@@ -14,13 +14,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Version information that will be populated at build time
-var (
-	Version   = "dev"
-	BuildTime = "unknown"
-	CommitSHA = "unknown"
-)
-
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "vizb [target]",
@@ -28,8 +21,9 @@ var rootCmd = &cobra.Command{
 	Long: `A CLI tool that extends the functionality of 'go test -bench' with chart generation.
 It runs the benchmark command internally, captures the JSON output, and generates
 an interactive HTML chart based on the results.`,
-	Args: cobra.ArbitraryArgs,
-	Run:  runBenchmark,
+	Version: "v0.1.1",
+	Args:    cobra.ArbitraryArgs,
+	Run:     runBenchmark,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -48,7 +42,6 @@ func init() {
 	rootCmd.Flags().StringVarP(&shared.FlagState.MemUnit, "mem-unit", "m", "B", "Memory unit available: b, B, KB, MB, GB")
 	rootCmd.Flags().StringVarP(&shared.FlagState.TimeUnit, "time-unit", "t", "ns", "Time unit available: ns, us, ms, s")
 	rootCmd.Flags().StringVarP(&shared.FlagState.Description, "description", "d", "", "Description of the benchmark")
-	rootCmd.Flags().BoolVarP(&shared.FlagState.ShowVersion, "version", "v", false, "Show version information")
 }
 
 // BenchEvent represents the structure of a JSON event from 'go test -json'
@@ -59,13 +52,6 @@ type BenchEvent struct {
 }
 
 func runBenchmark(cmd *cobra.Command, args []string) {
-	// Check if version flag is set
-	if shared.FlagState.ShowVersion {
-		fmt.Printf("vizb version %s\n", Version)
-		fmt.Printf("Build Time: %s\n", BuildTime)
-		fmt.Printf("Commit: %s\n", CommitSHA)
-		return
-	}
 
 	// Check if we're receiving data from stdin (piped input)
 	stat, _ := os.Stdin.Stat()

@@ -7,7 +7,6 @@ type flagState struct {
 	TimeUnit    string
 	Description string
 	Separator   string
-	ShowVersion bool
 }
 
 var FlagState flagState = flagState{}

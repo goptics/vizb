@@ -82,34 +82,12 @@ func resetFlagState() {
 	shared.FlagState.MemUnit = "B"
 	shared.FlagState.TimeUnit = "ns"
 	shared.FlagState.Description = ""
-	shared.FlagState.ShowVersion = false
 }
 
 // TestCLIFeatures groups all CLI functionality tests
 func TestCLIFeatures(t *testing.T) {
 	// Create a temporary directory for test files
 	tempDir := t.TempDir()
-
-	t.Run("Version flag", func(t *testing.T) {
-		resetFlagState()
-
-		// Set version flag
-		shared.FlagState.ShowVersion = true
-
-		stdout, _ := captureOutput(func() {
-			runBenchmark(&cobra.Command{}, []string{})
-		})
-
-		assert.Contains(t, stdout, "vizb version "+Version)
-	})
-
-	t.Run("Missing input error", func(t *testing.T) {
-		// Skip this test since we can't reliably test os.Exit behavior
-		t.Skip("Skipping test that involves os.Exit - can't be reliably tested")
-
-		// The actual implementation would check for the error message:
-		// "Error: no target provided and no piped input detected"
-	})
 
 	t.Run("Valid file input", func(t *testing.T) {
 		resetFlagState()
@@ -134,14 +112,6 @@ func TestCLIFeatures(t *testing.T) {
 		fileInfo, err := os.Stat(tempOutFile)
 		assert.NoError(t, err)
 		assert.Greater(t, fileInfo.Size(), int64(0))
-	})
-
-	t.Run("Invalid JSON input", func(t *testing.T) {
-		// Skip this test since we can't reliably test os.Exit behavior
-		t.Skip("Skipping test that involves os.Exit - can't be reliably tested")
-
-		// The actual implementation would check for the error message:
-		// "Error: Input file is not in proper JSON format"
 	})
 }
 
