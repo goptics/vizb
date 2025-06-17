@@ -1,0 +1,44 @@
+version: "3"
+
+tasks:
+  default:
+    desc: List available tasks
+    cmds:
+      - task --list
+
+  setup:
+    desc: Install required development tools
+    cmds:
+      - go install github.com/valyala/quicktemplate/qtc
+      - echo "Development tools installed successfully!"
+
+  generate:
+    desc: Generate templates using quicktemplate
+    cmds:
+      - qtc -dir=pkg/templates
+
+  build:
+    desc: Build the binary with version information
+    cmds:
+      - ./build.sh
+
+  test:
+    desc: Run all tests
+    cmds:
+      - go test -v ./...
+
+  lint:
+    desc: Run linter
+    cmds:
+      - golangci-lint run
+
+  release:
+    desc: Create and push a new tag to trigger release
+    prompt: This will create and push a new release tag. Continue?
+    vars:
+      VERSION: '{{.CLI_ARGS | default "v0.1.0"}}'
+    cmds:
+      - echo "Creating tag {{.VERSION}}..."
+      - git tag -a {{.VERSION}} -m "Release {{.VERSION}}"
+      - git push origin {{.VERSION}}
+      - echo "Tag {{.VERSION}} pushed. GitHub Actions will create the release."
