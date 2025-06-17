@@ -15,17 +15,11 @@ Vizb is a CLI tool for visualizing Go benchmark results as interactive HTML char
 
 ## Overview varmq benchmark
 
-<video width="854"  controls autoplay muted playsinline loop>
-  <source src="./assets/vizb-varmq-bench.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
+https://github.com/user-attachments/assets/71830a61-76a5-4917-9bb6-7d06be0cc625
 
-### The benchmark chart output
+### The chart output
 
-<video width="854"  controls autoplay muted playsinline loop>
-  <source src="./assets/vizb-varmq-bench-output.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
+https://github.com/user-attachments/assets/5dad22b0-d21f-434f-ad6e-57f4ebc74981
 
 ## Installation
 
@@ -147,7 +141,7 @@ Vizb always uses:
 - The last part after the separator as the `subject`
 - The second-to-last part as the `workload`
 
-![Example](<./docs/Execution_Time_(s_op).png>)
+![vizb chart example](<./assets/Execution_Time_(s_op).png>)
 
 ## Chart Types
 
