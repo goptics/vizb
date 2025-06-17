@@ -2,7 +2,7 @@
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/goptics/vizb)](https://goreportcard.com/report/github.com/goptics/vizb)
 [![CI](https://github.com/goptics/vizb/actions/workflows/ci.yml/badge.svg)](https://github.com/goptics/vizb/actions/workflows/ci.yml)
-![Codecov](https://img.shields.io/codecov/c/github/goptics/vizb)
+[![Codecov](https://codecov.io/gh/goptics/vizb/branch/main/graph/badge.svg)](https://codecov.io/gh/goptics/vizb)
 [![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8?style=for&logo=go)](https://golang.org/doc/devel/release.html)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=for)](LICENSE)
 
