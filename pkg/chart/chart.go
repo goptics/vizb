@@ -60,7 +60,7 @@ func GenerateChartsFromFile(jsonPath string) (string, error) {
 	}
 
 	if len(results) == 0 {
-		return "", fmt.Errorf("no benchmark results found in %s", jsonPath)
+		return "", fmt.Errorf("no benchmark results found")
 	}
 
 	// Create charts for each metric with converted units and truncated to 2 decimal places
