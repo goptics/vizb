@@ -208,8 +208,13 @@ func parseBenchmarkResults(jsonPath string) ([]BenchmarkResult, bool, error) {
 				// Remove CPU suffix from subject (e.g., "Subject-8" -> "Subject")
 				if idx := strings.LastIndex(subject, "-"); idx > 0 {
 					// Check if everything after the dash is a number
-					if _, err := strconv.Atoi(subject[idx+1:]); err == nil {
+					if cpuCount, err := strconv.Atoi(subject[idx+1:]); err == nil {
+						// Store CPU count in global bench state
 						subject = subject[:idx]
+
+						if shared.CPUCount == 0 {
+							shared.CPUCount = cpuCount
+						}
 					}
 				}
 
