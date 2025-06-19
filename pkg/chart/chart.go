@@ -306,7 +306,7 @@ func createChart(title string, results []BenchmarkResult, metricFn func(Benchmar
 	for w := range data {
 		workloads = append(workloads, w)
 	}
-	// sort.Strings(workloads)
+	sort.Strings(workloads)
 	bar.SetXAxis(workloads)
 
 	// Get unique subjects for series
