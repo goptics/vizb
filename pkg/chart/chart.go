@@ -93,7 +93,7 @@ func GenerateChartsFromFile(jsonPath string) (string, error) {
 		var memory float64
 		switch shared.FlagState.MemUnit {
 		case "b":
-			memory = r.BytesPerOp / 1024
+			memory = r.BytesPerOp * 8
 		case "KB":
 			memory = r.BytesPerOp / 1024 / 1024
 		case "MB":
