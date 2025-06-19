@@ -198,7 +198,7 @@ func runBenchmark(cmd *cobra.Command, args []string) {
 	}
 
 	// Generate the chart using the chart package functionality
-	fmt.Println("\n🔄 Generating chart...")
+	fmt.Println("🔄 Generating chart...")
 
 	// If no output file is specified, create a temporary one
 	var tempOutputFile string
