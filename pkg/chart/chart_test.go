@@ -14,7 +14,7 @@ import (
 func TestParseBenchmarkResults(t *testing.T) {
 	// Setup test data directory
 	tempDir := t.TempDir()
-	
+
 	t.Run("Valid benchmark results with memory stats", func(t *testing.T) {
 		// Create a temporary JSON file with valid benchmark results
 		jsonPath := filepath.Join(tempDir, "bench_with_mem.json")
@@ -28,9 +28,8 @@ func TestParseBenchmarkResults(t *testing.T) {
 		shared.FlagState.Separator = "/"
 
 		// Parse the results
-		results, hasMemStats, err := parseBenchmarkResults(jsonPath)
+		results, err := parseBenchmarkResults(jsonPath)
 		require.NoError(t, err)
-		assert.True(t, hasMemStats)
 		assert.Len(t, results, 3)
 
 		// Verify the first result
@@ -67,9 +66,8 @@ func TestParseBenchmarkResults(t *testing.T) {
 		shared.FlagState.Separator = "/"
 
 		// Parse the results
-		results, hasMemStats, err := parseBenchmarkResults(jsonPath)
+		results, err := parseBenchmarkResults(jsonPath)
 		require.NoError(t, err)
-		assert.False(t, hasMemStats)
 		assert.Len(t, results, 2)
 
 		// Verify the first result
@@ -98,9 +96,8 @@ func TestParseBenchmarkResults(t *testing.T) {
 		shared.FlagState.Separator = "-"
 
 		// Parse the results
-		results, hasMemStats, err := parseBenchmarkResults(jsonPath)
+		results, err := parseBenchmarkResults(jsonPath)
 		require.NoError(t, err)
-		assert.True(t, hasMemStats)
 		assert.Len(t, results, 1)
 
 		// With the separator as '-', the last two parts are 'Subject1' and '8'
@@ -118,9 +115,8 @@ func TestParseBenchmarkResults(t *testing.T) {
 		createTestFile(t, jsonPath, []BenchEvent{})
 
 		// Parse the results
-		results, hasMemStats, err := parseBenchmarkResults(jsonPath)
+		results, err := parseBenchmarkResults(jsonPath)
 		require.NoError(t, err)
-		assert.False(t, hasMemStats)
 		assert.Len(t, results, 0)
 	})
 
@@ -131,13 +127,13 @@ func TestParseBenchmarkResults(t *testing.T) {
 		require.NoError(t, err)
 
 		// Parse the results
-		_, _, err = parseBenchmarkResults(jsonPath)
+		_, err = parseBenchmarkResults(jsonPath)
 		assert.Error(t, err)
 	})
 
 	t.Run("Non-existent file", func(t *testing.T) {
 		// Try to parse a non-existent file
-		_, _, err := parseBenchmarkResults(filepath.Join(tempDir, "non_existent.json"))
+		_, err := parseBenchmarkResults(filepath.Join(tempDir, "non_existent.json"))
 		assert.Error(t, err)
 	})
 }
@@ -158,10 +154,10 @@ func TestCreateChart(t *testing.T) {
 		// Verify chart properties
 		assert.NotNil(t, chart)
 		assert.Equal(t, "Test Chart", chart.Title.Title)
-		
+
 		// Verify chart was created successfully
 		assert.NotNil(t, chart)
-		
+
 		// We can't directly access SeriesList, but we can verify the chart was created
 		assert.NotNil(t, chart)
 	})
@@ -175,10 +171,10 @@ func TestCreateChart(t *testing.T) {
 		// Verify chart properties
 		assert.NotNil(t, chart)
 		assert.Equal(t, "Empty Chart", chart.Title.Title)
-		
+
 		// Verify chart was created successfully
 		assert.NotNil(t, chart)
-		
+
 		// We can't directly access SeriesList, but we can verify the chart was created
 		assert.NotNil(t, chart)
 	})
@@ -193,7 +189,7 @@ func TestGenerateChartsFromFile(t *testing.T) {
 
 	// Setup test data directory
 	tempDir := t.TempDir()
-	
+
 	t.Run("Generate charts with memory stats", func(t *testing.T) {
 		// Create a temporary JSON file with valid benchmark results
 		jsonPath := filepath.Join(tempDir, "bench_with_mem.json")
@@ -211,12 +207,12 @@ func TestGenerateChartsFromFile(t *testing.T) {
 		// Generate charts
 		outputPath, err := GenerateChartsFromFile(jsonPath)
 		require.NoError(t, err)
-		
+
 		// Verify output file exists
 		assert.Equal(t, shared.FlagState.OutputFile, outputPath)
 		_, err = os.Stat(outputPath)
 		assert.NoError(t, err)
-		
+
 		// Verify file content (just check it's not empty)
 		content, err := os.ReadFile(outputPath)
 		require.NoError(t, err)
@@ -238,12 +234,12 @@ func TestGenerateChartsFromFile(t *testing.T) {
 		// Generate charts
 		outputPath, err := GenerateChartsFromFile(jsonPath)
 		require.NoError(t, err)
-		
+
 		// Verify output file exists
 		assert.Equal(t, shared.FlagState.OutputFile, outputPath)
 		_, err = os.Stat(outputPath)
 		assert.NoError(t, err)
-		
+
 		// Verify file content (just check it's not empty)
 		content, err := os.ReadFile(outputPath)
 		require.NoError(t, err)

@@ -7,12 +7,7 @@
     "github.com/goptics/vizb/shared"
 ) %}
 
-{% func BenchmarkChart(nsPerOpChart, bytesPerOpChart, allocsPerOpChart *charts.Bar) %}
-{% code
-    // Check if the memory charts exist
-    hasMemoryData := bytesPerOpChart != nil
-    hasAllocData := allocsPerOpChart != nil
-%}
+{% func BenchmarkChart(BenchCharts []shared.BenchCharts) %}
 <!DOCTYPE html>
 <html>
 <head>
@@ -78,20 +73,24 @@
     {% if shared.FlagState.Description != "" %}
     <p style="text-align: center; margin-bottom: 20px;">{%s shared.FlagState.Description %}</p>
     {% endif %}
+
+    {% for _, taskChart := range BenchCharts %}
     <div class='chart'>
-        {%s= renderChart(nsPerOpChart) %}
+        {%s= renderChart(taskChart.NsPerOpChart) %}
     </div>
-    {% if hasMemoryData %}
+    {% if shared.HasMemStats %}
     <div class='chart'>
-        {%s= renderChart(bytesPerOpChart) %}
-    </div>
-    {% endif %}
-    {% if hasAllocData %}
-    <div class='chart'>
-        {%s= renderChart(allocsPerOpChart) %}
+        {%s= renderChart(taskChart.BytesPerOpChart) %}
     </div>
     {% endif %}
-    {% if !hasMemoryData %}
+    {% if shared.HasMemStats %}
+    <div class='chart'>
+        {%s= renderChart(taskChart.AllocsPerOpChart) %}
+    </div>
+    {% endif %}
+    {% endfor %}
+
+    {% if !shared.HasMemStats %}
     <div style="text-align: center; margin: 20px; color: #666;">
         <p>Note: Memory statistics are not available. Run benchmarks with <code>-benchmem</code> flag to include memory metrics.</p>
     </div>

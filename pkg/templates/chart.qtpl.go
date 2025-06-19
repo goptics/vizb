@@ -26,25 +26,17 @@ var (
 )
 
 //line pkg/templates/chart.qtpl:10
-func StreamBenchmarkChart(qw422016 *qt422016.Writer, nsPerOpChart, bytesPerOpChart, allocsPerOpChart *charts.Bar) {
+func StreamBenchmarkChart(qw422016 *qt422016.Writer, BenchCharts []shared.BenchCharts) {
 //line pkg/templates/chart.qtpl:10
-	qw422016.N().S(`
-`)
-//line pkg/templates/chart.qtpl:12
-	// Check if the memory charts exist
-	hasMemoryData := bytesPerOpChart != nil
-	hasAllocData := allocsPerOpChart != nil
-
-//line pkg/templates/chart.qtpl:15
 	qw422016.N().S(`
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
     <title>`)
-//line pkg/templates/chart.qtpl:20
+//line pkg/templates/chart.qtpl:15
 	qw422016.E().S(shared.FlagState.Name)
-//line pkg/templates/chart.qtpl:20
+//line pkg/templates/chart.qtpl:15
 	qw422016.N().S(`</title>
     <script src="https://go-echarts.github.io/go-echarts-assets/assets/echarts.min.js"></script>
     <script src="https://go-echarts.github.io/go-echarts-assets/assets/themes/light.js"></script>
@@ -103,78 +95,94 @@ func StreamBenchmarkChart(qw422016 *qt422016.Writer, nsPerOpChart, bytesPerOpCha
 </head>
 <body>
     <h1>`)
-//line pkg/templates/chart.qtpl:77
+//line pkg/templates/chart.qtpl:72
 	qw422016.E().S(shared.FlagState.Name)
-//line pkg/templates/chart.qtpl:77
-	qw422016.N().S(`</h1>
+//line pkg/templates/chart.qtpl:72
+	qw422016.N().S(` (CPU: `)
+//line pkg/templates/chart.qtpl:72
+	qw422016.N().D(shared.CPUCount)
+//line pkg/templates/chart.qtpl:72
+	qw422016.N().S(`)</h1>
     `)
-//line pkg/templates/chart.qtpl:78
+//line pkg/templates/chart.qtpl:73
 	if shared.FlagState.Description != "" {
-//line pkg/templates/chart.qtpl:78
+//line pkg/templates/chart.qtpl:73
 		qw422016.N().S(`
     <p style="text-align: center; margin-bottom: 20px;">`)
-//line pkg/templates/chart.qtpl:79
+//line pkg/templates/chart.qtpl:74
 		qw422016.E().S(shared.FlagState.Description)
-//line pkg/templates/chart.qtpl:79
+//line pkg/templates/chart.qtpl:74
 		qw422016.N().S(`</p>
     `)
-//line pkg/templates/chart.qtpl:80
+//line pkg/templates/chart.qtpl:75
 	}
-//line pkg/templates/chart.qtpl:80
+//line pkg/templates/chart.qtpl:75
 	qw422016.N().S(`
-    <div class='chart'>
-        `)
-//line pkg/templates/chart.qtpl:82
-	qw422016.N().S(renderChart(nsPerOpChart))
-//line pkg/templates/chart.qtpl:82
-	qw422016.N().S(`
-    </div>
+
     `)
-//line pkg/templates/chart.qtpl:84
-	if hasMemoryData {
-//line pkg/templates/chart.qtpl:84
+//line pkg/templates/chart.qtpl:77
+	for _, taskChart := range BenchCharts {
+//line pkg/templates/chart.qtpl:77
 		qw422016.N().S(`
     <div class='chart'>
         `)
-//line pkg/templates/chart.qtpl:86
-		qw422016.N().S(renderChart(bytesPerOpChart))
-//line pkg/templates/chart.qtpl:86
+//line pkg/templates/chart.qtpl:79
+		qw422016.N().S(renderChart(taskChart.NsPerOpChart))
+//line pkg/templates/chart.qtpl:79
 		qw422016.N().S(`
     </div>
     `)
+//line pkg/templates/chart.qtpl:81
+		if shared.HasMemStats {
+//line pkg/templates/chart.qtpl:81
+			qw422016.N().S(`
+    <div class='chart'>
+        `)
+//line pkg/templates/chart.qtpl:83
+			qw422016.N().S(renderChart(taskChart.BytesPerOpChart))
+//line pkg/templates/chart.qtpl:83
+			qw422016.N().S(`
+    </div>
+    `)
+//line pkg/templates/chart.qtpl:85
+		}
+//line pkg/templates/chart.qtpl:85
+		qw422016.N().S(`
+    `)
+//line pkg/templates/chart.qtpl:86
+		if shared.HasMemStats {
+//line pkg/templates/chart.qtpl:86
+			qw422016.N().S(`
+    <div class='chart'>
+        `)
 //line pkg/templates/chart.qtpl:88
+			qw422016.N().S(renderChart(taskChart.AllocsPerOpChart))
+//line pkg/templates/chart.qtpl:88
+			qw422016.N().S(`
+    </div>
+    `)
+//line pkg/templates/chart.qtpl:90
+		}
+//line pkg/templates/chart.qtpl:90
+		qw422016.N().S(`
+    `)
+//line pkg/templates/chart.qtpl:91
 	}
-//line pkg/templates/chart.qtpl:88
+//line pkg/templates/chart.qtpl:91
 	qw422016.N().S(`
-    `)
-//line pkg/templates/chart.qtpl:89
-	if hasAllocData {
-//line pkg/templates/chart.qtpl:89
-		qw422016.N().S(`
-    <div class='chart'>
-        `)
-//line pkg/templates/chart.qtpl:91
-		qw422016.N().S(renderChart(allocsPerOpChart))
-//line pkg/templates/chart.qtpl:91
-		qw422016.N().S(`
-    </div>
+
     `)
 //line pkg/templates/chart.qtpl:93
-	}
+	if !shared.HasMemStats {
 //line pkg/templates/chart.qtpl:93
-	qw422016.N().S(`
-    `)
-//line pkg/templates/chart.qtpl:94
-	if !hasMemoryData {
-//line pkg/templates/chart.qtpl:94
 		qw422016.N().S(`
     <div style="text-align: center; margin: 20px; color: #666;">
         <p>Note: Memory statistics are not available. Run benchmarks with <code>-benchmem</code> flag to include memory metrics.</p>
     </div>
     `)
-//line pkg/templates/chart.qtpl:98
+//line pkg/templates/chart.qtpl:97
 	}
-//line pkg/templates/chart.qtpl:98
+//line pkg/templates/chart.qtpl:97
 	qw422016.N().S(`
     <footer style="text-align: center; margin-top: 30px; margin-bottom: 20px; font-size: 14px; color: #666;">
         Made with <span style="color: #e25555;">❤</span> - <a alt="Goptics" target="_blank" href="https://github.com/goptics" style="color: #666; text-decoration: none; font-weight: bold;">Goptics</a> &copy; 2025
@@ -182,41 +190,41 @@ func StreamBenchmarkChart(qw422016 *qt422016.Writer, nsPerOpChart, bytesPerOpCha
 </body>
 </html>
 `)
-//line pkg/templates/chart.qtpl:104
+//line pkg/templates/chart.qtpl:103
 }
 
-//line pkg/templates/chart.qtpl:104
-func WriteBenchmarkChart(qq422016 qtio422016.Writer, nsPerOpChart, bytesPerOpChart, allocsPerOpChart *charts.Bar) {
-//line pkg/templates/chart.qtpl:104
+//line pkg/templates/chart.qtpl:103
+func WriteBenchmarkChart(qq422016 qtio422016.Writer, BenchCharts []shared.BenchCharts) {
+//line pkg/templates/chart.qtpl:103
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line pkg/templates/chart.qtpl:104
-	StreamBenchmarkChart(qw422016, nsPerOpChart, bytesPerOpChart, allocsPerOpChart)
-//line pkg/templates/chart.qtpl:104
+//line pkg/templates/chart.qtpl:103
+	StreamBenchmarkChart(qw422016, BenchCharts)
+//line pkg/templates/chart.qtpl:103
 	qt422016.ReleaseWriter(qw422016)
-//line pkg/templates/chart.qtpl:104
+//line pkg/templates/chart.qtpl:103
 }
 
-//line pkg/templates/chart.qtpl:104
-func BenchmarkChart(nsPerOpChart, bytesPerOpChart, allocsPerOpChart *charts.Bar) string {
-//line pkg/templates/chart.qtpl:104
+//line pkg/templates/chart.qtpl:103
+func BenchmarkChart(BenchCharts []shared.BenchCharts) string {
+//line pkg/templates/chart.qtpl:103
 	qb422016 := qt422016.AcquireByteBuffer()
-//line pkg/templates/chart.qtpl:104
-	WriteBenchmarkChart(qb422016, nsPerOpChart, bytesPerOpChart, allocsPerOpChart)
-//line pkg/templates/chart.qtpl:104
+//line pkg/templates/chart.qtpl:103
+	WriteBenchmarkChart(qb422016, BenchCharts)
+//line pkg/templates/chart.qtpl:103
 	qs422016 := string(qb422016.B)
-//line pkg/templates/chart.qtpl:104
+//line pkg/templates/chart.qtpl:103
 	qt422016.ReleaseByteBuffer(qb422016)
-//line pkg/templates/chart.qtpl:104
+//line pkg/templates/chart.qtpl:103
 	return qs422016
-//line pkg/templates/chart.qtpl:104
+//line pkg/templates/chart.qtpl:103
 }
 
-//line pkg/templates/chart.qtpl:106
+//line pkg/templates/chart.qtpl:105
 func streamrenderChart(qw422016 *qt422016.Writer, chart *charts.Bar) {
-//line pkg/templates/chart.qtpl:106
+//line pkg/templates/chart.qtpl:105
 	qw422016.N().S(`
     `)
-//line pkg/templates/chart.qtpl:108
+//line pkg/templates/chart.qtpl:107
 	var buf bytes.Buffer
 	chart.Render(&buf)
 	content := buf.String()
@@ -247,39 +255,39 @@ func streamrenderChart(qw422016 *qt422016.Writer, chart *charts.Bar) {
 		}
 	}
 
-//line pkg/templates/chart.qtpl:137
+//line pkg/templates/chart.qtpl:136
 	qw422016.N().S(`
     `)
-//line pkg/templates/chart.qtpl:138
+//line pkg/templates/chart.qtpl:137
 	qw422016.N().S(chartContent)
-//line pkg/templates/chart.qtpl:138
+//line pkg/templates/chart.qtpl:137
 	qw422016.N().S(`
 `)
-//line pkg/templates/chart.qtpl:139
+//line pkg/templates/chart.qtpl:138
 }
 
-//line pkg/templates/chart.qtpl:139
+//line pkg/templates/chart.qtpl:138
 func writerenderChart(qq422016 qtio422016.Writer, chart *charts.Bar) {
-//line pkg/templates/chart.qtpl:139
+//line pkg/templates/chart.qtpl:138
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line pkg/templates/chart.qtpl:139
+//line pkg/templates/chart.qtpl:138
 	streamrenderChart(qw422016, chart)
-//line pkg/templates/chart.qtpl:139
+//line pkg/templates/chart.qtpl:138
 	qt422016.ReleaseWriter(qw422016)
-//line pkg/templates/chart.qtpl:139
+//line pkg/templates/chart.qtpl:138
 }
 
-//line pkg/templates/chart.qtpl:139
+//line pkg/templates/chart.qtpl:138
 func renderChart(chart *charts.Bar) string {
-//line pkg/templates/chart.qtpl:139
+//line pkg/templates/chart.qtpl:138
 	qb422016 := qt422016.AcquireByteBuffer()
-//line pkg/templates/chart.qtpl:139
+//line pkg/templates/chart.qtpl:138
 	writerenderChart(qb422016, chart)
-//line pkg/templates/chart.qtpl:139
+//line pkg/templates/chart.qtpl:138
 	qs422016 := string(qb422016.B)
-//line pkg/templates/chart.qtpl:139
+//line pkg/templates/chart.qtpl:138
 	qt422016.ReleaseByteBuffer(qb422016)
-//line pkg/templates/chart.qtpl:139
+//line pkg/templates/chart.qtpl:138
 	return qs422016
-//line pkg/templates/chart.qtpl:139
+//line pkg/templates/chart.qtpl:138
 }
