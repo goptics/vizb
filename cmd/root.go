@@ -162,6 +162,7 @@ func runBenchmark(cmd *cobra.Command, args []string) {
 		// Final flush to ensure all data is written
 		writer.Flush()
 		jsonFile.Sync()
+		fmt.Println()
 	} else {
 		// Using the target as a JSON file path
 		jsonFilePath = target
