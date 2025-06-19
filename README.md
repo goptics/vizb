@@ -131,8 +131,11 @@ Vizb organizes your benchmark results into groups based on a separator character
 
 For example, if your benchmark is named `BenchmarkTest/workload/subject`, Vizb will group it as:
 
+- BenchName: `Test`
 - Workload: `workload`
 - Subject: `subject`
+
+![vizb chart example](<./assets/Execution_Time_(s_op).png>)
 
 You can change the separator using the `-s` or `--separator` flag:
 
@@ -144,10 +147,16 @@ With this setting, a benchmark named `BenchmarkTest_workload_subject` would be g
 
 Vizb always uses:
 
-- The last part after the separator as the `subject`
-- The second-to-last part as the `workload`
+- The last part after the separator as the `subject` (`n - 1`)
+- The second-to-last part as the `workload` (`n - 2`) (only if `n > 2`)
+- The first part as the `Test` is considered as the name of the benchmark (`n - 3`)
 
-![vizb chart example](<./assets/Execution_Time_(s_op).png>)
+here `n` is the number of word parts after the separation.
+
+> [!Important]
+> If `n < 3` means `BenchmarkTest_workload`, then the `test` is considered as the name of the benchmark and the `workload` is considered as the name of the `subject`.
+
+In short, `workload` is only shows when the `n > 2`.
 
 ## Chart Types
 
