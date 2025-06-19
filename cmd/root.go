@@ -136,13 +136,13 @@ func runBenchmark(cmd *cobra.Command, args []string) {
 				if ev.Test != "" && strings.HasPrefix(ev.Test, "Benchmark") {
 					currentBenchName = ev.Test
 					// Only count sub-benchmarks (with a slash in the name)
-					if strings.Contains(ev.Test, shared.FlagState.Separator) && strings.Contains(line, "=== RUN") {
+					if strings.Contains(ev.Test, shared.FlagState.Separator) && strings.Contains(line, "ns/op") {
 						benchmarkCount++
 					}
 				}
 
 				// Update progress bar description with benchmark count and current benchmark name
-				description := fmt.Sprintf("Processing benchmarks [%s] (%d tests)",
+				description := fmt.Sprintf("Running Benchmarks [%s] (%d completed)",
 					currentBenchName, benchmarkCount)
 
 				bar.Describe(description)
@@ -242,7 +242,7 @@ func runBenchmark(cmd *cobra.Command, args []string) {
 		os.Remove(actualFilename)
 	} else {
 		// Normal file output, print success messages
-		fmt.Printf("\n🎉 Chart generated successfully!\n")
+		fmt.Printf("🎉 Chart generated successfully!\n")
 		fmt.Printf("📄 Output file: %s\n", actualFilename)
 		fmt.Printf("\nOpen the HTML file in your browser to view the benchmark results.\n")
 	}
