@@ -52,6 +52,7 @@ func StreamBenchmarkChart(qw422016 *qt422016.Writer, BenchCharts []shared.BenchC
             overflow-x: hidden;
             width: 100%;
             font-family: Arial, sans-serif;
+            scroll-padding-top: 20px;
         }
 
         .chart {
@@ -62,6 +63,7 @@ func StreamBenchmarkChart(qw422016 *qt422016.Writer, BenchCharts []shared.BenchC
             border: 1px solid #ddd;
             border-radius: 5px;
             max-width: 1080px;
+            scroll-margin-top: 20px;
         }
 
         .chart ~ .chart {
@@ -78,6 +80,101 @@ func StreamBenchmarkChart(qw422016 *qt422016.Writer, BenchCharts []shared.BenchC
             font-family: Arial, sans-serif;
             margin: 20px 0;
         }
+        
+        /* Sidebar styles */
+        .sidebar {
+            position: fixed;
+            top: 50%;
+            right: 10px;
+            transform: translateY(-50%);
+            background-color: rgba(255, 255, 255, 0.9);
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            max-height: 80vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            cursor: move;
+            user-select: none;
+        }
+        
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            cursor: move;
+        }
+        
+        .sidebar-title {
+            font-weight: bold;
+            text-align: center;
+            font-size: 14px;
+            flex-grow: 1;
+        }
+        
+        .minimize-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 0 5px;
+            color: #666;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .minimize-btn:hover {
+            color: #333;
+        }
+        
+        .sidebar.minimized {
+            width: auto;
+            padding: 5px;
+        }
+        
+        .sidebar.minimized .bench-indicator,
+        .sidebar.minimized .sidebar-title {
+            display: none;
+        }
+        
+        .sidebar.minimized .minimize-btn {
+            transform: rotate(180deg);
+            font-size: 14px;
+            padding: 3px;
+            margin: 0;
+        }
+        
+        .sidebar.minimized .sidebar-header {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .bench-indicator {
+            padding: 5px 10px;
+            border-radius: 4px;
+            background-color: #f0f0f0;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-size: 12px;
+            text-align: center;
+        }
+        
+        .bench-indicator:hover {
+            background-color: #e0e0e0;
+        }
+        
+        .bench-indicator.active {
+            background-color: #4CAF50;
+            color: white;
+        }
     </style>
     <script type="text/javascript">
         // Add resize event handler to make charts responsive
@@ -91,98 +188,272 @@ func StreamBenchmarkChart(qw422016 *qt422016.Writer, BenchCharts []shared.BenchC
                 }
             });
         });
+        
+        // Initialize sidebar functionality when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('bench-sidebar');
+            const indicators = document.querySelectorAll('.bench-indicator');
+            const chartSections = document.querySelectorAll('.chart-section');
+            const minimizeBtn = document.getElementById('minimize-btn');
+            
+            // Make sidebar draggable
+            let isDragging = false;
+            let offsetX, offsetY;
+            
+            function startDrag(e) {
+                // Only start drag if it's the sidebar header or the sidebar itself when minimized
+                if (e.target.closest('.sidebar-header') || 
+                    (sidebar.classList.contains('minimized') && e.target.closest('.sidebar'))) {
+                    isDragging = true;
+                    
+                    // Get the current position of the sidebar
+                    const sidebarRect = sidebar.getBoundingClientRect();
+                    
+                    // Calculate the offset from the mouse position to the sidebar position
+                    offsetX = e.clientX - sidebarRect.left;
+                    offsetY = e.clientY - sidebarRect.top;
+                    
+                    // Prevent text selection during drag
+                    e.preventDefault();
+                }
+            }
+            
+            function drag(e) {
+                if (isDragging) {
+                    // Calculate new position
+                    const x = e.clientX - offsetX;
+                    const y = e.clientY - offsetY;
+                    
+                    // Apply new position
+                    sidebar.style.left = x + 'px';
+                    sidebar.style.top = y + 'px';
+                    sidebar.style.right = 'auto';
+                    sidebar.style.transform = 'none';
+                }
+            }
+            
+            function stopDrag() {
+                isDragging = false;
+            }
+            
+            // Add event listeners for dragging
+            sidebar.addEventListener('mousedown', startDrag);
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', stopDrag);
+            
+            // Minimize/maximize sidebar
+            minimizeBtn.addEventListener('click', function() {
+                sidebar.classList.toggle('minimized');
+                this.textContent = sidebar.classList.contains('minimized') ? '◀' : '▶';
+            });
+            
+            // Add click event to each indicator
+            indicators.forEach(function(indicator) {
+                indicator.addEventListener('click', function() {
+                    const targetId = this.getAttribute('data-target');
+                    const targetElement = document.getElementById(targetId);
+                    
+                    if (targetElement) {
+                        // Scroll to the target element
+                        targetElement.scrollIntoView({ behavior: 'smooth' });
+                        
+                        // Update active state
+                        indicators.forEach(ind => ind.classList.remove('active'));
+                        this.classList.add('active');
+                    }
+                });
+            });
+            
+            // Update active indicator on scroll
+            window.addEventListener('scroll', function() {
+                let currentSection = '';
+                
+                chartSections.forEach(function(section) {
+                    const sectionTop = section.offsetTop;
+                    const sectionHeight = section.clientHeight;
+                    
+                    if (pageYOffset >= (sectionTop - 100)) {
+                        currentSection = section.getAttribute('id');
+                    }
+                });
+                
+                indicators.forEach(function(indicator) {
+                    indicator.classList.remove('active');
+                    if (indicator.getAttribute('data-target') === currentSection) {
+                        indicator.classList.add('active');
+                    }
+                });
+            });
+        });
     </script>
 </head>
 <body>
     <h1>`)
-//line pkg/templates/chart.qtpl:72
+//line pkg/templates/chart.qtpl:266
 	qw422016.E().S(shared.FlagState.Name)
-//line pkg/templates/chart.qtpl:72
+//line pkg/templates/chart.qtpl:266
 	qw422016.N().S(` (CPU: `)
-//line pkg/templates/chart.qtpl:72
+//line pkg/templates/chart.qtpl:266
 	qw422016.N().D(shared.CPUCount)
-//line pkg/templates/chart.qtpl:72
+//line pkg/templates/chart.qtpl:266
 	qw422016.N().S(`)</h1>
     `)
-//line pkg/templates/chart.qtpl:73
+//line pkg/templates/chart.qtpl:267
 	if shared.FlagState.Description != "" {
-//line pkg/templates/chart.qtpl:73
+//line pkg/templates/chart.qtpl:267
 		qw422016.N().S(`
     <p style="text-align: center; margin-bottom: 20px;">`)
-//line pkg/templates/chart.qtpl:74
+//line pkg/templates/chart.qtpl:268
 		qw422016.E().S(shared.FlagState.Description)
-//line pkg/templates/chart.qtpl:74
+//line pkg/templates/chart.qtpl:268
 		qw422016.N().S(`</p>
     `)
-//line pkg/templates/chart.qtpl:75
+//line pkg/templates/chart.qtpl:269
 	}
-//line pkg/templates/chart.qtpl:75
+//line pkg/templates/chart.qtpl:269
 	qw422016.N().S(`
 
     `)
-//line pkg/templates/chart.qtpl:77
+//line pkg/templates/chart.qtpl:272
+	// Check if any benchmark has a non-empty name
+	hasNamedBenchmarks := false
 	for _, taskChart := range BenchCharts {
-//line pkg/templates/chart.qtpl:77
-		qw422016.N().S(`
-    <div class='chart'>
-        `)
-//line pkg/templates/chart.qtpl:79
-		qw422016.N().S(renderChart(taskChart.NsPerOpChart))
-//line pkg/templates/chart.qtpl:79
-		qw422016.N().S(`
-    </div>
-    `)
-//line pkg/templates/chart.qtpl:81
-		if shared.HasMemStats {
-//line pkg/templates/chart.qtpl:81
-			qw422016.N().S(`
-    <div class='chart'>
-        `)
-//line pkg/templates/chart.qtpl:83
-			qw422016.N().S(renderChart(taskChart.BytesPerOpChart))
-//line pkg/templates/chart.qtpl:83
-			qw422016.N().S(`
-    </div>
-    `)
-//line pkg/templates/chart.qtpl:85
+		if taskChart.Name != "" {
+			hasNamedBenchmarks = true
+			break
 		}
-//line pkg/templates/chart.qtpl:85
-		qw422016.N().S(`
-    `)
-//line pkg/templates/chart.qtpl:86
-		if shared.HasMemStats {
-//line pkg/templates/chart.qtpl:86
-			qw422016.N().S(`
-    <div class='chart'>
-        `)
-//line pkg/templates/chart.qtpl:88
-			qw422016.N().S(renderChart(taskChart.AllocsPerOpChart))
-//line pkg/templates/chart.qtpl:88
-			qw422016.N().S(`
-    </div>
-    `)
-//line pkg/templates/chart.qtpl:90
-		}
-//line pkg/templates/chart.qtpl:90
-		qw422016.N().S(`
-    `)
-//line pkg/templates/chart.qtpl:91
 	}
-//line pkg/templates/chart.qtpl:91
+
+//line pkg/templates/chart.qtpl:280
+	qw422016.N().S(`
+    
+    `)
+//line pkg/templates/chart.qtpl:282
+	if hasNamedBenchmarks {
+//line pkg/templates/chart.qtpl:282
+		qw422016.N().S(`
+    <!-- Sidebar for benchmark navigation -->
+    <div id="bench-sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-title">Bench Indicators</div>
+            <button id="minimize-btn" class="minimize-btn">▶</button>
+        </div>
+        `)
+//line pkg/templates/chart.qtpl:289
+		for i, taskChart := range BenchCharts {
+//line pkg/templates/chart.qtpl:289
+			qw422016.N().S(`
+        `)
+//line pkg/templates/chart.qtpl:290
+			if taskChart.Name != "" {
+//line pkg/templates/chart.qtpl:290
+				qw422016.N().S(`
+        <div class="bench-indicator`)
+//line pkg/templates/chart.qtpl:291
+				if i == 0 {
+//line pkg/templates/chart.qtpl:291
+					qw422016.N().S(` active`)
+//line pkg/templates/chart.qtpl:291
+				}
+//line pkg/templates/chart.qtpl:291
+				qw422016.N().S(`" data-target="bench-section-`)
+//line pkg/templates/chart.qtpl:291
+				qw422016.N().D(i)
+//line pkg/templates/chart.qtpl:291
+				qw422016.N().S(`">
+            `)
+//line pkg/templates/chart.qtpl:292
+				qw422016.E().S(taskChart.Name)
+//line pkg/templates/chart.qtpl:292
+				qw422016.N().S(`
+        </div>
+        `)
+//line pkg/templates/chart.qtpl:294
+			}
+//line pkg/templates/chart.qtpl:294
+			qw422016.N().S(`
+        `)
+//line pkg/templates/chart.qtpl:295
+		}
+//line pkg/templates/chart.qtpl:295
+		qw422016.N().S(`
+    </div>
+    `)
+//line pkg/templates/chart.qtpl:297
+	}
+//line pkg/templates/chart.qtpl:297
+	qw422016.N().S(`
+    
+    `)
+//line pkg/templates/chart.qtpl:299
+	for i, taskChart := range BenchCharts {
+//line pkg/templates/chart.qtpl:299
+		qw422016.N().S(`
+    <div id="bench-section-`)
+//line pkg/templates/chart.qtpl:300
+		qw422016.N().D(i)
+//line pkg/templates/chart.qtpl:300
+		qw422016.N().S(`" class="chart-section">
+        <div class='chart'>
+            `)
+//line pkg/templates/chart.qtpl:302
+		qw422016.N().S(renderChart(taskChart.NsPerOpChart))
+//line pkg/templates/chart.qtpl:302
+		qw422016.N().S(`
+        </div>
+        `)
+//line pkg/templates/chart.qtpl:304
+		if shared.HasMemStats {
+//line pkg/templates/chart.qtpl:304
+			qw422016.N().S(`
+        <div class='chart'>
+            `)
+//line pkg/templates/chart.qtpl:306
+			qw422016.N().S(renderChart(taskChart.BytesPerOpChart))
+//line pkg/templates/chart.qtpl:306
+			qw422016.N().S(`
+        </div>
+        `)
+//line pkg/templates/chart.qtpl:308
+		}
+//line pkg/templates/chart.qtpl:308
+		qw422016.N().S(`
+        `)
+//line pkg/templates/chart.qtpl:309
+		if shared.HasMemStats {
+//line pkg/templates/chart.qtpl:309
+			qw422016.N().S(`
+        <div class='chart'>
+            `)
+//line pkg/templates/chart.qtpl:311
+			qw422016.N().S(renderChart(taskChart.AllocsPerOpChart))
+//line pkg/templates/chart.qtpl:311
+			qw422016.N().S(`
+        </div>
+        `)
+//line pkg/templates/chart.qtpl:313
+		}
+//line pkg/templates/chart.qtpl:313
+		qw422016.N().S(`
+    </div>
+    `)
+//line pkg/templates/chart.qtpl:315
+	}
+//line pkg/templates/chart.qtpl:315
 	qw422016.N().S(`
 
     `)
-//line pkg/templates/chart.qtpl:93
+//line pkg/templates/chart.qtpl:317
 	if !shared.HasMemStats {
-//line pkg/templates/chart.qtpl:93
+//line pkg/templates/chart.qtpl:317
 		qw422016.N().S(`
     <div style="text-align: center; margin: 20px; color: #666;">
         <p>Note: Memory statistics are not available. Run benchmarks with <code>-benchmem</code> flag to include memory metrics.</p>
     </div>
     `)
-//line pkg/templates/chart.qtpl:97
+//line pkg/templates/chart.qtpl:321
 	}
-//line pkg/templates/chart.qtpl:97
+//line pkg/templates/chart.qtpl:321
 	qw422016.N().S(`
     <footer style="text-align: center; margin-top: 30px; margin-bottom: 20px; font-size: 14px; color: #666;">
         Made with <span style="color: #e25555;">❤</span> - <a alt="Goptics" target="_blank" href="https://github.com/goptics" style="color: #666; text-decoration: none; font-weight: bold;">Goptics</a> &copy; 2025
@@ -190,41 +461,41 @@ func StreamBenchmarkChart(qw422016 *qt422016.Writer, BenchCharts []shared.BenchC
 </body>
 </html>
 `)
-//line pkg/templates/chart.qtpl:103
+//line pkg/templates/chart.qtpl:327
 }
 
-//line pkg/templates/chart.qtpl:103
+//line pkg/templates/chart.qtpl:327
 func WriteBenchmarkChart(qq422016 qtio422016.Writer, BenchCharts []shared.BenchCharts) {
-//line pkg/templates/chart.qtpl:103
+//line pkg/templates/chart.qtpl:327
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line pkg/templates/chart.qtpl:103
+//line pkg/templates/chart.qtpl:327
 	StreamBenchmarkChart(qw422016, BenchCharts)
-//line pkg/templates/chart.qtpl:103
+//line pkg/templates/chart.qtpl:327
 	qt422016.ReleaseWriter(qw422016)
-//line pkg/templates/chart.qtpl:103
+//line pkg/templates/chart.qtpl:327
 }
 
-//line pkg/templates/chart.qtpl:103
+//line pkg/templates/chart.qtpl:327
 func BenchmarkChart(BenchCharts []shared.BenchCharts) string {
-//line pkg/templates/chart.qtpl:103
+//line pkg/templates/chart.qtpl:327
 	qb422016 := qt422016.AcquireByteBuffer()
-//line pkg/templates/chart.qtpl:103
+//line pkg/templates/chart.qtpl:327
 	WriteBenchmarkChart(qb422016, BenchCharts)
-//line pkg/templates/chart.qtpl:103
+//line pkg/templates/chart.qtpl:327
 	qs422016 := string(qb422016.B)
-//line pkg/templates/chart.qtpl:103
+//line pkg/templates/chart.qtpl:327
 	qt422016.ReleaseByteBuffer(qb422016)
-//line pkg/templates/chart.qtpl:103
+//line pkg/templates/chart.qtpl:327
 	return qs422016
-//line pkg/templates/chart.qtpl:103
+//line pkg/templates/chart.qtpl:327
 }
 
-//line pkg/templates/chart.qtpl:105
+//line pkg/templates/chart.qtpl:329
 func streamrenderChart(qw422016 *qt422016.Writer, chart *charts.Bar) {
-//line pkg/templates/chart.qtpl:105
+//line pkg/templates/chart.qtpl:329
 	qw422016.N().S(`
     `)
-//line pkg/templates/chart.qtpl:107
+//line pkg/templates/chart.qtpl:331
 	var buf bytes.Buffer
 	chart.Render(&buf)
 	content := buf.String()
@@ -255,39 +526,39 @@ func streamrenderChart(qw422016 *qt422016.Writer, chart *charts.Bar) {
 		}
 	}
 
-//line pkg/templates/chart.qtpl:136
+//line pkg/templates/chart.qtpl:360
 	qw422016.N().S(`
     `)
-//line pkg/templates/chart.qtpl:137
+//line pkg/templates/chart.qtpl:361
 	qw422016.N().S(chartContent)
-//line pkg/templates/chart.qtpl:137
+//line pkg/templates/chart.qtpl:361
 	qw422016.N().S(`
 `)
-//line pkg/templates/chart.qtpl:138
+//line pkg/templates/chart.qtpl:362
 }
 
-//line pkg/templates/chart.qtpl:138
+//line pkg/templates/chart.qtpl:362
 func writerenderChart(qq422016 qtio422016.Writer, chart *charts.Bar) {
-//line pkg/templates/chart.qtpl:138
+//line pkg/templates/chart.qtpl:362
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line pkg/templates/chart.qtpl:138
+//line pkg/templates/chart.qtpl:362
 	streamrenderChart(qw422016, chart)
-//line pkg/templates/chart.qtpl:138
+//line pkg/templates/chart.qtpl:362
 	qt422016.ReleaseWriter(qw422016)
-//line pkg/templates/chart.qtpl:138
+//line pkg/templates/chart.qtpl:362
 }
 
-//line pkg/templates/chart.qtpl:138
+//line pkg/templates/chart.qtpl:362
 func renderChart(chart *charts.Bar) string {
-//line pkg/templates/chart.qtpl:138
+//line pkg/templates/chart.qtpl:362
 	qb422016 := qt422016.AcquireByteBuffer()
-//line pkg/templates/chart.qtpl:138
+//line pkg/templates/chart.qtpl:362
 	writerenderChart(qb422016, chart)
-//line pkg/templates/chart.qtpl:138
+//line pkg/templates/chart.qtpl:362
 	qs422016 := string(qb422016.B)
-//line pkg/templates/chart.qtpl:138
+//line pkg/templates/chart.qtpl:362
 	qt422016.ReleaseByteBuffer(qb422016)
-//line pkg/templates/chart.qtpl:138
+//line pkg/templates/chart.qtpl:362
 	return qs422016
-//line pkg/templates/chart.qtpl:138
+//line pkg/templates/chart.qtpl:362
 }

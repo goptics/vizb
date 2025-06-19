@@ -27,6 +27,7 @@
             overflow-x: hidden;
             width: 100%;
             font-family: Arial, sans-serif;
+            scroll-padding-top: 20px;
         }
 
         .chart {
@@ -37,6 +38,7 @@
             border: 1px solid #ddd;
             border-radius: 5px;
             max-width: 1080px;
+            scroll-margin-top: 20px;
         }
 
         .chart ~ .chart {
@@ -53,6 +55,101 @@
             font-family: Arial, sans-serif;
             margin: 20px 0;
         }
+        
+        /* Sidebar styles */
+        .sidebar {
+            position: fixed;
+            top: 50%;
+            right: 10px;
+            transform: translateY(-50%);
+            background-color: rgba(255, 255, 255, 0.9);
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            max-height: 80vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            cursor: move;
+            user-select: none;
+        }
+        
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            cursor: move;
+        }
+        
+        .sidebar-title {
+            font-weight: bold;
+            text-align: center;
+            font-size: 14px;
+            flex-grow: 1;
+        }
+        
+        .minimize-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 0 5px;
+            color: #666;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .minimize-btn:hover {
+            color: #333;
+        }
+        
+        .sidebar.minimized {
+            width: auto;
+            padding: 5px;
+        }
+        
+        .sidebar.minimized .bench-indicator,
+        .sidebar.minimized .sidebar-title {
+            display: none;
+        }
+        
+        .sidebar.minimized .minimize-btn {
+            transform: rotate(180deg);
+            font-size: 14px;
+            padding: 3px;
+            margin: 0;
+        }
+        
+        .sidebar.minimized .sidebar-header {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .bench-indicator {
+            padding: 5px 10px;
+            border-radius: 4px;
+            background-color: #f0f0f0;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-size: 12px;
+            text-align: center;
+        }
+        
+        .bench-indicator:hover {
+            background-color: #e0e0e0;
+        }
+        
+        .bench-indicator.active {
+            background-color: #4CAF50;
+            color: white;
+        }
     </style>
     <script type="text/javascript">
         // Add resize event handler to make charts responsive
@@ -66,6 +163,103 @@
                 }
             });
         });
+        
+        // Initialize sidebar functionality when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('bench-sidebar');
+            const indicators = document.querySelectorAll('.bench-indicator');
+            const chartSections = document.querySelectorAll('.chart-section');
+            const minimizeBtn = document.getElementById('minimize-btn');
+            
+            // Make sidebar draggable
+            let isDragging = false;
+            let offsetX, offsetY;
+            
+            function startDrag(e) {
+                // Only start drag if it's the sidebar header or the sidebar itself when minimized
+                if (e.target.closest('.sidebar-header') || 
+                    (sidebar.classList.contains('minimized') && e.target.closest('.sidebar'))) {
+                    isDragging = true;
+                    
+                    // Get the current position of the sidebar
+                    const sidebarRect = sidebar.getBoundingClientRect();
+                    
+                    // Calculate the offset from the mouse position to the sidebar position
+                    offsetX = e.clientX - sidebarRect.left;
+                    offsetY = e.clientY - sidebarRect.top;
+                    
+                    // Prevent text selection during drag
+                    e.preventDefault();
+                }
+            }
+            
+            function drag(e) {
+                if (isDragging) {
+                    // Calculate new position
+                    const x = e.clientX - offsetX;
+                    const y = e.clientY - offsetY;
+                    
+                    // Apply new position
+                    sidebar.style.left = x + 'px';
+                    sidebar.style.top = y + 'px';
+                    sidebar.style.right = 'auto';
+                    sidebar.style.transform = 'none';
+                }
+            }
+            
+            function stopDrag() {
+                isDragging = false;
+            }
+            
+            // Add event listeners for dragging
+            sidebar.addEventListener('mousedown', startDrag);
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', stopDrag);
+            
+            // Minimize/maximize sidebar
+            minimizeBtn.addEventListener('click', function() {
+                sidebar.classList.toggle('minimized');
+                this.textContent = sidebar.classList.contains('minimized') ? '◀' : '▶';
+            });
+            
+            // Add click event to each indicator
+            indicators.forEach(function(indicator) {
+                indicator.addEventListener('click', function() {
+                    const targetId = this.getAttribute('data-target');
+                    const targetElement = document.getElementById(targetId);
+                    
+                    if (targetElement) {
+                        // Scroll to the target element
+                        targetElement.scrollIntoView({ behavior: 'smooth' });
+                        
+                        // Update active state
+                        indicators.forEach(ind => ind.classList.remove('active'));
+                        this.classList.add('active');
+                    }
+                });
+            });
+            
+            // Update active indicator on scroll
+            window.addEventListener('scroll', function() {
+                let currentSection = '';
+                
+                chartSections.forEach(function(section) {
+                    const sectionTop = section.offsetTop;
+                    const sectionHeight = section.clientHeight;
+                    
+                    if (pageYOffset >= (sectionTop - 100)) {
+                        currentSection = section.getAttribute('id');
+                    }
+                });
+                
+                indicators.forEach(function(indicator) {
+                    indicator.classList.remove('active');
+                    if (indicator.getAttribute('data-target') === currentSection) {
+                        indicator.classList.add('active');
+                    }
+                });
+            });
+        });
     </script>
 </head>
 <body>
@@ -74,20 +268,50 @@
     <p style="text-align: center; margin-bottom: 20px;">{%s shared.FlagState.Description %}</p>
     {% endif %}
 
-    {% for _, taskChart := range BenchCharts %}
-    <div class='chart'>
-        {%s= renderChart(taskChart.NsPerOpChart) %}
-    </div>
-    {% if shared.HasMemStats %}
-    <div class='chart'>
-        {%s= renderChart(taskChart.BytesPerOpChart) %}
+    {% code
+        // Check if any benchmark has a non-empty name
+        hasNamedBenchmarks := false
+        for _, taskChart := range BenchCharts {
+            if taskChart.Name != "" {
+                hasNamedBenchmarks = true
+                break
+            }
+        }
+    %}
+    
+    {% if hasNamedBenchmarks %}
+    <!-- Sidebar for benchmark navigation -->
+    <div id="bench-sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-title">Bench Indicators</div>
+            <button id="minimize-btn" class="minimize-btn">▶</button>
+        </div>
+        {% for i, taskChart := range BenchCharts %}
+        {% if taskChart.Name != "" %}
+        <div class="bench-indicator{% if i == 0 %} active{% endif %}" data-target="bench-section-{%d i %}">
+            {%s taskChart.Name %}
+        </div>
+        {% endif %}
+        {% endfor %}
     </div>
     {% endif %}
-    {% if shared.HasMemStats %}
-    <div class='chart'>
-        {%s= renderChart(taskChart.AllocsPerOpChart) %}
+    
+    {% for i, taskChart := range BenchCharts %}
+    <div id="bench-section-{%d i %}" class="chart-section">
+        <div class='chart'>
+            {%s= renderChart(taskChart.NsPerOpChart) %}
+        </div>
+        {% if shared.HasMemStats %}
+        <div class='chart'>
+            {%s= renderChart(taskChart.BytesPerOpChart) %}
+        </div>
+        {% endif %}
+        {% if shared.HasMemStats %}
+        <div class='chart'>
+            {%s= renderChart(taskChart.AllocsPerOpChart) %}
+        </div>
+        {% endif %}
     </div>
-    {% endif %}
     {% endfor %}
 
     {% if !shared.HasMemStats %}
