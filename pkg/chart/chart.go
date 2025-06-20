@@ -125,8 +125,37 @@ func GenerateChartsFromFile(jsonPath string) (string, error) {
 				return fmt.Sprintf("%.2f", memory)
 			})
 
-			allocsPerOpChart = createChart(prepareChartTitle(Name, "Allocations (allocs/op)"), taskResults, func(r BenchmarkResult) string {
-				return fmt.Sprintf("%d", r.AllocsPerOp)
+			// Prepare title with unit if specified
+			allocTitle := "Allocations (allocs/op)"
+
+			if shared.FlagState.AllocUnit != "" {
+				allocTitle = fmt.Sprintf("Allocations (%s/op)", shared.FlagState.AllocUnit)
+			}
+
+			allocsPerOpChart = createChart(prepareChartTitle(Name, allocTitle), taskResults, func(r BenchmarkResult) string {
+				var allocs float64 = float64(r.AllocsPerOp)
+
+				// Convert based on the allocation unit flag
+				switch shared.FlagState.AllocUnit {
+				case "K":
+					allocs = allocs / 1000
+				case "M":
+					allocs = allocs / 1000000
+				case "B":
+					allocs = allocs / 1000000000
+				case "T":
+					allocs = allocs / 1000000000000
+				default:
+					// Default: as-is, no conversion needed
+					return fmt.Sprintf("%d", r.AllocsPerOp)
+				}
+
+				// Format without decimal places if it's a whole number
+				if allocs == float64(int64(allocs)) {
+					return fmt.Sprintf("%.0f", allocs)
+				}
+
+				return fmt.Sprintf("%.2f", allocs)
 			})
 		}
 
@@ -296,8 +325,8 @@ func createChart(title string, results []BenchmarkResult, metricFn func(Benchmar
 		}),
 		charts.WithGridOpts(opts.Grid{
 			Left:         "3%",
-			Right:        "5%",
-			Bottom:       "10%",
+			Right:        "3%",
+			Bottom:       "3%",
 			Top:          "15%",
 			ContainLabel: opts.Bool(true),
 		}),
@@ -307,7 +336,7 @@ func createChart(title string, results []BenchmarkResult, metricFn func(Benchmar
 		charts.WithLegendOpts(opts.Legend{
 			Show:    opts.Bool(true),
 			Padding: []int{30, 0, 0, 0},
-			Right:   "5%",
+			Right:   "3%",
 		}),
 		charts.WithTooltipOpts(opts.Tooltip{
 			Show:    opts.Bool(true),
