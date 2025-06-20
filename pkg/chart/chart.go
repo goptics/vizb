@@ -206,70 +206,70 @@ func parseBenchmarkResults(jsonPath string) (results []BenchmarkResult, e error)
 				shared.HasMemStats = true
 			} else if basicMatch := benchLineRe.FindStringSubmatch(ev.Output); basicMatch != nil {
 				stats = basicMatch
+			} else {
+				continue
 			}
 
-			if stats != nil {
-				// Extract the benchmark name from the output
-				parts := strings.Fields(ev.Output)
+			// Extract the benchmark name from the output
+			parts := strings.Fields(ev.Output)
 
-				if len(parts) == 0 {
-					continue
-				}
+			if len(parts) == 0 {
+				continue
+			}
 
-				benchName := parts[0]
+			benchName := parts[0]
 
-				nameParts := strings.Split(
-					strings.TrimPrefix(benchName, "Benchmark"),
-					shared.FlagState.Separator,
-				)
+			nameParts := strings.Split(
+				strings.TrimPrefix(benchName, "Benchmark"),
+				shared.FlagState.Separator,
+			)
 
-				var workload, subject string
-				partsLen := len(nameParts)
+			var workload, subject string
+			partsLen := len(nameParts)
 
-				switch {
-				case partsLen == 1:
-					subject = nameParts[0]
-				case partsLen == 2:
-					benchName, subject = nameParts[0], nameParts[1]
-				default:
-					benchName, workload, subject = nameParts[partsLen-3], nameParts[partsLen-2], nameParts[partsLen-1]
-				}
+			switch {
+			case partsLen == 1:
+				subject = nameParts[0]
+			case partsLen == 2:
+				benchName, subject = nameParts[0], nameParts[1]
+			default:
+				benchName, workload, subject = nameParts[partsLen-3], nameParts[partsLen-2], nameParts[partsLen-1]
+			}
 
-				// Remove CPU suffix from subject (e.g., "Subject-8" -> "Subject")
-				if idx := strings.LastIndex(subject, "-"); idx > 0 {
-					// Check if everything after the dash is a number
-					if cpuCount, err := strconv.Atoi(subject[idx+1:]); err == nil {
-						// Store CPU count in global bench state
-						subject = subject[:idx]
+			// Remove CPU suffix from subject (e.g., "Subject-8" -> "Subject")
+			if idx := strings.LastIndex(subject, "-"); idx > 0 {
+				// Check if everything after the dash is a number
+				if cpuCount, err := strconv.Atoi(subject[idx+1:]); err == nil {
+					// Store CPU count in global bench state
+					subject = subject[:idx]
 
-						if shared.CPUCount == 0 {
-							shared.CPUCount = cpuCount
-						}
+					if shared.CPUCount == 0 {
+						shared.CPUCount = cpuCount
 					}
 				}
-
-				// Parse metrics
-				nsPerOp, _ := strconv.ParseFloat(stats[1], 64)
-
-				// Default values for memory stats
-				var bytesPerOp float64
-				var allocsPerOp uint64
-
-				// If we have memory stats, parse them
-				if shared.HasMemStats && len(stats) >= 4 {
-					bytesPerOp, _ = strconv.ParseFloat(stats[2], 64)
-					allocsPerOp, _ = strconv.ParseUint(stats[3], 10, 64)
-				}
-
-				results = append(results, BenchmarkResult{
-					Name:        benchName,
-					Workload:    workload,
-					Subject:     subject,
-					NsPerOp:     nsPerOp,
-					BytesPerOp:  bytesPerOp,
-					AllocsPerOp: allocsPerOp,
-				})
 			}
+
+			// Parse metrics
+			nsPerOp, _ := strconv.ParseFloat(stats[1], 64)
+
+			// Default values for memory stats
+			var bytesPerOp float64
+			var allocsPerOp uint64
+
+			// If we have memory stats, parse them
+			if shared.HasMemStats && len(stats) >= 4 {
+				bytesPerOp, _ = strconv.ParseFloat(stats[2], 64)
+				allocsPerOp, _ = strconv.ParseUint(stats[3], 10, 64)
+			}
+
+			results = append(results, BenchmarkResult{
+				Name:        benchName,
+				Workload:    workload,
+				Subject:     subject,
+				NsPerOp:     nsPerOp,
+				BytesPerOp:  bytesPerOp,
+				AllocsPerOp: allocsPerOp,
+			})
 		}
 	}
 
