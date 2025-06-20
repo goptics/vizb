@@ -280,10 +280,10 @@ func TestGenerateChartsFromFile(t *testing.T) {
 			t.Run(fmt.Sprintf("TimeUnit_%s", unit), func(t *testing.T) {
 				shared.FlagState.TimeUnit = unit
 				shared.FlagState.OutputFile = filepath.Join(tempDir, fmt.Sprintf("output_%s.html", unit))
-				
+
 				outputPath, err := GenerateChartsFromFile(jsonPath)
 				require.NoError(t, err)
-				
+
 				// Verify output file exists
 				_, err = os.Stat(outputPath)
 				assert.NoError(t, err)
@@ -304,10 +304,10 @@ func TestGenerateChartsFromFile(t *testing.T) {
 			t.Run(fmt.Sprintf("MemUnit_%s", unit), func(t *testing.T) {
 				shared.FlagState.MemUnit = unit
 				shared.FlagState.OutputFile = filepath.Join(tempDir, fmt.Sprintf("output_mem_%s.html", unit))
-				
+
 				outputPath, err := GenerateChartsFromFile(jsonPath)
 				require.NoError(t, err)
-				
+
 				// Verify output file exists
 				_, err = os.Stat(outputPath)
 				assert.NoError(t, err)
@@ -328,10 +328,10 @@ func TestGenerateChartsFromFile(t *testing.T) {
 			t.Run(fmt.Sprintf("AllocUnit_%s", unit), func(t *testing.T) {
 				shared.FlagState.AllocUnit = unit
 				shared.FlagState.OutputFile = filepath.Join(tempDir, fmt.Sprintf("output_alloc_%s.html", unit))
-				
+
 				outputPath, err := GenerateChartsFromFile(jsonPath)
 				require.NoError(t, err)
-				
+
 				// Verify output file exists
 				_, err = os.Stat(outputPath)
 				assert.NoError(t, err)
