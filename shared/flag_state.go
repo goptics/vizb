@@ -5,6 +5,7 @@ type flagState struct {
 	OutputFile  string
 	MemUnit     string
 	TimeUnit    string
+	AllocUnit   string
 	Description string
 	Separator   string
 }

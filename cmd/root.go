@@ -37,11 +37,15 @@ func Execute() {
 
 func init() {
 	rootCmd.Flags().StringVarP(&shared.FlagState.Name, "name", "n", "Benchmarks", "Name of the chart")
+	rootCmd.Flags().StringVarP(&shared.FlagState.Description, "description", "d", "", "Description of the benchmark")
 	rootCmd.Flags().StringVarP(&shared.FlagState.Separator, "separator", "s", "/", "Separator for grouping benchmark names")
 	rootCmd.Flags().StringVarP(&shared.FlagState.OutputFile, "output", "o", "", "Output HTML file name")
 	rootCmd.Flags().StringVarP(&shared.FlagState.MemUnit, "mem-unit", "m", "B", "Memory unit available: b, B, KB, MB, GB")
 	rootCmd.Flags().StringVarP(&shared.FlagState.TimeUnit, "time-unit", "t", "ns", "Time unit available: ns, us, ms, s")
-	rootCmd.Flags().StringVarP(&shared.FlagState.Description, "description", "d", "", "Description of the benchmark")
+	rootCmd.Flags().StringVarP(&shared.FlagState.AllocUnit, "alloc-unit", "a", "", "Allocation unit available: K, M, B, T (default: as-is)")
+
+	// Add a hook to validate flags after parsing
+	cobra.OnInitialize(validateFlags)
 }
 
 // BenchEvent represents the structure of a JSON event from 'go test -json'
@@ -51,8 +55,34 @@ type BenchEvent struct {
 	Output string `json:"Output,omitempty"`
 }
 
-func runBenchmark(cmd *cobra.Command, args []string) {
+// validateFlags validates the flag values and sets defaults for invalid values
+func validateFlags() {
+	// Validate memory unit
+	validMemUnits := map[string]bool{"b": true, "B": true, "kb": true, "mb": true, "gb": true}
+	if _, valid := validMemUnits[strings.ToLower(shared.FlagState.MemUnit)]; !valid {
+		fmt.Fprintf(os.Stderr, "Warning: Invalid memory unit '%s'. Using default 'B'\n", shared.FlagState.MemUnit)
+		shared.FlagState.MemUnit = "B"
+	}
 
+	// Validate time unit
+	validTimeUnits := map[string]bool{"ns": true, "us": true, "ms": true, "s": true}
+	if _, valid := validTimeUnits[shared.FlagState.TimeUnit]; !valid {
+		fmt.Fprintf(os.Stderr, "Warning: Invalid time unit '%s'. Using default 'ns'\n", shared.FlagState.TimeUnit)
+		shared.FlagState.TimeUnit = "ns"
+	}
+
+	// Validate allocation unit
+	if shared.FlagState.AllocUnit != "" {
+		shared.FlagState.AllocUnit = strings.ToUpper(shared.FlagState.AllocUnit)
+		validAllocUnits := map[string]bool{"K": true, "M": true, "B": true, "T": true}
+		if _, valid := validAllocUnits[shared.FlagState.AllocUnit]; !valid {
+			fmt.Fprintf(os.Stderr, "Warning: Invalid allocation unit '%s'. Using default (as-is)\n", shared.FlagState.AllocUnit)
+			shared.FlagState.AllocUnit = ""
+		}
+	}
+}
+
+func runBenchmark(cmd *cobra.Command, args []string) {
 	// Check if we're receiving data from stdin (piped input)
 	stat, _ := os.Stdin.Stat()
 	isStdinPiped := (stat.Mode() & os.ModeCharDevice) == 0
@@ -136,13 +166,13 @@ func runBenchmark(cmd *cobra.Command, args []string) {
 				if ev.Test != "" && strings.HasPrefix(ev.Test, "Benchmark") {
 					currentBenchName = ev.Test
 					// Only count sub-benchmarks (with a slash in the name)
-					if strings.Contains(ev.Test, shared.FlagState.Separator) && strings.Contains(line, "=== RUN") {
+					if strings.Contains(ev.Test, shared.FlagState.Separator) && strings.Contains(line, "ns/op") {
 						benchmarkCount++
 					}
 				}
 
 				// Update progress bar description with benchmark count and current benchmark name
-				description := fmt.Sprintf("Processing benchmarks [%s] (%d tests)",
+				description := fmt.Sprintf("Running Benchmarks [%s] (%d completed)",
 					currentBenchName, benchmarkCount)
 
 				bar.Describe(description)
@@ -162,6 +192,7 @@ func runBenchmark(cmd *cobra.Command, args []string) {
 		// Final flush to ensure all data is written
 		writer.Flush()
 		jsonFile.Sync()
+		fmt.Println()
 	} else {
 		// Using the target as a JSON file path
 		jsonFilePath = target
@@ -198,7 +229,7 @@ func runBenchmark(cmd *cobra.Command, args []string) {
 	}
 
 	// Generate the chart using the chart package functionality
-	fmt.Println("\n🔄 Generating chart...")
+	fmt.Println("🔄 Generating chart...")
 
 	// If no output file is specified, create a temporary one
 	var tempOutputFile string
@@ -242,7 +273,7 @@ func runBenchmark(cmd *cobra.Command, args []string) {
 		os.Remove(actualFilename)
 	} else {
 		// Normal file output, print success messages
-		fmt.Printf("\n🎉 Chart generated successfully!\n")
+		fmt.Printf("🎉 Chart generated successfully!\n")
 		fmt.Printf("📄 Output file: %s\n", actualFilename)
 		fmt.Printf("\nOpen the HTML file in your browser to view the benchmark results.\n")
 	}

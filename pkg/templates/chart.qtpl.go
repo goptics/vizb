@@ -26,25 +26,17 @@ var (
 )
 
 //line pkg/templates/chart.qtpl:10
-func StreamBenchmarkChart(qw422016 *qt422016.Writer, nsPerOpChart, bytesPerOpChart, allocsPerOpChart *charts.Bar) {
+func StreamBenchmarkChart(qw422016 *qt422016.Writer, BenchCharts []shared.BenchCharts) {
 //line pkg/templates/chart.qtpl:10
-	qw422016.N().S(`
-`)
-//line pkg/templates/chart.qtpl:12
-	// Check if the memory charts exist
-	hasMemoryData := bytesPerOpChart != nil
-	hasAllocData := allocsPerOpChart != nil
-
-//line pkg/templates/chart.qtpl:15
 	qw422016.N().S(`
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
     <title>`)
-//line pkg/templates/chart.qtpl:20
+//line pkg/templates/chart.qtpl:15
 	qw422016.E().S(shared.FlagState.Name)
-//line pkg/templates/chart.qtpl:20
+//line pkg/templates/chart.qtpl:15
 	qw422016.N().S(`</title>
     <script src="https://go-echarts.github.io/go-echarts-assets/assets/echarts.min.js"></script>
     <script src="https://go-echarts.github.io/go-echarts-assets/assets/themes/light.js"></script>
@@ -60,6 +52,7 @@ func StreamBenchmarkChart(qw422016 *qt422016.Writer, nsPerOpChart, bytesPerOpCha
             overflow-x: hidden;
             width: 100%;
             font-family: Arial, sans-serif;
+            scroll-padding-top: 20px;
         }
 
         .chart {
@@ -70,6 +63,7 @@ func StreamBenchmarkChart(qw422016 *qt422016.Writer, nsPerOpChart, bytesPerOpCha
             border: 1px solid #ddd;
             border-radius: 5px;
             max-width: 1080px;
+            scroll-margin-top: 20px;
         }
 
         .chart ~ .chart {
@@ -86,6 +80,101 @@ func StreamBenchmarkChart(qw422016 *qt422016.Writer, nsPerOpChart, bytesPerOpCha
             font-family: Arial, sans-serif;
             margin: 20px 0;
         }
+        
+        /* Sidebar styles */
+        .sidebar {
+            position: fixed;
+            top: 50%;
+            right: 10px;
+            transform: translateY(-50%);
+            background-color: rgba(255, 255, 255, 0.9);
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            max-height: 80vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            cursor: move;
+            user-select: none;
+        }
+        
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            cursor: move;
+        }
+        
+        .sidebar-title {
+            font-weight: bold;
+            text-align: center;
+            font-size: 14px;
+            flex-grow: 1;
+        }
+        
+        .minimize-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 0 5px;
+            color: #666;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .minimize-btn:hover {
+            color: #333;
+        }
+        
+        .sidebar.minimized {
+            width: auto;
+            padding: 5px;
+        }
+        
+        .sidebar.minimized .bench-indicator,
+        .sidebar.minimized .sidebar-title {
+            display: none;
+        }
+        
+        .sidebar.minimized .minimize-btn {
+            transform: rotate(180deg);
+            font-size: 14px;
+            padding: 3px;
+            margin: 0;
+        }
+        
+        .sidebar.minimized .sidebar-header {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .bench-indicator {
+            padding: 5px 10px;
+            border-radius: 4px;
+            background-color: #f0f0f0;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-size: 12px;
+            text-align: center;
+        }
+        
+        .bench-indicator:hover {
+            background-color: #e0e0e0;
+        }
+        
+        .bench-indicator.active {
+            background-color: #4CAF50;
+            color: white;
+        }
     </style>
     <script type="text/javascript">
         // Add resize event handler to make charts responsive
@@ -99,124 +188,319 @@ func StreamBenchmarkChart(qw422016 *qt422016.Writer, nsPerOpChart, bytesPerOpCha
                 }
             });
         });
+        
+        // Initialize sidebar functionality when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('bench-sidebar');
+            const indicators = document.querySelectorAll('.bench-indicator');
+            const chartSections = document.querySelectorAll('.chart-section');
+            const minimizeBtn = document.getElementById('minimize-btn');
+            
+            // Only show sidebar if there are multiple indicators
+            if (sidebar && indicators.length <= 1) {
+                sidebar.style.display = 'none';
+            }
+            
+            // Make sidebar draggable
+            let isDragging = false;
+            let offsetX, offsetY;
+            
+            function startDrag(e) {
+                // Only start drag if it's the sidebar header or the sidebar itself when minimized
+                if (e.target.closest('.sidebar-header') || 
+                    (sidebar.classList.contains('minimized') && e.target.closest('.sidebar'))) {
+                    isDragging = true;
+                    
+                    // Get the current position of the sidebar
+                    const sidebarRect = sidebar.getBoundingClientRect();
+                    
+                    // Calculate the offset from the mouse position to the sidebar position
+                    offsetX = e.clientX - sidebarRect.left;
+                    offsetY = e.clientY - sidebarRect.top;
+                    
+                    // Prevent text selection during drag
+                    e.preventDefault();
+                }
+            }
+            
+            function drag(e) {
+                if (isDragging) {
+                    // Calculate new position
+                    const x = e.clientX - offsetX;
+                    const y = e.clientY - offsetY;
+                    
+                    // Apply new position
+                    sidebar.style.left = x + 'px';
+                    sidebar.style.top = y + 'px';
+                    sidebar.style.right = 'auto';
+                    sidebar.style.transform = 'none';
+                }
+            }
+            
+            function stopDrag() {
+                isDragging = false;
+            }
+            
+            // Add event listeners for dragging
+            sidebar.addEventListener('mousedown', startDrag);
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', stopDrag);
+            
+            // Minimize/maximize sidebar
+            minimizeBtn.addEventListener('click', function() {
+                sidebar.classList.toggle('minimized');
+                this.textContent = sidebar.classList.contains('minimized') ? '◀' : '▶';
+            });
+            
+            // Add click event to each indicator
+            indicators.forEach(function(indicator) {
+                indicator.addEventListener('click', function() {
+                    const targetId = this.getAttribute('data-target');
+                    const targetElement = document.getElementById(targetId);
+                    
+                    if (targetElement) {
+                        // Scroll to the target element
+                        targetElement.scrollIntoView({ behavior: 'smooth' });
+                        
+                        // Update active state
+                        indicators.forEach(ind => ind.classList.remove('active'));
+                        this.classList.add('active');
+                    }
+                });
+            });
+            
+            // Update active indicator on scroll
+            window.addEventListener('scroll', function() {
+                let currentSection = '';
+                
+                chartSections.forEach(function(section) {
+                    const sectionTop = section.offsetTop;
+                    const sectionHeight = section.clientHeight;
+                    
+                    if (pageYOffset >= (sectionTop - 100)) {
+                        currentSection = section.getAttribute('id');
+                    }
+                });
+                
+                indicators.forEach(function(indicator) {
+                    indicator.classList.remove('active');
+                    if (indicator.getAttribute('data-target') === currentSection) {
+                        indicator.classList.add('active');
+                    }
+                });
+            });
+        });
     </script>
 </head>
 <body>
     <h1>`)
-//line pkg/templates/chart.qtpl:77
+//line pkg/templates/chart.qtpl:271
 	qw422016.E().S(shared.FlagState.Name)
-//line pkg/templates/chart.qtpl:77
-	qw422016.N().S(`</h1>
+//line pkg/templates/chart.qtpl:271
+	qw422016.N().S(` (CPU: `)
+//line pkg/templates/chart.qtpl:271
+	qw422016.N().D(shared.CPUCount)
+//line pkg/templates/chart.qtpl:271
+	qw422016.N().S(`)</h1>
     `)
-//line pkg/templates/chart.qtpl:78
+//line pkg/templates/chart.qtpl:272
 	if shared.FlagState.Description != "" {
-//line pkg/templates/chart.qtpl:78
+//line pkg/templates/chart.qtpl:272
 		qw422016.N().S(`
     <p style="text-align: center; margin-bottom: 20px;">`)
-//line pkg/templates/chart.qtpl:79
+//line pkg/templates/chart.qtpl:273
 		qw422016.E().S(shared.FlagState.Description)
-//line pkg/templates/chart.qtpl:79
+//line pkg/templates/chart.qtpl:273
 		qw422016.N().S(`</p>
     `)
-//line pkg/templates/chart.qtpl:80
+//line pkg/templates/chart.qtpl:274
 	}
-//line pkg/templates/chart.qtpl:80
+//line pkg/templates/chart.qtpl:274
 	qw422016.N().S(`
-    <div class='chart'>
+
+    `)
+//line pkg/templates/chart.qtpl:277
+	// Check if any benchmark has a non-empty name
+	hasNamedBenchmarks := false
+	for _, taskChart := range BenchCharts {
+		if taskChart.Name != "" {
+			hasNamedBenchmarks = true
+			break
+		}
+	}
+
+//line pkg/templates/chart.qtpl:285
+	qw422016.N().S(`
+    
+    `)
+//line pkg/templates/chart.qtpl:287
+	if hasNamedBenchmarks {
+//line pkg/templates/chart.qtpl:287
+		qw422016.N().S(`
+    <!-- Sidebar for benchmark navigation -->
+    <div id="bench-sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-title">Bench Indicators</div>
+            <button id="minimize-btn" class="minimize-btn">▶</button>
+        </div>
         `)
-//line pkg/templates/chart.qtpl:82
-	qw422016.N().S(renderChart(nsPerOpChart))
-//line pkg/templates/chart.qtpl:82
-	qw422016.N().S(`
+//line pkg/templates/chart.qtpl:294
+		for i, taskChart := range BenchCharts {
+//line pkg/templates/chart.qtpl:294
+			qw422016.N().S(`
+        `)
+//line pkg/templates/chart.qtpl:295
+			if taskChart.Name != "" {
+//line pkg/templates/chart.qtpl:295
+				qw422016.N().S(`
+        <div class="bench-indicator`)
+//line pkg/templates/chart.qtpl:296
+				if i == 0 {
+//line pkg/templates/chart.qtpl:296
+					qw422016.N().S(` active`)
+//line pkg/templates/chart.qtpl:296
+				}
+//line pkg/templates/chart.qtpl:296
+				qw422016.N().S(`" data-target="bench-section-`)
+//line pkg/templates/chart.qtpl:296
+				qw422016.N().D(i)
+//line pkg/templates/chart.qtpl:296
+				qw422016.N().S(`">
+            `)
+//line pkg/templates/chart.qtpl:297
+				qw422016.E().S(taskChart.Name)
+//line pkg/templates/chart.qtpl:297
+				qw422016.N().S(`
+        </div>
+        `)
+//line pkg/templates/chart.qtpl:299
+			}
+//line pkg/templates/chart.qtpl:299
+			qw422016.N().S(`
+        `)
+//line pkg/templates/chart.qtpl:300
+		}
+//line pkg/templates/chart.qtpl:300
+		qw422016.N().S(`
     </div>
     `)
-//line pkg/templates/chart.qtpl:84
-	if hasMemoryData {
-//line pkg/templates/chart.qtpl:84
+//line pkg/templates/chart.qtpl:302
+	}
+//line pkg/templates/chart.qtpl:302
+	qw422016.N().S(`
+    
+    `)
+//line pkg/templates/chart.qtpl:304
+	for i, taskChart := range BenchCharts {
+//line pkg/templates/chart.qtpl:304
 		qw422016.N().S(`
-    <div class='chart'>
+    <div id="bench-section-`)
+//line pkg/templates/chart.qtpl:305
+		qw422016.N().D(i)
+//line pkg/templates/chart.qtpl:305
+		qw422016.N().S(`" class="chart-section">
+        <div class='chart'>
+            `)
+//line pkg/templates/chart.qtpl:307
+		qw422016.N().S(renderChart(taskChart.NsPerOpChart))
+//line pkg/templates/chart.qtpl:307
+		qw422016.N().S(`
+        </div>
         `)
-//line pkg/templates/chart.qtpl:86
-		qw422016.N().S(renderChart(bytesPerOpChart))
-//line pkg/templates/chart.qtpl:86
+//line pkg/templates/chart.qtpl:309
+		if shared.HasMemStats {
+//line pkg/templates/chart.qtpl:309
+			qw422016.N().S(`
+        <div class='chart'>
+            `)
+//line pkg/templates/chart.qtpl:311
+			qw422016.N().S(renderChart(taskChart.BytesPerOpChart))
+//line pkg/templates/chart.qtpl:311
+			qw422016.N().S(`
+        </div>
+        `)
+//line pkg/templates/chart.qtpl:313
+		}
+//line pkg/templates/chart.qtpl:313
+		qw422016.N().S(`
+        `)
+//line pkg/templates/chart.qtpl:314
+		if shared.HasMemStats {
+//line pkg/templates/chart.qtpl:314
+			qw422016.N().S(`
+        <div class='chart'>
+            `)
+//line pkg/templates/chart.qtpl:316
+			qw422016.N().S(renderChart(taskChart.AllocsPerOpChart))
+//line pkg/templates/chart.qtpl:316
+			qw422016.N().S(`
+        </div>
+        `)
+//line pkg/templates/chart.qtpl:318
+		}
+//line pkg/templates/chart.qtpl:318
 		qw422016.N().S(`
     </div>
     `)
-//line pkg/templates/chart.qtpl:88
+//line pkg/templates/chart.qtpl:320
 	}
-//line pkg/templates/chart.qtpl:88
+//line pkg/templates/chart.qtpl:320
 	qw422016.N().S(`
+
     `)
-//line pkg/templates/chart.qtpl:89
-	if hasAllocData {
-//line pkg/templates/chart.qtpl:89
-		qw422016.N().S(`
-    <div class='chart'>
-        `)
-//line pkg/templates/chart.qtpl:91
-		qw422016.N().S(renderChart(allocsPerOpChart))
-//line pkg/templates/chart.qtpl:91
-		qw422016.N().S(`
-    </div>
-    `)
-//line pkg/templates/chart.qtpl:93
-	}
-//line pkg/templates/chart.qtpl:93
-	qw422016.N().S(`
-    `)
-//line pkg/templates/chart.qtpl:94
-	if !hasMemoryData {
-//line pkg/templates/chart.qtpl:94
+//line pkg/templates/chart.qtpl:322
+	if !shared.HasMemStats {
+//line pkg/templates/chart.qtpl:322
 		qw422016.N().S(`
     <div style="text-align: center; margin: 20px; color: #666;">
         <p>Note: Memory statistics are not available. Run benchmarks with <code>-benchmem</code> flag to include memory metrics.</p>
     </div>
     `)
-//line pkg/templates/chart.qtpl:98
+//line pkg/templates/chart.qtpl:326
 	}
-//line pkg/templates/chart.qtpl:98
+//line pkg/templates/chart.qtpl:326
 	qw422016.N().S(`
     <footer style="text-align: center; margin-top: 30px; margin-bottom: 20px; font-size: 14px; color: #666;">
-        Made with <span style="color: #e25555;">❤</span> - <a alt="Goptics" target="_blank" href="https://github.com/goptics" style="color: #666; text-decoration: none; font-weight: bold;">Goptics</a> &copy; 2025
+        Generated by <a alt="Vizb" target="_blank" href="https://github.com/goptics/vizb" style="color: #666; text-decoration: none; font-weight: bold;">Vizb</a> | Made with <span style="color: #e25555;">❤</span> -  <a alt="Goptics" target="_blank" href="https://github.com/goptics" style="color: #666; text-decoration: none; font-weight: bold;">Goptics</a> &copy; 2025
     </footer>
 </body>
 </html>
 `)
-//line pkg/templates/chart.qtpl:104
+//line pkg/templates/chart.qtpl:332
 }
 
-//line pkg/templates/chart.qtpl:104
-func WriteBenchmarkChart(qq422016 qtio422016.Writer, nsPerOpChart, bytesPerOpChart, allocsPerOpChart *charts.Bar) {
-//line pkg/templates/chart.qtpl:104
+//line pkg/templates/chart.qtpl:332
+func WriteBenchmarkChart(qq422016 qtio422016.Writer, BenchCharts []shared.BenchCharts) {
+//line pkg/templates/chart.qtpl:332
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line pkg/templates/chart.qtpl:104
-	StreamBenchmarkChart(qw422016, nsPerOpChart, bytesPerOpChart, allocsPerOpChart)
-//line pkg/templates/chart.qtpl:104
+//line pkg/templates/chart.qtpl:332
+	StreamBenchmarkChart(qw422016, BenchCharts)
+//line pkg/templates/chart.qtpl:332
 	qt422016.ReleaseWriter(qw422016)
-//line pkg/templates/chart.qtpl:104
+//line pkg/templates/chart.qtpl:332
 }
 
-//line pkg/templates/chart.qtpl:104
-func BenchmarkChart(nsPerOpChart, bytesPerOpChart, allocsPerOpChart *charts.Bar) string {
-//line pkg/templates/chart.qtpl:104
+//line pkg/templates/chart.qtpl:332
+func BenchmarkChart(BenchCharts []shared.BenchCharts) string {
+//line pkg/templates/chart.qtpl:332
 	qb422016 := qt422016.AcquireByteBuffer()
-//line pkg/templates/chart.qtpl:104
-	WriteBenchmarkChart(qb422016, nsPerOpChart, bytesPerOpChart, allocsPerOpChart)
-//line pkg/templates/chart.qtpl:104
+//line pkg/templates/chart.qtpl:332
+	WriteBenchmarkChart(qb422016, BenchCharts)
+//line pkg/templates/chart.qtpl:332
 	qs422016 := string(qb422016.B)
-//line pkg/templates/chart.qtpl:104
+//line pkg/templates/chart.qtpl:332
 	qt422016.ReleaseByteBuffer(qb422016)
-//line pkg/templates/chart.qtpl:104
+//line pkg/templates/chart.qtpl:332
 	return qs422016
-//line pkg/templates/chart.qtpl:104
+//line pkg/templates/chart.qtpl:332
 }
 
-//line pkg/templates/chart.qtpl:106
+//line pkg/templates/chart.qtpl:334
 func streamrenderChart(qw422016 *qt422016.Writer, chart *charts.Bar) {
-//line pkg/templates/chart.qtpl:106
+//line pkg/templates/chart.qtpl:334
 	qw422016.N().S(`
     `)
-//line pkg/templates/chart.qtpl:108
+//line pkg/templates/chart.qtpl:336
 	var buf bytes.Buffer
 	chart.Render(&buf)
 	content := buf.String()
@@ -247,39 +531,39 @@ func streamrenderChart(qw422016 *qt422016.Writer, chart *charts.Bar) {
 		}
 	}
 
-//line pkg/templates/chart.qtpl:137
+//line pkg/templates/chart.qtpl:365
 	qw422016.N().S(`
     `)
-//line pkg/templates/chart.qtpl:138
+//line pkg/templates/chart.qtpl:366
 	qw422016.N().S(chartContent)
-//line pkg/templates/chart.qtpl:138
+//line pkg/templates/chart.qtpl:366
 	qw422016.N().S(`
 `)
-//line pkg/templates/chart.qtpl:139
+//line pkg/templates/chart.qtpl:367
 }
 
-//line pkg/templates/chart.qtpl:139
+//line pkg/templates/chart.qtpl:367
 func writerenderChart(qq422016 qtio422016.Writer, chart *charts.Bar) {
-//line pkg/templates/chart.qtpl:139
+//line pkg/templates/chart.qtpl:367
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line pkg/templates/chart.qtpl:139
+//line pkg/templates/chart.qtpl:367
 	streamrenderChart(qw422016, chart)
-//line pkg/templates/chart.qtpl:139
+//line pkg/templates/chart.qtpl:367
 	qt422016.ReleaseWriter(qw422016)
-//line pkg/templates/chart.qtpl:139
+//line pkg/templates/chart.qtpl:367
 }
 
-//line pkg/templates/chart.qtpl:139
+//line pkg/templates/chart.qtpl:367
 func renderChart(chart *charts.Bar) string {
-//line pkg/templates/chart.qtpl:139
+//line pkg/templates/chart.qtpl:367
 	qb422016 := qt422016.AcquireByteBuffer()
-//line pkg/templates/chart.qtpl:139
+//line pkg/templates/chart.qtpl:367
 	writerenderChart(qb422016, chart)
-//line pkg/templates/chart.qtpl:139
+//line pkg/templates/chart.qtpl:367
 	qs422016 := string(qb422016.B)
-//line pkg/templates/chart.qtpl:139
+//line pkg/templates/chart.qtpl:367
 	qt422016.ReleaseByteBuffer(qb422016)
-//line pkg/templates/chart.qtpl:139
+//line pkg/templates/chart.qtpl:367
 	return qs422016
-//line pkg/templates/chart.qtpl:139
+//line pkg/templates/chart.qtpl:367
 }
