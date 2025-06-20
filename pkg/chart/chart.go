@@ -104,14 +104,14 @@ func GenerateChartsFromFile(jsonPath string) (string, error) {
 			bytesPerOpChart = createChart(prepareChartTitle(Name, fmt.Sprintf("Memory Usage (%s/op)", shared.FlagState.MemUnit)), taskResults, func(r BenchmarkResult) string {
 				// Convert B to KB and truncate to 2 decimal
 				var memory float64
-				switch shared.FlagState.MemUnit {
+				switch strings.ToLower(shared.FlagState.MemUnit) {
 				case "b":
 					memory = r.BytesPerOp * 8
-				case "KB":
+				case "kb":
 					memory = r.BytesPerOp / 1024
-				case "MB":
+				case "mb":
 					memory = r.BytesPerOp / (1024 * 1024)
-				case "GB":
+				case "gb":
 					memory = r.BytesPerOp / (1024 * 1024 * 1024)
 				default:
 					memory = r.BytesPerOp // default B
