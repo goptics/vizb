@@ -297,7 +297,7 @@ func createChart(title string, results []BenchmarkResult, metricFn func(Benchmar
 		charts.WithGridOpts(opts.Grid{
 			Left:         "3%",
 			Right:        "5%",
-			Bottom:       "3%",
+			Bottom:       "10%",
 			Top:          "15%",
 			ContainLabel: opts.Bool(true),
 		}),
