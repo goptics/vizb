@@ -2,6 +2,7 @@ package chart
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -266,6 +267,78 @@ func TestGenerateChartsFromFile(t *testing.T) {
 		assert.NotEmpty(t, content)
 	})
 
+	t.Run("Different time units", func(t *testing.T) {
+		// Test with different time units
+		jsonPath := filepath.Join(tempDir, "bench_time_units.json")
+		createTestFile(t, jsonPath, []BenchEvent{
+			{Action: "output", Output: "BenchmarkBenchName1/Subject1-8         10000              100 ns/op             200 B/op              5 allocs/op"},
+		})
+
+		// Test different time units
+		timeUnits := []string{"ns", "us", "ms", "s"}
+		for _, unit := range timeUnits {
+			t.Run(fmt.Sprintf("TimeUnit_%s", unit), func(t *testing.T) {
+				shared.FlagState.TimeUnit = unit
+				shared.FlagState.OutputFile = filepath.Join(tempDir, fmt.Sprintf("output_%s.html", unit))
+				
+				outputPath, err := GenerateChartsFromFile(jsonPath)
+				require.NoError(t, err)
+				
+				// Verify output file exists
+				_, err = os.Stat(outputPath)
+				assert.NoError(t, err)
+			})
+		}
+	})
+
+	t.Run("Different memory units", func(t *testing.T) {
+		// Test with different memory units
+		jsonPath := filepath.Join(tempDir, "bench_mem_units.json")
+		createTestFile(t, jsonPath, []BenchEvent{
+			{Action: "output", Output: "BenchmarkBenchName1/Subject1-8         10000              100 ns/op             200 B/op              5 allocs/op"},
+		})
+
+		// Test different memory units
+		memUnits := []string{"b", "B", "kb", "mb", "gb"}
+		for _, unit := range memUnits {
+			t.Run(fmt.Sprintf("MemUnit_%s", unit), func(t *testing.T) {
+				shared.FlagState.MemUnit = unit
+				shared.FlagState.OutputFile = filepath.Join(tempDir, fmt.Sprintf("output_mem_%s.html", unit))
+				
+				outputPath, err := GenerateChartsFromFile(jsonPath)
+				require.NoError(t, err)
+				
+				// Verify output file exists
+				_, err = os.Stat(outputPath)
+				assert.NoError(t, err)
+			})
+		}
+	})
+
+	t.Run("Different allocation units", func(t *testing.T) {
+		// Test with different allocation units
+		jsonPath := filepath.Join(tempDir, "bench_alloc_units.json")
+		createTestFile(t, jsonPath, []BenchEvent{
+			{Action: "output", Output: "BenchmarkBenchName1/Subject1-8         10000              100 ns/op             200 B/op              5 allocs/op"},
+		})
+
+		// Test different allocation units
+		allocUnits := []string{"", "K", "M", "B", "T"}
+		for _, unit := range allocUnits {
+			t.Run(fmt.Sprintf("AllocUnit_%s", unit), func(t *testing.T) {
+				shared.FlagState.AllocUnit = unit
+				shared.FlagState.OutputFile = filepath.Join(tempDir, fmt.Sprintf("output_alloc_%s.html", unit))
+				
+				outputPath, err := GenerateChartsFromFile(jsonPath)
+				require.NoError(t, err)
+				
+				// Verify output file exists
+				_, err = os.Stat(outputPath)
+				assert.NoError(t, err)
+			})
+		}
+	})
+
 	t.Run("No benchmark results", func(t *testing.T) {
 		// Create a temporary JSON file with no benchmark results
 		jsonPath := filepath.Join(tempDir, "no_results.json")
@@ -284,6 +357,50 @@ func TestGenerateChartsFromFile(t *testing.T) {
 		_, err := GenerateChartsFromFile(filepath.Join(tempDir, "non_existent.json"))
 		assert.Error(t, err)
 	})
+
+	t.Run("Error creating output file", func(t *testing.T) {
+		// Create a temporary JSON file with valid benchmark results
+		jsonPath := filepath.Join(tempDir, "bench_valid.json")
+		createTestFile(t, jsonPath, []BenchEvent{
+			{Action: "output", Output: "BenchmarkBenchName1/Subject1-8         10000              100 ns/op             200 B/op              5 allocs/op"},
+		})
+
+		// Set output file to a non-writable location
+		shared.FlagState.OutputFile = "/non/existent/directory/output.html"
+
+		// Generate charts - should fail due to invalid output path
+		_, err := GenerateChartsFromFile(jsonPath)
+		assert.Error(t, err)
+	})
+}
+
+func TestPrepareChartTitle(t *testing.T) {
+	tests := []struct {
+		name       string
+		inputName  string
+		chartTitle string
+		expected   string
+	}{
+		{
+			name:       "With empty name",
+			inputName:  "",
+			chartTitle: "Test Chart",
+			expected:   "Test Chart",
+		},
+		{
+			name:       "With non-empty name",
+			inputName:  "BenchName",
+			chartTitle: "Test Chart",
+			expected:   "BenchName - Test Chart",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := prepareChartTitle(tt.inputName, tt.chartTitle)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
 }
 
 // Helper function to create a test file with benchmark events

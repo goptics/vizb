@@ -221,6 +221,120 @@ func TestOutputOptions(t *testing.T) {
 	})
 }
 
+// TestValidateFlags tests the validateFlags function
+func TestValidateFlags(t *testing.T) {
+	// Save original flag state and restore after test
+	originalFlagState := shared.FlagState
+	defer func() {
+		shared.FlagState = originalFlagState
+	}()
+
+	t.Run("Valid flag values", func(t *testing.T) {
+		// Set valid flag values
+		shared.FlagState.MemUnit = "B"
+		shared.FlagState.TimeUnit = "ns"
+		shared.FlagState.AllocUnit = "K"
+
+		// Capture stderr to verify no warnings
+		_, stderr := captureOutput(func() {
+			validateFlags()
+		})
+
+		// No warnings should be printed
+		assert.Empty(t, stderr)
+		// Flag values should remain unchanged
+		assert.Equal(t, "B", shared.FlagState.MemUnit)
+		assert.Equal(t, "ns", shared.FlagState.TimeUnit)
+		assert.Equal(t, "K", shared.FlagState.AllocUnit)
+	})
+
+	t.Run("Invalid memory unit", func(t *testing.T) {
+		// Set invalid memory unit
+		shared.FlagState.MemUnit = "invalid"
+		shared.FlagState.TimeUnit = "ns"
+		shared.FlagState.AllocUnit = ""
+
+		// Capture stderr to verify warning
+		_, stderr := captureOutput(func() {
+			validateFlags()
+		})
+
+		// Warning should be printed
+		assert.Contains(t, stderr, "Warning: Invalid memory unit 'invalid'")
+		// Flag value should be reset to default
+		assert.Equal(t, "B", shared.FlagState.MemUnit)
+	})
+
+	t.Run("Invalid time unit", func(t *testing.T) {
+		// Set invalid time unit
+		shared.FlagState.MemUnit = "B"
+		shared.FlagState.TimeUnit = "invalid"
+		shared.FlagState.AllocUnit = ""
+
+		// Capture stderr to verify warning
+		_, stderr := captureOutput(func() {
+			validateFlags()
+		})
+
+		// Warning should be printed
+		assert.Contains(t, stderr, "Warning: Invalid time unit 'invalid'")
+		// Flag value should be reset to default
+		assert.Equal(t, "ns", shared.FlagState.TimeUnit)
+	})
+
+	t.Run("Invalid allocation unit", func(t *testing.T) {
+		// Set invalid allocation unit
+		shared.FlagState.MemUnit = "B"
+		shared.FlagState.TimeUnit = "ns"
+		shared.FlagState.AllocUnit = "invalid"
+
+		// Capture stderr to verify warning
+		_, stderr := captureOutput(func() {
+			validateFlags()
+		})
+
+		// Warning should be printed
+		assert.Contains(t, stderr, "Warning: Invalid allocation unit 'INVALID'")
+		// Flag value should be reset to default (empty string)
+		assert.Equal(t, "", shared.FlagState.AllocUnit)
+	})
+
+	t.Run("Empty allocation unit", func(t *testing.T) {
+		// Set empty allocation unit (valid)
+		shared.FlagState.MemUnit = "B"
+		shared.FlagState.TimeUnit = "ns"
+		shared.FlagState.AllocUnit = ""
+
+		// Capture stderr to verify no warnings
+		_, stderr := captureOutput(func() {
+			validateFlags()
+		})
+
+		// No warnings should be printed
+		assert.Empty(t, stderr)
+		// Flag value should remain empty
+		assert.Equal(t, "", shared.FlagState.AllocUnit)
+	})
+}
+
+// TestRootCommand tests the root command initialization and configuration
+func TestRootCommand(t *testing.T) {
+	// Test that rootCmd is properly initialized
+	assert.Equal(t, "vizb [target]", rootCmd.Use)
+	assert.Equal(t, "Generate benchmark charts from Go test benchmarks", rootCmd.Short)
+	assert.Contains(t, rootCmd.Long, "CLI tool that extends the functionality")
+	assert.Equal(t, "v0.1.1", rootCmd.Version)
+
+	// Test that flags are properly defined
+	assert.NotNil(t, rootCmd.Flags().Lookup("name"))
+	assert.NotNil(t, rootCmd.Flags().Lookup("description"))
+	assert.NotNil(t, rootCmd.Flags().Lookup("separator"))
+	assert.NotNil(t, rootCmd.Flags().Lookup("output"))
+	assert.NotNil(t, rootCmd.Flags().Lookup("mem-unit"))
+	assert.NotNil(t, rootCmd.Flags().Lookup("time-unit"))
+	assert.NotNil(t, rootCmd.Flags().Lookup("alloc-unit"))
+}
+
 // TestInputMethods groups tests for different input methods
 func TestInputMethods(t *testing.T) {
 	// Create a temporary directory for test files
