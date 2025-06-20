@@ -5,6 +5,38 @@ All notable changes to the Vizb project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2025-06-20
+
+### Added
+
+- Added benchmark indicator for easy navigation
+- Added allocation unit conversion support for benchmark charts
+- Added support for units lowercase input
+- Enhanced grouping by adding bench name
+- Added CPU count suffix to the headline
+
+### Changed
+
+- Adjusted chart bottom margin for better visualization
+- Optimized benchmark parsing logic in chart.go with cleaner control flow
+- Organized the post generation logs
+- Renamed license file and added attribution request
+- Updated documentation with bench group feature information
+- Added Vizb attribution in footer
+
+### Fixed
+
+- Resolved extra line issue after pipe progress completed
+- Fixed test count display on pipe and changed the status
+- Corrected memory unit conversion from bytes to bits
+- Removed build script as it is no longer needed
+
+## [0.1.1] - 2025-06-19
+
+### Fixed
+
+- Enabled sorting of workloads in createChart function
+
 ## [0.1.0] - 2025-06-17
 
 ### Added
