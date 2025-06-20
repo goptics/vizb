@@ -78,6 +78,8 @@ Flags:
   -s, --separator string    Separator for grouping benchmark names (default "/")
   -m, --mem-unit string     Memory unit available: b, B, KB, MB, GB (default "B")
   -t, --time-unit string    Time unit available: ns, us, ms, s (default "ns")
+  -a, --alloc-unit string   Allocation unit available: K, M, B, T (default: as-is)
+
   -v, --version             Show version information
 ```
 
