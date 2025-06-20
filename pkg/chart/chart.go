@@ -3,31 +3,14 @@ package chart
 // This package contains the chart generation functionality for vizb
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
-	"os"
-	"regexp"
 	"sort"
-	"strconv"
-	"strings"
 
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/opts"
 
-	"github.com/goptics/vizb/pkg/templates"
 	"github.com/goptics/vizb/shared"
 )
-
-// BenchmarkResult represents a parsed benchmark result
-type BenchmarkResult struct {
-	Name        string
-	Workload    string
-	Subject     string
-	NsPerOp     float64
-	BytesPerOp  float64
-	AllocsPerOp uint64
-}
 
 // BenchEvent represents the structure of a JSON event from 'go test -bench . -json'
 type BenchEvent struct {
@@ -37,10 +20,6 @@ type BenchEvent struct {
 }
 
 var (
-	// Match benchmark output lines with memory stats (when -benchmem is used)
-	benchMemLineRe = regexp.MustCompile(`Benchmark[^\s]+\s+\d+\s+([\d\.]+)\s+ns/op\s+([\d\.]+)\s+B/op\s+([\d\.]+)\s+allocs/op`)
-	// Match benchmark output lines without memory stats
-	benchLineRe = regexp.MustCompile(`Benchmark[^\s]+\s+\d+\s+([\d\.]+)\s+ns/op`)
 	// Define a list of colors to use for the subjects
 	colorList = []string{
 		"#5470C6", // Blue
@@ -54,265 +33,43 @@ var (
 	}
 )
 
-func prepareChartTitle(Name, chartTitle string) string {
-	if Name != "" {
-		return Name + " - " + chartTitle
+func prepareTitle(name, chartTitle string) string {
+	if name != "" {
+		return name + " - " + chartTitle
 	}
 
 	return chartTitle
 }
 
-func GenerateChartsFromFile(jsonPath string) (string, error) {
-	results, err := parseBenchmarkResults(jsonPath)
-	if err != nil {
-		return "", err
+func truncateFloat(f float64) string {
+	if f == float64(int64(f)) {
+		return fmt.Sprintf("%.0f", f)
 	}
 
-	if len(results) == 0 {
-		return "", fmt.Errorf("no benchmark results found")
-	}
-
-	// Group results by task name
-	taskGroups := groupResultsByTask(results)
-	BenchCharts := make([]shared.BenchCharts, 0, len(taskGroups))
-
-	for Name, taskResults := range taskGroups {
-		var nsPerOpChart, bytesPerOpChart, allocsPerOpChart *charts.Bar
-
-		nsPerOpChart = createChart(prepareChartTitle(Name, fmt.Sprintf("Execution Time (%s/op)", shared.FlagState.TimeUnit)), taskResults, func(r BenchmarkResult) string {
-			var time float64
-			switch shared.FlagState.TimeUnit {
-			case "s":
-				time = r.NsPerOp / 1000000000
-			case "ms":
-				time = r.NsPerOp / 1000000
-			case "us":
-				time = r.NsPerOp / 1000
-			default:
-				time = r.NsPerOp
-			}
-
-			// Format without decimal places if it's a whole number
-			if time == float64(int64(time)) {
-				return fmt.Sprintf("%.0f", time)
-			}
-
-			return fmt.Sprintf("%.2f", time)
-		})
-
-		if shared.HasMemStats {
-			bytesPerOpChart = createChart(prepareChartTitle(Name, fmt.Sprintf("Memory Usage (%s/op)", shared.FlagState.MemUnit)), taskResults, func(r BenchmarkResult) string {
-				// Convert B to KB and truncate to 2 decimal
-				var memory float64
-				switch strings.ToLower(shared.FlagState.MemUnit) {
-				case "b":
-					memory = r.BytesPerOp * 8
-				case "kb":
-					memory = r.BytesPerOp / 1024
-				case "mb":
-					memory = r.BytesPerOp / (1024 * 1024)
-				case "gb":
-					memory = r.BytesPerOp / (1024 * 1024 * 1024)
-				default:
-					memory = r.BytesPerOp // default B
-				}
-
-				// Format without decimal places if it's a whole number
-				if memory == float64(int64(memory)) {
-					return fmt.Sprintf("%.0f", memory)
-				}
-
-				return fmt.Sprintf("%.2f", memory)
-			})
-
-			// Prepare title with unit if specified
-			allocTitle := "Allocations (allocs/op)"
-
-			if shared.FlagState.AllocUnit != "" {
-				shared.FlagState.AllocUnit = strings.ToUpper(shared.FlagState.AllocUnit)
-				allocTitle = fmt.Sprintf("Allocations (%s/op)", shared.FlagState.AllocUnit)
-			}
-
-			allocsPerOpChart = createChart(prepareChartTitle(Name, allocTitle), taskResults, func(r BenchmarkResult) string {
-				var allocs float64 = float64(r.AllocsPerOp)
-
-				// Convert based on the allocation unit flag
-				switch shared.FlagState.AllocUnit {
-				case "K":
-					allocs = allocs / 1000
-				case "M":
-					allocs = allocs / 1000000
-				case "B":
-					allocs = allocs / 1000000000
-				case "T":
-					allocs = allocs / 1000000000000
-				default:
-					// Default: as-is, no conversion needed
-					return fmt.Sprintf("%d", r.AllocsPerOp)
-				}
-
-				// Format without decimal places if it's a whole number
-				if allocs == float64(int64(allocs)) {
-					return fmt.Sprintf("%.0f", allocs)
-				}
-
-				return fmt.Sprintf("%.2f", allocs)
-			})
-		}
-
-		// Add charts for this task
-		BenchCharts = append(BenchCharts, shared.BenchCharts{
-			Name:             Name,
-			NsPerOpChart:     nsPerOpChart,
-			BytesPerOpChart:  bytesPerOpChart,
-			AllocsPerOpChart: allocsPerOpChart,
-		})
-	}
-
-	// Write all charts to HTML file using quicktemplate
-	f, err := os.Create(shared.FlagState.OutputFile)
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-
-	// Set initialization options for all charts
-	initOpts := opts.Initialization{}
-	for i := range BenchCharts {
-		BenchCharts[i].NsPerOpChart.SetGlobalOptions(charts.WithInitializationOpts(initOpts))
-		if shared.HasMemStats {
-			BenchCharts[i].BytesPerOpChart.SetGlobalOptions(charts.WithInitializationOpts(initOpts))
-			BenchCharts[i].AllocsPerOpChart.SetGlobalOptions(charts.WithInitializationOpts(initOpts))
-		}
-	}
-
-	// Write the template to the file with all charts
-	templates.WriteBenchmarkChart(f, BenchCharts)
-
-	return shared.FlagState.OutputFile, nil
+	return fmt.Sprintf("%.2f", f)
 }
 
 // Group results by task name
-func groupResultsByTask(results []BenchmarkResult) map[string][]BenchmarkResult {
-	taskGroups := make(map[string][]BenchmarkResult)
+func groupResultsByName(results []shared.BenchmarkResult) map[string][]shared.BenchmarkResult {
+	benchGroups := make(map[string][]shared.BenchmarkResult)
 
-	// Group results by task name
 	for _, result := range results {
-		Name := result.Name
+		name := result.Name
 
-		taskGroups[Name] = append(taskGroups[Name], result)
+		benchGroups[name] = append(benchGroups[name], result)
 	}
 
-	return taskGroups
+	return benchGroups
 }
 
-func parseBenchmarkResults(jsonPath string) (results []BenchmarkResult, e error) {
-	f, err := os.Open(jsonPath)
-	if err != nil {
-		e = err
-		return
-	}
-	defer f.Close()
-
-	dec := json.NewDecoder(f)
-
-	for {
-		var ev BenchEvent
-		if err := dec.Decode(&ev); err != nil {
-			if err == io.EOF {
-				break
-			}
-			e = err
-			return
-		}
-
-		// We're looking for output lines that contain benchmark results
-		if ev.Action == "output" && strings.Contains(ev.Output, "ns/op") {
-			var stats []string
-
-			// First try to match with memory stats
-			if memMatch := benchMemLineRe.FindStringSubmatch(ev.Output); memMatch != nil {
-				stats = memMatch
-				shared.HasMemStats = true
-			} else if basicMatch := benchLineRe.FindStringSubmatch(ev.Output); basicMatch != nil {
-				stats = basicMatch
-			} else {
-				continue
-			}
-			// Extract the benchmark name from the output
-			parts := strings.Fields(ev.Output)
-
-			if len(parts) == 0 {
-				continue
-			}
-
-			benchName := parts[0]
-
-			nameParts := strings.Split(
-				strings.TrimPrefix(benchName, "Benchmark"),
-				shared.FlagState.Separator,
-			)
-
-			var workload, subject string
-			partsLen := len(nameParts)
-
-			switch partsLen {
-			case 1:
-				subject = nameParts[0]
-			case 2:
-				benchName, subject = nameParts[0], nameParts[1]
-			default:
-				benchName, workload, subject = nameParts[partsLen-3], nameParts[partsLen-2], nameParts[partsLen-1]
-			}
-
-			// Remove CPU suffix from subject (e.g., "Subject-8" -> "Subject")
-			if idx := strings.LastIndex(subject, "-"); idx > 0 {
-				// Check if everything after the dash is a number
-				if cpuCount, err := strconv.Atoi(subject[idx+1:]); err == nil {
-					// Store CPU count in global bench state
-					subject = subject[:idx]
-
-					if shared.CPUCount == 0 {
-						shared.CPUCount = cpuCount
-					}
-				}
-			}
-
-			// Parse metrics
-			nsPerOp, _ := strconv.ParseFloat(stats[1], 64)
-
-			// Default values for memory stats
-			var bytesPerOp float64
-			var allocsPerOp uint64
-
-			// If we have memory stats, parse them
-			if shared.HasMemStats && len(stats) >= 4 {
-				bytesPerOp, _ = strconv.ParseFloat(stats[2], 64)
-				allocsPerOp, _ = strconv.ParseUint(stats[3], 10, 64)
-			}
-
-			results = append(results, BenchmarkResult{
-				Name:        benchName,
-				Workload:    workload,
-				Subject:     subject,
-				NsPerOp:     nsPerOp,
-				BytesPerOp:  bytesPerOp,
-				AllocsPerOp: allocsPerOp,
-			})
-		}
-	}
-
-	return
-}
-
-func createChart(title string, results []BenchmarkResult, metricFn func(BenchmarkResult) string) *charts.Bar {
+func createChart(title string, results []shared.BenchmarkResult, typeIndex int) *charts.Bar {
 	// Group data by workload and subject
 	data := make(map[string]map[string]string)
 	for _, r := range results {
 		if data[r.Workload] == nil {
 			data[r.Workload] = make(map[string]string)
 		}
-		data[r.Workload][r.Subject] = metricFn(r)
+		data[r.Workload][r.Subject] = truncateFloat(r.Stats[typeIndex].Value)
 	}
 
 	// Create a new bar chart
@@ -411,4 +168,40 @@ func createChart(title string, results []BenchmarkResult, metricFn func(Benchmar
 	}
 
 	return bar
+}
+
+func GenerateHTMLCharts(results []shared.BenchmarkResult) []shared.BenchCharts {
+	// Group results by task name
+	benchGroups := groupResultsByName(results)
+	benchCharts := make([]shared.BenchCharts, 0, len(benchGroups))
+
+	for name, benchResults := range benchGroups {
+		for _, benchResult := range benchResults {
+			charts := make([]*charts.Bar, 0, len(benchResult.Stats))
+
+			for idx, stat := range benchResult.Stats {
+				var chartTitle string
+
+				if stat.Unit != "" {
+					chartTitle = fmt.Sprintf("%s (%s/op)", stat.Type, stat.Unit)
+				} else {
+					chartTitle = fmt.Sprintf("%s/op", stat.Type)
+				}
+
+				chartBar := createChart(
+					prepareTitle(name, chartTitle),
+					benchResults,
+					idx,
+				)
+				charts = append(charts, chartBar)
+			}
+
+			benchCharts = append(benchCharts, shared.BenchCharts{
+				Name:   name,
+				Charts: charts,
+			})
+		}
+	}
+
+	return benchCharts
 }

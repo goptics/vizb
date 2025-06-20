@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/goptics/vizb/pkg/parser"
 	"github.com/goptics/vizb/shared"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -30,7 +31,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 		shared.FlagState.Separator = "/"
 
 		// Parse the results
-		results, err := parseBenchmarkResults(jsonPath)
+		results, err := parser.ParseBenchmarkResults(jsonPath)
 		require.NoError(t, err)
 		assert.Len(t, results, 4)
 
@@ -38,24 +39,24 @@ func TestParseBenchmarkResults(t *testing.T) {
 		assert.Equal(t, "BenchName1", results[0].Name)
 		assert.Equal(t, "Subject1", results[0].Subject)
 		assert.Equal(t, "", results[0].Workload)
-		assert.Equal(t, 100.0, results[0].NsPerOp)
-		assert.Equal(t, 200.0, results[0].BytesPerOp)
+		assert.Equal(t, 100.0, results[0].TimePerOp)
+		assert.Equal(t, 200.0, results[0].MemPerOp)
 		assert.Equal(t, uint64(5), results[0].AllocsPerOp)
 
 		// Verify the second result - case 2 in switch (two parts)
 		assert.Equal(t, "BenchName1", results[1].Name)
 		assert.Equal(t, "Subject2", results[1].Subject)
 		assert.Equal(t, "", results[1].Workload)
-		assert.Equal(t, 50.0, results[1].NsPerOp)
-		assert.Equal(t, 150.0, results[1].BytesPerOp)
+		assert.Equal(t, 50.0, results[1].TimePerOp)
+		assert.Equal(t, 150.0, results[1].MemPerOp)
 		assert.Equal(t, uint64(3), results[1].AllocsPerOp)
 
 		// Verify the third result - case 2 in switch (two parts)
 		assert.Equal(t, "BenchName2", results[2].Name)
 		assert.Equal(t, "Subject1", results[2].Subject)
 		assert.Equal(t, "", results[2].Workload)
-		assert.Equal(t, 120.0, results[2].NsPerOp)
-		assert.Equal(t, 180.0, results[2].BytesPerOp)
+		assert.Equal(t, 120.0, results[2].TimePerOp)
+		assert.Equal(t, 180.0, results[2].MemPerOp)
 		assert.Equal(t, uint64(4), results[2].AllocsPerOp)
 
 		// Verify the fourth result - default case in switch (three parts)
@@ -66,8 +67,8 @@ func TestParseBenchmarkResults(t *testing.T) {
 		assert.Equal(t, "BenchName", results[3].Name)
 		assert.Equal(t, "Subject", results[3].Subject)
 		assert.Equal(t, "Workload", results[3].Workload)
-		assert.Equal(t, 40.0, results[3].NsPerOp)
-		assert.Equal(t, 100.0, results[3].BytesPerOp)
+		assert.Equal(t, 40.0, results[3].TimePerOp)
+		assert.Equal(t, 100.0, results[3].MemPerOp)
 		assert.Equal(t, uint64(2), results[3].AllocsPerOp)
 	})
 
@@ -83,7 +84,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 		shared.FlagState.Separator = "/"
 
 		// Parse the results
-		results, err := parseBenchmarkResults(jsonPath)
+		results, err := parser.ParseBenchmarkResults(jsonPath)
 		require.NoError(t, err)
 		assert.Len(t, results, 2)
 
@@ -91,16 +92,16 @@ func TestParseBenchmarkResults(t *testing.T) {
 		assert.Equal(t, "BenchName1", results[0].Name)
 		assert.Equal(t, "Subject1", results[0].Subject)
 		assert.Equal(t, "", results[0].Workload)
-		assert.Equal(t, 100.0, results[0].NsPerOp)
-		assert.Equal(t, 0.0, results[0].BytesPerOp)
+		assert.Equal(t, 100.0, results[0].TimePerOp)
+		assert.Equal(t, 0.0, results[0].MemPerOp)
 		assert.Equal(t, uint64(0), results[0].AllocsPerOp)
 
 		// Verify the second result - case 2 in switch (two parts)
 		assert.Equal(t, "BenchName1", results[1].Name)
 		assert.Equal(t, "Subject2", results[1].Subject)
 		assert.Equal(t, "", results[1].Workload)
-		assert.Equal(t, 50.0, results[1].NsPerOp)
-		assert.Equal(t, 0.0, results[1].BytesPerOp)
+		assert.Equal(t, 50.0, results[1].TimePerOp)
+		assert.Equal(t, 0.0, results[1].MemPerOp)
 		assert.Equal(t, uint64(0), results[1].AllocsPerOp)
 	})
 
@@ -115,7 +116,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 		shared.FlagState.Separator = "_"
 
 		// Parse the results
-		results, err := parseBenchmarkResults(jsonPath)
+		results, err := parser.ParseBenchmarkResults(jsonPath)
 		require.NoError(t, err)
 		assert.Len(t, results, 1)
 
@@ -124,8 +125,8 @@ func TestParseBenchmarkResults(t *testing.T) {
 		assert.Equal(t, "BenchName1", results[0].Name)
 		assert.Equal(t, "Subject1", results[0].Subject)
 		assert.Equal(t, "", results[0].Workload)
-		assert.Equal(t, 100.0, results[0].NsPerOp)
-		assert.Equal(t, 200.0, results[0].BytesPerOp)
+		assert.Equal(t, 100.0, results[0].TimePerOp)
+		assert.Equal(t, 200.0, results[0].MemPerOp)
 		assert.Equal(t, uint64(5), results[0].AllocsPerOp)
 	})
 
@@ -135,7 +136,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 		createTestFile(t, jsonPath, []BenchEvent{})
 
 		// Parse the results
-		results, err := parseBenchmarkResults(jsonPath)
+		results, err := parser.ParseBenchmarkResults(jsonPath)
 		require.NoError(t, err)
 		assert.Len(t, results, 0)
 	})
@@ -147,13 +148,13 @@ func TestParseBenchmarkResults(t *testing.T) {
 		require.NoError(t, err)
 
 		// Parse the results
-		_, err = parseBenchmarkResults(jsonPath)
+		_, err = parser.ParseBenchmarkResults(jsonPath)
 		assert.Error(t, err)
 	})
 
 	t.Run("Non-existent file", func(t *testing.T) {
 		// Try to parse a non-existent file
-		_, err := parseBenchmarkResults(filepath.Join(tempDir, "non_existent.json"))
+		_, err := parser.ParseBenchmarkResults(filepath.Join(tempDir, "non_existent.json"))
 		assert.Error(t, err)
 	})
 }
@@ -161,13 +162,13 @@ func TestParseBenchmarkResults(t *testing.T) {
 func TestCreateChart(t *testing.T) {
 	t.Run("Chart creation with multiple BenchNames, workloads and subjects", func(t *testing.T) {
 		results := []BenchmarkResult{
-			{Name: "BenchName1", Subject: "Subject1", Workload: "", NsPerOp: 100, BytesPerOp: 200, AllocsPerOp: 5},
-			{Name: "BenchName1", Subject: "Subject2", Workload: "", NsPerOp: 50, BytesPerOp: 150, AllocsPerOp: 3},
-			{Name: "BenchName2", Subject: "Subject1", Workload: "", NsPerOp: 120, BytesPerOp: 180, AllocsPerOp: 4},
-			{Name: "BenchName3", Subject: "Subject1", Workload: "WorkloadA", NsPerOp: 80, BytesPerOp: 160, AllocsPerOp: 3},
+			{Name: "BenchName1", Subject: "Subject1", Workload: "", TimePerOp: 100, MemPerOp: 200, AllocsPerOp: 5},
+			{Name: "BenchName1", Subject: "Subject2", Workload: "", TimePerOp: 50, MemPerOp: 150, AllocsPerOp: 3},
+			{Name: "BenchName2", Subject: "Subject1", Workload: "", TimePerOp: 120, MemPerOp: 180, AllocsPerOp: 4},
+			{Name: "BenchName3", Subject: "Subject1", Workload: "WorkloadA", TimePerOp: 80, MemPerOp: 160, AllocsPerOp: 3},
 		}
 
-		// Create a chart for NsPerOp
+		// Create a chart for TimePerOp
 		chart := createChart("Test Chart", results, func(r BenchmarkResult) string {
 			return "100"
 		})

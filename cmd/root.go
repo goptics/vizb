@@ -6,9 +6,12 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/goptics/vizb/pkg/chart"
+	"github.com/goptics/vizb/pkg/parser"
+	"github.com/goptics/vizb/pkg/templates"
 	"github.com/goptics/vizb/shared"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
@@ -40,6 +43,7 @@ func init() {
 	rootCmd.Flags().StringVarP(&shared.FlagState.Description, "description", "d", "", "Description of the benchmark")
 	rootCmd.Flags().StringVarP(&shared.FlagState.Separator, "separator", "s", "/", "Separator for grouping benchmark names")
 	rootCmd.Flags().StringVarP(&shared.FlagState.OutputFile, "output", "o", "", "Output HTML file name")
+	rootCmd.Flags().StringVarP(&shared.FlagState.Format, "format", "f", "html", "Output format (html, json)")
 	rootCmd.Flags().StringVarP(&shared.FlagState.MemUnit, "mem-unit", "m", "B", "Memory unit available: b, B, KB, MB, GB")
 	rootCmd.Flags().StringVarP(&shared.FlagState.TimeUnit, "time-unit", "t", "ns", "Time unit available: ns, us, ms, s")
 	rootCmd.Flags().StringVarP(&shared.FlagState.AllocUnit, "alloc-unit", "a", "", "Allocation unit available: K, M, B, T (default: as-is)")
@@ -58,8 +62,9 @@ type BenchEvent struct {
 // validateFlags validates the flag values and sets defaults for invalid values
 func validateFlags() {
 	// Validate memory unit
-	validMemUnits := map[string]bool{"b": true, "B": true, "kb": true, "mb": true, "gb": true}
-	if _, valid := validMemUnits[strings.ToLower(shared.FlagState.MemUnit)]; !valid {
+	validMemUnits := []string{"b", "B", "kb", "mb", "gb"}
+
+	if !slices.Contains(validMemUnits, strings.ToLower(shared.FlagState.MemUnit)) {
 		fmt.Fprintf(os.Stderr, "Warning: Invalid memory unit '%s'. Using default 'B'\n", shared.FlagState.MemUnit)
 		shared.FlagState.MemUnit = "B"
 	}
@@ -74,11 +79,19 @@ func validateFlags() {
 	// Validate allocation unit
 	if shared.FlagState.AllocUnit != "" {
 		shared.FlagState.AllocUnit = strings.ToUpper(shared.FlagState.AllocUnit)
-		validAllocUnits := map[string]bool{"K": true, "M": true, "B": true, "T": true}
-		if _, valid := validAllocUnits[shared.FlagState.AllocUnit]; !valid {
+
+		validAllocUnits := []string{"K", "M", "B", "T"}
+		if !slices.Contains(validAllocUnits, shared.FlagState.AllocUnit) {
 			fmt.Fprintf(os.Stderr, "Warning: Invalid allocation unit '%s'. Using default (as-is)\n", shared.FlagState.AllocUnit)
 			shared.FlagState.AllocUnit = ""
 		}
+	}
+
+	// Validate format
+	validFormats := []string{"html", "json"}
+	if !slices.Contains(validFormats, strings.ToLower(shared.FlagState.Format)) {
+		fmt.Fprintf(os.Stderr, "Warning: Invalid format '%s'. Using default 'html'\n", shared.FlagState.Format)
+		shared.FlagState.Format = "html"
 	}
 }
 
@@ -229,52 +242,79 @@ func runBenchmark(cmd *cobra.Command, args []string) {
 	}
 
 	// Generate the chart using the chart package functionality
-	fmt.Println("🔄 Generating chart...")
 
-	// If no output file is specified, create a temporary one
-	var tempOutputFile string
-	if shared.FlagState.OutputFile == "" {
-		// Create a temporary HTML file
-		tempOutFile, err := os.CreateTemp("", "chart-*.html")
+	outFile := shared.FlagState.OutputFile
+
+	if outFile == "" {
+		tempOutFile, err := os.CreateTemp("", fmt.Sprintf("vizb-*.%s", shared.FlagState.Format))
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error creating temporary output file: %v\n", err)
 			os.Exit(1)
 		}
-		tempOutputFile = tempOutFile.Name()
-		tempOutFile.Close() // Close it now, it will be reopened by the chart generator
+		os.Remove(tempOutFile.Name())
+		outFile = tempOutFile.Name()
 
-		// Clear the terminal screen
-		shared.FlagState.OutputFile = tempOutputFile
-	} else if !strings.HasSuffix(strings.ToLower(shared.FlagState.OutputFile), ".html") {
-		shared.FlagState.OutputFile = shared.FlagState.OutputFile + ".html"
+		tempOutFile.Close() // Close it now, it will be reopened below
+	} else if !strings.HasSuffix(strings.ToLower(outFile), fmt.Sprintf(".%s", shared.FlagState.Format)) {
+		outFile = outFile + fmt.Sprintf(".%s", shared.FlagState.Format)
 	}
 
-	// Import the chart package from the new location
-	actualFilename, err := chart.GenerateChartsFromFile(jsonFilePath)
+	results, err := parser.ParseBenchmarkResults(jsonFilePath)
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "❌ Error generating chart: %v\n", err)
+		fmt.Fprintf(os.Stderr, "❌ Error parsing benchmark results: %v\n", err)
 		os.Exit(1)
 	}
 
-	// Handle different output scenarios
-	if tempOutputFile != "" {
-		// We created a temporary file, so read its contents and display them
-		htmlContent, err := os.ReadFile(actualFilename)
+	if len(results) == 0 {
+		fmt.Fprintf(os.Stderr, "❌ No benchmark results found\n")
+		os.Exit(1)
+	}
+
+	f, err := os.Create(outFile)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "❌ Error creating output file: %v\n", err)
+		os.Exit(1)
+	}
+	defer f.Close()
+
+	// Import the chart package from the new location
+
+	switch shared.FlagState.Format {
+	case "html":
+		fmt.Println("🔄 Generating chart...")
+		// Write all charts to HTML file using quicktemplate
+		charts := chart.GenerateHTMLCharts(results)
+		templates.WriteBenchmarkChart(f, charts)
+		fmt.Printf("🎉 Generated HTML chart successfully!\n")
+
+	case "json":
+		fmt.Println("🔄 Generating JSON...")
+		// Write all charts to JSON file
+		bytes, err := json.Marshal(results)
+
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error reading chart HTML: %v\n", err)
+			fmt.Fprintf(os.Stderr, "❌ Error marshaling results: %v\n", err)
+			os.Exit(1)
+		}
+
+		f.Write(bytes)
+		fmt.Printf("🎉 Generated JSON successfully!\n")
+	}
+
+	// Handle different output scenarios
+	if outFile != "" {
+		// We created a temporary file, so read its contents and display them
+		content, err := os.ReadFile(f.Name())
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error reading output file: %v\n", err)
 			os.Exit(1)
 		}
 		fmt.Print("\033[H\033[2J") // ANSI escape sequence to clear screen and move cursor to home position
 		// Print the HTML content to stdout
-		fmt.Println(string(htmlContent))
-
-		// Clean up the temporary file
-		os.Remove(actualFilename)
+		fmt.Println(string(content))
 	} else {
 		// Normal file output, print success messages
-		fmt.Printf("🎉 Chart generated successfully!\n")
-		fmt.Printf("📄 Output file: %s\n", actualFilename)
-		fmt.Printf("\nOpen the HTML file in your browser to view the benchmark results.\n")
+		fmt.Printf("📄 Output file: %s\n", f.Name())
 	}
 }
