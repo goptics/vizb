@@ -239,7 +239,6 @@ func parseBenchmarkResults(jsonPath string) (results []BenchmarkResult, e error)
 			} else {
 				continue
 			}
-
 			// Extract the benchmark name from the output
 			parts := strings.Fields(ev.Output)
 
@@ -257,10 +256,10 @@ func parseBenchmarkResults(jsonPath string) (results []BenchmarkResult, e error)
 			var workload, subject string
 			partsLen := len(nameParts)
 
-			switch {
-			case partsLen == 1:
+			switch partsLen {
+			case 1:
 				subject = nameParts[0]
-			case partsLen == 2:
+			case 2:
 				benchName, subject = nameParts[0], nameParts[1]
 			default:
 				benchName, workload, subject = nameParts[partsLen-3], nameParts[partsLen-2], nameParts[partsLen-1]
