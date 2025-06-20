@@ -137,7 +137,7 @@ For example, if your benchmark is named `BenchmarkTest/workload/subject`, Vizb w
 - Workload: `workload`
 - Subject: `subject`
 
-![vizb chart example](<./assets/Execution_Time_(s_op).png>)
+![vizb chart example](./assets/vizb-char-overview.png)
 
 You can change the separator using the `-s` or `--separator` flag:
 
