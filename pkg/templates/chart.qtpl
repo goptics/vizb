@@ -171,6 +171,11 @@
             const chartSections = document.querySelectorAll('.chart-section');
             const minimizeBtn = document.getElementById('minimize-btn');
             
+            // Only show sidebar if there are multiple indicators
+            if (sidebar && indicators.length <= 1) {
+                sidebar.style.display = 'none';
+            }
+            
             // Make sidebar draggable
             let isDragging = false;
             let offsetX, offsetY;

@@ -129,6 +129,7 @@ func GenerateChartsFromFile(jsonPath string) (string, error) {
 			allocTitle := "Allocations (allocs/op)"
 
 			if shared.FlagState.AllocUnit != "" {
+				shared.FlagState.AllocUnit = strings.ToUpper(shared.FlagState.AllocUnit)
 				allocTitle = fmt.Sprintf("Allocations (%s/op)", shared.FlagState.AllocUnit)
 			}
 

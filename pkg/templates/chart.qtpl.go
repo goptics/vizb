@@ -196,6 +196,11 @@ func StreamBenchmarkChart(qw422016 *qt422016.Writer, BenchCharts []shared.BenchC
             const chartSections = document.querySelectorAll('.chart-section');
             const minimizeBtn = document.getElementById('minimize-btn');
             
+            // Only show sidebar if there are multiple indicators
+            if (sidebar && indicators.length <= 1) {
+                sidebar.style.display = 'none';
+            }
+            
             // Make sidebar draggable
             let isDragging = false;
             let offsetX, offsetY;
@@ -289,32 +294,32 @@ func StreamBenchmarkChart(qw422016 *qt422016.Writer, BenchCharts []shared.BenchC
 </head>
 <body>
     <h1>`)
-//line pkg/templates/chart.qtpl:266
+//line pkg/templates/chart.qtpl:271
 	qw422016.E().S(shared.FlagState.Name)
-//line pkg/templates/chart.qtpl:266
+//line pkg/templates/chart.qtpl:271
 	qw422016.N().S(` (CPU: `)
-//line pkg/templates/chart.qtpl:266
+//line pkg/templates/chart.qtpl:271
 	qw422016.N().D(shared.CPUCount)
-//line pkg/templates/chart.qtpl:266
+//line pkg/templates/chart.qtpl:271
 	qw422016.N().S(`)</h1>
     `)
-//line pkg/templates/chart.qtpl:267
+//line pkg/templates/chart.qtpl:272
 	if shared.FlagState.Description != "" {
-//line pkg/templates/chart.qtpl:267
+//line pkg/templates/chart.qtpl:272
 		qw422016.N().S(`
     <p style="text-align: center; margin-bottom: 20px;">`)
-//line pkg/templates/chart.qtpl:268
+//line pkg/templates/chart.qtpl:273
 		qw422016.E().S(shared.FlagState.Description)
-//line pkg/templates/chart.qtpl:268
+//line pkg/templates/chart.qtpl:273
 		qw422016.N().S(`</p>
     `)
-//line pkg/templates/chart.qtpl:269
+//line pkg/templates/chart.qtpl:274
 	}
-//line pkg/templates/chart.qtpl:269
+//line pkg/templates/chart.qtpl:274
 	qw422016.N().S(`
 
     `)
-//line pkg/templates/chart.qtpl:272
+//line pkg/templates/chart.qtpl:277
 	// Check if any benchmark has a non-empty name
 	hasNamedBenchmarks := false
 	for _, taskChart := range BenchCharts {
@@ -324,13 +329,13 @@ func StreamBenchmarkChart(qw422016 *qt422016.Writer, BenchCharts []shared.BenchC
 		}
 	}
 
-//line pkg/templates/chart.qtpl:280
+//line pkg/templates/chart.qtpl:285
 	qw422016.N().S(`
     
     `)
-//line pkg/templates/chart.qtpl:282
+//line pkg/templates/chart.qtpl:287
 	if hasNamedBenchmarks {
-//line pkg/templates/chart.qtpl:282
+//line pkg/templates/chart.qtpl:287
 		qw422016.N().S(`
     <!-- Sidebar for benchmark navigation -->
     <div id="bench-sidebar" class="sidebar">
@@ -339,121 +344,121 @@ func StreamBenchmarkChart(qw422016 *qt422016.Writer, BenchCharts []shared.BenchC
             <button id="minimize-btn" class="minimize-btn">▶</button>
         </div>
         `)
-//line pkg/templates/chart.qtpl:289
+//line pkg/templates/chart.qtpl:294
 		for i, taskChart := range BenchCharts {
-//line pkg/templates/chart.qtpl:289
+//line pkg/templates/chart.qtpl:294
 			qw422016.N().S(`
         `)
-//line pkg/templates/chart.qtpl:290
+//line pkg/templates/chart.qtpl:295
 			if taskChart.Name != "" {
-//line pkg/templates/chart.qtpl:290
+//line pkg/templates/chart.qtpl:295
 				qw422016.N().S(`
         <div class="bench-indicator`)
-//line pkg/templates/chart.qtpl:291
+//line pkg/templates/chart.qtpl:296
 				if i == 0 {
-//line pkg/templates/chart.qtpl:291
+//line pkg/templates/chart.qtpl:296
 					qw422016.N().S(` active`)
-//line pkg/templates/chart.qtpl:291
+//line pkg/templates/chart.qtpl:296
 				}
-//line pkg/templates/chart.qtpl:291
+//line pkg/templates/chart.qtpl:296
 				qw422016.N().S(`" data-target="bench-section-`)
-//line pkg/templates/chart.qtpl:291
+//line pkg/templates/chart.qtpl:296
 				qw422016.N().D(i)
-//line pkg/templates/chart.qtpl:291
+//line pkg/templates/chart.qtpl:296
 				qw422016.N().S(`">
             `)
-//line pkg/templates/chart.qtpl:292
+//line pkg/templates/chart.qtpl:297
 				qw422016.E().S(taskChart.Name)
-//line pkg/templates/chart.qtpl:292
+//line pkg/templates/chart.qtpl:297
 				qw422016.N().S(`
         </div>
         `)
-//line pkg/templates/chart.qtpl:294
+//line pkg/templates/chart.qtpl:299
 			}
-//line pkg/templates/chart.qtpl:294
+//line pkg/templates/chart.qtpl:299
 			qw422016.N().S(`
         `)
-//line pkg/templates/chart.qtpl:295
+//line pkg/templates/chart.qtpl:300
 		}
-//line pkg/templates/chart.qtpl:295
+//line pkg/templates/chart.qtpl:300
 		qw422016.N().S(`
     </div>
     `)
-//line pkg/templates/chart.qtpl:297
+//line pkg/templates/chart.qtpl:302
 	}
-//line pkg/templates/chart.qtpl:297
+//line pkg/templates/chart.qtpl:302
 	qw422016.N().S(`
     
     `)
-//line pkg/templates/chart.qtpl:299
+//line pkg/templates/chart.qtpl:304
 	for i, taskChart := range BenchCharts {
-//line pkg/templates/chart.qtpl:299
+//line pkg/templates/chart.qtpl:304
 		qw422016.N().S(`
     <div id="bench-section-`)
-//line pkg/templates/chart.qtpl:300
+//line pkg/templates/chart.qtpl:305
 		qw422016.N().D(i)
-//line pkg/templates/chart.qtpl:300
+//line pkg/templates/chart.qtpl:305
 		qw422016.N().S(`" class="chart-section">
         <div class='chart'>
             `)
-//line pkg/templates/chart.qtpl:302
+//line pkg/templates/chart.qtpl:307
 		qw422016.N().S(renderChart(taskChart.NsPerOpChart))
-//line pkg/templates/chart.qtpl:302
+//line pkg/templates/chart.qtpl:307
 		qw422016.N().S(`
         </div>
         `)
-//line pkg/templates/chart.qtpl:304
+//line pkg/templates/chart.qtpl:309
 		if shared.HasMemStats {
-//line pkg/templates/chart.qtpl:304
+//line pkg/templates/chart.qtpl:309
 			qw422016.N().S(`
         <div class='chart'>
             `)
-//line pkg/templates/chart.qtpl:306
+//line pkg/templates/chart.qtpl:311
 			qw422016.N().S(renderChart(taskChart.BytesPerOpChart))
-//line pkg/templates/chart.qtpl:306
+//line pkg/templates/chart.qtpl:311
 			qw422016.N().S(`
         </div>
         `)
-//line pkg/templates/chart.qtpl:308
+//line pkg/templates/chart.qtpl:313
 		}
-//line pkg/templates/chart.qtpl:308
+//line pkg/templates/chart.qtpl:313
 		qw422016.N().S(`
         `)
-//line pkg/templates/chart.qtpl:309
+//line pkg/templates/chart.qtpl:314
 		if shared.HasMemStats {
-//line pkg/templates/chart.qtpl:309
+//line pkg/templates/chart.qtpl:314
 			qw422016.N().S(`
         <div class='chart'>
             `)
-//line pkg/templates/chart.qtpl:311
+//line pkg/templates/chart.qtpl:316
 			qw422016.N().S(renderChart(taskChart.AllocsPerOpChart))
-//line pkg/templates/chart.qtpl:311
+//line pkg/templates/chart.qtpl:316
 			qw422016.N().S(`
         </div>
         `)
-//line pkg/templates/chart.qtpl:313
+//line pkg/templates/chart.qtpl:318
 		}
-//line pkg/templates/chart.qtpl:313
+//line pkg/templates/chart.qtpl:318
 		qw422016.N().S(`
     </div>
     `)
-//line pkg/templates/chart.qtpl:315
+//line pkg/templates/chart.qtpl:320
 	}
-//line pkg/templates/chart.qtpl:315
+//line pkg/templates/chart.qtpl:320
 	qw422016.N().S(`
 
     `)
-//line pkg/templates/chart.qtpl:317
+//line pkg/templates/chart.qtpl:322
 	if !shared.HasMemStats {
-//line pkg/templates/chart.qtpl:317
+//line pkg/templates/chart.qtpl:322
 		qw422016.N().S(`
     <div style="text-align: center; margin: 20px; color: #666;">
         <p>Note: Memory statistics are not available. Run benchmarks with <code>-benchmem</code> flag to include memory metrics.</p>
     </div>
     `)
-//line pkg/templates/chart.qtpl:321
+//line pkg/templates/chart.qtpl:326
 	}
-//line pkg/templates/chart.qtpl:321
+//line pkg/templates/chart.qtpl:326
 	qw422016.N().S(`
     <footer style="text-align: center; margin-top: 30px; margin-bottom: 20px; font-size: 14px; color: #666;">
         Generated by <a alt="Vizb" target="_blank" href="https://github.com/goptics/vizb" style="color: #666; text-decoration: none; font-weight: bold;">Vizb</a> | Made with <span style="color: #e25555;">❤</span> by <a alt="Goptics" target="_blank" href="https://github.com/goptics" style="color: #666; text-decoration: none; font-weight: bold;">Goptics</a> &copy; 2025
@@ -461,41 +466,41 @@ func StreamBenchmarkChart(qw422016 *qt422016.Writer, BenchCharts []shared.BenchC
 </body>
 </html>
 `)
-//line pkg/templates/chart.qtpl:327
+//line pkg/templates/chart.qtpl:332
 }
 
-//line pkg/templates/chart.qtpl:327
+//line pkg/templates/chart.qtpl:332
 func WriteBenchmarkChart(qq422016 qtio422016.Writer, BenchCharts []shared.BenchCharts) {
-//line pkg/templates/chart.qtpl:327
+//line pkg/templates/chart.qtpl:332
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line pkg/templates/chart.qtpl:327
+//line pkg/templates/chart.qtpl:332
 	StreamBenchmarkChart(qw422016, BenchCharts)
-//line pkg/templates/chart.qtpl:327
+//line pkg/templates/chart.qtpl:332
 	qt422016.ReleaseWriter(qw422016)
-//line pkg/templates/chart.qtpl:327
+//line pkg/templates/chart.qtpl:332
 }
 
-//line pkg/templates/chart.qtpl:327
+//line pkg/templates/chart.qtpl:332
 func BenchmarkChart(BenchCharts []shared.BenchCharts) string {
-//line pkg/templates/chart.qtpl:327
+//line pkg/templates/chart.qtpl:332
 	qb422016 := qt422016.AcquireByteBuffer()
-//line pkg/templates/chart.qtpl:327
+//line pkg/templates/chart.qtpl:332
 	WriteBenchmarkChart(qb422016, BenchCharts)
-//line pkg/templates/chart.qtpl:327
+//line pkg/templates/chart.qtpl:332
 	qs422016 := string(qb422016.B)
-//line pkg/templates/chart.qtpl:327
+//line pkg/templates/chart.qtpl:332
 	qt422016.ReleaseByteBuffer(qb422016)
-//line pkg/templates/chart.qtpl:327
+//line pkg/templates/chart.qtpl:332
 	return qs422016
-//line pkg/templates/chart.qtpl:327
+//line pkg/templates/chart.qtpl:332
 }
 
-//line pkg/templates/chart.qtpl:329
+//line pkg/templates/chart.qtpl:334
 func streamrenderChart(qw422016 *qt422016.Writer, chart *charts.Bar) {
-//line pkg/templates/chart.qtpl:329
+//line pkg/templates/chart.qtpl:334
 	qw422016.N().S(`
     `)
-//line pkg/templates/chart.qtpl:331
+//line pkg/templates/chart.qtpl:336
 	var buf bytes.Buffer
 	chart.Render(&buf)
 	content := buf.String()
@@ -526,39 +531,39 @@ func streamrenderChart(qw422016 *qt422016.Writer, chart *charts.Bar) {
 		}
 	}
 
-//line pkg/templates/chart.qtpl:360
+//line pkg/templates/chart.qtpl:365
 	qw422016.N().S(`
     `)
-//line pkg/templates/chart.qtpl:361
+//line pkg/templates/chart.qtpl:366
 	qw422016.N().S(chartContent)
-//line pkg/templates/chart.qtpl:361
+//line pkg/templates/chart.qtpl:366
 	qw422016.N().S(`
 `)
-//line pkg/templates/chart.qtpl:362
+//line pkg/templates/chart.qtpl:367
 }
 
-//line pkg/templates/chart.qtpl:362
+//line pkg/templates/chart.qtpl:367
 func writerenderChart(qq422016 qtio422016.Writer, chart *charts.Bar) {
-//line pkg/templates/chart.qtpl:362
+//line pkg/templates/chart.qtpl:367
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line pkg/templates/chart.qtpl:362
+//line pkg/templates/chart.qtpl:367
 	streamrenderChart(qw422016, chart)
-//line pkg/templates/chart.qtpl:362
+//line pkg/templates/chart.qtpl:367
 	qt422016.ReleaseWriter(qw422016)
-//line pkg/templates/chart.qtpl:362
+//line pkg/templates/chart.qtpl:367
 }
 
-//line pkg/templates/chart.qtpl:362
+//line pkg/templates/chart.qtpl:367
 func renderChart(chart *charts.Bar) string {
-//line pkg/templates/chart.qtpl:362
+//line pkg/templates/chart.qtpl:367
 	qb422016 := qt422016.AcquireByteBuffer()
-//line pkg/templates/chart.qtpl:362
+//line pkg/templates/chart.qtpl:367
 	writerenderChart(qb422016, chart)
-//line pkg/templates/chart.qtpl:362
+//line pkg/templates/chart.qtpl:367
 	qs422016 := string(qb422016.B)
-//line pkg/templates/chart.qtpl:362
+//line pkg/templates/chart.qtpl:367
 	qt422016.ReleaseByteBuffer(qb422016)
-//line pkg/templates/chart.qtpl:362
+//line pkg/templates/chart.qtpl:367
 	return qs422016
-//line pkg/templates/chart.qtpl:362
+//line pkg/templates/chart.qtpl:367
 }
