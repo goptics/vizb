@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/goptics/vizb/shared"
@@ -274,138 +273,8 @@ func TestProcessJsonFile(t *testing.T) {
 	}
 }
 
-// TestGenerateOutputFile tests the output file generation functionality
-func TestGenerateOutputFile(t *testing.T) {
-	// Create a temporary directory for test files
-	tempDir := t.TempDir()
-
-	// Create valid JSON test file
-	validJsonPath := filepath.Join(tempDir, "valid.json")
-
-	// Create a valid JSON test file with benchmark data
-	validEvents := []shared.BenchEvent{
-		{Action: "output", Output: "BenchmarkTest 1 100 ns/op"},
-	}
-	validJsonFile, err := os.Create(validJsonPath)
-	require.NoError(t, err)
-	for _, event := range validEvents {
-		eventBytes, _ := json.Marshal(event)
-		validJsonFile.Write(eventBytes)
-		validJsonFile.Write([]byte("\n"))
-	}
-	validJsonFile.Close()
-
-	// Save original flag state and restore after tests
-	origFormat := shared.FlagState.Format
-	origOutputFile := shared.FlagState.OutputFile
-	defer func() {
-		shared.FlagState.Format = origFormat
-		shared.FlagState.OutputFile = origOutputFile
-	}()
-
-	// Mock os.Exit
-	exitCalled := false
-	oldOsExit := osExit
-	defer func() { osExit = oldOsExit }()
-	osExit = func(code int) {
-		exitCalled = true
-		panic(fmt.Sprintf("os.Exit(%d) called", code)) // Use panic for flow control in tests
-	}
-
-	tests := []struct {
-		name           string
-		setupFlags     func()
-		inputPath      string
-		expectExit     bool
-		expectedOutput string
-	}{
-		{
-			name: "HTML output with explicit output file",
-			setupFlags: func() {
-				shared.FlagState.Format = "html"
-				shared.FlagState.OutputFile = filepath.Join(tempDir, "output.html")
-			},
-			inputPath:      validJsonPath,
-			expectExit:     false,
-			expectedOutput: "Generated HTML chart successfully",
-		},
-		{
-			name: "JSON output with explicit output file",
-			setupFlags: func() {
-				shared.FlagState.Format = "json"
-				shared.FlagState.OutputFile = filepath.Join(tempDir, "output.json")
-			},
-			inputPath:      validJsonPath,
-			expectExit:     false,
-			expectedOutput: "Generated JSON successfully",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Reset the exitCalled flag for each test
-			exitCalled = false
-
-			// Set up flags
-			tt.setupFlags()
-
-			// Capture stdout
-			oldStdout := os.Stdout
-			oldStderr := os.Stderr
-			r, w, _ := os.Pipe()
-			os.Stdout = w
-			os.Stderr = w
-
-			// Call the function and handle any os.Exit panics
-			if tt.expectExit {
-				func() {
-					defer func() {
-						recovered := recover()
-
-						// Close write end of pipe
-						w.Close()
-
-						// Read output
-						var buf bytes.Buffer
-						io.Copy(&buf, r)
-
-						// Restore stdout and stderr
-						os.Stdout = oldStdout
-						os.Stderr = oldStderr
-
-						// Verify assertions
-						if recovered == nil {
-							t.Error("Expected os.Exit to be called")
-						}
-						assert.True(t, exitCalled, "os.Exit should have been called")
-					}()
-					generateOutputFile(tt.inputPath)
-				}()
-			} else {
-				generateOutputFile(tt.inputPath)
-
-				// Close write end of pipe
-				w.Close()
-
-				// Read output
-				var buf bytes.Buffer
-				io.Copy(&buf, r)
-
-				// Restore stdout and stderr
-				os.Stdout = oldStdout
-				os.Stderr = oldStderr
-
-				// Check output
-				assert.Contains(t, buf.String(), tt.expectedOutput)
-
-				// Check the output file was created with correct extension
-				assert.FileExists(t, shared.FlagState.OutputFile)
-				assert.True(t, strings.HasSuffix(shared.FlagState.OutputFile,
-					fmt.Sprintf(".%s", shared.FlagState.Format)))
-			}
-		})
-	}
-}
+// TestGenerateOutputFile has been moved to generate_output_test.go
+// as TestGenerateOutputFileExtended with more comprehensive test cases
 
 // TestRunBenchmark tests the main runBenchmark function
 func TestRunBenchmark(t *testing.T) {
@@ -537,15 +406,4 @@ func TestRunBenchmark(t *testing.T) {
 			}
 		})
 	}
-}
-
-// TestProcessStdinInput tests processStdinInput signature existence
-// Full testing is hard due to stdin piping requirements
-func TestProcessStdinInput(t *testing.T) {
-	t.Run("Function signature exists", func(t *testing.T) {
-		assert.NotPanics(t, func() {
-			functionType := fmt.Sprintf("%T", processStdinInput)
-			assert.Equal(t, "func() string", functionType)
-		})
-	})
 }
