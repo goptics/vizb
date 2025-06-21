@@ -31,7 +31,7 @@ var rootCmd = &cobra.Command{
 	Long: `A CLI tool that extends the functionality of 'go test -bench' with chart generation.
 It runs the benchmark command internally, captures the JSON output, and generates
 an interactive HTML chart based on the results.`,
-	Version: "v0.1.1",
+	Version: "v0.3.0",
 	Args:    cobra.ArbitraryArgs,
 	Run:     runBenchmark,
 }
