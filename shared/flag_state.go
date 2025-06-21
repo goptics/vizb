@@ -8,6 +8,7 @@ type flagState struct {
 	AllocUnit   string
 	Description string
 	Separator   string
+	Format      string
 }
 
 var FlagState flagState = flagState{}

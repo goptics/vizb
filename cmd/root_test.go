@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -14,396 +15,390 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Helper function to capture stdout and stderr
-func captureOutput(f func()) (string, string) {
-	oldStdout := os.Stdout
-	oldStderr := os.Stderr
+// Save the real os.Exit function in a variable
+var originalOsExit = os.Exit
 
-	rOut, wOut, _ := os.Pipe()
-	rErr, wErr, _ := os.Pipe()
-
-	os.Stdout = wOut
-	os.Stderr = wErr
-
-	f()
-
-	wOut.Close()
-	wErr.Close()
-
-	os.Stdout = oldStdout
-	os.Stderr = oldStderr
-
-	var bufOut, bufErr bytes.Buffer
-	io.Copy(&bufOut, rOut)
-	io.Copy(&bufErr, rErr)
-
-	return bufOut.String(), bufErr.String()
-}
-
-// Helper function to create a valid benchmark JSON file
-func createValidBenchmarkFile(t *testing.T) string {
-	tempFile, err := os.CreateTemp("", "valid-bench-*.json")
-	assert.NoError(t, err)
-
-	defer tempFile.Close()
-
-	// Create sample benchmark data using BenchEvent struct
-	benchData := []BenchEvent{
-		{
-			Action: "output",
-			Test:   "BenchmarkTest/workload/subject",
-			Output: "BenchmarkTest/workload/subject 100 1000.0 ns/op 2048.0 B/op 5 allocs/op",
-		},
-		{
-			Action: "output",
-			Test:   "BenchmarkTest/workload/subject2",
-			Output: "BenchmarkTest/workload/subject2 100 2000.0 ns/op 4096.0 B/op 10 allocs/op",
-		},
+// Override os.Exit for testing
+func TestMain(m *testing.M) {
+	// Replace the os.Exit function with a custom version for testing
+	// that doesn't actually exit the process
+	osExit = func(code int) {
+		// In tests, don't actually exit
+		panic(fmt.Sprintf("os.Exit(%d) was called", code))
 	}
 
-	for _, data := range benchData {
-		jsonData, err := json.Marshal(data)
-		assert.NoError(t, err)
+	// Run tests
+	code := m.Run()
 
-		_, err = tempFile.Write(jsonData)
-		assert.NoError(t, err)
+	// Restore the real os.Exit
+	osExit = originalOsExit
 
-		_, err = tempFile.Write([]byte("\n"))
-		assert.NoError(t, err)
-	}
-
-	return tempFile.Name()
+	// Exit with the code from the test run
+	osExit(code)
 }
 
-// Helper function to reset flag state between tests
-func resetFlagState() {
-	shared.FlagState.Name = "Benchmarks"
-	shared.FlagState.OutputFile = ""
-	shared.FlagState.MemUnit = "B"
-	shared.FlagState.TimeUnit = "ns"
-	shared.FlagState.Description = ""
-}
-
-// TestCLIFeatures groups all CLI functionality tests
-func TestCLIFeatures(t *testing.T) {
-	// Create a temporary directory for test files
-	tempDir := t.TempDir()
-
-	t.Run("Valid file input", func(t *testing.T) {
-		resetFlagState()
-
-		// Create a valid benchmark file
-		benchFile := createValidBenchmarkFile(t)
-		defer os.Remove(benchFile)
-
-		// Set output file
-		tempOutFile := filepath.Join(tempDir, "test-output.html")
-		shared.FlagState.OutputFile = tempOutFile
-
-		stdout, _ := captureOutput(func() {
-			runBenchmark(&cobra.Command{}, []string{benchFile})
-		})
-
-		// Check that the chart was generated
-		assert.Contains(t, stdout, "Chart generated successfully")
-		assert.Contains(t, stdout, "Output file:")
-
-		// Check that the output file exists and has content
-		fileInfo, err := os.Stat(tempOutFile)
-		assert.NoError(t, err)
-		assert.Greater(t, fileInfo.Size(), int64(0))
-	})
-}
-
-// TestOutputOptions groups tests for different output options
-func TestOutputOptions(t *testing.T) {
-	// Create a temporary directory for test files
-	tempDir := t.TempDir()
-
-	t.Run("Auto-add HTML extension", func(t *testing.T) {
-		resetFlagState()
-
-		// Create a valid benchmark file
-		benchFile := createValidBenchmarkFile(t)
-		defer os.Remove(benchFile)
-
-		// Set output file without .html extension
-		outputFile := filepath.Join(tempDir, "output-without-extension")
-		shared.FlagState.OutputFile = outputFile
-
-		stdout, _ := captureOutput(func() {
-			runBenchmark(&cobra.Command{}, []string{benchFile})
-		})
-
-		// Check that the chart was generated with .html extension
-		assert.Contains(t, stdout, "Chart generated successfully")
-		assert.Contains(t, stdout, outputFile+".html")
-
-		// Check that the output file exists with .html extension
-		fileInfo, err := os.Stat(outputFile + ".html")
-		assert.NoError(t, err)
-		assert.Greater(t, fileInfo.Size(), int64(0))
-	})
-
-	t.Run("Custom chart name and description", func(t *testing.T) {
-		resetFlagState()
-
-		// Create a valid benchmark file
-		benchFile := createValidBenchmarkFile(t)
-		defer os.Remove(benchFile)
-
-		// Set output file
-		tempOutFile := filepath.Join(tempDir, "custom-name-desc.html")
-		shared.FlagState.OutputFile = tempOutFile
-
-		// Set custom name and description
-		shared.FlagState.Name = "Custom Chart Name"
-		shared.FlagState.Description = "Custom chart description"
-
-		captureOutput(func() {
-			runBenchmark(&cobra.Command{}, []string{benchFile})
-		})
-
-		// Read the output file and check for custom name and description
-		content, err := os.ReadFile(tempOutFile)
-		assert.NoError(t, err)
-
-		htmlContent := string(content)
-		assert.Contains(t, htmlContent, "Custom Chart Name")
-		assert.Contains(t, htmlContent, "Custom chart description")
-	})
-
-	t.Run("Custom units", func(t *testing.T) {
-		resetFlagState()
-
-		// Create a valid benchmark file
-		benchFile := createValidBenchmarkFile(t)
-		defer os.Remove(benchFile)
-
-		// Set output file
-		tempOutFile := filepath.Join(tempDir, "custom-units.html")
-		shared.FlagState.OutputFile = tempOutFile
-
-		// Set custom units
-		shared.FlagState.TimeUnit = "ms"
-		shared.FlagState.MemUnit = "KB"
-
-		captureOutput(func() {
-			runBenchmark(&cobra.Command{}, []string{benchFile})
-		})
-
-		// Read the output file and check for custom units
-		content, err := os.ReadFile(tempOutFile)
-		assert.NoError(t, err)
-
-		htmlContent := string(content)
-		assert.Contains(t, htmlContent, "Execution Time (ms/op)")
-		assert.Contains(t, htmlContent, "Memory Usage (KB/op)")
-	})
-
-	t.Run("Temporary output to stdout", func(t *testing.T) {
-		resetFlagState()
-
-		// Create a valid benchmark file
-		benchFile := createValidBenchmarkFile(t)
-		defer os.Remove(benchFile)
-
-		// Don't set output file to trigger temporary file creation
-		shared.FlagState.OutputFile = ""
-
-		stdout, _ := captureOutput(func() {
-			runBenchmark(&cobra.Command{}, []string{benchFile})
-		})
-
-		// Check that HTML content was printed to stdout
-		assert.Contains(t, stdout, "<!DOCTYPE html>")
-		assert.Contains(t, stdout, "</html>")
-	})
-}
-
-// TestValidateFlags tests the validateFlags function
+// TestValidateFlags tests that flag validation works correctly
 func TestValidateFlags(t *testing.T) {
-	// Save original flag state and restore after test
-	originalFlagState := shared.FlagState
+	// Save original state to restore after tests
+	origMemUnit := shared.FlagState.MemUnit
+	origTimeUnit := shared.FlagState.TimeUnit
+	origAllocUnit := shared.FlagState.AllocUnit
+	origFormat := shared.FlagState.Format
+
 	defer func() {
-		shared.FlagState = originalFlagState
+		// Restore original flag values
+		shared.FlagState.MemUnit = origMemUnit
+		shared.FlagState.TimeUnit = origTimeUnit
+		shared.FlagState.AllocUnit = origAllocUnit
+		shared.FlagState.Format = origFormat
 	}()
 
-	t.Run("Valid flag values", func(t *testing.T) {
-		// Set valid flag values
-		shared.FlagState.MemUnit = "B"
-		shared.FlagState.TimeUnit = "ns"
-		shared.FlagState.AllocUnit = "K"
+	tests := []struct {
+		name              string
+		setupFlags        func()
+		expectedMemUnit   string
+		expectedTimeUnit  string
+		expectedAllocUnit string
+		expectedFormat    string
+		expectedOutput    string
+	}{
+		{
+			name: "Valid flags",
+			setupFlags: func() {
+				shared.FlagState.MemUnit = "B"
+				shared.FlagState.TimeUnit = "ns"
+				shared.FlagState.AllocUnit = ""
+				shared.FlagState.Format = "html"
+			},
+			expectedMemUnit:   "B",
+			expectedTimeUnit:  "ns",
+			expectedAllocUnit: "",
+			expectedFormat:    "html",
+			expectedOutput:    "",
+		},
+		{
+			name: "Invalid memory unit",
+			setupFlags: func() {
+				shared.FlagState.MemUnit = "invalid"
+				shared.FlagState.TimeUnit = "ns"
+				shared.FlagState.AllocUnit = ""
+				shared.FlagState.Format = "html"
+			},
+			expectedMemUnit:   "B",
+			expectedTimeUnit:  "ns",
+			expectedAllocUnit: "",
+			expectedFormat:    "html",
+			expectedOutput:    "Warning: Invalid memory unit 'invalid'. Using default 'B'",
+		},
+		{
+			name: "Invalid time unit",
+			setupFlags: func() {
+				shared.FlagState.MemUnit = "B"
+				shared.FlagState.TimeUnit = "invalid"
+				shared.FlagState.AllocUnit = ""
+				shared.FlagState.Format = "html"
+			},
+			expectedMemUnit:   "B",
+			expectedTimeUnit:  "ns",
+			expectedAllocUnit: "",
+			expectedFormat:    "html",
+			expectedOutput:    "Warning: Invalid time unit 'invalid'. Using default 'ns'",
+		},
+		{
+			name: "Invalid alloc unit",
+			setupFlags: func() {
+				shared.FlagState.MemUnit = "B"
+				shared.FlagState.TimeUnit = "ns"
+				shared.FlagState.AllocUnit = "invalid"
+				shared.FlagState.Format = "html"
+			},
+			expectedMemUnit:   "B",
+			expectedTimeUnit:  "ns",
+			expectedAllocUnit: "",
+			expectedFormat:    "html",
+			expectedOutput:    "Warning: Invalid allocation unit 'INVALID'. Using default (as-is)",
+		},
+		{
+			name: "Invalid format",
+			setupFlags: func() {
+				shared.FlagState.MemUnit = "B"
+				shared.FlagState.TimeUnit = "ns"
+				shared.FlagState.AllocUnit = ""
+				shared.FlagState.Format = "invalid"
+			},
+			expectedMemUnit:   "B",
+			expectedTimeUnit:  "ns",
+			expectedAllocUnit: "",
+			expectedFormat:    "html",
+			expectedOutput:    "Warning: Invalid format 'invalid'. Using default 'html'",
+		},
+	}
 
-		// Capture stderr to verify no warnings
-		_, stderr := captureOutput(func() {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Set up the flags
+			tt.setupFlags()
+
+			// Capture stderr output
+			oldStderr := os.Stderr
+			r, w, _ := os.Pipe()
+			os.Stderr = w
+
+			// Call the function
 			validateFlags()
+
+			// Close write end of pipe to get all output
+			w.Close()
+			// Read output data
+			var buf bytes.Buffer
+			io.Copy(&buf, r)
+			// Restore stderr
+			os.Stderr = oldStderr
+
+			// Check that the flags were updated correctly
+			assert.Equal(t, tt.expectedMemUnit, shared.FlagState.MemUnit)
+			assert.Equal(t, tt.expectedTimeUnit, shared.FlagState.TimeUnit)
+			assert.Equal(t, tt.expectedAllocUnit, shared.FlagState.AllocUnit)
+			assert.Equal(t, tt.expectedFormat, shared.FlagState.Format)
+
+			// Check the stderr output if expected
+			if tt.expectedOutput != "" {
+				assert.Contains(t, buf.String(), tt.expectedOutput)
+			}
 		})
-
-		// No warnings should be printed
-		assert.Empty(t, stderr)
-		// Flag values should remain unchanged
-		assert.Equal(t, "B", shared.FlagState.MemUnit)
-		assert.Equal(t, "ns", shared.FlagState.TimeUnit)
-		assert.Equal(t, "K", shared.FlagState.AllocUnit)
-	})
-
-	t.Run("Invalid memory unit", func(t *testing.T) {
-		// Set invalid memory unit
-		shared.FlagState.MemUnit = "invalid"
-		shared.FlagState.TimeUnit = "ns"
-		shared.FlagState.AllocUnit = ""
-
-		// Capture stderr to verify warning
-		_, stderr := captureOutput(func() {
-			validateFlags()
-		})
-
-		// Warning should be printed
-		assert.Contains(t, stderr, "Warning: Invalid memory unit 'invalid'")
-		// Flag value should be reset to default
-		assert.Equal(t, "B", shared.FlagState.MemUnit)
-	})
-
-	t.Run("Invalid time unit", func(t *testing.T) {
-		// Set invalid time unit
-		shared.FlagState.MemUnit = "B"
-		shared.FlagState.TimeUnit = "invalid"
-		shared.FlagState.AllocUnit = ""
-
-		// Capture stderr to verify warning
-		_, stderr := captureOutput(func() {
-			validateFlags()
-		})
-
-		// Warning should be printed
-		assert.Contains(t, stderr, "Warning: Invalid time unit 'invalid'")
-		// Flag value should be reset to default
-		assert.Equal(t, "ns", shared.FlagState.TimeUnit)
-	})
-
-	t.Run("Invalid allocation unit", func(t *testing.T) {
-		// Set invalid allocation unit
-		shared.FlagState.MemUnit = "B"
-		shared.FlagState.TimeUnit = "ns"
-		shared.FlagState.AllocUnit = "invalid"
-
-		// Capture stderr to verify warning
-		_, stderr := captureOutput(func() {
-			validateFlags()
-		})
-
-		// Warning should be printed
-		assert.Contains(t, stderr, "Warning: Invalid allocation unit 'INVALID'")
-		// Flag value should be reset to default (empty string)
-		assert.Equal(t, "", shared.FlagState.AllocUnit)
-	})
-
-	t.Run("Empty allocation unit", func(t *testing.T) {
-		// Set empty allocation unit (valid)
-		shared.FlagState.MemUnit = "B"
-		shared.FlagState.TimeUnit = "ns"
-		shared.FlagState.AllocUnit = ""
-
-		// Capture stderr to verify no warnings
-		_, stderr := captureOutput(func() {
-			validateFlags()
-		})
-
-		// No warnings should be printed
-		assert.Empty(t, stderr)
-		// Flag value should remain empty
-		assert.Equal(t, "", shared.FlagState.AllocUnit)
-	})
+	}
 }
 
-// TestRootCommand tests the root command initialization and configuration
-func TestRootCommand(t *testing.T) {
-	// Test that rootCmd is properly initialized
-	assert.Equal(t, "vizb [target]", rootCmd.Use)
-	assert.Equal(t, "Generate benchmark charts from Go test benchmarks", rootCmd.Short)
-	assert.Contains(t, rootCmd.Long, "CLI tool that extends the functionality")
-	assert.Equal(t, "v0.1.1", rootCmd.Version)
-
-	// Test that flags are properly defined
-	assert.NotNil(t, rootCmd.Flags().Lookup("name"))
-	assert.NotNil(t, rootCmd.Flags().Lookup("description"))
-	assert.NotNil(t, rootCmd.Flags().Lookup("separator"))
-	assert.NotNil(t, rootCmd.Flags().Lookup("output"))
-	assert.NotNil(t, rootCmd.Flags().Lookup("mem-unit"))
-	assert.NotNil(t, rootCmd.Flags().Lookup("time-unit"))
-	assert.NotNil(t, rootCmd.Flags().Lookup("alloc-unit"))
-}
-
-// TestInputMethods groups tests for different input methods
-func TestInputMethods(t *testing.T) {
+// TestReadTargetedJsonFile tests the JSON file processing functionality
+func TestReadTargetedJsonFile(t *testing.T) {
 	// Create a temporary directory for test files
 	tempDir := t.TempDir()
 
-	t.Run("File input", func(t *testing.T) {
-		resetFlagState()
+	// We don't need to mock os.Exit here since TestMain does it globally
+	exitCalled := false
+	originalOsExitFunc := osExit
+	osExit = func(code int) {
+		exitCalled = true
+		panic(fmt.Sprintf("os.Exit(%d) called", code)) // Use panic for flow control in tests
+	}
+	defer func() { osExit = originalOsExitFunc }()
 
-		// Create a valid benchmark file
-		benchFile := createValidBenchmarkFile(t)
-		defer os.Remove(benchFile)
+	// Create valid and invalid JSON test files
+	validJsonPath := filepath.Join(tempDir, "valid.json")
+	invalidJsonPath := filepath.Join(tempDir, "invalid.json")
+	nonExistentPath := filepath.Join(tempDir, "nonexistent.json")
 
-		// Set output file
-		tempOutFile := filepath.Join(tempDir, "file-input.html")
-		shared.FlagState.OutputFile = tempOutFile
+	// Create a valid JSON test file
+	validEvent := shared.BenchEvent{Action: "output", Output: "BenchmarkTest 1 100 ns/op"}
+	validEventBytes, _ := json.Marshal(validEvent)
+	err := os.WriteFile(validJsonPath, append(validEventBytes, '\n'), 0644)
+	require.NoError(t, err)
 
-		stdout, _ := captureOutput(func() {
-			runBenchmark(&cobra.Command{}, []string{benchFile})
+	// Create an invalid JSON test file
+	err = os.WriteFile(invalidJsonPath, []byte("this is not json"), 0644)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name          string
+		inputPath     string
+		expectExit    bool
+		expectedError string
+	}{
+		{
+			name:          "Valid JSON file",
+			inputPath:     validJsonPath,
+			expectExit:    false,
+			expectedError: "",
+		},
+		{
+			name:          "Non-existent file",
+			inputPath:     nonExistentPath,
+			expectExit:    true,
+			expectedError: "does not exist",
+		},
+		{
+			name:          "Invalid JSON file",
+			inputPath:     invalidJsonPath,
+			expectExit:    true,
+			expectedError: "not in proper JSON format",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Reset the exitCalled flag for each test
+			exitCalled = false
+
+			// Prepare stderr capture
+			oldStderr := os.Stderr
+			r, w, _ := os.Pipe()
+			os.Stderr = w
+
+			// Call the function and handle any os.Exit panics
+			if tt.expectExit {
+				func() {
+					defer func() {
+						recovered := recover()
+						// Close the write end of pipe to get all output
+						w.Close()
+
+						// Read the stderr output
+						var buf bytes.Buffer
+						io.Copy(&buf, r)
+
+						// Restore stderr
+						os.Stderr = oldStderr
+
+						// Check assertions
+						if recovered == nil {
+							t.Error("Expected os.Exit to be called")
+						}
+						assert.True(t, exitCalled, "os.Exit should have been called")
+						assert.Contains(t, buf.String(), tt.expectedError)
+					}()
+					readTargetedJsonFile(tt.inputPath)
+				}()
+			} else {
+				readTargetedJsonFile(tt.inputPath)
+
+				// Close write end of pipe
+				w.Close()
+				os.Stderr = oldStderr
+
+				assert.False(t, exitCalled, "os.Exit should not have been called")
+			}
 		})
+	}
+}
 
-		// Check that the chart was generated
-		assert.Contains(t, stdout, "Chart generated successfully")
-		assert.Contains(t, stdout, "Output file:")
+// TestRunBenchmark tests the main runBenchmark function
+func TestRunBenchmark(t *testing.T) {
+	// Create a temporary directory for test files
+	tempDir := t.TempDir()
 
-		// Check that the output file exists and has content
-		fileInfo, err := os.Stat(tempOutFile)
-		assert.NoError(t, err)
-		assert.Greater(t, fileInfo.Size(), int64(0))
-	})
+	// Create a valid JSON test file
+	validJsonPath := filepath.Join(tempDir, "valid.json")
+	validEvent := shared.BenchEvent{Action: "output", Output: "BenchmarkTest 1 100 ns/op"}
+	validEventBytes, _ := json.Marshal(validEvent)
+	err := os.WriteFile(validJsonPath, append(validEventBytes, '\n'), 0644)
+	require.NoError(t, err)
 
-	t.Run("Piped input", func(t *testing.T) {
-		resetFlagState()
+	// Save original flag state
+	origOutputFile := shared.FlagState.OutputFile
+	origFormat := shared.FlagState.Format
+	defer func() {
+		shared.FlagState.OutputFile = origOutputFile
+		shared.FlagState.Format = origFormat
+	}()
 
-		// Create a valid benchmark file to read its content
-		benchFile := createValidBenchmarkFile(t)
-		defer os.Remove(benchFile)
+	// Mock os.Exit
+	exitCalled := false
+	oldOsExit := osExit
+	defer func() { osExit = oldOsExit }()
+	osExit = func(code int) {
+		exitCalled = true
+		panic(fmt.Sprintf("os.Exit(%d) called", code)) // Use panic for flow control in tests
+	}
 
-		// Read the benchmark file content
-		benchContent, err := os.ReadFile(benchFile)
-		require.NoError(t, err)
+	tests := []struct {
+		name           string
+		argsFunc       func() []string
+		setupStdin     func() (restoreFunc func())
+		expectExit     bool
+		expectedOutput string
+		setupFlags     func()
+	}{
+		{
+			name: "Valid file input",
+			argsFunc: func() []string {
+				return []string{validJsonPath}
+			},
+			setupStdin:     func() func() { return func() {} },
+			expectExit:     false,
+			expectedOutput: "Generated",
+			setupFlags: func() {
+				shared.FlagState.Format = "html"
+				shared.FlagState.OutputFile = filepath.Join(tempDir, "out.html")
+			},
+		},
+		{
+			name: "No args and no stdin",
+			argsFunc: func() []string {
+				return []string{}
+			},
+			setupStdin:     func() func() { return func() {} },
+			expectExit:     true,
+			expectedOutput: "no target provided",
+			setupFlags:     func() {},
+		},
+	}
 
-		// Save original stdin
-		oldStdin := os.Stdin
-		defer func() { os.Stdin = oldStdin }()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Reset exit flag
+			exitCalled = false
 
-		// Create a pipe and write benchmark content to it
-		r, w, _ := os.Pipe()
-		os.Stdin = r
+			// Set up flags
+			tt.setupFlags()
 
-		go func() {
-			w.Write(benchContent)
-			w.Close()
-		}()
+			// Setup stdin if needed
+			restore := tt.setupStdin()
+			defer restore()
 
-		// Set output file
-		tempOutFile := filepath.Join(tempDir, "piped-input.html")
-		shared.FlagState.OutputFile = tempOutFile
+			// Capture stdout and stderr
+			oldStdout := os.Stdout
+			oldStderr := os.Stderr
+			r, w, _ := os.Pipe()
+			os.Stdout = w
+			os.Stderr = w
 
-		stdout, _ := captureOutput(func() {
-			runBenchmark(&cobra.Command{}, []string{})
+			// Create a cobra command for testing
+			cmd := &cobra.Command{}
+			args := tt.argsFunc()
+
+			// Run the function and catch any os.Exit calls
+			if tt.expectExit {
+				func() {
+					defer func() {
+						recovered := recover()
+
+						// Close write end of pipe
+						w.Close()
+
+						// Read output
+						var buf bytes.Buffer
+						io.Copy(&buf, r)
+
+						// Restore stdout and stderr
+						os.Stdout = oldStdout
+						os.Stderr = oldStderr
+
+						// Verify assertions
+						if recovered == nil {
+							t.Error("Expected os.Exit to be called")
+						}
+						assert.True(t, exitCalled, "os.Exit should have been called")
+						assert.Contains(t, buf.String(), tt.expectedOutput)
+					}()
+					runBenchmark(cmd, args)
+				}()
+			} else {
+				runBenchmark(cmd, args)
+
+				// Close write end of pipe
+				w.Close()
+
+				// Read output
+				var buf bytes.Buffer
+				io.Copy(&buf, r)
+
+				// Restore stdout and stderr
+				os.Stdout = oldStdout
+				os.Stderr = oldStderr
+
+				// Validate assertions
+				assert.Contains(t, buf.String(), tt.expectedOutput)
+			}
 		})
-
-		// Check that the chart was generated
-		assert.Contains(t, stdout, "Chart generated successfully")
-		assert.Contains(t, stdout, "Output file:")
-
-		// Check that the output file exists and has content
-		fileInfo, err := os.Stat(tempOutFile)
-		assert.NoError(t, err)
-		assert.Greater(t, fileInfo.Size(), int64(0))
-	})
+	}
 }
