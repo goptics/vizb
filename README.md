@@ -12,8 +12,9 @@ Vizb is a CLI tool for visualizing Go benchmark results as interactive HTML char
 
 - **Interactive Charts**: Generate beautiful, interactive HTML charts from Go benchmark results
 - **Multiple Metrics**: Compare execution time, memory usage, and allocation counts
-- **Customizable Units**: Display metrics in your preferred units (ns/ms/us for time, B/KB/MB/GB for memory)
-- **Customizable Chart Title**: Set a custom name for your benchmark charts
+- **Customizable Units**: Display metrics in your preferred units (ns/us/ms/s for time, b/B/KB/MB/GB for memory)
+- **Allocation Units**: Customize allocation count representation (K/M/B/T)
+- **Multiple Output Formats**: Generate HTML charts or JSON data with the `--format` flag
 - **Responsive Design**: Charts work well on any device or screen size
 - **Export Capability**: Save charts as PNG images directly from the browser
 - **Simple CLI Interface**: Easy-to-use command line interface with helpful flags
@@ -107,6 +108,10 @@ vizb bench.json -o custom_chart.html
 #### Generate JSON output instead of HTML
 
 ```bash
+# Using long flag name
+vizb bench.json --format json -o benchmarks.json
+
+# Using short flag name
 vizb bench.json -f json -o benchmark_results.json
 ```
 

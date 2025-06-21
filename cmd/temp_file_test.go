@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TestCreateBenchTempJsonFile tests both success and error paths of createBenchTempJsonFile
-func TestCreateBenchTempJsonFile(t *testing.T) {
+// TestCreateTempFile tests both success and error paths of createTempFile
+func TestCreateTempFile(t *testing.T) {
 	// Test success path - already covered by the stdin tests but included here for completeness
 	t.Run("Success Path", func(t *testing.T) {
 		// Call the function
