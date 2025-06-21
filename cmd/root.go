@@ -303,7 +303,7 @@ func runBenchmark(cmd *cobra.Command, args []string) {
 	}
 
 	// Handle different output scenarios
-	if outFile != "" {
+	if outFile == "" {
 		// We created a temporary file, so read its contents and display them
 		content, err := os.ReadFile(f.Name())
 		if err != nil {
