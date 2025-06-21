@@ -15,7 +15,7 @@ tasks:
   generate:
     desc: Generate templates using quicktemplate
     cmds:
-      - qtc -dir=pkg/templates
+      - qtc -dir=pkg/chart/templates
 
   build:
     desc: Build the binary with version information

@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	"github.com/goptics/vizb/pkg/chart"
+	"github.com/goptics/vizb/pkg/chart/templates"
 	"github.com/goptics/vizb/pkg/parser"
-	"github.com/goptics/vizb/pkg/templates"
 	"github.com/goptics/vizb/shared"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
