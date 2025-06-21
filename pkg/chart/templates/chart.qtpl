@@ -7,7 +7,7 @@
     "github.com/goptics/vizb/shared"
 ) %}
 
-{% func BenchmarkChart(BenchCharts []shared.BenchCharts) %}
+{% func BenchmarkChart(benchCharts []shared.BenchCharts) %}
 <!DOCTYPE html>
 <html>
 <head>
@@ -276,22 +276,27 @@
     {% code
         // Check if any benchmark has a non-empty name
         hasNamedBenchmarks := false
-        for _, benchChart := range BenchCharts {
+        for _, benchChart := range benchCharts {
             if benchChart.Name != "" {
                 hasNamedBenchmarks = true
                 break
             }
         }
+
+        totalCharts := 0
+        for _, benchChart := range benchCharts {
+            totalCharts += len(benchChart.Charts)
+        }
     %}
     
-    {% if hasNamedBenchmarks %}
+    {% if hasNamedBenchmarks && totalCharts > 2 %}
     <!-- Sidebar for benchmark navigation -->
     <div id="bench-sidebar" class="sidebar">
         <div class="sidebar-header">
             <div class="sidebar-title">Bench Indicators</div>
             <button id="minimize-btn" class="minimize-btn">▶</button>
         </div>
-        {% for i, benchChart := range BenchCharts %}
+        {% for i, benchChart := range benchCharts %}
         {% if benchChart.Name != "" %}
         <div class="bench-indicator{% if i == 0 %} active{% endif %}" data-target="bench-section-{%d i %}">
             {%s benchChart.Name %}
@@ -301,7 +306,7 @@
     </div>
     {% endif %}
     
-    {% for i, benchChart := range BenchCharts %}
+    {% for i, benchChart := range benchCharts %}
     <div id="bench-section-{%d i %}" class="chart-section">
         {% for _, chart := range benchChart.Charts %}
         <div class='chart'>
