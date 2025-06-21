@@ -75,6 +75,7 @@ Flags:
   -n, --name string         Name of the chart (default "Benchmarks")
   -d, --description string  Description of the benchmark
   -o, --output string       Output HTML file name
+  -f, --format string       Output format (html, json) (default "html")
   -s, --separator string    Separator for grouping benchmark names (default "/")
   -m, --mem-unit string     Memory unit available: b, B, KB, MB, GB (default "B")
   -t, --time-unit string    Time unit available: ns, us, ms, s (default "ns")
@@ -101,6 +102,12 @@ go test -bench . -run=^$ -json | vizb
 
 ```bash
 vizb bench.json -o custom_chart.html
+```
+
+#### Generate JSON output instead of HTML
+
+```bash
+vizb bench.json -f json -o benchmark_results.json
 ```
 
 #### Custom chart name and description

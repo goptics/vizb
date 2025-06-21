@@ -169,8 +169,8 @@ func TestValidateFlags(t *testing.T) {
 	}
 }
 
-// TestProcessJsonFile tests the JSON file processing functionality
-func TestProcessJsonFile(t *testing.T) {
+// TestReadTargetedJsonFile tests the JSON file processing functionality
+func TestReadTargetedJsonFile(t *testing.T) {
 	// Create a temporary directory for test files
 	tempDir := t.TempDir()
 
@@ -235,7 +235,6 @@ func TestProcessJsonFile(t *testing.T) {
 			os.Stderr = w
 
 			// Call the function and handle any os.Exit panics
-			var result string
 			if tt.expectExit {
 				func() {
 					defer func() {
@@ -257,24 +256,20 @@ func TestProcessJsonFile(t *testing.T) {
 						assert.True(t, exitCalled, "os.Exit should have been called")
 						assert.Contains(t, buf.String(), tt.expectedError)
 					}()
-					result = processJsonFile(tt.inputPath)
+					readTargetedJsonFile(tt.inputPath)
 				}()
 			} else {
-				result = processJsonFile(tt.inputPath)
+				readTargetedJsonFile(tt.inputPath)
 
 				// Close write end of pipe
 				w.Close()
 				os.Stderr = oldStderr
 
-				assert.Equal(t, tt.inputPath, result)
 				assert.False(t, exitCalled, "os.Exit should not have been called")
 			}
 		})
 	}
 }
-
-// TestGenerateOutputFile has been moved to generate_output_test.go
-// as TestGenerateOutputFileExtended with more comprehensive test cases
 
 // TestRunBenchmark tests the main runBenchmark function
 func TestRunBenchmark(t *testing.T) {

@@ -17,8 +17,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// osExit is a variable that allows us to mock os.Exit for testing
+// Variables to allow mocking for testing
 var osExit = os.Exit
+var osTempCreate = os.CreateTemp
+
+const tempBenchFilePrefix = "vizb-benchmark-"
+const outputFilePrefix = "vizb-"
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -112,36 +116,33 @@ func runBenchmark(cmd *cobra.Command, args []string) {
 		target = args[0]
 	}
 
-	// Variable to store the path to the JSON data file (either temp file or input file)
-	var jsonFilePath string
-
 	// Process the benchmark data
 	if isStdinPiped {
-		jsonFilePath = processStdinInput()
+		target = createTempFile(tempBenchFilePrefix, "json")
+		defer os.Remove(target)
+		writeStdinPipedInputs(target)
 	} else {
-		jsonFilePath = processJsonFile(target)
+		readTargetedJsonFile(target)
 	}
 
 	// Generate the output file with charts or JSON
-	generateOutputFile(jsonFilePath)
+	generateOutputFile(target)
 }
 
-func processStdinInput() string {
-	// Create a temporary file for the benchmark data
-	tempFile, err := os.CreateTemp("", "benchmark-*.json")
+func createTempFile(prefix, extension string) string {
+	temp, err := osTempCreate("", fmt.Sprintf("%s*.%s", prefix, extension))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error creating temporary file: %v\n", err)
 		osExit(1)
 	}
+	defer temp.Close()
 
-	jsonFilePath := tempFile.Name()
-	defer os.Remove(jsonFilePath) // Clean up the temp file when done
+	return temp.Name()
+}
 
-	// Close the temp file first
-	tempFile.Close()
-
+func writeStdinPipedInputs(tempJsonPath string) {
 	// Open the JSON file for writing
-	jsonFile, err := os.Create(jsonFilePath)
+	jsonFile, err := os.Create(tempJsonPath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error opening JSON file for writing: %v\n", err)
 		osExit(1)
@@ -215,26 +216,24 @@ func processStdinInput() string {
 	writer.Flush()
 	jsonFile.Sync()
 	fmt.Println()
-
-	return jsonFilePath
 }
 
-func processJsonFile(jsonFilePath string) string {
-	fmt.Printf("📊 Reading benchmark data from file: %s\n", jsonFilePath)
-
+func readTargetedJsonFile(jsonPath string) {
 	// Check if the target file exists
-	if _, err := os.Stat(jsonFilePath); os.IsNotExist(err) {
-		fmt.Fprintf(os.Stderr, "Error: File '%s' does not exist\n", jsonFilePath)
+	if _, err := os.Stat(jsonPath); os.IsNotExist(err) {
+		fmt.Fprintf(os.Stderr, "Error: File '%s' does not exist\n", jsonPath)
 		osExit(1)
 	}
 
 	// Check if the file contains valid JSON
-	srcFile, err := os.Open(jsonFilePath)
+	srcFile, err := os.Open(jsonPath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error opening source file: %v\n", err)
 		osExit(1)
 	}
 	defer srcFile.Close()
+
+	fmt.Printf("📊 Reading benchmark data from file: %s\n", jsonPath)
 
 	// Read a small portion of the file to check if it's valid JSON
 	scanner := bufio.NewScanner(srcFile)
@@ -249,18 +248,16 @@ func processJsonFile(jsonFilePath string) string {
 	}
 
 	srcFile.Seek(0, 0)
-
-	return jsonFilePath
 }
 
 // generateOutputFile handles the parsing of benchmark results, output file creation,
 // and generation of charts or JSON based on the specified format.
-func generateOutputFile(jsonFilePath string) {
+func generateOutputFile(jsonPath string) {
 	// Determine output file name
 	outFile := shared.FlagState.OutputFile
 
 	if outFile == "" {
-		tempOutFile, err := os.CreateTemp("", fmt.Sprintf("vizb-*.%s", shared.FlagState.Format))
+		tempOutFile, err := os.CreateTemp("", fmt.Sprintf("%s*.%s", outputFilePrefix, shared.FlagState.Format))
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error creating temporary output file: %v\n", err)
 			osExit(1)
@@ -274,7 +271,7 @@ func generateOutputFile(jsonFilePath string) {
 	}
 
 	// Parse benchmark results
-	results, err := parser.ParseBenchmarkResults(jsonFilePath)
+	results, err := parser.ParseBenchmarkResults(jsonPath)
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "❌ Error parsing benchmark results: %v\n", err)

@@ -13,9 +13,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestProcessStdinInput tests the functionality of processStdinInput
+// TestWriteStdinPipedInputs tests the functionality of writeStdinPipedInputs
 // This simulates piping data to stdin
-func TestProcessStdinInput(t *testing.T) {
+func TestWriteStdinPipedInputs(t *testing.T) {
 	// Save original stdin and create a pipe
 	originalStdin := os.Stdin
 	defer func() { os.Stdin = originalStdin }()
@@ -71,13 +71,16 @@ func TestProcessStdinInput(t *testing.T) {
 			}
 		}()
 
+		// Create a temp file path using the function we're testing
+		resultPath := createTempFile(tempBenchFilePrefix, "json")
+		defer os.Remove(resultPath)
+
 		// Call the function in a way that we can recover from the panic
-		var resultPath string
 		func() {
 			defer func() {
 				recover() // Recover from any panics
 			}()
-			resultPath = processStdinInput()
+			writeStdinPipedInputs(resultPath)
 		}()
 
 		// Close the write end of stdout/stderr pipes
@@ -132,13 +135,17 @@ func TestProcessStdinInput(t *testing.T) {
 			w.Write([]byte("This is not valid JSON\n"))
 		}()
 
+		// Create a temp file path using the function we're testing
+		resultPath := createTempFile(tempBenchFilePrefix, "json")
+		defer os.Remove(resultPath)
+
 		// Call the function and expect a panic from osExit
 		func() {
 			defer func() {
 				recovered := recover()
 				assert.NotNil(t, recovered, "Expected panic from os.Exit")
 			}()
-			_ = processStdinInput() // This should call osExit and panic
+			writeStdinPipedInputs(resultPath) // This should call osExit and panic
 		}()
 
 		errW.Close()
