@@ -12,26 +12,16 @@ import (
 	"github.com/goptics/vizb/shared"
 )
 
-// BenchEvent represents the structure of a JSON event from 'go test -bench . -json'
-type BenchEvent struct {
-	Action string `json:"Action"`
-	Test   string `json:"Test,omitempty"`
-	Output string `json:"Output,omitempty"`
+var colorList = []string{
+	"#5470C6", // Blue
+	"#3BA272", // Green
+	"#FC8452", // Orange
+	"#73C0DE", // Light blue
+	"#EE6666", // Red
+	"#FAC858", // Yellow
+	"#9A60B4", // Purple
+	"#EA7CCC", // Pink
 }
-
-var (
-	// Define a list of colors to use for the subjects
-	colorList = []string{
-		"#5470C6", // Blue
-		"#3BA272", // Green
-		"#FC8452", // Orange
-		"#73C0DE", // Light blue
-		"#EE6666", // Red
-		"#FAC858", // Yellow
-		"#9A60B4", // Purple
-		"#EA7CCC", // Pink
-	}
-)
 
 func prepareTitle(name, chartTitle string) string {
 	if name != "" {
@@ -62,14 +52,14 @@ func groupResultsByName(results []shared.BenchmarkResult) map[string][]shared.Be
 	return benchGroups
 }
 
-func createChart(title string, results []shared.BenchmarkResult, typeIndex int) *charts.Bar {
+func createChart(title string, results []shared.BenchmarkResult, statIndex int) *charts.Bar {
 	// Group data by workload and subject
 	data := make(map[string]map[string]string)
 	for _, r := range results {
 		if data[r.Workload] == nil {
 			data[r.Workload] = make(map[string]string)
 		}
-		data[r.Workload][r.Subject] = truncateFloat(r.Stats[typeIndex].Value)
+		data[r.Workload][r.Subject] = truncateFloat(r.Stats[statIndex].Value)
 	}
 
 	// Create a new bar chart

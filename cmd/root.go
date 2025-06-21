@@ -17,6 +17,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// osExit is a variable that allows us to mock os.Exit for testing
+var osExit = os.Exit
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "vizb [target]",
@@ -34,7 +37,7 @@ an interactive HTML chart based on the results.`,
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
-		os.Exit(1)
+		osExit(1)
 	}
 }
 
@@ -50,13 +53,6 @@ func init() {
 
 	// Add a hook to validate flags after parsing
 	cobra.OnInitialize(validateFlags)
-}
-
-// BenchEvent represents the structure of a JSON event from 'go test -json'
-type BenchEvent struct {
-	Action string `json:"Action"`
-	Test   string `json:"Test,omitempty"`
-	Output string `json:"Output,omitempty"`
 }
 
 // validateFlags validates the flag values and sets defaults for invalid values
@@ -89,7 +85,9 @@ func validateFlags() {
 
 	// Validate format
 	validFormats := []string{"html", "json"}
-	if !slices.Contains(validFormats, strings.ToLower(shared.FlagState.Format)) {
+	shared.FlagState.Format = strings.ToLower(shared.FlagState.Format)
+
+	if !slices.Contains(validFormats, shared.FlagState.Format) {
 		fmt.Fprintf(os.Stderr, "Warning: Invalid format '%s'. Using default 'html'\n", shared.FlagState.Format)
 		shared.FlagState.Format = "html"
 	}
@@ -104,11 +102,12 @@ func runBenchmark(cmd *cobra.Command, args []string) {
 	if len(args) == 0 && !isStdinPiped {
 		fmt.Fprintln(os.Stderr, "Error: no target provided and no piped input detected")
 		cmd.Help()
-		os.Exit(1)
+		osExit(1)
 	}
 
 	// Default target name for piped input
 	target := "stdin"
+
 	if len(args) > 0 {
 		target = args[0]
 	}
@@ -118,140 +117,155 @@ func runBenchmark(cmd *cobra.Command, args []string) {
 
 	// Process the benchmark data
 	if isStdinPiped {
-		// Create a temporary file for the benchmark data
-		tempFile, err := os.CreateTemp("", "benchmark-*.json")
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error creating temporary file: %v\n", err)
-			os.Exit(1)
-		}
-
-		jsonFilePath = tempFile.Name()
-		defer os.Remove(jsonFilePath) // Clean up the temp file when done
-
-		// Close the temp file first
-		tempFile.Close()
-
-		// Open the JSON file for writing
-		jsonFile, err := os.Create(jsonFilePath)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error opening JSON file for writing: %v\n", err)
-			os.Exit(1)
-		}
-		defer jsonFile.Close()
-
-		// Use bufio to read stdin line by line in real-time
-		reader := bufio.NewReader(os.Stdin)
-		writer := bufio.NewWriter(jsonFile)
-		lineCount := 0
-		benchmarkCount := 0
-		var currentBenchName string
-
-		// Create a progress bar
-		bar := progressbar.NewOptions(-1,
-			progressbar.OptionSetDescription("Processing benchmarks"),
-			progressbar.OptionSetWidth(50),
-			progressbar.OptionSetRenderBlankState(true),
-			progressbar.OptionEnableColorCodes(true),
-			progressbar.OptionOnCompletion(func() { fmt.Println() }),
-		)
-
-		// Process each line as it comes in
-		for {
-			line, err := reader.ReadString('\n')
-			if err != nil {
-				if err == io.EOF {
-					// End of input
-					break
-				}
-				fmt.Fprintf(os.Stderr, "Error reading from stdin: %v\n", err)
-				os.Exit(1)
-			}
-
-			// Write the line to the file
-			if _, err := writer.WriteString(line); err != nil {
-				fmt.Fprintf(os.Stderr, "Error writing to file: %v\n", err)
-				os.Exit(1)
-			}
-
-			var ev BenchEvent
-			if err := json.Unmarshal([]byte(line), &ev); err == nil {
-				// If this is a benchmark test event, update the current benchmark name
-				if ev.Test != "" && strings.HasPrefix(ev.Test, "Benchmark") {
-					currentBenchName = ev.Test
-					// Only count sub-benchmarks (with a slash in the name)
-					if strings.Contains(ev.Test, shared.FlagState.Separator) && strings.Contains(line, "ns/op") {
-						benchmarkCount++
-					}
-				}
-
-				// Update progress bar description with benchmark count and current benchmark name
-				description := fmt.Sprintf("Running Benchmarks [%s] (%d completed)",
-					currentBenchName, benchmarkCount)
-
-				bar.Describe(description)
-			} else {
-				fmt.Fprintf(os.Stderr, "\n❌ Error: Input is not in proper JSON format.\n")
-				os.Exit(1)
-			}
-
-			// Flush periodically to ensure data is written
-			if lineCount%100 == 0 {
-				writer.Flush()
-			}
-
-			lineCount++
-		}
-
-		// Final flush to ensure all data is written
-		writer.Flush()
-		jsonFile.Sync()
-		fmt.Println()
+		jsonFilePath = processStdinInput()
 	} else {
-		// Using the target as a JSON file path
-		jsonFilePath = target
-
-		// Check if the target file exists
-		if _, err := os.Stat(jsonFilePath); os.IsNotExist(err) {
-			fmt.Fprintf(os.Stderr, "Error: File '%s' does not exist\n", jsonFilePath)
-			os.Exit(1)
-		}
-
-		// Check if the file contains valid JSON
-		srcFile, err := os.Open(jsonFilePath)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error opening source file: %v\n", err)
-			os.Exit(1)
-		}
-		defer srcFile.Close()
-
-		// Read a small portion of the file to check if it's valid JSON
-		scanner := bufio.NewScanner(srcFile)
-
-		if scanner.Scan() {
-			firstLine := scanner.Text()
-			var ev BenchEvent
-			if err := json.Unmarshal([]byte(firstLine), &ev); err != nil {
-				fmt.Fprintf(os.Stderr, "❌ Error: Input file is not in proper JSON format.\n")
-				os.Exit(1)
-			}
-		}
-
-		srcFile.Seek(0, 0)
-
-		fmt.Printf("📊 Reading benchmark data from file: %s\n", target)
+		jsonFilePath = processJsonFile(target)
 	}
 
-	// Generate the chart using the chart package functionality
+	// Generate the output file with charts or JSON
+	generateOutputFile(jsonFilePath)
+}
 
+func processStdinInput() string {
+	// Create a temporary file for the benchmark data
+	tempFile, err := os.CreateTemp("", "benchmark-*.json")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error creating temporary file: %v\n", err)
+		osExit(1)
+	}
+
+	jsonFilePath := tempFile.Name()
+	defer os.Remove(jsonFilePath) // Clean up the temp file when done
+
+	// Close the temp file first
+	tempFile.Close()
+
+	// Open the JSON file for writing
+	jsonFile, err := os.Create(jsonFilePath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error opening JSON file for writing: %v\n", err)
+		osExit(1)
+	}
+	defer jsonFile.Close()
+
+	// Use bufio to read stdin line by line in real-time
+	reader := bufio.NewReader(os.Stdin)
+	writer := bufio.NewWriter(jsonFile)
+	lineCount := 0
+	benchmarkCount := 0
+	var currentBenchName string
+
+	// Create a progress bar
+	bar := progressbar.NewOptions(-1,
+		progressbar.OptionSetDescription("Processing benchmarks"),
+		progressbar.OptionSetWidth(50),
+		progressbar.OptionSetRenderBlankState(true),
+		progressbar.OptionEnableColorCodes(true),
+		progressbar.OptionOnCompletion(func() { fmt.Println() }),
+	)
+
+	// Process each line as it comes in
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			if err == io.EOF {
+				// End of input
+				break
+			}
+			fmt.Fprintf(os.Stderr, "Error reading from stdin: %v\n", err)
+			osExit(1)
+		}
+
+		// Write the line to the file
+		if _, err := writer.WriteString(line); err != nil {
+			fmt.Fprintf(os.Stderr, "Error writing to file: %v\n", err)
+			osExit(1)
+		}
+
+		var ev shared.BenchEvent
+		if err := json.Unmarshal([]byte(line), &ev); err == nil {
+			// If this is a benchmark test event, update the current benchmark name
+			if ev.Test != "" && strings.HasPrefix(ev.Test, "Benchmark") {
+				currentBenchName = ev.Test
+				// Only count sub-benchmarks (with a slash in the name)
+				if strings.Contains(ev.Test, shared.FlagState.Separator) && strings.Contains(line, "ns/op") {
+					benchmarkCount++
+				}
+			}
+
+			// Update progress bar description with benchmark count and current benchmark name
+			description := fmt.Sprintf("Running Benchmarks [%s] (%d completed)",
+				currentBenchName, benchmarkCount)
+
+			bar.Describe(description)
+		} else {
+			fmt.Fprintf(os.Stderr, "\n❌ Error: Input is not in proper JSON format.\n")
+			osExit(1)
+		}
+
+		// Flush periodically to ensure data is written
+		if lineCount%100 == 0 {
+			writer.Flush()
+		}
+
+		lineCount++
+	}
+
+	// Final flush to ensure all data is written
+	writer.Flush()
+	jsonFile.Sync()
+	fmt.Println()
+
+	return jsonFilePath
+}
+
+func processJsonFile(jsonFilePath string) string {
+	fmt.Printf("📊 Reading benchmark data from file: %s\n", jsonFilePath)
+
+	// Check if the target file exists
+	if _, err := os.Stat(jsonFilePath); os.IsNotExist(err) {
+		fmt.Fprintf(os.Stderr, "Error: File '%s' does not exist\n", jsonFilePath)
+		osExit(1)
+	}
+
+	// Check if the file contains valid JSON
+	srcFile, err := os.Open(jsonFilePath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error opening source file: %v\n", err)
+		osExit(1)
+	}
+	defer srcFile.Close()
+
+	// Read a small portion of the file to check if it's valid JSON
+	scanner := bufio.NewScanner(srcFile)
+
+	if scanner.Scan() {
+		firstLine := scanner.Text()
+		var ev shared.BenchEvent
+		if err := json.Unmarshal([]byte(firstLine), &ev); err != nil {
+			fmt.Fprintf(os.Stderr, "❌ Error: Input file is not in proper JSON format.\n")
+			osExit(1)
+		}
+	}
+
+	srcFile.Seek(0, 0)
+
+	return jsonFilePath
+}
+
+// generateOutputFile handles the parsing of benchmark results, output file creation,
+// and generation of charts or JSON based on the specified format.
+func generateOutputFile(jsonFilePath string) {
+	// Determine output file name
 	outFile := shared.FlagState.OutputFile
 
 	if outFile == "" {
 		tempOutFile, err := os.CreateTemp("", fmt.Sprintf("vizb-*.%s", shared.FlagState.Format))
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error creating temporary output file: %v\n", err)
-			os.Exit(1)
+			osExit(1)
 		}
-		os.Remove(tempOutFile.Name())
+		defer os.Remove(tempOutFile.Name())
 		outFile = tempOutFile.Name()
 
 		tempOutFile.Close() // Close it now, it will be reopened below
@@ -259,30 +273,31 @@ func runBenchmark(cmd *cobra.Command, args []string) {
 		outFile = outFile + fmt.Sprintf(".%s", shared.FlagState.Format)
 	}
 
+	// Parse benchmark results
 	results, err := parser.ParseBenchmarkResults(jsonFilePath)
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "❌ Error parsing benchmark results: %v\n", err)
-		os.Exit(1)
+		osExit(1)
 	}
 
 	if len(results) == 0 {
 		fmt.Fprintf(os.Stderr, "❌ No benchmark results found\n")
-		os.Exit(1)
+		osExit(1)
 	}
 
+	// Create output file
 	f, err := os.Create(outFile)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "❌ Error creating output file: %v\n", err)
-		os.Exit(1)
+		osExit(1)
 	}
 	defer f.Close()
 
-	// Import the chart package from the new location
-
+	// Generate content based on format
 	switch shared.FlagState.Format {
 	case "html":
-		fmt.Println("🔄 Generating chart...")
+		fmt.Println("🔄 Generating Chart...")
 		// Write all charts to HTML file using quicktemplate
 		charts := chart.GenerateHTMLCharts(results)
 		templates.WriteBenchmarkChart(f, charts)
@@ -295,7 +310,7 @@ func runBenchmark(cmd *cobra.Command, args []string) {
 
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "❌ Error marshaling results: %v\n", err)
-			os.Exit(1)
+			osExit(1)
 		}
 
 		f.Write(bytes)
@@ -303,12 +318,12 @@ func runBenchmark(cmd *cobra.Command, args []string) {
 	}
 
 	// Handle different output scenarios
-	if outFile == "" {
+	if shared.FlagState.OutputFile == "" {
 		// We created a temporary file, so read its contents and display them
 		content, err := os.ReadFile(f.Name())
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error reading output file: %v\n", err)
-			os.Exit(1)
+			osExit(1)
 		}
 		fmt.Print("\033[H\033[2J") // ANSI escape sequence to clear screen and move cursor to home position
 		// Print the HTML content to stdout
