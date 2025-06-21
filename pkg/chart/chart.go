@@ -176,31 +176,38 @@ func GenerateHTMLCharts(results []shared.BenchmarkResult) []shared.BenchCharts {
 	benchCharts := make([]shared.BenchCharts, 0, len(benchGroups))
 
 	for name, benchResults := range benchGroups {
-		for _, benchResult := range benchResults {
-			charts := make([]*charts.Bar, 0, len(benchResult.Stats))
+		if len(benchResults) == 0 {
+			continue
+		}
 
-			for idx, stat := range benchResult.Stats {
-				var chartTitle string
+		// Use the structure from the first result as a template
+		firstResult := benchResults[0]
+		charts := make([]*charts.Bar, 0, len(firstResult.Stats))
 
-				if stat.Unit != "" {
-					chartTitle = fmt.Sprintf("%s (%s/op)", stat.Type, stat.Unit)
-				} else {
-					chartTitle = fmt.Sprintf("%s/op", stat.Type)
-				}
-
-				chartBar := createChart(
-					prepareTitle(name, chartTitle),
-					benchResults,
-					idx,
-				)
-				charts = append(charts, chartBar)
+		// Create a chart for each stat type in the original order
+		for idx, stat := range firstResult.Stats {
+			// Determine chart title based on stat type and unit
+			var chartTitle string
+			if stat.Unit != "" {
+				chartTitle = fmt.Sprintf("%s (%s/op)", stat.Type, stat.Unit)
+			} else {
+				chartTitle = fmt.Sprintf("%s/op", stat.Type)
 			}
 
-			benchCharts = append(benchCharts, shared.BenchCharts{
-				Name:   name,
-				Charts: charts,
-			})
+			// Create chart for this stat type
+			chartBar := createChart(
+				prepareTitle(name, chartTitle),
+				benchResults,
+				idx,
+			)
+			charts = append(charts, chartBar)
 		}
+
+		// Create only one BenchCharts entry per name group
+		benchCharts = append(benchCharts, shared.BenchCharts{
+			Name:   name,
+			Charts: charts,
+		})
 	}
 
 	return benchCharts
