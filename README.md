@@ -1,5 +1,6 @@
 # Vizb - Go Benchmark Visualization Tool
 
+[![libs.tech recommends](https://libs.tech/project/1003638795/badge.svg)](https://libs.tech/project/1003638795/vizb)
 [![Go Report Card](https://goreportcard.com/badge/github.com/goptics/vizb)](https://goreportcard.com/report/github.com/goptics/vizb)
 [![CI](https://github.com/goptics/vizb/actions/workflows/ci.yml/badge.svg)](https://github.com/goptics/vizb/actions/workflows/ci.yml)
 [![Codecov](https://codecov.io/gh/goptics/vizb/branch/main/graph/badge.svg)](https://codecov.io/gh/goptics/vizb)
