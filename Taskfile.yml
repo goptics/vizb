@@ -20,7 +20,7 @@ tasks:
   build:
     desc: Build the binary with version information
     cmds:
-      - ./build.sh
+      - go build -o ./bin/vizb
 
   test:
     desc: Run all tests
