@@ -40,16 +40,21 @@ func truncateFloat(f float64) string {
 }
 
 // Group results by task name
-func groupResultsByName(results []shared.BenchmarkResult) map[string][]shared.BenchmarkResult {
+func groupResultsByName(results []shared.BenchmarkResult) (map[string][]shared.BenchmarkResult, []string) {
 	benchGroups := make(map[string][]shared.BenchmarkResult)
+	groupNames := make([]string, 0)
 
 	for _, result := range results {
 		name := result.Name
 
+		if _, has := benchGroups[name]; !has {
+			groupNames = append(groupNames, name)
+		}
+
 		benchGroups[name] = append(benchGroups[name], result)
 	}
 
-	return benchGroups
+	return benchGroups, groupNames
 }
 
 func createChart(title string, results []shared.BenchmarkResult, statIndex int) *charts.Bar {
@@ -162,10 +167,12 @@ func createChart(title string, results []shared.BenchmarkResult, statIndex int) 
 
 func GenerateHTMLCharts(results []shared.BenchmarkResult) []shared.BenchCharts {
 	// Group results by task name
-	benchGroups := groupResultsByName(results)
+	benchGroups, groupNames := groupResultsByName(results)
 	benchCharts := make([]shared.BenchCharts, 0, len(benchGroups))
 
-	for name, benchResults := range benchGroups {
+	for _, name := range groupNames {
+		benchResults := benchGroups[name]
+
 		if len(benchResults) == 0 {
 			continue
 		}

@@ -23,9 +23,9 @@ tasks:
       - go build -o ./bin/vizb
 
   test:
-    desc: Run all tests
+    desc: Run all tests (no cache)
     cmds:
-      - go test -v ./...
+      - go test -count=1 -v ./...
 
   lint:
     desc: Run linter
