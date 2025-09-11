@@ -47,7 +47,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 			timeUnit:  "ns",
 			expected: []shared.BenchmarkResult{
 				{
-					Name:     "BenchmarkSimple",
+					Name:     "",
 					Workload: "",
 					Subject:  "Simple",
 					Stats: []shared.Stat{
@@ -69,7 +69,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 			allocUnit: "K",
 			expected: []shared.BenchmarkResult{
 				{
-					Name:     "BenchmarkWithMem",
+					Name:     "",
 					Workload: "",
 					Subject:  "WithMem",
 					Stats: []shared.Stat{
@@ -168,7 +168,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 					},
 				},
 				{
-					Name:     "BenchmarkSimple",
+					Name:     "",
 					Workload: "",
 					Subject:  "Simple",
 					Stats: []shared.Stat{
@@ -190,7 +190,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 			timeUnit:  "ns",
 			expected: []shared.BenchmarkResult{
 				{
-					Name:     "BenchmarkTest",
+					Name:     "",
 					Workload: "",
 					Subject:  "Test",
 					Stats: []shared.Stat{
