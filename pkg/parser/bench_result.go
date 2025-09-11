@@ -19,11 +19,9 @@ var (
 	benchLineRe = regexp.MustCompile(`Benchmark[^\s]+\s+\d+\s+([\d\.]+)\s+ns/op`)
 )
 
-func parseBenchGroups(parts []string) (benchName, workload, subject string) {
-	benchName = parts[0]
-
+func parseBenchGroupsFromName(name string) (benchName, workload, subject string) {
 	nameParts := strings.Split(
-		strings.TrimPrefix(benchName, "Benchmark"),
+		strings.TrimPrefix(name, "Benchmark"), // remove the prefix Benchmark keyword
 		shared.FlagState.Separator,
 	)
 
@@ -81,7 +79,7 @@ func ParseBenchmarkResults(jsonPath string) (results []shared.BenchmarkResult, e
 			continue
 		}
 
-		benchName, workload, subject := parseBenchGroups(parts)
+		benchName, workload, subject := parseBenchGroupsFromName(parts[0]) // the first item is the name of the benchmark
 
 		// Remove CPU suffix from subject (e.g., "Subject-8" -> "Subject")
 		if idx := strings.LastIndex(subject, "-"); idx > 0 {
