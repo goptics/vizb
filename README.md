@@ -204,7 +204,7 @@ task
 # Generate templates
 task generate
 
-# Build the binary
+# Build the binary (run from ./bin/vizb)
 task build
 
 # Run tests

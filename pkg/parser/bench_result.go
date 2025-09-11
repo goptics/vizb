@@ -19,6 +19,25 @@ var (
 	benchLineRe = regexp.MustCompile(`Benchmark[^\s]+\s+\d+\s+([\d\.]+)\s+ns/op`)
 )
 
+func parseBenchGroups(parts []string) (benchName, workload, subject string) {
+	benchName = parts[0]
+
+	nameParts := strings.Split(
+		strings.TrimPrefix(benchName, "Benchmark"),
+		shared.FlagState.Separator,
+	)
+
+	switch l := len(nameParts); l {
+	case 1:
+		subject = nameParts[0]
+	case 2:
+		benchName, subject = nameParts[0], nameParts[1]
+	default:
+		benchName, workload, subject = nameParts[l-3], nameParts[l-2], nameParts[l-1]
+	}
+	return
+}
+
 func ParseBenchmarkResults(jsonPath string) (results []shared.BenchmarkResult, e error) {
 	f, err := os.Open(jsonPath)
 	if err != nil {
@@ -62,22 +81,7 @@ func ParseBenchmarkResults(jsonPath string) (results []shared.BenchmarkResult, e
 			continue
 		}
 
-		benchName := parts[0]
-
-		nameParts := strings.Split(
-			strings.TrimPrefix(benchName, "Benchmark"),
-			shared.FlagState.Separator,
-		)
-
-		var workload, subject string
-		switch l := len(nameParts); l {
-		case 1:
-			subject = nameParts[0]
-		case 2:
-			benchName, subject = nameParts[0], nameParts[1]
-		default:
-			benchName, workload, subject = nameParts[l-3], nameParts[l-2], nameParts[l-1]
-		}
+		benchName, workload, subject := parseBenchGroups(parts)
 
 		// Remove CPU suffix from subject (e.g., "Subject-8" -> "Subject")
 		if idx := strings.LastIndex(subject, "-"); idx > 0 {

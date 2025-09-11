@@ -207,24 +207,25 @@ func TestGroupResultsByName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := groupResultsByName(tt.results)
-			
+			result, groupNames := groupResultsByName(tt.results)
+
 			// Check map lengths match
 			assert.Equal(t, len(tt.expected), len(result))
-			
+			assert.Equal(t, len(tt.expected), len(groupNames))
+
 			// Check each key and its values
 			for name, expectedResults := range tt.expected {
 				actualResults, ok := result[name]
 				assert.True(t, ok, "Expected key %s not found in result", name)
 				assert.Equal(t, len(expectedResults), len(actualResults))
-				
+
 				// Compare each result in the slice
 				for i, expectedResult := range expectedResults {
 					assert.Equal(t, expectedResult.Name, actualResults[i].Name)
 					assert.Equal(t, expectedResult.Workload, actualResults[i].Workload)
 					assert.Equal(t, expectedResult.Subject, actualResults[i].Subject)
 					assert.Equal(t, len(expectedResult.Stats), len(actualResults[i].Stats))
-					
+
 					for j, expectedStat := range expectedResult.Stats {
 						assert.Equal(t, expectedStat.Type, actualResults[i].Stats[j].Type)
 						assert.Equal(t, expectedStat.Value, actualResults[i].Stats[j].Value)
@@ -338,17 +339,17 @@ func TestCreateChart(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			chart := createChart(tt.title, tt.results, tt.statIndex)
-			
+
 			if tt.expectNil {
 				return
 			}
-			
+
 			// Verify chart was created
 			assert.NotNil(t, chart)
-			
+
 			// Verify chart title
 			assert.Equal(t, tt.title, chart.Title.Title)
-			
+
 			// We can't directly access SeriesList or other internal properties,
 			// but we can verify the chart was created with the correct type
 			assert.IsType(t, &charts.Bar{}, chart)
@@ -358,15 +359,15 @@ func TestCreateChart(t *testing.T) {
 
 func TestGenerateHTMLCharts(t *testing.T) {
 	tests := []struct {
-		name              string
-		results           []shared.BenchmarkResult
+		name               string
+		results            []shared.BenchmarkResult
 		expectedChartCount int
 		expectedChartNames []string
 		expectedStatCounts map[string]int // name -> number of charts per benchmark (should match number of stats types)
 	}{
 		{
-			name:              "Empty results",
-			results:           []shared.BenchmarkResult{},
+			name:               "Empty results",
+			results:            []shared.BenchmarkResult{},
 			expectedChartCount: 0,
 			expectedChartNames: []string{},
 			expectedStatCounts: map[string]int{},
@@ -469,25 +470,25 @@ func TestGenerateHTMLCharts(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			benchCharts := GenerateHTMLCharts(tt.results)
-			
+
 			// Verify number of BenchCharts
 			assert.Equal(t, tt.expectedChartCount, len(benchCharts), "Unexpected number of BenchCharts")
-			
+
 			// Verify chart names
 			actualNames := make([]string, 0, len(benchCharts))
 			for _, bc := range benchCharts {
 				actualNames = append(actualNames, bc.Name)
 			}
-			
+
 			// Sort slices to ensure consistent comparison
 			assert.ElementsMatch(t, tt.expectedChartNames, actualNames, "Chart names don't match")
-			
+
 			// Verify each BenchCharts entry
 			for _, bc := range benchCharts {
 				expectedStatCount, ok := tt.expectedStatCounts[bc.Name]
 				assert.True(t, ok, "Unexpected benchmark name: %s", bc.Name)
 				assert.Equal(t, expectedStatCount, len(bc.Charts), "Wrong number of charts for %s", bc.Name)
-				
+
 				// Verify each chart is a Bar chart
 				for _, chart := range bc.Charts {
 					assert.IsType(t, &charts.Bar{}, chart)
@@ -552,31 +553,31 @@ func TestIntegrationWithParser(t *testing.T) {
 
 		// Generate charts
 		benchCharts := GenerateHTMLCharts(results)
-		
+
 		// Verify charts were generated
 		assert.GreaterOrEqual(t, len(benchCharts), 1, "Should have at least 1 benchmark chart group")
-		
+
 		// Print chart names for debugging
 		for _, bc := range benchCharts {
 			t.Logf("Found chart group: %s with %d charts", bc.Name, len(bc.Charts))
 		}
-		
+
 		// Verify that charts exist for each benchmark output
 		chartNames := make(map[string]bool)
 		for _, bc := range benchCharts {
 			chartNames[bc.Name] = true
 		}
-		
+
 		// We're just checking that we have at least one chart group
 		// and that charts were generated successfully
 		assert.GreaterOrEqual(t, len(chartNames), 1, "Should have at least one chart group")
-		
+
 		// Check that each chart group has the right number of charts based on its stats
 		for _, bc := range benchCharts {
 			// We should at least have a chart for execution time
-			assert.GreaterOrEqual(t, len(bc.Charts), 1, 
+			assert.GreaterOrEqual(t, len(bc.Charts), 1,
 				"Each chart group should have at least 1 chart")
-			
+
 			// Each chart should be a Bar chart
 			for _, chart := range bc.Charts {
 				assert.IsType(t, &charts.Bar{}, chart)
