@@ -1,50 +1,136 @@
 package parser
 
 import (
+	"bufio"
 	"encoding/json"
 	"io"
 	"os"
-	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/goptics/vizb/shared"
 	"github.com/goptics/vizb/shared/utils"
+	"golang.org/x/perf/benchfmt"
 )
 
-var (
-	// Match benchmark output lines with memory stats (when -benchmem is used)
-	benchMemLineRe = regexp.MustCompile(`Benchmark[^\s]+\s+\d+\s+([\d\.]+)\s+ns/op\s+([\d\.]+)\s+B/op\s+([\d\.]+)\s+allocs/op`)
-	// Match benchmark output lines without memory stats
-	benchLineRe = regexp.MustCompile(`Benchmark[^\s]+\s+\d+\s+([\d\.]+)\s+ns/op`)
-)
+func storeCpuCount(cpu string) {
+	if shared.CPUCount == 0 {
+		if cpuCount, err := strconv.Atoi(cpu); err == nil {
+			shared.CPUCount = cpuCount
+		}
+	}
+}
 
-func parseBenchGroupsFromName(name string) (benchName, workload, subject string) {
-	nameParts := strings.Split(
-		strings.TrimPrefix(name, "Benchmark"), // remove the prefix Benchmark keyword
-		shared.FlagState.Separator,
-	)
+func parseBenchmarkName(name benchfmt.Name) (base string, parts []string, cpu string) {
+	b, ps := name.Parts()
+	base = string(b)
 
-	switch l := len(nameParts); l {
+	for _, b := range ps {
+		part := string(b)
+
+		if has := strings.HasPrefix(part, "-"); has {
+			cpu = strings.TrimPrefix(part, "-")
+		} else {
+			parts = append(parts, strings.TrimPrefix(part, "/"))
+		}
+	}
+
+	return
+}
+
+func parseBenchGroupsFromName(base string, parts []string) (benchName, workload, subject string) {
+	switch l := len(parts); l {
+	case 0:
+		subject = base
 	case 1:
-		subject = nameParts[0]
-	case 2:
-		benchName, subject = nameParts[0], nameParts[1]
+		benchName, subject = base, parts[0]
 	default:
-		benchName, workload, subject = nameParts[l-3], nameParts[l-2], nameParts[l-1]
+		benchName, workload, subject = base, parts[l-2], parts[l-1]
 	}
 	return
 }
 
-func ParseBenchmarkResults(jsonPath string) (results []shared.BenchmarkResult, e error) {
-	f, err := os.Open(jsonPath)
+func ParseBenchmarkResults(filePath string) (results []shared.BenchmarkResult, e error) {
+	f, err := os.Open(filePath)
 	if err != nil {
 		e = err
 		return
 	}
 	defer f.Close()
+	reader := benchfmt.NewReader(f, filePath)
+
+	for reader.Scan() {
+		record := reader.Result()
+		result, ok := record.(*benchfmt.Result)
+
+		if !ok {
+			continue
+		}
+
+		base, parts, cpu := parseBenchmarkName(result.Name)
+		benchName, workload, subject := parseBenchGroupsFromName(base, parts)
+		storeCpuCount(cpu)
+
+		var benchStats []shared.Stat
+
+		for _, value := range result.Values {
+			var benchStat shared.Stat
+
+			switch value.Unit {
+			case "sec/op":
+				benchStat = shared.Stat{
+					Type:  "Execution Time",
+					Value: utils.FormatTime(value.OrigValue, shared.FlagState.TimeUnit),
+					Unit:  shared.FlagState.TimeUnit,
+				}
+			case "B/op":
+				shared.HasMemStats = true
+
+				benchStat = shared.Stat{
+					Type:  "Memory Usage",
+					Value: utils.FormatMem(value.Value, shared.FlagState.MemUnit),
+					Unit:  shared.FlagState.MemUnit,
+				}
+			case "allocs/op":
+				benchStat = shared.Stat{
+					Type:  "Allocations",
+					Value: float64(utils.FormatAllocs(uint64(value.Value), shared.FlagState.AllocUnit)),
+					Unit:  shared.FlagState.AllocUnit,
+				}
+			}
+
+			benchStats = append(benchStats, benchStat)
+		}
+
+		results = append(results, shared.BenchmarkResult{
+			Name:     benchName,
+			Workload: workload,
+			Subject:  subject,
+			Stats:    benchStats,
+		})
+	}
+
+	return
+}
+
+func ConvertJsonBenchToText(filePath string) (string, error) {
+	f, err := os.Open(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	// TODO: Create a global temp file creator function
+	tempFile, err := os.CreateTemp("", "vizb-input.txt")
+	if err != nil {
+		return "", err
+	}
+
+	file := tempFile.Name()
+
+	defer tempFile.Close()
 
 	dec := json.NewDecoder(f)
+	writer := bufio.NewWriter(tempFile)
 
 	for {
 		var ev shared.BenchEvent
@@ -52,91 +138,20 @@ func ParseBenchmarkResults(jsonPath string) (results []shared.BenchmarkResult, e
 			if err == io.EOF {
 				break
 			}
-			e = err
-			return
+
+			return "", err
 		}
 
-		// We're looking for output lines that contain benchmark results
-		if ev.Action != "output" || !strings.Contains(ev.Output, "ns/op") {
-			continue
+		if ev.Action == "output" {
+			writer.WriteString(ev.Output)
 		}
-
-		var stats []string
-
-		// First try to match with memory stats
-		if memMatch := benchMemLineRe.FindStringSubmatch(ev.Output); memMatch != nil {
-			stats = memMatch
-			shared.HasMemStats = true
-		} else if basicMatch := benchLineRe.FindStringSubmatch(ev.Output); basicMatch != nil {
-			stats = basicMatch
-		} else {
-			continue
-		}
-		// Extract the benchmark name from the output
-		parts := strings.Fields(ev.Output)
-
-		if len(parts) == 0 {
-			continue
-		}
-
-		benchName, workload, subject := parseBenchGroupsFromName(parts[0]) // the first item is the name of the benchmark
-
-		// Remove CPU suffix from subject (e.g., "Subject-8" -> "Subject")
-		if idx := strings.LastIndex(subject, "-"); idx > 0 {
-			// Check if everything after the dash is a number
-			if cpuCount, err := strconv.Atoi(subject[idx+1:]); err == nil {
-				// Store CPU count in global bench state
-				subject = subject[:idx]
-
-				if shared.CPUCount == 0 {
-					shared.CPUCount = cpuCount
-				}
-			}
-		}
-
-		var benchStats []shared.Stat
-
-		// Parse metrics
-		timePerOp, _ := strconv.ParseFloat(stats[1], 64)
-
-		benchStats = append(benchStats, shared.Stat{
-			Type:  "Execution Time",
-			Value: utils.FormatTime(timePerOp, shared.FlagState.TimeUnit),
-			Unit:  shared.FlagState.TimeUnit,
-		})
-		// Default values for memory stats
-		var memPerOp float64
-		var allocsPerOp uint64
-
-		// If we have memory stats, parse them
-		if shared.HasMemStats && len(stats) >= 4 {
-			memPerOp, _ = strconv.ParseFloat(stats[2], 64)
-			allocsPerOp, _ = strconv.ParseUint(stats[3], 10, 64)
-
-			benchStats = append(
-				benchStats,
-				shared.Stat{
-					Type:  "Memory Usage",
-					Value: utils.FormatMem(memPerOp, shared.FlagState.MemUnit),
-					Unit:  shared.FlagState.MemUnit,
-				},
-				shared.Stat{
-					Type:  "Allocations",
-					Value: float64(utils.FormatAllocs(allocsPerOp, shared.FlagState.AllocUnit)),
-					Unit:  shared.FlagState.AllocUnit,
-				},
-			)
-		}
-
-		benchResult := shared.BenchmarkResult{
-			Name:     benchName,
-			Workload: workload,
-			Subject:  subject,
-			Stats:    benchStats,
-		}
-
-		results = append(results, benchResult)
 	}
 
-	return
+	if err := writer.Flush(); err != nil {
+		return "", err
+	}
+
+	tempFile.Sync()
+
+	return file, nil
 }

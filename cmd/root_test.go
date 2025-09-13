@@ -169,8 +169,8 @@ func TestValidateFlags(t *testing.T) {
 	}
 }
 
-// TestReadTargetedJsonFile tests the JSON file processing functionality
-func TestReadTargetedJsonFile(t *testing.T) {
+// TestcheckTargetFile tests the JSON file processing functionality
+func TestcheckTargetFile(t *testing.T) {
 	// Create a temporary directory for test files
 	tempDir := t.TempDir()
 
@@ -256,10 +256,10 @@ func TestReadTargetedJsonFile(t *testing.T) {
 						assert.True(t, exitCalled, "os.Exit should have been called")
 						assert.Contains(t, buf.String(), tt.expectedError)
 					}()
-					readTargetedJsonFile(tt.inputPath)
+					checkTargetFile(tt.inputPath)
 				}()
 			} else {
-				readTargetedJsonFile(tt.inputPath)
+				checkTargetFile(tt.inputPath)
 
 				// Close write end of pipe
 				w.Close()

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/goptics/vizb/pkg/chart/templates"
 	"github.com/goptics/vizb/pkg/parser"
 	"github.com/goptics/vizb/shared"
+	"github.com/goptics/vizb/shared/utils"
 	"github.com/goptics/vizb/version"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
@@ -49,7 +51,6 @@ func Execute() {
 func init() {
 	rootCmd.Flags().StringVarP(&shared.FlagState.Name, "name", "n", "Benchmarks", "Name of the chart")
 	rootCmd.Flags().StringVarP(&shared.FlagState.Description, "description", "d", "", "Description of the benchmark")
-	rootCmd.Flags().StringVarP(&shared.FlagState.Separator, "separator", "s", "/", "Separator for grouping benchmark names")
 	rootCmd.Flags().StringVarP(&shared.FlagState.OutputFile, "output", "o", "", "Output HTML file name")
 	rootCmd.Flags().StringVarP(&shared.FlagState.Format, "format", "f", "html", "Output format (html, json)")
 	rootCmd.Flags().StringVarP(&shared.FlagState.MemUnit, "mem-unit", "m", "B", "Memory unit available: b, B, KB, MB, GB")
@@ -119,11 +120,11 @@ func runBenchmark(cmd *cobra.Command, args []string) {
 
 	// Process the benchmark data
 	if isStdinPiped {
-		target = createTempFile(tempBenchFilePrefix, "json")
+		target = createTempFile(tempBenchFilePrefix, "out")
 		defer os.Remove(target)
 		writeStdinPipedInputs(target)
 	} else {
-		readTargetedJsonFile(target)
+		checkTargetFile(target)
 	}
 
 	// Generate the output file with charts or JSON
@@ -141,21 +142,18 @@ func createTempFile(prefix, extension string) string {
 	return temp.Name()
 }
 
-func writeStdinPipedInputs(tempJsonPath string) {
+func writeStdinPipedInputs(tempfilePath string) {
 	// Open the JSON file for writing
-	jsonFile, err := os.Create(tempJsonPath)
+	outFile, err := os.Create(tempfilePath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error opening JSON file for writing: %v\n", err)
 		osExit(1)
 	}
-	defer jsonFile.Close()
+	defer outFile.Close()
 
 	// Use bufio to read stdin line by line in real-time
 	reader := bufio.NewReader(os.Stdin)
-	writer := bufio.NewWriter(jsonFile)
-	lineCount := 0
-	benchmarkCount := 0
-	var currentBenchName string
+	writer := bufio.NewWriter(outFile)
 
 	// Create a progress bar
 	bar := progressbar.NewOptions(-1,
@@ -165,6 +163,7 @@ func writeStdinPipedInputs(tempJsonPath string) {
 		progressbar.OptionEnableColorCodes(true),
 		progressbar.OptionOnCompletion(func() { fmt.Println() }),
 	)
+	benchmarkProgressManager := NewBenchmarkProgressManager(bar)
 
 	// Process each line as it comes in
 	for {
@@ -184,67 +183,45 @@ func writeStdinPipedInputs(tempJsonPath string) {
 			osExit(1)
 		}
 
-		var ev shared.BenchEvent
-		if err := json.Unmarshal([]byte(line), &ev); err == nil {
-			// If this is a benchmark test event, update the current benchmark name
-			if ev.Test != "" && strings.HasPrefix(ev.Test, "Benchmark") {
-				currentBenchName = ev.Test
-				// Only count sub-benchmarks (with a slash in the name)
-				if strings.Contains(ev.Test, shared.FlagState.Separator) && strings.Contains(line, "ns/op") {
-					benchmarkCount++
-				}
-			}
-
-			// Update progress bar description with benchmark count and current benchmark name
-			description := fmt.Sprintf("Running Benchmarks [%s] (%d completed)",
-				currentBenchName, benchmarkCount)
-
-			bar.Describe(description)
-		} else {
-			fmt.Fprintf(os.Stderr, "\n❌ Error: Input is not in proper JSON format.\n")
-			osExit(1)
-		}
-
-		// Flush periodically to ensure data is written
-		if lineCount%100 == 0 {
-			writer.Flush()
-		}
-
-		lineCount++
+		benchmarkProgressManager.ProcessLine(line)
 	}
 
-	// Final flush to ensure all data is written
 	writer.Flush()
-	jsonFile.Sync()
+	outFile.Sync()
 	fmt.Println()
 }
 
-func readTargetedJsonFile(jsonPath string) {
+func checkTargetFile(filePath string) {
 	// Check if the target file exists
-	if _, err := os.Stat(jsonPath); os.IsNotExist(err) {
-		fmt.Fprintf(os.Stderr, "Error: File '%s' does not exist\n", jsonPath)
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		fmt.Fprintf(os.Stderr, "Error: File '%s' does not exist\n", filePath)
 		osExit(1)
 	}
 
 	// Check if the file contains valid JSON
-	srcFile, err := os.Open(jsonPath)
+	srcFile, err := os.Open(filePath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error opening source file: %v\n", err)
 		osExit(1)
 	}
 	defer srcFile.Close()
 
-	fmt.Printf("📊 Reading benchmark data from file: %s\n", jsonPath)
+	fmt.Printf("📊 Reading benchmark data from file: %s\n", filePath)
 
+	ext := filepath.Ext(filePath)
 	// Read a small portion of the file to check if it's valid JSON
 	scanner := bufio.NewScanner(srcFile)
 
 	if scanner.Scan() {
 		firstLine := scanner.Text()
-		var ev shared.BenchEvent
-		if err := json.Unmarshal([]byte(firstLine), &ev); err != nil {
-			fmt.Fprintf(os.Stderr, "❌ Error: Input file is not in proper JSON format.\n")
-			osExit(1)
+
+		switch ext {
+		case "json":
+			var ev shared.BenchEvent
+			if err := json.Unmarshal([]byte(firstLine), &ev); err != nil {
+				fmt.Fprintf(os.Stderr, "❌ Error: Input file is not in proper JSON format.\n")
+				osExit(1)
+			}
 		}
 	}
 
@@ -253,7 +230,7 @@ func readTargetedJsonFile(jsonPath string) {
 
 // generateOutputFile handles the parsing of benchmark results, output file creation,
 // and generation of charts or JSON based on the specified format.
-func generateOutputFile(jsonPath string) {
+func generateOutputFile(filePath string) {
 	// Determine output file name
 	outFile := shared.FlagState.OutputFile
 
@@ -271,8 +248,21 @@ func generateOutputFile(jsonPath string) {
 		outFile = outFile + fmt.Sprintf(".%s", shared.FlagState.Format)
 	}
 
+	// if a json file is provided then covert it to a new text file
+	if utils.IsBenchJSONFile(filePath) {
+		newBenchTxtPath, err := parser.ConvertJsonBenchToText(filePath)
+		defer os.Remove(newBenchTxtPath)
+
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "❌ Error parsing json to txt: %v\n", err)
+			osExit(1)
+		}
+
+		filePath = newBenchTxtPath
+	}
+
 	// Parse benchmark results
-	results, err := parser.ParseBenchmarkResults(jsonPath)
+	results, err := parser.ParseBenchmarkResults(filePath)
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "❌ Error parsing benchmark results: %v\n", err)

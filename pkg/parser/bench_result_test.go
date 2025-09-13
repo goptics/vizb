@@ -1,7 +1,8 @@
 package parser
 
 import (
-	"encoding/json"
+	"bufio"
+	"log"
 	"os"
 	"path/filepath"
 	"testing"
@@ -9,39 +10,38 @@ import (
 	"github.com/goptics/vizb/shared"
 )
 
+type testBlock struct {
+	name           string
+	benchContent   []string // List of events to encode as JSON
+	separator      string
+	timeUnit       string
+	memUnit        string
+	allocUnit      string
+	expected       []shared.BenchmarkResult
+	expectMemStats bool
+	expectCPUCount int
+}
+
 func TestParseBenchmarkResults(t *testing.T) {
 	// Save original flag state to restore after tests
 	origTimeUnit := shared.FlagState.TimeUnit
 	origMemUnit := shared.FlagState.MemUnit
 	origAllocUnit := shared.FlagState.AllocUnit
-	origSeparator := shared.FlagState.Separator
 
 	// Restore flag state after tests
 	defer func() {
 		shared.FlagState.TimeUnit = origTimeUnit
 		shared.FlagState.MemUnit = origMemUnit
 		shared.FlagState.AllocUnit = origAllocUnit
-		shared.FlagState.Separator = origSeparator
 		shared.HasMemStats = false
 		shared.CPUCount = 0
 	}()
 
-	tests := []struct {
-		name           string
-		jsonContent    []shared.BenchEvent // List of events to encode as JSON
-		separator      string
-		timeUnit       string
-		memUnit        string
-		allocUnit      string
-		expected       []shared.BenchmarkResult
-		expectError    bool
-		expectMemStats bool
-		expectCPUCount int
-	}{
+	tests := []testBlock{
 		{
 			name: "Basic benchmark without memory stats",
-			jsonContent: []shared.BenchEvent{
-				{Action: "output", Output: "BenchmarkSimple 100 123.45 ns/op"},
+			benchContent: []string{
+				"BenchmarkSimple 100 123.45 ns/op",
 			},
 			separator: "/",
 			timeUnit:  "ns",
@@ -60,8 +60,8 @@ func TestParseBenchmarkResults(t *testing.T) {
 		},
 		{
 			name: "Benchmark with memory stats",
-			jsonContent: []shared.BenchEvent{
-				{Action: "output", Output: "BenchmarkWithMem 100 123.45 ns/op 64.0 B/op 2 allocs/op"},
+			benchContent: []string{
+				"BenchmarkWithMem 100 123.45 ns/op 64.0 B/op 2 allocs/op",
 			},
 			separator: "/",
 			timeUnit:  "ms",
@@ -84,10 +84,10 @@ func TestParseBenchmarkResults(t *testing.T) {
 		},
 		{
 			name: "Multiple benchmarks with different formats",
-			jsonContent: []shared.BenchEvent{
-				{Action: "output", Output: "BenchmarkGroup/Task/SubjectA 100 123.45 ns/op 64.0 B/op 2 allocs/op"},
-				{Action: "output", Output: "BenchmarkGroup/Task/SubjectB 100 234.56 ns/op 128.0 B/op 4 allocs/op"},
-				{Action: "output", Output: "BenchmarkOther/Simple 100 345.67 ns/op"},
+			benchContent: []string{
+				"BenchmarkGroup/Task/SubjectA 100 123.45 ns/op 64.0 B/op 2 allocs/op",
+				"BenchmarkGroup/Task/SubjectB 100 234.56 ns/op 128.0 B/op 4 allocs/op",
+				"BenchmarkOther/Simple 100 345.67 ns/op",
 			},
 			separator: "/",
 			timeUnit:  "ns",
@@ -128,8 +128,8 @@ func TestParseBenchmarkResults(t *testing.T) {
 		},
 		{
 			name: "Benchmark with CPU count in subject",
-			jsonContent: []shared.BenchEvent{
-				{Action: "output", Output: "BenchmarkParallel/SubjectA-8 100 123.45 ns/op"},
+			benchContent: []string{
+				"BenchmarkParallel/SubjectA-8 100 123.45 ns/op",
 			},
 			separator: "/",
 			timeUnit:  "ns",
@@ -148,9 +148,9 @@ func TestParseBenchmarkResults(t *testing.T) {
 		},
 		{
 			name: "Mixed benchmark formats with custom separator",
-			jsonContent: []shared.BenchEvent{
-				{Action: "output", Output: "BenchmarkGroup_Task_SubjectA 100 123.45 ns/op 64.0 B/op 2 allocs/op"},
-				{Action: "output", Output: "BenchmarkSimple 100 234.56 ns/op"},
+			benchContent: []string{
+				"BenchmarkGroup/Task/SubjectA 100 123.45 ns/op 64.0 B/op 2 allocs/op",
+				"BenchmarkSimple 100 234.56 ns/op",
 			},
 			separator: "_",
 			timeUnit:  "us",
@@ -181,10 +181,10 @@ func TestParseBenchmarkResults(t *testing.T) {
 		},
 		{
 			name: "Non-benchmark output should be ignored",
-			jsonContent: []shared.BenchEvent{
-				{Action: "output", Output: "PASS"},
-				{Action: "output", Output: "ok  \tgithub.com/example/pkg\t0.412s"},
-				{Action: "output", Output: "BenchmarkTest 100 123.45 ns/op"},
+			benchContent: []string{
+				"PASS",
+				"ok  \tgithub.com/example/pkg\t0.412s",
+				"BenchmarkTest 100 123.45 ns/op",
 			},
 			separator: "/",
 			timeUnit:  "ns",
@@ -202,24 +202,17 @@ func TestParseBenchmarkResults(t *testing.T) {
 			expectCPUCount: 0,
 		},
 		{
-			name:        "Empty file",
-			jsonContent: []shared.BenchEvent{},
-			separator:   "/",
-			timeUnit:    "ns",
-			expected:    []shared.BenchmarkResult{},
-			expectError: false,
-		},
-		{
-			name: "Invalid JSON should cause error",
-			// We'll create an invalid JSON file in the test
-			expectError: true,
+			name:         "Empty file",
+			benchContent: []string{},
+			separator:    "/",
+			timeUnit:     "ns",
+			expected:     []shared.BenchmarkResult{},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Set up flag state for this test
-			shared.FlagState.Separator = tt.separator
 			shared.FlagState.TimeUnit = tt.timeUnit
 			shared.FlagState.MemUnit = tt.memUnit
 			shared.FlagState.AllocUnit = tt.allocUnit
@@ -228,39 +221,27 @@ func TestParseBenchmarkResults(t *testing.T) {
 
 			// Create a temporary JSON file
 			tempDir := t.TempDir()
-			jsonPath := filepath.Join(tempDir, "bench.json")
+			filePath := filepath.Join(tempDir, "bench.txt")
 
-			// Special case for invalid JSON test
-			if tt.name == "Invalid JSON should cause error" {
-				err := os.WriteFile(jsonPath, []byte("invalid json"), 0644)
-				if err != nil {
-					t.Fatalf("Failed to write test file: %v", err)
-				}
-			} else {
-				// Create JSON file with test content
-				file, err := os.Create(jsonPath)
-				if err != nil {
-					t.Fatalf("Failed to create test file: %v", err)
-				}
-
-				enc := json.NewEncoder(file)
-				for _, event := range tt.jsonContent {
-					if err := enc.Encode(event); err != nil {
-						file.Close()
-						t.Fatalf("Failed to encode test data: %v", err)
-					}
-				}
-				file.Close()
+			// Create JSON file with test content
+			file, err := os.Create(filePath)
+			if err != nil {
+				t.Fatalf("Failed to create test file: %v", err)
 			}
+
+			writer := bufio.NewWriter(file)
+			for _, event := range tt.benchContent {
+				writer.WriteString(event + "\n")
+			}
+
+			if err := writer.Flush(); err != nil {
+				log.Fatal(err)
+			}
+
+			file.Close()
 
 			// Call the function under test
-			results, err := ParseBenchmarkResults(jsonPath)
-
-			// Check error expectation
-			if (err != nil) != tt.expectError {
-				t.Errorf("ParseBenchmarkResults() error = %v, expectError %v", err, tt.expectError)
-				return
-			}
+			results, err := ParseBenchmarkResults(filePath)
 
 			if err != nil {
 				return // If we expected an error, no need to check results
