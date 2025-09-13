@@ -169,8 +169,8 @@ func TestValidateFlags(t *testing.T) {
 	}
 }
 
-// TestcheckTargetFile tests the JSON file processing functionality
-func TestcheckTargetFile(t *testing.T) {
+// TestCheckTargetFile tests the JSON file processing functionality
+func TestCheckTargetFile(t *testing.T) {
 	// Create a temporary directory for test files
 	tempDir := t.TempDir()
 

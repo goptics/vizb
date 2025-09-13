@@ -58,9 +58,9 @@ func TestFormatMem(t *testing.T) {
 func TestFormatAllocs(t *testing.T) {
 	tests := []struct {
 		name     string
-		input    uint64
+		input    float64
 		unit     string
-		expected uint64
+		expected float64
 	}{
 		{"Zero Input", 0, "", 0},
 		{"Default Unit", 1000, "", 1000},
@@ -109,8 +109,8 @@ func TestFormatterEdgeCases(t *testing.T) {
 
 	t.Run("FormatAllocs Edge Cases", func(t *testing.T) {
 		// Test with maximum uint64 value
-		maxUint64 := uint64(18446744073709551615)
-		assert.Equal(t, maxUint64, FormatAllocs(maxUint64, ""), "Should handle max uint64 value")
+		maxfloat64 := float64(18446744073709551615)
+		assert.Equal(t, maxfloat64, FormatAllocs(maxfloat64, ""), "Should handle max uint64 value")
 
 		// Test with small values that get truncated to zero
 		assert.Equal(t, uint64(0), FormatAllocs(999, "K"), "Should truncate values less than unit")

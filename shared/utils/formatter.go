@@ -40,7 +40,7 @@ func FormatMem(n float64, unit string) (mem float64) {
 	return
 }
 
-func FormatAllocs(n uint64, unit string) (allocs uint64) {
+func FormatAllocs(n float64, unit string) (allocs float64) {
 	if n == 0 {
 		return
 	}

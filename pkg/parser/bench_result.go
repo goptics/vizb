@@ -94,7 +94,7 @@ func ParseBenchmarkResults(filePath string) (results []shared.BenchmarkResult, e
 			case "allocs/op":
 				benchStat = shared.Stat{
 					Type:  "Allocations",
-					Value: float64(utils.FormatAllocs(uint64(value.Value), shared.FlagState.AllocUnit)),
+					Value: utils.FormatAllocs(value.Value, shared.FlagState.AllocUnit),
 					Unit:  shared.FlagState.AllocUnit,
 				}
 			}
