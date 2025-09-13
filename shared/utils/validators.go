@@ -21,6 +21,10 @@ type ValidationRule struct {
 
 func ApplyValidationRules(rules []ValidationRule) {
 	for _, rule := range rules {
+		// skip validation if default and rule value are both empty
+		if rule.Default == "" && *rule.Value == "" {
+			continue
+		}
 		// Normalize if needed
 		if rule.Normalizer != nil {
 			*rule.Value = rule.Normalizer(*rule.Value)
@@ -30,7 +34,7 @@ func ApplyValidationRules(rules []ValidationRule) {
 		if !slices.Contains(rule.ValidSet, *rule.Value) {
 			fmt.Fprintf(
 				os.Stderr,
-				"Warning: Invalid %s '%s'. Using default '%s'\n",
+				"⚠️  Warning: Invalid %s '%s'. Using default '%s'\n",
 				rule.Label,
 				*rule.Value,
 				rule.Default,
