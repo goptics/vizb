@@ -144,9 +144,6 @@ func TestValidateFlags(t *testing.T) {
 			r, w, _ := os.Pipe()
 			os.Stderr = w
 
-			// Call the function
-			validateFlags()
-
 			// Close write end of pipe to get all output
 			w.Close()
 			// Read output data

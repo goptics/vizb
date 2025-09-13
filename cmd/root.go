@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 
 	"github.com/goptics/vizb/pkg/chart"
@@ -58,45 +57,9 @@ func init() {
 	rootCmd.Flags().StringVarP(&shared.FlagState.AllocUnit, "alloc-unit", "a", "", "Allocation unit available: K, M, B, T (default: as-is)")
 
 	// Add a hook to validate flags after parsing
-	cobra.OnInitialize(validateFlags)
-}
-
-// validateFlags validates the flag values and sets defaults for invalid values
-func validateFlags() {
-	// Validate memory unit
-	validMemUnits := []string{"b", "B", "kb", "mb", "gb"}
-
-	if !slices.Contains(validMemUnits, strings.ToLower(shared.FlagState.MemUnit)) {
-		fmt.Fprintf(os.Stderr, "Warning: Invalid memory unit '%s'. Using default 'B'\n", shared.FlagState.MemUnit)
-		shared.FlagState.MemUnit = "B"
-	}
-
-	// Validate time unit
-	validTimeUnits := map[string]bool{"ns": true, "us": true, "ms": true, "s": true}
-	if _, valid := validTimeUnits[shared.FlagState.TimeUnit]; !valid {
-		fmt.Fprintf(os.Stderr, "Warning: Invalid time unit '%s'. Using default 'ns'\n", shared.FlagState.TimeUnit)
-		shared.FlagState.TimeUnit = "ns"
-	}
-
-	// Validate allocation unit
-	if shared.FlagState.AllocUnit != "" {
-		shared.FlagState.AllocUnit = strings.ToUpper(shared.FlagState.AllocUnit)
-
-		validAllocUnits := []string{"K", "M", "B", "T"}
-		if !slices.Contains(validAllocUnits, shared.FlagState.AllocUnit) {
-			fmt.Fprintf(os.Stderr, "Warning: Invalid allocation unit '%s'. Using default (as-is)\n", shared.FlagState.AllocUnit)
-			shared.FlagState.AllocUnit = ""
-		}
-	}
-
-	// Validate format
-	validFormats := []string{"html", "json"}
-	shared.FlagState.Format = strings.ToLower(shared.FlagState.Format)
-
-	if !slices.Contains(validFormats, shared.FlagState.Format) {
-		fmt.Fprintf(os.Stderr, "Warning: Invalid format '%s'. Using default 'html'\n", shared.FlagState.Format)
-		shared.FlagState.Format = "html"
-	}
+	cobra.OnInitialize(func() {
+		utils.ApplyValidationRules(flagValidationRules)
+	})
 }
 
 func runBenchmark(cmd *cobra.Command, args []string) {
@@ -155,15 +118,16 @@ func writeStdinPipedInputs(tempfilePath string) {
 	reader := bufio.NewReader(os.Stdin)
 	writer := bufio.NewWriter(outFile)
 
-	// Create a progress bar
-	bar := progressbar.NewOptions(-1,
-		progressbar.OptionSetDescription("Processing benchmarks"),
-		progressbar.OptionSetWidth(50),
-		progressbar.OptionSetRenderBlankState(true),
-		progressbar.OptionEnableColorCodes(true),
-		progressbar.OptionOnCompletion(func() { fmt.Println() }),
+	// Create a progress bar manager
+	benchmarkProgressManager := NewBenchmarkProgressManager(
+		progressbar.NewOptions(-1,
+			progressbar.OptionSetDescription("Processing benchmarks"),
+			progressbar.OptionSetWidth(50),
+			progressbar.OptionSetRenderBlankState(true),
+			progressbar.OptionEnableColorCodes(true),
+			progressbar.OptionOnCompletion(func() { fmt.Println() }),
+		),
 	)
-	benchmarkProgressManager := NewBenchmarkProgressManager(bar)
 
 	// Process each line as it comes in
 	for {
@@ -285,14 +249,13 @@ func generateOutputFile(filePath string) {
 	// Generate content based on format
 	switch shared.FlagState.Format {
 	case "html":
-		fmt.Println("🔄 Generating Chart...")
+		fmt.Fprintf(os.Stdout, "🔄 Generating Chart...\n")
 		// Write all charts to HTML file using quicktemplate
-		charts := chart.GenerateHTMLCharts(results)
-		templates.WriteBenchmarkChart(f, charts)
-		fmt.Printf("🎉 Generated HTML chart successfully!\n")
+		templates.WriteBenchmarkChart(f, chart.GenerateHTMLCharts(results))
+		fmt.Fprintf(os.Stdout, "🎉 Generated HTML chart successfully!\n")
 
 	case "json":
-		fmt.Println("🔄 Generating JSON...")
+		fmt.Fprintf(os.Stdout, "🔄 Generating JSON...\n")
 		// Write all charts to JSON file
 		bytes, err := json.Marshal(results)
 
@@ -302,7 +265,7 @@ func generateOutputFile(filePath string) {
 		}
 
 		f.Write(bytes)
-		fmt.Printf("🎉 Generated JSON successfully!\n")
+		fmt.Fprintf(os.Stdout, "🎉 Generated JSON successfully!\n")
 	}
 
 	// Handle different output scenarios
