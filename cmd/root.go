@@ -13,6 +13,7 @@ import (
 	"github.com/goptics/vizb/pkg/chart/templates"
 	"github.com/goptics/vizb/pkg/parser"
 	"github.com/goptics/vizb/shared"
+	"github.com/goptics/vizb/version"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 )
@@ -31,7 +32,7 @@ var rootCmd = &cobra.Command{
 	Long: `A CLI tool that extends the functionality of 'go test -bench' with chart generation.
 It runs the benchmark command internally, captures the JSON output, and generates
 an interactive HTML chart based on the results.`,
-	Version: "v0.3.0",
+	Version: version.Version,
 	Args:    cobra.ArbitraryArgs,
 	Run:     runBenchmark,
 }
