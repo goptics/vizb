@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"encoding/json"
 	"io"
-	"os"
 	"strconv"
 	"strings"
 
@@ -50,13 +49,10 @@ func parseBenchGroupsFromName(base string, parts []string) (benchName, workload,
 	return
 }
 
-func ParseBenchmarkResults(filePath string) (results []shared.BenchmarkResult, e error) {
-	f, err := os.Open(filePath)
-	if err != nil {
-		e = err
-		return
-	}
+func ParseBenchmarkResults(filePath string) (results []shared.BenchmarkResult) {
+	f := shared.MustOpenFile(filePath)
 	defer f.Close()
+
 	reader := benchfmt.NewReader(f, filePath)
 
 	for reader.Scan() {
@@ -113,20 +109,11 @@ func ParseBenchmarkResults(filePath string) (results []shared.BenchmarkResult, e
 	return
 }
 
-func ConvertJsonBenchToText(filePath string) (string, error) {
-	f, err := os.Open(filePath)
-	if err != nil {
-		return "", err
-	}
+func ConvertJsonBenchToText(filePath string) string {
+	f := shared.MustOpenFile(filePath)
+	tempFilePath := shared.MustCreateTempFile("vizb-input", "txt")
+	tempFile := shared.MustOpenFile(tempFilePath)
 	defer f.Close()
-	// TODO: Create a global temp file creator function
-	tempFile, err := os.CreateTemp("", "vizb-input.txt")
-	if err != nil {
-		return "", err
-	}
-
-	file := tempFile.Name()
-
 	defer tempFile.Close()
 
 	dec := json.NewDecoder(f)
@@ -139,7 +126,7 @@ func ConvertJsonBenchToText(filePath string) (string, error) {
 				break
 			}
 
-			return "", err
+			shared.ExitWithError("Error on converting json to text", err)
 		}
 
 		if ev.Action == "output" {
@@ -148,10 +135,10 @@ func ConvertJsonBenchToText(filePath string) (string, error) {
 	}
 
 	if err := writer.Flush(); err != nil {
-		return "", err
+		shared.ExitWithError("Error on converting json to text", err)
 	}
 
 	tempFile.Sync()
 
-	return file, nil
+	return tempFilePath
 }

@@ -545,8 +545,7 @@ func TestIntegrationWithParser(t *testing.T) {
 		shared.FlagState.AllocUnit = ""
 
 		// Parse the results
-		results, err := parser.ParseBenchmarkResults(filePath)
-		require.NoError(t, err)
+		results := parser.ParseBenchmarkResults(filePath)
 		assert.Len(t, results, 3)
 
 		// Generate charts
