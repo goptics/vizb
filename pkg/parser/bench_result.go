@@ -112,7 +112,9 @@ func ParseBenchmarkResults(filePath string) (results []shared.BenchmarkResult) {
 func ConvertJsonBenchToText(filePath string) string {
 	f := shared.MustOpenFile(filePath)
 	tempFilePath := shared.MustCreateTempFile("vizb-input", "txt")
-	tempFile := shared.MustOpenFile(tempFilePath)
+	tempFile := shared.MustCreateFile(tempFilePath)
+	shared.TempFiles.Store(tempFilePath)
+
 	defer f.Close()
 	defer tempFile.Close()
 
