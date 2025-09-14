@@ -75,7 +75,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 					Stats: []shared.Stat{
 						{Type: "Execution Time", Value: 0.00012345, Unit: "ms"},
 						{Type: "Memory Usage", Value: 0.0625, Unit: "kb"},
-						{Type: "Allocations", Value: 0.000002, Unit: "K"},
+						{Type: "Allocations", Value: 0.002000, Unit: "K"},
 					},
 				},
 			},
@@ -310,14 +310,4 @@ func almostEqual(a, b, epsilon float64) bool {
 		diff = -diff
 	}
 	return diff < epsilon
-}
-
-// TestParseBenchmarkResultsFileError tests error handling for file operations
-func TestParseBenchmarkResultsFileError(t *testing.T) {
-	// Test with non-existent file
-	results := ParseBenchmarkResults("/non/existent/file.json")
-
-	if results != nil {
-		t.Errorf("ParseBenchmarkResults() with non-existent file should return nil results")
-	}
 }

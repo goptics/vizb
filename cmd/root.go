@@ -88,7 +88,7 @@ func runBenchmark(cmd *cobra.Command, args []string) {
 }
 
 func writeStdinPipedInputs(tempfilePath string) {
-	inputTempFile := shared.MustOpenFile(tempfilePath)
+	inputTempFile := shared.MustCreateFile(tempfilePath)
 	defer inputTempFile.Close()
 
 	// Use bufio to read stdin line by line in real-time
@@ -149,7 +149,7 @@ func checkTargetFile(filePath string) {
 		firstLine := scanner.Text()
 
 		switch ext {
-		case "json":
+		case ".json":
 			var ev shared.BenchEvent
 			if err := json.Unmarshal([]byte(firstLine), &ev); err != nil {
 				shared.ExitWithError("Input file is not in proper JSON format.", err)

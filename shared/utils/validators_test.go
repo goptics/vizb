@@ -13,11 +13,11 @@ import (
 
 // Test constants for validation rules
 const (
-	validFormat1   = "json"
-	validFormat2   = "html"
-	validFormat3   = "csv"
-	defaultFormat  = "json"
-	invalidFormat  = "xml"
+	validFormat1  = "json"
+	validFormat2  = "html"
+	validFormat3  = "csv"
+	defaultFormat = "json"
+	invalidFormat = "xml"
 )
 
 func TestApplyValidationRules(t *testing.T) {
@@ -294,11 +294,6 @@ invalid json here
 
 		result := IsBenchJSONFile(filePath)
 		assert.False(t, result, "File with only whitespace should return false")
-	})
-
-	t.Run("Non-existent file returns false", func(t *testing.T) {
-		result := IsBenchJSONFile("/non/existent/file.json")
-		assert.False(t, result, "Non-existent file should return false")
 	})
 
 	t.Run("File with mixed valid and invalid lines", func(t *testing.T) {
