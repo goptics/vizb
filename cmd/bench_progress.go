@@ -13,20 +13,19 @@ func hasBenchmark(line string) bool {
 }
 
 type BenchmarkLine interface {
-	ExtractName() string
+	ExtractName(string) string
 }
 
 // Base implementation for raw benchmarks
 type RawBenchmark struct {
-	line string
 }
 
-func (r *RawBenchmark) ExtractName() string {
-	if hasBenchmark(r.line) {
+func (r *RawBenchmark) ExtractName(line string) string {
+	if !hasBenchmark(line) {
 		return ""
 	}
 
-	fields := strings.Fields(r.line)
+	fields := strings.Fields(line)
 
 	if len(fields) == 0 {
 		return ""
@@ -47,7 +46,7 @@ type JSONBenchmark struct {
 	Event *shared.BenchEvent
 }
 
-func (j *JSONBenchmark) ExtractName() string {
+func (j *JSONBenchmark) ExtractName(_ string) string {
 	if j.Event != nil && j.Event.Test != "" && strings.HasPrefix(j.Event.Test, "Benchmark") {
 		return j.Event.Test
 	}
@@ -88,14 +87,14 @@ func (m *BenchmarkProgressManager) ProcessLine(line string) {
 	if err := json.Unmarshal([]byte(line), &ev); err == nil {
 		parser = &JSONBenchmark{Event: &ev}
 	} else {
-		parser = &RawBenchmark{line: line}
+		parser = &RawBenchmark{}
 	}
 
 	if hasBenchmark(line) {
 		m.benchmarkCount++
 	}
 
-	if name := parser.ExtractName(); name != "" {
+	if name := parser.ExtractName(line); name != "" {
 		m.currentBenchName = name
 		m.updateProgress()
 	}

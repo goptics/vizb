@@ -242,25 +242,6 @@ func TestFormatterConcurrency(t *testing.T) {
 	})
 }
 
-// Benchmark tests for performance validation
-func BenchmarkFormatTime(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		FormatTime(float64(i)*nanoToSecond, "s")
-	}
-}
-
-func BenchmarkFormatMem(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		FormatMem(float64(i)*byteToMb, "mb")
-	}
-}
-
-func BenchmarkFormatAllocs(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		FormatAllocs(float64(i)*allocToM, "M")
-	}
-}
-
 // Test comprehensive input validation
 func TestInputValidation(t *testing.T) {
 	t.Run("All Units Coverage", func(t *testing.T) {

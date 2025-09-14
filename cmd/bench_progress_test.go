@@ -94,8 +94,8 @@ func TestRawBenchmarkExtractName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			raw := &RawBenchmark{line: tt.line}
-			result := raw.ExtractName()
+			raw := &RawBenchmark{}
+			result := raw.ExtractName(tt.line)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
@@ -157,7 +157,7 @@ func TestJSONBenchmarkExtractName(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			jsonBench := &JSONBenchmark{Event: tt.event}
-			result := jsonBench.ExtractName()
+			result := jsonBench.ExtractName("")
 			assert.Equal(t, tt.expected, result)
 		})
 	}
@@ -198,14 +198,14 @@ func TestBenchmarkProgressManager(t *testing.T) {
 		manager.ProcessLine(jsonLine)
 
 		assert.Equal(t, "BenchmarkMemoryAlloc", manager.currentBenchName)
-		assert.Equal(t, 0, manager.benchmarkCount) // No ns/op yet
+		assert.Equal(t, 0, manager.benchmarkCount)     // No ns/op yet
 		assert.True(t, len(mockBar.descriptions) >= 1) // Should have at least one update
 
 		// Test JSON line with benchmark result
 		resultLine := `{"Action":"pass","Test":"BenchmarkMemoryAlloc","Output":"1000 ns/op"}`
 		manager.ProcessLine(resultLine)
 
-		assert.Equal(t, 1, manager.benchmarkCount) // Should increment
+		assert.Equal(t, 1, manager.benchmarkCount)     // Should increment
 		assert.True(t, len(mockBar.descriptions) >= 1) // Should have progress updates
 	})
 
@@ -226,7 +226,7 @@ func TestBenchmarkProgressManager(t *testing.T) {
 		manager.ProcessLine(resultLine)
 
 		assert.Equal(t, 1, manager.benchmarkCount) // Should increment
-		assert.Len(t, mockBar.descriptions, 1) // No new progress update
+		assert.Len(t, mockBar.descriptions, 1)     // No new progress update
 	})
 
 	t.Run("ProcessLine with mixed content", func(t *testing.T) {
@@ -362,41 +362,4 @@ func TestBenchmarkProgressIntegration(t *testing.T) {
 		assert.Equal(t, "BenchmarkExample", manager.currentBenchName)
 		assert.True(t, manager.benchmarkCount >= 1, "Should have found benchmark results")
 	})
-}
-
-// Benchmark tests for performance validation
-func BenchmarkHasBenchmark(b *testing.B) {
-	line := "BenchmarkExample-8    1000000    1234 ns/op"
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		hasBenchmark(line)
-	}
-}
-
-func BenchmarkRawBenchmarkExtractName(b *testing.B) {
-	raw := &RawBenchmark{line: "=== RUN   BenchmarkStringConcat-8"}
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		raw.ExtractName()
-	}
-}
-
-func BenchmarkJSONBenchmarkExtractName(b *testing.B) {
-	event := &shared.BenchEvent{Action: "run", Test: "BenchmarkExample"}
-	jsonBench := &JSONBenchmark{Event: event}
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		jsonBench.ExtractName()
-	}
-}
-
-func BenchmarkProcessLine(b *testing.B) {
-	mockBar := &MockProgressBar{}
-	manager := NewBenchmarkProgressManager(mockBar)
-	line := "BenchmarkExample-8    1000000    1234 ns/op"
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		manager.ProcessLine(line)
-	}
 }
