@@ -8,20 +8,25 @@ import (
 	"github.com/goptics/vizb/shared"
 )
 
+func hasBenchmark(line string) bool {
+	return strings.Contains(line, "ns/op")
+}
+
 type BenchmarkLine interface {
-	ExtractName(line string) string
-	HasBenchmark(line string) bool
+	ExtractName() string
 }
 
 // Base implementation for raw benchmarks
-type RawBenchmark struct{}
+type RawBenchmark struct {
+	line string
+}
 
-func (r *RawBenchmark) ExtractName(line string) string {
-	if !r.HasBenchmark(line) {
+func (r *RawBenchmark) ExtractName() string {
+	if hasBenchmark(r.line) {
 		return ""
 	}
 
-	fields := strings.Fields(line)
+	fields := strings.Fields(r.line)
 
 	if len(fields) == 0 {
 		return ""
@@ -37,17 +42,12 @@ func (r *RawBenchmark) ExtractName(line string) string {
 	return name
 }
 
-func (r *RawBenchmark) HasBenchmark(line string) bool {
-	return strings.Contains(line, "ns/op")
-}
-
 // JSONBenchmark extends RawBenchmark but overrides ExtractName
 type JSONBenchmark struct {
-	RawBenchmark
 	Event *shared.BenchEvent
 }
 
-func (j *JSONBenchmark) ExtractName(line string) string {
+func (j *JSONBenchmark) ExtractName() string {
 	if j.Event != nil && j.Event.Test != "" && strings.HasPrefix(j.Event.Test, "Benchmark") {
 		return j.Event.Test
 	}
@@ -88,14 +88,14 @@ func (m *BenchmarkProgressManager) ProcessLine(line string) {
 	if err := json.Unmarshal([]byte(line), &ev); err == nil {
 		parser = &JSONBenchmark{Event: &ev}
 	} else {
-		parser = &RawBenchmark{}
+		parser = &RawBenchmark{line: line}
 	}
 
-	if parser.HasBenchmark(line) {
+	if hasBenchmark(line) {
 		m.benchmarkCount++
 	}
 
-	if name := parser.ExtractName(line); name != "" {
+	if name := parser.ExtractName(); name != "" {
 		m.currentBenchName = name
 		m.updateProgress()
 	}
