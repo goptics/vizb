@@ -1,22 +1,18 @@
 package cmd
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
-	"io"
 	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
-	"github.com/goptics/vizb/shared"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // TestWriteStdinPipedInputs tests the functionality of writeStdinPipedInputs
-// This simulates piping data to stdin
 func TestWriteStdinPipedInputs(t *testing.T) {
-	// Save original stdin and create a pipe
+	// Save original stdin
 	originalStdin := os.Stdin
 	defer func() { os.Stdin = originalStdin }()
 
@@ -28,133 +24,166 @@ func TestWriteStdinPipedInputs(t *testing.T) {
 		os.Stderr = oldStderr
 	}()
 
-	// Save original osExit and replace with mock
-	originalOsExit := osExit
-	exitCalled := false
-	exitCode := 0
-	osExit = func(code int) {
-		exitCalled = true
-		exitCode = code
-		panic(fmt.Sprintf("os.Exit(%d) called", code))
-	}
-	defer func() { osExit = originalOsExit }()
+	t.Run("Basic functionality with simulated stdin", func(t *testing.T) {
+		// Create temp file for output
+		tempDir := t.TempDir()
+		tempfile := filepath.Join(tempDir, "test_output.txt")
 
-	// Test case 1: Successful processing of valid JSON input
-	t.Run("Valid JSON Input", func(t *testing.T) {
-		// Reset exit flags
-		exitCalled = false
-		exitCode = 0
-
-		// Create a pipe to simulate stdin
-		r, w, err := os.Pipe()
+		// Create temp file to simulate stdin input
+		stdinFile, err := os.CreateTemp("", "stdin_test")
 		require.NoError(t, err)
-		os.Stdin = r
+		defer os.Remove(stdinFile.Name())
 
-		// Capture stdout/stderr
-		stdout, outW, _ := os.Pipe()
-		stderr, errW, _ := os.Pipe()
-		os.Stdout = outW
-		os.Stderr = errW
-
-		// Write valid JSON events to the pipe in a goroutine
-		go func() {
-			defer w.Close()
-			validEvents := []shared.BenchEvent{
-				{Action: "output", Output: "BenchmarkTest/case1 1 100 ns/op", Test: "BenchmarkTest/case1"},
-				{Action: "output", Output: "BenchmarkTest/case2 1 200 ns/op", Test: "BenchmarkTest/case2"},
-			}
-
-			for _, event := range validEvents {
-				eventBytes, _ := json.Marshal(event)
-				w.Write(eventBytes)
-				w.Write([]byte("\n"))
-			}
-		}()
-
-		// Create a temp file path using the function we're testing
-		resultPath := createTempFile(tempBenchFilePrefix, "json")
-		defer os.Remove(resultPath)
-
-		// Call the function in a way that we can recover from the panic
-		func() {
-			defer func() {
-				recover() // Recover from any panics
-			}()
-			writeStdinPipedInputs(resultPath)
-		}()
-
-		// Close the write end of stdout/stderr pipes
-		outW.Close()
-		errW.Close()
-
-		// Collect output
-		var outBuf bytes.Buffer
-		io.Copy(&outBuf, stdout)
-		var errBuf bytes.Buffer
-		io.Copy(&errBuf, stderr)
-
-		// Restore stdout and stderr
-		os.Stdout = oldStdout
-		os.Stderr = oldStderr
-
-		// Check that a temporary file was created
-		assert.False(t, exitCalled, "os.Exit should not have been called")
-		assert.NotEmpty(t, resultPath, "Should have returned a file path")
-		assert.Contains(t, resultPath, ".json", "Should be a JSON file")
-
-		// Check file content if no exit occurred
-		if !exitCalled {
-			// Try to read the temp file before it's auto-deleted
-			content, err := os.ReadFile(resultPath)
-			// File may already be deleted in the function, so we don't assert on error
-			if err == nil && len(content) > 0 {
-				// Just verify we have some content
-				assert.Contains(t, string(content), "BenchmarkTest")
-			}
+		// Write test data to the stdin file
+		testData := []string{
+			`{"Action":"run","Test":"BenchmarkExample"}`,
+			`{"Action":"pass","Test":"BenchmarkExample","Output":"1000 ns/op"}`,
+			"BenchmarkAnotherTest-8 \t1000\t2000 ns/op",
 		}
+		for _, line := range testData {
+			stdinFile.WriteString(line + "\n")
+		}
+		stdinFile.Seek(0, 0) // Reset to beginning
+
+		os.Stdin = stdinFile
+
+		// Execute the function
+		writeStdinPipedInputs(tempfile)
+
+		// Read the temp file to verify content was written
+		content, err := os.ReadFile(tempfile)
+		require.NoError(t, err)
+
+		fileContent := string(content)
+
+		// Verify that content was written correctly
+		assert.Contains(t, fileContent, `{"Action":"run","Test":"BenchmarkExample"}`)
+		assert.Contains(t, fileContent, `{"Action":"pass","Test":"BenchmarkExample","Output":"1000 ns/op"}`)
+		assert.Contains(t, fileContent, "BenchmarkAnotherTest-8")
 	})
 
-	// Test case 2: Invalid JSON input
-	t.Run("Invalid JSON Input", func(t *testing.T) {
-		// Reset exit flags
-		exitCalled = false
-		exitCode = 0
+	t.Run("Empty input", func(t *testing.T) {
+		tempDir := t.TempDir()
+		tempfile := filepath.Join(tempDir, "empty_output.txt")
 
-		// Create a pipe to simulate stdin
-		r, w, err := os.Pipe()
+		// Create empty stdin file
+		stdinFile, err := os.CreateTemp("", "empty_stdin_test")
 		require.NoError(t, err)
-		os.Stdin = r
+		defer os.Remove(stdinFile.Name())
+		stdinFile.Seek(0, 0)
 
-		// Capture stderr
-		_, errW, _ := os.Pipe()
-		os.Stderr = errW
+		os.Stdin = stdinFile
 
-		// Write invalid content to pipe in a goroutine
-		go func() {
-			defer w.Close()
-			w.Write([]byte("This is not valid JSON\n"))
-		}()
+		// Execute the function
+		writeStdinPipedInputs(tempfile)
 
-		// Create a temp file path using the function we're testing
-		resultPath := createTempFile(tempBenchFilePrefix, "json")
-		defer os.Remove(resultPath)
+		// Read the temp file - should be empty
+		content, err := os.ReadFile(tempfile)
+		require.NoError(t, err)
+		assert.Empty(t, string(content), "Temp file should be empty")
+	})
 
-		// Call the function and expect a panic from osExit
-		func() {
-			defer func() {
-				recovered := recover()
-				assert.NotNil(t, recovered, "Expected panic from os.Exit")
-			}()
-			writeStdinPipedInputs(resultPath) // This should call osExit and panic
-		}()
+	t.Run("Large input", func(t *testing.T) {
+		tempDir := t.TempDir()
+		tempfile := filepath.Join(tempDir, "large_output.txt")
 
-		errW.Close()
+		// Create stdin file with lots of data
+		stdinFile, err := os.CreateTemp("", "large_stdin_test")
+		require.NoError(t, err)
+		defer os.Remove(stdinFile.Name())
 
-		// Check assertions
-		assert.True(t, exitCalled, "os.Exit should have been called")
-		assert.Equal(t, 1, exitCode, "Exit code should be 1")
+		// Generate large amount of test data
+		for i := 0; i < 100; i++ {
+			line := `{"Action":"run","Test":"BenchmarkTest` + strings.Repeat("X", i%10) + `"}`
+			stdinFile.WriteString(line + "\n")
+		}
+		stdinFile.Seek(0, 0)
+
+		os.Stdin = stdinFile
+
+		// Execute the function
+		writeStdinPipedInputs(tempfile)
+
+		// Verify content was written
+		content, err := os.ReadFile(tempfile)
+		require.NoError(t, err)
+
+		fileContent := string(content)
+		assert.Contains(t, fileContent, "BenchmarkTest")
+
+		// Count lines
+		lines := strings.Split(strings.TrimSpace(fileContent), "\n")
+		assert.Equal(t, 100, len(lines), "Should have written all 100 lines")
+	})
+
+	t.Run("JSON with benchmark content", func(t *testing.T) {
+		tempDir := t.TempDir()
+		tempfile := filepath.Join(tempDir, "json_output.txt")
+
+		stdinFile, err := os.CreateTemp("", "json_stdin_test")
+		require.NoError(t, err)
+		defer os.Remove(stdinFile.Name())
+
+		jsonData := []string{
+			`{"Action":"start"}`,
+			`{"Action":"run","Test":"BenchmarkStringBuilder"}`,
+			`{"Action":"output","Test":"BenchmarkStringBuilder","Output":"BenchmarkStringBuilder-8   "}`,
+			`{"Action":"output","Test":"BenchmarkStringBuilder","Output":"1000000"}`,
+			`{"Action":"output","Test":"BenchmarkStringBuilder","Output":"1234 ns/op"}`,
+			`{"Action":"pass","Test":"BenchmarkStringBuilder"}`,
+		}
+
+		for _, line := range jsonData {
+			stdinFile.WriteString(line + "\n")
+		}
+		stdinFile.Seek(0, 0)
+
+		os.Stdin = stdinFile
+
+		writeStdinPipedInputs(tempfile)
+
+		content, err := os.ReadFile(tempfile)
+		require.NoError(t, err)
+
+		fileContent := string(content)
+		assert.Contains(t, fileContent, "BenchmarkStringBuilder")
+		assert.Contains(t, fileContent, "ns/op")
+		assert.Contains(t, fileContent, "1000000")
+	})
+
+	t.Run("Mixed JSON and text format", func(t *testing.T) {
+		tempDir := t.TempDir()
+		tempfile := filepath.Join(tempDir, "mixed_output.txt")
+
+		stdinFile, err := os.CreateTemp("", "mixed_stdin_test")
+		require.NoError(t, err)
+		defer os.Remove(stdinFile.Name())
+
+		mixedData := []string{
+			"goos: linux",
+			"goarch: amd64",
+			`{"Action":"run","Test":"BenchmarkExample"}`,
+			"BenchmarkExample-8    1000000    1234 ns/op",
+			`{"Action":"pass","Test":"BenchmarkExample"}`,
+			"PASS",
+		}
+
+		for _, line := range mixedData {
+			stdinFile.WriteString(line + "\n")
+		}
+		stdinFile.Seek(0, 0)
+
+		os.Stdin = stdinFile
+
+		writeStdinPipedInputs(tempfile)
+
+		content, err := os.ReadFile(tempfile)
+		require.NoError(t, err)
+
+		fileContent := string(content)
+		assert.Contains(t, fileContent, "goos: linux")
+		assert.Contains(t, fileContent, "BenchmarkExample")
+		assert.Contains(t, fileContent, "1234 ns/op")
+		assert.Contains(t, fileContent, "PASS")
 	})
 }
-
-// Note: We can't directly test Execute() by mocking rootCmd.Execute
-// since it's not assignable. This test is removed for now.

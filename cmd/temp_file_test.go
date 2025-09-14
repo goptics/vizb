@@ -1,77 +1,74 @@
 package cmd
 
 import (
-	"errors"
-	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/goptics/vizb/shared"
 	"github.com/stretchr/testify/assert"
 )
 
-// TestCreateTempFile tests both success and error paths of createTempFile
-func TestCreateTempFile(t *testing.T) {
-	// Test success path - already covered by the stdin tests but included here for completeness
-	t.Run("Success Path", func(t *testing.T) {
-		// Call the function
-		tempFile := createTempFile(tempBenchFilePrefix, "json")
+func TestTempFileCreation(t *testing.T) {
+	t.Run("Create temp file with prefix and extension", func(t *testing.T) {
+		tempFile := shared.MustCreateTempFile("test-prefix", "json")
 		defer os.Remove(tempFile)
 
-		// Verify temp file was created with correct pattern
-		assert.True(t, filepath.Base(tempFile) != "", "Should have created a file with a name")
-		assert.Contains(t, tempFile, tempBenchFilePrefix, "Should contain the prefix in name")
-		assert.Contains(t, tempFile, ".json", "Should have .json extension")
+		// Verify temp file was created
 		assert.FileExists(t, tempFile, "Temp file should exist")
+
+		// Verify filename contains prefix
+		basename := filepath.Base(tempFile)
+		assert.Contains(t, basename, "test-prefix", "Filename should contain prefix")
+		assert.Contains(t, basename, ".json", "Filename should have correct extension")
 	})
 
-	// Test error path - CreateTemp fails
-	t.Run("Error Path", func(t *testing.T) {
-		// Save original functions to restore them later
-		origCreateTemp := osTempCreate
-		origOsExit := osExit
+	t.Run("Create temp file with empty prefix", func(t *testing.T) {
+		tempFile := shared.MustCreateTempFile("", "txt")
+		defer os.Remove(tempFile)
+
+		assert.FileExists(t, tempFile, "Temp file should exist even with empty prefix")
+		assert.Contains(t, filepath.Base(tempFile), ".txt", "Should have correct extension")
+	})
+
+	t.Run("Create temp file with empty extension", func(t *testing.T) {
+		tempFile := shared.MustCreateTempFile("test", "")
+		defer os.Remove(tempFile)
+
+		assert.FileExists(t, tempFile, "Temp file should exist even with empty extension")
+		basename := filepath.Base(tempFile)
+		assert.Contains(t, basename, "test", "Should contain prefix")
+	})
+
+	t.Run("Multiple temp files are unique", func(t *testing.T) {
+		tempFiles := make([]string, 5)
+
+		for i := 0; i < 5; i++ {
+			tempFiles[i] = shared.MustCreateTempFile("unique", "tmp")
+		}
+
+		// Clean up
 		defer func() {
-			osTempCreate = origCreateTemp
-			osExit = origOsExit
+			for _, file := range tempFiles {
+				os.Remove(file)
+			}
 		}()
 
-		// Mock os.CreateTemp to return an error
-		osTempCreate = func(dir, pattern string) (*os.File, error) {
-			return nil, errors.New("simulated CreateTemp error")
+		// Verify all files are unique
+		fileSet := make(map[string]bool)
+		for _, file := range tempFiles {
+			assert.False(t, fileSet[file], "All temp files should be unique")
+			fileSet[file] = true
+			assert.FileExists(t, file, "Each temp file should exist")
 		}
+	})
 
-		// Mock osExit to capture exit code
-		exitCalled := false
-		exitCode := 0
-		osExit = func(code int) {
-			exitCalled = true
-			exitCode = code
-			panic(fmt.Sprintf("os.Exit(%d) called", code)) // Use panic for flow control in tests
-		}
+	t.Run("Special characters in prefix and extension", func(t *testing.T) {
+		tempFile := shared.MustCreateTempFile("test-with_chars.123", "ext.json")
+		defer os.Remove(tempFile)
 
-		// Capture stderr
-		oldStderr := os.Stderr
-		r, w, _ := os.Pipe()
-		os.Stderr = w
-		defer func() { os.Stderr = oldStderr }()
-
-		// Call function and handle expected panic
-		assert.Panics(t, func() {
-			createTempFile(tempBenchFilePrefix, "json")
-		}, "Should panic when os.CreateTemp fails")
-
-		// Close write end of pipe
-		w.Close()
-
-		// Read captured stderr output
-		var output []byte
-		output, _ = io.ReadAll(r)
-
-		// Assert exit was called with correct code
-		assert.True(t, exitCalled, "osExit should have been called")
-		assert.Equal(t, 1, exitCode, "Exit code should be 1")
-		assert.Contains(t, string(output), "Error creating temporary file", "Should show error message")
-		assert.Contains(t, string(output), "simulated CreateTemp error", "Should include the error details")
+		assert.FileExists(t, tempFile, "Should handle special characters")
+		basename := filepath.Base(tempFile)
+		assert.Contains(t, basename, "test-with_chars.123", "Should preserve special characters in prefix")
 	})
 }

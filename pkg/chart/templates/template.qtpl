@@ -167,12 +167,12 @@
         // Initialize sidebar functionality when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
             const sidebar = document.getElementById('bench-sidebar');
-            const indicators = document.querySelectorAll('.bench-indicator');
+            const groups = document.querySelectorAll('.bench-indicator');
             const chartSections = document.querySelectorAll('.chart-section');
             const minimizeBtn = document.getElementById('minimize-btn');
             
-            // Only show sidebar if there are multiple indicators
-            if (sidebar && indicators.length <= 1) {
+            // Only show sidebar if there are multiple groups
+            if (sidebar && groups.length <= 1) {
                 sidebar.style.display = 'none';
             }
             
@@ -228,7 +228,7 @@
             });
             
             // Add click event to each indicator
-            indicators.forEach(function(indicator) {
+            groups.forEach(function(indicator) {
                 indicator.addEventListener('click', function() {
                     const targetId = this.getAttribute('data-target');
                     const targetElement = document.getElementById(targetId);
@@ -238,7 +238,7 @@
                         targetElement.scrollIntoView({ behavior: 'smooth' });
                         
                         // Update active state
-                        indicators.forEach(ind => ind.classList.remove('active'));
+                        groups.forEach(ind => ind.classList.remove('active'));
                         this.classList.add('active');
                     }
                 });
@@ -257,7 +257,7 @@
                     }
                 });
                 
-                indicators.forEach(function(indicator) {
+                groups.forEach(function(indicator) {
                     indicator.classList.remove('active');
                     if (indicator.getAttribute('data-target') === currentSection) {
                         indicator.classList.add('active');
@@ -293,7 +293,7 @@
     <!-- Sidebar for benchmark navigation -->
     <div id="bench-sidebar" class="sidebar">
         <div class="sidebar-header">
-            <div class="sidebar-title">Bench Indicators</div>
+            <div class="sidebar-title">Bench Groups</div>
             <button id="minimize-btn" class="minimize-btn">▶</button>
         </div>
         {% for i, benchChart := range benchCharts %}

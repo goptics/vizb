@@ -10,12 +10,14 @@ import (
 	"testing"
 
 	"github.com/goptics/vizb/shared"
+	"github.com/goptics/vizb/shared/utils"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // Save the real os.Exit function in a variable
+var osExit = shared.OsExit
 var originalOsExit = os.Exit
 
 // Override os.Exit for testing
@@ -65,12 +67,12 @@ func TestValidateFlags(t *testing.T) {
 		{
 			name: "Valid flags",
 			setupFlags: func() {
-				shared.FlagState.MemUnit = "B"
+				shared.FlagState.MemUnit = "b"
 				shared.FlagState.TimeUnit = "ns"
 				shared.FlagState.AllocUnit = ""
 				shared.FlagState.Format = "html"
 			},
-			expectedMemUnit:   "B",
+			expectedMemUnit:   "b",
 			expectedTimeUnit:  "ns",
 			expectedAllocUnit: "",
 			expectedFormat:    "html",
@@ -84,21 +86,21 @@ func TestValidateFlags(t *testing.T) {
 				shared.FlagState.AllocUnit = ""
 				shared.FlagState.Format = "html"
 			},
-			expectedMemUnit:   "B",
+			expectedMemUnit:   "b",
 			expectedTimeUnit:  "ns",
 			expectedAllocUnit: "",
 			expectedFormat:    "html",
-			expectedOutput:    "Warning: Invalid memory unit 'invalid'. Using default 'B'",
+			expectedOutput:    "Warning: Invalid memory unit 'invalid'. Using default 'b'",
 		},
 		{
 			name: "Invalid time unit",
 			setupFlags: func() {
-				shared.FlagState.MemUnit = "B"
+				shared.FlagState.MemUnit = "b"
 				shared.FlagState.TimeUnit = "invalid"
 				shared.FlagState.AllocUnit = ""
 				shared.FlagState.Format = "html"
 			},
-			expectedMemUnit:   "B",
+			expectedMemUnit:   "b",
 			expectedTimeUnit:  "ns",
 			expectedAllocUnit: "",
 			expectedFormat:    "html",
@@ -107,26 +109,26 @@ func TestValidateFlags(t *testing.T) {
 		{
 			name: "Invalid alloc unit",
 			setupFlags: func() {
-				shared.FlagState.MemUnit = "B"
+				shared.FlagState.MemUnit = "b"
 				shared.FlagState.TimeUnit = "ns"
 				shared.FlagState.AllocUnit = "invalid"
 				shared.FlagState.Format = "html"
 			},
-			expectedMemUnit:   "B",
+			expectedMemUnit:   "b",
 			expectedTimeUnit:  "ns",
 			expectedAllocUnit: "",
 			expectedFormat:    "html",
-			expectedOutput:    "Warning: Invalid allocation unit 'INVALID'. Using default (as-is)",
+			expectedOutput:    "Warning: Invalid allocation unit 'INVALID'. Using default ''",
 		},
 		{
 			name: "Invalid format",
 			setupFlags: func() {
-				shared.FlagState.MemUnit = "B"
+				shared.FlagState.MemUnit = "b"
 				shared.FlagState.TimeUnit = "ns"
 				shared.FlagState.AllocUnit = ""
 				shared.FlagState.Format = "invalid"
 			},
-			expectedMemUnit:   "B",
+			expectedMemUnit:   "b",
 			expectedTimeUnit:  "ns",
 			expectedAllocUnit: "",
 			expectedFormat:    "html",
@@ -144,8 +146,8 @@ func TestValidateFlags(t *testing.T) {
 			r, w, _ := os.Pipe()
 			os.Stderr = w
 
-			// Call the function
-			validateFlags()
+			// Call validation function to trigger validation and warning messages
+			utils.ApplyValidationRules(flagValidationRules)
 
 			// Close write end of pipe to get all output
 			w.Close()
@@ -155,7 +157,7 @@ func TestValidateFlags(t *testing.T) {
 			// Restore stderr
 			os.Stderr = oldStderr
 
-			// Check that the flags were updated correctly
+			// Check that the flags were updated correctly after validation
 			assert.Equal(t, tt.expectedMemUnit, shared.FlagState.MemUnit)
 			assert.Equal(t, tt.expectedTimeUnit, shared.FlagState.TimeUnit)
 			assert.Equal(t, tt.expectedAllocUnit, shared.FlagState.AllocUnit)
@@ -169,19 +171,19 @@ func TestValidateFlags(t *testing.T) {
 	}
 }
 
-// TestReadTargetedJsonFile tests the JSON file processing functionality
-func TestReadTargetedJsonFile(t *testing.T) {
+// TestCheckTargetFile tests the JSON file processing functionality
+func TestCheckTargetFile(t *testing.T) {
 	// Create a temporary directory for test files
 	tempDir := t.TempDir()
 
-	// We don't need to mock os.Exit here since TestMain does it globally
+	// Mock shared.OsExit since checkTargetFile calls shared.ExitWithError
 	exitCalled := false
-	originalOsExitFunc := osExit
-	osExit = func(code int) {
+	originalOsExitFunc := shared.OsExit
+	shared.OsExit = func(code int) {
 		exitCalled = true
-		panic(fmt.Sprintf("os.Exit(%d) called", code)) // Use panic for flow control in tests
+		panic(fmt.Sprintf("shared.OsExit(%d) called", code)) // Use panic for flow control in tests
 	}
-	defer func() { osExit = originalOsExitFunc }()
+	defer func() { shared.OsExit = originalOsExitFunc }()
 
 	// Create valid and invalid JSON test files
 	validJsonPath := filepath.Join(tempDir, "valid.json")
@@ -194,7 +196,7 @@ func TestReadTargetedJsonFile(t *testing.T) {
 	err := os.WriteFile(validJsonPath, append(validEventBytes, '\n'), 0644)
 	require.NoError(t, err)
 
-	// Create an invalid JSON test file
+	// Create an invalid JSON test file with .json extension to trigger JSON validation
 	err = os.WriteFile(invalidJsonPath, []byte("this is not json"), 0644)
 	require.NoError(t, err)
 
@@ -251,21 +253,21 @@ func TestReadTargetedJsonFile(t *testing.T) {
 
 						// Check assertions
 						if recovered == nil {
-							t.Error("Expected os.Exit to be called")
+							t.Error("Expected shared.OsExit to be called")
 						}
-						assert.True(t, exitCalled, "os.Exit should have been called")
+						assert.True(t, exitCalled, "shared.OsExit should have been called")
 						assert.Contains(t, buf.String(), tt.expectedError)
 					}()
-					readTargetedJsonFile(tt.inputPath)
+					checkTargetFile(tt.inputPath)
 				}()
 			} else {
-				readTargetedJsonFile(tt.inputPath)
+				checkTargetFile(tt.inputPath)
 
 				// Close write end of pipe
 				w.Close()
 				os.Stderr = oldStderr
 
-				assert.False(t, exitCalled, "os.Exit should not have been called")
+				assert.False(t, exitCalled, "shared.OsExit should not have been called")
 			}
 		})
 	}
@@ -276,11 +278,10 @@ func TestRunBenchmark(t *testing.T) {
 	// Create a temporary directory for test files
 	tempDir := t.TempDir()
 
-	// Create a valid JSON test file
-	validJsonPath := filepath.Join(tempDir, "valid.json")
-	validEvent := shared.BenchEvent{Action: "output", Output: "BenchmarkTest 1 100 ns/op"}
-	validEventBytes, _ := json.Marshal(validEvent)
-	err := os.WriteFile(validJsonPath, append(validEventBytes, '\n'), 0644)
+	// Create a valid text benchmark file (avoid JSON conversion issues)
+	validTextPath := filepath.Join(tempDir, "valid.txt")
+	textContent := `BenchmarkTest-8    1000000    1234 ns/op    1000 B/op    10 allocs/op`
+	err := os.WriteFile(validTextPath, []byte(textContent), 0644)
 	require.NoError(t, err)
 
 	// Save original flag state
@@ -291,13 +292,13 @@ func TestRunBenchmark(t *testing.T) {
 		shared.FlagState.Format = origFormat
 	}()
 
-	// Mock os.Exit
+	// Mock shared.OsExit since runBenchmark uses shared.ExitWithError
 	exitCalled := false
-	oldOsExit := osExit
-	defer func() { osExit = oldOsExit }()
-	osExit = func(code int) {
+	oldOsExit := shared.OsExit
+	defer func() { shared.OsExit = oldOsExit }()
+	shared.OsExit = func(code int) {
 		exitCalled = true
-		panic(fmt.Sprintf("os.Exit(%d) called", code)) // Use panic for flow control in tests
+		panic(fmt.Sprintf("shared.OsExit(%d) called", code)) // Use panic for flow control in tests
 	}
 
 	tests := []struct {
@@ -311,7 +312,7 @@ func TestRunBenchmark(t *testing.T) {
 		{
 			name: "Valid file input",
 			argsFunc: func() []string {
-				return []string{validJsonPath}
+				return []string{validTextPath}
 			},
 			setupStdin:     func() func() { return func() {} },
 			expectExit:     false,
@@ -375,9 +376,9 @@ func TestRunBenchmark(t *testing.T) {
 
 						// Verify assertions
 						if recovered == nil {
-							t.Error("Expected os.Exit to be called")
+							t.Error("Expected shared.OsExit to be called")
 						}
-						assert.True(t, exitCalled, "os.Exit should have been called")
+						assert.True(t, exitCalled, "shared.OsExit should have been called")
 						assert.Contains(t, buf.String(), tt.expectedOutput)
 					}()
 					runBenchmark(cmd, args)

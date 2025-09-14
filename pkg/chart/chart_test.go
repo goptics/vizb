@@ -1,7 +1,7 @@
 package chart
 
 import (
-	"encoding/json"
+	"bufio"
 	"os"
 	"path/filepath"
 	"testing"
@@ -499,16 +499,18 @@ func TestGenerateHTMLCharts(t *testing.T) {
 }
 
 // Helper function to create a test file with benchmark events
-func createTestFile(t *testing.T, path string, events []shared.BenchEvent) {
+func createTestFile(t *testing.T, path string, events []string) {
 	file, err := os.Create(path)
 	require.NoError(t, err)
 	defer file.Close()
 
-	encoder := json.NewEncoder(file)
+	writer := bufio.NewWriter(file)
+
 	for _, event := range events {
-		err := encoder.Encode(event)
-		require.NoError(t, err)
+		writer.WriteString(event + "\n")
 	}
+
+	writer.Flush()
 }
 
 func TestIntegrationWithParser(t *testing.T) {
@@ -519,36 +521,31 @@ func TestIntegrationWithParser(t *testing.T) {
 	origTimeUnit := shared.FlagState.TimeUnit
 	origMemUnit := shared.FlagState.MemUnit
 	origAllocUnit := shared.FlagState.AllocUnit
-	origSeparator := shared.FlagState.Separator
 
 	// Restore flag state after tests
 	defer func() {
 		shared.FlagState.TimeUnit = origTimeUnit
 		shared.FlagState.MemUnit = origMemUnit
 		shared.FlagState.AllocUnit = origAllocUnit
-		shared.FlagState.Separator = origSeparator
 		shared.HasMemStats = false
 		shared.CPUCount = 0
 	}()
 
 	t.Run("Integration with parser", func(t *testing.T) {
-		// Create a temporary JSON file with valid benchmark results
-		jsonPath := filepath.Join(tempDir, "bench.json")
-		createTestFile(t, jsonPath, []shared.BenchEvent{
-			{Action: "output", Output: "BenchmarkGroup/Task/SubjectA 100 123.45 ns/op 64.0 B/op 2 allocs/op"},
-			{Action: "output", Output: "BenchmarkGroup/Task/SubjectB 100 234.56 ns/op 128.0 B/op 4 allocs/op"},
-			{Action: "output", Output: "BenchmarkOther/Simple 100 345.67 ns/op"},
+		filePath := filepath.Join(tempDir, "bench.txt")
+		createTestFile(t, filePath, []string{
+			"BenchmarkGroup/Task/SubjectA 100 123.45 ns/op 64.0 B/op 2 allocs/op",
+			"BenchmarkGroup/Task/SubjectB 100 234.56 ns/op 128.0 B/op 4 allocs/op",
+			"BenchmarkOther/Simple 100 345.67 ns/op",
 		})
 
 		// Set flag state for the test
-		shared.FlagState.Separator = "/"
 		shared.FlagState.TimeUnit = "ns"
 		shared.FlagState.MemUnit = "B"
 		shared.FlagState.AllocUnit = ""
 
 		// Parse the results
-		results, err := parser.ParseBenchmarkResults(jsonPath)
-		require.NoError(t, err)
+		results := parser.ParseBenchmarkResults(filePath)
 		assert.Len(t, results, 3)
 
 		// Generate charts
