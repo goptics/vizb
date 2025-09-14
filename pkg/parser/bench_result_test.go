@@ -241,11 +241,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 			file.Close()
 
 			// Call the function under test
-			results, err := ParseBenchmarkResults(filePath)
-
-			if err != nil {
-				return // If we expected an error, no need to check results
-			}
+			results := ParseBenchmarkResults(filePath)
 
 			// Check results
 			if len(results) != len(tt.expected) {
@@ -319,10 +315,8 @@ func almostEqual(a, b, epsilon float64) bool {
 // TestParseBenchmarkResultsFileError tests error handling for file operations
 func TestParseBenchmarkResultsFileError(t *testing.T) {
 	// Test with non-existent file
-	results, err := ParseBenchmarkResults("/non/existent/file.json")
-	if err == nil {
-		t.Errorf("ParseBenchmarkResults() with non-existent file should return error")
-	}
+	results := ParseBenchmarkResults("/non/existent/file.json")
+
 	if results != nil {
 		t.Errorf("ParseBenchmarkResults() with non-existent file should return nil results")
 	}

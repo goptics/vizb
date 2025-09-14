@@ -13,7 +13,6 @@ func MustCreateTempFile(prefix, extension string) string {
 
 	if err != nil {
 		ExitWithError("Error creating temporary file", err)
-		OsExit(1)
 	}
 
 	defer temp.Close()

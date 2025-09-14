@@ -19,9 +19,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const tempBenchFilePrefix = "vizb-benchmark-"
-const outputFilePrefix = "vizb-"
-
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "vizb [target]",
@@ -78,7 +75,7 @@ func runBenchmark(cmd *cobra.Command, args []string) {
 
 	// Process the benchmark data
 	if isStdinPiped {
-		target = shared.MustCreateTempFile(tempBenchFilePrefix, "out")
+		target = shared.MustCreateTempFile(shared.TempBenchFilePrefix, "out")
 		defer os.Remove(target)
 
 		writeStdinPipedInputs(target)
@@ -182,7 +179,7 @@ func generateOutputFile(filePath string) {
 func resolveOutputFileName(outFile, format string) string {
 	// create a temp file if we need to print the output inside stdout
 	if outFile == "" {
-		return shared.MustCreateTempFile(outputFilePrefix, format)
+		return shared.MustCreateTempFile(shared.TempBenchFilePrefix, format)
 	}
 
 	// ensure output file has correct extension based on format (e.g., .html, .json)
