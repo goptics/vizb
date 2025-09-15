@@ -25,5 +25,5 @@ func (tfm *TmpFilesManager) RemoveAll() {
 		os.Remove(filePath)
 	}
 
-	TempFiles = NewTmpFileManager()
+	tfm.files = make([]string, 0)
 }
