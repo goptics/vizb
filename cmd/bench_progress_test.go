@@ -48,17 +48,17 @@ func TestRawBenchmarkExtractName(t *testing.T) {
 		{
 			name:     "Standard benchmark line",
 			line:     "BenchmarkExample-8    1000000    1234 ns/op",
-			expected: "",
+			expected: "BenchmarkExample", // Extract benchmark name from result line
 		},
 		{
 			name:     "RUN line with benchmark name",
 			line:     "=== RUN   BenchmarkMemoryAllocation",
-			expected: "===", // Current logic takes fields[0], which is "==="
+			expected: "", // RUN lines don't contain ns/op, so no extraction
 		},
 		{
 			name:     "RUN line with benchmark name and suffix",
 			line:     "=== RUN   BenchmarkStringConcat-8",
-			expected: "===", // Current logic takes fields[0], which is "==="
+			expected: "", // RUN lines don't contain ns/op, so no extraction
 		},
 		{
 			name:     "Empty line",
@@ -73,22 +73,22 @@ func TestRawBenchmarkExtractName(t *testing.T) {
 		{
 			name:     "CONT line",
 			line:     "=== CONT  BenchmarkExample",
-			expected: "===", // Current logic takes fields[0]
+			expected: "", // CONT lines don't contain ns/op, so no extraction
 		},
 		{
 			name:     "PAUSE line",
 			line:     "=== PAUSE BenchmarkLongRunning",
-			expected: "===", // Current logic takes fields[0]
+			expected: "", // PAUSE lines don't contain ns/op, so no extraction
 		},
 		{
 			name:     "Line with multiple dashes",
 			line:     "=== RUN   Benchmark-Complex-Name-8",
-			expected: "===", // Current logic takes fields[0]
+			expected: "", // RUN lines don't contain ns/op, so no extraction
 		},
 		{
 			name:     "Line without dash suffix",
 			line:     "=== RUN   BenchmarkSimple",
-			expected: "===", // Current logic takes fields[0]
+			expected: "", // RUN lines don't contain ns/op, so no extraction
 		},
 	}
 
@@ -213,20 +213,21 @@ func TestBenchmarkProgressManager(t *testing.T) {
 		mockBar := &MockProgressBar{}
 		manager := NewBenchmarkProgressManager(mockBar)
 
-		// Test RUN line - based on current implementation, it extracts fields[0]
+		// Test RUN line - doesn't extract name (no ns/op)
 		runLine := "=== RUN   BenchmarkStringConcat-8"
 		manager.ProcessLine(runLine)
 
-		assert.Equal(t, "===", manager.currentBenchName) // Current implementation extracts "==="
+		assert.Equal(t, "", manager.currentBenchName) // RUN lines don't extract names
 		assert.Equal(t, 0, manager.benchmarkCount)
-		assert.Len(t, mockBar.descriptions, 1)
+		assert.Len(t, mockBar.descriptions, 0) // No progress update
 
 		// Test benchmark result line
 		resultLine := "BenchmarkStringConcat-8    1000000    1234 ns/op"
 		manager.ProcessLine(resultLine)
 
 		assert.Equal(t, 1, manager.benchmarkCount) // Should increment
-		assert.Len(t, mockBar.descriptions, 1)     // No new progress update
+		assert.Equal(t, "BenchmarkStringConcat", manager.currentBenchName) // Extract name from result line
+		assert.Len(t, mockBar.descriptions, 1) // Progress update
 	})
 
 	t.Run("ProcessLine with mixed content", func(t *testing.T) {
@@ -246,8 +247,8 @@ func TestBenchmarkProgressManager(t *testing.T) {
 			manager.ProcessLine(line)
 		}
 
-		// Last name extracted would be from the JSON line, not the RUN line
-		assert.Equal(t, "===", manager.currentBenchName) // From the last RUN line
+		// Last name extracted would be from the last benchmark result line
+		assert.Equal(t, "BenchmarkThird", manager.currentBenchName) // From the last benchmark result line
 		assert.Equal(t, 3, manager.benchmarkCount)
 		assert.True(t, len(mockBar.descriptions) >= 2) // Should have multiple updates
 	})
@@ -262,8 +263,8 @@ func TestBenchmarkProgressManager(t *testing.T) {
 
 		// Should not panic and should process as raw text
 		assert.Equal(t, 0, manager.benchmarkCount)
-		// For invalid JSON treated as raw text, fields[0] would be the first field
-		assert.Equal(t, `{"Action":"run","Test":invalid}`, manager.currentBenchName) // First field of invalid JSON line
+		// Invalid JSON treated as raw text doesn't contain ns/op, so no name extraction
+		assert.Equal(t, "", manager.currentBenchName) // No extraction since no ns/op
 	})
 
 	t.Run("ProcessLine with empty lines", func(t *testing.T) {
@@ -336,7 +337,7 @@ func TestBenchmarkProgressIntegration(t *testing.T) {
 
 		// Should have processed multiple benchmarks
 		assert.True(t, manager.benchmarkCount >= 4, "Should have found at least 4 benchmark results")
-		assert.Equal(t, "ok", manager.currentBenchName) // Last line processed extracts "ok"
+		assert.Equal(t, "BenchmarkSliceAppend", manager.currentBenchName) // Last benchmark result line
 		assert.True(t, len(mockBar.descriptions) > 0, "Should have progress updates")
 	})
 

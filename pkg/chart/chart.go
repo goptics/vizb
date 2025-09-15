@@ -21,6 +21,14 @@ var colorList = []string{
 	"#FAC858", // Yellow
 	"#9A60B4", // Purple
 	"#EA7CCC", // Pink
+	"#91CC75", // Lime
+	"#FF9F7F", // Coral
+	"#B6A2DE", // Lavender
+	"#FFC069", // Peach
+	"#5BCEFA", // Sky blue
+	"#FFB7B2", // Rose
+	"#A8E6CF", // Mint
+	"#DDBDF1", // Lilac
 }
 
 func prepareTitle(name, chartTitle string) string {
