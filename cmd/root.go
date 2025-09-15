@@ -31,8 +31,9 @@ an interactive HTML chart based on the results.`,
 	Run:     runBenchmark,
 }
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
+// Execute runs the main command-line interface for vizb.
+// It processes the command line arguments and executes the benchmark visualization workflow.
+// This function is the main entry point called from main.go and handles cleanup of temporary files.
 func Execute() {
 	defer shared.TempFiles.RemoveAll()
 

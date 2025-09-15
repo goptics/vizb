@@ -66,6 +66,8 @@ type BenchmarkProgressManager struct {
 	currentBenchName string
 }
 
+// NewBenchmarkProgressManager creates a new instance of BenchmarkProgressManager
+// with the provided progress bar interface for displaying benchmark execution progress.
 func NewBenchmarkProgressManager(bar ProgressBar) *BenchmarkProgressManager {
 	return &BenchmarkProgressManager{bar: bar}
 }

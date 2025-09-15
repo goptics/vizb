@@ -173,6 +173,10 @@ func createChart(title string, results []shared.BenchmarkResult, statIndex int) 
 	return bar
 }
 
+// GenerateHTMLCharts creates interactive HTML charts from benchmark results.
+// It groups benchmark results by name and generates charts for each stat type
+// (execution time, memory usage, allocations) found in the results.
+// Returns a slice of BenchCharts containing the generated chart data.
 func GenerateHTMLCharts(results []shared.BenchmarkResult) []shared.BenchCharts {
 	// Group results by task name
 	benchGroups, groupNames := groupResultsByName(results)
