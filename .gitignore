@@ -1,4 +1,5 @@
 *.html
 *.json
 *.txt
+*.out
 bin/
