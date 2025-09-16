@@ -13,22 +13,62 @@ import (
 )
 
 var colorList = []string{
-	"#5470C6", // Blue
-	"#3BA272", // Green
-	"#FC8452", // Orange
-	"#73C0DE", // Light blue
-	"#EE6666", // Red
-	"#FAC858", // Yellow
-	"#9A60B4", // Purple
-	"#EA7CCC", // Pink
-	"#91CC75", // Lime
-	"#FF9F7F", // Coral
-	"#B6A2DE", // Lavender
-	"#FFC069", // Peach
-	"#5BCEFA", // Sky blue
-	"#FFB7B2", // Rose
-	"#A8E6CF", // Mint
-	"#DDBDF1", // Lilac
+
+	"#E74C3C", // Red
+	"#3498DB", // Blue
+	"#2ECC71", // Green
+	"#F39C12", // Orange
+	"#9B59B6", // Purple
+	"#1ABC9C", // Teal
+	"#E67E22", // Dark Orange
+	"#34495E", // Dark Blue Gray
+	"#F1C40F", // Yellow
+	"#E91E63", // Pink
+	"#00BCD4", // Cyan
+	"#8BC34A", // Light Green
+	"#FF9800", // Amber
+	"#673AB7", // Deep Purple
+	"#009688", // Teal Green
+	"#795548", // Brown
+	"#607D8B", // Blue Gray
+	"#FFC107", // Gold
+	"#FF5722", // Deep Orange
+	"#4CAF50", // Material Green
+	"#2196F3", // Material Blue
+	"#FFEB3B", // Bright Yellow
+	"#9C27B0", // Material Purple
+	"#00E676", // Neon Green
+	"#FF1744", // Bright Red
+	"#00B0FF", // Light Blue
+	"#FFAB00", // Deep Amber
+	"#AA00FF", // Electric Purple
+	"#76FF03", // Lime
+	"#FF6D00", // Vivid Orange
+	"#18FFFF", // Aqua Cyan
+	"#C6FF00", // Electric Lime
+	"#FF3D00", // Red Orange
+	"#651FFF", // Indigo
+	"#00E5FF", // Light Cyan
+	"#AEEA00", // Yellow Green
+	"#DD2C00", // Deep Red
+	"#3F51B5", // Indigo Blue
+	"#4DB6AC", // Medium Aquamarine
+	"#8D6E63", // Light Brown
+	"#A1887F", // Warm Gray
+	"#90A4AE", // Cool Gray
+	"#BCAAA4", // Beige
+	"#D7CCC8", // Light Beige
+	"#F8BBD9", // Light Pink
+	"#C8E6C9", // Mint Green
+	"#DCEDC1", // Pale Green
+	"#F0F4C3", // Pale Yellow
+	"#FFF9C4", // Cream
+	"#FFCCBC", // Peach
+	"#D1C4E9", // Lavender
+	"#C5CAE9", // Periwinkle
+	"#BBDEFB", // Alice Blue
+	"#B3E5FC", // Powder Blue
+	"#B2EBF2", // Pale Turquoise
 }
 
 func prepareTitle(name, chartTitle string) string {
@@ -65,6 +105,23 @@ func groupResultsByName(results []shared.BenchmarkResult) (map[string][]shared.B
 	return benchGroups, groupNames
 }
 
+func countTotalSubjects(results []shared.BenchmarkResult) int {
+	counter := make(map[string]bool)
+
+	for _, r := range results {
+		counter[r.Subject] = true
+	}
+
+	return len(counter)
+}
+
+func calculateLegendSpace(numItems int) string {
+	itemsPerColumn := 15
+	columns := (numItems + itemsPerColumn - 1) / itemsPerColumn
+
+	return fmt.Sprintf("%d%%", min(15+(columns-1)*4, 35))
+}
+
 func createChart(title string, results []shared.BenchmarkResult, statIndex int) *charts.Bar {
 	// Group data by workload and subject
 	data := make(map[string]map[string]string)
@@ -87,33 +144,36 @@ func createChart(title string, results []shared.BenchmarkResult, statIndex int) 
 			Left:         "3%",
 			Right:        "3%",
 			Bottom:       "3%",
-			Top:          "15%",
+			Top:          calculateLegendSpace(countTotalSubjects(results)),
 			ContainLabel: opts.Bool(true),
 		}),
 		charts.WithTitleOpts(opts.Title{
 			Title: title,
+			Top:   "1%",
+			Left:  "2%",
 		}),
 		charts.WithLegendOpts(opts.Legend{
-			Show:    opts.Bool(true),
-			Padding: []int{30, 0, 0, 0},
-			Right:   "3%",
-		}),
-		charts.WithTooltipOpts(opts.Tooltip{
-			Show:    opts.Bool(true),
-			Trigger: "axis",
+			Show:       opts.Bool(true),
+			Top:        "7%", // Position for legend start
+			Left:       "center",
+			ItemWidth:  10,
+			ItemHeight: 10,
+			TextStyle: &opts.TextStyle{
+				FontSize: 12,
+			},
 		}),
 		charts.WithToolboxOpts(opts.Toolbox{
-			Show: opts.Bool(true),
+			Show:  opts.Bool(true),
+			Right: "2%",
 			Feature: &opts.ToolBoxFeature{
 				SaveAsImage: &opts.ToolBoxFeatureSaveAsImage{
 					Show:  opts.Bool(true),
 					Type:  "png",
-					Title: "Save as PNG",
+					Title: "Save",
 				},
 			},
 		}),
 	)
-
 	// Get unique workloads and sort them for X-axis
 	workloads := make([]string, 0, len(data))
 	for w := range data {

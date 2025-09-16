@@ -297,11 +297,17 @@ func StreamBenchmarkChart(qw422016 *qt422016.Writer, benchCharts []shared.BenchC
 //line pkg/chart/templates/template.qtpl:271
 	qw422016.E().S(shared.FlagState.Name)
 //line pkg/chart/templates/template.qtpl:271
-	qw422016.N().S(` (CPU: `)
+	if shared.CPUCount > 0 {
 //line pkg/chart/templates/template.qtpl:271
-	qw422016.N().D(shared.CPUCount)
+		qw422016.N().S(` (CPU: `)
 //line pkg/chart/templates/template.qtpl:271
-	qw422016.N().S(`)</h1>
+		qw422016.N().D(shared.CPUCount)
+//line pkg/chart/templates/template.qtpl:271
+		qw422016.N().S(`)`)
+//line pkg/chart/templates/template.qtpl:271
+	}
+//line pkg/chart/templates/template.qtpl:271
+	qw422016.N().S(`</h1>
     `)
 //line pkg/chart/templates/template.qtpl:272
 	if shared.FlagState.Description != "" {
