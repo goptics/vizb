@@ -1,3 +1,3 @@
 package shared
 
-const TempBenchFilePrefix = "vizb-benchmark-"
+const TempBenchFilePrefix = "vizb-benchmark"

@@ -31,9 +31,12 @@ an interactive HTML chart based on the results.`,
 	Run:     runBenchmark,
 }
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
+// Execute runs the main command-line interface for vizb.
+// It processes the command line arguments and executes the benchmark visualization workflow.
+// This function is the main entry point called from main.go and handles cleanup of temporary files.
 func Execute() {
+	defer shared.TempFiles.RemoveAll()
+
 	if err := rootCmd.Execute(); err != nil {
 		shared.ExitWithError(err.Error(), nil)
 	}
@@ -76,7 +79,7 @@ func runBenchmark(cmd *cobra.Command, args []string) {
 	// Process the benchmark data
 	if isStdinPiped {
 		target = shared.MustCreateTempFile(shared.TempBenchFilePrefix, "out")
-		defer os.Remove(target)
+		shared.TempFiles.Store(target)
 
 		writeStdinPipedInputs(target)
 	} else {
@@ -162,10 +165,7 @@ func checkTargetFile(filePath string) {
 
 func generateOutputFile(filePath string) {
 	outFile := resolveOutputFileName(shared.FlagState.OutputFile, shared.FlagState.Format)
-	if preprocessedFile := preprocessInputFile(filePath); preprocessedFile != filePath {
-		filePath = preprocessedFile
-		defer os.Remove(filePath)
-	}
+	filePath = preprocessInputFile(filePath)
 	results := parseResults(filePath)
 	f := shared.MustCreateFile(outFile)
 	defer f.Close()
@@ -179,7 +179,9 @@ func generateOutputFile(filePath string) {
 func resolveOutputFileName(outFile, format string) string {
 	// create a temp file if we need to print the output inside stdout
 	if outFile == "" {
-		return shared.MustCreateTempFile(shared.TempBenchFilePrefix, format)
+		tmpFilePath := shared.MustCreateTempFile(shared.TempBenchFilePrefix, format)
+		shared.TempFiles.Store(tmpFilePath)
+		return tmpFilePath
 	}
 
 	// ensure output file has correct extension based on format (e.g., .html, .json)

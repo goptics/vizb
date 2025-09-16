@@ -19,6 +19,9 @@ type ValidationRule struct {
 	Default    string
 }
 
+// ApplyValidationRules validates and normalizes flag values according to the provided rules.
+// It checks each rule's validation function and normalizes the value if validation passes.
+// If validation fails, the program exits with an appropriate error message.
 func ApplyValidationRules(rules []ValidationRule) {
 	for _, rule := range rules {
 		// skip validation if default and rule value are both empty
@@ -44,6 +47,9 @@ func ApplyValidationRules(rules []ValidationRule) {
 	}
 }
 
+// IsBenchJSONFile determines if the given file path contains JSON benchmark data.
+// It opens the file and attempts to parse the first line as a JSON object.
+// Returns true if the file contains valid JSON benchmark events, false otherwise.
 func IsBenchJSONFile(path string) bool {
 	f, err := os.Open(path)
 	if err != nil {

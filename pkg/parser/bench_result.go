@@ -109,10 +109,16 @@ func ParseBenchmarkResults(filePath string) (results []shared.BenchmarkResult) {
 	return
 }
 
+// ConvertJsonBenchToText converts a JSON benchmark file to text format.
+// It reads JSON benchmark events from the input file and extracts the "output" field
+// from each event to create a text representation of the benchmark results.
+// Returns the path to the temporary text file containing the converted data.
 func ConvertJsonBenchToText(filePath string) string {
 	f := shared.MustOpenFile(filePath)
-	tempFilePath := shared.MustCreateTempFile("vizb-input", "txt")
-	tempFile := shared.MustOpenFile(tempFilePath)
+	tempFilePath := shared.MustCreateTempFile(shared.TempBenchFilePrefix, "txt")
+	tempFile := shared.MustCreateFile(tempFilePath)
+	shared.TempFiles.Store(tempFilePath)
+
 	defer f.Close()
 	defer tempFile.Close()
 

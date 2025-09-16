@@ -278,7 +278,7 @@ func TestWriteStdinPipedInputsErrorScenarios(t *testing.T) {
 // TestConstants validates that constants are properly defined and used
 func TestConstantsValidation(t *testing.T) {
 	t.Run("Constants have expected values", func(t *testing.T) {
-		assert.Equal(t, "vizb-benchmark-", shared.TempBenchFilePrefix,
+		assert.Equal(t, "vizb-benchmark", shared.TempBenchFilePrefix,
 			"tempBenchFilePrefix should have expected value")
 
 	})
