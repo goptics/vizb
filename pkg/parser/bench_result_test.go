@@ -13,7 +13,7 @@ import (
 type testBlock struct {
 	name           string
 	benchContent   []string // List of events to encode as JSON
-	separator      string
+	pattern        string
 	timeUnit       string
 	memUnit        string
 	allocUnit      string
@@ -43,8 +43,8 @@ func TestParseBenchmarkResults(t *testing.T) {
 			benchContent: []string{
 				"BenchmarkSimple 100 123.45 ns/op",
 			},
-			separator: "/",
-			timeUnit:  "ns",
+			timeUnit: "ns",
+			pattern:  "n/w/s",
 			expected: []shared.BenchmarkResult{
 				{
 					Name:     "",
@@ -63,7 +63,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 			benchContent: []string{
 				"BenchmarkWithMem 100 123.45 ns/op 64.0 B/op 2 allocs/op",
 			},
-			separator: "/",
+			pattern:   "n/w/s",
 			timeUnit:  "ms",
 			memUnit:   "kb",
 			allocUnit: "K",
@@ -89,7 +89,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 				"BenchmarkGroup/Task/SubjectB 100 234.56 ns/op 128.0 B/op 4 allocs/op",
 				"BenchmarkOther/Simple 100 345.67 ns/op",
 			},
-			separator: "/",
+			pattern:   "n/w/s",
 			timeUnit:  "ns",
 			memUnit:   "b",
 			allocUnit: "",
@@ -116,8 +116,8 @@ func TestParseBenchmarkResults(t *testing.T) {
 				},
 				{
 					Name:     "Other",
-					Workload: "",
-					Subject:  "Simple",
+					Workload: "Simple",
+					Subject:  "",
 					Stats: []shared.Stat{
 						{Type: "Execution Time", Value: 345.67, Unit: "ns"},
 					},
@@ -131,8 +131,8 @@ func TestParseBenchmarkResults(t *testing.T) {
 			benchContent: []string{
 				"BenchmarkParallel/SubjectA-8 100 123.45 ns/op",
 			},
-			separator: "/",
-			timeUnit:  "ns",
+			pattern:  "n/s",
+			timeUnit: "ns",
 			expected: []shared.BenchmarkResult{
 				{
 					Name:     "Parallel",
@@ -147,12 +147,12 @@ func TestParseBenchmarkResults(t *testing.T) {
 			expectCPUCount: 8,
 		},
 		{
-			name: "Mixed benchmark formats with custom separator",
+			name: "Mixed benchmark formats with custom pattern",
 			benchContent: []string{
 				"BenchmarkGroup/Task/SubjectA 100 123.45 ns/op 64.0 B/op 2 allocs/op",
 				"BenchmarkSimple 100 234.56 ns/op",
 			},
-			separator: "_",
+			pattern:   "n/w/s",
 			timeUnit:  "us",
 			memUnit:   "mb",
 			allocUnit: "M",
@@ -186,8 +186,8 @@ func TestParseBenchmarkResults(t *testing.T) {
 				"ok  \tgithub.com/example/pkg\t0.412s",
 				"BenchmarkTest 100 123.45 ns/op",
 			},
-			separator: "/",
-			timeUnit:  "ns",
+			timeUnit: "ns",
+			pattern:  "n/w/s",
 			expected: []shared.BenchmarkResult{
 				{
 					Name:     "",
@@ -204,7 +204,6 @@ func TestParseBenchmarkResults(t *testing.T) {
 		{
 			name:         "Empty file",
 			benchContent: []string{},
-			separator:    "/",
 			timeUnit:     "ns",
 			expected:     []shared.BenchmarkResult{},
 		},
@@ -216,6 +215,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 			shared.FlagState.TimeUnit = tt.timeUnit
 			shared.FlagState.MemUnit = tt.memUnit
 			shared.FlagState.AllocUnit = tt.allocUnit
+			shared.FlagState.GroupPattern = tt.pattern
 			shared.HasMemStats = false
 			shared.CPUCount = 0
 
