@@ -32,7 +32,7 @@ var colorList = []string{
 }
 
 // to map subject with color index
-var subjectColorMap map[string]int
+var subjectColorMap = make(map[string]int)
 
 func prepareTitle(name, chartTitle string) string {
 	if name != "" {
