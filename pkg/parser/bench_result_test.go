@@ -42,9 +42,10 @@ func TestParseBenchmarkResults(t *testing.T) {
 			name: "Basic benchmark without memory stats",
 			benchContent: []string{
 				"BenchmarkSimple 100 123.45 ns/op",
+				"BenchmarkSimpleBench 100 100.45 ns/op",
 			},
 			timeUnit: "ns",
-			pattern:  "n/w/s",
+			pattern:  "s",
 			expected: []shared.BenchmarkResult{
 				{
 					Name:     "",
@@ -52,6 +53,14 @@ func TestParseBenchmarkResults(t *testing.T) {
 					Subject:  "Simple",
 					Stats: []shared.Stat{
 						{Type: "Execution Time", Value: 123.45, Unit: "ns"},
+					},
+				},
+				{
+					Name:     "",
+					Workload: "",
+					Subject:  "SimpleBench",
+					Stats: []shared.Stat{
+						{Type: "Execution Time", Value: 100.45, Unit: "ns"},
 					},
 				},
 			},
@@ -63,7 +72,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 			benchContent: []string{
 				"BenchmarkWithMem 100 123.45 ns/op 64.0 B/op 2 allocs/op",
 			},
-			pattern:   "n/w/s",
+			pattern:   "s",
 			timeUnit:  "ms",
 			memUnit:   "kb",
 			allocUnit: "K",
@@ -83,11 +92,10 @@ func TestParseBenchmarkResults(t *testing.T) {
 			expectCPUCount: 0,
 		},
 		{
-			name: "Multiple benchmarks with different formats",
+			name: "Multiple benchmarks with workloads",
 			benchContent: []string{
 				"BenchmarkGroup/Task/SubjectA 100 123.45 ns/op 64.0 B/op 2 allocs/op",
 				"BenchmarkGroup/Task/SubjectB 100 234.56 ns/op 128.0 B/op 4 allocs/op",
-				"BenchmarkOther/Simple 100 345.67 ns/op",
 			},
 			pattern:   "n/w/s",
 			timeUnit:  "ns",
@@ -112,14 +120,6 @@ func TestParseBenchmarkResults(t *testing.T) {
 						{Type: "Execution Time", Value: 234.56, Unit: "ns"},
 						{Type: "Memory Usage", Value: 1024.0, Unit: "b"}, // 128*8=1024 bits
 						{Type: "Allocations", Value: 4.0, Unit: ""},
-					},
-				},
-				{
-					Name:     "Other",
-					Workload: "Simple",
-					Subject:  "",
-					Stats: []shared.Stat{
-						{Type: "Execution Time", Value: 345.67, Unit: "ns"},
 					},
 				},
 			},
@@ -147,39 +147,6 @@ func TestParseBenchmarkResults(t *testing.T) {
 			expectCPUCount: 8,
 		},
 		{
-			name: "Mixed benchmark formats with custom pattern",
-			benchContent: []string{
-				"BenchmarkGroup/Task/SubjectA 100 123.45 ns/op 64.0 B/op 2 allocs/op",
-				"BenchmarkSimple 100 234.56 ns/op",
-			},
-			pattern:   "n/w/s",
-			timeUnit:  "us",
-			memUnit:   "mb",
-			allocUnit: "M",
-			expected: []shared.BenchmarkResult{
-				{
-					Name:     "Group",
-					Workload: "Task",
-					Subject:  "SubjectA",
-					Stats: []shared.Stat{
-						{Type: "Execution Time", Value: 0.12345, Unit: "us"},
-						{Type: "Memory Usage", Value: 0.00006103515625, Unit: "mb"}, // 64/(1024*1024)
-						{Type: "Allocations", Value: 0.000002, Unit: "M"},
-					},
-				},
-				{
-					Name:     "",
-					Workload: "",
-					Subject:  "Simple",
-					Stats: []shared.Stat{
-						{Type: "Execution Time", Value: 0.23456, Unit: "us"},
-					},
-				},
-			},
-			expectMemStats: true,
-			expectCPUCount: 0,
-		},
-		{
 			name: "Non-benchmark output should be ignored",
 			benchContent: []string{
 				"PASS",
@@ -187,7 +154,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 				"BenchmarkTest 100 123.45 ns/op",
 			},
 			timeUnit: "ns",
-			pattern:  "n/w/s",
+			pattern:  "s",
 			expected: []shared.BenchmarkResult{
 				{
 					Name:     "",

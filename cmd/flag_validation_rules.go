@@ -47,6 +47,6 @@ var flagValidationRules = []utils.ValidationRule{
 
 			return true
 		},
-		Default: "name/workload/subject",
+		Default: "subject",
 	},
 }

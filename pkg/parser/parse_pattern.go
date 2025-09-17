@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
-	"slices"
 	"strings"
 )
 
@@ -20,24 +19,6 @@ func ParseBenchmarkNameToGroups(name, pattern string) (map[string]string, error)
 	nameParts := splitNameByPattern(name, pattern)
 	result := mapPartsToResult(patternParts, nameParts)
 
-	// If not enough parts in name, only return what we have
-	if len(nameParts) < len(patternParts) && hasNameInPattern(patternParts) {
-		filteredResult := make(map[string]string)
-		for key, value := range result {
-			if value != "" {
-				filteredResult[key] = value
-			}
-		}
-		return filteredResult, nil
-	}
-
-	// Default behavior: if no name in pattern, add implicit name=""
-	if !hasNameInPattern(patternParts) && len(patternParts) > 1 {
-		result["name"] = ""
-	}
-
-	fmt.Println("name is not removing", result)
-
 	return result, nil
 }
 
@@ -50,11 +31,21 @@ func ValidatePattern(pattern string) error {
 	validParts := regexp.MustCompile(`^[nsw]|name|subject|workload$`)
 	parts := separatorRegex.Split(pattern, -1)
 
+	// subject is required
+	var hasSubject bool
 	for _, part := range parts {
 		if !validParts.MatchString(part) {
 			return fmt.Errorf("Invalid part: '%s'; only name(n), subject(s), workload(w) allowed", part)
 		}
+		if part == "s" || part == "subject" {
+			hasSubject = true
+		}
 	}
+
+	if !hasSubject {
+		return errors.New("pattern must contain subject(s)")
+	}
+
 	return nil
 }
 
@@ -105,17 +96,10 @@ func mapPartsToResult(patternParts, nameParts []string) map[string]string {
 	for i, part := range patternParts {
 		if i < len(nameParts) {
 			result[part] = nameParts[i]
-		} else {
-			result[part] = ""
 		}
 	}
 
 	return result
-}
-
-// hasNameInPattern checks if pattern contains name
-func hasNameInPattern(parts []string) bool {
-	return slices.Contains(parts, "name")
 }
 
 // expandShorthand converts shorthand to full name

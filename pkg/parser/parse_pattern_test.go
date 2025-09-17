@@ -19,8 +19,9 @@ func TestParseNameToGroups(t *testing.T) {
 			benchmarkName: "Rivet_GPlusStatic",
 			pattern:       "name_subject",
 			expected: map[string]string{
-				"name":    "Rivet",
-				"subject": "GPlusStatic",
+				"name":     "Rivet",
+				"subject":  "GPlusStatic",
+				"workload": "",
 			},
 			expectError: false,
 		},
@@ -73,17 +74,9 @@ func TestParseNameToGroups(t *testing.T) {
 			benchmarkName: "Rivet_GPlusStatic",
 			pattern:       "subject",
 			expected: map[string]string{
-				"subject": "Rivet_GPlusStatic",
-			},
-			expectError: false,
-		},
-		// name will be consider as subject if only name found
-		{
-			name:          "Default behavior: name only pattern",
-			benchmarkName: "Rivet",
-			pattern:       "name",
-			expected: map[string]string{
-				"subject": "Rivet",
+				"name":     "",
+				"subject":  "Rivet_GPlusStatic",
+				"workload": "",
 			},
 			expectError: false,
 		},
@@ -105,8 +98,9 @@ func TestParseNameToGroups(t *testing.T) {
 			benchmarkName: "MyLib_ComplexFunction_TestCase",
 			pattern:       "name_subject",
 			expected: map[string]string{
-				"name":    "MyLib",
-				"subject": "ComplexFunction_TestCase",
+				"name":     "MyLib",
+				"subject":  "ComplexFunction_TestCase",
+				"workload": "",
 			},
 			expectError: false,
 		},
@@ -137,7 +131,9 @@ func TestParseNameToGroups(t *testing.T) {
 			benchmarkName: "Rivet",
 			pattern:       "name_subject_workload",
 			expected: map[string]string{
-				"name": "Rivet",
+				"name":     "Rivet",
+				"subject":  "",
+				"workload": "",
 			},
 			expectError: false,
 		},
@@ -208,6 +204,24 @@ func TestValidatePattern(t *testing.T) {
 			name:        "Valid pattern: all parts",
 			pattern:     "name_subject_workload",
 			expectError: false,
+		},
+		{
+			name:          "Invalid pattern: missing subject",
+			pattern:       "name_workload",
+			expectError:   true,
+			errorContains: "pattern must contain subject(s)",
+		},
+		{
+			name:          "Invalid pattern: name only",
+			pattern:       "name",
+			expectError:   true,
+			errorContains: "pattern must contain subject(s)",
+		},
+		{
+			name:          "Invalid pattern: workload only",
+			pattern:       "workload",
+			expectError:   true,
+			errorContains: "pattern must contain subject(s)",
 		},
 	}
 

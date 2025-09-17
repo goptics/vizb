@@ -50,7 +50,7 @@ func init() {
 	rootCmd.Flags().StringVarP(&shared.FlagState.MemUnit, "mem-unit", "m", "B", "Memory unit available: b, B, KB, MB, GB")
 	rootCmd.Flags().StringVarP(&shared.FlagState.TimeUnit, "time-unit", "t", "ns", "Time unit available: ns, us, ms, s")
 	rootCmd.Flags().StringVarP(&shared.FlagState.AllocUnit, "alloc-unit", "a", "", "Allocation unit available: K, M, B, T (default: as-is)")
-	rootCmd.Flags().StringVarP(&shared.FlagState.GroupPattern, "group-pattern", "p", "name/workload/subject", "")
+	rootCmd.Flags().StringVarP(&shared.FlagState.GroupPattern, "group-pattern", "p", "subject", "Pattern to extract grouping information from benchmark names")
 
 	// Add a hook to validate flags after parsing
 	cobra.OnInitialize(func() {
