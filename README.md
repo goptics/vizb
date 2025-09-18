@@ -109,14 +109,14 @@ The pattern defines the order and separators for extracting:
 
 ### Examples
 
-| Pattern                 | Benchmark Name                        | Name        | Workload    | Subject        | Description                            |
-| ----------------------- | ------------------------------------- | ----------- | ----------- | -------------- | -------------------------------------- |
-| `subject`               | `BenchmarkStringConcat`               | _(empty)_   | _(empty)_   | `StringConcat` | Default: treats entire name as subject |
-| `name/subject`          | `BenchmarkStringOps/Concat`           | `StringOps` | _(empty)_   | `Concat`       | Name and subject with slash            |
-| `name/workload/subject` | `BenchmarkStringOps/LargeData/Concat` | `StringOps` | `LargeData` | `Concat`       | All three components                   |
-| `subject/workload/name` | `BenchmarkConcat/LargeData/StringOps` | `StringOps` | `LargeData` | `Concat`       | Custom order                           |
-| `name_subject_workload` | `BenchmarkStringOps_Concat_LargeData` | `StringOps` | `LargeData` | `Concat`       | Underscore separator                   |
-| `/name/subject`         | `BenchmarkIgnored/StringOps/Concat`   | `StringOps` | _(empty)_   | `Concat`       | Skip first part                        |
+| Pattern | Benchmark Name                        | Name        | Workload    | Subject        | Description                            |
+| ------- | ------------------------------------- | ----------- | ----------- | -------------- | -------------------------------------- |
+| `s`     | `BenchmarkStringConcat`               | _(empty)_   | _(empty)_   | `StringConcat` | Default: treats entire name as subject |
+| `n/s`   | `BenchmarkStringOps/Concat`           | `StringOps` | _(empty)_   | `Concat`       | Name and subject with slash            |
+| `n/w/s` | `BenchmarkStringOps/LargeData/Concat` | `StringOps` | `LargeData` | `Concat`       | All three components                   |
+| `s/w/n` | `BenchmarkConcat/LargeData/StringOps` | `StringOps` | `LargeData` | `Concat`       | Custom order                           |
+| `n_s_w` | `BenchmarkStringOps_Concat_LargeData` | `StringOps` | `LargeData` | `Concat`       | Underscore separator                   |
+| `/n/s`  | `BenchmarkIgnored/StringOps/Concat`   | `StringOps` | _(empty)_   | `Concat`       | Skip first part                        |
 
 > [!Note]
 > The `workload` dimension only appears in charts when there are multiple workloads to compare. If all benchmarks have the same workload (or no workload), charts will be simplified to show just subjects.
