@@ -13,62 +13,60 @@ import (
 )
 
 var colorList = []string{
+	"#5470C6", // Blue
+	"#3BA272", // Green
+	"#FC8452", // Orange
+	"#73C0DE", // Light blue
+	"#EE6666", // Red
+	"#FAC858", // Yellow
+	"#9A60B4", // Purple
+	"#EA7CCC", // Pink
+	"#91CC75", // Lime
+	"#FF9F7F", // Coral
 
-	"#E74C3C", // Red
-	"#3498DB", // Blue
-	"#2ECC71", // Green
-	"#F39C12", // Orange
-	"#9B59B6", // Purple
-	"#1ABC9C", // Teal
-	"#E67E22", // Dark Orange
-	"#34495E", // Dark Blue Gray
-	"#F1C40F", // Yellow
-	"#E91E63", // Pink
-	"#00BCD4", // Cyan
-	"#8BC34A", // Light Green
-	"#FF9800", // Amber
-	"#673AB7", // Deep Purple
-	"#009688", // Teal Green
-	"#795548", // Brown
-	"#607D8B", // Blue Gray
-	"#FFC107", // Gold
-	"#FF5722", // Deep Orange
-	"#4CAF50", // Material Green
-	"#2196F3", // Material Blue
-	"#FFEB3B", // Bright Yellow
-	"#9C27B0", // Material Purple
-	"#00E676", // Neon Green
-	"#FF1744", // Bright Red
-	"#00B0FF", // Light Blue
-	"#FFAB00", // Deep Amber
-	"#AA00FF", // Electric Purple
-	"#76FF03", // Lime
-	"#FF6D00", // Vivid Orange
-	"#18FFFF", // Aqua Cyan
-	"#C6FF00", // Electric Lime
-	"#FF3D00", // Red Orange
-	"#651FFF", // Indigo
-	"#00E5FF", // Light Cyan
-	"#AEEA00", // Yellow Green
-	"#DD2C00", // Deep Red
-	"#3F51B5", // Indigo Blue
-	"#4DB6AC", // Medium Aquamarine
-	"#8D6E63", // Light Brown
-	"#A1887F", // Warm Gray
-	"#90A4AE", // Cool Gray
-	"#BCAAA4", // Beige
-	"#D7CCC8", // Light Beige
-	"#F8BBD9", // Light Pink
-	"#C8E6C9", // Mint Green
-	"#DCEDC1", // Pale Green
-	"#F0F4C3", // Pale Yellow
-	"#FFF9C4", // Cream
-	"#FFCCBC", // Peach
-	"#D1C4E9", // Lavender
-	"#C5CAE9", // Periwinkle
-	"#BBDEFB", // Alice Blue
-	"#B3E5FC", // Powder Blue
-	"#B2EBF2", // Pale Turquoise
+	"#3E5A9E", // Navy Depth (Blue)
+	"#2E7D32", // Forest Canopy (Green)
+	"#EF6C00", // Burnt Sienna (Orange)
+	"#7E57C2", // Amethyst Veil (Purple)
+	"#F9A825", // Goldenrod Shine (Yellow)
+	"#6A8ACF", // Steel Blue (Blue)
+	"#4CAF50", // Emerald Leaf (Green)
+	"#FF8F00", // Amber Flame (Orange)
+	"#AB47BC", // Fuchsia Bloom (Pink)
+	"#FFEB3B", // Lemon Zest (Yellow)
+
+	"#2B4E72", // Midnight Slate (Blue)
+	"#1B5E20", // Pine Shadow (Green)
+	"#D84315", // Rust Ember (Red)
+	"#512DA8", // Violet Shadow (Purple)
+	"#F57F17", // Saffron Warmth (Yellow)
+	"#4A90E2", // Cobalt Glow (Blue)
+	"#66BB6A", // Verdant Bloom (Green)
+	"#FF5722", // Coral Fire (Orange)
+	"#BA68C8", // Orchid Haze (Purple)
+	"#FFF176", // Banana Glow (Yellow)
+
+	"#1E3A5F", // Deep Ocean (Blue)
+	"#00695C", // Jade Depth (Green)
+	"#BF360C", // Crimson Ember (Red)
+	"#673AB7", // Plum Depth (Purple)
+	"#C0CA33", // Chartreuse Edge (Lime)
+	"#7FB3D5", // Azure Mist (Blue)
+	"#81C784", // Moss Glow (Green)
+	"#FFAB91", // Peach Sunset (Orange)
+	"#E040FB", // Magenta Spark (Pink)
+	"#DCE775", // Lime Radiance (Lime)
+
+	"#335C8A", // Indigo Wave (Blue)
+	"#388E3C", // Olive Ridge (Green)
+	"#E64A19", // Tangerine Blaze (Orange)
+	"#9575CD", // Lavender Dusk (Purple)
+	"#78909C", // Slate Gray-Blue (Neutral)
+	"#5C9EAD", // Teal Horizon (Blue-Green)
+	"#AED581", // Sage Whisper (Green)
+	"#FF7043", // Salmon Glow (Orange)
+	"#F06292", // Rose Quartz (Pink)
+	"#A1887F", // Taupe Earth (Neutral)
 }
 
 // to map subject with color index
