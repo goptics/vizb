@@ -71,6 +71,9 @@ var colorList = []string{
 	"#B2EBF2", // Pale Turquoise
 }
 
+// to map subject with color index
+var subjectColorMap = make(map[string]int)
+
 func prepareTitle(name, chartTitle string) string {
 	if name != "" {
 		return name + " - " + chartTitle
@@ -195,11 +198,11 @@ func createChart(title string, results []shared.BenchmarkResult, statIndex int) 
 	}
 	sort.Strings(subjectList)
 
-	// Assign colors to subjects dynamically
-	colors := make(map[string]string)
 	for i, subject := range subjectList {
-		colorIndex := i % len(colorList) // Cycle through colors if we have more subjects than colors
-		colors[subject] = colorList[colorIndex]
+		if colorIndex, has := subjectColorMap[subject]; !has {
+			colorIndex = i % len(colorList) // Cycle through colors if we have more subjects than colors
+			subjectColorMap[subject] = colorIndex
+		}
 	}
 
 	// Add a series for each subject
@@ -214,7 +217,7 @@ func createChart(title string, results []shared.BenchmarkResult, statIndex int) 
 		}
 
 		// Get color for this subject - we should always have a color assigned
-		color := colors[subject]
+		color := colorList[subjectColorMap[subject]]
 
 		// Add the series to the chart
 		bar.AddSeries(subject, values,
