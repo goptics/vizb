@@ -542,6 +542,7 @@ func TestIntegrationWithParser(t *testing.T) {
 		shared.FlagState.TimeUnit = "ns"
 		shared.FlagState.MemUnit = "B"
 		shared.FlagState.AllocUnit = ""
+		shared.FlagState.GroupPattern = "subject"
 
 		// Parse the results
 		results := parser.ParseBenchmarkResults(filePath)
