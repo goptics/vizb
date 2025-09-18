@@ -34,6 +34,11 @@ func ValidatePattern(pattern string) error {
 	// subject is required
 	var hasSubject bool
 	for _, part := range parts {
+		// Skip empty parts (from leading/trailing separators)
+		if part == "" {
+			continue
+		}
+
 		if !validParts.MatchString(part) {
 			return fmt.Errorf("Invalid part: '%s'; only name(n), subject(s), workload(w) allowed", part)
 		}
@@ -52,9 +57,11 @@ func ValidatePattern(pattern string) error {
 // parsePatternParts extracts and normalizes pattern parts
 func parsePatternParts(pattern string) []string {
 	parts := separatorRegex.Split(pattern, -1)
+
 	for i, part := range parts {
 		parts[i] = expandShorthand(part)
 	}
+
 	return parts
 }
 
@@ -94,6 +101,10 @@ func mapPartsToResult(patternParts, nameParts []string) map[string]string {
 	}
 
 	for i, part := range patternParts {
+		if part == "" {
+			continue
+		}
+
 		if i < len(nameParts) {
 			result[part] = nameParts[i]
 		}

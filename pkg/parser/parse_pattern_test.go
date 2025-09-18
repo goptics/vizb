@@ -125,6 +125,16 @@ func TestParseNameToGroups(t *testing.T) {
 			},
 			expectError: false,
 		},
+		{
+			name:          "Skip words",
+			benchmarkName: "Tasks/Name/Workload/Subject",
+			pattern:       "/name/workload/subject",
+			expected: map[string]string{
+				"name":     "Name",
+				"subject":  "Subject",
+				"workload": "Workload",
+			},
+		},
 		// Not enough parts in benchmark name
 		{
 			name:          "Not enough parts in benchmark name",
