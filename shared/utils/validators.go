@@ -16,6 +16,7 @@ type ValidationRule struct {
 	Value      *string
 	ValidSet   []string
 	Normalizer func(string) string
+	Validator  func(string) bool
 	Default    string
 }
 
@@ -33,8 +34,14 @@ func ApplyValidationRules(rules []ValidationRule) {
 			*rule.Value = rule.Normalizer(*rule.Value)
 		}
 
+		isValid := slices.Contains(rule.ValidSet, *rule.Value)
+
+		if rule.Validator != nil {
+			isValid = rule.Validator(*rule.Value)
+		}
+
 		// Validate
-		if !slices.Contains(rule.ValidSet, *rule.Value) {
+		if !isValid {
 			fmt.Fprintf(
 				os.Stderr,
 				"⚠️  Warning: Invalid %s '%s'. Using default '%s'\n",

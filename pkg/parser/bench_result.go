@@ -20,9 +20,9 @@ func storeCpuCount(cpu string) {
 	}
 }
 
-func parseBenchmarkName(name benchfmt.Name) (base string, parts []string, cpu string) {
+func parseBenchmarkName(name benchfmt.Name) (benchName string, cpu string) {
 	b, ps := name.Parts()
-	base = string(b)
+	benchName = string(b)
 
 	for _, b := range ps {
 		part := string(b)
@@ -30,22 +30,10 @@ func parseBenchmarkName(name benchfmt.Name) (base string, parts []string, cpu st
 		if has := strings.HasPrefix(part, "-"); has {
 			cpu = strings.TrimPrefix(part, "-")
 		} else {
-			parts = append(parts, strings.TrimPrefix(part, "/"))
+			benchName += part
 		}
 	}
 
-	return
-}
-
-func parseBenchGroupsFromName(base string, parts []string) (benchName, workload, subject string) {
-	switch l := len(parts); l {
-	case 0:
-		subject = base
-	case 1:
-		benchName, subject = base, parts[0]
-	default:
-		benchName, workload, subject = base, parts[l-2], parts[l-1]
-	}
 	return
 }
 
@@ -63,8 +51,15 @@ func ParseBenchmarkResults(filePath string) (results []shared.BenchmarkResult) {
 			continue
 		}
 
-		base, parts, cpu := parseBenchmarkName(result.Name)
-		benchName, workload, subject := parseBenchGroupsFromName(base, parts)
+		rawBenchName, cpu := parseBenchmarkName(result.Name)
+		group, err := ParseBenchmarkNameToGroups(rawBenchName, shared.FlagState.GroupPattern)
+
+		if err != nil {
+			shared.ExitWithError("Error on parsing group from bench name", err)
+		}
+
+		benchName, workload, subject := group["name"], group["workload"], group["subject"]
+
 		storeCpuCount(cpu)
 
 		var benchStats []shared.Stat

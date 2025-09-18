@@ -7,7 +7,7 @@
 [![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8?style=for&logo=go)](https://golang.org/doc/devel/release.html)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=for)](LICENSE)
 
-Vizb is a powerful CLI tool for visualizing Go benchmark results as interactive HTML charts. It automatically processes both raw benchmark output and JSON-formatted benchmark data, helping you compare the performance of different implementations across various workloads.
+Vizb is a powerful CLI tool for visualizing Go benchmark results as interactive HTML charts with advance grouping. It automatically processes both raw benchmark output and JSON-formatted benchmark data, helping you compare the performance of different implementations across various workloads.
 
 ## Features
 
@@ -16,17 +16,14 @@ Vizb is a powerful CLI tool for visualizing Go benchmark results as interactive 
 - **Multiple Metrics**: Compare execution time, memory usage, and allocation counts
 - **Customizable Units**: Display metrics in your preferred units (ns/us/ms/s for time, b/B/KB/MB/GB for memory)
 - **Allocation Units**: Customize allocation count representation (K/M/B/T)
+- **Flexible Grouping**: Use custom patterns to extract grouping information from benchmark names with `--group-pattern`
 - **Multiple Output Formats**: Generate HTML charts or JSON data with the `--format` flag
 - **Responsive Design**: Charts work well on any device or screen size
 - **Export Capability**: Save charts as PNG images directly from the browser
 - **Simple CLI Interface**: Easy-to-use command line interface with helpful flags
 - **Piped Input Support**: Process benchmark data directly from stdin
 
-## Overview varmq benchmark
-
-https://github.com/user-attachments/assets/71830a61-76a5-4917-9bb6-7d06be0cc625
-
-### The chart output
+## Overview
 
 https://github.com/user-attachments/assets/5dad22b0-d21f-434f-ad6e-57f4ebc74981
 
@@ -80,9 +77,49 @@ go test -bench . -run=^$ | vizb -o output.html
 go test -bench . -run=^$ -json | vizb -o output.html
 ```
 
-3. Open the generated HTML file in your browser to view the interactive charts.
+Open the generated HTML file in your browser to view the interactive charts.
 
 **Note**: Vizb automatically detects the input format (raw or JSON) and processes it accordingly. JSON files are automatically converted to the required text format for parsing.
+
+## How vizb groups your benchmark results
+
+Vizb organizes your benchmark results into logical groups to create meaningful charts by organizing related benchmarks together. You can control how benchmarks are grouped using the `--group-pattern` flag.
+
+### Group Pattern Configuration
+
+Use the `--group-pattern` (or `-p`) flag to specify how vizb should extract grouping information from your benchmark names:
+
+```bash
+vizb --group-pattern "name/workload/subject" results.txt
+```
+
+The pattern defines the order and separators for extracting:
+
+- **Name**: The benchmark family/category name
+- **Workload**: The test condition or data size
+- **Subject**: The specific operation being benchmarked (required)
+
+![vizb chart example](./assets/vizb-char-overview.png)
+
+### Pattern Syntax
+
+**Components**: Use `name`, `workload`, `subject` (or shorthand `n`, `w`, `s`)
+**Separators**: Use `/` (slash) or `_` (underscore) to define how parts are split.
+**Required**: Every pattern must include `subject` (the operation being measured)
+
+### Examples
+
+| Pattern                 | Benchmark Name                        | Name        | Workload    | Subject        | Description                            |
+| ----------------------- | ------------------------------------- | ----------- | ----------- | -------------- | -------------------------------------- |
+| `subject`               | `BenchmarkStringConcat`               | _(empty)_   | _(empty)_   | `StringConcat` | Default: treats entire name as subject |
+| `name/subject`          | `BenchmarkStringOps/Concat`           | `StringOps` | _(empty)_   | `Concat`       | Name and subject with slash            |
+| `name/workload/subject` | `BenchmarkStringOps/LargeData/Concat` | `StringOps` | `LargeData` | `Concat`       | All three components                   |
+| `subject/workload/name` | `BenchmarkConcat/LargeData/StringOps` | `StringOps` | `LargeData` | `Concat`       | Custom order                           |
+| `name_subject_workload` | `BenchmarkStringOps_Concat_LargeData` | `StringOps` | `LargeData` | `Concat`       | Underscore separator                   |
+| `/name/subject`         | `BenchmarkIgnored/StringOps/Concat`   | `StringOps` | _(empty)_   | `Concat`       | Skip first part                        |
+
+> [!Note]
+> The `workload` dimension only appears in charts when there are multiple workloads to compare. If all benchmarks have the same workload (or no workload), charts will be simplified to show just subjects.
 
 ### Command Line Options
 
@@ -99,52 +136,11 @@ Flags:
   -d, --description string  Description of the benchmark
   -o, --output string       Output HTML file name
   -f, --format string       Output format (html, json) (default "html")
+  -p, --group-pattern string Pattern to extract grouping information from benchmark names (default "subject")
   -m, --mem-unit string     Memory unit available: b, B, KB, MB, GB (default "B")
   -t, --time-unit string    Time unit available: ns, us, ms, s (default "ns")
   -a, --alloc-unit string   Allocation unit available: K, M, B, T (default: as-is)
   -v, --version             Show version information
-```
-
-### Examples
-
-#### Basic usage with raw benchmark file
-
-```bash
-vizb bench.txt
-```
-
-#### Basic usage with JSON benchmark file
-
-```bash
-vizb bench.json
-```
-
-#### Pipe benchmark results directly (raw)
-
-```bash
-go test -bench . -run=^$ | vizb
-```
-
-#### Pipe benchmark results directly (JSON)
-
-```bash
-go test -bench . -run=^$ -json | vizb
-```
-
-#### Custom output file
-
-```bash
-vizb bench.txt -o custom_chart.html
-```
-
-#### Generate JSON output instead of HTML
-
-```bash
-# Using long flag name
-vizb bench.txt --format json -o benchmarks.json
-
-# Using short flag name
-vizb bench.json -f json -o benchmark_results.json
 ```
 
 #### Custom chart name and description
@@ -158,57 +154,6 @@ vizb bench.txt -n "String Comparison Benchmarks" -d "Comparing different string 
 ```bash
 vizb bench.txt -t ms -m MB
 ```
-
-#### Show version information
-
-```bash
-vizb --version
-```
-
-## How vizb groups your benchmark results
-
-Vizb organizes your benchmark results into logical groups using the forward slash (`/`) as a separator. This grouping helps create meaningful charts by organizing related benchmarks together.
-
-### Grouping Logic
-
-For a benchmark named `BenchmarkTest/workload/subject`, Vizb will group it as:
-
-- **BenchName**: `Test`
-- **Workload**: `workload`
-- **Subject**: `subject`
-
-![vizb chart example](./assets/vizb-char-overview.png)
-
-### Naming Rules
-
-Vizb follows these rules for organizing benchmark names:
-
-- The **last part** after the separator becomes the `subject`
-- The **second-to-last part** becomes the `workload` (only when there are 3+ parts)
-- The **first part** (after removing "Benchmark" prefix) becomes the benchmark `name`
-
-### Examples
-
-**3+ parts**: `BenchmarkStringOps/LargeData/Concat`
-
-- Name: `StringOps`
-- Workload: `LargeData`
-- Subject: `Concat`
-
-**2 parts**: `BenchmarkStringOps/Concat`
-
-- Name: `StringOps`
-- Workload: _(empty)_
-- Subject: `Concat`
-
-**1 part**: `BenchmarkStringConcat`
-
-- Name: _(empty)_
-- Workload: _(empty)_
-- Subject: `StringConcat`
-
-> [!Note]
-> The `workload` dimension only appears in charts when there are multiple workloads to compare. If all benchmarks have the same workload (or no workload), charts will be simplified to show just subjects.
 
 ## Chart Types
 

@@ -536,17 +536,17 @@ func TestIntegrationWithParser(t *testing.T) {
 		createTestFile(t, filePath, []string{
 			"BenchmarkGroup/Task/SubjectA 100 123.45 ns/op 64.0 B/op 2 allocs/op",
 			"BenchmarkGroup/Task/SubjectB 100 234.56 ns/op 128.0 B/op 4 allocs/op",
-			"BenchmarkOther/Simple 100 345.67 ns/op",
 		})
 
 		// Set flag state for the test
 		shared.FlagState.TimeUnit = "ns"
 		shared.FlagState.MemUnit = "B"
 		shared.FlagState.AllocUnit = ""
+		shared.FlagState.GroupPattern = "subject"
 
 		// Parse the results
 		results := parser.ParseBenchmarkResults(filePath)
-		assert.Len(t, results, 3)
+		assert.Len(t, results, 2)
 
 		// Generate charts
 		benchCharts := GenerateHTMLCharts(results)
