@@ -5,6 +5,33 @@ All notable changes to the Vizb project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2025-09-18
+
+### Added
+
+- Advanced pattern-based grouping system for extracting groups from benchmark names
+- Skip functionality for selective benchmark processing during data analysis
+- Support for raw benchmark data processing
+- Comprehensive flag validation rules with enhanced error handling
+- Dynamic color assignment for chart subjects to ensure consistent coloring across benchmark groups
+- Enhanced temporary file management system
+- Extensive test coverage for previously untested functions including temp file creation, stdin processing, and output generation
+
+### Changed
+
+- Enhanced flag validation to require subject parameter specification
+- Improved chart template UX with dynamic legend section resizing based on subject numbers
+- Updated documentation with advanced grouping examples and usage patterns
+- Refined benchmark progress real-time logic
+- Streamlined error handling and file operations with shared utility functions
+- Updated README with shorthand patterns to reduce table width
+
+### Fixed
+
+- Improved chart template UX by hiding CPU number display when value is 0
+- Enhanced error handling in benchmark result parsing for group parsing
+- Resolved inconsistent color assignment issue when benchmark groups have different subject list lengths
+
 ## [0.3.2] - 2025-09-13
 
 ### Fixed
