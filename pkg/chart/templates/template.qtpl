@@ -268,7 +268,7 @@
     </script>
 </head>
 <body>
-    <h1>{%s shared.FlagState.Name %} (CPU: {%d shared.CPUCount %})</h1>
+    <h1>{%s shared.FlagState.Name %}{% if shared.CPUCount > 0 %} (CPU: {%d shared.CPUCount %}){% endif %}</h1>
     {% if shared.FlagState.Description != "" %}
     <p style="text-align: center; margin-bottom: 20px;">{%s shared.FlagState.Description %}</p>
     {% endif %}

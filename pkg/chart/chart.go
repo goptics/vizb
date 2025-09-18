@@ -23,12 +23,50 @@ var colorList = []string{
 	"#EA7CCC", // Pink
 	"#91CC75", // Lime
 	"#FF9F7F", // Coral
-	"#B6A2DE", // Lavender
-	"#FFC069", // Peach
-	"#5BCEFA", // Sky blue
-	"#FFB7B2", // Rose
-	"#A8E6CF", // Mint
-	"#DDBDF1", // Lilac
+
+	"#3E5A9E", // Navy Depth (Blue)
+	"#2E7D32", // Forest Canopy (Green)
+	"#EF6C00", // Burnt Sienna (Orange)
+	"#7E57C2", // Amethyst Veil (Purple)
+	"#F9A825", // Goldenrod Shine (Yellow)
+	"#6A8ACF", // Steel Blue (Blue)
+	"#4CAF50", // Emerald Leaf (Green)
+	"#FF8F00", // Amber Flame (Orange)
+	"#AB47BC", // Fuchsia Bloom (Pink)
+	"#FFEB3B", // Lemon Zest (Yellow)
+
+	"#2B4E72", // Midnight Slate (Blue)
+	"#1B5E20", // Pine Shadow (Green)
+	"#D84315", // Rust Ember (Red)
+	"#512DA8", // Violet Shadow (Purple)
+	"#F57F17", // Saffron Warmth (Yellow)
+	"#4A90E2", // Cobalt Glow (Blue)
+	"#66BB6A", // Verdant Bloom (Green)
+	"#FF5722", // Coral Fire (Orange)
+	"#BA68C8", // Orchid Haze (Purple)
+	"#FFF176", // Banana Glow (Yellow)
+
+	"#1E3A5F", // Deep Ocean (Blue)
+	"#00695C", // Jade Depth (Green)
+	"#BF360C", // Crimson Ember (Red)
+	"#673AB7", // Plum Depth (Purple)
+	"#C0CA33", // Chartreuse Edge (Lime)
+	"#7FB3D5", // Azure Mist (Blue)
+	"#81C784", // Moss Glow (Green)
+	"#FFAB91", // Peach Sunset (Orange)
+	"#E040FB", // Magenta Spark (Pink)
+	"#DCE775", // Lime Radiance (Lime)
+
+	"#335C8A", // Indigo Wave (Blue)
+	"#388E3C", // Olive Ridge (Green)
+	"#E64A19", // Tangerine Blaze (Orange)
+	"#9575CD", // Lavender Dusk (Purple)
+	"#78909C", // Slate Gray-Blue (Neutral)
+	"#5C9EAD", // Teal Horizon (Blue-Green)
+	"#AED581", // Sage Whisper (Green)
+	"#FF7043", // Salmon Glow (Orange)
+	"#F06292", // Rose Quartz (Pink)
+	"#A1887F", // Taupe Earth (Neutral)
 }
 
 // to map subject with color index
@@ -68,6 +106,23 @@ func groupResultsByName(results []shared.BenchmarkResult) (map[string][]shared.B
 	return benchGroups, groupNames
 }
 
+func countTotalSubjects(results []shared.BenchmarkResult) int {
+	counter := make(map[string]bool)
+
+	for _, r := range results {
+		counter[r.Subject] = true
+	}
+
+	return len(counter)
+}
+
+func calculateLegendSpace(numItems int) string {
+	itemsPerColumn := 15
+	columns := (numItems + itemsPerColumn - 1) / itemsPerColumn
+
+	return fmt.Sprintf("%d%%", min(15+(columns-1)*4, 35))
+}
+
 func createChart(title string, results []shared.BenchmarkResult, statIndex int) *charts.Bar {
 	// Group data by workload and subject
 	data := make(map[string]map[string]string)
@@ -90,33 +145,36 @@ func createChart(title string, results []shared.BenchmarkResult, statIndex int) 
 			Left:         "3%",
 			Right:        "3%",
 			Bottom:       "3%",
-			Top:          "15%",
+			Top:          calculateLegendSpace(countTotalSubjects(results)),
 			ContainLabel: opts.Bool(true),
 		}),
 		charts.WithTitleOpts(opts.Title{
 			Title: title,
+			Top:   "1%",
+			Left:  "2%",
 		}),
 		charts.WithLegendOpts(opts.Legend{
-			Show:    opts.Bool(true),
-			Padding: []int{30, 0, 0, 0},
-			Right:   "3%",
-		}),
-		charts.WithTooltipOpts(opts.Tooltip{
-			Show:    opts.Bool(true),
-			Trigger: "axis",
+			Show:       opts.Bool(true),
+			Top:        "7%", // Position for legend start
+			Left:       "center",
+			ItemWidth:  10,
+			ItemHeight: 10,
+			TextStyle: &opts.TextStyle{
+				FontSize: 12,
+			},
 		}),
 		charts.WithToolboxOpts(opts.Toolbox{
-			Show: opts.Bool(true),
+			Show:  opts.Bool(true),
+			Right: "2%",
 			Feature: &opts.ToolBoxFeature{
 				SaveAsImage: &opts.ToolBoxFeatureSaveAsImage{
 					Show:  opts.Bool(true),
 					Type:  "png",
-					Title: "Save as PNG",
+					Title: "Save",
 				},
 			},
 		}),
 	)
-
 	// Get unique workloads and sort them for X-axis
 	workloads := make([]string, 0, len(data))
 	for w := range data {
