@@ -55,7 +55,7 @@ func ParseBenchmarkResults(filePath string) (results []shared.BenchmarkResult) {
 		group, err := ParseBenchmarkNameToGroups(rawBenchName, shared.FlagState.GroupPattern)
 
 		if err != nil {
-
+			shared.ExitWithError("Error on parsing group from bench name", err)
 		}
 
 		benchName, workload, subject := group["name"], group["workload"], group["subject"]
