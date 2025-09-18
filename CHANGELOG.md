@@ -32,6 +32,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced error handling in benchmark result parsing for group parsing
 - Resolved inconsistent color assignment issue when benchmark groups have different subject list lengths
 
+### Breaking changes
+
+In this release the `--separator` flag is been replaced with `--group-pattern` to brings more flexibility.
+
 ## [0.3.2] - 2025-09-13
 
 ### Fixed

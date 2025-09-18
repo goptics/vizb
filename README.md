@@ -104,7 +104,9 @@ The pattern defines the order and separators for extracting:
 ### Pattern Syntax
 
 **Components**: Use `name`, `workload`, `subject` (or shorthand `n`, `w`, `s`)
+
 **Separators**: Use `/` (slash) or `_` (underscore) to define how parts are split.
+
 **Required**: Every pattern must include `subject` (the operation being measured)
 
 ### Examples
