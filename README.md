@@ -107,18 +107,26 @@ The pattern defines the order and separators for extracting:
 
 **Separators**: Use `/` (slash) or `_` (underscore) to define how parts are split.
 
+**Square Brackets**: Use `[...]` for PascalCase splitting when benchmark names don't have separators
+- `[s,w,n]` - Split PascalCase and assign consecutive words
+- `[,w]` - Skip first word, assign second word to `w`
+- `[,,s]` - Skip first 2 words, assign third word to `s`
+
 **Required**: Every pattern must include `subject` (the operation being measured)
 
 ### Examples
 
-| Pattern | Benchmark Name                        | Name        | Workload    | Subject        | Description                            |
-| ------- | ------------------------------------- | ----------- | ----------- | -------------- | -------------------------------------- |
-| `s`     | `BenchmarkStringConcat`               | _(empty)_   | _(empty)_   | `StringConcat` | Default: treats entire name as subject |
-| `n/s`   | `BenchmarkStringOps/Concat`           | `StringOps` | _(empty)_   | `Concat`       | Name and subject with slash            |
-| `n/w/s` | `BenchmarkStringOps/LargeData/Concat` | `StringOps` | `LargeData` | `Concat`       | All three components                   |
-| `s/w/n` | `BenchmarkConcat/LargeData/StringOps` | `StringOps` | `LargeData` | `Concat`       | Custom order                           |
-| `n_s_w` | `BenchmarkStringOps_Concat_LargeData` | `StringOps` | `LargeData` | `Concat`       | Underscore separator                   |
-| `/n/s`  | `BenchmarkIgnored/StringOps/Concat`   | `StringOps` | _(empty)_   | `Concat`       | Skip first part                        |
+| Pattern    | Benchmark Name                        | Name        | Workload    | Subject        | Description                            |
+| ---------- | ------------------------------------- | ----------- | ----------- | -------------- | -------------------------------------- |
+| `s`        | `BenchmarkStringConcat`               | _(empty)_   | _(empty)_   | `StringConcat` | Default: treats entire name as subject |
+| `n/s`      | `BenchmarkStringOps/Concat`           | `StringOps` | _(empty)_   | `Concat`       | Name and subject with slash            |
+| `n/w/s`    | `BenchmarkStringOps/LargeData/Concat` | `StringOps` | `LargeData` | `Concat`       | All three components                   |
+| `s/w/n`    | `BenchmarkConcat/LargeData/StringOps` | `StringOps` | `LargeData` | `Concat`       | Custom order                           |
+| `n_s_w`    | `BenchmarkStringOps_Concat_LargeData` | `StringOps` | `LargeData` | `Concat`       | Underscore separator                   |
+| `/n/s`     | `BenchmarkIgnored/StringOps/Concat`   | `StringOps` | _(empty)_   | `Concat`       | Skip first part                        |
+| `[s,w,n]`  | `SubjectWorkloadName`                 | `Name`      | `Workload`  | `Subject`      | PascalCase splitting with square brackets |
+| `s/[w]/[n]`| `Concat/LargeData/StringOps`          | `String`    | `Large`     | `Concat`       | Mixed separators and PascalCase        |
+| `[,,s]`    | `FirstSecondThirdFourth`              | _(empty)_   | _(empty)_   | `Third`        | Skip first 2 words, take 3rd          |
 
 > [!Note]
 > The `workload` dimension only appears in charts when there are multiple workloads to compare. If all benchmarks have the same workload (or no workload), charts will be simplified to show just subjects.
