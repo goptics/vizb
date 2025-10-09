@@ -4,6 +4,7 @@ package chart
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/opts"
@@ -134,13 +135,6 @@ func createChart(title string, results []shared.BenchmarkResult, statIndex int) 
 		subjectList = append(subjectList, s)
 	}
 	sort.Strings(subjectList)
-
-	for i, subject := range subjectList {
-		if colorIndex, has := subjectColorMap[subject]; !has {
-			colorIndex = i % len(colorList) // Cycle through colors if we have more subjects than colors
-			subjectColorMap[subject] = colorIndex
-		}
-	}
 
 	// Add a series for each subject
 	for _, subject := range subjectList {
