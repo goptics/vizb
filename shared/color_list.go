@@ -57,16 +57,17 @@ var ColorList = []string{
 	"#A1887F", // Taupe Earth (Neutral)
 }
 
-var colorMap = make(map[string]int)
-var i int
+var (
+	colorMap = make(map[string]int)
+	i        int
+)
 
 func GetNextColorFor(key string) string {
 	if _, has := colorMap[key]; has {
 		return ColorList[colorMap[key]]
 	}
 
-	colorIndex := i % len(ColorList) // Cycle through colors if we have more subjects than colors
-	colorMap[key] = colorIndex
+	colorIndex := i % len(ColorList)
 	color := ColorList[colorIndex]
 
 	if i == len(ColorList) {
