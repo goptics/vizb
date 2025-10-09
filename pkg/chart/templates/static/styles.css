@@ -1,0 +1,182 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    width: 100%;
+    font-family: Arial, sans-serif;
+    scroll-padding-top: 20px;
+}
+
+.chart {
+    margin: 20px auto;
+    width: 98%;
+    height: 500px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    max-width: 1080px;
+    scroll-margin-top: 20px;
+}
+
+.chart ~ .chart {
+    margin-top: 50px;
+}
+
+.container {
+    margin: 0 auto;
+    width: 100%;
+}
+
+h1 {
+    text-align: center;
+    font-family: Arial, sans-serif;
+    margin: 20px 0;
+}
+
+/* Sidebar styles */
+.sidebar {
+    position: fixed;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    background-color: rgba(255, 255, 255, 0.9);
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 10px;
+    z-index: 1000;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    max-height: 80vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    cursor: move;
+    user-select: none;
+}
+
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    cursor: move;
+}
+
+.sidebar-title {
+    font-weight: bold;
+    text-align: center;
+    font-size: 14px;
+    flex-grow: 1;
+}
+
+.minimize-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0 5px;
+    color: #666;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.minimize-btn:hover {
+    color: #333;
+}
+
+.sidebar.minimized {
+    width: auto;
+    padding: 5px;
+}
+
+.sidebar.minimized .bench-indicator,
+.sidebar.minimized .sidebar-title {
+    display: none;
+}
+
+.sidebar.minimized .minimize-btn {
+    transform: rotate(180deg);
+    font-size: 14px;
+    padding: 3px;
+    margin: 0;
+}
+
+.sidebar.minimized .sidebar-header {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.bench-indicator {
+    padding: 5px 10px;
+    border-radius: 4px;
+    background-color: #f0f0f0;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-size: 12px;
+    text-align: center;
+}
+
+.bench-indicator:hover {
+    background-color: #e0e0e0;
+}
+
+.bench-indicator.active {
+    background-color: #4CAF50;
+    color: white;
+}
+
+/* Sort controls */
+.sort-controls {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: rgba(255, 255, 255, 0.95);
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 10px;
+    z-index: 1001;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.sort-label {
+    font-size: 13px;
+    font-weight: bold;
+    color: #333;
+    margin-right: 5px;
+}
+
+.sort-btn {
+    padding: 6px 12px;
+    border: 1px solid #ccc;
+    background-color: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s;
+    outline: none;
+}
+
+.sort-btn:hover {
+    background-color: #f5f5f5;
+    border-color: #999;
+}
+
+.sort-btn.active {
+    background-color: #4CAF50;
+    color: white;
+    border-color: #4CAF50;
+}
+
+.sort-btn:active {
+    transform: scale(0.95);
+}

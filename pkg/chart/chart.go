@@ -4,7 +4,6 @@ package chart
 
 import (
 	"fmt"
-	"sort"
 
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/opts"
@@ -124,9 +123,27 @@ func calculateLegendSpace(numItems int) string {
 }
 
 func createChart(title string, results []shared.BenchmarkResult, statIndex int) *charts.Bar {
-	// Group data by workload and subject
+	// Group data by workload and subject, preserving insertion order
 	data := make(map[string]map[string]string)
+	workloads := make([]string, 0)
+	workloadSeen := make(map[string]bool)
+
+	subjectList := make([]string, 0)
+	subjectSeen := make(map[string]bool)
+
 	for _, r := range results {
+		// Track workload order
+		if !workloadSeen[r.Workload] {
+			workloads = append(workloads, r.Workload)
+			workloadSeen[r.Workload] = true
+		}
+
+		// Track subject order
+		if !subjectSeen[r.Subject] {
+			subjectList = append(subjectList, r.Subject)
+			subjectSeen[r.Subject] = true
+		}
+
 		if data[r.Workload] == nil {
 			data[r.Workload] = make(map[string]string)
 		}
@@ -175,33 +192,7 @@ func createChart(title string, results []shared.BenchmarkResult, statIndex int) 
 			},
 		}),
 	)
-	// Get unique workloads and sort them for X-axis
-	workloads := make([]string, 0, len(data))
-	for w := range data {
-		workloads = append(workloads, w)
-	}
-	sort.Strings(workloads)
 	bar.SetXAxis(workloads)
-
-	// Get unique subjects for series
-	subjects := make(map[string]struct{})
-	for _, m := range data {
-		for s := range m {
-			subjects[s] = struct{}{}
-		}
-	}
-	subjectList := make([]string, 0, len(subjects))
-	for s := range subjects {
-		subjectList = append(subjectList, s)
-	}
-	sort.Strings(subjectList)
-
-	for i, subject := range subjectList {
-		if colorIndex, has := subjectColorMap[subject]; !has {
-			colorIndex = i % len(colorList) // Cycle through colors if we have more subjects than colors
-			subjectColorMap[subject] = colorIndex
-		}
-	}
 
 	// Add a series for each subject
 	for _, subject := range subjectList {
