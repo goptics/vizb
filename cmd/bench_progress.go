@@ -17,8 +17,7 @@ type BenchmarkLine interface {
 }
 
 // Base implementation for raw benchmarks
-type RawBenchmark struct {
-}
+type RawBenchmark struct{}
 
 func (r *RawBenchmark) ExtractName(line string) string {
 	if !hasBenchmark(line) {
