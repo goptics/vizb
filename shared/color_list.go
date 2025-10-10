@@ -69,6 +69,7 @@ func GetNextColorFor(key string) string {
 
 	colorIndex := i % len(ColorList)
 	color := ColorList[colorIndex]
+	colorMap[key] = colorIndex
 
 	if i == len(ColorList) {
 		i = 0
