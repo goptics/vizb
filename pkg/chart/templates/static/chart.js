@@ -1,7 +1,18 @@
 // Store original chart data for each chart instance
 const originalChartData = new Map();
 
-// Sort chart with per-workload independent sorting
+// Chart state management
+const chartState = {
+    sortOrder: 'default',
+    showLabels: true,
+    units: {
+        time: 'ns',
+        memory: 'B',
+        count: 'ops'
+    }
+};
+
+// Sort chart intelligently based on structure
 function sortChart(chartInstance, sortOrder) {
     // Get chart ID to retrieve original data
     const chartDom = chartInstance.getDom();
@@ -27,84 +38,139 @@ function sortChart(chartInstance, sortOrder) {
     }
 
     const workloads = originalData.xAxis[0].data;
-    const subjects = originalData.series.map(function(s) { return s.name; });
+    const subjects = originalData.series.map(function (s) { return s.name; });
 
-    // Build data map: data[workload][subject] = value
-    const dataMap = {};
-    workloads.forEach(function(workload, wIdx) {
-        dataMap[workload] = {};
-        originalData.series.forEach(function(series) {
-            const dataPoint = series.data[wIdx];
-            const value = typeof dataPoint === 'object' ? parseFloat(dataPoint.value) : parseFloat(dataPoint);
-            dataMap[workload][series.name] = isNaN(value) ? 0 : value;
+    // Determine the structure:
+    // - If X-axis has meaningful data (non-empty, multiple items), workloads are on X-axis
+    // - If X-axis is empty or single empty item, subjects are in series
+    const hasRealWorkloads = workloads && workloads.length > 1 && workloads[0] !== '';
+
+    if (hasRealWorkloads) {
+        const dataMap = {};
+        workloads.forEach(function (workload, wIdx) {
+            dataMap[workload] = {};
+            originalData.series.forEach(function (series) {
+                const dataPoint = series.data[wIdx];
+                const value = typeof dataPoint === 'object' ? parseFloat(dataPoint.value) : parseFloat(dataPoint);
+                dataMap[workload][series.name] = isNaN(value) ? 0 : value;
+            });
         });
-    });
 
-    // For each workload, sort subjects by their values
-    const subjectMap = new Map()
+        // For each workload, sort subjects by their values
+        const subjectMap = new Map()
 
-    workloads.forEach(function(workload) {
-        for (const subject of subjects) {
-            const subjectValue = dataMap[workload][subject]
+        workloads.forEach(function (workload) {
+            for (const subject of subjects) {
+                const subjectValue = dataMap[workload][subject]
 
-            if (subjectMap.has(subject)) {
-                subjectMap.set(subject, {
-                    subject,
-                    total: subjectMap.get(subject).total + subjectValue
-                })
-            } else {
-                subjectMap.set(subject, {
-                    subject,
-                    total: subjectValue
-                })
+                if (subjectMap.has(subject)) {
+                    subjectMap.set(subject, {
+                        subject,
+                        total: subjectMap.get(subject).total + subjectValue
+                    })
+                } else {
+                    subjectMap.set(subject, {
+                        subject,
+                        total: subjectValue
+                    })
+                }
             }
-        }
-    });
+        });
 
-    const orderSubject = Array.from(subjectMap.values())
-        .sort((a, b) => {
+        const orderSubject = Array.from(subjectMap.values())
+            .sort((a, b) => {
+                if (sortOrder === 'asc') {
+                    return a.total - b.total;
+                }
+
+                return b.total - a.total;
+            })
+            .map(v => v.subject)
+
+
+        // Rebuild series: each workload becomes a series
+        const newSeries = workloads.map(function (workload) {
+            const data = orderSubject.map(function (subject) {
+                return dataMap[workload][subject];
+            });
+
+            return {
+                name: workload,
+                type: 'bar',
+                data: data,
+                label: {
+                    show: chartState.showLabels,
+                    position: 'top',
+                    formatter: '{c}',
+                    fontSize: 10
+                }
+            };
+        });
+
+        // Clear and rebuild chart with new structure
+        chartInstance.clear();
+        const newOption = JSON.parse(JSON.stringify(originalData));
+        newOption.xAxis[0].data = orderSubject;
+        newOption.series = newSeries;
+
+        // Ensure proper label rendering for many bars
+        if (!newOption.xAxis[0].axisLabel) {
+            newOption.xAxis[0].axisLabel = {};
+        }
+        newOption.xAxis[0].axisLabel.rotate = 0;
+        newOption.xAxis[0].axisLabel.interval = 0;
+
+        chartInstance.setOption(newOption);
+    } else {
+        // Calculate total value for each series (subject)
+        const seriesTotals = originalData.series.map(function(series, idx) {
+            let total = 0;
+            series.data.forEach(function(dataPoint) {
+                const value = typeof dataPoint === 'object' ? parseFloat(dataPoint.value) : parseFloat(dataPoint);
+                total += isNaN(value) ? 0 : value;
+            });
+            return {
+                series: series,
+                name: series.name,
+                total: total,
+                originalIndex: idx
+            };
+        });
+
+
+        // Sort series by total value
+        seriesTotals.sort(function(a, b) {
             if (sortOrder === 'asc') {
                 return a.total - b.total;
             }
-
             return b.total - a.total;
-        })
-        .map(v => v.subject)
-
-
-    // Rebuild series: each workload becomes a series
-    const newSeries = workloads.map(function(workload) {
-        const data = orderSubject.map(function(subject) {
-            return dataMap[workload][subject];
         });
 
-        return {
-            name: workload,
-            type: 'bar',
-            data: data,
-            label: {
-                show: true,
-                position: 'top',
-                formatter: '{c}',
-                fontSize: 10
+
+        // Rebuild series in sorted order, preserving all properties including colors
+        const sortedSeries = seriesTotals.map(function(item) {
+            const series = JSON.parse(JSON.stringify(item.series));
+            // Ensure label state is current
+            if (series.label) {
+                series.label.show = chartState.showLabels;
             }
-        };
-    });
+            return series;
+        });
 
-    // Clear and rebuild chart with new structure
-    chartInstance.clear();
-    const newOption = JSON.parse(JSON.stringify(originalData));
-    newOption.xAxis[0].data = orderSubject;
-    newOption.series = newSeries;
+        // Update chart (NO SWAP - just reorder series)
+        const newOption = JSON.parse(JSON.stringify(originalData));
+        newOption.series = sortedSeries;
 
-    chartInstance.setOption(newOption);
+        chartInstance.clear();
+        chartInstance.setOption(newOption);
+    }
 }
 
 // Apply sort to all charts
 function sortAllCharts(sortOrder) {
     const chartElements = document.querySelectorAll('.item');
 
-    chartElements.forEach(function(chartDom) {
+    chartElements.forEach(function (chartDom) {
         const instance = echarts.getInstanceByDom(chartDom);
 
         if (instance) {
@@ -115,7 +181,7 @@ function sortAllCharts(sortOrder) {
     });
 
     // Update button states
-    document.querySelectorAll('.sort-btn').forEach(function(btn) {
+    document.querySelectorAll('.sort-btn').forEach(function (btn) {
         btn.classList.remove('active');
     });
     const activeBtn = document.querySelector('.sort-btn[data-sort="' + sortOrder + '"]');
@@ -124,115 +190,199 @@ function sortAllCharts(sortOrder) {
     }
 }
 
-// Add resize event handler to make charts responsive
-window.addEventListener('resize', function() {
-    // Resize all charts when window size changes
-    const charts = document.querySelectorAll('.item');
-    charts.forEach(function(chart) {
-        const instance = echarts.getInstanceByDom(chart);
+
+// Toggle chart labels
+function toggleLabels() {
+    chartState.showLabels = !chartState.showLabels;
+
+    // Update toggle button state
+    const toggleBtn = document.querySelector('.toggle-switch');
+    if (toggleBtn) {
+        if (chartState.showLabels) {
+            toggleBtn.classList.add('active');
+        } else {
+            toggleBtn.classList.remove('active');
+        }
+    }
+
+    // Update all charts
+    const chartElements = document.querySelectorAll('.item');
+    chartElements.forEach(function(chartDom) {
+        const instance = echarts.getInstanceByDom(chartDom);
         if (instance) {
-            instance.resize();
+            const option = instance.getOption();
+
+            // Update label visibility for all series
+            if (option.series) {
+                option.series.forEach(function(series) {
+                    if (!series.label) {
+                        series.label = {};
+                    }
+                    series.label.show = chartState.showLabels;
+                });
+
+                instance.setOption(option);
+            }
         }
     });
+}
+
+// Toggle control panel visibility
+function toggleControlPanel() {
+    const panel = document.getElementById('controlPanel');
+    const toggleBtn = document.querySelector('.control-toggle');
+
+    if (panel) {
+        const isOpen = panel.classList.contains('open');
+
+        if (isOpen) {
+            panel.classList.remove('open');
+            if (toggleBtn) {
+                toggleBtn.style.opacity = '1';
+            }
+        } else {
+            panel.classList.add('open');
+            if (toggleBtn) {
+                toggleBtn.style.opacity = '0';
+            }
+        }
+    }
+}
+
+// Toggle bench groups panel visibility
+function toggleBenchGroups() {
+    const panel = document.getElementById('bench-groups');
+    const toggleBtn = document.querySelector('.groups-toggle');
+
+    if (panel && toggleBtn) {
+        const isOpen = panel.classList.contains('open');
+
+        if (isOpen) {
+            panel.classList.remove('open');
+            toggleBtn.classList.remove('hidden');
+        } else {
+            panel.classList.add('open');
+            toggleBtn.classList.add('hidden');
+        }
+    }
+}
+
+// Close panels when clicking outside
+document.addEventListener('click', function(e) {
+    // Handle control panel
+    const controlPanel = document.getElementById('controlPanel');
+    const controlToggleBtn = document.querySelector('.control-toggle');
+
+    if (controlPanel && controlPanel.classList.contains('open')) {
+        if (!controlPanel.contains(e.target) && !controlToggleBtn.contains(e.target)) {
+            controlPanel.classList.remove('open');
+            if (controlToggleBtn) {
+                controlToggleBtn.style.opacity = '1';
+            }
+        }
+    }
+
+    // Handle bench groups panel
+    const benchGroupsPanel = document.getElementById('bench-groups');
+    const groupsToggleBtn = document.querySelector('.groups-toggle');
+
+    if (benchGroupsPanel && benchGroupsPanel.classList.contains('open')) {
+        if (!benchGroupsPanel.contains(e.target) && !groupsToggleBtn?.contains(e.target)) {
+            benchGroupsPanel.classList.remove('open');
+            if (groupsToggleBtn) {
+                groupsToggleBtn.classList.remove('hidden');
+            }
+        }
+    }
 });
 
-// Initialize sidebar functionality when DOM is loaded
+// Change unit conversion
+function changeUnit(unitType, unitValue) {
+    chartState.units[unitType] = unitValue;
+
+    // TODO: Implement actual unit conversion logic
+    // This would require re-processing the chart data
+    console.log('Unit changed:', unitType, '→', unitValue);
+
+    // For now, just log the change
+    // In future implementation, you would:
+    // 1. Get original data values
+    // 2. Convert to new unit
+    // 3. Update chart with converted values
+}
+
+// Add resize event handler to make charts responsive
+let resizeTimeout;
+window.addEventListener('resize', function() {
+    // Debounce resize for better performance
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(function() {
+        const charts = document.querySelectorAll('.item');
+        charts.forEach(function(chart) {
+            const instance = echarts.getInstanceByDom(chart);
+            if (instance) {
+                instance.resize();
+            }
+        });
+    }, 150);
+});
+
+// Initialize bench groups functionality when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    const sidebar = document.getElementById('bench-sidebar');
-    const groups = document.querySelectorAll('.bench-indicator');
+    const benchGroups = document.getElementById('bench-groups');
+    const groupItems = document.querySelectorAll('.group-item');
     const chartSections = document.querySelectorAll('.chart-section');
-    const minimizeBtn = document.getElementById('minimize-btn');
+    const groupsToggleBtn = document.querySelector('.groups-toggle');
 
-    // Only show sidebar if there are multiple groups
-    if (sidebar && groups.length <= 1) {
-        sidebar.style.display = 'none';
-    }
+    if (!benchGroups) return;
 
-    // Make sidebar draggable
-    let isDragging = false;
-    let offsetX, offsetY;
-
-    function startDrag(e) {
-        // Only start drag if it's the sidebar header or the sidebar itself when minimized
-        if (e.target.closest('.sidebar-header') ||
-            (sidebar.classList.contains('minimized') && e.target.closest('.sidebar'))) {
-            isDragging = true;
-
-            // Get the current position of the sidebar
-            const sidebarRect = sidebar.getBoundingClientRect();
-
-            // Calculate the offset from the mouse position to the sidebar position
-            offsetX = e.clientX - sidebarRect.left;
-            offsetY = e.clientY - sidebarRect.top;
-
-            // Prevent text selection during drag
-            e.preventDefault();
-        }
-    }
-
-    function drag(e) {
-        if (isDragging) {
-            // Calculate new position
-            const x = e.clientX - offsetX;
-            const y = e.clientY - offsetY;
-
-            // Apply new position
-            sidebar.style.left = x + 'px';
-            sidebar.style.top = y + 'px';
-            sidebar.style.right = 'auto';
-            sidebar.style.transform = 'none';
-        }
-    }
-
-    function stopDrag() {
-        isDragging = false;
-    }
-
-    // Add event listeners for dragging
-    sidebar.addEventListener('mousedown', startDrag);
-    document.addEventListener('mousemove', drag);
-    document.addEventListener('mouseup', stopDrag);
-
-    // Minimize/maximize sidebar
-    minimizeBtn.addEventListener('click', function() {
-        sidebar.classList.toggle('minimized');
-        this.textContent = sidebar.classList.contains('minimized') ? '◀' : '▶';
-    });
-
-    // Add click event to each indicator
-    groups.forEach(function(indicator) {
-        indicator.addEventListener('click', function() {
+    // Add click event to each group item
+    groupItems.forEach(function(item) {
+        item.addEventListener('click', function() {
             const targetId = this.getAttribute('data-target');
             const targetElement = document.getElementById(targetId);
 
             if (targetElement) {
                 // Scroll to the target element
-                targetElement.scrollIntoView({ behavior: 'smooth' });
+                targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
                 // Update active state
-                groups.forEach(ind => ind.classList.remove('active'));
+                groupItems.forEach(i => i.classList.remove('active'));
                 this.classList.add('active');
+
+                // Close the panel after navigation
+                benchGroups.classList.remove('open');
+                if (groupsToggleBtn) {
+                    groupsToggleBtn.classList.remove('hidden');
+                }
             }
         });
     });
 
-    // Update active indicator on scroll
+    // Update active group item on scroll with debouncing
+    let scrollTimeout;
     window.addEventListener('scroll', function() {
-        let currentSection = '';
+        if (scrollTimeout) {
+            window.cancelAnimationFrame(scrollTimeout);
+        }
 
-        chartSections.forEach(function(section) {
-            const sectionTop = section.offsetTop;
+        scrollTimeout = window.requestAnimationFrame(function() {
+            let currentSection = '';
 
-            if (pageYOffset >= (sectionTop - 100)) {
-                currentSection = section.getAttribute('id');
-            }
-        });
+            chartSections.forEach(function(section) {
+                const sectionTop = section.offsetTop;
 
-        groups.forEach(function(indicator) {
-            indicator.classList.remove('active');
-            if (indicator.getAttribute('data-target') === currentSection) {
-                indicator.classList.add('active');
-            }
+                if (window.pageYOffset >= (sectionTop - 100)) {
+                    currentSection = section.getAttribute('id');
+                }
+            });
+
+            groupItems.forEach(function(item) {
+                item.classList.remove('active');
+                if (item.getAttribute('data-target') === currentSection) {
+                    item.classList.add('active');
+                }
+            });
         });
     });
 });
