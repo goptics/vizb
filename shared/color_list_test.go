@@ -7,7 +7,19 @@ import (
 )
 
 func TestGetNextColorFor(t *testing.T) {
-	t.Run("Returns colors sequentially for different keys", func(t *testing.T) {
+	t.Run("Returns same color for same key", func(t *testing.T) {
+		resetColorState()
+
+		color1 := GetNextColorFor("key1")
+		color2 := GetNextColorFor("key1")
+		color3 := GetNextColorFor("key1")
+
+		assert.Equal(t, color1, color2)
+		assert.Equal(t, color2, color3)
+		assert.Contains(t, ColorList, color1)
+	})
+
+	t.Run("Returns different colors for different keys", func(t *testing.T) {
 		resetColorState()
 
 		color1 := GetNextColorFor("key1")
@@ -21,12 +33,15 @@ func TestGetNextColorFor(t *testing.T) {
 		assert.Contains(t, ColorList, color3)
 	})
 
-	t.Run("Handles empty string key", func(t *testing.T) {
+	t.Run("Handles empty string key consistently", func(t *testing.T) {
 		resetColorState()
 
-		color := GetNextColorFor("")
-		assert.NotEmpty(t, color)
-		assert.Contains(t, ColorList, color)
+		color1 := GetNextColorFor("")
+		color2 := GetNextColorFor("")
+
+		assert.NotEmpty(t, color1)
+		assert.Contains(t, ColorList, color1)
+		assert.Equal(t, color1, color2, "Empty key should return same color")
 	})
 
 	t.Run("Handles special characters in keys", func(t *testing.T) {
@@ -49,16 +64,30 @@ func TestGetNextColorFor(t *testing.T) {
 		resetColorState()
 
 		colorListLen := len(ColorList)
-		colors := make([]string, colorListLen+5)
+		firstColors := make([]string, colorListLen)
 
-		for i := range colors {
-			colors[i] = GetNextColorFor(stringFromInt(i))
+		// Get first full cycle of colors
+		for i := range firstColors {
+			firstColors[i] = GetNextColorFor(stringFromInt(i))
+		}
+
+		// Get colors beyond the list length (should wrap)
+		extraColors := make([]string, 5)
+		for i := range extraColors {
+			extraColors[i] = GetNextColorFor(stringFromInt(colorListLen + i))
 		}
 
 		// All returned colors should be valid
-		for i, color := range colors {
+		for i, color := range firstColors {
 			assert.Contains(t, ColorList, color, "Color at index %d should be valid", i)
 		}
+		for i, color := range extraColors {
+			assert.Contains(t, ColorList, color, "Wrapped color at index %d should be valid", i)
+		}
+
+		// Verify that requesting same keys returns same colors
+		assert.Equal(t, firstColors[0], GetNextColorFor(stringFromInt(0)))
+		assert.Equal(t, extraColors[0], GetNextColorFor(stringFromInt(colorListLen)))
 	})
 
 	t.Run("Different similar keys get different colors", func(t *testing.T) {
