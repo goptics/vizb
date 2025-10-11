@@ -126,13 +126,23 @@ func TestParseNameToGroups(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name:          "Skip words",
+			name:          "Skip words from first",
 			benchmarkName: "Tasks/Name/Workload/Subject",
 			pattern:       "/name/workload/subject",
 			expected: map[string]string{
 				"name":     "Name",
 				"subject":  "Subject",
 				"workload": "Workload",
+			},
+		},
+		{
+			name:          "Skip words from middle",
+			benchmarkName: "Tasks/Name/Workload/Subject",
+			pattern:       "/name//subject",
+			expected: map[string]string{
+				"name":     "Name",
+				"subject":  "Subject",
+				"workload": "",
 			},
 		},
 		// Not enough parts in benchmark name
@@ -144,6 +154,62 @@ func TestParseNameToGroups(t *testing.T) {
 				"name":     "Rivet",
 				"subject":  "",
 				"workload": "",
+			},
+			expectError: false,
+		},
+		// Square bracket patterns for PascalCase splitting
+		{
+			name:          "Simple square bracket pattern",
+			benchmarkName: "SubjectWorkloadName",
+			pattern:       "[s,w,n]",
+			expected: map[string]string{
+				"subject":  "Subject",
+				"workload": "Workload",
+				"name":     "Name",
+			},
+			expectError: false,
+		},
+		{
+			name:          "Mixed separator and square bracket pattern",
+			benchmarkName: "Concat/LargeData/StringOps",
+			pattern:       "s/[w]/[n]",
+			expected: map[string]string{
+				"subject":  "Concat",
+				"workload": "Large",
+				"name":     "String",
+			},
+			expectError: false,
+		},
+		{
+			name:          "Square bracket pattern with skipping",
+			benchmarkName: "BenchmarkConcat/LargeData/StringOps",
+			pattern:       "s/[,w]/[,n]",
+			expected: map[string]string{
+				"subject":  "BenchmarkConcat",
+				"workload": "Data",
+				"name":     "Ops",
+			},
+			expectError: false,
+		},
+		{
+			name:          "Square bracket pattern with empty indices",
+			benchmarkName: "FirstSecondThirdFourth",
+			pattern:       "[,,s]",
+			expected: map[string]string{
+				"subject":  "Third",
+				"workload": "",
+				"name":     "",
+			},
+			expectError: false,
+		},
+		{
+			name:          "Complex PascalCase benchmark name",
+			benchmarkName: "HTTPServerRequestHandler",
+			pattern:       "[s,w,n]",
+			expected: map[string]string{
+				"subject":  "HTTP",
+				"workload": "Server",
+				"name":     "Request",
 			},
 			expectError: false,
 		},
@@ -230,6 +296,34 @@ func TestValidatePattern(t *testing.T) {
 		{
 			name:          "Invalid pattern: workload only",
 			pattern:       "workload",
+			expectError:   true,
+			errorContains: "pattern must contain subject(s)",
+		},
+		// Square bracket pattern validation tests
+		{
+			name:        "Valid square bracket pattern",
+			pattern:     "[s,w,n]",
+			expectError: false,
+		},
+		{
+			name:        "Valid mixed pattern with square brackets",
+			pattern:     "s/[w]/[n]",
+			expectError: false,
+		},
+		{
+			name:        "Valid square bracket pattern with skipping",
+			pattern:     "[,s,w]",
+			expectError: false,
+		},
+		{
+			name:          "Invalid square bracket pattern: unknown part",
+			pattern:       "[s,invalid,w]",
+			expectError:   true,
+			errorContains: "Invalid part in square brackets: 'invalid'",
+		},
+		{
+			name:          "Invalid square bracket pattern: missing subject",
+			pattern:       "[n,w]",
 			expectError:   true,
 			errorContains: "pattern must contain subject(s)",
 		},

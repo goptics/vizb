@@ -5,9 +5,65 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"unicode"
 )
 
 var separatorRegex = regexp.MustCompile(`[_/]`)
+
+// splitPascalCase splits a PascalCase string into individual words
+func splitPascalCase(s string) []string {
+	if s == "" {
+		return []string{}
+	}
+
+	var words []string
+	var current strings.Builder
+	runes := []rune(s)
+
+	for i, r := range runes {
+		if i == 0 {
+			current.WriteRune(r)
+		} else if unicode.IsUpper(r) {
+			// Check if we have consecutive uppercase letters (like HTTP)
+			// If next character is lowercase, split before current char
+			// If previous char was uppercase and current is uppercase, continue building
+			prevUpper := i > 0 && unicode.IsUpper(runes[i-1])
+			nextLower := i < len(runes)-1 && unicode.IsLower(runes[i+1])
+
+			if !prevUpper || nextLower {
+				if current.Len() > 0 {
+					words = append(words, current.String())
+					current.Reset()
+				}
+			}
+			current.WriteRune(r)
+		} else {
+			current.WriteRune(r)
+		}
+	}
+
+	if current.Len() > 0 {
+		words = append(words, current.String())
+	}
+
+	return words
+}
+
+// extractSquareBracketIndices extracts the indices from square bracket notation
+// e.g., "[s,w,n]" returns ["s", "w", "n"]
+// e.g., "[,w]" returns ["", "w"]
+func extractSquareBracketIndices(pattern string) []string {
+	if !strings.HasPrefix(pattern, "[") || !strings.HasSuffix(pattern, "]") {
+		return nil
+	}
+
+	content := strings.TrimPrefix(strings.TrimSuffix(pattern, "]"), "[")
+	if content == "" {
+		return []string{}
+	}
+
+	return strings.Split(content, ",")
+}
 
 // ParseBenchmarkNameToGroups parses a benchmark name using the given pattern
 func ParseBenchmarkNameToGroups(name, pattern string) (map[string]string, error) {
@@ -15,9 +71,73 @@ func ParseBenchmarkNameToGroups(name, pattern string) (map[string]string, error)
 		return nil, err
 	}
 
-	patternParts := parsePatternParts(pattern)
-	nameParts := splitNameByPattern(name, pattern)
-	result := mapPartsToResult(patternParts, nameParts)
+	result := map[string]string{
+		"name":     "",
+		"workload": "",
+		"subject":  "",
+	}
+
+	// Split pattern by separators to get pattern parts
+	rawPatternParts := separatorRegex.Split(pattern, -1)
+	separators := separatorRegex.FindAllString(pattern, -1)
+
+	// Split name by separators first
+	nameParts := []string{name}
+	for _, sep := range separators {
+		var newParts []string
+		for _, part := range nameParts {
+			split := strings.SplitN(part, sep, 2)
+			newParts = append(newParts, split...)
+		}
+		nameParts = newParts
+	}
+
+	// Filter empty name parts
+	var filteredNameParts []string
+	for _, part := range nameParts {
+		if part != "" {
+			filteredNameParts = append(filteredNameParts, part)
+		}
+	}
+
+	// Now map each pattern part to corresponding name part
+	for i, rawPatternPart := range rawPatternParts {
+		if rawPatternPart == "" || i >= len(filteredNameParts) {
+			continue
+		}
+
+		if strings.HasPrefix(rawPatternPart, "[") && strings.HasSuffix(rawPatternPart, "]") {
+			// Square bracket pattern - split name part by PascalCase and map indices
+			pascalWords := splitPascalCase(filteredNameParts[i])
+			indices := extractSquareBracketIndices(rawPatternPart)
+
+			// Count leading empty indices to determine skip offset
+			skipCount := 0
+			for _, index := range indices {
+				if index == "" {
+					skipCount++
+				} else {
+					break
+				}
+			}
+
+			// Map non-empty indices to words, starting after the skip offset
+			wordIndex := skipCount
+			for _, index := range indices {
+				if index != "" {
+					if wordIndex < len(pascalWords) {
+						expandedIndex := expandShorthand(index)
+						result[expandedIndex] = pascalWords[wordIndex]
+					}
+					wordIndex++
+				}
+			}
+		} else {
+			// Regular pattern part
+			expandedPart := expandShorthand(rawPatternPart)
+			result[expandedPart] = filteredNameParts[i]
+		}
+	}
 
 	return result, nil
 }
@@ -39,11 +159,23 @@ func ValidatePattern(pattern string) error {
 			continue
 		}
 
-		if !validParts.MatchString(part) {
+		// Handle square bracket patterns
+		if strings.HasPrefix(part, "[") && strings.HasSuffix(part, "]") {
+			indices := extractSquareBracketIndices(part)
+			for _, index := range indices {
+				if index != "" && !validParts.MatchString(index) {
+					return fmt.Errorf("Invalid part in square brackets: '%s'; only name(n), subject(s), workload(w) allowed", index)
+				}
+				if index == "s" || index == "subject" {
+					hasSubject = true
+				}
+			}
+		} else if !validParts.MatchString(part) {
 			return fmt.Errorf("Invalid part: '%s'; only name(n), subject(s), workload(w) allowed", part)
-		}
-		if part == "s" || part == "subject" {
-			hasSubject = true
+		} else {
+			if part == "s" || part == "subject" {
+				hasSubject = true
+			}
 		}
 	}
 
@@ -54,64 +186,6 @@ func ValidatePattern(pattern string) error {
 	return nil
 }
 
-// parsePatternParts extracts and normalizes pattern parts
-func parsePatternParts(pattern string) []string {
-	parts := separatorRegex.Split(pattern, -1)
-
-	for i, part := range parts {
-		parts[i] = expandShorthand(part)
-	}
-
-	return parts
-}
-
-// splitNameByPattern splits benchmark name using separators from pattern
-func splitNameByPattern(name, pattern string) []string {
-	separators := separatorRegex.FindAllString(pattern, -1)
-	if len(separators) == 0 {
-		return []string{name}
-	}
-
-	parts := []string{name}
-	for _, sep := range separators {
-		var newParts []string
-		for _, part := range parts {
-			split := strings.SplitN(part, sep, 2)
-			newParts = append(newParts, split...)
-		}
-		parts = newParts
-	}
-
-	// Filter empty parts
-	var result []string
-	for _, part := range parts {
-		if part != "" {
-			result = append(result, part)
-		}
-	}
-	return result
-}
-
-// mapPartsToResult maps pattern parts to name parts
-func mapPartsToResult(patternParts, nameParts []string) map[string]string {
-	result := map[string]string{
-		"name":     "",
-		"workload": "",
-		"subject":  "",
-	}
-
-	for i, part := range patternParts {
-		if part == "" {
-			continue
-		}
-
-		if i < len(nameParts) {
-			result[part] = nameParts[i]
-		}
-	}
-
-	return result
-}
 
 // expandShorthand converts shorthand to full name
 func expandShorthand(part string) string {
