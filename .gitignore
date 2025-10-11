@@ -1,5 +1,4 @@
-*.html
-*.json
 *.txt
 *.out
 bin/
+node_modules
