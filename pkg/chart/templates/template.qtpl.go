@@ -27,11 +27,11 @@ var (
 )
 
 //line pkg/chart/templates/template.qtpl:12
-//go:embed static/styles.css
+//go:embed styles.css
 var stylesCSS string
 
-//go:embed static/chart.js
-var chartJS string
+//go:embed index.js
+var indexJS string
 
 //line pkg/chart/templates/template.qtpl:19
 func StreamBenchmarkChart(qw422016 *qt422016.Writer, benchCharts []shared.BenchCharts) {
@@ -314,7 +314,7 @@ func StreamBenchmarkChart(qw422016 *qt422016.Writer, benchCharts []shared.BenchC
     <script type="text/javascript">
         `)
 //line pkg/chart/templates/template.qtpl:216
-	qw422016.N().S(chartJS)
+	qw422016.N().S(indexJS)
 //line pkg/chart/templates/template.qtpl:216
 	qw422016.N().S(`
     </script>

@@ -9,11 +9,11 @@
 ) %}
 
 {% code
-//go:embed static/styles.css
+//go:embed styles.css
 var stylesCSS string
 
-//go:embed static/chart.js
-var chartJS string
+//go:embed index.js
+var indexJS string
 %}
 
 {% func BenchmarkChart(benchCharts []shared.BenchCharts) %}
@@ -213,7 +213,7 @@ var chartJS string
 
     <!-- Custom Chart JS -->
     <script type="text/javascript">
-        {%s= chartJS %}
+        {%s= indexJS %}
     </script>
 </body>
 </html>
