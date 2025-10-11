@@ -191,9 +191,12 @@ func GenerateHTMLCharts(results []shared.BenchmarkResult) []shared.BenchCharts {
 		for idx, stat := range firstResult.Stats {
 			// Determine chart title based on stat type and unit
 			var chartTitle string
-			if stat.Unit != "" {
+			switch {
+			case stat.Unit != "" && stat.NotPerOp:
+				chartTitle = fmt.Sprintf("%s (%s)", stat.Type, stat.Unit)
+			case stat.Unit != "":
 				chartTitle = fmt.Sprintf("%s (%s/op)", stat.Type, stat.Unit)
-			} else {
+			default:
 				chartTitle = fmt.Sprintf("%s/op", stat.Type)
 			}
 
