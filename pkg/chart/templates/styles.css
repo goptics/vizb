@@ -1,5 +1,10 @@
 /* shadcn-inspired Modern Design System */
 
+/* Hide charts initially when they need to be sorted to prevent flash */
+.chart-card.chart-initializing {
+  opacity: 0;
+}
+
 :root {
   /* shadcn color palette */
   --background: 0 0% 100%;

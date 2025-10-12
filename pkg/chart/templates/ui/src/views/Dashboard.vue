@@ -5,8 +5,8 @@ import { useBenchmarkData } from "../composables/useBenchmarkData";
 import { useChartData } from "../composables/useChartData";
 import { useSettingsStore } from "../composables/useSettingsStore";
 import BenchmarkHeader from "../components/BenchmarkHeader.vue";
-import SettingsPopover from "../components/SettingsPopover.vue";
-import BenchGroupSelector from "../components/BenchGroupSelector.vue";
+import ChartSettingsSidebar from "../components/ChartSettingsSidebar.vue";
+import BenchGroupCombobox from "../components/BenchGroupCombobox.vue";
 import ChartCard from "../components/ChartCard.vue";
 
 const {
@@ -24,9 +24,11 @@ const { chartData } = useChartData(activeResults);
 const {
   sortOrder,
   showLabels,
+  chartType,
   isDark,
   setSortOrder,
   setShowLabels,
+  setChartType,
   toggleDark,
 } = useSettingsStore();
 
@@ -45,10 +47,12 @@ onMounted(async () => {
   <div class="min-h-screen bg-background text-foreground">
     <!-- Top Right Controls -->
     <div class="fixed top-6 right-6 z-50 flex items-center gap-2">
-      <!-- Settings Popover -->
-      <SettingsPopover
+      <!-- Settings Sidebar -->
+      <ChartSettingsSidebar
+        :chartType="chartType"
         :sortOrder="sortOrder"
         :showLabels="showLabels"
+        @update:chartType="setChartType"
         @update:sortOrder="setSortOrder"
         @update:showLabels="setShowLabels"
       />
@@ -92,7 +96,7 @@ onMounted(async () => {
           v-if="benchmarks.length > 1"
           class="flex justify-center mb-8"
         >
-          <BenchGroupSelector
+          <BenchGroupCombobox
             :benchmarks="benchmarks"
             :activeBenchmarkId="activeBenchmarkId"
             @select="selectBenchmark"
@@ -108,6 +112,7 @@ onMounted(async () => {
             :sortOrder="sortOrder"
             :showLabels="showLabels"
             :isDark="isDark"
+            :chartType="chartType"
             class="animate-fade-in"
             :style="{ animationDelay: `${index * 50}ms` }"
           />

@@ -1,35 +1,21 @@
 import { computed, type Ref } from 'vue'
 import type { BenchmarkResult, ChartData, SeriesData } from '../types/benchmark'
 
-/**
- * Composable for processing benchmark results into chart data
- * Groups results by stat type to create consolidated charts
- */
 export function useChartData(results: Ref<BenchmarkResult[]> | BenchmarkResult[]) {
-  /**
-   * Process results into chart data
-   * Creates one chart per stat type with all subjects as series
-   */
   const chartData = computed<ChartData[]>(() => {
     const resultsList = Array.isArray(results) ? results : results.value
+    if (!resultsList?.length) return []
 
-    if (!resultsList || resultsList.length === 0) return []
-
-    // Get all unique stat types from first result
     const firstResult = resultsList[0]
-    if (!firstResult || !firstResult.stats) return []
+    if (!firstResult?.stats) return []
 
-    const charts: ChartData[] = []
-
-    // Create a chart for each stat type
-    firstResult.stats.forEach((stat, statIndex) => {
-      // Group data by workload and subject
+    return firstResult.stats.map((stat, statIndex) => {
       const dataMap = new Map<string, Map<string, number>>()
       const workloadsSet = new Set<string>()
       const subjectsSet = new Set<string>()
 
       resultsList.forEach(result => {
-        const workload = result.workload || 'Default'
+        const workload = result.workload || ''
         const subject = result.subject
         const value = result.stats[statIndex]?.value || 0
 
@@ -43,34 +29,62 @@ export function useChartData(results: Ref<BenchmarkResult[]> | BenchmarkResult[]
       })
 
       const workloads = Array.from(workloadsSet)
-      const subjects = Array.from(subjectsSet)
+      let subjects = Array.from(subjectsSet)
 
-      // Create series for each subject
-      const series: SeriesData[] = subjects.map(subject => {
-        const values = workloads.map(workload => {
-          return dataMap.get(workload)?.get(subject) || 0
+      // When we have workloads, create series per workload (workload becomes legend)
+      // Otherwise, create series per subject (subject becomes legend)
+      const hasMultipleWorkloads = workloads.length > 1
+
+      // When we have multiple workloads, we need to keep subjects in original order
+      // because sorting will be handled in useEChartOptions based on sort settings
+      if (hasMultipleWorkloads) {
+        // Calculate total value for each subject across all workloads
+        const subjectTotals = subjects.map(subject => {
+          const total = workloads.reduce((sum, workload) => {
+            return sum + (dataMap.get(workload)?.get(subject) || 0)
+          }, 0)
+          return { subject, total }
         })
-        return { subject, values }
-      })
 
-      // Create chart title
-      const title = stat.unit
-        ? `${stat.type} (${stat.unit}/op)`
-        : `${stat.type}/op`
+        // Store totals for sorting but don't sort here - let chart options handle it
+        const series: SeriesData[] = workloads.map(workload => ({
+          subject: workload,
+          values: subjects.map(subject => dataMap.get(workload)?.get(subject) || 0),
+          subjectTotals // Pass totals for sorting in chart options
+        }))
 
-      charts.push({
+        const title = stat.unit ? `${stat.type} (${stat.unit}/op)` : `${stat.type}/op`
+
+        return {
+          title,
+          statType: stat.type,
+          statUnit: stat.unit,
+          workloads: subjects,
+          series,
+          subjectTotals: subjectTotals.reduce((acc, { subject, total }) => {
+            acc[subject] = total
+            return acc
+          }, {} as Record<string, number>)
+        }
+      }
+
+      // Single workload case - sort by subject values
+      const series: SeriesData[] = subjects.map(subject => ({
+        subject,
+        values: workloads.map(workload => dataMap.get(workload)?.get(subject) || 0)
+      }))
+
+      const title = stat.unit ? `${stat.type} (${stat.unit}/op)` : `${stat.type}/op`
+
+      return {
         title,
         statType: stat.type,
         statUnit: stat.unit,
         workloads,
         series
-      })
+      }
     })
-
-    return charts
   })
 
-  return {
-    chartData
-  }
+  return { chartData }
 }

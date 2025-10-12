@@ -1,15 +1,12 @@
 import { ref } from 'vue'
 import { useDark, useToggle } from '@vueuse/core'
-import type { SortOrder } from '../types/benchmark'
+import type { SortOrder, Settings, ChartType } from '../types/benchmark'
 
-/**
- * Global settings store using Vue's reactivity
- * Manages sorting, labels visibility, and theme state
- */
-const sortOrder = ref<SortOrder>('default')
+const sortOrder = ref<SortOrder>('')
 const showLabels = ref(false)
+const chartType = ref<ChartType>('bar')
+let initialized = false
 
-// Configure dark mode to use 'class' strategy on html element
 const isDark = useDark({
   selector: 'html',
   attribute: 'class',
@@ -23,21 +20,31 @@ export function useSettingsStore() {
     sortOrder.value = order
   }
 
-  const toggleLabels = () => {
-    showLabels.value = !showLabels.value
-  }
-
   const setShowLabels = (show: boolean) => {
     showLabels.value = show
+  }
+
+  const setChartType = (type: ChartType) => {
+    chartType.value = type
+  }
+
+  const initializeFromBenchmark = (settings: Settings) => {
+    if (!initialized) {
+      sortOrder.value = settings.sort
+      showLabels.value = settings.showLabels
+      initialized = true
+    }
   }
 
   return {
     sortOrder,
     showLabels,
+    chartType,
     isDark,
     setSortOrder,
-    toggleLabels,
     setShowLabels,
-    toggleDark
+    setChartType,
+    toggleDark,
+    initializeFromBenchmark
   }
 }

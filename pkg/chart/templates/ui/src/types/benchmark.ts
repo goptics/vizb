@@ -24,11 +24,13 @@ export interface ChartData {
   statUnit: string
   workloads: string[]
   series: SeriesData[]
+  subjectTotals?: Record<string, number>
 }
 
 export interface SeriesData {
   subject: string
   values: number[]
+  subjectTotals?: Array<{ subject: string; total: number }>
 }
 
 export interface Settings {
@@ -44,4 +46,6 @@ export interface Benchmark {
   results: BenchmarkResult[]
 }
 
-export type SortOrder = 'asc' | 'desc' | 'default'
+export type SortOrder = 'asc' | 'desc' | ''
+
+export type ChartType = 'bar' | 'line' | 'pie'

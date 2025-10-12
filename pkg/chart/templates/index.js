@@ -1,15 +1,10 @@
 // Store original chart data for each chart instance
 const originalChartData = new Map();
 
-// Chart state management
+// Chart state management - Initialize with flag settings if available
 const chartSettingState = {
-  sortOrder: 'default',
-  showLabels: false,
-  units: {
-    time: 'ns',
-    memory: 'B',
-    count: ''
-  }
+  sortOrder: typeof flagSettings !== 'undefined' ? flagSettings.sortOrder : 'default',
+  showLabels: typeof flagSettings !== 'undefined' ? flagSettings.showLabels : false,
 };
 
 // Sort chart intelligently based on structure
@@ -295,21 +290,6 @@ document.addEventListener('click', function (e) {
     }
   }
 });
-
-// Change unit conversion
-function changeUnit(unitType, unitValue) {
-  chartSettingState.units[unitType] = unitValue;
-
-  // TODO: Implement actual unit conversion logic
-  // This would require re-processing the chart data
-  console.log('Unit changed:', unitType, '→', unitValue);
-
-  // For now, just log the change
-  // In future implementation, you would:
-  // 1. Get original data values
-  // 2. Convert to new unit
-  // 3. Update chart with converted values
-}
 
 // Add resize event handler to make charts responsive
 let resizeTimeout;

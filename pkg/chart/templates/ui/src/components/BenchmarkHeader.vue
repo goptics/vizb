@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import type { Benchmark } from "../types/benchmark";
 
-const props = defineProps<{
-  benchmark: Benchmark;
-  mainTitle: string;
-}>();
+defineProps<{
+  benchmark: Benchmark
+  mainTitle: string
+}>()
 </script>
 
 <template>
-  <header class="text-center mb-8 animate-fade-in">
+  <header class="text-center mb-8">
     <h1 class="text-4xl font-bold tracking-tight mb-2">
       {{ mainTitle }}
       <span
@@ -25,21 +25,6 @@ const props = defineProps<{
 </template>
 
 <style scoped>
-@keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fade-in {
-  animation: fade-in 0.6s ease-out;
-}
-
 @media (max-width: 768px) {
   h1 {
     font-size: 2rem;
