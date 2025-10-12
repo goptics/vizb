@@ -1,6 +1,7 @@
 import type { Ref } from 'vue'
 import type { EChartsOption } from 'echarts'
 import type { ChartData, SortOrder } from '../../types/benchmark'
+import { getChartStyling } from './shared/chartConfig'
 
 export interface BaseChartConfig {
   chartData: Ref<ChartData>
@@ -27,7 +28,7 @@ export const formatValue = (value: number, unit: string): string => {
 
 export const getBaseOptions = (config: BaseChartConfig): Partial<EChartsOption> => {
   const { chartData, isDark } = config
-  const textColor = isDark.value ? "#e5e7eb" : "#374151"
+  const { textColor } = getChartStyling(isDark.value)
   
   return {
     backgroundColor: "transparent",
@@ -64,5 +65,5 @@ export const getBaseOptions = (config: BaseChartConfig): Partial<EChartsOption> 
       itemHeight: 10,
       textStyle: { fontSize: 12, color: textColor },
     },
-  }
+  };
 }

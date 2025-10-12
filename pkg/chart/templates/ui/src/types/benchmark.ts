@@ -3,6 +3,7 @@
  * Defines the structure for benchmark visualization data
  */
 
+
 export interface Stat {
   type: string
   value: number
@@ -34,7 +35,7 @@ export interface SeriesData {
 }
 
 export interface Settings {
-  sort: 'asc' | 'desc' | ''
+  sort: SortOrder
   showLabels: boolean
 }
 

@@ -2,6 +2,7 @@ import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
 import { type BaseChartConfig, getBaseOptions, formatValue } from './baseChartOptions'
 import { getNextColorFor } from '../../lib/utils'
+import { createAxisConfig, createGridConfig, createLegendConfig, createTooltipConfig, getChartStyling, getDataZoomConfig } from './shared'
 
 export function useLineChartOptions(config: BaseChartConfig) {
   const { chartData, sortOrder, showLabels, isDark } = config
@@ -71,193 +72,61 @@ export function useLineChartOptions(config: BaseChartConfig) {
     const { series, xAxisData } = sortedData.value;
     const hasMultipleSeries = series.length > 1;
     const hasMultipleWorkloads = chartData.value.workloads.length > 1;
-    const textColor = isDark.value ? "#e5e7eb" : "#374151";
-    
-    // For single workload case, use subjects as x-axis data and single series
-    if (!hasMultipleWorkloads) {
-      const baseOptions = getBaseOptions(config);
-      
-      return {
-        ...baseOptions,
-        tooltip: {
-          trigger: "item",
-          formatter: (params: any) => {
-            const value = formatValue(params.value, chartData.value.statUnit);
-            return `${params.marker} <strong>${params.name}</strong><br/>${value}`;
-          },
-        },
-        legend: {
-          show: false // No legend for single workload case
-        },
-        xAxis: {
-          type: "category",
-          data: series.map(s => s.subject), // Subjects on x-axis
-          axisLabel: {
-            fontSize: 10,
-            color: textColor,
-            margin: 8,
-          },
-          axisLine: {
-            lineStyle: { color: isDark.value ? "#4b5563" : "#d1d5db" },
-          },
-        },
-        yAxis: {
-          type: "value",
-          splitLine: {
-            show: true,
-            lineStyle: {
-              type: "solid",
-              opacity: 0.2,
-              color: isDark.value ? "#4b5563" : "#d1d5db",
-            },
-          },
-          axisLabel: {
-            color: textColor,
-          },
-          axisLine: {
-            lineStyle: { color: isDark.value ? "#4b5563" : "#d1d5db" },
-          },
-        },
-        dataZoom: series.length > 10 ? [
-          {
-            type: "inside",
-            xAxisIndex: 0,
-            start: 0,
-            end: 100,
-          },
-          {
-            type: "slider",
-            xAxisIndex: 0,
-            start: 0,
-            end: 100,
-            height: 20,
-            bottom: "2%",
-            handleStyle: {
-              color: textColor,
-            },
-            textStyle: {
-              color: textColor,
-            },
-          },
-        ] : [],
-        series: [{
-          name: chartData.value.statType,
-          type: "line",
-          data: series.map(s => ({
-            value: s.values[0] || 0,
-            label: {
-              show: showLabels.value,
-              position: "top",
-              formatter: "{c}",
-              fontSize: 10,
-              color: textColor,
-            },
-          })),
-          itemStyle: { color: "#3b82f6" }, // Single color for all points
-          lineStyle: { 
-            width: 2,
-            type: 'solid'
-          },
-          smooth: false,
-          symbol: 'circle',
-          symbolSize: 6,
-          emphasis: {
-            itemStyle: {
-              borderWidth: 2,
-              borderColor: '#fff'
-            }
-          }
-        }],
-      };
-    }
-
-    // Multiple workloads case - original logic
-    const legendSpace = Math.min(
-      15 + Math.floor((series.length - 1) / 15) * 4,
-      35
-    );
     const baseOptions = getBaseOptions(config);
-
-    return {
+    const styling = getChartStyling(isDark.value);
+    const opt = {
       ...baseOptions,
-      grid: {
-        left: "3%",
-        right: "3%",
-        bottom: "10%",
-        top: `${legendSpace}%`,
-        containLabel: true,
-      },
-      tooltip: {
-        trigger: "axis",
-        axisPointer: { type: "shadow" },
-        formatter: (params: any) => {
-          if (!Array.isArray(params)) return "";
-          let result = `<strong>${params[0].axisValue}</strong><br/>`;
-          params.forEach((param: any) => {
-            const value = formatValue(param.value, chartData.value.statUnit);
-            result += `${param.marker} ${param.seriesName}: ${value}<br/>`;
-          });
-          return result;
-        },
-      },
-      legend: hasMultipleSeries
-        ? {
-            ...baseOptions.legend,
-            data: series.map((s) => s.subject),
-          }
-        : undefined,
-      xAxis: {
-        type: "category",
-        data: xAxisData,
-        axisLabel: {
-          interval: "auto", // Auto-hide overlapping labels
-          fontSize: 10,
-          color: textColor,
-          margin: 8,
-        },
-        axisLine: {
-          lineStyle: { color: isDark.value ? "#4b5563" : "#d1d5db" },
-        },
-      },
-      yAxis: {
-        type: "value",
-        splitLine: {
-          show: true,
-          lineStyle: {
-            type: "solid",
-            opacity: 0.2,
-            color: isDark.value ? "#4b5563" : "#d1d5db",
-          },
-        },
-        axisLabel: {
-          color: textColor,
-        },
-        axisLine: {
-          lineStyle: { color: isDark.value ? "#4b5563" : "#d1d5db" },
-        },
-      },
-      dataZoom: [
+      grid: createGridConfig("line", series.length),
+      tooltip: createTooltipConfig(chartData.value, hasMultipleWorkloads),
+    };
+    
+    if (!hasMultipleWorkloads) {
+      return {
+        ...opt,
+        ...createAxisConfig(
+          styling,
+          series.map((s) => s.subject)
+        ),
+        dataZoom: getDataZoomConfig(series.length, styling),
+        legend: { show: false },
+        series: [
           {
-            type: "inside",
-            xAxisIndex: 0,
-            start: 0,
-            end: 100,
-          },
-          {
-            type: "slider",
-            xAxisIndex: 0,
-            start: 0,
-            end: 100,
-            height: 20,
-            bottom: "2%",
-            handleStyle: {
-              color: textColor,
+            name: chartData.value.statType,
+            type: "line",
+            data: series.map((s) => ({
+              value: s.values[0] || 0,
+              label: {
+                show: showLabels.value,
+                position: "top",
+                formatter: "{c}",
+                fontSize: 10,
+                color: styling.textColor,
+              },
+            })),
+            itemStyle: { color: "#3b82f6" }, // Single color for all points
+            lineStyle: {
+              width: 2,
+              type: "solid",
             },
-            textStyle: {
-              color: textColor,
+            smooth: false,
+            symbol: "circle",
+            symbolSize: 6,
+            emphasis: {
+              itemStyle: {
+                borderWidth: 2,
+                borderColor: "#fff",
+              },
             },
           },
         ],
+      };
+    }
+    
+    return {
+      ...opt,
+      ...createAxisConfig(styling, xAxisData),
+      dataZoom: getDataZoomConfig(xAxisData.length, styling),
+      legend: createLegendConfig(series, styling, hasMultipleSeries),
       series: series.map((seriesData) => ({
         name: seriesData.subject,
         type: "line",
@@ -268,7 +137,7 @@ export function useLineChartOptions(config: BaseChartConfig) {
             position: "top",
             formatter: "{c}",
             fontSize: 10,
-            color: textColor,
+            color: styling.textColor,
           },
         })),
         itemStyle: { color: getNextColorFor(seriesData.subject) },

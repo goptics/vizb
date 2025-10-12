@@ -1,10 +1,9 @@
-import type { ChartData } from '../../../types/benchmark'
+import type { ChartData, ChartType } from '../../../types/benchmark'
 import { formatValue } from '../baseChartOptions'
 
 export interface ChartStyling {
   textColor: string
-  axisLineColor: string
-  splitLineColor: string
+  axisColor: string
 }
 
 /**
@@ -13,8 +12,7 @@ export interface ChartStyling {
 export function getChartStyling(isDark: boolean): ChartStyling {
   return {
     textColor: isDark ? "#e5e7eb" : "#374151",
-    axisLineColor: isDark ? "#4b5563" : "#d1d5db",
-    splitLineColor: isDark ? "#4b5563" : "#d1d5db",
+    axisColor: isDark ? "#4b5563" : "#d1d5db",
   }
 }
 
@@ -23,23 +21,19 @@ export function getChartStyling(isDark: boolean): ChartStyling {
  */
 export function createAxisConfig(
   styling: ChartStyling,
-  _isDark: boolean,
   xAxisData: string[],
-  isLineChart = false
 ): { xAxis: any; yAxis: any } {
   return {
     xAxis: {
       type: "category",
       data: xAxisData,
       axisLabel: {
-        interval: isLineChart ? "auto" : 0,
-        rotate: isLineChart ? 45 : 0,
-        fontSize: isLineChart ? 10 : 11,
+        interval:  "auto" ,
+        fontSize: 10,
         color: styling.textColor,
-        margin: isLineChart ? 8 : undefined,
       },
       axisLine: {
-        lineStyle: { color: styling.axisLineColor },
+        lineStyle: { color: styling.axisColor },
       },
     },
     yAxis: {
@@ -49,14 +43,14 @@ export function createAxisConfig(
         lineStyle: {
           type: "solid",
           opacity: 0.2,
-          color: styling.splitLineColor,
+          color: styling.axisColor,
         },
       },
       axisLabel: {
         color: styling.textColor,
       },
       axisLine: {
-        lineStyle: { color: styling.axisLineColor },
+        lineStyle: { color: styling.axisColor },
       },
     },
   }
@@ -68,7 +62,6 @@ export function createAxisConfig(
 export function createTooltipConfig(
   chartData: ChartData,
   hasMultipleWorkloads: boolean,
-  _styling: ChartStyling
 ): any {
   if (hasMultipleWorkloads) {
     return {
@@ -76,6 +69,7 @@ export function createTooltipConfig(
       axisPointer: { type: "shadow" },
       formatter: (params: any) => {
         if (!Array.isArray(params)) return ""
+
         let result = `<strong>${params[0].axisValue}</strong><br/>`
         params.forEach((param: any) => {
           const value = formatValue(param.value, chartData.statUnit)
@@ -101,7 +95,7 @@ export function createTooltipConfig(
  */
 export function createLegendConfig(
   series: any[],
-  _styling: ChartStyling,
+  styling: ChartStyling,
   hasMultipleSeries: boolean,
   customConfig?: any
 ): any {
@@ -114,7 +108,7 @@ export function createLegendConfig(
     left: "center",
     itemWidth: 10,
     itemHeight: 10,
-    textStyle: { fontSize: 12, color: _styling.textColor },
+    textStyle: { fontSize: 12, color: styling.textColor },
     data: series.map((s) => s.subject),
     ...customConfig,
   }
@@ -124,9 +118,27 @@ export function createLegendConfig(
  * Creates common grid configuration
  */
 export function createGridConfig(
+  chartType: ChartType,
   seriesLength: number,
-  _customConfig?: any
 ): any {
+
+  if (chartType === "pie") {
+    return [
+      {
+        top: "10%",
+        bottom: "10%",
+        left: "0%",
+        right: "50%",
+      },
+      {
+        top: "10%",
+        bottom: "10%",
+        left: "50%",
+        right: "0%",
+      },
+    ];
+
+  }
   const legendSpace = Math.min(
     15 + Math.floor((seriesLength - 1) / 15) * 4,
     35
@@ -178,4 +190,33 @@ export function createEmphasisConfig(
     },
     ...customConfig,
   }
+}
+
+export const getDataZoomConfig = (xAxisLength: number, styling: ChartStyling) => {
+  if (xAxisLength > 10) {
+    return [
+      {
+        type: "inside",
+        xAxisIndex: 0,
+        start: 0,
+        end: 100,
+      },
+      {
+        type: "slider",
+        xAxisIndex: 0,
+        start: 0,
+        end: 100,
+        height: 30,
+        bottom: "2%",
+        handleStyle: {
+          color: styling.textColor,
+        },
+        textStyle: {
+          color: styling.textColor,
+        },
+      },
+    ];
+  }
+
+  return  [];
 }

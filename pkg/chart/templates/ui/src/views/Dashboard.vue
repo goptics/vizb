@@ -1,20 +1,18 @@
 <script setup lang="ts">
-import { onMounted, computed } from "vue";
+import { computed } from "vue";
 import { Moon, Sun } from "lucide-vue-next";
 import { useBenchmarkData } from "../composables/useBenchmarkData";
 import { useChartData } from "../composables/useChartData";
 import { useSettingsStore } from "../composables/useSettingsStore";
 import BenchmarkHeader from "../components/BenchmarkHeader.vue";
-import ChartSettingsSidebar from "../components/ChartSettingsSidebar.vue";
-import BenchGroupCombobox from "../components/BenchGroupCombobox.vue";
+import ChartSettingsPopover from "../components/ChartSettingsPopover.vue";
+import BenchmarkGroupSelector from "../components/BenchmarkGroupSelector.vue";
 import ChartCard from "../components/ChartCard.vue";
 
 const {
   benchmarks,
   activeBenchmark,
   activeBenchmarkId,
-  loading,
-  loadBenchmarks,
   selectBenchmark,
 } = useBenchmarkData();
 
@@ -38,17 +36,15 @@ const mainTitle = computed(() => {
   return benchmarks.value[0]?.description || 'Benchmarks'
 })
 
-onMounted(async () => {
-  await loadBenchmarks();
-});
+// No async loading needed since data is static
 </script>
 
 <template>
   <div class="min-h-screen bg-background text-foreground">
     <!-- Top Right Controls -->
     <div class="fixed top-6 right-6 z-50 flex items-center gap-2">
-      <!-- Settings Sidebar -->
-      <ChartSettingsSidebar
+      <!-- Settings Popover -->
+      <ChartSettingsPopover
         :chartType="chartType"
         :sortOrder="sortOrder"
         :showLabels="showLabels"
@@ -70,21 +66,8 @@ onMounted(async () => {
 
     <!-- Main Container -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <!-- Loading State -->
-      <div
-        v-if="loading"
-        class="flex items-center justify-center min-h-[400px]"
-      >
-        <div class="text-center">
-          <div
-            class="inline-block w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"
-          ></div>
-          <p class="text-muted-foreground">Loading benchmarks...</p>
-        </div>
-      </div>
-
       <!-- Content -->
-      <template v-else-if="activeBenchmark">
+      <template v-if="activeBenchmark">
         <!-- Header -->
         <BenchmarkHeader
           :benchmark="activeBenchmark"
@@ -96,7 +79,7 @@ onMounted(async () => {
           v-if="benchmarks.length > 1"
           class="flex justify-center mb-8"
         >
-          <BenchGroupCombobox
+          <BenchmarkGroupSelector
             :benchmarks="benchmarks"
             :activeBenchmarkId="activeBenchmarkId"
             @select="selectBenchmark"

@@ -12,7 +12,7 @@ import {
   DataZoomComponent
 } from 'echarts/components'
 import VChart from 'vue-echarts'
-import { useEChartOptions } from '../composables/useEChartOptions'
+import { useChartOptions } from '../composables/useChartOptions'
 import type { ChartData } from '../types/benchmark'
 import type { SortOrder } from '../types/benchmark'
 import type { ChartType } from '../types/benchmark'
@@ -42,7 +42,7 @@ const props = defineProps<{
 // Convert props to refs and pass them directly to maintain reactivity
 const { chartData, sortOrder, showLabels, isDark, chartType } = toRefs(props)
 
-const { options } = useEChartOptions(
+const { options } = useChartOptions(
   chartData,
   sortOrder,
   showLabels,

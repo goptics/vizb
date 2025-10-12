@@ -8,7 +8,7 @@ import { useLineChartOptions } from './charts/useLineChartOptions'
 import { usePieChartOptions } from './charts/usePieChartOptions'
 import type { BaseChartConfig } from './charts/baseChartOptions'
 
-export function useEChartOptions(
+export function useChartOptions(
   chartData: Ref<ChartData>,
   sortOrder: Ref<SortOrder>,
   showLabels: Ref<boolean>,

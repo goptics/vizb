@@ -2,6 +2,8 @@ import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
 import { type BaseChartConfig, getBaseOptions, formatValue } from './baseChartOptions'
 import { getNextColorFor } from '../../lib/utils'
+import { calculateLegendSpace } from './shared/common'
+import { createAxisConfig, createGridConfig, createLegendConfig, createTooltipConfig, getChartStyling, getDataZoomConfig } from './shared'
 
 export function useBarChartOptions(config: BaseChartConfig) {
   const { chartData, sortOrder, showLabels, isDark } = config
@@ -70,80 +72,19 @@ export function useBarChartOptions(config: BaseChartConfig) {
   const options = computed<EChartsOption>(() => {
     const { series, xAxisData } = sortedData.value;
     const hasMultipleSeries = series.length > 1;
-    const legendSpace = Math.min(
-      15 + Math.floor((series.length - 1) / 15) * 4,
-      35
-    );
-    const textColor = isDark.value ? "#e5e7eb" : "#374151";
+
+    const styling = getChartStyling(isDark.value);
     const hasMultipleWorkloads = chartData.value.workloads.length > 1;
 
     const baseOptions = getBaseOptions(config);
 
     return {
       ...baseOptions,
-      grid: {
-        left: "3%",
-        right: "3%",
-        bottom: "10%",
-        top: `${legendSpace}%`,
-        containLabel: true,
-      },
-      tooltip: {
-        trigger: hasMultipleWorkloads ? "axis" : "item",
-        axisPointer: hasMultipleWorkloads ? { type: "shadow" } : undefined,
-        formatter: (params: any) => {
-          if (hasMultipleWorkloads) {
-            if (!Array.isArray(params)) return "";
-            let result = `<strong>${params[0].axisValue}</strong><br/>`;
-            params.forEach((param: any) => {
-              const value = formatValue(param.value, chartData.value.statUnit);
-              result += `${param.marker} ${param.seriesName}: ${value}<br/>`;
-            });
-            return result;
-          }
-
-          // Single item tooltip
-          const param = Array.isArray(params) ? params[0] : params;
-          const value = formatValue(param.value, chartData.value.statUnit);
-          return `${param.marker} <strong>${param.seriesName}</strong><br/>${value}`;
-        },
-      },
-      legend: hasMultipleSeries
-        ? {
-            ...baseOptions.legend,
-            data: series.map((s) => s.subject),
-          }
-        : undefined,
-      xAxis: {
-        type: "category",
-        data: xAxisData,
-        axisLabel: {
-          interval: 0,
-          rotate: 0,
-          fontSize: 11,
-          color: textColor,
-        },
-        axisLine: {
-          lineStyle: { color: isDark.value ? "#4b5563" : "#d1d5db" },
-        },
-      },
-      yAxis: {
-        type: "value",
-        splitLine: {
-          show: true,
-          lineStyle: {
-            type: "solid",
-            opacity: 0.2,
-            color: isDark.value ? "#4b5563" : "#d1d5db",
-          },
-        },
-        axisLabel: {
-          color: textColor,
-        },
-        axisLine: {
-          lineStyle: { color: isDark.value ? "#4b5563" : "#d1d5db" },
-        },
-      },
+      grid: createGridConfig("bar", series.length),
+      tooltip: createTooltipConfig(chartData.value, hasMultipleWorkloads),
+      legend: createLegendConfig(series, styling, hasMultipleSeries),
+      ...createAxisConfig(styling, xAxisData),
+      dataZoom: getDataZoomConfig(xAxisData.length, styling),
       series: series.map((seriesData) => ({
         name: seriesData.subject,
         type: "bar",
@@ -154,7 +95,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
             position: "top",
             formatter: "{c}",
             fontSize: 10,
-            color: textColor,
+            color: styling.textColor,
           },
         })),
         itemStyle: { color: getNextColorFor(seriesData.subject) },
