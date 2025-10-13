@@ -1,6 +1,3 @@
-import type { EChartsOption } from 'echarts'
-import type { ChartData } from '../../../types/benchmark'
-import { formatValue } from '../baseChartOptions'
 
 /**
  * Creates data zoom configuration for charts with many data points
@@ -9,7 +6,7 @@ export function createDataZoomConfig(
   styling: { textColor: string },
   isLineChart = false,
   seriesLength = 0
-): any[] {
+) {
   if (isLineChart) {
     return [
       {
@@ -73,8 +70,7 @@ export function createPieLabelConfig(
 ): any {
   const defaultFormatter = (params: any) => {
     const name = params.name
-    const value = formatValue(params.value, 'ns') // Will be overridden by chart-specific formatter
-    return `${name}\n${value}\n${params.percent}%`
+    return `${name}\n${params.value}\n${params.percent}%`
   }
 
   return {
@@ -107,7 +103,7 @@ export function createPieLabelLineConfig(
 /**
  * Creates pie chart emphasis configuration
  */
-export function createPieEmphasisConfig(showLabels: boolean): any {
+export function createPieEmphasisConfig(showLabels: boolean) {
   return {
     itemStyle: {
       shadowBlur: 10,
@@ -131,7 +127,7 @@ export function createPieSeriesConfig(
   showLabels: boolean,
   styling: { textColor: string },
   customFormatter?: (params: any) => string,
-  radius: [string, string] = ['30%', '60%'],
+  radius: [string, string] = ['40%', '70%'],
   center: [string, string] = ['50%', '50%'],
 ): any {
   return {

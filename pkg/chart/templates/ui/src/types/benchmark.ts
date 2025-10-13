@@ -32,6 +32,7 @@ export interface SeriesData {
   subject: string
   values: number[]
   subjectTotals?: Array<{ subject: string; total: number }>
+  benchmarkId: string
 }
 
 export interface Settings {

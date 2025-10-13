@@ -10,13 +10,21 @@ import BenchmarkGroupSelector from "../components/BenchmarkGroupSelector.vue";
 import ChartCard from "../components/ChartCard.vue";
 
 const {
+  // Top level benchmark selection
   benchmarks,
   activeBenchmark,
   activeBenchmarkId,
   selectBenchmark,
+  
+  // Inner level group selection
+  resultGroups,
+  activeGroup,
+  activeGroupId,
+  selectGroup,
 } = useBenchmarkData();
 
-const activeResults = computed(() => activeBenchmark.value?.results || []);
+// Use the active group's results for chart data
+const activeResults = computed(() => activeGroup.value?.results || []);
 const { chartData } = useChartData(activeResults);
 
 const {
@@ -35,8 +43,6 @@ const mainTitle = computed(() => {
   // Use the description from the first benchmark as the constant title
   return benchmarks.value[0]?.description || 'Benchmarks'
 })
-
-// No async loading needed since data is static
 </script>
 
 <template>
@@ -68,21 +74,41 @@ const mainTitle = computed(() => {
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <!-- Content -->
       <template v-if="activeBenchmark">
-        <!-- Header -->
-        <BenchmarkHeader
-          :benchmark="activeBenchmark"
-          :mainTitle="mainTitle"
-        />
+        <!-- Header with Benchmark Selector -->
+        <div class="text-center mb-8">
+          <h1 class="text-4xl font-bold mb-4 flex items-center justify-center gap-4">
+            <template v-if="benchmarks.length > 1">
+              <BenchmarkGroupSelector
+                :benchmarks="benchmarks"
+                :activeBenchmarkId="activeBenchmarkId"
+                @select="selectBenchmark"
+                class="min-w-[400px]"
+                placeholder="Select Benchmark..."
+              />
+            </template>
+            <template v-else>
+              {{ mainTitle }}
+            </template>
+          </h1>
+          
+          <!-- Additional benchmark info -->
+          <BenchmarkHeader
+            :benchmark="activeBenchmark"
+            :mainTitle="mainTitle"
+            :hideTitle="true"
+          />
+        </div>
 
-        <!-- Bench Group Selector (if multiple groups) -->
+        <!-- Inner Group Selector (if multiple groups in benchmark) -->
         <div
-          v-if="benchmarks.length > 1"
+          v-if="resultGroups.length > 1"
           class="flex justify-center mb-8"
         >
           <BenchmarkGroupSelector
-            :benchmarks="benchmarks"
-            :activeBenchmarkId="activeBenchmarkId"
-            @select="selectBenchmark"
+            :benchmarks="resultGroups"
+            :activeBenchmarkId="activeGroupId"
+            @select="selectGroup"
+            placeholder="Select Group..."
           />
         </div>
 
@@ -90,7 +116,7 @@ const mainTitle = computed(() => {
         <div class="grid grid-cols-1 gap-8">
           <ChartCard
             v-for="(chart, index) in chartData"
-            :key="`${activeBenchmarkId}-${index}`"
+            :key="`${activeBenchmarkId}-${activeGroupId}-${index}`"
             :chartData="chart"
             :sortOrder="sortOrder"
             :showLabels="showLabels"

@@ -18,6 +18,7 @@ import type { Benchmark } from '../types/benchmark'
 const props = defineProps<{
   benchmarks: Benchmark[]
   activeBenchmarkId: number
+  placeholder: string
 }>()
 
 const emit = defineEmits<{
@@ -89,8 +90,8 @@ watch(open, (isOpen) => {
       <ComboboxTrigger
         class="inline-flex h-10 w-full items-center justify-between rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-card-foreground shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
       >
-        {{ value?.label ?? 'Select benchmark...' }}
-        <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        <span class="flex-1 text-center">{{ value?.label ?? 'Select benchmark...' }}</span>
+        <ChevronsUpDown class="h-4 w-4 shrink-0 opacity-50" />
       </ComboboxTrigger>
     </ComboboxAnchor>
 
@@ -98,7 +99,7 @@ watch(open, (isOpen) => {
       <div class="relative w-full items-center">
         <ComboboxInput
           class="pl-9 focus-visible:ring-0 border-0 border-b rounded-none h-10"
-          placeholder="Search benchmark..."
+          :placeholder="placeholder"
         />
         <span class="absolute start-0 inset-y-0 flex items-center justify-center px-3">
           <Search class="size-4 text-muted-foreground" />
@@ -112,11 +113,12 @@ watch(open, (isOpen) => {
           v-for="benchmark in benchmarkOptions"
           :key="benchmark.value"
           :value="benchmark"
+          class="flex items-center justify-between"
         >
-          {{ benchmark.label }}
+          <span class="flex-1 text-center">{{ benchmark.label }}</span>
 
           <ComboboxItemIndicator>
-            <Check :class="cn('ml-auto h-4 w-4')" />
+            <Check :class="cn('h-4 w-4')" />
           </ComboboxItemIndicator>
         </ComboboxItem>
       </ComboboxGroup>

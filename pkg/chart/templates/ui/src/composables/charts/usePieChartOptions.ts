@@ -1,10 +1,6 @@
 import { computed } from "vue";
 import type { EChartsOption } from "echarts";
-import {
-  type BaseChartConfig,
-  getBaseOptions,
-  formatValue,
-} from "./baseChartOptions";
+import { type BaseChartConfig, getBaseOptions } from "./baseChartOptions";
 import { getNextColorFor } from "../../lib/utils";
 import { getChartStyling, createPieSeriesConfig } from "./shared";
 import { sortByTotal } from "./shared/common";
@@ -16,13 +12,13 @@ export function usePieChartOptions(config: BaseChartConfig) {
     // Check if we have subjectTotals (multiple workloads case)
     if (chartData.value.subjectTotals) {
       // Prepare subject data
-      const subjects = Object.entries(chartData.value.subjectTotals).map(
-        ([subject, total]) => ({
+      const subjects = Object.entries(chartData.value.subjectTotals)
+        .map(([subject, total]) => ({
           subject,
           values: [total],
           total,
-        })
-      ).sort(sortByTotal(sortOrder.value));
+        }))
+        .sort(sortByTotal(sortOrder.value));
 
       // Prepare workload data
       const workloadTotals = new Map<string, number>();
@@ -59,8 +55,9 @@ export function usePieChartOptions(config: BaseChartConfig) {
     const baseOptions = getBaseOptions(config);
 
     const formatter = (params: any) => {
-      const value = formatValue(params.value, chartData.value.statUnit);
-      return `${params.name}\n${value} (${params.percent}%)`;
+      const value = Number(params.value).toFixed(2);
+      const percent = Number(params.percent).toFixed(2);
+      return `${params.name}\n${value} (${percent}%)`;
     };
 
     // Check if we have both subjects and workloads (multiple workloads case)
@@ -79,14 +76,14 @@ export function usePieChartOptions(config: BaseChartConfig) {
         itemStyle: { color: getNextColorFor(seriesData.subject) },
       }));
 
-      const title = {
+      const subjectTitle = {
         text: "Subjects",
         left: "25%",
-        top: "3%",
-        textAlign: "center",
+        top: "5%",
+        textAlign: "center" as const,
         textStyle: {
-          fontSize: 14,
-          fontWeight: "bold",
+          fontSize: 16,
+          fontWeight: "bold" as const,
           color: styling.textColor,
         },
       };
@@ -94,25 +91,12 @@ export function usePieChartOptions(config: BaseChartConfig) {
       // Show two pie charts
       return {
         ...baseOptions,
-        grid: [
-          {
-            top: "10%",
-            bottom: "10%",
-            left: "0%",
-            right: "50%",
-          },
-          {
-            top: "10%",
-            bottom: "10%",
-            left: "50%",
-            right: "0%",
-          },
-        ],
         legend: { show: false },
         title: [
-          title,
+          subjectTitle,
           {
-            ...title,
+            ...subjectTitle,
+            left: "75%",  // Align with the right pie chart
             text: "Workloads",
           },
         ],
@@ -122,14 +106,18 @@ export function usePieChartOptions(config: BaseChartConfig) {
             subjectPieData,
             showLabels.value,
             styling,
-            formatter
+            formatter,
+            ['30%', '60%'],  // Smaller radius for left pie
+            ['25%', '50%']   // Position left pie
           ),
           createPieSeriesConfig(
             `${chartData.value.statType} (Workloads)`,
             workloadPieData,
             showLabels.value,
             styling,
-            formatter
+            formatter,
+            ['30%', '60%'],  // Smaller radius for right pie
+            ['75%', '50%']   // Position right pie
           ),
         ],
       };

@@ -10,24 +10,9 @@ export interface BaseChartConfig {
   isDark: Ref<boolean>
 }
 
-export const formatValue = (value: number, unit: string): string => {
-  if (value === 0) return "0";
-  if (unit === "ns") {
-    if (value >= 1000000) return `${(value / 1000000).toFixed(2)} ms`;
-    if (value >= 1000) return `${(value / 1000).toFixed(2)} μs`;
-    return `${value.toFixed(0)} ns`;
-  }
-  if (unit === "b") {
-    if (value >= 1073741824) return `${(value / 1073741824).toFixed(2)} GB`;
-    if (value >= 1048576) return `${(value / 1048576).toFixed(2)} MB`;
-    if (value >= 1024) return `${(value / 1024).toFixed(2)} KB`;
-    return `${value.toFixed(0)} B`;
-  }
-  return value.toString();
-};
 
 export const getBaseOptions = (config: BaseChartConfig): Partial<EChartsOption> => {
-  const { chartData, isDark } = config
+  const { isDark } = config
   const { textColor } = getChartStyling(isDark.value)
   
   return {
@@ -35,8 +20,7 @@ export const getBaseOptions = (config: BaseChartConfig): Partial<EChartsOption> 
     tooltip: {
       trigger: "item",
       formatter: (params: any) => {
-        const value = formatValue(params.value, chartData.value.statUnit);
-        return `${params.marker} <strong>${params.name}</strong><br/>${value}`;
+        return `${params.marker} <strong>${params.name}</strong><br/>${params.value}`;
       },
     },
     toolbox: {

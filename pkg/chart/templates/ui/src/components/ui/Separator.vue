@@ -17,5 +17,5 @@ const props = defineProps<{
     )"
     role="separator"
     :aria-orientation="props.orientation || 'horizontal'"
-  />
+  ></div>
 </template>

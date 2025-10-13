@@ -4,20 +4,27 @@ import type { Benchmark } from "../types/benchmark";
 defineProps<{
   benchmark: Benchmark
   mainTitle: string
+  hideTitle?: boolean
 }>()
 </script>
 
 <template>
-  <header class="text-center mb-8">
-    <h1 class="text-4xl font-bold tracking-tight mb-2">
-      {{ mainTitle }}
+  <header class="text-center" :class="{ 'mb-8': !hideTitle }">
+    <template v-if="!hideTitle">
+      <h1 class="text-4xl font-bold tracking-tight mb-2">
+        {{ mainTitle }}
+      </h1>
+    </template>
+    
+    <div class="flex items-center justify-center gap-4 mb-2">
       <span
         v-if="benchmark.cpu"
-        class="inline-flex items-center px-3 py-1 text-sm font-semibold rounded-lg border border-border bg-secondary text-secondary-foreground ml-2"
+        class="inline-flex items-center px-3 py-1 text-sm font-semibold rounded-lg border border-border bg-secondary text-secondary-foreground"
       >
         CPU: {{ benchmark.cpu }}
       </span>
-    </h1>
+    </div>
+    
     <p v-if="benchmark.description" class="text-base text-muted-foreground">
       {{ benchmark.description }}
     </p>

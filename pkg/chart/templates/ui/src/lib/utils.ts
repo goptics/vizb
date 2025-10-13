@@ -88,3 +88,7 @@ export function getNextColorFor(key: string) {
   return color;
 }
 
+export const resetColor = () => {
+	colorMap.clear();
+	i = 0;
+}

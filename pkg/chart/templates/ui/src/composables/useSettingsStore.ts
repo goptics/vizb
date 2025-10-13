@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import type { SortOrder, Settings, ChartType } from '../types/benchmark'
 
 const sortOrder = ref<SortOrder>('')

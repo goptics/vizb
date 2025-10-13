@@ -72,7 +72,7 @@ export function useLineChartOptions(config: BaseChartConfig) {
     const opt = {
       ...baseOptions,
       grid: createGridConfig(series.length),
-      tooltip: createTooltipConfig(chartData.value, hasMultipleWorkloads),
+      tooltip: createTooltipConfig(hasMultipleWorkloads),
     };
     
     if (!hasMultipleWorkloads) {

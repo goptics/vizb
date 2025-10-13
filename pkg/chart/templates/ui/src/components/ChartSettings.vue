@@ -117,28 +117,32 @@ const sortDirection = ref<'asc' | 'desc'>(
 )
 const showLabels = ref(props.showLabels)
 
-const handleChartTypeChange = (value: string) => {
-  chartType.value = value as ChartType
-  emit('update:chartType', value as ChartType)
+const handleChartTypeChange = (value: string | number) => {
+  chartType.value = String(value) as ChartType
+  emit('update:chartType', String(value) as ChartType)
 }
 
 const handleSortingToggle = (checked: boolean) => {
   isSortingEnabled.value = checked
+  
   if (checked) {
     // Ensure we have a valid sort direction when enabling
     if (!sortDirection.value) {
       sortDirection.value = 'asc'
     }
+
     emit('update:sortOrder', sortDirection.value)
-  } else {
-    emit('update:sortOrder', '')
+    return
   }
+  
+  emit('update:sortOrder', '')
 }
 
-const handleSortDirectionChange = (value: string) => {
-  if (value === 'asc' || value === 'desc') {
-    sortDirection.value = value
-    emit('update:sortOrder', value as SortOrder)
+const handleSortDirectionChange = (value: string | number) => {
+  const stringValue = String(value)
+  if (stringValue === 'asc' || stringValue === 'desc') {
+    sortDirection.value = stringValue
+    emit('update:sortOrder', stringValue as SortOrder)
   }
 }
 

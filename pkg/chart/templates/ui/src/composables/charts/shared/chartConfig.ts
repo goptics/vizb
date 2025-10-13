@@ -1,6 +1,3 @@
-import type { ChartData, ChartType } from '../../../types/benchmark'
-import { formatValue } from '../baseChartOptions'
-
 export interface ChartStyling {
   textColor: string
   axisColor: string
@@ -60,7 +57,6 @@ export function createAxisConfig(
  * Creates common tooltip configuration
  */
 export function createTooltipConfig(
-  chartData: ChartData,
   hasMultipleWorkloads: boolean,
 ): any {
   if (hasMultipleWorkloads) {
@@ -72,8 +68,7 @@ export function createTooltipConfig(
 
         let result = `<strong>${params[0].axisValue}</strong><br/>`
         params.forEach((param: any) => {
-          const value = formatValue(param.value, chartData.statUnit)
-          result += `${param.marker} ${param.seriesName}: ${value}<br/>`
+          result += `${param.marker} ${param.seriesName}: ${param.value}<br/>`
         })
         return result
       },
@@ -84,8 +79,7 @@ export function createTooltipConfig(
     trigger: "item",
     formatter: (params: any) => {
       const param = Array.isArray(params) ? params[0] : params
-      const value = formatValue(param.value, chartData.statUnit)
-      return `${param.marker} <strong>${param.seriesName}</strong><br/>${value}`
+      return `${param.marker} <strong>${param.seriesName}</strong><br/>${param.value}`
     },
   }
 }

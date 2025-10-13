@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { TabsTrigger, type TabsTriggerProps } from 'radix-vue'
 import type { HTMLAttributes } from 'vue'
-import { cn } from '@/lib/utils'
+import { cn } from '../../lib/utils'
 
 const props = defineProps<TabsTriggerProps & { class?: HTMLAttributes['class'] }>()
 </script>

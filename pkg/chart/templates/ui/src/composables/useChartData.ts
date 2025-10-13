@@ -57,7 +57,8 @@ export function useChartData(results: Ref<BenchmarkResult[]> | BenchmarkResult[]
         const series: SeriesData[] = workloads.map(workload => ({
           subject: workload,
           values: subjects.map(subject => dataMap.get(workload)?.get(subject) || 0),
-          subjectTotals // Pass totals for sorting in chart options
+          subjectTotals, // Pass totals for sorting in chart options
+          benchmarkId: firstResult.name // Add benchmark identifier
         }))
 
         return {
@@ -76,7 +77,8 @@ export function useChartData(results: Ref<BenchmarkResult[]> | BenchmarkResult[]
       // Single workload case - sort by subject values
       const series: SeriesData[] = subjects.map(subject => ({
         subject,
-        values: workloads.map(workload => dataMap.get(workload)?.get(subject) || 0)
+        values: workloads.map(workload => dataMap.get(workload)?.get(subject) || 0),
+        benchmarkId: firstResult.name // Add benchmark identifier
       }))
 
       return {

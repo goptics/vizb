@@ -76,7 +76,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
     return {
       ...baseOptions,
       grid: createGridConfig(series.length),
-      tooltip: createTooltipConfig(chartData.value, hasMultipleWorkloads),
+      tooltip: createTooltipConfig(hasMultipleWorkloads),
       legend: createLegendConfig(series, styling, hasMultipleSeries),
       ...createAxisConfig(styling, xAxisData),
       dataZoom: getDataZoomConfig(xAxisData.length, styling),
