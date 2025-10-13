@@ -117,28 +117,8 @@ export function createLegendConfig(
 /**
  * Creates common grid configuration
  */
-export function createGridConfig(
-  chartType: ChartType,
-  seriesLength: number,
+export function createGridConfig( seriesLength = 1,
 ): any {
-
-  if (chartType === "pie") {
-    return [
-      {
-        top: "10%",
-        bottom: "10%",
-        left: "0%",
-        right: "50%",
-      },
-      {
-        top: "10%",
-        bottom: "10%",
-        left: "50%",
-        right: "0%",
-      },
-    ];
-
-  }
   const legendSpace = Math.min(
     15 + Math.floor((seriesLength - 1) / 15) * 4,
     35

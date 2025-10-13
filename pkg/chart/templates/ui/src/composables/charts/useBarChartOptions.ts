@@ -1,9 +1,9 @@
 import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
-import { type BaseChartConfig, getBaseOptions, formatValue } from './baseChartOptions'
+import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
 import { getNextColorFor } from '../../lib/utils'
-import { calculateLegendSpace } from './shared/common'
 import { createAxisConfig, createGridConfig, createLegendConfig, createTooltipConfig, getChartStyling, getDataZoomConfig } from './shared'
+import { sortByTotal } from './shared/common'
 
 export function useBarChartOptions(config: BaseChartConfig) {
   const { chartData, sortOrder, showLabels, isDark } = config
@@ -26,10 +26,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
           subject,
           total: chartData.value.subjectTotals![subject] || 0,
         }))
-        .sort((a, b) => {
-          if (sortOrder.value === "asc") return a.total - b.total;
-          return b.total - a.total;
-        })
+        .sort(sortByTotal(sortOrder.value))
         .map((item) => item.subject);
 
       // Rebuild series data with sorted X-axis order
@@ -58,10 +55,8 @@ export function useBarChartOptions(config: BaseChartConfig) {
       ...series,
       total: series.values.reduce((sum, val) => sum + val, 0),
     }));
-    seriesWithTotals.sort((a, b) => {
-      if (sortOrder.value === "asc") return (a.total || 0) - (b.total || 0);
-      return (b.total || 0) - (a.total || 0);
-    });
+    
+    seriesWithTotals.sort(sortByTotal(sortOrder.value));
 
     return {
       series: seriesWithTotals,
@@ -80,7 +75,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
 
     return {
       ...baseOptions,
-      grid: createGridConfig("bar", series.length),
+      grid: createGridConfig(series.length),
       tooltip: createTooltipConfig(chartData.value, hasMultipleWorkloads),
       legend: createLegendConfig(series, styling, hasMultipleSeries),
       ...createAxisConfig(styling, xAxisData),

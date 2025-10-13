@@ -1,5 +1,12 @@
 import { computed, type Ref } from 'vue'
-import type { BenchmarkResult, ChartData, SeriesData } from '../types/benchmark'
+import type { BenchmarkResult, ChartData, SeriesData, Stat } from '../types/benchmark'
+
+const createChartTitle = (stat: Stat) => {
+  if (stat.unit) {
+    return `${stat.type} (${stat.unit}/op)`
+  }
+  return `${stat.type}/op`
+}
 
 export function useChartData(results: Ref<BenchmarkResult[]> | BenchmarkResult[]) {
   const chartData = computed<ChartData[]>(() => {
@@ -53,10 +60,8 @@ export function useChartData(results: Ref<BenchmarkResult[]> | BenchmarkResult[]
           subjectTotals // Pass totals for sorting in chart options
         }))
 
-        const title = stat.unit ? `${stat.type} (${stat.unit}/op)` : `${stat.type}/op`
-
         return {
-          title,
+          title: createChartTitle(stat),
           statType: stat.type,
           statUnit: stat.unit,
           workloads: subjects,
@@ -74,10 +79,8 @@ export function useChartData(results: Ref<BenchmarkResult[]> | BenchmarkResult[]
         values: workloads.map(workload => dataMap.get(workload)?.get(subject) || 0)
       }))
 
-      const title = stat.unit ? `${stat.type} (${stat.unit}/op)` : `${stat.type}/op`
-
       return {
-        title,
+        title: createChartTitle(stat),
         statType: stat.type,
         statUnit: stat.unit,
         workloads,

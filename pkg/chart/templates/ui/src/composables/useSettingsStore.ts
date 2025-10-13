@@ -1,5 +1,4 @@
-import { ref } from 'vue'
-import { useDark, useToggle } from '@vueuse/core'
+import { ref, computed } from 'vue'
 import type { SortOrder, Settings, ChartType } from '../types/benchmark'
 
 const sortOrder = ref<SortOrder>('')
@@ -7,13 +6,42 @@ const showLabels = ref(false)
 const chartType = ref<ChartType>('bar')
 let initialized = false
 
-const isDark = useDark({
-  selector: 'html',
-  attribute: 'class',
-  valueDark: 'dark',
-  valueLight: 'light',
-})
-const toggleDark = useToggle(isDark)
+// Simple dark mode implementation
+const isDark = ref(false)
+
+// Initialize dark mode from localStorage or system preference
+const initializeDarkMode = () => {
+  const saved = localStorage.getItem('dark-mode')
+  if (saved !== null) {
+    isDark.value = saved === 'true'
+  } else {
+    // Check system preference
+    isDark.value = window.matchMedia('(prefers-color-scheme: dark)').matches
+  }
+  updateHtmlClass()
+}
+
+// Update HTML class based on dark mode state
+const updateHtmlClass = () => {
+  const html = document.documentElement
+  if (isDark.value) {
+    html.classList.add('dark')
+    html.classList.remove('light')
+  } else {
+    html.classList.add('light')
+    html.classList.remove('dark')
+  }
+}
+
+// Toggle dark mode
+const toggleDark = () => {
+  isDark.value = !isDark.value
+  localStorage.setItem('dark-mode', isDark.value.toString())
+  updateHtmlClass()
+}
+
+// Initialize on module load
+initializeDarkMode()
 
 export function useSettingsStore() {
   const setSortOrder = (order: SortOrder) => {
