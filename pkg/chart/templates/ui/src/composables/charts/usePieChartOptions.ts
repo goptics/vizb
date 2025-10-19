@@ -6,45 +6,22 @@ import { getChartStyling, createPieSeriesConfig } from "./shared";
 import { sortByTotal } from "./shared/common";
 
 export function usePieChartOptions(config: BaseChartConfig) {
-  const { chartData, sortOrder, showLabels, isDark } = config;
+  const { chartData, sort, showLabels, isDark } = config;
 
   const sortedData = computed(() => {
-    // Check if we have subjectTotals (multiple workloads case)
-    if (chartData.value.subjectTotals) {
-      // Prepare subject data
-      const subjects = Object.entries(chartData.value.subjectTotals)
-        .map(([subject, total]) => ({
-          subject,
-          values: [total],
-          total,
-        }))
-        .sort(sortByTotal(sortOrder.value));
-
-      // Prepare workload data
-      const workloadTotals = new Map<string, number>();
-      chartData.value.series.forEach((series) => {
-        const workloadTotal = series.values.reduce((sum, val) => sum + val, 0);
-        workloadTotals.set(series.subject, workloadTotal);
-      });
-
-      const workloads = Array.from(workloadTotals.entries())
-        .map(([workload, total]) => ({
-          subject: workload,
-          values: [total],
-          total,
-        }))
-        .sort(sortByTotal(sortOrder.value));
-
-      return { subjects, workloads };
+    // Check if we have y-axis data (dual categories)
+    const hasYAxis = chartData.value.yAxis && chartData.value.yAxis.length > 0 && chartData.value.yAxis[0] !== "";
+    
+    // Build a single pie dataset based on totals per xAxis
+    const seriesWithTotals = chartData.value.series.map((series) => ({
+      ...series,
+      // For single category (no y-axis), use the first value; for dual categories, sum all values
+      total: hasYAxis ? series.values.reduce((sum, val) => sum + val, 0) : (series.values[0] || 0),
+    }));
+    
+    if (sort.value.enabled) {
+      seriesWithTotals.sort(sortByTotal(sort.value.order));
     }
-
-    // Single workload case: use series directly
-    const seriesWithTotals = chartData.value.series
-      .map((series) => ({
-        ...series,
-        total: series.values.reduce((sum, val) => sum + val, 0),
-      }))
-      .sort(sortByTotal(sortOrder.value));
 
     return { series: seriesWithTotals };
   });
@@ -53,6 +30,9 @@ export function usePieChartOptions(config: BaseChartConfig) {
     const sorted = sortedData.value;
     const styling = getChartStyling(isDark.value);
     const baseOptions = getBaseOptions(config);
+    
+    // Check if we have y-axis data (dual categories)
+    const hasYAxis = chartData.value.yAxis && chartData.value.yAxis.length > 0 && chartData.value.yAxis[0] !== "";
 
     const formatter = (params: any) => {
       const value = Number(params.value).toFixed(2);
@@ -60,92 +40,94 @@ export function usePieChartOptions(config: BaseChartConfig) {
       return `${params.name}\n${value} (${percent}%)`;
     };
 
-    // Check if we have both subjects and workloads (multiple workloads case)
-    if (sorted.subjects && sorted.workloads) {
-      // Prepare subject pie chart data
-      const subjectPieData = sorted.subjects.map((seriesData) => ({
-        name: seriesData.subject,
-        value: seriesData.total || 0,
-        itemStyle: { color: getNextColorFor(seriesData.subject) },
-      }));
+    // Pie chart for x-axis data
+    const xAxisPieData = sorted.series.map((seriesData) => ({
+      name: seriesData.xAxis,
+      value: seriesData.total || 0,
+      itemStyle: { color: getNextColorFor(seriesData.xAxis) },
+    }));
 
-      // Prepare workload pie chart data
-      const workloadPieData = sorted.workloads.map((seriesData) => ({
-        name: seriesData.subject,
-        value: seriesData.total || 0,
-        itemStyle: { color: getNextColorFor(seriesData.subject) },
-      }));
-
-      const subjectTitle = {
-        text: "Subjects",
-        left: "25%",
-        top: "5%",
-        textAlign: "center" as const,
-        textStyle: {
-          fontSize: 16,
-          fontWeight: "bold" as const,
-          color: styling.textColor,
-        },
-      };
-
-      // Show two pie charts
+    // For single category: show only one pie chart
+    if (!hasYAxis) {
       return {
         ...baseOptions,
         legend: { show: false },
-        title: [
-          subjectTitle,
-          {
-            ...subjectTitle,
-            left: "75%",  // Align with the right pie chart
-            text: "Workloads",
-          },
-        ],
         series: [
           createPieSeriesConfig(
-            `${chartData.value.statType} (Subjects)`,
-            subjectPieData,
+            chartData.value.statType,
+            xAxisPieData,
             showLabels.value,
             styling,
-            formatter,
-            ['30%', '60%'],  // Smaller radius for left pie
-            ['25%', '50%']   // Position left pie
-          ),
-          createPieSeriesConfig(
-            `${chartData.value.statType} (Workloads)`,
-            workloadPieData,
-            showLabels.value,
-            styling,
-            formatter,
-            ['30%', '60%'],  // Smaller radius for right pie
-            ['75%', '50%']   // Position right pie
+            formatter
           ),
         ],
       };
     }
 
-    // Single pie chart for subjects only
-    const singlePieData = sorted.series.map((seriesData) => ({
-      name: seriesData.subject,
-      value: seriesData.total || 0,
-      itemStyle: { color: getNextColorFor(seriesData.subject) },
+    // For multiple categories: show two pie charts side by side
+    // Calculate totals for y-axis data
+    const yAxisTotals = new Map<string, number>();
+    chartData.value.yAxis.forEach((yAxis, index) => {
+      let total = 0;
+      sorted.series.forEach((series) => {
+        total += series.values[index] || 0;
+      });
+      yAxisTotals.set(yAxis, total);
+    });
+
+    const yAxisPieData = chartData.value.yAxis.map((yAxis) => ({
+      name: yAxis,
+      value: yAxisTotals.get(yAxis) || 0,
+      itemStyle: { color: getNextColorFor(yAxis) },
     }));
 
     return {
       ...baseOptions,
-      grid: {
-        top: "10%",
-        bottom: "10%",
-        left: "10%",
-        right: "10%",
-      },
+      title: [
+        {
+          text: 'X-Axis',
+          left: '25%',
+          top: '5%',
+          textAlign: 'center',
+          textStyle: {
+            color: styling.textColor,
+            fontSize: 12,
+            fontWeight: 'bold',
+          },
+        },
+        {
+          text: 'Y-Axis',
+          left: '75%',
+          top: '5%',
+          textAlign: 'center',
+          textStyle: {
+            color: styling.textColor,
+            fontSize: 12,
+            fontWeight: 'bold',
+          },
+        },
+      ],
       legend: { show: false },
       series: [
+        // Left pie chart: x-axis data
         createPieSeriesConfig(
-          chartData.value.statType,
-          singlePieData,
+          `By X-Axis`,
+          xAxisPieData,
           showLabels.value,
           styling,
-          formatter
+          formatter,
+          ['30%', '60%'],
+          ['25%', '50%']
+        ),
+        // Right pie chart: y-axis data
+        createPieSeriesConfig(
+          `By Y-Axis`,
+          yAxisPieData,
+          showLabels.value,
+          styling,
+          formatter,
+          ['30%', '60%'],
+          ['75%', '50%']
         ),
       ],
     };

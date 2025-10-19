@@ -1,6 +1,6 @@
 export interface ChartStyling {
-  textColor: string
-  axisColor: string
+  textColor: string;
+  axisColor: string;
 }
 
 /**
@@ -10,7 +10,7 @@ export function getChartStyling(isDark: boolean): ChartStyling {
   return {
     textColor: isDark ? "#e5e7eb" : "#374151",
     axisColor: isDark ? "#4b5563" : "#d1d5db",
-  }
+  };
 }
 
 /**
@@ -18,14 +18,14 @@ export function getChartStyling(isDark: boolean): ChartStyling {
  */
 export function createAxisConfig(
   styling: ChartStyling,
-  xAxisData: string[],
+  xAxisData: string[]
 ): { xAxis: any; yAxis: any } {
   return {
     xAxis: {
       type: "category",
       data: xAxisData,
       axisLabel: {
-        interval:  "auto" ,
+        interval: "auto",
         fontSize: 10,
         color: styling.textColor,
       },
@@ -50,38 +50,36 @@ export function createAxisConfig(
         lineStyle: { color: styling.axisColor },
       },
     },
-  }
+  };
 }
 
 /**
  * Creates common tooltip configuration
  */
-export function createTooltipConfig(
-  hasMultipleWorkloads: boolean,
-): any {
+export function createTooltipConfig(hasMultipleWorkloads: boolean): any {
   if (hasMultipleWorkloads) {
     return {
       trigger: "axis",
       axisPointer: { type: "shadow" },
       formatter: (params: any) => {
-        if (!Array.isArray(params)) return ""
+        if (!Array.isArray(params)) return "";
 
-        let result = `<strong>${params[0].axisValue}</strong><br/>`
+        let result = `<strong>${params[0].axisValue}</strong><br/>`;
         params.forEach((param: any) => {
-          result += `${param.marker} ${param.seriesName}: ${param.value}<br/>`
-        })
-        return result
+          result += `${param.marker} ${param.seriesName}: ${param.value}<br/>`;
+        });
+        return result;
       },
-    }
+    };
   }
 
   return {
     trigger: "item",
     formatter: (params: any) => {
-      const param = Array.isArray(params) ? params[0] : params
-      return `${param.marker} <strong>${param.seriesName}</strong><br/>${param.value}`
+      const param = Array.isArray(params) ? params[0] : params;
+      return `${param.marker} <strong>${param.seriesName}</strong><br/>${param.value}`;
     },
-  }
+  };
 }
 
 /**
@@ -94,7 +92,7 @@ export function createLegendConfig(
   customConfig?: any
 ): any {
   if (!hasMultipleSeries) {
-    return { show: false }
+    return { show: false };
   }
 
   return {
@@ -103,20 +101,19 @@ export function createLegendConfig(
     itemWidth: 10,
     itemHeight: 10,
     textStyle: { fontSize: 12, color: styling.textColor },
-    data: series.map((s) => s.subject),
+    data: series.map((s) => s.xAxis),
     ...customConfig,
-  }
+  };
 }
 
 /**
  * Creates common grid configuration
  */
-export function createGridConfig( seriesLength = 1,
-): any {
+export function createGridConfig(seriesLength = 1): any {
   const legendSpace = Math.min(
     15 + Math.floor((seriesLength - 1) / 15) * 4,
     35
-  )
+  );
 
   return {
     left: "3%",
@@ -124,7 +121,7 @@ export function createGridConfig( seriesLength = 1,
     bottom: "10%",
     top: `${legendSpace}%`,
     containLabel: true,
-  }
+  };
 }
 
 /**
@@ -146,14 +143,14 @@ export function createSeriesItemStyle(
       color: styling.textColor,
       ...customLabelConfig,
     },
-  }
+  };
 }
 
 /**
  * Creates common emphasis configuration
  */
 export function createEmphasisConfig(
-  focusType: 'series' | 'self' = 'series',
+  focusType: "series" | "self" = "series",
   customConfig?: any
 ): any {
   return {
@@ -163,10 +160,13 @@ export function createEmphasisConfig(
       borderColor: "#fff",
     },
     ...customConfig,
-  }
+  };
 }
 
-export const getDataZoomConfig = (xAxisLength: number, styling: ChartStyling) => {
+export const getDataZoomConfig = (
+  xAxisLength: number,
+  styling: ChartStyling
+) => {
   if (xAxisLength > 10) {
     return [
       {
@@ -192,5 +192,5 @@ export const getDataZoomConfig = (xAxisLength: number, styling: ChartStyling) =>
     ];
   }
 
-  return  [];
-}
+  return [];
+};

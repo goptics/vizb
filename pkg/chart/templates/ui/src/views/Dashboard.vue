@@ -15,7 +15,7 @@ const {
   activeBenchmark,
   activeBenchmarkId,
   selectBenchmark,
-  
+
   // Inner level group selection
   resultGroups,
   activeGroup,
@@ -24,25 +24,16 @@ const {
 } = useBenchmarkData();
 
 // Use the active group's results for chart data
-const activeResults = computed(() => activeGroup.value?.results || []);
+const activeResults = computed(() => activeGroup.value?.data || []);
 const { chartData } = useChartData(activeResults);
 
-const {
-  sortOrder,
-  showLabels,
-  chartType,
-  isDark,
-  setSortOrder,
-  setShowLabels,
-  setChartType,
-  toggleDark,
-} = useSettingsStore();
+const { isDark, toggleDark } = useSettingsStore();
 
 // Get the main constant title (use description as main title)
 const mainTitle = computed(() => {
   // Use the description from the first benchmark as the constant title
-  return benchmarks.value[0]?.description || 'Benchmarks'
-})
+  return benchmarks.value[0]?.name || "Benchmarks";
+});
 </script>
 
 <template>
@@ -50,14 +41,7 @@ const mainTitle = computed(() => {
     <!-- Top Right Controls -->
     <div class="fixed top-6 right-6 z-50 flex items-center gap-2">
       <!-- Settings Popover -->
-      <ChartSettingsPopover
-        :chartType="chartType"
-        :sortOrder="sortOrder"
-        :showLabels="showLabels"
-        @update:chartType="setChartType"
-        @update:sortOrder="setSortOrder"
-        @update:showLabels="setShowLabels"
-      />
+      <ChartSettingsPopover />
 
       <!-- Theme Toggle -->
       <button
@@ -76,7 +60,9 @@ const mainTitle = computed(() => {
       <template v-if="activeBenchmark">
         <!-- Header with Benchmark Selector -->
         <div class="text-center mb-8">
-          <h1 class="text-4xl font-bold mb-4 flex items-center justify-center gap-4">
+          <h1
+            class="text-4xl font-bold mb-4 flex items-center justify-center gap-4"
+          >
             <template v-if="benchmarks.length > 1">
               <BenchmarkGroupSelector
                 :benchmarks="benchmarks"
@@ -90,7 +76,7 @@ const mainTitle = computed(() => {
               {{ mainTitle }}
             </template>
           </h1>
-          
+
           <!-- Additional benchmark info -->
           <BenchmarkHeader
             :benchmark="activeBenchmark"
@@ -100,10 +86,7 @@ const mainTitle = computed(() => {
         </div>
 
         <!-- Inner Group Selector (if multiple groups in benchmark) -->
-        <div
-          v-if="resultGroups.length > 1"
-          class="flex justify-center mb-8"
-        >
+        <div v-if="resultGroups.length > 1" class="flex justify-center mb-8">
           <BenchmarkGroupSelector
             :benchmarks="resultGroups"
             :activeBenchmarkId="activeGroupId"
@@ -118,10 +101,6 @@ const mainTitle = computed(() => {
             v-for="(chart, index) in chartData"
             :key="`${activeBenchmarkId}-${activeGroupId}-${index}`"
             :chartData="chart"
-            :sortOrder="sortOrder"
-            :showLabels="showLabels"
-            :isDark="isDark"
-            :chartType="chartType"
             class="animate-fade-in"
             :style="{ animationDelay: `${index * 50}ms` }"
           />

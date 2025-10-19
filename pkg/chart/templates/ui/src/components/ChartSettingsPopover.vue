@@ -11,16 +11,10 @@
     
     <!-- Popover content rendering only the card (no outer chrome) -->
     <PopoverContent class="w-[380px] p-0">
-      <ChartSettings
-        :chartType="chartType"
-        :sortOrder="sortOrder"
-        :showLabels="showLabels"
-        @update:chartType="$emit('update:chartType', $event)"
-        @update:sortOrder="$emit('update:sortOrder', $event)"
-        @update:showLabels="$emit('update:showLabels', $event)"
-      />
+      <ChartSettings />
     </PopoverContent>
   </Popover>
+  
 </template>
 
 <script setup lang="ts">
@@ -28,19 +22,6 @@ import { ref } from 'vue'
 import { Settings } from 'lucide-vue-next'
 import { Popover, PopoverTrigger, PopoverContent } from './ui'
 import ChartSettings from './ChartSettings.vue'
-import type { SortOrder, ChartType } from '../types/benchmark'
-
-defineProps<{
-  chartType: ChartType
-  sortOrder: SortOrder
-  showLabels: boolean
-}>()
-
-defineEmits<{
-  'update:chartType': [value: ChartType]
-  'update:sortOrder': [value: SortOrder]
-  'update:showLabels': [value: boolean]
-}>()
 
 const isOpen = ref(false)
 </script>

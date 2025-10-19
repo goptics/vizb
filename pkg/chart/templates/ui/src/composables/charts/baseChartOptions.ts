@@ -1,11 +1,11 @@
 import type { Ref } from 'vue'
 import type { EChartsOption } from 'echarts'
-import type { ChartData, SortOrder } from '../../types/benchmark'
+import type { ChartData, Sort } from '../../types/benchmark'
 import { getChartStyling } from './shared/chartConfig'
 
 export interface BaseChartConfig {
   chartData: Ref<ChartData>
-  sortOrder: Ref<SortOrder>
+  sort: Ref<Sort>
   showLabels: Ref<boolean>
   isDark: Ref<boolean>
 }

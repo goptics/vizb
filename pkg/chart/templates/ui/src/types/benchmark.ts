@@ -8,13 +8,14 @@ export interface Stat {
   type: string
   value: number
   unit: string
+  per: string
 }
 
 // Represents a single benchmark result for one subject
-export interface BenchmarkResult {
+export interface BenchmarkData {
   name: string
-  workload: string
-  subject: string
+  yAxis: string
+  xAxis: string
   stats: Stat[]
 }
 
@@ -23,31 +24,45 @@ export interface ChartData {
   title: string
   statType: string
   statUnit: string
-  workloads: string[]
+  yAxis: string[]
   series: SeriesData[]
-  subjectTotals?: Record<string, number>
 }
 
 export interface SeriesData {
-  subject: string
+  xAxis: string
   values: number[]
-  subjectTotals?: Array<{ subject: string; total: number }>
   benchmarkId: string
 }
 
+export type Sort = {
+  enabled: boolean
+  order: SortOrder
+}
+
 export interface Settings {
-  sort: SortOrder
+  sort: Sort
   showLabels: boolean
+}
+
+export const DEFAULT_SETTINGS: Settings = {
+  sort: {
+    enabled: false,
+    order: 'asc',
+  },
+  showLabels: false,
 }
 
 export interface Benchmark {
   name: string
   description: string
-  cpu: string
+  cpu: {
+    name: string
+    cores: number
+  }
   settings: Settings
-  results: BenchmarkResult[]
+  data: BenchmarkData[]
 }
 
-export type SortOrder = 'asc' | 'desc' | ''
+export type SortOrder = 'asc' | 'desc'
 
 export type ChartType = 'bar' | 'line' | 'pie'

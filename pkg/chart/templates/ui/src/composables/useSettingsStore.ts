@@ -1,7 +1,7 @@
 import { ref } from 'vue'
-import type { SortOrder, Settings, ChartType } from '../types/benchmark'
+import type { Sort, Settings, ChartType } from "../types/benchmark";
 
-const sortOrder = ref<SortOrder>('')
+const sortOrder = ref<Sort>({ enabled: false, order: 'asc' })
 const showLabels = ref(false)
 const chartType = ref<ChartType>('bar')
 let initialized = false
@@ -44,8 +44,8 @@ const toggleDark = () => {
 initializeDarkMode()
 
 export function useSettingsStore() {
-  const setSortOrder = (order: SortOrder) => {
-    sortOrder.value = order
+  const setSort = (sort: Sort) => {
+    sortOrder.value = sort
   }
 
   const setShowLabels = (show: boolean) => {
@@ -69,10 +69,10 @@ export function useSettingsStore() {
     showLabels,
     chartType,
     isDark,
-    setSortOrder,
+    setSort,
     setShowLabels,
     setChartType,
     toggleDark,
-    initializeFromBenchmark
-  }
+    initializeFromBenchmark,
+  };
 }

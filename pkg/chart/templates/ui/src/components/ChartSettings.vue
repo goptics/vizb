@@ -89,66 +89,48 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { SortAsc, SortDesc, LayersIcon, BarChart3, TrendingUp, PieChart } from 'lucide-vue-next'
 import { Card, CardContent, CardHeader, CardTitle } from './ui'
 import { Switch } from './ui'
 import { Tabs, TabsList, TabsTrigger } from './ui'
 import { Separator } from './ui'
 import { Label } from './ui'
-import type { SortOrder, ChartType } from '../types/benchmark'
+import type { ChartType, SortOrder } from '../types/benchmark'
+import { useSettingsStore } from '../composables/useSettingsStore'
 
-const props = defineProps<{
-  chartType: ChartType
-  sortOrder: SortOrder
-  showLabels: boolean
-}>()
+const {
+  sortOrder,
+  showLabels: showLabelsStore,
+  chartType: chartTypeStore,
+  setSort,
+  setShowLabels,
+  setChartType,
+} = useSettingsStore()
 
-const emit = defineEmits<{
-  'update:chartType': [value: ChartType]
-  'update:sortOrder': [value: SortOrder]
-  'update:showLabels': [value: boolean]
-}>()
+const chartType = ref(chartTypeStore.value)
+const isSortingEnabled = ref(sortOrder.value.enabled)
+const sortDirection = ref<SortOrder>(sortOrder.value.order)
+const showLabels = ref(showLabelsStore.value)
 
-const chartType = ref(props.chartType)
-const isSortingEnabled = ref(props.sortOrder !== '')
-const sortDirection = ref<'asc' | 'desc'>(
-  props.sortOrder === 'asc' || props.sortOrder === 'desc' ? props.sortOrder : 'asc'
-)
-const showLabels = ref(props.showLabels)
+watch(chartType, (val) => setChartType(val))
+watch(showLabels, (val) => setShowLabels(val))
+watch([isSortingEnabled, sortDirection], ([enabled, order]) => setSort({ enabled, order }))
 
 const handleChartTypeChange = (value: string | number) => {
   chartType.value = String(value) as ChartType
-  emit('update:chartType', String(value) as ChartType)
 }
 
 const handleSortingToggle = (checked: boolean) => {
   isSortingEnabled.value = checked
-  
-  if (checked) {
-    // Ensure we have a valid sort direction when enabling
-    if (!sortDirection.value) {
-      sortDirection.value = 'asc'
-    }
-
-    emit('update:sortOrder', sortDirection.value)
-    return
-  }
-  
-  emit('update:sortOrder', '')
 }
 
 const handleSortDirectionChange = (value: string | number) => {
-  const stringValue = String(value)
-  if (stringValue === 'asc' || stringValue === 'desc') {
-    sortDirection.value = stringValue
-    emit('update:sortOrder', stringValue as SortOrder)
-  }
+  sortDirection.value = String(value) as SortOrder
 }
 
 const handleShowLabelsChange = (checked: boolean) => {
   showLabels.value = checked
-  emit('update:showLabels', checked)
 }
 </script>
 

@@ -18,10 +18,22 @@ defineProps<{
     
     <div class="flex items-center justify-center gap-4 mb-2">
       <span
-        v-if="benchmark.cpu"
+        v-if="benchmark.cpu && benchmark.cpu.name && benchmark.cpu.cores"
         class="inline-flex items-center px-3 py-1 text-sm font-semibold rounded-lg border border-border bg-secondary text-secondary-foreground"
       >
-        CPU: {{ benchmark.cpu }}
+        CPU: {{ benchmark.cpu.name }} ({{ benchmark.cpu.cores }} cores)
+      </span>
+      <span
+        v-else-if="benchmark.cpu && benchmark.cpu.name"
+        class="inline-flex items-center px-3 py-1 text-sm font-semibold rounded-lg border border-border bg-secondary text-secondary-foreground"
+      >
+        CPU: {{ benchmark.cpu.name }}
+      </span>
+      <span
+        v-else-if="benchmark.cpu && benchmark.cpu.cores"
+        class="inline-flex items-center px-3 py-1 text-sm font-semibold rounded-lg border border-border bg-secondary text-secondary-foreground"
+      >
+        CPU: {{ benchmark.cpu.cores }} cores
       </span>
     </div>
     

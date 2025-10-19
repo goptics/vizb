@@ -1,95 +1,65 @@
-import { computed, type Ref } from 'vue'
-import type { BenchmarkResult, ChartData, SeriesData, Stat } from '../types/benchmark'
+import { computed, type Ref } from "vue";
+import type {
+  BenchmarkData,
+  ChartData,
+  SeriesData,
+  Stat,
+} from "../types/benchmark";
 
 const createChartTitle = (stat: Stat) => {
   if (stat.unit) {
-    return `${stat.type} (${stat.unit}/op)`
+    return `${stat.type} (${stat.unit}/${stat.per})`;
   }
-  return `${stat.type}/op`
-}
 
-export function useChartData(results: Ref<BenchmarkResult[]> | BenchmarkResult[]) {
+  return `${stat.type}/${stat.per}`;
+};
+
+export function useChartData(results: Ref<BenchmarkData[]> | BenchmarkData[]) {
   const chartData = computed<ChartData[]>(() => {
-    const resultsList = Array.isArray(results) ? results : results.value
-    if (!resultsList?.length) return []
+    const data = Array.isArray(results) ? results : results.value;
+    if (!data?.length) return [];
 
-    const firstResult = resultsList[0]
-    if (!firstResult?.stats) return []
+    const firstBenchmarkData = data[0];
+    if (!firstBenchmarkData?.stats) return [];
 
-    return firstResult.stats.map((stat, statIndex) => {
-      const dataMap = new Map<string, Map<string, number>>()
-      const workloadsSet = new Set<string>()
-      const subjectsSet = new Set<string>()
+    return firstBenchmarkData.stats.map((stat, statIndex) => {
+      const dataMap = new Map<string, Map<string, number>>();
+      const xAxisSet = new Set<string>();
+      const yAxisSet = new Set<string>();
 
-      resultsList.forEach(result => {
-        const workload = result.workload || ''
-        const subject = result.subject
-        const value = result.stats[statIndex]?.value || 0
+      data.forEach((benchmarkData) => {
+        const { xAxis, yAxis } = benchmarkData;
+        const value = benchmarkData.stats[statIndex]?.value || 0;
 
-        workloadsSet.add(workload)
-        subjectsSet.add(subject)
+        yAxisSet.add(yAxis);
+        xAxisSet.add(xAxis);
 
-        if (!dataMap.has(workload)) {
-          dataMap.set(workload, new Map())
+        if (!dataMap.has(yAxis)) {
+          dataMap.set(yAxis, new Map());
         }
-        dataMap.get(workload)!.set(subject, value)
-      })
 
-      const workloads = Array.from(workloadsSet)
-      let subjects = Array.from(subjectsSet)
+        dataMap.get(yAxis)!.set(xAxis, value);
+      });
 
-      // When we have workloads, create series per workload (workload becomes legend)
-      // Otherwise, create series per subject (subject becomes legend)
-      const hasMultipleWorkloads = workloads.length > 1
-
-      // When we have multiple workloads, we need to keep subjects in original order
-      // because sorting will be handled in useEChartOptions based on sort settings
-      if (hasMultipleWorkloads) {
-        // Calculate total value for each subject across all workloads
-        const subjectTotals = subjects.map(subject => {
-          const total = workloads.reduce((sum, workload) => {
-            return sum + (dataMap.get(workload)?.get(subject) || 0)
-          }, 0)
-          return { subject, total }
-        })
-
-        // Store totals for sorting but don't sort here - let chart options handle it
-        const series: SeriesData[] = workloads.map(workload => ({
-          subject: workload,
-          values: subjects.map(subject => dataMap.get(workload)?.get(subject) || 0),
-          subjectTotals, // Pass totals for sorting in chart options
-          benchmarkId: firstResult.name // Add benchmark identifier
-        }))
-
-        return {
-          title: createChartTitle(stat),
-          statType: stat.type,
-          statUnit: stat.unit,
-          workloads: subjects,
-          series,
-          subjectTotals: subjectTotals.reduce((acc, { subject, total }) => {
-            acc[subject] = total
-            return acc
-          }, {} as Record<string, number>)
-        }
-      }
+      const xAxisValues = Array.from(xAxisSet);
+      const yAxisValues = Array.from(yAxisSet);
 
       // Single workload case - sort by subject values
-      const series: SeriesData[] = subjects.map(subject => ({
-        subject,
-        values: workloads.map(workload => dataMap.get(workload)?.get(subject) || 0),
-        benchmarkId: firstResult.name // Add benchmark identifier
-      }))
+      const series: SeriesData[] = xAxisValues.map((xAxis) => ({
+        xAxis,
+        values: yAxisValues.map((yAxis) => dataMap.get(yAxis)?.get(xAxis) || 0),
+        benchmarkId: firstBenchmarkData.name, // Add benchmark identifier
+      }));
 
       return {
         title: createChartTitle(stat),
         statType: stat.type,
         statUnit: stat.unit,
-        workloads,
-        series
-      }
-    })
-  })
+        yAxis: yAxisValues,
+        series,
+      };
+    });
+  });
 
-  return { chartData }
+  return { chartData };
 }

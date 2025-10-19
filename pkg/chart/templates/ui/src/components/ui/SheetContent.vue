@@ -12,7 +12,7 @@ const props = defineProps<{
   <DialogContent
     v-bind="$attrs"
     :class="cn(
-      'z-50 bg-transparent p-0',
+      'fixed inset-y-0 right-0 z-50 h-full w-[400px] border-l bg-background p-6 shadow-lg transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:duration-500',
       props.class
     )"
   >

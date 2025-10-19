@@ -1,95 +1,78 @@
-import { computed } from 'vue'
-import type { EChartsOption } from 'echarts'
-import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
-import { getNextColorFor } from '../../lib/utils'
-import { createAxisConfig, createGridConfig, createLegendConfig, createTooltipConfig, getChartStyling, getDataZoomConfig } from './shared'
-import { sortByTotal } from './shared/common'
+import { computed } from "vue";
+import type { EChartsOption } from "echarts";
+import { type BaseChartConfig, getBaseOptions } from "./baseChartOptions";
+import { getNextColorFor } from "../../lib/utils";
+import {
+  createAxisConfig,
+  createGridConfig,
+  createLegendConfig,
+  createTooltipConfig,
+  getChartStyling,
+  getDataZoomConfig,
+} from "./shared";
+import { sortByTotal } from "./shared/common";
 
 export function useLineChartOptions(config: BaseChartConfig) {
-  const { chartData, sortOrder, showLabels, isDark } = config
-  
+  const { chartData, sort, showLabels, isDark } = config;
+
   const sortedData = computed(() => {
-    if (sortOrder.value === "") {
+    // Check if we have y-axis data (dual categories)
+    const hasYAxis =
+      chartData.value.yAxis &&
+      chartData.value.yAxis.length > 0 &&
+      chartData.value.yAxis[0] !== "";
+
+    if (!sort.value.enabled) {
       return {
         series: chartData.value.series,
-        xAxisData: chartData.value.workloads,
+        xAxisData: chartData.value.series.map((s) => s.xAxis), // Always use framework names on x-axis
+        hasYAxis,
       };
     }
 
-    // Check if we have multiple workloads (subjectTotals will exist)
-    const hasSubjectTotals = chartData.value.subjectTotals !== undefined;
-
-    if (hasSubjectTotals) {
-      // Sort X-axis (subjects) based on their totals across all workloads
-      const sortedSubjects = chartData.value.workloads
-        .map((subject) => ({
-          subject,
-          total: chartData.value.subjectTotals![subject] || 0,
-        }))
-        .sort(sortByTotal(sortOrder.value))
-        .map((item) => item.subject);
-
-      // Rebuild series data with sorted X-axis order
-      const sortedSeries = chartData.value.series.map((series) => {
-        const subjectIndexMap = new Map(
-          chartData.value.workloads.map((subject, idx) => [subject, idx])
-        );
-
-        return {
-          ...series,
-          values: sortedSubjects.map((subject) => {
-            const idx = subjectIndexMap.get(subject);
-            return idx !== undefined ? series.values[idx] : 0;
-          }),
-        };
-      });
-
-      return {
-        series: sortedSeries,
-        xAxisData: sortedSubjects,
-      };
-    }
-
-    // Single workload case - sort series by their total values
+    // Sort series by total values
     const seriesWithTotals = chartData.value.series.map((series) => ({
       ...series,
       total: series.values.reduce((sum, val) => sum + val, 0),
-    }))
-      .sort(sortByTotal(sortOrder.value));
+    }));
+
+    if (sort.value.enabled) {
+      seriesWithTotals.sort(sortByTotal(sort.value.order));
+    }
 
     return {
       series: seriesWithTotals,
-      xAxisData: chartData.value.workloads,
+      xAxisData: seriesWithTotals.map((s) => s.xAxis), // Always use framework names on x-axis
+      hasYAxis,
     };
   });
 
   const options = computed<EChartsOption>(() => {
-    const { series, xAxisData } = sortedData.value;
-    const hasMultipleSeries = series.length > 1;
-    const hasMultipleWorkloads = chartData.value.workloads.length > 1;
+    const { series, xAxisData, hasYAxis } = sortedData.value;
     const baseOptions = getBaseOptions(config);
     const styling = getChartStyling(isDark.value);
-    const opt = {
-      ...baseOptions,
-      grid: createGridConfig(series.length),
-      tooltip: createTooltipConfig(hasMultipleWorkloads),
-    };
-    
-    if (!hasMultipleWorkloads) {
+
+    // For single category: create one series with each x-axis value as a data point
+    // For dual categories: create multiple series (one per x-axis value)
+    if (!hasYAxis) {
+      // Single category case: one series with multiple x-axis points
+      const opt = {
+        ...baseOptions,
+        grid: createGridConfig(1),
+        tooltip: createTooltipConfig(false),
+      };
+
       return {
         ...opt,
-        ...createAxisConfig(
-          styling,
-          series.map((s) => s.subject)
-        ),
-        dataZoom: getDataZoomConfig(series.length, styling),
+        ...createAxisConfig(styling, xAxisData),
+        dataZoom: getDataZoomConfig(xAxisData.length, styling),
         legend: { show: false },
         series: [
           {
-            name: chartData.value.statType,
+            name: chartData.value.title,
             type: "line",
-            data: series.map((s) => ({
-              value: s.values[0] || 0,
+            data: series.map((seriesData) => ({
+              value: seriesData.values[0], // Take the first (and only) value
               label: {
                 show: showLabels.value,
                 position: "top",
@@ -98,7 +81,7 @@ export function useLineChartOptions(config: BaseChartConfig) {
                 color: styling.textColor,
               },
             })),
-            itemStyle: { color: "#3b82f6" }, // Single color for all points
+            itemStyle: { color: getNextColorFor(chartData.value.title) },
             lineStyle: {
               width: 2,
               type: "solid",
@@ -107,6 +90,7 @@ export function useLineChartOptions(config: BaseChartConfig) {
             symbol: "circle",
             symbolSize: 6,
             emphasis: {
+              focus: "series",
               itemStyle: {
                 borderWidth: 2,
                 borderColor: "#fff",
@@ -116,41 +100,57 @@ export function useLineChartOptions(config: BaseChartConfig) {
         ],
       };
     }
-    
+
+    // Dual categories case: transpose data to show y-axis values as series
+    // Each y-axis value becomes a line, with x-axis values (frameworks) as points
+    const yAxisLabels = chartData.value.yAxis;
+    const transposedSeries = yAxisLabels.map((yAxisLabel, yIndex) => ({
+      name: yAxisLabel,
+      type: "line" as const,
+      data: series.map((seriesData) => ({
+        value: seriesData.values[yIndex] || 0,
+        label: {
+          show: showLabels.value,
+          position: "top",
+          formatter: "{c}",
+          fontSize: 10,
+          color: styling.textColor,
+        },
+      })),
+      itemStyle: { color: getNextColorFor(yAxisLabel) },
+      lineStyle: {
+        width: 2,
+        type: "solid" as const,
+      },
+      smooth: false,
+      symbol: "circle",
+      symbolSize: 6,
+      emphasis: {
+        focus: "series",
+        itemStyle: {
+          borderWidth: 2,
+          borderColor: "#fff",
+        },
+      },
+    }));
+
+    const hasMultipleSeries = transposedSeries.length > 1;
+    const opt = {
+      ...baseOptions,
+      grid: createGridConfig(transposedSeries.length),
+      tooltip: createTooltipConfig(true),
+    };
+
     return {
       ...opt,
       ...createAxisConfig(styling, xAxisData),
       dataZoom: getDataZoomConfig(xAxisData.length, styling),
-      legend: createLegendConfig(series, styling, hasMultipleSeries),
-      series: series.map((seriesData) => ({
-        name: seriesData.subject,
-        type: "line",
-        data: seriesData.values.map((value) => ({
-          value,
-          label: {
-            show: showLabels.value,
-            position: "top",
-            formatter: "{c}",
-            fontSize: 10,
-            color: styling.textColor,
-          },
-        })),
-        itemStyle: { color: getNextColorFor(seriesData.subject) },
-        lineStyle: {
-          width: 2,
-          type: "solid",
-        },
-        smooth: false,
-        symbol: "circle",
-        symbolSize: 6,
-        emphasis: {
-          focus: "series",
-          itemStyle: {
-            borderWidth: 2,
-            borderColor: "#fff",
-          },
-        },
-      })),
+      legend: createLegendConfig(
+        transposedSeries.map((s) => ({ xAxis: s.name })),
+        styling,
+        hasMultipleSeries
+      ),
+      series: transposedSeries as any,
     };
   });
 
