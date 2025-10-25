@@ -1,7 +1,7 @@
 import { computed } from "vue";
 import type { EChartsOption } from "echarts";
 import { type BaseChartConfig, getBaseOptions } from "./baseChartOptions";
-import { getNextColorFor } from "../../lib/utils";
+import { getNextColorFor, hasYAxis } from "../../lib/utils";
 import { getChartStyling, createPieSeriesConfig } from "./shared";
 import { sortByTotal } from "./shared/common";
 
@@ -32,7 +32,6 @@ export function usePieChartOptions(config: BaseChartConfig) {
     const baseOptions = getBaseOptions(config);
     
     // Check if we have y-axis data (dual categories)
-    const hasYAxis = chartData.value.yAxis && chartData.value.yAxis.length > 0 && chartData.value.yAxis[0] !== "";
 
     const formatter = (params: any) => {
       const value = Number(params.value).toFixed(2);
@@ -48,7 +47,7 @@ export function usePieChartOptions(config: BaseChartConfig) {
     }));
 
     // For single category: show only one pie chart
-    if (!hasYAxis) {
+    if (!hasYAxis(chartData)) {
       return {
         ...baseOptions,
         legend: { show: false },

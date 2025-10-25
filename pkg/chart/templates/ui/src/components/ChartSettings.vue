@@ -5,25 +5,21 @@
     </CardHeader>
     <CardContent class="space-y-6">
       <!-- Chart Type Section -->
-      <div class="space-y-4">
+      <div v-if="charts.length > 1" class="space-y-4">
         <div class="space-y-2">
           <Label>Chart Type</Label>
           <Tabs 
             :model-value="chartType" 
             @update:model-value="handleChartTypeChange"
           >
-            <TabsList class="grid w-full grid-cols-3">
-              <TabsTrigger value="bar">
-                <BarChart3 class="h-4 w-4" />
-                <span class="ml-2">Bar</span>
-              </TabsTrigger>
-              <TabsTrigger value="line">
-                <TrendingUp class="h-4 w-4" />
-                <span class="ml-2">Line</span>
-              </TabsTrigger>
-              <TabsTrigger value="pie">
-                <PieChart class="h-4 w-4" />
-                <span class="ml-2">Pie</span>
+            <TabsList :class="['grid w-full', gridColsClass]">
+              <TabsTrigger 
+                v-for="type in charts" 
+                :key="type"
+                :value="type"
+              >
+                <component :is="getChartIcon(type)" class="h-4 w-4" />
+                <span class="ml-2">{{ getChartLabel(type) }}</span>
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -89,7 +85,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { SortAsc, SortDesc, LayersIcon, BarChart3, TrendingUp, PieChart } from 'lucide-vue-next'
 import { Card, CardContent, CardHeader, CardTitle } from './ui'
 import { Switch } from './ui'
@@ -102,6 +98,7 @@ import { useSettingsStore } from '../composables/useSettingsStore'
 const {
   sortOrder,
   showLabels: showLabelsStore,
+  charts,
   chartType: chartTypeStore,
   setSort,
   setShowLabels,
@@ -132,6 +129,32 @@ const handleSortDirectionChange = (value: string | number) => {
 const handleShowLabelsChange = (checked: boolean) => {
   showLabels.value = checked
 }
+
+const getChartIcon = (type: ChartType) => {
+  switch (type) {
+    case 'bar': return BarChart3
+    case 'line': return TrendingUp
+    case 'pie': return PieChart
+    default: return BarChart3
+  }
+}
+
+const getChartLabel = (type: ChartType) => {
+  switch (type) {
+    case 'bar': return 'Bar'
+    case 'line': return 'Line'
+    case 'pie': return 'Pie'
+    default: return 'Bar'
+  }
+}
+
+const gridColsClass = computed(() => {
+  const len = charts.value.length
+  if (len <= 1) return 'grid-cols-1'
+  if (len === 2) return 'grid-cols-2'
+  if (len === 3) return 'grid-cols-3'
+  return 'grid-cols-4'
+})
 </script>
 
 <style scoped>

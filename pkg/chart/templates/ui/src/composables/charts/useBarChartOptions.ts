@@ -1,7 +1,7 @@
 import { computed } from "vue";
 import type { EChartsOption } from "echarts";
 import { type BaseChartConfig, getBaseOptions } from "./baseChartOptions";
-import { getNextColorFor } from "../../lib/utils";
+import { getNextColorFor, hasYAxis } from "../../lib/utils";
 import {
   createAxisConfig,
   createGridConfig,
@@ -17,13 +17,12 @@ export function useBarChartOptions(config: BaseChartConfig) {
 
   const sortedData = computed(() => {
     // Check if we have y-axis data (dual categories)
-    const hasYAxis = chartData.value.yAxis && chartData.value.yAxis.length > 0 && chartData.value.yAxis[0] !== "";
 
     if (!sort.value.enabled) {
       return {
         series: chartData.value.series,
         xAxisData: chartData.value.series.map(s => s.xAxis), // Always use framework names on x-axis
-        hasYAxis,
+        hasYAxis: hasYAxis(chartData),
       };
     }
 
@@ -33,6 +32,8 @@ export function useBarChartOptions(config: BaseChartConfig) {
       total: series.values.reduce((sum, val) => sum + val, 0),
     }));
 
+    console.log('Chart Data', chartData)
+
     if (sort.value.enabled) {
       seriesWithTotals.sort(sortByTotal(sort.value.order));
     }
@@ -40,7 +41,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
     return {
       series: seriesWithTotals,
       xAxisData: seriesWithTotals.map(s => s.xAxis), // Always use framework names on x-axis
-      hasYAxis,
+      hasYAxis: hasYAxis(chartData),
     };
   });
 

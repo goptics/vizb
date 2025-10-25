@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, watch } from "vue";
 import { Moon, Sun } from "lucide-vue-next";
 import { useBenchmarkData } from "../composables/useBenchmarkData";
 import { useChartData } from "../composables/useChartData";
@@ -27,7 +27,14 @@ const {
 const activeResults = computed(() => activeGroup.value?.data || []);
 const { chartData } = useChartData(activeResults);
 
-const { isDark, toggleDark } = useSettingsStore();
+const { isDark, toggleDark, initializeFromBenchmark } = useSettingsStore();
+
+// Initialize settings from the active benchmark settings
+watch(activeBenchmark, (b) => {
+  if (b?.settings) {
+    initializeFromBenchmark(b.settings);
+  }
+}, { immediate: true });
 
 // Get the main constant title (use description as main title)
 const mainTitle = computed(() => {

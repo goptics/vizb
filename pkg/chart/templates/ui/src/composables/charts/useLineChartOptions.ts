@@ -1,7 +1,7 @@
 import { computed } from "vue";
 import type { EChartsOption } from "echarts";
 import { type BaseChartConfig, getBaseOptions } from "./baseChartOptions";
-import { getNextColorFor } from "../../lib/utils";
+import { getNextColorFor, hasXAxis, hasYAxis } from "../../lib/utils";
 import {
   createAxisConfig,
   createGridConfig,
@@ -16,17 +16,11 @@ export function useLineChartOptions(config: BaseChartConfig) {
   const { chartData, sort, showLabels, isDark } = config;
 
   const sortedData = computed(() => {
-    // Check if we have y-axis data (dual categories)
-    const hasYAxis =
-      chartData.value.yAxis &&
-      chartData.value.yAxis.length > 0 &&
-      chartData.value.yAxis[0] !== "";
-
     if (!sort.value.enabled) {
       return {
         series: chartData.value.series,
         xAxisData: chartData.value.series.map((s) => s.xAxis), // Always use framework names on x-axis
-        hasYAxis,
+        hasYAxis: hasYAxis(chartData),
       };
     }
 
@@ -43,7 +37,7 @@ export function useLineChartOptions(config: BaseChartConfig) {
     return {
       series: seriesWithTotals,
       xAxisData: seriesWithTotals.map((s) => s.xAxis), // Always use framework names on x-axis
-      hasYAxis,
+      hasYAxis: hasYAxis(chartData),
     };
   });
 

@@ -1,74 +1,75 @@
-import { type ClassValue, clsx } from 'clsx'
-import { twMerge } from 'tailwind-merge'
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
+import type { ChartData } from "../types/benchmark";
+import type { Ref } from "vue";
 
 /**
  * Utility function to merge Tailwind CSS classes
  * Used for conditional styling with shadcn components
  */
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
-
 export const COLOR_PALETTE = [
-	"#5470C6", // Blue
-	"#3BA272", // Green
-	"#FC8452", // Orange
-	"#73C0DE", // Light blue
-	"#EE6666", // Red
-	"#FAC858", // Yellow
-	"#9A60B4", // Purple
-	"#EA7CCC", // Pink
-	"#91CC75", // Lime
-	"#FF9F7F", // Coral
+  "#5470C6", // Blue
+  "#3BA272", // Green
+  "#FC8452", // Orange
+  "#73C0DE", // Light blue
+  "#EE6666", // Red
+  "#FAC858", // Yellow
+  "#9A60B4", // Purple
+  "#EA7CCC", // Pink
+  "#91CC75", // Lime
+  "#FF9F7F", // Coral
 
-	"#3E5A9E", // Navy Depth (Blue)
-	"#2E7D32", // Forest Canopy (Green)
-	"#EF6C00", // Burnt Sienna (Orange)
-	"#7E57C2", // Amethyst Veil (Purple)
-	"#F9A825", // Goldenrod Shine (Yellow)
-	"#6A8ACF", // Steel Blue (Blue)
-	"#4CAF50", // Emerald Leaf (Green)
-	"#FF8F00", // Amber Flame (Orange)
-	"#AB47BC", // Fuchsia Bloom (Pink)
-	"#FFEB3B", // Lemon Zest (Yellow)
+  "#3E5A9E", // Navy Depth (Blue)
+  "#2E7D32", // Forest Canopy (Green)
+  "#EF6C00", // Burnt Sienna (Orange)
+  "#7E57C2", // Amethyst Veil (Purple)
+  "#F9A825", // Goldenrod Shine (Yellow)
+  "#6A8ACF", // Steel Blue (Blue)
+  "#4CAF50", // Emerald Leaf (Green)
+  "#FF8F00", // Amber Flame (Orange)
+  "#AB47BC", // Fuchsia Bloom (Pink)
+  "#FFEB3B", // Lemon Zest (Yellow)
 
-	"#2B4E72", // Midnight Slate (Blue)
-	"#1B5E20", // Pine Shadow (Green)
-	"#D84315", // Rust Ember (Red)
-	"#512DA8", // Violet Shadow (Purple)
-	"#F57F17", // Saffron Warmth (Yellow)
-	"#4A90E2", // Cobalt Glow (Blue)
-	"#66BB6A", // Verdant Bloom (Green)
-	"#FF5722", // Coral Fire (Orange)
-	"#BA68C8", // Orchid Haze (Purple)
-	"#FFF176", // Banana Glow (Yellow)
+  "#2B4E72", // Midnight Slate (Blue)
+  "#1B5E20", // Pine Shadow (Green)
+  "#D84315", // Rust Ember (Red)
+  "#512DA8", // Violet Shadow (Purple)
+  "#F57F17", // Saffron Warmth (Yellow)
+  "#4A90E2", // Cobalt Glow (Blue)
+  "#66BB6A", // Verdant Bloom (Green)
+  "#FF5722", // Coral Fire (Orange)
+  "#BA68C8", // Orchid Haze (Purple)
+  "#FFF176", // Banana Glow (Yellow)
 
-	"#1E3A5F", // Deep Ocean (Blue)
-	"#00695C", // Jade Depth (Green)
-	"#BF360C", // Crimson Ember (Red)
-	"#673AB7", // Plum Depth (Purple)
-	"#C0CA33", // Chartreuse Edge (Lime)
-	"#7FB3D5", // Azure Mist (Blue)
-	"#81C784", // Moss Glow (Green)
-	"#FFAB91", // Peach Sunset (Orange)
-	"#E040FB", // Magenta Spark (Pink)
-	"#DCE775", // Lime Radiance (Lime)
+  "#1E3A5F", // Deep Ocean (Blue)
+  "#00695C", // Jade Depth (Green)
+  "#BF360C", // Crimson Ember (Red)
+  "#673AB7", // Plum Depth (Purple)
+  "#C0CA33", // Chartreuse Edge (Lime)
+  "#7FB3D5", // Azure Mist (Blue)
+  "#81C784", // Moss Glow (Green)
+  "#FFAB91", // Peach Sunset (Orange)
+  "#E040FB", // Magenta Spark (Pink)
+  "#DCE775", // Lime Radiance (Lime)
 
-	"#335C8A", // Indigo Wave (Blue)
-	"#388E3C", // Olive Ridge (Green)
-	"#E64A19", // Tangerine Blaze (Orange)
-	"#9575CD", // Lavender Dusk (Purple)
-	"#78909C", // Slate Gray-Blue (Neutral)
-	"#5C9EAD", // Teal Horizon (Blue-Green)
-	"#AED581", // Sage Whisper (Green)
-	"#FF7043", // Salmon Glow (Orange)
-	"#F06292", // Rose Quartz (Pink)
-	"#A1887F", // Taupe Earth (Neutral)
-]
+  "#335C8A", // Indigo Wave (Blue)
+  "#388E3C", // Olive Ridge (Green)
+  "#E64A19", // Tangerine Blaze (Orange)
+  "#9575CD", // Lavender Dusk (Purple)
+  "#78909C", // Slate Gray-Blue (Neutral)
+  "#5C9EAD", // Teal Horizon (Blue-Green)
+  "#AED581", // Sage Whisper (Green)
+  "#FF7043", // Salmon Glow (Orange)
+  "#F06292", // Rose Quartz (Pink)
+  "#A1887F", // Taupe Earth (Neutral)
+];
 
-const colorMap = new Map<string, number>()
-let i = 0
+const colorMap = new Map<string, number>();
+let i = 0;
 
 export function getNextColorFor(key: string) {
   if (colorMap.has(key)) {
@@ -89,6 +90,16 @@ export function getNextColorFor(key: string) {
 }
 
 export const resetColor = () => {
-	colorMap.clear();
-	i = 0;
-}
+  colorMap.clear();
+  i = 0;
+};
+
+export const hasXAxis = (chartData: Ref<ChartData, ChartData>) =>
+  chartData.value.series.some(
+    (series) => series.xAxis && series.xAxis.trim() !== ""
+  );
+
+export const hasYAxis = (chartData: Ref<ChartData, ChartData>) =>
+  chartData.value.yAxis &&
+  chartData.value.yAxis.length > 0 &&
+  chartData.value.yAxis[0] !== "";
