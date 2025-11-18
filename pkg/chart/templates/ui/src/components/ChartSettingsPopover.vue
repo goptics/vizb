@@ -8,20 +8,19 @@
         <Settings class="w-5 h-5" />
       </button>
     </PopoverTrigger>
-    
+
     <!-- Popover content rendering only the card (no outer chrome) -->
     <PopoverContent class="w-[380px] p-0">
       <ChartSettings />
     </PopoverContent>
   </Popover>
-  
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { Settings } from 'lucide-vue-next'
-import { Popover, PopoverTrigger, PopoverContent } from './ui'
-import ChartSettings from './ChartSettings.vue'
+import { ref } from "vue";
+import { Settings } from "lucide-vue-next";
+import { Popover, PopoverTrigger, PopoverContent } from "./ui";
+import ChartSettings from "./ChartSettings.vue";
 
-const isOpen = ref(false)
+const isOpen = ref(false);
 </script>

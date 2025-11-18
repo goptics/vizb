@@ -56,8 +56,8 @@ export function createAxisConfig(
 /**
  * Creates common tooltip configuration
  */
-export function createTooltipConfig(hasMultipleWorkloads: boolean): any {
-  if (hasMultipleWorkloads) {
+export function createTooltipConfig(hasXYAxis: boolean): any {
+  if (hasXYAxis) {
     return {
       trigger: "axis",
       axisPointer: { type: "shadow" },
@@ -77,7 +77,9 @@ export function createTooltipConfig(hasMultipleWorkloads: boolean): any {
     trigger: "item",
     formatter: (params: any) => {
       const param = Array.isArray(params) ? params[0] : params;
-      return `${param.marker} <strong>${param.seriesName}</strong><br/>${param.value}`;
+      return `${param.marker} <strong>${
+        param.name || param.seriesName
+      }</strong><br/>${param.value}`;
     },
   };
 }
