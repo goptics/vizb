@@ -1,0 +1,14 @@
+<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="barFill" x1="0" y1="3" x2="0" y2="16" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#BDF6CE"/>
+      <stop offset="1" stop-color="#6EC48D"/>
+    </linearGradient>
+  </defs>
+  <rect x="1" y="11.2" width="2.2" height="3.8" rx="0.5" fill="url(#barFill)"/>
+  <rect x="4.4" y="9" width="2.2" height="6" rx="0.5" fill="url(#barFill)"/>
+  <rect x="7.8" y="6.2" width="2.2" height="8.8" rx="0.5" fill="url(#barFill)"/>
+  <rect x="11.2" y="3.2" width="2.2" height="11.8" rx="0.5" fill="url(#barFill)"/>
+  <path d="M1.5 12L5.3 8.2L8.8 9.8L14 2.6" stroke="#22323F" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <polyline points="12.5 2 14.8 2 14.8 4.4" fill="none" stroke="#22323F" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
