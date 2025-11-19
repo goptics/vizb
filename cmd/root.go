@@ -222,11 +222,18 @@ func writeOutput(f *os.File, results []shared.BenchmarkResult, format string) {
 		Description: shared.FlagState.Description,
 		Data:        results,
 	}
+	enableSorting := shared.FlagState.Sort != ""
 
 	benchmark.CPU.Cores = shared.CPUCount
 	benchmark.Settings.Charts = shared.FlagState.Charts
-	benchmark.Settings.Sort.Enabled = shared.FlagState.Sort != ""
-	benchmark.Settings.Sort.Order = shared.FlagState.Sort
+	benchmark.Settings.Sort.Enabled = enableSorting
+
+	if enableSorting {
+		benchmark.Settings.Sort.Order = shared.FlagState.Sort
+	} else {
+		benchmark.Settings.Sort.Order = "asc"
+	}
+
 	benchmark.Settings.ShowLabels = shared.FlagState.ShowLabels
 
 	switch format {
