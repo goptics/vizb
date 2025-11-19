@@ -10,7 +10,6 @@ export interface BaseChartConfig {
   isDark: Ref<boolean>
 }
 
-
 export const getBaseOptions = (config: BaseChartConfig): Partial<EChartsOption> => {
   const { isDark } = config
   const { textColor } = getChartStyling(isDark.value)

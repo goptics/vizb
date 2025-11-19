@@ -34,6 +34,10 @@ export function useBenchmarkData() {
 
   // Process and group all benchmarks
   const benchmarksProcessed = computed<Benchmark[]>(() => {
+    if (!Array.isArray(benchmarks.value)) {
+      benchmarks.value = [benchmarks.value];
+    }
+
     if (!benchmarks.value.length) return [];
 
     return benchmarks.value.map((benchmark) => {

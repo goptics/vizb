@@ -1,9 +1,9 @@
 import { ref, computed } from "vue";
-import type { Sort, Settings, ChartType } from "../types/benchmark";
+import { type Sort, type Settings, type ChartType, DEFAULT_SETTINGS } from "../types/benchmark";
 
 const sortOrder = ref<Sort>({ enabled: false, order: "asc" });
 const showLabels = ref(false);
-const charts = ref<ChartType[]>(["bar", "line", "pie"]);
+const charts = ref<ChartType[]>(DEFAULT_SETTINGS.charts);
 const activeChartIndex = ref<number>(0);
 const chartType = computed<ChartType>(
   () => charts.value[activeChartIndex.value] ?? "bar"
@@ -58,11 +58,9 @@ export function useSettingsStore() {
   };
 
   const setCharts = (list: ChartType[]) => {
-    // validate and ensure at least one
-    const valid: ChartType[] = ["bar", "line", "pie"];
-    const set = new Set(valid);
-    const filtered = list.filter((c) => set.has(c));
-    charts.value = filtered.length ? filtered : valid;
+    const filtered = list.filter((c) => DEFAULT_SETTINGS.charts.includes(c));
+    charts.value = filtered.length ? filtered : DEFAULT_SETTINGS.charts;
+
     // clamp index
     if (
       activeChartIndex.value < 0 ||
@@ -90,8 +88,7 @@ export function useSettingsStore() {
       sortOrder.value = settings.sort;
       showLabels.value = settings.showLabels;
 
-      const types = settings.chart?.types ?? ["bar", "line", "pie"];
-      setCharts(types);
+      setCharts(settings.charts ?? DEFAULT_SETTINGS.charts);
       setActiveChartIndex(0);
       initialized = true;
     }

@@ -42,12 +42,7 @@ export type Sort = {
 export interface Settings {
   sort: Sort
   showLabels: boolean
-  chart: Chart
-}
-
-type Chart = {
-  types: ChartType[]
-  activeIndex?: number
+  charts: ChartType[]
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -56,10 +51,7 @@ export const DEFAULT_SETTINGS: Settings = {
     order: 'asc',
   },
   showLabels: false,
-  chart: {
-    types: ['bar', 'line', 'pie'],
-    activeIndex: 0,
-  }
+  charts: ['line', 'pie', 'bar'],
 }
 
 export interface Benchmark {
