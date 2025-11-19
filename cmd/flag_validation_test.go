@@ -14,15 +14,19 @@ func TestFlagValidationRules(t *testing.T) {
 	// Save original flag state
 	origMemUnit := shared.FlagState.MemUnit
 	origTimeUnit := shared.FlagState.TimeUnit
-	origAllocUnit := shared.FlagState.AllocUnit
+	origAllocUnit := shared.FlagState.NumberUnit
 	origFormat := shared.FlagState.Format
+	origSort := shared.FlagState.Sort
+	origCharts := shared.FlagState.Charts
 
 	defer func() {
 		// Restore original values
 		shared.FlagState.MemUnit = origMemUnit
 		shared.FlagState.TimeUnit = origTimeUnit
-		shared.FlagState.AllocUnit = origAllocUnit
+		shared.FlagState.NumberUnit = origAllocUnit
 		shared.FlagState.Format = origFormat
+		shared.FlagState.Sort = origSort
+		shared.FlagState.Charts = origCharts
 	}()
 
 	t.Run("Memory unit validation", func(t *testing.T) {
@@ -107,7 +111,7 @@ func TestFlagValidationRules(t *testing.T) {
 		}
 	})
 
-	t.Run("Allocation unit validation", func(t *testing.T) {
+	t.Run("Number unit validation", func(t *testing.T) {
 		tests := []struct {
 			input    string
 			expected string
@@ -125,7 +129,7 @@ func TestFlagValidationRules(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run("input_"+tt.input, func(t *testing.T) {
-				shared.FlagState.AllocUnit = tt.input
+				shared.FlagState.NumberUnit = tt.input
 
 				oldStderr := os.Stderr
 				r, w, _ := os.Pipe()
@@ -140,9 +144,9 @@ func TestFlagValidationRules(t *testing.T) {
 				buf.ReadFrom(r)
 				stderr := buf.String()
 
-				assert.Equal(t, tt.expected, shared.FlagState.AllocUnit)
+				assert.Equal(t, tt.expected, shared.FlagState.NumberUnit)
 				if tt.hasWarn {
-					assert.Contains(t, stderr, "allocation unit")
+					assert.Contains(t, stderr, "number unit")
 				}
 			})
 		}
@@ -191,7 +195,7 @@ func TestFlagValidationRules(t *testing.T) {
 		shared.FlagState.MemUnit = "invalid"
 		shared.FlagState.TimeUnit = "invalid"
 		shared.FlagState.Format = "invalid"
-		shared.FlagState.AllocUnit = "invalid"
+		shared.FlagState.NumberUnit = "invalid"
 
 		oldStderr := os.Stderr
 		r, w, _ := os.Pipe()
@@ -210,13 +214,13 @@ func TestFlagValidationRules(t *testing.T) {
 		assert.Contains(t, stderr, "memory unit")
 		assert.Contains(t, stderr, "time unit")
 		assert.Contains(t, stderr, "format")
-		assert.Contains(t, stderr, "allocation unit")
+		assert.Contains(t, stderr, "number unit")
 
 		// Should use defaults
 		assert.Equal(t, "b", shared.FlagState.MemUnit)
 		assert.Equal(t, "ns", shared.FlagState.TimeUnit)
 		assert.Equal(t, "html", shared.FlagState.Format)
-		assert.Equal(t, "", shared.FlagState.AllocUnit)
+		assert.Equal(t, "", shared.FlagState.NumberUnit)
 	})
 }
 
@@ -230,15 +234,24 @@ func TestFlagValidationRulesStructure(t *testing.T) {
 
 		assert.True(t, labels["memory unit"], "Should have memory unit rule")
 		assert.True(t, labels["time unit"], "Should have time unit rule")
-		assert.True(t, labels["allocation unit"], "Should have allocation unit rule")
+		assert.True(t, labels["number unit"], "Should have number unit rule")
 		assert.True(t, labels["format"], "Should have format rule")
+		assert.True(t, labels["sort order"], "Should have sort order rule")
+		assert.True(t, labels["charts"], "Should have charts rule")
 	})
 
 	t.Run("Validation rules have correct properties", func(t *testing.T) {
 		for _, rule := range flagValidationRules {
 			t.Run("rule_"+rule.Label, func(t *testing.T) {
 				assert.NotEmpty(t, rule.Label, "Rule should have a label")
-				assert.NotNil(t, rule.Value, "Rule should have a value pointer")
+
+				if rule.SliceValue != nil {
+					assert.NotNil(t, rule.SliceValue, "Rule should have a slice value pointer")
+					assert.Nil(t, rule.Value, "Rule with SliceValue should not have Value")
+				} else {
+					assert.NotNil(t, rule.Value, "Rule should have a value pointer")
+					assert.Nil(t, rule.SliceValue, "Rule with Value should not have SliceValue")
+				}
 
 				// Check specific rule properties
 				switch rule.Label {
@@ -254,17 +267,27 @@ func TestFlagValidationRulesStructure(t *testing.T) {
 					assert.Equal(t, "ns", rule.Default)
 					assert.Nil(t, rule.Normalizer, "Time unit should not have normalizer")
 
-				case "allocation unit":
-					assert.Contains(t, rule.ValidSet, "K", "Alloc unit should accept 'K'")
-					assert.Contains(t, rule.ValidSet, "M", "Alloc unit should accept 'M'")
+				case "number unit":
+					assert.Contains(t, rule.ValidSet, "K", "Number unit should accept 'K'")
+					assert.Contains(t, rule.ValidSet, "M", "Number unit should accept 'M'")
 					assert.Equal(t, "", rule.Default)
-					assert.NotNil(t, rule.Normalizer, "Alloc unit should have normalizer")
+					assert.NotNil(t, rule.Normalizer, "Number unit should have normalizer")
 
 				case "format":
 					assert.Contains(t, rule.ValidSet, "html", "Format should accept 'html'")
 					assert.Contains(t, rule.ValidSet, "json", "Format should accept 'json'")
 					assert.Equal(t, "html", rule.Default)
 					assert.NotNil(t, rule.Normalizer, "Format should have normalizer")
+
+				case "sort order":
+					assert.Contains(t, rule.ValidSet, "asc")
+					assert.Contains(t, rule.ValidSet, "desc")
+					assert.Equal(t, "", rule.Default)
+
+				case "charts":
+					assert.Contains(t, rule.ValidSet, "bar")
+					assert.Contains(t, rule.ValidSet, "line")
+					assert.NotNil(t, rule.SliceValue)
 				}
 			})
 		}
@@ -281,8 +304,8 @@ func TestFlagNormalizers(t *testing.T) {
 		assert.Equal(t, "b", memRule.Normalizer("B"))
 	})
 
-	t.Run("Allocation unit normalizer", func(t *testing.T) {
-		allocRule := flagValidationRules[2] // Allocation unit rule
+	t.Run("Number unit normalizer", func(t *testing.T) {
+		allocRule := flagValidationRules[2] // Number unit rule
 		assert.Equal(t, "K", allocRule.Normalizer("k"))
 		assert.Equal(t, "M", allocRule.Normalizer("m"))
 		assert.Equal(t, "B", allocRule.Normalizer("b"))
@@ -302,13 +325,13 @@ func TestFlagValidationIntegration(t *testing.T) {
 	// Save original state
 	origMemUnit := shared.FlagState.MemUnit
 	origTimeUnit := shared.FlagState.TimeUnit
-	origAllocUnit := shared.FlagState.AllocUnit
+	origAllocUnit := shared.FlagState.NumberUnit
 	origFormat := shared.FlagState.Format
 
 	defer func() {
 		shared.FlagState.MemUnit = origMemUnit
 		shared.FlagState.TimeUnit = origTimeUnit
-		shared.FlagState.AllocUnit = origAllocUnit
+		shared.FlagState.NumberUnit = origAllocUnit
 		shared.FlagState.Format = origFormat
 	}()
 

@@ -78,7 +78,7 @@ func TestFormatMem(t *testing.T) {
 	}
 }
 
-func TestFormatAllocs(t *testing.T) {
+func TestFormatNumber(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    float64
@@ -97,8 +97,8 @@ func TestFormatAllocs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := FormatAllocs(tt.input, tt.unit)
-			assert.Equal(t, tt.expected, result, "FormatAllocs(%f, %s) should equal %f", tt.input, tt.unit, tt.expected)
+			result := FormatNumber(tt.input, tt.unit)
+			assert.Equal(t, tt.expected, result, "FormatNumber(%f, %s) should equal %f", tt.input, tt.unit, tt.expected)
 		})
 	}
 }
@@ -158,31 +158,31 @@ func TestFormatterEdgeCases(t *testing.T) {
 		assert.Equal(t, 0.0, FormatMem(0, "gb"), "Zero should remain zero for gigabytes")
 	})
 
-	t.Run("FormatAllocs Edge Cases", func(t *testing.T) {
+	t.Run("FormatNumber Edge Cases", func(t *testing.T) {
 		// Test with very large values
-		assert.Equal(t, veryLargeValue, FormatAllocs(veryLargeValue, ""), "Should handle very large values")
+		assert.Equal(t, veryLargeValue, FormatNumber(veryLargeValue, ""), "Should handle very large values")
 
 		// Test with negative values (though these are unlikely in benchmarks)
-		assert.Equal(t, -5.0, FormatAllocs(-5*allocToK, "K"), "Should handle negative values")
+		assert.Equal(t, -5.0, FormatNumber(-5*allocToK, "K"), "Should handle negative values")
 
 		// Test with very small positive values
-		assert.Equal(t, smallValue, FormatAllocs(smallValue, ""), "Should handle very small values")
+		assert.Equal(t, smallValue, FormatNumber(smallValue, ""), "Should handle very small values")
 
 		// Test boundary values for each unit
-		assert.Equal(t, 1.0, FormatAllocs(allocToK, "K"), "Should convert exactly 1K allocations")
-		assert.Equal(t, 1.0, FormatAllocs(allocToM, "M"), "Should convert exactly 1M allocations")
-		assert.Equal(t, 1.0, FormatAllocs(allocToB, "B"), "Should convert exactly 1B allocations")
-		assert.Equal(t, 1.0, FormatAllocs(allocToT, "T"), "Should convert exactly 1T allocations")
+		assert.Equal(t, 1.0, FormatNumber(allocToK, "K"), "Should convert exactly 1K allocations")
+		assert.Equal(t, 1.0, FormatNumber(allocToM, "M"), "Should convert exactly 1M allocations")
+		assert.Equal(t, 1.0, FormatNumber(allocToB, "B"), "Should convert exactly 1B allocations")
+		assert.Equal(t, 1.0, FormatNumber(allocToT, "T"), "Should convert exactly 1T allocations")
 
 		// Test with small values that result in fractional results
-		assert.Equal(t, 0.999, FormatAllocs(999, "K"), "Should handle small fractional values")
+		assert.Equal(t, 0.999, FormatNumber(999, "K"), "Should handle small fractional values")
 
 		// Test with invalid unit - should use default
-		assert.Equal(t, 1024.0, FormatAllocs(1024, "invalid"), "Should default to raw value with invalid unit")
+		assert.Equal(t, 1024.0, FormatNumber(1024, "invalid"), "Should default to raw value with invalid unit")
 
 		// Test zero with different units
-		assert.Equal(t, 0.0, FormatAllocs(0, "K"), "Zero should remain zero for K")
-		assert.Equal(t, 0.0, FormatAllocs(0, "M"), "Zero should remain zero for M")
+		assert.Equal(t, 0.0, FormatNumber(0, "K"), "Zero should remain zero for K")
+		assert.Equal(t, 0.0, FormatNumber(0, "M"), "Zero should remain zero for M")
 	})
 }
 
@@ -206,13 +206,13 @@ func TestFormatterPrecision(t *testing.T) {
 		assert.Equal(t, 4096.0, FormatMem(512, "b"), "Should precisely convert bytes to bits")
 	})
 
-	t.Run("FormatAllocs Precision", func(t *testing.T) {
+	t.Run("FormatNumber Precision", func(t *testing.T) {
 		// Test with non-integer values
-		assert.Equal(t, 1.5, FormatAllocs(1.5*allocToK, "K"), "Should handle fractional values")
-		assert.Equal(t, 0.000001, FormatAllocs(1, "M"), "Should handle very small fractional values")
+		assert.Equal(t, 1.5, FormatNumber(1.5*allocToK, "K"), "Should handle fractional values")
+		assert.Equal(t, 0.000001, FormatNumber(1, "M"), "Should handle very small fractional values")
 
 		// Test precision boundaries
-		assert.Equal(t, 1.000001, FormatAllocs(1000001, "M"), "Should maintain precision")
+		assert.Equal(t, 1.000001, FormatNumber(1000001, "M"), "Should maintain precision")
 	})
 }
 
@@ -224,9 +224,9 @@ func TestFormatterConcurrency(t *testing.T) {
 
 		results := make(chan float64, numGoroutines*numIterations)
 
-		for i := 0; i < numGoroutines; i++ {
+		for range numGoroutines {
 			go func() {
-				for j := 0; j < numIterations; j++ {
+				for j := range numIterations {
 					result := FormatTime(float64(j)*nanoToSecond, "s")
 					results <- result
 				}
@@ -259,17 +259,17 @@ func TestInputValidation(t *testing.T) {
 			assert.NotNil(t, result, "FormatMem should handle unit: %s", unit)
 		}
 
-		// Test all valid allocation units
-		allocUnits := []string{"", "K", "M", "B", "T"}
-		for _, unit := range allocUnits {
-			result := FormatAllocs(1000, unit)
-			assert.NotNil(t, result, "FormatAllocs should handle unit: %s", unit)
+		// Test all valid number units
+		numberUnits := []string{"", "K", "M", "B", "T"}
+		for _, unit := range numberUnits {
+			result := FormatNumber(1000, unit)
+			assert.NotNil(t, result, "FormatNumber should handle unit: %s", unit)
 		}
 	})
 
 	t.Run("Case Sensitivity", func(t *testing.T) {
 		// Test that units are case sensitive (as per implementation)
-		assert.NotEqual(t, FormatAllocs(1000, "k"), FormatAllocs(1000, "K"), "Units should be case sensitive")
+		assert.NotEqual(t, FormatNumber(1000, "k"), FormatNumber(1000, "K"), "Units should be case sensitive")
 		assert.NotEqual(t, FormatMem(1024, "KB"), FormatMem(1024, "kb"), "Units should be case sensitive")
 	})
 }

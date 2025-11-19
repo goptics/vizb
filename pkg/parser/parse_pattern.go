@@ -28,27 +28,17 @@ func ValidatePattern(pattern string) error {
 		return errors.New("pattern cannot be empty")
 	}
 
-	validParts := regexp.MustCompile(`^[nsw]|name|subject|workload$`)
+	validParts := regexp.MustCompile(`^[nxy]|name|xAxis|yAxis$`)
 	parts := separatorRegex.Split(pattern, -1)
 
-	// subject is required
-	var hasSubject bool
 	for _, part := range parts {
-		// Skip empty parts (from leading/trailing separators)
 		if part == "" {
 			continue
 		}
 
 		if !validParts.MatchString(part) {
-			return fmt.Errorf("Invalid part: '%s'; only name(n), subject(s), workload(w) allowed", part)
+			return fmt.Errorf("Invalid part: '%s'; only name(n), xAxis(x), yAxis(y) allowed", part)
 		}
-		if part == "s" || part == "subject" {
-			hasSubject = true
-		}
-	}
-
-	if !hasSubject {
-		return errors.New("pattern must contain subject(s)")
 	}
 
 	return nil
@@ -95,9 +85,9 @@ func splitNameByPattern(name, pattern string) []string {
 // mapPartsToResult maps pattern parts to name parts
 func mapPartsToResult(patternParts, nameParts []string) map[string]string {
 	result := map[string]string{
-		"name":     "",
-		"workload": "",
-		"subject":  "",
+		"name":  "",
+		"xAxis": "",
+		"yAxis": "",
 	}
 
 	for i, part := range patternParts {
@@ -117,8 +107,8 @@ func mapPartsToResult(patternParts, nameParts []string) map[string]string {
 func expandShorthand(part string) string {
 	shortcuts := map[string]string{
 		"n": "name",
-		"s": "subject",
-		"w": "workload",
+		"x": "xAxis",
+		"y": "yAxis",
 	}
 	if expanded, exists := shortcuts[part]; exists {
 		return expanded

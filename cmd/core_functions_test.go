@@ -132,9 +132,9 @@ func TestWriteOutput(t *testing.T) {
 	// Create sample benchmark results
 	sampleResults := []shared.BenchmarkResult{
 		{
-			Name:     "BenchmarkExample",
-			Workload: "8",
-			Subject:  "Example",
+			Name:  "BenchmarkExample",
+			XAxis: "8",
+			YAxis: "Example",
 			Stats: []shared.Stat{
 				{Type: "time", Value: 1234, Unit: "ns/op"},
 				{Type: "memory", Value: 1000, Unit: "B/op"},
@@ -142,9 +142,9 @@ func TestWriteOutput(t *testing.T) {
 			},
 		},
 		{
-			Name:     "BenchmarkAnother",
-			Workload: "8",
-			Subject:  "Another",
+			Name:  "BenchmarkAnother",
+			XAxis: "8",
+			YAxis: "Another",
 			Stats: []shared.Stat{
 				{Type: "time", Value: 2345, Unit: "ns/op"},
 				{Type: "memory", Value: 2000, Unit: "B/op"},

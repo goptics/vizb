@@ -57,8 +57,8 @@ import "strings"
 
 const benchmarkUITemplate = ${goLiteral}
 
-func RenderBenchmarkUI(benchmarkData string) string {
-    return strings.ReplaceAll(benchmarkUITemplate, "${placeholder}", benchmarkData)
+func GenerateBenchmarkUI(benchmarkData []byte) string {
+    return strings.ReplaceAll(benchmarkUITemplate, "${placeholder}", string(benchmarkData))
 }
 `;
 

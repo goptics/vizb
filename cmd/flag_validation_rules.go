@@ -24,8 +24,8 @@ var flagValidationRules = []utils.ValidationRule{
 		Default:    "ns",
 	},
 	{
-		Label:      "allocation unit",
-		Value:      &shared.FlagState.AllocUnit,
+		Label:      "number unit",
+		Value:      &shared.FlagState.NumberUnit,
 		ValidSet:   []string{"K", "M", "B", "T"},
 		Normalizer: strings.ToUpper,
 		Default:    "",
@@ -47,6 +47,20 @@ var flagValidationRules = []utils.ValidationRule{
 
 			return true
 		},
-		Default: "subject",
+		Default: "xAxis",
+	},
+	{
+		Label:      "sort order",
+		Value:      &shared.FlagState.Sort,
+		ValidSet:   []string{"asc", "desc"},
+		Normalizer: strings.ToLower,
+		Default:    "",
+	},
+	{
+		Label:        "charts",
+		SliceValue:   &shared.FlagState.Charts,
+		ValidSet:     []string{"bar", "line", "pie"},
+		Normalizer:   strings.ToLower,
+		SliceDefault: []string{"bar", "line", "pie"},
 	},
 }

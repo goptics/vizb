@@ -9,8 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/goptics/vizb/pkg/chart"
-	"github.com/goptics/vizb/pkg/chart/templates"
+	"github.com/goptics/vizb/pkg/chart/templates/ui"
 	"github.com/goptics/vizb/pkg/parser"
 	"github.com/goptics/vizb/shared"
 	"github.com/goptics/vizb/shared/utils"
@@ -49,8 +48,11 @@ func init() {
 	rootCmd.Flags().StringVarP(&shared.FlagState.Format, "format", "f", "html", "Output format (html, json)")
 	rootCmd.Flags().StringVarP(&shared.FlagState.MemUnit, "mem-unit", "m", "B", "Memory unit available: b, B, KB, MB, GB")
 	rootCmd.Flags().StringVarP(&shared.FlagState.TimeUnit, "time-unit", "t", "ns", "Time unit available: ns, us, ms, s")
-	rootCmd.Flags().StringVarP(&shared.FlagState.AllocUnit, "alloc-unit", "a", "", "Allocation unit available: K, M, B, T (default: as-is)")
-	rootCmd.Flags().StringVarP(&shared.FlagState.GroupPattern, "group-pattern", "p", "subject", "Pattern to extract grouping information from benchmark names")
+	rootCmd.Flags().StringVarP(&shared.FlagState.NumberUnit, "number-unit", "u", "", "Number unit available: K, M, B, T (default: as-is)")
+	rootCmd.Flags().StringVarP(&shared.FlagState.GroupPattern, "group-pattern", "p", "x", "Pattern to extract grouping information from benchmark names")
+	rootCmd.Flags().StringVarP(&shared.FlagState.Sort, "sort", "s", "", "Sort in asc or desc order (default: as-is)")
+	rootCmd.Flags().StringSliceVarP(&shared.FlagState.Charts, "charts", "c", []string{"bar", "line", "pie"}, "Chart types to generate (bar, line, pie)")
+	rootCmd.Flags().BoolVarP(&shared.FlagState.ShowLabels, "show-labels", "l", false, "Show labels on charts")
 
 	// Add a hook to validate flags after parsing
 	cobra.OnInitialize(func() {
@@ -218,7 +220,29 @@ func writeOutput(f *os.File, results []shared.BenchmarkResult, format string) {
 	switch format {
 	case "html":
 		fmt.Println("🔄 Generating Chart...")
-		templates.WriteBenchmarkChart(f, chart.GenerateHTMLCharts(results))
+
+		benchmark := shared.Benchmark{
+			Name:        shared.FlagState.Name,
+			Description: shared.FlagState.Description,
+			Data:        results,
+		}
+
+		benchmark.CPU.Cores = shared.CPUCount
+		benchmark.Settings.Charts = shared.FlagState.Charts
+		benchmark.Settings.Sort.Enabled = shared.FlagState.Sort != ""
+		benchmark.Settings.Sort.Order = shared.FlagState.Sort
+		benchmark.Settings.ShowLabels = shared.FlagState.ShowLabels
+
+		jsonData, err := json.Marshal(benchmark)
+		if err != nil {
+			shared.ExitWithError("Failed to marshal benchmark data: %v", err)
+		}
+
+		htmlContent := ui.GenerateBenchmarkUI(jsonData)
+		if _, err := f.WriteString(htmlContent); err != nil {
+			shared.ExitWithError("Failed to write output file: %v", err)
+		}
+
 		fmt.Println("🎉 Generated HTML chart successfully!")
 
 	case "json":
