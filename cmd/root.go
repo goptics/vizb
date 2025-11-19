@@ -217,21 +217,21 @@ func parseResults(filePath string) []shared.BenchmarkResult {
 
 // writeOutput writes results to file in required format
 func writeOutput(f *os.File, results []shared.BenchmarkResult, format string) {
+	benchmark := shared.Benchmark{
+		Name:        shared.FlagState.Name,
+		Description: shared.FlagState.Description,
+		Data:        results,
+	}
+
+	benchmark.CPU.Cores = shared.CPUCount
+	benchmark.Settings.Charts = shared.FlagState.Charts
+	benchmark.Settings.Sort.Enabled = shared.FlagState.Sort != ""
+	benchmark.Settings.Sort.Order = shared.FlagState.Sort
+	benchmark.Settings.ShowLabels = shared.FlagState.ShowLabels
+
 	switch format {
 	case "html":
 		fmt.Println("🔄 Generating Chart...")
-
-		benchmark := shared.Benchmark{
-			Name:        shared.FlagState.Name,
-			Description: shared.FlagState.Description,
-			Data:        results,
-		}
-
-		benchmark.CPU.Cores = shared.CPUCount
-		benchmark.Settings.Charts = shared.FlagState.Charts
-		benchmark.Settings.Sort.Enabled = shared.FlagState.Sort != ""
-		benchmark.Settings.Sort.Order = shared.FlagState.Sort
-		benchmark.Settings.ShowLabels = shared.FlagState.ShowLabels
 
 		jsonData, err := json.Marshal(benchmark)
 		if err != nil {
@@ -247,9 +247,9 @@ func writeOutput(f *os.File, results []shared.BenchmarkResult, format string) {
 
 	case "json":
 		fmt.Println("🔄 Generating JSON...")
-		bytes, err := json.Marshal(results)
+		bytes, err := json.Marshal(benchmark)
 		if err != nil {
-			shared.ExitWithError("Error marshaling results", err)
+			shared.ExitWithError("Error marshaling benchmark data", err)
 		}
 		f.Write(bytes)
 		fmt.Println("🎉 Generated JSON successfully!")
