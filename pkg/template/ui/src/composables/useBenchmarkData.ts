@@ -9,7 +9,7 @@ import { resetColor } from "../lib/utils";
 const getBenchmarks = async (): Promise<Benchmark[]> => {
   if (import.meta.env.DEV) {
     const data = await import("../data/sample.json");
-    return data.default as Benchmark[];
+    return data.default as unknown as Benchmark[];
   }
 
   try {

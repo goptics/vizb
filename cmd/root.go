@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/goptics/vizb/pkg/chart/templates/ui"
 	"github.com/goptics/vizb/pkg/parser"
+	"github.com/goptics/vizb/pkg/template"
 	"github.com/goptics/vizb/shared"
 	"github.com/goptics/vizb/shared/utils"
 	"github.com/goptics/vizb/version"
@@ -238,7 +238,7 @@ func writeOutput(f *os.File, results []shared.BenchmarkResult, format string) {
 			shared.ExitWithError("Failed to marshal benchmark data: %v", err)
 		}
 
-		htmlContent := ui.GenerateBenchmarkUI(jsonData)
+		htmlContent := template.GenerateHTMLBenchmarkUI(jsonData)
 		if _, err := f.WriteString(htmlContent); err != nil {
 			shared.ExitWithError("Failed to write output file: %v", err)
 		}
