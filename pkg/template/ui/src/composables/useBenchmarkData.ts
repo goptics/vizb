@@ -5,6 +5,7 @@ import {
   type BenchmarkData,
 } from "../types/benchmark";
 import { resetColor } from "../lib/utils";
+import { useSettingsStore } from "./useSettingsStore";
 
 const getBenchmarks = async (): Promise<Benchmark[]> => {
   if (import.meta.env.DEV) {
@@ -95,12 +96,21 @@ export function useBenchmarkData() {
     () => benchmarkGroups.value[activeGroupId.value] || benchmarkGroups.value[0]
   );
 
+  const { initializeFromBenchmark } = useSettingsStore();
+
   const selectBenchmark = (id: number) => {
     if (id >= 0 && id < benchmarks.value.length) {
       // Reset color mapping when benchmark changes
       resetColor();
 
       activeBenchmarkId.value = id;
+      
+      // Update settings from the new benchmark
+      const benchmark = benchmarks.value[id];
+      if (benchmark?.settings) {
+        initializeFromBenchmark(benchmark.settings, true);
+      }
+
       // Reset group selection when benchmark changes
       activeGroupId.value = 0;
     }

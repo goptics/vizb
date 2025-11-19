@@ -51,7 +51,7 @@ export const DEFAULT_SETTINGS: Settings = {
     order: 'asc',
   },
   showLabels: false,
-  charts: ['line', 'pie', 'bar'],
+  charts: ['bar', 'line', 'pie'],
 }
 
 export interface Benchmark {

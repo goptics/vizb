@@ -7,13 +7,10 @@
       "cores": 16
     },
     "settings": {
-      "chart": {
-        "types": [
-          "bar",
-          "line",
-          "pie"
-        ]
-      },
+      "charts": [
+        "bar",
+        "pie"
+      ],
       "sort": {
         "enabled": false,
         "order": "asc"

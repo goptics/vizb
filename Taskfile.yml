@@ -6,16 +6,15 @@ tasks:
     cmds:
       - task --list
 
-  setup:
-    desc: Install required development tools
+  dev:
+    desc: Run development server
     cmds:
-      - go install github.com/valyala/quicktemplate/qtc
-      - echo "Development tools installed successfully!"
+      - cd pkg/template/ui; pnpm dev --open
 
   generate:
-    desc: Generate templates using quicktemplate
+    desc: Generate Vue UI template
     cmds:
-      - qtc -dir=pkg/chart/templates
+      - cd pkg/template/ui; pnpm build; cd -
 
   build:
     desc: Build the binary with version information

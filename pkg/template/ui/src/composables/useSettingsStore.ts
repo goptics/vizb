@@ -83,8 +83,8 @@ export function useSettingsStore() {
     }
   };
 
-  const initializeFromBenchmark = (settings: Settings) => {
-    if (!initialized) {
+  const initializeFromBenchmark = (settings: Settings, force = false) => {
+    if (!initialized || force) {
       sortOrder.value = settings.sort;
       showLabels.value = settings.showLabels;
 
