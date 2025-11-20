@@ -44,7 +44,7 @@ func Execute() {
 func init() {
 	rootCmd.Flags().StringVarP(&shared.FlagState.Name, "name", "n", "Benchmarks", "Name of the benchmark")
 	rootCmd.Flags().StringVarP(&shared.FlagState.Description, "description", "d", "", "Description of the benchmark")
-	rootCmd.Flags().StringVarP(&shared.FlagState.OutputFile, "output", "o", "", "Output file name")
+	rootCmd.PersistentFlags().StringVarP(&shared.FlagState.OutputFile, "output", "o", "", "Output file name")
 	rootCmd.Flags().StringVarP(&shared.FlagState.Format, "format", "f", "html", "Output format (html, json)")
 	rootCmd.Flags().StringVarP(&shared.FlagState.MemUnit, "mem-unit", "m", "B", "Memory unit available: b, B, KB, MB, GB")
 	rootCmd.Flags().StringVarP(&shared.FlagState.TimeUnit, "time-unit", "t", "ns", "Time unit available: ns, us, ms, s")
@@ -175,7 +175,7 @@ func generateOutputFile(filePath string) {
 
 	writeOutput(f, results, shared.FlagState.Format)
 
-	handleOutputResult(f)
+	HandleOutputResult(f)
 }
 
 // resolveOutputFileName decides final output file name
@@ -263,8 +263,8 @@ func writeOutput(f *os.File, results []shared.BenchmarkResult, format string) {
 	}
 }
 
-// handleOutputResult manages printing or showing final result
-func handleOutputResult(f *os.File) {
+// HandleOutputResult manages printing or showing final result
+func HandleOutputResult(f *os.File) {
 	if shared.FlagState.OutputFile != "" {
 		fmt.Printf("📄 Output file: %s\n", f.Name())
 		return
