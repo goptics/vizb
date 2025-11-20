@@ -68,11 +68,3 @@ const { options } = useChartOptions(
     </div>
   </div>
 </template>
-
-<style scoped>
-@media (max-width: 768px) {
-  .h-\[500px\] {
-    height: 350px;
-  }
-}
-</style>

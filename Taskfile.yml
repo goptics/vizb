@@ -16,10 +16,16 @@ tasks:
     cmds:
       - cd pkg/template/ui; pnpm build; cd -
 
-  build:
-    desc: Build the binary with version information
+  build:cli:
+    desc: Build the binary 
     cmds:
       - go build -o ./bin/vizb
+
+  build:
+    desc: Build the UI & binary
+    cmds:
+      - task: build:ui
+      - task: build:cli
 
   test:
     desc: Run all tests (no cache)

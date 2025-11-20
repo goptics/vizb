@@ -11,7 +11,7 @@ defineProps<{
 <template>
   <header class="text-center" :class="{ 'mb-8': !hideTitle }">
     <template v-if="!hideTitle">
-      <h1 class="text-4xl font-bold tracking-tight mb-2">
+      <h1 class="text-3xl md:text-4xl font-bold tracking-tight mb-2">
         {{ mainTitle }}
       </h1>
     </template>
@@ -42,17 +42,3 @@ defineProps<{
     </p>
   </header>
 </template>
-
-<style scoped>
-@media (max-width: 768px) {
-  h1 {
-    font-size: 2rem;
-  }
-
-  h1 span {
-    display: block;
-    margin: 0.75rem auto 0;
-    width: fit-content;
-  }
-}
-</style>
