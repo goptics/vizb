@@ -100,6 +100,7 @@ func runMerge(cmd *cobra.Command, args []string) {
 
 	f := shared.MustCreateFile(outFile)
 	defer f.Close()
+	defer HandleOutputResult(f)
 
 	htmlContent := template.GenerateHTMLBenchmarkUI(jsonData)
 	if _, err := f.WriteString(htmlContent); err != nil {

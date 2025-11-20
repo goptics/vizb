@@ -43,7 +43,7 @@ func TestHandleOutputResultBehavior(t *testing.T) {
 		os.Stdout = w
 
 		// Execute handleOutputResult
-		handleOutputResult(file)
+		HandleOutputResult(file)
 
 		// Read stdout
 		w.Close()
@@ -81,7 +81,7 @@ func TestHandleOutputResultBehavior(t *testing.T) {
 		os.Stdout = w
 
 		// Execute handleOutputResult
-		handleOutputResult(file)
+		HandleOutputResult(file)
 
 		// Read stdout
 		w.Close()
@@ -115,7 +115,7 @@ func TestHandleOutputResultBehavior(t *testing.T) {
 		r, w, _ := os.Pipe()
 		os.Stdout = w
 
-		handleOutputResult(file)
+		HandleOutputResult(file)
 
 		w.Close()
 		var buf bytes.Buffer
@@ -146,7 +146,7 @@ func TestHandleOutputResultBehavior(t *testing.T) {
 		r, w, _ := os.Pipe()
 		os.Stdout = w
 
-		handleOutputResult(file)
+		HandleOutputResult(file)
 
 		w.Close()
 		var buf bytes.Buffer
@@ -176,7 +176,7 @@ func TestHandleOutputResultBehavior(t *testing.T) {
 		r, w, _ := os.Pipe()
 		os.Stdout = w
 
-		handleOutputResult(file)
+		HandleOutputResult(file)
 
 		w.Close()
 		var buf bytes.Buffer

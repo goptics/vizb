@@ -175,7 +175,7 @@ func generateOutputFile(filePath string) {
 
 	writeOutput(f, results, shared.FlagState.Format)
 
-	handleOutputResult(f)
+	HandleOutputResult(f)
 }
 
 // resolveOutputFileName decides final output file name
@@ -263,8 +263,8 @@ func writeOutput(f *os.File, results []shared.BenchmarkResult, format string) {
 	}
 }
 
-// handleOutputResult manages printing or showing final result
-func handleOutputResult(f *os.File) {
+// HandleOutputResult manages printing or showing final result
+func HandleOutputResult(f *os.File) {
 	if shared.FlagState.OutputFile != "" {
 		fmt.Printf("📄 Output file: %s\n", f.Name())
 		return
