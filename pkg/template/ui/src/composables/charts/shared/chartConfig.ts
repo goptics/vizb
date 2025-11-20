@@ -1,6 +1,7 @@
 export interface ChartStyling {
   textColor: string;
   axisColor: string;
+  opacity: number;
 }
 
 /**
@@ -10,6 +11,7 @@ export function getChartStyling(isDark: boolean): ChartStyling {
   return {
     textColor: isDark ? "#e5e7eb" : "#374151",
     axisColor: isDark ? "#4b5563" : "#d1d5db",
+    opacity: isDark ? 0.2 : 0.8,
   };
 }
 
@@ -37,11 +39,8 @@ export function createAxisConfig(
     yAxis: {
       type: "value",
       splitLine: {
-        show: true,
         lineStyle: {
-          type: "solid",
-          opacity: 0.2,
-          color: styling.axisColor,
+          opacity: styling.opacity,
         },
       },
       axisLabel: {
@@ -114,7 +113,7 @@ export function createLegendConfig(
  */
 export function createGridConfig(seriesLength = 1): any {
   const legendSpace = Math.min(
-    15 + Math.floor((seriesLength - 1) / 15) * 4,
+    15 + Math.floor((seriesLength - 1) / 15) * 2,
     35
   );
 
@@ -124,44 +123,5 @@ export function createGridConfig(seriesLength = 1): any {
     bottom: "10%",
     top: `${legendSpace}%`,
     containLabel: true,
-  };
-}
-
-/**
- * Creates common series item style with label
- */
-export function createSeriesItemStyle(
-  value: number,
-  showLabels: boolean,
-  styling: ChartStyling,
-  customLabelConfig?: any
-): any {
-  return {
-    value,
-    label: {
-      show: showLabels,
-      position: "top",
-      formatter: "{c}",
-      fontSize: 10,
-      color: styling.textColor,
-      ...customLabelConfig,
-    },
-  };
-}
-
-/**
- * Creates common emphasis configuration
- */
-export function createEmphasisConfig(
-  focusType: "series" | "self" = "series",
-  customConfig?: any
-): any {
-  return {
-    focus: focusType,
-    itemStyle: {
-      borderWidth: 2,
-      borderColor: "#fff",
-    },
-    ...customConfig,
   };
 }

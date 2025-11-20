@@ -4,6 +4,7 @@ import { type BaseChartConfig, getBaseOptions } from "./baseChartOptions";
 import { getNextColorFor, hasXAxis, hasYAxis } from "../../lib/utils";
 import { getChartStyling, createPieSeriesConfig } from "./shared";
 import { sortByTotal, sortByValue } from "./shared/common";
+import type { TitleOption } from "echarts/types/dist/shared";
 
 export function usePieChartOptions(config: BaseChartConfig) {
   const { chartData, sort, showLabels, isDark } = config;
@@ -39,9 +40,8 @@ export function usePieChartOptions(config: BaseChartConfig) {
     // Check if we have y-axis data (dual categories)
 
     const formatter = (params: any) => {
-      const value = Number(params.value).toFixed(2);
       const percent = Number(params.percent).toFixed(2);
-      return `${params.name}\n${value} (${percent}%)`;
+      return `${params.name} (${percent}%)`;
     };
 
     // Pie chart for x-axis data
@@ -106,28 +106,24 @@ export function usePieChartOptions(config: BaseChartConfig) {
       return options;
     }
 
-    options.title = [
-      {
-        text: "X-Axis",
-        left: "25%",
-        top: "5%",
-        textAlign: "center",
-        textStyle: {
-          color: styling.textColor,
-          fontSize: 12,
-          fontWeight: "bold",
-        },
+    const titleStyle: TitleOption = {
+      text: "X-Axis",
+      left: "25%",
+      top: "5%",
+      textAlign: "center",
+      textStyle: {
+        color: styling.textColor,
+        fontSize: 12,
+        fontWeight: "bold",
       },
+    };
+
+    options.title = [
+      titleStyle,
       {
+        ...titleStyle,
         text: "Y-Axis",
         left: "75%",
-        top: "5%",
-        textAlign: "center",
-        textStyle: {
-          color: styling.textColor,
-          fontSize: 12,
-          fontWeight: "bold",
-        },
       },
     ];
 
