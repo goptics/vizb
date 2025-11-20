@@ -39,6 +39,17 @@ const value = ref<{ value: string; label: string } | undefined>();
 // Control open/close state
 const open = ref(false);
 
+// Search term for filtering
+const searchTerm = ref("");
+
+// Filter function for combobox
+const filterFunction = (list: typeof benchmarkOptions.value, searchValue: string) => {
+  if (!searchValue) return list;
+  return list.filter((item) =>
+    item.label.toLowerCase().includes(searchValue.toLowerCase())
+  );
+};
+
 // Initialize the value when the component mounts or when activeBenchmarkId changes
 const updateValue = () => {
   const option = benchmarkOptions.value.find(
@@ -85,6 +96,8 @@ watch(open, (isOpen) => {
     v-if="benchmarks.length > 1"
     v-model:open="open"
     v-model="value"
+    v-model:searchTerm="searchTerm"
+    :filter-function="filterFunction"
     by="label"
     class="relative w-64"
   >
@@ -100,7 +113,7 @@ watch(open, (isOpen) => {
     </ComboboxAnchor>
 
     <ComboboxList>
-      <div class="sticky top-0 z-10 bg-popover -mx-1 -mt-1 border-b">
+      <div v-if="benchmarkOptions.length > 10" class="sticky top-0 z-10 bg-popover -mx-1 -mt-1 border-b">
         <div class="relative w-full items-center">
           <ComboboxInput class="w-full pl-9" :placeholder="placeholder" />
           <span
@@ -118,6 +131,7 @@ watch(open, (isOpen) => {
           v-for="benchmark in benchmarkOptions"
           :key="benchmark.value"
           :value="benchmark"
+          :text-value="benchmark.label"
           class="flex items-center justify-between"
         >
           <span class="flex-1 text-center">{{ benchmark.label }}</span>
