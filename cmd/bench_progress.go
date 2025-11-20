@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/goptics/vizb/pkg/style"
 	"github.com/goptics/vizb/shared"
 )
 
@@ -78,7 +79,7 @@ func (m *BenchmarkProgressManager) updateProgress() {
 		m.benchmarkCount,
 	)
 
-	m.bar.Describe(desc)
+	m.bar.Describe(style.Info.Render(desc))
 }
 
 func (m *BenchmarkProgressManager) ProcessLine(line string) {
