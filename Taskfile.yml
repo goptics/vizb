@@ -6,13 +6,13 @@ tasks:
     cmds:
       - task --list
 
-  dev:
-    desc: Run development server
+  dev:ui:
+    desc: Run development UI server
     cmds:
       - cd pkg/template/ui; pnpm dev --open
 
-  generate:
-    desc: Generate Vue UI template
+  build:ui:
+    desc: Build Vue UI template
     cmds:
       - cd pkg/template/ui; pnpm build; cd -
 

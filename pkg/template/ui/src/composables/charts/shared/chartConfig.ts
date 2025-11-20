@@ -25,7 +25,8 @@ export function createAxisConfig(
       type: "category",
       data: xAxisData,
       axisLabel: {
-        interval: "auto",
+        interval: 0,
+        rotate: xAxisData.length > 15 ? 30 : 0,
         fontSize: 10,
         color: styling.textColor,
       },
@@ -164,35 +165,3 @@ export function createEmphasisConfig(
     ...customConfig,
   };
 }
-
-export const getDataZoomConfig = (
-  xAxisLength: number,
-  styling: ChartStyling
-) => {
-  if (xAxisLength > 10) {
-    return [
-      {
-        type: "inside",
-        xAxisIndex: 0,
-        start: 0,
-        end: 100,
-      },
-      {
-        type: "slider",
-        xAxisIndex: 0,
-        start: 0,
-        end: 100,
-        height: 30,
-        bottom: "2%",
-        handleStyle: {
-          color: styling.textColor,
-        },
-        textStyle: {
-          color: styling.textColor,
-        },
-      },
-    ];
-  }
-
-  return [];
-};

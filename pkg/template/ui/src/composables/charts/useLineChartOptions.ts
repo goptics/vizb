@@ -8,7 +8,6 @@ import {
   createLegendConfig,
   createTooltipConfig,
   getChartStyling,
-  getDataZoomConfig,
 } from "./shared";
 import { sortByTotal } from "./shared/common";
 
@@ -59,7 +58,6 @@ export function useLineChartOptions(config: BaseChartConfig) {
       return {
         ...opt,
         ...createAxisConfig(styling, xAxisData),
-        dataZoom: getDataZoomConfig(xAxisData.length, styling),
         legend: { show: false },
         series: [
           {
@@ -138,7 +136,6 @@ export function useLineChartOptions(config: BaseChartConfig) {
     return {
       ...opt,
       ...createAxisConfig(styling, xAxisData),
-      dataZoom: getDataZoomConfig(xAxisData.length, styling),
       legend: createLegendConfig(
         transposedSeries.map((s) => ({ xAxis: s.name })),
         styling,

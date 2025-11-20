@@ -9,7 +9,6 @@ import {
   LegendComponent,
   GridComponent,
   ToolboxComponent,
-  DataZoomComponent,
 } from "echarts/components";
 import VChart from "vue-echarts";
 import { useChartOptions } from "../composables/useChartOptions";
@@ -27,7 +26,6 @@ use([
   LegendComponent,
   GridComponent,
   ToolboxComponent,
-  DataZoomComponent,
 ]);
 
 const props = defineProps<{
