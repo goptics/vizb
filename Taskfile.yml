@@ -6,20 +6,26 @@ tasks:
     cmds:
       - task --list
 
-  dev:
-    desc: Run development server
+  dev:ui:
+    desc: Run development UI server
     cmds:
       - cd pkg/template/ui; pnpm dev --open
 
-  generate:
-    desc: Generate Vue UI template
+  build:ui:
+    desc: Build Vue UI template
     cmds:
       - cd pkg/template/ui; pnpm build; cd -
 
-  build:
-    desc: Build the binary with version information
+  build:cli:
+    desc: Build the binary 
     cmds:
       - go build -o ./bin/vizb
+
+  build:
+    desc: Build the UI & binary
+    cmds:
+      - task: build:ui
+      - task: build:cli
 
   test:
     desc: Run all tests (no cache)

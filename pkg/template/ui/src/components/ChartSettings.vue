@@ -7,7 +7,7 @@
       <!-- Chart Type Section -->
       <div v-if="charts.length > 1" class="space-y-4">
         <div class="space-y-2">
-          <Label>Chart Type</Label>
+          <Label>Chart type</Label>
           <Tabs 
             :model-value="chartType" 
             @update:model-value="handleChartTypeChange"
@@ -19,7 +19,7 @@
                 :value="type"
               >
                 <component :is="getChartIcon(type)" class="h-4 w-4" />
-                <span class="ml-2">{{ getChartLabel(type) }}</span>
+                <span class="ml-2">{{ type.charAt(0).toUpperCase() + type.slice(1) }}</span>
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -32,7 +32,7 @@
       <div class="space-y-4">
         <div class="flex justify-between items-center">
           <div class="space-y-1">
-            <Label for="sorting-switch">Enable Sorting</Label>
+            <Label for="sorting-switch">Enable sorting</Label>
             <p class="text-sm text-muted-foreground">Sort your data by the selected axis.</p>
           </div>
           <Switch
@@ -65,11 +65,11 @@
       <Separator />
 
       <!-- Show Labels Section -->
-      <div class="flex justify-between items-center">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
         <div class="space-y-1">
           <Label for="labels-switch" class="flex items-center gap-2">
             <LayersIcon class="h-4 w-4" />
-            Show Labels
+            Show labels
           </Label>
           <p class="text-sm text-muted-foreground">Display data labels on chart elements.</p>
         </div>
@@ -77,7 +77,7 @@
           id="labels-switch"
           v-model:checked="showLabels"
           @update:checked="handleShowLabelsChange"
-          class="ml-auto"
+          class="sm:ml-auto"
         />
       </div>
     </CardContent>
@@ -139,15 +139,6 @@ const getChartIcon = (type: ChartType) => {
   }
 }
 
-const getChartLabel = (type: ChartType) => {
-  switch (type) {
-    case 'bar': return 'Bar'
-    case 'line': return 'Line'
-    case 'pie': return 'Pie'
-    default: return 'Bar'
-  }
-}
-
 const gridColsClass = computed(() => {
   const len = charts.value.length
   if (len <= 1) return 'grid-cols-1'
@@ -157,18 +148,3 @@ const gridColsClass = computed(() => {
 })
 </script>
 
-<style scoped>
-/* Responsive adjustments */
-@media (max-width: 640px) {
-  .flex.justify-between {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-  
-  .ml-auto {
-    margin-left: 0;
-    margin-top: 0.5rem;
-  }
-}
-</style>

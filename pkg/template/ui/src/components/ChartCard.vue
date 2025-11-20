@@ -9,7 +9,6 @@ import {
   LegendComponent,
   GridComponent,
   ToolboxComponent,
-  DataZoomComponent,
 } from "echarts/components";
 import VChart from "vue-echarts";
 import { useChartOptions } from "../composables/useChartOptions";
@@ -27,7 +26,6 @@ use([
   LegendComponent,
   GridComponent,
   ToolboxComponent,
-  DataZoomComponent,
 ]);
 
 const props = defineProps<{
@@ -70,11 +68,3 @@ const { options } = useChartOptions(
     </div>
   </div>
 </template>
-
-<style scoped>
-@media (max-width: 768px) {
-  .h-\[500px\] {
-    height: 350px;
-  }
-}
-</style>

@@ -8,7 +8,6 @@ import {
   createLegendConfig,
   createTooltipConfig,
   getChartStyling,
-  getDataZoomConfig,
 } from "./shared";
 import { sortByTotal } from "./shared/common";
 
@@ -57,7 +56,6 @@ export function useBarChartOptions(config: BaseChartConfig) {
         tooltip: createTooltipConfig(false),
         legend: { show: false },
         ...createAxisConfig(styling, xAxisData),
-        dataZoom: getDataZoomConfig(xAxisData.length, styling),
         series: [
           {
             name: chartData.value.title,
@@ -128,7 +126,6 @@ export function useBarChartOptions(config: BaseChartConfig) {
         hasMultipleSeries
       ),
       ...createAxisConfig(styling, xAxisData),
-      dataZoom: getDataZoomConfig(xAxisData.length, styling),
       series: transposedSeries as any,
     };
   });

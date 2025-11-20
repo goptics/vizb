@@ -1,19 +1,21 @@
-import type { Ref } from 'vue'
-import type { EChartsOption } from 'echarts'
-import type { ChartData, Sort } from '../../types/benchmark'
-import { getChartStyling } from './shared/chartConfig'
+import type { Ref } from "vue";
+import type { EChartsOption } from "echarts";
+import type { ChartData, Sort } from "../../types/benchmark";
+import { getChartStyling } from "./shared/chartConfig";
 
 export interface BaseChartConfig {
-  chartData: Ref<ChartData>
-  sort: Ref<Sort>
-  showLabels: Ref<boolean>
-  isDark: Ref<boolean>
+  chartData: Ref<ChartData>;
+  sort: Ref<Sort>;
+  showLabels: Ref<boolean>;
+  isDark: Ref<boolean>;
 }
 
-export const getBaseOptions = (config: BaseChartConfig): Partial<EChartsOption> => {
-  const { isDark } = config
-  const { textColor } = getChartStyling(isDark.value)
-  
+export const getBaseOptions = (
+  config: BaseChartConfig
+): Partial<EChartsOption> => {
+  const { isDark } = config;
+  const { textColor } = getChartStyling(isDark.value);
+
   return {
     backgroundColor: "transparent",
     tooltip: {
@@ -49,4 +51,4 @@ export const getBaseOptions = (config: BaseChartConfig): Partial<EChartsOption> 
       textStyle: { fontSize: 12, color: textColor },
     },
   };
-}
+};

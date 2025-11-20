@@ -25,14 +25,12 @@ const emit = defineEmits<{
   select: [id: number];
 }>();
 
-// Convert the benchmarks array to the format expected by the combobox, and sort it by label
+// Convert the benchmarks array to the format expected by the combobox
 const benchmarkOptions = computed(() =>
-  props.benchmarks
-    .map((b, index) => ({
-      value: index.toString(),
-      label: b.name,
-    }))
-    .sort((a, b) => a.label.localeCompare(b.label))
+  props.benchmarks.map((b, index) => ({
+    value: index.toString(),
+    label: b.name,
+  }))
 );
 
 // The current selected benchmark as an object
@@ -92,7 +90,7 @@ watch(open, (isOpen) => {
   >
     <ComboboxAnchor>
       <ComboboxTrigger
-        class="inline-flex h-10 w-full items-center justify-between rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-card-foreground shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+        class="inline-flex h-10 w-full items-center justify-between rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-card-foreground shadow-sm hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
       >
         <span class="flex-1 text-center">{{
           value?.label ?? "Select benchmark..."
@@ -102,19 +100,18 @@ watch(open, (isOpen) => {
     </ComboboxAnchor>
 
     <ComboboxList>
-      <div class="relative w-full items-center">
-        <ComboboxInput
-          class="pl-9 focus-visible:ring-0 border-0 border-b rounded-none h-10"
-          :placeholder="placeholder"
-        />
-        <span
-          class="absolute start-0 inset-y-0 flex items-center justify-center px-3"
-        >
-          <Search class="size-4 text-muted-foreground" />
-        </span>
+      <div class="sticky top-0 z-10 bg-popover -mx-1 -mt-1 border-b">
+        <div class="relative w-full items-center">
+          <ComboboxInput class="w-full pl-9" :placeholder="placeholder" />
+          <span
+            class="absolute start-0 inset-y-0 flex items-center justify-center px-3"
+          >
+            <Search class="size-4 text-muted-foreground" />
+          </span>
+        </div>
       </div>
 
-      <ComboboxEmpty> No benchmark found. </ComboboxEmpty>
+      <ComboboxEmpty> No benchmark found.</ComboboxEmpty>
 
       <ComboboxGroup>
         <ComboboxItem
