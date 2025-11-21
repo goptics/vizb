@@ -5,10 +5,13 @@ type flagState struct {
 	OutputFile   string
 	MemUnit      string
 	TimeUnit     string
-	AllocUnit    string
+	NumberUnit   string
 	Description  string
 	Format       string
 	GroupPattern string
+	Sort         string
+	Charts       []string
+	ShowLabels   bool
 }
 
 var FlagState flagState = flagState{}

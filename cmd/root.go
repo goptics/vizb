@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/goptics/vizb/pkg/chart"
-	"github.com/goptics/vizb/pkg/chart/templates"
 	"github.com/goptics/vizb/pkg/parser"
+	"github.com/goptics/vizb/pkg/style"
+	"github.com/goptics/vizb/pkg/template"
 	"github.com/goptics/vizb/shared"
 	"github.com/goptics/vizb/shared/utils"
 	"github.com/goptics/vizb/version"
@@ -45,12 +45,15 @@ func Execute() {
 func init() {
 	rootCmd.Flags().StringVarP(&shared.FlagState.Name, "name", "n", "Benchmarks", "Name of the benchmark")
 	rootCmd.Flags().StringVarP(&shared.FlagState.Description, "description", "d", "", "Description of the benchmark")
-	rootCmd.Flags().StringVarP(&shared.FlagState.OutputFile, "output", "o", "", "Output file name")
+	rootCmd.PersistentFlags().StringVarP(&shared.FlagState.OutputFile, "output", "o", "", "Output file name")
 	rootCmd.Flags().StringVarP(&shared.FlagState.Format, "format", "f", "html", "Output format (html, json)")
 	rootCmd.Flags().StringVarP(&shared.FlagState.MemUnit, "mem-unit", "m", "B", "Memory unit available: b, B, KB, MB, GB")
 	rootCmd.Flags().StringVarP(&shared.FlagState.TimeUnit, "time-unit", "t", "ns", "Time unit available: ns, us, ms, s")
-	rootCmd.Flags().StringVarP(&shared.FlagState.AllocUnit, "alloc-unit", "a", "", "Allocation unit available: K, M, B, T (default: as-is)")
-	rootCmd.Flags().StringVarP(&shared.FlagState.GroupPattern, "group-pattern", "p", "subject", "Pattern to extract grouping information from benchmark names")
+	rootCmd.Flags().StringVarP(&shared.FlagState.NumberUnit, "number-unit", "u", "", "Number unit available: K, M, B, T (default: as-is)")
+	rootCmd.Flags().StringVarP(&shared.FlagState.GroupPattern, "group-pattern", "p", "x", "Pattern to extract grouping information from benchmark names")
+	rootCmd.Flags().StringVarP(&shared.FlagState.Sort, "sort", "s", "", "Sort in asc or desc order (default: as-is)")
+	rootCmd.Flags().StringSliceVarP(&shared.FlagState.Charts, "charts", "c", []string{"bar", "line", "pie"}, "Chart types to generate (bar, line, pie)")
+	rootCmd.Flags().BoolVarP(&shared.FlagState.ShowLabels, "show-labels", "l", false, "Show labels on charts")
 
 	// Add a hook to validate flags after parsing
 	cobra.OnInitialize(func() {
@@ -102,7 +105,7 @@ func writeStdinPipedInputs(tempfilePath string) {
 	// Create a progress bar manager
 	benchmarkProgressManager := NewBenchmarkProgressManager(
 		progressbar.NewOptions(-1,
-			progressbar.OptionSetDescription("Processing benchmarks"),
+			progressbar.OptionSetDescription(style.Info.Render("Processing benchmarks")),
 			progressbar.OptionSetWidth(50),
 			progressbar.OptionSetRenderBlankState(true),
 			progressbar.OptionEnableColorCodes(true),
@@ -137,14 +140,14 @@ func writeStdinPipedInputs(tempfilePath string) {
 func checkTargetFile(filePath string) {
 	// Check if the target file exists
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		shared.ExitWithError(fmt.Sprintf("Error: File '%s' does not exist\n", filePath), nil)
+		shared.ExitWithError(fmt.Sprintf("Error: File '%s' does not exist", filePath), nil)
 	}
 
 	// Check if the file contains valid JSON
 	srcFile := shared.MustOpenFile(filePath)
 	defer srcFile.Close()
 
-	fmt.Printf("📊 Reading benchmark data from file: %s\n", filePath)
+	fmt.Println(style.Info.Render(fmt.Sprintf("📊 Reading benchmark data from file: %s", filePath)))
 
 	ext := filepath.Ext(filePath)
 	scanner := bufio.NewScanner(srcFile)
@@ -173,7 +176,7 @@ func generateOutputFile(filePath string) {
 
 	writeOutput(f, results, shared.FlagState.Format)
 
-	handleOutputResult(f)
+	HandleOutputResult(f)
 }
 
 // resolveOutputFileName decides final output file name
@@ -215,27 +218,56 @@ func parseResults(filePath string) []shared.BenchmarkResult {
 
 // writeOutput writes results to file in required format
 func writeOutput(f *os.File, results []shared.BenchmarkResult, format string) {
+	benchmark := shared.Benchmark{
+		Name:        shared.FlagState.Name,
+		Description: shared.FlagState.Description,
+		Data:        results,
+	}
+	enableSorting := shared.FlagState.Sort != ""
+
+	benchmark.CPU.Cores = shared.CPUCount
+	benchmark.Settings.Charts = shared.FlagState.Charts
+	benchmark.Settings.Sort.Enabled = enableSorting
+
+	if enableSorting {
+		benchmark.Settings.Sort.Order = shared.FlagState.Sort
+	} else {
+		benchmark.Settings.Sort.Order = "asc"
+	}
+
+	benchmark.Settings.ShowLabels = shared.FlagState.ShowLabels
+
 	switch format {
 	case "html":
-		fmt.Println("🔄 Generating Chart...")
-		templates.WriteBenchmarkChart(f, chart.GenerateHTMLCharts(results))
-		fmt.Println("🎉 Generated HTML chart successfully!")
+		fmt.Println(style.Info.Render("🔄 Generating Chart..."))
+
+		jsonData, err := json.Marshal(benchmark)
+		if err != nil {
+			shared.ExitWithError("Failed to marshal benchmark data: %v", err)
+		}
+
+		htmlContent := template.GenerateHTMLBenchmarkUI(jsonData)
+		if _, err := f.WriteString(htmlContent); err != nil {
+			shared.ExitWithError("Failed to write output file: %v", err)
+		}
+
+		fmt.Println(style.Success.Render("🎉 Generated HTML chart successfully!"))
 
 	case "json":
-		fmt.Println("🔄 Generating JSON...")
-		bytes, err := json.Marshal(results)
+		fmt.Println(style.Info.Render("🔄 Generating JSON..."))
+		bytes, err := json.Marshal(benchmark)
 		if err != nil {
-			shared.ExitWithError("Error marshaling results", err)
+			shared.ExitWithError("Error marshaling benchmark data", err)
 		}
 		f.Write(bytes)
-		fmt.Println("🎉 Generated JSON successfully!")
+		fmt.Println(style.Success.Render("🎉 Generated JSON successfully!"))
 	}
 }
 
-// handleOutputResult manages printing or showing final result
-func handleOutputResult(f *os.File) {
+// HandleOutputResult manages printing or showing final result
+func HandleOutputResult(f *os.File) {
 	if shared.FlagState.OutputFile != "" {
-		fmt.Printf("📄 Output file: %s\n", f.Name())
+		fmt.Println(style.Info.Render(fmt.Sprintf("📄 Output file: %s", f.Name())))
 		return
 	}
 

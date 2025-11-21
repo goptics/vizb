@@ -132,9 +132,9 @@ func TestWriteOutput(t *testing.T) {
 	// Create sample benchmark results
 	sampleResults := []shared.BenchmarkResult{
 		{
-			Name:     "BenchmarkExample",
-			Workload: "8",
-			Subject:  "Example",
+			Name:  "BenchmarkExample",
+			XAxis: "8",
+			YAxis: "Example",
 			Stats: []shared.Stat{
 				{Type: "time", Value: 1234, Unit: "ns/op"},
 				{Type: "memory", Value: 1000, Unit: "B/op"},
@@ -142,9 +142,9 @@ func TestWriteOutput(t *testing.T) {
 			},
 		},
 		{
-			Name:     "BenchmarkAnother",
-			Workload: "8",
-			Subject:  "Another",
+			Name:  "BenchmarkAnother",
+			XAxis: "8",
+			YAxis: "Another",
 			Stats: []shared.Stat{
 				{Type: "time", Value: 2345, Unit: "ns/op"},
 				{Type: "memory", Value: 2000, Unit: "B/op"},
@@ -184,10 +184,10 @@ func TestWriteOutput(t *testing.T) {
 		content, err := os.ReadFile(jsonFile)
 		require.NoError(t, err)
 
-		var results []shared.BenchmarkResult
-		err = json.Unmarshal(content, &results)
+		var bench shared.Benchmark
+		err = json.Unmarshal(content, &bench)
 		assert.NoError(t, err, "Should produce valid JSON")
-		assert.Len(t, results, 2, "Should have 2 benchmark results")
+		assert.Len(t, bench.Data, 2, "Should have 2 benchmark results")
 	})
 
 	t.Run("Invalid format", func(t *testing.T) {
@@ -221,7 +221,11 @@ func TestWriteOutput(t *testing.T) {
 		// Verify empty JSON array was written
 		content, err := os.ReadFile(emptyFile)
 		require.NoError(t, err)
-		assert.Equal(t, "[]", string(content), "Should write empty JSON array")
+		// The output should be a Benchmark struct with empty Data
+		var bench shared.Benchmark
+		err = json.Unmarshal(content, &bench)
+		assert.NoError(t, err)
+		assert.Empty(t, bench.Data, "Should have empty Data")
 	})
 }
 
@@ -286,8 +290,8 @@ func TestGenerateOutputFile(t *testing.T) {
 		content, err := os.ReadFile(shared.FlagState.OutputFile)
 		require.NoError(t, err)
 
-		var results []shared.BenchmarkResult
-		err = json.Unmarshal(content, &results)
+		var bench shared.Benchmark
+		err = json.Unmarshal(content, &bench)
 		assert.NoError(t, err, "Should produce valid JSON")
 	})
 
@@ -350,9 +354,9 @@ func TestOutputWorkflowIntegration(t *testing.T) {
 		content, err := os.ReadFile(shared.FlagState.OutputFile)
 		require.NoError(t, err)
 
-		var results []shared.BenchmarkResult
-		err = json.Unmarshal(content, &results)
+		var bench shared.Benchmark
+		err = json.Unmarshal(content, &bench)
 		assert.NoError(t, err)
-		assert.True(t, len(results) > 0, "Should have processed benchmark results")
+		assert.True(t, len(bench.Data) > 0, "Should have processed benchmark results")
 	})
 }

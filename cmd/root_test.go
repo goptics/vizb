@@ -44,14 +44,14 @@ func TestValidateFlags(t *testing.T) {
 	// Save original state to restore after tests
 	origMemUnit := shared.FlagState.MemUnit
 	origTimeUnit := shared.FlagState.TimeUnit
-	origAllocUnit := shared.FlagState.AllocUnit
+	origAllocUnit := shared.FlagState.NumberUnit
 	origFormat := shared.FlagState.Format
 
 	defer func() {
 		// Restore original flag values
 		shared.FlagState.MemUnit = origMemUnit
 		shared.FlagState.TimeUnit = origTimeUnit
-		shared.FlagState.AllocUnit = origAllocUnit
+		shared.FlagState.NumberUnit = origAllocUnit
 		shared.FlagState.Format = origFormat
 	}()
 
@@ -69,7 +69,7 @@ func TestValidateFlags(t *testing.T) {
 			setupFlags: func() {
 				shared.FlagState.MemUnit = "b"
 				shared.FlagState.TimeUnit = "ns"
-				shared.FlagState.AllocUnit = ""
+				shared.FlagState.NumberUnit = ""
 				shared.FlagState.Format = "html"
 			},
 			expectedMemUnit:   "b",
@@ -83,7 +83,7 @@ func TestValidateFlags(t *testing.T) {
 			setupFlags: func() {
 				shared.FlagState.MemUnit = "invalid"
 				shared.FlagState.TimeUnit = "ns"
-				shared.FlagState.AllocUnit = ""
+				shared.FlagState.NumberUnit = ""
 				shared.FlagState.Format = "html"
 			},
 			expectedMemUnit:   "b",
@@ -97,7 +97,7 @@ func TestValidateFlags(t *testing.T) {
 			setupFlags: func() {
 				shared.FlagState.MemUnit = "b"
 				shared.FlagState.TimeUnit = "invalid"
-				shared.FlagState.AllocUnit = ""
+				shared.FlagState.NumberUnit = ""
 				shared.FlagState.Format = "html"
 			},
 			expectedMemUnit:   "b",
@@ -111,21 +111,21 @@ func TestValidateFlags(t *testing.T) {
 			setupFlags: func() {
 				shared.FlagState.MemUnit = "b"
 				shared.FlagState.TimeUnit = "ns"
-				shared.FlagState.AllocUnit = "invalid"
+				shared.FlagState.NumberUnit = "invalid"
 				shared.FlagState.Format = "html"
 			},
 			expectedMemUnit:   "b",
 			expectedTimeUnit:  "ns",
 			expectedAllocUnit: "",
 			expectedFormat:    "html",
-			expectedOutput:    "Warning: Invalid allocation unit 'INVALID'. Using default ''",
+			expectedOutput:    "Warning: Invalid number unit 'INVALID'. Using default ''",
 		},
 		{
 			name: "Invalid format",
 			setupFlags: func() {
 				shared.FlagState.MemUnit = "b"
 				shared.FlagState.TimeUnit = "ns"
-				shared.FlagState.AllocUnit = ""
+				shared.FlagState.NumberUnit = ""
 				shared.FlagState.Format = "invalid"
 			},
 			expectedMemUnit:   "b",
@@ -160,7 +160,7 @@ func TestValidateFlags(t *testing.T) {
 			// Check that the flags were updated correctly after validation
 			assert.Equal(t, tt.expectedMemUnit, shared.FlagState.MemUnit)
 			assert.Equal(t, tt.expectedTimeUnit, shared.FlagState.TimeUnit)
-			assert.Equal(t, tt.expectedAllocUnit, shared.FlagState.AllocUnit)
+			assert.Equal(t, tt.expectedAllocUnit, shared.FlagState.NumberUnit)
 			assert.Equal(t, tt.expectedFormat, shared.FlagState.Format)
 
 			// Check the stderr output if expected

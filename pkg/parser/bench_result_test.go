@@ -26,13 +26,13 @@ func TestParseBenchmarkResults(t *testing.T) {
 	// Save original flag state to restore after tests
 	origTimeUnit := shared.FlagState.TimeUnit
 	origMemUnit := shared.FlagState.MemUnit
-	origAllocUnit := shared.FlagState.AllocUnit
+	origAllocUnit := shared.FlagState.NumberUnit
 
 	// Restore flag state after tests
 	defer func() {
 		shared.FlagState.TimeUnit = origTimeUnit
 		shared.FlagState.MemUnit = origMemUnit
-		shared.FlagState.AllocUnit = origAllocUnit
+		shared.FlagState.NumberUnit = origAllocUnit
 		shared.HasMemStats = false
 		shared.CPUCount = 0
 	}()
@@ -48,17 +48,17 @@ func TestParseBenchmarkResults(t *testing.T) {
 			pattern:  "s",
 			expected: []shared.BenchmarkResult{
 				{
-					Name:     "",
-					Workload: "",
-					Subject:  "Simple",
+					Name:  "",
+					XAxis: "",
+					YAxis: "Simple",
 					Stats: []shared.Stat{
 						{Type: "Execution Time", Value: 123.45, Unit: "ns"},
 					},
 				},
 				{
-					Name:     "",
-					Workload: "",
-					Subject:  "SimpleBench",
+					Name:  "",
+					XAxis: "",
+					YAxis: "SimpleBench",
 					Stats: []shared.Stat{
 						{Type: "Execution Time", Value: 100.45, Unit: "ns"},
 					},
@@ -78,9 +78,9 @@ func TestParseBenchmarkResults(t *testing.T) {
 			allocUnit: "K",
 			expected: []shared.BenchmarkResult{
 				{
-					Name:     "",
-					Workload: "",
-					Subject:  "WithMem",
+					Name:  "",
+					XAxis: "",
+					YAxis: "WithMem",
 					Stats: []shared.Stat{
 						{Type: "Execution Time", Value: 0.00012345, Unit: "ms"},
 						{Type: "Memory Usage", Value: 0.0625, Unit: "kb"},
@@ -103,9 +103,9 @@ func TestParseBenchmarkResults(t *testing.T) {
 			allocUnit: "",
 			expected: []shared.BenchmarkResult{
 				{
-					Name:     "Group",
-					Workload: "Task",
-					Subject:  "SubjectA",
+					Name:  "Group",
+					XAxis: "Task",
+					YAxis: "SubjectA",
 					Stats: []shared.Stat{
 						{Type: "Execution Time", Value: 123.45, Unit: "ns"},
 						{Type: "Memory Usage", Value: 512.0, Unit: "b"}, // 64*8=512 bits
@@ -113,9 +113,9 @@ func TestParseBenchmarkResults(t *testing.T) {
 					},
 				},
 				{
-					Name:     "Group",
-					Workload: "Task",
-					Subject:  "SubjectB",
+					Name:  "Group",
+					XAxis: "Task",
+					YAxis: "SubjectB",
 					Stats: []shared.Stat{
 						{Type: "Execution Time", Value: 234.56, Unit: "ns"},
 						{Type: "Memory Usage", Value: 1024.0, Unit: "b"}, // 128*8=1024 bits
@@ -135,9 +135,9 @@ func TestParseBenchmarkResults(t *testing.T) {
 			timeUnit: "ns",
 			expected: []shared.BenchmarkResult{
 				{
-					Name:     "Parallel",
-					Workload: "",
-					Subject:  "SubjectA",
+					Name:  "Parallel",
+					XAxis: "",
+					YAxis: "SubjectA",
 					Stats: []shared.Stat{
 						{Type: "Execution Time", Value: 123.45, Unit: "ns"},
 					},
@@ -157,9 +157,9 @@ func TestParseBenchmarkResults(t *testing.T) {
 			pattern:  "s",
 			expected: []shared.BenchmarkResult{
 				{
-					Name:     "",
-					Workload: "",
-					Subject:  "Test",
+					Name:  "",
+					XAxis: "",
+					YAxis: "Test",
 					Stats: []shared.Stat{
 						{Type: "Execution Time", Value: 123.45, Unit: "ns"},
 					},
@@ -181,7 +181,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 			// Set up flag state for this test
 			shared.FlagState.TimeUnit = tt.timeUnit
 			shared.FlagState.MemUnit = tt.memUnit
-			shared.FlagState.AllocUnit = tt.allocUnit
+			shared.FlagState.NumberUnit = tt.allocUnit
 			shared.FlagState.GroupPattern = tt.pattern
 			shared.HasMemStats = false
 			shared.CPUCount = 0
@@ -226,11 +226,11 @@ func TestParseBenchmarkResults(t *testing.T) {
 				if actual.Name != expected.Name {
 					t.Errorf("Result[%d].Name = %q, expected %q", i, actual.Name, expected.Name)
 				}
-				if actual.Workload != expected.Workload {
-					t.Errorf("Result[%d].Workload = %q, expected %q", i, actual.Workload, expected.Workload)
+				if actual.XAxis != expected.XAxis {
+					t.Errorf("Result[%d].XAxis = %q, expected %q", i, actual.XAxis, expected.XAxis)
 				}
-				if actual.Subject != expected.Subject {
-					t.Errorf("Result[%d].Subject = %q, expected %q", i, actual.Subject, expected.Subject)
+				if actual.YAxis != expected.YAxis {
+					t.Errorf("Result[%d].YAxis = %q, expected %q", i, actual.YAxis, expected.YAxis)
 				}
 
 				// Check stats

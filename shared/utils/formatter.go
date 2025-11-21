@@ -47,11 +47,11 @@ func FormatMem(n float64, unit string) (mem float64) {
 	return
 }
 
-// FormatAllocs converts an allocation count to the specified unit.
+// FormatNumber converts an allocation count to the specified unit.
 // Supported units: "K" (thousands), "M" (millions), "B" (billions), "T" (trillions).
 // Empty unit string returns the value unchanged.
 // Returns the converted allocation count as a float64.
-func FormatAllocs(n float64, unit string) (allocs float64) {
+func FormatNumber(n float64, unit string) (allocs float64) {
 	if n == 0 {
 		return
 	}

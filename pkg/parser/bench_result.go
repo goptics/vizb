@@ -58,7 +58,7 @@ func ParseBenchmarkResults(filePath string) (results []shared.BenchmarkResult) {
 			shared.ExitWithError("Error on parsing group from bench name", err)
 		}
 
-		benchName, workload, subject := group["name"], group["workload"], group["subject"]
+		benchName, xAxis, yAxis := group["name"], group["xAxis"], group["yAxis"]
 
 		storeCpuCount(cpu)
 
@@ -73,6 +73,7 @@ func ParseBenchmarkResults(filePath string) (results []shared.BenchmarkResult) {
 					Type:  "Execution Time",
 					Value: utils.FormatTime(value.OrigValue, shared.FlagState.TimeUnit),
 					Unit:  shared.FlagState.TimeUnit,
+					Per:   "op",
 				}
 			case "B/op":
 				shared.HasMemStats = true
@@ -81,12 +82,14 @@ func ParseBenchmarkResults(filePath string) (results []shared.BenchmarkResult) {
 					Type:  "Memory Usage",
 					Value: utils.FormatMem(value.Value, shared.FlagState.MemUnit),
 					Unit:  shared.FlagState.MemUnit,
+					Per:   "op",
 				}
 			case "allocs/op":
 				benchStat = shared.Stat{
 					Type:  "Allocations",
-					Value: utils.FormatAllocs(value.Value, shared.FlagState.AllocUnit),
-					Unit:  shared.FlagState.AllocUnit,
+					Value: utils.FormatNumber(value.Value, shared.FlagState.NumberUnit),
+					Unit:  shared.FlagState.NumberUnit,
+					Per:   "op",
 				}
 			}
 
@@ -94,10 +97,10 @@ func ParseBenchmarkResults(filePath string) (results []shared.BenchmarkResult) {
 		}
 
 		results = append(results, shared.BenchmarkResult{
-			Name:     benchName,
-			Workload: workload,
-			Subject:  subject,
-			Stats:    benchStats,
+			Name:  benchName,
+			XAxis: xAxis,
+			YAxis: yAxis,
+			Stats: benchStats,
 		})
 	}
 
