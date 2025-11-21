@@ -342,7 +342,7 @@ invalid line here
 
 // Test edge cases and error conditions
 func TestValidationEdgeCases(t *testing.T) {
-	t.Run("Nil value pointer panics", func(t *testing.T) {
+	t.Run("Nil value pointer safe", func(t *testing.T) {
 		rule := ValidationRule{
 			Label:    "format",
 			Value:    nil,
@@ -350,9 +350,9 @@ func TestValidationEdgeCases(t *testing.T) {
 			Default:  defaultFormat,
 		}
 
-		assert.Panics(t, func() {
+		assert.NotPanics(t, func() {
 			ApplyValidationRules([]ValidationRule{rule})
-		}, "Nil value pointer should cause panic")
+		}, "Nil value pointer should not cause panic")
 	})
 
 	t.Run("Empty ValidSet with valid default", func(t *testing.T) {

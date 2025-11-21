@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -306,12 +307,27 @@ func TestGenerateOutputFile(t *testing.T) {
 		shared.FlagState.OutputFile = ""
 		shared.FlagState.Format = "html"
 
+		// Capture stdout to prevent noisy output
+		oldStdout := os.Stdout
+		r, w, _ := os.Pipe()
+		os.Stdout = w
+
+		// Read from pipe in a separate goroutine to prevent deadlock
+		// if the output exceeds the pipe buffer size
+		done := make(chan struct{})
+		go func() {
+			io.Copy(io.Discard, r)
+			close(done)
+		}()
+
 		assert.NotPanics(t, func() {
 			generateOutputFile(benchFile)
 		})
 
-		// Can't easily verify temp file since it's handled internally,
-		// but function should not panic
+		// Restore stdout
+		w.Close()
+		os.Stdout = oldStdout
+		<-done
 	})
 }
 

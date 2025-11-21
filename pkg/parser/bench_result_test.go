@@ -45,7 +45,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 				"BenchmarkSimpleBench 100 100.45 ns/op",
 			},
 			timeUnit: "ns",
-			pattern:  "s",
+			pattern:  "y",
 			expected: []shared.BenchmarkResult{
 				{
 					Name:  "",
@@ -72,7 +72,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 			benchContent: []string{
 				"BenchmarkWithMem 100 123.45 ns/op 64.0 B/op 2 allocs/op",
 			},
-			pattern:   "s",
+			pattern:   "y",
 			timeUnit:  "ms",
 			memUnit:   "kb",
 			allocUnit: "K",
@@ -97,7 +97,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 				"BenchmarkGroup/Task/SubjectA 100 123.45 ns/op 64.0 B/op 2 allocs/op",
 				"BenchmarkGroup/Task/SubjectB 100 234.56 ns/op 128.0 B/op 4 allocs/op",
 			},
-			pattern:   "n/w/s",
+			pattern:   "n/x/y",
 			timeUnit:  "ns",
 			memUnit:   "b",
 			allocUnit: "",
@@ -131,7 +131,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 			benchContent: []string{
 				"BenchmarkParallel/SubjectA-8 100 123.45 ns/op",
 			},
-			pattern:  "n/s",
+			pattern:  "n/y",
 			timeUnit: "ns",
 			expected: []shared.BenchmarkResult{
 				{
@@ -154,7 +154,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 				"BenchmarkTest 100 123.45 ns/op",
 			},
 			timeUnit: "ns",
-			pattern:  "s",
+			pattern:  "y",
 			expected: []shared.BenchmarkResult{
 				{
 					Name:  "",
