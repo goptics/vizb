@@ -15,92 +15,92 @@ func TestParseNameToGroups(t *testing.T) {
 		errorContains string
 	}{
 		{
-			name:          "Pattern Match: name_subject pattern",
+			name:          "Pattern Match: name_yAxis pattern",
 			benchmarkName: "Rivet_GPlusStatic",
-			pattern:       "name_subject",
+			pattern:       "name_yAxis",
 			expected: map[string]string{
-				"name":     "Rivet",
-				"subject":  "GPlusStatic",
-				"workload": "",
+				"name":  "Rivet",
+				"yAxis": "GPlusStatic",
+				"xAxis": "",
 			},
 			expectError: false,
 		},
 		{
-			name:          "Pattern Match: name/subject/workload pattern",
+			name:          "Pattern Match: name/yAxis/xAxis pattern",
 			benchmarkName: "Rivet/GPlusStatic/100k",
-			pattern:       "name/subject/workload",
+			pattern:       "name/yAxis/xAxis",
 			expected: map[string]string{
-				"name":     "Rivet",
-				"subject":  "GPlusStatic",
-				"workload": "100k",
+				"name":  "Rivet",
+				"yAxis": "GPlusStatic",
+				"xAxis": "100k",
 			},
 			expectError: false,
 		},
 		{
-			name:          "Pattern Match: subject/name/workload pattern",
+			name:          "Pattern Match: yAxis/name/xAxis pattern",
 			benchmarkName: "Rivet/GPlusStatic/100k",
-			pattern:       "subject/name/workload",
+			pattern:       "yAxis/name/xAxis",
 			expected: map[string]string{
-				"name":     "GPlusStatic",
-				"subject":  "Rivet",
-				"workload": "100k",
+				"name":  "GPlusStatic",
+				"yAxis": "Rivet",
+				"xAxis": "100k",
 			},
 			expectError: false,
 		},
 		{
-			name:          "Pattern Match: workload/subject/name pattern",
+			name:          "Pattern Match: xAxis/yAxis/name pattern",
 			benchmarkName: "Rivet/GPlusStatic/100k",
-			pattern:       "workload/subject/name",
+			pattern:       "xAxis/yAxis/name",
 			expected: map[string]string{
-				"name":     "100k",
-				"subject":  "GPlusStatic",
-				"workload": "Rivet",
+				"name":  "100k",
+				"yAxis": "GPlusStatic",
+				"xAxis": "Rivet",
 			},
 			expectError: false,
 		},
 		{
-			name:          "Pattern Match: name_subject_workload pattern",
+			name:          "Pattern Match: name_yAxis_xAxis pattern",
 			benchmarkName: "MyLib_ComplexFunction_TestCase",
-			pattern:       "name_subject_workload",
+			pattern:       "name_yAxis_xAxis",
 			expected: map[string]string{
-				"name":     "MyLib",
-				"subject":  "ComplexFunction",
-				"workload": "TestCase",
+				"name":  "MyLib",
+				"yAxis": "ComplexFunction",
+				"xAxis": "TestCase",
 			},
 			expectError: false,
 		},
 		{
-			name:          "Default behavior: subject only pattern",
+			name:          "Default behavior: yAxis only pattern",
 			benchmarkName: "Rivet_GPlusStatic",
-			pattern:       "subject",
+			pattern:       "yAxis",
 			expected: map[string]string{
-				"name":     "",
-				"subject":  "Rivet_GPlusStatic",
-				"workload": "",
+				"name":  "",
+				"yAxis": "Rivet_GPlusStatic",
+				"xAxis": "",
 			},
 			expectError: false,
 		},
 		// Subject and workload without name
 		{
-			name:          "Subject and workload without name: s/w pattern",
+			name:          "yAxis and xAxis without name: y/x pattern",
 			benchmarkName: "Rivet_GPlusStatic/100k",
-			pattern:       "subject/workload",
+			pattern:       "yAxis/xAxis",
 			expected: map[string]string{
-				"name":     "",
-				"subject":  "Rivet_GPlusStatic",
-				"workload": "100k",
+				"name":  "",
+				"yAxis": "Rivet_GPlusStatic",
+				"xAxis": "100k",
 			},
 			expectError: false,
 		},
 		// Complex name with multiple underscores
 		{
-			name:          "Complex name: name_subject pattern with multi-part name",
+			name:          "Complex name: name_yAxis pattern with multi-part name",
 			benchmarkName: "MyLib_ComplexFunction_TestCase",
-			pattern:       "name_subject",
+			pattern:       "name_yAxis",
 			expected: map[string]string{
-				"name":     "MyLib",
-				"subject":  "ComplexFunction_TestCase",
-				"workload": "",
+				"name":  "MyLib",
+				"yAxis": "ComplexFunction_TestCase",
+				"xAxis": "",
 			},
 			expectError: false,
 		},
@@ -117,33 +117,33 @@ func TestParseNameToGroups(t *testing.T) {
 		{
 			name:          "Mixed separators: underscore and slash",
 			benchmarkName: "Rivet_GPlusStatic/100k_extra",
-			pattern:       "name_subject/workload",
+			pattern:       "name_yAxis/xAxis",
 			expected: map[string]string{
-				"name":     "Rivet",
-				"subject":  "GPlusStatic",
-				"workload": "100k_extra",
+				"name":  "Rivet",
+				"yAxis": "GPlusStatic",
+				"xAxis": "100k_extra",
 			},
 			expectError: false,
 		},
 		{
 			name:          "Skip words",
 			benchmarkName: "Tasks/Name/Workload/Subject",
-			pattern:       "/name/workload/subject",
+			pattern:       "/name/xAxis/yAxis",
 			expected: map[string]string{
-				"name":     "Name",
-				"subject":  "Subject",
-				"workload": "Workload",
+				"name":  "Name",
+				"yAxis": "Subject",
+				"xAxis": "Workload",
 			},
 		},
 		// Not enough parts in benchmark name
 		{
 			name:          "Not enough parts in benchmark name",
 			benchmarkName: "Rivet",
-			pattern:       "name_subject_workload",
+			pattern:       "name_yAxis_xAxis",
 			expected: map[string]string{
-				"name":     "Rivet",
-				"subject":  "",
-				"workload": "",
+				"name":  "Rivet",
+				"yAxis": "",
+				"xAxis": "",
 			},
 			expectError: false,
 		},
@@ -184,18 +184,18 @@ func TestValidatePattern(t *testing.T) {
 		errorContains string
 	}{
 		{
-			name:        "Valid pattern: name_subject",
-			pattern:     "name_subject",
+			name:        "Valid pattern: name_yAxis",
+			pattern:     "name_yAxis",
 			expectError: false,
 		},
 		{
-			name:        "Valid pattern with shorthand: n_s/w",
-			pattern:     "n_s/w",
+			name:        "Valid pattern with shorthand: n_y/x",
+			pattern:     "n_y/x",
 			expectError: false,
 		},
 		{
-			name:        "Valid pattern: subject only",
-			pattern:     "subject",
+			name:        "Valid pattern: yAxis only",
+			pattern:     "yAxis",
 			expectError: false,
 		},
 		{
@@ -212,26 +212,23 @@ func TestValidatePattern(t *testing.T) {
 		},
 		{
 			name:        "Valid pattern: all parts",
-			pattern:     "name_subject_workload",
+			pattern:     "name_yAxis_xAxis",
 			expectError: false,
 		},
 		{
-			name:          "Invalid pattern: missing subject",
-			pattern:       "name_workload",
-			expectError:   true,
-			errorContains: "pattern must contain subject(s)",
+			name:        "Invalid pattern: missing yAxis",
+			pattern:     "name_xAxis",
+			expectError: false, // Requirement removed
 		},
 		{
-			name:          "Invalid pattern: name only",
-			pattern:       "name",
-			expectError:   true,
-			errorContains: "pattern must contain subject(s)",
+			name:        "Invalid pattern: name only",
+			pattern:     "name",
+			expectError: false, // Requirement removed
 		},
 		{
-			name:          "Invalid pattern: workload only",
-			pattern:       "workload",
-			expectError:   true,
-			errorContains: "pattern must contain subject(s)",
+			name:        "Invalid pattern: xAxis only",
+			pattern:     "xAxis",
+			expectError: false, // Requirement removed
 		},
 	}
 
@@ -263,11 +260,11 @@ func TestExpandShorthand(t *testing.T) {
 		expected string
 	}{
 		{"n", "name"},
-		{"s", "subject"},
-		{"w", "workload"},
+		{"y", "yAxis"},
+		{"x", "xAxis"},
 		{"name", "name"},
-		{"subject", "subject"},
-		{"workload", "workload"},
+		{"yAxis", "yAxis"},
+		{"xAxis", "xAxis"},
 	}
 
 	for _, tt := range tests {

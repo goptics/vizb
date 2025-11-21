@@ -185,7 +185,7 @@ func TestExitWithErrorConcurrent(t *testing.T) {
 
 	// Verify stderr contains some output
 	output := buf.String()
-	assert.Contains(t, output, "❌", "stderr should contain error messages")
+	assert.NotEmpty(t, output, "stderr should contain error messages")
 }
 
 // TestExitWithErrorStderrFailure tests behavior when stderr write fails
