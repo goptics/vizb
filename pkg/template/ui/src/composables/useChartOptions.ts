@@ -39,7 +39,5 @@ export function useChartOptions(
     }
   });
 
-  console.log("options 2", options);
-
   return { options };
 }

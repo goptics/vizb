@@ -14,10 +14,9 @@ export const getBaseOptions = (
   config: BaseChartConfig
 ): Partial<EChartsOption> => {
   const { isDark } = config;
-  const { textColor } = getChartStyling(isDark.value);
-
+  const { textColor, backgroundColor } = getChartStyling(isDark.value);
   return {
-    backgroundColor: "transparent",
+  backgroundColor,
     tooltip: {
       trigger: "item",
       formatter: (params: any) => {
@@ -32,6 +31,7 @@ export const getBaseOptions = (
           type: "jpeg",
           title: "Save",
           pixelRatio: 2,
+          name:  config.chartData.value.title,
         },
       },
       iconStyle: {
