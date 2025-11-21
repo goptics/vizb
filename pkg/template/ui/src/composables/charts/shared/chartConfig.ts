@@ -2,6 +2,7 @@ export interface ChartStyling {
   textColor: string;
   axisColor: string;
   opacity: number;
+  backgroundColor: string | undefined
 }
 
 /**
@@ -11,6 +12,7 @@ export function getChartStyling(isDark: boolean): ChartStyling {
   return {
     textColor: isDark ? "#e5e7eb" : "#374151",
     axisColor: isDark ? "#4b5563" : "#d1d5db",
+    backgroundColor: isDark ? "transparent" : undefined,
     opacity: isDark ? 0.2 : 0.8,
   };
 }

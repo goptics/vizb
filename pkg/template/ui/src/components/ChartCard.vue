@@ -35,7 +35,6 @@ const props = defineProps<{
 // Convert props to refs
 const { chartData } = toRefs(props);
 
-console.log("Chart Data", chartData);
 // Pull settings from centralized store
 const { sortOrder, showLabels, isDark, chartType } = (() => {
   const store = useSettingsStore();
@@ -54,6 +53,11 @@ const { options } = useChartOptions(
   isDark,
   chartType
 );
+
+const initOptions = {
+  renderer: "canvas",
+  devicePixelRatio: window.devicePixelRatio,
+} as const;
 </script>
 
 <template>
@@ -64,7 +68,12 @@ const { options } = useChartOptions(
       {{ chartData.title }}
     </h3>
     <div class="w-full h-[500px]">
-      <VChart :option="options" :autoresize="true" class="w-full h-full" />
+      <VChart
+        :option="options"
+        :init-options="initOptions"
+        :autoresize="true"
+        class="w-full h-full"
+      />
     </div>
   </div>
 </template>
