@@ -45,13 +45,12 @@ func ApplyValidationRules(rules []ValidationRule) {
 
 			// Validate
 			if !isValid {
-				fmt.Fprintf(
-					os.Stderr,
-					"⚠️  Warning: Invalid %s '%s'. Using default '%s'\n",
+				shared.PrintWarning(fmt.Sprintf(
+					"Warning: Invalid %s '%s'. Using default '%s'",
 					rule.Label,
 					*rule.Value,
 					rule.Default,
-				)
+				))
 				*rule.Value = rule.Default
 			}
 		} else if rule.SliceValue != nil {
@@ -74,13 +73,12 @@ func ApplyValidationRules(rules []ValidationRule) {
 			}
 
 			if !isValid {
-				fmt.Fprintf(
-					os.Stderr,
-					"⚠️  Warning: Invalid %s '%v'. Using default '%v'\n",
+				shared.PrintWarning(fmt.Sprintf(
+					"Warning: Invalid %s '%v'. Using default '%v'",
 					rule.Label,
 					*rule.SliceValue,
 					rule.SliceDefault,
-				)
+				))
 				*rule.SliceValue = rule.SliceDefault
 			}
 		}

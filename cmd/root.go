@@ -140,7 +140,7 @@ func writeStdinPipedInputs(tempfilePath string) {
 func checkTargetFile(filePath string) {
 	// Check if the target file exists
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		shared.ExitWithError(fmt.Sprintf("Error: File '%s' does not exist\n", filePath), nil)
+		shared.ExitWithError(fmt.Sprintf("Error: File '%s' does not exist", filePath), nil)
 	}
 
 	// Check if the file contains valid JSON

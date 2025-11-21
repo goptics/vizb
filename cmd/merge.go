@@ -72,13 +72,6 @@ func runMerge(cmd *cobra.Command, args []string) {
 			continue
 		}
 
-		// Basic validation: check if Data is present or if it looks like a benchmark
-		// The user said: "if one of passes json file doen't satifies the struct it will shows just a warning"
-		// Unmarshal might succeed even if fields are missing (zero values).
-		// We can check if 'Data' is empty, but maybe that's valid?
-		// Let's assume if Unmarshal succeeds, it's "satisfied" enough, unless we want to check specific fields.
-		// Given the user's prompt, "satisfies the struct" usually implies type correctness which Unmarshal handles.
-
 		mergedBench = append(mergedBench, bench)
 		validFilesCount++
 	}

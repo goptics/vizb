@@ -70,7 +70,7 @@ func TestApplyValidationRules(t *testing.T) {
 		buf.ReadFrom(r)
 
 		assert.Equal(t, defaultFormat, value, "Invalid value should be replaced with default")
-		assert.Contains(t, buf.String(), "⚠️  Warning: Invalid format", "Warning should be printed")
+		assert.Contains(t, buf.String(), "Warning: Invalid format", "Warning should be printed")
 		assert.Contains(t, buf.String(), invalidFormat, "Warning should contain invalid value")
 		assert.Contains(t, buf.String(), defaultFormat, "Warning should contain default value")
 	})

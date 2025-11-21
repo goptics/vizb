@@ -12,11 +12,16 @@ import (
 // If err is nil, only the message is printed.
 func ExitWithError(msg string, err error) {
 	if err != nil {
-		fmt.Fprintln(os.Stderr, style.Error.Render(fmt.Sprintf("❌ %s: %v", msg, err)))
+		fmt.Fprintln(os.Stderr, style.Error.Render(fmt.Sprintf("%s: %v", msg, err)))
 	} else {
-		fmt.Fprintln(os.Stderr, style.Error.Render(fmt.Sprintf("❌ %s", msg)))
+		fmt.Fprintln(os.Stderr, style.Error.Render(fmt.Sprintf("%s", msg)))
 	}
 
 	TempFiles.RemoveAll()
 	OsExit(1)
+}
+
+// PrintWarning prints a warning message to stderr.
+func PrintWarning(msg string) {
+	fmt.Fprintln(os.Stderr, style.Warning.Render(msg))
 }

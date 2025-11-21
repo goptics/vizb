@@ -63,7 +63,7 @@ func TestFlagValidationRules(t *testing.T) {
 
 				assert.Equal(t, tt.expected, shared.FlagState.MemUnit)
 				if tt.hasWarn {
-					assert.Contains(t, stderr, "⚠️  Warning")
+					assert.Contains(t, stderr, "Warning")
 					assert.Contains(t, stderr, "memory unit")
 				} else {
 					assert.Empty(t, stderr)
