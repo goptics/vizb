@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/goptics/vizb/pkg/parser"
+	"github.com/goptics/vizb/pkg/style"
 	"github.com/goptics/vizb/pkg/template"
 	"github.com/goptics/vizb/shared"
 	"github.com/goptics/vizb/shared/utils"
@@ -104,7 +105,7 @@ func writeStdinPipedInputs(tempfilePath string) {
 	// Create a progress bar manager
 	benchmarkProgressManager := NewBenchmarkProgressManager(
 		progressbar.NewOptions(-1,
-			progressbar.OptionSetDescription("Processing benchmarks"),
+			progressbar.OptionSetDescription(style.Info.Render("Processing benchmarks")),
 			progressbar.OptionSetWidth(50),
 			progressbar.OptionSetRenderBlankState(true),
 			progressbar.OptionEnableColorCodes(true),
@@ -146,7 +147,7 @@ func checkTargetFile(filePath string) {
 	srcFile := shared.MustOpenFile(filePath)
 	defer srcFile.Close()
 
-	fmt.Printf("📊 Reading benchmark data from file: %s\n", filePath)
+	fmt.Println(style.Info.Render(fmt.Sprintf("📊 Reading benchmark data from file: %s", filePath)))
 
 	ext := filepath.Ext(filePath)
 	scanner := bufio.NewScanner(srcFile)
@@ -238,7 +239,7 @@ func writeOutput(f *os.File, results []shared.BenchmarkResult, format string) {
 
 	switch format {
 	case "html":
-		fmt.Println("🔄 Generating Chart...")
+		fmt.Println(style.Info.Render("🔄 Generating Chart..."))
 
 		jsonData, err := json.Marshal(benchmark)
 		if err != nil {
@@ -250,23 +251,23 @@ func writeOutput(f *os.File, results []shared.BenchmarkResult, format string) {
 			shared.ExitWithError("Failed to write output file: %v", err)
 		}
 
-		fmt.Println("🎉 Generated HTML chart successfully!")
+		fmt.Println(style.Success.Render("🎉 Generated HTML chart successfully!"))
 
 	case "json":
-		fmt.Println("🔄 Generating JSON...")
+		fmt.Println(style.Info.Render("🔄 Generating JSON..."))
 		bytes, err := json.Marshal(benchmark)
 		if err != nil {
 			shared.ExitWithError("Error marshaling benchmark data", err)
 		}
 		f.Write(bytes)
-		fmt.Println("🎉 Generated JSON successfully!")
+		fmt.Println(style.Success.Render("🎉 Generated JSON successfully!"))
 	}
 }
 
 // HandleOutputResult manages printing or showing final result
 func HandleOutputResult(f *os.File) {
 	if shared.FlagState.OutputFile != "" {
-		fmt.Printf("📄 Output file: %s\n", f.Name())
+		fmt.Println(style.Info.Render(fmt.Sprintf("📄 Output file: %s", f.Name())))
 		return
 	}
 

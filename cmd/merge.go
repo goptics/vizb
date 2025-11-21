@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/goptics/vizb/pkg/style"
 	"github.com/goptics/vizb/pkg/template"
 	"github.com/goptics/vizb/shared"
 	"github.com/spf13/cobra"
@@ -35,14 +36,14 @@ func runMerge(cmd *cobra.Command, args []string) {
 	for _, arg := range args {
 		info, err := os.Stat(arg)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: cannot access %s: %v\n", arg, err)
+			fmt.Fprintln(os.Stderr, style.Warning.Render(fmt.Sprintf("Warning: cannot access %s: %v", arg, err)))
 			continue
 		}
 
 		if info.IsDir() {
 			files, err := filepath.Glob(filepath.Join(arg, "*.json"))
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Warning: error scanning directory %s: %v\n", arg, err)
+				fmt.Fprintln(os.Stderr, style.Warning.Render(fmt.Sprintf("Warning: error scanning directory %s: %v", arg, err)))
 				continue
 			}
 			allFiles = append(allFiles, files...)
@@ -61,13 +62,13 @@ func runMerge(cmd *cobra.Command, args []string) {
 	for _, file := range allFiles {
 		content, err := os.ReadFile(file)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: cannot read file %s: %v\n", file, err)
+			fmt.Fprintln(os.Stderr, style.Warning.Render(fmt.Sprintf("Warning: cannot read file %s: %v", file, err)))
 			continue
 		}
 
 		var bench shared.Benchmark
 		if err := json.Unmarshal(content, &bench); err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: file %s does not satisfy Benchmark struct (JSON parse error), skipping.\n", file)
+			fmt.Fprintln(os.Stderr, style.Warning.Render(fmt.Sprintf("Warning: file %s does not satisfy Benchmark struct (JSON parse error), skipping.", file)))
 			continue
 		}
 
@@ -107,5 +108,5 @@ func runMerge(cmd *cobra.Command, args []string) {
 		shared.ExitWithError("Failed to write output file: %v", err)
 	}
 
-	fmt.Printf("🎉 Generated merged chart successfully: %s\n", outFile)
+	fmt.Println(style.Success.Render(fmt.Sprintf("🎉 Generated merged chart successfully: %s", outFile)))
 }
