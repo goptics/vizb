@@ -11,17 +11,20 @@ Vizb is a powerful CLI tool for visualizing Go benchmark results as interactive 
 
 ## Features
 
-- **Interactive Charts**: Generate beautiful, interactive HTML charts from Go benchmark results
+- **Modern Interactive UI**: Replaced raw HTML/JS charts with a robust **Vue.js** application, offering a smoother and more responsive user experience.
+- **Dark & Light Mode**: Supports both dark and light themes for better accessibility and preference.
+- **Sorting Capabilities**: Added support for sorting benchmark data in both **ascending** and **descending** order directly within the UI or via the `--sort` flag.
+- **Multi-layer Grouping**: `vizb` can merge multiple benchmark results using the `merge` command and display them in a single, interactive view, allowing for deeper comparative analysis across different runs.
+- **Label Control**: Users can control label visibility from the terminal command using `--show-labels`, which persists into the UI.
 - **Dual Input Support**: Process both raw benchmark output and JSON-formatted benchmark data automatically
 - **Multiple Metrics**: Compare execution time, memory usage, and allocation counts
 - **Customizable Units**: Display metrics in your preferred units (ns/us/ms/s for time, b/B/KB/MB/GB for memory)
-- **Allocation Units**: Customize allocation count representation (K/M/B/T)
 - **Flexible Grouping**: Use custom patterns to extract grouping information from benchmark names with `--group-pattern`
 - **Multiple Output Formats**: Generate HTML charts or JSON data with the `--format` flag
-- **Responsive Design**: Charts work well on any device or screen size
 - **Export Capability**: Save charts as PNG images directly from the browser
 - **Simple CLI Interface**: Easy-to-use command line interface with helpful flags
 - **Piped Input Support**: Process benchmark data directly from stdin
+
 
 ## Overview
 
@@ -77,9 +80,25 @@ go test -bench . -run=^$ | vizb -o output.html
 go test -bench . -run=^$ -json | vizb -o output.html
 ```
 
+**Option 4: Merging multiple benchmarks**
+
+You can combine multiple benchmark JSON files into a single report using the `merge` command. This is useful for aggregating results from different runs, machines, or environments.
+
+```bash
+# Merge specific files
+vizb merge bench1.json bench2.json -o merged_report.html
+
+# Merge all JSON files in a directory
+vizb merge ./results/ -o all_results.html
+
+# Mix and match files and directories
+vizb merge ./old_results/ new_run.json -o comparison.html
+```
+
 Open the generated HTML file in your browser to view the interactive charts.
 
-**Note**: Vizb automatically detects the input format (raw or JSON) and processes it accordingly. JSON files are automatically converted to the required text format for parsing.
+> [!Note]
+> The `merge` command requires JSON files as input, which must be generated using `vizb bench.txt -f json`.
 
 ## How vizb groups your benchmark results
 
@@ -90,38 +109,33 @@ Vizb organizes your benchmark results into logical groups to create meaningful c
 Use the `--group-pattern` (or `-p`) flag to specify how vizb should extract grouping information from your benchmark names:
 
 ```bash
-vizb --group-pattern "name/workload/subject" results.txt
+vizb --group-pattern "name/xAxis/yAxis" results.txt
 ```
 
 The pattern defines the order and separators for extracting:
 
-- **Name**: The benchmark family/category name
-- **Workload**: The test condition or data size
-- **Subject**: The specific operation being benchmarked (required)
+- **Name**: The benchmark family/group name
+- **XAxis**: The X-axis category
+- **YAxis**: The Y-axis category
 
 ![vizb chart example](./assets/vizb-char-overview.png)
 
 ### Pattern Syntax
 
-**Components**: Use `name`, `workload`, `subject` (or shorthand `n`, `w`, `s`)
+**Components**: Use `name`, `xAxis`, `yAxis` (or shorthand `n`, `x`, `y`)
 
 **Separators**: Use `/` (slash) or `_` (underscore) to define how parts are split.
 
-**Required**: Every pattern must include `subject` (the operation being measured)
-
 ### Examples
 
-| Pattern | Benchmark Name                        | Name        | Workload    | Subject        | Description                            |
+| Pattern | Benchmark Name                        | Name        | XAxis  | YAxis   | Description                            |
 | ------- | ------------------------------------- | ----------- | ----------- | -------------- | -------------------------------------- |
-| `s`     | `BenchmarkStringConcat`               | _(empty)_   | _(empty)_   | `StringConcat` | Default: treats entire name as subject |
-| `n/s`   | `BenchmarkStringOps/Concat`           | `StringOps` | _(empty)_   | `Concat`       | Name and subject with slash            |
-| `n/w/s` | `BenchmarkStringOps/LargeData/Concat` | `StringOps` | `LargeData` | `Concat`       | All three components                   |
-| `s/w/n` | `BenchmarkConcat/LargeData/StringOps` | `StringOps` | `LargeData` | `Concat`       | Custom order                           |
-| `n_s_w` | `BenchmarkStringOps_Concat_LargeData` | `StringOps` | `LargeData` | `Concat`       | Underscore separator                   |
-| `/n/s`  | `BenchmarkIgnored/StringOps/Concat`   | `StringOps` | _(empty)_   | `Concat`       | Skip first part                        |
-
-> [!Note]
-> The `workload` dimension only appears in charts when there are multiple workloads to compare. If all benchmarks have the same workload (or no workload), charts will be simplified to show just subjects.
+| `y`     | `BenchmarkStringConcat`               | _(empty)_   | _(empty)_   | `StringConcat` | Default: treats entire name as subject |
+| `n/y`   | `BenchmarkStringOps/Concat`           | `StringOps` | _(empty)_   | `Concat`       | Name and subject with slash            |
+| `n/x/y` | `BenchmarkStringOps/LargeData/Concat` | `StringOps` | `LargeData` | `Concat`       | All three components                   |
+| `y/x/n` | `BenchmarkConcat/LargeData/StringOps` | `StringOps` | `LargeData` | `Concat`       | Custom order                           |
+| `n_y_x` | `BenchmarkStringOps_Concat_LargeData` | `StringOps` | `LargeData` | `Concat`       | Underscore separator                   |
+| `/n/y`  | `BenchmarkIgnored/StringOps/Concat`   | `StringOps` | _(empty)_   | `Concat`       | Skip first part                        |
 
 ### Command Line Options
 
@@ -138,10 +152,13 @@ Flags:
   -d, --description string  Description of the benchmark
   -o, --output string       Output HTML file name
   -f, --format string       Output format (html, json) (default "html")
-  -p, --group-pattern string Pattern to extract grouping information from benchmark names (default "subject")
+  -p, --group-pattern string Pattern to extract grouping information from benchmark names (default "x")
   -m, --mem-unit string     Memory unit available: b, B, KB, MB, GB (default "B")
   -t, --time-unit string    Time unit available: ns, us, ms, s (default "ns")
-  -a, --alloc-unit string   Allocation unit available: K, M, B, T (default: as-is)
+  -u, --number-unit string  Number unit available: K, M, B, T (default: as-is)
+  -s, --sort string         Sort in asc or desc order (default: as-is)
+  -c, --charts strings      Chart types to generate (bar, line, pie) (default [bar,line,pie])
+  -l, --show-labels         Show labels on charts
   -v, --version             Show version information
 ```
 
@@ -157,13 +174,11 @@ vizb bench.txt -n "String Comparison Benchmarks" -d "Comparing different string 
 vizb bench.txt -t ms -m MB
 ```
 
-## Chart Types
+#### Sorting and Chart Selection
 
-Vizb generates three types of charts:
-
-1. **Execution Time**: Shows the execution time per operation for each subject across different workloads
-2. **Memory Usage**: Shows the memory usage per operation for each subject across different workloads
-3. **Allocations**: Shows the number of memory allocations per operation for each subject
+```bash
+vizb bench.txt --sort asc --charts bar,pie --show-labels
+```
 
 ## Development
 
@@ -185,10 +200,13 @@ task setup
 # List all available tasks
 task
 
-# Generate templates
-task generate
+# Build The UI
+task build:ui
 
 # Build the binary (run from ./bin/vizb)
+task build:cli
+
+# Build everything
 task build
 
 # Run tests
