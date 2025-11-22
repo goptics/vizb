@@ -13,17 +13,15 @@ func TestGenerateHTMLBenchmarkUI(t *testing.T) {
 	originalOsExit := shared.OsExit
 	defer func() { shared.OsExit = originalOsExit }()
 
-	// Mock OsExit to prevent actual exit
-	exitCalled := false
-	shared.OsExit = func(code int) {
-		exitCalled = true
-	}
-
 	// Simple test template
 	testTemplate := `<!DOCTYPE html><html><head><title>Test</title></head><body><script>window.VIZB_VERSION = {{ .Version }}; window.VIZB_DATA = {{ .Data }};</script></body></html>`
 
 	t.Run("Happy Path - Valid JSON", func(t *testing.T) {
-		exitCalled = false
+		exitCalled := false
+		shared.OsExit = func(code int) {
+			exitCalled = true
+		}
+
 		benchmarkJSON := []byte(`[{"name":"test","data":[]}]`)
 
 		result := GenerateHTMLBenchmarkUI(benchmarkJSON, testTemplate)
@@ -69,7 +67,11 @@ func TestGenerateHTMLBenchmarkUI(t *testing.T) {
 	})
 
 	t.Run("Empty JSON Array", func(t *testing.T) {
-		exitCalled = false
+		exitCalled := false
+		shared.OsExit = func(code int) {
+			exitCalled = true
+		}
+
 		benchmarkJSON := []byte(`[]`)
 
 		result := GenerateHTMLBenchmarkUI(benchmarkJSON, testTemplate)
@@ -84,6 +86,54 @@ func TestGenerateHTMLBenchmarkUI(t *testing.T) {
 
 		if !strings.Contains(result, "window.VIZB_DATA") {
 			t.Error("Expected HTML to contain window.VIZB_DATA")
+		}
+	})
+
+	t.Run("Invalid Template Execution", func(t *testing.T) {
+		exitCalled := false
+		shared.OsExit = func(code int) {
+			exitCalled = true
+			panic("exit called") // Panic to stop execution
+		}
+
+		benchmarkJSON := []byte(`[{"name":"test","data":[]}]`)
+		invalidTemplate := `<!DOCTYPE html><html><body>{{ .InvalidField }}</body></html>`
+
+		// Use WithSafe to handle the panic from our mocked OsExit
+		err := shared.WithSafe("GenerateHTMLBenchmarkUI", func() {
+			_ = GenerateHTMLBenchmarkUI(benchmarkJSON, invalidTemplate)
+		})
+
+		if !exitCalled {
+			t.Error("Expected OsExit to be called for invalid template execution")
+		}
+
+		if err == nil {
+			t.Error("Expected error from WithSafe when OsExit is called")
+		}
+	})
+
+	t.Run("Malformed Template Syntax", func(t *testing.T) {
+		exitCalled := false
+		shared.OsExit = func(code int) {
+			exitCalled = true
+			panic("exit called") // Panic to stop execution
+		}
+
+		benchmarkJSON := []byte(`[{"name":"test","data":[]}]`)
+		malformedTemplate := `<!DOCTYPE html><html><body>{{ .Version</body></html>`
+
+		// Use WithSafe to handle the panic from our mocked OsExit
+		err := shared.WithSafe("GenerateHTMLBenchmarkUI", func() {
+			_ = GenerateHTMLBenchmarkUI(benchmarkJSON, malformedTemplate)
+		})
+
+		if !exitCalled {
+			t.Error("Expected OsExit to be called for malformed template syntax")
+		}
+
+		if err == nil {
+			t.Error("Expected error from WithSafe when OsExit is called")
 		}
 	})
 }

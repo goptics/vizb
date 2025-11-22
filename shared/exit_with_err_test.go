@@ -85,11 +85,6 @@ func TestExitWithError(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Capture stderr
-			oldStderr := os.Stderr
-			r, w, _ := os.Pipe()
-			os.Stderr = w
-
 			// Track if OsExit was called with correct code
 			exitCalled := false
 			exitCode := -1
@@ -101,35 +96,22 @@ func TestExitWithError(t *testing.T) {
 				exitCode = code
 				panic(fmt.Sprintf("OsExit(%d) was called", code))
 			}
+			defer func() { OsExit = originalOsExit }()
 
-			// Execute the function and catch the panic
-			func() {
-				defer func() {
-					recovered := recover()
-
-					// Close write end and read output
-					w.Close()
-					var buf bytes.Buffer
-					io.Copy(&buf, r)
-
-					// Restore stderr and OsExit
-					os.Stderr = oldStderr
-					OsExit = originalOsExit
-
-					// Verify OsExit was called
-					if recovered == nil {
-						t.Error("Expected OsExit to be called (should panic)")
-					}
-					assert.True(t, exitCalled, "OsExit should have been called")
-					assert.Equal(t, tt.expectedCode, exitCode, "OsExit should be called with code 1")
-
-					// Verify stderr output
-					actualOutput := buf.String()
-					assert.Equal(t, tt.expectedOutput, actualOutput, "stderr output should match expected")
-				}()
-
+			// Use WithSafeStderr to execute and capture output
+			output, err := WithSafeStderr("ExitWithError", func() {
 				ExitWithError(tt.msg, tt.err)
-			}()
+			})
+
+			// Verify OsExit was called
+			if err == nil {
+				t.Error("Expected OsExit to be called (should panic)")
+			}
+			assert.True(t, exitCalled, "OsExit should have been called")
+			assert.Equal(t, tt.expectedCode, exitCode, "OsExit should be called with code 1")
+
+			// Verify stderr output
+			assert.Equal(t, tt.expectedOutput, output, "stderr output should match expected")
 		})
 	}
 }
@@ -154,18 +136,17 @@ func TestExitWithErrorConcurrent(t *testing.T) {
 
 	// Run multiple goroutines
 	done := make(chan bool, 5)
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		go func(id int) {
-			defer func() {
-				recover() // Catch the panic from OsExit
-				done <- true
-			}()
-			ExitWithError(fmt.Sprintf("Error from goroutine %d", id), errors.New("test error"))
+			WithSafe(fmt.Sprintf("goroutine-%d", id), func() {
+				ExitWithError(fmt.Sprintf("Error from goroutine %d", id), errors.New("test error"))
+			})
+			done <- true
 		}(i)
 	}
 
 	// Wait for all goroutines
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		<-done
 	}
 
@@ -206,17 +187,18 @@ func TestExitWithErrorStderrFailure(t *testing.T) {
 	w.Close() // Close write end immediately to cause write error
 	os.Stderr = w
 
-	defer func() {
-		recovered := recover()
-		r.Close()
-		os.Stderr = oldStderr
+	// Use WithSafe to handle the panic
+	err := WithSafe("ExitWithError", func() {
+		ExitWithError("Test message", errors.New("test error"))
+	})
 
-		// Even if stderr write fails, OsExit should still be called
-		if recovered == nil {
-			t.Error("Expected OsExit to be called (should panic)")
-		}
-		assert.True(t, exitCalled, "OsExit should be called even if stderr write fails")
-	}()
+	// Cleanup
+	r.Close()
+	os.Stderr = oldStderr
 
-	ExitWithError("Test message", errors.New("test error"))
+	// Even if stderr write fails, OsExit should still be called
+	if err == nil {
+		t.Error("Expected OsExit to be called (should panic)")
+	}
+	assert.True(t, exitCalled, "OsExit should be called even if stderr write fails")
 }
