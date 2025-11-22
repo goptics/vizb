@@ -25,10 +25,9 @@ Vizb is a powerful CLI tool for visualizing Go benchmark results as interactive 
 - **Simple CLI Interface**: Easy-to-use command line interface with helpful flags
 - **Piped Input Support**: Process benchmark data directly from stdin
 
-
 ## Overview
 
-https://github.com/user-attachments/assets/5dad22b0-d21f-434f-ad6e-57f4ebc74981
+https://github.com/user-attachments/assets/a6dbe3b9-f5aa-4643-8e19-d91e710c78fb
 
 ## Installation
 
@@ -40,35 +39,35 @@ go install github.com/goptics/vizb
 
 ### Basic Usage
 
-**Option 1: Using raw benchmark output**
+#### Option 1: Using raw benchmark output
 
-1. Run your Go benchmarks and save the output:
+Run your Go benchmarks and save the output:
 
-   ```bash
-   go test -bench . -run=^$ > bench.txt
-   ```
+```bash
+go test -bench . -run=^$ > bench.txt
+```
 
-2. Generate a chart from the benchmark results:
+Generate a chart from the benchmark results:
 
-   ```bash
-   vizb bench.txt -o output.html
-   ```
+```bash
+vizb bench.txt -o output.html
+```
 
-**Option 2: Using JSON benchmark output**
+#### Option 2: Using JSON benchmark output
 
-1. Run your Go benchmarks with JSON output:
+Run your Go benchmarks with JSON output:
 
-   ```bash
-   go test -bench . -run=^$ -json > bench.json
-   ```
+```bash
+go test -bench . -run=^$ -json > bench.json
+```
 
-2. Generate a chart from the JSON benchmark results:
+Generate a chart from the JSON benchmark results:
 
-   ```bash
-   vizb bench.json -o output.html
-   ```
+```bash
+vizb bench.json -o output.html
+```
 
-**Option 3: Direct piping (recommended)**
+#### Option 3: Direct piping (recommended)
 
 Pipe benchmark results directly to vizb:
 
@@ -80,7 +79,7 @@ go test -bench . -run=^$ | vizb -o output.html
 go test -bench . -run=^$ -json | vizb -o output.html
 ```
 
-**Option 4: Merging multiple benchmarks**
+#### Option 4: Merging multiple benchmarks
 
 You can combine multiple benchmark JSON files into a single report using the `merge` command. This is useful for aggregating results from different runs, machines, or environments.
 
@@ -102,65 +101,82 @@ Open the generated HTML file in your browser to view the interactive charts.
 
 ## How vizb groups your benchmark results
 
-Vizb organizes your benchmark results into logical groups to create meaningful charts by organizing related benchmarks together. You can control how benchmarks are grouped using the `--group-pattern` flag.
+Vizb organizes your benchmark results into logical groups to create meaningful charts. By default, it tries to be smart, but you can control exactly how benchmarks are grouped using the `--group-pattern` flag.
 
-### Group Pattern Configuration
+### Understanding Group Patterns
 
-Use the `--group-pattern` (or `-p`) flag to specify how vizb should extract grouping information from your benchmark names:
+A group pattern tells vizb how to dissect your benchmark names into three key components:
 
-```bash
-vizb --group-pattern "name/xAxis/yAxis" results.txt
+1.  **Name (n)**: The family or group the benchmark belongs to. Benchmarks with the same `Name` will be grouped together in the same chart.
+2.  **XAxis (x)**: The category that goes on the X-axis (e.g., input size, concurrency level).
+3.  **YAxis (y)**: The specific test case or variation (e.g., algorithm name, sub-test).
+
+### Visualizing the Extraction
+
+Imagine you have a benchmark named `BenchmarkMatrix/1024x1024/Parallel`.
+
+If you use the pattern `name/xAxis/yAxis` (or `n/x/y`), vizb splits the name wherever it finds a `/`:
+
+```text
+Benchmark Name:  BenchmarkMatrix  /  1024x1024  /  Parallel
+                     │                 │             │
+Pattern:           [Name]           [XAxis]        [YAxis]
+                     │                 │             │
+Result:           "Matrix"        "1024x1024"     "Parallel"
 ```
-
-The pattern defines the order and separators for extracting:
-
-- **Name**: The benchmark family/group name
-- **XAxis**: The X-axis category
-- **YAxis**: The Y-axis category
-
-![vizb chart example](./assets/vizb-char-overview.png)
 
 ### Pattern Syntax
 
-**Components**: Use `name`, `xAxis`, `yAxis` (or shorthand `n`, `x`, `y`)
+- **Components**: Use `name`, `xAxis`, `yAxis` (or shorthands `n`, `x`, `y`).
+- **Separators**: Use `/` (slash) or `_` (underscore) to match the separators in your benchmark names.
+- **Skipping parts**: You can leave parts empty in the pattern to ignore sections of the benchmark name.
 
-**Separators**: Use `/` (slash) or `_` (underscore) to define how parts are split.
+### Common Scenarios & Examples
 
-### Examples
+Here are some common benchmark naming conventions and the patterns to use:
 
-| Pattern | Benchmark Name                        | Name        | XAxis  | YAxis   | Description                            |
-| ------- | ------------------------------------- | ----------- | ----------- | -------------- | -------------------------------------- |
-| `y`     | `BenchmarkStringConcat`               | _(empty)_   | _(empty)_   | `StringConcat` | Default: treats entire name as subject |
-| `n/y`   | `BenchmarkStringOps/Concat`           | `StringOps` | _(empty)_   | `Concat`       | Name and subject with slash            |
-| `n/x/y` | `BenchmarkStringOps/LargeData/Concat` | `StringOps` | `LargeData` | `Concat`       | All three components                   |
-| `y/x/n` | `BenchmarkConcat/LargeData/StringOps` | `StringOps` | `LargeData` | `Concat`       | Custom order                           |
-| `n_y_x` | `BenchmarkStringOps_Concat_LargeData` | `StringOps` | `LargeData` | `Concat`       | Underscore separator                   |
-| `/n/y`  | `BenchmarkIgnored/StringOps/Concat`   | `StringOps` | _(empty)_   | `Concat`       | Skip first part                        |
+#### Scenario 1: Standard Go Benchmarks (Slash Separated)
 
-### Command Line Options
+Format: `Benchmark<Group>/<InputSize>/<Variant>`
 
-```bash
-Usage:
-  vizb [target] [flags]
+**Pattern:** `n/x/y`
 
-Arguments:
-  target               Path to benchmark file (raw or JSON) (optional if using piped input)
+| Benchmark Name                 | Extracted Data                                            |
+| :----------------------------- | :-------------------------------------------------------- |
+| `BenchmarkSort/1024/QuickSort` | **Name:** `Sort` **XAxis:** `1024` **YAxis:** `QuickSort` |
+| `BenchmarkSort/1024/MergeSort` | **Name:** `Sort` **XAxis:** `1024` **YAxis:** `MergeSort` |
 
-Flags:
-  -h, --help                Help for vizb
-  -n, --name string         Name of the chart (default "Benchmarks")
-  -d, --description string  Description of the benchmark
-  -o, --output string       Output HTML file name
-  -f, --format string       Output format (html, json) (default "html")
-  -p, --group-pattern string Pattern to extract grouping information from benchmark names (default "x")
-  -m, --mem-unit string     Memory unit available: b, B, KB, MB, GB (default "B")
-  -t, --time-unit string    Time unit available: ns, us, ms, s (default "ns")
-  -u, --number-unit string  Number unit available: K, M, B, T (default: as-is)
-  -s, --sort string         Sort in asc or desc order (default: as-is)
-  -c, --charts strings      Chart types to generate (bar, line, pie) (default [bar,line,pie])
-  -l, --show-labels         Show labels on charts
-  -v, --version             Show version information
-```
+#### Scenario 2: Underscore Separated
+
+Format: `Benchmark<Group>_<Variant>_<InputSize>`
+
+**Pattern:** `n_y_x`
+
+| Benchmark Name             | Extracted Data                                        |
+| :------------------------- | :---------------------------------------------------- |
+| `BenchmarkHash_SHA256_1KB` | **Name:** `Hash` **YAxis:** `SHA256` **XAxis:** `1KB` |
+| `BenchmarkHash_MD5_1KB`    | **Name:** `Hash` **YAxis:** `MD5` **XAxis:** `1KB`    |
+
+#### Scenario 3: Simple Grouping (No X-Axis)
+
+Format: `Benchmark<Group>/<Variant>`
+
+**Pattern:** `n/y`
+
+| Benchmark Name            | Extracted Data                                               |
+| :------------------------ | :----------------------------------------------------------- |
+| `BenchmarkJSON/Marshal`   | **Name:** `JSON` **XAxis:** _(empty)_ **YAxis:** `Marshal`   |
+| `BenchmarkJSON/Unmarshal` | **Name:** `JSON` **XAxis:** _(empty)_ **YAxis:** `Unmarshal` |
+
+#### Scenario 4: Ignoring Prefixes
+
+Sometimes you might want to ignore a common prefix or a specific part of the name.
+
+**Pattern:** `/n/y` (Starts with a separator to skip the first part)
+
+| Benchmark Name           | Extracted Data                                                              |
+| :----------------------- | :-------------------------------------------------------------------------- |
+| `BenchmarkTest/JSON/Marshal` | **Name:** `JSON` **YAxis:** `Marshal` _(First part "BenchmarkTest" is ignored)_ |
 
 #### Custom chart name and description
 
@@ -189,9 +205,6 @@ This project uses [Task](https://taskfile.dev/) for managing development workflo
 ```bash
 # Install Task runner
 go install github.com/go-task/task/v3/cmd/task@latest
-
-# Install required development tools
-task setup
 ```
 
 ### Available Tasks
@@ -199,6 +212,9 @@ task setup
 ```bash
 # List all available tasks
 task
+
+# Run the UI in development mode
+task dev:ui
 
 # Build The UI
 task build:ui
@@ -220,7 +236,3 @@ Contributions are welcome! Feel free to open issues or submit pull requests.
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-
-### Attribution
-
-While not required by the MIT license, we kindly ask that you preserve the attribution footer in charts generated by Vizb when displaying them publicly.
