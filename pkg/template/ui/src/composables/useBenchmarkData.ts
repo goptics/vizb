@@ -13,12 +13,7 @@ const getBenchmarks = async (): Promise<Benchmark[]> => {
     return data.default as unknown as Benchmark[];
   }
 
-  try {
-    return JSON.parse(window.VIZB_DATA);
-  } catch (error) {
-    console.error("Failed to parse VIZB_DATA:", error);
-    return [];
-  }
+  return window.VIZB_DATA ?? [];
 };
 
 /**
