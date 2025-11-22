@@ -17,6 +17,10 @@ func (m *MockProgressBar) Describe(desc string) {
 	m.descriptions = append(m.descriptions, desc)
 }
 
+func (m *MockProgressBar) Finish() error {
+	return nil
+}
+
 func TestHasBenchmark(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -225,9 +229,9 @@ func TestBenchmarkProgressManager(t *testing.T) {
 		resultLine := "BenchmarkStringConcat-8    1000000    1234 ns/op"
 		manager.ProcessLine(resultLine)
 
-		assert.Equal(t, 1, manager.benchmarkCount) // Should increment
+		assert.Equal(t, 1, manager.benchmarkCount)                         // Should increment
 		assert.Equal(t, "BenchmarkStringConcat", manager.currentBenchName) // Extract name from result line
-		assert.Len(t, mockBar.descriptions, 1) // Progress update
+		assert.Len(t, mockBar.descriptions, 1)                             // Progress update
 	})
 
 	t.Run("ProcessLine with mixed content", func(t *testing.T) {

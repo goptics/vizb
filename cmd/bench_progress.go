@@ -57,6 +57,7 @@ func (j *JSONBenchmark) ExtractName(_ string) string {
 // ProgressBar is a small interface for dependency injection
 type ProgressBar interface {
 	Describe(string)
+	Finish() error
 }
 
 // BenchmarkProgressManager holds state + orchestrates benchmark processing
@@ -80,6 +81,10 @@ func (m *BenchmarkProgressManager) updateProgress() {
 	)
 
 	m.bar.Describe(style.Info.Render(desc))
+}
+
+func (m *BenchmarkProgressManager) Finish() error {
+	return m.bar.Finish()
 }
 
 func (m *BenchmarkProgressManager) ProcessLine(line string) {

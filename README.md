@@ -11,19 +11,15 @@ Vizb is a powerful CLI tool for visualizing Go benchmark results as interactive 
 
 ## Features
 
-- **Modern Interactive UI**: Replaced raw HTML/JS charts with a robust **Vue.js** application, offering a smoother and more responsive user experience.
-- **Dark & Light Mode**: Supports both dark and light themes for better accessibility and preference.
-- **Sorting Capabilities**: Added support for sorting benchmark data in both **ascending** and **descending** order directly within the UI or via the `--sort` flag.
-- **Multi-layer Grouping**: `vizb` can merge multiple benchmark results using the `merge` command and display them in a single, interactive view, allowing for deeper comparative analysis across different runs.
-- **Label Control**: Users can control label visibility from the terminal command using `--show-labels`, which persists into the UI.
-- **Dual Input Support**: Process both raw benchmark output and JSON-formatted benchmark data automatically
-- **Multiple Metrics**: Compare execution time, memory usage, and allocation counts
-- **Customizable Units**: Display metrics in your preferred units (ns/us/ms/s for time, b/B/KB/MB/GB for memory)
-- **Flexible Grouping**: Use custom patterns to extract grouping information from benchmark names with `--group-pattern`
-- **Multiple Output Formats**: Generate HTML charts or JSON data with the `--format` flag
-- **Export Capability**: Save charts as PNG images directly from the browser
-- **Simple CLI Interface**: Easy-to-use command line interface with helpful flags
-- **Piped Input Support**: Process benchmark data directly from stdin
+- **Modern Interactive UI**: Robust **Vue.js** application with a smooth, responsive experience.
+- **Dark & Light Mode**: Built-in support for both themes.
+- **Sorting**: Sort data (asc/desc) via UI or CLI flags.
+- **Multi-layer Grouping**: Merge multiple benchmark results for deep comparative analysis.
+- **Flexible Input**: Automatically processes raw `go test` output or JSON.
+- **Comprehensive Metrics**: Compare time, memory, and number of allocations with customizable units.
+- **Smart Grouping**: Extract grouping logic from benchmark names using custom patterns.
+- **Export Options**: Generate HTML/JSON reports or save charts as PNG.
+- **Developer Friendly**: Simple CLI with piped input support (`| vizb`).
 
 ## Overview
 
@@ -44,7 +40,7 @@ go install github.com/goptics/vizb
 Run your Go benchmarks and save the output:
 
 ```bash
-go test -bench . -run=^$ > bench.txt
+go test -bench . > bench.txt
 ```
 
 Generate a chart from the benchmark results:
@@ -58,7 +54,7 @@ vizb bench.txt -o output.html
 Run your Go benchmarks with JSON output:
 
 ```bash
-go test -bench . -run=^$ -json > bench.json
+go test -bench . -json > bench.json
 ```
 
 Generate a chart from the JSON benchmark results:
@@ -73,10 +69,10 @@ Pipe benchmark results directly to vizb:
 
 ```bash
 # Raw output
-go test -bench . -run=^$ | vizb -o output.html
+go test -bench . | vizb -o output.html
 
 # JSON output (automatically detected and converted)
-go test -bench . -run=^$ -json | vizb -o output.html
+go test -bench . -json | vizb -o output.html
 ```
 
 #### Option 4: Merging multiple benchmarks
