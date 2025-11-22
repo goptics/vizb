@@ -132,9 +132,10 @@ func writeStdinPipedInputs(tempfilePath string) {
 		benchmarkProgressManager.ProcessLine(line)
 	}
 
+	benchmarkProgressManager.Finish()
+
 	writer.Flush()
 	inputTempFile.Sync()
-	fmt.Println()
 }
 
 func checkTargetFile(filePath string) {
