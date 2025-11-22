@@ -96,7 +96,7 @@ func runMerge(cmd *cobra.Command, args []string) {
 	defer f.Close()
 	defer HandleOutputResult(f)
 
-	htmlContent := template.GenerateHTMLBenchmarkUI(jsonData)
+	htmlContent := template.GenerateHTMLBenchmarkUI(jsonData, template.VizbHTMLTemplate)
 	if _, err := f.WriteString(htmlContent); err != nil {
 		shared.ExitWithError("Failed to write output file: %v", err)
 	}

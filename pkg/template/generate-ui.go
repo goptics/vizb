@@ -13,8 +13,8 @@ type PageData struct {
 	Data    htmlTemplate.JS
 }
 
-func GenerateHTMLBenchmarkUI(benchmarkJSON []byte) string {
-	tmpl, err := htmlTemplate.New("page").Parse(vizbHTMLTemplate)
+func GenerateHTMLBenchmarkUI(benchmarkJSON []byte, HTMLtemplate string) string {
+	tmpl, err := htmlTemplate.New("page").Parse(HTMLtemplate)
 
 	if err != nil {
 		shared.ExitWithError("failed to parse HTML template:", err)
