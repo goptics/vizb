@@ -231,36 +231,25 @@ func TestCheckTargetFile(t *testing.T) {
 			// Reset the exitCalled flag for each test
 			exitCalled = false
 
-			// Prepare stderr capture
-			oldStderr := os.Stderr
-			r, w, _ := os.Pipe()
-			os.Stderr = w
-
 			// Call the function and handle any os.Exit panics
 			if tt.expectExit {
-				func() {
-					defer func() {
-						recovered := recover()
-						// Close the write end of pipe to get all output
-						w.Close()
-
-						// Read the stderr output
-						var buf bytes.Buffer
-						io.Copy(&buf, r)
-
-						// Restore stderr
-						os.Stderr = oldStderr
-
-						// Check assertions
-						if recovered == nil {
-							t.Error("Expected shared.OsExit to be called")
-						}
-						assert.True(t, exitCalled, "shared.OsExit should have been called")
-						assert.Contains(t, buf.String(), tt.expectedError)
-					}()
+				// Use WithSafeStderr to execute and capture output
+				output, err := shared.WithSafeStderr("checkTargetFile", func() {
 					checkTargetFile(tt.inputPath)
-				}()
+				})
+
+				// Check assertions
+				if err == nil {
+					t.Error("Expected shared.OsExit to be called")
+				}
+				assert.True(t, exitCalled, "shared.OsExit should have been called")
+				assert.Contains(t, output, tt.expectedError)
 			} else {
+				// Prepare stderr capture for non-exit case
+				oldStderr := os.Stderr
+				_, w, _ := os.Pipe()
+				os.Stderr = w
+
 				checkTargetFile(tt.inputPath)
 
 				// Close write end of pipe
@@ -359,30 +348,33 @@ func TestRunBenchmark(t *testing.T) {
 
 			// Run the function and catch any os.Exit calls
 			if tt.expectExit {
-				func() {
-					defer func() {
-						recovered := recover()
+				// Capture both stdout and stderr
+				oldStdout := os.Stdout
+				oldStderr := os.Stderr
+				r, w, _ := os.Pipe()
+				os.Stdout = w
+				os.Stderr = w
 
-						// Close write end of pipe
-						w.Close()
-
-						// Read output
-						var buf bytes.Buffer
-						io.Copy(&buf, r)
-
-						// Restore stdout and stderr
-						os.Stdout = oldStdout
-						os.Stderr = oldStderr
-
-						// Verify assertions
-						if recovered == nil {
-							t.Error("Expected shared.OsExit to be called")
-						}
-						assert.True(t, exitCalled, "shared.OsExit should have been called")
-						assert.Contains(t, buf.String(), tt.expectedOutput)
-					}()
+				// Use WithSafe to handle panic
+				err := shared.WithSafe("runBenchmark", func() {
 					runBenchmark(cmd, args)
-				}()
+				})
+
+				// Close write end and read output
+				w.Close()
+				var buf bytes.Buffer
+				io.Copy(&buf, r)
+
+				// Restore stdout and stderr
+				os.Stdout = oldStdout
+				os.Stderr = oldStderr
+
+				// Verify assertions
+				if err == nil {
+					t.Error("Expected shared.OsExit to be called")
+				}
+				assert.True(t, exitCalled, "shared.OsExit should have been called")
+				assert.Contains(t, buf.String(), tt.expectedOutput)
 			} else {
 				runBenchmark(cmd, args)
 

@@ -246,7 +246,7 @@ func writeOutput(f *os.File, results []shared.BenchmarkResult, format string) {
 			shared.ExitWithError("Failed to marshal benchmark data: %v", err)
 		}
 
-		htmlContent := template.GenerateHTMLBenchmarkUI(jsonData)
+		htmlContent := template.GenerateHTMLBenchmarkUI(jsonData, template.VizbHTMLTemplate)
 		if _, err := f.WriteString(htmlContent); err != nil {
 			shared.ExitWithError("Failed to write output file: %v", err)
 		}
