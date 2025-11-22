@@ -3,8 +3,7 @@
     "name": "HTTP Framework Benchmarks",
     "description": "Performance comparison of popular Go HTTP frameworks",
     "cpu": {
-      "name": "Intel Core i9-13900K @ 5.8GHz",
-      "cores": 16
+      "name": "Intel Core i9-13900K @ 5.8GHz"
     },
     "settings": {
       "charts": [
@@ -12047,15 +12046,15 @@
   },
   {
     "name": "Worker Pool Benchmarks",
-    "description": "Performance comparison of popular Go HTTP frameworks",
+    "description": "Performance comparison of different worker pool implementations",
     "cpu": {
       "name": "Intel Core i9-13900K @ 5.8GHz",
-      "cores": 16
+      "cores": 8
     },
     "settings": {
       "sort": {
         "enabled": false,
-        "order": ""
+        "order": "asc"
       },
       "showLabels": false
     },
