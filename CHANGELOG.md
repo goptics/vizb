@@ -5,6 +5,33 @@ All notable changes to the Vizb project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [0.5.0] - 2025-11-23
+
+### Added
+
+- Completely new UI built with **Vue.js** for enhanced interactivity and modern design.
+- **Dark and Light Mode** support for the UI.
+- **Merge subcommand** for combining multiple benchmark JSON files into one report.
+- **New CLI flags** for advanced sorting and label control of benchmarks data.
+- Introduced chart types **Bar, Line, and Pie** for different metrics.
+
+### Changed
+
+- Refactored UI embedding using vite in the UI and html template in cli.
+- CLI output visually enhanced with consistent styles for info, success, error, and warning messages.
+- Documentation expanded with improved examples and advanced group patterns.
+
+### Fixed
+
+- Progress bar finish line issue resolved in benchmark visualization.
+- Improved chart rendering on high-DPI displays; images now save with correct chart titles.
+- Test failures after migration resolved; noisy terminal output suppressed during tests.
+
+### Breaking Changes
+
+- Renamed `--alloc-unit` flag to `--number-unit` (`-u`).
+- Updated pattern matching logic to use `x` and `y` axis terminology instead of `workload` and `subject`.
+
 ## [0.4.0] - 2025-09-18
 
 ### Added
