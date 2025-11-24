@@ -11,7 +11,11 @@ const createChartTitle = (stat: Stat) => {
     return `${stat.type} (${stat.unit}/${stat.per})`;
   }
 
-  return `${stat.type}/${stat.per}`;
+  if (stat.per) {
+    return `${stat.type}/${stat.per}`;
+  }
+
+  return stat.type;
 };
 
 export function useChartData(results: Ref<BenchmarkData[]> | BenchmarkData[]) {

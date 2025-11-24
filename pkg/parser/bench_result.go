@@ -43,6 +43,8 @@ func ParseBenchmarkResults(filePath string) (results []shared.BenchmarkResult) {
 
 	reader := benchfmt.NewReader(f, filePath)
 
+	var allIters []int
+
 	for reader.Scan() {
 		record := reader.Result()
 		result, ok := record.(*benchfmt.Result)
@@ -100,6 +102,30 @@ func ParseBenchmarkResults(filePath string) (results []shared.BenchmarkResult) {
 			YAxis: yAxis,
 			Stats: benchStats,
 		})
+
+		allIters = append(allIters, result.Iters)
+	}
+
+	hasDifferentIters := false
+	if len(allIters) > 1 {
+		firstIter := allIters[0]
+		for _, iter := range allIters[1:] {
+			if iter != firstIter {
+				hasDifferentIters = true
+				break
+			}
+		}
+	}
+
+	if hasDifferentIters {
+		for i := range results {
+			results[i].Stats = append(results[i].Stats, shared.Stat{
+				Type:  "Iterations",
+				Value: utils.FormatNumber(float64(allIters[i]), shared.FlagState.NumberUnit),
+				Unit:  shared.FlagState.NumberUnit,
+				Per:   "",
+			})
+		}
 	}
 
 	return

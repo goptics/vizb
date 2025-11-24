@@ -164,6 +164,38 @@ func TestParseBenchmarkResults(t *testing.T) {
 					},
 				},
 			},
+
+			expectMemStats: false,
+			expectCPUCount: 0,
+		},
+		{
+			name: "Benchmarks with varying iterations",
+			benchContent: []string{
+				"BenchmarkA 100 100.0 ns/op",
+				"BenchmarkB 200 100.0 ns/op",
+			},
+			timeUnit: "ns",
+			pattern:  "y",
+			expected: []shared.BenchmarkResult{
+				{
+					Name:  "",
+					XAxis: "",
+					YAxis: "A",
+					Stats: []shared.Stat{
+						{Type: "Execution Time", Value: 100.0, Unit: "ns"},
+						{Type: "Iterations", Value: 100, Unit: "", Per: ""},
+					},
+				},
+				{
+					Name:  "",
+					XAxis: "",
+					YAxis: "B",
+					Stats: []shared.Stat{
+						{Type: "Execution Time", Value: 100.0, Unit: "ns"},
+						{Type: "Iterations", Value: 200, Unit: "", Per: ""},
+					},
+				},
+			},
 			expectMemStats: false,
 			expectCPUCount: 0,
 		},
