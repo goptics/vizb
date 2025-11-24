@@ -10,11 +10,18 @@ import (
 
 var flagValidationRules = []utils.ValidationRule{
 	{
-		Label:      "memory unit",
-		Value:      &shared.FlagState.MemUnit,
-		ValidSet:   []string{"b", "kb", "mb", "gb"},
-		Normalizer: strings.ToLower,
-		Default:    "b",
+		Label:    "memory unit",
+		Value:    &shared.FlagState.MemUnit,
+		ValidSet: []string{"b", "B", "kb", "mb", "gb"},
+		Normalizer: func(s string) string {
+			// Skip normalization for B (Byte)
+			if s == "B" {
+				return s
+			}
+
+			return strings.ToLower(s)
+		},
+		Default: "B",
 	},
 	{
 		Label:      "time unit",
