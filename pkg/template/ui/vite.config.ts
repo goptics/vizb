@@ -6,24 +6,37 @@ import fs from "node:fs";
 import path from "path";
 import { parseHTML } from "linkedom";
 
-const faviconPath = path.resolve(__dirname, "public/vizb.svg");
-
 const inlineFaviconPlugin = (): PluginOption => {
-  let faviconDataUrl: string | null = null;
-
   return {
     name: "inline-favicon",
-    enforce: "post" as const,
+    enforce: "pre",
     transformIndexHtml(html: string) {
-      if (!faviconDataUrl) {
-        const svg = fs.readFileSync(faviconPath, "utf-8");
-        faviconDataUrl = `data:image/svg+xml,${encodeURIComponent(svg)}`;
+      const { document } = parseHTML(html);
+      const link = document.querySelector('link[rel="icon"]');
+
+      if (!link) {
+        return html;
       }
 
-      return html.replace(
-        /href=(["'])\.?\/vizb\.svg\1/,
-        `href=$1${faviconDataUrl}$1`,
-      );
+      const href = link.getAttribute("href");
+      if (!href) return html;
+
+      // Try to resolve the file path, checking the public directory if needed
+      let faviconPath = path.resolve(__dirname, href);
+
+      if (!fs.existsSync(faviconPath)) {
+        faviconPath = path.resolve(__dirname, "public", href);
+      }
+
+      if (!fs.existsSync(faviconPath)) {
+        console.warn(`[inline-favicon] Could not locate favicon: ${href}`);
+        return html;
+      }
+
+      const source = fs.readFileSync(faviconPath, "utf-8");
+      link.setAttribute("href", `data:${link.getAttribute("type")},${encodeURIComponent(source)}`);
+
+      return "<!DOCTYPE html>" + document.documentElement.outerHTML;
     },
   };
 };
@@ -76,6 +89,7 @@ const VizbHTMLTemplate = \`${goRawString}\`
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
+    inlineFaviconPlugin(),
     vue(), 
     viteSingleFile({
       removeViteModuleLoader: true,
@@ -92,7 +106,6 @@ export default defineConfig({
         minifyJS: true,
       },
     }),
-    inlineFaviconPlugin(),
     benchmarkUiGoWrapperPlugin(),
   ],
   resolve: {
