@@ -1,0 +1,13 @@
+BenchmarkHashing64MD5                   10458847               114.8 ns/op        69.71 MB/s
+BenchmarkHashing64SHA1                   8493391               141.2 ns/op        56.66 MB/s
+BenchmarkHashing64SHA256                 6398036               187.1 ns/op        42.75 MB/s
+BenchmarkHashing64SHA3B224               2091546               573.1 ns/op        13.96 MB/s
+BenchmarkHashing64SHA3B256               2102798               569.2 ns/op        14.06 MB/s
+BenchmarkHashing64RIPEMD160              3957055               303.1 ns/op        26.40 MB/s
+BenchmarkHashing64Blake2B                4042722               296.9 ns/op        26.95 MB/s
+BenchmarkHashing64Blake2BSimd            4844781               247.7 ns/op        32.30 MB/s
+BenchmarkHashing64Murmur3               25517697                47.19 ns/op      169.52 MB/s
+BenchmarkHashing64Murmur3Twmb           25722096                46.34 ns/op      172.65 MB/s
+BenchmarkHashing64SipHash               28485819                41.71 ns/op      191.82 MB/s
+BenchmarkHashing64XXHash                46363768                25.71 ns/op      311.20 MB/s
+BenchmarkHashing64XXHashpier            44888440                26.43 ns/op      302.64 MB/s

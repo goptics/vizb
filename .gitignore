@@ -1,4 +1,3 @@
-*.txt
 *.out
 bin/
 node_modules
