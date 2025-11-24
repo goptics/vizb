@@ -1,6 +1,3 @@
 package shared
 
-var (
-	HasMemStats bool
-	CPUCount    int
-)
+var CPUCount int

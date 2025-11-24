@@ -33,7 +33,6 @@ func TestParseBenchmarkResults(t *testing.T) {
 		shared.FlagState.TimeUnit = origTimeUnit
 		shared.FlagState.MemUnit = origMemUnit
 		shared.FlagState.NumberUnit = origAllocUnit
-		shared.HasMemStats = false
 		shared.CPUCount = 0
 	}()
 
@@ -183,7 +182,6 @@ func TestParseBenchmarkResults(t *testing.T) {
 			shared.FlagState.MemUnit = tt.memUnit
 			shared.FlagState.NumberUnit = tt.allocUnit
 			shared.FlagState.GroupPattern = tt.pattern
-			shared.HasMemStats = false
 			shared.CPUCount = 0
 
 			// Create a temporary JSON file
@@ -259,10 +257,6 @@ func TestParseBenchmarkResults(t *testing.T) {
 				}
 			}
 
-			// Check global state
-			if shared.HasMemStats != tt.expectMemStats {
-				t.Errorf("shared.HasMemStats = %v, expected %v", shared.HasMemStats, tt.expectMemStats)
-			}
 			if shared.CPUCount != tt.expectCPUCount {
 				t.Errorf("shared.CPUCount = %d, expected %d", shared.CPUCount, tt.expectCPUCount)
 			}

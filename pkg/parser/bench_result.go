@@ -76,8 +76,6 @@ func ParseBenchmarkResults(filePath string) (results []shared.BenchmarkResult) {
 					Per:   "op",
 				}
 			case "B/op":
-				shared.HasMemStats = true
-
 				benchStat = shared.Stat{
 					Type:  "Memory Usage",
 					Value: utils.FormatMem(value.Value, shared.FlagState.MemUnit),
