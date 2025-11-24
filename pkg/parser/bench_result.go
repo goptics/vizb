@@ -91,6 +91,18 @@ func ParseBenchmarkResults(filePath string) (results []shared.BenchmarkResult) {
 					Unit:  shared.FlagState.NumberUnit,
 					Per:   "op",
 				}
+			case "B/s":
+				benchStat = shared.Stat{
+					Type:  "Throughput",
+					Value: value.OrigValue,
+					Unit:  value.OrigUnit,
+				}
+			default:
+				benchStat = shared.Stat{
+					Type:  "Metric",
+					Value: value.Value,
+					Unit:  value.Unit,
+				}
 			}
 
 			benchStats = append(benchStats, benchStat)

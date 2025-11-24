@@ -7,8 +7,12 @@ import type {
 } from "../types/benchmark";
 
 const createChartTitle = (stat: Stat) => {
-  if (stat.unit) {
+  if (stat.unit && stat.per) {
     return `${stat.type} (${stat.unit}/${stat.per})`;
+  }
+
+  if (stat.unit) {
+    return `${stat.type} (${stat.unit})`;
   }
 
   if (stat.per) {
