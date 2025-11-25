@@ -1,3 +1,5 @@
+import type { TooltipOption } from "echarts/types/dist/shared";
+
 export interface ChartStyling {
   textColor: string;
   axisColor: string;
@@ -57,31 +59,37 @@ export function createAxisConfig(
 
 /**
  * Creates common tooltip configuration
+ * @param hasXYAxis - Whether the chart has both X and Y axes
+ * @param seriesCount - Number of series in the chart (defaults to 1)
  */
-export function createTooltipConfig(hasXYAxis: boolean): any {
-  if (hasXYAxis) {
+export function createTooltipConfig(hasXYAxis: boolean, seriesCount = 1): TooltipOption {
+  // Use item trigger if there are too many series (>10) to avoid overwhelming tooltip
+  if (hasXYAxis && seriesCount <= 10) {
     return {
       trigger: "axis",
       axisPointer: { type: "shadow" },
-      formatter: (params: any) => {
+      formatter: (params) => {
         if (!Array.isArray(params)) return "";
 
-        let result = `<strong>${params[0].axisValue}</strong><br/>`;
-        params.forEach((param: any) => {
-          result += `${param.marker} ${param.seriesName}: ${param.value}<br/>`;
-        });
-        return result;
+        return params.reduce(
+          (acc, cur) => `${acc}${cur.marker} ${cur.seriesName}: ${cur.value}<br/>`,
+          `<strong>${params[0]?.name}</strong><br/>`
+        );
       },
-    };
+    }
   }
 
   return {
     trigger: "item",
-    formatter: (params: any) => {
-      const param = Array.isArray(params) ? params[0] : params;
-      return `${param.marker} <strong>${
-        param.name || param.seriesName
-      }</strong><br/>${param.value}`;
+    formatter: (params) => {
+      if (Array.isArray(params)) return "";
+      let { name, seriesName } = params;
+
+      if (hasXYAxis && seriesName) {
+        name = seriesName;
+      }
+
+      return `${params.marker} <strong>${name}</strong><br/>${params.value}`;
     },
   };
 }
@@ -127,3 +135,12 @@ export function createGridConfig(seriesLength = 1): any {
     containLabel: true,
   };
 }
+
+
+export const createLabelConfig = (showLabels: boolean, styling: ChartStyling) => ({
+      show: showLabels,
+      position: "top" as const,
+      formatter: "{c}",
+      fontSize: 10,
+      color: styling.textColor,
+    });
