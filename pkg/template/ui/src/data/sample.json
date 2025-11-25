@@ -6,10 +6,6 @@
       "name": "Intel Core i9-13900K @ 5.8GHz"
     },
     "settings": {
-      "charts": [
-        "bar",
-        "pie"
-      ],
       "sort": {
         "enabled": false,
         "order": "asc"
