@@ -17,9 +17,9 @@ tasks:
       - cd pkg/template/ui; pnpm build; cd -
 
   build:cli:
-    desc: Build the binary 
+    desc: Build the binary (production-ready, stripped)
     cmds:
-      - go build -o ./bin/vizb
+      - go build -ldflags="-s -w" -o ./bin/vizb
 
   build:
     desc: Build the UI & binary
