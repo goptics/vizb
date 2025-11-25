@@ -91,15 +91,29 @@ func ParseBenchmarkResults(filePath string) (results []shared.BenchmarkResult) {
 					Unit:  shared.FlagState.NumberUnit,
 					Per:   "op",
 				}
-			case "B/s":
+			case "B/s", "MB/s", "GB/s":
+				// benchfmt only populates OrigValue/OrigUnit for MB/s
+				// For B/s and GB/s, fall back to Value/Unit
+				val, unit := value.OrigValue, value.OrigUnit
+
+				if val == 0 || unit == "" {
+					val, unit = value.Value, value.Unit
+				}
+
 				benchStat = shared.Stat{
 					Type:  "Throughput",
-					Value: value.OrigValue,
-					Unit:  value.OrigUnit,
+					Value: val,
+					Unit:  unit,
 				}
 			default:
+				customType := "Metric"
+
+				if strings.HasSuffix(value.Unit, "/s") {
+					customType = "Throughput"
+				}
+
 				benchStat = shared.Stat{
-					Type:  "Metric",
+					Type:  customType,
 					Value: value.Value,
 					Unit:  value.Unit,
 				}
