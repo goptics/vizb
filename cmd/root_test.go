@@ -86,21 +86,21 @@ func TestValidateFlags(t *testing.T) {
 				shared.FlagState.NumberUnit = ""
 				shared.FlagState.Format = "html"
 			},
-			expectedMemUnit:   "b",
+			expectedMemUnit:   "B",
 			expectedTimeUnit:  "ns",
 			expectedAllocUnit: "",
 			expectedFormat:    "html",
-			expectedOutput:    "Warning: Invalid memory unit 'invalid'. Using default 'b'",
+			expectedOutput:    "Warning: Invalid memory unit 'invalid'. Using default 'B'",
 		},
 		{
 			name: "Invalid time unit",
 			setupFlags: func() {
-				shared.FlagState.MemUnit = "b"
+				shared.FlagState.MemUnit = "B"
 				shared.FlagState.TimeUnit = "invalid"
 				shared.FlagState.NumberUnit = ""
 				shared.FlagState.Format = "html"
 			},
-			expectedMemUnit:   "b",
+			expectedMemUnit:   "B",
 			expectedTimeUnit:  "ns",
 			expectedAllocUnit: "",
 			expectedFormat:    "html",
@@ -109,12 +109,12 @@ func TestValidateFlags(t *testing.T) {
 		{
 			name: "Invalid alloc unit",
 			setupFlags: func() {
-				shared.FlagState.MemUnit = "b"
+				shared.FlagState.MemUnit = "B"
 				shared.FlagState.TimeUnit = "ns"
 				shared.FlagState.NumberUnit = "invalid"
 				shared.FlagState.Format = "html"
 			},
-			expectedMemUnit:   "b",
+			expectedMemUnit:   "B",
 			expectedTimeUnit:  "ns",
 			expectedAllocUnit: "",
 			expectedFormat:    "html",
@@ -123,12 +123,12 @@ func TestValidateFlags(t *testing.T) {
 		{
 			name: "Invalid format",
 			setupFlags: func() {
-				shared.FlagState.MemUnit = "b"
+				shared.FlagState.MemUnit = "B"
 				shared.FlagState.TimeUnit = "ns"
 				shared.FlagState.NumberUnit = ""
 				shared.FlagState.Format = "invalid"
 			},
-			expectedMemUnit:   "b",
+			expectedMemUnit:   "B",
 			expectedTimeUnit:  "ns",
 			expectedAllocUnit: "",
 			expectedFormat:    "html",

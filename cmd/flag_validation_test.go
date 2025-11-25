@@ -35,12 +35,13 @@ func TestFlagValidationRules(t *testing.T) {
 			expected string
 			hasWarn  bool
 		}{
-			{"B", "b", false},      // Valid, normalized
+			{"B", "B", false},      // skip normalization
+			{"b", "b", false},      // skip normalization
 			{"KB", "kb", false},    // Valid, normalized
 			{"mb", "mb", false},    // Valid, already lowercase
 			{"gb", "gb", false},    // Valid
-			{"invalid", "b", true}, // Invalid, uses default
-			{"", "b", true},        // Empty, uses default
+			{"invalid", "B", true}, // Invalid, uses default
+			{"", "B", true},        // Empty, uses default
 		}
 
 		for _, tt := range tests {
@@ -217,7 +218,7 @@ func TestFlagValidationRules(t *testing.T) {
 		assert.Contains(t, stderr, "number unit")
 
 		// Should use defaults
-		assert.Equal(t, "b", shared.FlagState.MemUnit)
+		assert.Equal(t, "B", shared.FlagState.MemUnit)
 		assert.Equal(t, "ns", shared.FlagState.TimeUnit)
 		assert.Equal(t, "html", shared.FlagState.Format)
 		assert.Equal(t, "", shared.FlagState.NumberUnit)
@@ -256,9 +257,9 @@ func TestFlagValidationRulesStructure(t *testing.T) {
 				// Check specific rule properties
 				switch rule.Label {
 				case "memory unit":
-					assert.Contains(t, rule.ValidSet, "b", "Memory unit should accept 'b'")
+					assert.Contains(t, rule.ValidSet, "B", "Memory unit should accept 'B'")
 					assert.Contains(t, rule.ValidSet, "kb", "Memory unit should accept 'kb'")
-					assert.Equal(t, "b", rule.Default)
+					assert.Equal(t, "B", rule.Default)
 					assert.NotNil(t, rule.Normalizer, "Memory unit should have normalizer")
 
 				case "time unit":
@@ -301,7 +302,7 @@ func TestFlagNormalizers(t *testing.T) {
 		assert.Equal(t, "kb", memRule.Normalizer("KB"))
 		assert.Equal(t, "mb", memRule.Normalizer("MB"))
 		assert.Equal(t, "gb", memRule.Normalizer("GB"))
-		assert.Equal(t, "b", memRule.Normalizer("B"))
+		assert.Equal(t, "b", memRule.Normalizer("b"))
 	})
 
 	t.Run("Number unit normalizer", func(t *testing.T) {
@@ -356,7 +357,7 @@ func TestFlagValidationIntegration(t *testing.T) {
 		stderr := buf.String()
 
 		// Should have fixed the invalid values
-		assert.Equal(t, "b", shared.FlagState.MemUnit)
+		assert.Equal(t, "B", shared.FlagState.MemUnit)
 		assert.Equal(t, "html", shared.FlagState.Format)
 		assert.Contains(t, stderr, "Warning")
 	})
