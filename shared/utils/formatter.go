@@ -34,11 +34,11 @@ func FormatMem(n float64, unit string) (mem float64) {
 	switch unit {
 	case "b":
 		mem = n * 8
-	case "kb":
+	case "KB":
 		mem = n / 1024
-	case "mb":
+	case "MB":
 		mem = n / (1024 * 1024)
-	case "gb":
+	case "GB":
 		mem = n / (1024 * 1024 * 1024)
 	default:
 		mem = n

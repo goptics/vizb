@@ -37,9 +37,9 @@ func TestFlagValidationRules(t *testing.T) {
 		}{
 			{"B", "B", false},      // skip normalization
 			{"b", "b", false},      // skip normalization
-			{"KB", "kb", false},    // Valid, normalized
-			{"mb", "mb", false},    // Valid, already lowercase
-			{"gb", "gb", false},    // Valid
+			{"KB", "KB", false},    // Valid, normalized
+			{"mb", "MB", false},    // Valid, already lowercase
+			{"gb", "GB", false},    // Valid
 			{"invalid", "B", true}, // Invalid, uses default
 			{"", "B", true},        // Empty, uses default
 		}
@@ -258,7 +258,7 @@ func TestFlagValidationRulesStructure(t *testing.T) {
 				switch rule.Label {
 				case "memory unit":
 					assert.Contains(t, rule.ValidSet, "B", "Memory unit should accept 'B'")
-					assert.Contains(t, rule.ValidSet, "kb", "Memory unit should accept 'kb'")
+					assert.Contains(t, rule.ValidSet, "KB", "Memory unit should accept 'kb'")
 					assert.Equal(t, "B", rule.Default)
 					assert.NotNil(t, rule.Normalizer, "Memory unit should have normalizer")
 
@@ -299,10 +299,12 @@ func TestFlagValidationRulesStructure(t *testing.T) {
 func TestFlagNormalizers(t *testing.T) {
 	t.Run("Memory unit normalizer", func(t *testing.T) {
 		memRule := flagValidationRules[0] // Memory unit rule
-		assert.Equal(t, "kb", memRule.Normalizer("KB"))
-		assert.Equal(t, "mb", memRule.Normalizer("MB"))
-		assert.Equal(t, "gb", memRule.Normalizer("GB"))
+		assert.Equal(t, "KB", memRule.Normalizer("kb"))
+		assert.Equal(t, "MB", memRule.Normalizer("mb"))
+		assert.Equal(t, "GB", memRule.Normalizer("gb"))
 		assert.Equal(t, "b", memRule.Normalizer("b"))
+		assert.Equal(t, "B", memRule.Normalizer("B"))
+
 	})
 
 	t.Run("Number unit normalizer", func(t *testing.T) {

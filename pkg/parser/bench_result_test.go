@@ -73,7 +73,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 			},
 			pattern:   "y",
 			timeUnit:  "ms",
-			memUnit:   "kb",
+			memUnit:   "KB",
 			allocUnit: "K",
 			expected: []shared.BenchmarkResult{
 				{
@@ -82,7 +82,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 					YAxis: "WithMem",
 					Stats: []shared.Stat{
 						{Type: "Execution Time", Value: 0.00012345, Unit: "ms"},
-						{Type: "Memory Usage", Value: 0.0625, Unit: "kb"},
+						{Type: "Memory Usage", Value: 0.0625, Unit: "KB"},
 						{Type: "Allocations", Value: 0.002000, Unit: "K"},
 					},
 				},

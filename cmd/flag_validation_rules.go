@@ -12,14 +12,19 @@ var flagValidationRules = []utils.ValidationRule{
 	{
 		Label:    "memory unit",
 		Value:    &shared.FlagState.MemUnit,
-		ValidSet: []string{"b", "B", "kb", "mb", "gb"},
+		ValidSet: []string{"b", "B", "KB", "MB", "GB"},
 		Normalizer: func(s string) string {
-			// Skip normalization for B (Byte)
-			if s == "B" {
-				return s
+			mapping := map[string]string{
+				"kb": "KB",
+				"mb": "MB",
+				"gb": "GB",
 			}
 
-			return strings.ToLower(s)
+			if val, ok := mapping[s]; ok {
+				return val
+			}
+
+			return s
 		},
 		Default: "B",
 	},

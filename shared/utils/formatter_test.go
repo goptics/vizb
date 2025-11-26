@@ -63,11 +63,11 @@ func TestFormatMem(t *testing.T) {
 		{"Zero Input", 0, "B", 0},
 		{"Bytes Default", 1024, "", 1024},
 		{"Bytes to Bits", 64, "b", 512}, // 64 bytes = 512 bits
-		{"Bytes to Kilobytes", 2048, "kb", 2},
-		{"Bytes to Megabytes", 2097152, "mb", 2},    // 2 MB = 2*1024*1024 bytes
-		{"Bytes to Gigabytes", 2147483648, "gb", 2}, // 2 GB = 2*1024*1024*1024 bytes
-		{"Large Number", 10737418240, "gb", 10},     // 10 GB
-		{"Small Number", 512, "kb", 0.5},            // 0.5 KB
+		{"Bytes to Kilobytes", 2048, "KB", 2},
+		{"Bytes to Megabytes", 2097152, "MB", 2},    // 2 MB = 2*1024*1024 bytes
+		{"Bytes to Gigabytes", 2147483648, "GB", 2}, // 2 GB = 2*1024*1024*1024 bytes
+		{"Large Number", 10737418240, "GB", 10},     // 10 GB
+		{"Small Number", 512, "KB", 0.5},            // 0.5 KB
 	}
 
 	for _, tt := range tests {
@@ -133,29 +133,29 @@ func TestFormatterEdgeCases(t *testing.T) {
 	t.Run("FormatMem Edge Cases", func(t *testing.T) {
 		// Test with small value and large unit conversion
 		expectedGbFromByte := 1.0 / byteToGb
-		assert.Equal(t, expectedGbFromByte, FormatMem(1, "gb"), "Should handle small values with large units")
+		assert.Equal(t, expectedGbFromByte, FormatMem(1, "GB"), "Should handle small values with large units")
 
 		// Test with very large values
-		assert.Equal(t, veryLargeValue/byteToKb, FormatMem(veryLargeValue, "kb"), "Should handle very large values")
+		assert.Equal(t, veryLargeValue/byteToKb, FormatMem(veryLargeValue, "KB"), "Should handle very large values")
 
 		// Test with negative values (though these are unlikely in benchmarks)
-		assert.Equal(t, -2.0, FormatMem(-2*byteToKb, "kb"), "Should handle negative values")
+		assert.Equal(t, -2.0, FormatMem(-2*byteToKb, "KB"), "Should handle negative values")
 
 		// Test with very small positive values
 		assert.Equal(t, smallValue, FormatMem(smallValue, "B"), "Should handle very small values")
 
 		// Test boundary values for each unit
 		assert.Equal(t, 8.0, FormatMem(1, "b"), "1 byte should equal 8 bits")
-		assert.Equal(t, 1.0, FormatMem(byteToKb, "kb"), "Should convert exactly 1 KB")
-		assert.Equal(t, 1.0, FormatMem(byteToMb, "mb"), "Should convert exactly 1 MB")
-		assert.Equal(t, 1.0, FormatMem(byteToGb, "gb"), "Should convert exactly 1 GB")
+		assert.Equal(t, 1.0, FormatMem(byteToKb, "KB"), "Should convert exactly 1 KB")
+		assert.Equal(t, 1.0, FormatMem(byteToMb, "MB"), "Should convert exactly 1 MB")
+		assert.Equal(t, 1.0, FormatMem(byteToGb, "GB"), "Should convert exactly 1 GB")
 
 		// Test with invalid unit - should use default
 		assert.Equal(t, 1024.0, FormatMem(1024, "invalid"), "Should default to bytes with invalid unit")
 
 		// Test zero with different units
-		assert.Equal(t, 0.0, FormatMem(0, "kb"), "Zero should remain zero for kilobytes")
-		assert.Equal(t, 0.0, FormatMem(0, "gb"), "Zero should remain zero for gigabytes")
+		assert.Equal(t, 0.0, FormatMem(0, "KB"), "Zero should remain zero for kilobytes")
+		assert.Equal(t, 0.0, FormatMem(0, "GB"), "Zero should remain zero for gigabytes")
 	})
 
 	t.Run("FormatNumber Edge Cases", func(t *testing.T) {
@@ -199,8 +199,8 @@ func TestFormatterPrecision(t *testing.T) {
 
 	t.Run("FormatMem Precision", func(t *testing.T) {
 		// Test with non-integer values
-		assert.Equal(t, 1.5, FormatMem(1.5*byteToKb, "kb"), "Should handle fractional values")
-		assert.Equal(t, 1.0/byteToKb, FormatMem(1024, "mb"), "Should handle small fractional values")
+		assert.Equal(t, 1.5, FormatMem(1.5*byteToKb, "KB"), "Should handle fractional values")
+		assert.Equal(t, 1.0/byteToKb, FormatMem(1024, "MB"), "Should handle small fractional values")
 
 		// Test precision with bits conversion
 		assert.Equal(t, 4096.0, FormatMem(512, "b"), "Should precisely convert bytes to bits")
@@ -253,7 +253,7 @@ func TestInputValidation(t *testing.T) {
 		}
 
 		// Test all valid memory units
-		memUnits := []string{"", "B", "b", "kb", "mb", "gb"}
+		memUnits := []string{"", "B", "b", "KB", "MB", "GB"}
 		for _, unit := range memUnits {
 			result := FormatMem(1024, unit)
 			assert.NotNil(t, result, "FormatMem should handle unit: %s", unit)
@@ -270,6 +270,6 @@ func TestInputValidation(t *testing.T) {
 	t.Run("Case Sensitivity", func(t *testing.T) {
 		// Test that units are case sensitive (as per implementation)
 		assert.NotEqual(t, FormatNumber(1000, "k"), FormatNumber(1000, "K"), "Units should be case sensitive")
-		assert.NotEqual(t, FormatMem(1024, "KB"), FormatMem(1024, "kb"), "Units should be case sensitive")
+		assert.NotEqual(t, FormatMem(1024, "kb"), FormatMem(1024, "KB"), "Units should be case sensitive")
 	})
 }
