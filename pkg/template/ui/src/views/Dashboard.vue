@@ -105,7 +105,7 @@ const mainTitle = computed(() => {
             :benchmarks="resultGroups"
             :activeBenchmarkId="activeGroupId"
             @select="selectGroup"
-            placeholder="Select Group..."
+            placeholder="Search Group..."
           />
         </div>
 
