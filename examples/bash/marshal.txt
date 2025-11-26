@@ -1,0 +1,19 @@
+BenchmarkMarshalByJson-12                               14336848               406 ns/op                65.0 marshaledBytes          128 B/op          2 allocs/op
+BenchmarkMarshalByXml-12                                 2366107              2546 ns/op               137 marshaledBytes           4736 B/op         11 allocs/op
+BenchmarkMarshalByMsgp-12                               75395308                77.2 ns/op              47.0 marshaledBytes           80 B/op          1 allocs/op
+BenchmarkMarshalByProtoBuf-12                           18706688               320 ns/op                36.0 marshaledBytes           64 B/op          2 allocs/op
+BenchmarkMarshalByGogoProtoBuf-12                       62550351                95.2 ns/op              36.0 marshaledBytes           48 B/op          1 allocs/op
+BenchmarkMarshalByThrift-12                             20778853               289 ns/op                63.0 marshaledBytes           64 B/op          1 allocs/op
+BenchmarkMarshalByThriftIterator-12                     17397620               343 ns/op                63.0 marshaledBytes          248 B/op          6 allocs/op
+BenchmarkMarshalByThriftIteratorDynamic-12              16680176               360 ns/op                63.0 marshaledBytes          200 B/op          5 allocs/op
+BenchmarkMarshalByThriftIteratorEncoder-12              26840368               253 ns/op                63.0 marshaledBytes          169 B/op          0 allocs/op
+BenchmarkUnmarshalByJson-12                              4311666              1396 ns/op             248 B/op          9 allocs/op
+BenchmarkUnmarshalByXml-12                                719829              8465 ns/op            3038 B/op         74 allocs/op
+BenchmarkUnmarshalByMsgp-12                             45195660               131 ns/op              32 B/op          5 allocs/op
+BenchmarkUnmarshalByProtoBuf-12                         10638994               557 ns/op             176 B/op         11 allocs/op
+BenchmarkUnmarshalByGogoProtoBuf-12                     19217240               311 ns/op             160 B/op         10 allocs/op
+BenchmarkUnmarshalByThrift-12                            7694175               807 ns/op             416 B/op         11 allocs/op
+BenchmarkUnmarshalByThriftIterator-12                   16212927               371 ns/op             168 B/op          7 allocs/op
+BenchmarkUnmarshalByThriftIteratorDynamic-12             6664594               904 ns/op             600 B/op         18 allocs/op
+BenchmarkUnmarshalByThriftIteratorDecoder-12             6360967               939 ns/op             632 B/op         19 allocs/op
+                

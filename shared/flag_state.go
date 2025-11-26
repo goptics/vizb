@@ -9,6 +9,7 @@ type flagState struct {
 	Description  string
 	Format       string
 	GroupPattern string
+	GroupRegex   string
 	Sort         string
 	Charts       []string
 	ShowLabels   bool

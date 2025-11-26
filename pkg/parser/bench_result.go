@@ -54,9 +54,16 @@ func ParseBenchmarkResults(filePath string) (results []shared.BenchmarkResult) {
 		}
 
 		shared.OS, shared.Arch, shared.Pkg, shared.CPU = result.GetConfig("goos"), result.GetConfig("goarch"), result.GetConfig("pkg"), result.GetConfig("cpu")
-
 		rawBenchName, cpuCore := parseBenchmarkName(result.Name)
-		group, err := ParseBenchmarkNameToGroups(rawBenchName, shared.FlagState.GroupPattern)
+
+		var group map[string]string
+		var err error
+
+		if shared.FlagState.GroupRegex != "" {
+			group, err = ParseBenchmarkNameWithRegex(rawBenchName, shared.FlagState.GroupRegex)
+		} else {
+			group, err = ParseBenchmarkNameToGroups(rawBenchName, shared.FlagState.GroupPattern)
+		}
 
 		if err != nil {
 			shared.ExitWithError("Error on parsing group from bench name", err)
