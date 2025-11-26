@@ -20,19 +20,26 @@ builds:
     main: .
 
 archives:
-  - format: tar.gz
-    name_template: >-
-      {{ .ProjectName }}_
-      {{- title .Os }}_
-      {{- if eq .Arch "amd64" }}x86_64
-      {{- else }}{{ .Arch }}{{ end }}
+  - formats:
+      - tar.gz
+    name_template: "{{ .ProjectName }}@{{ .Version }}-{{ .Os }}-{{ .Arch }}"
     format_overrides:
       - goos: windows
-        format: zip
+        formats:
+          - zip
 
 changelog:
-  sort: asc
+  sort: desc
   filters:
     exclude:
       - '^docs:'
       - '^test:'
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  version_template: "{{ .Tag }}-next"
+
+release:
+  draft: true
