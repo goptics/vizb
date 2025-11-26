@@ -3,39 +3,38 @@ name: Release
 on:
   push:
     tags:
-      - "v*"
+      - 'v*'
 
 permissions:
   contents: write
 
 jobs:
-  tag-release:
+  goreleaser:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           fetch-tags: true
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v6
         with:
-          go-version: "1.24"
+          go-version: '^1.24'
+          cache: true
+
+      - name: Download dependencies
+        run: go mod download
 
       - name: Run tests
-        run: go test ./...
+        run: go test -v ./...
 
-      - name: Create GitHub Release
-        id: create_release
-        uses: softprops/action-gh-release@v1
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
         with:
-          draft: true
-          prerelease: false
-          body: |
-            See [CHANGELOG.md](https://github.com/goptics/vizb/blob/main/CHANGELOG.md) for details.
-
-            ## Installation
-            ```
-            go install github.com/goptics/vizb@${{ github.ref_name }}
-            ```
+          distribution: goreleaser
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

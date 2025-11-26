@@ -17,9 +17,9 @@ tasks:
       - cd pkg/template/ui; pnpm build; cd -
 
   build:cli:
-    desc: Build the binary 
+    desc: Build the binary (production-ready, stripped)
     cmds:
-      - go build -o ./bin/vizb
+      - go build -ldflags="-s -w" -o ./bin/vizb
 
   build:
     desc: Build the UI & binary
@@ -37,11 +37,24 @@ tasks:
     cmds:
       - golangci-lint run
 
+  release:check:
+    desc: Check Goreleaser configuration
+    cmds:
+      - goreleaser check
+
+  release:snapshot:
+    desc: Create a snapshot release
+    cmds:
+      - goreleaser release --snapshot --clean
+
   release:
     desc: Create and push a new tag to trigger release
     prompt: This will create and push a new release tag. Continue?
     vars:
-      VERSION: '{{.CLI_ARGS | default "v0.1.0"}}'
+      VERSION: '{{.CLI_ARGS}}'
+    deps: 
+      - task: release:check
+      - task: release:snapshot
     cmds:
       - echo "Creating tag {{.VERSION}}..."
       - git tag -a {{.VERSION}} -m "Release {{.VERSION}}"
