@@ -43,6 +43,8 @@ func ParseBenchmarkResults(filePath string) (results []shared.BenchmarkResult) {
 
 	reader := benchfmt.NewReader(f, filePath)
 
+	var allIters []int
+
 	for reader.Scan() {
 		record := reader.Result()
 		result, ok := record.(*benchfmt.Result)
@@ -76,8 +78,6 @@ func ParseBenchmarkResults(filePath string) (results []shared.BenchmarkResult) {
 					Per:   "op",
 				}
 			case "B/op":
-				shared.HasMemStats = true
-
 				benchStat = shared.Stat{
 					Type:  "Memory Usage",
 					Value: utils.FormatMem(value.Value, shared.FlagState.MemUnit),
@@ -91,6 +91,32 @@ func ParseBenchmarkResults(filePath string) (results []shared.BenchmarkResult) {
 					Unit:  shared.FlagState.NumberUnit,
 					Per:   "op",
 				}
+			case "B/s", "MB/s", "GB/s":
+				// benchfmt only populates OrigValue/OrigUnit for MB/s
+				// For B/s and GB/s, fall back to Value/Unit
+				val, unit := value.OrigValue, value.OrigUnit
+
+				if val == 0 || unit == "" {
+					val, unit = value.Value, value.Unit
+				}
+
+				benchStat = shared.Stat{
+					Type:  "Throughput",
+					Value: val,
+					Unit:  unit,
+				}
+			default:
+				customType := "Metric"
+
+				if strings.HasSuffix(value.Unit, "/s") {
+					customType = "Throughput"
+				}
+
+				benchStat = shared.Stat{
+					Type:  customType,
+					Value: value.Value,
+					Unit:  value.Unit,
+				}
 			}
 
 			benchStats = append(benchStats, benchStat)
@@ -102,6 +128,30 @@ func ParseBenchmarkResults(filePath string) (results []shared.BenchmarkResult) {
 			YAxis: yAxis,
 			Stats: benchStats,
 		})
+
+		allIters = append(allIters, result.Iters)
+	}
+
+	hasDifferentIters := false
+	if len(allIters) > 1 {
+		firstIter := allIters[0]
+		for _, iter := range allIters[1:] {
+			if iter != firstIter {
+				hasDifferentIters = true
+				break
+			}
+		}
+	}
+
+	if hasDifferentIters {
+		for i := range results {
+			results[i].Stats = append(results[i].Stats, shared.Stat{
+				Type:  "Iterations",
+				Value: utils.FormatNumber(float64(allIters[i]), shared.FlagState.NumberUnit),
+				Unit:  shared.FlagState.NumberUnit,
+				Per:   "",
+			})
+		}
 	}
 
 	return

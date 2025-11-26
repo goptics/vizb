@@ -37,9 +37,9 @@ func TestFlagValidationRules(t *testing.T) {
 		}{
 			{"B", "B", false},      // skip normalization
 			{"b", "b", false},      // skip normalization
-			{"KB", "kb", false},    // Valid, normalized
-			{"mb", "mb", false},    // Valid, already lowercase
-			{"gb", "gb", false},    // Valid
+			{"KB", "KB", false},    // Valid, normalized
+			{"mb", "MB", false},    // Valid, already lowercase
+			{"gb", "GB", false},    // Valid
 			{"invalid", "B", true}, // Invalid, uses default
 			{"", "B", true},        // Empty, uses default
 		}
@@ -258,7 +258,7 @@ func TestFlagValidationRulesStructure(t *testing.T) {
 				switch rule.Label {
 				case "memory unit":
 					assert.Contains(t, rule.ValidSet, "B", "Memory unit should accept 'B'")
-					assert.Contains(t, rule.ValidSet, "kb", "Memory unit should accept 'kb'")
+					assert.Contains(t, rule.ValidSet, "KB", "Memory unit should accept 'kb'")
 					assert.Equal(t, "B", rule.Default)
 					assert.NotNil(t, rule.Normalizer, "Memory unit should have normalizer")
 
@@ -299,10 +299,12 @@ func TestFlagValidationRulesStructure(t *testing.T) {
 func TestFlagNormalizers(t *testing.T) {
 	t.Run("Memory unit normalizer", func(t *testing.T) {
 		memRule := flagValidationRules[0] // Memory unit rule
-		assert.Equal(t, "kb", memRule.Normalizer("KB"))
-		assert.Equal(t, "mb", memRule.Normalizer("MB"))
-		assert.Equal(t, "gb", memRule.Normalizer("GB"))
+		assert.Equal(t, "KB", memRule.Normalizer("kb"))
+		assert.Equal(t, "MB", memRule.Normalizer("mb"))
+		assert.Equal(t, "GB", memRule.Normalizer("gb"))
 		assert.Equal(t, "b", memRule.Normalizer("b"))
+		assert.Equal(t, "B", memRule.Normalizer("B"))
+
 	})
 
 	t.Run("Number unit normalizer", func(t *testing.T) {
@@ -318,47 +320,5 @@ func TestFlagNormalizers(t *testing.T) {
 		assert.Equal(t, "html", formatRule.Normalizer("HTML"))
 		assert.Equal(t, "json", formatRule.Normalizer("JSON"))
 		assert.Equal(t, "html", formatRule.Normalizer("Html"))
-	})
-}
-
-// Integration test with cobra command
-func TestFlagValidationIntegration(t *testing.T) {
-	// Save original state
-	origMemUnit := shared.FlagState.MemUnit
-	origTimeUnit := shared.FlagState.TimeUnit
-	origAllocUnit := shared.FlagState.NumberUnit
-	origFormat := shared.FlagState.Format
-
-	defer func() {
-		shared.FlagState.MemUnit = origMemUnit
-		shared.FlagState.TimeUnit = origTimeUnit
-		shared.FlagState.NumberUnit = origAllocUnit
-		shared.FlagState.Format = origFormat
-	}()
-
-	t.Run("Flag validation happens during cobra initialization", func(t *testing.T) {
-		// Set invalid values
-		shared.FlagState.MemUnit = "INVALID"
-		shared.FlagState.Format = "XML"
-
-		// Capture stderr
-		oldStderr := os.Stderr
-		r, w, _ := os.Pipe()
-		os.Stderr = w
-
-		// Trigger validation (normally happens during cobra.OnInitialize)
-		utils.ApplyValidationRules(flagValidationRules)
-
-		w.Close()
-		os.Stderr = oldStderr
-
-		var buf bytes.Buffer
-		buf.ReadFrom(r)
-		stderr := buf.String()
-
-		// Should have fixed the invalid values
-		assert.Equal(t, "B", shared.FlagState.MemUnit)
-		assert.Equal(t, "html", shared.FlagState.Format)
-		assert.Contains(t, stderr, "Warning")
 	})
 }

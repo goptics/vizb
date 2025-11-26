@@ -50,5 +50,8 @@ export const getBaseOptions = (
       itemHeight: 10,
       textStyle: { fontSize: 12, color: textColor },
     },
+    emphasis: {
+      focus: "series",
+    },
   };
 };

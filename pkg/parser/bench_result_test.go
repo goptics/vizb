@@ -33,7 +33,6 @@ func TestParseBenchmarkResults(t *testing.T) {
 		shared.FlagState.TimeUnit = origTimeUnit
 		shared.FlagState.MemUnit = origMemUnit
 		shared.FlagState.NumberUnit = origAllocUnit
-		shared.HasMemStats = false
 		shared.CPUCount = 0
 	}()
 
@@ -74,7 +73,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 			},
 			pattern:   "y",
 			timeUnit:  "ms",
-			memUnit:   "kb",
+			memUnit:   "KB",
 			allocUnit: "K",
 			expected: []shared.BenchmarkResult{
 				{
@@ -83,7 +82,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 					YAxis: "WithMem",
 					Stats: []shared.Stat{
 						{Type: "Execution Time", Value: 0.00012345, Unit: "ms"},
-						{Type: "Memory Usage", Value: 0.0625, Unit: "kb"},
+						{Type: "Memory Usage", Value: 0.0625, Unit: "KB"},
 						{Type: "Allocations", Value: 0.002000, Unit: "K"},
 					},
 				},
@@ -165,6 +164,38 @@ func TestParseBenchmarkResults(t *testing.T) {
 					},
 				},
 			},
+
+			expectMemStats: false,
+			expectCPUCount: 0,
+		},
+		{
+			name: "Benchmarks with varying iterations",
+			benchContent: []string{
+				"BenchmarkA 100 100.0 ns/op",
+				"BenchmarkB 200 100.0 ns/op",
+			},
+			timeUnit: "ns",
+			pattern:  "y",
+			expected: []shared.BenchmarkResult{
+				{
+					Name:  "",
+					XAxis: "",
+					YAxis: "A",
+					Stats: []shared.Stat{
+						{Type: "Execution Time", Value: 100.0, Unit: "ns"},
+						{Type: "Iterations", Value: 100, Unit: "", Per: ""},
+					},
+				},
+				{
+					Name:  "",
+					XAxis: "",
+					YAxis: "B",
+					Stats: []shared.Stat{
+						{Type: "Execution Time", Value: 100.0, Unit: "ns"},
+						{Type: "Iterations", Value: 200, Unit: "", Per: ""},
+					},
+				},
+			},
 			expectMemStats: false,
 			expectCPUCount: 0,
 		},
@@ -173,6 +204,111 @@ func TestParseBenchmarkResults(t *testing.T) {
 			benchContent: []string{},
 			timeUnit:     "ns",
 			expected:     []shared.BenchmarkResult{},
+		},
+		{
+			name: "Benchmark with B/s (Throughput)",
+			benchContent: []string{
+				"BenchmarkThroughput 100 123.45 ns/op 512.0 B/s",
+			},
+			pattern:  "y",
+			timeUnit: "ns",
+			expected: []shared.BenchmarkResult{
+				{
+					Name:  "",
+					XAxis: "",
+					YAxis: "Throughput",
+					Stats: []shared.Stat{
+						{Type: "Execution Time", Value: 123.45, Unit: "ns"},
+						{Type: "Throughput", Value: 512.0, Unit: "B/s"},
+					},
+				},
+			},
+			expectMemStats: false,
+			expectCPUCount: 0,
+		},
+		{
+			name: "Benchmark with MB/s (Throughput)",
+			benchContent: []string{
+				"BenchmarkThroughput 100 123.45 ns/op 1024.0 MB/s",
+			},
+			pattern:  "y",
+			timeUnit: "ns",
+			expected: []shared.BenchmarkResult{
+				{
+					Name:  "",
+					XAxis: "",
+					YAxis: "Throughput",
+					Stats: []shared.Stat{
+						{Type: "Execution Time", Value: 123.45, Unit: "ns"},
+						{Type: "Throughput", Value: 1024.0, Unit: "MB/s"},
+					},
+				},
+			},
+			expectMemStats: false,
+			expectCPUCount: 0,
+		},
+		{
+			name: "Benchmark with GB/s (Throughput)",
+			benchContent: []string{
+				"BenchmarkThroughput 100 123.45 ns/op 2.5 GB/s",
+			},
+			pattern:  "y",
+			timeUnit: "ns",
+			expected: []shared.BenchmarkResult{
+				{
+					Name:  "",
+					XAxis: "",
+					YAxis: "Throughput",
+					Stats: []shared.Stat{
+						{Type: "Execution Time", Value: 123.45, Unit: "ns"},
+						{Type: "Throughput", Value: 2.5, Unit: "GB/s"},
+					},
+				},
+			},
+			expectMemStats: false,
+			expectCPUCount: 0,
+		},
+		{
+			name: "Benchmark with custom throughput metric (res/s)",
+			benchContent: []string{
+				"BenchmarkCustom 100 123.45 ns/op 5000.0 res/s",
+			},
+			pattern:  "y",
+			timeUnit: "ns",
+			expected: []shared.BenchmarkResult{
+				{
+					Name:  "",
+					XAxis: "",
+					YAxis: "Custom",
+					Stats: []shared.Stat{
+						{Type: "Execution Time", Value: 123.45, Unit: "ns"},
+						{Type: "Throughput", Value: 5000.0, Unit: "res/s"},
+					},
+				},
+			},
+			expectMemStats: false,
+			expectCPUCount: 0,
+		},
+		{
+			name: "Benchmark with custom metric (non-throughput)",
+			benchContent: []string{
+				"BenchmarkCustom 100 123.45 ns/op 42.5 customUnit",
+			},
+			pattern:  "y",
+			timeUnit: "ns",
+			expected: []shared.BenchmarkResult{
+				{
+					Name:  "",
+					XAxis: "",
+					YAxis: "Custom",
+					Stats: []shared.Stat{
+						{Type: "Execution Time", Value: 123.45, Unit: "ns"},
+						{Type: "Metric", Value: 42.5, Unit: "customUnit"},
+					},
+				},
+			},
+			expectMemStats: false,
+			expectCPUCount: 0,
 		},
 	}
 
@@ -183,7 +319,6 @@ func TestParseBenchmarkResults(t *testing.T) {
 			shared.FlagState.MemUnit = tt.memUnit
 			shared.FlagState.NumberUnit = tt.allocUnit
 			shared.FlagState.GroupPattern = tt.pattern
-			shared.HasMemStats = false
 			shared.CPUCount = 0
 
 			// Create a temporary JSON file
@@ -259,10 +394,6 @@ func TestParseBenchmarkResults(t *testing.T) {
 				}
 			}
 
-			// Check global state
-			if shared.HasMemStats != tt.expectMemStats {
-				t.Errorf("shared.HasMemStats = %v, expected %v", shared.HasMemStats, tt.expectMemStats)
-			}
 			if shared.CPUCount != tt.expectCPUCount {
 				t.Errorf("shared.CPUCount = %d, expected %d", shared.CPUCount, tt.expectCPUCount)
 			}

@@ -5,6 +5,7 @@ import { getNextColorFor, hasXAxis, hasYAxis } from "../../lib/utils";
 import {
   createAxisConfig,
   createGridConfig,
+  createLabelConfig,
   createLegendConfig,
   createTooltipConfig,
   getChartStyling,
@@ -46,6 +47,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
     const baseOptions = getBaseOptions(config);
     const styling = getChartStyling(isDark.value);
 
+
     // For single category: create one series with each x-axis value as a data point
     // For dual categories: create multiple series (one per x-axis value)
     if (!hasYAxis) {
@@ -59,24 +61,15 @@ export function useBarChartOptions(config: BaseChartConfig) {
         series: [
           {
             name: chartData.value.title,
-            type: "bar",
+            type: "bar" as const,
             data: series.map((seriesData) => ({
               value: seriesData.values[0], // Take the first (and only) value
-              label: {
-                show: showLabels.value,
-                position: "top",
-                formatter: "{c}",
-                fontSize: 10,
-                color: styling.textColor,
-              },
+              label: createLabelConfig(showLabels.value, styling),
             })),
             itemStyle: { color: getNextColorFor(chartData.value.title) },
-            emphasis: {
-              focus: "series",
-            },
           },
         ],
-      };
+      } as EChartsOption;
     }
 
     // Dual categories case: transpose data to show y-axis values as series
@@ -87,18 +80,9 @@ export function useBarChartOptions(config: BaseChartConfig) {
       type: "bar" as const,
       data: series.map((seriesData) => ({
         value: seriesData.values[yIndex] || 0,
-        label: {
-          show: showLabels.value,
-          position: "top" as const,
-          formatter: "{c}",
-          fontSize: 10,
-          color: styling.textColor,
-        },
+        label:createLabelConfig(showLabels.value, styling),
       })),
       itemStyle: { color: getNextColorFor(yAxisLabel) },
-      emphasis: {
-        focus: "series",
-      },
     }));
 
     // Sort y-axis groups if there's only one x-axis group
@@ -119,15 +103,15 @@ export function useBarChartOptions(config: BaseChartConfig) {
     return {
       ...baseOptions,
       grid: createGridConfig(transposedSeries.length),
-      tooltip: createTooltipConfig(hasXAxis(chartData)),
+      tooltip: createTooltipConfig(hasXAxis(chartData), transposedSeries.length),
       legend: createLegendConfig(
         transposedSeries.map((s) => ({ xAxis: s.name })),
         styling,
         hasMultipleSeries
       ),
       ...createAxisConfig(styling, xAxisData),
-      series: transposedSeries as any,
-    };
+      series: transposedSeries,
+    } as EChartsOption;
   });
 
   return { options };
