@@ -1,51 +1,3 @@
-<template>
-  <Card class="w-full">
-    <CardHeader>
-      <CardTitle class="text-lg">Settings</CardTitle>
-    </CardHeader>
-    <CardContent class="space-y-3">
-      <!-- Chart Type Section -->
-      <SelectionTabs
-        v-if="showChartTypeSelection"
-        :model-value="chartType"
-        :options="chartOptions"
-        @update:model-value="handleChartTypeChange"
-      />
-
-      <Separator v-if="showChartTypeSelection" />
-
-      <!-- Sort Controls Section -->
-      <div class="space-y-2">
-        <SettingsToggle
-          id="sorting-switch"
-          label="Enable sorting"
-          description="Sort your data by the selected axis."
-          :checked="isSortingEnabled"
-          @update:checked="handleSortingToggle"
-        />
-        
-        <SelectionTabs
-          v-if="isSortingEnabled"
-          :model-value="sortDirection"
-          :options="sortDirectionOptions"
-          @update:model-value="handleSortDirectionChange"
-        />
-      </div>
-
-      <Separator />
-
-      <!-- Show Labels Section -->
-      <SettingsToggle
-        id="labels-switch"
-        label="Show labels"
-        description="Display data labels on chart elements."
-        :checked="showLabels"
-        @update:checked="handleShowLabelsChange"
-      />
-    </CardContent>
-  </Card>
-</template>
-
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import { SortAsc, SortDesc, BarChart3, TrendingUp, PieChart } from 'lucide-vue-next'
@@ -113,3 +65,32 @@ const getChartIcon = (type: ChartType) => {
 }
 </script>
 
+<template>
+  <Card class="w-full">
+    <CardHeader>
+      <CardTitle class="text-lg">Settings</CardTitle>
+    </CardHeader>
+    <CardContent class="space-y-3">
+      <!-- Chart Type Section -->
+      <SelectionTabs v-if="showChartTypeSelection" :model-value="chartType" :options="chartOptions"
+        @update:model-value="handleChartTypeChange" />
+
+      <Separator v-if="showChartTypeSelection" />
+
+      <!-- Sort Controls Section -->
+      <div class="space-y-2">
+        <SettingsToggle id="sorting-switch" label="Enable sorting" description="Sort your data by the selected axis."
+          :checked="isSortingEnabled" @update:checked="handleSortingToggle" />
+
+        <SelectionTabs v-if="isSortingEnabled" :model-value="sortDirection" :options="sortDirectionOptions"
+          @update:model-value="handleSortDirectionChange" />
+      </div>
+
+      <Separator />
+
+      <!-- Show Labels Section -->
+      <SettingsToggle id="labels-switch" label="Show labels" description="Display data labels on chart elements."
+        :checked="showLabels" @update:checked="handleShowLabelsChange" />
+    </CardContent>
+  </Card>
+</template>

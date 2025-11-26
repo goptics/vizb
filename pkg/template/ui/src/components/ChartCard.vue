@@ -64,7 +64,7 @@ const initOptions = {
   <div
     class="bg-card border border-border rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
   >
-    <h3 class="text-lg font-semibold text-card-foreground mb-4">
+    <h3 class="text-lg font-semibold text-card-foreground">
       {{ chartData.title }}
     </h3>
     <div class="w-full h-[500px]">
