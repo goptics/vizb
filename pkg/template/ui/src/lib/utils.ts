@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import type { ChartData } from "../types/benchmark";
+import type { Benchmark, ChartData } from "../types/benchmark";
 import type { Ref } from "vue";
 
 /**
@@ -59,3 +59,19 @@ export const hasYAxis = (chartData: Ref<ChartData, ChartData>) =>
   chartData.value.yAxis &&
   chartData.value.yAxis.length > 0 &&
   chartData.value.yAxis[0] !== "";
+
+export const CPUtoString = (cpu: Benchmark['cpu']) => {
+  if (cpu.name && cpu.cores) {
+    return `${cpu.name} (${cpu.cores} cores)`;
+  }
+
+  if (cpu.name) {
+    return cpu.name;
+  }
+
+  if (cpu.cores) {
+    return `${cpu.cores} cores`;
+  }
+
+  return "";
+};

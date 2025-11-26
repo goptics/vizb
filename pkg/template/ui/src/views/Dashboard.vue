@@ -4,11 +4,11 @@ import { Moon, Sun } from "lucide-vue-next";
 import { useBenchmarkData } from "../composables/useBenchmarkData";
 import { useChartData } from "../composables/useChartData";
 import { useSettingsStore } from "../composables/useSettingsStore";
-import BenchmarkHeader from "../components/BenchmarkHeader.vue";
 import ChartSettingsPopover from "../components/ChartSettingsPopover.vue";
 import BenchmarkGroupSelector from "../components/BenchmarkGroupSelector.vue";
 import ChartCard from "../components/ChartCard.vue";
-import AccentLink from "../components/AccentLink.vue";
+import IconButton from "../components/IconButton.vue";
+import { CPUtoString } from "../lib/utils";
 
 const version = window.VIZB_VERSION || 'v0.0.0-dev'
 
@@ -48,95 +48,68 @@ const mainTitle = computed(() => {
   // Use the description from the first benchmark as the constant title
   return benchmarks.value[0]?.name || "Benchmarks";
 });
+
+const hasCPU = computed(() => activeBenchmark.value?.cpu?.name || activeBenchmark.value?.cpu?.cores);
 </script>
 
 <template>
-  <div class="min-h-screen bg-background text-foreground">
-    <!-- Top Right Controls -->
-    <div class="fixed top-6 right-6 z-50 flex items-center gap-2">
-      <!-- Settings Popover -->
-      <ChartSettingsPopover />
+  <nav class="fixed top-6 right-6 z-50 flex items-center gap-2">
+    <ChartSettingsPopover />
 
-      <!-- Theme Toggle -->
-      <button
-        @click="toggleDark()"
-        class="inline-flex items-center justify-center w-12 h-12 rounded-lg border border-border bg-card text-card-foreground hover:bg-accent hover:text-accent-foreground shadow-sm"
-        aria-label="Toggle theme"
-      >
-        <Sun v-if="isDark" class="w-5 h-5" />
-        <Moon v-else class="w-5 h-5" />
-      </button>
-    </div>
+    <IconButton @click="toggleDark()" aria-label="Toggle theme">
+      <Sun v-if="isDark" class="w-5 h-5" />
+      <Moon v-else class="w-5 h-5" />
+    </IconButton>
+  </nav>
 
-    <!-- Main Container -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <!-- Content -->
-      <template v-if="activeBenchmark">
-        <!-- Header with Benchmark Selector -->
-        <div class="text-center mb-8">
-          <h1
-            class="text-4xl font-bold mb-4 flex items-center justify-center gap-4"
-          >
-            <template v-if="benchmarks.length > 1">
-              <BenchmarkGroupSelector
-                :benchmarks="benchmarks"
-                :activeBenchmarkId="activeBenchmarkId"
-                @select="selectBenchmark"
-                class="min-w-80"
-                placeholder="Select Benchmark..."
-              />
-            </template>
-            <template v-else>
-              {{ mainTitle }}
-            </template>
-          </h1>
+  <main class="min-h-screen max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <template v-if="activeBenchmark">
+      <header class="text-center space-y-3 pb-5">
+        <h1 class="text-4xl flex items-center justify-center">
+          <BenchmarkGroupSelector v-if="benchmarks.length > 1" :benchmarks="benchmarks"
+            :activeBenchmarkId="activeBenchmarkId" @select="selectBenchmark" class="min-w-80"
+            placeholder="Select Benchmark..." />
+          <template v-else>
+            {{ mainTitle }}
+          </template>
+        </h1>
 
-          <!-- Additional benchmark info -->
-          <BenchmarkHeader
-            :benchmark="activeBenchmark"
-            :mainTitle="mainTitle"
-            :hideTitle="true"
-          />
+        <span v-if="hasCPU"
+          class="inline-flex items-center px-3 py-1 text-sm font-semibold rounded-lg border border-border bg-secondary text-secondary-foreground">
+          CPU: {{ CPUtoString(activeBenchmark.cpu) }}
+        </span>
+
+        <p v-if="activeBenchmark.description" class="text-muted-foreground">
+          {{ activeBenchmark.description }}
+        </p>
+
+        <!-- Inner Group Selector -->
+        <div v-if="resultGroups.length > 1" class="flex justify-center">
+          <BenchmarkGroupSelector :benchmarks="resultGroups" :activeBenchmarkId="activeGroupId" @select="selectGroup"
+            placeholder="Search Group..." />
         </div>
+      </header>
 
-        <!-- Inner Group Selector (if multiple groups in benchmark) -->
-        <div v-if="resultGroups.length > 1" class="flex justify-center mb-8">
-          <BenchmarkGroupSelector
-            :benchmarks="resultGroups"
-            :activeBenchmarkId="activeGroupId"
-            @select="selectGroup"
-            placeholder="Select Group..."
-          />
-        </div>
+      <!-- Charts Grid -->
+      <div class="space-y-5">
+        <ChartCard v-for="(chart, index) in chartData" :key="`${activeBenchmarkId}-${activeGroupId}-${index}`"
+          :chartData="chart" class="animate-fade-in" :style="{ animationDelay: `${index * 50}ms` }" />
+      </div>
+    </template>
+  </main>
 
-        <!-- Charts Grid -->
-        <div class="grid grid-cols-1 gap-8">
-          <ChartCard
-            v-for="(chart, index) in chartData"
-            :key="`${activeBenchmarkId}-${activeGroupId}-${index}`"
-            :chartData="chart"
-            class="animate-fade-in"
-            :style="{ animationDelay: `${index * 50}ms` }"
-          />
-        </div>
-
-        <!-- Footer -->
-        <footer class="text-center space-y-2 mt-8 text-sm text-muted-foreground">
-          Generated by
-          <AccentLink href="https://github.com/goptics/vizb" :newTab="true">
-            Vizb
-          </AccentLink>
-          | Made with ❤ -
-          <AccentLink href="https://github.com/goptics" :newTab="true">
-            Goptics
-          </AccentLink>
-          © {{ new Date().getFullYear() }}
-
-          <p class="text-muted-foreground/50 pointer-events-none">
-            {{ version }}
-          </p>
-        </footer>
-      </template>
-    </div>
-  </div>
+  <footer class="text-center pb-5 text-sm text-muted-foreground">
+    Generated by
+    <AccentLink href="https://github.com/goptics/vizb">
+      Vizb
+    </AccentLink>
+    | Made with ❤ -
+    <AccentLink href="https://github.com/goptics">
+      Goptics
+    </AccentLink>
+    © {{ new Date().getFullYear() }}
+    <p class="text-muted-foreground/50">
+      {{ version }}
+    </p>
+  </footer>
 </template>
