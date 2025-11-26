@@ -9,6 +9,7 @@ import ChartSettingsPopover from "../components/ChartSettingsPopover.vue";
 import BenchmarkGroupSelector from "../components/BenchmarkGroupSelector.vue";
 import ChartCard from "../components/ChartCard.vue";
 import AccentLink from "../components/AccentLink.vue";
+import IconButton from "../components/IconButton.vue";
 
 const version = window.VIZB_VERSION || 'v0.0.0-dev'
 
@@ -58,14 +59,13 @@ const mainTitle = computed(() => {
       <ChartSettingsPopover />
 
       <!-- Theme Toggle -->
-      <button
+      <IconButton
         @click="toggleDark()"
-        class="inline-flex items-center justify-center w-12 h-12 rounded-lg border border-border bg-card text-card-foreground hover:bg-accent hover:text-accent-foreground shadow-sm"
         aria-label="Toggle theme"
       >
         <Sun v-if="isDark" class="w-5 h-5" />
         <Moon v-else class="w-5 h-5" />
-      </button>
+      </IconButton>
     </div>
 
     <!-- Main Container -->
