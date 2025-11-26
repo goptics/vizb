@@ -53,7 +53,9 @@ func ParseBenchmarkResults(filePath string) (results []shared.BenchmarkResult) {
 			continue
 		}
 
-		rawBenchName, cpu := parseBenchmarkName(result.Name)
+		shared.OS, shared.Arch, shared.Pkg, shared.CPU = result.GetConfig("goos"), result.GetConfig("goarch"), result.GetConfig("pkg"), result.GetConfig("cpu")
+
+		rawBenchName, cpuCore := parseBenchmarkName(result.Name)
 		group, err := ParseBenchmarkNameToGroups(rawBenchName, shared.FlagState.GroupPattern)
 
 		if err != nil {
@@ -62,7 +64,7 @@ func ParseBenchmarkResults(filePath string) (results []shared.BenchmarkResult) {
 
 		benchName, xAxis, yAxis := group["name"], group["xAxis"], group["yAxis"]
 
-		storeCpuCount(cpu)
+		storeCpuCount(cpuCore)
 
 		var benchStats []shared.Stat
 

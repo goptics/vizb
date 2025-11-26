@@ -21,6 +21,9 @@ type Benchmark struct {
 		Name  string `json:"name"`
 		Cores int    `json:"cores"`
 	} `json:"cpu"`
+	OS       string `json:"os"`
+	Arch     string `json:"arch"`
+	Pkg      string `json:"pkg"`
 	Settings struct {
 		Charts []string `json:"charts"`
 		Sort   struct {
