@@ -4,12 +4,12 @@ import { Moon, Sun } from "lucide-vue-next";
 import { useBenchmarkData } from "../composables/useBenchmarkData";
 import { useChartData } from "../composables/useChartData";
 import { useSettingsStore } from "../composables/useSettingsStore";
-import BenchmarkHeader from "../components/BenchmarkHeader.vue";
 import ChartSettingsPopover from "../components/ChartSettingsPopover.vue";
 import BenchmarkGroupSelector from "../components/BenchmarkGroupSelector.vue";
 import ChartCard from "../components/ChartCard.vue";
 import AccentLink from "../components/AccentLink.vue";
 import IconButton from "../components/IconButton.vue";
+import type { Benchmark } from "../types/benchmark";
 
 const version = window.VIZB_VERSION || 'v0.0.0-dev'
 
@@ -49,6 +49,25 @@ const mainTitle = computed(() => {
   // Use the description from the first benchmark as the constant title
   return benchmarks.value[0]?.name || "Benchmarks";
 });
+
+const CPUtoString = (cpu: Benchmark['cpu']) => {
+  if (cpu.name && cpu.cores) {
+    return `${cpu.name} (${cpu.cores} cores)`;
+  }
+
+  if (cpu.name) {
+    return cpu.name;
+  }
+
+  if (cpu.cores) {
+    return `${cpu.cores} cores`;
+  }
+
+  return "";
+};
+
+const hasCPU = computed(() => activeBenchmark.value?.cpu?.name || activeBenchmark.value?.cpu?.cores);
+
 </script>
 
 <template>
@@ -77,29 +96,34 @@ const mainTitle = computed(() => {
           <h1
             class="text-4xl font-bold mb-4 flex items-center justify-center gap-4"
           >
-            <template v-if="benchmarks.length > 1">
               <BenchmarkGroupSelector
+                v-if="benchmarks.length > 1"
                 :benchmarks="benchmarks"
                 :activeBenchmarkId="activeBenchmarkId"
                 @select="selectBenchmark"
                 class="min-w-80"
                 placeholder="Select Benchmark..."
               />
-            </template>
             <template v-else>
               {{ mainTitle }}
             </template>
           </h1>
 
-          <!-- Additional benchmark info -->
-          <BenchmarkHeader
-            :benchmark="activeBenchmark"
-            :mainTitle="mainTitle"
-            :hideTitle="true"
-          />
+        <div class="flex items-center justify-center gap-4 mb-2">
+          <span
+            v-if="hasCPU"
+            class="inline-flex items-center px-3 py-1 text-sm font-semibold rounded-lg border border-border bg-secondary text-secondary-foreground"
+          >
+            CPU: {{ CPUtoString(activeBenchmark.cpu) }}
+          </span>
+        </div>
+      
+          <p v-if="activeBenchmark.description" class="text-base text-muted-foreground">
+            {{ activeBenchmark.description }}
+          </p>
         </div>
 
-        <!-- Inner Group Selector (if multiple groups in benchmark) -->
+        <!-- Inner Group Selector -->
         <div v-if="resultGroups.length > 1" class="flex justify-center mb-8">
           <BenchmarkGroupSelector
             :benchmarks="resultGroups"
@@ -110,7 +134,7 @@ const mainTitle = computed(() => {
         </div>
 
         <!-- Charts Grid -->
-        <div class="grid grid-cols-1 gap-8">
+        <div class="space-y-5">
           <ChartCard
             v-for="(chart, index) in chartData"
             :key="`${activeBenchmarkId}-${activeGroupId}-${index}`"
