@@ -1,7 +1,9 @@
 import type { Ref } from "vue";
 import type { EChartsOption } from "echarts";
 import type { ChartData, Sort } from "../../types/benchmark";
-import { getChartStyling } from "./shared/chartConfig";
+import { createTooltipConfig, getChartStyling } from "./shared/chartConfig";
+import type { TooltipOption } from "echarts/types/dist/shared";
+import { fontSize } from "./shared/common";
 
 export interface BaseChartConfig {
   chartData: Ref<ChartData>;
@@ -16,13 +18,8 @@ export const getBaseOptions = (
   const { isDark } = config;
   const { textColor, backgroundColor } = getChartStyling(isDark.value);
   return {
-  backgroundColor,
-    tooltip: {
-      trigger: "item",
-      formatter: (params: any) => {
-        return `${params.marker} <strong>${params.name}</strong><br/>${params.value}`;
-      },
-    },
+    backgroundColor,
+    tooltip: createTooltipConfig(false) as EChartsOption['tooltip'],
     toolbox: {
       show: true,
       feature: {
@@ -31,7 +28,7 @@ export const getBaseOptions = (
           type: "jpeg",
           title: "Save",
           pixelRatio: 2,
-          name:  config.chartData.value.title,
+          name: config.chartData.value.title,
         },
       },
       iconStyle: {
@@ -48,7 +45,7 @@ export const getBaseOptions = (
       left: "center",
       itemWidth: 10,
       itemHeight: 10,
-      textStyle: { fontSize: 12, color: textColor },
+      textStyle: { fontSize, color: textColor },
     },
     emphasis: {
       focus: "series",

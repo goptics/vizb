@@ -3,7 +3,7 @@ import type { EChartsOption } from "echarts";
 import { type BaseChartConfig, getBaseOptions } from "./baseChartOptions";
 import { getNextColorFor, hasXAxis, hasYAxis } from "../../lib/utils";
 import { getChartStyling, createPieSeriesConfig } from "./shared";
-import { sortByTotal, sortByValue } from "./shared/common";
+import { fontSize, sortByTotal, sortByValue } from "./shared/common";
 import type { TitleOption } from "echarts/types/dist/shared";
 
 export function usePieChartOptions(config: BaseChartConfig) {
@@ -113,7 +113,7 @@ export function usePieChartOptions(config: BaseChartConfig) {
       textAlign: "center",
       textStyle: {
         color: styling.textColor,
-        fontSize: 12,
+        fontSize,
         fontWeight: "bold",
       },
     };

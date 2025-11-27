@@ -1,3 +1,5 @@
+import { fontSize } from "./common";
+
 /**
  * Creates pie chart label configuration
  */
@@ -9,7 +11,7 @@ export function createPieLabelConfig(
   return {
     show: showLabels,
     formatter: customFormatter,
-    fontSize: 10,
+    fontSize,
     color: styling.textColor,
   };
 }
@@ -55,7 +57,7 @@ export function createLineSeriesConfig(
         show: showLabels,
         position: "top",
         formatter: "{c}",
-        fontSize: 10,
+        fontSize,
         color: styling.textColor,
       },
     })),
@@ -83,7 +85,7 @@ export function createBarSeriesConfig(
         show: showLabels,
         position: "top",
         formatter: "{c}",
-        fontSize: 10,
+        fontSize,
         color: styling.textColor,
       },
     })),

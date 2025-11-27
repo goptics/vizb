@@ -1,4 +1,5 @@
-import type { TooltipOption } from "echarts/types/dist/shared";
+import type { EChartsOption } from "echarts/types/dist/shared";
+import { fontSize } from "./common";
 
 export interface ChartStyling {
   textColor: string;
@@ -33,7 +34,7 @@ export function createAxisConfig(
       axisLabel: {
         interval: 0,
         rotate: xAxisData.length > 15 ? 30 : 0,
-        fontSize: 10,
+        fontSize,
         color: styling.textColor,
       },
       axisLine: {
@@ -62,7 +63,7 @@ export function createAxisConfig(
  * @param hasXYAxis - Whether the chart has both X and Y axes
  * @param seriesCount - Number of series in the chart (defaults to 1)
  */
-export function createTooltipConfig(hasXYAxis: boolean, seriesCount = 1): TooltipOption {
+export function createTooltipConfig(hasXYAxis: boolean, seriesCount = 1): EChartsOption['tooltip'] {
   // Use item trigger if there are too many series (>10) to avoid overwhelming tooltip
   if (hasXYAxis && seriesCount <= 10) {
     return {
@@ -112,7 +113,7 @@ export function createLegendConfig(
     left: "center",
     itemWidth: 10,
     itemHeight: 10,
-    textStyle: { fontSize: 12, color: styling.textColor },
+    textStyle: { fontSize, color: styling.textColor },
     data: series.map((s) => s.xAxis),
     ...customConfig,
   };
@@ -138,9 +139,9 @@ export function createGridConfig(seriesLength = 1): any {
 
 
 export const createLabelConfig = (showLabels: boolean, styling: ChartStyling) => ({
-      show: showLabels,
-      position: "top" as const,
-      formatter: "{c}",
-      fontSize: 10,
-      color: styling.textColor,
-    });
+  show: showLabels,
+  position: "top" as const,
+  formatter: "{c}",
+  fontSize,
+  color: styling.textColor,
+});
