@@ -5,6 +5,9 @@
     "cpu": {
       "name": "Intel Core i9-13900K @ 5.8GHz"
     },
+    "os": "",
+    "arch": "",
+    "pkg": "",
     "settings": {
       "sort": {
         "enabled": false,
@@ -14933,6 +14936,9 @@
       "name": "Intel Core i9-13900K @ 5.8GHz",
       "cores": 8
     },
+    "os": "linux",
+    "arch": "amd64",
+    "pkg": "github.com/alitto/pond-benchmarks",
     "settings": {
       "sort": {
         "enabled": false,
@@ -15944,12 +15950,15 @@
     ]
   },
   {
-    "name": "Marshalling vs Unmarshalling",
-    "description": "Performance comparison of marshalling and unmarshalling",
+    "name": "Serialization",
+    "description": "Comparison of different serialization methods",
     "cpu": {
       "name": "",
       "cores": 128
     },
+    "os": "",
+    "arch": "",
+    "pkg": "github.com/smallnest/gosercomp",
     "settings": {
       "charts": [
         "bar",
@@ -15964,8 +15973,8 @@
     "data": [
       {
         "name": "",
-        "xAxis": "Marshal",
-        "yAxis": "Json",
+        "xAxis": "Json",
+        "yAxis": "Marshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -16001,8 +16010,8 @@
       },
       {
         "name": "",
-        "xAxis": "Marshal",
-        "yAxis": "Xml",
+        "xAxis": "Xml",
+        "yAxis": "Marshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -16038,8 +16047,8 @@
       },
       {
         "name": "",
-        "xAxis": "Marshal",
-        "yAxis": "Msgp",
+        "xAxis": "Msgp",
+        "yAxis": "Marshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -16075,8 +16084,8 @@
       },
       {
         "name": "",
-        "xAxis": "Marshal",
-        "yAxis": "ProtoBuf",
+        "xAxis": "ProtoBuf",
+        "yAxis": "Marshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -16112,8 +16121,8 @@
       },
       {
         "name": "",
-        "xAxis": "Marshal",
-        "yAxis": "GogoProtoBuf",
+        "xAxis": "GogoProtoBuf",
+        "yAxis": "Marshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -16149,8 +16158,8 @@
       },
       {
         "name": "",
-        "xAxis": "Marshal",
-        "yAxis": "Thrift",
+        "xAxis": "Thrift",
+        "yAxis": "Marshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -16186,8 +16195,8 @@
       },
       {
         "name": "",
-        "xAxis": "Marshal",
-        "yAxis": "ThriftIterator",
+        "xAxis": "ThriftIterator",
+        "yAxis": "Marshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -16223,8 +16232,8 @@
       },
       {
         "name": "",
-        "xAxis": "Marshal",
-        "yAxis": "ThriftIteratorDynamic",
+        "xAxis": "ThriftIteratorDynamic",
+        "yAxis": "Marshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -16260,8 +16269,8 @@
       },
       {
         "name": "",
-        "xAxis": "Marshal",
-        "yAxis": "ThriftIteratorEncoder",
+        "xAxis": "ThriftIteratorEncoder",
+        "yAxis": "Marshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -16297,8 +16306,8 @@
       },
       {
         "name": "",
-        "xAxis": "Marshal",
-        "yAxis": "Avro",
+        "xAxis": "Avro",
+        "yAxis": "Marshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -16334,8 +16343,8 @@
       },
       {
         "name": "",
-        "xAxis": "Marshal",
-        "yAxis": "Gencode",
+        "xAxis": "Gencode",
+        "yAxis": "Marshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -16371,8 +16380,8 @@
       },
       {
         "name": "",
-        "xAxis": "Marshal",
-        "yAxis": "UgorjiCodecAndCbor",
+        "xAxis": "UgorjiCodecAndCbor",
+        "yAxis": "Marshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -16408,8 +16417,8 @@
       },
       {
         "name": "",
-        "xAxis": "Marshal",
-        "yAxis": "UgorjiCodecAndMsgp",
+        "xAxis": "UgorjiCodecAndMsgp",
+        "yAxis": "Marshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -16445,8 +16454,8 @@
       },
       {
         "name": "",
-        "xAxis": "Marshal",
-        "yAxis": "UgorjiCodecAndBinc",
+        "xAxis": "UgorjiCodecAndBinc",
+        "yAxis": "Marshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -16482,8 +16491,8 @@
       },
       {
         "name": "",
-        "xAxis": "Marshal",
-        "yAxis": "UgorjiCodecAndJson",
+        "xAxis": "UgorjiCodecAndJson",
+        "yAxis": "Marshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -16519,8 +16528,8 @@
       },
       {
         "name": "",
-        "xAxis": "Marshal",
-        "yAxis": "Easyjson",
+        "xAxis": "Easyjson",
+        "yAxis": "Marshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -16556,8 +16565,8 @@
       },
       {
         "name": "",
-        "xAxis": "Marshal",
-        "yAxis": "Ffjson",
+        "xAxis": "Ffjson",
+        "yAxis": "Marshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -16593,8 +16602,8 @@
       },
       {
         "name": "",
-        "xAxis": "Marshal",
-        "yAxis": "Jsoniter",
+        "xAxis": "Jsoniter",
+        "yAxis": "Marshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -16630,8 +16639,8 @@
       },
       {
         "name": "",
-        "xAxis": "Marshal",
-        "yAxis": "Sonic",
+        "xAxis": "Sonic",
+        "yAxis": "Marshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -16667,8 +16676,8 @@
       },
       {
         "name": "",
-        "xAxis": "Marshal",
-        "yAxis": "Gojay",
+        "xAxis": "Gojay",
+        "yAxis": "Marshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -16704,8 +16713,8 @@
       },
       {
         "name": "",
-        "xAxis": "Marshal",
-        "yAxis": "GoMemdump",
+        "xAxis": "GoMemdump",
+        "yAxis": "Marshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -16741,8 +16750,8 @@
       },
       {
         "name": "",
-        "xAxis": "Marshal",
-        "yAxis": "Colfer",
+        "xAxis": "Colfer",
+        "yAxis": "Marshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -16778,8 +16787,8 @@
       },
       {
         "name": "",
-        "xAxis": "Marshal",
-        "yAxis": "Zebrapack",
+        "xAxis": "Zebrapack",
+        "yAxis": "Marshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -16815,8 +16824,8 @@
       },
       {
         "name": "",
-        "xAxis": "Marshal",
-        "yAxis": "Hprose",
+        "xAxis": "Hprose",
+        "yAxis": "Marshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -16852,8 +16861,8 @@
       },
       {
         "name": "",
-        "xAxis": "Marshal",
-        "yAxis": "Sereal",
+        "xAxis": "Sereal",
+        "yAxis": "Marshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -16889,8 +16898,8 @@
       },
       {
         "name": "",
-        "xAxis": "Marshal",
-        "yAxis": "VmihMsgpackv4",
+        "xAxis": "VmihMsgpackv4",
+        "yAxis": "Marshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -16926,8 +16935,8 @@
       },
       {
         "name": "",
-        "xAxis": "Marshal",
-        "yAxis": "Rlp",
+        "xAxis": "Rlp",
+        "yAxis": "Marshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -16963,8 +16972,8 @@
       },
       {
         "name": "",
-        "xAxis": "Marshal",
-        "yAxis": "SegmentioJSON",
+        "xAxis": "SegmentioJSON",
+        "yAxis": "Marshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -17000,8 +17009,8 @@
       },
       {
         "name": "",
-        "xAxis": "Unmarshal",
-        "yAxis": "Json",
+        "xAxis": "Json",
+        "yAxis": "Unmarshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -17031,8 +17040,8 @@
       },
       {
         "name": "",
-        "xAxis": "Unmarshal",
-        "yAxis": "Xml",
+        "xAxis": "Xml",
+        "yAxis": "Unmarshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -17062,8 +17071,8 @@
       },
       {
         "name": "",
-        "xAxis": "Unmarshal",
-        "yAxis": "Msgp",
+        "xAxis": "Msgp",
+        "yAxis": "Unmarshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -17093,8 +17102,8 @@
       },
       {
         "name": "",
-        "xAxis": "Unmarshal",
-        "yAxis": "ProtoBuf",
+        "xAxis": "ProtoBuf",
+        "yAxis": "Unmarshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -17124,8 +17133,8 @@
       },
       {
         "name": "",
-        "xAxis": "Unmarshal",
-        "yAxis": "GogoProtoBuf",
+        "xAxis": "GogoProtoBuf",
+        "yAxis": "Unmarshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -17155,8 +17164,8 @@
       },
       {
         "name": "",
-        "xAxis": "Unmarshal",
-        "yAxis": "Thrift",
+        "xAxis": "Thrift",
+        "yAxis": "Unmarshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -17186,8 +17195,8 @@
       },
       {
         "name": "",
-        "xAxis": "Unmarshal",
-        "yAxis": "ThriftIterator",
+        "xAxis": "ThriftIterator",
+        "yAxis": "Unmarshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -17217,8 +17226,8 @@
       },
       {
         "name": "",
-        "xAxis": "Unmarshal",
-        "yAxis": "ThriftIteratorDynamic",
+        "xAxis": "ThriftIteratorDynamic",
+        "yAxis": "Unmarshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -17248,8 +17257,8 @@
       },
       {
         "name": "",
-        "xAxis": "Unmarshal",
-        "yAxis": "ThriftIteratorDecoder",
+        "xAxis": "ThriftIteratorDecoder",
+        "yAxis": "Unmarshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -17279,8 +17288,8 @@
       },
       {
         "name": "",
-        "xAxis": "Unmarshal",
-        "yAxis": "Avro",
+        "xAxis": "Avro",
+        "yAxis": "Unmarshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -17310,8 +17319,8 @@
       },
       {
         "name": "",
-        "xAxis": "Unmarshal",
-        "yAxis": "Gencode",
+        "xAxis": "Gencode",
+        "yAxis": "Unmarshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -17341,8 +17350,8 @@
       },
       {
         "name": "",
-        "xAxis": "Unmarshal",
-        "yAxis": "UgorjiCodecAndCbor",
+        "xAxis": "UgorjiCodecAndCbor",
+        "yAxis": "Unmarshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -17372,8 +17381,8 @@
       },
       {
         "name": "",
-        "xAxis": "Unmarshal",
-        "yAxis": "UgorjiCodecAndMsgp",
+        "xAxis": "UgorjiCodecAndMsgp",
+        "yAxis": "Unmarshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -17403,8 +17412,8 @@
       },
       {
         "name": "",
-        "xAxis": "Unmarshal",
-        "yAxis": "UgorjiCodecAndBinc",
+        "xAxis": "UgorjiCodecAndBinc",
+        "yAxis": "Unmarshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -17434,8 +17443,8 @@
       },
       {
         "name": "",
-        "xAxis": "Unmarshal",
-        "yAxis": "UgorjiCodecAndJson",
+        "xAxis": "UgorjiCodecAndJson",
+        "yAxis": "Unmarshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -17465,8 +17474,8 @@
       },
       {
         "name": "",
-        "xAxis": "Unmarshal",
-        "yAxis": "Easyjson",
+        "xAxis": "Easyjson",
+        "yAxis": "Unmarshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -17496,8 +17505,8 @@
       },
       {
         "name": "",
-        "xAxis": "Unmarshal",
-        "yAxis": "Ffjson",
+        "xAxis": "Ffjson",
+        "yAxis": "Unmarshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -17527,8 +17536,8 @@
       },
       {
         "name": "",
-        "xAxis": "Unmarshal",
-        "yAxis": "Jsoniter",
+        "xAxis": "Jsoniter",
+        "yAxis": "Unmarshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -17558,8 +17567,8 @@
       },
       {
         "name": "",
-        "xAxis": "Unmarshal",
-        "yAxis": "Sonic",
+        "xAxis": "Sonic",
+        "yAxis": "Unmarshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -17589,8 +17598,8 @@
       },
       {
         "name": "",
-        "xAxis": "Unmarshal",
-        "yAxis": "Gojay",
+        "xAxis": "Gojay",
+        "yAxis": "Unmarshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -17620,8 +17629,8 @@
       },
       {
         "name": "",
-        "xAxis": "Unmarshal",
-        "yAxis": "GoMemdump",
+        "xAxis": "GoMemdump",
+        "yAxis": "Unmarshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -17651,8 +17660,8 @@
       },
       {
         "name": "",
-        "xAxis": "Unmarshal",
-        "yAxis": "Colfer",
+        "xAxis": "Colfer",
+        "yAxis": "Unmarshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -17682,8 +17691,8 @@
       },
       {
         "name": "",
-        "xAxis": "Unmarshal",
-        "yAxis": "Zebrapack",
+        "xAxis": "Zebrapack",
+        "yAxis": "Unmarshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -17713,8 +17722,8 @@
       },
       {
         "name": "",
-        "xAxis": "Unmarshal",
-        "yAxis": "Hprose",
+        "xAxis": "Hprose",
+        "yAxis": "Unmarshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -17744,8 +17753,8 @@
       },
       {
         "name": "",
-        "xAxis": "Unmarshal",
-        "yAxis": "Sereal",
+        "xAxis": "Sereal",
+        "yAxis": "Unmarshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -17775,8 +17784,8 @@
       },
       {
         "name": "",
-        "xAxis": "Unmarshal",
-        "yAxis": "VmihMsgpackv4",
+        "xAxis": "VmihMsgpackv4",
+        "yAxis": "Unmarshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -17806,8 +17815,8 @@
       },
       {
         "name": "",
-        "xAxis": "Unmarshal",
-        "yAxis": "Rlp",
+        "xAxis": "Rlp",
+        "yAxis": "Unmarshal",
         "stats": [
           {
             "type": "Execution Time",
@@ -17837,8 +17846,8 @@
       },
       {
         "name": "",
-        "xAxis": "Unmarshal",
-        "yAxis": "SegmentioJSON",
+        "xAxis": "SegmentioJSON",
+        "yAxis": "Unmarshal",
         "stats": [
           {
             "type": "Execution Time",
