@@ -1,8 +1,4 @@
-*.txt
 *.out
 bin/
 node_modules
 dist
-
-output/*.html
-output/*.json

@@ -57,6 +57,7 @@ export const DEFAULT_SETTINGS: Settings = {
 export interface Benchmark {
   name: string
   description: string
+  pkg?: string
   cpu: {
     name: string
     cores: number

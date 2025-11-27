@@ -115,3 +115,33 @@ func expandShorthand(part string) string {
 	}
 	return part
 }
+
+// ParseBenchmarkNameWithRegex parses a benchmark name using the given regex pattern
+func ParseBenchmarkNameWithRegex(name, pattern string) (map[string]string, error) {
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		return nil, fmt.Errorf("invalid regex pattern: %w", err)
+	}
+
+	match := re.FindStringSubmatch(name)
+	if match == nil {
+		return nil, fmt.Errorf("benchmark name '%s' does not match regex '%s'", name, pattern)
+	}
+
+	result := map[string]string{
+		"name":  "",
+		"xAxis": "",
+		"yAxis": "",
+	}
+
+	for i, name := range re.SubexpNames() {
+		if i != 0 && name != "" {
+			expandedName := expandShorthand(name)
+			if i < len(match) {
+				result[expandedName] = match[i]
+			}
+		}
+	}
+
+	return result, nil
+}

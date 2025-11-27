@@ -292,3 +292,90 @@ func indexOfSubstring(s, substr string) int {
 	}
 	return -1
 }
+
+func TestParseBenchmarkNameWithRegex(t *testing.T) {
+	tests := []struct {
+		name          string
+		benchmarkName string
+		pattern       string
+		expected      map[string]string
+		expectError   bool
+		errorContains string
+	}{
+		{
+			name:          "Valid Regex: Named Groups",
+			benchmarkName: "BenchmarkHashing64MD5",
+			pattern:       `Benchmark(?<n>Hashing64)(?<y>.*)`,
+			expected: map[string]string{
+				"name":  "Hashing64",
+				"yAxis": "MD5",
+				"xAxis": "",
+			},
+			expectError: false,
+		},
+		{
+			name:          "Valid Regex: All Groups",
+			benchmarkName: "BenchmarkMatrix/1024/Parallel",
+			pattern:       `Benchmark(?<n>Matrix)/(?<x>\d+)/(?<y>.*)`,
+			expected: map[string]string{
+				"name":  "Matrix",
+				"xAxis": "1024",
+				"yAxis": "Parallel",
+			},
+			expectError: false,
+		},
+		{
+			name:          "Regex No Match",
+			benchmarkName: "BenchmarkHashing64MD5",
+			pattern:       `Benchmark(?<n>Sorting)(?<y>.*)`,
+			expected:      nil,
+			expectError:   true,
+			errorContains: "does not match regex",
+		},
+		{
+			name:          "Invalid Regex Syntax",
+			benchmarkName: "BenchmarkHashing64MD5",
+			pattern:       `Benchmark(?<n>Hashing64)(?<y>.*`, // Missing closing parenthesis
+			expected:      nil,
+			expectError:   true,
+			errorContains: "invalid regex pattern",
+		},
+		{
+			name:          "Regex with non-capturing groups (ignored)",
+			benchmarkName: "BenchmarkHashing64MD5",
+			pattern:       `Benchmark(?:Hashing64)(?<y>.*)`,
+			expected: map[string]string{
+				"name":  "",
+				"xAxis": "",
+				"yAxis": "MD5",
+			},
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := ParseBenchmarkNameWithRegex(tt.benchmarkName, tt.pattern)
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+					return
+				}
+				if tt.errorContains != "" && !contains(err.Error(), tt.errorContains) {
+					t.Errorf("Expected error to contain '%s', but got '%s'", tt.errorContains, err.Error())
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+				return
+			}
+
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("Expected %v, but got %v", tt.expected, result)
+			}
+		})
+	}
+}

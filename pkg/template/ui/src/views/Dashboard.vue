@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, watch } from "vue";
-import { Moon, Sun } from "lucide-vue-next";
+import { Moon, Sun, Package } from "lucide-vue-next";
 import { useBenchmarkData } from "../composables/useBenchmarkData";
 import { useChartData } from "../composables/useChartData";
 import { useSettingsStore } from "../composables/useSettingsStore";
@@ -8,6 +8,7 @@ import ChartSettingsPopover from "../components/ChartSettingsPopover.vue";
 import BenchmarkGroupSelector from "../components/BenchmarkGroupSelector.vue";
 import ChartCard from "../components/ChartCard.vue";
 import IconButton from "../components/IconButton.vue";
+import AccentLink from "../components/AccentLink.vue";
 import { CPUtoString } from "../lib/utils";
 
 const version = window.VIZB_VERSION || 'v0.0.0-dev'
@@ -50,10 +51,19 @@ const mainTitle = computed(() => {
 });
 
 const hasCPU = computed(() => activeBenchmark.value?.cpu?.name || activeBenchmark.value?.cpu?.cores);
+
 </script>
 
 <template>
   <nav class="fixed top-6 right-6 z-50 flex items-center gap-2">
+    <IconButton
+      v-if="activeBenchmark?.pkg"
+      :href="`https://${activeBenchmark.pkg}`"
+      aria-label="View Package Source"
+    >
+      <Package class="w-5 h-5" />
+    </IconButton>
+
     <ChartSettingsPopover />
 
     <IconButton @click="toggleDark()" aria-label="Toggle theme">

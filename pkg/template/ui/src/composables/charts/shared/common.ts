@@ -1,5 +1,7 @@
 import type { SortOrder } from "../../../types/benchmark";
 
+export const fontSize = 12;
+
 export const sortByTotal = <T extends { total: number }>(
   sortOrder: SortOrder
 ) => {

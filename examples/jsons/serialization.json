@@ -1,0 +1,1928 @@
+{
+  "name": "Serialization",
+  "description": "Comparison of different serialization methods",
+  "cpu": {
+    "name": "",
+    "cores": 128
+  },
+  "os": "",
+  "arch": "",
+  "pkg": "https://github.com/smallnest/gosercomp",
+  "settings": {
+    "charts": [
+      "bar",
+      "pie"
+    ],
+    "sort": {
+      "enabled": true,
+      "order": "asc"
+    },
+    "showLabels": false
+  },
+  "data": [
+    {
+      "name": "",
+      "xAxis": "Json",
+      "yAxis": "Marshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 410.2,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Metric",
+          "value": 65,
+          "unit": "marshaledBytes",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 128,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 2,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 14734310,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "Xml",
+      "yAxis": "Marshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 3735,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Metric",
+          "value": 137,
+          "unit": "marshaledBytes",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 4736,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 11,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 1578195,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "Msgp",
+      "yAxis": "Marshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 90.96,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Metric",
+          "value": 47,
+          "unit": "marshaledBytes",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 80,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 1,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 60867415,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "ProtoBuf",
+      "yAxis": "Marshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 327,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Metric",
+          "value": 36,
+          "unit": "marshaledBytes",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 64,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 2,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 18273046,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "GogoProtoBuf",
+      "yAxis": "Marshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 90.39,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Metric",
+          "value": 36,
+          "unit": "marshaledBytes",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 48,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 1,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 65710664,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "Thrift",
+      "yAxis": "Marshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 273.7,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Metric",
+          "value": 63,
+          "unit": "marshaledBytes",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 64,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 1,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 21794796,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "ThriftIterator",
+      "yAxis": "Marshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 402.6,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Metric",
+          "value": 63,
+          "unit": "marshaledBytes",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 248,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 6,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 14869611,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "ThriftIteratorDynamic",
+      "yAxis": "Marshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 423.2,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Metric",
+          "value": 63,
+          "unit": "marshaledBytes",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 200,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 5,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 14203106,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "ThriftIteratorEncoder",
+      "yAxis": "Marshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 295.3,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Metric",
+          "value": 63,
+          "unit": "marshaledBytes",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 187,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 0,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 22899847,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "Avro",
+      "yAxis": "Marshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 297.5,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Metric",
+          "value": 32,
+          "unit": "marshaledBytes",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 112,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 2,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 20259181,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "Gencode",
+      "yAxis": "Marshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 35.88,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Metric",
+          "value": 34,
+          "unit": "marshaledBytes",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 0,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 0,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 165538641,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "UgorjiCodecAndCbor",
+      "yAxis": "Marshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 1103,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Metric",
+          "value": 47,
+          "unit": "marshaledBytes",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 1504,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 6,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 5353467,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "UgorjiCodecAndMsgp",
+      "yAxis": "Marshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 1093,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Metric",
+          "value": 47,
+          "unit": "marshaledBytes",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 1504,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 6,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 5484471,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "UgorjiCodecAndBinc",
+      "yAxis": "Marshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 1104,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Metric",
+          "value": 47,
+          "unit": "marshaledBytes",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 1504,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 6,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 5455846,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "UgorjiCodecAndJson",
+      "yAxis": "Marshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 1291,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Metric",
+          "value": 65,
+          "unit": "marshaledBytes",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 1584,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 6,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 4621263,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "Easyjson",
+      "yAxis": "Marshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 215.5,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Metric",
+          "value": 65,
+          "unit": "marshaledBytes",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 128,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 1,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 27812725,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "Ffjson",
+      "yAxis": "Marshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 1190,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Metric",
+          "value": 65,
+          "unit": "marshaledBytes",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 412,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 9,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 5023614,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "Jsoniter",
+      "yAxis": "Marshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 350.6,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Metric",
+          "value": 65,
+          "unit": "marshaledBytes",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 88,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 2,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 17086744,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "Sonic",
+      "yAxis": "Marshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 288.6,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Metric",
+          "value": 65,
+          "unit": "marshaledBytes",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 198,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 4,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 20919127,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "Gojay",
+      "yAxis": "Marshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 430.9,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Metric",
+          "value": 65,
+          "unit": "marshaledBytes",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 538,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 2,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 13831465,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "GoMemdump",
+      "yAxis": "Marshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 3864,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Metric",
+          "value": 200,
+          "unit": "marshaledBytes",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 1512,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 27,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 1550764,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "Colfer",
+      "yAxis": "Marshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 27.93,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Metric",
+          "value": 35,
+          "unit": "marshaledBytes",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 0,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 0,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 216226507,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "Zebrapack",
+      "yAxis": "Marshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 133,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Metric",
+          "value": 109,
+          "unit": "marshaledBytes",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 186,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 0,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 46097662,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "Hprose",
+      "yAxis": "Marshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 233.2,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Metric",
+          "value": 49,
+          "unit": "marshaledBytes",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 24,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 1,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 25639276,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "Sereal",
+      "yAxis": "Marshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 1724,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Metric",
+          "value": 76,
+          "unit": "marshaledBytes",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 728,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 22,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 3448252,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "VmihMsgpackv4",
+      "yAxis": "Marshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 516.2,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Metric",
+          "value": 55,
+          "unit": "marshaledBytes",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 232,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 5,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 11608585,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "Rlp",
+      "yAxis": "Marshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 266.8,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Metric",
+          "value": 32,
+          "unit": "marshaledBytes",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 64,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 3,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 22588225,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "SegmentioJSON",
+      "yAxis": "Marshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 623.1,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Metric",
+          "value": 65,
+          "unit": "marshaledBytes",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 1072,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 2,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 9633194,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "Json",
+      "yAxis": "Unmarshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 1631,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 264,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 10,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 3697374,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "Xml",
+      "yAxis": "Unmarshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 9316,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 2946,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 70,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 638480,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "Msgp",
+      "yAxis": "Unmarshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 135.5,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 32,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 5,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 44057836,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "ProtoBuf",
+      "yAxis": "Unmarshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 620.3,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 176,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 11,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 9628360,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "GogoProtoBuf",
+      "yAxis": "Unmarshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 370,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 160,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 10,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 16364524,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "Thrift",
+      "yAxis": "Unmarshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 591,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 96,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 6,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 10060344,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "ThriftIterator",
+      "yAxis": "Unmarshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 407.5,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 168,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 7,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 14740503,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "ThriftIteratorDynamic",
+      "yAxis": "Unmarshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 1098,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 592,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 18,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 5471894,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "ThriftIteratorDecoder",
+      "yAxis": "Unmarshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 1162,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 616,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 19,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 5110819,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "Avro",
+      "yAxis": "Unmarshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 21232,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 12305,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 232,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 281683,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "Gencode",
+      "yAxis": "Unmarshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 99.6,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 32,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 5,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 59231443,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "UgorjiCodecAndCbor",
+      "yAxis": "Unmarshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 1128,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 656,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 8,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 5306976,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "UgorjiCodecAndMsgp",
+      "yAxis": "Unmarshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 1284,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 768,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 10,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 4681980,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "UgorjiCodecAndBinc",
+      "yAxis": "Unmarshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 1118,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 656,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 8,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 5368308,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "UgorjiCodecAndJson",
+      "yAxis": "Unmarshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 1865,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 1168,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 10,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 3233894,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "Easyjson",
+      "yAxis": "Unmarshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 371.5,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 32,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 5,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 16066514,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "Ffjson",
+      "yAxis": "Unmarshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 1620,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 474,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 13,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 3694323,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "Jsoniter",
+      "yAxis": "Unmarshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 354.9,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 32,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 5,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 16905810,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "Sonic",
+      "yAxis": "Unmarshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 247.9,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 99,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 1,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 24124342,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "Gojay",
+      "yAxis": "Unmarshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 659.9,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 281,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 9,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 9106419,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "GoMemdump",
+      "yAxis": "Unmarshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 655.1,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 736,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 9,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 9233306,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "Colfer",
+      "yAxis": "Unmarshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 175.7,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 96,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 6,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 34182229,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "Zebrapack",
+      "yAxis": "Unmarshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 195.6,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 32,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 5,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 29730520,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "Hprose",
+      "yAxis": "Unmarshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 517.5,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 272,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 9,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 11646049,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "Sereal",
+      "yAxis": "Unmarshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 480.3,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 80,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 6,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 12377004,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "VmihMsgpackv4",
+      "yAxis": "Unmarshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 818.5,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 264,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 11,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 7308202,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "Rlp",
+      "yAxis": "Unmarshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 634.5,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 104,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 11,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 9474120,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "",
+      "xAxis": "SegmentioJSON",
+      "yAxis": "Unmarshal",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 421.1,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 32,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 5,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 14143380,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    }
+  ]
+}
