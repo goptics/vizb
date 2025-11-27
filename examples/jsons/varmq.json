@@ -1,0 +1,396 @@
+{
+  "name": "VarMQ",
+  "description": "Variadic Queue Benchmark",
+  "cpu": {
+    "name": "13th Gen Intel(R) Core(TM) i7-13700",
+    "cores": 24
+  },
+  "os": "linux",
+  "arch": "amd64",
+  "pkg": "github.com/goptics/varmq",
+  "settings": {
+    "charts": [
+      "bar",
+      "pie"
+    ],
+    "sort": {
+      "enabled": true,
+      "order": "asc"
+    },
+    "showLabels": false
+  },
+  "data": [
+    {
+      "name": "Add",
+      "xAxis": "",
+      "yAxis": "Queue",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 3183,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 128,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 3,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 364238,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "Add",
+      "xAxis": "",
+      "yAxis": "Priority",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 2080,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 144,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 4,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 760196,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "Add",
+      "xAxis": "",
+      "yAxis": "ErrQueue",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 3823,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 305,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 6,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 339716,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "Add",
+      "xAxis": "",
+      "yAxis": "ErrPriority",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 3301,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 320,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 7,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 466075,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "Add",
+      "xAxis": "",
+      "yAxis": "ResultQueue",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 4121,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 356,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 6,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 368671,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "Add",
+      "xAxis": "",
+      "yAxis": "ResultPriority",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 2694,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 368,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 7,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 453199,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "AddAll",
+      "xAxis": "",
+      "yAxis": "Queue",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 1968265,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 147696,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 4002,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 812,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "AddAll",
+      "xAxis": "",
+      "yAxis": "Priority",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 2818853,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 162360,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 5002,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 727,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "AddAll",
+      "xAxis": "",
+      "yAxis": "ErrQueue",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 2390848,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 171757,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 4505,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 544,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "AddAll",
+      "xAxis": "",
+      "yAxis": "ErrPriority",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 3183455,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 186954,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 5505,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 458,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "AddAll",
+      "xAxis": "",
+      "yAxis": "ResultQueue",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 2334586,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 189515,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 4005,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 510,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "AddAll",
+      "xAxis": "",
+      "yAxis": "ResultPriority",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 2575231,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 203547,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 5005,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 1384,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    }
+  ]
+}

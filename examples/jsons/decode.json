@@ -1,0 +1,915 @@
+{
+  "name": "Decode vs Encode",
+  "description": "Comparison of decode and encode performance",
+  "cpu": {
+    "name": "Intel(R) Core(TM) i7-4980HQ CPU @ 2.80GHz",
+    "cores": 8
+  },
+  "os": "darwin",
+  "arch": "amd64",
+  "pkg": "",
+  "settings": {
+    "charts": [
+      "bar",
+      "pie"
+    ],
+    "sort": {
+      "enabled": true,
+      "order": "asc"
+    },
+    "showLabels": false
+  },
+  "data": [
+    {
+      "name": "Decode",
+      "xAxis": "digits",
+      "yAxis": "speed/size=1e4",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 154125,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Throughput",
+          "value": 64.88,
+          "unit": "MB/s",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 40418,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 7,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 100,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "Decode",
+      "xAxis": "digits",
+      "yAxis": "speed/size=1e5",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 1367632,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Throughput",
+          "value": 73.12,
+          "unit": "MB/s",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 41356,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 14,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 10,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "Decode",
+      "xAxis": "digits",
+      "yAxis": "speed/size=1e6",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 13879794,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Throughput",
+          "value": 72.05,
+          "unit": "MB/s",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 52056,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 94,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 1,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "Decode",
+      "xAxis": "digits",
+      "yAxis": "default/size=1e4",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 147551,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Throughput",
+          "value": 67.77,
+          "unit": "MB/s",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 40418,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 8,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 100,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "Decode",
+      "xAxis": "digits",
+      "yAxis": "default/size=1e5",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 1197672,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Throughput",
+          "value": 83.5,
+          "unit": "MB/s",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 41508,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 13,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 10,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "Decode",
+      "xAxis": "digits",
+      "yAxis": "default/size=1e6",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 11808775,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Throughput",
+          "value": 84.68,
+          "unit": "MB/s",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 53800,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 80,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 1,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "Decode",
+      "xAxis": "digits",
+      "yAxis": "best/size=1e4",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 143348,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Throughput",
+          "value": 69.76,
+          "unit": "MB/s",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 40417,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 8,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 100,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "Decode",
+      "xAxis": "digits",
+      "yAxis": "best/size=1e5",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 1185527,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Throughput",
+          "value": 84.35,
+          "unit": "MB/s",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 41508,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 13,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 10,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "Decode",
+      "xAxis": "digits",
+      "yAxis": "best/size=1e6",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 11740304,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Throughput",
+          "value": 85.18,
+          "unit": "MB/s",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 53800,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 80,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 1,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "Decode",
+      "xAxis": "twain",
+      "yAxis": "speed/size=1e4",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 143665,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Throughput",
+          "value": 69.61,
+          "unit": "MB/s",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 40849,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 15,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 100,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "Decode",
+      "xAxis": "twain",
+      "yAxis": "speed/size=1e5",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 1390359,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Throughput",
+          "value": 71.92,
+          "unit": "MB/s",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 45700,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 31,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 10,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "Decode",
+      "xAxis": "twain",
+      "yAxis": "speed/size=1e6",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 12128469,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Throughput",
+          "value": 82.45,
+          "unit": "MB/s",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 89336,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 221,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 1,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "Decode",
+      "xAxis": "twain",
+      "yAxis": "default/size=1e4",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 141916,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Throughput",
+          "value": 70.46,
+          "unit": "MB/s",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 40849,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 15,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 100,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "Decode",
+      "xAxis": "twain",
+      "yAxis": "default/size=1e5",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 1076669,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Throughput",
+          "value": 92.88,
+          "unit": "MB/s",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 43820,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 28,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 10,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "Decode",
+      "xAxis": "twain",
+      "yAxis": "default/size=1e6",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 10106485,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Throughput",
+          "value": 98.95,
+          "unit": "MB/s",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 71096,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 172,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 1,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "Decode",
+      "xAxis": "twain",
+      "yAxis": "best/size=1e4",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 138516,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Throughput",
+          "value": 72.19,
+          "unit": "MB/s",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 40849,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 15,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 100,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "Decode",
+      "xAxis": "twain",
+      "yAxis": "best/size=1e5",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 1227964,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Throughput",
+          "value": 81.44,
+          "unit": "MB/s",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 43316,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 25,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 10,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "Decode",
+      "xAxis": "twain",
+      "yAxis": "best/size=1e6",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 10040347,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Throughput",
+          "value": 99.6,
+          "unit": "MB/s",
+          "per": ""
+        },
+        {
+          "type": "Memory Usage",
+          "value": 72120,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 173,
+          "unit": "",
+          "per": "op"
+        },
+        {
+          "type": "Iterations",
+          "value": 1,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "Encode",
+      "xAxis": "digits",
+      "yAxis": "speed/size=1e4",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 482808,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Throughput",
+          "value": 20.71,
+          "unit": "MB/s",
+          "per": ""
+        },
+        {
+          "type": "Iterations",
+          "value": 30,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "Encode",
+      "xAxis": "digits",
+      "yAxis": "speed/size=1e5",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 2685455,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Throughput",
+          "value": 37.24,
+          "unit": "MB/s",
+          "per": ""
+        },
+        {
+          "type": "Iterations",
+          "value": 5,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "Encode",
+      "xAxis": "digits",
+      "yAxis": "speed/size=1e6",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 24966055,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Throughput",
+          "value": 40.05,
+          "unit": "MB/s",
+          "per": ""
+        },
+        {
+          "type": "Iterations",
+          "value": 1,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "Encode",
+      "xAxis": "digits",
+      "yAxis": "default/size=1e4",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 655592,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Throughput",
+          "value": 15.25,
+          "unit": "MB/s",
+          "per": ""
+        },
+        {
+          "type": "Iterations",
+          "value": 20,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "Encode",
+      "xAxis": "digits",
+      "yAxis": "default/size=1e5",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 13000839,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Throughput",
+          "value": 7.69,
+          "unit": "MB/s",
+          "per": ""
+        },
+        {
+          "type": "Iterations",
+          "value": 1,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "Encode",
+      "xAxis": "digits",
+      "yAxis": "default/size=1e6",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 136341747,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Throughput",
+          "value": 7.33,
+          "unit": "MB/s",
+          "per": ""
+        },
+        {
+          "type": "Iterations",
+          "value": 1,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "Encode",
+      "xAxis": "digits",
+      "yAxis": "best/size=1e4",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 668083,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Throughput",
+          "value": 14.97,
+          "unit": "MB/s",
+          "per": ""
+        },
+        {
+          "type": "Iterations",
+          "value": 20,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "Encode",
+      "xAxis": "digits",
+      "yAxis": "best/size=1e5",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 12301511,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Throughput",
+          "value": 8.13,
+          "unit": "MB/s",
+          "per": ""
+        },
+        {
+          "type": "Iterations",
+          "value": 1,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    },
+    {
+      "name": "Encode",
+      "xAxis": "digits",
+      "yAxis": "best/size=1e6",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 137962041,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Throughput",
+          "value": 7.25,
+          "unit": "MB/s",
+          "per": ""
+        },
+        {
+          "type": "Iterations",
+          "value": 1,
+          "unit": "",
+          "per": ""
+        }
+      ]
+    }
+  ]
+}

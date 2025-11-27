@@ -1,0 +1,2025 @@
+{
+  "name": "Worker Pool Benchmarks",
+  "description": "Performance comparison of different worker pool implementations",
+  "cpu": {
+    "name": "",
+    "cores": 8
+  },
+  "os": "linux",
+  "arch": "amd64",
+  "pkg": "github.com/alitto/pond-benchmarks",
+  "settings": {
+    "charts": [
+      "bar",
+      "line",
+      "pie"
+    ],
+    "sort": {
+      "enabled": true,
+      "order": "asc"
+    },
+    "showLabels": false
+  },
+  "data": [
+    {
+      "name": "AllSleep10ms",
+      "xAxis": "Pond-Eager",
+      "yAxis": "1u-1Mt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 658233743,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 13177872,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 83966,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllSleep10ms",
+      "xAxis": "Pond-Balanced",
+      "yAxis": "1u-1Mt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 542151290,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 12843525,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 80628,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllSleep10ms",
+      "xAxis": "Pond-Lazy",
+      "yAxis": "1u-1Mt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 453957719,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 13619120,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 88093,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllSleep10ms",
+      "xAxis": "Goroutines",
+      "yAxis": "1u-1Mt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 452322853,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 81737360,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 1009514,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllSleep10ms",
+      "xAxis": "GoroutinePool",
+      "yAxis": "1u-1Mt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 942987920,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 22749680,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 270289,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllSleep10ms",
+      "xAxis": "BufferedPool",
+      "yAxis": "1u-1Mt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 971651135,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 31039664,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 273297,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllSleep10ms",
+      "xAxis": "Gammazero",
+      "yAxis": "1u-1Mt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 1165440763,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 2003037,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 24369,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllSleep10ms",
+      "xAxis": "AntsPool",
+      "yAxis": "1u-1Mt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 640480375,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 6467578,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 85681,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllSleep10ms",
+      "xAxis": "Pond-Eager",
+      "yAxis": "100u-10Kt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 674275336,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 34262096,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 420257,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllSleep10ms",
+      "xAxis": "Pond-Balanced",
+      "yAxis": "100u-10Kt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 668055373,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 26164368,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 325129,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllSleep10ms",
+      "xAxis": "Pond-Lazy",
+      "yAxis": "100u-10Kt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 570578768,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 19205968,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 200380,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllSleep10ms",
+      "xAxis": "Goroutines",
+      "yAxis": "100u-10Kt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 566593280,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 100025210,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 1049624,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllSleep10ms",
+      "xAxis": "GoroutinePool",
+      "yAxis": "100u-10Kt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 1037432189,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 22381360,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 266476,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllSleep10ms",
+      "xAxis": "BufferedPool",
+      "yAxis": "100u-10Kt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 901981176,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 30382512,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 266452,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllSleep10ms",
+      "xAxis": "Gammazero",
+      "yAxis": "100u-10Kt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 1008801867,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 2371378,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 28852,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllSleep10ms",
+      "xAxis": "AntsPool",
+      "yAxis": "100u-10Kt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 632685132,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 12738146,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 170562,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllSleep10ms",
+      "xAxis": "Pond-Eager",
+      "yAxis": "1Ku-1Kt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 860672256,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 33584048,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 466470,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllSleep10ms",
+      "xAxis": "Pond-Balanced",
+      "yAxis": "1Ku-1Kt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 605668097,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 33586224,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 466493,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllSleep10ms",
+      "xAxis": "Pond-Lazy",
+      "yAxis": "1Ku-1Kt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 462462043,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 12380016,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 79389,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllSleep10ms",
+      "xAxis": "Goroutines",
+      "yAxis": "1Ku-1Kt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 516023441,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 80000048,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 1000002,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllSleep10ms",
+      "xAxis": "GoroutinePool",
+      "yAxis": "1Ku-1Kt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 1059879992,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 22381552,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 266478,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllSleep10ms",
+      "xAxis": "BufferedPool",
+      "yAxis": "1Ku-1Kt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 990989556,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 30387472,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 266503,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllSleep10ms",
+      "xAxis": "Gammazero",
+      "yAxis": "1Ku-1Kt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 1062265159,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 2400296,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 29203,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllSleep10ms",
+      "xAxis": "AntsPool",
+      "yAxis": "1Ku-1Kt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 668318364,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 9868850,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 131752,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllSleep10ms",
+      "xAxis": "Pond-Eager",
+      "yAxis": "10Ku-100t",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 532311024,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 13046192,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 91585,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllSleep10ms",
+      "xAxis": "Pond-Balanced",
+      "yAxis": "10Ku-100t",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 524989416,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 10928912,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 53280,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllSleep10ms",
+      "xAxis": "Pond-Lazy",
+      "yAxis": "10Ku-100t",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 724182859,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 10228752,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 40577,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllSleep10ms",
+      "xAxis": "Goroutines",
+      "yAxis": "10Ku-100t",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 459821171,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 80000048,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 1000002,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllSleep10ms",
+      "xAxis": "GoroutinePool",
+      "yAxis": "10Ku-100t",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 1007354405,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 22378448,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 266446,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllSleep10ms",
+      "xAxis": "BufferedPool",
+      "yAxis": "10Ku-100t",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 924880667,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 30383568,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 266463,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllSleep10ms",
+      "xAxis": "Gammazero",
+      "yAxis": "10Ku-100t",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 1302254736,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 2091101,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 25209,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllSleep10ms",
+      "xAxis": "AntsPool",
+      "yAxis": "10Ku-100t",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 735473470,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 11536946,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 150942,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllSleep10ms",
+      "xAxis": "Pond-Eager",
+      "yAxis": "1Mu-1t",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 829461779,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 10932880,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 53259,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllSleep10ms",
+      "xAxis": "Pond-Balanced",
+      "yAxis": "1Mu-1t",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 794574849,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 10551632,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 46156,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllSleep10ms",
+      "xAxis": "Pond-Lazy",
+      "yAxis": "1Mu-1t",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 685584019,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 10807088,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 50711,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllSleep10ms",
+      "xAxis": "Goroutines",
+      "yAxis": "1Mu-1t",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 422483752,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 80000048,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 1000002,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllSleep10ms",
+      "xAxis": "GoroutinePool",
+      "yAxis": "1Mu-1t",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 1138926533,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 22380240,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 266464,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllSleep10ms",
+      "xAxis": "BufferedPool",
+      "yAxis": "1Mu-1t",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 1139537728,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 30385872,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 266487,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllSleep10ms",
+      "xAxis": "Gammazero",
+      "yAxis": "1Mu-1t",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 1580322536,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 36548029,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 334860,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllSleep10ms",
+      "xAxis": "AntsPool",
+      "yAxis": "1Mu-1t",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 1005205084,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 34527010,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 455767,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllRandFloat64",
+      "xAxis": "Pond-Eager",
+      "yAxis": "1u-1Mt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 221147440,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 8024589,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 156,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllRandFloat64",
+      "xAxis": "Pond-Balanced",
+      "yAxis": "1u-1Mt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 206112267,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 8014616,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 96,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllRandFloat64",
+      "xAxis": "Pond-Lazy",
+      "yAxis": "1u-1Mt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 228397720,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 8014010,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 120,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllRandFloat64",
+      "xAxis": "Goroutines",
+      "yAxis": "1u-1Mt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 255098957,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 173648,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 602,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllRandFloat64",
+      "xAxis": "GoroutinePool",
+      "yAxis": "1u-1Mt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 608808567,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 6381850,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 66476,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllRandFloat64",
+      "xAxis": "BufferedPool",
+      "yAxis": "1u-1Mt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 646646774,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 14388720,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 66516,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllRandFloat64",
+      "xAxis": "Gammazero",
+      "yAxis": "1u-1Mt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 556528977,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 765,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 14,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllRandFloat64",
+      "xAxis": "AntsPool",
+      "yAxis": "1u-1Mt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 511636669,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 1884922,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 25377,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllRandFloat64",
+      "xAxis": "Pond-Eager",
+      "yAxis": "100u-10Kt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 240239174,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 8056522,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 1514,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllRandFloat64",
+      "xAxis": "Pond-Balanced",
+      "yAxis": "100u-10Kt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 244726370,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 8009328,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 293,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllRandFloat64",
+      "xAxis": "Pond-Lazy",
+      "yAxis": "100u-10Kt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 302086894,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 8322613,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 5889,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllRandFloat64",
+      "xAxis": "Goroutines",
+      "yAxis": "100u-10Kt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 426853026,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 20887664,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 46804,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllRandFloat64",
+      "xAxis": "GoroutinePool",
+      "yAxis": "100u-10Kt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 713127672,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 6380848,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 66471,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllRandFloat64",
+      "xAxis": "BufferedPool",
+      "yAxis": "100u-10Kt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 595125950,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 14385456,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 66482,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllRandFloat64",
+      "xAxis": "Gammazero",
+      "yAxis": "100u-10Kt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 977617485,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 13714,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 147,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllRandFloat64",
+      "xAxis": "AntsPool",
+      "yAxis": "100u-10Kt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 474116870,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 122397,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 1797,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllRandFloat64",
+      "xAxis": "Pond-Eager",
+      "yAxis": "1Ku-1Kt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 338964329,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 15464181,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 133763,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllRandFloat64",
+      "xAxis": "Pond-Balanced",
+      "yAxis": "1Ku-1Kt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 289530482,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 8005776,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 110,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllRandFloat64",
+      "xAxis": "Pond-Lazy",
+      "yAxis": "1Ku-1Kt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 294471089,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 8016704,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 419,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllRandFloat64",
+      "xAxis": "Goroutines",
+      "yAxis": "1Ku-1Kt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 490915673,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 33891216,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 79199,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllRandFloat64",
+      "xAxis": "GoroutinePool",
+      "yAxis": "1Ku-1Kt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 732660817,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 6405008,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 66722,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllRandFloat64",
+      "xAxis": "BufferedPool",
+      "yAxis": "1Ku-1Kt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 612328640,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 14381232,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 66438,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllRandFloat64",
+      "xAxis": "Gammazero",
+      "yAxis": "1Ku-1Kt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 973129161,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 78610,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 823,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllRandFloat64",
+      "xAxis": "AntsPool",
+      "yAxis": "1Ku-1Kt",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 498528201,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 458680,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 6466,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllRandFloat64",
+      "xAxis": "Pond-Eager",
+      "yAxis": "10Ku-100t",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 292830436,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 8006517,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 145,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllRandFloat64",
+      "xAxis": "Pond-Balanced",
+      "yAxis": "10Ku-100t",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 290014999,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 8008160,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 230,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllRandFloat64",
+      "xAxis": "Pond-Lazy",
+      "yAxis": "10Ku-100t",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 288724307,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 8004794,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 45,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllRandFloat64",
+      "xAxis": "Goroutines",
+      "yAxis": "10Ku-100t",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 359906263,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 6014704,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 62654,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllRandFloat64",
+      "xAxis": "GoroutinePool",
+      "yAxis": "10Ku-100t",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 727553640,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 6463184,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 67328,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllRandFloat64",
+      "xAxis": "BufferedPool",
+      "yAxis": "10Ku-100t",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 753007382,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 14385616,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 66484,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllRandFloat64",
+      "xAxis": "Gammazero",
+      "yAxis": "10Ku-100t",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 1101229554,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 400072,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 4172,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllRandFloat64",
+      "xAxis": "AntsPool",
+      "yAxis": "10Ku-100t",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 559372453,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 3569413,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 48919,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllRandFloat64",
+      "xAxis": "Pond-Eager",
+      "yAxis": "1Mu-1t",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 571780271,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 8006266,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 104,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllRandFloat64",
+      "xAxis": "Pond-Balanced",
+      "yAxis": "1Mu-1t",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 593644124,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 8005317,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 76,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllRandFloat64",
+      "xAxis": "Pond-Lazy",
+      "yAxis": "1Mu-1t",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 556206022,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 8006197,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 83,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllRandFloat64",
+      "xAxis": "Goroutines",
+      "yAxis": "1Mu-1t",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 327126810,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 784,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 9,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllRandFloat64",
+      "xAxis": "GoroutinePool",
+      "yAxis": "1Mu-1t",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 833617738,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 6382672,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 66490,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllRandFloat64",
+      "xAxis": "BufferedPool",
+      "yAxis": "1Mu-1t",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 823267182,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 14384528,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 66473,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllRandFloat64",
+      "xAxis": "Gammazero",
+      "yAxis": "1Mu-1t",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 1494572327,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 44507208,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 333672,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    },
+    {
+      "name": "AllRandFloat64",
+      "xAxis": "AntsPool",
+      "yAxis": "1Mu-1t",
+      "stats": [
+        {
+          "type": "Execution Time",
+          "value": 745656046,
+          "unit": "ns",
+          "per": "op"
+        },
+        {
+          "type": "Memory Usage",
+          "value": 13846717,
+          "unit": "B",
+          "per": "op"
+        },
+        {
+          "type": "Allocations",
+          "value": 187657,
+          "unit": "",
+          "per": "op"
+        }
+      ]
+    }
+  ]
+}

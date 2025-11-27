@@ -2,6 +2,3 @@
 bin/
 node_modules
 dist
-
-examples/output/*.html
-examples/output/*.json

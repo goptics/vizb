@@ -1,16 +1,21 @@
 [
   {
-    "name": "HTTP Framework Benchmarks",
-    "description": "Performance comparison of popular Go HTTP frameworks",
+    "name": "HTTP Routing Benchmarks",
+    "description": "Performance comparison of popular Go HTTP Routers",
     "cpu": {
-      "name": "Intel Core i9-13900K @ 5.8GHz"
+      "name": "",
+      "cores": 0
     },
     "os": "",
     "arch": "",
-    "pkg": "",
+    "pkg": "github.com/gin-gonic/go-http-routing-benchmark",
     "settings": {
+      "charts": [
+        "bar",
+        "pie"
+      ],
       "sort": {
-        "enabled": false,
+        "enabled": true,
         "order": "asc"
       },
       "showLabels": false

@@ -1,3 +1,4 @@
+pkg: github.com/gin-gonic/go-http-routing-benchmark
 BenchmarkGin_StaticAll                   62169         19319 ns/op           0 B/op           0 allocs/op
 
 BenchmarkAce_StaticAll                   65428         18313 ns/op           0 B/op           0 allocs/op
