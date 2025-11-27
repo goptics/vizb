@@ -57,12 +57,14 @@ const updateValue = () => {
   );
   if (option) {
     value.value = option;
+  } else {
+    value.value = undefined;
   }
 };
 
-// Watch for changes in activeBenchmarkId
+// Watch for changes in activeBenchmarkId or benchmarks list
 watch(
-  () => props.activeBenchmarkId,
+  [() => props.activeBenchmarkId, () => props.benchmarks],
   () => {
     updateValue();
   },

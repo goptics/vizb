@@ -98,6 +98,9 @@ export function useBenchmarkData() {
       // Reset color mapping when benchmark changes
       resetColor();
 
+      // Store current group name to try and restore it after benchmark change
+      const currentGroupName = activeGroup.value?.name;
+
       activeBenchmarkId.value = id;
       
       // Update settings from the new benchmark
@@ -106,8 +109,17 @@ export function useBenchmarkData() {
         initializeFromBenchmark(benchmark.settings, true);
       }
 
-      // Reset group selection when benchmark changes
-      activeGroupId.value = 0;
+      // Try to find the previously selected group in the new benchmark
+      // If found, select it. Otherwise, select the first group.
+      const newGroupIndex = benchmarkGroups.value.findIndex(
+        (g) => g.name === currentGroupName
+      );
+
+      if (newGroupIndex !== -1) {
+        activeGroupId.value = newGroupIndex;
+      } else {
+        activeGroupId.value = 0;
+      }
     }
   };
 
