@@ -10,17 +10,11 @@ export function usePieChartOptions(config: BaseChartConfig) {
   const { chartData, sort, showLabels, isDark } = config;
 
   const sortedData = computed(() => {
-    // Check if we have y-axis data (dual categories)
-    const hasYAxis =
-      chartData.value.yAxis &&
-      chartData.value.yAxis.length > 0 &&
-      chartData.value.yAxis[0] !== "";
-
     // Build a single pie dataset based on totals per xAxis
     const seriesWithTotals = chartData.value.series.map((series) => ({
       ...series,
       // For single category (no y-axis), use the first value; for dual categories, sum all values
-      total: hasYAxis
+      total: hasYAxis(chartData)
         ? series.values.reduce((sum, val) => sum + val, 0)
         : series.values[0] || 0,
     }));

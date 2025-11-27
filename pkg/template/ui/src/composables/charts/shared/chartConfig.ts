@@ -90,6 +90,10 @@ export function createTooltipConfig(hasXYAxis: boolean, seriesCount = 1): EChart
         name = seriesName;
       }
 
+      if (!name && seriesName) {
+        name = seriesName;
+      }
+      
       return `${params.marker} <strong>${name}</strong><br/>${params.value}`;
     },
   };

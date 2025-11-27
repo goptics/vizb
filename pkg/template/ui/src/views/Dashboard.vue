@@ -78,7 +78,7 @@ const hasCPU = computed(() => activeBenchmark.value?.cpu?.name || activeBenchmar
         <h1 class="text-4xl flex items-center justify-center">
           <BenchmarkGroupSelector v-if="benchmarks.length > 1" :benchmarks="benchmarks"
             :activeBenchmarkId="activeBenchmarkId" @select="selectBenchmark" class="min-w-80"
-            placeholder="Select Benchmark..." />
+            placeholder="Search Benchmark..." />
           <template v-else>
             {{ mainTitle }}
           </template>
