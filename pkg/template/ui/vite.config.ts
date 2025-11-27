@@ -70,7 +70,7 @@ const benchmarkUiGoWrapperPlugin = (): PluginOption => {
 
       const htmlContent = fs.readFileSync(distHtmlPath, "utf-8");
       const htmlWithState = appendVizbDataScriptTag(htmlContent);
-      
+
       // Escape backticks for Go raw string literal
       const goRawString = htmlWithState.split("`").join('` + "`" + `');
 
@@ -86,15 +86,26 @@ const VizbHTMLTemplate = \`${goRawString}\`
   };
 };
 
-// https://vite.dev/config/
-export default defineConfig({
-  plugins: [
+const singleFile = process.env.SINGLEFILE === "True"
+console.info("SINGLEFILE env var:", process.env.SINGLEFILE);
+
+const plugins: PluginOption[] = [vue()];
+
+if (singleFile) {
+  plugins.push(
     inlineFaviconPlugin(),
-    vue(), 
     viteSingleFile({
       removeViteModuleLoader: true,
       useRecommendedBuildConfig: true,
     }),
+    benchmarkUiGoWrapperPlugin()
+  );
+}
+
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [
+    ...plugins,
     createHtmlPlugin({
       minify: {
         removeComments: true,
@@ -106,7 +117,6 @@ export default defineConfig({
         minifyJS: true,
       },
     }),
-    benchmarkUiGoWrapperPlugin(),
   ],
   resolve: {
     alias: {
