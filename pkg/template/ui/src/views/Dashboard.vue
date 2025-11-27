@@ -72,40 +72,44 @@ const hasCPU = computed(() => activeBenchmark.value?.cpu?.name || activeBenchmar
     </IconButton>
   </nav>
 
-  <main class="min-h-screen max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <template v-if="activeBenchmark">
-      <header class="text-center space-y-3 pb-5">
-        <h1 class="text-4xl flex items-center justify-center">
-          <BenchmarkGroupSelector v-if="benchmarks.length > 1" :benchmarks="benchmarks"
-            :activeBenchmarkId="activeBenchmarkId" @select="selectBenchmark" class="min-w-80"
-            placeholder="Search Benchmark..." />
-          <template v-else>
-            {{ mainTitle }}
-          </template>
-        </h1>
+  <main v-if="activeBenchmark" class="min-h-screen max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <header class="space-y-3 text-center py-5">
+      <BenchmarkGroupSelector 
+        v-if="benchmarks.length > 1" 
+        :benchmarks="benchmarks"
+        :activeBenchmarkId="activeBenchmarkId" 
+        @select="selectBenchmark" 
+        class="min-w-80 mx-auto"
+        placeholder="Search Benchmark..." 
+      />
 
-        <span v-if="hasCPU"
-          class="inline-flex items-center px-3 py-1 text-sm font-semibold rounded-lg border border-border bg-secondary text-secondary-foreground">
-          CPU: {{ CPUtoString(activeBenchmark.cpu) }}
-        </span>
+      <h1 v-else class="text-4xl">{{ mainTitle }}</h1>
 
-        <p v-if="activeBenchmark.description" class="text-muted-foreground">
-          {{ activeBenchmark.description }}
-        </p>
+      <span v-if="hasCPU" class="inline-block px-2 py-1 text-sm font-semibold rounded-lg border border-border bg-secondary text-secondary-foreground">CPU: {{ CPUtoString(activeBenchmark.cpu) }}</span>
 
-        <!-- Inner Group Selector -->
-        <div v-if="resultGroups.length > 1" class="flex justify-center">
-          <BenchmarkGroupSelector :benchmarks="resultGroups" :activeBenchmarkId="activeGroupId" @select="selectGroup"
-            placeholder="Search Group..." />
-        </div>
-      </header>
+      <p v-if="activeBenchmark.description" class="text-muted-foreground">{{ activeBenchmark.description }}</p>
 
-      <!-- Charts Grid -->
-      <div class="space-y-5">
-        <ChartCard v-for="(chart, index) in chartData" :key="`${activeBenchmarkId}-${activeGroupId}-${index}`"
-          :chartData="chart" class="animate-fade-in" :style="{ animationDelay: `${index * 50}ms` }" />
-      </div>
-    </template>
+      <!-- Inner Group Selector -->
+      <BenchmarkGroupSelector 
+        v-if="resultGroups.length > 1" 
+        :benchmarks="resultGroups" 
+        :activeBenchmarkId="activeGroupId" 
+        @select="selectGroup"
+        placeholder="Search Group..." 
+        class="min-w-80 mx-auto"
+      />
+    </header>
+
+    <!-- Charts Grid -->
+    <div class="space-y-5">
+      <ChartCard 
+        v-for="(chart, index) in chartData" 
+        :key="`${activeBenchmarkId}-${activeGroupId}-${index}`"
+        :chartData="chart" 
+        class="animate-fade-in" 
+        :style="{ animationDelay: `${index * 50}ms` }" 
+      />
+    </div>
   </main>
 
   <footer class="text-center pb-5 text-sm text-muted-foreground">
