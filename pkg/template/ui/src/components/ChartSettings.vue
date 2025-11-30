@@ -28,11 +28,13 @@ watch(showLabels, (val) => setShowLabels(val))
 watch([isSortingEnabled, sortDirection], ([enabled, order]) => setSort({ enabled, order }))
 
 const showChartTypeSelection = computed(() => charts.value.length > 1)
-const chartOptions = computed(() => charts.value.map(type => ({
-  value: type,
-  label: type.charAt(0).toUpperCase() + type.slice(1),
-  icon: getChartIcon(type)
-})))
+const chartOptions = computed(() =>
+  charts.value.map((type) => ({
+    value: type,
+    label: type.charAt(0).toUpperCase() + type.slice(1),
+    icon: getChartIcon(type),
+  }))
+)
 
 const sortDirectionOptions = [
   { value: 'asc', label: 'Ascending', icon: SortAsc },
@@ -57,10 +59,14 @@ const handleShowLabelsChange = (checked: boolean) => {
 
 const getChartIcon = (type: ChartType) => {
   switch (type) {
-    case 'bar': return BarChart3
-    case 'line': return TrendingUp
-    case 'pie': return PieChart
-    default: return BarChart3
+    case 'bar':
+      return BarChart3
+    case 'line':
+      return TrendingUp
+    case 'pie':
+      return PieChart
+    default:
+      return BarChart3
   }
 }
 </script>
@@ -70,27 +76,45 @@ const getChartIcon = (type: ChartType) => {
     <CardHeader>
       <CardTitle class="text-lg">Settings</CardTitle>
     </CardHeader>
-    <CardContent class="space-y-3">
+    <CardContent class="space-y-4">
       <!-- Chart Type Section -->
-      <SelectionTabs v-if="showChartTypeSelection" :model-value="chartType" :options="chartOptions"
-        @update:model-value="handleChartTypeChange" />
+      <SelectionTabs
+        v-if="showChartTypeSelection"
+        :model-value="chartType"
+        :options="chartOptions"
+        @update:model-value="handleChartTypeChange"
+      />
 
       <Separator v-if="showChartTypeSelection" />
 
       <!-- Sort Controls Section -->
-      <div class="space-y-2">
-        <SettingsToggle id="sorting-switch" label="Enable sorting" description="Sort your data by the selected axis."
-          :checked="isSortingEnabled" @update:checked="handleSortingToggle" />
+      <div class="space-y-3">
+        <SettingsToggle
+          id="sorting-switch"
+          label="Enable sorting"
+          description="Sort your data by the selected axis."
+          :checked="isSortingEnabled"
+          @update:checked="handleSortingToggle"
+        />
 
-        <SelectionTabs v-if="isSortingEnabled" :model-value="sortDirection" :options="sortDirectionOptions"
-          @update:model-value="handleSortDirectionChange" />
+        <SelectionTabs
+          v-if="isSortingEnabled"
+          :model-value="sortDirection"
+          :options="sortDirectionOptions"
+          @update:model-value="handleSortDirectionChange"
+        />
       </div>
 
       <Separator />
 
       <!-- Show Labels Section -->
-      <SettingsToggle id="labels-switch" label="Show labels" description="Display data labels on chart elements."
-        :checked="showLabels" @update:checked="handleShowLabelsChange" />
+      <SettingsToggle
+        id="labels-switch"
+        label="Show labels"
+        description="Display data labels on chart elements."
+        :checked="showLabels"
+        @update:checked="handleShowLabelsChange"
+      />
     </CardContent>
   </Card>
 </template>

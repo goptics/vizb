@@ -12,10 +12,7 @@ const delegatedProps = computed(() => {
 </script>
 
 <template>
-  <ComboboxItemIndicator
-    v-bind="delegatedProps"
-    :class="cn('ml-auto', props.class)"
-  >
+  <ComboboxItemIndicator v-bind="delegatedProps" :class="cn('ml-auto', props.class)">
     <slot />
   </ComboboxItemIndicator>
 </template>

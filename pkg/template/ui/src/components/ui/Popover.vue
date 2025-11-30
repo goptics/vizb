@@ -8,7 +8,4 @@ defineProps<{ class?: string }>()
   <PopoverRoot v-bind="$attrs">
     <slot />
   </PopoverRoot>
-  
 </template>
-
-

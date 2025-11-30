@@ -1,10 +1,10 @@
-import type { EChartsOption } from "echarts/types/dist/shared";
-import { fontSize } from "./common";
+import type { EChartsOption } from 'echarts/types/dist/shared'
+import { fontSize } from './common'
 
 export interface ChartStyling {
-  textColor: string;
-  axisColor: string;
-  opacity: number;
+  textColor: string
+  axisColor: string
+  opacity: number
   backgroundColor: string | undefined
 }
 
@@ -13,11 +13,11 @@ export interface ChartStyling {
  */
 export function getChartStyling(isDark: boolean): ChartStyling {
   return {
-    textColor: isDark ? "#e5e7eb" : "#374151",
-    axisColor: isDark ? "#4b5563" : "#d1d5db",
-    backgroundColor: isDark ? "transparent" : undefined,
+    textColor: isDark ? '#e5e7eb' : '#374151',
+    axisColor: isDark ? '#4b5563' : '#d1d5db',
+    backgroundColor: isDark ? 'transparent' : undefined,
     opacity: isDark ? 0.2 : 0.8,
-  };
+  }
 }
 
 /**
@@ -29,7 +29,7 @@ export function createAxisConfig(
 ): { xAxis: any; yAxis: any } {
   return {
     xAxis: {
-      type: "category",
+      type: 'category',
       data: xAxisData,
       axisLabel: {
         interval: 0,
@@ -42,7 +42,7 @@ export function createAxisConfig(
       },
     },
     yAxis: {
-      type: "value",
+      type: 'value',
       splitLine: {
         lineStyle: {
           opacity: styling.opacity,
@@ -55,7 +55,7 @@ export function createAxisConfig(
         lineStyle: { color: styling.axisColor },
       },
     },
-  };
+  }
 }
 
 /**
@@ -67,36 +67,36 @@ export function createTooltipConfig(hasXYAxis: boolean, seriesCount = 1): EChart
   // Use item trigger if there are too many series (>10) to avoid overwhelming tooltip
   if (hasXYAxis && seriesCount <= 10) {
     return {
-      trigger: "axis",
-      axisPointer: { type: "shadow" },
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
       formatter: (params) => {
-        if (!Array.isArray(params)) return "";
+        if (!Array.isArray(params)) return ''
 
         return params.reduce(
           (acc, cur) => `${acc}${cur.marker} ${cur.seriesName}: ${cur.value}<br/>`,
           `<strong>${params[0]?.name}</strong><br/>`
-        );
+        )
       },
     }
   }
 
   return {
-    trigger: "item",
+    trigger: 'item',
     formatter: (params) => {
-      if (Array.isArray(params)) return "";
-      let { name, seriesName } = params;
+      if (Array.isArray(params)) return ''
+      let { name, seriesName } = params
 
       if (hasXYAxis && seriesName) {
-        name = seriesName;
+        name = seriesName
       }
 
       if (!name && seriesName) {
-        name = seriesName;
+        name = seriesName
       }
-      
-      return `${params.marker} <strong>${name}</strong><br/>${params.value}`;
+
+      return `${params.marker} <strong>${name}</strong><br/>${params.value}`
     },
-  };
+  }
 }
 
 /**
@@ -109,43 +109,39 @@ export function createLegendConfig(
   customConfig?: any
 ): any {
   if (!hasMultipleSeries) {
-    return { show: false };
+    return { show: false }
   }
 
   return {
     show: true,
-    left: "center",
+    left: 'center',
     itemWidth: 10,
     itemHeight: 10,
     textStyle: { fontSize, color: styling.textColor },
     data: series.map((s) => s.xAxis),
     ...customConfig,
-  };
+  }
 }
 
 /**
  * Creates common grid configuration
  */
 export function createGridConfig(seriesLength = 1): any {
-  const legendSpace = Math.min(
-    15 + Math.floor((seriesLength - 1) / 15) * 2,
-    35
-  );
+  const legendSpace = Math.min(15 + Math.floor((seriesLength - 1) / 15) * 2, 35)
 
   return {
-    left: "3%",
-    right: "3%",
-    bottom: "10%",
+    left: '3%',
+    right: '3%',
+    bottom: '10%',
     top: `${legendSpace}%`,
     containLabel: true,
-  };
+  }
 }
-
 
 export const createLabelConfig = (showLabels: boolean, styling: ChartStyling) => ({
   show: showLabels,
-  position: "top" as const,
-  formatter: "{c}",
+  position: 'top' as const,
+  formatter: '{c}',
   fontSize,
   color: styling.textColor,
-});
+})

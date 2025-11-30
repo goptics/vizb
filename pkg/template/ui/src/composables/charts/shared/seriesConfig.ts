@@ -1,4 +1,4 @@
-import { fontSize } from "./common";
+import { fontSize } from './common'
 
 /**
  * Creates pie chart label configuration
@@ -13,7 +13,7 @@ export function createPieLabelConfig(
     formatter: customFormatter,
     fontSize,
     color: styling.textColor,
-  };
+  }
 }
 
 /**
@@ -25,17 +25,17 @@ export function createPieSeriesConfig(
   showLabels: boolean,
   styling: { textColor: string },
   customFormatter?: (params: any) => string,
-  radius: [string, string] = ["40%", "70%"],
-  center: [string, string] = ["50%", "50%"]
+  radius: [string, string] = ['40%', '70%'],
+  center: [string, string] = ['50%', '50%']
 ): any {
   return {
     name,
-    type: "pie",
+    type: 'pie',
     radius,
     center,
     data,
     label: createPieLabelConfig(showLabels, styling, customFormatter),
-  };
+  }
 }
 
 /**
@@ -50,20 +50,20 @@ export function createLineSeriesConfig(
 ): any {
   return {
     name: seriesData.subject,
-    type: "line",
+    type: 'line',
     data: seriesData.values.map((value: number) => ({
       value,
       label: {
         show: showLabels,
-        position: "top",
-        formatter: "{c}",
+        position: 'top',
+        formatter: '{c}',
         fontSize,
         color: styling.textColor,
       },
     })),
     itemStyle: { color },
     ...customConfig,
-  };
+  }
 }
 
 /**
@@ -78,18 +78,18 @@ export function createBarSeriesConfig(
 ): any {
   return {
     name: seriesData.subject,
-    type: "bar",
+    type: 'bar',
     data: seriesData.values.map((value: number) => ({
       value,
       label: {
         show: showLabels,
-        position: "top",
-        formatter: "{c}",
+        position: 'top',
+        formatter: '{c}',
         fontSize,
         color: styling.textColor,
       },
     })),
     itemStyle: { color },
     ...customConfig,
-  };
+  }
 }

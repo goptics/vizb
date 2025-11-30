@@ -10,12 +10,3 @@ const props = defineProps<{ class?: string }>()
     <slot />
   </PopoverTrigger>
 </template>
-
-
-
-
-
-
-
-
-

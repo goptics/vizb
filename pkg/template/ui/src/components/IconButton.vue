@@ -1,7 +1,7 @@
 <script setup lang="ts">
 defineProps<{
-  href?: string;
-}>();
+  href?: string
+}>()
 </script>
 
 <template>
@@ -11,7 +11,7 @@ defineProps<{
     :target="href ? '_blank' : undefined"
     :rel="href ? 'noopener noreferrer' : undefined"
     :type="href ? undefined : 'button'"
-    class="inline-flex items-center justify-center w-12 h-12 rounded-lg border border-border bg-card text-card-foreground hover:bg-accent hover:text-primary shadow-sm"
+    class="inline-flex h-12 w-12 items-center justify-center rounded-lg border border-border bg-card text-card-foreground shadow-sm hover:bg-accent hover:text-primary"
   >
     <slot />
   </component>
