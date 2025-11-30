@@ -37,6 +37,12 @@ tasks:
     cmds:
       - golangci-lint run
 
+  format:
+    desc: Format codes
+    cmds:
+      - gofmt -w .
+      - cd pkg/template/ui; pnpm format; cd -
+
   release:check:
     desc: Check Goreleaser configuration
     cmds:
