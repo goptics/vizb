@@ -8,10 +8,7 @@ const props = defineProps<{
 </script>
 
 <template>
-  <ComboboxRoot
-    v-bind="$attrs"
-    :class="cn(props.class)"
-  >
+  <ComboboxRoot v-bind="$attrs" :class="cn(props.class)">
     <slot />
   </ComboboxRoot>
 </template>

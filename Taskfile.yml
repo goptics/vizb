@@ -14,7 +14,7 @@ tasks:
   build:ui:
     desc: Build Vue UI template
     cmds:
-      - cd pkg/template/ui; pnpm build; cd -
+      - cd pkg/template/ui; SINGLEFILE=True pnpm build; cd -
 
   build:cli:
     desc: Build the binary (production-ready, stripped)
@@ -36,6 +36,12 @@ tasks:
     desc: Run linter
     cmds:
       - golangci-lint run
+
+  format:
+    desc: Format codes
+    cmds:
+      - gofmt -w .
+      - cd pkg/template/ui; pnpm format; cd -
 
   release:check:
     desc: Check Goreleaser configuration

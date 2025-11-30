@@ -10,10 +10,7 @@
     "arch": "",
     "pkg": "github.com/gin-gonic/go-http-routing-benchmark",
     "settings": {
-      "charts": [
-        "bar",
-        "pie"
-      ],
+      "charts": ["bar", "pie"],
       "sort": {
         "enabled": true,
         "order": "asc"
@@ -16965,10 +16962,7 @@
     "arch": "",
     "pkg": "github.com/smallnest/gosercomp",
     "settings": {
-      "charts": [
-        "bar",
-        "pie"
-      ],
+      "charts": ["bar", "pie"],
       "sort": {
         "enabled": true,
         "order": "asc"
@@ -18893,10 +18887,7 @@
     "arch": "amd64",
     "pkg": "github.com/goptics/varmq",
     "settings": {
-      "charts": [
-        "bar",
-        "pie"
-      ],
+      "charts": ["bar", "pie"],
       "sort": {
         "enabled": true,
         "order": "asc"

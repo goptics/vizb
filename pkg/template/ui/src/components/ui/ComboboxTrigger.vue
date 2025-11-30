@@ -12,10 +12,7 @@ const delegatedProps = computed(() => {
 </script>
 
 <template>
-  <ComboboxTrigger
-    v-bind="delegatedProps"
-    :class="cn('', props.class)"
-  >
+  <ComboboxTrigger v-bind="delegatedProps" :class="cn('', props.class)">
     <slot />
   </ComboboxTrigger>
 </template>

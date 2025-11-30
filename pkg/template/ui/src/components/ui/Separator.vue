@@ -10,11 +10,13 @@ const props = defineProps<{
 <template>
   <div
     v-bind="$attrs"
-    :class="cn(
-      'shrink-0 bg-border',
-      props.orientation === 'vertical' ? 'w-px h-full' : 'h-px w-full',
-      props.class
-    )"
+    :class="
+      cn(
+        'shrink-0 bg-border',
+        props.orientation === 'vertical' ? 'h-full w-px' : 'h-px w-full',
+        props.class
+      )
+    "
     role="separator"
     :aria-orientation="props.orientation || 'horizontal'"
   ></div>

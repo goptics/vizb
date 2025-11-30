@@ -3,7 +3,6 @@
  * Defines the structure for benchmark visualization data
  */
 
-
 export interface Stat {
   type: string
   value: number

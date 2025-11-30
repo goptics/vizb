@@ -14,10 +14,12 @@ const delegatedProps = computed(() => {
 <template>
   <ComboboxContent
     v-bind="delegatedProps"
-    :class="cn(
-      'absolute top-full left-0 z-50 mt-1 w-full max-h-[300px] overflow-y-auto rounded-md border bg-popover text-popover-foreground shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
-      props.class
-    )"
+    :class="
+      cn(
+        'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 absolute left-0 top-full z-50 mt-1 max-h-[300px] w-full overflow-y-auto rounded-md border bg-popover text-popover-foreground shadow-lg',
+        props.class
+      )
+    "
     :side-offset="4"
     :align-offset="0"
   >

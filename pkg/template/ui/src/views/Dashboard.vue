@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { computed, watch } from "vue";
-import { Moon, Sun, Package } from "lucide-vue-next";
-import { useBenchmarkData } from "../composables/useBenchmarkData";
-import { useChartData } from "../composables/useChartData";
-import { useSettingsStore } from "../composables/useSettingsStore";
-import ChartSettingsPopover from "../components/ChartSettingsPopover.vue";
-import BenchmarkGroupSelector from "../components/BenchmarkGroupSelector.vue";
-import ChartCard from "../components/ChartCard.vue";
-import IconButton from "../components/IconButton.vue";
-import AccentLink from "../components/AccentLink.vue";
-import { CPUtoString } from "../lib/utils";
+import { computed, watch } from 'vue'
+import { Moon, Sun, Package } from 'lucide-vue-next'
+import { useBenchmarkData } from '../composables/useBenchmarkData'
+import { useChartData } from '../composables/useChartData'
+import { useSettingsStore } from '../composables/useSettingsStore'
+import ChartSettingsPopover from '../components/ChartSettingsPopover.vue'
+import BenchmarkGroupSelector from '../components/BenchmarkGroupSelector.vue'
+import ChartCard from '../components/ChartCard.vue'
+import IconButton from '../components/IconButton.vue'
+import AccentLink from '../components/AccentLink.vue'
+import { CPUtoString } from '../lib/utils'
 
 const version = window.VIZB_VERSION || 'v0.0.0-dev'
 
@@ -25,98 +25,103 @@ const {
   activeGroup,
   activeGroupId,
   selectGroup,
-} = useBenchmarkData();
+} = useBenchmarkData()
 
 // Use the active group's results for chart data
-const activeResults = computed(() => activeGroup.value?.data || []);
-const { chartData } = useChartData(activeResults);
+const activeResults = computed(() => activeGroup.value?.data || [])
+const { chartData } = useChartData(activeResults)
 
-const { isDark, toggleDark, initializeFromBenchmark } = useSettingsStore();
+const { isDark, toggleDark, initializeFromBenchmark } = useSettingsStore()
 
 // Initialize settings from the active benchmark settings
 watch(
   activeBenchmark,
   (b) => {
     if (b?.settings) {
-      initializeFromBenchmark(b.settings);
+      initializeFromBenchmark(b.settings)
     }
   },
   { immediate: true }
-);
+)
 
 // Get the main constant title (use description as main title)
 const mainTitle = computed(() => {
   // Use the description from the first benchmark as the constant title
-  return benchmarks.value[0]?.name || "Benchmarks";
-});
+  return benchmarks.value[0]?.name || 'Benchmarks'
+})
 
-const hasCPU = computed(() => activeBenchmark.value?.cpu?.name || activeBenchmark.value?.cpu?.cores);
-
+const hasCPU = computed(() => activeBenchmark.value?.cpu?.name || activeBenchmark.value?.cpu?.cores)
 </script>
 
 <template>
-  <nav class="fixed top-6 right-6 z-50 flex items-center gap-2">
+  <nav class="fixed right-6 top-6 z-50 flex items-center gap-2">
     <IconButton
       v-if="activeBenchmark?.pkg"
       :href="`https://${activeBenchmark.pkg}`"
       aria-label="View Package Source"
     >
-      <Package class="w-5 h-5" />
+      <Package class="h-5 w-5" />
     </IconButton>
 
     <ChartSettingsPopover />
 
     <IconButton @click="toggleDark()" aria-label="Toggle theme">
-      <Sun v-if="isDark" class="w-5 h-5" />
-      <Moon v-else class="w-5 h-5" />
+      <Sun v-if="isDark" class="h-5 w-5" />
+      <Moon v-else class="h-5 w-5" />
     </IconButton>
   </nav>
 
-  <main class="min-h-screen max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <template v-if="activeBenchmark">
-      <header class="text-center space-y-3 pb-5">
-        <h1 class="text-4xl flex items-center justify-center">
-          <BenchmarkGroupSelector v-if="benchmarks.length > 1" :benchmarks="benchmarks"
-            :activeBenchmarkId="activeBenchmarkId" @select="selectBenchmark" class="min-w-80"
-            placeholder="Search Benchmark..." />
-          <template v-else>
-            {{ mainTitle }}
-          </template>
-        </h1>
+  <main v-if="activeBenchmark" class="mx-auto min-h-screen max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <header class="space-y-3 py-5 text-center">
+      <BenchmarkGroupSelector
+        v-if="benchmarks.length > 1"
+        :benchmarks="benchmarks"
+        :activeBenchmarkId="activeBenchmarkId"
+        @select="selectBenchmark"
+        class="mx-auto min-w-80"
+        placeholder="Search Benchmark..."
+      />
 
-        <span v-if="hasCPU"
-          class="inline-flex items-center px-3 py-1 text-sm font-semibold rounded-lg border border-border bg-secondary text-secondary-foreground">
-          CPU: {{ CPUtoString(activeBenchmark.cpu) }}
-        </span>
+      <h1 v-else class="text-4xl">{{ mainTitle }}</h1>
 
-        <p v-if="activeBenchmark.description" class="text-muted-foreground">
-          {{ activeBenchmark.description }}
-        </p>
+      <span
+        v-if="hasCPU"
+        class="inline-block rounded-lg border border-border bg-secondary px-2 py-1 text-sm font-semibold text-secondary-foreground"
+        >CPU: {{ CPUtoString(activeBenchmark.cpu) }}</span
+      >
 
-        <!-- Inner Group Selector -->
-        <div v-if="resultGroups.length > 1" class="flex justify-center">
-          <BenchmarkGroupSelector :benchmarks="resultGroups" :activeBenchmarkId="activeGroupId" @select="selectGroup"
-            placeholder="Search Group..." />
-        </div>
-      </header>
+      <p v-if="activeBenchmark.description" class="text-muted-foreground">
+        {{ activeBenchmark.description }}
+      </p>
 
-      <!-- Charts Grid -->
-      <div class="space-y-5">
-        <ChartCard v-for="(chart, index) in chartData" :key="`${activeBenchmarkId}-${activeGroupId}-${index}`"
-          :chartData="chart" class="animate-fade-in" :style="{ animationDelay: `${index * 50}ms` }" />
-      </div>
-    </template>
+      <!-- Inner Group Selector -->
+      <BenchmarkGroupSelector
+        v-if="resultGroups.length > 1"
+        :benchmarks="resultGroups"
+        :activeBenchmarkId="activeGroupId"
+        @select="selectGroup"
+        placeholder="Search Group..."
+        class="mx-auto min-w-80"
+      />
+    </header>
+
+    <!-- Charts Grid -->
+    <div class="space-y-5">
+      <ChartCard
+        v-for="(chart, index) in chartData"
+        :key="`${activeBenchmarkId}-${activeGroupId}-${index}`"
+        :chartData="chart"
+        class="animate-fade-in"
+        :style="{ animationDelay: `${index * 50}ms` }"
+      />
+    </div>
   </main>
 
-  <footer class="text-center pb-5 text-sm text-muted-foreground">
+  <footer class="pb-5 text-center text-sm text-muted-foreground">
     Generated by
-    <AccentLink href="https://github.com/goptics/vizb">
-      Vizb
-    </AccentLink>
+    <AccentLink href="https://github.com/goptics/vizb"> Vizb </AccentLink>
     | Made with ❤ -
-    <AccentLink href="https://github.com/goptics">
-      Goptics
-    </AccentLink>
+    <AccentLink href="https://github.com/goptics"> Goptics </AccentLink>
     © {{ new Date().getFullYear() }}
     <p class="text-muted-foreground/50">
       {{ version }}

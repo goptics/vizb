@@ -12,10 +12,7 @@ const delegatedProps = computed(() => {
 </script>
 
 <template>
-  <ComboboxAnchor
-    v-bind="delegatedProps"
-    :class="cn('relative', props.class)"
-  >
+  <ComboboxAnchor v-bind="delegatedProps" :class="cn('relative', props.class)">
     <slot />
   </ComboboxAnchor>
 </template>

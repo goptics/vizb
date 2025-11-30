@@ -1,4 +1,4 @@
-import type { Benchmark } from "./types/benchmark"
+import type { Benchmark } from './types/benchmark'
 
 declare global {
   interface Window {
@@ -8,5 +8,3 @@ declare global {
 }
 
 export {}
-
-
