@@ -3,8 +3,11 @@ package shared
 type Stat struct {
 	Type  string  `json:"type"`
 	Value float64 `json:"value,omitempty"`
-	Unit  string  `json:"unit,omitempty"`
-	Per   string  `json:"per,omitempty"`
+}
+
+type StatConfig struct {
+	Unit string `json:"unit,omitempty"`
+	Per  string `json:"per,omitempty"`
 }
 
 type BenchmarkResult struct {
@@ -30,7 +33,8 @@ type Benchmark struct {
 			Enabled bool   `json:"enabled"`
 			Order   string `json:"order"`
 		} `json:"sort"`
-		ShowLabels bool `json:"showLabels"`
+		ShowLabels bool                  `json:"showLabels"`
+		Stats      map[string]StatConfig `json:"stats,omitempty"`
 	} `json:"settings"`
 	Data []BenchmarkResult `json:"data"`
 }
