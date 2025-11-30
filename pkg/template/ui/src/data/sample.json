@@ -9,7 +9,21 @@
         "enabled": true,
         "order": "asc"
       },
-      "showLabels": false
+      "showLabels": false,
+      "stats": {
+        "Execution Time": {
+          "unit": "ns",
+          "per": "op"
+        },
+        "Memory Usage": {
+          "unit": "B",
+          "per": "op"
+        },
+        "Allocations": {
+          "per": "op"
+        },
+        "Iterations": {}
+      }
     },
     "data": [
       {
@@ -24,13 +38,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -51,13 +63,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -78,13 +88,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -105,13 +113,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -186,13 +192,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -240,13 +244,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -267,13 +269,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -321,13 +321,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -456,13 +454,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -483,13 +479,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -510,13 +504,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -537,13 +529,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -564,13 +554,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -726,13 +714,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -861,13 +847,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -888,13 +872,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -915,13 +897,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -1077,13 +1057,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -1293,13 +1271,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -1374,13 +1350,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -1671,13 +1645,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -1698,13 +1670,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -1860,13 +1830,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -1887,13 +1855,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -2103,13 +2069,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -2184,13 +2148,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -2481,13 +2443,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -2508,13 +2468,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -2670,13 +2628,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -2697,13 +2653,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -2913,13 +2867,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -2994,13 +2946,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -3318,13 +3268,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -3507,13 +3455,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -3723,13 +3669,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -3804,13 +3748,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -4101,13 +4043,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -4128,13 +4068,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -4155,13 +4093,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -4290,13 +4226,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -4317,13 +4251,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -4371,13 +4303,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -4506,13 +4436,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -4533,13 +4461,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -4560,13 +4486,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -4587,13 +4511,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -4614,13 +4536,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -4776,13 +4696,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -4911,13 +4829,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -4938,13 +4854,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -5100,13 +5014,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -5127,13 +5039,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -5343,13 +5253,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -5424,13 +5332,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -5721,13 +5627,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -5748,13 +5652,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -5910,13 +5812,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -5937,13 +5837,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -6153,13 +6051,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -6234,13 +6130,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -6531,13 +6425,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -6558,13 +6450,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -6585,13 +6475,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -6720,13 +6608,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -6747,13 +6633,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -6801,13 +6685,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -6936,13 +6818,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -6963,13 +6843,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -6990,13 +6868,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -7017,13 +6893,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -7044,13 +6918,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -7206,13 +7078,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -7341,13 +7211,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -7368,13 +7236,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -7530,13 +7396,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -7557,13 +7421,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -7773,13 +7635,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -7854,13 +7714,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -8151,13 +8009,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -8178,13 +8034,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -8340,13 +8194,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -8367,13 +8219,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -8583,13 +8433,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -8664,13 +8512,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -8961,13 +8807,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -8988,13 +8832,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -9150,13 +8992,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -9177,13 +9017,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -9393,13 +9231,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -9474,13 +9310,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -9771,13 +9605,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -9798,13 +9630,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -9825,13 +9655,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -9960,13 +9788,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -9987,13 +9813,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -10041,13 +9865,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -10176,13 +9998,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -10203,13 +10023,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -10230,13 +10048,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -10257,13 +10073,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -10284,13 +10098,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -10446,13 +10258,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -10581,13 +10391,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -10608,13 +10416,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -10770,13 +10576,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -10797,13 +10601,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -11013,13 +10815,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -11094,13 +10894,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -11391,13 +11189,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -11418,13 +11214,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -11580,13 +11374,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -11607,13 +11399,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -11823,13 +11613,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -11904,13 +11692,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -12201,13 +11987,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -12228,13 +12012,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -12390,13 +12172,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -12417,13 +12197,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -12633,13 +12411,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -12714,13 +12490,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -15236,7 +15010,6 @@
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -15294,13 +15067,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -15646,13 +15417,11 @@
           },
           {
             "type": "Memory Usage",
-            "value": 0,
             "unit": "B",
             "per": "op"
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {
@@ -15684,7 +15453,6 @@
           },
           {
             "type": "Allocations",
-            "value": 0,
             "per": "op"
           },
           {

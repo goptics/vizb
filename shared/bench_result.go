@@ -2,7 +2,7 @@ package shared
 
 type Stat struct {
 	Type  string  `json:"type"`
-	Value float64 `json:"value"`
+	Value float64 `json:"value,omitempty"`
 	Unit  string  `json:"unit,omitempty"`
 	Per   string  `json:"per,omitempty"`
 }
