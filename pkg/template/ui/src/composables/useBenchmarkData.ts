@@ -36,7 +36,8 @@ export function useBenchmarkData() {
       // Process stats for each result
       for (const result of benchmark.data) {
         for (const stat of result.stats) {
-          stat.value = parseFloat(stat.value.toFixed(2))
+          const { value = 0 } = stat
+          stat.value = Number(value.toFixed(2))
         }
       }
 

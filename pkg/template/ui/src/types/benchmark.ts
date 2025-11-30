@@ -5,7 +5,7 @@
 
 export interface Stat {
   type: string
-  value: number
+  value?: number
   unit?: string
   per?: string
 }

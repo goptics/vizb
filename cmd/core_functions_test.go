@@ -137,9 +137,9 @@ func TestWriteOutput(t *testing.T) {
 			XAxis: "8",
 			YAxis: "Example",
 			Stats: []shared.Stat{
-				{Type: "time", Value: 1234, Unit: "ns/op"},
-				{Type: "memory", Value: 1000, Unit: "B/op"},
-				{Type: "allocs", Value: 10, Unit: "allocs/op"},
+				{Type: "time", Value: 1234},
+				{Type: "memory", Value: 1000},
+				{Type: "allocs", Value: 10},
 			},
 		},
 		{
@@ -147,9 +147,9 @@ func TestWriteOutput(t *testing.T) {
 			XAxis: "8",
 			YAxis: "Another",
 			Stats: []shared.Stat{
-				{Type: "time", Value: 2345, Unit: "ns/op"},
-				{Type: "memory", Value: 2000, Unit: "B/op"},
-				{Type: "allocs", Value: 20, Unit: "allocs/op"},
+				{Type: "time", Value: 2345},
+				{Type: "memory", Value: 2000},
+				{Type: "allocs", Value: 20},
 			},
 		},
 	}
