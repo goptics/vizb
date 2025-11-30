@@ -57,6 +57,10 @@ export const hasYAxis = (chartData: Ref<ChartData, ChartData>) =>
   chartData.value.yAxis && chartData.value.yAxis.length > 0 && chartData.value.yAxis[0] !== ''
 
 export const CPUtoString = (cpu: Benchmark['cpu']) => {
+  if (!cpu) {
+    return ''
+  }
+
   if (cpu.name && cpu.cores) {
     return `${cpu.name} (${cpu.cores} cores)`
   }

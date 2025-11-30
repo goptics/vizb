@@ -2,7 +2,6 @@
   "name": "Worker Pool Benchmarks",
   "description": "Performance comparison of different worker pool implementations",
   "cpu": {
-    "name": "",
     "cores": 8
   },
   "os": "linux",
@@ -41,7 +40,6 @@
         {
           "type": "Allocations",
           "value": 83966,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -66,7 +64,6 @@
         {
           "type": "Allocations",
           "value": 80628,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -91,7 +88,6 @@
         {
           "type": "Allocations",
           "value": 88093,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -116,7 +112,6 @@
         {
           "type": "Allocations",
           "value": 1009514,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -141,7 +136,6 @@
         {
           "type": "Allocations",
           "value": 270289,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -166,7 +160,6 @@
         {
           "type": "Allocations",
           "value": 273297,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -191,7 +184,6 @@
         {
           "type": "Allocations",
           "value": 24369,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -216,7 +208,6 @@
         {
           "type": "Allocations",
           "value": 85681,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -241,7 +232,6 @@
         {
           "type": "Allocations",
           "value": 420257,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -266,7 +256,6 @@
         {
           "type": "Allocations",
           "value": 325129,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -291,7 +280,6 @@
         {
           "type": "Allocations",
           "value": 200380,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -316,7 +304,6 @@
         {
           "type": "Allocations",
           "value": 1049624,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -341,7 +328,6 @@
         {
           "type": "Allocations",
           "value": 266476,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -366,7 +352,6 @@
         {
           "type": "Allocations",
           "value": 266452,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -391,7 +376,6 @@
         {
           "type": "Allocations",
           "value": 28852,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -416,7 +400,6 @@
         {
           "type": "Allocations",
           "value": 170562,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -441,7 +424,6 @@
         {
           "type": "Allocations",
           "value": 466470,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -466,7 +448,6 @@
         {
           "type": "Allocations",
           "value": 466493,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -491,7 +472,6 @@
         {
           "type": "Allocations",
           "value": 79389,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -516,7 +496,6 @@
         {
           "type": "Allocations",
           "value": 1000002,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -541,7 +520,6 @@
         {
           "type": "Allocations",
           "value": 266478,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -566,7 +544,6 @@
         {
           "type": "Allocations",
           "value": 266503,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -591,7 +568,6 @@
         {
           "type": "Allocations",
           "value": 29203,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -616,7 +592,6 @@
         {
           "type": "Allocations",
           "value": 131752,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -641,7 +616,6 @@
         {
           "type": "Allocations",
           "value": 91585,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -666,7 +640,6 @@
         {
           "type": "Allocations",
           "value": 53280,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -691,7 +664,6 @@
         {
           "type": "Allocations",
           "value": 40577,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -716,7 +688,6 @@
         {
           "type": "Allocations",
           "value": 1000002,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -741,7 +712,6 @@
         {
           "type": "Allocations",
           "value": 266446,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -766,7 +736,6 @@
         {
           "type": "Allocations",
           "value": 266463,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -791,7 +760,6 @@
         {
           "type": "Allocations",
           "value": 25209,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -816,7 +784,6 @@
         {
           "type": "Allocations",
           "value": 150942,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -841,7 +808,6 @@
         {
           "type": "Allocations",
           "value": 53259,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -866,7 +832,6 @@
         {
           "type": "Allocations",
           "value": 46156,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -891,7 +856,6 @@
         {
           "type": "Allocations",
           "value": 50711,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -916,7 +880,6 @@
         {
           "type": "Allocations",
           "value": 1000002,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -941,7 +904,6 @@
         {
           "type": "Allocations",
           "value": 266464,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -966,7 +928,6 @@
         {
           "type": "Allocations",
           "value": 266487,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -991,7 +952,6 @@
         {
           "type": "Allocations",
           "value": 334860,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -1016,7 +976,6 @@
         {
           "type": "Allocations",
           "value": 455767,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -1041,7 +1000,6 @@
         {
           "type": "Allocations",
           "value": 156,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -1066,7 +1024,6 @@
         {
           "type": "Allocations",
           "value": 96,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -1091,7 +1048,6 @@
         {
           "type": "Allocations",
           "value": 120,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -1116,7 +1072,6 @@
         {
           "type": "Allocations",
           "value": 602,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -1141,7 +1096,6 @@
         {
           "type": "Allocations",
           "value": 66476,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -1166,7 +1120,6 @@
         {
           "type": "Allocations",
           "value": 66516,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -1191,7 +1144,6 @@
         {
           "type": "Allocations",
           "value": 14,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -1216,7 +1168,6 @@
         {
           "type": "Allocations",
           "value": 25377,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -1241,7 +1192,6 @@
         {
           "type": "Allocations",
           "value": 1514,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -1266,7 +1216,6 @@
         {
           "type": "Allocations",
           "value": 293,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -1291,7 +1240,6 @@
         {
           "type": "Allocations",
           "value": 5889,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -1316,7 +1264,6 @@
         {
           "type": "Allocations",
           "value": 46804,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -1341,7 +1288,6 @@
         {
           "type": "Allocations",
           "value": 66471,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -1366,7 +1312,6 @@
         {
           "type": "Allocations",
           "value": 66482,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -1391,7 +1336,6 @@
         {
           "type": "Allocations",
           "value": 147,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -1416,7 +1360,6 @@
         {
           "type": "Allocations",
           "value": 1797,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -1441,7 +1384,6 @@
         {
           "type": "Allocations",
           "value": 133763,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -1466,7 +1408,6 @@
         {
           "type": "Allocations",
           "value": 110,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -1491,7 +1432,6 @@
         {
           "type": "Allocations",
           "value": 419,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -1516,7 +1456,6 @@
         {
           "type": "Allocations",
           "value": 79199,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -1541,7 +1480,6 @@
         {
           "type": "Allocations",
           "value": 66722,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -1566,7 +1504,6 @@
         {
           "type": "Allocations",
           "value": 66438,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -1591,7 +1528,6 @@
         {
           "type": "Allocations",
           "value": 823,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -1616,7 +1552,6 @@
         {
           "type": "Allocations",
           "value": 6466,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -1641,7 +1576,6 @@
         {
           "type": "Allocations",
           "value": 145,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -1666,7 +1600,6 @@
         {
           "type": "Allocations",
           "value": 230,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -1691,7 +1624,6 @@
         {
           "type": "Allocations",
           "value": 45,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -1716,7 +1648,6 @@
         {
           "type": "Allocations",
           "value": 62654,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -1741,7 +1672,6 @@
         {
           "type": "Allocations",
           "value": 67328,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -1766,7 +1696,6 @@
         {
           "type": "Allocations",
           "value": 66484,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -1791,7 +1720,6 @@
         {
           "type": "Allocations",
           "value": 4172,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -1816,7 +1744,6 @@
         {
           "type": "Allocations",
           "value": 48919,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -1841,7 +1768,6 @@
         {
           "type": "Allocations",
           "value": 104,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -1866,7 +1792,6 @@
         {
           "type": "Allocations",
           "value": 76,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -1891,7 +1816,6 @@
         {
           "type": "Allocations",
           "value": 83,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -1916,7 +1840,6 @@
         {
           "type": "Allocations",
           "value": 9,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -1941,7 +1864,6 @@
         {
           "type": "Allocations",
           "value": 66490,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -1966,7 +1888,6 @@
         {
           "type": "Allocations",
           "value": 66473,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -1991,7 +1912,6 @@
         {
           "type": "Allocations",
           "value": 333672,
-          "unit": "",
           "per": "op"
         }
       ]
@@ -2016,7 +1936,6 @@
         {
           "type": "Allocations",
           "value": 187657,
-          "unit": "",
           "per": "op"
         }
       ]

@@ -22,7 +22,6 @@
   "data": [
     {
       "name": "Add",
-      "xAxis": "",
       "yAxis": "Queue",
       "stats": [
         {
@@ -40,20 +39,16 @@
         {
           "type": "Allocations",
           "value": 3,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 364238,
-          "unit": "",
-          "per": ""
+          "value": 364238
         }
       ]
     },
     {
       "name": "Add",
-      "xAxis": "",
       "yAxis": "Priority",
       "stats": [
         {
@@ -71,20 +66,16 @@
         {
           "type": "Allocations",
           "value": 4,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 760196,
-          "unit": "",
-          "per": ""
+          "value": 760196
         }
       ]
     },
     {
       "name": "Add",
-      "xAxis": "",
       "yAxis": "ErrQueue",
       "stats": [
         {
@@ -102,20 +93,16 @@
         {
           "type": "Allocations",
           "value": 6,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 339716,
-          "unit": "",
-          "per": ""
+          "value": 339716
         }
       ]
     },
     {
       "name": "Add",
-      "xAxis": "",
       "yAxis": "ErrPriority",
       "stats": [
         {
@@ -133,20 +120,16 @@
         {
           "type": "Allocations",
           "value": 7,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 466075,
-          "unit": "",
-          "per": ""
+          "value": 466075
         }
       ]
     },
     {
       "name": "Add",
-      "xAxis": "",
       "yAxis": "ResultQueue",
       "stats": [
         {
@@ -164,20 +147,16 @@
         {
           "type": "Allocations",
           "value": 6,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 368671,
-          "unit": "",
-          "per": ""
+          "value": 368671
         }
       ]
     },
     {
       "name": "Add",
-      "xAxis": "",
       "yAxis": "ResultPriority",
       "stats": [
         {
@@ -195,20 +174,16 @@
         {
           "type": "Allocations",
           "value": 7,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 453199,
-          "unit": "",
-          "per": ""
+          "value": 453199
         }
       ]
     },
     {
       "name": "AddAll",
-      "xAxis": "",
       "yAxis": "Queue",
       "stats": [
         {
@@ -226,20 +201,16 @@
         {
           "type": "Allocations",
           "value": 4002,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 812,
-          "unit": "",
-          "per": ""
+          "value": 812
         }
       ]
     },
     {
       "name": "AddAll",
-      "xAxis": "",
       "yAxis": "Priority",
       "stats": [
         {
@@ -257,20 +228,16 @@
         {
           "type": "Allocations",
           "value": 5002,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 727,
-          "unit": "",
-          "per": ""
+          "value": 727
         }
       ]
     },
     {
       "name": "AddAll",
-      "xAxis": "",
       "yAxis": "ErrQueue",
       "stats": [
         {
@@ -288,20 +255,16 @@
         {
           "type": "Allocations",
           "value": 4505,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 544,
-          "unit": "",
-          "per": ""
+          "value": 544
         }
       ]
     },
     {
       "name": "AddAll",
-      "xAxis": "",
       "yAxis": "ErrPriority",
       "stats": [
         {
@@ -319,20 +282,16 @@
         {
           "type": "Allocations",
           "value": 5505,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 458,
-          "unit": "",
-          "per": ""
+          "value": 458
         }
       ]
     },
     {
       "name": "AddAll",
-      "xAxis": "",
       "yAxis": "ResultQueue",
       "stats": [
         {
@@ -350,20 +309,16 @@
         {
           "type": "Allocations",
           "value": 4005,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 510,
-          "unit": "",
-          "per": ""
+          "value": 510
         }
       ]
     },
     {
       "name": "AddAll",
-      "xAxis": "",
       "yAxis": "ResultPriority",
       "stats": [
         {
@@ -381,14 +336,11 @@
         {
           "type": "Allocations",
           "value": 5005,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 1384,
-          "unit": "",
-          "per": ""
+          "value": 1384
         }
       ]
     }

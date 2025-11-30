@@ -1,13 +1,6 @@
 {
   "name": "Hashing",
   "description": "Comparison of different hash functions",
-  "cpu": {
-    "name": "",
-    "cores": 0
-  },
-  "os": "",
-  "arch": "",
-  "pkg": "",
   "settings": {
     "charts": [
       "bar",
@@ -22,9 +15,7 @@
   },
   "data": [
     {
-      "name": "",
       "xAxis": "MD5",
-      "yAxis": "",
       "stats": [
         {
           "type": "Execution Time",
@@ -35,21 +26,16 @@
         {
           "type": "Throughput",
           "value": 69.71,
-          "unit": "MB/s",
-          "per": ""
+          "unit": "MB/s"
         },
         {
           "type": "Iterations",
-          "value": 10458847,
-          "unit": "",
-          "per": ""
+          "value": 10458847
         }
       ]
     },
     {
-      "name": "",
       "xAxis": "SHA1",
-      "yAxis": "",
       "stats": [
         {
           "type": "Execution Time",
@@ -60,21 +46,16 @@
         {
           "type": "Throughput",
           "value": 56.66,
-          "unit": "MB/s",
-          "per": ""
+          "unit": "MB/s"
         },
         {
           "type": "Iterations",
-          "value": 8493391,
-          "unit": "",
-          "per": ""
+          "value": 8493391
         }
       ]
     },
     {
-      "name": "",
       "xAxis": "SHA256",
-      "yAxis": "",
       "stats": [
         {
           "type": "Execution Time",
@@ -85,21 +66,16 @@
         {
           "type": "Throughput",
           "value": 42.75,
-          "unit": "MB/s",
-          "per": ""
+          "unit": "MB/s"
         },
         {
           "type": "Iterations",
-          "value": 6398036,
-          "unit": "",
-          "per": ""
+          "value": 6398036
         }
       ]
     },
     {
-      "name": "",
       "xAxis": "SHA3B224",
-      "yAxis": "",
       "stats": [
         {
           "type": "Execution Time",
@@ -110,21 +86,16 @@
         {
           "type": "Throughput",
           "value": 13.96,
-          "unit": "MB/s",
-          "per": ""
+          "unit": "MB/s"
         },
         {
           "type": "Iterations",
-          "value": 2091546,
-          "unit": "",
-          "per": ""
+          "value": 2091546
         }
       ]
     },
     {
-      "name": "",
       "xAxis": "SHA3B256",
-      "yAxis": "",
       "stats": [
         {
           "type": "Execution Time",
@@ -135,21 +106,16 @@
         {
           "type": "Throughput",
           "value": 14.06,
-          "unit": "MB/s",
-          "per": ""
+          "unit": "MB/s"
         },
         {
           "type": "Iterations",
-          "value": 2102798,
-          "unit": "",
-          "per": ""
+          "value": 2102798
         }
       ]
     },
     {
-      "name": "",
       "xAxis": "RIPEMD160",
-      "yAxis": "",
       "stats": [
         {
           "type": "Execution Time",
@@ -160,21 +126,16 @@
         {
           "type": "Throughput",
           "value": 26.4,
-          "unit": "MB/s",
-          "per": ""
+          "unit": "MB/s"
         },
         {
           "type": "Iterations",
-          "value": 3957055,
-          "unit": "",
-          "per": ""
+          "value": 3957055
         }
       ]
     },
     {
-      "name": "",
       "xAxis": "Blake2B",
-      "yAxis": "",
       "stats": [
         {
           "type": "Execution Time",
@@ -185,21 +146,16 @@
         {
           "type": "Throughput",
           "value": 26.95,
-          "unit": "MB/s",
-          "per": ""
+          "unit": "MB/s"
         },
         {
           "type": "Iterations",
-          "value": 4042722,
-          "unit": "",
-          "per": ""
+          "value": 4042722
         }
       ]
     },
     {
-      "name": "",
       "xAxis": "Blake2BSimd",
-      "yAxis": "",
       "stats": [
         {
           "type": "Execution Time",
@@ -210,21 +166,16 @@
         {
           "type": "Throughput",
           "value": 32.3,
-          "unit": "MB/s",
-          "per": ""
+          "unit": "MB/s"
         },
         {
           "type": "Iterations",
-          "value": 4844781,
-          "unit": "",
-          "per": ""
+          "value": 4844781
         }
       ]
     },
     {
-      "name": "",
       "xAxis": "Murmur3",
-      "yAxis": "",
       "stats": [
         {
           "type": "Execution Time",
@@ -235,21 +186,16 @@
         {
           "type": "Throughput",
           "value": 169.52,
-          "unit": "MB/s",
-          "per": ""
+          "unit": "MB/s"
         },
         {
           "type": "Iterations",
-          "value": 25517697,
-          "unit": "",
-          "per": ""
+          "value": 25517697
         }
       ]
     },
     {
-      "name": "",
       "xAxis": "Murmur3Twmb",
-      "yAxis": "",
       "stats": [
         {
           "type": "Execution Time",
@@ -260,21 +206,16 @@
         {
           "type": "Throughput",
           "value": 172.65,
-          "unit": "MB/s",
-          "per": ""
+          "unit": "MB/s"
         },
         {
           "type": "Iterations",
-          "value": 25722096,
-          "unit": "",
-          "per": ""
+          "value": 25722096
         }
       ]
     },
     {
-      "name": "",
       "xAxis": "SipHash",
-      "yAxis": "",
       "stats": [
         {
           "type": "Execution Time",
@@ -285,21 +226,16 @@
         {
           "type": "Throughput",
           "value": 191.82,
-          "unit": "MB/s",
-          "per": ""
+          "unit": "MB/s"
         },
         {
           "type": "Iterations",
-          "value": 28485819,
-          "unit": "",
-          "per": ""
+          "value": 28485819
         }
       ]
     },
     {
-      "name": "",
       "xAxis": "XXHash",
-      "yAxis": "",
       "stats": [
         {
           "type": "Execution Time",
@@ -310,21 +246,16 @@
         {
           "type": "Throughput",
           "value": 311.2,
-          "unit": "MB/s",
-          "per": ""
+          "unit": "MB/s"
         },
         {
           "type": "Iterations",
-          "value": 46363768,
-          "unit": "",
-          "per": ""
+          "value": 46363768
         }
       ]
     },
     {
-      "name": "",
       "xAxis": "XXHashpier",
-      "yAxis": "",
       "stats": [
         {
           "type": "Execution Time",
@@ -335,14 +266,11 @@
         {
           "type": "Throughput",
           "value": 302.64,
-          "unit": "MB/s",
-          "per": ""
+          "unit": "MB/s"
         },
         {
           "type": "Iterations",
-          "value": 44888440,
-          "unit": "",
-          "per": ""
+          "value": 44888440
         }
       ]
     }

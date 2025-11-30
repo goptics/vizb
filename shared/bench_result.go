@@ -3,27 +3,27 @@ package shared
 type Stat struct {
 	Type  string  `json:"type"`
 	Value float64 `json:"value"`
-	Unit  string  `json:"unit"`
-	Per   string  `json:"per"`
+	Unit  string  `json:"unit,omitempty"`
+	Per   string  `json:"per,omitempty"`
 }
 
 type BenchmarkResult struct {
-	Name  string `json:"name"`
-	XAxis string `json:"xAxis"`
-	YAxis string `json:"yAxis"`
+	Name  string `json:"name,omitempty"`
+	XAxis string `json:"xAxis,omitempty"`
+	YAxis string `json:"yAxis,omitempty"`
 	Stats []Stat `json:"stats"`
 }
 
 type Benchmark struct {
 	Name        string `json:"name"`
-	Description string `json:"description"`
+	Description string `json:"description,omitempty"`
 	CPU         struct {
-		Name  string `json:"name"`
-		Cores int    `json:"cores"`
+		Name  string `json:"name,omitempty"`
+		Cores int    `json:"cores,omitempty"`
 	} `json:"cpu"`
-	OS       string `json:"os"`
-	Arch     string `json:"arch"`
-	Pkg      string `json:"pkg"`
+	OS       string `json:"os,omitempty"`
+	Arch     string `json:"arch,omitempty"`
+	Pkg      string `json:"pkg,omitempty"`
 	Settings struct {
 		Charts []string `json:"charts"`
 		Sort   struct {
