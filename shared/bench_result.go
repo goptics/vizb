@@ -5,11 +5,6 @@ type Stat struct {
 	Value float64 `json:"value,omitempty"`
 }
 
-type StatConfig struct {
-	Unit string `json:"unit,omitempty"`
-	Per  string `json:"per,omitempty"`
-}
-
 type BenchmarkResult struct {
 	Name  string `json:"name,omitempty"`
 	XAxis string `json:"xAxis,omitempty"`
@@ -33,8 +28,7 @@ type Benchmark struct {
 			Enabled bool   `json:"enabled"`
 			Order   string `json:"order"`
 		} `json:"sort"`
-		ShowLabels bool                  `json:"showLabels"`
-		Stats      map[string]StatConfig `json:"stats,omitempty"`
+		ShowLabels bool `json:"showLabels"`
 	} `json:"settings"`
 	Data []BenchmarkResult `json:"data"`
 }
