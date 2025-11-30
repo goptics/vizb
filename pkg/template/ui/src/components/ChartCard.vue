@@ -61,13 +61,6 @@ const initOptions = {
     <h3 class="text-lg font-semibold text-card-foreground">
       {{ chartData.title }}
     </h3>
-    <div class="h-[500px] w-full">
-      <VChart
-        :option="options"
-        :init-options="initOptions"
-        :autoresize="true"
-        class="h-full w-full"
-      />
-    </div>
+    <VChart :option="options" :init-options="initOptions" :autoresize="true" class="h-[500px]" />
   </div>
 </template>

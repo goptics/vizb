@@ -1,0 +1,7 @@
+dist
+node_modules
+.output
+public
+pnpm-lock.yaml
+package-lock.json
+
