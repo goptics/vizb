@@ -7,7 +7,6 @@
   },
   "os": "darwin",
   "arch": "amd64",
-  "pkg": "",
   "settings": {
     "charts": [
       "bar",
@@ -34,8 +33,7 @@
         {
           "type": "Throughput",
           "value": 64.88,
-          "unit": "MB/s",
-          "per": ""
+          "unit": "MB/s"
         },
         {
           "type": "Memory Usage",
@@ -46,14 +44,11 @@
         {
           "type": "Allocations",
           "value": 7,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 100,
-          "unit": "",
-          "per": ""
+          "value": 100
         }
       ]
     },
@@ -71,8 +66,7 @@
         {
           "type": "Throughput",
           "value": 73.12,
-          "unit": "MB/s",
-          "per": ""
+          "unit": "MB/s"
         },
         {
           "type": "Memory Usage",
@@ -83,14 +77,11 @@
         {
           "type": "Allocations",
           "value": 14,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 10,
-          "unit": "",
-          "per": ""
+          "value": 10
         }
       ]
     },
@@ -108,8 +99,7 @@
         {
           "type": "Throughput",
           "value": 72.05,
-          "unit": "MB/s",
-          "per": ""
+          "unit": "MB/s"
         },
         {
           "type": "Memory Usage",
@@ -120,14 +110,11 @@
         {
           "type": "Allocations",
           "value": 94,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 1,
-          "unit": "",
-          "per": ""
+          "value": 1
         }
       ]
     },
@@ -145,8 +132,7 @@
         {
           "type": "Throughput",
           "value": 67.77,
-          "unit": "MB/s",
-          "per": ""
+          "unit": "MB/s"
         },
         {
           "type": "Memory Usage",
@@ -157,14 +143,11 @@
         {
           "type": "Allocations",
           "value": 8,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 100,
-          "unit": "",
-          "per": ""
+          "value": 100
         }
       ]
     },
@@ -182,8 +165,7 @@
         {
           "type": "Throughput",
           "value": 83.5,
-          "unit": "MB/s",
-          "per": ""
+          "unit": "MB/s"
         },
         {
           "type": "Memory Usage",
@@ -194,14 +176,11 @@
         {
           "type": "Allocations",
           "value": 13,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 10,
-          "unit": "",
-          "per": ""
+          "value": 10
         }
       ]
     },
@@ -219,8 +198,7 @@
         {
           "type": "Throughput",
           "value": 84.68,
-          "unit": "MB/s",
-          "per": ""
+          "unit": "MB/s"
         },
         {
           "type": "Memory Usage",
@@ -231,14 +209,11 @@
         {
           "type": "Allocations",
           "value": 80,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 1,
-          "unit": "",
-          "per": ""
+          "value": 1
         }
       ]
     },
@@ -256,8 +231,7 @@
         {
           "type": "Throughput",
           "value": 69.76,
-          "unit": "MB/s",
-          "per": ""
+          "unit": "MB/s"
         },
         {
           "type": "Memory Usage",
@@ -268,14 +242,11 @@
         {
           "type": "Allocations",
           "value": 8,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 100,
-          "unit": "",
-          "per": ""
+          "value": 100
         }
       ]
     },
@@ -293,8 +264,7 @@
         {
           "type": "Throughput",
           "value": 84.35,
-          "unit": "MB/s",
-          "per": ""
+          "unit": "MB/s"
         },
         {
           "type": "Memory Usage",
@@ -305,14 +275,11 @@
         {
           "type": "Allocations",
           "value": 13,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 10,
-          "unit": "",
-          "per": ""
+          "value": 10
         }
       ]
     },
@@ -330,8 +297,7 @@
         {
           "type": "Throughput",
           "value": 85.18,
-          "unit": "MB/s",
-          "per": ""
+          "unit": "MB/s"
         },
         {
           "type": "Memory Usage",
@@ -342,14 +308,11 @@
         {
           "type": "Allocations",
           "value": 80,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 1,
-          "unit": "",
-          "per": ""
+          "value": 1
         }
       ]
     },
@@ -367,8 +330,7 @@
         {
           "type": "Throughput",
           "value": 69.61,
-          "unit": "MB/s",
-          "per": ""
+          "unit": "MB/s"
         },
         {
           "type": "Memory Usage",
@@ -379,14 +341,11 @@
         {
           "type": "Allocations",
           "value": 15,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 100,
-          "unit": "",
-          "per": ""
+          "value": 100
         }
       ]
     },
@@ -404,8 +363,7 @@
         {
           "type": "Throughput",
           "value": 71.92,
-          "unit": "MB/s",
-          "per": ""
+          "unit": "MB/s"
         },
         {
           "type": "Memory Usage",
@@ -416,14 +374,11 @@
         {
           "type": "Allocations",
           "value": 31,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 10,
-          "unit": "",
-          "per": ""
+          "value": 10
         }
       ]
     },
@@ -441,8 +396,7 @@
         {
           "type": "Throughput",
           "value": 82.45,
-          "unit": "MB/s",
-          "per": ""
+          "unit": "MB/s"
         },
         {
           "type": "Memory Usage",
@@ -453,14 +407,11 @@
         {
           "type": "Allocations",
           "value": 221,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 1,
-          "unit": "",
-          "per": ""
+          "value": 1
         }
       ]
     },
@@ -478,8 +429,7 @@
         {
           "type": "Throughput",
           "value": 70.46,
-          "unit": "MB/s",
-          "per": ""
+          "unit": "MB/s"
         },
         {
           "type": "Memory Usage",
@@ -490,14 +440,11 @@
         {
           "type": "Allocations",
           "value": 15,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 100,
-          "unit": "",
-          "per": ""
+          "value": 100
         }
       ]
     },
@@ -515,8 +462,7 @@
         {
           "type": "Throughput",
           "value": 92.88,
-          "unit": "MB/s",
-          "per": ""
+          "unit": "MB/s"
         },
         {
           "type": "Memory Usage",
@@ -527,14 +473,11 @@
         {
           "type": "Allocations",
           "value": 28,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 10,
-          "unit": "",
-          "per": ""
+          "value": 10
         }
       ]
     },
@@ -552,8 +495,7 @@
         {
           "type": "Throughput",
           "value": 98.95,
-          "unit": "MB/s",
-          "per": ""
+          "unit": "MB/s"
         },
         {
           "type": "Memory Usage",
@@ -564,14 +506,11 @@
         {
           "type": "Allocations",
           "value": 172,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 1,
-          "unit": "",
-          "per": ""
+          "value": 1
         }
       ]
     },
@@ -589,8 +528,7 @@
         {
           "type": "Throughput",
           "value": 72.19,
-          "unit": "MB/s",
-          "per": ""
+          "unit": "MB/s"
         },
         {
           "type": "Memory Usage",
@@ -601,14 +539,11 @@
         {
           "type": "Allocations",
           "value": 15,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 100,
-          "unit": "",
-          "per": ""
+          "value": 100
         }
       ]
     },
@@ -626,8 +561,7 @@
         {
           "type": "Throughput",
           "value": 81.44,
-          "unit": "MB/s",
-          "per": ""
+          "unit": "MB/s"
         },
         {
           "type": "Memory Usage",
@@ -638,14 +572,11 @@
         {
           "type": "Allocations",
           "value": 25,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 10,
-          "unit": "",
-          "per": ""
+          "value": 10
         }
       ]
     },
@@ -663,8 +594,7 @@
         {
           "type": "Throughput",
           "value": 99.6,
-          "unit": "MB/s",
-          "per": ""
+          "unit": "MB/s"
         },
         {
           "type": "Memory Usage",
@@ -675,14 +605,11 @@
         {
           "type": "Allocations",
           "value": 173,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 1,
-          "unit": "",
-          "per": ""
+          "value": 1
         }
       ]
     },
@@ -700,14 +627,11 @@
         {
           "type": "Throughput",
           "value": 20.71,
-          "unit": "MB/s",
-          "per": ""
+          "unit": "MB/s"
         },
         {
           "type": "Iterations",
-          "value": 30,
-          "unit": "",
-          "per": ""
+          "value": 30
         }
       ]
     },
@@ -725,14 +649,11 @@
         {
           "type": "Throughput",
           "value": 37.24,
-          "unit": "MB/s",
-          "per": ""
+          "unit": "MB/s"
         },
         {
           "type": "Iterations",
-          "value": 5,
-          "unit": "",
-          "per": ""
+          "value": 5
         }
       ]
     },
@@ -750,14 +671,11 @@
         {
           "type": "Throughput",
           "value": 40.05,
-          "unit": "MB/s",
-          "per": ""
+          "unit": "MB/s"
         },
         {
           "type": "Iterations",
-          "value": 1,
-          "unit": "",
-          "per": ""
+          "value": 1
         }
       ]
     },
@@ -775,14 +693,11 @@
         {
           "type": "Throughput",
           "value": 15.25,
-          "unit": "MB/s",
-          "per": ""
+          "unit": "MB/s"
         },
         {
           "type": "Iterations",
-          "value": 20,
-          "unit": "",
-          "per": ""
+          "value": 20
         }
       ]
     },
@@ -800,14 +715,11 @@
         {
           "type": "Throughput",
           "value": 7.69,
-          "unit": "MB/s",
-          "per": ""
+          "unit": "MB/s"
         },
         {
           "type": "Iterations",
-          "value": 1,
-          "unit": "",
-          "per": ""
+          "value": 1
         }
       ]
     },
@@ -825,14 +737,11 @@
         {
           "type": "Throughput",
           "value": 7.33,
-          "unit": "MB/s",
-          "per": ""
+          "unit": "MB/s"
         },
         {
           "type": "Iterations",
-          "value": 1,
-          "unit": "",
-          "per": ""
+          "value": 1
         }
       ]
     },
@@ -850,14 +759,11 @@
         {
           "type": "Throughput",
           "value": 14.97,
-          "unit": "MB/s",
-          "per": ""
+          "unit": "MB/s"
         },
         {
           "type": "Iterations",
-          "value": 20,
-          "unit": "",
-          "per": ""
+          "value": 20
         }
       ]
     },
@@ -875,14 +781,11 @@
         {
           "type": "Throughput",
           "value": 8.13,
-          "unit": "MB/s",
-          "per": ""
+          "unit": "MB/s"
         },
         {
           "type": "Iterations",
-          "value": 1,
-          "unit": "",
-          "per": ""
+          "value": 1
         }
       ]
     },
@@ -900,14 +803,11 @@
         {
           "type": "Throughput",
           "value": 7.25,
-          "unit": "MB/s",
-          "per": ""
+          "unit": "MB/s"
         },
         {
           "type": "Iterations",
-          "value": 1,
-          "unit": "",
-          "per": ""
+          "value": 1
         }
       ]
     }

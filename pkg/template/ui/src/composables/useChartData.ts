@@ -46,7 +46,7 @@ export function useChartData(results: Ref<BenchmarkData[]> | BenchmarkData[]) {
       const yAxisSet = new Set<string>()
 
       for (const benchmarkData of data) {
-        const { xAxis, yAxis } = benchmarkData
+        const { xAxis = '', yAxis = '' } = benchmarkData
 
         // Find the matching stat for this benchmark
         const matchingStat = benchmarkData.stats?.find((s) => toStatSignature(s) === signature)

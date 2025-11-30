@@ -87,11 +87,11 @@ const hasCPU = computed(() => activeBenchmark.value?.cpu?.name || activeBenchmar
       <span
         v-if="hasCPU"
         class="inline-block rounded-lg border border-border bg-secondary px-2 py-1 text-sm font-semibold text-secondary-foreground"
-        >CPU: {{ CPUtoString(activeBenchmark.cpu) }}</span
+        >CPU: {{ CPUtoString(activeBenchmark?.cpu) }}</span
       >
 
-      <p v-if="activeBenchmark.description" class="text-muted-foreground">
-        {{ activeBenchmark.description }}
+      <p v-if="activeBenchmark?.description" class="text-muted-foreground">
+        {{ activeBenchmark?.description }}
       </p>
 
       <!-- Inner Group Selector -->

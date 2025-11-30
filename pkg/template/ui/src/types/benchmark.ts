@@ -6,15 +6,15 @@
 export interface Stat {
   type: string
   value: number
-  unit: string
-  per: string
+  unit?: string
+  per?: string
 }
 
 // Represents a single benchmark result for one subject
 export interface BenchmarkData {
-  name: string
-  yAxis: string
-  xAxis: string
+  name?: string
+  yAxis?: string
+  xAxis?: string
   stats: Stat[]
 }
 
@@ -22,7 +22,7 @@ export interface BenchmarkData {
 export interface ChartData {
   title: string
   statType: string
-  statUnit: string
+  statUnit?: string
   yAxis: string[]
   series: SeriesData[]
 }
@@ -55,11 +55,11 @@ export const DEFAULT_SETTINGS: Settings = {
 
 export interface Benchmark {
   name: string
-  description: string
+  description?: string
   pkg?: string
-  cpu: {
-    name: string
-    cores: number
+  cpu?: {
+    name?: string
+    cores?: number
   }
   settings: Settings
   data: BenchmarkData[]

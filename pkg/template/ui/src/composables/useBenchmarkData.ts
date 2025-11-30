@@ -57,10 +57,13 @@ export function useBenchmarkData() {
     const groupMap = new Map<string, BenchmarkData[]>()
 
     for (const benchmarkData of activeBenchmark.value.data) {
-      if (!groupMap.has(benchmarkData.name)) {
-        groupMap.set(benchmarkData.name, [])
+      const { name = 'Default', ...rest } = benchmarkData
+
+      if (!groupMap.has(name)) {
+        groupMap.set(name, [])
       }
-      groupMap.get(benchmarkData.name)!.push(benchmarkData)
+
+      groupMap.get(name)!.push(rest)
     }
 
     return groupMap

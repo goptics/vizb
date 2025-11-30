@@ -21,7 +21,7 @@
   },
   "data": [
     {
-      "name": "Normal",
+      "name": "Default",
       "xAxis": "Success",
       "yAxis": "Field",
       "stats": [
@@ -40,14 +40,11 @@
         {
           "type": "Allocations",
           "value": 0,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 42461943,
-          "unit": "",
-          "per": ""
+          "value": 42461943
         }
       ]
     },
@@ -71,19 +68,16 @@
         {
           "type": "Allocations",
           "value": 0,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 486632887,
-          "unit": "",
-          "per": ""
+          "value": 486632887
         }
       ]
     },
     {
-      "name": "Normal",
+      "name": "Default",
       "xAxis": "Failure",
       "yAxis": "Field",
       "stats": [
@@ -102,14 +96,11 @@
         {
           "type": "Allocations",
           "value": 4,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 9566167,
-          "unit": "",
-          "per": ""
+          "value": 9566167
         }
       ]
     },
@@ -133,19 +124,16 @@
         {
           "type": "Allocations",
           "value": 4,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 17551471,
-          "unit": "",
-          "per": ""
+          "value": 17551471
         }
       ]
     },
     {
-      "name": "Normal",
+      "name": "Default",
       "xAxis": "Success",
       "yAxis": "FieldArrayDive",
       "stats": [
@@ -164,14 +152,11 @@
         {
           "type": "Allocations",
           "value": 5,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 7602306,
-          "unit": "",
-          "per": ""
+          "value": 7602306
         }
       ]
     },
@@ -195,19 +180,16 @@
         {
           "type": "Allocations",
           "value": 5,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 20664610,
-          "unit": "",
-          "per": ""
+          "value": 20664610
         }
       ]
     },
     {
-      "name": "Normal",
+      "name": "Default",
       "xAxis": "Failure",
       "yAxis": "FieldArrayDive",
       "stats": [
@@ -226,14 +208,11 @@
         {
           "type": "Allocations",
           "value": 10,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 4659756,
-          "unit": "",
-          "per": ""
+          "value": 4659756
         }
       ]
     },
@@ -257,19 +236,16 @@
         {
           "type": "Allocations",
           "value": 10,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 8010116,
-          "unit": "",
-          "per": ""
+          "value": 8010116
         }
       ]
     },
     {
-      "name": "Normal",
+      "name": "Default",
       "xAxis": "Success",
       "yAxis": "FieldMapDive",
       "stats": [
@@ -288,14 +264,11 @@
         {
           "type": "Allocations",
           "value": 14,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 2834575,
-          "unit": "",
-          "per": ""
+          "value": 2834575
         }
       ]
     },
@@ -319,19 +292,16 @@
         {
           "type": "Allocations",
           "value": 14,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 7179700,
-          "unit": "",
-          "per": ""
+          "value": 7179700
         }
       ]
     },
     {
-      "name": "Normal",
+      "name": "Default",
       "xAxis": "Failure",
       "yAxis": "FieldMapDive",
       "stats": [
@@ -350,14 +320,11 @@
         {
           "type": "Allocations",
           "value": 13,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 3081728,
-          "unit": "",
-          "per": ""
+          "value": 3081728
         }
       ]
     },
@@ -381,19 +348,16 @@
         {
           "type": "Allocations",
           "value": 13,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 6058137,
-          "unit": "",
-          "per": ""
+          "value": 6058137
         }
       ]
     },
     {
-      "name": "Normal",
+      "name": "Default",
       "xAxis": "Success",
       "yAxis": "FieldMapDiveWithKeys",
       "stats": [
@@ -412,14 +376,11 @@
         {
           "type": "Allocations",
           "value": 14,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 2544975,
-          "unit": "",
-          "per": ""
+          "value": 2544975
         }
       ]
     },
@@ -443,19 +404,16 @@
         {
           "type": "Allocations",
           "value": 14,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 6661954,
-          "unit": "",
-          "per": ""
+          "value": 6661954
         }
       ]
     },
     {
-      "name": "Normal",
+      "name": "Default",
       "xAxis": "Failure",
       "yAxis": "FieldMapDiveWithKeys",
       "stats": [
@@ -474,14 +432,11 @@
         {
           "type": "Allocations",
           "value": 16,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 2435484,
-          "unit": "",
-          "per": ""
+          "value": 2435484
         }
       ]
     },
@@ -505,19 +460,16 @@
         {
           "type": "Allocations",
           "value": 16,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 4249617,
-          "unit": "",
-          "per": ""
+          "value": 4249617
         }
       ]
     },
     {
-      "name": "Normal",
+      "name": "Default",
       "xAxis": "Success",
       "yAxis": "FieldCustomType",
       "stats": [
@@ -536,14 +488,11 @@
         {
           "type": "Allocations",
           "value": 2,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 14943525,
-          "unit": "",
-          "per": ""
+          "value": 14943525
         }
       ]
     },
@@ -567,19 +516,16 @@
         {
           "type": "Allocations",
           "value": 2,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 64051954,
-          "unit": "",
-          "per": ""
+          "value": 64051954
         }
       ]
     },
     {
-      "name": "Normal",
+      "name": "Default",
       "xAxis": "Failure",
       "yAxis": "FieldCustomType",
       "stats": [
@@ -598,14 +544,11 @@
         {
           "type": "Allocations",
           "value": 3,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 10721384,
-          "unit": "",
-          "per": ""
+          "value": 10721384
         }
       ]
     },
@@ -629,19 +572,16 @@
         {
           "type": "Allocations",
           "value": 3,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 18714495,
-          "unit": "",
-          "per": ""
+          "value": 18714495
         }
       ]
     },
     {
-      "name": "Normal",
+      "name": "Default",
       "xAxis": "Success",
       "yAxis": "FieldOrTag",
       "stats": [
@@ -660,14 +600,11 @@
         {
           "type": "Allocations",
           "value": 1,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 4063124,
-          "unit": "",
-          "per": ""
+          "value": 4063124
         }
       ]
     },
@@ -691,19 +628,16 @@
         {
           "type": "Allocations",
           "value": 1,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 31903756,
-          "unit": "",
-          "per": ""
+          "value": 31903756
         }
       ]
     },
     {
-      "name": "Normal",
+      "name": "Default",
       "xAxis": "Failure",
       "yAxis": "FieldOrTag",
       "stats": [
@@ -722,14 +656,11 @@
         {
           "type": "Allocations",
           "value": 5,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 7748558,
-          "unit": "",
-          "per": ""
+          "value": 7748558
         }
       ]
     },
@@ -753,19 +684,16 @@
         {
           "type": "Allocations",
           "value": 5,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 13139854,
-          "unit": "",
-          "per": ""
+          "value": 13139854
         }
       ]
     },
     {
-      "name": "Normal",
+      "name": "Default",
       "xAxis": "Success",
       "yAxis": "StructLevelValidation",
       "stats": [
@@ -784,14 +712,11 @@
         {
           "type": "Allocations",
           "value": 1,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 16808389,
-          "unit": "",
-          "per": ""
+          "value": 16808389
         }
       ]
     },
@@ -815,19 +740,16 @@
         {
           "type": "Allocations",
           "value": 1,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 90686955,
-          "unit": "",
-          "per": ""
+          "value": 90686955
         }
       ]
     },
     {
-      "name": "Normal",
+      "name": "Default",
       "xAxis": "Failure",
       "yAxis": "StructLevelValidation",
       "stats": [
@@ -846,14 +768,11 @@
         {
           "type": "Allocations",
           "value": 7,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 5818791,
-          "unit": "",
-          "per": ""
+          "value": 5818791
         }
       ]
     },
@@ -877,19 +796,16 @@
         {
           "type": "Allocations",
           "value": 7,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 11115874,
-          "unit": "",
-          "per": ""
+          "value": 11115874
         }
       ]
     },
     {
-      "name": "Normal",
+      "name": "Default",
       "xAxis": "Success",
       "yAxis": "StructSimpleCustomType",
       "stats": [
@@ -908,14 +824,11 @@
         {
           "type": "Allocations",
           "value": 2,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 7764956,
-          "unit": "",
-          "per": ""
+          "value": 7764956
         }
       ]
     },
@@ -939,19 +852,16 @@
         {
           "type": "Allocations",
           "value": 2,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 52316265,
-          "unit": "",
-          "per": ""
+          "value": 52316265
         }
       ]
     },
     {
-      "name": "Normal",
+      "name": "Default",
       "xAxis": "Failure",
       "yAxis": "StructSimpleCustomType",
       "stats": [
@@ -970,14 +880,11 @@
         {
           "type": "Allocations",
           "value": 9,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 4195429,
-          "unit": "",
-          "per": ""
+          "value": 4195429
         }
       ]
     },
@@ -1001,19 +908,16 @@
         {
           "type": "Allocations",
           "value": 10,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 7305661,
-          "unit": "",
-          "per": ""
+          "value": 7305661
         }
       ]
     },
     {
-      "name": "Normal",
+      "name": "Default",
       "xAxis": "Success",
       "yAxis": "StructFiltered",
       "stats": [
@@ -1032,14 +936,11 @@
         {
           "type": "Allocations",
           "value": 5,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 6312625,
-          "unit": "",
-          "per": ""
+          "value": 6312625
         }
       ]
     },
@@ -1063,19 +964,16 @@
         {
           "type": "Allocations",
           "value": 5,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 13684459,
-          "unit": "",
-          "per": ""
+          "value": 13684459
         }
       ]
     },
     {
-      "name": "Normal",
+      "name": "Default",
       "xAxis": "Failure",
       "yAxis": "StructFiltered",
       "stats": [
@@ -1094,14 +992,11 @@
         {
           "type": "Allocations",
           "value": 5,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 6751482,
-          "unit": "",
-          "per": ""
+          "value": 6751482
         }
       ]
     },
@@ -1125,19 +1020,16 @@
         {
           "type": "Allocations",
           "value": 5,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 14146070,
-          "unit": "",
-          "per": ""
+          "value": 14146070
         }
       ]
     },
     {
-      "name": "Normal",
+      "name": "Default",
       "xAxis": "Success",
       "yAxis": "StructPartial",
       "stats": [
@@ -1156,14 +1048,11 @@
         {
           "type": "Allocations",
           "value": 4,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 6544448,
-          "unit": "",
-          "per": ""
+          "value": 6544448
         }
       ]
     },
@@ -1187,19 +1076,16 @@
         {
           "type": "Allocations",
           "value": 4,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 13951946,
-          "unit": "",
-          "per": ""
+          "value": 13951946
         }
       ]
     },
     {
-      "name": "Normal",
+      "name": "Default",
       "xAxis": "Failure",
       "yAxis": "StructPartial",
       "stats": [
@@ -1218,14 +1104,11 @@
         {
           "type": "Allocations",
           "value": 9,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 4075833,
-          "unit": "",
-          "per": ""
+          "value": 4075833
         }
       ]
     },
@@ -1249,19 +1132,16 @@
         {
           "type": "Allocations",
           "value": 9,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 7490805,
-          "unit": "",
-          "per": ""
+          "value": 7490805
         }
       ]
     },
     {
-      "name": "Normal",
+      "name": "Default",
       "xAxis": "Success",
       "yAxis": "StructExcept",
       "stats": [
@@ -1280,14 +1160,11 @@
         {
           "type": "Allocations",
           "value": 8,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 4107187,
-          "unit": "",
-          "per": ""
+          "value": 4107187
         }
       ]
     },
@@ -1311,19 +1188,16 @@
         {
           "type": "Allocations",
           "value": 3,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 15979173,
-          "unit": "",
-          "per": ""
+          "value": 15979173
         }
       ]
     },
     {
-      "name": "Normal",
+      "name": "Default",
       "xAxis": "Failure",
       "yAxis": "StructExcept",
       "stats": [
@@ -1342,14 +1216,11 @@
         {
           "type": "Allocations",
           "value": 8,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 4434372,
-          "unit": "",
-          "per": ""
+          "value": 4434372
         }
       ]
     },
@@ -1373,19 +1244,16 @@
         {
           "type": "Allocations",
           "value": 8,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 8081367,
-          "unit": "",
-          "per": ""
+          "value": 8081367
         }
       ]
     },
     {
-      "name": "Normal",
+      "name": "Default",
       "xAxis": "Success",
       "yAxis": "StructSimpleCrossField",
       "stats": [
@@ -1404,14 +1272,11 @@
         {
           "type": "Allocations",
           "value": 3,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 6459542,
-          "unit": "",
-          "per": ""
+          "value": 6459542
         }
       ]
     },
@@ -1435,19 +1300,16 @@
         {
           "type": "Allocations",
           "value": 3,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 41013781,
-          "unit": "",
-          "per": ""
+          "value": 41013781
         }
       ]
     },
     {
-      "name": "Normal",
+      "name": "Default",
       "xAxis": "Failure",
       "yAxis": "StructSimpleCrossField",
       "stats": [
@@ -1466,14 +1328,11 @@
         {
           "type": "Allocations",
           "value": 8,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 4034998,
-          "unit": "",
-          "per": ""
+          "value": 4034998
         }
       ]
     },
@@ -1497,19 +1356,16 @@
         {
           "type": "Allocations",
           "value": 8,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 11348446,
-          "unit": "",
-          "per": ""
+          "value": 11348446
         }
       ]
     },
     {
-      "name": "Normal",
+      "name": "Default",
       "xAxis": "Success",
       "yAxis": "StructSimpleCrossStructCrossField",
       "stats": [
@@ -1528,14 +1384,11 @@
         {
           "type": "Allocations",
           "value": 4,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 4448528,
-          "unit": "",
-          "per": ""
+          "value": 4448528
         }
       ]
     },
@@ -1559,19 +1412,16 @@
         {
           "type": "Allocations",
           "value": 4,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 26813619,
-          "unit": "",
-          "per": ""
+          "value": 26813619
         }
       ]
     },
     {
-      "name": "Normal",
+      "name": "Default",
       "xAxis": "Failure",
       "yAxis": "StructSimpleCrossStructCrossField",
       "stats": [
@@ -1590,14 +1440,11 @@
         {
           "type": "Allocations",
           "value": 9,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 3090646,
-          "unit": "",
-          "per": ""
+          "value": 3090646
         }
       ]
     },
@@ -1621,19 +1468,16 @@
         {
           "type": "Allocations",
           "value": 9,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 9870906,
-          "unit": "",
-          "per": ""
+          "value": 9870906
         }
       ]
     },
     {
-      "name": "Normal",
+      "name": "Default",
       "xAxis": "Success",
       "yAxis": "StructSimple",
       "stats": [
@@ -1652,14 +1496,11 @@
         {
           "type": "Allocations",
           "value": 0,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 10675562,
-          "unit": "",
-          "per": ""
+          "value": 10675562
         }
       ]
     },
@@ -1683,19 +1524,16 @@
         {
           "type": "Allocations",
           "value": 0,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 131159784,
-          "unit": "",
-          "per": ""
+          "value": 131159784
         }
       ]
     },
     {
-      "name": "Normal",
+      "name": "Default",
       "xAxis": "Failure",
       "yAxis": "StructSimple",
       "stats": [
@@ -1714,14 +1552,11 @@
         {
           "type": "Allocations",
           "value": 9,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 4094979,
-          "unit": "",
-          "per": ""
+          "value": 4094979
         }
       ]
     },
@@ -1745,19 +1580,16 @@
         {
           "type": "Allocations",
           "value": 9,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 7606663,
-          "unit": "",
-          "per": ""
+          "value": 7606663
         }
       ]
     },
     {
-      "name": "Normal",
+      "name": "Default",
       "xAxis": "Success",
       "yAxis": "StructComplex",
       "stats": [
@@ -1776,14 +1608,11 @@
         {
           "type": "Allocations",
           "value": 5,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 2073470,
-          "unit": "",
-          "per": ""
+          "value": 2073470
         }
       ]
     },
@@ -1807,19 +1636,16 @@
         {
           "type": "Allocations",
           "value": 5,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 7821831,
-          "unit": "",
-          "per": ""
+          "value": 7821831
         }
       ]
     },
     {
-      "name": "Normal",
+      "name": "Default",
       "xAxis": "Failure",
       "yAxis": "StructComplex",
       "stats": [
@@ -1838,14 +1664,11 @@
         {
           "type": "Allocations",
           "value": 48,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 576358,
-          "unit": "",
-          "per": ""
+          "value": 576358
         }
       ]
     },
@@ -1869,20 +1692,16 @@
         {
           "type": "Allocations",
           "value": 48,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 1000000,
-          "unit": "",
-          "per": ""
+          "value": 1000000
         }
       ]
     },
     {
-      "name": "Normal",
-      "xAxis": "",
+      "name": "Default",
       "yAxis": "Oneof",
       "stats": [
         {
@@ -1900,20 +1719,16 @@
         {
           "type": "Allocations",
           "value": 0,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 22503973,
-          "unit": "",
-          "per": ""
+          "value": 22503973
         }
       ]
     },
     {
-      "name": "Normal",
-      "xAxis": "",
+      "name": "Default",
       "yAxis": "OneofParallel",
       "stats": [
         {
@@ -1931,14 +1746,11 @@
         {
           "type": "Allocations",
           "value": 0,
-          "unit": "",
           "per": "op"
         },
         {
           "type": "Iterations",
-          "value": 8538474,
-          "unit": "",
-          "per": ""
+          "value": 8538474
         }
       ]
     }
