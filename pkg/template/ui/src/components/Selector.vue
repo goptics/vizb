@@ -12,12 +12,16 @@ import {
   ComboboxList,
   ComboboxTrigger,
 } from './ui/combobox'
-import type { Benchmark } from '../types/benchmark'
+
+type Item = {
+  name: string
+}
 
 const props = defineProps<{
-  benchmarks: Benchmark[]
-  activeBenchmarkId: number
-  placeholder: string
+  items: Item[]
+  activeId: number
+  placeholder?: string
+  notFoundText?: string
 }>()
 
 const emit = defineEmits<{
@@ -25,10 +29,10 @@ const emit = defineEmits<{
 }>()
 
 // Convert the benchmarks array to the format expected by the combobox
-const benchmarkOptions = computed(() =>
-  props.benchmarks.map((b, index) => ({
+const options = computed(() =>
+  props.items.map((item, index) => ({
     value: index.toString(),
-    label: b.name,
+    label: item.name,
   }))
 )
 
@@ -42,16 +46,14 @@ const open = ref(false)
 const searchTerm = ref('')
 
 // Filter function for combobox
-const filterFunction = (list: typeof benchmarkOptions.value, searchValue: string) => {
+const filterFunction = (list: typeof options.value, searchValue: string) => {
   if (!searchValue) return list
   return list.filter((item) => item.label.toLowerCase().includes(searchValue.toLowerCase()))
 }
 
-// Initialize the value when the component mounts or when activeBenchmarkId changes
+// Initialize the value when the component mounts or when activeId changes
 const updateValue = () => {
-  const option = benchmarkOptions.value.find(
-    (opt) => opt.value === props.activeBenchmarkId.toString()
-  )
+  const option = options.value.find((opt) => opt.value === props.activeId.toString())
   if (option) {
     value.value = option
   } else {
@@ -59,9 +61,9 @@ const updateValue = () => {
   }
 }
 
-// Watch for changes in activeBenchmarkId or benchmarks list
+// Watch for changes in activeId or benchmarks list
 watch(
-  [() => props.activeBenchmarkId, () => props.benchmarks],
+  [() => props.activeId, () => props.items],
   () => {
     updateValue()
   },
@@ -72,7 +74,7 @@ watch(
 watch(value, (newValue) => {
   if (newValue) {
     const index = parseInt(newValue.value)
-    if (!isNaN(index) && index !== props.activeBenchmarkId) {
+    if (!isNaN(index) && index !== props.activeId) {
       emit('select', index)
     }
   }
@@ -83,7 +85,7 @@ watch(open, (isOpen) => {
   // Close when selection is made
   if (!isOpen && value.value) {
     const index = parseInt(value.value.value)
-    if (!isNaN(index) && index !== props.activeBenchmarkId) {
+    if (!isNaN(index) && index !== props.activeId) {
       emit('select', index)
     }
   }
@@ -92,7 +94,7 @@ watch(open, (isOpen) => {
 
 <template>
   <Combobox
-    v-if="benchmarks.length > 1"
+    v-if="items.length > 1"
     v-model:open="open"
     v-model="value"
     v-model:searchTerm="searchTerm"
@@ -110,10 +112,7 @@ watch(open, (isOpen) => {
     </ComboboxAnchor>
 
     <ComboboxList>
-      <div
-        v-if="benchmarkOptions.length > 10"
-        class="sticky top-0 z-10 -mx-1 -mt-1 border-b bg-popover"
-      >
+      <div v-if="options.length > 10" class="sticky top-0 z-10 -mx-1 -mt-1 border-b bg-popover">
         <div class="relative items-center">
           <ComboboxInput class="pl-9" :placeholder="placeholder" />
           <span class="absolute inset-y-0 flex items-center px-3">
@@ -122,17 +121,17 @@ watch(open, (isOpen) => {
         </div>
       </div>
 
-      <ComboboxEmpty>No benchmark found.</ComboboxEmpty>
+      <ComboboxEmpty>{{ notFoundText }}</ComboboxEmpty>
 
       <ComboboxGroup>
         <ComboboxItem
-          v-for="benchmark in benchmarkOptions"
-          :key="benchmark.value"
-          :value="benchmark"
-          :text-value="benchmark.label"
+          v-for="option in options"
+          :key="option.value"
+          :value="option"
+          :text-value="option.label"
           class="flex items-center data-[state=checked]:font-medium data-[state=checked]:text-primary"
         >
-          <span class="flex-1 text-center">{{ benchmark.label }}</span>
+          <span class="flex-1 text-center">{{ option.label }}</span>
         </ComboboxItem>
       </ComboboxGroup>
     </ComboboxList>

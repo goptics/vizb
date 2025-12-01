@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui'
 import { Separator } from './ui'
 import SettingsToggle from './SettingsToggle.vue'
 import SelectionTabs from './SelectionTabs.vue'
+import AxisSwapper from './AxisSwapper.vue'
 import type { ChartType, SortOrder } from '../types/benchmark'
 import { useSettingsStore } from '../composables/useSettingsStore'
 
@@ -115,6 +116,10 @@ const getChartIcon = (type: ChartType) => {
         :checked="showLabels"
         @update:checked="handleShowLabelsChange"
       />
+
+      <Separator />
+
+      <AxisSwapper />
     </CardContent>
   </Card>
 </template>
