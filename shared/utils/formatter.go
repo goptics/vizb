@@ -1,9 +1,5 @@
 package utils
 
-import (
-	"fmt"
-)
-
 // FormatTime converts a time value from nanoseconds to the specified unit.
 // Supported units: "ns" (nanoseconds), "us" (microseconds), "ms" (milliseconds), "s" (seconds).
 // Returns the converted time value as a float64.
@@ -74,21 +70,4 @@ func FormatNumber(n float64, unit string) (allocs float64) {
 	}
 
 	return
-}
-
-// CreateStatType generates a formatted stat type based on the stat type, unit, and per value.
-func CreateStatType(name, unit, per string) string {
-	if unit != "" && per != "" {
-		return fmt.Sprintf("%s (%s/%s)", name, unit, per)
-	}
-
-	if unit != "" {
-		return fmt.Sprintf("%s (%s)", name, unit)
-	}
-
-	if per != "" {
-		return fmt.Sprintf("%s/%s", name, per)
-	}
-
-	return name
 }
