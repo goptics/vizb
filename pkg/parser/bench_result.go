@@ -81,24 +81,18 @@ func ParseBenchmarkResults(filePath string) (results []shared.BenchmarkResult) {
 			switch value.Unit {
 			case "sec/op":
 				benchStat = shared.Stat{
-					Type:  "Execution Time",
+					Type:  utils.CreateStatType("Execution Time", shared.FlagState.TimeUnit, "op"),
 					Value: utils.FormatTime(value.OrigValue, shared.FlagState.TimeUnit),
-					Unit:  shared.FlagState.TimeUnit,
-					Per:   "op",
 				}
 			case "B/op":
 				benchStat = shared.Stat{
-					Type:  "Memory Usage",
+					Type:  utils.CreateStatType("Memory Usage", shared.FlagState.MemUnit, "op"),
 					Value: utils.FormatMem(value.Value, shared.FlagState.MemUnit),
-					Unit:  shared.FlagState.MemUnit,
-					Per:   "op",
 				}
 			case "allocs/op":
 				benchStat = shared.Stat{
-					Type:  "Allocations",
+					Type:  utils.CreateStatType("Allocations", shared.FlagState.NumberUnit, "op"),
 					Value: utils.FormatNumber(value.Value, shared.FlagState.NumberUnit),
-					Unit:  shared.FlagState.NumberUnit,
-					Per:   "op",
 				}
 			case "B/s", "MB/s", "GB/s":
 				// benchfmt only populates OrigValue/OrigUnit for MB/s
@@ -110,9 +104,8 @@ func ParseBenchmarkResults(filePath string) (results []shared.BenchmarkResult) {
 				}
 
 				benchStat = shared.Stat{
-					Type:  "Throughput",
+					Type:  utils.CreateStatType("Throughput", unit, ""),
 					Value: val,
-					Unit:  unit,
 				}
 			default:
 				customType := "Metric"
@@ -122,9 +115,8 @@ func ParseBenchmarkResults(filePath string) (results []shared.BenchmarkResult) {
 				}
 
 				benchStat = shared.Stat{
-					Type:  customType,
+					Type:  utils.CreateStatType(customType, value.Unit, ""),
 					Value: value.Value,
-					Unit:  value.Unit,
 				}
 			}
 
@@ -155,10 +147,8 @@ func ParseBenchmarkResults(filePath string) (results []shared.BenchmarkResult) {
 	if hasDifferentIters {
 		for i := range results {
 			results[i].Stats = append(results[i].Stats, shared.Stat{
-				Type:  "Iterations",
+				Type:  utils.CreateStatType("Iterations", shared.FlagState.NumberUnit, ""),
 				Value: utils.FormatNumber(float64(allIters[i]), shared.FlagState.NumberUnit),
-				Unit:  shared.FlagState.NumberUnit,
-				Per:   "",
 			})
 		}
 	}

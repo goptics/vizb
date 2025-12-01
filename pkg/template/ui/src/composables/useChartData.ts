@@ -1,22 +1,6 @@
 import { computed, type Ref } from 'vue'
 import type { BenchmarkData, ChartData, SeriesData, Stat } from '../types/benchmark'
 
-const createChartTitle = (stat: Stat) => {
-  if (stat.unit && stat.per) {
-    return `${stat.type} (${stat.unit}/${stat.per})`
-  }
-
-  if (stat.unit) {
-    return `${stat.type} (${stat.unit})`
-  }
-
-  if (stat.per) {
-    return `${stat.type}/${stat.per}`
-  }
-
-  return stat.type
-}
-
 type StatSignature = `${Stat['type']}-${Stat['unit']}-${Stat['per']}`
 
 const toStatSignature = (stat: Stat): StatSignature => {
@@ -77,7 +61,7 @@ export function useChartData(results: Ref<BenchmarkData[]> | BenchmarkData[]) {
       }))
 
       return {
-        title: createChartTitle(statTemplate),
+        title: statTemplate.type,
         statType: statTemplate.type,
         statUnit: statTemplate.unit,
         yAxis: yAxisValues,

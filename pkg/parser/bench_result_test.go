@@ -51,7 +51,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 					XAxis: "",
 					YAxis: "Simple",
 					Stats: []shared.Stat{
-						{Type: "Execution Time", Value: 123.45, Unit: "ns"},
+						{Type: "Execution Time (ns/op)", Value: 123.45},
 					},
 				},
 				{
@@ -59,7 +59,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 					XAxis: "",
 					YAxis: "SimpleBench",
 					Stats: []shared.Stat{
-						{Type: "Execution Time", Value: 100.45, Unit: "ns"},
+						{Type: "Execution Time (ns/op)", Value: 100.45},
 					},
 				},
 			},
@@ -81,9 +81,9 @@ func TestParseBenchmarkResults(t *testing.T) {
 					XAxis: "",
 					YAxis: "WithMem",
 					Stats: []shared.Stat{
-						{Type: "Execution Time", Value: 0.00012345, Unit: "ms"},
-						{Type: "Memory Usage", Value: 0.0625, Unit: "KB"},
-						{Type: "Allocations", Value: 0.002000, Unit: "K"},
+						{Type: "Execution Time (ms/op)", Value: 0.00012345},
+						{Type: "Memory Usage (KB/op)", Value: 0.0625},
+						{Type: "Allocations (K/op)", Value: 0.002000},
 					},
 				},
 			},
@@ -106,9 +106,9 @@ func TestParseBenchmarkResults(t *testing.T) {
 					XAxis: "Task",
 					YAxis: "SubjectA",
 					Stats: []shared.Stat{
-						{Type: "Execution Time", Value: 123.45, Unit: "ns"},
-						{Type: "Memory Usage", Value: 512.0, Unit: "b"}, // 64*8=512 bits
-						{Type: "Allocations", Value: 2.0, Unit: ""},
+						{Type: "Execution Time (ns/op)", Value: 123.45},
+						{Type: "Memory Usage (b/op)", Value: 512.0}, // 64*8=512 bits
+						{Type: "Allocations/op", Value: 2.0},
 					},
 				},
 				{
@@ -116,9 +116,9 @@ func TestParseBenchmarkResults(t *testing.T) {
 					XAxis: "Task",
 					YAxis: "SubjectB",
 					Stats: []shared.Stat{
-						{Type: "Execution Time", Value: 234.56, Unit: "ns"},
-						{Type: "Memory Usage", Value: 1024.0, Unit: "b"}, // 128*8=1024 bits
-						{Type: "Allocations", Value: 4.0, Unit: ""},
+						{Type: "Execution Time (ns/op)", Value: 234.56},
+						{Type: "Memory Usage (b/op)", Value: 1024.0}, // 128*8=1024 bits
+						{Type: "Allocations/op", Value: 4.0},
 					},
 				},
 			},
@@ -138,7 +138,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 					XAxis: "",
 					YAxis: "SubjectA",
 					Stats: []shared.Stat{
-						{Type: "Execution Time", Value: 123.45, Unit: "ns"},
+						{Type: "Execution Time (ns/op)", Value: 123.45},
 					},
 				},
 			},
@@ -160,7 +160,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 					XAxis: "",
 					YAxis: "Test",
 					Stats: []shared.Stat{
-						{Type: "Execution Time", Value: 123.45, Unit: "ns"},
+						{Type: "Execution Time (ns/op)", Value: 123.45},
 					},
 				},
 			},
@@ -182,8 +182,8 @@ func TestParseBenchmarkResults(t *testing.T) {
 					XAxis: "",
 					YAxis: "A",
 					Stats: []shared.Stat{
-						{Type: "Execution Time", Value: 100.0, Unit: "ns"},
-						{Type: "Iterations", Value: 100, Unit: "", Per: ""},
+						{Type: "Execution Time (ns/op)", Value: 100.0},
+						{Type: "Iterations", Value: 100},
 					},
 				},
 				{
@@ -191,8 +191,8 @@ func TestParseBenchmarkResults(t *testing.T) {
 					XAxis: "",
 					YAxis: "B",
 					Stats: []shared.Stat{
-						{Type: "Execution Time", Value: 100.0, Unit: "ns"},
-						{Type: "Iterations", Value: 200, Unit: "", Per: ""},
+						{Type: "Execution Time (ns/op)", Value: 100.0},
+						{Type: "Iterations", Value: 200},
 					},
 				},
 			},
@@ -218,8 +218,8 @@ func TestParseBenchmarkResults(t *testing.T) {
 					XAxis: "",
 					YAxis: "Throughput",
 					Stats: []shared.Stat{
-						{Type: "Execution Time", Value: 123.45, Unit: "ns"},
-						{Type: "Throughput", Value: 512.0, Unit: "B/s"},
+						{Type: "Execution Time (ns/op)", Value: 123.45},
+						{Type: "Throughput (B/s)", Value: 512.0},
 					},
 				},
 			},
@@ -239,8 +239,8 @@ func TestParseBenchmarkResults(t *testing.T) {
 					XAxis: "",
 					YAxis: "Throughput",
 					Stats: []shared.Stat{
-						{Type: "Execution Time", Value: 123.45, Unit: "ns"},
-						{Type: "Throughput", Value: 1024.0, Unit: "MB/s"},
+						{Type: "Execution Time (ns/op)", Value: 123.45},
+						{Type: "Throughput (MB/s)", Value: 1024.0},
 					},
 				},
 			},
@@ -260,8 +260,8 @@ func TestParseBenchmarkResults(t *testing.T) {
 					XAxis: "",
 					YAxis: "Throughput",
 					Stats: []shared.Stat{
-						{Type: "Execution Time", Value: 123.45, Unit: "ns"},
-						{Type: "Throughput", Value: 2.5, Unit: "GB/s"},
+						{Type: "Execution Time (ns/op)", Value: 123.45},
+						{Type: "Throughput (GB/s)", Value: 2.5},
 					},
 				},
 			},
@@ -281,8 +281,8 @@ func TestParseBenchmarkResults(t *testing.T) {
 					XAxis: "",
 					YAxis: "Custom",
 					Stats: []shared.Stat{
-						{Type: "Execution Time", Value: 123.45, Unit: "ns"},
-						{Type: "Throughput", Value: 5000.0, Unit: "res/s"},
+						{Type: "Execution Time (ns/op)", Value: 123.45},
+						{Type: "Throughput (res/s)", Value: 5000.0},
 					},
 				},
 			},
@@ -302,8 +302,8 @@ func TestParseBenchmarkResults(t *testing.T) {
 					XAxis: "",
 					YAxis: "Custom",
 					Stats: []shared.Stat{
-						{Type: "Execution Time", Value: 123.45, Unit: "ns"},
-						{Type: "Metric", Value: 42.5, Unit: "customUnit"},
+						{Type: "Execution Time (ns/op)", Value: 123.45},
+						{Type: "Metric (customUnit)", Value: 42.5},
 					},
 				},
 			},
@@ -383,9 +383,6 @@ func TestParseBenchmarkResults(t *testing.T) {
 					actualStat := actual.Stats[j]
 					if actualStat.Type != expectedStat.Type {
 						t.Errorf("Result[%d].Stats[%d].Type = %q, expected %q", i, j, actualStat.Type, expectedStat.Type)
-					}
-					if actualStat.Unit != expectedStat.Unit {
-						t.Errorf("Result[%d].Stats[%d].Unit = %q, expected %q", i, j, actualStat.Unit, expectedStat.Unit)
 					}
 					// For float comparisons, allow a small epsilon
 					if !almostEqual(actualStat.Value, expectedStat.Value, 0.001) {

@@ -2,9 +2,7 @@ package shared
 
 type Stat struct {
 	Type  string  `json:"type"`
-	Value float64 `json:"value"`
-	Unit  string  `json:"unit,omitempty"`
-	Per   string  `json:"per,omitempty"`
+	Value float64 `json:"value,omitempty"`
 }
 
 type BenchmarkResult struct {
