@@ -1,4 +1,4 @@
-import type { SortOrder } from '../../../types/benchmark'
+import type { SortOrder } from '../../../types'
 
 export const fontSize = 12
 

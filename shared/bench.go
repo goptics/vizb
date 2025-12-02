@@ -5,7 +5,7 @@ type Stat struct {
 	Value float64 `json:"value,omitempty"`
 }
 
-type BenchmarkResult struct {
+type BenchmarkData struct {
 	Name  string `json:"name,omitempty"`
 	XAxis string `json:"xAxis,omitempty"`
 	YAxis string `json:"yAxis,omitempty"`
@@ -30,5 +30,5 @@ type Benchmark struct {
 		} `json:"sort"`
 		ShowLabels bool `json:"showLabels"`
 	} `json:"settings"`
-	Data []BenchmarkResult `json:"data"`
+	Data []BenchmarkData `json:"data"`
 }

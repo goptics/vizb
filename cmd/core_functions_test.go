@@ -59,7 +59,7 @@ func TestPreprocessInputFile(t *testing.T) {
 	})
 }
 
-func TestParseResults(t *testing.T) {
+func TestPrepareBenchmarkData(t *testing.T) {
 	// Save original shared.OsExit
 	originalOsExit := shared.OsExit
 	defer func() { shared.OsExit = originalOsExit }()
@@ -75,7 +75,7 @@ BenchmarkAnother-8    2000000    2345 ns/op    2000 B/op    20 allocs/op`
 		err := os.WriteFile(benchFile, []byte(benchContent), 0644)
 		require.NoError(t, err)
 
-		results := parseResults(benchFile)
+		results := prepareBenchmarkData(benchFile)
 
 		assert.NotEmpty(t, results, "Should parse benchmark results")
 		assert.True(t, len(results) > 0, "Should have at least one result")
@@ -94,7 +94,7 @@ BenchmarkAnother-8    2000000    2345 ns/op    2000 B/op    20 allocs/op`
 		}
 
 		assert.Panics(t, func() {
-			parseResults(emptyFile)
+			prepareBenchmarkData(emptyFile)
 		})
 		assert.True(t, exitCalled, "Should call osExit when no results found")
 	})
@@ -115,7 +115,7 @@ Just some random text`
 		}
 
 		assert.Panics(t, func() {
-			parseResults(invalidFile)
+			prepareBenchmarkData(invalidFile)
 		})
 		assert.True(t, exitCalled, "Should call osExit when no valid benchmarks found")
 	})
@@ -129,7 +129,7 @@ func TestWriteOutput(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create sample benchmark results
-	sampleResults := []shared.BenchmarkResult{
+	sampleResults := []shared.BenchmarkData{
 		{
 			Name:  "BenchmarkExample",
 			XAxis: "8",
@@ -216,7 +216,7 @@ func TestWriteOutput(t *testing.T) {
 		defer file.Close()
 
 		emptyBenchmark := &shared.Benchmark{
-			Data: []shared.BenchmarkResult{},
+			Data: []shared.BenchmarkData{},
 		}
 
 		assert.NotPanics(t, func() {

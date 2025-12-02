@@ -37,7 +37,7 @@ func parseBenchmarkName(name benchfmt.Name) (benchName string, cpu string) {
 	return
 }
 
-func ParseBenchmarkResults(filePath string) (results []shared.BenchmarkResult) {
+func ParseBenchmarkData(filePath string) (results []shared.BenchmarkData) {
 	f := shared.MustOpenFile(filePath)
 	defer f.Close()
 
@@ -123,7 +123,7 @@ func ParseBenchmarkResults(filePath string) (results []shared.BenchmarkResult) {
 			benchStats = append(benchStats, benchStat)
 		}
 
-		results = append(results, shared.BenchmarkResult{
+		results = append(results, shared.BenchmarkData{
 			Name:  benchName,
 			XAxis: xAxis,
 			YAxis: yAxis,

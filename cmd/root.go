@@ -170,7 +170,7 @@ func generateOutputFile(filePath string) {
 	// if it fails, try to parse results from txt, or bench event json
 	if benchmark == nil {
 		filePath = preprocessInputFile(filePath)
-		results := parseResults(filePath)
+		results := prepareBenchmarkData(filePath)
 		benchmark = prepareBenchmarkFromParsedResults(results)
 	}
 
@@ -209,18 +209,18 @@ func preprocessInputFile(filePath string) string {
 	return filePath
 }
 
-// parseResults parses benchmark results or exits on error
-func parseResults(filePath string) []shared.BenchmarkResult {
-	results := parser.ParseBenchmarkResults(filePath)
+// prepareBenchmarkData parses benchmark results or exits on error
+func prepareBenchmarkData(filePath string) []shared.BenchmarkData {
+	data := parser.ParseBenchmarkData(filePath)
 
-	if len(results) == 0 {
-		shared.ExitWithError("No benchmark results found", nil)
+	if len(data) == 0 {
+		shared.ExitWithError("No benchmark data found", nil)
 	}
 
-	return results
+	return data
 }
 
-func prepareBenchmarkFromParsedResults(results []shared.BenchmarkResult) *shared.Benchmark {
+func prepareBenchmarkFromParsedResults(results []shared.BenchmarkData) *shared.Benchmark {
 	benchmark := &shared.Benchmark{
 		Name:        shared.FlagState.Name,
 		Description: shared.FlagState.Description,

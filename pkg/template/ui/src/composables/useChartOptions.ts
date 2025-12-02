@@ -1,7 +1,5 @@
 import { computed, type Ref } from 'vue'
-import type { ChartData } from '../types/benchmark'
-import type { Sort } from '../types/benchmark'
-import type { ChartType } from '../types/benchmark'
+import type { ChartData, Sort, ChartType } from '../types'
 import type { EChartsOption } from 'echarts'
 import { useBarChartOptions } from './charts/useBarChartOptions'
 import { useLineChartOptions } from './charts/useLineChartOptions'
