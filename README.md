@@ -1,29 +1,32 @@
-# Vizb - Go Benchmark Visualization Tool
+<div align="center">
+  <img src="assests/logo.png" alt="vizb logo" width="120" height="auto" />
+  <h1>Vizb</h1>
 
-[![libs.tech recommends](https://libs.tech/project/1003638795/badge.svg)](https://libs.tech/project/1003638795/vizb)
-[![Go Report Card](https://goreportcard.com/badge/github.com/goptics/vizb)](https://goreportcard.com/report/github.com/goptics/vizb)
-[![CI](https://github.com/goptics/vizb/actions/workflows/ci.yml/badge.svg)](https://github.com/goptics/vizb/actions/workflows/ci.yml)
-[![Codecov](https://codecov.io/gh/goptics/vizb/branch/main/graph/badge.svg)](https://codecov.io/gh/goptics/vizb)
-[![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8?style=for&logo=go)](https://golang.org/doc/devel/release.html)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg?style=for)](LICENSE)
+  <p>
+    <a href="https://libs.tech/project/1003638795/vizb"><img src="https://libs.tech/project/1003638795/badge.svg" alt="libs.tech recommends" /></a>
+    <a href="https://goreportcard.com/report/github.com/goptics/vizb"><img src="https://goreportcard.com/badge/github.com/goptics/vizb" alt="Go Report Card" /></a>
+    <a href="https://github.com/goptics/vizb/actions/workflows/ci.yml"><img src="https://github.com/goptics/vizb/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+    <a href="https://codecov.io/gh/goptics/vizb"><img src="https://codecov.io/gh/goptics/vizb/branch/main/graph/badge.svg" alt="Codecov" /></a>
+    <a href="https://golang.org/doc/devel/release.html"><img src="https://img.shields.io/badge/Go-1.24+-00ADD8?style=for&logo=go" alt="Go Version" /></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg?style=for" alt="License" /></a>
+  </p>
 
-Vizb is a powerful CLI tool for visualizing Go benchmark results as interactive HTML charts with advance grouping. It automatically processes both raw benchmark output and JSON-formatted benchmark data, helping you compare the performance of different implementations across various workloads.
+  <p>
+    Vizb is a powerful CLI tool for visualizing Go benchmark results as interactive HTML charts with advance grouping. It automatically processes both raw benchmark output and JSON-formatted benchmark data, helping you compare the performance of different implementations across various workloads.
+  </p>
+</div>
 
 ## Features
 
 - **Modern Interactive UI**: Robust **Vue.js** application with a smooth, responsive experience.
-- **Dark & Light Mode**: Built-in support for both themes.
-- **Sorting**: Sort data (asc/desc) via UI or CLI flags.
-- **Multi-layer Grouping**: Merge multiple benchmark results for deep comparative analysis.
-- **Flexible Input**: Automatically processes raw `go test` output or JSON.
-- **Comprehensive Metrics**: Compare time, memory, and number of allocations with customizable units.
-- **Smart Grouping**: Extract grouping logic from benchmark names using custom patterns.
-- **Export Options**: Generate HTML/JSON reports or save charts as PNG.
-- **Developer Friendly**: Simple CLI with piped input support (`| vizb`).
-
-## Overview
-
-https://github.com/user-attachments/assets/a6dbe3b9-f5aa-4643-8e19-d91e710c78fb
+- **Multi-Chart**: Supports multiple charts (`bar`, `line` and `pie`) in a single place.
+- **Sorting**: Sort data (`asc`/`desc`) for comparison through UI settings or CLI flags.
+- **Swap Axis**: Swap `N`, `X` and `Y` axis for diverse comparison through UI settings.
+- **Multi-layer Grouping**: Merge multiple benchmark data for deep comparative analysis.
+- **Flexible Input**: Automatically processes raw `go test -bench` output or standard JSON of vizb.
+- **Comprehensive Metrics**: Compare time, memory, and numbers with customizable units.
+- **Smart Grouping**: Extract grouping logic from benchmark names using regex and group patterns.
+- **Export Options**: Generate `single-file` HTML/JSON and options to save charts as PNG.
 
 ## Installation
 
@@ -31,11 +34,9 @@ https://github.com/user-attachments/assets/a6dbe3b9-f5aa-4643-8e19-d91e710c78fb
 go install github.com/goptics/vizb
 ```
 
-## Usage
+## Basic Usage
 
-### Basic Usage
-
-#### Option 1: Using raw benchmark output
+### Option 1: Using raw benchmark output
 
 Run your Go benchmarks and save the output:
 
@@ -43,27 +44,13 @@ Run your Go benchmarks and save the output:
 go test -bench . > bench.txt
 ```
 
-Generate a chart from the benchmark results:
+Generate charts from the benchmark:
 
 ```bash
 vizb bench.txt -o output.html
 ```
 
-#### Option 2: Using JSON benchmark output
-
-Run your Go benchmarks with JSON output:
-
-```bash
-go test -bench . -json > bench.json
-```
-
-Generate a chart from the JSON benchmark results:
-
-```bash
-vizb bench.json -o output.html
-```
-
-#### Option 3: Direct piping (recommended)
+### Option 2: Direct piping
 
 Pipe benchmark results directly to vizb:
 
@@ -75,9 +62,21 @@ go test -bench . | vizb -o output.html
 go test -bench . -json | vizb -o output.html
 ```
 
-#### Option 4: Merging multiple benchmarks
+### Option 3: Using standard JSON benchmark output
 
-You can combine multiple benchmark JSON files into a single report using the `merge` command. This is useful for aggregating results from different runs, machines, or environments.
+```bash
+vizb bench.txt -f json -o output.json
+```
+
+Generate charts from the standard JSON benchmark data:
+
+```bash
+vizb output.json -o output.html
+```
+
+### Option 4: Merging multiple benchmarks
+
+You can combine multiple benchmark JSON files into a single html file using the `merge` command. This is useful for aggregating benchmark data from different runs, machines, or environments.
 
 ```bash
 # Merge specific files
@@ -95,15 +94,17 @@ Open the generated HTML file in your browser to view the interactive charts.
 > [!Note]
 > The `merge` command requires JSON files as input, which must be generated using `vizb bench.txt -f json`.
 
-## How vizb groups your benchmark results
+## Advance Usage
 
-Vizb organizes your benchmark results into logical groups to create meaningful charts. By default, it tries to be smart, but you can control exactly how benchmarks are grouped using the `--group-pattern` flag.
+### How vizb groups your benchmark data
+
+Vizb organizes your benchmark data into logical groups to create meaningful charts. By default, it tries to be smart, but you can control exactly how benchmarks are grouped using the `--group-pattern` flag.
 
 ### Understanding Group Patterns
 
 A group pattern tells vizb how to dissect your benchmark names into three key components:
 
-1.  **Name (n)**: The family or group the benchmark belongs to. Benchmarks with the same `Name` will be grouped together in the same chart.
+1.  **Name (n)**: The family or group the benchmark belongs to. Benchmarks with the same `Name` will be grouped together in the same chart. (optional)
 2.  **XAxis (x)**: The category that goes on the X-axis (e.g., input size, concurrency level).
 3.  **YAxis (y)**: The specific test case or variation (e.g., algorithm name, sub-test).
 
