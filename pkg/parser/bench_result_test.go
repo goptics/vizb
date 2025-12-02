@@ -406,3 +406,54 @@ func almostEqual(a, b, epsilon float64) bool {
 	}
 	return diff < epsilon
 }
+
+func TestConvertJsonBenchToText(t *testing.T) {
+	tempDir := t.TempDir()
+
+	t.Run("Valid JSON events", func(t *testing.T) {
+		jsonFile := filepath.Join(tempDir, "events.json")
+		content := `{"Action":"output","Output":"BenchmarkA 100 100 ns/op\n"}
+{"Action":"output","Output":"BenchmarkB 200 200 ns/op\n"}`
+		err := os.WriteFile(jsonFile, []byte(content), 0644)
+		if err != nil {
+			t.Fatalf("Failed to write json file: %v", err)
+		}
+
+		txtFile := ConvertJsonBenchToText(jsonFile)
+		defer os.Remove(txtFile)
+
+		txtContent, err := os.ReadFile(txtFile)
+		if err != nil {
+			t.Fatalf("Failed to read result file: %v", err)
+		}
+
+		expected := "BenchmarkA 100 100 ns/op\nBenchmarkB 200 200 ns/op\n"
+		if string(txtContent) != expected {
+			t.Errorf("Expected content %q, got %q", expected, string(txtContent))
+		}
+	})
+
+	t.Run("Mixed actions", func(t *testing.T) {
+		jsonFile := filepath.Join(tempDir, "mixed.json")
+		content := `{"Action":"run","Test":"BenchmarkA"}
+{"Action":"output","Output":"BenchmarkA 100 100 ns/op\n"}
+{"Action":"pass","Test":"BenchmarkA"}`
+		err := os.WriteFile(jsonFile, []byte(content), 0644)
+		if err != nil {
+			t.Fatalf("Failed to write json file: %v", err)
+		}
+
+		txtFile := ConvertJsonBenchToText(jsonFile)
+		defer os.Remove(txtFile)
+
+		txtContent, err := os.ReadFile(txtFile)
+		if err != nil {
+			t.Fatalf("Failed to read result file: %v", err)
+		}
+
+		expected := "BenchmarkA 100 100 ns/op\n"
+		if string(txtContent) != expected {
+			t.Errorf("Expected content %q, got %q", expected, string(txtContent))
+		}
+	})
+}
