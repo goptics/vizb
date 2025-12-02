@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/goptics/vizb/pkg/parser"
@@ -140,43 +139,47 @@ func writeStdinPipedInputs(tempfilePath string) {
 }
 
 func checkTargetFile(filePath string) {
+	fmt.Println(style.Info.Render(fmt.Sprintf("📊 Reading benchmark data from file: %s", filePath)))
+
 	// Check if the target file exists
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		shared.ExitWithError(fmt.Sprintf("Error: File '%s' does not exist", filePath), nil)
 	}
+}
 
-	// Check if the file contains valid JSON
-	srcFile := shared.MustOpenFile(filePath)
-	defer srcFile.Close()
+func convertToBenchmark(filePath string) (benchmark *shared.Benchmark) {
+	f := shared.MustOpenFile(filePath)
+	defer f.Close()
 
-	fmt.Println(style.Info.Render(fmt.Sprintf("📊 Reading benchmark data from file: %s", filePath)))
-
-	ext := filepath.Ext(filePath)
-	scanner := bufio.NewScanner(srcFile)
-
-	if scanner.Scan() {
-		firstLine := scanner.Text()
-
-		switch ext {
-		case ".json":
-			var ev shared.BenchEvent
-			if err := json.Unmarshal([]byte(firstLine), &ev); err != nil {
-				shared.ExitWithError("Input file is not in proper JSON format.", err)
-			}
-		}
+	content, err := io.ReadAll(f)
+	if err != nil {
+		shared.ExitWithError("Failed to read file: %v", err)
 	}
 
-	srcFile.Seek(0, 0)
+	if err := json.Unmarshal(content, &benchmark); err != nil {
+		return nil
+	}
+
+	return benchmark
 }
 
 func generateOutputFile(filePath string) {
 	outFile := resolveOutputFileName(shared.FlagState.OutputFile, shared.FlagState.Format)
-	filePath = preprocessInputFile(filePath)
-	results := parseResults(filePath)
+	// first try to convert to benchmark
+	benchmark := convertToBenchmark(filePath)
+
+	// if it fails, try to parse results from txt, or bench event json
+	if benchmark == nil {
+		filePath = preprocessInputFile(filePath)
+		results := parseResults(filePath)
+		benchmark = prepareBenchmarkFromParsedResults(results)
+	}
+
 	f := shared.MustCreateFile(outFile)
+
 	defer f.Close()
 
-	writeOutput(f, results, shared.FlagState.Format)
+	writeOutput(f, benchmark, shared.FlagState.Format)
 
 	HandleOutputResult(f)
 }
@@ -218,9 +221,8 @@ func parseResults(filePath string) []shared.BenchmarkResult {
 	return results
 }
 
-// writeOutput writes results to file in required format
-func writeOutput(f *os.File, results []shared.BenchmarkResult, format string) {
-	benchmark := shared.Benchmark{
+func prepareBenchmarkFromParsedResults(results []shared.BenchmarkResult) *shared.Benchmark {
+	benchmark := &shared.Benchmark{
 		Name:        shared.FlagState.Name,
 		Description: shared.FlagState.Description,
 		Data:        results,
@@ -243,6 +245,11 @@ func writeOutput(f *os.File, results []shared.BenchmarkResult, format string) {
 
 	benchmark.Settings.ShowLabels = shared.FlagState.ShowLabels
 
+	return benchmark
+}
+
+// writeOutput writes results to file in required format
+func writeOutput(f *os.File, benchmark *shared.Benchmark, format string) {
 	switch format {
 	case "html":
 		fmt.Println(style.Info.Render("🔄 Generating Chart..."))

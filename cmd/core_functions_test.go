@@ -13,8 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestCheckTargetFile is already implemented in root_test.go - no need to duplicate
-
 func TestPreprocessInputFile(t *testing.T) {
 	tempDir := t.TempDir()
 
@@ -154,6 +152,10 @@ func TestWriteOutput(t *testing.T) {
 		},
 	}
 
+	sampleBenchmark := &shared.Benchmark{
+		Data: sampleResults,
+	}
+
 	t.Run("HTML output", func(t *testing.T) {
 		htmlFile := filepath.Join(tempDir, "output.html")
 		file, err := os.Create(htmlFile)
@@ -161,7 +163,7 @@ func TestWriteOutput(t *testing.T) {
 		defer file.Close()
 
 		assert.NotPanics(t, func() {
-			writeOutput(file, sampleResults, "html")
+			writeOutput(file, sampleBenchmark, "html")
 		})
 
 		// Verify file was written
@@ -177,7 +179,7 @@ func TestWriteOutput(t *testing.T) {
 		defer file.Close()
 
 		assert.NotPanics(t, func() {
-			writeOutput(file, sampleResults, "json")
+			writeOutput(file, sampleBenchmark, "json")
 		})
 
 		// Verify JSON content
@@ -199,7 +201,7 @@ func TestWriteOutput(t *testing.T) {
 
 		// Invalid format should not cause panic, but file should remain empty
 		assert.NotPanics(t, func() {
-			writeOutput(file, sampleResults, "invalid_format")
+			writeOutput(file, sampleBenchmark, "invalid_format")
 		})
 
 		stat, err := file.Stat()
@@ -213,10 +215,12 @@ func TestWriteOutput(t *testing.T) {
 		require.NoError(t, err)
 		defer file.Close()
 
-		emptyResults := []shared.BenchmarkResult{}
+		emptyBenchmark := &shared.Benchmark{
+			Data: []shared.BenchmarkResult{},
+		}
 
 		assert.NotPanics(t, func() {
-			writeOutput(file, emptyResults, "json")
+			writeOutput(file, emptyBenchmark, "json")
 		})
 
 		// Verify empty JSON array was written

@@ -171,7 +171,7 @@ func TestValidateFlags(t *testing.T) {
 	}
 }
 
-// TestCheckTargetFile tests the JSON file processing functionality
+// TestCheckTargetFile tests the file existence check
 func TestCheckTargetFile(t *testing.T) {
 	// Create a temporary directory for test files
 	tempDir := t.TempDir()
@@ -185,20 +185,12 @@ func TestCheckTargetFile(t *testing.T) {
 	}
 	defer func() { shared.OsExit = originalOsExitFunc }()
 
-	// Create valid and invalid JSON test files
-	validJsonPath := filepath.Join(tempDir, "valid.json")
-	invalidJsonPath := filepath.Join(tempDir, "invalid.json")
-	nonExistentPath := filepath.Join(tempDir, "nonexistent.json")
-
-	// Create a valid JSON test file
-	validEvent := shared.BenchEvent{Action: "output", Output: "BenchmarkTest 1 100 ns/op"}
-	validEventBytes, _ := json.Marshal(validEvent)
-	err := os.WriteFile(validJsonPath, append(validEventBytes, '\n'), 0644)
+	// Create a valid file
+	validPath := filepath.Join(tempDir, "valid.txt")
+	err := os.WriteFile(validPath, []byte("content"), 0644)
 	require.NoError(t, err)
 
-	// Create an invalid JSON test file with .json extension to trigger JSON validation
-	err = os.WriteFile(invalidJsonPath, []byte("this is not json"), 0644)
-	require.NoError(t, err)
+	nonExistentPath := filepath.Join(tempDir, "nonexistent.txt")
 
 	tests := []struct {
 		name          string
@@ -207,8 +199,8 @@ func TestCheckTargetFile(t *testing.T) {
 		expectedError string
 	}{
 		{
-			name:          "Valid JSON file",
-			inputPath:     validJsonPath,
+			name:          "Existing file",
+			inputPath:     validPath,
 			expectExit:    false,
 			expectedError: "",
 		},
@@ -217,12 +209,6 @@ func TestCheckTargetFile(t *testing.T) {
 			inputPath:     nonExistentPath,
 			expectExit:    true,
 			expectedError: "does not exist",
-		},
-		{
-			name:          "Invalid JSON file",
-			inputPath:     invalidJsonPath,
-			expectExit:    true,
-			expectedError: "not in proper JSON format",
 		},
 	}
 
@@ -260,6 +246,54 @@ func TestCheckTargetFile(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestConvertToBenchmark(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Mock shared.OsExit
+	originalOsExit := shared.OsExit
+	defer func() { shared.OsExit = originalOsExit }()
+
+	shared.OsExit = func(code int) {
+		panic(fmt.Sprintf("shared.OsExit(%d) called", code))
+	}
+
+	t.Run("Valid benchmark JSON", func(t *testing.T) {
+		validFile := filepath.Join(tempDir, "valid_bench.json")
+		bench := shared.Benchmark{
+			Name: "Test Benchmark",
+			Data: []shared.BenchmarkResult{
+				{Name: "Bench1", Stats: []shared.Stat{{Type: "time", Value: 100}}},
+			},
+		}
+		data, err := json.Marshal(bench)
+		require.NoError(t, err)
+		err = os.WriteFile(validFile, data, 0644)
+		require.NoError(t, err)
+
+		result := convertToBenchmark(validFile)
+		require.NotNil(t, result)
+		assert.Equal(t, "Test Benchmark", result.Name)
+		assert.Len(t, result.Data, 1)
+	})
+
+	t.Run("Invalid JSON content", func(t *testing.T) {
+		invalidFile := filepath.Join(tempDir, "invalid.json")
+		err := os.WriteFile(invalidFile, []byte("invalid json"), 0644)
+		require.NoError(t, err)
+
+		result := convertToBenchmark(invalidFile)
+		assert.Nil(t, result)
+	})
+
+	t.Run("File read error", func(t *testing.T) {
+		nonExistentFile := filepath.Join(tempDir, "does_not_exist.json")
+
+		assert.Panics(t, func() {
+			convertToBenchmark(nonExistentFile)
+		})
+	})
 }
 
 // TestRunBenchmark tests the main runBenchmark function
