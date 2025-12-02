@@ -24,8 +24,7 @@ var rootCmd = &cobra.Command{
 	Use:   "vizb [target]",
 	Short: "Generate benchmark charts from Go test benchmarks",
 	Long: `A CLI tool that extends the functionality of 'go test -bench' with chart generation.
-It runs the benchmark command internally, captures the JSON output, and generates
-an interactive HTML chart based on the results.`,
+It takes benchmark text or json file as input and generates an interactive HTML chart application.`,
 	Version: version.Version,
 	Args:    cobra.ArbitraryArgs,
 	Run:     runBenchmark,
