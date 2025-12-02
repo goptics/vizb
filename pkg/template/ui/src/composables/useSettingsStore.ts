@@ -6,6 +6,7 @@ const showLabels = ref(false)
 const charts = ref<ChartType[]>(DEFAULT_SETTINGS.charts)
 const activeChartIndex = ref<number>(0)
 const chartType = computed<ChartType>(() => charts.value[activeChartIndex.value] ?? 'bar')
+const selectedSwapIndexMap = ref(new Map<number, number>())
 let initialized = false
 
 // Simple dark mode implementation
@@ -89,6 +90,14 @@ export function useSettingsStore() {
     }
   }
 
+  const setSelectedSwapIndex = (benchmarkId: number, index: number) => {
+    selectedSwapIndexMap.value.set(benchmarkId, index)
+  }
+
+  const getSelectedSwapIndex = (benchmarkId: number): number | undefined => {
+    return selectedSwapIndexMap.value.get(benchmarkId)
+  }
+
   return {
     sortOrder,
     showLabels,
@@ -96,6 +105,7 @@ export function useSettingsStore() {
     activeChartIndex,
     chartType,
     isDark,
+    selectedSwapIndexMap,
     setSort,
     setShowLabels,
     setCharts,
@@ -103,5 +113,7 @@ export function useSettingsStore() {
     setChartType,
     toggleDark,
     initializeFromBenchmark,
+    setSelectedSwapIndex,
+    getSelectedSwapIndex,
   }
 }

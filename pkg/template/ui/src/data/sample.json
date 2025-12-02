@@ -4,7 +4,7 @@
     "description": "Performance comparison of popular Go HTTP Routers",
     "pkg": "github.com/gin-gonic/go-http-routing-benchmark",
     "settings": {
-      "charts": ["bar", "pie"],
+      "charts": ["bar", "line", "pie"],
       "sort": {
         "enabled": true,
         "order": "asc"
@@ -13532,6 +13532,241 @@
           {
             "type": "Iterations",
             "value": 1384
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Hashing",
+    "description": "Comparison of different hash functions",
+    "settings": {
+      "charts": ["bar", "line", "pie"],
+      "sort": {
+        "enabled": true,
+        "order": "asc"
+      },
+      "showLabels": false
+    },
+    "data": [
+      {
+        "xAxis": "MD5",
+        "stats": [
+          {
+            "type": "Execution Time (ns/op)",
+            "value": 114.8
+          },
+          {
+            "type": "Throughput (MB/s)",
+            "value": 69.71
+          },
+          {
+            "type": "Iterations",
+            "value": 10458847
+          }
+        ]
+      },
+      {
+        "xAxis": "SHA1",
+        "stats": [
+          {
+            "type": "Execution Time (ns/op)",
+            "value": 141.2
+          },
+          {
+            "type": "Throughput (MB/s)",
+            "value": 56.66
+          },
+          {
+            "type": "Iterations",
+            "value": 8493391
+          }
+        ]
+      },
+      {
+        "xAxis": "SHA256",
+        "stats": [
+          {
+            "type": "Execution Time (ns/op)",
+            "value": 187.1
+          },
+          {
+            "type": "Throughput (MB/s)",
+            "value": 42.75
+          },
+          {
+            "type": "Iterations",
+            "value": 6398036
+          }
+        ]
+      },
+      {
+        "xAxis": "SHA3B224",
+        "stats": [
+          {
+            "type": "Execution Time (ns/op)",
+            "value": 573.1
+          },
+          {
+            "type": "Throughput (MB/s)",
+            "value": 13.96
+          },
+          {
+            "type": "Iterations",
+            "value": 2091546
+          }
+        ]
+      },
+      {
+        "xAxis": "SHA3B256",
+        "stats": [
+          {
+            "type": "Execution Time (ns/op)",
+            "value": 569.2
+          },
+          {
+            "type": "Throughput (MB/s)",
+            "value": 14.06
+          },
+          {
+            "type": "Iterations",
+            "value": 2102798
+          }
+        ]
+      },
+      {
+        "xAxis": "RIPEMD160",
+        "stats": [
+          {
+            "type": "Execution Time (ns/op)",
+            "value": 303.1
+          },
+          {
+            "type": "Throughput (MB/s)",
+            "value": 26.4
+          },
+          {
+            "type": "Iterations",
+            "value": 3957055
+          }
+        ]
+      },
+      {
+        "xAxis": "Blake2B",
+        "stats": [
+          {
+            "type": "Execution Time (ns/op)",
+            "value": 296.9
+          },
+          {
+            "type": "Throughput (MB/s)",
+            "value": 26.95
+          },
+          {
+            "type": "Iterations",
+            "value": 4042722
+          }
+        ]
+      },
+      {
+        "xAxis": "Blake2BSimd",
+        "stats": [
+          {
+            "type": "Execution Time (ns/op)",
+            "value": 247.7
+          },
+          {
+            "type": "Throughput (MB/s)",
+            "value": 32.3
+          },
+          {
+            "type": "Iterations",
+            "value": 4844781
+          }
+        ]
+      },
+      {
+        "xAxis": "Murmur3",
+        "stats": [
+          {
+            "type": "Execution Time (ns/op)",
+            "value": 47.19
+          },
+          {
+            "type": "Throughput (MB/s)",
+            "value": 169.52
+          },
+          {
+            "type": "Iterations",
+            "value": 25517697
+          }
+        ]
+      },
+      {
+        "xAxis": "Murmur3Twmb",
+        "stats": [
+          {
+            "type": "Execution Time (ns/op)",
+            "value": 46.34
+          },
+          {
+            "type": "Throughput (MB/s)",
+            "value": 172.65
+          },
+          {
+            "type": "Iterations",
+            "value": 25722096
+          }
+        ]
+      },
+      {
+        "xAxis": "SipHash",
+        "stats": [
+          {
+            "type": "Execution Time (ns/op)",
+            "value": 41.71
+          },
+          {
+            "type": "Throughput (MB/s)",
+            "value": 191.82
+          },
+          {
+            "type": "Iterations",
+            "value": 28485819
+          }
+        ]
+      },
+      {
+        "xAxis": "XXHash",
+        "stats": [
+          {
+            "type": "Execution Time (ns/op)",
+            "value": 25.71
+          },
+          {
+            "type": "Throughput (MB/s)",
+            "value": 311.2
+          },
+          {
+            "type": "Iterations",
+            "value": 46363768
+          }
+        ]
+      },
+      {
+        "xAxis": "XXHashpier",
+        "stats": [
+          {
+            "type": "Execution Time (ns/op)",
+            "value": 26.43
+          },
+          {
+            "type": "Throughput (MB/s)",
+            "value": 302.64
+          },
+          {
+            "type": "Iterations",
+            "value": 44888440
           }
         ]
       }

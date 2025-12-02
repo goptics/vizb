@@ -40,7 +40,9 @@ export function useLineChartOptions(config: BaseChartConfig) {
       hasYAxis: hasYAxis(chartData),
     }
   })
-
+  const symbolSize = 7
+  const symbol = 'circle'
+  
   const options = computed<EChartsOption>(() => {
     const { series, xAxisData, hasYAxis } = sortedData.value
     const baseOptions = getBaseOptions(config)
@@ -63,6 +65,8 @@ export function useLineChartOptions(config: BaseChartConfig) {
               label: createLabelConfig(showLabels.value, styling),
             })),
             itemStyle: { color: getNextColorFor(chartData.value.title) },
+            symbol,
+            symbolSize,
           },
         ],
       } as EChartsOption
@@ -77,7 +81,9 @@ export function useLineChartOptions(config: BaseChartConfig) {
         value: seriesData.values[yIndex] || 0,
         label: createLabelConfig(showLabels.value, styling),
       })),
-      itemStyle: { color: getNextColorFor(yAxisLabel) },
+      itemStyle: { color: getNextColorFor(yAxisLabel)},
+      symbol,
+      symbolSize,
     }))
 
     return {

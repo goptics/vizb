@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Label, Switch } from './ui'
+import { Switch } from './ui'
+import SettingHeader from './SettingHeader.vue'
 
 defineProps<{
   id: string
@@ -15,12 +16,7 @@ defineEmits<{
 
 <template>
   <div class="flex items-center justify-between">
-    <div class="space-y-1">
-      <Label :for="id" class="flex items-center gap-2">
-        {{ label }}
-      </Label>
-      <p class="text-sm text-muted-foreground">{{ description }}</p>
-    </div>
+    <SettingHeader :id="id" :label="label" :description="description" />
     <Switch :id="id" :checked="checked" @update:checked="$emit('update:checked', $event)" />
   </div>
 </template>
