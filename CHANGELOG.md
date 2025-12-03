@@ -5,6 +5,31 @@ All notable changes to the Vizb project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [0.6.0] - 2025-12-03
+
+### Added
+
+- **Standard Benchmark JSON Support**: Added support for using standard benchmark JSON files as input ([#47](https://github.com/goptics/vizb/pull/47)).
+- **Axis Swapping**: Implemented a new axis swapping feature that allows dynamic reordering of benchmark dimensions (name, xAxis, yAxis) with persistent state management ([#46](https://github.com/goptics/vizb/pull/46)).
+- **Advanced Grouping**: Introduced advanced benchmark grouping capabilities using regular expressions.([#40](https://github.com/goptics/vizb/pull/40))
+- **Benchmark Environment**: Added benchmark environment details to the results ([#39](https://github.com/goptics/vizb/pull/39)).
+- **Metric Extraction**: Added support for extracting and displaying benchmark iterations, throughput, and custom metrics ([#35](https://github.com/goptics/vizb/pull/35)).
+- Added a "Package Source" button to the dashboard and updated documentation with comprehensive examples.
+
+### Changed
+
+- **JSON Optimization**: Reduced JSON output size by 30% by removing redundant `unit` and `per` properties and using `omitempty` ([#43](https://github.com/goptics/vizb/pull/43), [#45](https://github.com/goptics/vizb/pull/45)).
+- **UI Performance**: Refactored UI components to reduce bundle size and improved dashboard layout ([#38](https://github.com/goptics/vizb/pull/38)).
+- **CI/CD**: Updated CI runners to `slim` versions and improved GoReleaser configuration for optimized builds ([#37](https://github.com/goptics/vizb/pull/37), e673195).
+- **Documentation**: Updated docs and info for the upcoming release ([#50](https://github.com/goptics/vizb/pull/50)).
+- **Build**: Updated favicon inline build script and added `format` task to Taskfile.yml.
+
+### Fixed
+
+- **Label Rotation**: Fixed x-axis label rotation based on character length ([#48](https://github.com/goptics/vizb/pull/48)).
+- **Group Selection**: Resolved issues with group selection state not being preserved when switching benchmarks ([#41](https://github.com/goptics/vizb/pull/41), [#42](https://github.com/goptics/vizb/pull/42)).
+- **Flag Validation**: Resolved flag validation rules and updated tests ([#36](https://github.com/goptics/vizb/pull/36)).
+
 # [0.5.0] - 2025-11-23
 
 ### Added
