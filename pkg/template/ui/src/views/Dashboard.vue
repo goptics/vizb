@@ -83,7 +83,7 @@ const hasCPU = computed(() => activeBenchmark.value?.cpu?.name || activeBenchmar
         notFoundText="No benchmark found."
       />
 
-      <h1 v-else class="text-4xl">{{ mainTitle }}</h1>
+      <h1 v-else class="text-4xl font-bold">{{ mainTitle }}</h1>
 
       <span
         v-if="hasCPU"
