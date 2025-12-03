@@ -17,10 +17,10 @@ Use the `vizb` command to parse your benchmark output files (`.txt`) and generat
 | `bench/http-routing.txt` | `x_n` | `-p` |
 | `bench/worker-pools.txt` | `n/y/x` | `-p` |
 | `bench/varmq.txt` | `x/y` | `-p` |
-| `bench/hash.txt` | `'Hashing64(?<x>.*)'` | `-r` |
-| `bench/serialization.txt` | `'(?<x>.*)By(?<y>.*)'` | `-r` |
-| `bench/validator.txt` | `'(?<y>.+?)(?:(?<x>Success\|Failure)(?<n>.*)\|$)'` | `-r` |
-| `bench/decode-encode.txt` | `'(?<n>[^/]+)/text=(?<x>[^/]+)/level=(?<y>.*)'` | `-r` |
+| `bench/hash.txt` | `Hashing64(?<x>.*)` | `-r` |
+| `bench/serialization.txt` | `(?<x>.*)By(?<y>.*)` | `-r` |
+| `bench/validator.txt` | `(?<y>.*?)(?:(?<x>Success|Failure)(?<n>.*)|$)` | `-r` |
+| `bench/decode-encode.txt` | `(?<n>.*)/text=(?<x>.*)/level=(?<y>.*)` | `-r` |
 
 ### Template Command
 

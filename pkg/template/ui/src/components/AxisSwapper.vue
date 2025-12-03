@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import SettingHeader from './SettingHeader.vue'
 import SwapSelector from './Selector.vue'
-import type { BenchmarkData } from '../types/benchmark'
+import type { BenchmarkData } from '../types'
 import { useBenchmarkData } from '../composables/useBenchmarkData'
 import { resetColor } from '../lib/utils'
 import { useSettingsStore } from '../composables/useSettingsStore'

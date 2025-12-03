@@ -26,21 +26,16 @@
       "yAxis": "1u-1Mt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 658233743,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 658233743
         },
         {
-          "type": "Memory Usage",
-          "value": 13177872,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 13177872
         },
         {
-          "type": "Allocations",
-          "value": 83966,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 83966
         }
       ]
     },
@@ -50,21 +45,16 @@
       "yAxis": "1u-1Mt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 542151290,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 542151290
         },
         {
-          "type": "Memory Usage",
-          "value": 12843525,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 12843525
         },
         {
-          "type": "Allocations",
-          "value": 80628,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 80628
         }
       ]
     },
@@ -74,21 +64,16 @@
       "yAxis": "1u-1Mt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 453957719,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 453957719
         },
         {
-          "type": "Memory Usage",
-          "value": 13619120,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 13619120
         },
         {
-          "type": "Allocations",
-          "value": 88093,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 88093
         }
       ]
     },
@@ -98,21 +83,16 @@
       "yAxis": "1u-1Mt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 452322853,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 452322853
         },
         {
-          "type": "Memory Usage",
-          "value": 81737360,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 81737360
         },
         {
-          "type": "Allocations",
-          "value": 1009514,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 1009514
         }
       ]
     },
@@ -122,21 +102,16 @@
       "yAxis": "1u-1Mt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 942987920,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 942987920
         },
         {
-          "type": "Memory Usage",
-          "value": 22749680,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 22749680
         },
         {
-          "type": "Allocations",
-          "value": 270289,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 270289
         }
       ]
     },
@@ -146,21 +121,16 @@
       "yAxis": "1u-1Mt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 971651135,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 971651135
         },
         {
-          "type": "Memory Usage",
-          "value": 31039664,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 31039664
         },
         {
-          "type": "Allocations",
-          "value": 273297,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 273297
         }
       ]
     },
@@ -170,21 +140,16 @@
       "yAxis": "1u-1Mt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 1165440763,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 1165440763
         },
         {
-          "type": "Memory Usage",
-          "value": 2003037,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 2003037
         },
         {
-          "type": "Allocations",
-          "value": 24369,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 24369
         }
       ]
     },
@@ -194,21 +159,16 @@
       "yAxis": "1u-1Mt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 640480375,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 640480375
         },
         {
-          "type": "Memory Usage",
-          "value": 6467578,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 6467578
         },
         {
-          "type": "Allocations",
-          "value": 85681,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 85681
         }
       ]
     },
@@ -218,21 +178,16 @@
       "yAxis": "100u-10Kt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 674275336,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 674275336
         },
         {
-          "type": "Memory Usage",
-          "value": 34262096,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 34262096
         },
         {
-          "type": "Allocations",
-          "value": 420257,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 420257
         }
       ]
     },
@@ -242,21 +197,16 @@
       "yAxis": "100u-10Kt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 668055373,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 668055373
         },
         {
-          "type": "Memory Usage",
-          "value": 26164368,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 26164368
         },
         {
-          "type": "Allocations",
-          "value": 325129,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 325129
         }
       ]
     },
@@ -266,21 +216,16 @@
       "yAxis": "100u-10Kt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 570578768,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 570578768
         },
         {
-          "type": "Memory Usage",
-          "value": 19205968,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 19205968
         },
         {
-          "type": "Allocations",
-          "value": 200380,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 200380
         }
       ]
     },
@@ -290,21 +235,16 @@
       "yAxis": "100u-10Kt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 566593280,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 566593280
         },
         {
-          "type": "Memory Usage",
-          "value": 100025210,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 100025210
         },
         {
-          "type": "Allocations",
-          "value": 1049624,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 1049624
         }
       ]
     },
@@ -314,21 +254,16 @@
       "yAxis": "100u-10Kt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 1037432189,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 1037432189
         },
         {
-          "type": "Memory Usage",
-          "value": 22381360,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 22381360
         },
         {
-          "type": "Allocations",
-          "value": 266476,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 266476
         }
       ]
     },
@@ -338,21 +273,16 @@
       "yAxis": "100u-10Kt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 901981176,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 901981176
         },
         {
-          "type": "Memory Usage",
-          "value": 30382512,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 30382512
         },
         {
-          "type": "Allocations",
-          "value": 266452,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 266452
         }
       ]
     },
@@ -362,21 +292,16 @@
       "yAxis": "100u-10Kt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 1008801867,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 1008801867
         },
         {
-          "type": "Memory Usage",
-          "value": 2371378,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 2371378
         },
         {
-          "type": "Allocations",
-          "value": 28852,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 28852
         }
       ]
     },
@@ -386,21 +311,16 @@
       "yAxis": "100u-10Kt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 632685132,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 632685132
         },
         {
-          "type": "Memory Usage",
-          "value": 12738146,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 12738146
         },
         {
-          "type": "Allocations",
-          "value": 170562,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 170562
         }
       ]
     },
@@ -410,21 +330,16 @@
       "yAxis": "1Ku-1Kt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 860672256,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 860672256
         },
         {
-          "type": "Memory Usage",
-          "value": 33584048,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 33584048
         },
         {
-          "type": "Allocations",
-          "value": 466470,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 466470
         }
       ]
     },
@@ -434,21 +349,16 @@
       "yAxis": "1Ku-1Kt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 605668097,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 605668097
         },
         {
-          "type": "Memory Usage",
-          "value": 33586224,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 33586224
         },
         {
-          "type": "Allocations",
-          "value": 466493,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 466493
         }
       ]
     },
@@ -458,21 +368,16 @@
       "yAxis": "1Ku-1Kt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 462462043,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 462462043
         },
         {
-          "type": "Memory Usage",
-          "value": 12380016,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 12380016
         },
         {
-          "type": "Allocations",
-          "value": 79389,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 79389
         }
       ]
     },
@@ -482,21 +387,16 @@
       "yAxis": "1Ku-1Kt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 516023441,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 516023441
         },
         {
-          "type": "Memory Usage",
-          "value": 80000048,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 80000048
         },
         {
-          "type": "Allocations",
-          "value": 1000002,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 1000002
         }
       ]
     },
@@ -506,21 +406,16 @@
       "yAxis": "1Ku-1Kt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 1059879992,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 1059879992
         },
         {
-          "type": "Memory Usage",
-          "value": 22381552,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 22381552
         },
         {
-          "type": "Allocations",
-          "value": 266478,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 266478
         }
       ]
     },
@@ -530,21 +425,16 @@
       "yAxis": "1Ku-1Kt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 990989556,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 990989556
         },
         {
-          "type": "Memory Usage",
-          "value": 30387472,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 30387472
         },
         {
-          "type": "Allocations",
-          "value": 266503,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 266503
         }
       ]
     },
@@ -554,21 +444,16 @@
       "yAxis": "1Ku-1Kt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 1062265159,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 1062265159
         },
         {
-          "type": "Memory Usage",
-          "value": 2400296,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 2400296
         },
         {
-          "type": "Allocations",
-          "value": 29203,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 29203
         }
       ]
     },
@@ -578,21 +463,16 @@
       "yAxis": "1Ku-1Kt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 668318364,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 668318364
         },
         {
-          "type": "Memory Usage",
-          "value": 9868850,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 9868850
         },
         {
-          "type": "Allocations",
-          "value": 131752,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 131752
         }
       ]
     },
@@ -602,21 +482,16 @@
       "yAxis": "10Ku-100t",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 532311024,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 532311024
         },
         {
-          "type": "Memory Usage",
-          "value": 13046192,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 13046192
         },
         {
-          "type": "Allocations",
-          "value": 91585,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 91585
         }
       ]
     },
@@ -626,21 +501,16 @@
       "yAxis": "10Ku-100t",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 524989416,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 524989416
         },
         {
-          "type": "Memory Usage",
-          "value": 10928912,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 10928912
         },
         {
-          "type": "Allocations",
-          "value": 53280,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 53280
         }
       ]
     },
@@ -650,21 +520,16 @@
       "yAxis": "10Ku-100t",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 724182859,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 724182859
         },
         {
-          "type": "Memory Usage",
-          "value": 10228752,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 10228752
         },
         {
-          "type": "Allocations",
-          "value": 40577,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 40577
         }
       ]
     },
@@ -674,21 +539,16 @@
       "yAxis": "10Ku-100t",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 459821171,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 459821171
         },
         {
-          "type": "Memory Usage",
-          "value": 80000048,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 80000048
         },
         {
-          "type": "Allocations",
-          "value": 1000002,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 1000002
         }
       ]
     },
@@ -698,21 +558,16 @@
       "yAxis": "10Ku-100t",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 1007354405,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 1007354405
         },
         {
-          "type": "Memory Usage",
-          "value": 22378448,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 22378448
         },
         {
-          "type": "Allocations",
-          "value": 266446,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 266446
         }
       ]
     },
@@ -722,21 +577,16 @@
       "yAxis": "10Ku-100t",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 924880667,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 924880667
         },
         {
-          "type": "Memory Usage",
-          "value": 30383568,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 30383568
         },
         {
-          "type": "Allocations",
-          "value": 266463,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 266463
         }
       ]
     },
@@ -746,21 +596,16 @@
       "yAxis": "10Ku-100t",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 1302254736,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 1302254736
         },
         {
-          "type": "Memory Usage",
-          "value": 2091101,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 2091101
         },
         {
-          "type": "Allocations",
-          "value": 25209,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 25209
         }
       ]
     },
@@ -770,21 +615,16 @@
       "yAxis": "10Ku-100t",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 735473470,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 735473470
         },
         {
-          "type": "Memory Usage",
-          "value": 11536946,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 11536946
         },
         {
-          "type": "Allocations",
-          "value": 150942,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 150942
         }
       ]
     },
@@ -794,21 +634,16 @@
       "yAxis": "1Mu-1t",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 829461779,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 829461779
         },
         {
-          "type": "Memory Usage",
-          "value": 10932880,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 10932880
         },
         {
-          "type": "Allocations",
-          "value": 53259,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 53259
         }
       ]
     },
@@ -818,21 +653,16 @@
       "yAxis": "1Mu-1t",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 794574849,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 794574849
         },
         {
-          "type": "Memory Usage",
-          "value": 10551632,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 10551632
         },
         {
-          "type": "Allocations",
-          "value": 46156,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 46156
         }
       ]
     },
@@ -842,21 +672,16 @@
       "yAxis": "1Mu-1t",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 685584019,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 685584019
         },
         {
-          "type": "Memory Usage",
-          "value": 10807088,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 10807088
         },
         {
-          "type": "Allocations",
-          "value": 50711,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 50711
         }
       ]
     },
@@ -866,21 +691,16 @@
       "yAxis": "1Mu-1t",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 422483752,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 422483752
         },
         {
-          "type": "Memory Usage",
-          "value": 80000048,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 80000048
         },
         {
-          "type": "Allocations",
-          "value": 1000002,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 1000002
         }
       ]
     },
@@ -890,21 +710,16 @@
       "yAxis": "1Mu-1t",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 1138926533,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 1138926533
         },
         {
-          "type": "Memory Usage",
-          "value": 22380240,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 22380240
         },
         {
-          "type": "Allocations",
-          "value": 266464,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 266464
         }
       ]
     },
@@ -914,21 +729,16 @@
       "yAxis": "1Mu-1t",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 1139537728,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 1139537728
         },
         {
-          "type": "Memory Usage",
-          "value": 30385872,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 30385872
         },
         {
-          "type": "Allocations",
-          "value": 266487,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 266487
         }
       ]
     },
@@ -938,21 +748,16 @@
       "yAxis": "1Mu-1t",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 1580322536,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 1580322536
         },
         {
-          "type": "Memory Usage",
-          "value": 36548029,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 36548029
         },
         {
-          "type": "Allocations",
-          "value": 334860,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 334860
         }
       ]
     },
@@ -962,21 +767,16 @@
       "yAxis": "1Mu-1t",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 1005205084,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 1005205084
         },
         {
-          "type": "Memory Usage",
-          "value": 34527010,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 34527010
         },
         {
-          "type": "Allocations",
-          "value": 455767,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 455767
         }
       ]
     },
@@ -986,21 +786,16 @@
       "yAxis": "1u-1Mt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 221147440,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 221147440
         },
         {
-          "type": "Memory Usage",
-          "value": 8024589,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 8024589
         },
         {
-          "type": "Allocations",
-          "value": 156,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 156
         }
       ]
     },
@@ -1010,21 +805,16 @@
       "yAxis": "1u-1Mt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 206112267,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 206112267
         },
         {
-          "type": "Memory Usage",
-          "value": 8014616,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 8014616
         },
         {
-          "type": "Allocations",
-          "value": 96,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 96
         }
       ]
     },
@@ -1034,21 +824,16 @@
       "yAxis": "1u-1Mt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 228397720,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 228397720
         },
         {
-          "type": "Memory Usage",
-          "value": 8014010,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 8014010
         },
         {
-          "type": "Allocations",
-          "value": 120,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 120
         }
       ]
     },
@@ -1058,21 +843,16 @@
       "yAxis": "1u-1Mt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 255098957,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 255098957
         },
         {
-          "type": "Memory Usage",
-          "value": 173648,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 173648
         },
         {
-          "type": "Allocations",
-          "value": 602,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 602
         }
       ]
     },
@@ -1082,21 +862,16 @@
       "yAxis": "1u-1Mt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 608808567,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 608808567
         },
         {
-          "type": "Memory Usage",
-          "value": 6381850,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 6381850
         },
         {
-          "type": "Allocations",
-          "value": 66476,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 66476
         }
       ]
     },
@@ -1106,21 +881,16 @@
       "yAxis": "1u-1Mt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 646646774,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 646646774
         },
         {
-          "type": "Memory Usage",
-          "value": 14388720,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 14388720
         },
         {
-          "type": "Allocations",
-          "value": 66516,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 66516
         }
       ]
     },
@@ -1130,21 +900,16 @@
       "yAxis": "1u-1Mt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 556528977,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 556528977
         },
         {
-          "type": "Memory Usage",
-          "value": 765,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 765
         },
         {
-          "type": "Allocations",
-          "value": 14,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 14
         }
       ]
     },
@@ -1154,21 +919,16 @@
       "yAxis": "1u-1Mt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 511636669,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 511636669
         },
         {
-          "type": "Memory Usage",
-          "value": 1884922,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 1884922
         },
         {
-          "type": "Allocations",
-          "value": 25377,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 25377
         }
       ]
     },
@@ -1178,21 +938,16 @@
       "yAxis": "100u-10Kt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 240239174,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 240239174
         },
         {
-          "type": "Memory Usage",
-          "value": 8056522,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 8056522
         },
         {
-          "type": "Allocations",
-          "value": 1514,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 1514
         }
       ]
     },
@@ -1202,21 +957,16 @@
       "yAxis": "100u-10Kt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 244726370,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 244726370
         },
         {
-          "type": "Memory Usage",
-          "value": 8009328,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 8009328
         },
         {
-          "type": "Allocations",
-          "value": 293,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 293
         }
       ]
     },
@@ -1226,21 +976,16 @@
       "yAxis": "100u-10Kt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 302086894,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 302086894
         },
         {
-          "type": "Memory Usage",
-          "value": 8322613,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 8322613
         },
         {
-          "type": "Allocations",
-          "value": 5889,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 5889
         }
       ]
     },
@@ -1250,21 +995,16 @@
       "yAxis": "100u-10Kt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 426853026,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 426853026
         },
         {
-          "type": "Memory Usage",
-          "value": 20887664,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 20887664
         },
         {
-          "type": "Allocations",
-          "value": 46804,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 46804
         }
       ]
     },
@@ -1274,21 +1014,16 @@
       "yAxis": "100u-10Kt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 713127672,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 713127672
         },
         {
-          "type": "Memory Usage",
-          "value": 6380848,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 6380848
         },
         {
-          "type": "Allocations",
-          "value": 66471,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 66471
         }
       ]
     },
@@ -1298,21 +1033,16 @@
       "yAxis": "100u-10Kt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 595125950,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 595125950
         },
         {
-          "type": "Memory Usage",
-          "value": 14385456,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 14385456
         },
         {
-          "type": "Allocations",
-          "value": 66482,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 66482
         }
       ]
     },
@@ -1322,21 +1052,16 @@
       "yAxis": "100u-10Kt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 977617485,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 977617485
         },
         {
-          "type": "Memory Usage",
-          "value": 13714,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 13714
         },
         {
-          "type": "Allocations",
-          "value": 147,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 147
         }
       ]
     },
@@ -1346,21 +1071,16 @@
       "yAxis": "100u-10Kt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 474116870,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 474116870
         },
         {
-          "type": "Memory Usage",
-          "value": 122397,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 122397
         },
         {
-          "type": "Allocations",
-          "value": 1797,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 1797
         }
       ]
     },
@@ -1370,21 +1090,16 @@
       "yAxis": "1Ku-1Kt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 338964329,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 338964329
         },
         {
-          "type": "Memory Usage",
-          "value": 15464181,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 15464181
         },
         {
-          "type": "Allocations",
-          "value": 133763,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 133763
         }
       ]
     },
@@ -1394,21 +1109,16 @@
       "yAxis": "1Ku-1Kt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 289530482,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 289530482
         },
         {
-          "type": "Memory Usage",
-          "value": 8005776,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 8005776
         },
         {
-          "type": "Allocations",
-          "value": 110,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 110
         }
       ]
     },
@@ -1418,21 +1128,16 @@
       "yAxis": "1Ku-1Kt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 294471089,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 294471089
         },
         {
-          "type": "Memory Usage",
-          "value": 8016704,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 8016704
         },
         {
-          "type": "Allocations",
-          "value": 419,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 419
         }
       ]
     },
@@ -1442,21 +1147,16 @@
       "yAxis": "1Ku-1Kt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 490915673,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 490915673
         },
         {
-          "type": "Memory Usage",
-          "value": 33891216,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 33891216
         },
         {
-          "type": "Allocations",
-          "value": 79199,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 79199
         }
       ]
     },
@@ -1466,21 +1166,16 @@
       "yAxis": "1Ku-1Kt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 732660817,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 732660817
         },
         {
-          "type": "Memory Usage",
-          "value": 6405008,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 6405008
         },
         {
-          "type": "Allocations",
-          "value": 66722,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 66722
         }
       ]
     },
@@ -1490,21 +1185,16 @@
       "yAxis": "1Ku-1Kt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 612328640,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 612328640
         },
         {
-          "type": "Memory Usage",
-          "value": 14381232,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 14381232
         },
         {
-          "type": "Allocations",
-          "value": 66438,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 66438
         }
       ]
     },
@@ -1514,21 +1204,16 @@
       "yAxis": "1Ku-1Kt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 973129161,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 973129161
         },
         {
-          "type": "Memory Usage",
-          "value": 78610,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 78610
         },
         {
-          "type": "Allocations",
-          "value": 823,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 823
         }
       ]
     },
@@ -1538,21 +1223,16 @@
       "yAxis": "1Ku-1Kt",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 498528201,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 498528201
         },
         {
-          "type": "Memory Usage",
-          "value": 458680,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 458680
         },
         {
-          "type": "Allocations",
-          "value": 6466,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 6466
         }
       ]
     },
@@ -1562,21 +1242,16 @@
       "yAxis": "10Ku-100t",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 292830436,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 292830436
         },
         {
-          "type": "Memory Usage",
-          "value": 8006517,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 8006517
         },
         {
-          "type": "Allocations",
-          "value": 145,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 145
         }
       ]
     },
@@ -1586,21 +1261,16 @@
       "yAxis": "10Ku-100t",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 290014999,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 290014999
         },
         {
-          "type": "Memory Usage",
-          "value": 8008160,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 8008160
         },
         {
-          "type": "Allocations",
-          "value": 230,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 230
         }
       ]
     },
@@ -1610,21 +1280,16 @@
       "yAxis": "10Ku-100t",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 288724307,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 288724307
         },
         {
-          "type": "Memory Usage",
-          "value": 8004794,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 8004794
         },
         {
-          "type": "Allocations",
-          "value": 45,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 45
         }
       ]
     },
@@ -1634,21 +1299,16 @@
       "yAxis": "10Ku-100t",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 359906263,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 359906263
         },
         {
-          "type": "Memory Usage",
-          "value": 6014704,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 6014704
         },
         {
-          "type": "Allocations",
-          "value": 62654,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 62654
         }
       ]
     },
@@ -1658,21 +1318,16 @@
       "yAxis": "10Ku-100t",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 727553640,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 727553640
         },
         {
-          "type": "Memory Usage",
-          "value": 6463184,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 6463184
         },
         {
-          "type": "Allocations",
-          "value": 67328,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 67328
         }
       ]
     },
@@ -1682,21 +1337,16 @@
       "yAxis": "10Ku-100t",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 753007382,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 753007382
         },
         {
-          "type": "Memory Usage",
-          "value": 14385616,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 14385616
         },
         {
-          "type": "Allocations",
-          "value": 66484,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 66484
         }
       ]
     },
@@ -1706,21 +1356,16 @@
       "yAxis": "10Ku-100t",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 1101229554,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 1101229554
         },
         {
-          "type": "Memory Usage",
-          "value": 400072,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 400072
         },
         {
-          "type": "Allocations",
-          "value": 4172,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 4172
         }
       ]
     },
@@ -1730,21 +1375,16 @@
       "yAxis": "10Ku-100t",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 559372453,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 559372453
         },
         {
-          "type": "Memory Usage",
-          "value": 3569413,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 3569413
         },
         {
-          "type": "Allocations",
-          "value": 48919,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 48919
         }
       ]
     },
@@ -1754,21 +1394,16 @@
       "yAxis": "1Mu-1t",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 571780271,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 571780271
         },
         {
-          "type": "Memory Usage",
-          "value": 8006266,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 8006266
         },
         {
-          "type": "Allocations",
-          "value": 104,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 104
         }
       ]
     },
@@ -1778,21 +1413,16 @@
       "yAxis": "1Mu-1t",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 593644124,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 593644124
         },
         {
-          "type": "Memory Usage",
-          "value": 8005317,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 8005317
         },
         {
-          "type": "Allocations",
-          "value": 76,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 76
         }
       ]
     },
@@ -1802,21 +1432,16 @@
       "yAxis": "1Mu-1t",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 556206022,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 556206022
         },
         {
-          "type": "Memory Usage",
-          "value": 8006197,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 8006197
         },
         {
-          "type": "Allocations",
-          "value": 83,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 83
         }
       ]
     },
@@ -1826,21 +1451,16 @@
       "yAxis": "1Mu-1t",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 327126810,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 327126810
         },
         {
-          "type": "Memory Usage",
-          "value": 784,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 784
         },
         {
-          "type": "Allocations",
-          "value": 9,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 9
         }
       ]
     },
@@ -1850,21 +1470,16 @@
       "yAxis": "1Mu-1t",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 833617738,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 833617738
         },
         {
-          "type": "Memory Usage",
-          "value": 6382672,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 6382672
         },
         {
-          "type": "Allocations",
-          "value": 66490,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 66490
         }
       ]
     },
@@ -1874,21 +1489,16 @@
       "yAxis": "1Mu-1t",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 823267182,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 823267182
         },
         {
-          "type": "Memory Usage",
-          "value": 14384528,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 14384528
         },
         {
-          "type": "Allocations",
-          "value": 66473,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 66473
         }
       ]
     },
@@ -1898,21 +1508,16 @@
       "yAxis": "1Mu-1t",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 1494572327,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 1494572327
         },
         {
-          "type": "Memory Usage",
-          "value": 44507208,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 44507208
         },
         {
-          "type": "Allocations",
-          "value": 333672,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 333672
         }
       ]
     },
@@ -1922,21 +1527,16 @@
       "yAxis": "1Mu-1t",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 745656046,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 745656046
         },
         {
-          "type": "Memory Usage",
-          "value": 13846717,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 13846717
         },
         {
-          "type": "Allocations",
-          "value": 187657,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 187657
         }
       ]
     }

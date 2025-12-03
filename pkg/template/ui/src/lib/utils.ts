@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
-import type { Benchmark, ChartData } from '../types/benchmark'
+import type { Benchmark, ChartData } from '../types'
 import type { Ref } from 'vue'
 
 /**

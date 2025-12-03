@@ -293,7 +293,7 @@ func indexOfSubstring(s, substr string) int {
 	return -1
 }
 
-func TestParseBenchmarkNameWithRegex(t *testing.T) {
+func TestParseNameWithRegex(t *testing.T) {
 	tests := []struct {
 		name          string
 		benchmarkName string
@@ -304,8 +304,8 @@ func TestParseBenchmarkNameWithRegex(t *testing.T) {
 	}{
 		{
 			name:          "Valid Regex: Named Groups",
-			benchmarkName: "BenchmarkHashing64MD5",
-			pattern:       `Benchmark(?<n>Hashing64)(?<y>.*)`,
+			benchmarkName: "Hashing64MD5",
+			pattern:       `(?<n>Hashing64)(?<y>.*)`,
 			expected: map[string]string{
 				"name":  "Hashing64",
 				"yAxis": "MD5",
@@ -315,8 +315,8 @@ func TestParseBenchmarkNameWithRegex(t *testing.T) {
 		},
 		{
 			name:          "Valid Regex: All Groups",
-			benchmarkName: "BenchmarkMatrix/1024/Parallel",
-			pattern:       `Benchmark(?<n>Matrix)/(?<x>\d+)/(?<y>.*)`,
+			benchmarkName: "Matrix/1024/Parallel",
+			pattern:       `(?<n>.*)/(?<x>\d+)/(?<y>.*)`,
 			expected: map[string]string{
 				"name":  "Matrix",
 				"xAxis": "1024",
@@ -325,25 +325,36 @@ func TestParseBenchmarkNameWithRegex(t *testing.T) {
 			expectError: false,
 		},
 		{
+			name:          "Valid Regex: Named Groups 2",
+			benchmarkName: "Decode/text=digits/level=speed",
+			pattern:       `(?<n>.*)/text=(?<x>.*)/level=(?<y>.*)`,
+			expected: map[string]string{
+				"name":  "Decode",
+				"xAxis": "digits",
+				"yAxis": "speed",
+			},
+			expectError: false,
+		},
+		{
 			name:          "Regex No Match",
-			benchmarkName: "BenchmarkHashing64MD5",
-			pattern:       `Benchmark(?<n>Sorting)(?<y>.*)`,
+			benchmarkName: "Hashing64MD5",
+			pattern:       `(?<n>Sorting)(?<y>.*)`,
 			expected:      nil,
 			expectError:   true,
 			errorContains: "does not match regex",
 		},
 		{
 			name:          "Invalid Regex Syntax",
-			benchmarkName: "BenchmarkHashing64MD5",
-			pattern:       `Benchmark(?<n>Hashing64)(?<y>.*`, // Missing closing parenthesis
+			benchmarkName: "Hashing64MD5",
+			pattern:       `(?<n>Hashing64)(?<y>.*`, // Missing closing parenthesis
 			expected:      nil,
 			expectError:   true,
 			errorContains: "invalid regex pattern",
 		},
 		{
 			name:          "Regex with non-capturing groups (ignored)",
-			benchmarkName: "BenchmarkHashing64MD5",
-			pattern:       `Benchmark(?:Hashing64)(?<y>.*)`,
+			benchmarkName: "Hashing64MD5",
+			pattern:       `(?:Hashing64)(?<y>.*)`,
 			expected: map[string]string{
 				"name":  "",
 				"xAxis": "",

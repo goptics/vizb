@@ -17,12 +17,12 @@ type testBlock struct {
 	timeUnit       string
 	memUnit        string
 	allocUnit      string
-	expected       []shared.BenchmarkResult
+	expected       []shared.BenchmarkData
 	expectMemStats bool
 	expectCPUCount int
 }
 
-func TestParseBenchmarkResults(t *testing.T) {
+func TestParseBenchmarkData(t *testing.T) {
 	// Save original flag state to restore after tests
 	origTimeUnit := shared.FlagState.TimeUnit
 	origMemUnit := shared.FlagState.MemUnit
@@ -45,7 +45,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 			},
 			timeUnit: "ns",
 			pattern:  "y",
-			expected: []shared.BenchmarkResult{
+			expected: []shared.BenchmarkData{
 				{
 					Name:  "",
 					XAxis: "",
@@ -75,7 +75,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 			timeUnit:  "ms",
 			memUnit:   "KB",
 			allocUnit: "K",
-			expected: []shared.BenchmarkResult{
+			expected: []shared.BenchmarkData{
 				{
 					Name:  "",
 					XAxis: "",
@@ -100,7 +100,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 			timeUnit:  "ns",
 			memUnit:   "b",
 			allocUnit: "",
-			expected: []shared.BenchmarkResult{
+			expected: []shared.BenchmarkData{
 				{
 					Name:  "Group",
 					XAxis: "Task",
@@ -132,7 +132,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 			},
 			pattern:  "n/y",
 			timeUnit: "ns",
-			expected: []shared.BenchmarkResult{
+			expected: []shared.BenchmarkData{
 				{
 					Name:  "Parallel",
 					XAxis: "",
@@ -154,7 +154,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 			},
 			timeUnit: "ns",
 			pattern:  "y",
-			expected: []shared.BenchmarkResult{
+			expected: []shared.BenchmarkData{
 				{
 					Name:  "",
 					XAxis: "",
@@ -176,7 +176,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 			},
 			timeUnit: "ns",
 			pattern:  "y",
-			expected: []shared.BenchmarkResult{
+			expected: []shared.BenchmarkData{
 				{
 					Name:  "",
 					XAxis: "",
@@ -203,7 +203,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 			name:         "Empty file",
 			benchContent: []string{},
 			timeUnit:     "ns",
-			expected:     []shared.BenchmarkResult{},
+			expected:     []shared.BenchmarkData{},
 		},
 		{
 			name: "Benchmark with B/s (Throughput)",
@@ -212,7 +212,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 			},
 			pattern:  "y",
 			timeUnit: "ns",
-			expected: []shared.BenchmarkResult{
+			expected: []shared.BenchmarkData{
 				{
 					Name:  "",
 					XAxis: "",
@@ -233,7 +233,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 			},
 			pattern:  "y",
 			timeUnit: "ns",
-			expected: []shared.BenchmarkResult{
+			expected: []shared.BenchmarkData{
 				{
 					Name:  "",
 					XAxis: "",
@@ -254,7 +254,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 			},
 			pattern:  "y",
 			timeUnit: "ns",
-			expected: []shared.BenchmarkResult{
+			expected: []shared.BenchmarkData{
 				{
 					Name:  "",
 					XAxis: "",
@@ -275,7 +275,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 			},
 			pattern:  "y",
 			timeUnit: "ns",
-			expected: []shared.BenchmarkResult{
+			expected: []shared.BenchmarkData{
 				{
 					Name:  "",
 					XAxis: "",
@@ -296,7 +296,7 @@ func TestParseBenchmarkResults(t *testing.T) {
 			},
 			pattern:  "y",
 			timeUnit: "ns",
-			expected: []shared.BenchmarkResult{
+			expected: []shared.BenchmarkData{
 				{
 					Name:  "",
 					XAxis: "",
@@ -343,11 +343,11 @@ func TestParseBenchmarkResults(t *testing.T) {
 			file.Close()
 
 			// Call the function under test
-			results := ParseBenchmarkResults(filePath)
+			results := ParseBenchmarkData(filePath)
 
 			// Check results
 			if len(results) != len(tt.expected) {
-				t.Errorf("ParseBenchmarkResults() returned %d results, expected %d", len(results), len(tt.expected))
+				t.Errorf("ParseBenchmarkData() returned %d results, expected %d", len(results), len(tt.expected))
 				return
 			}
 

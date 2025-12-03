@@ -12,7 +12,7 @@ import {
 } from 'echarts/components'
 import VChart from 'vue-echarts'
 import { useChartOptions } from '../composables/useChartOptions'
-import type { ChartData } from '../types/benchmark'
+import type { ChartData } from '../types'
 import { useSettingsStore } from '../composables/useSettingsStore'
 
 // Register ECharts components

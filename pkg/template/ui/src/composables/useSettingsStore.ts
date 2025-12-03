@@ -1,5 +1,6 @@
 import { ref, computed } from 'vue'
-import { type Sort, type Settings, type ChartType, DEFAULT_SETTINGS } from '../types/benchmark'
+import type { Sort, Settings, ChartType } from '../types'
+import { DEFAULT_SETTINGS } from './constants'
 
 const sortOrder = ref<Sort>({ enabled: false, order: 'asc' })
 const showLabels = ref(false)

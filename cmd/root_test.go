@@ -263,7 +263,7 @@ func TestConvertToBenchmark(t *testing.T) {
 		validFile := filepath.Join(tempDir, "valid_bench.json")
 		bench := shared.Benchmark{
 			Name: "Test Benchmark",
-			Data: []shared.BenchmarkResult{
+			Data: []shared.BenchmarkData{
 				{Name: "Bench1", Stats: []shared.Stat{{Type: "time", Value: 100}}},
 			},
 		}

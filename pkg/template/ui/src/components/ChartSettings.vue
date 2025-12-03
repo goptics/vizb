@@ -6,7 +6,7 @@ import { Separator } from './ui'
 import SettingsToggle from './SettingsToggle.vue'
 import SelectionTabs from './SelectionTabs.vue'
 import AxisSwapper from './AxisSwapper.vue'
-import type { ChartType, SortOrder } from '../types/benchmark'
+import type { ChartType, SortOrder } from '../types'
 import { useSettingsStore } from '../composables/useSettingsStore'
 
 const {

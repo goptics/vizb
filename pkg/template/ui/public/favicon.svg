@@ -1,0 +1,12 @@
+<svg width="32" height="32" viewBox="100 90 320 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Left Pillar (Solid) -->
+  <path d="M135 150 L215 400 L285 400 L205 150 Z" fill="#5470C6" />
+  
+  <!-- Right Pillar (Segmented/Stacked) -->
+  <path d="M235 340 L275 220 L345 220 L305 340 Z" fill="#3BA272" />
+  <path d="M255 280 L295 160 L365 160 L325 280 Z" fill="#FC8452" />
+  <path d="M275 220 L315 100 L385 100 L345 220 Z" fill="#EE6666" />
+
+  <!-- Base Connector -->
+  <path d="M215 400 L285 400 L305 340 L235 340 Z" fill="#1A202C" />
+</svg>

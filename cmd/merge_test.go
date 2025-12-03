@@ -30,13 +30,13 @@ func TestMergeCmd(t *testing.T) {
 	// Create two dummy benchmark files
 	bench1 := shared.Benchmark{
 		Name: "Bench1",
-		Data: []shared.BenchmarkResult{
+		Data: []shared.BenchmarkData{
 			{Name: "Test1", XAxis: "1", YAxis: "100"},
 		},
 	}
 	bench2 := shared.Benchmark{
 		Name: "Bench2",
-		Data: []shared.BenchmarkResult{
+		Data: []shared.BenchmarkData{
 			{Name: "Test2", XAxis: "2", YAxis: "200"},
 		},
 	}
@@ -96,7 +96,7 @@ func TestMergeCmd_Directory(t *testing.T) {
 
 	bench1 := shared.Benchmark{
 		Name: "Bench1",
-		Data: []shared.BenchmarkResult{{Name: "Test1"}},
+		Data: []shared.BenchmarkData{{Name: "Test1"}},
 	}
 	writeJSON(t, filepath.Join(tmpDir, "b1.json"), bench1)
 

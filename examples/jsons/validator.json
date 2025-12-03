@@ -21,26 +21,18 @@
   },
   "data": [
     {
-      "name": "Default",
       "xAxis": "Success",
       "yAxis": "Field",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 27.88,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 27.88
         },
         {
-          "type": "Memory Usage",
-          "value": 0,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)"
         },
         {
-          "type": "Allocations",
-          "value": 0,
-          "per": "op"
+          "type": "Allocations/op"
         },
         {
           "type": "Iterations",
@@ -54,21 +46,14 @@
       "yAxis": "Field",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 2.289,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 2.289
         },
         {
-          "type": "Memory Usage",
-          "value": 0,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)"
         },
         {
-          "type": "Allocations",
-          "value": 0,
-          "per": "op"
+          "type": "Allocations/op"
         },
         {
           "type": "Iterations",
@@ -77,26 +62,20 @@
       ]
     },
     {
-      "name": "Default",
       "xAxis": "Failure",
       "yAxis": "Field",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 121.3,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 121.3
         },
         {
-          "type": "Memory Usage",
-          "value": 200,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 200
         },
         {
-          "type": "Allocations",
-          "value": 4,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 4
         },
         {
           "type": "Iterations",
@@ -110,21 +89,16 @@
       "yAxis": "Field",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 83.68,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 83.68
         },
         {
-          "type": "Memory Usage",
-          "value": 200,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 200
         },
         {
-          "type": "Allocations",
-          "value": 4,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 4
         },
         {
           "type": "Iterations",
@@ -133,26 +107,20 @@
       ]
     },
     {
-      "name": "Default",
       "xAxis": "Success",
       "yAxis": "FieldArrayDive",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 155.6,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 155.6
         },
         {
-          "type": "Memory Usage",
-          "value": 97,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 97
         },
         {
-          "type": "Allocations",
-          "value": 5,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 5
         },
         {
           "type": "Iterations",
@@ -166,21 +134,16 @@
       "yAxis": "FieldArrayDive",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 59.8,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 59.8
         },
         {
-          "type": "Memory Usage",
-          "value": 97,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 97
         },
         {
-          "type": "Allocations",
-          "value": 5,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 5
         },
         {
           "type": "Iterations",
@@ -189,26 +152,20 @@
       ]
     },
     {
-      "name": "Default",
       "xAxis": "Failure",
       "yAxis": "FieldArrayDive",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 252.9,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 252.9
         },
         {
-          "type": "Memory Usage",
-          "value": 301,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 301
         },
         {
-          "type": "Allocations",
-          "value": 10,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 10
         },
         {
           "type": "Iterations",
@@ -222,21 +179,16 @@
       "yAxis": "FieldArrayDive",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 152.9,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 152.9
         },
         {
-          "type": "Memory Usage",
-          "value": 301,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 301
         },
         {
-          "type": "Allocations",
-          "value": 10,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 10
         },
         {
           "type": "Iterations",
@@ -245,26 +197,20 @@
       ]
     },
     {
-      "name": "Default",
       "xAxis": "Success",
       "yAxis": "FieldMapDive",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 421.2,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 421.2
         },
         {
-          "type": "Memory Usage",
-          "value": 288,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 288
         },
         {
-          "type": "Allocations",
-          "value": 14,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 14
         },
         {
           "type": "Iterations",
@@ -278,21 +224,16 @@
       "yAxis": "FieldMapDive",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 171.8,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 171.8
         },
         {
-          "type": "Memory Usage",
-          "value": 288,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 288
         },
         {
-          "type": "Allocations",
-          "value": 14,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 14
         },
         {
           "type": "Iterations",
@@ -301,26 +242,20 @@
       ]
     },
     {
-      "name": "Default",
       "xAxis": "Failure",
       "yAxis": "FieldMapDive",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 384.4,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 384.4
         },
         {
-          "type": "Memory Usage",
-          "value": 376,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 376
         },
         {
-          "type": "Allocations",
-          "value": 13,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 13
         },
         {
           "type": "Iterations",
@@ -334,21 +269,16 @@
       "yAxis": "FieldMapDive",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 204,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 204
         },
         {
-          "type": "Memory Usage",
-          "value": 377,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 377
         },
         {
-          "type": "Allocations",
-          "value": 13,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 13
         },
         {
           "type": "Iterations",
@@ -357,26 +287,20 @@
       ]
     },
     {
-      "name": "Default",
       "xAxis": "Success",
       "yAxis": "FieldMapDiveWithKeys",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 464.8,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 464.8
         },
         {
-          "type": "Memory Usage",
-          "value": 288,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 288
         },
         {
-          "type": "Allocations",
-          "value": 14,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 14
         },
         {
           "type": "Iterations",
@@ -390,21 +314,16 @@
       "yAxis": "FieldMapDiveWithKeys",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 181.4,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 181.4
         },
         {
-          "type": "Memory Usage",
-          "value": 288,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 288
         },
         {
-          "type": "Allocations",
-          "value": 14,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 14
         },
         {
           "type": "Iterations",
@@ -413,26 +332,20 @@
       ]
     },
     {
-      "name": "Default",
       "xAxis": "Failure",
       "yAxis": "FieldMapDiveWithKeys",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 490.7,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 490.7
         },
         {
-          "type": "Memory Usage",
-          "value": 553,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 553
         },
         {
-          "type": "Allocations",
-          "value": 16,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 16
         },
         {
           "type": "Iterations",
@@ -446,21 +359,16 @@
       "yAxis": "FieldMapDiveWithKeys",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 282,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 282
         },
         {
-          "type": "Memory Usage",
-          "value": 554,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 554
         },
         {
-          "type": "Allocations",
-          "value": 16,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 16
         },
         {
           "type": "Iterations",
@@ -469,26 +377,20 @@
       ]
     },
     {
-      "name": "Default",
       "xAxis": "Success",
       "yAxis": "FieldCustomType",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 77.35,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 77.35
         },
         {
-          "type": "Memory Usage",
-          "value": 32,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 32
         },
         {
-          "type": "Allocations",
-          "value": 2,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 2
         },
         {
           "type": "Iterations",
@@ -502,21 +404,16 @@
       "yAxis": "FieldCustomType",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 20.61,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 20.61
         },
         {
-          "type": "Memory Usage",
-          "value": 32,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 32
         },
         {
-          "type": "Allocations",
-          "value": 2,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 2
         },
         {
           "type": "Iterations",
@@ -525,26 +422,20 @@
       ]
     },
     {
-      "name": "Default",
       "xAxis": "Failure",
       "yAxis": "FieldCustomType",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 107.1,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 107.1
         },
         {
-          "type": "Memory Usage",
-          "value": 184,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 184
         },
         {
-          "type": "Allocations",
-          "value": 3,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 3
         },
         {
           "type": "Iterations",
@@ -558,21 +449,16 @@
       "yAxis": "FieldCustomType",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 69.77,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 69.77
         },
         {
-          "type": "Memory Usage",
-          "value": 184,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 184
         },
         {
-          "type": "Allocations",
-          "value": 3,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 3
         },
         {
           "type": "Iterations",
@@ -581,26 +467,20 @@
       ]
     },
     {
-      "name": "Default",
       "xAxis": "Success",
       "yAxis": "FieldOrTag",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 294.3,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 294.3
         },
         {
-          "type": "Memory Usage",
-          "value": 16,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 16
         },
         {
-          "type": "Allocations",
-          "value": 1,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 1
         },
         {
           "type": "Iterations",
@@ -614,21 +494,16 @@
       "yAxis": "FieldOrTag",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 41.22,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 41.22
         },
         {
-          "type": "Memory Usage",
-          "value": 18,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 18
         },
         {
-          "type": "Allocations",
-          "value": 1,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 1
         },
         {
           "type": "Iterations",
@@ -637,26 +512,20 @@
       ]
     },
     {
-      "name": "Default",
       "xAxis": "Failure",
       "yAxis": "FieldOrTag",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 146.8,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 146.8
         },
         {
-          "type": "Memory Usage",
-          "value": 216,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 216
         },
         {
-          "type": "Allocations",
-          "value": 5,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 5
         },
         {
           "type": "Iterations",
@@ -670,21 +539,16 @@
       "yAxis": "FieldOrTag",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 92.05,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 92.05
         },
         {
-          "type": "Memory Usage",
-          "value": 216,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 216
         },
         {
-          "type": "Allocations",
-          "value": 5,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 5
         },
         {
           "type": "Iterations",
@@ -693,26 +557,20 @@
       ]
     },
     {
-      "name": "Default",
       "xAxis": "Success",
       "yAxis": "StructLevelValidation",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 70.25,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 70.25
         },
         {
-          "type": "Memory Usage",
-          "value": 16,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 16
         },
         {
-          "type": "Allocations",
-          "value": 1,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 1
         },
         {
           "type": "Iterations",
@@ -726,21 +584,16 @@
       "yAxis": "StructLevelValidation",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 14.47,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 14.47
         },
         {
-          "type": "Memory Usage",
-          "value": 16,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 16
         },
         {
-          "type": "Allocations",
-          "value": 1,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 1
         },
         {
           "type": "Iterations",
@@ -749,26 +602,20 @@
       ]
     },
     {
-      "name": "Default",
       "xAxis": "Failure",
       "yAxis": "StructLevelValidation",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 200.2,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 200.2
         },
         {
-          "type": "Memory Usage",
-          "value": 264,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 264
         },
         {
-          "type": "Allocations",
-          "value": 7,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 7
         },
         {
           "type": "Iterations",
@@ -782,21 +629,16 @@
       "yAxis": "StructLevelValidation",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 107.5,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 107.5
         },
         {
-          "type": "Memory Usage",
-          "value": 264,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 264
         },
         {
-          "type": "Allocations",
-          "value": 7,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 7
         },
         {
           "type": "Iterations",
@@ -805,26 +647,20 @@
       ]
     },
     {
-      "name": "Default",
       "xAxis": "Success",
       "yAxis": "StructSimpleCustomType",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 151.9,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 151.9
         },
         {
-          "type": "Memory Usage",
-          "value": 32,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 32
         },
         {
-          "type": "Allocations",
-          "value": 2,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 2
         },
         {
           "type": "Iterations",
@@ -838,21 +674,16 @@
       "yAxis": "StructSimpleCustomType",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 30.37,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 30.37
         },
         {
-          "type": "Memory Usage",
-          "value": 32,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 32
         },
         {
-          "type": "Allocations",
-          "value": 2,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 2
         },
         {
           "type": "Iterations",
@@ -861,26 +692,20 @@
       ]
     },
     {
-      "name": "Default",
       "xAxis": "Failure",
       "yAxis": "StructSimpleCustomType",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 277.2,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 277.2
         },
         {
-          "type": "Memory Usage",
-          "value": 416,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 416
         },
         {
-          "type": "Allocations",
-          "value": 9,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 9
         },
         {
           "type": "Iterations",
@@ -894,21 +719,16 @@
       "yAxis": "StructSimpleCustomType",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 164.6,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 164.6
         },
         {
-          "type": "Memory Usage",
-          "value": 432,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 432
         },
         {
-          "type": "Allocations",
-          "value": 10,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 10
         },
         {
           "type": "Iterations",
@@ -917,26 +737,20 @@
       ]
     },
     {
-      "name": "Default",
       "xAxis": "Success",
       "yAxis": "StructFiltered",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 186.1,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 186.1
         },
         {
-          "type": "Memory Usage",
-          "value": 216,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 216
         },
         {
-          "type": "Allocations",
-          "value": 5,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 5
         },
         {
           "type": "Iterations",
@@ -950,21 +764,16 @@
       "yAxis": "StructFiltered",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 93.42,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 93.42
         },
         {
-          "type": "Memory Usage",
-          "value": 216,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 216
         },
         {
-          "type": "Allocations",
-          "value": 5,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 5
         },
         {
           "type": "Iterations",
@@ -973,26 +782,20 @@
       ]
     },
     {
-      "name": "Default",
       "xAxis": "Failure",
       "yAxis": "StructFiltered",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 171.2,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 171.2
         },
         {
-          "type": "Memory Usage",
-          "value": 216,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 216
         },
         {
-          "type": "Allocations",
-          "value": 5,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 5
         },
         {
           "type": "Iterations",
@@ -1006,21 +809,16 @@
       "yAxis": "StructFiltered",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 86.93,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 86.93
         },
         {
-          "type": "Memory Usage",
-          "value": 216,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 216
         },
         {
-          "type": "Allocations",
-          "value": 5,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 5
         },
         {
           "type": "Iterations",
@@ -1029,26 +827,20 @@
       ]
     },
     {
-      "name": "Default",
       "xAxis": "Success",
       "yAxis": "StructPartial",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 177.3,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 177.3
         },
         {
-          "type": "Memory Usage",
-          "value": 224,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 224
         },
         {
-          "type": "Allocations",
-          "value": 4,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 4
         },
         {
           "type": "Iterations",
@@ -1062,21 +854,16 @@
       "yAxis": "StructPartial",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 88.73,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 88.73
         },
         {
-          "type": "Memory Usage",
-          "value": 224,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 224
         },
         {
-          "type": "Allocations",
-          "value": 4,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 4
         },
         {
           "type": "Iterations",
@@ -1085,26 +872,20 @@
       ]
     },
     {
-      "name": "Default",
       "xAxis": "Failure",
       "yAxis": "StructPartial",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 287.5,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 287.5
         },
         {
-          "type": "Memory Usage",
-          "value": 440,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 440
         },
         {
-          "type": "Allocations",
-          "value": 9,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 9
         },
         {
           "type": "Iterations",
@@ -1118,21 +899,16 @@
       "yAxis": "StructPartial",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 161.3,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 161.3
         },
         {
-          "type": "Memory Usage",
-          "value": 440,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 440
         },
         {
-          "type": "Allocations",
-          "value": 9,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 9
         },
         {
           "type": "Iterations",
@@ -1141,26 +917,20 @@
       ]
     },
     {
-      "name": "Default",
       "xAxis": "Success",
       "yAxis": "StructExcept",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 281.4,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 281.4
         },
         {
-          "type": "Memory Usage",
-          "value": 424,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 424
         },
         {
-          "type": "Allocations",
-          "value": 8,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 8
         },
         {
           "type": "Iterations",
@@ -1174,21 +944,16 @@
       "yAxis": "StructExcept",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 80.86,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 80.86
         },
         {
-          "type": "Memory Usage",
-          "value": 208,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 208
         },
         {
-          "type": "Allocations",
-          "value": 3,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 3
         },
         {
           "type": "Iterations",
@@ -1197,26 +962,20 @@
       ]
     },
     {
-      "name": "Default",
       "xAxis": "Failure",
       "yAxis": "StructExcept",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 264.3,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 264.3
         },
         {
-          "type": "Memory Usage",
-          "value": 424,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 424
         },
         {
-          "type": "Allocations",
-          "value": 8,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 8
         },
         {
           "type": "Iterations",
@@ -1230,21 +989,16 @@
       "yAxis": "StructExcept",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 154.1,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 154.1
         },
         {
-          "type": "Memory Usage",
-          "value": 424,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 424
         },
         {
-          "type": "Allocations",
-          "value": 8,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 8
         },
         {
           "type": "Iterations",
@@ -1253,26 +1007,20 @@
       ]
     },
     {
-      "name": "Default",
       "xAxis": "Success",
       "yAxis": "StructSimpleCrossField",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 183.4,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 183.4
         },
         {
-          "type": "Memory Usage",
-          "value": 56,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 56
         },
         {
-          "type": "Allocations",
-          "value": 3,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 3
         },
         {
           "type": "Iterations",
@@ -1286,21 +1034,16 @@
       "yAxis": "StructSimpleCrossField",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 37.95,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 37.95
         },
         {
-          "type": "Memory Usage",
-          "value": 56,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 56
         },
         {
-          "type": "Allocations",
-          "value": 3,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 3
         },
         {
           "type": "Iterations",
@@ -1309,26 +1052,20 @@
       ]
     },
     {
-      "name": "Default",
       "xAxis": "Failure",
       "yAxis": "StructSimpleCrossField",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 292.1,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 292.1
         },
         {
-          "type": "Memory Usage",
-          "value": 272,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 272
         },
         {
-          "type": "Allocations",
-          "value": 8,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 8
         },
         {
           "type": "Iterations",
@@ -1342,21 +1079,16 @@
       "yAxis": "StructSimpleCrossField",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 115.3,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 115.3
         },
         {
-          "type": "Memory Usage",
-          "value": 272,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 272
         },
         {
-          "type": "Allocations",
-          "value": 8,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 8
         },
         {
           "type": "Iterations",
@@ -1365,26 +1097,20 @@
       ]
     },
     {
-      "name": "Default",
       "xAxis": "Success",
       "yAxis": "StructSimpleCrossStructCrossField",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 267.7,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 267.7
         },
         {
-          "type": "Memory Usage",
-          "value": 64,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 64
         },
         {
-          "type": "Allocations",
-          "value": 4,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 4
         },
         {
           "type": "Iterations",
@@ -1398,21 +1124,16 @@
       "yAxis": "StructSimpleCrossStructCrossField",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 48.33,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 48.33
         },
         {
-          "type": "Memory Usage",
-          "value": 64,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 64
         },
         {
-          "type": "Allocations",
-          "value": 4,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 4
         },
         {
           "type": "Iterations",
@@ -1421,26 +1142,20 @@
       ]
     },
     {
-      "name": "Default",
       "xAxis": "Failure",
       "yAxis": "StructSimpleCrossStructCrossField",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 384.5,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 384.5
         },
         {
-          "type": "Memory Usage",
-          "value": 288,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 288
         },
         {
-          "type": "Allocations",
-          "value": 9,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 9
         },
         {
           "type": "Iterations",
@@ -1454,21 +1169,16 @@
       "yAxis": "StructSimpleCrossStructCrossField",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 129.5,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 129.5
         },
         {
-          "type": "Memory Usage",
-          "value": 288,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 288
         },
         {
-          "type": "Allocations",
-          "value": 9,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 9
         },
         {
           "type": "Iterations",
@@ -1477,26 +1187,18 @@
       ]
     },
     {
-      "name": "Default",
       "xAxis": "Success",
       "yAxis": "StructSimple",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 109.5,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 109.5
         },
         {
-          "type": "Memory Usage",
-          "value": 0,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)"
         },
         {
-          "type": "Allocations",
-          "value": 0,
-          "per": "op"
+          "type": "Allocations/op"
         },
         {
           "type": "Iterations",
@@ -1510,21 +1212,14 @@
       "yAxis": "StructSimple",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 8.932,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 8.932
         },
         {
-          "type": "Memory Usage",
-          "value": 0,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)"
         },
         {
-          "type": "Allocations",
-          "value": 0,
-          "per": "op"
+          "type": "Allocations/op"
         },
         {
           "type": "Iterations",
@@ -1533,26 +1228,20 @@
       ]
     },
     {
-      "name": "Default",
       "xAxis": "Failure",
       "yAxis": "StructSimple",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 286.6,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 286.6
         },
         {
-          "type": "Memory Usage",
-          "value": 416,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 416
         },
         {
-          "type": "Allocations",
-          "value": 9,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 9
         },
         {
           "type": "Iterations",
@@ -1566,21 +1255,16 @@
       "yAxis": "StructSimple",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 157.9,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 157.9
         },
         {
-          "type": "Memory Usage",
-          "value": 416,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 416
         },
         {
-          "type": "Allocations",
-          "value": 9,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 9
         },
         {
           "type": "Iterations",
@@ -1589,26 +1273,20 @@
       ]
     },
     {
-      "name": "Default",
       "xAxis": "Success",
       "yAxis": "StructComplex",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 576,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 576
         },
         {
-          "type": "Memory Usage",
-          "value": 224,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 224
         },
         {
-          "type": "Allocations",
-          "value": 5,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 5
         },
         {
           "type": "Iterations",
@@ -1622,21 +1300,16 @@
       "yAxis": "StructComplex",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 161.3,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 161.3
         },
         {
-          "type": "Memory Usage",
-          "value": 224,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 224
         },
         {
-          "type": "Allocations",
-          "value": 5,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 5
         },
         {
           "type": "Iterations",
@@ -1645,26 +1318,20 @@
       ]
     },
     {
-      "name": "Default",
       "xAxis": "Failure",
       "yAxis": "StructComplex",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 2001,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 2001
         },
         {
-          "type": "Memory Usage",
-          "value": 3042,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 3042
         },
         {
-          "type": "Allocations",
-          "value": 48,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 48
         },
         {
           "type": "Iterations",
@@ -1678,21 +1345,16 @@
       "yAxis": "StructComplex",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 1171,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 1171
         },
         {
-          "type": "Memory Usage",
-          "value": 3041,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)",
+          "value": 3041
         },
         {
-          "type": "Allocations",
-          "value": 48,
-          "per": "op"
+          "type": "Allocations/op",
+          "value": 48
         },
         {
           "type": "Iterations",
@@ -1701,25 +1363,17 @@
       ]
     },
     {
-      "name": "Default",
       "yAxis": "Oneof",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 52.82,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 52.82
         },
         {
-          "type": "Memory Usage",
-          "value": 0,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)"
         },
         {
-          "type": "Allocations",
-          "value": 0,
-          "per": "op"
+          "type": "Allocations/op"
         },
         {
           "type": "Iterations",
@@ -1728,25 +1382,17 @@
       ]
     },
     {
-      "name": "Default",
       "yAxis": "OneofParallel",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 140.4,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 140.4
         },
         {
-          "type": "Memory Usage",
-          "value": 0,
-          "unit": "B",
-          "per": "op"
+          "type": "Memory Usage (B/op)"
         },
         {
-          "type": "Allocations",
-          "value": 0,
-          "per": "op"
+          "type": "Allocations/op"
         },
         {
           "type": "Iterations",

@@ -1,7 +1,8 @@
 import { ref, computed } from 'vue'
-import { DEFAULT_SETTINGS, type Benchmark, type BenchmarkData } from '../types/benchmark'
+import type { Benchmark, BenchmarkData } from '../types'
 import { resetColor } from '../lib/utils'
 import { useSettingsStore } from './useSettingsStore'
+import { DEFAULT_SETTINGS } from './constants'
 
 const getStatDimensions = (benchmarks: BenchmarkData[]) => {
   let dimension = 0

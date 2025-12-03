@@ -1,6 +1,6 @@
 import type { Ref } from 'vue'
 import type { EChartsOption } from 'echarts'
-import type { ChartData, Sort } from '../../types/benchmark'
+import type { ChartData, Sort } from '../../types'
 import { createTooltipConfig, getChartStyling } from './shared/chartConfig'
 import { fontSize } from './shared/common'
 

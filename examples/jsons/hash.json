@@ -1,6 +1,7 @@
 {
   "name": "Hashing",
   "description": "Comparison of different hash functions",
+  "cpu": {},
   "settings": {
     "charts": [
       "bar",
@@ -18,15 +19,12 @@
       "xAxis": "MD5",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 114.8,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 114.8
         },
         {
-          "type": "Throughput",
-          "value": 69.71,
-          "unit": "MB/s"
+          "type": "Throughput (MB/s)",
+          "value": 69.71
         },
         {
           "type": "Iterations",
@@ -38,15 +36,12 @@
       "xAxis": "SHA1",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 141.2,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 141.2
         },
         {
-          "type": "Throughput",
-          "value": 56.66,
-          "unit": "MB/s"
+          "type": "Throughput (MB/s)",
+          "value": 56.66
         },
         {
           "type": "Iterations",
@@ -58,15 +53,12 @@
       "xAxis": "SHA256",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 187.1,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 187.1
         },
         {
-          "type": "Throughput",
-          "value": 42.75,
-          "unit": "MB/s"
+          "type": "Throughput (MB/s)",
+          "value": 42.75
         },
         {
           "type": "Iterations",
@@ -78,15 +70,12 @@
       "xAxis": "SHA3B224",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 573.1,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 573.1
         },
         {
-          "type": "Throughput",
-          "value": 13.96,
-          "unit": "MB/s"
+          "type": "Throughput (MB/s)",
+          "value": 13.96
         },
         {
           "type": "Iterations",
@@ -98,15 +87,12 @@
       "xAxis": "SHA3B256",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 569.2,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 569.2
         },
         {
-          "type": "Throughput",
-          "value": 14.06,
-          "unit": "MB/s"
+          "type": "Throughput (MB/s)",
+          "value": 14.06
         },
         {
           "type": "Iterations",
@@ -118,15 +104,12 @@
       "xAxis": "RIPEMD160",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 303.1,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 303.1
         },
         {
-          "type": "Throughput",
-          "value": 26.4,
-          "unit": "MB/s"
+          "type": "Throughput (MB/s)",
+          "value": 26.4
         },
         {
           "type": "Iterations",
@@ -138,15 +121,12 @@
       "xAxis": "Blake2B",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 296.9,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 296.9
         },
         {
-          "type": "Throughput",
-          "value": 26.95,
-          "unit": "MB/s"
+          "type": "Throughput (MB/s)",
+          "value": 26.95
         },
         {
           "type": "Iterations",
@@ -158,15 +138,12 @@
       "xAxis": "Blake2BSimd",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 247.7,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 247.7
         },
         {
-          "type": "Throughput",
-          "value": 32.3,
-          "unit": "MB/s"
+          "type": "Throughput (MB/s)",
+          "value": 32.3
         },
         {
           "type": "Iterations",
@@ -178,15 +155,12 @@
       "xAxis": "Murmur3",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 47.19,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 47.19
         },
         {
-          "type": "Throughput",
-          "value": 169.52,
-          "unit": "MB/s"
+          "type": "Throughput (MB/s)",
+          "value": 169.52
         },
         {
           "type": "Iterations",
@@ -198,15 +172,12 @@
       "xAxis": "Murmur3Twmb",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 46.34,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 46.34
         },
         {
-          "type": "Throughput",
-          "value": 172.65,
-          "unit": "MB/s"
+          "type": "Throughput (MB/s)",
+          "value": 172.65
         },
         {
           "type": "Iterations",
@@ -218,15 +189,12 @@
       "xAxis": "SipHash",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 41.71,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 41.71
         },
         {
-          "type": "Throughput",
-          "value": 191.82,
-          "unit": "MB/s"
+          "type": "Throughput (MB/s)",
+          "value": 191.82
         },
         {
           "type": "Iterations",
@@ -238,15 +206,12 @@
       "xAxis": "XXHash",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 25.71,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 25.71
         },
         {
-          "type": "Throughput",
-          "value": 311.2,
-          "unit": "MB/s"
+          "type": "Throughput (MB/s)",
+          "value": 311.2
         },
         {
           "type": "Iterations",
@@ -258,15 +223,12 @@
       "xAxis": "XXHashpier",
       "stats": [
         {
-          "type": "Execution Time",
-          "value": 26.43,
-          "unit": "ns",
-          "per": "op"
+          "type": "Execution Time (ns/op)",
+          "value": 26.43
         },
         {
-          "type": "Throughput",
-          "value": 302.64,
-          "unit": "MB/s"
+          "type": "Throughput (MB/s)",
+          "value": 302.64
         },
         {
           "type": "Iterations",

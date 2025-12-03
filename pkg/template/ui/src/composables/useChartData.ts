@@ -1,5 +1,5 @@
 import { computed, type Ref } from 'vue'
-import type { BenchmarkData, ChartData, SeriesData, Stat } from '../types/benchmark'
+import type { BenchmarkData, ChartData, SeriesData, Stat } from '../types'
 
 type StatSignature = `${Stat['type']}-${Stat['unit']}-${Stat['per']}`
 
