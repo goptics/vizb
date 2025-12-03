@@ -33,7 +33,7 @@ export function createAxisConfig(
       data: xAxisData,
       axisLabel: {
         interval: 0,
-        rotate: xAxisData.length > 15 ? 30 : 0,
+        rotate: xAxisData.reduce((acc, cur) => acc + cur.length, 0) > 100 ? 30 : 0,
         fontSize,
         color: styling.textColor,
       },
