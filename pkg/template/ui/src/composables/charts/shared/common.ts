@@ -2,18 +2,16 @@ import type { SortOrder } from '../../../types'
 
 export const fontSize = 12
 
-export const sortByTotal = <T extends { total: number }>(sortOrder: SortOrder) => {
-  if (sortOrder === 'asc') {
-    return (a: T, b: T) => a.total - b.total
+export const sortBy =
+  <K extends string>(key: K) =>
+    <T extends Record<K, number>>(sortOrder: SortOrder) => {
+    if (sortOrder === 'asc') {
+      return (a: T, b: T) => a[key] - b[key]
+    }
+
+    return (a: T, b: T) => b[key] - a[key]
   }
 
-  return (a: T, b: T) => b.total - a.total
-}
+export const sortByTotal = sortBy('total')
 
-export const sortByValue = <T extends { value: number }>(sortOrder: SortOrder) => {
-  if (sortOrder === 'asc') {
-    return (a: T, b: T) => a.value - b.value
-  }
-
-  return (a: T, b: T) => b.value - a.value
-}
+export const sortByValue = sortBy('value')
