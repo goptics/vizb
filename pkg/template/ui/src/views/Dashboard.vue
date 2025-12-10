@@ -31,7 +31,7 @@ const {
 const activeResults = computed(() => activeGroup.value?.data || [])
 const { chartData } = useChartData(activeResults)
 
-const { isDark, toggleDark, initializeFromBenchmark } = useSettingsStore()
+const { settings, toggleDark, initializeFromBenchmark } = useSettingsStore()
 
 // Initialize settings from the active benchmark settings
 watch(
@@ -66,7 +66,7 @@ const hasCPU = computed(() => activeBenchmark.value?.cpu?.name || activeBenchmar
     <ChartSettingsPopover />
 
     <IconButton @click="toggleDark()" aria-label="Toggle theme">
-      <Sun v-if="isDark" class="h-5 w-5" />
+      <Sun v-if="settings.isDark" class="h-5 w-5" />
       <Moon v-else class="h-5 w-5" />
     </IconButton>
   </nav>

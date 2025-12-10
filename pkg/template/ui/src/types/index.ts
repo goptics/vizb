@@ -9,7 +9,6 @@ export type Stat = {
   per?: string
 }
 
-// Represents a single benchmark result for one subject
 export type BenchmarkData = {
   name?: string
   yAxis?: string
@@ -40,7 +39,6 @@ export type Benchmark = {
   data: BenchmarkData[]
 }
 
-// Chart data structure
 export type ChartData = {
   title: string
   statType: string
