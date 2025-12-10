@@ -36,17 +36,10 @@ const props = defineProps<{
 const { chartData } = toRefs(props)
 
 // Pull settings from centralized store
-const { sortOrder, showLabels, isDark, chartType } = (() => {
-  const store = useSettingsStore()
-  return {
-    sortOrder: store.sortOrder,
-    showLabels: store.showLabels,
-    isDark: store.isDark,
-    chartType: store.chartType,
-  }
-})()
+const { settings, chartType } = useSettingsStore()
+const { sort, showLabels, isDark } = toRefs(settings)
 
-const { options } = useChartOptions(chartData, sortOrder, showLabels, isDark, chartType)
+const { options } = useChartOptions(chartData, sort, showLabels, isDark, chartType)
 
 const initOptions = {
   renderer: 'canvas',

@@ -9,28 +9,20 @@ import AxisSwapper from './AxisSwapper.vue'
 import type { ChartType, SortOrder } from '../types'
 import { useSettingsStore } from '../composables/useSettingsStore'
 
-const {
-  sortOrder,
-  showLabels: showLabelsStore,
-  charts,
-  chartType: chartTypeStore,
-  setSort,
-  setShowLabels,
-  setChartType,
-} = useSettingsStore()
+const { settings, setSort, setShowLabels, setChartType } = useSettingsStore()
 
-const chartType = ref(chartTypeStore.value)
-const isSortingEnabled = ref(sortOrder.value.enabled)
-const sortDirection = ref<SortOrder>(sortOrder.value.order)
-const showLabels = ref(showLabelsStore.value)
+const chartType = ref(settings.charts[settings.activeChartIndex] ?? 'bar')
+const isSortingEnabled = ref(settings.sort.enabled)
+const sortDirection = ref<SortOrder>(settings.sort.order)
+const showLabels = ref(settings.showLabels)
 
 watch(chartType, (val) => setChartType(val))
 watch(showLabels, (val) => setShowLabels(val))
 watch([isSortingEnabled, sortDirection], ([enabled, order]) => setSort({ enabled, order }))
 
-const showChartTypeSelection = computed(() => charts.value.length > 1)
+const showChartTypeSelection = computed(() => settings.charts.length > 1)
 const chartOptions = computed(() =>
-  charts.value.map((type) => ({
+  settings.charts.map((type) => ({
     value: type,
     label: type.charAt(0).toUpperCase() + type.slice(1),
     icon: getChartIcon(type),

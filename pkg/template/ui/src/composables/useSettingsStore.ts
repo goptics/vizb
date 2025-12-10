@@ -1,47 +1,60 @@
-import { ref, computed } from 'vue'
-import type { Sort, Settings, ChartType } from '../types'
+import { reactive, computed } from 'vue'
+import type { Sort, ChartType, Settings as BenchmarkSettings } from '../types'
 import { DEFAULT_SETTINGS } from './constants'
 
-const sortOrder = ref<Sort>({ enabled: false, order: 'asc' })
-const showLabels = ref(false)
-const charts = ref<ChartType[]>(DEFAULT_SETTINGS.charts)
-const activeChartIndex = ref<number>(0)
-const chartType = computed<ChartType>(() => charts.value[activeChartIndex.value] ?? 'bar')
-const selectedSwapIndexMap = ref(new Map<number, number>())
-let initialized = false
+type StoreSettings = {
+  sort: Sort
+  showLabels: boolean
+  charts: ChartType[]
+  activeChartIndex: number
+  selectedSwapIndexMap: Map<number, number>
+  isDark: boolean
+}
 
-// Simple dark mode implementation
-const isDark = ref(false)
+const settings = reactive<StoreSettings>({
+  sort: { enabled: false, order: 'asc' },
+  showLabels: false,
+  charts: DEFAULT_SETTINGS.charts,
+  activeChartIndex: 0,
+  selectedSwapIndexMap: new Map(),
+  isDark: false,
+})
+
+const chartType = computed<ChartType>(() => settings.charts[settings.activeChartIndex] ?? 'bar')
+
+let initialized = false
 
 // Initialize dark mode from localStorage or system preference
 const initializeDarkMode = () => {
   const saved = localStorage.getItem('dark-mode')
+
   if (saved !== null) {
-    isDark.value = saved === 'true'
+    settings.isDark = saved === 'true'
   } else {
     // Check system preference
-    isDark.value = window.matchMedia('(prefers-color-scheme: dark)').matches
+    settings.isDark = window.matchMedia('(prefers-color-scheme: dark)').matches
   }
+  
   updateHtmlClass()
 }
 
 // Update HTML class based on dark mode state
 const updateHtmlClass = () => {
   const html = document.documentElement
+  let [addClass, removeClass] = ['light', 'dark']
 
-  if (isDark.value) {
-    html.classList.add('dark')
-    html.classList.remove('light')
-  } else {
-    html.classList.add('light')
-    html.classList.remove('dark')
+  if (settings.isDark) {
+    [addClass, removeClass] = [removeClass, addClass]
   }
+
+  html.classList.add(addClass)
+  html.classList.remove(removeClass)
 }
 
 // Toggle dark mode
 const toggleDark = () => {
-  isDark.value = !isDark.value
-  localStorage.setItem('dark-mode', isDark.value.toString())
+  settings.isDark = !settings.isDark
+  localStorage.setItem('dark-mode', settings.isDark.toString())
   updateHtmlClass()
 }
 
@@ -50,63 +63,58 @@ initializeDarkMode()
 
 export function useSettingsStore() {
   const setSort = (sort: Sort) => {
-    sortOrder.value = sort
+    settings.sort = sort
   }
 
   const setShowLabels = (show: boolean) => {
-    showLabels.value = show
+    settings.showLabels = show
   }
 
   const setCharts = (list: ChartType[]) => {
     const filtered = list.filter((c) => DEFAULT_SETTINGS.charts.includes(c))
-    charts.value = filtered.length ? filtered : DEFAULT_SETTINGS.charts
+    settings.charts = filtered.length ? filtered : DEFAULT_SETTINGS.charts
 
     // clamp index
-    if (activeChartIndex.value < 0 || activeChartIndex.value >= charts.value.length) {
-      activeChartIndex.value = 0
+    if (settings.activeChartIndex < 0 || settings.activeChartIndex >= settings.charts.length) {
+      settings.activeChartIndex = 0
     }
   }
 
   const setActiveChartIndex = (index: number) => {
-    if (index >= 0 && index < charts.value.length) {
-      activeChartIndex.value = index
+    if (index >= 0 && index < settings.charts.length) {
+      settings.activeChartIndex = index
     }
   }
 
   const setChartType = (type: ChartType) => {
-    const idx = charts.value.indexOf(type)
+    const idx = settings.charts.indexOf(type)
     if (idx !== -1) {
-      activeChartIndex.value = idx
+      settings.activeChartIndex = idx
     }
   }
 
-  const initializeFromBenchmark = (settings: Settings, force = false) => {
+  const initializeFromBenchmark = (inputSettings: BenchmarkSettings, force = false) => {
     if (!initialized || force) {
-      sortOrder.value = settings.sort
-      showLabels.value = settings.showLabels
+      settings.sort = inputSettings.sort
+      settings.showLabels = inputSettings.showLabels
 
-      setCharts(settings.charts ?? DEFAULT_SETTINGS.charts)
+      setCharts(inputSettings.charts ?? DEFAULT_SETTINGS.charts)
       setActiveChartIndex(0)
       initialized = true
     }
   }
 
   const setSelectedSwapIndex = (benchmarkId: number, index: number) => {
-    selectedSwapIndexMap.value.set(benchmarkId, index)
+    settings.selectedSwapIndexMap.set(benchmarkId, index)
   }
 
   const getSelectedSwapIndex = (benchmarkId: number): number | undefined => {
-    return selectedSwapIndexMap.value.get(benchmarkId)
+    return settings.selectedSwapIndexMap.get(benchmarkId)
   }
 
   return {
-    sortOrder,
-    showLabels,
-    charts,
-    activeChartIndex,
+    settings,
     chartType,
-    isDark,
-    selectedSwapIndexMap,
     setSort,
     setShowLabels,
     setCharts,
