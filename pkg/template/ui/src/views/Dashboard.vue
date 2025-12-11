@@ -4,6 +4,7 @@ import { Moon, Sun, Package } from 'lucide-vue-next'
 import { useBenchmarkData } from '../composables/useBenchmarkData'
 import { useChartData } from '../composables/useChartData'
 import { useSettingsStore } from '../composables/useSettingsStore'
+import { useUrlRouter } from '../composables/useUrlRouter'
 import ChartSettingsPopover from '../components/ChartSettingsPopover.vue'
 import GroupSelector from '../components/Selector.vue'
 import ChartCard from '../components/ChartCard.vue'
@@ -32,6 +33,9 @@ const activeResults = computed(() => activeGroup.value?.data || [])
 const { chartData } = useChartData(activeResults)
 
 const { settings, toggleDark, initializeFromBenchmark } = useSettingsStore()
+const { initFromUrl } = useUrlRouter()
+
+let urlInitialized = false
 
 // Initialize settings from the active benchmark settings
 watch(
@@ -39,6 +43,18 @@ watch(
   (b) => {
     if (b?.settings) {
       initializeFromBenchmark(b.settings)
+    }
+  },
+  { immediate: true }
+)
+
+// Initialize from URL once benchmarks are loaded
+watch(
+  benchmarks,
+  (b) => {
+    if (b.length && !urlInitialized) {
+      initFromUrl()
+      urlInitialized = true
     }
   },
   { immediate: true }
