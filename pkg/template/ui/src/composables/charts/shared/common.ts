@@ -4,7 +4,7 @@ export const fontSize = 12
 
 export const sortBy =
   <K extends string>(key: K) =>
-    <T extends Record<K, number>>(sortOrder: SortOrder) => {
+  <T extends Record<K, number>>(sortOrder: SortOrder) => {
     if (sortOrder === 'asc') {
       return (a: T, b: T) => a[key] - b[key]
     }

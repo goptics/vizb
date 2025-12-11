@@ -34,7 +34,7 @@ const initializeDarkMode = () => {
     // Check system preference
     settings.isDark = window.matchMedia('(prefers-color-scheme: dark)').matches
   }
-  
+
   updateHtmlClass()
 }
 
@@ -44,7 +44,7 @@ const updateHtmlClass = () => {
   let [addClass, removeClass] = ['light', 'dark']
 
   if (settings.isDark) {
-    [addClass, removeClass] = [removeClass, addClass]
+    ;[addClass, removeClass] = [removeClass, addClass]
   }
 
   html.classList.add(addClass)
