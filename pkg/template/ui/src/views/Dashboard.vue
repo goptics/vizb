@@ -37,10 +37,16 @@ const { initFromUrl } = useUrlRouter()
 
 let urlInitialized = false
 
-// Initialize settings from the active benchmark settings
+// Initialize settings from the active benchmark settings and update title
 watch(
   activeBenchmark,
   (b) => {
+    // Update document title
+    if (b?.name) {
+      document.title = `Vizb | ${b.name}`
+    }
+
+    // Initialize settings from the active benchmark settings
     if (b?.settings) {
       initializeFromBenchmark(b.settings)
     }
