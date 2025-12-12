@@ -90,7 +90,7 @@ func TestValidateFlags(t *testing.T) {
 			expectedTimeUnit:  "ns",
 			expectedAllocUnit: "",
 			expectedFormat:    "html",
-			expectedOutput:    "Warning: Invalid memory unit 'invalid'. Using default 'B'",
+			expectedOutput:    "Warning: Invalid memory unit 'invalid'.",
 		},
 		{
 			name: "Invalid time unit",
@@ -104,7 +104,7 @@ func TestValidateFlags(t *testing.T) {
 			expectedTimeUnit:  "ns",
 			expectedAllocUnit: "",
 			expectedFormat:    "html",
-			expectedOutput:    "Warning: Invalid time unit 'invalid'. Using default 'ns'",
+			expectedOutput:    "Warning: Invalid time unit 'invalid'.",
 		},
 		{
 			name: "Invalid alloc unit",
@@ -118,7 +118,7 @@ func TestValidateFlags(t *testing.T) {
 			expectedTimeUnit:  "ns",
 			expectedAllocUnit: "",
 			expectedFormat:    "html",
-			expectedOutput:    "Warning: Invalid number unit 'INVALID'. Using default ''",
+			expectedOutput:    "Warning: Invalid number unit 'INVALID'.",
 		},
 		{
 			name: "Invalid format",
@@ -132,7 +132,7 @@ func TestValidateFlags(t *testing.T) {
 			expectedTimeUnit:  "ns",
 			expectedAllocUnit: "",
 			expectedFormat:    "html",
-			expectedOutput:    "Warning: Invalid format 'invalid'. Using default 'html'",
+			expectedOutput:    "Warning: Invalid format 'invalid'.",
 		},
 	}
 

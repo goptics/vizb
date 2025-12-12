@@ -239,6 +239,7 @@ func TestFlagValidationRulesStructure(t *testing.T) {
 		assert.True(t, labels["format"], "Should have format rule")
 		assert.True(t, labels["sort order"], "Should have sort order rule")
 		assert.True(t, labels["charts"], "Should have charts rule")
+		assert.True(t, labels["group pattern"], "Should have group pattern rule")
 	})
 
 	t.Run("Validation rules have correct properties", func(t *testing.T) {

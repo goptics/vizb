@@ -176,7 +176,7 @@ func TestParseNameToGroups(t *testing.T) {
 	}
 }
 
-func TestValidatePattern(t *testing.T) {
+func TestValidateGroupPattern(t *testing.T) {
 	tests := []struct {
 		name          string
 		pattern       string
@@ -216,25 +216,26 @@ func TestValidatePattern(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name:        "Invalid pattern: missing yAxis",
+			name:        "Valid pattern: xAxis without yAxis",
 			pattern:     "name_xAxis",
-			expectError: false, // Requirement removed
+			expectError: false, // Only requires xAxis OR yAxis
 		},
 		{
-			name:        "Invalid pattern: name only",
-			pattern:     "name",
-			expectError: false, // Requirement removed
+			name:          "Invalid pattern: name only (missing xAxis and yAxis)",
+			pattern:       "name",
+			expectError:   true, // Must have xAxis or yAxis
+			errorContains: "pattern must contain xAxis (x) or yAxis (y)",
 		},
 		{
-			name:        "Invalid pattern: xAxis only",
+			name:        "Valid pattern: xAxis only",
 			pattern:     "xAxis",
-			expectError: false, // Requirement removed
+			expectError: false, // Only requires xAxis OR yAxis
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := ValidatePattern(tt.pattern)
+			err := ValidateGroupPattern(tt.pattern)
 
 			if tt.expectError {
 				if err == nil {
@@ -361,6 +362,33 @@ func TestParseNameWithRegex(t *testing.T) {
 				"yAxis": "MD5",
 			},
 			expectError: false,
+		},
+		{
+			name:          "Regex with only name capture (missing xAxis and yAxis)",
+			benchmarkName: "Hashing64MD5",
+			pattern:       `(?<n>Hashing64)(?<name>.*)`,
+			expected:      nil,
+			expectError:   true,
+			errorContains: "does not contain x (xAxis) or y (yAxis)",
+		},
+		{
+			name:          "Regex with only xAxis (valid)",
+			benchmarkName: "TestFunc/1024",
+			pattern:       `(?<n>.*)/(?<x>\d+)`,
+			expected: map[string]string{
+				"name":  "TestFunc",
+				"xAxis": "1024",
+				"yAxis": "",
+			},
+			expectError: false,
+		},
+		{
+			name:          "Regex with no named groups at all",
+			benchmarkName: "TestFunc/1024",
+			pattern:       `(.*)/(\d+)`,
+			expected:      nil,
+			expectError:   true,
+			errorContains: "does not contain x (xAxis) or y (yAxis)",
 		},
 	}
 
