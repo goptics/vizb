@@ -455,6 +455,216 @@ func TestNormalizerFunctions(t *testing.T) {
 	})
 }
 
+// Test slice validation rules
+func TestApplyValidationRulesSlice(t *testing.T) {
+	t.Run("Valid slice values pass validation", func(t *testing.T) {
+		values := []string{"bar", "line"}
+		rule := ValidationRule{
+			Label:        "charts",
+			SliceValue:   &values,
+			ValidSet:     []string{"bar", "line", "pie"},
+			SliceDefault: []string{"bar"},
+		}
+
+		oldStderr := os.Stderr
+		r, w, _ := os.Pipe()
+		os.Stderr = w
+
+		ApplyValidationRules([]ValidationRule{rule})
+
+		w.Close()
+		os.Stderr = oldStderr
+
+		var buf bytes.Buffer
+		buf.ReadFrom(r)
+
+		assert.Equal(t, []string{"bar", "line"}, values, "Valid slice should remain unchanged")
+		assert.Empty(t, buf.String(), "No warning should be printed for valid slice")
+	})
+
+	t.Run("Invalid slice value gets replaced with default", func(t *testing.T) {
+		values := []string{"bar", "invalid"}
+		rule := ValidationRule{
+			Label:        "charts",
+			SliceValue:   &values,
+			ValidSet:     []string{"bar", "line", "pie"},
+			SliceDefault: []string{"bar", "line", "pie"},
+		}
+
+		oldStderr := os.Stderr
+		r, w, _ := os.Pipe()
+		os.Stderr = w
+
+		ApplyValidationRules([]ValidationRule{rule})
+
+		w.Close()
+		os.Stderr = oldStderr
+
+		var buf bytes.Buffer
+		buf.ReadFrom(r)
+
+		assert.Equal(t, []string{"bar", "line", "pie"}, values, "Invalid slice should be replaced with default")
+		assert.Contains(t, buf.String(), "Warning: Invalid charts", "Warning should be printed")
+	})
+
+	t.Run("Slice with normalizer", func(t *testing.T) {
+		values := []string{"BAR", "LINE"}
+		rule := ValidationRule{
+			Label:        "charts",
+			SliceValue:   &values,
+			ValidSet:     []string{"bar", "line", "pie"},
+			Normalizer:   strings.ToLower,
+			SliceDefault: []string{"bar"},
+		}
+
+		ApplyValidationRules([]ValidationRule{rule})
+
+		assert.Equal(t, []string{"bar", "line"}, values, "Slice values should be normalized")
+	})
+
+	t.Run("Empty slice remains empty", func(t *testing.T) {
+		values := []string{}
+		rule := ValidationRule{
+			Label:        "charts",
+			SliceValue:   &values,
+			ValidSet:     []string{"bar", "line", "pie"},
+			SliceDefault: []string{"bar"},
+		}
+
+		ApplyValidationRules([]ValidationRule{rule})
+
+		assert.Equal(t, []string{}, values, "Empty slice should remain empty")
+	})
+}
+
+// Test custom validator function that returns error
+func TestApplyValidationRulesWithCustomValidator(t *testing.T) {
+	t.Run("Custom validator returns nil (success)", func(t *testing.T) {
+		value := "custom-value"
+		rule := ValidationRule{
+			Label: "custom",
+			Value: &value,
+			Validator: func(s string) error {
+				return nil // Always valid
+			},
+			Default: "default",
+		}
+
+		ApplyValidationRules([]ValidationRule{rule})
+
+		assert.Equal(t, "custom-value", value, "Value should remain unchanged when validator returns nil")
+	})
+
+	t.Run("Custom validator returns error", func(t *testing.T) {
+		value := "invalid-pattern"
+		rule := ValidationRule{
+			Label: "pattern",
+			Value: &value,
+			Validator: func(s string) error {
+				return assert.AnError // Return an error
+			},
+			Default: "default-pattern",
+		}
+
+		oldStderr := os.Stderr
+		r, w, _ := os.Pipe()
+		os.Stderr = w
+
+		ApplyValidationRules([]ValidationRule{rule})
+
+		w.Close()
+		os.Stderr = oldStderr
+
+		var buf bytes.Buffer
+		buf.ReadFrom(r)
+
+		assert.Equal(t, "default-pattern", value, "Value should be replaced with default when validator returns error")
+		assert.Contains(t, buf.String(), "Warning: Invalid pattern", "Warning should be printed")
+		assert.Contains(t, buf.String(), "Reason:", "Warning should contain reason")
+	})
+
+	t.Run("Custom validator with specific error message", func(t *testing.T) {
+		value := "name"
+		customErr := "pattern must contain xAxis (x) or yAxis (y)"
+		rule := ValidationRule{
+			Label: "group pattern",
+			Value: &value,
+			Validator: func(s string) error {
+				if s == "name" {
+					return assert.AnError
+				}
+				return nil
+			},
+			Default: "xAxis",
+		}
+
+		oldStderr := os.Stderr
+		r, w, _ := os.Pipe()
+		os.Stderr = w
+
+		ApplyValidationRules([]ValidationRule{rule})
+
+		w.Close()
+		os.Stderr = oldStderr
+
+		var buf bytes.Buffer
+		buf.ReadFrom(r)
+
+		assert.Equal(t, "xAxis", value, "Invalid pattern should be replaced with default")
+		assert.Contains(t, buf.String(), "group pattern", "Warning should mention the label")
+		_ = customErr // suppress unused warning
+	})
+
+	t.Run("Slice with custom validator", func(t *testing.T) {
+		values := []string{"valid", "also-valid"}
+		rule := ValidationRule{
+			Label:      "items",
+			SliceValue: &values,
+			Validator: func(s string) error {
+				if s == "invalid" {
+					return assert.AnError
+				}
+				return nil
+			},
+			SliceDefault: []string{"default"},
+		}
+
+		ApplyValidationRules([]ValidationRule{rule})
+
+		assert.Equal(t, []string{"valid", "also-valid"}, values, "Valid slice should remain unchanged")
+	})
+
+	t.Run("Slice with custom validator returns error", func(t *testing.T) {
+		values := []string{"valid", "invalid"}
+		rule := ValidationRule{
+			Label:      "items",
+			SliceValue: &values,
+			Validator: func(s string) error {
+				if s == "invalid" {
+					return assert.AnError
+				}
+				return nil
+			},
+			SliceDefault: []string{"default"},
+		}
+
+		oldStderr := os.Stderr
+		r, w, _ := os.Pipe()
+		os.Stderr = w
+
+		ApplyValidationRules([]ValidationRule{rule})
+
+		w.Close()
+		os.Stderr = oldStderr
+
+		var buf bytes.Buffer
+		buf.ReadFrom(r)
+
+		assert.Equal(t, []string{"default"}, values, "Slice with invalid item should be replaced with default")
+		assert.Contains(t, buf.String(), "Warning: Invalid items", "Warning should be printed")
+	})
+}
+
 // Test concurrent usage
 func TestValidatorsConcurrency(t *testing.T) {
 	t.Run("Concurrent ApplyValidationRules", func(t *testing.T) {
