@@ -50,16 +50,10 @@ var flagValidationRules = []utils.ValidationRule{
 		Default:    "html",
 	},
 	{
-		Label: "group pattern",
-		Value: &shared.FlagState.GroupPattern,
-		Validator: func(pattern string) bool {
-			if err := parser.ValidatePattern(pattern); err != nil {
-				return false
-			}
-
-			return true
-		},
-		Default: "xAxis",
+		Label:     "group pattern",
+		Value:     &shared.FlagState.GroupPattern,
+		Validator: parser.ValidateGroupPattern,
+		Default:   "xAxis",
 	},
 	{
 		Label:      "sort order",

@@ -11,7 +11,7 @@ var separatorRegex = regexp.MustCompile(`[_/]`)
 
 // ParseBenchmarkNameToGroups parses a benchmark name using the given pattern
 func ParseBenchmarkNameToGroups(name, pattern string) (map[string]string, error) {
-	if err := ValidatePattern(pattern); err != nil {
+	if err := ValidateGroupPattern(pattern); err != nil {
 		return nil, err
 	}
 
@@ -22,14 +22,19 @@ func ParseBenchmarkNameToGroups(name, pattern string) (map[string]string, error)
 	return result, nil
 }
 
-// ValidatePattern validates the pattern string
-func ValidatePattern(pattern string) error {
+// ValidateGroupPattern validates the group pattern and regex string
+func ValidateGroupPattern(pattern string) error {
 	if pattern == "" {
 		return errors.New("pattern cannot be empty")
 	}
 
 	validParts := regexp.MustCompile(`^[nxy]|name|xAxis|yAxis$`)
 	parts := separatorRegex.Split(pattern, -1)
+
+	var (
+		hasXAxis bool
+		hasYAxis bool
+	)
 
 	for _, part := range parts {
 		if part == "" {
@@ -39,6 +44,17 @@ func ValidatePattern(pattern string) error {
 		if !validParts.MatchString(part) {
 			return fmt.Errorf("Invalid part: '%s'; only name(n), xAxis(x), yAxis(y) allowed", part)
 		}
+
+		switch expandShorthand(part) {
+		case "xAxis":
+			hasXAxis = true
+		case "yAxis":
+			hasYAxis = true
+		}
+	}
+
+	if !hasXAxis && !hasYAxis {
+		return errors.New("pattern must contain xAxis (x) or yAxis (y)")
 	}
 
 	return nil
@@ -141,6 +157,10 @@ func ParseBenchmarkNameWithRegex(name, pattern string) (map[string]string, error
 				result[expandedName] = match[i]
 			}
 		}
+	}
+
+	if result["xAxis"] == "" && result["yAxis"] == "" {
+		return nil, fmt.Errorf("regex '%s' does not contain x (xAxis) or y (yAxis)", pattern)
 	}
 
 	return result, nil

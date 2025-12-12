@@ -17,7 +17,7 @@ type ValidationRule struct {
 	SliceValue   *[]string
 	ValidSet     []string
 	Normalizer   func(string) string
-	Validator    func(string) bool
+	Validator    func(string) error
 	Default      string
 	SliceDefault []string
 }
@@ -27,62 +27,80 @@ type ValidationRule struct {
 // If validation fails, the program exits with an appropriate error message.
 func ApplyValidationRules(rules []ValidationRule) {
 	for _, rule := range rules {
-		if rule.Value != nil {
-			// skip validation if default and rule value are both empty
-			if rule.Default == "" && *rule.Value == "" {
-				continue
-			}
-			// Normalize if needed
-			if rule.Normalizer != nil {
-				*rule.Value = rule.Normalizer(*rule.Value)
-			}
+		rule.apply()
+	}
+}
 
-			isValid := slices.Contains(rule.ValidSet, *rule.Value)
+func (r ValidationRule) apply() {
+	switch {
+	case r.Value != nil:
+		r.validateValue()
+	case r.SliceValue != nil:
+		r.validateSlice()
+	}
+}
 
-			if rule.Validator != nil {
-				isValid = rule.Validator(*rule.Value)
-			}
+func (r ValidationRule) validateValue() {
+	// skip validation if default and rule value are both empty
+	if r.Default == "" && *r.Value == "" {
+		return
+	}
 
-			// Validate
-			if !isValid {
-				shared.PrintWarning(fmt.Sprintf(
-					"Warning: Invalid %s '%s'. Using default '%s'",
-					rule.Label,
-					*rule.Value,
-					rule.Default,
-				))
-				*rule.Value = rule.Default
-			}
-		} else if rule.SliceValue != nil {
-			isValid := true
-			for i, v := range *rule.SliceValue {
-				if rule.Normalizer != nil {
-					(*rule.SliceValue)[i] = rule.Normalizer(v)
-					v = (*rule.SliceValue)[i]
-				}
+	r.normalizeValue()
 
-				itemValid := slices.Contains(rule.ValidSet, v)
-				if rule.Validator != nil {
-					itemValid = rule.Validator(v)
-				}
+	err := r.validate(*r.Value)
+	if err == nil {
+		return
+	}
 
-				if !itemValid {
-					isValid = false
-					break
-				}
-			}
+	r.printWarning(*r.Value, r.Default, err)
+	*r.Value = r.Default
+}
 
-			if !isValid {
-				shared.PrintWarning(fmt.Sprintf(
-					"Warning: Invalid %s '%v'. Using default '%v'",
-					rule.Label,
-					*rule.SliceValue,
-					rule.SliceDefault,
-				))
-				*rule.SliceValue = rule.SliceDefault
-			}
+func (r ValidationRule) validateSlice() {
+	r.normalizeSlice()
+
+	for _, v := range *r.SliceValue {
+		if err := r.validate(v); err != nil {
+			r.printWarning(*r.SliceValue, r.SliceDefault, err)
+			*r.SliceValue = r.SliceDefault
+			return
 		}
 	}
+}
+
+func (r ValidationRule) normalizeValue() {
+	if r.Normalizer != nil {
+		*r.Value = r.Normalizer(*r.Value)
+	}
+}
+
+func (r ValidationRule) normalizeSlice() {
+	if r.Normalizer == nil {
+		return
+	}
+	for i, v := range *r.SliceValue {
+		(*r.SliceValue)[i] = r.Normalizer(v)
+	}
+}
+
+func (r ValidationRule) validate(value string) error {
+	if r.Validator != nil {
+		return r.Validator(value)
+	}
+	if slices.Contains(r.ValidSet, value) {
+		return nil
+	}
+	return fmt.Errorf("value not in valid set %v", r.ValidSet)
+}
+
+func (r ValidationRule) printWarning(value any, defaultValue any, err error) {
+	errMsg := fmt.Sprintf("Warning: Invalid %s '%v'.", r.Label, value)
+	if err != nil {
+		errMsg += fmt.Sprintf(" Reason: %s.", err.Error())
+	}
+	errMsg += fmt.Sprintf(" Using default '%v'", defaultValue)
+	shared.PrintWarning(errMsg)
 }
 
 // IsBenchJSONFile determines if the given file path contains JSON benchmark data.
