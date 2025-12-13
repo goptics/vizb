@@ -237,11 +237,9 @@ func TestWriteOutput(t *testing.T) {
 func TestGenerateOutputFile(t *testing.T) {
 	// Save original flag state and shared.OsExit
 	origOutputFile := shared.FlagState.OutputFile
-	origFormat := shared.FlagState.Format
 	origOsExit := shared.OsExit
 	defer func() {
 		shared.FlagState.OutputFile = origOutputFile
-		shared.FlagState.Format = origFormat
 		shared.OsExit = origOsExit
 	}()
 
@@ -261,7 +259,6 @@ func TestGenerateOutputFile(t *testing.T) {
 		require.NoError(t, err)
 
 		shared.FlagState.OutputFile = filepath.Join(tempDir, "output.html")
-		shared.FlagState.Format = "html"
 
 		assert.NotPanics(t, func() {
 			generateOutputFile(benchFile)
@@ -284,7 +281,6 @@ func TestGenerateOutputFile(t *testing.T) {
 		require.NoError(t, err)
 
 		shared.FlagState.OutputFile = filepath.Join(tempDir, "output.json")
-		shared.FlagState.Format = "json"
 
 		assert.NotPanics(t, func() {
 			generateOutputFile(benchFile)
@@ -309,7 +305,6 @@ func TestGenerateOutputFile(t *testing.T) {
 
 		// Empty output file should create temp file
 		shared.FlagState.OutputFile = ""
-		shared.FlagState.Format = "html"
 
 		// Capture stdout to prevent noisy output
 		oldStdout := os.Stdout
@@ -341,11 +336,9 @@ func TestOutputWorkflowIntegration(t *testing.T) {
 
 	// Save original flag state and shared.OsExit
 	origOutputFile := shared.FlagState.OutputFile
-	origFormat := shared.FlagState.Format
 	origOsExit := shared.OsExit
 	defer func() {
 		shared.FlagState.OutputFile = origOutputFile
-		shared.FlagState.Format = origFormat
 		shared.OsExit = origOsExit
 	}()
 
@@ -363,7 +356,6 @@ func TestOutputWorkflowIntegration(t *testing.T) {
 		require.NoError(t, err)
 
 		shared.FlagState.OutputFile = filepath.Join(tempDir, "workflow_output.json")
-		shared.FlagState.Format = "json"
 
 		assert.NotPanics(t, func() {
 			generateOutputFile(txtFile)

@@ -43,13 +43,6 @@ var flagValidationRules = []utils.ValidationRule{
 		Default:    "",
 	},
 	{
-		Label:      "format",
-		Value:      &shared.FlagState.Format,
-		ValidSet:   []string{"html", "json"},
-		Normalizer: strings.ToLower,
-		Default:    "html",
-	},
-	{
 		Label:     "group pattern",
 		Value:     &shared.FlagState.GroupPattern,
 		Validator: parser.ValidateGroupPattern,

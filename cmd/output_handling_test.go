@@ -294,36 +294,31 @@ func TestGenerateOutputFileFlow(t *testing.T) {
 	t.Run("resolveOutputFileName integration", func(t *testing.T) {
 		// Test the filename resolution works correctly
 		testCases := []struct {
-			input    string
-			format   string
-			expected func(string) bool // validation function
+			input        string
+			expectedFile string
 		}{
 			{
-				input:  "custom",
-				format: "json",
-				expected: func(result string) bool {
-					return result == "custom.json"
-				},
+				input:        "custom",
+				expectedFile: "custom.html", // No extension defaults to html
 			},
 			{
-				input:  "report.html",
-				format: "html",
-				expected: func(result string) bool {
-					return result == "report.html"
-				},
+				input:        "custom.json",
+				expectedFile: "custom.json",
+			},
+			{
+				input:        "report.html",
+				expectedFile: "report.html",
 			},
 		}
 
 		for i, tc := range testCases {
 			t.Run(fmt.Sprintf("case_%d", i), func(t *testing.T) {
-				result := resolveOutputFileName(tc.input, tc.format)
-				assert.True(t, tc.expected(result),
-					"Case %d failed: input=%q, format=%q, result=%q", i, tc.input, tc.format, result)
-
-				// Clean up temp files
-				if tc.input == "" {
-					os.Remove(result)
-				}
+				resultFile := resolveOutputFileName(tc.input)
+				assert.Equal(t, tc.expectedFile, resultFile,
+					"Case %d failed: input=%q, resultFile=%q", i, tc.input, resultFile)
+				// Format can still be verified using inferFormatFromExtension
+				resultFormat := inferFormatFromExtension(resultFile)
+				assert.NotEmpty(t, resultFormat, "Format should not be empty")
 			})
 		}
 	})

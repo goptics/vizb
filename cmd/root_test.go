@@ -45,14 +45,12 @@ func TestValidateFlags(t *testing.T) {
 	origMemUnit := shared.FlagState.MemUnit
 	origTimeUnit := shared.FlagState.TimeUnit
 	origAllocUnit := shared.FlagState.NumberUnit
-	origFormat := shared.FlagState.Format
 
 	defer func() {
 		// Restore original flag values
 		shared.FlagState.MemUnit = origMemUnit
 		shared.FlagState.TimeUnit = origTimeUnit
 		shared.FlagState.NumberUnit = origAllocUnit
-		shared.FlagState.Format = origFormat
 	}()
 
 	tests := []struct {
@@ -61,7 +59,6 @@ func TestValidateFlags(t *testing.T) {
 		expectedMemUnit   string
 		expectedTimeUnit  string
 		expectedAllocUnit string
-		expectedFormat    string
 		expectedOutput    string
 	}{
 		{
@@ -70,12 +67,10 @@ func TestValidateFlags(t *testing.T) {
 				shared.FlagState.MemUnit = "b"
 				shared.FlagState.TimeUnit = "ns"
 				shared.FlagState.NumberUnit = ""
-				shared.FlagState.Format = "html"
 			},
 			expectedMemUnit:   "b",
 			expectedTimeUnit:  "ns",
 			expectedAllocUnit: "",
-			expectedFormat:    "html",
 			expectedOutput:    "",
 		},
 		{
@@ -84,12 +79,10 @@ func TestValidateFlags(t *testing.T) {
 				shared.FlagState.MemUnit = "invalid"
 				shared.FlagState.TimeUnit = "ns"
 				shared.FlagState.NumberUnit = ""
-				shared.FlagState.Format = "html"
 			},
 			expectedMemUnit:   "B",
 			expectedTimeUnit:  "ns",
 			expectedAllocUnit: "",
-			expectedFormat:    "html",
 			expectedOutput:    "Warning: Invalid memory unit 'invalid'.",
 		},
 		{
@@ -98,12 +91,10 @@ func TestValidateFlags(t *testing.T) {
 				shared.FlagState.MemUnit = "B"
 				shared.FlagState.TimeUnit = "invalid"
 				shared.FlagState.NumberUnit = ""
-				shared.FlagState.Format = "html"
 			},
 			expectedMemUnit:   "B",
 			expectedTimeUnit:  "ns",
 			expectedAllocUnit: "",
-			expectedFormat:    "html",
 			expectedOutput:    "Warning: Invalid time unit 'invalid'.",
 		},
 		{
@@ -112,27 +103,11 @@ func TestValidateFlags(t *testing.T) {
 				shared.FlagState.MemUnit = "B"
 				shared.FlagState.TimeUnit = "ns"
 				shared.FlagState.NumberUnit = "invalid"
-				shared.FlagState.Format = "html"
 			},
 			expectedMemUnit:   "B",
 			expectedTimeUnit:  "ns",
 			expectedAllocUnit: "",
-			expectedFormat:    "html",
 			expectedOutput:    "Warning: Invalid number unit 'INVALID'.",
-		},
-		{
-			name: "Invalid format",
-			setupFlags: func() {
-				shared.FlagState.MemUnit = "B"
-				shared.FlagState.TimeUnit = "ns"
-				shared.FlagState.NumberUnit = ""
-				shared.FlagState.Format = "invalid"
-			},
-			expectedMemUnit:   "B",
-			expectedTimeUnit:  "ns",
-			expectedAllocUnit: "",
-			expectedFormat:    "html",
-			expectedOutput:    "Warning: Invalid format 'invalid'.",
 		},
 	}
 
@@ -161,7 +136,6 @@ func TestValidateFlags(t *testing.T) {
 			assert.Equal(t, tt.expectedMemUnit, shared.FlagState.MemUnit)
 			assert.Equal(t, tt.expectedTimeUnit, shared.FlagState.TimeUnit)
 			assert.Equal(t, tt.expectedAllocUnit, shared.FlagState.NumberUnit)
-			assert.Equal(t, tt.expectedFormat, shared.FlagState.Format)
 
 			// Check the stderr output if expected
 			if tt.expectedOutput != "" {
@@ -309,10 +283,8 @@ func TestRunBenchmark(t *testing.T) {
 
 	// Save original flag state
 	origOutputFile := shared.FlagState.OutputFile
-	origFormat := shared.FlagState.Format
 	defer func() {
 		shared.FlagState.OutputFile = origOutputFile
-		shared.FlagState.Format = origFormat
 	}()
 
 	// Mock shared.OsExit since runBenchmark uses shared.ExitWithError
@@ -341,7 +313,6 @@ func TestRunBenchmark(t *testing.T) {
 			expectExit:     false,
 			expectedOutput: "Generated",
 			setupFlags: func() {
-				shared.FlagState.Format = "html"
 				shared.FlagState.OutputFile = filepath.Join(tempDir, "out.html")
 			},
 		},

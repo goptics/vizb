@@ -7,12 +7,12 @@ type flagState struct {
 	TimeUnit     string
 	NumberUnit   string
 	Description  string
-	Format       string
 	GroupPattern string
 	GroupRegex   string
 	Sort         string
 	Charts       []string
 	ShowLabels   bool
+	FilterRegex  string
 }
 
 var FlagState flagState = flagState{}

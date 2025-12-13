@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/goptics/vizb/pkg/parser"
@@ -43,8 +44,7 @@ func Execute() {
 func init() {
 	rootCmd.Flags().StringVarP(&shared.FlagState.Name, "name", "n", "Benchmarks", "Name of the benchmark")
 	rootCmd.Flags().StringVarP(&shared.FlagState.Description, "description", "d", "", "Description of the benchmark")
-	rootCmd.PersistentFlags().StringVarP(&shared.FlagState.OutputFile, "output", "o", "", "Output file name")
-	rootCmd.Flags().StringVarP(&shared.FlagState.Format, "format", "f", "html", "Output format (html, json)")
+	rootCmd.PersistentFlags().StringVarP(&shared.FlagState.OutputFile, "output", "o", "", "Output file name (.json for JSON, .html or other for HTML)")
 	rootCmd.Flags().StringVarP(&shared.FlagState.MemUnit, "mem-unit", "m", "B", "Memory unit available: b, B, KB, MB, GB")
 	rootCmd.Flags().StringVarP(&shared.FlagState.TimeUnit, "time-unit", "t", "ns", "Time unit available: ns, us, ms, s")
 	rootCmd.Flags().StringVarP(&shared.FlagState.NumberUnit, "number-unit", "u", "", "Number unit available: K, M, B, T (default: as-is)")
@@ -53,6 +53,7 @@ func init() {
 	rootCmd.Flags().StringVarP(&shared.FlagState.Sort, "sort", "s", "", "Sort in asc or desc order (default: as-is)")
 	rootCmd.Flags().StringSliceVarP(&shared.FlagState.Charts, "charts", "c", []string{"bar", "line", "pie"}, "Chart types to generate (bar, line, pie)")
 	rootCmd.Flags().BoolVarP(&shared.FlagState.ShowLabels, "show-labels", "l", false, "Show labels on charts")
+	rootCmd.Flags().StringVarP(&shared.FlagState.FilterRegex, "filter", "f", "", "Regex pattern to include only matching benchmark names")
 
 	// Add a hook to validate flags after parsing
 	cobra.OnInitialize(func() {
@@ -163,7 +164,7 @@ func convertToBenchmark(filePath string) (benchmark *shared.Benchmark) {
 }
 
 func generateOutputFile(filePath string) {
-	outFile := resolveOutputFileName(shared.FlagState.OutputFile, shared.FlagState.Format)
+	outFile := resolveOutputFileName(shared.FlagState.OutputFile)
 	// first try to convert to benchmark
 	benchmark := convertToBenchmark(filePath)
 
@@ -178,23 +179,33 @@ func generateOutputFile(filePath string) {
 
 	defer f.Close()
 
-	writeOutput(f, benchmark, shared.FlagState.Format)
+	writeOutput(f, benchmark, inferFormatFromExtension(outFile))
 
 	HandleOutputResult(f)
 }
 
-// resolveOutputFileName decides final output file name
-func resolveOutputFileName(outFile, format string) string {
-	// create a temp file if we need to print the output inside stdout
+// inferFormatFromExtension returns the output format based on file extension
+func inferFormatFromExtension(outFile string) string {
+	switch ext := strings.ToLower(filepath.Ext(outFile)); ext {
+	case ".json":
+		return "json"
+	default:
+		return "html"
+	}
+}
+
+// resolveOutputFileName decides final output file name and infers format from extension
+func resolveOutputFileName(outFile string) string {
+	// create a temp file if we need to print the output inside stdout (default to html)
 	if outFile == "" {
-		tmpFilePath := shared.MustCreateTempFile(shared.TempBenchFilePrefix, format)
+		tmpFilePath := shared.MustCreateTempFile(shared.TempBenchFilePrefix, "html")
 		shared.TempFiles.Store(tmpFilePath)
 		return tmpFilePath
 	}
 
-	// ensure output file has correct extension based on format (e.g., .html, .json)
-	if !strings.HasSuffix(strings.ToLower(outFile), "."+format) {
-		outFile += "." + format
+	// if file doesn't have an extension, add the default html extension
+	if filepath.Ext(outFile) == "" {
+		outFile += ".html"
 	}
 
 	return outFile
