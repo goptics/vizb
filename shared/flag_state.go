@@ -13,6 +13,7 @@ type flagState struct {
 	Sort         string
 	Charts       []string
 	ShowLabels   bool
+	FilterRegex  string
 }
 
 var FlagState flagState = flagState{}

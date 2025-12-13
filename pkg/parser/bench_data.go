@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"io"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -37,6 +38,21 @@ func parseBenchmarkName(name benchfmt.Name) (benchName string, cpu string) {
 	return
 }
 
+// shouldIncludeBenchmark returns true if the benchmark name should be included
+// based on the filter regex. If no filter is set, all benchmarks are included.
+func shouldIncludeBenchmark(benchName string) bool {
+	if shared.FlagState.FilterRegex == "" {
+		return true
+	}
+
+	filterRe, err := regexp.Compile(shared.FlagState.FilterRegex)
+	if err != nil {
+		shared.ExitWithError("Invalid filter regex", err)
+	}
+
+	return filterRe.MatchString(benchName)
+}
+
 func ParseBenchmarkData(filePath string) (results []shared.BenchmarkData) {
 	f := shared.MustOpenFile(filePath)
 	defer f.Close()
@@ -55,6 +71,10 @@ func ParseBenchmarkData(filePath string) (results []shared.BenchmarkData) {
 
 		shared.OS, shared.Arch, shared.Pkg, shared.CPU = result.GetConfig("goos"), result.GetConfig("goarch"), result.GetConfig("pkg"), result.GetConfig("cpu")
 		rawBenchName, cpuCore := parseBenchmarkName(result.Name)
+
+		if !shouldIncludeBenchmark(rawBenchName) {
+			continue
+		}
 
 		var group map[string]string
 		var err error

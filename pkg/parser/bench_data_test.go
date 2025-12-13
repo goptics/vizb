@@ -457,3 +457,126 @@ func TestConvertJsonBenchToText(t *testing.T) {
 		}
 	})
 }
+
+func TestShouldIncludeBenchmark(t *testing.T) {
+	// Save original filter state
+	origFilter := shared.FlagState.FilterRegex
+	defer func() {
+		shared.FlagState.FilterRegex = origFilter
+	}()
+
+	tests := []struct {
+		name      string
+		filter    string
+		benchName string
+		expected  bool
+	}{
+		{
+			name:      "Empty filter includes all",
+			filter:    "",
+			benchName: "AnyBenchmark",
+			expected:  true,
+		},
+		{
+			name:      "Exact match",
+			filter:    "^TestBenchmark$",
+			benchName: "TestBenchmark",
+			expected:  true,
+		},
+		{
+			name:      "Exact match fails on partial",
+			filter:    "^TestBenchmark$",
+			benchName: "TestBenchmarkExtra",
+			expected:  false,
+		},
+		{
+			name:      "Partial match with substring",
+			filter:    "Success",
+			benchName: "BenchmarkValidateSuccess",
+			expected:  true,
+		},
+		{
+			name:      "Partial match fails",
+			filter:    "Success",
+			benchName: "BenchmarkValidateFail",
+			expected:  false,
+		},
+		{
+			name:      "Regex with alternation",
+			filter:    "Encode|Decode",
+			benchName: "BenchmarkEncode",
+			expected:  true,
+		},
+		{
+			name:      "Regex with alternation second option",
+			filter:    "Encode|Decode",
+			benchName: "BenchmarkDecode",
+			expected:  true,
+		},
+		{
+			name:      "Regex with alternation no match",
+			filter:    "Encode|Decode",
+			benchName: "BenchmarkTransform",
+			expected:  false,
+		},
+		{
+			name:      "Regex with prefix anchor",
+			filter:    "^Parse",
+			benchName: "ParseJSON",
+			expected:  true,
+		},
+		{
+			name:      "Regex with prefix anchor fails",
+			filter:    "^Parse",
+			benchName: "JSONParse",
+			expected:  false,
+		},
+		{
+			name:      "Regex with suffix anchor",
+			filter:    "Fast$",
+			benchName: "BenchmarkFast",
+			expected:  true,
+		},
+		{
+			name:      "Regex with suffix anchor fails",
+			filter:    "Fast$",
+			benchName: "FastBenchmark",
+			expected:  false,
+		},
+		{
+			name:      "Complex regex pattern",
+			filter:    "Benchmark(Parse|Validate).*JSON",
+			benchName: "BenchmarkParseComplexJSON",
+			expected:  true,
+		},
+		{
+			name:      "Complex regex pattern no match",
+			filter:    "Benchmark(Parse|Validate).*JSON",
+			benchName: "BenchmarkParseXML",
+			expected:  false,
+		},
+		{
+			name:      "Case sensitive match",
+			filter:    "test",
+			benchName: "Test",
+			expected:  false,
+		},
+		{
+			name:      "Case insensitive regex",
+			filter:    "(?i)test",
+			benchName: "TEST",
+			expected:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			shared.FlagState.FilterRegex = tt.filter
+			result := shouldIncludeBenchmark(tt.benchName)
+			if result != tt.expected {
+				t.Errorf("shouldIncludeBenchmark(%q) with filter %q = %v, expected %v",
+					tt.benchName, tt.filter, result, tt.expected)
+			}
+		})
+	}
+}

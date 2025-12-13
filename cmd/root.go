@@ -53,6 +53,7 @@ func init() {
 	rootCmd.Flags().StringVarP(&shared.FlagState.Sort, "sort", "s", "", "Sort in asc or desc order (default: as-is)")
 	rootCmd.Flags().StringSliceVarP(&shared.FlagState.Charts, "charts", "c", []string{"bar", "line", "pie"}, "Chart types to generate (bar, line, pie)")
 	rootCmd.Flags().BoolVarP(&shared.FlagState.ShowLabels, "show-labels", "l", false, "Show labels on charts")
+	rootCmd.Flags().StringVarP(&shared.FlagState.FilterRegex, "filter", "F", "", "Regex pattern to include only matching benchmark names")
 
 	// Add a hook to validate flags after parsing
 	cobra.OnInitialize(func() {
