@@ -89,7 +89,7 @@ func runMerge(cmd *cobra.Command, args []string) {
 	// Determine output file
 	outFile := shared.FlagState.OutputFile
 	if outFile == "" {
-		outFile = resolveOutputFileName(outFile, "html")
+		outFile = resolveOutputFileName(outFile)
 	}
 
 	f := shared.MustCreateFile(outFile)

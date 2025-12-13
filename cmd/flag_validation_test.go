@@ -15,7 +15,6 @@ func TestFlagValidationRules(t *testing.T) {
 	origMemUnit := shared.FlagState.MemUnit
 	origTimeUnit := shared.FlagState.TimeUnit
 	origAllocUnit := shared.FlagState.NumberUnit
-	origFormat := shared.FlagState.Format
 	origSort := shared.FlagState.Sort
 	origCharts := shared.FlagState.Charts
 
@@ -24,7 +23,6 @@ func TestFlagValidationRules(t *testing.T) {
 		shared.FlagState.MemUnit = origMemUnit
 		shared.FlagState.TimeUnit = origTimeUnit
 		shared.FlagState.NumberUnit = origAllocUnit
-		shared.FlagState.Format = origFormat
 		shared.FlagState.Sort = origSort
 		shared.FlagState.Charts = origCharts
 	}()
@@ -153,49 +151,9 @@ func TestFlagValidationRules(t *testing.T) {
 		}
 	})
 
-	t.Run("Format validation", func(t *testing.T) {
-		tests := []struct {
-			input    string
-			expected string
-			hasWarn  bool
-		}{
-			{"html", "html", false},
-			{"json", "json", false},
-			{"HTML", "html", false}, // Valid, normalized
-			{"JSON", "json", false}, // Valid, normalized
-			{"xml", "html", true},   // Invalid, uses default
-			{"csv", "html", true},   // Invalid, uses default
-		}
-
-		for _, tt := range tests {
-			t.Run("input_"+tt.input, func(t *testing.T) {
-				shared.FlagState.Format = tt.input
-
-				oldStderr := os.Stderr
-				r, w, _ := os.Pipe()
-				os.Stderr = w
-
-				utils.ApplyValidationRules(flagValidationRules)
-
-				w.Close()
-				os.Stderr = oldStderr
-
-				var buf bytes.Buffer
-				buf.ReadFrom(r)
-				stderr := buf.String()
-
-				assert.Equal(t, tt.expected, shared.FlagState.Format)
-				if tt.hasWarn {
-					assert.Contains(t, stderr, "format")
-				}
-			})
-		}
-	})
-
 	t.Run("Multiple invalid flags", func(t *testing.T) {
 		shared.FlagState.MemUnit = "invalid"
 		shared.FlagState.TimeUnit = "invalid"
-		shared.FlagState.Format = "invalid"
 		shared.FlagState.NumberUnit = "invalid"
 
 		oldStderr := os.Stderr
@@ -214,13 +172,11 @@ func TestFlagValidationRules(t *testing.T) {
 		// Should have warnings for all invalid flags
 		assert.Contains(t, stderr, "memory unit")
 		assert.Contains(t, stderr, "time unit")
-		assert.Contains(t, stderr, "format")
 		assert.Contains(t, stderr, "number unit")
 
 		// Should use defaults
 		assert.Equal(t, "B", shared.FlagState.MemUnit)
 		assert.Equal(t, "ns", shared.FlagState.TimeUnit)
-		assert.Equal(t, "html", shared.FlagState.Format)
 		assert.Equal(t, "", shared.FlagState.NumberUnit)
 	})
 }
@@ -236,7 +192,6 @@ func TestFlagValidationRulesStructure(t *testing.T) {
 		assert.True(t, labels["memory unit"], "Should have memory unit rule")
 		assert.True(t, labels["time unit"], "Should have time unit rule")
 		assert.True(t, labels["number unit"], "Should have number unit rule")
-		assert.True(t, labels["format"], "Should have format rule")
 		assert.True(t, labels["sort order"], "Should have sort order rule")
 		assert.True(t, labels["charts"], "Should have charts rule")
 		assert.True(t, labels["group pattern"], "Should have group pattern rule")
@@ -275,12 +230,6 @@ func TestFlagValidationRulesStructure(t *testing.T) {
 					assert.Equal(t, "", rule.Default)
 					assert.NotNil(t, rule.Normalizer, "Number unit should have normalizer")
 
-				case "format":
-					assert.Contains(t, rule.ValidSet, "html", "Format should accept 'html'")
-					assert.Contains(t, rule.ValidSet, "json", "Format should accept 'json'")
-					assert.Equal(t, "html", rule.Default)
-					assert.NotNil(t, rule.Normalizer, "Format should have normalizer")
-
 				case "sort order":
 					assert.Contains(t, rule.ValidSet, "asc")
 					assert.Contains(t, rule.ValidSet, "desc")
@@ -314,12 +263,5 @@ func TestFlagNormalizers(t *testing.T) {
 		assert.Equal(t, "M", allocRule.Normalizer("m"))
 		assert.Equal(t, "B", allocRule.Normalizer("b"))
 		assert.Equal(t, "T", allocRule.Normalizer("t"))
-	})
-
-	t.Run("Format normalizer", func(t *testing.T) {
-		formatRule := flagValidationRules[3] // Format rule
-		assert.Equal(t, "html", formatRule.Normalizer("HTML"))
-		assert.Equal(t, "json", formatRule.Normalizer("JSON"))
-		assert.Equal(t, "html", formatRule.Normalizer("Html"))
 	})
 }

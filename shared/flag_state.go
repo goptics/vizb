@@ -7,7 +7,6 @@ type flagState struct {
 	TimeUnit     string
 	NumberUnit   string
 	Description  string
-	Format       string
 	GroupPattern string
 	GroupRegex   string
 	Sort         string
