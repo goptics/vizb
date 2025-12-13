@@ -1,0 +1,195 @@
+{
+  "name": "Encode",
+  "description": "Encode Performance Comparison",
+  "cpu": {
+    "name": "Intel(R) Core(TM) i7-4980HQ CPU @ 2.80GHz",
+    "cores": 8
+  },
+  "os": "darwin",
+  "arch": "amd64",
+  "settings": {
+    "charts": [
+      "bar",
+      "line",
+      "pie"
+    ],
+    "sort": {
+      "enabled": true,
+      "order": "asc"
+    },
+    "showLabels": true
+  },
+  "data": [
+    {
+      "name": "digits",
+      "xAxis": "speed",
+      "yAxis": "1e4",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 482808
+        },
+        {
+          "type": "Throughput (MB/s)",
+          "value": 20.71
+        },
+        {
+          "type": "Iterations",
+          "value": 30
+        }
+      ]
+    },
+    {
+      "name": "digits",
+      "xAxis": "speed",
+      "yAxis": "1e5",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 2685455
+        },
+        {
+          "type": "Throughput (MB/s)",
+          "value": 37.24
+        },
+        {
+          "type": "Iterations",
+          "value": 5
+        }
+      ]
+    },
+    {
+      "name": "digits",
+      "xAxis": "speed",
+      "yAxis": "1e6",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 24966055
+        },
+        {
+          "type": "Throughput (MB/s)",
+          "value": 40.05
+        },
+        {
+          "type": "Iterations",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "name": "digits",
+      "xAxis": "default",
+      "yAxis": "1e4",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 655592
+        },
+        {
+          "type": "Throughput (MB/s)",
+          "value": 15.25
+        },
+        {
+          "type": "Iterations",
+          "value": 20
+        }
+      ]
+    },
+    {
+      "name": "digits",
+      "xAxis": "default",
+      "yAxis": "1e5",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 13000839
+        },
+        {
+          "type": "Throughput (MB/s)",
+          "value": 7.69
+        },
+        {
+          "type": "Iterations",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "name": "digits",
+      "xAxis": "default",
+      "yAxis": "1e6",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 136341747
+        },
+        {
+          "type": "Throughput (MB/s)",
+          "value": 7.33
+        },
+        {
+          "type": "Iterations",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "name": "digits",
+      "xAxis": "best",
+      "yAxis": "1e4",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 668083
+        },
+        {
+          "type": "Throughput (MB/s)",
+          "value": 14.97
+        },
+        {
+          "type": "Iterations",
+          "value": 20
+        }
+      ]
+    },
+    {
+      "name": "digits",
+      "xAxis": "best",
+      "yAxis": "1e5",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 12301511
+        },
+        {
+          "type": "Throughput (MB/s)",
+          "value": 8.13
+        },
+        {
+          "type": "Iterations",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "name": "digits",
+      "xAxis": "best",
+      "yAxis": "1e6",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 137962041
+        },
+        {
+          "type": "Throughput (MB/s)",
+          "value": 7.25
+        },
+        {
+          "type": "Iterations",
+          "value": 1
+        }
+      ]
+    }
+  ]
+}
