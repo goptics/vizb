@@ -14,7 +14,7 @@
   </p>
 
   <p>
-    Vizb is a CLI tool that transforms Go benchmark raw output into interactive <strong>4D visualizations</strong>. It allows you to <a href="#merging-multiple-benchmarks">merge multiple benchmark data</a>, apply <a href="#advance-usage">advanced grouping logic</a>, and explore performance across four dimensions: Source, Group, and two customizable axes (X and Y). All within a single, deployable HTML file.
+    Vizb is a CLI tool that transforms Go benchmark raw output into interactive <strong>4D visualizations</strong>. It allows you to <a href="#merging-multiple-benchmarks">merge multiple benchmark data</a>, apply <a href="#advance-usage">advanced grouping logic</a>, and explore performance across four dimensions: Source, Group, and two customizable axes (X and Y). All within a single and deployable HTML file.
   </p>
 </div>
 
