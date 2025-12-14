@@ -14,7 +14,7 @@
   </p>
 
   <p>
-    Vizb is a CLI tool that transforms Go benchmark raw output into interactive <strong>4D visualizations</strong>. It allows you to <a href="#merging-multiple-benchmarks">merge multiple benchmark data</a>, apply <a href="#advance-usage">advanced grouping logic</a>, and explore performance across four dimensions: Source, Group, and two customizable axes (X and Y). All within a single, shareable HTML report.
+    Vizb is a CLI tool that transforms Go benchmark raw output into interactive <strong>4D visualizations</strong>. It allows you to <a href="#merging-multiple-benchmarks">merge multiple benchmark data</a>, apply <a href="#advance-usage">advanced grouping logic</a>, and explore performance across four dimensions: Source, Group, and two customizable axes (X and Y). All within a single and deployable HTML file.
   </p>
 </div>
 
@@ -28,6 +28,7 @@
 - **Flexible Input**: Automatically processes raw `go test -bench` output and the standard JSON output of `go test -bench -json`.
 - **Comprehensive Metrics**: Compare time, memory, and numbers with customizable units.
 - **Smart Grouping**: Extract grouping logic from benchmark names using regex and group patterns.
+- **Filtering**: Filter benchmarks to include only those matching a regex pattern.
 - **Export Options**: Generate `single-file` HTML/JSON and options to save charts as `JPEG`.
 
 ## Installation
@@ -67,7 +68,7 @@ go test -bench . -json | vizb -o output.html
 ### Using vizb standard JSON benchmark output
 
 ```bash
-vizb bench.txt -f json -o output.json
+vizb bench.txt -o output.json
 ```
 
 Generate charts from the standard JSON benchmark data:
@@ -94,7 +95,7 @@ vizb merge ./old_results/ output.json -o comparison.html
 Open the generated HTML file in your browser to view the interactive charts.
 
 > [!Note]
-> The `merge` command requires JSON files as input, which must be generated using `vizb bench.txt -f json`.
+> The `merge` command requires JSON files as input, which must be generated using `vizb bench.txt -o output.json`.
 
 ## Advance Usage
 

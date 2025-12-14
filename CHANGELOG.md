@@ -5,6 +5,26 @@ All notable changes to the Vizb project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [0.7.0] - 2025-12-14
+
+### Added
+
+- **Filter Flag**: Added `-f/--filter` flag to filter benchmarks using regular expressions ([#58](https://github.com/goptics/vizb/pull/58)).
+- **Format Inference**: Output format is now automatically inferred from the file extension (e.g., `.json` for JSON, others for HTML) ([#58](https://github.com/goptics/vizb/pull/58)).
+- **URL Routing**: Implemented a lightweight URL router to sync UI state (sort, labels, chart type, selection) with query parameters ([#55](https://github.com/goptics/vizb/pull/55)).
+- **Dynamic Title**: Browser tab title now dynamically updates to show the active benchmark name ([#56](https://github.com/goptics/vizb/pull/56)).
+
+### Changed
+
+- **Validation**: Enhanced validation logic and improved warning messages to provide specific reasons for failures ([#57](https://github.com/goptics/vizb/pull/57)).
+- **UI Architecture**: Refactored settings management to use a single reactive state object for better consistency ([#53](https://github.com/goptics/vizb/pull/53)).
+- **Internal**: Introduced generic `sortBy` function and removed unused dependencies ([#52](https://github.com/goptics/vizb/pull/52), [#54](https://github.com/goptics/vizb/pull/54)).
+
+### Breaking Changes
+
+- **Format Flag Removed**: The `--format` flag has been removed in favor of automatic inference from the output filename.
+- **Short Flag Reassigned**: The `-f` shorthand flag is now used for `--filter` instead of `--format`.
+
 # [0.6.0] - 2025-12-03
 
 ### Added
