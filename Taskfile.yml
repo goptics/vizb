@@ -62,6 +62,6 @@ tasks:
       - task: release:check
       - task: release:snapshot
       - echo "Creating tag {{.VERSION}}..."
-      - git tag -a {{.VERSION}} -m "Release {{.VERSION}}"
+      - git tag -s {{.VERSION}} -m "Release {{.VERSION}}"
       - git push origin {{.VERSION}}
       - echo "Tag {{.VERSION}} pushed. GitHub Actions will create the release."
