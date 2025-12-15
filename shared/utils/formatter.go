@@ -1,5 +1,15 @@
 package utils
 
+import "math"
+
+func RoundToTwo(num float64) float64 {
+	if num == 0 {
+		return 0
+	}
+
+	return math.Round(num*100) / 100
+}
+
 // FormatTime converts a time value from nanoseconds to the specified unit.
 // Supported units: "ns" (nanoseconds), "us" (microseconds), "ms" (milliseconds), "s" (seconds).
 // Returns the converted time value as a float64.
@@ -19,7 +29,7 @@ func FormatTime(n float64, unit string) (time float64) {
 		time = n
 	}
 
-	return
+	return RoundToTwo(time)
 }
 
 // FormatMem converts a memory value from bytes to the specified unit.
@@ -44,7 +54,7 @@ func FormatMem(n float64, unit string) (mem float64) {
 		mem = n
 	}
 
-	return
+	return RoundToTwo(mem)
 }
 
 // FormatNumber converts an allocation count to the specified unit.
@@ -69,5 +79,5 @@ func FormatNumber(n float64, unit string) (allocs float64) {
 		allocs = n
 	}
 
-	return
+	return RoundToTwo(allocs)
 }
