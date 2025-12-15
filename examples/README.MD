@@ -12,27 +12,28 @@ Use the `vizb` command to parse your benchmark output files (`.txt`) and generat
 
 ### Benchmark Patterns
 
-| Benchmark File | Pattern / Regex | Flag |
-| :--- | :--- | :--- |
-| `bench/http-routing.txt` | `x_n` | `-p` |
-| `bench/worker-pools.txt` | `n/y/x` | `-p` |
-| `bench/varmq.txt` | `x/y` | `-p` |
-| `bench/hash.txt` | `Hashing64(?<x>.*)` | `-r` |
-| `bench/serialization.txt` | `(?<x>.*)By(?<y>.*)` | `-r` |
-| `bench/validator.txt` | `(?<y>.*?)(?:(?<x>Success|Failure)(?<n>.*)|$)` | `-r` |
-| `bench/decode-encode.txt` | `'/text=(?<n>.*)/level=(?<x>.*)/size=(?<y>.*)'` | `-r` |
+| Benchmark File            | Pattern / Regex                                  | Flag |
+| :------------------------ | :----------------------------------------------- | :--- |
+| `bench/http-routing.txt`  | `x_n`                                            | `-p` |
+| `bench/worker-pools.txt`  | `n/y/x`                                          | `-p` |
+| `bench/varmq.txt`         | `x/y`                                            | `-p` |
+| `bench/hash.txt`          | `Hashing64(?<x>.*)`                              | `-r` |
+| `bench/serialization.txt` | `(?<x>.*)By(?<y>.*)`                             | `-r` |
+| `bench/validator.txt`     | `(?<y>.*?)(?:(?<x>Success\|Failure)(?<n>.*)\|$)` | `-r` |
+| `bench/decode-encode.txt` | `'/text=(?<n>.*)/level=(?<x>.*)/size=(?<y>.*)'`  | `-r` |
 
 ### Template Command
 
 Use the following template to process any of the benchmarks listed above:
 
 ```bash
-vizb <bench-file> <flag> <pattern> -o <output-json> -f json
+vizb <bench-file> <flag> <pattern> -o output.json
 ```
 
 For example:
+
 ```bash
-vizb bench/http-routing.txt -p x_n -o jsons/http-routing -f json
+vizb bench/http-routing.txt -p x_n -o jsons/http-routing.json
 ```
 
 ## Step 2: Generate the Dashboard (`index.html`)
