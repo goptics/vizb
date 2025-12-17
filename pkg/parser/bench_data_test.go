@@ -81,9 +81,9 @@ func TestParseBenchmarkData(t *testing.T) {
 					XAxis: "",
 					YAxis: "WithMem",
 					Stats: []shared.Stat{
-						{Type: "Execution Time (ms/op)", Value: 0.00012345},
-						{Type: "Memory Usage (KB/op)", Value: 0.0625},
-						{Type: "Allocations (K/op)", Value: 0.002000},
+						{Type: "Execution Time (ms/op)", Value: 0.00}, // 123.45ns -> 0.00012345ms -> 0.00
+						{Type: "Memory Usage (KB/op)", Value: 0.06},   // 64B -> 0.0625KB -> 0.06
+						{Type: "Allocations (K/op)", Value: 0.00},     // 2 allocs -> 0.002K -> 0.00
 					},
 				},
 			},

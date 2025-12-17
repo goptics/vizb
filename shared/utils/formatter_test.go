@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,6 +29,36 @@ const (
 	veryLargeValue = 1.8446744073709552e+19
 	smallValue     = 0.0001
 )
+
+func TestRoundToTwo(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    float64
+		expected float64
+	}{
+		{"Zero", 0, 0},
+		{"Rounding Up", 1.006, 1.01},   // 1.006 * 100 = 100.6 -> round(101) -> 1.01
+		{"Rounding Down", 1.004, 1.00}, // 1.004 * 100 = 100.4 -> round(100) -> 1.00
+		{"Exact Integer", 100, 100},
+		{"Negative Rounding Up", -1.006, -1.01}, // -1.006 * 100 = -100.6 -> round(-101) -> -1.01
+		{"Negative Rounding Down", -1.004, -1.00},
+		{"Large Number", 123456.78945345545, 123456.79},
+		{"Small Number", 0.00001, 0},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := RoundToTwo(tt.input)
+			assert.Equal(t, tt.expected, result, "RoundToTwo(%f) should equal %f", tt.input, tt.expected)
+
+			// Verify logic consistency manually as well for critical path
+			if tt.input != 0 {
+				expectedMath := math.Round(tt.input*100) / 100
+				assert.Equal(t, expectedMath, result, "Should match direct math.Round logic")
+			}
+		})
+	}
+}
 
 func TestFormatTime(t *testing.T) {
 	tests := []struct {
@@ -109,13 +140,14 @@ func TestFormatterEdgeCases(t *testing.T) {
 
 	t.Run("FormatTime Edge Cases", func(t *testing.T) {
 		// Test with very large values
-		assert.Equal(t, veryLargeValue/nanoToSecond, FormatTime(veryLargeValue, "s"), "Should handle very large values")
+		expectedLarge := RoundToTwo(veryLargeValue / nanoToSecond)
+		assert.Equal(t, expectedLarge, FormatTime(veryLargeValue, "s"), "Should handle very large values")
 
 		// Test with negative values (though these are unlikely in benchmarks)
 		assert.Equal(t, -5.0, FormatTime(-5*nanoToSecond, "s"), "Should handle negative values")
 
-		// Test with very small positive values
-		assert.Equal(t, smallValue, FormatTime(smallValue, "ns"), "Should handle very small values")
+		// Test with very small positive values - rounds to 0
+		assert.Equal(t, 0.0, FormatTime(smallValue, "ns"), "Should round very small values to 0")
 
 		// Test boundary values for each unit
 		assert.Equal(t, 1.0, FormatTime(nanoToSecond, "s"), "Should convert exactly 1 second")
@@ -131,18 +163,18 @@ func TestFormatterEdgeCases(t *testing.T) {
 	})
 
 	t.Run("FormatMem Edge Cases", func(t *testing.T) {
-		// Test with small value and large unit conversion
-		expectedGbFromByte := 1.0 / byteToGb
-		assert.Equal(t, expectedGbFromByte, FormatMem(1, "GB"), "Should handle small values with large units")
+		// Test with small value and large unit conversion - rounds to 0
+		assert.Equal(t, 0.0, FormatMem(1, "GB"), "Should round small values with large units to 0")
 
 		// Test with very large values
-		assert.Equal(t, veryLargeValue/byteToKb, FormatMem(veryLargeValue, "KB"), "Should handle very large values")
+		expectedLarge := RoundToTwo(veryLargeValue / byteToKb)
+		assert.Equal(t, expectedLarge, FormatMem(veryLargeValue, "KB"), "Should handle very large values")
 
 		// Test with negative values (though these are unlikely in benchmarks)
 		assert.Equal(t, -2.0, FormatMem(-2*byteToKb, "KB"), "Should handle negative values")
 
-		// Test with very small positive values
-		assert.Equal(t, smallValue, FormatMem(smallValue, "B"), "Should handle very small values")
+		// Test with very small positive values - rounds to 0
+		assert.Equal(t, 0.0, FormatMem(smallValue, "B"), "Should round very small values to 0")
 
 		// Test boundary values for each unit
 		assert.Equal(t, 8.0, FormatMem(1, "b"), "1 byte should equal 8 bits")
@@ -160,13 +192,14 @@ func TestFormatterEdgeCases(t *testing.T) {
 
 	t.Run("FormatNumber Edge Cases", func(t *testing.T) {
 		// Test with very large values
-		assert.Equal(t, veryLargeValue, FormatNumber(veryLargeValue, ""), "Should handle very large values")
+		expectedLarge := RoundToTwo(veryLargeValue)
+		assert.Equal(t, expectedLarge, FormatNumber(veryLargeValue, ""), "Should handle very large values")
 
 		// Test with negative values (though these are unlikely in benchmarks)
 		assert.Equal(t, -5.0, FormatNumber(-5*allocToK, "K"), "Should handle negative values")
 
-		// Test with very small positive values
-		assert.Equal(t, smallValue, FormatNumber(smallValue, ""), "Should handle very small values")
+		// Test with very small positive values - rounds to 0
+		assert.Equal(t, 0.0, FormatNumber(smallValue, ""), "Should round very small values to 0")
 
 		// Test boundary values for each unit
 		assert.Equal(t, 1.0, FormatNumber(allocToK, "K"), "Should convert exactly 1K allocations")
@@ -175,7 +208,7 @@ func TestFormatterEdgeCases(t *testing.T) {
 		assert.Equal(t, 1.0, FormatNumber(allocToT, "T"), "Should convert exactly 1T allocations")
 
 		// Test with small values that result in fractional results
-		assert.Equal(t, 0.999, FormatNumber(999, "K"), "Should handle small fractional values")
+		assert.Equal(t, 1.0, FormatNumber(999, "K"), "Should round 0.999 to 1.0")
 
 		// Test with invalid unit - should use default
 		assert.Equal(t, 1024.0, FormatNumber(1024, "invalid"), "Should default to raw value with invalid unit")
@@ -186,33 +219,33 @@ func TestFormatterEdgeCases(t *testing.T) {
 	})
 }
 
-// Test precision and rounding behavior
+// Test rounding behavior
 func TestFormatterPrecision(t *testing.T) {
-	t.Run("FormatTime Precision", func(t *testing.T) {
+	t.Run("FormatTime Rounding", func(t *testing.T) {
 		// Test with non-integer values
 		assert.Equal(t, 1.5, FormatTime(1.5*nanoToSecond, "s"), "Should handle fractional values")
-		assert.Equal(t, 0.001, FormatTime(nanoToMilli, "s"), "Should handle small fractional values")
+		assert.Equal(t, 0.0, FormatTime(nanoToMilli, "s"), "Should round small fractional values to 0")
 
 		// Test precision boundaries
-		assert.Equal(t, 1.000001, FormatTime(1000001*nanoToMicro, "s"), "Should maintain precision")
+		assert.Equal(t, 1.0, FormatTime(1000001*nanoToMicro, "s"), "Should round to 2 decimal places")
 	})
 
-	t.Run("FormatMem Precision", func(t *testing.T) {
+	t.Run("FormatMem Rounding", func(t *testing.T) {
 		// Test with non-integer values
 		assert.Equal(t, 1.5, FormatMem(1.5*byteToKb, "KB"), "Should handle fractional values")
-		assert.Equal(t, 1.0/byteToKb, FormatMem(1024, "MB"), "Should handle small fractional values")
+		assert.Equal(t, 0.0, FormatMem(1024, "MB"), "Should round small fractional values to 0")
 
 		// Test precision with bits conversion
 		assert.Equal(t, 4096.0, FormatMem(512, "b"), "Should precisely convert bytes to bits")
 	})
 
-	t.Run("FormatNumber Precision", func(t *testing.T) {
+	t.Run("FormatNumber Rounding", func(t *testing.T) {
 		// Test with non-integer values
 		assert.Equal(t, 1.5, FormatNumber(1.5*allocToK, "K"), "Should handle fractional values")
-		assert.Equal(t, 0.000001, FormatNumber(1, "M"), "Should handle very small fractional values")
+		assert.Equal(t, 0.0, FormatNumber(1, "M"), "Should round very small fractional values to 0")
 
 		// Test precision boundaries
-		assert.Equal(t, 1.000001, FormatNumber(1000001, "M"), "Should maintain precision")
+		assert.Equal(t, 1.0, FormatNumber(1000001, "M"), "Should round to 2 decimal places")
 	})
 }
 
