@@ -5,6 +5,18 @@ All notable changes to the Vizb project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [0.7.1] - 2025-12-28
+
+### Changed
+
+- **Formatter**: Optimized `RoundToTwo` formatter and updated tests ([#62](https://github.com/goptics/vizb/pull/62)).
+- **Documentation**: Updated examples with latest commands.
+- **Internal**: Use signed tags for releases to ensure verification ([#61](https://github.com/goptics/vizb/pull/61)).
+
+### Fixed
+
+- **UI**: Resolved favicon xmlns attr issue ([#60](https://github.com/goptics/vizb/pull/60)).
+
 # [0.7.0] - 2025-12-14
 
 ### Added
