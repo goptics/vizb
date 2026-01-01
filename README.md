@@ -206,8 +206,8 @@ go install github.com/go-task/task/v3/cmd/task@latest
 ### Available Tasks
 
 ```bash
-# List all available tasks
-task
+# install dependencies
+task init
 
 # Run the UI in development mode
 task dev:ui
