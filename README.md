@@ -30,11 +30,11 @@
 - **Smart Grouping**: Extract grouping logic from benchmark names using regex and group patterns.
 - **Filtering**: Filter benchmarks to include only those matching a regex pattern.
 - **Export Options**: Generate `single-file` HTML/JSON and options to save charts as `JPEG`.
-
+  
 ## Installation
 
 ```bash
-go install github.com/goptics/vizb
+go install github.com/goptics/vizb@latest
 ```
 
 ## Basic Usage
