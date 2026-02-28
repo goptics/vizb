@@ -21,8 +21,8 @@
   },
   "data": [
     {
-      "xAxis": "Add",
-      "yAxis": "Queue",
+      "name": "Add",
+      "xAxis": "Queue",
       "stats": [
         {
           "type": "Execution Time (ns/op)",
@@ -43,8 +43,8 @@
       ]
     },
     {
-      "xAxis": "Add",
-      "yAxis": "Priority",
+      "name": "Add",
+      "xAxis": "Priority",
       "stats": [
         {
           "type": "Execution Time (ns/op)",
@@ -65,8 +65,8 @@
       ]
     },
     {
-      "xAxis": "Add",
-      "yAxis": "ErrQueue",
+      "name": "Add",
+      "xAxis": "ErrQueue",
       "stats": [
         {
           "type": "Execution Time (ns/op)",
@@ -87,8 +87,8 @@
       ]
     },
     {
-      "xAxis": "Add",
-      "yAxis": "ErrPriority",
+      "name": "Add",
+      "xAxis": "ErrPriority",
       "stats": [
         {
           "type": "Execution Time (ns/op)",
@@ -109,8 +109,8 @@
       ]
     },
     {
-      "xAxis": "Add",
-      "yAxis": "ResultQueue",
+      "name": "Add",
+      "xAxis": "ResultQueue",
       "stats": [
         {
           "type": "Execution Time (ns/op)",
@@ -131,8 +131,8 @@
       ]
     },
     {
-      "xAxis": "Add",
-      "yAxis": "ResultPriority",
+      "name": "Add",
+      "xAxis": "ResultPriority",
       "stats": [
         {
           "type": "Execution Time (ns/op)",
@@ -153,8 +153,8 @@
       ]
     },
     {
-      "xAxis": "AddAll",
-      "yAxis": "Queue",
+      "name": "AddAll",
+      "xAxis": "Queue",
       "stats": [
         {
           "type": "Execution Time (ns/op)",
@@ -175,8 +175,8 @@
       ]
     },
     {
-      "xAxis": "AddAll",
-      "yAxis": "Priority",
+      "name": "AddAll",
+      "xAxis": "Priority",
       "stats": [
         {
           "type": "Execution Time (ns/op)",
@@ -197,8 +197,8 @@
       ]
     },
     {
-      "xAxis": "AddAll",
-      "yAxis": "ErrQueue",
+      "name": "AddAll",
+      "xAxis": "ErrQueue",
       "stats": [
         {
           "type": "Execution Time (ns/op)",
@@ -219,8 +219,8 @@
       ]
     },
     {
-      "xAxis": "AddAll",
-      "yAxis": "ErrPriority",
+      "name": "AddAll",
+      "xAxis": "ErrPriority",
       "stats": [
         {
           "type": "Execution Time (ns/op)",
@@ -241,8 +241,8 @@
       ]
     },
     {
-      "xAxis": "AddAll",
-      "yAxis": "ResultQueue",
+      "name": "AddAll",
+      "xAxis": "ResultQueue",
       "stats": [
         {
           "type": "Execution Time (ns/op)",
@@ -263,8 +263,8 @@
       ]
     },
     {
-      "xAxis": "AddAll",
-      "yAxis": "ResultPriority",
+      "name": "AddAll",
+      "xAxis": "ResultPriority",
       "stats": [
         {
           "type": "Execution Time (ns/op)",
