@@ -3,7 +3,7 @@
   <h1>Vizb: Visualize Go Benchmarks in 4D</h1>
 
   <p>
-    <a href="https://libs.tech/project/1003638795/vizb"><img src="https://libs.tech/project/1003638795/badge.svg" alt="libs.tech recommends" /></a>
+    <a href="https://github.com/avelino/awesome-go?tab=readme-ov-file#benchmarks"><img src="https://awesome.re/mentioned-badge-flat.svg" alt="Mentioned in Awesome Go" /></a>
     <a href="https://vizb-demo.netlify.app"><img src="https://img.shields.io/badge/Live-Demo-orange?style=for" alt="Live Demo" /></a>
     <a href="https://pkg.go.dev/github.com/goptics/vizb"><img src="https://img.shields.io/badge/go-pkg-00ADD8.svg?logo=go" alt="Go Reference" /></a>
     <a href="https://goreportcard.com/report/github.com/goptics/vizb"><img src="https://goreportcard.com/badge/github.com/goptics/vizb" alt="Go Report Card" /></a>
