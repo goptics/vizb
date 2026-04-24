@@ -1,5 +1,5 @@
 import { watch } from 'vue'
-import type { SortOrder, ChartType } from '../types'
+import type { SortOrder, ChartType, ScaleType } from '../types'
 import { useSettingsStore } from './useSettingsStore'
 import { useBenchmarkData } from './useBenchmarkData'
 import { DEFAULT_SETTINGS } from './constants'
@@ -8,6 +8,7 @@ type UrlParams = {
   s?: SortOrder // sort order
   l?: 'true' | 'false' // show labels
   c?: ChartType // chart type
+  sc?: ScaleType // scale type
   b?: string // benchmark ID
   g?: string // group ID
 }
@@ -21,6 +22,7 @@ const parseUrlParams = (): UrlParams => {
     s: params.get('s') as SortOrder | undefined,
     l: params.get('l') as 'true' | 'false' | undefined,
     c: params.get('c') as ChartType | undefined,
+    sc: params.get('sc') as ScaleType | undefined,
     b: params.get('b') ?? undefined,
     g: params.get('g') ?? undefined,
   }
@@ -57,7 +59,7 @@ const applyIndexParam = (
  * Composable for syncing app state with URL query parameters
  */
 export function useUrlRouter() {
-  const { settings, setSort, setShowLabels, setChartType } = useSettingsStore()
+  const { settings, setSort, setShowLabels, setChartType, setScale } = useSettingsStore()
   const {
     benchmarks,
     resultGroups,
@@ -97,6 +99,11 @@ export function useUrlRouter() {
     if (params.c && DEFAULT_SETTINGS.charts.includes(params.c)) {
       setChartType(params.c)
     }
+
+    // Scale type
+    if (params.sc && ['linear', 'log'].includes(params.sc)) {
+      setScale(params.sc)
+    }
   }
 
   /**
@@ -119,6 +126,11 @@ export function useUrlRouter() {
 
     if (chartType && settings.activeChartIndex !== 0) {
       params.c = chartType
+    }
+
+    // Scale - only include if not linear (default)
+    if (settings.scale !== 'linear') {
+      params.sc = settings.scale
     }
 
     // Benchmark ID - only include if not first
@@ -153,6 +165,7 @@ export function useUrlRouter() {
         sortOrder: settings.sort.order,
         showLabels: settings.showLabels,
         chartIndex: settings.activeChartIndex,
+        scale: settings.scale,
         benchmarkId: activeBenchmarkId.value,
         groupId: activeGroupId.value,
       }),

@@ -13,6 +13,7 @@ type flagState struct {
 	Charts       []string
 	ShowLabels   bool
 	FilterRegex  string
+	Scale       string
 }
 
 var FlagState flagState = flagState{}

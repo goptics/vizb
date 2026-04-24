@@ -1,4 +1,5 @@
 import type { EChartsOption } from 'echarts/types/dist/shared'
+import type { ScaleType } from '../../../types'
 import { fontSize } from './common'
 
 export interface ChartStyling {
@@ -25,8 +26,33 @@ export function getChartStyling(isDark: boolean): ChartStyling {
  */
 export function createAxisConfig(
   styling: ChartStyling,
-  xAxisData: string[]
+  xAxisData: string[],
+  scale: ScaleType = 'linear',
+  minValue?: number
 ): { xAxis: any; yAxis: any } {
+  const yAxisConfig: any = {
+    type: scale === 'log' ? 'log' : 'value',
+    logBase: 10,
+    splitLine: {
+      lineStyle: {
+        opacity: styling.opacity,
+      },
+    },
+    axisLabel: {
+      color: styling.textColor,
+    },
+    axisLine: {
+      lineStyle: { color: styling.axisColor },
+    },
+  }
+
+  // For log scale, set a clean minimum to avoid showing 0.1
+  if (scale === 'log' && minValue !== undefined) {
+    // Round down to nearest power of 10, but minimum is 1
+    const minLog = Math.pow(10, Math.floor(Math.log10(minValue)))
+    yAxisConfig.min = Math.max(1, minLog)
+  }
+
   return {
     xAxis: {
       type: 'category',
@@ -41,21 +67,16 @@ export function createAxisConfig(
         lineStyle: { color: styling.axisColor },
       },
     },
-    yAxis: {
-      type: 'value',
-      splitLine: {
-        lineStyle: {
-          opacity: styling.opacity,
-        },
-      },
-      axisLabel: {
-        color: styling.textColor,
-      },
-      axisLine: {
-        lineStyle: { color: styling.axisColor },
-      },
-    },
+    yAxis: yAxisConfig,
   }
+}
+
+/**
+ * Format a tooltip value, showing 0 for null/undefined values
+ */
+function formatTooltipValue(value: any): string {
+  if (value === null || value === undefined) return '0'
+  return String(value)
 }
 
 /**
@@ -73,7 +94,7 @@ export function createTooltipConfig(hasXYAxis: boolean, seriesCount = 1): EChart
         if (!Array.isArray(params)) return ''
 
         return params.reduce(
-          (acc, cur) => `${acc}${cur.marker} ${cur.seriesName}: ${cur.value}<br/>`,
+          (acc, cur) => `${acc}${cur.marker} ${cur.seriesName}: ${formatTooltipValue(cur.value)}<br/>`,
           `<strong>${params[0]?.name}</strong><br/>`
         )
       },
@@ -94,7 +115,7 @@ export function createTooltipConfig(hasXYAxis: boolean, seriesCount = 1): EChart
         name = seriesName
       }
 
-      return `${params.marker} <strong>${name}</strong><br/>${params.value}`
+      return `${params.marker} <strong>${name}</strong><br/>${formatTooltipValue(params.value)}`
     },
   }
 }

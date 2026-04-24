@@ -1,5 +1,5 @@
 import { computed, type Ref } from 'vue'
-import type { ChartData, Sort, ChartType } from '../types'
+import type { ChartData, Sort, ChartType, ScaleType } from '../types'
 import type { EChartsOption } from 'echarts'
 import { useBarChartOptions } from './charts/useBarChartOptions'
 import { useLineChartOptions } from './charts/useLineChartOptions'
@@ -11,13 +11,15 @@ export function useChartOptions(
   sort: Ref<Sort>,
   showLabels: Ref<boolean>,
   isDark: Ref<boolean>,
-  chartType: Ref<ChartType>
+  chartType: Ref<ChartType>,
+  scale: Ref<ScaleType>
 ) {
   const config: BaseChartConfig = {
     chartData,
     sort,
     showLabels,
     isDark,
+    scale,
   }
 
   const barOptions = useBarChartOptions(config)

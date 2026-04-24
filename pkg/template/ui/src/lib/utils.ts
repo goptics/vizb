@@ -50,11 +50,13 @@ export const resetColor = () => {
   i = 0
 }
 
+export const chartHasYAxis = (chart: ChartData) =>
+  chart.yAxis && chart.yAxis.length > 0 && chart.yAxis[0] !== ''
+
 export const hasXAxis = (chartData: Ref<ChartData, ChartData>) =>
   chartData.value.series.some((series) => series.xAxis && series.xAxis.trim() !== '')
 
-export const hasYAxis = (chartData: Ref<ChartData, ChartData>) =>
-  chartData.value.yAxis && chartData.value.yAxis.length > 0 && chartData.value.yAxis[0] !== ''
+export const hasYAxis = (chartData: Ref<ChartData, ChartData>) => chartHasYAxis(chartData.value)
 
 export const CPUtoString = (cpu: Benchmark['cpu']) => {
   if (!cpu) {

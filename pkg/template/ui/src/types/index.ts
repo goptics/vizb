@@ -2,6 +2,8 @@ export type SortOrder = 'asc' | 'desc'
 
 export type ChartType = 'bar' | 'line' | 'pie'
 
+export type ScaleType = 'linear' | 'log'
+
 export type Stat = {
   type: string
   value?: number
@@ -25,6 +27,7 @@ export type Settings = {
   sort: Sort
   showLabels: boolean
   charts: ChartType[]
+  scale: ScaleType
 }
 
 export type Benchmark = {

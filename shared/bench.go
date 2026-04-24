@@ -28,7 +28,8 @@ type Benchmark struct {
 			Enabled bool   `json:"enabled"`
 			Order   string `json:"order"`
 		} `json:"sort"`
-		ShowLabels bool `json:"showLabels"`
+		ShowLabels bool   `json:"showLabels"`
+		Scale     string `json:"scale"`
 	} `json:"settings"`
 	Data []BenchmarkData `json:"data"`
 }

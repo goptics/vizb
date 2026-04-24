@@ -1,4 +1,4 @@
-import type { SortOrder } from '../../../types'
+import type { SortOrder, ScaleType } from '../../../types'
 
 export const fontSize = 12
 
@@ -15,3 +15,9 @@ export const sortBy =
 export const sortByTotal = sortBy('total')
 
 export const sortByValue = sortBy('value')
+
+// For line charts: use null for zero values to create gaps instead of dropping below axis
+export const adjustForLogScaleLine = (value: number, scale: ScaleType): number | null => {
+  if (scale !== 'log') return value
+  return value <= 0 ? null : value
+}

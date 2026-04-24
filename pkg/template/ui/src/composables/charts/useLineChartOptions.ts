@@ -5,15 +5,14 @@ import { getNextColorFor, hasYAxis } from '../../lib/utils'
 import {
   createAxisConfig,
   createGridConfig,
-  createLabelConfig,
   createLegendConfig,
   createTooltipConfig,
   getChartStyling,
 } from './shared'
-import { sortByTotal } from './shared/common'
+import { sortByTotal, adjustForLogScaleLine } from './shared/common'
 
 export function useLineChartOptions(config: BaseChartConfig) {
-  const { chartData, sort, showLabels, isDark } = config
+  const { chartData, sort, isDark, scale } = config
 
   const sortedData = computed(() => {
     if (!sort.value.enabled) {
@@ -48,22 +47,25 @@ export function useLineChartOptions(config: BaseChartConfig) {
     const baseOptions = getBaseOptions(config)
     const styling = getChartStyling(isDark.value)
 
+    // Calculate minimum non-zero value for log scale
+    const allValues = series.flatMap((s) => s.values)
+    const nonZeroValues = allValues.filter((v) => v > 0)
+    const minValue = nonZeroValues.length > 0 ? Math.min(...nonZeroValues) : undefined
+
     // Single category case: one series with multiple x-axis points
     if (!hasYAxis) {
       return {
         ...baseOptions,
         grid: createGridConfig(1),
         tooltip: createTooltipConfig(false, 1),
-        ...createAxisConfig(styling, xAxisData),
+        ...createAxisConfig(styling, xAxisData, scale.value, minValue),
         legend: { show: false },
         series: [
           {
             name: chartData.value.title,
             type: 'line' as const,
-            data: series.map((seriesData) => ({
-              value: seriesData.values[0],
-              label: createLabelConfig(showLabels.value, styling),
-            })),
+            data: series.map((seriesData) => adjustForLogScaleLine(seriesData.values[0] ?? 0, scale.value)),
+            connectNulls: true,
             itemStyle: { color: getNextColorFor(chartData.value.title) },
             symbol,
             symbolSize,
@@ -77,10 +79,8 @@ export function useLineChartOptions(config: BaseChartConfig) {
     const transposedSeries = yAxisLabels.map((yAxisLabel, yIndex) => ({
       name: yAxisLabel,
       type: 'line' as const,
-      data: series.map((seriesData) => ({
-        value: seriesData.values[yIndex] || 0,
-        label: createLabelConfig(showLabels.value, styling),
-      })),
+      data: series.map((seriesData) => adjustForLogScaleLine(seriesData.values[yIndex] ?? 0, scale.value)),
+      connectNulls: true,
       itemStyle: { color: getNextColorFor(yAxisLabel) },
       symbol,
       symbolSize,
@@ -90,7 +90,7 @@ export function useLineChartOptions(config: BaseChartConfig) {
       ...baseOptions,
       grid: createGridConfig(transposedSeries.length),
       tooltip: createTooltipConfig(true, transposedSeries.length),
-      ...createAxisConfig(styling, xAxisData),
+      ...createAxisConfig(styling, xAxisData, scale.value, minValue),
       legend: createLegendConfig(
         transposedSeries.map((s) => ({ xAxis: s.name })),
         styling,

@@ -13,7 +13,7 @@ import {
 import { sortByTotal } from './shared/common'
 
 export function useBarChartOptions(config: BaseChartConfig) {
-  const { chartData, sort, showLabels, isDark } = config
+  const { chartData, sort, showLabels, isDark, scale } = config
 
   const sortedData = computed(() => {
     // Check if we have y-axis data (dual categories)
@@ -47,24 +47,32 @@ export function useBarChartOptions(config: BaseChartConfig) {
     const baseOptions = getBaseOptions(config)
     const styling = getChartStyling(isDark.value)
 
+    // Calculate minimum non-zero value for log scale
+    const allValues = series.flatMap((s) => s.values)
+    const nonZeroValues = allValues.filter((v) => v > 0)
+    const minValue = nonZeroValues.length > 0 ? Math.min(...nonZeroValues) : undefined
+
     // For single category: create one series with each x-axis value as a data point
     // For dual categories: create multiple series (one per x-axis value)
     if (!hasYAxis) {
-      // Single category case: one series with multiple x-axis points
+      const barData = series.map((seriesData) => {
+        const val = seriesData.values[0] ?? 0
+        return scale.value === 'log' && val === 0
+          ? null
+          : { value: val, label: createLabelConfig(showLabels.value, styling) }
+      })
+
       return {
         ...baseOptions,
         grid: createGridConfig(1),
         tooltip: createTooltipConfig(false),
         legend: { show: false },
-        ...createAxisConfig(styling, xAxisData),
+        ...createAxisConfig(styling, xAxisData, scale.value, minValue),
         series: [
           {
             name: chartData.value.title,
             type: 'bar' as const,
-            data: series.map((seriesData) => ({
-              value: seriesData.values[0], // Take the first (and only) value
-              label: createLabelConfig(showLabels.value, styling),
-            })),
+            data: barData,
             itemStyle: { color: getNextColorFor(chartData.value.title) },
           },
         ],
@@ -74,15 +82,21 @@ export function useBarChartOptions(config: BaseChartConfig) {
     // Dual categories case: transpose data to show y-axis values as series
     // Each y-axis value becomes a bar group, with x-axis values (frameworks) as bars
     const yAxisLabels = chartData.value.yAxis
-    const transposedSeries = yAxisLabels.map((yAxisLabel, yIndex) => ({
-      name: yAxisLabel,
-      type: 'bar' as const,
-      data: series.map((seriesData) => ({
-        value: seriesData.values[yIndex] || 0,
-        label: createLabelConfig(showLabels.value, styling),
-      })),
-      itemStyle: { color: getNextColorFor(yAxisLabel) },
-    }))
+    const transposedSeries = yAxisLabels.map((yAxisLabel, yIndex) => {
+      const barData = series.map((seriesData) => {
+        const val = seriesData.values[yIndex] || 0
+        return scale.value === 'log' && val === 0
+          ? null
+          : { value: val, label: createLabelConfig(showLabels.value, styling) }
+      })
+
+      return {
+        name: yAxisLabel,
+        type: 'bar' as const,
+        data: barData,
+        itemStyle: { color: getNextColorFor(yAxisLabel) },
+      }
+    })
 
     // Sort y-axis groups if there's only one x-axis group
     if (sort.value.enabled && xAxisData.length === 1) {
@@ -108,7 +122,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
         styling,
         hasMultipleSeries
       ),
-      ...createAxisConfig(styling, xAxisData),
+      ...createAxisConfig(styling, xAxisData, scale.value, minValue),
       series: transposedSeries,
     } as EChartsOption
   })

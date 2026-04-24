@@ -10,7 +10,7 @@ import GroupSelector from '../components/Selector.vue'
 import ChartCard from '../components/ChartCard.vue'
 import IconButton from '../components/IconButton.vue'
 import AccentLink from '../components/AccentLink.vue'
-import { CPUtoString } from '../lib/utils'
+import { CPUtoString, chartHasYAxis } from '../lib/utils'
 
 const version = window.VIZB_VERSION || 'v0.0.0-dev'
 
@@ -85,7 +85,7 @@ const hasCPU = computed(() => activeBenchmark.value?.cpu?.name || activeBenchmar
       <Package class="h-5 w-5" />
     </IconButton>
 
-    <ChartSettingsPopover />
+    <ChartSettingsPopover :has-y-axis="chartData.some(chartHasYAxis)" />
 
     <IconButton @click="toggleDark()" aria-label="Toggle theme">
       <Sun v-if="settings.isDark" class="h-5 w-5" />

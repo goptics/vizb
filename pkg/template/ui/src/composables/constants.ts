@@ -7,4 +7,5 @@ export const DEFAULT_SETTINGS: Settings = {
   },
   showLabels: false,
   charts: ['bar', 'line', 'pie'],
+  scale: 'linear',
 }
