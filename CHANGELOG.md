@@ -5,6 +5,14 @@ All notable changes to the Vizb project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [0.8.0] - 2026-04-25
+
+### Added
+
+- **Logarithmic Scale**: Added `--scale` flag (`linear|log`) for bar and line charts to better visualize benchmarks with high variance in values ([#66](https://github.com/goptics/vizb/pull/66)).
+- **URL Routing for Scale**: Log scale is now synced with the `sc` query parameter for shareable URLs.
+
+
 # [0.7.1] - 2025-12-28
 
 ### Changed
