@@ -1,5 +1,5 @@
 import { reactive, computed } from 'vue'
-import type { Sort, ChartType, Settings as BenchmarkSettings } from '../types'
+import type { Sort, ChartType, ScaleType, Settings as BenchmarkSettings } from '../types'
 import { DEFAULT_SETTINGS } from './constants'
 
 type StoreSettings = {
@@ -9,6 +9,7 @@ type StoreSettings = {
   activeChartIndex: number
   selectedSwapIndexMap: Map<number, number>
   isDark: boolean
+  scale: ScaleType
 }
 
 const settings = reactive<StoreSettings>({
@@ -18,6 +19,7 @@ const settings = reactive<StoreSettings>({
   activeChartIndex: 0,
   selectedSwapIndexMap: new Map(),
   isDark: false,
+  scale: 'linear',
 })
 
 const chartType = computed<ChartType>(() => settings.charts[settings.activeChartIndex] ?? 'bar')
@@ -66,6 +68,10 @@ export function useSettingsStore() {
     settings.sort = sort
   }
 
+  const setScale = (scale: ScaleType) => {
+    settings.scale = scale
+  }
+
   const setShowLabels = (show: boolean) => {
     settings.showLabels = show
   }
@@ -97,6 +103,7 @@ export function useSettingsStore() {
     if (!initialized || force) {
       settings.sort = inputSettings.sort
       settings.showLabels = inputSettings.showLabels
+      settings.scale = inputSettings.scale || 'linear'
 
       setCharts(inputSettings.charts ?? DEFAULT_SETTINGS.charts)
       setActiveChartIndex(0)
@@ -116,6 +123,7 @@ export function useSettingsStore() {
     settings,
     chartType,
     setSort,
+    setScale,
     setShowLabels,
     setCharts,
     setActiveChartIndex,

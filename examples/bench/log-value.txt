@@ -1,0 +1,46 @@
+goos: linux
+goarch: amd64
+pkg: cmpfr
+cpu: Intel(R) Core(TM) i9-10900X CPU @ 3.70GHz
+BenchmarkCmpFloatRat0/SmallIntegers-6         5456551      999.2 ns/op    248 B/op      9 allocs/op
+BenchmarkCmpFloatRat0/LargeIntegers-6         3774207     1352 ns/op    408 B/op     10 allocs/op
+BenchmarkCmpFloatRat0/SimpleFraction-6        4361322     1321 ns/op    352 B/op     10 allocs/op
+BenchmarkCmpFloatRat0/ComplexFraction-6       4945956     1380 ns/op    360 B/op     11 allocs/op
+BenchmarkCmpFloatRat0/LargeFraction-6         3197026     1797 ns/op    376 B/op     11 allocs/op
+BenchmarkCmpFloatRat0/VeryLargeNumerator-6    4230940     1515 ns/op    496 B/op     11 allocs/op
+BenchmarkCmpFloatRat0/VeryLargeDenominator-6  1391353     4379 ns/op   1016 B/op     13 allocs/op
+BenchmarkCmpFloatRat0/NegativeSmall-6         4345306     1301 ns/op    248 B/op      9 allocs/op
+BenchmarkCmpFloatRat0/NegativeLarge-6         4798053     1409 ns/op    408 B/op     10 allocs/op
+BenchmarkCmpFloatRat0/CloseToZero-6           3178645     2391 ns/op    408 B/op     11 allocs/op
+BenchmarkCmpFloatRat0/DifferentSigns-6        5880873      928.8 ns/op    248 B/op      9 allocs/op
+BenchmarkCmpFloatRat0/BothZero-6              19789045      270.9 ns/op     72 B/op      2 allocs/op
+BenchmarkCmpFloatRat0/HighPrecision-6         1708896     3018 ns/op    928 B/op     11 allocs/op
+BenchmarkCmpFloatRat0/RandomValues-6              3870  1707999 ns/op 248067 B/op   9000 allocs/op
+BenchmarkCmpFloatRat1/SmallIntegers-6         62907930       84.63 ns/op      8 B/op      1 allocs/op
+BenchmarkCmpFloatRat1/LargeIntegers-6         33243613      171.1 ns/op     48 B/op      1 allocs/op
+BenchmarkCmpFloatRat1/SimpleFraction-6        12206640      512.2 ns/op     64 B/op      3 allocs/op
+BenchmarkCmpFloatRat1/ComplexFraction-6       12092005      540.7 ns/op     72 B/op      4 allocs/op
+BenchmarkCmpFloatRat1/LargeFraction-6         10411040      637.1 ns/op     88 B/op      4 allocs/op
+BenchmarkCmpFloatRat1/VeryLargeNumerator-6    7143363      836.4 ns/op    208 B/op      5 allocs/op
+BenchmarkCmpFloatRat1/VeryLargeDenominator-6  3883464     1387 ns/op    344 B/op      5 allocs/op
+BenchmarkCmpFloatRat1/NegativeSmall-6         10532964      564.2 ns/op     72 B/op      4 allocs/op
+BenchmarkCmpFloatRat1/NegativeLarge-6         34627219      157.7 ns/op     48 B/op      1 allocs/op
+BenchmarkCmpFloatRat1/CloseToZero-6           8623437      659.3 ns/op     88 B/op      4 allocs/op
+BenchmarkCmpFloatRat1/DifferentSigns-6        98775561       81.51 ns/op      8 B/op      1 allocs/op
+BenchmarkCmpFloatRat1/BothZero-6              570580450       10.53 ns/op      0 B/op      0 allocs/op
+BenchmarkCmpFloatRat1/HighPrecision-6         5828425      986.5 ns/op    216 B/op      5 allocs/op
+BenchmarkCmpFloatRat1/RandomValues-6             9214   566609 ns/op  71492 B/op   3964 allocs/op
+BenchmarkCmpFloatRat2/SmallIntegers-6          60722422       99.73 ns/op      8 B/op      1 allocs/op
+BenchmarkCmpFloatRat2/LargeIntegers-6         34208551      189.4 ns/op     48 B/op      1 allocs/op
+BenchmarkCmpFloatRat2/SimpleFraction-6        10308673      577.7 ns/op     64 B/op      3 allocs/op
+BenchmarkCmpFloatRat2/ComplexFraction-6       9420973      624.5 ns/op     72 B/op      4 allocs/op
+BenchmarkCmpFloatRat2/LargeFraction-6         9549158      664.5 ns/op     88 B/op      4 allocs/op
+BenchmarkCmpFloatRat2/VeryLargeNumerator-6    7537648      813.9 ns/op    208 B/op      5 allocs/op
+BenchmarkCmpFloatRat2/VeryLargeDenominator-6  5180502     1141 ns/op    344 B/op      5 allocs/op
+BenchmarkCmpFloatRat2/NegativeSmall-6         11936049      560.7 ns/op     72 B/op      4 allocs/op
+BenchmarkCmpFloatRat2/NegativeLarge-6         34200104      200.0 ns/op     48 B/op      1 allocs/op
+BenchmarkCmpFloatRat2/CloseToZero-6           528448011        9.619 ns/op      0 B/op      0 allocs/op
+BenchmarkCmpFloatRat2/DifferentSigns-6        1000000000        3.135 ns/op      0 B/op      0 allocs/op
+BenchmarkCmpFloatRat2/BothZero-6              1000000000        2.793 ns/op      0 B/op      0 allocs/op
+BenchmarkCmpFloatRat2/HighPrecision-6         6116125      821.0 ns/op    216 B/op      5 allocs/op
+BenchmarkCmpFloatRat2/RandomValues-6             8496   640530 ns/op  71491 B/op   3964 allocs/op

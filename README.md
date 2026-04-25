@@ -24,13 +24,14 @@
 - **Multi-Chart**: Supports multiple charts (`bar`, `line` and `pie`) in a single place.
 - **Sorting**: Sort data (`asc`/`desc`) for comparison through UI settings or CLI flags.
 - **Swap Axis**: Swap the `n`, `x` and `y` axes for diverse comparison through UI settings.
+- **Logarithmic Scale**: Use `--scale log` for bar and line charts to better visualize benchmarks with high variance in values.
 - **Multi-Dimensional Grouping**: Merge multiple benchmark data for deep comparative analysis.
 - **Flexible Input**: Automatically processes raw `go test -bench` output and the standard JSON output of `go test -bench -json`.
 - **Comprehensive Metrics**: Compare time, memory, and numbers with customizable units.
 - **Smart Grouping**: Extract grouping logic from benchmark names using regex and group patterns.
 - **Filtering**: Filter benchmarks to include only those matching a regex pattern.
 - **Export Options**: Generate `single-file` HTML/JSON and options to save charts as `JPEG`.
-  
+
 ## Installation
 
 ```bash
@@ -52,6 +53,16 @@ Generate charts from the benchmark:
 ```bash
 vizb bench.txt -o output.html
 ```
+
+### Using logarithmic scale
+
+For benchmarks with high variance in values (e.g., 1 to 1,000,000), use the logarithmic Y-axis scale:
+
+```bash
+vizb bench.txt -o output.html --scale log
+```
+
+The `--scale` flag accepts `linear` (default) or `log`. It works with bar and line charts; pie charts and 1D data automatically use linear scale.
 
 ### Direct piping
 

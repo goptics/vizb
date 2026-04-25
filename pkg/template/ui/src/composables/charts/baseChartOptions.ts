@@ -1,6 +1,6 @@
 import type { Ref } from 'vue'
 import type { EChartsOption } from 'echarts'
-import type { ChartData, Sort } from '../../types'
+import type { ChartData, Sort, ScaleType } from '../../types'
 import { createTooltipConfig, getChartStyling } from './shared/chartConfig'
 import { fontSize } from './shared/common'
 
@@ -9,6 +9,7 @@ export interface BaseChartConfig {
   sort: Ref<Sort>
   showLabels: Ref<boolean>
   isDark: Ref<boolean>
+  scale: Ref<ScaleType>
 }
 
 export const getBaseOptions = (config: BaseChartConfig): Partial<EChartsOption> => {

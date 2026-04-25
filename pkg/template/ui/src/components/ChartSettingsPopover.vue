@@ -3,7 +3,12 @@ import { ref } from 'vue'
 import { Settings } from 'lucide-vue-next'
 import { Popover, PopoverTrigger, PopoverContent } from './ui'
 import ChartSettings from './ChartSettings.vue'
+import ScaleSelector from './ScaleSelector.vue'
 import IconButton from './IconButton.vue'
+
+defineProps<{
+  hasYAxis?: boolean
+}>()
 
 const isOpen = ref(false)
 </script>
@@ -16,9 +21,12 @@ const isOpen = ref(false)
       </IconButton>
     </PopoverTrigger>
 
-    <!-- Popover content rendering only the card (no outer chrome) -->
     <PopoverContent>
-      <ChartSettings />
+      <ChartSettings>
+        <template #scale>
+          <ScaleSelector v-if="hasYAxis" />
+        </template>
+      </ChartSettings>
     </PopoverContent>
   </Popover>
 </template>

@@ -109,6 +109,8 @@ const getChartIcon = (type: ChartType) => {
         @update:checked="handleShowLabelsChange"
       />
 
+      <slot name="scale" />
+
       <Separator />
 
       <AxisSwapper />
