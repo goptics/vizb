@@ -214,6 +214,9 @@ func TestWriteStdinPipedInputsErrorScenarios(t *testing.T) {
 	defer func() { shared.OsExit = originalOsExit }()
 
 	t.Run("Invalid temp file path causes exit", func(t *testing.T) {
+		if os.Geteuid() == 0 {
+			t.Skip("skipping test when running as root")
+		}
 		// Create a temp directory structure, then create the directory we'll try to use
 		tempDir := t.TempDir()
 		removedDir := filepath.Join(tempDir, "removed_dir")
@@ -246,6 +249,9 @@ func TestWriteStdinPipedInputsErrorScenarios(t *testing.T) {
 	})
 
 	t.Run("Permission denied on temp file causes exit", func(t *testing.T) {
+		if os.Geteuid() == 0 {
+			t.Skip("skipping test when running as root")
+		}
 		tempDir := t.TempDir()
 
 		// Create a file but make it inaccessible
