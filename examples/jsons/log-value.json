@@ -1,0 +1,940 @@
+{
+  "name": "Logarithmic Benchmark",
+  "cpu": {
+    "name": "Intel(R) Core(TM) i9-10900X CPU @ 3.70GHz",
+    "cores": 6
+  },
+  "os": "linux",
+  "arch": "amd64",
+  "pkg": "cmpfr",
+  "settings": {
+    "charts": [
+      "bar",
+      "line"
+    ],
+    "sort": {
+      "enabled": true,
+      "order": "asc"
+    },
+    "showLabels": false,
+    "scale": "log"
+  },
+  "data": [
+    {
+      "xAxis": "SmallIntegers",
+      "yAxis": "CmpFloatRat0",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 999.2
+        },
+        {
+          "type": "Memory Usage (B/op)",
+          "value": 248
+        },
+        {
+          "type": "Allocations/op",
+          "value": 9
+        },
+        {
+          "type": "Iterations",
+          "value": 5456551
+        }
+      ]
+    },
+    {
+      "xAxis": "LargeIntegers",
+      "yAxis": "CmpFloatRat0",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 1352
+        },
+        {
+          "type": "Memory Usage (B/op)",
+          "value": 408
+        },
+        {
+          "type": "Allocations/op",
+          "value": 10
+        },
+        {
+          "type": "Iterations",
+          "value": 3774207
+        }
+      ]
+    },
+    {
+      "xAxis": "SimpleFraction",
+      "yAxis": "CmpFloatRat0",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 1321
+        },
+        {
+          "type": "Memory Usage (B/op)",
+          "value": 352
+        },
+        {
+          "type": "Allocations/op",
+          "value": 10
+        },
+        {
+          "type": "Iterations",
+          "value": 4361322
+        }
+      ]
+    },
+    {
+      "xAxis": "ComplexFraction",
+      "yAxis": "CmpFloatRat0",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 1380
+        },
+        {
+          "type": "Memory Usage (B/op)",
+          "value": 360
+        },
+        {
+          "type": "Allocations/op",
+          "value": 11
+        },
+        {
+          "type": "Iterations",
+          "value": 4945956
+        }
+      ]
+    },
+    {
+      "xAxis": "LargeFraction",
+      "yAxis": "CmpFloatRat0",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 1797
+        },
+        {
+          "type": "Memory Usage (B/op)",
+          "value": 376
+        },
+        {
+          "type": "Allocations/op",
+          "value": 11
+        },
+        {
+          "type": "Iterations",
+          "value": 3197026
+        }
+      ]
+    },
+    {
+      "xAxis": "VeryLargeNumerator",
+      "yAxis": "CmpFloatRat0",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 1515
+        },
+        {
+          "type": "Memory Usage (B/op)",
+          "value": 496
+        },
+        {
+          "type": "Allocations/op",
+          "value": 11
+        },
+        {
+          "type": "Iterations",
+          "value": 4230940
+        }
+      ]
+    },
+    {
+      "xAxis": "VeryLargeDenominator",
+      "yAxis": "CmpFloatRat0",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 4379
+        },
+        {
+          "type": "Memory Usage (B/op)",
+          "value": 1016
+        },
+        {
+          "type": "Allocations/op",
+          "value": 13
+        },
+        {
+          "type": "Iterations",
+          "value": 1391353
+        }
+      ]
+    },
+    {
+      "xAxis": "NegativeSmall",
+      "yAxis": "CmpFloatRat0",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 1301
+        },
+        {
+          "type": "Memory Usage (B/op)",
+          "value": 248
+        },
+        {
+          "type": "Allocations/op",
+          "value": 9
+        },
+        {
+          "type": "Iterations",
+          "value": 4345306
+        }
+      ]
+    },
+    {
+      "xAxis": "NegativeLarge",
+      "yAxis": "CmpFloatRat0",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 1409
+        },
+        {
+          "type": "Memory Usage (B/op)",
+          "value": 408
+        },
+        {
+          "type": "Allocations/op",
+          "value": 10
+        },
+        {
+          "type": "Iterations",
+          "value": 4798053
+        }
+      ]
+    },
+    {
+      "xAxis": "CloseToZero",
+      "yAxis": "CmpFloatRat0",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 2391
+        },
+        {
+          "type": "Memory Usage (B/op)",
+          "value": 408
+        },
+        {
+          "type": "Allocations/op",
+          "value": 11
+        },
+        {
+          "type": "Iterations",
+          "value": 3178645
+        }
+      ]
+    },
+    {
+      "xAxis": "DifferentSigns",
+      "yAxis": "CmpFloatRat0",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 928.8
+        },
+        {
+          "type": "Memory Usage (B/op)",
+          "value": 248
+        },
+        {
+          "type": "Allocations/op",
+          "value": 9
+        },
+        {
+          "type": "Iterations",
+          "value": 5880873
+        }
+      ]
+    },
+    {
+      "xAxis": "BothZero",
+      "yAxis": "CmpFloatRat0",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 270.9
+        },
+        {
+          "type": "Memory Usage (B/op)",
+          "value": 72
+        },
+        {
+          "type": "Allocations/op",
+          "value": 2
+        },
+        {
+          "type": "Iterations",
+          "value": 19789045
+        }
+      ]
+    },
+    {
+      "xAxis": "HighPrecision",
+      "yAxis": "CmpFloatRat0",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 3018
+        },
+        {
+          "type": "Memory Usage (B/op)",
+          "value": 928
+        },
+        {
+          "type": "Allocations/op",
+          "value": 11
+        },
+        {
+          "type": "Iterations",
+          "value": 1708896
+        }
+      ]
+    },
+    {
+      "xAxis": "RandomValues",
+      "yAxis": "CmpFloatRat0",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 1707999
+        },
+        {
+          "type": "Memory Usage (B/op)",
+          "value": 248067
+        },
+        {
+          "type": "Allocations/op",
+          "value": 9000
+        },
+        {
+          "type": "Iterations",
+          "value": 3870
+        }
+      ]
+    },
+    {
+      "xAxis": "SmallIntegers",
+      "yAxis": "CmpFloatRat1",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 84.63
+        },
+        {
+          "type": "Memory Usage (B/op)",
+          "value": 8
+        },
+        {
+          "type": "Allocations/op",
+          "value": 1
+        },
+        {
+          "type": "Iterations",
+          "value": 62907930
+        }
+      ]
+    },
+    {
+      "xAxis": "LargeIntegers",
+      "yAxis": "CmpFloatRat1",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 171.1
+        },
+        {
+          "type": "Memory Usage (B/op)",
+          "value": 48
+        },
+        {
+          "type": "Allocations/op",
+          "value": 1
+        },
+        {
+          "type": "Iterations",
+          "value": 33243613
+        }
+      ]
+    },
+    {
+      "xAxis": "SimpleFraction",
+      "yAxis": "CmpFloatRat1",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 512.2
+        },
+        {
+          "type": "Memory Usage (B/op)",
+          "value": 64
+        },
+        {
+          "type": "Allocations/op",
+          "value": 3
+        },
+        {
+          "type": "Iterations",
+          "value": 12206640
+        }
+      ]
+    },
+    {
+      "xAxis": "ComplexFraction",
+      "yAxis": "CmpFloatRat1",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 540.7
+        },
+        {
+          "type": "Memory Usage (B/op)",
+          "value": 72
+        },
+        {
+          "type": "Allocations/op",
+          "value": 4
+        },
+        {
+          "type": "Iterations",
+          "value": 12092005
+        }
+      ]
+    },
+    {
+      "xAxis": "LargeFraction",
+      "yAxis": "CmpFloatRat1",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 637.1
+        },
+        {
+          "type": "Memory Usage (B/op)",
+          "value": 88
+        },
+        {
+          "type": "Allocations/op",
+          "value": 4
+        },
+        {
+          "type": "Iterations",
+          "value": 10411040
+        }
+      ]
+    },
+    {
+      "xAxis": "VeryLargeNumerator",
+      "yAxis": "CmpFloatRat1",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 836.4
+        },
+        {
+          "type": "Memory Usage (B/op)",
+          "value": 208
+        },
+        {
+          "type": "Allocations/op",
+          "value": 5
+        },
+        {
+          "type": "Iterations",
+          "value": 7143363
+        }
+      ]
+    },
+    {
+      "xAxis": "VeryLargeDenominator",
+      "yAxis": "CmpFloatRat1",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 1387
+        },
+        {
+          "type": "Memory Usage (B/op)",
+          "value": 344
+        },
+        {
+          "type": "Allocations/op",
+          "value": 5
+        },
+        {
+          "type": "Iterations",
+          "value": 3883464
+        }
+      ]
+    },
+    {
+      "xAxis": "NegativeSmall",
+      "yAxis": "CmpFloatRat1",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 564.2
+        },
+        {
+          "type": "Memory Usage (B/op)",
+          "value": 72
+        },
+        {
+          "type": "Allocations/op",
+          "value": 4
+        },
+        {
+          "type": "Iterations",
+          "value": 10532964
+        }
+      ]
+    },
+    {
+      "xAxis": "NegativeLarge",
+      "yAxis": "CmpFloatRat1",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 157.7
+        },
+        {
+          "type": "Memory Usage (B/op)",
+          "value": 48
+        },
+        {
+          "type": "Allocations/op",
+          "value": 1
+        },
+        {
+          "type": "Iterations",
+          "value": 34627219
+        }
+      ]
+    },
+    {
+      "xAxis": "CloseToZero",
+      "yAxis": "CmpFloatRat1",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 659.3
+        },
+        {
+          "type": "Memory Usage (B/op)",
+          "value": 88
+        },
+        {
+          "type": "Allocations/op",
+          "value": 4
+        },
+        {
+          "type": "Iterations",
+          "value": 8623437
+        }
+      ]
+    },
+    {
+      "xAxis": "DifferentSigns",
+      "yAxis": "CmpFloatRat1",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 81.51
+        },
+        {
+          "type": "Memory Usage (B/op)",
+          "value": 8
+        },
+        {
+          "type": "Allocations/op",
+          "value": 1
+        },
+        {
+          "type": "Iterations",
+          "value": 98775561
+        }
+      ]
+    },
+    {
+      "xAxis": "BothZero",
+      "yAxis": "CmpFloatRat1",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 10.53
+        },
+        {
+          "type": "Memory Usage (B/op)"
+        },
+        {
+          "type": "Allocations/op"
+        },
+        {
+          "type": "Iterations",
+          "value": 570580450
+        }
+      ]
+    },
+    {
+      "xAxis": "HighPrecision",
+      "yAxis": "CmpFloatRat1",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 986.5
+        },
+        {
+          "type": "Memory Usage (B/op)",
+          "value": 216
+        },
+        {
+          "type": "Allocations/op",
+          "value": 5
+        },
+        {
+          "type": "Iterations",
+          "value": 5828425
+        }
+      ]
+    },
+    {
+      "xAxis": "RandomValues",
+      "yAxis": "CmpFloatRat1",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 566609
+        },
+        {
+          "type": "Memory Usage (B/op)",
+          "value": 71492
+        },
+        {
+          "type": "Allocations/op",
+          "value": 3964
+        },
+        {
+          "type": "Iterations",
+          "value": 9214
+        }
+      ]
+    },
+    {
+      "xAxis": "SmallIntegers",
+      "yAxis": "CmpFloatRat2",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 99.73
+        },
+        {
+          "type": "Memory Usage (B/op)",
+          "value": 8
+        },
+        {
+          "type": "Allocations/op",
+          "value": 1
+        },
+        {
+          "type": "Iterations",
+          "value": 60722422
+        }
+      ]
+    },
+    {
+      "xAxis": "LargeIntegers",
+      "yAxis": "CmpFloatRat2",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 189.4
+        },
+        {
+          "type": "Memory Usage (B/op)",
+          "value": 48
+        },
+        {
+          "type": "Allocations/op",
+          "value": 1
+        },
+        {
+          "type": "Iterations",
+          "value": 34208551
+        }
+      ]
+    },
+    {
+      "xAxis": "SimpleFraction",
+      "yAxis": "CmpFloatRat2",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 577.7
+        },
+        {
+          "type": "Memory Usage (B/op)",
+          "value": 64
+        },
+        {
+          "type": "Allocations/op",
+          "value": 3
+        },
+        {
+          "type": "Iterations",
+          "value": 10308673
+        }
+      ]
+    },
+    {
+      "xAxis": "ComplexFraction",
+      "yAxis": "CmpFloatRat2",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 624.5
+        },
+        {
+          "type": "Memory Usage (B/op)",
+          "value": 72
+        },
+        {
+          "type": "Allocations/op",
+          "value": 4
+        },
+        {
+          "type": "Iterations",
+          "value": 9420973
+        }
+      ]
+    },
+    {
+      "xAxis": "LargeFraction",
+      "yAxis": "CmpFloatRat2",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 664.5
+        },
+        {
+          "type": "Memory Usage (B/op)",
+          "value": 88
+        },
+        {
+          "type": "Allocations/op",
+          "value": 4
+        },
+        {
+          "type": "Iterations",
+          "value": 9549158
+        }
+      ]
+    },
+    {
+      "xAxis": "VeryLargeNumerator",
+      "yAxis": "CmpFloatRat2",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 813.9
+        },
+        {
+          "type": "Memory Usage (B/op)",
+          "value": 208
+        },
+        {
+          "type": "Allocations/op",
+          "value": 5
+        },
+        {
+          "type": "Iterations",
+          "value": 7537648
+        }
+      ]
+    },
+    {
+      "xAxis": "VeryLargeDenominator",
+      "yAxis": "CmpFloatRat2",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 1141
+        },
+        {
+          "type": "Memory Usage (B/op)",
+          "value": 344
+        },
+        {
+          "type": "Allocations/op",
+          "value": 5
+        },
+        {
+          "type": "Iterations",
+          "value": 5180502
+        }
+      ]
+    },
+    {
+      "xAxis": "NegativeSmall",
+      "yAxis": "CmpFloatRat2",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 560.7
+        },
+        {
+          "type": "Memory Usage (B/op)",
+          "value": 72
+        },
+        {
+          "type": "Allocations/op",
+          "value": 4
+        },
+        {
+          "type": "Iterations",
+          "value": 11936049
+        }
+      ]
+    },
+    {
+      "xAxis": "NegativeLarge",
+      "yAxis": "CmpFloatRat2",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 200
+        },
+        {
+          "type": "Memory Usage (B/op)",
+          "value": 48
+        },
+        {
+          "type": "Allocations/op",
+          "value": 1
+        },
+        {
+          "type": "Iterations",
+          "value": 34200104
+        }
+      ]
+    },
+    {
+      "xAxis": "CloseToZero",
+      "yAxis": "CmpFloatRat2",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 9.62
+        },
+        {
+          "type": "Memory Usage (B/op)"
+        },
+        {
+          "type": "Allocations/op"
+        },
+        {
+          "type": "Iterations",
+          "value": 528448011
+        }
+      ]
+    },
+    {
+      "xAxis": "DifferentSigns",
+      "yAxis": "CmpFloatRat2",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 3.14
+        },
+        {
+          "type": "Memory Usage (B/op)"
+        },
+        {
+          "type": "Allocations/op"
+        },
+        {
+          "type": "Iterations",
+          "value": 1000000000
+        }
+      ]
+    },
+    {
+      "xAxis": "BothZero",
+      "yAxis": "CmpFloatRat2",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 2.79
+        },
+        {
+          "type": "Memory Usage (B/op)"
+        },
+        {
+          "type": "Allocations/op"
+        },
+        {
+          "type": "Iterations",
+          "value": 1000000000
+        }
+      ]
+    },
+    {
+      "xAxis": "HighPrecision",
+      "yAxis": "CmpFloatRat2",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 821
+        },
+        {
+          "type": "Memory Usage (B/op)",
+          "value": 216
+        },
+        {
+          "type": "Allocations/op",
+          "value": 5
+        },
+        {
+          "type": "Iterations",
+          "value": 6116125
+        }
+      ]
+    },
+    {
+      "xAxis": "RandomValues",
+      "yAxis": "CmpFloatRat2",
+      "stats": [
+        {
+          "type": "Execution Time (ns/op)",
+          "value": 640530
+        },
+        {
+          "type": "Memory Usage (B/op)",
+          "value": 71491
+        },
+        {
+          "type": "Allocations/op",
+          "value": 3964
+        },
+        {
+          "type": "Iterations",
+          "value": 8496
+        }
+      ]
+    }
+  ]
+}
