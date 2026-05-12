@@ -15,7 +15,7 @@ func ParseBenchmarkNameToGroups(name, pattern string) (map[string]string, error)
 		return nil, err
 	}
 
-	patternParts := parsePatternParts(pattern)
+	patternParts := ParsePatternParts(pattern)
 	nameParts := splitNameByPattern(name, pattern)
 	result := mapPartsToResult(patternParts, nameParts)
 
@@ -60,8 +60,8 @@ func ValidateGroupPattern(pattern string) error {
 	return nil
 }
 
-// parsePatternParts extracts and normalizes pattern parts
-func parsePatternParts(pattern string) []string {
+// ParsePatternParts extracts and normalizes pattern parts
+func ParsePatternParts(pattern string) []string {
 	parts := separatorRegex.Split(pattern, -1)
 
 	for i, part := range parts {
