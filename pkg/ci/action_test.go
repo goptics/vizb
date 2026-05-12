@@ -24,20 +24,16 @@ BenchmarkAdd/Priority-16 1000000    2345 ns/op    890 B/op    15 allocs/op
 	require.NoError(t, os.WriteFile(inputPath, []byte(input), 0644))
 
 	opts := ActionOpts{
-		Input:   inputPath,
-		Version: "abc123",
-		Tag:     "v1.0.0",
-		Date:    time.Now(),
+		Input:        inputPath,
+		Version:      "abc123",
+		Tag:          "v1.0.0",
+		Date:         time.Now(),
+		GroupPattern: "n/y",
 	}
 
-	run, bench, err := RunAction(opts)
+	bench, err := RunAction(opts)
 	require.NoError(t, err)
-	require.NotNil(t, run)
 	require.NotNil(t, bench)
-
-	assert.Equal(t, "abc123", run.Version)
-	assert.Equal(t, "v1.0.0", run.Tag)
-	assert.Len(t, run.Benchmarks, 2)
 
 	assert.Equal(t, "example.com/foo", bench.Pkg)
 	assert.GreaterOrEqual(t, len(bench.Data), 2)
@@ -102,15 +98,16 @@ func TestRunActionMergeReplaceByTag(t *testing.T) {
 	require.NoError(t, os.WriteFile(inputPath, []byte(input), 0644))
 
 	opts := ActionOpts{
-		Input:     inputPath,
-		Version:   "newsha",
-		Tag:       "v1.0.0",
-		Date:      time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC),
-		MergeFile: mergePath,
-		Output:    mergePath,
+		Input:        inputPath,
+		Version:      "newsha",
+		Tag:          "v1.0.0",
+		Date:         time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC),
+		MergeFile:    mergePath,
+		Output:       mergePath,
+		GroupPattern: "n/y",
 	}
 
-	_, bench, err := RunAction(opts)
+	bench, err := RunAction(opts)
 	require.NoError(t, err)
 
 	// Should have v1.1.0 data preserved, v1.0.0 replaced with new data
@@ -173,16 +170,17 @@ func TestRunActionPruneOldRuns(t *testing.T) {
 	require.NoError(t, os.WriteFile(inputPath, []byte(input), 0644))
 
 	opts := ActionOpts{
-		Input:      inputPath,
-		Version:    "newsha",
-		Tag:        "v1.5.0",
-		Date:       time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC),
-		MergeFile:  mergePath,
-		Output:     mergePath,
-		KeepCount: 3,
+		Input:        inputPath,
+		Version:      "newsha",
+		Tag:          "v1.5.0",
+		Date:         time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC),
+		MergeFile:    mergePath,
+		Output:       mergePath,
+		KeepCount:    3,
+		GroupPattern: "n/y",
 	}
 
-	_, bench, err := RunAction(opts)
+	bench, err := RunAction(opts)
 	require.NoError(t, err)
 
 	// Should have exactly 3 tags (prune=3)

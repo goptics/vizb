@@ -6,12 +6,10 @@ import (
 	"os"
 	"regexp"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/goptics/vizb/pkg/parser"
 	"github.com/goptics/vizb/shared"
-	"golang.org/x/perf/benchfmt"
 )
 
 type ActionOpts struct {
@@ -27,93 +25,53 @@ type ActionOpts struct {
 	GroupRegex   string
 }
 
-func RunAction(opts ActionOpts) (*shared.Run, *shared.Benchmark, error) {
-	f, err := os.Open(opts.Input)
+func RunAction(opts ActionOpts) (*shared.Benchmark, error) {
+	if _, err := os.Stat(opts.Input); err != nil {
+		return nil, fmt.Errorf("input file: %w", err)
+	}
+
+	prevPattern := shared.FlagState.GroupPattern
+	prevRegex := shared.FlagState.GroupRegex
+	shared.FlagState.GroupPattern = opts.GroupPattern
+	shared.FlagState.GroupRegex = opts.GroupRegex
+	defer func() {
+		shared.FlagState.GroupPattern = prevPattern
+		shared.FlagState.GroupRegex = prevRegex
+	}()
+
+	data := parser.ParseBenchmarkData(opts.Input)
+
+	data, err := InjectTag(data, opts.Tag, opts.GroupPattern, opts.GroupRegex)
 	if err != nil {
-		return nil, nil, fmt.Errorf("open input: %w", err)
-	}
-	defer f.Close()
-
-	reader := benchfmt.NewReader(f, opts.Input)
-	var goos, goarch, pkgName, cpu string
-	var benchResults []shared.BenchmarkResult
-
-	for reader.Scan() {
-		result, ok := reader.Result().(*benchfmt.Result)
-		if !ok {
-			continue
-		}
-		goos = result.GetConfig("goos")
-		goarch = result.GetConfig("goarch")
-		pkgName = result.GetConfig("pkg")
-		cpu = result.GetConfig("cpu")
-
-		rawBenchName, _ := parseBenchName(result.Name)
-		br := shared.BenchmarkResult{Name: rawBenchName, Pkg: pkgName}
-
-		for _, value := range result.Values {
-			switch value.Unit {
-			case "sec/op":
-				br.NsPerOp = value.Value * 1e9
-			case "B/op":
-				br.BytesPerOp = value.Value
-			case "allocs/op":
-				br.AllocsPerOp = value.Value
-			case "B/s", "MB/s", "GB/s":
-				br.MBPerSec = value.Value
-			}
-		}
-		benchResults = append(benchResults, br)
-	}
-	if err := reader.Err(); err != nil {
-		return nil, nil, fmt.Errorf("read benchmarks: %w", err)
+		return nil, err
 	}
 
-	run := &shared.Run{
-		Version:    opts.Version,
-		Tag:        opts.Tag,
-		Date:       opts.Date,
-		Branch:     opts.Branch,
-		Goos:       goos,
-		Goarch:     goarch,
-		CPU:        cpu,
-		Benchmarks: benchResults,
-	}
-
-	var newData []shared.BenchmarkData
-	for _, br := range benchResults {
-		name, yAxis := splitBenchName(br.Name)
-		newData = append(newData, shared.BenchmarkData{
-			Name:  name,
-			XAxis: opts.Tag,
-			YAxis: yAxis,
-			Stats: resultToStats(br),
-		})
+	tagDim, err := TagDimension(opts.GroupPattern, opts.GroupRegex)
+	if err != nil {
+		return nil, err
 	}
 
 	bench := shared.Benchmark{
-		Name: pkgName,
-		Pkg:  pkgName,
-		OS:   goos,
-		Arch: goarch,
-		Data: newData,
+		Name: shared.Pkg,
+		Pkg:  shared.Pkg,
+		OS:   shared.OS,
+		Arch: shared.Arch,
+		Data: data,
 	}
-	bench.CPU.Name = cpu
+	bench.CPU.Name = shared.CPU
 	bench.Settings.Charts = []string{"bar", "line", "pie"}
 	bench.Settings.ShowLabels = true
 
-	// Handle merge: replace data items with matching xAxis (tag)
 	if opts.MergeFile != "" {
 		existing, err := shared.ReadJSONFile[shared.Benchmark](opts.MergeFile)
 		if err == nil {
-			// Remove existing items with same xAxis (tag)
 			var filteredData []shared.BenchmarkData
 			for _, d := range existing.Data {
-				if d.XAxis != opts.Tag {
+				if getDim(d, tagDim) != opts.Tag {
 					filteredData = append(filteredData, d)
 				}
 			}
-			bench.Data = append(filteredData, newData...)
+			bench.Data = append(filteredData, data...)
 			bench.Name = existing.Name
 			bench.Description = existing.Description
 			bench.CPU = existing.CPU
@@ -122,24 +80,20 @@ func RunAction(opts ActionOpts) (*shared.Run, *shared.Benchmark, error) {
 			bench.Settings = existing.Settings
 			bench.Runtimes = existing.Runtimes
 		} else if !errors.Is(err, os.ErrNotExist) {
-			// Check if the underlying error is "file not found"
-			// ReadJSONFile wraps: "read file %s: %w"
-			// We just ignore if file doesn't exist
+			// ignore file-not-found for first run
 		}
 	}
 
-	// Track runtime for this tag/commit
 	if bench.Runtimes == nil {
 		bench.Runtimes = make(map[string]time.Time)
 	}
 	bench.Runtimes[opts.Tag] = opts.Date
 
-	// Prune: keep at most PruneCount unique xAxis values (by most recent runtime)
 	if opts.KeepCount > 0 {
-		pruneBenchData(&bench, opts.KeepCount)
+		pruneBenchData(&bench, opts.KeepCount, tagDim)
 	}
 
-	return run, &bench, nil
+	return &bench, nil
 }
 
 // TagDimension returns which dimension (name, xAxis, yAxis) is NOT covered
@@ -248,7 +202,7 @@ func expandCIShorthand(part string) string {
 	return part
 }
 
-func pruneBenchData(bench *shared.Benchmark, keep int) {
+func pruneBenchData(bench *shared.Benchmark, keep int, tagDim string) {
 	tags := make([]string, 0, len(bench.Runtimes))
 	for tag := range bench.Runtimes {
 		tags = append(tags, tag)
@@ -268,7 +222,7 @@ func pruneBenchData(bench *shared.Benchmark, keep int) {
 
 	var filtered []shared.BenchmarkData
 	for _, d := range bench.Data {
-		if keepSet[d.XAxis] {
+		if keepSet[getDim(d, tagDim)] {
 			filtered = append(filtered, d)
 		}
 	}
@@ -281,43 +235,4 @@ func pruneBenchData(bench *shared.Benchmark, keep int) {
 	}
 }
 
-func parseBenchName(name benchfmt.Name) (string, string) {
-	b, ps := name.Parts()
-	benchName := string(b)
-	var cpu string
-	for _, p := range ps {
-		part := string(p)
-		if len(part) > 0 && part[0] == '-' {
-			cpu = part[1:]
-		} else {
-			benchName += part
-		}
-	}
-	return benchName, cpu
-}
 
-func splitBenchName(fullName string) (string, string) {
-	name := strings.TrimPrefix(fullName, "Benchmark")
-	parts := strings.SplitN(name, "/", 2)
-	if len(parts) == 1 {
-		return parts[0], ""
-	}
-	return parts[0], parts[1]
-}
-
-func resultToStats(br shared.BenchmarkResult) []shared.Stat {
-	var stats []shared.Stat
-	if br.NsPerOp > 0 {
-		stats = append(stats, shared.Stat{Type: "Execution Time (ns/op)", Value: br.NsPerOp})
-	}
-	if br.BytesPerOp > 0 {
-		stats = append(stats, shared.Stat{Type: "Memory Usage (B/op)", Value: br.BytesPerOp})
-	}
-	if br.AllocsPerOp > 0 {
-		stats = append(stats, shared.Stat{Type: "Allocations/op", Value: br.AllocsPerOp})
-	}
-	if br.MBPerSec > 0 {
-		stats = append(stats, shared.Stat{Type: "Throughput (MB/s)", Value: br.MBPerSec})
-	}
-	return stats
-}
