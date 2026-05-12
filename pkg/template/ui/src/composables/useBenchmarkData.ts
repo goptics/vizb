@@ -6,11 +6,9 @@ import { DEFAULT_SETTINGS } from './constants'
 
 const getStatDimensions = (benchmarks: BenchmarkData[]) => {
   let dimension = 0
-
   if (benchmarks.some((b) => b.name)) dimension++
   if (benchmarks.some((b) => b.xAxis)) dimension++
   if (benchmarks.some((b) => b.yAxis)) dimension++
-
   return dimension
 }
 
@@ -20,13 +18,12 @@ const getBenchmarks = async (): Promise<Benchmark[]> => {
     return data.default as unknown as Benchmark[]
   }
 
-  return window.VIZB_DATA ?? []
-}
+  if (window.VIZB_DATA && window.VIZB_DATA.length > 0) {
+    return window.VIZB_DATA
+  }
 
-/**
- * Composable for loading and managing benchmark data
- * Groups results by benchmark name to create separate benchmark groups
- */
+  return []
+}
 
 // Global state
 const benchmarks = ref<Benchmark[]>([])
@@ -43,18 +40,14 @@ const benchmarksProcessed = computed<Benchmark[]>(() => {
   if (!Array.isArray(benchmarks.value)) {
     benchmarks.value = [benchmarks.value]
   }
-
   if (!benchmarks.value.length) return []
-
   return benchmarks.value.map((benchmark) => {
-    // Process stats for each result
     for (const result of benchmark.data) {
       for (const stat of result.stats) {
         const { value = 0 } = stat
         stat.value = Number(value.toFixed(2))
       }
     }
-
     return benchmark
   })
 })
@@ -67,26 +60,19 @@ const activeBenchmark = computed(
   () => benchmarksProcessed.value[activeBenchmarkId.value] || benchmarksProcessed.value[0]
 )
 
-// Group results within the active benchmark
 const grouped = computed(() => {
   if (!activeBenchmark.value) return new Map<string, BenchmarkData[]>()
-
   const groupMap = new Map<string, BenchmarkData[]>()
-
   for (const benchmarkData of activeBenchmark.value.data) {
     const { name = 'Default', ...rest } = benchmarkData
-
     if (!groupMap.has(name)) {
       groupMap.set(name, [])
     }
-
     groupMap.get(name)!.push(rest)
   }
-
   return groupMap
 })
 
-// Convert grouped results to array format for easier consumption
 const benchmarkGroups = computed(() =>
   Array.from(grouped.value.entries()).map(([name, data]) => ({
     name,
@@ -108,24 +94,14 @@ const { initializeFromBenchmark } = useSettingsStore()
 
 const selectBenchmark = (id: number) => {
   if (id >= 0 && id < benchmarks.value.length) {
-    // Reset color mapping when benchmark changes
     resetColor()
-
-    // Store current group name to try and restore it after benchmark change
     const currentGroupName = activeGroup.value?.name
-
     activeBenchmarkId.value = id
-
-    // Update settings from the new benchmark
     const benchmark = benchmarks.value[id]
     if (benchmark?.settings) {
       initializeFromBenchmark(benchmark.settings, true)
     }
-
-    // Try to find the previously selected group in the new benchmark
-    // If found, select it. Otherwise, select the first group.
     const newGroupIndex = benchmarkGroups.value.findIndex((g) => g.name === currentGroupName)
-
     if (newGroupIndex !== -1) {
       activeGroupId.value = newGroupIndex
     } else {
@@ -142,14 +118,11 @@ const selectGroup = (id: number) => {
 
 export function useBenchmarkData() {
   return {
-    // Top level benchmark selection
     benchmarks,
     activeBenchmark,
     activeBenchmarkId,
     activeBenchmarkDimension,
     selectBenchmark,
-
-    // Inner level group selection
     resultGroups: benchmarkGroups,
     activeGroup,
     activeGroupId,

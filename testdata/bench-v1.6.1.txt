@@ -1,0 +1,19 @@
+go test -bench=. -benchmem
+goos: linux
+goarch: amd64
+pkg: github.com/goptics/varmq
+cpu: 13th Gen Intel(R) Core(TM) i7-13700
+BenchmarkAdd/Queue-24 	  658718	      2479 ns/op	     112 B/op	       2 allocs/op
+BenchmarkAdd/Priority-24         	  688447	      3096 ns/op	     128 B/op	       3 allocs/op
+BenchmarkAdd/ErrQueue-24         	  442580	      3915 ns/op	     289 B/op	       5 allocs/op
+BenchmarkAdd/ErrPriority-24      	 1000000	      3179 ns/op	     304 B/op	       6 allocs/op
+BenchmarkAdd/ResultQueue-24      	 1000000	      1121 ns/op	     337 B/op	       5 allocs/op
+BenchmarkAdd/ResultPriority-24   	  998410	      1856 ns/op	     352 B/op	       6 allocs/op
+BenchmarkAddAll/Queue-24         	     744	   1868113 ns/op	  131014 B/op	    3002 allocs/op
+BenchmarkAddAll/Priority-24      	     358	   2812668 ns/op	  146493 B/op	    4002 allocs/op
+BenchmarkAddAll/ErrQueue-24      	     507	   2237957 ns/op	  156914 B/op	    3505 allocs/op
+BenchmarkAddAll/ErrPriority-24   	     391	   3227587 ns/op	  171057 B/op	    4505 allocs/op
+BenchmarkAddAll/ResultQueue-24   	     516	   2339587 ns/op	  173254 B/op	    3005 allocs/op
+BenchmarkAddAll/ResultPriority-24         	     394	   2837816 ns/op	  187688 B/op	    4006 allocs/op
+PASS
+ok  	github.com/goptics/varmq	23.368s

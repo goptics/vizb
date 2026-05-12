@@ -41,11 +41,11 @@ func parseBenchmarkName(name benchfmt.Name) (benchName string, cpu string) {
 // shouldIncludeBenchmark returns true if the benchmark name should be included
 // based on the filter regex. If no filter is set, all benchmarks are included.
 func shouldIncludeBenchmark(benchName string) bool {
-	if shared.FlagState.FilterRegex == "" {
+	if shared.BenchSettings.FilterRegex == "" {
 		return true
 	}
 
-	filterRe, err := regexp.Compile(shared.FlagState.FilterRegex)
+	filterRe, err := regexp.Compile(shared.BenchSettings.FilterRegex)
 	if err != nil {
 		shared.ExitWithError("Invalid filter regex", err)
 	}
@@ -101,18 +101,18 @@ func ParseBenchmarkData(filePath string) (results []shared.BenchmarkData) {
 			switch value.Unit {
 			case "sec/op":
 				benchStat = shared.Stat{
-					Type:  utils.CreateStatType("Execution Time", shared.FlagState.TimeUnit, "op"),
-					Value: utils.FormatTime(value.OrigValue, shared.FlagState.TimeUnit),
+					Type:  utils.CreateStatType("Execution Time", shared.BenchSettings.TimeUnit, "op"),
+					Value: utils.FormatTime(value.OrigValue, shared.BenchSettings.TimeUnit),
 				}
 			case "B/op":
 				benchStat = shared.Stat{
-					Type:  utils.CreateStatType("Memory Usage", shared.FlagState.MemUnit, "op"),
-					Value: utils.FormatMem(value.Value, shared.FlagState.MemUnit),
+					Type:  utils.CreateStatType("Memory Usage", shared.BenchSettings.MemUnit, "op"),
+					Value: utils.FormatMem(value.Value, shared.BenchSettings.MemUnit),
 				}
 			case "allocs/op":
 				benchStat = shared.Stat{
-					Type:  utils.CreateStatType("Allocations", shared.FlagState.NumberUnit, "op"),
-					Value: utils.FormatNumber(value.Value, shared.FlagState.NumberUnit),
+					Type:  utils.CreateStatType("Allocations", shared.BenchSettings.NumberUnit, "op"),
+					Value: utils.FormatNumber(value.Value, shared.BenchSettings.NumberUnit),
 				}
 			case "B/s", "MB/s", "GB/s":
 				// benchfmt only populates OrigValue/OrigUnit for MB/s
@@ -167,8 +167,8 @@ func ParseBenchmarkData(filePath string) (results []shared.BenchmarkData) {
 	if hasDifferentIters {
 		for i := range results {
 			results[i].Stats = append(results[i].Stats, shared.Stat{
-				Type:  utils.CreateStatType("Iterations", shared.FlagState.NumberUnit, ""),
-				Value: utils.FormatNumber(float64(allIters[i]), shared.FlagState.NumberUnit),
+				Type:  utils.CreateStatType("Iterations", shared.BenchSettings.NumberUnit, ""),
+				Value: utils.FormatNumber(float64(allIters[i]), shared.BenchSettings.NumberUnit),
 			})
 		}
 	}

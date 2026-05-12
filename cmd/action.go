@@ -9,6 +9,7 @@ import (
 	"github.com/goptics/vizb/pkg/style"
 	"github.com/goptics/vizb/pkg/template"
 	"github.com/goptics/vizb/shared"
+	"github.com/goptics/vizb/shared/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -31,9 +32,12 @@ func init() {
 	actionCmd.Flags().IntVar(&shared.ActionState.Keep, "keep", 0, "Max number of tags/commits to keep (0 = unlimited)")
 	actionCmd.Flags().StringVar(&shared.ActionState.GroupPattern, "group-pattern", "n/y", "Pattern to parse benchmark names in CI mode (n/y, n/x, x/y, etc.). The missing dimension gets the tag.")
 	actionCmd.Flags().StringVar(&shared.ActionState.GroupRegex, "group-regex", "", "Regex to parse benchmark names in CI mode. Overrides group-pattern.")
+	registerBenchmarkFlags(actionCmd)
 }
 
 func runAction(cmd *cobra.Command, args []string) {
+	utils.ApplyValidationRules(sharedFlagValidationRules)
+
 	input := "stdin"
 	if len(args) > 0 {
 		input = args[0]

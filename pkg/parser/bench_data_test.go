@@ -24,15 +24,15 @@ type testBlock struct {
 
 func TestParseBenchmarkData(t *testing.T) {
 	// Save original flag state to restore after tests
-	origTimeUnit := shared.FlagState.TimeUnit
-	origMemUnit := shared.FlagState.MemUnit
-	origAllocUnit := shared.FlagState.NumberUnit
+	origTimeUnit := shared.BenchSettings.TimeUnit
+	origMemUnit := shared.BenchSettings.MemUnit
+	origAllocUnit := shared.BenchSettings.NumberUnit
 
 	// Restore flag state after tests
 	defer func() {
-		shared.FlagState.TimeUnit = origTimeUnit
-		shared.FlagState.MemUnit = origMemUnit
-		shared.FlagState.NumberUnit = origAllocUnit
+		shared.BenchSettings.TimeUnit = origTimeUnit
+		shared.BenchSettings.MemUnit = origMemUnit
+		shared.BenchSettings.NumberUnit = origAllocUnit
 		shared.CPUCount = 0
 	}()
 
@@ -315,9 +315,9 @@ func TestParseBenchmarkData(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Set up flag state for this test
-			shared.FlagState.TimeUnit = tt.timeUnit
-			shared.FlagState.MemUnit = tt.memUnit
-			shared.FlagState.NumberUnit = tt.allocUnit
+			shared.BenchSettings.TimeUnit = tt.timeUnit
+			shared.BenchSettings.MemUnit = tt.memUnit
+			shared.BenchSettings.NumberUnit = tt.allocUnit
 			shared.FlagState.GroupPattern = tt.pattern
 			shared.CPUCount = 0
 
@@ -460,9 +460,9 @@ func TestConvertJsonBenchToText(t *testing.T) {
 
 func TestShouldIncludeBenchmark(t *testing.T) {
 	// Save original filter state
-	origFilter := shared.FlagState.FilterRegex
+	origFilter := shared.BenchSettings.FilterRegex
 	defer func() {
-		shared.FlagState.FilterRegex = origFilter
+		shared.BenchSettings.FilterRegex = origFilter
 	}()
 
 	tests := []struct {
@@ -571,7 +571,7 @@ func TestShouldIncludeBenchmark(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			shared.FlagState.FilterRegex = tt.filter
+			shared.BenchSettings.FilterRegex = tt.filter
 			result := shouldIncludeBenchmark(tt.benchName)
 			if result != tt.expected {
 				t.Errorf("shouldIncludeBenchmark(%q) with filter %q = %v, expected %v",

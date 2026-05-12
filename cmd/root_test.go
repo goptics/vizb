@@ -42,15 +42,15 @@ func TestMain(m *testing.M) {
 // TestValidateFlags tests that flag validation works correctly
 func TestValidateFlags(t *testing.T) {
 	// Save original state to restore after tests
-	origMemUnit := shared.FlagState.MemUnit
-	origTimeUnit := shared.FlagState.TimeUnit
-	origAllocUnit := shared.FlagState.NumberUnit
+	origMemUnit := shared.BenchSettings.MemUnit
+	origTimeUnit := shared.BenchSettings.TimeUnit
+	origAllocUnit := shared.BenchSettings.NumberUnit
 
 	defer func() {
 		// Restore original flag values
-		shared.FlagState.MemUnit = origMemUnit
-		shared.FlagState.TimeUnit = origTimeUnit
-		shared.FlagState.NumberUnit = origAllocUnit
+		shared.BenchSettings.MemUnit = origMemUnit
+		shared.BenchSettings.TimeUnit = origTimeUnit
+		shared.BenchSettings.NumberUnit = origAllocUnit
 	}()
 
 	tests := []struct {
@@ -64,9 +64,9 @@ func TestValidateFlags(t *testing.T) {
 		{
 			name: "Valid flags",
 			setupFlags: func() {
-				shared.FlagState.MemUnit = "b"
-				shared.FlagState.TimeUnit = "ns"
-				shared.FlagState.NumberUnit = ""
+				shared.BenchSettings.MemUnit = "b"
+				shared.BenchSettings.TimeUnit = "ns"
+				shared.BenchSettings.NumberUnit = ""
 			},
 			expectedMemUnit:   "b",
 			expectedTimeUnit:  "ns",
@@ -76,9 +76,9 @@ func TestValidateFlags(t *testing.T) {
 		{
 			name: "Invalid memory unit",
 			setupFlags: func() {
-				shared.FlagState.MemUnit = "invalid"
-				shared.FlagState.TimeUnit = "ns"
-				shared.FlagState.NumberUnit = ""
+				shared.BenchSettings.MemUnit = "invalid"
+				shared.BenchSettings.TimeUnit = "ns"
+				shared.BenchSettings.NumberUnit = ""
 			},
 			expectedMemUnit:   "B",
 			expectedTimeUnit:  "ns",
@@ -88,9 +88,9 @@ func TestValidateFlags(t *testing.T) {
 		{
 			name: "Invalid time unit",
 			setupFlags: func() {
-				shared.FlagState.MemUnit = "B"
-				shared.FlagState.TimeUnit = "invalid"
-				shared.FlagState.NumberUnit = ""
+				shared.BenchSettings.MemUnit = "B"
+				shared.BenchSettings.TimeUnit = "invalid"
+				shared.BenchSettings.NumberUnit = ""
 			},
 			expectedMemUnit:   "B",
 			expectedTimeUnit:  "ns",
@@ -100,9 +100,9 @@ func TestValidateFlags(t *testing.T) {
 		{
 			name: "Invalid alloc unit",
 			setupFlags: func() {
-				shared.FlagState.MemUnit = "B"
-				shared.FlagState.TimeUnit = "ns"
-				shared.FlagState.NumberUnit = "invalid"
+				shared.BenchSettings.MemUnit = "B"
+				shared.BenchSettings.TimeUnit = "ns"
+				shared.BenchSettings.NumberUnit = "invalid"
 			},
 			expectedMemUnit:   "B",
 			expectedTimeUnit:  "ns",
@@ -133,9 +133,9 @@ func TestValidateFlags(t *testing.T) {
 			os.Stderr = oldStderr
 
 			// Check that the flags were updated correctly after validation
-			assert.Equal(t, tt.expectedMemUnit, shared.FlagState.MemUnit)
-			assert.Equal(t, tt.expectedTimeUnit, shared.FlagState.TimeUnit)
-			assert.Equal(t, tt.expectedAllocUnit, shared.FlagState.NumberUnit)
+			assert.Equal(t, tt.expectedMemUnit, shared.BenchSettings.MemUnit)
+			assert.Equal(t, tt.expectedTimeUnit, shared.BenchSettings.TimeUnit)
+			assert.Equal(t, tt.expectedAllocUnit, shared.BenchSettings.NumberUnit)
 
 			// Check the stderr output if expected
 			if tt.expectedOutput != "" {

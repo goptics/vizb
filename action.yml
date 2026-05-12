@@ -1,20 +1,11 @@
 name: 'vizb'
-description: 'Run Go benchmarks and track performance history with vizb'
+description: 'Track Go benchmark performance history with vizb'
 author: 'goptics'
 
 inputs:
-  bench-pattern:
-    description: 'Benchmark pattern to pass to go test -bench'
-    required: false
-    default: './...'
-  bench-count:
-    description: 'Number of benchmark iterations (-count flag)'
-    required: false
-    default: '5'
-  bench-args:
-    description: 'Additional arguments to pass to go test'
-    required: false
-    default: '-benchmem'
+  bench-txt:
+    description: 'Path to Go benchmark output file (from go test -bench)'
+    required: true
   generate-html:
     description: 'Generate an index.html viewer alongside benchmarks.json'
     required: false
@@ -27,28 +18,60 @@ inputs:
     description: 'Regex to parse benchmark names in CI mode. Overrides group-pattern.'
     required: false
     default: ''
+  name:
+    description: 'Name of the benchmark'
+    required: false
+    default: 'Benchmarks'
+  description:
+    description: 'Description of the benchmark'
+    required: false
+    default: ''
+  sort:
+    description: 'Sort order (asc or desc)'
+    required: false
+    default: ''
+  scale:
+    description: 'Y-axis scale type (linear, log)'
+    required: false
+    default: 'linear'
+  charts:
+    description: 'Chart types to generate (comma-separated: bar, line, pie)'
+    required: false
+    default: 'bar,line,pie'
+  show-labels:
+    description: 'Show labels on charts'
+    required: false
+    default: 'false'
+  filter:
+    description: 'Regex pattern to include only matching benchmark names'
+    required: false
+    default: ''
+  time-unit:
+    description: 'Time unit (ns, us, ms, s)'
+    required: false
+    default: 'ns'
+  mem-unit:
+    description: 'Memory unit (b, B, KB, MB, GB)'
+    required: false
+    default: 'B'
+  number-unit:
+    description: 'Number unit (K, M, B, T)'
+    required: false
+    default: ''
 
 runs:
   using: 'composite'
   steps:
-    - name: Setup Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: 'stable'
-
     - name: Install vizb
       run: go install github.com/goptics/vizb@latest
       shell: bash
 
-    - name: Run benchmarks
-      run: |
-        go test -bench=${{ inputs.bench-pattern }} \
-          -run=^$ \
-          -benchmem \
-          -count=${{ inputs.bench-count }} \
-          ${{ inputs.bench-args }} \
-          > bench.txt
-      shell: bash
+    - name: Download previous benchmarks
+      uses: actions/download-artifact@v4
+      with:
+        name: benchmarks
+        path: .
+      continue-on-error: true
 
     - name: Generate history
       run: |
@@ -60,13 +83,49 @@ runs:
         if [ "${{ inputs.group-regex }}" != "" ]; then
           GROUP_REGEX_FLAG="--group-regex ${{ inputs.group-regex }}"
         fi
-        vizb action bench.txt \
+        FILTER_FLAG=""
+        if [ "${{ inputs.filter }}" != "" ]; then
+          FILTER_FLAG="--filter ${{ inputs.filter }}"
+        fi
+        SORT_FLAG=""
+        if [ "${{ inputs.sort }}" != "" ]; then
+          SORT_FLAG="--sort ${{ inputs.sort }}"
+        fi
+        SHOW_LABELS_FLAG=""
+        if [ "${{ inputs.show-labels }}" = "true" ]; then
+          SHOW_LABELS_FLAG="--show-labels"
+        fi
+        vizb action ${{ inputs.bench-txt }} \
           --sha ${{ github.sha }} \
           --tag ${{ github.ref_name }} \
           --branch ${{ github.ref_name }} \
           --merge benchmarks.json \
           --output benchmarks.json \
           --group-pattern ${{ inputs.group-pattern }} \
+          --name "${{ inputs.name }}" \
+          --description "${{ inputs.description }}" \
+          --scale ${{ inputs.scale }} \
+          --charts ${{ inputs.charts }} \
+          --time-unit ${{ inputs.time-unit }} \
+          --mem-unit ${{ inputs.mem-unit }} \
           $GROUP_REGEX_FLAG \
-          $HTML_FLAG
+          $HTML_FLAG \
+          $SHOW_LABELS_FLAG \
+          $FILTER_FLAG \
+          $SORT_FLAG
       shell: bash
+
+    - name: Upload benchmarks artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: benchmarks
+        path: benchmarks.json
+        overwrite: true
+
+    - name: Upload HTML viewer
+      if: ${{ inputs.generate-html == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: vizb-html
+        path: index.html
+        overwrite: true

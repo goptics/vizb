@@ -12,19 +12,19 @@ import (
 
 func TestFlagValidationRules(t *testing.T) {
 	// Save original flag state
-	origMemUnit := shared.FlagState.MemUnit
-	origTimeUnit := shared.FlagState.TimeUnit
-	origAllocUnit := shared.FlagState.NumberUnit
-	origSort := shared.FlagState.Sort
-	origCharts := shared.FlagState.Charts
+	origMemUnit := shared.BenchSettings.MemUnit
+	origTimeUnit := shared.BenchSettings.TimeUnit
+	origAllocUnit := shared.BenchSettings.NumberUnit
+	origSort := shared.BenchSettings.Sort
+	origCharts := shared.BenchSettings.Charts
 
 	defer func() {
 		// Restore original values
-		shared.FlagState.MemUnit = origMemUnit
-		shared.FlagState.TimeUnit = origTimeUnit
-		shared.FlagState.NumberUnit = origAllocUnit
-		shared.FlagState.Sort = origSort
-		shared.FlagState.Charts = origCharts
+		shared.BenchSettings.MemUnit = origMemUnit
+		shared.BenchSettings.TimeUnit = origTimeUnit
+		shared.BenchSettings.NumberUnit = origAllocUnit
+		shared.BenchSettings.Sort = origSort
+		shared.BenchSettings.Charts = origCharts
 	}()
 
 	t.Run("Memory unit validation", func(t *testing.T) {
@@ -44,7 +44,7 @@ func TestFlagValidationRules(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run("input_"+tt.input, func(t *testing.T) {
-				shared.FlagState.MemUnit = tt.input
+				shared.BenchSettings.MemUnit = tt.input
 
 				// Capture stderr
 				oldStderr := os.Stderr
@@ -60,7 +60,7 @@ func TestFlagValidationRules(t *testing.T) {
 				buf.ReadFrom(r)
 				stderr := buf.String()
 
-				assert.Equal(t, tt.expected, shared.FlagState.MemUnit)
+				assert.Equal(t, tt.expected, shared.BenchSettings.MemUnit)
 				if tt.hasWarn {
 					assert.Contains(t, stderr, "Warning")
 					assert.Contains(t, stderr, "memory unit")
@@ -87,7 +87,7 @@ func TestFlagValidationRules(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run("input_"+tt.input, func(t *testing.T) {
-				shared.FlagState.TimeUnit = tt.input
+				shared.BenchSettings.TimeUnit = tt.input
 
 				oldStderr := os.Stderr
 				r, w, _ := os.Pipe()
@@ -102,7 +102,7 @@ func TestFlagValidationRules(t *testing.T) {
 				buf.ReadFrom(r)
 				stderr := buf.String()
 
-				assert.Equal(t, tt.expected, shared.FlagState.TimeUnit)
+				assert.Equal(t, tt.expected, shared.BenchSettings.TimeUnit)
 				if tt.hasWarn {
 					assert.Contains(t, stderr, "time unit")
 				}
@@ -128,7 +128,7 @@ func TestFlagValidationRules(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run("input_"+tt.input, func(t *testing.T) {
-				shared.FlagState.NumberUnit = tt.input
+				shared.BenchSettings.NumberUnit = tt.input
 
 				oldStderr := os.Stderr
 				r, w, _ := os.Pipe()
@@ -143,7 +143,7 @@ func TestFlagValidationRules(t *testing.T) {
 				buf.ReadFrom(r)
 				stderr := buf.String()
 
-				assert.Equal(t, tt.expected, shared.FlagState.NumberUnit)
+				assert.Equal(t, tt.expected, shared.BenchSettings.NumberUnit)
 				if tt.hasWarn {
 					assert.Contains(t, stderr, "number unit")
 				}
@@ -152,9 +152,9 @@ func TestFlagValidationRules(t *testing.T) {
 	})
 
 	t.Run("Multiple invalid flags", func(t *testing.T) {
-		shared.FlagState.MemUnit = "invalid"
-		shared.FlagState.TimeUnit = "invalid"
-		shared.FlagState.NumberUnit = "invalid"
+		shared.BenchSettings.MemUnit = "invalid"
+		shared.BenchSettings.TimeUnit = "invalid"
+		shared.BenchSettings.NumberUnit = "invalid"
 
 		oldStderr := os.Stderr
 		r, w, _ := os.Pipe()
@@ -175,9 +175,9 @@ func TestFlagValidationRules(t *testing.T) {
 		assert.Contains(t, stderr, "number unit")
 
 		// Should use defaults
-		assert.Equal(t, "B", shared.FlagState.MemUnit)
-		assert.Equal(t, "ns", shared.FlagState.TimeUnit)
-		assert.Equal(t, "", shared.FlagState.NumberUnit)
+		assert.Equal(t, "B", shared.BenchSettings.MemUnit)
+		assert.Equal(t, "ns", shared.BenchSettings.TimeUnit)
+		assert.Equal(t, "", shared.BenchSettings.NumberUnit)
 	})
 }
 

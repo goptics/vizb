@@ -8,10 +8,10 @@ import (
 	"github.com/goptics/vizb/shared/utils"
 )
 
-var flagValidationRules = []utils.ValidationRule{
+var sharedFlagValidationRules = []utils.ValidationRule{
 	{
 		Label:    "memory unit",
-		Value:    &shared.FlagState.MemUnit,
+		Value:    &shared.BenchSettings.MemUnit,
 		ValidSet: []string{"b", "B", "KB", "MB", "GB"},
 		Normalizer: func(s string) string {
 			mapping := map[string]string{
@@ -30,36 +30,37 @@ var flagValidationRules = []utils.ValidationRule{
 	},
 	{
 		Label:      "time unit",
-		Value:      &shared.FlagState.TimeUnit,
+		Value:      &shared.BenchSettings.TimeUnit,
 		ValidSet:   []string{"ns", "us", "ms", "s"},
 		Normalizer: nil,
 		Default:    "ns",
 	},
 	{
 		Label:      "number unit",
-		Value:      &shared.FlagState.NumberUnit,
+		Value:      &shared.BenchSettings.NumberUnit,
 		ValidSet:   []string{"K", "M", "B", "T"},
 		Normalizer: strings.ToUpper,
 		Default:    "",
 	},
 	{
-		Label:     "group pattern",
-		Value:     &shared.FlagState.GroupPattern,
-		Validator: parser.ValidateGroupPattern,
-		Default:   "xAxis",
-	},
-	{
 		Label:      "sort order",
-		Value:      &shared.FlagState.Sort,
+		Value:      &shared.BenchSettings.Sort,
 		ValidSet:   []string{"asc", "desc"},
 		Normalizer: strings.ToLower,
 		Default:    "",
 	},
 	{
 		Label:        "charts",
-		SliceValue:   &shared.FlagState.Charts,
+		SliceValue:   &shared.BenchSettings.Charts,
 		ValidSet:     []string{"bar", "line", "pie"},
 		Normalizer:   strings.ToLower,
 		SliceDefault: []string{"bar", "line", "pie"},
 	},
 }
+
+var flagValidationRules = append(sharedFlagValidationRules, utils.ValidationRule{
+	Label:     "group pattern",
+	Value:     &shared.FlagState.GroupPattern,
+	Validator: parser.ValidateGroupPattern,
+	Default:   "xAxis",
+})

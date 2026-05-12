@@ -27,7 +27,6 @@ func GenerateHTMLBenchmarkUI(benchmarkJSON []byte, HTMLtemplate string) string {
 
 	var buf bytes.Buffer
 
-	// Render into the buffer instead of stdout
 	if err := tmpl.Execute(&buf, pageData); err != nil {
 		shared.ExitWithError("failed to execute HTML template:", err)
 	}

@@ -42,21 +42,11 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.Flags().StringVarP(&shared.FlagState.Name, "name", "n", "Benchmarks", "Name of the benchmark")
-	rootCmd.Flags().StringVarP(&shared.FlagState.Description, "description", "d", "", "Description of the benchmark")
-	rootCmd.PersistentFlags().StringVarP(&shared.FlagState.OutputFile, "output", "o", "", "Output file name (.json for JSON, .html or other for HTML)")
-	rootCmd.Flags().StringVarP(&shared.FlagState.MemUnit, "mem-unit", "m", "B", "Memory unit available: b, B, KB, MB, GB")
-	rootCmd.Flags().StringVarP(&shared.FlagState.TimeUnit, "time-unit", "t", "ns", "Time unit available: ns, us, ms, s")
-	rootCmd.Flags().StringVarP(&shared.FlagState.NumberUnit, "number-unit", "u", "", "Number unit available: K, M, B, T (default: as-is)")
+	registerBenchmarkFlags(rootCmd)
 	rootCmd.Flags().StringVarP(&shared.FlagState.GroupPattern, "group-pattern", "p", "x", "Pattern to extract grouping information from benchmark names")
 	rootCmd.Flags().StringVarP(&shared.FlagState.GroupRegex, "group-regex", "r", "", "Regex pattern to extract grouping information from benchmark names")
-	rootCmd.Flags().StringVarP(&shared.FlagState.Sort, "sort", "s", "", "Sort in asc or desc order (default: as-is)")
-	rootCmd.Flags().StringSliceVarP(&shared.FlagState.Charts, "charts", "c", []string{"bar", "line", "pie"}, "Chart types to generate (bar, line, pie)")
-	rootCmd.Flags().BoolVarP(&shared.FlagState.ShowLabels, "show-labels", "l", false, "Show labels on charts")
-	rootCmd.Flags().StringVarP(&shared.FlagState.FilterRegex, "filter", "f", "", "Regex pattern to include only matching benchmark names")
-	rootCmd.Flags().StringVarP(&shared.FlagState.Scale, "scale", "S", "linear", "Y-axis scale type (linear, log)")
+	rootCmd.PersistentFlags().StringVarP(&shared.FlagState.OutputFile, "output", "o", "", "Output file name (.json for JSON, .html or other for HTML)")
 
-	// Add a hook to validate flags after parsing
 	cobra.OnInitialize(func() {
 		utils.ApplyValidationRules(flagValidationRules)
 	})
@@ -233,31 +223,8 @@ func prepareBenchmarkData(filePath string) []shared.BenchmarkData {
 }
 
 func prepareBenchmarkFromParsedResults(results []shared.BenchmarkData) *shared.Benchmark {
-	benchmark := &shared.Benchmark{
-		Name:        shared.FlagState.Name,
-		Description: shared.FlagState.Description,
-		Data:        results,
-	}
-	enableSorting := shared.FlagState.Sort != ""
-
-	benchmark.CPU.Cores = shared.CPUCount
-	benchmark.CPU.Name = shared.CPU
-	benchmark.Arch = shared.Arch
-	benchmark.OS = shared.OS
-	benchmark.Pkg = shared.Pkg
-	benchmark.Settings.Charts = shared.FlagState.Charts
-	benchmark.Settings.Sort.Enabled = enableSorting
-
-	if enableSorting {
-		benchmark.Settings.Sort.Order = shared.FlagState.Sort
-	} else {
-		benchmark.Settings.Sort.Order = "asc"
-	}
-
-	benchmark.Settings.ShowLabels = shared.FlagState.ShowLabels
-	benchmark.Settings.Scale = shared.FlagState.Scale
-
-	return benchmark
+	b := shared.NewBenchmark(results)
+	return &b
 }
 
 // writeOutput writes results to file in required format

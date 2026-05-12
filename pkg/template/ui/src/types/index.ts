@@ -55,3 +55,4 @@ export type SeriesData = {
   values: number[]
   benchmarkId: string
 }
+

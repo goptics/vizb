@@ -51,16 +51,7 @@ func RunAction(opts ActionOpts) (*shared.Benchmark, error) {
 		return nil, err
 	}
 
-	bench := shared.Benchmark{
-		Name: shared.Pkg,
-		Pkg:  shared.Pkg,
-		OS:   shared.OS,
-		Arch: shared.Arch,
-		Data: data,
-	}
-	bench.CPU.Name = shared.CPU
-	bench.Settings.Charts = []string{"bar", "line", "pie"}
-	bench.Settings.ShowLabels = true
+	bench := shared.NewBenchmark(data)
 
 	if opts.MergeFile != "" {
 		existing, err := shared.ReadJSONFile[shared.Benchmark](opts.MergeFile)
@@ -72,12 +63,9 @@ func RunAction(opts ActionOpts) (*shared.Benchmark, error) {
 				}
 			}
 			bench.Data = append(filteredData, data...)
-			bench.Name = existing.Name
-			bench.Description = existing.Description
 			bench.CPU = existing.CPU
 			bench.OS = existing.OS
 			bench.Arch = existing.Arch
-			bench.Settings = existing.Settings
 			bench.Runtimes = existing.Runtimes
 		} else if !errors.Is(err, os.ErrNotExist) {
 			// ignore file-not-found for first run

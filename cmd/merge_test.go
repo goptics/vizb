@@ -104,8 +104,8 @@ func TestMergeCmd_Directory(t *testing.T) {
 
 	// Reset FlagState
 	shared.FlagState.OutputFile = outFile
-	shared.FlagState.Name = "Benchmarks"
-	shared.FlagState.Charts = []string{"bar", "line", "pie"}
+	shared.BenchSettings.Name = "Benchmarks"
+	shared.BenchSettings.Charts = []string{"bar", "line", "pie"}
 
 	rootCmd.SetArgs([]string{"merge", tmpDir})
 	err = rootCmd.Execute()

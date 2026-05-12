@@ -23,6 +23,11 @@ tasks:
     cmds:
       - cd pkg/template/ui; SINGLEFILE=True pnpm build; cd -
 
+  build:dev:
+    desc: Build fast binary for development
+    cmds:
+      - go build -o ./bin/vizb .
+
   build:cli:
     desc: Build the binary (production-ready, stripped)
     cmds:
@@ -72,3 +77,39 @@ tasks:
       - git tag -s {{.VERSION}} -m "Release {{.VERSION}}"
       - git push origin {{.VERSION}}
       - echo "Tag {{.VERSION}} pushed. GitHub Actions will create the release."
+
+  ci-sim:
+    desc: Simulate full CI pipeline locally (merge, prune, filter, html)
+    deps: [build:dev]
+    vars:
+      OUT: "testdata/ci-output"
+      BENCH: ".." # parent of ci-output/ = testdata/
+      SORT: "--sort asc"
+      UNITS: "--time-unit us --mem-unit KB"
+      CHARTS: "--charts bar,line"
+    cmds:
+      - mkdir -p {{.OUT}}
+      - |
+        cd {{.OUT}} && \
+        echo "--- v1.4.0 (fresh) ---" && \
+        ../../bin/vizb action {{.BENCH}}/bench-v1.4.0.txt --sha aaa --tag v1.4.0 --group-pattern n/y \
+          {{.SORT}} {{.UNITS}} {{.CHARTS}} -o b.json && \
+        echo "--- v1.5.0 (merge) ---" && \
+        ../../bin/vizb action {{.BENCH}}/bench-v1.5.0.txt --sha bbb --tag v1.5.0 --group-pattern n/y \
+          {{.SORT}} {{.UNITS}} {{.CHARTS}} --merge b.json -o b.json && \
+        echo "--- v1.6.0 (merge) ---" && \
+        ../../bin/vizb action {{.BENCH}}/bench-v1.6.0.txt --sha ccc --tag v1.6.0 --group-pattern n/y \
+          {{.SORT}} {{.UNITS}} {{.CHARTS}} --merge b.json -o b.json && \
+        echo "--- v1.6.1 (merge + prune + filter + html) ---" && \
+        ../../bin/vizb action {{.BENCH}}/bench-v1.6.1.txt --sha ddd --tag v1.6.1 --group-pattern n/y \
+          {{.SORT}} {{.UNITS}} {{.CHARTS}} \
+           --merge b.json -o b.json --keep 2 --html && \
+        echo "" && \
+        python3 -c "import json; d=json.load(open('b.json')); print(f'data points: {len(d[\"data\"])}'); print(f'tags: {sorted(d[\"runtimes\"].keys())}'); print(f'names: {sorted(set(x[\"name\"] for x in d[\"data\"]))}'); print(f'charts: {d[\"settings\"][\"charts\"]}'); print(f'sort: {d[\"settings\"][\"sort\"]}'); print(f'stats: {[s[\"type\"] for s in d[\"data\"][0][\"stats\"]][:3]}')" && \
+        echo "" && \
+        echo "Output: {{.OUT}}/"
+
+  ci-clean:
+    desc: Remove CI simulation output
+    cmds:
+      - rm -rf testdata/ci-output

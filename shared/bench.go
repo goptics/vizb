@@ -1,5 +1,7 @@
 package shared
 
+import "time"
+
 type Stat struct {
 	Type  string  `json:"type"`
 	Value float64 `json:"value,omitempty"`
@@ -31,5 +33,6 @@ type Benchmark struct {
 		ShowLabels bool   `json:"showLabels"`
 		Scale     string `json:"scale"`
 	} `json:"settings"`
-	Data []BenchmarkData `json:"data"`
+	Data     []BenchmarkData      `json:"data"`
+	Runtimes map[string]time.Time `json:"runtimes,omitempty"`
 }
