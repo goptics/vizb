@@ -29,6 +29,8 @@ func init() {
 	actionCmd.Flags().StringVarP(&shared.ActionState.Output, "output", "o", "benchmarks.json", "Output file path")
 	actionCmd.Flags().BoolVar(&shared.ActionState.HTML, "html", false, "Also generate an index.html viewer")
 	actionCmd.Flags().IntVar(&shared.ActionState.Keep, "keep", 0, "Max number of tags/commits to keep (0 = unlimited)")
+	actionCmd.Flags().StringVar(&shared.ActionState.GroupPattern, "group-pattern", "n/y", "Pattern to parse benchmark names in CI mode (n/y, n/x, x/y, etc.). The missing dimension gets the tag.")
+	actionCmd.Flags().StringVar(&shared.ActionState.GroupRegex, "group-regex", "", "Regex to parse benchmark names in CI mode. Overrides group-pattern.")
 }
 
 func runAction(cmd *cobra.Command, args []string) {
@@ -45,7 +47,9 @@ func runAction(cmd *cobra.Command, args []string) {
 		Date:      time.Now(),
 		MergeFile: shared.ActionState.Merge,
 		Output:    shared.ActionState.Output,
-		KeepCount: shared.ActionState.Keep,
+		KeepCount:    shared.ActionState.Keep,
+		GroupPattern: shared.ActionState.GroupPattern,
+		GroupRegex:   shared.ActionState.GroupRegex,
 	}
 
 	bench, err := ci.RunAction(opts)

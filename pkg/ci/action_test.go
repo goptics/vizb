@@ -238,6 +238,73 @@ func TestTagDimension(t *testing.T) {
 	}
 }
 
+func TestRunActionWithCustomPattern(t *testing.T) {
+	tmpDir := t.TempDir()
+	input := `goos: linux
+goarch: amd64
+pkg: example.com/foo
+BenchmarkAdd/Queue-16    1000000    1234 ns/op
+`
+	inputPath := filepath.Join(tmpDir, "bench.txt")
+	require.NoError(t, os.WriteFile(inputPath, []byte(input), 0644))
+
+	opts := ActionOpts{
+		Input:        inputPath,
+		Version:      "abc123",
+		Tag:          "v1.0.0",
+		Date:         time.Now(),
+		GroupPattern: "x/y",
+	}
+
+	bench, err := RunAction(opts)
+	require.NoError(t, err)
+	require.NotNil(t, bench)
+
+	require.GreaterOrEqual(t, len(bench.Data), 1)
+	assert.Equal(t, "Add", bench.Data[0].XAxis)
+	assert.Equal(t, "Queue", bench.Data[0].YAxis)
+	assert.Equal(t, "v1.0.0", bench.Data[0].Name)
+}
+
+func TestRunActionMergeWithCustomPattern(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	existing := shared.Benchmark{
+		Name: "example.com/foo",
+		Pkg:  "example.com/foo",
+		Runtimes: map[string]time.Time{
+			"v1.0.0": time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
+		},
+		Data: []shared.BenchmarkData{
+			{Name: "v1.0.0", XAxis: "Add", YAxis: "Queue",
+				Stats: []shared.Stat{{Type: "Execution Time (ns/op)", Value: 100}}},
+		},
+	}
+	mergePath := filepath.Join(tmpDir, "existing.json")
+	require.NoError(t, shared.WriteJSONFile(mergePath, existing))
+
+	input := "goos: linux\ngoarch: amd64\npkg: example.com/foo\nBenchmarkAdd/Queue-16    100   50 ns/op\n"
+	inputPath := filepath.Join(tmpDir, "bench.txt")
+	require.NoError(t, os.WriteFile(inputPath, []byte(input), 0644))
+
+	opts := ActionOpts{
+		Input:        inputPath,
+		Version:      "newsha",
+		Tag:          "v1.0.0",
+		Date:         time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC),
+		MergeFile:    mergePath,
+		GroupPattern: "x/y",
+	}
+
+	bench, err := RunAction(opts)
+	require.NoError(t, err)
+	assert.Len(t, bench.Data, 1)
+	assert.Equal(t, "Add", bench.Data[0].XAxis)
+	assert.Equal(t, "Queue", bench.Data[0].YAxis)
+	assert.Equal(t, "v1.0.0", bench.Data[0].Name)
+	assert.InDelta(t, 50.0, bench.Data[0].Stats[0].Value, 0.001)
+}
+
 func TestInjectTag(t *testing.T) {
 	tests := []struct {
 		name    string
