@@ -1,0 +1,72 @@
+name: 'vizb'
+description: 'Run Go benchmarks and track performance history with vizb'
+author: 'goptics'
+
+inputs:
+  bench-pattern:
+    description: 'Benchmark pattern to pass to go test -bench'
+    required: false
+    default: './...'
+  bench-count:
+    description: 'Number of benchmark iterations (-count flag)'
+    required: false
+    default: '5'
+  bench-args:
+    description: 'Additional arguments to pass to go test'
+    required: false
+    default: '-benchmem'
+  generate-html:
+    description: 'Generate an index.html viewer alongside benchmarks.json'
+    required: false
+    default: 'true'
+  group-pattern:
+    description: 'Pattern to parse benchmark names in CI mode (n/y, n/x, x/y, etc.). The missing dimension gets the tag.'
+    required: false
+    default: 'n/y'
+  group-regex:
+    description: 'Regex to parse benchmark names in CI mode. Overrides group-pattern.'
+    required: false
+    default: ''
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: 'stable'
+
+    - name: Install vizb
+      run: go install github.com/goptics/vizb@latest
+      shell: bash
+
+    - name: Run benchmarks
+      run: |
+        go test -bench=${{ inputs.bench-pattern }} \
+          -run=^$ \
+          -benchmem \
+          -count=${{ inputs.bench-count }} \
+          ${{ inputs.bench-args }} \
+          > bench.txt
+      shell: bash
+
+    - name: Generate history
+      run: |
+        HTML_FLAG=""
+        if [ "${{ inputs.generate-html }}" = "true" ]; then
+          HTML_FLAG="--html"
+        fi
+        GROUP_REGEX_FLAG=""
+        if [ "${{ inputs.group-regex }}" != "" ]; then
+          GROUP_REGEX_FLAG="--group-regex ${{ inputs.group-regex }}"
+        fi
+        vizb action bench.txt \
+          --sha ${{ github.sha }} \
+          --tag ${{ github.ref_name }} \
+          --branch ${{ github.ref_name }} \
+          --merge benchmarks.json \
+          --output benchmarks.json \
+          --group-pattern ${{ inputs.group-pattern }} \
+          $GROUP_REGEX_FLAG \
+          $HTML_FLAG
+      shell: bash
