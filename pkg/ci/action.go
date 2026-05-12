@@ -15,14 +15,16 @@ import (
 )
 
 type ActionOpts struct {
-	Input      string
-	Version    string
-	Tag        string
-	Branch     string
-	Date       time.Time
-	MergeFile  string
-	Output    string
-	KeepCount int
+	Input        string
+	Version      string
+	Tag          string
+	Branch       string
+	Date         time.Time
+	MergeFile    string
+	Output       string
+	KeepCount    int
+	GroupPattern string
+	GroupRegex   string
 }
 
 func RunAction(opts ActionOpts) (*shared.Run, *shared.Benchmark, error) {
