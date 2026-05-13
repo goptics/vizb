@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/goptics/vizb/pkg/parser"
 	"github.com/goptics/vizb/pkg/style"
@@ -55,6 +56,7 @@ func init() {
 	rootCmd.Flags().BoolVarP(&shared.FlagState.ShowLabels, "show-labels", "l", false, "Show labels on charts")
 	rootCmd.Flags().StringVarP(&shared.FlagState.FilterRegex, "filter", "f", "", "Regex pattern to include only matching benchmark names")
 	rootCmd.Flags().StringVarP(&shared.FlagState.Scale, "scale", "S", "linear", "Y-axis scale type (linear, log)")
+	rootCmd.Flags().StringVarP(&shared.FlagState.Tag, "tag", "T", "", "Tag/identifier for the benchmark")
 
 	// Add a hook to validate flags after parsing
 	cobra.OnInitialize(func() {
@@ -256,6 +258,13 @@ func prepareBenchmarkFromParsedResults(results []shared.BenchmarkData) *shared.B
 
 	benchmark.Settings.ShowLabels = shared.FlagState.ShowLabels
 	benchmark.Settings.Scale = shared.FlagState.Scale
+
+	if shared.FlagState.Tag != "" {
+		benchmark.Tag = shared.FlagState.Tag
+		benchmark.Runtimes = map[string]string{
+			benchmark.Tag: time.Now().UTC().Format(time.RFC3339),
+		}
+	}
 
 	return benchmark
 }

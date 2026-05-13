@@ -23,6 +23,8 @@ You can provide individual JSON files or directories containing JSON files.`,
 
 func init() {
 	rootCmd.AddCommand(mergeCmd)
+	mergeCmd.Flags().StringVarP(&shared.FlagState.InjectDimension, "inject-dimension", "i", "n",
+		"Dimension to inject Tag into: n (name), x (xAxis), y (yAxis)")
 }
 
 func runMerge(cmd *cobra.Command, args []string) {
@@ -76,7 +78,9 @@ func runMerge(cmd *cobra.Command, args []string) {
 		validFilesCount++
 	}
 
-	if validFilesCount == 0 {
+	mergedBench = shared.MergeBenchmarks(mergedBench, shared.FlagState.InjectDimension)
+
+	if len(mergedBench) == 0 {
 		shared.ExitWithError("No valid benchmark files processed", nil)
 	}
 
