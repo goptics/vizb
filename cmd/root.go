@@ -233,7 +233,7 @@ func writeOutput(f *os.File, benchmark *shared.Benchmark, format string) {
 	case "html":
 		fmt.Println(style.Info.Render("🔄 Generating Chart..."))
 
-		jsonData, err := json.Marshal(benchmark)
+		jsonData, err := json.Marshal([]*shared.Benchmark{benchmark})
 		if err != nil {
 			shared.ExitWithError("Failed to marshal benchmark data: %v", err)
 		}

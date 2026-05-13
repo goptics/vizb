@@ -18,11 +18,7 @@ const getBenchmarks = async (): Promise<Benchmark[]> => {
     return data.default as unknown as Benchmark[]
   }
 
-  if (window.VIZB_DATA && window.VIZB_DATA.length > 0) {
-    return window.VIZB_DATA
-  }
-
-  return []
+return window.VIZB_DATA ?? []
 }
 
 // Global state
@@ -40,7 +36,9 @@ const benchmarksProcessed = computed<Benchmark[]>(() => {
   if (!Array.isArray(benchmarks.value)) {
     benchmarks.value = [benchmarks.value]
   }
+
   if (!benchmarks.value.length) return []
+  
   return benchmarks.value.map((benchmark) => {
     for (const result of benchmark.data) {
       for (const stat of result.stats) {
@@ -64,11 +62,11 @@ const grouped = computed(() => {
   if (!activeBenchmark.value) return new Map<string, BenchmarkData[]>()
   const groupMap = new Map<string, BenchmarkData[]>()
   for (const benchmarkData of activeBenchmark.value.data) {
-    const { name = 'Default', ...rest } = benchmarkData
+    const name = benchmarkData.name || 'Default'
     if (!groupMap.has(name)) {
       groupMap.set(name, [])
     }
-    groupMap.get(name)!.push(rest)
+    groupMap.get(name)!.push(benchmarkData)
   }
   return groupMap
 })

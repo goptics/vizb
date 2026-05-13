@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestActionCommandBasic(t *testing.T) {
+func TestCICommandBasic(t *testing.T) {
 	orig := shared.ActionState
 	defer func() { shared.ActionState = orig }()
 
@@ -34,7 +34,7 @@ BenchmarkFoo-16    1000000    1234 ns/op    567 B/op    10 allocs/op
 	shared.ActionState.GroupPattern = "n/y"
 
 	cmd := &cobra.Command{}
-	runAction(cmd, []string{inputPath})
+	runCI(cmd, []string{inputPath})
 
 	data, err := os.ReadFile(outPath)
 	require.NoError(t, err)
@@ -45,7 +45,7 @@ BenchmarkFoo-16    1000000    1234 ns/op    567 B/op    10 allocs/op
 	assert.Equal(t, "v1.0.0", bench.Data[0].XAxis)
 }
 
-func TestActionCommandWithMerge(t *testing.T) {
+func TestCICommandWithAppend(t *testing.T) {
 	orig := shared.ActionState
 	defer func() { shared.ActionState = orig }()
 
@@ -58,8 +58,8 @@ func TestActionCommandWithMerge(t *testing.T) {
 			{Name: "Foo", XAxis: "v1.0.0", Stats: []shared.Stat{{Type: "Execution Time (ns/op)", Value: 100}}},
 		},
 	}
-	mergePath := filepath.Join(tmpDir, "existing.json")
-	require.NoError(t, shared.WriteJSONFile(mergePath, existing))
+	appendPath := filepath.Join(tmpDir, "existing.json")
+	require.NoError(t, shared.WriteJSONFile(appendPath, existing))
 
 	input := "goos: linux\ngoarch: amd64\nBenchmarkFoo-16    100   10 ns/op\n"
 	inputPath := filepath.Join(tmpDir, "bench.txt")
@@ -68,12 +68,12 @@ func TestActionCommandWithMerge(t *testing.T) {
 	outPath := filepath.Join(tmpDir, "benchmarks.json")
 	shared.ActionState.SHA = "newsha"
 	shared.ActionState.Tag = "v1.1.0"
-	shared.ActionState.Merge = mergePath
+	shared.ActionState.Append = appendPath
 	shared.ActionState.Output = outPath
 	shared.ActionState.GroupPattern = "n/y"
 
 	cmd := &cobra.Command{}
-	runAction(cmd, []string{inputPath})
+	runCI(cmd, []string{inputPath})
 
 	bench, err := shared.ReadJSONFile[shared.Benchmark](outPath)
 	require.NoError(t, err)
@@ -91,7 +91,7 @@ func TestActionCommandWithMerge(t *testing.T) {
 	assert.True(t, hasNew, "should add new data")
 }
 
-func TestActionCommandWithPrune(t *testing.T) {
+func TestCICommandWithPrune(t *testing.T) {
 	orig := shared.ActionState
 	defer func() { shared.ActionState = orig }()
 
@@ -111,8 +111,8 @@ func TestActionCommandWithPrune(t *testing.T) {
 			{Name: "Foo", XAxis: "v1.2.0", Stats: []shared.Stat{{Type: "Execution Time (ns/op)", Value: 300}}},
 		},
 	}
-	mergePath := filepath.Join(tmpDir, "existing.json")
-	require.NoError(t, shared.WriteJSONFile(mergePath, existing))
+	appendPath := filepath.Join(tmpDir, "existing.json")
+	require.NoError(t, shared.WriteJSONFile(appendPath, existing))
 
 	input := "goos: linux\ngoarch: amd64\nBenchmarkFoo-16    100   50 ns/op\n"
 	inputPath := filepath.Join(tmpDir, "bench.txt")
@@ -121,13 +121,13 @@ func TestActionCommandWithPrune(t *testing.T) {
 	outPath := filepath.Join(tmpDir, "benchmarks.json")
 	shared.ActionState.SHA = "newsha"
 	shared.ActionState.Tag = "v1.3.0"
-	shared.ActionState.Merge = mergePath
+	shared.ActionState.Append = appendPath
 	shared.ActionState.Output = outPath
 	shared.ActionState.Keep = 2
 	shared.ActionState.GroupPattern = "n/y"
 
 	cmd := &cobra.Command{}
-	runAction(cmd, []string{inputPath})
+	runCI(cmd, []string{inputPath})
 
 	bench, err := shared.ReadJSONFile[shared.Benchmark](outPath)
 	require.NoError(t, err)
@@ -144,7 +144,7 @@ func TestActionCommandWithPrune(t *testing.T) {
 	assert.False(t, tags["v1.1.0"], "should drop second oldest")
 }
 
-func TestActionCommandNoInputFile(t *testing.T) {
+func TestCICommandNoInputFile(t *testing.T) {
 	orig := shared.ActionState
 	defer func() { shared.ActionState = orig }()
 
@@ -165,12 +165,12 @@ func TestActionCommandNoInputFile(t *testing.T) {
 
 	cmd := &cobra.Command{}
 	assert.Panics(t, func() {
-		runAction(cmd, []string{"/tmp/nonexistent_xyz_bench.txt"})
+		runCI(cmd, []string{"/tmp/nonexistent_xyz_bench.txt"})
 	})
 	assert.True(t, exitCalled)
 }
 
-func TestActionCommandCustomPattern(t *testing.T) {
+func TestCICommandCustomPattern(t *testing.T) {
 	orig := shared.ActionState
 	defer func() { shared.ActionState = orig }()
 
@@ -185,7 +185,7 @@ func TestActionCommandCustomPattern(t *testing.T) {
 	shared.ActionState.GroupPattern = "x/y"
 
 	cmd := &cobra.Command{}
-	runAction(cmd, []string{inputPath})
+	runCI(cmd, []string{inputPath})
 
 	data, err := os.ReadFile(outPath)
 	require.NoError(t, err)

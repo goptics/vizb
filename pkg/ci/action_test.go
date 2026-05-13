@@ -24,11 +24,10 @@ BenchmarkAdd/Priority-16 1000000    2345 ns/op    890 B/op    15 allocs/op
 	require.NoError(t, os.WriteFile(inputPath, []byte(input), 0644))
 
 	opts := ActionOpts{
-		Input:        inputPath,
-		Version:      "abc123",
-		Tag:          "v1.0.0",
-		Date:         time.Now(),
-		GroupPattern: "n/y",
+		Input:         inputPath,
+		IdentifyValue: "v1.0.0",
+		Date:          time.Now(),
+		GroupPattern:  "n/y",
 	}
 
 	bench, err := RunAction(opts)
@@ -38,12 +37,10 @@ BenchmarkAdd/Priority-16 1000000    2345 ns/op    890 B/op    15 allocs/op
 	assert.Equal(t, "example.com/foo", bench.Pkg)
 	assert.GreaterOrEqual(t, len(bench.Data), 2)
 
-	// Verify tag is used as xAxis
 	for _, d := range bench.Data {
 		assert.Equal(t, "v1.0.0", d.XAxis)
 	}
 
-	// Verify benchmark name splitting: Add/Queue -> name=Add, yAxis=Queue
 	var queueItem *shared.BenchmarkData
 	for i := range bench.Data {
 		if bench.Data[i].YAxis == "Queue" {
@@ -55,7 +52,6 @@ BenchmarkAdd/Priority-16 1000000    2345 ns/op    890 B/op    15 allocs/op
 	assert.Equal(t, "Add", queueItem.Name)
 	assert.Equal(t, "Queue", queueItem.YAxis)
 
-	// Verify stats
 	var hasNsOp, hasBOp, hasAllocs bool
 	for _, s := range queueItem.Stats {
 		if strings.Contains(s.Type, "Execution Time") {
@@ -73,10 +69,9 @@ BenchmarkAdd/Priority-16 1000000    2345 ns/op    890 B/op    15 allocs/op
 	assert.True(t, hasAllocs)
 }
 
-func TestRunActionMergeReplaceByTag(t *testing.T) {
+func TestRunActionAppendReplaceByTag(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	// Create existing merged benchmark with v1.0.0 data
 	existing := shared.Benchmark{
 		Name: "example.com/foo",
 		Pkg:  "example.com/foo",
@@ -89,35 +84,30 @@ func TestRunActionMergeReplaceByTag(t *testing.T) {
 			{Name: "Add", XAxis: "v1.1.0", YAxis: "Queue", Stats: []shared.Stat{{Type: "Execution Time (ns/op)", Value: 200}}},
 		},
 	}
-	mergePath := filepath.Join(tmpDir, "existing.json")
-	require.NoError(t, shared.WriteJSONFile(mergePath, existing))
+	appendPath := filepath.Join(tmpDir, "existing.json")
+	require.NoError(t, shared.WriteJSONFile(appendPath, existing))
 
-	// New bench data for v1.0.0 (replaces old v1.0.0 data)
 	input := "goos: linux\ngoarch: amd64\npkg: example.com/foo\nBenchmarkAdd/Queue-16    100   50 ns/op\n"
 	inputPath := filepath.Join(tmpDir, "bench.txt")
 	require.NoError(t, os.WriteFile(inputPath, []byte(input), 0644))
 
 	opts := ActionOpts{
-		Input:        inputPath,
-		Version:      "newsha",
-		Tag:          "v1.0.0",
-		Date:         time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC),
-		MergeFile:    mergePath,
-		Output:       mergePath,
-		GroupPattern: "n/y",
+		Input:         inputPath,
+		IdentifyValue: "v1.0.0",
+		Date:          time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC),
+		AppendFile:    appendPath,
+		GroupPattern:  "n/y",
 	}
 
 	bench, err := RunAction(opts)
 	require.NoError(t, err)
 
-	// Should have v1.1.0 data preserved, v1.0.0 replaced with new data
 	assert.Len(t, bench.Data, 2)
 
 	var v10Count, v11Count int
 	for _, d := range bench.Data {
 		if d.XAxis == "v1.0.0" {
 			v10Count++
-			// New value should be the latest (50 ns/op)
 			if len(d.Stats) > 0 {
 				assert.InDelta(t, 50.0, d.Stats[0].Value, 0.001)
 			}
@@ -129,7 +119,6 @@ func TestRunActionMergeReplaceByTag(t *testing.T) {
 	assert.Equal(t, 1, v10Count)
 	assert.Equal(t, 1, v11Count)
 
-	// Runtimes should be tracked
 	assert.Contains(t, bench.Runtimes, "v1.0.0")
 	assert.Contains(t, bench.Runtimes, "v1.1.0")
 }
@@ -137,7 +126,6 @@ func TestRunActionMergeReplaceByTag(t *testing.T) {
 func TestRunActionPruneOldRuns(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	// Create existing data with 5 tags, each with 1 data point
 	existingTags := []struct {
 		tag  string
 		date time.Time
@@ -161,33 +149,28 @@ func TestRunActionPruneOldRuns(t *testing.T) {
 			Stats: []shared.Stat{{Type: "Execution Time (ns/op)", Value: 100}},
 		})
 	}
-	mergePath := filepath.Join(tmpDir, "existing.json")
-	require.NoError(t, shared.WriteJSONFile(mergePath, existing))
+	appendPath := filepath.Join(tmpDir, "existing.json")
+	require.NoError(t, shared.WriteJSONFile(appendPath, existing))
 
-	// Add a 6th tag with prune=3
 	input := "goos: linux\ngoarch: amd64\npkg: example.com/foo\nBenchmarkAdd/Queue-16    100   50 ns/op\n"
 	inputPath := filepath.Join(tmpDir, "bench.txt")
 	require.NoError(t, os.WriteFile(inputPath, []byte(input), 0644))
 
 	opts := ActionOpts{
-		Input:        inputPath,
-		Version:      "newsha",
-		Tag:          "v1.5.0",
-		Date:         time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC),
-		MergeFile:    mergePath,
-		Output:       mergePath,
-		KeepCount:    3,
-		GroupPattern: "n/y",
+		Input:         inputPath,
+		IdentifyValue: "v1.5.0",
+		Date:          time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC),
+		AppendFile:    appendPath,
+		KeepCount:     3,
+		GroupPattern:  "n/y",
 	}
 
 	bench, err := RunAction(opts)
 	require.NoError(t, err)
 
-	// Should have exactly 3 tags (prune=3)
 	assert.Len(t, bench.Data, 3)
 	assert.Len(t, bench.Runtimes, 3)
 
-	// Should keep the 3 most recent: v1.5.0, v1.4.0, v1.3.0
 	tags := make(map[string]bool)
 	for _, d := range bench.Data {
 		tags[d.XAxis] = true
@@ -200,26 +183,77 @@ func TestRunActionPruneOldRuns(t *testing.T) {
 	assert.False(t, tags["v1.2.0"], "should drop v1.2.0")
 }
 
+func TestRunActionFileNotFound(t *testing.T) {
+	opts := ActionOpts{
+		Input: "/nonexistent/bench.txt",
+		Date:  time.Now(),
+	}
+
+	_, err := RunAction(opts)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "input file")
+}
+
+func TestRunActionAppendFileNotFound(t *testing.T) {
+	tmpDir := t.TempDir()
+	input := "goos: linux\ngoarch: amd64\nBenchmarkFoo-16    100   10 ns/op\n"
+	inputPath := filepath.Join(tmpDir, "bench.txt")
+	require.NoError(t, os.WriteFile(inputPath, []byte(input), 0644))
+
+	opts := ActionOpts{
+		Input:         inputPath,
+		IdentifyValue: "v1.0.0",
+		Date:          time.Now(),
+		AppendFile:    "/nonexistent/benchmarks.json",
+		GroupPattern:  "n/y",
+	}
+
+	bench, err := RunAction(opts)
+	require.NoError(t, err)
+	require.NotNil(t, bench)
+	assert.Len(t, bench.Data, 1)
+}
+
+func TestRunActionEmptyIdentifyValue(t *testing.T) {
+	tmpDir := t.TempDir()
+	input := "goos: linux\ngoarch: amd64\nBenchmarkFoo-16    100   10 ns/op\n"
+	inputPath := filepath.Join(tmpDir, "bench.txt")
+	require.NoError(t, os.WriteFile(inputPath, []byte(input), 0644))
+
+	opts := ActionOpts{
+		Input:        inputPath,
+		Date:         time.Now(),
+		GroupPattern: "n/y",
+	}
+
+	bench, err := RunAction(opts)
+	require.NoError(t, err)
+	require.NotNil(t, bench)
+	assert.Len(t, bench.Data, 1)
+	// When identify value is empty, data is returned as-is
+	assert.Equal(t, "", bench.Data[0].XAxis)
+}
+
 func TestTagDimension(t *testing.T) {
 	tests := []struct {
 		pattern string
 		regex   string
-		want    string
+		want    Dimension
 		wantErr bool
 		errMsg  string
 	}{
-		{pattern: "n/y", want: "xAxis"},
-		{pattern: "n/x", want: "yAxis"},
-		{pattern: "x/y", want: "name"},
-		{pattern: "x/n", want: "yAxis"},
-		{pattern: "y/n", want: "xAxis"},
-		{pattern: "y/x", want: "name"},
+		{pattern: "n/y", want: DimXAxis},
+		{pattern: "n/x", want: DimYAxis},
+		{pattern: "x/y", want: DimName},
+		{pattern: "x/n", want: DimYAxis},
+		{pattern: "y/n", want: DimXAxis},
+		{pattern: "y/x", want: DimName},
 		{pattern: "n/y/x", wantErr: true, errMsg: "exactly 2 dimensions"},
 		{pattern: "n", wantErr: true, errMsg: "exactly 2 dimensions"},
 		{pattern: "", wantErr: true},
-		{regex: "(?P<name>.*)/(?P<yAxis>.*)", want: "xAxis"},
-		{regex: "(?P<n>.*)/(?P<y>.*)", want: "xAxis"},
-		{regex: "(?P<x>.*)/(?P<y>.*)", want: "name"},
+		{regex: "(?P<name>.*)/(?P<yAxis>.*)", want: DimXAxis},
+		{regex: "(?P<n>.*)/(?P<y>.*)", want: DimXAxis},
+		{regex: "(?P<x>.*)/(?P<y>.*)", want: DimName},
 		{regex: "bad(regex", wantErr: true},
 	}
 	for _, tt := range tests {
@@ -236,73 +270,6 @@ func TestTagDimension(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
-}
-
-func TestRunActionWithCustomPattern(t *testing.T) {
-	tmpDir := t.TempDir()
-	input := `goos: linux
-goarch: amd64
-pkg: example.com/foo
-BenchmarkAdd/Queue-16    1000000    1234 ns/op
-`
-	inputPath := filepath.Join(tmpDir, "bench.txt")
-	require.NoError(t, os.WriteFile(inputPath, []byte(input), 0644))
-
-	opts := ActionOpts{
-		Input:        inputPath,
-		Version:      "abc123",
-		Tag:          "v1.0.0",
-		Date:         time.Now(),
-		GroupPattern: "x/y",
-	}
-
-	bench, err := RunAction(opts)
-	require.NoError(t, err)
-	require.NotNil(t, bench)
-
-	require.GreaterOrEqual(t, len(bench.Data), 1)
-	assert.Equal(t, "Add", bench.Data[0].XAxis)
-	assert.Equal(t, "Queue", bench.Data[0].YAxis)
-	assert.Equal(t, "v1.0.0", bench.Data[0].Name)
-}
-
-func TestRunActionMergeWithCustomPattern(t *testing.T) {
-	tmpDir := t.TempDir()
-
-	existing := shared.Benchmark{
-		Name: "example.com/foo",
-		Pkg:  "example.com/foo",
-		Runtimes: map[string]time.Time{
-			"v1.0.0": time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
-		},
-		Data: []shared.BenchmarkData{
-			{Name: "v1.0.0", XAxis: "Add", YAxis: "Queue",
-				Stats: []shared.Stat{{Type: "Execution Time (ns/op)", Value: 100}}},
-		},
-	}
-	mergePath := filepath.Join(tmpDir, "existing.json")
-	require.NoError(t, shared.WriteJSONFile(mergePath, existing))
-
-	input := "goos: linux\ngoarch: amd64\npkg: example.com/foo\nBenchmarkAdd/Queue-16    100   50 ns/op\n"
-	inputPath := filepath.Join(tmpDir, "bench.txt")
-	require.NoError(t, os.WriteFile(inputPath, []byte(input), 0644))
-
-	opts := ActionOpts{
-		Input:        inputPath,
-		Version:      "newsha",
-		Tag:          "v1.0.0",
-		Date:         time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC),
-		MergeFile:    mergePath,
-		GroupPattern: "x/y",
-	}
-
-	bench, err := RunAction(opts)
-	require.NoError(t, err)
-	assert.Len(t, bench.Data, 1)
-	assert.Equal(t, "Add", bench.Data[0].XAxis)
-	assert.Equal(t, "Queue", bench.Data[0].YAxis)
-	assert.Equal(t, "v1.0.0", bench.Data[0].Name)
-	assert.InDelta(t, 50.0, bench.Data[0].Stats[0].Value, 0.001)
 }
 
 func TestInjectTag(t *testing.T) {
@@ -374,14 +341,6 @@ func TestInjectTag(t *testing.T) {
 			},
 		},
 		{
-			name:    "3D pattern rejected",
-			data:    []shared.BenchmarkData{},
-			tag:     "v1.0.0",
-			pattern: "n/y/x",
-			wantErr: true,
-			errMsg:  "exactly 2 dimensions",
-		},
-		{
 			name:    "empty tag is no-op",
 			data:    []shared.BenchmarkData{{Name: "Foo", YAxis: "Bar"}},
 			tag:     "",
@@ -402,14 +361,83 @@ func TestInjectTag(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := InjectTag(tt.data, tt.tag, tt.pattern, tt.regex)
+			tagDim, err := TagDimension(tt.pattern, tt.regex)
 			if tt.wantErr {
 				require.Error(t, err)
-				assert.Contains(t, err.Error(), tt.errMsg)
+				if tt.errMsg != "" {
+					assert.Contains(t, err.Error(), tt.errMsg)
+				}
 				return
 			}
 			require.NoError(t, err)
+
+			got := InjectTag(tt.data, tt.tag, tagDim)
 			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func TestRunActionWithCustomPattern(t *testing.T) {
+	tmpDir := t.TempDir()
+	input := `goos: linux
+goarch: amd64
+pkg: example.com/foo
+BenchmarkAdd/Queue-16    1000000    1234 ns/op
+`
+	inputPath := filepath.Join(tmpDir, "bench.txt")
+	require.NoError(t, os.WriteFile(inputPath, []byte(input), 0644))
+
+	opts := ActionOpts{
+		Input:         inputPath,
+		IdentifyValue: "v1.0.0",
+		Date:          time.Now(),
+		GroupPattern:  "x/y",
+	}
+
+	bench, err := RunAction(opts)
+	require.NoError(t, err)
+	require.NotNil(t, bench)
+
+	require.GreaterOrEqual(t, len(bench.Data), 1)
+	assert.Equal(t, "Add", bench.Data[0].XAxis)
+	assert.Equal(t, "Queue", bench.Data[0].YAxis)
+	assert.Equal(t, "v1.0.0", bench.Data[0].Name)
+}
+
+func TestRunActionAppendWithCustomPattern(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	existing := shared.Benchmark{
+		Name: "example.com/foo",
+		Pkg:  "example.com/foo",
+		Runtimes: map[string]time.Time{
+			"v1.0.0": time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
+		},
+		Data: []shared.BenchmarkData{
+			{Name: "v1.0.0", XAxis: "Add", YAxis: "Queue",
+				Stats: []shared.Stat{{Type: "Execution Time (ns/op)", Value: 100}}},
+		},
+	}
+	appendPath := filepath.Join(tmpDir, "existing.json")
+	require.NoError(t, shared.WriteJSONFile(appendPath, existing))
+
+	input := "goos: linux\ngoarch: amd64\npkg: example.com/foo\nBenchmarkAdd/Queue-16    100   50 ns/op\n"
+	inputPath := filepath.Join(tmpDir, "bench.txt")
+	require.NoError(t, os.WriteFile(inputPath, []byte(input), 0644))
+
+	opts := ActionOpts{
+		Input:         inputPath,
+		IdentifyValue: "v1.0.0",
+		Date:          time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC),
+		AppendFile:    appendPath,
+		GroupPattern:  "x/y",
+	}
+
+	bench, err := RunAction(opts)
+	require.NoError(t, err)
+	assert.Len(t, bench.Data, 1)
+	assert.Equal(t, "Add", bench.Data[0].XAxis)
+	assert.Equal(t, "Queue", bench.Data[0].YAxis)
+	assert.Equal(t, "v1.0.0", bench.Data[0].Name)
+	assert.InDelta(t, 50.0, bench.Data[0].Stats[0].Value, 0.001)
 }

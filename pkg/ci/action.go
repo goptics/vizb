@@ -12,17 +12,24 @@ import (
 	"github.com/goptics/vizb/shared"
 )
 
+type Dimension string
+
+const (
+	DimName  Dimension = "name"
+	DimXAxis Dimension = "xAxis"
+	DimYAxis Dimension = "yAxis"
+)
+
+var allDimensions = []Dimension{DimName, DimXAxis, DimYAxis}
+
 type ActionOpts struct {
-	Input        string
-	Version      string
-	Tag          string
-	Branch       string
-	Date         time.Time
-	MergeFile    string
-	Output       string
-	KeepCount    int
-	GroupPattern string
-	GroupRegex   string
+	Input         string
+	IdentifyValue string
+	Date          time.Time
+	AppendFile    string
+	KeepCount     int
+	GroupPattern  string
+	GroupRegex    string
 }
 
 func RunAction(opts ActionOpts) (*shared.Benchmark, error) {
@@ -30,52 +37,26 @@ func RunAction(opts ActionOpts) (*shared.Benchmark, error) {
 		return nil, fmt.Errorf("input file: %w", err)
 	}
 
-	prevPattern := shared.FlagState.GroupPattern
-	prevRegex := shared.FlagState.GroupRegex
-	shared.FlagState.GroupPattern = opts.GroupPattern
-	shared.FlagState.GroupRegex = opts.GroupRegex
-	defer func() {
-		shared.FlagState.GroupPattern = prevPattern
-		shared.FlagState.GroupRegex = prevRegex
-	}()
-
-	data := parser.ParseBenchmarkData(opts.Input)
-
-	data, err := InjectTag(data, opts.Tag, opts.GroupPattern, opts.GroupRegex)
-	if err != nil {
-		return nil, err
-	}
-
 	tagDim, err := TagDimension(opts.GroupPattern, opts.GroupRegex)
 	if err != nil {
 		return nil, err
 	}
 
+	shared.FlagState.GroupPattern = opts.GroupPattern
+	shared.FlagState.GroupRegex = opts.GroupRegex
+
+	data := parser.ParseBenchmarkData(opts.Input)
+	data = InjectTag(data, opts.IdentifyValue, tagDim)
 	bench := shared.NewBenchmark(data)
 
-	if opts.MergeFile != "" {
-		existing, err := shared.ReadJSONFile[shared.Benchmark](opts.MergeFile)
-		if err == nil {
-			var filteredData []shared.BenchmarkData
-			for _, d := range existing.Data {
-				if getDim(d, tagDim) != opts.Tag {
-					filteredData = append(filteredData, d)
-				}
-			}
-			bench.Data = append(filteredData, data...)
-			bench.CPU = existing.CPU
-			bench.OS = existing.OS
-			bench.Arch = existing.Arch
-			bench.Runtimes = existing.Runtimes
-		} else if !errors.Is(err, os.ErrNotExist) {
-			// ignore file-not-found for first run
-		}
+	if err := appendExistingRuns(&bench, opts.AppendFile, opts.IdentifyValue, tagDim); err != nil {
+		return nil, err
 	}
 
 	if bench.Runtimes == nil {
 		bench.Runtimes = make(map[string]time.Time)
 	}
-	bench.Runtimes[opts.Tag] = opts.Date
+	bench.Runtimes[opts.IdentifyValue] = opts.Date
 
 	if opts.KeepCount > 0 {
 		pruneBenchData(&bench, opts.KeepCount, tagDim)
@@ -84,68 +65,100 @@ func RunAction(opts ActionOpts) (*shared.Benchmark, error) {
 	return &bench, nil
 }
 
-// TagDimension returns which dimension (name, xAxis, yAxis) is NOT covered
-// by the 2D CI pattern or regex — this is where the tag/commit goes.
-func TagDimension(pattern, regexStr string) (string, error) {
-	all := []string{"name", "xAxis", "yAxis"}
-	var present []string
-
+func parsePresentDimensions(pattern, regexStr string) ([]Dimension, error) {
 	if regexStr != "" {
 		re, err := regexp.Compile(regexStr)
 		if err != nil {
-			return "", fmt.Errorf("invalid regex: %w", err)
+			return nil, fmt.Errorf("invalid regex: %w", err)
 		}
+		var present []Dimension
 		for _, name := range re.SubexpNames() {
 			if name == "" {
 				continue
 			}
 			present = append(present, expandCIShorthand(name))
 		}
-	} else {
-		if err := validateCIPattern(pattern); err != nil {
-			return "", err
-		}
-		present = parser.ParsePatternParts(pattern)
+		return present, nil
 	}
 
-	presentSet := make(map[string]bool, len(present))
-	for _, p := range present {
-		presentSet[p] = true
+	if err := validateCIPattern(pattern); err != nil {
+		return nil, err
 	}
-
-	var missing []string
-	for _, d := range all {
-		if !presentSet[d] {
-			missing = append(missing, d)
-		}
+	parts := parser.ParsePatternParts(pattern)
+	dims := make([]Dimension, len(parts))
+	for i, p := range parts {
+		dims[i] = Dimension(p)
 	}
-
-	if len(missing) != 1 {
-		return "", fmt.Errorf("CI pattern must define exactly 2 dimensions, got %d defined (%v), missing %d (%v)",
-			len(presentSet), present, len(missing), missing)
-	}
-
-	return missing[0], nil
+	return dims, nil
 }
 
-// InjectTag fills the missing dimension in each BenchmarkData with the tag value.
-func InjectTag(data []shared.BenchmarkData, tag, pattern, regexStr string) ([]shared.BenchmarkData, error) {
-	if tag == "" {
-		return data, nil
+func TagDimension(pattern, regexStr string) (Dimension, error) {
+	present, err := parsePresentDimensions(pattern, regexStr)
+	if err != nil {
+		return "", err
 	}
 
-	tagDim, err := TagDimension(pattern, regexStr)
-	if err != nil {
-		return nil, err
+	presentSet := make(map[Dimension]bool, len(present))
+	for _, d := range present {
+		presentSet[d] = true
+	}
+
+	for _, d := range allDimensions {
+		if !presentSet[d] {
+			return d, nil
+		}
+	}
+
+	return "", fmt.Errorf("CI pattern must define exactly 2 dimensions, got %d", len(presentSet))
+}
+
+func InjectTag(data []shared.BenchmarkData, tag string, tagDim Dimension) []shared.BenchmarkData {
+	if tag == "" {
+		return data
 	}
 
 	result := make([]shared.BenchmarkData, len(data))
 	for i, d := range data {
-		tagged := d
-		setDim(&tagged, tagDim, tag)
-		result[i] = tagged
+		setDim(&d, tagDim, tag)
+		result[i] = d
 	}
-	return result, nil
+	return result
+}
+
+func appendExistingRuns(bench *shared.Benchmark, appendFile, identifyValue string, tagDim Dimension) error {
+	if appendFile == "" {
+		return nil
+	}
+
+	existing, err := shared.ReadJSONFile[shared.Benchmark](appendFile)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil
+		}
+		return fmt.Errorf("read existing benchmarks: %w", err)
+	}
+
+	for _, d := range existing.Data {
+		if getDim(d, tagDim) != identifyValue {
+			bench.Data = append(bench.Data, d)
+		}
+	}
+
+	bench.CPU = existing.CPU
+	bench.OS = existing.OS
+	bench.Arch = existing.Arch
+
+	if bench.Runtimes == nil && existing.Runtimes != nil {
+		bench.Runtimes = make(map[string]time.Time, len(existing.Runtimes))
+	}
+	for k, v := range existing.Runtimes {
+		if bench.Runtimes == nil {
+			bench.Runtimes = make(map[string]time.Time)
+		}
+		bench.Runtimes[k] = v
+	}
+
+	return nil
 }
 
 func validateCIPattern(pattern string) error {
@@ -159,38 +172,38 @@ func validateCIPattern(pattern string) error {
 	return nil
 }
 
-func setDim(d *shared.BenchmarkData, dim, value string) {
+func expandCIShorthand(part string) Dimension {
+	shortcuts := map[string]Dimension{"n": DimName, "x": DimXAxis, "y": DimYAxis}
+	if expanded, exists := shortcuts[part]; exists {
+		return expanded
+	}
+	return Dimension(part)
+}
+
+func setDim(d *shared.BenchmarkData, dim Dimension, value string) {
 	switch dim {
-	case "name":
+	case DimName:
 		d.Name = value
-	case "xAxis":
+	case DimXAxis:
 		d.XAxis = value
-	case "yAxis":
+	case DimYAxis:
 		d.YAxis = value
 	}
 }
 
-func getDim(d shared.BenchmarkData, dim string) string {
+func getDim(d shared.BenchmarkData, dim Dimension) string {
 	switch dim {
-	case "name":
+	case DimName:
 		return d.Name
-	case "xAxis":
+	case DimXAxis:
 		return d.XAxis
-	case "yAxis":
+	case DimYAxis:
 		return d.YAxis
 	}
 	return ""
 }
 
-func expandCIShorthand(part string) string {
-	shortcuts := map[string]string{"n": "name", "x": "xAxis", "y": "yAxis"}
-	if expanded, exists := shortcuts[part]; exists {
-		return expanded
-	}
-	return part
-}
-
-func pruneBenchData(bench *shared.Benchmark, keep int, tagDim string) {
+func pruneBenchData(bench *shared.Benchmark, keep int, tagDim Dimension) {
 	tags := make([]string, 0, len(bench.Runtimes))
 	for tag := range bench.Runtimes {
 		tags = append(tags, tag)
@@ -222,5 +235,3 @@ func pruneBenchData(bench *shared.Benchmark, keep int, tagDim string) {
 		}
 	}
 }
-
-

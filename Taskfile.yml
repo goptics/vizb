@@ -92,18 +92,20 @@ tasks:
       - |
         cd {{.OUT}} && \
         echo "--- v1.4.0 (fresh) ---" && \
-        ../../bin/vizb action {{.BENCH}}/bench-v1.4.0.txt --sha aaa --tag v1.4.0 --group-pattern n/y \
+        ../../bin/vizb ci {{.BENCH}}/bench-v1.4.0.txt --sha aaa --tag v1.4.0 --group-pattern n/y \
           {{.SORT}} {{.UNITS}} {{.CHARTS}} -o b.json && \
-        echo "--- v1.5.0 (merge) ---" && \
-        ../../bin/vizb action {{.BENCH}}/bench-v1.5.0.txt --sha bbb --tag v1.5.0 --group-pattern n/y \
-          {{.SORT}} {{.UNITS}} {{.CHARTS}} --merge b.json -o b.json && \
-        echo "--- v1.6.0 (merge) ---" && \
-        ../../bin/vizb action {{.BENCH}}/bench-v1.6.0.txt --sha ccc --tag v1.6.0 --group-pattern n/y \
-          {{.SORT}} {{.UNITS}} {{.CHARTS}} --merge b.json -o b.json && \
-        echo "--- v1.6.1 (merge + prune + filter + html) ---" && \
-        ../../bin/vizb action {{.BENCH}}/bench-v1.6.1.txt --sha ddd --tag v1.6.1 --group-pattern n/y \
+        echo "--- v1.5.0 (append) ---" && \
+        ../../bin/vizb ci {{.BENCH}}/bench-v1.5.0.txt --sha bbb --tag v1.5.0 --group-pattern n/y \
+          {{.SORT}} {{.UNITS}} {{.CHARTS}} --append b.json -o b.json && \
+        echo "--- v1.6.0 (append) ---" && \
+        ../../bin/vizb ci {{.BENCH}}/bench-v1.6.0.txt --sha ccc --tag v1.6.0 --group-pattern n/y \
+          {{.SORT}} {{.UNITS}} {{.CHARTS}} --append b.json -o b.json && \
+        echo "--- v1.6.1 (append + prune + filter) ---" && \
+        ../../bin/vizb ci {{.BENCH}}/bench-v1.6.1.txt --sha ddd --tag v1.6.1 --group-pattern n/y \
           {{.SORT}} {{.UNITS}} {{.CHARTS}} \
-           --merge b.json -o b.json --keep 2 --html && \
+           --append b.json -o b.json --keep 2 && \
+        echo "--- Generate HTML viewer ---" && \
+        ../../bin/vizb b.json -o index.html && \
         echo "" && \
         python3 -c "import json; d=json.load(open('b.json')); print(f'data points: {len(d[\"data\"])}'); print(f'tags: {sorted(d[\"runtimes\"].keys())}'); print(f'names: {sorted(set(x[\"name\"] for x in d[\"data\"]))}'); print(f'charts: {d[\"settings\"][\"charts\"]}'); print(f'sort: {d[\"settings\"][\"sort\"]}'); print(f'stats: {[s[\"type\"] for s in d[\"data\"][0][\"stats\"]][:3]}')" && \
         echo "" && \

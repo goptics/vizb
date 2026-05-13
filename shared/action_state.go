@@ -4,9 +4,8 @@ type actionState struct {
 	SHA          string
 	Tag          string
 	Branch       string
-	Merge        string
+	Append       string
 	Output       string
-	HTML         bool
 	Keep         int
 	GroupPattern string
 	GroupRegex   string
