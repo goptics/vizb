@@ -119,6 +119,47 @@ func TestMergeCmd_Directory(t *testing.T) {
 	assert.Contains(t, string(content), "Test1")
 }
 
+func TestMergeCmd_ArrayInput(t *testing.T) {
+	oldOsExit := shared.OsExit
+	defer func() { shared.OsExit = oldOsExit }()
+
+	var exitCode int
+	shared.OsExit = func(code int) { exitCode = code }
+
+	tmpDir, err := os.MkdirTemp("", "vizb-merge-array-test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Single file with an array of 2 benchmarks
+	benches := []shared.Benchmark{
+		{Name: "Bench1", Data: []shared.BenchmarkData{{Name: "Test1", XAxis: "1", YAxis: "100"}}},
+		{Name: "Bench2", Data: []shared.BenchmarkData{{Name: "Test2", XAxis: "2", YAxis: "200"}}},
+	}
+	writeJSON(t, filepath.Join(tmpDir, "array.json"), benches)
+
+	outFile := filepath.Join(tmpDir, "merged_array.json")
+	shared.FlagState.OutputFile = outFile
+
+	rootCmd.SetArgs([]string{"merge", filepath.Join(tmpDir, "array.json")})
+	err = rootCmd.Execute()
+
+	if exitCode != 0 {
+		t.Errorf("OsExit called with code %d", exitCode)
+	}
+	assert.NoError(t, err)
+
+	content, err := os.ReadFile(outFile)
+	assert.NoError(t, err)
+
+	var parsed []shared.Benchmark
+	assert.NoError(t, json.Unmarshal(content, &parsed))
+	assert.Len(t, parsed, 2)
+	assert.Equal(t, "Bench1", parsed[0].Name)
+	assert.Equal(t, "Bench2", parsed[1].Name)
+}
+
 func writeJSON(t *testing.T, path string, v interface{}) {
 	data, err := json.Marshal(v)
 	if err != nil {
