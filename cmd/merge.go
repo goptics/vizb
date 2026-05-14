@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -33,65 +34,91 @@ func runMerge(cmd *cobra.Command, args []string) {
 		shared.ExitWithError("No input files provided", nil)
 	}
 
-	var allFiles []string
+	files := collectJSONFiles(args)
+	if len(files) == 0 {
+		shared.ExitWithError("No valid files found to merge", nil)
+	}
 
-	// Expand directories and collect files
+	benches := readBenchmarks(files)
+	if len(benches) == 0 {
+		shared.ExitWithError("No valid benchmark files processed", nil)
+	}
+
+	merged := shared.MergeBenchmarks(benches, shared.Dimension(shared.FlagState.TagAxis))
+	writeMergeOutput(merged)
+}
+
+func collectJSONFiles(args []string) []string {
+	var files []string
 	for _, arg := range args {
 		info, err := os.Stat(arg)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, style.Warning.Render(fmt.Sprintf("Warning: cannot access %s: %v", arg, err)))
+			logWarn("cannot access %s: %v", arg, err)
 			continue
 		}
 
 		if info.IsDir() {
-			files, err := filepath.Glob(filepath.Join(arg, "*.json"))
+			found, err := filepath.Glob(filepath.Join(arg, "*.json"))
 			if err != nil {
-				fmt.Fprintln(os.Stderr, style.Warning.Render(fmt.Sprintf("Warning: error scanning directory %s: %v", arg, err)))
+				logWarn("error scanning directory %s: %v", arg, err)
 				continue
 			}
-			allFiles = append(allFiles, files...)
+			files = append(files, found...)
 		} else {
-			allFiles = append(allFiles, arg)
+			files = append(files, arg)
 		}
 	}
+	return files
+}
 
-	if len(allFiles) == 0 {
-		shared.ExitWithError("No valid files found to merge", nil)
-	}
-
-	var mergedBench []shared.Benchmark
-	validFilesCount := 0
-
-	for _, file := range allFiles {
-		content, err := os.ReadFile(file)
+func readBenchmarks(files []string) []shared.Benchmark {
+	var benches []shared.Benchmark
+	for _, file := range files {
+		parsed, err := parseBenchmarkFile(file)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, style.Warning.Render(fmt.Sprintf("Warning: cannot read file %s: %v", file, err)))
+			logWarn("%s: %v", file, err)
 			continue
 		}
+		benches = append(benches, parsed...)
+	}
+	return benches
+}
 
+func parseBenchmarkFile(file string) ([]shared.Benchmark, error) {
+	content, err := os.ReadFile(file)
+	if err != nil {
+		return nil, fmt.Errorf("cannot read file: %w", err)
+	}
+
+	trimmed := bytes.TrimLeft(content, " \t\r\n")
+	if len(trimmed) == 0 {
+		return nil, fmt.Errorf("file is empty")
+	}
+
+	switch trimmed[0] {
+	case '[':
+		var benches []shared.Benchmark
+		if err := json.Unmarshal(content, &benches); err != nil {
+			return nil, fmt.Errorf("invalid benchmark array: %w", err)
+		}
+		return benches, nil
+	case '{':
 		var bench shared.Benchmark
 		if err := json.Unmarshal(content, &bench); err != nil {
-			fmt.Fprintln(os.Stderr, style.Warning.Render(fmt.Sprintf("Warning: file %s does not satisfy Benchmark struct (JSON parse error), skipping.", file)))
-			continue
+			return nil, fmt.Errorf("invalid benchmark object: %w", err)
 		}
-
-		mergedBench = append(mergedBench, bench)
-		validFilesCount++
+		return []shared.Benchmark{bench}, nil
+	default:
+		return nil, fmt.Errorf("not valid JSON")
 	}
+}
 
-	mergedBench = shared.MergeBenchmarks(mergedBench, shared.FlagState.TagAxis)
-
-	if len(mergedBench) == 0 {
-		shared.ExitWithError("No valid benchmark files processed", nil)
-	}
-
-	// Generate Output
-	jsonData, err := json.Marshal(mergedBench)
+func writeMergeOutput(benches []shared.Benchmark) {
+	jsonData, err := json.Marshal(benches)
 	if err != nil {
 		shared.ExitWithError("Failed to marshal merged benchmark data: %v", err)
 	}
 
-	// Determine output file
 	outFile := shared.FlagState.OutputFile
 	if outFile == "" {
 		outFile = resolveOutputFileName(outFile)
@@ -114,4 +141,9 @@ func runMerge(cmd *cobra.Command, args []string) {
 		}
 		fmt.Println(style.Success.Render(fmt.Sprintf("🎉 Generated merged chart successfully: %s", outFile)))
 	}
+}
+
+func logWarn(format string, args ...interface{}) {
+	msg := fmt.Sprintf("Warning: "+format, args...)
+	fmt.Fprintln(os.Stderr, style.Warning.Render(msg))
 }
