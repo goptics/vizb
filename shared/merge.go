@@ -5,6 +5,8 @@ import "maps"
 // MergeBenchmarks performs tag-based smart merging on a slice of benchmarks.
 // Benchmarks with the same Name and valid Tag fields are deep-merged into a
 // single object. Benchmarks lacking a Tag are appended individually (legacy).
+// When both legacy and tagged benchmarks share a Name they are combined into
+// one object so accumulated data is preserved across incremental merges.
 // dim controls which inner data dimension receives the benchmark tag annotation.
 func MergeBenchmarks(benchmarks []Benchmark, dim Dimension) []Benchmark {
 	groups := groupByName(benchmarks)
@@ -12,14 +14,38 @@ func MergeBenchmarks(benchmarks []Benchmark, dim Dimension) []Benchmark {
 
 	for _, group := range groups {
 		noTag, withTag := splitByTag(group)
-		result = append(result, noTag...)
 
 		switch len(withTag) {
 		case 0:
+			result = append(result, noTag...)
 		case 1:
-			result = append(result, withTag[0])
+			b := deepCloneBenchmark(withTag[0])
+			for i := range b.Data {
+				if dimFieldEmpty(b.Data[i], dim) {
+					b.Data[i] = injectTag(b.Data[i], b.Tag, dim)
+				}
+			}
+			b.Tag = ""
+			if len(noTag) > 0 {
+				c := deepCloneBenchmark(noTag[0])
+				c.Runtimes = mergeRuntimes([]Benchmark{noTag[0], b})
+				c.Data = append(c.Data, b.Data...)
+				result = append(result, c)
+				result = append(result, noTag[1:]...)
+			} else {
+				result = append(result, b)
+			}
 		default:
-			result = append(result, tagBasedMerge(withTag, dim)...)
+			merged := tagBasedMerge(withTag, dim)
+			if len(noTag) > 0 {
+				c := deepCloneBenchmark(noTag[0])
+				c.Runtimes = mergeRuntimes([]Benchmark{noTag[0], merged[0]})
+				c.Data = append(c.Data, merged[0].Data...)
+				result = append(result, c)
+				result = append(result, noTag[1:]...)
+			} else {
+				result = append(result, merged...)
+			}
 		}
 	}
 
@@ -54,6 +80,7 @@ func tagBasedMerge(benchmarks []Benchmark, dim Dimension) []Benchmark {
 	merged := deepCloneBenchmark(benchmarks[latestIdx])
 	merged.Runtimes = mergeRuntimes(benchmarks)
 	merged.Data = mergeData(benchmarks, dim)
+	merged.Tag = ""
 	return []Benchmark{merged}
 }
 
@@ -113,10 +140,25 @@ func mergeData(benchmarks []Benchmark, dim Dimension) []BenchmarkData {
 	var result []BenchmarkData
 	for _, bench := range benchmarks {
 		for _, item := range bench.Data {
-			result = append(result, injectTag(item, bench.Tag, dim))
+			if dimFieldEmpty(item, dim) {
+				result = append(result, injectTag(item, bench.Tag, dim))
+			} else {
+				result = append(result, deepCloneData(item))
+			}
 		}
 	}
 	return result
+}
+
+func dimFieldEmpty(item BenchmarkData, dim Dimension) bool {
+	switch dim {
+	case DimensionXAxis:
+		return item.XAxis == ""
+	case DimensionYAxis:
+		return item.YAxis == ""
+	default:
+		return item.Name == ""
+	}
 }
 
 func injectTag(item BenchmarkData, tag string, dim Dimension) BenchmarkData {

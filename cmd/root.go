@@ -243,7 +243,7 @@ func prepareBenchmarkFromParsedResults(results []shared.BenchmarkData) *shared.B
 	enableSorting := shared.FlagState.Sort != ""
 
 	benchmark.CPU.Cores = shared.CPUCount
-	benchmark.CPU.Name = shared.CPU
+	benchmark.CPU.Name = strings.TrimSpace(shared.CPU)
 	benchmark.Arch = shared.Arch
 	benchmark.OS = shared.OS
 	benchmark.Pkg = shared.Pkg
