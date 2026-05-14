@@ -5,6 +5,19 @@ All notable changes to the Vizb project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [0.9.0] - 2026-05-14
+
+### Added
+
+- **Tag-Based Merging**: Benchmarks with the same name and different tags are now deep-merged when using the `merge` subcommand, enabling historical comparison across commits, releases, or environment variants ([#69](https://github.com/goptics/vizb/pull/69)).
+- **`--tag -t` Flag**: New root command flag to assign a label (e.g., commit hash, version number) to a benchmark run. Automatically populates a `runtimes` map with a UTC timestamp.
+- **`--tag-axis -A` Flag**: New merge subcommand flag to control which data dimension receives the tag annotation. Accepts `n` (name), `x` (xAxis), or `y` (yAxis). Defaults to `n`.
+- **Runtimes Tracking**: `Tag` and `Runtimes` fields added to the `Benchmark` struct for tracking benchmark provenance and timestamps.
+
+### Breaking
+
+- **Unit Shorthand Flags**: Shorthand flags for time (`-t`→`-T`), memory (`-m`→`-M`), and number (`-n`→`-N`) are now capitalized.
+
 # [0.8.0] - 2026-04-25
 
 ### Added
