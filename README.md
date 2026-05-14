@@ -26,6 +26,7 @@
 - **Swap Axis**: Swap the `n`, `x` and `y` axes for diverse comparison through UI settings.
 - **Logarithmic Scale**: Use `--scale log` for bar and line charts to better visualize benchmarks with high variance in values.
 - **Multi-Dimensional Grouping**: Merge multiple benchmark data for deep comparative analysis.
+- **Tag-Based Merging**: Tag benchmarks with commit hashes or version labels to compare performance across releases with automatic data merging.
 - **Flexible Input**: Automatically processes raw `go test -bench` output and the standard JSON output of `go test -bench -json`.
 - **Comprehensive Metrics**: Compare time, memory, and numbers with customizable units.
 - **Smart Grouping**: Extract grouping logic from benchmark names using regex and group patterns.
@@ -107,6 +108,39 @@ Open the generated HTML file in your browser to view the interactive charts.
 
 > [!Note]
 > The `merge` command requires JSON files as input, which must be generated using `vizb bench.txt -o output.json`.
+
+### Tag-Based Merging
+
+Vizb supports tagging benchmarks to compare performance across multiple commits, releases, or environment variants. The `--tag` flag on the main command assigns a label (e.g., commit hash, version number) to a benchmark run. When merging, vizb groups benchmarks by `name` and deep-merges those sharing the same name but different tags into a single object, preserving all runtimes and data.
+
+#### Tagging a benchmark run
+
+```bash
+vizb bench.txt -o v1.json --tag v1 -n "Foo"
+
+vizb bench.txt -o v2.json --tag v2 -n "Foo"
+```
+
+#### How tag-based merging works
+
+When you merge two tagged benchmarks with the same name:
+
+```bash
+vizb merge v1.json v2.json -o comparison.html
+```
+
+Vizb detects the shared benchmark name, merges the datasets into a single object, and annotates each inner data point with its originating tag. The merged result keeps the latest tag (by runtime timestamp), combines all runtime entries, and appends data from both runs.
+
+#### Controlling where the tag is injected
+
+By default, the tag is injected into the `name` dimension of each inner data object. Use `--tag-axis` (shorthand `-A`) to target `xAxis` or `yAxis` instead:
+
+```bash
+# Inject tag into xAxis so the X-axis labels show version differences
+vizb merge v1.json v2.json -A x -o comparison.html
+```
+
+Accepted values: `n` (name), `x` (xAxis), `y` (yAxis). Default is `n`.
 
 ## Advance Usage
 

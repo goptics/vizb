@@ -62,4 +62,11 @@ var flagValidationRules = []utils.ValidationRule{
 		Normalizer:   strings.ToLower,
 		SliceDefault: []string{"bar", "line", "pie"},
 	},
+	{
+		Label:      "inject dimension",
+		Value:      &shared.FlagState.TagAxis,
+		ValidSet:   []string{"n", "x", "y"},
+		Normalizer: strings.ToLower,
+		Default:    "n",
+	},
 }

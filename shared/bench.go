@@ -13,8 +13,10 @@ type BenchmarkData struct {
 }
 
 type Benchmark struct {
-	Name        string `json:"name"`
-	Description string `json:"description,omitempty"`
+	Tag         string            `json:"tag,omitempty"`
+	Name        string            `json:"name"`
+	Runtimes    map[string]string `json:"runtimes,omitempty"`
+	Description string            `json:"description,omitempty"`
 	CPU         struct {
 		Name  string `json:"name,omitempty"`
 		Cores int    `json:"cores,omitempty"`
