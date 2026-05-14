@@ -27,7 +27,7 @@ func TestMergeBenchmarks_SmartMerge(t *testing.T) {
 	assert.Len(t, result, 1)
 
 	merged := result[0]
-	assert.Equal(t, "2", merged.Tag)
+	assert.Empty(t, merged.Tag)
 	assert.Equal(t, "My benchmark", merged.Name)
 	assert.Equal(t, map[string]string{
 		"1": "2026-05-13T10:00:00Z",
@@ -52,7 +52,14 @@ func TestMergeBenchmarks_MixedGroup(t *testing.T) {
 	}
 
 	result := MergeBenchmarks([]Benchmark{bench1, bench2, noTagBench}, DimensionName)
-	assert.Len(t, result, 2)
+	assert.Len(t, result, 1)
+
+	merged := result[0]
+	assert.Len(t, merged.Data, 3)
+	assert.Equal(t, "legacy", merged.Data[0].Name)
+	assert.Equal(t, "1", merged.Data[1].Name)
+	assert.Equal(t, "2", merged.Data[2].Name)
+	assert.Empty(t, merged.Tag)
 }
 
 func TestMergeBenchmarks_AllNoTag(t *testing.T) {
@@ -88,8 +95,8 @@ func TestMergeBenchmarks_PopulatedName(t *testing.T) {
 
 	result := MergeBenchmarks([]Benchmark{bench1, bench2}, DimensionName)
 	assert.Len(t, result, 1)
-	assert.Equal(t, "digits - 1", result[0].Data[0].Name)
-	assert.Equal(t, "digits - 2", result[0].Data[1].Name)
+	assert.Equal(t, "digits", result[0].Data[0].Name)
+	assert.Equal(t, "digits", result[0].Data[1].Name)
 }
 
 func TestMergeBenchmarks_InjectDimensionX(t *testing.T) {

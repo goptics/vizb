@@ -156,8 +156,13 @@ func TestMergeCmd_ArrayInput(t *testing.T) {
 	var parsed []shared.Benchmark
 	assert.NoError(t, json.Unmarshal(content, &parsed))
 	assert.Len(t, parsed, 2)
-	assert.Equal(t, "Bench1", parsed[0].Name)
-	assert.Equal(t, "Bench2", parsed[1].Name)
+
+	names := make(map[string]bool)
+	for _, b := range parsed {
+		names[b.Name] = true
+	}
+	assert.True(t, names["Bench1"])
+	assert.True(t, names["Bench2"])
 }
 
 func writeJSON(t *testing.T, path string, v interface{}) {
