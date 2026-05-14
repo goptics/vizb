@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/goptics/vizb/pkg/style"
 	"github.com/goptics/vizb/pkg/template"
@@ -100,10 +101,17 @@ func runMerge(cmd *cobra.Command, args []string) {
 	defer f.Close()
 	defer HandleOutputResult(f)
 
-	htmlContent := template.GenerateHTMLBenchmarkUI(jsonData, template.VizbHTMLTemplate)
-	if _, err := f.WriteString(htmlContent); err != nil {
-		shared.ExitWithError("Failed to write output file: %v", err)
+	switch strings.ToLower(filepath.Ext(outFile)) {
+	case ".json":
+		if _, err := f.Write(jsonData); err != nil {
+			shared.ExitWithError("Failed to write JSON output: %v", err)
+		}
+		fmt.Println(style.Success.Render(fmt.Sprintf("🎉 Generated merged JSON successfully: %s", outFile)))
+	default:
+		htmlContent := template.GenerateHTMLBenchmarkUI(jsonData, template.VizbHTMLTemplate)
+		if _, err := f.WriteString(htmlContent); err != nil {
+			shared.ExitWithError("Failed to write output file: %v", err)
+		}
+		fmt.Println(style.Success.Render(fmt.Sprintf("🎉 Generated merged chart successfully: %s", outFile)))
 	}
-
-	fmt.Println(style.Success.Render(fmt.Sprintf("🎉 Generated merged chart successfully: %s", outFile)))
 }
