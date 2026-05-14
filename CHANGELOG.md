@@ -5,6 +5,16 @@ All notable changes to the Vizb project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [0.9.2] - 2026-05-14
+
+### Fix
+
+- Fix merge command to accept JSON files containing arrays of benchmarks ([#72](https://github.com/goptics/vizb/pull/72))
+
+### Refactor
+
+- Extract helpers from merge function, add typed `Dimension` constants for tag-axis values
+
 # [0.9.1] - 2026-05-14
 
 ### Fix
