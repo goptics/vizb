@@ -15,7 +15,7 @@ type flagState struct {
 	ShowLabels      bool
 	FilterRegex     string
 	Scale           string
-	InjectDimension string
+	TagAxis string
 }
 
 var FlagState flagState = flagState{}

@@ -133,11 +133,11 @@ Vizb detects the shared benchmark name, merges the datasets into a single object
 
 #### Controlling where the tag is injected
 
-By default, the tag is injected into the `name` dimension of each inner data object. Use `--inject-dimension` (shorthand `-i`) to target `xAxis` or `yAxis` instead:
+By default, the tag is injected into the `name` dimension of each inner data object. Use `--tag-axis` (shorthand `-A`) to target `xAxis` or `yAxis` instead:
 
 ```bash
 # Inject tag into xAxis so the X-axis labels show version differences
-vizb merge v1.json v2.json -i x -o comparison.html
+vizb merge v1.json v2.json -A x -o comparison.html
 ```
 
 Accepted values: `n` (name), `x` (xAxis), `y` (yAxis). Default is `n`.

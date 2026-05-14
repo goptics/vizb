@@ -99,11 +99,11 @@ func mergeRuntimes(benchmarks []Benchmark) map[string]string {
 	return result
 }
 
-func mergeData(benchmarks []Benchmark, injectDim string) []BenchmarkData {
+func mergeData(benchmarks []Benchmark, tagAxis string) []BenchmarkData {
 	var result []BenchmarkData
 	for _, bench := range benchmarks {
 		for _, item := range bench.Data {
-			result = append(result, injectTag(item, bench.Tag, injectDim))
+			result = append(result, injectTag(item, bench.Tag, tagAxis))
 		}
 	}
 	return result
