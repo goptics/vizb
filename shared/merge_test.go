@@ -67,7 +67,8 @@ func TestMergeBenchmarks_AllNoTag(t *testing.T) {
 	bench2 := Benchmark{Name: "Bench A", Data: []BenchmarkData{{Name: "b"}}}
 
 	result := MergeBenchmarks([]Benchmark{bench1, bench2}, DimensionName)
-	assert.Len(t, result, 2)
+	assert.Len(t, result, 1)
+	assert.Equal(t, "a", result[0].Data[0].Name)
 }
 
 func TestMergeBenchmarks_TimestampTie(t *testing.T) {
@@ -75,7 +76,11 @@ func TestMergeBenchmarks_TimestampTie(t *testing.T) {
 	bench2 := makeBench("2", "Test", map[string]string{"2": "2026-05-13T10:00:00Z"}, []BenchmarkData{{Name: "b"}})
 
 	result := MergeBenchmarks([]Benchmark{bench1, bench2}, DimensionName)
-	assert.Len(t, result, 2)
+	assert.Len(t, result, 1)
+	assert.Len(t, result[0].Data, 2)
+	assert.Equal(t, "a", result[0].Data[0].Name)
+	assert.Equal(t, "b", result[0].Data[1].Name)
+	assert.Empty(t, result[0].Tag)
 }
 
 func TestMergeBenchmarks_SingleBenchmark(t *testing.T) {
