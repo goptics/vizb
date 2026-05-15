@@ -95,13 +95,13 @@ func MergeBenchmarks(benchmarks []Benchmark, dim Dimension) []Benchmark {
 				base := deepCloneBenchmark(group.noTag)
 				base.Runtimes = mergeRuntimes(allBenches)
 				base.Data = mergeData(allBenches, dim)
-				base.Tag = ""
+				base.Tag = benches[len(benches)-1].Tag
 				result = append(result, base)
 			} else {
 				base := deepCloneBenchmark(benches[len(benches)-1])
 				base.Runtimes = mergeRuntimes(benches)
 				base.Data = mergeData(benches, dim)
-				base.Tag = ""
+				base.Tag = benches[len(benches)-1].Tag
 				result = append(result, base)
 			}
 		}
