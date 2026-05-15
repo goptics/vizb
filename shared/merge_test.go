@@ -169,3 +169,43 @@ func TestMergeBenchmarks_NoMutation(t *testing.T) {
 	assert.Equal(t, "b", original[1].Data[0].Name)
 	assert.Len(t, result, 1)
 }
+
+func TestMergeBenchmarks_SameNameSameTagDedup(t *testing.T) {
+	bench1 := makeBench("v1", "Bench", map[string]string{"run1": "2026-05-13T10:00:00Z"},
+		[]BenchmarkData{{Name: "", XAxis: "speed", YAxis: "1e4"}})
+	bench2 := makeBench("v1", "Bench", map[string]string{"run2": "2026-05-14T10:00:00Z"},
+		[]BenchmarkData{{Name: "", XAxis: "speed", YAxis: "1e4"}})
+
+	result := MergeBenchmarks([]Benchmark{bench1, bench2}, DimensionName)
+	assert.Len(t, result, 1)
+	assert.Len(t, result[0].Data, 1)
+	assert.Equal(t, "v1", result[0].Data[0].Name)
+	assert.Equal(t, map[string]string{
+		"run2": "2026-05-14T10:00:00Z",
+	}, result[0].Runtimes)
+}
+
+func TestMergeBenchmarks_SameNameNoTagDedup(t *testing.T) {
+	bench1 := Benchmark{Name: "Bench", Data: []BenchmarkData{{Name: "first"}}}
+	bench2 := Benchmark{Name: "Bench", Data: []BenchmarkData{{Name: "second"}}}
+
+	result := MergeBenchmarks([]Benchmark{bench1, bench2}, DimensionName)
+	assert.Len(t, result, 1)
+	assert.Equal(t, "first", result[0].Data[0].Name)
+}
+
+func TestMergeBenchmarks_TagOrderChronological(t *testing.T) {
+	bench1 := makeBench("v1", "Bench", map[string]string{"1": "2026-05-13T10:00:00Z"},
+		[]BenchmarkData{{Name: "", XAxis: "speed", YAxis: "1e4"}})
+	bench2 := makeBench("v2", "Bench", map[string]string{"2": "2026-05-14T10:00:00Z"},
+		[]BenchmarkData{{Name: "", XAxis: "speed", YAxis: "1e4"}})
+	bench3 := makeBench("v3", "Bench", map[string]string{"3": "2026-05-12T10:00:00Z"},
+		[]BenchmarkData{{Name: "", XAxis: "speed", YAxis: "1e4"}})
+
+	result := MergeBenchmarks([]Benchmark{bench1, bench2, bench3}, DimensionName)
+	assert.Len(t, result, 1)
+	assert.Len(t, result[0].Data, 3)
+	assert.Equal(t, "v3", result[0].Data[0].Name)
+	assert.Equal(t, "v1", result[0].Data[1].Name)
+	assert.Equal(t, "v2", result[0].Data[2].Name)
+}
