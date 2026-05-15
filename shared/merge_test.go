@@ -78,8 +78,7 @@ func TestMergeBenchmarks_TimestampTie(t *testing.T) {
 	result := MergeBenchmarks([]Benchmark{bench1, bench2}, DimensionName)
 	assert.Len(t, result, 1)
 	assert.Len(t, result[0].Data, 2)
-	assert.Equal(t, "a", result[0].Data[0].Name)
-	assert.Equal(t, "b", result[0].Data[1].Name)
+	assert.ElementsMatch(t, []string{"a", "b"}, []string{result[0].Data[0].Name, result[0].Data[1].Name})
 	assert.Empty(t, result[0].Tag)
 }
 

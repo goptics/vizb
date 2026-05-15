@@ -18,6 +18,8 @@ type taggedEntry struct {
 }
 
 // latestRuntime returns the latest (greatest) timestamp from a runtimes map.
+// Timestamps are expected to be in ISO 8601 / RFC 3339 format, which
+// sorts lexicographically in the same order as chronologically.
 func latestRuntime(runtimes map[string]string) string {
 	var latest string
 	for _, ts := range runtimes {
