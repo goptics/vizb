@@ -1,6 +1,33 @@
 package shared
 
-import "maps"
+import (
+	"maps"
+	"sort"
+)
+
+type benchGroup struct {
+	noTag       Benchmark
+	hasNoTag    bool
+	taggedByTag map[string]*taggedEntry
+}
+
+type taggedEntry struct {
+	benchmark Benchmark
+	timestamp string
+}
+
+// latestRuntime returns the latest (greatest) timestamp from a runtimes map.
+// Timestamps are expected to be in ISO 8601 / RFC 3339 format, which
+// sorts lexicographically in the same order as chronologically.
+func latestRuntime(runtimes map[string]string) string {
+	var latest string
+	for _, ts := range runtimes {
+		if ts > latest {
+			latest = ts
+		}
+	}
+	return latest
+}
 
 // MergeBenchmarks performs tag-based smart merging on a slice of benchmarks.
 // Benchmarks with the same Name and valid Tag fields are deep-merged into a
@@ -9,108 +36,78 @@ import "maps"
 // one object so accumulated data is preserved across incremental merges.
 // dim controls which inner data dimension receives the benchmark tag annotation.
 func MergeBenchmarks(benchmarks []Benchmark, dim Dimension) []Benchmark {
-	groups := groupByName(benchmarks)
-	var result []Benchmark
+	nameOrder := make([]string, 0)
+	groups := make(map[string]*benchGroup)
 
-	for _, group := range groups {
-		noTag, withTag := splitByTag(group)
+	for _, bench := range benchmarks {
+		group, ok := groups[bench.Name]
+		if !ok {
+			group = &benchGroup{taggedByTag: make(map[string]*taggedEntry)}
+			groups[bench.Name] = group
+			nameOrder = append(nameOrder, bench.Name)
+		}
 
-		switch len(withTag) {
-		case 0:
-			result = append(result, noTag...)
-		case 1:
-			b := deepCloneBenchmark(withTag[0])
-			for i := range b.Data {
-				if dimFieldEmpty(b.Data[i], dim) {
-					b.Data[i] = injectTag(b.Data[i], b.Tag, dim)
-				}
+		if bench.Tag == "" {
+			if !group.hasNoTag {
+				group.noTag = bench
+				group.hasNoTag = true
 			}
-			b.Tag = ""
-			if len(noTag) > 0 {
-				c := deepCloneBenchmark(noTag[0])
-				c.Runtimes = mergeRuntimes([]Benchmark{noTag[0], b})
-				c.Data = append(c.Data, b.Data...)
-				result = append(result, c)
-				result = append(result, noTag[1:]...)
-			} else {
-				result = append(result, b)
-			}
+			continue
+		}
+
+		latestTS := latestRuntime(bench.Runtimes)
+		if existing, exists := group.taggedByTag[bench.Tag]; exists && existing.timestamp >= latestTS {
+			continue
+		}
+
+		group.taggedByTag[bench.Tag] = &taggedEntry{
+			benchmark: bench,
+			timestamp: latestTS,
+		}
+	}
+
+	result := make([]Benchmark, 0, len(nameOrder))
+
+	for _, name := range nameOrder {
+		group := groups[name]
+
+		tagged := make([]*taggedEntry, 0, len(group.taggedByTag))
+		for _, entry := range group.taggedByTag {
+			tagged = append(tagged, entry)
+		}
+		sort.SliceStable(tagged, func(i, j int) bool {
+			return tagged[i].timestamp < tagged[j].timestamp
+		})
+
+		switch {
+		case group.hasNoTag && len(tagged) == 0:
+			result = append(result, group.noTag)
 		default:
-			merged := tagBasedMerge(withTag, dim)
-			if len(noTag) > 0 {
-				c := deepCloneBenchmark(noTag[0])
-				c.Runtimes = mergeRuntimes([]Benchmark{noTag[0], merged[0]})
-				c.Data = append(c.Data, merged[0].Data...)
-				result = append(result, c)
-				result = append(result, noTag[1:]...)
+			benches := make([]Benchmark, len(tagged))
+			for i, e := range tagged {
+				benches[i] = e.benchmark
+			}
+
+			if group.hasNoTag {
+				allBenches := make([]Benchmark, 0, 1+len(benches))
+				allBenches = append(allBenches, group.noTag)
+				allBenches = append(allBenches, benches...)
+				base := deepCloneBenchmark(group.noTag)
+				base.Runtimes = mergeRuntimes(allBenches)
+				base.Data = mergeData(allBenches, dim)
+				base.Tag = benches[len(benches)-1].Tag
+				result = append(result, base)
 			} else {
-				result = append(result, merged...)
+				base := deepCloneBenchmark(benches[len(benches)-1])
+				base.Runtimes = mergeRuntimes(benches)
+				base.Data = mergeData(benches, dim)
+				base.Tag = benches[len(benches)-1].Tag
+				result = append(result, base)
 			}
 		}
 	}
 
 	return result
-}
-
-func groupByName(benchmarks []Benchmark) map[string][]Benchmark {
-	groups := make(map[string][]Benchmark)
-	for _, bench := range benchmarks {
-		groups[bench.Name] = append(groups[bench.Name], bench)
-	}
-	return groups
-}
-
-func splitByTag(benchmarks []Benchmark) (noTag, withTag []Benchmark) {
-	for _, bench := range benchmarks {
-		if bench.Tag == "" {
-			noTag = append(noTag, bench)
-		} else {
-			withTag = append(withTag, bench)
-		}
-	}
-	return
-}
-
-func tagBasedMerge(benchmarks []Benchmark, dim Dimension) []Benchmark {
-	latestIdx, tie := findLatest(benchmarks)
-	if tie {
-		return benchmarks
-	}
-
-	merged := deepCloneBenchmark(benchmarks[latestIdx])
-	merged.Runtimes = mergeRuntimes(benchmarks)
-	merged.Data = mergeData(benchmarks, dim)
-	merged.Tag = ""
-	return []Benchmark{merged}
-}
-
-func findLatest(benchmarks []Benchmark) (int, bool) {
-	var maxTS string
-
-	for _, b := range benchmarks {
-		for _, ts := range b.Runtimes {
-			if ts > maxTS {
-				maxTS = ts
-			}
-		}
-	}
-
-	if maxTS == "" {
-		return -1, len(benchmarks) > 1
-	}
-
-	var latest, count int
-	for i, b := range benchmarks {
-		for _, ts := range b.Runtimes {
-			if ts == maxTS {
-				latest = i
-				count++
-				break
-			}
-		}
-	}
-
-	return latest, count > 1
 }
 
 func deepCloneBenchmark(src Benchmark) Benchmark {
