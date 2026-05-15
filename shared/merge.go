@@ -1,46 +1,26 @@
 package shared
 
 import (
-	"maps"
 	"sort"
 )
 
 type benchGroup struct {
 	noTag  *Benchmark
-	tagged []taggedEntry
-}
-
-type taggedEntry struct {
-	Benchmark Benchmark
-	timestamp string
+	tagged []Benchmark
 }
 
 func (g *benchGroup) addTagged(bench Benchmark) {
-	latest := latestRuntime(bench.Runtimes)
-	for i, e := range g.tagged {
-		if e.Benchmark.Tag != bench.Tag {
+	for i, t := range g.tagged {
+		if t.Tag != bench.Tag {
 			continue
 		}
-		if e.timestamp >= latest {
+		if t.Timestamp >= bench.Timestamp {
 			return
 		}
-		g.tagged[i] = taggedEntry{Benchmark: bench, timestamp: latest}
+		g.tagged[i] = bench
 		return
 	}
-	g.tagged = append(g.tagged, taggedEntry{Benchmark: bench, timestamp: latest})
-}
-
-// latestRuntime returns the latest (greatest) timestamp from a runtimes map.
-// Timestamps are expected to be in ISO 8601 / RFC 3339 format, which
-// sorts lexicographically in the same order as chronologically.
-func latestRuntime(runtimes map[string]string) string {
-	var latest string
-	for _, ts := range runtimes {
-		if ts > latest {
-			latest = ts
-		}
-	}
-	return latest
+	g.tagged = append(g.tagged, bench)
 }
 
 // MergeBenchmarks performs tag-based smart merging on a slice of benchmarks.
@@ -77,37 +57,35 @@ func MergeBenchmarks(benchmarks []Benchmark, dim Dimension) []Benchmark {
 	for _, name := range nameOrder {
 		group := groups[name]
 
-		tagged := make([]taggedEntry, len(group.tagged))
+		tagged := make([]Benchmark, len(group.tagged))
 		copy(tagged, group.tagged)
 		sort.SliceStable(tagged, func(i, j int) bool {
-			return tagged[i].timestamp < tagged[j].timestamp
+			return tagged[i].Timestamp < tagged[j].Timestamp
 		})
 
 		switch {
 		case group.noTag != nil && len(tagged) == 0:
 			result = append(result, *group.noTag)
 		default:
-			benches := make([]Benchmark, len(tagged))
-			for i, e := range tagged {
-				benches[i] = e.Benchmark
+			if group.noTag != nil {
+				allBenches := make([]Benchmark, 0, 1+len(tagged))
+				allBenches = append(allBenches, *group.noTag)
+				allBenches = append(allBenches, tagged...)
+				base := deepCloneBenchmark(*group.noTag)
+				latest := tagged[len(tagged)-1]
+				base.Tag = latest.Tag
+				base.Timestamp = latest.Timestamp
+				base.History = buildHistory(allBenches, latest.Tag)
+				base.Data = mergeData(allBenches, dim)
+				result = append(result, base)
+				continue
 			}
 
-			if group.noTag != nil {
-				allBenches := make([]Benchmark, 0, 1+len(benches))
-				allBenches = append(allBenches, *group.noTag)
-				allBenches = append(allBenches, benches...)
-				base := deepCloneBenchmark(*group.noTag)
-				base.Runtimes = mergeRuntimes(allBenches)
-				base.Data = mergeData(allBenches, dim)
-				base.Tag = benches[len(benches)-1].Tag
-				result = append(result, base)
-			} else {
-				base := deepCloneBenchmark(benches[len(benches)-1])
-				base.Runtimes = mergeRuntimes(benches)
-				base.Data = mergeData(benches, dim)
-				base.Tag = benches[len(benches)-1].Tag
-				result = append(result, base)
-			}
+			latest := tagged[len(tagged)-1]
+			base := deepCloneBenchmark(latest)
+			base.History = buildHistory(tagged, latest.Tag)
+			base.Data = mergeData(tagged, dim)
+			result = append(result, base)
 		}
 	}
 
@@ -121,20 +99,47 @@ func deepCloneBenchmark(src Benchmark) Benchmark {
 		dst.Data[i] = deepCloneData(src.Data[i])
 	}
 
-	if src.Runtimes != nil {
-		dst.Runtimes = make(map[string]string, len(src.Runtimes))
-		maps.Copy(dst.Runtimes, src.Runtimes)
+	if src.History != nil {
+		dst.History = make([]HistoryEntry, len(src.History))
+		copy(dst.History, src.History)
 	}
 
 	return dst
 }
 
-func mergeRuntimes(benchmarks []Benchmark) map[string]string {
-	result := make(map[string]string)
+// buildHistory collects tag+timestamp pairs from all benchmarks and their
+// existing History entries, excluding the latest tag. Entries are deduplicated
+// by tag (keeping the latest timestamp per tag) and sorted chronologically.
+func buildHistory(benchmarks []Benchmark, latestTag string) []HistoryEntry {
+	seen := make(map[string]string)
 	for _, bench := range benchmarks {
-		maps.Copy(result, bench.Runtimes)
+		if bench.Tag != "" && bench.Tag != latestTag {
+			if ts, ok := seen[bench.Tag]; !ok || bench.Timestamp > ts {
+				seen[bench.Tag] = bench.Timestamp
+			}
+		}
+		for _, entry := range bench.History {
+			if entry.Tag == latestTag {
+				continue
+			}
+			if ts, ok := seen[entry.Tag]; !ok || entry.Timestamp > ts {
+				seen[entry.Tag] = entry.Timestamp
+			}
+		}
 	}
-	return result
+
+	if len(seen) == 0 {
+		return nil
+	}
+
+	entries := make([]HistoryEntry, 0, len(seen))
+	for tag, ts := range seen {
+		entries = append(entries, HistoryEntry{Tag: tag, Timestamp: ts})
+	}
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].Timestamp < entries[j].Timestamp
+	})
+	return entries
 }
 
 func mergeData(benchmarks []Benchmark, dim Dimension) []BenchmarkData {

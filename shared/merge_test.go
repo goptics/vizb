@@ -6,20 +6,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func makeBench(tag, name string, runtimes map[string]string, data []BenchmarkData) Benchmark {
+func makeBench(tag, name, timestamp string, data []BenchmarkData) Benchmark {
 	return Benchmark{
-		Tag:      tag,
-		Name:     name,
-		Runtimes: runtimes,
-		Data:     data,
+		Tag:       tag,
+		Timestamp: timestamp,
+		Name:      name,
+		Data:      data,
 	}
 }
 
 func TestMergeBenchmarks_SmartMerge(t *testing.T) {
-	bench1 := makeBench("1", "My benchmark", map[string]string{"1": "2026-05-13T10:00:00Z"}, []BenchmarkData{
+	bench1 := makeBench("1", "My benchmark", "2026-05-13T10:00:00Z", []BenchmarkData{
 		{Name: "", XAxis: "speed", YAxis: "1e4"},
 	})
-	bench2 := makeBench("2", "My benchmark", map[string]string{"2": "2026-05-13T10:05:00Z"}, []BenchmarkData{
+	bench2 := makeBench("2", "My benchmark", "2026-05-13T10:05:00Z", []BenchmarkData{
 		{Name: "", XAxis: "speed", YAxis: "1e4"},
 	})
 
@@ -29,20 +29,20 @@ func TestMergeBenchmarks_SmartMerge(t *testing.T) {
 	merged := result[0]
 	assert.Equal(t, "2", merged.Tag)
 	assert.Equal(t, "My benchmark", merged.Name)
-	assert.Equal(t, map[string]string{
-		"1": "2026-05-13T10:00:00Z",
-		"2": "2026-05-13T10:05:00Z",
-	}, merged.Runtimes)
+	assert.Equal(t, "2026-05-13T10:05:00Z", merged.Timestamp)
+	assert.Equal(t, []HistoryEntry{
+		{Tag: "1", Timestamp: "2026-05-13T10:00:00Z"},
+	}, merged.History)
 	assert.Len(t, merged.Data, 2)
 	assert.Equal(t, "1", merged.Data[0].Name)
 	assert.Equal(t, "2", merged.Data[1].Name)
 }
 
 func TestMergeBenchmarks_MixedGroup(t *testing.T) {
-	bench1 := makeBench("1", "My benchmark", map[string]string{"1": "2026-05-13T10:00:00Z"}, []BenchmarkData{
+	bench1 := makeBench("1", "My benchmark", "2026-05-13T10:00:00Z", []BenchmarkData{
 		{Name: "", XAxis: "speed", YAxis: "1e4"},
 	})
-	bench2 := makeBench("2", "My benchmark", map[string]string{"2": "2026-05-13T10:05:00Z"}, []BenchmarkData{
+	bench2 := makeBench("2", "My benchmark", "2026-05-13T10:05:00Z", []BenchmarkData{
 		{Name: "", XAxis: "speed", YAxis: "1e4"},
 	})
 	noTagBench := Benchmark{
@@ -60,6 +60,7 @@ func TestMergeBenchmarks_MixedGroup(t *testing.T) {
 	assert.Equal(t, "1", merged.Data[1].Name)
 	assert.Equal(t, "2", merged.Data[2].Name)
 	assert.Equal(t, "2", merged.Tag)
+	assert.Equal(t, "2026-05-13T10:05:00Z", merged.Timestamp)
 }
 
 func TestMergeBenchmarks_AllNoTag(t *testing.T) {
@@ -72,8 +73,8 @@ func TestMergeBenchmarks_AllNoTag(t *testing.T) {
 }
 
 func TestMergeBenchmarks_TimestampTie(t *testing.T) {
-	bench1 := makeBench("1", "Test", map[string]string{"1": "2026-05-13T10:00:00Z"}, []BenchmarkData{{Name: "a"}})
-	bench2 := makeBench("2", "Test", map[string]string{"2": "2026-05-13T10:00:00Z"}, []BenchmarkData{{Name: "b"}})
+	bench1 := makeBench("1", "Test", "2026-05-13T10:00:00Z", []BenchmarkData{{Name: "a"}})
+	bench2 := makeBench("2", "Test", "2026-05-13T10:00:00Z", []BenchmarkData{{Name: "b"}})
 
 	result := MergeBenchmarks([]Benchmark{bench1, bench2}, DimensionName)
 	assert.Len(t, result, 1)
@@ -83,17 +84,19 @@ func TestMergeBenchmarks_TimestampTie(t *testing.T) {
 }
 
 func TestMergeBenchmarks_SingleBenchmark(t *testing.T) {
-	bench := makeBench("1", "Solo", map[string]string{"1": "2026-05-13T10:00:00Z"}, []BenchmarkData{{Name: "x"}})
+	bench := makeBench("1", "Solo", "2026-05-13T10:00:00Z", []BenchmarkData{{Name: "x"}})
 	result := MergeBenchmarks([]Benchmark{bench}, DimensionName)
 	assert.Len(t, result, 1)
 	assert.Equal(t, "Solo", result[0].Name)
+	assert.Equal(t, "2026-05-13T10:00:00Z", result[0].Timestamp)
+	assert.Nil(t, result[0].History)
 }
 
 func TestMergeBenchmarks_PopulatedName(t *testing.T) {
-	bench1 := makeBench("1", "digits", map[string]string{"1": "2026-05-13T10:00:00Z"}, []BenchmarkData{
+	bench1 := makeBench("1", "digits", "2026-05-13T10:00:00Z", []BenchmarkData{
 		{Name: "digits", XAxis: "speed", YAxis: "1e4"},
 	})
-	bench2 := makeBench("2", "digits", map[string]string{"2": "2026-05-13T10:05:00Z"}, []BenchmarkData{
+	bench2 := makeBench("2", "digits", "2026-05-13T10:05:00Z", []BenchmarkData{
 		{Name: "digits", XAxis: "speed", YAxis: "1e4"},
 	})
 
@@ -104,10 +107,10 @@ func TestMergeBenchmarks_PopulatedName(t *testing.T) {
 }
 
 func TestMergeBenchmarks_InjectDimensionX(t *testing.T) {
-	bench1 := makeBench("1", "Test", map[string]string{"1": "2026-05-13T10:00:00Z"}, []BenchmarkData{
+	bench1 := makeBench("1", "Test", "2026-05-13T10:00:00Z", []BenchmarkData{
 		{XAxis: "", YAxis: "100"},
 	})
-	bench2 := makeBench("2", "Test", map[string]string{"2": "2026-05-13T10:05:00Z"}, []BenchmarkData{
+	bench2 := makeBench("2", "Test", "2026-05-13T10:05:00Z", []BenchmarkData{
 		{XAxis: "", YAxis: "200"},
 	})
 
@@ -119,10 +122,10 @@ func TestMergeBenchmarks_InjectDimensionX(t *testing.T) {
 }
 
 func TestMergeBenchmarks_InjectDimensionY(t *testing.T) {
-	bench1 := makeBench("1", "Test", map[string]string{"1": "2026-05-13T10:00:00Z"}, []BenchmarkData{
+	bench1 := makeBench("1", "Test", "2026-05-13T10:00:00Z", []BenchmarkData{
 		{XAxis: "x", YAxis: ""},
 	})
-	bench2 := makeBench("2", "Test", map[string]string{"2": "2026-05-13T10:05:00Z"}, []BenchmarkData{
+	bench2 := makeBench("2", "Test", "2026-05-13T10:05:00Z", []BenchmarkData{
 		{XAxis: "x", YAxis: ""},
 	})
 
@@ -132,21 +135,26 @@ func TestMergeBenchmarks_InjectDimensionY(t *testing.T) {
 	assert.Equal(t, "2", result[0].Data[1].YAxis)
 }
 
-func TestMergeBenchmarks_RuntimeMerge(t *testing.T) {
-	bench1 := makeBench("1", "Test", map[string]string{"1": "2026-05-13T10:00:00Z"}, []BenchmarkData{{Name: "a"}})
-	bench2 := makeBench("2", "Test", map[string]string{"2": "2026-05-13T10:05:00Z", "extra": "2026-05-13T11:00:00Z"}, []BenchmarkData{{Name: "b"}})
+func TestMergeBenchmarks_HistoryMerge(t *testing.T) {
+	bench1 := makeBench("1", "Test", "2026-05-13T10:00:00Z", []BenchmarkData{{Name: "a"}})
+	bench2 := makeBench("2", "Test", "2026-05-13T10:05:00Z", []BenchmarkData{{Name: "b"}})
+	bench2.History = []HistoryEntry{
+		{Tag: "extra", Timestamp: "2026-05-13T11:00:00Z"},
+	}
 
 	result := MergeBenchmarks([]Benchmark{bench1, bench2}, DimensionName)
 	assert.Len(t, result, 1)
-	assert.Len(t, result[0].Runtimes, 3)
-	assert.Equal(t, "2026-05-13T10:00:00Z", result[0].Runtimes["1"])
-	assert.Equal(t, "2026-05-13T10:05:00Z", result[0].Runtimes["2"])
-	assert.Equal(t, "2026-05-13T11:00:00Z", result[0].Runtimes["extra"])
+	assert.Equal(t, "2", result[0].Tag)
+	assert.Equal(t, "2026-05-13T10:05:00Z", result[0].Timestamp)
+	assert.Equal(t, []HistoryEntry{
+		{Tag: "1", Timestamp: "2026-05-13T10:00:00Z"},
+		{Tag: "extra", Timestamp: "2026-05-13T11:00:00Z"},
+	}, result[0].History)
 }
 
 func TestMergeBenchmarks_DifferentNames(t *testing.T) {
-	bench1 := makeBench("1", "Bench A", map[string]string{"1": "2026-05-13T10:00:00Z"}, []BenchmarkData{{Name: "a"}})
-	bench2 := makeBench("2", "Bench B", map[string]string{"2": "2026-05-13T10:05:00Z"}, []BenchmarkData{{Name: "b"}})
+	bench1 := makeBench("1", "Bench A", "2026-05-13T10:00:00Z", []BenchmarkData{{Name: "a"}})
+	bench2 := makeBench("2", "Bench B", "2026-05-13T10:05:00Z", []BenchmarkData{{Name: "b"}})
 
 	result := MergeBenchmarks([]Benchmark{bench1, bench2}, DimensionName)
 	assert.Len(t, result, 2)
@@ -158,8 +166,8 @@ func TestMergeBenchmarks_EmptyInput(t *testing.T) {
 }
 
 func TestMergeBenchmarks_NoMutation(t *testing.T) {
-	bench1 := makeBench("1", "Test", map[string]string{"1": "2026-05-13T10:00:00Z"}, []BenchmarkData{{Name: "a"}})
-	bench2 := makeBench("2", "Test", map[string]string{"2": "2026-05-13T10:05:00Z"}, []BenchmarkData{{Name: "b"}})
+	bench1 := makeBench("1", "Test", "2026-05-13T10:00:00Z", []BenchmarkData{{Name: "a"}})
+	bench2 := makeBench("2", "Test", "2026-05-13T10:05:00Z", []BenchmarkData{{Name: "b"}})
 
 	original := []Benchmark{bench1, bench2}
 	result := MergeBenchmarks(original, DimensionName)
@@ -170,9 +178,9 @@ func TestMergeBenchmarks_NoMutation(t *testing.T) {
 }
 
 func TestMergeBenchmarks_SameNameSameTagDedup(t *testing.T) {
-	bench1 := makeBench("v1", "Bench", map[string]string{"run1": "2026-05-13T10:00:00Z"},
+	bench1 := makeBench("v1", "Bench", "2026-05-13T10:00:00Z",
 		[]BenchmarkData{{Name: "", XAxis: "speed", YAxis: "1e4"}})
-	bench2 := makeBench("v1", "Bench", map[string]string{"run2": "2026-05-14T10:00:00Z"},
+	bench2 := makeBench("v1", "Bench", "2026-05-14T10:00:00Z",
 		[]BenchmarkData{{Name: "", XAxis: "speed", YAxis: "1e4"}})
 
 	result := MergeBenchmarks([]Benchmark{bench1, bench2}, DimensionName)
@@ -180,9 +188,8 @@ func TestMergeBenchmarks_SameNameSameTagDedup(t *testing.T) {
 	assert.Len(t, result[0].Data, 1)
 	assert.Equal(t, "v1", result[0].Data[0].Name)
 	assert.Equal(t, "v1", result[0].Tag)
-	assert.Equal(t, map[string]string{
-		"run2": "2026-05-14T10:00:00Z",
-	}, result[0].Runtimes)
+	assert.Equal(t, "2026-05-14T10:00:00Z", result[0].Timestamp)
+	assert.Nil(t, result[0].History)
 }
 
 func TestMergeBenchmarks_SameNameNoTagDedup(t *testing.T) {
@@ -195,18 +202,23 @@ func TestMergeBenchmarks_SameNameNoTagDedup(t *testing.T) {
 }
 
 func TestMergeBenchmarks_TagOrderChronological(t *testing.T) {
-	bench1 := makeBench("v1", "Bench", map[string]string{"1": "2026-05-13T10:00:00Z"},
+	bench1 := makeBench("v1", "Bench", "2026-05-13T10:00:00Z",
 		[]BenchmarkData{{Name: "", XAxis: "speed", YAxis: "1e4"}})
-	bench2 := makeBench("v2", "Bench", map[string]string{"2": "2026-05-14T10:00:00Z"},
+	bench2 := makeBench("v2", "Bench", "2026-05-14T10:00:00Z",
 		[]BenchmarkData{{Name: "", XAxis: "speed", YAxis: "1e4"}})
-	bench3 := makeBench("v3", "Bench", map[string]string{"3": "2026-05-12T10:00:00Z"},
+	bench3 := makeBench("v3", "Bench", "2026-05-12T10:00:00Z",
 		[]BenchmarkData{{Name: "", XAxis: "speed", YAxis: "1e4"}})
 
 	result := MergeBenchmarks([]Benchmark{bench1, bench2, bench3}, DimensionName)
 	assert.Len(t, result, 1)
 	assert.Equal(t, "v2", result[0].Tag)
+	assert.Equal(t, "2026-05-14T10:00:00Z", result[0].Timestamp)
 	assert.Len(t, result[0].Data, 3)
 	assert.Equal(t, "v3", result[0].Data[0].Name)
 	assert.Equal(t, "v1", result[0].Data[1].Name)
 	assert.Equal(t, "v2", result[0].Data[2].Name)
+	assert.Equal(t, []HistoryEntry{
+		{Tag: "v3", Timestamp: "2026-05-12T10:00:00Z"},
+		{Tag: "v1", Timestamp: "2026-05-13T10:00:00Z"},
+	}, result[0].History)
 }
