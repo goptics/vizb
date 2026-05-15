@@ -123,13 +123,18 @@ vizb bench.txt -o v2.json --tag v2 -n "Foo"
 
 #### How tag-based merging works
 
-When you merge two tagged benchmarks with the same name:
+When you merge benchmarks sharing the same name with different tags:
 
 ```bash
 vizb merge v1.json v2.json -o comparison.html
 ```
 
-Vizb detects the shared benchmark name, merges the datasets into a single object, and annotates each inner data point with its originating tag. The merged result keeps the latest tag (by runtime timestamp), combines all runtime entries, and appends data from both runs.
+Vizb groups benchmarks by name and processes each group as follows:
+
+1. **Deduplication** — If two entries share the same name and tag, only the one with the latest runtime timestamp is kept. Older entries are discarded.
+2. **Inner merge** — Entries with different tags are deep-merged into a single benchmark. Data points are sorted in chronological tag order and each is annotated with its originating tag.
+3. **Legacy entries** — Untagged benchmarks (no `--tag`) with the same name are deduplicated (first-seen wins) and their data is prepended before tagged entries.
+4. **Output** — The merged benchmark retains the latest tag (by runtime timestamp), combines all runtime maps, and includes data from all runs.
 
 #### Controlling where the tag is injected
 
