@@ -5,7 +5,19 @@ All notable changes to the Vizb project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [0.9.3] - 2026-05-14
+# [0.9.4] - 2026-05-15
+
+### Added
+
+- **Merge Dedup**: Benchmarks sharing the same name and tag are now deduplicated by latest runtime timestamp instead of merging both data sets ([#76](https://github.com/goptics/vizb/pull/76))
+- **Chronological Tag Ordering**: Tags are processed in chronological order during inner merge for deterministic data ordering ([#76](https://github.com/goptics/vizb/pull/76))
+- **Latest Tag Preserved**: Merged output now retains the latest tag (by runtime timestamp) instead of clearing it ([#76](https://github.com/goptics/vizb/pull/76))
+
+### Changed
+
+- **Merge Internals**: Rewrote `MergeBenchmarks` with a two-level map (`Name → Tag → Benchmark`) for cleaner dedup and deterministic output (removed 4 unused helpers) ([#76](https://github.com/goptics/vizb/pull/76))
+- **Scale Selector Label**: Renamed "Y-Axis Scale" to "Data Scale" since the scale applies to all chart data, not just Y-axis ([#77](https://github.com/goptics/vizb/pull/77))
+- **Scale Selector Visibility**: Removed Y-axis data gating — scale selector now always visible for non-pie charts ([#77](https://github.com/goptics/vizb/pull/77))
 
 ### Fix
 
