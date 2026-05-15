@@ -6,10 +6,6 @@ import ChartSettings from './ChartSettings.vue'
 import ScaleSelector from './ScaleSelector.vue'
 import IconButton from './IconButton.vue'
 
-defineProps<{
-  hasYAxis?: boolean
-}>()
-
 const isOpen = ref(false)
 </script>
 
@@ -24,7 +20,7 @@ const isOpen = ref(false)
     <PopoverContent>
       <ChartSettings>
         <template #scale>
-          <ScaleSelector v-if="hasYAxis" />
+          <ScaleSelector />
         </template>
       </ChartSettings>
     </PopoverContent>
