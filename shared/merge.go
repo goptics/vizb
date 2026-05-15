@@ -4,24 +4,7 @@ import (
 	"sort"
 )
 
-type benchGroup struct {
-	noTag  *Benchmark
-	tagged []Benchmark
-}
-
-func (g *benchGroup) addTagged(bench Benchmark) {
-	for i, t := range g.tagged {
-		if t.Tag != bench.Tag {
-			continue
-		}
-		if t.Timestamp >= bench.Timestamp {
-			return
-		}
-		g.tagged[i] = bench
-		return
-	}
-	g.tagged = append(g.tagged, bench)
-}
+const noTagKey = "__no_tag__"
 
 // MergeBenchmarks performs tag-based smart merging on a slice of benchmarks.
 // Benchmarks with the same Name and valid Tag fields are deep-merged into a
@@ -31,47 +14,53 @@ func (g *benchGroup) addTagged(bench Benchmark) {
 // dim controls which inner data dimension receives the benchmark tag annotation.
 func MergeBenchmarks(benchmarks []Benchmark, dim Dimension) []Benchmark {
 	nameOrder := make([]string, 0)
-	groups := make(map[string]*benchGroup)
+	groups := make(map[string]map[string]*Benchmark)
 
 	for _, bench := range benchmarks {
-		group, ok := groups[bench.Name]
+		tags, ok := groups[bench.Name]
 		if !ok {
-			group = new(benchGroup)
-			groups[bench.Name] = group
+			tags = make(map[string]*Benchmark)
+			groups[bench.Name] = tags
 			nameOrder = append(nameOrder, bench.Name)
 		}
 
-		if bench.Tag == "" {
-			if group.noTag == nil {
-				b := bench
-				group.noTag = &b
-			}
+		tag := bench.Tag
+		if tag == "" {
+			tag = noTagKey
+		}
+
+		if existing, exists := tags[tag]; exists && existing.Timestamp >= bench.Timestamp {
 			continue
 		}
 
-		group.addTagged(bench)
+		tags[tag] = &bench
 	}
 
 	result := make([]Benchmark, 0, len(nameOrder))
 
 	for _, name := range nameOrder {
-		group := groups[name]
+		tags := groups[name]
 
-		tagged := make([]Benchmark, len(group.tagged))
-		copy(tagged, group.tagged)
+		noTag := tags[noTagKey]
+		delete(tags, noTagKey)
+
+		tagged := make([]Benchmark, 0, len(tags))
+		for _, b := range tags {
+			tagged = append(tagged, *b)
+		}
 		sort.SliceStable(tagged, func(i, j int) bool {
 			return tagged[i].Timestamp < tagged[j].Timestamp
 		})
 
 		switch {
-		case group.noTag != nil && len(tagged) == 0:
-			result = append(result, *group.noTag)
+		case noTag != nil && len(tagged) == 0:
+			result = append(result, *noTag)
 		default:
-			if group.noTag != nil {
+			if noTag != nil {
 				allBenches := make([]Benchmark, 0, 1+len(tagged))
-				allBenches = append(allBenches, *group.noTag)
+				allBenches = append(allBenches, *noTag)
 				allBenches = append(allBenches, tagged...)
-				base := deepCloneBenchmark(*group.noTag)
+				base := deepCloneBenchmark(*noTag)
 				latest := tagged[len(tagged)-1]
 				base.Tag = latest.Tag
 				base.Timestamp = latest.Timestamp
