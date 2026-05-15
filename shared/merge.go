@@ -12,7 +12,6 @@ type benchGroup struct {
 }
 
 type taggedEntry struct {
-	tag       string
 	benchmark Benchmark
 	timestamp string
 }
@@ -62,7 +61,6 @@ func MergeBenchmarks(benchmarks []Benchmark, dim Dimension) []Benchmark {
 		}
 
 		group.taggedByTag[bench.Tag] = &taggedEntry{
-			tag:       bench.Tag,
 			benchmark: bench,
 			timestamp: latestTS,
 		}
