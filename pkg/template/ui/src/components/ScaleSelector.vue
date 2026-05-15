@@ -26,7 +26,7 @@ const handleScaleChange = (value: string | number) => {
 <template>
   <Separator v-if="isAxisChart" />
   <div v-if="isAxisChart" class="space-y-3">
-    <p class="text-sm font-medium">Y-Axis Scale</p>
+    <p class="text-sm font-medium">Data Scale</p>
     <SelectionTabs
       :model-value="scaleType"
       :options="scaleOptions"
