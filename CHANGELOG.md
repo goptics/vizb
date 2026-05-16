@@ -5,6 +5,20 @@ All notable changes to the Vizb project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [0.9.5] - 2026-05-16
+
+### Changed
+
+- **Benchmark Timestamp**: Replaced `Runtimes map[string]string` with direct `Timestamp` field on each benchmark — each run carries its own timestamp instead of an indirect tag→timestamp map
+- **Benchmark History**: Added `History []HistoryEntry` to track old tag+timestamp pairs from previous merges; latest tag stays on the benchmark itself, history holds only older tags
+- **Merge Internals**: Removed `benchGroup` struct and `taggedEntry` wrapper — replaced with `map[string]map[string]*Benchmark` for simpler tag dedup and insertion
+
+### Removed
+
+- `Runtimes` field from `Benchmark` struct (replaced by `Timestamp` + `History`)
+- `latestRuntime` and `mergeRuntimes` helper functions (no longer needed)
+- `benchGroup` and `taggedEntry` internal types
+
 # [0.9.4] - 2026-05-15
 
 ### Added
