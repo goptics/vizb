@@ -1,0 +1,215 @@
+name: Vizb Benchmark
+description: Run Go benchmarks and generate interactive HTML visualizations with vizb
+
+inputs:
+  bench:
+    description: "Benchmark command to run (e.g., go test -bench=.)"
+    default: ""
+  bench_file:
+    description: "Path to existing benchmark output file (takes priority over bench)"
+    default: ""
+  name:
+    description: "Benchmark name (-n flag)"
+    default: "Benchmarks"
+  description:
+    description: "Benchmark description (-d flag)"
+    default: ""
+  tag:
+    description: "Tag/identifier for the benchmark (-t flag)"
+    default: ""
+  group_pattern:
+    description: "Group pattern (-p flag)"
+    default: "x"
+  group_regex:
+    description: "Group regex (-r flag)"
+    default: ""
+  scale:
+    description: "Scale type: linear or log (-S flag)"
+    default: linear
+  sort:
+    description: "Sort order: asc or desc (-s flag)"
+    default: ""
+  filter:
+    description: "Regex filter for benchmarks (-f flag)"
+    default: ""
+  mem_unit:
+    description: "Memory unit: b, B, KB, MB, GB (-M flag)"
+    default: B
+  time_unit:
+    description: "Time unit: ns, us, ms, s (-T flag)"
+    default: ns
+  number_unit:
+    description: "Number unit: K, M, B, T (-N flag)"
+    default: ""
+  charts:
+    description: "Chart types to generate (-c flag)"
+    default: "bar,line,pie"
+  show_labels:
+    description: "Show labels on charts (-l flag)"
+    default: "false"
+  merge_files:
+    description: "Space-separated JSON files to merge"
+    default: ""
+  merge_dir:
+    description: "Directory to scan for JSON files to merge"
+    default: ""
+  tag_axis:
+    description: "Tag injection axis: n, x, or y (-A flag)"
+    default: n
+  output:
+    description: "Output format: html, json, or both"
+    default: html
+
+outputs:
+  output-file:
+    description: Path to produced output file
+    value: ${{ steps.generate.outputs.file }}
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: go.mod
+        cache: true
+
+    - name: Resolve vizb version
+      id: version
+      shell: bash
+      run: |
+        VERSION="${{ github.action_ref }}"
+        if [ -z "$VERSION" ]; then
+          VERSION="latest"
+        fi
+        echo "value=$VERSION" >> "$GITHUB_OUTPUT"
+
+    - name: Cache vizb binary
+      id: cache-vizb
+      uses: actions/cache@v4
+      with:
+        path: ~/go/bin/vizb
+        key: vizb-${{ steps.version.outputs.value }}-${{ runner.os }}
+
+    - name: Install vizb
+      if: steps.cache-vizb.outputs.cache-hit != 'true'
+      shell: bash
+      run: go install github.com/goptics/vizb@${{ steps.version.outputs.value }}
+
+    # ── Resolve input source ───────────────────────────────────
+
+    - name: Resolve input
+      id: resolve
+      shell: bash
+      run: |
+        BENCH_FILE="${{ inputs.bench_file }}"
+        BENCH_CMD="${{ inputs.bench }}"
+        HAS_MERGE=""
+        [ -n "${{ inputs.merge_files }}" ] && HAS_MERGE="true"
+        [ -n "${{ inputs.merge_dir }}" ] && HAS_MERGE="true"
+
+        if [ -n "$BENCH_FILE" ]; then
+          echo "source=file" >> "$GITHUB_OUTPUT"
+          echo "has_input=true" >> "$GITHUB_OUTPUT"
+        elif [ -n "$BENCH_CMD" ]; then
+          echo "source=command" >> "$GITHUB_OUTPUT"
+          echo "has_input=true" >> "$GITHUB_OUTPUT"
+        elif [ -n "$HAS_MERGE" ]; then
+          echo "source=merge-only" >> "$GITHUB_OUTPUT"
+          echo "has_input=false" >> "$GITHUB_OUTPUT"
+        else
+          echo "::error::No input provided. Specify bench, bench_file, merge_files, or merge_dir."
+          exit 1
+        fi
+
+    # ── Convert to JSON ────────────────────────────────────────
+
+    - name: Convert to JSON
+      if: steps.resolve.outputs.has_input == 'true'
+      shell: bash
+      run: |
+        # Build vizb flags
+        VIZB_ARGS=()
+        [ -n "${{ inputs.tag }}" ] && VIZB_ARGS+=(--tag "${{ inputs.tag }}")
+        [ -n "${{ inputs.name }}" ] && VIZB_ARGS+=(-n "${{ inputs.name }}")
+        [ -n "${{ inputs.description }}" ] && VIZB_ARGS+=(-d "${{ inputs.description }}")
+        [ -n "${{ inputs.group_pattern }}" ] && VIZB_ARGS+=(-p "${{ inputs.group_pattern }}")
+        [ -n "${{ inputs.group_regex }}" ] && VIZB_ARGS+=(-r "${{ inputs.group_regex }}")
+        [ "${{ inputs.scale }}" != "linear" ] && VIZB_ARGS+=(--scale "${{ inputs.scale }}")
+        [ -n "${{ inputs.sort }}" ] && VIZB_ARGS+=(--sort "${{ inputs.sort }}")
+        [ -n "${{ inputs.filter }}" ] && VIZB_ARGS+=(--filter "${{ inputs.filter }}")
+        [ -n "${{ inputs.mem_unit }}" ] && VIZB_ARGS+=(-M "${{ inputs.mem_unit }}")
+        [ -n "${{ inputs.time_unit }}" ] && VIZB_ARGS+=(-T "${{ inputs.time_unit }}")
+        [ -n "${{ inputs.number_unit }}" ] && VIZB_ARGS+=(-N "${{ inputs.number_unit }}")
+        [ -n "${{ inputs.charts }}" ] && VIZB_ARGS+=(-c "${{ inputs.charts }}")
+        [ "${{ inputs.show_labels }}" = "true" ] && VIZB_ARGS+=(-l)
+
+        if [ "${{ steps.resolve.outputs.source }}" = "file" ]; then
+          cp "${{ inputs.bench_file }}" bench-input.txt
+        else
+          bash -c '${{ inputs.bench }}' > bench-input.txt
+        fi
+
+        vizb bench-input.txt -o bench-new.json "${VIZB_ARGS[@]}" < /dev/null
+
+    # ── Merge ──────────────────────────────────────────────────
+
+    - name: Merge
+      id: merge
+      shell: bash
+      run: |
+        FILES=()
+
+        # Collect new benchmark if it exists
+        [ -f bench-new.json ] && FILES+=("bench-new.json")
+
+        # Collect from merge_files
+        if [ -n "${{ inputs.merge_files }}" ]; then
+          for f in ${{ inputs.merge_files }}; do
+            [ -f "$f" ] && FILES+=("$f")
+          done
+        fi
+
+        # Collect from merge_dir
+        if [ -n "${{ inputs.merge_dir }}" ]; then
+          while IFS= read -r f; do
+            FILES+=("$f")
+          done < <(find "${{ inputs.merge_dir }}" -name '*.json')
+        fi
+
+        if [ ${#FILES[@]} -eq 0 ]; then
+          echo "::error::No JSON files found"
+          exit 1
+        fi
+
+        if [ ${#FILES[@]} -eq 1 ]; then
+          cp "${FILES[0]}" bench.json
+        else
+          vizb merge "${FILES[@]}" -o bench.json --tag-axis "${{ inputs.tag_axis }}"
+        fi
+
+    # ── Generate output ────────────────────────────────────────
+
+    - name: Generate output
+      id: generate
+      shell: bash
+      run: |
+        if [ ! -f bench.json ]; then
+          echo "::error::bench.json not found. Merge step may have failed."
+          exit 1
+        fi
+
+        case "${{ inputs.output }}" in
+          json)
+            OUTPUT_FILE="bench.json"
+            ;;
+          both)
+            vizb bench.json -o bench.html
+            OUTPUT_FILE="bench.html"
+            ;;
+          *)
+            vizb bench.json -o bench.html
+            OUTPUT_FILE="bench.html"
+            ;;
+        esac
+        echo "file=$OUTPUT_FILE" >> "$GITHUB_OUTPUT"
