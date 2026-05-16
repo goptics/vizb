@@ -1,22 +1,35 @@
 # Changelog
 
-All notable changes to the Vizb project will be documented in this file.
+Notable changes to Vizb documented here.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+# [0.9.5] - 2026-05-16
+
+### Changed
+
+- **Benchmark Timestamp**: Replaced `Runtimes map[string]string` with direct `Timestamp` field on each benchmark — each run carries its own timestamp instead of an indirect tag→timestamp map
+- **Benchmark History**: Added `History []HistoryEntry` to track old tag+timestamp pairs from previous merges; latest tag stays on benchmark itself, history holds only older tags
+- **Merge Internals**: Removed `benchGroup` struct and `taggedEntry` wrapper — replaced with `map[string]map[string]*Benchmark` for simpler tag dedup and insertion
+
+### Removed
+
+- `Runtimes` field from `Benchmark` struct (replaced by `Timestamp` + `History`)
+- `latestRuntime` and `mergeRuntimes` helper functions (no longer needed)
+- `benchGroup` and `taggedEntry` internal types
 
 # [0.9.4] - 2026-05-15
 
 ### Added
 
-- **Merge Dedup**: Benchmarks sharing the same name and tag are now deduplicated by latest runtime timestamp instead of merging both data sets ([#76](https://github.com/goptics/vizb/pull/76))
-- **Chronological Tag Ordering**: Tags are processed in chronological order during inner merge for deterministic data ordering ([#76](https://github.com/goptics/vizb/pull/76))
-- **Latest Tag Preserved**: Merged output now retains the latest tag (by runtime timestamp) instead of clearing it ([#76](https://github.com/goptics/vizb/pull/76))
+- **Merge Dedup**: Benchmarks sharing same name and tag now deduplicated by latest runtime timestamp instead of merging both data sets ([#76](https://github.com/goptics/vizb/pull/76))
+- **Chronological Tag Ordering**: Tags processed in chronological order during inner merge for deterministic data ordering ([#76](https://github.com/goptics/vizb/pull/76))
+- **Latest Tag Preserved**: Merged output retains latest tag (by runtime timestamp) instead of clearing it ([#76](https://github.com/goptics/vizb/pull/76))
 
 ### Changed
 
-- **Merge Internals**: Rewrote `MergeBenchmarks` with a two-level map (`Name → Tag → Benchmark`) for cleaner dedup and deterministic output (removed 4 unused helpers) ([#76](https://github.com/goptics/vizb/pull/76))
-- **Scale Selector Label**: Renamed "Y-Axis Scale" to "Data Scale" since the scale applies to all chart data, not just Y-axis ([#77](https://github.com/goptics/vizb/pull/77))
+- **Merge Internals**: Rewrote `MergeBenchmarks` with two-level map (`Name → Tag → Benchmark`) for cleaner dedup and deterministic output (removed 4 unused helpers) ([#76](https://github.com/goptics/vizb/pull/76))
+- **Scale Selector Label**: Renamed "Y-Axis Scale" to "Data Scale" — scale applies to all chart data, not just Y-axis ([#77](https://github.com/goptics/vizb/pull/77))
 - **Scale Selector Visibility**: Removed Y-axis data gating — scale selector now always visible for non-pie charts ([#77](https://github.com/goptics/vizb/pull/77))
 
 ### Fix
@@ -40,27 +53,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fix json format as merged subcommand output ([#71](https://github.com/goptics/vizb/pull/71))
 
-
 # [0.9.0] - 2026-05-14
 
 ### Added
 
-- **Tag-Based Merging**: Benchmarks with the same name and different tags are now deep-merged when using the `merge` subcommand, enabling historical comparison across commits, releases, or environment variants ([#69](https://github.com/goptics/vizb/pull/69)).
-- **`--tag -t` Flag**: New root command flag to assign a label (e.g., commit hash, version number) to a benchmark run. Automatically populates a `runtimes` map with a UTC timestamp.
-- **`--tag-axis -A` Flag**: New merge subcommand flag to control which data dimension receives the tag annotation. Accepts `n` (name), `x` (xAxis), or `y` (yAxis). Defaults to `n`.
-- **Runtimes Tracking**: `Tag` and `Runtimes` fields added to the `Benchmark` struct for tracking benchmark provenance and timestamps.
+- **Tag-Based Merging**: Benchmarks with same name but different tags deep-merged via `merge` subcommand — enables historical comparison across commits, releases, or environment variants ([#69](https://github.com/goptics/vizb/pull/69)).
+- **`--tag -t` Flag**: New root command flag to assign label (e.g., commit hash, version number) to benchmark run. Auto-populates `runtimes` map with UTC timestamp.
+- **`--tag-axis -A` Flag**: New merge subcommand flag controlling which data dimension receives tag annotation. Accepts `n` (name), `x` (xAxis), or `y` (yAxis). Defaults to `n`.
+- **Runtimes Tracking**: `Tag` and `Runtimes` fields added to `Benchmark` struct for tracking provenance and timestamps.
 
 ### Breaking
 
-- **Unit Shorthand Flags**: Shorthand flags for time (`-t`→`-T`), memory (`-m`→`-M`), and number (`-n`→`-N`) are now capitalized.
+- **Unit Shorthand Flags**: Shorthand flags for time (`-t`→`-T`), memory (`-m`→`-M`), and number (`-n`→`-N`) now capitalized.
 
 # [0.8.0] - 2026-04-25
 
 ### Added
 
-- **Logarithmic Scale**: Added `--scale` flag (`linear|log`) for bar and line charts to better visualize benchmarks with high variance in values ([#66](https://github.com/goptics/vizb/pull/66)).
-- **URL Routing for Scale**: Log scale is now synced with the `sc` query parameter for shareable URLs.
-
+- **Logarithmic Scale**: Added `--scale` flag (`linear|log`) for bar and line charts — better visualization of benchmarks with high variance in values ([#66](https://github.com/goptics/vizb/pull/66)).
+- **URL Routing for Scale**: Log scale synced with `sc` query parameter for shareable URLs.
 
 # [0.7.1] - 2025-12-28
 
@@ -78,61 +89,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Filter Flag**: Added `-f/--filter` flag to filter benchmarks using regular expressions ([#58](https://github.com/goptics/vizb/pull/58)).
-- **Format Inference**: Output format is now automatically inferred from the file extension (e.g., `.json` for JSON, others for HTML) ([#58](https://github.com/goptics/vizb/pull/58)).
-- **URL Routing**: Implemented a lightweight URL router to sync UI state (sort, labels, chart type, selection) with query parameters ([#55](https://github.com/goptics/vizb/pull/55)).
-- **Dynamic Title**: Browser tab title now dynamically updates to show the active benchmark name ([#56](https://github.com/goptics/vizb/pull/56)).
+- **Filter Flag**: Added `-f/--filter` flag to filter benchmarks using regex ([#58](https://github.com/goptics/vizb/pull/58)).
+- **Format Inference**: Output format auto-inferred from file extension (e.g., `.json` for JSON, others for HTML) ([#58](https://github.com/goptics/vizb/pull/58)).
+- **URL Routing**: Lightweight URL router syncs UI state (sort, labels, chart type, selection) with query parameters ([#55](https://github.com/goptics/vizb/pull/55)).
+- **Dynamic Title**: Browser tab title dynamically updates to show active benchmark name ([#56](https://github.com/goptics/vizb/pull/56)).
 
 ### Changed
 
-- **Validation**: Enhanced validation logic and improved warning messages to provide specific reasons for failures ([#57](https://github.com/goptics/vizb/pull/57)).
-- **UI Architecture**: Refactored settings management to use a single reactive state object for better consistency ([#53](https://github.com/goptics/vizb/pull/53)).
-- **Internal**: Introduced generic `sortBy` function and removed unused dependencies ([#52](https://github.com/goptics/vizb/pull/52), [#54](https://github.com/goptics/vizb/pull/54)).
+- **Validation**: Enhanced validation logic, improved warning messages with specific failure reasons ([#57](https://github.com/goptics/vizb/pull/57)).
+- **UI Architecture**: Refactored settings management to single reactive state object for consistency ([#53](https://github.com/goptics/vizb/pull/53)).
+- **Internal**: Introduced generic `sortBy` function, removed unused dependencies ([#52](https://github.com/goptics/vizb/pull/52), [#54](https://github.com/goptics/vizb/pull/54)).
 
 ### Breaking Changes
 
-- **Format Flag Removed**: The `--format` flag has been removed in favor of automatic inference from the output filename.
-- **Short Flag Reassigned**: The `-f` shorthand flag is now used for `--filter` instead of `--format`.
+- **Format Flag Removed**: `--format` flag removed in favor of automatic inference from output filename.
+- **Short Flag Reassigned**: `-f` shorthand now used for `--filter` instead of `--format`.
 
 # [0.6.0] - 2025-12-03
 
 ### Added
 
-- **Standard Benchmark JSON Support**: Added support for using standard benchmark JSON files as input ([#47](https://github.com/goptics/vizb/pull/47)).
-- **Axis Swapping**: Implemented a new axis swapping feature that allows dynamic reordering of benchmark dimensions (name, xAxis, yAxis) with persistent state management ([#46](https://github.com/goptics/vizb/pull/46)).
-- **Advanced Grouping**: Introduced advanced benchmark grouping capabilities using regular expressions.([#40](https://github.com/goptics/vizb/pull/40))
-- **Benchmark Environment**: Added benchmark environment details to the results ([#39](https://github.com/goptics/vizb/pull/39)).
-- **Metric Extraction**: Added support for extracting and displaying benchmark iterations, throughput, and custom metrics ([#35](https://github.com/goptics/vizb/pull/35)).
-- Added a "Package Source" button to the dashboard and updated documentation with comprehensive examples.
+- **Standard Benchmark JSON Support**: Support for standard benchmark JSON files as input ([#47](https://github.com/goptics/vizb/pull/47)).
+- **Axis Swapping**: Dynamic reordering of benchmark dimensions (name, xAxis, yAxis) with persistent state management ([#46](https://github.com/goptics/vizb/pull/46)).
+- **Advanced Grouping**: Benchmark grouping via regex patterns ([#40](https://github.com/goptics/vizb/pull/40)).
+- **Benchmark Environment**: Added benchmark environment details to results ([#39](https://github.com/goptics/vizb/pull/39)).
+- **Metric Extraction**: Support for extracting and displaying benchmark iterations, throughput, and custom metrics ([#35](https://github.com/goptics/vizb/pull/35)).
+- Added "Package Source" button to dashboard, updated docs with comprehensive examples.
 
 ### Changed
 
-- **JSON Optimization**: Reduced JSON output size by 30% by removing redundant `unit` and `per` properties and using `omitempty` ([#43](https://github.com/goptics/vizb/pull/43), [#45](https://github.com/goptics/vizb/pull/45)).
-- **UI Performance**: Refactored UI components to reduce bundle size and improved dashboard layout ([#38](https://github.com/goptics/vizb/pull/38)).
-- **CI/CD**: Updated CI runners to `slim` versions and improved GoReleaser configuration for optimized builds ([#37](https://github.com/goptics/vizb/pull/37), e673195).
-- **Documentation**: Updated docs and info for the upcoming release ([#50](https://github.com/goptics/vizb/pull/50)).
-- **Build**: Updated favicon inline build script and added `format` task to Taskfile.yml.
+- **JSON Optimization**: Reduced JSON output size 30% by removing redundant `unit` and `per` properties, using `omitempty` ([#43](https://github.com/goptics/vizb/pull/43), [#45](https://github.com/goptics/vizb/pull/45)).
+- **UI Performance**: Refactored UI components to reduce bundle size, improved dashboard layout ([#38](https://github.com/goptics/vizb/pull/38)).
+- **CI/CD**: Updated CI runners to `slim` versions, improved GoReleaser config for optimized builds ([#37](https://github.com/goptics/vizb/pull/37), e673195).
+- **Documentation**: Updated docs for upcoming release ([#50](https://github.com/goptics/vizb/pull/50)).
+- **Build**: Updated favicon inline build script, added `format` task to Taskfile.yml.
 
 ### Fixed
 
 - **Label Rotation**: Fixed x-axis label rotation based on character length ([#48](https://github.com/goptics/vizb/pull/48)).
-- **Group Selection**: Resolved issues with group selection state not being preserved when switching benchmarks ([#41](https://github.com/goptics/vizb/pull/41), [#42](https://github.com/goptics/vizb/pull/42)).
-- **Flag Validation**: Resolved flag validation rules and updated tests ([#36](https://github.com/goptics/vizb/pull/36)).
+- **Group Selection**: Fixed group selection state not preserved when switching benchmarks ([#41](https://github.com/goptics/vizb/pull/41), [#42](https://github.com/goptics/vizb/pull/42)).
+- **Flag Validation**: Fixed flag validation rules and updated tests ([#36](https://github.com/goptics/vizb/pull/36)).
 
 # [0.5.0] - 2025-11-23
 
 ### Added
 
-- Completely new UI built with **Vue.js** for enhanced interactivity and modern design.
-- **Dark and Light Mode** support for the UI.
+- Completely new UI built with **Vue.js** — enhanced interactivity and modern design.
+- **Dark and Light Mode** support.
 - **Merge subcommand** for combining multiple benchmark JSON files into one report.
-- **New CLI flags** for advanced sorting and label control of benchmarks data.
+- **New CLI flags** for advanced sorting and label control.
 - Introduced chart types **Bar, Line, and Pie** for different metrics.
 
 ### Changed
 
-- Refactored UI embedding using vite in the UI and html template in cli.
-- CLI output visually enhanced with consistent styles for info, success, error, and warning messages.
+- Refactored UI embedding using vite in UI and html template in cli.
+- CLI output visually enhanced with consistent styles for info, success, error, warning messages.
 - Documentation expanded with improved examples and advanced group patterns.
 
 ### Fixed
@@ -150,32 +161,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Advanced pattern-based grouping system for extracting groups from benchmark names
-- Skip functionality for selective benchmark processing during data analysis
+- Advanced pattern-based grouping for extracting groups from benchmark names
+- Skip functionality for selective benchmark processing
 - Support for raw benchmark data processing
-- Comprehensive flag validation rules with enhanced error handling
-- Dynamic color assignment for chart subjects to ensure consistent coloring across benchmark groups
-- Enhanced temporary file management system
-- Extensive test coverage for previously untested functions including temp file creation, stdin processing, and output generation
+- Comprehensive flag validation with enhanced error handling
+- Dynamic color assignment for chart subjects — consistent coloring across groups
+- Enhanced temp file management
+- Extensive test coverage for previously untested functions (temp file creation, stdin processing, output generation)
 
 ### Changed
 
-- Enhanced flag validation to require subject parameter specification
-- Improved chart template UX with dynamic legend section resizing based on subject numbers
-- Updated documentation with advanced grouping examples and usage patterns
+- Enhanced flag validation to require subject parameter
+- Improved chart template UX with dynamic legend resizing based on subject count
+- Updated docs with advanced grouping examples
 - Refined benchmark progress real-time logic
-- Streamlined error handling and file operations with shared utility functions
+- Streamlined error handling and file ops with shared utility functions
 - Updated README with shorthand patterns to reduce table width
 
 ### Fixed
 
-- Improved chart template UX by hiding CPU number display when value is 0
-- Enhanced error handling in benchmark result parsing for group parsing
-- Resolved inconsistent color assignment issue when benchmark groups have different subject list lengths
+- Hide CPU number display when value is 0
+- Improved error handling in benchmark result parsing for group parsing
+- Fixed inconsistent color assignment when groups have different subject list lengths
 
 ### Breaking changes
 
-In this release the `--separator` flag is been replaced with `--group-pattern` to brings more flexibility.
+`--separator` flag replaced with `--group-pattern` for more flexibility.
 
 ## [0.3.2] - 2025-09-13
 
@@ -188,22 +199,22 @@ In this release the `--separator` flag is been replaced with `--group-pattern` t
 ### Fixed
 
 - Group bench name order issue resolved
-- Resolved grouping name when the split words len less then one
+- Fixed grouping name when split words len < 1
 
 ## [0.3.0] - 2025-06-21
 
 ### Added
 
-- Added improved documentation for `--format` flag in README
-- Added comprehensive test coverage for previously untested functions
-- Added dedicated tests for temp file creation, stdin processing, and output generation
-- Added example for JSON output format in documentation
+- Improved docs for `--format` flag in README
+- Comprehensive test coverage for previously untested functions
+- Dedicated tests for temp file creation, stdin processing, output generation
+- Example for JSON output format in docs
 
 ### Changed
 
 - Enhanced code testability with mock-friendly function variables
-- Optimized sidebar display logic in chart templates to only show with sufficient chart count
-- Standardized temporary file naming with consistent prefixes
+- Optimized sidebar display logic — only show with sufficient chart count
+- Standardized temp file naming with consistent prefixes
 
 ### Fixed
 
@@ -214,27 +225,27 @@ In this release the `--separator` flag is been replaced with `--group-pattern` t
 
 ### Added
 
-- Added benchmark indicator for easy navigation
-- Added allocation unit conversion support for benchmark charts
-- Added support for units lowercase input
+- Benchmark indicator for easy navigation
+- Allocation unit conversion support for benchmark charts
+- Support for units lowercase input
 - Enhanced grouping by adding bench name
-- Added CPU count suffix to the headline
+- CPU count suffix added to headline
 
 ### Changed
 
 - Adjusted chart bottom margin for better visualization
 - Optimized benchmark parsing logic in chart.go with cleaner control flow
-- Organized the post generation logs
-- Renamed license file and added attribution request
-- Updated documentation with bench group feature information
+- Organized post-generation logs
+- Renamed license file, added attribution request
+- Updated docs with bench group feature info
 - Added Vizb attribution in footer
 
 ### Fixed
 
 - Resolved extra line issue after pipe progress completed
-- Fixed test count display on pipe and changed the status
+- Fixed test count display on pipe, changed status
 - Corrected memory unit conversion from bytes to bits
-- Removed build script as it is no longer needed
+- Removed build script — no longer needed
 
 ## [0.1.1] - 2025-06-19
 
@@ -246,24 +257,24 @@ In this release the `--separator` flag is been replaced with `--group-pattern` t
 
 ### Added
 
-- Initial release of Vizb - Go Benchmark Visualization Tool
-- Interactive HTML charts generation from Go benchmark results
-- Support for multiple metrics:
+- Initial release of Vizb — Go Benchmark Visualization Tool
+- Interactive HTML charts from Go benchmark results
+- Multiple metric support:
   - Execution time visualization
   - Memory usage visualization
   - Allocation counts visualization
-- Customizable units for metrics:
+- Customizable units:
   - Time: ns, us, ms, s
   - Memory: B, KB, MB, GB
 - Customizable chart titles and descriptions
-- Responsive design for charts that work on any device
-- Export capability to save charts as PNG images
+- Responsive design for any device
+- Export charts as PNG images
 - Simple CLI interface with helpful flags:
   - Custom output file name
   - Custom chart name and description
   - Custom units for time and memory
   - Custom separator for benchmark grouping
-- Support for piped input to process benchmark data directly from stdin
+- Piped input support — process benchmark data from stdin
 - Benchmark grouping based on separator character (default: "/")
 - Organized visualization with workload and subject grouping
 - Development workflow using Task runner

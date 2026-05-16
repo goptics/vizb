@@ -102,6 +102,9 @@ vizb merge ./results/ -o all_results.html
 
 # Mix and match files and directories
 vizb merge ./old_results/ output.json -o comparison.html
+
+# To get json as an output for CI/CD
+vizb merge ./old_results/ output.json -o comparison.json
 ```
 
 Open the generated HTML file in your browser to view the interactive charts.
@@ -111,14 +114,14 @@ Open the generated HTML file in your browser to view the interactive charts.
 
 ### Tag-Based Merging
 
-Vizb supports tagging benchmarks to compare performance across multiple commits, releases, or environment variants. The `--tag` flag on the main command assigns a label (e.g., commit hash, version number) to a benchmark run. When merging, vizb groups benchmarks by `name` and deep-merges those sharing the same name but different tags into a single object, preserving all runtimes and data.
+Vizb supports tagging benchmarks to compare performance across multiple commits, releases, or environment variants. The `--tag` flag on the main command assigns a label (e.g., commit hash, version number) to a benchmark run. When merging, vizb groups benchmarks by `name` and deep-merges those sharing the same name but different tags into a single object, preserving all timestamps, history, and data.
 
 #### Tagging a benchmark run
 
 ```bash
-vizb bench.txt -o v1.json --tag v1 -n "Foo"
+vizb bench-v1.txt -o v1.json --tag v1 -n "Foo"
 
-vizb bench.txt -o v2.json --tag v2 -n "Foo"
+vizb bench-v2.txt -o v2.json --tag v2 -n "Foo"
 ```
 
 #### How tag-based merging works
@@ -131,10 +134,10 @@ vizb merge v1.json v2.json -o comparison.html
 
 Vizb groups benchmarks by name and processes each group as follows:
 
-1. **Deduplication** — If two entries share the same name and tag, only the one with the latest runtime timestamp is kept. Older entries are discarded.
-2. **Inner merge** — Entries with different tags are deep-merged into a single benchmark. Data points are sorted in chronological tag order and each is annotated with its originating tag.
-3. **Legacy entries** — Untagged benchmarks (no `--tag`) with the same name are deduplicated (first-seen wins) and their data is prepended before tagged entries.
-4. **Output** — The merged benchmark retains the latest tag (by runtime timestamp), combines all runtime maps, and includes data from all runs.
+1. **Deduplication**: If two entries share the same name and tag, only the one with the latest timestamp is kept. Older entries are discarded.
+2. **Inner merge**: Entries with different tags are deep-merged into a single benchmark. Data points are sorted in chronological tag order and each is annotated with its originating tag.
+3. **Legacy entries**: Untagged benchmarks (no `--tag`) with the same name are deduplicated (first-seen wins) and their data is prepended before tagged entries.
+4. **Output**: The merged benchmark retains the latest tag (by timestamp), carries a history of older tags, and includes data from all runs.
 
 #### Controlling where the tag is injected
 
@@ -157,9 +160,9 @@ Vizb creates charts that make sense by putting your benchmark data into logical 
 
 A group pattern tells vizb how to dissect your benchmark names into three key components:
 
-1.  **Name (n)**: The family or group the benchmark belongs to. Benchmarks with the same `Name` will be grouped together in the same chart. (optional)
-2.  **XAxis (x)**: The category that goes on the X-axis (e.g., input size, concurrency level).
-3.  **YAxis (y)**: The specific test case or variation (e.g., algorithm name, sub-test).
+1. **Name (n)**: The family or group the benchmark belongs to. Benchmarks with the same `Name` will be grouped together in the same chart. (optional)
+2. **XAxis (x)**: The category that goes on the X-axis (e.g., input size, concurrency level).
+3. **YAxis (y)**: The specific test case or variation (e.g., algorithm name, sub-test).
 
 ### Visualizing the Extraction
 

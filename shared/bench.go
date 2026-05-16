@@ -12,11 +12,17 @@ type BenchmarkData struct {
 	Stats []Stat `json:"stats"`
 }
 
+type HistoryEntry struct {
+	Tag       string `json:"tag"`
+	Timestamp string `json:"timestamp"`
+}
+
 type Benchmark struct {
-	Tag         string            `json:"tag,omitempty"`
-	Name        string            `json:"name"`
-	Runtimes    map[string]string `json:"runtimes,omitempty"`
-	Description string            `json:"description,omitempty"`
+	Tag         string         `json:"tag,omitempty"`
+	Timestamp   string         `json:"timestamp,omitempty"`
+	Name        string         `json:"name"`
+	History     []HistoryEntry `json:"history,omitempty"`
+	Description string         `json:"description,omitempty"`
 	CPU         struct {
 		Name  string `json:"name,omitempty"`
 		Cores int    `json:"cores,omitempty"`
