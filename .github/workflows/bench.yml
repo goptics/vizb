@@ -1,0 +1,105 @@
+name: benchmark
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Pipeline mode"
+        required: true
+        default: stateful
+        type: choice
+        options: [stateful, stateless]
+      os:
+        description: "OS matrix (JSON array)"
+        required: true
+        default: '["ubuntu-latest"]'
+        type: string
+      bench:
+        description: "Bench command"
+        type: string
+        default: go test -bench=.
+      tag:
+        description: "Tag (auto from git ref if empty)"
+        type: string
+      tag_axis:
+        description: "Tag injection axis (n, x, y)"
+        default: n
+        type: choice
+        options: [n, x, y]
+      name:
+        description: "Benchmark name (-n)"
+        type: string
+      group_pattern:
+        description: "Group pattern (-p)"
+        type: string
+      scale:
+        description: "Scale mode"
+        default: linear
+        type: choice
+        options: [linear, log]
+  push:
+    tags: ["v*"]
+
+permissions:
+  actions: write
+  contents: write
+
+jobs:
+  bench:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJson(github.event_name == 'workflow_dispatch' && inputs.os || '["ubuntu-latest"]') }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download previous merged data
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'stateful')
+        uses: dawidd6/action-download-artifact@v6
+        continue-on-error: true
+        with:
+          workflow: bench.yml
+          name: merged.json
+          path: results/prev
+
+      - name: Run benchmarks
+        uses: ./
+        with:
+          bench: ${{ github.event_name == 'workflow_dispatch' && inputs.bench || 'go test -bench=.' }}
+          tag: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+          name: ${{ github.event_name == 'workflow_dispatch' && inputs.name || '' }}
+          group_pattern: ${{ github.event_name == 'workflow_dispatch' && inputs.group_pattern || '' }}
+          scale: ${{ github.event_name == 'workflow_dispatch' && inputs.scale || 'linear' }}
+          merge_dir: results/prev
+          tag_axis: ${{ github.event_name == 'workflow_dispatch' && inputs.tag_axis || 'n' }}
+          output: both
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: bench-${{ matrix.os }}
+          path: bench.json
+
+      - name: Upload merged artifact
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'stateful')
+        uses: actions/upload-artifact@v7
+        with:
+          name: merged.json
+          path: bench.json
+
+      - name: Deploy to GitHub Pages
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'stateful')
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .
+          publish_branch: gh-pages
+          force_orphan: true
+          include: bench.html
+
+      - name: Upload HTML report
+        if: github.event_name == 'workflow_dispatch' && inputs.mode == 'stateless'
+        uses: actions/upload-artifact@v7
+        with:
+          name: benchmark-report
+          path: bench.html
