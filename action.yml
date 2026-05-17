@@ -137,8 +137,9 @@ runs:
         echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
     - name: Show vizb version
+      if: steps.version.outputs.is-latest == 'true'
       shell: bash
-      run: echo "::notice::vizb $(vizb -v 2>&1)"
+      run: echo "::notice::$(vizb -v 2>&1)"
 
     # ── Resolve input source ───────────────────────────────────
 
