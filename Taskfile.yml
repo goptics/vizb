@@ -12,6 +12,7 @@ tasks:
       - go mod tidy
       - go mod download
       - cd pkg/template/ui; pnpm install; cd -
+      - task: act:install
 
   dev:ui:
     desc: Run development UI server
@@ -72,3 +73,34 @@ tasks:
       - git tag -s {{.VERSION}} -m "Release {{.VERSION}}"
       - git push origin {{.VERSION}}
       - echo "Tag {{.VERSION}} pushed. GitHub Actions will create the release."
+
+  # ── Act: Local GitHub Actions Testing ──────────────────────
+
+  act:install:
+    desc: Install act for local GitHub Actions testing
+    cmds:
+      - (which act && echo "act already installed") || (echo "Installing act..." && go install github.com/nektos/act@latest)
+
+  act:check:
+    desc: Verify act is installed
+    cmds:
+      - which act || (echo "act not found. Run 'task act:install' first" && exit 1)
+
+  act:test:stateless:
+    desc: Test action in stateless mode (bench file → HTML)
+    cmds:
+      - task: act:check
+      - act --bind workflow_dispatch -W .github/workflows/test-action.yml --job stateless --matrix os:ubuntu-latest
+
+  act:test:stateful:
+    desc: Test action in stateful mode (merge + HTML + JSON)
+    cmds:
+      - task: act:check
+      - mkdir -p results/prev
+      - cp examples/jsons/hash.json results/prev/
+      - act --bind workflow_dispatch -W .github/workflows/test-action.yml --job stateful --matrix os:ubuntu-latest
+
+  act:clean:
+    desc: Clean up act test artifacts
+    cmds:
+      - rm -rf bench*.json index.html results/ bench-input.txt bench-new.json
