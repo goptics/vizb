@@ -3,7 +3,7 @@ description: Run Go benchmarks and generate interactive HTML visualizations with
 
 inputs:
   bench:
-    description: "Benchmark command to run (e.g., go test -bench=.)"
+    description: "Benchmark command to run (e.g., go test -bench=.). Requires Go toolchain — add actions/setup-go before this action."
     default: ""
   bench-file:
     description: "Path to existing benchmark output file (takes priority over bench)"
@@ -135,6 +135,10 @@ runs:
         fi
 
         echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+    - name: Show vizb version
+      shell: bash
+      run: echo "::notice::vizb $(vizb -v 2>&1)"
 
     # ── Resolve input source ───────────────────────────────────
 
