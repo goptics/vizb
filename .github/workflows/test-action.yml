@@ -1,0 +1,40 @@
+name: test-action
+on: workflow_dispatch
+
+jobs:
+  stateless:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.24"
+
+      - name: Run action (stateless)
+        uses: ./
+        with:
+          bench-file: examples/bench/hash.txt
+          output-html: index.html
+
+  stateful:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.24"
+
+      - name: Setup previous data
+        run: |
+          mkdir -p results/prev
+          cp examples/jsons/hash.json results/prev/ 2>/dev/null || true
+
+      - name: Run action (stateful)
+        uses: ./
+        with:
+          bench-file: examples/bench/hash.txt
+          merge-dir: results/prev
+          output-html: index.html
+          output-json: results/bench.json

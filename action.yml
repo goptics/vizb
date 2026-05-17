@@ -1,11 +1,11 @@
-name: Vizb Benchmark
+name: vizb
 description: Run Go benchmarks and generate interactive HTML visualizations with vizb
 
 inputs:
   bench:
     description: "Benchmark command to run (e.g., go test -bench=.)"
     default: ""
-  bench_file:
+  bench-file:
     description: "Path to existing benchmark output file (takes priority over bench)"
     default: ""
   name:
@@ -17,10 +17,10 @@ inputs:
   tag:
     description: "Tag/identifier for the benchmark (-t flag)"
     default: ""
-  group_pattern:
+  group-pattern:
     description: "Group pattern (-p flag)"
     default: "x"
-  group_regex:
+  group-regex:
     description: "Group regex (-r flag)"
     default: ""
   scale:
@@ -32,48 +32,47 @@ inputs:
   filter:
     description: "Regex filter for benchmarks (-f flag)"
     default: ""
-  mem_unit:
+  mem-unit:
     description: "Memory unit: b, B, KB, MB, GB (-M flag)"
     default: B
-  time_unit:
+  time-unit:
     description: "Time unit: ns, us, ms, s (-T flag)"
     default: ns
-  number_unit:
+  number-unit:
     description: "Number unit: K, M, B, T (-N flag)"
     default: ""
   charts:
     description: "Chart types to generate (-c flag)"
     default: "bar,line,pie"
-  show_labels:
+  show-labels:
     description: "Show labels on charts (-l flag)"
     default: "false"
-  merge_files:
+  merge-files:
     description: "Space-separated JSON files to merge"
     default: ""
-  merge_dir:
+  merge-dir:
     description: "Directory to scan for JSON files to merge"
     default: ""
-  tag_axis:
+  tag-axis:
     description: "Tag injection axis: n, x, or y (-A flag)"
     default: n
-  output:
-    description: "Output format: html, json, or both"
-    default: html
-
+  output-json:
+    description: "Path for JSON output file (leave empty to skip JSON generation)"
+    default: ""
+  output-html:
+    description: "Path for HTML output file (leave empty to skip HTML generation)"
+    default: "index.html"
 outputs:
-  output-file:
-    description: Path to produced output file
-    value: ${{ steps.generate.outputs.file }}
+  output-file-html:
+    description: Path to HTML output file
+    value: ${{ steps.generate.outputs.html }}
+  output-file-json:
+    description: Path to JSON output file
+    value: ${{ steps.generate.outputs.json }}
 
 runs:
   using: composite
   steps:
-    - name: Setup Go
-      uses: actions/setup-go@v5
-      with:
-        go-version-file: go.mod
-        cache: true
-
     - name: Resolve vizb version
       id: version
       shell: bash
@@ -84,11 +83,22 @@ runs:
         fi
         echo "value=$VERSION" >> "$GITHUB_OUTPUT"
 
+    - name: Resolve vizb binary path
+      id: binpath
+      shell: bash
+      run: |
+        GOPATH="$(go env GOPATH)"
+        if [ "${{ runner.os }}" = "Windows" ]; then
+          echo "path=$GOPATH/bin/vizb.exe" >> "$GITHUB_OUTPUT"
+        else
+          echo "path=$GOPATH/bin/vizb" >> "$GITHUB_OUTPUT"
+        fi
+
     - name: Cache vizb binary
       id: cache-vizb
       uses: actions/cache@v4
       with:
-        path: ~/go/bin/vizb
+        path: ${{ steps.binpath.outputs.path }}
         key: vizb-${{ steps.version.outputs.value }}-${{ runner.os }}
 
     - name: Install vizb
@@ -102,11 +112,11 @@ runs:
       id: resolve
       shell: bash
       run: |
-        BENCH_FILE="${{ inputs.bench_file }}"
+        BENCH_FILE="${{ inputs.bench-file }}"
         BENCH_CMD="${{ inputs.bench }}"
         HAS_MERGE=""
-        [ -n "${{ inputs.merge_files }}" ] && HAS_MERGE="true"
-        [ -n "${{ inputs.merge_dir }}" ] && HAS_MERGE="true"
+        [ -n "${{ inputs.merge-files }}" ] && HAS_MERGE="true"
+        [ -n "${{ inputs.merge-dir }}" ] && HAS_MERGE="true"
 
         if [ -n "$BENCH_FILE" ]; then
           echo "source=file" >> "$GITHUB_OUTPUT"
@@ -118,7 +128,7 @@ runs:
           echo "source=merge-only" >> "$GITHUB_OUTPUT"
           echo "has_input=false" >> "$GITHUB_OUTPUT"
         else
-          echo "::error::No input provided. Specify bench, bench_file, merge_files, or merge_dir."
+          echo "::error::No input provided. Specify bench, bench-file, merge-files, or merge-dir."
           exit 1
         fi
 
@@ -133,21 +143,21 @@ runs:
         [ -n "${{ inputs.tag }}" ] && VIZB_ARGS+=(--tag "${{ inputs.tag }}")
         [ -n "${{ inputs.name }}" ] && VIZB_ARGS+=(-n "${{ inputs.name }}")
         [ -n "${{ inputs.description }}" ] && VIZB_ARGS+=(-d "${{ inputs.description }}")
-        [ -n "${{ inputs.group_pattern }}" ] && VIZB_ARGS+=(-p "${{ inputs.group_pattern }}")
-        [ -n "${{ inputs.group_regex }}" ] && VIZB_ARGS+=(-r "${{ inputs.group_regex }}")
+        [ -n "${{ inputs.group-pattern }}" ] && VIZB_ARGS+=(-p "${{ inputs.group-pattern }}")
+        [ -n "${{ inputs.group-regex }}" ] && VIZB_ARGS+=(-r "${{ inputs.group-regex }}")
         [ "${{ inputs.scale }}" != "linear" ] && VIZB_ARGS+=(--scale "${{ inputs.scale }}")
         [ -n "${{ inputs.sort }}" ] && VIZB_ARGS+=(--sort "${{ inputs.sort }}")
         [ -n "${{ inputs.filter }}" ] && VIZB_ARGS+=(--filter "${{ inputs.filter }}")
-        [ -n "${{ inputs.mem_unit }}" ] && VIZB_ARGS+=(-M "${{ inputs.mem_unit }}")
-        [ -n "${{ inputs.time_unit }}" ] && VIZB_ARGS+=(-T "${{ inputs.time_unit }}")
-        [ -n "${{ inputs.number_unit }}" ] && VIZB_ARGS+=(-N "${{ inputs.number_unit }}")
+        [ -n "${{ inputs.mem-unit }}" ] && VIZB_ARGS+=(-M "${{ inputs.mem-unit }}")
+        [ -n "${{ inputs.time-unit }}" ] && VIZB_ARGS+=(-T "${{ inputs.time-unit }}")
+        [ -n "${{ inputs.number-unit }}" ] && VIZB_ARGS+=(-N "${{ inputs.number-unit }}")
         [ -n "${{ inputs.charts }}" ] && VIZB_ARGS+=(-c "${{ inputs.charts }}")
-        [ "${{ inputs.show_labels }}" = "true" ] && VIZB_ARGS+=(-l)
+        [ "${{ inputs.show-labels }}" = "true" ] && VIZB_ARGS+=(-l)
 
         if [ "${{ steps.resolve.outputs.source }}" = "file" ]; then
-          cp "${{ inputs.bench_file }}" bench-input.txt
+          cp "${{ inputs.bench-file }}" bench-input.txt
         else
-          bash -c '${{ inputs.bench }}' > bench-input.txt
+          ${{ inputs.bench }} > bench-input.txt
         fi
 
         vizb bench-input.txt -o bench-new.json "${VIZB_ARGS[@]}" < /dev/null
@@ -163,18 +173,18 @@ runs:
         # Collect new benchmark if it exists
         [ -f bench-new.json ] && FILES+=("bench-new.json")
 
-        # Collect from merge_files
-        if [ -n "${{ inputs.merge_files }}" ]; then
-          for f in ${{ inputs.merge_files }}; do
+        # Collect from merge-files
+        if [ -n "${{ inputs.merge-files }}" ]; then
+          for f in ${{ inputs.merge-files }}; do
             [ -f "$f" ] && FILES+=("$f")
           done
         fi
 
-        # Collect from merge_dir
-        if [ -n "${{ inputs.merge_dir }}" ]; then
+        # Collect from merge-dir
+        if [ -n "${{ inputs.merge-dir }}" ]; then
           while IFS= read -r f; do
             FILES+=("$f")
-          done < <(find "${{ inputs.merge_dir }}" -name '*.json')
+          done < <(find "${{ inputs.merge-dir }}" -name '*.json')
         fi
 
         if [ ${#FILES[@]} -eq 0 ]; then
@@ -185,7 +195,7 @@ runs:
         if [ ${#FILES[@]} -eq 1 ]; then
           cp "${FILES[0]}" bench.json
         else
-          vizb merge "${FILES[@]}" -o bench.json --tag-axis "${{ inputs.tag_axis }}"
+          vizb merge "${FILES[@]}" -o bench.json --tag-axis "${{ inputs.tag-axis }}"
         fi
 
     # ── Generate output ────────────────────────────────────────
@@ -199,17 +209,21 @@ runs:
           exit 1
         fi
 
-        case "${{ inputs.output }}" in
-          json)
-            OUTPUT_FILE="bench.json"
-            ;;
-          both)
-            vizb bench.json -o bench.html
-            OUTPUT_FILE="bench.html"
-            ;;
-          *)
-            vizb bench.json -o bench.html
-            OUTPUT_FILE="bench.html"
-            ;;
-        esac
-        echo "file=$OUTPUT_FILE" >> "$GITHUB_OUTPUT"
+        HTML_OUT=""
+        JSON_OUT=""
+
+        if [ -n "${{ inputs.output-html }}" ]; then
+          vizb merge bench.json -o "${{ inputs.output-html }}"
+          HTML_OUT="${{ inputs.output-html }}"
+        fi
+
+        JSON_PATH="${{ inputs.output-json }}"
+        if [ -n "$JSON_PATH" ] && [ "$JSON_PATH" != "bench.json" ]; then
+          cp bench.json "$JSON_PATH"
+          JSON_OUT="$JSON_PATH"
+        elif [ -n "$JSON_PATH" ]; then
+          JSON_OUT="$JSON_PATH"
+        fi
+
+        echo "html=$HTML_OUT" >> "$GITHUB_OUTPUT"
+        echo "json=$JSON_OUT" >> "$GITHUB_OUTPUT"
