@@ -165,6 +165,7 @@ runs:
     # ── Convert to JSON ────────────────────────────────────────
 
     - name: Convert to JSON
+      id: convert
       if: steps.resolve.outputs.has_input == 'true'
       shell: bash
       run: |
@@ -195,6 +196,7 @@ runs:
     # ── Merge ──────────────────────────────────────────────────
 
     - name: Merge
+      if: inputs.merge-files != '' || inputs.merge-dir != ''
       id: merge
       shell: bash
       run: |
@@ -202,11 +204,6 @@ runs:
         [ -f bench-new.json ] && FILES+=("bench-new.json")
         [ -n "${{ inputs.merge-files }}" ] && FILES+=(${{ inputs.merge-files }})
         [ -n "${{ inputs.merge-dir }}" ] && FILES+=("${{ inputs.merge-dir }}")
-
-        if [ ${#FILES[@]} -eq 0 ]; then
-          echo "::error::No JSON files found"
-          exit 1
-        fi
 
         if [ ${#FILES[@]} -eq 1 ]; then
           cp "${FILES[0]}" bench.json
@@ -220,6 +217,10 @@ runs:
       id: generate
       shell: bash
       run: |
+        if [ -f bench-new.json ] && [ ! -f bench.json ]; then
+          cp bench-new.json bench.json
+        fi
+
         if [ ! -f bench.json ]; then
           echo "::error::bench.json not found. Merge step may have failed."
           exit 1
