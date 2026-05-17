@@ -90,21 +90,15 @@ tasks:
     desc: Test action in stateless mode (bench file → HTML)
     cmds:
       - task: act:check
-      - act --bind -s GITHUB_TOKEN="$(gh auth token)" workflow_dispatch -W .github/workflows/test-action.yml --job stateless
-
-  act:setup:stateful:
-    desc: Setup sample data for stateful testing
-    cmds:
-      - mkdir -p results/prev
-      - cp examples/jsons/hash.json results/prev/
+      - act --bind workflow_dispatch -W .github/workflows/test-action.yml --job stateless --matrix os:ubuntu-latest
 
   act:test:stateful:
     desc: Test action in stateful mode (merge + HTML + JSON)
-    deps:
-      - act:setup:stateful
     cmds:
       - task: act:check
-      - act --bind -s GITHUB_TOKEN="$(gh auth token)" workflow_dispatch -W .github/workflows/test-action.yml --job stateful
+      - mkdir -p results/prev
+      - cp examples/jsons/hash.json results/prev/
+      - act --bind workflow_dispatch -W .github/workflows/test-action.yml --job stateful --matrix os:ubuntu-latest
 
   act:clean:
     desc: Clean up act test artifacts

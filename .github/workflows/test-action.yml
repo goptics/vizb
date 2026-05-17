@@ -3,13 +3,12 @@ on: workflow_dispatch
 
 jobs:
   stateless:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-go@v6
-        with:
-          go-version: "1.24"
+      - uses: actions/checkout@v6
 
       - name: Run action (stateless)
         uses: ./
@@ -18,18 +17,17 @@ jobs:
           output-html: index.html
 
   stateful:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-go@v6
-        with:
-          go-version: "1.24"
+      - uses: actions/checkout@v6
 
       - name: Setup previous data
         run: |
           mkdir -p results/prev
-          cp examples/jsons/hash.json results/prev/ 2>/dev/null || true
+          cp examples/jsons/hash.json results/prev/
 
       - name: Run action (stateful)
         uses: ./
