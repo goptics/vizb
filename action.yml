@@ -1,4 +1,4 @@
-name: vizb
+name: Go Benchmark Visualization
 description: Run Go benchmarks and generate interactive HTML visualizations with vizb
 branding:
   icon: "bar-chart-2"
