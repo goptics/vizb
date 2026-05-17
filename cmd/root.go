@@ -65,35 +65,25 @@ func init() {
 }
 
 func runBenchmark(cmd *cobra.Command, args []string) {
-	// Check if we're receiving data from stdin (piped input)
 	stat, _ := os.Stdin.Stat()
 	isStdinPiped := (stat.Mode() & os.ModeCharDevice) == 0
 
-	// If no args provided and no piped input, show error
-	if len(args) == 0 && !isStdinPiped {
-		fmt.Fprintln(os.Stderr, "Error: no target provided and no piped input detected")
-		cmd.Help()
-		shared.OsExit(1)
-	}
-
-	// Default target name for piped input
-	target := "stdin"
+	var target string
 
 	if len(args) > 0 {
 		target = args[0]
-	}
-
-	// Process the benchmark data
-	if isStdinPiped {
+		checkTargetFile(target)
+	} else if isStdinPiped {
 		target = shared.MustCreateTempFile(shared.TempBenchFilePrefix, "out")
 		shared.TempFiles.Store(target)
 
 		writeStdinPipedInputs(target)
 	} else {
-		checkTargetFile(target)
+		fmt.Fprintln(os.Stderr, "Error: no target provided and no piped input detected")
+		cmd.Help()
+		shared.OsExit(1)
 	}
 
-	// Generate the output file with charts or JSON
 	generateOutputFile(target)
 }
 

@@ -191,7 +191,7 @@ runs:
           ${{ inputs.bench }} > bench-input.txt
         fi
 
-        vizb bench-input.txt -o bench-new.json "${VIZB_ARGS[@]}" < /dev/null
+        vizb bench-input.txt -o bench-new.json "${VIZB_ARGS[@]}"
 
     # ── Merge ──────────────────────────────────────────────────
 
