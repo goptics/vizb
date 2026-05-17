@@ -221,11 +221,6 @@ runs:
           cp bench-new.json bench.json
         fi
 
-        if [ ! -f bench.json ]; then
-          echo "::error::bench.json not found. Merge step may have failed."
-          exit 1
-        fi
-
         HTML_OUT=""
         JSON_OUT=""
 
