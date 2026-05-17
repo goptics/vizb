@@ -1,5 +1,8 @@
 name: vizb
 description: Run Go benchmarks and generate interactive HTML visualizations with vizb
+branding:
+  icon: "bar-chart-2"
+  color: "blue"
 
 inputs:
   bench:
