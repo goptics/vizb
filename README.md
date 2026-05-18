@@ -33,6 +33,73 @@
 - **Filtering**: Filter benchmarks to include only those matching a regex pattern.
 - **Export Options**: Generate `single-file` HTML/JSON and options to save charts as `JPEG`.
 
+## GitHub Action
+
+Vizb provides a composite GitHub Action to run benchmarks and generate visualizations in CI.
+
+### Basic Usage
+
+```yaml
+- uses: actions/setup-go@v6
+  with:
+    go-version-file: go.mod
+
+- uses: goptics/vizb@v0.10.0
+  with:
+    bench-cmd: "go test -bench=."
+    output-html: pages/index.html
+```
+
+### Tracking Performance Across Releases
+
+Tag benchmarks with release versions, merge historical data, and deploy charts:
+
+```yaml
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  bench:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Download previous benchmark data
+        uses: dawidd6/action-download-artifact@v21
+        continue-on-error: true
+        with:
+          workflow: bench.yml
+          name: merged.json
+          path: prev
+
+      - uses: goptics/vizb@v0.10.0
+        with:
+          bench-cmd: "go test -bench=."
+          tag: ${{ github.ref_name }}
+          merge-dir: prev
+          tag-axis: x
+          output-json: merged.json
+          output-html: pages/index.html
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: merged.json
+          path: merged.json
+
+      - uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: pages
+```
+
+> [!Note]
+> The `tag-axis` input controls which data dimension receives the tag annotation. Use `x` to show versions on the X-axis for clean progressive comparison.
+
 ## Installation
 
 ```bash
@@ -91,19 +158,19 @@ vizb output.json -o output.html
 
 ### Merging multiple benchmarks
 
-You can combine multiple benchmark JSON files into a single html file using the `merge` command. This is useful for aggregating benchmark data from different runs, machines, or environments.
+You can combine multiple benchmark JSON files using the `merge` command. This is useful for aggregating benchmark data from different runs, machines, or environments. The merge command always outputs JSON — use `vizb html` to render the result as an interactive HTML chart.
 
 ```bash
-# Merge specific files
-vizb merge output.json output2.json -o merged_report.html
+# Merge specific files into JSON
+vizb merge output.json output2.json -o merged.json
+
+# Generate HTML from merged JSON
+vizb html merged.json -o merged_report.html
 
 # Merge all JSON files in a directory
-vizb merge ./results/ -o all_results.html
+vizb merge ./results/ -o all.json
 
 # Mix and match files and directories
-vizb merge ./old_results/ output.json -o comparison.html
-
-# To get json as an output for CI/CD
 vizb merge ./old_results/ output.json -o comparison.json
 ```
 
@@ -129,7 +196,8 @@ vizb bench-v2.txt -o v2.json --tag v2 -n "Foo"
 When you merge benchmarks sharing the same name with different tags:
 
 ```bash
-vizb merge v1.json v2.json -o comparison.html
+vizb merge v1.json v2.json -o comparison.json
+vizb html comparison.json -o comparison.html
 ```
 
 Vizb groups benchmarks by name and processes each group as follows:
@@ -145,7 +213,8 @@ By default, the tag is injected into the `name` dimension of each inner data obj
 
 ```bash
 # Inject tag into xAxis so the X-axis labels show version differences
-vizb merge v1.json v2.json -A x -o comparison.html
+vizb merge v1.json v2.json -A x -o comparison.json
+vizb html comparison.json -o comparison.html
 ```
 
 Accepted values: `n` (name), `x` (xAxis), `y` (yAxis). Default is `n`.
