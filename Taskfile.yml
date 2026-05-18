@@ -103,4 +103,4 @@ tasks:
   act:clean:
     desc: Clean up act test artifacts
     cmds:
-      - rm -rf bench*.json index.html results/ bench-input.txt bench-new.json
+      - rm -rf bench*.json index.html results/ bench-input.txt
