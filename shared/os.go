@@ -3,6 +3,7 @@ package shared
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 )
 
 var OsExit = os.Exit
@@ -21,6 +22,10 @@ func MustCreateTempFile(prefix, extension string) string {
 }
 
 func MustCreateFile(filePath string) *os.File {
+	if err := os.MkdirAll(filepath.Dir(filePath), 0o755); err != nil {
+		ExitWithError("Error creating parent directories", err)
+	}
+
 	f, err := os.Create(filePath)
 	if err != nil {
 		ExitWithError("Error creating file", err)
