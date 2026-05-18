@@ -4,6 +4,27 @@ Notable changes to Vizb documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [0.10.0] - 2026-05-18
+
+### Added
+
+- **GitHub Action** (`action.yml`): Composite action for running vizb in CI
+  - Auto-downloads vizb binary via curl with multi-OS support (linux, macos, windows)
+  - Binary caching for pinned versions
+  - Inputs: `bench-cmd`, `bench-file`, `tag`, `name`, `merge-files`, `merge-dir`, `tag-axis`, etc.
+  - Outputs: `output-file-html`, `output-file-json`
+  - Branding for GitHub Marketplace
+- **`vizb html` subcommand**: Render benchmark JSON to interactive HTML
+  - `vizb html <file.json> -o <output.html>`
+  - Pure render — no merge or tag injection
+  - Accepts single JSON object or array
+
+### Changed
+
+- **`vizb merge` JSON-only**: Merge command no longer generates HTML — outputs JSON only. Use `vizb html` for HTML rendering after merge.
+- **Input priority**: File argument now takes precedence over piped stdin, matching standard Unix convention (`grep`, `cat`, `jq`). Heredocs in CI no longer need `< /dev/null` workaround.
+- **`MustCreateFile`**: Auto-creates parent directories for output file paths.
+
 # [0.9.5] - 2026-05-16
 
 ### Changed

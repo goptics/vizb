@@ -52,7 +52,7 @@ func TestMergeCmd(t *testing.T) {
 	os.WriteFile(file3, []byte("{invalid json"), 0644)
 
 	// Output file
-	outFile := filepath.Join(tmpDir, "merged.html")
+	outFile := filepath.Join(tmpDir, "merged.json")
 
 	// Reset FlagState
 	shared.FlagState.OutputFile = outFile
@@ -72,10 +72,19 @@ func TestMergeCmd(t *testing.T) {
 	_, err = os.Stat(outFile)
 	assert.NoError(t, err)
 
-	content, _ := os.ReadFile(outFile)
-	htmlStr := string(content)
-	assert.Contains(t, htmlStr, "Test1")
-	assert.Contains(t, htmlStr, "Test2")
+	content, err := os.ReadFile(outFile)
+	assert.NoError(t, err)
+
+	var parsed []shared.Benchmark
+	assert.NoError(t, json.Unmarshal(content, &parsed))
+	assert.Len(t, parsed, 2)
+
+	names := make(map[string]bool)
+	for _, b := range parsed {
+		names[b.Name] = true
+	}
+	assert.True(t, names["Bench1"])
+	assert.True(t, names["Bench2"])
 }
 
 func TestMergeCmd_Directory(t *testing.T) {
@@ -100,7 +109,7 @@ func TestMergeCmd_Directory(t *testing.T) {
 	}
 	writeJSON(t, filepath.Join(tmpDir, "b1.json"), bench1)
 
-	outFile := filepath.Join(tmpDir, "merged_dir.html")
+	outFile := filepath.Join(tmpDir, "merged_dir.json")
 
 	// Reset FlagState
 	shared.FlagState.OutputFile = outFile
@@ -115,8 +124,13 @@ func TestMergeCmd_Directory(t *testing.T) {
 	}
 	assert.NoError(t, err)
 
-	content, _ := os.ReadFile(outFile)
-	assert.Contains(t, string(content), "Test1")
+	content, err := os.ReadFile(outFile)
+	assert.NoError(t, err)
+
+	var parsed []shared.Benchmark
+	assert.NoError(t, json.Unmarshal(content, &parsed))
+	assert.Len(t, parsed, 1)
+	assert.Equal(t, "Bench1", parsed[0].Name)
 }
 
 func TestMergeCmd_ArrayInput(t *testing.T) {

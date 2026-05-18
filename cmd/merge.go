@@ -6,10 +6,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/goptics/vizb/pkg/style"
-	"github.com/goptics/vizb/pkg/template"
 	"github.com/goptics/vizb/shared"
 	"github.com/spf13/cobra"
 )
@@ -121,26 +119,20 @@ func writeMergeOutput(benches []shared.Benchmark) {
 
 	outFile := shared.FlagState.OutputFile
 	if outFile == "" {
-		outFile = resolveOutputFileName(outFile)
+		outFile = shared.MustCreateTempFile(shared.TempBenchFilePrefix, "json")
+		shared.TempFiles.Store(outFile)
+	} else if filepath.Ext(outFile) == "" {
+		outFile += ".json"
 	}
 
 	f := shared.MustCreateFile(outFile)
 	defer f.Close()
 	defer HandleOutputResult(f)
 
-	switch strings.ToLower(filepath.Ext(outFile)) {
-	case ".json":
-		if _, err := f.Write(jsonData); err != nil {
-			shared.ExitWithError("Failed to write JSON output: %v", err)
-		}
-		fmt.Println(style.Success.Render(fmt.Sprintf("🎉 Generated merged JSON successfully: %s", outFile)))
-	default:
-		htmlContent := template.GenerateHTMLBenchmarkUI(jsonData, template.VizbHTMLTemplate)
-		if _, err := f.WriteString(htmlContent); err != nil {
-			shared.ExitWithError("Failed to write output file: %v", err)
-		}
-		fmt.Println(style.Success.Render(fmt.Sprintf("🎉 Generated merged chart successfully: %s", outFile)))
+	if _, err := f.Write(jsonData); err != nil {
+		shared.ExitWithError("Failed to write JSON output: %v", err)
 	}
+	fmt.Println(style.Success.Render(fmt.Sprintf("🎉 Generated merged JSON successfully: %s", outFile)))
 }
 
 func logWarn(format string, args ...interface{}) {
