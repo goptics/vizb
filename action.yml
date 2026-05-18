@@ -5,11 +5,11 @@ branding:
   color: 'blue'
 
 inputs:
-  bench:
+  bench-cmd:
     description: "Benchmark command to run (e.g., go test -bench=.). Requires Go toolchain — add actions/setup-go before this action."
     default: ""
   bench-file:
-    description: "Path to existing benchmark output file (takes priority over bench)"
+    description: "Path to existing benchmark output file (takes priority over bench-cmd)"
     default: ""
   name:
     description: "Benchmark name (-n flag)"
@@ -81,6 +81,12 @@ runs:
       shell: bash
       run: |
         REF="${{ github.action_ref }}"
+        if [ -z "$REF" ] || [ "$REF" = "latest" ]; then
+          PATH_REF=$(basename "${{ github.action_path }}")
+          if echo "$PATH_REF" | grep -qE '^v[0-9]'; then
+            REF="$PATH_REF"
+          fi
+        fi
         if [ -z "$REF" ]; then
           REF="latest"
         fi
@@ -151,7 +157,7 @@ runs:
       shell: bash
       run: |
         BENCH_FILE="${{ inputs.bench-file }}"
-        BENCH_CMD="${{ inputs.bench }}"
+        BENCH_CMD="${{ inputs.bench-cmd }}"
         HAS_MERGE=""
         [ -n "${{ inputs.merge-files }}" ] && HAS_MERGE="true"
         [ -n "${{ inputs.merge-dir }}" ] && HAS_MERGE="true"
@@ -166,7 +172,7 @@ runs:
           echo "source=merge-only" >> "$GITHUB_OUTPUT"
           echo "has_input=false" >> "$GITHUB_OUTPUT"
         else
-          echo "::error::No input provided. Specify bench, bench-file, merge-files, or merge-dir."
+          echo "::error::No input provided. Specify bench-cmd, bench-file, merge-files, or merge-dir."
           exit 1
         fi
 
@@ -196,7 +202,7 @@ runs:
         if [ "${{ steps.resolve.outputs.source }}" = "file" ]; then
           cp "${{ inputs.bench-file }}" bench-input.txt
         else
-          ${{ inputs.bench }} > bench-input.txt
+          ${{ inputs.bench-cmd }} > bench-input.txt
         fi
 
         vizb bench-input.txt -o bench-new.json "${VIZB_ARGS[@]}"
@@ -233,7 +239,7 @@ runs:
         JSON_OUT=""
 
         if [ -n "${{ inputs.output-html }}" ]; then
-          vizb merge bench.json -o "${{ inputs.output-html }}"
+          vizb html bench.json -o "${{ inputs.output-html }}"
           HTML_OUT="${{ inputs.output-html }}"
         fi
 
