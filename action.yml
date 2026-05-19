@@ -137,7 +137,7 @@ runs:
         fi
 
         if [ "$OS" = "windows" ]; then
-          unzip vizb-archive -d ~/.local/bin
+          unzip -o vizb-archive -d ~/.local/bin
         else
           tar xzf vizb-archive -C ~/.local/bin
           chmod +x ~/.local/bin/vizb
