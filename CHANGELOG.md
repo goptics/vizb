@@ -4,6 +4,25 @@ Notable changes to Vizb documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [0.10.1] - 2026-05-19
+
+### Fixed
+
+- **Windows compatibility**: `unzip -o` in action to avoid interactive overwrite prompt on re-runs
+- **Stateful test**: Fixed after `examples/jsons/` removal — generates previous JSON via the action itself
+- **`mkdir -p`** in Generate JSON step to handle nested output paths (e.g., `results/prev/hash.json`)
+- **Taskfile**: Removed stale `cp examples/jsons/hash.json` from `act:test:stateful` task
+
+### Changed
+
+- **CI: test-before-deploy pipeline**: `test-action` now gates `deploy-examples` via `workflow_call` — no deployment without passing tests on all OSes ([#87](https://github.com/goptics/vizb/pull/87))
+- **CI: smarter triggers**: `ci.yml` only runs Go tests on source changes (`**.go`, `go.mod`, `go.sum`, `ci.yml`) instead of every push
+- **CI: Go version**: `ci.yml` uses `go-version-file: go.mod` instead of hardcoded `1.24`
+- **CI: deploy gating**: `deploy-examples` restricted to `main` branch only
+- **Action: optional outputs**: `output-html` and `output-json` fully optional with separate gated generate steps
+- **Action: simplified merge**: Always uses `vizb merge` (no intermediate `bench-new.json`)
+- **Docs**: Added binary download option to installation section
+
 # [0.10.0] - 2026-05-18
 
 ### Added
