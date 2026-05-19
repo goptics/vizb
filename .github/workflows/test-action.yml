@@ -1,5 +1,11 @@
 name: test-action
-on: workflow_dispatch
+on:
+  workflow_call:
+  workflow_dispatch:
+  push:
+    paths:
+      - action.yml
+      - .github/workflows/test-action.yml
 
 jobs:
   stateless:

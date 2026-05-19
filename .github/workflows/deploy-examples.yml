@@ -1,12 +1,20 @@
 name: deploy-examples
 on:
   push:
+    branches: [main]
     paths:
       - examples/bench/**
+      - action.yml
+      - .github/workflows/test-action.yml
       - .github/workflows/deploy-examples.yml
+  workflow_dispatch:
 
 jobs:
+  test:
+    uses: ./.github/workflows/test-action.yml
+
   convert:
+    needs: test
     strategy:
       matrix:
         include:
