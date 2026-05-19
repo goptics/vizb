@@ -44,7 +44,7 @@ Vizb provides a composite GitHub Action to run benchmarks and generate visualiza
   with:
     go-version-file: go.mod
 
-- uses: goptics/vizb@latest
+- uses: goptics/vizb@v0
   with:
     bench-cmd: "go test -bench=."
     output-html: pages/index.html
@@ -77,7 +77,7 @@ jobs:
           name: merged.json
           path: prev
 
-      - uses: goptics/vizb@latest
+      - uses: goptics/vizb@v0
         with:
           bench-cmd: "go test -bench=."
           tag: ${{ github.ref_name }}

@@ -82,32 +82,25 @@ runs:
       shell: bash
       run: |
         REF="${{ github.action_ref }}"
-        if [ -z "$REF" ] || [ "$REF" = "latest" ]; then
-          PATH_REF=$(basename "${{ github.action_path }}")
-          if echo "$PATH_REF" | grep -qE '^v[0-9]'; then
-            REF="$PATH_REF"
-          fi
-        fi
         if [ -z "$REF" ]; then
-          REF="latest"
+          echo "::error::Pin to a version: @v0 for latest, @v0.10.1 for pinned."
+          exit 1
         fi
 
-        if [ "$REF" = "latest" ]; then
-          TAG=$(curl -sL -o /dev/null -w '%{url_effective}' \
-            https://github.com/goptics/vizb/releases/latest | sed 's|.*/tag/||')
-          if [ -z "$TAG" ] || [ "$TAG" = "latest" ]; then
-            echo "::error::No releases found. Pin to a specific version tag."
-            exit 1
-          fi
+        if echo "$REF" | grep -qE '^v[0-9]+$'; then
+          PREFIX="${REF#v}"
+          TAG=$(git ls-remote --tags --refs --sort='-version:refname' \
+            https://github.com/goptics/vizb "refs/tags/v${PREFIX}.*" | \
+            head -1 | sed 's|.*/||')
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "is-latest=true" >> "$GITHUB_OUTPUT"
+          echo "is-major=true" >> "$GITHUB_OUTPUT"
         else
           echo "tag=$REF" >> "$GITHUB_OUTPUT"
-          echo "is-latest=false" >> "$GITHUB_OUTPUT"
+          echo "is-major=false" >> "$GITHUB_OUTPUT"
         fi
 
     - name: Cache vizb binary
-      if: steps.version.outputs.is-latest != 'true'
+      if: steps.version.outputs.is-major != 'true'
       id: cache-vizb
       uses: actions/cache@v5
       with:
@@ -147,7 +140,7 @@ runs:
         echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
     - name: Show vizb version
-      if: steps.version.outputs.is-latest == 'true'
+      if: steps.version.outputs.is-major == 'true'
       shell: bash
       run: echo "::notice::$(vizb -v 2>&1)"
 
