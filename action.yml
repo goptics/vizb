@@ -64,14 +64,14 @@ inputs:
     default: ""
   output-html:
     description: "Path for HTML output file (leave empty to skip HTML generation)"
-    default: "index.html"
+    default: ""
 outputs:
   output-file-html:
     description: Path to HTML output file
-    value: ${{ steps.generate.outputs.html }}
+    value: ${{ steps.generate-html.outputs.html }}
   output-file-json:
     description: Path to JSON output file
-    value: ${{ steps.generate.outputs.json }}
+    value: ${{ steps.generate-json.outputs.json }}
 
 runs:
   using: composite
@@ -205,7 +205,7 @@ runs:
           ${{ inputs.bench-cmd }} > bench-input.txt
         fi
 
-        vizb bench-input.txt -o bench-new.json "${VIZB_ARGS[@]}"
+        vizb bench-input.txt -o bench.json "${VIZB_ARGS[@]}"
 
     # ── Merge ──────────────────────────────────────────────────
 
@@ -215,41 +215,25 @@ runs:
       shell: bash
       run: |
         FILES=()
-        [ -f bench-new.json ] && FILES+=("bench-new.json")
+        [ -f bench.json ] && FILES+=("bench.json")
         [ -n "${{ inputs.merge-files }}" ] && FILES+=(${{ inputs.merge-files }})
         [ -n "${{ inputs.merge-dir }}" ] && FILES+=("${{ inputs.merge-dir }}")
-
-        if [ ${#FILES[@]} -eq 1 ]; then
-          cp "${FILES[0]}" bench.json
-        else
-          vizb merge "${FILES[@]}" -o bench.json --tag-axis "${{ inputs.tag-axis }}"
-        fi
+        vizb merge "${FILES[@]}" -o bench.json --tag-axis "${{ inputs.tag-axis }}"
 
     # ── Generate output ────────────────────────────────────────
 
-    - name: Generate output
-      id: generate
+    - name: Generate HTML
+      id: generate-html
+      if: inputs.output-html != ''
       shell: bash
       run: |
-        if [ -f bench-new.json ] && [ ! -f bench.json ]; then
-          cp bench-new.json bench.json
-        fi
+        vizb html bench.json -o "${{ inputs.output-html }}"
+        echo "html=${{ inputs.output-html }}" >> "$GITHUB_OUTPUT"
 
-        HTML_OUT=""
-        JSON_OUT=""
-
-        if [ -n "${{ inputs.output-html }}" ]; then
-          vizb html bench.json -o "${{ inputs.output-html }}"
-          HTML_OUT="${{ inputs.output-html }}"
-        fi
-
-        JSON_PATH="${{ inputs.output-json }}"
-        if [ -n "$JSON_PATH" ] && [ "$JSON_PATH" != "bench.json" ]; then
-          cp bench.json "$JSON_PATH"
-          JSON_OUT="$JSON_PATH"
-        elif [ -n "$JSON_PATH" ]; then
-          JSON_OUT="$JSON_PATH"
-        fi
-
-        echo "html=$HTML_OUT" >> "$GITHUB_OUTPUT"
-        echo "json=$JSON_OUT" >> "$GITHUB_OUTPUT"
+    - name: Generate JSON
+      id: generate-json
+      if: inputs.output-json != ''
+      shell: bash
+      run: |
+        cp bench.json "${{ inputs.output-json }}"
+        echo "json=${{ inputs.output-json }}" >> "$GITHUB_OUTPUT"
