@@ -27,13 +27,17 @@ jobs:
       - name: Generate previous JSON
         uses: ./
         with:
+          name: Hash
           bench-file: examples/bench/hash.txt
           output-json: results/prev/hash.json
 
       - name: Run action (stateful)
         uses: ./
         with:
-          bench-file: examples/bench/hash.txt
+          name: HTTP Frameworks Comparisons
+          group-pattern: x_n
+          sort: asc
+          bench-file: examples/bench/http-routing.txt
           merge-dir: results/prev
           output-html: index.html
           output-json: results/bench.json
