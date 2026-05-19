@@ -83,8 +83,7 @@ runs:
       run: |
         REF="${{ github.action_ref }}"
         if [ -z "$REF" ]; then
-          echo "::error::Pin to a version: @v0 for latest, @v0.10.1 for pinned."
-          exit 1
+          REF="v0"
         fi
 
         if echo "$REF" | grep -qE '^v[0-9]+$'; then
