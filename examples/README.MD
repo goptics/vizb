@@ -8,7 +8,7 @@ Pushing changes to `examples/bench/` triggers a CI workflow (`.github/workflows/
 
 1. Converts each `.txt` bench file to JSON with per-benchmark name, description, and group pattern
 2. Merges all JSONs into a single HTML dashboard
-3. Deploys to GitHub Pages on the orphan `examples` branch
+3. Deploys to GitHub Pages on the orphan `docs` branch
 
 ## Live dashboard
 
