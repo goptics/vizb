@@ -102,9 +102,15 @@ jobs:
 
 ## Installation
 
+### Via Go
+
 ```bash
 go install github.com/goptics/vizb@latest
 ```
+
+### Download Binary
+
+Pre-built binaries for Linux, macOS, and Windows are available on the [releases page](https://github.com/goptics/vizb/releases).
 
 ## Basic Usage
 
