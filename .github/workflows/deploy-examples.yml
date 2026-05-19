@@ -1,0 +1,133 @@
+name: deploy-examples
+on:
+  push:
+    paths:
+      - examples/bench/**
+      - .github/workflows/deploy-examples.yml
+
+jobs:
+  convert:
+    strategy:
+      matrix:
+        include:
+          - output: hash
+            bench-file: examples/bench/hash.txt
+            name: "Hashing"
+            description: "Comparison of different hash functions"
+            group-regex: "Hashing64(?<x>.*)"
+            scale: "log"
+
+          - output: http-routing
+            bench-file: examples/bench/http-routing.txt
+            name: "HTTP Routing"
+            description: "Performance comparison of popular Go HTTP Routers"
+            group-pattern: "x_n"
+            scale: "log"
+
+          - output: worker-pools
+            bench-file: examples/bench/worker-pools.txt
+            name: "Worker Pools"
+            description: "Performance comparison of different worker pool implementations"
+            group-pattern: "n/y/x"
+            scale: "linear"
+
+          - output: varmq
+            bench-file: examples/bench/varmq.txt
+            name: "Varmq"
+            description: "Variadic Queue Benchmark"
+            group-pattern: "x/y"
+            scale: "linear"
+
+          - output: serialization
+            bench-file: examples/bench/serialization.txt
+            name: "Serialization"
+            description: "Comparison of different serialization methods"
+            group-regex: "(?<x>.*)By(?<y>.*)"
+            scale: "linear"
+
+          - output: validator
+            bench-file: examples/bench/validator.txt
+            name: "Validator"
+            description: ""
+            group-regex: "(?<y>.*?)(?:(?<x>Success|Failure)(?<n>.*)|$)"
+            scale: "linear"
+
+          - output: decode
+            bench-file: examples/bench/decode-encode.txt
+            name: "Decode"
+            description: "Decode Performance Comparison"
+            group-regex: "'/text=(?<n>.*)/level=(?<x>.*)/size=(?<y>.*)'"
+            filter: "Decode"
+            scale: "log"
+
+          - output: encode
+            bench-file: examples/bench/decode-encode.txt
+            name: "Encode"
+            description: "Encode Performance Comparison"
+            group-regex: "'/text=(?<n>.*)/level=(?<x>.*)/size=(?<y>.*)'"
+            filter: "Encode"
+            scale: "log"
+
+          - output: log-value
+            bench-file: examples/bench/log-value.txt
+            name: "Log Value"
+            description: ""
+            group-pattern: "x/y"
+            scale: "linear"
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - uses: ./
+        with:
+          bench-file: ${{ matrix.bench-file }}
+          name: ${{ matrix.name }}
+          description: ${{ matrix.description }}
+          group-pattern: ${{ matrix.group-pattern }}
+          group-regex: ${{ matrix.group-regex }}
+          filter: ${{ matrix.filter }}
+          scale: ${{ matrix.scale }}
+          output-json: ${{ matrix.output }}.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: json-${{ matrix.output }}
+          path: ${{ matrix.output }}.json
+
+  merge-deploy:
+    needs: convert
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: json-*
+          path: /tmp/jsons
+          merge-multiple: true
+
+      - name: Prepare output directory
+        run: mkdir -p dist/examples
+
+      - uses: ./
+        with:
+          merge-dir: /tmp/jsons
+          output-html: dist/examples/index.html
+
+      - uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: examples
+          force_orphan: true
+          publish_dir: dist
