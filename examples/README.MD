@@ -1,48 +1,31 @@
 # Vizb Examples
 
-This guide demonstrates how to process benchmark results and generate a unified dashboard using `vizb`.
+This directory contains benchmark output files used to generate the vizb examples dashboard.
 
-## Prerequisites
+## How it works
 
-Ensure you have `vizb` installed and available in your PATH.
+Pushing changes to `examples/bench/` triggers a CI workflow (`.github/workflows/deploy-examples.yml`) that:
 
-## Step 1: Process Benchmark JSON Files
+1. Converts each `.txt` bench file to JSON with per-benchmark name, description, and group pattern
+2. Merges all JSONs into a single HTML dashboard
+3. Deploys to GitHub Pages on the orphan `docs` branch
 
-Use the `vizb` command to parse your benchmark output files (`.txt`) and generate JSON reports. You can define how benchmarks are grouped using patterns (`-p`) or regular expressions (`-r`).
+## Live dashboard
 
-### Benchmark Patterns
+**[goptics.github.io/vizb/examples](https://goptics.github.io/vizb/examples/)**
 
-| Benchmark File            | Pattern / Regex                                  | Flag |
-| :------------------------ | :----------------------------------------------- | :--- |
-| `bench/http-routing.txt`  | `x_n`                                            | `-p` |
-| `bench/worker-pools.txt`  | `n/y/x`                                          | `-p` |
-| `bench/varmq.txt`         | `x/y`                                            | `-p` |
-| `bench/hash.txt`          | `Hashing64(?<x>.*)`                              | `-r` |
-| `bench/serialization.txt` | `(?<x>.*)By(?<y>.*)`                             | `-r` |
-| `bench/validator.txt`     | `(?<y>.*?)(?:(?<x>Success\|Failure)(?<n>.*)\|$)` | `-r` |
-| `bench/decode-encode.txt` | `'/text=(?<n>.*)/level=(?<x>.*)/size=(?<y>.*)'`  | `-r` |
+## Adding a new benchmark
 
-### Template Command
+1. Drop a `.txt` bench output file into `examples/bench/`
+2. Add a matrix entry in `.github/workflows/deploy-examples.yml`:
 
-Use the following template to process any of the benchmarks listed above:
-
-```bash
-vizb <bench-file> <flag> <pattern> -o output.json
+```yaml
+- output: my-benchmark
+  bench-file: examples/bench/my-benchmark.txt
+  name: "My Benchmark"
+  description: "What this benchmark measures"
+  group-pattern: "x/y"      # or group-regex for regex grouping
+  scale: "linear"            # or "log"
 ```
 
-For example:
-
-```bash
-vizb bench/http-routing.txt -p x_n -o jsons/http-routing.json
-```
-
-## Step 2: Generate the Dashboard (`index.html`)
-
-After generating the JSON reports, use the `merge` command to combine them into a single, interactive HTML dashboard.
-
-```bash
-# Merge all JSON files from the 'jsons/' directory
-vizb merge jsons/ -o index.html
-```
-
-This command will create an `index.html` file. Open it in your web browser to view and analyze your benchmark results.
+3. Push — the CI rebuilds and deploys automatically.

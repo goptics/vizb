@@ -4,7 +4,7 @@
 
   <p>
     <a href="https://github.com/avelino/awesome-go?tab=readme-ov-file#benchmarks"><img src="https://awesome.re/mentioned-badge-flat.svg" alt="Mentioned in Awesome Go" /></a>
-    <a href="https://vizb-demo.netlify.app"><img src="https://img.shields.io/badge/Live-Demo-orange?style=for" alt="Live Demo" /></a>
+    <a href="https://goptics.github.io/vizb/examples/"><img src="https://img.shields.io/badge/Live-Examples-orange?style=for" alt="Examples" /></a>
     <a href="https://pkg.go.dev/github.com/goptics/vizb"><img src="https://img.shields.io/badge/go-pkg-00ADD8.svg?logo=go" alt="Go Reference" /></a>
     <a href="https://goreportcard.com/report/github.com/goptics/vizb"><img src="https://goreportcard.com/badge/github.com/goptics/vizb" alt="Go Report Card" /></a>
     <a href="https://github.com/goptics/vizb/actions/workflows/ci.yml"><img src="https://github.com/goptics/vizb/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
@@ -102,9 +102,15 @@ jobs:
 
 ## Installation
 
+### Go Toolchain
+
 ```bash
 go install github.com/goptics/vizb@latest
 ```
+
+### Download Binary
+
+Pre-built binaries for Linux, macOS, and Windows are available on the [releases page](https://github.com/goptics/vizb/releases).
 
 ## Basic Usage
 
