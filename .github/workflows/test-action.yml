@@ -24,10 +24,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Setup previous data
-        run: |
-          mkdir -p results/prev
-          cp examples/jsons/hash.json results/prev/
+      - name: Generate previous JSON
+        uses: ./
+        with:
+          bench-file: examples/bench/hash.txt
+          output-json: results/prev/hash.json
 
       - name: Run action (stateful)
         uses: ./
