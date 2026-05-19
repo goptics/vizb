@@ -79,10 +79,31 @@ runs:
     - name: Resolve vizb version
       id: version
       shell: bash
-      run: ${{ github.action_path }}/scripts/resolve-version.sh
-      env:
-        INPUT_ACTION_REF: ${{ github.action_ref }}
-        GITHUB_ACTION_PATH: ${{ github.action_path }}
+      run: |
+        REF="${{ github.action_ref }}"
+        if [ -z "$REF" ] || [ "$REF" = "latest" ]; then
+          PATH_REF=$(basename "${{ github.action_path }}")
+          if echo "$PATH_REF" | grep -qE '^v[0-9]'; then
+            REF="$PATH_REF"
+          fi
+        fi
+        if [ -z "$REF" ]; then
+          REF="latest"
+        fi
+
+        if [ "$REF" = "latest" ]; then
+          TAG=$(curl -sL -o /dev/null -w '%{url_effective}' \
+            https://github.com/goptics/vizb/releases/latest | sed 's|.*/tag/||')
+          if [ -z "$TAG" ] || [ "$TAG" = "latest" ]; then
+            echo "::error::No releases found. Pin to a specific version tag."
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "is-latest=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "tag=$REF" >> "$GITHUB_OUTPUT"
+          echo "is-latest=false" >> "$GITHUB_OUTPUT"
+        fi
 
     - name: Cache vizb binary
       if: steps.version.outputs.is-latest != 'true'
@@ -95,11 +116,34 @@ runs:
     - name: Download vizb
       if: steps.cache-vizb.outputs.cache-hit != 'true'
       shell: bash
-      run: ${{ github.action_path }}/scripts/download-vizb.sh
-      env:
-        INPUT_TAG: ${{ steps.version.outputs.tag }}
-        INPUT_RUNNER_OS: ${{ runner.os }}
-        INPUT_RUNNER_ARCH: ${{ runner.arch }}
+      run: |
+        OS=$(echo "${{ runner.os }}" | tr '[:upper:]' '[:lower:]')
+        [ "$OS" = "macos" ] && OS="darwin"
+        ARCH=$(echo "${{ runner.arch }}" | tr '[:upper:]' '[:lower:]')
+        [ "$ARCH" = "x64" ] && ARCH="amd64"
+
+        TAG="${{ steps.version.outputs.tag }}"
+        VERSION="${TAG#v}"
+        EXT=".tar.gz"
+        [ "$OS" = "windows" ] && EXT=".zip"
+
+        URL="https://github.com/goptics/vizb/releases/download/${TAG}/vizb@${VERSION}-${OS}-${ARCH}${EXT}"
+
+        mkdir -p ~/.local/bin
+        curl -sfL "$URL" -o vizb-archive
+        if [ $? -ne 0 ]; then
+          echo "::error::Failed to download vizb from $URL. Check that release ${TAG} exists."
+          exit 1
+        fi
+
+        if [ "$OS" = "windows" ]; then
+          unzip vizb-archive -d ~/.local/bin
+        else
+          tar xzf vizb-archive -C ~/.local/bin
+          chmod +x ~/.local/bin/vizb
+        fi
+
+        echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
     - name: Show vizb version
       if: steps.version.outputs.is-latest == 'true'
@@ -111,12 +155,26 @@ runs:
     - name: Resolve input
       id: resolve
       shell: bash
-      run: ${{ github.action_path }}/scripts/resolve-input.sh
-      env:
-        INPUT_BENCH_FILE: ${{ inputs.bench-file }}
-        INPUT_BENCH_CMD: ${{ inputs.bench-cmd }}
-        INPUT_MERGE_FILES: ${{ inputs.merge-files }}
-        INPUT_MERGE_DIR: ${{ inputs.merge-dir }}
+      run: |
+        BENCH_FILE="${{ inputs.bench-file }}"
+        BENCH_CMD="${{ inputs.bench-cmd }}"
+        HAS_MERGE=""
+        [ -n "${{ inputs.merge-files }}" ] && HAS_MERGE="true"
+        [ -n "${{ inputs.merge-dir }}" ] && HAS_MERGE="true"
+
+        if [ -n "$BENCH_FILE" ]; then
+          echo "source=file" >> "$GITHUB_OUTPUT"
+          echo "has_input=true" >> "$GITHUB_OUTPUT"
+        elif [ -n "$BENCH_CMD" ]; then
+          echo "source=command" >> "$GITHUB_OUTPUT"
+          echo "has_input=true" >> "$GITHUB_OUTPUT"
+        elif [ -n "$HAS_MERGE" ]; then
+          echo "source=merge-only" >> "$GITHUB_OUTPUT"
+          echo "has_input=false" >> "$GITHUB_OUTPUT"
+        else
+          echo "::error::No input provided. Specify bench-cmd, bench-file, merge-files, or merge-dir."
+          exit 1
+        fi
 
     # ── Convert to JSON ────────────────────────────────────────
 
@@ -124,24 +182,30 @@ runs:
       id: convert
       if: steps.resolve.outputs.has_input == 'true'
       shell: bash
-      run: ${{ github.action_path }}/scripts/convert-bench.sh
-      env:
-        INPUT_TAG: ${{ inputs.tag }}
-        INPUT_NAME: ${{ inputs.name }}
-        INPUT_DESCRIPTION: ${{ inputs.description }}
-        INPUT_GROUP_PATTERN: ${{ inputs.group-pattern }}
-        INPUT_GROUP_REGEX: ${{ inputs.group-regex }}
-        INPUT_SCALE: ${{ inputs.scale }}
-        INPUT_SORT: ${{ inputs.sort }}
-        INPUT_FILTER: ${{ inputs.filter }}
-        INPUT_MEM_UNIT: ${{ inputs.mem-unit }}
-        INPUT_TIME_UNIT: ${{ inputs.time-unit }}
-        INPUT_NUMBER_UNIT: ${{ inputs.number-unit }}
-        INPUT_CHARTS: ${{ inputs.charts }}
-        INPUT_SHOW_LABELS: ${{ inputs.show-labels }}
-        INPUT_BENCH_FILE: ${{ inputs.bench-file }}
-        INPUT_BENCH_CMD: ${{ inputs.bench-cmd }}
-        INPUT_SOURCE: ${{ steps.resolve.outputs.source }}
+      run: |
+        # Build vizb flags
+        VIZB_ARGS=()
+        [ -n "${{ inputs.tag }}" ] && VIZB_ARGS+=(--tag "${{ inputs.tag }}")
+        [ -n "${{ inputs.name }}" ] && VIZB_ARGS+=(-n "${{ inputs.name }}")
+        [ -n "${{ inputs.description }}" ] && VIZB_ARGS+=(-d "${{ inputs.description }}")
+        [ -n "${{ inputs.group-pattern }}" ] && VIZB_ARGS+=(-p "${{ inputs.group-pattern }}")
+        [ -n "${{ inputs.group-regex }}" ] && VIZB_ARGS+=(-r "${{ inputs.group-regex }}")
+        [ "${{ inputs.scale }}" != "linear" ] && VIZB_ARGS+=(--scale "${{ inputs.scale }}")
+        [ -n "${{ inputs.sort }}" ] && VIZB_ARGS+=(--sort "${{ inputs.sort }}")
+        [ -n "${{ inputs.filter }}" ] && VIZB_ARGS+=(--filter "${{ inputs.filter }}")
+        [ -n "${{ inputs.mem-unit }}" ] && VIZB_ARGS+=(-M "${{ inputs.mem-unit }}")
+        [ -n "${{ inputs.time-unit }}" ] && VIZB_ARGS+=(-T "${{ inputs.time-unit }}")
+        [ -n "${{ inputs.number-unit }}" ] && VIZB_ARGS+=(-N "${{ inputs.number-unit }}")
+        [ -n "${{ inputs.charts }}" ] && VIZB_ARGS+=(-c "${{ inputs.charts }}")
+        [ "${{ inputs.show-labels }}" = "true" ] && VIZB_ARGS+=(-l)
+
+        if [ "${{ steps.resolve.outputs.source }}" = "file" ]; then
+          cp "${{ inputs.bench-file }}" bench-input.txt
+        else
+          ${{ inputs.bench-cmd }} > bench-input.txt
+        fi
+
+        vizb bench-input.txt -o bench.json "${VIZB_ARGS[@]}"
 
     # ── Merge ──────────────────────────────────────────────────
 
@@ -149,11 +213,12 @@ runs:
       if: inputs.merge-files != '' || inputs.merge-dir != ''
       id: merge
       shell: bash
-      run: ${{ github.action_path }}/scripts/merge-bench.sh
-      env:
-        INPUT_MERGE_FILES: ${{ inputs.merge-files }}
-        INPUT_MERGE_DIR: ${{ inputs.merge-dir }}
-        INPUT_TAG_AXIS: ${{ inputs.tag-axis }}
+      run: |
+        FILES=()
+        [ -f bench.json ] && FILES+=("bench.json")
+        [ -n "${{ inputs.merge-files }}" ] && FILES+=(${{ inputs.merge-files }})
+        [ -n "${{ inputs.merge-dir }}" ] && FILES+=("${{ inputs.merge-dir }}")
+        vizb merge "${FILES[@]}" -o bench.json --tag-axis "${{ inputs.tag-axis }}"
 
     # ── Generate output ────────────────────────────────────────
 
