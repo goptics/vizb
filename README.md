@@ -102,7 +102,7 @@ jobs:
 
 ## Installation
 
-### Via Go
+### Go Toolchain
 
 ```bash
 go install github.com/goptics/vizb@latest
