@@ -2,11 +2,19 @@ name: CI
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+    paths:
+      - '**.go'
+      - go.mod
+      - go.sum
+      - .github/workflows/ci.yml
   pull_request:
-    branches:
-      - main
+    branches: [main]
+    paths:
+      - '**.go'
+      - go.mod
+      - go.sum
+      - .github/workflows/ci.yml
 
 jobs:
   build:
@@ -19,7 +27,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: "^1.24"
+          go-version-file: go.mod
           cache: true
 
       - name: Download dependencies

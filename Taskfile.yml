@@ -96,8 +96,6 @@ tasks:
     desc: Test action in stateful mode (merge + HTML + JSON)
     cmds:
       - task: act:check
-      - mkdir -p results/prev
-      - cp examples/jsons/hash.json results/prev/
       - act --bind workflow_dispatch -W .github/workflows/test-action.yml --job stateful --matrix os:ubuntu-latest
 
   act:clean:
