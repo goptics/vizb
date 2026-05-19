@@ -149,12 +149,11 @@ runs:
       if: inputs.merge-files != '' || inputs.merge-dir != ''
       id: merge
       shell: bash
-      run: |
-        FILES=()
-        [ -f bench.json ] && FILES+=("bench.json")
-        [ -n "${{ inputs.merge-files }}" ] && FILES+=(${{ inputs.merge-files }})
-        [ -n "${{ inputs.merge-dir }}" ] && FILES+=("${{ inputs.merge-dir }}")
-        vizb merge "${FILES[@]}" -o bench.json --tag-axis "${{ inputs.tag-axis }}"
+      run: ${{ github.action_path }}/scripts/merge-bench.sh
+      env:
+        INPUT_MERGE_FILES: ${{ inputs.merge-files }}
+        INPUT_MERGE_DIR: ${{ inputs.merge-dir }}
+        INPUT_TAG_AXIS: ${{ inputs.tag-axis }}
 
     # ── Generate output ────────────────────────────────────────
 
