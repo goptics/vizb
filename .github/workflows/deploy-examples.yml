@@ -29,28 +29,27 @@ jobs:
             name: "Worker Pools"
             description: "Performance comparison of different worker pool implementations"
             group-pattern: "n/y/x"
-            scale: "linear"
 
           - output: varmq
             bench-file: examples/bench/varmq.txt
             name: "Varmq"
             description: "Variadic Queue Benchmark"
             group-pattern: "x/y"
-            scale: "linear"
+            scale: "log"
 
           - output: serialization
             bench-file: examples/bench/serialization.txt
             name: "Serialization"
             description: "Comparison of different serialization methods"
             group-regex: "(?<x>.*)By(?<y>.*)"
-            scale: "linear"
+            scale: "log"
 
           - output: validator
             bench-file: examples/bench/validator.txt
             name: "Validator"
             description: ""
             group-regex: "(?<y>.*?)(?:(?<x>Success|Failure)(?<n>.*)|$)"
-            scale: "linear"
+            scale: "log"
 
           - output: decode
             bench-file: examples/bench/decode-encode.txt
@@ -70,10 +69,10 @@ jobs:
 
           - output: log-value
             bench-file: examples/bench/log-value.txt
-            name: "Log Value"
+            name: "Logarithmic Value"
             description: ""
             group-pattern: "x/y"
-            scale: "linear"
+            scale: "log"
 
     runs-on: ubuntu-latest
     steps:
@@ -93,6 +92,7 @@ jobs:
           filter: ${{ matrix.filter }}
           scale: ${{ matrix.scale }}
           output-json: ${{ matrix.output }}.json
+          sort: asc
 
       - uses: actions/upload-artifact@v4
         with:
