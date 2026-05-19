@@ -56,7 +56,7 @@ jobs:
             bench-file: examples/bench/decode-encode.txt
             name: "Decode"
             description: "Decode Performance Comparison"
-            group-regex: "'/text=(?<n>.*)/level=(?<x>.*)/size=(?<y>.*)'"
+            group-regex: "/text=(?<n>.*)/level=(?<x>.*)/size=(?<y>.*)"
             filter: "Decode"
             scale: "log"
 
@@ -64,7 +64,7 @@ jobs:
             bench-file: examples/bench/decode-encode.txt
             name: "Encode"
             description: "Encode Performance Comparison"
-            group-regex: "'/text=(?<n>.*)/level=(?<x>.*)/size=(?<y>.*)'"
+            group-regex: "/text=(?<n>.*)/level=(?<x>.*)/size=(?<y>.*)"
             filter: "Encode"
             scale: "log"
 
