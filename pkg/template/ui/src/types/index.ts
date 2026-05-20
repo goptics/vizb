@@ -30,10 +30,18 @@ export type Settings = {
   scale: ScaleType
 }
 
+export type HistoryEntry = {
+  tag: string
+  timestamp: string
+}
+
 export type Benchmark = {
   name: string
   description?: string
   pkg?: string
+  tag?: string
+  timestamp?: string
+  history?: HistoryEntry[]
   cpu?: {
     name?: string
     cores?: number

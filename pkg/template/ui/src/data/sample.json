@@ -3,8 +3,13 @@
     "name": "HTTP Routing Benchmarks",
     "description": "Performance comparison of popular Go HTTP Routers",
     "pkg": "github.com/gin-gonic/go-http-routing-benchmark",
+    "timestamp": "2025-11-15T10:30:00Z",
     "settings": {
-      "charts": ["bar", "line", "pie"],
+      "charts": [
+        "bar",
+        "line",
+        "pie"
+      ],
       "sort": {
         "enabled": true,
         "order": "asc"
@@ -10354,6 +10359,21 @@
           }
         ]
       }
+    ],
+    "tag": "v1.2.0",
+    "history": [
+      {
+        "tag": "v1.0.0",
+        "timestamp": "2025-06-01T08:00:00Z"
+      },
+      {
+        "tag": "v1.1.0",
+        "timestamp": "2025-08-20T14:15:00Z"
+      },
+      {
+        "tag": "v1.2.0",
+        "timestamp": "2025-11-15T10:30:00Z"
+      }
     ]
   },
   {
@@ -11894,6 +11914,18 @@
           }
         ]
       }
+    ],
+    "tag": "v2.0.0",
+    "timestamp": "2026-01-10T16:45:00Z",
+    "history": [
+      {
+        "tag": "v1.0.0",
+        "timestamp": "2025-09-10T12:00:00Z"
+      },
+      {
+        "tag": "v2.0.0",
+        "timestamp": "2026-01-10T16:45:00Z"
+      }
     ]
   },
   {
@@ -11904,7 +11936,10 @@
     },
     "pkg": "github.com/smallnest/gosercomp",
     "settings": {
-      "charts": ["bar", "pie"],
+      "charts": [
+        "bar",
+        "pie"
+      ],
       "sort": {
         "enabled": true,
         "order": "asc"
@@ -13250,6 +13285,22 @@
           }
         ]
       }
+    ],
+    "tag": "v0.3.0",
+    "timestamp": "2025-12-05T09:20:00Z",
+    "history": [
+      {
+        "tag": "v0.1.0",
+        "timestamp": "2025-10-01T07:30:00Z"
+      },
+      {
+        "tag": "v0.2.0",
+        "timestamp": "2025-11-01T11:00:00Z"
+      },
+      {
+        "tag": "v0.3.0",
+        "timestamp": "2025-12-05T09:20:00Z"
+      }
     ]
   },
   {
@@ -13263,7 +13314,10 @@
     "arch": "amd64",
     "pkg": "github.com/goptics/varmq",
     "settings": {
-      "charts": ["bar", "pie"],
+      "charts": [
+        "bar",
+        "pie"
+      ],
       "sort": {
         "enabled": true,
         "order": "asc"
@@ -13541,7 +13595,11 @@
     "name": "Hashing",
     "description": "Comparison of different hash functions",
     "settings": {
-      "charts": ["bar", "line", "pie"],
+      "charts": [
+        "bar",
+        "line",
+        "pie"
+      ],
       "sort": {
         "enabled": true,
         "order": "asc"
