@@ -4,6 +4,19 @@ Notable changes to Vizb documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [0.10.3] - 2026-05-20
+
+### Fixed
+
+- **Timestamp for Untagged Benchmarks**: Timestamp was only set when `--tag` flag was used. Now all benchmarks get a generation timestamp, enabling the UI timestamp badge for every run ([#95](https://github.com/goptics/vizb/pull/95)).
+- **Draft Release Blocking Deploy**: GoReleaser was configured with `draft: true`, creating hidden releases. The `deploy-examples` workflow couldn't download binaries from draft releases (404). Removed the draft setting so releases publish immediately after approval ([#98](https://github.com/goptics/vizb/pull/98)).
+
+### Changed
+
+- **CI: Remove Redundant setup-go**: The `deploy-examples` workflow used `actions/setup-go@v6` in both `convert` and `merge-deploy` jobs, but the composite action downloads the vizb binary via curl — no Go toolchain needed ([#96](https://github.com/goptics/vizb/pull/96)).
+- **CI: Go Version Consistency**: `release.yml` now uses `go-version-file: go.mod` instead of hardcoded `'^1.24'` for consistency with other workflows ([#96](https://github.com/goptics/vizb/pull/96)).
+- **CI: Approval Issue Customization**: Added custom `issue-title` and `issue-body` to the manual-approval step — shows the release tag, build targets, and post-approval flow in the approval issue ([#98](https://github.com/goptics/vizb/pull/98)).
+
 # [0.10.2] - 2026-05-20
 
 ### Added
