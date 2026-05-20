@@ -4,6 +4,22 @@ Notable changes to Vizb documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [0.10.2] - 2026-05-20
+
+### Added
+
+- **Timestamp Badge**: Dashboard header now shows the benchmark's last update time with a calendar icon. Clicking reveals a popover with full tag history (all versions + timestamps) via radix-vue Popover ([#92](https://github.com/goptics/vizb/pull/92)).
+- **Reusable Badge Component**: New `Badge.vue` component (icon + label + value) replaces inline CPU badge for consistent header styling ([#92](https://github.com/goptics/vizb/pull/92)).
+- **Release Guard**: Manual approval gate via `trstringer/manual-approval` — tag push pauses the release workflow until explicitly approved in the Actions UI ([#93](https://github.com/goptics/vizb/pull/93)).
+- **Auto-Deploy on Release**: `deploy-examples` workflow now triggers automatically when a release completes successfully, ensuring examples use the newly published binary ([#93](https://github.com/goptics/vizb/pull/93)).
+
+### Changed
+
+- **Benchmark TS Types**: Added `HistoryEntry`, `tag`, `timestamp`, and `history` fields to the TypeScript `Benchmark` type to match the Go data model ([#92](https://github.com/goptics/vizb/pull/92)).
+- **PopoverContent**: Added optional `align` prop (`start` | `center` | `end`) to `PopoverContent.vue` for flexible popover positioning ([#92](https://github.com/goptics/vizb/pull/92)).
+- **Deploy Trigger Fix**: Removed `pkg/template/ui/**` from `deploy-examples` push trigger — UI-only changes on main no longer redeploy examples using a stale binary ([#93](https://github.com/goptics/vizb/pull/93)).
+- **Documents**: Updated README description and features to mention GitHub Action and release guard ([#93](https://github.com/goptics/vizb/pull/93)).
+
 # [0.10.1] - 2026-05-19
 
 ### Fixed
