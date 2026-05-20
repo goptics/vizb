@@ -1,6 +1,6 @@
 <div align="center">
   <img src="assests/logo.png" alt="vizb logo" width="120" height="auto" />
-  <h1>Vizb: Visualize Go Benchmarks in 4D</h1>
+  <h1>Vizb</h1>
 
   <p>
     <a href="https://github.com/avelino/awesome-go?tab=readme-ov-file#benchmarks"><img src="https://awesome.re/mentioned-badge-flat.svg" alt="Mentioned in Awesome Go" /></a>
@@ -14,7 +14,7 @@
   </p>
 
   <p>
-    Vizb is a CLI tool that transforms Go benchmark raw output into interactive <strong>4D visualizations</strong>. It allows you to <a href="#merging-multiple-benchmarks">merge multiple benchmark data</a>, apply <a href="#advance-usage">advanced grouping logic</a>, and explore performance across four dimensions: Source, Group, and two customizable axes (X and Y). All within a single and deployable HTML file.
+    A CLI tool that transforms Go benchmark raw output into interactive <strong>4D visualizations</strong>. It allows you to <a href="#merging-multiple-benchmarks">merge multiple benchmark data</a>, apply <a href="#advance-usage">advanced grouping logic</a>, and explore performance across four dimensions: Source, Group, and two customizable axes (X and Y). Available as both a <strong>CLI tool</strong> and a <strong>GitHub Action</strong> for seamless CI pipeline integration — all within a single deployable HTML file.
   </p>
 </div>
 
@@ -32,6 +32,8 @@
 - **Smart Grouping**: Extract grouping logic from benchmark names using regex and group patterns.
 - **Filtering**: Filter benchmarks to include only those matching a regex pattern.
 - **Export Options**: Generate `single-file` HTML/JSON and options to save charts as `JPEG`.
+- **GitHub Action**: First-class CI support — run benchmarks, tag releases, merge history, and deploy visualizations directly from your workflows with a single composite action.
+- **Release Guard**: Manual approval gate — push a tag, review in the Actions UI, and approve before GoReleaser publishes.
 
 ## GitHub Action
 
