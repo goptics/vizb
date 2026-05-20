@@ -14,7 +14,7 @@
   </p>
 
   <p>
-    A CLI tool that transforms Go benchmark raw output into interactive <strong>4D visualizations</strong>. It allows you to <a href="#merging-multiple-benchmarks">merge multiple benchmark data</a>, apply <a href="#advance-usage">advanced grouping logic</a>, and explore performance across four dimensions: Source, Group, and two customizable axes (X and Y). Available as both a <strong>CLI tool</strong> and a <strong>GitHub Action</strong> for seamless CI pipeline integration — all within a single deployable HTML file.
+    A CLI tool that transforms Go benchmark raw output into interactive <strong>4D visualizations</strong>. It allows you to <a href="#merging-multiple-benchmarks">merge multiple benchmark data</a>, apply <a href="#advance-usage">advanced grouping logic</a>, and explore performance across four dimensions: Source, Group, and two customizable axes (X and Y). Available as both a <strong>CLI tool</strong> and a <strong><a href="#github-action">GitHub Action</a></strong> for seamless CI pipeline integration — all within a single deployable HTML file.
   </p>
 </div>
 
@@ -34,73 +34,6 @@
 - **Export Options**: Generate `single-file` HTML/JSON and options to save charts as `JPEG`.
 - **GitHub Action**: First-class CI support — run benchmarks, tag releases, merge history, and deploy visualizations directly from your workflows with a single composite action.
 - **Release Guard**: Manual approval gate — push a tag, review in the Actions UI, and approve before GoReleaser publishes.
-
-## GitHub Action
-
-Vizb provides a composite GitHub Action to run benchmarks and generate visualizations in CI.
-
-### Basic Usage
-
-```yaml
-- uses: actions/setup-go@v6
-  with:
-    go-version-file: go.mod
-
-- uses: goptics/vizb@v0
-  with:
-    bench-cmd: "go test -bench=."
-    output-html: pages/index.html
-```
-
-### Tracking Performance Across Releases
-
-Tag benchmarks with release versions, merge historical data, and deploy charts:
-
-```yaml
-on:
-  push:
-    tags: ['v*']
-
-jobs:
-  bench:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: actions/setup-go@v6
-        with:
-          go-version-file: go.mod
-
-      - name: Download previous benchmark data
-        uses: dawidd6/action-download-artifact@v21
-        continue-on-error: true
-        with:
-          workflow: bench.yml
-          name: merged.json
-          path: prev
-
-      - uses: goptics/vizb@v0
-        with:
-          bench-cmd: "go test -bench=."
-          tag: ${{ github.ref_name }}
-          merge-dir: prev
-          tag-axis: x
-          output-json: merged.json
-          output-html: pages/index.html
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: merged.json
-          path: merged.json
-
-      - uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: pages
-```
-
-> [!Note]
-> The `tag-axis` input controls which data dimension receives the tag annotation. Use `x` to show versions on the X-axis for clean progressive comparison.
 
 ## Installation
 
@@ -130,16 +63,6 @@ Generate charts from the benchmark:
 vizb bench.txt -o output.html
 ```
 
-### Using logarithmic scale
-
-For benchmarks with high variance in values (e.g., 1 to 1,000,000), use the logarithmic Y-axis scale:
-
-```bash
-vizb bench.txt -o output.html --scale log
-```
-
-The `--scale` flag accepts `linear` (default) or `log`. It works with bar and line charts; pie charts and 1D data automatically use linear scale.
-
 ### Direct piping
 
 Pipe benchmark results directly to vizb:
@@ -163,6 +86,16 @@ Generate charts from the standard JSON benchmark data:
 ```bash
 vizb output.json -o output.html
 ```
+
+### Using logarithmic scale
+
+For benchmarks with high variance in values (e.g., 1 to 1,000,000), use the logarithmic Y-axis scale:
+
+```bash
+vizb bench.txt -o output.html --scale log
+```
+
+The `--scale` flag accepts `linear` (default) or `log`. It works with bar and line charts; pie charts and 1D data automatically use linear scale.
 
 ### Merging multiple benchmarks
 
@@ -321,6 +254,74 @@ For more complex benchmark names where simple patterns aren't enough, you can us
 
 > [!Note]
 > You must specify at least one of the `x` and `y` axes when you use the `--group-[pattern|regex]` command. the `n` is optional.
+
+
+## GitHub Action
+
+Vizb provides a composite GitHub Action to run benchmarks and generate visualizations in CI.
+
+### Basic Usage
+
+```yaml
+- uses: actions/setup-go@v6
+  with:
+    go-version-file: go.mod
+
+- uses: goptics/vizb@v0
+  with:
+    bench-cmd: "go test -bench=."
+    output-html: pages/index.html
+```
+
+### Tracking Performance Across Releases
+
+Tag benchmarks with release versions, merge historical data, and deploy charts:
+
+```yaml
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  bench:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Download previous benchmark data
+        uses: dawidd6/action-download-artifact@v21
+        continue-on-error: true
+        with:
+          workflow: bench.yml
+          name: merged.json
+          path: prev
+
+      - uses: goptics/vizb@v0
+        with:
+          bench-cmd: "go test -bench=."
+          tag: ${{ github.ref_name }}
+          merge-dir: prev
+          tag-axis: x
+          output-json: merged.json
+          output-html: pages/index.html
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: merged.json
+          path: merged.json
+
+      - uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: pages
+```
+
+> [!Note]
+> The `tag-axis` input controls which data dimension receives the tag annotation. Use `x` to show versions on the X-axis for clean progressive comparison.
 
 ## Development
 
