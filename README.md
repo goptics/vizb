@@ -33,7 +33,6 @@
 - **Filtering**: Filter benchmarks to include only those matching a regex pattern.
 - **Export Options**: Generate `single-file` HTML/JSON and options to save charts as `JPEG`.
 - **GitHub Action**: First-class CI support — run benchmarks, tag releases, merge history, and deploy visualizations directly from your workflows with a single composite action.
-- **Release Guard**: Manual approval gate — push a tag, review in the Actions UI, and approve before GoReleaser publishes.
 
 ## Installation
 
@@ -260,9 +259,10 @@ For more complex benchmark names where simple patterns aren't enough, you can us
 
 Vizb provides a composite GitHub Action to run benchmarks and generate visualizations in CI.
 
-### Basic Usage
+### Run bench and generate HTML
 
 ```yaml
+# Need go since the composite uses the raw binary
 - uses: actions/setup-go@v6
   with:
     go-version-file: go.mod
@@ -306,7 +306,7 @@ jobs:
           tag: ${{ github.ref_name }}
           merge-dir: prev
           tag-axis: x
-          output-json: merged.json
+          output-json: merged.json # passing previous json file if exist
           output-html: pages/index.html
 
       - uses: actions/upload-artifact@v4
