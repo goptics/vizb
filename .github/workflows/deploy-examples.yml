@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - examples/bench/**
+      - pkg/template/ui/**
       - action.yml
       - .github/workflows/test-action.yml
       - .github/workflows/deploy-examples.yml
