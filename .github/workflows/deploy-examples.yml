@@ -4,10 +4,12 @@ on:
     branches: [main]
     paths:
       - examples/bench/**
-      - pkg/template/ui/**
       - action.yml
       - .github/workflows/test-action.yml
       - .github/workflows/deploy-examples.yml
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
   workflow_dispatch:
 
 jobs:
@@ -110,6 +112,7 @@ jobs:
 
   merge-deploy:
     needs: convert
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
