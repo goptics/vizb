@@ -7,10 +7,21 @@ on:
 
 permissions:
   contents: write
+  issues: write
+  actions: read
 
 jobs:
+  approve:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ secrets.GITHUB_TOKEN }}
+          approvers: fahimfaisaal
+          minimum-approvals: 1
+
   goreleaser:
-    environment: release
+    needs: approve
     runs-on: ubuntu-slim
     steps:
       - name: Checkout
