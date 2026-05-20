@@ -14,7 +14,7 @@
   </p>
 
   <p>
-    A CLI tool that transforms Go benchmark raw output into interactive <strong>4D visualizations</strong>. It allows you to <a href="#merging-multiple-benchmarks">merge multiple benchmark data</a>, apply <a href="#advance-usage">advanced grouping logic</a>, and explore performance across four dimensions: Source, Group, and two customizable axes (X and Y). Available as both a <strong>CLI tool</strong> and a <strong><a href="#github-action">GitHub Action</a></strong> for seamless CI pipeline integration — all within a single deployable HTML file.
+    A CLI tool that transforms Go benchmark raw output into interactive <strong>4D visualizations</strong>. It allows you to <a href="#merging-multiple-benchmarks">merge multiple benchmark data</a>, apply <a href="#advance-usage">advanced grouping logic</a>, and explore performance across four dimensions: Source, Group, and two customizable axes (X and Y). Available <strong><a href="#github-action">GitHub Action</a></strong> for seamless CI pipeline integration — all within a single deployable HTML file.
   </p>
 </div>
 
