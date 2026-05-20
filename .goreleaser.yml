@@ -42,4 +42,4 @@ snapshot:
   version_template: "{{ .Tag }}-next"
 
 release:
-  draft: true
+  draft: false
