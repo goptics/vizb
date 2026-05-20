@@ -249,10 +249,8 @@ func prepareBenchmarkFromParsedResults(results []shared.BenchmarkData) *shared.B
 	benchmark.Settings.ShowLabels = shared.FlagState.ShowLabels
 	benchmark.Settings.Scale = shared.FlagState.Scale
 
-	if shared.FlagState.Tag != "" {
-		benchmark.Tag = shared.FlagState.Tag
-		benchmark.Timestamp = time.Now().UTC().Format(time.RFC3339)
-	}
+	benchmark.Tag = shared.FlagState.Tag
+	benchmark.Timestamp = time.Now().UTC().Format(time.RFC3339)
 
 	return benchmark
 }
