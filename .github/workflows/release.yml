@@ -19,6 +19,18 @@ jobs:
           secret: ${{ secrets.GITHUB_TOKEN }}
           approvers: fahimfaisaal
           minimum-approvals: 1
+          issue-title: 'Release Approval: ${{ github.ref_name }}'
+          issue-body: |
+            A new release tag `${{ github.ref_name }}` has been pushed.
+
+            **What will happen after approval:**
+            - GoReleaser builds binaries for linux/darwin/windows (amd64 + arm64)
+            - Release is published to GitHub Releases
+            - Examples at https://goptics.github.io/vizb/examples/ are auto-redeployed
+
+            Respond "approved", "approve", "lgtm", or "yes" to proceed.
+            Respond "denied", "deny", or "no" to cancel.
+          
 
   goreleaser:
     needs: approve
