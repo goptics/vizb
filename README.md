@@ -4,8 +4,8 @@
 
   <p>
     <a href="https://github.com/avelino/awesome-go?tab=readme-ov-file#benchmarks"><img src="https://awesome.re/mentioned-badge-flat.svg" alt="Mentioned in Awesome Go" /></a>
+    <a href="https://goptics.github.io/vizb/"><img src="https://img.shields.io/badge/Docs-00ADD8?style=for&logo=readthedocs" alt="Docs" /></a>
     <a href="https://goptics.github.io/vizb/examples/"><img src="https://img.shields.io/badge/Live-Examples-orange?style=for" alt="Examples" /></a>
-    <a href="https://pkg.go.dev/github.com/goptics/vizb"><img src="https://img.shields.io/badge/go-pkg-00ADD8.svg?logo=go" alt="Go Reference" /></a>
     <a href="https://goreportcard.com/report/github.com/goptics/vizb"><img src="https://goreportcard.com/badge/github.com/goptics/vizb" alt="Go Report Card" /></a>
     <a href="https://github.com/goptics/vizb/actions/workflows/ci.yml"><img src="https://github.com/goptics/vizb/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
     <a href="https://codecov.io/gh/goptics/vizb"><img src="https://codecov.io/gh/goptics/vizb/branch/main/graph/badge.svg" alt="Codecov" /></a>
@@ -14,7 +14,7 @@
   </p>
 
   <p>
-    A CLI tool that transforms Go benchmark raw output into interactive <strong>4D visualizations</strong>. It allows you to <a href="#merging-multiple-benchmarks">merge multiple benchmark data</a>, apply <a href="#advance-usage">advanced grouping logic</a>, and explore performance across four dimensions: Source, Group, and two customizable axes (X and Y). Available <strong><a href="#github-action">GitHub Action</a></strong> for seamless CI pipeline integration — all within a single deployable HTML file.
+    A CLI tool that transforms Go benchmark raw output into interactive <strong>4D visualizations</strong>. Merge multiple benchmark runs, apply advanced grouping logic, and explore performance across four dimensions — all within a single deployable HTML file. Available <strong><a href="#github-action">GitHub Action</a></strong> for seamless CI pipeline integration.
   </p>
 </div>
 
@@ -46,214 +46,52 @@ go install github.com/goptics/vizb@latest
 
 Pre-built binaries for Linux, macOS, and Windows are available on the [releases page](https://github.com/goptics/vizb/releases).
 
-## Basic Usage
-
-### Using raw benchmark output
-
-Run your Go benchmarks and save the output:
-
-```bash
-go test -bench . > bench.txt
-```
-
-Generate charts from the benchmark:
-
-```bash
-vizb bench.txt -o output.html
-```
+## Quick Start
 
 ### Direct piping
 
-Pipe benchmark results directly to vizb:
+```bash
+go test -bench . | vizb -o output.html
+```
+
+### From a saved file
 
 ```bash
-# Raw output
-go test -bench . | vizb -o output.html
+go test -bench . > bench.txt
+vizb bench.txt -o output.html
+```
 
-# JSON output (automatically detected and converted)
+### JSON output
+
+```bash
 go test -bench . -json | vizb -o output.html
 ```
 
-### Using vizb standard JSON benchmark output
-
-```bash
-vizb bench.txt -o output.json
-```
-
-Generate charts from the standard JSON benchmark data:
-
-```bash
-vizb output.json -o output.html
-```
-
-### Using logarithmic scale
-
-For benchmarks with high variance in values (e.g., 1 to 1,000,000), use the logarithmic Y-axis scale:
-
-```bash
-vizb bench.txt -o output.html --scale log
-```
-
-The `--scale` flag accepts `linear` (default) or `log`. It works with bar and line charts; pie charts and 1D data automatically use linear scale.
-
 ### Merging multiple benchmarks
 
-You can combine multiple benchmark JSON files using the `merge` command. This is useful for aggregating benchmark data from different runs, machines, or environments. The merge command always outputs JSON — use `vizb html` to render the result as an interactive HTML chart.
-
 ```bash
-# Merge specific files into JSON
+# Merge specific files
 vizb merge output.json output2.json -o merged.json
-
-# Generate HTML from merged JSON
-vizb html merged.json -o merged_report.html
 
 # Merge all JSON files in a directory
 vizb merge ./results/ -o all.json
 
-# Mix and match files and directories
-vizb merge ./old_results/ output.json -o comparison.json
+# Generate HTML from merged JSON
+vizb html merged.json -o report.html
 ```
-
-Open the generated HTML file in your browser to view the interactive charts.
 
 > [!Note]
-> The `merge` command requires JSON files as input, which must be generated using `vizb bench.txt -o output.json`.
+> The `merge` command requires JSON files as input, generated with `-o output.json`.
 
-### Tag-Based Merging
+## Documentation
 
-Vizb supports tagging benchmarks to compare performance across multiple commits, releases, or environment variants. The `--tag` flag on the main command assigns a label (e.g., commit hash, version number) to a benchmark run. When merging, vizb groups benchmarks by `name` and deep-merges those sharing the same name but different tags into a single object, preserving all timestamps, history, and data.
+Full documentation is available at **[goptics.github.io/vizb](https://goptics.github.io/vizb/)**:
 
-#### Tagging a benchmark run
-
-```bash
-vizb bench-v1.txt -o v1.json --tag v1 -n "Foo"
-
-vizb bench-v2.txt -o v2.json --tag v2 -n "Foo"
-```
-
-#### How tag-based merging works
-
-When you merge benchmarks sharing the same name with different tags:
-
-```bash
-vizb merge v1.json v2.json -o comparison.json
-vizb html comparison.json -o comparison.html
-```
-
-Vizb groups benchmarks by name and processes each group as follows:
-
-1. **Deduplication**: If two entries share the same name and tag, only the one with the latest timestamp is kept. Older entries are discarded.
-2. **Inner merge**: Entries with different tags are deep-merged into a single benchmark. Data points are sorted in chronological tag order and each is annotated with its originating tag.
-3. **Legacy entries**: Untagged benchmarks (no `--tag`) with the same name are deduplicated (first-seen wins) and their data is prepended before tagged entries.
-4. **Output**: The merged benchmark retains the latest tag (by timestamp), carries a history of older tags, and includes data from all runs.
-
-#### Controlling where the tag is injected
-
-By default, the tag is injected into the `name` dimension of each inner data object. Use `--tag-axis` (shorthand `-A`) to target `xAxis` or `yAxis` instead:
-
-```bash
-# Inject tag into xAxis so the X-axis labels show version differences
-vizb merge v1.json v2.json -A x -o comparison.json
-vizb html comparison.json -o comparison.html
-```
-
-Accepted values: `n` (name), `x` (xAxis), `y` (yAxis). Default is `n`.
-
-## Advance Usage
-
-### How vizb groups your benchmark data
-
-Vizb creates charts that make sense by putting your benchmark data into logical groupings and axes. It sees the data as `1D` (xAxis) by default, but if you have to deal with `2D` or `3D` data, you can use the `--group-pattern` and `--group-regex` flags to group your data.
-
-### Understanding Group Patterns
-
-A group pattern tells vizb how to dissect your benchmark names into three key components:
-
-1. **Name (n)**: The family or group the benchmark belongs to. Benchmarks with the same `Name` will be grouped together in the same chart. (optional)
-2. **XAxis (x)**: The category that goes on the X-axis (e.g., input size, concurrency level).
-3. **YAxis (y)**: The specific test case or variation (e.g., algorithm name, sub-test).
-
-### Visualizing the Extraction
-
-Imagine you have a benchmark named `BenchmarkSort/100/Ints`, which has `3D` data.
-
-If you use the pattern `name/xAxis/yAxis` (or `n/x/y`), vizb splits the name wherever it finds a `/`:
-
-```text
-Benchmark Name:  BenchmarkSort  /  100  /  Ints
-                     │              │        │
-Pattern:           [Name]        [XAxis]   [YAxis]
-                     │              │        │
-Result:            "Sort"         "100"    "Ints"
-```
-
-### Group Pattern Syntax (`--group-pattern`)
-
-- **Components**: Use `name`, `xAxis`, `yAxis` (or shorthands `n`, `x`, `y`).
-- **Separators**: Use `/` (slash) or `_` (underscore) to match the separators in your benchmark names.
-- **Skipping parts**: You can leave parts empty in the pattern to ignore sections of the benchmark name.
-
-#### Standard Go Benchmarks (Slash Separated)
-
-Format: `Benchmark<Group>/<InputSize>/<Variant>`
-
-**Pattern:** `n/x/y`
-
-| Benchmark Name                 | Extracted Data                                            |
-| :----------------------------- | :-------------------------------------------------------- |
-| `BenchmarkSort/1024/QuickSort` | **Name:** `Sort` **XAxis:** `1024` **YAxis:** `QuickSort` |
-| `BenchmarkSort/1024/MergeSort` | **Name:** `Sort` **XAxis:** `1024` **YAxis:** `MergeSort` |
-
-#### Underscore Separated
-
-Format: `Benchmark<Group>_<Variant>_<InputSize>`
-
-**Pattern:** `n_y_x`
-
-| Benchmark Name             | Extracted Data                                        |
-| :------------------------- | :---------------------------------------------------- |
-| `BenchmarkHash_SHA256_1KB` | **Name:** `Hash` **YAxis:** `SHA256` **XAxis:** `1KB` |
-| `BenchmarkHash_MD5_1KB`    | **Name:** `Hash` **YAxis:** `MD5` **XAxis:** `1KB`    |
-
-#### Simple Grouping (No X-Axis)
-
-Format: `Benchmark<Group>/<Variant>`
-
-**Pattern:** `n/y`
-
-| Benchmark Name            | Extracted Data                                               |
-| :------------------------ | :----------------------------------------------------------- |
-| `BenchmarkJSON/Marshal`   | **Name:** `JSON` **XAxis:** _(empty)_ **YAxis:** `Marshal`   |
-| `BenchmarkJSON/Unmarshal` | **Name:** `JSON` **XAxis:** _(empty)_ **YAxis:** `Unmarshal` |
-
-#### Ignoring Prefixes
-
-Sometimes you might want to ignore a common prefix or a specific part of the name.
-
-**Pattern:** `/n/y` (Starts with a separator to skip the first part)
-
-| Benchmark Name               | Extracted Data                                                         |
-| :--------------------------- | :--------------------------------------------------------------------- |
-| `BenchmarkTest/JSON/Marshal` | **Name:** `JSON` **YAxis:** `Marshal` _(First part "Test" is ignored)_ |
-
-### Group Regex Syntax (`--group-regex`)
-
-For more complex benchmark names where simple patterns aren't enough, you can use Regular Expressions with named groups.
-
-- **Named Groups**: Use `(?<name>...)`, `(?<xAxis>...)`, `(?<yAxis>...)` (or shorthands `(?<n>...)`, `(?<x>...)`, `(?<y>...)`) to capture parts of the benchmark name.
-- **Flexibility**: Regex allows you to match specific characters, ignore parts, and handle irregular formats.
-
-#### Examples
-
-| Benchmark Name                            | Regex                                   | Extracted Data                                            | Dimensions |
-| :---------------------------------------- | :-------------------------------------- | :-------------------------------------------------------- | :--------- |
-| `BenchmarkHashing64MD5`                   | `Hashing64(?<x>.*)`                     | **XAxis:** `MD5`                                          | 1D         |
-| `BenchmarkJSONByMarshal`                  | `(?<x>.*)By(?<y>.*)`                    | **XAxis:** `JSON` **YAxis:** `Marshal`                    | 2D         |
-| `BenchmarkDecode/text=digits/level=speed` | `(?<n>.*)/text=(?<x>.*)/level=(?<y>.*)` | **Name:** `Decode` **XAxis:** `digits` **YAxis:** `speed` | 3D         |
-
-> [!Note]
-> You must specify at least one of the `x` and `y` axes when you use the `--group-[pattern|regex]` command. the `n` is optional.
-
+- [CLI Commands](https://goptics.github.io/vizb/commands/root/)
+- [Grouping Guide](https://goptics.github.io/vizb/guides/grouping/)
+- [Merging Guide](https://goptics.github.io/vizb/guides/merging/)
+- [CI/CD Integration](https://goptics.github.io/vizb/ci-cd/github-action/)
+- [UI Features](https://goptics.github.io/vizb/ui/)
 
 ## GitHub Action
 
@@ -262,7 +100,6 @@ Vizb provides a composite GitHub Action to run benchmarks and generate visualiza
 ### Run bench and generate HTML
 
 ```yaml
-# Need go since the composite uses the raw binary
 - uses: actions/setup-go@v6
   with:
     go-version-file: go.mod
@@ -273,87 +110,29 @@ Vizb provides a composite GitHub Action to run benchmarks and generate visualiza
     output-html: pages/index.html
 ```
 
-### Tracking Performance Across Releases
-
-Tag benchmarks with release versions, merge historical data, and deploy charts:
-
-```yaml
-on:
-  push:
-    tags: ['v*']
-
-jobs:
-  bench:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: actions/setup-go@v6
-        with:
-          go-version-file: go.mod
-
-      - name: Download previous benchmark data
-        uses: dawidd6/action-download-artifact@v21
-        continue-on-error: true
-        with:
-          workflow: bench.yml
-          name: merged.json
-          path: prev
-
-      - uses: goptics/vizb@v0
-        with:
-          bench-cmd: "go test -bench=."
-          tag: ${{ github.ref_name }}
-          merge-dir: prev
-          tag-axis: x
-          output-json: merged.json # passing previous json file if exist
-          output-html: pages/index.html
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: merged.json
-          path: merged.json
-
-      - uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: pages
-```
-
 > [!Note]
-> The `tag-axis` input controls which data dimension receives the tag annotation. Use `x` to show versions on the X-axis for clean progressive comparison.
+> For full input reference, CI tutorials (stateless & stateful), and deployment guides, see the [CI/CD documentation](https://goptics.github.io/vizb/ci-cd/github-action/).
 
 ## Development
 
 This project uses [Task](https://taskfile.dev/) for managing development workflows.
 
-### Setup Development Environment
+### Setup
 
 ```bash
-# Install Task runner
 go install github.com/go-task/task/v3/cmd/task@latest
+task init
 ```
 
 ### Available Tasks
 
 ```bash
-# install dependencies
-task init
-
-# Run the UI in development mode
-task dev:ui
-
-# Build The UI
-task build:ui
-
-# Build the binary (run from ./bin/vizb)
-task build:cli
-
-# Build everything
-task build
-
-# Run tests
-task test
+task dev:ui      # Run the UI in development mode
+task docs:dev    # Run the docs site in development mode
+task build:ui    # Build the UI
+task build:cli   # Build the binary (run from ./bin/vizb)
+task build       # Build everything
+task test        # Run tests
 ```
 
 ## Contributing
@@ -362,4 +141,4 @@ Contributions are welcome! Feel free to open issues or submit pull requests.
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
