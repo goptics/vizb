@@ -122,12 +122,12 @@ jobs:
           merge-multiple: true
 
       - name: Prepare output directory
-        run: mkdir -p dist/examples
+        run: mkdir -p dist/examples/dashboard
 
       - uses: ./
         with:
           merge-dir: /tmp/jsons
-          output-html: dist/examples/index.html
+          output-html: dist/examples/dashboard/index.html
 
       - uses: peaceiris/actions-gh-pages@v4
         with:
