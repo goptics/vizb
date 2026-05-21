@@ -1,0 +1,58 @@
+---
+title: Vizb
+description: Transform Go benchmark output into interactive 4D visualizations
+template: splash
+hero:
+  tagline: Go benchmark visualization, made simple
+  actions:
+    - text: Get Started
+      link: /getting-started
+      variant: primary
+      icon: right-arrow
+    - text: GitHub
+      link: https://github.com/goptics/vizb
+      icon: github
+---
+
+import { CardGrid, Card, LinkCard } from '@astrojs/starlight/components';
+
+Vizb turns raw `go test -bench` output into interactive charts you can explore in your browser. Single HTML file — no server, no dependencies, no build step.
+
+<CardGrid stagger>
+  <Card title="Multi-Chart" icon="analytics">
+    Bar, line, and pie charts in a single view. Sort, swap axes, and toggle logarithmic scale.
+  </Card>
+  <Card title="Merge & Compare" icon="code-branch">
+    Merge benchmarks from multiple runs, machines, or releases. Tag with version labels for cross-release comparison.
+  </Card>
+  <Card title="Smart Grouping" icon="list-format">
+    Extract dimensions from benchmark names using pattern matching or regex. 1D, 2D, or 3D data — vizb handles it.
+  </Card>
+  <Card title="CI Ready" icon="seti:puppet">
+    First-class GitHub Action. Run benchmarks, tag releases, merge history, and deploy — all from your workflow.
+  </Card>
+  <Card title="Interactive UI" icon="laptop">
+    Vue.js-powered interface with sortable charts, axis swapping, scale toggles, and JPEG export. All in a single HTML file.
+  </Card>
+  <Card title="Flexible Input" icon="document">
+    Automatically detects raw text or JSON benchmark output. Pipe from `go test` or read from files.
+  </Card>
+</CardGrid>
+
+## Quick Start
+
+```bash
+go test -bench . | vizb -o output.html
+open output.html
+```
+
+One pipe, one file, interactive charts in your browser.
+
+## Explore
+
+<CardGrid cols={2}>
+  <LinkCard title="Commands" description="All CLI flags and options for root, merge, and html commands." href="/commands/root" />
+  <LinkCard title="CI/CD Integration" description="GitHub Action reference and step-by-step CI tutorials." href="/ci-cd/github-action" />
+  <LinkCard title="Grouping Guide" description="Pattern and regex grouping for multi-dimensional data." href="/guides/grouping" />
+  <LinkCard title="Merging Guide" description="Combine benchmarks with tag-based inner and outer merging." href="/guides/merging" />
+</CardGrid>

@@ -1,0 +1,72 @@
+---
+title: Deploying
+description: Deploy benchmark visualizations to GitHub Pages, Netlify, Cloudflare Pages, and more.
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+Vizb generates a single self-contained HTML file. Deployment is straightforward — upload the file to any static hosting platform.
+
+## Platforms
+
+<Tabs syncKey="platform">
+  <TabItem label="GitHub Pages" icon="github">
+
+  Deploy using [peaceiris/actions-gh-pages](https://github.com/peaceiris/actions-gh-pages):
+
+  ```yaml
+  - uses: peaceiris/actions-gh-pages@v4
+    with:
+      github_token: ${{ secrets.GITHUB_TOKEN }}
+      publish_dir: .
+  ```
+
+  Configure GitHub Pages to serve from the `gh-pages` branch in **Settings → Pages**.
+
+  </TabItem>
+  <TabItem label="Netlify" icon="netlify">
+
+  Deploy using [Netlify CLI action](https://github.com/marketplace/actions/netlify-deploy):
+
+  ```yaml
+  - uses: nwtgck/actions-netlify@v3
+    with:
+      publish-dir: '.'
+      production-branch: main
+      production-deploy: true
+    env:
+      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+  ```
+
+  </TabItem>
+  <TabItem label="Cloudflare Pages" icon="cloudflare">
+
+  Use [Cloudflare Pages action](https://github.com/cloudflare/wrangler-action):
+
+  ```yaml
+  - uses: cloudflare/wrangler-action@v3
+    with:
+      apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      command: pages deploy . --project-name=my-benchmarks
+  ```
+
+  </TabItem>
+  <TabItem label="Artifact Only" icon="rocket">
+
+  Upload as a workflow artifact for manual download:
+
+  ```yaml
+  - uses: actions/upload-artifact@v4
+    with:
+      name: benchmark-report
+      path: benchmark.html
+  ```
+
+  </TabItem>
+</Tabs>
+
+<Aside type="note">
+  Since vizb generates a single HTML file with no external dependencies, any platform that can serve static files works.
+</Aside>

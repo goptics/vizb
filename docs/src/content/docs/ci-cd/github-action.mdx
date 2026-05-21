@@ -1,0 +1,115 @@
+---
+title: GitHub Action
+description: Complete reference for the vizb GitHub Action and all its inputs.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Vizb provides a composite GitHub Action to run benchmarks and generate visualizations in CI. Add it to any workflow with a single step.
+
+## Basic Usage
+
+```yaml
+- uses: actions/setup-go@v6
+  with:
+    go-version-file: go.mod
+
+- uses: goptics/vizb@v0
+  with:
+    bench-cmd: "go test -bench=."
+    output-html: pages/index.html
+```
+
+<Aside type="note">
+  When using `bench-cmd`, the action needs a Go toolchain. Add `actions/setup-go` before the vizb step.
+</Aside>
+
+## Versioning
+
+Use `goptics/vizb@v0` to automatically resolve to the latest `v0.x.x` release:
+
+```yaml
+- uses: goptics/vizb@v0  # auto-resolves to latest v0.x.x
+```
+
+The action:
+- Resolves the major version tag to the latest patch release
+- Caches the downloaded binary across runs
+- Falls back to the exact tag for non-major refs (e.g., `@v0.10.3`)
+
+## Inputs
+
+| Input | Default | Description |
+|-------|---------|-------------|
+| `bench-cmd` | `""` | Benchmark command to run (e.g., `go test -bench=.`). Requires Go toolchain. |
+| `bench-file` | `""` | Path to existing benchmark file. Takes priority over `bench-cmd`. |
+| `name` | `"Benchmarks"` | Benchmark name |
+| `description` | `""` | Benchmark description |
+| `tag` | `""` | Tag/identifier for the benchmark |
+| `group-pattern` | `"x"` | Group pattern |
+| `group-regex` | `""` | Group regex |
+| `scale` | `"linear"` | Scale type: `linear` or `log` |
+| `sort` | `""` | Sort order: `asc` or `desc` |
+| `filter` | `""` | Regex filter for benchmark names |
+| `mem-unit` | `"B"` | Memory unit: `b`, `B`, `KB`, `MB`, `GB` |
+| `time-unit` | `"ns"` | Time unit: `ns`, `us`, `ms`, `s` |
+| `number-unit` | `""` | Number unit: `K`, `M`, `B`, `T` |
+| `charts` | `"bar,line,pie"` | Chart types |
+| `show-labels` | `"false"` | Show labels on charts |
+| `merge-files` | `""` | Space-separated JSON files to merge |
+| `merge-dir` | `""` | Directory to scan for JSON files to merge |
+| `tag-axis` | `"n"` | Tag injection axis: `n`, `x`, or `y` |
+| `output-json` | `""` | Path for JSON output file. Empty = skip JSON. |
+| `output-html` | `""` | Path for HTML output file. Empty = skip HTML. |
+
+## Outputs
+
+| Output | Description |
+|--------|-------------|
+| `output-file-html` | Path to the generated HTML file |
+| `output-file-json` | Path to the generated JSON file (same as `output-json` input) |
+
+## Input Resolution
+
+The action resolves input in this priority order:
+
+1. **`bench-file`** — if provided, uses the existing file directly
+2. **`bench-cmd`** — runs the command and captures output
+3. **Merge-only** — if only `merge-files` or `merge-dir` is provided, skips benchmarking
+
+<Aside type="caution">
+  At least one of `bench-cmd`, `bench-file`, `merge-files`, or `merge-dir` must be provided.
+</Aside>
+
+## Minimal Examples
+
+### Run benchmarks and generate HTML
+
+```yaml
+- uses: goptics/vizb@v0
+  with:
+    bench-cmd: "go test -bench=."
+    output-html: pages/index.html
+```
+
+### Use existing benchmark file
+
+```yaml
+- uses: goptics/vizb@v0
+  with:
+    bench-file: bench-results.txt
+    output-html: report.html
+```
+
+### Merge and generate
+
+```yaml
+- uses: goptics/vizb@v0
+  with:
+    bench-cmd: "go test -bench=."
+    merge-dir: previous-results/
+    tag: v1.2.0
+    tag-axis: x
+    output-json: merged.json
+    output-html: pages/index.html
+```

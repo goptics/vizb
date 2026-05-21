@@ -1,0 +1,139 @@
+---
+title: How It Works
+description: The data pipeline from benchmark input to interactive HTML visualization.
+---
+
+import { FileTree, Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+Vizb converts `go test -bench` output into a structured JSON format, then embeds it in a self-contained HTML file with a Vue.js visualization app.
+
+## Pipeline
+
+```
+go test -bench .  →  raw text  →  parser  →  Benchmark struct  →  JSON / HTML
+                       ↓                        ↓
+               (or JSON bench events)     (grouping applied)
+```
+
+## Source Structure
+
+<FileTree>
+
+- cmd/
+  - root.go          CLI entry point, flag definitions
+  - merge.go         Merge command
+  - html.go          HTML generation command
+- pkg/
+  - parser/
+    - bench_data.go      ParseBenchmarkData, ConvertJsonBenchToText
+    - parse_pattern.go   ParseBenchmarkNameToGroups, ParseBenchmarkNameWithRegex
+  - template/
+    - generate-ui.go     HTML template generation
+    - vizb-ui.gen.go     Built Vue UI (auto-generated)
+  - style/
+    - style.go           Terminal styling (lipgloss)
+- shared/
+  - bench.go         Benchmark, BenchmarkData, Stat structs
+  - merge.go         MergeBenchmarks function
+  - dimension.go     Dimension type (n, x, y)
+  - flag_state.go    CLI flag state
+  - constants.go     Temp file prefix
+  - …
+
+</FileTree>
+
+## Data Structures
+
+### Stat
+
+A single metric value extracted from a benchmark result:
+
+```json
+{
+  "type": "Execution Time (ns/op)",
+  "value": 1523.4
+}
+```
+
+### BenchmarkData
+
+A single benchmark entry with dimensions and stats:
+
+```json
+{
+  "name": "Sort",
+  "xAxis": "1024",
+  "yAxis": "QuickSort",
+  "stats": [
+    { "type": "Execution Time (ns/op)", "value": 1523.4 },
+    { "type": "Memory Usage (B/op)", "value": 256 },
+    { "type": "Allocations (op)", "value": 4 }
+  ]
+}
+```
+
+### Benchmark
+
+The top-level output struct containing metadata and all benchmark data:
+
+```json
+{
+  "tag": "v1.0.0",
+  "timestamp": "2025-01-15T10:30:00Z",
+  "name": "MyBenchmarks",
+  "description": "Sorting algorithm comparison",
+  "cpu": { "name": "Apple M2", "cores": 8 },
+  "os": "darwin",
+  "arch": "arm64",
+  "pkg": "github.com/example/sort",
+  "settings": {
+    "charts": ["bar", "line", "pie"],
+    "sort": { "enabled": true, "order": "asc" },
+    "showLabels": false,
+    "scale": "linear"
+  },
+  "data": [
+    { "name": "Sort", "xAxis": "1024", "yAxis": "QuickSort", "stats": [...] },
+    { "name": "Sort", "xAxis": "1024", "yAxis": "MergeSort", "stats": [...] }
+  ]
+}
+```
+
+## Input Detection
+
+Vizb auto-detects the input format:
+
+<Tabs syncKey="format">
+  <TabItem label="Raw Text">
+  Standard `go test -bench` output. Parsed line by line using `golang.org/x/perf/benchfmt`.
+
+  ```bash
+  go test -bench . > bench.txt
+  vizb bench.txt -o output.html
+  ```
+  </TabItem>
+  <TabItem label="JSON Bench Events">
+  `go test -bench -json` output. Vizb extracts the `output` field from each event and converts to text before parsing.
+
+  ```bash
+  go test -bench . -json | vizb -o output.html
+  ```
+  </TabItem>
+  <TabItem label="Vizb JSON">
+  Previously generated vizb JSON output. Loaded directly without re-parsing.
+
+  ```bash
+  vizb bench.txt -o data.json
+  vizb data.json -o output.html
+  ```
+  </TabItem>
+</Tabs>
+
+## Processing Steps
+
+1. **Input** — file argument or stdin pipe written to temp file
+2. **Preprocess** — JSON bench events converted to text (if needed)
+3. **Parse** — `benchfmt.NewReader` extracts benchmark results
+4. **Group** — `--group-pattern` or `--group-regex` splits names into dimensions
+5. **Build** — assemble `Benchmark` struct with metadata and settings
+6. **Output** — JSON (`json.Marshal`) or HTML (Vue template + embedded JSON)

@@ -1,0 +1,53 @@
+---
+title: Features
+description: A detailed overview of everything vizb can do.
+---
+
+import { CardGrid, Card, Aside } from '@astrojs/starlight/components';
+
+Vizb transforms `go test -bench` output into interactive 4D HTML visualizations. Here's what it offers.
+
+<CardGrid stagger>
+  <Card title="Modern Interactive UI" icon="laptop">
+    Vue.js application embedded in a single HTML file. Sort, zoom, swap axes, and export — all in the browser with no server.
+  </Card>
+  <Card title="Multi-Chart" icon="analytics">
+    Bar, line, and pie charts rendered together. Choose which to show with `--charts` or toggle in the UI.
+  </Card>
+  <Card title="Sorting" icon="list-format">
+    Sort data ascending or descending via `--sort` flag or UI settings.
+  </Card>
+  <Card title="Axis Swapping" icon="random">
+    Rearrange Name, X-axis, and Y-axis dimensions in the UI for different perspectives on the same data.
+  </Card>
+  <Card title="Logarithmic Scale" icon="puzzle">
+    Use `--scale log` for bar and line charts to visualize benchmarks with high variance in values.
+  </Card>
+  <Card title="Multi-Dimensional Grouping" icon="puzzle">
+    Extract Name, XAxis, and YAxis from benchmark names using pattern matching or regex. 1D, 2D, or 3D data.
+  </Card>
+  <Card title="Tag-Based Merging" icon="code-branch">
+    Tag benchmarks with version labels. Deep-merge across releases with chronological data ordering.
+  </Card>
+  <Card title="Flexible Input" icon="document">
+    Auto-detects raw text and `go test -bench -json` format. Accepts files or stdin pipes.
+  </Card>
+  <Card title="Comprehensive Metrics" icon="information">
+    Time (ns/us/ms/s), memory (B/KB/MB/GB), allocations, and throughput with configurable units.
+  </Card>
+  <Card title="Smart Filtering" icon="magnifier">
+    Include only matching benchmarks with `--filter` regex pattern.
+  </Card>
+  <Card title="Export Options" icon="download">
+    Single-file HTML or JSON output. Export charts as JPEG from the UI.
+  </Card>
+  <Card title="GitHub Action" icon="server">
+    First-class CI integration. Run benchmarks, tag releases, merge history, and deploy — all from GitHub Actions.
+  </Card>
+</CardGrid>
+
+## Learn More
+
+<Aside type="tip">
+  Each feature is documented in detail — follow the guides in the sidebar.
+</Aside>

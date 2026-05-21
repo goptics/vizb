@@ -1,0 +1,38 @@
+---
+title: Roadmap
+description: Current capabilities and future plans for vizb.
+---
+
+import { CardGrid, Card, Aside } from '@astrojs/starlight/components';
+
+## Current State
+
+Vizb currently supports:
+
+- **Go** — `go test -bench` output (raw text and JSON)
+- Single-file HTML output with embedded Vue.js visualization
+- Multi-dimensional grouping, tag-based merging, and GitHub Action integration
+
+## Future Language Support
+
+Vizb aims to support benchmark output from other languages and tools:
+
+<CardGrid>
+  <Card title="Rust" icon="rust">
+    Parse output from `cargo bench` and Criterion.rs. Bring the same multi-dimensional grouping and merge capabilities to Rust benchmarks.
+  </Card>
+  <Card title="Python" icon="python">
+    Integrate with `pytest-benchmark` output. Generate interactive visualizations for Python performance testing.
+  </Card>
+  <Card title="JavaScript / TypeScript" icon="javascript">
+    Support benchmark.js and similar JS benchmarking tools. Visualize frontend and Node.js performance data.
+  </Card>
+</CardGrid>
+
+<Aside type="note">
+  Multi-language support is planned but not yet available. Contributions and feature requests are welcome on [GitHub](https://github.com/goptics/vizb/issues).
+</Aside>
+
+## Contributing
+
+Interested in helping? Check out the [GitHub repository](https://github.com/goptics/vizb) for open issues and contribution guidelines.

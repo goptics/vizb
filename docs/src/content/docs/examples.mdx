@@ -1,0 +1,27 @@
+---
+title: Examples
+description: Live benchmark visualizations and example data.
+---
+
+import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
+
+🚀 <a href="https://goptics.github.io/vizb/examples/" target="_blank" rel="noopener noreferrer">View the live examples dashboard</a> for interactive demos.
+
+## Benchmark Files
+
+These example benchmark files are available in the [repository](https://github.com/goptics/vizb/tree/main/examples/bench):
+
+<CardGrid cols={2}>
+  <LinkCard title="Hash" description="Hashing algorithms (MD5, SHA1, SHA256, SHA3, etc.) — 1D with regex grouping, log scale." href="https://github.com/goptics/vizb/blob/main/examples/bench/hash.txt" />
+  <LinkCard title="HTTP Routing" description="Router benchmarks (Gin, Echo, Chi, etc.) — 2D with pattern grouping." href="https://github.com/goptics/vizb/blob/main/examples/bench/http-routing.txt" />
+  <LinkCard title="Worker Pools" description="Worker pool implementations — 3D with pattern grouping." href="https://github.com/goptics/vizb/blob/main/examples/bench/worker-pools.txt" />
+  <LinkCard title="Serialization" description="JSON, XML, Protobuf, etc. — 2D with regex grouping." href="https://github.com/goptics/vizb/blob/main/examples/bench/serialization.txt" />
+  <LinkCard title="Decode/Encode" description="Decode/encode with text/level/size parameters — 3D regex grouping." href="https://github.com/goptics/vizb/blob/main/examples/bench/decode-encode.txt" />
+  <LinkCard title="Validator" description="Go validator benchmarks — regex grouping, log scale." href="https://github.com/goptics/vizb/blob/main/examples/bench/validator.txt" />
+  <LinkCard title="Varmq" description="Variadic queue benchmarks — 2D pattern grouping." href="https://github.com/goptics/vizb/blob/main/examples/bench/varmq.txt" />
+  <LinkCard title="Logarithmic Value" description="Wide-range values demonstrating log scale — 2D pattern grouping." href="https://github.com/goptics/vizb/blob/main/examples/bench/log-value.txt" />
+</CardGrid>
+
+<Aside type="tip">
+  Clone the repo and run any example: `vizb examples/bench/hash.txt -o hash.html`
+</Aside>

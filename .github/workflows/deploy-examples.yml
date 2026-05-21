@@ -133,5 +133,5 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: docs
-          force_orphan: true
           publish_dir: dist
+          keep_files: true

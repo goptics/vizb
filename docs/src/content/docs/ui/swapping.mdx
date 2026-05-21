@@ -1,0 +1,38 @@
+---
+title: Axis Swapping
+description: Rearrange Name, X-axis, and Y-axis dimensions in the UI.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+When your benchmark data has multiple dimensions (2D or 3D), the UI lets you swap which dimension maps to which axis. This changes the perspective without regenerating the file.
+
+## How It Works
+
+Vizb extracts three dimensions from benchmark names:
+- **Name** — groups benchmarks into separate charts
+- **XAxis** — categories on the X-axis
+- **YAxis** — test case variants
+
+In the UI, use the axis dropdown to rearrange these. For example, swap Name and YAxis to see all variants grouped differently.
+
+{/* TODO: Add GIF showing axis swapping animation */}
+
+## When to Swap
+
+- Compare different perspectives of the same 3D data
+- Group by variant instead of by benchmark family
+- Switch which dimension appears on the X-axis for better comparison
+
+## Setting Defaults
+
+The initial axis assignment comes from your `--group-pattern` or `--group-regex` flags:
+
+```bash
+# Default: Name=XAxis=YAxis assignment from pattern
+vizb bench.txt -p n/x/y -o output.html
+```
+
+<Aside type="tip">
+  Axis swapping in the UI is non-destructive — the underlying data stays the same. Swap freely and revert anytime.
+</Aside>
