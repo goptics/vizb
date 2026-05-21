@@ -1,0 +1,112 @@
+---
+title: vizb
+description: Parse benchmark output and generate HTML or JSON visualizations.
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+The root command (`vizb`) is the primary entry point. It parses `go test -bench` output and generates interactive visualizations.
+
+## Usage
+
+```bash
+vizb [target] [flags]
+```
+
+## Input Methods
+
+<Tabs syncKey="input">
+  <TabItem label="File">
+  ```bash
+  vizb bench.txt -o output.html
+  ```
+  Pass a file path as the first argument.
+  </TabItem>
+  <TabItem label="Stdin Pipe">
+  ```bash
+  go test -bench . | vizb -o output.html
+  ```
+  Pipe benchmark output directly to vizb.
+  </TabItem>
+  <TabItem label="JSON Auto-Detect">
+  ```bash
+  # JSON bench events are auto-detected and converted
+  go test -bench . -json | vizb -o output.html
+  ```
+  Vizb automatically detects `go test -bench -json` format.
+  </TabItem>
+</Tabs>
+
+## Flags
+
+| Flag | Short | Default | Description |
+|------|-------|---------|-------------|
+| `--output` | `-o` | *(stdout)* | Output file path. `.json` → JSON, else → HTML |
+| `--name` | `-n` | `Benchmarks` | Benchmark name |
+| `--description` | `-d` | `""` | Benchmark description |
+| `--tag` | `-t` | `""` | Tag identifier for release tracking |
+| `--group-pattern` | `-p` | `x` | Pattern-based grouping (`n`/`x`/`y` with `/` or `_`) |
+| `--group-regex` | `-r` | `""` | Regex-based grouping (named captures) |
+| `--scale` | `-S` | `linear` | Scale type: `linear` or `log` |
+| `--sort` | `-s` | `""` | Sort order: `asc` or `desc` (default: as-is) |
+| `--charts` | `-c` | `bar,line,pie` | Chart types to generate |
+| `--show-labels` | `-l` | `false` | Show value labels on charts |
+| `--filter` | `-f` | `""` | Regex to include only matching benchmark names |
+| `--mem-unit` | `-M` | `B` | Memory unit: `b`, `B`, `KB`, `MB`, `GB` |
+| `--time-unit` | `-T` | `ns` | Time unit: `ns`, `us`, `ms`, `s` |
+| `--number-unit` | `-N` | `""` | Number unit: `K`, `M`, `B`, `T` (default: as-is) |
+
+## Examples
+
+### Basic usage
+
+```bash
+# Pipe benchmarks to HTML
+go test -bench . | vizb -o output.html
+
+# From a file
+vizb bench.txt -o output.html
+```
+
+### JSON output
+
+```bash
+# Generate JSON for later merging
+vizb bench.txt -o data.json
+
+# Then generate HTML from JSON
+vizb data.json -o output.html
+```
+
+### Grouping
+
+```bash
+# Pattern grouping (slash-separated 3D data)
+vizb bench.txt -p n/x/y -o output.html
+
+# Regex grouping
+vizb bench.txt -r '(?<n>.*)/text=(?<x>.*)/level=(?<y>.*)' -o output.html
+```
+
+See the [Grouping Guide](/guides/grouping) for detailed examples.
+
+### Logarithmic scale
+
+```bash
+vizb bench.txt --scale log -o output.html
+```
+
+### Filtering
+
+```bash
+# Include only benchmarks matching a pattern
+vizb bench.txt -f "Sort" -o output.html
+```
+
+### Tagging for release tracking
+
+```bash
+vizb bench.txt -o v1.json --tag v1.0 -n "MyBench"
+```
+
+See [Merging Guide](/guides/merging) for tag-based comparison.

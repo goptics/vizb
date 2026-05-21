@@ -1,0 +1,71 @@
+---
+title: UI Overview
+description: Interactive visualization features in the vizb HTML output.
+---
+
+import { CardGrid, Card, Aside } from '@astrojs/starlight/components';
+
+Vizb generates a single self-contained HTML file with a Vue.js-powered interactive UI. No server needed — open the file in any browser.
+
+## Chart Types
+
+Vizb supports three chart types, all rendered in a single view:
+
+<CardGrid>
+  <Card title="Bar Chart" icon="chart-bar">
+    Default chart type. Compare values across categories. Supports linear and logarithmic scale.
+  </Card>
+  <Card title="Line Chart" icon="chart-line">
+    Track trends across X-axis values. Best for sequential data like input sizes or concurrency levels.
+  </Card>
+  <Card title="Pie Chart" icon="pie">
+    Show proportional distribution. Useful for comparing relative sizes of benchmark results.
+  </Card>
+</CardGrid>
+
+Control which charts appear with `--charts`:
+
+```bash
+vizb bench.txt -c bar,line -o output.html
+```
+
+{/* TODO: Add GIF showing all three chart types rendered side by side */}
+
+## Scale Options
+
+Toggle between linear and logarithmic Y-axis scale:
+
+```bash
+# Linear (default)
+vizb bench.txt -o output.html
+
+# Logarithmic — better for high-variance data
+vizb bench.txt --scale log -o output.html
+```
+
+<Aside type="tip">
+  Use `--scale log` when benchmark values span several orders of magnitude (e.g., 1 to 1,000,000).
+</Aside>
+
+{/* TODO: Add GIF showing linear vs logarithmic scale comparison */}
+
+## JPEG Export
+
+Export any chart as a JPEG image directly from the UI. Click the export button on any chart to download.
+
+{/* TODO: Add GIF showing JPEG export */}
+
+## Single-File Output
+
+The generated HTML is fully self-contained:
+- Vue.js app embedded inline
+- Chart data embedded as JSON
+- No external dependencies or network requests
+- Works offline
+
+Open with any browser — no build step, no server.
+
+## Next Steps
+
+- [Settings](/ui/settings) — CLI flags and UI settings mapping
+- [Axis Swapping](/ui/swapping) — rearrange n/x/y dimensions in the UI

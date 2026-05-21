@@ -1,0 +1,57 @@
+---
+title: Getting Started
+description: Get up and running with vizb in under a minute.
+---
+
+import { Aside, Steps, LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+<Aside type="note">
+  Vizb requires **Go 1.24+** and a Go project with `go test -bench` benchmarks.
+</Aside>
+
+<Steps>
+
+1. **Pipe benchmarks to vizb**
+
+   Run your benchmarks and pipe the output directly:
+
+   ```bash
+   go test -bench . | vizb -o output.html
+   ```
+
+   Open `output.html` in your browser.
+
+2. **From a saved file**
+
+   If you already have benchmark output saved:
+
+   ```bash
+   go test -bench . > bench.txt
+   vizb bench.txt -o output.html
+   ```
+
+3. **JSON pipeline**
+
+   Vizb auto-detects JSON format from `go test -bench -json`:
+
+   ```bash
+   go test -bench . -json | vizb -o output.html
+   ```
+
+   Save as JSON for later merging:
+
+   ```bash
+   vizb bench.txt -o output.json
+   vizb output.json -o output.html
+   ```
+
+</Steps>
+
+## Next Steps
+
+<CardGrid cols={2}>
+  <LinkCard title="Installation" description="Go install, binary download, and PATH setup." href="/installation" />
+  <LinkCard title="Commands" description="All CLI flags and options." href="/commands/root" />
+  <LinkCard title="Grouping Guide" description="Multi-dimensional data with patterns and regex." href="/guides/grouping" />
+  <LinkCard title="CI/CD" description="GitHub Action and CI pipeline setup." href="/ci-cd/github-action" />
+</CardGrid>

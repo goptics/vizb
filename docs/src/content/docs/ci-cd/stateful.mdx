@@ -1,0 +1,121 @@
+---
+title: Stateful CI
+description: Track benchmark performance across releases with artifact persistence.
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+
+Stateful CI tracks benchmark performance over time. Each run merges with historical data, creating a progressive visualization that shows how performance changes across releases.
+
+## How It Works
+
+1. Each release run tags benchmarks with the version
+2. Previous benchmark data is downloaded from artifacts
+3. Vizb merges old and new data with tag-based deep merge
+4. The merged result is uploaded as an artifact for the next run
+5. HTML report shows all versions in a single chart
+
+## Tutorial
+
+<Steps>
+
+1. **Create the workflow**
+
+   Create `.github/workflows/bench.yml`:
+
+   ```yaml
+   name: Benchmark Tracking
+
+   on:
+     push:
+       tags: ['v*']
+
+   jobs:
+     bench:
+       runs-on: ubuntu-latest
+       steps:
+         - uses: actions/checkout@v4
+
+         - uses: actions/setup-go@v6
+           with:
+             go-version-file: go.mod
+
+         - name: Download previous benchmark data
+           uses: dawidd6/action-download-artifact@v21
+           continue-on-error: true
+           with:
+             workflow: bench.yml
+             name: merged.json
+             path: prev
+
+         - uses: goptics/vizb@v0
+           with:
+             bench-cmd: "go test -bench=."
+             tag: ${{ github.ref_name }}
+             merge-dir: prev
+             tag-axis: x
+             output-json: merged.json
+             output-html: pages/index.html
+
+         - uses: actions/upload-artifact@v4
+           with:
+             name: merged.json
+             path: merged.json
+
+         - uses: peaceiris/actions-gh-pages@v4
+           with:
+             github_token: ${{ secrets.GITHUB_TOKEN }}
+             publish_dir: pages
+   ```
+
+2. **Tag a release**
+
+   ```bash
+   git tag -s v1.0.0 -m "Release v1.0.0"
+   git push origin v1.0.0
+   ```
+
+   This triggers the workflow. The first run creates the initial benchmark. Subsequent tags add to the history.
+
+3. **View the results**
+
+   After the workflow completes:
+   - The HTML report is deployed to GitHub Pages
+   - The merged JSON is stored as an artifact
+   - Next release will download and merge with this data
+
+</Steps>
+
+## Key Configuration
+
+| Setting | Value | Why |
+|---------|-------|-----|
+| `tag` | `${{ github.ref_name }}` | Tags each run with the release version |
+| `merge-dir` | `prev` | Merges with previously downloaded data |
+| `tag-axis` | `x` | Shows versions on the X-axis for progressive comparison |
+| `continue-on-error` | `true` | First run has no previous data — that's OK |
+| `output-json` | `merged.json` | Stores the merged result as an artifact |
+
+<Aside type="tip">
+  Use `tag-axis: x` so versions appear on the X-axis. This creates a clear timeline showing performance changes across releases.
+</Aside>
+
+## The Merge Cycle
+
+```
+Release v1.0 → run benchmarks → tag v1.0 → upload merged.json
+                                          ↓
+Release v1.1 → download prev → merge v1.0+v1.1 → upload merged.json
+                                                     ↓
+Release v1.2 → download prev → merge v1.0+v1.1+v1.2 → upload + deploy
+```
+
+Each run:
+1. Downloads the previous `merged.json` artifact
+2. Runs benchmarks with the new tag
+3. Merges old data with new data (inner merge by tag)
+4. Uploads the new merged result for the next run
+
+<Aside type="note">
+  The `continue-on-error: true` on the artifact download step ensures the first run succeeds even when no previous data exists.
+</Aside>

@@ -1,0 +1,155 @@
+---
+title: Grouping
+description: Split benchmark names into structured dimensions for multi-dimensional charts.
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+## What is Grouping
+
+Benchmark names often contain structured information beyond a simple label. A name like `BenchmarkSort/1024/QuickSort` encodes the function, the input size, and the algorithm variant. Grouping is the process of extracting these dimensions — **Name**, **XAxis**, and **YAxis** — from benchmark names so vizb can chart them meaningfully.
+
+Without grouping, every benchmark is treated as a flat label. With grouping, vizb understands which benchmarks belong together, what goes on each axis, and how to organize charts into logical groups.
+
+## Why Grouping
+
+Grouping creates multi-dimensional charts. Without grouping, all benchmarks produce a single flat list — every result is an isolated bar or point. With grouping, vizb can:
+
+- **Separate charts** by logical category (e.g., one chart per algorithm)
+- **Populate axes** with meaningful values (e.g., input size on the X-axis)
+- **Create series** for test case variants (e.g., different data distributions on the Y-axis)
+
+| Without Grouping | With Grouping |
+|---|---|
+| Single flat chart with all benchmarks | Multiple charts grouped by name |
+| No axis structure | X-axis and Y-axis with meaningful categories |
+| Hard to compare across dimensions | Easy side-by-side comparison |
+
+## The Three Dimensions
+
+Grouping extracts up to three dimensions from each benchmark name:
+
+| Dimension | Flag Component | Description |
+|---|---|---|
+| **Name** (`name` / `n`) | Groups benchmarks into separate charts | Benchmarks sharing the same name appear in the same chart |
+| **XAxis** (`xAxis` / `x`) | Sets the X-axis categories | Each unique value becomes a tick on the X-axis |
+| **YAxis** (`yAxis` / `y`) | Creates test case variants | Each unique value becomes a separate series or bar group |
+
+<Aside type="note">
+  At least one axis (`x` or `y`) is required for grouping to take effect. The `name` dimension is optional — when omitted, all benchmarks go into a single chart.
+</Aside>
+
+## Pattern Syntax
+
+The `--group-pattern` flag splits benchmark names using a separator (`/` or `_`) and assigns each segment to a dimension.
+
+### Separators
+
+- `/` — slash separator (the Go benchmark convention)
+- `_` — underscore separator
+
+### Components
+
+| Component | Shorthand | Meaning |
+|---|---|---|
+| `name` | `n` | Chart group name |
+| `xAxis` | `x` | X-axis values |
+| `yAxis` | `y` | Y-axis series |
+
+### Examples
+
+**Slash-separated `n/x/y`:**
+
+```bash
+vizb bench.txt --group-pattern "n/x/y" -o output.html
+```
+
+| Benchmark Name | Name | XAxis | YAxis |
+|---|---|---|---|
+| `BenchmarkSort/1024/QuickSort` | Sort | 1024 | QuickSort |
+| `BenchmarkSort/2048/MergeSort` | Sort | 2048 | MergeSort |
+| `BenchmarkSort/4096/QuickSort` | Sort | 4096 | QuickSort |
+
+**Underscore-separated `n_y_x`:**
+
+```bash
+vizb bench.txt --group-pattern "n_y_x" -o output.html
+```
+
+| Benchmark Name | Name | YAxis | XAxis |
+|---|---|---|---|
+| `BenchmarkHash_SHA256_1KB` | Hash | SHA256 | 1KB |
+| `BenchmarkHash_MD5_4KB` | Hash | MD5 | 4KB |
+
+**2D with `n/y` (no X-axis grouping):**
+
+```bash
+vizb bench.txt --group-pattern "n/y" -o output.html
+```
+
+| Benchmark Name | Name | YAxis |
+|---|---|---|
+| `BenchmarkJSON/Marshal` | JSON | Marshal |
+| `BenchmarkJSON/Unmarshal` | JSON | Unmarshal |
+
+**Prefix skip with `/n/y` (leading slash discards the first segment):**
+
+```bash
+vizb bench.txt --group-pattern "/n/y" -o output.html
+```
+
+| Benchmark Name | Name | YAxis |
+|---|---|---|
+| `BenchmarkTest/JSON/Marshal` | JSON | Marshal |
+| `BenchmarkTest/XML/Parse` | XML | Parse |
+
+## Regex Syntax
+
+The `--group-regex` flag uses Go-style named capture groups for full flexibility. Use this when your benchmark names do not follow a simple separator pattern.
+
+### Named Capture Groups
+
+| Group Name | Shorthand | Dimension |
+|---|---|---|
+| `(?<name>...)` | `(?<n>...)` | Chart group name |
+| `(?<xAxis>...)` | `(?<x>...)` | X-axis values |
+| `(?<yAxis>...)` | `(?<y>...)` | Y-axis series |
+
+### Examples
+
+| Benchmark Name | Regex | Extracted |
+|---|---|---|
+| `BenchmarkHashing64MD5` | `Hashing64(?<x>.*)` | X: MD5 |
+| `BenchmarkJSONByMarshal` | `(?<x>.*)By(?<y>.*)` | X: JSON, Y: Marshal |
+| `BenchmarkDecode/text=digits/level=speed` | `(?<n>.*)/text=(?<x>.*)/level=(?<y>.*)` | N: Decode, X: digits, Y: speed |
+
+```bash
+vizb bench.txt --group-regex "(?<n>.*)/text=(?<x>.*)/level=(?<y>.*)" -o output.html
+```
+
+## Choosing a Method
+
+<Tabs syncKey="method">
+  <TabItem label="Pattern" icon="list">
+    Use `--group-pattern` when benchmark names follow a consistent separator format (`/` or `_`).
+
+    ```bash
+    vizb bench.txt --group-pattern "n/x/y" -o output.html
+    ```
+
+    Best for standard Go benchmarks where sub-benchmarks use slash-separated names like `BenchmarkFunc/size/variant`.
+  </TabItem>
+  <TabItem label="Regex" icon="search">
+    Use `--group-regex` when benchmark names have non-standard formats or you need fine-grained control over extraction.
+
+    ```bash
+    vizb bench.txt --group-regex "Hash(?<n>[A-Za-z]+)(?<x>\d+)" -o output.html
+    ```
+
+    Best for custom naming conventions or when you need to skip fixed prefixes and suffixes.
+  </TabItem>
+</Tabs>
+
+<Aside type="tip">
+  If your benchmarks follow Go's standard `BenchmarkName/subtest/subtest` convention, start with `--group-pattern`. Switch to `--group-regex` only when pattern syntax cannot express your naming structure.
+</Aside>

@@ -12,6 +12,7 @@ tasks:
       - go mod tidy
       - go mod download
       - cd pkg/template/ui; pnpm install; cd -
+      - cd docs; pnpm install; cd -
       - task: act:install
 
   dev:ui:
@@ -102,3 +103,26 @@ tasks:
     desc: Clean up act test artifacts
     cmds:
       - rm -rf bench*.json index.html results/ bench-input.txt
+
+  # ── Docs (Starlight) ──────────────────────────────────
+
+  docs:install:
+    desc: Install docs dependencies
+    cmds:
+      - cd docs; pnpm install; cd -
+
+  docs:dev:
+    desc: Run docs dev server on localhost:4321
+    cmds:
+      - cd docs; pnpm dev --open; cd -
+
+  docs:build:
+    desc: Build docs for production
+    cmds:
+      - cd docs; pnpm build; cd -
+
+  docs:preview:
+    desc: Preview production build locally
+    cmds:
+      - task: docs:build
+      - cd docs; pnpm preview; cd -

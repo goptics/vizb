@@ -1,0 +1,112 @@
+---
+title: Stateless CI
+description: Run benchmarks and generate HTML without history tracking.
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+
+Stateless CI runs benchmarks and generates an HTML report on each push — no history, no artifact tracking, no merge. Each run is independent.
+
+## When to Use Stateless
+
+- Quick benchmark reports on every push
+- PR benchmark comparisons (generate and comment)
+- One-time benchmark visualizations
+- Simple setups that don't need release tracking
+
+## Tutorial
+
+<Steps>
+
+1. **Set up the workflow**
+
+   Create `.github/workflows/bench.yml`:
+
+   ```yaml
+   name: Benchmarks
+
+   on:
+     push:
+       branches: [main]
+     workflow_dispatch:
+
+   jobs:
+     bench:
+       runs-on: ubuntu-latest
+       steps:
+         - uses: actions/checkout@v4
+
+         - uses: actions/setup-go@v6
+           with:
+             go-version-file: go.mod
+
+         - uses: goptics/vizb@v0
+           with:
+             bench-cmd: "go test -bench=."
+             output-html: benchmark.html
+
+         - uses: actions/upload-artifact@v4
+           with:
+             name: benchmark-report
+             path: benchmark.html
+   ```
+
+2. **(Optional) Deploy to GitHub Pages**
+
+   Add a deploy step to publish the report:
+
+   ```yaml
+   - uses: peaceiris/actions-gh-pages@v4
+     with:
+       github_token: ${{ secrets.GITHUB_TOKEN }}
+       publish_dir: .
+       publish_branch: gh-pages
+   ```
+
+   <Aside type="note">
+     Make sure GitHub Pages is configured to serve from the `gh-pages` branch in your repository settings.
+   </Aside>
+
+3. **Run the workflow**
+
+   Push to `main` or trigger manually via **Actions** → **Run workflow**. The HTML report will be available as a downloadable artifact or on GitHub Pages.
+
+</Steps>
+
+## Variations
+
+### Using a benchmark file from a previous step
+
+```yaml
+jobs:
+  bench:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Run benchmarks
+        run: go test -bench=. > bench.txt
+
+      - uses: goptics/vizb@v0
+        with:
+          bench-file: bench.txt
+          output-html: report.html
+```
+
+### With grouping and log scale
+
+```yaml
+- uses: goptics/vizb@v0
+  with:
+    bench-cmd: "go test -bench=."
+    group-pattern: "n/x/y"
+    scale: log
+    output-html: report.html
+```
+
+<Aside type="tip">
+  For tracking benchmark history across releases, see [Stateful CI](/ci-cd/stateful).
+</Aside>

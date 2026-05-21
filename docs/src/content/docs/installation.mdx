@@ -1,0 +1,55 @@
+---
+title: Installation
+description: Install vizb using Go toolchain or download a pre-built binary.
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+<Aside type="note">
+  Vizb requires **Go 1.24+**. Install Go from the [official site](https://go.dev/dl) or via [webi](https://webinstall.dev/go/).
+</Aside>
+
+## Go Install
+
+```bash
+go install github.com/goptics/vizb@latest
+```
+
+## Download Binary
+
+Pre-built binaries for Linux, macOS, and Windows (amd64 and arm64) are available on the [releases page](https://github.com/goptics/vizb/releases).
+
+<Tabs syncKey="os">
+  <TabItem label="Linux" icon="linux">
+  ```bash
+  # Download (adjust version)
+  curl -sfL https://github.com/goptics/vizb/releases/download/v0.10.3/vizb@0.10.3-linux-amd64.tar.gz | tar xz
+  chmod +x vizb
+  sudo mv vizb /usr/local/bin/
+  ```
+  </TabItem>
+  <TabItem label="macOS" icon="apple">
+  ```bash
+  # Apple Silicon (M1/M2/M3)
+  curl -sfL https://github.com/goptics/vizb/releases/download/v0.10.3/vizb@0.10.3-darwin-arm64.tar.gz | tar xz
+  chmod +x vizb
+  sudo mv vizb /usr/local/bin/
+
+  # Intel
+  curl -sfL https://github.com/goptics/vizb/releases/download/v0.10.3/vizb@0.10.3-darwin-amd64.tar.gz | tar xz
+  chmod +x vizb
+  sudo mv vizb /usr/local/bin/
+  ```
+  </TabItem>
+  <TabItem label="Windows" icon="seti:windows">
+  1. Download `vizb@0.10.3-windows-amd64.zip` from [releases](https://github.com/goptics/vizb/releases)
+  2. Extract `vizb.exe`
+  3. Add to a directory in your `PATH`
+  </TabItem>
+</Tabs>
+
+## Verify
+
+```bash
+vizb --help
+```
