@@ -5,6 +5,7 @@ import starlight from '@astrojs/starlight';
 // https://astro.build/config
 export default defineConfig({
 	site: 'https://goptics.github.io/vizb',
+	base: '/vizb/',
 	integrations: [
 		starlight({
 			title: 'Vizb',
