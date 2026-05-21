@@ -128,9 +128,10 @@ task init
 
 ```bash
 task dev:ui      # Run the UI in development mode
-task docs:dev    # Run the docs site in development mode
+task dev:docs    # Run the docs site in development mode
 task build:ui    # Build the UI
 task build:cli   # Build the binary (run from ./bin/vizb)
+task build:docs  # Build the docs for production
 task build       # Build everything
 task test        # Run tests
 ```

@@ -55,7 +55,7 @@ const appendVizbDataScriptTag = (html: string): string => {
 
 const benchmarkUiGoWrapperPlugin = (): PluginOption => {
   const distHtmlPath = path.resolve(__dirname, 'dist/index.html')
-  const goFilePath = path.resolve(__dirname, '..', 'vizb-ui.gen.go')
+  const goFilePath = path.resolve(__dirname, '..', 'pkg', 'template', 'vizb-ui.gen.go')
 
   return {
     name: 'benchmark-ui-go-wrapper',

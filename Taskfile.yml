@@ -11,19 +11,29 @@ tasks:
     cmds:
       - go mod tidy
       - go mod download
-      - cd pkg/template/ui; pnpm install; cd -
+      - cd ui; pnpm install; cd -
       - cd docs; pnpm install; cd -
       - task: act:install
+
+  dev:docs:
+    desc: Run docs dev server on localhost:4321
+    cmds:
+      - cd docs; pnpm dev --open; cd -
 
   dev:ui:
     desc: Run development UI server
     cmds:
-      - cd pkg/template/ui; pnpm dev --open
+      - cd ui; pnpm dev --open
+
+  build:docs:
+    desc: Build docs for production
+    cmds:
+      - cd docs; pnpm build; cd -
 
   build:ui:
     desc: Build Vue UI template
     cmds:
-      - cd pkg/template/ui; SINGLEFILE=True pnpm build; cd -
+      - cd ui; SINGLEFILE=True pnpm build; cd -
 
   build:cli:
     desc: Build the binary (production-ready, stripped)
@@ -31,10 +41,17 @@ tasks:
       - go build -ldflags="-s -w" -o ./bin/vizb
 
   build:
-    desc: Build the UI & binary
+    desc: Build the Docs, UI & binary
     cmds:
+      - task: build:docs
       - task: build:ui
       - task: build:cli
+
+  preview:docs:
+    desc: Preview production build locally
+    cmds:
+      - task: build:docs
+      - cd docs; pnpm preview; cd -
 
   test:
     desc: Run all tests (no cache)
@@ -50,7 +67,7 @@ tasks:
     desc: Format codes
     cmds:
       - gofmt -w .
-      - cd pkg/template/ui; pnpm format; cd -
+      - cd ui; pnpm format; cd -
 
   release:check:
     desc: Check Goreleaser configuration
@@ -103,26 +120,3 @@ tasks:
     desc: Clean up act test artifacts
     cmds:
       - rm -rf bench*.json index.html results/ bench-input.txt
-
-  # ── Docs (Starlight) ──────────────────────────────────
-
-  docs:install:
-    desc: Install docs dependencies
-    cmds:
-      - cd docs; pnpm install; cd -
-
-  docs:dev:
-    desc: Run docs dev server on localhost:4321
-    cmds:
-      - cd docs; pnpm dev --open; cd -
-
-  docs:build:
-    desc: Build docs for production
-    cmds:
-      - cd docs; pnpm build; cd -
-
-  docs:preview:
-    desc: Preview production build locally
-    cmds:
-      - task: docs:build
-      - cd docs; pnpm preview; cd -
