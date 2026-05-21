@@ -57,7 +57,7 @@ export default defineConfig({
 				},
 			],
 			editLink: {
-				baseUrl: 'https://github.com/goptics/vizb/edit/main/docs/src/content/docs/',
+				baseUrl: 'https://github.com/goptics/vizb/edit/main/docs/',
 			},
 			lastUpdated: true,
 			tableOfContents: {
