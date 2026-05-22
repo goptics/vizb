@@ -60,7 +60,7 @@ func init() {
 	rootCmd.Flags().StringVarP(&shared.FlagState.FilterRegex, "filter", "f", "", "Regex pattern to include only matching benchmark names")
 	rootCmd.Flags().StringVarP(&shared.FlagState.Scale, "scale", "S", "linear", "Scale type (linear, log)")
 	rootCmd.Flags().StringVarP(&shared.FlagState.Tag, "tag", "t", "", "Tag/identifier for the benchmark")
-	rootCmd.Flags().StringVarP(&shared.FlagState.Parser, "parser", "P", "go", "Benchmark parser to use: go, js:tinybench")
+	rootCmd.Flags().StringVarP(&shared.FlagState.Parser, "parser", "P", "go", "Benchmark parser to use (one of: "+strings.Join(parser.AvailableParsers(), ", ")+")")
 
 	// Add a hook to validate flags after parsing
 	cobra.OnInitialize(func() {

@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"os"
 	"regexp"
-	"strconv"
 	"strings"
 	"unicode"
 
@@ -14,34 +13,12 @@ import (
 )
 
 func init() {
-	parser.Parsers["rs:cargo"] = ParseCargoBenchmark
+	parser.Parsers["rs:criterion"] = ParseCriterionBenchmark
 }
-
-var ansiRe = regexp.MustCompile(`\x1b\[[0-9;]*m`)
 
 var criterionRe = regexp.MustCompile(`^(\S+)\s+time:\s+\[([\d.]+)\s*(ns|µs|μs|ms|s)\s+([\d.]+)\s*(ns|µs|μs|ms|s)\s+([\d.]+)\s*(ns|µs|μs|ms|s)\]`)
 
-func toNsMultiplier(unit string) float64 {
-	switch unit {
-	case "ns":
-		return 1
-	case "µs", "μs":
-		return 1e3
-	case "ms":
-		return 1e6
-	case "s":
-		return 1e9
-	}
-	return 1
-}
-
-func parseNum(s string) float64 {
-	s = strings.ReplaceAll(s, ",", "")
-	n, _ := strconv.ParseFloat(s, 64)
-	return n
-}
-
-func ParseCargoBenchmark(filename string) []shared.BenchmarkData {
+func ParseCriterionBenchmark(filename string) []shared.BenchmarkData {
 	f, err := os.Open(filename)
 	if err != nil {
 		shared.ExitWithError("Error opening file", err)

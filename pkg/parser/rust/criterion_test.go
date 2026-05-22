@@ -70,7 +70,7 @@ func assertStat(t *testing.T, s shared.Stat, expectedType string, expectedValue 
 	assert.Equal(t, expectedSymbol, s.Symbol, "stat symbol mismatch")
 }
 
-func TestParseCargoBenchmark(t *testing.T) {
+func TestParseCriterionBenchmark(t *testing.T) {
 	origPattern := shared.FlagState.GroupPattern
 	origFilter := shared.FlagState.FilterRegex
 	origTimeUnit := shared.FlagState.TimeUnit
@@ -85,7 +85,7 @@ func TestParseCargoBenchmark(t *testing.T) {
 		shared.FlagState.FilterRegex = ""
 		shared.FlagState.TimeUnit = "ns"
 
-		results := ParseCargoBenchmark(writeTestFile(t, testCargoTable))
+		results := ParseCriterionBenchmark(writeTestFile(t, testCargoTable))
 		assert.Len(t, results, 6)
 
 		// First: bubbleSort/n=100 → 3.0524 µs = 3052.4 ns
@@ -115,7 +115,7 @@ func TestParseCargoBenchmark(t *testing.T) {
 		shared.FlagState.FilterRegex = ""
 		shared.FlagState.TimeUnit = "us"
 
-		results := ParseCargoBenchmark(writeTestFile(t, testCargoTable))
+		results := ParseCriterionBenchmark(writeTestFile(t, testCargoTable))
 		assert.Len(t, results, 6)
 
 		assertStat(t, results[0].Stats[0], "Latency avg (us)", 3.05, "")
@@ -128,7 +128,7 @@ func TestParseCargoBenchmark(t *testing.T) {
 		shared.FlagState.FilterRegex = "bubbleSort"
 		shared.FlagState.TimeUnit = "ns"
 
-		results := ParseCargoBenchmark(writeTestFile(t, testCargoTable))
+		results := ParseCriterionBenchmark(writeTestFile(t, testCargoTable))
 		assert.Len(t, results, 3)
 		for _, r := range results {
 			assert.Equal(t, "bubbleSort", r.Name)
@@ -140,7 +140,7 @@ func TestParseCargoBenchmark(t *testing.T) {
 		shared.FlagState.FilterRegex = ""
 		shared.FlagState.TimeUnit = "ns"
 
-		results := ParseCargoBenchmark(writeTestFile(t, ""))
+		results := ParseCriterionBenchmark(writeTestFile(t, ""))
 		assert.Empty(t, results)
 	})
 }
