@@ -13,6 +13,7 @@ import (
 	"github.com/goptics/vizb/pkg/parser"
 	goparser "github.com/goptics/vizb/pkg/parser/golang"
 	_ "github.com/goptics/vizb/pkg/parser/javascript"
+	_ "github.com/goptics/vizb/pkg/parser/rust"
 	"github.com/goptics/vizb/pkg/style"
 	"github.com/goptics/vizb/pkg/template"
 	"github.com/goptics/vizb/shared"
