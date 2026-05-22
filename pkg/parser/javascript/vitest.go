@@ -63,7 +63,7 @@ func ParseVitestBenchmark(filename string) []shared.BenchmarkData {
 
 		name := fields[0]
 		if currentSuite != "" {
-			name = name + "/" + currentSuite
+			name = currentSuite + "/" + name
 		}
 
 		if !parser.ShouldIncludeBenchmark(name) {

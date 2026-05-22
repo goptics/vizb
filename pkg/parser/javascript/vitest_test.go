@@ -33,7 +33,7 @@ func TestParseVitestBenchmark(t *testing.T) {
 	}()
 
 	t.Run("Real vitest output from sort.bench.js", func(t *testing.T) {
-		shared.FlagState.GroupPattern = "n/y"
+		shared.FlagState.GroupPattern = "y/n"
 		shared.FlagState.FilterRegex = ""
 
 		results := ParseVitestBenchmark(writeVitestTestFile(t, testVitestTable))
@@ -79,7 +79,7 @@ func TestParseVitestBenchmark(t *testing.T) {
 	})
 
 	t.Run("Filter regex", func(t *testing.T) {
-		shared.FlagState.GroupPattern = "n/y"
+		shared.FlagState.GroupPattern = "y/n"
 		shared.FlagState.FilterRegex = "bubbleSort"
 
 		results := ParseVitestBenchmark(writeVitestTestFile(t, testVitestTable))
