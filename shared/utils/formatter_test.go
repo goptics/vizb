@@ -275,6 +275,40 @@ func TestFormatterConcurrency(t *testing.T) {
 	})
 }
 
+func TestConvertTime(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    float64
+		from     string
+		to       string
+		expected float64
+	}{
+		{"Zero", 0, "ms", "ns", 0},
+		{"Identity ns", 1000, "ns", "ns", 1000},
+		{"Identity ms", 5.5, "ms", "ms", 5.5},
+		{"ms to ns", 1, "ms", "ns", 1000000},
+		{"ms to us", 1, "ms", "us", 1000},
+		{"ms to s", 1000, "ms", "s", 1},
+		{"ns to ms", 1000000, "ns", "ms", 1},
+		{"ns to us", 1000, "ns", "us", 1},
+		{"ns to s", 1e9, "ns", "s", 1},
+		{"us to ms", 1000, "us", "ms", 1},
+		{"us to ns", 1, "us", "ns", 1000},
+		{"s to ms", 1, "s", "ms", 1000},
+		{"s to us", 1, "s", "us", 1000000},
+		{"s to ns", 1, "s", "ns", 1e9},
+		{"Small ms to ns", 0.0038, "ms", "ns", 3800},
+		{"Small ms to us", 0.0038, "ms", "us", 3.8},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ConvertTime(tt.input, tt.from, tt.to)
+			assert.Equal(t, tt.expected, result, "ConvertTime(%f, %s, %s) should equal %f", tt.input, tt.from, tt.to, tt.expected)
+		})
+	}
+}
+
 // Test comprehensive input validation
 func TestInputValidation(t *testing.T) {
 	t.Run("All Units Coverage", func(t *testing.T) {

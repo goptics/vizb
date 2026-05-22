@@ -10,6 +10,7 @@ import (
 
 	"github.com/goptics/vizb/pkg/parser"
 	"github.com/goptics/vizb/shared"
+	"github.com/goptics/vizb/shared/utils"
 )
 
 func init() {
@@ -96,13 +97,13 @@ func ParseVitestBenchmark(filename string) []shared.BenchmarkData {
 			YAxis: yAxis,
 			Stats: []shared.Stat{
 				{Type: "Throughput avg (ops/s)", Value: hz},
-				{Type: "Latency min (ms)", Value: minVal},
-				{Type: "Latency max (ms)", Value: maxVal},
-				{Type: "Latency avg (ms)", Value: mean},
-				{Type: "Latency p75 (ms)", Value: p75},
-				{Type: "Latency p99 (ms)", Value: p99},
-				{Type: "Latency p995 (ms)", Value: p995},
-				{Type: "Latency p999 (ms)", Value: p999},
+				{Type: utils.CreateStatType("Latency min", shared.FlagState.TimeUnit, ""), Value: utils.ConvertTime(minVal, "ms", shared.FlagState.TimeUnit)},
+				{Type: utils.CreateStatType("Latency max", shared.FlagState.TimeUnit, ""), Value: utils.ConvertTime(maxVal, "ms", shared.FlagState.TimeUnit)},
+				{Type: utils.CreateStatType("Latency avg", shared.FlagState.TimeUnit, ""), Value: utils.ConvertTime(mean, "ms", shared.FlagState.TimeUnit)},
+				{Type: utils.CreateStatType("Latency p75", shared.FlagState.TimeUnit, ""), Value: utils.ConvertTime(p75, "ms", shared.FlagState.TimeUnit)},
+				{Type: utils.CreateStatType("Latency p99", shared.FlagState.TimeUnit, ""), Value: utils.ConvertTime(p99, "ms", shared.FlagState.TimeUnit)},
+				{Type: utils.CreateStatType("Latency p995", shared.FlagState.TimeUnit, ""), Value: utils.ConvertTime(p995, "ms", shared.FlagState.TimeUnit)},
+				{Type: utils.CreateStatType("Latency p999", shared.FlagState.TimeUnit, ""), Value: utils.ConvertTime(p999, "ms", shared.FlagState.TimeUnit)},
 				{Type: "RME (%)", Value: rme, Symbol: "±"},
 				{Type: "Samples", Value: samples},
 			},

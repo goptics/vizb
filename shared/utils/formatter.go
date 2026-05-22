@@ -57,6 +57,32 @@ func FormatMem(n float64, unit string) (mem float64) {
 	return RoundToTwo(mem)
 }
 
+// ConvertTime converts a time value from one unit to another.
+// Supported units: "ns", "us", "ms", "s".
+func ConvertTime(n float64, from, to string) float64 {
+	if n == 0 {
+		return 0
+	}
+
+	if from == to {
+		return n
+	}
+
+	var ns float64
+	switch from {
+	case "s":
+		ns = n * 1e9
+	case "ms":
+		ns = n * 1e6
+	case "us":
+		ns = n * 1e3
+	default:
+		ns = n
+	}
+
+	return FormatTime(ns, to)
+}
+
 // FormatNumber converts an allocation count to the specified unit.
 // Supported units: "K" (thousands), "M" (millions), "B" (billions), "T" (trillions).
 // Empty unit string returns the value unchanged.

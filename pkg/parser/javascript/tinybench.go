@@ -9,6 +9,7 @@ import (
 
 	"github.com/goptics/vizb/pkg/parser"
 	"github.com/goptics/vizb/shared"
+	"github.com/goptics/vizb/shared/utils"
 )
 
 func init() {
@@ -106,10 +107,10 @@ func ParseTinyBenchBenchmark(filename string) []shared.BenchmarkData {
 			XAxis: xAxis,
 			YAxis: yAxis,
 			Stats: []shared.Stat{
-				{Type: "Latency avg (ns)", Value: latencyAvg},
+				{Type: utils.CreateStatType("Latency avg", shared.FlagState.TimeUnit, ""), Value: utils.FormatTime(latencyAvg, shared.FlagState.TimeUnit)},
 				{Type: "Latency RME (%)", Value: latencyRME, Symbol: "±"},
-				{Type: "Latency med (ns)", Value: latencyMed},
-				{Type: "Latency MAD (ns)", Value: latencyMAD, Symbol: "±"},
+				{Type: utils.CreateStatType("Latency med", shared.FlagState.TimeUnit, ""), Value: utils.FormatTime(latencyMed, shared.FlagState.TimeUnit)},
+				{Type: utils.CreateStatType("Latency MAD", shared.FlagState.TimeUnit, ""), Value: utils.FormatTime(latencyMAD, shared.FlagState.TimeUnit), Symbol: "±"},
 				{Type: "Throughput avg (ops/s)", Value: throughputAvg},
 				{Type: "Throughput RME (%)", Value: throughputRME, Symbol: "±"},
 				{Type: "Throughput med (ops/s)", Value: throughputMed},

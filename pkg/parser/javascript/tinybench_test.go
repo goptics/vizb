@@ -40,14 +40,17 @@ func writeTestFile(t *testing.T, content string) string {
 func TestParseTinyBenchBenchmark(t *testing.T) {
 	origPattern := shared.FlagState.GroupPattern
 	origFilter := shared.FlagState.FilterRegex
+	origTimeUnit := shared.FlagState.TimeUnit
 	defer func() {
 		shared.FlagState.GroupPattern = origPattern
 		shared.FlagState.FilterRegex = origFilter
+		shared.FlagState.TimeUnit = origTimeUnit
 	}()
 
 	t.Run("Real tinybench output from sorting.txt", func(t *testing.T) {
 		shared.FlagState.GroupPattern = "n/y"
 		shared.FlagState.FilterRegex = ""
+		shared.FlagState.TimeUnit = "ns"
 
 		results := ParseTinyBenchBenchmark(writeTestFile(t, testSortingTable))
 
@@ -55,12 +58,10 @@ func TestParseTinyBenchBenchmark(t *testing.T) {
 			t.Fatal("expected results, got none")
 		}
 
-		// Expect 6 rows: 2 sort algorithms x 3 sizes
 		if len(results) != 6 {
 			t.Fatalf("expected 6 results, got %d", len(results))
 		}
 
-		// First row: bubbleSort/100
 		assertStat(t, results[0].Stats[0], "Latency avg (ns)", 3741.5, "")
 		assertStat(t, results[0].Stats[1], "Latency RME (%)", 0.18, "±")
 		assertStat(t, results[0].Stats[2], "Latency med (ns)", 3703.0, "")
@@ -78,7 +79,6 @@ func TestParseTinyBenchBenchmark(t *testing.T) {
 			t.Errorf("YAxis = %q, want %q", results[0].YAxis, "100")
 		}
 
-		// Last row: insertionSort/2000
 		last := results[5]
 		if last.Name != "insertionSort" {
 			t.Errorf("Name = %q, want %q", last.Name, "insertionSort")
@@ -90,9 +90,26 @@ func TestParseTinyBenchBenchmark(t *testing.T) {
 		assertStat(t, last.Stats[8], "Samples", 1950, "")
 	})
 
+	t.Run("Unit conversion to us", func(t *testing.T) {
+		shared.FlagState.GroupPattern = "n/y"
+		shared.FlagState.FilterRegex = ""
+		shared.FlagState.TimeUnit = "us"
+
+		results := ParseTinyBenchBenchmark(writeTestFile(t, testSortingTable))
+
+		if len(results) != 6 {
+			t.Fatalf("expected 6 results, got %d", len(results))
+		}
+
+		// 3741.5 ns → 3.74 us
+		assertStat(t, results[0].Stats[0], "Latency avg (us)", 3.74, "")
+		assertStat(t, results[0].Stats[2], "Latency med (us)", 3.7, "")
+	})
+
 	t.Run("Filter regex", func(t *testing.T) {
 		shared.FlagState.GroupPattern = "n/y"
 		shared.FlagState.FilterRegex = "bubbleSort"
+		shared.FlagState.TimeUnit = "ns"
 
 		results := ParseTinyBenchBenchmark(writeTestFile(t, testSortingTable))
 
@@ -109,6 +126,7 @@ func TestParseTinyBenchBenchmark(t *testing.T) {
 	t.Run("Empty file", func(t *testing.T) {
 		shared.FlagState.GroupPattern = "y"
 		shared.FlagState.FilterRegex = ""
+		shared.FlagState.TimeUnit = "ns"
 
 		results := ParseTinyBenchBenchmark(writeTestFile(t, ""))
 		if len(results) != 0 {

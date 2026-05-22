@@ -27,14 +27,17 @@ var testVitestTable = ` ✓ sort.bench.js > n=100 1356ms
 func TestParseVitestBenchmark(t *testing.T) {
 	origPattern := shared.FlagState.GroupPattern
 	origFilter := shared.FlagState.FilterRegex
+	origTimeUnit := shared.FlagState.TimeUnit
 	defer func() {
 		shared.FlagState.GroupPattern = origPattern
 		shared.FlagState.FilterRegex = origFilter
+		shared.FlagState.TimeUnit = origTimeUnit
 	}()
 
 	t.Run("Real vitest output from sort.bench.js", func(t *testing.T) {
 		shared.FlagState.GroupPattern = "y/n"
 		shared.FlagState.FilterRegex = ""
+		shared.FlagState.TimeUnit = "ms"
 
 		results := ParseVitestBenchmark(writeVitestTestFile(t, testVitestTable))
 
@@ -42,12 +45,10 @@ func TestParseVitestBenchmark(t *testing.T) {
 			t.Fatal("expected results, got none")
 		}
 
-		// Expect 6 rows: 2 sort algorithms x 3 sizes
 		if len(results) != 6 {
 			t.Fatalf("expected 6 results, got %d", len(results))
 		}
 
-		// First row: n=100/bubbleSort → name=bubbleSort, yAxis=n=100
 		assertStat(t, results[0].Stats[0], "Throughput avg (ops/s)", 264413.96, "")
 		assertStat(t, results[0].Stats[1], "Latency min (ms)", 0.0037, "")
 		assertStat(t, results[0].Stats[2], "Latency max (ms)", 0.0974, "")
@@ -66,7 +67,6 @@ func TestParseVitestBenchmark(t *testing.T) {
 			t.Errorf("YAxis = %q, want %q", results[0].YAxis, "n=100")
 		}
 
-		// Last row: n=2000/insertionSort
 		last := results[5]
 		if last.Name != "insertionSort" {
 			t.Errorf("Name = %q, want %q", last.Name, "insertionSort")
@@ -78,9 +78,27 @@ func TestParseVitestBenchmark(t *testing.T) {
 		assertStat(t, last.Stats[9], "Samples", 967, "")
 	})
 
+	t.Run("Unit conversion to us", func(t *testing.T) {
+		shared.FlagState.GroupPattern = "y/n"
+		shared.FlagState.FilterRegex = ""
+		shared.FlagState.TimeUnit = "us"
+
+		results := ParseVitestBenchmark(writeVitestTestFile(t, testVitestTable))
+
+		if len(results) != 6 {
+			t.Fatalf("expected 6 results, got %d", len(results))
+		}
+
+		// 0.0038 ms → 3.8 us
+		assertStat(t, results[0].Stats[3], "Latency avg (us)", 3.8, "")
+		// 0.0049 ms → 4.9 us
+		assertStat(t, results[0].Stats[5], "Latency p99 (us)", 4.9, "")
+	})
+
 	t.Run("Filter regex", func(t *testing.T) {
 		shared.FlagState.GroupPattern = "y/n"
 		shared.FlagState.FilterRegex = "bubbleSort"
+		shared.FlagState.TimeUnit = "ms"
 
 		results := ParseVitestBenchmark(writeVitestTestFile(t, testVitestTable))
 
@@ -97,6 +115,7 @@ func TestParseVitestBenchmark(t *testing.T) {
 	t.Run("Empty file", func(t *testing.T) {
 		shared.FlagState.GroupPattern = "y"
 		shared.FlagState.FilterRegex = ""
+		shared.FlagState.TimeUnit = "ms"
 
 		results := ParseVitestBenchmark(writeVitestTestFile(t, ""))
 		if len(results) != 0 {
