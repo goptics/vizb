@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/goptics/vizb/pkg/parser"
@@ -69,4 +70,17 @@ var flagValidationRules = []utils.ValidationRule{
 		Normalizer: strings.ToLower,
 		Default:    "n",
 	},
+	{
+		Label:     "parser",
+		Value:     &shared.FlagState.Parser,
+		Validator: validateParser,
+		Default:   "go",
+	},
+}
+
+func validateParser(key string) error {
+	if _, ok := parser.Parsers[key]; !ok {
+		return fmt.Errorf("unknown parser '%s'; available: %v", key, parser.AvailableParsers())
+	}
+	return nil
 }

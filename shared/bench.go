@@ -1,8 +1,9 @@
 package shared
 
 type Stat struct {
-	Type  string  `json:"type"`
-	Value float64 `json:"value,omitempty"`
+	Type   string  `json:"type"`
+	Value  float64 `json:"value,omitempty"`
+	Symbol string  `json:"symbol,omitempty"`
 }
 
 type BenchmarkData struct {

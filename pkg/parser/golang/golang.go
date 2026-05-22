@@ -1,17 +1,21 @@
-package parser
+package golang
 
 import (
 	"bufio"
 	"encoding/json"
 	"io"
-	"regexp"
 	"strconv"
 	"strings"
 
+	"github.com/goptics/vizb/pkg/parser"
 	"github.com/goptics/vizb/shared"
 	"github.com/goptics/vizb/shared/utils"
 	"golang.org/x/perf/benchfmt"
 )
+
+func init() {
+	parser.Parsers["go"] = ParseGoBenchmark
+}
 
 func storeCpuCount(cpu string) {
 	if shared.CPUCount == 0 {
@@ -38,22 +42,7 @@ func parseBenchmarkName(name benchfmt.Name) (benchName string, cpu string) {
 	return
 }
 
-// shouldIncludeBenchmark returns true if the benchmark name should be included
-// based on the filter regex. If no filter is set, all benchmarks are included.
-func shouldIncludeBenchmark(benchName string) bool {
-	if shared.FlagState.FilterRegex == "" {
-		return true
-	}
-
-	filterRe, err := regexp.Compile(shared.FlagState.FilterRegex)
-	if err != nil {
-		shared.ExitWithError("Invalid filter regex", err)
-	}
-
-	return filterRe.MatchString(benchName)
-}
-
-func ParseBenchmarkData(filePath string) (results []shared.BenchmarkData) {
+func ParseGoBenchmark(filePath string) (results []shared.BenchmarkData) {
 	f := shared.MustOpenFile(filePath)
 	defer f.Close()
 
@@ -72,18 +61,11 @@ func ParseBenchmarkData(filePath string) (results []shared.BenchmarkData) {
 		shared.OS, shared.Arch, shared.Pkg, shared.CPU = result.GetConfig("goos"), result.GetConfig("goarch"), result.GetConfig("pkg"), result.GetConfig("cpu")
 		rawBenchName, cpuCore := parseBenchmarkName(result.Name)
 
-		if !shouldIncludeBenchmark(rawBenchName) {
+		if !parser.ShouldIncludeBenchmark(rawBenchName) {
 			continue
 		}
 
-		var group map[string]string
-		var err error
-
-		if shared.FlagState.GroupRegex != "" {
-			group, err = ParseBenchmarkNameWithRegex(rawBenchName, shared.FlagState.GroupRegex)
-		} else {
-			group, err = ParseBenchmarkNameToGroups(rawBenchName, shared.FlagState.GroupPattern)
-		}
+		group, err := parser.GroupBenchmarkName(rawBenchName)
 
 		if err != nil {
 			shared.ExitWithError("Error on parsing group from bench name", err)
@@ -115,8 +97,6 @@ func ParseBenchmarkData(filePath string) (results []shared.BenchmarkData) {
 					Value: utils.FormatNumber(value.Value, shared.FlagState.NumberUnit),
 				}
 			case "B/s", "MB/s", "GB/s":
-				// benchfmt only populates OrigValue/OrigUnit for MB/s
-				// For B/s and GB/s, fall back to Value/Unit
 				val, unit := value.OrigValue, value.OrigUnit
 
 				if val == 0 || unit == "" {
@@ -176,11 +156,7 @@ func ParseBenchmarkData(filePath string) (results []shared.BenchmarkData) {
 	return
 }
 
-// ConvertJsonBenchToText converts a JSON benchmark file to text format.
-// It reads JSON benchmark events from the input file and extracts the "output" field
-// from each event to create a text representation of the benchmark results.
-// Returns the path to the temporary text file containing the converted data.
-func ConvertJsonBenchToText(filePath string) string {
+func ConvertGoJsonBenchToText(filePath string) string {
 	f := shared.MustOpenFile(filePath)
 	tempFilePath := shared.MustCreateTempFile(shared.TempBenchFilePrefix, "txt")
 	tempFile := shared.MustCreateFile(tempFilePath)
