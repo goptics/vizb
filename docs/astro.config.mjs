@@ -5,8 +5,7 @@ import starlightThemeRapide from 'starlight-theme-rapide'
 
 // https://astro.build/config
 export default defineConfig({
-	site: 'https://goptics.github.io/vizb',
-	base: '/vizb/',
+	site: 'https://vizb.goptics.org',
 	integrations: [
 	starlight({
 		title: 'Benchmark visualization made simple',
