@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/goptics/vizb/shared"
+	"github.com/stretchr/testify/assert"
 )
 
 var testVitestTable = ` ✓ sort.bench.js > n=100 1356ms
@@ -24,6 +25,22 @@ var testVitestTable = ` ✓ sort.bench.js > n=100 1356ms
    · insertionSort  1,933.38  0.5139  0.5336  0.5172  0.5181  0.5278  0.5288  0.5336  ±0.05%      967
 `
 
+func writeVitestTestFile(t *testing.T, content string) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "bench.txt")
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+func assertStat(t *testing.T, s shared.Stat, expectedType string, expectedValue float64, expectedSymbol string) {
+	t.Helper()
+	assert.Equal(t, expectedType, s.Type, "stat type mismatch")
+	assert.Equal(t, expectedValue, s.Value, "stat value mismatch")
+	assert.Equal(t, expectedSymbol, s.Symbol, "stat symbol mismatch")
+}
+
 func TestParseVitestBenchmark(t *testing.T) {
 	origPattern := shared.FlagState.GroupPattern
 	origFilter := shared.FlagState.FilterRegex
@@ -40,14 +57,7 @@ func TestParseVitestBenchmark(t *testing.T) {
 		shared.FlagState.TimeUnit = "ms"
 
 		results := ParseVitestBenchmark(writeVitestTestFile(t, testVitestTable))
-
-		if len(results) == 0 {
-			t.Fatal("expected results, got none")
-		}
-
-		if len(results) != 6 {
-			t.Fatalf("expected 6 results, got %d", len(results))
-		}
+		assert.Len(t, results, 6)
 
 		assertStat(t, results[0].Stats[0], "Throughput avg (ops/s)", 264413.96, "")
 		assertStat(t, results[0].Stats[1], "Latency min (ms)", 0.0037, "")
@@ -60,20 +70,12 @@ func TestParseVitestBenchmark(t *testing.T) {
 		assertStat(t, results[0].Stats[8], "RME (%)", 0.09, "±")
 		assertStat(t, results[0].Stats[9], "Samples", 132207, "")
 
-		if results[0].Name != "bubbleSort" {
-			t.Errorf("Name = %q, want %q", results[0].Name, "bubbleSort")
-		}
-		if results[0].YAxis != "n=100" {
-			t.Errorf("YAxis = %q, want %q", results[0].YAxis, "n=100")
-		}
+		assert.Equal(t, "bubbleSort", results[0].Name)
+		assert.Equal(t, "n=100", results[0].YAxis)
 
 		last := results[5]
-		if last.Name != "insertionSort" {
-			t.Errorf("Name = %q, want %q", last.Name, "insertionSort")
-		}
-		if last.YAxis != "n=2000" {
-			t.Errorf("YAxis = %q, want %q", last.YAxis, "n=2000")
-		}
+		assert.Equal(t, "insertionSort", last.Name)
+		assert.Equal(t, "n=2000", last.YAxis)
 		assertStat(t, last.Stats[0], "Throughput avg (ops/s)", 1933.38, "")
 		assertStat(t, last.Stats[9], "Samples", 967, "")
 	})
@@ -84,14 +86,9 @@ func TestParseVitestBenchmark(t *testing.T) {
 		shared.FlagState.TimeUnit = "us"
 
 		results := ParseVitestBenchmark(writeVitestTestFile(t, testVitestTable))
+		assert.Len(t, results, 6)
 
-		if len(results) != 6 {
-			t.Fatalf("expected 6 results, got %d", len(results))
-		}
-
-		// 0.0038 ms → 3.8 us
 		assertStat(t, results[0].Stats[3], "Latency avg (us)", 3.8, "")
-		// 0.0049 ms → 4.9 us
 		assertStat(t, results[0].Stats[5], "Latency p99 (us)", 4.9, "")
 	})
 
@@ -101,14 +98,9 @@ func TestParseVitestBenchmark(t *testing.T) {
 		shared.FlagState.TimeUnit = "ms"
 
 		results := ParseVitestBenchmark(writeVitestTestFile(t, testVitestTable))
-
-		if len(results) != 3 {
-			t.Fatalf("expected 3 bubbleSort results, got %d", len(results))
-		}
+		assert.Len(t, results, 3)
 		for _, r := range results {
-			if r.Name != "bubbleSort" {
-				t.Errorf("unexpected Name = %q", r.Name)
-			}
+			assert.Equal(t, "bubbleSort", r.Name)
 		}
 	})
 
@@ -118,17 +110,6 @@ func TestParseVitestBenchmark(t *testing.T) {
 		shared.FlagState.TimeUnit = "ms"
 
 		results := ParseVitestBenchmark(writeVitestTestFile(t, ""))
-		if len(results) != 0 {
-			t.Errorf("expected 0 results for empty file, got %d", len(results))
-		}
+		assert.Empty(t, results)
 	})
-}
-
-func writeVitestTestFile(t *testing.T, content string) string {
-	t.Helper()
-	path := filepath.Join(t.TempDir(), "bench.txt")
-	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-		t.Fatal(err)
-	}
-	return path
 }

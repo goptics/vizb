@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/goptics/vizb/shared"
+	"github.com/stretchr/testify/assert"
 )
 
 var testCargoTable = `running 0 tests
@@ -64,15 +65,9 @@ func writeTestFile(t *testing.T, content string) string {
 
 func assertStat(t *testing.T, s shared.Stat, expectedType string, expectedValue float64, expectedSymbol string) {
 	t.Helper()
-	if s.Type != expectedType {
-		t.Errorf("Stat type = %q, want %q", s.Type, expectedType)
-	}
-	if s.Value != expectedValue {
-		t.Errorf("Stat value = %f, want %f", s.Value, expectedValue)
-	}
-	if s.Symbol != expectedSymbol {
-		t.Errorf("Stat symbol = %q, want %q", s.Symbol, expectedSymbol)
-	}
+	assert.Equal(t, expectedType, s.Type, "stat type mismatch")
+	assert.Equal(t, expectedValue, s.Value, "stat value mismatch")
+	assert.Equal(t, expectedSymbol, s.Symbol, "stat symbol mismatch")
 }
 
 func TestParseCargoBenchmark(t *testing.T) {
@@ -91,22 +86,15 @@ func TestParseCargoBenchmark(t *testing.T) {
 		shared.FlagState.TimeUnit = "ns"
 
 		results := ParseCargoBenchmark(writeTestFile(t, testCargoTable))
-
-		if len(results) != 6 {
-			t.Fatalf("expected 6 results, got %d", len(results))
-		}
+		assert.Len(t, results, 6)
 
 		// First: bubbleSort/n=100 → 3.0524 µs = 3052.4 ns
 		assertStat(t, results[0].Stats[0], "Latency avg (ns)", 3052.4, "")
 		assertStat(t, results[0].Stats[1], "Latency lower (ns)", 3042.4, "")
 		assertStat(t, results[0].Stats[2], "Latency upper (ns)", 3063.7, "±")
 
-		if results[0].Name != "bubbleSort" {
-			t.Errorf("Name = %q, want %q", results[0].Name, "bubbleSort")
-		}
-		if results[0].YAxis != "n=100" {
-			t.Errorf("YAxis = %q, want %q", results[0].YAxis, "n=100")
-		}
+		assert.Equal(t, "bubbleSort", results[0].Name)
+		assert.Equal(t, "n=100", results[0].YAxis)
 
 		// Second: insertionSort/n=100 → 821.61 ns (already in ns)
 		assertStat(t, results[1].Stats[0], "Latency avg (ns)", 821.61, "")
@@ -118,12 +106,8 @@ func TestParseCargoBenchmark(t *testing.T) {
 
 		// Last: insertionSort/n=2000 → 300.19 µs = 300190 ns
 		assertStat(t, results[5].Stats[0], "Latency avg (ns)", 300190, "")
-		if results[5].Name != "insertionSort" {
-			t.Errorf("Name = %q, want %q", results[5].Name, "insertionSort")
-		}
-		if results[5].YAxis != "n=2000" {
-			t.Errorf("YAxis = %q, want %q", results[5].YAxis, "n=2000")
-		}
+		assert.Equal(t, "insertionSort", results[5].Name)
+		assert.Equal(t, "n=2000", results[5].YAxis)
 	})
 
 	t.Run("Unit conversion to us", func(t *testing.T) {
@@ -132,16 +116,10 @@ func TestParseCargoBenchmark(t *testing.T) {
 		shared.FlagState.TimeUnit = "us"
 
 		results := ParseCargoBenchmark(writeTestFile(t, testCargoTable))
+		assert.Len(t, results, 6)
 
-		if len(results) != 6 {
-			t.Fatalf("expected 6 results, got %d", len(results))
-		}
-
-		// 3052.4 ns → 3.05 us
 		assertStat(t, results[0].Stats[0], "Latency avg (us)", 3.05, "")
-		// 821.61 ns → 0.82 us
 		assertStat(t, results[1].Stats[0], "Latency avg (us)", 0.82, "")
-		// 1382700 ns → 1382.7 us
 		assertStat(t, results[4].Stats[0], "Latency avg (us)", 1382.7, "")
 	})
 
@@ -151,14 +129,9 @@ func TestParseCargoBenchmark(t *testing.T) {
 		shared.FlagState.TimeUnit = "ns"
 
 		results := ParseCargoBenchmark(writeTestFile(t, testCargoTable))
-
-		if len(results) != 3 {
-			t.Fatalf("expected 3 bubbleSort results, got %d", len(results))
-		}
+		assert.Len(t, results, 3)
 		for _, r := range results {
-			if r.Name != "bubbleSort" {
-				t.Errorf("unexpected Name = %q", r.Name)
-			}
+			assert.Equal(t, "bubbleSort", r.Name)
 		}
 	})
 
@@ -168,8 +141,6 @@ func TestParseCargoBenchmark(t *testing.T) {
 		shared.FlagState.TimeUnit = "ns"
 
 		results := ParseCargoBenchmark(writeTestFile(t, ""))
-		if len(results) != 0 {
-			t.Errorf("expected 0 results for empty file, got %d", len(results))
-		}
+		assert.Empty(t, results)
 	})
 }

@@ -7,6 +7,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/goptics/vizb/pkg/parser"
 	"github.com/goptics/vizb/shared"
 )
@@ -323,9 +326,7 @@ func TestParseGoBenchmark(t *testing.T) {
 			filePath := filepath.Join(tempDir, "bench.txt")
 
 			file, err := os.Create(filePath)
-			if err != nil {
-				t.Fatalf("Failed to create test file: %v", err)
-			}
+			require.NoError(t, err, "Failed to create test file")
 
 			writer := bufio.NewWriter(file)
 			for _, event := range tt.benchContent {
@@ -333,7 +334,8 @@ func TestParseGoBenchmark(t *testing.T) {
 				writer.WriteString("\n")
 			}
 
-			if err := writer.Flush(); err != nil {
+			err = writer.Flush()
+			if err != nil {
 				log.Fatal(err)
 			}
 
@@ -341,62 +343,26 @@ func TestParseGoBenchmark(t *testing.T) {
 
 			results := ParseGoBenchmark(filePath)
 
-			if len(results) != len(tt.expected) {
-				t.Errorf("ParseGoBenchmark() returned %d results, expected %d", len(results), len(tt.expected))
-				return
-			}
+			require.Len(t, results, len(tt.expected), "ParseGoBenchmark() returned %d results, expected %d", len(results), len(tt.expected))
 
 			for i, expected := range tt.expected {
-				if i >= len(results) {
-					t.Errorf("Missing expected result at index %d", i)
-					continue
-				}
-
 				actual := results[i]
-				if actual.Name != expected.Name {
-					t.Errorf("Result[%d].Name = %q, expected %q", i, actual.Name, expected.Name)
-				}
-				if actual.XAxis != expected.XAxis {
-					t.Errorf("Result[%d].XAxis = %q, expected %q", i, actual.XAxis, expected.XAxis)
-				}
-				if actual.YAxis != expected.YAxis {
-					t.Errorf("Result[%d].YAxis = %q, expected %q", i, actual.YAxis, expected.YAxis)
-				}
+				assert.Equal(t, expected.Name, actual.Name, "Result[%d].Name mismatch", i)
+				assert.Equal(t, expected.XAxis, actual.XAxis, "Result[%d].XAxis mismatch", i)
+				assert.Equal(t, expected.YAxis, actual.YAxis, "Result[%d].YAxis mismatch", i)
 
-				if len(actual.Stats) != len(expected.Stats) {
-					t.Errorf("Result[%d] has %d stats, expected %d", i, len(actual.Stats), len(expected.Stats))
-					continue
-				}
+				require.Len(t, actual.Stats, len(expected.Stats), "Result[%d] stats count mismatch", i)
 
 				for j, expectedStat := range expected.Stats {
-					if j >= len(actual.Stats) {
-						t.Errorf("Missing expected stat at result[%d].Stats[%d]", i, j)
-						continue
-					}
-
 					actualStat := actual.Stats[j]
-					if actualStat.Type != expectedStat.Type {
-						t.Errorf("Result[%d].Stats[%d].Type = %q, expected %q", i, j, actualStat.Type, expectedStat.Type)
-					}
-					if !almostEqual(actualStat.Value, expectedStat.Value, 0.001) {
-						t.Errorf("Result[%d].Stats[%d].Value = %f, expected %f", i, j, actualStat.Value, expectedStat.Value)
-					}
+					assert.Equal(t, expectedStat.Type, actualStat.Type, "Result[%d].Stats[%d].Type mismatch", i, j)
+					assert.InDelta(t, expectedStat.Value, actualStat.Value, 0.001, "Result[%d].Stats[%d].Value mismatch", i, j)
 				}
 			}
 
-			if shared.CPUCount != tt.expectCPUCount {
-				t.Errorf("shared.CPUCount = %d, expected %d", shared.CPUCount, tt.expectCPUCount)
-			}
+			assert.Equal(t, tt.expectCPUCount, shared.CPUCount, "CPUCount mismatch")
 		})
 	}
-}
-
-func almostEqual(a, b, epsilon float64) bool {
-	diff := a - b
-	if diff < 0 {
-		diff = -diff
-	}
-	return diff < epsilon
 }
 
 func TestConvertGoJsonBenchToText(t *testing.T) {
@@ -407,22 +373,16 @@ func TestConvertGoJsonBenchToText(t *testing.T) {
 		content := `{"Action":"output","Output":"BenchmarkA 100 100 ns/op\n"}
 	{"Action":"output","Output":"BenchmarkB 200 200 ns/op\n"}`
 		err := os.WriteFile(jsonFile, []byte(content), 0644)
-		if err != nil {
-			t.Fatalf("Failed to write json file: %v", err)
-		}
+		require.NoError(t, err, "Failed to write json file")
 
 		txtFile := ConvertGoJsonBenchToText(jsonFile)
 		defer os.Remove(txtFile)
 
 		txtContent, err := os.ReadFile(txtFile)
-		if err != nil {
-			t.Fatalf("Failed to read result file: %v", err)
-		}
+		require.NoError(t, err, "Failed to read result file")
 
 		expected := "BenchmarkA 100 100 ns/op\nBenchmarkB 200 200 ns/op\n"
-		if string(txtContent) != expected {
-			t.Errorf("Expected content %q, got %q", expected, string(txtContent))
-		}
+		assert.Equal(t, expected, string(txtContent))
 	})
 
 	t.Run("Mixed actions", func(t *testing.T) {
@@ -431,22 +391,16 @@ func TestConvertGoJsonBenchToText(t *testing.T) {
 	{"Action":"output","Output":"BenchmarkA 100 100 ns/op\n"}
 	{"Action":"pass","Test":"BenchmarkA"}`
 		err := os.WriteFile(jsonFile, []byte(content), 0644)
-		if err != nil {
-			t.Fatalf("Failed to write json file: %v", err)
-		}
+		require.NoError(t, err, "Failed to write json file")
 
 		txtFile := ConvertGoJsonBenchToText(jsonFile)
 		defer os.Remove(txtFile)
 
 		txtContent, err := os.ReadFile(txtFile)
-		if err != nil {
-			t.Fatalf("Failed to read result file: %v", err)
-		}
+		require.NoError(t, err, "Failed to read result file")
 
 		expected := "BenchmarkA 100 100 ns/op\n"
-		if string(txtContent) != expected {
-			t.Errorf("Expected content %q, got %q", expected, string(txtContent))
-		}
+		assert.Equal(t, expected, string(txtContent))
 	})
 }
 
@@ -565,10 +519,7 @@ func TestShouldIncludeBenchmark(t *testing.T) {
 			shared.FlagState.FilterRegex = tt.filter
 
 			result := parser.ShouldIncludeBenchmark(tt.benchName)
-			if result != tt.expected {
-				t.Errorf("ShouldIncludeBenchmark(%q) with filter %q = %v, expected %v",
-					tt.benchName, tt.filter, result, tt.expected)
-			}
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }

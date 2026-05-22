@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/goptics/vizb/shared"
+	"github.com/stretchr/testify/assert"
 )
 
 var testSortingTable = `┌─────────┬─────────────────────┬─────────────────────┬──────────────────┬────────────────────────┬────────────────────────┬─────────┐
@@ -37,6 +38,7 @@ func writeTestFile(t *testing.T, content string) string {
 	return path
 }
 
+
 func TestParseTinyBenchBenchmark(t *testing.T) {
 	origPattern := shared.FlagState.GroupPattern
 	origFilter := shared.FlagState.FilterRegex
@@ -53,14 +55,7 @@ func TestParseTinyBenchBenchmark(t *testing.T) {
 		shared.FlagState.TimeUnit = "ns"
 
 		results := ParseTinyBenchBenchmark(writeTestFile(t, testSortingTable))
-
-		if len(results) == 0 {
-			t.Fatal("expected results, got none")
-		}
-
-		if len(results) != 6 {
-			t.Fatalf("expected 6 results, got %d", len(results))
-		}
+		assert.Len(t, results, 6)
 
 		assertStat(t, results[0].Stats[0], "Latency avg (ns)", 3741.5, "")
 		assertStat(t, results[0].Stats[1], "Latency RME (%)", 0.18, "±")
@@ -72,20 +67,12 @@ func TestParseTinyBenchBenchmark(t *testing.T) {
 		assertStat(t, results[0].Stats[7], "Throughput MAD (ops/s)", 2354, "±")
 		assertStat(t, results[0].Stats[8], "Samples", 267270, "")
 
-		if results[0].Name != "bubbleSort" {
-			t.Errorf("Name = %q, want %q", results[0].Name, "bubbleSort")
-		}
-		if results[0].YAxis != "100" {
-			t.Errorf("YAxis = %q, want %q", results[0].YAxis, "100")
-		}
+		assert.Equal(t, "bubbleSort", results[0].Name)
+		assert.Equal(t, "100", results[0].YAxis)
 
 		last := results[5]
-		if last.Name != "insertionSort" {
-			t.Errorf("Name = %q, want %q", last.Name, "insertionSort")
-		}
-		if last.YAxis != "2000" {
-			t.Errorf("YAxis = %q, want %q", last.YAxis, "2000")
-		}
+		assert.Equal(t, "insertionSort", last.Name)
+		assert.Equal(t, "2000", last.YAxis)
 		assertStat(t, last.Stats[0], "Latency avg (ns)", 512841, "")
 		assertStat(t, last.Stats[8], "Samples", 1950, "")
 	})
@@ -96,12 +83,8 @@ func TestParseTinyBenchBenchmark(t *testing.T) {
 		shared.FlagState.TimeUnit = "us"
 
 		results := ParseTinyBenchBenchmark(writeTestFile(t, testSortingTable))
+		assert.Len(t, results, 6)
 
-		if len(results) != 6 {
-			t.Fatalf("expected 6 results, got %d", len(results))
-		}
-
-		// 3741.5 ns → 3.74 us
 		assertStat(t, results[0].Stats[0], "Latency avg (us)", 3.74, "")
 		assertStat(t, results[0].Stats[2], "Latency med (us)", 3.7, "")
 	})
@@ -112,14 +95,9 @@ func TestParseTinyBenchBenchmark(t *testing.T) {
 		shared.FlagState.TimeUnit = "ns"
 
 		results := ParseTinyBenchBenchmark(writeTestFile(t, testSortingTable))
-
-		if len(results) != 3 {
-			t.Fatalf("expected 3 bubbleSort results, got %d", len(results))
-		}
+		assert.Len(t, results, 3)
 		for _, r := range results {
-			if r.Name != "bubbleSort" {
-				t.Errorf("unexpected Name = %q", r.Name)
-			}
+			assert.Equal(t, "bubbleSort", r.Name)
 		}
 	})
 
@@ -129,21 +107,6 @@ func TestParseTinyBenchBenchmark(t *testing.T) {
 		shared.FlagState.TimeUnit = "ns"
 
 		results := ParseTinyBenchBenchmark(writeTestFile(t, ""))
-		if len(results) != 0 {
-			t.Errorf("expected 0 results for empty file, got %d", len(results))
-		}
+		assert.Empty(t, results)
 	})
-}
-
-func assertStat(t *testing.T, s shared.Stat, expectedType string, expectedValue float64, expectedSymbol string) {
-	t.Helper()
-	if s.Type != expectedType {
-		t.Errorf("Stat type = %q, want %q", s.Type, expectedType)
-	}
-	if s.Value != expectedValue {
-		t.Errorf("Stat value = %f, want %f", s.Value, expectedValue)
-	}
-	if s.Symbol != expectedSymbol {
-		t.Errorf("Stat symbol = %q, want %q", s.Symbol, expectedSymbol)
-	}
 }

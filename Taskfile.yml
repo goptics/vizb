@@ -56,7 +56,7 @@ tasks:
   test:
     desc: Run all tests (no cache)
     cmds:
-      - go test -count=1 -v ./...
+      - go test -count=1 ./...
 
   lint:
     desc: Run linter
