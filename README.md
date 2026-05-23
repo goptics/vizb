@@ -24,7 +24,7 @@
 
 ```bash
 # Linux / macOS
-curl -fsSL https://vizb.goptics.io/install.sh | bash
+curl -fsSL https://vizb.goptics.org/install.sh | bash
 
 # Windows
 winget install goptics.vizb
