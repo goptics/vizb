@@ -1,5 +1,6 @@
 import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
+import type { ScaleType } from '../../types'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
 import { getNextColorFor, hasYAxis } from '../../lib/utils'
 import {
@@ -47,10 +48,12 @@ export function useLineChartOptions(config: BaseChartConfig) {
     const baseOptions = getBaseOptions(config)
     const styling = getChartStyling(isDark.value)
 
-    // Calculate minimum non-zero value for log scale
+    // Calculate min/max for log scale guard
     const allValues = series.flatMap((s) => s.values)
     const nonZeroValues = allValues.filter((v) => v > 0)
     const minValue = nonZeroValues.length > 0 ? Math.min(...nonZeroValues) : undefined
+    const maxValue = allValues.length > 0 ? Math.max(...allValues) : 0
+    const effectiveScale: ScaleType = scale.value === 'log' && maxValue < 1 ? 'linear' : scale.value
 
     // Single category case: one series with multiple x-axis points
     if (!hasYAxis) {
@@ -58,13 +61,13 @@ export function useLineChartOptions(config: BaseChartConfig) {
         ...baseOptions,
         grid: createGridConfig(1),
         tooltip: createTooltipConfig(false, 1),
-        ...createAxisConfig(styling, xAxisData, scale.value, minValue),
+        ...createAxisConfig(styling, xAxisData, effectiveScale, minValue),
         legend: { show: false },
         series: [
           {
             name: chartData.value.title,
             type: 'line' as const,
-            data: series.map((seriesData) => adjustForLogScaleLine(seriesData.values[0] ?? 0, scale.value)),
+            data: series.map((seriesData) => adjustForLogScaleLine(seriesData.values[0] ?? 0, effectiveScale)),
             connectNulls: true,
             itemStyle: { color: getNextColorFor(chartData.value.title) },
             symbol,
@@ -79,7 +82,7 @@ export function useLineChartOptions(config: BaseChartConfig) {
     const transposedSeries = yAxisLabels.map((yAxisLabel, yIndex) => ({
       name: yAxisLabel,
       type: 'line' as const,
-      data: series.map((seriesData) => adjustForLogScaleLine(seriesData.values[yIndex] ?? 0, scale.value)),
+      data: series.map((seriesData) => adjustForLogScaleLine(seriesData.values[yIndex] ?? 0, effectiveScale)),
       connectNulls: true,
       itemStyle: { color: getNextColorFor(yAxisLabel) },
       symbol,
@@ -90,7 +93,7 @@ export function useLineChartOptions(config: BaseChartConfig) {
       ...baseOptions,
       grid: createGridConfig(transposedSeries.length),
       tooltip: createTooltipConfig(true, transposedSeries.length),
-      ...createAxisConfig(styling, xAxisData, scale.value, minValue),
+      ...createAxisConfig(styling, xAxisData, effectiveScale, minValue),
       legend: createLegendConfig(
         transposedSeries.map((s) => ({ xAxis: s.name })),
         styling,

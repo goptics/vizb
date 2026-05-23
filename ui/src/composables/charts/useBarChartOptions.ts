@@ -1,5 +1,6 @@
 import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
+import type { ScaleType } from '../../types'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
 import { getNextColorFor, hasXAxis, hasYAxis } from '../../lib/utils'
 import {
@@ -47,17 +48,19 @@ export function useBarChartOptions(config: BaseChartConfig) {
     const baseOptions = getBaseOptions(config)
     const styling = getChartStyling(isDark.value)
 
-    // Calculate minimum non-zero value for log scale
+    // Calculate min/max for log scale guard
     const allValues = series.flatMap((s) => s.values)
     const nonZeroValues = allValues.filter((v) => v > 0)
     const minValue = nonZeroValues.length > 0 ? Math.min(...nonZeroValues) : undefined
+    const maxValue = allValues.length > 0 ? Math.max(...allValues) : 0
+    const effectiveScale: ScaleType = scale.value === 'log' && maxValue < 1 ? 'linear' : scale.value
 
     // For single category: create one series with each x-axis value as a data point
     // For dual categories: create multiple series (one per x-axis value)
     if (!hasYAxis) {
       const barData = series.map((seriesData) => {
         const val = seriesData.values[0] ?? 0
-        return scale.value === 'log' && val === 0
+        return effectiveScale === 'log' && val === 0
           ? null
           : { value: val, label: createLabelConfig(showLabels.value, styling) }
       })
@@ -67,7 +70,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
         grid: createGridConfig(1),
         tooltip: createTooltipConfig(false),
         legend: { show: false },
-        ...createAxisConfig(styling, xAxisData, scale.value, minValue),
+        ...createAxisConfig(styling, xAxisData, effectiveScale, minValue),
         series: [
           {
             name: chartData.value.title,
@@ -85,7 +88,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
     const transposedSeries = yAxisLabels.map((yAxisLabel, yIndex) => {
       const barData = series.map((seriesData) => {
         const val = seriesData.values[yIndex] || 0
-        return scale.value === 'log' && val === 0
+        return effectiveScale === 'log' && val === 0
           ? null
           : { value: val, label: createLabelConfig(showLabels.value, styling) }
       })
@@ -122,7 +125,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
         styling,
         hasMultipleSeries
       ),
-      ...createAxisConfig(styling, xAxisData, scale.value, minValue),
+      ...createAxisConfig(styling, xAxisData, effectiveScale, minValue),
       series: transposedSeries,
     } as EChartsOption
   })
