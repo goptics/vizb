@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Usage: curl https://vizb.goptics.org/install.sh | bash
+
 set -euo pipefail
 
 REPO="goptics/vizb"
