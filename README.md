@@ -20,6 +20,16 @@
 
 ## Installation
 
+### Quick Install
+
+```bash
+# Linux / macOS
+curl -fsSL https://vizb.goptics.io/install.sh | bash
+
+# Windows
+winget install goptics.vizb
+```
+
 ### Go Toolchain
 
 ```bash

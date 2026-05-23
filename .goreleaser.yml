@@ -40,3 +40,15 @@ checksum:
 
 snapshot:
   version_template: "{{ .Tag }}-next"
+
+winget:
+  - name: vizb
+    publisher: fahimfaisaal
+    short_description: "Multi-language benchmark visualization CLI"
+    repository:
+      owner: goptics
+      name: winget-pkgs
+    description: "Transform benchmark output from Go (go test -bench), Rust (cargo bench via Criterion/Divan), and JavaScript (Vitest/Tinybench) into interactive 4D HTML visualizations."
+    homepage: https://vizb.goptics.org
+    license: MIT
+    license_url: https://github.com/goptics/vizb/blob/main/LICENSE

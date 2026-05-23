@@ -9,7 +9,7 @@ export default defineConfig({
 	integrations: [
 	starlight({
 		title: 'Benchmark visualization made simple',
-		description: 'A CLI tool that transforms Go benchmark raw output into interactive 4D visualizations. Merge multiple benchmark runs, apply advanced grouping logic, and explore performance across four dimensions — all within a single deployable HTML file. Available GitHub Action for seamless CI pipeline integration.',
+		description: 'Transform benchmark output from Go, Rust, and JavaScript frameworks into interactive 4D visualizations — a single self-contained HTML file.',
 		logo: {
 			dark: './src/assets/logo-dark.svg',
 			light: './src/assets/logo-light.svg',
