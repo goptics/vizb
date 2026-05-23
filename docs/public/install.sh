@@ -3,7 +3,7 @@ set -euo pipefail
 
 REPO="goptics/vizb"
 BIN="vizb"
-INSTALL_DIR="/usr/local/bin"
+INSTALL_DIR="${HOME}/.local/bin"
 
 # ----- helpers -----
 die() { echo "error: $*" >&2; exit 1; }
@@ -29,9 +29,11 @@ esac
 command -v curl >/dev/null 2>&1 || die "curl is required but not installed"
 command -v tar >/dev/null 2>&1 || die "tar is required but not installed"
 
-# ----- fetch latest version -----
+# ----- fetch latest version (uses redirect, no API call) -----
 info "fetching latest release…"
-LATEST=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+LATEST=$(curl -fsSL -o /dev/null -w '%{url_effective}' \
+  "https://github.com/${REPO}/releases/latest" \
+  | grep -oP '[^/]+(?=/?$)')
 if [[ -z "$LATEST" ]]; then
   die "failed to determine latest version"
 fi
@@ -55,13 +57,10 @@ if [[ ! -f "${TMPDIR}/${BIN}" ]]; then
 fi
 
 # ----- install -----
-info "installing to ${INSTALL_DIR}…"
-if [[ -w "$INSTALL_DIR" ]]; then
-  cp "${TMPDIR}/${BIN}" "${INSTALL_DIR}/${BIN}"
-else
-  sudo cp "${TMPDIR}/${BIN}" "${INSTALL_DIR}/${BIN}"
-fi
+mkdir -p "$INSTALL_DIR"
 
+info "installing to ${INSTALL_DIR}…"
+cp "${TMPDIR}/${BIN}" "${INSTALL_DIR}/${BIN}"
 chmod +x "${INSTALL_DIR}/${BIN}"
 
 # ----- verify -----
@@ -70,4 +69,9 @@ if "${INSTALL_DIR}/${BIN}" --version >/dev/null 2>&1; then
   info "vizb ${VERSION} installed successfully to ${INSTALL_DIR}/${BIN}"
 else
   die "installation verification failed"
+fi
+
+if [[ ":$PATH:" != *":${INSTALL_DIR}:"* ]]; then
+  info "note: ${INSTALL_DIR} is not in your PATH"
+  info "      add it with: echo 'export PATH=\"${INSTALL_DIR}:\$PATH\"' >> ~/.bashrc"
 fi

@@ -26,10 +26,8 @@ jobs:
             **What will happen after approval:**
             - GoReleaser builds binaries for linux/darwin/windows (amd64 + arm64)
             - Release is published to GitHub Releases
+            - A PR is auto-submitted to microsoft/winget-pkgs
             - Examples at https://goptics.github.io/vizb/examples/ are auto-redeployed
-
-            Respond "approved", "approve", "lgtm", or "yes" to proceed.
-            Respond "denied", "deny", or "no" to cancel.
           
 
   goreleaser:
