@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+
+	"github.com/goptics/vizb/shared"
 )
 
 var separatorRegex = regexp.MustCompile(`[_/]`)
@@ -164,4 +166,12 @@ func ParseBenchmarkNameWithRegex(name, pattern string) (map[string]string, error
 	}
 
 	return result, nil
+}
+
+func GroupBenchmarkName(name string) (map[string]string, error) {
+	if shared.FlagState.GroupRegex != "" {
+		return ParseBenchmarkNameWithRegex(name, shared.FlagState.GroupRegex)
+	}
+
+	return ParseBenchmarkNameToGroups(name, shared.FlagState.GroupPattern)
 }

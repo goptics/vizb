@@ -5,7 +5,7 @@ description: A detailed overview of everything vizb can do.
 
 import { CardGrid, Card, Aside } from '@astrojs/starlight/components';
 
-Vizb transforms `go test -bench` output into interactive 4D HTML visualizations. Here's what it offers.
+Vizb transforms benchmark output from Go, Rust, and JavaScript frameworks into interactive 4D HTML visualizations. Here's what it offers.
 
 <CardGrid stagger>
   <Card title="Modern Interactive UI" icon="laptop">
@@ -30,10 +30,10 @@ Vizb transforms `go test -bench` output into interactive 4D HTML visualizations.
     Tag benchmarks with version labels. Deep-merge across releases with chronological data ordering.
   </Card>
   <Card title="Flexible Input" icon="document">
-    Auto-detects raw text and `go test -bench -json` format. Accepts files or stdin pipes.
+    Reads benchmark output from Go, Rust (Criterion, Divan), and JavaScript (Vitest, Tinybench). Auto-detects text and JSON formats. Accepts files or stdin pipes.
   </Card>
   <Card title="Comprehensive Metrics" icon="information">
-    Time (ns/us/ms/s), memory (B/KB/MB/GB), allocations, and throughput with configurable units.
+    Time (ns/us/ms/s), memory (B/KB/MB/GB), allocations, throughput, and latency percentiles — with configurable units. Which metrics appear depends on the parser used.
   </Card>
   <Card title="Smart Filtering" icon="magnifier">
     Include only matching benchmarks with `--filter` regex pattern.

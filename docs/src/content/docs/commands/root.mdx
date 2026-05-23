@@ -5,7 +5,7 @@ description: Parse benchmark output and generate HTML or JSON visualizations.
 
 import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
 
-The root command (`vizb`) is the primary entry point. It parses `go test -bench` output and generates interactive visualizations.
+The root command (`vizb`) is the primary entry point. It parses benchmark output from multiple frameworks and generates interactive visualizations.
 
 ## Usage
 
@@ -30,18 +30,39 @@ vizb [target] [flags]
   </TabItem>
   <TabItem label="JSON Auto-Detect">
   ```bash
-  # JSON bench events are auto-detected and converted
+  # JSON bench events are auto-detected and converted for Go
   go test -bench . -json | vizb -o output.html
   ```
-  Vizb automatically detects `go test -bench -json` format.
+  Vizb automatically detects `go test -bench -json` format when using `--parser go`.
   </TabItem>
 </Tabs>
+
+## Multi-Language Parsers
+
+Vizb supports Rust, JavaScript, and TypeScript benchmark frameworks in addition to Go. Use `--parser` to select the right one:
+
+```bash
+# Rust Criterion
+cargo bench 2>&1 | vizb --parser rs:criterion -o output.html
+
+# Rust Divan
+cargo bench 2>&1 | vizb --parser rs:divan -o output.html
+
+# Vitest
+npx vitest bench 2>&1 | vizb --parser js:vitest -o output.html
+
+# Tinybench
+node bench.js 2>&1 | vizb --parser js:tinybench -o output.html
+```
+
+See the [Parser Guide](/guides/parsers) for full details on each parser's metrics and configuration.
 
 ## Flags
 
 | Flag | Short | Default | Description |
 |------|-------|---------|-------------|
 | `--output` | `-o` | *(stdout)* | Output file path. `.json` → JSON, else → HTML |
+| `--parser` | `-P` | `go` | Benchmark parser: `go`, `js:tinybench`, `js:vitest`, `rs:criterion`, `rs:divan` |
 | `--name` | `-n` | `Benchmarks` | Benchmark name |
 | `--description` | `-d` | `""` | Benchmark description |
 | `--tag` | `-t` | `""` | Tag identifier for release tracking |

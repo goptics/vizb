@@ -1,12 +1,31 @@
 ---
 title: Installation
-description: Install vizb using Go toolchain or download a pre-built binary.
+description: Install vizb using a one-liner, Go toolchain, or download a pre-built binary.
 ---
 
 import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
 
+## Quick Install
+
+<Tabs syncKey="os">
+  <TabItem label="Linux / macOS" icon="terminal">
+
+```bash
+curl -fsSL https://vizb.goptics.io/install.sh | bash
+```
+
+  </TabItem>
+  <TabItem label="Windows" icon="seti:windows">
+
+```powershell
+winget install goptics.vizb
+```
+
+  </TabItem>
+</Tabs>
+
 <Aside type="note">
-  Vizb requires **Go 1.24+**. Install Go from the [official site](https://go.dev/dl) or via [webi](https://webinstall.dev/go/).
+  The installer script downloads the latest binary from GitHub Releases and places it in `/usr/local/bin`. Winget installs via the Windows Package Manager.
 </Aside>
 
 ## Go Install
@@ -14,6 +33,10 @@ import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
 ```bash
 go install github.com/goptics/vizb@latest
 ```
+
+<Aside type="note">
+  Building from source requires **Go 1.24+**. Install Go from the [official site](https://go.dev/dl) or via [webi](https://webinstall.dev/go/). Pre-built binaries and the install script need no Go runtime.
+</Aside>
 
 ## Download Binary
 

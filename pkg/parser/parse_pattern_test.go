@@ -1,8 +1,10 @@
 package parser
 
 import (
-	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestParseNameToGroups(t *testing.T) {
@@ -80,7 +82,6 @@ func TestParseNameToGroups(t *testing.T) {
 			},
 			expectError: false,
 		},
-		// Subject and workload without name
 		{
 			name:          "yAxis and xAxis without name: y/x pattern",
 			benchmarkName: "Rivet_GPlusStatic/100k",
@@ -92,7 +93,6 @@ func TestParseNameToGroups(t *testing.T) {
 			},
 			expectError: false,
 		},
-		// Complex name with multiple underscores
 		{
 			name:          "Complex name: name_yAxis pattern with multi-part name",
 			benchmarkName: "MyLib_ComplexFunction_TestCase",
@@ -104,7 +104,6 @@ func TestParseNameToGroups(t *testing.T) {
 			},
 			expectError: false,
 		},
-		// Empty pattern
 		{
 			name:          "Empty pattern",
 			benchmarkName: "Rivet",
@@ -113,7 +112,6 @@ func TestParseNameToGroups(t *testing.T) {
 			expectError:   true,
 			errorContains: "pattern cannot be empty",
 		},
-		// Mixed separators
 		{
 			name:          "Mixed separators: underscore and slash",
 			benchmarkName: "Rivet_GPlusStatic/100k_extra",
@@ -135,7 +133,6 @@ func TestParseNameToGroups(t *testing.T) {
 				"xAxis": "Workload",
 			},
 		},
-		// Not enough parts in benchmark name
 		{
 			name:          "Not enough parts in benchmark name",
 			benchmarkName: "Rivet",
@@ -154,24 +151,15 @@ func TestParseNameToGroups(t *testing.T) {
 			result, err := ParseBenchmarkNameToGroups(tt.benchmarkName, tt.pattern)
 
 			if tt.expectError {
-				if err == nil {
-					t.Errorf("Expected error but got none")
-					return
-				}
-				if tt.errorContains != "" && !contains(err.Error(), tt.errorContains) {
-					t.Errorf("Expected error to contain '%s', but got '%s'", tt.errorContains, err.Error())
+				require.Error(t, err)
+				if tt.errorContains != "" {
+					assert.Contains(t, err.Error(), tt.errorContains)
 				}
 				return
 			}
 
-			if err != nil {
-				t.Errorf("Unexpected error: %v", err)
-				return
-			}
-
-			if !reflect.DeepEqual(result, tt.expected) {
-				t.Errorf("Expected %v, but got %v", tt.expected, result)
-			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
@@ -218,18 +206,18 @@ func TestValidateGroupPattern(t *testing.T) {
 		{
 			name:        "Valid pattern: xAxis without yAxis",
 			pattern:     "name_xAxis",
-			expectError: false, // Only requires xAxis OR yAxis
+			expectError: false,
 		},
 		{
 			name:          "Invalid pattern: name only (missing xAxis and yAxis)",
 			pattern:       "name",
-			expectError:   true, // Must have xAxis or yAxis
+			expectError:   true,
 			errorContains: "pattern must contain xAxis (x) or yAxis (y)",
 		},
 		{
 			name:        "Valid pattern: xAxis only",
 			pattern:     "xAxis",
-			expectError: false, // Only requires xAxis OR yAxis
+			expectError: false,
 		},
 	}
 
@@ -238,19 +226,14 @@ func TestValidateGroupPattern(t *testing.T) {
 			err := ValidateGroupPattern(tt.pattern)
 
 			if tt.expectError {
-				if err == nil {
-					t.Errorf("Expected error but got none")
-					return
-				}
-				if tt.errorContains != "" && !contains(err.Error(), tt.errorContains) {
-					t.Errorf("Expected error to contain '%s', but got '%s'", tt.errorContains, err.Error())
+				require.Error(t, err)
+				if tt.errorContains != "" {
+					assert.Contains(t, err.Error(), tt.errorContains)
 				}
 				return
 			}
 
-			if err != nil {
-				t.Errorf("Unexpected error: %v", err)
-			}
+			assert.NoError(t, err)
 		})
 	}
 }
@@ -271,27 +254,9 @@ func TestExpandShorthand(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
 			result := expandShorthand(tt.input)
-			if result != tt.expected {
-				t.Errorf("expandShorthand(%s) = %s, want %s", tt.input, result, tt.expected)
-			}
+			assert.Equal(t, tt.expected, result)
 		})
 	}
-}
-
-// Helper function to check if a string contains a substring
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(substr) == 0 || (len(s) > len(substr) &&
-		(s[:len(substr)] == substr || s[len(s)-len(substr):] == substr ||
-			indexOfSubstring(s, substr) >= 0)))
-}
-
-func indexOfSubstring(s, substr string) int {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return i
-		}
-	}
-	return -1
 }
 
 func TestParseNameWithRegex(t *testing.T) {
@@ -347,7 +312,7 @@ func TestParseNameWithRegex(t *testing.T) {
 		{
 			name:          "Invalid Regex Syntax",
 			benchmarkName: "Hashing64MD5",
-			pattern:       `(?<n>Hashing64)(?<y>.*`, // Missing closing parenthesis
+			pattern:       `(?<n>Hashing64)(?<y>.*`,
 			expected:      nil,
 			expectError:   true,
 			errorContains: "invalid regex pattern",
@@ -397,24 +362,15 @@ func TestParseNameWithRegex(t *testing.T) {
 			result, err := ParseBenchmarkNameWithRegex(tt.benchmarkName, tt.pattern)
 
 			if tt.expectError {
-				if err == nil {
-					t.Errorf("Expected error but got none")
-					return
-				}
-				if tt.errorContains != "" && !contains(err.Error(), tt.errorContains) {
-					t.Errorf("Expected error to contain '%s', but got '%s'", tt.errorContains, err.Error())
+				require.Error(t, err)
+				if tt.errorContains != "" {
+					assert.Contains(t, err.Error(), tt.errorContains)
 				}
 				return
 			}
 
-			if err != nil {
-				t.Errorf("Unexpected error: %v", err)
-				return
-			}
-
-			if !reflect.DeepEqual(result, tt.expected) {
-				t.Errorf("Expected %v, but got %v", tt.expected, result)
-			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }

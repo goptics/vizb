@@ -11,6 +11,9 @@ import (
 	"time"
 
 	"github.com/goptics/vizb/pkg/parser"
+	goparser "github.com/goptics/vizb/pkg/parser/golang"
+	_ "github.com/goptics/vizb/pkg/parser/javascript"
+	_ "github.com/goptics/vizb/pkg/parser/rust"
 	"github.com/goptics/vizb/pkg/style"
 	"github.com/goptics/vizb/pkg/template"
 	"github.com/goptics/vizb/shared"
@@ -57,6 +60,7 @@ func init() {
 	rootCmd.Flags().StringVarP(&shared.FlagState.FilterRegex, "filter", "f", "", "Regex pattern to include only matching benchmark names")
 	rootCmd.Flags().StringVarP(&shared.FlagState.Scale, "scale", "S", "linear", "Scale type (linear, log)")
 	rootCmd.Flags().StringVarP(&shared.FlagState.Tag, "tag", "t", "", "Tag/identifier for the benchmark")
+	rootCmd.Flags().StringVarP(&shared.FlagState.Parser, "parser", "P", "go", "Benchmark parser to use (one of: "+strings.Join(parser.AvailableParsers(), ", ")+")")
 
 	// Add a hook to validate flags after parsing
 	cobra.OnInitialize(func() {
@@ -206,8 +210,8 @@ func resolveOutputFileName(outFile string) string {
 
 // preprocessInputFile handles JSON → TXT conversion if needed
 func preprocessInputFile(filePath string) string {
-	if utils.IsBenchJSONFile(filePath) {
-		return parser.ConvertJsonBenchToText(filePath)
+	if shared.FlagState.Parser == "go" && utils.IsBenchJSONFile(filePath) {
+		return goparser.ConvertGoJsonBenchToText(filePath)
 	}
 
 	return filePath
@@ -215,7 +219,12 @@ func preprocessInputFile(filePath string) string {
 
 // prepareBenchmarkData parses benchmark results or exits on error
 func prepareBenchmarkData(filePath string) []shared.BenchmarkData {
-	data := parser.ParseBenchmarkData(filePath)
+	parseFn, err := parser.GetParser(shared.FlagState.Parser)
+	if err != nil {
+		shared.ExitWithError(err.Error(), nil)
+	}
+
+	data := parseFn(filePath)
 
 	if len(data) == 0 {
 		shared.ExitWithError("No benchmark data found", nil)

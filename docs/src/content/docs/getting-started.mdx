@@ -3,55 +3,105 @@ title: Getting Started
 description: Get up and running with vizb in under a minute.
 ---
 
-import { Aside, Steps, LinkCard, CardGrid } from '@astrojs/starlight/components';
+import { Aside, LinkCard, CardGrid, Tabs, TabItem } from '@astrojs/starlight/components';
 
-<Aside type="note">
-  Vizb requires **Go 1.24+** and a Go project with `go test -bench` benchmarks.
-</Aside>
+<Tabs syncKey="lang">
+  <TabItem label="Go" icon="seti:go">
 
-<Steps>
+  **Pipe**
+  ```bash
+  go test -bench . | vizb -o output.html
+  ```
 
-1. **Pipe benchmarks to vizb**
+  **From a saved file**
+  ```bash
+  go test -bench . > bench.txt
+  vizb bench.txt -o output.html
+  ```
 
-   Run your benchmarks and pipe the output directly:
+  **JSON pipeline**
+  ```bash
+  go test -bench . -json | vizb -o output.html
+  ```
 
-   ```bash
-   go test -bench . | vizb -o output.html
-   ```
+  Save as JSON for later merging:
+  ```bash
+  vizb bench.txt -o output.json
+  vizb output.json -o output.html
+  ```
 
-   Open `output.html` in your browser.
+  <Aside type="note">
+    To build from source, **Go 1.24+** is required. Pre-built binaries from the [installation page](/installation) need no Go runtime.
+  </Aside>
 
-2. **From a saved file**
+  </TabItem>
+  <TabItem label="Criterion" icon="seti:rust">
 
-   If you already have benchmark output saved:
+  **Pipe**
+  ```bash
+  cargo bench 2>&1 | vizb --parser rs:criterion -o output.html
+  ```
 
-   ```bash
-   go test -bench . > bench.txt
-   vizb bench.txt -o output.html
-   ```
+  **From a saved file**
+  ```bash
+  cargo bench 2>&1 > bench.txt
+  vizb --parser rs:criterion bench.txt -o output.html
+  ```
 
-3. **JSON pipeline**
+  </TabItem>
+  <TabItem label="Divan" icon="seti:rust">
 
-   Vizb auto-detects JSON format from `go test -bench -json`:
+  **Pipe**
+  ```bash
+  cargo bench 2>&1 | vizb --parser rs:divan -o output.html
+  ```
 
-   ```bash
-   go test -bench . -json | vizb -o output.html
-   ```
+  **From a saved file**
+  ```bash
+  cargo bench 2>&1 > bench.txt
+  vizb --parser rs:divan bench.txt -o output.html
+  ```
 
-   Save as JSON for later merging:
+  </TabItem>
+  <TabItem label="Vitest" icon="seti:javascript">
 
-   ```bash
-   vizb bench.txt -o output.json
-   vizb output.json -o output.html
-   ```
+  **Pipe**
+  ```bash
+  npx vitest bench 2>&1 | vizb --parser js:vitest -o output.html
+  ```
 
-</Steps>
+  **From a saved file**
+  ```bash
+  npx vitest bench 2>&1 > bench.txt
+  vizb --parser js:vitest bench.txt -o output.html
+  ```
+
+  <Aside type="caution" title="Experimental">
+    Benchmarking in Vitest is experimental and does not follow SemVer. The parser was tested against v4.1.7. Future Vitest versions may change output format and break parser compatibility.
+  </Aside>
+
+  </TabItem>
+  <TabItem label="Tinybench" icon="seti:javascript">
+
+  **Pipe**
+  ```bash
+  node bench.js 2>&1 | vizb --parser js:tinybench -o output.html
+  ```
+
+  **From a saved file**
+  ```bash
+  node bench.js 2>&1 > bench.txt
+  vizb --parser js:tinybench bench.txt -o output.html
+  ```
+
+  </TabItem>
+</Tabs>
 
 ## Next Steps
 
 <CardGrid cols={2}>
   <LinkCard title="Installation" description="Go install, binary download, and PATH setup." href="/installation" />
+  <LinkCard title="Parser Guide" description="Choose the right parser for Go, Rust, or JavaScript benchmarks." href="/guides/parsers" />
   <LinkCard title="Commands" description="All CLI flags and options." href="/commands/root" />
   <LinkCard title="Grouping Guide" description="Multi-dimensional data with patterns and regex." href="/guides/grouping" />
-  <LinkCard title="CI/CD" description="GitHub Action and CI pipeline setup." href="/ci-cd/github-action" />
 </CardGrid>

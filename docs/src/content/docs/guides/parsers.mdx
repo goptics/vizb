@@ -1,0 +1,158 @@
+---
+title: Parser Guide
+description: Choose the right parser for your benchmark framework — Go, Rust Criterion, Divan, Vitest, or Tinybench.
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+Vizb supports multiple benchmark frameworks through its parser registry. Use `--parser` to select the right one for your benchmark output.
+
+## Why Multiple Parsers
+
+Each benchmark framework produces output in a different format. Vizb's parser registry knows how to read them all and convert the results into a common structure — so your charts, grouping, filtering, and merging work identically regardless of where the benchmarks came from.
+
+## Choosing a Parser
+
+<Tabs syncKey="parser">
+  <TabItem label="Go" icon="seti:go">
+  Default parser. Reads `go test -bench` text or `-json` output.
+
+  ```bash
+  go test -bench . | vizb -o output.html
+  # or explicitly
+  go test -bench . | vizb --parser go -o output.html
+  ```
+
+  **When JSON auto-detection applies:** `--parser go` is required for JSON input (the `go test -bench -json` format).
+
+  **Metrics extracted:**
+
+  | Metric | Description |
+  |---|---|
+  | Execution time | ns/op, with configurable unit |
+  | Memory | B/op, with configurable unit |
+  | Allocations | allocs/op, with configurable unit |
+  | Throughput | MB/s, B/s, GB/s, or custom |
+  | Iterations | Number of iterations run |
+  </TabItem>
+
+  <TabItem label="Criterion" icon="seti:rust">
+  Parses `cargo bench` output from [Criterion](https://github.com/bheisler/criterion.rs).
+
+  ```bash
+  cargo bench 2>&1 | vizb --parser rs:criterion -o output.html
+  ```
+
+  **Metrics extracted:**
+
+  | Metric | Description |
+  |---|---|
+  | Latency avg | Mean time per iteration |
+  | Latency lower | Lower bound of confidence interval |
+  | Latency upper | Upper bound (±) |
+
+  <Aside type="note">
+    Criterion output contains ANSI color codes — vizb strips these automatically before parsing.
+  </Aside>
+  </TabItem>
+
+  <TabItem label="Divan" icon="seti:rust">
+  Parses `cargo bench` output from [Divan](https://github.com/nvzqz/divan).
+
+  ```bash
+  cargo bench 2>&1 | vizb --parser rs:divan -o output.html
+  ```
+
+  **Metrics extracted:**
+
+  | Metric | Description |
+  |---|---|
+  | Latency fastest | Fastest measured iteration |
+  | Latency slowest | Slowest measured iteration (±) |
+  | Latency median | Median across all samples |
+  | Latency mean | Mean across all samples |
+  | Samples | Number of samples collected |
+
+  <Aside type="note">
+    The `iters` column from Divan output is not extracted — it represents per-sample iteration counts rather than an aggregate metric.
+  </Aside>
+  </TabItem>
+
+  <TabItem label="Vitest" icon="seti:javascript">
+  Parses `vitest bench` output.
+
+  <Aside type="caution" title="Experimental">
+    Benchmarking in Vitest is experimental and does not follow SemVer. The parser was tested against v4.1.7. Output format changes in future Vitest versions may break parser compatibility.
+  </Aside>
+
+  ```bash
+  npx vitest bench 2>&1 | vizb --parser js:vitest -o output.html
+  ```
+
+  **Metrics extracted:**
+
+  | Metric | Description |
+  |---|---|
+  | Throughput | Operations per second (ops/s) |
+  | Latency min / max | Fastest and slowest run |
+  | Latency avg | Mean across all runs |
+  | Latency p75 / p99 / p995 / p999 | Percentile latency |
+  | RME | Relative margin of error (±) |
+  | Samples | Number of samples collected |
+
+  **Naming convention:** When `describe()` wraps `bench()` blocks, names are concatenated with `/`:
+
+  ```ts
+  describe('n=100', () => {
+    bench('bubbleSort', () => { ... })
+    bench('insertionSort', () => { ... })
+  })
+  ```
+
+  Produces names `n=100/bubbleSort` and `n=100/insertionSort`. Use `--group-pattern` with any valid 2D combination (`n/x`, `n/y`, `x/n`, `y/n`, `x/y`, `y/x`) to split the suite name into its own dimension.
+
+  See the [Grouping Guide](/guides/grouping) for detailed pattern and regex syntax.
+  </TabItem>
+
+  <TabItem label="Tinybench" icon="seti:javascript">
+  Parses [Tinybench](https://github.com/tinylibs/tinybench) `console.table()` output.
+
+  ```bash
+  node bench.js 2>&1 | vizb --parser js:tinybench -o output.html
+  ```
+
+  **Metrics extracted:**
+
+  | Metric | Description |
+  |---|---|
+  | Latency avg / med | Mean and median latency |
+  | Latency RME / MAD | Relative margin of error and median absolute deviation (±) |
+  | Throughput avg / med | Mean and median operations per second |
+  | Throughput RME / MAD | Relative margin of error (±) |
+  | Samples | Number of samples collected |
+  </TabItem>
+</Tabs>
+
+## All Parser Keys
+
+| Key | Framework | Language |
+|-----|-----------|----------|
+| `go` | Go testing (benchfmt) | Go |
+| `rs:criterion` | Criterion | Rust |
+| `rs:divan` | Divan | Rust |
+| `js:vitest` | Vitest | JavaScript / TypeScript |
+| `js:tinybench` | Tinybench | JavaScript / TypeScript |
+
+## Add a New Parser
+
+Want to add support for a benchmark framework or language not listed here? Parser contributions are welcome. Here's what the process looks like:
+
+1. **Choose a key** following the `<lang>:<framework>` convention (e.g., `py:pytest`, `java:jmh`)
+2. **Implement a parse function** that extracts `[]shared.BenchmarkData` from the framework's output
+3. **Register it** via `parser.Register("your-key", YourParseFunc)` in an `init()` block
+4. **Add tests** with real output samples and edge cases
+5. **Open a PR** on [GitHub](https://github.com/goptics/vizb) — the existing parsers in `pkg/parser/` are good references to follow
+
+<Aside type="tip">
+  The parser registry is designed to be extensible. As long as your parse function returns benchmark data with names, values, and optional metadata, everything else — grouping, filtering, merging, time unit conversion — works automatically.
+</Aside>

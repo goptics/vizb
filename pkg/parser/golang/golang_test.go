@@ -1,4 +1,4 @@
-package parser
+package golang
 
 import (
 	"bufio"
@@ -7,12 +7,16 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/goptics/vizb/pkg/parser"
 	"github.com/goptics/vizb/shared"
 )
 
 type testBlock struct {
 	name           string
-	benchContent   []string // List of events to encode as JSON
+	benchContent   []string
 	pattern        string
 	timeUnit       string
 	memUnit        string
@@ -22,13 +26,11 @@ type testBlock struct {
 	expectCPUCount int
 }
 
-func TestParseBenchmarkData(t *testing.T) {
-	// Save original flag state to restore after tests
+func TestParseGoBenchmark(t *testing.T) {
 	origTimeUnit := shared.FlagState.TimeUnit
 	origMemUnit := shared.FlagState.MemUnit
 	origAllocUnit := shared.FlagState.NumberUnit
 
-	// Restore flag state after tests
 	defer func() {
 		shared.FlagState.TimeUnit = origTimeUnit
 		shared.FlagState.MemUnit = origMemUnit
@@ -81,9 +83,9 @@ func TestParseBenchmarkData(t *testing.T) {
 					XAxis: "",
 					YAxis: "WithMem",
 					Stats: []shared.Stat{
-						{Type: "Execution Time (ms/op)", Value: 0.00}, // 123.45ns -> 0.00012345ms -> 0.00
-						{Type: "Memory Usage (KB/op)", Value: 0.06},   // 64B -> 0.0625KB -> 0.06
-						{Type: "Allocations (K/op)", Value: 0.00},     // 2 allocs -> 0.002K -> 0.00
+						{Type: "Execution Time (ms/op)", Value: 0.00},
+						{Type: "Memory Usage (KB/op)", Value: 0.06},
+						{Type: "Allocations (K/op)", Value: 0.00},
 					},
 				},
 			},
@@ -107,7 +109,7 @@ func TestParseBenchmarkData(t *testing.T) {
 					YAxis: "SubjectA",
 					Stats: []shared.Stat{
 						{Type: "Execution Time (ns/op)", Value: 123.45},
-						{Type: "Memory Usage (b/op)", Value: 512.0}, // 64*8=512 bits
+						{Type: "Memory Usage (b/op)", Value: 512.0},
 						{Type: "Allocations/op", Value: 2.0},
 					},
 				},
@@ -117,7 +119,7 @@ func TestParseBenchmarkData(t *testing.T) {
 					YAxis: "SubjectB",
 					Stats: []shared.Stat{
 						{Type: "Execution Time (ns/op)", Value: 234.56},
-						{Type: "Memory Usage (b/op)", Value: 1024.0}, // 128*8=1024 bits
+						{Type: "Memory Usage (b/op)", Value: 1024.0},
 						{Type: "Allocations/op", Value: 4.0},
 					},
 				},
@@ -314,152 +316,95 @@ func TestParseBenchmarkData(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Set up flag state for this test
 			shared.FlagState.TimeUnit = tt.timeUnit
 			shared.FlagState.MemUnit = tt.memUnit
 			shared.FlagState.NumberUnit = tt.allocUnit
 			shared.FlagState.GroupPattern = tt.pattern
 			shared.CPUCount = 0
 
-			// Create a temporary JSON file
 			tempDir := t.TempDir()
 			filePath := filepath.Join(tempDir, "bench.txt")
 
-			// Create JSON file with test content
 			file, err := os.Create(filePath)
-			if err != nil {
-				t.Fatalf("Failed to create test file: %v", err)
-			}
+			require.NoError(t, err, "Failed to create test file")
 
 			writer := bufio.NewWriter(file)
 			for _, event := range tt.benchContent {
-				writer.WriteString(event + "\n")
+				writer.WriteString(event)
+				writer.WriteString("\n")
 			}
 
-			if err := writer.Flush(); err != nil {
+			err = writer.Flush()
+			if err != nil {
 				log.Fatal(err)
 			}
 
 			file.Close()
 
-			// Call the function under test
-			results := ParseBenchmarkData(filePath)
+			results := ParseGoBenchmark(filePath)
 
-			// Check results
-			if len(results) != len(tt.expected) {
-				t.Errorf("ParseBenchmarkData() returned %d results, expected %d", len(results), len(tt.expected))
-				return
-			}
+			require.Len(t, results, len(tt.expected), "ParseGoBenchmark() returned %d results, expected %d", len(results), len(tt.expected))
 
 			for i, expected := range tt.expected {
-				if i >= len(results) {
-					t.Errorf("Missing expected result at index %d", i)
-					continue
-				}
-
 				actual := results[i]
-				if actual.Name != expected.Name {
-					t.Errorf("Result[%d].Name = %q, expected %q", i, actual.Name, expected.Name)
-				}
-				if actual.XAxis != expected.XAxis {
-					t.Errorf("Result[%d].XAxis = %q, expected %q", i, actual.XAxis, expected.XAxis)
-				}
-				if actual.YAxis != expected.YAxis {
-					t.Errorf("Result[%d].YAxis = %q, expected %q", i, actual.YAxis, expected.YAxis)
-				}
+				assert.Equal(t, expected.Name, actual.Name, "Result[%d].Name mismatch", i)
+				assert.Equal(t, expected.XAxis, actual.XAxis, "Result[%d].XAxis mismatch", i)
+				assert.Equal(t, expected.YAxis, actual.YAxis, "Result[%d].YAxis mismatch", i)
 
-				// Check stats
-				if len(actual.Stats) != len(expected.Stats) {
-					t.Errorf("Result[%d] has %d stats, expected %d", i, len(actual.Stats), len(expected.Stats))
-					continue
-				}
+				require.Len(t, actual.Stats, len(expected.Stats), "Result[%d] stats count mismatch", i)
 
 				for j, expectedStat := range expected.Stats {
-					if j >= len(actual.Stats) {
-						t.Errorf("Missing expected stat at result[%d].Stats[%d]", i, j)
-						continue
-					}
-
 					actualStat := actual.Stats[j]
-					if actualStat.Type != expectedStat.Type {
-						t.Errorf("Result[%d].Stats[%d].Type = %q, expected %q", i, j, actualStat.Type, expectedStat.Type)
-					}
-					// For float comparisons, allow a small epsilon
-					if !almostEqual(actualStat.Value, expectedStat.Value, 0.001) {
-						t.Errorf("Result[%d].Stats[%d].Value = %f, expected %f", i, j, actualStat.Value, expectedStat.Value)
-					}
+					assert.Equal(t, expectedStat.Type, actualStat.Type, "Result[%d].Stats[%d].Type mismatch", i, j)
+					assert.InDelta(t, expectedStat.Value, actualStat.Value, 0.001, "Result[%d].Stats[%d].Value mismatch", i, j)
 				}
 			}
 
-			if shared.CPUCount != tt.expectCPUCount {
-				t.Errorf("shared.CPUCount = %d, expected %d", shared.CPUCount, tt.expectCPUCount)
-			}
+			assert.Equal(t, tt.expectCPUCount, shared.CPUCount, "CPUCount mismatch")
 		})
 	}
 }
 
-// Helper function to compare float values with tolerance
-func almostEqual(a, b, epsilon float64) bool {
-	diff := a - b
-	if diff < 0 {
-		diff = -diff
-	}
-	return diff < epsilon
-}
-
-func TestConvertJsonBenchToText(t *testing.T) {
+func TestConvertGoJsonBenchToText(t *testing.T) {
 	tempDir := t.TempDir()
 
 	t.Run("Valid JSON events", func(t *testing.T) {
 		jsonFile := filepath.Join(tempDir, "events.json")
 		content := `{"Action":"output","Output":"BenchmarkA 100 100 ns/op\n"}
-{"Action":"output","Output":"BenchmarkB 200 200 ns/op\n"}`
+	{"Action":"output","Output":"BenchmarkB 200 200 ns/op\n"}`
 		err := os.WriteFile(jsonFile, []byte(content), 0644)
-		if err != nil {
-			t.Fatalf("Failed to write json file: %v", err)
-		}
+		require.NoError(t, err, "Failed to write json file")
 
-		txtFile := ConvertJsonBenchToText(jsonFile)
+		txtFile := ConvertGoJsonBenchToText(jsonFile)
 		defer os.Remove(txtFile)
 
 		txtContent, err := os.ReadFile(txtFile)
-		if err != nil {
-			t.Fatalf("Failed to read result file: %v", err)
-		}
+		require.NoError(t, err, "Failed to read result file")
 
 		expected := "BenchmarkA 100 100 ns/op\nBenchmarkB 200 200 ns/op\n"
-		if string(txtContent) != expected {
-			t.Errorf("Expected content %q, got %q", expected, string(txtContent))
-		}
+		assert.Equal(t, expected, string(txtContent))
 	})
 
 	t.Run("Mixed actions", func(t *testing.T) {
 		jsonFile := filepath.Join(tempDir, "mixed.json")
 		content := `{"Action":"run","Test":"BenchmarkA"}
-{"Action":"output","Output":"BenchmarkA 100 100 ns/op\n"}
-{"Action":"pass","Test":"BenchmarkA"}`
+	{"Action":"output","Output":"BenchmarkA 100 100 ns/op\n"}
+	{"Action":"pass","Test":"BenchmarkA"}`
 		err := os.WriteFile(jsonFile, []byte(content), 0644)
-		if err != nil {
-			t.Fatalf("Failed to write json file: %v", err)
-		}
+		require.NoError(t, err, "Failed to write json file")
 
-		txtFile := ConvertJsonBenchToText(jsonFile)
+		txtFile := ConvertGoJsonBenchToText(jsonFile)
 		defer os.Remove(txtFile)
 
 		txtContent, err := os.ReadFile(txtFile)
-		if err != nil {
-			t.Fatalf("Failed to read result file: %v", err)
-		}
+		require.NoError(t, err, "Failed to read result file")
 
 		expected := "BenchmarkA 100 100 ns/op\n"
-		if string(txtContent) != expected {
-			t.Errorf("Expected content %q, got %q", expected, string(txtContent))
-		}
+		assert.Equal(t, expected, string(txtContent))
 	})
 }
 
 func TestShouldIncludeBenchmark(t *testing.T) {
-	// Save original filter state
 	origFilter := shared.FlagState.FilterRegex
 	defer func() {
 		shared.FlagState.FilterRegex = origFilter
@@ -572,11 +517,9 @@ func TestShouldIncludeBenchmark(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			shared.FlagState.FilterRegex = tt.filter
-			result := shouldIncludeBenchmark(tt.benchName)
-			if result != tt.expected {
-				t.Errorf("shouldIncludeBenchmark(%q) with filter %q = %v, expected %v",
-					tt.benchName, tt.filter, result, tt.expected)
-			}
+
+			result := parser.ShouldIncludeBenchmark(tt.benchName)
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }

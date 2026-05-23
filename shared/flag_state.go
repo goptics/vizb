@@ -16,6 +16,7 @@ type flagState struct {
 	FilterRegex     string
 	Scale           string
 	TagAxis string
+	Parser          string
 }
 
 var FlagState flagState = flagState{}

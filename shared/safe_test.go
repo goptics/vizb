@@ -2,6 +2,9 @@ package shared
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestWithSafe(t *testing.T) {
@@ -11,13 +14,8 @@ func TestWithSafe(t *testing.T) {
 			executed = true
 		})
 
-		if !executed {
-			t.Error("Expected function to be executed")
-		}
-
-		if err != nil {
-			t.Errorf("Expected no error, got: %v", err)
-		}
+		assert.True(t, executed, "Expected function to be executed")
+		assert.NoError(t, err)
 	})
 
 	t.Run("Panic Recovery", func(t *testing.T) {
@@ -25,31 +23,21 @@ func TestWithSafe(t *testing.T) {
 			panic("test panic message")
 		})
 
-		if err == nil {
-			t.Error("Expected error from panic recovery")
-		}
+		require.Error(t, err, "Expected error from panic recovery")
 
 		expectedMsg := "panic recovered inside test panic: test panic message"
-		if err.Error() != expectedMsg {
-			t.Errorf("Expected error message %q, got %q", expectedMsg, err.Error())
-		}
+		assert.EqualError(t, err, expectedMsg)
 	})
 
 	t.Run("Panic with Different Types", func(t *testing.T) {
-		// Test with string panic
 		err := WithSafe("string panic", func() {
 			panic("string error")
 		})
-		if err == nil {
-			t.Error("Expected error from string panic")
-		}
+		assert.Error(t, err, "Expected error from string panic")
 
-		// Test with int panic
 		err = WithSafe("int panic", func() {
 			panic(42)
 		})
-		if err == nil {
-			t.Error("Expected error from int panic")
-		}
+		assert.Error(t, err, "Expected error from int panic")
 	})
 }
