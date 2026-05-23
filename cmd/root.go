@@ -48,7 +48,7 @@ func Execute() {
 func init() {
 	rootCmd.Flags().StringVarP(&shared.FlagState.Name, "name", "n", "Benchmarks", "Name of the benchmark")
 	rootCmd.Flags().StringVarP(&shared.FlagState.Description, "description", "d", "", "Description of the benchmark")
-	rootCmd.PersistentFlags().StringVarP(&shared.FlagState.OutputFile, "output", "o", "", "Output file name (.json for JSON, .html or other for HTML)")
+	rootCmd.PersistentFlags().StringVarP(&shared.FlagState.OutputFile, "output", "o", "", "Output file path/name")
 	rootCmd.Flags().StringVarP(&shared.FlagState.MemUnit, "mem-unit", "M", "B", "Memory unit available: b, B, KB, MB, GB")
 	rootCmd.Flags().StringVarP(&shared.FlagState.TimeUnit, "time-unit", "T", "ns", "Time unit available: ns, us, ms, s")
 	rootCmd.Flags().StringVarP(&shared.FlagState.NumberUnit, "number-unit", "N", "", "Number unit available: K, M, B, T (default: as-is)")
@@ -83,9 +83,8 @@ func runBenchmark(cmd *cobra.Command, args []string) {
 
 		writeStdinPipedInputs(target)
 	} else {
-		fmt.Fprintln(os.Stderr, "Error: no target provided and no piped input detected")
 		cmd.Help()
-		shared.OsExit(1)
+		shared.OsExit(0)
 	}
 
 	generateOutputFile(target)
