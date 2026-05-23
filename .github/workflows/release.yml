@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: trstringer/manual-approval@v1
         with:
-          secret: ${{ secrets.GITHUB_TOKEN }}
+          secret: ${{ secrets.GORELEASER_TOKEN }}
           approvers: fahimfaisaal
           minimum-approvals: 1
           issue-title: 'Release Approval: ${{ github.ref_name }}'
@@ -28,7 +28,6 @@ jobs:
             - Release is published to GitHub Releases
             - A PR is auto-submitted to microsoft/winget-pkgs
             - Examples at https://goptics.github.io/vizb/examples/ are auto-redeployed
-          
 
   goreleaser:
     needs: approve
