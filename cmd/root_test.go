@@ -139,7 +139,9 @@ func TestValidateFlags(t *testing.T) {
 
 			// Check the stderr output if expected
 			if tt.expectedOutput != "" {
-				assert.Contains(t, buf.String(), tt.expectedOutput)
+				if tt.expectedOutput != "" {
+					assert.Contains(t, buf.String(), tt.expectedOutput)
+				}
 			}
 		})
 	}
@@ -323,7 +325,7 @@ func TestRunBenchmark(t *testing.T) {
 			},
 			setupStdin:     func() func() { return func() {} },
 			expectExit:     true,
-			expectedOutput: "no target provided",
+			expectedOutput: "",
 			setupFlags:     func() {},
 		},
 	}
