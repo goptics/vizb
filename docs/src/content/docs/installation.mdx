@@ -4,28 +4,14 @@ description: Install vizb using a one-liner, Go toolchain, or download a pre-bui
 ---
 
 import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+import QuickInstall from '../../components/QuickInstall.mdx';
 
 ## Quick Install
 
-<Tabs syncKey="os">
-  <TabItem label="Linux / macOS" icon="terminal">
-
-```bash
-curl -fsSL https://vizb.goptics.org/install.sh | bash
-```
-
-  </TabItem>
-  <TabItem label="Windows" icon="seti:windows">
-
-```powershell
-irm https://vizb.goptics.org/install.ps1 | iex
-```
-
-  </TabItem>
-</Tabs>
+<QuickInstall />
 
 <Aside type="note">
-  The installer script downloads the latest binary from GitHub Releases and places it in `/usr/local/bin`. Winget installs via the Windows Package Manager.
+  The installer downloads the latest binary from GitHub Releases to `~/.local/bin` on Linux/macOS or `%LOCALAPPDATA%\vizb` on Windows. No admin required.
 </Aside>
 
 ## Go Install

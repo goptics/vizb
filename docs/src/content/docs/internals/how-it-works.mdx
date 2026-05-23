@@ -11,8 +11,8 @@ Vizb converts `go test -bench` output into a structured JSON format, then embeds
 
 ```
 go test -bench .  →  raw text  →  parser  →  Benchmark struct  →  JSON / HTML
-                       ↓                        ↓
-               (or JSON bench events)     (grouping applied)
+  Vitest output   ↘              ↓                        ↓
+  Criterion output →         registry            (grouping applied)
 ```
 
 ## Source Structure
@@ -20,16 +20,20 @@ go test -bench .  →  raw text  →  parser  →  Benchmark struct  →  JSON /
 <FileTree>
 
 - cmd/
-  - root.go          CLI entry point, flag definitions
+  - root.go          CLI entry point, flag definitions, parser discovery
   - merge.go         Merge command
   - html.go          HTML generation command
 - pkg/
   - parser/
-    - bench_data.go      ParseBenchmarkData, ConvertJsonBenchToText
-    - parse_pattern.go   ParseBenchmarkNameToGroups, ParseBenchmarkNameWithRegex
+    - registry.go        Parser registration (ParseFunc, Parsers map)
+    - bench_data.go      ParseBenchmarkData, ConvertGoJsonBenchToText
+    - parse_pattern.go   GroupBenchmarkName, ParseBenchmarkNameWithRegex
+    - golang/            Go testing.B parser (default)
+    - javascript/        Vitest and TinyBench parsers
+    - rust/              Criterion and Divan parsers
   - template/
     - generate-ui.go     HTML template generation
-    - vizb-ui.gen.go     Built Vue UI (auto-generated)
+    - vizb-ui.gen.go     Built Vue UI (auto-generated from ui/dist)
   - style/
     - style.go           Terminal styling (lipgloss)
 - shared/
@@ -37,8 +41,17 @@ go test -bench .  →  raw text  →  parser  →  Benchmark struct  →  JSON /
   - merge.go         MergeBenchmarks function
   - dimension.go     Dimension type (n, x, y)
   - flag_state.go    CLI flag state
-  - constants.go     Temp file prefix
-  - …
+- ui/                Vue 3 + TypeScript visualization app
+  - src/composables/
+    - charts/            Bar, line, and pie chart rendering (ECharts)
+    - useSettingsStore.ts    Reactive chart settings (scale, sort, labels)
+    - useChartOptions.ts     Chart composable routing
+  - src/components/
+    - ChartCard.vue        Individual chart container
+    - ScaleSelector.vue    Linear/log toggle (hidden for pie charts)
+    - SelectionTabs.vue    Metric/chart-type picker
+  - src/views/
+    - Dashboard.vue        Full multi-chart dashboard layout
 
 </FileTree>
 
@@ -78,10 +91,14 @@ The top-level output struct containing metadata and all benchmark data:
 
 ```json
 {
-  "tag": "v1.0.0",
+  "tag": "v1.1.0",
   "timestamp": "2025-01-15T10:30:00Z",
   "name": "MyBenchmarks",
   "description": "Sorting algorithm comparison",
+  "history": [
+    { "tag": "v0.9.0", "timestamp": "2024-12-01T08:00:00Z" },
+    { "tag": "v1.0.0", "timestamp": "2025-01-15T10:30:00Z" }
+  ],
   "cpu": { "name": "Apple M2", "cores": 8 },
   "os": "darwin",
   "arch": "arm64",
@@ -133,7 +150,8 @@ Vizb auto-detects the input format:
 
 1. **Input** — file argument or stdin pipe written to temp file
 2. **Preprocess** — JSON bench events converted to text (if needed)
-3. **Parse** — `benchfmt.NewReader` extracts benchmark results
-4. **Group** — `--group-pattern` or `--group-regex` splits names into dimensions
-5. **Build** — assemble `Benchmark` struct with metadata and settings
-6. **Output** — JSON (`json.Marshal`) or HTML (Vue template + embedded JSON)
+3. **Detect Parser** — maps input to a language-specific parser via the registry (Go/Vitest/TinyBench/Criterion/Divan)
+4. **Parse** — language-specific parser extracts name and stats from the benchmark output
+5. **Group** — `--group-pattern` or `--group-regex` splits benchmark names into dimensions (n, x, y)
+6. **Build** — assemble `Benchmark` struct with metadata and settings
+7. **Output** — JSON (`json.Marshal`) or HTML (Vue template + embedded JSON)
