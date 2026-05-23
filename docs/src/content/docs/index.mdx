@@ -1,9 +1,9 @@
 ---
 title: Vizb
-description: Transform Go benchmark output into interactive 4D visualizations
+description: Transform benchmark output from Go, Rust, and JavaScript frameworks into interactive 4D visualizations
 template: splash
 hero:
-  tagline: Vizb turns raw `go test -bench` output into interactive charts you can explore in your browser. Single HTML file — no server, no dependencies, no build step.
+  tagline: Turns benchmark output from Go, Rust, and JavaScript into interactive charts you can explore in your browser. Single HTML file — no server, no dependencies, no build step.
   image:
     file: ../../assets/logo.png
     alt: Vizb
@@ -39,7 +39,7 @@ import { CardGrid, Card, LinkCard } from '@astrojs/starlight/components';
     Vue.js-powered interface with sortable charts, axis swapping, scale toggles, and JPEG export. All in a single HTML file.
   </Card>
   <Card title="Flexible Input" icon="document">
-    Automatically detects raw text or JSON benchmark output. Pipe from `go test` or read from files.
+    Reads benchmark output from Go, Rust (Criterion, Divan), and JavaScript (Vitest, Tinybench). Auto-detects text and JSON formats. Pipe from CLI or read from files.
   </Card>
 </CardGrid>
 

@@ -41,6 +41,7 @@ export default defineConfig({
 				items: [
 					{ label: 'Grouping', slug: 'guides/grouping' },
 					{ label: 'Merging', slug: 'guides/merging' },
+					{ label: 'Parser Guide', slug: 'guides/parsers' },
 				],
 			},
 			{

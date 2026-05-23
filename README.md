@@ -14,25 +14,9 @@
   </p>
 
   <p>
-    A CLI tool that transforms Go benchmark raw output into interactive <strong>4D visualizations</strong>. Merge multiple benchmark runs, apply advanced grouping logic, and explore performance across four dimensions — all within a single deployable HTML file. Available <strong><a href="#github-action">GitHub Action</a></strong> for seamless CI pipeline integration.
+    A CLI tool that transforms benchmark output from <strong>Go</strong>, <strong>Rust</strong>, and <strong>JavaScript</strong> frameworks into interactive <strong>4D visualizations</strong>. Pipe in benchmark results, apply multi-dimensional grouping, merge across releases, and explore performance in a single self-contained HTML file — no server, no dependencies, no build step.
   </p>
 </div>
-
-## Features
-
-- **Modern Interactive UI**: Robust **Vue.js** application with a smooth and responsive experience.
-- **Multi-Chart**: Supports multiple charts (`bar`, `line` and `pie`) in a single place.
-- **Sorting**: Sort data (`asc`/`desc`) for comparison through UI settings or CLI flags.
-- **Swap Axis**: Swap the `n`, `x` and `y` axes for diverse comparison through UI settings.
-- **Logarithmic Scale**: Use `--scale log` for bar and line charts to better visualize benchmarks with high variance in values.
-- **Multi-Dimensional Grouping**: Merge multiple benchmark data for deep comparative analysis.
-- **Tag-Based Merging**: Tag benchmarks with commit hashes or version labels to compare performance across releases with automatic data merging.
-- **Flexible Input**: Automatically processes raw `go test -bench` output and the standard JSON output of `go test -bench -json`.
-- **Comprehensive Metrics**: Compare time, memory, and numbers with customizable units.
-- **Smart Grouping**: Extract grouping logic from benchmark names using regex and group patterns.
-- **Filtering**: Filter benchmarks to include only those matching a regex pattern.
-- **Export Options**: Generate `single-file` HTML/JSON and options to save charts as `JPEG`.
-- **GitHub Action**: First-class CI support — run benchmarks, tag releases, merge history, and deploy visualizations directly from your workflows with a single composite action.
 
 ## Installation
 
@@ -46,72 +30,16 @@ go install github.com/goptics/vizb@latest
 
 Pre-built binaries for Linux, macOS, and Windows are available on the [releases page](https://github.com/goptics/vizb/releases).
 
-## Quick Start
-
-### Direct piping
-
-```bash
-go test -bench . | vizb -o output.html
-```
-
-### From a saved file
-
-```bash
-go test -bench . > bench.txt
-vizb bench.txt -o output.html
-```
-
-### JSON output
-
-```bash
-go test -bench . -json | vizb -o output.html
-```
-
-### Merging multiple benchmarks
-
-```bash
-# Merge specific files
-vizb merge output.json output2.json -o merged.json
-
-# Merge all JSON files in a directory
-vizb merge ./results/ -o all.json
-
-# Generate HTML from merged JSON
-vizb html merged.json -o report.html
-```
-
-> [!Note]
-> The `merge` command requires JSON files as input, generated with `-o output.json`.
-
 ## Documentation
 
 Full documentation is available at **[vizb.goptics.org](https://vizb.goptics.org/)**:
 
+- [Getting Started](https://vizb.goptics.org/getting-started/)
+- [Parser Guide](https://vizb.goptics.org/guides/parsers/)
 - [CLI Commands](https://vizb.goptics.org/commands/root/)
 - [Grouping Guide](https://vizb.goptics.org/guides/grouping/)
 - [Merging Guide](https://vizb.goptics.org/guides/merging/)
 - [CI/CD Integration](https://vizb.goptics.org/ci-cd/github-action/)
-- [UI Features](https://vizb.goptics.org/ui/)
-
-## GitHub Action
-
-Vizb provides a composite GitHub Action to run benchmarks and generate visualizations in CI.
-
-### Run bench and generate HTML
-
-```yaml
-- uses: actions/setup-go@v6
-  with:
-    go-version-file: go.mod
-
-- uses: goptics/vizb@v0
-  with:
-    bench-cmd: "go test -bench=."
-    output-html: pages/index.html
-```
-
-> [!Note]
-> For full input reference, CI tutorials (stateless & stateful), and deployment guides, see the [CI/CD documentation](https://vizb.goptics.org/ci-cd/github-action/).
 
 ## Development
 

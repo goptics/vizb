@@ -7,7 +7,7 @@ import { Aside, Steps } from '@astrojs/starlight/components';
 
 ## What is Merging
 
-Merging combines multiple JSON benchmark files into a single dataset for visualization. This enables comparing benchmarks across different runs, machines, Go versions, or releases — all in one interactive chart.
+Merging combines multiple JSON benchmark files into a single dataset for visualization. This enables comparing benchmarks across different runs, machines, versions, or releases — all in one interactive chart.
 
 Without merging, each benchmark run is an isolated report. With merging, you can overlay results from `v1.0` and `v2.0`, compare performance across different machines, or track regressions over time.
 
@@ -87,7 +87,7 @@ The merge process handles tagged data as follows:
 
 ## Tag-Axis
 
-The `-A` (or `--tag-axis`) flag controls where the tag label is injected in the grouped dimensions. By default, tags are added to the **name** dimension, which creates separate charts per tag. Changing the axis lets you control how the comparison is visualized.
+The `-A` (or `--tag-axis`) flag controls where the tag label is **injected** in the grouped dimensions. By default, tags are added to the **name/n** dimension, which creates separate charts per tag. Changing the axis lets you control how the comparison is visualized.
 
 | Value | Axis | Effect |
 |---|---|---|

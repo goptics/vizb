@@ -3,38 +3,34 @@ title: Roadmap
 description: Current capabilities and future plans for vizb.
 ---
 
-import { CardGrid, Card, Aside } from '@astrojs/starlight/components';
+import { CardGrid, Card } from '@astrojs/starlight/components';
 
 ## Current State
 
-Vizb currently supports:
+Vizb currently supports benchmark output from three languages across five frameworks:
 
-- **Go** — `go test -bench` output (raw text and JSON)
-- Single-file HTML output with embedded Vue.js visualization
-- Multi-dimensional grouping, tag-based merging, and GitHub Action integration
+- **Go** — `go test -bench` output (raw text and `-json`)
+- **Rust** — `cargo bench` via [Criterion](https://github.com/bheisler/criterion.rs) (`rs:criterion`) and [Divan](https://github.com/nvzqz/divan) (`rs:divan`)
+- **JavaScript / TypeScript** — [Vitest](https://vitest.dev) bench (`js:vitest`) and [Tinybench](https://github.com/tinylibs/tinybench) console.table (`js:tinybench`)
 
-## Future Language Support
+All parsers support multi-dimensional grouping, tag-based merging, time unit conversion, and filtering. See the [Parser Guide](/guides/parsers) for setup.
 
-Vizb aims to support benchmark output from other languages and tools:
+## Planned
 
 <CardGrid>
-  <Card title="Rust" icon="seti:rust">
-    Parse output from `cargo bench` and Criterion.rs. Bring the same multi-dimensional grouping and merge capabilities to Rust benchmarks.
-  </Card>
   <Card title="Python" icon="seti:python">
     Integrate with `pytest-benchmark` output. Generate interactive visualizations for Python performance testing.
   </Card>
-  <Card title="JavaScript / TypeScript" icon="seti:javascript">
-    Support benchmark.js and similar JS benchmarking tools. Visualize frontend and Node.js performance data.
+  <Card title="C++" icon="seti:cpp">
+    Parse output from Google Benchmark and similar C++ benchmarking frameworks. Bring multi-dimensional visualization to native performance testing.
+  </Card>
+  <Card title="Dart" icon="seti:dart">
+    Support the Dart benchmark harness (`benchmark_harness` package). Visualize Dart VM performance data.
   </Card>
   <Card title="Java" icon="seti:java">
     Parse output from JMH (Java Microbenchmark Harness) and similar Java benchmarking frameworks. Bring multi-dimensional visualization to JVM performance testing.
   </Card>
 </CardGrid>
-
-<Aside type="note">
-  Multi-language support is planned but not yet available. Contributions and feature requests are welcome on [GitHub](https://github.com/goptics/vizb/issues).
-</Aside>
 
 ## Contributing
 
