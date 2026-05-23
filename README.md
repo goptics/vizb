@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assests/logo.png" alt="vizb logo" width="120" height="auto" />
+  <img src="assests/logo.svg" alt="vizb logo" width="120" height="auto" />
   <h1>Vizb</h1>
 
   <p>
