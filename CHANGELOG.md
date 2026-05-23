@@ -4,6 +4,20 @@ Notable changes to Vizb documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [0.11.0] - 2026-05-23
+
+### Added
+
+- **Multi-Language Parser Registry**: Vizb now supports benchmark output from Rust and JavaScript via a new parser registry. Ships with parsers for Rust (Criterion, Divan) and JavaScript (Vitest, TinyBench) — making Vizb a cross-language benchmark visualization tool.
+- **`--parser` Flag**: Explicitly select a parser for non-Go benchmark input (`--parser rs:criterion`, `--parser js:vitest`, etc.). Auto-detection based on file extension also supported.
+- **Rust Parsers**: Added parsers for Criterion (`rs:criterion`) and Divan (`rs:divan`) benchmark output formats.
+- **JavaScript Parsers**: Added parsers for Vitest (`js:vitest`) and TinyBench (`js:tinybench`) benchmark output formats.
+- **Quick Installation**: One-command install via `curl` (macOS/Linux) and `winget` (Windows) — no manual binary download needed.
+
+### Changed
+
+- **Tests migrated to testify**: Test suite standardized on `testify/assert` for consistent assertions and better failure messages.
+
 # [0.10.3] - 2026-05-20
 
 ### Fixed
