@@ -44,6 +44,7 @@ The action:
 | `bench-cmd` | `""` | Benchmark command to run (e.g., `go test -bench=.`). Requires Go toolchain. |
 | `bench-file` | `""` | Path to existing benchmark file. Takes priority over `bench-cmd`. |
 | `name` | `"Benchmarks"` | Benchmark name |
+| `parser` | `"go"` | Benchmark parser to use (one of: `go`, `js:tinybench`, `js:vitest`, `rs:criterion` and `rs:divan`) |
 | `description` | `""` | Benchmark description |
 | `tag` | `""` | Tag/identifier for the benchmark |
 | `group-pattern` | `"x"` | Group pattern |
