@@ -15,7 +15,7 @@ jobs:
       - name: Run action (stateless)
         uses: ./
         with:
-          bench-file: examples/go/hash.txt
+          bench-file: examples/go/01-hash.txt
           output-html: index.html
 
   stateful:
@@ -30,7 +30,7 @@ jobs:
         uses: ./
         with:
           name: Hash
-          bench-file: examples/go/hash.txt
+          bench-file: examples/go/01-hash.txt
           output-json: results/prev/hash.json
 
       - name: Run action (stateful)

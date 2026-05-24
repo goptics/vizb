@@ -17,19 +17,20 @@ jobs:
     uses: ./.github/workflows/test-action.yml
 
   convert:
+    name: Convert Rust Benchmarks
     needs: test
     strategy:
       matrix:
         include:
-          - output: criterion
-            bench-file: criterion.txt
+          - output: 00-criterion
+            bench-file: 00-criterion
             name: "Bubble vs Insertion Sort (Criterion)"
             group-regex: "(?<x>.*)/n=(?<y>.*)"
             scale: "log"
             parser: rs:criterion
 
-          - output: divan
-            bench-file: divan.txt
+          - output: 01-divan
+            bench-file: 01-divan
             name: "Bubble vs Insertion Sort (Divan)"
             group-pattern: "x__y"
             scale: "log"
@@ -42,7 +43,7 @@ jobs:
       - name: ${{ matrix.name }}
         uses: ./
         with:
-          bench-file: examples/rust/${{ matrix.bench-file }}
+          bench-file: examples/rust/${{ matrix.bench-file }}.txt
           name: ${{ matrix.name }}
           group-pattern: ${{ matrix.group-pattern }}
           group-regex: ${{ matrix.group-regex }}
@@ -58,6 +59,7 @@ jobs:
           path: ${{ matrix.output }}.json
 
   merge-deploy:
+    name: Merge Javascript Benchmarks
     needs: convert
     permissions:
       contents: write

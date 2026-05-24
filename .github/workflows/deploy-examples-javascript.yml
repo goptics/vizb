@@ -17,18 +17,19 @@ jobs:
     uses: ./.github/workflows/test-action.yml
 
   convert:
+    name: Convert Javascript Benchmarks
     needs: test
     strategy:
       matrix:
         include:
-          - output: tinybench
-            bench-file: tinybench.txt
+          - output: 00-tinybench
+            bench-file: 00-tinybench
             name: "Bubble Vs Insertion Sort (tinybench)"
             group-pattern: x/y
             parser: js:tinybench
 
-          - output: vitest
-            bench-file: vitest.txt
+          - output: 01-vitest
+            bench-file: 01-vitest
             name: "Bubble Vs Insertion Sort (vitest)"
             group-regex: "n=(?<y>.*)/(?<x>.*)"
             parser: js:vitest
@@ -40,7 +41,7 @@ jobs:
       - name: ${{ matrix.name }}
         uses: ./
         with:
-          bench-file: examples/javascript/${{ matrix.bench-file }}
+          bench-file: examples/javascript/${{ matrix.bench-file }}.txt
           name: ${{ matrix.name }}
           group-pattern: ${{ matrix.group-pattern }}
           group-regex: ${{ matrix.group-regex }}
@@ -55,6 +56,7 @@ jobs:
           path: ${{ matrix.output }}.json
 
   merge-deploy:
+    name: Merge Javascript Benchmarks
     needs: convert
     permissions:
       contents: write
