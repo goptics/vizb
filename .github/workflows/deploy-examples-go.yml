@@ -103,6 +103,8 @@ jobs:
 
   merge-deploy:
     needs: convert
+    permissions:
+      contents: write
     uses: ./.github/workflows/merge-deploy-examples.yml
     with:
       language: go
