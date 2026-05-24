@@ -83,7 +83,7 @@ export default defineConfig({
 			},
 			{
 				tag: 'meta',
-				attrs: { property: 'og:image:height', content: '630' },
+				attrs: { property: 'og:image:height', content: '600' },
 			}
 		],
 	}),
