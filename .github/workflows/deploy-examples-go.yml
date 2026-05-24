@@ -6,7 +6,7 @@ on:
       - examples/go/**
       - action.yml
       - .github/workflows/test-action.yml
-      - .github/workflows/deploy-examples/go.yml
+      - .github/workflows/deploy-examples-go.yml
   workflow_run:
     workflows: [Release]
     types: [completed]
@@ -103,6 +103,6 @@ jobs:
 
   merge-deploy:
     needs: convert
-    uses: ./.github/workflows/deploy-examples/merge-deploy.yml
+    uses: ./.github/workflows/merge-deploy-examples.yml
     with:
       language: go

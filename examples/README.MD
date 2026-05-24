@@ -14,9 +14,9 @@ Push changes to `examples/{go,javascript,rust}/` to trigger a per-language CI pi
 
 | Language | Workflow | Dashboard |
 |----------|----------|-----------|
-| Go       | `.github/workflows/deploy-examples/go.yml`       | [goptics.github.io/vizb/examples/go/][go-dash]       |
-| JavaScript | `.github/workflows/deploy-examples/javascript.yml` | [goptics.github.io/vizb/examples/javascript/][js-dash] |
-| Rust     | `.github/workflows/deploy-examples/rust.yml`     | [goptics.github.io/vizb/examples/rust/][rust-dash]     |
+| Go       | `.github/workflows/deploy-examples-go.yml`       | [goptics.github.io/vizb/examples/go/][go-dash]       |
+| JavaScript | `.github/workflows/deploy-examples-javascript.yml` | [goptics.github.io/vizb/examples/javascript/][js-dash] |
+| Rust     | `.github/workflows/deploy-examples-rust.yml`     | [goptics.github.io/vizb/examples/rust/][rust-dash]     |
 
 [go-dash]: https://goptics.github.io/vizb/examples/go/
 [js-dash]: https://goptics.github.io/vizb/examples/javascript/
@@ -25,7 +25,7 @@ Push changes to `examples/{go,javascript,rust}/` to trigger a per-language CI pi
 ## Adding a new benchmark
 
 1. Drop a `.txt` bench output file into `examples/{language}/`
-2. Add a matrix entry in the corresponding workflow (e.g. `.github/workflows/deploy-examples/go.yml`):
+2. Add a matrix entry in the corresponding workflow (e.g. `.github/workflows/deploy-examples-go.yml`):
 
 ```yaml
 - output: my-benchmark

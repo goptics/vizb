@@ -1,12 +1,12 @@
-name: deploy-rust-examples
+name: deploy-javascript-examples
 on:
   push:
     branches: [main]
     paths:
-      - examples/rust/**
+      - examples/javascript/**
       - action.yml
       - .github/workflows/test-action.yml
-      - .github/workflows/deploy-examples/rust.yml
+      - .github/workflows/deploy-examples-javascript.yml
   workflow_run:
     workflows: [Release]
     types: [completed]
@@ -21,19 +21,17 @@ jobs:
     strategy:
       matrix:
         include:
-          - output: criterion
-            bench-file: criterion.txt
-            name: "Bubble vs Insertion Sort (Criterion)"
-            group-regex: "x/n=(?<y>.*)"
-            scale: "log"
-            parser: rs:criterion
+          - output: tinybench
+            bench-file: tinybench.txt
+            name: "Bubble Vs Insertion Sort (tinybench)"
+            group-pattern: x/y
+            parser: js:tinybench
 
-          - output: divan
-            bench-file: divan.txt
-            name: "Bubble vs Insertion Sort (Divan)"
-            group-pattern: "x__y"
-            scale: "log"
-            parser: rs:divan
+          - output: vitest
+            bench-file: http-routing.txt
+            name: "Bubble Vs Insertion Sort (vitest)"
+            group-regex: "n=(?<y>.*)/x"
+            parser: js:vitest
 
     runs-on: ubuntu-latest
     steps:
@@ -42,13 +40,10 @@ jobs:
       - name: ${{ matrix.name }}
         uses: ./
         with:
-          bench-file: examples/rust/${{ matrix.bench-file }}
+          bench-file: examples/javascript/${{ matrix.bench-file }}
           name: ${{ matrix.name }}
-          description: ${{ matrix.description }}
           group-pattern: ${{ matrix.group-pattern }}
           group-regex: ${{ matrix.group-regex }}
-          filter: ${{ matrix.filter }}
-          scale: ${{ matrix.scale }}
           output-json: ${{ matrix.output }}.json
           parser: ${{matrix.parser}}
           sort: asc
@@ -61,6 +56,6 @@ jobs:
 
   merge-deploy:
     needs: convert
-    uses: ./.github/workflows/deploy-examples/merge-deploy.yml
+    uses: ./.github/workflows/merge-deploy-examples.yml
     with:
-      language: rust
+      language: javascript
