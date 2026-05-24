@@ -14,6 +14,7 @@ tasks:
       - cd ui; pnpm install; cd -
       - cd docs; pnpm install; cd -
       - task: act:install
+      - go run github.com/evilmartians/lefthook@latest install
 
   dev:docs:
     desc: Run docs dev server on localhost:4321
