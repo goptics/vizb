@@ -1,0 +1,15 @@
+pre-commit:
+  parallel: true
+  commands:
+    ui-gen-check:
+      glob: "ui/**"
+      run: |
+        if ! git diff --cached --name-only | grep -q "^pkg/template/vizb-ui.gen.go$"; then
+          echo "❌ ui/ changed but pkg/template/vizb-ui.gen.go is not staged."
+          echo "   Run: task build:ui"
+          exit 1
+        fi
+        echo "✅ vizb-ui.gen.go is staged with UI changes"
+    go-test:
+      glob: "*.go"
+      run: task test

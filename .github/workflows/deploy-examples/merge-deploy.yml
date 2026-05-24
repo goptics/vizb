@@ -1,0 +1,41 @@
+name: merge-deploy-examples
+on:
+  workflow_call:
+    inputs:
+      language:
+        required: true
+        type: string
+        description: "Language subdirectory under examples/ (e.g. go, javascript, rust)"
+
+jobs:
+  merge-deploy:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Downloading json artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: json-*
+          path: /tmp/jsons
+          merge-multiple: true
+
+      - name: Prepare output directory
+        run: mkdir -p dist/examples/${{ inputs.language }}
+
+      - name: Merging
+        uses: ./
+        with:
+          merge-dir: /tmp/jsons
+          output-html: dist/examples/${{ inputs.language }}/index.html
+
+      - name: Deploying to Github pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: website
+          publish_dir: dist
+          keep_files: true

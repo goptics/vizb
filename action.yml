@@ -48,6 +48,9 @@ inputs:
   charts:
     description: "Chart types to generate (-c flag)"
     default: "bar,line,pie"
+  parser:
+    description: "Benchmark parser: go, js:tinybench, js:vitest, rs:criterion, rs:divan (-P flag)"
+    default: "go"
   show-labels:
     description: "Show labels on charts (-l flag)"
     default: "false"
@@ -198,6 +201,7 @@ runs:
         [ -n "${{ inputs.number-unit }}" ] && VIZB_ARGS+=(-N "${{ inputs.number-unit }}")
         [ -n "${{ inputs.charts }}" ] && VIZB_ARGS+=(-c "${{ inputs.charts }}")
         [ "${{ inputs.show-labels }}" = "true" ] && VIZB_ARGS+=(-l)
+        [ -n "${{ inputs.parser }}" ] && VIZB_ARGS+=(-P "${{ inputs.parser }}")
 
         if [ "${{ steps.resolve.outputs.source }}" = "file" ]; then
           cp "${{ inputs.bench-file }}" bench-input.txt

@@ -1,27 +1,35 @@
 # Vizb Examples
 
-This directory contains benchmark output files used to generate the vizb examples dashboard.
+Benchmark output files used to generate the vizb examples dashboard, organized by language.
 
 ## How it works
 
-Pushing changes to `examples/bench/` triggers a CI workflow (`.github/workflows/deploy-examples.yml`) that:
+Push changes to `examples/{go,javascript,rust}/` to trigger a per-language CI pipeline that:
 
 1. Converts each `.txt` bench file to JSON with per-benchmark name, description, and group pattern
-2. Merges all JSONs into a single HTML dashboard
-3. Deploys to GitHub Pages on the orphan `docs` branch
+2. Merges all JSONs into a single HTML dashboard for that language
+3. Deploys to GitHub Pages on the `website` branch
 
-## Live dashboard
+## Live dashboards
 
-**[goptics.github.io/vizb/examples](https://goptics.github.io/vizb/examples/)**
+| Language | Workflow | Dashboard |
+|----------|----------|-----------|
+| Go       | `.github/workflows/deploy-examples/go.yml`       | [goptics.github.io/vizb/examples/go/][go-dash]       |
+| JavaScript | `.github/workflows/deploy-examples/javascript.yml` | [goptics.github.io/vizb/examples/javascript/][js-dash] |
+| Rust     | `.github/workflows/deploy-examples/rust.yml`     | [goptics.github.io/vizb/examples/rust/][rust-dash]     |
+
+[go-dash]: https://goptics.github.io/vizb/examples/go/
+[js-dash]: https://goptics.github.io/vizb/examples/javascript/
+[rust-dash]: https://goptics.github.io/vizb/examples/rust/
 
 ## Adding a new benchmark
 
-1. Drop a `.txt` bench output file into `examples/bench/`
-2. Add a matrix entry in `.github/workflows/deploy-examples.yml`:
+1. Drop a `.txt` bench output file into `examples/{language}/`
+2. Add a matrix entry in the corresponding workflow (e.g. `.github/workflows/deploy-examples/go.yml`):
 
 ```yaml
 - output: my-benchmark
-  bench-file: examples/bench/my-benchmark.txt
+  bench-file: my-benchmark.txt
   name: "My Benchmark"
   description: "What this benchmark measures"
   group-pattern: "x/y"      # or group-regex for regex grouping

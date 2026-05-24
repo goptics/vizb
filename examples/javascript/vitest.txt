@@ -1,0 +1,14 @@
+✓ sort.bench.js > n=100 1356ms
+     name                   hz     min     max    mean     p75     p99    p995    p999     rme  samples
+   · bubbleSort     264,413.96  0.0037  0.0974  0.0038  0.0038  0.0049  0.0060  0.0076  ±0.09%   132207
+   · insertionSort  639,846.68  0.0015  0.1212  0.0016  0.0016  0.0024  0.0025  0.0034  ±0.14%   319924
+
+ ✓ sort.bench.js > n=500 1212ms
+     name                  hz     min     max    mean     p75     p99    p995    p999     rme  samples
+   · bubbleSort      7,715.01  0.1235  1.6623  0.1296  0.1298  0.1663  0.1713  0.1744  ±0.61%     3858
+   · insertionSort  30,632.50  0.0320  0.1858  0.0326  0.0329  0.0345  0.0357  0.0441  ±0.09%    15317
+
+ ✓ sort.bench.js > n=2000 1211ms
+     name                 hz     min     max    mean     p75     p99    p995    p999     rme  samples
+   · bubbleSort       581.49  1.6942  1.8435  1.7197  1.7342  1.8244  1.8252  1.8435  ±0.15%      291
+   · insertionSort  1,933.38  0.5139  0.5336  0.5172  0.5181  0.5278  0.5288  0.5336  ±0.05%      967

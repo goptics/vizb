@@ -1,0 +1,65 @@
+name: deploy-javascript-examples
+on:
+  push:
+    branches: [main]
+    paths:
+      - examples/javascript/**
+      - action.yml
+      - .github/workflows/test-action.yml
+      - .github/workflows/deploy-examples/javascript.yml
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+  workflow_dispatch:
+
+jobs:
+  test:
+    uses: ./.github/workflows/test-action.yml
+
+  convert:
+    needs: test
+    strategy:
+      matrix:
+        include:
+          - output: tinybench
+            bench-file: tinybench.txt
+            name: "Bubble Vs Insertion Sort (tinybench)"
+            group-pattern: x/y
+            parser: js:tinybench
+
+          - output: vitest
+            bench-file: http-routing.txt
+            name: "Bubble Vs Insertion Sort (vitest)"
+            description: "Performance comparison of popular Go HTTP Routers"
+            group-regex: "n=(?<y>.*)/x"
+            parser: js:vitest
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: ${{ matrix.name }}
+        uses: ./
+        with:
+          bench-file: examples/javascript/${{ matrix.bench-file }}
+          name: ${{ matrix.name }}
+          description: ${{ matrix.description }}
+          group-pattern: ${{ matrix.group-pattern }}
+          group-regex: ${{ matrix.group-regex }}
+          filter: ${{ matrix.filter }}
+          scale: ${{ matrix.scale }}
+          output-json: ${{ matrix.output }}.json
+          parser: ${{matrix.parser}}
+          sort: asc
+
+      - name: Uploading json artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: json-${{ matrix.output }}
+          path: ${{ matrix.output }}.json
+
+  merge-deploy:
+    needs: convert
+    uses: ./.github/workflows/deploy-examples/merge-deploy.yml
+    with:
+      language: javascript
