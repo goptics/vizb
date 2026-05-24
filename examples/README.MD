@@ -14,13 +14,13 @@ Push changes to `examples/{go,javascript,rust}/` to trigger a per-language CI pi
 
 | Language | Workflow | Dashboard |
 |----------|----------|-----------|
-| Go       | `.github/workflows/deploy-examples-go.yml`       | [goptics.github.io/vizb/examples/go/][go-dash]       |
-| JavaScript | `.github/workflows/deploy-examples-javascript.yml` | [goptics.github.io/vizb/examples/javascript/][js-dash] |
-| Rust     | `.github/workflows/deploy-examples-rust.yml`     | [goptics.github.io/vizb/examples/rust/][rust-dash]     |
+| Go       | `.github/workflows/deploy-examples-go.yml`       | [vizb.goptics.org/examples/go/][go-dash]       |
+| JavaScript | `.github/workflows/deploy-examples-javascript.yml` | [vizb.goptics.org/examples/javascript/][js-dash] |
+| Rust     | `.github/workflows/deploy-examples-rust.yml`     | [vizb.goptics.org/examples/rust/][rust-dash]     |
 
-[go-dash]: https://goptics.github.io/vizb/examples/go/
-[js-dash]: https://goptics.github.io/vizb/examples/javascript/
-[rust-dash]: https://goptics.github.io/vizb/examples/rust/
+[go-dash]: https://vizb.goptics.org/examples/go/
+[js-dash]: https://vizb.goptics.org/examples/javascript/
+[rust-dash]: https://vizb.goptics.org/examples/rust/
 
 ## Adding a new benchmark
 

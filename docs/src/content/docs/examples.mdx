@@ -1,27 +1,57 @@
 ---
 title: Examples
-description: Live benchmark visualizations and example data.
+description: Live benchmark visualizations and example data across Go, JavaScript, and Rust.
 ---
 
-import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
+import { LinkCard, Aside } from '@astrojs/starlight/components';
 
-🚀 <a href="https://vizb.goptics.org/examples/dashboard" target="_blank" rel="noopener noreferrer">View the live examples dashboard</a> for interactive demos.
+Benchmark files are organized by language under [`examples/`](https://github.com/goptics/vizb/tree/main/examples). Push changes to `examples/{go,javascript,rust}/` to trigger a per-language CI pipeline that converts `.txt` bench files into an interactive HTML dashboard and deploys it to `vizb.goptics.org/examples/{lang}`.
 
-## Benchmark Files
+## Live Dashboards
 
-These example benchmark files are available in the [repository](https://github.com/goptics/vizb/tree/main/examples/bench):
+| Language   | Workflow | Dashboard |
+|------------|----------|-----------|
+| Go         | [deploy-examples-go.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/deploy-examples-go.yml)       | [vizb.goptics.org/examples/go/](https://vizb.goptics.org/examples/go/)       |
+| JavaScript | [deploy-examples-javascript.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/deploy-examples-javascript.yml) | [vizb.goptics.org/examples/javascript/](https://vizb.goptics.org/examples/javascript/) |
+| Rust       | [deploy-examples-rust.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/deploy-examples-rust.yml)     | [vizb.goptics.org/examples/rust/](https://vizb.goptics.org/examples/rust/)     |
 
-<CardGrid cols={2}>
-  <LinkCard title="Hash" description="Hashing algorithms (MD5, SHA1, SHA256, SHA3, etc.) — 1D with regex grouping, log scale." href="https://github.com/goptics/vizb/blob/main/examples/bench/hash.txt" />
-  <LinkCard title="HTTP Routing" description="Router benchmarks (Gin, Echo, Chi, etc.) — 2D with pattern grouping." href="https://github.com/goptics/vizb/blob/main/examples/bench/http-routing.txt" />
-  <LinkCard title="Worker Pools" description="Worker pool implementations — 3D with pattern grouping." href="https://github.com/goptics/vizb/blob/main/examples/bench/worker-pools.txt" />
-  <LinkCard title="Serialization" description="JSON, XML, Protobuf, etc. — 2D with regex grouping." href="https://github.com/goptics/vizb/blob/main/examples/bench/serialization.txt" />
-  <LinkCard title="Decode/Encode" description="Decode/encode with text/level/size parameters — 3D regex grouping." href="https://github.com/goptics/vizb/blob/main/examples/bench/decode-encode.txt" />
-  <LinkCard title="Validator" description="Go validator benchmarks — regex grouping, log scale." href="https://github.com/goptics/vizb/blob/main/examples/bench/validator.txt" />
-  <LinkCard title="Varmq" description="Variadic queue benchmarks — 2D pattern grouping." href="https://github.com/goptics/vizb/blob/main/examples/bench/varmq.txt" />
-  <LinkCard title="Logarithmic Value" description="Wide-range values demonstrating log scale — 2D pattern grouping." href="https://github.com/goptics/vizb/blob/main/examples/bench/log-value.txt" />
-</CardGrid>
+## Go Benchmarks Inputs
+
+| Benchmark | Input File | Dashboard |
+|-----------|-----------|-----------|
+| Hashing | [hash.txt](https://github.com/goptics/vizb/blob/main/examples/go/hash.txt) | [vizb.goptics.org/examples/go/](https://vizb.goptics.org/examples/go/) |
+| HTTP Routing | [http-routing.txt](https://github.com/goptics/vizb/blob/main/examples/go/http-routing.txt) | [vizb.goptics.org/examples/go/](https://vizb.goptics.org/examples/go/) |
+| Worker Pools | [worker-pools.txt](https://github.com/goptics/vizb/blob/main/examples/go/worker-pools.txt) | [vizb.goptics.org/examples/go/](https://vizb.goptics.org/examples/go/) |
+| Varmq | [varmq.txt](https://github.com/goptics/vizb/blob/main/examples/go/varmq.txt) | [vizb.goptics.org/examples/go/](https://vizb.goptics.org/examples/go/) |
+| Serialization | [serialization.txt](https://github.com/goptics/vizb/blob/main/examples/go/serialization.txt) | [vizb.goptics.org/examples/go/](https://vizb.goptics.org/examples/go/) |
+| Validator | [validator.txt](https://github.com/goptics/vizb/blob/main/examples/go/validator.txt) | [vizb.goptics.org/examples/go/](https://vizb.goptics.org/examples/go/) |
+| Decode | [decode-encode.txt](https://github.com/goptics/vizb/blob/main/examples/go/decode-encode.txt) | [vizb.goptics.org/examples/go/](https://vizb.goptics.org/examples/go/) |
+| Encode | [decode-encode.txt](https://github.com/goptics/vizb/blob/main/examples/go/decode-encode.txt) | [vizb.goptics.org/examples/go/](https://vizb.goptics.org/examples/go/) |
+
+## JavaScript Benchmarks Inputs
+
+| Benchmark | Input File | Dashboard |
+|-----------|-----------|-----------|
+| Tinybench | [tinybench.txt](https://github.com/goptics/vizb/blob/main/examples/javascript/tinybench.txt) | [vizb.goptics.org/examples/javascript/](https://vizb.goptics.org/examples/javascript/) |
+| Vitest | [vitest.txt](https://github.com/goptics/vizb/blob/main/examples/javascript/vitest.txt) | [vizb.goptics.org/examples/javascript/](https://vizb.goptics.org/examples/javascript/) |
+
+## Rust Benchmarks Inputs
+
+| Benchmark | Input File | Dashboard |
+|-----------|-----------|-----------|
+| Criterion | [criterion.txt](https://github.com/goptics/vizb/blob/main/examples/rust/criterion.txt) | [vizb.goptics.org/examples/rust/](https://vizb.goptics.org/examples/rust/) |
+| Divan | [divan.txt](https://github.com/goptics/vizb/blob/main/examples/rust/divan.txt) | [vizb.goptics.org/examples/rust/](https://vizb.goptics.org/examples/rust/) |
+
+## How People Are Using Vizb
+
+| Repository | Short Description | Workflow | Live Link |
+|------------|-------------------|----------|-----------|
+| [goptics/vizb](https://github.com/goptics/vizb) | Vizb's own benchmark dashboards for Go, JavaScript, and Rust | [deploy-examples-*.yml](https://github.com/goptics/vizb/tree/main/.github/workflows) | [vizb.goptics.org/examples/](https://vizb.goptics.org/examples/) |
+| [goptics/varmq-benchmarks](https://github.com/goptics/varmq-benchmarks) | Worker pool benchmarks comparing VarMQ vs PondV2 across workload patterns and CPU configs | [bench.yml](https://github.com/goptics/varmq-benchmarks/blob/main/.github/workflows/bench.yml) | [goptics.github.io/varmq-benchmarks/](https://goptics.github.io/varmq-benchmarks/) |
+| [goptics/sortbench](https://github.com/goptics/sortbench) | Sorting algorithm benchmarks across git versions using per-tag vizb merging (bubble, insertion, shell, quicksort, merge) | [bench.yml](https://github.com/goptics/sortbench/blob/main/.github/workflows/bench.yml) | [goptics.github.io/sortbench/](https://goptics.github.io/sortbench/) |
+
+**Using vizb in your project?** [Open a PR](https://github.com/goptics/vizb/edit/main/docs/src/content/docs/examples.mdx) to add your entry!
 
 <Aside type="tip">
-  Clone the repo and run any example: `vizb examples/bench/hash.txt -o hash.html`
+  Clone the repo and run any example: `vizb examples/go/hash.txt -o hash.html`
 </Aside>
