@@ -71,7 +71,21 @@ export default defineConfig({
 		},
 		plugins: [
 			starlightThemeRapide()
-		]
+		],
+		head: [
+			{
+				tag: 'meta',
+				attrs: { property: 'og:image', content: '/og-image.png' },
+			},
+			{
+				tag: 'meta',
+				attrs: { property: 'og:image:width', content: '1200' },
+			},
+			{
+				tag: 'meta',
+				attrs: { property: 'og:image:height', content: '630' },
+			}
+		],
 	}),
 	],
 });
