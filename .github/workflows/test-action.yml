@@ -39,7 +39,7 @@ jobs:
           name: HTTP Frameworks Comparisons
           group-pattern: x_n
           sort: asc
-          bench-file: examples/go/http-routing.txt
+          bench-file: examples/go/02-http-routing.txt
           merge-dir: results/prev
           output-html: index.html
           output-json: results/bench.json
