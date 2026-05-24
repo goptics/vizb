@@ -1,0 +1,14 @@
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+sort_divan              fastest       │ slowest       │ median        │ mean          │ samples │ iters
+├─ bubble_sort_100      4.36 µs       │ 9.68 µs       │ 4.646 µs      │ 4.733 µs      │ 100     │ 100
+├─ bubble_sort_500      103.7 µs      │ 174.6 µs      │ 108 µs        │ 119.1 µs      │ 100     │ 100
+├─ bubble_sort_2000     1.36 ms       │ 2.005 ms      │ 1.391 ms      │ 1.458 ms      │ 100     │ 100
+├─ insertion_sort_100   1.131 µs      │ 1.423 µs      │ 1.139 µs      │ 1.149 µs      │ 100     │ 200
+├─ insertion_sort_500   20.86 µs      │ 23.8 µs       │ 21.42 µs      │ 21.39 µs      │ 100     │ 100
+╰─ insertion_sort_2000  289 µs        │ 299.9 µs      │ 292.8 µs      │ 292.4 µs      │ 100     │ 100
+```
+
+The experimental parser
