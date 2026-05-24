@@ -28,9 +28,9 @@ jobs:
             parser: js:tinybench
 
           - output: vitest
-            bench-file: http-routing.txt
+            bench-file: vitest.txt
             name: "Bubble Vs Insertion Sort (vitest)"
-            group-regex: "n=(?<y>.*)/x"
+            group-regex: "n=(?<y>.*)/(?<x>.*)"
             parser: js:vitest
 
     runs-on: ubuntu-latest

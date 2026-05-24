@@ -24,7 +24,7 @@ jobs:
           - output: criterion
             bench-file: criterion.txt
             name: "Bubble vs Insertion Sort (Criterion)"
-            group-regex: "x/n=(?<y>.*)"
+            group-regex: "(?<x>.*)/n=(?<y>.*)"
             scale: "log"
             parser: rs:criterion
 
