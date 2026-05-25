@@ -1,5 +1,12 @@
 <div align="center">
-  <img src="assests/logo.svg" alt="vizb logo" width="120" height="auto" />
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./assests/logo-dark.gif">
+  
+  <source media="(prefers-color-scheme: light)" srcset="./assests/logo-light.gif">
+  
+  <img alt="My Logo" width="100px" src="./assests/logo-light.gif">
+</picture>
+
   <h1>Vizb</h1>
 
   <p>
