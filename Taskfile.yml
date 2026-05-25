@@ -121,3 +121,23 @@ tasks:
     desc: Clean up act test artifacts
     cmds:
       - rm -rf bench*.json index.html results/ bench-input.txt
+
+  # ── Homebrew Testing ──────────────────────────────────────────
+
+  brew:test:
+    desc: Build, test, and audit vizb Homebrew formula in a disposable tap
+    dir: "{{.USER_WORKING_DIR}}"
+    vars:
+      TAP_OWNER: fahimfaisaal
+      TAP_NAME: vizb-test
+      TAP: "{{.TAP_OWNER}}/homebrew-{{.TAP_NAME}}"
+      TAP_REF: "{{.TAP_OWNER}}/{{.TAP_NAME}}"
+    cmds:
+      - brew tap-new {{.TAP}} 2>/dev/null || true
+      - cp vizb.rb $(brew --repository)/Library/Taps/{{.TAP_OWNER}}/homebrew-{{.TAP_NAME}}/Formula/
+      - HOMEBREW_NO_INSTALL_FROM_API=1 brew install --build-from-source {{.TAP_REF}}/vizb
+      - brew test {{.TAP_REF}}/vizb
+      - brew audit --new {{.TAP_REF}}/vizb
+      - vizb -v
+      - brew uninstall {{.TAP_REF}}/vizb
+      - brew untap {{.TAP}}
