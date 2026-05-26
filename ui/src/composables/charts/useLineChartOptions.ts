@@ -6,6 +6,7 @@ import { getNextColorFor, hasYAxis } from '../../lib/utils'
 import {
   createAxisConfig,
   createGridConfig,
+  createLabelConfig,
   createLegendConfig,
   createTooltipConfig,
   getChartStyling,
@@ -13,7 +14,7 @@ import {
 import { sortByTotal, adjustForLogScaleLine } from './shared/common'
 
 export function useLineChartOptions(config: BaseChartConfig) {
-  const { chartData, sort, isDark, scale } = config
+  const { chartData, sort, isDark,showLabels, scale } = config
 
   const sortedData = computed(() => {
     if (!sort.value.enabled) {
@@ -67,7 +68,12 @@ export function useLineChartOptions(config: BaseChartConfig) {
           {
             name: chartData.value.title,
             type: 'line' as const,
-            data: series.map((seriesData) => adjustForLogScaleLine(seriesData.values[0] ?? 0, effectiveScale)),
+            data: series.map((seriesData) => {
+              const val = adjustForLogScaleLine(seriesData.values[0] ?? 0, effectiveScale)
+              return val === null
+                ? null
+                : { value: val, label: createLabelConfig(showLabels.value, styling) }
+            }),
             connectNulls: true,
             itemStyle: { color: getNextColorFor(chartData.value.title) },
             symbol,
@@ -82,7 +88,12 @@ export function useLineChartOptions(config: BaseChartConfig) {
     const transposedSeries = yAxisLabels.map((yAxisLabel, yIndex) => ({
       name: yAxisLabel,
       type: 'line' as const,
-      data: series.map((seriesData) => adjustForLogScaleLine(seriesData.values[yIndex] ?? 0, effectiveScale)),
+      data: series.map((seriesData) => {
+        const val = adjustForLogScaleLine(seriesData.values[yIndex] ?? 0, effectiveScale)
+        return val === null
+          ? null
+          : { value: val, label: createLabelConfig(showLabels.value, styling) }
+      }),
       connectNulls: true,
       itemStyle: { color: getNextColorFor(yAxisLabel) },
       symbol,
