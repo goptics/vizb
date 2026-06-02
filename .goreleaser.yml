@@ -16,7 +16,8 @@ builds:
       - amd64
       - arm64
     ldflags:
-      - -s -w  # Strip debug info
+      - -s -w
+      - -X github.com/goptics/vizb/version.Version={{.Version}}
     main: .
 
 archives:
