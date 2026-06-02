@@ -52,10 +52,10 @@ vizb html merged.json -o report.html
 
 The default embed mode inlines the benchmark JSON directly into the HTML file. For small datasets this is ideal — one file, works offline, no dependencies. But as benchmark history grows (many merged runs, many benchmarks), the JSON can exceed 1 MB and the output file becomes unwieldy to share or store.
 
-Use `--api` to decouple the UI layer from the data layer: the HTML stays a fixed ~765 KB dashboard shell and fetches the JSON from a URL at load time. The JSON file is hosted separately and can be updated without regenerating the HTML.
+Use `--api` to decouple the UI layer from the data layer: the HTML stays a fixed ~784 KB dashboard shell and fetches the JSON from a URL at load time. The JSON file is hosted separately and can be updated without regenerating the HTML.
 
 Instead of embedding the JSON inside the HTML, point the dashboard at a hosted URL.
-The generated HTML is a lean ~765 KB viewer; benchmark data is fetched at load time.
+The generated HTML is a lean ~784 KB viewer; benchmark data is fetched at load time.
 
 ```bash
 vizb html --api https://example.com/bench.json -o report.html
