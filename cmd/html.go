@@ -25,7 +25,7 @@ Note: the JSON host must serve Access-Control-Allow-Origin: * for file:// access
 
 func init() {
 	rootCmd.AddCommand(htmlCmd)
-	htmlCmd.Flags().StringVarP(&shared.FlagState.DataURL, "data-url", "u", "", "URL to fetch benchmark JSON from at runtime (no input file needed)")
+	htmlCmd.Flags().StringVarP(&shared.FlagState.DataURL, "data-url", "U", "", "URL to fetch benchmark JSON from at runtime (no input file needed)")
 }
 
 func runHTML(cmd *cobra.Command, args []string) {
