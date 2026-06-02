@@ -2,9 +2,13 @@ package version
 
 import "runtime/debug"
 
-var Version = func() string {
-	if info, ok := debug.ReadBuildInfo(); ok && info.Main.Version != "" {
-		return info.Main.Version
+var Version = "devel"
+
+func init() {
+	if Version != "devel" {
+		return
 	}
-	return "devel"
-}()
+	if info, ok := debug.ReadBuildInfo(); ok && info.Main.Version != "" {
+		Version = info.Main.Version
+	}
+}
