@@ -76,11 +76,24 @@ var flagValidationRules = []utils.ValidationRule{
 		Validator: validateParser,
 		Default:   "go",
 	},
+	{
+		Label:     "api url",
+		Value:     &shared.FlagState.API,
+		Validator: validateAPIURL,
+		Default:   "",
+	},
 }
 
 func validateParser(key string) error {
 	if _, ok := parser.Parsers[key]; !ok {
 		return fmt.Errorf("unknown parser '%s'; available: %v", key, parser.AvailableParsers())
+	}
+	return nil
+}
+
+func validateAPIURL(url string) error {
+	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
+		return fmt.Errorf("must start with http:// or https://")
 	}
 	return nil
 }

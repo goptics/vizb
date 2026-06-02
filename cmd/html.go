@@ -3,7 +3,6 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/goptics/vizb/pkg/style"
 	"github.com/goptics/vizb/pkg/template"
@@ -40,12 +39,7 @@ func runHTML(cmd *cobra.Command, args []string) {
 	defer HandleOutputResult(f)
 
 	if shared.FlagState.API != "" {
-		apiURL := shared.FlagState.API
-		if !strings.HasPrefix(apiURL, "http://") && !strings.HasPrefix(apiURL, "https://") {
-			shared.ExitWithError("--api URL must start with http:// or https://", nil)
-		}
-
-		htmlContent := template.GenerateRemoteHTMLBenchmarkUI(apiURL, template.VizbHTMLTemplate)
+		htmlContent := template.GenerateRemoteHTMLBenchmarkUI(shared.FlagState.API, template.VizbHTMLTemplate)
 		if _, err := f.WriteString(htmlContent); err != nil {
 			shared.ExitWithError("Failed to write output file: %v", err)
 		}
