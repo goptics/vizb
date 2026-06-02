@@ -13,9 +13,16 @@ type BenchmarkData struct {
 	Stats []Stat `json:"stats"`
 }
 
+type CPUInfo struct {
+	Name  string `json:"name,omitempty"`
+	Cores int    `json:"cores,omitempty"`
+}
+
 type HistoryEntry struct {
-	Tag       string `json:"tag"`
-	Timestamp string `json:"timestamp"`
+	Tag       string   `json:"tag"`
+	Timestamp string   `json:"timestamp"`
+	CPU       *CPUInfo `json:"cpu,omitempty"`
+	OS        string   `json:"os,omitempty"`
 }
 
 type Benchmark struct {
@@ -24,10 +31,7 @@ type Benchmark struct {
 	Name        string         `json:"name"`
 	History     []HistoryEntry `json:"history,omitempty"`
 	Description string         `json:"description,omitempty"`
-	CPU         struct {
-		Name  string `json:"name,omitempty"`
-		Cores int    `json:"cores,omitempty"`
-	} `json:"cpu"`
+	CPU         CPUInfo        `json:"cpu"`
 	OS       string `json:"os,omitempty"`
 	Arch     string `json:"arch,omitempty"`
 	Pkg      string `json:"pkg,omitempty"`
