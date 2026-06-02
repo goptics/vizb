@@ -46,7 +46,7 @@ const appendVizbDataScriptTag = (html: string): string => {
 
   const script = document.createElement('script')
   script.type = 'text/javascript'
-  script.textContent = `window.VIZB_VERSION = {{ .Version }}; window.VIZB_DATA = {{ .Data }};`
+  script.textContent = `window.VIZB_VERSION = {{ .Version }}; window.VIZB_DATA = {{ .Data }}; window.VIZB_DATA_URL = {{ .DataURL }};`
 
   document.head.appendChild(script)
 
