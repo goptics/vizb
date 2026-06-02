@@ -77,8 +77,8 @@ var flagValidationRules = []utils.ValidationRule{
 		Default:   "go",
 	},
 	{
-		Label:     "api url",
-		Value:     &shared.FlagState.API,
+		Label:     "data url",
+		Value:     &shared.FlagState.DataURL,
 		Validator: validateAPIURL,
 		Default:   "",
 	},

@@ -106,7 +106,7 @@ func TestHtmlCmd_NoArgs(t *testing.T) {
 	exitCode := 0
 	shared.OsExit = func(code int) { exitCode = code }
 
-	shared.FlagState.API = ""
+	shared.FlagState.DataURL = ""
 	rootCmd.SetArgs([]string{"html"})
 	rootCmd.Execute()
 	assert.Equal(t, 1, exitCode)
@@ -127,10 +127,10 @@ func TestHtmlCmd_APIFlag(t *testing.T) {
 
 	outFile := filepath.Join(tmpDir, "remote.html")
 	shared.FlagState.OutputFile = outFile
-	shared.FlagState.API = "https://example.com/bench.json"
-	defer func() { shared.FlagState.API = "" }()
+	shared.FlagState.DataURL = "https://example.com/bench.json"
+	defer func() { shared.FlagState.DataURL = "" }()
 
-	rootCmd.SetArgs([]string{"html", "--api", "https://example.com/bench.json"})
+	rootCmd.SetArgs([]string{"html", "--data-url", "https://example.com/bench.json"})
 	err = rootCmd.Execute()
 	assert.NoError(t, err)
 	assert.Equal(t, 0, exitCode)
@@ -151,10 +151,10 @@ func TestHtmlCmd_APIFlag_InvalidURL(t *testing.T) {
 	exitCode := 0
 	shared.OsExit = func(code int) { exitCode = code }
 
-	shared.FlagState.API = "not-a-url"
-	defer func() { shared.FlagState.API = "" }()
+	shared.FlagState.DataURL = "not-a-url"
+	defer func() { shared.FlagState.DataURL = "" }()
 
-	rootCmd.SetArgs([]string{"html", "--api", "not-a-url"})
+	rootCmd.SetArgs([]string{"html", "--data-url", "not-a-url"})
 	rootCmd.Execute()
 	assert.Equal(t, 1, exitCode)
 }

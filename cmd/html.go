@@ -16,7 +16,7 @@ var htmlCmd = &cobra.Command{
 	Long: `Generate an interactive HTML chart from a benchmark JSON file.
 The input file must be a valid vizb benchmark JSON (single object or array).
 
-When --api is set, no input file is needed. The generated HTML will fetch
+When --data-url is set, no input file is needed. The generated HTML will fetch
 benchmark JSON from the provided URL at runtime instead of embedding it.
 Note: the JSON host must serve Access-Control-Allow-Origin: * for file:// access.`,
 	Args: cobra.MaximumNArgs(1),
@@ -25,7 +25,7 @@ Note: the JSON host must serve Access-Control-Allow-Origin: * for file:// access
 
 func init() {
 	rootCmd.AddCommand(htmlCmd)
-	htmlCmd.Flags().StringVarP(&shared.FlagState.API, "api", "a", "", "URL to fetch benchmark JSON from at runtime (no input file needed)")
+	htmlCmd.Flags().StringVarP(&shared.FlagState.DataURL, "data-url", "u", "", "URL to fetch benchmark JSON from at runtime (no input file needed)")
 }
 
 func runHTML(cmd *cobra.Command, args []string) {
@@ -38,8 +38,8 @@ func runHTML(cmd *cobra.Command, args []string) {
 	defer f.Close()
 	defer HandleOutputResult(f)
 
-	if shared.FlagState.API != "" {
-		htmlContent := template.GenerateRemoteHTMLBenchmarkUI(shared.FlagState.API, template.VizbHTMLTemplate)
+	if shared.FlagState.DataURL != "" {
+		htmlContent := template.GenerateRemoteHTMLBenchmarkUI(shared.FlagState.DataURL, template.VizbHTMLTemplate)
 		if _, err := f.WriteString(htmlContent); err != nil {
 			shared.ExitWithError("Failed to write output file: %v", err)
 		}
@@ -48,7 +48,7 @@ func runHTML(cmd *cobra.Command, args []string) {
 	}
 
 	if len(args) == 0 {
-		shared.ExitWithError("provide a benchmark JSON file or use --api <url>", nil)
+		shared.ExitWithError("provide a benchmark JSON file or use --data-url <url>", nil)
 		return
 	}
 
