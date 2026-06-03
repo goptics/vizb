@@ -43,16 +43,16 @@ Vizb supports Rust, JavaScript, and TypeScript benchmark frameworks in addition 
 
 ```bash
 # Rust Criterion
-cargo bench 2>&1 | vizb --parser rs:criterion -o output.html
+cargo bench | vizb --parser rs:criterion -o output.html
 
 # Rust Divan
-cargo bench 2>&1 | vizb --parser rs:divan -o output.html
+cargo bench | vizb --parser rs:divan -o output.html
 
 # Vitest
-npx vitest bench 2>&1 | vizb --parser js:vitest -o output.html
+npx vitest bench | vizb --parser js:vitest -o output.html
 
 # Tinybench
-node bench.js 2>&1 | vizb --parser js:tinybench -o output.html
+node bench.js | vizb --parser js:tinybench -o output.html
 ```
 
 See the [Parser Guide](/guides/parsers) for full details on each parser's metrics and configuration.

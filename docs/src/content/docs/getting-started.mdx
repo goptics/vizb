@@ -39,12 +39,12 @@ import { Aside, LinkCard, CardGrid, Tabs, TabItem } from '@astrojs/starlight/com
 
   **Pipe**
   ```bash
-  cargo bench 2>&1 | vizb --parser rs:criterion -o output.html
+  cargo bench | vizb --parser rs:criterion -o output.html
   ```
 
   **From a saved file**
   ```bash
-  cargo bench 2>&1 > bench.txt
+  cargo bench > bench.txt
   vizb --parser rs:criterion bench.txt -o output.html
   ```
 
@@ -53,12 +53,12 @@ import { Aside, LinkCard, CardGrid, Tabs, TabItem } from '@astrojs/starlight/com
 
   **Pipe**
   ```bash
-  cargo bench 2>&1 | vizb --parser rs:divan -o output.html
+  cargo bench | vizb --parser rs:divan -o output.html
   ```
 
   **From a saved file**
   ```bash
-  cargo bench 2>&1 > bench.txt
+  cargo bench > bench.txt
   vizb --parser rs:divan bench.txt -o output.html
   ```
 
@@ -67,12 +67,12 @@ import { Aside, LinkCard, CardGrid, Tabs, TabItem } from '@astrojs/starlight/com
 
   **Pipe**
   ```bash
-  npx vitest bench 2>&1 | vizb --parser js:vitest -o output.html
+  npx vitest bench | vizb --parser js:vitest -o output.html
   ```
 
   **From a saved file**
   ```bash
-  npx vitest bench 2>&1 > bench.txt
+  npx vitest bench > bench.txt
   vizb --parser js:vitest bench.txt -o output.html
   ```
 
@@ -85,12 +85,12 @@ import { Aside, LinkCard, CardGrid, Tabs, TabItem } from '@astrojs/starlight/com
 
   **Pipe**
   ```bash
-  node bench.js 2>&1 | vizb --parser js:tinybench -o output.html
+  node bench.js | vizb --parser js:tinybench -o output.html
   ```
 
   **From a saved file**
   ```bash
-  node bench.js 2>&1 > bench.txt
+  node bench.js > bench.txt
   vizb --parser js:tinybench bench.txt -o output.html
   ```
 

@@ -40,7 +40,7 @@ Each benchmark framework produces output in a different format. Vizb's parser re
   Parses `cargo bench` output from [Criterion](https://github.com/bheisler/criterion.rs).
 
   ```bash
-  cargo bench 2>&1 | vizb --parser rs:criterion -o output.html
+  cargo bench | vizb --parser rs:criterion -o output.html
   ```
 
   **Metrics extracted:**
@@ -60,7 +60,7 @@ Each benchmark framework produces output in a different format. Vizb's parser re
   Parses `cargo bench` output from [Divan](https://github.com/nvzqz/divan).
 
   ```bash
-  cargo bench 2>&1 | vizb --parser rs:divan -o output.html
+  cargo bench | vizb --parser rs:divan -o output.html
   ```
 
   **Metrics extracted:**
@@ -86,7 +86,7 @@ Each benchmark framework produces output in a different format. Vizb's parser re
   </Aside>
 
   ```bash
-  npx vitest bench 2>&1 | vizb --parser js:vitest -o output.html
+  npx vitest bench | vizb --parser js:vitest -o output.html
   ```
 
   **Metrics extracted:**
@@ -118,7 +118,7 @@ Each benchmark framework produces output in a different format. Vizb's parser re
   Parses [Tinybench](https://github.com/tinylibs/tinybench) `console.table()` output.
 
   ```bash
-  node bench.js 2>&1 | vizb --parser js:tinybench -o output.html
+  node bench.js | vizb --parser js:tinybench -o output.html
   ```
 
   **Metrics extracted:**
