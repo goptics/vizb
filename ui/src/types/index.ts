@@ -33,6 +33,11 @@ export type Settings = {
 export type HistoryEntry = {
   tag: string
   timestamp: string
+  cpu?: {
+    name?: string
+    cores?: number
+  }
+  os?: string
 }
 
 export type Benchmark = {
@@ -41,6 +46,7 @@ export type Benchmark = {
   pkg?: string
   tag?: string
   timestamp?: string
+  os?: string
   history?: HistoryEntry[]
   cpu?: {
     name?: string
