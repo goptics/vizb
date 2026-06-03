@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/goptics/vizb/pkg/parser"
@@ -91,9 +92,10 @@ func validateParser(key string) error {
 	return nil
 }
 
-func validateAPIURL(url string) error {
-	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
-		return fmt.Errorf("must start with http:// or https://")
+func validateAPIURL(rawURL string) error {
+	u, err := url.ParseRequestURI(rawURL)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") {
+		return fmt.Errorf("must be a valid http:// or https:// URL")
 	}
 	return nil
 }
