@@ -71,7 +71,7 @@ func ParseGoBenchmark(filePath string) (results []shared.BenchmarkData) {
 			shared.ExitWithError("Error on parsing group from bench name", err)
 		}
 
-		benchName, xAxis, yAxis := group["name"], group["xAxis"], group["yAxis"]
+		benchName, xAxis, yAxis, zAxis := group["name"], group["xAxis"], group["yAxis"], group["zAxis"]
 
 		storeCpuCount(cpuCore)
 
@@ -127,6 +127,7 @@ func ParseGoBenchmark(filePath string) (results []shared.BenchmarkData) {
 			Name:  benchName,
 			XAxis: xAxis,
 			YAxis: yAxis,
+			ZAxis: zAxis,
 			Stats: benchStats,
 		})
 

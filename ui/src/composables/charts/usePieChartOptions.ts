@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
-import { getNextColorFor, hasXAxis, hasYAxis } from '../../lib/utils'
+import { getNextColorFor, hasXAxis, hasYAxis, hasZAxis } from '../../lib/utils'
 import { getChartStyling, createPieSeriesConfig } from './shared'
 import { fontSize, sortByTotal, sortByValue } from './shared/common'
 import type { TitleOption } from 'echarts/types/dist/shared'
@@ -110,6 +110,64 @@ export function usePieChartOptions(config: BaseChartConfig) {
         fontSize,
         fontWeight: 'bold',
       },
+    }
+
+    // 3D data (x + y + z): show three reduced side-by-side pies
+    if (hasZAxis(chartData)) {
+      const zAxisTotals = new Map<string, number>()
+      for (const point of chartData.value.points ?? []) {
+        zAxisTotals.set(point.zAxis, (zAxisTotals.get(point.zAxis) ?? 0) + point.value)
+      }
+
+      const zAxisPieData = chartData.value.zAxis
+        .filter((zAxis) => zAxis !== '')
+        .map((zAxis) => ({
+          name: zAxis,
+          value: zAxisTotals.get(zAxis) || 0,
+          itemStyle: { color: getNextColorFor(zAxis) },
+        }))
+
+      if (sort.value.enabled) {
+        zAxisPieData.sort(sortByValue(sort.value.order))
+      }
+
+      options.title = [
+        { ...titleStyle, left: '16.66%' },
+        { ...titleStyle, text: 'Y-Axis', left: '50%' },
+        { ...titleStyle, text: 'Z-Axis', left: '83.33%' },
+      ]
+
+      options.series = [
+        createPieSeriesConfig(
+          `By X-Axis`,
+          xAxisPieData,
+          showLabels.value,
+          styling,
+          formatter,
+          ['25%', '50%'],
+          ['16.66%', '50%']
+        ),
+        createPieSeriesConfig(
+          `By Y-Axis`,
+          yAxisPieData,
+          showLabels.value,
+          styling,
+          formatter,
+          ['25%', '50%'],
+          ['50%', '50%']
+        ),
+        createPieSeriesConfig(
+          `By Z-Axis`,
+          zAxisPieData,
+          showLabels.value,
+          styling,
+          formatter,
+          ['25%', '50%'],
+          ['83.33%', '50%']
+        ),
+      ]
+
+      return options
     }
 
     options.title = [

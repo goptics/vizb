@@ -1,5 +1,5 @@
 import { computed, type Ref } from 'vue'
-import type { BenchmarkData, ChartData, SeriesData, Stat } from '../types'
+import type { BenchmarkData, ChartData, Point3D, SeriesData, Stat } from '../types'
 
 type StatSignature = `${Stat['type']}-${Stat['unit']}-${Stat['per']}`
 
@@ -28,9 +28,11 @@ export function useChartData(results: Ref<BenchmarkData[]> | BenchmarkData[]) {
       const dataMap = new Map<string, Map<string, number>>()
       const xAxisSet = new Set<string>()
       const yAxisSet = new Set<string>()
+      const zAxisSet = new Set<string>()
+      const points: Point3D[] = []
 
       for (const benchmarkData of data) {
-        const { xAxis = '', yAxis = '' } = benchmarkData
+        const { xAxis = '', yAxis = '', zAxis = '' } = benchmarkData
 
         // Find the matching stat for this benchmark
         const matchingStat = benchmarkData.stats?.find((s) => toStatSignature(s) === signature)
@@ -42,6 +44,9 @@ export function useChartData(results: Ref<BenchmarkData[]> | BenchmarkData[]) {
 
         yAxisSet.add(yAxis)
         xAxisSet.add(xAxis)
+        zAxisSet.add(zAxis)
+
+        points.push({ xAxis, yAxis, zAxis, value })
 
         if (!dataMap.has(yAxis)) {
           dataMap.set(yAxis, new Map())
@@ -52,6 +57,7 @@ export function useChartData(results: Ref<BenchmarkData[]> | BenchmarkData[]) {
 
       const xAxisValues = Array.from(xAxisSet)
       const yAxisValues = Array.from(yAxisSet)
+      const zAxisValues = Array.from(zAxisSet)
 
       // Single workload case - sort by subject values
       const series: SeriesData[] = xAxisValues.map((xAxis) => ({
@@ -65,7 +71,9 @@ export function useChartData(results: Ref<BenchmarkData[]> | BenchmarkData[]) {
         statType: statTemplate.type,
         statUnit: statTemplate.unit,
         yAxis: yAxisValues,
+        zAxis: zAxisValues,
         series,
+        points,
       }
     })
   })

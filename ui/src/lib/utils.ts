@@ -53,10 +53,19 @@ export const resetColor = () => {
 export const chartHasYAxis = (chart: ChartData) =>
   chart.yAxis && chart.yAxis.length > 0 && chart.yAxis[0] !== ''
 
+export const chartHasZAxis = (chart: ChartData) =>
+  chart.zAxis && chart.zAxis.length > 0 && chart.zAxis[0] !== ''
+
 export const hasXAxis = (chartData: Ref<ChartData, ChartData>) =>
   chartData.value.series.some((series) => series.xAxis && series.xAxis.trim() !== '')
 
 export const hasYAxis = (chartData: Ref<ChartData, ChartData>) => chartHasYAxis(chartData.value)
+
+export const hasZAxis = (chartData: Ref<ChartData, ChartData>) => chartHasZAxis(chartData.value)
+
+// 3D rendering kicks in only when x, y AND z dimensions are all present
+export const is3D = (chartData: Ref<ChartData, ChartData>) =>
+  hasXAxis(chartData) && hasYAxis(chartData) && hasZAxis(chartData)
 
 export const CPUtoString = (cpu: Benchmark['cpu']) => {
   if (!cpu) {

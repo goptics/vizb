@@ -10,6 +10,8 @@ import {
   GridComponent,
   ToolboxComponent,
 } from 'echarts/components'
+import { Bar3DChart, Line3DChart } from 'echarts-gl/charts'
+import { Grid3DComponent } from 'echarts-gl/components'
 import VChart from 'vue-echarts'
 import { useChartOptions } from '../composables/useChartOptions'
 import type { ChartData } from '../types'
@@ -21,6 +23,9 @@ use([
   BarChart,
   LineChart,
   PieChart,
+  Bar3DChart,
+  Line3DChart,
+  Grid3DComponent,
   TitleComponent,
   TooltipComponent,
   LegendComponent,

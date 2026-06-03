@@ -46,7 +46,9 @@ const appendVizbDataScriptTag = (html: string): string => {
 
   const script = document.createElement('script')
   script.type = 'text/javascript'
-  script.textContent = `window.VIZB_VERSION = {{ .Version }}; window.VIZB_DATA = {{ .Data }}; window.VIZB_DATA_URL = {{ .DataURL }};`
+  // Custom Go-template delimiters: echarts-gl's clay.gl GLSL shaders use {{ }}
+  // for loop unrolling, which would otherwise collide with html/template parsing.
+  script.textContent = `window.VIZB_VERSION = [[VIZB .Version VIZB]]; window.VIZB_DATA = [[VIZB .Data VIZB]]; window.VIZB_DATA_URL = [[VIZB .DataURL VIZB]];`
 
   document.head.appendChild(script)
 

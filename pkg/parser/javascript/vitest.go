@@ -89,12 +89,13 @@ func ParseVitestBenchmark(filename string) []shared.BenchmarkData {
 			shared.ExitWithError("Error parsing vitest benchmark name", groupErr)
 		}
 
-		benchName, xAxis, yAxis := group["name"], group["xAxis"], group["yAxis"]
+		benchName, xAxis, yAxis, zAxis := group["name"], group["xAxis"], group["yAxis"], group["zAxis"]
 
 		results = append(results, shared.BenchmarkData{
 			Name:  benchName,
 			XAxis: xAxis,
 			YAxis: yAxis,
+			ZAxis: zAxis,
 			Stats: []shared.Stat{
 				{Type: "Throughput avg (ops/s)", Value: hz},
 				{Type: utils.CreateStatType("Latency min", shared.FlagState.TimeUnit, ""), Value: utils.ConvertTime(minVal, "ms", shared.FlagState.TimeUnit)},

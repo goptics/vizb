@@ -135,6 +135,20 @@ func TestMergeBenchmarks_InjectDimensionY(t *testing.T) {
 	assert.Equal(t, "2", result[0].Data[1].YAxis)
 }
 
+func TestMergeBenchmarks_InjectDimensionZ(t *testing.T) {
+	bench1 := makeBench("1", "Test", "2026-05-13T10:00:00Z", []BenchmarkData{
+		{XAxis: "x", YAxis: "y", ZAxis: ""},
+	})
+	bench2 := makeBench("2", "Test", "2026-05-13T10:05:00Z", []BenchmarkData{
+		{XAxis: "x", YAxis: "y", ZAxis: ""},
+	})
+
+	result := MergeBenchmarks([]Benchmark{bench1, bench2}, DimensionZAxis)
+	assert.Len(t, result, 1)
+	assert.Equal(t, "1", result[0].Data[0].ZAxis)
+	assert.Equal(t, "2", result[0].Data[1].ZAxis)
+}
+
 func TestMergeBenchmarks_HistoryMerge(t *testing.T) {
 	bench1 := makeBench("1", "Test", "2026-05-13T10:00:00Z", []BenchmarkData{{Name: "a"}})
 	bench2 := makeBench("2", "Test", "2026-05-13T10:05:00Z", []BenchmarkData{{Name: "b"}})

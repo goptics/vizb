@@ -74,12 +74,13 @@ func ParseDivanBenchmark(filename string) []shared.BenchmarkData {
 			shared.ExitWithError("Error parsing divan benchmark name", groupErr)
 		}
 
-		benchName, xAxis, yAxis := group["name"], group["xAxis"], group["yAxis"]
+		benchName, xAxis, yAxis, zAxis := group["name"], group["xAxis"], group["yAxis"], group["zAxis"]
 
 		results = append(results, shared.BenchmarkData{
 			Name:  benchName,
 			XAxis: xAxis,
 			YAxis: yAxis,
+			ZAxis: zAxis,
 			Stats: []shared.Stat{
 				{Type: utils.CreateStatType("Latency fastest", shared.FlagState.TimeUnit, ""), Value: utils.ConvertTime(fastestNs, "ns", shared.FlagState.TimeUnit)},
 				{Type: utils.CreateStatType("Latency slowest", shared.FlagState.TimeUnit, ""), Value: utils.ConvertTime(slowestNs, "ns", shared.FlagState.TimeUnit), Symbol: "±"},
