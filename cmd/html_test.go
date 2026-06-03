@@ -100,9 +100,63 @@ func TestHtmlCmd_MissingFile(t *testing.T) {
 }
 
 func TestHtmlCmd_NoArgs(t *testing.T) {
+	oldOsExit := shared.OsExit
+	defer func() { shared.OsExit = oldOsExit }()
+
+	exitCode := 0
+	shared.OsExit = func(code int) { exitCode = code }
+
+	shared.FlagState.DataURL = ""
 	rootCmd.SetArgs([]string{"html"})
-	err := rootCmd.Execute()
-	assert.Error(t, err)
+	rootCmd.Execute()
+	assert.Equal(t, 1, exitCode)
+}
+
+func TestHtmlCmd_APIFlag(t *testing.T) {
+	oldOsExit := shared.OsExit
+	defer func() { shared.OsExit = oldOsExit }()
+
+	var exitCode int
+	shared.OsExit = func(code int) { exitCode = code }
+
+	tmpDir, err := os.MkdirTemp("", "vizb-html-api-test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	outFile := filepath.Join(tmpDir, "remote.html")
+	shared.FlagState.OutputFile = outFile
+	shared.FlagState.DataURL = "https://example.com/bench.json"
+	defer func() { shared.FlagState.DataURL = "" }()
+
+	rootCmd.SetArgs([]string{"html", "--data-url", "https://example.com/bench.json"})
+	err = rootCmd.Execute()
+	assert.NoError(t, err)
+	assert.Equal(t, 0, exitCode)
+
+	content, err := os.ReadFile(outFile)
+	assert.NoError(t, err)
+
+	htmlStr := string(content)
+	assert.Contains(t, htmlStr, "https://example.com/bench.json")
+	assert.Contains(t, htmlStr, "<html")
+	assert.NotContains(t, htmlStr, `"name":"Bench`)
+}
+
+func TestHtmlCmd_APIFlag_InvalidURL(t *testing.T) {
+	oldOsExit := shared.OsExit
+	defer func() { shared.OsExit = oldOsExit }()
+
+	exitCode := 0
+	shared.OsExit = func(code int) { exitCode = code }
+
+	shared.FlagState.DataURL = "not-a-url"
+	defer func() { shared.FlagState.DataURL = "" }()
+
+	rootCmd.SetArgs([]string{"html", "--data-url", "not-a-url"})
+	rootCmd.Execute()
+	assert.Equal(t, 1, exitCode)
 }
 
 func TestHtmlCmd_InvalidJSON(t *testing.T) {

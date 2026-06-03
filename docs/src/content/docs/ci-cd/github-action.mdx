@@ -62,6 +62,7 @@ The action:
 | `tag-axis` | `"n"` | Tag injection axis: `n`, `x`, or `y` |
 | `output-json` | `""` | Path for JSON output file. Empty = skip JSON. |
 | `output-html` | `""` | Path for HTML output file. Empty = skip HTML. |
+| `data-url` | `""` | URL to fetch benchmark JSON from at runtime. When set, no input file is needed — the HTML fetches data remotely. The JSON host must serve `Access-Control-Allow-Origin: *`. |
 
 ## Outputs
 
@@ -79,7 +80,7 @@ The action resolves input in this priority order:
 3. **Merge-only** — if only `merge-files` or `merge-dir` is provided, skips benchmarking
 
 <Aside type="caution">
-  At least one of `bench-cmd`, `bench-file`, `merge-files`, or `merge-dir` must be provided.
+  At least one of `bench-cmd`, `bench-file`, `merge-files`, `merge-dir`, or `data-url` must be provided.
 </Aside>
 
 ## Minimal Examples
@@ -101,6 +102,19 @@ The action resolves input in this priority order:
     bench-file: bench-results.txt
     output-html: report.html
 ```
+
+### Generate HTML from remote data URL
+
+```yaml
+- uses: goptics/vizb@v0
+  with:
+    data-url: https://example.com/bench.json
+    output-html: pages/index.html
+```
+
+<Aside type="note">
+  When `data-url` is set, no `bench-cmd`, `bench-file`, or merge input is needed. The HTML fetches the JSON at runtime. The JSON host must serve `Access-Control-Allow-Origin: *`.
+</Aside>
 
 ### Merge and generate
 

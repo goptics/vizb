@@ -11,26 +11,34 @@ import (
 type PageData struct {
 	Version string
 	Data    htmlTemplate.JS
+	DataURL string
 }
 
-func GenerateHTMLBenchmarkUI(benchmarkJSON []byte, HTMLtemplate string) string {
+func renderPage(pd PageData, HTMLtemplate string) string {
 	tmpl, err := htmlTemplate.New("page").Parse(HTMLtemplate)
-
 	if err != nil {
 		shared.ExitWithError("failed to parse HTML template:", err)
 	}
 
-	pageData := PageData{
-		Version: version.Version,
-		Data:    htmlTemplate.JS(benchmarkJSON),
-	}
-
 	var buf bytes.Buffer
-
-	// Render into the buffer instead of stdout
-	if err := tmpl.Execute(&buf, pageData); err != nil {
+	if err := tmpl.Execute(&buf, pd); err != nil {
 		shared.ExitWithError("failed to execute HTML template:", err)
 	}
 
 	return buf.String()
+}
+
+func GenerateHTMLBenchmarkUI(benchmarkJSON []byte, HTMLtemplate string) string {
+	return renderPage(PageData{
+		Version: version.Version,
+		Data:    htmlTemplate.JS(benchmarkJSON),
+	}, HTMLtemplate)
+}
+
+func GenerateRemoteHTMLBenchmarkUI(dataURL string, HTMLtemplate string) string {
+	return renderPage(PageData{
+		Version: version.Version,
+		Data:    htmlTemplate.JS("null"),
+		DataURL: dataURL,
+	}, HTMLtemplate)
 }

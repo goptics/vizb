@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/goptics/vizb/pkg/parser"
@@ -76,11 +77,25 @@ var flagValidationRules = []utils.ValidationRule{
 		Validator: validateParser,
 		Default:   "go",
 	},
+	{
+		Label:     "data url",
+		Value:     &shared.FlagState.DataURL,
+		Validator: validateAPIURL,
+		Default:   "",
+	},
 }
 
 func validateParser(key string) error {
 	if _, ok := parser.Parsers[key]; !ok {
 		return fmt.Errorf("unknown parser '%s'; available: %v", key, parser.AvailableParsers())
+	}
+	return nil
+}
+
+func validateAPIURL(rawURL string) error {
+	u, err := url.ParseRequestURI(rawURL)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") {
+		return fmt.Errorf("must be a valid http:// or https:// URL")
 	}
 	return nil
 }

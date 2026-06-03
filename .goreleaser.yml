@@ -17,7 +17,7 @@ builds:
       - arm64
     ldflags:
       - -s -w
-      - -X github.com/goptics/vizb/version.Version={{.Version}}
+      - -X github.com/goptics/vizb/version.Version={{.Tag}}
     main: .
 
 archives:

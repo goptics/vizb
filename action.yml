@@ -69,6 +69,9 @@ inputs:
   output-html:
     description: "Path for HTML output file (leave empty to skip HTML generation)"
     default: ""
+  data-url:
+    description: "URL to fetch benchmark JSON from at runtime (-U flag). When set, no input file is needed and the HTML fetches data remotely."
+    default: ""
 outputs:
   output-file-html:
     description: Path to HTML output file
@@ -167,8 +170,11 @@ runs:
         elif [ -n "$HAS_MERGE" ]; then
           echo "source=merge-only" >> "$GITHUB_OUTPUT"
           echo "has_input=false" >> "$GITHUB_OUTPUT"
+        elif [ -n "${{ inputs.data-url }}" ]; then
+          echo "source=data-url" >> "$GITHUB_OUTPUT"
+          echo "has_input=false" >> "$GITHUB_OUTPUT"
         else
-          echo "::error::No input provided. Specify bench-cmd, bench-file, merge-files, or merge-dir."
+          echo "::error::No input provided. Specify bench-cmd, bench-file, merge-files, merge-dir, or data-url."
           exit 1
         fi
 
@@ -232,5 +238,9 @@ runs:
       if: inputs.output-html != ''
       shell: bash
       run: |
-        vizb html "${{ steps.resolve.outputs.json_file }}" -o "${{ inputs.output-html }}"
+        if [ -n "${{ inputs.data-url }}" ]; then
+          vizb html -U "${{ inputs.data-url }}" -o "${{ inputs.output-html }}"
+        else
+          vizb html "${{ steps.resolve.outputs.json_file }}" -o "${{ inputs.output-html }}"
+        fi
         echo "html=${{ inputs.output-html }}" >> "$GITHUB_OUTPUT"
