@@ -10,6 +10,7 @@ const getStatDimensions = (benchmarks: BenchmarkData[]) => {
   if (benchmarks.some((b) => b.name)) dimension++
   if (benchmarks.some((b) => b.xAxis)) dimension++
   if (benchmarks.some((b) => b.yAxis)) dimension++
+  if (benchmarks.some((b) => b.zAxis)) dimension++
 
   return dimension
 }
