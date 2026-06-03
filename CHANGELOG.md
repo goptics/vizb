@@ -4,6 +4,27 @@ Notable changes to Vizb documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [0.12.0] - 2026-06-03
+
+### Added
+
+- **`--data-url` Flag**: New flag for `vizb html` to decouple benchmark data from the UI bundle — serves data from an external URL instead of embedding JSON inline ([#119](https://github.com/goptics/vizb/pull/119)).
+- **CPU & OS in History Entries**: History popover now shows CPU and OS info per entry alongside tag and timestamp ([#118](https://github.com/goptics/vizb/pull/118)).
+- **Multi-Language CI Examples**: Added CI pipeline generating live examples for Rust (Criterion, Divan) and JavaScript (Vitest, TinyBench) parsers ([#112](https://github.com/goptics/vizb/pull/112)).
+- **Logo Animation**: Animated SVG logo using anime.js with OG image config ([#111](https://github.com/goptics/vizb/pull/111)).
+
+
+### Fixed
+
+- **Version Injection**: Version now injected via ldflags in GoReleaser build — binary reports correct version at runtime ([#116](https://github.com/goptics/vizb/pull/116)).
+- **Line Chart Labels**: `showLabels` state was not applied to line charts — now consistent with bar/pie charts ([#114](https://github.com/goptics/vizb/pull/114)).
+- **CI**: Resolved bench file path routing, write permissions, subdirectory handling, and group regex issues in the multi-lang examples pipeline.
+
+### Changed
+
+- **Version Embedding**: Refactored to use `init()` for embedding version flag instead of inline assignment ([#115](https://github.com/goptics/vizb/pull/115)).
+- **Taskfile**: `act:test:stateless` and `act:test:stateful` now run containers as current user (`--user $(id -u):$(id -g)`) to avoid permission issues.
+
 # [0.11.0] - 2026-05-23
 
 ### Added
