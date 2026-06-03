@@ -37,6 +37,7 @@ jobs:
             group-regex: "/text=(?<n>.*)/level=(?<x>.*)/size=(?<y>.*)"
             filter: "Encode"
             scale: "log"
+
           - output: 02-hash
             bench-file: 01-hash
             name: "Hashing"

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
-import { Moon, Sun, Package, Cpu } from 'lucide-vue-next'
+import { Moon, Sun, Package } from 'lucide-vue-next'
 import { useBenchmarkData } from '../composables/useBenchmarkData'
 import { useChartData } from '../composables/useChartData'
 import { useSettingsStore } from '../composables/useSettingsStore'
@@ -8,11 +8,11 @@ import { useUrlRouter } from '../composables/useUrlRouter'
 import ChartSettingsPopover from '../components/ChartSettingsPopover.vue'
 import GroupSelector from '../components/Selector.vue'
 import ChartCard from '../components/ChartCard.vue'
-import Badge from '../components/Badge.vue'
+import CpuBadge from '../components/CpuBadge.vue'
+import OsBadge from '../components/OsBadge.vue'
 import TimestampBadge from '../components/TimestampBadge.vue'
 import IconButton from '../components/IconButton.vue'
 import AccentLink from '../components/AccentLink.vue'
-import { CPUtoString } from '../lib/utils'
 
 const version = window.VIZB_VERSION || 'v0.0.0-dev'
 
@@ -78,6 +78,7 @@ const mainTitle = computed(() => {
 })
 
 const hasCPU = computed(() => activeBenchmark.value?.cpu?.name || activeBenchmark.value?.cpu?.cores)
+const hasOS = computed(() => activeBenchmark.value?.os)
 </script>
 
 <template>
@@ -149,8 +150,9 @@ const hasCPU = computed(() => activeBenchmark.value?.cpu?.name || activeBenchmar
 
       <h1 v-else class="text-4xl font-bold">{{ mainTitle }}</h1>
 
-      <div class="flex justify-center">
-        <Badge v-if="hasCPU" :icon="Cpu" label="CPU" :value="CPUtoString(activeBenchmark?.cpu)" />
+      <div class="flex flex-col items-center gap-2">
+        <CpuBadge v-if="hasCPU" :cpu="activeBenchmark?.cpu" :history="activeBenchmark?.history" />
+        <OsBadge v-if="hasOS" :os="activeBenchmark?.os" :history="activeBenchmark?.history" />
       </div>
 
       <TimestampBadge

@@ -96,23 +96,34 @@ func deepCloneBenchmark(src Benchmark) Benchmark {
 	return dst
 }
 
-// buildHistory collects tag+timestamp pairs from all benchmarks and their
+type historyCandidate struct {
+	timestamp string
+	cpu       *CPUInfo
+	os        string
+}
+
+// buildHistory collects tag+timestamp+cpu+os from all benchmarks and their
 // existing History entries, excluding the latest tag. Entries are deduplicated
 // by tag (keeping the latest timestamp per tag) and sorted chronologically.
 func buildHistory(benchmarks []Benchmark, latestTag string) []HistoryEntry {
-	seen := make(map[string]string)
+	seen := make(map[string]historyCandidate)
 	for _, bench := range benchmarks {
 		if bench.Tag != "" && bench.Tag != latestTag {
-			if ts, ok := seen[bench.Tag]; !ok || bench.Timestamp > ts {
-				seen[bench.Tag] = bench.Timestamp
+			if c, ok := seen[bench.Tag]; !ok || bench.Timestamp > c.timestamp {
+				var cpuPtr *CPUInfo
+				if bench.CPU.Name != "" || bench.CPU.Cores != 0 {
+					cpu := bench.CPU
+					cpuPtr = &cpu
+				}
+				seen[bench.Tag] = historyCandidate{timestamp: bench.Timestamp, cpu: cpuPtr, os: bench.OS}
 			}
 		}
 		for _, entry := range bench.History {
 			if entry.Tag == latestTag {
 				continue
 			}
-			if ts, ok := seen[entry.Tag]; !ok || entry.Timestamp > ts {
-				seen[entry.Tag] = entry.Timestamp
+			if c, ok := seen[entry.Tag]; !ok || entry.Timestamp > c.timestamp {
+				seen[entry.Tag] = historyCandidate{timestamp: entry.Timestamp, cpu: entry.CPU, os: entry.OS}
 			}
 		}
 	}
@@ -122,8 +133,8 @@ func buildHistory(benchmarks []Benchmark, latestTag string) []HistoryEntry {
 	}
 
 	entries := make([]HistoryEntry, 0, len(seen))
-	for tag, ts := range seen {
-		entries = append(entries, HistoryEntry{Tag: tag, Timestamp: ts})
+	for tag, c := range seen {
+		entries = append(entries, HistoryEntry{Tag: tag, Timestamp: c.timestamp, CPU: c.cpu, OS: c.os})
 	}
 	sort.Slice(entries, func(i, j int) bool {
 		return entries[i].Timestamp < entries[j].Timestamp
