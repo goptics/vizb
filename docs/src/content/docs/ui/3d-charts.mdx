@@ -1,0 +1,109 @@
+---
+title: 3D Charts
+description: Add a z-axis to render interactive 3D bar and line charts.
+---
+
+import { CardGrid, Card, Aside } from '@astrojs/starlight/components';
+
+When your benchmark data has a **fourth dimension** — a z-axis on top of Name,
+XAxis, and YAxis — vizb renders interactive **3D** bar and line charts instead of
+flat 2D ones. Rotate, zoom, and pan the scene directly in the browser.
+
+## What Makes a Chart 3D
+
+A chart renders in 3D when a data point has **all three** plotting axes present:
+
+- **XAxis** — categories along the width
+- **YAxis** — categories along the depth's base
+- **ZAxis** — the depth/height dimension stacked on top
+
+The **Name** dimension stays optional — it still groups points into separate
+charts. Without a z-axis, charts render as the usual 2D bar/line/pie.
+
+<Aside type="note">
+  The z-axis (`z`) is only valid alongside **both** `x` and `y`. A 3D chart needs
+  an x/y floor to stand on.
+</Aside>
+
+## Generating 3D Data
+
+Add a `z` segment to your grouping pattern or a `(?<z>…)` capture to your regex.
+
+**Pattern — `n/x/y/z`:**
+
+```bash
+vizb bench.txt --group-pattern "n/x/y/z" -o output.html
+```
+
+| Benchmark Name | Name | XAxis | YAxis | ZAxis |
+|---|---|---|---|---|
+| `BenchmarkSort/1024/QuickSort/warm` | Sort | 1024 | QuickSort | warm |
+| `BenchmarkSort/2048/MergeSort/cold` | Sort | 2048 | MergeSort | cold |
+
+**Regex — named `z` capture:**
+
+```bash
+vizb bench.txt --group-regex "(?<n>.*)/(?<x>.*)/(?<y>.*)/(?<z>.*)" -o output.html
+```
+
+If you supply a `z` without both `x` and `y`, vizb rejects the pattern:
+
+```text
+zAxis (z) requires both xAxis (x) and yAxis (y)
+```
+
+See the [Grouping Guide](/guides/grouping) for full pattern and regex syntax.
+
+## 3D Chart Types
+
+<CardGrid>
+  <Card title="3D Bar" icon="bars">
+    Stacked 3D bars — each z value stacks on the (x, y) cell. The bar-top label
+    shows the stacked total when value labels are on.
+  </Card>
+  <Card title="3D Line" icon="analytics">
+    3D polylines across the x/y grid, with scatter markers at each vertex so
+    individual points stay readable.
+  </Card>
+</CardGrid>
+
+{/* TODO: Add GIF showing 3D bar and 3D line charts rotating */}
+
+## Auto-Rotate
+
+3D charts gain an **Auto rotate** toggle in the settings panel (it only appears
+for 3D data). Enable it to continuously spin the scene for a hands-free
+walkaround.
+
+{/* TODO: Add GIF showing auto-rotate toggle */}
+
+## Axis-Sum Tooltips
+
+Hover any cell to see its breakdown plus **marginal sums** — each marginal is the
+sum over the other axes:
+
+- **Σ z** — the stacked height at this `(x, y)` cell (sum over z)
+- **Σ x** — total for this x value (sum over the other axes)
+- **Σ y** — total for this y value (sum over the other axes)
+
+Sums honor the legend: toggle a z series off and the totals recompute to reflect
+only what's visible. Tooltips follow light/dark mode automatically.
+
+{/* TODO: Add GIF showing 3D tooltip with axis sums */}
+
+<Aside type="tip">
+  2D charts get axis sums too — per-series totals after each name and a labeled
+  x-marginal at the bottom of the tooltip.
+</Aside>
+
+## Scale
+
+Logarithmic scale is **not** available for 3D charts — the Scale control is
+hidden when a 3D chart is active. Use linear scale, or drop the z-axis (via
+[Axis Swapping](/ui/swapping)) to fall back to a 2D chart with log support.
+
+## Next Steps
+
+- [Axis Swapping](/ui/swapping) — rotate z in and out to switch between 3D and 2D
+- [Grouping](/guides/grouping) — extract the z dimension from benchmark names
+- [Settings](/ui/settings) — auto-rotate and other runtime controls

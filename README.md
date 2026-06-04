@@ -22,7 +22,7 @@
   </p>
 
   <p>
-    A CLI tool that transforms benchmark output from <strong>Go</strong>, <strong>Rust</strong>, and <strong>JavaScript</strong> frameworks into interactive <strong>4D visualizations</strong>. Pipe in benchmark results, apply multi-dimensional grouping, merge across releases, and explore performance in a single self-contained HTML file — no server, no dependencies, no build step.
+    A CLI tool that transforms benchmark output from <strong>Go</strong>, <strong>Rust</strong>, and <strong>JavaScript</strong> frameworks into interactive <strong>4D visualizations</strong> — including <strong>3D bar &amp; line charts</strong> via a z-axis. Pipe in benchmark results, apply multi-dimensional grouping, merge across releases, and explore performance in a single self-contained HTML file — no server, no dependencies, no build step.
   </p>
 </div>
 

@@ -34,6 +34,7 @@ export default defineConfig({
 					{ label: 'Overview', slug: 'ui' },
 					{ label: 'Settings', slug: 'ui/settings' },
 					{ label: 'Axis Swapping', slug: 'ui/swapping' },
+					{ label: '3D Charts', slug: 'ui/3d-charts' },
 				],
 			},
 			{

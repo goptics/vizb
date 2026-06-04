@@ -9,12 +9,28 @@ When your benchmark data has multiple dimensions (2D or 3D), the UI lets you swa
 
 ## How It Works
 
-Vizb extracts three dimensions from benchmark names:
+Vizb extracts up to four dimensions from benchmark names:
 - **Name** — groups benchmarks into separate charts
 - **XAxis** — categories on the X-axis
 - **YAxis** — test case variants
+- **ZAxis** — depth layer of a [3D chart](/ui/3d-charts)
 
 In the UI, use the axis dropdown to rearrange these. For example, swap Name and YAxis to see all variants grouped differently.
+
+The dropdown offers arrangements of the present axes — how many you get depends
+on how many dimensions your data has:
+
+| Dimensions present | Available arrangements |
+|---|---|
+| 1 | `x`, `y` |
+| 2 | `nx`, `ny`, `xn`, `xy`, `yn`, `yx` |
+| 3 | every `n`/`x`/`y` ordering, plus `xyz` orderings (3D) |
+| 4 | every `n`/`x`/`y`/`z` ordering |
+
+An arrangement that **uses** z (e.g. `xyz`) renders a 3D chart; one that rotates z
+out to `name` (e.g. `nxy`) renders 2D. z is only offered when both x and y are
+present. For single-dimension data, the lone value can only be placed on the x or
+y axis — grouping it by `name` would make one chart per point.
 
 {/* TODO: Add GIF showing axis swapping animation */}
 

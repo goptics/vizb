@@ -35,7 +35,7 @@ vizb merge ./old_results/ latest.json -o comparison.json
 | Flag | Short | Default | Description |
 |------|-------|---------|-------------|
 | `--output` | `-o` | *(stdout)* | Output file path (always JSON) |
-| `--tag-axis` | `-A` | `n` | Where to inject tag: `n` (name), `x` (xAxis), `y` (yAxis) |
+| `--tag-axis` | `-A` | `n` | Where to inject tag: `n` (name), `x` (xAxis), `y` (yAxis), `z` (zAxis) |
 
 ## Outer Merge (Untagged)
 
@@ -81,6 +81,7 @@ vizb merge v1.json v2.json -A x -o comparison.json
 | `n` | Name dimension (default) |
 | `x` | X-axis — use for version comparison |
 | `y` | Y-axis |
+| `z` | Z-axis — depth layer of a [3D chart](/ui/3d-charts) (needs existing x + y) |
 
 <Aside type="tip">
   Use `-A x` to display version tags on the X-axis for clean progressive comparison across releases.
