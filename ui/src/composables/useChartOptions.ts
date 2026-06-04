@@ -15,7 +15,8 @@ export function useChartOptions(
   isDark: Ref<boolean>,
   chartType: Ref<ChartType>,
   scale: Ref<ScaleType>,
-  autoRotate: Ref<boolean>
+  autoRotate: Ref<boolean>,
+  visibleZ: Ref<Record<string, boolean>>
 ) {
   const config: BaseChartConfig = {
     chartData,
@@ -24,6 +25,7 @@ export function useChartOptions(
     isDark,
     scale,
     autoRotate,
+    visibleZ,
   }
 
   const barOptions = useBarChartOptions(config)

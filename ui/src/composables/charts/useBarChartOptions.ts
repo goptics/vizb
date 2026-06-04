@@ -68,7 +68,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
       return {
         ...baseOptions,
         grid: createGridConfig(1),
-        tooltip: createTooltipConfig(false),
+        tooltip: createTooltipConfig(false, 1, isDark.value),
         legend: { show: false },
         ...createAxisConfig(styling, xAxisData, effectiveScale, minValue),
         series: [
@@ -115,11 +115,22 @@ export function useBarChartOptions(config: BaseChartConfig) {
     }
 
     const hasMultipleSeries = transposedSeries.length > 1
+    const seriesTotals = new Map(
+      transposedSeries.map((s) => [
+        s.name,
+        s.data.reduce((sum, d) => sum + (d?.value ?? 0), 0),
+      ])
+    )
 
     return {
       ...baseOptions,
       grid: createGridConfig(transposedSeries.length),
-      tooltip: createTooltipConfig(hasXAxis(chartData), transposedSeries.length),
+      tooltip: createTooltipConfig(
+        hasXAxis(chartData),
+        transposedSeries.length,
+        isDark.value,
+        seriesTotals
+      ),
       legend: createLegendConfig(
         transposedSeries.map((s) => ({ xAxis: s.name })),
         styling,

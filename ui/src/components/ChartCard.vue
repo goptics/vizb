@@ -46,6 +46,13 @@ const { chartData } = toRefs(props)
 const { settings, chartType } = useSettingsStore()
 const { sort, showLabels, isDark, scale, autoRotate } = toRefs(settings)
 
+// Legend z-toggle state, kept in sync via the legendselectchanged event so
+// tooltip/label sums reflect only the visible z series.
+const visibleZ = ref<Record<string, boolean>>({})
+function onLegendSelectChanged(e: { selected: Record<string, boolean> }) {
+  visibleZ.value = { ...e.selected }
+}
+
 const { options } = useChartOptions(
   chartData,
   sort,
@@ -54,6 +61,7 @@ const { options } = useChartOptions(
   chartType,
   scale,
   autoRotate,
+  visibleZ,
 )
 
 const initOptions = {
@@ -120,6 +128,7 @@ const mergedOptions = computed<EChartsOption>(() => {
       :init-options="initOptions"
       :autoresize="true"
       :class="isFullscreen ? 'h-[calc(100vh-4rem)]' : 'h-[500px]'"
+      @legendselectchanged="onLegendSelectChanged"
     />
   </div>
 </template>

@@ -61,7 +61,7 @@ export function useLineChartOptions(config: BaseChartConfig) {
       return {
         ...baseOptions,
         grid: createGridConfig(1),
-        tooltip: createTooltipConfig(false, 1),
+        tooltip: createTooltipConfig(false, 1, isDark.value),
         ...createAxisConfig(styling, xAxisData, effectiveScale, minValue),
         legend: { show: false },
         series: [
@@ -100,10 +100,17 @@ export function useLineChartOptions(config: BaseChartConfig) {
       symbolSize,
     }))
 
+    const seriesTotals = new Map(
+      transposedSeries.map((s) => [
+        s.name,
+        s.data.reduce((sum, d) => sum + (d?.value ?? 0), 0),
+      ])
+    )
+
     return {
       ...baseOptions,
       grid: createGridConfig(transposedSeries.length),
-      tooltip: createTooltipConfig(true, transposedSeries.length),
+      tooltip: createTooltipConfig(true, transposedSeries.length, isDark.value, seriesTotals),
       ...createAxisConfig(styling, xAxisData, effectiveScale, minValue),
       legend: createLegendConfig(
         transposedSeries.map((s) => ({ xAxis: s.name })),

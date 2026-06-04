@@ -12,6 +12,8 @@ export interface BaseChartConfig {
   isDark: Ref<boolean>
   scale: Ref<ScaleType>
   autoRotate: Ref<boolean>
+  // Legend selection state for z series (3D); key = z name, false = hidden.
+  visibleZ?: Ref<Record<string, boolean>>
 }
 
 export const getBaseOptions = (config: BaseChartConfig): Partial<EChartsOption> => {
@@ -24,7 +26,7 @@ export const getBaseOptions = (config: BaseChartConfig): Partial<EChartsOption> 
   const saveAsImagePixelRatio = is3D(config.chartData) ? dpr : 2
   return {
     backgroundColor,
-    tooltip: createTooltipConfig(false) as EChartsOption['tooltip'],
+    tooltip: createTooltipConfig(false, 1, isDark.value) as EChartsOption['tooltip'],
     toolbox: {
       show: true,
       feature: {

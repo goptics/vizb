@@ -76,33 +76,73 @@ export function createAxisConfig(
  */
 function formatTooltipValue(value: any): string {
   if (value === null || value === undefined) return '0'
+  if (typeof value === 'number') return String(Math.round(value * 100) / 100)
   return String(value)
+}
+
+/**
+ * Shared tooltip box theme (background, border, text) for light/dark mode.
+ * Single source so 2D and 3D tooltips look identical.
+ */
+export function getTooltipTheme(isDark: boolean) {
+  return {
+    backgroundColor: isDark ? '#1f2937' : '#ffffff',
+    borderColor: isDark ? '#4b5563' : '#e5e7eb',
+    textStyle: { color: getChartStyling(isDark).textColor },
+  }
+}
+
+/** Horizontal divider used inside tooltip HTML, themed to match the box. */
+export function tooltipDivider(isDark: boolean): string {
+  return `<hr style="border:none;border-top:1px solid ${getChartStyling(isDark).axisColor};margin:4px 0"/>`
 }
 
 /**
  * Creates common tooltip configuration
  * @param hasXYAxis - Whether the chart has both X and Y axes
  * @param seriesCount - Number of series in the chart (defaults to 1)
+ * @param isDark - Dark mode flag for tooltip theming
+ * @param seriesTotals - Per-series totals across all x, appended after each name
  */
-export function createTooltipConfig(hasXYAxis: boolean, seriesCount = 1): EChartsOption['tooltip'] {
+export function createTooltipConfig(
+  hasXYAxis: boolean,
+  seriesCount = 1,
+  isDark = false,
+  seriesTotals?: Map<string, number>
+): EChartsOption['tooltip'] {
+  const theme = getTooltipTheme(isDark)
+
   // Use item trigger if there are too many series (>10) to avoid overwhelming tooltip
   if (hasXYAxis && seriesCount <= 10) {
     return {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },
+      ...theme,
       formatter: (params) => {
         if (!Array.isArray(params)) return ''
 
-        return params.reduce(
-          (acc, cur) => `${acc}${cur.marker} ${cur.seriesName}: ${formatTooltipValue(cur.value)}<br/>`,
-          `<strong>${params[0]?.name}</strong><br/>`
+        const body = params.reduce((acc, cur) => {
+          const seriesSum = seriesTotals?.get(cur.seriesName ?? '')
+          const sumTag = seriesSum === undefined ? '' : ` (Σ${Math.round(seriesSum * 100) / 100})`
+          return `${acc}${cur.marker} ${cur.seriesName}${sumTag}: ${formatTooltipValue(cur.value)}<br/>`
+        }, `<strong>${params[0]?.name}</strong><br/>`)
+
+        // Σ across all series at this x = the x marginal. Label with the x name
+        // to match the 3D tooltip's "Σ <name>" lines. Only meaningful with >1 series.
+        if (params.length <= 1) return body
+        const total = params.reduce(
+          (sum, cur) => sum + (typeof cur.value === 'number' ? cur.value : 0),
+          0
         )
+        const xName = params[0]?.name ?? ''
+        return `${body}${tooltipDivider(isDark)}Σ ${xName}: <b>${Math.round(total * 100) / 100}</b>`
       },
     }
   }
 
   return {
     trigger: 'item',
+    ...theme,
     formatter: (params) => {
       if (Array.isArray(params)) return ''
       let { name, seriesName } = params

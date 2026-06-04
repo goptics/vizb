@@ -2,7 +2,7 @@ import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
 import { getNextColorFor } from '../../lib/utils'
-import { getChartStyling, type ChartStyling } from './shared'
+import { getChartStyling, getTooltipTheme, tooltipDivider, type ChartStyling } from './shared'
 import type { Point3D } from '../../types'
 
 type Series3DType = 'bar3D' | 'line3D'
@@ -36,16 +36,31 @@ function makeAxisCommon(styling: ChartStyling) {
 }
 
 export function use3DChartOptions(config: BaseChartConfig, seriesType: Series3DType) {
-  const { chartData, sort, showLabels, isDark, autoRotate } = config
+  const { chartData, sort, showLabels, isDark, autoRotate, visibleZ } = config
 
   const options = computed<EChartsOption>(() => {
     const styling = getChartStyling(isDark.value)
     const base = getBaseOptions(config)
     const points: Point3D[] = chartData.value.points ?? []
 
+    // Legend can toggle z series off. Aggregates (tooltip sums + bar-top labels)
+    // must reflect only the currently-visible z, so sum over the filtered set.
+    // echarts treats a missing legend key as selected → default everything on.
+    const sel = visibleZ?.value ?? {}
+    const aggPoints = points.filter((p) => sel[p.zAxis] !== false)
+
     let xValues = Array.from(new Set(points.map((p) => p.xAxis)))
     let yValues = Array.from(new Set(points.map((p) => p.yAxis)))
     let zValues = chartData.value.zAxis.filter((z) => z !== '')
+
+    // Marginal totals per category (sum over the other two visible axes).
+    const sumByKey = (key: 'xAxis' | 'yAxis') => {
+      const t = new Map<string, number>()
+      for (const p of aggPoints) t.set(p[key], (t.get(p[key]) ?? 0) + p.value)
+      return t
+    }
+    const xTotals = sumByKey('xAxis')
+    const yTotals = sumByKey('yAxis')
 
     if (sort.value.enabled) {
       const sortByTotal = (values: string[], key: 'xAxis' | 'yAxis' | 'zAxis') => {
@@ -64,10 +79,19 @@ export function use3DChartOptions(config: BaseChartConfig, seriesType: Series3DT
     const xIndex = new Map(xValues.map((v, i) => [v, i]))
     const yIndex = new Map(yValues.map((v, i) => [v, i]))
 
+    // Precompute per-cell aggregates so tooltip hover is O(1), not O(points):
+    // cellTotals = stacked height (Σ over z); cellZ = z→value for the breakdown.
     const cellTotals = new Map<string, number>()
-    for (const p of points) {
+    const cellZ = new Map<string, Map<string, number>>()
+    for (const p of aggPoints) {
       const key = `${xIndex.get(p.xAxis)},${yIndex.get(p.yAxis)}`
       cellTotals.set(key, (cellTotals.get(key) ?? 0) + p.value)
+      let zmap = cellZ.get(key)
+      if (!zmap) {
+        zmap = new Map()
+        cellZ.set(key, zmap)
+      }
+      zmap.set(p.zAxis, (zmap.get(p.zAxis) ?? 0) + p.value)
     }
 
     const series = zValues.map((z, zi) => ({
@@ -112,16 +136,30 @@ export function use3DChartOptions(config: BaseChartConfig, seriesType: Series3DT
       const [xi = 0, yi = 0] = params.value
       const xName = xValues[xi]
       const yName = yValues[yi]
-      const cell = points.filter((p) => p.xAxis === xName && p.yAxis === yName)
+      const key = `${xi},${yi}`
+      const zmap = cellZ.get(key)
       const rows = zValues
         .map((z) => {
-          const pt = cell.find((p) => p.zAxis === z)
-          if (!pt) return ''
+          const v = zmap?.get(z)
+          if (v === undefined) return ''
           const dot = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${getNextColorFor(z)};margin-right:6px"></span>`
-          return `${dot}${z}: <b>${round2(pt.value)}</b>`
+          return `${dot}${z}: <b>${round2(v)}</b>`
         })
         .filter(Boolean)
-      return `<b>${xName} / ${yName}</b><br/>${rows.join('<br/>')}`
+
+      // Σ over z = stacked bar height at this (x,y). First line under the
+      // divider, above the x/y marginals, when there's more than one z to sum.
+      const zSumLine =
+        zmap && zmap.size > 1 ? `Σ z: <b>${round2(cellTotals.get(key) ?? 0)}</b><br/>` : ''
+
+      // Marginal totals: sum over the other two axes for this x / this y.
+      const margins =
+        tooltipDivider(isDark.value) +
+        zSumLine +
+        `Σ ${xName}: <b>${round2(xTotals.get(xName ?? '') ?? 0)}</b><br/>` +
+        `Σ ${yName}: <b>${round2(yTotals.get(yName ?? '') ?? 0)}</b>`
+
+      return `<b>${xName} / ${yName}</b><br/>${rows.join('<br/>')}${margins}`
     }
 
     const grid3DConfig = {
@@ -150,12 +188,13 @@ export function use3DChartOptions(config: BaseChartConfig, seriesType: Series3DT
         left: 'left',
         top: 'middle',
         textStyle: { color: styling.textColor },
+        // Controlled selection: persist toggles across recomputes (without this,
+        // re-applying the option would reset every z back to visible).
+        selected: sel,
       },
       tooltip: {
         ...base.tooltip,
-        backgroundColor: isDark.value ? '#1f2937' : '#ffffff',
-        borderColor: isDark.value ? '#4b5563' : '#e5e7eb',
-        textStyle: { color: styling.textColor },
+        ...getTooltipTheme(isDark.value),
         formatter: tooltipFormatter,
       },
       xAxis3D: { type: 'category', data: xValues, ...axisCommon },
