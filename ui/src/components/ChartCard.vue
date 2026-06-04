@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { toRefs, ref } from 'vue'
-import { Maximize2, Minimize2 } from 'lucide-vue-next'
+import { toRefs, ref, computed } from 'vue'
+import type { EChartsOption } from 'echarts'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { BarChart, LineChart, PieChart } from 'echarts/charts'
@@ -76,6 +76,34 @@ function toggleFullscreen() {
 document.addEventListener('fullscreenchange', () => {
   isFullscreen.value = !!document.fullscreenElement
 })
+
+// Line-style corner-bracket icons so they match echarts' stroke-only toolbox
+// icons (filled glyphs render hollow). Enter = outward corners, exit = inward.
+const ENTER_FULLSCREEN_ICON = 'path://M3 9V3H9 M21 9V3H15 M3 15V21H9 M21 15V21H15'
+const EXIT_FULLSCREEN_ICON = 'path://M9 3V9H3 M15 3V9H21 M9 21V15H3 M15 21V15H21'
+
+// Inject fullscreen as a custom toolbox feature so it sits inline with
+// saveAsImage in echarts' horizontal toolbar (instead of a separate button).
+const mergedOptions = computed<EChartsOption>(() => {
+  const opt = options.value
+  const toolbox = opt.toolbox as Record<string, unknown> | undefined
+  const feature = (toolbox?.feature ?? {}) as Record<string, unknown>
+  return {
+    ...opt,
+    toolbox: {
+      ...toolbox,
+      feature: {
+        ...feature,
+        myFullScreen: {
+          show: true,
+          title: isFullscreen.value ? 'Exit fullscreen' : 'Fullscreen',
+          icon: isFullscreen.value ? EXIT_FULLSCREEN_ICON : ENTER_FULLSCREEN_ICON,
+          onclick: toggleFullscreen,
+        },
+      },
+    },
+  } as EChartsOption
+})
 </script>
 
 <template>
@@ -84,21 +112,11 @@ document.addEventListener('fullscreenchange', () => {
     class="rounded-lg border border-border bg-card p-6 shadow-sm transition-shadow hover:shadow-md"
     :class="{ 'fixed inset-0 z-50 rounded-none': isFullscreen }"
   >
-    <div class="flex items-center justify-between">
-      <h3 class="text-lg font-semibold text-card-foreground">
-        {{ chartData.title }}
-      </h3>
-      <button
-        class="rounded p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-        :title="isFullscreen ? 'Exit fullscreen' : 'Fullscreen'"
-        @click="toggleFullscreen"
-      >
-        <Minimize2 v-if="isFullscreen" class="h-4 w-4" />
-        <Maximize2 v-else class="h-4 w-4" />
-      </button>
-    </div>
+    <h3 class="text-lg font-semibold text-card-foreground">
+      {{ chartData.title }}
+    </h3>
     <VChart
-      :option="options"
+      :option="mergedOptions"
       :init-options="initOptions"
       :autoresize="true"
       :class="isFullscreen ? 'h-[calc(100vh-4rem)]' : 'h-[500px]'"
