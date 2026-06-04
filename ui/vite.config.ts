@@ -90,7 +90,12 @@ const compressBundlePlugin = (): PluginOption => {
         `await import(u);URL.revokeObjectURL(u);` +
         `</script>`
 
-      fs.writeFileSync(distHtmlPath, html.slice(0, match.index) + bootstrap + html.slice(match.index! + match[0].length), 'utf-8')
+      const compressed = html.slice(0, match.index) + bootstrap + html.slice(match.index! + match[0].length)
+      fs.writeFileSync(distHtmlPath, compressed, 'utf-8')
+
+      const originalKB = (Buffer.byteLength(html, 'utf-8') / 1024).toFixed(1)
+      const compressedKB = (Buffer.byteLength(compressed, 'utf-8') / 1024).toFixed(1)
+      console.info(`[compress-bundle] ${originalKB} KB → ${compressedKB} KB`)
     },
   }
 }

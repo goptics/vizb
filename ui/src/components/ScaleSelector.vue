@@ -5,11 +5,23 @@ import { Separator } from './ui'
 import SelectionTabs from './SelectionTabs.vue'
 import type { ScaleType } from '../types'
 import { useSettingsStore } from '../composables/useSettingsStore'
+import { useBenchmarkData } from '../composables/useBenchmarkData'
 
 const { settings, setScale } = useSettingsStore()
+const { activeBenchmark } = useBenchmarkData()
 
 const scaleType = ref<ScaleType>(settings.scale)
-const isAxisChart = computed(() => (settings.charts[settings.activeChartIndex] ?? 'bar') !== 'pie')
+
+// 3D charts (x+y+z all present) don't support log scale yet — hide the control.
+const is3DChart = computed(() => {
+  const data = activeBenchmark.value?.data
+  if (!data) return false
+  return data.some((d) => d.xAxis) && data.some((d) => d.yAxis) && data.some((d) => d.zAxis)
+})
+
+const isAxisChart = computed(
+  () => (settings.charts[settings.activeChartIndex] ?? 'bar') !== 'pie' && !is3DChart.value,
+)
 
 watch(scaleType, (val) => setScale(val))
 
