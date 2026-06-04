@@ -342,12 +342,17 @@ func TestRunBenchmark(t *testing.T) {
 			restore := tt.setupStdin()
 			defer restore()
 
-			// Capture stdout and stderr
+			// Capture stdout and stderr. Restore via defer so a panic
+			// (recovered by WithSafe) can't leak the pipe into later tests.
 			oldStdout := os.Stdout
 			oldStderr := os.Stderr
 			r, w, _ := os.Pipe()
 			os.Stdout = w
 			os.Stderr = w
+			defer func() {
+				os.Stdout = oldStdout
+				os.Stderr = oldStderr
+			}()
 
 			// Create a cobra command for testing
 			cmd := &cobra.Command{}
@@ -355,13 +360,6 @@ func TestRunBenchmark(t *testing.T) {
 
 			// Run the function and catch any os.Exit calls
 			if tt.expectExit {
-				// Capture both stdout and stderr
-				oldStdout := os.Stdout
-				oldStderr := os.Stderr
-				r, w, _ := os.Pipe()
-				os.Stdout = w
-				os.Stderr = w
-
 				// Use WithSafe to handle panic
 				err := shared.WithSafe("runBenchmark", func() {
 					runBenchmark(cmd, args)
@@ -371,10 +369,6 @@ func TestRunBenchmark(t *testing.T) {
 				w.Close()
 				var buf bytes.Buffer
 				io.Copy(&buf, r)
-
-				// Restore stdout and stderr
-				os.Stdout = oldStdout
-				os.Stderr = oldStderr
 
 				// Verify assertions
 				if err == nil {
@@ -391,10 +385,6 @@ func TestRunBenchmark(t *testing.T) {
 				// Read output
 				var buf bytes.Buffer
 				io.Copy(&buf, r)
-
-				// Restore stdout and stderr
-				os.Stdout = oldStdout
-				os.Stderr = oldStderr
 
 				// Validate assertions
 				assert.Contains(t, buf.String(), tt.expectedOutput)
