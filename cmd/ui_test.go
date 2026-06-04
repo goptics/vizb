@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestHtmlCmd_SingleObject(t *testing.T) {
+func TestUICmd_SingleObject(t *testing.T) {
 	oldOsExit := shared.OsExit
 	defer func() { shared.OsExit = oldOsExit }()
 
@@ -34,7 +34,7 @@ func TestHtmlCmd_SingleObject(t *testing.T) {
 	outFile := filepath.Join(tmpDir, "output.html")
 	shared.FlagState.OutputFile = outFile
 
-	rootCmd.SetArgs([]string{"html", inputFile})
+	rootCmd.SetArgs([]string{"ui", inputFile})
 	err = rootCmd.Execute()
 	assert.NoError(t, err)
 	assert.Equal(t, 0, exitCode)
@@ -49,7 +49,7 @@ func TestHtmlCmd_SingleObject(t *testing.T) {
 	assert.Contains(t, htmlStr, "</html>")
 }
 
-func TestHtmlCmd_ArrayInput(t *testing.T) {
+func TestUICmd_ArrayInput(t *testing.T) {
 	oldOsExit := shared.OsExit
 	defer func() { shared.OsExit = oldOsExit }()
 
@@ -72,7 +72,7 @@ func TestHtmlCmd_ArrayInput(t *testing.T) {
 	outFile := filepath.Join(tmpDir, "output.html")
 	shared.FlagState.OutputFile = outFile
 
-	rootCmd.SetArgs([]string{"html", inputFile})
+	rootCmd.SetArgs([]string{"ui", inputFile})
 	err = rootCmd.Execute()
 	assert.NoError(t, err)
 	assert.Equal(t, 0, exitCode)
@@ -87,19 +87,19 @@ func TestHtmlCmd_ArrayInput(t *testing.T) {
 	assert.Contains(t, htmlStr, "Test2")
 }
 
-func TestHtmlCmd_MissingFile(t *testing.T) {
+func TestUICmd_MissingFile(t *testing.T) {
 	oldOsExit := shared.OsExit
 	defer func() { shared.OsExit = oldOsExit }()
 
 	exitCode := 0
 	shared.OsExit = func(code int) { exitCode = code }
 
-	rootCmd.SetArgs([]string{"html", "/nonexistent/path.json"})
+	rootCmd.SetArgs([]string{"ui", "/nonexistent/path.json"})
 	rootCmd.Execute()
 	assert.Equal(t, 1, exitCode)
 }
 
-func TestHtmlCmd_NoArgs(t *testing.T) {
+func TestUICmd_NoArgs(t *testing.T) {
 	oldOsExit := shared.OsExit
 	defer func() { shared.OsExit = oldOsExit }()
 
@@ -107,12 +107,12 @@ func TestHtmlCmd_NoArgs(t *testing.T) {
 	shared.OsExit = func(code int) { exitCode = code }
 
 	shared.FlagState.DataURL = ""
-	rootCmd.SetArgs([]string{"html"})
+	rootCmd.SetArgs([]string{"ui"})
 	rootCmd.Execute()
 	assert.Equal(t, 1, exitCode)
 }
 
-func TestHtmlCmd_APIFlag(t *testing.T) {
+func TestUICmd_APIFlag(t *testing.T) {
 	oldOsExit := shared.OsExit
 	defer func() { shared.OsExit = oldOsExit }()
 
@@ -130,7 +130,7 @@ func TestHtmlCmd_APIFlag(t *testing.T) {
 	shared.FlagState.DataURL = "https://example.com/bench.json"
 	defer func() { shared.FlagState.DataURL = "" }()
 
-	rootCmd.SetArgs([]string{"html", "--data-url", "https://example.com/bench.json"})
+	rootCmd.SetArgs([]string{"ui", "--data-url", "https://example.com/bench.json"})
 	err = rootCmd.Execute()
 	assert.NoError(t, err)
 	assert.Equal(t, 0, exitCode)
@@ -144,7 +144,7 @@ func TestHtmlCmd_APIFlag(t *testing.T) {
 	assert.NotContains(t, htmlStr, `"name":"Bench`)
 }
 
-func TestHtmlCmd_APIFlag_InvalidURL(t *testing.T) {
+func TestUICmd_APIFlag_InvalidURL(t *testing.T) {
 	oldOsExit := shared.OsExit
 	defer func() { shared.OsExit = oldOsExit }()
 
@@ -154,12 +154,12 @@ func TestHtmlCmd_APIFlag_InvalidURL(t *testing.T) {
 	shared.FlagState.DataURL = "not-a-url"
 	defer func() { shared.FlagState.DataURL = "" }()
 
-	rootCmd.SetArgs([]string{"html", "--data-url", "not-a-url"})
+	rootCmd.SetArgs([]string{"ui", "--data-url", "not-a-url"})
 	rootCmd.Execute()
 	assert.Equal(t, 1, exitCode)
 }
 
-func TestHtmlCmd_InvalidJSON(t *testing.T) {
+func TestUICmd_InvalidJSON(t *testing.T) {
 	oldOsExit := shared.OsExit
 	defer func() { shared.OsExit = oldOsExit }()
 
@@ -175,12 +175,12 @@ func TestHtmlCmd_InvalidJSON(t *testing.T) {
 	inputFile := filepath.Join(tmpDir, "invalid.json")
 	os.WriteFile(inputFile, []byte("not json"), 0644)
 
-	rootCmd.SetArgs([]string{"html", inputFile})
+	rootCmd.SetArgs([]string{"ui", inputFile})
 	rootCmd.Execute()
 	assert.Equal(t, 1, exitCode)
 }
 
-func TestHtmlCmd_StdoutFallback(t *testing.T) {
+func TestUICmd_StdoutFallback(t *testing.T) {
 	oldOsExit := shared.OsExit
 	defer func() { shared.OsExit = oldOsExit }()
 
@@ -204,13 +204,13 @@ func TestHtmlCmd_StdoutFallback(t *testing.T) {
 
 	shared.FlagState.OutputFile = ""
 
-	rootCmd.SetArgs([]string{"html", inputFile})
+	rootCmd.SetArgs([]string{"ui", inputFile})
 	err = rootCmd.Execute()
 	assert.NoError(t, err)
 	assert.Equal(t, 0, exitCode)
 }
 
-func TestHtmlCmd_EmptyFile(t *testing.T) {
+func TestUICmd_EmptyFile(t *testing.T) {
 	oldOsExit := shared.OsExit
 	defer func() { shared.OsExit = oldOsExit }()
 
@@ -226,12 +226,12 @@ func TestHtmlCmd_EmptyFile(t *testing.T) {
 	inputFile := filepath.Join(tmpDir, "empty.json")
 	os.WriteFile(inputFile, []byte(""), 0644)
 
-	rootCmd.SetArgs([]string{"html", inputFile})
+	rootCmd.SetArgs([]string{"ui", inputFile})
 	rootCmd.Execute()
 	assert.Equal(t, 1, exitCode)
 }
 
-func TestHtmlCmd_MergedOutput(t *testing.T) {
+func TestUICmd_MergedOutput(t *testing.T) {
 	oldOsExit := shared.OsExit
 	defer func() { shared.OsExit = oldOsExit }()
 
@@ -263,7 +263,7 @@ func TestHtmlCmd_MergedOutput(t *testing.T) {
 	outFile := filepath.Join(tmpDir, "chart.html")
 	shared.FlagState.OutputFile = outFile
 
-	rootCmd.SetArgs([]string{"html", inputFile})
+	rootCmd.SetArgs([]string{"ui", inputFile})
 	err = rootCmd.Execute()
 	assert.NoError(t, err)
 	assert.Equal(t, 0, exitCode)
@@ -275,4 +275,40 @@ func TestHtmlCmd_MergedOutput(t *testing.T) {
 	assert.Contains(t, htmlStr, "v1.0.0")
 	assert.Contains(t, htmlStr, "v0.9.0")
 	assert.Contains(t, htmlStr, "Sort Benchmarks")
+}
+
+// TestUICmd_HtmlAlias verifies the legacy `html` alias still resolves to the ui command.
+func TestUICmd_HtmlAlias(t *testing.T) {
+	oldOsExit := shared.OsExit
+	defer func() { shared.OsExit = oldOsExit }()
+
+	var exitCode int
+	shared.OsExit = func(code int) { exitCode = code }
+
+	tmpDir, err := os.MkdirTemp("", "vizb-html-alias-test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	bench := shared.Benchmark{
+		Name: "Bench1",
+		Data: []shared.BenchmarkData{
+			{Name: "Test1", XAxis: "1", YAxis: "100"},
+		},
+	}
+	inputFile := filepath.Join(tmpDir, "bench.json")
+	writeJSON(t, inputFile, bench)
+
+	outFile := filepath.Join(tmpDir, "output.html")
+	shared.FlagState.OutputFile = outFile
+
+	rootCmd.SetArgs([]string{"html", inputFile})
+	err = rootCmd.Execute()
+	assert.NoError(t, err)
+	assert.Equal(t, 0, exitCode)
+
+	content, err := os.ReadFile(outFile)
+	assert.NoError(t, err)
+	assert.Contains(t, string(content), "Bench1")
 }

@@ -10,9 +10,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var htmlCmd = &cobra.Command{
-	Use:   "html [file]",
-	Short: "Generate HTML visualization from a benchmark JSON file",
+var uiCmd = &cobra.Command{
+	Use:     "ui [file]",
+	Aliases: []string{"html"},
+	Short:   "Generate the interactive HTML UI from a benchmark JSON file",
 	Long: `Generate an interactive HTML chart from a benchmark JSON file.
 The input file must be a valid vizb benchmark JSON (single object or array).
 
@@ -20,15 +21,15 @@ When --data-url is set, no input file is needed. The generated HTML will fetch
 benchmark JSON from the provided URL at runtime instead of embedding it.
 Note: the JSON host must serve Access-Control-Allow-Origin: * for file:// access.`,
 	Args: cobra.MaximumNArgs(1),
-	Run:  runHTML,
+	Run:  runUI,
 }
 
 func init() {
-	rootCmd.AddCommand(htmlCmd)
-	htmlCmd.Flags().StringVarP(&shared.FlagState.DataURL, "data-url", "U", "", "URL to fetch benchmark JSON from at runtime (no input file needed)")
+	rootCmd.AddCommand(uiCmd)
+	uiCmd.Flags().StringVarP(&shared.FlagState.DataURL, "data-url", "U", "", "URL to fetch benchmark JSON from at runtime (no input file needed)")
 }
 
-func runHTML(cmd *cobra.Command, args []string) {
+func runUI(cmd *cobra.Command, args []string) {
 	outFile := shared.FlagState.OutputFile
 	if outFile == "" {
 		outFile = resolveOutputFileName(outFile)
