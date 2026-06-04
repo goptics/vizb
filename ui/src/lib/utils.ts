@@ -11,6 +11,9 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+export const isValidIndex = (id: number, length: number): boolean =>
+  id >= 0 && id < length
+
 export const COLOR_PALETTE = [
   '#5470C6', // Blue
   '#3BA272', // Green

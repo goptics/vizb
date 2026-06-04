@@ -1,6 +1,7 @@
 import { reactive, computed } from 'vue'
 import type { Sort, ChartType, ScaleType, Settings as BenchmarkSettings } from '../types'
 import { DEFAULT_SETTINGS } from './constants'
+import { isValidIndex } from '../lib/utils'
 
 type StoreSettings = {
   sort: Sort
@@ -86,14 +87,13 @@ export function useSettingsStore() {
     const filtered = list.filter((c) => DEFAULT_SETTINGS.charts.includes(c))
     settings.charts = filtered.length ? filtered : DEFAULT_SETTINGS.charts
 
-    // clamp index
-    if (settings.activeChartIndex < 0 || settings.activeChartIndex >= settings.charts.length) {
+    if (!isValidIndex(settings.activeChartIndex, settings.charts.length)) {
       settings.activeChartIndex = 0
     }
   }
 
   const setActiveChartIndex = (index: number) => {
-    if (index >= 0 && index < settings.charts.length) {
+    if (isValidIndex(index, settings.charts.length)) {
       settings.activeChartIndex = index
     }
   }

@@ -3,6 +3,7 @@ import type { EChartsOption } from 'echarts'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
 import { getNextColorFor } from '../../lib/utils'
 import { getChartStyling, getTooltipTheme, tooltipDivider, type ChartStyling } from './shared'
+import { sortByAxisTotal } from './shared/common'
 import type { Point3D } from '../../types'
 
 type Series3DType = 'bar3D' | 'line3D'
@@ -13,7 +14,7 @@ function mapPoints(
   points: Point3D[],
   z: string,
   xIndex: Map<string, number>,
-  yIndex: Map<string, number>,
+  yIndex: Map<string, number>
 ) {
   return points
     .filter((p) => p.zAxis === z)
@@ -23,7 +24,7 @@ function mapPoints(
 function makeLabel(
   show: boolean,
   textColor: string,
-  formatter: (p: { value: number[] }) => string,
+  formatter: (p: { value: number[] }) => string
 ) {
   return { show, fontSize: 12, textStyle: { color: textColor }, formatter }
 }
@@ -63,17 +64,9 @@ export function use3DChartOptions(config: BaseChartConfig, seriesType: Series3DT
     const yTotals = sumByKey('yAxis')
 
     if (sort.value.enabled) {
-      const sortByTotal = (values: string[], key: 'xAxis' | 'yAxis' | 'zAxis') => {
-        const totals = new Map<string, number>()
-        for (const p of points) totals.set(p[key], (totals.get(p[key]) ?? 0) + p.value)
-        return values.sort((a, b) => {
-          const diff = (totals.get(a) ?? 0) - (totals.get(b) ?? 0)
-          return sort.value.order === 'asc' ? diff : -diff
-        })
-      }
-      xValues = sortByTotal(xValues, 'xAxis')
-      yValues = sortByTotal(yValues, 'yAxis')
-      zValues = sortByTotal(zValues, 'zAxis')
+      xValues = sortByAxisTotal(xValues, 'xAxis', points, sort.value.order)
+      yValues = sortByAxisTotal(yValues, 'yAxis', points, sort.value.order)
+      zValues = sortByAxisTotal(zValues, 'zAxis', points, sort.value.order)
     }
 
     const xIndex = new Map(xValues.map((v, i) => [v, i]))
@@ -109,7 +102,7 @@ export function use3DChartOptions(config: BaseChartConfig, seriesType: Series3DT
         ({ value: [xi = 0, yi = 0] }) => {
           const total = cellTotals.get(`${xi},${yi}`)
           return total === undefined ? '' : String(round2(total))
-        },
+        }
       ),
       emphasis: { disabled: true },
     }))
@@ -124,7 +117,7 @@ export function use3DChartOptions(config: BaseChartConfig, seriesType: Series3DT
             symbolSize: 10,
             itemStyle: { color: getNextColorFor(z) },
             label: makeLabel(showLabels.value, styling.textColor, ({ value: [, , v] }) =>
-              v === undefined ? '' : String(round2(v)),
+              v === undefined ? '' : String(round2(v))
             ),
             emphasis: { disabled: true },
           }))
@@ -162,25 +155,8 @@ export function use3DChartOptions(config: BaseChartConfig, seriesType: Series3DT
       return `<b>${xName} / ${yName}</b><br/>${rows.join('<br/>')}${margins}`
     }
 
-    const grid3DConfig = {
-      boxWidth: 100,
-      boxDepth: 100,
-      axisLine: { lineStyle: { color: styling.axisColor } },
-      splitLine: { lineStyle: { color: styling.axisColor, opacity: styling.opacity } },
-      viewControl: {
-        distance: 200,
-        autoRotate: autoRotate.value,
-        ...(seriesType === 'line3D' ? { projection: 'orthographic' } : {}),
-      },
-      light: {
-        main: { intensity: 0.3, shadow: false },
-        ambient: { intensity: 0.9 },
-      },
-    }
-
-    const opt = {
+    return {
       ...base,
-      emphasis: { focus: 'none' },
       legend: {
         ...base.legend,
         show: zValues.length > 1,
@@ -200,11 +176,23 @@ export function use3DChartOptions(config: BaseChartConfig, seriesType: Series3DT
       xAxis3D: { type: 'category', data: xValues, ...axisCommon },
       yAxis3D: { type: 'category', data: yValues, ...axisCommon },
       zAxis3D: { type: 'value', ...axisCommon },
-      grid3D: grid3DConfig,
+      grid3D: {
+        boxWidth: 100,
+        boxDepth: 100,
+        axisLine: { lineStyle: { color: styling.axisColor } },
+        splitLine: { lineStyle: { color: styling.axisColor, opacity: styling.opacity } },
+        viewControl: {
+          distance: 200,
+          autoRotate: autoRotate.value,
+          ...(seriesType === 'line3D' ? { projection: 'orthographic' } : {}),
+        },
+        light: {
+          main: { intensity: 0.3, shadow: false },
+          ambient: { intensity: 0.9 },
+        },
+      },
       series: [...series, ...labelSeries],
-    }
-
-    return opt as unknown as EChartsOption
+    } as unknown as EChartsOption
   })
 
   return { options }

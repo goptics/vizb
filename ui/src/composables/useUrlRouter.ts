@@ -1,8 +1,10 @@
 import { watch } from 'vue'
 import type { SortOrder, ChartType, ScaleType } from '../types'
+import { SORT_ORDERS, SCALE_TYPES } from '../types'
 import { useSettingsStore } from './useSettingsStore'
 import { useBenchmarkData } from './useBenchmarkData'
 import { DEFAULT_SETTINGS } from './constants'
+import { isValidIndex } from '../lib/utils'
 
 type UrlParams = {
   s?: SortOrder // sort order
@@ -50,7 +52,7 @@ const applyIndexParam = (
 ) => {
   if (value === undefined) return
   const id = parseInt(value, 10)
-  if (!isNaN(id) && id >= 0 && id < maxLength) {
+  if (!isNaN(id) && isValidIndex(id, maxLength)) {
     setter(id)
   }
 }
@@ -82,7 +84,7 @@ export function useUrlRouter() {
 
     // 3. Now apply settings on top of benchmark defaults
     // Sort
-    if (params.s && ['asc', 'desc'].includes(params.s.toLowerCase())) {
+    if (params.s && SORT_ORDERS.includes(params.s.toLowerCase() as SortOrder)) {
       setSort({ enabled: true, order: params.s })
     }
 
@@ -101,7 +103,7 @@ export function useUrlRouter() {
     }
 
     // Scale type
-    if (params.sc && ['linear', 'log'].includes(params.sc)) {
+    if (params.sc && SCALE_TYPES.includes(params.sc)) {
       setScale(params.sc)
     }
   }

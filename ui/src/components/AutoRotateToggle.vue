@@ -1,27 +1,17 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
 import { Separator } from './ui'
 import SettingsToggle from './SettingsToggle.vue'
 import { useSettingsStore } from '../composables/useSettingsStore'
-import { useBenchmarkData } from '../composables/useBenchmarkData'
+import { useActiveChartShape } from '../composables/useActiveChartShape'
+import { useSyncedSetting } from '../composables/useSyncedSetting'
 
 const { settings, setAutoRotate } = useSettingsStore()
-const { activeBenchmark } = useBenchmarkData()
+const { is3DChart } = useActiveChartShape()
 
-const autoRotate = ref(settings.autoRotate)
-
-// Auto-rotate only applies to 3D charts (x+y+z all present).
-const is3DChart = computed(() => {
-  const data = activeBenchmark.value?.data
-  if (!data) return false
-  return data.some((d) => d.xAxis) && data.some((d) => d.yAxis) && data.some((d) => d.zAxis)
-})
-
-watch(autoRotate, (val) => setAutoRotate(val))
-
-const handleChange = (checked: boolean) => {
-  autoRotate.value = checked
-}
+const autoRotate = useSyncedSetting(
+  () => settings.autoRotate,
+  (val: boolean) => setAutoRotate(val)
+)
 </script>
 
 <template>
@@ -32,7 +22,7 @@ const handleChange = (checked: boolean) => {
       label="Auto rotate"
       description="Continuously rotate the 3D chart."
       :checked="autoRotate"
-      @update:checked="handleChange"
+      @update:checked="autoRotate = $event"
     />
   </template>
 </template>

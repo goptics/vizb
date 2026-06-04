@@ -1,62 +1,36 @@
 import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
-import type { ScaleType } from '../../types'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
-import { getNextColorFor, hasYAxis } from '../../lib/utils'
+import { getNextColorFor } from '../../lib/utils'
 import {
   createAxisConfig,
   createGridConfig,
-  createLabelConfig,
   createLegendConfig,
   createTooltipConfig,
   getChartStyling,
 } from './shared'
-import { sortByTotal, adjustForLogScaleLine } from './shared/common'
+import {
+  adjustForLogScaleLine,
+  useSortedSeriesData,
+  getEffectiveScale,
+  computeSeriesTotals,
+} from './shared/common'
+import { makeDataItem } from './shared/seriesConfig'
+
+const symbolSize = 7
+const symbol = 'circle'
 
 export function useLineChartOptions(config: BaseChartConfig) {
-  const { chartData, sort, isDark,showLabels, scale } = config
+  const { chartData, sort, isDark, showLabels, scale } = config
 
-  const sortedData = computed(() => {
-    if (!sort.value.enabled) {
-      return {
-        series: chartData.value.series,
-        xAxisData: chartData.value.series.map((s) => s.xAxis), // Always use framework names on x-axis
-        hasYAxis: hasYAxis(chartData),
-      }
-    }
-
-    // Sort series by total values
-    const seriesWithTotals = chartData.value.series.map((series) => ({
-      ...series,
-      total: series.values.reduce((sum, val) => sum + val, 0),
-    }))
-
-    if (sort.value.enabled) {
-      seriesWithTotals.sort(sortByTotal(sort.value.order))
-    }
-
-    return {
-      series: seriesWithTotals,
-      xAxisData: seriesWithTotals.map((s) => s.xAxis), // Always use framework names on x-axis
-      hasYAxis: hasYAxis(chartData),
-    }
-  })
-  const symbolSize = 7
-  const symbol = 'circle'
+  const sortedData = useSortedSeriesData(chartData, sort)
 
   const options = computed<EChartsOption>(() => {
     const { series, xAxisData, hasYAxis } = sortedData.value
     const baseOptions = getBaseOptions(config)
     const styling = getChartStyling(isDark.value)
+    const { minValue, effectiveScale } = getEffectiveScale(series, scale.value)
 
-    // Calculate min/max for log scale guard
-    const allValues = series.flatMap((s) => s.values)
-    const nonZeroValues = allValues.filter((v) => v > 0)
-    const minValue = nonZeroValues.length > 0 ? Math.min(...nonZeroValues) : undefined
-    const maxValue = allValues.length > 0 ? Math.max(...allValues) : 0
-    const effectiveScale: ScaleType = scale.value === 'log' && maxValue < 1 ? 'linear' : scale.value
-
-    // Single category case: one series with multiple x-axis points
     if (!hasYAxis) {
       return {
         ...baseOptions,
@@ -68,12 +42,13 @@ export function useLineChartOptions(config: BaseChartConfig) {
           {
             name: chartData.value.title,
             type: 'line' as const,
-            data: series.map((seriesData) => {
-              const val = adjustForLogScaleLine(seriesData.values[0] ?? 0, effectiveScale)
-              return val === null
-                ? null
-                : { value: val, label: createLabelConfig(showLabels.value, styling) }
-            }),
+            data: series.map((s) =>
+              makeDataItem(
+                adjustForLogScaleLine(s.values[0] ?? 0, effectiveScale),
+                showLabels.value,
+                styling
+              )
+            ),
             connectNulls: true,
             itemStyle: { color: getNextColorFor(chartData.value.title) },
             symbol,
@@ -83,29 +58,25 @@ export function useLineChartOptions(config: BaseChartConfig) {
       } as EChartsOption
     }
 
-    // Dual categories case: transpose data to show y-axis values as series
+    // Dual categories: transpose — each y-axis value becomes a line series
     const yAxisLabels = chartData.value.yAxis
     const transposedSeries = yAxisLabels.map((yAxisLabel, yIndex) => ({
       name: yAxisLabel,
       type: 'line' as const,
-      data: series.map((seriesData) => {
-        const val = adjustForLogScaleLine(seriesData.values[yIndex] ?? 0, effectiveScale)
-        return val === null
-          ? null
-          : { value: val, label: createLabelConfig(showLabels.value, styling) }
-      }),
+      data: series.map((s) =>
+        makeDataItem(
+          adjustForLogScaleLine(s.values[yIndex] ?? 0, effectiveScale),
+          showLabels.value,
+          styling
+        )
+      ),
       connectNulls: true,
       itemStyle: { color: getNextColorFor(yAxisLabel) },
       symbol,
       symbolSize,
     }))
 
-    const seriesTotals = new Map(
-      transposedSeries.map((s) => [
-        s.name,
-        s.data.reduce((sum, d) => sum + (d?.value ?? 0), 0),
-      ])
-    )
+    const seriesTotals = computeSeriesTotals(transposedSeries)
 
     return {
       ...baseOptions,
