@@ -44,9 +44,17 @@ const { chartData } = toRefs(props)
 
 // Pull settings from centralized store
 const { settings, chartType } = useSettingsStore()
-const { sort, showLabels, isDark, scale } = toRefs(settings)
+const { sort, showLabels, isDark, scale, autoRotate } = toRefs(settings)
 
-const { options } = useChartOptions(chartData, sort, showLabels, isDark, chartType, scale)
+const { options } = useChartOptions(
+  chartData,
+  sort,
+  showLabels,
+  isDark,
+  chartType,
+  scale,
+  autoRotate,
+)
 
 const initOptions = {
   renderer: 'canvas',

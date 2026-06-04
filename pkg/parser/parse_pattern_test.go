@@ -252,6 +252,18 @@ func TestValidateGroupPattern(t *testing.T) {
 			pattern:     "name/xAxis/yAxis/zAxis",
 			expectError: false,
 		},
+		{
+			name:          "Invalid pattern: z with x but no y",
+			pattern:       "x/z",
+			expectError:   true,
+			errorContains: "zAxis (z) requires both xAxis (x) and yAxis (y)",
+		},
+		{
+			name:          "Invalid pattern: z with y but no x",
+			pattern:       "n/y/z",
+			expectError:   true,
+			errorContains: "zAxis (z) requires both xAxis (x) and yAxis (y)",
+		},
 	}
 
 	for _, tt := range tests {
@@ -406,6 +418,14 @@ func TestParseNameWithRegex(t *testing.T) {
 			expected:      nil,
 			expectError:   true,
 			errorContains: "does not contain x (xAxis) or y (yAxis)",
+		},
+		{
+			name:          "Regex with zAxis but missing yAxis",
+			benchmarkName: "Sort/bubble/threads8",
+			pattern:       `(?<n>.*)/(?<x>.*)/(?<z>.*)`,
+			expected:      nil,
+			expectError:   true,
+			errorContains: "z requires both xAxis (x) and yAxis (y)",
 		},
 	}
 

@@ -10,6 +10,7 @@ type StoreSettings = {
   selectedSwapIndexMap: Map<number, number>
   isDark: boolean
   scale: ScaleType
+  autoRotate: boolean
 }
 
 const settings = reactive<StoreSettings>({
@@ -20,6 +21,7 @@ const settings = reactive<StoreSettings>({
   selectedSwapIndexMap: new Map(),
   isDark: false,
   scale: 'linear',
+  autoRotate: false,
 })
 
 const chartType = computed<ChartType>(() => settings.charts[settings.activeChartIndex] ?? 'bar')
@@ -76,6 +78,10 @@ export function useSettingsStore() {
     settings.showLabels = show
   }
 
+  const setAutoRotate = (rotate: boolean) => {
+    settings.autoRotate = rotate
+  }
+
   const setCharts = (list: ChartType[]) => {
     const filtered = list.filter((c) => DEFAULT_SETTINGS.charts.includes(c))
     settings.charts = filtered.length ? filtered : DEFAULT_SETTINGS.charts
@@ -125,6 +131,7 @@ export function useSettingsStore() {
     setSort,
     setScale,
     setShowLabels,
+    setAutoRotate,
     setCharts,
     setActiveChartIndex,
     setChartType,

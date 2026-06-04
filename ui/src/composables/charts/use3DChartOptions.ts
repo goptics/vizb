@@ -36,7 +36,7 @@ function makeAxisCommon(styling: ChartStyling) {
 }
 
 export function use3DChartOptions(config: BaseChartConfig, seriesType: Series3DType) {
-  const { chartData, sort, showLabels, isDark } = config
+  const { chartData, sort, showLabels, isDark, autoRotate } = config
 
   const options = computed<EChartsOption>(() => {
     const styling = getChartStyling(isDark.value)
@@ -131,6 +131,7 @@ export function use3DChartOptions(config: BaseChartConfig, seriesType: Series3DT
       splitLine: { lineStyle: { color: styling.axisColor, opacity: styling.opacity } },
       viewControl: {
         distance: 200,
+        autoRotate: autoRotate.value,
         ...(seriesType === 'line3D' ? { projection: 'orthographic' } : {}),
       },
       light: {

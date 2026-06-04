@@ -4,6 +4,7 @@ import { Settings } from 'lucide-vue-next'
 import { Popover, PopoverTrigger, PopoverContent } from './ui'
 import ChartSettings from './ChartSettings.vue'
 import ScaleSelector from './ScaleSelector.vue'
+import AutoRotateToggle from './AutoRotateToggle.vue'
 import IconButton from './IconButton.vue'
 
 const isOpen = ref(false)
@@ -21,6 +22,9 @@ const isOpen = ref(false)
       <ChartSettings>
         <template #scale>
           <ScaleSelector />
+        </template>
+        <template #autoRotate>
+          <AutoRotateToggle />
         </template>
       </ChartSettings>
     </PopoverContent>

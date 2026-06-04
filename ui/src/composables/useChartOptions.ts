@@ -14,7 +14,8 @@ export function useChartOptions(
   showLabels: Ref<boolean>,
   isDark: Ref<boolean>,
   chartType: Ref<ChartType>,
-  scale: Ref<ScaleType>
+  scale: Ref<ScaleType>,
+  autoRotate: Ref<boolean>
 ) {
   const config: BaseChartConfig = {
     chartData,
@@ -22,6 +23,7 @@ export function useChartOptions(
     showLabels,
     isDark,
     scale,
+    autoRotate,
   }
 
   const barOptions = useBarChartOptions(config)

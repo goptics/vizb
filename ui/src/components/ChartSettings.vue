@@ -111,6 +111,8 @@ const getChartIcon = (type: ChartType) => {
 
       <slot name="scale" />
 
+      <slot name="autoRotate" />
+
       <Separator />
 
       <AxisSwapper />
