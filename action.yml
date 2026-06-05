@@ -239,8 +239,8 @@ runs:
       shell: bash
       run: |
         if [ -n "${{ inputs.data-url }}" ]; then
-          vizb html -U "${{ inputs.data-url }}" -o "${{ inputs.output-html }}"
+          vizb ui -U "${{ inputs.data-url }}" -o "${{ inputs.output-html }}"
         else
-          vizb html "${{ steps.resolve.outputs.json_file }}" -o "${{ inputs.output-html }}"
+          vizb ui "${{ steps.resolve.outputs.json_file }}" -o "${{ inputs.output-html }}"
         fi
         echo "html=${{ inputs.output-html }}" >> "$GITHUB_OUTPUT"
