@@ -22,9 +22,9 @@ func TestUICmd_SingleObject(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	bench := shared.Benchmark{
+	bench := shared.Dataset{
 		Name: "Bench1",
-		Data: []shared.BenchmarkData{
+		Data: []shared.DataPoint{
 			{Name: "Test1", XAxis: "1", YAxis: "100"},
 		},
 	}
@@ -62,9 +62,9 @@ func TestUICmd_ArrayInput(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	benches := []shared.Benchmark{
-		{Name: "Bench1", Data: []shared.BenchmarkData{{Name: "Test1", XAxis: "1", YAxis: "100"}}},
-		{Name: "Bench2", Data: []shared.BenchmarkData{{Name: "Test2", XAxis: "2", YAxis: "200"}}},
+	benches := []shared.Dataset{
+		{Name: "Bench1", Data: []shared.DataPoint{{Name: "Test1", XAxis: "1", YAxis: "100"}}},
+		{Name: "Bench2", Data: []shared.DataPoint{{Name: "Test2", XAxis: "2", YAxis: "200"}}},
 	}
 	inputFile := filepath.Join(tmpDir, "benches.json")
 	writeJSON(t, inputFile, benches)
@@ -193,9 +193,9 @@ func TestUICmd_StdoutFallback(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	bench := shared.Benchmark{
+	bench := shared.Dataset{
 		Name: "Bench1",
-		Data: []shared.BenchmarkData{
+		Data: []shared.DataPoint{
 			{Name: "Test1", XAxis: "1", YAxis: "100"},
 		},
 	}
@@ -244,7 +244,7 @@ func TestUICmd_MergedOutput(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	benches := []shared.Benchmark{
+	benches := []shared.Dataset{
 		{
 			Tag:       "v1.0.0",
 			Timestamp: "2024-01-01T00:00:00Z",
@@ -252,7 +252,7 @@ func TestUICmd_MergedOutput(t *testing.T) {
 			History: []shared.HistoryEntry{
 				{Tag: "v0.9.0", Timestamp: "2023-12-01T00:00:00Z"},
 			},
-			Data: []shared.BenchmarkData{
+			Data: []shared.DataPoint{
 				{Name: "v1.0.0", XAxis: "v0.9.0", YAxis: "100"},
 			},
 		},
@@ -291,9 +291,9 @@ func TestUICmd_HtmlAlias(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	bench := shared.Benchmark{
+	bench := shared.Dataset{
 		Name: "Bench1",
-		Data: []shared.BenchmarkData{
+		Data: []shared.DataPoint{
 			{Name: "Test1", XAxis: "1", YAxis: "100"},
 		},
 	}

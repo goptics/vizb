@@ -14,6 +14,10 @@ import (
 )
 
 func TestPreprocessInputFile(t *testing.T) {
+	origParser := shared.FlagState.Parser
+	shared.FlagState.Parser = "go"
+	defer func() { shared.FlagState.Parser = origParser }()
+
 	tempDir := t.TempDir()
 
 	t.Run("JSON file gets preprocessed", func(t *testing.T) {
@@ -59,10 +63,15 @@ func TestPreprocessInputFile(t *testing.T) {
 	})
 }
 
-func TestPrepareBenchmarkData(t *testing.T) {
+func TestPrepareData(t *testing.T) {
 	// Save original shared.OsExit
 	originalOsExit := shared.OsExit
-	defer func() { shared.OsExit = originalOsExit }()
+	origParser := shared.FlagState.Parser
+	shared.FlagState.Parser = "go"
+	defer func() {
+		shared.OsExit = originalOsExit
+		shared.FlagState.Parser = origParser
+	}()
 
 	tempDir := t.TempDir()
 
@@ -75,7 +84,7 @@ BenchmarkAnother-8    2000000    2345 ns/op    2000 B/op    20 allocs/op`
 		err := os.WriteFile(benchFile, []byte(benchContent), 0644)
 		require.NoError(t, err)
 
-		results := prepareBenchmarkData(benchFile)
+		results := prepareData(benchFile)
 
 		assert.NotEmpty(t, results, "Should parse benchmark results")
 		assert.True(t, len(results) > 0, "Should have at least one result")
@@ -94,7 +103,7 @@ BenchmarkAnother-8    2000000    2345 ns/op    2000 B/op    20 allocs/op`
 		}
 
 		assert.Panics(t, func() {
-			prepareBenchmarkData(emptyFile)
+			prepareData(emptyFile)
 		})
 		assert.True(t, exitCalled, "Should call osExit when no results found")
 	})
@@ -115,7 +124,7 @@ Just some random text`
 		}
 
 		assert.Panics(t, func() {
-			prepareBenchmarkData(invalidFile)
+			prepareData(invalidFile)
 		})
 		assert.True(t, exitCalled, "Should call osExit when no valid benchmarks found")
 	})
@@ -129,7 +138,7 @@ func TestWriteOutput(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create sample benchmark results
-	sampleResults := []shared.BenchmarkData{
+	sampleResults := []shared.DataPoint{
 		{
 			Name:  "BenchmarkExample",
 			XAxis: "8",
@@ -152,7 +161,7 @@ func TestWriteOutput(t *testing.T) {
 		},
 	}
 
-	sampleBenchmark := &shared.Benchmark{
+	sampleBenchmark := &shared.Dataset{
 		Data: sampleResults,
 	}
 
@@ -187,7 +196,7 @@ func TestWriteOutput(t *testing.T) {
 		content, err := os.ReadFile(jsonFile)
 		require.NoError(t, err)
 
-		var bench shared.Benchmark
+		var bench shared.Dataset
 		err = json.Unmarshal(content, &bench)
 		assert.NoError(t, err, "Should produce valid JSON")
 		assert.Len(t, bench.Data, 2, "Should have 2 benchmark results")
@@ -215,8 +224,8 @@ func TestWriteOutput(t *testing.T) {
 		require.NoError(t, err)
 		defer file.Close()
 
-		emptyBenchmark := &shared.Benchmark{
-			Data: []shared.BenchmarkData{},
+		emptyBenchmark := &shared.Dataset{
+			Data: []shared.DataPoint{},
 		}
 
 		assert.NotPanics(t, func() {
@@ -227,7 +236,7 @@ func TestWriteOutput(t *testing.T) {
 		content, err := os.ReadFile(emptyFile)
 		require.NoError(t, err)
 		// The output should be a Benchmark struct with empty Data
-		var bench shared.Benchmark
+		var bench shared.Dataset
 		err = json.Unmarshal(content, &bench)
 		assert.NoError(t, err)
 		assert.Empty(t, bench.Data, "Should have empty Data")
@@ -238,9 +247,12 @@ func TestGenerateOutputFile(t *testing.T) {
 	// Save original flag state and shared.OsExit
 	origOutputFile := shared.FlagState.OutputFile
 	origOsExit := shared.OsExit
+	origParser := shared.FlagState.Parser
+	shared.FlagState.Parser = "go"
 	defer func() {
 		shared.FlagState.OutputFile = origOutputFile
 		shared.OsExit = origOsExit
+		shared.FlagState.Parser = origParser
 	}()
 
 	// Mock shared.OsExit to prevent actual exits during tests
@@ -291,7 +303,7 @@ func TestGenerateOutputFile(t *testing.T) {
 		content, err := os.ReadFile(shared.FlagState.OutputFile)
 		require.NoError(t, err)
 
-		var bench shared.Benchmark
+		var bench shared.Dataset
 		err = json.Unmarshal(content, &bench)
 		assert.NoError(t, err, "Should produce valid JSON")
 	})
@@ -337,9 +349,12 @@ func TestOutputWorkflowIntegration(t *testing.T) {
 	// Save original flag state and shared.OsExit
 	origOutputFile := shared.FlagState.OutputFile
 	origOsExit := shared.OsExit
+	origParser := shared.FlagState.Parser
+	shared.FlagState.Parser = "go"
 	defer func() {
 		shared.FlagState.OutputFile = origOutputFile
 		shared.OsExit = origOsExit
+		shared.FlagState.Parser = origParser
 	}()
 
 	// Mock shared.OsExit to prevent actual exits during tests
@@ -366,7 +381,7 @@ func TestOutputWorkflowIntegration(t *testing.T) {
 		content, err := os.ReadFile(shared.FlagState.OutputFile)
 		require.NoError(t, err)
 
-		var bench shared.Benchmark
+		var bench shared.Dataset
 		err = json.Unmarshal(content, &bench)
 		assert.NoError(t, err)
 		assert.True(t, len(bench.Data) > 0, "Should have processed benchmark results")

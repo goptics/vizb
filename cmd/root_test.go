@@ -237,9 +237,9 @@ func TestConvertToBenchmark(t *testing.T) {
 
 	t.Run("Valid benchmark JSON", func(t *testing.T) {
 		validFile := filepath.Join(tempDir, "valid_bench.json")
-		bench := shared.Benchmark{
+		bench := shared.Dataset{
 			Name: "Test Benchmark",
-			Data: []shared.BenchmarkData{
+			Data: []shared.DataPoint{
 				{Name: "Bench1", Stats: []shared.Stat{{Type: "time", Value: 100}}},
 			},
 		}
@@ -248,7 +248,7 @@ func TestConvertToBenchmark(t *testing.T) {
 		err = os.WriteFile(validFile, data, 0644)
 		require.NoError(t, err)
 
-		result := convertToBenchmark(validFile)
+		result := convertToDataset(validFile)
 		require.NotNil(t, result)
 		assert.Equal(t, "Test Benchmark", result.Name)
 		assert.Len(t, result.Data, 1)
@@ -259,7 +259,7 @@ func TestConvertToBenchmark(t *testing.T) {
 		err := os.WriteFile(invalidFile, []byte("invalid json"), 0644)
 		require.NoError(t, err)
 
-		result := convertToBenchmark(invalidFile)
+		result := convertToDataset(invalidFile)
 		assert.Nil(t, result)
 	})
 
@@ -267,7 +267,7 @@ func TestConvertToBenchmark(t *testing.T) {
 		nonExistentFile := filepath.Join(tempDir, "does_not_exist.json")
 
 		assert.Panics(t, func() {
-			convertToBenchmark(nonExistentFile)
+			convertToDataset(nonExistentFile)
 		})
 	})
 }

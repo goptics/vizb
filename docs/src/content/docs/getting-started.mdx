@@ -5,6 +5,58 @@ description: Get up and running with vizb in under a minute.
 
 import { Aside, LinkCard, CardGrid, Tabs, TabItem } from '@astrojs/starlight/components';
 
+Vizb does two distinct jobs: chart **any tabular CSV/JSON data**, and visualize **benchmark
+output** from Go, Rust, and JavaScript. Either way, the input format is **auto-detected from
+content** — `--parser`/`-P` is optional and only needed to override the guess.
+
+<Aside type="tip">
+  Just run `vizb <input> -o output.html`. vizb inspects the content, picks the parser, and prints
+  its choice (`✨ Auto-detected parser: …`). See [Auto-Detection](/guides/auto-detection).
+</Aside>
+
+## Visualize Tabular Data
+
+Turn any CSV or JSON table into charts — numeric columns/fields become series.
+
+<Tabs syncKey="data">
+  <TabItem label="CSV" icon="seti:csv">
+
+  ```bash
+  vizb data.csv -o output.html
+  ```
+
+  Use `--group`/`-g` to turn non-numeric columns into the name / X / Y dimensions:
+  ```bash
+  vizb data.csv -g name -o output.html
+  ```
+
+  </TabItem>
+  <TabItem label="JSON" icon="seti:json">
+
+  A JSON array of objects (each object a row, each numeric key a series). Nested objects flatten to dotted keys.
+
+  ```bash
+  vizb data.json -o output.html
+  ```
+
+  Group by one or more fields with `--group`/`-g`:
+  ```bash
+  vizb data.json -g name -o output.html
+  ```
+
+  </TabItem>
+</Tabs>
+
+<Aside type="note">
+  A `go test -bench -json` event stream is **not** treated as tabular JSON — it stays a Go
+  benchmark. Full rules in the [Tabular Data guide](/guides/data).
+</Aside>
+
+## Visualize Benchmarks
+
+Pipe benchmark output straight in. The framework is detected from the content, so no `--parser` is
+needed in most cases.
+
 <Tabs syncKey="lang">
   <TabItem label="Go" icon="seti:go">
 
@@ -19,7 +71,7 @@ import { Aside, LinkCard, CardGrid, Tabs, TabItem } from '@astrojs/starlight/com
   vizb bench.txt -o output.html
   ```
 
-  **JSON pipeline**
+  **JSON event stream**
   ```bash
   go test -bench . -json | vizb -o output.html
   ```
@@ -35,73 +87,32 @@ import { Aside, LinkCard, CardGrid, Tabs, TabItem } from '@astrojs/starlight/com
   </Aside>
 
   </TabItem>
-  <TabItem label="Criterion" icon="seti:rust">
+  <TabItem label="Rust" icon="seti:rust">
 
-  **Pipe**
+  Criterion and Divan output are both auto-detected from `cargo bench`:
+
   ```bash
-  cargo bench | vizb --parser rs:criterion -o output.html
+  cargo bench | vizb -o output.html
   ```
 
-  **From a saved file**
+  Force a specific parser with `-P` if needed (`rs:criterion` or `rs:divan`):
   ```bash
-  cargo bench > bench.txt
-  vizb --parser rs:criterion bench.txt -o output.html
-  ```
-
-  </TabItem>
-  <TabItem label="Divan" icon="seti:rust">
-
-  **Pipe**
-  ```bash
-  cargo bench | vizb --parser rs:divan -o output.html
-  ```
-
-  **From a saved file**
-  ```bash
-  cargo bench > bench.txt
-  vizb --parser rs:divan bench.txt -o output.html
-  ```
-
-  </TabItem>
-  <TabItem label="Vitest" icon="seti:javascript">
-
-  **Pipe**
-  ```bash
-  npx vitest bench | vizb --parser js:vitest -o output.html
-  ```
-
-  **From a saved file**
-  ```bash
-  npx vitest bench > bench.txt
-  vizb --parser js:vitest bench.txt -o output.html
-  ```
-
-  <Aside type="caution" title="Experimental">
-    Benchmarking in Vitest is experimental and does not follow SemVer. The parser was tested against v4.1.7. Future Vitest versions may change output format and break parser compatibility.
-  </Aside>
-
-  </TabItem>
-  <TabItem label="Tinybench" icon="seti:javascript">
-
-  **Pipe**
-  ```bash
-  node bench.js | vizb --parser js:tinybench -o output.html
-  ```
-
-  **From a saved file**
-  ```bash
-  node bench.js > bench.txt
-  vizb --parser js:tinybench bench.txt -o output.html
+  cargo bench | vizb -P rs:divan -o output.html
   ```
 
   </TabItem>
 </Tabs>
 
+<Aside type="tip">
+  JavaScript frameworks (Vitest, Tinybench) and every supported format are covered in the
+  [Parser Guide](/guides/parsers) — including the metrics each one extracts.
+</Aside>
+
 ## Next Steps
 
 <CardGrid cols={2}>
   <LinkCard title="Installation" description="Go install, binary download, and PATH setup." href="/installation" />
-  <LinkCard title="Parser Guide" description="Choose the right parser for Go, Rust, or JavaScript benchmarks." href="/guides/parsers" />
+  <LinkCard title="Parser Guide" description="Choose the right parser — Go, Rust, JavaScript, or generic CSV/JSON." href="/guides/parsers" />
   <LinkCard title="Commands" description="All CLI flags and options." href="/commands/root" />
   <LinkCard title="Grouping Guide" description="Multi-dimensional data with patterns and regex." href="/guides/grouping" />
 </CardGrid>

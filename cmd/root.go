@@ -11,8 +11,10 @@ import (
 	"time"
 
 	"github.com/goptics/vizb/pkg/parser"
+	_ "github.com/goptics/vizb/pkg/parser/csv"
 	goparser "github.com/goptics/vizb/pkg/parser/golang"
 	_ "github.com/goptics/vizb/pkg/parser/javascript"
+	_ "github.com/goptics/vizb/pkg/parser/json"
 	_ "github.com/goptics/vizb/pkg/parser/rust"
 	"github.com/goptics/vizb/pkg/style"
 	"github.com/goptics/vizb/pkg/template"
@@ -26,9 +28,11 @@ import (
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "vizb [target]",
-	Short: "Generate benchmark charts from Go test benchmarks",
-	Long: `A CLI tool that extends the functionality of 'go test -bench' with chart generation.
-It takes benchmark text or json file as input and generates an interactive HTML chart application.`,
+	Short: "Visualize benchmarks or tabular CSV/JSON data as interactive 4D charts",
+	Long: `A CLI tool that turns benchmark output (Go, Rust, JavaScript) or any tabular
+CSV/JSON data into an interactive, self-contained HTML chart application.
+It reads a file or piped stdin, auto-detects the input format (override with --parser),
+and renders bar, line, and pie charts you can explore in the browser.`,
 	Version: version.Version,
 	Args:    cobra.ArbitraryArgs,
 	Run:     runBenchmark,
@@ -52,15 +56,16 @@ func init() {
 	rootCmd.Flags().StringVarP(&shared.FlagState.MemUnit, "mem-unit", "M", "B", "Memory unit available: b, B, KB, MB, GB")
 	rootCmd.Flags().StringVarP(&shared.FlagState.TimeUnit, "time-unit", "T", "ns", "Time unit available: ns, us, ms, s")
 	rootCmd.Flags().StringVarP(&shared.FlagState.NumberUnit, "number-unit", "N", "", "Number unit available: K, M, B, T (default: as-is)")
-	rootCmd.Flags().StringVarP(&shared.FlagState.GroupPattern, "group-pattern", "p", "x", "Pattern to extract grouping information from benchmark names")
-	rootCmd.Flags().StringVarP(&shared.FlagState.GroupRegex, "group-regex", "r", "", "Regex pattern to extract grouping information from benchmark names")
+	rootCmd.Flags().StringVarP(&shared.FlagState.GroupPattern, "group-pattern", "p", "x", "Pattern to extract grouping information from data labels / series names")
+	rootCmd.Flags().StringVarP(&shared.FlagState.GroupRegex, "group-regex", "r", "", "Regex pattern to extract grouping information from data labels / series names")
 	rootCmd.Flags().StringVarP(&shared.FlagState.Sort, "sort", "s", "", "Sort in asc or desc order (default: as-is)")
 	rootCmd.Flags().StringSliceVarP(&shared.FlagState.Charts, "charts", "c", []string{"bar", "line", "pie"}, "Chart types to generate (bar, line, pie)")
+	rootCmd.Flags().StringSliceVarP(&shared.FlagState.Group, "group", "g", nil, "Column/field names merged (in flag order, '/'-joined) into the group name; parsed by -p/-r (csv/json parsers)")
 	rootCmd.Flags().BoolVarP(&shared.FlagState.ShowLabels, "show-labels", "l", false, "Show labels on charts")
-	rootCmd.Flags().StringVarP(&shared.FlagState.FilterRegex, "filter", "f", "", "Regex pattern to include only matching benchmark names")
+	rootCmd.Flags().StringVarP(&shared.FlagState.FilterRegex, "filter", "f", "", "Regex pattern to include only matching data labels / series names")
 	rootCmd.Flags().StringVarP(&shared.FlagState.Scale, "scale", "S", "linear", "Scale type (linear, log)")
 	rootCmd.Flags().StringVarP(&shared.FlagState.Tag, "tag", "t", "", "Tag/identifier for the benchmark")
-	rootCmd.Flags().StringVarP(&shared.FlagState.Parser, "parser", "P", "go", "Benchmark parser to use (one of: "+strings.Join(parser.AvailableParsers(), ", ")+")")
+	rootCmd.Flags().StringVarP(&shared.FlagState.Parser, "parser", "P", "auto", "Benchmark parser to use; 'auto' detects from input content (one of: auto, "+strings.Join(parser.AvailableParsers(), ", ")+")")
 
 	// Add a hook to validate flags after parsing
 	cobra.OnInitialize(func() {
@@ -85,6 +90,14 @@ func runBenchmark(cmd *cobra.Command, args []string) {
 	} else {
 		cmd.Help()
 		shared.OsExit(0)
+	}
+
+	// In 'auto' mode (the default), sniff the input content and surface the
+	// auto-selected parser so the choice is never silent.
+	if shared.FlagState.Parser == "auto" {
+		detected := parser.DetectParser(target)
+		shared.FlagState.Parser = detected
+		fmt.Println(style.Info.Render("✨ Auto-detected parser: " + detected))
 	}
 
 	generateOutputFile(target)
@@ -143,7 +156,7 @@ func checkTargetFile(filePath string) {
 	}
 }
 
-func convertToBenchmark(filePath string) (benchmark *shared.Benchmark) {
+func convertToDataset(filePath string) (benchmark *shared.Dataset) {
 	f := shared.MustOpenFile(filePath)
 	defer f.Close()
 
@@ -162,13 +175,13 @@ func convertToBenchmark(filePath string) (benchmark *shared.Benchmark) {
 func generateOutputFile(filePath string) {
 	outFile := resolveOutputFileName(shared.FlagState.OutputFile)
 	// first try to convert to benchmark
-	benchmark := convertToBenchmark(filePath)
+	benchmark := convertToDataset(filePath)
 
 	// if it fails, try to parse results from txt, or bench event json
 	if benchmark == nil {
 		filePath = preprocessInputFile(filePath)
-		results := prepareBenchmarkData(filePath)
-		benchmark = prepareBenchmarkFromParsedResults(results)
+		results := prepareData(filePath)
+		benchmark = prepareDatasetFromResults(results)
 	}
 
 	f := shared.MustCreateFile(outFile)
@@ -216,8 +229,8 @@ func preprocessInputFile(filePath string) string {
 	return filePath
 }
 
-// prepareBenchmarkData parses benchmark results or exits on error
-func prepareBenchmarkData(filePath string) []shared.BenchmarkData {
+// prepareData parses benchmark results or exits on error
+func prepareData(filePath string) []shared.DataPoint {
 	parseFn, err := parser.GetParser(shared.FlagState.Parser)
 	if err != nil {
 		shared.ExitWithError(err.Error(), nil)
@@ -232,8 +245,8 @@ func prepareBenchmarkData(filePath string) []shared.BenchmarkData {
 	return data
 }
 
-func prepareBenchmarkFromParsedResults(results []shared.BenchmarkData) *shared.Benchmark {
-	benchmark := &shared.Benchmark{
+func prepareDatasetFromResults(results []shared.DataPoint) *shared.Dataset {
+	benchmark := &shared.Dataset{
 		Name:        shared.FlagState.Name,
 		Description: shared.FlagState.Description,
 		Data:        results,
@@ -264,7 +277,7 @@ func prepareBenchmarkFromParsedResults(results []shared.BenchmarkData) *shared.B
 }
 
 // writeOutput writes results to file in required format
-func writeOutput(f *os.File, benchmark *shared.Benchmark, format string) {
+func writeOutput(f *os.File, benchmark *shared.Dataset, format string) {
 	switch format {
 	case "html":
 		fmt.Println(style.Info.Render("🔄 Generating Chart..."))

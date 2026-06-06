@@ -8,7 +8,7 @@ import (
 	"github.com/goptics/vizb/shared"
 )
 
-type ParseFunc func(filename string) []shared.BenchmarkData
+type ParseFunc func(filename string) []shared.DataPoint
 
 var Parsers = map[string]ParseFunc{}
 

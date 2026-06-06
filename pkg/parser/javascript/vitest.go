@@ -25,7 +25,7 @@ func parseNum(s string) float64 {
 	return n
 }
 
-func ParseVitestBenchmark(filename string) []shared.BenchmarkData {
+func ParseVitestBenchmark(filename string) []shared.DataPoint {
 	f, err := os.Open(filename)
 	if err != nil {
 		shared.ExitWithError("Error opening file", err)
@@ -33,7 +33,7 @@ func ParseVitestBenchmark(filename string) []shared.BenchmarkData {
 	defer f.Close()
 
 	scanner := bufio.NewScanner(f)
-	var results []shared.BenchmarkData
+	var results []shared.DataPoint
 	var currentSuite string
 
 	for scanner.Scan() {
@@ -91,7 +91,7 @@ func ParseVitestBenchmark(filename string) []shared.BenchmarkData {
 
 		benchName, xAxis, yAxis := group["name"], group["xAxis"], group["yAxis"]
 
-		results = append(results, shared.BenchmarkData{
+		results = append(results, shared.DataPoint{
 			Name:  benchName,
 			XAxis: xAxis,
 			YAxis: yAxis,
