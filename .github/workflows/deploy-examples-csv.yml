@@ -1,0 +1,59 @@
+name: deploy-csv-examples
+on:
+  push:
+    branches: [main]
+    paths:
+      - examples/csv/**
+      - action.yml
+      - .github/workflows/test-action.yml
+      - .github/workflows/deploy-examples-csv.yml
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+  workflow_dispatch:
+
+jobs:
+  test:
+    uses: ./.github/workflows/test-action.yml
+
+  convert:
+    name: Convert CSV Data
+    needs: test
+    strategy:
+      matrix:
+        include:
+          - output: sales
+            bench-file: sales
+            name: "Sales data Visualization from CSV file"
+            group: "product,region,category"
+            group-pattern: n/x/y
+            scale: "log"
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: ${{ matrix.name }}
+        uses: ./
+        with:
+          bench-file: examples/csv/${{ matrix.bench-file }}.csv
+          name: ${{ matrix.name }}
+          group-pattern: ${{ matrix.group-pattern }}
+          scale: ${{ matrix.scale }}
+          output-json: ${{ matrix.output }}.json
+          sort: asc
+
+      - name: Uploading json artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: json-${{ matrix.output }}
+          path: ${{ matrix.output }}.json
+
+  merge-deploy:
+    name: Merge and Deploy CSV Data
+    needs: convert
+    permissions:
+      contents: write
+    uses: ./.github/workflows/merge-deploy-examples.yml
+    with:
+      language: csv

@@ -22,7 +22,7 @@
   </p>
 
   <p>
-    A CLI tool that transforms benchmark output from <strong>Go</strong>, <strong>Rust</strong>, and <strong>JavaScript</strong> frameworks into interactive <strong>4D visualizations</strong> — including <strong>3D bar &amp; line charts</strong> via a z-axis. Pipe in benchmark results, apply multi-dimensional grouping, merge across releases, and explore performance in a single self-contained HTML file — no server, no dependencies, no build step.
+    A CLI tool that turns benchmark output from <strong>Go</strong>, <strong>Rust</strong>, and <strong>JavaScript</strong> frameworks — or <strong>any tabular CSV/JSON data</strong> — into interactive <strong>5D visualizations</strong>. Pipe in results, apply multi-dimensional grouping, merge across runs, and explore everything in a single self-contained HTML file — no server, no dependencies, no build step. The input format is auto-detected, so <code>vizb data.csv</code> just works.
   </p>
 </div>
 
@@ -54,6 +54,8 @@ Full documentation is available at **[vizb.goptics.org](https://vizb.goptics.org
 
 - [Getting Started](https://vizb.goptics.org/getting-started/)
 - [Parser Guide](https://vizb.goptics.org/guides/parsers/)
+- [Tabular Data (CSV & JSON)](https://vizb.goptics.org/guides/data/)
+- [Automatic Parser Detection](https://vizb.goptics.org/guides/auto-detection/)
 - [CLI Commands](https://vizb.goptics.org/commands/root/)
 - [Grouping Guide](https://vizb.goptics.org/guides/grouping/)
 - [Merging Guide](https://vizb.goptics.org/guides/merging/)

@@ -1,25 +1,34 @@
 name: Vizb Action
-description: Run Go benchmarks and generate interactive HTML visualizations with vizb
+description: Run benchmarks or produce CSV/JSON data and generate interactive HTML visualizations with vizb
 author: fahimfaisaal
 branding:
   icon: 'bar-chart-2'
   color: 'blue'
 
 inputs:
+  cmd:
+    description: "Command whose stdout is visualized (e.g., go test -bench=., cargo bench, or any command emitting benchmark/CSV/JSON output)."
+    default: ""
+  file:
+    description: "Path to an existing input file to visualize — benchmark output, CSV, or JSON (takes priority over cmd)"
+    default: ""
   bench-cmd:
-    description: "Benchmark command to run (e.g., go test -bench=.). Requires Go toolchain — add actions/setup-go before this action."
+    description: "DEPRECATED: use 'cmd'. Command to run; honored only when 'cmd' is empty." # remove on v1
     default: ""
   bench-file:
-    description: "Path to existing benchmark output file (takes priority over bench-cmd)"
+    description: "DEPRECATED: use 'file'. Existing input file; honored only when 'file' is empty." # remove on v1
     default: ""
   name:
-    description: "Benchmark name (-n flag)"
+    description: "Dataset/benchmark name (-n flag)"
     default: "Benchmarks"
   description:
-    description: "Benchmark description (-d flag)"
+    description: "Dataset/benchmark description (-d flag)"
     default: ""
   tag:
-    description: "Tag/identifier for the benchmark (-t flag)"
+    description: "Tag/identifier for the dataset (-t flag)"
+    default: ""
+  group:
+    description: "Comma-separated column/field names merged into the group name; parsed by -p/-r (-g flag, csv/json parsers)"
     default: ""
   group-pattern:
     description: "Group pattern (-p flag)"
@@ -34,7 +43,7 @@ inputs:
     description: "Sort order: asc or desc (-s flag)"
     default: ""
   filter:
-    description: "Regex filter for benchmarks (-f flag)"
+    description: "Regex filter for data labels / series names (-f flag)"
     default: ""
   mem-unit:
     description: "Memory unit: b, B, KB, MB, GB (-M flag)"
@@ -49,8 +58,8 @@ inputs:
     description: "Chart types to generate (-c flag)"
     default: "bar,line,pie"
   parser:
-    description: "Benchmark parser: go, js:tinybench, js:vitest, rs:criterion, rs:divan (-P flag)"
-    default: "go"
+    description: "Parser to use: csv, json, go, js:tinybench, js:vitest, rs:criterion, rs:divan (-P flag)"
+    default: "auto"
   show-labels:
     description: "Show labels on charts (-l flag)"
     default: "false"
@@ -155,16 +164,19 @@ runs:
       id: resolve
       shell: bash
       run: |
-        BENCH_FILE="${{ inputs.bench-file }}"
-        BENCH_CMD="${{ inputs.bench-cmd }}"
+        # New generic inputs take priority; fall back to deprecated bench-* aliases.
+        FILE="${{ inputs.file }}"
+        [ -z "$FILE" ] && FILE="${{ inputs.bench-file }}"
+        CMD="${{ inputs.cmd }}"
+        [ -z "$CMD" ] && CMD="${{ inputs.bench-cmd }}"
         HAS_MERGE=""
         [ -n "${{ inputs.merge-files }}" ] && HAS_MERGE="true"
         [ -n "${{ inputs.merge-dir }}" ] && HAS_MERGE="true"
 
-        if [ -n "$BENCH_FILE" ]; then
+        if [ -n "$FILE" ]; then
           echo "source=file" >> "$GITHUB_OUTPUT"
           echo "has_input=true" >> "$GITHUB_OUTPUT"
-        elif [ -n "$BENCH_CMD" ]; then
+        elif [ -n "$CMD" ]; then
           echo "source=command" >> "$GITHUB_OUTPUT"
           echo "has_input=true" >> "$GITHUB_OUTPUT"
         elif [ -n "$HAS_MERGE" ]; then
@@ -174,9 +186,19 @@ runs:
           echo "source=data-url" >> "$GITHUB_OUTPUT"
           echo "has_input=false" >> "$GITHUB_OUTPUT"
         else
-          echo "::error::No input provided. Specify bench-cmd, bench-file, merge-files, merge-dir, or data-url."
+          echo "::error::No input provided. Specify cmd, file, merge-files, merge-dir, or data-url."
           exit 1
         fi
+
+        # Expose resolved source so later steps don't re-derive the fallback.
+        {
+          echo "file<<__VIZB_EOF__"
+          echo "$FILE"
+          echo "__VIZB_EOF__"
+          echo "cmd<<__VIZB_EOF__"
+          echo "$CMD"
+          echo "__VIZB_EOF__"
+        } >> "$GITHUB_OUTPUT"
 
         OUT_JSON="${{ inputs.output-json }}"
         if [ -n "$OUT_JSON" ]; then
@@ -210,12 +232,15 @@ runs:
         [ -n "${{ inputs.parser }}" ] && VIZB_ARGS+=(-P "${{ inputs.parser }}")
 
         if [ "${{ steps.resolve.outputs.source }}" = "file" ]; then
-          cp "${{ inputs.bench-file }}" bench-input.txt
+          # Pass the original file so its extension (.csv/.json) survives for auto-detection.
+          INPUT="${{ steps.resolve.outputs.file }}"
         else
-          ${{ inputs.bench-cmd }} > bench-input.txt
+          # Command stdout has no extension; vizb detects the format from content.
+          ${{ steps.resolve.outputs.cmd }} > data-input.txt
+          INPUT="data-input.txt"
         fi
 
-        vizb bench-input.txt -o "${{ steps.resolve.outputs.json_file }}" "${VIZB_ARGS[@]}"
+        vizb "$INPUT" -o "${{ steps.resolve.outputs.json_file }}" "${VIZB_ARGS[@]}"
 
     # ── Merge ──────────────────────────────────────────────────
 
@@ -239,8 +264,8 @@ runs:
       shell: bash
       run: |
         if [ -n "${{ inputs.data-url }}" ]; then
-          vizb html -U "${{ inputs.data-url }}" -o "${{ inputs.output-html }}"
+          vizb ui -U "${{ inputs.data-url }}" -o "${{ inputs.output-html }}"
         else
-          vizb html "${{ steps.resolve.outputs.json_file }}" -o "${{ inputs.output-html }}"
+          vizb ui "${{ steps.resolve.outputs.json_file }}" -o "${{ inputs.output-html }}"
         fi
         echo "html=${{ inputs.output-html }}" >> "$GITHUB_OUTPUT"

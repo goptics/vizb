@@ -42,7 +42,7 @@ func runMerge(cmd *cobra.Command, args []string) {
 		shared.ExitWithError("No valid benchmark files processed", nil)
 	}
 
-	merged := shared.MergeBenchmarks(benches, shared.Dimension(shared.FlagState.TagAxis))
+	merged := shared.MergeDatasets(benches, shared.Dimension(shared.FlagState.TagAxis))
 	writeMergeOutput(merged)
 }
 
@@ -69,8 +69,8 @@ func collectJSONFiles(args []string) []string {
 	return files
 }
 
-func readBenchmarks(files []string) []shared.Benchmark {
-	var benches []shared.Benchmark
+func readBenchmarks(files []string) []shared.Dataset {
+	var benches []shared.Dataset
 	for _, file := range files {
 		parsed, err := parseBenchmarkFile(file)
 		if err != nil {
@@ -82,7 +82,7 @@ func readBenchmarks(files []string) []shared.Benchmark {
 	return benches
 }
 
-func parseBenchmarkFile(file string) ([]shared.Benchmark, error) {
+func parseBenchmarkFile(file string) ([]shared.Dataset, error) {
 	content, err := os.ReadFile(file)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read file: %w", err)
@@ -95,23 +95,23 @@ func parseBenchmarkFile(file string) ([]shared.Benchmark, error) {
 
 	switch trimmed[0] {
 	case '[':
-		var benches []shared.Benchmark
+		var benches []shared.Dataset
 		if err := json.Unmarshal(content, &benches); err != nil {
 			return nil, fmt.Errorf("invalid benchmark array: %w", err)
 		}
 		return benches, nil
 	case '{':
-		var bench shared.Benchmark
+		var bench shared.Dataset
 		if err := json.Unmarshal(content, &bench); err != nil {
 			return nil, fmt.Errorf("invalid benchmark object: %w", err)
 		}
-		return []shared.Benchmark{bench}, nil
+		return []shared.Dataset{bench}, nil
 	default:
 		return nil, fmt.Errorf("not valid JSON")
 	}
 }
 
-func writeMergeOutput(benches []shared.Benchmark) {
+func writeMergeOutput(benches []shared.Dataset) {
 	jsonData, err := json.Marshal(benches)
 	if err != nil {
 		shared.ExitWithError("Failed to marshal merged benchmark data: %v", err)

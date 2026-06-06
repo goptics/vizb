@@ -5,7 +5,7 @@ description: A detailed overview of everything vizb can do.
 
 import { CardGrid, Card, Aside } from '@astrojs/starlight/components';
 
-Vizb transforms benchmark output from Go, Rust, and JavaScript frameworks into interactive 4D HTML visualizations. Here's what it offers.
+Vizb transforms benchmark output from Go, Rust, and JavaScript frameworks — or any tabular CSV/JSON data — into interactive 4D HTML visualizations. Here's what it offers.
 
 <CardGrid stagger>
   <Card title="Modern Interactive UI" icon="laptop">
@@ -36,7 +36,13 @@ Vizb transforms benchmark output from Go, Rust, and JavaScript frameworks into i
     Tag benchmarks with version labels. Deep-merge across releases with chronological data ordering.
   </Card>
   <Card title="Flexible Input" icon="document">
-    Reads benchmark output from Go, Rust (Criterion, Divan), and JavaScript (Vitest, Tinybench). Auto-detects text and JSON formats. Accepts files or stdin pipes.
+    Reads benchmark output from Go, Rust (Criterion, Divan), and JavaScript (Vitest, Tinybench), plus generic CSV and JSON tables. Accepts files or stdin pipes.
+  </Card>
+  <Card title="Tabular Data Parsers" icon="seti:csv">
+    Chart any CSV or JSON table, not just benchmarks. Numeric columns/fields become series; group by other columns with `--group`. See the [Tabular Data guide](/guides/data).
+  </Card>
+  <Card title="Automatic Parser Detection" icon="magnifier">
+    `--parser` defaults to `auto`: vizb inspects the input content and picks the right parser, printing its choice. Override anytime with `-P`. See [Auto-Detection](/guides/auto-detection).
   </Card>
   <Card title="Comprehensive Metrics" icon="information">
     Time (ns/us/ms/s), memory (B/KB/MB/GB), allocations, throughput, and latency percentiles — with configurable units. Which metrics appear depends on the parser used.

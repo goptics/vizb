@@ -1,6 +1,6 @@
 ---
-title: vizb html
-description: Generate HTML visualization from a benchmark JSON file.
+title: vizb ui
+description: Generate the interactive HTML UI from a benchmark JSON file.
 ---
 
 import { Aside } from '@astrojs/starlight/components';
@@ -10,10 +10,14 @@ Generate an interactive HTML chart from a vizb benchmark JSON file. This is the 
 ## Usage
 
 ```bash
-vizb html [file] [flags]
+vizb ui [file] [flags]
 ```
 
 `[file]` is optional when `--data-url` is set.
+
+<Aside type="note">
+  `vizb html` remains as a backward-compatible alias for `vizb ui`.
+</Aside>
 
 ## Input
 
@@ -35,7 +39,7 @@ A single JSON file containing a vizb benchmark object or array. This must be JSO
 vizb bench.txt -o data.json
 
 # Step 2: Generate HTML from JSON
-vizb html data.json -o report.html
+vizb ui data.json -o report.html
 ```
 
 ### After merging
@@ -45,7 +49,7 @@ vizb html data.json -o report.html
 vizb merge v1.json v2.json -o merged.json
 
 # Render the merged result as HTML
-vizb html merged.json -o report.html
+vizb ui merged.json -o report.html
 ```
 
 ### Remote data via `--data-url`
@@ -58,7 +62,7 @@ Instead of embedding the JSON inside the HTML, point the dashboard at a hosted U
 The generated HTML is a lean ~786 KB viewer; benchmark data is fetched at load time.
 
 ```bash
-vizb html --data-url https://example.com/bench.json -o report.html
+vizb ui --data-url https://example.com/bench.json -o report.html
 ```
 
 Upload `bench.json` to the URL separately (GitHub raw, S3, GitHub Pages, etc.), then open `report.html` in any browser.

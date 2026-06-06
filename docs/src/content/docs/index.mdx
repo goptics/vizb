@@ -1,9 +1,9 @@
 ---
 title: Vizb
-description: Transform benchmark output from Go, Rust, and JavaScript frameworks into interactive 4D visualizations
+description: Transform benchmark output from Go, Rust, and JavaScript — or any tabular CSV/JSON data — into interactive 4D visualizations
 template: splash
 hero:
-  tagline: Transforms benchmark output from Go, Rust, and JavaScript into interactive charts you can explore in your browser. Single HTML file — no server, no dependencies, no build step.
+  tagline: Interactive 4D charts for your benchmarks and tabular data. Feed it Go/Rust/JS benchmark output or any CSV/JSON table — vizb auto-detects the format and renders charts you explore in the browser. Single HTML file — no server, no dependencies, no build step.
   image:
     html: <svg class="vizb-hero" viewBox="0 0 300 300" fill="none" aria-label="Vizb" stroke-linejoin="round" stroke-width="2"><path class="viz-path" d="M32.8125 56.25L107.797 290.625H173.438L98.4375 56.25H32.8125Z" fill="#5470C6" stroke="#5470C6"/><path class="viz-path" d="M107.797 290.625H173.422L192.172 234.375H126.547L107.797 290.625Z" fill="#1A202C" stroke="#1A202C"/><path class="viz-path" d="M126.562 234.375L145.424 178.022H211.017L192.187 234.375H126.562Z" fill="#3BA272" stroke="#3BA272"/><path class="viz-path" d="M145.424 178.022L164.237 121.429H229.831L211.017 178.022H145.424Z" fill="#FC8452" stroke="#FC8452"/><path class="viz-path" d="M164.237 121.429L201.563 9.375H267.188L229.831 121.429H164.237Z" fill="#EE6666" stroke="#EE6666"/></svg>
   actions:
@@ -35,7 +35,10 @@ import LogoAnimation from '../../components/LogoAnimation.astro';
     Merge benchmarks from multiple runs, machines, or releases. Tag with version labels for cross-release comparison.
   </Card>
   <Card title="Smart Grouping" icon="list-format">
-    Extract dimensions from benchmark names using pattern matching or regex. 1D, 2D, or 3D data — vizb handles it.
+    Extract dimensions from data labels and series names using pattern matching or regex. 1D, 2D, or 3D data — vizb handles it.
+  </Card>
+  <Card title="Any Tabular Data" icon="seti:csv">
+    Not just benchmarks — chart any CSV or JSON table. Numeric columns become series; the format is auto-detected from the content.
   </Card>
   <Card title="CI Ready" icon="seti:puppet">
     First-class GitHub Action. Run benchmarks, tag releases, merge history, and deploy — all from your workflow.
@@ -44,14 +47,14 @@ import LogoAnimation from '../../components/LogoAnimation.astro';
     Vue.js-powered interface with sortable charts, axis swapping, scale toggles, and JPEG export. All in a single HTML file.
   </Card>
   <Card title="Flexible Input" icon="document">
-    Reads benchmark output from Go, Rust (Criterion, Divan), and JavaScript (Vitest, Tinybench). Auto-detects text and JSON formats. Pipe from CLI or read from files.
+    Go, Rust (Criterion, Divan), JS (Vitest, Tinybench), plus CSV and JSON — auto-detected. Pipe from CLI or read files.
   </Card>
 </CardGrid>
 
 ## Explore
 
 <CardGrid cols={2}>
-  <LinkCard title="Commands" description="All CLI flags and options for root, merge, and html commands." href="/commands/root" />
+  <LinkCard title="Commands" description="All CLI flags and options for root, merge, and ui commands." href="/commands/root" />
   <LinkCard title="CI/CD Integration" description="GitHub Action reference and step-by-step CI tutorials." href="/ci-cd/github-action" />
   <LinkCard title="Grouping Guide" description="Pattern and regex grouping for multi-dimensional data." href="/guides/grouping" />
   <LinkCard title="Merging Guide" description="Combine benchmarks with tag-based inner and outer merging." href="/guides/merging" />

@@ -1,0 +1,326 @@
+package json
+
+import (
+	"encoding/json"
+	"fmt"
+	"math"
+	"os"
+	"strconv"
+	"strings"
+
+	"github.com/goptics/vizb/pkg/parser"
+	"github.com/goptics/vizb/shared"
+	"github.com/goptics/vizb/shared/utils"
+)
+
+func init() {
+	parser.Parsers["json"] = ParseJSON
+}
+
+// leaf is a single flattened scalar field of a row. val is float64 or string.
+type leaf struct {
+	key string
+	val any
+}
+
+// parseFinite parses a trimmed string as a float, rejecting NaN/Inf.
+func parseFinite(s string) (float64, bool) {
+	v, err := strconv.ParseFloat(strings.TrimSpace(s), 64)
+	if err != nil || math.IsNaN(v) || math.IsInf(v, 0) {
+		return 0, false
+	}
+	return v, true
+}
+
+// leafNumber reports whether v is a finite number — either a JSON number or a
+// numeric string (mirrors the CSV any-one-parses rule).
+func leafNumber(v any) (float64, bool) {
+	switch t := v.(type) {
+	case float64:
+		if math.IsNaN(t) || math.IsInf(t, 0) {
+			return 0, false
+		}
+		return t, true
+	case string:
+		return parseFinite(t)
+	}
+	return 0, false
+}
+
+// stringify renders a leaf value for use in a group label.
+func stringify(v any) string {
+	switch t := v.(type) {
+	case float64:
+		return strconv.FormatFloat(t, 'g', -1, 64)
+	case string:
+		return t
+	}
+	return ""
+}
+
+// ParseJSON turns a JSON array of objects into benchmark data. Each
+// numeric field becomes a chart series (field name = Stat.Type); non-numeric
+// fields are ignored unless named in --group/-g, whose values are '/'-joined and
+// routed through the existing grouping machinery (-p/-r). Nested objects are
+// flattened to dotted keys; array-valued fields are skipped.
+func ParseJSON(filename string) []shared.DataPoint {
+	f, err := os.Open(filename)
+	if err != nil {
+		shared.ExitWithError("Error opening file", err)
+	}
+	defer f.Close()
+
+	dec := json.NewDecoder(f)
+
+	// Top-level must be a JSON array; otherwise unsupported (object form is
+	// consumed earlier by convertToBenchmark).
+	tok, err := dec.Token()
+	if err != nil {
+		return nil
+	}
+	if d, ok := tok.(json.Delim); !ok || d != '[' {
+		return nil
+	}
+
+	var rows []map[string]any
+	var colOrder []string
+	seenCol := map[string]bool{}
+
+	for dec.More() {
+		leaves, derr := decodeElement(dec)
+		if derr != nil {
+			shared.ExitWithError("Error reading JSON", derr)
+		}
+
+		row := make(map[string]any, len(leaves))
+		for _, lf := range leaves {
+			row[lf.key] = lf.val // last wins on duplicate key
+			if !seenCol[lf.key] {
+				seenCol[lf.key] = true
+				colOrder = append(colOrder, lf.key)
+			}
+		}
+		rows = append(rows, row)
+	}
+
+	if len(rows) == 0 {
+		return nil
+	}
+
+	groupKeys, groupSet := resolveGroupKeys(colOrder, seenCol)
+
+	chartCols := chartColumns(colOrder, groupSet, rows)
+	if len(chartCols) == 0 {
+		shared.ExitWithError("no numeric fields found in JSON", nil)
+	}
+
+	var results []shared.DataPoint
+
+	for _, row := range rows {
+		label := buildLabel(row, groupKeys)
+
+		var name, xAxis, yAxis string
+		if label != "" {
+			if !parser.ShouldIncludeBenchmark(label) {
+				continue
+			}
+
+			group, gerr := parser.GroupBenchmarkName(label)
+			if gerr != nil {
+				shared.ExitWithError("Error parsing JSON group name", gerr)
+			}
+
+			name, xAxis, yAxis = group["name"], group["xAxis"], group["yAxis"]
+		}
+
+		var stats []shared.Stat
+		for _, k := range chartCols {
+			v, ok := row[k]
+			if !ok {
+				continue
+			}
+
+			num, ok := leafNumber(v)
+			if !ok {
+				continue
+			}
+
+			stats = append(stats, shared.Stat{
+				Type:  utils.CreateStatType(k, shared.FlagState.NumberUnit, ""),
+				Value: utils.FormatNumber(num, shared.FlagState.NumberUnit),
+			})
+		}
+
+		if len(stats) == 0 {
+			continue
+		}
+
+		results = append(results, shared.DataPoint{
+			Name:  name,
+			XAxis: xAxis,
+			YAxis: yAxis,
+			Stats: stats,
+		})
+	}
+
+	return results
+}
+
+// resolveGroupKeys maps each non-empty --group name to a known field (preserving
+// flag order). A missing name is fatal and lists available fields.
+func resolveGroupKeys(colOrder []string, seenCol map[string]bool) ([]string, map[string]bool) {
+	var keys []string
+	set := map[string]bool{}
+
+	for _, name := range shared.FlagState.Group {
+		name = strings.TrimSpace(name)
+		if name == "" {
+			continue
+		}
+
+		if !seenCol[name] {
+			shared.ExitWithError(fmt.Sprintf("group field '%s' not found; available: %v", name, colOrder), nil)
+		}
+
+		keys = append(keys, name)
+		set[name] = true
+	}
+
+	return keys, set
+}
+
+// chartColumns returns, in first-seen order, fields that have at least one
+// numeric value across the rows and are not group fields.
+func chartColumns(colOrder []string, groupSet map[string]bool, rows []map[string]any) []string {
+	var cols []string
+
+	for _, k := range colOrder {
+		if groupSet[k] {
+			continue
+		}
+
+		for _, row := range rows {
+			if v, ok := row[k]; ok {
+				if _, isNum := leafNumber(v); isNum {
+					cols = append(cols, k)
+					break
+				}
+			}
+		}
+	}
+
+	return cols
+}
+
+// buildLabel joins the stringified group-field values for a row with '/'.
+func buildLabel(row map[string]any, groupKeys []string) string {
+	if len(groupKeys) == 0 {
+		return ""
+	}
+
+	parts := make([]string, 0, len(groupKeys))
+	for _, k := range groupKeys {
+		parts = append(parts, stringify(row[k]))
+	}
+
+	return strings.Join(parts, "/")
+}
+
+// decodeElement decodes one array element. Objects are flattened to leaves;
+// non-object elements (scalars, arrays) are skipped.
+func decodeElement(dec *json.Decoder) ([]leaf, error) {
+	tok, err := dec.Token()
+	if err != nil {
+		return nil, err
+	}
+
+	if d, ok := tok.(json.Delim); ok {
+		switch d {
+		case '{':
+			return decodeObjectBody(dec, "")
+		case '[':
+			return nil, skipContainerBody(dec)
+		}
+	}
+
+	// scalar element: token already consumed
+	return nil, nil
+}
+
+// decodeObjectBody walks an object whose opening '{' has already been read,
+// emitting one leaf per scalar field (recursing into nested objects with a
+// dotted prefix, skipping arrays).
+func decodeObjectBody(dec *json.Decoder, prefix string) ([]leaf, error) {
+	var out []leaf
+
+	for dec.More() {
+		keyTok, err := dec.Token()
+		if err != nil {
+			return nil, err
+		}
+
+		key, _ := keyTok.(string)
+		full := prefix + key
+
+		leaves, err := decodeValue(dec, full)
+		if err != nil {
+			return nil, err
+		}
+
+		out = append(out, leaves...)
+	}
+
+	if _, err := dec.Token(); err != nil { // consume '}'
+		return nil, err
+	}
+
+	return out, nil
+}
+
+// decodeValue reads a single value for the given key.
+func decodeValue(dec *json.Decoder, key string) ([]leaf, error) {
+	tok, err := dec.Token()
+	if err != nil {
+		return nil, err
+	}
+
+	switch v := tok.(type) {
+	case json.Delim:
+		switch v {
+		case '{':
+			return decodeObjectBody(dec, key+".")
+		case '[':
+			return nil, skipContainerBody(dec)
+		}
+		return nil, nil
+	case float64:
+		return []leaf{{key: key, val: v}}, nil
+	case string:
+		return []leaf{{key: key, val: v}}, nil
+	default: // bool, nil
+		return nil, nil
+	}
+}
+
+// skipContainerBody consumes tokens until the container whose opening delimiter
+// was already read is balanced (handles arbitrary nesting).
+func skipContainerBody(dec *json.Decoder) error {
+	depth := 1
+	for depth > 0 {
+		tok, err := dec.Token()
+		if err != nil {
+			return err
+		}
+
+		if d, ok := tok.(json.Delim); ok {
+			switch d {
+			case '[', '{':
+				depth++
+			case ']', '}':
+				depth--
+			}
+		}
+	}
+
+	return nil
+}

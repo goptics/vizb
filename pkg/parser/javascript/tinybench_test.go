@@ -38,7 +38,6 @@ func writeTestFile(t *testing.T, content string) string {
 	return path
 }
 
-
 func TestParseTinyBenchBenchmark(t *testing.T) {
 	origPattern := shared.FlagState.GroupPattern
 	origFilter := shared.FlagState.FilterRegex

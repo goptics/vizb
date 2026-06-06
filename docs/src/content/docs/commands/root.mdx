@@ -1,11 +1,11 @@
 ---
 title: vizb
-description: Parse benchmark output and generate HTML or JSON visualizations.
+description: Parse benchmark output or tabular CSV/JSON data and generate HTML or JSON visualizations.
 ---
 
 import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
 
-The root command (`vizb`) is the primary entry point. It parses benchmark output from multiple frameworks and generates interactive visualizations.
+The root command (`vizb`) is the primary entry point. It parses benchmark output from multiple frameworks — or any tabular CSV/JSON data — and generates interactive visualizations. The input format is auto-detected by default (override with `--parser`).
 
 ## Usage
 
@@ -28,18 +28,21 @@ vizb [target] [flags]
   ```
   Pipe benchmark output directly to vizb.
   </TabItem>
-  <TabItem label="JSON Auto-Detect">
+  <TabItem label="Auto-Detect">
   ```bash
-  # JSON bench events are auto-detected and converted for Go
-  go test -bench . -json | vizb -o output.html
+  # Format detected from content — no --parser needed
+  go test -bench . -json | vizb -o output.html   # ✨ go
+  vizb data.csv -o output.html                    # ✨ csv
+  vizb data.json -o output.html                   # ✨ json
   ```
-  Vizb automatically detects `go test -bench -json` format when using `--parser go`.
+  With `--parser auto` (the default), vizb inspects the input content, picks the right parser, and prints its choice. See [Auto-Detection](/guides/auto-detection).
   </TabItem>
 </Tabs>
 
-## Multi-Language Parsers
+## Parsers
 
-Vizb supports Rust, JavaScript, and TypeScript benchmark frameworks in addition to Go. Use `--parser` to select the right one:
+Vizb supports Rust, JavaScript, and TypeScript benchmark frameworks in addition to Go, plus
+generic CSV and JSON tables. Detection is automatic, but you can force a parser with `--parser`:
 
 ```bash
 # Rust Criterion
@@ -53,18 +56,24 @@ npx vitest bench | vizb --parser js:vitest -o output.html
 
 # Tinybench
 node bench.js | vizb --parser js:tinybench -o output.html
+
+# Generic CSV / JSON tables (auto-detected; -P optional)
+vizb data.csv -o output.html
+vizb data.json -o output.html
 ```
 
-See the [Parser Guide](/guides/parsers) for full details on each parser's metrics and configuration.
+See the [Parser Guide](/guides/parsers) for each parser's metrics, the
+[Tabular Data guide](/guides/data) for CSV/JSON rules, and [Auto-Detection](/guides/auto-detection)
+for how the format is chosen.
 
 ## Flags
 
 | Flag | Short | Default | Description |
 |------|-------|---------|-------------|
 | `--output` | `-o` | *(stdout)* | Output file path. `.json` → JSON, else → HTML |
-| `--parser` | `-P` | `go` | Benchmark parser: `go`, `js:tinybench`, `js:vitest`, `rs:criterion`, `rs:divan` |
-| `--name` | `-n` | `Benchmarks` | Benchmark name |
-| `--description` | `-d` | `""` | Benchmark description |
+| `--parser` | `-P` | `auto` | Parser: `auto` (detect), `go`, `js:tinybench`, `js:vitest`, `rs:criterion`, `rs:divan`, `csv`, `json` |
+| `--name` | `-n` | `Benchmarks` | Dataset name |
+| `--description` | `-d` | `""` | Dataset description |
 | `--tag` | `-t` | `""` | Tag identifier for release tracking |
 | `--group-pattern` | `-p` | `x` | Pattern-based grouping (`n`/`x`/`y`/`z` with `/` or `_`; `z` → 3D) |
 | `--group-regex` | `-r` | `""` | Regex-based grouping (named captures) |
@@ -72,7 +81,7 @@ See the [Parser Guide](/guides/parsers) for full details on each parser's metric
 | `--sort` | `-s` | `""` | Sort order: `asc` or `desc` (default: as-is) |
 | `--charts` | `-c` | `bar,line,pie` | Chart types to generate |
 | `--show-labels` | `-l` | `false` | Show value labels on charts |
-| `--filter` | `-f` | `""` | Regex to include only matching benchmark names |
+| `--filter` | `-f` | `""` | Regex to include only matching data labels / series names |
 | `--mem-unit` | `-M` | `B` | Memory unit: `b`, `B`, `KB`, `MB`, `GB` |
 | `--time-unit` | `-T` | `ns` | Time unit: `ns`, `us`, `ms`, `s` |
 | `--number-unit` | `-N` | `""` | Number unit: `K`, `M`, `B`, `T` (default: as-is) |

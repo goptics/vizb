@@ -1,0 +1,101 @@
+---
+title: Tabular Data (CSV & JSON)
+description: Chart any CSV or JSON table with vizb — numeric columns become chart series, with optional grouping.
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+Vizb isn't only for benchmarks. The **`csv`** and **`json`** parsers turn any tabular data into
+the same interactive 4D charts: each **numeric column/field becomes a chart series**, and
+non-numeric columns can be promoted into the Name / X / Y dimensions with `--group`.
+
+Both formats are **auto-detected from content** — `vizb data.csv` and `vizb data.json` just work
+without `--parser`. See [Automatic Parser Detection](/guides/auto-detection).
+
+## CSV
+
+```bash
+vizb sales.csv -o sales.html          # auto-detected as csv
+vizb sales.csv -P csv -o sales.html   # explicit
+```
+
+### Input
+
+```csv
+name,sells,stocks,date
+alpha,100,5,2024-01
+beta,200,7,2025-02
+gamma,150,9,2024-06
+```
+
+- `sells` and `stocks` → two chart series (numeric).
+- `name`, `date` → ignored by default (non-numeric), but available as `--group` fields.
+
+### Rules
+
+| Topic | Behaviour |
+|-------|-----------|
+| Numeric column | A column is charted if **at least one cell** parses as a finite number ("any-one-parses"). Non-numeric cells in that column become gaps. |
+| Delimiter | Comma only. Quoted fields with embedded commas/newlines are handled by the standard CSV reader. |
+| Header | First row. A leading UTF-8 BOM is stripped; cells are trimmed; duplicate names are suffixed (`sells`, `sells (2)`). |
+| Ragged rows | Short/long rows are tolerated; missing cells become gaps. |
+| `NaN` / `Inf` | Rejected. |
+| No numeric columns | Hard error: `no numeric columns found in CSV`. |
+
+## JSON
+
+A **JSON array of objects**, where each object is a row and each key is a column.
+
+```bash
+vizb data.json -o data.html           # auto-detected as json
+vizb data.json -P json -o data.html   # explicit
+```
+
+### Input
+
+```json
+[
+  { "name": "alpha", "sells": 100, "stocks": 5, "date": "2024-01", "mem": { "alloc": 3 } },
+  { "name": "beta",  "sells": 200, "stocks": 7, "date": "2025-02", "mem": { "alloc": 9 } }
+]
+```
+
+Produces series `sells`, `stocks`, and `mem.alloc`. `date` (string) is ignored.
+
+### Rules
+
+| Topic | Behaviour |
+|-------|-----------|
+| Shape | Top-level **array of objects**. A single top-level object is not supported (it is consumed by vizb's own dataset-JSON path). |
+| Numeric value | A finite JSON **number** *or* a **numeric string** (`"10"` → 10). `bool`/`null` are ignored. |
+| Nested objects | Flattened to dotted keys: `{"mem":{"alloc":5}}` → `mem.alloc`. |
+| Arrays as values | Skipped. |
+| Column order | **First-seen** key order across the array (preserved, not alphabetical). |
+| Heterogeneous rows | Keys are unioned; a missing key in a row is a gap; a key numeric in some rows and text in others is charted where numeric. |
+| No numeric fields | Hard error: `no numeric fields found in JSON`. |
+
+## Grouping with `--group` / `-g`
+
+`--group` names one or more **non-numeric** columns/fields. Their per-row values are joined with
+`/` and fed through the existing grouping machinery (`--group-pattern`/`-p`,
+`--group-regex`/`-r`) — exactly like benchmark names.
+
+```bash
+vizb sales.csv -g name                  # name → X axis (default pattern "x")
+vizb sales.csv -g name,date -p name/x   # name → series name, date → X axis
+vizb data.json -g name,date -p name/x   # same, for JSON
+```
+
+See the [Grouping Guide](/guides/grouping) for pattern and regex syntax.
+
+<Aside type="note">
+  `--group` values are stringified (numbers included) before joining. A value that itself
+  contains `/` or `_` is re-split by the grouping pattern — that's inherent to the grouping
+  engine, not the data parsers.
+</Aside>
+
+## Limitations
+
+- **CSV:** no thousands separators / currency / `%` parsing; comma delimiter only; no headerless files.
+- **JSON:** a single top-level object is unsupported; arrays-of-scalars are not exploded into series.
+- `--number-unit`/`-N` scales every numeric column/field uniformly.

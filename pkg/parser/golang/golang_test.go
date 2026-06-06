@@ -21,7 +21,7 @@ type testBlock struct {
 	timeUnit       string
 	memUnit        string
 	allocUnit      string
-	expected       []shared.BenchmarkData
+	expected       []shared.DataPoint
 	expectMemStats bool
 	expectCPUCount int
 }
@@ -47,7 +47,7 @@ func TestParseGoBenchmark(t *testing.T) {
 			},
 			timeUnit: "ns",
 			pattern:  "y",
-			expected: []shared.BenchmarkData{
+			expected: []shared.DataPoint{
 				{
 					Name:  "",
 					XAxis: "",
@@ -77,7 +77,7 @@ func TestParseGoBenchmark(t *testing.T) {
 			timeUnit:  "ms",
 			memUnit:   "KB",
 			allocUnit: "K",
-			expected: []shared.BenchmarkData{
+			expected: []shared.DataPoint{
 				{
 					Name:  "",
 					XAxis: "",
@@ -102,7 +102,7 @@ func TestParseGoBenchmark(t *testing.T) {
 			timeUnit:  "ns",
 			memUnit:   "b",
 			allocUnit: "",
-			expected: []shared.BenchmarkData{
+			expected: []shared.DataPoint{
 				{
 					Name:  "Group",
 					XAxis: "Task",
@@ -134,7 +134,7 @@ func TestParseGoBenchmark(t *testing.T) {
 			},
 			pattern:  "n/y",
 			timeUnit: "ns",
-			expected: []shared.BenchmarkData{
+			expected: []shared.DataPoint{
 				{
 					Name:  "Parallel",
 					XAxis: "",
@@ -156,7 +156,7 @@ func TestParseGoBenchmark(t *testing.T) {
 			},
 			timeUnit: "ns",
 			pattern:  "y",
-			expected: []shared.BenchmarkData{
+			expected: []shared.DataPoint{
 				{
 					Name:  "",
 					XAxis: "",
@@ -178,7 +178,7 @@ func TestParseGoBenchmark(t *testing.T) {
 			},
 			timeUnit: "ns",
 			pattern:  "y",
-			expected: []shared.BenchmarkData{
+			expected: []shared.DataPoint{
 				{
 					Name:  "",
 					XAxis: "",
@@ -205,7 +205,7 @@ func TestParseGoBenchmark(t *testing.T) {
 			name:         "Empty file",
 			benchContent: []string{},
 			timeUnit:     "ns",
-			expected:     []shared.BenchmarkData{},
+			expected:     []shared.DataPoint{},
 		},
 		{
 			name: "Benchmark with B/s (Throughput)",
@@ -214,7 +214,7 @@ func TestParseGoBenchmark(t *testing.T) {
 			},
 			pattern:  "y",
 			timeUnit: "ns",
-			expected: []shared.BenchmarkData{
+			expected: []shared.DataPoint{
 				{
 					Name:  "",
 					XAxis: "",
@@ -235,7 +235,7 @@ func TestParseGoBenchmark(t *testing.T) {
 			},
 			pattern:  "y",
 			timeUnit: "ns",
-			expected: []shared.BenchmarkData{
+			expected: []shared.DataPoint{
 				{
 					Name:  "",
 					XAxis: "",
@@ -256,7 +256,7 @@ func TestParseGoBenchmark(t *testing.T) {
 			},
 			pattern:  "y",
 			timeUnit: "ns",
-			expected: []shared.BenchmarkData{
+			expected: []shared.DataPoint{
 				{
 					Name:  "",
 					XAxis: "",
@@ -277,7 +277,7 @@ func TestParseGoBenchmark(t *testing.T) {
 			},
 			pattern:  "y",
 			timeUnit: "ns",
-			expected: []shared.BenchmarkData{
+			expected: []shared.DataPoint{
 				{
 					Name:  "",
 					XAxis: "",
@@ -298,7 +298,7 @@ func TestParseGoBenchmark(t *testing.T) {
 			},
 			pattern:  "y",
 			timeUnit: "ns",
-			expected: []shared.BenchmarkData{
+			expected: []shared.DataPoint{
 				{
 					Name:  "",
 					XAxis: "",

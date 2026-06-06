@@ -6,20 +6,20 @@ import (
 
 const noTagKey = "__no_tag__"
 
-// MergeBenchmarks performs tag-based smart merging on a slice of benchmarks.
+// MergeDatasets performs tag-based smart merging on a slice of benchmarks.
 // Benchmarks with the same Name and valid Tag fields are deep-merged into a
 // single object. Benchmarks lacking a Tag are appended individually (legacy).
 // When both legacy and tagged benchmarks share a Name they are combined into
 // one object so accumulated data is preserved across incremental merges.
 // dim controls which inner data dimension receives the benchmark tag annotation.
-func MergeBenchmarks(benchmarks []Benchmark, dim Dimension) []Benchmark {
+func MergeDatasets(benchmarks []Dataset, dim Dimension) []Dataset {
 	nameOrder := make([]string, 0)
-	groups := make(map[string]map[string]*Benchmark)
+	groups := make(map[string]map[string]*Dataset)
 
 	for _, bench := range benchmarks {
 		tags, ok := groups[bench.Name]
 		if !ok {
-			tags = make(map[string]*Benchmark)
+			tags = make(map[string]*Dataset)
 			groups[bench.Name] = tags
 			nameOrder = append(nameOrder, bench.Name)
 		}
@@ -36,7 +36,7 @@ func MergeBenchmarks(benchmarks []Benchmark, dim Dimension) []Benchmark {
 		tags[tag] = &bench
 	}
 
-	result := make([]Benchmark, 0, len(nameOrder))
+	result := make([]Dataset, 0, len(nameOrder))
 
 	for _, name := range nameOrder {
 		tags := groups[name]
@@ -44,7 +44,7 @@ func MergeBenchmarks(benchmarks []Benchmark, dim Dimension) []Benchmark {
 		noTag := tags[noTagKey]
 		delete(tags, noTagKey)
 
-		tagged := make([]Benchmark, 0, len(tags))
+		tagged := make([]Dataset, 0, len(tags))
 		for _, b := range tags {
 			tagged = append(tagged, *b)
 		}
@@ -57,10 +57,10 @@ func MergeBenchmarks(benchmarks []Benchmark, dim Dimension) []Benchmark {
 			result = append(result, *noTag)
 		default:
 			if noTag != nil {
-				allBenches := make([]Benchmark, 0, 1+len(tagged))
+				allBenches := make([]Dataset, 0, 1+len(tagged))
 				allBenches = append(allBenches, *noTag)
 				allBenches = append(allBenches, tagged...)
-				base := deepCloneBenchmark(*noTag)
+				base := deepCloneDataset(*noTag)
 				latest := tagged[len(tagged)-1]
 				base.Tag = latest.Tag
 				base.Timestamp = latest.Timestamp
@@ -71,7 +71,7 @@ func MergeBenchmarks(benchmarks []Benchmark, dim Dimension) []Benchmark {
 			}
 
 			latest := tagged[len(tagged)-1]
-			base := deepCloneBenchmark(latest)
+			base := deepCloneDataset(latest)
 			base.History = buildHistory(tagged, latest.Tag)
 			base.Data = mergeData(tagged, dim)
 			result = append(result, base)
@@ -81,9 +81,9 @@ func MergeBenchmarks(benchmarks []Benchmark, dim Dimension) []Benchmark {
 	return result
 }
 
-func deepCloneBenchmark(src Benchmark) Benchmark {
+func deepCloneDataset(src Dataset) Dataset {
 	dst := src
-	dst.Data = make([]BenchmarkData, len(src.Data))
+	dst.Data = make([]DataPoint, len(src.Data))
 	for i := range src.Data {
 		dst.Data[i] = deepCloneData(src.Data[i])
 	}
@@ -105,7 +105,7 @@ type historyCandidate struct {
 // buildHistory collects tag+timestamp+cpu+os from all benchmarks and their
 // existing History entries, excluding the latest tag. Entries are deduplicated
 // by tag (keeping the latest timestamp per tag) and sorted chronologically.
-func buildHistory(benchmarks []Benchmark, latestTag string) []HistoryEntry {
+func buildHistory(benchmarks []Dataset, latestTag string) []HistoryEntry {
 	seen := make(map[string]historyCandidate)
 	for _, bench := range benchmarks {
 		if bench.Tag != "" && bench.Tag != latestTag {
@@ -142,8 +142,8 @@ func buildHistory(benchmarks []Benchmark, latestTag string) []HistoryEntry {
 	return entries
 }
 
-func mergeData(benchmarks []Benchmark, dim Dimension) []BenchmarkData {
-	var result []BenchmarkData
+func mergeData(benchmarks []Dataset, dim Dimension) []DataPoint {
+	var result []DataPoint
 	for _, bench := range benchmarks {
 		for _, item := range bench.Data {
 			if dimFieldEmpty(item, dim) {
@@ -156,7 +156,7 @@ func mergeData(benchmarks []Benchmark, dim Dimension) []BenchmarkData {
 	return result
 }
 
-func dimFieldEmpty(item BenchmarkData, dim Dimension) bool {
+func dimFieldEmpty(item DataPoint, dim Dimension) bool {
 	switch dim {
 	case DimensionXAxis:
 		return item.XAxis == ""
@@ -169,7 +169,7 @@ func dimFieldEmpty(item BenchmarkData, dim Dimension) bool {
 	}
 }
 
-func injectTag(item BenchmarkData, tag string, dim Dimension) BenchmarkData {
+func injectTag(item DataPoint, tag string, dim Dimension) DataPoint {
 	item = deepCloneData(item)
 
 	switch dim {
@@ -193,7 +193,7 @@ func applyInjection(existing string, tag string) string {
 	return existing + " - " + tag
 }
 
-func deepCloneData(src BenchmarkData) BenchmarkData {
+func deepCloneData(src DataPoint) DataPoint {
 	dst := src
 	if src.Stats != nil {
 		dst.Stats = make([]Stat, len(src.Stats))

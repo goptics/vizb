@@ -18,7 +18,7 @@ func init() {
 
 var criterionRe = regexp.MustCompile(`^(\S+)\s+time:\s+\[([\d.]+)\s*(ns|µs|μs|ms|s)\s+([\d.]+)\s*(ns|µs|μs|ms|s)\s+([\d.]+)\s*(ns|µs|μs|ms|s)\]`)
 
-func ParseCriterionBenchmark(filename string) []shared.BenchmarkData {
+func ParseCriterionBenchmark(filename string) []shared.DataPoint {
 	f, err := os.Open(filename)
 	if err != nil {
 		shared.ExitWithError("Error opening file", err)
@@ -26,7 +26,7 @@ func ParseCriterionBenchmark(filename string) []shared.BenchmarkData {
 	defer f.Close()
 
 	scanner := bufio.NewScanner(f)
-	var results []shared.BenchmarkData
+	var results []shared.DataPoint
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -54,7 +54,7 @@ func ParseCriterionBenchmark(filename string) []shared.BenchmarkData {
 
 		benchName, xAxis, yAxis, zAxis := group["name"], group["xAxis"], group["yAxis"], group["zAxis"]
 
-		results = append(results, shared.BenchmarkData{
+		results = append(results, shared.DataPoint{
 			Name:  benchName,
 			XAxis: xAxis,
 			YAxis: yAxis,

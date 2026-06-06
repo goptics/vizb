@@ -75,7 +75,7 @@ var flagValidationRules = []utils.ValidationRule{
 		Label:     "parser",
 		Value:     &shared.FlagState.Parser,
 		Validator: validateParser,
-		Default:   "go",
+		Default:   "auto",
 	},
 	{
 		Label:     "data url",
@@ -86,8 +86,11 @@ var flagValidationRules = []utils.ValidationRule{
 }
 
 func validateParser(key string) error {
+	if key == "auto" {
+		return nil
+	}
 	if _, ok := parser.Parsers[key]; !ok {
-		return fmt.Errorf("unknown parser '%s'; available: %v", key, parser.AvailableParsers())
+		return fmt.Errorf("unknown parser '%s'; available: auto, %v", key, parser.AvailableParsers())
 	}
 	return nil
 }
