@@ -42,6 +42,8 @@ export default defineConfig({
 					{ label: 'Grouping', slug: 'guides/grouping' },
 					{ label: 'Merging', slug: 'guides/merging' },
 					{ label: 'Parser Guide', slug: 'guides/parsers' },
+					{ label: 'Tabular Data (CSV & JSON)', slug: 'guides/data' },
+					{ label: 'Auto-Detection', slug: 'guides/auto-detection' },
 				],
 			},
 			{
