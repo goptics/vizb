@@ -3,6 +3,7 @@ import vue from '@vitejs/plugin-vue'
 import { viteSingleFile } from 'vite-plugin-singlefile'
 import { createHtmlPlugin } from 'vite-plugin-html'
 import fs from 'node:fs'
+import zlib from 'node:zlib'
 import path from 'path'
 import { parseHTML } from 'linkedom'
 
@@ -46,11 +47,57 @@ const appendVizbDataScriptTag = (html: string): string => {
 
   const script = document.createElement('script')
   script.type = 'text/javascript'
-  script.textContent = `window.VIZB_VERSION = {{ .Version }}; window.VIZB_DATA = {{ .Data }}; window.VIZB_DATA_URL = {{ .DataURL }};`
+  // Custom Go-template delimiters: echarts-gl's clay.gl GLSL shaders use {{ }}
+  // for loop unrolling, which would otherwise collide with html/template parsing.
+  script.textContent = `window.VIZB_VERSION = [[VIZB .Version VIZB]]; window.VIZB_DATA = [[VIZB .Data VIZB]]; window.VIZB_DATA_URL = [[VIZB .DataURL VIZB]];`
 
   document.head.appendChild(script)
 
   return '<!DOCTYPE html>' + document.documentElement.outerHTML
+}
+
+// echarts-gl bundles the clay.gl WebGL engine, inflating the single-file JS to
+// ~1.2MB. Store it gzip-compressed + base64 and inflate at runtime via the
+// browser's DecompressionStream, cutting the emitted HTML to ~0.5MB.
+const compressBundlePlugin = (): PluginOption => {
+  const distHtmlPath = path.resolve(__dirname, 'dist/index.html')
+
+  return {
+    name: 'compress-bundle',
+    apply: 'build',
+    closeBundle() {
+      if (!fs.existsSync(distHtmlPath)) return
+
+      const html = fs.readFileSync(distHtmlPath, 'utf-8')
+      const match = html.match(/<script type=module[^>]*>([\s\S]*?)<\/script>/)
+      if (!match) {
+        console.warn('[compress-bundle] No module script found, skipping compression.')
+        return
+      }
+
+      const js = match[1] ?? ''
+      const b64 = zlib.gzipSync(Buffer.from(js, 'utf-8'), { level: 9 }).toString('base64')
+
+      // Module bootstrap (deferred, like the original entry): decode base64 ->
+      // gunzip -> import as a module blob. Deferral guarantees the VIZB_DATA
+      // script in <head> has run before the app module evaluates.
+      const bootstrap =
+        `<script type=module>` +
+        `const b=Uint8Array.from(atob("${b64}"),c=>c.charCodeAt(0));` +
+        `const s=new Blob([b]).stream().pipeThrough(new DecompressionStream("gzip"));` +
+        `const code=await new Response(s).text();` +
+        `const u=URL.createObjectURL(new Blob([code],{type:"text/javascript"}));` +
+        `await import(u);URL.revokeObjectURL(u);` +
+        `</script>`
+
+      const compressed = html.slice(0, match.index) + bootstrap + html.slice(match.index! + match[0].length)
+      fs.writeFileSync(distHtmlPath, compressed, 'utf-8')
+
+      const originalKB = (Buffer.byteLength(html, 'utf-8') / 1024).toFixed(1)
+      const compressedKB = (Buffer.byteLength(compressed, 'utf-8') / 1024).toFixed(1)
+      console.info(`[compress-bundle] ${originalKB} KB → ${compressedKB} KB`)
+    },
+  }
 }
 
 const benchmarkUiGoWrapperPlugin = (): PluginOption => {
@@ -98,6 +145,7 @@ if (singleFile) {
       removeViteModuleLoader: true,
       useRecommendedBuildConfig: true,
     }),
+    compressBundlePlugin(),
     benchmarkUiGoWrapperPlugin()
   )
 }

@@ -52,12 +52,13 @@ func ParseCriterionBenchmark(filename string) []shared.DataPoint {
 			shared.ExitWithError("Error parsing cargo benchmark name", groupErr)
 		}
 
-		benchName, xAxis, yAxis := group["name"], group["xAxis"], group["yAxis"]
+		benchName, xAxis, yAxis, zAxis := group["name"], group["xAxis"], group["yAxis"], group["zAxis"]
 
 		results = append(results, shared.DataPoint{
 			Name:  benchName,
 			XAxis: xAxis,
 			YAxis: yAxis,
+			ZAxis: zAxis,
 			Stats: []shared.Stat{
 				{Type: utils.CreateStatType("Latency avg", shared.FlagState.TimeUnit, ""), Value: utils.ConvertTime(estimateNs, "ns", shared.FlagState.TimeUnit)},
 				{Type: utils.CreateStatType("Latency lower", shared.FlagState.TimeUnit, ""), Value: utils.ConvertTime(lowerNs, "ns", shared.FlagState.TimeUnit)},

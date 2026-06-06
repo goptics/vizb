@@ -7,25 +7,40 @@ import { useBenchmarkData } from '../composables/useBenchmarkData'
 import { resetColor } from '../lib/utils'
 import { useSettingsStore } from '../composables/useSettingsStore'
 
-const { activeBenchmarkDimension, activeBenchmark, activeGroupId, activeBenchmarkId } =
-  useBenchmarkData()
+const { activeBenchmark, activeGroupId, activeBenchmarkId } = useBenchmarkData()
 const { setSelectedSwapIndex, getSelectedSwapIndex } = useSettingsStore()
 
-const dimensionMap = {
-  1: ['x', 'y'],
-  2: ['nx', 'ny', 'xy', 'yx', 'yn', 'xn'],
-  3: ['nxy', 'nyx', 'xny', 'xyn', 'ynx', 'yxn'],
-}
+// Canonical axis order; swap options are permutations of whichever are present.
+const AXIS_ORDER = ['n', 'x', 'y', 'z'] as const
 
-type AxisKey = 'name' | 'xAxis' | 'yAxis'
+type AxisKey = 'name' | 'xAxis' | 'yAxis' | 'zAxis'
 
 const translateAxisKey = (key: string): AxisKey[] => {
   const keyMap = {
     x: 'xAxis',
     y: 'yAxis',
     n: 'name',
+    z: 'zAxis',
   }
   return key.split('').map((k) => keyMap[k as keyof typeof keyMap]) as AxisKey[]
+}
+
+// All ordered length-`k` arrangements drawn from `pool`, deterministic.
+// k = number of present values; pool = full axis set, so axes can be rotated
+// in/out of `name` (e.g. a 3-axis dataset still offers nxy, nxz, ...).
+const kPermutations = (pool: readonly string[], k: number): string[] => {
+  if (k <= 0) return ['']
+  const result: string[] = []
+  pool.forEach((key, i) => {
+    const rest = [...pool.slice(0, i), ...pool.slice(i + 1)]
+    for (const perm of kPermutations(rest, k - 1)) result.push(key + perm)
+  })
+  return result
+}
+
+const presentKeys = (data: BenchmarkData[]): string[] => {
+  const fieldFor = { n: 'name', x: 'xAxis', y: 'yAxis', z: 'zAxis' } as const
+  return AXIS_ORDER.filter((k) => data.some((d) => d[fieldFor[k]]))
 }
 
 const swapAxis = (currentKey: string, targetKey: string, data: BenchmarkData[]) => {
@@ -48,28 +63,27 @@ const swapAxis = (currentKey: string, targetKey: string, data: BenchmarkData[]) 
 }
 
 const swapOptions = computed(() => {
-  const dimensions = dimensionMap[activeBenchmarkDimension.value as keyof typeof dimensionMap] || []
-  return dimensions.map((key) => ({ name: key }))
+  const data = activeBenchmark.value?.data
+  if (!data || data.length === 0) return []
+  // k = number of values; pool = full axis set. Selecting an arrangement that
+  // omits z (e.g. nxy) renders 2D, while one using z (xyz) renders 3D.
+  // z is only valid alongside both x and y (3D needs an x/y floor).
+  return kPermutations(AXIS_ORDER, presentKeys(data).length)
+    .filter((key) => !key.includes('z') || (key.includes('x') && key.includes('y')))
+    // 1D data: drop the bare `n` arrangement — putting the lone value on `name`
+    // gives one chart per point, which is useless. Offer only x / y placement.
+    // (Multi-axis arrangements are never exactly 'n', so this is 1D-only.)
+    .filter((key) => key !== 'n')
+    .map((key) => ({ name: key }))
 })
 
 const getInitialSwapIndex = () => {
   const data = activeBenchmark.value?.data
   if (!data || data.length === 0) return 0
 
-  const hasName = data.some((d) => d.name)
-  const hasX = data.some((d) => d.xAxis)
-  const hasY = data.some((d) => d.yAxis)
-
-  const presentKeys = new Set<string>()
-  if (hasName) presentKeys.add('n')
-  if (hasX) presentKeys.add('x')
-  if (hasY) presentKeys.add('y')
-
-  const index = swapOptions.value.findIndex((option) => {
-    if (option.name.length !== presentKeys.size) return false
-    const optionKeys = option.name.split('')
-    return optionKeys.every((k) => presentKeys.has(k))
-  })
+  // Identity ordering (present keys in canonical order) = current data layout.
+  const identity = presentKeys(data).join('')
+  const index = swapOptions.value.findIndex((option) => option.name === identity)
 
   return index !== -1 ? index : 0
 }

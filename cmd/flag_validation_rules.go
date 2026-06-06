@@ -67,7 +67,7 @@ var flagValidationRules = []utils.ValidationRule{
 	{
 		Label:      "inject dimension",
 		Value:      &shared.FlagState.TagAxis,
-		ValidSet:   []string{"n", "x", "y"},
+		ValidSet:   []string{"n", "x", "y", "z"},
 		Normalizer: strings.ToLower,
 		Default:    "n",
 	},

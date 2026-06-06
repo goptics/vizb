@@ -30,12 +30,13 @@ func ValidateGroupPattern(pattern string) error {
 		return errors.New("pattern cannot be empty")
 	}
 
-	validParts := regexp.MustCompile(`^[nxy]|name|xAxis|yAxis$`)
+	validParts := regexp.MustCompile(`^[nxyz]|name|xAxis|yAxis|zAxis$`)
 	parts := separatorRegex.Split(pattern, -1)
 
 	var (
 		hasXAxis bool
 		hasYAxis bool
+		hasZAxis bool
 	)
 
 	for _, part := range parts {
@@ -44,7 +45,7 @@ func ValidateGroupPattern(pattern string) error {
 		}
 
 		if !validParts.MatchString(part) {
-			return fmt.Errorf("Invalid part: '%s'; only name(n), xAxis(x), yAxis(y) allowed", part)
+			return fmt.Errorf("Invalid part: '%s'; only name(n), xAxis(x), yAxis(y), zAxis(z) allowed", part)
 		}
 
 		switch expandShorthand(part) {
@@ -52,11 +53,19 @@ func ValidateGroupPattern(pattern string) error {
 			hasXAxis = true
 		case "yAxis":
 			hasYAxis = true
+		case "zAxis":
+			hasZAxis = true
 		}
 	}
 
 	if !hasXAxis && !hasYAxis {
 		return errors.New("pattern must contain xAxis (x) or yAxis (y)")
+	}
+
+	// zAxis defines the third (depth) dimension of a 3D chart, which needs an
+	// x/y floor; reject z unless both x and y are present.
+	if hasZAxis && (!hasXAxis || !hasYAxis) {
+		return errors.New("zAxis (z) requires both xAxis (x) and yAxis (y)")
 	}
 
 	return nil
@@ -106,6 +115,7 @@ func mapPartsToResult(patternParts, nameParts []string) map[string]string {
 		"name":  "",
 		"xAxis": "",
 		"yAxis": "",
+		"zAxis": "",
 	}
 
 	for i, part := range patternParts {
@@ -127,6 +137,7 @@ func expandShorthand(part string) string {
 		"n": "name",
 		"x": "xAxis",
 		"y": "yAxis",
+		"z": "zAxis",
 	}
 	if expanded, exists := shortcuts[part]; exists {
 		return expanded
@@ -150,6 +161,7 @@ func ParseBenchmarkNameWithRegex(name, pattern string) (map[string]string, error
 		"name":  "",
 		"xAxis": "",
 		"yAxis": "",
+		"zAxis": "",
 	}
 
 	for i, name := range re.SubexpNames() {
@@ -163,6 +175,12 @@ func ParseBenchmarkNameWithRegex(name, pattern string) (map[string]string, error
 
 	if result["xAxis"] == "" && result["yAxis"] == "" {
 		return nil, fmt.Errorf("regex '%s' does not contain x (xAxis) or y (yAxis)", pattern)
+	}
+
+	// zAxis is the depth dimension of a 3D chart, which needs an x/y floor;
+	// reject z unless both x and y are also captured.
+	if result["zAxis"] != "" && (result["xAxis"] == "" || result["yAxis"] == "") {
+		return nil, fmt.Errorf("regex '%s' captures zAxis (z) but z requires both xAxis (x) and yAxis (y)", pattern)
 	}
 
 	return result, nil

@@ -22,7 +22,7 @@
   </p>
 
   <p>
-    A CLI tool that turns benchmark output from <strong>Go</strong>, <strong>Rust</strong>, and <strong>JavaScript</strong> frameworks — or <strong>any tabular CSV/JSON data</strong> — into interactive <strong>4D visualizations</strong>. Pipe in results, apply multi-dimensional grouping, merge across runs, and explore everything in a single self-contained HTML file — no server, no dependencies, no build step. The input format is auto-detected, so <code>vizb data.csv</code> just works.
+    A CLI tool that turns benchmark output from <strong>Go</strong>, <strong>Rust</strong>, and <strong>JavaScript</strong> frameworks — or <strong>any tabular CSV/JSON data</strong> — into interactive <strong>5D visualizations</strong>. Pipe in results, apply multi-dimensional grouping, merge across runs, and explore everything in a single self-contained HTML file — no server, no dependencies, no build step. The input format is auto-detected, so <code>vizb data.csv</code> just works.
   </p>
 </div>
 

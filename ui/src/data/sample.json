@@ -10406,7 +10406,7 @@
     },
     "data": [
       {
-        "name": "AllSleep10ms",
+        "zAxis": "AllSleep10ms",
         "xAxis": "Pond-Eager",
         "yAxis": "1u-1Mt",
         "stats": [
@@ -10425,7 +10425,7 @@
         ]
       },
       {
-        "name": "AllSleep10ms",
+        "zAxis": "AllSleep10ms",
         "xAxis": "Pond-Balanced",
         "yAxis": "1u-1Mt",
         "stats": [
@@ -10444,7 +10444,7 @@
         ]
       },
       {
-        "name": "AllSleep10ms",
+        "zAxis": "AllSleep10ms",
         "xAxis": "Pond-Lazy",
         "yAxis": "1u-1Mt",
         "stats": [
@@ -10463,7 +10463,7 @@
         ]
       },
       {
-        "name": "AllSleep10ms",
+        "zAxis": "AllSleep10ms",
         "xAxis": "Goroutines",
         "yAxis": "1u-1Mt",
         "stats": [
@@ -10482,7 +10482,7 @@
         ]
       },
       {
-        "name": "AllSleep10ms",
+        "zAxis": "AllSleep10ms",
         "xAxis": "GoroutinePool",
         "yAxis": "1u-1Mt",
         "stats": [
@@ -10501,7 +10501,7 @@
         ]
       },
       {
-        "name": "AllSleep10ms",
+        "zAxis": "AllSleep10ms",
         "xAxis": "BufferedPool",
         "yAxis": "1u-1Mt",
         "stats": [
@@ -10520,7 +10520,7 @@
         ]
       },
       {
-        "name": "AllSleep10ms",
+        "zAxis": "AllSleep10ms",
         "xAxis": "Gammazero",
         "yAxis": "1u-1Mt",
         "stats": [
@@ -10539,7 +10539,7 @@
         ]
       },
       {
-        "name": "AllSleep10ms",
+        "zAxis": "AllSleep10ms",
         "xAxis": "AntsPool",
         "yAxis": "1u-1Mt",
         "stats": [
@@ -10558,7 +10558,7 @@
         ]
       },
       {
-        "name": "AllSleep10ms",
+        "zAxis": "AllSleep10ms",
         "xAxis": "Pond-Eager",
         "yAxis": "100u-10Kt",
         "stats": [
@@ -10577,7 +10577,7 @@
         ]
       },
       {
-        "name": "AllSleep10ms",
+        "zAxis": "AllSleep10ms",
         "xAxis": "Pond-Balanced",
         "yAxis": "100u-10Kt",
         "stats": [
@@ -10596,7 +10596,7 @@
         ]
       },
       {
-        "name": "AllSleep10ms",
+        "zAxis": "AllSleep10ms",
         "xAxis": "Pond-Lazy",
         "yAxis": "100u-10Kt",
         "stats": [
@@ -10615,7 +10615,7 @@
         ]
       },
       {
-        "name": "AllSleep10ms",
+        "zAxis": "AllSleep10ms",
         "xAxis": "Goroutines",
         "yAxis": "100u-10Kt",
         "stats": [
@@ -10634,7 +10634,7 @@
         ]
       },
       {
-        "name": "AllSleep10ms",
+        "zAxis": "AllSleep10ms",
         "xAxis": "GoroutinePool",
         "yAxis": "100u-10Kt",
         "stats": [
@@ -10653,7 +10653,7 @@
         ]
       },
       {
-        "name": "AllSleep10ms",
+        "zAxis": "AllSleep10ms",
         "xAxis": "BufferedPool",
         "yAxis": "100u-10Kt",
         "stats": [
@@ -10672,7 +10672,7 @@
         ]
       },
       {
-        "name": "AllSleep10ms",
+        "zAxis": "AllSleep10ms",
         "xAxis": "Gammazero",
         "yAxis": "100u-10Kt",
         "stats": [
@@ -10691,7 +10691,7 @@
         ]
       },
       {
-        "name": "AllSleep10ms",
+        "zAxis": "AllSleep10ms",
         "xAxis": "AntsPool",
         "yAxis": "100u-10Kt",
         "stats": [
@@ -10710,7 +10710,7 @@
         ]
       },
       {
-        "name": "AllSleep10ms",
+        "zAxis": "AllSleep10ms",
         "xAxis": "Pond-Eager",
         "yAxis": "1Ku-1Kt",
         "stats": [
@@ -10729,7 +10729,7 @@
         ]
       },
       {
-        "name": "AllSleep10ms",
+        "zAxis": "AllSleep10ms",
         "xAxis": "Pond-Balanced",
         "yAxis": "1Ku-1Kt",
         "stats": [
@@ -10748,7 +10748,7 @@
         ]
       },
       {
-        "name": "AllSleep10ms",
+        "zAxis": "AllSleep10ms",
         "xAxis": "Pond-Lazy",
         "yAxis": "1Ku-1Kt",
         "stats": [
@@ -10767,7 +10767,7 @@
         ]
       },
       {
-        "name": "AllSleep10ms",
+        "zAxis": "AllSleep10ms",
         "xAxis": "Goroutines",
         "yAxis": "1Ku-1Kt",
         "stats": [
@@ -10786,7 +10786,7 @@
         ]
       },
       {
-        "name": "AllSleep10ms",
+        "zAxis": "AllSleep10ms",
         "xAxis": "GoroutinePool",
         "yAxis": "1Ku-1Kt",
         "stats": [
@@ -10805,7 +10805,7 @@
         ]
       },
       {
-        "name": "AllSleep10ms",
+        "zAxis": "AllSleep10ms",
         "xAxis": "BufferedPool",
         "yAxis": "1Ku-1Kt",
         "stats": [
@@ -10824,7 +10824,7 @@
         ]
       },
       {
-        "name": "AllSleep10ms",
+        "zAxis": "AllSleep10ms",
         "xAxis": "Gammazero",
         "yAxis": "1Ku-1Kt",
         "stats": [
@@ -10843,7 +10843,7 @@
         ]
       },
       {
-        "name": "AllSleep10ms",
+        "zAxis": "AllSleep10ms",
         "xAxis": "AntsPool",
         "yAxis": "1Ku-1Kt",
         "stats": [
@@ -10862,7 +10862,7 @@
         ]
       },
       {
-        "name": "AllSleep10ms",
+        "zAxis": "AllSleep10ms",
         "xAxis": "Pond-Eager",
         "yAxis": "10Ku-100t",
         "stats": [
@@ -10881,7 +10881,7 @@
         ]
       },
       {
-        "name": "AllSleep10ms",
+        "zAxis": "AllSleep10ms",
         "xAxis": "Pond-Balanced",
         "yAxis": "10Ku-100t",
         "stats": [
@@ -10900,7 +10900,7 @@
         ]
       },
       {
-        "name": "AllSleep10ms",
+        "zAxis": "AllSleep10ms",
         "xAxis": "Pond-Lazy",
         "yAxis": "10Ku-100t",
         "stats": [
@@ -10919,7 +10919,7 @@
         ]
       },
       {
-        "name": "AllSleep10ms",
+        "zAxis": "AllSleep10ms",
         "xAxis": "Goroutines",
         "yAxis": "10Ku-100t",
         "stats": [
@@ -10938,7 +10938,7 @@
         ]
       },
       {
-        "name": "AllSleep10ms",
+        "zAxis": "AllSleep10ms",
         "xAxis": "GoroutinePool",
         "yAxis": "10Ku-100t",
         "stats": [
@@ -10957,7 +10957,7 @@
         ]
       },
       {
-        "name": "AllSleep10ms",
+        "zAxis": "AllSleep10ms",
         "xAxis": "BufferedPool",
         "yAxis": "10Ku-100t",
         "stats": [
@@ -10976,7 +10976,7 @@
         ]
       },
       {
-        "name": "AllSleep10ms",
+        "zAxis": "AllSleep10ms",
         "xAxis": "Gammazero",
         "yAxis": "10Ku-100t",
         "stats": [
@@ -10995,7 +10995,7 @@
         ]
       },
       {
-        "name": "AllSleep10ms",
+        "zAxis": "AllSleep10ms",
         "xAxis": "AntsPool",
         "yAxis": "10Ku-100t",
         "stats": [
@@ -11014,7 +11014,7 @@
         ]
       },
       {
-        "name": "AllSleep10ms",
+        "zAxis": "AllSleep10ms",
         "xAxis": "Pond-Eager",
         "yAxis": "1Mu-1t",
         "stats": [
@@ -11033,7 +11033,7 @@
         ]
       },
       {
-        "name": "AllSleep10ms",
+        "zAxis": "AllSleep10ms",
         "xAxis": "Pond-Balanced",
         "yAxis": "1Mu-1t",
         "stats": [
@@ -11052,7 +11052,7 @@
         ]
       },
       {
-        "name": "AllSleep10ms",
+        "zAxis": "AllSleep10ms",
         "xAxis": "Pond-Lazy",
         "yAxis": "1Mu-1t",
         "stats": [
@@ -11071,7 +11071,7 @@
         ]
       },
       {
-        "name": "AllSleep10ms",
+        "zAxis": "AllSleep10ms",
         "xAxis": "Goroutines",
         "yAxis": "1Mu-1t",
         "stats": [
@@ -11090,7 +11090,7 @@
         ]
       },
       {
-        "name": "AllSleep10ms",
+        "zAxis": "AllSleep10ms",
         "xAxis": "GoroutinePool",
         "yAxis": "1Mu-1t",
         "stats": [
@@ -11109,7 +11109,7 @@
         ]
       },
       {
-        "name": "AllSleep10ms",
+        "zAxis": "AllSleep10ms",
         "xAxis": "BufferedPool",
         "yAxis": "1Mu-1t",
         "stats": [
@@ -11128,7 +11128,7 @@
         ]
       },
       {
-        "name": "AllSleep10ms",
+        "zAxis": "AllSleep10ms",
         "xAxis": "Gammazero",
         "yAxis": "1Mu-1t",
         "stats": [
@@ -11147,7 +11147,7 @@
         ]
       },
       {
-        "name": "AllSleep10ms",
+        "zAxis": "AllSleep10ms",
         "xAxis": "AntsPool",
         "yAxis": "1Mu-1t",
         "stats": [
@@ -11166,7 +11166,7 @@
         ]
       },
       {
-        "name": "AllRandFloat64",
+        "zAxis": "AllRandFloat64",
         "xAxis": "Pond-Eager",
         "yAxis": "1u-1Mt",
         "stats": [
@@ -11185,7 +11185,7 @@
         ]
       },
       {
-        "name": "AllRandFloat64",
+        "zAxis": "AllRandFloat64",
         "xAxis": "Pond-Balanced",
         "yAxis": "1u-1Mt",
         "stats": [
@@ -11204,7 +11204,7 @@
         ]
       },
       {
-        "name": "AllRandFloat64",
+        "zAxis": "AllRandFloat64",
         "xAxis": "Pond-Lazy",
         "yAxis": "1u-1Mt",
         "stats": [
@@ -11223,7 +11223,7 @@
         ]
       },
       {
-        "name": "AllRandFloat64",
+        "zAxis": "AllRandFloat64",
         "xAxis": "Goroutines",
         "yAxis": "1u-1Mt",
         "stats": [
@@ -11242,7 +11242,7 @@
         ]
       },
       {
-        "name": "AllRandFloat64",
+        "zAxis": "AllRandFloat64",
         "xAxis": "GoroutinePool",
         "yAxis": "1u-1Mt",
         "stats": [
@@ -11261,7 +11261,7 @@
         ]
       },
       {
-        "name": "AllRandFloat64",
+        "zAxis": "AllRandFloat64",
         "xAxis": "BufferedPool",
         "yAxis": "1u-1Mt",
         "stats": [
@@ -11280,7 +11280,7 @@
         ]
       },
       {
-        "name": "AllRandFloat64",
+        "zAxis": "AllRandFloat64",
         "xAxis": "Gammazero",
         "yAxis": "1u-1Mt",
         "stats": [
@@ -11299,7 +11299,7 @@
         ]
       },
       {
-        "name": "AllRandFloat64",
+        "zAxis": "AllRandFloat64",
         "xAxis": "AntsPool",
         "yAxis": "1u-1Mt",
         "stats": [
@@ -11318,7 +11318,7 @@
         ]
       },
       {
-        "name": "AllRandFloat64",
+        "zAxis": "AllRandFloat64",
         "xAxis": "Pond-Eager",
         "yAxis": "100u-10Kt",
         "stats": [
@@ -11337,7 +11337,7 @@
         ]
       },
       {
-        "name": "AllRandFloat64",
+        "zAxis": "AllRandFloat64",
         "xAxis": "Pond-Balanced",
         "yAxis": "100u-10Kt",
         "stats": [
@@ -11356,7 +11356,7 @@
         ]
       },
       {
-        "name": "AllRandFloat64",
+        "zAxis": "AllRandFloat64",
         "xAxis": "Pond-Lazy",
         "yAxis": "100u-10Kt",
         "stats": [
@@ -11375,7 +11375,7 @@
         ]
       },
       {
-        "name": "AllRandFloat64",
+        "zAxis": "AllRandFloat64",
         "xAxis": "Goroutines",
         "yAxis": "100u-10Kt",
         "stats": [
@@ -11394,7 +11394,7 @@
         ]
       },
       {
-        "name": "AllRandFloat64",
+        "zAxis": "AllRandFloat64",
         "xAxis": "GoroutinePool",
         "yAxis": "100u-10Kt",
         "stats": [
@@ -11413,7 +11413,7 @@
         ]
       },
       {
-        "name": "AllRandFloat64",
+        "zAxis": "AllRandFloat64",
         "xAxis": "BufferedPool",
         "yAxis": "100u-10Kt",
         "stats": [
@@ -11432,7 +11432,7 @@
         ]
       },
       {
-        "name": "AllRandFloat64",
+        "zAxis": "AllRandFloat64",
         "xAxis": "Gammazero",
         "yAxis": "100u-10Kt",
         "stats": [
@@ -11451,7 +11451,7 @@
         ]
       },
       {
-        "name": "AllRandFloat64",
+        "zAxis": "AllRandFloat64",
         "xAxis": "AntsPool",
         "yAxis": "100u-10Kt",
         "stats": [
@@ -11470,7 +11470,7 @@
         ]
       },
       {
-        "name": "AllRandFloat64",
+        "zAxis": "AllRandFloat64",
         "xAxis": "Pond-Eager",
         "yAxis": "1Ku-1Kt",
         "stats": [
@@ -11489,7 +11489,7 @@
         ]
       },
       {
-        "name": "AllRandFloat64",
+        "zAxis": "AllRandFloat64",
         "xAxis": "Pond-Balanced",
         "yAxis": "1Ku-1Kt",
         "stats": [
@@ -11508,7 +11508,7 @@
         ]
       },
       {
-        "name": "AllRandFloat64",
+        "zAxis": "AllRandFloat64",
         "xAxis": "Pond-Lazy",
         "yAxis": "1Ku-1Kt",
         "stats": [
@@ -11527,7 +11527,7 @@
         ]
       },
       {
-        "name": "AllRandFloat64",
+        "zAxis": "AllRandFloat64",
         "xAxis": "Goroutines",
         "yAxis": "1Ku-1Kt",
         "stats": [
@@ -11546,7 +11546,7 @@
         ]
       },
       {
-        "name": "AllRandFloat64",
+        "zAxis": "AllRandFloat64",
         "xAxis": "GoroutinePool",
         "yAxis": "1Ku-1Kt",
         "stats": [
@@ -11565,7 +11565,7 @@
         ]
       },
       {
-        "name": "AllRandFloat64",
+        "zAxis": "AllRandFloat64",
         "xAxis": "BufferedPool",
         "yAxis": "1Ku-1Kt",
         "stats": [
@@ -11584,7 +11584,7 @@
         ]
       },
       {
-        "name": "AllRandFloat64",
+        "zAxis": "AllRandFloat64",
         "xAxis": "Gammazero",
         "yAxis": "1Ku-1Kt",
         "stats": [
@@ -11603,7 +11603,7 @@
         ]
       },
       {
-        "name": "AllRandFloat64",
+        "zAxis": "AllRandFloat64",
         "xAxis": "AntsPool",
         "yAxis": "1Ku-1Kt",
         "stats": [
@@ -11622,7 +11622,7 @@
         ]
       },
       {
-        "name": "AllRandFloat64",
+        "zAxis": "AllRandFloat64",
         "xAxis": "Pond-Eager",
         "yAxis": "10Ku-100t",
         "stats": [
@@ -11641,7 +11641,7 @@
         ]
       },
       {
-        "name": "AllRandFloat64",
+        "zAxis": "AllRandFloat64",
         "xAxis": "Pond-Balanced",
         "yAxis": "10Ku-100t",
         "stats": [
@@ -11660,7 +11660,7 @@
         ]
       },
       {
-        "name": "AllRandFloat64",
+        "zAxis": "AllRandFloat64",
         "xAxis": "Pond-Lazy",
         "yAxis": "10Ku-100t",
         "stats": [
@@ -11679,7 +11679,7 @@
         ]
       },
       {
-        "name": "AllRandFloat64",
+        "zAxis": "AllRandFloat64",
         "xAxis": "Goroutines",
         "yAxis": "10Ku-100t",
         "stats": [
@@ -11698,7 +11698,7 @@
         ]
       },
       {
-        "name": "AllRandFloat64",
+        "zAxis": "AllRandFloat64",
         "xAxis": "GoroutinePool",
         "yAxis": "10Ku-100t",
         "stats": [
@@ -11717,7 +11717,7 @@
         ]
       },
       {
-        "name": "AllRandFloat64",
+        "zAxis": "AllRandFloat64",
         "xAxis": "BufferedPool",
         "yAxis": "10Ku-100t",
         "stats": [
@@ -11736,7 +11736,7 @@
         ]
       },
       {
-        "name": "AllRandFloat64",
+        "zAxis": "AllRandFloat64",
         "xAxis": "Gammazero",
         "yAxis": "10Ku-100t",
         "stats": [
@@ -11755,7 +11755,7 @@
         ]
       },
       {
-        "name": "AllRandFloat64",
+        "zAxis": "AllRandFloat64",
         "xAxis": "AntsPool",
         "yAxis": "10Ku-100t",
         "stats": [
@@ -11774,7 +11774,7 @@
         ]
       },
       {
-        "name": "AllRandFloat64",
+        "zAxis": "AllRandFloat64",
         "xAxis": "Pond-Eager",
         "yAxis": "1Mu-1t",
         "stats": [
@@ -11793,7 +11793,7 @@
         ]
       },
       {
-        "name": "AllRandFloat64",
+        "zAxis": "AllRandFloat64",
         "xAxis": "Pond-Balanced",
         "yAxis": "1Mu-1t",
         "stats": [
@@ -11812,7 +11812,7 @@
         ]
       },
       {
-        "name": "AllRandFloat64",
+        "zAxis": "AllRandFloat64",
         "xAxis": "Pond-Lazy",
         "yAxis": "1Mu-1t",
         "stats": [
@@ -11831,7 +11831,7 @@
         ]
       },
       {
-        "name": "AllRandFloat64",
+        "zAxis": "AllRandFloat64",
         "xAxis": "Goroutines",
         "yAxis": "1Mu-1t",
         "stats": [
@@ -11850,7 +11850,7 @@
         ]
       },
       {
-        "name": "AllRandFloat64",
+        "zAxis": "AllRandFloat64",
         "xAxis": "GoroutinePool",
         "yAxis": "1Mu-1t",
         "stats": [
@@ -11869,7 +11869,7 @@
         ]
       },
       {
-        "name": "AllRandFloat64",
+        "zAxis": "AllRandFloat64",
         "xAxis": "BufferedPool",
         "yAxis": "1Mu-1t",
         "stats": [
@@ -11888,7 +11888,7 @@
         ]
       },
       {
-        "name": "AllRandFloat64",
+        "zAxis": "AllRandFloat64",
         "xAxis": "Gammazero",
         "yAxis": "1Mu-1t",
         "stats": [
@@ -11907,7 +11907,7 @@
         ]
       },
       {
-        "name": "AllRandFloat64",
+        "zAxis": "AllRandFloat64",
         "xAxis": "AntsPool",
         "yAxis": "1Mu-1t",
         "stats": [

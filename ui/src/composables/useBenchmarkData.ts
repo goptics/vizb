@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue'
 import type { Benchmark, BenchmarkData } from '../types'
-import { resetColor } from '../lib/utils'
+import { resetColor, isValidIndex } from '../lib/utils'
 import { useSettingsStore } from './useSettingsStore'
 import { DEFAULT_SETTINGS } from './constants'
 
@@ -10,6 +10,7 @@ const getStatDimensions = (benchmarks: BenchmarkData[]) => {
   if (benchmarks.some((b) => b.name)) dimension++
   if (benchmarks.some((b) => b.xAxis)) dimension++
   if (benchmarks.some((b) => b.yAxis)) dimension++
+  if (benchmarks.some((b) => b.zAxis)) dimension++
 
   return dimension
 }
@@ -116,7 +117,7 @@ const activeGroup = computed(
 const { initializeFromBenchmark } = useSettingsStore()
 
 const selectBenchmark = (id: number) => {
-  if (id >= 0 && id < benchmarks.value.length) {
+  if (isValidIndex(id, benchmarks.value.length)) {
     resetColor()
 
     const currentGroupName = activeGroup.value?.name
@@ -139,7 +140,7 @@ const selectBenchmark = (id: number) => {
 }
 
 const selectGroup = (id: number) => {
-  if (id >= 0 && id < benchmarkGroups.value.length) {
+  if (isValidIndex(id, benchmarkGroups.value.length)) {
     activeGroupId.value = id
   }
 }

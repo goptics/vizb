@@ -9,22 +9,28 @@ Vizb transforms benchmark output from Go, Rust, and JavaScript frameworks — or
 
 <CardGrid stagger>
   <Card title="Modern Interactive UI" icon="laptop">
-    Vue.js application embedded in a single HTML file. Sort, zoom, swap axes, and export — all in the browser with no server.
+    Vue.js application embedded in a single HTML file. Sort, zoom, swap axes, fullscreen, and export — all in the browser with no server.
   </Card>
   <Card title="Multi-Chart" icon="analytics">
     Bar, line, and pie charts rendered together. Choose which to show with `--charts` or toggle in the UI.
+  </Card>
+  <Card title="3D Charts" icon="cube">
+    Add a z-axis to render interactive 3D stacked-bar and 3D line charts. Rotate, zoom, and auto-rotate the scene. See [3D Charts](/ui/3d-charts).
+  </Card>
+  <Card title="Axis-Sum Tooltips" icon="information">
+    Hover any point for marginal sums — per-series and x totals in 2D, `Σ z` / `Σ x` / `Σ y` in 3D — recomputed live as you toggle the legend.
   </Card>
   <Card title="Sorting" icon="list-format">
     Sort data ascending or descending via `--sort` flag or UI settings.
   </Card>
   <Card title="Axis Swapping" icon="random">
-    Rearrange Name, X-axis, and Y-axis dimensions in the UI for different perspectives on the same data.
+    Rearrange Name, X-axis, Y-axis, and Z-axis dimensions in the UI for different perspectives on the same data.
   </Card>
   <Card title="Logarithmic Scale" icon="puzzle">
-    Use `--scale log` for bar and line charts to visualize benchmarks with high variance in values.
+    Use `--scale log` for 2D bar and line charts to visualize benchmarks with high variance in values.
   </Card>
   <Card title="Multi-Dimensional Grouping" icon="puzzle">
-    Extract Name, XAxis, and YAxis from data labels and series names using pattern matching or regex. 1D, 2D, or 3D data.
+    Extract Name, XAxis, YAxis, and ZAxis from benchmark names using pattern matching or regex. 1D, 2D, 3D, or 4D data.
   </Card>
   <Card title="Tag-Based Merging" icon="code-branch">
     Tag benchmarks with version labels. Deep-merge across releases with chronological data ordering.

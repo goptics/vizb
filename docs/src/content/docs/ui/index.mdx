@@ -29,6 +29,9 @@ Control which charts appear with `--charts`:
 vizb bench.txt -c bar,line -o output.html
 ```
 
+When your data has a z-axis, bar and line charts render in **3D** instead of 2D.
+See [3D Charts](/ui/3d-charts).
+
 {/* TODO: Add GIF showing all three chart types rendered side by side */}
 
 ## Scale Options
@@ -49,6 +52,22 @@ vizb bench.txt --scale log -o output.html
 
 {/* TODO: Add GIF showing linear vs logarithmic scale comparison */}
 
+## Tooltips & Axis Sums
+
+Hovering a data point shows its value alongside **axis-sum** totals. 2D charts
+add per-series totals after each series name and a labeled x-marginal at the
+bottom of the tooltip. 3D charts add `Σ z` / `Σ x` / `Σ y` marginals — see
+[3D Charts](/ui/3d-charts). Tooltips follow light/dark mode automatically.
+
+{/* TODO: Add GIF showing tooltip with axis sums */}
+
+## Fullscreen
+
+Every chart has a **fullscreen** button in its toolbar (next to export). Click it
+to expand the chart to the full viewport, and again to exit.
+
+{/* TODO: Add GIF showing fullscreen toggle */}
+
 ## JPEG Export
 
 Export any chart as a JPEG image directly from the UI. Click the export button on any chart to download.
@@ -68,4 +87,5 @@ Open with any browser — no build step, no server.
 ## Next Steps
 
 - [Settings](/ui/settings) — CLI flags and UI settings mapping
-- [Axis Swapping](/ui/swapping) — rearrange n/x/y dimensions in the UI
+- [Axis Swapping](/ui/swapping) — rearrange n/x/y/z dimensions in the UI
+- [3D Charts](/ui/3d-charts) — z-axis, auto-rotate, and axis-sum tooltips

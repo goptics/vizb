@@ -1,8 +1,7 @@
 import { fontSize } from './common'
+import type { ChartStyling } from './chartConfig'
+import { createLabelConfig } from './chartConfig'
 
-/**
- * Creates pie chart label configuration
- */
 export function createPieLabelConfig(
   showLabels: boolean,
   styling: { textColor: string },
@@ -16,9 +15,6 @@ export function createPieLabelConfig(
   }
 }
 
-/**
- * Creates pie chart series configuration
- */
 export function createPieSeriesConfig(
   name: string,
   data: any[],
@@ -38,58 +34,12 @@ export function createPieSeriesConfig(
   }
 }
 
-/**
- * Creates line chart series configuration
- */
-export function createLineSeriesConfig(
-  seriesData: any,
+// Converts a nullable value into an ECharts data item with label config.
+// Returns null to produce a gap (log-scale zero/negative handling).
+export function makeDataItem(
+  val: number | null,
   showLabels: boolean,
-  styling: { textColor: string },
-  color: string,
-  customConfig?: any
-): any {
-  return {
-    name: seriesData.subject,
-    type: 'line',
-    data: seriesData.values.map((value: number) => ({
-      value,
-      label: {
-        show: showLabels,
-        position: 'top',
-        formatter: '{c}',
-        fontSize,
-        color: styling.textColor,
-      },
-    })),
-    itemStyle: { color },
-    ...customConfig,
-  }
-}
-
-/**
- * Creates bar chart series configuration
- */
-export function createBarSeriesConfig(
-  seriesData: any,
-  showLabels: boolean,
-  styling: { textColor: string },
-  color: string,
-  customConfig?: any
-): any {
-  return {
-    name: seriesData.subject,
-    type: 'bar',
-    data: seriesData.values.map((value: number) => ({
-      value,
-      label: {
-        show: showLabels,
-        position: 'top',
-        formatter: '{c}',
-        fontSize,
-        color: styling.textColor,
-      },
-    })),
-    itemStyle: { color },
-    ...customConfig,
-  }
+  styling: ChartStyling
+): { value: number; label: ReturnType<typeof createLabelConfig> } | null {
+  return val === null ? null : { value: val, label: createLabelConfig(showLabels, styling) }
 }

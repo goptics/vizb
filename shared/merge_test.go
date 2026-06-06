@@ -16,10 +16,10 @@ func makeBench(tag, name, timestamp string, data []DataPoint) Dataset {
 }
 
 func TestMergeDatasets_SmartMerge(t *testing.T) {
-	bench1 := makeBench("1", "My benchmark", "2026-05-13T10:00:00Z", []DataPoint{
+	bench1 := makeBench("1", "My Dataset", "2026-05-13T10:00:00Z", []DataPoint{
 		{Name: "", XAxis: "speed", YAxis: "1e4"},
 	})
-	bench2 := makeBench("2", "My benchmark", "2026-05-13T10:05:00Z", []DataPoint{
+	bench2 := makeBench("2", "My Dataset", "2026-05-13T10:05:00Z", []DataPoint{
 		{Name: "", XAxis: "speed", YAxis: "1e4"},
 	})
 
@@ -28,7 +28,7 @@ func TestMergeDatasets_SmartMerge(t *testing.T) {
 
 	merged := result[0]
 	assert.Equal(t, "2", merged.Tag)
-	assert.Equal(t, "My benchmark", merged.Name)
+	assert.Equal(t, "My Dataset", merged.Name)
 	assert.Equal(t, "2026-05-13T10:05:00Z", merged.Timestamp)
 	assert.Equal(t, []HistoryEntry{
 		{Tag: "1", Timestamp: "2026-05-13T10:00:00Z"},
@@ -39,15 +39,15 @@ func TestMergeDatasets_SmartMerge(t *testing.T) {
 }
 
 func TestMergeDatasets_MixedGroup(t *testing.T) {
-	bench1 := makeBench("1", "My benchmark", "2026-05-13T10:00:00Z", []DataPoint{
+	bench1 := makeBench("1", "My Dataset", "2026-05-13T10:00:00Z", []DataPoint{
 		{Name: "", XAxis: "speed", YAxis: "1e4"},
 	})
-	bench2 := makeBench("2", "My benchmark", "2026-05-13T10:05:00Z", []DataPoint{
+	bench2 := makeBench("2", "My Dataset", "2026-05-13T10:05:00Z", []DataPoint{
 		{Name: "", XAxis: "speed", YAxis: "1e4"},
 	})
 	noTagBench := Dataset{
 		Tag:  "",
-		Name: "My benchmark",
+		Name: "My Dataset",
 		Data: []DataPoint{{Name: "legacy", XAxis: "x", YAxis: "y"}},
 	}
 
@@ -83,7 +83,7 @@ func TestMergeDatasets_TimestampTie(t *testing.T) {
 	assert.Contains(t, []string{"1", "2"}, result[0].Tag)
 }
 
-func TestMergeDatasets_SingleBenchmark(t *testing.T) {
+func TestMergeDatasets_SingleDataset(t *testing.T) {
 	bench := makeBench("1", "Solo", "2026-05-13T10:00:00Z", []DataPoint{{Name: "x"}})
 	result := MergeDatasets([]Dataset{bench}, DimensionName)
 	assert.Len(t, result, 1)
@@ -133,6 +133,20 @@ func TestMergeDatasets_InjectDimensionY(t *testing.T) {
 	assert.Len(t, result, 1)
 	assert.Equal(t, "1", result[0].Data[0].YAxis)
 	assert.Equal(t, "2", result[0].Data[1].YAxis)
+}
+
+func TestMergeDatasets_InjectDimensionZ(t *testing.T) {
+	bench1 := makeBench("1", "Test", "2026-05-13T10:00:00Z", []DataPoint{
+		{XAxis: "x", YAxis: "y", ZAxis: ""},
+	})
+	bench2 := makeBench("2", "Test", "2026-05-13T10:05:00Z", []DataPoint{
+		{XAxis: "x", YAxis: "y", ZAxis: ""},
+	})
+
+	result := MergeDatasets([]Dataset{bench1, bench2}, DimensionZAxis)
+	assert.Len(t, result, 1)
+	assert.Equal(t, "1", result[0].Data[0].ZAxis)
+	assert.Equal(t, "2", result[0].Data[1].ZAxis)
 }
 
 func TestMergeDatasets_HistoryMerge(t *testing.T) {

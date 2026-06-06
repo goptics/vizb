@@ -1,8 +1,10 @@
 export type SortOrder = 'asc' | 'desc'
+export const SORT_ORDERS: SortOrder[] = ['asc', 'desc']
 
 export type ChartType = 'bar' | 'line' | 'pie'
 
 export type ScaleType = 'linear' | 'log'
+export const SCALE_TYPES: ScaleType[] = ['linear', 'log']
 
 export type Stat = {
   type: string
@@ -15,6 +17,7 @@ export type BenchmarkData = {
   name?: string
   yAxis?: string
   xAxis?: string
+  zAxis?: string
   stats: Stat[]
 }
 
@@ -61,11 +64,20 @@ export type ChartData = {
   statType: string
   statUnit?: string
   yAxis: string[]
+  zAxis: string[]
   series: SeriesData[]
+  points: Point3D[]
 }
 
 export type SeriesData = {
   xAxis: string
   values: number[]
   benchmarkId: string
+}
+
+export type Point3D = {
+  xAxis: string
+  yAxis: string
+  zAxis: string
+  value: number
 }

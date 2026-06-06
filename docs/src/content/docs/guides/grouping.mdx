@@ -25,18 +25,19 @@ Grouping creates multi-dimensional charts. Without grouping, all benchmarks prod
 | No axis structure | X-axis and Y-axis with meaningful categories |
 | Hard to compare across dimensions | Easy side-by-side comparison |
 
-## The Three Dimensions
+## The Dimensions
 
-Grouping extracts up to three dimensions from each benchmark name:
+Grouping extracts up to four dimensions from each benchmark name:
 
 | Dimension | Flag Component | Description |
 |---|---|---|
 | **Name** (`name` / `n`) | Groups benchmarks into separate charts | Benchmarks sharing the same name appear in the same chart |
 | **XAxis** (`xAxis` / `x`) | Sets the X-axis categories | Each unique value becomes a tick on the X-axis |
 | **YAxis** (`yAxis` / `y`) | Creates test case variants | Each unique value becomes a separate series or bar group |
+| **ZAxis** (`zAxis` / `z`) | Adds a depth axis → 3D chart | Each unique value becomes a stacked depth layer in a [3D chart](/ui/3d-charts) |
 
 <Aside type="note">
-  At least one axis (`x` or `y`) is required for grouping to take effect. The `name` dimension is optional — when omitted, all benchmarks go into a single chart.
+  At least one axis (`x` or `y`) is required for grouping to take effect. The `name` dimension is optional — when omitted, all benchmarks go into a single chart. The `z` dimension requires **both** `x` and `y` to be present.
 </Aside>
 
 ## Pattern Syntax
@@ -55,6 +56,7 @@ The `--group-pattern` flag splits benchmark names using a separator (`/` or `_`)
 | `name` | `n` | Chart group name |
 | `xAxis` | `x` | X-axis values |
 | `yAxis` | `y` | Y-axis series |
+| `zAxis` | `z` | Z-axis depth layer (3D, requires `x` + `y`) |
 
 ### Examples
 
@@ -103,6 +105,21 @@ vizb bench.txt --group-pattern "/n/y" -o output.html
 | `BenchmarkTest/JSON/Marshal` | JSON | Marshal |
 | `BenchmarkTest/XML/Parse` | XML | Parse |
 
+**4D with `n/x/y/z` (renders a 3D chart):**
+
+```bash
+vizb bench.txt --group-pattern "n/x/y/z" -o output.html
+```
+
+| Benchmark Name | Name | XAxis | YAxis | ZAxis |
+|---|---|---|---|---|
+| `BenchmarkSort/1024/QuickSort/warm` | Sort | 1024 | QuickSort | warm |
+| `BenchmarkSort/2048/MergeSort/cold` | Sort | 2048 | MergeSort | cold |
+
+<Aside type="note">
+  A `z` segment requires both `x` and `y` — vizb rejects `z` otherwise with `zAxis (z) requires both xAxis (x) and yAxis (y)`. See [3D Charts](/ui/3d-charts).
+</Aside>
+
 ## Regex Syntax
 
 The `--group-regex` flag uses Go-style named capture groups for full flexibility. Use this when your benchmark names do not follow a simple separator pattern.
@@ -114,6 +131,7 @@ The `--group-regex` flag uses Go-style named capture groups for full flexibility
 | `(?<name>...)` | `(?<n>...)` | Chart group name |
 | `(?<xAxis>...)` | `(?<x>...)` | X-axis values |
 | `(?<yAxis>...)` | `(?<y>...)` | Y-axis series |
+| `(?<zAxis>...)` | `(?<z>...)` | Z-axis depth layer (3D, requires `x` + `y`) |
 
 ### Examples
 

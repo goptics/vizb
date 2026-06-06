@@ -1,125 +1,87 @@
 import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
-import type { ScaleType } from '../../types'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
-import { getNextColorFor, hasXAxis, hasYAxis } from '../../lib/utils'
+import { getNextColorFor, hasXAxis } from '../../lib/utils'
 import {
   createAxisConfig,
   createGridConfig,
-  createLabelConfig,
   createLegendConfig,
   createTooltipConfig,
   getChartStyling,
 } from './shared'
-import { sortByTotal } from './shared/common'
+import {
+  useSortedSeriesData,
+  getEffectiveScale,
+  computeSeriesTotals,
+} from './shared/common'
+import { makeDataItem } from './shared/seriesConfig'
+
+const barNullable = (val: number, scale: string): number | null =>
+  scale === 'log' && val === 0 ? null : val
 
 export function useBarChartOptions(config: BaseChartConfig) {
   const { chartData, sort, showLabels, isDark, scale } = config
 
-  const sortedData = computed(() => {
-    // Check if we have y-axis data (dual categories)
-    if (!sort.value.enabled) {
-      return {
-        series: chartData.value.series,
-        xAxisData: chartData.value.series.map((s) => s.xAxis), // Always use framework names on x-axis
-        hasYAxis: hasYAxis(chartData),
-      }
-    }
-
-    // Sort series by their total values
-    const seriesWithTotals = chartData.value.series.map((series) => ({
-      ...series,
-      total: series.values.reduce((sum, val) => sum + val, 0),
-    }))
-
-    if (sort.value.enabled) {
-      seriesWithTotals.sort(sortByTotal(sort.value.order))
-    }
-
-    return {
-      series: seriesWithTotals,
-      xAxisData: seriesWithTotals.map((s) => s.xAxis), // Always use framework names on x-axis
-      hasYAxis: hasYAxis(chartData),
-    }
-  })
+  const sortedData = useSortedSeriesData(chartData, sort)
 
   const options = computed<EChartsOption>(() => {
     const { series, xAxisData, hasYAxis } = sortedData.value
     const baseOptions = getBaseOptions(config)
     const styling = getChartStyling(isDark.value)
+    const { minValue, effectiveScale } = getEffectiveScale(series, scale.value)
 
-    // Calculate min/max for log scale guard
-    const allValues = series.flatMap((s) => s.values)
-    const nonZeroValues = allValues.filter((v) => v > 0)
-    const minValue = nonZeroValues.length > 0 ? Math.min(...nonZeroValues) : undefined
-    const maxValue = allValues.length > 0 ? Math.max(...allValues) : 0
-    const effectiveScale: ScaleType = scale.value === 'log' && maxValue < 1 ? 'linear' : scale.value
-
-    // For single category: create one series with each x-axis value as a data point
-    // For dual categories: create multiple series (one per x-axis value)
     if (!hasYAxis) {
-      const barData = series.map((seriesData) => {
-        const val = seriesData.values[0] ?? 0
-        return effectiveScale === 'log' && val === 0
-          ? null
-          : { value: val, label: createLabelConfig(showLabels.value, styling) }
-      })
-
       return {
         ...baseOptions,
         grid: createGridConfig(1),
-        tooltip: createTooltipConfig(false),
+        tooltip: createTooltipConfig(false, 1, isDark.value),
         legend: { show: false },
         ...createAxisConfig(styling, xAxisData, effectiveScale, minValue),
         series: [
           {
             name: chartData.value.title,
             type: 'bar' as const,
-            data: barData,
+            data: series.map((s) =>
+              makeDataItem(barNullable(s.values[0] ?? 0, effectiveScale), showLabels.value, styling)
+            ),
             itemStyle: { color: getNextColorFor(chartData.value.title) },
           },
         ],
       } as EChartsOption
     }
 
-    // Dual categories case: transpose data to show y-axis values as series
-    // Each y-axis value becomes a bar group, with x-axis values (frameworks) as bars
+    // Dual categories: transpose — each y-axis value becomes a bar group
     const yAxisLabels = chartData.value.yAxis
-    const transposedSeries = yAxisLabels.map((yAxisLabel, yIndex) => {
-      const barData = series.map((seriesData) => {
-        const val = seriesData.values[yIndex] || 0
-        return effectiveScale === 'log' && val === 0
-          ? null
-          : { value: val, label: createLabelConfig(showLabels.value, styling) }
-      })
+    const transposedSeries = yAxisLabels.map((yAxisLabel, yIndex) => ({
+      name: yAxisLabel,
+      type: 'bar' as const,
+      data: series.map((s) =>
+        makeDataItem(barNullable(s.values[yIndex] || 0, effectiveScale), showLabels.value, styling)
+      ),
+      itemStyle: { color: getNextColorFor(yAxisLabel) },
+    }))
 
-      return {
-        name: yAxisLabel,
-        type: 'bar' as const,
-        data: barData,
-        itemStyle: { color: getNextColorFor(yAxisLabel) },
-      }
-    })
-
-    // Sort y-axis groups if there's only one x-axis group
+    // Secondary sort when there is only one x-group (sort within the group)
     if (sort.value.enabled && xAxisData.length === 1) {
       transposedSeries.sort((a, b) => {
         const valA = a.data[0]?.value || 0
         const valB = b.data[0]?.value || 0
-        if (sort.value.order === 'asc') {
-          return valA - valB
-        }
-
-        return valB - valA
+        return sort.value.order === 'asc' ? valA - valB : valB - valA
       })
     }
 
     const hasMultipleSeries = transposedSeries.length > 1
+    const seriesTotals = computeSeriesTotals(transposedSeries)
 
     return {
       ...baseOptions,
       grid: createGridConfig(transposedSeries.length),
-      tooltip: createTooltipConfig(hasXAxis(chartData), transposedSeries.length),
+      tooltip: createTooltipConfig(
+        hasXAxis(chartData),
+        transposedSeries.length,
+        isDark.value,
+        seriesTotals
+      ),
       legend: createLegendConfig(
         transposedSeries.map((s) => ({ xAxis: s.name })),
         styling,

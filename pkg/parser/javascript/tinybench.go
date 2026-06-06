@@ -100,12 +100,13 @@ func ParseTinyBenchBenchmark(filename string) []shared.DataPoint {
 			shared.ExitWithError("Error parsing tinybench name", groupErr)
 		}
 
-		benchName, xAxis, yAxis := group["name"], group["xAxis"], group["yAxis"]
+		benchName, xAxis, yAxis, zAxis := group["name"], group["xAxis"], group["yAxis"], group["zAxis"]
 
 		results = append(results, shared.DataPoint{
 			Name:  benchName,
 			XAxis: xAxis,
 			YAxis: yAxis,
+			ZAxis: zAxis,
 			Stats: []shared.Stat{
 				{Type: utils.CreateStatType("Latency avg", shared.FlagState.TimeUnit, ""), Value: utils.FormatTime(latencyAvg, shared.FlagState.TimeUnit)},
 				{Type: "Latency RME (%)", Value: latencyRME, Symbol: "±"},

@@ -24,7 +24,7 @@ You can provide individual JSON files or directories containing JSON files.`,
 func init() {
 	rootCmd.AddCommand(mergeCmd)
 	mergeCmd.Flags().StringVarP(&shared.FlagState.TagAxis, "tag-axis", "A", "n",
-		"Where to inject tag: n (name), x (xAxis), y (yAxis)")
+		"Where to inject tag: n (name), x (xAxis), y (yAxis), z (zAxis)")
 }
 
 func runMerge(cmd *cobra.Command, args []string) {

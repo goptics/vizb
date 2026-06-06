@@ -10,6 +10,7 @@ type DataPoint struct {
 	Name  string `json:"name,omitempty"`
 	XAxis string `json:"xAxis,omitempty"`
 	YAxis string `json:"yAxis,omitempty"`
+	ZAxis string `json:"zAxis,omitempty"`
 	Stats []Stat `json:"stats"`
 }
 

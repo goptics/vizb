@@ -162,6 +162,8 @@ func dimFieldEmpty(item DataPoint, dim Dimension) bool {
 		return item.XAxis == ""
 	case DimensionYAxis:
 		return item.YAxis == ""
+	case DimensionZAxis:
+		return item.ZAxis == ""
 	default:
 		return item.Name == ""
 	}
@@ -175,6 +177,8 @@ func injectTag(item DataPoint, tag string, dim Dimension) DataPoint {
 		item.XAxis = applyInjection(item.XAxis, tag)
 	case DimensionYAxis:
 		item.YAxis = applyInjection(item.YAxis, tag)
+	case DimensionZAxis:
+		item.ZAxis = applyInjection(item.ZAxis, tag)
 	default:
 		item.Name = applyInjection(item.Name, tag)
 	}

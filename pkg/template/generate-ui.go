@@ -15,7 +15,9 @@ type PageData struct {
 }
 
 func renderPage(pd PageData, HTMLtemplate string) string {
-	tmpl, err := htmlTemplate.New("page").Parse(HTMLtemplate)
+	// Custom delimiters avoid clashing with echarts-gl's clay.gl GLSL shaders,
+	// which embed literal {{ }} sequences for shader loop unrolling.
+	tmpl, err := htmlTemplate.New("page").Delims("[[VIZB", "VIZB]]").Parse(HTMLtemplate)
 	if err != nil {
 		shared.ExitWithError("failed to parse HTML template:", err)
 	}

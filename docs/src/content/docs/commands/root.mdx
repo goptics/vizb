@@ -75,8 +75,7 @@ for how the format is chosen.
 | `--name` | `-n` | `Benchmarks` | Dataset name |
 | `--description` | `-d` | `""` | Dataset description |
 | `--tag` | `-t` | `""` | Tag identifier for release tracking |
-| `--group` | `-g` | *(none)* | Column/field names (CSV/JSON) merged into the group name, then parsed by `-p`/`-r` |
-| `--group-pattern` | `-p` | `x` | Pattern-based grouping (`n`/`x`/`y` with `/` or `_`) |
+| `--group-pattern` | `-p` | `x` | Pattern-based grouping (`n`/`x`/`y`/`z` with `/` or `_`; `z` → 3D) |
 | `--group-regex` | `-r` | `""` | Regex-based grouping (named captures) |
 | `--scale` | `-S` | `linear` | Scale type: `linear` or `log` |
 | `--sort` | `-s` | `""` | Sort order: `asc` or `desc` (default: as-is) |
@@ -112,14 +111,17 @@ vizb data.json -o output.html
 ### Grouping
 
 ```bash
-# Pattern grouping (slash-separated 3D data)
+# Pattern grouping (slash-separated multi-dimensional data)
 vizb bench.txt -p n/x/y -o output.html
+
+# 4D grouping → renders a 3D chart (z requires x and y)
+vizb bench.txt -p n/x/y/z -o output.html
 
 # Regex grouping
 vizb bench.txt -r '(?<n>.*)/text=(?<x>.*)/level=(?<y>.*)' -o output.html
 ```
 
-See the [Grouping Guide](/guides/grouping) for detailed examples.
+See the [Grouping Guide](/guides/grouping) and [3D Charts](/ui/3d-charts) for detailed examples.
 
 ### Logarithmic scale
 

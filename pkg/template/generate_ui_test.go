@@ -14,7 +14,7 @@ func TestGenerateHTMLBenchmarkUI(t *testing.T) {
 	originalOsExit := shared.OsExit
 	defer func() { shared.OsExit = originalOsExit }()
 
-	testTemplate := `<!DOCTYPE html><html><head><title>Test</title></head><body><script>window.VIZB_VERSION = {{ .Version }}; window.VIZB_DATA = {{ .Data }};</script></body></html>`
+	testTemplate := `<!DOCTYPE html><html><head><title>Test</title></head><body><script>window.VIZB_VERSION = [[VIZB .Version VIZB]]; window.VIZB_DATA = [[VIZB .Data VIZB]];</script></body></html>`
 
 	t.Run("Happy Path - Valid JSON", func(t *testing.T) {
 		exitCalled := false
@@ -59,7 +59,7 @@ func TestGenerateHTMLBenchmarkUI(t *testing.T) {
 		}
 
 		benchmarkJSON := []byte(`[{"name":"test","data":[]}]`)
-		invalidTemplate := `<!DOCTYPE html><html><body>{{ .InvalidField }}</body></html>`
+		invalidTemplate := `<!DOCTYPE html><html><body>[[VIZB .InvalidField VIZB]]</body></html>`
 
 		err := shared.WithSafe("GenerateHTMLBenchmarkUI", func() {
 			_ = GenerateHTMLBenchmarkUI(benchmarkJSON, invalidTemplate)
@@ -77,7 +77,7 @@ func TestGenerateHTMLBenchmarkUI(t *testing.T) {
 		}
 
 		benchmarkJSON := []byte(`[{"name":"test","data":[]}]`)
-		malformedTemplate := `<!DOCTYPE html><html><body>{{ .Version</body></html>`
+		malformedTemplate := `<!DOCTYPE html><html><body>[[VIZB .Version</body></html>`
 
 		err := shared.WithSafe("GenerateHTMLBenchmarkUI", func() {
 			_ = GenerateHTMLBenchmarkUI(benchmarkJSON, malformedTemplate)
