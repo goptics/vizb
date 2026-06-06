@@ -20,7 +20,7 @@ var divanRowRe = regexp.MustCompile(`^[├╰]─\s+(\S+)\s+(.+)$`)
 
 var divanValRe = regexp.MustCompile(`([\d.]+)\s*(ns|µs|μs|ms|s)`)
 
-func ParseDivanBenchmark(filename string) []shared.BenchmarkData {
+func ParseDivanBenchmark(filename string) []shared.DataPoint {
 	f, err := os.Open(filename)
 	if err != nil {
 		shared.ExitWithError("Error opening file", err)
@@ -28,7 +28,7 @@ func ParseDivanBenchmark(filename string) []shared.BenchmarkData {
 	defer f.Close()
 
 	scanner := bufio.NewScanner(f)
-	var results []shared.BenchmarkData
+	var results []shared.DataPoint
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -76,7 +76,7 @@ func ParseDivanBenchmark(filename string) []shared.BenchmarkData {
 
 		benchName, xAxis, yAxis := group["name"], group["xAxis"], group["yAxis"]
 
-		results = append(results, shared.BenchmarkData{
+		results = append(results, shared.DataPoint{
 			Name:  benchName,
 			XAxis: xAxis,
 			YAxis: yAxis,

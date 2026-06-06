@@ -6,7 +6,7 @@ type Stat struct {
 	Symbol string  `json:"symbol,omitempty"`
 }
 
-type BenchmarkData struct {
+type DataPoint struct {
 	Name  string `json:"name,omitempty"`
 	XAxis string `json:"xAxis,omitempty"`
 	YAxis string `json:"yAxis,omitempty"`
@@ -25,24 +25,24 @@ type HistoryEntry struct {
 	OS        string   `json:"os,omitempty"`
 }
 
-type Benchmark struct {
+type Dataset struct {
 	Tag         string         `json:"tag,omitempty"`
 	Timestamp   string         `json:"timestamp,omitempty"`
 	Name        string         `json:"name"`
 	History     []HistoryEntry `json:"history,omitempty"`
 	Description string         `json:"description,omitempty"`
 	CPU         CPUInfo        `json:"cpu"`
-	OS       string `json:"os,omitempty"`
-	Arch     string `json:"arch,omitempty"`
-	Pkg      string `json:"pkg,omitempty"`
-	Settings struct {
+	OS          string         `json:"os,omitempty"`
+	Arch        string         `json:"arch,omitempty"`
+	Pkg         string         `json:"pkg,omitempty"`
+	Settings    struct {
 		Charts []string `json:"charts"`
 		Sort   struct {
 			Enabled bool   `json:"enabled"`
 			Order   string `json:"order"`
 		} `json:"sort"`
 		ShowLabels bool   `json:"showLabels"`
-		Scale     string `json:"scale"`
+		Scale      string `json:"scale"`
 	} `json:"settings"`
-	Data []BenchmarkData `json:"data"`
+	Data []DataPoint `json:"data"`
 }

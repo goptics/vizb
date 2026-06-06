@@ -28,15 +28,15 @@ func TestMergeCmd(t *testing.T) {
 	defer os.RemoveAll(tmpDir)
 
 	// Create two dummy benchmark files
-	bench1 := shared.Benchmark{
+	bench1 := shared.Dataset{
 		Name: "Bench1",
-		Data: []shared.BenchmarkData{
+		Data: []shared.DataPoint{
 			{Name: "Test1", XAxis: "1", YAxis: "100"},
 		},
 	}
-	bench2 := shared.Benchmark{
+	bench2 := shared.Dataset{
 		Name: "Bench2",
-		Data: []shared.BenchmarkData{
+		Data: []shared.DataPoint{
 			{Name: "Test2", XAxis: "2", YAxis: "200"},
 		},
 	}
@@ -75,7 +75,7 @@ func TestMergeCmd(t *testing.T) {
 	content, err := os.ReadFile(outFile)
 	assert.NoError(t, err)
 
-	var parsed []shared.Benchmark
+	var parsed []shared.Dataset
 	assert.NoError(t, json.Unmarshal(content, &parsed))
 	assert.Len(t, parsed, 2)
 
@@ -103,9 +103,9 @@ func TestMergeCmd_Directory(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	bench1 := shared.Benchmark{
+	bench1 := shared.Dataset{
 		Name: "Bench1",
-		Data: []shared.BenchmarkData{{Name: "Test1"}},
+		Data: []shared.DataPoint{{Name: "Test1"}},
 	}
 	writeJSON(t, filepath.Join(tmpDir, "b1.json"), bench1)
 
@@ -127,7 +127,7 @@ func TestMergeCmd_Directory(t *testing.T) {
 	content, err := os.ReadFile(outFile)
 	assert.NoError(t, err)
 
-	var parsed []shared.Benchmark
+	var parsed []shared.Dataset
 	assert.NoError(t, json.Unmarshal(content, &parsed))
 	assert.Len(t, parsed, 1)
 	assert.Equal(t, "Bench1", parsed[0].Name)
@@ -147,9 +147,9 @@ func TestMergeCmd_ArrayInput(t *testing.T) {
 	defer os.RemoveAll(tmpDir)
 
 	// Single file with an array of 2 benchmarks
-	benches := []shared.Benchmark{
-		{Name: "Bench1", Data: []shared.BenchmarkData{{Name: "Test1", XAxis: "1", YAxis: "100"}}},
-		{Name: "Bench2", Data: []shared.BenchmarkData{{Name: "Test2", XAxis: "2", YAxis: "200"}}},
+	benches := []shared.Dataset{
+		{Name: "Bench1", Data: []shared.DataPoint{{Name: "Test1", XAxis: "1", YAxis: "100"}}},
+		{Name: "Bench2", Data: []shared.DataPoint{{Name: "Test2", XAxis: "2", YAxis: "200"}}},
 	}
 	writeJSON(t, filepath.Join(tmpDir, "array.json"), benches)
 
@@ -167,7 +167,7 @@ func TestMergeCmd_ArrayInput(t *testing.T) {
 	content, err := os.ReadFile(outFile)
 	assert.NoError(t, err)
 
-	var parsed []shared.Benchmark
+	var parsed []shared.Dataset
 	assert.NoError(t, json.Unmarshal(content, &parsed))
 	assert.Len(t, parsed, 2)
 
@@ -202,9 +202,9 @@ func TestMergeCmd_JSONOutput(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	bench1 := shared.Benchmark{
+	bench1 := shared.Dataset{
 		Name: "Bench1",
-		Data: []shared.BenchmarkData{
+		Data: []shared.DataPoint{
 			{Name: "Test1", XAxis: "1", YAxis: "100"},
 		},
 	}
@@ -224,7 +224,7 @@ func TestMergeCmd_JSONOutput(t *testing.T) {
 	content, err := os.ReadFile(outFile)
 	assert.NoError(t, err)
 
-	var parsed []shared.Benchmark
+	var parsed []shared.Dataset
 	assert.NoError(t, json.Unmarshal(content, &parsed))
 	assert.Len(t, parsed, 1)
 	assert.Equal(t, "Bench1", parsed[0].Name)
