@@ -1,39 +1,28 @@
 <script setup lang="ts">
-import { toRefs, ref, computed } from 'vue'
+import { toRefs, ref, computed, defineAsyncComponent, h } from 'vue'
 import type { EChartsOption } from 'echarts'
-import { use } from 'echarts/core'
-import { CanvasRenderer } from 'echarts/renderers'
-import { BarChart, LineChart, PieChart } from 'echarts/charts'
-import {
-  TitleComponent,
-  TooltipComponent,
-  LegendComponent,
-  GridComponent,
-  ToolboxComponent,
-} from 'echarts/components'
-import { Bar3DChart, Line3DChart, Scatter3DChart } from 'echarts-gl/charts'
-import { Grid3DComponent } from 'echarts-gl/components'
-import VChart from 'vue-echarts'
+import Chart2D from './Chart2D.vue'
 import { useChartOptions } from '../composables/useChartOptions'
 import type { ChartData } from '../types'
 import { useSettingsStore } from '../composables/useSettingsStore'
+import { is3D } from '../lib/utils'
 
-// Register ECharts components
-use([
-  CanvasRenderer,
-  BarChart,
-  LineChart,
-  PieChart,
-  Bar3DChart,
-  Line3DChart,
-  Scatter3DChart,
-  Grid3DComponent,
-  TitleComponent,
-  TooltipComponent,
-  LegendComponent,
-  GridComponent,
-  ToolboxComponent,
-])
+// Chart3D pulls in echarts-gl (the heavy clay.gl WebGL engine). Loading it via
+// defineAsyncComponent keeps it in its own rollup chunk that the browser only
+// parses when a 3D chart actually renders — the 2D-only path never pays for it.
+const ChartLoading = () => h('div', { class: 'h-[500px] animate-pulse rounded bg-muted' })
+const ChartLoadError = () =>
+  h(
+    'div',
+    { class: 'flex h-[500px] items-center justify-center text-sm text-muted-foreground' },
+    'Failed to load 3D chart'
+  )
+const Chart3D = defineAsyncComponent({
+  loader: () => import('./Chart3D.vue'),
+  loadingComponent: ChartLoading,
+  errorComponent: ChartLoadError,
+  delay: 0,
+})
 
 const props = defineProps<{
   chartData: ChartData
@@ -41,6 +30,9 @@ const props = defineProps<{
 
 // Convert props to refs
 const { chartData } = toRefs(props)
+
+// Drives which renderer mounts; only the 3D branch loads echarts-gl.
+const is3DChart = computed(() => is3D(chartData))
 
 // Pull settings from centralized store
 const { settings, chartType } = useSettingsStore()
@@ -61,7 +53,7 @@ const { options } = useChartOptions(
   chartType,
   scale,
   autoRotate,
-  visibleZ,
+  visibleZ
 )
 
 const initOptions = {
@@ -123,10 +115,17 @@ const mergedOptions = computed<EChartsOption>(() => {
     <h3 class="text-lg font-semibold text-card-foreground">
       {{ chartData.title }}
     </h3>
-    <VChart
+    <Chart3D
+      v-if="is3DChart"
       :option="mergedOptions"
       :init-options="initOptions"
-      :autoresize="true"
+      :class="isFullscreen ? 'h-[calc(100vh-4rem)]' : 'h-[500px]'"
+      @legendselectchanged="onLegendSelectChanged"
+    />
+    <Chart2D
+      v-else
+      :option="mergedOptions"
+      :init-options="initOptions"
       :class="isFullscreen ? 'h-[calc(100vh-4rem)]' : 'h-[500px]'"
       @legendselectchanged="onLegendSelectChanged"
     />

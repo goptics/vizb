@@ -1,6 +1,5 @@
 import { defineConfig, type PluginOption } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import { viteSingleFile } from 'vite-plugin-singlefile'
 import { createHtmlPlugin } from 'vite-plugin-html'
 import fs from 'node:fs'
 import zlib from 'node:zlib'
@@ -22,11 +21,14 @@ const inlineFaviconPlugin = (): PluginOption => {
       const href = link.getAttribute('href')
       if (!href) return html
 
-      // Try to resolve the file path, checking the public directory if needed
-      let faviconPath = path.resolve(__dirname, href)
+      // Strip the leading "/" so the href resolves relative to the project
+      // (path.resolve treats a leading slash as an absolute path and discards
+      // the base), checking the public directory if needed.
+      const relHref = href.replace(/^\//, '')
+      let faviconPath = path.resolve(__dirname, relHref)
 
       if (!fs.existsSync(faviconPath)) {
-        faviconPath = path.resolve(__dirname, 'public', href)
+        faviconPath = path.resolve(__dirname, 'public', relHref)
       }
 
       if (!fs.existsSync(faviconPath)) {
@@ -56,11 +58,17 @@ const appendVizbDataScriptTag = (html: string): string => {
   return '<!DOCTYPE html>' + document.documentElement.outerHTML
 }
 
-// echarts-gl bundles the clay.gl WebGL engine, inflating the single-file JS to
-// ~1.2MB. Store it gzip-compressed + base64 and inflate at runtime via the
-// browser's DecompressionStream, cutting the emitted HTML to ~0.5MB.
+// echarts-gl bundles the clay.gl WebGL engine, dominating the JS payload. The
+// build emits multiple ES module chunks (a 2D entry plus an async echarts-gl
+// chunk reached only when a 3D chart renders). This plugin inlines every chunk
+// as its own gzip+base64 blob and wires them together with a runtime import
+// map, so the browser parses/compiles only the entry on load and defers the gl
+// chunk's parse until its dynamic import() actually fires — while the output
+// stays a single self-contained HTML file.
 const compressBundlePlugin = (): PluginOption => {
-  const distHtmlPath = path.resolve(__dirname, 'dist/index.html')
+  const distDir = path.resolve(__dirname, 'dist')
+  const distHtmlPath = path.resolve(distDir, 'index.html')
+  const keyOf = (file: string) => `vizb:${file.replace(/\.js$/, '')}`
 
   return {
     name: 'compress-bundle',
@@ -69,35 +77,80 @@ const compressBundlePlugin = (): PluginOption => {
       if (!fs.existsSync(distHtmlPath)) return
 
       const html = fs.readFileSync(distHtmlPath, 'utf-8')
-      const match = html.match(/<script type=module[^>]*>([\s\S]*?)<\/script>/)
-      if (!match) {
-        console.warn('[compress-bundle] No module script found, skipping compression.')
-        return
+      const { document } = parseHTML(html)
+
+      // Inline the (single, cssCodeSplit:false) stylesheet, drop the <link>.
+      for (const link of Array.from(document.querySelectorAll('link[rel="stylesheet"]')) as any[]) {
+        const href = link.getAttribute('href')
+        if (!href) continue
+        const cssPath = path.resolve(distDir, href.replace(/^\//, ''))
+        if (fs.existsSync(cssPath)) {
+          const style = document.createElement('style')
+          style.textContent = fs.readFileSync(cssPath, 'utf-8')
+          link.replaceWith(style)
+        }
       }
 
-      const js = match[1] ?? ''
-      const b64 = zlib.gzipSync(Buffer.from(js, 'utf-8'), { level: 9 }).toString('base64')
+      const entryScript = document.querySelector('script[type="module"][src]')
+      if (!entryScript) {
+        console.warn('[compress-bundle] No entry module script found, skipping.')
+        return
+      }
+      const entrySrc = entryScript.getAttribute('src')!.replace(/^\//, '')
+      const entryFile = path.basename(entrySrc)
+      const assetsDir = path.resolve(distDir, path.dirname(entrySrc))
+      const chunkFiles = fs.readdirSync(assetsDir).filter((f) => f.endsWith('.js'))
 
-      // Module bootstrap (deferred, like the original entry): decode base64 ->
-      // gunzip -> import as a module blob. Deferral guarantees the VIZB_DATA
-      // script in <head> has run before the app module evaluates.
+      // gzip each chunk, rewriting rollup's relative sibling/dynamic-import
+      // specifiers ("./<chunk>.js") to stable import-map keys so they resolve
+      // through the runtime map regardless of the blob URLs assigned later.
+      const chunkData: Record<string, string> = {}
+      for (const file of chunkFiles) {
+        let code = fs.readFileSync(path.resolve(assetsDir, file), 'utf-8')
+        for (const other of chunkFiles) {
+          code = code.split(`./${other}`).join(keyOf(other))
+        }
+        chunkData[keyOf(file)] = zlib
+          .gzipSync(Buffer.from(code, 'utf-8'), { level: 9 })
+          .toString('base64')
+      }
+
+      // Classic (non-module) bootstrap: dynamically registering an import map is
+      // only permitted before the first module script is prepared, and classic
+      // scripts don't lock import-map acquisition. So we decode every chunk to a
+      // blob URL, register the map, then dynamically import the entry (which —
+      // and its lazy chunks — resolve through the map).
       const bootstrap =
-        `<script type=module>` +
+        `(async()=>{` +
         `console.time("parse");` +
-        `const b=Uint8Array.from(atob("${b64}"),c=>c.charCodeAt(0));` +
+        `const C=${JSON.stringify(chunkData)},m={};` +
+        `await Promise.all(Object.keys(C).map(async k=>{` +
+        `const b=new Uint8Array(await(await fetch("data:application/octet-stream;base64,"+C[k])).arrayBuffer());` +
         `const s=new Blob([b]).stream().pipeThrough(new DecompressionStream("gzip"));` +
         `const code=await new Response(s).text();` +
-        `const u=URL.createObjectURL(new Blob([code],{type:"text/javascript"}));` +
-        `await import(u);URL.revokeObjectURL(u);` +
+        `m[k]=URL.createObjectURL(new Blob([code],{type:"text/javascript"}))` +
+        `}));` +
+        `const im=document.createElement("script");im.type="importmap";` +
+        `im.textContent=JSON.stringify({imports:m});document.head.appendChild(im);` +
+        `await import(${JSON.stringify(keyOf(entryFile))});` +
         `console.timeEnd("parse")` +
-        `</script>`
+        `})()`
 
-      const compressed = html.slice(0, match.index) + bootstrap + html.slice(match.index! + match[0].length)
-      fs.writeFileSync(distHtmlPath, compressed, 'utf-8')
+      entryScript.remove()
+      const boot = document.createElement('script')
+      boot.textContent = bootstrap
+      document.body.appendChild(boot)
 
-      const originalKB = (Buffer.byteLength(html, 'utf-8') / 1024).toFixed(1)
-      const compressedKB = (Buffer.byteLength(compressed, 'utf-8') / 1024).toFixed(1)
-      console.info(`[compress-bundle] ${originalKB} KB → ${compressedKB} KB`)
+      const out = '<!DOCTYPE html>' + document.documentElement.outerHTML
+      fs.writeFileSync(distHtmlPath, out, 'utf-8')
+
+      const sizes = chunkFiles
+        .map((f) => `${f} ${(chunkData[keyOf(f)].length / 1024).toFixed(0)}KB(b64)`)
+        .join(', ')
+      const compressedKB = (Buffer.byteLength(out, 'utf-8') / 1024).toFixed(1)
+      console.info(
+        `[compress-bundle] ${chunkFiles.length} chunk(s) [${sizes}] → ${compressedKB} KB HTML`
+      )
     },
   }
 }
@@ -141,19 +194,25 @@ console.info('SINGLEFILE env var:', process.env.SINGLEFILE)
 const plugins: PluginOption[] = [vue()]
 
 if (singleFile) {
-  plugins.push(
-    inlineFaviconPlugin(),
-    viteSingleFile({
-      removeViteModuleLoader: true,
-      useRecommendedBuildConfig: true,
-    }),
-    compressBundlePlugin(),
-    benchmarkUiGoWrapperPlugin()
-  )
+  plugins.push(inlineFaviconPlugin(), compressBundlePlugin(), benchmarkUiGoWrapperPlugin())
 }
+
+// In single-file mode we own the inlining (compressBundlePlugin): keep CSS in
+// one file to inline, drop modulepreload (its dep arrays would defy the import
+// map), and inline any static assets so nothing external is referenced. Dynamic
+// imports are intentionally NOT inlined — that's what keeps echarts-gl in its
+// own lazily-parsed chunk.
+const singleFileBuild = singleFile
+  ? {
+      cssCodeSplit: false,
+      modulePreload: false as const,
+      assetsInlineLimit: 100_000_000,
+    }
+  : undefined
 
 // https://vite.dev/config/
 export default defineConfig({
+  build: singleFileBuild,
   plugins: [
     ...plugins,
     createHtmlPlugin({
