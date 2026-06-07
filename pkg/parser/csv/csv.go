@@ -65,7 +65,7 @@ func ParseCSV(filename string) []shared.DataPoint {
 	for _, row := range dataRows {
 		label := buildLabel(row, groupIdx)
 
-		var name, xAxis, yAxis string
+		var name, xAxis, yAxis, zAxis string
 		if label != "" {
 			if !parser.ShouldIncludeBenchmark(label) {
 				continue
@@ -76,7 +76,7 @@ func ParseCSV(filename string) []shared.DataPoint {
 				shared.ExitWithError("Error parsing CSV group name", gerr)
 			}
 
-			name, xAxis, yAxis = group["name"], group["xAxis"], group["yAxis"]
+			name, xAxis, yAxis, zAxis = group["name"], group["xAxis"], group["yAxis"], group["zAxis"]
 		}
 
 		var stats []shared.Stat
@@ -104,6 +104,7 @@ func ParseCSV(filename string) []shared.DataPoint {
 			Name:  name,
 			XAxis: xAxis,
 			YAxis: yAxis,
+			ZAxis: zAxis,
 			Stats: stats,
 		})
 	}

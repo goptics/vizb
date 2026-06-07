@@ -3,6 +3,7 @@ package parser
 import (
 	"testing"
 
+	"github.com/goptics/vizb/shared"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -443,6 +444,78 @@ func TestParseNameWithRegex(t *testing.T) {
 
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestGroupAxisLabels(t *testing.T) {
+	tests := []struct {
+		name     string
+		group    []string
+		pattern  string
+		regex    string
+		expected map[string]string
+	}{
+		{
+			name:     "x and y from group columns",
+			group:    []string{"region", "product"},
+			pattern:  "y/x",
+			expected: map[string]string{"yAxis": "region", "xAxis": "product"},
+		},
+		{
+			name:     "name x y z",
+			group:    []string{"vendor", "product", "region", "category"},
+			pattern:  "n/x/y/z",
+			expected: map[string]string{"name": "vendor", "xAxis": "product", "yAxis": "region", "zAxis": "category"},
+		},
+		{
+			name:     "single default pattern",
+			group:    []string{"product"},
+			pattern:  "x",
+			expected: map[string]string{"xAxis": "product"},
+		},
+		{
+			name:     "blank group entries skipped, align with pattern",
+			group:    []string{"", "region", " ", "product"},
+			pattern:  "y/x",
+			expected: map[string]string{"yAxis": "region", "xAxis": "product"},
+		},
+		{
+			name:     "more columns than pattern parts: extras ignored",
+			group:    []string{"region", "product", "extra"},
+			pattern:  "y/x",
+			expected: map[string]string{"yAxis": "region", "xAxis": "product"},
+		},
+		{
+			name:     "regex mode yields no labels",
+			group:    []string{"region", "product"},
+			regex:    `(?<y>.*)/(?<x>.*)`,
+			expected: map[string]string{},
+		},
+		{
+			name:     "no group columns yields no labels",
+			group:    nil,
+			pattern:  "y/x",
+			expected: map[string]string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			prevGroup := shared.FlagState.Group
+			prevPattern := shared.FlagState.GroupPattern
+			prevRegex := shared.FlagState.GroupRegex
+			t.Cleanup(func() {
+				shared.FlagState.Group = prevGroup
+				shared.FlagState.GroupPattern = prevPattern
+				shared.FlagState.GroupRegex = prevRegex
+			})
+
+			shared.FlagState.Group = tt.group
+			shared.FlagState.GroupPattern = tt.pattern
+			shared.FlagState.GroupRegex = tt.regex
+
+			assert.Equal(t, tt.expected, GroupAxisLabels())
 		})
 	}
 }
