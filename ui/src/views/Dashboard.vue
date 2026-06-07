@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Moon, Sun, Package } from 'lucide-vue-next'
-import { useBenchmarkData } from '../composables/useBenchmarkData'
+import { useDataPoint } from '../composables/useDataPoint'
 import { useChartData } from '../composables/useChartData'
 import { useSettingsStore } from '../composables/useSettingsStore'
 import { useDashboardInit } from '../composables/useDashboardInit'
 import ChartSettingsPopover from '../components/ChartSettingsPopover.vue'
 import ChartCard from '../components/ChartCard.vue'
-import BenchmarkHeader from '../components/BenchmarkHeader.vue'
+import DataSetHeader from '../components/DataSetHeader.vue'
 import LoadingSkeleton from '../components/LoadingSkeleton.vue'
 import LoadError from '../components/LoadError.vue'
 import AppFooter from '../components/AppFooter.vue'
@@ -17,19 +17,20 @@ const version = window.VIZB_VERSION || 'v0.0.0-dev'
 
 const {
   benchmarks,
-  activeBenchmark,
-  activeBenchmarkId,
-  selectBenchmark,
+  activeDataSet,
+  activeDataSetId,
+  selectDataSet,
   resultGroups,
   activeGroup,
   activeGroupId,
   selectGroup,
   loading,
   loadError,
-} = useBenchmarkData()
+} = useDataPoint()
 
 const activeResults = computed(() => activeGroup.value?.data || [])
-const { chartData } = useChartData(activeResults)
+const activeAxisLabels = computed(() => activeDataSet.value?.axisLabels)
+const { chartData } = useChartData(activeResults, activeAxisLabels)
 
 const { settings, toggleDark } = useSettingsStore()
 
@@ -39,8 +40,8 @@ useDashboardInit()
 <template>
   <nav class="fixed right-6 top-6 z-50 flex items-center gap-2">
     <IconButton
-      v-if="activeBenchmark?.pkg"
-      :href="`https://${activeBenchmark.pkg}`"
+      v-if="activeDataSet?.pkg"
+      :href="`https://${activeDataSet.pkg}`"
       aria-label="View Package Source"
     >
       <Package class="h-5 w-5" />
@@ -58,21 +59,21 @@ useDashboardInit()
 
   <LoadError v-else-if="loadError" :message="loadError" />
 
-  <main v-else-if="activeBenchmark" class="mx-auto min-h-screen max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-    <BenchmarkHeader
-      :benchmark="activeBenchmark"
+  <main v-else-if="activeDataSet" class="mx-auto min-h-screen max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <DataSetHeader
+      :benchmark="activeDataSet"
       :benchmarks="benchmarks"
-      :activeBenchmarkId="activeBenchmarkId"
+      :activeDataSetId="activeDataSetId"
       :resultGroups="resultGroups"
       :activeGroupId="activeGroupId"
-      @selectBenchmark="selectBenchmark"
+      @selectDataSet="selectDataSet"
       @selectGroup="selectGroup"
     />
 
     <div class="space-y-5">
       <ChartCard
         v-for="(chart, index) in chartData"
-        :key="`${activeBenchmarkId}-${activeGroupId}-${index}`"
+        :key="`${activeDataSetId}-${activeGroupId}-${index}`"
         :chartData="chart"
         class="animate-fade-in"
         :style="{ animationDelay: `${index * 50}ms` }"
@@ -80,5 +81,5 @@ useDashboardInit()
     </div>
   </main>
 
-  <AppFooter v-if="activeBenchmark && !loading && !loadError" :version="version" />
+  <AppFooter v-if="activeDataSet && !loading && !loadError" :version="version" />
 </template>

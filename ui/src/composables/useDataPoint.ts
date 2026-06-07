@@ -1,10 +1,10 @@
 import { ref, computed } from 'vue'
-import type { Benchmark, BenchmarkData } from '../types'
+import type { DataSet, DataPoint } from '../types'
 import { resetColor, isValidIndex } from '../lib/utils'
 import { useSettingsStore } from './useSettingsStore'
 import { DEFAULT_SETTINGS } from './constants'
 
-const getStatDimensions = (benchmarks: BenchmarkData[]) => {
+const getStatDimensions = (benchmarks: DataPoint[]) => {
   let dimension = 0
 
   if (benchmarks.some((b) => b.name)) dimension++
@@ -15,10 +15,10 @@ const getStatDimensions = (benchmarks: BenchmarkData[]) => {
   return dimension
 }
 
-const getBenchmarks = async (): Promise<Benchmark[]> => {
+const getDataSets = async (): Promise<DataSet[]> => {
   if (import.meta.env.DEV) {
     const data = await import('../data/sample.json')
-    return data.default as unknown as Benchmark[]
+    return data.default as unknown as DataSet[]
   }
 
   const url = window.VIZB_DATA_URL
@@ -32,13 +32,13 @@ const getBenchmarks = async (): Promise<Benchmark[]> => {
 }
 
 // Global state
-const benchmarks = ref<Benchmark[]>([])
-const activeBenchmarkId = ref(0)
+const benchmarks = ref<DataSet[]>([])
+const activeDataSetId = ref(0)
 const activeGroupId = ref(0)
 const loading = ref(true)
 const loadError = ref<string | null>(null)
 
-getBenchmarks()
+getDataSets()
   .then((data) => {
     benchmarks.value = data
   })
@@ -50,7 +50,7 @@ getBenchmarks()
   })
 
 // Process and group all benchmarks
-const benchmarksProcessed = computed<Benchmark[]>(() => {
+const benchmarksProcessed = computed<DataSet[]>(() => {
   if (!Array.isArray(benchmarks.value)) {
     benchmarks.value = [benchmarks.value]
   }
@@ -69,21 +69,21 @@ const benchmarksProcessed = computed<Benchmark[]>(() => {
   })
 })
 
-const activeBenchmarkDimension = computed(() =>
-  getStatDimensions(benchmarksProcessed.value[activeBenchmarkId.value]?.data ?? [])
+const activeDataSetDimension = computed(() =>
+  getStatDimensions(benchmarksProcessed.value[activeDataSetId.value]?.data ?? [])
 )
 
-const activeBenchmark = computed(
-  () => benchmarksProcessed.value[activeBenchmarkId.value] || benchmarksProcessed.value[0]
+const activeDataSet = computed(
+  () => benchmarksProcessed.value[activeDataSetId.value] || benchmarksProcessed.value[0]
 )
 
 // Group results within the active benchmark
 const grouped = computed(() => {
-  if (!activeBenchmark.value) return new Map<string, BenchmarkData[]>()
+  if (!activeDataSet.value) return new Map<string, DataPoint[]>()
 
-  const groupMap = new Map<string, BenchmarkData[]>()
+  const groupMap = new Map<string, DataPoint[]>()
 
-  for (const benchmarkData of activeBenchmark.value.data) {
+  for (const benchmarkData of activeDataSet.value.data) {
     const { name = 'Default', ...rest } = benchmarkData
 
     if (!groupMap.has(name)) {
@@ -100,12 +100,12 @@ const grouped = computed(() => {
 const benchmarkGroups = computed(() =>
   Array.from(grouped.value.entries()).map(([name, data]) => ({
     name,
-    description: activeBenchmark.value?.description || '',
+    description: activeDataSet.value?.description || '',
     cpu: {
-      name: activeBenchmark.value?.cpu?.name || '',
-      cores: activeBenchmark.value?.cpu?.cores || 0,
+      name: activeDataSet.value?.cpu?.name || '',
+      cores: activeDataSet.value?.cpu?.cores || 0,
     },
-    settings: activeBenchmark.value?.settings || DEFAULT_SETTINGS,
+    settings: activeDataSet.value?.settings || DEFAULT_SETTINGS,
     data,
   }))
 )
@@ -114,19 +114,19 @@ const activeGroup = computed(
   () => benchmarkGroups.value[activeGroupId.value] || benchmarkGroups.value[0]
 )
 
-const { initializeFromBenchmark } = useSettingsStore()
+const { initializeFromDataSet } = useSettingsStore()
 
-const selectBenchmark = (id: number) => {
+const selectDataSet = (id: number) => {
   if (isValidIndex(id, benchmarks.value.length)) {
     resetColor()
 
     const currentGroupName = activeGroup.value?.name
 
-    activeBenchmarkId.value = id
+    activeDataSetId.value = id
 
     const benchmark = benchmarks.value[id]
     if (benchmark?.settings) {
-      initializeFromBenchmark(benchmark.settings, true)
+      initializeFromDataSet(benchmark.settings, true)
     }
 
     const newGroupIndex = benchmarkGroups.value.findIndex((g) => g.name === currentGroupName)
@@ -145,13 +145,13 @@ const selectGroup = (id: number) => {
   }
 }
 
-export function useBenchmarkData() {
+export function useDataPoint() {
   return {
     benchmarks,
-    activeBenchmark,
-    activeBenchmarkId,
-    activeBenchmarkDimension,
-    selectBenchmark,
+    activeDataSet,
+    activeDataSetId,
+    activeDataSetDimension,
+    selectDataSet,
 
     resultGroups: benchmarkGroups,
     activeGroup,

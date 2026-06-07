@@ -23,7 +23,7 @@ jobs:
       matrix:
         include:
           - output: 00-decode
-            bench-file: 00-decode-encode
+            file: 00-decode-encode
             name: "Decode"
             description: "Decode Performance Comparison"
             group-regex: "/text=(?<n>.*)/level=(?<x>.*)/size=(?<y>.*)"
@@ -31,7 +31,7 @@ jobs:
             scale: "log"
 
           - output: 01-encode
-            bench-file: 00-decode-encode
+            file: 00-decode-encode
             name: "Encode"
             description: "Encode Performance Comparison"
             group-regex: "/text=(?<n>.*)/level=(?<x>.*)/size=(?<y>.*)"
@@ -39,42 +39,42 @@ jobs:
             scale: "log"
 
           - output: 02-hash
-            bench-file: 01-hash
+            file: 01-hash
             name: "Hashing"
             description: "Comparison of different hash functions"
             group-regex: "Hashing64(?<x>.*)"
             scale: "log"
 
           - output: 03-http-routing
-            bench-file: 02-http-routing
+            file: 02-http-routing
             name: "HTTP Routing"
             description: "Performance comparison of popular Go HTTP Routers"
             group-pattern: "x_n"
             scale: "log"
 
           - output: 04-serialization
-            bench-file: 03-serialization
+            file: 03-serialization
             name: "Serialization"
             description: "Comparison of different serialization methods"
             group-regex: "(?<x>.*)By(?<y>.*)"
             scale: "log"
 
           - output: 05-validator
-            bench-file: 04-validator
+            file: 04-validator
             name: "Validator"
             description: ""
             group-regex: "(?<y>.*?)(?:(?<x>Success|Failure)(?<n>.*)|$)"
             scale: "log"
 
           - output: 06-varmq
-            bench-file: 05-varmq
+            file: 05-varmq
             name: "Varmq"
             description: "Variadic Queue Benchmark"
             group-pattern: "x/y"
             scale: "log"
 
           - output: 07-worker-pools
-            bench-file: 06-worker-pools
+            file: 06-worker-pools
             name: "Worker Pools"
             description: "Performance comparison of different worker pool implementations"
             group-pattern: "n/y/x"
@@ -86,7 +86,7 @@ jobs:
       - name: ${{ matrix.name }}
         uses: ./
         with:
-          bench-file: examples/go/${{ matrix.bench-file }}.txt
+          file: examples/go/${{ matrix.file }}.txt
           name: ${{ matrix.name }}
           description: ${{ matrix.description }}
           group-pattern: ${{ matrix.group-pattern }}

@@ -20,7 +20,7 @@ inputs:
     default: ""
   name:
     description: "Dataset/benchmark name (-n flag)"
-    default: "Benchmarks"
+    default: "Comparisons"
   description:
     description: "Dataset/benchmark description (-d flag)"
     default: ""

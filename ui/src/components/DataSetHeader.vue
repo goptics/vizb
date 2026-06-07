@@ -1,25 +1,25 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { Benchmark } from '../types'
+import type { DataSet } from '../types'
 import CpuBadge from './CpuBadge.vue'
 import OsBadge from './OsBadge.vue'
 import TimestampBadge from './TimestampBadge.vue'
 import GroupSelector from './Selector.vue'
 
 const props = defineProps<{
-  benchmark: Benchmark
+  benchmark: DataSet
   benchmarks: { name: string }[]
-  activeBenchmarkId: number
+  activeDataSetId: number
   resultGroups: { name: string }[]
   activeGroupId: number
 }>()
 
 const emit = defineEmits<{
-  selectBenchmark: [id: number]
+  selectDataSet: [id: number]
   selectGroup: [id: number]
 }>()
 
-const mainTitle = computed(() => props.benchmarks[0]?.name || 'Benchmarks')
+const mainTitle = computed(() => props.benchmarks[0]?.name || 'DataSets')
 const hasCPU = computed(() => props.benchmark.cpu?.name || props.benchmark.cpu?.cores)
 const hasOS = computed(() => props.benchmark.os)
 </script>
@@ -29,10 +29,10 @@ const hasOS = computed(() => props.benchmark.os)
     <GroupSelector
       v-if="benchmarks.length > 1"
       :items="benchmarks"
-      :activeId="activeBenchmarkId"
-      @select="emit('selectBenchmark', $event)"
+      :activeId="activeDataSetId"
+      @select="emit('selectDataSet', $event)"
       class="mx-auto min-w-80"
-      placeholder="Search Benchmark..."
+      placeholder="Search DataSet..."
       notFoundText="No benchmark found."
     />
 

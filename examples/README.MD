@@ -29,7 +29,7 @@ Push changes to `examples/{go,javascript,rust}/` to trigger a per-language CI pi
 
 ```yaml
 - output: my-benchmark
-  bench-file: my-benchmark.txt
+  file: my-benchmark.txt
   name: "My Benchmark"
   description: "What this benchmark measures"
   group-pattern: "x/y"      # or group-regex for regex grouping

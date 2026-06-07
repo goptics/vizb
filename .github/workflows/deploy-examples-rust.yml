@@ -23,14 +23,14 @@ jobs:
       matrix:
         include:
           - output: 00-criterion
-            bench-file: 00-criterion
+            file: 00-criterion
             name: "Bubble vs Insertion Sort (Criterion)"
             group-regex: "(?<x>.*)/n=(?<y>.*)"
             scale: "log"
             parser: rs:criterion
 
           - output: 01-divan
-            bench-file: 01-divan
+            file: 01-divan
             name: "Bubble vs Insertion Sort (Divan)"
             group-pattern: "x__y"
             scale: "log"
@@ -43,7 +43,7 @@ jobs:
       - name: ${{ matrix.name }}
         uses: ./
         with:
-          bench-file: examples/rust/${{ matrix.bench-file }}.txt
+          file: examples/rust/${{ matrix.file }}.txt
           name: ${{ matrix.name }}
           group-pattern: ${{ matrix.group-pattern }}
           group-regex: ${{ matrix.group-regex }}
@@ -59,7 +59,7 @@ jobs:
           path: ${{ matrix.output }}.json
 
   merge-deploy:
-    name: Merge Javascript Benchmarks
+    name: Merge Rust Benchmarks
     needs: convert
     permissions:
       contents: write

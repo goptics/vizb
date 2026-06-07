@@ -83,11 +83,13 @@ const compressBundlePlugin = (): PluginOption => {
       // script in <head> has run before the app module evaluates.
       const bootstrap =
         `<script type=module>` +
+        `console.time("parse");` +
         `const b=Uint8Array.from(atob("${b64}"),c=>c.charCodeAt(0));` +
         `const s=new Blob([b]).stream().pipeThrough(new DecompressionStream("gzip"));` +
         `const code=await new Response(s).text();` +
         `const u=URL.createObjectURL(new Blob([code],{type:"text/javascript"}));` +
         `await import(u);URL.revokeObjectURL(u);` +
+        `console.timeEnd("parse")` +
         `</script>`
 
       const compressed = html.slice(0, match.index) + bootstrap + html.slice(match.index! + match[0].length)

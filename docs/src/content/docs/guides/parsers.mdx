@@ -191,7 +191,7 @@ from.
 Want to add support for a benchmark framework or language not listed here? Parser contributions are welcome. Here's what the process looks like:
 
 1. **Choose a key** following the `<lang>:<framework>` convention (e.g., `py:pytest`, `java:jmh`)
-2. **Implement a parse function** that extracts `[]shared.BenchmarkData` from the framework's output
+2. **Implement a parse function** that extracts `[]shared.DataPoint` from the framework's output
 3. **Register it** via `parser.Register("your-key", YourParseFunc)` in an `init()` block
 4. **Add tests** with real output samples and edge cases
 5. **Open a PR** on [GitHub](https://github.com/goptics/vizb) — the existing parsers in `pkg/parser/` are good references to follow

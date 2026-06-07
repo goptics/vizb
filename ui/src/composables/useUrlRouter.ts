@@ -2,7 +2,7 @@ import { watch } from 'vue'
 import type { SortOrder, ChartType, ScaleType } from '../types'
 import { SORT_ORDERS, SCALE_TYPES } from '../types'
 import { useSettingsStore } from './useSettingsStore'
-import { useBenchmarkData } from './useBenchmarkData'
+import { useDataPoint } from './useDataPoint'
 import { DEFAULT_SETTINGS } from './constants'
 import { isValidIndex } from '../lib/utils'
 
@@ -65,19 +65,19 @@ export function useUrlRouter() {
   const {
     benchmarks,
     resultGroups,
-    activeBenchmarkId,
+    activeDataSetId,
     activeGroupId,
-    selectBenchmark,
+    selectDataSet,
     selectGroup,
-  } = useBenchmarkData()
+  } = useDataPoint()
 
   /**
    * Apply parsed URL params to app state
    * Order matters: select benchmark/group first, then apply settings on top
    */
   const applyParams = (params: UrlParams) => {
-    // 1. Benchmark ID - apply first since it resets settings
-    applyIndexParam(params.b, benchmarks.value.length, selectBenchmark)
+    // 1. DataSet ID - apply first since it resets settings
+    applyIndexParam(params.b, benchmarks.value.length, selectDataSet)
 
     // 2. Group ID - depends on benchmark selection
     applyIndexParam(params.g, resultGroups.value.length, selectGroup)
@@ -135,9 +135,9 @@ export function useUrlRouter() {
       params.sc = settings.scale
     }
 
-    // Benchmark ID - only include if not first
-    if (activeBenchmarkId.value > 0) {
-      params.b = activeBenchmarkId.value.toString()
+    // DataSet ID - only include if not first
+    if (activeDataSetId.value > 0) {
+      params.b = activeDataSetId.value.toString()
     }
 
     // Group ID - only include if not first
@@ -168,7 +168,7 @@ export function useUrlRouter() {
         showLabels: settings.showLabels,
         chartIndex: settings.activeChartIndex,
         scale: settings.scale,
-        benchmarkId: activeBenchmarkId.value,
+        benchmarkId: activeDataSetId.value,
         groupId: activeGroupId.value,
       }),
       () => syncUrlToState(),

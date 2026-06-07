@@ -28,7 +28,7 @@ go test -bench .  →  raw text  →  parser  →  Dataset struct  →  JSON / H
   - parser/
     - registry.go        Parser registration (ParseFunc, Parsers map)
     - detect.go          DetectParser — content-based format auto-detection
-    - bench_data.go      ParseBenchmarkData, ConvertGoJsonBenchToText
+    - bench_data.go      ParseDataPoint, ConvertGoJsonBenchToText
     - parse_pattern.go   GroupBenchmarkName, ParseBenchmarkNameWithRegex
     - golang/            Go testing.B parser (default)
     - javascript/        Vitest and TinyBench parsers

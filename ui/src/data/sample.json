@@ -1,6 +1,6 @@
 [
   {
-    "name": "HTTP Routing Benchmarks",
+    "name": "HTTP Routing DataSets",
     "description": "Performance comparison of popular Go HTTP Routers",
     "pkg": "github.com/gin-gonic/go-http-routing-benchmark",
     "timestamp": "2025-11-15T10:30:00Z",
@@ -10388,7 +10388,7 @@
     ]
   },
   {
-    "name": "Worker Pool Benchmarks",
+    "name": "Worker Pool DataSets",
     "description": "Performance comparison of different worker pool implementations",
     "cpu": {
       "name": "Intel Core i9-13900K @ 5.8GHz",
@@ -13336,7 +13336,7 @@
   },
   {
     "name": "VarMQ",
-    "description": "Variadic Queue Benchmark",
+    "description": "Variadic Queue DataSet",
     "cpu": {
       "name": "13th Gen Intel(R) Core(TM) i7-13700",
       "cores": 24

@@ -28,7 +28,8 @@ export function createAxisConfig(
   styling: ChartStyling,
   xAxisData: string[],
   scale: ScaleType = 'linear',
-  minValue?: number
+  minValue?: number,
+  xAxisName?: string
 ): { xAxis: any; yAxis: any } {
   const yAxisConfig: any = {
     type: scale === 'log' ? 'log' : 'value',
@@ -57,6 +58,16 @@ export function createAxisConfig(
     xAxis: {
       type: 'category',
       data: xAxisData,
+      // Group/axis label (e.g. "category") under the category axis, when known.
+      // Bold + extra gap so it clears the (often rotated) tick labels.
+      ...(xAxisName
+        ? {
+            name: xAxisName,
+            nameLocation: 'middle',
+            nameGap: 45,
+            nameTextStyle: { color: styling.textColor, fontSize, fontWeight: 'bold' },
+          }
+        : {}),
       axisLabel: {
         interval: 0,
         rotate: xAxisData.reduce((acc, cur) => acc + cur.length, 0) > 100 ? 30 : 0,
@@ -74,7 +85,7 @@ export function createAxisConfig(
 /**
  * Format a tooltip value, showing 0 for null/undefined values
  */
-function formatTooltipValue(value: any): string {
+export function formatTooltipValue(value: any): string {
   if (value === null || value === undefined) return '0'
   if (typeof value === 'number') return String(Math.round(value * 100) / 100)
   return String(value)
@@ -187,13 +198,25 @@ export function createLegendConfig(
 /**
  * Creates common grid configuration
  */
+// Header centered above the legend, naming the dimension the legend encodes
+// (the y group on 2D bar/line). ECharts legends have no native title.
+export function makeLegendTitle(text: string, styling: ChartStyling): any {
+  return {
+    text,
+    left: 'center',
+    top: 0,
+    textStyle: { color: styling.textColor, fontSize, fontWeight: 'bold' },
+  }
+}
+
 export function createGridConfig(seriesLength = 1): any {
   const legendSpace = Math.min(15 + Math.floor((seriesLength - 1) / 15) * 2, 35)
 
   return {
     left: '3%',
     right: '3%',
-    bottom: '10%',
+    // Extra bottom room so a category-axis name (group label) isn't clipped.
+    bottom: '13%',
     top: `${legendSpace}%`,
     containLabel: true,
   }

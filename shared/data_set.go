@@ -19,6 +19,16 @@ type CPUInfo struct {
 	Cores int    `json:"cores,omitempty"`
 }
 
+// AxisLabels holds the human-readable name of each dimension, derived from the
+// --group column names + --group-pattern. Name is kept (though not rendered as
+// an axis) so the UI swap feature can rotate it onto x/y/z carrying its label.
+type AxisLabels struct {
+	Name string `json:"name,omitempty"`
+	X    string `json:"x,omitempty"`
+	Y    string `json:"y,omitempty"`
+	Z    string `json:"z,omitempty"`
+}
+
 type HistoryEntry struct {
 	Tag       string   `json:"tag"`
 	Timestamp string   `json:"timestamp"`
@@ -45,5 +55,6 @@ type Dataset struct {
 		ShowLabels bool   `json:"showLabels"`
 		Scale      string `json:"scale"`
 	} `json:"settings"`
-	Data []DataPoint `json:"data"`
+	AxisLabels AxisLabels  `json:"axisLabels"`
+	Data       []DataPoint `json:"data"`
 }

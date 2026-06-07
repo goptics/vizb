@@ -23,7 +23,7 @@ jobs:
       matrix:
         include:
           - output: sales
-            bench-file: sales
+            file: sales
             name: "Sales data Visualization from JSON file"
             group: "product,region,category"
             group-pattern: n/x/y
@@ -36,7 +36,7 @@ jobs:
       - name: ${{ matrix.name }}
         uses: ./
         with:
-          bench-file: examples/json/${{ matrix.bench-file }}.json
+          file: examples/json/${{ matrix.file }}.json
           name: ${{ matrix.name }}
           group-pattern: ${{ matrix.group-pattern }}
           scale: ${{ matrix.scale }}

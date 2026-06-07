@@ -1,8 +1,8 @@
-import type { Benchmark } from './types'
+import type { DataSet } from './types'
 
 declare global {
   interface Window {
-    VIZB_DATA: Benchmark[]
+    VIZB_DATA: DataSet[]
     VIZB_VERSION: string
     VIZB_DATA_URL?: string
   }

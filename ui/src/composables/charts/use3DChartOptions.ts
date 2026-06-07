@@ -14,19 +14,38 @@ function mapPoints(
   points: Point3D[],
   z: string,
   xIndex: Map<string, number>,
-  yIndex: Map<string, number>
+  yIndex: Map<string, number>,
+  fillGrid: boolean
 ) {
-  return points
-    .filter((p) => p.zAxis === z)
-    .map((p) => ({ value: [xIndex.get(p.xAxis), yIndex.get(p.yAxis), p.value] }))
-}
-
-function makeLabel(
-  show: boolean,
-  textColor: string,
-  formatter: (p: { value: number[] }) => string
-) {
-  return { show, fontSize: 12, textStyle: { color: textColor }, formatter }
+  // Aggregate per (x,y) cell: generic tabular data has many rows sharing the
+  // same (x,y,z), and emitting one bar per row stacks coplanar boxes at the
+  // same position → WebGL z-fighting (stippled patches). Sum into one bar/cell.
+  const cells = new Map<string, number>()
+  for (const p of points) {
+    if (p.zAxis !== z) continue
+    const xi = xIndex.get(p.xAxis)
+    const yi = yIndex.get(p.yAxis)
+    if (xi === undefined || yi === undefined) continue
+    cells.set(`${xi},${yi}`, (cells.get(`${xi},${yi}`) ?? 0) + p.value)
+  }
+  // bar3D: emit a full (x,y) grid, filling absent cells with 0. Stacked bar3D
+  // derives each segment's base from the previous series at the same cell; a
+  // sparse series misaligns that base → floating segments. A complete grid keeps
+  // stacks seated (0-height bars are invisible, so empty columns stay empty).
+  // line3D: keep sparse — a 0-grid would drag every line down to the floor.
+  if (!fillGrid) {
+    return Array.from(cells, ([key, value]) => {
+      const [xi, yi] = key.split(',').map(Number)
+      return { value: [xi, yi, value] }
+    })
+  }
+  const grid: { value: number[] }[] = []
+  for (const xi of xIndex.values()) {
+    for (const yi of yIndex.values()) {
+      grid.push({ value: [xi, yi, cells.get(`${xi},${yi}`) ?? 0] })
+    }
+  }
+  return grid
 }
 
 function makeAxisCommon(styling: ChartStyling) {
@@ -36,8 +55,19 @@ function makeAxisCommon(styling: ChartStyling) {
   }
 }
 
+// Axis name block for a 3D axis (bold + gap so it clears the tick labels and
+// reads as a title, not another tick). Returns {} when no label is known.
+function axis3DName(label: string | undefined, styling: ChartStyling) {
+  if (!label) return {}
+  return {
+    name: label,
+    nameGap: 25,
+    nameTextStyle: { color: styling.textColor, fontSize: 14, fontWeight: 'bold' as const },
+  }
+}
+
 export function use3DChartOptions(config: BaseChartConfig, seriesType: Series3DType) {
-  const { chartData, sort, showLabels, isDark, autoRotate, visibleZ } = config
+  const { chartData, sort, isDark, autoRotate, visibleZ } = config
 
   const options = computed<EChartsOption>(() => {
     const styling = getChartStyling(isDark.value)
@@ -54,15 +84,6 @@ export function use3DChartOptions(config: BaseChartConfig, seriesType: Series3DT
     let yValues = Array.from(new Set(points.map((p) => p.yAxis)))
     let zValues = chartData.value.zAxis.filter((z) => z !== '')
 
-    // Marginal totals per category (sum over the other two visible axes).
-    const sumByKey = (key: 'xAxis' | 'yAxis') => {
-      const t = new Map<string, number>()
-      for (const p of aggPoints) t.set(p[key], (t.get(p[key]) ?? 0) + p.value)
-      return t
-    }
-    const xTotals = sumByKey('xAxis')
-    const yTotals = sumByKey('yAxis')
-
     if (sort.value.enabled) {
       xValues = sortByAxisTotal(xValues, 'xAxis', points, sort.value.order)
       yValues = sortByAxisTotal(yValues, 'yAxis', points, sort.value.order)
@@ -72,54 +93,37 @@ export function use3DChartOptions(config: BaseChartConfig, seriesType: Series3DT
     const xIndex = new Map(xValues.map((v, i) => [v, i]))
     const yIndex = new Map(yValues.map((v, i) => [v, i]))
 
-    // Precompute per-cell aggregates so tooltip hover is O(1), not O(points):
-    // cellTotals = stacked height (Σ over z); cellZ = z→value for the breakdown.
-    const cellTotals = new Map<string, number>()
-    const cellZ = new Map<string, Map<string, number>>()
-    for (const p of aggPoints) {
-      const key = `${xIndex.get(p.xAxis)},${yIndex.get(p.yAxis)}`
-      cellTotals.set(key, (cellTotals.get(key) ?? 0) + p.value)
-      let zmap = cellZ.get(key)
-      if (!zmap) {
-        zmap = new Map()
-        cellZ.set(key, zmap)
-      }
-      zmap.set(p.zAxis, (zmap.get(p.zAxis) ?? 0) + p.value)
-    }
-
-    const series = zValues.map((z, zi) => ({
+    const series = zValues.map((z) => ({
       name: z,
       type: seriesType,
       ...(seriesType === 'bar3D'
         ? { stack: 'z', bevelSize: 0.4, bevelSmoothness: 4 }
         : { lineStyle: { width: 2 } }),
-      data: mapPoints(points, z, xIndex, yIndex),
+      data: mapPoints(points, z, xIndex, yIndex, seriesType === 'bar3D'),
       itemStyle: { color: getNextColorFor(z) },
       shading: 'lambert',
-      label: makeLabel(
-        showLabels.value && seriesType === 'bar3D' && zi === zValues.length - 1,
-        styling.textColor,
-        ({ value: [xi = 0, yi = 0] }) => {
-          const total = cellTotals.get(`${xi},${yi}`)
-          return total === undefined ? '' : String(round2(total))
-        }
-      ),
-      emphasis: { disabled: true },
+      // No data labels: the z axis always exists here, so every value is already in
+      // the tooltip — numbers on bars/points only clutter the 3D scene (and stacked
+      // bar3D labels paint unreliably on sparse 4D anyway).
+      label: { show: false },
+      // echarts-gl ignores emphasis.disabled and shows the value label on hover by
+      // default; kill it explicitly so the tooltip stays the only source of values.
+      emphasis: { label: { show: false } },
     }))
 
-    // line3D can't render vertex markers or labels itself — scatter3D overlay handles both.
+    // line3D can't draw its own vertex markers → overlay scatter3D dots so the data
+    // points are visible (labels off; values live in the tooltip). bar3D needs no
+    // overlay.
     const labelSeries =
       seriesType === 'line3D'
         ? zValues.map((z) => ({
             name: z,
             type: 'scatter3D',
-            data: mapPoints(points, z, xIndex, yIndex),
+            data: mapPoints(points, z, xIndex, yIndex, false),
             symbolSize: 10,
             itemStyle: { color: getNextColorFor(z) },
-            label: makeLabel(showLabels.value, styling.textColor, ({ value: [, , v] }) =>
-              v === undefined ? '' : String(round2(v))
-            ),
-            emphasis: { disabled: true },
+            label: { show: false },
+            emphasis: { label: { show: false } },
           }))
         : []
 
@@ -129,28 +133,45 @@ export function use3DChartOptions(config: BaseChartConfig, seriesType: Series3DT
       const [xi = 0, yi = 0] = params.value
       const xName = xValues[xi]
       const yName = yValues[yi]
-      const key = `${xi},${yi}`
-      const zmap = cellZ.get(key)
+
+      // Aggregate on demand for the hovered cell only — one pass over the visible
+      // points yields this cell's per-z breakdown, its Σz, and the x/y marginals.
+      // Hovers are rare next to cell count, so computing here beats precomputing
+      // every cell's sums up front.
+      const zmap = new Map<string, number>()
+      let cellTotal = 0
+      let xMarginal = 0
+      let yMarginal = 0
+      for (const p of aggPoints) {
+        const onX = p.xAxis === xName
+        const onY = p.yAxis === yName
+        if (onX) xMarginal += p.value
+        if (onY) yMarginal += p.value
+        if (onX && onY) {
+          zmap.set(p.zAxis, (zmap.get(p.zAxis) ?? 0) + p.value)
+          cellTotal += p.value
+        }
+      }
+
       const rows = zValues
         .map((z) => {
-          const v = zmap?.get(z)
+          const v = zmap.get(z)
           if (v === undefined) return ''
           const dot = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${getNextColorFor(z)};margin-right:6px"></span>`
           return `${dot}${z}: <b>${round2(v)}</b>`
         })
         .filter(Boolean)
 
-      // Σ over z = stacked bar height at this (x,y). First line under the
-      // divider, above the x/y marginals, when there's more than one z to sum.
-      const zSumLine =
-        zmap && zmap.size > 1 ? `Σ z: <b>${round2(cellTotals.get(key) ?? 0)}</b><br/>` : ''
+      // Σ over z = stacked bar height at this (x,y). First line under the divider,
+      // above the x/y marginals, when there's more than one z to sum.
+      const zSumLine = zmap.size > 1 ? `Σ z: <b>${round2(cellTotal)}</b><br/>` : ''
 
       // Marginal totals: sum over the other two axes for this x / this y.
       const margins =
         tooltipDivider(isDark.value) +
         zSumLine +
-        `Σ ${xName}: <b>${round2(xTotals.get(xName ?? '') ?? 0)}</b><br/>` +
-        `Σ ${yName}: <b>${round2(yTotals.get(yName ?? '') ?? 0)}</b>`
+        `Σ ${xName}: <b>${round2(xMarginal)}</b><br/>` +
+        `Σ ${yName}: <b>${round2(yMarginal)}</b>`
 
       return `<b>${xName} / ${yName}</b><br/>${rows.join('<br/>')}${margins}`
     }
@@ -173,9 +194,26 @@ export function use3DChartOptions(config: BaseChartConfig, seriesType: Series3DT
         ...getTooltipTheme(isDark.value),
         formatter: tooltipFormatter,
       },
-      xAxis3D: { type: 'category', data: xValues, ...axisCommon },
-      yAxis3D: { type: 'category', data: yValues, ...axisCommon },
-      zAxis3D: { type: 'value', ...axisCommon },
+      xAxis3D: {
+        type: 'category',
+        data: xValues,
+        ...axisCommon,
+        ...axis3DName(chartData.value.axisLabels?.x, styling),
+      },
+      yAxis3D: {
+        type: 'category',
+        data: yValues,
+        ...axisCommon,
+        ...axis3DName(chartData.value.axisLabels?.y, styling),
+      },
+      zAxis3D: {
+        type: 'value',
+        ...axisCommon,
+        // The vertical axis is the only free spatial axis for the z group, so its
+        // label rides here inside the canvas — matching x/y axis names. The ticks
+        // remain the metric value; the legend still lists the z categories.
+        ...axis3DName(chartData.value.axisLabels?.z, styling),
+      },
       grid3D: {
         boxWidth: 100,
         boxDepth: 100,

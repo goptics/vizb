@@ -8,6 +8,7 @@ import {
   createLegendConfig,
   createTooltipConfig,
   getChartStyling,
+  makeLegendTitle,
 } from './shared'
 import {
   useSortedSeriesData,
@@ -36,7 +37,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
         grid: createGridConfig(1),
         tooltip: createTooltipConfig(false, 1, isDark.value),
         legend: { show: false },
-        ...createAxisConfig(styling, xAxisData, effectiveScale, minValue),
+        ...createAxisConfig(styling, xAxisData, effectiveScale, minValue, chartData.value.axisLabels?.x),
         series: [
           {
             name: chartData.value.title,
@@ -73,8 +74,13 @@ export function useBarChartOptions(config: BaseChartConfig) {
     const hasMultipleSeries = transposedSeries.length > 1
     const seriesTotals = computeSeriesTotals(transposedSeries)
 
+    // The legend encodes the y group; title it above the legend when known.
+    const yLabel = chartData.value.axisLabels?.y
+    const showLegendTitle = hasMultipleSeries && !!yLabel
+
     return {
       ...baseOptions,
+      ...(showLegendTitle ? { title: makeLegendTitle(yLabel!, styling) } : {}),
       grid: createGridConfig(transposedSeries.length),
       tooltip: createTooltipConfig(
         hasXAxis(chartData),
@@ -85,9 +91,10 @@ export function useBarChartOptions(config: BaseChartConfig) {
       legend: createLegendConfig(
         transposedSeries.map((s) => ({ xAxis: s.name })),
         styling,
-        hasMultipleSeries
+        hasMultipleSeries,
+        showLegendTitle ? { top: 24 } : undefined
       ),
-      ...createAxisConfig(styling, xAxisData, effectiveScale, minValue),
+      ...createAxisConfig(styling, xAxisData, effectiveScale, minValue, chartData.value.axisLabels?.x),
       series: transposedSeries,
     } as EChartsOption
   })

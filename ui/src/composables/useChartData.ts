@@ -1,5 +1,5 @@
-import { computed, type Ref } from 'vue'
-import type { BenchmarkData, ChartData, Point3D, SeriesData, Stat } from '../types'
+import { computed, unref, type MaybeRef, type Ref } from 'vue'
+import type { AxisLabels, DataPoint, ChartData, Point3D, SeriesData, Stat } from '../types'
 
 type StatSignature = `${Stat['type']}-${Stat['unit']}-${Stat['per']}`
 
@@ -7,10 +7,15 @@ const toStatSignature = (stat: Stat): StatSignature => {
   return `${stat.type}-${stat.unit}-${stat.per}`
 }
 
-export function useChartData(results: Ref<BenchmarkData[]> | BenchmarkData[]) {
+export function useChartData(
+  results: Ref<DataPoint[]> | DataPoint[],
+  axisLabels?: MaybeRef<AxisLabels | undefined>
+) {
   const chartData = computed<ChartData[]>(() => {
     const data = Array.isArray(results) ? results : results.value
     if (!data?.length) return []
+
+    const labels = unref(axisLabels)
 
     // Collect all unique stat signatures
     const uniqueStats = data.reduce((acc, benchmark) => {
@@ -74,6 +79,7 @@ export function useChartData(results: Ref<BenchmarkData[]> | BenchmarkData[]) {
         zAxis: zAxisValues,
         series,
         points,
+        axisLabels: labels,
       }
     })
   })

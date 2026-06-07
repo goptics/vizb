@@ -16,12 +16,12 @@ Vizb provides a composite GitHub Action to run benchmarks and generate visualiza
 
 - uses: goptics/vizb@v0
   with:
-    bench-cmd: "go test -bench=."
+    cmd: "go test -bench=."
     output-html: pages/index.html
 ```
 
 <Aside type="note">
-  When using `bench-cmd`, the action needs a Go toolchain. Add `actions/setup-go` before the vizb step.
+  When using `cmd`, the action needs a Go toolchain. Add `actions/setup-go` before the vizb step.
 </Aside>
 
 ## Versioning
@@ -41,8 +41,8 @@ The action:
 
 | Input | Default | Description |
 |-------|---------|-------------|
-| `bench-cmd` | `""` | Benchmark command to run (e.g., `go test -bench=.`). Requires Go toolchain. |
-| `bench-file` | `""` | Path to existing benchmark file. Takes priority over `bench-cmd`. |
+| `cmd` | `""` | Benchmark command to run (e.g., `go test -bench=.`). Requires Go toolchain. |
+| `file` | `""` | Path to existing benchmark file. Takes priority over `cmd`. |
 | `name` | `"Benchmarks"` | Benchmark name |
 | `parser` | `"go"` | Benchmark parser to use (one of: `go`, `js:tinybench`, `js:vitest`, `rs:criterion` and `rs:divan`) |
 | `description` | `""` | Benchmark description |
@@ -75,12 +75,12 @@ The action:
 
 The action resolves input in this priority order:
 
-1. **`bench-file`** — if provided, uses the existing file directly
-2. **`bench-cmd`** — runs the command and captures output
+1. **`file`** — if provided, uses the existing file directly
+2. **`cmd`** — runs the command and captures output
 3. **Merge-only** — if only `merge-files` or `merge-dir` is provided, skips benchmarking
 
 <Aside type="caution">
-  At least one of `bench-cmd`, `bench-file`, `merge-files`, `merge-dir`, or `data-url` must be provided.
+  At least one of `cmd`, `file`, `merge-files`, `merge-dir`, or `data-url` must be provided.
 </Aside>
 
 ## Minimal Examples
@@ -90,7 +90,7 @@ The action resolves input in this priority order:
 ```yaml
 - uses: goptics/vizb@v0
   with:
-    bench-cmd: "go test -bench=."
+    cmd: "go test -bench=."
     output-html: pages/index.html
 ```
 
@@ -99,7 +99,7 @@ The action resolves input in this priority order:
 ```yaml
 - uses: goptics/vizb@v0
   with:
-    bench-file: bench-results.txt
+    file: bench-results.txt
     output-html: report.html
 ```
 
@@ -113,7 +113,7 @@ The action resolves input in this priority order:
 ```
 
 <Aside type="note">
-  When `data-url` is set, no `bench-cmd`, `bench-file`, or merge input is needed. The HTML fetches the JSON at runtime. The JSON host must serve `Access-Control-Allow-Origin: *`.
+  When `data-url` is set, no `cmd`, `file`, or merge input is needed. The HTML fetches the JSON at runtime. The JSON host must serve `Access-Control-Allow-Origin: *`.
 </Aside>
 
 ### Merge and generate
@@ -121,7 +121,7 @@ The action resolves input in this priority order:
 ```yaml
 - uses: goptics/vizb@v0
   with:
-    bench-cmd: "go test -bench=."
+    cmd: "go test -bench=."
     merge-dir: previous-results/
     tag: v1.2.0
     tag-axis: x

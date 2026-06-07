@@ -13,10 +13,10 @@ export type Stat = {
   per?: string
 }
 
-export type BenchmarkData = {
+export type DataPoint = {
   name?: string
-  yAxis?: string
   xAxis?: string
+  yAxis?: string
   zAxis?: string
   stats: Stat[]
 }
@@ -33,6 +33,16 @@ export type Settings = {
   scale: ScaleType
 }
 
+// Human-readable label for each dimension, derived from the --group columns.
+// `name` is carried (though not rendered as an axis) so the swap feature can
+// rotate it onto x/y/z carrying its label.
+export type AxisLabels = {
+  name?: string
+  x?: string
+  y?: string
+  z?: string
+}
+
 export type HistoryEntry = {
   tag: string
   timestamp: string
@@ -43,7 +53,7 @@ export type HistoryEntry = {
   os?: string
 }
 
-export type Benchmark = {
+export type DataSet = {
   name: string
   description?: string
   pkg?: string
@@ -56,7 +66,8 @@ export type Benchmark = {
     cores?: number
   }
   settings: Settings
-  data: BenchmarkData[]
+  axisLabels?: AxisLabels
+  data: DataPoint[]
 }
 
 export type ChartData = {
@@ -67,6 +78,7 @@ export type ChartData = {
   zAxis: string[]
   series: SeriesData[]
   points: Point3D[]
+  axisLabels?: AxisLabels
 }
 
 export type SeriesData = {

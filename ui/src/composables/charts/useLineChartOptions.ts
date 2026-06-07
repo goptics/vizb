@@ -8,6 +8,7 @@ import {
   createLegendConfig,
   createTooltipConfig,
   getChartStyling,
+  makeLegendTitle,
 } from './shared'
 import {
   adjustForLogScaleLine,
@@ -36,7 +37,7 @@ export function useLineChartOptions(config: BaseChartConfig) {
         ...baseOptions,
         grid: createGridConfig(1),
         tooltip: createTooltipConfig(false, 1, isDark.value),
-        ...createAxisConfig(styling, xAxisData, effectiveScale, minValue),
+        ...createAxisConfig(styling, xAxisData, effectiveScale, minValue, chartData.value.axisLabels?.x),
         legend: { show: false },
         series: [
           {
@@ -78,15 +79,20 @@ export function useLineChartOptions(config: BaseChartConfig) {
 
     const seriesTotals = computeSeriesTotals(transposedSeries)
 
+    // The legend encodes the y group; title it above the legend when known.
+    const yLabel = chartData.value.axisLabels?.y
+
     return {
       ...baseOptions,
+      ...(yLabel ? { title: makeLegendTitle(yLabel, styling) } : {}),
       grid: createGridConfig(transposedSeries.length),
       tooltip: createTooltipConfig(true, transposedSeries.length, isDark.value, seriesTotals),
-      ...createAxisConfig(styling, xAxisData, effectiveScale, minValue),
+      ...createAxisConfig(styling, xAxisData, effectiveScale, minValue, chartData.value.axisLabels?.x),
       legend: createLegendConfig(
         transposedSeries.map((s) => ({ xAxis: s.name })),
         styling,
-        true
+        true,
+        yLabel ? { top: 24 } : undefined
       ),
       series: transposedSeries,
     } as EChartsOption
