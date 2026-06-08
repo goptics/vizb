@@ -3,50 +3,15 @@ import type { EChartsOption } from 'echarts'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
 import { getNextColorFor } from '../../lib/utils'
 import { getChartStyling, getTooltipTheme, tooltipDivider, type ChartStyling } from './shared'
-import { sortByAxisTotal } from './shared/common'
-import type { Point3D } from '../../types'
+import type { Render3D } from '../../types'
 
 type Series3DType = 'bar3D' | 'line3D'
 
 const round2 = (v: number) => Math.round(v * 100) / 100
 
-function mapPoints(
-  points: Point3D[],
-  z: string,
-  xIndex: Map<string, number>,
-  yIndex: Map<string, number>,
-  fillGrid: boolean
-) {
-  // Aggregate per (x,y) cell: generic tabular data has many rows sharing the
-  // same (x,y,z), and emitting one bar per row stacks coplanar boxes at the
-  // same position → WebGL z-fighting (stippled patches). Sum into one bar/cell.
-  const cells = new Map<string, number>()
-  for (const p of points) {
-    if (p.zAxis !== z) continue
-    const xi = xIndex.get(p.xAxis)
-    const yi = yIndex.get(p.yAxis)
-    if (xi === undefined || yi === undefined) continue
-    cells.set(`${xi},${yi}`, (cells.get(`${xi},${yi}`) ?? 0) + p.value)
-  }
-  // bar3D: emit a full (x,y) grid, filling absent cells with 0. Stacked bar3D
-  // derives each segment's base from the previous series at the same cell; a
-  // sparse series misaligns that base → floating segments. A complete grid keeps
-  // stacks seated (0-height bars are invisible, so empty columns stay empty).
-  // line3D: keep sparse — a 0-grid would drag every line down to the floor.
-  if (!fillGrid) {
-    return Array.from(cells, ([key, value]) => {
-      const [xi, yi] = key.split(',').map(Number)
-      return { value: [xi, yi, value] }
-    })
-  }
-  const grid: { value: number[] }[] = []
-  for (const xi of xIndex.values()) {
-    for (const yi of yIndex.values()) {
-      grid.push({ value: [xi, yi, cells.get(`${xi},${yi}`) ?? 0] })
-    }
-  }
-  return grid
-}
+// Empty render payload when a chart lacks precomputed 3D data (shouldn't happen:
+// the worker attaches render3D to every 3D chart).
+const EMPTY_RENDER: Render3D = { xValues: [], yValues: [], zValues: [], barSeries: [], lineSeries: [] }
 
 function makeAxisCommon(styling: ChartStyling) {
   return {
@@ -67,40 +32,33 @@ function axis3DName(label: string | undefined, styling: ChartStyling) {
 }
 
 export function use3DChartOptions(config: BaseChartConfig, seriesType: Series3DType) {
-  const { chartData, sort, isDark, autoRotate, visibleZ } = config
+  const { chartData, isDark, autoRotate, visibleZ } = config
 
   const options = computed<EChartsOption>(() => {
     const styling = getChartStyling(isDark.value)
     const base = getBaseOptions(config)
-    const points: Point3D[] = chartData.value.points ?? []
+    const points = chartData.value.points ?? []
 
-    // Legend can toggle z series off. Aggregates (tooltip sums + bar-top labels)
-    // must reflect only the currently-visible z, so sum over the filtered set.
-    // echarts treats a missing legend key as selected → default everything on.
+    // Sorted axis categories + per-z series data are precomputed off-thread by
+    // the transform worker (see lib/transform.ts) and carried on chartData.
+    const render = chartData.value.render3D ?? EMPTY_RENDER
+    const { xValues, yValues, zValues } = render
+    const seriesData = seriesType === 'bar3D' ? render.barSeries : render.lineSeries
+
+    // Legend can toggle z series off. Aggregates (tooltip sums) must reflect only
+    // the currently-visible z, so sum over the filtered set. echarts treats a
+    // missing legend key as selected → default everything on.
     const sel = visibleZ?.value ?? {}
     const aggPoints = points.filter((p) => sel[p.zAxis] !== false)
 
-    let xValues = Array.from(new Set(points.map((p) => p.xAxis)))
-    let yValues = Array.from(new Set(points.map((p) => p.yAxis)))
-    let zValues = chartData.value.zAxis.filter((z) => z !== '')
-
-    if (sort.value.enabled) {
-      xValues = sortByAxisTotal(xValues, 'xAxis', points, sort.value.order)
-      yValues = sortByAxisTotal(yValues, 'yAxis', points, sort.value.order)
-      zValues = sortByAxisTotal(zValues, 'zAxis', points, sort.value.order)
-    }
-
-    const xIndex = new Map(xValues.map((v, i) => [v, i]))
-    const yIndex = new Map(yValues.map((v, i) => [v, i]))
-
-    const series = zValues.map((z) => ({
-      name: z,
+    const series = seriesData.map((s) => ({
+      name: s.name,
       type: seriesType,
       ...(seriesType === 'bar3D'
         ? { stack: 'z', bevelSize: 0.4, bevelSmoothness: 4 }
         : { lineStyle: { width: 2 } }),
-      data: mapPoints(points, z, xIndex, yIndex, seriesType === 'bar3D'),
-      itemStyle: { color: getNextColorFor(z) },
+      data: s.data,
+      itemStyle: { color: getNextColorFor(s.name) },
       shading: 'lambert',
       // No data labels: the z axis always exists here, so every value is already in
       // the tooltip — numbers on bars/points only clutter the 3D scene (and stacked
@@ -112,16 +70,16 @@ export function use3DChartOptions(config: BaseChartConfig, seriesType: Series3DT
     }))
 
     // line3D can't draw its own vertex markers → overlay scatter3D dots so the data
-    // points are visible (labels off; values live in the tooltip). bar3D needs no
-    // overlay.
+    // points are visible (labels off; values live in the tooltip). Reuses the same
+    // sparse per-z data. bar3D needs no overlay.
     const labelSeries =
       seriesType === 'line3D'
-        ? zValues.map((z) => ({
-            name: z,
+        ? render.lineSeries.map((s) => ({
+            name: s.name,
             type: 'scatter3D',
-            data: mapPoints(points, z, xIndex, yIndex, false),
+            data: s.data,
             symbolSize: 10,
-            itemStyle: { color: getNextColorFor(z) },
+            itemStyle: { color: getNextColorFor(s.name) },
             label: { show: false },
             emphasis: { label: { show: false } },
           }))
@@ -222,6 +180,10 @@ export function use3DChartOptions(config: BaseChartConfig, seriesType: Series3DT
         viewControl: {
           distance: 200,
           autoRotate: autoRotate.value,
+          // No camera tween: echarts-gl otherwise animates the camera in to
+          // `distance` on (re)render, which reads as a jarring zoom flash when
+          // switching chart type. Snap straight to the final position.
+          animation: false,
           ...(seriesType === 'line3D' ? { projection: 'orthographic' } : {}),
         },
         light: {

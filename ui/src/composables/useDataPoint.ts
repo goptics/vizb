@@ -31,6 +31,20 @@ const getDataSets = async (): Promise<DataSet[]> => {
   return window.VIZB_DATA ?? []
 }
 
+// Normalize stat values once, at load. Done here (not in a computed) so later
+// swaps — which mutate the dataset in place — don't re-round every row of every
+// dataset on each change.
+const normalize = (sets: DataSet[]): DataSet[] => {
+  for (const set of sets) {
+    for (const result of set.data ?? []) {
+      for (const stat of result.stats ?? []) {
+        stat.value = Number((stat.value ?? 0).toFixed(2))
+      }
+    }
+  }
+  return sets
+}
+
 // Global state
 const benchmarks = ref<DataSet[]>([])
 const activeDataSetId = ref(0)
@@ -40,7 +54,7 @@ const loadError = ref<string | null>(null)
 
 getDataSets()
   .then((data) => {
-    benchmarks.value = data
+    benchmarks.value = normalize(Array.isArray(data) ? data : [data])
   })
   .catch((err: unknown) => {
     loadError.value = err instanceof Error ? err.message : String(err)
@@ -49,24 +63,14 @@ getDataSets()
     loading.value = false
   })
 
-// Process and group all benchmarks
+// Values are normalized once at load (see `normalize`); this just guards the
+// array shape.
 const benchmarksProcessed = computed<DataSet[]>(() => {
   if (!Array.isArray(benchmarks.value)) {
     benchmarks.value = [benchmarks.value]
   }
 
-  if (!benchmarks.value.length) return []
-
-  return benchmarks.value.map((benchmark) => {
-    for (const result of benchmark.data) {
-      for (const stat of result.stats) {
-        const { value = 0 } = stat
-        stat.value = Number(value.toFixed(2))
-      }
-    }
-
-    return benchmark
-  })
+  return benchmarks.value
 })
 
 const activeDataSetDimension = computed(() =>

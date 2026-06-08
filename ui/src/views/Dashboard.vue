@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, toRef } from 'vue'
 import { Moon, Sun, Package } from 'lucide-vue-next'
 import { useDataPoint } from '../composables/useDataPoint'
-import { useChartData } from '../composables/useChartData'
+import { useChartPipeline } from '../composables/useChartPipeline'
 import { useSettingsStore } from '../composables/useSettingsStore'
 import { useDashboardInit } from '../composables/useDashboardInit'
 import ChartSettingsPopover from '../components/ChartSettingsPopover.vue'
@@ -28,11 +28,19 @@ const {
   loadError,
 } = useDataPoint()
 
+const { settings, toggleDark } = useSettingsStore()
+
 const activeResults = computed(() => activeGroup.value?.data || [])
 const activeAxisLabels = computed(() => activeDataSet.value?.axisLabels)
-const { chartData } = useChartData(activeResults, activeAxisLabels)
+// Charts are computed off-thread in a worker, one at a time (queue-based). Each
+// slot carries its own `pending` so its card drives an independent skeleton and
+// reveals progressively.
+const { charts, hasAny } = useChartPipeline(activeResults, activeAxisLabels, toRef(settings, 'sort'))
 
-const { settings, toggleDark } = useSettingsStore()
+// Full-page skeleton only while loading the dataset or on the very first compute
+// (no chart has data yet). Later recomputes keep existing charts visible and let
+// each card show its own skeleton.
+const showSkeleton = computed(() => loading.value || (!hasAny.value && charts.value.length > 0))
 
 useDashboardInit()
 </script>
@@ -55,9 +63,9 @@ useDashboardInit()
     </IconButton>
   </nav>
 
-  <LoadingSkeleton v-if="loading" />
+  <LoadError v-if="loadError" :message="loadError" />
 
-  <LoadError v-else-if="loadError" :message="loadError" />
+  <LoadingSkeleton v-else-if="showSkeleton" />
 
   <main v-else-if="activeDataSet" class="mx-auto min-h-screen max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
     <DataSetHeader
@@ -71,15 +79,17 @@ useDashboardInit()
     />
 
     <div class="space-y-5">
-      <ChartCard
-        v-for="(chart, index) in chartData"
-        :key="`${activeDataSetId}-${activeGroupId}-${index}`"
-        :chartData="chart"
-        class="animate-fade-in"
-        :style="{ animationDelay: `${index * 50}ms` }"
-      />
+      <template v-for="(state, index) in charts" :key="state.key">
+        <ChartCard
+          v-if="state.data"
+          :chartData="state.data"
+          :loading="state.pending"
+          class="animate-fade-in"
+          :style="{ animationDelay: `${index * 50}ms` }"
+        />
+      </template>
     </div>
   </main>
 
-  <AppFooter v-if="activeDataSet && !loading && !loadError" :version="version" />
+  <AppFooter v-if="activeDataSet && !showSkeleton && !loadError" :version="version" />
 </template>

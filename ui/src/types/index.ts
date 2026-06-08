@@ -79,6 +79,24 @@ export type ChartData = {
   series: SeriesData[]
   points: Point3D[]
   axisLabels?: AxisLabels
+  // Precomputed 3D render data (built in the transform worker for charts that
+  // have x, y and z). Absent for 2D charts. Holds the sorted axis category
+  // arrays plus the per-z series data for both bar3D (filled grid) and line3D
+  // (sparse) so a chart-type switch needs no recompute.
+  render3D?: Render3D
+}
+
+export type Series3DData = {
+  name: string
+  data: { value: number[] }[]
+}
+
+export type Render3D = {
+  xValues: string[]
+  yValues: string[]
+  zValues: string[]
+  barSeries: Series3DData[]
+  lineSeries: Series3DData[]
 }
 
 export type SeriesData = {
