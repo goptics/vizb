@@ -1,28 +1,37 @@
 <script setup lang="ts">
-import { toRefs, ref, computed, defineAsyncComponent, h } from 'vue'
+import { toRefs, ref, computed, defineAsyncComponent, h, type Component } from 'vue'
 import type { EChartsOption } from 'echarts'
-import Chart2D from './Chart2D.vue'
 import { useChartOptions } from '../composables/useChartOptions'
-import type { ChartData } from '../types'
+import type { ChartData, ChartType } from '../types'
 import { useSettingsStore } from '../composables/useSettingsStore'
 import { is3D } from '../lib/utils'
 
-// Chart3D pulls in echarts-gl (the heavy clay.gl WebGL engine). Loading it via
-// defineAsyncComponent keeps it in its own rollup chunk that the browser only
-// parses when a 3D chart actually renders — the 2D-only path never pays for it.
+// Every chart renderer (2D bar/line/pie + 3D) is loaded via defineAsyncComponent
+// so the echarts runtime stays out of the eager startup bundle: nothing in the
+// initial parse imports echarts, and each chart's module body lands in its own
+// chunk that the browser only parses when that type actually renders. The
+// chart-area skeleton shows while a chunk loads (once per type, then cached).
 const ChartLoading = () => h('div', { class: 'h-[500px] animate-pulse rounded bg-muted' })
 const ChartLoadError = () =>
   h(
     'div',
     { class: 'flex h-[500px] items-center justify-center text-sm text-muted-foreground' },
-    'Failed to load 3D chart'
+    'Failed to load chart'
   )
-const Chart3D = defineAsyncComponent({
-  loader: () => import('./Chart3D.vue'),
-  loadingComponent: ChartLoading,
-  errorComponent: ChartLoadError,
-  delay: 0,
-})
+const mk = (loader: () => Promise<Component>) =>
+  defineAsyncComponent({
+    loader,
+    loadingComponent: ChartLoading,
+    errorComponent: ChartLoadError,
+    delay: 0,
+  })
+
+const RENDERERS: Record<ChartType, Component> = {
+  bar: mk(() => import('./ChartBar.vue')),
+  line: mk(() => import('./ChartLine.vue')),
+  pie: mk(() => import('./ChartPie.vue')),
+}
+const Chart3D = mk(() => import('./Chart3D.vue'))
 
 const props = defineProps<{
   chartData: ChartData
@@ -36,6 +45,11 @@ const is3DChart = computed(() => is3D(chartData))
 
 // Pull settings from centralized store
 const { settings, chartType } = useSettingsStore()
+
+// Pick the lazily-loaded renderer for the active chart shape/type.
+const ActiveChart = computed<Component>(() =>
+  is3DChart.value ? Chart3D : (RENDERERS[chartType.value] ?? RENDERERS.bar)
+)
 const { sort, showLabels, isDark, scale, autoRotate } = toRefs(settings)
 
 // Legend z-toggle state, kept in sync via the legendselectchanged event so
@@ -115,15 +129,8 @@ const mergedOptions = computed<EChartsOption>(() => {
     <h3 class="text-lg font-semibold text-card-foreground">
       {{ chartData.title }}
     </h3>
-    <Chart3D
-      v-if="is3DChart"
-      :option="mergedOptions"
-      :init-options="initOptions"
-      :class="isFullscreen ? 'h-[calc(100vh-4rem)]' : 'h-[500px]'"
-      @legendselectchanged="onLegendSelectChanged"
-    />
-    <Chart2D
-      v-else
+    <component
+      :is="ActiveChart"
       :option="mergedOptions"
       :init-options="initOptions"
       :class="isFullscreen ? 'h-[calc(100vh-4rem)]' : 'h-[500px]'"
