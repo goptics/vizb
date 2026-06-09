@@ -165,7 +165,11 @@ export function renderDonutSvg(
       return `<div style="display:flex;align-items:center;white-space:nowrap">${swatch}<span>${s.name}</span><b style="margin-left:6px">${pct}%</b></div>`
     })
     .join('')
-  const legend = `<div style="display:flex;flex-direction:column;gap:2px;font-size:11px">${legendRows}</div>`
+  // Flow into balanced columns when there are many slices, so a long legend
+  // stays compact instead of one tall stack. ≤12 slices → single column.
+  const cols = Math.ceil(pos.length / 12)
+  const rowsPerCol = Math.ceil(pos.length / cols)
+  const legend = `<div style="display:grid;grid-auto-flow:column;grid-template-rows:repeat(${rowsPerCol},auto);gap:2px 12px;font-size:11px">${legendRows}</div>`
 
   return `<div style="display:flex;align-items:center;gap:8px;margin-top:4px">${svg}${legend}</div>`
 }
