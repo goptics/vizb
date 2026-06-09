@@ -1,16 +1,16 @@
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import type { DataSet, DataPoint } from '../types'
 import { resetColor, isValidIndex } from '../lib/utils'
 import { useSettingsStore } from './useSettingsStore'
 import { DEFAULT_SETTINGS } from './constants'
 
-const getStatDimensions = (benchmarks: DataPoint[]) => {
+const getStatDimensions = (points: DataPoint[]) => {
   let dimension = 0
 
-  if (benchmarks.some((b) => b.name)) dimension++
-  if (benchmarks.some((b) => b.xAxis)) dimension++
-  if (benchmarks.some((b) => b.yAxis)) dimension++
-  if (benchmarks.some((b) => b.zAxis)) dimension++
+  if (points.some((b) => b.name)) dimension++
+  if (points.some((b) => b.xAxis)) dimension++
+  if (points.some((b) => b.yAxis)) dimension++
+  if (points.some((b) => b.zAxis)) dimension++
 
   return dimension
 }
@@ -46,7 +46,7 @@ const normalize = (sets: DataSet[]): DataSet[] => {
 }
 
 // Global state
-const benchmarks = ref<DataSet[]>([])
+const dataSets = ref<DataSet[]>([])
 const activeDataSetId = ref(0)
 const activeGroupId = ref(0)
 const loading = ref(true)
@@ -54,7 +54,7 @@ const loadError = ref<string | null>(null)
 
 getDataSets()
   .then((data) => {
-    benchmarks.value = normalize(Array.isArray(data) ? data : [data])
+    dataSets.value = normalize(Array.isArray(data) ? data : [data])
   })
   .catch((err: unknown) => {
     loadError.value = err instanceof Error ? err.message : String(err)
@@ -65,20 +65,20 @@ getDataSets()
 
 // Values are normalized once at load (see `normalize`); this just guards the
 // array shape.
-const benchmarksProcessed = computed<DataSet[]>(() => {
-  if (!Array.isArray(benchmarks.value)) {
-    benchmarks.value = [benchmarks.value]
+const dataSetsProcessed = computed<DataSet[]>(() => {
+  if (!Array.isArray(dataSets.value)) {
+    dataSets.value = [dataSets.value]
   }
 
-  return benchmarks.value
+  return dataSets.value
 })
 
 const activeDataSetDimension = computed(() =>
-  getStatDimensions(benchmarksProcessed.value[activeDataSetId.value]?.data ?? [])
+  getStatDimensions(dataSetsProcessed.value[activeDataSetId.value]?.data ?? [])
 )
 
 const activeDataSet = computed(
-  () => benchmarksProcessed.value[activeDataSetId.value] || benchmarksProcessed.value[0]
+  () => dataSetsProcessed.value[activeDataSetId.value] || dataSetsProcessed.value[0]
 )
 
 // Group results within the active benchmark
@@ -87,8 +87,8 @@ const grouped = computed(() => {
 
   const groupMap = new Map<string, DataPoint[]>()
 
-  for (const benchmarkData of activeDataSet.value.data) {
-    const { name = 'Default', ...rest } = benchmarkData
+  for (const dataPoints of activeDataSet.value.data) {
+    const { name = 'Default', ...rest } = dataPoints
 
     if (!groupMap.has(name)) {
       groupMap.set(name, [])
@@ -101,7 +101,7 @@ const grouped = computed(() => {
 })
 
 // Convert grouped results to array format for easier consumption
-const benchmarkGroups = computed(() =>
+const dataPointGroups = computed(() =>
   Array.from(grouped.value.entries()).map(([name, data]) => ({
     name,
     description: activeDataSet.value?.description || '',
@@ -115,49 +115,49 @@ const benchmarkGroups = computed(() =>
 )
 
 const activeGroup = computed(
-  () => benchmarkGroups.value[activeGroupId.value] || benchmarkGroups.value[0]
+  () => dataPointGroups.value[activeGroupId.value] || dataPointGroups.value[0]
 )
 
 const { initializeFromDataSet } = useSettingsStore()
 
 const selectDataSet = (id: number) => {
-  if (isValidIndex(id, benchmarks.value.length)) {
-    resetColor()
-
+  if (isValidIndex(id, dataSets.value.length)) {
     const currentGroupName = activeGroup.value?.name
 
     activeDataSetId.value = id
 
-    const benchmark = benchmarks.value[id]
+    const benchmark = dataSets.value[id]
     if (benchmark?.settings) {
       initializeFromDataSet(benchmark.settings, true)
     }
 
-    const newGroupIndex = benchmarkGroups.value.findIndex((g) => g.name === currentGroupName)
+    const newGroupIndex = dataPointGroups.value.findIndex((g) => g.name === currentGroupName)
 
     if (newGroupIndex !== -1) {
       activeGroupId.value = newGroupIndex
     } else {
       activeGroupId.value = 0
     }
+
+    nextTick(() => resetColor())
   }
 }
 
 const selectGroup = (id: number) => {
-  if (isValidIndex(id, benchmarkGroups.value.length)) {
+  if (isValidIndex(id, dataPointGroups.value.length)) {
     activeGroupId.value = id
   }
 }
 
 export function useDataPoint() {
   return {
-    benchmarks,
+    dataSets,
     activeDataSet,
     activeDataSetId,
     activeDataSetDimension,
     selectDataSet,
 
-    resultGroups: benchmarkGroups,
+    resultGroups: dataPointGroups,
     activeGroup,
     activeGroupId,
     selectGroup,
