@@ -18,7 +18,7 @@ import {
 import { makeDataItem } from './shared/seriesConfig'
 
 const barNullable = (val: number, scale: string): number | null =>
-  scale === 'log' && val === 0 ? null : val
+  scale === 'log' && val <= 0 ? null : val
 
 export function useBarChartOptions(config: BaseChartConfig) {
   const { chartData, sort, showLabels, isDark, scale } = config

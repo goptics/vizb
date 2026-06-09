@@ -13860,5 +13860,57 @@
         ]
       }
     ]
+  },
+  {
+    "name": "Compression Delta Benchmarks",
+    "description": "Throughput delta vs baseline (negative = regression, positive = improvement)",
+    "settings": {
+      "charts": ["bar", "line", "pie"],
+      "sort": { "enabled": false, "order": "asc" },
+      "showLabels": true,
+      "scale": "linear"
+    },
+    "data": [
+      { "xAxis": "LZ4",    "yAxis": "1KB",  "stats": [{ "type": "Throughput Delta (MB/s)", "value": 142.5 }, { "type": "Latency Delta (µs)", "value": -0.8 }] },
+      { "xAxis": "LZ4",    "yAxis": "64KB", "stats": [{ "type": "Throughput Delta (MB/s)", "value": 310.2 }, { "type": "Latency Delta (µs)", "value": -4.1 }] },
+      { "xAxis": "LZ4",    "yAxis": "1MB",  "stats": [{ "type": "Throughput Delta (MB/s)", "value": -22.7 }, { "type": "Latency Delta (µs)", "value": 12.3 }] },
+      { "xAxis": "Zstd",   "yAxis": "1KB",  "stats": [{ "type": "Throughput Delta (MB/s)", "value": -55.3 }, { "type": "Latency Delta (µs)", "value": 3.2 }] },
+      { "xAxis": "Zstd",   "yAxis": "64KB", "stats": [{ "type": "Throughput Delta (MB/s)", "value": 88.1 },  { "type": "Latency Delta (µs)", "value": -6.5 }] },
+      { "xAxis": "Zstd",   "yAxis": "1MB",  "stats": [{ "type": "Throughput Delta (MB/s)", "value": 201.4 }, { "type": "Latency Delta (µs)", "value": -18.9 }] },
+      { "xAxis": "Snappy", "yAxis": "1KB",  "stats": [{ "type": "Throughput Delta (MB/s)", "value": 38.6 },  { "type": "Latency Delta (µs)", "value": -1.4 }] },
+      { "xAxis": "Snappy", "yAxis": "64KB", "stats": [{ "type": "Throughput Delta (MB/s)", "value": -103.8 },{ "type": "Latency Delta (µs)", "value": 8.7 }] },
+      { "xAxis": "Snappy", "yAxis": "1MB",  "stats": [{ "type": "Throughput Delta (MB/s)", "value": -67.2 }, { "type": "Latency Delta (µs)", "value": 22.1 }] },
+      { "xAxis": "Gzip",   "yAxis": "1KB",  "stats": [{ "type": "Throughput Delta (MB/s)", "value": -189.4 },{ "type": "Latency Delta (µs)", "value": 45.6 }] },
+      { "xAxis": "Gzip",   "yAxis": "64KB", "stats": [{ "type": "Throughput Delta (MB/s)", "value": -241.7 },{ "type": "Latency Delta (µs)", "value": 67.3 }] },
+      { "xAxis": "Gzip",   "yAxis": "1MB",  "stats": [{ "type": "Throughput Delta (MB/s)", "value": -318.5 },{ "type": "Latency Delta (µs)", "value": 91.2 }] }
+    ]
+  },
+  {
+    "name": "Codec Delta 3D Benchmarks",
+    "description": "Encode/decode throughput delta vs baseline across codecs, payload sizes, and operations",
+    "settings": {
+      "charts": ["bar", "line", "pie"],
+      "sort": { "enabled": false, "order": "asc" },
+      "showLabels": true,
+      "scale": "linear"
+    },
+    "data": [
+      { "xAxis": "LZ4",    "yAxis": "1KB",  "zAxis": "Encode", "stats": [{ "type": "Throughput Delta (MB/s)", "value": 142.5 }] },
+      { "xAxis": "LZ4",    "yAxis": "1KB",  "zAxis": "Decode", "stats": [{ "type": "Throughput Delta (MB/s)", "value": 398.1 }] },
+      { "xAxis": "LZ4",    "yAxis": "1MB",  "zAxis": "Encode", "stats": [{ "type": "Throughput Delta (MB/s)", "value": -22.7 }] },
+      { "xAxis": "LZ4",    "yAxis": "1MB",  "zAxis": "Decode", "stats": [{ "type": "Throughput Delta (MB/s)", "value": 187.4 }] },
+      { "xAxis": "Zstd",   "yAxis": "1KB",  "zAxis": "Encode", "stats": [{ "type": "Throughput Delta (MB/s)", "value": -55.3 }] },
+      { "xAxis": "Zstd",   "yAxis": "1KB",  "zAxis": "Decode", "stats": [{ "type": "Throughput Delta (MB/s)", "value": 112.6 }] },
+      { "xAxis": "Zstd",   "yAxis": "1MB",  "zAxis": "Encode", "stats": [{ "type": "Throughput Delta (MB/s)", "value": 201.4 }] },
+      { "xAxis": "Zstd",   "yAxis": "1MB",  "zAxis": "Decode", "stats": [{ "type": "Throughput Delta (MB/s)", "value": -88.9 }] },
+      { "xAxis": "Snappy", "yAxis": "1KB",  "zAxis": "Encode", "stats": [{ "type": "Throughput Delta (MB/s)", "value": 38.6 }] },
+      { "xAxis": "Snappy", "yAxis": "1KB",  "zAxis": "Decode", "stats": [{ "type": "Throughput Delta (MB/s)", "value": -44.2 }] },
+      { "xAxis": "Snappy", "yAxis": "1MB",  "zAxis": "Encode", "stats": [{ "type": "Throughput Delta (MB/s)", "value": -67.2 }] },
+      { "xAxis": "Snappy", "yAxis": "1MB",  "zAxis": "Decode", "stats": [{ "type": "Throughput Delta (MB/s)", "value": -129.5 }] },
+      { "xAxis": "Gzip",   "yAxis": "1KB",  "zAxis": "Encode", "stats": [{ "type": "Throughput Delta (MB/s)", "value": -189.4 }] },
+      { "xAxis": "Gzip",   "yAxis": "1KB",  "zAxis": "Decode", "stats": [{ "type": "Throughput Delta (MB/s)", "value": -76.3 }] },
+      { "xAxis": "Gzip",   "yAxis": "1MB",  "zAxis": "Encode", "stats": [{ "type": "Throughput Delta (MB/s)", "value": -318.5 }] },
+      { "xAxis": "Gzip",   "yAxis": "1MB",  "zAxis": "Decode", "stats": [{ "type": "Throughput Delta (MB/s)", "value": -52.1 }] }
+    ]
   }
 ]

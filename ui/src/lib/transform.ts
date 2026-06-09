@@ -186,7 +186,9 @@ export function build3DRender(points: Point3D[], zAxisAll: string[], sort: Sort,
 
   const cellTotals: Record<string, number> = {}
   if (showLabels) {
-    for (const s of barSeries) {
+    // Use lineSeries (sparse) not barSeries (full grid) — sparse only contains
+    // cells with real data, so key presence distinguishes real data from 0-fill.
+    for (const s of lineSeries) {
       for (const item of s.data) {
         const [xi = 0, yi = 0, v = 0] = item.value
         const key = `${xi},${yi}`

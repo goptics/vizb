@@ -63,10 +63,10 @@ export function use3DChartOptions(config: BaseChartConfig, seriesType: Series3DT
         show: true,
         formatter: (params: { value: number[] }) => {
           const [xi = 0, yi = 0] = params.value
-          const total = cellTotals[`${xi},${yi}`] ?? 0
-          return total > 0 ? String(round2(total)) : ''
+          const total = cellTotals[`${xi},${yi}`]
+          return total === undefined ? '' : String(round2(total))
         },
-        textStyle: { fontSize: 11, color: styling.textColor },
+        textStyle: { fontSize: 12, color: styling.textColor },
       }
     }
 

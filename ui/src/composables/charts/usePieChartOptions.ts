@@ -72,7 +72,7 @@ export function usePieChartOptions(config: BaseChartConfig) {
 
     const xAxisPieData = sorted.series.map((s) => ({
       name: s.xAxis,
-      value: s.total || 0,
+      value: Math.max(0, s.total),
       itemStyle: { color: getNextColorFor(s.xAxis) },
     }))
 
@@ -87,7 +87,7 @@ export function usePieChartOptions(config: BaseChartConfig) {
     const yAxisTotals = computeYAxisTotals(chartData.value.yAxis, sorted.series)
     const yAxisPieData = chartData.value.yAxis.map((y) => ({
       name: y,
-      value: yAxisTotals.get(y) || 0,
+      value: Math.max(0, yAxisTotals.get(y) ?? 0),
       itemStyle: { color: getNextColorFor(y) },
     }))
 
@@ -108,7 +108,7 @@ export function usePieChartOptions(config: BaseChartConfig) {
         .filter((z) => z !== '')
         .map((z) => ({
           name: z,
-          value: zAxisTotals.get(z) || 0,
+          value: Math.max(0, zAxisTotals.get(z) ?? 0),
           itemStyle: { color: getNextColorFor(z) },
         }))
 
