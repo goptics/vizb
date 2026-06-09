@@ -35,7 +35,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
       return {
         ...baseOptions,
         grid: createGridConfig(1),
-        tooltip: createTooltipConfig(false, 1, isDark.value),
+        tooltip: createTooltipConfig(false, isDark.value),
         legend: { show: false },
         ...createAxisConfig(styling, xAxisData, effectiveScale, minValue, chartData.value.axisLabels?.x),
         series: [
@@ -82,12 +82,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
       ...baseOptions,
       ...(showLegendTitle ? { title: makeLegendTitle(yLabel!, styling) } : {}),
       grid: createGridConfig(transposedSeries.length),
-      tooltip: createTooltipConfig(
-        hasXAxis(chartData),
-        transposedSeries.length,
-        isDark.value,
-        seriesTotals
-      ),
+      tooltip: createTooltipConfig(hasXAxis(chartData), isDark.value, seriesTotals),
       legend: createLegendConfig(
         transposedSeries.map((s) => ({ xAxis: s.name })),
         styling,

@@ -156,7 +156,7 @@ export function use3DChartOptions(config: BaseChartConfig, seriesType: Series3DT
           ? renderDonutSvg(
               zValues
                 .filter((z) => zmap.has(z))
-                .map((z) => ({ value: zmap.get(z)!, color: getNextColorFor(z) ?? '' }))
+                .map((z) => ({ value: zmap.get(z)!, color: getNextColorFor(z) ?? '', name: z }))
             )
           : ''
       return `<b>${xName} / ${yName}</b><br/>${rows.join('<br/>')}${margins}${donut ? tooltipDivider(isDark.value) + donut : ''}`

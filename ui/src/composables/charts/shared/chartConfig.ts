@@ -108,9 +108,13 @@ export function tooltipDivider(isDark: boolean): string {
   return `<hr style="border:none;border-top:1px solid ${getChartStyling(isDark).axisColor};margin:4px 0"/>`
 }
 
-// Inline SVG donut for tooltips. Non-positive slices are dropped (can't show
-// negative share). Returns '' when fewer than 2 positive slices — nothing to compare.
-export function renderDonutSvg(slices: { value: number; color: string }[], size = 96): string {
+// Inline SVG donut + side legend (swatch, name, %) for tooltips. Non-positive
+// slices are dropped (can't show negative share). Returns '' when fewer than 2
+// positive slices — nothing to compare.
+export function renderDonutSvg(
+  slices: { value: number; color: string; name: string }[],
+  size = 96
+): string {
   const pos = slices.filter((s) => s.value > 0)
   if (pos.length < 2) return ''
   const total = pos.reduce((s, p) => s + p.value, 0)
@@ -150,29 +154,43 @@ export function renderDonutSvg(slices: { value: number; color: string }[], size 
     return `<path d="${path(start, end)}" fill="${s.color}"/>`
   })
 
-  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="display:block;margin:4px auto">${paths.join('')}</svg>`
+  const svg = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="flex:none">${paths.join('')}</svg>`
+
+  // Side legend: one row per slice (swatch + name + share %). Scrolls with the
+  // tooltip when there are many slices.
+  const legendRows = pos
+    .map((s) => {
+      const pct = ((s.value / total) * 100).toFixed(1)
+      const swatch = `<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${s.color};margin-right:6px;flex:none"></span>`
+      return `<div style="display:flex;align-items:center;white-space:nowrap">${swatch}<span>${s.name}</span><b style="margin-left:6px">${pct}%</b></div>`
+    })
+    .join('')
+  const legend = `<div style="display:flex;flex-direction:column;gap:2px;font-size:11px">${legendRows}</div>`
+
+  return `<div style="display:flex;align-items:center;gap:8px;margin-top:4px">${svg}${legend}</div>`
 }
 
 /**
  * Creates common tooltip configuration
  * @param hasXYAxis - Whether the chart has both X and Y axes
- * @param seriesCount - Number of series in the chart (defaults to 1)
  * @param isDark - Dark mode flag for tooltip theming
  * @param seriesTotals - Per-series totals across all x, appended after each name
  */
 export function createTooltipConfig(
   hasXYAxis: boolean,
-  seriesCount = 1,
   isDark = false,
   seriesTotals?: Map<string, number>
 ): EChartsOption['tooltip'] {
   const theme = getTooltipTheme(isDark)
 
-  // Use item trigger if there are too many series (>10) to avoid overwhelming tooltip
-  if (hasXYAxis && seriesCount <= 10) {
+  if (hasXYAxis) {
     return {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },
+      // Many-series charts can produce a long row list + donut legend; cap the
+      // height and let the user scroll into the tooltip rather than overflow.
+      enterable: true,
+      extraCssText: 'max-height:60vh;overflow:auto;',
       ...theme,
       formatter: (params) => {
         if (!Array.isArray(params)) return ''
@@ -196,6 +214,7 @@ export function createTooltipConfig(
           params.map((p) => ({
             value: typeof p.value === 'number' ? p.value : 0,
             color: typeof p.color === 'string' ? p.color : String(p.color),
+            name: p.seriesName ?? '',
           }))
         )
         return `${body}${sumLine}${donut ? tooltipDivider(isDark) + donut : ''}`
