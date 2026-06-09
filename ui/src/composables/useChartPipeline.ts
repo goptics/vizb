@@ -23,7 +23,8 @@ export type ChartState = {
 export function useChartPipeline(
   results: Ref<DataPoint[]> | DataPoint[],
   axisLabels: MaybeRef<AxisLabels | undefined> | undefined,
-  sort: Ref<Sort>
+  sort: Ref<Sort>,
+  showLabels: Ref<boolean>
 ) {
   const charts = ref<ChartState[]>([])
   // True any chart already has data — gates the first-load full-page skeleton.
@@ -47,7 +48,7 @@ export function useChartPipeline(
     const signature = queue.shift()
     if (signature === undefined) return
     draining = true
-    worker.postMessage({ type: 'compute', epoch, signature, sort: currentSort() })
+    worker.postMessage({ type: 'compute', epoch, signature, sort: currentSort(), showLabels: showLabels.value })
   }
 
   worker.onmessage = (e: MessageEvent<WorkerResponse>) => {
@@ -114,7 +115,7 @@ export function useChartPipeline(
 
   let debounce: ReturnType<typeof setTimeout> | undefined
   watch(
-    () => [Array.isArray(results) ? results : results.value, unref(axisLabels), sort.value] as const,
+    () => [Array.isArray(results) ? results : results.value, unref(axisLabels), sort.value, showLabels.value] as const,
     () => {
       // Flip every chart to pending synchronously (not after the debounce) so the
       // card skeletons rise the instant inputs change, not 50ms + a round-trip

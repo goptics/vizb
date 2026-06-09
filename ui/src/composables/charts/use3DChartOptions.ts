@@ -11,7 +11,7 @@ const round2 = (v: number) => Math.round(v * 100) / 100
 
 // Empty render payload when a chart lacks precomputed 3D data (shouldn't happen:
 // the worker attaches render3D to every 3D chart).
-const EMPTY_RENDER: Render3D = { xValues: [], yValues: [], zValues: [], barSeries: [], lineSeries: [] }
+const EMPTY_RENDER: Render3D = { xValues: [], yValues: [], zValues: [], barSeries: [], lineSeries: [], cellTotals: {} }
 
 function makeAxisCommon(styling: ChartStyling) {
   return {
@@ -32,7 +32,7 @@ function axis3DName(label: string | undefined, styling: ChartStyling) {
 }
 
 export function use3DChartOptions(config: BaseChartConfig, seriesType: Series3DType) {
-  const { chartData, isDark, autoRotate, visibleZ } = config
+  const { chartData, isDark, autoRotate, visibleZ, showLabels } = config
 
   const options = computed<EChartsOption>(() => {
     const styling = getChartStyling(isDark.value)
@@ -51,27 +51,47 @@ export function use3DChartOptions(config: BaseChartConfig, seriesType: Series3DT
     const sel = visibleZ?.value ?? {}
     const aggPoints = points.filter((p) => sel[p.zAxis] !== false)
 
-    const series = seriesData.map((s) => ({
-      name: s.name,
-      type: seriesType,
-      ...(seriesType === 'bar3D'
-        ? { stack: 'z', bevelSize: 0.4, bevelSmoothness: 4 }
-        : { lineStyle: { width: 2 } }),
-      data: s.data,
-      itemStyle: { color: getNextColorFor(s.name) },
-      shading: 'lambert',
-      // No data labels: the z axis always exists here, so every value is already in
-      // the tooltip — numbers on bars/points only clutter the 3D scene (and stacked
-      // bar3D labels paint unreliably on sparse 4D anyway).
-      label: { show: false },
-      // echarts-gl ignores emphasis.disabled and shows the value label on hover by
-      // default; kill it explicitly so the tooltip stays the only source of values.
-      emphasis: { label: { show: false } },
-    }))
+    // Precomputed per-cell totals from the transform worker (all z groups, unfiltered).
+    const cellTotals = render.cellTotals ?? {}
+    // Only the visual top of the stacked bar gets labels to avoid duplicate text per cell.
+    const lastVisibleZName =
+      [...zValues].reverse().find((z) => sel[z] !== false) ?? zValues[zValues.length - 1]
+
+    const makeLabel = (isTop: boolean) => {
+      if (!isTop) return { show: false }
+      return {
+        show: true,
+        formatter: (params: { value: number[] }) => {
+          const [xi = 0, yi = 0] = params.value
+          const total = cellTotals[`${xi},${yi}`] ?? 0
+          return total > 0 ? String(round2(total)) : ''
+        },
+        textStyle: { fontSize: 11, color: styling.textColor },
+      }
+    }
+
+    const series = seriesData.map((s) => {
+      // line3D labels go on the scatter3D overlay (visible vertex dots), not here.
+      const isTop = seriesType === 'bar3D' && showLabels.value && s.name === lastVisibleZName
+      return {
+        name: s.name,
+        type: seriesType,
+        ...(seriesType === 'bar3D'
+          ? { stack: 'z', bevelSize: 0.4, bevelSmoothness: 4 }
+          : { lineStyle: { width: 2 } }),
+        data: s.data,
+        itemStyle: { color: getNextColorFor(s.name) },
+        shading: 'lambert',
+        label: makeLabel(isTop),
+        // echarts-gl ignores emphasis.disabled and shows the value label on hover by
+        // default; kill it explicitly so the tooltip stays the only source of values.
+        emphasis: { label: { show: false } },
+      }
+    })
 
     // line3D can't draw its own vertex markers → overlay scatter3D dots so the data
-    // points are visible (labels off; values live in the tooltip). Reuses the same
-    // sparse per-z data. bar3D needs no overlay.
+    // points are visible. When showLabels is on, the last visible z series shows
+    // cell totals via series-level formatter. bar3D needs no overlay.
     const labelSeries =
       seriesType === 'line3D'
         ? render.lineSeries.map((s) => ({
@@ -80,7 +100,7 @@ export function use3DChartOptions(config: BaseChartConfig, seriesType: Series3DT
             data: s.data,
             symbolSize: 10,
             itemStyle: { color: getNextColorFor(s.name) },
-            label: { show: false },
+            label: makeLabel(showLabels.value && s.name === lastVisibleZName),
             emphasis: { label: { show: false } },
           }))
         : []

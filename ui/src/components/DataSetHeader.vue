@@ -7,8 +7,8 @@ import TimestampBadge from './TimestampBadge.vue'
 import GroupSelector from './Selector.vue'
 
 const props = defineProps<{
-  benchmark: DataSet
-  benchmarks: { name: string }[]
+  dataSet: DataSet
+  dataSets: { name: string }[]
   activeDataSetId: number
   resultGroups: { name: string }[]
   activeGroupId: number
@@ -19,38 +19,38 @@ const emit = defineEmits<{
   selectGroup: [id: number]
 }>()
 
-const mainTitle = computed(() => props.benchmarks[0]?.name || 'DataSets')
-const hasCPU = computed(() => props.benchmark.cpu?.name || props.benchmark.cpu?.cores)
-const hasOS = computed(() => props.benchmark.os)
+const mainTitle = computed(() => props.dataSets[0]?.name || 'DataSets')
+const hasCPU = computed(() => props.dataSet.cpu?.name || props.dataSet.cpu?.cores)
+const hasOS = computed(() => props.dataSet.os)
 </script>
 
 <template>
   <header class="space-y-3 py-5 text-center">
     <GroupSelector
-      v-if="benchmarks.length > 1"
-      :items="benchmarks"
+      v-if="dataSets.length > 1"
+      :items="dataSets"
       :activeId="activeDataSetId"
       @select="emit('selectDataSet', $event)"
       class="mx-auto min-w-80"
       placeholder="Search DataSet..."
-      notFoundText="No benchmark found."
+      notFoundText="No dataSet found."
     />
 
     <h1 v-else class="text-4xl font-bold">{{ mainTitle }}</h1>
 
     <div class="flex flex-col items-center gap-2">
-      <CpuBadge v-if="hasCPU" :cpu="benchmark.cpu" :history="benchmark.history" />
-      <OsBadge v-if="hasOS" :os="benchmark.os" :history="benchmark.history" />
+      <CpuBadge v-if="hasCPU" :cpu="dataSet.cpu" :history="dataSet.history" />
+      <OsBadge v-if="hasOS" :os="dataSet.os" :history="dataSet.history" />
     </div>
 
     <TimestampBadge
-      v-if="benchmark.timestamp"
-      :timestamp="benchmark.timestamp"
-      :history="benchmark.history"
+      v-if="dataSet.timestamp"
+      :timestamp="dataSet.timestamp"
+      :history="dataSet.history"
     />
 
-    <p v-if="benchmark.description" class="text-muted-foreground">
-      {{ benchmark.description }}
+    <p v-if="dataSet.description" class="text-muted-foreground">
+      {{ dataSet.description }}
     </p>
 
     <GroupSelector

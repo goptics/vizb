@@ -47,7 +47,8 @@ export function buildChartForSignature(
   signature: string,
   statTemplate: Stat,
   labels: AxisLabels | undefined,
-  sort: Sort
+  sort: Sort,
+  showLabels = false
 ): ChartData {
   const dataMap = new Map<string, Map<string, number>>()
   const xAxisSet = new Set<string>()
@@ -91,16 +92,16 @@ export function buildChartForSignature(
     axisLabels: labels,
   }
 
-  if (chartIs3D(chart)) chart.render3D = build3DRender(chart.points, chart.zAxis, sort)
+  if (chartIs3D(chart)) chart.render3D = build3DRender(chart.points, chart.zAxis, sort, showLabels)
 
   return chart
 }
 
 // Build one ChartData per unique stat signature. Kept as the bulk entry point
 // (tests + any non-worker caller); the worker uses the per-signature builder.
-export function buildChartData(data: DataPoint[], labels: AxisLabels | undefined, sort: Sort): ChartData[] {
+export function buildChartData(data: DataPoint[], labels: AxisLabels | undefined, sort: Sort, showLabels = false): ChartData[] {
   return listChartSignatures(data).map(({ signature, statTemplate }) =>
-    buildChartForSignature(data, signature, statTemplate, labels, sort)
+    buildChartForSignature(data, signature, statTemplate, labels, sort, showLabels)
   )
 }
 
@@ -161,7 +162,7 @@ const gridFromCells = (
 // Build the 3D render payload: sorted axis categories plus per-z series data for
 // bar3D (full grid — keeps stacked bars seated) and line3D (sparse — a 0-grid
 // would drag every line to the floor).
-export function build3DRender(points: Point3D[], zAxisAll: string[], sort: Sort): Render3D {
+export function build3DRender(points: Point3D[], zAxisAll: string[], sort: Sort, showLabels = false): Render3D {
   let xValues = Array.from(new Set(points.map((p) => p.xAxis)))
   let yValues = Array.from(new Set(points.map((p) => p.yAxis)))
   let zValues = zAxisAll.filter((z) => z !== '')
@@ -183,7 +184,18 @@ export function build3DRender(points: Point3D[], zAxisAll: string[], sort: Sort)
     lineSeries.push({ name: z, data: sparseFromCells(cells) })
   }
 
-  return { xValues, yValues, zValues, barSeries, lineSeries }
+  const cellTotals: Record<string, number> = {}
+  if (showLabels) {
+    for (const s of barSeries) {
+      for (const item of s.data) {
+        const [xi = 0, yi = 0, v = 0] = item.value
+        const key = `${xi},${yi}`
+        cellTotals[key] = (cellTotals[key] ?? 0) + v
+      }
+    }
+  }
+
+  return { xValues, yValues, zValues, barSeries, lineSeries, cellTotals }
 }
 
 const chartIs3D = (c: ChartData): boolean => {

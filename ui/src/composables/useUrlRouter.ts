@@ -11,7 +11,7 @@ type UrlParams = {
   l?: 'true' | 'false' // show labels
   c?: ChartType // chart type
   sc?: ScaleType // scale type
-  b?: string // benchmark ID
+  d?: string // dataset ID
   g?: string // group ID
 }
 
@@ -25,7 +25,7 @@ const parseUrlParams = (): UrlParams => {
     l: params.get('l') as 'true' | 'false' | undefined,
     c: params.get('c') as ChartType | undefined,
     sc: params.get('sc') as ScaleType | undefined,
-    b: params.get('b') ?? undefined,
+    d: params.get('d') ?? undefined,
     g: params.get('g') ?? undefined,
   }
 }
@@ -63,7 +63,7 @@ const applyIndexParam = (
 export function useUrlRouter() {
   const { settings, setSort, setShowLabels, setChartType, setScale } = useSettingsStore()
   const {
-    benchmarks,
+    dataSets,
     resultGroups,
     activeDataSetId,
     activeGroupId,
@@ -77,7 +77,7 @@ export function useUrlRouter() {
    */
   const applyParams = (params: UrlParams) => {
     // 1. DataSet ID - apply first since it resets settings
-    applyIndexParam(params.b, benchmarks.value.length, selectDataSet)
+    applyIndexParam(params.d, dataSets.value.length, selectDataSet)
 
     // 2. Group ID - depends on benchmark selection
     applyIndexParam(params.g, resultGroups.value.length, selectGroup)
@@ -137,7 +137,7 @@ export function useUrlRouter() {
 
     // DataSet ID - only include if not first
     if (activeDataSetId.value > 0) {
-      params.b = activeDataSetId.value.toString()
+      params.d = activeDataSetId.value.toString()
     }
 
     // Group ID - only include if not first

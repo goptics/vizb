@@ -35,6 +35,7 @@ export function getNextColorFor(key: string) {
     return COLOR_PALETTE[colorMap.get(key)!]
   }
 
+
   const colorIndex = i % COLOR_PALETTE.length
   const color = COLOR_PALETTE[colorIndex]
   colorMap.set(key, colorIndex)
@@ -49,8 +50,8 @@ export function getNextColorFor(key: string) {
 }
 
 export const resetColor = () => {
-  colorMap.clear()
   i = 0
+  colorMap.clear()
 }
 
 export const chartHasYAxis = (chart: ChartData) =>

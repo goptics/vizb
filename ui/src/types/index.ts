@@ -97,6 +97,9 @@ export type Render3D = {
   zValues: string[]
   barSeries: Series3DData[]
   lineSeries: Series3DData[]
+  // Precomputed sum of all z-group values per (xi,yi) cell. Key: "${xi},${yi}".
+  // Computed in the transform worker so the Vue computed only does O(1) lookups.
+  cellTotals: Record<string, number>
 }
 
 export type SeriesData = {

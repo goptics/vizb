@@ -12,7 +12,7 @@ import { listChartSignatures, buildChartForSignature, type ChartSignature } from
 import type { DataPoint, AxisLabels, Sort, ChartData } from '../types'
 
 export type InitMessage = { type: 'init'; epoch: number; data: DataPoint[]; labels?: AxisLabels }
-export type ComputeMessage = { type: 'compute'; epoch: number; signature: string; sort: Sort }
+export type ComputeMessage = { type: 'compute'; epoch: number; signature: string; sort: Sort; showLabels: boolean }
 export type WorkerRequest = InitMessage | ComputeMessage
 
 export type ReadyMessage = {
@@ -63,7 +63,8 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
     entry.signature,
     entry.statTemplate,
     state.labels,
-    msg.sort
+    msg.sort,
+    msg.showLabels
   )
   post({ type: 'chart', epoch: msg.epoch, signature: msg.signature, chart })
 }

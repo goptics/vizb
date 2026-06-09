@@ -16,7 +16,7 @@ import IconButton from '../components/IconButton.vue'
 const version = window.VIZB_VERSION || 'v0.0.0-dev'
 
 const {
-  benchmarks,
+  dataSets,
   activeDataSet,
   activeDataSetId,
   selectDataSet,
@@ -35,7 +35,7 @@ const activeAxisLabels = computed(() => activeDataSet.value?.axisLabels)
 // Charts are computed off-thread in a worker, one at a time (queue-based). Each
 // slot carries its own `pending` so its card drives an independent skeleton and
 // reveals progressively.
-const { charts, hasAny } = useChartPipeline(activeResults, activeAxisLabels, toRef(settings, 'sort'))
+const { charts, hasAny } = useChartPipeline(activeResults, activeAxisLabels, toRef(settings, 'sort'), toRef(settings, 'showLabels'))
 
 // Full-page skeleton only while loading the dataset or on the very first compute
 // (no chart has data yet). Later recomputes keep existing charts visible and let
@@ -69,8 +69,8 @@ useDashboardInit()
 
   <main v-else-if="activeDataSet" class="mx-auto min-h-screen max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
     <DataSetHeader
-      :benchmark="activeDataSet"
-      :benchmarks="benchmarks"
+      :dataSet="activeDataSet"
+      :dataSets="dataSets"
       :activeDataSetId="activeDataSetId"
       :resultGroups="resultGroups"
       :activeGroupId="activeGroupId"

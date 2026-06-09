@@ -1,6 +1,6 @@
 [
   {
-    "name": "HTTP Routing DataSets",
+    "name": "HTTP Routing Benchmarks",
     "description": "Performance comparison of popular Go HTTP Routers",
     "pkg": "github.com/gin-gonic/go-http-routing-benchmark",
     "timestamp": "2025-11-15T10:30:00Z",
@@ -10388,7 +10388,7 @@
     ]
   },
   {
-    "name": "Worker Pool DataSets",
+    "name": "Worker Pool Benchmarks",
     "description": "Performance comparison of different worker pool implementations",
     "cpu": {
       "name": "Intel Core i9-13900K @ 5.8GHz",
