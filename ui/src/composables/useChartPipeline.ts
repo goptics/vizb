@@ -1,5 +1,5 @@
 import { ref, watch, unref, onScopeDispose, type MaybeRef, type Ref } from 'vue'
-import type { AxisLabels, DataPoint, ChartData, Sort } from '../types'
+import type { AxisLabels, DataPoint, ChartData, Sort, ScaleType } from '../types'
 import TransformWorker from '../workers/transform.worker.ts?worker&inline'
 import type { WorkerResponse } from '../workers/transform.worker'
 
@@ -24,7 +24,8 @@ export function useChartPipeline(
   results: Ref<DataPoint[]> | DataPoint[],
   axisLabels: MaybeRef<AxisLabels | undefined> | undefined,
   sort: Ref<Sort>,
-  showLabels: Ref<boolean>
+  showLabels: Ref<boolean>,
+  scale: Ref<ScaleType>
 ) {
   const charts = ref<ChartState[]>([])
   // True any chart already has data — gates the first-load full-page skeleton.
@@ -48,7 +49,7 @@ export function useChartPipeline(
     const signature = queue.shift()
     if (signature === undefined) return
     draining = true
-    worker.postMessage({ type: 'compute', epoch, signature, sort: currentSort(), showLabels: showLabels.value })
+    worker.postMessage({ type: 'compute', epoch, signature, sort: currentSort(), showLabels: showLabels.value, scale: scale.value })
   }
 
   worker.onmessage = (e: MessageEvent<WorkerResponse>) => {
@@ -115,7 +116,7 @@ export function useChartPipeline(
 
   let debounce: ReturnType<typeof setTimeout> | undefined
   watch(
-    () => [Array.isArray(results) ? results : results.value, unref(axisLabels), sort.value, showLabels.value] as const,
+    () => [Array.isArray(results) ? results : results.value, unref(axisLabels), sort.value, showLabels.value, scale.value] as const,
     () => {
       // Flip every chart to pending synchronously (not after the debounce) so the
       // card skeletons rise the instant inputs change, not 50ms + a round-trip

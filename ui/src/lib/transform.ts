@@ -13,6 +13,7 @@ import type {
   SortOrder,
   Render3D,
   Series3DData,
+  ScaleType,
 } from '../types'
 
 const toStatSignature = (stat: Stat): string => `${stat.type}-${stat.unit}-${stat.per}`
@@ -48,7 +49,8 @@ export function buildChartForSignature(
   statTemplate: Stat,
   labels: AxisLabels | undefined,
   sort: Sort,
-  showLabels = false
+  showLabels = false,
+  scale: ScaleType = 'linear'
 ): ChartData {
   const dataMap = new Map<string, Map<string, number>>()
   const xAxisSet = new Set<string>()
@@ -92,16 +94,16 @@ export function buildChartForSignature(
     axisLabels: labels,
   }
 
-  if (chartIs3D(chart)) chart.render3D = build3DRender(chart.points, chart.zAxis, sort, showLabels)
+  if (chartIs3D(chart)) chart.render3D = build3DRender(chart.points, chart.zAxis, sort, showLabels, scale)
 
   return chart
 }
 
 // Build one ChartData per unique stat signature. Kept as the bulk entry point
 // (tests + any non-worker caller); the worker uses the per-signature builder.
-export function buildChartData(data: DataPoint[], labels: AxisLabels | undefined, sort: Sort, showLabels = false): ChartData[] {
+export function buildChartData(data: DataPoint[], labels: AxisLabels | undefined, sort: Sort, showLabels = false, scale: ScaleType = 'linear'): ChartData[] {
   return listChartSignatures(data).map(({ signature, statTemplate }) =>
-    buildChartForSignature(data, signature, statTemplate, labels, sort, showLabels)
+    buildChartForSignature(data, signature, statTemplate, labels, sort, showLabels, scale)
   )
 }
 
@@ -162,7 +164,7 @@ const gridFromCells = (
 // Build the 3D render payload: sorted axis categories plus per-z series data for
 // bar3D (full grid — keeps stacked bars seated) and line3D (sparse — a 0-grid
 // would drag every line to the floor).
-export function build3DRender(points: Point3D[], zAxisAll: string[], sort: Sort, showLabels = false): Render3D {
+export function build3DRender(points: Point3D[], zAxisAll: string[], sort: Sort, showLabels = false, scale: ScaleType = 'linear'): Render3D {
   let xValues = Array.from(new Set(points.map((p) => p.xAxis)))
   let yValues = Array.from(new Set(points.map((p) => p.yAxis)))
   let zValues = zAxisAll.filter((z) => z !== '')
@@ -176,11 +178,17 @@ export function build3DRender(points: Point3D[], zAxisAll: string[], sort: Sort,
   const xIndex = new Map(xValues.map((v, i) => [v, i]))
   const yIndex = new Map(yValues.map((v, i) => [v, i]))
 
+  // A log z-axis can't plot 0/negative values. bar3D's full 0-filled grid would
+  // be invalid, so under log we drop non-positive cells and make bar sparse too
+  // (same intent as the 2D log path nulling values <= 0).
+  const isLog = scale === 'log'
+
   const barSeries: Series3DData[] = []
   const lineSeries: Series3DData[] = []
   for (const z of zValues) {
     const cells = cellsFor(points, z, xIndex, yIndex)
-    barSeries.push({ name: z, data: gridFromCells(cells, xIndex, yIndex) })
+    if (isLog) for (const [k, v] of cells) if (v <= 0) cells.delete(k)
+    barSeries.push({ name: z, data: isLog ? sparseFromCells(cells) : gridFromCells(cells, xIndex, yIndex) })
     lineSeries.push({ name: z, data: sparseFromCells(cells) })
   }
 

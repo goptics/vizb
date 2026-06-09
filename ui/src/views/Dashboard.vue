@@ -35,7 +35,7 @@ const activeAxisLabels = computed(() => activeDataSet.value?.axisLabels)
 // Charts are computed off-thread in a worker, one at a time (queue-based). Each
 // slot carries its own `pending` so its card drives an independent skeleton and
 // reveals progressively.
-const { charts, hasAny } = useChartPipeline(activeResults, activeAxisLabels, toRef(settings, 'sort'), toRef(settings, 'showLabels'))
+const { charts, hasAny } = useChartPipeline(activeResults, activeAxisLabels, toRef(settings, 'sort'), toRef(settings, 'showLabels'), toRef(settings, 'scale'))
 
 // Full-page skeleton only while loading the dataset or on the very first compute
 // (no chart has data yet). Later recomputes keep existing charts visible and let

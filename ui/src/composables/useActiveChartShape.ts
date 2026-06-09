@@ -12,8 +12,10 @@ export function useActiveChartShape() {
     return data.some((d) => d.xAxis) && data.some((d) => d.yAxis) && data.some((d) => d.zAxis)
   })
 
+  // Scale (linear/log) applies to any value-axis chart — 2D and 3D bar/line.
+  // Only pie has no value axis to scale.
   const isAxisChart = computed(
-    () => (settings.charts[settings.activeChartIndex] ?? 'bar') !== 'pie' && !is3DChart.value
+    () => (settings.charts[settings.activeChartIndex] ?? 'bar') !== 'pie'
   )
 
   return { is3DChart, isAxisChart }

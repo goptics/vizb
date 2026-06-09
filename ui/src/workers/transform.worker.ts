@@ -9,10 +9,10 @@
 // Every message carries an `epoch`; the worker ignores anything that doesn't
 // match the last init, so stale jobs from a superseded input never reply.
 import { listChartSignatures, buildChartForSignature, type ChartSignature } from '../lib/transform'
-import type { DataPoint, AxisLabels, Sort, ChartData } from '../types'
+import type { DataPoint, AxisLabels, Sort, ChartData, ScaleType } from '../types'
 
 export type InitMessage = { type: 'init'; epoch: number; data: DataPoint[]; labels?: AxisLabels }
-export type ComputeMessage = { type: 'compute'; epoch: number; signature: string; sort: Sort; showLabels: boolean }
+export type ComputeMessage = { type: 'compute'; epoch: number; signature: string; sort: Sort; showLabels: boolean; scale: ScaleType }
 export type WorkerRequest = InitMessage | ComputeMessage
 
 export type ReadyMessage = {
@@ -64,7 +64,8 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
     entry.statTemplate,
     state.labels,
     msg.sort,
-    msg.showLabels
+    msg.showLabels,
+    msg.scale
   )
   post({ type: 'chart', epoch: msg.epoch, signature: msg.signature, chart })
 }

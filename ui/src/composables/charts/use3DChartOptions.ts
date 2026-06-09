@@ -32,7 +32,7 @@ function axis3DName(label: string | undefined, styling: ChartStyling) {
 }
 
 export function use3DChartOptions(config: BaseChartConfig, seriesType: Series3DType) {
-  const { chartData, isDark, autoRotate, visibleZ, showLabels } = config
+  const { chartData, isDark, autoRotate, visibleZ, showLabels, scale } = config
 
   const options = computed<EChartsOption>(() => {
     const styling = getChartStyling(isDark.value)
@@ -193,7 +193,9 @@ export function use3DChartOptions(config: BaseChartConfig, seriesType: Series3DT
         ...axis3DName(chartData.value.axisLabels?.y, styling),
       },
       zAxis3D: {
-        type: 'value',
+        // Log scale mirrors the 2D value axis; the worker has already dropped
+        // non-positive cells so nothing invalid lands on a log axis.
+        ...(scale.value === 'log' ? { type: 'log', logBase: 10 } : { type: 'value' }),
         ...axisCommon,
         // The vertical axis is the only free spatial axis for the z group, so its
         // label rides here inside the canvas — matching x/y axis names. The ticks
