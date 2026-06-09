@@ -498,6 +498,19 @@ func TestGroupAxisLabels(t *testing.T) {
 			pattern:  "y/x",
 			expected: map[string]string{},
 		},
+		// bench-parser usage: --group labels name/x/y/z axes in pattern order
+		{
+			name:     "bench: n/y/x pattern labels all three dimensions",
+			group:    []string{"Sort", "algorithm", "size"},
+			pattern:  "n/y/x",
+			expected: map[string]string{"name": "Sort", "yAxis": "algorithm", "xAxis": "size"},
+		},
+		{
+			name:     "bench: n/x/y/z pattern labels all four dimensions",
+			group:    []string{"Sort", "size", "variant", "depth"},
+			pattern:  "n/x/y/z",
+			expected: map[string]string{"name": "Sort", "xAxis": "size", "yAxis": "variant", "zAxis": "depth"},
+		},
 	}
 
 	for _, tt := range tests {

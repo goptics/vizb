@@ -145,6 +145,36 @@ The `--group-regex` flag uses Go-style named capture groups for full flexibility
 vizb bench.txt --group-regex "(?<n>.*)/text=(?<x>.*)/level=(?<y>.*)" -o output.html
 ```
 
+## Labelling Axes with `--group` / `-g`
+
+The `--group` flag assigns human-readable labels to each dimension — the name, x, y, and z axes — so charts render meaningful axis titles instead of raw field identifiers.
+
+Labels are mapped **positionally** to the `--group-pattern` parts in order:
+
+```bash
+# Pattern n/y/x → --group labels: Sort=name, algorithm=y, size=x
+go test -bench . | vizb -p n/y/x --group Sort,algorithm,size -o output.html
+```
+
+| Pattern slot | `--group` entry | Axis label |
+|---|---|---|
+| `n` (name) | `Sort` | chart group label |
+| `y` | `algorithm` | Y-axis title |
+| `x` | `size` | X-axis title |
+
+This works for all parser types:
+
+- **Benchmark parsers** (`go`, `rs:*`, `js:*`): `--group` provides display labels for the
+  dimensions already extracted from the benchmark name by `--group-pattern`.
+- **csv/json parsers**: `--group` selects *which columns* feed each dimension. The same entries
+  also become the axis labels.
+
+<Aside type="note">
+  Labels are included in the JSON output under `axisLabels` and displayed on the chart axes.
+  The `name` label is preserved for the UI axis-swap feature, which lets you rotate dimensions
+  while carrying their labels.
+</Aside>
+
 ## Choosing a Method
 
 <Tabs syncKey="method">

@@ -50,8 +50,8 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.Flags().StringVarP(&shared.FlagState.Name, "name", "n", "Comparisons", "Name of the Data set")
-	rootCmd.Flags().StringVarP(&shared.FlagState.Description, "description", "d", "", "Description of the Data set")
+	rootCmd.Flags().StringVarP(&shared.FlagState.Name, "name", "n", "Comparisons", "Name of the comparison")
+	rootCmd.Flags().StringVarP(&shared.FlagState.Description, "description", "d", "", "Description of the comparison")
 	rootCmd.PersistentFlags().StringVarP(&shared.FlagState.OutputFile, "output", "o", "", "Output file path/name")
 	rootCmd.Flags().StringVarP(&shared.FlagState.MemUnit, "mem-unit", "M", "B", "Memory unit available: b, B, KB, MB, GB")
 	rootCmd.Flags().StringVarP(&shared.FlagState.TimeUnit, "time-unit", "T", "ns", "Time unit available: ns, us, ms, s")
@@ -60,11 +60,11 @@ func init() {
 	rootCmd.Flags().StringVarP(&shared.FlagState.GroupRegex, "group-regex", "r", "", "Regex pattern to extract grouping information from data labels / series names")
 	rootCmd.Flags().StringVarP(&shared.FlagState.Sort, "sort", "s", "", "Sort in asc or desc order (default: as-is)")
 	rootCmd.Flags().StringSliceVarP(&shared.FlagState.Charts, "charts", "c", []string{"bar", "line", "pie"}, "Chart types to generate (bar, line, pie)")
-	rootCmd.Flags().StringSliceVarP(&shared.FlagState.Group, "group", "g", nil, "Column/field names merged (in flag order, '/'-joined) into the group name; parsed by -p/-r (csv/json parsers)")
+	rootCmd.Flags().StringSliceVarP(&shared.FlagState.Group, "group", "g", nil, "Names each dimension in --group-pattern/regex order. csv/json: column/field names whose values feed the dimensions; benchmark parsers: human-readable labels for the name/x/y/z axes")
 	rootCmd.Flags().BoolVarP(&shared.FlagState.ShowLabels, "show-labels", "l", false, "Show labels on charts")
 	rootCmd.Flags().StringVarP(&shared.FlagState.FilterRegex, "filter", "f", "", "Regex pattern to include only matching data labels / series names")
 	rootCmd.Flags().StringVarP(&shared.FlagState.Scale, "scale", "S", "linear", "Scale type (linear, log)")
-	rootCmd.Flags().StringVarP(&shared.FlagState.Tag, "tag", "t", "", "Tag/identifier for the Data set")
+	rootCmd.Flags().StringVarP(&shared.FlagState.Tag, "tag", "t", "", "Tag/identifier for the comparison")
 	rootCmd.Flags().StringVarP(&shared.FlagState.Parser, "parser", "P", "auto", "Benchmark parser to use; 'auto' detects from input content (one of: auto, "+strings.Join(parser.AvailableParsers(), ", ")+")")
 
 	// Add a hook to validate flags after parsing
