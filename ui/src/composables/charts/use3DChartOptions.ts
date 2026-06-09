@@ -2,7 +2,7 @@ import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
 import { getNextColorFor } from '../../lib/utils'
-import { getChartStyling, getTooltipTheme, tooltipDivider, type ChartStyling } from './shared'
+import { getChartStyling, getTooltipTheme, tooltipDivider, renderDonutSvg, type ChartStyling } from './shared'
 import type { Render3D } from '../../types'
 
 type Series3DType = 'bar3D' | 'line3D'
@@ -151,7 +151,15 @@ export function use3DChartOptions(config: BaseChartConfig, seriesType: Series3DT
         `Σ ${xName}: <b>${round2(xMarginal)}</b><br/>` +
         `Σ ${yName}: <b>${round2(yMarginal)}</b>`
 
-      return `<b>${xName} / ${yName}</b><br/>${rows.join('<br/>')}${margins}`
+      const donut =
+        zmap.size > 1
+          ? renderDonutSvg(
+              zValues
+                .filter((z) => zmap.has(z))
+                .map((z) => ({ value: zmap.get(z)!, color: getNextColorFor(z) ?? '' }))
+            )
+          : ''
+      return `<b>${xName} / ${yName}</b><br/>${rows.join('<br/>')}${margins}${donut ? tooltipDivider(isDark.value) + donut : ''}`
     }
 
     return {
