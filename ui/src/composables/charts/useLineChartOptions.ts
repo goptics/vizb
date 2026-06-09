@@ -43,7 +43,6 @@ export function useLineChartOptions(config: BaseChartConfig) {
           {
             name: chartData.value.title,
             type: 'line' as const,
-            smooth: true,
             data: series.map((s) =>
               makeDataItem(
                 adjustForLogScaleLine(s.values[0] ?? 0, effectiveScale),
@@ -65,7 +64,6 @@ export function useLineChartOptions(config: BaseChartConfig) {
     const transposedSeries = yAxisLabels.map((yAxisLabel, yIndex) => ({
       name: yAxisLabel,
       type: 'line' as const,
-      smooth: true,
       data: series.map((s) =>
         makeDataItem(
           adjustForLogScaleLine(s.values[yIndex] ?? 0, effectiveScale),
