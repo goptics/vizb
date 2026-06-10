@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, toRef } from 'vue'
+import { computed, toRef, provide } from 'vue'
 import { Moon, Sun, Package } from 'lucide-vue-next'
 import { useDataPoint } from '../composables/useDataPoint'
 import { useChartPipeline } from '../composables/useChartPipeline'
@@ -35,7 +35,8 @@ const activeAxisLabels = computed(() => activeDataSet.value?.axisLabels)
 // Charts are computed off-thread in a worker, one at a time (queue-based). Each
 // slot carries its own `pending` so its card drives an independent skeleton and
 // reveals progressively.
-const { charts, hasAny } = useChartPipeline(activeResults, activeAxisLabels, toRef(settings, 'sort'), toRef(settings, 'showLabels'), toRef(settings, 'scale'))
+const { charts, hasAny, triggerSwap } = useChartPipeline(activeResults, activeAxisLabels, toRef(settings, 'sort'), toRef(settings, 'showLabels'), toRef(settings, 'scale'))
+provide('triggerSwap', triggerSwap)
 
 // Full-page skeleton only while loading the dataset or on the very first compute
 // (no chart has data yet). Later recomputes keep existing charts visible and let

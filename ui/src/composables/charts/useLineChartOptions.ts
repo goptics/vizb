@@ -6,12 +6,14 @@ import {
   createAxisConfig,
   createDataZoomConfig,
   createGridConfig,
+  createLabelConfig,
   createLegendConfig,
   createPinnedAxisTooltip,
   createTooltipConfig,
   getChartStyling,
   isLargeXAxis,
   makeLegendTitle,
+  LARGE_DATA_THRESHOLD,
 } from './shared'
 import {
   adjustForLogScaleLine,
@@ -19,7 +21,6 @@ import {
   getEffectiveScale,
   computeSeriesTotals,
 } from './shared/common'
-import { makeDataItem } from './shared/seriesConfig'
 
 const defaultSymbol = { symbol: 'circle', symbolSize: 7 }
 const largeSymbol = { symbol: 'none', sampling: 'lttb' }
@@ -48,13 +49,10 @@ export function useLineChartOptions(config: BaseChartConfig) {
           {
             name: chartData.value.title,
             type: 'line' as const,
-            data: series.map((s) =>
-              makeDataItem(
-                adjustForLogScaleLine(s.values[0] ?? 0, effectiveScale),
-                showLabels.value,
-                styling
-              )
-            ),
+            data: series.map((s) => adjustForLogScaleLine(s.values[0] ?? 0, effectiveScale)),
+            label: createLabelConfig(showLabels.value, styling),
+            large: true,
+            largeThreshold: LARGE_DATA_THRESHOLD,
             connectNulls: true,
             itemStyle: { color: getNextColorFor(chartData.value.title) },
             ...(largeX ? largeSymbol : defaultSymbol),
@@ -68,13 +66,10 @@ export function useLineChartOptions(config: BaseChartConfig) {
     const transposedSeries = yAxisLabels.map((yAxisLabel, yIndex) => ({
       name: yAxisLabel,
       type: 'line' as const,
-      data: series.map((s) =>
-        makeDataItem(
-          adjustForLogScaleLine(s.values[yIndex] ?? 0, effectiveScale),
-          showLabels.value,
-          styling
-        )
-      ),
+      data: series.map((s) => adjustForLogScaleLine(s.values[yIndex] ?? 0, effectiveScale)),
+      label: createLabelConfig(showLabels.value, styling),
+      large: true,
+      largeThreshold: LARGE_DATA_THRESHOLD,
       connectNulls: true,
       itemStyle: { color: getNextColorFor(yAxisLabel) },
       ...(largeX ? largeSymbol : defaultSymbol),

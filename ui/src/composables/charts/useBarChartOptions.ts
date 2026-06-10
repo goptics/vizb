@@ -6,18 +6,19 @@ import {
   createAxisConfig,
   createDataZoomConfig,
   createGridConfig,
+  createLabelConfig,
   createLegendConfig,
   createTooltipConfig,
   getChartStyling,
   isLargeXAxis,
   makeLegendTitle,
+  LARGE_DATA_THRESHOLD,
 } from './shared'
 import {
   useSortedSeriesData,
   getEffectiveScale,
   computeSeriesTotals,
 } from './shared/common'
-import { makeDataItem } from './shared/seriesConfig'
 
 const barNullable = (val: number, scale: string): number | null =>
   scale === 'log' && val <= 0 ? null : val
@@ -46,9 +47,14 @@ export function useBarChartOptions(config: BaseChartConfig) {
           {
             name: chartData.value.title,
             type: 'bar' as const,
-            data: series.map((s) =>
-              makeDataItem(barNullable(s.values[0] ?? 0, effectiveScale), showLabels.value, styling)
-            ),
+            // Plain values + one series-level label, not a per-point {value,label}
+            // object — a 100k-bar chart would otherwise allocate 100k label configs
+            // on every recompute. `large` keeps the draw on one frame past the
+            // threshold.
+            data: series.map((s) => barNullable(s.values[0] ?? 0, effectiveScale)),
+            label: createLabelConfig(showLabels.value, styling),
+            large: true,
+            largeThreshold: LARGE_DATA_THRESHOLD,
             itemStyle: { color: getNextColorFor(chartData.value.title) },
           },
         ],
@@ -60,17 +66,19 @@ export function useBarChartOptions(config: BaseChartConfig) {
     const transposedSeries = yAxisLabels.map((yAxisLabel, yIndex) => ({
       name: yAxisLabel,
       type: 'bar' as const,
-      data: series.map((s) =>
-        makeDataItem(barNullable(s.values[yIndex] || 0, effectiveScale), showLabels.value, styling)
-      ),
+      data: series.map((s) => barNullable(s.values[yIndex] || 0, effectiveScale)),
+      label: createLabelConfig(showLabels.value, styling),
+      large: true,
+      largeThreshold: LARGE_DATA_THRESHOLD,
       itemStyle: { color: getNextColorFor(yAxisLabel) },
     }))
 
-    // Secondary sort when there is only one x-group (sort within the group)
+    // Secondary sort when there is only one x-group (sort within the group).
+    // data items are now plain numbers (or null).
     if (sort.value.enabled && xAxisData.length === 1) {
       transposedSeries.sort((a, b) => {
-        const valA = a.data[0]?.value || 0
-        const valB = b.data[0]?.value || 0
+        const valA = a.data[0] ?? 0
+        const valB = b.data[0] ?? 0
         return sort.value.order === 'asc' ? valA - valB : valB - valA
       })
     }

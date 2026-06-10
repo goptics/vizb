@@ -8,6 +8,11 @@ export function isLargeXAxis(xAxisData: string[]): boolean {
   return xAxisData.length > LARGE_X_THRESHOLD
 }
 
+// Point count past which bar/line series switch on ECharts' large-data path
+// (`large: true`). Below it, normal rendering keeps full per-item interactivity;
+// above it the optimized path keeps a 100k-point dataset's draw on one frame.
+export const LARGE_DATA_THRESHOLD = 2000
+
 export function createDataZoomConfig(xAxisData: string[]): any[] {
   const end = Math.max(5, Math.ceil((30 / xAxisData.length) * 100))
   return [

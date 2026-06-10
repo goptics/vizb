@@ -18,6 +18,17 @@ import type {
 
 const toStatSignature = (stat: Stat): string => `${stat.type}-${stat.unit}-${stat.per}`
 
+// Sort series in place by their summed value across all y, mirroring the old
+// main-thread `useSortedSeriesData`. Totals are computed once (not per compare).
+function sortSeriesByTotal(series: SeriesData[], order: SortOrder): void {
+  const totals = new Map<SeriesData, number>()
+  for (const s of series) totals.set(s, s.values.reduce((sum, v) => sum + v, 0))
+  series.sort((a, b) => {
+    const diff = totals.get(a)! - totals.get(b)!
+    return order === 'asc' ? diff : -diff
+  })
+}
+
 export type ChartSignature = { signature: string; statTemplate: Stat }
 
 // Enumerate the unique stat signatures in the dataset, in first-seen order.
@@ -82,6 +93,13 @@ export function buildChartForSignature(
     values: yAxisValues.map((yAxis) => dataMap.get(yAxis)?.get(xAxis) || 0),
     benchmarkId: data[0]?.name || '',
   }))
+
+  // Sort the 2D series here (in the worker) rather than in the chart-option
+  // computed on the main thread — for a wide x-axis (up to 100k series) the
+  // per-series total + sort is the expensive bit and belongs off-thread. 3D
+  // charts render off `render3D` (sorted separately below), so this only shapes
+  // the 2D bar/line x order; harmless for the 3D path.
+  if (sort.enabled) sortSeriesByTotal(series, sort.order)
 
   const chart: ChartData = {
     title: statTemplate.type,

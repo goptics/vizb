@@ -26,53 +26,55 @@ export const adjustForLogScaleLine = (value: number, scale: ScaleType): number |
   return value <= 0 ? null : value
 }
 
-// Shared sorted-series computation for bar/line charts (identical logic in both)
-export function useSortedSeriesData(chartData: Ref<ChartData>, sort: Ref<Sort>) {
-  return computed(() => {
-    if (!sort.value.enabled) {
-      return {
-        series: chartData.value.series,
-        xAxisData: chartData.value.series.map((s) => s.xAxis),
-        hasYAxis: hasYAxis(chartData),
-      }
-    }
-
-    const seriesWithTotals = chartData.value.series.map((series) => ({
-      ...series,
-      total: series.values.reduce((sum, val) => sum + val, 0),
-    }))
-
-    seriesWithTotals.sort(sortByTotal(sort.value.order))
-
-    return {
-      series: seriesWithTotals,
-      xAxisData: seriesWithTotals.map((s) => s.xAxis),
-      hasYAxis: hasYAxis(chartData),
-    }
-  })
+// Series order for bar/line charts. The sort now happens in the transform worker
+// (see `sortSeriesByTotal` in lib/transform.ts), so the series arrive in final
+// order — this just derives the x-axis category list and the has-y flag. `sort`
+// is kept in the signature (callers pass it) but is no longer re-sorted here;
+// removing the per-recompute O(n log n) over up to 100k series off the main
+// thread is the point.
+export function useSortedSeriesData(chartData: Ref<ChartData>, _sort: Ref<Sort>) {
+  return computed(() => ({
+    series: chartData.value.series,
+    xAxisData: chartData.value.series.map((s) => s.xAxis),
+    hasYAxis: hasYAxis(chartData),
+  }))
 }
 
-// Compute effective scale and min value — log is downgraded to linear when max < 1
+// Compute effective scale and min value — log is downgraded to linear when max < 1.
+// Single pass (no `Math.min(...arr)` spread — that both allocates an intermediate
+// array and throws RangeError once the arg count is large, e.g. 100k points).
 export function getEffectiveScale(
   series: SeriesData[],
   scale: ScaleType
 ): { minValue: number | undefined; effectiveScale: ScaleType } {
-  const allValues = series.flatMap((s) => s.values)
-  const nonZeroValues = allValues.filter((v) => v > 0)
-  const minValue = nonZeroValues.length > 0 ? Math.min(...nonZeroValues) : undefined
-  const maxValue = allValues.length > 0 ? Math.max(...allValues) : 0
+  let minValue: number | undefined
+  let maxValue = 0
+  let any = false
+  for (const s of series) {
+    for (const v of s.values) {
+      if (!any) {
+        maxValue = v
+        any = true
+      } else if (v > maxValue) {
+        maxValue = v
+      }
+      if (v > 0 && (minValue === undefined || v < minValue)) minValue = v
+    }
+  }
   return { minValue, effectiveScale: scale === 'log' && maxValue < 1 ? 'linear' : scale }
 }
 
-// Sum each named series' data values — used for tooltip axis-sum display
+// Sum each named series' data values — used for tooltip axis-sum display. Data
+// items are plain numbers (or null for log gaps); also tolerates the legacy
+// `{ value }` item shape.
+type SeriesDatum = number | null | { value?: number }
 export function computeSeriesTotals(
-  series: Array<{ name: string; data: Array<{ value?: number } | null> }>
+  series: Array<{ name: string; data: SeriesDatum[] }>
 ): Map<string, number> {
+  const valueOf = (d: SeriesDatum): number =>
+    typeof d === 'number' ? d : (d?.value ?? 0)
   return new Map(
-    series.map((s) => [
-      s.name,
-      s.data.reduce((sum, d) => sum + (d?.value ?? 0), 0),
-    ])
+    series.map((s) => [s.name, s.data.reduce<number>((sum, d) => sum + valueOf(d), 0)])
   )
 }
 
