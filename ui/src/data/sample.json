@@ -11970,8 +11970,8 @@
     },
     "data": [
       {
-        "xAxis": "Marshal",
-        "yAxis": "Json",
+        "yAxis": "Marshal",
+        "xAxis": "Json",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -11996,8 +11996,8 @@
         ]
       },
       {
-        "xAxis": "Marshal",
-        "yAxis": "Xml",
+        "yAxis": "Marshal",
+        "xAxis": "Xml",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -12022,8 +12022,8 @@
         ]
       },
       {
-        "xAxis": "Marshal",
-        "yAxis": "Msgp",
+        "yAxis": "Marshal",
+        "xAxis": "Msgp",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -12048,8 +12048,8 @@
         ]
       },
       {
-        "xAxis": "Marshal",
-        "yAxis": "ProtoBuf",
+        "yAxis": "Marshal",
+        "xAxis": "ProtoBuf",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -12074,8 +12074,8 @@
         ]
       },
       {
-        "xAxis": "Marshal",
-        "yAxis": "GogoProtoBuf",
+        "yAxis": "Marshal",
+        "xAxis": "GogoProtoBuf",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -12100,8 +12100,8 @@
         ]
       },
       {
-        "xAxis": "Marshal",
-        "yAxis": "Thrift",
+        "yAxis": "Marshal",
+        "xAxis": "Thrift",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -12126,8 +12126,8 @@
         ]
       },
       {
-        "xAxis": "Marshal",
-        "yAxis": "ThriftIterator",
+        "yAxis": "Marshal",
+        "xAxis": "ThriftIterator",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -12152,8 +12152,8 @@
         ]
       },
       {
-        "xAxis": "Marshal",
-        "yAxis": "ThriftIteratorDynamic",
+        "yAxis": "Marshal",
+        "xAxis": "ThriftIteratorDynamic",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -12178,8 +12178,8 @@
         ]
       },
       {
-        "xAxis": "Marshal",
-        "yAxis": "ThriftIteratorEncoder",
+        "yAxis": "Marshal",
+        "xAxis": "ThriftIteratorEncoder",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -12203,8 +12203,8 @@
         ]
       },
       {
-        "xAxis": "Marshal",
-        "yAxis": "Avro",
+        "yAxis": "Marshal",
+        "xAxis": "Avro",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -12229,8 +12229,8 @@
         ]
       },
       {
-        "xAxis": "Marshal",
-        "yAxis": "Gencode",
+        "yAxis": "Marshal",
+        "xAxis": "Gencode",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -12253,8 +12253,8 @@
         ]
       },
       {
-        "xAxis": "Marshal",
-        "yAxis": "UgorjiCodecAndCbor",
+        "yAxis": "Marshal",
+        "xAxis": "UgorjiCodecAndCbor",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -12279,8 +12279,8 @@
         ]
       },
       {
-        "xAxis": "Marshal",
-        "yAxis": "UgorjiCodecAndMsgp",
+        "yAxis": "Marshal",
+        "xAxis": "UgorjiCodecAndMsgp",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -12305,8 +12305,8 @@
         ]
       },
       {
-        "xAxis": "Marshal",
-        "yAxis": "UgorjiCodecAndBinc",
+        "yAxis": "Marshal",
+        "xAxis": "UgorjiCodecAndBinc",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -12331,8 +12331,8 @@
         ]
       },
       {
-        "xAxis": "Marshal",
-        "yAxis": "UgorjiCodecAndJson",
+        "yAxis": "Marshal",
+        "xAxis": "UgorjiCodecAndJson",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -12357,8 +12357,8 @@
         ]
       },
       {
-        "xAxis": "Marshal",
-        "yAxis": "Easyjson",
+        "yAxis": "Marshal",
+        "xAxis": "Easyjson",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -12383,8 +12383,8 @@
         ]
       },
       {
-        "xAxis": "Marshal",
-        "yAxis": "Ffjson",
+        "yAxis": "Marshal",
+        "xAxis": "Ffjson",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -12409,8 +12409,8 @@
         ]
       },
       {
-        "xAxis": "Marshal",
-        "yAxis": "Jsoniter",
+        "yAxis": "Marshal",
+        "xAxis": "Jsoniter",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -12435,8 +12435,8 @@
         ]
       },
       {
-        "xAxis": "Marshal",
-        "yAxis": "Sonic",
+        "yAxis": "Marshal",
+        "xAxis": "Sonic",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -12461,8 +12461,8 @@
         ]
       },
       {
-        "xAxis": "Marshal",
-        "yAxis": "Gojay",
+        "yAxis": "Marshal",
+        "xAxis": "Gojay",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -12487,8 +12487,8 @@
         ]
       },
       {
-        "xAxis": "Marshal",
-        "yAxis": "GoMemdump",
+        "yAxis": "Marshal",
+        "xAxis": "GoMemdump",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -12513,8 +12513,8 @@
         ]
       },
       {
-        "xAxis": "Marshal",
-        "yAxis": "Colfer",
+        "yAxis": "Marshal",
+        "xAxis": "Colfer",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -12537,8 +12537,8 @@
         ]
       },
       {
-        "xAxis": "Marshal",
-        "yAxis": "Zebrapack",
+        "yAxis": "Marshal",
+        "xAxis": "Zebrapack",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -12562,8 +12562,8 @@
         ]
       },
       {
-        "xAxis": "Marshal",
-        "yAxis": "Hprose",
+        "yAxis": "Marshal",
+        "xAxis": "Hprose",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -12588,8 +12588,8 @@
         ]
       },
       {
-        "xAxis": "Marshal",
-        "yAxis": "Sereal",
+        "yAxis": "Marshal",
+        "xAxis": "Sereal",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -12614,8 +12614,8 @@
         ]
       },
       {
-        "xAxis": "Marshal",
-        "yAxis": "VmihMsgpackv4",
+        "yAxis": "Marshal",
+        "xAxis": "VmihMsgpackv4",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -12640,8 +12640,8 @@
         ]
       },
       {
-        "xAxis": "Marshal",
-        "yAxis": "Rlp",
+        "yAxis": "Marshal",
+        "xAxis": "Rlp",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -12666,8 +12666,8 @@
         ]
       },
       {
-        "xAxis": "Marshal",
-        "yAxis": "SegmentioJSON",
+        "yAxis": "Marshal",
+        "xAxis": "SegmentioJSON",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -12692,8 +12692,8 @@
         ]
       },
       {
-        "xAxis": "Unmarshal",
-        "yAxis": "Json",
+        "yAxis": "Unmarshal",
+        "xAxis": "Json",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -12714,8 +12714,8 @@
         ]
       },
       {
-        "xAxis": "Unmarshal",
-        "yAxis": "Xml",
+        "yAxis": "Unmarshal",
+        "xAxis": "Xml",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -12736,8 +12736,8 @@
         ]
       },
       {
-        "xAxis": "Unmarshal",
-        "yAxis": "Msgp",
+        "yAxis": "Unmarshal",
+        "xAxis": "Msgp",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -12758,8 +12758,8 @@
         ]
       },
       {
-        "xAxis": "Unmarshal",
-        "yAxis": "ProtoBuf",
+        "yAxis": "Unmarshal",
+        "xAxis": "ProtoBuf",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -12780,8 +12780,8 @@
         ]
       },
       {
-        "xAxis": "Unmarshal",
-        "yAxis": "GogoProtoBuf",
+        "yAxis": "Unmarshal",
+        "xAxis": "GogoProtoBuf",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -12802,8 +12802,8 @@
         ]
       },
       {
-        "xAxis": "Unmarshal",
-        "yAxis": "Thrift",
+        "yAxis": "Unmarshal",
+        "xAxis": "Thrift",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -12824,8 +12824,8 @@
         ]
       },
       {
-        "xAxis": "Unmarshal",
-        "yAxis": "ThriftIterator",
+        "yAxis": "Unmarshal",
+        "xAxis": "ThriftIterator",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -12846,8 +12846,8 @@
         ]
       },
       {
-        "xAxis": "Unmarshal",
-        "yAxis": "ThriftIteratorDynamic",
+        "yAxis": "Unmarshal",
+        "xAxis": "ThriftIteratorDynamic",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -12868,8 +12868,8 @@
         ]
       },
       {
-        "xAxis": "Unmarshal",
-        "yAxis": "ThriftIteratorDecoder",
+        "yAxis": "Unmarshal",
+        "xAxis": "ThriftIteratorDecoder",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -12890,8 +12890,8 @@
         ]
       },
       {
-        "xAxis": "Unmarshal",
-        "yAxis": "Avro",
+        "yAxis": "Unmarshal",
+        "xAxis": "Avro",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -12912,8 +12912,8 @@
         ]
       },
       {
-        "xAxis": "Unmarshal",
-        "yAxis": "Gencode",
+        "yAxis": "Unmarshal",
+        "xAxis": "Gencode",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -12934,8 +12934,8 @@
         ]
       },
       {
-        "xAxis": "Unmarshal",
-        "yAxis": "UgorjiCodecAndCbor",
+        "yAxis": "Unmarshal",
+        "xAxis": "UgorjiCodecAndCbor",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -12956,8 +12956,8 @@
         ]
       },
       {
-        "xAxis": "Unmarshal",
-        "yAxis": "UgorjiCodecAndMsgp",
+        "yAxis": "Unmarshal",
+        "xAxis": "UgorjiCodecAndMsgp",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -12978,8 +12978,8 @@
         ]
       },
       {
-        "xAxis": "Unmarshal",
-        "yAxis": "UgorjiCodecAndBinc",
+        "yAxis": "Unmarshal",
+        "xAxis": "UgorjiCodecAndBinc",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -13000,8 +13000,8 @@
         ]
       },
       {
-        "xAxis": "Unmarshal",
-        "yAxis": "UgorjiCodecAndJson",
+        "yAxis": "Unmarshal",
+        "xAxis": "UgorjiCodecAndJson",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -13022,8 +13022,8 @@
         ]
       },
       {
-        "xAxis": "Unmarshal",
-        "yAxis": "Easyjson",
+        "yAxis": "Unmarshal",
+        "xAxis": "Easyjson",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -13044,8 +13044,8 @@
         ]
       },
       {
-        "xAxis": "Unmarshal",
-        "yAxis": "Ffjson",
+        "yAxis": "Unmarshal",
+        "xAxis": "Ffjson",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -13066,8 +13066,8 @@
         ]
       },
       {
-        "xAxis": "Unmarshal",
-        "yAxis": "Jsoniter",
+        "yAxis": "Unmarshal",
+        "xAxis": "Jsoniter",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -13088,8 +13088,8 @@
         ]
       },
       {
-        "xAxis": "Unmarshal",
-        "yAxis": "Sonic",
+        "yAxis": "Unmarshal",
+        "xAxis": "Sonic",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -13110,8 +13110,8 @@
         ]
       },
       {
-        "xAxis": "Unmarshal",
-        "yAxis": "Gojay",
+        "yAxis": "Unmarshal",
+        "xAxis": "Gojay",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -13132,8 +13132,8 @@
         ]
       },
       {
-        "xAxis": "Unmarshal",
-        "yAxis": "GoMemdump",
+        "yAxis": "Unmarshal",
+        "xAxis": "GoMemdump",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -13154,8 +13154,8 @@
         ]
       },
       {
-        "xAxis": "Unmarshal",
-        "yAxis": "Colfer",
+        "yAxis": "Unmarshal",
+        "xAxis": "Colfer",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -13176,8 +13176,8 @@
         ]
       },
       {
-        "xAxis": "Unmarshal",
-        "yAxis": "Zebrapack",
+        "yAxis": "Unmarshal",
+        "xAxis": "Zebrapack",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -13198,8 +13198,8 @@
         ]
       },
       {
-        "xAxis": "Unmarshal",
-        "yAxis": "Hprose",
+        "yAxis": "Unmarshal",
+        "xAxis": "Hprose",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -13220,8 +13220,8 @@
         ]
       },
       {
-        "xAxis": "Unmarshal",
-        "yAxis": "Sereal",
+        "yAxis": "Unmarshal",
+        "xAxis": "Sereal",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -13242,8 +13242,8 @@
         ]
       },
       {
-        "xAxis": "Unmarshal",
-        "yAxis": "VmihMsgpackv4",
+        "yAxis": "Unmarshal",
+        "xAxis": "VmihMsgpackv4",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -13264,8 +13264,8 @@
         ]
       },
       {
-        "xAxis": "Unmarshal",
-        "yAxis": "Rlp",
+        "yAxis": "Unmarshal",
+        "xAxis": "Rlp",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -13286,8 +13286,8 @@
         ]
       },
       {
-        "xAxis": "Unmarshal",
-        "yAxis": "SegmentioJSON",
+        "yAxis": "Unmarshal",
+        "xAxis": "SegmentioJSON",
         "stats": [
           {
             "type": "Execution Time (ns/op)",
@@ -13336,7 +13336,7 @@
   },
   {
     "name": "VarMQ",
-    "description": "Variadic Queue Benchmark",
+    "description": "Variadic Queue DataSet",
     "cpu": {
       "name": "13th Gen Intel(R) Core(TM) i7-13700",
       "cores": 24
@@ -13856,6 +13856,388 @@
           {
             "type": "Iterations",
             "value": 44888440
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Compression Delta Benchmarks",
+    "description": "Throughput delta vs baseline (negative = regression, positive = improvement)",
+    "settings": {
+      "charts": [
+        "bar",
+        "line",
+        "pie"
+      ],
+      "sort": {
+        "enabled": false,
+        "order": "asc"
+      },
+      "showLabels": true,
+      "scale": "linear"
+    },
+    "data": [
+      {
+        "xAxis": "LZ4",
+        "yAxis": "1KB",
+        "stats": [
+          {
+            "type": "Throughput Delta (MB/s)",
+            "value": 142.5
+          },
+          {
+            "type": "Latency Delta (µs)",
+            "value": -0.8
+          }
+        ]
+      },
+      {
+        "xAxis": "LZ4",
+        "yAxis": "64KB",
+        "stats": [
+          {
+            "type": "Throughput Delta (MB/s)",
+            "value": 310.2
+          },
+          {
+            "type": "Latency Delta (µs)",
+            "value": -4.1
+          }
+        ]
+      },
+      {
+        "xAxis": "LZ4",
+        "yAxis": "1MB",
+        "stats": [
+          {
+            "type": "Throughput Delta (MB/s)",
+            "value": -22.7
+          },
+          {
+            "type": "Latency Delta (µs)",
+            "value": 12.3
+          }
+        ]
+      },
+      {
+        "xAxis": "Zstd",
+        "yAxis": "1KB",
+        "stats": [
+          {
+            "type": "Throughput Delta (MB/s)",
+            "value": -55.3
+          },
+          {
+            "type": "Latency Delta (µs)",
+            "value": 3.2
+          }
+        ]
+      },
+      {
+        "xAxis": "Zstd",
+        "yAxis": "64KB",
+        "stats": [
+          {
+            "type": "Throughput Delta (MB/s)",
+            "value": 88.1
+          },
+          {
+            "type": "Latency Delta (µs)",
+            "value": -6.5
+          }
+        ]
+      },
+      {
+        "xAxis": "Zstd",
+        "yAxis": "1MB",
+        "stats": [
+          {
+            "type": "Throughput Delta (MB/s)",
+            "value": 201.4
+          },
+          {
+            "type": "Latency Delta (µs)",
+            "value": -18.9
+          }
+        ]
+      },
+      {
+        "xAxis": "Snappy",
+        "yAxis": "1KB",
+        "stats": [
+          {
+            "type": "Throughput Delta (MB/s)",
+            "value": 38.6
+          },
+          {
+            "type": "Latency Delta (µs)",
+            "value": -1.4
+          }
+        ]
+      },
+      {
+        "xAxis": "Snappy",
+        "yAxis": "64KB",
+        "stats": [
+          {
+            "type": "Throughput Delta (MB/s)",
+            "value": -103.8
+          },
+          {
+            "type": "Latency Delta (µs)",
+            "value": 8.7
+          }
+        ]
+      },
+      {
+        "xAxis": "Snappy",
+        "yAxis": "1MB",
+        "stats": [
+          {
+            "type": "Throughput Delta (MB/s)",
+            "value": -67.2
+          },
+          {
+            "type": "Latency Delta (µs)",
+            "value": 22.1
+          }
+        ]
+      },
+      {
+        "xAxis": "Gzip",
+        "yAxis": "1KB",
+        "stats": [
+          {
+            "type": "Throughput Delta (MB/s)",
+            "value": -189.4
+          },
+          {
+            "type": "Latency Delta (µs)",
+            "value": 45.6
+          }
+        ]
+      },
+      {
+        "xAxis": "Gzip",
+        "yAxis": "64KB",
+        "stats": [
+          {
+            "type": "Throughput Delta (MB/s)",
+            "value": -241.7
+          },
+          {
+            "type": "Latency Delta (µs)",
+            "value": 67.3
+          }
+        ]
+      },
+      {
+        "xAxis": "Gzip",
+        "yAxis": "1MB",
+        "stats": [
+          {
+            "type": "Throughput Delta (MB/s)",
+            "value": -318.5
+          },
+          {
+            "type": "Latency Delta (µs)",
+            "value": 91.2
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Codec Delta 3D Benchmarks",
+    "description": "Encode/decode throughput delta vs baseline across codecs, payload sizes, and operations",
+    "settings": {
+      "charts": [
+        "bar",
+        "line",
+        "pie"
+      ],
+      "sort": {
+        "enabled": false,
+        "order": "asc"
+      },
+      "showLabels": true,
+      "scale": "linear"
+    },
+    "data": [
+      {
+        "xAxis": "LZ4",
+        "yAxis": "1KB",
+        "zAxis": "Encode",
+        "stats": [
+          {
+            "type": "Throughput Delta (MB/s)",
+            "value": 142.5
+          }
+        ]
+      },
+      {
+        "xAxis": "LZ4",
+        "yAxis": "1KB",
+        "zAxis": "Decode",
+        "stats": [
+          {
+            "type": "Throughput Delta (MB/s)",
+            "value": 398.1
+          }
+        ]
+      },
+      {
+        "xAxis": "LZ4",
+        "yAxis": "1MB",
+        "zAxis": "Encode",
+        "stats": [
+          {
+            "type": "Throughput Delta (MB/s)",
+            "value": -22.7
+          }
+        ]
+      },
+      {
+        "xAxis": "LZ4",
+        "yAxis": "1MB",
+        "zAxis": "Decode",
+        "stats": [
+          {
+            "type": "Throughput Delta (MB/s)",
+            "value": 187.4
+          }
+        ]
+      },
+      {
+        "xAxis": "Zstd",
+        "yAxis": "1KB",
+        "zAxis": "Encode",
+        "stats": [
+          {
+            "type": "Throughput Delta (MB/s)",
+            "value": -55.3
+          }
+        ]
+      },
+      {
+        "xAxis": "Zstd",
+        "yAxis": "1KB",
+        "zAxis": "Decode",
+        "stats": [
+          {
+            "type": "Throughput Delta (MB/s)",
+            "value": 112.6
+          }
+        ]
+      },
+      {
+        "xAxis": "Zstd",
+        "yAxis": "1MB",
+        "zAxis": "Encode",
+        "stats": [
+          {
+            "type": "Throughput Delta (MB/s)",
+            "value": 201.4
+          }
+        ]
+      },
+      {
+        "xAxis": "Zstd",
+        "yAxis": "1MB",
+        "zAxis": "Decode",
+        "stats": [
+          {
+            "type": "Throughput Delta (MB/s)",
+            "value": -88.9
+          }
+        ]
+      },
+      {
+        "xAxis": "Snappy",
+        "yAxis": "1KB",
+        "zAxis": "Encode",
+        "stats": [
+          {
+            "type": "Throughput Delta (MB/s)",
+            "value": 38.6
+          }
+        ]
+      },
+      {
+        "xAxis": "Snappy",
+        "yAxis": "1KB",
+        "zAxis": "Decode",
+        "stats": [
+          {
+            "type": "Throughput Delta (MB/s)",
+            "value": -44.2
+          }
+        ]
+      },
+      {
+        "xAxis": "Snappy",
+        "yAxis": "1MB",
+        "zAxis": "Encode",
+        "stats": [
+          {
+            "type": "Throughput Delta (MB/s)",
+            "value": -67.2
+          }
+        ]
+      },
+      {
+        "xAxis": "Snappy",
+        "yAxis": "1MB",
+        "zAxis": "Decode",
+        "stats": [
+          {
+            "type": "Throughput Delta (MB/s)",
+            "value": -129.5
+          }
+        ]
+      },
+      {
+        "xAxis": "Gzip",
+        "yAxis": "1KB",
+        "zAxis": "Encode",
+        "stats": [
+          {
+            "type": "Throughput Delta (MB/s)",
+            "value": -189.4
+          }
+        ]
+      },
+      {
+        "xAxis": "Gzip",
+        "yAxis": "1KB",
+        "zAxis": "Decode",
+        "stats": [
+          {
+            "type": "Throughput Delta (MB/s)",
+            "value": -76.3
+          }
+        ]
+      },
+      {
+        "xAxis": "Gzip",
+        "yAxis": "1MB",
+        "zAxis": "Encode",
+        "stats": [
+          {
+            "type": "Throughput Delta (MB/s)",
+            "value": -318.5
+          }
+        ]
+      },
+      {
+        "xAxis": "Gzip",
+        "yAxis": "1MB",
+        "zAxis": "Decode",
+        "stats": [
+          {
+            "type": "Throughput Delta (MB/s)",
+            "value": -52.1
           }
         ]
       }

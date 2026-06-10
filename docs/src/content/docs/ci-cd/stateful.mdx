@@ -50,7 +50,7 @@ Stateful CI tracks benchmark performance over time. Each run merges with histori
 
          - uses: goptics/vizb@v0
            with:
-             bench-cmd: "go test -bench=."
+             cmd: "go test -bench=."
              tag: ${{ github.ref_name }}
              merge-dir: prev
              tag-axis: x

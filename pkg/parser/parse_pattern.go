@@ -186,6 +186,39 @@ func ParseBenchmarkNameWithRegex(name, pattern string) (map[string]string, error
 	return result, nil
 }
 
+// GroupAxisLabels derives the human-readable label of each dimension from the
+// --group columns and --group-pattern, keyed by dimension (name/xAxis/yAxis/
+// zAxis). The -g columns are consumed positionally by the pattern, so the
+// pattern part at position i names the dimension and the i-th non-empty -g
+// column is its label. Returns an empty map when grouping carries no column
+// names (no -g, or regex mode where captures are keyed by x/y/z not columns).
+func GroupAxisLabels() map[string]string {
+	labels := map[string]string{}
+
+	if shared.FlagState.GroupRegex != "" || len(shared.FlagState.Group) == 0 {
+		return labels
+	}
+
+	// Trimmed, non-empty group names in flag order — mirrors how the csv/json
+	// parsers build the label, so positions line up with the pattern parts.
+	var groups []string
+	for _, g := range shared.FlagState.Group {
+		if g = strings.TrimSpace(g); g != "" {
+			groups = append(groups, g)
+		}
+	}
+
+	parts := parsePatternParts(shared.FlagState.GroupPattern)
+	for i, dim := range parts {
+		if dim == "" || i >= len(groups) {
+			continue
+		}
+		labels[dim] = groups[i]
+	}
+
+	return labels
+}
+
 func GroupBenchmarkName(name string) (map[string]string, error) {
 	if shared.FlagState.GroupRegex != "" {
 		return ParseBenchmarkNameWithRegex(name, shared.FlagState.GroupRegex)

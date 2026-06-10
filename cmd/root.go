@@ -28,8 +28,8 @@ import (
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "vizb [target]",
-	Short: "Visualize benchmarks or tabular CSV/JSON data as interactive 4D charts",
-	Long: `A CLI tool that turns benchmark output (Go, Rust, JavaScript) or any tabular
+	Short: "Visualize dataSets or tabular CSV/JSON data as interactive 4D charts",
+	Long: `A CLI tool that turns dataSet output (Go, Rust, JavaScript) or any tabular
 CSV/JSON data into an interactive, self-contained HTML chart application.
 It reads a file or piped stdin, auto-detects the input format (override with --parser),
 and renders bar, line, and pie charts you can explore in the browser.`,
@@ -39,7 +39,7 @@ and renders bar, line, and pie charts you can explore in the browser.`,
 }
 
 // Execute runs the main command-line interface for vizb.
-// It processes the command line arguments and executes the benchmark visualization workflow.
+// It processes the command line arguments and executes the dataSet visualization workflow.
 // This function is the main entry point called from main.go and handles cleanup of temporary files.
 func Execute() {
 	defer shared.TempFiles.RemoveAll()
@@ -50,8 +50,8 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.Flags().StringVarP(&shared.FlagState.Name, "name", "n", "Benchmarks", "Name of the benchmark")
-	rootCmd.Flags().StringVarP(&shared.FlagState.Description, "description", "d", "", "Description of the benchmark")
+	rootCmd.Flags().StringVarP(&shared.FlagState.Name, "name", "n", "Comparisons", "Name of the comparison")
+	rootCmd.Flags().StringVarP(&shared.FlagState.Description, "description", "d", "", "Description of the comparison")
 	rootCmd.PersistentFlags().StringVarP(&shared.FlagState.OutputFile, "output", "o", "", "Output file path/name")
 	rootCmd.Flags().StringVarP(&shared.FlagState.MemUnit, "mem-unit", "M", "B", "Memory unit available: b, B, KB, MB, GB")
 	rootCmd.Flags().StringVarP(&shared.FlagState.TimeUnit, "time-unit", "T", "ns", "Time unit available: ns, us, ms, s")
@@ -60,11 +60,11 @@ func init() {
 	rootCmd.Flags().StringVarP(&shared.FlagState.GroupRegex, "group-regex", "r", "", "Regex pattern to extract grouping information from data labels / series names")
 	rootCmd.Flags().StringVarP(&shared.FlagState.Sort, "sort", "s", "", "Sort in asc or desc order (default: as-is)")
 	rootCmd.Flags().StringSliceVarP(&shared.FlagState.Charts, "charts", "c", []string{"bar", "line", "pie"}, "Chart types to generate (bar, line, pie)")
-	rootCmd.Flags().StringSliceVarP(&shared.FlagState.Group, "group", "g", nil, "Column/field names merged (in flag order, '/'-joined) into the group name; parsed by -p/-r (csv/json parsers)")
+	rootCmd.Flags().StringSliceVarP(&shared.FlagState.Group, "group", "g", nil, "Names each dimension in --group-pattern/regex order. csv/json: column/field names whose values feed the dimensions; benchmark parsers: human-readable labels for the name/x/y/z axes")
 	rootCmd.Flags().BoolVarP(&shared.FlagState.ShowLabels, "show-labels", "l", false, "Show labels on charts")
 	rootCmd.Flags().StringVarP(&shared.FlagState.FilterRegex, "filter", "f", "", "Regex pattern to include only matching data labels / series names")
 	rootCmd.Flags().StringVarP(&shared.FlagState.Scale, "scale", "S", "linear", "Scale type (linear, log)")
-	rootCmd.Flags().StringVarP(&shared.FlagState.Tag, "tag", "t", "", "Tag/identifier for the benchmark")
+	rootCmd.Flags().StringVarP(&shared.FlagState.Tag, "tag", "t", "", "Tag/identifier for the comparison")
 	rootCmd.Flags().StringVarP(&shared.FlagState.Parser, "parser", "P", "auto", "Benchmark parser to use; 'auto' detects from input content (one of: auto, "+strings.Join(parser.AvailableParsers(), ", ")+")")
 
 	// Add a hook to validate flags after parsing
@@ -112,9 +112,9 @@ func writeStdinPipedInputs(tempfilePath string) {
 	writer := bufio.NewWriter(inputTempFile)
 
 	// Create a progress bar manager
-	benchmarkProgressManager := NewBenchmarkProgressManager(
+	dataSetProgressManager := NewBenchmarkProgressManager(
 		progressbar.NewOptions(-1,
-			progressbar.OptionSetDescription(style.Info.Render("Processing benchmarks")),
+			progressbar.OptionSetDescription(style.Info.Render("Processing data sets")),
 			progressbar.OptionSetWidth(50),
 			progressbar.OptionSetRenderBlankState(true),
 			progressbar.OptionEnableColorCodes(true),
@@ -138,17 +138,17 @@ func writeStdinPipedInputs(tempfilePath string) {
 			shared.ExitWithError("Error writing to file", err)
 		}
 
-		benchmarkProgressManager.ProcessLine(line)
+		dataSetProgressManager.ProcessLine(line)
 	}
 
-	benchmarkProgressManager.Finish()
+	dataSetProgressManager.Finish()
 
 	writer.Flush()
 	inputTempFile.Sync()
 }
 
 func checkTargetFile(filePath string) {
-	fmt.Println(style.Info.Render(fmt.Sprintf("📊 Reading benchmark data from file: %s", filePath)))
+	fmt.Println(style.Info.Render(fmt.Sprintf("📊 Reading dataSet data from file: %s", filePath)))
 
 	// Check if the target file exists
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
@@ -156,7 +156,7 @@ func checkTargetFile(filePath string) {
 	}
 }
 
-func convertToDataset(filePath string) (benchmark *shared.Dataset) {
+func convertToDataset(filePath string) (dataSet *shared.Dataset) {
 	f := shared.MustOpenFile(filePath)
 	defer f.Close()
 
@@ -165,30 +165,30 @@ func convertToDataset(filePath string) (benchmark *shared.Dataset) {
 		shared.ExitWithError("Failed to read file: %v", err)
 	}
 
-	if err := json.Unmarshal(content, &benchmark); err != nil {
+	if err := json.Unmarshal(content, &dataSet); err != nil {
 		return nil
 	}
 
-	return benchmark
+	return dataSet
 }
 
 func generateOutputFile(filePath string) {
 	outFile := resolveOutputFileName(shared.FlagState.OutputFile)
-	// first try to convert to benchmark
-	benchmark := convertToDataset(filePath)
+	// first try to convert to dataSet
+	dataSet := convertToDataset(filePath)
 
 	// if it fails, try to parse results from txt, or bench event json
-	if benchmark == nil {
+	if dataSet == nil {
 		filePath = preprocessInputFile(filePath)
 		results := prepareData(filePath)
-		benchmark = prepareDatasetFromResults(results)
+		dataSet = prepareDatasetFromResults(results)
 	}
 
 	f := shared.MustCreateFile(outFile)
 
 	defer f.Close()
 
-	writeOutput(f, benchmark, inferFormatFromExtension(outFile))
+	writeOutput(f, dataSet, inferFormatFromExtension(outFile))
 
 	HandleOutputResult(f)
 }
@@ -229,7 +229,7 @@ func preprocessInputFile(filePath string) string {
 	return filePath
 }
 
-// prepareData parses benchmark results or exits on error
+// prepareData parses dataSet results or exits on error
 func prepareData(filePath string) []shared.DataPoint {
 	parseFn, err := parser.GetParser(shared.FlagState.Parser)
 	if err != nil {
@@ -239,55 +239,61 @@ func prepareData(filePath string) []shared.DataPoint {
 	data := parseFn(filePath)
 
 	if len(data) == 0 {
-		shared.ExitWithError("No benchmark data found", nil)
+		shared.ExitWithError("No dataSet data found", nil)
 	}
 
 	return data
 }
 
 func prepareDatasetFromResults(results []shared.DataPoint) *shared.Dataset {
-	benchmark := &shared.Dataset{
+	dataSet := &shared.Dataset{
 		Name:        shared.FlagState.Name,
 		Description: shared.FlagState.Description,
 		Data:        results,
 	}
 	enableSorting := shared.FlagState.Sort != ""
 
-	benchmark.CPU.Cores = shared.CPUCount
-	benchmark.CPU.Name = strings.TrimSpace(shared.CPU)
-	benchmark.Arch = shared.Arch
-	benchmark.OS = shared.OS
-	benchmark.Pkg = shared.Pkg
-	benchmark.Settings.Charts = shared.FlagState.Charts
-	benchmark.Settings.Sort.Enabled = enableSorting
+	dataSet.CPU.Cores = shared.CPUCount
+	dataSet.CPU.Name = strings.TrimSpace(shared.CPU)
+	dataSet.Arch = shared.Arch
+	dataSet.OS = shared.OS
+	dataSet.Pkg = shared.Pkg
+	dataSet.Settings.Charts = shared.FlagState.Charts
+	dataSet.Settings.Sort.Enabled = enableSorting
 
 	if enableSorting {
-		benchmark.Settings.Sort.Order = shared.FlagState.Sort
+		dataSet.Settings.Sort.Order = shared.FlagState.Sort
 	} else {
-		benchmark.Settings.Sort.Order = "asc"
+		dataSet.Settings.Sort.Order = "asc"
 	}
 
-	benchmark.Settings.ShowLabels = shared.FlagState.ShowLabels
-	benchmark.Settings.Scale = shared.FlagState.Scale
+	dataSet.Settings.ShowLabels = shared.FlagState.ShowLabels
+	dataSet.Settings.Scale = shared.FlagState.Scale
 
-	benchmark.Tag = shared.FlagState.Tag
-	benchmark.Timestamp = time.Now().UTC().Format(time.RFC3339)
+	dataSet.Tag = shared.FlagState.Tag
+	dataSet.Timestamp = time.Now().UTC().Format(time.RFC3339)
 
-	return benchmark
+	labels := parser.GroupAxisLabels()
+	dataSet.AxisLabels.Name = labels["name"]
+	dataSet.AxisLabels.X = labels["xAxis"]
+	dataSet.AxisLabels.Y = labels["yAxis"]
+	dataSet.AxisLabels.Z = labels["zAxis"]
+
+	return dataSet
 }
 
 // writeOutput writes results to file in required format
-func writeOutput(f *os.File, benchmark *shared.Dataset, format string) {
+func writeOutput(f *os.File, dataSet *shared.Dataset, format string) {
 	switch format {
 	case "html":
 		fmt.Println(style.Info.Render("🔄 Generating Chart..."))
 
-		jsonData, err := json.Marshal(benchmark)
+		jsonData, err := json.Marshal(dataSet)
 		if err != nil {
-			shared.ExitWithError("Failed to marshal benchmark data: %v", err)
+			shared.ExitWithError("Failed to marshal dataSet data: %v", err)
 		}
 
-		htmlContent := template.GenerateHTMLBenchmarkUI(jsonData, template.VizbHTMLTemplate)
+		htmlContent := template.GenerateUI(jsonData, template.VizbHTMLTemplate)
 		if _, err := f.WriteString(htmlContent); err != nil {
 			shared.ExitWithError("Failed to write output file: %v", err)
 		}
@@ -296,9 +302,9 @@ func writeOutput(f *os.File, benchmark *shared.Dataset, format string) {
 
 	case "json":
 		fmt.Println(style.Info.Render("🔄 Generating JSON..."))
-		bytes, err := json.Marshal(benchmark)
+		bytes, err := json.Marshal(dataSet)
 		if err != nil {
-			shared.ExitWithError("Error marshaling benchmark data", err)
+			shared.ExitWithError("Error marshaling dataSet data", err)
 		}
 		f.Write(bytes)
 		fmt.Println(style.Success.Render("🎉 Generated JSON successfully!"))

@@ -15,7 +15,7 @@ jobs:
       - name: Run action (stateless)
         uses: ./
         with:
-          bench-file: examples/go/01-hash.txt
+          file: examples/go/01-hash.txt
           output-html: index.html
 
   stateful:
@@ -30,7 +30,7 @@ jobs:
         uses: ./
         with:
           name: Hash
-          bench-file: examples/go/01-hash.txt
+          file: examples/go/01-hash.txt
           output-json: results/prev/hash.json
 
       - name: Run action (stateful)
@@ -39,7 +39,7 @@ jobs:
           name: HTTP Frameworks Comparisons
           group-pattern: x_n
           sort: asc
-          bench-file: examples/go/02-http-routing.txt
+          file: examples/go/02-http-routing.txt
           merge-dir: results/prev
           output-html: index.html
           output-json: results/bench.json

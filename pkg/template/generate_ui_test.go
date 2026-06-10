@@ -10,7 +10,7 @@ import (
 	"github.com/goptics/vizb/version"
 )
 
-func TestGenerateHTMLBenchmarkUI(t *testing.T) {
+func TestGenerateUI(t *testing.T) {
 	originalOsExit := shared.OsExit
 	defer func() { shared.OsExit = originalOsExit }()
 
@@ -24,7 +24,7 @@ func TestGenerateHTMLBenchmarkUI(t *testing.T) {
 
 		benchmarkJSON := []byte(`[{"name":"test","data":[]}]`)
 
-		result := GenerateHTMLBenchmarkUI(benchmarkJSON, testTemplate)
+		result := GenerateUI(benchmarkJSON, testTemplate)
 
 		assert.False(t, exitCalled, "Expected OsExit not to be called for valid input")
 		require.NotEmpty(t, result, "Expected non-empty HTML output")
@@ -44,7 +44,7 @@ func TestGenerateHTMLBenchmarkUI(t *testing.T) {
 
 		benchmarkJSON := []byte(`[]`)
 
-		result := GenerateHTMLBenchmarkUI(benchmarkJSON, testTemplate)
+		result := GenerateUI(benchmarkJSON, testTemplate)
 
 		assert.False(t, exitCalled, "Expected OsExit not to be called for empty JSON array")
 		require.NotEmpty(t, result, "Expected non-empty HTML output")
@@ -61,8 +61,8 @@ func TestGenerateHTMLBenchmarkUI(t *testing.T) {
 		benchmarkJSON := []byte(`[{"name":"test","data":[]}]`)
 		invalidTemplate := `<!DOCTYPE html><html><body>[[VIZB .InvalidField VIZB]]</body></html>`
 
-		err := shared.WithSafe("GenerateHTMLBenchmarkUI", func() {
-			_ = GenerateHTMLBenchmarkUI(benchmarkJSON, invalidTemplate)
+		err := shared.WithSafe("GenerateUI", func() {
+			_ = GenerateUI(benchmarkJSON, invalidTemplate)
 		})
 
 		assert.True(t, exitCalled, "Expected OsExit to be called for invalid template execution")
@@ -79,8 +79,8 @@ func TestGenerateHTMLBenchmarkUI(t *testing.T) {
 		benchmarkJSON := []byte(`[{"name":"test","data":[]}]`)
 		malformedTemplate := `<!DOCTYPE html><html><body>[[VIZB .Version</body></html>`
 
-		err := shared.WithSafe("GenerateHTMLBenchmarkUI", func() {
-			_ = GenerateHTMLBenchmarkUI(benchmarkJSON, malformedTemplate)
+		err := shared.WithSafe("GenerateUI", func() {
+			_ = GenerateUI(benchmarkJSON, malformedTemplate)
 		})
 
 		assert.True(t, exitCalled, "Expected OsExit to be called for malformed template syntax")

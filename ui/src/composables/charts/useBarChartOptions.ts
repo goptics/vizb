@@ -8,6 +8,7 @@ import {
   createLegendConfig,
   createTooltipConfig,
   getChartStyling,
+  makeLegendTitle,
 } from './shared'
 import {
   useSortedSeriesData,
@@ -17,7 +18,7 @@ import {
 import { makeDataItem } from './shared/seriesConfig'
 
 const barNullable = (val: number, scale: string): number | null =>
-  scale === 'log' && val === 0 ? null : val
+  scale === 'log' && val <= 0 ? null : val
 
 export function useBarChartOptions(config: BaseChartConfig) {
   const { chartData, sort, showLabels, isDark, scale } = config
@@ -34,9 +35,9 @@ export function useBarChartOptions(config: BaseChartConfig) {
       return {
         ...baseOptions,
         grid: createGridConfig(1),
-        tooltip: createTooltipConfig(false, 1, isDark.value),
+        tooltip: createTooltipConfig(false, isDark.value),
         legend: { show: false },
-        ...createAxisConfig(styling, xAxisData, effectiveScale, minValue),
+        ...createAxisConfig(styling, xAxisData, effectiveScale, minValue, chartData.value.axisLabels?.x),
         series: [
           {
             name: chartData.value.title,
@@ -73,21 +74,22 @@ export function useBarChartOptions(config: BaseChartConfig) {
     const hasMultipleSeries = transposedSeries.length > 1
     const seriesTotals = computeSeriesTotals(transposedSeries)
 
+    // The legend encodes the y group; title it above the legend when known.
+    const yLabel = chartData.value.axisLabels?.y
+    const showLegendTitle = hasMultipleSeries && !!yLabel
+
     return {
       ...baseOptions,
+      ...(showLegendTitle ? { title: makeLegendTitle(yLabel!, styling) } : {}),
       grid: createGridConfig(transposedSeries.length),
-      tooltip: createTooltipConfig(
-        hasXAxis(chartData),
-        transposedSeries.length,
-        isDark.value,
-        seriesTotals
-      ),
+      tooltip: createTooltipConfig(hasXAxis(chartData), isDark.value, seriesTotals),
       legend: createLegendConfig(
         transposedSeries.map((s) => ({ xAxis: s.name })),
         styling,
-        hasMultipleSeries
+        hasMultipleSeries,
+        showLegendTitle ? { top: 24 } : undefined
       ),
-      ...createAxisConfig(styling, xAxisData, effectiveScale, minValue),
+      ...createAxisConfig(styling, xAxisData, effectiveScale, minValue, chartData.value.axisLabels?.x),
       series: transposedSeries,
     } as EChartsOption
   })

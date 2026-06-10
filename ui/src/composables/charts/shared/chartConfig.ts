@@ -28,7 +28,8 @@ export function createAxisConfig(
   styling: ChartStyling,
   xAxisData: string[],
   scale: ScaleType = 'linear',
-  minValue?: number
+  minValue?: number,
+  xAxisName?: string
 ): { xAxis: any; yAxis: any } {
   const yAxisConfig: any = {
     type: scale === 'log' ? 'log' : 'value',
@@ -57,6 +58,16 @@ export function createAxisConfig(
     xAxis: {
       type: 'category',
       data: xAxisData,
+      // Group/axis label (e.g. "category") under the category axis, when known.
+      // Bold + extra gap so it clears the (often rotated) tick labels.
+      ...(xAxisName
+        ? {
+            name: xAxisName,
+            nameLocation: 'middle',
+            nameGap: 45,
+            nameTextStyle: { color: styling.textColor, fontSize, fontWeight: 'bold' },
+          }
+        : {}),
       axisLabel: {
         interval: 0,
         rotate: xAxisData.reduce((acc, cur) => acc + cur.length, 0) > 100 ? 30 : 0,
@@ -74,7 +85,7 @@ export function createAxisConfig(
 /**
  * Format a tooltip value, showing 0 for null/undefined values
  */
-function formatTooltipValue(value: any): string {
+export function formatTooltipValue(value: any): string {
   if (value === null || value === undefined) return '0'
   if (typeof value === 'number') return String(Math.round(value * 100) / 100)
   return String(value)
@@ -97,26 +108,93 @@ export function tooltipDivider(isDark: boolean): string {
   return `<hr style="border:none;border-top:1px solid ${getChartStyling(isDark).axisColor};margin:4px 0"/>`
 }
 
+// Inline SVG donut + side legend (swatch, name, %) for tooltips. Non-positive
+// slices are dropped (can't show negative share). Returns '' when fewer than 2
+// positive slices — nothing to compare.
+export function renderDonutSvg(
+  slices: { value: number; color: string; name: string }[],
+  size = 96
+): string {
+  const pos = slices.filter((s) => s.value > 0)
+  if (pos.length < 2) return ''
+  const total = pos.reduce((s, p) => s + p.value, 0)
+  if (total <= 0) return ''
+
+  const cx = size / 2
+  const cy = size / 2
+  const outerR = size / 2 - 2
+  const innerR = outerR * 0.55
+  const GAP = 1.5
+
+  const xy = (r: number, deg: number) => {
+    const rad = ((deg - 90) * Math.PI) / 180
+    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) }
+  }
+
+  const path = (start: number, end: number) => {
+    const s1 = xy(outerR, start), e1 = xy(outerR, end)
+    const s2 = xy(innerR, end),   e2 = xy(innerR, start)
+    const lg = end - start > 180 ? 1 : 0
+    const f = (n: number) => n.toFixed(2)
+    return [
+      `M${f(s1.x)},${f(s1.y)}`,
+      `A${outerR},${outerR},0,${lg},1,${f(e1.x)},${f(e1.y)}`,
+      `L${f(s2.x)},${f(s2.y)}`,
+      `A${innerR.toFixed(2)},${innerR.toFixed(2)},0,${lg},0,${f(e2.x)},${f(e2.y)}`,
+      'Z',
+    ].join(' ')
+  }
+
+  let angle = 0
+  const paths = pos.map((s) => {
+    const sweep = (s.value / total) * 360
+    const start = angle + GAP / 2
+    const end = angle + sweep - GAP / 2
+    angle += sweep
+    return `<path d="${path(start, end)}" fill="${s.color}"/>`
+  })
+
+  const svg = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="flex:none">${paths.join('')}</svg>`
+
+  // Side legend: one row per slice (swatch + name + share %). Scrolls with the
+  // tooltip when there are many slices.
+  const legendRows = pos
+    .map((s) => {
+      const pct = ((s.value / total) * 100).toFixed(1)
+      const swatch = `<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${s.color};margin-right:6px;flex:none"></span>`
+      return `<div style="display:flex;align-items:center;white-space:nowrap">${swatch}<span>${s.name}</span><b style="margin-left:6px">${pct}%</b></div>`
+    })
+    .join('')
+  // Flow into balanced columns when there are many slices, so a long legend
+  // stays compact instead of one tall stack. ≤12 slices → single column.
+  const cols = Math.ceil(pos.length / 12)
+  const rowsPerCol = Math.ceil(pos.length / cols)
+  const legend = `<div style="display:grid;grid-auto-flow:column;grid-template-rows:repeat(${rowsPerCol},auto);gap:2px 12px;font-size:11px">${legendRows}</div>`
+
+  return `<div style="display:flex;align-items:center;gap:8px;margin-top:4px">${svg}${legend}</div>`
+}
+
 /**
  * Creates common tooltip configuration
  * @param hasXYAxis - Whether the chart has both X and Y axes
- * @param seriesCount - Number of series in the chart (defaults to 1)
  * @param isDark - Dark mode flag for tooltip theming
  * @param seriesTotals - Per-series totals across all x, appended after each name
  */
 export function createTooltipConfig(
   hasXYAxis: boolean,
-  seriesCount = 1,
   isDark = false,
   seriesTotals?: Map<string, number>
 ): EChartsOption['tooltip'] {
   const theme = getTooltipTheme(isDark)
 
-  // Use item trigger if there are too many series (>10) to avoid overwhelming tooltip
-  if (hasXYAxis && seriesCount <= 10) {
+  if (hasXYAxis) {
     return {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },
+      // Many-series charts can produce a long row list + donut legend; cap the
+      // height and let the user scroll into the tooltip rather than overflow.
+      enterable: true,
+      extraCssText: 'max-height:60vh;overflow:auto;',
       ...theme,
       formatter: (params) => {
         if (!Array.isArray(params)) return ''
@@ -135,7 +213,15 @@ export function createTooltipConfig(
           0
         )
         const xName = params[0]?.name ?? ''
-        return `${body}${tooltipDivider(isDark)}Σ ${xName}: <b>${Math.round(total * 100) / 100}</b>`
+        const sumLine = `${tooltipDivider(isDark)}Σ ${xName}: <b>${Math.round(total * 100) / 100}</b>`
+        const donut = renderDonutSvg(
+          params.map((p) => ({
+            value: typeof p.value === 'number' ? p.value : 0,
+            color: typeof p.color === 'string' ? p.color : String(p.color),
+            name: p.seriesName ?? '',
+          }))
+        )
+        return `${body}${sumLine}${donut ? tooltipDivider(isDark) + donut : ''}`
       },
     }
   }
@@ -187,13 +273,25 @@ export function createLegendConfig(
 /**
  * Creates common grid configuration
  */
+// Header centered above the legend, naming the dimension the legend encodes
+// (the y group on 2D bar/line). ECharts legends have no native title.
+export function makeLegendTitle(text: string, styling: ChartStyling): any {
+  return {
+    text,
+    left: 'center',
+    top: 0,
+    textStyle: { color: styling.textColor, fontSize, fontWeight: 'bold' },
+  }
+}
+
 export function createGridConfig(seriesLength = 1): any {
   const legendSpace = Math.min(15 + Math.floor((seriesLength - 1) / 15) * 2, 35)
 
   return {
     left: '3%',
     right: '3%',
-    bottom: '10%',
+    // Extra bottom room so a category-axis name (group label) isn't clipped.
+    bottom: '13%',
     top: `${legendSpace}%`,
     containLabel: true,
   }

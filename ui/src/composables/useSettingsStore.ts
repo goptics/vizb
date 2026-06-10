@@ -1,5 +1,5 @@
 import { reactive, computed } from 'vue'
-import type { Sort, ChartType, ScaleType, Settings as BenchmarkSettings } from '../types'
+import type { Sort, ChartType, ScaleType, Settings as DataSetSettings } from '../types'
 import { DEFAULT_SETTINGS } from './constants'
 import { isValidIndex } from '../lib/utils'
 
@@ -105,7 +105,7 @@ export function useSettingsStore() {
     }
   }
 
-  const initializeFromBenchmark = (inputSettings: BenchmarkSettings, force = false) => {
+  const initializeFromDataSet = (inputSettings: DataSetSettings, force = false) => {
     if (!initialized || force) {
       settings.sort = inputSettings.sort
       settings.showLabels = inputSettings.showLabels
@@ -136,7 +136,7 @@ export function useSettingsStore() {
     setActiveChartIndex,
     setChartType,
     toggleDark,
-    initializeFromBenchmark,
+    initializeFromDataSet,
     setSelectedSwapIndex,
     getSelectedSwapIndex,
   }

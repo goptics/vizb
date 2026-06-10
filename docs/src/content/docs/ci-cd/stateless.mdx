@@ -42,7 +42,7 @@ Stateless CI runs benchmarks and generates an HTML report on each push — no hi
 
          - uses: goptics/vizb@v0
            with:
-             bench-cmd: "go test -bench=."
+             cmd: "go test -bench=."
              output-html: benchmark.html
 
          - uses: actions/upload-artifact@v4
@@ -92,7 +92,7 @@ jobs:
 
       - uses: goptics/vizb@v0
         with:
-          bench-file: bench.txt
+          file: bench.txt
           output-html: report.html
 ```
 
@@ -101,7 +101,7 @@ jobs:
 ```yaml
 - uses: goptics/vizb@v0
   with:
-    bench-cmd: "go test -bench=."
+    cmd: "go test -bench=."
     group-pattern: "n/x/y"
     scale: log
     output-html: report.html

@@ -3,7 +3,7 @@ import type { EChartsOption } from 'echarts'
 import type { TitleOption } from 'echarts/types/dist/shared'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
 import { getNextColorFor, hasXAxis, hasYAxis, hasZAxis } from '../../lib/utils'
-import { getChartStyling, createPieSeriesConfig } from './shared'
+import { getChartStyling, createPieSeriesConfig, getTooltipTheme, formatTooltipValue } from './shared'
 import { fontSize, sortByTotal, sortByValue } from './shared/common'
 import type { Point3D } from '../../types'
 
@@ -61,9 +61,18 @@ export function usePieChartOptions(config: BaseChartConfig) {
       return `${params.name} (${percent}%)`
     }
 
+    // Pie hover tooltip: the generic config shows name + value only. Slices are
+    // shares of a whole, so surface the percent here too (not just on labels).
+    baseOptions.tooltip = {
+      trigger: 'item',
+      ...getTooltipTheme(isDark.value),
+      formatter: (params: any) =>
+        `${params.marker} <strong>${params.name}</strong><br/>${formatTooltipValue(params.value)} (${Number(params.percent).toFixed(2)}%)`,
+    } as EChartsOption['tooltip']
+
     const xAxisPieData = sorted.series.map((s) => ({
       name: s.xAxis,
-      value: s.total || 0,
+      value: Math.max(0, s.total),
       itemStyle: { color: getNextColorFor(s.xAxis) },
     }))
 
@@ -78,7 +87,7 @@ export function usePieChartOptions(config: BaseChartConfig) {
     const yAxisTotals = computeYAxisTotals(chartData.value.yAxis, sorted.series)
     const yAxisPieData = chartData.value.yAxis.map((y) => ({
       name: y,
-      value: yAxisTotals.get(y) || 0,
+      value: Math.max(0, yAxisTotals.get(y) ?? 0),
       itemStyle: { color: getNextColorFor(y) },
     }))
 
@@ -99,7 +108,7 @@ export function usePieChartOptions(config: BaseChartConfig) {
         .filter((z) => z !== '')
         .map((z) => ({
           name: z,
-          value: zAxisTotals.get(z) || 0,
+          value: Math.max(0, zAxisTotals.get(z) ?? 0),
           itemStyle: { color: getNextColorFor(z) },
         }))
 
@@ -107,10 +116,11 @@ export function usePieChartOptions(config: BaseChartConfig) {
         zAxisPieData.sort(sortByValue(sort.value.order))
       }
 
+      const labels = chartData.value.axisLabels
       options.title = [
-        makePieTitle('X-Axis', '16.66%', styling),
-        makePieTitle('Y-Axis', '50%', styling),
-        makePieTitle('Z-Axis', '83.33%', styling),
+        makePieTitle(labels?.x || 'X-Axis', '16.66%', styling),
+        makePieTitle(labels?.y || 'Y-Axis', '50%', styling),
+        makePieTitle(labels?.z || 'Z-Axis', '83.33%', styling),
       ]
 
       const specs3D = [
@@ -126,8 +136,8 @@ export function usePieChartOptions(config: BaseChartConfig) {
     }
 
     options.title = [
-      makePieTitle('X-Axis', '25%', styling),
-      makePieTitle('Y-Axis', '75%', styling),
+      makePieTitle(chartData.value.axisLabels?.x || 'X-Axis', '25%', styling),
+      makePieTitle(chartData.value.axisLabels?.y || 'Y-Axis', '75%', styling),
     ]
 
     const specs2D = [

@@ -1,30 +1,30 @@
 import { watch } from 'vue'
-import { useBenchmarkData } from './useBenchmarkData'
+import { useDataPoint } from './useDataPoint'
 import { useSettingsStore } from './useSettingsStore'
 import { useUrlRouter } from './useUrlRouter'
 
 // Owns the init-orchestration watchers and document-title side effect,
 // keeping Dashboard.vue focused on wiring and layout only.
 export function useDashboardInit() {
-  const { benchmarks, activeBenchmark } = useBenchmarkData()
-  const { initializeFromBenchmark } = useSettingsStore()
+  const { dataSets, activeDataSet } = useDataPoint()
+  const { initializeFromDataSet } = useSettingsStore()
   const { initFromUrl } = useUrlRouter()
 
   let urlInitialized = false
 
   watch(
-    activeBenchmark,
-    (b) => {
-      if (b?.name) document.title = `Vizb | ${b.name}`
-      if (b?.settings) initializeFromBenchmark(b.settings)
+    activeDataSet,
+    (d) => {
+      if (d?.name) document.title = `Vizb | ${d.name}`
+      if (d?.settings) initializeFromDataSet(d.settings)
     },
     { immediate: true }
   )
 
   watch(
-    benchmarks,
-    (b) => {
-      if (b.length && !urlInitialized) {
+    dataSets,
+    (d) => {
+      if (d.length && !urlInitialized) {
         initFromUrl()
         urlInitialized = true
       }

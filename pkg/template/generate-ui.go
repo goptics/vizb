@@ -30,14 +30,14 @@ func renderPage(pd PageData, HTMLtemplate string) string {
 	return buf.String()
 }
 
-func GenerateHTMLBenchmarkUI(benchmarkJSON []byte, HTMLtemplate string) string {
+func GenerateUI(benchmarkJSON []byte, HTMLtemplate string) string {
 	return renderPage(PageData{
 		Version: version.Version,
 		Data:    htmlTemplate.JS(benchmarkJSON),
 	}, HTMLtemplate)
 }
 
-func GenerateRemoteHTMLBenchmarkUI(dataURL string, HTMLtemplate string) string {
+func GenerateRemoteUI(dataURL string, HTMLtemplate string) string {
 	return renderPage(PageData{
 		Version: version.Version,
 		Data:    htmlTemplate.JS("null"),

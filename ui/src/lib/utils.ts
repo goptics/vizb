@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
-import type { Benchmark, ChartData } from '../types'
+import type { DataSet, ChartData } from '../types'
 import type { Ref } from 'vue'
 
 /**
@@ -35,6 +35,7 @@ export function getNextColorFor(key: string) {
     return COLOR_PALETTE[colorMap.get(key)!]
   }
 
+
   const colorIndex = i % COLOR_PALETTE.length
   const color = COLOR_PALETTE[colorIndex]
   colorMap.set(key, colorIndex)
@@ -49,8 +50,8 @@ export function getNextColorFor(key: string) {
 }
 
 export const resetColor = () => {
-  colorMap.clear()
   i = 0
+  colorMap.clear()
 }
 
 export const chartHasYAxis = (chart: ChartData) =>
@@ -70,7 +71,7 @@ export const hasZAxis = (chartData: Ref<ChartData, ChartData>) => chartHasZAxis(
 export const is3D = (chartData: Ref<ChartData, ChartData>) =>
   hasXAxis(chartData) && hasYAxis(chartData) && hasZAxis(chartData)
 
-export const CPUtoString = (cpu: Benchmark['cpu']) => {
+export const CPUtoString = (cpu: DataSet['cpu']) => {
   if (!cpu) {
     return ''
   }

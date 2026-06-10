@@ -119,7 +119,7 @@ func ParseJSON(filename string) []shared.DataPoint {
 	for _, row := range rows {
 		label := buildLabel(row, groupKeys)
 
-		var name, xAxis, yAxis string
+		var name, xAxis, yAxis, zAxis string
 		if label != "" {
 			if !parser.ShouldIncludeBenchmark(label) {
 				continue
@@ -130,7 +130,7 @@ func ParseJSON(filename string) []shared.DataPoint {
 				shared.ExitWithError("Error parsing JSON group name", gerr)
 			}
 
-			name, xAxis, yAxis = group["name"], group["xAxis"], group["yAxis"]
+			name, xAxis, yAxis, zAxis = group["name"], group["xAxis"], group["yAxis"], group["zAxis"]
 		}
 
 		var stats []shared.Stat
@@ -159,6 +159,7 @@ func ParseJSON(filename string) []shared.DataPoint {
 			Name:  name,
 			XAxis: xAxis,
 			YAxis: yAxis,
+			ZAxis: zAxis,
 			Stats: stats,
 		})
 	}
