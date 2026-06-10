@@ -15,6 +15,7 @@ import type {
   Series3DData,
   ScaleType,
 } from '../types'
+import type { AxisKey } from './swap'
 
 const toStatSignature = (stat: Stat): string => `${stat.type}-${stat.unit}-${stat.per}`
 
@@ -231,4 +232,60 @@ const chartIs3D = (c: ChartData): boolean => {
   const hasY = c.yAxis.length > 0 && c.yAxis[0] !== ''
   const hasZ = c.zAxis.length > 0 && c.zAxis[0] !== ''
   return hasX && hasY && hasZ
+}
+
+// Arrangement-aware, non-mutating grouping for the chart pipeline. Given a set
+// of raw DataPoint rows and a permutation of axis keys (identityKeys → targetKeys),
+// project each row's field values onto the target dimensions and bucket rows into
+// groups keyed by whichever target dimension is 'name'.
+//
+// identityKeys[i] names the source field; targetKeys[i] names the destination.
+// When targetKeys[i] is 'name', that value becomes the group key and is NOT
+// written onto the output row. All other values are copied to their target field.
+// stats are always carried through unchanged.
+//
+// Groups are ordered by first-seen insertion (Map order). The 'Default' group key
+// is used when no target dimension maps to 'name', or when the mapped value is
+// absent/empty — matching the useDataPoint `grouped` computed's fallback.
+//
+// Identity case (['name','xAxis'] → ['name','xAxis']) reproduces the existing
+// useDataPoint behaviour: groups by name, output rows hold xAxis (no name field).
+export function projectAndGroup(
+  raw: DataPoint[],
+  identityKeys: AxisKey[],
+  targetKeys: AxisKey[],
+): { grouped: Map<string, DataPoint[]>; groupNames: string[] } {
+  const grouped = new Map<string, DataPoint[]>()
+
+  // Length mismatch: treat as identity — one 'Default' group, rows projected as-is.
+  if (identityKeys.length !== targetKeys.length) {
+    const rows = raw.map((row) => ({ ...row }))
+    grouped.set('Default', rows)
+    return { grouped, groupNames: ['Default'] }
+  }
+
+  for (const row of raw) {
+    let groupKey = 'Default'
+    const out: DataPoint = { stats: row.stats }
+
+    const rowRec = row as Record<string, unknown>
+    for (let i = 0; i < identityKeys.length; i++) {
+      // Non-null: the loop bound guarantees i is always in range.
+      const srcKey = identityKeys[i]!
+      const dstKey = targetKeys[i]!
+      const val = rowRec[srcKey]
+      if (dstKey === 'name') {
+        // This dimension becomes the group discriminator; exclude from output row.
+        if (val !== undefined && val !== null && val !== '') groupKey = val as string
+      } else {
+        // dstKey is 'xAxis' | 'yAxis' | 'zAxis' here; cast to satisfy the indexer.
+        ;(out as Record<string, unknown>)[dstKey] = val
+      }
+    }
+
+    if (!grouped.has(groupKey)) grouped.set(groupKey, [])
+    grouped.get(groupKey)!.push(out)
+  }
+
+  return { grouped, groupNames: Array.from(grouped.keys()) }
 }
