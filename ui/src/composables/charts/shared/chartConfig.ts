@@ -2,7 +2,7 @@ import type { EChartsOption } from 'echarts/types/dist/shared'
 import type { ScaleType } from '../../../types'
 import { fontSize } from './common'
 
-export const LARGE_X_THRESHOLD = 30
+export const LARGE_X_THRESHOLD = 50
 
 export function isLargeXAxis(xAxisData: string[]): boolean {
   return xAxisData.length > LARGE_X_THRESHOLD
