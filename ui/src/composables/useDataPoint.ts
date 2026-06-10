@@ -1,4 +1,4 @@
-import { ref, reactive, computed, nextTick } from 'vue'
+import { ref, shallowRef, markRaw, reactive, computed, nextTick } from 'vue'
 import type { DataSet, DataPoint } from '../types'
 import type { Arrangement } from './useChartPipeline'
 import { resetColor, isValidIndex } from '../lib/utils'
@@ -43,21 +43,12 @@ const getDataSets = async (): Promise<DataSet[]> => {
   return window.VIZB_DATA ?? []
 }
 
-// Normalize stat values once, at load. Done here (not in a computed) so later
-// recomputes don't re-round every row of every dataset on each change.
-const normalize = (sets: DataSet[]): DataSet[] => {
-  for (const set of sets) {
-    for (const result of set.data ?? []) {
-      for (const stat of result.stats ?? []) {
-        stat.value = Number((stat.value ?? 0).toFixed(2))
-      }
-    }
-  }
-  return sets
-}
-
-// Global state
-const dataSets = ref<DataSet[]>([])
+// Global state. shallowRef (not ref): the rows are display-only and never mutated
+// in place, so deep reactivity would only proxy every row for nothing — and that
+// proxy is what forced the expensive JSON round-trip when cloning into the worker.
+// Top-level `.value =` still triggers reactivity (the selector/dimension/arrangement
+// computeds depend on the ref + activeDataSetId, not per-row reactivity).
+const dataSets = shallowRef<DataSet[]>([])
 const activeDataSetId = ref(0)
 const activeGroupId = ref(0)
 const loading = ref(true)
@@ -80,7 +71,9 @@ const setArrangement = (datasetId: number, targetString: string) => {
 
 getDataSets()
   .then((data) => {
-    dataSets.value = normalize(Array.isArray(data) ? data : [data])
+    // markRaw keeps the rows plain (clone-safe) even if a future code path tries
+    // to wrap them in reactive() — the worker postMessage clones them natively.
+    dataSets.value = markRaw(Array.isArray(data) ? data : [data])
   })
   .catch((err: unknown) => {
     loadError.value = err instanceof Error ? err.message : String(err)

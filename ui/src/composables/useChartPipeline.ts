@@ -2,6 +2,7 @@ import { ref, watch, unref, markRaw, onScopeDispose, type MaybeRef, type Ref } f
 import type { AxisLabels, DataPoint, ChartData, Sort, ScaleType } from '../types'
 import TransformWorker from '../workers/transform.worker.ts?worker&inline'
 import type { WorkerResponse } from '../workers/transform.worker'
+import { listChartSignatures } from '../lib/transform'
 
 // The arrangement the worker projects/groups under: present source axes in
 // canonical order (identityString, e.g. "nx") and the selected target order
@@ -151,16 +152,14 @@ export function useChartPipeline(
   const setArrangement = () => {
     if (!lastSignatures.length || readyInFlight || dataPending) return
     readyInFlight = true
-    worker.postMessage(
-      JSON.parse(
-        JSON.stringify({
-          type: 'setArrangement',
-          identityString: arrangement.value.identityString,
-          targetString: arrangement.value.targetString,
-          labels: unref(labels) ?? null,
-        })
-      )
-    )
+    // labels is a fresh plain object from swapAxisLabels (off now-plain axisLabels),
+    // so postMessage clones it natively — no proxy stripping needed.
+    worker.postMessage({
+      type: 'setArrangement',
+      identityString: arrangement.value.identityString,
+      targetString: arrangement.value.targetString,
+      labels: unref(labels) ?? null,
+    })
   }
 
   // Recompute every chart against the worker's cached dataset — no re-clone. Used
@@ -191,20 +190,31 @@ export function useChartPipeline(
     queue.length = 0
     draining = false
 
-    // Send a clone-safe plain copy of the dataset. structured-clone (used by
-    // postMessage) rejects Vue reactive Proxies — round-trip through JSON.
-    worker.postMessage(
-      JSON.parse(
-        JSON.stringify({
-          type: 'init',
-          dataEpoch,
-          data,
-          identityString: arrangement.value.identityString,
-          targetString: arrangement.value.targetString,
-          labels: unref(labels) ?? null,
-        })
-      )
-    )
+    // Pre-populate skeleton slots so ChartCards appear immediately while the worker
+    // clones and groups the dataset. Signatures are arrangement-independent (raw
+    // rows only), so they match what ready will return. The ready handler reconciles
+    // via its own prev-map: same keys → same ChartCard instances, no flicker.
+    const sigs = listChartSignatures(data)
+    const prev = new Map(charts.value.map((c) => [c.key, c]))
+    charts.value = sigs.map(({ signature, statTemplate }) => ({
+      key: signature,
+      title: statTemplate.type,
+      data: prev.get(signature)?.data ?? null,
+      pending: true,
+    }))
+
+    // The rows are kept non-reactive (shallowRef + markRaw in useDataPoint), so
+    // postMessage's structured clone takes them directly — a single native pass,
+    // no proxy stripping, no JSON stringify/parse round-trip. This was the 7s
+    // bottleneck on large datasets.
+    worker.postMessage({
+      type: 'init',
+      dataEpoch,
+      data,
+      identityString: arrangement.value.identityString,
+      targetString: arrangement.value.targetString,
+      labels: unref(labels) ?? null,
+    })
   }
 
   // Bump the batch and flip charts to pending synchronously (not after the

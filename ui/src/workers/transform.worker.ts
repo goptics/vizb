@@ -102,7 +102,8 @@ const readyReply = (s: State): ReadyMessage => ({
 self.onmessage = (e: MessageEvent<WorkerRequest>) => {
   const msg = e.data
 
-  if (msg.type === 'init') {
+  switch (msg.type) {
+    case 'init': { 
     state = {
       dataEpoch: msg.dataEpoch,
       raw: msg.data,
@@ -112,16 +113,16 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
       bySignature: new Map(),
     }
     applyArrangement(state, msg.identityString, msg.targetString)
-    post(readyReply(state))
+      post(readyReply(state))
     return
-  }
-
-  if (msg.type === 'setArrangement') {
+    }
+    case 'setArrangement': { 
     if (!state) return
     if (msg.labels !== undefined) state.labels = msg.labels ?? undefined
     applyArrangement(state, msg.identityString, msg.targetString)
     post(readyReply(state))
     return
+    }
   }
 
   // compute: ignore jobs aimed at a superseded dataset (a newer init landed).

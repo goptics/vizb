@@ -47,7 +47,7 @@ const activeLabels = computed(() =>
 // Charts are computed off-thread in a worker, one at a time (queue-based). Each
 // slot carries its own `pending` so its card drives an independent skeleton and
 // reveals progressively.
-const { charts, hasAny, groupNames } = useChartPipeline(
+const { charts, groupNames } = useChartPipeline(
   activeResults,
   activeArrangement,
   activeLabels,
@@ -61,10 +61,9 @@ const { charts, hasAny, groupNames } = useChartPipeline(
 // selector and URL router stay worker-backed.
 watch(groupNames, (names) => setGroupNames(names))
 
-// Full-page skeleton only while loading the dataset or on the very first compute
-// (no chart has data yet). Later recomputes keep existing charts visible and let
-// each card show its own skeleton.
-const showSkeleton = computed(() => loading.value || (!hasAny.value && charts.value.length > 0))
+// Full-page skeleton only while loading the dataset. Once data is ready the header
+// and layout appear immediately; each chart card drives its own skeleton while pending.
+const showSkeleton = computed(() => loading.value)
 
 useDashboardInit()
 </script>
@@ -111,6 +110,13 @@ useDashboardInit()
           class="animate-fade-in"
           :style="{ animationDelay: `${index * 50}ms` }"
         />
+        <div
+          v-else
+          class="rounded-lg border border-border bg-card p-6 shadow-sm"
+        >
+          <div class="mb-4 h-6 w-48 animate-pulse rounded bg-muted" />
+          <div class="h-[500px] animate-pulse rounded bg-muted" />
+        </div>
       </template>
     </div>
   </main>

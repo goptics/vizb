@@ -17,7 +17,17 @@ import type {
 } from '../types'
 import type { AxisKey } from './swap'
 
-const toStatSignature = (stat: Stat): string => `${stat.type}-${stat.unit}-${stat.per}`
+const toStatSignature = (stat: Stat): string => { 
+  if (!stat.per) { 
+    return `${stat.type}-${stat.unit}`
+  }
+
+  if (!stat.unit) {
+    return stat.type
+  }
+  
+  return `${stat.type}-${stat.unit}-${stat.per}`
+}
 
 // Sort series in place by their summed value across all y, mirroring the old
 // main-thread `useSortedSeriesData`. Totals are computed once (not per compare).
