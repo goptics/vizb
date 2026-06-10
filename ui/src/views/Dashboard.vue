@@ -24,7 +24,6 @@ const {
   activeArrangement,
   resultGroups,
   activeGroupId,
-  activeGroupName,
   selectGroup,
   setGroupNames,
   loading,
@@ -52,7 +51,7 @@ const { charts, hasAny, groupNames } = useChartPipeline(
   activeResults,
   activeArrangement,
   activeLabels,
-  activeGroupName,
+  activeGroupId,
   toRef(settings, 'sort'),
   toRef(settings, 'showLabels'),
   toRef(settings, 'scale')

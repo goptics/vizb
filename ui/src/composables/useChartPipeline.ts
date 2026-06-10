@@ -34,7 +34,7 @@ export function useChartPipeline(
   rawData: Ref<DataPoint[]> | DataPoint[],
   arrangement: Ref<Arrangement>,
   labels: MaybeRef<AxisLabels | undefined> | undefined,
-  groupName: Ref<string>,
+  activeGroupId: Ref<number>,
   sort: Ref<Sort>,
   showLabels: Ref<boolean>,
   scale: Ref<ScaleType>
@@ -45,6 +45,11 @@ export function useChartPipeline(
   // The worker's group list from the last `ready`. Drives the group selector and
   // the URL router; updated on init and on every arrangement change.
   const groupNames = ref<string[]>([])
+  // Resolve the active group name synchronously from the pipeline's own groupNames.
+  // Reading here (not from a Ref<string> input) means `ready` can call pumpQueue()
+  // immediately and get the correct name without waiting for a downstream watcher to
+  // copy groupNames into useDataPoint and transition activeGroupName '' → groupNames[0].
+  const currentGroupName = () => groupNames.value[activeGroupId.value] ?? groupNames.value[0] ?? ''
 
   const worker = new TransformWorker()
   // dataEpoch: the worker's cached-dataset identity, bumped only on a dataset
@@ -85,7 +90,7 @@ export function useChartPipeline(
       dataEpoch,
       jobEpoch,
       signature,
-      groupName: groupName.value,
+      groupName: currentGroupName(),
       sort: currentSort(),
       showLabels: showLabels.value,
       scale: scale.value,
@@ -239,8 +244,13 @@ export function useChartPipeline(
 
   // Params path — fires on group / sort / scale / showLabels. Recompute off the
   // cached dataset; no clone, no init, no re-group.
+  // NOTE: tracks activeGroupId (not a derived group-name string) so that the
+  // groupNames [] → [...] transition on the first `ready` does NOT trip this watch
+  // (activeGroupId stays 0). pumpQueue() inside `ready` already reads the live
+  // currentGroupName() synchronously, so the first batch is correct without this
+  // watch firing a redundant second recompute.
   watch(
-    () => [groupName.value, sort.value.enabled, sort.value.order, showLabels.value, scale.value] as const,
+    () => [activeGroupId.value, sort.value.enabled, sort.value.order, showLabels.value, scale.value] as const,
     () => {
       startBatch()
       clearTimeout(paramsDebounce)

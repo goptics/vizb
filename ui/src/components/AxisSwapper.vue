@@ -31,7 +31,6 @@ const presentKeys = (data: DataPoint[]): string[] => {
   return AXIS_ORDER.filter((k) => data.some((d) => d[fieldFor[k]]))
 }
 
-
 const swapOptions = computed(() => {
   const data = activeDataSet.value?.data
   if (!data || data.length === 0) return []

@@ -118,10 +118,6 @@ const activeArrangement = computed<Arrangement>(() => {
 // Group list as the selector consumes it: a `{ name }[]` over the worker's names.
 const resultGroups = computed(() => groupNames.value.map((name) => ({ name })))
 
-// The active group's name — what the pipeline passes to the worker as the
-// `groupName` compute param.
-const activeGroupName = computed(() => groupNames.value[activeGroupId.value] ?? '')
-
 const { initializeFromDataSet } = useSettingsStore()
 
 const selectDataSet = (id: number) => {
@@ -160,7 +156,6 @@ export function useDataPoint() {
 
     resultGroups,
     activeGroupId,
-    activeGroupName,
     selectGroup,
     setGroupNames,
 
