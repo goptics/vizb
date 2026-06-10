@@ -4,10 +4,12 @@ import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
 import { getNextColorFor, hasXAxis } from '../../lib/utils'
 import {
   createAxisConfig,
+  createDataZoomConfig,
   createGridConfig,
   createLegendConfig,
   createTooltipConfig,
   getChartStyling,
+  isLargeXAxis,
   makeLegendTitle,
 } from './shared'
 import {
@@ -30,14 +32,16 @@ export function useBarChartOptions(config: BaseChartConfig) {
     const baseOptions = getBaseOptions(config)
     const styling = getChartStyling(isDark.value)
     const { minValue, effectiveScale } = getEffectiveScale(series, scale.value)
+    const largeX = isLargeXAxis(xAxisData)
 
     if (!hasYAxis) {
       return {
         ...baseOptions,
-        grid: createGridConfig(1),
+        grid: createGridConfig(1, largeX),
         tooltip: createTooltipConfig(false, isDark.value),
         legend: { show: false },
         ...createAxisConfig(styling, xAxisData, effectiveScale, minValue, chartData.value.axisLabels?.x),
+        ...(largeX ? { dataZoom: createDataZoomConfig(xAxisData) } : {}),
         series: [
           {
             name: chartData.value.title,
@@ -81,7 +85,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
     return {
       ...baseOptions,
       ...(showLegendTitle ? { title: makeLegendTitle(yLabel!, styling) } : {}),
-      grid: createGridConfig(transposedSeries.length),
+      grid: createGridConfig(transposedSeries.length, largeX),
       tooltip: createTooltipConfig(hasXAxis(chartData), isDark.value, seriesTotals),
       legend: createLegendConfig(
         transposedSeries.map((s) => ({ xAxis: s.name })),
@@ -90,6 +94,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
         showLegendTitle ? { top: 24 } : undefined
       ),
       ...createAxisConfig(styling, xAxisData, effectiveScale, minValue, chartData.value.axisLabels?.x),
+      ...(largeX ? { dataZoom: createDataZoomConfig(xAxisData) } : {}),
       series: transposedSeries,
     } as EChartsOption
   })
