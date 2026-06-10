@@ -3,7 +3,10 @@ import type { AxisLabels, DataPoint, ChartData, Sort, ScaleType } from '../types
 import TransformWorker from '../workers/transform.worker.ts?worker&inline'
 import type { WorkerResponse } from '../workers/transform.worker'
 
-export type TriggerSwap = (currentKey: string, targetKey: string, newLabels?: AxisLabels) => void
+// The arrangement the worker projects/groups under: present source axes in
+// canonical order (identityString, e.g. "nx") and the selected target order
+// (targetString, e.g. "yx"). Same length and value set.
+export type Arrangement = { identityString: string; targetString: string }
 
 // One chart's reactive slot. `key` is the stat signature — the chart's stable
 // identity across swap/sort/group within a dataset — so the ChartCard keyed by
@@ -16,19 +19,22 @@ export type ChartState = {
   pending: boolean
 }
 
-// Runs the grouping/3D/sort transform in a Web Worker, one chart at a time. Two
-// kinds of change drive it, and they cost very differently:
-//   - data/labels change (dataset / group / swap): the rows are new, so we clone
-//     them into the worker once (`init`) and recompute every chart.
-//   - sort / scale / showLabels change: the rows are unchanged, so we DON'T
-//     re-clone — the worker still holds the dataset, and we only enqueue compute
-//     jobs against its cache. This is the hot path (a sort toggle on 100k points)
-//     and avoids the multi-hundred-ms main-thread JSON clone of the reactive rows.
+// Runs the grouping/3D/sort transform in a Web Worker, one chart at a time. The
+// worker owns the full raw dataset, so only one kind of change costs a clone:
+//   - dataset change: the rows are new, so we clone them into the worker once
+//     (`init`) and recompute every chart.
+// Everything else is a param toggle against the worker's cache — NO clone, no
+// main-thread data work:
+//   - arrangement (swap): post `setArrangement`; the worker re-projects/re-groups
+//     its cached raw data off-thread and replies `ready` with the new groupNames.
+//   - group / sort / scale / showLabels: re-queue compute jobs against the cache.
 // Jobs drain serially; each chart reveals the moment its job returns (progressive)
 // and each ChartCard drives its own skeleton off its `pending`.
 export function useChartPipeline(
-  results: Ref<DataPoint[]> | DataPoint[],
-  axisLabels: MaybeRef<AxisLabels | undefined> | undefined,
+  rawData: Ref<DataPoint[]> | DataPoint[],
+  arrangement: Ref<Arrangement>,
+  labels: MaybeRef<AxisLabels | undefined> | undefined,
+  groupName: Ref<string>,
   sort: Ref<Sort>,
   showLabels: Ref<boolean>,
   scale: Ref<ScaleType>
@@ -36,32 +42,33 @@ export function useChartPipeline(
   const charts = ref<ChartState[]>([])
   // True once any chart has data — gates the first-load full-page skeleton.
   const hasAny = ref(false)
+  // The worker's group list from the last `ready`. Drives the group selector and
+  // the URL router; updated on init and on every arrangement change.
+  const groupNames = ref<string[]>([])
 
   const worker = new TransformWorker()
-  // dataEpoch: the worker's cached-dataset identity, bumped only on a data/labels
+  // dataEpoch: the worker's cached-dataset identity, bumped only on a dataset
   // change. jobEpoch: the current compute batch, bumped on every flush. Replies
   // are dropped unless both match — so neither a job for a superseded dataset nor
-  // one from a superseded sort/scale batch ever renders.
+  // one from a superseded batch ever renders.
   let dataEpoch = 0
   let jobEpoch = 0
   // Signatures from the last `ready` — lets a params-only flush re-queue compute
-  // jobs without waiting on a fresh init.
+  // jobs without waiting on a fresh init/arrangement.
   let lastSignatures: { signature: string; title: string }[] = []
-  // True from sending `init` until its `ready` lands. While set, a params flush
-  // does nothing: the pending `ready` will queue the jobs, and each job reads the
-  // live sort/scale/showLabels at send time, so it already picks up the change.
-  let initInFlight = false
+  // True from sending `init`/`setArrangement` until its `ready` lands. While set,
+  // a params flush does nothing: the pending `ready` will queue the jobs, and each
+  // job reads the live params at send time, so it already picks up the change.
+  let readyInFlight = false
   // True while a data change is debounced but its re-init hasn't run yet. Suppresses
   // a params recompute that would otherwise fire a job against the soon-to-be-stale
   // cached dataset; the imminent re-init recomputes everything with live params.
   let dataPending = false
-  // Set by triggerSwap before the caller mutates axisLabels/data. The data watcher
-  // fires once from those mutations; this flag tells it to skip reinit (the worker
-  // already received the swap message and will send `ready` directly).
-  let swapPending = false
   // FIFO of signatures still to compute for the current batch.
   const queue: string[] = []
   let draining = false
+
+  const rows = () => (Array.isArray(rawData) ? rawData : rawData.value)
 
   // Plain (proxy-free) copy of the sort. postMessage structured-clone rejects
   // Vue reactive Proxies, and sort.value is one (it comes off the reactive
@@ -78,6 +85,7 @@ export function useChartPipeline(
       dataEpoch,
       jobEpoch,
       signature,
+      groupName: groupName.value,
       sort: currentSort(),
       showLabels: showLabels.value,
       scale: scale.value,
@@ -88,10 +96,10 @@ export function useChartPipeline(
     const msg = e.data
 
     if (msg.type === 'ready') {
-      console.log('[pipe] ready dataEpoch=', msg.dataEpoch, 'local=', dataEpoch, 'sigs=', msg.signatures.length)
       if (msg.dataEpoch !== dataEpoch) return // superseded by a newer dataset
-      initInFlight = false
+      readyInFlight = false
       lastSignatures = msg.signatures
+      groupNames.value = msg.groupNames
       // Reconcile slots to the worker's signature list: keep existing rows (so
       // their old chart stays visible while the new one computes), add new ones,
       // drop gone ones. Mark everything pending and queue a job per chart.
@@ -116,7 +124,6 @@ export function useChartPipeline(
     // reply still advances the queue. Only store/reveal when the reply belongs to
     // the current dataset AND the current batch.
     draining = false
-    console.log('[pipe] chart reply sig=', msg.signature, 'dE=', msg.dataEpoch, '/', dataEpoch, 'jE=', msg.jobEpoch, '/', jobEpoch, 'series0=', JSON.stringify(msg.chart.series?.[0]?.xAxis), 'nSeries=', msg.chart.series?.length)
     if (msg.dataEpoch === dataEpoch && msg.jobEpoch === jobEpoch) {
       const slot = charts.value.find((c) => c.key === msg.signature)
       if (slot) {
@@ -132,42 +139,50 @@ export function useChartPipeline(
     pumpQueue()
   }
 
-  // Send a cheap swap to the worker (no re-clone). The worker applies the same O(n)
-  // field-rename to its cached data and sends `ready`; the caller is expected to
-  // apply the matching mutation to the main-thread store so the two copies stay in
-  // sync. The data watcher fires from the axisLabels replacement that follows; the
-  // swapPending flag tells it to skip reinit for that one fire.
-  const triggerSwap: TriggerSwap = (currentKey, targetKey, newLabels) => {
-    console.log('[pipe] triggerSwap', currentKey, '->', targetKey)
-    swapPending = true
-    startBatch()
-    worker.postMessage({ type: 'swap', currentKey, targetKey, labels: newLabels ?? null })
+  // Post a new arrangement to the worker (no re-clone). The worker re-projects and
+  // re-groups its cached raw data off-thread and replies `ready`, which re-queues
+  // the compute jobs. Bumps the batch so in-flight replies from the old arrangement
+  // are dropped.
+  const setArrangement = () => {
+    if (!lastSignatures.length || readyInFlight || dataPending) return
+    readyInFlight = true
+    worker.postMessage(
+      JSON.parse(
+        JSON.stringify({
+          type: 'setArrangement',
+          identityString: arrangement.value.identityString,
+          targetString: arrangement.value.targetString,
+          labels: unref(labels) ?? null,
+        })
+      )
+    )
   }
 
   // Recompute every chart against the worker's cached dataset — no re-clone. Used
-  // when only sort / scale / showLabels changed.
+  // when only group / sort / scale / showLabels changed.
   const recompute = () => {
-    if (!lastSignatures.length || initInFlight || dataPending) return
+    if (!lastSignatures.length || readyInFlight || dataPending) return
     queue.length = 0
     queue.push(...lastSignatures.map((s) => s.signature))
     pumpQueue()
   }
 
   // Clone the current dataset into the worker and (re)establish its signatures.
-  // Heavy (a structured clone of every row) — only runs on a real data change.
+  // Heavy (a structured clone of every row) — only runs on a real dataset change.
   const reinit = () => {
     dataPending = false
-    const data = Array.isArray(results) ? results : results.value
+    const data = rows()
     if (!data?.length) {
       charts.value = []
       lastSignatures = []
+      groupNames.value = []
       hasAny.value = false
-      initInFlight = false
+      readyInFlight = false
       return
     }
 
     dataEpoch++
-    initInFlight = true
+    readyInFlight = true
     queue.length = 0
     draining = false
 
@@ -179,7 +194,9 @@ export function useChartPipeline(
           type: 'init',
           dataEpoch,
           data,
-          labels: unref(axisLabels) ?? null,
+          identityString: arrangement.value.identityString,
+          targetString: arrangement.value.targetString,
+          labels: unref(labels) ?? null,
         })
       )
     )
@@ -189,24 +206,18 @@ export function useChartPipeline(
   // debounce) so the card skeletons rise the instant inputs change.
   const startBatch = () => {
     jobEpoch++
-    const data = Array.isArray(results) ? results : results.value
-    if (data?.length) for (const c of charts.value) c.pending = true
+    if (rows()?.length) for (const c of charts.value) c.pending = true
   }
 
   let dataDebounce: ReturnType<typeof setTimeout> | undefined
   let paramsDebounce: ReturnType<typeof setTimeout> | undefined
+  let arrangeDebounce: ReturnType<typeof setTimeout> | undefined
 
-  // Data path — fires on dataset / group change (identity-based, no deep watch).
-  // Also fires on swap (axisLabels replacement), but swapPending suppresses reinit
-  // for that one fire — the worker already holds the swapped dataset via `swap` msg.
+  // Data path — fires only on a dataset change (identity-based, no deep watch).
+  // This is the one path that re-clones the rows into the worker.
   watch(
-    () => [Array.isArray(results) ? results : results.value, unref(axisLabels)] as const,
+    () => rows(),
     () => {
-      console.log('[pipe] data watcher fired, swapPending=', swapPending)
-      if (swapPending) {
-        swapPending = false
-        return
-      }
       dataPending = true
       startBatch()
       clearTimeout(dataDebounce)
@@ -215,10 +226,21 @@ export function useChartPipeline(
     { immediate: true }
   )
 
-  // Params path — fires on sort / scale / showLabels. Recompute off the cached
-  // dataset; no clone, no init.
+  // Arrangement path — fires on swap. The rows are unchanged, so we don't clone;
+  // we tell the worker to re-project/re-group off-thread and re-queue on `ready`.
   watch(
-    () => [sort.value.enabled, sort.value.order, showLabels.value, scale.value] as const,
+    () => [arrangement.value.identityString, arrangement.value.targetString] as const,
+    () => {
+      startBatch()
+      clearTimeout(arrangeDebounce)
+      arrangeDebounce = setTimeout(setArrangement, 50)
+    }
+  )
+
+  // Params path — fires on group / sort / scale / showLabels. Recompute off the
+  // cached dataset; no clone, no init, no re-group.
+  watch(
+    () => [groupName.value, sort.value.enabled, sort.value.order, showLabels.value, scale.value] as const,
     () => {
       startBatch()
       clearTimeout(paramsDebounce)
@@ -229,9 +251,10 @@ export function useChartPipeline(
   onScopeDispose(() => {
     clearTimeout(dataDebounce)
     clearTimeout(paramsDebounce)
+    clearTimeout(arrangeDebounce)
     queue.length = 0
     worker.terminate()
   })
 
-  return { charts, hasAny, triggerSwap }
+  return { charts, hasAny, groupNames }
 }

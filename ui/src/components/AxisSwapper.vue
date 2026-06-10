@@ -1,17 +1,14 @@
 <script setup lang="ts">
-import { computed, inject } from 'vue'
+import { computed } from 'vue'
 import SettingHeader from './SettingHeader.vue'
 import SwapSelector from './Selector.vue'
 import type { DataPoint } from '../types'
 import { useDataPoint } from '../composables/useDataPoint'
 import { resetColor } from '../lib/utils'
 import { useSettingsStore } from '../composables/useSettingsStore'
-import { translateAxisKey, swapAxisFields, swapAxisLabels } from '../lib/swap'
-import type { TriggerSwap } from '../composables/useChartPipeline'
 
-const { activeDataSet, activeGroupId, activeDataSetId } = useDataPoint()
+const { activeDataSet, activeGroupId, activeDataSetId, setArrangement } = useDataPoint()
 const { setSelectedSwapIndex, getSelectedSwapIndex } = useSettingsStore()
-const triggerSwap = inject<TriggerSwap>('triggerSwap', () => {})
 
 // Canonical axis order; swap options are permutations of whichever are present.
 const AXIS_ORDER = ['n', 'x', 'y', 'z'] as const
@@ -79,21 +76,18 @@ const handleSwapSelect = (index: number) => {
   const currentIndex = selectedSwapIndex.value
   if (index === currentIndex) return
 
-  const currentOption = swapOptions.value[currentIndex]
   const targetOption = swapOptions.value[index]
+  if (!targetOption || !activeDataSet.value) return
 
-  if (currentOption && targetOption && activeDataSet.value) {
-    const newLabels = swapAxisLabels(currentOption.name, targetOption.name, activeDataSet.value.axisLabels)
-    // Signal the pipeline BEFORE mutations so it can suppress the data-watcher
-    // reinit that would otherwise fire from the axisLabels replacement below.
-    triggerSwap(currentOption.name, targetOption.name, newLabels)
-    // Keep main-thread store in sync (needed for future reinits after dataset/group
-    // changes). swapAxisFields is the same O(n) rename the worker will also apply.
-    swapAxisFields(activeDataSet.value.data, translateAxisKey(currentOption.name), translateAxisKey(targetOption.name))
-    activeDataSet.value.axisLabels = newLabels
-    resetColor()
-    activeGroupId.value = 0
-  }
+  // Set the per-dataset arrangement key; the pipeline watches activeArrangement
+  // and posts `setArrangement` so the worker re-projects/re-groups off-thread. No
+  // main-thread row mutation, no axisLabels mutation (labels are derived from the
+  // arrangement in Dashboard).
+  setArrangement(activeDataSetId.value, targetOption.name)
+  resetColor()
+  // New arrangement → new grouping; reset to the first group until the worker's
+  // fresh group list arrives.
+  activeGroupId.value = 0
 
   setSelectedSwapIndex(activeDataSetId.value, index)
 }

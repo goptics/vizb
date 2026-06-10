@@ -1,9 +1,10 @@
-// Framework-free axis-swap helpers, shared by the swap UI (AxisSwapper.vue) and
-// the transform Web Worker. Swapping rotates which dataset field (name/x/y/z)
-// each axis value lives on; the worker applies the same O(n) field rename to its
-// cached dataset that the main-thread store applies, keeping the two copies in
-// sync without re-cloning the rows. No Vue, no echarts — pure data in/out.
-import type { DataPoint, AxisLabels } from '../types'
+// Framework-free axis-swap helpers, shared by the swap UI (AxisSwapper.vue), the
+// chart pipeline and the transform Web Worker. Swapping rotates which dataset
+// field (name/x/y/z) each axis value lives on. The worker re-projects its cached
+// raw dataset under the new arrangement (see `projectAndGroup`); these helpers
+// translate the compact arrangement strings and permute the display labels. No
+// Vue, no echarts — pure data in/out.
+import type { AxisLabels } from '../types'
 
 export type AxisKey = 'name' | 'xAxis' | 'yAxis' | 'zAxis'
 
@@ -17,26 +18,6 @@ export const translateAxisKey = (key: string): AxisKey[] => {
     z: 'zAxis',
   }
   return key.split('').map((k) => keyMap[k as keyof typeof keyMap]) as AxisKey[]
-}
-
-// Rename axis fields in place across every row: read each row's current-key
-// values, drop the current keys, then re-assign those values onto the target
-// keys by position. Keys are pre-translated by the caller. No-op on length
-// mismatch (the arrangements always share length, but guard anyway).
-export const swapAxisFields = (
-  data: DataPoint[],
-  currentKeys: AxisKey[],
-  targetKeys: AxisKey[]
-): void => {
-  if (currentKeys.length !== targetKeys.length) return
-
-  for (const bench of data) {
-    const values = currentKeys.map((k) => bench[k])
-    for (const k of currentKeys) delete bench[k]
-    targetKeys.forEach((k, i) => {
-      bench[k] = values[i]
-    })
-  }
 }
 
 // Axis values move between dimensions on swap; the dataset's axisLabels are keyed

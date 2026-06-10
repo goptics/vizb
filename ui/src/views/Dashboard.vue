@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, toRef, provide } from 'vue'
+import { computed, toRef, watch } from 'vue'
 import { Moon, Sun, Package } from 'lucide-vue-next'
 import { useDataPoint } from '../composables/useDataPoint'
 import { useChartPipeline } from '../composables/useChartPipeline'
 import { useSettingsStore } from '../composables/useSettingsStore'
 import { useDashboardInit } from '../composables/useDashboardInit'
+import { swapAxisLabels } from '../lib/swap'
 import ChartSettingsPopover from '../components/ChartSettingsPopover.vue'
 import ChartCard from '../components/ChartCard.vue'
 import DataSetHeader from '../components/DataSetHeader.vue'
@@ -20,23 +21,46 @@ const {
   activeDataSet,
   activeDataSetId,
   selectDataSet,
+  activeArrangement,
   resultGroups,
-  activeGroup,
   activeGroupId,
+  activeGroupName,
   selectGroup,
+  setGroupNames,
   loading,
   loadError,
 } = useDataPoint()
 
 const { settings, toggleDark } = useSettingsStore()
 
-const activeResults = computed(() => activeGroup.value?.data || [])
-const activeAxisLabels = computed(() => activeDataSet.value?.axisLabels)
+// The full raw rows — the worker owns grouping/projection, so we pass the dataset
+// as-is (no main-thread grouping or swap mutation). Only a dataset switch re-clones.
+const activeResults = computed(() => activeDataSet.value?.data || [])
+// Display labels are derived from the arrangement (swap rotates which dimension
+// each label sits on), not mutated onto the dataset.
+const activeLabels = computed(() =>
+  swapAxisLabels(
+    activeArrangement.value.identityString,
+    activeArrangement.value.targetString,
+    activeDataSet.value?.axisLabels
+  )
+)
 // Charts are computed off-thread in a worker, one at a time (queue-based). Each
 // slot carries its own `pending` so its card drives an independent skeleton and
 // reveals progressively.
-const { charts, hasAny, triggerSwap } = useChartPipeline(activeResults, activeAxisLabels, toRef(settings, 'sort'), toRef(settings, 'showLabels'), toRef(settings, 'scale'))
-provide('triggerSwap', triggerSwap)
+const { charts, hasAny, groupNames } = useChartPipeline(
+  activeResults,
+  activeArrangement,
+  activeLabels,
+  activeGroupName,
+  toRef(settings, 'sort'),
+  toRef(settings, 'showLabels'),
+  toRef(settings, 'scale')
+)
+
+// The worker owns grouping; feed its group list back into useDataPoint so the
+// selector and URL router stay worker-backed.
+watch(groupNames, (names) => setGroupNames(names))
 
 // Full-page skeleton only while loading the dataset or on the very first compute
 // (no chart has data yet). Later recomputes keep existing charts visible and let
