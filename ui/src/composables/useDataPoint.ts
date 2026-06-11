@@ -1,8 +1,8 @@
-import { ref, computed, nextTick } from 'vue'
+import { ref, shallowRef, markRaw, reactive, computed, nextTick } from 'vue'
 import type { DataSet, DataPoint } from '../types'
+import type { Arrangement } from './useChartPipeline'
 import { resetColor, isValidIndex } from '../lib/utils'
 import { useSettingsStore } from './useSettingsStore'
-import { DEFAULT_SETTINGS } from './constants'
 
 const getStatDimensions = (points: DataPoint[]) => {
   let dimension = 0
@@ -13,6 +13,18 @@ const getStatDimensions = (points: DataPoint[]) => {
   if (points.some((b) => b.zAxis)) dimension++
 
   return dimension
+}
+
+// Canonical axis order; the identity arrangement is the present source axes in
+// this order (e.g. a dataset with name+xAxis → "nx").
+const AXIS_ORDER = ['n', 'x', 'y', 'z'] as const
+
+// The present source axes of a dataset, as a compact arrangement string. Cheap
+// (a few `.some()` passes, no grouping). Mirrors AxisSwapper's identity check.
+const presentKeys = (data: DataPoint[] | undefined): string => {
+  if (!data?.length) return ''
+  const fieldFor = { n: 'name', x: 'xAxis', y: 'yAxis', z: 'zAxis' } as const
+  return AXIS_ORDER.filter((k) => data.some((d) => d[fieldFor[k]])).join('')
 }
 
 const getDataSets = async (): Promise<DataSet[]> => {
@@ -31,30 +43,37 @@ const getDataSets = async (): Promise<DataSet[]> => {
   return window.VIZB_DATA ?? []
 }
 
-// Normalize stat values once, at load. Done here (not in a computed) so later
-// swaps — which mutate the dataset in place — don't re-round every row of every
-// dataset on each change.
-const normalize = (sets: DataSet[]): DataSet[] => {
-  for (const set of sets) {
-    for (const result of set.data ?? []) {
-      for (const stat of result.stats ?? []) {
-        stat.value = Number((stat.value ?? 0).toFixed(2))
-      }
-    }
-  }
-  return sets
-}
-
-// Global state
-const dataSets = ref<DataSet[]>([])
+// Global state. shallowRef (not ref): the rows are display-only and never mutated
+// in place, so deep reactivity would only proxy every row for nothing — and that
+// proxy is what forced the expensive JSON round-trip when cloning into the worker.
+// Top-level `.value =` still triggers reactivity (the selector/dimension/arrangement
+// computeds depend on the ref + activeDataSetId, not per-row reactivity).
+const dataSets = shallowRef<DataSet[]>([])
 const activeDataSetId = ref(0)
 const activeGroupId = ref(0)
 const loading = ref(true)
 const loadError = ref<string | null>(null)
 
+// Group list now comes from the worker (it owns grouping). Dashboard wires the
+// pipeline's `groupNames` into this via `setGroupNames` on every `ready`, so the
+// selector + URL router read the worker's grouping without any main-thread pass.
+const groupNames = ref<string[]>([])
+const setGroupNames = (names: string[]) => {
+  groupNames.value = names
+}
+
+// Per-dataset target arrangement (e.g. "yx"); absent = identity (no swap). The
+// worker projects/groups under this; AxisSwapper sets it instead of mutating rows.
+const arrangementMap = reactive(new Map<number, string>())
+const setArrangement = (datasetId: number, targetString: string) => {
+  arrangementMap.set(datasetId, targetString)
+}
+
 getDataSets()
   .then((data) => {
-    dataSets.value = normalize(Array.isArray(data) ? data : [data])
+    // markRaw keeps the rows plain (clone-safe) even if a future code path tries
+    // to wrap them in reactive() — the worker postMessage clones them natively.
+    dataSets.value = markRaw(Array.isArray(data) ? data : [data])
   })
   .catch((err: unknown) => {
     loadError.value = err instanceof Error ? err.message : String(err)
@@ -81,49 +100,21 @@ const activeDataSet = computed(
   () => dataSetsProcessed.value[activeDataSetId.value] || dataSetsProcessed.value[0]
 )
 
-// Group results within the active benchmark
-const grouped = computed(() => {
-  if (!activeDataSet.value) return new Map<string, DataPoint[]>()
-
-  const groupMap = new Map<string, DataPoint[]>()
-
-  for (const dataPoints of activeDataSet.value.data) {
-    const { name = 'Default', ...rest } = dataPoints
-
-    if (!groupMap.has(name)) {
-      groupMap.set(name, [])
-    }
-
-    groupMap.get(name)!.push(rest)
-  }
-
-  return groupMap
+// The active dataset's arrangement: identity = present source axes in canonical
+// order; target = the per-dataset selection, defaulting to identity (no swap).
+const activeArrangement = computed<Arrangement>(() => {
+  const identityString = presentKeys(activeDataSet.value?.data)
+  const targetString = arrangementMap.get(activeDataSetId.value) ?? identityString
+  return { identityString, targetString }
 })
 
-// Convert grouped results to array format for easier consumption
-const dataPointGroups = computed(() =>
-  Array.from(grouped.value.entries()).map(([name, data]) => ({
-    name,
-    description: activeDataSet.value?.description || '',
-    cpu: {
-      name: activeDataSet.value?.cpu?.name || '',
-      cores: activeDataSet.value?.cpu?.cores || 0,
-    },
-    settings: activeDataSet.value?.settings || DEFAULT_SETTINGS,
-    data,
-  }))
-)
-
-const activeGroup = computed(
-  () => dataPointGroups.value[activeGroupId.value] || dataPointGroups.value[0]
-)
+// Group list as the selector consumes it: a `{ name }[]` over the worker's names.
+const resultGroups = computed(() => groupNames.value.map((name) => ({ name })))
 
 const { initializeFromDataSet } = useSettingsStore()
 
 const selectDataSet = (id: number) => {
   if (isValidIndex(id, dataSets.value.length)) {
-    const currentGroupName = activeGroup.value?.name
-
     activeDataSetId.value = id
 
     const benchmark = dataSets.value[id]
@@ -131,20 +122,16 @@ const selectDataSet = (id: number) => {
       initializeFromDataSet(benchmark.settings, true)
     }
 
-    const newGroupIndex = dataPointGroups.value.findIndex((g) => g.name === currentGroupName)
-
-    if (newGroupIndex !== -1) {
-      activeGroupId.value = newGroupIndex
-    } else {
-      activeGroupId.value = 0
-    }
+    // Group names repopulate asynchronously from the worker's `ready` for the new
+    // dataset; reset to the first group until they arrive.
+    activeGroupId.value = 0
 
     nextTick(() => resetColor())
   }
 }
 
 const selectGroup = (id: number) => {
-  if (isValidIndex(id, dataPointGroups.value.length)) {
+  if (isValidIndex(id, groupNames.value.length)) {
     activeGroupId.value = id
   }
 }
@@ -157,10 +144,13 @@ export function useDataPoint() {
     activeDataSetDimension,
     selectDataSet,
 
-    resultGroups: dataPointGroups,
-    activeGroup,
+    activeArrangement,
+    setArrangement,
+
+    resultGroups,
     activeGroupId,
     selectGroup,
+    setGroupNames,
 
     loading,
     loadError,

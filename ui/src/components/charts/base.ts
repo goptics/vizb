@@ -4,6 +4,7 @@ import {
   TooltipComponent,
   LegendComponent,
   ToolboxComponent,
+  DataZoomComponent,
 } from 'echarts/components'
 
 // Universal 2D ECharts modules shared by every 2D renderer (bar/line/pie).
@@ -16,4 +17,5 @@ export const BASE_2D = [
   TooltipComponent,
   LegendComponent,
   ToolboxComponent,
+  DataZoomComponent,
 ]

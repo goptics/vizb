@@ -2,28 +2,16 @@
 import { computed } from 'vue'
 import SettingHeader from './SettingHeader.vue'
 import SwapSelector from './Selector.vue'
-import type { AxisLabels, DataPoint } from '../types'
+import type { DataPoint } from '../types'
 import { useDataPoint } from '../composables/useDataPoint'
 import { resetColor } from '../lib/utils'
 import { useSettingsStore } from '../composables/useSettingsStore'
 
-const { activeDataSet, activeGroupId, activeDataSetId } = useDataPoint()
+const { activeDataSet, activeGroupId, activeDataSetId, setArrangement } = useDataPoint()
 const { setSelectedSwapIndex, getSelectedSwapIndex } = useSettingsStore()
 
 // Canonical axis order; swap options are permutations of whichever are present.
 const AXIS_ORDER = ['n', 'x', 'y', 'z'] as const
-
-type AxisKey = 'name' | 'xAxis' | 'yAxis' | 'zAxis'
-
-const translateAxisKey = (key: string): AxisKey[] => {
-  const keyMap = {
-    x: 'xAxis',
-    y: 'yAxis',
-    n: 'name',
-    z: 'zAxis',
-  }
-  return key.split('').map((k) => keyMap[k as keyof typeof keyMap]) as AxisKey[]
-}
 
 // All ordered length-`k` arrangements drawn from `pool`, deterministic.
 // k = number of present values; pool = full axis set, so axes can be rotated
@@ -41,57 +29,6 @@ const kPermutations = (pool: readonly string[], k: number): string[] => {
 const presentKeys = (data: DataPoint[]): string[] => {
   const fieldFor = { n: 'name', x: 'xAxis', y: 'yAxis', z: 'zAxis' } as const
   return AXIS_ORDER.filter((k) => data.some((d) => d[fieldFor[k]]))
-}
-
-const swapAxis = (currentKey: string, targetKey: string, data: DataPoint[]) => {
-  const currentKeys = translateAxisKey(currentKey)
-  const targetKeys = translateAxisKey(targetKey)
-
-  if (currentKeys.length !== targetKeys.length) return
-
-  for (const bench of data) {
-    const values = currentKeys.map((k) => bench[k])
-
-    for (const k of currentKeys) {
-      delete bench[k]
-    }
-
-    for (const k of targetKeys) {
-      bench[k] = values.shift()
-    }
-  }
-}
-
-// Axis values move between dimensions on swap; the dataset's axisLabels are keyed
-// by dimension, so permute them by the same currentKeys → targetKeys mapping or
-// they'd point at the wrong axis. Returns a fresh object so the chart computeds
-// re-read it. No-op when there are no labels (benchmark inputs).
-const LABEL_KEY_FOR: Record<AxisKey, keyof AxisLabels> = {
-  name: 'name',
-  xAxis: 'x',
-  yAxis: 'y',
-  zAxis: 'z',
-}
-
-const swapAxisLabels = (
-  currentKey: string,
-  targetKey: string,
-  labels: AxisLabels | undefined
-): AxisLabels | undefined => {
-  if (!labels) return labels
-
-  const currentKeys = translateAxisKey(currentKey)
-  const targetKeys = translateAxisKey(targetKey)
-  if (currentKeys.length !== targetKeys.length) return labels
-
-  const values = currentKeys.map((k) => labels[LABEL_KEY_FOR[k]])
-  const next: AxisLabels = { ...labels }
-  for (const k of currentKeys) delete next[LABEL_KEY_FOR[k]]
-  targetKeys.forEach((k, i) => {
-    next[LABEL_KEY_FOR[k]] = values[i]
-  })
-
-  return next
 }
 
 const swapOptions = computed(() => {
@@ -138,19 +75,18 @@ const handleSwapSelect = (index: number) => {
   const currentIndex = selectedSwapIndex.value
   if (index === currentIndex) return
 
-  const currentOption = swapOptions.value[currentIndex]
   const targetOption = swapOptions.value[index]
+  if (!targetOption || !activeDataSet.value) return
 
-  if (currentOption && targetOption && activeDataSet.value) {
-    swapAxis(currentOption.name, targetOption.name, activeDataSet.value.data)
-    activeDataSet.value.axisLabels = swapAxisLabels(
-      currentOption.name,
-      targetOption.name,
-      activeDataSet.value.axisLabels
-    )
-    resetColor()
-    activeGroupId.value = 0
-  }
+  // Set the per-dataset arrangement key; the pipeline watches activeArrangement
+  // and posts `setArrangement` so the worker re-projects/re-groups off-thread. No
+  // main-thread row mutation, no axisLabels mutation (labels are derived from the
+  // arrangement in Dashboard).
+  setArrangement(activeDataSetId.value, targetOption.name)
+  resetColor()
+  // New arrangement → new grouping; reset to the first group until the worker's
+  // fresh group list arrives.
+  activeGroupId.value = 0
 
   setSelectedSwapIndex(activeDataSetId.value, index)
 }

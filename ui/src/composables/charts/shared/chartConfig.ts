@@ -2,6 +2,28 @@ import type { EChartsOption } from 'echarts/types/dist/shared'
 import type { ScaleType } from '../../../types'
 import { fontSize } from './common'
 
+export const LARGE_X_THRESHOLD = 50
+
+export function isLargeXAxis(xAxisData: string[]): boolean {
+  return xAxisData.length > LARGE_X_THRESHOLD
+}
+
+// Point count past which bar/line series switch on ECharts' large-data path
+// (`large: true`). Below it, normal rendering keeps full per-item interactivity;
+// above it the optimized path keeps a 100k-point dataset's draw on one frame.
+export const LARGE_DATA_THRESHOLD = 2000
+
+export function createDataZoomConfig(xAxisData: string[]): any[] {
+  const end = Math.max(5, Math.ceil((30 / xAxisData.length) * 100))
+  return [
+    { type: 'inside', start: 0, end },
+    // Slider sits between the (auto-thinned) tick labels and the category-axis
+    // name, which is pushed below it via a larger nameGap. Heights coordinated
+    // with createGridConfig's fixed px bottom so spacing is stable across sizes.
+    { type: 'slider', start: 0, end, bottom: 34, height: 28 },
+  ]
+}
+
 export interface ChartStyling {
   textColor: string
   axisColor: string
@@ -64,13 +86,20 @@ export function createAxisConfig(
         ? {
             name: xAxisName,
             nameLocation: 'middle',
-            nameGap: 45,
+            // Large axis: extra gap drops the name below the dataZoom slider.
+            nameGap: isLargeXAxis(xAxisData) ? 88 : 45,
             nameTextStyle: { color: styling.textColor, fontSize, fontWeight: 'bold' },
           }
         : {}),
       axisLabel: {
-        interval: 0,
-        rotate: xAxisData.reduce((acc, cur) => acc + cur.length, 0) > 100 ? 30 : 0,
+        // Large axis: let ECharts auto-thin ticks (dataZoom drives navigation)
+        // so labels don't overlap. Small axis: force every label visible.
+        interval: isLargeXAxis(xAxisData) ? 'auto' : 0,
+        rotate: isLargeXAxis(xAxisData)
+          ? 0
+          : xAxisData.reduce((acc, cur) => acc + cur.length, 0) > 100
+            ? 30
+            : 0,
         fontSize,
         color: styling.textColor,
       },
@@ -172,6 +201,27 @@ export function renderDonutSvg(
   const legend = `<div style="display:grid;grid-auto-flow:column;grid-template-rows:repeat(${rowsPerCol},auto);gap:2px 12px;font-size:11px">${legendRows}</div>`
 
   return `<div style="display:flex;align-items:center;gap:8px;margin-top:4px">${svg}${legend}</div>`
+}
+
+/**
+ * Single-series axis tooltip pinned near the top, following the cursor's x.
+ * Used by the no-Y line chart (only an x axis): with dense/large data an
+ * item-trigger tooltip is hard to hit, so we trigger on the axis and pin the
+ * box to a fixed height so it never jumps over the line.
+ */
+export function createPinnedAxisTooltip(isDark = false): EChartsOption['tooltip'] {
+  const theme = getTooltipTheme(isDark)
+  return {
+    trigger: 'axis',
+    position: (pt: number[]) => [pt[0] ?? 0, '10%'],
+    ...theme,
+    formatter: (params) => {
+      if (!Array.isArray(params)) return ''
+      const p = params[0]
+      if (!p) return ''
+      return `<strong>${p.name}</strong><br/>${p.marker} ${formatTooltipValue(p.value)}`
+    },
+  }
 }
 
 /**
@@ -284,8 +334,24 @@ export function makeLegendTitle(text: string, styling: ChartStyling): any {
   }
 }
 
-export function createGridConfig(seriesLength = 1): any {
+export function createGridConfig(seriesLength = 1, hasDataZoom = false): any {
   const legendSpace = Math.min(15 + Math.floor((seriesLength - 1) / 15) * 2, 35)
+
+  // With a dataZoom slider we turn containLabel OFF and reserve label space in
+  // fixed px. containLabel pins both the tick labels and the axis name to the
+  // container bottom, where they collide with a bottom-pinned slider. Fixed px
+  // lets the axis line sit at exactly `bottom`, so the slider (bottom:34) and
+  // the axis name (nameGap:88 → ~8px from bottom) land in predictable, non-
+  // overlapping bands: ticks → slider → name, top to bottom.
+  if (hasDataZoom) {
+    return {
+      left: 55,
+      right: 24,
+      bottom: 100,
+      top: `${legendSpace}%`,
+      containLabel: false,
+    }
+  }
 
   return {
     left: '3%',

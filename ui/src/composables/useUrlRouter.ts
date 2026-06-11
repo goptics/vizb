@@ -79,8 +79,23 @@ export function useUrlRouter() {
     // 1. DataSet ID - apply first since it resets settings
     applyIndexParam(params.d, dataSets.value.length, selectDataSet)
 
-    // 2. Group ID - depends on benchmark selection
-    applyIndexParam(params.g, resultGroups.value.length, selectGroup)
+    // 2. Group ID - depends on benchmark selection.
+    // Groups are populated asynchronously by the worker (first `ready` event),
+    // so we may not have them yet at init. Apply immediately if available;
+    // otherwise register a one-shot watcher that fires once groups arrive.
+    if (resultGroups.value.length > 0) {
+      applyIndexParam(params.g, resultGroups.value.length, selectGroup)
+    } else if (params.g !== undefined) {
+      watch(
+        () => resultGroups.value.length,
+        (len) => {
+          if (len > 0) {
+            applyIndexParam(params.g, len, selectGroup)
+          }
+        },
+        { once: true }
+      )
+    }
 
     // 3. Now apply settings on top of benchmark defaults
     // Sort

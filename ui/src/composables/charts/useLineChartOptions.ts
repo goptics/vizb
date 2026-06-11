@@ -4,11 +4,16 @@ import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
 import { getNextColorFor } from '../../lib/utils'
 import {
   createAxisConfig,
+  createDataZoomConfig,
   createGridConfig,
+  createLabelConfig,
   createLegendConfig,
+  createPinnedAxisTooltip,
   createTooltipConfig,
   getChartStyling,
+  isLargeXAxis,
   makeLegendTitle,
+  LARGE_DATA_THRESHOLD,
 } from './shared'
 import {
   adjustForLogScaleLine,
@@ -16,10 +21,9 @@ import {
   getEffectiveScale,
   computeSeriesTotals,
 } from './shared/common'
-import { makeDataItem } from './shared/seriesConfig'
 
-const symbolSize = 7
-const symbol = 'circle'
+const defaultSymbol = { symbol: 'circle', symbolSize: 7 }
+const largeSymbol = { symbol: 'none', sampling: 'lttb' }
 
 export function useLineChartOptions(config: BaseChartConfig) {
   const { chartData, sort, isDark, showLabels, scale } = config
@@ -31,29 +35,27 @@ export function useLineChartOptions(config: BaseChartConfig) {
     const baseOptions = getBaseOptions(config)
     const styling = getChartStyling(isDark.value)
     const { minValue, effectiveScale } = getEffectiveScale(series, scale.value)
+    const largeX = isLargeXAxis(xAxisData)
 
     if (!hasYAxis) {
       return {
         ...baseOptions,
-        grid: createGridConfig(1),
-        tooltip: createTooltipConfig(false, isDark.value),
+        grid: createGridConfig(1, largeX),
+        tooltip: createPinnedAxisTooltip(isDark.value),
         ...createAxisConfig(styling, xAxisData, effectiveScale, minValue, chartData.value.axisLabels?.x),
+        ...(largeX ? { dataZoom: createDataZoomConfig(xAxisData) } : {}),
         legend: { show: false },
         series: [
           {
             name: chartData.value.title,
             type: 'line' as const,
-            data: series.map((s) =>
-              makeDataItem(
-                adjustForLogScaleLine(s.values[0] ?? 0, effectiveScale),
-                showLabels.value,
-                styling
-              )
-            ),
+            data: series.map((s) => adjustForLogScaleLine(s.values[0] ?? 0, effectiveScale)),
+            label: createLabelConfig(showLabels.value, styling),
+            large: true,
+            largeThreshold: LARGE_DATA_THRESHOLD,
             connectNulls: true,
             itemStyle: { color: getNextColorFor(chartData.value.title) },
-            symbol,
-            symbolSize,
+            ...(largeX ? largeSymbol : defaultSymbol),
           },
         ],
       } as EChartsOption
@@ -64,17 +66,13 @@ export function useLineChartOptions(config: BaseChartConfig) {
     const transposedSeries = yAxisLabels.map((yAxisLabel, yIndex) => ({
       name: yAxisLabel,
       type: 'line' as const,
-      data: series.map((s) =>
-        makeDataItem(
-          adjustForLogScaleLine(s.values[yIndex] ?? 0, effectiveScale),
-          showLabels.value,
-          styling
-        )
-      ),
+      data: series.map((s) => adjustForLogScaleLine(s.values[yIndex] ?? 0, effectiveScale)),
+      label: createLabelConfig(showLabels.value, styling),
+      large: true,
+      largeThreshold: LARGE_DATA_THRESHOLD,
       connectNulls: true,
       itemStyle: { color: getNextColorFor(yAxisLabel) },
-      symbol,
-      symbolSize,
+      ...(largeX ? largeSymbol : defaultSymbol),
     }))
 
     const seriesTotals = computeSeriesTotals(transposedSeries)
@@ -85,9 +83,10 @@ export function useLineChartOptions(config: BaseChartConfig) {
     return {
       ...baseOptions,
       ...(yLabel ? { title: makeLegendTitle(yLabel, styling) } : {}),
-      grid: createGridConfig(transposedSeries.length),
+      grid: createGridConfig(transposedSeries.length, largeX),
       tooltip: createTooltipConfig(true, isDark.value, seriesTotals),
       ...createAxisConfig(styling, xAxisData, effectiveScale, minValue, chartData.value.axisLabels?.x),
+      ...(largeX ? { dataZoom: createDataZoomConfig(xAxisData) } : {}),
       legend: createLegendConfig(
         transposedSeries.map((s) => ({ xAxis: s.name })),
         styling,

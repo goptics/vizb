@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, toRef } from 'vue'
+import { computed, toRef, watch } from 'vue'
 import { Moon, Sun, Package } from 'lucide-vue-next'
 import { useDataPoint } from '../composables/useDataPoint'
 import { useChartPipeline } from '../composables/useChartPipeline'
 import { useSettingsStore } from '../composables/useSettingsStore'
 import { useDashboardInit } from '../composables/useDashboardInit'
+import { swapAxisLabels } from '../lib/swap'
 import ChartSettingsPopover from '../components/ChartSettingsPopover.vue'
 import ChartCard from '../components/ChartCard.vue'
 import DataSetHeader from '../components/DataSetHeader.vue'
@@ -20,27 +21,49 @@ const {
   activeDataSet,
   activeDataSetId,
   selectDataSet,
+  activeArrangement,
   resultGroups,
-  activeGroup,
   activeGroupId,
   selectGroup,
+  setGroupNames,
   loading,
   loadError,
 } = useDataPoint()
 
 const { settings, toggleDark } = useSettingsStore()
 
-const activeResults = computed(() => activeGroup.value?.data || [])
-const activeAxisLabels = computed(() => activeDataSet.value?.axisLabels)
+// The full raw rows — the worker owns grouping/projection, so we pass the dataset
+// as-is (no main-thread grouping or swap mutation). Only a dataset switch re-clones.
+const activeResults = computed(() => activeDataSet.value?.data || [])
+// Display labels are derived from the arrangement (swap rotates which dimension
+// each label sits on), not mutated onto the dataset.
+const activeLabels = computed(() =>
+  swapAxisLabels(
+    activeArrangement.value.identityString,
+    activeArrangement.value.targetString,
+    activeDataSet.value?.axisLabels
+  )
+)
 // Charts are computed off-thread in a worker, one at a time (queue-based). Each
 // slot carries its own `pending` so its card drives an independent skeleton and
 // reveals progressively.
-const { charts, hasAny } = useChartPipeline(activeResults, activeAxisLabels, toRef(settings, 'sort'), toRef(settings, 'showLabels'), toRef(settings, 'scale'))
+const { charts, groupNames } = useChartPipeline(
+  activeResults,
+  activeArrangement,
+  activeLabels,
+  activeGroupId,
+  toRef(settings, 'sort'),
+  toRef(settings, 'showLabels'),
+  toRef(settings, 'scale')
+)
 
-// Full-page skeleton only while loading the dataset or on the very first compute
-// (no chart has data yet). Later recomputes keep existing charts visible and let
-// each card show its own skeleton.
-const showSkeleton = computed(() => loading.value || (!hasAny.value && charts.value.length > 0))
+// The worker owns grouping; feed its group list back into useDataPoint so the
+// selector and URL router stay worker-backed.
+watch(groupNames, (names) => setGroupNames(names))
+
+// Full-page skeleton only while loading the dataset. Once data is ready the header
+// and layout appear immediately; each chart card drives its own skeleton while pending.
+const showSkeleton = computed(() => loading.value)
 
 useDashboardInit()
 </script>
@@ -87,6 +110,13 @@ useDashboardInit()
           class="animate-fade-in"
           :style="{ animationDelay: `${index * 50}ms` }"
         />
+        <div
+          v-else
+          class="rounded-lg border border-border bg-card p-6 shadow-sm"
+        >
+          <div class="mb-4 h-6 w-48 animate-pulse rounded bg-muted" />
+          <div class="h-[500px] animate-pulse rounded bg-muted" />
+        </div>
       </template>
     </div>
   </main>
