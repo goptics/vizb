@@ -235,7 +235,7 @@ describe('projectAndGroup', () => {
 
   it('empty name value falls back to Default group', () => {
     const raw: DataPoint[] = [{ name: '', xAxis: 'A', stats: [] }]
-    const { grouped, groupNames } = projectAndGroup(
+    const { groupNames } = projectAndGroup(
       raw, ['name', 'xAxis'], ['name', 'xAxis'],
     )
     expect(groupNames).toEqual(['Default'])

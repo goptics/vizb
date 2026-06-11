@@ -14,14 +14,23 @@ export function isLargeXAxis(xAxisData: string[]): boolean {
 // above it the optimized path keeps a 100k-point dataset's draw on one frame.
 export const LARGE_DATA_THRESHOLD = 2000
 
-export function createDataZoomConfig(xAxisData: string[]): any[] {
+export function createDataZoomConfig(xAxisData: string[], styling: ChartStyling): any[] {
   const end = Math.max(5, Math.ceil((30 / xAxisData.length) * 100))
   return [
     { type: 'inside', start: 0, end },
     // Slider sits between the (auto-thinned) tick labels and the category-axis
     // name, which is pushed below it via a larger nameGap. Heights coordinated
     // with createGridConfig's fixed px bottom so spacing is stable across sizes.
-    { type: 'slider', start: 0, end, bottom: 34, height: 28 },
+    // textStyle colors the left/right boundary labels to match the theme text
+    // (ECharts' default gray is too dim in dark mode).
+    {
+      type: 'slider',
+      start: 0,
+      end,
+      bottom: 34,
+      height: 28,
+      textStyle: { color: styling.textColor },
+    },
   ]
 }
 

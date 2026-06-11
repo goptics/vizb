@@ -43,7 +43,7 @@ export function useLineChartOptions(config: BaseChartConfig) {
         grid: createGridConfig(1, largeX),
         tooltip: createPinnedAxisTooltip(isDark.value),
         ...createAxisConfig(styling, xAxisData, effectiveScale, minValue, chartData.value.axisLabels?.x),
-        ...(largeX ? { dataZoom: createDataZoomConfig(xAxisData) } : {}),
+        ...(largeX ? { dataZoom: createDataZoomConfig(xAxisData, styling) } : {}),
         legend: { show: false },
         series: [
           {
@@ -86,7 +86,7 @@ export function useLineChartOptions(config: BaseChartConfig) {
       grid: createGridConfig(transposedSeries.length, largeX),
       tooltip: createTooltipConfig(true, isDark.value, seriesTotals),
       ...createAxisConfig(styling, xAxisData, effectiveScale, minValue, chartData.value.axisLabels?.x),
-      ...(largeX ? { dataZoom: createDataZoomConfig(xAxisData) } : {}),
+      ...(largeX ? { dataZoom: createDataZoomConfig(xAxisData, styling) } : {}),
       legend: createLegendConfig(
         transposedSeries.map((s) => ({ xAxis: s.name })),
         styling,

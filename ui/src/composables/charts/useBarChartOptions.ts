@@ -42,7 +42,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
         tooltip: createTooltipConfig(false, isDark.value),
         legend: { show: false },
         ...createAxisConfig(styling, xAxisData, effectiveScale, minValue, chartData.value.axisLabels?.x),
-        ...(largeX ? { dataZoom: createDataZoomConfig(xAxisData) } : {}),
+        ...(largeX ? { dataZoom: createDataZoomConfig(xAxisData, styling) } : {}),
         series: [
           {
             name: chartData.value.title,
@@ -102,7 +102,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
         showLegendTitle ? { top: 24 } : undefined
       ),
       ...createAxisConfig(styling, xAxisData, effectiveScale, minValue, chartData.value.axisLabels?.x),
-      ...(largeX ? { dataZoom: createDataZoomConfig(xAxisData) } : {}),
+      ...(largeX ? { dataZoom: createDataZoomConfig(xAxisData, styling) } : {}),
       series: transposedSeries,
     } as EChartsOption
   })
