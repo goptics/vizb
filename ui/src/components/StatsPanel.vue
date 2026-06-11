@@ -22,9 +22,11 @@ async function load() {
   loading.value = true
   const result = await computeStats(props.chartData)
   if (mine !== token) return // a newer chartData superseded this request
-  // New chart starts in natural series order, not whatever the last chart's sort was.
+  // New chart starts in natural series order with no active search filter.
   sortKey.value = null
   sortDir.value = 'desc'
+  searchQuery.value = ''
+  debouncedQuery.value = ''
   profiles.value = result.seriesProfiles
   correlation.value = result.correlation
   loading.value = false
@@ -119,6 +121,25 @@ const sortedProfiles = computed(() => {
   })
 })
 
+// --- Search / filter the descriptive table --------------------------------
+// Shown only when > 20 series. Debounced 300 ms so fast typists don't trigger
+// a filter recompute on every keystroke. No external debounce lib in project.
+const searchQuery = ref('')
+const debouncedQuery = ref('')
+let debounceTimer: ReturnType<typeof setTimeout> | null = null
+watch(searchQuery, (val) => {
+  if (debounceTimer) clearTimeout(debounceTimer)
+  debounceTimer = setTimeout(() => { debouncedQuery.value = val }, 300)
+})
+
+// Filter sortedProfiles by case-insensitive substring on series name. When
+// the query is empty, return sortedProfiles directly (no allocation).
+const filteredProfiles = computed(() => {
+  const q = debouncedQuery.value.trim().toLowerCase()
+  if (!q) return sortedProfiles.value
+  return sortedProfiles.value.filter((p) => p.name.toLowerCase().includes(q))
+})
+
 // Widened to string|number so SelectionTabs' v-model (emits string|number) types
 // cleanly; only ever set to the literal option values below.
 const view = ref<string | number>('descriptive')
@@ -172,11 +193,11 @@ watch([view, loading], () => nextTick(measure))
 
 const startIndex = computed(() => Math.max(0, Math.floor(scrollTop.value / ROW_H) - OVERSCAN))
 const endIndex = computed(() =>
-  Math.min(sortedProfiles.value.length, startIndex.value + Math.ceil(viewportH.value / ROW_H) + OVERSCAN * 2)
+  Math.min(filteredProfiles.value.length, startIndex.value + Math.ceil(viewportH.value / ROW_H) + OVERSCAN * 2)
 )
-const visibleRows = computed(() => sortedProfiles.value.slice(startIndex.value, endIndex.value))
+const visibleRows = computed(() => filteredProfiles.value.slice(startIndex.value, endIndex.value))
 const topPad = computed(() => startIndex.value * ROW_H)
-const bottomPad = computed(() => (sortedProfiles.value.length - endIndex.value) * ROW_H)
+const bottomPad = computed(() => (filteredProfiles.value.length - endIndex.value) * ROW_H)
 
 // Diverging heatmap colour for r ∈ [-1,1]: red (negative) → neutral → green
 // (positive). Explicit bg + text colour so cells read in both light and dark
@@ -217,7 +238,7 @@ function downloadCsv() {
     csv = correlationCsv(correlation.value.labels, corrMatrix.value)
     suffix = `correlation-${method.value}`
   } else {
-    csv = descriptiveCsv(sortedProfiles.value, COLUMNS)
+    csv = descriptiveCsv(filteredProfiles.value, COLUMNS)
     suffix = 'descriptive'
   }
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
@@ -274,12 +295,19 @@ function downloadCsv() {
 
     <!-- Descriptive: series (rows) × metrics (cols). Virtualized vertically,
          horizontal scroll for the wide metric set. -->
-    <div
-      v-else-if="view === 'descriptive'"
-      ref="scrollEl"
-      class="max-h-[28rem] overflow-auto"
-      @scroll="onScroll"
-    >
+    <template v-else-if="view === 'descriptive'">
+      <input
+        v-if="profiles.length > 20"
+        v-model="searchQuery"
+        type="search"
+        placeholder="Search Series..."
+        class="mb-2 w-full rounded-md border border-border bg-background px-3 py-1.5 text-xs text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+      />
+      <div
+        ref="scrollEl"
+        class="max-h-[28rem] overflow-auto"
+        @scroll="onScroll"
+      >
       <table class="w-full border-collapse text-right text-xs">
         <thead>
           <tr class="border-b border-border text-muted-foreground">
@@ -311,6 +339,11 @@ function downloadCsv() {
           <tr v-if="topPad" :style="{ height: topPad + 'px' }">
             <td :colspan="COLUMNS.length + 1" class="p-0" />
           </tr>
+          <tr v-if="debouncedQuery && !filteredProfiles.length">
+            <td :colspan="COLUMNS.length + 1" class="py-6 text-center text-muted-foreground">
+              No series match "{{ debouncedQuery }}"
+            </td>
+          </tr>
           <tr
             v-for="p in visibleRows"
             :key="p.name"
@@ -337,6 +370,7 @@ function downloadCsv() {
         </tbody>
       </table>
     </div>
+    </template>
 
     <!-- Correlation heatmap (capped series count, no virtualization needed). -->
     <div v-else-if="correlation" class="max-h-[28rem] overflow-auto">
