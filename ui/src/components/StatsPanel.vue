@@ -121,6 +121,9 @@ const sortedProfiles = computed(() => {
   })
 })
 
+// User-supplied label for the series (xAxis) dimension, falls back to "Series".
+const seriesLabel = computed(() => props.chartData.axisLabels?.x || 'Series')
+
 // --- Search / filter the descriptive table --------------------------------
 // Shown only when > 20 series. Debounced 300 ms so fast typists don't trigger
 // a filter recompute on every keystroke. No external debounce lib in project.
@@ -296,13 +299,17 @@ function downloadCsv() {
     <!-- Descriptive: series (rows) × metrics (cols). Virtualized vertically,
          horizontal scroll for the wide metric set. -->
     <template v-else-if="view === 'descriptive'">
-      <input
-        v-if="profiles.length > 20"
-        v-model="searchQuery"
-        type="search"
-        placeholder="Search Series..."
-        class="mb-2 w-full rounded-md border border-border bg-background px-3 py-1.5 text-xs text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-      />
+      <div v-if="profiles.length > 20" class="mb-2 flex items-center gap-2">
+        <input
+          v-model="searchQuery"
+          type="search"
+          :placeholder="`Search ${seriesLabel}...`"
+          class="max-w-xs rounded-md border border-border bg-background px-3 py-1.5 text-xs text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+        />
+        <span v-if="debouncedQuery" class="text-xs text-muted-foreground">
+          {{ filteredProfiles.length }} / {{ profiles.length }}
+        </span>
+      </div>
       <div
         ref="scrollEl"
         class="max-h-[28rem] overflow-auto"
@@ -316,7 +323,7 @@ function downloadCsv() {
               @click="toggleSort('name')"
             >
               <span class="inline-flex items-center gap-1">
-                Series
+                {{ seriesLabel }}
                 <ArrowDown v-if="sortKey === 'name' && sortDir === 'desc'" class="h-3 w-3" />
                 <ArrowUp v-else-if="sortKey === 'name' && sortDir === 'asc'" class="h-3 w-3" />
               </span>
