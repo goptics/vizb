@@ -11,10 +11,12 @@ import {
   type Component,
 } from 'vue'
 import type { EChartsOption } from 'echarts'
+import { Sigma } from 'lucide-vue-next'
 import { useChartOptions } from '../composables/useChartOptions'
 import type { ChartData, ChartType } from '../types'
 import { useSettingsStore } from '../composables/useSettingsStore'
 import { is3D } from '../lib/utils'
+import StatsPanel from './StatsPanel.vue'
 
 // Every chart renderer (2D bar/line/pie + 3D) is loaded via defineAsyncComponent
 // so the echarts runtime stays out of the eager startup bundle: nothing in the
@@ -94,6 +96,13 @@ const initOptions = {
 
 const containerRef = ref<HTMLElement | null>(null)
 const isFullscreen = ref(false)
+
+// Stats panel is collapsed by default so the chart view is unchanged until the
+// user opts in. Offered for any chart with at least one series; the actual
+// profiles/correlation are computed lazily off-thread when the panel opens
+// (see StatsPanel.vue + useStatsWorker.ts), so this check stays payload-free.
+const showStats = ref(false)
+const hasStats = computed(() => chartData.value.series.length > 0)
 
 function toggleFullscreen() {
   if (!containerRef.value) return
@@ -184,9 +193,23 @@ watch(
     class="rounded-lg border border-border bg-card p-6 shadow-sm transition-shadow hover:shadow-md"
     :class="{ 'fixed inset-0 z-50 rounded-none': isFullscreen }"
   >
-    <h3 class="text-lg font-semibold text-card-foreground">
-      {{ chartData.title }}
-    </h3>
+    <div class="flex items-center justify-between gap-2 mb-2">
+      <h3 class="text-lg font-semibold text-card-foreground">
+        {{ chartData.title }}
+      </h3>
+      <button
+        v-if="hasStats"
+        type="button"
+        class="inline-flex h-8 items-center gap-1.5 rounded-md border border-border px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-primary"
+        :class="{ 'bg-accent text-primary': showStats }"
+        :aria-pressed="showStats"
+        title="Toggle statistics"
+        @click="showStats = !showStats"
+      >
+        <Sigma class="h-4 w-4" />
+        Stats
+      </button>
+    </div>
     <!-- Keep the chart mounted and overlay the skeleton; unmounting would reset
          the echarts-gl camera on every 3D switch (zoom-in flash). -->
     <div class="relative" :class="isFullscreen ? 'h-[calc(100vh-4rem)]' : 'h-[500px]'">
@@ -199,5 +222,6 @@ watch(
       />
       <div v-if="showSkeleton" class="absolute inset-0 z-10 animate-pulse rounded bg-muted" />
     </div>
+    <StatsPanel v-if="hasStats && showStats" :chart-data="chartData" />
   </div>
 </template>

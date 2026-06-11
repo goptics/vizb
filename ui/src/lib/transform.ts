@@ -17,7 +17,7 @@ import type {
 } from '../types'
 import type { AxisKey } from './swap'
 
-const toStatSignature = (stat: Stat): string => { 
+const toStatSignature = (stat: Stat): string => {
   if (!stat.per) { 
     return `${stat.type}-${stat.unit}`
   }
@@ -112,6 +112,10 @@ export function buildChartForSignature(
   // the 2D bar/line x order; harmless for the 3D path.
   if (sort.enabled) sortSeriesByTotal(series, sort.order)
 
+  // Descriptive stats + correlation are NOT computed here — they're off the chart
+  // critical path now, computed lazily in the dedicated stats worker only when a
+  // panel is opened (see composables/useStatsWorker.ts). This keeps every
+  // sort/group/scale recompute from blocking the chart reply behind stat work.
   const chart: ChartData = {
     title: statTemplate.type,
     statType: statTemplate.type,
@@ -145,7 +149,7 @@ function sortByAxisTotal(
 ): string[] {
   const totals = new Map<string, number>()
   for (const p of points) totals.set(p[key], (totals.get(p[key]) ?? 0) + p.value)
-  return [...values].sort((a, b) => {
+  return values.toSorted((a, b) => {
     const diff = (totals.get(a) ?? 0) - (totals.get(b) ?? 0)
     return order === 'asc' ? diff : -diff
   })

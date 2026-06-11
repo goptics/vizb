@@ -1,6 +1,7 @@
 import type { EChartsOption } from 'echarts/types/dist/shared'
 import type { ScaleType } from '../../../types'
 import { fontSize } from './common'
+import { describe } from '../../../lib/stats'
 
 export const LARGE_X_THRESHOLD = 50
 
@@ -137,6 +138,24 @@ export function tooltipDivider(isDark: boolean): string {
   return `<hr style="border:none;border-top:1px solid ${getChartStyling(isDark).axisColor};margin:4px 0"/>`
 }
 
+// Lean spread summary for the hovered vector (the series values at a category /
+// the z-values in a 3D cell): median, IQR, CV. The full descriptive set lives in
+// the stats panel — this is just the at-a-glance trio. Returns '' for <2 finite
+// values (a single value has no spread). Shared by the 2D and 3D tooltips.
+export function tooltipSpreadRows(values: number[], isDark: boolean): string {
+  const finite = values.filter((v) => Number.isFinite(v))
+  if (finite.length < 2) return ''
+  const s = describe(finite)
+  const num = (v: number) => (Number.isFinite(v) ? Math.round(v * 100) / 100 : '—')
+  const cv = Number.isFinite(s.cv) ? `${(s.cv * 100).toFixed(1)}%` : '—'
+  return (
+    `${tooltipDivider(isDark)}` +
+    `Median: <b>${num(s.median)}</b><br/>` +
+    `IQR: <b>${num(s.iqr)}</b><br/>` +
+    `CV: <b>${cv}</b>`
+  )
+}
+
 // Inline SVG donut + side legend (swatch, name, %) for tooltips. Non-positive
 // slices are dropped (can't show negative share). Returns '' when fewer than 2
 // positive slices — nothing to compare.
@@ -264,6 +283,10 @@ export function createTooltipConfig(
         )
         const xName = params[0]?.name ?? ''
         const sumLine = `${tooltipDivider(isDark)}Σ ${xName}: <b>${Math.round(total * 100) / 100}</b>`
+        const spread = tooltipSpreadRows(
+          params.map((p) => (typeof p.value === 'number' ? p.value : NaN)),
+          isDark
+        )
         const donut = renderDonutSvg(
           params.map((p) => ({
             value: typeof p.value === 'number' ? p.value : 0,
@@ -271,7 +294,7 @@ export function createTooltipConfig(
             name: p.seriesName ?? '',
           }))
         )
-        return `${body}${sumLine}${donut ? tooltipDivider(isDark) + donut : ''}`
+        return `${body}${sumLine}${spread}${donut ? tooltipDivider(isDark) + donut : ''}`
       },
     }
   }

@@ -2,7 +2,7 @@ import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
 import { getNextColorFor } from '../../lib/utils'
-import { getChartStyling, getTooltipTheme, tooltipDivider, renderDonutSvg, type ChartStyling } from './shared'
+import { getChartStyling, getTooltipTheme, tooltipDivider, tooltipSpreadRows, renderDonutSvg, type ChartStyling } from './shared'
 import type { Render3D } from '../../types'
 
 type Series3DType = 'bar3D' | 'line3D'
@@ -151,6 +151,10 @@ export function use3DChartOptions(config: BaseChartConfig, seriesType: Series3DT
         `Σ ${xName}: <b>${round2(xMarginal)}</b><br/>` +
         `Σ ${yName}: <b>${round2(yMarginal)}</b>`
 
+      // Spread of the z-values in this cell (median / IQR / CV), mirroring the 2D
+      // tooltip. Only meaningful with >1 z.
+      const spread = tooltipSpreadRows(Array.from(zmap.values()), isDark.value)
+
       const donut =
         zmap.size > 1
           ? renderDonutSvg(
@@ -159,7 +163,7 @@ export function use3DChartOptions(config: BaseChartConfig, seriesType: Series3DT
                 .map((z) => ({ value: zmap.get(z)!, color: getNextColorFor(z) ?? '', name: z }))
             )
           : ''
-      return `<b>${xName} / ${yName}</b><br/>${rows.join('<br/>')}${margins}${donut ? tooltipDivider(isDark.value) + donut : ''}`
+      return `<b>${xName} / ${yName}</b><br/>${rows.join('<br/>')}${margins}${spread}${donut ? tooltipDivider(isDark.value) + donut : ''}`
     }
 
     return {

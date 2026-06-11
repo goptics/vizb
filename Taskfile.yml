@@ -58,6 +58,7 @@ tasks:
     desc: Run all tests (no cache)
     cmds:
       - go test -count=1 ./...
+      - cd ui; pnpm test; cd -
 
   lint:
     desc: Run linter
