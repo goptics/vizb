@@ -148,7 +148,7 @@ func writeStdinPipedInputs(tempfilePath string) {
 }
 
 func checkTargetFile(filePath string) {
-	fmt.Println(style.Info.Render(fmt.Sprintf("📊 Reading dataSet data from file: %s", filePath)))
+	fmt.Println(style.Info.Render(fmt.Sprintf("🔎 Reading data from file: %s", filePath)))
 
 	// Check if the target file exists
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
@@ -236,7 +236,20 @@ func prepareData(filePath string) []shared.DataPoint {
 		shared.ExitWithError(err.Error(), nil)
 	}
 
+	fmt.Println(style.Info.Render("⚙️  Parsing data..."))
 	data := parseFn(filePath)
+
+	// CSV/JSON emit one DataPoint per row; when grouping is active, multiple rows
+	// can share the same (name, xAxis, yAxis, zAxis) key. Collapse them by summing
+	// so the output isn't a row-per-record dump (200k rows → a few thousand points).
+	// Benchmark parsers are excluded: their count=N repeats share a key but must NOT
+	// be summed (the UI averages those instead).
+	if (shared.FlagState.Parser == "csv" || shared.FlagState.Parser == "json") && len(shared.FlagState.Group) > 0 {
+		before := len(data)
+		fmt.Println(style.Info.Render(fmt.Sprintf("🧮 Aggregating %d rows...", before)))
+		data = shared.AggregateDataPoints(data)
+		fmt.Println(style.Info.Render(fmt.Sprintf("✅ Aggregated into %d grouped data points", len(data))))
+	}
 
 	if len(data) == 0 {
 		shared.ExitWithError("No dataSet data found", nil)
@@ -286,7 +299,7 @@ func prepareDatasetFromResults(results []shared.DataPoint) *shared.Dataset {
 func writeOutput(f *os.File, dataSet *shared.Dataset, format string) {
 	switch format {
 	case "html":
-		fmt.Println(style.Info.Render("🔄 Generating Chart..."))
+		fmt.Println(style.Info.Render("🔄 Generating UI..."))
 
 		jsonData, err := json.Marshal(dataSet)
 		if err != nil {
@@ -298,7 +311,7 @@ func writeOutput(f *os.File, dataSet *shared.Dataset, format string) {
 			shared.ExitWithError("Failed to write output file: %v", err)
 		}
 
-		fmt.Println(style.Success.Render("🎉 Generated HTML chart successfully!"))
+		fmt.Println(style.Success.Render("🎉 Generated HTML UI successfully!"))
 
 	case "json":
 		fmt.Println(style.Info.Render("🔄 Generating JSON..."))

@@ -75,6 +75,7 @@ export function buildChartForSignature(
   scale: ScaleType = 'linear'
 ): ChartData {
   const dataMap = new Map<string, Map<string, number>>()
+  const countMap = new Map<string, Map<string, number>>()
   const xAxisSet = new Set<string>()
   const yAxisSet = new Set<string>()
   const zAxisSet = new Set<string>()
@@ -91,8 +92,23 @@ export function buildChartForSignature(
     zAxisSet.add(zAxis)
     points.push({ xAxis, yAxis, zAxis, value })
 
-    if (!dataMap.has(yAxis)) dataMap.set(yAxis, new Map())
-    dataMap.get(yAxis)!.set(xAxis, value)
+    // Accumulate sum + count per (yAxis, xAxis) so duplicates are averaged below,
+    // never silently overwritten. Grouped CSV/JSON arrives pre-summed from the Go
+    // layer (one point per key → mean == value), so this only meaningfully fires
+    // for benchmark count=N repeats, where the mean is the correct measurement.
+    if (!dataMap.has(yAxis)) {
+      dataMap.set(yAxis, new Map())
+      countMap.set(yAxis, new Map())
+    }
+    const yMap = dataMap.get(yAxis)!
+    const cMap = countMap.get(yAxis)!
+    yMap.set(xAxis, (yMap.get(xAxis) ?? 0) + value)
+    cMap.set(xAxis, (cMap.get(xAxis) ?? 0) + 1)
+  }
+
+  for (const [yAxis, xMap] of dataMap) {
+    const cMap = countMap.get(yAxis)!
+    for (const [xAxis, sum] of xMap) xMap.set(xAxis, sum / cMap.get(xAxis)!)
   }
 
   const xAxisValues = Array.from(xAxisSet)
@@ -155,8 +171,10 @@ function sortByAxisTotal(
   })
 }
 
-// Aggregate points into per-(x,y) cell sums for a single z series. Many rows can
-// share the same (x,y,z); summing avoids coplanar WebGL z-fighting.
+// Aggregate points into per-(x,y) cells for a single z series. Many rows can share
+// the same (x,y,z); we average them (matching the 2D path) so benchmark count=N
+// repeats render as their mean rather than a meaningless sum. Grouped CSV/JSON is
+// pre-summed in the Go layer (one point per cell → mean == value).
 function cellsFor(
   points: Point3D[],
   z: string,
@@ -164,13 +182,17 @@ function cellsFor(
   yIndex: Map<string, number>
 ): Map<string, number> {
   const cells = new Map<string, number>()
+  const counts = new Map<string, number>()
   for (const p of points) {
     if (p.zAxis !== z) continue
     const xi = xIndex.get(p.xAxis)
     const yi = yIndex.get(p.yAxis)
     if (xi === undefined || yi === undefined) continue
-    cells.set(`${xi},${yi}`, (cells.get(`${xi},${yi}`) ?? 0) + p.value)
+    const key = `${xi},${yi}`
+    cells.set(key, (cells.get(key) ?? 0) + p.value)
+    counts.set(key, (counts.get(key) ?? 0) + 1)
   }
+  for (const [key, sum] of cells) cells.set(key, sum / counts.get(key)!)
   return cells
 }
 
