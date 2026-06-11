@@ -299,14 +299,14 @@ function downloadCsv() {
     <!-- Descriptive: series (rows) × metrics (cols). Virtualized vertically,
          horizontal scroll for the wide metric set. -->
     <template v-else-if="view === 'descriptive'">
-      <div v-if="profiles.length > 20" class="mb-2 flex items-center gap-2">
+      <div v-if="profiles.length > 20" class="mb-2 flex items-center">
         <input
           v-model="searchQuery"
           type="search"
           :placeholder="`Search ${seriesLabel}...`"
           class="max-w-xs rounded-md border border-border bg-background px-3 py-1.5 text-xs text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
         />
-        <span v-if="debouncedQuery" class="text-xs text-muted-foreground">
+        <span v-if="debouncedQuery" class="ml-auto text-xs text-muted-foreground">
           {{ filteredProfiles.length }} / {{ profiles.length }}
         </span>
       </div>
