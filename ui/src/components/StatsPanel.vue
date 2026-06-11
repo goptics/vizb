@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch, nextTick } from 'vue'
-import { Download } from 'lucide-vue-next'
+import { Download, ArrowUp, ArrowDown } from 'lucide-vue-next'
 import type { ChartData, DescriptiveStats, SeriesProfile, CorrelationMatrix } from '../types'
 import { computeStats } from '../composables/useStatsWorker'
 import { descriptiveCsv, correlationCsv } from '../lib/csv'
@@ -22,6 +22,9 @@ async function load() {
   loading.value = true
   const result = await computeStats(props.chartData)
   if (mine !== token) return // a newer chartData superseded this request
+  // New chart starts in natural series order, not whatever the last chart's sort was.
+  sortKey.value = null
+  sortDir.value = 'desc'
   profiles.value = result.seriesProfiles
   correlation.value = result.correlation
   loading.value = false
@@ -71,6 +74,50 @@ function fmt(key: keyof DescriptiveStats, v: number): string {
   if (a !== 0 && (a < 1e-3 || a >= 1e6)) return v.toExponential(2)
   return Number(v.toPrecision(4)).toString()
 }
+
+// --- Click-to-sort the descriptive table ----------------------------------
+// Pure view concern over the already-computed profiles (no worker round-trip).
+// `'name'` is the Series column; every other key indexes DescriptiveStats.
+type SortKey = keyof DescriptiveStats | 'name'
+const sortKey = ref<SortKey | null>(null) // null = original series order
+const sortDir = ref<'asc' | 'desc'>('desc')
+
+// Tri-state cycle on a header click: new col → desc; same col desc → asc;
+// same col asc → back to original (null).
+function toggleSort(key: SortKey) {
+  if (sortKey.value !== key) {
+    sortKey.value = key
+    sortDir.value = 'desc'
+  } else if (sortDir.value === 'desc') {
+    sortDir.value = 'asc'
+  } else {
+    sortKey.value = null
+  }
+  resetScroll() // top of the freshly ordered list
+}
+
+// Sorted view of `profiles`. Non-finite values (NaN/±Inf — the "—" cells) always
+// sink to the bottom regardless of direction, so a mostly-missing column still
+// surfaces its real min/max. Stable copy — never mutate profiles.value.
+const sortedProfiles = computed(() => {
+  const key = sortKey.value
+  if (!key) return profiles.value
+  const dir = sortDir.value
+  return profiles.value.slice().sort((a, b) => {
+    if (key === 'name') {
+      const c = a.name.localeCompare(b.name)
+      return dir === 'asc' ? c : -c
+    }
+    const av = a.stats[key]
+    const bv = b.stats[key]
+    const an = !Number.isFinite(av)
+    const bn = !Number.isFinite(bv)
+    if (an && bn) return 0
+    if (an) return 1 // NaN always last
+    if (bn) return -1
+    return dir === 'asc' ? av - bv : bv - av
+  })
+})
 
 // Widened to string|number so SelectionTabs' v-model (emits string|number) types
 // cleanly; only ever set to the literal option values below.
@@ -125,11 +172,11 @@ watch([view, loading], () => nextTick(measure))
 
 const startIndex = computed(() => Math.max(0, Math.floor(scrollTop.value / ROW_H) - OVERSCAN))
 const endIndex = computed(() =>
-  Math.min(profiles.value.length, startIndex.value + Math.ceil(viewportH.value / ROW_H) + OVERSCAN * 2)
+  Math.min(sortedProfiles.value.length, startIndex.value + Math.ceil(viewportH.value / ROW_H) + OVERSCAN * 2)
 )
-const visibleRows = computed(() => profiles.value.slice(startIndex.value, endIndex.value))
+const visibleRows = computed(() => sortedProfiles.value.slice(startIndex.value, endIndex.value))
 const topPad = computed(() => startIndex.value * ROW_H)
-const bottomPad = computed(() => (profiles.value.length - endIndex.value) * ROW_H)
+const bottomPad = computed(() => (sortedProfiles.value.length - endIndex.value) * ROW_H)
 
 // Diverging heatmap colour for r ∈ [-1,1]: red (negative) → neutral → green
 // (positive). Explicit bg + text colour so cells read in both light and dark
@@ -170,7 +217,7 @@ function downloadCsv() {
     csv = correlationCsv(correlation.value.labels, corrMatrix.value)
     suffix = `correlation-${method.value}`
   } else {
-    csv = descriptiveCsv(profiles.value, COLUMNS)
+    csv = descriptiveCsv(sortedProfiles.value, COLUMNS)
     suffix = 'descriptive'
   }
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
@@ -237,16 +284,26 @@ function downloadCsv() {
         <thead>
           <tr class="border-b border-border text-muted-foreground">
             <th
-              class="sticky left-0 top-0 z-20 bg-card px-2 py-1.5 text-left font-medium"
+              class="sticky left-0 top-0 z-20 cursor-pointer select-none bg-card px-2 py-1.5 text-left font-medium hover:text-primary"
+              @click="toggleSort('name')"
             >
-              Series
+              <span class="inline-flex items-center gap-1">
+                Series
+                <ArrowDown v-if="sortKey === 'name' && sortDir === 'desc'" class="h-3 w-3" />
+                <ArrowUp v-else-if="sortKey === 'name' && sortDir === 'asc'" class="h-3 w-3" />
+              </span>
             </th>
             <th
               v-for="col in COLUMNS"
               :key="col.key"
-              class="sticky top-0 z-10 bg-muted px-2 py-1.5 font-medium"
+              class="sticky top-0 z-10 cursor-pointer select-none bg-muted px-2 py-1.5 font-medium hover:text-primary"
+              @click="toggleSort(col.key)"
             >
-              {{ col.label }}
+              <span class="inline-flex items-center justify-end gap-1">
+                {{ col.label }}
+                <ArrowDown v-if="sortKey === col.key && sortDir === 'desc'" class="h-3 w-3" />
+                <ArrowUp v-else-if="sortKey === col.key && sortDir === 'asc'" class="h-3 w-3" />
+              </span>
             </th>
           </tr>
         </thead>
