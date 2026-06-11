@@ -17,6 +17,7 @@ import type { ChartData, ChartType } from '../types'
 import { useSettingsStore } from '../composables/useSettingsStore'
 import { is3D } from '../lib/utils'
 import StatsPanel from './StatsPanel.vue'
+import Badge from './Badge.vue'
 
 // Every chart renderer (2D bar/line/pie + 3D) is loaded via defineAsyncComponent
 // so the echarts runtime stays out of the eager startup bundle: nothing in the
@@ -221,6 +222,21 @@ watch(
         @legendselectchanged="onLegendSelectChanged"
       />
       <div v-if="showSkeleton" class="absolute inset-0 z-10 animate-pulse rounded bg-muted" />
+    </div>
+    <div class="mt-2 flex flex-wrap justify-end gap-1.5">
+      <Badge
+        :label="chartData.axisLabels?.x || 'Series'"
+        :value="String(chartData.series.length)"
+      />
+      <Badge
+        :label="chartData.axisLabels?.y || 'Y-axis'"
+        :value="String(chartData.yAxis.length)"
+      />
+      <Badge
+        v-if="is3DChart"
+        :label="chartData.axisLabels?.z || 'Z-axis'"
+        :value="String(chartData.zAxis.length)"
+      />
     </div>
     <StatsPanel v-if="hasStats && showStats" :chart-data="chartData" />
   </div>
