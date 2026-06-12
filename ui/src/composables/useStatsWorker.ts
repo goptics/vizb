@@ -1,56 +1,77 @@
 // Singleton bridge to the dedicated stats worker. The worker is created lazily on
 // first use (so charts that never open a panel never spin one up) and shared by
-// every StatsPanel. Requests are correlated by an incrementing id; results are
-// cached per ChartData object so reopening the *same* chart is instant, while a
-// recompute (a fresh ChartData) recomputes.
+// every StatsPanel. Requests are correlated by an incrementing id; each piece
+// (descriptive / correlation) is cached per ChartData object so reopening the
+// *same* chart — or re-clicking a tab — is instant, while a recompute (a fresh
+// ChartData) recomputes.
 import StatsWorker from '../workers/stats.worker.ts?worker&inline'
-import type { StatsResponse } from '../workers/stats.worker'
+import type { StatsResponse, StatsKind } from '../workers/stats.worker'
 import type { ChartData, SeriesProfile, CorrelationMatrix } from '../types'
-
-export type StatsResult = {
-  seriesProfiles: SeriesProfile[]
-  correlation?: CorrelationMatrix
-}
 
 let worker: Worker | null = null
 let nextId = 0
-const pending = new Map<number, (r: StatsResult) => void>()
-// WeakMap so cached results don't pin ChartData objects in memory after the chart
-// is replaced by a recompute — they're collected with their key.
-const cache = new WeakMap<ChartData, Promise<StatsResult>>()
+// id → resolve. `unknown` because each request resolves a different shape; the
+// caller's typed wrapper narrows it.
+const pending = new Map<number, (r: StatsResponse) => void>()
+
+// Per-ChartData cache of the in-flight/settled promise for each piece. WeakMap so
+// cached results don't pin ChartData objects in memory after the chart is replaced
+// by a recompute — they're collected with their key.
+type PieceCache = {
+  descriptive?: Promise<SeriesProfile[]>
+  correlation?: Promise<CorrelationMatrix | undefined>
+}
+const cache = new WeakMap<ChartData, PieceCache>()
 
 function getWorker(): Worker {
   if (!worker) {
     worker = new StatsWorker()
     worker.onmessage = (e: MessageEvent<StatsResponse>) => {
-      const { id, seriesProfiles, correlation } = e.data
-      const resolve = pending.get(id)
+      const resolve = pending.get(e.data.id)
       if (resolve) {
-        pending.delete(id)
-        resolve({ seriesProfiles, correlation })
+        pending.delete(e.data.id)
+        resolve(e.data)
       }
     }
   }
   return worker
 }
 
-export function computeStats(chartData: ChartData): Promise<StatsResult> {
-  const cached = cache.get(chartData)
-  if (cached) return cached
-
-  const promise = new Promise<StatsResult>((resolve) => {
+// Post one kinded request and resolve when its matching reply lands.
+function request(chartData: ChartData, kind: StatsKind): Promise<StatsResponse> {
+  return new Promise<StatsResponse>((resolve) => {
     const id = nextId++
     pending.set(id, resolve)
     // points/yAxis/series are plain (markRaw) → structured-clone takes them directly.
     getWorker().postMessage({
       type: 'compute',
       id,
+      kind,
       points: chartData.points,
       yAxis: chartData.yAxis,
+      zAxis: chartData.zAxis,
       seriesOrder: chartData.series.map((s) => s.xAxis),
     })
   })
+}
 
-  cache.set(chartData, promise)
-  return promise
+function cacheFor(chartData: ChartData): PieceCache {
+  let c = cache.get(chartData)
+  if (!c) {
+    c = {}
+    cache.set(chartData, c)
+  }
+  return c
+}
+
+export function computeDescriptive(chartData: ChartData): Promise<SeriesProfile[]> {
+  const c = cacheFor(chartData)
+  return (c.descriptive ??= request(chartData, 'descriptive').then((r) => r.seriesProfiles ?? []))
+}
+
+export function computeCorrelation(
+  chartData: ChartData
+): Promise<CorrelationMatrix | undefined> {
+  const c = cacheFor(chartData)
+  return (c.correlation ??= request(chartData, 'correlation').then((r) => r.correlation))
 }

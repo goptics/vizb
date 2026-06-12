@@ -14,6 +14,11 @@ import {
   spearman,
   correlationMatrix,
   computeProfiles,
+  buildColumns,
+  availableViews,
+  computeDescriptive,
+  computeCorrelation,
+  selectCorrelationAxis,
 } from './stats'
 import type { Point3D } from '../types'
 
@@ -171,5 +176,124 @@ describe('computeProfiles', () => {
 
   it('empty series order → no profiles', () => {
     expect(computeProfiles([], [], []).seriesProfiles).toEqual([])
+  })
+})
+
+describe('buildColumns', () => {
+  const pts = (...t: [string, string, number][]): Point3D[] =>
+    t.map(([xAxis, yAxis, value]) => ({ xAxis, yAxis, zAxis: '', value }))
+
+  it('NaN-aligns columns by (series, yAxis); last point wins', () => {
+    const cols = buildColumns(
+      pts(['A', 'p', 1], ['A', 'q', 9], ['A', 'q', 2], ['B', 'p', 4]),
+      ['A', 'B'],
+      ['p', 'q', 'r']
+    )
+    expect(cols[0]).toEqual([1, 2, NaN]) // A: q overwritten 9→2, r absent
+    expect(cols[1]![0]).toBe(4)
+    expect(cols[1]![1]).toBeNaN() // B has no q
+    expect(cols[1]![2]).toBeNaN()
+  })
+})
+
+describe('selectCorrelationAxis', () => {
+  const ids = (k: number) => Array.from({ length: k }, (_, i) => `S${i}`)
+  const cat = (n: number) => Array.from({ length: n }, (_, i) => `c${i}`)
+
+  it('prefers x (series) when it fits the cap and has ≥3 observations', () => {
+    const sel = selectCorrelationAxis(ids(5), cat(4), [])
+    expect(sel.axis).toBe('x')
+    expect(sel.labels).toEqual(ids(5))
+  })
+
+  it('needs ≥2 entities and ≥3 observations per axis', () => {
+    expect(selectCorrelationAxis(ids(1), cat(3), []).axis).toBeNull() // 1 series, and y has 1 obs
+    expect(selectCorrelationAxis(ids(2), cat(2), []).axis).toBeNull() // 2 obs each way
+    expect(selectCorrelationAxis(ids(2), cat(3), []).axis).toBe('x')
+  })
+
+  it('falls back to y when x exceeds the entity cap', () => {
+    const sel = selectCorrelationAxis(ids(201), cat(3), [])
+    expect(sel.axis).toBe('y') // 201 series > 200 cap → correlate the 3 categories
+    expect(sel.labels).toEqual(cat(3))
+  })
+
+  it('falls back to z when both x and y exceed the cap (3D)', () => {
+    const sel = selectCorrelationAxis(ids(300), cat(250), cat(4))
+    expect(sel.axis).toBe('z')
+    expect(sel.labels).toEqual(cat(4))
+  })
+
+  it('none usable → null', () => {
+    expect(selectCorrelationAxis(ids(300), cat(250), []).axis).toBeNull() // both over cap, no z
+    expect(selectCorrelationAxis(ids(300), cat(250), cat(300)).axis).toBeNull() // z also over cap
+  })
+})
+
+describe('availableViews', () => {
+  const series = (k: number) => Array.from({ length: k }, (_, i) => `S${i}`)
+  const num = (n: number) => Array.from({ length: n }, (_, i) => String(i + 1))
+
+  it('correlation available whenever some axis (x→y→z) yields a fittable matrix', () => {
+    expect(availableViews(series(1), num(3)).correlation).toBe(false)
+    expect(availableViews(series(2), num(2)).correlation).toBe(false)
+    expect(availableViews(series(2), num(3)).correlation).toBe(true)
+    // x over the cap now falls back to the (small) y axis instead of vanishing.
+    expect(availableViews(series(201), num(3)).correlation).toBe(true)
+    expect(availableViews(series(200), num(3)).correlation).toBe(true)
+    // both x and y over the cap, no z → unavailable.
+    expect(availableViews(series(201), num(201)).correlation).toBe(false)
+  })
+})
+
+describe('computeCorrelation axis pick', () => {
+  const pts2d = (...t: [string, string, number][]): Point3D[] =>
+    t.map(([xAxis, yAxis, value]) => ({ xAxis, yAxis, zAxis: '', value }))
+
+  it('default 2D path correlates the series (axis x)', () => {
+    const points = pts2d(
+      ['A', 'p', 1], ['A', 'q', 2], ['A', 'r', 3],
+      ['B', 'p', 2], ['B', 'q', 4], ['B', 'r', 6]
+    )
+    const corr = computeCorrelation(points, ['A', 'B'], ['p', 'q', 'r'])
+    expect(corr!.axis).toBe('x')
+    expect(corr!.labels).toEqual(['A', 'B'])
+    expect(corr!.pearson[0]![1]).toBeCloseTo(1, P) // B = 2·A → perfectly correlated
+  })
+
+  it('transposes to y (categories) when the series axis is too wide', () => {
+    // 201 series (> cap) × 2 perfectly-(anti)correlated categories.
+    const order = Array.from({ length: 201 }, (_, i) => `s${i}`)
+    const points: Point3D[] = []
+    for (let i = 0; i < order.length; i++) {
+      points.push({ xAxis: order[i]!, yAxis: 'L1', zAxis: '', value: i })
+      points.push({ xAxis: order[i]!, yAxis: 'L2', zAxis: '', value: -i })
+    }
+    const corr = computeCorrelation(points, order, ['L1', 'L2'])
+    expect(corr!.axis).toBe('y')
+    expect(corr!.labels).toEqual(['L1', 'L2'])
+    expect(corr!.pearson[0]![1]).toBeCloseTo(-1, P) // L2 = −L1 across the 201 series
+  })
+})
+
+describe('lazy compute pieces match computeProfiles', () => {
+  const pts = (...t: [string, string, number][]): Point3D[] =>
+    t.map(([xAxis, yAxis, value]) => ({ xAxis, yAxis, zAxis: '', value }))
+  const labels = ['1', '2', '3', '4', '5', '6', '7', '8']
+  const points = [
+    ...labels.map((l): [string, string, number] => ['A', l, Number(l) * 2]),
+    ...labels.map((l): [string, string, number] => ['B', l, Number(l) ** 2]),
+  ]
+  const order = ['A', 'B']
+
+  it('each piece equals the corresponding field of the one-shot bundle', () => {
+    const all = computeProfiles(pts(...points), order, labels)
+    expect(computeDescriptive(pts(...points), order, labels)).toEqual(all.seriesProfiles)
+    expect(computeCorrelation(pts(...points), order, labels)).toEqual(all.correlation)
+  })
+
+  it('lazy pieces return undefined when their view is unavailable', () => {
+    const nonNumeric = pts(['A', 'p', 1], ['A', 'q', 2], ['A', 'r', 3])
+    expect(computeCorrelation(nonNumeric, ['A'], ['p', 'q', 'r'])).toBeUndefined() // 1 series
   })
 })

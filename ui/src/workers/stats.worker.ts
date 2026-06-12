@@ -7,30 +7,45 @@
 // Stateless: each request carries one chart's point cloud (already plain /
 // markRaw, clone-safe — never the full raw dataset, so there's no second
 // full-dataset clone). The `id` lets the caller match replies to requests.
-import { computeProfiles } from '../lib/stats'
-import type { Point3D, SeriesProfile, CorrelationMatrix } from '../types'
+import { computeDescriptive, computeCorrelation } from '../lib/stats'
+import type {
+  Point3D,
+  SeriesProfile,
+  CorrelationMatrix,
+} from '../types'
+
+// `kind` selects which (potentially expensive) piece to compute, so the panel can
+// pull descriptive eagerly and defer correlation until its tab opens.
+export type StatsKind = 'descriptive' | 'correlation'
 
 export type StatsRequest = {
   type: 'compute'
   id: number
+  kind: StatsKind
   points: Point3D[]
   yAxis: string[]
+  zAxis: string[]
   seriesOrder: string[]
 }
+// Only the field matching the request `kind` is populated; the caller knows which
+// one it asked for by `id`.
 export type StatsResponse = {
   type: 'result'
   id: number
-  seriesProfiles: SeriesProfile[]
+  seriesProfiles?: SeriesProfile[]
   correlation?: CorrelationMatrix
 }
 
 self.onmessage = (e: MessageEvent<StatsRequest>) => {
-  const { id, points, yAxis, seriesOrder } = e.data
-  const { seriesProfiles, correlation } = computeProfiles(points, seriesOrder, yAxis)
-  ;(self as unknown as Worker).postMessage({
-    type: 'result',
-    id,
-    seriesProfiles,
-    correlation,
-  } satisfies StatsResponse)
+  const { id, kind, points, yAxis, zAxis, seriesOrder } = e.data
+  const res: StatsResponse = { type: 'result', id }
+  switch (kind) {
+    case 'descriptive':
+      res.seriesProfiles = computeDescriptive(points, seriesOrder, yAxis)
+      break
+    case 'correlation':
+      res.correlation = computeCorrelation(points, seriesOrder, yAxis, zAxis)
+      break
+  }
+  ;(self as unknown as Worker).postMessage(res satisfies StatsResponse)
 }

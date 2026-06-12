@@ -102,9 +102,12 @@ export type SeriesProfile = {
   stats: DescriptiveStats
 }
 
-// Symmetric correlation matrices across the chart's series, labelled by series
-// name. Both methods are precomputed so the panel toggles with no recompute.
+// Symmetric correlation matrices across the chart's auto-picked entity axis (the
+// series, the category axis, or the z axis — see `selectCorrelationAxis`). `axis`
+// names which one so the panel can caption it; `labels` are that axis's values.
+// Both methods are precomputed so the panel toggles with no recompute.
 export type CorrelationMatrix = {
+  axis: 'x' | 'y' | 'z'
   labels: string[]
   pearson: number[][]
   spearman: number[][]

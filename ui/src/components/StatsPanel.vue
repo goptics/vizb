@@ -1,43 +1,112 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch, nextTick } from 'vue'
+import { computed, defineAsyncComponent, onMounted, ref, toRefs, watch, nextTick } from 'vue'
 import { Download, ArrowUp, ArrowDown } from 'lucide-vue-next'
-import type { ChartData, DescriptiveStats, SeriesProfile, CorrelationMatrix } from '../types'
-import { computeStats } from '../composables/useStatsWorker'
+import type {
+  ChartData,
+  DescriptiveStats,
+  SeriesProfile,
+  CorrelationMatrix,
+} from '../types'
+import { computeDescriptive, computeCorrelation } from '../composables/useStatsWorker'
+import { availableViews } from '../lib/stats'
+import { buildCorrelationOption } from '../composables/charts/useCorrelationOption'
+import { useSettingsStore } from '../composables/useSettingsStore'
 import { descriptiveCsv, correlationCsv } from '../lib/csv'
 import SelectionTabs from './SelectionTabs.vue'
 
+// Correlation renders as an echarts canvas heatmap, lazy-loaded so its echarts
+// modules parse only when the correlation tab opens (same discipline as ChartCard).
+const ChartCorrelation = defineAsyncComponent(() => import('./ChartCorrelation.vue'))
+
 const props = defineProps<{ chartData: ChartData }>()
 
-// Stats are computed lazily off-thread (dedicated stats worker) the first time
-// the panel opens for a chart, and recomputed when the chart's data changes. A
-// per-ChartData cache in useStatsWorker makes reopening the same chart instant.
-const loading = ref(true)
+const { settings } = useSettingsStore()
+const { isDark } = toRefs(settings)
+const initOptions = { renderer: 'canvas', devicePixelRatio: window.devicePixelRatio } as const
+
+// Active view + its sub-toggles. Widened to string|number so SelectionTabs'
+// v-model (emits string|number) types cleanly; only ever set to literal values.
+const view = ref<string | number>('descriptive')
+const method = ref<string | number>('pearson')
+
+// Descriptive stats are computed eagerly off-thread when the panel opens;
+// correlation is deferred until its tab is first clicked (lazy), then cached per
+// ChartData in useStatsWorker. Each piece has its own loading flag so the active
+// tab shows a skeleton only while *its* data is in flight.
 const profiles = ref<SeriesProfile[]>([])
 const correlation = ref<CorrelationMatrix | undefined>(undefined)
+const descLoading = ref(true)
+const corrLoading = ref(false)
+
+// Which views are valid for this data shape — cheap O(K) precondition flags
+// (counts + one numeric-axis parse, no heavy math), so the tabs render before any
+// expensive compute runs. Recomputed synchronously per chartData.
+const available = ref(availableViews([], []))
+
+// Skeleton shows while the *active* view's data is being computed.
+const activeLoading = computed(() => {
+  switch (view.value) {
+    case 'correlation':
+      return corrLoading.value
+    default:
+      return descLoading.value
+  }
+})
 
 // Monotonic token so a slow reply for a superseded chartData is discarded.
 let token = 0
+
+// Lazily fetch the heavy piece backing a view (no-op for descriptive, or when
+// already loaded / in flight / unavailable). The worker layer caches per chart,
+// so re-clicking a tab never re-posts.
+async function ensureCorrelation() {
+  if (correlation.value !== undefined || corrLoading.value || !available.value.correlation) return
+  corrLoading.value = true
+  const mine = token
+  const r = await computeCorrelation(props.chartData)
+  if (mine !== token) return
+  correlation.value = r
+  corrLoading.value = false
+}
+function ensureForView(v: string | number) {
+  if (v === 'correlation') ensureCorrelation()
+}
+
 async function load() {
   const mine = ++token
-  loading.value = true
-  const result = await computeStats(props.chartData)
-  if (mine !== token) return // a newer chartData superseded this request
+  // Reset per-chart state. Availability is synchronous, so the tabs are correct
+  // immediately; the descriptive table then fills in off-thread, and the heavier
+  // tabs compute on first open.
+  descLoading.value = true
+  corrLoading.value = false
+  correlation.value = undefined
+  available.value = availableViews(
+    props.chartData.series.map((s) => s.xAxis),
+    props.chartData.yAxis,
+    props.chartData.zAxis
+  )
   // New chart starts in natural series order with no active search filter.
   sortKey.value = null
   sortDir.value = 'desc'
   searchQuery.value = ''
   debouncedQuery.value = ''
-  profiles.value = result.seriesProfiles
-  correlation.value = result.correlation
-  loading.value = false
-  // If correlation vanished (e.g. fewer series after a recompute) while we were
-  // sitting on the correlation tab, fall back so the view isn't blank.
-  if (!correlation.value && view.value === 'correlation') view.value = 'descriptive'
+  // If the active tab is no longer valid for this data shape, fall back so the
+  // view isn't blank.
+  if (!viewOptions.value.some((o) => o.value === view.value)) view.value = 'descriptive'
+
+  const result = await computeDescriptive(props.chartData)
+  if (mine !== token) return // a newer chartData superseded this request
+  profiles.value = result
+  descLoading.value = false
+  // Kick off the lazy load for whatever non-descriptive tab is active.
+  ensureForView(view.value)
   resetScroll()
 }
 
 onMounted(load)
 watch(() => props.chartData, load)
+// Fetch a tab's backing data the first time it's selected.
+watch(view, (v) => ensureForView(v))
 
 // Descriptive table columns, in display order. `key` indexes DescriptiveStats.
 const COLUMNS: { key: keyof DescriptiveStats; label: string }[] = [
@@ -122,7 +191,33 @@ const sortedProfiles = computed(() => {
 })
 
 // User-supplied label for the series (xAxis) dimension, falls back to "Series".
+// Used by the descriptive table and the search box — both key rows by series (xAxis).
 const seriesLabel = computed(() => props.chartData.axisLabels?.x || 'Series')
+
+// --- Correlation caption ---------------------------------------------------
+// The correlation matrix auto-picks which axis supplies its entities (x → y → z;
+// see selectCorrelationAxis). Caption names the chosen dimension and what it's
+// correlated across, flipping with the worker's choice.
+const AXIS_FALLBACK = { x: 'Series', y: 'the y-axis', z: 'the z-axis' } as const
+const corrAxis = computed<'x' | 'y' | 'z'>(() => correlation.value?.axis ?? 'x')
+const corrEntityLabel = computed(() => {
+  const a = corrAxis.value
+  return props.chartData.axisLabels?.[a] || AXIS_FALLBACK[a]
+})
+// The other present dimensions (≥2 distinct values) the entities are correlated over.
+const corrObsLabel = computed(() => {
+  const a = corrAxis.value
+  const counts = {
+    x: props.chartData.series.length,
+    y: props.chartData.yAxis.length,
+    z: props.chartData.zAxis.length,
+  }
+  const labels = props.chartData.axisLabels
+  const names = (['x', 'y', 'z'] as const)
+    .filter((ax) => ax !== a && counts[ax] >= 2)
+    .map((ax) => labels?.[ax] || AXIS_FALLBACK[ax])
+  return names.length ? names.join(' × ') : 'the other dimensions'
+})
 
 // --- Search / filter the descriptive table --------------------------------
 // Shown only when > 20 series. Debounced 300 ms so fast typists don't trigger
@@ -143,14 +238,13 @@ const filteredProfiles = computed(() => {
   return sortedProfiles.value.filter((p) => p.name.toLowerCase().includes(q))
 })
 
-// Widened to string|number so SelectionTabs' v-model (emits string|number) types
-// cleanly; only ever set to the literal option values below.
-const view = ref<string | number>('descriptive')
-const method = ref<string | number>('pearson')
-
+// Tabs are driven by the cheap availability flags, not by whether the heavy
+// result is already in memory — so a tab can show (and trigger its lazy compute)
+// before its data exists.
 const viewOptions = computed(() => {
   const opts = [{ value: 'descriptive', label: 'Descriptive' }]
-  if (correlation.value) opts.push({ value: 'correlation', label: 'Correlation' })
+  const a = available.value
+  if (a.correlation) opts.push({ value: 'correlation', label: 'Correlation' })
   return opts
 })
 const methodOptions = [
@@ -162,6 +256,13 @@ const corrMatrix = computed(() => {
   const c = correlation.value
   if (!c) return []
   return method.value === 'spearman' ? c.spearman : c.pearson
+})
+
+// Heatmap option for the active correlation method, re-themed on dark-mode toggle.
+const corrOption = computed(() => {
+  const c = correlation.value
+  if (!c) return null
+  return buildCorrelationOption(c.labels, corrMatrix.value, isDark.value)
 })
 
 // --- Virtualized descriptive table -----------------------------------------
@@ -192,7 +293,7 @@ function resetScroll() {
 
 // Re-measure whenever the descriptive table (re)mounts (e.g. switching back from
 // the correlation tab, or after the loading skeleton clears).
-watch([view, loading], () => nextTick(measure))
+watch([view, activeLoading], () => nextTick(measure))
 
 const startIndex = computed(() => Math.max(0, Math.floor(scrollTop.value / ROW_H) - OVERSCAN))
 const endIndex = computed(() =>
@@ -202,32 +303,19 @@ const visibleRows = computed(() => filteredProfiles.value.slice(startIndex.value
 const topPad = computed(() => startIndex.value * ROW_H)
 const bottomPad = computed(() => (filteredProfiles.value.length - endIndex.value) * ROW_H)
 
-// Diverging heatmap colour for r ∈ [-1,1]: red (negative) → neutral → green
-// (positive). Explicit bg + text colour so cells read in both light and dark
-// themes. NaN cells (constant series / too few pairs) stay neutral grey.
-function corrColor(v: number): string {
-  if (!Number.isFinite(v)) return 'transparent'
-  const t = Math.min(Math.abs(v), 1)
-  const hue = v >= 0 ? 145 : 8
-  const light = 92 - t * 42
-  return `hsl(${hue} 70% ${light}%)`
-}
-function corrText(v: number): string {
-  return Number.isFinite(v) && Math.abs(v) > 0.55 ? '#fff' : 'inherit'
-}
-function corrCell(v: number): string {
-  return Number.isFinite(v) ? Number(v.toFixed(2)).toString() : '—'
-}
-
 // --- CSV export (active view) ----------------------------------------------
 // Exports whichever table is shown: descriptive (series × metrics, full
 // precision) or the correlation matrix for the active method. Built on the main
 // thread from already-in-memory state — a one-shot user action, no worker hop.
-const canDownload = computed(
-  () =>
-    !loading.value &&
-    (view.value === 'descriptive' ? profiles.value.length > 0 : !!correlation.value)
-)
+const canDownload = computed(() => {
+  if (activeLoading.value) return false
+  switch (view.value) {
+    case 'correlation':
+      return !!correlation.value
+    default:
+      return profiles.value.length > 0
+  }
+})
 
 function slug(s: string): string {
   return (s || 'stats').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'stats'
@@ -281,8 +369,8 @@ function downloadCsv() {
       </div>
     </div>
 
-    <!-- Lazy compute in progress. -->
-    <div v-if="loading" class="space-y-2 py-2">
+    <!-- Active tab's data is being computed off-thread. -->
+    <div v-if="activeLoading" class="space-y-2 py-2">
       <div class="h-4 w-40 animate-pulse rounded bg-muted" />
       <div class="h-8 w-full animate-pulse rounded bg-muted" />
       <div class="h-8 w-full animate-pulse rounded bg-muted" />
@@ -379,41 +467,16 @@ function downloadCsv() {
     </div>
     </template>
 
-    <!-- Correlation heatmap (capped series count, no virtualization needed). -->
-    <div v-else-if="correlation" class="max-h-[28rem] overflow-auto">
-      <table class="border-collapse text-xs">
-        <thead>
-          <tr>
-            <th class="sticky left-0 top-0 z-20 bg-card px-2 py-1"></th>
-            <th
-              v-for="label in correlation.labels"
-              :key="label"
-              class="sticky top-0 z-10 max-w-[8rem] truncate bg-muted px-2 py-1 font-medium text-muted-foreground"
-              :title="label"
-            >
-              {{ label || '—' }}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(label, i) in correlation.labels" :key="label">
-            <th
-              class="sticky left-0 z-10 max-w-[10rem] truncate bg-card px-2 py-1 text-left font-medium text-card-foreground"
-              :title="label"
-            >
-              {{ label || '—' }}
-            </th>
-            <td
-              v-for="(val, j) in corrMatrix[i]"
-              :key="j"
-              class="px-2 py-1 text-center tabular-nums"
-              :style="{ background: corrColor(val), color: corrText(val) }"
-            >
-              {{ corrCell(val) }}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <!-- Correlation heatmap — echarts canvas, scales past what a DOM grid can.
+         Entity axis is auto-picked (x → y → z); the caption names it. -->
+    <template v-else-if="view === 'correlation' && corrOption">
+      <p class="mb-2 text-xs text-muted-foreground">
+        Correlating <span class="font-medium">{{ corrEntityLabel }}</span> across
+        {{ corrObsLabel }}.
+      </p>
+      <div class="h-[28rem]">
+        <ChartCorrelation :option="corrOption" :init-options="initOptions" class="h-full w-full" />
+      </div>
+    </template>
   </div>
 </template>

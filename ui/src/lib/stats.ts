@@ -6,7 +6,12 @@
 // the /n divisor, skewness/kurtosis use population moments. Non-finite values
 // (NaN / ±Inf) are dropped up front — callers pass NaN for "missing cell" so a
 // zero-fill never biases a stat (see transform.ts).
-import type { DescriptiveStats, SeriesProfile, CorrelationMatrix, Point3D } from '../types'
+import type {
+  DescriptiveStats,
+  SeriesProfile,
+  CorrelationMatrix,
+  Point3D,
+} from '../types'
 
 const finite = (xs: number[]): number[] => xs.filter((x) => Number.isFinite(x))
 
@@ -227,22 +232,25 @@ export function correlationMatrix(
   return m
 }
 
-// Correlation is O(K²·N) and a K×K heatmap stops being legible well past this,
-// so it's capped tighter than the (now virtualized, uncapped) descriptive table.
-const CORR_MAX_SERIES = 60
+// Correlation is O(K²·N); past this the K×K matrix is both slow to compute and
+// rarely actionable, so we cap the number of entities (matrix rows/cols). The
+// canvas heatmap (not a DOM table) means this is a compute-safety ceiling, not a
+// legibility one.
+const CORR_MAX_ENTITIES = 200
 
-// Build the chart's per-series descriptive profiles + cross-series correlation
-// straight from its point cloud — the pure core the stats worker runs. One column
-// per series (in `seriesOrder`), each indexed by `yAxis` with NaN for an absent
-// (x,y) cell so the chart's zero-fill never biases a stat. Last point wins per
-// (x,y), mirroring the transform's dataMap collapse.
-export function computeProfiles(
+// A correlation needs at least this many observations per entity to mean anything.
+const CORR_MIN_OBSERVATIONS = 3
+
+// Per-series NaN-aligned columns straight from the point cloud — the shared
+// substrate every stat computes over. One column per series (in `seriesOrder`),
+// each indexed by `yAxis` with NaN for an absent (x,y) cell so the chart's
+// zero-fill never biases a stat. Last point wins per (x,y), mirroring the
+// transform's dataMap collapse.
+export function buildColumns(
   points: Point3D[],
   seriesOrder: string[],
   yAxis: string[]
-): { seriesProfiles: SeriesProfile[]; correlation?: CorrelationMatrix } {
-  if (seriesOrder.length === 0) return { seriesProfiles: [] }
-
+): number[][] {
   const byX = new Map<string, Map<string, number>>()
   for (const p of points) {
     let row = byX.get(p.xAxis)
@@ -252,29 +260,157 @@ export function computeProfiles(
     }
     row.set(p.yAxis, p.value)
   }
-
-  const columns = seriesOrder.map((x) => {
+  return seriesOrder.map((x) => {
     const row = byX.get(x)
     return yAxis.map((y) => {
       const v = row?.get(y)
       return v === undefined ? NaN : v
     })
   })
+}
 
-  const seriesProfiles: SeriesProfile[] = seriesOrder.map((name, i) => ({
-    name,
-    stats: describe(columns[i]!),
-  }))
+// Which axis supplies the correlation matrix's entities (its rows/cols). 'x' = the
+// series-identity axis (`seriesOrder`); 'y' = the per-series category axis; 'z' =
+// the third (3D-only) axis. The observation vector for each entity is its values
+// across the tuple of the *other two* axes.
+export type CorrelationAxis = 'x' | 'y' | 'z'
 
-  let correlation: CorrelationMatrix | undefined
-  // Need ≥2 series and ≥3 shared categories for a correlation to mean anything.
-  if (seriesOrder.length >= 2 && seriesOrder.length <= CORR_MAX_SERIES && yAxis.length >= 3) {
-    correlation = {
-      labels: seriesOrder.slice(),
-      pearson: correlationMatrix(columns, 'pearson'),
-      spearman: correlationMatrix(columns, 'spearman'),
+// Pick the axis to correlate along: prefer x (series), fall back to y, then z —
+// taking the first whose entity count fits the matrix cap and which has enough
+// observations to correlate over. This lets correlation survive a chart that has
+// thousands of series but few categories (or vice versa): the small axis becomes
+// the entities. `obsCount` approximates observations as the product of the other
+// two axes' distinct counts (an absent/constant axis counts as 1). Single source
+// of truth shared by `availableViews` (gate) and `computeCorrelation` (compute).
+export function selectCorrelationAxis(
+  seriesOrder: string[],
+  yAxis: string[],
+  zAxis: string[]
+): { axis: CorrelationAxis | null; labels: string[] } {
+  const nx = seriesOrder.length
+  const ny = yAxis.length
+  const nz = zAxis.length
+  const usable = (entityCount: number, obsCount: number) =>
+    entityCount >= 2 && entityCount <= CORR_MAX_ENTITIES && obsCount >= CORR_MIN_OBSERVATIONS
+  // obsCount per axis = product of the OTHER two axes' distinct counts (≥1 each).
+  if (usable(nx, (ny || 1) * (nz || 1))) return { axis: 'x', labels: seriesOrder }
+  if (usable(ny, (nx || 1) * (nz || 1))) return { axis: 'y', labels: yAxis }
+  if (usable(nz, (nx || 1) * (ny || 1))) return { axis: 'z', labels: zAxis }
+  return { axis: null, labels: [] }
+}
+
+// One NaN-aligned column per entity along the chosen correlation axis, indexed by a
+// stable union of the other two axes' value tuples. Generalises `buildColumns` (the
+// x-axis, yAxis-indexed case) to any entity axis so the same `correlationMatrix` can
+// fit over series, categories, or the z dimension. Last point wins per (entity, obs).
+export function buildCorrelationColumns(
+  points: Point3D[],
+  axis: CorrelationAxis,
+  seriesOrder: string[],
+  yAxis: string[],
+  zAxis: string[]
+): { labels: string[]; columns: number[][] } {
+  // The entity value and the (otherA, otherB) observation values for one point.
+  const parts = (p: Point3D): [entity: string, obsA: string, obsB: string] =>
+    axis === 'x'
+      ? [p.xAxis, p.yAxis, p.zAxis]
+      : axis === 'y'
+        ? [p.yAxis, p.xAxis, p.zAxis]
+        : [p.zAxis, p.xAxis, p.yAxis]
+  const labels = axis === 'x' ? seriesOrder : axis === 'y' ? yAxis : zAxis
+
+  // entity → (obsKey → value); plus a stable first-seen ordering of obs keys.
+  const byEntity = new Map<string, Map<string, number>>()
+  const obsKeys: string[] = []
+  const seenObs = new Set<string>()
+  for (const p of points) {
+    const [entity, obsA, obsB] = parts(p)
+    const obsKey = `${obsA} ${obsB}`
+    if (!seenObs.has(obsKey)) {
+      seenObs.add(obsKey)
+      obsKeys.push(obsKey)
     }
+    let row = byEntity.get(entity)
+    if (!row) {
+      row = new Map()
+      byEntity.set(entity, row)
+    }
+    row.set(obsKey, p.value)
   }
 
-  return { seriesProfiles, correlation }
+  const columns = labels.map((entity) => {
+    const row = byEntity.get(entity)
+    return obsKeys.map((k) => {
+      const v = row?.get(k)
+      return v === undefined ? NaN : v
+    })
+  })
+  return { labels, columns }
+}
+
+// Cheap, math-free precondition flags: which stat views are valid for this data
+// shape. O(K) — counts only, no pairwise loops — so the panel can render its tabs
+// (and the compute functions can guard) without paying for any heavy computation.
+// Single source of truth for the gates.
+export function availableViews(
+  seriesOrder: string[],
+  yAxis: string[],
+  zAxis: string[] = []
+): {
+  correlation: boolean
+} {
+  return {
+    // Available when some axis (x → y → z) yields a fittable matrix.
+    correlation: selectCorrelationAxis(seriesOrder, yAxis, zAxis).axis !== null,
+  }
+}
+
+// Per-series descriptive profiles. The eager part — always computed when a stats
+// panel opens.
+export function computeDescriptive(
+  points: Point3D[],
+  seriesOrder: string[],
+  yAxis: string[]
+): SeriesProfile[] {
+  if (seriesOrder.length === 0) return []
+  const columns = buildColumns(points, seriesOrder, yAxis)
+  return seriesOrder.map((name, i) => ({ name, stats: describe(columns[i]!) }))
+}
+
+// Cross-entity correlation matrix (both methods) over the auto-picked axis (see
+// `selectCorrelationAxis`). Lazy — computed only when the correlation tab opens.
+// Returns undefined when no axis yields a fittable matrix.
+export function computeCorrelation(
+  points: Point3D[],
+  seriesOrder: string[],
+  yAxis: string[],
+  zAxis: string[] = []
+): CorrelationMatrix | undefined {
+  const sel = selectCorrelationAxis(seriesOrder, yAxis, zAxis)
+  if (sel.axis === null) return undefined
+  const { labels, columns } = buildCorrelationColumns(points, sel.axis, seriesOrder, yAxis, zAxis)
+  return {
+    axis: sel.axis,
+    labels: labels.slice(),
+    pearson: correlationMatrix(columns, 'pearson'),
+    spearman: correlationMatrix(columns, 'spearman'),
+  }
+}
+
+// Build the full per-chart stat bundle in one pass — descriptive profiles +
+// correlation. Retained as a thin wrapper over the lazy pieces for callers/tests
+// that want everything at once.
+export function computeProfiles(
+  points: Point3D[],
+  seriesOrder: string[],
+  yAxis: string[],
+  zAxis: string[] = []
+): {
+  seriesProfiles: SeriesProfile[]
+  correlation?: CorrelationMatrix
+} {
+  return {
+    seriesProfiles: computeDescriptive(points, seriesOrder, yAxis),
+    correlation: computeCorrelation(points, seriesOrder, yAxis, zAxis),
+  }
 }
