@@ -187,11 +187,9 @@ watch(
         @legendselectchanged="onLegendSelectChanged"
       />
       <div v-if="showSkeleton" class="absolute inset-0 z-10 animate-pulse rounded bg-muted" />
-    </div>
-    <div class="mt-2 flex justify-end">
       <Button
         v-if="hasStats"
-        class="h-8 bg-transparent border border-border px-2.5 py-0 text-xs leading-none text-muted-foreground transition-colors hover:bg-accent hover:text-primary"
+        class="absolute bottom-2 right-2 z-20 h-8 bg-transparent border border-border px-2.5 py-0 text-xs leading-none text-muted-foreground transition-colors hover:bg-accent hover:text-primary"
         :class="{ 'bg-accent text-primary': showStats }"
         :aria-pressed="showStats"
         title="Toggle statistics"
