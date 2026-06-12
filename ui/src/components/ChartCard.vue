@@ -15,6 +15,7 @@ import { Sigma } from 'lucide-vue-next'
 import { useChartOptions } from '../composables/useChartOptions'
 import type { ChartData, ChartType } from '../types'
 import { useSettingsStore } from '../composables/useSettingsStore'
+import { useFullscreen } from '../composables/useFullscreen'
 import { is3D } from '../lib/utils'
 import StatsPanel from './StatsPanel.vue'
 import Badge from './Badge.vue'
@@ -95,8 +96,7 @@ const initOptions = {
   devicePixelRatio: window.devicePixelRatio,
 } as const
 
-const containerRef = ref<HTMLElement | null>(null)
-const isFullscreen = ref(false)
+const { containerRef, isFullscreen, withFullscreenToolbox } = useFullscreen()
 
 // Stats panel is collapsed by default so the chart view is unchanged until the
 // user opts in. Offered for any chart with at least one series; the actual
@@ -105,46 +105,7 @@ const isFullscreen = ref(false)
 const showStats = ref(false)
 const hasStats = computed(() => chartData.value.series.length > 0)
 
-function toggleFullscreen() {
-  if (!containerRef.value) return
-  if (!document.fullscreenElement) {
-    containerRef.value.requestFullscreen()
-  } else {
-    document.exitFullscreen()
-  }
-}
-
-document.addEventListener('fullscreenchange', () => {
-  isFullscreen.value = !!document.fullscreenElement
-})
-
-// Line-style corner-bracket icons so they match echarts' stroke-only toolbox
-// icons (filled glyphs render hollow). Enter = outward corners, exit = inward.
-const ENTER_FULLSCREEN_ICON = 'path://M3 9V3H9 M21 9V3H15 M3 15V21H9 M21 15V21H15'
-const EXIT_FULLSCREEN_ICON = 'path://M9 3V9H3 M15 3V9H21 M9 21V15H3 M15 21V15H21'
-
-// Inject fullscreen as a custom toolbox feature so it sits inline with
-// saveAsImage in echarts' horizontal toolbar (instead of a separate button).
-const mergedOptions = computed<EChartsOption>(() => {
-  const opt = options.value
-  const toolbox = opt.toolbox as Record<string, unknown> | undefined
-  const feature = (toolbox?.feature ?? {}) as Record<string, unknown>
-  return {
-    ...opt,
-    toolbox: {
-      ...toolbox,
-      feature: {
-        ...feature,
-        myFullScreen: {
-          show: true,
-          title: isFullscreen.value ? 'Exit fullscreen' : 'Fullscreen',
-          icon: isFullscreen.value ? EXIT_FULLSCREEN_ICON : ENTER_FULLSCREEN_ICON,
-          onclick: toggleFullscreen,
-        },
-      },
-    },
-  } as EChartsOption
-})
+const mergedOptions = computed<EChartsOption>(() => withFullscreenToolbox(options.value))
 
 // Double-buffer the chart so a worker recompute never flashes a stale or
 // half-drawn frame. The live `<component>` renders `renderedChart`/`renderedOption`
