@@ -19,6 +19,7 @@ import { useFullscreen } from '../composables/useFullscreen'
 import { is3D } from '../lib/utils'
 import StatsPanel from './StatsPanel.vue'
 import Badge from './Badge.vue'
+import Button from './ui/Button.vue'
 
 // Every chart renderer (2D bar/line/pie + 3D) is loaded via defineAsyncComponent
 // so the echarts runtime stays out of the eager startup bundle: nothing in the
@@ -159,18 +160,21 @@ watch(
       <h3 class="text-lg font-semibold text-card-foreground">
         {{ chartData.title }}
       </h3>
-      <button
-        v-if="hasStats"
-        type="button"
-        class="inline-flex h-8 items-center gap-1.5 rounded-md border border-border px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-primary"
-        :class="{ 'bg-accent text-primary': showStats }"
-        :aria-pressed="showStats"
-        title="Toggle statistics"
-        @click="showStats = !showStats"
-      >
-        <Sigma class="h-4 w-4" />
-        Stats
-      </button>
+      <div class="flex flex-wrap justify-end gap-1.5">
+        <Badge
+          :label="chartData.axisLabels?.x || 'Series'"
+          :value="String(chartData.series.length)"
+        />
+        <Badge
+          :label="chartData.axisLabels?.y || 'Y-axis'"
+          :value="String(chartData.yAxis.length)"
+        />
+        <Badge
+          v-if="is3DChart"
+          :label="chartData.axisLabels?.z || 'Z-axis'"
+          :value="String(chartData.zAxis.length)"
+        />
+      </div>
     </div>
     <!-- Keep the chart mounted and overlay the skeleton; unmounting would reset
          the echarts-gl camera on every 3D switch (zoom-in flash). -->
@@ -184,20 +188,20 @@ watch(
       />
       <div v-if="showSkeleton" class="absolute inset-0 z-10 animate-pulse rounded bg-muted" />
     </div>
-    <div class="mt-2 flex flex-wrap justify-end gap-1.5">
-      <Badge
-        :label="chartData.axisLabels?.x || 'Series'"
-        :value="String(chartData.series.length)"
-      />
-      <Badge
-        :label="chartData.axisLabels?.y || 'Y-axis'"
-        :value="String(chartData.yAxis.length)"
-      />
-      <Badge
-        v-if="is3DChart"
-        :label="chartData.axisLabels?.z || 'Z-axis'"
-        :value="String(chartData.zAxis.length)"
-      />
+    <div class="mt-2 flex justify-end">
+      <Button
+        v-if="hasStats"
+        class="h-8 bg-transparent border border-border px-2.5 py-0 text-xs leading-none text-muted-foreground transition-colors hover:bg-accent hover:text-primary"
+        :class="{ 'bg-accent text-primary': showStats }"
+        :aria-pressed="showStats"
+        title="Toggle statistics"
+        @click="showStats = !showStats"
+      >
+        <template #icon>
+          <Sigma class="h-4 w-4" />
+        </template>
+        Stats
+      </Button>
     </div>
     <StatsPanel v-if="hasStats && showStats" :chart-data="chartData" />
   </div>
