@@ -17,7 +17,7 @@
         class="rounded-lg border border-border bg-card p-6 shadow-sm"
       >
         <div class="mb-4 h-5 w-40 rounded bg-muted"></div>
-        <div class="h-[500px] rounded bg-muted"></div>
+        <div class="h-[600px] rounded bg-muted"></div>
       </div>
     </div>
   </div>

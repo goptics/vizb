@@ -1,7 +1,7 @@
 export type SortOrder = 'asc' | 'desc'
 export const SORT_ORDERS: SortOrder[] = ['asc', 'desc']
 
-export type ChartType = 'bar' | 'line' | 'pie'
+export type ChartType = 'bar' | 'line' | 'pie' | 'heatmap'
 
 export type ScaleType = 'linear' | 'log'
 export const SCALE_TYPES: ScaleType[] = ['linear', 'log']

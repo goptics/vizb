@@ -60,9 +60,9 @@ var flagValidationRules = []utils.ValidationRule{
 	{
 		Label:        "charts",
 		SliceValue:   &shared.FlagState.Charts,
-		ValidSet:     []string{"bar", "line", "pie"},
+		ValidSet:     []string{"bar", "line", "pie", "heatmap"},
 		Normalizer:   strings.ToLower,
-		SliceDefault: []string{"bar", "line", "pie"},
+		SliceDefault: []string{"bar", "line", "pie", "heatmap"},
 	},
 	{
 		Label:      "inject dimension",

@@ -26,11 +26,11 @@ import Button from './ui/Button.vue'
 // initial parse imports echarts, and each chart's module body lands in its own
 // chunk that the browser only parses when that type actually renders. The
 // chart-area skeleton shows while a chunk loads (once per type, then cached).
-const ChartLoading = () => h('div', { class: 'h-[500px] animate-pulse rounded bg-muted' })
+const ChartLoading = () => h('div', { class: 'h-[600px] animate-pulse rounded bg-muted' })
 const ChartLoadError = () =>
   h(
     'div',
-    { class: 'flex h-[500px] items-center justify-center text-sm text-muted-foreground' },
+    { class: 'flex h-[600px] items-center justify-center text-sm text-muted-foreground' },
     'Failed to load chart'
   )
 const mk = (loader: () => Promise<Component>) =>
@@ -45,6 +45,7 @@ const RENDERERS: Record<ChartType, Component> = {
   bar: mk(() => import('./ChartBar.vue')),
   line: mk(() => import('./ChartLine.vue')),
   pie: mk(() => import('./ChartPie.vue')),
+  heatmap: mk(() => import('./ChartHeatmap.vue')),
 }
 const Chart3D = mk(() => import('./Chart3D.vue'))
 
@@ -68,7 +69,11 @@ const { settings, chartType } = useSettingsStore()
 // 3D form (it renders per-dimension 2D pies even for x/y/z data), so it always
 // routes to ChartPie — never Chart3D, which doesn't register the pie module.
 const ActiveChart = computed<Component>(() => {
+  // Pie and heatmap have no 3D form — both render their own 2D layout even for x/y/z
+  // data (pie folds dimensions into per-dimension pies; heatmap folds z onto the legend),
+  // so they must route past the is3D check that otherwise hands x/y/z off to Chart3D.
   if (chartType.value === 'pie') return RENDERERS.pie
+  if (chartType.value === 'heatmap') return RENDERERS.heatmap
   return is3DChart.value ? Chart3D : (RENDERERS[chartType.value] ?? RENDERERS.bar)
 })
 
@@ -178,7 +183,7 @@ watch(
     </div>
     <!-- Keep the chart mounted and overlay the skeleton; unmounting would reset
          the echarts-gl camera on every 3D switch (zoom-in flash). -->
-    <div class="relative" :class="isFullscreen ? 'h-[calc(100vh-4rem)]' : 'h-[500px]'">
+    <div class="relative" :class="isFullscreen ? 'h-[calc(100vh-4rem)]' : 'h-[600px]'">
       <component
         :is="renderedChart"
         :option="renderedOption"
