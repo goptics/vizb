@@ -77,4 +77,24 @@ func TestMigrateDataset(t *testing.T) {
 			t.Errorf("expected empty axes, got %+v", ds.Settings.Axes)
 		}
 	})
+
+	// Simulates the parseInputFile array branch in cmd/merge.go: decode via
+	// []json.RawMessage so each element's raw bytes carry axisLabels.
+	t.Run("migrates element from raw array element bytes", func(t *testing.T) {
+		rawElem := []byte(`{"name":"elem","axisLabels":{"x":"N","y":"ns/op"},"settings":{"charts":["bar"],"sort":{"enabled":false,"order":"asc"},"showLabels":false,"scale":"linear"},"data":[]}`)
+		var ds Dataset
+		if err := json.Unmarshal(rawElem, &ds); err != nil {
+			t.Fatal(err)
+		}
+		MigrateDataset(&ds, rawElem)
+		if len(ds.Settings.Axes) != 2 {
+			t.Fatalf("expected 2 axes from per-element bytes, got %d", len(ds.Settings.Axes))
+		}
+		if ds.Settings.Axes[0] != (Axis{Key: "x", Label: "N"}) {
+			t.Errorf("axes[0] = %+v", ds.Settings.Axes[0])
+		}
+		if ds.Settings.Axes[1] != (Axis{Key: "y", Label: "ns/op"}) {
+			t.Errorf("axes[1] = %+v", ds.Settings.Axes[1])
+		}
+	})
 }
