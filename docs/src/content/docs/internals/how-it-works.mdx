@@ -5,15 +5,14 @@ description: The data pipeline from benchmark input to interactive HTML visualiz
 
 import { FileTree, Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 
-Vizb converts benchmark output — or any tabular CSV/JSON data — into a structured JSON format, then embeds it in a self-contained HTML file with a Vue.js visualization app.
+Vizb reads a table — straight from CSV/JSON, or normalized from benchmark output — into a structured Dataset, then embeds it in a self-contained HTML file with a Vue.js charting app.
 
 ## Pipeline
 
 ```
-go test -bench .  →  raw text  →  parser  →  Dataset struct  →  JSON / HTML
-  Vitest output   ↘              ↓                       ↓
-  Criterion output →         registry           (grouping applied)
-  CSV / JSON      ↗      (format auto-detected)
+CSV / JSON         ↘
+go test -bench .    →   parser    →   Dataset struct   →   JSON / HTML
+Vitest / Criterion ↗  (auto-detected)  (grouping applied)
 ```
 
 ## Source Structure
@@ -28,30 +27,38 @@ go test -bench .  →  raw text  →  parser  →  Dataset struct  →  JSON / H
   - parser/
     - registry.go        Parser registration (ParseFunc, Parsers map)
     - detect.go          DetectParser — content-based format auto-detection
-    - bench_data.go      ParseDataPoint, ConvertGoJsonBenchToText
     - parse_pattern.go   GroupBenchmarkName, ParseBenchmarkNameWithRegex
-    - golang/            Go testing.B parser (default)
-    - javascript/        Vitest and TinyBench parsers
-    - rust/              Criterion and Divan parsers
     - csv/               Generic CSV table parser
     - json/              Generic JSON array-of-objects parser
+    - golang/            Go testing.B parser
+    - javascript/        Vitest and TinyBench parsers
+    - rust/              Criterion and Divan parsers
   - template/
     - generate-ui.go     HTML template generation
     - vizb-ui.gen.go     Built Vue UI (auto-generated from ui/dist)
-  - style/
-    - style.go           Terminal styling (lipgloss)
 - shared/
-  - bench.go         Dataset, DataPoint, Stat structs
+  - dataset.go         Dataset, DataPoint, Stat structs
   - merge.go         MergeDatasets function
-  - dimension.go     Dimension type (n, x, y)
+  - aggregate.go     AggregateDataPoints — sum CSV/JSON rows sharing a group key
+  - dimension.go     Dimension type (n, x, y, z)
   - flag_state.go    CLI flag state
 - ui/                Vue 3 + TypeScript visualization app
   - src/composables/
-    - charts/            Bar, line, and pie chart rendering (ECharts)
+    - charts/            Bar, line, pie, and heatmap chart rendering (ECharts)
     - useSettingsStore.ts    Reactive chart settings (scale, sort, labels)
     - useChartOptions.ts     Chart composable routing
+    - useStatsWorker.ts      Off-thread descriptive + correlation compute
+  - src/lib/
+    - stats.ts          Framework-free descriptive statistics
+    - csv.ts            CSV builders for stats export
+  - src/workers/
+    - stats.worker.ts   Web Worker hosting the heavy stats math
+    - transform.worker.ts Web Worker to re-render charts asynchronously based on settings changes
   - src/components/
     - ChartCard.vue        Individual chart container
+    - ChartHeatmap.vue     Heatmap chart canvas
+    - ChartCorrelation.vue Correlation-matrix heatmap
+    - StatsPanel.vue       Descriptive + correlation statistics panel
     - ScaleSelector.vue    Linear/log toggle (hidden for pie charts)
     - SelectionTabs.vue    Metric/chart-type picker
   - src/views/
@@ -162,7 +169,7 @@ Vizb auto-detects the input format:
 
 1. **Input** — file argument or stdin pipe written to temp file
 2. **Preprocess** — JSON bench events converted to text (if needed)
-3. **Detect Parser** — `DetectParser` inspects the content and picks a parser via the registry (Go/Vitest/TinyBench/Criterion/Divan/CSV/JSON), unless `--parser` forces one
+3. **Detect Parser** — `DetectParser` inspects the content and picks a parser via the registry (CSV/JSON/Go/Vitest/TinyBench/Criterion/Divan), unless `--parser` forces one
 4. **Parse** — the selected parser extracts names and stats from the input
 5. **Group** — `--group-pattern` or `--group-regex` splits data labels into dimensions (n, x, y); `--group` feeds CSV/JSON columns in first
 6. **Build** — assemble `Dataset` struct with metadata and settings

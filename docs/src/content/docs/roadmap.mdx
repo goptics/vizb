@@ -7,17 +7,19 @@ import { CardGrid, Card } from '@astrojs/starlight/components';
 
 ## Current State
 
-Vizb currently supports benchmark output from three languages across five frameworks:
+Vizb charts any CSV or JSON table today. On top of that foundation, it ships parsers that normalize benchmark output from three languages across five frameworks:
 
 - **Go** — `go test -bench` output (raw text and `-json`)
 - **Rust** — `cargo bench` via [Criterion](https://github.com/bheisler/criterion.rs) (`rs:criterion`) and [Divan](https://github.com/nvzqz/divan) (`rs:divan`)
 - **JavaScript / TypeScript** — [Vitest](https://vitest.dev) bench (`js:vitest`) and [Tinybench](https://github.com/tinylibs/tinybench) console.table (`js:tinybench`)
 
-All parsers support multi-dimensional grouping, tag-based merging, time unit conversion, and filtering. See the [Parser Guide](/guides/parsers) for setup.
+Every parser — CSV, JSON, and benchmark — supports multi-dimensional grouping, tag-based merging, time unit conversion, filtering, and auto-aggregation of grouped rows. See the [Parser Guide](/guides/parsers) for setup.
 
-Visualization spans up to **four dimensions** — adding a z-axis renders interactive [3D charts](/ui/3d-charts) with auto-rotate and axis-sum tooltips.
+All of it visualizes the same way, up to **four dimensions**: add a z-axis for interactive [3D charts](/ui/3d-charts) with auto-rotate and axis-sum tooltips, or a flat [heatmap](/ui/heatmap). Charts ship as bar, line, pie, and heatmap, and each comes with a [statistics panel](/ui/stats) (descriptive metrics + a Pearson/Spearman correlation matrix).
 
 ## Planned
+
+Tabular CSV/JSON is already first-class. The work below extends the **benchmark** adapters to more languages — each new parser normalizes another tool's output into the same table vizb already charts.
 
 <CardGrid>
   <Card title="Python" icon="seti:python">

@@ -1,0 +1,70 @@
+---
+title: Statistics
+description: Per-series descriptive statistics and a correlation matrix, computed off-thread inside the UI.
+---
+
+import { CardGrid, Card, Aside } from '@astrojs/starlight/components';
+
+Every chart has a **statistics** button that opens a panel over the chart area. It
+has two tabs — a **descriptive** table and a **correlation** matrix — both computed
+in a Web Worker so the UI never blocks, even on large datasets.
+
+These stats work on any dataset, and they're especially handy for exploring an
+unfamiliar CSV or JSON table before you decide what to chart.
+
+<Aside type="note">
+  Statistics run **off the main thread**. The descriptive table fills in as soon as
+  the panel opens; the correlation matrix is computed lazily the first time you open
+  its tab, then cached — re-opening a tab never recomputes.
+</Aside>
+
+{/* TODO: Add GIF showing the stats button opening the panel */}
+
+## Descriptive Statistics
+
+A sortable, searchable table with one row per series and 20 metrics per row:
+
+| Group | Metrics |
+|-------|---------|
+| Counts | Count, Missing, Unique |
+| Center | Mean, Median, Mode |
+| Spread | SD, Variance, Range, IQR, MAD, CV |
+| Extremes | Min, Max |
+| Shape | Skew, Kurtosis |
+| Percentiles | P5, P25, P75, P95 |
+
+- **Sort** any column ascending/descending by clicking its header.
+- **Search** to filter the visible series; a result count shows how many match.
+- **Export** the table to CSV with the download button.
+
+<Aside type="note">
+  Values are treated as a **finite population** (variance/SD use the `/n` divisor;
+  skewness and kurtosis use population moments). Non-finite values (`NaN` / `±Inf`,
+  including missing cells from CSV/JSON) are dropped before computing, so gaps never
+  bias a statistic.
+</Aside>
+
+{/* TODO: Add GIF showing sorting and searching the descriptive table */}
+
+## Correlation Matrix
+
+A symmetric matrix of pairwise correlations between the data's series, rendered as an
+echarts heatmap. Cells are colored on a diverging **red → neutral → green** scale for
+`r ∈ [-1, 1]`.
+
+- **Method toggle** — switch between **Pearson** (linear) and **Spearman** (rank)
+  correlation. Both are precomputed, so toggling is instant.
+- **Fullscreen** — expand the matrix to the full viewport for large series counts.
+- **Export** the matrix to CSV.
+
+Cell labels are hidden once there are many series (so the grid stays readable); the
+tooltip always names both series and shows the exact `r`. Cells that can't be computed
+(a constant series, or too few overlapping points) are dropped and render empty.
+
+{/* TODO: Add GIF showing the correlation matrix with the Pearson/Spearman toggle */}
+
+## Next Steps
+
+- [Heatmap Chart](/ui/heatmap) — the chart-area heatmap (distinct from this matrix)
+- [3D Charts](/ui/3d-charts) — z-axis visualization
+- [Tabular Data](/guides/data) — charting CSV/JSON, where descriptive stats shine

@@ -8,8 +8,8 @@ export default defineConfig({
 	site: 'https://vizb.goptics.org',
 	integrations: [
 	starlight({
-		title: 'Benchmark visualization made simple',
-		description: 'Transform benchmark output from Go, Rust, and JavaScript frameworks into interactive 4D visualizations — a single self-contained HTML file.',
+		title: 'Turn any table into interactive charts',
+		description: 'Vizb renders any CSV or JSON table — and benchmark output from Go, Rust, and JavaScript — as interactive 4D charts in a single self-contained HTML file.',
 		logo: {
 			dark: './src/assets/logo-dark.svg',
 			light: './src/assets/logo-light.svg',
@@ -35,6 +35,8 @@ export default defineConfig({
 					{ label: 'Settings', slug: 'ui/settings' },
 					{ label: 'Axis Swapping', slug: 'ui/swapping' },
 					{ label: '3D Charts', slug: 'ui/3d-charts' },
+					{ label: 'Heatmap', slug: 'ui/heatmap' },
+					{ label: 'Statistics', slug: 'ui/stats' },
 				],
 			},
 			{

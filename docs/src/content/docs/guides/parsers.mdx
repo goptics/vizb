@@ -1,11 +1,11 @@
 ---
 title: Parser Guide
-description: Choose the right parser — Go, Rust (Criterion, Divan), JavaScript (Vitest, Tinybench), or generic CSV/JSON.
+description: Choose the right parser — generic CSV/JSON, or benchmark output from Go, Rust (Criterion, Divan), and JavaScript (Vitest, Tinybench).
 ---
 
 import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 
-Vizb supports multiple benchmark frameworks **and generic tabular formats** through its parser
+Vizb reads **generic CSV/JSON tables and multiple benchmark frameworks** through its parser
 registry. Use `--parser` to select one — or leave it as the default `auto` and let vizb detect
 the format from the input content.
 
@@ -17,12 +17,12 @@ the format from the input content.
 
 ## Why Multiple Parsers
 
-Each benchmark framework — and each tabular format — produces output in a different shape. Vizb's
+Each tabular format — and each benchmark framework — produces output in a different shape. Vizb's
 parser registry knows how to read them all and convert the results into a common structure, so
 your charts, grouping, filtering, and merging work identically regardless of where the data came
 from.
 
-## Choosing a Parser
+## Choosing a Benchmark Parser
 
 <Tabs syncKey="parser">
   <TabItem label="Go" icon="seti:go">
@@ -141,35 +141,6 @@ from.
   | Throughput avg / med | Mean and median operations per second |
   | Throughput RME / MAD | Relative margin of error (±) |
   | Samples | Number of samples collected |
-  </TabItem>
-
-  <TabItem label="CSV" icon="seti:csv">
-  Charts any comma-separated table — not a benchmark framework. Each **numeric column** becomes a
-  chart series; non-numeric columns are ignored unless promoted with `--group`.
-
-  ```bash
-  vizb data.csv -o output.html            # auto-detected
-  vizb data.csv -P csv -g name -o out.html
-  ```
-
-  See the [Tabular Data guide](/guides/data) for the full input rules and `--group` usage.
-  </TabItem>
-
-  <TabItem label="JSON" icon="seti:json">
-  Charts a **JSON array of objects** (each object a row, each numeric key a series). Nested objects
-  flatten to dotted keys (`mem.alloc`).
-
-  ```bash
-  vizb data.json -o output.html           # auto-detected
-  vizb data.json -P json -g name -o out.html
-  ```
-
-  <Aside type="note">
-    Only a top-level **array** is treated as tabular JSON. A `go test -bench -json` event stream
-    and vizb's own output JSON are handled separately — see [Auto-Detection](/guides/auto-detection).
-  </Aside>
-
-  See the [Tabular Data guide](/guides/data) for the full rules.
   </TabItem>
 </Tabs>
 

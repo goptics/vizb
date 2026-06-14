@@ -52,6 +52,8 @@ Turn any CSV or JSON table into charts — numeric columns/fields become series.
   benchmark. Full rules in the [Tabular Data guide](/guides/data).
 </Aside>
 
+Detection is automatic, but you can force the parser with `-P csv` or `-P json`.
+
 ## Visualize Benchmarks
 
 Pipe benchmark output straight in. The framework is detected from the content, so no `--parser` is
@@ -71,15 +73,9 @@ needed in most cases.
   vizb bench.txt -o output.html
   ```
 
-  **JSON event stream**
+  **JSON event stream** (`go test -bench -json` is detected and converted automatically)
   ```bash
   go test -bench . -json | vizb -o output.html
-  ```
-
-  Save as JSON for later merging:
-  ```bash
-  vizb bench.txt -o output.json
-  vizb output.json -o output.html
   ```
 
   <Aside type="note">
@@ -89,23 +85,46 @@ needed in most cases.
   </TabItem>
   <TabItem label="Rust" icon="seti:rust">
 
-  Criterion and Divan output are both auto-detected from `cargo bench`:
+  Criterion and Divan output are both read from `cargo bench`.
 
+  **Pipe**
   ```bash
   cargo bench | vizb -o output.html
   ```
 
-  Force a specific parser with `-P` if needed (`rs:criterion` or `rs:divan`):
+  **From a saved file**
   ```bash
-  cargo bench | vizb -P rs:divan -o output.html
+  cargo bench > bench.txt
+  vizb bench.txt -o output.html
   ```
+
+  </TabItem>
+  <TabItem label="JavaScript" icon="seti:javascript">
+
+  Works with Vitest (`npx vitest bench`) and Tinybench (`node bench.js`).
+
+  **Pipe**
+  ```bash
+  npx vitest bench | vizb -o output.html
+  ```
+
+  **From a saved file**
+  ```bash
+  npx vitest bench > bench.txt
+  vizb bench.txt -o output.html
+  ```
+
+  <Aside type="caution" title="Experimental">
+    Vitest benchmarking is experimental and does not follow SemVer — output-format changes may break the parser. See the [Parser Guide](/guides/parsers).
+  </Aside>
 
   </TabItem>
 </Tabs>
 
+Detection is automatic, but you can force the parser with `-P go`, `-P rs:criterion`, `-P rs:divan`, `-P js:vitest`, or `-P js:tinybench`.
+
 <Aside type="tip">
-  JavaScript frameworks (Vitest, Tinybench) and every supported format are covered in the
-  [Parser Guide](/guides/parsers) — including the metrics each one extracts.
+  Save any run as JSON to merge it later — `vizb bench.txt -o output.json`, then `vizb output.json -o output.html`. Every supported format and the metrics each one extracts are covered in the [Parser Guide](/guides/parsers).
 </Aside>
 
 ## Next Steps

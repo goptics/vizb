@@ -5,9 +5,9 @@ description: Add a z-axis to render interactive 3D bar and line charts.
 
 import { CardGrid, Card, Aside } from '@astrojs/starlight/components';
 
-When your benchmark data has a **fourth dimension** — a z-axis on top of Name,
-XAxis, and YAxis — vizb renders interactive **3D** bar and line charts instead of
-flat 2D ones. Rotate, zoom, and pan the scene directly in the browser.
+When your data has a **fourth dimension** — a z-axis on top of Name, XAxis, and
+YAxis — vizb renders interactive **3D** bar and line charts instead of flat 2D
+ones. Rotate, zoom, and pan the scene directly in the browser.
 
 ## What Makes a Chart 3D
 
@@ -19,6 +19,11 @@ A chart renders in 3D when a data point has **all three** plotting axes present:
 
 The **Name** dimension stays optional — it still groups points into separate
 charts. Without a z-axis, charts render as the usual 2D bar/line/pie.
+
+<Aside type="tip">
+  Prefer a flat view of the same z-axis data? The [Heatmap](/ui/heatmap) folds X, Y,
+  and Z into a colored grid — no rotating scene required.
+</Aside>
 
 <Aside type="note">
   The z-axis (`z`) is only valid alongside **both** `x` and `y`. A 3D chart needs
@@ -35,10 +40,14 @@ Add a `z` segment to your grouping pattern or a `(?<z>…)` capture to your rege
 vizb bench.txt --group-pattern "n/x/y/z" -o output.html
 ```
 
-| Benchmark Name | Name | XAxis | YAxis | ZAxis |
+| Source Label | Name | XAxis | YAxis | ZAxis |
 |---|---|---|---|---|
 | `BenchmarkSort/1024/QuickSort/warm` | Sort | 1024 | QuickSort | warm |
 | `BenchmarkSort/2048/MergeSort/cold` | Sort | 2048 | MergeSort | cold |
+
+The same `z` dimension can come from a CSV or JSON column instead of a benchmark
+name segment — pass the column as the fourth `--group` field. See the
+[Tabular Data guide](/guides/data).
 
 **Regex — named `z` capture:**
 

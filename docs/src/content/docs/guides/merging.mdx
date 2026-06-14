@@ -1,15 +1,15 @@
 ---
 title: Merging
-description: Combine benchmark runs from multiple executions, machines, or releases into a single dataset for comparison.
+description: Combine vizb dataset JSON files from multiple runs, machines, or releases into a single dataset for comparison.
 ---
 
 import { Aside, Steps } from '@astrojs/starlight/components';
 
 ## What is Merging
 
-Merging combines multiple JSON benchmark files into a single dataset for visualization. This enables comparing benchmarks across different runs, machines, versions, or releases — all in one interactive chart.
+Merging combines multiple vizb dataset JSON files into one — letting you overlay results across runs, machines, or releases in a single interactive chart. Benchmarks are the common case, but any dataset vizb produces (including charted CSV/JSON) merges the same way.
 
-Without merging, each benchmark run is an isolated report. With merging, you can overlay results from `v1.0` and `v2.0`, compare performance across different machines, or track regressions over time.
+Without merging, each run is an isolated report. With merging, you can overlay results from `v1.0` and `v2.0`, compare performance across different machines, or track regressions over time.
 
 ## How Merging Works
 
@@ -27,7 +27,7 @@ The general pipeline has three steps:
 
 3. **Generate** the HTML report:
    ```bash
-   vizb html merged.json -o report.html
+   vizb ui merged.json -o report.html
    ```
 
 ## Outer Merging (Untagged)
@@ -72,7 +72,7 @@ Inner merging is for comparing the same benchmarks across different conditions. 
 3. **Generate the HTML report**
 
    ```bash
-   vizb html comparison.json -o comparison.html
+   vizb ui comparison.json -o comparison.html
    ```
 
 </Steps>
