@@ -3,6 +3,9 @@
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     "types": ["vite/client"],
+    // Override the dom preset's ES2020 floor: ES2023 adds the non-mutating
+    // Array.prototype.toSorted/toReversed used below. Superset of ES2020.
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
     /* Linting */
     "strict": true,
     "noUnusedLocals": true,

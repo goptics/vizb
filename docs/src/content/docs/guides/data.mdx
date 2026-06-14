@@ -5,7 +5,7 @@ description: Chart any CSV or JSON table with vizb — numeric columns become ch
 
 import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 
-Vizb isn't only for benchmarks. The **`csv`** and **`json`** parsers turn any tabular data into
+Vizb charts any tabular data. The **`csv`** and **`json`** parsers turn a table into
 the same interactive 4D charts: each **numeric column/field becomes a chart series**, and
 non-numeric columns can be promoted into the Name / X / Y dimensions with `--group`.
 
@@ -92,6 +92,29 @@ See the [Grouping Guide](/guides/grouping) for pattern and regex syntax.
   `--group` values are stringified (numbers included) before joining. A value that itself
   contains `/` or `_` is re-split by the grouping pattern — that's inherent to the grouping
   engine, not the data parsers.
+</Aside>
+
+## Aggregation
+
+CSV and JSON emit **one data point per row**. Raw tables routinely have many rows that
+collapse to the same dimensions — e.g. hundreds of sales for the same region on the
+same date. So when a `--group` is active for the `csv`/`json` parsers, vizb
+**aggregates** before charting: rows sharing the same `(Name, XAxis, YAxis, ZAxis)`
+key are merged into a single point by **summing** their values.
+
+```bash
+vizb sales.csv -g region,product,month -p name/x/y -o sales.html
+# 🧮 Aggregating 200000 rows...
+# ✅ Aggregated into 4200 grouped data points
+```
+
+This turns a row-per-record dump into a handful of meaningful grouped points, and
+keeps the chart (and the [statistics panel](/ui/stats)) fast.
+
+<Aside type="note">
+  Aggregation runs **only** for the `csv`/`json` parsers **with** `--group`. Benchmark
+  parsers are never summed — their repeated `count=N` rows share a key on purpose and
+  are **averaged** by the UI instead. Without `--group`, every row is kept as-is.
 </Aside>
 
 ## Limitations

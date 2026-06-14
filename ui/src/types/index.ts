@@ -1,7 +1,7 @@
 export type SortOrder = 'asc' | 'desc'
 export const SORT_ORDERS: SortOrder[] = ['asc', 'desc']
 
-export type ChartType = 'bar' | 'line' | 'pie'
+export type ChartType = 'bar' | 'line' | 'pie' | 'heatmap'
 
 export type ScaleType = 'linear' | 'log'
 export const SCALE_TYPES: ScaleType[] = ['linear', 'log']
@@ -68,6 +68,49 @@ export type DataSet = {
   settings: Settings
   axisLabels?: AxisLabels
   data: DataPoint[]
+}
+
+// Full descriptive-statistics profile of one numeric vector (a series' values
+// across categories). Produced by lib/stats.ts `describe`. NaN where undefined
+// (e.g. cv when mean is 0, shape stats for n<2).
+export type DescriptiveStats = {
+  count: number
+  missing: number
+  unique: number
+  mean: number
+  median: number
+  mode: number
+  variance: number
+  stdDev: number
+  min: number
+  max: number
+  range: number
+  iqr: number
+  mad: number
+  cv: number
+  skewness: number
+  kurtosis: number
+  p5: number
+  p25: number
+  p75: number
+  p95: number
+}
+
+// One series' descriptive profile (column profile, YData/D-Tale style).
+export type SeriesProfile = {
+  name: string
+  stats: DescriptiveStats
+}
+
+// Symmetric correlation matrices across the chart's auto-picked entity axis (the
+// series, the category axis, or the z axis — see `selectCorrelationAxis`). `axis`
+// names which one so the panel can caption it; `labels` are that axis's values.
+// Both methods are precomputed so the panel toggles with no recompute.
+export type CorrelationMatrix = {
+  axis: 'x' | 'y' | 'z'
+  labels: string[]
+  pearson: number[][]
+  spearman: number[][]
 }
 
 export type ChartData = {

@@ -5,17 +5,29 @@ description: A detailed overview of everything vizb can do.
 
 import { CardGrid, Card, Aside } from '@astrojs/starlight/components';
 
-Vizb transforms benchmark output from Go, Rust, and JavaScript frameworks — or any tabular CSV/JSON data — into interactive 4D HTML visualizations. Here's what it offers.
+Vizb turns any CSV or JSON table — and benchmark output from Go, Rust, and JavaScript — into interactive 4D HTML charts. A benchmark result is just a table of named, numeric rows, so everything below works the same whether your data came from a spreadsheet or a benchmark run.
 
 <CardGrid stagger>
   <Card title="Modern Interactive UI" icon="laptop">
     Vue.js application embedded in a single HTML file. Sort, zoom, swap axes, fullscreen, and export — all in the browser with no server.
   </Card>
+  <Card title="Any CSV or JSON" icon="seti:csv">
+    Chart any table directly. Numeric columns and fields become series; promote other columns to the Name / X / Y / Z axes with `--group`. See the [Tabular Data guide](/guides/data).
+  </Card>
   <Card title="Multi-Chart" icon="analytics">
-    Bar, line, and pie charts rendered together. Choose which to show with `--charts` or toggle in the UI.
+    Bar, line, pie, and heatmap charts rendered together. Choose which to show with `--charts` or toggle in the UI.
   </Card>
   <Card title="3D Charts" icon="cube">
     Add a z-axis to render interactive 3D stacked-bar and 3D line charts. Rotate, zoom, and auto-rotate the scene. See [3D Charts](/ui/3d-charts).
+  </Card>
+  <Card title="Heatmap Chart" icon="seti:default">
+    Fold X, Y, and Z into a colored grid — cell value sums the z-axis, cell color blends the z palette. See [Heatmap](/ui/heatmap).
+  </Card>
+  <Card title="Statistics Panel" icon="approve-check">
+    Per-series descriptive stats (20 metrics, sortable, searchable, CSV export) plus a Pearson/Spearman correlation matrix — computed off-thread. See [Statistics](/ui/stats).
+  </Card>
+  <Card title="Large-Data Zoom" icon="magnifier">
+    A dataZoom slider for wide X-axes and an optimized render path for big datasets keep the UI responsive on thousands of points.
   </Card>
   <Card title="Axis-Sum Tooltips" icon="information">
     Hover any point for marginal sums — per-series and x totals in 2D, `Σ z` / `Σ x` / `Σ y` in 3D — recomputed live as you toggle the legend.
@@ -27,19 +39,16 @@ Vizb transforms benchmark output from Go, Rust, and JavaScript frameworks — or
     Rearrange Name, X-axis, Y-axis, and Z-axis dimensions in the UI for different perspectives on the same data.
   </Card>
   <Card title="Logarithmic Scale" icon="puzzle">
-    Use `--scale log` for 2D bar and line charts to visualize benchmarks with high variance in values.
+    Use `--scale log` for 2D bar and line charts when your data spans several orders of magnitude.
   </Card>
   <Card title="Multi-Dimensional Grouping" icon="puzzle">
-    Extract Name, XAxis, YAxis, and ZAxis from benchmark names using pattern matching or regex. 1D, 2D, 3D, or 4D data.
+    Extract Name, XAxis, YAxis, and ZAxis from row labels or column values using pattern matching or regex. 1D, 2D, 3D, or 4D data.
   </Card>
   <Card title="Tag-Based Merging" icon="code-branch">
     Tag benchmarks with version labels. Deep-merge across releases with chronological data ordering.
   </Card>
   <Card title="Flexible Input" icon="document">
-    Reads benchmark output from Go, Rust (Criterion, Divan), and JavaScript (Vitest, Tinybench), plus generic CSV and JSON tables. Accepts files or stdin pipes.
-  </Card>
-  <Card title="Tabular Data Parsers" icon="seti:csv">
-    Chart any CSV or JSON table, not just benchmarks. Numeric columns/fields become series; group by other columns with `--group`. See the [Tabular Data guide](/guides/data).
+    Reads CSV and JSON tables, plus benchmark output from Go, Rust (Criterion, Divan), and JavaScript (Vitest, Tinybench). Accepts a file path or an stdin pipe.
   </Card>
   <Card title="Automatic Parser Detection" icon="magnifier">
     `--parser` defaults to `auto`: vizb inspects the input content and picks the right parser, printing its choice. Override anytime with `-P`. See [Auto-Detection](/guides/auto-detection).

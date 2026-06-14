@@ -32,7 +32,7 @@ var rootCmd = &cobra.Command{
 	Long: `A CLI tool that turns dataSet output (Go, Rust, JavaScript) or any tabular
 CSV/JSON data into an interactive, self-contained HTML chart application.
 It reads a file or piped stdin, auto-detects the input format (override with --parser),
-and renders bar, line, and pie charts you can explore in the browser.`,
+and renders bar, line, pie, and heatmap charts you can explore in the browser.`,
 	Version: version.Version,
 	Args:    cobra.ArbitraryArgs,
 	Run:     runBenchmark,
@@ -59,7 +59,7 @@ func init() {
 	rootCmd.Flags().StringVarP(&shared.FlagState.GroupPattern, "group-pattern", "p", "x", "Pattern to extract grouping information from data labels / series names")
 	rootCmd.Flags().StringVarP(&shared.FlagState.GroupRegex, "group-regex", "r", "", "Regex pattern to extract grouping information from data labels / series names")
 	rootCmd.Flags().StringVarP(&shared.FlagState.Sort, "sort", "s", "", "Sort in asc or desc order (default: as-is)")
-	rootCmd.Flags().StringSliceVarP(&shared.FlagState.Charts, "charts", "c", []string{"bar", "line", "pie"}, "Chart types to generate (bar, line, pie)")
+	rootCmd.Flags().StringSliceVarP(&shared.FlagState.Charts, "charts", "c", []string{"bar", "line", "pie", "heatmap"}, "Chart types to generate (bar, line, pie, heatmap)")
 	rootCmd.Flags().StringSliceVarP(&shared.FlagState.Group, "group", "g", nil, "Names each dimension in --group-pattern/regex order. csv/json: column/field names whose values feed the dimensions; benchmark parsers: human-readable labels for the name/x/y/z axes")
 	rootCmd.Flags().BoolVarP(&shared.FlagState.ShowLabels, "show-labels", "l", false, "Show labels on charts")
 	rootCmd.Flags().StringVarP(&shared.FlagState.FilterRegex, "filter", "f", "", "Regex pattern to include only matching data labels / series names")
@@ -148,7 +148,7 @@ func writeStdinPipedInputs(tempfilePath string) {
 }
 
 func checkTargetFile(filePath string) {
-	fmt.Println(style.Info.Render(fmt.Sprintf("📊 Reading dataSet data from file: %s", filePath)))
+	fmt.Println(style.Info.Render(fmt.Sprintf("🔎 Reading data from file: %s", filePath)))
 
 	// Check if the target file exists
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
@@ -236,7 +236,20 @@ func prepareData(filePath string) []shared.DataPoint {
 		shared.ExitWithError(err.Error(), nil)
 	}
 
+	fmt.Println(style.Info.Render("⚙️  Parsing data..."))
 	data := parseFn(filePath)
+
+	// CSV/JSON emit one DataPoint per row; when grouping is active, multiple rows
+	// can share the same (name, xAxis, yAxis, zAxis) key. Collapse them by summing
+	// so the output isn't a row-per-record dump (200k rows → a few thousand points).
+	// Benchmark parsers are excluded: their count=N repeats share a key but must NOT
+	// be summed (the UI averages those instead).
+	if (shared.FlagState.Parser == "csv" || shared.FlagState.Parser == "json") && len(shared.FlagState.Group) > 0 {
+		before := len(data)
+		fmt.Println(style.Info.Render(fmt.Sprintf("🧮 Aggregating %d rows...", before)))
+		data = shared.AggregateDataPoints(data)
+		fmt.Println(style.Info.Render(fmt.Sprintf("✅ Aggregated into %d grouped data points", len(data))))
+	}
 
 	if len(data) == 0 {
 		shared.ExitWithError("No dataSet data found", nil)
@@ -286,19 +299,19 @@ func prepareDatasetFromResults(results []shared.DataPoint) *shared.Dataset {
 func writeOutput(f *os.File, dataSet *shared.Dataset, format string) {
 	switch format {
 	case "html":
-		fmt.Println(style.Info.Render("🔄 Generating Chart..."))
+		fmt.Println(style.Info.Render("🔄 Generating UI..."))
 
 		jsonData, err := json.Marshal(dataSet)
 		if err != nil {
 			shared.ExitWithError("Failed to marshal dataSet data: %v", err)
 		}
 
-		htmlContent := template.GenerateUI(jsonData, template.VizbHTMLTemplate)
+		htmlContent := template.GenerateUI(jsonData, dataSet.Settings.Charts, shared.DatasetNeeds3D(dataSet), template.VizbHTMLTemplate)
 		if _, err := f.WriteString(htmlContent); err != nil {
 			shared.ExitWithError("Failed to write output file: %v", err)
 		}
 
-		fmt.Println(style.Success.Render("🎉 Generated HTML chart successfully!"))
+		fmt.Println(style.Success.Render("🎉 Generated HTML UI successfully!"))
 
 	case "json":
 		fmt.Println(style.Info.Render("🔄 Generating JSON..."))

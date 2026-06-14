@@ -1,6 +1,7 @@
 import type { EChartsOption } from 'echarts/types/dist/shared'
 import type { ScaleType } from '../../../types'
 import { fontSize } from './common'
+import { describe } from '../../../lib/stats'
 
 export const LARGE_X_THRESHOLD = 50
 
@@ -13,14 +14,48 @@ export function isLargeXAxis(xAxisData: string[]): boolean {
 // above it the optimized path keeps a 100k-point dataset's draw on one frame.
 export const LARGE_DATA_THRESHOLD = 2000
 
-export function createDataZoomConfig(xAxisData: string[]): any[] {
+export function createHeatmapDataZoomConfig(
+  largeX: boolean,
+  largeY: boolean,
+  xLen: number,
+  yLen: number,
+  styling: ChartStyling,
+): any[] {
+  const result: any[] = []
+  if (largeX) {
+    const end = Math.max(5, Math.ceil((30 / xLen) * 100))
+    result.push(
+      { type: 'inside', xAxisIndex: 0, start: 0, end, filterMode: 'filter' },
+      { type: 'slider', xAxisIndex: 0, start: 0, end, bottom: 55, height: 28, filterMode: 'filter', textStyle: { color: styling.textColor } },
+    )
+  }
+  if (largeY) {
+    const end = Math.max(5, Math.ceil((30 / yLen) * 100))
+    result.push(
+      { type: 'inside', yAxisIndex: 0, start: 0, end, filterMode: 'filter' },
+      { type: 'slider', yAxisIndex: 0, start: 0, end, left: 10, width: 20, filterMode: 'filter', textStyle: { color: styling.textColor } },
+    )
+  }
+  return result
+}
+
+export function createDataZoomConfig(xAxisData: string[], styling: ChartStyling): any[] {
   const end = Math.max(5, Math.ceil((30 / xAxisData.length) * 100))
   return [
     { type: 'inside', start: 0, end },
     // Slider sits between the (auto-thinned) tick labels and the category-axis
     // name, which is pushed below it via a larger nameGap. Heights coordinated
     // with createGridConfig's fixed px bottom so spacing is stable across sizes.
-    { type: 'slider', start: 0, end, bottom: 34, height: 28 },
+    // textStyle colors the left/right boundary labels to match the theme text
+    // (ECharts' default gray is too dim in dark mode).
+    {
+      type: 'slider',
+      start: 0,
+      end,
+      bottom: 34,
+      height: 28,
+      textStyle: { color: styling.textColor },
+    },
   ]
 }
 
@@ -29,6 +64,24 @@ export interface ChartStyling {
   axisColor: string
   opacity: number
   backgroundColor: string | undefined
+}
+
+export function createToolboxConfig(isDark: boolean, title: string, pixelRatio: number): any {
+  const { textColor } = getChartStyling(isDark)
+  return {
+    show: true,
+    feature: {
+      saveAsImage: {
+        show: true,
+        type: 'jpeg',
+        title: 'Save',
+        pixelRatio,
+        name: title,
+      },
+    },
+    iconStyle: { borderColor: textColor },
+    emphasis: { iconStyle: { borderColor: textColor } },
+  }
 }
 
 /**
@@ -135,6 +188,24 @@ export function getTooltipTheme(isDark: boolean) {
 /** Horizontal divider used inside tooltip HTML, themed to match the box. */
 export function tooltipDivider(isDark: boolean): string {
   return `<hr style="border:none;border-top:1px solid ${getChartStyling(isDark).axisColor};margin:4px 0"/>`
+}
+
+// Lean spread summary for the hovered vector (the series values at a category /
+// the z-values in a 3D cell): median, IQR, CV. The full descriptive set lives in
+// the stats panel — this is just the at-a-glance trio. Returns '' for <2 finite
+// values (a single value has no spread). Shared by the 2D and 3D tooltips.
+export function tooltipSpreadRows(values: number[], isDark: boolean): string {
+  const finite = values.filter((v) => Number.isFinite(v))
+  if (finite.length < 2) return ''
+  const s = describe(finite)
+  const num = (v: number) => (Number.isFinite(v) ? Math.round(v * 100) / 100 : '—')
+  const cv = Number.isFinite(s.cv) ? `${(s.cv * 100).toFixed(1)}%` : '—'
+  return (
+    `${tooltipDivider(isDark)}` +
+    `Median: <b>${num(s.median)}</b><br/>` +
+    `IQR: <b>${num(s.iqr)}</b><br/>` +
+    `CV: <b>${cv}</b>`
+  )
 }
 
 // Inline SVG donut + side legend (swatch, name, %) for tooltips. Non-positive
@@ -264,6 +335,10 @@ export function createTooltipConfig(
         )
         const xName = params[0]?.name ?? ''
         const sumLine = `${tooltipDivider(isDark)}Σ ${xName}: <b>${Math.round(total * 100) / 100}</b>`
+        const spread = tooltipSpreadRows(
+          params.map((p) => (typeof p.value === 'number' ? p.value : NaN)),
+          isDark
+        )
         const donut = renderDonutSvg(
           params.map((p) => ({
             value: typeof p.value === 'number' ? p.value : 0,
@@ -271,7 +346,7 @@ export function createTooltipConfig(
             name: p.seriesName ?? '',
           }))
         )
-        return `${body}${sumLine}${donut ? tooltipDivider(isDark) + donut : ''}`
+        return `${body}${sumLine}${spread}${donut ? tooltipDivider(isDark) + donut : ''}`
       },
     }
   }

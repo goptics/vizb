@@ -11,21 +11,26 @@ import {
   type Component,
 } from 'vue'
 import type { EChartsOption } from 'echarts'
+import { Sigma } from 'lucide-vue-next'
 import { useChartOptions } from '../composables/useChartOptions'
 import type { ChartData, ChartType } from '../types'
 import { useSettingsStore } from '../composables/useSettingsStore'
+import { useFullscreen } from '../composables/useFullscreen'
 import { is3D } from '../lib/utils'
+import StatsPanel from './StatsPanel.vue'
+import Badge from './Badge.vue'
+import Button from './ui/Button.vue'
 
 // Every chart renderer (2D bar/line/pie + 3D) is loaded via defineAsyncComponent
 // so the echarts runtime stays out of the eager startup bundle: nothing in the
 // initial parse imports echarts, and each chart's module body lands in its own
 // chunk that the browser only parses when that type actually renders. The
 // chart-area skeleton shows while a chunk loads (once per type, then cached).
-const ChartLoading = () => h('div', { class: 'h-[500px] animate-pulse rounded bg-muted' })
+const ChartLoading = () => h('div', { class: 'h-[600px] animate-pulse rounded bg-muted' })
 const ChartLoadError = () =>
   h(
     'div',
-    { class: 'flex h-[500px] items-center justify-center text-sm text-muted-foreground' },
+    { class: 'flex h-[600px] items-center justify-center text-sm text-muted-foreground' },
     'Failed to load chart'
   )
 const mk = (loader: () => Promise<Component>) =>
@@ -40,6 +45,7 @@ const RENDERERS: Record<ChartType, Component> = {
   bar: mk(() => import('./ChartBar.vue')),
   line: mk(() => import('./ChartLine.vue')),
   pie: mk(() => import('./ChartPie.vue')),
+  heatmap: mk(() => import('./ChartHeatmap.vue')),
 }
 const Chart3D = mk(() => import('./Chart3D.vue'))
 
@@ -63,7 +69,11 @@ const { settings, chartType } = useSettingsStore()
 // 3D form (it renders per-dimension 2D pies even for x/y/z data), so it always
 // routes to ChartPie — never Chart3D, which doesn't register the pie module.
 const ActiveChart = computed<Component>(() => {
+  // Pie and heatmap have no 3D form — both render their own 2D layout even for x/y/z
+  // data (pie folds dimensions into per-dimension pies; heatmap folds z onto the legend),
+  // so they must route past the is3D check that otherwise hands x/y/z off to Chart3D.
   if (chartType.value === 'pie') return RENDERERS.pie
+  if (chartType.value === 'heatmap') return RENDERERS.heatmap
   return is3DChart.value ? Chart3D : (RENDERERS[chartType.value] ?? RENDERERS.bar)
 })
 
@@ -92,49 +102,16 @@ const initOptions = {
   devicePixelRatio: window.devicePixelRatio,
 } as const
 
-const containerRef = ref<HTMLElement | null>(null)
-const isFullscreen = ref(false)
+const { containerRef, isFullscreen, withFullscreenToolbox } = useFullscreen()
 
-function toggleFullscreen() {
-  if (!containerRef.value) return
-  if (!document.fullscreenElement) {
-    containerRef.value.requestFullscreen()
-  } else {
-    document.exitFullscreen()
-  }
-}
+// Stats panel is collapsed by default so the chart view is unchanged until the
+// user opts in. Offered for any chart with at least one series; the actual
+// profiles/correlation are computed lazily off-thread when the panel opens
+// (see StatsPanel.vue + useStatsWorker.ts), so this check stays payload-free.
+const showStats = ref(false)
+const hasStats = computed(() => chartData.value.series.length > 0)
 
-document.addEventListener('fullscreenchange', () => {
-  isFullscreen.value = !!document.fullscreenElement
-})
-
-// Line-style corner-bracket icons so they match echarts' stroke-only toolbox
-// icons (filled glyphs render hollow). Enter = outward corners, exit = inward.
-const ENTER_FULLSCREEN_ICON = 'path://M3 9V3H9 M21 9V3H15 M3 15V21H9 M21 15V21H15'
-const EXIT_FULLSCREEN_ICON = 'path://M9 3V9H3 M15 3V9H21 M9 21V15H3 M15 21V15H21'
-
-// Inject fullscreen as a custom toolbox feature so it sits inline with
-// saveAsImage in echarts' horizontal toolbar (instead of a separate button).
-const mergedOptions = computed<EChartsOption>(() => {
-  const opt = options.value
-  const toolbox = opt.toolbox as Record<string, unknown> | undefined
-  const feature = (toolbox?.feature ?? {}) as Record<string, unknown>
-  return {
-    ...opt,
-    toolbox: {
-      ...toolbox,
-      feature: {
-        ...feature,
-        myFullScreen: {
-          show: true,
-          title: isFullscreen.value ? 'Exit fullscreen' : 'Fullscreen',
-          icon: isFullscreen.value ? EXIT_FULLSCREEN_ICON : ENTER_FULLSCREEN_ICON,
-          onclick: toggleFullscreen,
-        },
-      },
-    },
-  } as EChartsOption
-})
+const mergedOptions = computed<EChartsOption>(() => withFullscreenToolbox(options.value))
 
 // Double-buffer the chart so a worker recompute never flashes a stale or
 // half-drawn frame. The live `<component>` renders `renderedChart`/`renderedOption`
@@ -184,12 +161,29 @@ watch(
     class="rounded-lg border border-border bg-card p-6 shadow-sm transition-shadow hover:shadow-md"
     :class="{ 'fixed inset-0 z-50 rounded-none': isFullscreen }"
   >
-    <h3 class="text-lg font-semibold text-card-foreground">
-      {{ chartData.title }}
-    </h3>
+    <div class="flex items-center justify-between gap-2 mb-2">
+      <h3 class="text-lg font-semibold text-card-foreground">
+        {{ chartData.title }}
+      </h3>
+      <div class="flex flex-wrap justify-end gap-1.5">
+        <Badge
+          :label="chartData.axisLabels?.x || 'Series'"
+          :value="String(chartData.series.length)"
+        />
+        <Badge
+          :label="chartData.axisLabels?.y || 'Y-axis'"
+          :value="String(chartData.yAxis.length)"
+        />
+        <Badge
+          v-if="is3DChart"
+          :label="chartData.axisLabels?.z || 'Z-axis'"
+          :value="String(chartData.zAxis.length)"
+        />
+      </div>
+    </div>
     <!-- Keep the chart mounted and overlay the skeleton; unmounting would reset
          the echarts-gl camera on every 3D switch (zoom-in flash). -->
-    <div class="relative" :class="isFullscreen ? 'h-[calc(100vh-4rem)]' : 'h-[500px]'">
+    <div class="relative" :class="isFullscreen ? 'h-[calc(100vh-4rem)]' : 'h-[600px]'">
       <component
         :is="renderedChart"
         :option="renderedOption"
@@ -198,6 +192,20 @@ watch(
         @legendselectchanged="onLegendSelectChanged"
       />
       <div v-if="showSkeleton" class="absolute inset-0 z-10 animate-pulse rounded bg-muted" />
+      <Button
+        v-if="hasStats"
+        class="absolute bottom-2 right-2 z-20 h-8 bg-transparent border border-border px-2.5 py-0 text-xs leading-none text-muted-foreground transition-colors hover:bg-accent hover:text-primary"
+        :class="{ 'bg-accent text-primary': showStats }"
+        :aria-pressed="showStats"
+        title="Toggle statistics"
+        @click="showStats = !showStats"
+      >
+        <template #icon>
+          <Sigma class="h-4 w-4" />
+        </template>
+        Stats
+      </Button>
     </div>
+    <StatsPanel v-if="hasStats && showStats" :chart-data="chartData" />
   </div>
 </template>

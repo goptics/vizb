@@ -115,7 +115,7 @@ useDashboardInit()
           class="rounded-lg border border-border bg-card p-6 shadow-sm"
         >
           <div class="mb-4 h-6 w-48 animate-pulse rounded bg-muted" />
-          <div class="h-[500px] animate-pulse rounded bg-muted" />
+          <div class="h-[600px] animate-pulse rounded bg-muted" />
         </div>
       </template>
     </div>
