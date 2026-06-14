@@ -448,68 +448,99 @@ func TestParseNameWithRegex(t *testing.T) {
 	}
 }
 
-func TestGroupAxisLabels(t *testing.T) {
+func TestGroupAxes(t *testing.T) {
 	tests := []struct {
-		name     string
-		group    []string
-		pattern  string
-		regex    string
-		expected map[string]string
+		name        string
+		pattern     string
+		regex       string
+		groupLabels []string
+		want        []shared.Axis
 	}{
 		{
-			name:     "x and y from group columns",
-			group:    []string{"region", "product"},
-			pattern:  "y/x",
-			expected: map[string]string{"yAxis": "region", "xAxis": "product"},
+			name:        "pattern with labels",
+			pattern:     "n_x_y",
+			groupLabels: []string{"Impl", "Size", "ns/op"},
+			want: []shared.Axis{
+				{Key: "name", Label: "Impl"},
+				{Key: "x", Label: "Size"},
+				{Key: "y", Label: "ns/op"},
+			},
 		},
 		{
-			name:     "name x y z",
-			group:    []string{"vendor", "product", "region", "category"},
-			pattern:  "n/x/y/z",
-			expected: map[string]string{"name": "vendor", "xAxis": "product", "yAxis": "region", "zAxis": "category"},
+			name:    "pattern without labels",
+			pattern: "x_y",
+			want: []shared.Axis{
+				{Key: "x", Label: ""},
+				{Key: "y", Label: ""},
+			},
 		},
 		{
-			name:     "single default pattern",
-			group:    []string{"product"},
-			pattern:  "x",
-			expected: map[string]string{"xAxis": "product"},
+			name:        "pattern with partial labels",
+			pattern:     "n_x_y",
+			groupLabels: []string{"Impl"},
+			want: []shared.Axis{
+				{Key: "name", Label: "Impl"},
+				{Key: "x", Label: ""},
+				{Key: "y", Label: ""},
+			},
 		},
 		{
-			name:     "blank group entries skipped, align with pattern",
-			group:    []string{"", "region", " ", "product"},
-			pattern:  "y/x",
-			expected: map[string]string{"yAxis": "region", "xAxis": "product"},
+			name:  "regex mode - 2D",
+			regex: `(?P<x>[^/]+)/(?P<y>.+)`,
+			want: []shared.Axis{
+				{Key: "x", Label: ""},
+				{Key: "y", Label: ""},
+			},
 		},
 		{
-			name:     "more columns than pattern parts: extras ignored",
-			group:    []string{"region", "product", "extra"},
-			pattern:  "y/x",
-			expected: map[string]string{"yAxis": "region", "xAxis": "product"},
+			name:  "regex mode - 3D with name",
+			regex: `(?P<n>[^/]+)/(?P<x>[^/]+)/(?P<y>[^/]+)/(?P<z>.+)`,
+			want: []shared.Axis{
+				{Key: "name", Label: ""},
+				{Key: "x", Label: ""},
+				{Key: "y", Label: ""},
+				{Key: "z", Label: ""},
+			},
 		},
 		{
-			name:     "regex mode yields no labels",
-			group:    []string{"region", "product"},
-			regex:    `(?<y>.*)/(?<x>.*)`,
-			expected: map[string]string{},
+			name: "no grouping",
+			want: nil,
 		},
 		{
-			name:     "no group columns yields no labels",
-			group:    nil,
-			pattern:  "y/x",
-			expected: map[string]string{},
-		},
-		// bench-parser usage: --group labels name/x/y/z axes in pattern order
-		{
-			name:     "bench: n/y/x pattern labels all three dimensions",
-			group:    []string{"Sort", "algorithm", "size"},
-			pattern:  "n/y/x",
-			expected: map[string]string{"name": "Sort", "yAxis": "algorithm", "xAxis": "size"},
+			name:        "pattern y/x with labels: order follows pattern",
+			pattern:     "y/x",
+			groupLabels: []string{"region", "product"},
+			want: []shared.Axis{
+				{Key: "y", Label: "region"},
+				{Key: "x", Label: "product"},
+			},
 		},
 		{
-			name:     "bench: n/x/y/z pattern labels all four dimensions",
-			group:    []string{"Sort", "size", "variant", "depth"},
-			pattern:  "n/x/y/z",
-			expected: map[string]string{"name": "Sort", "xAxis": "size", "yAxis": "variant", "zAxis": "depth"},
+			name:        "blank group entries skipped, align with pattern",
+			pattern:     "y/x",
+			groupLabels: []string{"", "region", " ", "product"},
+			want: []shared.Axis{
+				{Key: "y", Label: "region"},
+				{Key: "x", Label: "product"},
+			},
+		},
+		{
+			name:        "more group labels than pattern parts: extras ignored",
+			pattern:     "y/x",
+			groupLabels: []string{"region", "product", "extra"},
+			want: []shared.Axis{
+				{Key: "y", Label: "region"},
+				{Key: "x", Label: "product"},
+			},
+		},
+		{
+			name:        "regex mode ignores group labels",
+			regex:       `(?<y>.*)/(?<x>.*)`,
+			groupLabels: []string{"region", "product"},
+			want: []shared.Axis{
+				{Key: "x", Label: ""},
+				{Key: "y", Label: ""},
+			},
 		},
 	}
 
@@ -524,11 +555,11 @@ func TestGroupAxisLabels(t *testing.T) {
 				shared.FlagState.GroupRegex = prevRegex
 			})
 
-			shared.FlagState.Group = tt.group
+			shared.FlagState.Group = tt.groupLabels
 			shared.FlagState.GroupPattern = tt.pattern
 			shared.FlagState.GroupRegex = tt.regex
 
-			assert.Equal(t, tt.expected, GroupAxisLabels())
+			assert.Equal(t, tt.want, GroupAxes())
 		})
 	}
 }
