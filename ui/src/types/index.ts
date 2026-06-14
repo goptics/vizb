@@ -26,11 +26,30 @@ export type Sort = {
   order: SortOrder
 }
 
+// Ordered axis dimension — replaces the flat AxisLabels on DataSet.
+// `key` is the canonical short key ("name" | "x" | "y" | "z");
+// `label` is the human-readable column name from --group.
+export type Axis = {
+  key: 'name' | 'x' | 'y' | 'z'
+  label?: string
+}
+
+// Per-chart type settings override. Absent fields inherit the global Setting value.
+export type ChartSettings = {
+  swap?: string       // target arrangement string, e.g. "yxn"
+  sort?: Sort         // overrides global sort
+  scale?: ScaleType   // overrides global scale; not valid for pie/heatmap
+  showLabels?: boolean // overrides global showLabels
+  autoRotate?: boolean // 3D-only; only for bar/line when chart has z-axis
+}
+
 export type Settings = {
   sort: Sort
   showLabels: boolean
   charts: ChartType[]
   scale: ScaleType
+  axes?: Axis[]  // ordered axis dimensions, replaces top-level axisLabels on DataSet
+  chartSettings?: Record<ChartType, ChartSettings>  // per-chart type overrides
 }
 
 // Human-readable label for each dimension, derived from the --group columns.
@@ -66,6 +85,7 @@ export type DataSet = {
     cores?: number
   }
   settings: Settings
+  /** @deprecated Kept for reading legacy JSON; use settings.axes instead. */
   axisLabels?: AxisLabels
   data: DataPoint[]
 }
