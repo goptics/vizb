@@ -89,8 +89,8 @@ useDashboardInit()
 <template>
   <nav class="fixed right-6 top-6 z-50 flex items-center gap-2">
     <IconButton
-      v-if="activeDataSet?.pkg"
-      :href="`https://${activeDataSet.pkg}`"
+      v-if="activeDataSet?.meta?.pkg"
+      :href="`https://${activeDataSet.meta?.pkg}`"
       aria-label="View Package Source"
     >
       <Package class="h-5 w-5" />

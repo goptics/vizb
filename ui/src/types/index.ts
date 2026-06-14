@@ -62,28 +62,31 @@ export type AxisLabels = {
   z?: string
 }
 
-export type HistoryEntry = {
-  tag: string
-  timestamp: string
+// Machine metadata, nested under `meta` on both the dataset and each history
+// entry. `cpu` is absent when there is no CPU info.
+export type Meta = {
   cpu?: {
     name?: string
     cores?: number
   }
   os?: string
+  arch?: string
+  pkg?: string
+}
+
+export type HistoryEntry = {
+  tag: string
+  timestamp: string
+  meta?: Meta
 }
 
 export type DataSet = {
   name: string
   description?: string
-  pkg?: string
   tag?: string
   timestamp?: string
-  os?: string
   history?: HistoryEntry[]
-  cpu?: {
-    name?: string
-    cores?: number
-  }
+  meta: Meta
   settings: Settings
   /** @deprecated Kept for reading legacy JSON; use settings.axes instead. */
   axisLabels?: AxisLabels

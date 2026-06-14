@@ -11,7 +11,7 @@ const props = defineProps<{
 }>()
 
 const historyRef = computed(() => props.history)
-const { sortedHistory, hasHistory } = useSortedHistory(historyRef, (e) => !!e.os)
+const { sortedHistory, hasHistory } = useSortedHistory(historyRef, (e) => !!e.meta?.os)
 </script>
 
 <template>
@@ -25,7 +25,7 @@ const { sortedHistory, hasHistory } = useSortedHistory(historyRef, (e) => !!e.os
     :has-history="hasHistory"
   >
     <template #entry="{ entry }">
-      <span class="shrink-0 tabular-nums">{{ entry.os }}</span>
+      <span class="shrink-0 tabular-nums">{{ entry.meta?.os }}</span>
     </template>
   </HistoryPopover>
 </template>

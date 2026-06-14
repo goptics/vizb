@@ -2,7 +2,6 @@
   {
     "name": "HTTP Routing Benchmarks",
     "description": "Performance comparison of popular Go HTTP Routers",
-    "pkg": "github.com/gin-gonic/go-http-routing-benchmark",
     "timestamp": "2025-11-15T10:30:00Z",
     "settings": {
       "charts": [
@@ -10366,37 +10365,37 @@
       {
         "tag": "v1.0.0",
         "timestamp": "2025-06-01T08:00:00Z",
-        "cpu": {
-          "yAxis": "Intel Core i7-9700K",
-          "cores": 8
-        },
-        "os": "linux"
+        "meta": {
+          "cpu": {
+            "yAxis": "Intel Core i7-9700K",
+            "cores": 8
+          },
+          "os": "linux"
+        }
       },
       {
         "tag": "v1.1.0",
         "timestamp": "2025-08-20T14:15:00Z",
-        "cpu": {
-          "yAxis": "Intel Core i7-9700K",
-          "cores": 8
-        },
-        "os": "linux"
+        "meta": {
+          "cpu": {
+            "yAxis": "Intel Core i7-9700K",
+            "cores": 8
+          },
+          "os": "linux"
+        }
       },
       {
         "tag": "v1.2.0",
         "timestamp": "2025-11-15T10:30:00Z"
       }
-    ]
+    ],
+    "meta": {
+      "pkg": "github.com/gin-gonic/go-http-routing-benchmark"
+    }
   },
   {
     "name": "Worker Pool Benchmarks",
     "description": "Performance comparison of different worker pool implementations",
-    "cpu": {
-      "name": "Intel Core i9-13900K @ 5.8GHz",
-      "cores": 8
-    },
-    "os": "linux",
-    "arch": "amd64",
-    "pkg": "github.com/alitto/pond-benchmarks",
     "settings": {
       "sort": {
         "enabled": false,
@@ -11932,30 +11931,39 @@
       {
         "tag": "v1.0.0",
         "timestamp": "2025-09-10T12:00:00Z",
-        "cpu": {
-          "yAxis": "AMD Ryzen 9 5950X",
-          "cores": 16
-        },
-        "os": "linux"
+        "meta": {
+          "cpu": {
+            "yAxis": "AMD Ryzen 9 5950X",
+            "cores": 16
+          },
+          "os": "linux"
+        }
       },
       {
         "tag": "v2.0.0",
         "timestamp": "2026-01-10T16:45:00Z",
-        "cpu": {
-          "yAxis": "Intel Core i9-13900K @ 5.8GHz",
-          "cores": 8
-        },
-        "os": "linux"
+        "meta": {
+          "cpu": {
+            "yAxis": "Intel Core i9-13900K @ 5.8GHz",
+            "cores": 8
+          },
+          "os": "linux"
+        }
       }
-    ]
+    ],
+    "meta": {
+      "cpu": {
+        "name": "Intel Core i9-13900K @ 5.8GHz",
+        "cores": 8
+      },
+      "os": "linux",
+      "arch": "amd64",
+      "pkg": "github.com/alitto/pond-benchmarks"
+    }
   },
   {
     "name": "Serialization",
     "description": "Comparison of different serialization methods",
-    "cpu": {
-      "cores": 128
-    },
-    "pkg": "github.com/smallnest/gosercomp",
     "settings": {
       "charts": [
         "bar",
@@ -13314,36 +13322,41 @@
       {
         "tag": "v0.1.0",
         "timestamp": "2025-10-01T07:30:00Z",
-        "cpu": {
-          "cores": 64
+        "meta": {
+          "cpu": {
+            "cores": 64
+          }
         }
       },
       {
         "tag": "v0.2.0",
         "timestamp": "2025-11-01T11:00:00Z",
-        "cpu": {
-          "cores": 96
+        "meta": {
+          "cpu": {
+            "cores": 96
+          }
         }
       },
       {
         "tag": "v0.3.0",
         "timestamp": "2025-12-05T09:20:00Z",
-        "cpu": {
-          "cores": 128
+        "meta": {
+          "cpu": {
+            "cores": 128
+          }
         }
       }
-    ]
+    ],
+    "meta": {
+      "cpu": {
+        "cores": 128
+      },
+      "pkg": "github.com/smallnest/gosercomp"
+    }
   },
   {
     "name": "VarMQ",
     "description": "Variadic Queue DataSet",
-    "cpu": {
-      "name": "13th Gen Intel(R) Core(TM) i7-13700",
-      "cores": 24
-    },
-    "os": "linux",
-    "arch": "amd64",
-    "pkg": "github.com/goptics/varmq",
     "settings": {
       "charts": [
         "bar",
@@ -13620,7 +13633,16 @@
           }
         ]
       }
-    ]
+    ],
+    "meta": {
+      "cpu": {
+        "name": "13th Gen Intel(R) Core(TM) i7-13700",
+        "cores": 24
+      },
+      "os": "linux",
+      "arch": "amd64",
+      "pkg": "github.com/goptics/varmq"
+    }
   },
   {
     "name": "Hashing",
