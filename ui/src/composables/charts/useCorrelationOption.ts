@@ -2,10 +2,6 @@ import type { EChartsOption } from 'echarts'
 import { getChartStyling, getTooltipTheme, createToolboxConfig, isLargeXAxis, createHeatmapDataZoomConfig } from './shared'
 import { fontSize } from './shared/common'
 
-// Past this many series the per-cell value labels turn to mush, so we drop them
-// and let colour + tooltip carry the read.
-const CELL_LABEL_MAX = 15
-
 // Build a correlation heatmap option from a symmetric K×K matrix. Rows/cols are
 // the series labels; the cell value is r ∈ [-1, 1] coloured on a diverging
 // red→neutral→green scale (matching the old table's hue intent). NaN cells (a
@@ -28,7 +24,6 @@ export function buildCorrelationOption(
     }
   }
 
-  const showLabel = labels.length <= CELL_LABEL_MAX
   // Symmetric K×K matrix — both axes share the same size, so one threshold covers both.
   const large = isLargeXAxis(labels)
 
@@ -85,7 +80,7 @@ export function buildCorrelationOption(
         type: 'heatmap',
         data,
         label: {
-          show: showLabel,
+          show: true,
           color: styling.textColor,
           fontSize,
           formatter: (p: unknown) => {
