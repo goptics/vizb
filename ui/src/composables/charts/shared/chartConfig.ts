@@ -14,6 +14,31 @@ export function isLargeXAxis(xAxisData: string[]): boolean {
 // above it the optimized path keeps a 100k-point dataset's draw on one frame.
 export const LARGE_DATA_THRESHOLD = 2000
 
+export function createHeatmapDataZoomConfig(
+  largeX: boolean,
+  largeY: boolean,
+  xLen: number,
+  yLen: number,
+  styling: ChartStyling,
+): any[] {
+  const result: any[] = []
+  if (largeX) {
+    const end = Math.max(5, Math.ceil((30 / xLen) * 100))
+    result.push(
+      { type: 'inside', xAxisIndex: 0, start: 0, end, filterMode: 'filter' },
+      { type: 'slider', xAxisIndex: 0, start: 0, end, bottom: 55, height: 28, filterMode: 'filter', textStyle: { color: styling.textColor } },
+    )
+  }
+  if (largeY) {
+    const end = Math.max(5, Math.ceil((30 / yLen) * 100))
+    result.push(
+      { type: 'inside', yAxisIndex: 0, start: 0, end, filterMode: 'filter' },
+      { type: 'slider', yAxisIndex: 0, start: 0, end, left: 10, width: 20, filterMode: 'filter', textStyle: { color: styling.textColor } },
+    )
+  }
+  return result
+}
+
 export function createDataZoomConfig(xAxisData: string[], styling: ChartStyling): any[] {
   const end = Math.max(5, Math.ceil((30 / xAxisData.length) * 100))
   return [
