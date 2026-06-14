@@ -93,6 +93,11 @@ func deepCloneDataset(src Dataset) Dataset {
 		copy(dst.History, src.History)
 	}
 
+	if src.Meta.CPU != nil {
+		cpu := *src.Meta.CPU
+		dst.Meta.CPU = &cpu
+	}
+
 	if src.Settings.Axes != nil {
 		dst.Settings.Axes = make([]Axis, len(src.Settings.Axes))
 		copy(dst.Settings.Axes, src.Settings.Axes)
@@ -126,6 +131,7 @@ func buildHistory(benchmarks []Dataset, latestTag string) []HistoryEntry {
 		if bench.Tag != "" && bench.Tag != latestTag {
 			if c, ok := seen[bench.Tag]; !ok || bench.Timestamp > c.timestamp {
 				var metaPtr *Meta
+				// Meta is comparable (pointer + string fields only); skip storing an empty meta.
 				if bench.Meta != (Meta{}) {
 					metaCopy := bench.Meta
 					if bench.Meta.CPU != nil {
@@ -142,7 +148,16 @@ func buildHistory(benchmarks []Dataset, latestTag string) []HistoryEntry {
 				continue
 			}
 			if c, ok := seen[entry.Tag]; !ok || entry.Timestamp > c.timestamp {
-				seen[entry.Tag] = historyCandidate{timestamp: entry.Timestamp, meta: entry.Meta}
+				meta := entry.Meta
+				if meta != nil {
+					m := *meta
+					if meta.CPU != nil {
+						cpu := *meta.CPU
+						m.CPU = &cpu
+					}
+					meta = &m
+				}
+				seen[entry.Tag] = historyCandidate{timestamp: entry.Timestamp, meta: meta}
 			}
 		}
 	}
