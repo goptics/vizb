@@ -10367,7 +10367,7 @@
         "timestamp": "2025-06-01T08:00:00Z",
         "meta": {
           "cpu": {
-            "yAxis": "Intel Core i7-9700K",
+            "name": "Intel Core i7-9700K",
             "cores": 8
           },
           "os": "linux"
@@ -10378,7 +10378,7 @@
         "timestamp": "2025-08-20T14:15:00Z",
         "meta": {
           "cpu": {
-            "yAxis": "Intel Core i7-9700K",
+            "name": "Intel Core i7-9700K",
             "cores": 8
           },
           "os": "linux"
@@ -11933,7 +11933,7 @@
         "timestamp": "2025-09-10T12:00:00Z",
         "meta": {
           "cpu": {
-            "yAxis": "AMD Ryzen 9 5950X",
+            "name": "AMD Ryzen 9 5950X",
             "cores": 16
           },
           "os": "linux"
@@ -11944,7 +11944,7 @@
         "timestamp": "2026-01-10T16:45:00Z",
         "meta": {
           "cpu": {
-            "yAxis": "Intel Core i9-13900K @ 5.8GHz",
+            "name": "Intel Core i9-13900K @ 5.8GHz",
             "cores": 8
           },
           "os": "linux"
@@ -13324,7 +13324,7 @@
         "timestamp": "2025-10-01T07:30:00Z",
         "meta": {
           "cpu": {
-            "cores": 64
+            "name": 64
           }
         }
       },
@@ -13333,7 +13333,7 @@
         "timestamp": "2025-11-01T11:00:00Z",
         "meta": {
           "cpu": {
-            "cores": 96
+            "name": 96
           }
         }
       },
@@ -13342,14 +13342,14 @@
         "timestamp": "2025-12-05T09:20:00Z",
         "meta": {
           "cpu": {
-            "cores": 128
+            "name": 128
           }
         }
       }
     ],
     "meta": {
       "cpu": {
-        "cores": 128
+        "name": 128
       },
       "pkg": "github.com/smallnest/gosercomp"
     }

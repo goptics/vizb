@@ -2,7 +2,7 @@ pre-commit:
   parallel: true
   commands:
     ui-gen-check:
-      glob: "ui/**"
+      glob: "ui/src/**/*.{vue,ts,js,css,svg}"
       run: |
         if ! git diff --cached --name-only | grep -q "^pkg/template/vizb-ui.gen.go$"; then
           echo "❌ ui/ changed but pkg/template/vizb-ui.gen.go is not staged."
