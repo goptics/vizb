@@ -155,6 +155,11 @@ export function useSettingsStore() {
     settings.chartSettings[ct] = { ...settings.chartSettings[ct], ...update }
   }
 
+  // setChartSettingsForType writes per-chart overrides for any given chart type.
+  const setChartSettingsForType = (ct: ChartType, update: Partial<Omit<ChartSettings, 'swap'>>) => {
+    settings.chartSettings[ct] = { ...settings.chartSettings[ct], ...update }
+  }
+
   // Swap index is keyed by (benchmarkId, chartType) so each chart keeps its own arrangement.
   const setSelectedSwapIndex = (benchmarkId: number, ct: ChartType, index: number) => {
     settings.selectedSwapIndexMap.set(`${benchmarkId}:${ct}`, index)
@@ -178,6 +183,7 @@ export function useSettingsStore() {
     initializeFromDataSet,
     resolved,
     setForActiveChart,
+    setChartSettingsForType,
     setSelectedSwapIndex,
     getSelectedSwapIndex,
   }

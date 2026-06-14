@@ -7,7 +7,7 @@ import { useDataPoint } from '../composables/useDataPoint'
 import { resetColor } from '../lib/utils'
 import { useSettingsStore } from '../composables/useSettingsStore'
 
-const { activeDataSet, activeGroupId, activeDataSetId, setArrangement } = useDataPoint()
+const { activeDataSet, activeGroupId, activeDataSetId, setArrangement, activeArrangement } = useDataPoint()
 const { setSelectedSwapIndex, getSelectedSwapIndex, chartType } = useSettingsStore()
 
 // Canonical axis order; swap options are permutations of whichever are present.
@@ -31,9 +31,6 @@ const presentKeys = (data: DataPoint[]): string[] => {
   return AXIS_ORDER.filter((k) => data.some((d) => d[fieldFor[k]]))
 }
 
-// Short char for an axis key: name→'n', x→'x', y→'y', z→'z'.
-const axisChar = (key: string): string => (key === 'name' ? 'n' : key.charAt(0))
-
 const swapOptions = computed(() => {
   const data = activeDataSet.value?.data
   if (!data || data.length === 0) return []
@@ -53,13 +50,10 @@ const getInitialSwapIndex = () => {
   const ds = activeDataSet.value
   if (!ds) return 0
 
-  // Identity: from axes[] if available (preserves serial order from --group-pattern),
-  // else fall back to present data fields in canonical order.
-  const identity = ds.settings?.axes?.length
-    ? ds.settings.axes.map((a) => axisChar(a.key)).join('')
-    : presentKeys(ds.data).join('')
-
-  const index = swapOptions.value.findIndex((option) => option.name === identity)
+  // Prefer the currently effective arrangement (may have been restored from URL)
+  // over always defaulting to identity.
+  const currentArrangement = activeArrangement.value.targetString
+  const index = swapOptions.value.findIndex((option) => option.name === currentArrangement)
   return index !== -1 ? index : 0
 }
 

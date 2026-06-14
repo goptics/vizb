@@ -147,6 +147,10 @@ const selectGroup = (id: number) => {
 }
 
 export function useDataPoint() {
+  const getArrangement = (datasetId: number, ct: ChartType): string | undefined => {
+    return arrangementMap.get(`${datasetId}:${ct}`)
+  }
+
   return {
     dataSets,
     activeDataSet,
@@ -156,6 +160,8 @@ export function useDataPoint() {
 
     activeArrangement,
     setArrangement,
+    getArrangement,
+    arrangementMap,
 
     resultGroups,
     activeGroupId,

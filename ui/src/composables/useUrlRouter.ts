@@ -1,38 +1,13 @@
 import { watch } from 'vue'
-import type { SortOrder, ChartType, ScaleType } from '../types'
+import type { ChartType, ChartSettings, SortOrder, ScaleType } from '../types'
 import { SORT_ORDERS, SCALE_TYPES } from '../types'
 import { useSettingsStore } from './useSettingsStore'
 import { useDataPoint } from './useDataPoint'
 import { DEFAULT_SETTINGS } from './constants'
 import { isValidIndex } from '../lib/utils'
 
-type UrlParams = {
-  s?: SortOrder // sort order
-  l?: 'true' | 'false' // show labels
-  c?: ChartType // chart type
-  sc?: ScaleType // scale type
-  d?: string // dataset ID
-  g?: string // group ID
-}
+const ALL_CHART_TYPES = DEFAULT_SETTINGS.charts
 
-/**
- * Parse query params from the current URL
- */
-const parseUrlParams = (): UrlParams => {
-  const params = new URLSearchParams(window.location.search)
-  return {
-    s: params.get('s') as SortOrder | undefined,
-    l: params.get('l') as 'true' | 'false' | undefined,
-    c: params.get('c') as ChartType | undefined,
-    sc: params.get('sc') as ScaleType | undefined,
-    d: params.get('d') ?? undefined,
-    g: params.get('g') ?? undefined,
-  }
-}
-
-/**
- * Build URL query string from current state
- */
 const buildQueryString = (params: Record<string, string | undefined>): string => {
   const searchParams = new URLSearchParams()
   for (const [key, value] of Object.entries(params)) {
@@ -40,11 +15,10 @@ const buildQueryString = (params: Record<string, string | undefined>): string =>
       searchParams.set(key, value)
     }
   }
-  const queryString = searchParams.toString()
-  return queryString ? `?${queryString}` : ''
+  const qs = searchParams.toString()
+  return qs ? `?${qs}` : ''
 }
 
-// Helper to apply index-based params
 const applyIndexParam = (
   value: string | undefined,
   maxLength: number,
@@ -52,147 +26,162 @@ const applyIndexParam = (
 ) => {
   if (value === undefined) return
   const id = parseInt(value, 10)
-  if (!isNaN(id) && isValidIndex(id, maxLength)) {
-    setter(id)
-  }
+  if (!isNaN(id) && isValidIndex(id, maxLength)) setter(id)
 }
 
-/**
- * Composable for syncing app state with URL query parameters
- */
 export function useUrlRouter() {
-  const { settings, setSort, setShowLabels, setChartType, setScale } = useSettingsStore()
+  const {
+    settings,
+    setSort,
+    setShowLabels,
+    setScale,
+    setChartType,
+    setChartSettingsForType,
+  } = useSettingsStore()
+
   const {
     dataSets,
     resultGroups,
     activeDataSetId,
     activeGroupId,
+    activeArrangement,
     selectDataSet,
     selectGroup,
+    setArrangement,
+    arrangementMap,
   } = useDataPoint()
 
-  /**
-   * Apply parsed URL params to app state
-   * Order matters: select benchmark/group first, then apply settings on top
-   */
-  const applyParams = (params: UrlParams) => {
-    // 1. DataSet ID - apply first since it resets settings
+  const parseUrlParams = () => {
+    const p = new URLSearchParams(window.location.search)
+    const result: Record<string, string | undefined> = {}
+    for (const [key, value] of p.entries()) {
+      result[key] = value
+    }
+    return result
+  }
+
+  const applyParams = (params: Record<string, string | undefined>) => {
+    // 1. Dataset ID
     applyIndexParam(params.d, dataSets.value.length, selectDataSet)
 
-    // 2. Group ID - depends on benchmark selection.
-    // Groups are populated asynchronously by the worker (first `ready` event),
-    // so we may not have them yet at init. Apply immediately if available;
-    // otherwise register a one-shot watcher that fires once groups arrive.
+    // 2. Group ID — deferred if groups not yet populated (worker populates asynchronously)
+    const gParam = params.g
     if (resultGroups.value.length > 0) {
-      applyIndexParam(params.g, resultGroups.value.length, selectGroup)
-    } else if (params.g !== undefined) {
+      applyIndexParam(gParam, resultGroups.value.length, selectGroup)
+    } else if (gParam !== undefined) {
       watch(
         () => resultGroups.value.length,
-        (len) => {
-          if (len > 0) {
-            applyIndexParam(params.g, len, selectGroup)
-          }
-        },
+        (len) => { if (len > 0) applyIndexParam(gParam, len, selectGroup) },
         { once: true }
       )
     }
 
-    // 3. Now apply settings on top of benchmark defaults
-    // Sort
-    if (params.s && SORT_ORDERS.includes(params.s.toLowerCase() as SortOrder)) {
-      setSort({ enabled: true, order: params.s })
+    // 3. Active chart type
+    if (params.c && DEFAULT_SETTINGS.charts.includes(params.c as ChartType)) {
+      setChartType(params.c as ChartType)
     }
 
-    // Labels
-    switch (params.l?.toLowerCase()) {
-      case 'true':
-        setShowLabels(true)
-        break
-      case 'false':
-        setShowLabels(false)
+    // 4. Legacy global params (back-compat for old URLs with bare s/l/sc)
+    const legacyS = params.s as SortOrder | undefined
+    if (legacyS && SORT_ORDERS.includes(legacyS.toLowerCase() as SortOrder)) {
+      setSort({ enabled: true, order: legacyS.toLowerCase() as SortOrder })
     }
+    const legacyL = params.l
+    if (legacyL === 'true') setShowLabels(true)
+    else if (legacyL === 'false') setShowLabels(false)
+    const legacySc = params.sc as ScaleType | undefined
+    if (legacySc && SCALE_TYPES.includes(legacySc)) setScale(legacySc)
 
-    // Chart type
-    if (params.c && DEFAULT_SETTINGS.charts.includes(params.c)) {
-      setChartType(params.c)
-    }
+    // 5. Per-chart settings
+    const datasetId = params.d !== undefined ? (parseInt(params.d, 10) || 0) : 0
+    for (const ct of ALL_CHART_TYPES) {
+      const so = params[`${ct}.so`] as SortOrder | undefined
+      const l = params[`${ct}.l`]
+      const sc = params[`${ct}.sc`] as ScaleType | undefined
+      const rt = params[`${ct}.rt`]
+      const sw = params[`${ct}.sw`]
 
-    // Scale type
-    if (params.sc && SCALE_TYPES.includes(params.sc)) {
-      setScale(params.sc)
+      const update: Partial<Omit<ChartSettings, 'swap'>> = {}
+      if (so && SORT_ORDERS.includes(so.toLowerCase() as SortOrder)) {
+        update.sort = { enabled: true, order: so.toLowerCase() as SortOrder }
+      }
+      if (l === 'true') update.showLabels = true
+      else if (l === 'false') update.showLabels = false
+      if (sc && SCALE_TYPES.includes(sc)) update.scale = sc
+      if (rt === 'true') update.autoRotate = true
+
+      if (Object.keys(update).length > 0) {
+        setChartSettingsForType(ct as ChartType, update)
+      }
+
+      // Swap: apply after data loads (same defer pattern as group ID)
+      if (sw) {
+        const applySwap = () => setArrangement(datasetId, ct as ChartType, sw)
+        if (dataSets.value.length > 0) {
+          applySwap()
+        } else {
+          watch(
+            () => dataSets.value.length,
+            (len) => { if (len > 0) applySwap() },
+            { once: true }
+          )
+        }
+      }
     }
   }
 
-  /**
-   * Update URL with current state (without adding to history)
-   */
   const syncUrlToState = () => {
     const params: Record<string, string | undefined> = {}
+    const identity = activeArrangement.value.identityString
 
-    // Sort - only include if enabled
-    if (settings.sort.enabled) {
-      params.s = settings.sort.order
+    // Active chart tab (omit if first)
+    if (settings.activeChartIndex !== 0) {
+      params.c = settings.charts[settings.activeChartIndex]
     }
 
-    // Labels - only include if true
-    if (settings.showLabels) {
-      params.l = 'true'
-    }
+    // Dataset / group (omit if first)
+    if (activeDataSetId.value > 0) params.d = activeDataSetId.value.toString()
+    if (activeGroupId.value > 0) params.g = activeGroupId.value.toString()
 
-    const chartType = settings.charts[settings.activeChartIndex]
+    // Per-chart settings
+    for (const ct of settings.charts) {
+      const cs = settings.chartSettings[ct as ChartType]
+      if (cs?.sort?.enabled) params[`${ct}.so`] = cs.sort.order
+      if (cs?.showLabels === true) params[`${ct}.l`] = 'true'
+      else if (cs?.showLabels === false) params[`${ct}.l`] = 'false'
+      if (cs?.scale && cs.scale !== 'linear') params[`${ct}.sc`] = cs.scale
+      if (cs?.autoRotate === true) params[`${ct}.rt`] = 'true'
 
-    if (chartType && settings.activeChartIndex !== 0) {
-      params.c = chartType
-    }
-
-    // Scale - only include if not linear (default)
-    if (settings.scale !== 'linear') {
-      params.sc = settings.scale
-    }
-
-    // DataSet ID - only include if not first
-    if (activeDataSetId.value > 0) {
-      params.d = activeDataSetId.value.toString()
-    }
-
-    // Group ID - only include if not first
-    if (activeGroupId.value > 0) {
-      params.g = activeGroupId.value.toString()
+      const arr = arrangementMap.get(`${activeDataSetId.value}:${ct}`)
+      if (arr && arr !== identity) params[`${ct}.sw`] = arr
     }
 
     const queryString = buildQueryString(params)
     const newUrl = window.location.pathname + queryString
-
     if (newUrl !== window.location.pathname + window.location.search) {
       window.history.replaceState(null, '', newUrl)
     }
   }
 
-  /**
-   * Initialize app state from URL and set up watchers
-   */
   const initFromUrl = () => {
     const params = parseUrlParams()
     applyParams(params)
 
-    // Watch for state changes and update URL
     watch(
       () => ({
-        sortEnabled: settings.sort.enabled,
-        sortOrder: settings.sort.order,
-        showLabels: settings.showLabels,
         chartIndex: settings.activeChartIndex,
-        scale: settings.scale,
         benchmarkId: activeDataSetId.value,
         groupId: activeGroupId.value,
+        swaps: settings.charts
+          .map((ct) => arrangementMap.get(`${activeDataSetId.value}:${ct}`) ?? '')
+          .join(','),
+        csStr: Object.entries(settings.chartSettings)
+          .map(([k, v]) => `${k}:${JSON.stringify(v)}`)
+          .join('|'),
       }),
-      () => syncUrlToState(),
-      { deep: true }
+      () => syncUrlToState()
     )
   }
 
-  return {
-    initFromUrl,
-    syncUrlToState,
-  }
+  return { initFromUrl, syncUrlToState }
 }
