@@ -316,10 +316,12 @@ const scrollTop = ref(0)
 const viewportH = ref(448) // ≈ max-h-[28rem]; replaced by the real height on mount
 
 function measure() {
-  if (scrollEl.value) viewportH.value = scrollEl.value.clientHeight
+  if (scrollEl.value) {
+    scrollTop.value = scrollEl.value.scrollTop
+    viewportH.value = scrollEl.value.clientHeight
+  }
 }
 function onScroll() {
-  if (scrollEl.value) scrollTop.value = scrollEl.value.scrollTop
   measure()
 }
 function resetScroll() {
