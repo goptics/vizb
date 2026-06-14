@@ -171,7 +171,7 @@ func convertToDataset(filePath string) (dataSet *shared.Dataset) {
 	if err := json.Unmarshal(content, &dataSet); err != nil {
 		return nil
 	}
-
+	shared.MigrateDataset(dataSet, content)
 	return dataSet
 }
 
