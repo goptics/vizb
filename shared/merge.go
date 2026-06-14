@@ -93,6 +93,22 @@ func deepCloneDataset(src Dataset) Dataset {
 		copy(dst.History, src.History)
 	}
 
+	if src.Settings.Axes != nil {
+		dst.Settings.Axes = make([]Axis, len(src.Settings.Axes))
+		copy(dst.Settings.Axes, src.Settings.Axes)
+	}
+
+	if src.Settings.ChartSettings != nil {
+		dst.Settings.ChartSettings = make(map[string]ChartSettings, len(src.Settings.ChartSettings))
+		for k, v := range src.Settings.ChartSettings {
+			if v.Sort != nil {
+				sortCopy := *v.Sort
+				v.Sort = &sortCopy
+			}
+			dst.Settings.ChartSettings[k] = v
+		}
+	}
+
 	return dst
 }
 
