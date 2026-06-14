@@ -51,11 +51,17 @@ type DatasetSettings struct {
 	ChartSettings map[string]ChartSettings `json:"chartSettings,omitempty"`
 }
 
+type Meta struct {
+	CPU  *CPUInfo `json:"cpu,omitempty"`
+	OS   string   `json:"os,omitempty"`
+	Arch string   `json:"arch,omitempty"`
+	Pkg  string   `json:"pkg,omitempty"`
+}
+
 type HistoryEntry struct {
-	Tag       string   `json:"tag"`
-	Timestamp string   `json:"timestamp"`
-	CPU       *CPUInfo `json:"cpu,omitempty"`
-	OS        string   `json:"os,omitempty"`
+	Tag       string `json:"tag"`
+	Timestamp string `json:"timestamp"`
+	Meta      *Meta  `json:"meta,omitempty"`
 }
 
 type Dataset struct {
@@ -64,10 +70,7 @@ type Dataset struct {
 	Name        string          `json:"name"`
 	History     []HistoryEntry  `json:"history,omitempty"`
 	Description string          `json:"description,omitempty"`
-	CPU         CPUInfo         `json:"cpu"`
-	OS          string          `json:"os,omitempty"`
-	Arch        string          `json:"arch,omitempty"`
-	Pkg         string          `json:"pkg,omitempty"`
+	Meta        Meta            `json:"meta"`
 	Settings    DatasetSettings `json:"settings"`
 	Data        []DataPoint     `json:"data"`
 }

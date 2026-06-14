@@ -114,11 +114,10 @@ func deepCloneDataset(src Dataset) Dataset {
 
 type historyCandidate struct {
 	timestamp string
-	cpu       *CPUInfo
-	os        string
+	meta      *Meta
 }
 
-// buildHistory collects tag+timestamp+cpu+os from all benchmarks and their
+// buildHistory collects tag+timestamp+meta from all benchmarks and their
 // existing History entries, excluding the latest tag. Entries are deduplicated
 // by tag (keeping the latest timestamp per tag) and sorted chronologically.
 func buildHistory(benchmarks []Dataset, latestTag string) []HistoryEntry {
@@ -126,12 +125,16 @@ func buildHistory(benchmarks []Dataset, latestTag string) []HistoryEntry {
 	for _, bench := range benchmarks {
 		if bench.Tag != "" && bench.Tag != latestTag {
 			if c, ok := seen[bench.Tag]; !ok || bench.Timestamp > c.timestamp {
-				var cpuPtr *CPUInfo
-				if bench.CPU.Name != "" || bench.CPU.Cores != 0 {
-					cpu := bench.CPU
-					cpuPtr = &cpu
+				var metaPtr *Meta
+				if bench.Meta != (Meta{}) {
+					metaCopy := bench.Meta
+					if bench.Meta.CPU != nil {
+						cpu := *bench.Meta.CPU
+						metaCopy.CPU = &cpu
+					}
+					metaPtr = &metaCopy
 				}
-				seen[bench.Tag] = historyCandidate{timestamp: bench.Timestamp, cpu: cpuPtr, os: bench.OS}
+				seen[bench.Tag] = historyCandidate{timestamp: bench.Timestamp, meta: metaPtr}
 			}
 		}
 		for _, entry := range bench.History {
@@ -139,7 +142,7 @@ func buildHistory(benchmarks []Dataset, latestTag string) []HistoryEntry {
 				continue
 			}
 			if c, ok := seen[entry.Tag]; !ok || entry.Timestamp > c.timestamp {
-				seen[entry.Tag] = historyCandidate{timestamp: entry.Timestamp, cpu: entry.CPU, os: entry.OS}
+				seen[entry.Tag] = historyCandidate{timestamp: entry.Timestamp, meta: entry.Meta}
 			}
 		}
 	}
@@ -150,7 +153,7 @@ func buildHistory(benchmarks []Dataset, latestTag string) []HistoryEntry {
 
 	entries := make([]HistoryEntry, 0, len(seen))
 	for tag, c := range seen {
-		entries = append(entries, HistoryEntry{Tag: tag, Timestamp: c.timestamp, CPU: c.cpu, OS: c.os})
+		entries = append(entries, HistoryEntry{Tag: tag, Timestamp: c.timestamp, Meta: c.meta})
 	}
 	sort.Slice(entries, func(i, j int) bool {
 		return entries[i].Timestamp < entries[j].Timestamp
