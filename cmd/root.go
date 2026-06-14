@@ -286,12 +286,6 @@ func prepareDatasetFromResults(results []shared.DataPoint) *shared.Dataset {
 	dataSet.Tag = shared.FlagState.Tag
 	dataSet.Timestamp = time.Now().UTC().Format(time.RFC3339)
 
-	labels := parser.GroupAxisLabels()
-	dataSet.AxisLabels.Name = labels["name"]
-	dataSet.AxisLabels.X = labels["xAxis"]
-	dataSet.AxisLabels.Y = labels["yAxis"]
-	dataSet.AxisLabels.Z = labels["zAxis"]
-
 	return dataSet
 }
 
