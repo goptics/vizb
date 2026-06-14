@@ -185,14 +185,14 @@ func TestParseChartSpecs(t *testing.T) {
 			},
 		},
 		{
-			name:    "invalid: unknown chart type xyz in active charts",
-			specs:   []string{"xyz:sort=asc"},
-			charts:  []string{"bar", "line"},
+			name:    "invalid: empty rest after colon",
+			specs:   []string{"bar:"},
+			charts:  allCharts,
 			axes:    xynAxes,
 			wantErr: true,
 		},
 		{
-			name:   "valid: labels as key=val form",
+			name:   "valid: labels=true sets ShowLabels to true",
 			specs:  []string{"bar:labels=true"},
 			charts: allCharts,
 			axes:   xynAxes,
@@ -200,6 +200,18 @@ func TestParseChartSpecs(t *testing.T) {
 				s := got["bar"]
 				if s.ShowLabels == nil || !*s.ShowLabels {
 					t.Errorf("ShowLabels: got %v, want &true", s.ShowLabels)
+				}
+			},
+		},
+		{
+			name:   "valid: labels=false sets ShowLabels to false",
+			specs:  []string{"bar:labels=false"},
+			charts: allCharts,
+			axes:   xynAxes,
+			check: func(t *testing.T, got map[string]ChartSettings) {
+				s := got["bar"]
+				if s.ShowLabels == nil || *s.ShowLabels {
+					t.Errorf("ShowLabels: got %v, want &false", s.ShowLabels)
 				}
 			},
 		},

@@ -3,6 +3,7 @@ package shared
 import (
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -14,14 +15,8 @@ var validChartTypes = map[string]bool{
 	"heatmap": true,
 }
 
-// scaleNotAllowed lists chart types that do not support the "scale" key.
-var scaleNotAllowed = map[string]bool{
-	"pie":     true,
-	"heatmap": true,
-}
-
-// rotateNotAllowed lists chart types that do not support the "rotate" key.
-var rotateNotAllowed = map[string]bool{
+// notAllowedForLimitedCharts lists settings not valid for pie/heatmap.
+var notAllowedForLimitedCharts = map[string]bool{
 	"pie":     true,
 	"heatmap": true,
 }
@@ -96,6 +91,9 @@ func ParseChartSpecs(specs []string, charts []string, axes []Axis) (map[string]C
 		if !ok {
 			return nil, fmt.Errorf("--chart: malformed spec %q: expected <type>:<key>=<val>,... or <type>:<flag>", spec)
 		}
+		if rest == "" {
+			return nil, fmt.Errorf("--chart: spec %q has no settings after ':'; expected <type>:<key>=<val> or <type>:<flag>", spec)
+		}
 		chartType = strings.ToLower(chartType)
 
 		// Validate chart type is known.
@@ -135,8 +133,8 @@ func ParseChartSpecs(specs []string, charts []string, axes []Axis) (map[string]C
 					t := true
 					settings.ShowLabels = &t
 				case "rotate":
-					if rotateNotAllowed[chartType] {
-						return nil, fmt.Errorf("--chart: key %q is not valid for chart type %q", "rotate", chartType)
+					if notAllowedForLimitedCharts[chartType] {
+						return nil, fmt.Errorf("--chart: key %q is not valid for chart type %q", key, chartType)
 					}
 					t := true
 					settings.AutoRotate = &t
@@ -167,7 +165,7 @@ func ParseChartSpecs(specs []string, charts []string, axes []Axis) (map[string]C
 				settings.Sort = &Sort{Enabled: true, Order: normalized}
 
 			case "scale":
-				if scaleNotAllowed[chartType] {
+				if notAllowedForLimitedCharts[chartType] {
 					return nil, fmt.Errorf("--chart: key %q is not valid for chart type %q", key, chartType)
 				}
 				normalized := strings.ToLower(val)
@@ -177,15 +175,21 @@ func ParseChartSpecs(specs []string, charts []string, axes []Axis) (map[string]C
 				settings.Scale = normalized
 
 			case "labels":
-				t := true
-				settings.ShowLabels = &t
+				b, err := strconv.ParseBool(val)
+				if err != nil {
+					return nil, fmt.Errorf("--chart: key %q value %q must be true or false", key, val)
+				}
+				settings.ShowLabels = &b
 
 			case "rotate":
-				if rotateNotAllowed[chartType] {
+				if notAllowedForLimitedCharts[chartType] {
 					return nil, fmt.Errorf("--chart: key %q is not valid for chart type %q", key, chartType)
 				}
-				t := true
-				settings.AutoRotate = &t
+				b, err := strconv.ParseBool(val)
+				if err != nil {
+					return nil, fmt.Errorf("--chart: key %q value %q must be true or false", key, val)
+				}
+				settings.AutoRotate = &b
 
 			default:
 				return nil, fmt.Errorf("--chart: unknown key %q in spec %q (valid keys: swap, sort, scale, labels, rotate)", key, spec)
