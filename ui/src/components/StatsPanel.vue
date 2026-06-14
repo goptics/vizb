@@ -8,21 +8,26 @@ import type {
   CorrelationMatrix,
 } from '../types'
 import { computeDescriptive, computeCorrelation } from '../composables/useStatsWorker'
-import { availableViews } from '../lib/stats'
+import { availableViews, usableCorrelationAxes } from '../lib/stats'
+import type { CorrelationAxis } from '../lib/stats'
 import { buildCorrelationOption } from '../composables/charts/useCorrelationOption'
 import { useSettingsStore } from '../composables/useSettingsStore'
+import { useFullscreen } from '../composables/useFullscreen'
 import { descriptiveCsv, correlationCsv } from '../lib/csv'
 import SelectionTabs from './SelectionTabs.vue'
+import Selector from './Selector.vue'
 
-// Correlation renders as an echarts canvas heatmap, lazy-loaded so its echarts
-// modules parse only when the correlation tab opens (same discipline as ChartCard).
-const ChartCorrelation = defineAsyncComponent(() => import('./ChartCorrelation.vue'))
+// Correlation heatmap — same renderer as the chart-type heatmap, lazy-loaded so
+// its echarts modules parse only when the correlation tab actually renders.
+const ChartHeatmap = defineAsyncComponent(() => import('./ChartHeatmap.vue'))
 
 const props = defineProps<{ chartData: ChartData }>()
 
 const { settings } = useSettingsStore()
 const { isDark } = toRefs(settings)
 const initOptions = { renderer: 'canvas', devicePixelRatio: window.devicePixelRatio } as const
+
+const { containerRef: corrContainerRef, isFullscreen: corrIsFullscreen, withFullscreenToolbox } = useFullscreen()
 
 // Active view + its sub-toggles. Widened to string|number so SelectionTabs'
 // v-model (emits string|number) types cleanly; only ever set to literal values.
@@ -63,7 +68,7 @@ async function ensureCorrelation() {
   if (correlation.value !== undefined || corrLoading.value || !available.value.correlation) return
   corrLoading.value = true
   const mine = token
-  const r = await computeCorrelation(props.chartData)
+  const r = await computeCorrelation(props.chartData, corrAxisOverride.value ?? undefined)
   if (mine !== token) return
   correlation.value = r
   corrLoading.value = false
@@ -80,6 +85,7 @@ async function load() {
   descLoading.value = true
   corrLoading.value = false
   correlation.value = undefined
+  corrAxisOverride.value = null
   available.value = availableViews(
     props.chartData.series.map((s) => s.xAxis),
     props.chartData.yAxis,
@@ -194,11 +200,43 @@ const sortedProfiles = computed(() => {
 // Used by the descriptive table and the search box — both key rows by series (xAxis).
 const seriesLabel = computed(() => props.chartData.axisLabels?.x || 'Series')
 
+// --- Correlation axis override --------------------------------------------
+// null = follow the auto-pick from the worker; set by the user's dropdown.
+// Resets to null on each new chart so the auto default takes effect.
+const AXIS_FALLBACK = { x: 'Series', y: 'the y-axis', z: 'the z-axis' } as const
+
+const corrAxisOverride = ref<CorrelationAxis | null>(null)
+
+const corrAxes = computed<CorrelationAxis[]>(() =>
+  usableCorrelationAxes(
+    props.chartData.series.map((s) => s.xAxis),
+    props.chartData.yAxis,
+    props.chartData.zAxis ?? []
+  )
+)
+
+const corrAxisItems = computed(() =>
+  corrAxes.value.map((a) => ({ name: props.chartData.axisLabels?.[a] || AXIS_FALLBACK[a] }))
+)
+
+const corrAxisActiveIndex = computed(() => {
+  const active = corrAxisOverride.value ?? correlation.value?.axis ?? corrAxes.value[0]
+  const idx = corrAxes.value.indexOf(active as CorrelationAxis)
+  return idx >= 0 ? idx : 0
+})
+
+function onCorrAxisSelect(index: number) {
+  const axis = corrAxes.value[index]
+  if (!axis || axis === corrAxisOverride.value) return
+  corrAxisOverride.value = axis
+  correlation.value = undefined
+  ensureCorrelation()
+}
+
 // --- Correlation caption ---------------------------------------------------
 // The correlation matrix auto-picks which axis supplies its entities (x → y → z;
 // see selectCorrelationAxis). Caption names the chosen dimension and what it's
 // correlated across, flipping with the worker's choice.
-const AXIS_FALLBACK = { x: 'Series', y: 'the y-axis', z: 'the z-axis' } as const
 const corrAxis = computed<'x' | 'y' | 'z'>(() => correlation.value?.axis ?? 'x')
 const corrEntityLabel = computed(() => {
   const a = corrAxis.value
@@ -259,10 +297,11 @@ const corrMatrix = computed(() => {
 })
 
 // Heatmap option for the active correlation method, re-themed on dark-mode toggle.
+// Includes saveAsImage + fullscreen toolbox via withFullscreenToolbox.
 const corrOption = computed(() => {
   const c = correlation.value
   if (!c) return null
-  return buildCorrelationOption(c.labels, corrMatrix.value, isDark.value)
+  return withFullscreenToolbox(buildCorrelationOption(c.labels, corrMatrix.value, isDark.value, props.chartData.statType))
 })
 
 // --- Virtualized descriptive table -----------------------------------------
@@ -468,14 +507,27 @@ function downloadCsv() {
     </template>
 
     <!-- Correlation heatmap — echarts canvas, scales past what a DOM grid can.
-         Entity axis is auto-picked (x → y → z); the caption names it. -->
+         Entity axis is user-selectable (dropdown) defaulting to auto-pick. -->
     <template v-else-if="view === 'correlation' && corrOption">
-      <p class="mb-2 text-xs text-muted-foreground">
-        Correlating <span class="font-medium">{{ corrEntityLabel }}</span> across
-        {{ corrObsLabel }}.
-      </p>
-      <div class="h-[28rem]">
-        <ChartCorrelation :option="corrOption" :init-options="initOptions" class="h-full w-full" />
+      <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <p class="text-xs text-muted-foreground">
+          Correlating <span class="font-medium">{{ corrEntityLabel }}</span> across
+          {{ corrObsLabel }}.
+        </p>
+        <Selector
+          v-if="corrAxisItems.length > 1"
+          :items="corrAxisItems"
+          :activeId="corrAxisActiveIndex"
+          class="w-40"
+          @select="onCorrAxisSelect"
+        />
+      </div>
+      <div
+        ref="corrContainerRef"
+        class="h-[28rem]"
+        :class="{ 'fixed inset-0 z-50 h-auto bg-background': corrIsFullscreen }"
+      >
+        <ChartHeatmap :option="corrOption" :init-options="initOptions" class="h-full w-full" />
       </div>
     </template>
   </div>

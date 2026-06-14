@@ -1,7 +1,7 @@
 import type { Ref } from 'vue'
 import type { EChartsOption } from 'echarts'
 import type { ChartData, Sort, ScaleType } from '../../types'
-import { createTooltipConfig, getChartStyling } from './shared/chartConfig'
+import { createTooltipConfig, createToolboxConfig, getChartStyling } from './shared/chartConfig'
 import { fontSize } from './shared/common'
 import { is3D } from '../../lib/utils'
 
@@ -27,26 +27,7 @@ export const getBaseOptions = (config: BaseChartConfig): Partial<EChartsOption> 
   return {
     backgroundColor,
     tooltip: createTooltipConfig(false, isDark.value) as EChartsOption['tooltip'],
-    toolbox: {
-      show: true,
-      feature: {
-        saveAsImage: {
-          show: true,
-          type: 'jpeg',
-          title: 'Save',
-          pixelRatio: saveAsImagePixelRatio,
-          name: config.chartData.value.title,
-        },
-      },
-      iconStyle: {
-        borderColor: textColor,
-      },
-      emphasis: {
-        iconStyle: {
-          borderColor: textColor,
-        },
-      },
-    },
+    toolbox: createToolboxConfig(isDark.value, config.chartData.value.title, saveAsImagePixelRatio),
     legend: {
       show: true,
       left: 'center',

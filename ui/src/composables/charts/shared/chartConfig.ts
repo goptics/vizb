@@ -66,6 +66,24 @@ export interface ChartStyling {
   backgroundColor: string | undefined
 }
 
+export function createToolboxConfig(isDark: boolean, title: string, pixelRatio: number): any {
+  const { textColor } = getChartStyling(isDark)
+  return {
+    show: true,
+    feature: {
+      saveAsImage: {
+        show: true,
+        type: 'jpeg',
+        title: 'Save',
+        pixelRatio,
+        name: title,
+      },
+    },
+    iconStyle: { borderColor: textColor },
+    emphasis: { iconStyle: { borderColor: textColor } },
+  }
+}
+
 /**
  * Gets consistent styling colors based on dark mode
  */

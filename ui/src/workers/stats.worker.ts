@@ -8,6 +8,7 @@
 // markRaw, clone-safe — never the full raw dataset, so there's no second
 // full-dataset clone). The `id` lets the caller match replies to requests.
 import { computeDescriptive, computeCorrelation } from '../lib/stats'
+import type { CorrelationAxis } from '../lib/stats'
 import type {
   Point3D,
   SeriesProfile,
@@ -26,6 +27,7 @@ export type StatsRequest = {
   yAxis: string[]
   zAxis: string[]
   seriesOrder: string[]
+  axis?: CorrelationAxis
 }
 // Only the field matching the request `kind` is populated; the caller knows which
 // one it asked for by `id`.
@@ -37,14 +39,14 @@ export type StatsResponse = {
 }
 
 self.onmessage = (e: MessageEvent<StatsRequest>) => {
-  const { id, kind, points, yAxis, zAxis, seriesOrder } = e.data
+  const { id, kind, points, yAxis, zAxis, seriesOrder, axis } = e.data
   const res: StatsResponse = { type: 'result', id }
   switch (kind) {
     case 'descriptive':
       res.seriesProfiles = computeDescriptive(points, seriesOrder, yAxis)
       break
     case 'correlation':
-      res.correlation = computeCorrelation(points, seriesOrder, yAxis, zAxis)
+      res.correlation = computeCorrelation(points, seriesOrder, yAxis, zAxis, axis)
       break
   }
   ;(self as unknown as Worker).postMessage(res satisfies StatsResponse)

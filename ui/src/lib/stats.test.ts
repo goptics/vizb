@@ -155,16 +155,21 @@ describe('computeProfiles', () => {
     expect(correlation!.labels).toEqual(['A', 'B'])
   })
 
-  it('omits correlation with <3 categories', () => {
+  it('computes correlation on the x axis when x and y both have ≥2 entities', () => {
     const points = pts(['A', 'p', 1], ['A', 'q', 2], ['B', 'p', 4], ['B', 'q', 5])
-    expect(computeProfiles(points, ['A', 'B'], ['p', 'q']).correlation).toBeUndefined()
+    const { correlation } = computeProfiles(points, ['A', 'B'], ['p', 'q'])
+    // Both x=2 and y=2 are usable; auto-picks one (smallest, stable sort → x or y, both size 2)
+    expect(correlation).toBeDefined()
+    expect(correlation!.labels).toHaveLength(2)
   })
 
-  it('omits correlation with a single series', () => {
+  it('falls back to y when only 1 series exists', () => {
     const points = pts(['A', 'p', 1], ['A', 'q', 2], ['A', 'r', 3])
     const { seriesProfiles, correlation } = computeProfiles(points, ['A'], ['p', 'q', 'r'])
     expect(seriesProfiles).toHaveLength(1)
-    expect(correlation).toBeUndefined()
+    // x=1 (<2), y=3 (≥2) → y is usable
+    expect(correlation).toBeDefined()
+    expect(correlation!.axis).toBe('y')
   })
 
   it('last point wins per (x,y)', () => {
@@ -200,33 +205,34 @@ describe('selectCorrelationAxis', () => {
   const ids = (k: number) => Array.from({ length: k }, (_, i) => `S${i}`)
   const cat = (n: number) => Array.from({ length: n }, (_, i) => `c${i}`)
 
-  it('prefers x (series) when it fits the cap and has ≥3 observations', () => {
+  it('picks the smallest axis (min entity count) when multiple qualify', () => {
+    // 5 series, 4 categories → y (4) is smaller, auto-pick = y
     const sel = selectCorrelationAxis(ids(5), cat(4), [])
-    expect(sel.axis).toBe('x')
-    expect(sel.labels).toEqual(ids(5))
-  })
-
-  it('needs ≥2 entities and ≥3 observations per axis', () => {
-    expect(selectCorrelationAxis(ids(1), cat(3), []).axis).toBeNull() // 1 series, and y has 1 obs
-    expect(selectCorrelationAxis(ids(2), cat(2), []).axis).toBeNull() // 2 obs each way
-    expect(selectCorrelationAxis(ids(2), cat(3), []).axis).toBe('x')
-  })
-
-  it('falls back to y when x exceeds the entity cap', () => {
-    const sel = selectCorrelationAxis(ids(201), cat(3), [])
-    expect(sel.axis).toBe('y') // 201 series > 200 cap → correlate the 3 categories
-    expect(sel.labels).toEqual(cat(3))
-  })
-
-  it('falls back to z when both x and y exceed the cap (3D)', () => {
-    const sel = selectCorrelationAxis(ids(300), cat(250), cat(4))
-    expect(sel.axis).toBe('z')
+    expect(sel.axis).toBe('y')
     expect(sel.labels).toEqual(cat(4))
   })
 
-  it('none usable → null', () => {
-    expect(selectCorrelationAxis(ids(300), cat(250), []).axis).toBeNull() // both over cap, no z
-    expect(selectCorrelationAxis(ids(300), cat(250), cat(300)).axis).toBeNull() // z also over cap
+  it('picks x when it is the only axis with ≥2 entities', () => {
+    const sel = selectCorrelationAxis(ids(2), cat(1), [])
+    expect(sel.axis).toBe('x')
+    expect(sel.labels).toEqual(ids(2))
+  })
+
+  it('returns null when no axis has ≥2 entities', () => {
+    expect(selectCorrelationAxis(ids(1), cat(1), []).axis).toBeNull()
+    expect(selectCorrelationAxis([], [], []).axis).toBeNull()
+  })
+
+  it('no cap — large axis counts are usable (user can switch)', () => {
+    const sel = selectCorrelationAxis(ids(5000), cat(3), [])
+    expect(sel.axis).toBe('y') // 3 < 5000, y is smallest
+    expect(sel.labels).toEqual(cat(3))
+  })
+
+  it('3D — picks smallest among x/y/z', () => {
+    const sel = selectCorrelationAxis(ids(300), cat(250), cat(4))
+    expect(sel.axis).toBe('z')
+    expect(sel.labels).toEqual(cat(4))
   })
 })
 
@@ -234,15 +240,12 @@ describe('availableViews', () => {
   const series = (k: number) => Array.from({ length: k }, (_, i) => `S${i}`)
   const num = (n: number) => Array.from({ length: n }, (_, i) => String(i + 1))
 
-  it('correlation available whenever some axis (x→y→z) yields a fittable matrix', () => {
-    expect(availableViews(series(1), num(3)).correlation).toBe(false)
-    expect(availableViews(series(2), num(2)).correlation).toBe(false)
+  it('correlation available when at least one axis has ≥2 entities', () => {
+    expect(availableViews(series(1), num(1)).correlation).toBe(false) // neither axis ≥2
+    expect(availableViews(series(2), num(1)).correlation).toBe(true)  // x has 2
+    expect(availableViews(series(1), num(2)).correlation).toBe(true)  // y has 2
     expect(availableViews(series(2), num(3)).correlation).toBe(true)
-    // x over the cap now falls back to the (small) y axis instead of vanishing.
-    expect(availableViews(series(201), num(3)).correlation).toBe(true)
-    expect(availableViews(series(200), num(3)).correlation).toBe(true)
-    // both x and y over the cap, no z → unavailable.
-    expect(availableViews(series(201), num(201)).correlation).toBe(false)
+    expect(availableViews(series(5000), num(5000)).correlation).toBe(true) // no cap
   })
 })
 
@@ -292,8 +295,8 @@ describe('lazy compute pieces match computeProfiles', () => {
     expect(computeCorrelation(pts(...points), order, labels)).toEqual(all.correlation)
   })
 
-  it('lazy pieces return undefined when their view is unavailable', () => {
-    const nonNumeric = pts(['A', 'p', 1], ['A', 'q', 2], ['A', 'r', 3])
-    expect(computeCorrelation(nonNumeric, ['A'], ['p', 'q', 'r'])).toBeUndefined() // 1 series
+  it('lazy pieces return undefined when no axis has ≥2 entities', () => {
+    const single = pts(['A', 'p', 1])
+    expect(computeCorrelation(single, ['A'], ['p'])).toBeUndefined() // x=1, y=1 → no usable axis
   })
 })

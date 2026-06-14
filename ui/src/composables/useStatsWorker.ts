@@ -6,6 +6,7 @@
 // ChartData) recomputes.
 import StatsWorker from '../workers/stats.worker.ts?worker&inline'
 import type { StatsResponse, StatsKind } from '../workers/stats.worker'
+import type { CorrelationAxis } from '../lib/stats'
 import type { ChartData, SeriesProfile, CorrelationMatrix } from '../types'
 
 let worker: Worker | null = null
@@ -19,7 +20,8 @@ const pending = new Map<number, (r: StatsResponse) => void>()
 // by a recompute — they're collected with their key.
 type PieceCache = {
   descriptive?: Promise<SeriesProfile[]>
-  correlation?: Promise<CorrelationMatrix | undefined>
+  // keyed by axis ('x'|'y'|'z') or 'auto' for the default pick
+  correlation: Map<string, Promise<CorrelationMatrix | undefined>>
 }
 const cache = new WeakMap<ChartData, PieceCache>()
 
@@ -38,7 +40,7 @@ function getWorker(): Worker {
 }
 
 // Post one kinded request and resolve when its matching reply lands.
-function request(chartData: ChartData, kind: StatsKind): Promise<StatsResponse> {
+function request(chartData: ChartData, kind: StatsKind, axis?: CorrelationAxis): Promise<StatsResponse> {
   return new Promise<StatsResponse>((resolve) => {
     const id = nextId++
     pending.set(id, resolve)
@@ -51,6 +53,7 @@ function request(chartData: ChartData, kind: StatsKind): Promise<StatsResponse> 
       yAxis: chartData.yAxis,
       zAxis: chartData.zAxis,
       seriesOrder: chartData.series.map((s) => s.xAxis),
+      axis,
     })
   })
 }
@@ -58,7 +61,7 @@ function request(chartData: ChartData, kind: StatsKind): Promise<StatsResponse> 
 function cacheFor(chartData: ChartData): PieceCache {
   let c = cache.get(chartData)
   if (!c) {
-    c = {}
+    c = { correlation: new Map() }
     cache.set(chartData, c)
   }
   return c
@@ -70,8 +73,15 @@ export function computeDescriptive(chartData: ChartData): Promise<SeriesProfile[
 }
 
 export function computeCorrelation(
-  chartData: ChartData
+  chartData: ChartData,
+  axis?: CorrelationAxis
 ): Promise<CorrelationMatrix | undefined> {
   const c = cacheFor(chartData)
-  return (c.correlation ??= request(chartData, 'correlation').then((r) => r.correlation))
+  const key = axis ?? 'auto'
+  let p = c.correlation.get(key)
+  if (!p) {
+    p = request(chartData, 'correlation', axis).then((r) => r.correlation)
+    c.correlation.set(key, p)
+  }
+  return p
 }

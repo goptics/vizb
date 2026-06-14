@@ -1,5 +1,5 @@
 import type { EChartsOption } from 'echarts'
-import { getChartStyling, getTooltipTheme } from './shared/chartConfig'
+import { getChartStyling, getTooltipTheme, createToolboxConfig, isLargeXAxis, createHeatmapDataZoomConfig } from './shared'
 import { fontSize } from './shared/common'
 
 // Past this many series the per-cell value labels turn to mush, so we drop them
@@ -13,7 +13,8 @@ const CELL_LABEL_MAX = 15
 export function buildCorrelationOption(
   labels: string[],
   matrix: number[][],
-  isDark: boolean
+  isDark: boolean,
+  title = 'correlation'
 ): EChartsOption {
   const styling = getChartStyling(isDark)
   const neutral = isDark ? '#374151' : '#f3f4f6'
@@ -28,12 +29,17 @@ export function buildCorrelationOption(
   }
 
   const showLabel = labels.length <= CELL_LABEL_MAX
+  // Symmetric K×K matrix — both axes share the same size, so one threshold covers both.
+  const large = isLargeXAxis(labels)
 
   return {
     backgroundColor: styling.backgroundColor,
-    // Reserve a bottom band for the horizontal visualMap so it sits *below* the
-    // heatmap instead of overlapping the cells.
-    grid: { left: 8, right: 8, top: 8, bottom: 48, containLabel: true },
+    toolbox: createToolboxConfig(isDark, title, 2),
+    // Large matrix: reserve fixed px for sliders + visualMap. Small: containLabel.
+    grid: large
+      ? { left: 60, right: '3%', bottom: 110, top: 8, containLabel: false }
+      : { left: 8, right: 8, top: 8, bottom: 48, containLabel: true },
+    ...(large ? { dataZoom: createHeatmapDataZoomConfig(true, true, labels.length, labels.length, styling) } : {}),
     tooltip: {
       position: 'top',
       ...getTooltipTheme(isDark),
@@ -60,7 +66,7 @@ export function buildCorrelationOption(
       // Put the first label at the top so the matrix reads like a table.
       inverse: true,
       splitArea: { show: true },
-      axisLabel: { color: styling.textColor, fontSize, interval: 0 },
+      axisLabel: { color: styling.textColor, fontSize, interval: large ? 'auto' : 0 },
       axisLine: { lineStyle: { color: styling.axisColor } },
     },
     visualMap: {

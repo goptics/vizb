@@ -232,15 +232,6 @@ export function correlationMatrix(
   return m
 }
 
-// Correlation is O(K²·N); past this the K×K matrix is both slow to compute and
-// rarely actionable, so we cap the number of entities (matrix rows/cols). The
-// canvas heatmap (not a DOM table) means this is a compute-safety ceiling, not a
-// legibility one.
-const CORR_MAX_ENTITIES = 200
-
-// A correlation needs at least this many observations per entity to mean anything.
-const CORR_MIN_OBSERVATIONS = 3
-
 // Per-series NaN-aligned columns straight from the point cloud — the shared
 // substrate every stat computes over. One column per series (in `seriesOrder`),
 // each indexed by `yAxis` with NaN for an absent (x,y) cell so the chart's
@@ -275,28 +266,37 @@ export function buildColumns(
 // across the tuple of the *other two* axes.
 export type CorrelationAxis = 'x' | 'y' | 'z'
 
-// Pick the axis to correlate along: prefer x (series), fall back to y, then z —
-// taking the first whose entity count fits the matrix cap and which has enough
-// observations to correlate over. This lets correlation survive a chart that has
-// thousands of series but few categories (or vice versa): the small axis becomes
-// the entities. `obsCount` approximates observations as the product of the other
-// two axes' distinct counts (an absent/constant axis counts as 1). Single source
-// of truth shared by `availableViews` (gate) and `computeCorrelation` (compute).
+// All axes with ≥2 distinct entities, sorted by entity count ascending so the
+// auto-pick ([0]) is always the smallest (cheapest) matrix. User can switch to
+// any axis including large ones.
+export function usableCorrelationAxes(
+  seriesOrder: string[],
+  yAxis: string[],
+  zAxis: string[]
+): CorrelationAxis[] {
+  const counts: [CorrelationAxis, number][] = [
+    ['x', seriesOrder.length],
+    ['y', yAxis.length],
+    ['z', zAxis.length],
+  ]
+  return counts
+    .filter(([, n]) => n >= 2)
+    .sort(([, a], [, b]) => a - b)
+    .map(([ax]) => ax)
+}
+
+// Pick the axis to correlate along: prefer x (series), fall back to y, then z.
+// Single source of truth shared by `availableViews` (gate) and `computeCorrelation`.
 export function selectCorrelationAxis(
   seriesOrder: string[],
   yAxis: string[],
   zAxis: string[]
 ): { axis: CorrelationAxis | null; labels: string[] } {
-  const nx = seriesOrder.length
-  const ny = yAxis.length
-  const nz = zAxis.length
-  const usable = (entityCount: number, obsCount: number) =>
-    entityCount >= 2 && entityCount <= CORR_MAX_ENTITIES && obsCount >= CORR_MIN_OBSERVATIONS
-  // obsCount per axis = product of the OTHER two axes' distinct counts (≥1 each).
-  if (usable(nx, (ny || 1) * (nz || 1))) return { axis: 'x', labels: seriesOrder }
-  if (usable(ny, (nx || 1) * (nz || 1))) return { axis: 'y', labels: yAxis }
-  if (usable(nz, (nx || 1) * (ny || 1))) return { axis: 'z', labels: zAxis }
-  return { axis: null, labels: [] }
+  const axes = usableCorrelationAxes(seriesOrder, yAxis, zAxis)
+  if (axes.length === 0) return { axis: null, labels: [] }
+  const axis = axes[0]!
+  const labels = axis === 'x' ? seriesOrder : axis === 'y' ? yAxis : zAxis
+  return { axis, labels }
 }
 
 // One NaN-aligned column per entity along the chosen correlation axis, indexed by a
@@ -377,21 +377,24 @@ export function computeDescriptive(
   return seriesOrder.map((name, i) => ({ name, stats: describe(columns[i]!) }))
 }
 
-// Cross-entity correlation matrix (both methods) over the auto-picked axis (see
-// `selectCorrelationAxis`). Lazy — computed only when the correlation tab opens.
+// Cross-entity correlation matrix (both methods). `axis` overrides the auto-pick
+// when it's among the usable axes; otherwise falls back to the first usable.
 // Returns undefined when no axis yields a fittable matrix.
 export function computeCorrelation(
   points: Point3D[],
   seriesOrder: string[],
   yAxis: string[],
-  zAxis: string[] = []
+  zAxis: string[] = [],
+  axis?: CorrelationAxis
 ): CorrelationMatrix | undefined {
-  const sel = selectCorrelationAxis(seriesOrder, yAxis, zAxis)
-  if (sel.axis === null) return undefined
-  const { labels, columns } = buildCorrelationColumns(points, sel.axis, seriesOrder, yAxis, zAxis)
+  const usable = usableCorrelationAxes(seriesOrder, yAxis, zAxis)
+  if (usable.length === 0) return undefined
+  const resolved: CorrelationAxis = (axis && usable.includes(axis)) ? axis : usable[0]!
+  const labels = resolved === 'x' ? seriesOrder : resolved === 'y' ? yAxis : zAxis
+  const { labels: resolvedLabels, columns } = buildCorrelationColumns(points, resolved, seriesOrder, yAxis, zAxis)
   return {
-    axis: sel.axis,
-    labels: labels.slice(),
+    axis: resolved,
+    labels: resolvedLabels.length ? resolvedLabels : labels.slice(),
     pearson: correlationMatrix(columns, 'pearson'),
     spearman: correlationMatrix(columns, 'spearman'),
   }
