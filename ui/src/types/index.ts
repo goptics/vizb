@@ -40,7 +40,7 @@ export type ChartSettings = {
   sort?: Sort         // overrides global sort
   scale?: ScaleType   // overrides global scale; not valid for pie/heatmap
   showLabels?: boolean // overrides global showLabels
-  autoRotate?: boolean // 3D-only; only for bar/line when chart has z-axis
+  autoRotate?: boolean // 3D bar/line only; overrides the store-level autoRotate when set
 }
 
 export type Settings = {
@@ -48,8 +48,8 @@ export type Settings = {
   showLabels: boolean
   charts: ChartType[]
   scale: ScaleType
-  axes?: Axis[]  // ordered axis dimensions, replaces top-level axisLabels on DataSet
-  chartSettings?: Record<ChartType, ChartSettings>  // per-chart type overrides
+  axes?: Axis[]
+  chartSettings?: Partial<Record<ChartType, ChartSettings>>
 }
 
 // Human-readable label for each dimension, derived from the --group columns.
