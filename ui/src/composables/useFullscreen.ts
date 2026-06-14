@@ -18,7 +18,7 @@ export function useFullscreen() {
   }
 
   document.addEventListener('fullscreenchange', () => {
-    isFullscreen.value = !!document.fullscreenElement
+    isFullscreen.value = document.fullscreenElement === containerRef.value
   })
 
   function withFullscreenToolbox(option: EChartsOption): EChartsOption {
