@@ -29,13 +29,13 @@ type Axis struct {
 // Sort controls sort direction for chart data.
 type Sort struct {
 	Enabled bool   `json:"enabled"`
-	Order   string `json:"order"`
+	Order   string `json:"order"` // "asc" or "desc"
 }
 
 // ChartSettings holds per-chart overrides; nil/"" means inherit the global setting.
 type ChartSettings struct {
 	Swap       string `json:"swap,omitempty"`
-	Sort       *Sort  `json:"sort,omitempty"`
+	Sort       *Sort  `json:"sort,omitempty"` // pointer: nil means inherit from DatasetSettings.Sort
 	Scale      string `json:"scale,omitempty"`
 	ShowLabels *bool  `json:"showLabels,omitempty"`
 	AutoRotate *bool  `json:"autoRotate,omitempty"`

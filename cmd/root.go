@@ -286,6 +286,23 @@ func prepareDatasetFromResults(results []shared.DataPoint) *shared.Dataset {
 	dataSet.Tag = shared.FlagState.Tag
 	dataSet.Timestamp = time.Now().UTC().Format(time.RFC3339)
 
+	// Temporary: populate Axes from GroupAxisLabels until GroupAxes() is added (Task 3)
+	labels := parser.GroupAxisLabels()
+	axisKeyMap := map[string]string{
+		"name":  "name",
+		"xAxis": "x",
+		"yAxis": "y",
+		"zAxis": "z",
+	}
+	for _, longKey := range []string{"name", "xAxis", "yAxis", "zAxis"} {
+		if label, ok := labels[longKey]; ok {
+			dataSet.Settings.Axes = append(dataSet.Settings.Axes, shared.Axis{
+				Key:   axisKeyMap[longKey],
+				Label: label,
+			})
+		}
+	}
+
 	return dataSet
 }
 
