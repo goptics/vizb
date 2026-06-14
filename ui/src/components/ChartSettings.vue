@@ -7,11 +7,11 @@ import { Separator } from './ui'
 import SettingsToggle from './SettingsToggle.vue'
 import SelectionTabs from './SelectionTabs.vue'
 import AxisSwapper from './AxisSwapper.vue'
-import type { ChartType, SortOrder } from '../types'
+import type { ChartType, Sort, SortOrder } from '../types'
 import { useSettingsStore } from '../composables/useSettingsStore'
 import { useSyncedSetting } from '../composables/useSyncedSetting'
 
-const { settings, setSort, setShowLabels, setChartType } = useSettingsStore()
+const { settings, resolved, setForActiveChart, setChartType } = useSettingsStore()
 
 const CHART_ICONS: Record<ChartType, Component> = {
   bar: BarChart3,
@@ -25,19 +25,21 @@ const chartType = useSyncedSetting<ChartType>(
   (val) => setChartType(val)
 )
 
+const resolvedSort = computed(() => resolved('sort') as Sort)
+
 const isSortingEnabled = useSyncedSetting(
-  () => settings.sort.enabled,
-  (val: boolean) => setSort({ enabled: val, order: settings.sort.order })
+  () => resolvedSort.value.enabled,
+  (val: boolean) => setForActiveChart({ sort: { enabled: val, order: resolvedSort.value.order } })
 )
 
 const sortDirection = useSyncedSetting<SortOrder>(
-  () => settings.sort.order,
-  (val) => setSort({ enabled: settings.sort.enabled, order: val })
+  () => resolvedSort.value.order,
+  (val) => setForActiveChart({ sort: { enabled: resolvedSort.value.enabled, order: val } })
 )
 
 const showLabels = useSyncedSetting(
-  () => settings.showLabels,
-  (val: boolean) => setShowLabels(val)
+  () => resolved('showLabels') as boolean,
+  (val: boolean) => setForActiveChart({ showLabels: val })
 )
 
 const showChartTypeSelection = computed(() => settings.charts.length > 1)

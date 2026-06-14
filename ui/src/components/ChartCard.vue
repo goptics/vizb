@@ -13,7 +13,7 @@ import {
 import type { EChartsOption } from 'echarts'
 import { Sigma } from 'lucide-vue-next'
 import { useChartOptions } from '../composables/useChartOptions'
-import type { ChartData, ChartType } from '../types'
+import type { ChartData, ChartType, Sort, ScaleType } from '../types'
 import { useSettingsStore } from '../composables/useSettingsStore'
 import { useFullscreen } from '../composables/useFullscreen'
 import { is3D } from '../lib/utils'
@@ -63,7 +63,7 @@ const { chartData } = toRefs(props)
 const is3DChart = computed(() => is3D(chartData))
 
 // Pull settings from centralized store
-const { settings, chartType } = useSettingsStore()
+const { settings, chartType, resolved } = useSettingsStore()
 
 // Pick the lazily-loaded renderer for the active chart shape/type. Pie has no
 // 3D form (it renders per-dimension 2D pies even for x/y/z data), so it always
@@ -77,7 +77,12 @@ const ActiveChart = computed<Component>(() => {
   return is3DChart.value ? Chart3D : (RENDERERS[chartType.value] ?? RENDERERS.bar)
 })
 
-const { sort, showLabels, isDark, scale, autoRotate } = toRefs(settings)
+const { isDark } = toRefs(settings)
+// Per-chart resolved values — each chart type can override global defaults.
+const sort = computed(() => resolved('sort') as Sort)
+const showLabels = computed(() => resolved('showLabels') as boolean)
+const scale = computed(() => resolved('scale') as ScaleType)
+const autoRotate = computed(() => resolved('autoRotate') as boolean)
 
 // Legend z-toggle state, kept in sync via the legendselectchanged event so
 // tooltip/label sums reflect only the visible z series.
