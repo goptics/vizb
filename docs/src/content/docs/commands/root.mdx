@@ -82,6 +82,7 @@ for how the format is chosen.
 | `--scale` | `-S` | `linear` | Scale type: `linear` or `log` |
 | `--sort` | `-s` | `""` | Sort order: `asc` or `desc` (default: as-is) |
 | `--charts` | `-c` | `bar,line,pie,heatmap` | Chart types to generate (`bar`, `line`, `pie`, `heatmap`) |
+| `--chart` | | | Per-chart type settings override (repeatable): `<type>:<key>=<val>,...` — see below |
 | `--show-labels` | `-l` | `false` | Show value labels on charts |
 | `--filter` | `-f` | `""` | Regex to include only matching data labels / series names |
 | `--mem-unit` | `-M` | `B` | Memory unit: `b`, `B`, `KB`, `MB`, `GB` |
@@ -152,6 +153,33 @@ The 3D engine (~380 kB) is included automatically when data has a z-axis and `ba
 or `line` is selected. For 2D-only data, it is always omitted.
 
 See [UI Overview → Output File Size](/ui#output-file-size) for a size reference table.
+
+### Per-chart settings
+
+Use `--chart` (repeatable) to override settings for a specific chart type. Each spec is `<type>:<key>=<val>,...` or `<type>:<bare-flag>,...`.
+
+```bash
+# Bar chart: swap axes to yx, sort ascending
+vizb bench.txt -p n/x/y --chart bar:swap=yx,sort=asc -o output.html
+
+# Line chart: log scale; pie chart: show labels
+vizb bench.txt --chart line:scale=log --chart pie:labels -o output.html
+
+# 3D bar with auto-rotate; line with labels off
+vizb bench.txt -p n/x/y/z --chart bar:rotate --chart line:labels=false -o output.html
+```
+
+**Supported keys:**
+
+| Key | Bare flag | Values | Valid for |
+|-----|-----------|--------|-----------|
+| `swap` | — | permutation of axis chars (e.g. `yx`, `yxn`) | all |
+| `sort` | — | `asc`, `desc` | all |
+| `labels` | `labels` | `true`, `false` | all |
+| `scale` | — | `linear`, `log` | `bar`, `line` only |
+| `rotate` | `rotate` | `true`, `false` | `bar`, `line` 3D only |
+
+Bare flags (no `=`) default to `true`. Per-chart settings layer over the global `--sort`, `--scale`, `--show-labels` defaults.
 
 ### Tagging for release tracking
 
