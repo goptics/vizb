@@ -1,5 +1,5 @@
 import { ref, shallowRef, markRaw, reactive, computed, nextTick } from 'vue'
-import type { DataSet, DataPoint } from '../types'
+import type { DataSet, DataPoint, ChartType } from '../types'
 import type { Arrangement } from './useChartPipeline'
 import { resetColor, isValidIndex } from '../lib/utils'
 import { useSettingsStore } from './useSettingsStore'
@@ -62,11 +62,11 @@ const setGroupNames = (names: string[]) => {
   groupNames.value = names
 }
 
-// Per-dataset target arrangement (e.g. "yx"); absent = identity (no swap). The
-// worker projects/groups under this; AxisSwapper sets it instead of mutating rows.
-const arrangementMap = reactive(new Map<number, string>())
-const setArrangement = (datasetId: number, targetString: string) => {
-  arrangementMap.set(datasetId, targetString)
+// Per-(dataset, chartType) target arrangement (e.g. "yx"); absent = identity.
+// Key: "${datasetId}:${chartType}". Allows each chart type to keep its own swap.
+const arrangementMap = reactive(new Map<string, string>())
+const setArrangement = (datasetId: number, ct: ChartType, targetString: string) => {
+  arrangementMap.set(`${datasetId}:${ct}`, targetString)
 }
 
 getDataSets()
@@ -100,18 +100,28 @@ const activeDataSet = computed(
   () => dataSetsProcessed.value[activeDataSetId.value] || dataSetsProcessed.value[0]
 )
 
-// The active dataset's arrangement: identity = present source axes in canonical
-// order; target = the per-dataset selection, defaulting to identity (no swap).
+const { initializeFromDataSet, chartType } = useSettingsStore()
+
+// Derive identity from axes[] key order if present, else fall back to presentKeys(data).
+// axes[] preserves the serial dimension order from --group-pattern / --group-regex.
+const identityFromDataSet = (ds: DataSet | undefined): string => {
+  if (ds?.settings?.axes?.length) {
+    return ds.settings.axes.map((a) => (a.key === 'name' ? 'n' : a.key.charAt(0))).join('')
+  }
+  return presentKeys(ds?.data)
+}
+
+// The active arrangement: per-(dataset, chartType) target with identity fallback.
 const activeArrangement = computed<Arrangement>(() => {
-  const identityString = presentKeys(activeDataSet.value?.data)
-  const targetString = arrangementMap.get(activeDataSetId.value) ?? identityString
+  const ds = activeDataSet.value
+  const identityString = identityFromDataSet(ds)
+  const targetString =
+    arrangementMap.get(`${activeDataSetId.value}:${chartType.value}`) ?? identityString
   return { identityString, targetString }
 })
 
 // Group list as the selector consumes it: a `{ name }[]` over the worker's names.
 const resultGroups = computed(() => groupNames.value.map((name) => ({ name })))
-
-const { initializeFromDataSet } = useSettingsStore()
 
 const selectDataSet = (id: number) => {
   if (isValidIndex(id, dataSets.value.length)) {
