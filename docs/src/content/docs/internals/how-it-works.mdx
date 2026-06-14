@@ -35,13 +35,12 @@ Vitest / Criterion ↗  (auto-detected)  (grouping applied)
     - rust/              Criterion and Divan parsers
   - template/
     - generate-ui.go     HTML template generation
+    - chunks.go          Go-stage chunk pruning (SelectChunks, gated BFS)
     - vizb-ui.gen.go     Built Vue UI (auto-generated from ui/dist)
 - shared/
   - dataset.go         Dataset, DataPoint, Stat structs
   - merge.go         MergeDatasets function
   - aggregate.go     AggregateDataPoints — sum CSV/JSON rows sharing a group key
-  - dimension.go     Dimension type (n, x, y, z)
-  - flag_state.go    CLI flag state
 - ui/                Vue 3 + TypeScript visualization app
   - src/composables/
     - charts/            Bar, line, pie, and heatmap chart rendering (ECharts)
@@ -173,4 +172,8 @@ Vizb auto-detects the input format:
 4. **Parse** — the selected parser extracts names and stats from the input
 5. **Group** — `--group-pattern` or `--group-regex` splits data labels into dimensions (n, x, y); `--group` feeds CSV/JSON columns in first
 6. **Build** — assemble `Dataset` struct with metadata and settings
-7. **Output** — JSON (`json.Marshal`) or HTML (Vue template + embedded JSON)
+7. **Prune** — `SelectChunks` (`pkg/template/chunks.go`) walks the chunk reference
+   graph built at Vite build time and keeps only chunks reachable from the selected
+   chart renderers. The 3D engine is gated separately: included when `--charts`
+   contains `bar` or `line` and data has a z-axis.
+8. **Output** — JSON (`json.Marshal`) or HTML (Vue template + embedded JSON + pruned chunk map)

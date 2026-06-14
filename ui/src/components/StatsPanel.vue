@@ -203,7 +203,7 @@ const seriesLabel = computed(() => props.chartData.axisLabels?.x || 'Series')
 // --- Correlation axis override --------------------------------------------
 // null = follow the auto-pick from the worker; set by the user's dropdown.
 // Resets to null on each new chart so the auto default takes effect.
-const AXIS_FALLBACK = { x: 'Series', y: 'the y-axis', z: 'the z-axis' } as const
+const AXIS_FALLBACK = { x: 'Series', y: 'y-axis', z: 'z-axis' } as const
 
 const corrAxisOverride = ref<CorrelationAxis | null>(null)
 

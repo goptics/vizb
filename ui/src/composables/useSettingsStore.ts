@@ -84,8 +84,13 @@ export function useSettingsStore() {
   }
 
   const setCharts = (list: ChartType[]) => {
-    const filtered = list.filter((c) => DEFAULT_SETTINGS.charts.includes(c))
-    settings.charts = filtered.length ? filtered : DEFAULT_SETTINGS.charts
+    // Constrain to the charts actually bundled at generation time (--charts).
+    // In remote mode settings.charts comes from the fetched JSON, which may list
+    // charts whose renderer chunks were pruned; surfacing those tabs would fail
+    // the lazy import(). Fall back to all charts when VIZB_CHARTS is absent.
+    const allowed = window.VIZB_CHARTS?.length ? window.VIZB_CHARTS : DEFAULT_SETTINGS.charts
+    const filtered = list.filter((c) => allowed.includes(c))
+    settings.charts = filtered.length ? filtered : allowed
 
     if (!isValidIndex(settings.activeChartIndex, settings.charts.length)) {
       settings.activeChartIndex = 0

@@ -26,7 +26,7 @@ Vizb supports four chart types, all rendered in a single view:
   </Card>
 </CardGrid>
 
-Control which charts appear with `--charts`:
+Control which charts appear with `--charts` (this also controls output file size — see [Output File Size](#output-file-size)):
 
 ```bash
 vizb bench.txt -c bar,line -o output.html
@@ -108,6 +108,34 @@ The generated HTML is fully self-contained:
 
 Open with any browser — no build step, no server.
 
+## Output File Size
+
+Each chart renderer ships as a separate compressed chunk inside the HTML; only the
+ones you select are embedded at generation time.
+
+| Selection | Approx. file size |
+|-----------|------------------|
+| `bar` only | ~400 kB |
+| `bar,line,pie,heatmap` (default, 2D data) | ~445 kB |
+| `bar` or `line` with z-axis data | ~570 kB |
+
+The 3D engine (echarts-gl, ~380 kB encoded) is the heaviest component. Vizb includes
+it automatically when your data has a z-axis and `bar` or `line` is selected — and
+omits it otherwise, even at the default four-chart selection.
+
+To reduce file size, pass `--charts` to bundle only the renderers you need:
+
+```bash
+vizb bench.txt -c bar -o output.html       # bar only, ~400 kB
+vizb bench.txt -c bar,line -o output.html  # ~415 kB
+```
+
+<Aside type="tip">
+  For sharing or deploying reports, use `--charts` to include only the charts your
+  audience needs. The default bundles all four 2D renderers, which is fine for local
+  exploration.
+</Aside>
+
 ## Next Steps
 
 - [Settings](/ui/settings) — CLI flags and UI settings mapping
@@ -115,3 +143,4 @@ Open with any browser — no build step, no server.
 - [3D Charts](/ui/3d-charts) — z-axis, auto-rotate, and axis-sum tooltips
 - [Heatmap](/ui/heatmap) — fold X/Y/Z into a colored grid
 - [Statistics](/ui/stats) — descriptive stats and correlation matrix
+- [Output File Size](#output-file-size) — how `--charts` affects HTML size

@@ -306,7 +306,7 @@ func writeOutput(f *os.File, dataSet *shared.Dataset, format string) {
 			shared.ExitWithError("Failed to marshal dataSet data: %v", err)
 		}
 
-		htmlContent := template.GenerateUI(jsonData, template.VizbHTMLTemplate)
+		htmlContent := template.GenerateUI(jsonData, dataSet.Settings.Charts, shared.DatasetNeeds3D(dataSet), template.VizbHTMLTemplate)
 		if _, err := f.WriteString(htmlContent); err != nil {
 			shared.ExitWithError("Failed to write output file: %v", err)
 		}

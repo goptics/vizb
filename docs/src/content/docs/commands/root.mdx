@@ -138,6 +138,21 @@ vizb bench.txt --scale log -o output.html
 vizb bench.txt -f "Sort" -o output.html
 ```
 
+### Reducing output size
+
+By default all four chart renderers are bundled. Use `--charts` to include only
+the ones you need — unselected renderers are dropped at generation time.
+
+```bash
+vizb bench.txt -c bar -o output.html       # ~400 kB
+vizb bench.txt -c bar,line -o output.html  # ~415 kB
+```
+
+The 3D engine (~380 kB) is included automatically when data has a z-axis and `bar`
+or `line` is selected. For 2D-only data, it is always omitted.
+
+See [UI Overview → Output File Size](/ui#output-file-size) for a size reference table.
+
 ### Tagging for release tracking
 
 ```bash
