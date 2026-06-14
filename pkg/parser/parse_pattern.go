@@ -39,6 +39,7 @@ func ValidateGroupPattern(pattern string) error {
 		hasZAxis bool
 	)
 
+	seen := map[string]bool{}
 	for _, part := range parts {
 		if part == "" {
 			continue
@@ -48,7 +49,13 @@ func ValidateGroupPattern(pattern string) error {
 			return fmt.Errorf("Invalid part: '%s'; only name(n), xAxis(x), yAxis(y), zAxis(z) allowed", part)
 		}
 
-		switch expandShorthand(part) {
+		expanded := expandShorthand(part)
+		if seen[expanded] {
+			return fmt.Errorf("duplicate dimension '%s' in pattern", expanded)
+		}
+		seen[expanded] = true
+
+		switch expanded {
 		case "xAxis":
 			hasXAxis = true
 		case "yAxis":
@@ -264,14 +271,16 @@ func GroupAxes() []shared.Axis {
 
 	parts := parsePatternParts(shared.FlagState.GroupPattern)
 	var axes []shared.Axis
-	for i, dim := range parts {
+	groupIdx := 0
+	for _, dim := range parts {
 		if dim == "" {
 			continue
 		}
 		label := ""
-		if i < len(groups) {
-			label = groups[i]
+		if groupIdx < len(groups) {
+			label = groups[groupIdx]
 		}
+		groupIdx++
 		axes = append(axes, shared.Axis{Key: shortAxisKey(dim), Label: label})
 	}
 	return axes

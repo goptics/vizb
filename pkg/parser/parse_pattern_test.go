@@ -265,6 +265,12 @@ func TestValidateGroupPattern(t *testing.T) {
 			expectError:   true,
 			errorContains: "zAxis (z) requires both xAxis (x) and yAxis (y)",
 		},
+		{
+			name:          "Invalid pattern: duplicate dimension x/y/x",
+			pattern:       "x/y/x",
+			expectError:   true,
+			errorContains: "duplicate dimension 'xAxis' in pattern",
+		},
 	}
 
 	for _, tt := range tests {
@@ -540,6 +546,15 @@ func TestGroupAxes(t *testing.T) {
 			want: []shared.Axis{
 				{Key: "x", Label: ""},
 				{Key: "y", Label: ""},
+			},
+		},
+		{
+			name:        "empty part in pattern does not shift group label index",
+			pattern:     "x//y",
+			groupLabels: []string{"A", "B"},
+			want: []shared.Axis{
+				{Key: "x", Label: "A"},
+				{Key: "y", Label: "B"},
 			},
 		},
 	}
