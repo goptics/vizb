@@ -86,7 +86,7 @@ export type DataSet = {
   tag?: string
   timestamp?: string
   history?: HistoryEntry[]
-  meta: Meta
+  meta?: Meta
   settings: Settings
   /** @deprecated Kept for reading legacy JSON; use settings.axes instead. */
   axisLabels?: AxisLabels

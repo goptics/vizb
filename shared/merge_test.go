@@ -169,14 +169,14 @@ func TestMergeDatasets_HistoryMerge(t *testing.T) {
 
 func TestMergeDatasets_HistoryMetaPropagation(t *testing.T) {
 	bench1 := makeBench("1", "Test", "2026-05-13T10:00:00Z", []DataPoint{{Name: "a"}})
-	bench1.Meta = Meta{
+	bench1.Meta = &Meta{
 		CPU:  &CPUInfo{Name: "Intel i7", Cores: 8},
 		OS:   "linux",
 		Arch: "amd64",
 		Pkg:  "github.com/foo/bar",
 	}
 	bench2 := makeBench("2", "Test", "2026-05-13T10:05:00Z", []DataPoint{{Name: "b"}})
-	bench2.Meta = Meta{
+	bench2.Meta = &Meta{
 		CPU:  &CPUInfo{Name: "Apple M2", Cores: 10},
 		OS:   "darwin",
 		Arch: "arm64",

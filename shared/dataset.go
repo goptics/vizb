@@ -70,7 +70,7 @@ type Dataset struct {
 	Name        string          `json:"name"`
 	History     []HistoryEntry  `json:"history,omitempty"`
 	Description string          `json:"description,omitempty"`
-	Meta        Meta            `json:"meta"`
+	Meta        *Meta           `json:"meta,omitempty"`
 	Settings    DatasetSettings `json:"settings"`
 	Data        []DataPoint     `json:"data"`
 }

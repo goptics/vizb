@@ -269,9 +269,12 @@ func prepareDatasetFromResults(results []shared.DataPoint) *shared.Dataset {
 	}
 	enableSorting := shared.FlagState.Sort != ""
 
-	dataSet.Meta = shared.Meta{OS: shared.OS, Arch: shared.Arch, Pkg: shared.Pkg}
+	meta := shared.Meta{OS: shared.OS, Arch: shared.Arch, Pkg: shared.Pkg}
 	if cpuName := strings.TrimSpace(shared.CPU); cpuName != "" || shared.CPUCount != 0 {
-		dataSet.Meta.CPU = &shared.CPUInfo{Name: cpuName, Cores: shared.CPUCount}
+		meta.CPU = &shared.CPUInfo{Name: cpuName, Cores: shared.CPUCount}
+	}
+	if meta != (shared.Meta{}) {
+		dataSet.Meta = &meta
 	}
 	dataSet.Settings.Charts = shared.FlagState.Charts
 	dataSet.Settings.Sort.Enabled = enableSorting
