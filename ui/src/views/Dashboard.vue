@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, toRef, watch } from 'vue'
+import { computed, watch } from 'vue'
 import { Moon, Sun, Package } from 'lucide-vue-next'
+import type { Sort, ScaleType, Axis, AxisLabels } from '../types'
 import { useDataPoint } from '../composables/useDataPoint'
 import { useChartPipeline } from '../composables/useChartPipeline'
 import { useSettingsStore } from '../composables/useSettingsStore'
@@ -30,20 +31,37 @@ const {
   loadError,
 } = useDataPoint()
 
-const { settings, toggleDark } = useSettingsStore()
+const { settings, resolved, toggleDark } = useSettingsStore()
+
+// Build an AxisLabels object from axes[] for swapAxisLabels. Falls back to the
+// legacy axisLabels field for datasets migrated from old JSON.
+const axisLabelsFromAxes = (axes: Axis[] | undefined): AxisLabels | undefined => {
+  if (!axes?.length) return undefined
+  const result: AxisLabels = {}
+  for (const a of axes) {
+    if (a.label) (result as Record<string, string>)[a.key] = a.label
+  }
+  return Object.keys(result).length ? result : undefined
+}
 
 // The full raw rows — the worker owns grouping/projection, so we pass the dataset
 // as-is (no main-thread grouping or swap mutation). Only a dataset switch re-clones.
 const activeResults = computed(() => activeDataSet.value?.data || [])
-// Display labels are derived from the arrangement (swap rotates which dimension
-// each label sits on), not mutated onto the dataset.
+// Display labels: prefer axes[] (new schema), fall back to legacy axisLabels field.
+// swapAxisLabels permutes them to match the active arrangement.
 const activeLabels = computed(() =>
   swapAxisLabels(
     activeArrangement.value.identityString,
     activeArrangement.value.targetString,
-    activeDataSet.value?.axisLabels
+    axisLabelsFromAxes(activeDataSet.value?.settings?.axes) ?? activeDataSet.value?.axisLabels
   )
 )
+
+// Per-chart resolved compute params — each chart type carries its own sort/showLabels/scale.
+const resolvedSort = computed(() => resolved('sort') as Sort)
+const resolvedShowLabels = computed(() => resolved('showLabels') as boolean)
+const resolvedScale = computed(() => resolved('scale') as ScaleType)
+
 // Charts are computed off-thread in a worker, one at a time (queue-based). Each
 // slot carries its own `pending` so its card drives an independent skeleton and
 // reveals progressively.
@@ -52,9 +70,9 @@ const { charts, groupNames } = useChartPipeline(
   activeArrangement,
   activeLabels,
   activeGroupId,
-  toRef(settings, 'sort'),
-  toRef(settings, 'showLabels'),
-  toRef(settings, 'scale')
+  resolvedSort,
+  resolvedShowLabels,
+  resolvedScale
 )
 
 // The worker owns grouping; feed its group list back into useDataPoint so the
