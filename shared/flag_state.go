@@ -19,6 +19,7 @@ type flagState struct {
 	TagAxis      string
 	Parser       string
 	DataURL      string
+	ChartSpecs   []string
 }
 
 var FlagState flagState = flagState{}

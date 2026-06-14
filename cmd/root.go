@@ -66,6 +66,9 @@ func init() {
 	rootCmd.Flags().StringVarP(&shared.FlagState.Scale, "scale", "S", "linear", "Scale type (linear, log)")
 	rootCmd.Flags().StringVarP(&shared.FlagState.Tag, "tag", "t", "", "Tag/identifier for the comparison")
 	rootCmd.Flags().StringVarP(&shared.FlagState.Parser, "parser", "P", "auto", "Benchmark parser to use; 'auto' detects from input content (one of: auto, "+strings.Join(parser.AvailableParsers(), ", ")+")")
+	rootCmd.Flags().StringArrayVar(&shared.FlagState.ChartSpecs, "chart", nil,
+		"Per-chart settings override: <type>:<key>=<val>(,<key>=<val>)* or bare flags (labels, rotate). "+
+			"Keys: swap, sort, scale, labels, rotate. E.g. --chart bar:swap=yxn,sort=asc --chart pie:labels")
 
 	// Add a hook to validate flags after parsing
 	cobra.OnInitialize(func() {
@@ -287,6 +290,18 @@ func prepareDatasetFromResults(results []shared.DataPoint) *shared.Dataset {
 	dataSet.Timestamp = time.Now().UTC().Format(time.RFC3339)
 
 	dataSet.Settings.Axes = parser.GroupAxes()
+
+	if len(shared.FlagState.ChartSpecs) > 0 {
+		chartSettings, err := shared.ParseChartSpecs(
+			shared.FlagState.ChartSpecs,
+			shared.FlagState.Charts,
+			dataSet.Settings.Axes,
+		)
+		if err != nil {
+			shared.ExitWithError(err.Error(), nil)
+		}
+		dataSet.Settings.ChartSettings = chartSettings
+	}
 
 	return dataSet
 }
