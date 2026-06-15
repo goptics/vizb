@@ -116,7 +116,7 @@ export function useRadarChartOptions(config: BaseChartConfig) {
     const xAxisRadarData: RadarDataItem[] = sorted.series.map((s) => ({
       name: s.xAxis,
       value: Math.max(0, s.total),
-      itemStyle: { color: getNextColorFor(s.xAxis) },
+      itemStyle: { color: getNextColorFor(s.xAxis) ?? '#5470C6' },
     }))
 
     // X-only (no Y): single radar with xAxis items as spokes
@@ -134,7 +134,7 @@ export function useRadarChartOptions(config: BaseChartConfig) {
     const yAxisRadarData: RadarDataItem[] = chartData.value.yAxis.map((y) => ({
       name: y,
       value: Math.max(0, yAxisTotals.get(y) ?? 0),
-      itemStyle: { color: getNextColorFor(y) },
+      itemStyle: { color: getNextColorFor(y) ?? '#5470C6' },
     }))
 
     if (sort.value.enabled) {
@@ -160,7 +160,7 @@ export function useRadarChartOptions(config: BaseChartConfig) {
         .map((z) => ({
           name: z,
           value: Math.max(0, zAxisTotals.get(z) ?? 0),
-          itemStyle: { color: getNextColorFor(z) },
+          itemStyle: { color: getNextColorFor(z) ?? '#5470C6' },
         }))
 
       if (sort.value.enabled) {

@@ -80,6 +80,7 @@ const CHART_ROOT_PREFIX: Record<string, string> = {
   ChartLine: 'line',
   ChartPie: 'pie',
   ChartHeatmap: 'heatmap',
+  ChartRadar: 'radar',
   Chart3D: '3d',
 }
 
@@ -280,7 +281,7 @@ var VizbChunks = map[string]string${goStringMap(chunks)}
 // VizbChunkImports is the chunk reference graph (key → keys it imports).
 var VizbChunkImports = map[string][]string${goStringSliceMap(imports)}
 
-// VizbChartRoots maps each logical chart (bar/line/pie/heatmap/3d) to its
+// VizbChartRoots maps each logical chart (bar/line/pie/heatmap/radar/3d) to its
 // renderer chunk key. These are the only chunks the pruner gates.
 var VizbChartRoots = map[string]string${goStringMap(roots)}
 

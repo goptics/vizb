@@ -22,10 +22,12 @@ func TestSelectChunks(t *testing.T) {
 	lineRoot := VizbChartRoots["line"]
 	pieRoot := VizbChartRoots["pie"]
 	heatRoot := VizbChartRoots["heatmap"]
+	radarRoot := VizbChartRoots["radar"]
 	root3D := VizbChartRoots["3d"]
 
 	require.NotEmpty(t, entry, "generated VizbEntryKey must be present")
 	require.NotEmpty(t, barRoot, "generated VizbChartRoots must be populated")
+	require.NotEmpty(t, radarRoot, "generated VizbChartRoots must contain radar")
 
 	t.Run("bar only, no 3D drops other renderers and the 3D stack", func(t *testing.T) {
 		got := decodeChunks(t, string(SelectChunks([]string{"bar"}, false)))
@@ -54,6 +56,17 @@ func TestSelectChunks(t *testing.T) {
 		assert.Contains(t, got, pieRoot)
 		assert.NotContains(t, got, root3D)
 		assert.NotContains(t, got, barRoot)
+	})
+
+	t.Run("radar keeps radar, prunes unrelated renderers", func(t *testing.T) {
+		got := decodeChunks(t, string(SelectChunks([]string{"radar"}, false)))
+
+		assert.Contains(t, got, radarRoot, "radar renderer is kept")
+		assert.NotContains(t, got, barRoot, "unselected bar renderer is pruned")
+		assert.NotContains(t, got, lineRoot, "unselected line renderer is pruned")
+		assert.NotContains(t, got, pieRoot, "unselected pie renderer is pruned")
+		assert.NotContains(t, got, heatRoot, "unselected heatmap renderer is pruned")
+		assert.NotContains(t, got, root3D, "3D renderer is pruned when needs3D is false")
 	})
 
 	t.Run("empty selection ships all renderers", func(t *testing.T) {
