@@ -35,10 +35,8 @@ const makeRadarTitle = (text: string, left: string, styling: ReturnType<typeof g
   textStyle: { color: styling.textColor, fontSize, fontWeight: 'bold' },
 })
 
-const makeIndicators = (data: RadarDataItem[]) => {
-  const maxVal = data.reduce((m, d) => Math.max(m, d.value), 0)
-  return data.map((d) => ({ name: d.name, max: Math.max(maxVal * 1.1, 1) }))
-}
+const makeIndicators = (data: RadarDataItem[]) =>
+  data.map((d) => ({ name: d.name, max: Math.max(d.value * 1.1, 1) }))
 
 const makeRadarSeriesEntry = (
   name: string,
@@ -102,9 +100,15 @@ export function useRadarChartOptions(config: BaseChartConfig) {
       trigger: 'item',
       ...getTooltipTheme(isDark.value),
       formatter: (params: any) => {
-        if (!params?.data) return ''
+        if (!params) return ''
         const vals: number[] = Array.isArray(params.value) ? params.value : []
-        const rows = vals.map((v) => formatTooltipValue(v)).join(', ')
+        const indicators: Array<{ name: string }> = params.indicator ?? []
+        const rows =
+          indicators.length > 0
+            ? indicators
+                .map((ind, i) => `${ind.name}: <b>${formatTooltipValue(vals[i])}</b>`)
+                .join('<br/>')
+            : vals.map((v) => formatTooltipValue(v)).join('<br/>')
         return `<strong>${params.name}</strong><br/>${rows}`
       },
     } as EChartsOption['tooltip']
