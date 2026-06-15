@@ -125,18 +125,30 @@ export function useRadarChartOptions(config: BaseChartConfig) {
         )
       }
 
+      // Render largest Z series first so smaller ones stay on top and are hoverable.
+      const zTotalsForRender = new Map<string, number>()
+      for (const [z, xMap] of grouped) {
+        let t = 0
+        for (const vals of xMap.values()) t += vals.reduce((a, b) => a + b, 0)
+        zTotalsForRender.set(z, t)
+      }
+      const renderZValues = [...zValues].sort(
+        (a, b) => (zTotalsForRender.get(b) ?? 0) - (zTotalsForRender.get(a) ?? 0),
+      )
+
       return {
         ...baseOptions,
         tooltip: makeTooltip(isDark.value, yAxis),
         legend: { data: zValues, bottom: 5, textStyle: { color: styling.textColor } },
         radar: radarConfig(makeIndicators(yAxis, perSpokeMax), styling),
-        series: zValues.map((z) => ({
+        series: renderZValues.map((z) => ({
           name: z,
           type: 'radar' as const,
-          symbol: 'none',
+          symbol: 'circle',
+          symbolSize: 4,
           label,
           itemStyle: { color: getNextColorFor(z) },
-          lineStyle: { width: 1, opacity: 0.5 },
+          lineStyle: { width: 1.5, opacity: 0.7 },
           areaStyle: { opacity: 0.1 },
           data: [...(grouped.get(z) ?? new Map<string, number[]>()).entries()].map(([x, vals]) => ({
             value: vals.map((v) => Math.max(0, v)),
@@ -160,6 +172,10 @@ export function useRadarChartOptions(config: BaseChartConfig) {
       })
     }
 
+    // Render largest-first so smaller polygons are drawn on top and remain hoverable.
+    // Legend keeps the user's sort order; ECharts matches series to legend by name.
+    const renderRows = [...rows].sort((a, b) => b.total - a.total)
+
     return {
       ...baseOptions,
       tooltip: makeTooltip(isDark.value, yAxis),
@@ -169,13 +185,14 @@ export function useRadarChartOptions(config: BaseChartConfig) {
         textStyle: { color: styling.textColor },
       },
       radar: radarConfig(makeIndicators(yAxis, perSpokeMax), styling),
-      series: rows.map((s) => ({
+      series: renderRows.map((s) => ({
         name: s.xAxis,
         type: 'radar' as const,
-        symbol: 'none',
+        symbol: 'circle',
+        symbolSize: 4,
         label,
         itemStyle: { color: getNextColorFor(s.xAxis) },
-        lineStyle: { width: 1, opacity: 0.5 },
+        lineStyle: { width: 1.5, opacity: 0.7 },
         areaStyle: { opacity: 0.1 },
         data: [{ value: s.values.map((v) => Math.max(0, v)), name: s.xAxis }],
       })),
