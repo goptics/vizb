@@ -33,8 +33,7 @@ const {
 
 const { settings, resolved, toggleDark } = useSettingsStore()
 
-// Build an AxisLabels object from axes[] for swapAxisLabels. Falls back to the
-// legacy axisLabels field for datasets migrated from old JSON.
+// Build an AxisLabels flat map from settings.axes for swapAxisLabels.
 const axisLabelsFromAxes = (axes: Axis[] | undefined): AxisLabels | undefined => {
   if (!axes?.length) return undefined
   const result: AxisLabels = {}
@@ -47,13 +46,12 @@ const axisLabelsFromAxes = (axes: Axis[] | undefined): AxisLabels | undefined =>
 // The full raw rows — the worker owns grouping/projection, so we pass the dataset
 // as-is (no main-thread grouping or swap mutation). Only a dataset switch re-clones.
 const activeResults = computed(() => activeDataSet.value?.data || [])
-// Display labels: prefer axes[] (new schema), fall back to legacy axisLabels field.
-// swapAxisLabels permutes them to match the active arrangement.
+// Display labels from axes[], permuted to match the active arrangement.
 const activeLabels = computed(() =>
   swapAxisLabels(
     activeArrangement.value.identityString,
     activeArrangement.value.targetString,
-    axisLabelsFromAxes(activeDataSet.value?.settings?.axes) ?? activeDataSet.value?.axisLabels
+    axisLabelsFromAxes(activeDataSet.value?.settings?.axes)
   )
 )
 

@@ -2,38 +2,46 @@ package shared
 
 import "encoding/json"
 
-// MigrateDataset populates ds.Settings.Axes from the legacy top-level
-// "axisLabels" JSON field when Settings.Axes is empty. rawJSON must be
-// the original bytes from which ds was unmarshalled; pass nil to skip
-// legacy migration (axes remain empty).
+// MigrateDataset populates ds.Meta (and each HistoryEntry.Meta) from the
+// legacy flat top-level fields (cpu/os/arch/pkg) that existed before the Meta
+// struct was introduced. rawJSON must be the original bytes from which ds was
+// unmarshalled; pass nil to skip migration.
 func MigrateDataset(ds *Dataset, rawJSON []byte) {
-	// Nothing to do if axes already present or no raw bytes for second pass.
-	if len(ds.Settings.Axes) > 0 || len(rawJSON) == 0 {
+	if len(rawJSON) == 0 {
 		return
 	}
 
-	// Second-pass: unmarshal only the legacy axisLabels field.
 	var legacy struct {
-		AxisLabels struct {
-			Name string `json:"name,omitempty"`
-			X    string `json:"x,omitempty"`
-			Y    string `json:"y,omitempty"`
-			Z    string `json:"z,omitempty"`
-		} `json:"axisLabels"`
+		CPU     *CPUInfo `json:"cpu"`
+		OS      string   `json:"os"`
+		Arch    string   `json:"arch"`
+		Pkg     string   `json:"pkg"`
+		History []struct {
+			CPU *CPUInfo `json:"cpu"`
+			OS  string   `json:"os"`
+		} `json:"history"`
 	}
 	if err := json.Unmarshal(rawJSON, &legacy); err != nil {
-		return // not parseable, leave Axes empty
+		return
 	}
 
-	// Build Axes in canonical order, including only non-empty labels.
-	for _, entry := range []struct{ key, label string }{
-		{"name", legacy.AxisLabels.Name},
-		{"x", legacy.AxisLabels.X},
-		{"y", legacy.AxisLabels.Y},
-		{"z", legacy.AxisLabels.Z},
-	} {
-		if entry.label != "" {
-			ds.Settings.Axes = append(ds.Settings.Axes, Axis{Key: entry.key, Label: entry.label})
+	if ds.Meta == nil {
+		m := &Meta{CPU: legacy.CPU, OS: legacy.OS, Arch: legacy.Arch, Pkg: legacy.Pkg}
+		if m.CPU != nil || m.OS != "" || m.Arch != "" || m.Pkg != "" {
+			ds.Meta = m
+		}
+	}
+
+	for i := range ds.History {
+		if i >= len(legacy.History) {
+			break
+		}
+		if ds.History[i].Meta == nil {
+			leg := legacy.History[i]
+			m := &Meta{CPU: leg.CPU, OS: leg.OS}
+			if m.CPU != nil || m.OS != "" {
+				ds.History[i].Meta = m
+			}
 		}
 	}
 }
