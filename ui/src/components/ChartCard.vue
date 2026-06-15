@@ -70,8 +70,8 @@ const { settings, chartType, resolved } = useSettingsStore()
 // 3D form (it renders per-dimension 2D pies even for x/y/z data), so it always
 // routes to ChartPie — never Chart3D, which doesn't register the pie module.
 const ActiveChart = computed<Component>(() => {
-  // Pie and heatmap have no 3D form — both render their own 2D layout even for x/y/z
-  // data (pie folds dimensions into per-dimension pies; heatmap folds z onto the legend),
+  // Pie, heatmap, and radar have no 3D form — each renders its own 2D layout even for
+  // x/y/z data (pie: per-dimension pies; heatmap: z on legend; radar: per-dimension radars),
   // so they must route past the is3D check that otherwise hands x/y/z off to Chart3D.
   if (chartType.value === 'pie') return RENDERERS.pie
   if (chartType.value === 'heatmap') return RENDERERS.heatmap
