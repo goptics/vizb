@@ -59,7 +59,7 @@ func init() {
 	rootCmd.Flags().StringVarP(&shared.FlagState.GroupPattern, "group-pattern", "p", "x", "Pattern to extract grouping information from data labels / series names")
 	rootCmd.Flags().StringVarP(&shared.FlagState.GroupRegex, "group-regex", "r", "", "Regex pattern to extract grouping information from data labels / series names")
 	rootCmd.Flags().StringVarP(&shared.FlagState.Sort, "sort", "s", "", "Sort in asc or desc order (default: as-is)")
-	rootCmd.Flags().StringSliceVarP(&shared.FlagState.Charts, "charts", "c", []string{"bar", "line", "pie", "heatmap"}, "Chart types to generate (bar, line, pie, heatmap)")
+	rootCmd.Flags().StringSliceVarP(&shared.FlagState.Charts, "charts", "c", []string{"bar", "line", "pie", "heatmap", "radar"}, "Chart types to generate (bar, line, pie, heatmap, radar)")
 	rootCmd.Flags().StringSliceVarP(&shared.FlagState.Group, "group", "g", nil, "Names each dimension in --group-pattern/regex order. csv/json: column/field names whose values feed the dimensions; benchmark parsers: human-readable labels for the name/x/y/z axes")
 	rootCmd.Flags().BoolVarP(&shared.FlagState.ShowLabels, "show-labels", "l", false, "Show labels on charts")
 	rootCmd.Flags().StringVarP(&shared.FlagState.FilterRegex, "filter", "f", "", "Regex pattern to include only matching data labels / series names")

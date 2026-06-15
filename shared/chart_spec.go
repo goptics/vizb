@@ -13,12 +13,14 @@ var validChartTypes = map[string]bool{
 	"line":    true,
 	"pie":     true,
 	"heatmap": true,
+	"radar":   true,
 }
 
-// notAllowedForLimitedCharts lists settings not valid for pie/heatmap.
+// notAllowedForLimitedCharts lists settings not valid for pie/heatmap/radar.
 var notAllowedForLimitedCharts = map[string]bool{
 	"pie":     true,
 	"heatmap": true,
+	"radar":   true,
 }
 
 // axisChar returns the single character that represents an axis key in a swap
@@ -98,7 +100,7 @@ func ParseChartSpecs(specs []string, charts []string, axes []Axis) (map[string]C
 
 		// Validate chart type is known.
 		if !validChartTypes[chartType] {
-			return nil, fmt.Errorf("--chart: unknown chart type %q (must be one of: bar, line, pie, heatmap)", chartType)
+			return nil, fmt.Errorf("--chart: unknown chart type %q (must be one of: bar, line, pie, heatmap, radar)", chartType)
 		}
 
 		// Validate chart type is active.

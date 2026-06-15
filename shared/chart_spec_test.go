@@ -10,7 +10,7 @@ func TestParseChartSpecs(t *testing.T) {
 		{Key: "y"},
 		{Key: "name"},
 	}
-	allCharts := []string{"bar", "line", "pie", "heatmap"}
+	allCharts := []string{"bar", "line", "pie", "heatmap", "radar"}
 	barLine := []string{"bar", "line"}
 
 	tests := []struct {
@@ -187,6 +187,35 @@ func TestParseChartSpecs(t *testing.T) {
 		{
 			name:    "invalid: empty rest after colon",
 			specs:   []string{"bar:"},
+			charts:  allCharts,
+			axes:    xynAxes,
+			wantErr: true,
+		},
+		{
+			name:   "valid: radar:sort=asc",
+			specs:  []string{"radar:sort=asc"},
+			charts: allCharts,
+			axes:   xynAxes,
+			check: func(t *testing.T, got map[string]ChartSettings) {
+				s, ok := got["radar"]
+				if !ok {
+					t.Fatal("expected radar entry")
+				}
+				if s.Sort == nil || !s.Sort.Enabled || s.Sort.Order != "asc" {
+					t.Errorf("Sort: got %+v, want &Sort{Enabled:true, Order:asc}", s.Sort)
+				}
+			},
+		},
+		{
+			name:    "invalid: radar:scale=log",
+			specs:   []string{"radar:scale=log"},
+			charts:  allCharts,
+			axes:    xynAxes,
+			wantErr: true,
+		},
+		{
+			name:    "invalid: radar:rotate",
+			specs:   []string{"radar:rotate"},
 			charts:  allCharts,
 			axes:    xynAxes,
 			wantErr: true,
