@@ -41,11 +41,14 @@ const makeIndicators = (data: RadarDataItem[]) =>
 const makeRadarSeriesEntry = (
   name: string,
   data: RadarDataItem[],
+  showLabels: boolean,
+  styling: ReturnType<typeof getChartStyling>,
   radarIndex?: number,
 ): any => ({
   name,
   type: 'radar' as const,
   ...(radarIndex !== undefined ? { radarIndex } : {}),
+  label: { show: showLabels, fontSize, color: styling.textColor },
   data: [
     {
       name,
@@ -62,9 +65,7 @@ const makeRadarConfig = (
   radius: string,
   center: [string, string],
   styling: ReturnType<typeof getChartStyling>,
-  index?: number,
 ): any => ({
-  ...(index !== undefined ? { index } : {}),
   radius,
   center,
   indicator: makeIndicators(data),
@@ -73,8 +74,27 @@ const makeRadarConfig = (
   splitArea: { areaStyle: { opacity: 0.05 } },
 })
 
+// Tooltip that maps each polygon vertex back to its spoke name.
+// ECharts radar params carry `value` (the full value array) and `seriesIndex`;
+// `params.indicator` is not part of the callback — spoke names come from the
+// data arrays that built the radar, captured via `dataArrays`.
+const makeRadarTooltip = (
+  isDark: boolean,
+  dataArrays: RadarDataItem[][],
+): EChartsOption['tooltip'] => ({
+  trigger: 'item',
+  ...getTooltipTheme(isDark),
+  formatter: (params: any) => {
+    if (!params) return ''
+    const vals: number[] = Array.isArray(params.value) ? params.value : []
+    const dataArr = dataArrays[params.seriesIndex ?? 0] ?? dataArrays[0] ?? []
+    const rows = dataArr.map((d, i) => `${d.name}: <b>${formatTooltipValue(vals[i])}</b>`).join('<br/>')
+    return `<strong>${params.name}</strong><br/>${rows}`
+  },
+} as EChartsOption['tooltip'])
+
 export function useRadarChartOptions(config: BaseChartConfig) {
-  const { chartData, sort, isDark } = config
+  const { chartData, sort, showLabels, isDark } = config
 
   const sortedData = computed(() => {
     const seriesWithTotals = chartData.value.series.map((series) => ({
@@ -96,23 +116,6 @@ export function useRadarChartOptions(config: BaseChartConfig) {
     const styling = getChartStyling(isDark.value)
     const baseOptions = getBaseOptions(config)
 
-    baseOptions.tooltip = {
-      trigger: 'item',
-      ...getTooltipTheme(isDark.value),
-      formatter: (params: any) => {
-        if (!params) return ''
-        const vals: number[] = Array.isArray(params.value) ? params.value : []
-        const indicators: Array<{ name: string }> = params.indicator ?? []
-        const rows =
-          indicators.length > 0
-            ? indicators
-                .map((ind, i) => `${ind.name}: <b>${formatTooltipValue(vals[i])}</b>`)
-                .join('<br/>')
-            : vals.map((v) => formatTooltipValue(v)).join('<br/>')
-        return `<strong>${params.name}</strong><br/>${rows}`
-      },
-    } as EChartsOption['tooltip']
-
     const xAxisRadarData: RadarDataItem[] = sorted.series.map((s) => ({
       name: s.xAxis,
       value: Math.max(0, s.total),
@@ -121,13 +124,13 @@ export function useRadarChartOptions(config: BaseChartConfig) {
 
     // X-only (no Y): single radar with xAxis items as spokes
     if (!hasYAxis(chartData)) {
-      const options: EChartsOption = {
+      return {
         ...baseOptions,
+        tooltip: makeRadarTooltip(isDark.value, [xAxisRadarData]),
         legend: { show: false },
         radar: makeRadarConfig(xAxisRadarData, '70%', ['50%', '55%'], styling),
-        series: [makeRadarSeriesEntry(chartData.value.statType, xAxisRadarData)],
+        series: [makeRadarSeriesEntry(chartData.value.statType, xAxisRadarData, showLabels.value, styling)],
       }
-      return options
     }
 
     const yAxisTotals = computeYAxisTotals(chartData.value.yAxis, sorted.series)
@@ -143,13 +146,13 @@ export function useRadarChartOptions(config: BaseChartConfig) {
 
     // Y-only (no X): single radar with yAxis items as spokes
     if (!hasXAxis(chartData)) {
-      const options: EChartsOption = {
+      return {
         ...baseOptions,
+        tooltip: makeRadarTooltip(isDark.value, [yAxisRadarData]),
         legend: { show: false },
         radar: makeRadarConfig(yAxisRadarData, '70%', ['50%', '55%'], styling),
-        series: [makeRadarSeriesEntry(chartData.value.statType, yAxisRadarData)],
+        series: [makeRadarSeriesEntry(chartData.value.statType, yAxisRadarData, showLabels.value, styling)],
       }
-      return options
     }
 
     // X + Y + Z: three side-by-side radars
@@ -168,8 +171,9 @@ export function useRadarChartOptions(config: BaseChartConfig) {
       }
 
       const labels = chartData.value.axisLabels
-      const options: EChartsOption = {
+      return {
         ...baseOptions,
+        tooltip: makeRadarTooltip(isDark.value, [xAxisRadarData, yAxisRadarData, zAxisRadarData]),
         legend: { show: false },
         title: [
           makeRadarTitle(labels?.x || 'X-Axis', '16.66%', styling),
@@ -177,37 +181,36 @@ export function useRadarChartOptions(config: BaseChartConfig) {
           makeRadarTitle(labels?.z || 'Z-Axis', '83.33%', styling),
         ],
         radar: [
-          makeRadarConfig(xAxisRadarData, '25%', ['16.66%', '55%'], styling, 0),
-          makeRadarConfig(yAxisRadarData, '25%', ['50%', '55%'], styling, 1),
-          makeRadarConfig(zAxisRadarData, '25%', ['83.33%', '55%'], styling, 2),
+          makeRadarConfig(xAxisRadarData, '25%', ['16.66%', '55%'], styling),
+          makeRadarConfig(yAxisRadarData, '25%', ['50%', '55%'], styling),
+          makeRadarConfig(zAxisRadarData, '25%', ['83.33%', '55%'], styling),
         ],
         series: [
-          makeRadarSeriesEntry('By X-Axis', xAxisRadarData, 0),
-          makeRadarSeriesEntry('By Y-Axis', yAxisRadarData, 1),
-          makeRadarSeriesEntry('By Z-Axis', zAxisRadarData, 2),
+          makeRadarSeriesEntry('By X-Axis', xAxisRadarData, showLabels.value, styling, 0),
+          makeRadarSeriesEntry('By Y-Axis', yAxisRadarData, showLabels.value, styling, 1),
+          makeRadarSeriesEntry('By Z-Axis', zAxisRadarData, showLabels.value, styling, 2),
         ],
       }
-      return options
     }
 
     // X + Y: two side-by-side radars
-    const options: EChartsOption = {
+    return {
       ...baseOptions,
+      tooltip: makeRadarTooltip(isDark.value, [xAxisRadarData, yAxisRadarData]),
       legend: { show: false },
       title: [
         makeRadarTitle(chartData.value.axisLabels?.x || 'X-Axis', '25%', styling),
         makeRadarTitle(chartData.value.axisLabels?.y || 'Y-Axis', '75%', styling),
       ],
       radar: [
-        makeRadarConfig(xAxisRadarData, '35%', ['25%', '55%'], styling, 0),
-        makeRadarConfig(yAxisRadarData, '35%', ['75%', '55%'], styling, 1),
+        makeRadarConfig(xAxisRadarData, '35%', ['25%', '55%'], styling),
+        makeRadarConfig(yAxisRadarData, '35%', ['75%', '55%'], styling),
       ],
       series: [
-        makeRadarSeriesEntry('By X-Axis', xAxisRadarData, 0),
-        makeRadarSeriesEntry('By Y-Axis', yAxisRadarData, 1),
+        makeRadarSeriesEntry('By X-Axis', xAxisRadarData, showLabels.value, styling, 0),
+        makeRadarSeriesEntry('By Y-Axis', yAxisRadarData, showLabels.value, styling, 1),
       ],
     }
-    return options
   })
 
   return { options }
