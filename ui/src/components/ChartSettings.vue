@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { SortAsc, SortDesc, BarChart3, TrendingUp, PieChart, Table } from 'lucide-vue-next'
+import { SortAsc, SortDesc, BarChart3, TrendingUp, PieChart, Table, Radar } from 'lucide-vue-next'
 import type { Component } from 'vue'
 import { Card, CardContent, CardHeader, CardTitle } from './ui'
 import { Separator } from './ui'
@@ -18,6 +18,7 @@ const CHART_ICONS: Record<ChartType, Component> = {
   line: TrendingUp,
   pie: PieChart,
   heatmap: Table,
+  radar: Radar,
 }
 
 const chartType = useSyncedSetting<ChartType>(

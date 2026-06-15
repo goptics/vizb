@@ -46,6 +46,7 @@ const RENDERERS: Record<ChartType, Component> = {
   line: mk(() => import('./ChartLine.vue')),
   pie: mk(() => import('./ChartPie.vue')),
   heatmap: mk(() => import('./ChartHeatmap.vue')),
+  radar: mk(() => import('./ChartRadar.vue')),
 }
 const Chart3D = mk(() => import('./Chart3D.vue'))
 
@@ -74,6 +75,7 @@ const ActiveChart = computed<Component>(() => {
   // so they must route past the is3D check that otherwise hands x/y/z off to Chart3D.
   if (chartType.value === 'pie') return RENDERERS.pie
   if (chartType.value === 'heatmap') return RENDERERS.heatmap
+  if (chartType.value === 'radar') return RENDERERS.radar
   return is3DChart.value ? Chart3D : (RENDERERS[chartType.value] ?? RENDERERS.bar)
 })
 
