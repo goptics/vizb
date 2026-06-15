@@ -9,7 +9,7 @@ import type { Point3D } from '../../types'
 
 type SeriesWithTotal = { xAxis: string; values: number[]; total: number }
 
-type RadarDataItem = { name: string; value: number; itemStyle: { color: string } }
+type RadarDataItem = { name: string; value: number; itemStyle: { color: string | undefined } }
 
 const computeYAxisTotals = (yAxis: string[], series: SeriesWithTotal[]): Map<string, number> => {
   const totals = new Map<string, number>()
@@ -50,8 +50,8 @@ const makeRadarSeriesEntry = (
     {
       name,
       value: data.map((d) => d.value),
-      itemStyle: { color: data[0]?.itemStyle?.color ?? '#5470C6' },
-      lineStyle: { color: data[0]?.itemStyle?.color ?? '#5470C6' },
+      itemStyle: { color: data[0]?.itemStyle?.color },
+      lineStyle: { color: data[0]?.itemStyle?.color },
       areaStyle: { color: data[0]?.itemStyle?.color ?? '#5470C6', opacity: 0.15 },
     },
   ],
@@ -116,7 +116,7 @@ export function useRadarChartOptions(config: BaseChartConfig) {
     const xAxisRadarData: RadarDataItem[] = sorted.series.map((s) => ({
       name: s.xAxis,
       value: Math.max(0, s.total),
-      itemStyle: { color: getNextColorFor(s.xAxis) ?? '#5470C6' },
+      itemStyle: { color: getNextColorFor(s.xAxis) },
     }))
 
     // X-only (no Y): single radar with xAxis items as spokes
@@ -134,7 +134,7 @@ export function useRadarChartOptions(config: BaseChartConfig) {
     const yAxisRadarData: RadarDataItem[] = chartData.value.yAxis.map((y) => ({
       name: y,
       value: Math.max(0, yAxisTotals.get(y) ?? 0),
-      itemStyle: { color: getNextColorFor(y) ?? '#5470C6' },
+      itemStyle: { color: getNextColorFor(y) },
     }))
 
     if (sort.value.enabled) {
@@ -160,7 +160,7 @@ export function useRadarChartOptions(config: BaseChartConfig) {
         .map((z) => ({
           name: z,
           value: Math.max(0, zAxisTotals.get(z) ?? 0),
-          itemStyle: { color: getNextColorFor(z) ?? '#5470C6' },
+          itemStyle: { color: getNextColorFor(z) },
         }))
 
       if (sort.value.enabled) {
