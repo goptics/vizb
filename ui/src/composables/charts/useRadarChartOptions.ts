@@ -1,20 +1,17 @@
 import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
-import { hasXAxis, hasYAxis, hasZAxis } from '../../lib/utils'
+import { getNextColorFor, hasXAxis, hasYAxis, hasZAxis } from '../../lib/utils'
 import { getChartStyling, getTooltipTheme, formatTooltipValue } from './shared'
 import { fontSize, sortByTotal } from './shared/common'
 
-interface AxisView {
-  label: string
-  names: string[]
-  values: number[]
-}
+const makeIndicators = (names: string[], perSpokeMax: number[]) =>
+  names.map((name, i) => ({ name, max: Math.max((perSpokeMax[i] ?? 0) * 1.1, 1) }))
 
-const makeIndicators = (names: string[], maxValues: number[]) =>
-  names.map((name, i) => ({ name, max: Math.max((maxValues[i] ?? 0) * 1.1, 1) }))
-
-const makeTooltip = (isDark: boolean, indicatorNames: string[]): EChartsOption['tooltip'] =>
+const makeTooltip = (
+  isDark: boolean,
+  indicatorNames: string[],
+): EChartsOption['tooltip'] =>
   ({
     trigger: 'item',
     ...getTooltipTheme(isDark),
@@ -39,7 +36,7 @@ const radarConfig = (
 })
 
 export function useRadarChartOptions(config: BaseChartConfig) {
-  const { chartData, sort, showLabels, isDark, visibleZ } = config
+  const { chartData, sort, showLabels, isDark } = config
 
   const options = computed<EChartsOption>(() => {
     const cd = chartData.value
@@ -47,94 +44,141 @@ export function useRadarChartOptions(config: BaseChartConfig) {
     const baseOptions = getBaseOptions(config)
     const label = { show: showLabels.value, fontSize, color: styling.textColor }
 
-    const xLabel = cd.axisLabels?.x || 'X-Axis'
-    const yLabel = cd.axisLabels?.y || 'Y-Axis'
-    const zLabel = cd.axisLabels?.z || 'Z-Axis'
-
-    // Build one view per available axis
-    const views: AxisView[] = []
-
-    if (hasXAxis(chartData)) {
-      const rows = cd.series.map((s) => ({ ...s, total: s.values.reduce((a, b) => a + b, 0) }))
+    // X only: xAxis values as spokes, single polygon with totals
+    if (!hasYAxis(chartData)) {
+      const rows = cd.series.map((s) => ({ ...s, total: s.values[0] ?? 0 }))
       if (sort.value.enabled) rows.sort(sortByTotal(sort.value.order))
-      views.push({
-        label: xLabel,
-        names: rows.map((s) => s.xAxis),
-        values: rows.map((s) => Math.max(0, s.total)),
-      })
-    }
-
-    if (hasYAxis(chartData)) {
-      const yTotals = cd.yAxis.map((_, i) =>
-        cd.series.reduce((sum, s) => sum + (s.values[i] ?? 0), 0),
-      )
-      views.push({
-        label: yLabel,
-        names: cd.yAxis,
-        values: yTotals.map((v) => Math.max(0, v)),
-      })
-    }
-
-    if (hasZAxis(chartData)) {
-      const zTotals = new Map<string, number>()
-      for (const pt of cd.points ?? []) {
-        zTotals.set(pt.zAxis, (zTotals.get(pt.zAxis) ?? 0) + pt.value)
-      }
-      const zNames = cd.zAxis.filter((z) => z !== '')
-      views.push({
-        label: zLabel,
-        names: zNames,
-        values: zNames.map((z) => Math.max(0, zTotals.get(z) ?? 0)),
-      })
-    }
-
-    if (views.length === 0) return baseOptions as EChartsOption
-
-    // Single-axis: no legend switcher needed
-    if (views.length === 1) {
-      const view = views[0]!
+      const names = rows.map((s) => s.xAxis)
+      const values = rows.map((s) => Math.max(0, s.total))
       return {
         ...baseOptions,
-        tooltip: makeTooltip(isDark.value, view.names),
+        tooltip: makeTooltip(isDark.value, names),
         legend: { show: false },
-        radar: radarConfig(makeIndicators(view.names, view.values), styling),
+        radar: radarConfig(makeIndicators(names, values), styling),
         series: [
           {
             type: 'radar' as const,
             symbol: 'none',
             label,
-            data: [{ value: view.values, name: view.label }],
+            data: [{ value: values, name: cd.statType }],
           },
         ],
       }
     }
 
-    // Multi-axis: legend items = axis labels, one active at a time (like pie titles)
-    const axisLabels = views.map((v) => v.label)
-    const visibleZVal = visibleZ?.value ?? {}
-    const activeLabel = axisLabels.find((l) => visibleZVal[l] === true) ?? axisLabels[0]!
-    const activeView = views.find((v) => v.label === activeLabel) ?? views[0]!
-    const legendSelected = Object.fromEntries(axisLabels.map((l) => [l, l === activeLabel]))
+    const yAxis = cd.yAxis
 
-    return {
-      ...baseOptions,
-      tooltip: makeTooltip(isDark.value, activeView.names),
-      legend: {
-        data: axisLabels,
-        selectedMode: 'single' as const,
-        selected: legendSelected,
-        bottom: 5,
-        textStyle: { color: styling.textColor },
-      },
-      radar: radarConfig(makeIndicators(activeView.names, activeView.values), styling),
-      series: [
-        {
+    // Y only: yAxis values as spokes, single polygon with column totals
+    if (!hasXAxis(chartData)) {
+      const spokeTotals = yAxis.map((_, i) =>
+        cd.series.reduce((sum, s) => sum + (s.values[i] ?? 0), 0),
+      )
+      return {
+        ...baseOptions,
+        tooltip: makeTooltip(isDark.value, yAxis),
+        legend: { show: false },
+        radar: radarConfig(makeIndicators(yAxis, spokeTotals), styling),
+        series: [
+          {
+            type: 'radar' as const,
+            symbol: 'none',
+            label,
+            data: [{ value: spokeTotals.map((v) => Math.max(0, v)), name: cd.statType }],
+          },
+        ],
+      }
+    }
+
+    // X + Y + Z: Z = series in legend, X = multiple data points per Z series, Y = spokes
+    if (hasZAxis(chartData)) {
+      const yIndex = new Map(yAxis.map((y, i) => [y, i]))
+      const grouped = new Map<string, Map<string, number[]>>()
+      for (const pt of cd.points ?? []) {
+        if (!grouped.has(pt.zAxis)) grouped.set(pt.zAxis, new Map())
+        const zMap = grouped.get(pt.zAxis)!
+        if (!zMap.has(pt.xAxis)) zMap.set(pt.xAxis, new Array(yAxis.length).fill(0))
+        const idx = yIndex.get(pt.yAxis)
+        if (idx !== undefined) zMap.get(pt.xAxis)![idx] = pt.value
+      }
+
+      const perSpokeMax = new Array<number>(yAxis.length).fill(0)
+      for (const xMap of grouped.values()) {
+        for (const vals of xMap.values()) {
+          vals.forEach((v, i) => {
+            if (v > (perSpokeMax[i] ?? 0)) perSpokeMax[i] = v
+          })
+        }
+      }
+
+      let zValues = cd.zAxis.filter((z) => z !== '')
+      if (sort.value.enabled) {
+        const zTotals = new Map<string, number>()
+        for (const [z, xMap] of grouped) {
+          let total = 0
+          for (const vals of xMap.values()) total += vals.reduce((a, b) => a + b, 0)
+          zTotals.set(z, total)
+        }
+        zValues = [...zValues].sort((a, b) =>
+          sort.value.order === 'asc'
+            ? (zTotals.get(a) ?? 0) - (zTotals.get(b) ?? 0)
+            : (zTotals.get(b) ?? 0) - (zTotals.get(a) ?? 0),
+        )
+      }
+
+      return {
+        ...baseOptions,
+        tooltip: makeTooltip(isDark.value, yAxis),
+        legend: { data: zValues, bottom: 5, textStyle: { color: styling.textColor } },
+        radar: radarConfig(makeIndicators(yAxis, perSpokeMax), styling),
+        series: zValues.map((z) => ({
+          name: z,
           type: 'radar' as const,
           symbol: 'none',
           label,
-          data: [{ value: activeView.values, name: activeLabel }],
-        },
-      ],
+          itemStyle: { color: getNextColorFor(z) },
+          lineStyle: { width: 1, opacity: 0.5 },
+          areaStyle: { opacity: 0.1 },
+          data: [...(grouped.get(z) ?? new Map<string, number[]>()).entries()].map(([x, vals]) => ({
+            value: vals.map((v) => Math.max(0, v)),
+            name: x,
+          })),
+        })),
+      }
+    }
+
+    // X + Y: one polygon per X value, Y = spokes, legend = X values
+    const rows = cd.series.map((s) => ({
+      ...s,
+      total: s.values.reduce((sum, v) => sum + v, 0),
+    }))
+    if (sort.value.enabled) rows.sort(sortByTotal(sort.value.order))
+
+    const perSpokeMax = new Array<number>(yAxis.length).fill(0)
+    for (const s of rows) {
+      s.values.forEach((v, i) => {
+        if (v > (perSpokeMax[i] ?? 0)) perSpokeMax[i] = v
+      })
+    }
+
+    return {
+      ...baseOptions,
+      tooltip: makeTooltip(isDark.value, yAxis),
+      legend: {
+        data: rows.map((s) => s.xAxis),
+        bottom: 5,
+        textStyle: { color: styling.textColor },
+      },
+      radar: radarConfig(makeIndicators(yAxis, perSpokeMax), styling),
+      series: rows.map((s) => ({
+        name: s.xAxis,
+        type: 'radar' as const,
+        symbol: 'none',
+        label,
+        itemStyle: { color: getNextColorFor(s.xAxis) },
+        lineStyle: { width: 1, opacity: 0.5 },
+        areaStyle: { opacity: 0.1 },
+        data: [{ value: s.values.map((v) => Math.max(0, v)), name: s.xAxis }],
+      })),
     }
   })
 
