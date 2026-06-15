@@ -7,12 +7,12 @@ import { useSettingsStore } from '../composables/useSettingsStore'
 import { useActiveChartShape } from '../composables/useActiveChartShape'
 import { useSyncedSetting } from '../composables/useSyncedSetting'
 
-const { settings, setScale } = useSettingsStore()
+const { resolved, setForActiveChart } = useSettingsStore()
 const { isAxisChart } = useActiveChartShape()
 
 const scaleType = useSyncedSetting<ScaleType>(
-  () => settings.scale,
-  (val) => setScale(val)
+  () => resolved('scale') as ScaleType,
+  (val) => setForActiveChart({ scale: val })
 )
 
 const scaleOptions = [

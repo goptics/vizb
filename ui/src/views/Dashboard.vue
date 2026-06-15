@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, toRef, watch } from 'vue'
+import { computed, watch } from 'vue'
 import { Moon, Sun, Package } from 'lucide-vue-next'
+import type { Sort, ScaleType, Axis, AxisLabels } from '../types'
 import { useDataPoint } from '../composables/useDataPoint'
 import { useChartPipeline } from '../composables/useChartPipeline'
 import { useSettingsStore } from '../composables/useSettingsStore'
@@ -30,20 +31,35 @@ const {
   loadError,
 } = useDataPoint()
 
-const { settings, toggleDark } = useSettingsStore()
+const { settings, resolved, toggleDark } = useSettingsStore()
+
+// Build an AxisLabels flat map from settings.axes for swapAxisLabels.
+const axisLabelsFromAxes = (axes: Axis[] | undefined): AxisLabels | undefined => {
+  if (!axes?.length) return undefined
+  const result: AxisLabels = {}
+  for (const a of axes) {
+    if (a.label) (result as Record<string, string>)[a.key] = a.label
+  }
+  return Object.keys(result).length ? result : undefined
+}
 
 // The full raw rows — the worker owns grouping/projection, so we pass the dataset
 // as-is (no main-thread grouping or swap mutation). Only a dataset switch re-clones.
 const activeResults = computed(() => activeDataSet.value?.data || [])
-// Display labels are derived from the arrangement (swap rotates which dimension
-// each label sits on), not mutated onto the dataset.
+// Display labels from axes[], permuted to match the active arrangement.
 const activeLabels = computed(() =>
   swapAxisLabels(
     activeArrangement.value.identityString,
     activeArrangement.value.targetString,
-    activeDataSet.value?.axisLabels
+    axisLabelsFromAxes(activeDataSet.value?.settings?.axes)
   )
 )
+
+// Per-chart resolved compute params — each chart type carries its own sort/showLabels/scale.
+const resolvedSort = computed(() => resolved('sort') as Sort)
+const resolvedShowLabels = computed(() => resolved('showLabels') as boolean)
+const resolvedScale = computed(() => resolved('scale') as ScaleType)
+
 // Charts are computed off-thread in a worker, one at a time (queue-based). Each
 // slot carries its own `pending` so its card drives an independent skeleton and
 // reveals progressively.
@@ -52,9 +68,9 @@ const { charts, groupNames } = useChartPipeline(
   activeArrangement,
   activeLabels,
   activeGroupId,
-  toRef(settings, 'sort'),
-  toRef(settings, 'showLabels'),
-  toRef(settings, 'scale')
+  resolvedSort,
+  resolvedShowLabels,
+  resolvedScale
 )
 
 // The worker owns grouping; feed its group list back into useDataPoint so the
@@ -71,8 +87,8 @@ useDashboardInit()
 <template>
   <nav class="fixed right-6 top-6 z-50 flex items-center gap-2">
     <IconButton
-      v-if="activeDataSet?.pkg"
-      :href="`https://${activeDataSet.pkg}`"
+      v-if="activeDataSet?.meta?.pkg"
+      :href="`https://${activeDataSet.meta?.pkg}`"
       aria-label="View Package Source"
     >
       <Package class="h-5 w-5" />

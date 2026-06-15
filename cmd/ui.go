@@ -31,6 +31,7 @@ func init() {
 	// to let `vizb html` prune chart chunks (incl. --data-url, where it's the only
 	// source of the selection since the data is fetched at runtime).
 	uiCmd.Flags().StringSliceVarP(&shared.FlagState.Charts, "charts", "c", []string{"bar", "line", "pie", "heatmap"}, "Chart types to bundle (bar, line, pie, heatmap)")
+	uiCmd.Flags().StringArrayVar(&shared.FlagState.ChartSpecs, "chart", nil, "Per-chart type settings override: <type>:<key>=<val>,... (repeatable)")
 }
 
 func runUI(cmd *cobra.Command, args []string) {
@@ -84,6 +85,20 @@ func runUI(cmd *cobra.Command, args []string) {
 		}
 	} else {
 		charts = unionCharts(benches)
+	}
+
+	if len(shared.FlagState.ChartSpecs) > 0 {
+		for i := range benches {
+			chartSettings, err := shared.ParseChartSpecs(
+				shared.FlagState.ChartSpecs,
+				benches[i].Settings.Charts,
+				benches[i].Settings.Axes,
+			)
+			if err != nil {
+				shared.ExitWithError(err.Error(), nil)
+			}
+			benches[i].Settings.ChartSettings = chartSettings
+		}
 	}
 
 	needs3D := shared.ChartsHave3DCapable(charts) && anyDatasetHasZAxis(benches)

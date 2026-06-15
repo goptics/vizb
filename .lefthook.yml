@@ -2,14 +2,20 @@ pre-commit:
   parallel: true
   commands:
     ui-gen-check:
-      glob: "ui/**"
+      glob: "ui/src/**/*.{vue,ts,js,css,svg}"
       run: |
-        if ! git diff --cached --name-only | grep -q "^pkg/template/vizb-ui.gen.go$"; then
-          echo "❌ ui/ changed but pkg/template/vizb-ui.gen.go is not staged."
-          echo "   Run: task build:ui"
-          exit 1
+        gen="pkg/template/vizb-ui.gen.go"
+        if git diff --cached --name-only | grep -q "^$gen$"; then
+          echo "✅ vizb-ui.gen.go is staged with UI changes"
+          exit 0
         fi
-        echo "✅ vizb-ui.gen.go is staged with UI changes"
+        if git diff --quiet HEAD -- "$gen"; then
+          echo "✅ vizb-ui.gen.go unchanged (type-only or asset change)"
+          exit 0
+        fi
+        echo "❌ ui/ changed and pkg/template/vizb-ui.gen.go needs updating."
+        echo "   Run: task build:ui"
+        exit 1
     go-test:
       glob: "*.go"
       run: task test

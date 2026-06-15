@@ -26,11 +26,30 @@ export type Sort = {
   order: SortOrder
 }
 
+// Ordered axis dimension — replaces the flat AxisLabels on DataSet.
+// `key` is the canonical short key ("name" | "x" | "y" | "z");
+// `label` is the human-readable column name from --group.
+export type Axis = {
+  key: 'name' | 'x' | 'y' | 'z'
+  label?: string
+}
+
+// Per-chart type settings override. Absent fields inherit the global Setting value.
+export type ChartSettings = {
+  swap?: string       // target arrangement string, e.g. "yxn"
+  sort?: Sort         // overrides global sort
+  scale?: ScaleType   // overrides global scale; not valid for pie/heatmap
+  showLabels?: boolean // overrides global showLabels
+  autoRotate?: boolean // 3D bar/line only; overrides the store-level autoRotate when set
+}
+
 export type Settings = {
   sort: Sort
   showLabels: boolean
   charts: ChartType[]
   scale: ScaleType
+  axes?: Axis[]
+  chartSettings?: Partial<Record<ChartType, ChartSettings>>
 }
 
 // Human-readable label for each dimension, derived from the --group columns.
@@ -43,30 +62,32 @@ export type AxisLabels = {
   z?: string
 }
 
-export type HistoryEntry = {
-  tag: string
-  timestamp: string
+// Machine metadata, nested under `meta` on both the dataset and each history
+// entry. `cpu` is absent when there is no CPU info.
+export type Meta = {
   cpu?: {
     name?: string
     cores?: number
   }
   os?: string
+  arch?: string
+  pkg?: string
+}
+
+export type HistoryEntry = {
+  tag: string
+  timestamp: string
+  meta?: Meta
 }
 
 export type DataSet = {
   name: string
   description?: string
-  pkg?: string
   tag?: string
   timestamp?: string
-  os?: string
   history?: HistoryEntry[]
-  cpu?: {
-    name?: string
-    cores?: number
-  }
+  meta?: Meta
   settings: Settings
-  axisLabels?: AxisLabels
   data: DataPoint[]
 }
 

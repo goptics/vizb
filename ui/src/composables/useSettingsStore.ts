@@ -1,17 +1,28 @@
 import { reactive, computed } from 'vue'
-import type { Sort, ChartType, ScaleType, Settings as DataSetSettings } from '../types'
+import type {
+  Sort,
+  ChartType,
+  ChartSettings,
+  ScaleType,
+  Settings as DataSetSettings,
+} from '../types'
 import { DEFAULT_SETTINGS } from './constants'
 import { isValidIndex } from '../lib/utils'
+
+type ResolvedKey = 'sort' | 'showLabels' | 'scale' | 'autoRotate'
+type ResolvedValue = Sort | boolean | ScaleType
 
 type StoreSettings = {
   sort: Sort
   showLabels: boolean
   charts: ChartType[]
   activeChartIndex: number
-  selectedSwapIndexMap: Map<number, number>
+  // Key: "${benchmarkId}:${chartType}" — per-chart swap index
+  selectedSwapIndexMap: Map<string, number>
   isDark: boolean
   scale: ScaleType
   autoRotate: boolean
+  chartSettings: Partial<Record<ChartType, ChartSettings>>
 }
 
 const settings = reactive<StoreSettings>({
@@ -23,6 +34,7 @@ const settings = reactive<StoreSettings>({
   isDark: false,
   scale: 'linear',
   autoRotate: false,
+  chartSettings: {},
 })
 
 const chartType = computed<ChartType>(() => settings.charts[settings.activeChartIndex] ?? 'bar')
@@ -115,6 +127,10 @@ export function useSettingsStore() {
       settings.sort = inputSettings.sort
       settings.showLabels = inputSettings.showLabels
       settings.scale = inputSettings.scale || 'linear'
+      // Seed per-chart overrides from the dataset's baked-in chartSettings.
+      settings.chartSettings = inputSettings.chartSettings
+        ? { ...inputSettings.chartSettings }
+        : {}
 
       setCharts(inputSettings.charts ?? DEFAULT_SETTINGS.charts)
       setActiveChartIndex(0)
@@ -122,12 +138,35 @@ export function useSettingsStore() {
     }
   }
 
-  const setSelectedSwapIndex = (benchmarkId: number, index: number) => {
-    settings.selectedSwapIndexMap.set(benchmarkId, index)
+  // resolved returns the effective value for key for the active chart type:
+  // per-chart override (if set) or the global default.
+  const resolved = (key: ResolvedKey): ResolvedValue => {
+    const ct = chartType.value
+    const perChart = settings.chartSettings[ct]
+    if (perChart !== undefined && perChart[key] !== undefined) {
+      return perChart[key] as ResolvedValue
+    }
+    return settings[key] as ResolvedValue
   }
 
-  const getSelectedSwapIndex = (benchmarkId: number): number | undefined => {
-    return settings.selectedSwapIndexMap.get(benchmarkId)
+  // setForActiveChart writes per-chart overrides for the currently active chart type.
+  const setForActiveChart = (update: Partial<Omit<ChartSettings, 'swap'>>) => {
+    const ct = chartType.value
+    settings.chartSettings[ct] = { ...settings.chartSettings[ct], ...update }
+  }
+
+  // setChartSettingsForType writes per-chart overrides for any given chart type.
+  const setChartSettingsForType = (ct: ChartType, update: Partial<Omit<ChartSettings, 'swap'>>) => {
+    settings.chartSettings[ct] = { ...settings.chartSettings[ct], ...update }
+  }
+
+  // Swap index is keyed by (benchmarkId, chartType) so each chart keeps its own arrangement.
+  const setSelectedSwapIndex = (benchmarkId: number, ct: ChartType, index: number) => {
+    settings.selectedSwapIndexMap.set(`${benchmarkId}:${ct}`, index)
+  }
+
+  const getSelectedSwapIndex = (benchmarkId: number, ct: ChartType): number | undefined => {
+    return settings.selectedSwapIndexMap.get(`${benchmarkId}:${ct}`)
   }
 
   return {
@@ -142,6 +181,9 @@ export function useSettingsStore() {
     setChartType,
     toggleDark,
     initializeFromDataSet,
+    resolved,
+    setForActiveChart,
+    setChartSettingsForType,
     setSelectedSwapIndex,
     getSelectedSwapIndex,
   }

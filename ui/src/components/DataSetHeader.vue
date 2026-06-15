@@ -20,8 +20,8 @@ const emit = defineEmits<{
 }>()
 
 const mainTitle = computed(() => props.dataSets[0]?.name || 'DataSets')
-const hasCPU = computed(() => props.dataSet.cpu?.name || props.dataSet.cpu?.cores)
-const hasOS = computed(() => props.dataSet.os)
+const hasCPU = computed(() => props.dataSet.meta?.cpu?.name || props.dataSet.meta?.cpu?.cores)
+const hasOS = computed(() => props.dataSet.meta?.os)
 </script>
 
 <template>
@@ -39,8 +39,8 @@ const hasOS = computed(() => props.dataSet.os)
     <h1 v-else class="text-4xl font-bold">{{ mainTitle }}</h1>
 
     <div class="flex flex-col items-center gap-2">
-      <CpuBadge v-if="hasCPU" :cpu="dataSet.cpu" :history="dataSet.history" />
-      <OsBadge v-if="hasOS" :os="dataSet.os" :history="dataSet.history" />
+      <CpuBadge v-if="hasCPU" :cpu="dataSet.meta?.cpu" :history="dataSet.history" />
+      <OsBadge v-if="hasOS" :os="dataSet.meta?.os" :history="dataSet.history" />
     </div>
 
     <TimestampBadge

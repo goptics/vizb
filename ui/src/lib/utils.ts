@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
-import type { DataSet, ChartData } from '../types'
+import type { Meta, ChartData } from '../types'
 import type { Ref } from 'vue'
 
 /**
@@ -71,7 +71,7 @@ export const hasZAxis = (chartData: Ref<ChartData, ChartData>) => chartHasZAxis(
 export const is3D = (chartData: Ref<ChartData, ChartData>) =>
   hasXAxis(chartData) && hasYAxis(chartData) && hasZAxis(chartData)
 
-export const CPUtoString = (cpu: DataSet['cpu']) => {
+export const CPUtoString = (cpu: Meta['cpu']) => {
   if (!cpu) {
     return ''
   }

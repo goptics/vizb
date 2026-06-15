@@ -7,8 +7,8 @@ import { useDataPoint } from '../composables/useDataPoint'
 import { resetColor } from '../lib/utils'
 import { useSettingsStore } from '../composables/useSettingsStore'
 
-const { activeDataSet, activeGroupId, activeDataSetId, setArrangement } = useDataPoint()
-const { setSelectedSwapIndex, getSelectedSwapIndex } = useSettingsStore()
+const { activeDataSet, activeGroupId, activeDataSetId, setArrangement, activeArrangement } = useDataPoint()
+const { setSelectedSwapIndex, getSelectedSwapIndex, chartType } = useSettingsStore()
 
 // Canonical axis order; swap options are permutations of whichever are present.
 const AXIS_ORDER = ['n', 'x', 'y', 'z'] as const
@@ -47,19 +47,20 @@ const swapOptions = computed(() => {
 })
 
 const getInitialSwapIndex = () => {
-  const data = activeDataSet.value?.data
-  if (!data || data.length === 0) return 0
+  const ds = activeDataSet.value
+  if (!ds) return 0
 
-  // Identity ordering (present keys in canonical order) = current data layout.
-  const identity = presentKeys(data).join('')
-  const index = swapOptions.value.findIndex((option) => option.name === identity)
-
+  // Prefer the currently effective arrangement (may have been restored from URL)
+  // over always defaulting to identity.
+  const currentArrangement = activeArrangement.value.targetString
+  const index = swapOptions.value.findIndex((option) => option.name === currentArrangement)
   return index !== -1 ? index : 0
 }
 
 const selectedSwapIndex = computed(() => {
   const benchmarkId = activeDataSetId.value
-  const stored = getSelectedSwapIndex(benchmarkId)
+  const ct = chartType.value
+  const stored = getSelectedSwapIndex(benchmarkId, ct)
 
   if (stored !== undefined) {
     return stored
@@ -67,7 +68,7 @@ const selectedSwapIndex = computed(() => {
 
   // Calculate and store if not found
   const index = getInitialSwapIndex()
-  setSelectedSwapIndex(benchmarkId, index)
+  setSelectedSwapIndex(benchmarkId, ct, index)
   return index
 })
 
@@ -78,17 +79,17 @@ const handleSwapSelect = (index: number) => {
   const targetOption = swapOptions.value[index]
   if (!targetOption || !activeDataSet.value) return
 
-  // Set the per-dataset arrangement key; the pipeline watches activeArrangement
+  // Set the per-(dataset, chartType) arrangement key; the pipeline watches activeArrangement
   // and posts `setArrangement` so the worker re-projects/re-groups off-thread. No
   // main-thread row mutation, no axisLabels mutation (labels are derived from the
   // arrangement in Dashboard).
-  setArrangement(activeDataSetId.value, targetOption.name)
+  setArrangement(activeDataSetId.value, chartType.value, targetOption.name)
   resetColor()
   // New arrangement → new grouping; reset to the first group until the worker's
   // fresh group list arrives.
   activeGroupId.value = 0
 
-  setSelectedSwapIndex(activeDataSetId.value, index)
+  setSelectedSwapIndex(activeDataSetId.value, chartType.value, index)
 }
 </script>
 

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func makeBench(tag, name, timestamp string, data []DataPoint) Dataset {
@@ -164,6 +165,47 @@ func TestMergeDatasets_HistoryMerge(t *testing.T) {
 		{Tag: "1", Timestamp: "2026-05-13T10:00:00Z"},
 		{Tag: "extra", Timestamp: "2026-05-13T11:00:00Z"},
 	}, result[0].History)
+}
+
+func TestMergeDatasets_HistoryMetaPropagation(t *testing.T) {
+	bench1 := makeBench("1", "Test", "2026-05-13T10:00:00Z", []DataPoint{{Name: "a"}})
+	bench1.Meta = &Meta{
+		CPU:  &CPUInfo{Name: "Intel i7", Cores: 8},
+		OS:   "linux",
+		Arch: "amd64",
+		Pkg:  "github.com/foo/bar",
+	}
+	bench2 := makeBench("2", "Test", "2026-05-13T10:05:00Z", []DataPoint{{Name: "b"}})
+	bench2.Meta = &Meta{
+		CPU:  &CPUInfo{Name: "Apple M2", Cores: 10},
+		OS:   "darwin",
+		Arch: "arm64",
+		Pkg:  "github.com/baz/qux",
+	}
+
+	datasets := []Dataset{bench1, bench2}
+	result := MergeDatasets(datasets, DimensionName)
+	assert.Len(t, result, 1)
+	assert.Equal(t, "2", result[0].Tag)
+
+	require.Len(t, result[0].History, 1)
+	entry := result[0].History[0]
+	assert.Equal(t, "1", entry.Tag)
+	assert.Equal(t, "2026-05-13T10:00:00Z", entry.Timestamp)
+
+	// FULL meta propagates into history (not just cpu/os).
+	require.NotNil(t, entry.Meta)
+	require.NotNil(t, entry.Meta.CPU)
+	assert.Equal(t, "Intel i7", entry.Meta.CPU.Name)
+	assert.Equal(t, 8, entry.Meta.CPU.Cores)
+	assert.Equal(t, "linux", entry.Meta.OS)
+	assert.Equal(t, "amd64", entry.Meta.Arch)
+	assert.Equal(t, "github.com/foo/bar", entry.Meta.Pkg)
+
+	// Pointer independence: history CPU must not alias the source dataset's CPU.
+	if got := entry.Meta.CPU; got == datasets[0].Meta.CPU {
+		t.Fatal("history Meta.CPU aliases source dataset Meta.CPU; expected a deep copy")
+	}
 }
 
 func TestMergeDatasets_DifferentNames(t *testing.T) {

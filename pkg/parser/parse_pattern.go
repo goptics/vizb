@@ -39,6 +39,7 @@ func ValidateGroupPattern(pattern string) error {
 		hasZAxis bool
 	)
 
+	seen := map[string]bool{}
 	for _, part := range parts {
 		if part == "" {
 			continue
@@ -48,7 +49,13 @@ func ValidateGroupPattern(pattern string) error {
 			return fmt.Errorf("Invalid part: '%s'; only name(n), xAxis(x), yAxis(y), zAxis(z) allowed", part)
 		}
 
-		switch expandShorthand(part) {
+		expanded := expandShorthand(part)
+		if seen[expanded] {
+			return fmt.Errorf("duplicate dimension '%s' in pattern", expanded)
+		}
+		seen[expanded] = true
+
+		switch expanded {
 		case "xAxis":
 			hasXAxis = true
 		case "yAxis":
@@ -186,21 +193,75 @@ func ParseBenchmarkNameWithRegex(name, pattern string) (map[string]string, error
 	return result, nil
 }
 
-// GroupAxisLabels derives the human-readable label of each dimension from the
-// --group columns and --group-pattern, keyed by dimension (name/xAxis/yAxis/
-// zAxis). The -g columns are consumed positionally by the pattern, so the
-// pattern part at position i names the dimension and the i-th non-empty -g
-// column is its label. Returns an empty map when grouping carries no column
-// names (no -g, or regex mode where captures are keyed by x/y/z not columns).
-func GroupAxisLabels() map[string]string {
-	labels := map[string]string{}
+// shortAxisKey maps the full dimension name to its canonical short key used in
+// shared.Axis.Key ("name"→"name", "xAxis"→"x", "yAxis"→"y", "zAxis"→"z").
+func shortAxisKey(dim string) string {
+	switch dim {
+	case "xAxis":
+		return "x"
+	case "yAxis":
+		return "y"
+	case "zAxis":
+		return "z"
+	default:
+		return dim // "name" stays "name"
+	}
+}
 
-	if shared.FlagState.GroupRegex != "" || len(shared.FlagState.Group) == 0 {
-		return labels
+// GroupAxes returns the ordered list of axis descriptors for the current
+// grouping configuration, reading from shared.FlagState.
+//
+// Pattern mode: dims are taken from --group-pattern in order; each dim's label
+// is the positional --group[i] value (empty string when no label supplied).
+//
+// Regex mode: named capture groups (x/y/z/n) define dims; labels are always
+// empty (captures provide values, not column names).
+//
+// No grouping (both empty): returns nil.
+func GroupAxes() []shared.Axis {
+	if shared.FlagState.GroupRegex == "" && shared.FlagState.GroupPattern == "" {
+		return nil
 	}
 
-	// Trimmed, non-empty group names in flag order — mirrors how the csv/json
-	// parsers build the label, so positions line up with the pattern parts.
+	if shared.FlagState.GroupRegex != "" {
+		// Regex mode: inspect named sub-expressions for known axis names.
+		re, err := regexp.Compile(shared.FlagState.GroupRegex)
+		if err != nil {
+			return nil
+		}
+
+		// canonicalOrder defines output sequence: name, x, y, z.
+		canonicalOrder := []string{"name", "x", "y", "z"}
+		found := map[string]bool{}
+		for _, capName := range re.SubexpNames() {
+			if capName == "" {
+				continue
+			}
+			expanded := expandShorthand(capName) // n→name, x→xAxis, y→yAxis, z→zAxis
+			// Map back to short keys used in Axis.Key.
+			switch expanded {
+			case "name":
+				found["name"] = true
+			case "xAxis":
+				found["x"] = true
+			case "yAxis":
+				found["y"] = true
+			case "zAxis":
+				found["z"] = true
+			}
+		}
+
+		var axes []shared.Axis
+		for _, key := range canonicalOrder {
+			if found[key] {
+				axes = append(axes, shared.Axis{Key: key, Label: ""})
+			}
+		}
+		return axes
+	}
+
+	// Pattern mode: dims come from --group-pattern in declaration order.
+	// Collect non-empty trimmed --group labels positionally.
 	var groups []string
 	for _, g := range shared.FlagState.Group {
 		if g = strings.TrimSpace(g); g != "" {
@@ -209,14 +270,20 @@ func GroupAxisLabels() map[string]string {
 	}
 
 	parts := parsePatternParts(shared.FlagState.GroupPattern)
-	for i, dim := range parts {
-		if dim == "" || i >= len(groups) {
+	var axes []shared.Axis
+	groupIdx := 0
+	for _, dim := range parts {
+		if dim == "" {
 			continue
 		}
-		labels[dim] = groups[i]
+		label := ""
+		if groupIdx < len(groups) {
+			label = groups[groupIdx]
+		}
+		groupIdx++
+		axes = append(axes, shared.Axis{Key: shortAxisKey(dim), Label: label})
 	}
-
-	return labels
+	return axes
 }
 
 func GroupBenchmarkName(name string) (map[string]string, error) {

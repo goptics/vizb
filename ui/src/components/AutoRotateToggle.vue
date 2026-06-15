@@ -5,12 +5,12 @@ import { useSettingsStore } from '../composables/useSettingsStore'
 import { useActiveChartShape } from '../composables/useActiveChartShape'
 import { useSyncedSetting } from '../composables/useSyncedSetting'
 
-const { settings, setAutoRotate } = useSettingsStore()
+const { resolved, setForActiveChart } = useSettingsStore()
 const { is3DChart } = useActiveChartShape()
 
 const autoRotate = useSyncedSetting(
-  () => settings.autoRotate,
-  (val: boolean) => setAutoRotate(val)
+  () => resolved('autoRotate') as boolean,
+  (val: boolean) => setForActiveChart({ autoRotate: val })
 )
 </script>
 

@@ -95,9 +95,20 @@ func parseInputFile(file string) ([]shared.Dataset, error) {
 
 	switch trimmed[0] {
 	case '[':
-		var dataSets []shared.Dataset
-		if err := json.Unmarshal(content, &dataSets); err != nil {
+		// Two-pass: decode each element from its own raw bytes so MigrateDataset
+		// can recover the legacy top-level axisLabels field (lost after Unmarshal).
+		var rawElems []json.RawMessage
+		if err := json.Unmarshal(content, &rawElems); err != nil {
 			return nil, fmt.Errorf("invalid data set array: %w", err)
+		}
+		dataSets := make([]shared.Dataset, 0, len(rawElems))
+		for _, rawElem := range rawElems {
+			var ds shared.Dataset
+			if err := json.Unmarshal(rawElem, &ds); err != nil {
+				return nil, fmt.Errorf("invalid data set array: %w", err)
+			}
+			shared.MigrateDataset(&ds, rawElem)
+			dataSets = append(dataSets, ds)
 		}
 		return dataSets, nil
 	case '{':
@@ -105,6 +116,7 @@ func parseInputFile(file string) ([]shared.Dataset, error) {
 		if err := json.Unmarshal(content, &bench); err != nil {
 			return nil, fmt.Errorf("invalid data set object: %w", err)
 		}
+		shared.MigrateDataset(&bench, content)
 		return []shared.Dataset{bench}, nil
 	default:
 		return nil, fmt.Errorf("not valid JSON")

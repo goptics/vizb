@@ -66,6 +66,9 @@ func init() {
 	rootCmd.Flags().StringVarP(&shared.FlagState.Scale, "scale", "S", "linear", "Scale type (linear, log)")
 	rootCmd.Flags().StringVarP(&shared.FlagState.Tag, "tag", "t", "", "Tag/identifier for the comparison")
 	rootCmd.Flags().StringVarP(&shared.FlagState.Parser, "parser", "P", "auto", "Benchmark parser to use; 'auto' detects from input content (one of: auto, "+strings.Join(parser.AvailableParsers(), ", ")+")")
+	rootCmd.Flags().StringArrayVar(&shared.FlagState.ChartSpecs, "chart", nil,
+		"Per-chart settings override: <type>:<key>=<val>(,<key>=<val>)* or bare flags (labels, rotate). "+
+			"Keys: swap, sort, scale, labels, rotate. E.g. --chart bar:swap=yxn,sort=asc --chart pie:labels")
 
 	// Add a hook to validate flags after parsing
 	cobra.OnInitialize(func() {
@@ -168,7 +171,7 @@ func convertToDataset(filePath string) (dataSet *shared.Dataset) {
 	if err := json.Unmarshal(content, &dataSet); err != nil {
 		return nil
 	}
-
+	shared.MigrateDataset(dataSet, content)
 	return dataSet
 }
 
@@ -266,11 +269,13 @@ func prepareDatasetFromResults(results []shared.DataPoint) *shared.Dataset {
 	}
 	enableSorting := shared.FlagState.Sort != ""
 
-	dataSet.CPU.Cores = shared.CPUCount
-	dataSet.CPU.Name = strings.TrimSpace(shared.CPU)
-	dataSet.Arch = shared.Arch
-	dataSet.OS = shared.OS
-	dataSet.Pkg = shared.Pkg
+	meta := shared.Meta{OS: shared.OS, Arch: shared.Arch, Pkg: shared.Pkg}
+	if cpuName := strings.TrimSpace(shared.CPU); cpuName != "" || shared.CPUCount != 0 {
+		meta.CPU = &shared.CPUInfo{Name: cpuName, Cores: shared.CPUCount}
+	}
+	if meta != (shared.Meta{}) {
+		dataSet.Meta = &meta
+	}
 	dataSet.Settings.Charts = shared.FlagState.Charts
 	dataSet.Settings.Sort.Enabled = enableSorting
 
@@ -286,11 +291,19 @@ func prepareDatasetFromResults(results []shared.DataPoint) *shared.Dataset {
 	dataSet.Tag = shared.FlagState.Tag
 	dataSet.Timestamp = time.Now().UTC().Format(time.RFC3339)
 
-	labels := parser.GroupAxisLabels()
-	dataSet.AxisLabels.Name = labels["name"]
-	dataSet.AxisLabels.X = labels["xAxis"]
-	dataSet.AxisLabels.Y = labels["yAxis"]
-	dataSet.AxisLabels.Z = labels["zAxis"]
+	dataSet.Settings.Axes = parser.GroupAxes()
+
+	if len(shared.FlagState.ChartSpecs) > 0 {
+		chartSettings, err := shared.ParseChartSpecs(
+			shared.FlagState.ChartSpecs,
+			shared.FlagState.Charts,
+			dataSet.Settings.Axes,
+		)
+		if err != nil {
+			shared.ExitWithError(err.Error(), nil)
+		}
+		dataSet.Settings.ChartSettings = chartSettings
+	}
 
 	return dataSet
 }

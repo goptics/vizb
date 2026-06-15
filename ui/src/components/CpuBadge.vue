@@ -15,7 +15,7 @@ const cpuString = computed(() => CPUtoString(props.cpu))
 const historyRef = computed(() => props.history)
 const { sortedHistory, hasHistory } = useSortedHistory(
   historyRef,
-  (e) => !!(e.cpu?.name || e.cpu?.cores)
+  (e) => !!(e.meta?.cpu?.name || e.meta?.cpu?.cores)
 )
 </script>
 
@@ -31,7 +31,7 @@ const { sortedHistory, hasHistory } = useSortedHistory(
     content-width="w-80"
   >
     <template #entry="{ entry }">
-      <span class="min-w-0 truncate text-right tabular-nums">{{ CPUtoString(entry.cpu) }}</span>
+      <span class="min-w-0 truncate text-right tabular-nums">{{ CPUtoString(entry.meta?.cpu) }}</span>
     </template>
   </HistoryPopover>
 </template>
