@@ -32,7 +32,7 @@ var rootCmd = &cobra.Command{
 	Long: `A CLI tool that turns dataSet output (Go, Rust, JavaScript) or any tabular
 CSV/JSON data into an interactive, self-contained HTML chart application.
 It reads a file or piped stdin, auto-detects the input format (override with --parser),
-and renders bar, line, pie, and heatmap charts you can explore in the browser.`,
+and renders bar, line, pie, heatmap, and radar charts you can explore in the browser.`,
 	Version: version.Version,
 	Args:    cobra.ArbitraryArgs,
 	Run:     runBenchmark,
