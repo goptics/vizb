@@ -31,7 +31,7 @@ func parseFinite(s string) (float64, bool) {
 // becomes a chart series (column name = Stat.Type); non-numeric columns are
 // ignored unless named in --group/-g, whose values are '/'-joined and routed
 // through the existing grouping machinery (-p/-r) for name/xAxis/yAxis placement.
-func ParseCSV(filename string) []shared.DataPoint {
+func ParseCSV(filename string, cfg parser.Config) []shared.DataPoint {
 	f, err := os.Open(filename)
 	if err != nil {
 		shared.ExitWithError("Error opening file", err)
@@ -53,7 +53,7 @@ func ParseCSV(filename string) []shared.DataPoint {
 	headers := normalizeHeaders(rows[0])
 	dataRows := rows[1:]
 
-	groupIdx, groupSet := resolveGroupColumns(headers)
+	groupIdx, groupSet := resolveGroupColumns(headers, cfg.Group)
 
 	chartCols := chartColumns(headers, groupSet, dataRows)
 	if len(chartCols) == 0 {
@@ -67,11 +67,11 @@ func ParseCSV(filename string) []shared.DataPoint {
 
 		var name, xAxis, yAxis, zAxis string
 		if label != "" {
-			if !parser.ShouldIncludeBenchmark(label) {
+			if !parser.ShouldIncludeBenchmark(label, cfg) {
 				continue
 			}
 
-			group, gerr := parser.GroupBenchmarkName(label)
+			group, gerr := parser.GroupBenchmarkName(label, cfg)
 			if gerr != nil {
 				shared.ExitWithError("Error parsing CSV group name", gerr)
 			}
@@ -91,8 +91,8 @@ func ParseCSV(filename string) []shared.DataPoint {
 			}
 
 			stats = append(stats, shared.Stat{
-				Type:  utils.CreateStatType(headers[c], shared.FlagState.NumberUnit, ""),
-				Value: utils.FormatNumber(v, shared.FlagState.NumberUnit),
+				Type:  utils.CreateStatType(headers[c], cfg.NumberUnit, ""),
+				Value: utils.FormatNumber(v, cfg.NumberUnit),
 			})
 		}
 
@@ -142,11 +142,11 @@ func normalizeHeaders(raw []string) []string {
 
 // resolveGroupColumns maps each non-empty --group name to its header index
 // (preserving flag order). A missing column is fatal and lists available headers.
-func resolveGroupColumns(headers []string) ([]int, map[int]bool) {
+func resolveGroupColumns(headers []string, group []string) ([]int, map[int]bool) {
 	var idx []int
 	set := map[int]bool{}
 
-	for _, name := range shared.FlagState.Group {
+	for _, name := range group {
 		name = strings.TrimSpace(name)
 		if name == "" {
 			continue

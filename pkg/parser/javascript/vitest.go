@@ -25,7 +25,7 @@ func parseNum(s string) float64 {
 	return n
 }
 
-func ParseVitestBenchmark(filename string) []shared.DataPoint {
+func ParseVitestBenchmark(filename string, cfg parser.Config) []shared.DataPoint {
 	f, err := os.Open(filename)
 	if err != nil {
 		shared.ExitWithError("Error opening file", err)
@@ -67,7 +67,7 @@ func ParseVitestBenchmark(filename string) []shared.DataPoint {
 			name = currentSuite + "/" + name
 		}
 
-		if !parser.ShouldIncludeBenchmark(name) {
+		if !parser.ShouldIncludeBenchmark(name, cfg) {
 			continue
 		}
 
@@ -84,7 +84,7 @@ func ParseVitestBenchmark(filename string) []shared.DataPoint {
 		rme := parseNum(rmeStr)
 		samples := parseNum(fields[10])
 
-		group, groupErr := parser.GroupBenchmarkName(name)
+		group, groupErr := parser.GroupBenchmarkName(name, cfg)
 		if groupErr != nil {
 			shared.ExitWithError("Error parsing vitest benchmark name", groupErr)
 		}
@@ -98,13 +98,13 @@ func ParseVitestBenchmark(filename string) []shared.DataPoint {
 			ZAxis: zAxis,
 			Stats: []shared.Stat{
 				{Type: "Throughput avg (ops/s)", Value: hz},
-				{Type: utils.CreateStatType("Latency min", shared.FlagState.TimeUnit, ""), Value: utils.ConvertTime(minVal, "ms", shared.FlagState.TimeUnit)},
-				{Type: utils.CreateStatType("Latency max", shared.FlagState.TimeUnit, ""), Value: utils.ConvertTime(maxVal, "ms", shared.FlagState.TimeUnit)},
-				{Type: utils.CreateStatType("Latency avg", shared.FlagState.TimeUnit, ""), Value: utils.ConvertTime(mean, "ms", shared.FlagState.TimeUnit)},
-				{Type: utils.CreateStatType("Latency p75", shared.FlagState.TimeUnit, ""), Value: utils.ConvertTime(p75, "ms", shared.FlagState.TimeUnit)},
-				{Type: utils.CreateStatType("Latency p99", shared.FlagState.TimeUnit, ""), Value: utils.ConvertTime(p99, "ms", shared.FlagState.TimeUnit)},
-				{Type: utils.CreateStatType("Latency p995", shared.FlagState.TimeUnit, ""), Value: utils.ConvertTime(p995, "ms", shared.FlagState.TimeUnit)},
-				{Type: utils.CreateStatType("Latency p999", shared.FlagState.TimeUnit, ""), Value: utils.ConvertTime(p999, "ms", shared.FlagState.TimeUnit)},
+				{Type: utils.CreateStatType("Latency min", cfg.TimeUnit, ""), Value: utils.ConvertTime(minVal, "ms", cfg.TimeUnit)},
+				{Type: utils.CreateStatType("Latency max", cfg.TimeUnit, ""), Value: utils.ConvertTime(maxVal, "ms", cfg.TimeUnit)},
+				{Type: utils.CreateStatType("Latency avg", cfg.TimeUnit, ""), Value: utils.ConvertTime(mean, "ms", cfg.TimeUnit)},
+				{Type: utils.CreateStatType("Latency p75", cfg.TimeUnit, ""), Value: utils.ConvertTime(p75, "ms", cfg.TimeUnit)},
+				{Type: utils.CreateStatType("Latency p99", cfg.TimeUnit, ""), Value: utils.ConvertTime(p99, "ms", cfg.TimeUnit)},
+				{Type: utils.CreateStatType("Latency p995", cfg.TimeUnit, ""), Value: utils.ConvertTime(p995, "ms", cfg.TimeUnit)},
+				{Type: utils.CreateStatType("Latency p999", cfg.TimeUnit, ""), Value: utils.ConvertTime(p999, "ms", cfg.TimeUnit)},
 				{Type: "RME (%)", Value: rme, Symbol: "±"},
 				{Type: "Samples", Value: samples},
 			},

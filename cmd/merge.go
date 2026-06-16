@@ -1,16 +1,25 @@
 package cmd
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 
+	"github.com/goptics/vizb/cmd/cli"
 	"github.com/goptics/vizb/pkg/style"
 	"github.com/goptics/vizb/shared"
+	"github.com/goptics/vizb/shared/utils"
 	"github.com/spf13/cobra"
 )
+
+// mergeOptions holds the flags for the merge subcommand.
+type mergeOptions struct {
+	OutputFile string
+	TagAxis    string
+}
+
+var mergeOpts mergeOptions
 
 // mergeCmd represents the merge command
 var mergeCmd = &cobra.Command{
@@ -23,11 +32,19 @@ You can provide individual JSON files or directories containing JSON files.`,
 
 func init() {
 	rootCmd.AddCommand(mergeCmd)
-	mergeCmd.Flags().StringVarP(&shared.FlagState.TagAxis, "tag-axis", "A", "n",
+	mergeCmd.Flags().StringVarP(&mergeOpts.OutputFile, "output", "o", "", "Output file path/name")
+	mergeCmd.Flags().StringVarP(&mergeOpts.TagAxis, "tag-axis", "A", "n",
 		"Where to inject tag: n (name), x (xAxis), y (yAxis), z (zAxis)")
 }
 
 func runMerge(cmd *cobra.Command, args []string) {
+	utils.ApplyValidationRules([]utils.ValidationRule{{
+		Label:    "inject dimension",
+		Value:    &mergeOpts.TagAxis,
+		ValidSet: []string{"n", "x", "y", "z"},
+		Default:  "n",
+	}})
+
 	if len(args) == 0 {
 		shared.ExitWithError("No input files provided", nil)
 	}
@@ -42,7 +59,7 @@ func runMerge(cmd *cobra.Command, args []string) {
 		shared.ExitWithError("No valid data set files processed", nil)
 	}
 
-	merged := shared.MergeDatasets(dataSets, shared.Dimension(shared.FlagState.TagAxis))
+	merged := shared.MergeDatasets(dataSets, shared.Dimension(mergeOpts.TagAxis))
 	writeMergeOutput(merged)
 }
 
@@ -72,7 +89,7 @@ func collectJSONFiles(args []string) []string {
 func readFiles(files []string) []shared.Dataset {
 	var dataSets []shared.Dataset
 	for _, file := range files {
-		parsed, err := parseInputFile(file)
+		parsed, err := cli.ParseDatasetFile(file)
 		if err != nil {
 			logWarn("%s: %v", file, err)
 			continue
@@ -82,54 +99,13 @@ func readFiles(files []string) []shared.Dataset {
 	return dataSets
 }
 
-func parseInputFile(file string) ([]shared.Dataset, error) {
-	content, err := os.ReadFile(file)
-	if err != nil {
-		return nil, fmt.Errorf("cannot read file: %w", err)
-	}
-
-	trimmed := bytes.TrimLeft(content, " \t\r\n")
-	if len(trimmed) == 0 {
-		return nil, fmt.Errorf("file is empty")
-	}
-
-	switch trimmed[0] {
-	case '[':
-		// Two-pass: decode each element from its own raw bytes so MigrateDataset
-		// can recover the legacy top-level axisLabels field (lost after Unmarshal).
-		var rawElems []json.RawMessage
-		if err := json.Unmarshal(content, &rawElems); err != nil {
-			return nil, fmt.Errorf("invalid data set array: %w", err)
-		}
-		dataSets := make([]shared.Dataset, 0, len(rawElems))
-		for _, rawElem := range rawElems {
-			var ds shared.Dataset
-			if err := json.Unmarshal(rawElem, &ds); err != nil {
-				return nil, fmt.Errorf("invalid data set array: %w", err)
-			}
-			shared.MigrateDataset(&ds, rawElem)
-			dataSets = append(dataSets, ds)
-		}
-		return dataSets, nil
-	case '{':
-		var bench shared.Dataset
-		if err := json.Unmarshal(content, &bench); err != nil {
-			return nil, fmt.Errorf("invalid data set object: %w", err)
-		}
-		shared.MigrateDataset(&bench, content)
-		return []shared.Dataset{bench}, nil
-	default:
-		return nil, fmt.Errorf("not valid JSON")
-	}
-}
-
 func writeMergeOutput(dataSets []shared.Dataset) {
 	jsonData, err := json.Marshal(dataSets)
 	if err != nil {
 		shared.ExitWithError("Failed to marshal merged data set data: %v", err)
 	}
 
-	outFile := shared.FlagState.OutputFile
+	outFile := mergeOpts.OutputFile
 	if outFile == "" {
 		outFile = shared.MustCreateTempFile(shared.TempBenchFilePrefix, "json")
 		shared.TempFiles.Store(outFile)
@@ -139,7 +115,7 @@ func writeMergeOutput(dataSets []shared.Dataset) {
 
 	f := shared.MustCreateFile(outFile)
 	defer f.Close()
-	defer HandleOutputResult(f)
+	defer cli.HandleOutputResult(f, mergeOpts.OutputFile)
 
 	if _, err := f.Write(jsonData); err != nil {
 		shared.ExitWithError("Failed to write JSON output: %v", err)

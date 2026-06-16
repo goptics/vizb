@@ -208,8 +208,8 @@ func shortAxisKey(dim string) string {
 	}
 }
 
-// GroupAxes returns the ordered list of axis descriptors for the current
-// grouping configuration, reading from shared.FlagState.
+// GroupAxes returns the ordered list of axis descriptors for the given grouping
+// configuration.
 //
 // Pattern mode: dims are taken from --group-pattern in order; each dim's label
 // is the positional --group[i] value (empty string when no label supplied).
@@ -218,14 +218,14 @@ func shortAxisKey(dim string) string {
 // empty (captures provide values, not column names).
 //
 // No grouping (both empty): returns nil.
-func GroupAxes() []shared.Axis {
-	if shared.FlagState.GroupRegex == "" && shared.FlagState.GroupPattern == "" {
+func GroupAxes(cfg Config) []shared.Axis {
+	if cfg.GroupRegex == "" && cfg.GroupPattern == "" {
 		return nil
 	}
 
-	if shared.FlagState.GroupRegex != "" {
+	if cfg.GroupRegex != "" {
 		// Regex mode: inspect named sub-expressions for known axis names.
-		re, err := regexp.Compile(shared.FlagState.GroupRegex)
+		re, err := regexp.Compile(cfg.GroupRegex)
 		if err != nil {
 			return nil
 		}
@@ -263,13 +263,13 @@ func GroupAxes() []shared.Axis {
 	// Pattern mode: dims come from --group-pattern in declaration order.
 	// Collect non-empty trimmed --group labels positionally.
 	var groups []string
-	for _, g := range shared.FlagState.Group {
+	for _, g := range cfg.Group {
 		if g = strings.TrimSpace(g); g != "" {
 			groups = append(groups, g)
 		}
 	}
 
-	parts := parsePatternParts(shared.FlagState.GroupPattern)
+	parts := parsePatternParts(cfg.GroupPattern)
 	var axes []shared.Axis
 	groupIdx := 0
 	for _, dim := range parts {
@@ -286,10 +286,10 @@ func GroupAxes() []shared.Axis {
 	return axes
 }
 
-func GroupBenchmarkName(name string) (map[string]string, error) {
-	if shared.FlagState.GroupRegex != "" {
-		return ParseBenchmarkNameWithRegex(name, shared.FlagState.GroupRegex)
+func GroupBenchmarkName(name string, cfg Config) (map[string]string, error) {
+	if cfg.GroupRegex != "" {
+		return ParseBenchmarkNameWithRegex(name, cfg.GroupRegex)
 	}
 
-	return ParseBenchmarkNameToGroups(name, shared.FlagState.GroupPattern)
+	return ParseBenchmarkNameToGroups(name, cfg.GroupPattern)
 }

@@ -1,314 +1,171 @@
 package cmd
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/goptics/vizb/shared"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestUICmd_SingleObject(t *testing.T) {
-	oldOsExit := shared.OsExit
-	defer func() { shared.OsExit = oldOsExit }()
-
-	var exitCode int
-	shared.OsExit = func(code int) { exitCode = code }
-
-	tmpDir, err := os.MkdirTemp("", "vizb-html-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	bench := shared.Dataset{
-		Name: "Bench1",
-		Data: []shared.DataPoint{
-			{Name: "Test1", XAxis: "1", YAxis: "100"},
-		},
-	}
-	inputFile := filepath.Join(tmpDir, "bench.json")
-	writeJSON(t, inputFile, bench)
-
-	outFile := filepath.Join(tmpDir, "output.html")
-	shared.FlagState.OutputFile = outFile
-
-	rootCmd.SetArgs([]string{"ui", inputFile})
-	err = rootCmd.Execute()
-	assert.NoError(t, err)
-	assert.Equal(t, 0, exitCode)
-
-	content, err := os.ReadFile(outFile)
-	assert.NoError(t, err)
-
-	htmlStr := string(content)
-	assert.Contains(t, htmlStr, "Bench1")
-	assert.Contains(t, htmlStr, "Test1")
-	assert.Contains(t, htmlStr, "<html")
-	assert.Contains(t, htmlStr, "</html>")
+// UISuite covers the ui/html subcommand end-to-end via rootCmd.Execute.
+type UISuite struct {
+	suite.Suite
+	origOsExit func(int)
+	exitCode   int
 }
 
-func TestUICmd_ArrayInput(t *testing.T) {
-	oldOsExit := shared.OsExit
-	defer func() { shared.OsExit = oldOsExit }()
+func (s *UISuite) SetupTest() {
+	s.origOsExit = shared.OsExit
+	s.exitCode = 0
+	shared.OsExit = func(code int) { s.exitCode = code }
 
-	var exitCode int
-	shared.OsExit = func(code int) { exitCode = code }
+	// Reset the ui flag bindings so an un-passed flag doesn't inherit a prior
+	// test's value (cobra retains bound values between Execute calls).
+	uiOpts = uiOptions{Charts: []string{"bar", "line", "pie", "heatmap"}}
+}
 
-	tmpDir, err := os.MkdirTemp("", "vizb-html-array-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
+func (s *UISuite) TearDownTest() {
+	shared.OsExit = s.origOsExit
+}
 
-	benches := []shared.Dataset{
+func (s *UISuite) writeJSON(path string, v any) {
+	data, err := json.Marshal(v)
+	s.Require().NoError(err)
+	s.Require().NoError(os.WriteFile(path, data, 0644))
+}
+
+func (s *UISuite) TestSingleObject() {
+	dir := s.T().TempDir()
+	input := filepath.Join(dir, "bench.json")
+	s.writeJSON(input, shared.Dataset{Name: "Bench1", Data: []shared.DataPoint{{Name: "Test1", XAxis: "1", YAxis: "100"}}})
+	out := filepath.Join(dir, "output.html")
+
+	rootCmd.SetArgs([]string{"ui", "-o", out, input})
+	s.Require().NoError(rootCmd.Execute())
+	s.Equal(0, s.exitCode)
+
+	html := s.read(out)
+	s.Contains(html, "Bench1")
+	s.Contains(html, "Test1")
+	s.Contains(html, "<html")
+	s.Contains(html, "</html>")
+}
+
+func (s *UISuite) TestArrayInput() {
+	dir := s.T().TempDir()
+	input := filepath.Join(dir, "benches.json")
+	s.writeJSON(input, []shared.Dataset{
 		{Name: "Bench1", Data: []shared.DataPoint{{Name: "Test1", XAxis: "1", YAxis: "100"}}},
 		{Name: "Bench2", Data: []shared.DataPoint{{Name: "Test2", XAxis: "2", YAxis: "200"}}},
-	}
-	inputFile := filepath.Join(tmpDir, "benches.json")
-	writeJSON(t, inputFile, benches)
+	})
+	out := filepath.Join(dir, "output.html")
 
-	outFile := filepath.Join(tmpDir, "output.html")
-	shared.FlagState.OutputFile = outFile
+	rootCmd.SetArgs([]string{"ui", "-o", out, input})
+	s.Require().NoError(rootCmd.Execute())
+	s.Equal(0, s.exitCode)
 
-	rootCmd.SetArgs([]string{"ui", inputFile})
-	err = rootCmd.Execute()
-	assert.NoError(t, err)
-	assert.Equal(t, 0, exitCode)
-
-	content, err := os.ReadFile(outFile)
-	assert.NoError(t, err)
-
-	htmlStr := string(content)
-	assert.Contains(t, htmlStr, "Bench1")
-	assert.Contains(t, htmlStr, "Bench2")
-	assert.Contains(t, htmlStr, "Test1")
-	assert.Contains(t, htmlStr, "Test2")
+	html := s.read(out)
+	s.Contains(html, "Bench1")
+	s.Contains(html, "Bench2")
 }
 
-func TestUICmd_MissingFile(t *testing.T) {
-	oldOsExit := shared.OsExit
-	defer func() { shared.OsExit = oldOsExit }()
-
-	exitCode := 0
-	shared.OsExit = func(code int) { exitCode = code }
-
+func (s *UISuite) TestMissingFileExits() {
 	rootCmd.SetArgs([]string{"ui", "/nonexistent/path.json"})
 	rootCmd.Execute()
-	assert.Equal(t, 1, exitCode)
+	s.Equal(1, s.exitCode)
 }
 
-func TestUICmd_NoArgs(t *testing.T) {
-	oldOsExit := shared.OsExit
-	defer func() { shared.OsExit = oldOsExit }()
-
-	exitCode := 0
-	shared.OsExit = func(code int) { exitCode = code }
-
-	shared.FlagState.DataURL = ""
+func (s *UISuite) TestNoArgsExits() {
 	rootCmd.SetArgs([]string{"ui"})
 	rootCmd.Execute()
-	assert.Equal(t, 1, exitCode)
+	s.Equal(1, s.exitCode)
 }
 
-func TestUICmd_APIFlag(t *testing.T) {
-	oldOsExit := shared.OsExit
-	defer func() { shared.OsExit = oldOsExit }()
+func (s *UISuite) TestAPIFlag() {
+	dir := s.T().TempDir()
+	out := filepath.Join(dir, "remote.html")
 
-	var exitCode int
-	shared.OsExit = func(code int) { exitCode = code }
+	rootCmd.SetArgs([]string{"ui", "-o", out, "--data-url", "https://example.com/bench.json"})
+	s.Require().NoError(rootCmd.Execute())
+	s.Equal(0, s.exitCode)
 
-	tmpDir, err := os.MkdirTemp("", "vizb-html-api-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	outFile := filepath.Join(tmpDir, "remote.html")
-	shared.FlagState.OutputFile = outFile
-	shared.FlagState.DataURL = "https://example.com/bench.json"
-	defer func() { shared.FlagState.DataURL = "" }()
-
-	rootCmd.SetArgs([]string{"ui", "--data-url", "https://example.com/bench.json"})
-	err = rootCmd.Execute()
-	assert.NoError(t, err)
-	assert.Equal(t, 0, exitCode)
-
-	content, err := os.ReadFile(outFile)
-	assert.NoError(t, err)
-
-	htmlStr := string(content)
-	assert.Contains(t, htmlStr, "https://example.com/bench.json")
-	assert.Contains(t, htmlStr, "<html")
-	assert.NotContains(t, htmlStr, `"name":"Bench`)
+	html := s.read(out)
+	s.Contains(html, "https://example.com/bench.json")
+	s.Contains(html, "<html")
+	s.NotContains(html, `"name":"Bench`)
 }
 
-func TestUICmd_APIFlag_InvalidURL(t *testing.T) {
-	oldOsExit := shared.OsExit
-	defer func() { shared.OsExit = oldOsExit }()
-
-	exitCode := 0
-	shared.OsExit = func(code int) { exitCode = code }
-
-	shared.FlagState.DataURL = "not-a-url"
-	defer func() { shared.FlagState.DataURL = "" }()
-
+func (s *UISuite) TestAPIFlagInvalidURLExits() {
 	rootCmd.SetArgs([]string{"ui", "--data-url", "not-a-url"})
 	rootCmd.Execute()
-	assert.Equal(t, 1, exitCode)
+	s.Equal(1, s.exitCode)
 }
 
-func TestUICmd_InvalidJSON(t *testing.T) {
-	oldOsExit := shared.OsExit
-	defer func() { shared.OsExit = oldOsExit }()
+func (s *UISuite) TestInvalidJSONExits() {
+	dir := s.T().TempDir()
+	input := filepath.Join(dir, "invalid.json")
+	s.Require().NoError(os.WriteFile(input, []byte("not json"), 0644))
 
-	exitCode := 0
-	shared.OsExit = func(code int) { exitCode = code }
-
-	tmpDir, err := os.MkdirTemp("", "vizb-html-invalid-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	inputFile := filepath.Join(tmpDir, "invalid.json")
-	os.WriteFile(inputFile, []byte("not json"), 0644)
-
-	rootCmd.SetArgs([]string{"ui", inputFile})
+	rootCmd.SetArgs([]string{"ui", input})
 	rootCmd.Execute()
-	assert.Equal(t, 1, exitCode)
+	s.Equal(1, s.exitCode)
 }
 
-func TestUICmd_StdoutFallback(t *testing.T) {
-	oldOsExit := shared.OsExit
-	defer func() { shared.OsExit = oldOsExit }()
+func (s *UISuite) TestEmptyFileExits() {
+	dir := s.T().TempDir()
+	input := filepath.Join(dir, "empty.json")
+	s.Require().NoError(os.WriteFile(input, []byte(""), 0644))
 
-	var exitCode int
-	shared.OsExit = func(code int) { exitCode = code }
-
-	tmpDir, err := os.MkdirTemp("", "vizb-html-stdout-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	bench := shared.Dataset{
-		Name: "Bench1",
-		Data: []shared.DataPoint{
-			{Name: "Test1", XAxis: "1", YAxis: "100"},
-		},
-	}
-	inputFile := filepath.Join(tmpDir, "bench.json")
-	writeJSON(t, inputFile, bench)
-
-	shared.FlagState.OutputFile = ""
-
-	rootCmd.SetArgs([]string{"ui", inputFile})
-	err = rootCmd.Execute()
-	assert.NoError(t, err)
-	assert.Equal(t, 0, exitCode)
-}
-
-func TestUICmd_EmptyFile(t *testing.T) {
-	oldOsExit := shared.OsExit
-	defer func() { shared.OsExit = oldOsExit }()
-
-	exitCode := 0
-	shared.OsExit = func(code int) { exitCode = code }
-
-	tmpDir, err := os.MkdirTemp("", "vizb-html-empty-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	inputFile := filepath.Join(tmpDir, "empty.json")
-	os.WriteFile(inputFile, []byte(""), 0644)
-
-	rootCmd.SetArgs([]string{"ui", inputFile})
+	rootCmd.SetArgs([]string{"ui", input})
 	rootCmd.Execute()
-	assert.Equal(t, 1, exitCode)
+	s.Equal(1, s.exitCode)
 }
 
-func TestUICmd_MergedOutput(t *testing.T) {
-	oldOsExit := shared.OsExit
-	defer func() { shared.OsExit = oldOsExit }()
+func (s *UISuite) TestMergedOutput() {
+	dir := s.T().TempDir()
+	input := filepath.Join(dir, "merged.json")
+	s.writeJSON(input, []shared.Dataset{{
+		Tag:       "v1.0.0",
+		Timestamp: "2024-01-01T00:00:00Z",
+		Name:      "Sort Benchmarks",
+		History:   []shared.HistoryEntry{{Tag: "v0.9.0", Timestamp: "2023-12-01T00:00:00Z"}},
+		Data:      []shared.DataPoint{{Name: "v1.0.0", XAxis: "v0.9.0", YAxis: "100"}},
+	}})
+	out := filepath.Join(dir, "chart.html")
 
-	var exitCode int
-	shared.OsExit = func(code int) { exitCode = code }
+	rootCmd.SetArgs([]string{"ui", "-o", out, input})
+	s.Require().NoError(rootCmd.Execute())
+	s.Equal(0, s.exitCode)
 
-	tmpDir, err := os.MkdirTemp("", "vizb-html-merged-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	benches := []shared.Dataset{
-		{
-			Tag:       "v1.0.0",
-			Timestamp: "2024-01-01T00:00:00Z",
-			Name:      "Sort Benchmarks",
-			History: []shared.HistoryEntry{
-				{Tag: "v0.9.0", Timestamp: "2023-12-01T00:00:00Z"},
-			},
-			Data: []shared.DataPoint{
-				{Name: "v1.0.0", XAxis: "v0.9.0", YAxis: "100"},
-			},
-		},
-	}
-	inputFile := filepath.Join(tmpDir, "merged.json")
-	writeJSON(t, inputFile, benches)
-
-	outFile := filepath.Join(tmpDir, "chart.html")
-	shared.FlagState.OutputFile = outFile
-
-	rootCmd.SetArgs([]string{"ui", inputFile})
-	err = rootCmd.Execute()
-	assert.NoError(t, err)
-	assert.Equal(t, 0, exitCode)
-
-	content, err := os.ReadFile(outFile)
-	assert.NoError(t, err)
-
-	htmlStr := string(content)
-	assert.Contains(t, htmlStr, "v1.0.0")
-	assert.Contains(t, htmlStr, "v0.9.0")
-	assert.Contains(t, htmlStr, "Sort Benchmarks")
+	html := s.read(out)
+	s.Contains(html, "v1.0.0")
+	s.Contains(html, "v0.9.0")
+	s.Contains(html, "Sort Benchmarks")
 }
 
-// TestUICmd_HtmlAlias verifies the legacy `html` alias still resolves to the ui command.
-func TestUICmd_HtmlAlias(t *testing.T) {
-	oldOsExit := shared.OsExit
-	defer func() { shared.OsExit = oldOsExit }()
+// TestHtmlAlias verifies the legacy `html` alias still resolves to the ui command.
+func (s *UISuite) TestHtmlAlias() {
+	dir := s.T().TempDir()
+	input := filepath.Join(dir, "bench.json")
+	s.writeJSON(input, shared.Dataset{Name: "Bench1", Data: []shared.DataPoint{{Name: "Test1", XAxis: "1", YAxis: "100"}}})
+	out := filepath.Join(dir, "output.html")
 
-	var exitCode int
-	shared.OsExit = func(code int) { exitCode = code }
+	rootCmd.SetArgs([]string{"html", "-o", out, input})
+	s.Require().NoError(rootCmd.Execute())
+	s.Equal(0, s.exitCode)
 
-	tmpDir, err := os.MkdirTemp("", "vizb-html-alias-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
+	s.Contains(s.read(out), "Bench1")
+}
 
-	bench := shared.Dataset{
-		Name: "Bench1",
-		Data: []shared.DataPoint{
-			{Name: "Test1", XAxis: "1", YAxis: "100"},
-		},
-	}
-	inputFile := filepath.Join(tmpDir, "bench.json")
-	writeJSON(t, inputFile, bench)
+func (s *UISuite) read(path string) string {
+	content, err := os.ReadFile(path)
+	s.Require().NoError(err)
+	return string(content)
+}
 
-	outFile := filepath.Join(tmpDir, "output.html")
-	shared.FlagState.OutputFile = outFile
-
-	rootCmd.SetArgs([]string{"html", inputFile})
-	err = rootCmd.Execute()
-	assert.NoError(t, err)
-	assert.Equal(t, 0, exitCode)
-
-	content, err := os.ReadFile(outFile)
-	assert.NoError(t, err)
-	assert.Contains(t, string(content), "Bench1")
+func TestUISuite(t *testing.T) {
+	suite.Run(t, new(UISuite))
 }

@@ -42,7 +42,7 @@ func parseBenchmarkName(name benchfmt.Name) (benchName string, cpu string) {
 	return
 }
 
-func ParseGoBenchmark(filePath string) (results []shared.DataPoint) {
+func ParseGoBenchmark(filePath string, cfg parser.Config) (results []shared.DataPoint) {
 	f := shared.MustOpenFile(filePath)
 	defer f.Close()
 
@@ -61,11 +61,11 @@ func ParseGoBenchmark(filePath string) (results []shared.DataPoint) {
 		shared.OS, shared.Arch, shared.Pkg, shared.CPU = result.GetConfig("goos"), result.GetConfig("goarch"), result.GetConfig("pkg"), result.GetConfig("cpu")
 		rawBenchName, cpuCore := parseBenchmarkName(result.Name)
 
-		if !parser.ShouldIncludeBenchmark(rawBenchName) {
+		if !parser.ShouldIncludeBenchmark(rawBenchName, cfg) {
 			continue
 		}
 
-		group, err := parser.GroupBenchmarkName(rawBenchName)
+		group, err := parser.GroupBenchmarkName(rawBenchName, cfg)
 
 		if err != nil {
 			shared.ExitWithError("Error on parsing group from bench name", err)
@@ -83,18 +83,18 @@ func ParseGoBenchmark(filePath string) (results []shared.DataPoint) {
 			switch value.Unit {
 			case "sec/op":
 				benchStat = shared.Stat{
-					Type:  utils.CreateStatType("Execution Time", shared.FlagState.TimeUnit, "op"),
-					Value: utils.FormatTime(value.OrigValue, shared.FlagState.TimeUnit),
+					Type:  utils.CreateStatType("Execution Time", cfg.TimeUnit, "op"),
+					Value: utils.FormatTime(value.OrigValue, cfg.TimeUnit),
 				}
 			case "B/op":
 				benchStat = shared.Stat{
-					Type:  utils.CreateStatType("Memory Usage", shared.FlagState.MemUnit, "op"),
-					Value: utils.FormatMem(value.Value, shared.FlagState.MemUnit),
+					Type:  utils.CreateStatType("Memory Usage", cfg.MemUnit, "op"),
+					Value: utils.FormatMem(value.Value, cfg.MemUnit),
 				}
 			case "allocs/op":
 				benchStat = shared.Stat{
-					Type:  utils.CreateStatType("Allocations", shared.FlagState.NumberUnit, "op"),
-					Value: utils.FormatNumber(value.Value, shared.FlagState.NumberUnit),
+					Type:  utils.CreateStatType("Allocations", cfg.NumberUnit, "op"),
+					Value: utils.FormatNumber(value.Value, cfg.NumberUnit),
 				}
 			case "B/s", "MB/s", "GB/s":
 				val, unit := value.OrigValue, value.OrigUnit
@@ -148,8 +148,8 @@ func ParseGoBenchmark(filePath string) (results []shared.DataPoint) {
 	if hasDifferentIters {
 		for i := range results {
 			results[i].Stats = append(results[i].Stats, shared.Stat{
-				Type:  utils.CreateStatType("Iterations", shared.FlagState.NumberUnit, ""),
-				Value: utils.FormatNumber(float64(allIters[i]), shared.FlagState.NumberUnit),
+				Type:  utils.CreateStatType("Iterations", cfg.NumberUnit, ""),
+				Value: utils.FormatNumber(float64(allIters[i]), cfg.NumberUnit),
 			})
 		}
 	}

@@ -20,7 +20,7 @@ var divanRowRe = regexp.MustCompile(`^[├╰]─\s+(\S+)\s+(.+)$`)
 
 var divanValRe = regexp.MustCompile(`([\d.]+)\s*(ns|µs|μs|ms|s)`)
 
-func ParseDivanBenchmark(filename string) []shared.DataPoint {
+func ParseDivanBenchmark(filename string, cfg parser.Config) []shared.DataPoint {
 	f, err := os.Open(filename)
 	if err != nil {
 		shared.ExitWithError("Error opening file", err)
@@ -41,7 +41,7 @@ func ParseDivanBenchmark(filename string) []shared.DataPoint {
 		}
 
 		name := match[1]
-		if !parser.ShouldIncludeBenchmark(name) {
+		if !parser.ShouldIncludeBenchmark(name, cfg) {
 			continue
 		}
 
@@ -69,7 +69,7 @@ func ParseDivanBenchmark(filename string) []shared.DataPoint {
 		meanNs := values[3]
 		samples := values[4]
 
-		group, groupErr := parser.GroupBenchmarkName(name)
+		group, groupErr := parser.GroupBenchmarkName(name, cfg)
 		if groupErr != nil {
 			shared.ExitWithError("Error parsing divan benchmark name", groupErr)
 		}
@@ -82,10 +82,10 @@ func ParseDivanBenchmark(filename string) []shared.DataPoint {
 			YAxis: yAxis,
 			ZAxis: zAxis,
 			Stats: []shared.Stat{
-				{Type: utils.CreateStatType("Latency fastest", shared.FlagState.TimeUnit, ""), Value: utils.ConvertTime(fastestNs, "ns", shared.FlagState.TimeUnit)},
-				{Type: utils.CreateStatType("Latency slowest", shared.FlagState.TimeUnit, ""), Value: utils.ConvertTime(slowestNs, "ns", shared.FlagState.TimeUnit), Symbol: "±"},
-				{Type: utils.CreateStatType("Latency median", shared.FlagState.TimeUnit, ""), Value: utils.ConvertTime(medianNs, "ns", shared.FlagState.TimeUnit)},
-				{Type: utils.CreateStatType("Latency mean", shared.FlagState.TimeUnit, ""), Value: utils.ConvertTime(meanNs, "ns", shared.FlagState.TimeUnit)},
+				{Type: utils.CreateStatType("Latency fastest", cfg.TimeUnit, ""), Value: utils.ConvertTime(fastestNs, "ns", cfg.TimeUnit)},
+				{Type: utils.CreateStatType("Latency slowest", cfg.TimeUnit, ""), Value: utils.ConvertTime(slowestNs, "ns", cfg.TimeUnit), Symbol: "±"},
+				{Type: utils.CreateStatType("Latency median", cfg.TimeUnit, ""), Value: utils.ConvertTime(medianNs, "ns", cfg.TimeUnit)},
+				{Type: utils.CreateStatType("Latency mean", cfg.TimeUnit, ""), Value: utils.ConvertTime(meanNs, "ns", cfg.TimeUnit)},
 				{Type: "Samples", Value: samples},
 			},
 		})

@@ -1,4 +1,4 @@
-package cmd
+package cli
 
 import (
 	"encoding/json"
@@ -17,7 +17,7 @@ type BenchmarkLine interface {
 	ExtractName(string) string
 }
 
-// Base implementation for raw benchmarks
+// RawBenchmark is the base implementation for raw benchmark text.
 type RawBenchmark struct{}
 
 func (r *RawBenchmark) ExtractName(line string) string {
@@ -41,7 +41,7 @@ func (r *RawBenchmark) ExtractName(line string) string {
 	return name
 }
 
-// JSONBenchmark extends RawBenchmark but overrides ExtractName
+// JSONBenchmark extends RawBenchmark but overrides ExtractName.
 type JSONBenchmark struct {
 	Event *shared.BenchEvent
 }
@@ -54,13 +54,13 @@ func (j *JSONBenchmark) ExtractName(_ string) string {
 	return ""
 }
 
-// ProgressBar is a small interface for dependency injection
+// ProgressBar is a small interface for dependency injection.
 type ProgressBar interface {
 	Describe(string)
 	Finish() error
 }
 
-// BenchmarkProgressManager holds state + orchestrates benchmark processing
+// BenchmarkProgressManager holds state + orchestrates benchmark processing.
 type BenchmarkProgressManager struct {
 	bar              ProgressBar
 	benchmarkCount   int
@@ -89,19 +89,19 @@ func (m *BenchmarkProgressManager) Finish() error {
 
 func (m *BenchmarkProgressManager) ProcessLine(line string) {
 	var ev shared.BenchEvent
-	var parser BenchmarkLine
+	var p BenchmarkLine
 
 	if err := json.Unmarshal([]byte(line), &ev); err == nil {
-		parser = &JSONBenchmark{Event: &ev}
+		p = &JSONBenchmark{Event: &ev}
 	} else {
-		parser = &RawBenchmark{}
+		p = &RawBenchmark{}
 	}
 
 	if hasBenchmark(line) {
 		m.benchmarkCount++
 	}
 
-	if name := parser.ExtractName(line); name != "" {
+	if name := p.ExtractName(line); name != "" {
 		m.currentBenchName = name
 		m.updateProgress()
 	}

@@ -8,7 +8,20 @@ import (
 	"github.com/goptics/vizb/shared"
 )
 
-type ParseFunc func(filename string) []shared.DataPoint
+// Config carries the parse-time settings every parser needs. It replaces the
+// former global shared.FlagState reads, making parsers pure functions of
+// (input, config).
+type Config struct {
+	GroupPattern string
+	GroupRegex   string
+	Group        []string
+	Filter       string
+	MemUnit      string
+	TimeUnit     string
+	NumberUnit   string
+}
+
+type ParseFunc func(filename string, cfg Config) []shared.DataPoint
 
 var Parsers = map[string]ParseFunc{}
 
@@ -29,12 +42,12 @@ func AvailableParsers() []string {
 	return keys
 }
 
-func ShouldIncludeBenchmark(benchName string) bool {
-	if shared.FlagState.FilterRegex == "" {
+func ShouldIncludeBenchmark(benchName string, cfg Config) bool {
+	if cfg.Filter == "" {
 		return true
 	}
 
-	filterRe, err := regexp.Compile(shared.FlagState.FilterRegex)
+	filterRe, err := regexp.Compile(cfg.Filter)
 	if err != nil {
 		shared.ExitWithError("Invalid filter regex", err)
 	}

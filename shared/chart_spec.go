@@ -67,6 +67,24 @@ func isPermutation(identity, candidate string) bool {
 	return true
 }
 
+// ValidateSwap reports whether swap is a valid axis permutation for the given
+// axes. An empty swap is always valid (no override). When axes are unknown
+// (none configured) any non-empty swap is accepted. Reused by the per-chart
+// --swap flag and the --chart spec parser.
+func ValidateSwap(swap string, axes []Axis) error {
+	if swap == "" {
+		return nil
+	}
+	if len(axes) == 0 {
+		return nil
+	}
+	identity := axisIdentity(axes)
+	if !isPermutation(identity, swap) {
+		return fmt.Errorf("swap value %q is not a permutation of the axis identity %q", swap, identity)
+	}
+	return nil
+}
+
 // ParseChartSpecs parses --chart flag specs into per-chart ChartSettings.
 //
 // specs: each element is one --chart value, e.g. "bar:swap=yxn,sort=asc"

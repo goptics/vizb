@@ -28,6 +28,7 @@ export default defineConfig({
 				label: 'Commands',
 				items: [
 					{ label: 'vizb', slug: 'commands/root' },
+					{ label: 'vizb <chart>', slug: 'commands/charts' },
 					{ label: 'vizb merge', slug: 'commands/merge' },
 					{ label: 'vizb ui', slug: 'commands/ui' },
 				],
