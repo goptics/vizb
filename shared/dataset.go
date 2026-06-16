@@ -44,30 +44,6 @@ type Sort struct {
 // imported here (under the config_charts alias) so Dataset.Settings can be
 // []ChartConfig without a per-chart package needing to know about shared.
 
-// ChartSettings holds per-chart overrides; nil/"" means inherit the global
-// setting. Retained for backward compatibility with the v0.12.0 wire format
-// and the --chart spec parser. The new model stores these fields per-chart on
-// the typed Config structs; this struct survives only until the spec parser
-// migrates (Task 4).
-type ChartSettings struct {
-	Swap       string `json:"swap,omitempty"`
-	Sort       *Sort  `json:"sort,omitempty"`
-	Scale      string `json:"scale,omitempty"`
-	ShowLabels *bool  `json:"showLabels,omitempty"`
-	AutoRotate *bool  `json:"autoRotate,omitempty"`
-}
-
-// DatasetSettings is the legacy v0.12.0 settings struct shape. Retained for
-// reference; the new model uses []ChartConfig on Dataset.Settings instead.
-type DatasetSettings struct {
-	Charts        []string                 `json:"charts"`
-	Sort          Sort                     `json:"sort"`
-	ShowLabels    bool                     `json:"showLabels"`
-	Scale         string                   `json:"scale"`
-	Axes          []Axis                   `json:"axes,omitempty"`
-	ChartSettings map[string]ChartSettings `json:"chartSettings,omitempty"`
-}
-
 type Meta struct {
 	CPU  *CPUInfo `json:"cpu,omitempty"`
 	OS   string   `json:"os,omitempty"`
