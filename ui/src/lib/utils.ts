@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
-import type { Meta, ChartData } from '../types'
+import type { Meta, ChartData, DataPoint } from '../types'
 import type { Ref } from 'vue'
 
 /**
@@ -70,6 +70,20 @@ export const hasZAxis = (chartData: Ref<ChartData, ChartData>) => chartHasZAxis(
 // 3D rendering kicks in only when x, y AND z dimensions are all present
 export const is3D = (chartData: Ref<ChartData, ChartData>) =>
   hasXAxis(chartData) && hasYAxis(chartData) && hasZAxis(chartData)
+
+// Data-shape dimensionality tag, derived from the raw `DataPoint[]` rows. The
+// panel uses this to decide which fields render (e.g. `autoRotate` is 3D-only).
+// Independent of the chart's post-group `ChartData` — purely the source shape.
+// `undefined` (empty/unknown data) means "no constraint" so the panel still
+// shows every field by default until data arrives.
+export type Dimension = '1D' | '2D' | '3D'
+
+export const datasetDimension = (data: DataPoint[] | undefined): Dimension | undefined => {
+  if (!data?.length) return undefined
+  if (data.some((p) => !!p.zAxis)) return '3D'
+  if (data.some((p) => !!p.xAxis && !!p.yAxis)) return '2D'
+  return '1D'
+}
 
 export const CPUtoString = (cpu: Meta['cpu']) => {
   if (!cpu) {

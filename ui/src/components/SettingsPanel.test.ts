@@ -24,7 +24,7 @@ const { getRenderableFields } = await import('../composables/settings/fieldRegis
 // of controls.
 
 describe('SettingsPanel field selection', () => {
-  it('renders 5 controls for a bar config (sort/scale/showLabels/autoRotate/swap)', () => {
+  it('renders 5 controls for a 3D bar config (sort/scale/showLabels/autoRotate/swap)', () => {
     const cfg: BarConfig = {
       type: 'bar',
       sort: { enabled: false, order: 'asc' },
@@ -33,7 +33,7 @@ describe('SettingsPanel field selection', () => {
       autoRotate: false,
       swap: '',
     }
-    expect(getRenderableFields(cfg).map((f) => f.key)).toEqual([
+    expect(getRenderableFields(cfg, { dimension: '3D' }).map((f) => f.key)).toEqual([
       'sort',
       'scale',
       'showLabels',
@@ -42,7 +42,7 @@ describe('SettingsPanel field selection', () => {
     ])
   })
 
-  it('renders 5 controls for a line config (sort/scale/showLabels/autoRotate/swap)', () => {
+  it('renders 5 controls for a 3D line config (sort/scale/showLabels/autoRotate/swap)', () => {
     const cfg: LineConfig = {
       type: 'line',
       sort: { enabled: false, order: 'asc' },
@@ -51,11 +51,45 @@ describe('SettingsPanel field selection', () => {
       autoRotate: false,
       swap: '',
     }
-    expect(getRenderableFields(cfg).map((f) => f.key)).toEqual([
+    expect(getRenderableFields(cfg, { dimension: '3D' }).map((f) => f.key)).toEqual([
       'sort',
       'scale',
       'showLabels',
       'autoRotate',
+      'swap',
+    ])
+  })
+
+  it('renders 4 controls for a 2D bar config (no autoRotate — 3D-only)', () => {
+    // A 2D bar chart has no grid3D, so autoRotate has no effect. The panel
+    // must drop the control when the data has no z axis.
+    const cfg: BarConfig = {
+      type: 'bar',
+      sort: { enabled: false, order: 'asc' },
+      scale: 'linear',
+      showLabels: false,
+      swap: '',
+    }
+    expect(getRenderableFields(cfg, { dimension: '2D' }).map((f) => f.key)).toEqual([
+      'sort',
+      'scale',
+      'showLabels',
+      'swap',
+    ])
+  })
+
+  it('renders 4 controls for a 2D line config (no autoRotate)', () => {
+    const cfg: LineConfig = {
+      type: 'line',
+      sort: { enabled: false, order: 'asc' },
+      scale: 'linear',
+      showLabels: false,
+      swap: '',
+    }
+    expect(getRenderableFields(cfg, { dimension: '2D' }).map((f) => f.key)).toEqual([
+      'sort',
+      'scale',
+      'showLabels',
       'swap',
     ])
   })
@@ -67,7 +101,11 @@ describe('SettingsPanel field selection', () => {
       showLabels: false,
       swap: '',
     }
-    expect(getRenderableFields(cfg).map((f) => f.key)).toEqual(['sort', 'showLabels', 'swap'])
+    expect(getRenderableFields(cfg, { dimension: '2D' }).map((f) => f.key)).toEqual([
+      'sort',
+      'showLabels',
+      'swap',
+    ])
   })
 
   it('renders 3 controls for a heatmap config (no scale/autoRotate)', () => {
@@ -77,7 +115,11 @@ describe('SettingsPanel field selection', () => {
       showLabels: false,
       swap: '',
     }
-    expect(getRenderableFields(cfg).map((f) => f.key)).toEqual(['sort', 'showLabels', 'swap'])
+    expect(getRenderableFields(cfg, { dimension: '2D' }).map((f) => f.key)).toEqual([
+      'sort',
+      'showLabels',
+      'swap',
+    ])
   })
 
   it('renders 3 controls for a radar config (no scale/autoRotate)', () => {
@@ -87,12 +129,16 @@ describe('SettingsPanel field selection', () => {
       showLabels: false,
       swap: '',
     }
-    expect(getRenderableFields(cfg).map((f) => f.key)).toEqual(['sort', 'showLabels', 'swap'])
+    expect(getRenderableFields(cfg, { dimension: '2D' }).map((f) => f.key)).toEqual([
+      'sort',
+      'showLabels',
+      'swap',
+    ])
   })
 
   it('renders all available fields even when most keys are absent from the config', () => {
     const cfg: BarConfig = { type: 'bar', sort: { enabled: false, order: 'asc' } }
-    expect(getRenderableFields(cfg).map((f) => f.key)).toEqual([
+    expect(getRenderableFields(cfg, { dimension: '3D' }).map((f) => f.key)).toEqual([
       'sort',
       'scale',
       'showLabels',

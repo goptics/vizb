@@ -26,7 +26,7 @@ const {
   setSwap,
 } = useSettingsStore()
 
-const { activeDataSet, activeDataSetId, setArrangement, activeGroupId } = useDataPoint()
+const { activeDataSet, activeDataSetId, activeDataDimension, setArrangement, activeGroupId } = useDataPoint()
 
 const CHART_ICONS: Record<ChartType, Component> = {
   bar: BarChart3,
@@ -52,11 +52,14 @@ const chartOptions = computed(() =>
 const onChartTypeChange = (val: string | number) => setChartType(val as ChartType)
 
 // The field list for the active chart. `getRenderableFields` walks the config's
-// own keys, so pie/heatmap/radar configs naturally skip `scale` and `autoRotate`
-// without any chart-type check here.
+// own keys (filtered by `appliesTo` + the active data's dimension) so pie/
+// heatmap/radar configs naturally skip `scale` and `autoRotate` without any
+// chart-type check here, and a 2D bar config also skips `autoRotate` (3D-only).
 const fields = computed(() => {
   const cfg = activeConfig.value
-  return cfg ? getRenderableFields(cfg) : []
+  return cfg
+    ? getRenderableFields(cfg, { dimension: activeDataDimension.value })
+    : []
 })
 
 // Each control emits `update:modelValue` with the appropriate type for its

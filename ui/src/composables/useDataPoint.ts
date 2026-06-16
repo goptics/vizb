@@ -1,7 +1,7 @@
 import { ref, shallowRef, markRaw, reactive, computed, nextTick } from 'vue'
 import type { DataSet, DataPoint, ChartType } from '../types'
 import type { Arrangement } from './useChartPipeline'
-import { resetColor, isValidIndex } from '../lib/utils'
+import { resetColor, isValidIndex, datasetDimension } from '../lib/utils'
 import { useSettingsStore } from './useSettingsStore'
 
 const getStatDimensions = (points: DataPoint[]) => {
@@ -98,8 +98,17 @@ const dataSetsProcessed = computed<DataSet[]>(() => {
   return dataSets.value
 })
 
-const activeDataSetDimension = computed(() =>
+// Number of present axes in the active dataset (0..4: name, x, y, z). Used
+// for the "rows: N cols: M" subtitle in the dashboard.
+const activeDataAxisCount = computed(() =>
   getStatDimensions(dataSetsProcessed.value[activeDataSetId.value]?.data ?? [])
+)
+
+// Data-shape dimensionality tag for the active dataset, used by the settings
+// panel to filter fields (e.g. `autoRotate` is 3D-only). `undefined` for
+// empty/unknown data — the panel treats that as "no dimension constraint".
+const activeDataDimension = computed(() =>
+  datasetDimension(dataSetsProcessed.value[activeDataSetId.value]?.data)
 )
 
 const activeDataSet = computed(
@@ -161,7 +170,8 @@ export function useDataPoint() {
     dataSets,
     activeDataSet,
     activeDataSetId,
-    activeDataSetDimension,
+    activeDataAxisCount,
+    activeDataDimension,
     selectDataSet,
 
     activeArrangement,
