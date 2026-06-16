@@ -22,7 +22,7 @@ func TestRegistered(t *testing.T) {
 }
 
 func TestRegister_Duplicate(t *testing.T) {
-	factory := func() shared.ChartConfig { return &Config{} }
+	factory := func() charts.ChartConfig { return &Config{} }
 	charts.Register("test_dup", factory)
 	assert.Panics(t, func() {
 		charts.Register("test_dup", factory)

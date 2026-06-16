@@ -5,6 +5,7 @@
 package bar
 
 import (
+	"github.com/goptics/vizb/config/charts"
 	"github.com/goptics/vizb/shared"
 )
 
@@ -24,11 +25,11 @@ type Config struct {
 	AutoRotate *bool        `json:"autoRotate,omitempty"`
 }
 
-// ChartType returns the chart-type discriminator; satisfies shared.ChartConfig.
+// ChartType returns the chart-type discriminator; satisfies charts.ChartConfig.
 func (Config) ChartType() string { return Type }
 
 func init() {
-	shared.RegisterChartConfig(Type, func() shared.ChartConfig { return &Config{} })
+	charts.Register(Type, func() charts.ChartConfig { return &Config{} })
 }
 
 // Flags carries the values Materialise reads from a command's flags (either

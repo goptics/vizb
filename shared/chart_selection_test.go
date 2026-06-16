@@ -1,16 +1,31 @@
 package shared
 
-import "testing"
+import (
+	"testing"
+
+	config_charts "github.com/goptics/vizb/config/charts"
+)
+
+// stubChartConfig is a minimal ChartConfig used by the internal test below.
+// The test only exercises DatasetNeeds3D, which reads ChartType() from each
+// entry — the per-chart typed Configs are not required. The internal test
+// file is in package shared, so it cannot import the per-chart subpackages
+// (bar/line/pie/heatmap/radar each import shared, which would cycle).
+type stubChartConfig struct {
+	typ string
+}
+
+func (s stubChartConfig) ChartType() string { return s.typ }
 
 func dsWith(types []string, zValues ...string) *Dataset {
 	ds := &Dataset{}
-	// Build Settings from the requested chart types via the registry. The
-	// test only cares about ChartType() values, so empty zero-value Configs
-	// are sufficient.
+	// Build Settings from the requested chart types. The test only cares
+	// about ChartType() values, so a stub config that satisfies
+	// config_charts.ChartConfig is sufficient — no need to go through the
+	// registry (which lives in config/charts and imports shared, so we
+	// can't import the per-chart subpackages from this internal test).
 	for _, t := range types {
-		if cfg, err := NewChartConfig(t); err == nil {
-			ds.Settings = append(ds.Settings, cfg)
-		}
+		ds.Settings = append(ds.Settings, stubChartConfig{typ: t})
 	}
 	for _, z := range zValues {
 		ds.Data = append(ds.Data, DataPoint{XAxis: "x", YAxis: "y", ZAxis: z})
@@ -63,3 +78,7 @@ func TestDatasetNeeds3D(t *testing.T) {
 		})
 	}
 }
+
+// silence unused-import warning if Go's tooling ever flags it; the test
+// references config_charts via the stub type assignment above.
+var _ config_charts.ChartConfig = stubChartConfig{}

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	config_charts "github.com/goptics/vizb/config/charts"
 	"github.com/goptics/vizb/pkg/parser"
 	goparser "github.com/goptics/vizb/pkg/parser/golang"
 	"github.com/goptics/vizb/pkg/style"
@@ -269,7 +270,7 @@ func applySelections(dataSet *shared.Dataset, defaults LinearDefaults, selection
 // chartTypeNames extracts the chart-type discriminators from a slice of
 // per-chart Configs. Used by callers that need a []string (e.g. HTML chunk
 // pruning) in place of the old dataSet.Settings.Charts list.
-func chartTypeNames(settings []shared.ChartConfig) []string {
+func chartTypeNames(settings []config_charts.ChartConfig) []string {
 	out := make([]string, 0, len(settings))
 	for _, c := range settings {
 		out = append(out, c.ChartType())

@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	config_charts "github.com/goptics/vizb/config/charts"
 	"github.com/goptics/vizb/config/charts/bar"
 	_ "github.com/goptics/vizb/config/charts/bar"
 	_ "github.com/goptics/vizb/config/charts/heatmap"
@@ -259,7 +260,7 @@ func TestBuildLegacyConfig_PerChartFieldAssignment(t *testing.T) {
 	})
 
 	t.Run("unknown chart type returns error", func(t *testing.T) {
-		_, err := shared.DecodeChartConfig("graph", json.RawMessage(`{"type":"graph"}`))
+		_, err := config_charts.Decode("graph", json.RawMessage(`{"type":"graph"}`))
 		if err == nil {
 			t.Error("expected error for unknown chart type, got nil")
 		}
@@ -267,10 +268,10 @@ func TestBuildLegacyConfig_PerChartFieldAssignment(t *testing.T) {
 }
 
 // mustBuildLegacyConfig mirrors the migration's buildLegacyConfig (same
-// payload + Decode) but is public-ish via the shared registry, so external
-// tests can exercise the field-assignment contract without going through
-// MigrateDataset's full JSON path.
-func mustBuildLegacyConfig(t *testing.T, typ string, sort shared.Sort, showLabels bool, scale string) shared.ChartConfig {
+// payload + Decode) but is public-ish via the config_charts registry, so
+// external tests can exercise the field-assignment contract without going
+// through MigrateDataset's full JSON path.
+func mustBuildLegacyConfig(t *testing.T, typ string, sort shared.Sort, showLabels bool, scale string) config_charts.ChartConfig {
 	t.Helper()
 	scaleVal := scale
 	if scaleVal == "" {
@@ -286,9 +287,9 @@ func mustBuildLegacyConfig(t *testing.T, typ string, sort shared.Sort, showLabel
 	if err != nil {
 		t.Fatal(err)
 	}
-	cfg, err := shared.DecodeChartConfig(typ, raw)
+	cfg, err := config_charts.Decode(typ, raw)
 	if err != nil {
-		t.Fatalf("DecodeChartConfig(%q): %v", typ, err)
+		t.Fatalf("config_charts.Decode(%q): %v", typ, err)
 	}
 	return cfg
 }

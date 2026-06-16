@@ -3,6 +3,7 @@
 package heatmap
 
 import (
+	"github.com/goptics/vizb/config/charts"
 	"github.com/goptics/vizb/shared"
 )
 
@@ -18,7 +19,7 @@ type Config struct {
 func (Config) ChartType() string { return Type }
 
 func init() {
-	shared.RegisterChartConfig(Type, func() shared.ChartConfig { return &Config{} })
+	charts.Register(Type, func() charts.ChartConfig { return &Config{} })
 }
 
 type Flags struct {

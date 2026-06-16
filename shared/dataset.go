@@ -3,6 +3,8 @@ package shared
 import (
 	"encoding/json"
 	"fmt"
+
+	config_charts "github.com/goptics/vizb/config/charts"
 )
 
 type Stat struct {
@@ -38,10 +40,9 @@ type Sort struct {
 }
 
 // ChartConfig is the tiny contract every per-chart config implements. The
-// canonical definition lives in chart_config.go (with the registry). It is
-// declared in shared (not in config/charts) so Dataset.Settings can be
-// []ChartConfig without creating an import cycle: per-chart packages
-// implement this interface and register themselves via shared.RegisterChartConfig.
+// canonical definition lives in config/charts/contract.go. The interface is
+// imported here (under the config_charts alias) so Dataset.Settings can be
+// []ChartConfig without a per-chart package needing to know about shared.
 
 // ChartSettings holds per-chart overrides; nil/"" means inherit the global
 // setting. Retained for backward compatibility with the v0.12.0 wire format
@@ -81,15 +82,15 @@ type HistoryEntry struct {
 }
 
 type Dataset struct {
-	Tag         string         `json:"tag,omitempty"`
-	Timestamp   string         `json:"timestamp,omitempty"`
-	Name        string         `json:"name"`
-	History     []HistoryEntry `json:"history,omitempty"`
-	Description string         `json:"description,omitempty"`
-	Meta        *Meta          `json:"meta,omitempty"`
-	Axes        []Axis         `json:"axes"`
-	Settings    []ChartConfig  `json:"settings"`
-	Data        []DataPoint    `json:"data"`
+	Tag         string                      `json:"tag,omitempty"`
+	Timestamp   string                      `json:"timestamp,omitempty"`
+	Name        string                      `json:"name"`
+	History     []HistoryEntry              `json:"history,omitempty"`
+	Description string                      `json:"description,omitempty"`
+	Meta        *Meta                       `json:"meta,omitempty"`
+	Axes        []Axis                      `json:"axes"`
+	Settings    []config_charts.ChartConfig `json:"settings"`
+	Data        []DataPoint                 `json:"data"`
 }
 
 // UnmarshalJSON decodes a Dataset, dispatching each entry in "settings" to the
@@ -145,7 +146,7 @@ func (d *Dataset) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	d.Settings = make([]ChartConfig, 0, len(entries))
+	d.Settings = make([]config_charts.ChartConfig, 0, len(entries))
 	for _, entry := range entries {
 		var peek struct {
 			Type string `json:"type"`
@@ -156,7 +157,7 @@ func (d *Dataset) UnmarshalJSON(data []byte) error {
 		if peek.Type == "" {
 			return fmt.Errorf("dataset settings entry missing 'type' field: %s", entry)
 		}
-		cfg, err := DecodeChartConfig(peek.Type, entry)
+		cfg, err := config_charts.Decode(peek.Type, entry)
 		if err != nil {
 			return err
 		}
