@@ -94,29 +94,23 @@ func runUI(cmd *cobra.Command, args []string) {
 	// Determine the effective chart selection that drives chunk pruning. When -c
 	// is given it overrides (and is written back into each dataset so the embedded
 	// VIZB_DATA tabs match the bundled chunks); otherwise honour each dataset's
-	// baked-in Settings.Charts.
+	// baked-in chart types (extracted from Settings in the new model).
 	var charts []string
 	if cmd.Flags().Changed("charts") {
 		charts = uiOpts.Charts
-		for i := range benches {
-			benches[i].Settings.Charts = charts
-		}
+		// Task 2 keeps the call sites compiling; the per-chart Config assembly
+		// itself is rewritten in Task 4.
 	} else {
 		charts = unionCharts(benches)
 	}
 
 	if len(uiOpts.ChartSpecs) > 0 {
-		for i := range benches {
-			chartSettings, err := shared.ParseChartSpecs(
-				uiOpts.ChartSpecs,
-				benches[i].Settings.Charts,
-				benches[i].Settings.Axes,
-			)
-			if err != nil {
-				shared.ExitWithError(err.Error(), nil)
-			}
-			benches[i].Settings.ChartSettings = chartSettings
-		}
+		// ParseChartSpecs still operates on the legacy []ChartSettings shape
+		// (Task 4 will rewrite it on the new model). Kept as a no-op call for
+		// now so the build passes; the per-chart override application is
+		// rewritten alongside ParseChartSpecs in Task 4.
+		_ = uiOpts.ChartSpecs
+		_ = shared.ParseChartSpecs
 	}
 
 	needs3D := shared.ChartsHave3DCapable(charts) && anyDatasetHasZAxis(benches)
@@ -139,10 +133,10 @@ func unionCharts(benches []shared.Dataset) []string {
 	seen := make(map[string]bool)
 	var charts []string
 	for i := range benches {
-		for _, c := range benches[i].Settings.Charts {
-			if !seen[c] {
-				seen[c] = true
-				charts = append(charts, c)
+		for _, c := range benches[i].Settings {
+			if !seen[c.ChartType()] {
+				seen[c.ChartType()] = true
+				charts = append(charts, c.ChartType())
 			}
 		}
 	}

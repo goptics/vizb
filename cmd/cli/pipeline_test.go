@@ -156,7 +156,13 @@ func (s *PipelineSuite) TestRunLinearGeneratesOutputFile() {
 		s.Require().NoError(err)
 		var ds shared.Dataset
 		s.Require().NoError(json.Unmarshal(content, &ds))
-		s.Equal([]string{"bar"}, ds.Settings.Charts)
+		// Task 2: settings is now []ChartConfig; Task 3 will populate it via
+		// Materialise. Asserting on the typed config requires the build to
+		// actually wire it up — until then, this is a known test fixture
+		// failure (settings will be empty).
+		if s.Len(ds.Settings, 1) {
+			s.Equal("bar", ds.Settings[0].ChartType())
+		}
 	})
 }
 

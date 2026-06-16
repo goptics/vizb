@@ -2,9 +2,16 @@ package shared
 
 import "testing"
 
-func dsWith(charts []string, zValues ...string) *Dataset {
+func dsWith(types []string, zValues ...string) *Dataset {
 	ds := &Dataset{}
-	ds.Settings.Charts = charts
+	// Build Settings from the requested chart types via the registry. The
+	// test only cares about ChartType() values, so empty zero-value Configs
+	// are sufficient.
+	for _, t := range types {
+		if cfg, err := NewChartConfig(t); err == nil {
+			ds.Settings = append(ds.Settings, cfg)
+		}
+	}
 	for _, z := range zValues {
 		ds.Data = append(ds.Data, DataPoint{XAxis: "x", YAxis: "y", ZAxis: z})
 	}
@@ -13,9 +20,9 @@ func dsWith(charts []string, zValues ...string) *Dataset {
 
 func TestChartsHave3DCapable(t *testing.T) {
 	cases := []struct {
-		name   string
-		charts []string
-		want   bool
+		name  string
+		types []string
+		want  bool
 	}{
 		{"bar is 3D-capable", []string{"bar"}, true},
 		{"line is 3D-capable", []string{"line"}, true},
@@ -27,8 +34,8 @@ func TestChartsHave3DCapable(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			if got := ChartsHave3DCapable(c.charts); got != c.want {
-				t.Fatalf("ChartsHave3DCapable(%v) = %v, want %v", c.charts, got, c.want)
+			if got := ChartsHave3DCapable(c.types); got != c.want {
+				t.Fatalf("ChartsHave3DCapable(%v) = %v, want %v", c.types, got, c.want)
 			}
 		})
 	}

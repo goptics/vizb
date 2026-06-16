@@ -238,10 +238,16 @@ func assembleDataset(results []shared.DataPoint, common CommonOptions, defaults 
 		dataSet.Meta = &meta
 	}
 
-	dataSet.Settings.Charts = selectionTypes(selections)
-	applyDefaults(&dataSet.Settings, defaults)
-	dataSet.Settings.Axes = parser.GroupAxes(cfg)
-	dataSet.Settings.ChartSettings = selectionSettings(selections)
+	// Task 2 keeps the call sites compiling; the per-chart Config assembly
+	// itself is rewritten in Task 3 (which uses each chart's Materialise
+	// function). For now we only need the build to pass — the test fixture
+	// failures on Settings assertions are expected and noted.
+	_ = selectionTypes
+	_ = applyDefaults
+	_ = selectionSettings
+	_ = defaults
+	_ = selections
+	dataSet.Axes = parser.GroupAxes(cfg)
 
 	dataSet.Tag = common.Tag
 	dataSet.Timestamp = time.Now().UTC().Format(time.RFC3339)
@@ -250,11 +256,25 @@ func assembleDataset(results []shared.DataPoint, common CommonOptions, defaults 
 }
 
 // applySelections overrides a passed-through Dataset's chart selection and
-// defaults, so e.g. `vizb bar data.json` re-renders as bar only.
+// defaults, so e.g. `vizb bar data.json` re-renders as bar only. Task 2 keeps
+// this compiling; the rewrite is in Task 3.
 func applySelections(dataSet *shared.Dataset, defaults LinearDefaults, selections []ChartSelection) {
-	dataSet.Settings.Charts = selectionTypes(selections)
-	applyDefaults(&dataSet.Settings, defaults)
-	dataSet.Settings.ChartSettings = selectionSettings(selections)
+	_ = defaults
+	_ = selections
+	_ = selectionTypes
+	_ = applyDefaults
+	_ = selectionSettings
+}
+
+// chartTypeNames extracts the chart-type discriminators from a slice of
+// per-chart Configs. Used by callers that need a []string (e.g. HTML chunk
+// pruning) in place of the old dataSet.Settings.Charts list.
+func chartTypeNames(settings []shared.ChartConfig) []string {
+	out := make([]string, 0, len(settings))
+	for _, c := range settings {
+		out = append(out, c.ChartType())
+	}
+	return out
 }
 
 // applyDefaults writes the dataset-level sort/scale/labels defaults into Settings.
@@ -304,7 +324,7 @@ func writeOutput(f *os.File, dataSet *shared.Dataset, format string) {
 			shared.ExitWithError("Failed to marshal dataSet data: %v", err)
 		}
 
-		htmlContent := template.GenerateUI(jsonData, dataSet.Settings.Charts, shared.DatasetNeeds3D(dataSet), template.VizbHTMLTemplate)
+		htmlContent := template.GenerateUI(jsonData, chartTypeNames(dataSet.Settings), shared.DatasetNeeds3D(dataSet), template.VizbHTMLTemplate)
 		if _, err := f.WriteString(htmlContent); err != nil {
 			shared.ExitWithError("Failed to write output file: %v", err)
 		}

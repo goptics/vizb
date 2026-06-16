@@ -1,5 +1,10 @@
 package shared
 
+import (
+	"encoding/json"
+	"fmt"
+)
+
 type Stat struct {
 	Type   string  `json:"type"`
 	Value  float64 `json:"value,omitempty"`
@@ -32,16 +37,27 @@ type Sort struct {
 	Order   string `json:"order"` // "asc" or "desc"
 }
 
-// ChartSettings holds per-chart overrides; nil/"" means inherit the global setting.
+// ChartConfig is the tiny contract every per-chart config implements. The
+// canonical definition lives in chart_config.go (with the registry). It is
+// declared in shared (not in config/charts) so Dataset.Settings can be
+// []ChartConfig without creating an import cycle: per-chart packages
+// implement this interface and register themselves via shared.RegisterChartConfig.
+
+// ChartSettings holds per-chart overrides; nil/"" means inherit the global
+// setting. Retained for backward compatibility with the v0.12.0 wire format
+// and the --chart spec parser. The new model stores these fields per-chart on
+// the typed Config structs; this struct survives only until the spec parser
+// migrates (Task 4).
 type ChartSettings struct {
 	Swap       string `json:"swap,omitempty"`
-	Sort       *Sort  `json:"sort,omitempty"` // pointer: nil means inherit from DatasetSettings.Sort
+	Sort       *Sort  `json:"sort,omitempty"`
 	Scale      string `json:"scale,omitempty"`
 	ShowLabels *bool  `json:"showLabels,omitempty"`
 	AutoRotate *bool  `json:"autoRotate,omitempty"`
 }
 
-// DatasetSettings holds global chart settings and per-chart overrides.
+// DatasetSettings is the legacy v0.12.0 settings struct shape. Retained for
+// reference; the new model uses []ChartConfig on Dataset.Settings instead.
 type DatasetSettings struct {
 	Charts        []string                 `json:"charts"`
 	Sort          Sort                     `json:"sort"`
@@ -65,12 +81,86 @@ type HistoryEntry struct {
 }
 
 type Dataset struct {
-	Tag         string          `json:"tag,omitempty"`
-	Timestamp   string          `json:"timestamp,omitempty"`
-	Name        string          `json:"name"`
-	History     []HistoryEntry  `json:"history,omitempty"`
-	Description string          `json:"description,omitempty"`
-	Meta        *Meta           `json:"meta,omitempty"`
-	Settings    DatasetSettings `json:"settings"`
-	Data        []DataPoint     `json:"data"`
+	Tag         string         `json:"tag,omitempty"`
+	Timestamp   string         `json:"timestamp,omitempty"`
+	Name        string         `json:"name"`
+	History     []HistoryEntry `json:"history,omitempty"`
+	Description string         `json:"description,omitempty"`
+	Meta        *Meta          `json:"meta,omitempty"`
+	Axes        []Axis         `json:"axes"`
+	Settings    []ChartConfig  `json:"settings"`
+	Data        []DataPoint    `json:"data"`
+}
+
+// UnmarshalJSON decodes a Dataset, dispatching each entry in "settings" to the
+// chart-type-specific Config via the charts registry. The new wire format is
+//
+//	"settings": [{"type":"bar",...}, {"type":"pie",...}]
+//
+// A v0.12.0 file uses
+//
+//	"settings": {"charts":[...], "sort":{...}, "showLabels":bool, "scale":string}
+//
+// — a single object. UnmarshalJSON cannot decode that into []ChartConfig, so
+// it leaves Settings nil and MigrateDataset converts the legacy struct to the
+// new shape. The default Marshal path (no MarshalJSON override) iterates the
+// slice and writes each struct's `type` field naturally.
+func (d *Dataset) UnmarshalJSON(data []byte) error {
+	var raw struct {
+		Tag         string          `json:"tag,omitempty"`
+		Timestamp   string          `json:"timestamp,omitempty"`
+		Name        string          `json:"name"`
+		History     []HistoryEntry  `json:"history,omitempty"`
+		Description string          `json:"description,omitempty"`
+		Meta        *Meta           `json:"meta,omitempty"`
+		Axes        []Axis          `json:"axes"`
+		Settings    json.RawMessage `json:"settings"`
+		Data        []DataPoint     `json:"data"`
+	}
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	d.Tag = raw.Tag
+	d.Timestamp = raw.Timestamp
+	d.Name = raw.Name
+	d.History = raw.History
+	d.Description = raw.Description
+	d.Meta = raw.Meta
+	d.Axes = raw.Axes
+	d.Data = raw.Data
+
+	// No settings, JSON null, or legacy v0.12.0 single object — leave
+	// Settings nil so MigrateDataset can populate it from the legacy struct.
+	if len(raw.Settings) == 0 || raw.Settings[0] != '[' {
+		d.Settings = nil
+		return nil
+	}
+
+	var entries []json.RawMessage
+	if err := json.Unmarshal(raw.Settings, &entries); err != nil {
+		return fmt.Errorf("dataset settings: expected JSON array: %w", err)
+	}
+	if len(entries) == 0 {
+		d.Settings = nil
+		return nil
+	}
+
+	d.Settings = make([]ChartConfig, 0, len(entries))
+	for _, entry := range entries {
+		var peek struct {
+			Type string `json:"type"`
+		}
+		if err := json.Unmarshal(entry, &peek); err != nil {
+			return fmt.Errorf("dataset settings entry: %w", err)
+		}
+		if peek.Type == "" {
+			return fmt.Errorf("dataset settings entry missing 'type' field: %s", entry)
+		}
+		cfg, err := DecodeChartConfig(peek.Type, entry)
+		if err != nil {
+			return err
+		}
+		d.Settings = append(d.Settings, cfg)
+	}
+	return nil
 }

@@ -28,7 +28,16 @@ func DatasetHasZAxis(ds *Dataset) bool {
 
 // DatasetNeeds3D reports whether a dataset will render a 3D chart, matching the
 // UI's is3D = hasX && hasY && hasZ combined with the bar/line-only 3D routing.
-// Used to decide whether the echarts-gl (3D) chunk must ship.
+// Used to decide whether the echarts-gl (3D) chunk must ship. Settings is
+// []ChartConfig in the new model, so we extract the chart-type discriminators
+// before checking 3D capability.
 func DatasetNeeds3D(ds *Dataset) bool {
-	return DatasetHasZAxis(ds) && ChartsHave3DCapable(ds.Settings.Charts)
+	if !DatasetHasZAxis(ds) {
+		return false
+	}
+	types := make([]string, len(ds.Settings))
+	for i, c := range ds.Settings {
+		types[i] = c.ChartType()
+	}
+	return ChartsHave3DCapable(types)
 }
