@@ -6,6 +6,8 @@ import (
 	"github.com/goptics/vizb/cmd/cli"
 	config_charts "github.com/goptics/vizb/config/charts"
 	barchart "github.com/goptics/vizb/config/charts/bar"
+	"github.com/goptics/vizb/pkg/parser"
+	"github.com/goptics/vizb/shared"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -46,6 +48,11 @@ func NewCommand() *cobra.Command {
 				ShowLabels: o.ShowLabels,
 				AutoRotate: o.AutoRotate,
 			}, nil)
+
+			axes := parser.GroupAxes(o.CommonOptions.ParseConfig())
+			if err := shared.ValidateSwap(cfg.Swap, axes); err != nil {
+				shared.ExitWithError(err.Error(), nil)
+			}
 
 			cli.RunSingleChart(cmd, args, o.CommonOptions, []config_charts.ChartConfig{cfg})
 		},

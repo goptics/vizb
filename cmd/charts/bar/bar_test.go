@@ -66,7 +66,7 @@ func (s *BarSuite) TestBarCommand_NewShape() {
 	out := filepath.Join(dir, "out.json")
 
 	cmd := NewCommand()
-	cmd.SetArgs([]string{"-o", out, "-P", "go", "-p", "y", "--swap", "yxn", "-l", "-s", "desc", input})
+	cmd.SetArgs([]string{"-o", out, "-P", "go", "-p", "n/x/y", "--swap", "yxn", "-l", "-s", "desc", input})
 	s.Require().NoError(cmd.Execute())
 
 	content, err := os.ReadFile(out)
@@ -84,6 +84,22 @@ func (s *BarSuite) TestBarCommand_NewShape() {
 	s.Require().NotNil(barCfg.Sort)
 	s.True(barCfg.Sort.Enabled)
 	s.Equal("desc", barCfg.Sort.Order)
+}
+
+func (s *BarSuite) TestBarCommand_BadSwapExits() {
+	dir := s.T().TempDir()
+	input := filepath.Join(dir, "bench.txt")
+	s.Require().NoError(os.WriteFile(input, []byte("BenchmarkExample-8 1000000 1234 ns/op"), 0644))
+	out := filepath.Join(dir, "out.json")
+
+	exitCalled := false
+	shared.OsExit = func(int) { exitCalled = true; panic("exit") }
+
+	cmd := NewCommand()
+	// -p y produces axes "y"; "xyz" is not a permutation of "y" → ValidateSwap errors.
+	cmd.SetArgs([]string{"-o", out, "-P", "go", "-p", "y", "--swap", "xyz", input})
+	s.Panics(func() { _ = cmd.Execute() })
+	s.True(exitCalled, "expected shared.OsExit to be invoked for bad --swap")
 }
 
 func TestBarSuite(t *testing.T) {

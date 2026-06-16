@@ -44,7 +44,7 @@ func (s *PieSuite) TestPieCommand_NewShape() {
 	out := filepath.Join(dir, "out.json")
 
 	cmd := NewCommand()
-	cmd.SetArgs([]string{"-o", out, "-P", "go", "-p", "y", "--swap", "yn", "-l", "-s", "desc", input})
+	cmd.SetArgs([]string{"-o", out, "-P", "go", "-p", "n/y", "--swap", "yn", "-l", "-s", "desc", input})
 	s.Require().NoError(cmd.Execute())
 
 	content, err := os.ReadFile(out)

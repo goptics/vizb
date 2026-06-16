@@ -42,7 +42,7 @@ func (s *LineSuite) TestLineCommand_NewShape() {
 	out := filepath.Join(dir, "out.json")
 
 	cmd := NewCommand()
-	cmd.SetArgs([]string{"-o", out, "-P", "go", "-p", "y", "--swap", "yxn", "-l", "-s", "desc", input})
+	cmd.SetArgs([]string{"-o", out, "-P", "go", "-p", "n/x/y", "--swap", "yxn", "-l", "-s", "desc", input})
 	s.Require().NoError(cmd.Execute())
 
 	content, err := os.ReadFile(out)
