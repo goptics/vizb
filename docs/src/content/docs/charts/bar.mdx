@@ -1,0 +1,85 @@
+---
+title: Bar Chart
+description: Compare values across categories with grouped or 3D bars — vizb's default chart type.
+---
+
+import { CardGrid, Card, LinkCard, Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+The **bar chart** is vizb's default chart type. It maps categories to bars, making it easy to compare values at a glance — whether you have one series or a full three-dimensional dataset. As you add dimensions, bars group and then grow into a full 3D WebGL scene.
+
+Use bar charts when you want direct side-by-side comparison of discrete categories, benchmark names, or labeled data points. If you're already using bar and want to fold in a z-axis without the depth, the [Heatmap](/charts/heatmap) is a good complement.
+
+## How vizb builds it
+
+vizb maps your grouping columns to the chart's visual axes:
+
+| Dimension | Role |
+|-----------|------|
+| **XAxis** | Category axis — each unique X value becomes a bar group |
+| **YAxis** | Series axis — each unique Y value becomes a separate bar within each X group |
+| **ZAxis** | Depth layer — stacks Z values into the X/Y floor grid (3D only, requires echarts-gl) |
+
+## Dimensions
+
+### 1D (X axis)
+
+A single series of bars — one bar per X category. The height is the raw value. This is the simplest view: run a benchmark, pick one grouping column, get a bar per result.
+
+```bash
+vizb data.csv -g category -c bar -o out.html
+```
+
+{/* TODO: Add GIF showing a 1D bar chart with single series */}
+
+### 2D (X + Y axes)
+
+Grouped bars: X stays on the category axis, and each distinct Y value becomes its own bar series side-by-side within each X group. The legend lists the Y values so you can toggle individual series on and off.
+
+```bash
+vizb data.csv -g category,metric -p x/y -c bar -o out.html
+```
+
+{/* TODO: Add GIF showing a 2D grouped bar chart with legend toggles */}
+
+### 3D (X + Y + Z axes)
+
+WebGL `bar3D` scene: X and Y form a grid floor, and Z values stack as depth layers on each (X, Y) cell. Rotate, zoom, and pan the scene in the browser. Requires echarts-gl (bundled automatically).
+
+```bash
+vizb data.csv -g category,metric,group -p x/y/z -c bar -o out.html
+```
+
+{/* TODO: Add GIF showing a 3D bar chart rotating */}
+
+<Aside type="note">
+  The Z axis requires **both** X and Y to be present. Passing a Z without an X/Y floor will be rejected with an error.
+</Aside>
+
+## Settings
+
+These settings apply to bar charts:
+
+| Setting | CLI flag | UI toggle | Notes |
+|---------|----------|-----------|-------|
+| Sort | `--sort asc\|desc` | Sort control | Sorts bars along the X axis |
+| Labels | `--show-labels` | Show labels | Displays value on each bar |
+| Swap | `--swap` | Axis switcher | Rotates which column maps to X vs Y |
+| Scale (log) | `--log-scale` | Scale toggle | Log Y axis — 2D only |
+| Auto-rotate | `--rotate` | Auto rotate | Spins the 3D scene — 3D only |
+
+Override settings for just this chart type without affecting others:
+
+```bash
+# Sort ascending and show labels on bars only
+vizb data.csv -g category,metric --chart bar:sort=asc,labels -o out.html
+
+# Log scale on the bar chart only
+vizb data.csv -g category,metric --chart bar:scale=log -o out.html
+```
+
+## Next Steps
+
+<LinkCard title="Line Chart" href="/charts/line" description="Same dimension model, but draws connected lines instead of bars." />
+<LinkCard title="3D Charts" href="/charts/3d" description="Deep dive into the 3D WebGL scene — rotate, zoom, tooltips, and auto-rotate." />
+<LinkCard title="Heatmap" href="/charts/heatmap" description="Flatten the Z axis into a colored grid instead of a 3D scene." />
+<LinkCard title="Settings" href="/ui/settings" description="All runtime controls — sort, labels, scale, and more." />

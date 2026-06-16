@@ -1,0 +1,77 @@
+---
+title: Heatmap Chart
+description: Compare values across two dimensions in a colored grid — optionally fold a z-axis into each cell for blended composition.
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+The **heatmap** packs X and Y into a flat grid of colored cells. Each cell shows a value and a color — spot high/low combinations at a glance across the full matrix.
+
+Use heatmaps when you have two categorical dimensions. A z-axis is optional: without z you get a single-gradient matrix; with z each cell sums its z-series values and blends their colors.
+
+## How vizb builds it
+
+| Dimension | Role |
+|-----------|------|
+| **XAxis** | Columns of the grid |
+| **YAxis** | Rows of the grid |
+| **ZAxis** | Folded into each cell: cell **value** = `Σ z`, cell **color** = value-weighted blend of z-series colors |
+
+A cell with one z-series shows that series' pure color. A cell mixing two z-series blends them proportionally — color reads as composition while the number reads as magnitude.
+
+## Dimensions
+
+### 2D (X + Y axes)
+
+Classic heatmap: one value per X × Y cell, colored on a continuous gradient with a `visualMap` scale. No z-series, no blending — magnitude as color.
+
+```bash
+vizb data.csv -g category,metric -p x/y -c heatmap -o out.html
+```
+
+{/* TODO: Add GIF showing a 2D gradient heatmap with visualMap scale */}
+
+### 3D (X + Y + Z axes)
+
+Z values are folded into each cell rather than rendered as depth. Each cell sums its z-series values and blends their palette colors by contribution weight. Toggle z-series in the legend — cells recompute and re-blend live.
+
+```bash
+vizb data.csv -g category,metric,group -p x/y/z -c heatmap -o out.html
+```
+
+{/* TODO: Add GIF showing a z-blended heatmap with legend toggles */}
+
+<Aside type="note">
+  The y-axis stays flat intentionally. Splitting each row by z made the grid tall and sparse — so z is folded into the cell instead.
+</Aside>
+
+## Settings
+
+These settings apply to heatmap charts:
+
+| Setting | CLI flag | UI toggle | Notes |
+|---------|----------|-----------|-------|
+| Sort | `--sort asc\|desc` | Sort control | Orders the matrix axes |
+| Labels | `--show-labels` | Show labels | Shows the summed value inside each cell |
+| Swap | `--chart heatmap:swap=yx` | Axis switcher | Swaps X and Y axes |
+
+Override settings for just the heatmap without affecting other charts:
+
+```bash
+# Show per-cell labels on the heatmap only
+vizb data.csv -g category,metric,group -p x/y/z --chart heatmap:labels -o out.html
+
+# Sort the axes descending
+vizb data.csv -g category,metric,group -p x/y/z --chart heatmap:sort=desc -o out.html
+```
+
+<Aside type="note">
+  `scale` (log) and `rotate` are not available for heatmap — those options are bar and line only.
+</Aside>
+
+## Next Steps
+
+<LinkCard title="3D Charts (WebGL)" href="/charts/3d" description="Bar and line in a visual WebGL scene — rotate, zoom, and pan with a z-axis." />
+<LinkCard title="Bar Chart" href="/charts/bar" description="Side-by-side bar comparison across the same dimensions." />
+<LinkCard title="Statistics" href="/ui/stats" description="Descriptive stats and correlation matrix for the same data." />
+<LinkCard title="Settings" href="/ui/settings" description="All runtime controls — sort, labels, and more." />

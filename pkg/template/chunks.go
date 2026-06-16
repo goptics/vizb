@@ -7,7 +7,7 @@ import (
 
 // defaultCharts is the full chart set, used when no selection is supplied so
 // nothing is over-pruned.
-var defaultCharts = []string{"bar", "line", "pie", "heatmap"}
+var defaultCharts = []string{"bar", "line", "pie", "heatmap", "radar"}
 
 // gatedRoots returns the set of renderer chunk keys the pruner gates: a gated
 // chunk is followed during reachability only when it is explicitly enabled.

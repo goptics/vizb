@@ -1,0 +1,84 @@
+---
+title: Pie Chart
+description: Break data into proportional slices — vizb renders one pie per dimension, side-by-side.
+---
+
+import { CardGrid, Card, LinkCard, Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+The **pie chart** shows how a whole breaks into parts. Unlike bar and line charts, pie has no cartesian axes — vizb maps your dimensions to multiple pie charts rendered side-by-side, one per axis. Each slice carries its name and percentage, so the composition of your dataset is immediately readable.
+
+Use pie charts when you care about proportion and share rather than raw magnitude: which dataset name dominates, which configuration contributes the most, or how Z variants divide the total.
+
+## How vizb builds it
+
+Pie ignores the X/Y/Z grid model. Instead, each axis becomes its own standalone pie:
+
+| Dimension | Role |
+|-----------|------|
+| **XAxis** | Each unique X value becomes a slice in the "By X-Axis" pie |
+| **YAxis** | Each unique Y value becomes a slice in the "By Y-Axis" pie |
+| **ZAxis** | Each unique Z value becomes a slice in the "By Z-Axis" pie |
+
+Slice sizes are proportional to the sum of values for that axis entry. Labels show the slice name and its percentage of the total.
+
+## Dimensions
+
+### 1D (X axis)
+
+One pie chart: each unique X value is a slice. The slice size is proportional to its total value. This is the clearest way to see which X category dominates.
+
+```bash
+vizb data.csv -g category -c pie -o out.html
+```
+
+{/* TODO: Add GIF showing a 1D pie chart with labeled slices */}
+
+### 2D (X + Y axes)
+
+Two pies side-by-side: **By X-Axis** and **By Y-Axis**. Each pie breaks the total differently — the first by X category, the second by Y column. Comparing the two lets you see which axis has more evenly-distributed weight.
+
+```bash
+vizb data.csv -g category,metric -p x/y -c pie -o out.html
+```
+
+{/* TODO: Add GIF showing two pies side-by-side with slice labels */}
+
+### 3D (X + Y + Z axes)
+
+Three pies in a row: **By X-Axis**, **By Y-Axis**, and **By Z-Axis**. Each pie slices the total along a different axis, giving you a three-way breakdown of the same dataset in a single view.
+
+```bash
+vizb data.csv -g category,metric,group -p x/y/z -c pie -o out.html
+```
+
+{/* TODO: Add GIF showing three pies in a row for a 3D dataset */}
+
+<Aside type="caution">
+  **Scale (log) and auto-rotate are not available for pie charts.** Pie has no cartesian axis to scale logarithmically, and there is no 3D scene to rotate. These controls are hidden from the UI when only a pie chart is active.
+</Aside>
+
+## Settings
+
+These settings apply to pie charts:
+
+| Setting | CLI flag | UI toggle | Notes |
+|---------|----------|-----------|-------|
+| Sort | `--sort asc\|desc` | Sort control | Orders slices by value |
+| Labels | `--show-labels` | Show labels | Shows name + percentage on each slice |
+| Swap | `--swap` | Axis switcher | Reorders which axis maps to which pie |
+| Scale (log) | — | — | **Not available** for pie charts |
+| Auto-rotate | — | — | **Not available** for pie charts |
+
+Override settings for just this chart type without affecting others:
+
+```bash
+# Sort slices descending and show labels on the pie only
+vizb data.csv -g category,metric --chart pie:sort=desc,labels -o out.html
+```
+
+## Next Steps
+
+<LinkCard title="Bar Chart" href="/charts/bar" description="Compare the same categories with bars — supports log scale and 3D." />
+<LinkCard title="Line Chart" href="/charts/line" description="Trace trends across categories with connected lines." />
+<LinkCard title="Radar Chart" href="/charts/radar" description="Spider/web layout — visualize multi-axis profiles at a glance." />
+<LinkCard title="Settings" href="/ui/settings" description="All runtime controls — sort, labels, swap, and more." />

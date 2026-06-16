@@ -81,7 +81,7 @@ for how the format is chosen.
 | `--group` | `-g` | `""` | Labels each dimension in `--group-pattern` order. csv/json: column/field names whose values populate dimensions; benchmark parsers: human-readable labels for name/x/y/z axes |
 | `--scale` | `-S` | `linear` | Scale type: `linear` or `log` |
 | `--sort` | `-s` | `""` | Sort order: `asc` or `desc` (default: as-is) |
-| `--charts` | `-c` | `bar,line,pie,heatmap` | Chart types to generate (`bar`, `line`, `pie`, `heatmap`) |
+| `--charts` | `-c` | `bar,line,pie,heatmap,radar` | Chart types to generate (`bar`, `line`, `pie`, `heatmap`, `radar`) |
 | `--chart` | | | Per-chart type settings override (repeatable): `<type>:<key>=<val>,...` — see below |
 | `--show-labels` | `-l` | `false` | Show value labels on charts |
 | `--filter` | `-f` | `""` | Regex to include only matching data labels / series names |
@@ -124,7 +124,7 @@ vizb bench.txt -p n/x/y/z -o output.html
 vizb bench.txt -r '(?<n>.*)/text=(?<x>.*)/level=(?<y>.*)' -o output.html
 ```
 
-See the [Grouping Guide](/guides/grouping) and [3D Charts](/ui/3d-charts) for detailed examples.
+See the [Grouping Guide](/guides/grouping) and [3D Charts](/charts/3d) for detailed examples.
 
 ### Logarithmic scale
 
@@ -141,7 +141,7 @@ vizb bench.txt -f "Sort" -o output.html
 
 ### Reducing output size
 
-By default all four chart renderers are bundled. Use `--charts` to include only
+By default all five chart renderers are bundled. Use `--charts` to include only
 the ones you need — unselected renderers are dropped at generation time.
 
 ```bash

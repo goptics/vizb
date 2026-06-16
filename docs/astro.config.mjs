@@ -6,6 +6,10 @@ import starlightThemeRapide from 'starlight-theme-rapide'
 // https://astro.build/config
 export default defineConfig({
 	site: 'https://vizb.goptics.org',
+	redirects: {
+		'/ui/heatmap': '/charts/heatmap',
+		'/ui/3d-charts': '/charts/3d',
+	},
 	integrations: [
 	starlight({
 		title: 'Turn any table into interactive charts',
@@ -34,9 +38,19 @@ export default defineConfig({
 					{ label: 'Overview', slug: 'ui' },
 					{ label: 'Settings', slug: 'ui/settings' },
 					{ label: 'Axis Swapping', slug: 'ui/swapping' },
-					{ label: '3D Charts', slug: 'ui/3d-charts' },
-					{ label: 'Heatmap', slug: 'ui/heatmap' },
 					{ label: 'Statistics', slug: 'ui/stats' },
+				],
+			},
+			{
+				label: 'Charts',
+				items: [
+					{ label: 'Overview', slug: 'charts' },
+					{ label: 'Bar Chart', slug: 'charts/bar' },
+					{ label: 'Line Chart', slug: 'charts/line' },
+					{ label: 'Pie Chart', slug: 'charts/pie' },
+					{ label: 'Radar Chart', slug: 'charts/radar' },
+					{ label: 'Heatmap', slug: 'charts/heatmap' },
+					{ label: '3D Charts (WebGL)', slug: 'charts/3d' },
 				],
 			},
 			{

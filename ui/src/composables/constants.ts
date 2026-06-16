@@ -6,6 +6,6 @@ export const DEFAULT_SETTINGS: Settings = {
     order: 'asc',
   },
   showLabels: false,
-  charts: ['bar', 'line', 'pie', 'heatmap'],
+  charts: ['bar', 'line', 'pie', 'heatmap', 'radar'],
   scale: 'linear',
 }

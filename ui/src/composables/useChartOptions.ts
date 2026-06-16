@@ -5,6 +5,7 @@ import { useBarChartOptions } from './charts/useBarChartOptions'
 import { useLineChartOptions } from './charts/useLineChartOptions'
 import { usePieChartOptions } from './charts/usePieChartOptions'
 import { useHeatmapChartOptions } from './charts/useHeatmapChartOptions'
+import { useRadarChartOptions } from './charts/useRadarChartOptions'
 import { use3DChartOptions } from './charts/use3DChartOptions'
 import type { BaseChartConfig } from './charts/baseChartOptions'
 import { is3D } from '../lib/utils'
@@ -33,6 +34,7 @@ export function useChartOptions(
   const lineOptions = useLineChartOptions(config)
   const pieOptions = usePieChartOptions(config)
   const heatmapOptions = useHeatmapChartOptions(config)
+  const radarOptions = useRadarChartOptions(config)
   const bar3DOptions = use3DChartOptions(config, 'bar3D')
   const line3DOptions = use3DChartOptions(config, 'line3D')
 
@@ -50,6 +52,8 @@ export function useChartOptions(
         return pieOptions.options.value
       case 'heatmap':
         return heatmapOptions.options.value
+      case 'radar':
+        return radarOptions.options.value
       default:
         return threeD ? bar3DOptions.options.value : barOptions.options.value
     }
