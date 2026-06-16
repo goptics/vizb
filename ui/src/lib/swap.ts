@@ -1,22 +1,10 @@
-// Framework-free axis-swap helpers, shared by the swap UI (AxisSwapper.vue), the
+// Framework-free axis-swap helpers, shared by the swap UI (SwapControl.vue), the
 // chart pipeline and the transform Web Worker. Swapping rotates which dataset
 // field (name/x/y/z) each axis value lives on. The worker re-projects its cached
 // raw dataset under the new arrangement (see `projectAndGroup`); these helpers
 // translate the compact arrangement strings and permute the display labels. No
 // Vue, no echarts — pure data in/out.
-import type { Axis, AxisLabels } from '../types'
-
-// Concatenate an axis list into the compact arrangement string (e.g.
-// [{key:"x"},{key:"y"},{key:"name"}] → "xyn"). The single-char convention is:
-// name → 'n', x/y/z → first char of the key. Returns '' for an empty axis list
-// — callers default to identity-string fallback when the dataset has no axes.
-// Mirrors the Go side's `axisIdentity` in `shared/chart_spec.go`.
-export const axisKeyConcat = (axes: Axis[] | undefined): string => {
-  if (!axes?.length) return ''
-  return axes
-    .map((a) => (a.key === 'name' ? 'n' : a.key.charAt(0)))
-    .join('')
-}
+import type { AxisLabels } from '../types'
 
 export type AxisKey = 'name' | 'xAxis' | 'yAxis' | 'zAxis'
 

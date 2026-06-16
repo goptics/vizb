@@ -4,8 +4,9 @@ import { BarChart3, TrendingUp, PieChart, Table, Radar } from 'lucide-vue-next'
 import { Card, CardContent, CardHeader, CardTitle, Separator } from './ui'
 import SelectionTabs from './SelectionTabs.vue'
 import { useSettingsStore } from '../composables/useSettingsStore'
+import { useDataPoint } from '../composables/useDataPoint'
+import { resetColor } from '../lib/utils'
 import { getRenderableFields } from '../composables/settings/fieldRegistry'
-import { activeDataSet } from '../composables/useDataPoint'
 import type { ChartType } from '../types'
 
 // Generic, schema-less settings panel: walks `Object.keys(activeConfig)` via
@@ -24,6 +25,8 @@ const {
   setAutoRotate,
   setSwap,
 } = useSettingsStore()
+
+const { activeDataSet, activeDataSetId, setArrangement, activeGroupId } = useDataPoint()
 
 const CHART_ICONS: Record<ChartType, Component> = {
   bar: BarChart3,
@@ -59,13 +62,23 @@ const fields = computed(() => {
 // Each control emits `update:modelValue` with the appropriate type for its
 // field. The store's setters handle the writeback to `dataset.value.settings[i]`
 // and ignore writes for fields that don't exist on the active chart's config
-// (e.g. `setScale` on a pie config).
+// (e.g. `setScale` on a pie config). Swap has extra side effects beyond the
+// wire format: it must also update useDataPoint's arrangement (which the
+// pipeline watches to post `setArrangement` to the worker so it re-projects /
+// re-groups off-thread) and reset the group + recolor on a new arrangement.
 const handlers: Record<string, (val: unknown) => void> = {
   sort: (val) => setSort(val as Parameters<typeof setSort>[0]),
   scale: (val) => setScale(val as Parameters<typeof setScale>[0]),
   showLabels: (val) => setShowLabels(val as boolean),
   autoRotate: (val) => setAutoRotate(val as boolean),
-  swap: (val) => setSwap(val as string | undefined),
+  swap: (val) => {
+    const target = val as string | undefined
+    if (target === undefined) return
+    setArrangement(activeDataSetId.value, chartType.value, target)
+    activeGroupId.value = 0
+    resetColor()
+    setSwap(target)
+  },
 }
 
 const valueFor = (key: string) =>

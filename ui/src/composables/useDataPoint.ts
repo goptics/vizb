@@ -20,7 +20,7 @@ const getStatDimensions = (points: DataPoint[]) => {
 const AXIS_ORDER = ['n', 'x', 'y', 'z'] as const
 
 // The present source axes of a dataset, as a compact arrangement string. Cheap
-// (a few `.some()` passes, no grouping). Mirrors AxisSwapper's identity check.
+// (a few `.some()` passes, no grouping). Mirrors SwapControl's identity check.
 const presentKeys = (data: DataPoint[] | undefined): string => {
   if (!data?.length) return ''
   const fieldFor = { n: 'name', x: 'xAxis', y: 'yAxis', z: 'zAxis' } as const

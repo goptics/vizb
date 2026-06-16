@@ -24,7 +24,5 @@ export function useActiveChartShape() {
 
   const sort = computed<Sort | undefined>(() => activeConfig.value?.sort)
 
-  const swap = computed<string | undefined>(() => activeConfig.value?.swap)
-
-  return { scale, autoRotate, showLabels, sort, swap }
+  return { scale, autoRotate, showLabels, sort }
 }

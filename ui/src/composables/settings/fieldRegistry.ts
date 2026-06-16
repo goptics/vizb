@@ -1,5 +1,10 @@
-import { defineAsyncComponent, type Component } from 'vue'
+import type { Component } from 'vue'
 import type { ChartConfig, ChartType } from '../../types'
+import SortControl from '../../components/settings/SortControl.vue'
+import ScaleControl from '../../components/settings/ScaleControl.vue'
+import ShowLabelsControl from '../../components/settings/ShowLabelsControl.vue'
+import AutoRotateControl from '../../components/settings/AutoRotateControl.vue'
+import SwapControl from '../../components/settings/SwapControl.vue'
 
 // Field registry: maps a JSON field name to the control component that renders
 // it. `SettingsPanel.vue` uses `getRenderableFields(activeConfig)` to discover
@@ -15,27 +20,23 @@ type FieldMeta = {
 
 export const fieldRegistry: Record<string, FieldMeta> = {
   sort: {
-    component: defineAsyncComponent(() => import('../../components/settings/SortControl.vue')),
+    component: SortControl,
     appliesTo: ['bar', 'line', 'pie', 'heatmap', 'radar'],
   },
   scale: {
-    component: defineAsyncComponent(() => import('../../components/settings/ScaleControl.vue')),
+    component: ScaleControl,
     appliesTo: ['bar', 'line'],
   },
   showLabels: {
-    component: defineAsyncComponent(
-      () => import('../../components/settings/ShowLabelsControl.vue')
-    ),
+    component: ShowLabelsControl,
     appliesTo: ['bar', 'line', 'pie', 'heatmap', 'radar'],
   },
   autoRotate: {
-    component: defineAsyncComponent(
-      () => import('../../components/settings/AutoRotateControl.vue')
-    ),
+    component: AutoRotateControl,
     appliesTo: ['bar', 'line'],
   },
   swap: {
-    component: defineAsyncComponent(() => import('../../components/settings/SwapControl.vue')),
+    component: SwapControl,
     appliesTo: ['bar', 'line', 'pie', 'heatmap', 'radar'],
   },
 }

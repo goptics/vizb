@@ -1,6 +1,19 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import type { BarConfig, LineConfig, PieConfig, HeatmapConfig, RadarConfig } from '../types'
-import { getRenderableFields } from '../composables/settings/fieldRegistry'
+
+// SettingsPanel.vue renders the controls registered in fieldRegistry. Those
+// controls are .vue SFCs; the vitest config intentionally excludes the Vue
+// plugin (pure-function tests only, per project convention), so we stub the
+// five .vue control files with placeholder objects. The suite asserts which
+// field keys make it through `getRenderableFields` for each chart type — the
+// panel's declarative contract.
+vi.mock('../components/settings/SortControl.vue', () => ({ default: { name: 'SortControl' } }))
+vi.mock('../components/settings/ScaleControl.vue', () => ({ default: { name: 'ScaleControl' } }))
+vi.mock('../components/settings/ShowLabelsControl.vue', () => ({ default: { name: 'ShowLabelsControl' } }))
+vi.mock('../components/settings/AutoRotateControl.vue', () => ({ default: { name: 'AutoRotateControl' } }))
+vi.mock('../components/settings/SwapControl.vue', () => ({ default: { name: 'SwapControl' } }))
+
+const { getRenderableFields } = await import('../composables/settings/fieldRegistry')
 
 // SettingsPanel.vue is declarative: it walks `Object.keys(activeConfig)` via
 // `getRenderableFields` and renders the registered control for each match. The

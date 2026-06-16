@@ -1,4 +1,4 @@
-import { computed, ref, reactive, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { ChartConfig, ChartType, Sort, ScaleType } from '../types'
 import { activeDataSet } from './useDataPoint'
 import { isValidIndex } from '../lib/utils'
@@ -9,7 +9,6 @@ import { isValidIndex } from '../lib/utils'
 // config in place, which the Vue reactivity propagates everywhere.
 const activeChartIndex = ref(0)
 const isDark = ref(false)
-const selectedSwapIndexMap = reactive(new Map<string, number>())
 
 // Dark mode is gated so the module is import-safe in node/test environments
 // (no `localStorage` / `window` access at load time).
@@ -108,17 +107,6 @@ export function useSettingsStore() {
     if (cfg) cfg.swap = swap
   }
 
-  // Swap index is keyed by (benchmarkId, chartType) so each chart keeps its
-  // own arrangement. Lives outside the dataset (it's UI-local) so the wire
-  // format stays clean.
-  const setSelectedSwapIndex = (benchmarkId: number, ct: ChartType, index: number) => {
-    selectedSwapIndexMap.set(`${benchmarkId}:${ct}`, index)
-  }
-
-  const getSelectedSwapIndex = (benchmarkId: number, ct: ChartType): number | undefined => {
-    return selectedSwapIndexMap.get(`${benchmarkId}:${ct}`)
-  }
-
   return {
     activeChartIndex,
     activeConfig,
@@ -132,8 +120,5 @@ export function useSettingsStore() {
     setAutoRotate,
     setSwap,
     toggleDark,
-    selectedSwapIndexMap,
-    setSelectedSwapIndex,
-    getSelectedSwapIndex,
   }
 }

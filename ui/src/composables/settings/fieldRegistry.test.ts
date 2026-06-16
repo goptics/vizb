@@ -1,6 +1,18 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import type { BarConfig, LineConfig, PieConfig, HeatmapConfig, RadarConfig } from '../../types'
-import { fieldRegistry, getControl, getRenderableFields } from './fieldRegistry'
+
+// fieldRegistry imports the .vue control components directly. The vitest config
+// intentionally excludes the Vue plugin (pure-function tests only, per project
+// convention), so we stub the .vue files with placeholder objects. The registry's
+// shape + appliesTo matrix + getRenderableFields logic are what this suite
+// actually exercises; the .vue bodies are exercised by the runtime / browser.
+vi.mock('../../components/settings/SortControl.vue', () => ({ default: { name: 'SortControl' } }))
+vi.mock('../../components/settings/ScaleControl.vue', () => ({ default: { name: 'ScaleControl' } }))
+vi.mock('../../components/settings/ShowLabelsControl.vue', () => ({ default: { name: 'ShowLabelsControl' } }))
+vi.mock('../../components/settings/AutoRotateControl.vue', () => ({ default: { name: 'AutoRotateControl' } }))
+vi.mock('../../components/settings/SwapControl.vue', () => ({ default: { name: 'SwapControl' } }))
+
+const { fieldRegistry, getControl, getRenderableFields } = await import('./fieldRegistry')
 
 describe('fieldRegistry', () => {
   it('exposes the five known field controls', () => {
