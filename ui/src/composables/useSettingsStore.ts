@@ -81,7 +81,11 @@ export function useSettingsStore() {
   // shape carries only the fields that apply to its chart type, so `scale` and
   // `autoRotate` are only set on bar/line configs (the others have no such
   // field). The narrowing uses TypeScript's optional-field semantics — no
-  // runtime type-guard, just `'scale' in cfg` to keep the compiler happy.
+  // runtime type-guard. The SettingsPanel already gates by `appliesTo` in
+  // `fieldRegistry`, so the setters are only ever called for the chart types
+  // that carry the field. The Go migration does NOT pre-populate `autoRotate`
+  // (it didn't exist in v0.12.0), so an `'autoRotate' in cfg` guard here would
+  // silently no-op the first toggle on a freshly migrated config.
   const setSort = (sort: Sort) => {
     const cfg = activeConfig.value
     if (cfg) cfg.sort = { ...sort }
@@ -89,7 +93,7 @@ export function useSettingsStore() {
 
   const setScale = (scale: ScaleType) => {
     const cfg = activeConfig.value as { scale?: ScaleType } | undefined
-    if (cfg && 'scale' in cfg) cfg.scale = scale
+    if (cfg) cfg.scale = scale
   }
 
   const setShowLabels = (show: boolean) => {
@@ -99,7 +103,7 @@ export function useSettingsStore() {
 
   const setAutoRotate = (rotate: boolean) => {
     const cfg = activeConfig.value as { autoRotate?: boolean } | undefined
-    if (cfg && 'autoRotate' in cfg) cfg.autoRotate = rotate
+    if (cfg) cfg.autoRotate = rotate
   }
 
   const setSwap = (swap: string | undefined) => {
