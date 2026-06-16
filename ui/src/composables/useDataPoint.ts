@@ -71,9 +71,15 @@ const setArrangement = (datasetId: number, ct: ChartType, targetString: string) 
 
 getDataSets()
   .then((data) => {
-    // markRaw keeps the rows plain (clone-safe) even if a future code path tries
-    // to wrap them in reactive() — the worker postMessage clones them natively.
-    dataSets.value = markRaw(Array.isArray(data) ? data : [data])
+    // Each DataSet is wrapped in reactive() so settings mutations (sort/scale/
+    // showLabels/autoRotate/swap) propagate to the chart pipeline's watchers.
+    // The `data` field (raw rows) is markRaw'd so it stays proxy-free: the
+    // transform worker clones it natively via postMessage structured clone,
+    // which would otherwise reject Vue's reactive Proxy. Rows are display-only
+    // and never mutated in place, so dropping per-row reactivity is the
+    // intended perf trade-off.
+    const raw = Array.isArray(data) ? data : [data]
+    dataSets.value = raw.map((ds) => reactive({ ...ds, data: markRaw(ds.data) }))
   })
   .catch((err: unknown) => {
     loadError.value = err instanceof Error ? err.message : String(err)
