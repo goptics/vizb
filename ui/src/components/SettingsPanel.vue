@@ -118,20 +118,19 @@ const onUpdate = (key: string, value: unknown) => {
     <CardContent class="space-y-4">
       <template v-if="showChartTypeSelection">
         <div class="flex items-center justify-between">
-          <SettingHeader label="Chart type" description="Switch active chart." />
+          <SettingHeader label="Chart type" description="Switch the active chart." />
           <SelectionTabs
             v-if="useTabPicker"
             :model-value="chartType"
             :options="chartOptions"
             @update:model-value="onChartTypeChange"
-            class="w-[400px]"
           />
           <Selector
             v-else
             :items="chartOptions.map((o) => ({ name: o.label, icon: o.icon }))"
             :activeId="activeChartTypeIndex"
             @select="onChartTypeSelect"
-            class="w-44"
+            class="w-40"
           />
         </div>
         <Separator />
