@@ -10418,7 +10418,30 @@
   {
     "name": "Worker Pool Benchmarks",
     "description": "Performance comparison of different worker pool implementations",
-    "settings": [],
+    "settings": [
+      {
+        "type": "bar",
+        "sort": {
+          "enabled": true,
+          "order": "asc"
+        },
+        "showLabels": false
+      },
+      {
+        "type": "line"
+      },
+      {
+        "type": "pie",
+        "sort": {
+          "enabled": true,
+          "order": "asc"
+        },
+        "showLabels": true
+      },
+      {
+        "type": "radar"
+      }
+    ],
     "data": [
       {
         "zAxis": "AllSleep10ms",
