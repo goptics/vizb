@@ -47,7 +47,6 @@ func (s *RootSuite) SetupTest() {
 	rootOpts.MemUnit = "B"
 	rootOpts.TimeUnit = "ns"
 	rootOpts.Charts = allChartTypes
-	rootOpts.Scale = "linear"
 	s.origOsExit = shared.OsExit
 }
 

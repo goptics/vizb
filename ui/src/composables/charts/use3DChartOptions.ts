@@ -91,8 +91,8 @@ export function use3DChartOptions(config: BaseChartConfig, seriesType: Series3DT
         name: s.name,
         type: seriesType,
         ...(seriesType === 'bar3D'
-          ? { stack: 'z', bevelSize: 0.4, bevelSmoothness: 4 }
-          : { lineStyle: { width: 2 } }),
+          ? { stack: 'z', bevelSize: 0.3, bevelSmoothness: 3 }
+          : { lineStyle: { width: 3 } }),
         data: s.data,
         itemStyle: { color: getNextColorFor(s.name) },
         shading: 'lambert',

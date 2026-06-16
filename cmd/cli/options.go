@@ -17,9 +17,9 @@ type CommonOptions struct {
 	Tag          string
 	OutputFile   string
 	Parser       string
+	Group        []string
 	GroupPattern string
 	GroupRegex   string
-	Group        []string
 	Filter       string
 	MemUnit      string
 	TimeUnit     string
