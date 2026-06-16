@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import SettingHeader from '../SettingHeader.vue'
+import { activeDataSet } from '../../composables/useDataPoint'
+import { axisKeyConcat } from '../../lib/swap'
 
 const props = defineProps<{
   modelValue: string | undefined
@@ -10,7 +12,12 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void
 }>()
 
-const value = computed(() => props.modelValue ?? '')
+// Default to the active dataset's axis key concatenation (e.g. "xyn" for
+// [{key:"x"},{key:"y"},{key:"name"}]) when no swap is set. The user can still
+// type any permutation — the only constraint is validation downstream.
+const defaultSwap = computed(() => axisKeyConcat(activeDataSet.value?.axes))
+
+const value = computed(() => props.modelValue ?? defaultSwap.value)
 </script>
 
 <template>
@@ -21,7 +28,7 @@ const value = computed(() => props.modelValue ?? '')
       type="text"
       :value="value"
       class="w-28 rounded-md border border-border bg-background px-2 py-1 text-sm text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-      placeholder="yxn"
+      :placeholder="defaultSwap || 'yxn'"
       @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
     />
   </div>

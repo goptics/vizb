@@ -77,8 +77,14 @@ describe('SettingsPanel field selection', () => {
     expect(getRenderableFields(cfg).map((f) => f.key)).toEqual(['sort', 'showLabels', 'swap'])
   })
 
-  it('omits keys whose value is absent from the config (no defaults injected)', () => {
+  it('renders all available fields even when most keys are absent from the config', () => {
     const cfg: BarConfig = { type: 'bar', sort: { enabled: false, order: 'asc' } }
-    expect(getRenderableFields(cfg).map((f) => f.key)).toEqual(['sort'])
+    expect(getRenderableFields(cfg).map((f) => f.key)).toEqual([
+      'sort',
+      'scale',
+      'showLabels',
+      'autoRotate',
+      'swap',
+    ])
   })
 })
