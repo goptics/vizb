@@ -7,6 +7,11 @@ import ShowLabelsControl from '../../components/settings/ShowLabelsControl.vue'
 import AutoRotateControl from '../../components/settings/AutoRotateControl.vue'
 import SwapControl from '../../components/settings/SwapControl.vue'
 
+// Re-exported so SettingsPanel can import the chart-type picker threshold
+// from the same module as the field registry — both are "what to render in the
+// settings panel" decisions.
+export { shouldUseTabPicker, CHART_PICKER_TAB_THRESHOLD } from '../../lib/pickerRule'
+
 // Field registry: maps a JSON field name to the control component that renders
 // it. `SettingsPanel.vue` uses `getRenderableFields(activeConfig, ctx)` to
 // discover which fields are AVAILABLE for the active chart — the result is
