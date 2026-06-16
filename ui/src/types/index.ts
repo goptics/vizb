@@ -34,23 +34,53 @@ export type Axis = {
   label?: string
 }
 
-// Per-chart type settings override. Absent fields inherit the global Setting value.
-export type ChartSettings = {
-  swap?: string       // target arrangement string, e.g. "yxn"
-  sort?: Sort         // overrides global sort
-  scale?: ScaleType   // overrides global scale; not valid for pie/heatmap
-  showLabels?: boolean // overrides global showLabels
-  autoRotate?: boolean // 3D bar/line only; overrides the store-level autoRotate when set
+// Per-chart typed configs (wire format: `Dataset.Settings []ChartConfig`).
+// Each chart type carries only the fields that apply to it. The `type`
+// discriminator narrows the union at the call site — chart-rendering code may
+// still use `cfg.type === 'bar' || cfg.type === 'line'` to access `scale` /
+// `autoRotate` (those fields are absent on pie/heatmap/radar). The settings
+// panel is fully schema-less: it walks `Object.keys(activeConfig)` and renders
+// the registered control for each non-`type` key.
+export type BarConfig = {
+  type: 'bar'
+  swap?: string
+  sort?: Sort
+  scale?: ScaleType
+  showLabels?: boolean
+  autoRotate?: boolean
 }
 
-export type Settings = {
-  sort: Sort
-  showLabels: boolean
-  charts: ChartType[]
-  scale: ScaleType
-  axes?: Axis[]
-  chartSettings?: Partial<Record<ChartType, ChartSettings>>
+export type LineConfig = {
+  type: 'line'
+  swap?: string
+  sort?: Sort
+  scale?: ScaleType
+  showLabels?: boolean
+  autoRotate?: boolean
 }
+
+export type PieConfig = {
+  type: 'pie'
+  swap?: string
+  sort?: Sort
+  showLabels?: boolean
+}
+
+export type HeatmapConfig = {
+  type: 'heatmap'
+  swap?: string
+  sort?: Sort
+  showLabels?: boolean
+}
+
+export type RadarConfig = {
+  type: 'radar'
+  swap?: string
+  sort?: Sort
+  showLabels?: boolean
+}
+
+export type ChartConfig = BarConfig | LineConfig | PieConfig | HeatmapConfig | RadarConfig
 
 // Human-readable label for each dimension, derived from the --group columns.
 // `name` is carried (though not rendered as an axis) so the swap feature can
@@ -87,7 +117,7 @@ export type DataSet = {
   timestamp?: string
   history?: HistoryEntry[]
   meta?: Meta
-  settings: Settings
+  settings: ChartConfig[]
   data: DataPoint[]
 }
 

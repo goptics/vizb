@@ -100,6 +100,8 @@ const activeDataSet = computed(
   () => dataSetsProcessed.value[activeDataSetId.value] || dataSetsProcessed.value[0]
 )
 
+export { activeDataSet }
+
 const { initializeFromDataSet, chartType } = useSettingsStore()
 
 // Derive identity from axes[] key order if present, else fall back to presentKeys(data).

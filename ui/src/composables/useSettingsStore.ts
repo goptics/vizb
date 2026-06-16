@@ -1,189 +1,138 @@
-import { reactive, computed } from 'vue'
-import type {
-  Sort,
-  ChartType,
-  ChartSettings,
-  ScaleType,
-  Settings as DataSetSettings,
-} from '../types'
-import { DEFAULT_SETTINGS } from './constants'
+import { computed, ref, reactive, watch } from 'vue'
+import type { ChartConfig, ChartType, Sort, ScaleType } from '../types'
+import { activeDataSet } from './useDataPoint'
 import { isValidIndex } from '../lib/utils'
 
-type ResolvedKey = 'sort' | 'showLabels' | 'scale' | 'autoRotate'
-type ResolvedValue = Sort | boolean | ScaleType
+// Module-level singleton state. `activeChartIndex` is the cursor into
+// `activeDataSet.value.settings`; the dataset IS the source of truth — no flat
+// global state anymore. `setSort` / `setScale` / etc. mutate the active
+// config in place, which the Vue reactivity propagates everywhere.
+const activeChartIndex = ref(0)
+const isDark = ref(false)
+const selectedSwapIndexMap = reactive(new Map<string, number>())
 
-type StoreSettings = {
-  sort: Sort
-  showLabels: boolean
-  charts: ChartType[]
-  activeChartIndex: number
-  // Key: "${benchmarkId}:${chartType}" — per-chart swap index
-  selectedSwapIndexMap: Map<string, number>
-  isDark: boolean
-  scale: ScaleType
-  autoRotate: boolean
-  chartSettings: Partial<Record<ChartType, ChartSettings>>
-}
+// Dark mode is gated so the module is import-safe in node/test environments
+// (no `localStorage` / `window` access at load time).
+const isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined'
 
-const settings = reactive<StoreSettings>({
-  sort: { enabled: false, order: 'asc' },
-  showLabels: false,
-  charts: DEFAULT_SETTINGS.charts,
-  activeChartIndex: 0,
-  selectedSwapIndexMap: new Map(),
-  isDark: false,
-  scale: 'linear',
-  autoRotate: false,
-  chartSettings: {},
-})
-
-const chartType = computed<ChartType>(() => settings.charts[settings.activeChartIndex] ?? 'bar')
-
-let initialized = false
-
-// Initialize dark mode from localStorage or system preference
-const initializeDarkMode = () => {
-  const saved = localStorage.getItem('dark-mode')
-
-  if (saved !== null) {
-    settings.isDark = saved === 'true'
-  } else {
-    // Check system preference
-    settings.isDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-  }
-
-  updateHtmlClass()
-}
-
-// Update HTML class based on dark mode state
 const updateHtmlClass = () => {
+  if (!isBrowser) return
   const html = document.documentElement
-  let [addClass, removeClass] = ['light', 'dark']
-
-  if (settings.isDark) {
-    ;[addClass, removeClass] = [removeClass, addClass]
-  }
-
-  html.classList.add(addClass)
-  html.classList.remove(removeClass)
+  html.classList.toggle('dark', isDark.value)
+  html.classList.toggle('light', !isDark.value)
 }
 
-// Toggle dark mode
-const toggleDark = () => {
-  settings.isDark = !settings.isDark
-  localStorage.setItem('dark-mode', settings.isDark.toString())
+const initializeDarkMode = () => {
+  if (!isBrowser) return
+  const saved = localStorage.getItem('dark-mode')
+  if (saved !== null) {
+    isDark.value = saved === 'true'
+  } else {
+    isDark.value = window.matchMedia('(prefers-color-scheme: dark)').matches
+  }
   updateHtmlClass()
 }
 
-// Initialize on module load
 initializeDarkMode()
 
+const toggleDark = () => {
+  isDark.value = !isDark.value
+  if (isBrowser) {
+    localStorage.setItem('dark-mode', isDark.value.toString())
+  }
+  updateHtmlClass()
+}
+
 export function useSettingsStore() {
+  const activeConfig = computed<ChartConfig | undefined>(
+    () => activeDataSet.value?.settings[activeChartIndex.value]
+  )
+
+  const chartType = computed<ChartType>(() => activeConfig.value?.type ?? 'bar')
+
+  // Clamp the active index when the active dataset's chart list shrinks (e.g.
+  // a settings change drops one of the bundled charts).
+  watch(
+    () => activeDataSet.value?.settings.length,
+    (len) => {
+      if (len !== undefined && activeChartIndex.value >= len) {
+        activeChartIndex.value = 0
+      }
+    }
+  )
+
+  const setActiveChartIndex = (index: number) => {
+    const len = activeDataSet.value?.settings.length ?? 0
+    if (isValidIndex(index, len)) {
+      activeChartIndex.value = index
+    }
+  }
+
+  // setChartType locates the first config with the requested type and makes it
+  // active. No-op if the active dataset has no config of that type.
+  const setChartType = (type: ChartType) => {
+    const settings: ChartConfig[] = activeDataSet.value?.settings ?? []
+    const idx = settings.findIndex((s: ChartConfig) => s.type === type)
+    if (idx !== -1) {
+      activeChartIndex.value = idx
+    }
+  }
+
+  // Per-field setters write back to the active config in place. Each config
+  // shape carries only the fields that apply to its chart type, so `scale` and
+  // `autoRotate` are only set on bar/line configs (the others have no such
+  // field). The narrowing uses TypeScript's optional-field semantics — no
+  // runtime type-guard, just `'scale' in cfg` to keep the compiler happy.
   const setSort = (sort: Sort) => {
-    settings.sort = sort
+    const cfg = activeConfig.value
+    if (cfg) cfg.sort = { ...sort }
   }
 
   const setScale = (scale: ScaleType) => {
-    settings.scale = scale
+    const cfg = activeConfig.value as { scale?: ScaleType } | undefined
+    if (cfg && 'scale' in cfg) cfg.scale = scale
   }
 
   const setShowLabels = (show: boolean) => {
-    settings.showLabels = show
+    const cfg = activeConfig.value
+    if (cfg) cfg.showLabels = show
   }
 
   const setAutoRotate = (rotate: boolean) => {
-    settings.autoRotate = rotate
+    const cfg = activeConfig.value as { autoRotate?: boolean } | undefined
+    if (cfg && 'autoRotate' in cfg) cfg.autoRotate = rotate
   }
 
-  const setCharts = (list: ChartType[]) => {
-    // Constrain to the charts actually bundled at generation time (--charts).
-    // In remote mode settings.charts comes from the fetched JSON, which may list
-    // charts whose renderer chunks were pruned; surfacing those tabs would fail
-    // the lazy import(). Fall back to all charts when VIZB_CHARTS is absent.
-    const allowed = window.VIZB_CHARTS?.length ? window.VIZB_CHARTS : DEFAULT_SETTINGS.charts
-    const filtered = list.filter((c) => allowed.includes(c))
-    settings.charts = filtered.length ? filtered : allowed
-
-    if (!isValidIndex(settings.activeChartIndex, settings.charts.length)) {
-      settings.activeChartIndex = 0
-    }
+  const setSwap = (swap: string | undefined) => {
+    const cfg = activeConfig.value
+    if (cfg) cfg.swap = swap
   }
 
-  const setActiveChartIndex = (index: number) => {
-    if (isValidIndex(index, settings.charts.length)) {
-      settings.activeChartIndex = index
-    }
-  }
-
-  const setChartType = (type: ChartType) => {
-    const idx = settings.charts.indexOf(type)
-    if (idx !== -1) {
-      settings.activeChartIndex = idx
-    }
-  }
-
-  const initializeFromDataSet = (inputSettings: DataSetSettings, force = false) => {
-    if (!initialized || force) {
-      settings.sort = inputSettings.sort
-      settings.showLabels = inputSettings.showLabels
-      settings.scale = inputSettings.scale || 'linear'
-      // Seed per-chart overrides from the dataset's baked-in chartSettings.
-      settings.chartSettings = inputSettings.chartSettings
-        ? { ...inputSettings.chartSettings }
-        : {}
-
-      setCharts(inputSettings.charts ?? DEFAULT_SETTINGS.charts)
-      setActiveChartIndex(0)
-      initialized = true
-    }
-  }
-
-  // resolved returns the effective value for key for the active chart type:
-  // per-chart override (if set) or the global default.
-  const resolved = (key: ResolvedKey): ResolvedValue => {
-    const ct = chartType.value
-    const perChart = settings.chartSettings[ct]
-    if (perChart !== undefined && perChart[key] !== undefined) {
-      return perChart[key] as ResolvedValue
-    }
-    return settings[key] as ResolvedValue
-  }
-
-  // setForActiveChart writes per-chart overrides for the currently active chart type.
-  const setForActiveChart = (update: Partial<Omit<ChartSettings, 'swap'>>) => {
-    const ct = chartType.value
-    settings.chartSettings[ct] = { ...settings.chartSettings[ct], ...update }
-  }
-
-  // setChartSettingsForType writes per-chart overrides for any given chart type.
-  const setChartSettingsForType = (ct: ChartType, update: Partial<Omit<ChartSettings, 'swap'>>) => {
-    settings.chartSettings[ct] = { ...settings.chartSettings[ct], ...update }
-  }
-
-  // Swap index is keyed by (benchmarkId, chartType) so each chart keeps its own arrangement.
+  // Swap index is keyed by (benchmarkId, chartType) so each chart keeps its
+  // own arrangement. Lives outside the dataset (it's UI-local) so the wire
+  // format stays clean.
   const setSelectedSwapIndex = (benchmarkId: number, ct: ChartType, index: number) => {
-    settings.selectedSwapIndexMap.set(`${benchmarkId}:${ct}`, index)
+    selectedSwapIndexMap.set(`${benchmarkId}:${ct}`, index)
   }
 
   const getSelectedSwapIndex = (benchmarkId: number, ct: ChartType): number | undefined => {
-    return settings.selectedSwapIndexMap.get(`${benchmarkId}:${ct}`)
+    return selectedSwapIndexMap.get(`${benchmarkId}:${ct}`)
   }
 
   return {
-    settings,
+    activeChartIndex,
+    activeConfig,
     chartType,
+    isDark,
+    setActiveChartIndex,
+    setChartType,
     setSort,
     setScale,
     setShowLabels,
     setAutoRotate,
-    setCharts,
-    setActiveChartIndex,
-    setChartType,
+    setSwap,
     toggleDark,
-    initializeFromDataSet,
-    resolved,
-    setForActiveChart,
-    setChartSettingsForType,
+    selectedSwapIndexMap,
     setSelectedSwapIndex,
     getSelectedSwapIndex,
   }
