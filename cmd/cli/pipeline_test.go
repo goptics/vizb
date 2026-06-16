@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	config_charts "github.com/goptics/vizb/config/charts"
+	barchart "github.com/goptics/vizb/config/charts/bar"
 	"github.com/goptics/vizb/pkg/parser"
 	"github.com/goptics/vizb/shared"
 	"github.com/spf13/cobra"
@@ -132,13 +134,14 @@ func (s *PipelineSuite) TestRunLinearGeneratesOutputFile() {
 	benchFile := s.writeFile("input.txt", `BenchmarkExample-8    1000000    1234 ns/op    1000 B/op    10 allocs/op`)
 
 	common := CommonOptions{Parser: "go", GroupPattern: "y", TimeUnit: "ns", MemUnit: "B"}
-	sel := []ChartSelection{{Type: "bar"}}
+	barCfg := barchart.Materialise(barchart.Flags{Scale: "linear"}, nil)
+	configs := []config_charts.ChartConfig{barCfg}
 
 	s.Run("HTML output", func() {
 		out := filepath.Join(s.T().TempDir(), "out.html")
 		c := common
 		c.OutputFile = out
-		RunLinear(&cobra.Command{}, []string{benchFile}, c, LinearDefaults{Scale: "linear"}, sel, false)
+		RunLinear(&cobra.Command{}, []string{benchFile}, c, configs, false)
 
 		s.FileExists(out)
 		stat, err := os.Stat(out)
@@ -150,20 +153,29 @@ func (s *PipelineSuite) TestRunLinearGeneratesOutputFile() {
 		out := filepath.Join(s.T().TempDir(), "out.json")
 		c := common
 		c.OutputFile = out
-		RunLinear(&cobra.Command{}, []string{benchFile}, c, LinearDefaults{Scale: "linear"}, sel, false)
+		RunLinear(&cobra.Command{}, []string{benchFile}, c, configs, false)
 
 		content, err := os.ReadFile(out)
 		s.Require().NoError(err)
 		var ds shared.Dataset
 		s.Require().NoError(json.Unmarshal(content, &ds))
-		// Task 2: settings is now []ChartConfig; Task 3 will populate it via
-		// Materialise. Asserting on the typed config requires the build to
-		// actually wire it up — until then, this is a known test fixture
-		// failure (settings will be empty).
-		if s.Len(ds.Settings, 1) {
-			s.Equal("bar", ds.Settings[0].ChartType())
-		}
+		s.Require().Len(ds.Settings, 1)
+		s.Equal("bar", ds.Settings[0].ChartType())
+		typed, ok := ds.Settings[0].(*barchart.Config)
+		s.Require().True(ok, "expected *barchart.Config, got %T", ds.Settings[0])
+		s.Equal("linear", typed.Scale)
 	})
+}
+
+func (s *PipelineSuite) TestRunSingleChart_EmptyConfigs() {
+	dir := s.T().TempDir()
+	out := filepath.Join(dir, "out.json")
+	common := CommonOptions{Parser: "go", GroupPattern: "y", TimeUnit: "ns", MemUnit: "B", OutputFile: out}
+
+	RunSingleChart(&cobra.Command{}, []string{}, common, nil)
+
+	_, err := os.Stat(out)
+	s.True(os.IsNotExist(err), "empty configs should be a no-op (no file written)")
 }
 
 func (s *PipelineSuite) TestWriteStdinPipedInputs() {

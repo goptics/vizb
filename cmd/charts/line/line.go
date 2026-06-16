@@ -4,6 +4,8 @@ package line
 
 import (
 	"github.com/goptics/vizb/cmd/cli"
+	config_charts "github.com/goptics/vizb/config/charts"
+	linechart "github.com/goptics/vizb/config/charts/line"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -37,17 +39,15 @@ func NewCommand() *cobra.Command {
 			o.LinearOptions.Validate()
 			cli.ValidateScale(&o.Scale)
 
-			var rotate *bool
-			if o.AutoRotate {
-				t := true
-				rotate = &t
-			}
-
-			cli.RunSingleChart(cmd, args, o.CommonOptions, cli.LinearDefaults{
-				Sort:       o.Sort,
+			cfg := linechart.Materialise(linechart.Flags{
+				Swap:       o.Swap,
 				Scale:      o.Scale,
+				Sort:       o.Sort,
 				ShowLabels: o.ShowLabels,
-			}, "line", o.Swap, rotate)
+				AutoRotate: o.AutoRotate,
+			}, nil)
+
+			cli.RunSingleChart(cmd, args, o.CommonOptions, []config_charts.ChartConfig{cfg})
 		},
 	}
 	o.Bind(cmd.Flags())

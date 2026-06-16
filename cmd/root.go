@@ -1,16 +1,22 @@
+// Package cmd wires the root cobra command and registers its subcommands.
 package cmd
 
 import (
 	"strings"
 
 	"github.com/goptics/vizb/cmd/cli"
+	config_charts "github.com/goptics/vizb/config/charts"
+	barchart "github.com/goptics/vizb/config/charts/bar"
+	heatmapchart "github.com/goptics/vizb/config/charts/heatmap"
+	linechart "github.com/goptics/vizb/config/charts/line"
+	piechart "github.com/goptics/vizb/config/charts/pie"
+	radarchart "github.com/goptics/vizb/config/charts/radar"
 	// Chart subcommands self-register into cli's registry via their init().
 	_ "github.com/goptics/vizb/cmd/charts/bar"
 	_ "github.com/goptics/vizb/cmd/charts/heatmap"
 	_ "github.com/goptics/vizb/cmd/charts/line"
 	_ "github.com/goptics/vizb/cmd/charts/pie"
 	_ "github.com/goptics/vizb/cmd/charts/radar"
-	"github.com/goptics/vizb/pkg/parser"
 	// Parsers self-register into pkg/parser via their init().
 	_ "github.com/goptics/vizb/pkg/parser/csv"
 	_ "github.com/goptics/vizb/pkg/parser/golang"
@@ -75,24 +81,56 @@ func init() {
 func runBenchmark(cmd *cobra.Command, args []string) {
 	validateRootOptions()
 
-	cfg := rootOpts.ParseConfig()
-	axes := parser.GroupAxes(cfg)
-
-	specs, err := shared.ParseChartSpecs(rootOpts.ChartSpecs, rootOpts.Charts, axes)
-	if err != nil {
-		shared.ExitWithError(err.Error(), nil)
-	}
-
-	selections := cli.SelectionsFromCharts(rootOpts.Charts, specs)
-	defaults := cli.LinearDefaults{
-		Sort:       rootOpts.Sort,
-		Scale:      rootOpts.Scale,
-		ShowLabels: rootOpts.ShowLabels,
+	// Build a per-chart Config for every active chart type. The switch is
+	// required because each chart's Materialise is typed to that chart's Flags
+	// struct. Per-chart --chart specs (rootOpts.ChartSpecs) are not yet
+	// applied here; the typed override path lands in the root-command
+	// refactor (which rewires ParseChartSpecs -> ParseOverrides). For now the
+	// global flags seed each Materialise call with `nil` override, matching
+	// the behaviour Task 4 will refine.
+	configs := make([]config_charts.ChartConfig, 0, len(rootOpts.Charts))
+	for _, chartType := range rootOpts.Charts {
+		var cfg config_charts.ChartConfig
+		switch chartType {
+		case "bar":
+			c := barchart.Materialise(barchart.Flags{
+				Scale:      rootOpts.Scale,
+				Sort:       rootOpts.Sort,
+				ShowLabels: rootOpts.ShowLabels,
+			}, nil)
+			cfg = c
+		case "line":
+			c := linechart.Materialise(linechart.Flags{
+				Scale:      rootOpts.Scale,
+				Sort:       rootOpts.Sort,
+				ShowLabels: rootOpts.ShowLabels,
+			}, nil)
+			cfg = c
+		case "pie":
+			c := piechart.Materialise(piechart.Flags{
+				Sort:       rootOpts.Sort,
+				ShowLabels: rootOpts.ShowLabels,
+			}, nil)
+			cfg = c
+		case "heatmap":
+			c := heatmapchart.Materialise(heatmapchart.Flags{
+				Sort:       rootOpts.Sort,
+				ShowLabels: rootOpts.ShowLabels,
+			}, nil)
+			cfg = c
+		case "radar":
+			c := radarchart.Materialise(radarchart.Flags{
+				Sort:       rootOpts.Sort,
+				ShowLabels: rootOpts.ShowLabels,
+			}, nil)
+			cfg = c
+		}
+		configs = append(configs, cfg)
 	}
 
 	// applyOnPassthrough is false: the root command preserves an existing Dataset
 	// JSON as-is (matching historical behaviour).
-	cli.RunLinear(cmd, args, rootOpts.CommonOptions, defaults, selections, false)
+	cli.RunLinear(cmd, args, rootOpts.CommonOptions, configs, false)
 }
 
 func validateRootOptions() {

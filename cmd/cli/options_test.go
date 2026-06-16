@@ -6,7 +6,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/goptics/vizb/shared"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -85,33 +84,6 @@ func (s *OptionsSuite) TestValidateScale() {
 		s.captureStderr(func() { ValidateScale(&scale) })
 		s.Equal("linear", scale)
 	})
-}
-
-func (s *OptionsSuite) TestSelectionsFromCharts() {
-	specs := map[string]shared.ChartSettings{"bar": {Swap: "yx"}}
-	sel := SelectionsFromCharts([]string{"bar", "pie"}, specs)
-
-	s.Len(sel, 2)
-	s.Equal("bar", sel[0].Type)
-	s.Equal("yx", sel[0].Settings.Swap)
-	s.Equal("pie", sel[1].Type)
-	s.Equal(shared.ChartSettings{}, sel[1].Settings)
-}
-
-func (s *OptionsSuite) TestSelectionSettingsOmitsZeroValues() {
-	rotate := true
-	sel := []ChartSelection{
-		{Type: "bar", Settings: shared.ChartSettings{AutoRotate: &rotate}},
-		{Type: "pie"},
-	}
-	m := selectionSettings(sel)
-	s.Len(m, 1)
-	s.Contains(m, "bar")
-	s.NotContains(m, "pie")
-}
-
-func (s *OptionsSuite) TestSelectionSettingsNilWhenAllZero() {
-	s.Nil(selectionSettings([]ChartSelection{{Type: "pie"}, {Type: "radar"}}))
 }
 
 func TestOptionsSuite(t *testing.T) {

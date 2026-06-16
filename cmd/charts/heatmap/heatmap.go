@@ -5,6 +5,8 @@ package heatmap
 
 import (
 	"github.com/goptics/vizb/cmd/cli"
+	config_charts "github.com/goptics/vizb/config/charts"
+	heatmapchart "github.com/goptics/vizb/config/charts/heatmap"
 	"github.com/spf13/cobra"
 )
 
@@ -26,10 +28,13 @@ func NewCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			o.LinearOptions.Validate()
 
-			cli.RunSingleChart(cmd, args, o.CommonOptions, cli.LinearDefaults{
+			cfg := heatmapchart.Materialise(heatmapchart.Flags{
+				Swap:       o.Swap,
 				Sort:       o.Sort,
 				ShowLabels: o.ShowLabels,
-			}, "heatmap", o.Swap, nil)
+			}, nil)
+
+			cli.RunSingleChart(cmd, args, o.CommonOptions, []config_charts.ChartConfig{cfg})
 		},
 	}
 	o.ChartOptions.Bind(cmd.Flags())

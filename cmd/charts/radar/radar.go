@@ -4,6 +4,8 @@ package radar
 
 import (
 	"github.com/goptics/vizb/cmd/cli"
+	config_charts "github.com/goptics/vizb/config/charts"
+	radarchart "github.com/goptics/vizb/config/charts/radar"
 	"github.com/spf13/cobra"
 )
 
@@ -25,10 +27,13 @@ func NewCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			o.LinearOptions.Validate()
 
-			cli.RunSingleChart(cmd, args, o.CommonOptions, cli.LinearDefaults{
+			cfg := radarchart.Materialise(radarchart.Flags{
+				Swap:       o.Swap,
 				Sort:       o.Sort,
 				ShowLabels: o.ShowLabels,
-			}, "radar", o.Swap, nil)
+			}, nil)
+
+			cli.RunSingleChart(cmd, args, o.CommonOptions, []config_charts.ChartConfig{cfg})
 		},
 	}
 	o.ChartOptions.Bind(cmd.Flags())
