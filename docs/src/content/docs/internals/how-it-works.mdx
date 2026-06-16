@@ -109,22 +109,29 @@ The top-level output struct containing metadata and all data points:
     { "tag": "v0.9.0", "timestamp": "2024-12-01T08:00:00Z" },
     { "tag": "v1.0.0", "timestamp": "2025-01-15T10:30:00Z" }
   ],
-  "cpu": { "name": "Apple M2", "cores": 8 },
-  "os": "darwin",
-  "arch": "arm64",
-  "pkg": "github.com/example/sort",
-  "settings": {
-    "charts": ["bar", "line", "pie"],
-    "sort": { "enabled": true, "order": "asc" },
-    "showLabels": false,
-    "scale": "linear"
+  "meta": {
+    "cpu": { "name": "Apple M2", "cores": 8 },
+    "os": "darwin",
+    "arch": "arm64",
+    "pkg": "github.com/example/sort"
   },
+  "axes": [
+    { "key": "x", "label": "size" },
+    { "key": "y", "label": "ns/op" }
+  ],
+  "settings": [
+    { "type": "bar",  "swap": "yxn", "scale": "linear", "sort": { "enabled": true, "order": "asc" }, "showLabels": false },
+    { "type": "line", "swap": "xyn", "scale": "log",    "sort": { "enabled": true, "order": "asc" }, "showLabels": true,  "autoRotate": true },
+    { "type": "pie",  "swap": "n",   "sort": { "enabled": true, "order": "asc" }, "showLabels": true }
+  ],
   "data": [
     { "name": "Sort", "xAxis": "1024", "yAxis": "QuickSort", "stats": [...] },
     { "name": "Sort", "xAxis": "1024", "yAxis": "MergeSort", "stats": [...] }
   ]
 }
 ```
+
+`settings` is an array of per-chart typed configs — each entry carries its own `scale`, `sort`, `showLabels`, etc. v0.12.0 files (a single `settings` object with `charts`/`sort`/`showLabels`/`scale`) are auto-migrated in-memory on read, so existing files keep working transparently.
 
 ## Input Detection
 

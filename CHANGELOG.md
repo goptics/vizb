@@ -4,6 +4,12 @@ Notable changes to Vizb documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [0.13.0] - Unreleased
+
+### Breaking Changes
+
+- **Wire format change**: `Dataset.Settings` is now an array of typed per-chart configs. v0.12.0 files are auto-migrated in-memory on read. See `docs/superpowers/specs/2026-06-16-settings-architecture-design.md`.
+
 # [0.12.0] - 2026-06-03
 
 ### Added
