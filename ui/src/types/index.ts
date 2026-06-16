@@ -117,6 +117,7 @@ export type DataSet = {
   timestamp?: string
   history?: HistoryEntry[]
   meta?: Meta
+  axes?: Axis[]
   settings: ChartConfig[]
   data: DataPoint[]
 }

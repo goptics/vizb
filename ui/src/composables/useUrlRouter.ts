@@ -1,12 +1,11 @@
-import { watch } from 'vue'
-import type { ChartType, ChartSettings, SortOrder, ScaleType } from '../types'
+import { watch, computed } from 'vue'
+import type { ChartType, ChartConfig, SortOrder, ScaleType } from '../types'
 import { SORT_ORDERS, SCALE_TYPES } from '../types'
 import { useSettingsStore } from './useSettingsStore'
 import { useDataPoint } from './useDataPoint'
-import { DEFAULT_SETTINGS } from './constants'
+import { activeDataSet } from './useDataPoint'
+import { ALL_CHART_TYPES } from './constants'
 import { isValidIndex } from '../lib/utils'
-
-const ALL_CHART_TYPES = DEFAULT_SETTINGS.charts
 
 const buildQueryString = (params: Record<string, string | undefined>): string => {
   const searchParams = new URLSearchParams()
@@ -29,15 +28,39 @@ const applyIndexParam = (
   if (!isNaN(id) && isValidIndex(id, maxLength)) setter(id)
 }
 
+// Field update payload accepted by `applyConfigUpdate`. Only the keys present
+// in the URL get touched; missing fields stay at whatever the config already
+// holds. `scale` and `autoRotate` are skipped for pie/heatmap/radar (those
+// types don't carry the field) so a malformed URL can't widen the config.
+type ConfigUpdate = {
+  sort?: { enabled: boolean; order: SortOrder }
+  showLabels?: boolean
+  scale?: ScaleType
+  autoRotate?: boolean
+}
+
+// Find the first config of the given chart type and apply a partial update in
+// place. The dataset slice is the source of truth — Vue reactivity propagates
+// the mutation to every consumer (chart pipeline, panel, etc.). Returns true
+// when an update was applied.
+const applyConfigUpdate = (type: ChartType, update: ConfigUpdate): boolean => {
+  const settings = activeDataSet.value?.settings
+  if (!settings) return false
+  const cfg = settings.find((s) => s.type === type)
+  if (!cfg) return false
+
+  if (update.sort) cfg.sort = update.sort
+  if (update.showLabels !== undefined) cfg.showLabels = update.showLabels
+  // Only bar/line carry `scale`/`autoRotate`; the union narrows on `cfg.type`.
+  if (cfg.type === 'bar' || cfg.type === 'line') {
+    if (update.scale) cfg.scale = update.scale
+    if (update.autoRotate !== undefined) cfg.autoRotate = update.autoRotate
+  }
+  return true
+}
+
 export function useUrlRouter() {
-  const {
-    settings,
-    setSort,
-    setShowLabels,
-    setScale,
-    setChartType,
-    setChartSettingsForType,
-  } = useSettingsStore()
+  const { activeChartIndex, chartType, setChartType } = useSettingsStore()
 
   const {
     dataSets,
@@ -50,6 +73,11 @@ export function useUrlRouter() {
     setArrangement,
     arrangementMap,
   } = useDataPoint()
+
+  // Chart-type list for the active dataset, derived from its `settings` array.
+  const availableTypes = computed<ChartType[]>(
+    () => activeDataSet.value?.settings.map((s) => s.type) ?? []
+  )
 
   const parseUrlParams = () => {
     const p = new URLSearchParams(window.location.search)
@@ -71,29 +99,36 @@ export function useUrlRouter() {
     } else if (gParam !== undefined) {
       watch(
         () => resultGroups.value.length,
-        (len) => { if (len > 0) applyIndexParam(gParam, len, selectGroup) },
+        (len) => {
+          if (len > 0) applyIndexParam(gParam, len, selectGroup)
+        },
         { once: true }
       )
     }
 
     // 3. Active chart type
-    if (params.c && DEFAULT_SETTINGS.charts.includes(params.c as ChartType)) {
+    if (params.c && ALL_CHART_TYPES.includes(params.c as ChartType)) {
       setChartType(params.c as ChartType)
     }
 
-    // 4. Legacy global params (back-compat for old URLs with bare s/l/sc)
+    // 4. Legacy global params (back-compat for old URLs with bare s/l/sc) —
+    // applied to every chart config that exists in the active dataset.
     const legacyS = params.s as SortOrder | undefined
-    if (legacyS && SORT_ORDERS.includes(legacyS.toLowerCase() as SortOrder)) {
-      setSort({ enabled: true, order: legacyS.toLowerCase() as SortOrder })
-    }
     const legacyL = params.l
-    if (legacyL === 'true') setShowLabels(true)
-    else if (legacyL === 'false') setShowLabels(false)
     const legacySc = params.sc as ScaleType | undefined
-    if (legacySc && SCALE_TYPES.includes(legacySc)) setScale(legacySc)
+    const globalUpdate: ConfigUpdate = {}
+    if (legacyS && SORT_ORDERS.includes(legacyS.toLowerCase() as SortOrder)) {
+      globalUpdate.sort = { enabled: true, order: legacyS.toLowerCase() as SortOrder }
+    }
+    if (legacyL === 'true') globalUpdate.showLabels = true
+    else if (legacyL === 'false') globalUpdate.showLabels = false
+    if (legacySc && SCALE_TYPES.includes(legacySc)) globalUpdate.scale = legacySc
+    if (Object.keys(globalUpdate).length > 0) {
+      for (const t of availableTypes.value) applyConfigUpdate(t, globalUpdate)
+    }
 
     // 5. Per-chart settings
-    const datasetId = params.d !== undefined ? (parseInt(params.d, 10) || 0) : 0
+    const datasetId = params.d !== undefined ? parseInt(params.d, 10) || 0 : 0
     for (const ct of ALL_CHART_TYPES) {
       const so = params[`${ct}.so`] as SortOrder | undefined
       const l = params[`${ct}.l`]
@@ -101,7 +136,7 @@ export function useUrlRouter() {
       const rt = params[`${ct}.rt`]
       const sw = params[`${ct}.sw`]
 
-      const update: Partial<Omit<ChartSettings, 'swap'>> = {}
+      const update: ConfigUpdate = {}
       if (so && SORT_ORDERS.includes(so.toLowerCase() as SortOrder)) {
         update.sort = { enabled: true, order: so.toLowerCase() as SortOrder }
       }
@@ -111,18 +146,20 @@ export function useUrlRouter() {
       if (rt === 'true') update.autoRotate = true
 
       if (Object.keys(update).length > 0) {
-        setChartSettingsForType(ct as ChartType, update)
+        applyConfigUpdate(ct, update)
       }
 
       // Swap: apply after data loads (same defer pattern as group ID)
       if (sw) {
-        const applySwap = () => setArrangement(datasetId, ct as ChartType, sw)
+        const applySwap = () => setArrangement(datasetId, ct, sw)
         if (dataSets.value.length > 0) {
           applySwap()
         } else {
           watch(
             () => dataSets.value.length,
-            (len) => { if (len > 0) applySwap() },
+            (len) => {
+              if (len > 0) applySwap()
+            },
             { once: true }
           )
         }
@@ -133,10 +170,12 @@ export function useUrlRouter() {
   const syncUrlToState = () => {
     const params: Record<string, string | undefined> = {}
     const identity = activeArrangement.value.identityString
+    const settings: ChartConfig[] = activeDataSet.value?.settings ?? []
 
     // Active chart tab (omit if first)
-    if (settings.activeChartIndex !== 0) {
-      params.c = settings.charts[settings.activeChartIndex]
+    const activeCfg = settings[activeChartIndex.value]
+    if (activeChartIndex.value !== 0 && activeCfg) {
+      params.c = activeCfg.type
     }
 
     // Dataset / group (omit if first)
@@ -144,13 +183,15 @@ export function useUrlRouter() {
     if (activeGroupId.value > 0) params.g = activeGroupId.value.toString()
 
     // Per-chart settings
-    for (const ct of settings.charts) {
-      const cs = settings.chartSettings[ct as ChartType]
-      if (cs?.sort?.enabled) params[`${ct}.so`] = cs.sort.order
-      if (cs?.showLabels === true) params[`${ct}.l`] = 'true'
-      else if (cs?.showLabels === false) params[`${ct}.l`] = 'false'
-      if (cs?.scale && cs.scale !== 'linear') params[`${ct}.sc`] = cs.scale
-      if (cs?.autoRotate === true) params[`${ct}.rt`] = 'true'
+    for (const cfg of settings) {
+      const ct = cfg.type
+      if (cfg.sort?.enabled) params[`${ct}.so`] = cfg.sort.order
+      if (cfg.showLabels === true) params[`${ct}.l`] = 'true'
+      else if (cfg.showLabels === false) params[`${ct}.l`] = 'false'
+      if (cfg.type === 'bar' || cfg.type === 'line') {
+        if (cfg.scale && cfg.scale !== 'linear') params[`${ct}.sc`] = cfg.scale
+        if (cfg.autoRotate === true) params[`${ct}.rt`] = 'true'
+      }
 
       const arr = arrangementMap.get(`${activeDataSetId.value}:${ct}`)
       if (arr && arr !== identity) params[`${ct}.sw`] = arr
@@ -167,17 +208,20 @@ export function useUrlRouter() {
     const params = parseUrlParams()
     applyParams(params)
 
+    // Re-sync the URL whenever any source of truth (active index, dataset,
+    // group, per-chart swap, or per-chart config) changes. The config
+    // serialization is JSON so per-field mutations propagate without manual
+    // bookkeeping.
     watch(
       () => ({
-        chartIndex: settings.activeChartIndex,
+        chartIndex: activeChartIndex.value,
         benchmarkId: activeDataSetId.value,
         groupId: activeGroupId.value,
-        swaps: settings.charts
+        chartType: chartType.value,
+        swaps: availableTypes.value
           .map((ct) => arrangementMap.get(`${activeDataSetId.value}:${ct}`) ?? '')
           .join(','),
-        csStr: Object.entries(settings.chartSettings)
-          .map(([k, v]) => `${k}:${JSON.stringify(v)}`)
-          .join('|'),
+        csStr: JSON.stringify(activeDataSet.value?.settings ?? []),
       }),
       () => syncUrlToState()
     )

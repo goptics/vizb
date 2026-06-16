@@ -102,13 +102,13 @@ const activeDataSet = computed(
 
 export { activeDataSet }
 
-const { initializeFromDataSet, chartType } = useSettingsStore()
+const { chartType } = useSettingsStore()
 
 // Derive identity from axes[] key order if present, else fall back to presentKeys(data).
 // axes[] preserves the serial dimension order from --group-pattern / --group-regex.
 const identityFromDataSet = (ds: DataSet | undefined): string => {
-  if (ds?.settings?.axes?.length) {
-    return ds.settings.axes.map((a) => (a.key === 'name' ? 'n' : a.key.charAt(0))).join('')
+  if (ds?.axes?.length) {
+    return ds.axes.map((a) => (a.key === 'name' ? 'n' : a.key.charAt(0))).join('')
   }
   return presentKeys(ds?.data)
 }
@@ -129,10 +129,8 @@ const selectDataSet = (id: number) => {
   if (isValidIndex(id, dataSets.value.length)) {
     activeDataSetId.value = id
 
-    const benchmark = dataSets.value[id]
-    if (benchmark?.settings) {
-      initializeFromDataSet(benchmark.settings, true)
-    }
+    // The new store reads `dataset.value.settings[activeChartIndex]` directly,
+    // so no init step is needed — switching the active dataset id is enough.
 
     // Group names repopulate asynchronously from the worker's `ready` for the new
     // dataset; reset to the first group until they arrive.

@@ -1,12 +1,7 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onMounted, ref, toRefs, watch, nextTick } from 'vue'
+import { computed, defineAsyncComponent, onMounted, ref, watch, nextTick } from 'vue'
 import { Download, ArrowUp, ArrowDown } from 'lucide-vue-next'
-import type {
-  ChartData,
-  DescriptiveStats,
-  SeriesProfile,
-  CorrelationMatrix,
-} from '../types'
+import type { ChartData, DescriptiveStats, SeriesProfile, CorrelationMatrix } from '../types'
 import { computeDescriptive, computeCorrelation } from '../composables/useStatsWorker'
 import { availableViews, usableCorrelationAxes } from '../lib/stats'
 import type { CorrelationAxis } from '../lib/stats'
@@ -23,11 +18,14 @@ const ChartHeatmap = defineAsyncComponent(() => import('./ChartHeatmap.vue'))
 
 const props = defineProps<{ chartData: ChartData }>()
 
-const { settings } = useSettingsStore()
-const { isDark } = toRefs(settings)
+const { isDark } = useSettingsStore()
 const initOptions = { renderer: 'canvas', devicePixelRatio: window.devicePixelRatio } as const
 
-const { containerRef: corrContainerRef, isFullscreen: corrIsFullscreen, withFullscreenToolbox } = useFullscreen()
+const {
+  containerRef: corrContainerRef,
+  isFullscreen: corrIsFullscreen,
+  withFullscreenToolbox,
+} = useFullscreen()
 
 // Active view + its sub-toggles. Widened to string|number so SelectionTabs'
 // v-model (emits string|number) types cleanly; only ever set to literal values.
@@ -265,7 +263,9 @@ const debouncedQuery = ref('')
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 watch(searchQuery, (val) => {
   if (debounceTimer) clearTimeout(debounceTimer)
-  debounceTimer = setTimeout(() => { debouncedQuery.value = val }, 300)
+  debounceTimer = setTimeout(() => {
+    debouncedQuery.value = val
+  }, 300)
 })
 
 // Filter sortedProfiles by case-insensitive substring on series name. When
@@ -301,7 +301,9 @@ const corrMatrix = computed(() => {
 const corrOption = computed(() => {
   const c = correlation.value
   if (!c) return null
-  return withFullscreenToolbox(buildCorrelationOption(c.labels, corrMatrix.value, isDark.value, props.chartData.statType))
+  return withFullscreenToolbox(
+    buildCorrelationOption(c.labels, corrMatrix.value, isDark.value, props.chartData.statType)
+  )
 })
 
 // --- Virtualized descriptive table -----------------------------------------
@@ -338,7 +340,10 @@ watch([view, activeLoading], () => nextTick(measure))
 
 const startIndex = computed(() => Math.max(0, Math.floor(scrollTop.value / ROW_H) - OVERSCAN))
 const endIndex = computed(() =>
-  Math.min(filteredProfiles.value.length, startIndex.value + Math.ceil(viewportH.value / ROW_H) + OVERSCAN * 2)
+  Math.min(
+    filteredProfiles.value.length,
+    startIndex.value + Math.ceil(viewportH.value / ROW_H) + OVERSCAN * 2
+  )
 )
 const visibleRows = computed(() => filteredProfiles.value.slice(startIndex.value, endIndex.value))
 const topPad = computed(() => startIndex.value * ROW_H)
@@ -359,7 +364,12 @@ const canDownload = computed(() => {
 })
 
 function slug(s: string): string {
-  return (s || 'stats').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'stats'
+  return (
+    (s || 'stats')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'stats'
+  )
 }
 
 function downloadCsv() {
@@ -391,11 +401,7 @@ function downloadCsv() {
         <span class="font-normal text-muted-foreground">· {{ chartData.statType }}</span>
       </p>
       <div class="flex items-center gap-2">
-        <SelectionTabs
-          v-if="view === 'correlation'"
-          v-model="method"
-          :options="methodOptions"
-        />
+        <SelectionTabs v-if="view === 'correlation'" v-model="method" :options="methodOptions" />
         <SelectionTabs v-if="viewOptions.length > 1" v-model="view" :options="viewOptions" />
         <button
           type="button"
@@ -418,10 +424,7 @@ function downloadCsv() {
       <div class="h-8 w-full animate-pulse rounded bg-muted" />
     </div>
 
-    <p
-      v-else-if="!profiles.length"
-      class="py-6 text-center text-sm text-muted-foreground"
-    >
+    <p v-else-if="!profiles.length" class="py-6 text-center text-sm text-muted-foreground">
       No statistics available for this chart.
     </p>
 
@@ -439,73 +442,69 @@ function downloadCsv() {
           {{ filteredProfiles.length }} / {{ profiles.length }}
         </span>
       </div>
-      <div
-        ref="scrollEl"
-        class="max-h-[28rem] overflow-auto"
-        @scroll="onScroll"
-      >
-      <table class="w-full border-collapse text-right text-xs">
-        <thead>
-          <tr class="border-b border-border text-muted-foreground">
-            <th
-              class="sticky left-0 top-0 z-20 cursor-pointer select-none bg-card px-2 py-1.5 text-left font-medium hover:text-primary"
-              @click="toggleSort('name')"
+      <div ref="scrollEl" class="max-h-[28rem] overflow-auto" @scroll="onScroll">
+        <table class="w-full border-collapse text-right text-xs">
+          <thead>
+            <tr class="border-b border-border text-muted-foreground">
+              <th
+                class="sticky left-0 top-0 z-20 cursor-pointer select-none bg-card px-2 py-1.5 text-left font-medium hover:text-primary"
+                @click="toggleSort('name')"
+              >
+                <span class="inline-flex items-center gap-1">
+                  {{ seriesLabel }}
+                  <ArrowDown v-if="sortKey === 'name' && sortDir === 'desc'" class="h-3 w-3" />
+                  <ArrowUp v-else-if="sortKey === 'name' && sortDir === 'asc'" class="h-3 w-3" />
+                </span>
+              </th>
+              <th
+                v-for="col in COLUMNS"
+                :key="col.key"
+                class="sticky top-0 z-10 cursor-pointer select-none bg-muted px-2 py-1.5 font-medium hover:text-primary"
+                @click="toggleSort(col.key)"
+              >
+                <span class="inline-flex items-center justify-end gap-1">
+                  {{ col.label }}
+                  <ArrowDown v-if="sortKey === col.key && sortDir === 'desc'" class="h-3 w-3" />
+                  <ArrowUp v-else-if="sortKey === col.key && sortDir === 'asc'" class="h-3 w-3" />
+                </span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="topPad" :style="{ height: topPad + 'px' }">
+              <td :colspan="COLUMNS.length + 1" class="p-0" />
+            </tr>
+            <tr v-if="debouncedQuery && !filteredProfiles.length">
+              <td :colspan="COLUMNS.length + 1" class="py-6 text-center text-muted-foreground">
+                No series match "{{ debouncedQuery }}"
+              </td>
+            </tr>
+            <tr
+              v-for="p in visibleRows"
+              :key="p.name"
+              class="border-b border-border/50"
+              :style="{ height: ROW_H + 'px' }"
             >
-              <span class="inline-flex items-center gap-1">
-                {{ seriesLabel }}
-                <ArrowDown v-if="sortKey === 'name' && sortDir === 'desc'" class="h-3 w-3" />
-                <ArrowUp v-else-if="sortKey === 'name' && sortDir === 'asc'" class="h-3 w-3" />
-              </span>
-            </th>
-            <th
-              v-for="col in COLUMNS"
-              :key="col.key"
-              class="sticky top-0 z-10 cursor-pointer select-none bg-muted px-2 py-1.5 font-medium hover:text-primary"
-              @click="toggleSort(col.key)"
-            >
-              <span class="inline-flex items-center justify-end gap-1">
-                {{ col.label }}
-                <ArrowDown v-if="sortKey === col.key && sortDir === 'desc'" class="h-3 w-3" />
-                <ArrowUp v-else-if="sortKey === col.key && sortDir === 'asc'" class="h-3 w-3" />
-              </span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="topPad" :style="{ height: topPad + 'px' }">
-            <td :colspan="COLUMNS.length + 1" class="p-0" />
-          </tr>
-          <tr v-if="debouncedQuery && !filteredProfiles.length">
-            <td :colspan="COLUMNS.length + 1" class="py-6 text-center text-muted-foreground">
-              No series match "{{ debouncedQuery }}"
-            </td>
-          </tr>
-          <tr
-            v-for="p in visibleRows"
-            :key="p.name"
-            class="border-b border-border/50"
-            :style="{ height: ROW_H + 'px' }"
-          >
-            <th
-              class="sticky left-0 z-10 max-w-[12rem] truncate bg-card px-2 text-left font-medium text-card-foreground"
-              :title="p.name"
-            >
-              {{ p.name || '—' }}
-            </th>
-            <td
-              v-for="col in COLUMNS"
-              :key="col.key"
-              class="px-2 tabular-nums text-card-foreground"
-            >
-              {{ fmt(col.key, p.stats[col.key]) }}
-            </td>
-          </tr>
-          <tr v-if="bottomPad" :style="{ height: bottomPad + 'px' }">
-            <td :colspan="COLUMNS.length + 1" class="p-0" />
-          </tr>
-        </tbody>
-      </table>
-    </div>
+              <th
+                class="sticky left-0 z-10 max-w-[12rem] truncate bg-card px-2 text-left font-medium text-card-foreground"
+                :title="p.name"
+              >
+                {{ p.name || '—' }}
+              </th>
+              <td
+                v-for="col in COLUMNS"
+                :key="col.key"
+                class="px-2 tabular-nums text-card-foreground"
+              >
+                {{ fmt(col.key, p.stats[col.key]) }}
+              </td>
+            </tr>
+            <tr v-if="bottomPad" :style="{ height: bottomPad + 'px' }">
+              <td :colspan="COLUMNS.length + 1" class="p-0" />
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </template>
 
     <!-- Correlation heatmap — echarts canvas, scales past what a DOM grid can.

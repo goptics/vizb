@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 import { Moon, Sun, Package } from 'lucide-vue-next'
-import type { Sort, ScaleType, Axis, AxisLabels } from '../types'
+import type { Axis, AxisLabels } from '../types'
 import { useDataPoint } from '../composables/useDataPoint'
 import { useChartPipeline } from '../composables/useChartPipeline'
 import { useSettingsStore } from '../composables/useSettingsStore'
+import { useActiveChartShape } from '../composables/useActiveChartShape'
 import { useDashboardInit } from '../composables/useDashboardInit'
 import { swapAxisLabels } from '../lib/swap'
 import ChartSettingsPopover from '../components/ChartSettingsPopover.vue'
@@ -31,9 +32,10 @@ const {
   loadError,
 } = useDataPoint()
 
-const { settings, resolved, toggleDark } = useSettingsStore()
+const { isDark, toggleDark } = useSettingsStore()
+const { sort, showLabels, scale } = useActiveChartShape()
 
-// Build an AxisLabels flat map from settings.axes for swapAxisLabels.
+// Build an AxisLabels flat map from dataset.axes for swapAxisLabels.
 const axisLabelsFromAxes = (axes: Axis[] | undefined): AxisLabels | undefined => {
   if (!axes?.length) return undefined
   const result: AxisLabels = {}
@@ -51,14 +53,14 @@ const activeLabels = computed(() =>
   swapAxisLabels(
     activeArrangement.value.identityString,
     activeArrangement.value.targetString,
-    axisLabelsFromAxes(activeDataSet.value?.settings?.axes)
+    axisLabelsFromAxes(activeDataSet.value?.axes)
   )
 )
 
-// Per-chart resolved compute params — each chart type carries its own sort/showLabels/scale.
-const resolvedSort = computed(() => resolved('sort') as Sort)
-const resolvedShowLabels = computed(() => resolved('showLabels') as boolean)
-const resolvedScale = computed(() => resolved('scale') as ScaleType)
+// Per-chart resolved compute params come from `useActiveChartShape`, which reads
+// the active chart's typed config and applies `?? default` for missing fields.
+// `sort` defaults to disabled when absent so the worker treats it as a no-op.
+const resolvedSort = computed(() => sort.value ?? { enabled: false, order: 'asc' as const })
 
 // Charts are computed off-thread in a worker, one at a time (queue-based). Each
 // slot carries its own `pending` so its card drives an independent skeleton and
@@ -69,8 +71,8 @@ const { charts, groupNames } = useChartPipeline(
   activeLabels,
   activeGroupId,
   resolvedSort,
-  resolvedShowLabels,
-  resolvedScale
+  showLabels,
+  scale
 )
 
 // The worker owns grouping; feed its group list back into useDataPoint so the
@@ -97,7 +99,7 @@ useDashboardInit()
     <ChartSettingsPopover />
 
     <IconButton @click="toggleDark()" aria-label="Toggle theme">
-      <Sun v-if="settings.isDark" class="h-5 w-5" />
+      <Sun v-if="isDark" class="h-5 w-5" />
       <Moon v-else class="h-5 w-5" />
     </IconButton>
   </nav>
@@ -126,10 +128,7 @@ useDashboardInit()
           class="animate-fade-in"
           :style="{ animationDelay: `${index * 50}ms` }"
         />
-        <div
-          v-else
-          class="rounded-lg border border-border bg-card p-6 shadow-sm"
-        >
+        <div v-else class="rounded-lg border border-border bg-card p-6 shadow-sm">
           <div class="mb-4 h-6 w-48 animate-pulse rounded bg-muted" />
           <div class="h-[600px] animate-pulse rounded bg-muted" />
         </div>
