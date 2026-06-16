@@ -3,12 +3,24 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 
+	"github.com/goptics/vizb/cmd/cli"
 	"github.com/goptics/vizb/pkg/style"
 	"github.com/goptics/vizb/pkg/template"
 	"github.com/goptics/vizb/shared"
 	"github.com/spf13/cobra"
 )
+
+// uiOptions holds the flags for the ui/html subcommand.
+type uiOptions struct {
+	OutputFile string
+	Charts     []string
+	ChartSpecs []string
+	DataURL    string
+}
+
+var uiOpts uiOptions
 
 var uiCmd = &cobra.Command{
 	Use:     "ui [file]",
@@ -26,31 +38,37 @@ Note: the JSON host must serve Access-Control-Allow-Origin: * for file:// access
 
 func init() {
 	rootCmd.AddCommand(uiCmd)
-	uiCmd.Flags().StringVarP(&shared.FlagState.DataURL, "data-url", "U", "", "URL to fetch DataSet JSON from at runtime (no input file needed)")
-	// --charts is registered on rootCmd (not persistent), so register it here too
-	// to let `vizb html` prune chart chunks (incl. --data-url, where it's the only
-	// source of the selection since the data is fetched at runtime).
-	uiCmd.Flags().StringSliceVarP(&shared.FlagState.Charts, "charts", "c", []string{"bar", "line", "pie", "heatmap"}, "Chart types to bundle (bar, line, pie, heatmap)")
-	uiCmd.Flags().StringArrayVar(&shared.FlagState.ChartSpecs, "chart", nil, "Per-chart type settings override: <type>:<key>=<val>,... (repeatable)")
+	uiCmd.Flags().StringVarP(&uiOpts.OutputFile, "output", "o", "", "Output file path/name")
+	uiCmd.Flags().StringVarP(&uiOpts.DataURL, "data-url", "U", "", "URL to fetch DataSet JSON from at runtime (no input file needed)")
+	// --charts lets `vizb ui` prune chart chunks (incl. --data-url, where it's the
+	// only source of the selection since the data is fetched at runtime).
+	uiCmd.Flags().StringSliceVarP(&uiOpts.Charts, "charts", "c", []string{"bar", "line", "pie", "heatmap"}, "Chart types to bundle (bar, line, pie, heatmap)")
+	uiCmd.Flags().StringArrayVar(&uiOpts.ChartSpecs, "chart", nil, "Per-chart type settings override: <type>:<key>=<val>,... (repeatable)")
 }
 
 func runUI(cmd *cobra.Command, args []string) {
-	outFile := shared.FlagState.OutputFile
+	if uiOpts.DataURL != "" {
+		if err := validateAPIURL(uiOpts.DataURL); err != nil {
+			shared.ExitWithError(fmt.Sprintf("invalid data url '%s': %v", uiOpts.DataURL, err), nil)
+		}
+	}
+
+	outFile := uiOpts.OutputFile
 	if outFile == "" {
-		outFile = resolveOutputFileName(outFile)
+		outFile = cli.ResolveOutputFileName(outFile)
 	}
 
 	f := shared.MustCreateFile(outFile)
 	defer f.Close()
-	defer HandleOutputResult(f)
+	defer cli.HandleOutputResult(f, uiOpts.OutputFile)
 
-	if shared.FlagState.DataURL != "" {
+	if uiOpts.DataURL != "" {
 		// No data at generation time: --charts is the authoritative selection, and
 		// 3D is kept whenever a 3D-capable type (bar/line) is bundled, since the
 		// remote data might carry a z dimension.
-		charts := shared.FlagState.Charts
+		charts := uiOpts.Charts
 		htmlContent := template.GenerateRemoteUI(
-			shared.FlagState.DataURL, charts, shared.ChartsHave3DCapable(charts), template.VizbHTMLTemplate,
+			uiOpts.DataURL, charts, shared.ChartsHave3DCapable(charts), template.VizbHTMLTemplate,
 		)
 		if _, err := f.WriteString(htmlContent); err != nil {
 			shared.ExitWithError("Failed to write output file: %v", err)
@@ -64,7 +82,7 @@ func runUI(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	benches, err := parseInputFile(args[0])
+	benches, err := cli.ParseDatasetFile(args[0])
 	if err != nil {
 		shared.ExitWithError("Failed to parse DataSet file: %v", err)
 	}
@@ -79,7 +97,7 @@ func runUI(cmd *cobra.Command, args []string) {
 	// baked-in Settings.Charts.
 	var charts []string
 	if cmd.Flags().Changed("charts") {
-		charts = shared.FlagState.Charts
+		charts = uiOpts.Charts
 		for i := range benches {
 			benches[i].Settings.Charts = charts
 		}
@@ -87,10 +105,10 @@ func runUI(cmd *cobra.Command, args []string) {
 		charts = unionCharts(benches)
 	}
 
-	if len(shared.FlagState.ChartSpecs) > 0 {
+	if len(uiOpts.ChartSpecs) > 0 {
 		for i := range benches {
 			chartSettings, err := shared.ParseChartSpecs(
-				shared.FlagState.ChartSpecs,
+				uiOpts.ChartSpecs,
 				benches[i].Settings.Charts,
 				benches[i].Settings.Axes,
 			)
@@ -139,4 +157,13 @@ func anyDatasetHasZAxis(benches []shared.Dataset) bool {
 		}
 	}
 	return false
+}
+
+// validateAPIURL ensures a string is a valid http(s) URL.
+func validateAPIURL(rawURL string) error {
+	u, err := url.ParseRequestURI(rawURL)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") {
+		return fmt.Errorf("must be a valid http:// or https:// URL")
+	}
+	return nil
 }

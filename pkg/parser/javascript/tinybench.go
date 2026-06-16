@@ -50,7 +50,7 @@ func parseMedWithMAD(s string) (med, mad float64) {
 	return
 }
 
-func ParseTinyBenchBenchmark(filename string) []shared.DataPoint {
+func ParseTinyBenchBenchmark(filename string, cfg parser.Config) []shared.DataPoint {
 	f, err := os.Open(filename)
 	if err != nil {
 		shared.ExitWithError("Error opening file", err)
@@ -79,7 +79,7 @@ func ParseTinyBenchBenchmark(filename string) []shared.DataPoint {
 
 		taskName := strings.Trim(columns[0], " '")
 
-		if !parser.ShouldIncludeBenchmark(taskName) {
+		if !parser.ShouldIncludeBenchmark(taskName, cfg) {
 			continue
 		}
 
@@ -95,7 +95,7 @@ func ParseTinyBenchBenchmark(filename string) []shared.DataPoint {
 		throughputMed, throughputMAD := parseMedWithMAD(throughputMedStr)
 		samples, _ := strconv.ParseFloat(samplesStr, 64)
 
-		group, groupErr := parser.GroupBenchmarkName(taskName)
+		group, groupErr := parser.GroupBenchmarkName(taskName, cfg)
 		if groupErr != nil {
 			shared.ExitWithError("Error parsing tinybench name", groupErr)
 		}
@@ -108,10 +108,10 @@ func ParseTinyBenchBenchmark(filename string) []shared.DataPoint {
 			YAxis: yAxis,
 			ZAxis: zAxis,
 			Stats: []shared.Stat{
-				{Type: utils.CreateStatType("Latency avg", shared.FlagState.TimeUnit, ""), Value: utils.FormatTime(latencyAvg, shared.FlagState.TimeUnit)},
+				{Type: utils.CreateStatType("Latency avg", cfg.TimeUnit, ""), Value: utils.FormatTime(latencyAvg, cfg.TimeUnit)},
 				{Type: "Latency RME (%)", Value: latencyRME, Symbol: "±"},
-				{Type: utils.CreateStatType("Latency med", shared.FlagState.TimeUnit, ""), Value: utils.FormatTime(latencyMed, shared.FlagState.TimeUnit)},
-				{Type: utils.CreateStatType("Latency MAD", shared.FlagState.TimeUnit, ""), Value: utils.FormatTime(latencyMAD, shared.FlagState.TimeUnit), Symbol: "±"},
+				{Type: utils.CreateStatType("Latency med", cfg.TimeUnit, ""), Value: utils.FormatTime(latencyMed, cfg.TimeUnit)},
+				{Type: utils.CreateStatType("Latency MAD", cfg.TimeUnit, ""), Value: utils.FormatTime(latencyMAD, cfg.TimeUnit), Symbol: "±"},
 				{Type: "Throughput avg (ops/s)", Value: throughputAvg},
 				{Type: "Throughput RME (%)", Value: throughputRME, Symbol: "±"},
 				{Type: "Throughput med (ops/s)", Value: throughputMed},

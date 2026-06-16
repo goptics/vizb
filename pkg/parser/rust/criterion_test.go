@@ -5,8 +5,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/goptics/vizb/pkg/parser"
 	"github.com/goptics/vizb/shared"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
 var testCargoTable = `running 0 tests
@@ -54,7 +55,8 @@ Found 3 outliers among 100 measurements (3.00%)
   3 (3.00%) high mild
 `
 
-func writeTestFile(t *testing.T, content string) string {
+// writeRustTestFile writes content to a temp bench.txt and returns its path.
+func writeRustTestFile(t *testing.T, content string) string {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "bench.txt")
 	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
@@ -63,84 +65,83 @@ func writeTestFile(t *testing.T, content string) string {
 	return path
 }
 
+// assertStat asserts a stat's type, value, and symbol. Shared by the rust suites.
 func assertStat(t *testing.T, s shared.Stat, expectedType string, expectedValue float64, expectedSymbol string) {
 	t.Helper()
-	assert.Equal(t, expectedType, s.Type, "stat type mismatch")
-	assert.Equal(t, expectedValue, s.Value, "stat value mismatch")
-	assert.Equal(t, expectedSymbol, s.Symbol, "stat symbol mismatch")
+	require := func(got, want any, msg string) {
+		if got != want {
+			t.Errorf("%s: got %v want %v", msg, got, want)
+		}
+	}
+	require(s.Type, expectedType, "stat type mismatch")
+	require(s.Value, expectedValue, "stat value mismatch")
+	require(s.Symbol, expectedSymbol, "stat symbol mismatch")
 }
 
-func TestParseCriterionBenchmark(t *testing.T) {
-	origPattern := shared.FlagState.GroupPattern
-	origFilter := shared.FlagState.FilterRegex
-	origTimeUnit := shared.FlagState.TimeUnit
-	defer func() {
-		shared.FlagState.GroupPattern = origPattern
-		shared.FlagState.FilterRegex = origFilter
-		shared.FlagState.TimeUnit = origTimeUnit
-	}()
+// CriterionSuite exercises ParseCriterionBenchmark with a per-test parser.Config.
+type CriterionSuite struct {
+	suite.Suite
+	cfg parser.Config
+}
 
-	t.Run("Real cargo criterion output", func(t *testing.T) {
-		shared.FlagState.GroupPattern = "n/y"
-		shared.FlagState.FilterRegex = ""
-		shared.FlagState.TimeUnit = "ns"
+func (s *CriterionSuite) SetupTest() {
+	s.cfg = parser.Config{GroupPattern: "n/y", TimeUnit: "ns"}
+}
 
-		results := ParseCriterionBenchmark(writeTestFile(t, testCargoTable))
-		assert.Len(t, results, 6)
+func (s *CriterionSuite) TestRealCargoCriterionOutput() {
+	results := ParseCriterionBenchmark(writeRustTestFile(s.T(), testCargoTable), s.cfg)
+	s.Len(results, 6)
 
-		// First: bubbleSort/n=100 → 3.0524 µs = 3052.4 ns
-		assertStat(t, results[0].Stats[0], "Latency avg (ns)", 3052.4, "")
-		assertStat(t, results[0].Stats[1], "Latency lower (ns)", 3042.4, "")
-		assertStat(t, results[0].Stats[2], "Latency upper (ns)", 3063.7, "±")
+	// First: bubbleSort/n=100 → 3.0524 µs = 3052.4 ns
+	assertStat(s.T(), results[0].Stats[0], "Latency avg (ns)", 3052.4, "")
+	assertStat(s.T(), results[0].Stats[1], "Latency lower (ns)", 3042.4, "")
+	assertStat(s.T(), results[0].Stats[2], "Latency upper (ns)", 3063.7, "±")
 
-		assert.Equal(t, "bubbleSort", results[0].Name)
-		assert.Equal(t, "n=100", results[0].YAxis)
+	s.Equal("bubbleSort", results[0].Name)
+	s.Equal("n=100", results[0].YAxis)
 
-		// Second: insertionSort/n=100 → 821.61 ns (already in ns)
-		assertStat(t, results[1].Stats[0], "Latency avg (ns)", 821.61, "")
-		assertStat(t, results[1].Stats[1], "Latency lower (ns)", 819.49, "")
-		assertStat(t, results[1].Stats[2], "Latency upper (ns)", 824.5, "±")
+	// Second: insertionSort/n=100 → 821.61 ns (already in ns)
+	assertStat(s.T(), results[1].Stats[0], "Latency avg (ns)", 821.61, "")
+	assertStat(s.T(), results[1].Stats[1], "Latency lower (ns)", 819.49, "")
+	assertStat(s.T(), results[1].Stats[2], "Latency upper (ns)", 824.5, "±")
 
-		// Fifth: bubbleSort/n=2000 → 1.3827 ms = 1382700 ns
-		assertStat(t, results[4].Stats[0], "Latency avg (ns)", 1382700, "")
+	// Fifth: bubbleSort/n=2000 → 1.3827 ms = 1382700 ns
+	assertStat(s.T(), results[4].Stats[0], "Latency avg (ns)", 1382700, "")
 
-		// Last: insertionSort/n=2000 → 300.19 µs = 300190 ns
-		assertStat(t, results[5].Stats[0], "Latency avg (ns)", 300190, "")
-		assert.Equal(t, "insertionSort", results[5].Name)
-		assert.Equal(t, "n=2000", results[5].YAxis)
-	})
+	// Last: insertionSort/n=2000 → 300.19 µs = 300190 ns
+	assertStat(s.T(), results[5].Stats[0], "Latency avg (ns)", 300190, "")
+	s.Equal("insertionSort", results[5].Name)
+	s.Equal("n=2000", results[5].YAxis)
+}
 
-	t.Run("Unit conversion to us", func(t *testing.T) {
-		shared.FlagState.GroupPattern = "n/y"
-		shared.FlagState.FilterRegex = ""
-		shared.FlagState.TimeUnit = "us"
+func (s *CriterionSuite) TestUnitConversionToUs() {
+	s.cfg.TimeUnit = "us"
 
-		results := ParseCriterionBenchmark(writeTestFile(t, testCargoTable))
-		assert.Len(t, results, 6)
+	results := ParseCriterionBenchmark(writeRustTestFile(s.T(), testCargoTable), s.cfg)
+	s.Len(results, 6)
 
-		assertStat(t, results[0].Stats[0], "Latency avg (us)", 3.05, "")
-		assertStat(t, results[1].Stats[0], "Latency avg (us)", 0.82, "")
-		assertStat(t, results[4].Stats[0], "Latency avg (us)", 1382.7, "")
-	})
+	assertStat(s.T(), results[0].Stats[0], "Latency avg (us)", 3.05, "")
+	assertStat(s.T(), results[1].Stats[0], "Latency avg (us)", 0.82, "")
+	assertStat(s.T(), results[4].Stats[0], "Latency avg (us)", 1382.7, "")
+}
 
-	t.Run("Filter regex", func(t *testing.T) {
-		shared.FlagState.GroupPattern = "n/y"
-		shared.FlagState.FilterRegex = "bubbleSort"
-		shared.FlagState.TimeUnit = "ns"
+func (s *CriterionSuite) TestFilterRegex() {
+	s.cfg.Filter = "bubbleSort"
 
-		results := ParseCriterionBenchmark(writeTestFile(t, testCargoTable))
-		assert.Len(t, results, 3)
-		for _, r := range results {
-			assert.Equal(t, "bubbleSort", r.Name)
-		}
-	})
+	results := ParseCriterionBenchmark(writeRustTestFile(s.T(), testCargoTable), s.cfg)
+	s.Len(results, 3)
+	for _, r := range results {
+		s.Equal("bubbleSort", r.Name)
+	}
+}
 
-	t.Run("Empty file", func(t *testing.T) {
-		shared.FlagState.GroupPattern = "y"
-		shared.FlagState.FilterRegex = ""
-		shared.FlagState.TimeUnit = "ns"
+func (s *CriterionSuite) TestEmptyFile() {
+	s.cfg.GroupPattern = "y"
 
-		results := ParseCriterionBenchmark(writeTestFile(t, ""))
-		assert.Empty(t, results)
-	})
+	results := ParseCriterionBenchmark(writeRustTestFile(s.T(), ""), s.cfg)
+	s.Empty(results)
+}
+
+func TestCriterionSuite(t *testing.T) {
+	suite.Run(t, new(CriterionSuite))
 }

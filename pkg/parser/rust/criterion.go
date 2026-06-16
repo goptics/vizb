@@ -18,7 +18,7 @@ func init() {
 
 var criterionRe = regexp.MustCompile(`^(\S+)\s+time:\s+\[([\d.]+)\s*(ns|µs|μs|ms|s)\s+([\d.]+)\s*(ns|µs|μs|ms|s)\s+([\d.]+)\s*(ns|µs|μs|ms|s)\]`)
 
-func ParseCriterionBenchmark(filename string) []shared.DataPoint {
+func ParseCriterionBenchmark(filename string, cfg parser.Config) []shared.DataPoint {
 	f, err := os.Open(filename)
 	if err != nil {
 		shared.ExitWithError("Error opening file", err)
@@ -39,7 +39,7 @@ func ParseCriterionBenchmark(filename string) []shared.DataPoint {
 		}
 
 		name := match[1]
-		if !parser.ShouldIncludeBenchmark(name) {
+		if !parser.ShouldIncludeBenchmark(name, cfg) {
 			continue
 		}
 
@@ -47,7 +47,7 @@ func ParseCriterionBenchmark(filename string) []shared.DataPoint {
 		estimateNs := parseNum(match[4]) * toNsMultiplier(match[5])
 		upperNs := parseNum(match[6]) * toNsMultiplier(match[7])
 
-		group, groupErr := parser.GroupBenchmarkName(name)
+		group, groupErr := parser.GroupBenchmarkName(name, cfg)
 		if groupErr != nil {
 			shared.ExitWithError("Error parsing cargo benchmark name", groupErr)
 		}
@@ -60,9 +60,9 @@ func ParseCriterionBenchmark(filename string) []shared.DataPoint {
 			YAxis: yAxis,
 			ZAxis: zAxis,
 			Stats: []shared.Stat{
-				{Type: utils.CreateStatType("Latency avg", shared.FlagState.TimeUnit, ""), Value: utils.ConvertTime(estimateNs, "ns", shared.FlagState.TimeUnit)},
-				{Type: utils.CreateStatType("Latency lower", shared.FlagState.TimeUnit, ""), Value: utils.ConvertTime(lowerNs, "ns", shared.FlagState.TimeUnit)},
-				{Type: utils.CreateStatType("Latency upper", shared.FlagState.TimeUnit, ""), Value: utils.ConvertTime(upperNs, "ns", shared.FlagState.TimeUnit), Symbol: "±"},
+				{Type: utils.CreateStatType("Latency avg", cfg.TimeUnit, ""), Value: utils.ConvertTime(estimateNs, "ns", cfg.TimeUnit)},
+				{Type: utils.CreateStatType("Latency lower", cfg.TimeUnit, ""), Value: utils.ConvertTime(lowerNs, "ns", cfg.TimeUnit)},
+				{Type: utils.CreateStatType("Latency upper", cfg.TimeUnit, ""), Value: utils.ConvertTime(upperNs, "ns", cfg.TimeUnit), Symbol: "±"},
 			},
 		})
 	}

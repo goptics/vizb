@@ -1,0 +1,81 @@
+---
+title: vizb chart subcommands
+description: Generate a single chart type with only the flags that chart supports.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Each chart type has its own subcommand: `vizb bar`, `vizb line`, `vizb pie`, `vizb heatmap`, and `vizb radar`. A chart subcommand is equivalent to the root command restricted to one chart — `vizb bar data.csv` produces the same output as `vizb data.csv --charts bar` — but it exposes **only the flags valid for that chart**. For example, `--scale` and `--rotate` exist on `bar`/`line` but not on `pie`/`heatmap`/`radar`, so an unsupported flag fails fast instead of being silently ignored.
+
+Use a subcommand when you want a single focused chart; use the [root command](/commands/root) with `--charts` when you want several chart types from one dataset.
+
+## Usage
+
+```bash
+vizb <chart> [target] [flags]
+```
+
+`<chart>` is one of `bar`, `line`, `pie`, `heatmap`, `radar`. Output is HTML by default, or JSON when `-o` ends in `.json` (same rules as the root command).
+
+```bash
+vizb bar data.csv -g impl,size -p n/x -o bar.html
+vizb pie data.csv -g impl -o pie.html
+go test -bench . | vizb line -p n/y -o line.html
+```
+
+## Shared flags
+
+Every chart subcommand accepts the common data, grouping, and metadata flags:
+
+| Flag | Short | Default | Description |
+|------|-------|---------|-------------|
+| `--output` | `-o` | *(stdout)* | Output file path. `.json` → JSON, else → HTML |
+| `--parser` | `-P` | `auto` | Parser: `auto` (detect), `go`, `js:tinybench`, `js:vitest`, `rs:criterion`, `rs:divan`, `csv`, `json` |
+| `--name` | `-n` | `Comparisons` | Dataset name |
+| `--description` | `-d` | `""` | Dataset description |
+| `--tag` | `-t` | `""` | Tag identifier for release tracking |
+| `--group-pattern` | `-p` | `x` | Pattern-based grouping (`n`/`x`/`y`/`z`) |
+| `--group-regex` | `-r` | `""` | Regex-based grouping (named captures) |
+| `--group` | `-g` | `""` | Names each dimension in `--group-pattern` order |
+| `--filter` | `-f` | `""` | Regex to include only matching labels / series |
+| `--sort` | `-s` | `""` | Sort order: `asc` or `desc` |
+| `--swap` | | `""` | Axis permutation override, e.g. `yx`, `yxn` |
+| `--show-labels` | `-l` | `false` | Show value labels on the chart |
+| `--mem-unit` | `-M` | `B` | Memory unit: `b`, `B`, `KB`, `MB`, `GB` |
+| `--time-unit` | `-T` | `ns` | Time unit: `ns`, `us`, `ms`, `s` |
+| `--number-unit` | `-N` | `""` | Number unit: `K`, `M`, `B`, `T` |
+
+## Chart-specific flags
+
+| Flag | `bar` | `line` | `pie` | `heatmap` | `radar` | Description |
+|------|:---:|:---:|:---:|:---:|:---:|-------------|
+| `--scale` (`-S`) | ✅ | ✅ | — | — | — | Value scale: `linear` or `log` |
+| `--rotate` | ✅ | ✅ | — | — | — | Auto-rotate the 3D chart (only meaningful with z-axis data) |
+
+`bar` and `line` render in 3D when the data has a z dimension (`-p n/x/y/z`), which is why they accept `--scale` and `--rotate`. The other chart types are 2D-only, so those flags are intentionally absent — passing them is an error:
+
+```bash
+vizb pie data.csv --scale log   # Error: unknown flag: --scale
+```
+
+## Examples
+
+```bash
+# 3D bar with log scale and auto-rotation
+vizb bar data.csv -p n/x/y/z --scale log --rotate -o bar3d.html
+
+# Pie with value labels, ascending sort
+vizb pie data.csv -g impl --sort asc --show-labels -o pie.html
+
+# Line from Go benchmarks via stdin, swapping axes
+go test -bench . | vizb line -p n/y --swap yn -o line.html
+
+# JSON output for later merging / re-rendering
+vizb radar data.csv -g impl -o radar.json
+```
+
+<Aside type="note">
+  For multiple chart types from one dataset, or per-chart overrides via `--chart`,
+  use the [root command](/commands/root). Subcommands focus on a single chart with a
+  flag set tailored to it.
+</Aside>

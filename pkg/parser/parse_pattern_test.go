@@ -4,11 +4,15 @@ import (
 	"testing"
 
 	"github.com/goptics/vizb/shared"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestParseNameToGroups(t *testing.T) {
+// ParsePatternSuite covers the name-grouping helpers and GroupAxes.
+type ParsePatternSuite struct {
+	suite.Suite
+}
+
+func (s *ParsePatternSuite) TestParseNameToGroups() {
 	tests := []struct {
 		name          string
 		benchmarkName string
@@ -21,97 +25,49 @@ func TestParseNameToGroups(t *testing.T) {
 			name:          "Pattern Match: name_yAxis pattern",
 			benchmarkName: "Rivet_GPlusStatic",
 			pattern:       "name_yAxis",
-			expected: map[string]string{
-				"name":  "Rivet",
-				"yAxis": "GPlusStatic",
-				"xAxis": "",
-				"zAxis": "",
-			},
-			expectError: false,
+			expected:      map[string]string{"name": "Rivet", "yAxis": "GPlusStatic", "xAxis": "", "zAxis": ""},
 		},
 		{
 			name:          "Pattern Match: name/yAxis/xAxis pattern",
 			benchmarkName: "Rivet/GPlusStatic/100k",
 			pattern:       "name/yAxis/xAxis",
-			expected: map[string]string{
-				"name":  "Rivet",
-				"yAxis": "GPlusStatic",
-				"xAxis": "100k",
-				"zAxis": "",
-			},
-			expectError: false,
+			expected:      map[string]string{"name": "Rivet", "yAxis": "GPlusStatic", "xAxis": "100k", "zAxis": ""},
 		},
 		{
 			name:          "Pattern Match: yAxis/name/xAxis pattern",
 			benchmarkName: "Rivet/GPlusStatic/100k",
 			pattern:       "yAxis/name/xAxis",
-			expected: map[string]string{
-				"name":  "GPlusStatic",
-				"yAxis": "Rivet",
-				"xAxis": "100k",
-				"zAxis": "",
-			},
-			expectError: false,
+			expected:      map[string]string{"name": "GPlusStatic", "yAxis": "Rivet", "xAxis": "100k", "zAxis": ""},
 		},
 		{
 			name:          "Pattern Match: xAxis/yAxis/name pattern",
 			benchmarkName: "Rivet/GPlusStatic/100k",
 			pattern:       "xAxis/yAxis/name",
-			expected: map[string]string{
-				"name":  "100k",
-				"yAxis": "GPlusStatic",
-				"xAxis": "Rivet",
-				"zAxis": "",
-			},
-			expectError: false,
+			expected:      map[string]string{"name": "100k", "yAxis": "GPlusStatic", "xAxis": "Rivet", "zAxis": ""},
 		},
 		{
 			name:          "Pattern Match: name_yAxis_xAxis pattern",
 			benchmarkName: "MyLib_ComplexFunction_TestCase",
 			pattern:       "name_yAxis_xAxis",
-			expected: map[string]string{
-				"name":  "MyLib",
-				"yAxis": "ComplexFunction",
-				"xAxis": "TestCase",
-				"zAxis": "",
-			},
-			expectError: false,
+			expected:      map[string]string{"name": "MyLib", "yAxis": "ComplexFunction", "xAxis": "TestCase", "zAxis": ""},
 		},
 		{
 			name:          "Default behavior: yAxis only pattern",
 			benchmarkName: "Rivet_GPlusStatic",
 			pattern:       "yAxis",
-			expected: map[string]string{
-				"name":  "",
-				"yAxis": "Rivet_GPlusStatic",
-				"xAxis": "",
-				"zAxis": "",
-			},
-			expectError: false,
+			expected:      map[string]string{"name": "", "yAxis": "Rivet_GPlusStatic", "xAxis": "", "zAxis": ""},
 		},
 		{
 			name:          "yAxis and xAxis without name: y/x pattern",
 			benchmarkName: "Rivet_GPlusStatic/100k",
 			pattern:       "yAxis/xAxis",
-			expected: map[string]string{
-				"name":  "",
-				"yAxis": "Rivet_GPlusStatic",
-				"xAxis": "100k",
-				"zAxis": "",
-			},
-			expectError: false,
+			expected:      map[string]string{"name": "", "yAxis": "Rivet_GPlusStatic", "xAxis": "100k", "zAxis": ""},
 		},
 		{
 			name:          "Complex name: name_yAxis pattern with multi-part name",
 			benchmarkName: "MyLib_ComplexFunction_TestCase",
 			pattern:       "name_yAxis",
-			expected: map[string]string{
-				"name":  "MyLib",
-				"yAxis": "ComplexFunction_TestCase",
-				"xAxis": "",
-				"zAxis": "",
-			},
-			expectError: false,
+			expected:      map[string]string{"name": "MyLib", "yAxis": "ComplexFunction_TestCase", "xAxis": "", "zAxis": ""},
 		},
 		{
 			name:          "Empty pattern",
@@ -125,172 +81,87 @@ func TestParseNameToGroups(t *testing.T) {
 			name:          "Mixed separators: underscore and slash",
 			benchmarkName: "Rivet_GPlusStatic/100k_extra",
 			pattern:       "name_yAxis/xAxis",
-			expected: map[string]string{
-				"name":  "Rivet",
-				"yAxis": "GPlusStatic",
-				"xAxis": "100k_extra",
-				"zAxis": "",
-			},
-			expectError: false,
+			expected:      map[string]string{"name": "Rivet", "yAxis": "GPlusStatic", "xAxis": "100k_extra", "zAxis": ""},
 		},
 		{
 			name:          "Skip words",
 			benchmarkName: "Tasks/Name/Workload/Subject",
 			pattern:       "/name/xAxis/yAxis",
-			expected: map[string]string{
-				"name":  "Name",
-				"yAxis": "Subject",
-				"xAxis": "Workload",
-				"zAxis": "",
-			},
+			expected:      map[string]string{"name": "Name", "yAxis": "Subject", "xAxis": "Workload", "zAxis": ""},
 		},
 		{
 			name:          "Not enough parts in benchmark name",
 			benchmarkName: "Rivet",
 			pattern:       "name_yAxis_xAxis",
-			expected: map[string]string{
-				"name":  "Rivet",
-				"yAxis": "",
-				"xAxis": "",
-				"zAxis": "",
-			},
-			expectError: false,
+			expected:      map[string]string{"name": "Rivet", "yAxis": "", "xAxis": "", "zAxis": ""},
 		},
 		{
 			name:          "Pattern Match: name/x/y/z pattern (3D)",
 			benchmarkName: "Sort/bubble/1000/threads8",
 			pattern:       "name/x/y/z",
-			expected: map[string]string{
-				"name":  "Sort",
-				"xAxis": "bubble",
-				"yAxis": "1000",
-				"zAxis": "threads8",
-			},
-			expectError: false,
+			expected:      map[string]string{"name": "Sort", "xAxis": "bubble", "yAxis": "1000", "zAxis": "threads8"},
 		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		s.Run(tt.name, func() {
 			result, err := ParseBenchmarkNameToGroups(tt.benchmarkName, tt.pattern)
 
 			if tt.expectError {
-				require.Error(t, err)
+				s.Require().Error(err)
 				if tt.errorContains != "" {
-					assert.Contains(t, err.Error(), tt.errorContains)
+					s.Contains(err.Error(), tt.errorContains)
 				}
 				return
 			}
 
-			require.NoError(t, err)
-			assert.Equal(t, tt.expected, result)
+			s.Require().NoError(err)
+			s.Equal(tt.expected, result)
 		})
 	}
 }
 
-func TestValidateGroupPattern(t *testing.T) {
+func (s *ParsePatternSuite) TestValidateGroupPattern() {
 	tests := []struct {
 		name          string
 		pattern       string
 		expectError   bool
 		errorContains string
 	}{
-		{
-			name:        "Valid pattern: name_yAxis",
-			pattern:     "name_yAxis",
-			expectError: false,
-		},
-		{
-			name:        "Valid pattern with shorthand: n_y/x",
-			pattern:     "n_y/x",
-			expectError: false,
-		},
-		{
-			name:        "Valid pattern: yAxis only",
-			pattern:     "yAxis",
-			expectError: false,
-		},
-		{
-			name:          "Invalid pattern: unknown part",
-			pattern:       "name_invalid",
-			expectError:   true,
-			errorContains: "Invalid part: 'invalid'",
-		},
-		{
-			name:          "Empty pattern",
-			pattern:       "",
-			expectError:   true,
-			errorContains: "pattern cannot be empty",
-		},
-		{
-			name:        "Valid pattern: all parts",
-			pattern:     "name_yAxis_xAxis",
-			expectError: false,
-		},
-		{
-			name:        "Valid pattern: xAxis without yAxis",
-			pattern:     "name_xAxis",
-			expectError: false,
-		},
-		{
-			name:          "Invalid pattern: name only (missing xAxis and yAxis)",
-			pattern:       "name",
-			expectError:   true,
-			errorContains: "pattern must contain xAxis (x) or yAxis (y)",
-		},
-		{
-			name:        "Valid pattern: xAxis only",
-			pattern:     "xAxis",
-			expectError: false,
-		},
-		{
-			name:        "Valid pattern: name/x/y/z (3D)",
-			pattern:     "name/x/y/z",
-			expectError: false,
-		},
-		{
-			name:        "Valid pattern: full zAxis token",
-			pattern:     "name/xAxis/yAxis/zAxis",
-			expectError: false,
-		},
-		{
-			name:          "Invalid pattern: z with x but no y",
-			pattern:       "x/z",
-			expectError:   true,
-			errorContains: "zAxis (z) requires both xAxis (x) and yAxis (y)",
-		},
-		{
-			name:          "Invalid pattern: z with y but no x",
-			pattern:       "n/y/z",
-			expectError:   true,
-			errorContains: "zAxis (z) requires both xAxis (x) and yAxis (y)",
-		},
-		{
-			name:          "Invalid pattern: duplicate dimension x/y/x",
-			pattern:       "x/y/x",
-			expectError:   true,
-			errorContains: "duplicate dimension 'xAxis' in pattern",
-		},
+		{name: "Valid pattern: name_yAxis", pattern: "name_yAxis"},
+		{name: "Valid pattern with shorthand: n_y/x", pattern: "n_y/x"},
+		{name: "Valid pattern: yAxis only", pattern: "yAxis"},
+		{name: "Invalid pattern: unknown part", pattern: "name_invalid", expectError: true, errorContains: "Invalid part: 'invalid'"},
+		{name: "Empty pattern", pattern: "", expectError: true, errorContains: "pattern cannot be empty"},
+		{name: "Valid pattern: all parts", pattern: "name_yAxis_xAxis"},
+		{name: "Valid pattern: xAxis without yAxis", pattern: "name_xAxis"},
+		{name: "Invalid pattern: name only (missing xAxis and yAxis)", pattern: "name", expectError: true, errorContains: "pattern must contain xAxis (x) or yAxis (y)"},
+		{name: "Valid pattern: xAxis only", pattern: "xAxis"},
+		{name: "Valid pattern: name/x/y/z (3D)", pattern: "name/x/y/z"},
+		{name: "Valid pattern: full zAxis token", pattern: "name/xAxis/yAxis/zAxis"},
+		{name: "Invalid pattern: z with x but no y", pattern: "x/z", expectError: true, errorContains: "zAxis (z) requires both xAxis (x) and yAxis (y)"},
+		{name: "Invalid pattern: z with y but no x", pattern: "n/y/z", expectError: true, errorContains: "zAxis (z) requires both xAxis (x) and yAxis (y)"},
+		{name: "Invalid pattern: duplicate dimension x/y/x", pattern: "x/y/x", expectError: true, errorContains: "duplicate dimension 'xAxis' in pattern"},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		s.Run(tt.name, func() {
 			err := ValidateGroupPattern(tt.pattern)
 
 			if tt.expectError {
-				require.Error(t, err)
+				s.Require().Error(err)
 				if tt.errorContains != "" {
-					assert.Contains(t, err.Error(), tt.errorContains)
+					s.Contains(err.Error(), tt.errorContains)
 				}
 				return
 			}
 
-			assert.NoError(t, err)
+			s.NoError(err)
 		})
 	}
 }
 
-func TestExpandShorthand(t *testing.T) {
+func (s *ParsePatternSuite) TestExpandShorthand() {
 	tests := []struct {
 		input    string
 		expected string
@@ -306,14 +177,13 @@ func TestExpandShorthand(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
-			result := expandShorthand(tt.input)
-			assert.Equal(t, tt.expected, result)
+		s.Run(tt.input, func() {
+			s.Equal(tt.expected, expandShorthand(tt.input))
 		})
 	}
 }
 
-func TestParseNameWithRegex(t *testing.T) {
+func (s *ParsePatternSuite) TestParseNameWithRegex() {
 	tests := []struct {
 		name          string
 		benchmarkName string
@@ -326,37 +196,19 @@ func TestParseNameWithRegex(t *testing.T) {
 			name:          "Valid Regex: Named Groups",
 			benchmarkName: "Hashing64MD5",
 			pattern:       `(?<n>Hashing64)(?<y>.*)`,
-			expected: map[string]string{
-				"name":  "Hashing64",
-				"yAxis": "MD5",
-				"xAxis": "",
-				"zAxis": "",
-			},
-			expectError: false,
+			expected:      map[string]string{"name": "Hashing64", "yAxis": "MD5", "xAxis": "", "zAxis": ""},
 		},
 		{
 			name:          "Valid Regex: All Groups",
 			benchmarkName: "Matrix/1024/Parallel",
 			pattern:       `(?<n>.*)/(?<x>\d+)/(?<y>.*)`,
-			expected: map[string]string{
-				"name":  "Matrix",
-				"xAxis": "1024",
-				"yAxis": "Parallel",
-				"zAxis": "",
-			},
-			expectError: false,
+			expected:      map[string]string{"name": "Matrix", "xAxis": "1024", "yAxis": "Parallel", "zAxis": ""},
 		},
 		{
 			name:          "Valid Regex: Named Groups 2",
 			benchmarkName: "Decode/text=digits/level=speed",
 			pattern:       `(?<n>.*)/text=(?<x>.*)/level=(?<y>.*)`,
-			expected: map[string]string{
-				"name":  "Decode",
-				"xAxis": "digits",
-				"yAxis": "speed",
-				"zAxis": "",
-			},
-			expectError: false,
+			expected:      map[string]string{"name": "Decode", "xAxis": "digits", "yAxis": "speed", "zAxis": ""},
 		},
 		{
 			name:          "Regex No Match",
@@ -378,13 +230,7 @@ func TestParseNameWithRegex(t *testing.T) {
 			name:          "Regex with non-capturing groups (ignored)",
 			benchmarkName: "Hashing64MD5",
 			pattern:       `(?:Hashing64)(?<y>.*)`,
-			expected: map[string]string{
-				"name":  "",
-				"xAxis": "",
-				"yAxis": "MD5",
-				"zAxis": "",
-			},
-			expectError: false,
+			expected:      map[string]string{"name": "", "xAxis": "", "yAxis": "MD5", "zAxis": ""},
 		},
 		{
 			name:          "Regex with only name capture (missing xAxis and yAxis)",
@@ -398,25 +244,13 @@ func TestParseNameWithRegex(t *testing.T) {
 			name:          "Regex with only xAxis (valid)",
 			benchmarkName: "TestFunc/1024",
 			pattern:       `(?<n>.*)/(?<x>\d+)`,
-			expected: map[string]string{
-				"name":  "TestFunc",
-				"xAxis": "1024",
-				"yAxis": "",
-				"zAxis": "",
-			},
-			expectError: false,
+			expected:      map[string]string{"name": "TestFunc", "xAxis": "1024", "yAxis": "", "zAxis": ""},
 		},
 		{
 			name:          "Regex with all four groups (3D)",
 			benchmarkName: "Sort/bubble/1000/threads8",
 			pattern:       `(?<n>.*)/(?<x>.*)/(?<y>.*)/(?<z>.*)`,
-			expected: map[string]string{
-				"name":  "Sort",
-				"xAxis": "bubble",
-				"yAxis": "1000",
-				"zAxis": "threads8",
-			},
-			expectError: false,
+			expected:      map[string]string{"name": "Sort", "xAxis": "bubble", "yAxis": "1000", "zAxis": "threads8"},
 		},
 		{
 			name:          "Regex with no named groups at all",
@@ -437,24 +271,24 @@ func TestParseNameWithRegex(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		s.Run(tt.name, func() {
 			result, err := ParseBenchmarkNameWithRegex(tt.benchmarkName, tt.pattern)
 
 			if tt.expectError {
-				require.Error(t, err)
+				s.Require().Error(err)
 				if tt.errorContains != "" {
-					assert.Contains(t, err.Error(), tt.errorContains)
+					s.Contains(err.Error(), tt.errorContains)
 				}
 				return
 			}
 
-			require.NoError(t, err)
-			assert.Equal(t, tt.expected, result)
+			s.Require().NoError(err)
+			s.Equal(tt.expected, result)
 		})
 	}
 }
 
-func TestGroupAxes(t *testing.T) {
+func (s *ParsePatternSuite) TestGroupAxes() {
 	tests := []struct {
 		name        string
 		pattern     string
@@ -560,21 +394,17 @@ func TestGroupAxes(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			prevGroup := shared.FlagState.Group
-			prevPattern := shared.FlagState.GroupPattern
-			prevRegex := shared.FlagState.GroupRegex
-			t.Cleanup(func() {
-				shared.FlagState.Group = prevGroup
-				shared.FlagState.GroupPattern = prevPattern
-				shared.FlagState.GroupRegex = prevRegex
-			})
-
-			shared.FlagState.Group = tt.groupLabels
-			shared.FlagState.GroupPattern = tt.pattern
-			shared.FlagState.GroupRegex = tt.regex
-
-			assert.Equal(t, tt.want, GroupAxes())
+		s.Run(tt.name, func() {
+			cfg := Config{
+				Group:        tt.groupLabels,
+				GroupPattern: tt.pattern,
+				GroupRegex:   tt.regex,
+			}
+			s.Equal(tt.want, GroupAxes(cfg))
 		})
 	}
+}
+
+func TestParsePatternSuite(t *testing.T) {
+	suite.Run(t, new(ParsePatternSuite))
 }

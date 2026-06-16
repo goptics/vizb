@@ -7,6 +7,8 @@ import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
 
 The root command (`vizb`) is the primary entry point. It parses data and generates interactive visualizations. The input format is auto-detected by default (override with `--parser`).
 
+Use the root command to generate **multiple chart types** from one dataset (`--charts bar,line,...`) with optional per-chart overrides (`--chart`). To generate a **single chart** with a flag set tailored to it, use the [chart subcommands](/commands/charts) (`vizb bar`, `vizb pie`, …) instead.
+
 ## Usage
 
 ```bash

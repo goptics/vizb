@@ -1,0 +1,37 @@
+// Package pie registers the `vizb pie` subcommand: a pie chart. Pie data is
+// non-linear, so --scale and --rotate are intentionally absent (the Options
+// struct simply doesn't carry them).
+package pie
+
+import (
+	"github.com/goptics/vizb/cmd/cli"
+	"github.com/spf13/cobra"
+)
+
+func init() { cli.Register(NewCommand) }
+
+// Options carries only the shared chart flags; no --scale/--rotate.
+type Options struct {
+	cli.ChartOptions
+}
+
+// NewCommand builds the `vizb pie` cobra command.
+func NewCommand() *cobra.Command {
+	o := &Options{}
+	cmd := &cobra.Command{
+		Use:   "pie [target]",
+		Short: "Generate a pie chart from data",
+		Long:  "Generate an interactive pie chart (HTML or JSON) from benchmark output or tabular CSV/JSON data.",
+		Args:  cobra.ArbitraryArgs,
+		Run: func(cmd *cobra.Command, args []string) {
+			o.LinearOptions.Validate()
+
+			cli.RunSingleChart(cmd, args, o.CommonOptions, cli.LinearDefaults{
+				Sort:       o.Sort,
+				ShowLabels: o.ShowLabels,
+			}, "pie", o.Swap, nil)
+		},
+	}
+	o.ChartOptions.Bind(cmd.Flags())
+	return cmd
+}

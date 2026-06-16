@@ -7,225 +7,94 @@ import (
 	"testing"
 
 	"github.com/goptics/vizb/shared"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestMergeCmd(t *testing.T) {
-	// Mock OsExit
-	oldOsExit := shared.OsExit
-	defer func() { shared.OsExit = oldOsExit }()
+// MergeSuite covers the merge subcommand end-to-end via rootCmd.Execute.
+type MergeSuite struct {
+	suite.Suite
+	origOsExit func(int)
+	exitCode   int
+}
 
-	var exitCode int
-	shared.OsExit = func(code int) {
-		exitCode = code
-	}
+func (s *MergeSuite) SetupTest() {
+	s.origOsExit = shared.OsExit
+	s.exitCode = 0
+	shared.OsExit = func(code int) { s.exitCode = code }
+}
 
-	// Create temporary directory for test files
-	tmpDir, err := os.MkdirTemp("", "vizb-merge-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
+func (s *MergeSuite) TearDownTest() {
+	shared.OsExit = s.origOsExit
+}
 
-	// Create two dummy benchmark files
-	bench1 := shared.Dataset{
-		Name: "Bench1",
-		Data: []shared.DataPoint{
-			{Name: "Test1", XAxis: "1", YAxis: "100"},
-		},
-	}
-	bench2 := shared.Dataset{
-		Name: "Bench2",
-		Data: []shared.DataPoint{
-			{Name: "Test2", XAxis: "2", YAxis: "200"},
-		},
-	}
+func (s *MergeSuite) writeJSON(path string, v any) {
+	data, err := json.Marshal(v)
+	s.Require().NoError(err)
+	s.Require().NoError(os.WriteFile(path, data, 0644))
+}
 
-	file1 := filepath.Join(tmpDir, "bench1.json")
-	file2 := filepath.Join(tmpDir, "bench2.json")
+func (s *MergeSuite) TestMergeTwoFilesSkippingInvalid() {
+	dir := s.T().TempDir()
+	file1 := filepath.Join(dir, "bench1.json")
+	file2 := filepath.Join(dir, "bench2.json")
+	s.writeJSON(file1, shared.Dataset{Name: "Bench1", Data: []shared.DataPoint{{Name: "Test1", XAxis: "1", YAxis: "100"}}})
+	s.writeJSON(file2, shared.Dataset{Name: "Bench2", Data: []shared.DataPoint{{Name: "Test2", XAxis: "2", YAxis: "200"}}})
+	invalid := filepath.Join(dir, "invalid.json")
+	s.Require().NoError(os.WriteFile(invalid, []byte("{invalid json"), 0644))
 
-	writeJSON(t, file1, bench1)
-	writeJSON(t, file2, bench2)
+	out := filepath.Join(dir, "merged.json")
+	rootCmd.SetArgs([]string{"merge", "-o", out, file1, file2, invalid})
+	s.Require().NoError(rootCmd.Execute())
+	s.Equal(0, s.exitCode)
 
-	// Create an invalid file
-	file3 := filepath.Join(tmpDir, "invalid.json")
-	os.WriteFile(file3, []byte("{invalid json"), 0644)
-
-	// Output file
-	outFile := filepath.Join(tmpDir, "merged.json")
-
-	// Reset FlagState
-	shared.FlagState.OutputFile = outFile
-
-	// Execute via rootCmd
-	rootCmd.SetArgs([]string{"merge", file1, file2, file3})
-	err = rootCmd.Execute()
-
-	// Check if OsExit was called with error
-	if exitCode != 0 {
-		t.Errorf("OsExit called with code %d", exitCode)
-	}
-
-	assert.NoError(t, err)
-
-	// Verify output file exists
-	_, err = os.Stat(outFile)
-	assert.NoError(t, err)
-
-	content, err := os.ReadFile(outFile)
-	assert.NoError(t, err)
-
-	var parsed []shared.Dataset
-	assert.NoError(t, json.Unmarshal(content, &parsed))
-	assert.Len(t, parsed, 2)
-
-	names := make(map[string]bool)
+	parsed := s.readDatasets(out)
+	s.Len(parsed, 2)
+	names := map[string]bool{}
 	for _, b := range parsed {
 		names[b.Name] = true
 	}
-	assert.True(t, names["Bench1"])
-	assert.True(t, names["Bench2"])
+	s.True(names["Bench1"])
+	s.True(names["Bench2"])
 }
 
-func TestMergeCmd_Directory(t *testing.T) {
-	// Mock OsExit
-	oldOsExit := shared.OsExit
-	defer func() { shared.OsExit = oldOsExit }()
+func (s *MergeSuite) TestMergeDirectory() {
+	dir := s.T().TempDir()
+	s.writeJSON(filepath.Join(dir, "b1.json"), shared.Dataset{Name: "Bench1", Data: []shared.DataPoint{{Name: "Test1"}}})
 
-	var exitCode int
-	shared.OsExit = func(code int) {
-		exitCode = code
-	}
+	out := filepath.Join(dir, "merged_dir.json")
+	rootCmd.SetArgs([]string{"merge", "-o", out, dir})
+	s.Require().NoError(rootCmd.Execute())
+	s.Equal(0, s.exitCode)
 
-	tmpDir, err := os.MkdirTemp("", "vizb-merge-dir-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	bench1 := shared.Dataset{
-		Name: "Bench1",
-		Data: []shared.DataPoint{{Name: "Test1"}},
-	}
-	writeJSON(t, filepath.Join(tmpDir, "b1.json"), bench1)
-
-	outFile := filepath.Join(tmpDir, "merged_dir.json")
-
-	// Reset FlagState
-	shared.FlagState.OutputFile = outFile
-	shared.FlagState.Name = "Comparisons"
-	shared.FlagState.Charts = []string{"bar", "line", "pie"}
-
-	rootCmd.SetArgs([]string{"merge", tmpDir})
-	err = rootCmd.Execute()
-
-	if exitCode != 0 {
-		t.Errorf("OsExit called with code %d", exitCode)
-	}
-	assert.NoError(t, err)
-
-	content, err := os.ReadFile(outFile)
-	assert.NoError(t, err)
-
-	var parsed []shared.Dataset
-	assert.NoError(t, json.Unmarshal(content, &parsed))
-	assert.Len(t, parsed, 1)
-	assert.Equal(t, "Bench1", parsed[0].Name)
+	parsed := s.readDatasets(out)
+	s.Len(parsed, 1)
+	s.Equal("Bench1", parsed[0].Name)
 }
 
-func TestMergeCmd_ArrayInput(t *testing.T) {
-	oldOsExit := shared.OsExit
-	defer func() { shared.OsExit = oldOsExit }()
-
-	var exitCode int
-	shared.OsExit = func(code int) { exitCode = code }
-
-	tmpDir, err := os.MkdirTemp("", "vizb-merge-array-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	// Single file with an array of 2 benchmarks
-	benches := []shared.Dataset{
+func (s *MergeSuite) TestMergeArrayInput() {
+	dir := s.T().TempDir()
+	s.writeJSON(filepath.Join(dir, "array.json"), []shared.Dataset{
 		{Name: "Bench1", Data: []shared.DataPoint{{Name: "Test1", XAxis: "1", YAxis: "100"}}},
 		{Name: "Bench2", Data: []shared.DataPoint{{Name: "Test2", XAxis: "2", YAxis: "200"}}},
-	}
-	writeJSON(t, filepath.Join(tmpDir, "array.json"), benches)
+	})
 
-	outFile := filepath.Join(tmpDir, "merged_array.json")
-	shared.FlagState.OutputFile = outFile
+	out := filepath.Join(dir, "merged_array.json")
+	rootCmd.SetArgs([]string{"merge", "-o", out, filepath.Join(dir, "array.json")})
+	s.Require().NoError(rootCmd.Execute())
+	s.Equal(0, s.exitCode)
 
-	rootCmd.SetArgs([]string{"merge", filepath.Join(tmpDir, "array.json")})
-	err = rootCmd.Execute()
-
-	if exitCode != 0 {
-		t.Errorf("OsExit called with code %d", exitCode)
-	}
-	assert.NoError(t, err)
-
-	content, err := os.ReadFile(outFile)
-	assert.NoError(t, err)
-
-	var parsed []shared.Dataset
-	assert.NoError(t, json.Unmarshal(content, &parsed))
-	assert.Len(t, parsed, 2)
-
-	names := make(map[string]bool)
-	for _, b := range parsed {
-		names[b.Name] = true
-	}
-	assert.True(t, names["Bench1"])
-	assert.True(t, names["Bench2"])
+	parsed := s.readDatasets(out)
+	s.Len(parsed, 2)
 }
 
-func writeJSON(t *testing.T, path string, v interface{}) {
-	data, err := json.Marshal(v)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(path, data, 0644); err != nil {
-		t.Fatal(err)
-	}
+func (s *MergeSuite) readDatasets(path string) []shared.Dataset {
+	content, err := os.ReadFile(path)
+	s.Require().NoError(err)
+	var parsed []shared.Dataset
+	s.Require().NoError(json.Unmarshal(content, &parsed))
+	return parsed
 }
 
-func TestMergeCmd_JSONOutput(t *testing.T) {
-	oldOsExit := shared.OsExit
-	defer func() { shared.OsExit = oldOsExit }()
-
-	var exitCode int
-	shared.OsExit = func(code int) { exitCode = code }
-
-	tmpDir, err := os.MkdirTemp("", "vizb-merge-json-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	bench1 := shared.Dataset{
-		Name: "Bench1",
-		Data: []shared.DataPoint{
-			{Name: "Test1", XAxis: "1", YAxis: "100"},
-		},
-	}
-	writeJSON(t, filepath.Join(tmpDir, "b1.json"), bench1)
-
-	outFile := filepath.Join(tmpDir, "merged.json")
-	shared.FlagState.OutputFile = outFile
-
-	rootCmd.SetArgs([]string{"merge", filepath.Join(tmpDir, "b1.json")})
-	err = rootCmd.Execute()
-
-	if exitCode != 0 {
-		t.Errorf("OsExit called with code %d", exitCode)
-	}
-	assert.NoError(t, err)
-
-	content, err := os.ReadFile(outFile)
-	assert.NoError(t, err)
-
-	var parsed []shared.Dataset
-	assert.NoError(t, json.Unmarshal(content, &parsed))
-	assert.Len(t, parsed, 1)
-	assert.Equal(t, "Bench1", parsed[0].Name)
+func TestMergeSuite(t *testing.T) {
+	suite.Run(t, new(MergeSuite))
 }

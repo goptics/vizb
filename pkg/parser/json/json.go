@@ -63,7 +63,7 @@ func stringify(v any) string {
 // fields are ignored unless named in --group/-g, whose values are '/'-joined and
 // routed through the existing grouping machinery (-p/-r). Nested objects are
 // flattened to dotted keys; array-valued fields are skipped.
-func ParseJSON(filename string) []shared.DataPoint {
+func ParseJSON(filename string, cfg parser.Config) []shared.DataPoint {
 	f, err := os.Open(filename)
 	if err != nil {
 		shared.ExitWithError("Error opening file", err)
@@ -107,7 +107,7 @@ func ParseJSON(filename string) []shared.DataPoint {
 		return nil
 	}
 
-	groupKeys, groupSet := resolveGroupKeys(colOrder, seenCol)
+	groupKeys, groupSet := resolveGroupKeys(colOrder, seenCol, cfg.Group)
 
 	chartCols := chartColumns(colOrder, groupSet, rows)
 	if len(chartCols) == 0 {
@@ -121,11 +121,11 @@ func ParseJSON(filename string) []shared.DataPoint {
 
 		var name, xAxis, yAxis, zAxis string
 		if label != "" {
-			if !parser.ShouldIncludeBenchmark(label) {
+			if !parser.ShouldIncludeBenchmark(label, cfg) {
 				continue
 			}
 
-			group, gerr := parser.GroupBenchmarkName(label)
+			group, gerr := parser.GroupBenchmarkName(label, cfg)
 			if gerr != nil {
 				shared.ExitWithError("Error parsing JSON group name", gerr)
 			}
@@ -146,8 +146,8 @@ func ParseJSON(filename string) []shared.DataPoint {
 			}
 
 			stats = append(stats, shared.Stat{
-				Type:  utils.CreateStatType(k, shared.FlagState.NumberUnit, ""),
-				Value: utils.FormatNumber(num, shared.FlagState.NumberUnit),
+				Type:  utils.CreateStatType(k, cfg.NumberUnit, ""),
+				Value: utils.FormatNumber(num, cfg.NumberUnit),
 			})
 		}
 
@@ -169,11 +169,11 @@ func ParseJSON(filename string) []shared.DataPoint {
 
 // resolveGroupKeys maps each non-empty --group name to a known field (preserving
 // flag order). A missing name is fatal and lists available fields.
-func resolveGroupKeys(colOrder []string, seenCol map[string]bool) ([]string, map[string]bool) {
+func resolveGroupKeys(colOrder []string, seenCol map[string]bool, group []string) ([]string, map[string]bool) {
 	var keys []string
 	set := map[string]bool{}
 
-	for _, name := range shared.FlagState.Group {
+	for _, name := range group {
 		name = strings.TrimSpace(name)
 		if name == "" {
 			continue

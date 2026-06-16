@@ -1,12 +1,10 @@
 package javascript
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 
-	"github.com/goptics/vizb/shared"
-	"github.com/stretchr/testify/assert"
+	"github.com/goptics/vizb/pkg/parser"
+	"github.com/stretchr/testify/suite"
 )
 
 var testSortingTable = `┌─────────┬─────────────────────┬─────────────────────┬──────────────────┬────────────────────────┬────────────────────────┬─────────┐
@@ -29,83 +27,67 @@ var testSortingTable = `┌─────────┬───────�
 └─────────┴──────────────────────┴───────────────────┴───────────────────┴────────────────────────┴────────────────────────┴─────────┘
 `
 
-func writeTestFile(t *testing.T, content string) string {
-	t.Helper()
-	path := filepath.Join(t.TempDir(), "bench.txt")
-	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-		t.Fatal(err)
-	}
-	return path
+// TinyBenchSuite exercises ParseTinyBenchBenchmark with a per-test parser.Config.
+type TinyBenchSuite struct {
+	suite.Suite
+	cfg parser.Config
 }
 
-func TestParseTinyBenchBenchmark(t *testing.T) {
-	origPattern := shared.FlagState.GroupPattern
-	origFilter := shared.FlagState.FilterRegex
-	origTimeUnit := shared.FlagState.TimeUnit
-	defer func() {
-		shared.FlagState.GroupPattern = origPattern
-		shared.FlagState.FilterRegex = origFilter
-		shared.FlagState.TimeUnit = origTimeUnit
-	}()
+func (s *TinyBenchSuite) SetupTest() {
+	s.cfg = parser.Config{GroupPattern: "n/y", TimeUnit: "ns"}
+}
 
-	t.Run("Real tinybench output from sorting.txt", func(t *testing.T) {
-		shared.FlagState.GroupPattern = "n/y"
-		shared.FlagState.FilterRegex = ""
-		shared.FlagState.TimeUnit = "ns"
+func (s *TinyBenchSuite) TestRealTinybenchOutput() {
+	results := ParseTinyBenchBenchmark(writeJSTestFile(s.T(), testSortingTable), s.cfg)
+	s.Len(results, 6)
 
-		results := ParseTinyBenchBenchmark(writeTestFile(t, testSortingTable))
-		assert.Len(t, results, 6)
+	assertStat(s.T(), results[0].Stats[0], "Latency avg (ns)", 3741.5, "")
+	assertStat(s.T(), results[0].Stats[1], "Latency RME (%)", 0.18, "±")
+	assertStat(s.T(), results[0].Stats[2], "Latency med (ns)", 3703.0, "")
+	assertStat(s.T(), results[0].Stats[3], "Latency MAD (ns)", 32.00, "±")
+	assertStat(s.T(), results[0].Stats[4], "Throughput avg (ops/s)", 268758, "")
+	assertStat(s.T(), results[0].Stats[5], "Throughput RME (%)", 0.02, "±")
+	assertStat(s.T(), results[0].Stats[6], "Throughput med (ops/s)", 270051, "")
+	assertStat(s.T(), results[0].Stats[7], "Throughput MAD (ops/s)", 2354, "±")
+	assertStat(s.T(), results[0].Stats[8], "Samples", 267270, "")
 
-		assertStat(t, results[0].Stats[0], "Latency avg (ns)", 3741.5, "")
-		assertStat(t, results[0].Stats[1], "Latency RME (%)", 0.18, "±")
-		assertStat(t, results[0].Stats[2], "Latency med (ns)", 3703.0, "")
-		assertStat(t, results[0].Stats[3], "Latency MAD (ns)", 32.00, "±")
-		assertStat(t, results[0].Stats[4], "Throughput avg (ops/s)", 268758, "")
-		assertStat(t, results[0].Stats[5], "Throughput RME (%)", 0.02, "±")
-		assertStat(t, results[0].Stats[6], "Throughput med (ops/s)", 270051, "")
-		assertStat(t, results[0].Stats[7], "Throughput MAD (ops/s)", 2354, "±")
-		assertStat(t, results[0].Stats[8], "Samples", 267270, "")
+	s.Equal("bubbleSort", results[0].Name)
+	s.Equal("100", results[0].YAxis)
 
-		assert.Equal(t, "bubbleSort", results[0].Name)
-		assert.Equal(t, "100", results[0].YAxis)
+	last := results[5]
+	s.Equal("insertionSort", last.Name)
+	s.Equal("2000", last.YAxis)
+	assertStat(s.T(), last.Stats[0], "Latency avg (ns)", 512841, "")
+	assertStat(s.T(), last.Stats[8], "Samples", 1950, "")
+}
 
-		last := results[5]
-		assert.Equal(t, "insertionSort", last.Name)
-		assert.Equal(t, "2000", last.YAxis)
-		assertStat(t, last.Stats[0], "Latency avg (ns)", 512841, "")
-		assertStat(t, last.Stats[8], "Samples", 1950, "")
-	})
+func (s *TinyBenchSuite) TestUnitConversionToUs() {
+	s.cfg.TimeUnit = "us"
 
-	t.Run("Unit conversion to us", func(t *testing.T) {
-		shared.FlagState.GroupPattern = "n/y"
-		shared.FlagState.FilterRegex = ""
-		shared.FlagState.TimeUnit = "us"
+	results := ParseTinyBenchBenchmark(writeJSTestFile(s.T(), testSortingTable), s.cfg)
+	s.Len(results, 6)
 
-		results := ParseTinyBenchBenchmark(writeTestFile(t, testSortingTable))
-		assert.Len(t, results, 6)
+	assertStat(s.T(), results[0].Stats[0], "Latency avg (us)", 3.74, "")
+	assertStat(s.T(), results[0].Stats[2], "Latency med (us)", 3.7, "")
+}
 
-		assertStat(t, results[0].Stats[0], "Latency avg (us)", 3.74, "")
-		assertStat(t, results[0].Stats[2], "Latency med (us)", 3.7, "")
-	})
+func (s *TinyBenchSuite) TestFilterRegex() {
+	s.cfg.Filter = "bubbleSort"
 
-	t.Run("Filter regex", func(t *testing.T) {
-		shared.FlagState.GroupPattern = "n/y"
-		shared.FlagState.FilterRegex = "bubbleSort"
-		shared.FlagState.TimeUnit = "ns"
+	results := ParseTinyBenchBenchmark(writeJSTestFile(s.T(), testSortingTable), s.cfg)
+	s.Len(results, 3)
+	for _, r := range results {
+		s.Equal("bubbleSort", r.Name)
+	}
+}
 
-		results := ParseTinyBenchBenchmark(writeTestFile(t, testSortingTable))
-		assert.Len(t, results, 3)
-		for _, r := range results {
-			assert.Equal(t, "bubbleSort", r.Name)
-		}
-	})
+func (s *TinyBenchSuite) TestEmptyFile() {
+	s.cfg.GroupPattern = "y"
 
-	t.Run("Empty file", func(t *testing.T) {
-		shared.FlagState.GroupPattern = "y"
-		shared.FlagState.FilterRegex = ""
-		shared.FlagState.TimeUnit = "ns"
+	results := ParseTinyBenchBenchmark(writeJSTestFile(s.T(), ""), s.cfg)
+	s.Empty(results)
+}
 
-		results := ParseTinyBenchBenchmark(writeTestFile(t, ""))
-		assert.Empty(t, results)
-	})
+func TestTinyBenchSuite(t *testing.T) {
+	suite.Run(t, new(TinyBenchSuite))
 }

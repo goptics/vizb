@@ -1,12 +1,10 @@
 package rust
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 
-	"github.com/goptics/vizb/shared"
-	"github.com/stretchr/testify/assert"
+	"github.com/goptics/vizb/pkg/parser"
+	"github.com/stretchr/testify/suite"
 )
 
 var testDivanTable = `sort_divan              fastest       │ slowest       │ median        │ mean          │ samples │ iters
@@ -18,79 +16,61 @@ var testDivanTable = `sort_divan              fastest       │ slowest       �
 ╰─ insertion_sort_2000  289 µs        │ 299.9 µs      │ 292.8 µs      │ 292.4 µs      │ 100     │ 100
 `
 
-func writeDivanTestFile(t *testing.T, content string) string {
-	t.Helper()
-	path := filepath.Join(t.TempDir(), "bench.txt")
-	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-		t.Fatal(err)
-	}
-	return path
+// DivanSuite exercises ParseDivanBenchmark with a per-test parser.Config.
+type DivanSuite struct {
+	suite.Suite
+	cfg parser.Config
 }
 
-func TestParseDivanBenchmark(t *testing.T) {
-	origPattern := shared.FlagState.GroupPattern
-	origFilter := shared.FlagState.FilterRegex
-	origTimeUnit := shared.FlagState.TimeUnit
-	defer func() {
-		shared.FlagState.GroupPattern = origPattern
-		shared.FlagState.FilterRegex = origFilter
-		shared.FlagState.TimeUnit = origTimeUnit
-	}()
+func (s *DivanSuite) SetupTest() {
+	s.cfg = parser.Config{GroupPattern: "y", TimeUnit: "ns"}
+}
 
-	t.Run("Real divan output", func(t *testing.T) {
-		shared.FlagState.GroupPattern = "y"
-		shared.FlagState.FilterRegex = ""
-		shared.FlagState.TimeUnit = "ns"
+func (s *DivanSuite) TestRealDivanOutput() {
+	results := ParseDivanBenchmark(writeRustTestFile(s.T(), testDivanTable), s.cfg)
+	s.Len(results, 6)
 
-		results := ParseDivanBenchmark(writeDivanTestFile(t, testDivanTable))
-		assert.Len(t, results, 6)
+	assertStat(s.T(), results[0].Stats[0], "Latency fastest (ns)", 4360, "")
+	assertStat(s.T(), results[0].Stats[1], "Latency slowest (ns)", 9680, "±")
+	assertStat(s.T(), results[0].Stats[2], "Latency median (ns)", 4646, "")
+	assertStat(s.T(), results[0].Stats[3], "Latency mean (ns)", 4733, "")
+	assertStat(s.T(), results[0].Stats[4], "Samples", 100, "")
 
-		assertStat(t, results[0].Stats[0], "Latency fastest (ns)", 4360, "")
-		assertStat(t, results[0].Stats[1], "Latency slowest (ns)", 9680, "±")
-		assertStat(t, results[0].Stats[2], "Latency median (ns)", 4646, "")
-		assertStat(t, results[0].Stats[3], "Latency mean (ns)", 4733, "")
-		assertStat(t, results[0].Stats[4], "Samples", 100, "")
+	s.Equal("bubble_sort_100", results[0].YAxis)
 
-		assert.Equal(t, "bubble_sort_100", results[0].YAxis)
+	assertStat(s.T(), results[2].Stats[0], "Latency fastest (ns)", 1360000, "")
+	assertStat(s.T(), results[2].Stats[1], "Latency slowest (ns)", 2005000, "±")
 
-		assertStat(t, results[2].Stats[0], "Latency fastest (ns)", 1360000, "")
-		assertStat(t, results[2].Stats[1], "Latency slowest (ns)", 2005000, "±")
+	assertStat(s.T(), results[5].Stats[3], "Latency mean (ns)", 292400, "")
+	s.Equal("insertion_sort_2000", results[5].YAxis)
+}
 
-		assertStat(t, results[5].Stats[3], "Latency mean (ns)", 292400, "")
-		assert.Equal(t, "insertion_sort_2000", results[5].YAxis)
-	})
+func (s *DivanSuite) TestUnitConversionToUs() {
+	s.cfg.TimeUnit = "us"
 
-	t.Run("Unit conversion to us", func(t *testing.T) {
-		shared.FlagState.GroupPattern = "y"
-		shared.FlagState.FilterRegex = ""
-		shared.FlagState.TimeUnit = "us"
+	results := ParseDivanBenchmark(writeRustTestFile(s.T(), testDivanTable), s.cfg)
+	s.Len(results, 6)
 
-		results := ParseDivanBenchmark(writeDivanTestFile(t, testDivanTable))
-		assert.Len(t, results, 6)
+	assertStat(s.T(), results[0].Stats[0], "Latency fastest (us)", 4.36, "")
+	assertStat(s.T(), results[0].Stats[3], "Latency mean (us)", 4.73, "")
+	assertStat(s.T(), results[2].Stats[0], "Latency fastest (us)", 1360, "")
+}
 
-		assertStat(t, results[0].Stats[0], "Latency fastest (us)", 4.36, "")
-		assertStat(t, results[0].Stats[3], "Latency mean (us)", 4.73, "")
-		assertStat(t, results[2].Stats[0], "Latency fastest (us)", 1360, "")
-	})
+func (s *DivanSuite) TestFilterRegex() {
+	s.cfg.Filter = "insertion"
 
-	t.Run("Filter regex", func(t *testing.T) {
-		shared.FlagState.GroupPattern = "y"
-		shared.FlagState.FilterRegex = "insertion"
-		shared.FlagState.TimeUnit = "ns"
+	results := ParseDivanBenchmark(writeRustTestFile(s.T(), testDivanTable), s.cfg)
+	s.Len(results, 3)
+	for _, r := range results {
+		s.Contains(r.YAxis, "insertion")
+	}
+}
 
-		results := ParseDivanBenchmark(writeDivanTestFile(t, testDivanTable))
-		assert.Len(t, results, 3)
-		for _, r := range results {
-			assert.Contains(t, r.YAxis, "insertion")
-		}
-	})
+func (s *DivanSuite) TestEmptyFile() {
+	results := ParseDivanBenchmark(writeRustTestFile(s.T(), ""), s.cfg)
+	s.Empty(results)
+}
 
-	t.Run("Empty file", func(t *testing.T) {
-		shared.FlagState.GroupPattern = "y"
-		shared.FlagState.FilterRegex = ""
-		shared.FlagState.TimeUnit = "ns"
-
-		results := ParseDivanBenchmark(writeDivanTestFile(t, ""))
-		assert.Empty(t, results)
-	})
+func TestDivanSuite(t *testing.T) {
+	suite.Run(t, new(DivanSuite))
 }
