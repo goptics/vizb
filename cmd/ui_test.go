@@ -4,11 +4,27 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	config_charts "github.com/goptics/vizb/config/charts"
+	barchart "github.com/goptics/vizb/config/charts/bar"
 	"github.com/goptics/vizb/shared"
 	"github.com/stretchr/testify/suite"
 )
+
+// barFromJSON round-trips a map through JSON to produce a *barchart.Config
+// whose fields are populated per the map. Mirrors what MigrateDataset does
+// for legacy settings: we get a typed Config without manually setting fields.
+func (s *UISuite) barFromJSON(payload map[string]any) *barchart.Config {
+	raw, err := json.Marshal(payload)
+	s.Require().NoError(err)
+	cfg, err := config_charts.Decode("bar", raw)
+	s.Require().NoError(err)
+	c, ok := cfg.(*barchart.Config)
+	s.Require().True(ok, "expected *barchart.Config, got %T", cfg)
+	return c
+}
 
 // UISuite covers the ui/html subcommand end-to-end via rootCmd.Execute.
 type UISuite struct {
@@ -164,6 +180,63 @@ func (s *UISuite) read(path string) string {
 	content, err := os.ReadFile(path)
 	s.Require().NoError(err)
 	return string(content)
+}
+
+// extractVIZBDataArray parses the JSON array assigned to `window.VIZB_DATA` in
+// the generated HTML. The data is inlined by the template (see
+// pkg/template/generate-ui.go) as a single JS literal; for the ui subcommand
+// the value is always a JSON array of datasets.
+func (s *UISuite) extractVIZBDataArray(html string) []any {
+	const prefix = "window.VIZB_DATA = "
+	start := strings.Index(html, prefix)
+	s.Require().NotEqual(-1, start, "expected window.VIZB_DATA in HTML")
+	start += len(prefix)
+	end := strings.Index(html[start:], ";")
+	s.Require().NotEqual(-1, end, "expected ';' after window.VIZB_DATA")
+	var data []any
+	s.Require().NoError(json.Unmarshal([]byte(html[start:start+end]), &data))
+	return data
+}
+
+// TestRunUI_AppliesOverrides verifies that `--chart bar:swap=yxn` on the
+// `vizb ui` subcommand is applied to the bar setting baked into the input
+// dataset. The override should appear in the embedded VIZB_DATA, not just
+// the chunk-pruning list.
+func (s *UISuite) TestRunUI_AppliesOverrides() {
+	dir := s.T().TempDir()
+	input := filepath.Join(dir, "old.json")
+	// Dataset with a bar config whose initial swap is "xyn" (different from
+	// the override), so the assertion distinguishes override from no-op.
+	s.writeJSON(input, shared.Dataset{
+		Name: "Test",
+		Axes: []shared.Axis{{Key: "x"}, {Key: "y"}, {Key: "name"}},
+		Settings: []config_charts.ChartConfig{s.barFromJSON(map[string]any{
+			"type":  "bar",
+			"swap":  "xyn",
+			"scale": "linear",
+		})},
+		Data: []shared.DataPoint{{Name: "Test1", XAxis: "1", YAxis: "100"}},
+	})
+	out := filepath.Join(dir, "output.html")
+
+	rootCmd.SetArgs([]string{"ui", "-o", out, "--chart", "bar:swap=yxn", input})
+	s.Require().NoError(rootCmd.Execute())
+	s.Equal(0, s.exitCode)
+
+	html := s.read(out)
+	datasets := s.extractVIZBDataArray(html)
+	s.Require().Len(datasets, 1)
+
+	ds, ok := datasets[0].(map[string]any)
+	s.Require().True(ok, "expected dataset object, got %T", datasets[0])
+
+	settings, ok := ds["settings"].([]any)
+	s.Require().True(ok, "expected settings array in VIZB_DATA, got %T", ds["settings"])
+	s.Require().Len(settings, 1)
+
+	bar, ok := settings[0].(map[string]any)
+	s.Require().True(ok, "expected bar config object, got %T", settings[0])
+	s.Equal("yxn", bar["swap"], "override should replace baked swap value")
 }
 
 func TestUISuite(t *testing.T) {

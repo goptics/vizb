@@ -81,49 +81,74 @@ func init() {
 func runBenchmark(cmd *cobra.Command, args []string) {
 	validateRootOptions()
 
+	// Parse the per-chart --chart overrides into a typed map. An unknown
+	// chart type or out-of-range value short-circuits with a CLI error.
+	overrides, err := shared.ParseOverrides(rootOpts.ChartSpecs, rootOpts.Charts, nil)
+	if err != nil {
+		shared.ExitWithError(err.Error(), nil)
+	}
+
 	// Build a per-chart Config for every active chart type. The switch is
 	// required because each chart's Materialise is typed to that chart's Flags
-	// struct. Per-chart --chart specs (rootOpts.ChartSpecs) are not yet
-	// applied here; the typed override path lands in the root-command
-	// refactor (which rewires ParseChartSpecs -> ParseOverrides). For now the
-	// global flags seed each Materialise call with `nil` override, matching
-	// the behaviour Task 4 will refine.
+	// struct. The override from `overrides[chartType]` is passed as the
+	// second arg so per-chart values (e.g. --chart bar:swap=yxn) win over the
+	// global -s/--sort/-l/--show-labels defaults seeded via flagsFromDefaults.
 	configs := make([]config_charts.ChartConfig, 0, len(rootOpts.Charts))
 	for _, chartType := range rootOpts.Charts {
 		var cfg config_charts.ChartConfig
 		switch chartType {
 		case "bar":
-			c := barchart.Materialise(barchart.Flags{
+			flags := barchart.Flags{
 				Scale:      rootOpts.Scale,
 				Sort:       rootOpts.Sort,
 				ShowLabels: rootOpts.ShowLabels,
-			}, nil)
-			cfg = c
+			}
+			var override *barchart.Config
+			if o, ok := overrides["bar"]; ok {
+				override = o.(*barchart.Config)
+			}
+			cfg = barchart.Materialise(flags, override)
 		case "line":
-			c := linechart.Materialise(linechart.Flags{
+			flags := linechart.Flags{
 				Scale:      rootOpts.Scale,
 				Sort:       rootOpts.Sort,
 				ShowLabels: rootOpts.ShowLabels,
-			}, nil)
-			cfg = c
+			}
+			var override *linechart.Config
+			if o, ok := overrides["line"]; ok {
+				override = o.(*linechart.Config)
+			}
+			cfg = linechart.Materialise(flags, override)
 		case "pie":
-			c := piechart.Materialise(piechart.Flags{
+			flags := piechart.Flags{
 				Sort:       rootOpts.Sort,
 				ShowLabels: rootOpts.ShowLabels,
-			}, nil)
-			cfg = c
+			}
+			var override *piechart.Config
+			if o, ok := overrides["pie"]; ok {
+				override = o.(*piechart.Config)
+			}
+			cfg = piechart.Materialise(flags, override)
 		case "heatmap":
-			c := heatmapchart.Materialise(heatmapchart.Flags{
+			flags := heatmapchart.Flags{
 				Sort:       rootOpts.Sort,
 				ShowLabels: rootOpts.ShowLabels,
-			}, nil)
-			cfg = c
+			}
+			var override *heatmapchart.Config
+			if o, ok := overrides["heatmap"]; ok {
+				override = o.(*heatmapchart.Config)
+			}
+			cfg = heatmapchart.Materialise(flags, override)
 		case "radar":
-			c := radarchart.Materialise(radarchart.Flags{
+			flags := radarchart.Flags{
 				Sort:       rootOpts.Sort,
 				ShowLabels: rootOpts.ShowLabels,
-			}, nil)
-			cfg = c
+			}
+			var override *radarchart.Config
+			if o, ok := overrides["radar"]; ok {
+				override = o.(*radarchart.Config)
+			}
+			cfg = radarchart.Materialise(flags, override)
 		}
 		configs = append(configs, cfg)
 	}

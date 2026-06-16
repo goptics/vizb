@@ -2,12 +2,15 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"testing"
 
+	barchart "github.com/goptics/vizb/config/charts/bar"
+	linechart "github.com/goptics/vizb/config/charts/line"
 	"github.com/goptics/vizb/shared"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/suite"
@@ -100,6 +103,47 @@ func (s *RootSuite) captureStdout(fn func()) string {
 	var buf bytes.Buffer
 	io.Copy(&buf, r)
 	return buf.String()
+}
+
+// TestRunBenchmark_GlobalSortApplied runs the root command with the global
+// --sort=desc flag, and asserts that every chart in the output has the sort
+// applied. Verifies the global -s/--sort flag becomes a default applied to
+// every chart (per spec section 4).
+func (s *RootSuite) TestRunBenchmark_GlobalSortApplied() {
+	dir := s.T().TempDir()
+	input := filepath.Join(dir, "valid.txt")
+	s.Require().NoError(os.WriteFile(input, []byte(`BenchmarkTest-8    1000000    1234 ns/op    1000 B/op    10 allocs/op`), 0644))
+
+	rootOpts.Charts = []string{"bar", "line"}
+	rootOpts.Sort = "desc"
+	rootOpts.OutputFile = filepath.Join(dir, "out.json")
+
+	out := s.captureStdout(func() {
+		runBenchmark(&cobra.Command{}, []string{input})
+	})
+
+	s.Contains(out, "Generated")
+
+	content, err := os.ReadFile(rootOpts.OutputFile)
+	s.Require().NoError(err)
+	var ds shared.Dataset
+	s.Require().NoError(json.Unmarshal(content, &ds))
+	s.Require().Len(ds.Settings, 2)
+
+	for i, c := range ds.Settings {
+		switch c := c.(type) {
+		case *barchart.Config:
+			s.Require().NotNil(c.Sort, "settings[%d] (bar) sort should be set", i)
+			s.True(c.Sort.Enabled)
+			s.Equal("desc", c.Sort.Order)
+		case *linechart.Config:
+			s.Require().NotNil(c.Sort, "settings[%d] (line) sort should be set", i)
+			s.True(c.Sort.Enabled)
+			s.Equal("desc", c.Sort.Order)
+		default:
+			s.Failf("unexpected chart type", "settings[%d] type=%T", i, c)
+		}
+	}
 }
 
 func (s *RootSuite) captureStderr(fn func()) string {
