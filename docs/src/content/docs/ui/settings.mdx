@@ -13,24 +13,20 @@ The UI includes a settings panel where you can adjust chart behavior at runtime.
 |----------|-----------|---------|
 | `--scale` | Scale toggle | `linear` / `log` |
 | `--sort` | Sort dropdown | `asc` / `desc` / none |
-| `--charts` | Chart visibility | `bar` / `line` / `pie` / `heatmap` |
+| `--charts` | Chart visibility | `bar` / `line` / `pie` / `heatmap` / `radar` |
 | `--show-labels` | Labels toggle | on / off |
-| *(none)* | Auto rotate | on / off — 3D charts only |
+| `--chart bar:rotate` / `--chart line:rotate` | Auto rotate | on / off — 3D bar and line only |
 
 {/* TODO: Add GIF showing the settings panel in the UI */}
-
-<Aside type="note">
-  The **Scale** toggle is hidden for [3D charts](/ui/3d-charts) — logarithmic scale isn't supported there. The **Auto rotate** toggle only appears for 3D charts and has no CLI flag.
-</Aside>
 
 ## Setting Defaults from CLI
 
 ```bash
 # Enable log scale and labels by default
-vizb bench.txt --scale log --show-labels -o output.html
+vizb data.csv --scale log --show-labels -o output.html
 
 # Sort descending and show only bar chart
-vizb bench.txt -s desc -c bar -o output.html
+vizb data.csv -s desc -c bar -o output.html
 ```
 
 <Aside type="note">

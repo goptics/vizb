@@ -1,0 +1,132 @@
+---
+title: Charts Overview
+description: How vizb's five chart types share the same x/y/z dimension model — and how to pick the right shape for your data.
+---
+
+import { CardGrid, Card, LinkCard, Aside } from '@astrojs/starlight/components';
+
+Vizb folds the same **x/y/z dimension model** into every chart type — you describe your data once with `-p x/y/z`, and all five renderers interpret it in parallel. One pipeline, five different shapes. Use `--charts` (or `-c`) to control which renderers are bundled into the output file.
+
+## Chart Types
+
+<CardGrid>
+  <Card title="Bar Chart" icon="bars" href="/charts/bar">
+    Compare values across categories. Supports linear and log scale, grouped 2D bars, and WebGL bar3D for z-axis data.
+  </Card>
+  <Card title="Line Chart" icon="analytics" href="/charts/line">
+    Track trends across X-axis values. One line per Y-series in 2D; switches to WebGL line3D with a z-axis.
+  </Card>
+  <Card title="Pie Chart" icon="puzzle" href="/charts/pie">
+    Show proportional distribution. Scales from one pie (1D) to two side-by-side (2D) to three pies (3D).
+  </Card>
+  <Card title="Radar Chart" icon="star" href="/charts/radar">
+    Multi-dimensional comparison on a spoke diagram. Spokes change meaning across 1D/2D/3D — great for profiles and benchmarks.
+  </Card>
+  <Card title="Heatmap" icon="seti:default" href="/charts/heatmap">
+    X × Y colored grid — works with or without a z-axis. With z, cell value sums z-series and cell color blends the z palette.
+  </Card>
+</CardGrid>
+
+## Dimensions: 1D, 2D, and 3D
+
+Every vizb chart is driven by up to three chart dimensions: **X-axis** (`x`), **Y-axis** (`y`), and **Z-axis** (`z`). You declare them with the `-p` flag:
+
+| Pattern | Dimensionality | What you get |
+|---------|---------------|--------------|
+| `-p x` | **1D** — X only | X is the only axis |
+| `-p x/y` | **2D** — X + Y | Y subdivides each X point into groups or series |
+| `-p x/y/z` | **3D** — X + Y + Z | Z adds a third dimension; bar/line go WebGL, pie/radar add a third slice set, heatmap blends Z into cell color |
+
+Pie and radar have no cartesian axes, but the same `-p` pattern governs how many series or spokes they render:
+
+| Chart | 1D (`-p x`) | 2D (`-p x/y`) | 3D (`-p x/y/z`) |
+|-------|--------------|----------------|------------------|
+| **Bar** | Single bar series over X | Grouped bars, one series per Y value | WebGL bar3D — Z stacked per (X, Y) cell |
+| **Line** | Single line over X | One line per Y value across X | WebGL line3D — sparse points per Z |
+| **Pie** | One pie (X = slices) | Two pies side-by-side (By X / By Y) | Three pies (By X / By Y / By Z) |
+| **Radar** | One polygon, X = spokes, value = stat total | One polygon per X, Y = spokes, legend = X | One polygon per Z, X = data points, Y = spokes |
+| **Heatmap** | n/a — needs at least X + Y | Matrix X × Y, single-series gradient | Same matrix; cell = Σ z, color blends z palette |
+
+{/* TODO: Add GIF showing all five charts rendered side by side */}
+
+<Aside type="note">
+  Heatmap requires at least a 2D pattern (`-p x/y`). Passing `-p x` with `-c heatmap` will produce an empty chart panel.
+</Aside>
+
+## 4D: Named Chart Groups
+
+The `n` axis is the 4th dimension. Unlike x/y/z — which add visual structure *inside* a chart — `n` splits data into **named groups**, each rendered as its own chart panel. Every unique name value becomes a separate chart.
+
+| Pattern | Result |
+|---------|--------|
+| `-p n/x` | One chart per name, each a 1D view |
+| `-p n/x/y` | One chart per name, each a 2D view |
+| `-p n/x/y/z` | One chart per name, each a 3D view — **maximum dimensionality** |
+
+For CSV, `-g` maps columns to pattern slots positionally:
+
+```bash
+# 4D: name=algo, x=input_size, y=variant, z=run_type
+vizb data.csv -g algo,input_size,variant,run_type -p n/x/y/z -c bar -o out.html
+```
+
+{/* TODO: Add GIF showing multiple named chart panels side by side */}
+
+<Aside type="note">
+  The `n` axis is optional. Without it, all rows share a single unnamed chart. With it, each unique name value gets its own panel — useful for comparing independent algorithms, datasets, or experiments side by side.
+</Aside>
+
+## Settings
+
+Most settings apply to every chart type. The exceptions are `scale` (log), which only affects cartesian charts, and `rotate` (3D auto-spin), which only applies when bar or line renders in WebGL mode.
+
+| Setting | `bar` | `line` | `pie` | `radar` | `heatmap` |
+|---------|:-----:|:------:|:-----:|:-------:|:---------:|
+| `sort` / `--sort` | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `labels` / `--show-labels` | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `swap` (axis reorder) | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `scale` log | ✓ | ✓ | ✗ | ✗ | ✗ |
+| `rotate` (3D auto-rotate) | ✓ 3D only | ✓ 3D only | ✗ | ✗ | ✗ |
+
+To override a setting for a single chart type without affecting the others, use the `--chart <type>:key=val` syntax:
+
+```bash
+# Turn on labels for bar only
+vizb data.csv -g category --chart bar:labels=true -o output.html
+
+# Enable sort on radar, keep others unsorted
+vizb data.csv -g category,metric -p x/y -c bar,radar --chart radar:sort=asc -o output.html
+```
+
+See [Commands: root](/commands/root) for the full flag reference.
+
+## Selecting Chart Types
+
+The `--charts` flag (short: `-c`) controls which renderers are compiled into the output HTML. The default includes all five:
+
+```
+bar,line,pie,heatmap,radar
+```
+
+Each chart renderer ships as a separate compressed chunk; only the ones you select are embedded. This keeps the output small when you only need one or two shapes:
+
+```bash
+# Radar and bar only
+vizb data.csv -g category,metric -p x/y -c bar,radar -o output.html
+
+# Single chart — smallest possible output
+vizb data.csv -g category -c bar -o output.html
+```
+
+<Aside type="tip">
+  For sharing or deploying reports, pass `--charts` to include only what your audience needs. The 3D engine (~380 kB encoded) is pulled in automatically when bar or line is selected *and* your data has a z-axis — and omitted otherwise. See [Output File Size](/ui#output-file-size) for the size breakdown.
+</Aside>
+
+## Next Steps
+
+<CardGrid>
+  <LinkCard title="Settings" href="/ui/settings" description="CLI flags and UI settings — sort, labels, scale, swap, and more." />
+  <LinkCard title="Axis Swapping" href="/ui/swapping" description="Rearrange x/y/z dimensions interactively in the UI." />
+  <LinkCard title="Statistics" href="/ui/stats" description="Per-series descriptive stats and a Pearson/Spearman correlation matrix." />
+  <LinkCard title="Grouping" href="/guides/grouping" description="Aggregate rows before charting with --group." />
+</CardGrid>

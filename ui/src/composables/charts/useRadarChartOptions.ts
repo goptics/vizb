@@ -145,7 +145,7 @@ export function useRadarChartOptions(config: BaseChartConfig) {
           name: z,
           type: 'radar' as const,
           symbol: 'circle',
-          symbolSize: 4,
+          symbolSize: 10,
           label,
           itemStyle: { color: getNextColorFor(z) },
           lineStyle: { width: 1.5, opacity: 0.7 },
@@ -172,10 +172,6 @@ export function useRadarChartOptions(config: BaseChartConfig) {
       })
     }
 
-    // Render largest-first so smaller polygons are drawn on top and remain hoverable.
-    // Legend keeps the user's sort order; ECharts matches series to legend by name.
-    const renderRows = [...rows].sort((a, b) => b.total - a.total)
-
     return {
       ...baseOptions,
       tooltip: makeTooltip(isDark.value, yAxis),
@@ -185,11 +181,11 @@ export function useRadarChartOptions(config: BaseChartConfig) {
         textStyle: { color: styling.textColor },
       },
       radar: radarConfig(makeIndicators(yAxis, perSpokeMax), styling),
-      series: renderRows.map((s) => ({
+      series: rows.map((s) => ({
         name: s.xAxis,
         type: 'radar' as const,
         symbol: 'circle',
-        symbolSize: 4,
+        symbolSize: 10,
         label,
         itemStyle: { color: getNextColorFor(s.xAxis) },
         lineStyle: { width: 1.5, opacity: 0.7 },

@@ -1,13 +1,11 @@
 ---
-title: 3D Charts
-description: Add a z-axis to render interactive 3D bar and line charts.
+title: 3D Charts (Visual WebGL)
+description: Add a z-axis to render interactive visual 3D bar and line charts in a WebGL scene — rotate, zoom, and pan in the browser.
 ---
 
-import { CardGrid, Card, Aside } from '@astrojs/starlight/components';
+import { CardGrid, Card, Aside, LinkCard } from '@astrojs/starlight/components';
 
-When your data has a **fourth dimension** — a z-axis on top of Name, XAxis, and
-YAxis — vizb renders interactive **3D** bar and line charts instead of flat 2D
-ones. Rotate, zoom, and pan the scene directly in the browser.
+When a **z-axis** is present and the active chart is **bar** or **line**, vizb automatically switches to a visual WebGL 3D scene instead of a flat 2D chart. Rotate, zoom, and pan directly in the browser. Other chart types (pie, radar, heatmap) receive z-axis data differently — they don't render a 3D scene.
 
 ## What Makes a Chart 3D
 
@@ -20,11 +18,6 @@ A chart renders in 3D when a data point has **all three** plotting axes present:
 The **Name** dimension stays optional — it still groups points into separate
 charts. Without a z-axis, charts render as the usual 2D bar/line/pie.
 
-<Aside type="tip">
-  Prefer a flat view of the same z-axis data? The [Heatmap](/ui/heatmap) folds X, Y,
-  and Z into a colored grid — no rotating scene required.
-</Aside>
-
 <Aside type="note">
   The z-axis (`z`) is only valid alongside **both** `x` and `y`. A 3D chart needs
   an x/y floor to stand on.
@@ -34,10 +27,10 @@ charts. Without a z-axis, charts render as the usual 2D bar/line/pie.
 
 Add a `z` segment to your grouping pattern or a `(?<z>…)` capture to your regex.
 
-**Pattern — `n/x/y/z`:**
+**Pattern — `x/y/z`:**
 
 ```bash
-vizb bench.txt --group-pattern "n/x/y/z" -o output.html
+vizb data.csv -g category,metric,group --group-pattern "x/y/z" -o output.html
 ```
 
 | Source Label | Name | XAxis | YAxis | ZAxis |
@@ -52,7 +45,7 @@ name segment — pass the column as the fourth `--group` field. See the
 **Regex — named `z` capture:**
 
 ```bash
-vizb bench.txt --group-regex "(?<n>.*)/(?<x>.*)/(?<y>.*)/(?<z>.*)" -o output.html
+vizb data.csv -g category,metric,group,series --group-regex "(?<n>.*)/(?<x>.*)/(?<y>.*)/(?<z>.*)" -o output.html
 ```
 
 If you supply a `z` without both `x` and `y`, vizb rejects the pattern:
@@ -105,14 +98,10 @@ only what's visible. Tooltips follow light/dark mode automatically.
   x-marginal at the bottom of the tooltip.
 </Aside>
 
-## Scale
-
-Logarithmic scale is **not** available for 3D charts — the Scale control is
-hidden when a 3D chart is active. Use linear scale, or drop the z-axis (via
-[Axis Swapping](/ui/swapping)) to fall back to a 2D chart with log support.
-
 ## Next Steps
 
-- [Axis Swapping](/ui/swapping) — rotate z in and out to switch between 3D and 2D
-- [Grouping](/guides/grouping) — extract the z dimension from benchmark names
-- [Settings](/ui/settings) — auto-rotate and other runtime controls
+<LinkCard title="Heatmap" href="/charts/heatmap" description="X × Y colored grid — works great with or without z, never renders WebGL." />
+<LinkCard title="Bar Chart" href="/charts/bar" description="Bar chart in all three dimensions — 1D, 2D, and 3D." />
+<LinkCard title="Line Chart" href="/charts/line" description="Line chart in all three dimensions — 1D, 2D, and 3D." />
+<LinkCard title="Axis Swapping" href="/ui/swapping" description="Swap z in and out interactively to toggle between 3D and 2D." />
+<LinkCard title="Settings" href="/ui/settings" description="Auto-rotate and other runtime controls." />

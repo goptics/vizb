@@ -39,7 +39,7 @@ Grouping extracts up to four dimensions from each label:
 | **Name** (`name` / `n`) | Groups rows into separate charts | Rows sharing the same name appear in the same chart |
 | **XAxis** (`xAxis` / `x`) | Sets the X-axis categories | Each unique value becomes a tick on the X-axis |
 | **YAxis** (`yAxis` / `y`) | Creates series / variants | Each unique value becomes a separate series or bar group |
-| **ZAxis** (`zAxis` / `z`) | Adds a depth axis → 3D chart | Each unique value becomes a stacked depth layer in a [3D chart](/ui/3d-charts) |
+| **ZAxis** (`zAxis` / `z`) | Adds a depth axis → 3D chart | Each unique value becomes a stacked depth layer in a [3D chart](/charts/3d) |
 
 <Aside type="note">
   At least one axis (`x` or `y`) is required for grouping to take effect. The `name` dimension is optional — when omitted, all rows go into a single chart. The `z` dimension requires **both** `x` and `y` to be present.
@@ -186,7 +186,7 @@ vizb bench.txt --group-pattern "n/x/y/z" -o output.html
 | `BenchmarkSort/2048/MergeSort/cold` | Sort | 2048 | MergeSort | cold |
 
 <Aside type="note">
-  A pattern must contain `x` or `y` (`pattern must contain xAxis (x) or yAxis (y)`). A `z` segment requires both `x` and `y` — vizb rejects `z` otherwise with `zAxis (z) requires both xAxis (x) and yAxis (y)`. See [3D Charts](/ui/3d-charts).
+  A pattern must contain `x` or `y` (`pattern must contain xAxis (x) or yAxis (y)`). A `z` segment requires both `x` and `y` — vizb rejects `z` otherwise with `zAxis (z) requires both xAxis (x) and yAxis (y)`. See [3D Charts](/charts/3d).
 </Aside>
 
 ## Regex Syntax

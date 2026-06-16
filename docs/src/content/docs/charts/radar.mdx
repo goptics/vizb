@@ -1,0 +1,85 @@
+---
+title: Radar Chart
+description: Compare multi-axis profiles as spider/web polygons — one polygon per data point, one spoke per Y value.
+---
+
+import { CardGrid, Card, LinkCard, Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+The **radar chart** (also called a spider or web chart) draws filled polygons on a circular grid of spokes. Each spoke is a metric, and each polygon is a subject being compared across all those metrics at once. It's the chart to reach for when you want to see a multi-dimensional profile — not just "which is biggest" but "where does each variant win and where does it lose."
+
+Use radar charts when your Y axis holds multiple meaningful metrics (throughput, latency, memory, etc.) and you want to compare several subjects across all of them simultaneously.
+
+## How vizb builds it
+
+Radar has no cartesian axes. Instead, vizb maps your dimensions to the radial layout:
+
+| Dimension | Role |
+|-----------|------|
+| **YAxis** | Spoke indicators — each unique Y value becomes one spoke radiating from the center |
+| **XAxis** | Data points — each unique X value becomes a polygon on the web |
+| **ZAxis** | Series grouping — each Z value becomes a set of polygons; X values become multiple points within each Z polygon (3D only) |
+
+Each polygon is filled with a semi-transparent area so overlapping shapes stay visible. Hover any polygon to see a tooltip listing every spoke name alongside its value.
+
+## Dimensions
+
+### 1D (X axis)
+
+One polygon on the radar. The X values become the spokes, and the single data point is plotted as a stat-total shape. Best for a quick profile of one subject.
+
+```bash
+vizb data.csv -g category -c radar -o out.html
+```
+
+{/* TODO: Add GIF showing a 1D radar chart with a single polygon */}
+
+### 2D (X + Y axes)
+
+Multiple polygons, one per X value, all sharing the same set of spokes (Y values). The legend lists the X values so you can show or hide individual polygons. This is the core use case: compare how several subjects score across the same set of metrics.
+
+```bash
+vizb data.csv -g category,metric -p x/y -c radar -o out.html
+```
+
+{/* TODO: Add GIF showing a 2D radar chart with multiple overlapping polygons and legend toggles */}
+
+### 3D (X + Y + Z axes)
+
+Multiple polygon sets, one set per Z value. Within each Z series, X values become multiple data points and Y values remain the spokes. The legend lists the Z values. To keep smaller polygons hoverable, vizb draws the **largest Z series first** so smaller polygons are rendered on top and their vertices stay reachable.
+
+Spoke vertices are rendered as circle symbols, so you can hover individual points on each polygon to inspect a specific metric value.
+
+```bash
+vizb data.csv -g category,metric,group -p x/y/z -c radar -o out.html
+```
+
+{/* TODO: Add GIF showing a 3D radar chart with multiple Z polygon sets and hoverable spoke vertices */}
+
+<Aside type="caution">
+  **Scale (log) and auto-rotate are not available for radar charts.** Radar has no cartesian axis to scale logarithmically, and there is no 3D scene to rotate. These controls are hidden from the UI when only a radar chart is active.
+</Aside>
+
+## Settings
+
+These settings apply to radar charts:
+
+| Setting | CLI flag | UI toggle | Notes |
+|---------|----------|-----------|-------|
+| Sort | `--sort asc\|desc` | Sort control | Orders polygons / spokes |
+| Labels | `--show-labels` | Show labels | Displays values at spoke vertices |
+| Swap | `--swap` | Axis switcher | Swaps which column maps to spokes vs polygons |
+
+
+Override settings for just this chart type without affecting others:
+
+```bash
+# Sort and show labels on the radar only
+vizb data.csv -g category,metric --chart radar:sort=asc,labels -o out.html
+```
+
+## Next Steps
+
+<LinkCard title="Bar Chart" href="/charts/bar" description="Compare the same data as grouped bars — supports log scale and 3D depth." />
+<LinkCard title="Line Chart" href="/charts/line" description="Trace trends across categories with connected lines — log scale supported." />
+<LinkCard title="Pie Chart" href="/charts/pie" description="Proportional slices per axis — three pies for a full three-dimensional breakdown." />
+<LinkCard title="Settings" href="/ui/settings" description="All runtime controls — sort, labels, swap, and more." />

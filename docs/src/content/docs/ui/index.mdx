@@ -9,7 +9,7 @@ Vizb generates a single self-contained HTML file with a Vue.js-powered interacti
 
 ## Chart Types
 
-Vizb supports four chart types, all rendered in a single view:
+Vizb supports five chart types, all rendered in a single view:
 
 <CardGrid>
   <Card title="Bar Chart" icon="bars">
@@ -21,8 +21,11 @@ Vizb supports four chart types, all rendered in a single view:
   <Card title="Pie Chart" icon="puzzle">
     Show proportional distribution. Useful for comparing relative sizes of benchmark results.
   </Card>
+  <Card title="Radar Chart" icon="star">
+    Compare multiple series across shared dimensions. Y values become spoke indicators; X values (or Z series) become the polygon overlays. See [Radar Chart](/charts/radar).
+  </Card>
   <Card title="Heatmap" icon="seti:default">
-    Fold X, Y, and Z into a colored grid. Cell value sums the z-axis; cell color blends the z palette. See [Heatmap](/ui/heatmap).
+    Fold X, Y, and Z into a colored grid. Cell value sums the z-axis; cell color blends the z palette. See [Heatmap](/charts/heatmap).
   </Card>
 </CardGrid>
 
@@ -33,9 +36,9 @@ vizb bench.txt -c bar,line -o output.html
 ```
 
 When your data has a z-axis, bar and line charts render in **3D** instead of 2D.
-See [3D Charts](/ui/3d-charts).
+See [3D Charts](/charts/3d).
 
-{/* TODO: Add GIF showing all four chart types rendered side by side */}
+{/* TODO: Add GIF showing all five chart types rendered side by side */}
 
 ## Scale Options
 
@@ -60,7 +63,7 @@ vizb bench.txt --scale log -o output.html
 Hovering a data point shows its value alongside **axis-sum** totals. 2D charts
 add per-series totals after each series name and a labeled x-marginal at the
 bottom of the tooltip. 3D charts add `Σ z` / `Σ x` / `Σ y` marginals — see
-[3D Charts](/ui/3d-charts). Tooltips follow light/dark mode automatically.
+[3D Charts](/charts/3d). Tooltips follow light/dark mode automatically.
 
 {/* TODO: Add GIF showing tooltip with axis sums */}
 
@@ -116,12 +119,12 @@ ones you select are embedded at generation time.
 | Selection | Approx. file size |
 |-----------|------------------|
 | `bar` only | ~400 kB |
-| `bar,line,pie,heatmap` (default, 2D data) | ~445 kB |
+| `bar,line,pie,heatmap,radar` (default, 2D data) | ~445 kB |
 | `bar` or `line` with z-axis data | ~570 kB |
 
 The 3D engine (echarts-gl, ~380 kB encoded) is the heaviest component. Vizb includes
 it automatically when your data has a z-axis and `bar` or `line` is selected — and
-omits it otherwise, even at the default four-chart selection.
+omits it otherwise, even at the default five-chart selection.
 
 To reduce file size, pass `--charts` to bundle only the renderers you need:
 
@@ -132,7 +135,7 @@ vizb bench.txt -c bar,line -o output.html  # ~415 kB
 
 <Aside type="tip">
   For sharing or deploying reports, use `--charts` to include only the charts your
-  audience needs. The default bundles all four 2D renderers, which is fine for local
+  audience needs. The default bundles all five 2D renderers, which is fine for local
   exploration.
 </Aside>
 
@@ -140,7 +143,7 @@ vizb bench.txt -c bar,line -o output.html  # ~415 kB
 
 - [Settings](/ui/settings) — CLI flags and UI settings mapping
 - [Axis Swapping](/ui/swapping) — rearrange n/x/y/z dimensions in the UI
-- [3D Charts](/ui/3d-charts) — z-axis, auto-rotate, and axis-sum tooltips
-- [Heatmap](/ui/heatmap) — fold X/Y/Z into a colored grid
+- [3D Charts](/charts/3d) — z-axis, auto-rotate, and axis-sum tooltips
+- [Heatmap](/charts/heatmap) — fold X/Y/Z into a colored grid
 - [Statistics](/ui/stats) — descriptive stats and correlation matrix
 - [Output File Size](#output-file-size) — how `--charts` affects HTML size

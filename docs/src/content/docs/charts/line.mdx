@@ -1,0 +1,89 @@
+---
+title: Line Chart
+description: Trace trends across categories with connected lines — one series per Y value, or a full 3D polyline scene.
+---
+
+import { CardGrid, Card, LinkCard, Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+The **line chart** draws connected data points across your X-axis categories, making it easy to spot trends, regressions, and performance curves. It follows the same dimension model as the bar chart — swap `-c bar` for `-c line` and your data renders as lines instead.
+
+Use line charts when the shape of the curve matters as much as individual values: latency vs. input size, throughput vs. concurrency, or any benchmark where you want to see how values change across a sweep.
+
+## How vizb builds it
+
+vizb maps your grouping columns to the chart's visual axes:
+
+| Dimension | Role |
+|-----------|------|
+| **XAxis** | Category axis — each unique X value is a point on the line |
+| **YAxis** | Series axis — each unique Y value becomes a separate line |
+| **ZAxis** | Z series — each Z value gets its own 3D polyline across the X/Y grid (3D only, requires echarts-gl) |
+
+## Dimensions
+
+### 1D (X axis)
+
+A single line tracing one value per X category. The simplest view: one grouping column, one continuous curve from left to right.
+
+```bash
+vizb data.csv -g category -c line -o out.html
+```
+
+{/* TODO: Add GIF showing a 1D line chart with a single series */}
+
+### 2D (X + Y axes)
+
+One line per Y value, all sharing the same X axis. The legend lists the Y values so you can show or hide individual lines. Great for comparing multiple algorithms or configurations across the same input sweep.
+
+```bash
+vizb data.csv -g category,metric -p x/y -c line -o out.html
+```
+
+{/* TODO: Add GIF showing a 2D multi-line chart with legend toggles */}
+
+### 3D (X + Y + Z axes)
+
+WebGL `line3D` scene: each Z value becomes a separate 3D polyline with scatter markers at each vertex. The markers keep individual data points readable when lines converge or overlap. Rotate, zoom, and pan the scene in the browser. Requires echarts-gl (bundled automatically).
+
+```bash
+vizb data.csv -g category,metric,group -p x/y/z -c line -o out.html
+```
+
+{/* TODO: Add GIF showing a 3D line chart rotating with scatter markers */}
+
+<Aside type="tip">
+  Log scale is supported in 2D mode. When enabled, gaps appear at X values where the value is zero or negative — those points are skipped rather than breaking the chart.
+</Aside>
+
+<Aside type="note">
+  The Z axis requires **both** X and Y to be present. Passing a Z without an X/Y floor will be rejected with an error.
+</Aside>
+
+## Settings
+
+These settings apply to line charts:
+
+| Setting | CLI flag | UI toggle | Notes |
+|---------|----------|-----------|-------|
+| Sort | `--sort asc\|desc` | Sort control | Sorts points along the X axis |
+| Labels | `--show-labels` | Show labels | Displays value at each data point |
+| Swap | `--swap` | Axis switcher | Rotates which column maps to X vs Y |
+| Scale (log) | `--log-scale` | Scale toggle | Log Y axis — 2D only; gaps at ≤0 |
+| Auto-rotate | `--rotate` | Auto rotate | Spins the 3D scene — 3D only |
+
+Override settings for just this chart type without affecting others:
+
+```bash
+# Log scale and labels on the line chart only
+vizb data.csv -g category,metric --chart line:scale=log,labels -o out.html
+
+# Sort descending on the line chart only
+vizb data.csv -g category,metric --chart line:sort=desc -o out.html
+```
+
+## Next Steps
+
+<LinkCard title="Bar Chart" href="/charts/bar" description="Same dimension model, but draws bars instead of connected lines." />
+<LinkCard title="3D Charts" href="/charts/3d" description="Deep dive into the 3D WebGL scene — rotate, zoom, tooltips, and auto-rotate." />
+<LinkCard title="Heatmap" href="/charts/heatmap" description="Flatten the Z axis into a colored grid instead of a 3D scene." />
+<LinkCard title="Settings" href="/ui/settings" description="All runtime controls — sort, labels, scale, and more." />
