@@ -14,11 +14,7 @@ import {
   makeLegendTitle,
   LARGE_DATA_THRESHOLD,
 } from './shared'
-import {
-  useSortedSeriesData,
-  getEffectiveScale,
-  computeSeriesTotals,
-} from './shared/common'
+import { useSortedSeriesData, getEffectiveScale, computeSeriesTotals } from './shared/common'
 
 const barNullable = (val: number, scale: string): number | null =>
   scale === 'log' && val <= 0 ? null : val
@@ -32,7 +28,10 @@ export function useBarChartOptions(config: BaseChartConfig) {
     const { series, xAxisData, hasYAxis } = sortedData.value
     const baseOptions = getBaseOptions(config)
     const styling = getChartStyling(isDark.value)
-    const { minValue, effectiveScale } = getEffectiveScale(series, scale.value)
+    // `scale` is optional on BaseChartConfig (relaxed in Task 7) — pie/heatmap/
+    // radar pass a config without it. The bar composable is the only consumer,
+    // so we default at the call site.
+    const { minValue, effectiveScale } = getEffectiveScale(series, scale?.value ?? 'linear')
     const largeX = isLargeXAxis(xAxisData)
 
     if (!hasYAxis) {
@@ -41,7 +40,13 @@ export function useBarChartOptions(config: BaseChartConfig) {
         grid: createGridConfig(1, largeX),
         tooltip: createTooltipConfig(false, isDark.value),
         legend: { show: false },
-        ...createAxisConfig(styling, xAxisData, effectiveScale, minValue, chartData.value.axisLabels?.x),
+        ...createAxisConfig(
+          styling,
+          xAxisData,
+          effectiveScale,
+          minValue,
+          chartData.value.axisLabels?.x
+        ),
         ...(largeX ? { dataZoom: createDataZoomConfig(xAxisData, styling) } : {}),
         series: [
           {
@@ -101,7 +106,13 @@ export function useBarChartOptions(config: BaseChartConfig) {
         hasMultipleSeries,
         showLegendTitle ? { top: 24 } : undefined
       ),
-      ...createAxisConfig(styling, xAxisData, effectiveScale, minValue, chartData.value.axisLabels?.x),
+      ...createAxisConfig(
+        styling,
+        xAxisData,
+        effectiveScale,
+        minValue,
+        chartData.value.axisLabels?.x
+      ),
       ...(largeX ? { dataZoom: createDataZoomConfig(xAxisData, styling) } : {}),
       series: transposedSeries,
     } as EChartsOption

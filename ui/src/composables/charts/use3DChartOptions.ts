@@ -2,7 +2,14 @@ import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
 import { getNextColorFor } from '../../lib/utils'
-import { getChartStyling, getTooltipTheme, tooltipDivider, tooltipSpreadRows, renderDonutSvg, type ChartStyling } from './shared'
+import {
+  getChartStyling,
+  getTooltipTheme,
+  tooltipDivider,
+  tooltipSpreadRows,
+  renderDonutSvg,
+  type ChartStyling,
+} from './shared'
 import type { Render3D } from '../../types'
 
 type Series3DType = 'bar3D' | 'line3D'
@@ -11,7 +18,14 @@ const round2 = (v: number) => Math.round(v * 100) / 100
 
 // Empty render payload when a chart lacks precomputed 3D data (shouldn't happen:
 // the worker attaches render3D to every 3D chart).
-const EMPTY_RENDER: Render3D = { xValues: [], yValues: [], zValues: [], barSeries: [], lineSeries: [], cellTotals: {} }
+const EMPTY_RENDER: Render3D = {
+  xValues: [],
+  yValues: [],
+  zValues: [],
+  barSeries: [],
+  lineSeries: [],
+  cellTotals: {},
+}
 
 function makeAxisCommon(styling: ChartStyling) {
   return {
@@ -199,7 +213,7 @@ export function use3DChartOptions(config: BaseChartConfig, seriesType: Series3DT
       zAxis3D: {
         // Log scale mirrors the 2D value axis; the worker has already dropped
         // non-positive cells so nothing invalid lands on a log axis.
-        ...(scale.value === 'log' ? { type: 'log', logBase: 10 } : { type: 'value' }),
+        ...(scale?.value === 'log' ? { type: 'log', logBase: 10 } : { type: 'value' }),
         ...axisCommon,
         // The vertical axis is the only free spatial axis for the z group, so its
         // label rides here inside the canvas — matching x/y axis names. The ticks
@@ -213,7 +227,10 @@ export function use3DChartOptions(config: BaseChartConfig, seriesType: Series3DT
         splitLine: { lineStyle: { color: styling.axisColor, opacity: styling.opacity } },
         viewControl: {
           distance: 200,
-          autoRotate: autoRotate.value,
+          // `autoRotate` is optional on BaseChartConfig (relaxed in Task 7) —
+          // pie/heatmap/radar pass a config without it. Default to off at the
+          // call site; 3D bar/line are the only consumers.
+          autoRotate: autoRotate?.value ?? false,
           // No camera tween: echarts-gl otherwise animates the camera in to
           // `distance` on (re)render, which reads as a jarring zoom flash when
           // switching chart type. Snap straight to the final position.
