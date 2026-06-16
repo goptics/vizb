@@ -11,6 +11,7 @@ import (
 	_ "github.com/goptics/vizb/cmd/charts/pie"
 	_ "github.com/goptics/vizb/cmd/charts/radar"
 	"github.com/goptics/vizb/pkg/parser"
+
 	// Parsers self-register into pkg/parser via their init().
 	_ "github.com/goptics/vizb/pkg/parser/csv"
 	_ "github.com/goptics/vizb/pkg/parser/golang"
@@ -27,12 +28,11 @@ import (
 var allChartTypes = []string{"bar", "line", "pie", "heatmap", "radar"}
 
 // rootOptions holds the root command's flags: the shared linear data flags plus
-// the multi-chart selection (--charts), global --scale, and the per-chart
-// --chart override specs.
+// the multi-chart selection (--charts) and the per-chart --chart override specs.
+// Scale is per-chart only (bar/line); the root command has no global --scale.
 type rootOptions struct {
 	cli.LinearOptions
 	Charts     []string
-	Scale      string
 	ChartSpecs []string
 }
 
@@ -41,7 +41,7 @@ var rootOpts rootOptions
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "vizb [target]",
-	Short: "Visualize dataSets or tabular CSV/JSON data as interactive 4D charts",
+	Short: "Visualize datasets as interactive charts",
 	Long: `A CLI tool that turns dataSet output (Go, Rust, JavaScript) or any tabular
 CSV/JSON data into an interactive, self-contained HTML chart application.
 It reads a file or piped stdin, auto-detects the input format (override with --parser),
@@ -63,7 +63,6 @@ func Execute() {
 func init() {
 	rootOpts.LinearOptions.Bind(rootCmd.Flags())
 	rootCmd.Flags().StringSliceVarP(&rootOpts.Charts, "charts", "c", allChartTypes, "Chart types to generate (bar, line, pie, heatmap, radar)")
-	rootCmd.Flags().StringVarP(&rootOpts.Scale, "scale", "S", "linear", "Scale type (linear, log)")
 	rootCmd.Flags().StringArrayVar(&rootOpts.ChartSpecs, "chart", nil,
 		"Per-chart settings override: <type>:<key>=<val>(,<key>=<val>)* or bare flags (labels, rotate). "+
 			"Keys: swap, sort, scale, labels, rotate. E.g. --chart bar:swap=yxn,sort=asc --chart pie:labels")
@@ -85,8 +84,10 @@ func runBenchmark(cmd *cobra.Command, args []string) {
 
 	selections := cli.SelectionsFromCharts(rootOpts.Charts, specs)
 	defaults := cli.LinearDefaults{
-		Sort:       rootOpts.Sort,
-		Scale:      rootOpts.Scale,
+		Sort: rootOpts.Sort,
+		// Scale is per-chart only (bar/line). The dataset-level default stays
+		// "linear"; the UI falls back to it for charts without a per-chart override.
+		Scale:      "linear",
 		ShowLabels: rootOpts.ShowLabels,
 	}
 
@@ -97,7 +98,6 @@ func runBenchmark(cmd *cobra.Command, args []string) {
 
 func validateRootOptions() {
 	rootOpts.LinearOptions.Validate()
-	cli.ValidateScale(&rootOpts.Scale)
 	utils.ApplyValidationRules([]utils.ValidationRule{{
 		Label:        "charts",
 		SliceValue:   &rootOpts.Charts,
