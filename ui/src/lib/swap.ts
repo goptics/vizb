@@ -10,6 +10,17 @@ export type AxisKey = 'name' | 'xAxis' | 'yAxis' | 'zAxis'
 
 // Translate a compact arrangement string (e.g. "nxy") into the DataPoint field
 // keys it maps to (e.g. ['name','xAxis','yAxis']).
+// Which raw field feeds a chart axis under the current identity → target mapping.
+export const sourceFieldForChartAxis = (
+  identityKeys: AxisKey[],
+  targetKeys: AxisKey[],
+  chartAxis: 'xAxis' | 'yAxis' | 'zAxis'
+): AxisKey | undefined => {
+  const i = targetKeys.indexOf(chartAxis)
+  if (i < 0 || i >= identityKeys.length) return undefined
+  return identityKeys[i]
+}
+
 export const translateAxisKey = (key: string): AxisKey[] => {
   const keyMap = {
     x: 'xAxis',

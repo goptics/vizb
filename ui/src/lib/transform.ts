@@ -15,7 +15,66 @@ import type {
   Series3DData,
   ScaleType,
 } from '../types'
-import type { AxisKey } from './swap'
+import { sourceFieldForChartAxis, translateAxisKey, type AxisKey } from './swap'
+
+export type CanonicalAxisOrders = {
+  x?: string[]
+  y?: string[]
+  z?: string[]
+}
+
+const fieldValue = (row: DataPoint, field: AxisKey): string => {
+  if (field === 'name') return row.name ?? ''
+  const rec = row as unknown as Record<string, string | undefined>
+  return rec[field] ?? ''
+}
+
+// First-seen category order for a raw field — stable across group/arrangement changes.
+export function canonicalValuesForField(raw: DataPoint[], field: AxisKey): string[] {
+  const order: string[] = []
+  const seen = new Set<string>()
+  for (const row of raw) {
+    const val = fieldValue(row, field)
+    if (val && !seen.has(val)) {
+      seen.add(val)
+      order.push(val)
+    }
+  }
+  return order
+}
+
+export function canonicalAxisOrders(
+  raw: DataPoint[],
+  identityKeys: AxisKey[],
+  targetKeys: AxisKey[]
+): CanonicalAxisOrders {
+  const axes = ['xAxis', 'yAxis', 'zAxis'] as const
+  const keyFor: Record<(typeof axes)[number], keyof CanonicalAxisOrders> = {
+    xAxis: 'x',
+    yAxis: 'y',
+    zAxis: 'z',
+  }
+  const result: CanonicalAxisOrders = {}
+  for (const axis of axes) {
+    const field = sourceFieldForChartAxis(identityKeys, targetKeys, axis)
+    if (field) result[keyFor[axis]] = canonicalValuesForField(raw, field)
+  }
+  return result
+}
+
+export function canonicalAxisOrdersFromStrings(
+  raw: DataPoint[],
+  identityString: string,
+  targetString: string
+): CanonicalAxisOrders {
+  return canonicalAxisOrders(raw, translateAxisKey(identityString), translateAxisKey(targetString))
+}
+
+const applyCanonicalOrder = (values: string[], canonical: string[] | undefined): string[] => {
+  if (!canonical?.length) return values
+  const present = new Set(values)
+  return canonical.filter((v) => present.has(v))
+}
 
 const toStatSignature = (stat: Stat): string => {
   if (!stat.per) {
@@ -76,7 +135,8 @@ export function buildChartForSignature(
   labels: AxisLabels | undefined,
   sort: Sort,
   showLabels = false,
-  scale: ScaleType = 'linear'
+  scale: ScaleType = 'linear',
+  canonical?: CanonicalAxisOrders
 ): ChartData {
   const dataMap = new Map<string, Map<string, number>>()
   const countMap = new Map<string, Map<string, number>>()
@@ -115,9 +175,14 @@ export function buildChartForSignature(
     for (const [xAxis, sum] of xMap) xMap.set(xAxis, sum / cMap.get(xAxis)!)
   }
 
-  const xAxisValues = Array.from(xAxisSet)
-  const yAxisValues = Array.from(yAxisSet)
-  const zAxisValues = Array.from(zAxisSet)
+  let xAxisValues = Array.from(xAxisSet)
+  let yAxisValues = Array.from(yAxisSet)
+  let zAxisValues = Array.from(zAxisSet)
+  if (!sort.enabled && canonical) {
+    xAxisValues = applyCanonicalOrder(xAxisValues, canonical.x)
+    yAxisValues = applyCanonicalOrder(yAxisValues, canonical.y)
+    zAxisValues = applyCanonicalOrder(zAxisValues, canonical.z)
+  }
 
   const series: SeriesData[] = xAxisValues.map((xAxis) => ({
     xAxis,
@@ -148,7 +213,7 @@ export function buildChartForSignature(
   }
 
   if (chartIs3D(chart))
-    chart.render3D = build3DRender(chart.points, chart.zAxis, sort, showLabels, scale)
+    chart.render3D = build3DRender(chart.points, chart.zAxis, sort, showLabels, scale, canonical)
 
   return chart
 }
@@ -235,11 +300,18 @@ export function build3DRender(
   zAxisAll: string[],
   sort: Sort,
   showLabels = false,
-  scale: ScaleType = 'linear'
+  scale: ScaleType = 'linear',
+  canonical?: CanonicalAxisOrders
 ): Render3D {
   let xValues = Array.from(new Set(points.map((p) => p.xAxis)))
   let yValues = Array.from(new Set(points.map((p) => p.yAxis)))
   let zValues = zAxisAll.filter((z) => z !== '')
+
+  if (!sort.enabled && canonical) {
+    xValues = applyCanonicalOrder(xValues, canonical.x)
+    yValues = applyCanonicalOrder(yValues, canonical.y)
+    zValues = applyCanonicalOrder(zValues, canonical.z)
+  }
 
   if (sort.enabled) {
     xValues = sortByAxisTotal(xValues, 'xAxis', points, sort.order)
