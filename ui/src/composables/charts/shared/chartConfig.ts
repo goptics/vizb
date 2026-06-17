@@ -173,6 +173,59 @@ export function formatTooltipValue(value: any): string {
   return String(value)
 }
 
+/** Item-trigger radar tooltip: spoke rows + Σ + spread + donut (parity with 3D/heatmap). */
+export function formatRadarItemTooltip(
+  params: {
+    data?: { name?: string; value?: number[] }
+    name?: string
+    seriesName?: string
+    color?: string
+  },
+  indicatorNames: string[],
+  isDark: boolean,
+  colorFor?: (name: string) => string | undefined,
+): string {
+  if (!params?.data) return ''
+
+  const vals: number[] = Array.isArray(params.data.value) ? params.data.value : []
+  const dataName = params.data.name
+  const seriesName = params.seriesName
+
+  const title =
+    seriesName && dataName && seriesName !== dataName
+      ? `${seriesName} / ${dataName}`
+      : (dataName ?? seriesName ?? params.name ?? '')
+
+  const seriesColor = typeof params.color === 'string' ? params.color : undefined
+  const color = (name: string) => colorFor?.(name) ?? seriesColor ?? '#888'
+
+  const rows = indicatorNames
+    .map((name, i) => {
+      const dot = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color(name)};margin-right:6px"></span>`
+      return `${dot}${name}: <b>${formatTooltipValue(vals[i])}</b>`
+    })
+    .join('<br/>')
+
+  const finiteVals = vals.filter((v) => Number.isFinite(v))
+  const sigmaBlock =
+    finiteVals.length >= 2
+      ? `${tooltipDivider(isDark)}Σ ${title}: <b>${formatTooltipValue(finiteVals.reduce((a, b) => a + b, 0))}</b>`
+      : ''
+
+  const spread = tooltipSpreadRows(vals, isDark)
+
+  const donut = renderDonutSvg(
+    indicatorNames.map((name, i) => ({
+      name,
+      value: typeof vals[i] === 'number' ? vals[i]! : 0,
+      color: color(name),
+    })),
+  )
+  const donutBlock = donut ? `${tooltipDivider(isDark)}${donut}` : ''
+
+  return `<b>${title}</b><br/>${rows}${sigmaBlock}${spread}${donutBlock}`
+}
+
 /**
  * Shared tooltip box theme (background, border, text) for light/dark mode.
  * Single source so 2D and 3D tooltips look identical.

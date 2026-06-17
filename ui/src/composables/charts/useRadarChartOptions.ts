@@ -2,7 +2,7 @@ import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
 import { getNextColorFor, hasXAxis, hasYAxis, hasZAxis } from '../../lib/utils'
-import { getChartStyling, getTooltipTheme, formatTooltipValue } from './shared'
+import { getChartStyling, getTooltipTheme, formatRadarItemTooltip } from './shared'
 import { fontSize, sortByTotal } from './shared/common'
 
 const makeIndicators = (names: string[], perSpokeMax: number[]) =>
@@ -15,14 +15,8 @@ const makeTooltip = (
   ({
     trigger: 'item',
     ...getTooltipTheme(isDark),
-    formatter: (params: any) => {
-      if (!params?.data) return ''
-      const vals: number[] = Array.isArray(params.data.value) ? params.data.value : []
-      const rows = indicatorNames
-        .map((name, i) => `${name}: <b>${formatTooltipValue(vals[i])}</b>`)
-        .join('<br/>')
-      return `<strong>${params.data.name ?? params.name}</strong><br/>${rows}`
-    },
+    formatter: (params: any) =>
+      formatRadarItemTooltip(params, indicatorNames, isDark, getNextColorFor),
   }) as EChartsOption['tooltip']
 
 const radarConfig = (
