@@ -1,6 +1,9 @@
 pre-commit:
   parallel: true
   commands:
+    format:
+      run: task format
+      stage_fixed: true
     ui-gen-check:
       glob: "ui/src/**/*.{vue,ts,js,css,svg}"
       run: |
