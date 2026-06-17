@@ -113,7 +113,7 @@ The action resolves input in this priority order:
 ```
 
 <Aside type="note">
-  When `data-url` is set, no `cmd`, `file`, or merge input is needed. The HTML fetches the JSON at runtime. The JSON host must serve `Access-Control-Allow-Origin: *`.
+  When `data-url` is set, no `cmd`, `file`, or merge input is needed. The HTML fetches the JSON at runtime. The JSON host must serve `Access-Control-Allow-Origin: *`. The action bundles the default `bar,line,pie` selection without the 3D engine; pass extra chart types via `charts` (e.g. `bar,line,pie,heatmap`). For 3D remote data, run `vizb ui -U … --3d` locally until the action exposes a `--3d` input.
 </Aside>
 
 ### Merge and generate

@@ -1,21 +1,38 @@
 package shared
 
-import "testing"
+import (
+	"testing"
 
-func dsWith(charts []string, zValues ...string) *Dataset {
+	config_charts "github.com/goptics/vizb/config/charts"
+	"github.com/stretchr/testify/suite"
+)
+
+type stubChartConfig struct {
+	typ string
+}
+
+func (s stubChartConfig) ChartType() string { return s.typ }
+
+func dsWith(types []string, zValues ...string) *Dataset {
 	ds := &Dataset{}
-	ds.Settings.Charts = charts
+	for _, t := range types {
+		ds.Settings = append(ds.Settings, stubChartConfig{typ: t})
+	}
 	for _, z := range zValues {
 		ds.Data = append(ds.Data, DataPoint{XAxis: "x", YAxis: "y", ZAxis: z})
 	}
 	return ds
 }
 
-func TestChartsHave3DCapable(t *testing.T) {
+type ChartSelectionSuite struct {
+	suite.Suite
+}
+
+func (s *ChartSelectionSuite) TestChartsHave3DCapable() {
 	cases := []struct {
-		name   string
-		charts []string
-		want   bool
+		name  string
+		types []string
+		want  bool
 	}{
 		{"bar is 3D-capable", []string{"bar"}, true},
 		{"line is 3D-capable", []string{"line"}, true},
@@ -26,15 +43,13 @@ func TestChartsHave3DCapable(t *testing.T) {
 		{"empty", nil, false},
 	}
 	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			if got := ChartsHave3DCapable(c.charts); got != c.want {
-				t.Fatalf("ChartsHave3DCapable(%v) = %v, want %v", c.charts, got, c.want)
-			}
+		s.Run(c.name, func() {
+			s.Equal(c.want, ChartsHave3DCapable(c.types))
 		})
 	}
 }
 
-func TestDatasetNeeds3D(t *testing.T) {
+func (s *ChartSelectionSuite) TestDatasetNeeds3D() {
 	cases := []struct {
 		name string
 		ds   *Dataset
@@ -49,10 +64,14 @@ func TestDatasetNeeds3D(t *testing.T) {
 		{"mixed charts with z, one z point", dsWith([]string{"pie", "bar"}, "", "3"), true},
 	}
 	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			if got := DatasetNeeds3D(c.ds); got != c.want {
-				t.Fatalf("DatasetNeeds3D() = %v, want %v", got, c.want)
-			}
+		s.Run(c.name, func() {
+			s.Equal(c.want, DatasetNeeds3D(c.ds))
 		})
 	}
+}
+
+var _ config_charts.ChartConfig = stubChartConfig{}
+
+func TestChartSelectionSuite(t *testing.T) {
+	suite.Run(t, new(ChartSelectionSuite))
 }

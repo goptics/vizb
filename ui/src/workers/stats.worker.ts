@@ -1,7 +1,7 @@
 // Dedicated Web Worker for descriptive statistics, kept OFF the chart's critical
 // path. The transform worker builds and replies the chart immediately; stats are
 // computed here only when the user opens a chart's stats panel (lazy). Bundled and
-// base64-inlined via `?worker&inline` so the single-file HTML output stays
+// base64-inlined via `?worker&inline` so the embedded HTML template stays
 // self-contained (no external worker asset).
 //
 // Stateless: each request carries one chart's point cloud (already plain /
@@ -9,11 +9,7 @@
 // full-dataset clone). The `id` lets the caller match replies to requests.
 import { computeDescriptive, computeCorrelation } from '../lib/stats'
 import type { CorrelationAxis } from '../lib/stats'
-import type {
-  Point3D,
-  SeriesProfile,
-  CorrelationMatrix,
-} from '../types'
+import type { Point3D, SeriesProfile, CorrelationMatrix } from '../types'
 
 // `kind` selects which (potentially expensive) piece to compute, so the panel can
 // pull descriptive eagerly and defer correlation until its tab opens.

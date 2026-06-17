@@ -3,41 +3,42 @@ package shared
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestWithSafe(t *testing.T) {
-	t.Run("No Panic", func(t *testing.T) {
-		executed := false
-		err := WithSafe("test function", func() {
-			executed = true
-		})
+type SafeSuite struct {
+	suite.Suite
+}
 
-		assert.True(t, executed, "Expected function to be executed")
-		assert.NoError(t, err)
+func (s *SafeSuite) TestWithSafeNoPanic() {
+	executed := false
+	err := WithSafe("test function", func() {
+		executed = true
 	})
+	s.True(executed)
+	s.NoError(err)
+}
 
-	t.Run("Panic Recovery", func(t *testing.T) {
-		err := WithSafe("test panic", func() {
-			panic("test panic message")
-		})
-
-		require.Error(t, err, "Expected error from panic recovery")
-
-		expectedMsg := "panic recovered inside test panic: test panic message"
-		assert.EqualError(t, err, expectedMsg)
+func (s *SafeSuite) TestWithSafePanicRecovery() {
+	err := WithSafe("test panic", func() {
+		panic("test panic message")
 	})
+	s.Require().Error(err)
+	s.EqualError(err, "panic recovered inside test panic: test panic message")
+}
 
-	t.Run("Panic with Different Types", func(t *testing.T) {
-		err := WithSafe("string panic", func() {
-			panic("string error")
-		})
-		assert.Error(t, err, "Expected error from string panic")
-
-		err = WithSafe("int panic", func() {
-			panic(42)
-		})
-		assert.Error(t, err, "Expected error from int panic")
+func (s *SafeSuite) TestWithSafePanicDifferentTypes() {
+	err := WithSafe("string panic", func() {
+		panic("string error")
 	})
+	s.Error(err)
+
+	err = WithSafe("int panic", func() {
+		panic(42)
+	})
+	s.Error(err)
+}
+
+func TestSafeSuite(t *testing.T) {
+	suite.Run(t, new(SafeSuite))
 }

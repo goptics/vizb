@@ -260,7 +260,14 @@ export function useChartPipeline(
   // currentGroupName() synchronously, so the first batch is correct without this
   // watch firing a redundant second recompute.
   watch(
-    () => [activeGroupId.value, sort.value.enabled, sort.value.order, showLabels.value, scale.value] as const,
+    () =>
+      [
+        activeGroupId.value,
+        sort.value.enabled,
+        sort.value.order,
+        showLabels.value,
+        scale.value,
+      ] as const,
     () => {
       startBatch()
       clearTimeout(paramsDebounce)

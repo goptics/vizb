@@ -69,14 +69,16 @@ func TestSelectChunks(t *testing.T) {
 		assert.NotContains(t, got, root3D, "3D renderer is pruned when needs3D is false")
 	})
 
-	t.Run("empty selection ships all renderers", func(t *testing.T) {
+	t.Run("empty selection ships default renderers", func(t *testing.T) {
 		got := decodeChunks(t, string(SelectChunks(nil, false)))
 
-		for name, root := range VizbChartRoots {
-			if name == "3d" {
-				continue // 3d only via needs3D
-			}
+		for _, name := range []string{"bar", "line", "pie"} {
+			root := VizbChartRoots[name]
 			assert.Contains(t, got, root, "default selection keeps %s", name)
+		}
+		for _, name := range []string{"heatmap", "radar", "3d"} {
+			root := VizbChartRoots[name]
+			assert.NotContains(t, got, root, "default selection prunes %s", name)
 		}
 	})
 

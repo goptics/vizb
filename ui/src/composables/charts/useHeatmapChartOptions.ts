@@ -39,10 +39,15 @@ function formatCellNumber(v: number): string {
   return String(round2(v))
 }
 
-function heatmapGrid(seriesLength: number, largeX: boolean, largeY: boolean, hasLegend = true): any {
+function heatmapGrid(
+  seriesLength: number,
+  largeX: boolean,
+  largeY: boolean,
+  hasLegend = true
+): any {
   const legendSpace = hasLegend ? Math.min(15 + Math.floor((seriesLength - 1) / 15) * 2, 35) : 5
   return {
-    left: largeY ? 60 : (largeX ? 100 : '3%'),
+    left: largeY ? 60 : largeX ? 100 : '3%',
     right: '3%',
     bottom: largeX ? 110 : '13%',
     top: `${legendSpace}%`,
@@ -50,9 +55,16 @@ function heatmapGrid(seriesLength: number, largeX: boolean, largeY: boolean, has
   }
 }
 
-function heatmapVisualMap(min: number, max: number, colors: string[], styling: any, largeX: boolean): any {
+function heatmapVisualMap(
+  min: number,
+  max: number,
+  colors: string[],
+  styling: any,
+  largeX: boolean
+): any {
   return {
-    min, max,
+    min,
+    max,
     calculable: true,
     orient: 'horizontal',
     left: 'center',
@@ -103,7 +115,17 @@ function build2DHeatmap(config: BaseChartConfig): EChartsOption {
     ...base,
     grid: heatmapGrid(1, largeX, largeY, false),
     legend: { show: false },
-    ...(hasZoom ? { dataZoom: createHeatmapDataZoomConfig(largeX, largeY, xCategories.length, yCategories.length, styling) } : {}),
+    ...(hasZoom
+      ? {
+          dataZoom: createHeatmapDataZoomConfig(
+            largeX,
+            largeY,
+            xCategories.length,
+            yCategories.length,
+            styling
+          ),
+        }
+      : {}),
     tooltip: {
       ...getTooltipTheme(isDark.value),
       position: 'top',
@@ -158,7 +180,13 @@ function build2DHeatmap(config: BaseChartConfig): EChartsOption {
           }
         : {}),
     },
-    visualMap: heatmapVisualMap(minVal, maxVal, [COLOR_PALETTE[0]!, COLOR_PALETTE[4]!], styling, largeX),
+    visualMap: heatmapVisualMap(
+      minVal,
+      maxVal,
+      [COLOR_PALETTE[0]!, COLOR_PALETTE[4]!],
+      styling,
+      largeX
+    ),
     series: [
       {
         type: 'heatmap',
@@ -262,7 +290,12 @@ function build3DHeatmap(config: BaseChartConfig): EChartsOption {
   }
 
   const uniqueColors = Array.from(blendColorSet)
-  const rangeColors = uniqueColors.length >= 2 ? uniqueColors : uniqueColors.length === 1 ? [uniqueColors[0]!, uniqueColors[0]!] : ['#ccc', '#333']
+  const rangeColors =
+    uniqueColors.length >= 2
+      ? uniqueColors
+      : uniqueColors.length === 1
+        ? [uniqueColors[0]!, uniqueColors[0]!]
+        : ['#ccc', '#333']
 
   const tooltipFormatter = (params: any) => {
     const val = Array.isArray(params.value) ? params.value : params.data
@@ -316,7 +349,17 @@ function build3DHeatmap(config: BaseChartConfig): EChartsOption {
   return {
     ...base,
     grid: heatmapGrid(zValues.length, largeX, largeY, zValues.length > 1),
-    ...(hasZoom ? { dataZoom: createHeatmapDataZoomConfig(largeX, largeY, xValues.length, yValues.length, styling) } : {}),
+    ...(hasZoom
+      ? {
+          dataZoom: createHeatmapDataZoomConfig(
+            largeX,
+            largeY,
+            xValues.length,
+            yValues.length,
+            styling
+          ),
+        }
+      : {}),
     legend: {
       show: zValues.length > 1,
       left: 'center',

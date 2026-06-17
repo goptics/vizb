@@ -1,12 +1,10 @@
 package cli
 
 import (
-	"bytes"
-	"io"
-	"os"
 	"testing"
 
-	"github.com/goptics/vizb/shared"
+	"github.com/goptics/vizb/testutil"
+	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -14,22 +12,6 @@ import (
 // selection assembly.
 type OptionsSuite struct {
 	suite.Suite
-}
-
-// captureStderr runs fn with os.Stderr redirected and returns what it printed
-// (validation warnings go to stderr).
-func (s *OptionsSuite) captureStderr(fn func()) string {
-	old := os.Stderr
-	r, w, _ := os.Pipe()
-	os.Stderr = w
-	defer func() { os.Stderr = old }()
-
-	fn()
-
-	w.Close()
-	var buf bytes.Buffer
-	io.Copy(&buf, r)
-	return buf.String()
 }
 
 func (s *OptionsSuite) TestCommonValidateNormalisesUnits() {
@@ -41,14 +23,14 @@ func (s *OptionsSuite) TestCommonValidateNormalisesUnits() {
 
 func (s *OptionsSuite) TestCommonValidateWarnsAndDefaultsInvalid() {
 	o := &CommonOptions{MemUnit: "invalid", TimeUnit: "ns", GroupPattern: "x", Parser: "auto"}
-	out := s.captureStderr(func() { o.Validate() })
+	out := testutil.CaptureStderr(func() { o.Validate() })
 	s.Equal("B", o.MemUnit)
 	s.Contains(out, "Invalid memory unit")
 }
 
 func (s *OptionsSuite) TestCommonValidateRejectsUnknownParser() {
 	o := &CommonOptions{TimeUnit: "ns", MemUnit: "B", GroupPattern: "x", Parser: "nope"}
-	s.captureStderr(func() { o.Validate() })
+	testutil.CaptureStderr(func() { o.Validate() })
 	s.Equal("auto", o.Parser)
 }
 
@@ -74,6 +56,34 @@ func (s *OptionsSuite) TestParseConfigMapsFields() {
 	s.Equal("M", cfg.NumberUnit)
 }
 
+func (s *OptionsSuite) TestLinearOptionsBind() {
+	var common CommonOptions
+	commonFS := pflag.NewFlagSet("common", pflag.ContinueOnError)
+	common.Bind(commonFS)
+	s.NotNil(commonFS.Lookup("name"))
+	s.NotNil(commonFS.Lookup("parser"))
+	s.NotNil(commonFS.Lookup("group-pattern"))
+
+	var linear LinearOptions
+	linearFS := pflag.NewFlagSet("linear", pflag.ContinueOnError)
+	linear.Bind(linearFS)
+	s.NotNil(linearFS.Lookup("sort"))
+	s.NotNil(linearFS.Lookup("show-labels"))
+	s.NotNil(linearFS.Lookup("name"))
+
+	var chart ChartOptions
+	chartFS := pflag.NewFlagSet("chart", pflag.ContinueOnError)
+	chart.Bind(chartFS)
+	s.NotNil(chartFS.Lookup("swap"))
+	s.NotNil(chartFS.Lookup("sort"))
+}
+
+func (s *OptionsSuite) TestValidateParserInvalid() {
+	err := validateParser("nope")
+	s.Error(err)
+	s.Contains(err.Error(), "unknown parser")
+}
+
 func (s *OptionsSuite) TestValidateScale() {
 	s.Run("log is accepted", func() {
 		scale := "LOG"
@@ -82,36 +92,9 @@ func (s *OptionsSuite) TestValidateScale() {
 	})
 	s.Run("invalid falls back to linear", func() {
 		scale := "bogus"
-		s.captureStderr(func() { ValidateScale(&scale) })
+		testutil.CaptureStderr(func() { ValidateScale(&scale) })
 		s.Equal("linear", scale)
 	})
-}
-
-func (s *OptionsSuite) TestSelectionsFromCharts() {
-	specs := map[string]shared.ChartSettings{"bar": {Swap: "yx"}}
-	sel := SelectionsFromCharts([]string{"bar", "pie"}, specs)
-
-	s.Len(sel, 2)
-	s.Equal("bar", sel[0].Type)
-	s.Equal("yx", sel[0].Settings.Swap)
-	s.Equal("pie", sel[1].Type)
-	s.Equal(shared.ChartSettings{}, sel[1].Settings)
-}
-
-func (s *OptionsSuite) TestSelectionSettingsOmitsZeroValues() {
-	rotate := true
-	sel := []ChartSelection{
-		{Type: "bar", Settings: shared.ChartSettings{AutoRotate: &rotate}},
-		{Type: "pie"},
-	}
-	m := selectionSettings(sel)
-	s.Len(m, 1)
-	s.Contains(m, "bar")
-	s.NotContains(m, "pie")
-}
-
-func (s *OptionsSuite) TestSelectionSettingsNilWhenAllZero() {
-	s.Nil(selectionSettings([]ChartSelection{{Type: "pie"}, {Type: "radar"}}))
 }
 
 func TestOptionsSuite(t *testing.T) {

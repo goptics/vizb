@@ -71,8 +71,7 @@ type SeriesDatum = number | null | { value?: number }
 export function computeSeriesTotals(
   series: Array<{ name: string; data: SeriesDatum[] }>
 ): Map<string, number> {
-  const valueOf = (d: SeriesDatum): number =>
-    typeof d === 'number' ? d : (d?.value ?? 0)
+  const valueOf = (d: SeriesDatum): number => (typeof d === 'number' ? d : (d?.value ?? 0))
   return new Map(
     series.map((s) => [s.name, s.data.reduce<number>((sum, d) => sum + valueOf(d), 0)])
   )

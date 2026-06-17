@@ -6,6 +6,12 @@ import (
 	"net/url"
 
 	"github.com/goptics/vizb/cmd/cli"
+	config_charts "github.com/goptics/vizb/config/charts"
+	barchart "github.com/goptics/vizb/config/charts/bar"
+	heatmapchart "github.com/goptics/vizb/config/charts/heatmap"
+	linechart "github.com/goptics/vizb/config/charts/line"
+	piechart "github.com/goptics/vizb/config/charts/pie"
+	radarchart "github.com/goptics/vizb/config/charts/radar"
 	"github.com/goptics/vizb/pkg/style"
 	"github.com/goptics/vizb/pkg/template"
 	"github.com/goptics/vizb/shared"
@@ -18,6 +24,7 @@ type uiOptions struct {
 	Charts     []string
 	ChartSpecs []string
 	DataURL    string
+	Enable3D   bool
 }
 
 var uiOpts uiOptions
@@ -42,8 +49,9 @@ func init() {
 	uiCmd.Flags().StringVarP(&uiOpts.DataURL, "data-url", "U", "", "URL to fetch DataSet JSON from at runtime (no input file needed)")
 	// --charts lets `vizb ui` prune chart chunks (incl. --data-url, where it's the
 	// only source of the selection since the data is fetched at runtime).
-	uiCmd.Flags().StringSliceVarP(&uiOpts.Charts, "charts", "c", []string{"bar", "line", "pie", "heatmap"}, "Chart types to bundle (bar, line, pie, heatmap)")
+	uiCmd.Flags().StringSliceVarP(&uiOpts.Charts, "charts", "c", shared.DefaultChartTypes, "Chart types to bundle (bar, line, pie, heatmap, radar)")
 	uiCmd.Flags().StringArrayVar(&uiOpts.ChartSpecs, "chart", nil, "Per-chart type settings override: <type>:<key>=<val>,... (repeatable)")
+	uiCmd.Flags().BoolVar(&uiOpts.Enable3D, "3d", false, "Bundle the 3D renderer for --data-url (remote data shape is unknown at build time)")
 }
 
 func runUI(cmd *cobra.Command, args []string) {
@@ -63,12 +71,12 @@ func runUI(cmd *cobra.Command, args []string) {
 	defer cli.HandleOutputResult(f, uiOpts.OutputFile)
 
 	if uiOpts.DataURL != "" {
-		// No data at generation time: --charts is the authoritative selection, and
-		// 3D is kept whenever a 3D-capable type (bar/line) is bundled, since the
-		// remote data might carry a z dimension.
+		// No data at generation time: --charts is the authoritative selection.
+		// 3D is opt-in via --3d because the remote data shape is unknown.
 		charts := uiOpts.Charts
+		needs3D := uiOpts.Enable3D && shared.ChartsHave3DCapable(charts)
 		htmlContent := template.GenerateRemoteUI(
-			uiOpts.DataURL, charts, shared.ChartsHave3DCapable(charts), template.VizbHTMLTemplate,
+			uiOpts.DataURL, charts, needs3D, template.VizbHTMLTemplate,
 		)
 		if _, err := f.WriteString(htmlContent); err != nil {
 			shared.ExitWithError("Failed to write output file: %v", err)
@@ -94,28 +102,31 @@ func runUI(cmd *cobra.Command, args []string) {
 	// Determine the effective chart selection that drives chunk pruning. When -c
 	// is given it overrides (and is written back into each dataset so the embedded
 	// VIZB_DATA tabs match the bundled chunks); otherwise honour each dataset's
-	// baked-in Settings.Charts.
+	// baked-in chart types (extracted from Settings in the new model).
 	var charts []string
 	if cmd.Flags().Changed("charts") {
 		charts = uiOpts.Charts
-		for i := range benches {
-			benches[i].Settings.Charts = charts
-		}
 	} else {
 		charts = unionCharts(benches)
 	}
 
-	if len(uiOpts.ChartSpecs) > 0 {
+	if cmd.Flags().Changed("charts") {
 		for i := range benches {
-			chartSettings, err := shared.ParseChartSpecs(
-				uiOpts.ChartSpecs,
-				benches[i].Settings.Charts,
-				benches[i].Settings.Axes,
-			)
-			if err != nil {
-				shared.ExitWithError(err.Error(), nil)
-			}
-			benches[i].Settings.ChartSettings = chartSettings
+			benches[i].Settings = filterSettings(benches[i].Settings, charts)
+		}
+	}
+
+	if len(uiOpts.ChartSpecs) > 0 {
+		// Collect the union of every active chart type across the input
+		// datasets so --chart overrides can be validated against the actual
+		// selection (matches the same rule as the root command).
+		active := unionCharts(benches)
+		overrides, err := shared.ParseOverrides(uiOpts.ChartSpecs, active, nil)
+		if err != nil {
+			shared.ExitWithError(err.Error(), nil)
+		}
+		for i := range benches {
+			applyOverrides(&benches[i].Settings, overrides)
 		}
 	}
 
@@ -133,20 +144,162 @@ func runUI(cmd *cobra.Command, args []string) {
 	fmt.Println(style.Success.Render(fmt.Sprintf("🎉 Generated UI successfully: %s", outFile)))
 }
 
+// filterSettings keeps only configs whose chart type is in the allowed list,
+// preserving the original settings order.
+func filterSettings(settings []config_charts.ChartConfig, allowed []string) []config_charts.ChartConfig {
+	if len(allowed) == 0 {
+		return settings
+	}
+	permitted := make(map[string]bool, len(allowed))
+	for _, c := range allowed {
+		permitted[c] = true
+	}
+	filtered := make([]config_charts.ChartConfig, 0, len(settings))
+	for _, s := range settings {
+		if permitted[s.ChartType()] {
+			filtered = append(filtered, s)
+		}
+	}
+	return filtered
+}
+
 // unionCharts collects the distinct chart types across datasets, preserving first
 // appearance order, so every chart any input requests stays bundled.
 func unionCharts(benches []shared.Dataset) []string {
 	seen := make(map[string]bool)
 	var charts []string
 	for i := range benches {
-		for _, c := range benches[i].Settings.Charts {
-			if !seen[c] {
-				seen[c] = true
-				charts = append(charts, c)
+		for _, c := range benches[i].Settings {
+			if !seen[c.ChartType()] {
+				seen[c.ChartType()] = true
+				charts = append(charts, c.ChartType())
 			}
 		}
 	}
 	return charts
+}
+
+// applyOverrides mutates settings in place, applying any matching override
+// from the per-chart map. The per-chart-type switch is required because each
+// Config struct has a distinct concrete type, and the override values only
+// apply when both sides are the same type. An override whose key doesn't match
+// any existing setting is silently dropped (the user can't add a chart type
+// via --chart in the ui subcommand — the chart list is locked to what's
+// already in the input file).
+func applyOverrides(settings *[]config_charts.ChartConfig, overrides map[string]config_charts.ChartConfig) {
+	if len(overrides) == 0 {
+		return
+	}
+	for _, s := range *settings {
+		ov, ok := overrides[s.ChartType()]
+		if !ok {
+			continue
+		}
+		switch s := s.(type) {
+		case *barchart.Config:
+			if o, ok := ov.(*barchart.Config); ok {
+				mergeBarConfig(s, o)
+			}
+		case *linechart.Config:
+			if o, ok := ov.(*linechart.Config); ok {
+				mergeLineConfig(s, o)
+			}
+		case *piechart.Config:
+			if o, ok := ov.(*piechart.Config); ok {
+				mergePieConfig(s, o)
+			}
+		case *heatmapchart.Config:
+			if o, ok := ov.(*heatmapchart.Config); ok {
+				mergeHeatmapConfig(s, o)
+			}
+		case *radarchart.Config:
+			if o, ok := ov.(*radarchart.Config); ok {
+				mergeRadarConfig(s, o)
+			}
+		}
+	}
+}
+
+// mergeBarConfig copies the non-zero fields of `from` into `to`. Mirrors the
+// override-merge logic in barchart.Materialise.
+func mergeBarConfig(to, from *barchart.Config) {
+	if from.Swap != "" {
+		to.Swap = from.Swap
+	}
+	if from.Sort != nil {
+		to.Sort = from.Sort
+	}
+	if from.Scale != "" {
+		to.Scale = from.Scale
+	}
+	if from.ShowLabels != nil {
+		to.ShowLabels = from.ShowLabels
+	}
+	if from.AutoRotate != nil {
+		to.AutoRotate = from.AutoRotate
+	}
+}
+
+// mergeLineConfig copies the non-zero fields of `from` into `to`. Mirrors the
+// override-merge logic in linechart.Materialise.
+func mergeLineConfig(to, from *linechart.Config) {
+	if from.Swap != "" {
+		to.Swap = from.Swap
+	}
+	if from.Sort != nil {
+		to.Sort = from.Sort
+	}
+	if from.Scale != "" {
+		to.Scale = from.Scale
+	}
+	if from.ShowLabels != nil {
+		to.ShowLabels = from.ShowLabels
+	}
+	if from.AutoRotate != nil {
+		to.AutoRotate = from.AutoRotate
+	}
+}
+
+// mergePieConfig copies the non-zero fields of `from` into `to`. pie has no
+// Scale / AutoRotate.
+func mergePieConfig(to, from *piechart.Config) {
+	if from.Swap != "" {
+		to.Swap = from.Swap
+	}
+	if from.Sort != nil {
+		to.Sort = from.Sort
+	}
+	if from.ShowLabels != nil {
+		to.ShowLabels = from.ShowLabels
+	}
+}
+
+// mergeHeatmapConfig copies the non-zero fields of `from` into `to`. heatmap
+// has no Scale / AutoRotate.
+func mergeHeatmapConfig(to, from *heatmapchart.Config) {
+	if from.Swap != "" {
+		to.Swap = from.Swap
+	}
+	if from.Sort != nil {
+		to.Sort = from.Sort
+	}
+	if from.ShowLabels != nil {
+		to.ShowLabels = from.ShowLabels
+	}
+}
+
+// mergeRadarConfig copies the non-zero fields of `from` into `to`. radar has
+// no Scale / AutoRotate.
+func mergeRadarConfig(to, from *radarchart.Config) {
+	if from.Swap != "" {
+		to.Swap = from.Swap
+	}
+	if from.Sort != nil {
+		to.Sort = from.Sort
+	}
+	if from.ShowLabels != nil {
+		to.ShowLabels = from.ShowLabels
+	}
 }
 
 // anyDatasetHasZAxis reports whether any dataset carries a z dimension.

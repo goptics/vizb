@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	config_charts "github.com/goptics/vizb/config/charts"
 	"github.com/goptics/vizb/pkg/parser"
 	goparser "github.com/goptics/vizb/pkg/parser/golang"
 	"github.com/goptics/vizb/pkg/style"
@@ -19,41 +20,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// LinearDefaults holds the dataset-level defaults a command bakes into
-// Settings.Sort/Scale/ShowLabels. A single chart subcommand fills these from its
-// own flags; the root command fills them from its global flags.
-type LinearDefaults struct {
-	Sort       string
-	Scale      string
-	ShowLabels bool
-}
-
-// ChartSelection is one chart type plus its resolved per-chart settings. Settings
-// may be the zero value (no per-chart overrides beyond the global defaults).
-type ChartSelection struct {
-	Type     string
-	Settings shared.ChartSettings
-}
-
-// SelectionsFromCharts pairs each chart type with its per-chart settings (zero
-// value when the type has none). Used by the root command to combine --charts
-// with the parsed --chart specs.
-func SelectionsFromCharts(charts []string, specs map[string]shared.ChartSettings) []ChartSelection {
-	out := make([]ChartSelection, 0, len(charts))
-	for _, c := range charts {
-		out = append(out, ChartSelection{Type: c, Settings: specs[c]})
-	}
-	return out
-}
-
 // RunLinear runs the full linear pipeline shared by the root command and every
 // linear chart subcommand: resolve input (file/stdin) → optional Dataset JSON
 // passthrough → parse → assemble Dataset → write HTML/JSON → handle output.
 //
-// applyOnPassthrough controls whether selections override a passed-through
-// Dataset's baked chart selection. Chart subcommands pass true (explicit single
-// chart intent); the root command passes false (preserve the dataset as-is).
-func RunLinear(cmd *cobra.Command, args []string, common CommonOptions, defaults LinearDefaults, selections []ChartSelection, applyOnPassthrough bool) {
+// applyOnPassthrough controls whether the provided configs override a
+// passed-through Dataset's baked chart selection. Chart subcommands pass true
+// (explicit single chart intent); the root command passes false (preserve the
+// dataset as-is).
+func RunLinear(cmd *cobra.Command, args []string, common CommonOptions, configs []config_charts.ChartConfig, applyOnPassthrough bool) {
 	target, ok := resolveInput(cmd, args)
 	if !ok {
 		return
@@ -76,9 +51,9 @@ func RunLinear(cmd *cobra.Command, args []string, common CommonOptions, defaults
 		// Not Dataset JSON: parse raw/bench input into data points.
 		target = preprocessInputFile(target, common.Parser)
 		results := prepareData(target, common.Parser, cfg)
-		dataSet = assembleDataset(results, common, defaults, cfg, selections)
+		dataSet = assembleDataset(results, common, configs, cfg)
 	} else if applyOnPassthrough {
-		applySelections(dataSet, defaults, selections)
+		applySelections(dataSet, configs)
 	}
 
 	f := shared.MustCreateFile(outFile)
@@ -89,17 +64,15 @@ func RunLinear(cmd *cobra.Command, args []string, common CommonOptions, defaults
 	HandleOutputResult(f, common.OutputFile)
 }
 
-// RunSingleChart is the entry point for a single-chart subcommand. It validates
-// the --swap value against the active grouping, assembles one ChartSelection,
-// and runs the shared linear pipeline.
-func RunSingleChart(cmd *cobra.Command, args []string, common CommonOptions, defaults LinearDefaults, chartType, swap string, autoRotate *bool) {
-	axes := parser.GroupAxes(common.ParseConfig())
-	if err := shared.ValidateSwap(swap, axes); err != nil {
-		shared.ExitWithError(err.Error(), nil)
+// RunSingleChart is the entry point for a single-chart subcommand. It forwards
+// the per-chart Config (built by the subcommand via its chart's Materialise) to
+// the shared linear pipeline. An empty configs slice is treated as a no-op so
+// callers can defensively guard against misconfiguration.
+func RunSingleChart(cmd *cobra.Command, args []string, common CommonOptions, configs []config_charts.ChartConfig) {
+	if len(configs) == 0 {
+		return
 	}
-
-	sel := ChartSelection{Type: chartType, Settings: shared.ChartSettings{Swap: swap, AutoRotate: autoRotate}}
-	RunLinear(cmd, args, common, defaults, []ChartSelection{sel}, true)
+	RunLinear(cmd, args, common, configs, true)
 }
 
 // ValidateScale normalises and validates a scale flag (linear/log), falling back
@@ -221,13 +194,15 @@ func prepareData(filePath, parserKey string, cfg parser.Config) []shared.DataPoi
 	return data
 }
 
-// assembleDataset builds the output Dataset from parsed results plus the command's
-// metadata, defaults, and chart selections.
-func assembleDataset(results []shared.DataPoint, common CommonOptions, defaults LinearDefaults, cfg parser.Config, selections []ChartSelection) *shared.Dataset {
+// assembleDataset builds the output Dataset from parsed results plus the
+// command's metadata and the resolved per-chart configs.
+func assembleDataset(results []shared.DataPoint, common CommonOptions, configs []config_charts.ChartConfig, cfg parser.Config) *shared.Dataset {
 	dataSet := &shared.Dataset{
 		Name:        common.Name,
 		Description: common.Description,
 		Data:        results,
+		Settings:    configs,
+		Axes:        parser.GroupAxes(cfg),
 	}
 
 	meta := shared.Meta{OS: shared.OS, Arch: shared.Arch, Pkg: shared.Pkg}
@@ -238,59 +213,27 @@ func assembleDataset(results []shared.DataPoint, common CommonOptions, defaults 
 		dataSet.Meta = &meta
 	}
 
-	dataSet.Settings.Charts = selectionTypes(selections)
-	applyDefaults(&dataSet.Settings, defaults)
-	dataSet.Settings.Axes = parser.GroupAxes(cfg)
-	dataSet.Settings.ChartSettings = selectionSettings(selections)
-
 	dataSet.Tag = common.Tag
 	dataSet.Timestamp = time.Now().UTC().Format(time.RFC3339)
 
 	return dataSet
 }
 
-// applySelections overrides a passed-through Dataset's chart selection and
-// defaults, so e.g. `vizb bar data.json` re-renders as bar only.
-func applySelections(dataSet *shared.Dataset, defaults LinearDefaults, selections []ChartSelection) {
-	dataSet.Settings.Charts = selectionTypes(selections)
-	applyDefaults(&dataSet.Settings, defaults)
-	dataSet.Settings.ChartSettings = selectionSettings(selections)
+// applySelections overrides a passed-through Dataset's chart selection so e.g.
+// `vizb bar data.json` re-renders with the new configs.
+func applySelections(dataSet *shared.Dataset, configs []config_charts.ChartConfig) {
+	dataSet.Settings = configs
 }
 
-// applyDefaults writes the dataset-level sort/scale/labels defaults into Settings.
-func applyDefaults(s *shared.DatasetSettings, defaults LinearDefaults) {
-	enableSorting := defaults.Sort != ""
-	s.Sort.Enabled = enableSorting
-	if enableSorting {
-		s.Sort.Order = defaults.Sort
-	} else {
-		s.Sort.Order = "asc"
+// chartTypeNames extracts the chart-type discriminators from a slice of
+// per-chart Configs. Used by callers that need a []string (e.g. HTML chunk
+// pruning) in place of the old dataSet.Settings.Charts list.
+func chartTypeNames(settings []config_charts.ChartConfig) []string {
+	out := make([]string, 0, len(settings))
+	for _, c := range settings {
+		out = append(out, c.ChartType())
 	}
-	s.ShowLabels = defaults.ShowLabels
-	s.Scale = defaults.Scale
-}
-
-func selectionTypes(selections []ChartSelection) []string {
-	types := make([]string, 0, len(selections))
-	for _, s := range selections {
-		types = append(types, s.Type)
-	}
-	return types
-}
-
-// selectionSettings collects the non-zero per-chart settings keyed by type, or
-// nil when none have overrides.
-func selectionSettings(selections []ChartSelection) map[string]shared.ChartSettings {
-	m := make(map[string]shared.ChartSettings)
-	for _, s := range selections {
-		if s.Settings != (shared.ChartSettings{}) {
-			m[s.Type] = s.Settings
-		}
-	}
-	if len(m) == 0 {
-		return nil
-	}
-	return m
+	return out
 }
 
 // writeOutput writes the dataset to f as HTML or JSON.
@@ -304,7 +247,7 @@ func writeOutput(f *os.File, dataSet *shared.Dataset, format string) {
 			shared.ExitWithError("Failed to marshal dataSet data: %v", err)
 		}
 
-		htmlContent := template.GenerateUI(jsonData, dataSet.Settings.Charts, shared.DatasetNeeds3D(dataSet), template.VizbHTMLTemplate)
+		htmlContent := template.GenerateUI(jsonData, chartTypeNames(dataSet.Settings), shared.DatasetNeeds3D(dataSet), template.VizbHTMLTemplate)
 		if _, err := f.WriteString(htmlContent); err != nil {
 			shared.ExitWithError("Failed to write output file: %v", err)
 		}

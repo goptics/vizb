@@ -13,8 +13,9 @@ import {
 import type { EChartsOption } from 'echarts'
 import { Sigma } from 'lucide-vue-next'
 import { useChartOptions } from '../composables/useChartOptions'
-import type { ChartData, ChartType, Sort, ScaleType } from '../types'
+import type { ChartData, ChartType } from '../types'
 import { useSettingsStore } from '../composables/useSettingsStore'
+import { useActiveChartShape } from '../composables/useActiveChartShape'
 import { useFullscreen } from '../composables/useFullscreen'
 import { is3D } from '../lib/utils'
 import StatsPanel from './StatsPanel.vue'
@@ -63,8 +64,13 @@ const { chartData } = toRefs(props)
 // Drives which renderer mounts; only the 3D branch loads echarts-gl.
 const is3DChart = computed(() => is3D(chartData))
 
-// Pull settings from centralized store
-const { settings, chartType, resolved } = useSettingsStore()
+// Pull active-chart shape + theme state from the centralized store.
+const { isDark, chartType } = useSettingsStore()
+const { sort, showLabels, scale, autoRotate } = useActiveChartShape()
+
+// Resolved sort gets a no-op default for the worker when the active config has
+// no `sort` field set — keeps the consumer pipeline shape stable.
+const resolvedSort = computed(() => sort.value ?? { enabled: false, order: 'asc' as const })
 
 // Pick the lazily-loaded renderer for the active chart shape/type. Pie has no
 // 3D form (it renders per-dimension 2D pies even for x/y/z data), so it always
@@ -79,13 +85,6 @@ const ActiveChart = computed<Component>(() => {
   return is3DChart.value ? Chart3D : (RENDERERS[chartType.value] ?? RENDERERS.bar)
 })
 
-const { isDark } = toRefs(settings)
-// Per-chart resolved values — each chart type can override global defaults.
-const sort = computed(() => resolved('sort') as Sort)
-const showLabels = computed(() => resolved('showLabels') as boolean)
-const scale = computed(() => resolved('scale') as ScaleType)
-const autoRotate = computed(() => resolved('autoRotate') as boolean)
-
 // Legend z-toggle state, kept in sync via the legendselectchanged event so
 // tooltip/label sums reflect only the visible z series.
 const visibleZ = ref<Record<string, boolean>>({})
@@ -95,7 +94,7 @@ function onLegendSelectChanged(e: { selected: Record<string, boolean> }) {
 
 const { options } = useChartOptions(
   chartData,
-  sort,
+  resolvedSort,
   showLabels,
   isDark,
   chartType,
@@ -168,7 +167,7 @@ watch(
     class="rounded-lg border border-border bg-card p-6 shadow-sm transition-shadow hover:shadow-md"
     :class="{ 'fixed inset-0 z-50 rounded-none': isFullscreen }"
   >
-    <div class="flex items-center justify-between gap-2 mb-2">
+    <div class="mb-2 flex items-center justify-between gap-2">
       <h3 class="text-lg font-semibold text-card-foreground">
         {{ chartData.title }}
       </h3>
@@ -201,7 +200,7 @@ watch(
       <div v-if="showSkeleton" class="absolute inset-0 z-10 animate-pulse rounded bg-muted" />
       <Button
         v-if="hasStats"
-        class="absolute bottom-2 right-2 z-20 h-8 bg-transparent border border-border px-2.5 py-0 text-xs leading-none text-muted-foreground transition-colors hover:bg-accent hover:text-primary"
+        class="absolute bottom-2 right-2 z-20 h-8 border border-border bg-transparent px-2.5 py-0 text-xs leading-none text-muted-foreground transition-colors hover:bg-accent hover:text-primary"
         :class="{ 'bg-accent text-primary': showStats }"
         :aria-pressed="showStats"
         title="Toggle statistics"

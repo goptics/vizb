@@ -11,11 +11,7 @@
       <div class="mx-auto h-4 w-48 rounded bg-muted"></div>
     </header>
     <div class="space-y-5">
-      <div
-        v-for="i in 3"
-        :key="i"
-        class="rounded-lg border border-border bg-card p-6 shadow-sm"
-      >
+      <div v-for="i in 3" :key="i" class="rounded-lg border border-border bg-card p-6 shadow-sm">
         <div class="mb-4 h-5 w-40 rounded bg-muted"></div>
         <div class="h-[600px] rounded bg-muted"></div>
       </div>

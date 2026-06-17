@@ -29,7 +29,8 @@ A single JSON file containing a vizb dataset object or array. This must be JSON 
 |------|-------|---------|-------------|
 | `--output` | `-o` | *(stdout)* | Output file path (HTML) |
 | `--data-url` | `-U` | *(none)* | URL to fetch dataset JSON from at runtime (no input file needed) |
-| `--charts` | `-c` | `bar,line,pie,heatmap,radar` | Chart types to bundle into the HTML (bar, line, pie, heatmap, radar) |
+| `--charts` | `-c` | `bar,line,pie` | Chart types to bundle into the HTML (`bar`, `line`, `pie`, `heatmap`, `radar`) |
+| `--3d` | | `false` | Bundle the 3D renderer when using `--data-url` (remote z-axis shape is unknown at build time) |
 
 ## Examples
 
@@ -55,13 +56,13 @@ vizb ui merged.json -o report.html
 
 ### Reduce output size with `--charts`
 
-By default all five chart renderers are bundled. Pass `--charts` to ship only the ones you need — unused renderers (and the heavy 3D engine when no z-axis data is present) are stripped at generation time.
+By default `bar`, `line`, and `pie` are bundled. Pass `--charts` to add `heatmap` or `radar`, or to ship fewer renderers — unused chart chunks are stripped at generation time.
 
 | Selection | Approx. size |
 |-----------|---------------|
-| `bar`, `line`, `pie` and `heatmap` only | ~400 kB |
-| `bar,line,pie,heatmap,radar` (default, 2D data) | ~445 kB |
-| `bar` or `line` with z-axis data | ~570 kB |
+| `bar,line,pie` (default, 2D data) | ~400 kB |
+| `bar,line,pie,heatmap,radar` | ~445 kB |
+| `bar` or `line` with z-axis data (embedded JSON) | ~570 kB |
 
 ```bash
 # Bar-only report — smallest possible output (~400 KB vs ~570 KB with 3D)
@@ -75,7 +76,7 @@ vizb ui --data-url https://example.com/bench.json -o report.html -c pie // 375K
 ```
 
 <Aside type="note">
-  When no `--charts` flag is given, the chart selection baked into each dataset JSON is used. The `--charts` flag overrides it, which is useful when you want a lighter viewer than what was originally generated.
+  When no `--charts` flag is given with an input file, chunk pruning follows the union of chart types baked into each dataset's `settings`. When `--charts` is set explicitly, embedded `settings` are trimmed to match and the UI only surfaces those chart tabs.
 </Aside>
 
 ### Remote data via `--data-url`
@@ -92,6 +93,17 @@ vizb ui --data-url https://example.com/bench.json -o report.html
 ```
 
 Upload `bench.json` to the URL separately (GitHub raw, S3, GitHub Pages, etc.), then open `report.html` in any browser.
+
+The remote JSON may list more chart types in `settings` than were bundled — the UI intersects against `VIZB_CHARTS` at load time, so only shipped renderers appear as tabs.
+
+Because the remote data shape is unknown at build time, the 3D engine is **not** bundled unless you pass `--3d`:
+
+```bash
+# Remote data might have a z-axis — opt in to the 3D chunk
+vizb ui --data-url https://example.com/bench.json --3d -o report.html
+```
+
+With an embedded JSON file, 3D is still detected automatically from the data (no `--3d` needed).
 
 <Aside type="note">
   The default (no `--data-url`) produces a fully self-contained file with no external dependencies — open it directly in any browser, even offline.

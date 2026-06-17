@@ -2,32 +2,23 @@ import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
 import { getNextColorFor, hasXAxis, hasYAxis, hasZAxis } from '../../lib/utils'
-import { getChartStyling, getTooltipTheme, formatTooltipValue } from './shared'
+import { getChartStyling, getTooltipTheme, formatRadarItemTooltip } from './shared'
 import { fontSize, sortByTotal } from './shared/common'
 
 const makeIndicators = (names: string[], perSpokeMax: number[]) =>
   names.map((name, i) => ({ name, max: Math.max((perSpokeMax[i] ?? 0) * 1.1, 1) }))
 
-const makeTooltip = (
-  isDark: boolean,
-  indicatorNames: string[],
-): EChartsOption['tooltip'] =>
+const makeTooltip = (isDark: boolean, indicatorNames: string[]): EChartsOption['tooltip'] =>
   ({
     trigger: 'item',
     ...getTooltipTheme(isDark),
-    formatter: (params: any) => {
-      if (!params?.data) return ''
-      const vals: number[] = Array.isArray(params.data.value) ? params.data.value : []
-      const rows = indicatorNames
-        .map((name, i) => `${name}: <b>${formatTooltipValue(vals[i])}</b>`)
-        .join('<br/>')
-      return `<strong>${params.data.name ?? params.name}</strong><br/>${rows}`
-    },
+    formatter: (params: any) =>
+      formatRadarItemTooltip(params, indicatorNames, isDark, getNextColorFor),
   }) as EChartsOption['tooltip']
 
 const radarConfig = (
   indicators: { name: string; max: number }[],
-  styling: ReturnType<typeof getChartStyling>,
+  styling: ReturnType<typeof getChartStyling>
 ) => ({
   indicator: indicators,
   axisName: { color: styling.textColor },
@@ -71,7 +62,7 @@ export function useRadarChartOptions(config: BaseChartConfig) {
     // Y only: yAxis values as spokes, single polygon with column totals
     if (!hasXAxis(chartData)) {
       const spokeTotals = yAxis.map((_, i) =>
-        cd.series.reduce((sum, s) => sum + (s.values[i] ?? 0), 0),
+        cd.series.reduce((sum, s) => sum + (s.values[i] ?? 0), 0)
       )
       return {
         ...baseOptions,
@@ -121,7 +112,7 @@ export function useRadarChartOptions(config: BaseChartConfig) {
         zValues = [...zValues].sort((a, b) =>
           sort.value.order === 'asc'
             ? (zTotals.get(a) ?? 0) - (zTotals.get(b) ?? 0)
-            : (zTotals.get(b) ?? 0) - (zTotals.get(a) ?? 0),
+            : (zTotals.get(b) ?? 0) - (zTotals.get(a) ?? 0)
         )
       }
 
@@ -133,7 +124,7 @@ export function useRadarChartOptions(config: BaseChartConfig) {
         zTotalsForRender.set(z, t)
       }
       const renderZValues = [...zValues].sort(
-        (a, b) => (zTotalsForRender.get(b) ?? 0) - (zTotalsForRender.get(a) ?? 0),
+        (a, b) => (zTotalsForRender.get(b) ?? 0) - (zTotalsForRender.get(a) ?? 0)
       )
 
       return {

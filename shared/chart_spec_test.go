@@ -1,6 +1,7 @@
 package shared
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -18,164 +19,145 @@ func (s *ChartSpecSuite) SetupTest() {
 	s.allCharts = []string{"bar", "line", "pie", "heatmap", "radar"}
 }
 
-func (s *ChartSpecSuite) TestParseChartSpecs() {
-	tests := []struct {
-		name    string
-		specs   []string
-		charts  []string
-		axes    []Axis
-		wantErr bool
-		check   func(got map[string]ChartSettings)
-	}{
-		{
-			name:   "valid: swap and sort",
-			specs:  []string{"bar:swap=yxn,sort=asc"},
-			charts: s.allCharts,
-			axes:   s.xynAxes,
-			check: func(got map[string]ChartSettings) {
-				bar, ok := got["bar"]
-				s.Require().True(ok, "expected bar entry")
-				s.Equal("yxn", bar.Swap)
-				s.Require().NotNil(bar.Sort)
-				s.True(bar.Sort.Enabled)
-				s.Equal("asc", bar.Sort.Order)
-			},
-		},
-		{
-			name:   "valid: bare labels flag",
-			specs:  []string{"bar:labels"},
-			charts: s.allCharts,
-			axes:   s.xynAxes,
-			check: func(got map[string]ChartSettings) {
-				s.Require().NotNil(got["bar"].ShowLabels)
-				s.True(*got["bar"].ShowLabels)
-			},
-		},
-		{
-			name:   "valid: bare rotate flag",
-			specs:  []string{"bar:rotate"},
-			charts: s.allCharts,
-			axes:   s.xynAxes,
-			check: func(got map[string]ChartSettings) {
-				s.Require().NotNil(got["bar"].AutoRotate)
-				s.True(*got["bar"].AutoRotate)
-			},
-		},
-		{
-			name:   "valid: scale=log",
-			specs:  []string{"bar:scale=log"},
-			charts: s.allCharts,
-			axes:   s.xynAxes,
-			check: func(got map[string]ChartSettings) {
-				s.Equal("log", got["bar"].Scale)
-			},
-		},
-		{
-			name:   "valid: multiple specs same type merged",
-			specs:  []string{"bar:sort=asc", "bar:scale=log"},
-			charts: s.allCharts,
-			axes:   s.xynAxes,
-			check: func(got map[string]ChartSettings) {
-				s.Require().NotNil(got["bar"].Sort)
-				s.Equal("asc", got["bar"].Sort.Order)
-				s.Equal("log", got["bar"].Scale)
-			},
-		},
-		{name: "invalid: pie:scale=log", specs: []string{"pie:scale=log"}, charts: s.allCharts, axes: s.xynAxes, wantErr: true},
-		{name: "invalid: heatmap:rotate", specs: []string{"heatmap:rotate"}, charts: s.allCharts, axes: s.xynAxes, wantErr: true},
-		{name: "invalid: bad sort value", specs: []string{"bar:sort=invalid"}, charts: s.allCharts, axes: s.xynAxes, wantErr: true},
-		{name: "invalid: swap not a permutation", specs: []string{"bar:swap=abc"}, charts: s.allCharts, axes: s.xynAxes, wantErr: true},
-		{name: "invalid: unknown key", specs: []string{"bar:unknown=val"}, charts: s.allCharts, axes: s.xynAxes, wantErr: true},
-		{name: "invalid: type not in --charts", specs: []string{"xyz:sort=asc"}, charts: []string{"bar", "line"}, axes: s.xynAxes, wantErr: true},
-		{
-			name:   "valid: empty specs returns nil",
-			specs:  []string{},
-			charts: s.allCharts,
-			axes:   s.xynAxes,
-			check: func(got map[string]ChartSettings) {
-				s.Nil(got)
-			},
-		},
-		{name: "invalid: malformed (no colon)", specs: []string{"barswap=yxn"}, charts: s.allCharts, axes: s.xynAxes, wantErr: true},
-		{
-			name:   "valid: swap with no axes accepts non-empty string",
-			specs:  []string{"bar:swap=anything"},
-			charts: s.allCharts,
-			axes:   []Axis{},
-			check: func(got map[string]ChartSettings) {
-				s.Equal("anything", got["bar"].Swap)
-			},
-		},
-		{
-			name:   "valid: sort normalised to lower",
-			specs:  []string{"bar:sort=ASC"},
-			charts: s.allCharts,
-			axes:   s.xynAxes,
-			check: func(got map[string]ChartSettings) {
-				s.Require().NotNil(got["bar"].Sort)
-				s.Equal("asc", got["bar"].Sort.Order)
-			},
-		},
-		{
-			name:   "valid: scale normalised to lower",
-			specs:  []string{"bar:scale=LOG"},
-			charts: s.allCharts,
-			axes:   s.xynAxes,
-			check: func(got map[string]ChartSettings) {
-				s.Equal("log", got["bar"].Scale)
-			},
-		},
-		{name: "invalid: empty rest after colon", specs: []string{"bar:"}, charts: s.allCharts, axes: s.xynAxes, wantErr: true},
-		{
-			name:   "valid: radar:sort=asc",
-			specs:  []string{"radar:sort=asc"},
-			charts: s.allCharts,
-			axes:   s.xynAxes,
-			check: func(got map[string]ChartSettings) {
-				radar, ok := got["radar"]
-				s.Require().True(ok, "expected radar entry")
-				s.Require().NotNil(radar.Sort)
-				s.True(radar.Sort.Enabled)
-				s.Equal("asc", radar.Sort.Order)
-			},
-		},
-		{name: "invalid: radar:scale=log", specs: []string{"radar:scale=log"}, charts: s.allCharts, axes: s.xynAxes, wantErr: true},
-		{name: "invalid: radar:rotate", specs: []string{"radar:rotate"}, charts: s.allCharts, axes: s.xynAxes, wantErr: true},
-		{
-			name:   "valid: labels=true sets ShowLabels to true",
-			specs:  []string{"bar:labels=true"},
-			charts: s.allCharts,
-			axes:   s.xynAxes,
-			check: func(got map[string]ChartSettings) {
-				s.Require().NotNil(got["bar"].ShowLabels)
-				s.True(*got["bar"].ShowLabels)
-			},
-		},
-		{
-			name:   "valid: labels=false sets ShowLabels to false",
-			specs:  []string{"bar:labels=false"},
-			charts: s.allCharts,
-			axes:   s.xynAxes,
-			check: func(got map[string]ChartSettings) {
-				s.Require().NotNil(got["bar"].ShowLabels)
-				s.False(*got["bar"].ShowLabels)
-			},
-		},
-	}
+// TestParseOverrides_BarSwap is the canonical example from the Task 4 spec:
+// `ParseOverrides(["bar:swap=yxn"], []string{"bar"}, nil)` returns a map whose
+// "bar" entry is a typed bar Config with Swap == "yxn".
+//
+// We verify the concrete type via JSON roundtrip to avoid an import cycle
+// (config/charts/bar imports shared, so shared cannot import it back).
+func (s *ChartSpecSuite) TestParseOverridesBarSwap() {
+	got, err := ParseOverrides([]string{"bar:swap=yxn"}, []string{"bar"}, s.xynAxes)
+	s.Require().NoError(err)
+	s.Require().NotNil(got)
 
-	for _, tt := range tests {
-		s.Run(tt.name, func() {
-			got, err := ParseChartSpecs(tt.specs, tt.charts, tt.axes)
-			if tt.wantErr {
-				s.Require().Error(err)
-				return
-			}
-			s.Require().NoError(err)
-			if tt.check != nil {
-				tt.check(got)
-			}
+	cfg, ok := got["bar"]
+	s.Require().True(ok, "expected bar entry in overrides map")
+	s.Equal("bar", cfg.ChartType())
+
+	// Verify the typed field via JSON roundtrip. The Config's `swap` JSON
+	// tag preserves the value, and bar has no other field with this name.
+	raw, err := json.Marshal(cfg)
+	s.Require().NoError(err)
+	var m map[string]any
+	s.Require().NoError(json.Unmarshal(raw, &m))
+	s.Equal("yxn", m["swap"])
+}
+
+// TestParseOverrides_AllFields exercises every supported key in a single spec
+// to confirm the typed config receives all the values.
+func (s *ChartSpecSuite) TestParseOverridesAllFields() {
+	got, err := ParseOverrides(
+		[]string{"bar:swap=yxn,sort=asc,scale=log,labels=true,3d-rotate=false"},
+		[]string{"bar"},
+		s.xynAxes,
+	)
+	s.Require().NoError(err)
+	s.Require().Contains(got, "bar")
+
+	raw, err := json.Marshal(got["bar"])
+	s.Require().NoError(err)
+	var m map[string]any
+	s.Require().NoError(json.Unmarshal(raw, &m))
+	s.Equal("yxn", m["swap"])
+	s.Equal("log", m["scale"])
+	s.Equal("asc", m["sort"].(map[string]any)["order"])
+	s.Equal(true, m["sort"].(map[string]any)["enabled"])
+	s.Equal(true, m["showLabels"])
+	s.Equal(false, m["autoRotate"])
+}
+
+// TestParseOverrides_BareLabels confirms a bare flag (no =val) parses correctly.
+func (s *ChartSpecSuite) TestParseOverridesBareLabels() {
+	got, err := ParseOverrides([]string{"bar:labels"}, []string{"bar"}, s.xynAxes)
+	s.Require().NoError(err)
+
+	raw, err := json.Marshal(got["bar"])
+	s.Require().NoError(err)
+	var m map[string]any
+	s.Require().NoError(json.Unmarshal(raw, &m))
+	s.Equal(true, m["showLabels"])
+}
+
+// TestParseOverrides_BareRotate confirms `3d-rotate` (no =val) sets autoRotate=true.
+func (s *ChartSpecSuite) TestParseOverridesBareRotate() {
+	got, err := ParseOverrides([]string{"bar:3d-rotate"}, []string{"bar"}, s.xynAxes)
+	s.Require().NoError(err)
+
+	raw, err := json.Marshal(got["bar"])
+	s.Require().NoError(err)
+	var m map[string]any
+	s.Require().NoError(json.Unmarshal(raw, &m))
+	s.Equal(true, m["autoRotate"])
+}
+
+// TestParseOverrides_MultipleSpecsSameType confirms two specs for the same
+// type are merged into a single entry in the map.
+func (s *ChartSpecSuite) TestParseOverridesMultipleSpecsSameType() {
+	got, err := ParseOverrides(
+		[]string{"bar:sort=asc", "bar:scale=log"},
+		[]string{"bar"},
+		s.xynAxes,
+	)
+	s.Require().NoError(err)
+	s.Require().Len(got, 1)
+
+	raw, err := json.Marshal(got["bar"])
+	s.Require().NoError(err)
+	var m map[string]any
+	s.Require().NoError(json.Unmarshal(raw, &m))
+	s.Equal("log", m["scale"])
+	s.Equal("asc", m["sort"].(map[string]any)["order"])
+}
+
+// TestParseOverrides_Empty confirms the function returns (nil, nil) for empty input.
+func (s *ChartSpecSuite) TestParseOverridesEmpty() {
+	got, err := ParseOverrides(nil, []string{"bar"}, s.xynAxes)
+	s.Require().NoError(err)
+	s.Nil(got)
+
+	got, err = ParseOverrides([]string{}, []string{"bar"}, s.xynAxes)
+	s.Require().NoError(err)
+	s.Nil(got)
+}
+
+// TestParseOverrides_Errors covers the validation failures the new contract
+// still surfaces. Per-chart Validate is deferred to a future task, so
+// "pie:scale=log" is silently accepted — see TestParseOverrides_NoLimitedChartCheck.
+func (s *ChartSpecSuite) TestParseOverridesErrors() {
+	cases := []struct {
+		name  string
+		specs []string
+	}{
+		{"malformed (no colon)", []string{"barswap=yxn"}},
+		{"empty rest after colon", []string{"bar:"}},
+		{"unknown chart type", []string{"graph:swap=yxn"}},
+		{"chart not in --charts", []string{"pie:sort=asc"}}, // only "bar" is active
+		{"bad sort value", []string{"bar:sort=invalid"}},
+		{"swap not a permutation", []string{"bar:swap=abc"}},
+		{"unknown key", []string{"bar:unknown=val"}},
+		{"unknown bare flag", []string{"bar:explode"}},
+	}
+	for _, c := range cases {
+		s.Run(c.name, func() {
+			_, err := ParseOverrides(c.specs, []string{"bar"}, s.xynAxes)
+			s.Error(err)
 		})
 	}
+}
+
+// TestParseOverrides_NoLimitedChartCheck documents the deferred-validation
+// contract: pie/heatmap/radar accept keys they don't carry (scale, 3d-rotate) in
+// the payload; the values are silently dropped by Decode. The per-chart
+// Validate(axes) method (future task) will surface this as an error.
+func (s *ChartSpecSuite) TestParseOverridesNoLimitedChartCheck() {
+	got, err := ParseOverrides([]string{"pie:scale=log"}, []string{"pie"}, s.xynAxes)
+	s.Require().NoError(err)
+	s.Require().Contains(got, "pie")
+}
+
+func (s *ChartSpecSuite) TestParseOverridesInvalidSwap() {
+	_, err := ParseOverrides([]string{"bar:swap=abc"}, []string{"bar"}, s.xynAxes)
+	s.Error(err)
 }
 
 func (s *ChartSpecSuite) TestValidateSwap() {
@@ -187,6 +169,9 @@ func (s *ChartSpecSuite) TestValidateSwap() {
 	})
 	s.Run("non-permutation fails", func() {
 		s.Error(ValidateSwap("abc", s.xynAxes))
+	})
+	s.Run("unknown axis char fails", func() {
+		s.Error(ValidateSwap("xyz", s.xynAxes))
 	})
 	s.Run("no axes accepts any non-empty swap", func() {
 		s.NoError(ValidateSwap("anything", nil))

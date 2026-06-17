@@ -31,7 +31,9 @@ const { sortedHistory, hasHistory } = useSortedHistory(
     content-width="w-80"
   >
     <template #entry="{ entry }">
-      <span class="min-w-0 truncate text-right tabular-nums">{{ CPUtoString(entry.meta?.cpu) }}</span>
+      <span class="min-w-0 truncate text-right tabular-nums">{{
+        CPUtoString(entry.meta?.cpu)
+      }}</span>
     </template>
   </HistoryPopover>
 </template>

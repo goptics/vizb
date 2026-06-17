@@ -1,11 +1,7 @@
-import type { Settings } from '../types'
+import type { ChartType } from '../types'
 
-export const DEFAULT_SETTINGS: Settings = {
-  sort: {
-    enabled: false,
-    order: 'asc',
-  },
-  showLabels: false,
-  charts: ['bar', 'line', 'pie', 'heatmap', 'radar'],
-  scale: 'linear',
-}
+// Closed enumeration of chart types vizb knows how to render. Single source of
+// truth on the UI side — the wire format's `settings[i].type` discriminator is
+// the matching axis on the Go side. Keep this in sync with the registered Go
+// chart configs (`config/charts/*`).
+export const ALL_CHART_TYPES: ChartType[] = ['bar', 'line', 'pie', 'heatmap', 'radar']

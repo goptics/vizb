@@ -3,10 +3,14 @@ package utils
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestCreateStatType(t *testing.T) {
+type StatTypeSuite struct {
+	suite.Suite
+}
+
+func (s *StatTypeSuite) TestCreateStatType() {
 	tests := []struct {
 		name     string
 		statName string
@@ -59,9 +63,13 @@ func TestCreateStatType(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		s.Run(tt.name, func() {
 			result := CreateStatType(tt.statName, tt.unit, tt.per)
-			assert.Equal(t, tt.expected, result, "CreateStatType(%s, %s, %s) should equal %s", tt.statName, tt.unit, tt.per, tt.expected)
+			s.Equal(tt.expected, result, "CreateStatType(%s, %s, %s) should equal %s", tt.statName, tt.unit, tt.per, tt.expected)
 		})
 	}
+}
+
+func TestStatTypeSuite(t *testing.T) {
+	suite.Run(t, new(StatTypeSuite))
 }

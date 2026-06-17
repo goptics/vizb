@@ -242,8 +242,8 @@ describe('availableViews', () => {
 
   it('correlation available when at least one axis has ≥2 entities', () => {
     expect(availableViews(series(1), num(1)).correlation).toBe(false) // neither axis ≥2
-    expect(availableViews(series(2), num(1)).correlation).toBe(true)  // x has 2
-    expect(availableViews(series(1), num(2)).correlation).toBe(true)  // y has 2
+    expect(availableViews(series(2), num(1)).correlation).toBe(true) // x has 2
+    expect(availableViews(series(1), num(2)).correlation).toBe(true) // y has 2
     expect(availableViews(series(2), num(3)).correlation).toBe(true)
     expect(availableViews(series(5000), num(5000)).correlation).toBe(true) // no cap
   })
@@ -255,8 +255,12 @@ describe('computeCorrelation axis pick', () => {
 
   it('default 2D path correlates the series (axis x)', () => {
     const points = pts2d(
-      ['A', 'p', 1], ['A', 'q', 2], ['A', 'r', 3],
-      ['B', 'p', 2], ['B', 'q', 4], ['B', 'r', 6]
+      ['A', 'p', 1],
+      ['A', 'q', 2],
+      ['A', 'r', 3],
+      ['B', 'p', 2],
+      ['B', 'q', 4],
+      ['B', 'r', 6]
     )
     const corr = computeCorrelation(points, ['A', 'B'], ['p', 'q', 'r'])
     expect(corr!.axis).toBe('x')

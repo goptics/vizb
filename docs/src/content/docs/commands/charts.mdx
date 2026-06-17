@@ -5,7 +5,7 @@ description: Generate a single chart type with only the flags that chart support
 
 import { Aside } from '@astrojs/starlight/components';
 
-Each chart type has its own subcommand: `vizb bar`, `vizb line`, `vizb pie`, `vizb heatmap`, and `vizb radar`. A chart subcommand is equivalent to the root command restricted to one chart — `vizb bar data.csv` produces the same output as `vizb data.csv --charts bar` — but it exposes **only the flags valid for that chart**. For example, `--scale` and `--rotate` exist on `bar`/`line` but not on `pie`/`heatmap`/`radar`, so an unsupported flag fails fast instead of being silently ignored.
+Each chart type has its own subcommand: `vizb bar`, `vizb line`, `vizb pie`, `vizb heatmap`, and `vizb radar`. A chart subcommand is equivalent to the root command restricted to one chart — `vizb bar data.csv` produces the same output as `vizb data.csv --charts bar` — but it exposes **only the flags valid for that chart**. For example, `--scale` and `--3d-rotate` exist on `bar`/`line` but not on `pie`/`heatmap`/`radar`, so an unsupported flag fails fast instead of being silently ignored.
 
 Use a subcommand when you want a single focused chart; use the [root command](/commands/root) with `--charts` when you want several chart types from one dataset.
 
@@ -50,9 +50,9 @@ Every chart subcommand accepts the common data, grouping, and metadata flags:
 | Flag | `bar` | `line` | `pie` | `heatmap` | `radar` | Description |
 |------|:---:|:---:|:---:|:---:|:---:|-------------|
 | `--scale` (`-S`) | ✅ | ✅ | — | — | — | Value scale: `linear` or `log` |
-| `--rotate` | ✅ | ✅ | — | — | — | Auto-rotate the 3D chart (only meaningful with z-axis data) |
+| `--3d-rotate` | ✅ | ✅ | — | — | — | Auto-rotate the 3D scene (only meaningful with z-axis data) |
 
-`bar` and `line` render in 3D when the data has a z dimension (`-p n/x/y/z`), which is why they accept `--scale` and `--rotate`. The other chart types are 2D-only, so those flags are intentionally absent — passing them is an error:
+`bar` and `line` render in 3D when the data has a z dimension (`-p n/x/y/z`), which is why they accept `--scale` and `--3d-rotate`. The other chart types are 2D-only, so those flags are intentionally absent — passing them is an error:
 
 ```bash
 vizb pie data.csv --scale log   # Error: unknown flag: --scale
@@ -62,7 +62,7 @@ vizb pie data.csv --scale log   # Error: unknown flag: --scale
 
 ```bash
 # 3D bar with log scale and auto-rotation
-vizb bar data.csv -p n/x/y/z --scale log --rotate -o bar3d.html
+vizb bar data.csv -p n/x/y/z --scale log --3d-rotate -o bar3d.html
 
 # Pie with value labels, ascending sort
 vizb pie data.csv -g impl --sort asc --show-labels -o pie.html

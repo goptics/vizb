@@ -6,7 +6,8 @@ import { useLineChartOptions } from './charts/useLineChartOptions'
 import { usePieChartOptions } from './charts/usePieChartOptions'
 import { useHeatmapChartOptions } from './charts/useHeatmapChartOptions'
 import { useRadarChartOptions } from './charts/useRadarChartOptions'
-import { use3DChartOptions } from './charts/use3DChartOptions'
+import { useBar3DChartOptions } from './charts/useBar3DChartOptions'
+import { useLine3DChartOptions } from './charts/useLine3DChartOptions'
 import type { BaseChartConfig } from './charts/baseChartOptions'
 import { is3D } from '../lib/utils'
 
@@ -35,8 +36,8 @@ export function useChartOptions(
   const pieOptions = usePieChartOptions(config)
   const heatmapOptions = useHeatmapChartOptions(config)
   const radarOptions = useRadarChartOptions(config)
-  const bar3DOptions = use3DChartOptions(config, 'bar3D')
-  const line3DOptions = use3DChartOptions(config, 'line3D')
+  const bar3DOptions = useBar3DChartOptions(config)
+  const line3DOptions = useLine3DChartOptions(config)
 
   const options = computed<EChartsOption>(() => {
     // When x, y AND z are all present, bar/line render as 3D charts.

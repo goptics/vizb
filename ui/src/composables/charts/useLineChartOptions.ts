@@ -34,7 +34,10 @@ export function useLineChartOptions(config: BaseChartConfig) {
     const { series, xAxisData, hasYAxis } = sortedData.value
     const baseOptions = getBaseOptions(config)
     const styling = getChartStyling(isDark.value)
-    const { minValue, effectiveScale } = getEffectiveScale(series, scale.value)
+    // `scale` is optional on BaseChartConfig (relaxed in Task 7) — pie/heatmap/
+    // radar pass a config without it. The line composable is the only consumer,
+    // so we default at the call site.
+    const { minValue, effectiveScale } = getEffectiveScale(series, scale?.value ?? 'linear')
     const largeX = isLargeXAxis(xAxisData)
 
     if (!hasYAxis) {
@@ -42,7 +45,13 @@ export function useLineChartOptions(config: BaseChartConfig) {
         ...baseOptions,
         grid: createGridConfig(1, largeX),
         tooltip: createPinnedAxisTooltip(isDark.value),
-        ...createAxisConfig(styling, xAxisData, effectiveScale, minValue, chartData.value.axisLabels?.x),
+        ...createAxisConfig(
+          styling,
+          xAxisData,
+          effectiveScale,
+          minValue,
+          chartData.value.axisLabels?.x
+        ),
         ...(largeX ? { dataZoom: createDataZoomConfig(xAxisData, styling) } : {}),
         legend: { show: false },
         series: [
@@ -85,7 +94,13 @@ export function useLineChartOptions(config: BaseChartConfig) {
       ...(yLabel ? { title: makeLegendTitle(yLabel, styling) } : {}),
       grid: createGridConfig(transposedSeries.length, largeX),
       tooltip: createTooltipConfig(true, isDark.value, seriesTotals),
-      ...createAxisConfig(styling, xAxisData, effectiveScale, minValue, chartData.value.axisLabels?.x),
+      ...createAxisConfig(
+        styling,
+        xAxisData,
+        effectiveScale,
+        minValue,
+        chartData.value.axisLabels?.x
+      ),
       ...(largeX ? { dataZoom: createDataZoomConfig(xAxisData, styling) } : {}),
       legend: createLegendConfig(
         transposedSeries.map((s) => ({ xAxis: s.name })),

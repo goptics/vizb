@@ -3,11 +3,12 @@ package template
 import (
 	"encoding/json"
 	htmlTemplate "html/template"
+
+	"github.com/goptics/vizb/shared"
 )
 
-// defaultCharts is the full chart set, used when no selection is supplied so
-// nothing is over-pruned.
-var defaultCharts = []string{"bar", "line", "pie", "heatmap", "radar"}
+// defaultCharts is the CLI default chart set when no selection is supplied.
+var defaultCharts = shared.DefaultChartTypes
 
 // gatedRoots returns the set of renderer chunk keys the pruner gates: a gated
 // chunk is followed during reachability only when it is explicitly enabled.

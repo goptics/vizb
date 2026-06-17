@@ -6,9 +6,26 @@ import type { DescriptiveStats, SeriesProfile } from '../types'
 // builders only read the columns they're given, but the type wants all keys.
 function stats(overrides: Partial<DescriptiveStats>): DescriptiveStats {
   const keys: (keyof DescriptiveStats)[] = [
-    'count', 'missing', 'unique', 'mean', 'median', 'mode', 'variance', 'stdDev',
-    'min', 'max', 'range', 'iqr', 'mad', 'cv', 'skewness', 'kurtosis',
-    'p5', 'p25', 'p75', 'p95',
+    'count',
+    'missing',
+    'unique',
+    'mean',
+    'median',
+    'mode',
+    'variance',
+    'stdDev',
+    'min',
+    'max',
+    'range',
+    'iqr',
+    'mad',
+    'cv',
+    'skewness',
+    'kurtosis',
+    'p5',
+    'p25',
+    'p75',
+    'p95',
   ]
   const base = Object.fromEntries(keys.map((k) => [k, NaN])) as DescriptiveStats
   return { ...base, ...overrides }
@@ -45,7 +62,13 @@ describe('descriptiveCsv', () => {
 
 describe('correlationCsv', () => {
   it('corner cell, labels header, NaN blank', () => {
-    const csv = correlationCsv(['x', 'y'], [[1, NaN], [NaN, 1]])
+    const csv = correlationCsv(
+      ['x', 'y'],
+      [
+        [1, NaN],
+        [NaN, 1],
+      ]
+    )
     expect(csv).toBe(',x,y\nx,1,\ny,,1')
   })
 })

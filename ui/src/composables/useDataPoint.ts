@@ -1,7 +1,8 @@
 import { ref, shallowRef, markRaw, reactive, computed, nextTick } from 'vue'
 import type { DataSet, DataPoint, ChartType } from '../types'
 import type { Arrangement } from './useChartPipeline'
-import { resetColor, isValidIndex } from '../lib/utils'
+import { filterDataSetSettings } from '../lib/filterDataSetSettings'
+import { resetColor, isValidIndex, datasetDimension } from '../lib/utils'
 import { useSettingsStore } from './useSettingsStore'
 
 const getStatDimensions = (points: DataPoint[]) => {
@@ -20,7 +21,7 @@ const getStatDimensions = (points: DataPoint[]) => {
 const AXIS_ORDER = ['n', 'x', 'y', 'z'] as const
 
 // The present source axes of a dataset, as a compact arrangement string. Cheap
-// (a few `.some()` passes, no grouping). Mirrors AxisSwapper's identity check.
+// (a few `.some()` passes, no grouping). Mirrors SwapControl's identity check.
 const presentKeys = (data: DataPoint[] | undefined): string => {
   if (!data?.length) return ''
   const fieldFor = { n: 'name', x: 'xAxis', y: 'yAxis', z: 'zAxis' } as const
@@ -71,9 +72,19 @@ const setArrangement = (datasetId: number, ct: ChartType, targetString: string) 
 
 getDataSets()
   .then((data) => {
-    // markRaw keeps the rows plain (clone-safe) even if a future code path tries
-    // to wrap them in reactive() — the worker postMessage clones them natively.
-    dataSets.value = markRaw(Array.isArray(data) ? data : [data])
+    // Each DataSet is wrapped in reactive() so settings mutations (sort/scale/
+    // showLabels/autoRotate/swap) propagate to the chart pipeline's watchers.
+    // The `data` field (raw rows) is markRaw'd so it stays proxy-free: the
+    // transform worker clones it natively via postMessage structured clone,
+    // which would otherwise reject Vue's reactive Proxy. Rows are display-only
+    // and never mutated in place, so dropping per-row reactivity is the
+    // intended perf trade-off.
+    const raw = Array.isArray(data) ? data : [data]
+    const allowed = window.VIZB_CHARTS
+    dataSets.value = raw.map((ds) => {
+      const filtered = filterDataSetSettings(ds, allowed)
+      return reactive({ ...filtered, data: markRaw(filtered.data) })
+    })
   })
   .catch((err: unknown) => {
     loadError.value = err instanceof Error ? err.message : String(err)
@@ -92,21 +103,32 @@ const dataSetsProcessed = computed<DataSet[]>(() => {
   return dataSets.value
 })
 
-const activeDataSetDimension = computed(() =>
+// Number of present axes in the active dataset (0..4: name, x, y, z). Used
+// for the "rows: N cols: M" subtitle in the dashboard.
+const activeDataAxisCount = computed(() =>
   getStatDimensions(dataSetsProcessed.value[activeDataSetId.value]?.data ?? [])
+)
+
+// Data-shape dimensionality tag for the active dataset, used by the settings
+// panel to filter fields (e.g. `autoRotate` is 3D-only). `undefined` for
+// empty/unknown data — the panel treats that as "no dimension constraint".
+const activeDataDimension = computed(() =>
+  datasetDimension(dataSetsProcessed.value[activeDataSetId.value]?.data)
 )
 
 const activeDataSet = computed(
   () => dataSetsProcessed.value[activeDataSetId.value] || dataSetsProcessed.value[0]
 )
 
-const { initializeFromDataSet, chartType } = useSettingsStore()
+export { activeDataSet }
+
+const { chartType } = useSettingsStore()
 
 // Derive identity from axes[] key order if present, else fall back to presentKeys(data).
 // axes[] preserves the serial dimension order from --group-pattern / --group-regex.
 const identityFromDataSet = (ds: DataSet | undefined): string => {
-  if (ds?.settings?.axes?.length) {
-    return ds.settings.axes.map((a) => (a.key === 'name' ? 'n' : a.key.charAt(0))).join('')
+  if (ds?.axes?.length) {
+    return ds.axes.map((a) => (a.key === 'name' ? 'n' : a.key.charAt(0))).join('')
   }
   return presentKeys(ds?.data)
 }
@@ -127,10 +149,8 @@ const selectDataSet = (id: number) => {
   if (isValidIndex(id, dataSets.value.length)) {
     activeDataSetId.value = id
 
-    const benchmark = dataSets.value[id]
-    if (benchmark?.settings) {
-      initializeFromDataSet(benchmark.settings, true)
-    }
+    // The new store reads `dataset.value.settings[activeChartIndex]` directly,
+    // so no init step is needed — switching the active dataset id is enough.
 
     // Group names repopulate asynchronously from the worker's `ready` for the new
     // dataset; reset to the first group until they arrive.
@@ -155,7 +175,8 @@ export function useDataPoint() {
     dataSets,
     activeDataSet,
     activeDataSetId,
-    activeDataSetDimension,
+    activeDataAxisCount,
+    activeDataDimension,
     selectDataSet,
 
     activeArrangement,

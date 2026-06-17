@@ -19,21 +19,39 @@ export function createHeatmapDataZoomConfig(
   largeY: boolean,
   xLen: number,
   yLen: number,
-  styling: ChartStyling,
+  styling: ChartStyling
 ): any[] {
   const result: any[] = []
   if (largeX) {
     const end = Math.max(5, Math.ceil((30 / xLen) * 100))
     result.push(
       { type: 'inside', xAxisIndex: 0, start: 0, end, filterMode: 'filter' },
-      { type: 'slider', xAxisIndex: 0, start: 0, end, bottom: 55, height: 28, filterMode: 'filter', textStyle: { color: styling.textColor } },
+      {
+        type: 'slider',
+        xAxisIndex: 0,
+        start: 0,
+        end,
+        bottom: 55,
+        height: 28,
+        filterMode: 'filter',
+        textStyle: { color: styling.textColor },
+      }
     )
   }
   if (largeY) {
     const end = Math.max(5, Math.ceil((30 / yLen) * 100))
     result.push(
       { type: 'inside', yAxisIndex: 0, start: 0, end, filterMode: 'filter' },
-      { type: 'slider', yAxisIndex: 0, start: 0, end, left: 10, width: 20, filterMode: 'filter', textStyle: { color: styling.textColor } },
+      {
+        type: 'slider',
+        yAxisIndex: 0,
+        start: 0,
+        end,
+        left: 10,
+        width: 20,
+        filterMode: 'filter',
+        textStyle: { color: styling.textColor },
+      }
     )
   }
   return result
@@ -173,6 +191,59 @@ export function formatTooltipValue(value: any): string {
   return String(value)
 }
 
+/** Item-trigger radar tooltip: spoke rows + Σ + spread + donut (parity with 3D/heatmap). */
+export function formatRadarItemTooltip(
+  params: {
+    data?: { name?: string; value?: number[] }
+    name?: string
+    seriesName?: string
+    color?: string
+  },
+  indicatorNames: string[],
+  isDark: boolean,
+  colorFor?: (name: string) => string | undefined
+): string {
+  if (!params?.data) return ''
+
+  const vals: number[] = Array.isArray(params.data.value) ? params.data.value : []
+  const dataName = params.data.name
+  const seriesName = params.seriesName
+
+  const title =
+    seriesName && dataName && seriesName !== dataName
+      ? `${seriesName} / ${dataName}`
+      : (dataName ?? seriesName ?? params.name ?? '')
+
+  const seriesColor = typeof params.color === 'string' ? params.color : undefined
+  const color = (name: string) => colorFor?.(name) ?? seriesColor ?? '#888'
+
+  const rows = indicatorNames
+    .map((name, i) => {
+      const dot = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color(name)};margin-right:6px"></span>`
+      return `${dot}${name}: <b>${formatTooltipValue(vals[i])}</b>`
+    })
+    .join('<br/>')
+
+  const finiteVals = vals.filter((v) => Number.isFinite(v))
+  const sigmaBlock =
+    finiteVals.length >= 2
+      ? `${tooltipDivider(isDark)}Σ ${title}: <b>${formatTooltipValue(finiteVals.reduce((a, b) => a + b, 0))}</b>`
+      : ''
+
+  const spread = tooltipSpreadRows(vals, isDark)
+
+  const donut = renderDonutSvg(
+    indicatorNames.map((name, i) => ({
+      name,
+      value: typeof vals[i] === 'number' ? vals[i]! : 0,
+      color: color(name),
+    }))
+  )
+  const donutBlock = donut ? `${tooltipDivider(isDark)}${donut}` : ''
+
+  return `<b>${title}</b><br/>${rows}${sigmaBlock}${spread}${donutBlock}`
+}
+
 /**
  * Shared tooltip box theme (background, border, text) for light/dark mode.
  * Single source so 2D and 3D tooltips look identical.
@@ -232,8 +303,10 @@ export function renderDonutSvg(
   }
 
   const path = (start: number, end: number) => {
-    const s1 = xy(outerR, start), e1 = xy(outerR, end)
-    const s2 = xy(innerR, end),   e2 = xy(innerR, start)
+    const s1 = xy(outerR, start),
+      e1 = xy(outerR, end)
+    const s2 = xy(innerR, end),
+      e2 = xy(innerR, start)
     const lg = end - start > 180 ? 1 : 0
     const f = (n: number) => n.toFixed(2)
     return [

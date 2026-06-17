@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "typecheck": "vue-tsc -b --noEmit",
     "format": "prettier --write ."
   },
   "dependencies": {
@@ -36,7 +37,6 @@
     "typescript": "~5.9.3",
     "vite": "^7.1.7",
     "vite-plugin-html": "^3.2.2",
-    "vite-plugin-singlefile": "^2.3.0",
     "vitest": "^3.2.4",
     "vue-tsc": "^3.1.0"
   }

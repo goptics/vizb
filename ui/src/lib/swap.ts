@@ -1,4 +1,4 @@
-// Framework-free axis-swap helpers, shared by the swap UI (AxisSwapper.vue), the
+// Framework-free axis-swap helpers, shared by the swap UI (SwapControl.vue), the
 // chart pipeline and the transform Web Worker. Swapping rotates which dataset
 // field (name/x/y/z) each axis value lives on. The worker re-projects its cached
 // raw dataset under the new arrangement (see `projectAndGroup`); these helpers

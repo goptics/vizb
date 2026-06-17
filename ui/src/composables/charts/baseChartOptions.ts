@@ -10,8 +10,12 @@ export interface BaseChartConfig {
   sort: Ref<Sort>
   showLabels: Ref<boolean>
   isDark: Ref<boolean>
-  scale: Ref<ScaleType>
-  autoRotate: Ref<boolean>
+  // `scale` and `autoRotate` only apply to bar/line (the chart types whose
+  // config carries them). Pie/heatmap/radar configs don't produce a Ref for
+  // these fields, so they're relaxed to optional here; chart composables that
+  // access them default at the call site (e.g. `scale?.value ?? "linear"`).
+  scale?: Ref<ScaleType>
+  autoRotate?: Ref<boolean>
   // Legend selection state for z series (3D); key = z name, false = hidden.
   visibleZ?: Ref<Record<string, boolean>>
 }

@@ -2,6 +2,8 @@ package shared
 
 import (
 	"sort"
+
+	config_charts "github.com/goptics/vizb/config/charts"
 )
 
 const noTagKey = "__no_tag__"
@@ -102,20 +104,14 @@ func deepCloneDataset(src Dataset) Dataset {
 		dst.Meta = &m
 	}
 
-	if src.Settings.Axes != nil {
-		dst.Settings.Axes = make([]Axis, len(src.Settings.Axes))
-		copy(dst.Settings.Axes, src.Settings.Axes)
+	if src.Axes != nil {
+		dst.Axes = make([]Axis, len(src.Axes))
+		copy(dst.Axes, src.Axes)
 	}
 
-	if src.Settings.ChartSettings != nil {
-		dst.Settings.ChartSettings = make(map[string]ChartSettings, len(src.Settings.ChartSettings))
-		for k, v := range src.Settings.ChartSettings {
-			if v.Sort != nil {
-				sortCopy := *v.Sort
-				v.Sort = &sortCopy
-			}
-			dst.Settings.ChartSettings[k] = v
-		}
+	if src.Settings != nil {
+		dst.Settings = make([]config_charts.ChartConfig, len(src.Settings))
+		copy(dst.Settings, src.Settings)
 	}
 
 	return dst

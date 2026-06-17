@@ -34,7 +34,7 @@ tasks:
   build:ui:
     desc: Build Vue UI template
     cmds:
-      - cd ui; SINGLEFILE=True pnpm build; cd -
+      - cd ui; EMBED_UI=True pnpm build; cd -
 
   build:cli:
     desc: Build the binary (production-ready, stripped)
@@ -59,6 +59,13 @@ tasks:
     cmds:
       - go test -count=1 ./...
       - cd ui; pnpm test; cd -
+
+  # Pragmatic Go coverage (excludes main.go, vizb-ui.gen.go, pkg/style from review).
+  test:cover:
+    desc: Go cross-package coverage report
+    cmds:
+      - go test -count=1 -coverpkg=./... -coverprofile=coverage.out ./...
+      - go tool cover -func=coverage.out | tail -1
 
   lint:
     desc: Run linter

@@ -2,13 +2,13 @@ package utils
 
 import (
 	"bytes"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
 
 // Test constants for validation rules
@@ -20,8 +20,14 @@ const (
 	invalidFormat = "xml"
 )
 
-func TestApplyValidationRules(t *testing.T) {
-	t.Run("Valid value passes validation", func(t *testing.T) {
+var errValidation = errors.New("validation error")
+
+type ValidatorsSuite struct {
+	suite.Suite
+}
+
+func (s *ValidatorsSuite) TestApplyValidationRules() {
+	s.Run("Valid value passes validation", func() {
 		value := validFormat1
 		rule := ValidationRule{
 			Label:    "format",
@@ -43,11 +49,11 @@ func TestApplyValidationRules(t *testing.T) {
 		var buf bytes.Buffer
 		buf.ReadFrom(r)
 
-		assert.Equal(t, validFormat1, value, "Valid value should remain unchanged")
-		assert.Empty(t, buf.String(), "No warning should be printed for valid value")
+		s.Equal(validFormat1, value, "Valid value should remain unchanged")
+		s.Empty(buf.String(), "No warning should be printed for valid value")
 	})
 
-	t.Run("Invalid value gets replaced with default", func(t *testing.T) {
+	s.Run("Invalid value gets replaced with default", func() {
 		value := invalidFormat
 		rule := ValidationRule{
 			Label:    "format",
@@ -69,13 +75,13 @@ func TestApplyValidationRules(t *testing.T) {
 		var buf bytes.Buffer
 		buf.ReadFrom(r)
 
-		assert.Equal(t, defaultFormat, value, "Invalid value should be replaced with default")
-		assert.Contains(t, buf.String(), "Warning: Invalid format", "Warning should be printed")
-		assert.Contains(t, buf.String(), invalidFormat, "Warning should contain invalid value")
-		assert.Contains(t, buf.String(), defaultFormat, "Warning should contain default value")
+		s.Equal(defaultFormat, value, "Invalid value should be replaced with default")
+		s.Contains(buf.String(), "Warning: Invalid format", "Warning should be printed")
+		s.Contains(buf.String(), invalidFormat, "Warning should contain invalid value")
+		s.Contains(buf.String(), defaultFormat, "Warning should contain default value")
 	})
 
-	t.Run("Empty value and empty default are skipped", func(t *testing.T) {
+	s.Run("Empty value and empty default are skipped", func() {
 		value := ""
 		rule := ValidationRule{
 			Label:    "format",
@@ -86,10 +92,10 @@ func TestApplyValidationRules(t *testing.T) {
 
 		ApplyValidationRules([]ValidationRule{rule})
 
-		assert.Equal(t, "", value, "Empty value should remain empty when default is also empty")
+		s.Equal("", value, "Empty value should remain empty when default is also empty")
 	})
 
-	t.Run("Empty value gets replaced with non-empty default", func(t *testing.T) {
+	s.Run("Empty value gets replaced with non-empty default", func() {
 		value := ""
 		rule := ValidationRule{
 			Label:    "format",
@@ -100,10 +106,10 @@ func TestApplyValidationRules(t *testing.T) {
 
 		ApplyValidationRules([]ValidationRule{rule})
 
-		assert.Equal(t, defaultFormat, value, "Empty value should be replaced with default")
+		s.Equal(defaultFormat, value, "Empty value should be replaced with default")
 	})
 
-	t.Run("Normalizer function is applied", func(t *testing.T) {
+	s.Run("Normalizer function is applied", func() {
 		value := "JSON"
 		normalizer := strings.ToLower
 		rule := ValidationRule{
@@ -116,10 +122,10 @@ func TestApplyValidationRules(t *testing.T) {
 
 		ApplyValidationRules([]ValidationRule{rule})
 
-		assert.Equal(t, "json", value, "Normalizer should convert to lowercase")
+		s.Equal("json", value, "Normalizer should convert to lowercase")
 	})
 
-	t.Run("Normalizer then validation", func(t *testing.T) {
+	s.Run("Normalizer then validation", func() {
 		value := "HTML"
 		normalizer := strings.ToLower
 		rule := ValidationRule{
@@ -132,10 +138,10 @@ func TestApplyValidationRules(t *testing.T) {
 
 		ApplyValidationRules([]ValidationRule{rule})
 
-		assert.Equal(t, validFormat2, value, "Normalized value should pass validation")
+		s.Equal(validFormat2, value, "Normalized value should pass validation")
 	})
 
-	t.Run("Normalizer with invalid result uses default", func(t *testing.T) {
+	s.Run("Normalizer with invalid result uses default", func() {
 		value := "INVALID"
 		normalizer := strings.ToLower
 		rule := ValidationRule{
@@ -159,11 +165,11 @@ func TestApplyValidationRules(t *testing.T) {
 		var buf bytes.Buffer
 		buf.ReadFrom(r)
 
-		assert.Equal(t, defaultFormat, value, "Invalid normalized value should use default")
-		assert.Contains(t, buf.String(), "invalid", "Warning should contain normalized invalid value")
+		s.Equal(defaultFormat, value, "Invalid normalized value should use default")
+		s.Contains(buf.String(), "invalid", "Warning should contain normalized invalid value")
 	})
 
-	t.Run("Multiple rules are processed", func(t *testing.T) {
+	s.Run("Multiple rules are processed", func() {
 		format := "JSON"
 		output := "invalid_output"
 
@@ -184,11 +190,11 @@ func TestApplyValidationRules(t *testing.T) {
 
 		ApplyValidationRules([]ValidationRule{formatRule, outputRule})
 
-		assert.Equal(t, "json", format, "First rule should normalize and validate")
-		assert.Equal(t, "stdout", output, "Second rule should use default")
+		s.Equal("json", format, "First rule should normalize and validate")
+		s.Equal("stdout", output, "Second rule should use default")
 	})
 
-	t.Run("Nil normalizer is handled safely", func(t *testing.T) {
+	s.Run("Nil normalizer is handled safely", func() {
 		value := validFormat1
 		rule := ValidationRule{
 			Label:      "format",
@@ -200,129 +206,130 @@ func TestApplyValidationRules(t *testing.T) {
 
 		ApplyValidationRules([]ValidationRule{rule})
 
-		assert.Equal(t, validFormat1, value, "Value should remain unchanged with nil normalizer")
+		s.Equal(validFormat1, value, "Value should remain unchanged with nil normalizer")
 	})
 }
 
-func TestIsBenchJSONFile(t *testing.T) {
-	tempDir := t.TempDir()
+func (s *ValidatorsSuite) TestIsBenchJSONFile() {
+	tempDir := s.T().TempDir()
 
-	t.Run("Valid benchmark JSON file", func(t *testing.T) {
+	s.Run("Valid benchmark JSON file", func() {
 		content := `{"Action":"run","Test":"BenchmarkExample"}
 {"Action":"pass","Test":"BenchmarkExample","Output":"result"}
 `
 		filePath := filepath.Join(tempDir, "valid_bench.json")
 		err := os.WriteFile(filePath, []byte(content), 0644)
-		require.NoError(t, err)
+		s.Require().NoError(err)
 
 		result := IsBenchJSONFile(filePath)
-		assert.True(t, result, "Valid benchmark JSON should return true")
+		s.True(result, "Valid benchmark JSON should return true")
 	})
 
-	t.Run("Valid JSON with benchmark test name", func(t *testing.T) {
+	s.Run("Valid JSON with benchmark test name", func() {
 		content := `{"Action":"run","Test":"BenchmarkMemoryUsage"}
 `
 		filePath := filepath.Join(tempDir, "benchmark.json")
 		err := os.WriteFile(filePath, []byte(content), 0644)
-		require.NoError(t, err)
+		s.Require().NoError(err)
 
 		result := IsBenchJSONFile(filePath)
-		assert.True(t, result, "JSON with Benchmark prefix should return true")
+		s.True(result, "JSON with Benchmark prefix should return true")
 	})
 
-	t.Run("Valid JSON without benchmark test name but with action", func(t *testing.T) {
+	s.Run("Valid JSON without benchmark test name but with action", func() {
 		content := `{"Action":"run","Test":"TestSomething"}
 `
 		filePath := filepath.Join(tempDir, "test.json")
 		err := os.WriteFile(filePath, []byte(content), 0644)
-		require.NoError(t, err)
+		s.Require().NoError(err)
 
 		result := IsBenchJSONFile(filePath)
-		assert.True(t, result, "JSON with valid action should return true")
+		s.True(result, "JSON with valid action should return true")
 	})
 
-	t.Run("Empty action returns false", func(t *testing.T) {
+	s.Run("Empty action returns false", func() {
 		content := `{"Action":"","Test":"BenchmarkExample"}
 `
 		filePath := filepath.Join(tempDir, "empty_action.json")
 		err := os.WriteFile(filePath, []byte(content), 0644)
-		require.NoError(t, err)
+		s.Require().NoError(err)
 
 		result := IsBenchJSONFile(filePath)
-		assert.False(t, result, "Empty action should return false")
+		s.False(result, "Empty action should return false")
 	})
 
-	t.Run("Missing action field returns false", func(t *testing.T) {
+	s.Run("Missing action field returns false", func() {
 		content := `{"Test":"BenchmarkExample"}
 `
 		filePath := filepath.Join(tempDir, "missing_action.json")
 		err := os.WriteFile(filePath, []byte(content), 0644)
-		require.NoError(t, err)
+		s.Require().NoError(err)
 
 		result := IsBenchJSONFile(filePath)
-		assert.False(t, result, "Missing action field should return false")
+		s.False(result, "Missing action field should return false")
 	})
 
-	t.Run("Invalid JSON returns false", func(t *testing.T) {
+	s.Run("Invalid JSON returns false", func() {
 		content := `{"Action":"run","Test":"BenchmarkExample"
 invalid json here
 `
 		filePath := filepath.Join(tempDir, "invalid.json")
 		err := os.WriteFile(filePath, []byte(content), 0644)
-		require.NoError(t, err)
+		s.Require().NoError(err)
 
 		result := IsBenchJSONFile(filePath)
-		assert.False(t, result, "Invalid JSON should return false")
+		s.False(result, "Invalid JSON should return false")
 	})
 
-	t.Run("Empty file returns false", func(t *testing.T) {
+	s.Run("Empty file returns false", func() {
 		filePath := filepath.Join(tempDir, "empty.json")
 		err := os.WriteFile(filePath, []byte(""), 0644)
-		require.NoError(t, err)
+		s.Require().NoError(err)
 
 		result := IsBenchJSONFile(filePath)
-		assert.False(t, result, "Empty file should return false")
+		s.False(result, "Empty file should return false")
 	})
 
-	t.Run("File with only whitespace returns false", func(t *testing.T) {
+	s.Run("File with only whitespace returns false", func() {
 		content := `
+
 
 	`
 		filePath := filepath.Join(tempDir, "whitespace.json")
 		err := os.WriteFile(filePath, []byte(content), 0644)
-		require.NoError(t, err)
+		s.Require().NoError(err)
 
 		result := IsBenchJSONFile(filePath)
-		assert.False(t, result, "File with only whitespace should return false")
+		s.False(result, "File with only whitespace should return false")
 	})
 
-	t.Run("File with mixed valid and invalid lines", func(t *testing.T) {
+	s.Run("File with mixed valid and invalid lines", func() {
 		content := `{"Action":"run","Test":"BenchmarkExample"}
 invalid line here
 {"Action":"pass","Test":"BenchmarkExample"}
 `
 		filePath := filepath.Join(tempDir, "mixed.json")
 		err := os.WriteFile(filePath, []byte(content), 0644)
-		require.NoError(t, err)
+		s.Require().NoError(err)
 
 		result := IsBenchJSONFile(filePath)
-		assert.True(t, result, "File with first valid line should return true")
+		s.True(result, "File with first valid line should return true")
 	})
 
-	t.Run("File with empty lines at start", func(t *testing.T) {
+	s.Run("File with empty lines at start", func() {
 		content := `
 
 {"Action":"run","Test":"BenchmarkExample"}
 `
 		filePath := filepath.Join(tempDir, "empty_start.json")
 		err := os.WriteFile(filePath, []byte(content), 0644)
-		require.NoError(t, err)
+		s.Require().NoError(err)
 
 		result := IsBenchJSONFile(filePath)
-		assert.True(t, result, "File with empty lines at start should still work")
+		s.True(result, "File with empty lines at start should still work")
 	})
 
-	t.Run("Large file with valid first line", func(t *testing.T) {
+	s.Run("Large file with valid first line", func() {
 		var content strings.Builder
 		content.WriteString(`{"Action":"run","Test":"BenchmarkLargeTest"}` + "\n")
 
@@ -333,16 +340,15 @@ invalid line here
 
 		filePath := filepath.Join(tempDir, "large.json")
 		err := os.WriteFile(filePath, []byte(content.String()), 0644)
-		require.NoError(t, err)
+		s.Require().NoError(err)
 
 		result := IsBenchJSONFile(filePath)
-		assert.True(t, result, "Large file with valid format should return true")
+		s.True(result, "Large file with valid format should return true")
 	})
 }
 
-// Test edge cases and error conditions
-func TestValidationEdgeCases(t *testing.T) {
-	t.Run("Nil value pointer safe", func(t *testing.T) {
+func (s *ValidatorsSuite) TestValidationEdgeCases() {
+	s.Run("Nil value pointer safe", func() {
 		rule := ValidationRule{
 			Label:    "format",
 			Value:    nil,
@@ -350,12 +356,12 @@ func TestValidationEdgeCases(t *testing.T) {
 			Default:  defaultFormat,
 		}
 
-		assert.NotPanics(t, func() {
+		s.NotPanics(func() {
 			ApplyValidationRules([]ValidationRule{rule})
 		}, "Nil value pointer should not cause panic")
 	})
 
-	t.Run("Empty ValidSet with valid default", func(t *testing.T) {
+	s.Run("Empty ValidSet with valid default", func() {
 		value := "anything"
 		rule := ValidationRule{
 			Label:    "format",
@@ -366,10 +372,10 @@ func TestValidationEdgeCases(t *testing.T) {
 
 		ApplyValidationRules([]ValidationRule{rule})
 
-		assert.Equal(t, defaultFormat, value, "Empty ValidSet should always use default")
+		s.Equal(defaultFormat, value, "Empty ValidSet should always use default")
 	})
 
-	t.Run("Case sensitive validation", func(t *testing.T) {
+	s.Run("Case sensitive validation", func() {
 		value := "JSON"
 		rule := ValidationRule{
 			Label:    "format",
@@ -380,10 +386,10 @@ func TestValidationEdgeCases(t *testing.T) {
 
 		ApplyValidationRules([]ValidationRule{rule})
 
-		assert.Equal(t, "json", value, "Case sensitive validation should use default for 'JSON' vs 'json'")
+		s.Equal("json", value, "Case sensitive validation should use default for 'JSON' vs 'json'")
 	})
 
-	t.Run("Special characters in validation", func(t *testing.T) {
+	s.Run("Special characters in validation", func() {
 		value := "special-format_123"
 		rule := ValidationRule{
 			Label:    "format",
@@ -394,13 +400,12 @@ func TestValidationEdgeCases(t *testing.T) {
 
 		ApplyValidationRules([]ValidationRule{rule})
 
-		assert.Equal(t, "special-format_123", value, "Special characters should be handled correctly")
+		s.Equal("special-format_123", value, "Special characters should be handled correctly")
 	})
 }
 
-// Test complex normalizer functions
-func TestNormalizerFunctions(t *testing.T) {
-	t.Run("Trim whitespace normalizer", func(t *testing.T) {
+func (s *ValidatorsSuite) TestNormalizerFunctions() {
+	s.Run("Trim whitespace normalizer", func() {
 		value := "  json  "
 		rule := ValidationRule{
 			Label:      "format",
@@ -412,10 +417,10 @@ func TestNormalizerFunctions(t *testing.T) {
 
 		ApplyValidationRules([]ValidationRule{rule})
 
-		assert.Equal(t, "json", value, "Whitespace should be trimmed")
+		s.Equal("json", value, "Whitespace should be trimmed")
 	})
 
-	t.Run("Replace normalizer", func(t *testing.T) {
+	s.Run("Replace normalizer", func() {
 		value := "json-format"
 		normalizer := func(s string) string {
 			return strings.ReplaceAll(s, "-", "_")
@@ -430,10 +435,10 @@ func TestNormalizerFunctions(t *testing.T) {
 
 		ApplyValidationRules([]ValidationRule{rule})
 
-		assert.Equal(t, "json_format", value, "Replace normalizer should work")
+		s.Equal("json_format", value, "Replace normalizer should work")
 	})
 
-	t.Run("Chain normalizers effect", func(t *testing.T) {
+	s.Run("Chain normalizers effect", func() {
 		value := "  JSON-FORMAT  "
 		normalizer := func(s string) string {
 			s = strings.TrimSpace(s)
@@ -451,13 +456,12 @@ func TestNormalizerFunctions(t *testing.T) {
 
 		ApplyValidationRules([]ValidationRule{rule})
 
-		assert.Equal(t, "json_format", value, "Chained normalizer operations should work")
+		s.Equal("json_format", value, "Chained normalizer operations should work")
 	})
 }
 
-// Test slice validation rules
-func TestApplyValidationRulesSlice(t *testing.T) {
-	t.Run("Valid slice values pass validation", func(t *testing.T) {
+func (s *ValidatorsSuite) TestApplyValidationRulesSlice() {
+	s.Run("Valid slice values pass validation", func() {
 		values := []string{"bar", "line"}
 		rule := ValidationRule{
 			Label:        "charts",
@@ -478,11 +482,11 @@ func TestApplyValidationRulesSlice(t *testing.T) {
 		var buf bytes.Buffer
 		buf.ReadFrom(r)
 
-		assert.Equal(t, []string{"bar", "line"}, values, "Valid slice should remain unchanged")
-		assert.Empty(t, buf.String(), "No warning should be printed for valid slice")
+		s.Equal([]string{"bar", "line"}, values, "Valid slice should remain unchanged")
+		s.Empty(buf.String(), "No warning should be printed for valid slice")
 	})
 
-	t.Run("Invalid slice value gets replaced with default", func(t *testing.T) {
+	s.Run("Invalid slice value gets replaced with default", func() {
 		values := []string{"bar", "invalid"}
 		rule := ValidationRule{
 			Label:        "charts",
@@ -503,11 +507,11 @@ func TestApplyValidationRulesSlice(t *testing.T) {
 		var buf bytes.Buffer
 		buf.ReadFrom(r)
 
-		assert.Equal(t, []string{"bar", "line", "pie"}, values, "Invalid slice should be replaced with default")
-		assert.Contains(t, buf.String(), "Warning: Invalid charts", "Warning should be printed")
+		s.Equal([]string{"bar", "line", "pie"}, values, "Invalid slice should be replaced with default")
+		s.Contains(buf.String(), "Warning: Invalid charts", "Warning should be printed")
 	})
 
-	t.Run("Slice with normalizer", func(t *testing.T) {
+	s.Run("Slice with normalizer", func() {
 		values := []string{"BAR", "LINE"}
 		rule := ValidationRule{
 			Label:        "charts",
@@ -519,10 +523,10 @@ func TestApplyValidationRulesSlice(t *testing.T) {
 
 		ApplyValidationRules([]ValidationRule{rule})
 
-		assert.Equal(t, []string{"bar", "line"}, values, "Slice values should be normalized")
+		s.Equal([]string{"bar", "line"}, values, "Slice values should be normalized")
 	})
 
-	t.Run("Empty slice remains empty", func(t *testing.T) {
+	s.Run("Empty slice remains empty", func() {
 		values := []string{}
 		rule := ValidationRule{
 			Label:        "charts",
@@ -533,13 +537,12 @@ func TestApplyValidationRulesSlice(t *testing.T) {
 
 		ApplyValidationRules([]ValidationRule{rule})
 
-		assert.Equal(t, []string{}, values, "Empty slice should remain empty")
+		s.Equal([]string{}, values, "Empty slice should remain empty")
 	})
 }
 
-// Test custom validator function that returns error
-func TestApplyValidationRulesWithCustomValidator(t *testing.T) {
-	t.Run("Custom validator returns nil (success)", func(t *testing.T) {
+func (s *ValidatorsSuite) TestApplyValidationRulesWithCustomValidator() {
+	s.Run("Custom validator returns nil (success)", func() {
 		value := "custom-value"
 		rule := ValidationRule{
 			Label: "custom",
@@ -552,16 +555,16 @@ func TestApplyValidationRulesWithCustomValidator(t *testing.T) {
 
 		ApplyValidationRules([]ValidationRule{rule})
 
-		assert.Equal(t, "custom-value", value, "Value should remain unchanged when validator returns nil")
+		s.Equal("custom-value", value, "Value should remain unchanged when validator returns nil")
 	})
 
-	t.Run("Custom validator returns error", func(t *testing.T) {
+	s.Run("Custom validator returns error", func() {
 		value := "invalid-pattern"
 		rule := ValidationRule{
 			Label: "pattern",
 			Value: &value,
 			Validator: func(s string) error {
-				return assert.AnError // Return an error
+				return errValidation
 			},
 			Default: "default-pattern",
 		}
@@ -578,12 +581,12 @@ func TestApplyValidationRulesWithCustomValidator(t *testing.T) {
 		var buf bytes.Buffer
 		buf.ReadFrom(r)
 
-		assert.Equal(t, "default-pattern", value, "Value should be replaced with default when validator returns error")
-		assert.Contains(t, buf.String(), "Warning: Invalid pattern", "Warning should be printed")
-		assert.Contains(t, buf.String(), "Reason:", "Warning should contain reason")
+		s.Equal("default-pattern", value, "Value should be replaced with default when validator returns error")
+		s.Contains(buf.String(), "Warning: Invalid pattern", "Warning should be printed")
+		s.Contains(buf.String(), "Reason:", "Warning should contain reason")
 	})
 
-	t.Run("Custom validator with specific error message", func(t *testing.T) {
+	s.Run("Custom validator with specific error message", func() {
 		value := "name"
 		customErr := "pattern must contain xAxis (x) or yAxis (y)"
 		rule := ValidationRule{
@@ -591,7 +594,7 @@ func TestApplyValidationRulesWithCustomValidator(t *testing.T) {
 			Value: &value,
 			Validator: func(s string) error {
 				if s == "name" {
-					return assert.AnError
+					return errValidation
 				}
 				return nil
 			},
@@ -610,19 +613,19 @@ func TestApplyValidationRulesWithCustomValidator(t *testing.T) {
 		var buf bytes.Buffer
 		buf.ReadFrom(r)
 
-		assert.Equal(t, "xAxis", value, "Invalid pattern should be replaced with default")
-		assert.Contains(t, buf.String(), "group pattern", "Warning should mention the label")
+		s.Equal("xAxis", value, "Invalid pattern should be replaced with default")
+		s.Contains(buf.String(), "group pattern", "Warning should mention the label")
 		_ = customErr // suppress unused warning
 	})
 
-	t.Run("Slice with custom validator", func(t *testing.T) {
+	s.Run("Slice with custom validator", func() {
 		values := []string{"valid", "also-valid"}
 		rule := ValidationRule{
 			Label:      "items",
 			SliceValue: &values,
 			Validator: func(s string) error {
 				if s == "invalid" {
-					return assert.AnError
+					return errValidation
 				}
 				return nil
 			},
@@ -631,17 +634,17 @@ func TestApplyValidationRulesWithCustomValidator(t *testing.T) {
 
 		ApplyValidationRules([]ValidationRule{rule})
 
-		assert.Equal(t, []string{"valid", "also-valid"}, values, "Valid slice should remain unchanged")
+		s.Equal([]string{"valid", "also-valid"}, values, "Valid slice should remain unchanged")
 	})
 
-	t.Run("Slice with custom validator returns error", func(t *testing.T) {
+	s.Run("Slice with custom validator returns error", func() {
 		values := []string{"valid", "invalid"}
 		rule := ValidationRule{
 			Label:      "items",
 			SliceValue: &values,
 			Validator: func(s string) error {
 				if s == "invalid" {
-					return assert.AnError
+					return errValidation
 				}
 				return nil
 			},
@@ -660,14 +663,13 @@ func TestApplyValidationRulesWithCustomValidator(t *testing.T) {
 		var buf bytes.Buffer
 		buf.ReadFrom(r)
 
-		assert.Equal(t, []string{"default"}, values, "Slice with invalid item should be replaced with default")
-		assert.Contains(t, buf.String(), "Warning: Invalid items", "Warning should be printed")
+		s.Equal([]string{"default"}, values, "Slice with invalid item should be replaced with default")
+		s.Contains(buf.String(), "Warning: Invalid items", "Warning should be printed")
 	})
 }
 
-// Test concurrent usage
-func TestValidatorsConcurrency(t *testing.T) {
-	t.Run("Concurrent ApplyValidationRules", func(t *testing.T) {
+func (s *ValidatorsSuite) TestValidatorsConcurrency() {
+	s.Run("Concurrent ApplyValidationRules", func() {
 		const numGoroutines = 100
 
 		results := make(chan string, numGoroutines)
@@ -691,16 +693,16 @@ func TestValidatorsConcurrency(t *testing.T) {
 		// Collect all results
 		for i := 0; i < numGoroutines; i++ {
 			result := <-results
-			assert.Equal(t, "json", result, "All concurrent operations should produce consistent results")
+			s.Equal("json", result, "All concurrent operations should produce consistent results")
 		}
 	})
 
-	t.Run("Concurrent IsBenchJSONFile", func(t *testing.T) {
-		tempDir := t.TempDir()
+	s.Run("Concurrent IsBenchJSONFile", func() {
+		tempDir := s.T().TempDir()
 		content := `{"Action":"run","Test":"BenchmarkExample"}`
 		filePath := filepath.Join(tempDir, "concurrent_test.json")
 		err := os.WriteFile(filePath, []byte(content), 0644)
-		require.NoError(t, err)
+		s.Require().NoError(err)
 
 		const numGoroutines = 50
 		results := make(chan bool, numGoroutines)
@@ -715,7 +717,11 @@ func TestValidatorsConcurrency(t *testing.T) {
 		// Collect all results
 		for i := 0; i < numGoroutines; i++ {
 			result := <-results
-			assert.True(t, result, "All concurrent file reads should succeed")
+			s.True(result, "All concurrent file reads should succeed")
 		}
 	})
+}
+
+func TestValidatorsSuite(t *testing.T) {
+	suite.Run(t, new(ValidatorsSuite))
 }

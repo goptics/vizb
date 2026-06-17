@@ -1,21 +1,26 @@
 pre-commit:
   parallel: true
   commands:
+    format:
+      run: task format
+      stage_fixed: true
     ui-gen-check:
       glob: "ui/src/**/*.{vue,ts,js,css,svg}"
       run: |
         gen="pkg/template/vizb-ui.gen.go"
-        if git diff --cached --name-only | grep -q "^$gen$"; then
-          echo "✅ vizb-ui.gen.go is staged with UI changes"
-          exit 0
+        # When ui/src sources are staged for commit we require that the generated
+        # bundle file has no unstaged modifications (wt vs index). This covers:
+        # - You ran `task build:ui` (wt now differs) but forgot `git add` → block.
+        # - Legitimate "no material change" ui edits (gen still clean vs index) → allow.
+        # - Proper "ui/src + gen.go both staged" → wt == index for gen → allow.
+        if ! git diff --quiet -- "$gen"; then
+          echo "❌ ui/ changed and pkg/template/vizb-ui.gen.go has unstaged modifications."
+          echo "   Run: task build:ui && git add $gen"
+          echo "   (If you believe the ui/src edit has no material effect on output, you may also: git checkout -- $gen)"
+          exit 1
         fi
-        if git diff --quiet HEAD -- "$gen"; then
-          echo "✅ vizb-ui.gen.go unchanged (type-only or asset change)"
-          exit 0
-        fi
-        echo "❌ ui/ changed and pkg/template/vizb-ui.gen.go needs updating."
-        echo "   Run: task build:ui"
-        exit 1
+        echo "✅ vizb-ui.gen.go is clean (or its updates are staged together with the ui/src changes)"
+        exit 0
     go-test:
       glob: "*.go"
       run: task test

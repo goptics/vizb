@@ -87,3 +87,26 @@ func TestGenerateUI(t *testing.T) {
 		assert.NotNil(t, err, "Expected error from WithSafe when OsExit is called")
 	})
 }
+
+func TestGenerateRemoteUI(t *testing.T) {
+	testTemplate := `<!DOCTYPE html><html><body>` +
+		`<script>window.VIZB_DATA = [[VIZB .Data VIZB]];` +
+		`window.VIZB_DATA_URL = [[VIZB .DataURL VIZB]];` +
+		`window.VIZB_CHARTS = [[VIZB .ChartList VIZB]];</script></body></html>`
+
+	result := GenerateRemoteUI("https://example.com/data.json", []string{"bar"}, false, testTemplate)
+
+	require.NotEmpty(t, result)
+	assert.Contains(t, result, "https://example.com/data.json")
+	assert.Contains(t, result, "null")
+	assert.Contains(t, result, `"bar"`)
+}
+
+func TestChartListJSEmptyDefaults(t *testing.T) {
+	testTemplate := `<!DOCTYPE html><html><body><script>window.VIZB_CHARTS = [[VIZB .ChartList VIZB]];</script></body></html>`
+	result := GenerateUI([]byte(`[]`), nil, false, testTemplate)
+
+	assert.Contains(t, result, `"bar"`)
+	assert.Contains(t, result, `"line"`)
+	assert.Contains(t, result, `"pie"`)
+}

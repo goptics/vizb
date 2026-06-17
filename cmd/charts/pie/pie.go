@@ -1,16 +1,20 @@
 // Package pie registers the `vizb pie` subcommand: a pie chart. Pie data is
-// non-linear, so --scale and --rotate are intentionally absent (the Options
+// non-linear, so --scale and --3d-rotate are intentionally absent (the Options
 // struct simply doesn't carry them).
 package pie
 
 import (
 	"github.com/goptics/vizb/cmd/cli"
+	config_charts "github.com/goptics/vizb/config/charts"
+	piechart "github.com/goptics/vizb/config/charts/pie"
+	"github.com/goptics/vizb/pkg/parser"
+	"github.com/goptics/vizb/shared"
 	"github.com/spf13/cobra"
 )
 
 func init() { cli.Register(NewCommand) }
 
-// Options carries only the shared chart flags; no --scale/--rotate.
+// Options carries only the shared chart flags; no --scale/--3d-rotate.
 type Options struct {
 	cli.ChartOptions
 }
@@ -26,10 +30,18 @@ func NewCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			o.LinearOptions.Validate()
 
-			cli.RunSingleChart(cmd, args, o.CommonOptions, cli.LinearDefaults{
+			cfg := piechart.Materialise(piechart.Flags{
+				Swap:       o.Swap,
 				Sort:       o.Sort,
 				ShowLabels: o.ShowLabels,
-			}, "pie", o.Swap, nil)
+			}, nil)
+
+			axes := parser.GroupAxes(o.CommonOptions.ParseConfig())
+			if err := shared.ValidateSwap(cfg.Swap, axes); err != nil {
+				shared.ExitWithError(err.Error(), nil)
+			}
+
+			cli.RunSingleChart(cmd, args, o.CommonOptions, []config_charts.ChartConfig{cfg})
 		},
 	}
 	o.ChartOptions.Bind(cmd.Flags())

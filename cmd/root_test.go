@@ -1,118 +1,227 @@
 package cmd
 
 import (
-	"bytes"
-	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"testing"
 
+	config_charts "github.com/goptics/vizb/config/charts"
+	barchart "github.com/goptics/vizb/config/charts/bar"
+	linechart "github.com/goptics/vizb/config/charts/line"
+	piechart "github.com/goptics/vizb/config/charts/pie"
 	"github.com/goptics/vizb/shared"
-	"github.com/spf13/cobra"
+	"github.com/goptics/vizb/testutil"
 	"github.com/stretchr/testify/suite"
 )
 
-// osExit mirrors the historical test hook; tests panic instead of exiting.
-var osExit = shared.OsExit
-var originalOsExit = os.Exit
-
-// TestMain replaces os.Exit so an exit-on-error path doesn't kill the test run.
-func TestMain(m *testing.M) {
-	osExit = func(code int) {
-		panic(fmt.Sprintf("os.Exit(%d) was called", code))
-	}
-
-	code := m.Run()
-
-	osExit = originalOsExit
-	osExit(code)
-}
-
-// RootSuite covers the root command's runBenchmark + option validation. SetupTest
-// resets the global rootOpts so cases don't leak state into one another (a payoff
-// of removing the old shared.FlagState global).
+// RootSuite covers the root command end-to-end via rootCmd.Execute.
 type RootSuite struct {
 	suite.Suite
-	origOsExit func(int)
+	restoreOsExit func()
 }
 
 func (s *RootSuite) SetupTest() {
-	rootOpts = rootOptions{}
-	rootOpts.Parser = "auto"
-	rootOpts.GroupPattern = "x"
-	rootOpts.MemUnit = "B"
-	rootOpts.TimeUnit = "ns"
-	rootOpts.Charts = allChartTypes
-	s.origOsExit = shared.OsExit
+	ResetTestState()
+	s.restoreOsExit, _ = testutil.TrapOsExitPanic(s.T())
 }
 
 func (s *RootSuite) TearDownTest() {
-	shared.OsExit = s.origOsExit
+	s.restoreOsExit()
+}
+
+func (s *RootSuite) TestCommandFlags() {
+	s.NotNil(rootCmd.Flags().Lookup("charts"))
+	s.NotNil(rootCmd.Flags().Lookup("sort"))
+	s.NotNil(rootCmd.Flags().Lookup("parser"))
+	s.Equal(defaultChartTypes, rootOpts.Charts)
 }
 
 func (s *RootSuite) TestValidateRootOptionsWarnsAndDefaults() {
 	rootOpts.MemUnit = "invalid"
-	out := s.captureStderr(func() { validateRootOptions() })
+	out := testutil.CaptureStderr(func() { validateRootOptions() })
 	s.Equal("B", rootOpts.MemUnit)
 	s.Contains(out, "Invalid memory unit")
 }
 
 func (s *RootSuite) TestRunBenchmarkValidFileInput() {
 	dir := s.T().TempDir()
-	input := filepath.Join(dir, "valid.txt")
-	s.Require().NoError(os.WriteFile(input, []byte(`BenchmarkTest-8    1000000    1234 ns/op    1000 B/op    10 allocs/op`), 0644))
+	input := testutil.WriteBenchFile(s.T(), dir, "valid.txt",
+		`BenchmarkTest-8    1000000    1234 ns/op    1000 B/op    10 allocs/op`)
+	out := filepath.Join(dir, "out.html")
 
-	rootOpts.OutputFile = filepath.Join(dir, "out.html")
-
-	out := s.captureStdout(func() {
-		runBenchmark(&cobra.Command{}, []string{input})
+	outStr := testutil.CaptureStdout(func() {
+		rootCmd.SetArgs([]string{"-o", out, input})
+		s.Require().NoError(rootCmd.Execute())
 	})
 
-	s.FileExists(rootOpts.OutputFile)
-	s.Contains(out, "Generated")
+	s.FileExists(out)
+	s.Contains(outStr, "Generated")
 }
 
 func (s *RootSuite) TestRunBenchmarkNoArgsNoStdinExits() {
-	exitCalled := false
-	shared.OsExit = func(int) { exitCalled = true; panic("exit") }
+	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
+	defer restore()
 
-	cmd := &cobra.Command{}
-	cmd.SetOut(io.Discard)
-	cmd.SetErr(io.Discard)
+	oldStdin := os.Stdin
+	r, w, _ := os.Pipe()
+	os.Stdin = r
+	w.Close()
+	defer func() { os.Stdin = oldStdin }()
 
-	s.captureStdout(func() {
-		s.Panics(func() { runBenchmark(cmd, []string{}) })
+	rootCmd.SetArgs(nil)
+	s.Panics(func() { _ = rootCmd.Execute() })
+	s.True(*exitCalled)
+}
+
+func (s *RootSuite) TestRunBenchmarkGlobalSortApplied() {
+	dir := s.T().TempDir()
+	input := testutil.WriteBenchFile(s.T(), dir, "valid.txt",
+		`BenchmarkTest-8    1000000    1234 ns/op    1000 B/op    10 allocs/op`)
+	out := filepath.Join(dir, "out.json")
+	rootOpts.Charts = nil
+
+	outStr := testutil.CaptureStdout(func() {
+		rootCmd.SetArgs([]string{"-o", out, "-c", "bar", "-c", "line", "-s", "desc", input})
+		s.Require().NoError(rootCmd.Execute())
 	})
-	s.True(exitCalled)
+
+	s.Contains(outStr, "Generated")
+
+	ds := testutil.ReadDataset(s.T(), out)
+	s.Require().Len(ds.Settings, 2)
+
+	for i, c := range ds.Settings {
+		switch c := c.(type) {
+		case *barchart.Config:
+			s.Require().NotNil(c.Sort, "settings[%d] (bar) sort should be set", i)
+			s.True(c.Sort.Enabled)
+			s.Equal("desc", c.Sort.Order)
+		case *linechart.Config:
+			s.Require().NotNil(c.Sort, "settings[%d] (line) sort should be set", i)
+			s.True(c.Sort.Enabled)
+			s.Equal("desc", c.Sort.Order)
+		default:
+			s.Failf("unexpected chart type", "settings[%d] type=%T", i, c)
+		}
+	}
 }
 
-func (s *RootSuite) captureStdout(fn func()) string {
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-	defer func() { os.Stdout = old }()
+func (s *RootSuite) TestRunBenchmarkStdinPipe() {
+	origStdin := os.Stdin
+	defer func() { os.Stdin = origStdin }()
 
-	fn()
+	stdinFile, err := os.CreateTemp("", "root_stdin")
+	s.Require().NoError(err)
+	defer os.Remove(stdinFile.Name())
+	s.Require().NoError(os.WriteFile(stdinFile.Name(), []byte(
+		"BenchmarkExample-8    1000000    1234 ns/op    1000 B/op    10 allocs/op\n",
+	), 0644))
+	f, err := os.Open(stdinFile.Name())
+	s.Require().NoError(err)
+	os.Stdin = f
+	defer f.Close()
 
-	w.Close()
-	var buf bytes.Buffer
-	io.Copy(&buf, r)
-	return buf.String()
+	dir := s.T().TempDir()
+	out := filepath.Join(dir, "out.json")
+
+	outStr := testutil.CaptureStdout(func() {
+		rootCmd.SetArgs([]string{"-o", out})
+		s.Require().NoError(rootCmd.Execute())
+	})
+
+	s.FileExists(out)
+	s.Contains(outStr, "Generated")
+	ds := testutil.ReadDataset(s.T(), out)
+	s.NotEmpty(ds.Data)
 }
 
-func (s *RootSuite) captureStderr(fn func()) string {
-	old := os.Stderr
-	r, w, _ := os.Pipe()
-	os.Stderr = w
-	defer func() { os.Stderr = old }()
+func (s *RootSuite) TestRunBenchmarkDatasetPassthrough() {
+	dir := s.T().TempDir()
+	input := filepath.Join(dir, "baked.json")
+	testutil.WriteJSON(s.T(), input, shared.Dataset{
+		Name: "Baked",
+		Settings: []config_charts.ChartConfig{
+			barchart.Materialise(barchart.Flags{Scale: "log"}, nil),
+			&linechart.Config{Type: "line", Scale: "log"},
+		},
+		Data: []shared.DataPoint{{Name: "P1", XAxis: "1", YAxis: "100"}},
+	})
+	out := filepath.Join(dir, "out.json")
+	rootOpts.Charts = nil
 
-	fn()
+	rootCmd.SetArgs([]string{"-o", out, "-c", "bar", input})
+	s.Require().NoError(rootCmd.Execute())
 
-	w.Close()
-	var buf bytes.Buffer
-	io.Copy(&buf, r)
-	return buf.String()
+	ds := testutil.ReadDataset(s.T(), out)
+	s.Require().Len(ds.Settings, 2)
+	s.Equal("bar", ds.Settings[0].ChartType())
+	s.Equal("line", ds.Settings[1].ChartType())
+	lineCfg, ok := ds.Settings[1].(*linechart.Config)
+	s.Require().True(ok)
+	s.Equal("log", lineCfg.Scale)
+}
+
+func (s *RootSuite) TestRunBenchmarkAutoParser() {
+	dir := s.T().TempDir()
+	csv := filepath.Join(dir, "data.csv")
+	s.Require().NoError(os.WriteFile(csv, []byte("name,sells\nalpha,10\nbeta,20\n"), 0644))
+	out := filepath.Join(dir, "out.json")
+
+	rootCmd.SetArgs([]string{"-o", out, "-P", "auto", csv})
+	s.Require().NoError(rootCmd.Execute())
+
+	ds := testutil.ReadDataset(s.T(), out)
+	s.NotEmpty(ds.Data)
+}
+
+func (s *RootSuite) TestRunBenchmarkChartOverride() {
+	dir := s.T().TempDir()
+	input := testutil.WriteBenchFile(s.T(), dir, "valid.txt",
+		`BenchmarkTest-8    1000000    1234 ns/op    1000 B/op    10 allocs/op`)
+	out := filepath.Join(dir, "out.json")
+	rootOpts.Charts = nil
+
+	rootCmd.SetArgs([]string{"-o", out, "-c", "bar", "--chart", "bar:swap=yxn", input})
+	s.Require().NoError(rootCmd.Execute())
+
+	ds := testutil.ReadDataset(s.T(), out)
+	s.Require().Len(ds.Settings, 1)
+	barCfg, ok := ds.Settings[0].(*barchart.Config)
+	s.Require().True(ok)
+	s.Equal("yxn", barCfg.Swap)
+}
+
+func (s *RootSuite) TestBakesDefaultCharts() {
+	dir := s.T().TempDir()
+	input := testutil.WriteBenchFile(s.T(), dir, "valid.txt",
+		`BenchmarkTest-8    1000000    1234 ns/op    1000 B/op    10 allocs/op`)
+	out := filepath.Join(dir, "out.json")
+
+	rootCmd.SetArgs([]string{"-o", out, input})
+	s.Require().NoError(rootCmd.Execute())
+
+	ds := testutil.ReadDataset(s.T(), out)
+	s.Require().Len(ds.Settings, 3)
+	s.Equal("bar", ds.Settings[0].ChartType())
+	s.Equal("line", ds.Settings[1].ChartType())
+	s.Equal("pie", ds.Settings[2].ChartType())
+
+	_, ok := ds.Settings[0].(*barchart.Config)
+	s.Require().True(ok)
+	_, ok = ds.Settings[1].(*linechart.Config)
+	s.Require().True(ok)
+	_, ok = ds.Settings[2].(*piechart.Config)
+	s.Require().True(ok)
+}
+
+func (s *RootSuite) TestExecuteRunsRootCommand() {
+	dir := s.T().TempDir()
+	input := testutil.WriteBenchFile(s.T(), dir, "valid.txt", "")
+	out := filepath.Join(dir, "out.json")
+
+	rootCmd.SetArgs([]string{"-o", out, input})
+	Execute()
+	s.FileExists(out)
 }
 
 func TestRootSuite(t *testing.T) {

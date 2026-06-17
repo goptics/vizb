@@ -83,7 +83,7 @@ for how the format is chosen.
 | `--group` | `-g` | `""` | Labels each dimension in `--group-pattern` order. csv/json: column/field names whose values populate dimensions; benchmark parsers: human-readable labels for name/x/y/z axes |
 | `--scale` | `-S` | `linear` | Scale type: `linear` or `log` |
 | `--sort` | `-s` | `""` | Sort order: `asc` or `desc` (default: as-is) |
-| `--charts` | `-c` | `bar,line,pie,heatmap,radar` | Chart types to generate (`bar`, `line`, `pie`, `heatmap`, `radar`) |
+| `--charts` | `-c` | `bar,line,pie` | Chart types to generate (`bar`, `line`, `pie`, `heatmap`, `radar`) |
 | `--chart` | | | Per-chart type settings override (repeatable): `<type>:<key>=<val>,...` — see below |
 | `--show-labels` | `-l` | `false` | Show value labels on charts |
 | `--filter` | `-f` | `""` | Regex to include only matching data labels / series names |
@@ -143,8 +143,9 @@ vizb bench.txt -f "Sort" -o output.html
 
 ### Reducing output size
 
-By default all five chart renderers are bundled. Use `--charts` to include only
-the ones you need — unselected renderers are dropped at generation time.
+By default `bar`, `line`, and `pie` are bundled. Use `--charts` to add
+`heatmap` or `radar`, or to narrow the set further — unselected renderers are
+dropped at generation time.
 
 ```bash
 vizb bench.txt -c bar -o output.html       # ~400 kB
@@ -168,7 +169,7 @@ vizb bench.txt -p n/x/y --chart bar:swap=yx,sort=asc -o output.html
 vizb bench.txt --chart line:scale=log --chart pie:labels -o output.html
 
 # 3D bar with auto-rotate; line with labels off
-vizb bench.txt -p n/x/y/z --chart bar:rotate --chart line:labels=false -o output.html
+vizb bench.txt -p n/x/y/z --chart bar:3d-rotate --chart line:labels=false -o output.html
 ```
 
 **Supported keys:**
@@ -179,7 +180,7 @@ vizb bench.txt -p n/x/y/z --chart bar:rotate --chart line:labels=false -o output
 | `sort` | — | `asc`, `desc` | all |
 | `labels` | `labels` | `true`, `false` | all |
 | `scale` | — | `linear`, `log` | `bar`, `line` only |
-| `rotate` | `rotate` | `true`, `false` | `bar`, `line` 3D only |
+| `3d-rotate` | `3d-rotate` | `true`, `false` | `bar`, `line` 3D only |
 
 Bare flags (no `=`) default to `true`. Per-chart settings layer over the global `--sort`, `--scale`, `--show-labels` defaults.
 

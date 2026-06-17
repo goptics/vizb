@@ -3,20 +3,41 @@
     "name": "HTTP Routing Benchmarks",
     "description": "Performance comparison of popular Go HTTP Routers",
     "timestamp": "2025-11-15T10:30:00Z",
-    "settings": {
-      "charts": [
-        "line",
-        "pie",
-        "heatmap",
-        "radar"
-      ],
-      "sort": {
-        "enabled": true,
-        "order": "asc"
+    "settings": [
+      {
+        "type": "line",
+        "sort": {
+          "enabled": true,
+          "order": "asc"
+        },
+        "showLabels": false,
+        "scale": "log"
       },
-      "showLabels": false,
-      "scale": "log"
-    },
+      {
+        "type": "pie",
+        "sort": {
+          "enabled": true,
+          "order": "asc"
+        },
+        "showLabels": false
+      },
+      {
+        "type": "heatmap",
+        "sort": {
+          "enabled": true,
+          "order": "asc"
+        },
+        "showLabels": false
+      },
+      {
+        "type": "radar",
+        "sort": {
+          "enabled": true,
+          "order": "asc"
+        },
+        "showLabels": false
+      }
+    ],
     "data": [
       {
         "yAxis": "StaticAll",
@@ -10397,13 +10418,30 @@
   {
     "name": "Worker Pool Benchmarks",
     "description": "Performance comparison of different worker pool implementations",
-    "settings": {
-      "sort": {
-        "enabled": false,
-        "order": "asc"
+    "settings": [
+      {
+        "type": "bar",
+        "sort": {
+          "enabled": true,
+          "order": "asc"
+        },
+        "showLabels": false
       },
-      "showLabels": false
-    },
+      {
+        "type": "line"
+      },
+      {
+        "type": "pie",
+        "sort": {
+          "enabled": true,
+          "order": "asc"
+        },
+        "showLabels": true
+      },
+      {
+        "type": "radar"
+      }
+    ],
     "data": [
       {
         "zAxis": "AllSleep10ms",
@@ -11965,18 +12003,25 @@
   {
     "name": "Serialization",
     "description": "Comparison of different serialization methods",
-    "settings": {
-      "charts": [
-        "bar",
-        "pie"
-      ],
-      "sort": {
-        "enabled": true,
-        "order": "asc"
+    "settings": [
+      {
+        "type": "bar",
+        "sort": {
+          "enabled": true,
+          "order": "asc"
+        },
+        "showLabels": false,
+        "scale": "log"
       },
-      "showLabels": false,
-      "scale": "log"
-    },
+      {
+        "type": "pie",
+        "sort": {
+          "enabled": true,
+          "order": "asc"
+        },
+        "showLabels": false
+      }
+    ],
     "data": [
       {
         "yAxis": "Marshal",
@@ -13358,17 +13403,25 @@
   {
     "name": "VarMQ",
     "description": "Variadic Queue DataSet",
-    "settings": {
-      "charts": [
-        "bar",
-        "pie"
-      ],
-      "sort": {
-        "enabled": true,
-        "order": "asc"
+    "settings": [
+      {
+        "type": "bar",
+        "sort": {
+          "enabled": true,
+          "order": "asc"
+        },
+        "showLabels": false,
+        "scale": "linear"
       },
-      "showLabels": false
-    },
+      {
+        "type": "pie",
+        "sort": {
+          "enabled": true,
+          "order": "asc"
+        },
+        "showLabels": false
+      }
+    ],
     "data": [
       {
         "name": "Add",
@@ -13648,18 +13701,34 @@
   {
     "name": "Hashing",
     "description": "Comparison of different hash functions",
-    "settings": {
-      "charts": [
-        "bar",
-        "line",
-        "pie"
-      ],
-      "sort": {
-        "enabled": true,
-        "order": "asc"
+    "settings": [
+      {
+        "type": "bar",
+        "sort": {
+          "enabled": true,
+          "order": "asc"
+        },
+        "showLabels": false,
+        "scale": "linear"
       },
-      "showLabels": false
-    },
+      {
+        "type": "line",
+        "sort": {
+          "enabled": true,
+          "order": "asc"
+        },
+        "showLabels": false,
+        "scale": "linear"
+      },
+      {
+        "type": "pie",
+        "sort": {
+          "enabled": true,
+          "order": "asc"
+        },
+        "showLabels": false
+      }
+    ],
     "data": [
       {
         "xAxis": "MD5",
@@ -13887,19 +13956,34 @@
   {
     "name": "Compression Delta Benchmarks",
     "description": "Throughput delta vs baseline (negative = regression, positive = improvement)",
-    "settings": {
-      "charts": [
-        "bar",
-        "line",
-        "pie"
-      ],
-      "sort": {
-        "enabled": false,
-        "order": "asc"
+    "settings": [
+      {
+        "type": "bar",
+        "sort": {
+          "enabled": false,
+          "order": "asc"
+        },
+        "showLabels": true,
+        "scale": "linear"
       },
-      "showLabels": true,
-      "scale": "linear"
-    },
+      {
+        "type": "line",
+        "sort": {
+          "enabled": false,
+          "order": "asc"
+        },
+        "showLabels": true,
+        "scale": "linear"
+      },
+      {
+        "type": "pie",
+        "sort": {
+          "enabled": false,
+          "order": "asc"
+        },
+        "showLabels": true
+      }
+    ],
     "data": [
       {
         "xAxis": "LZ4",

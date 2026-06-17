@@ -18,14 +18,14 @@ import type {
 import type { AxisKey } from './swap'
 
 const toStatSignature = (stat: Stat): string => {
-  if (!stat.per) { 
+  if (!stat.per) {
     return `${stat.type}-${stat.unit}`
   }
 
   if (!stat.unit) {
     return stat.type
   }
-  
+
   return `${stat.type}-${stat.unit}-${stat.per}`
 }
 
@@ -33,7 +33,11 @@ const toStatSignature = (stat: Stat): string => {
 // main-thread `useSortedSeriesData`. Totals are computed once (not per compare).
 function sortSeriesByTotal(series: SeriesData[], order: SortOrder): void {
   const totals = new Map<SeriesData, number>()
-  for (const s of series) totals.set(s, s.values.reduce((sum, v) => sum + v, 0))
+  for (const s of series)
+    totals.set(
+      s,
+      s.values.reduce((sum, v) => sum + v, 0)
+    )
   series.sort((a, b) => {
     const diff = totals.get(a)! - totals.get(b)!
     return order === 'asc' ? diff : -diff
@@ -143,14 +147,21 @@ export function buildChartForSignature(
     axisLabels: labels,
   }
 
-  if (chartIs3D(chart)) chart.render3D = build3DRender(chart.points, chart.zAxis, sort, showLabels, scale)
+  if (chartIs3D(chart))
+    chart.render3D = build3DRender(chart.points, chart.zAxis, sort, showLabels, scale)
 
   return chart
 }
 
 // Build one ChartData per unique stat signature. Kept as the bulk entry point
 // (tests + any non-worker caller); the worker uses the per-signature builder.
-export function buildChartData(data: DataPoint[], labels: AxisLabels | undefined, sort: Sort, showLabels = false, scale: ScaleType = 'linear'): ChartData[] {
+export function buildChartData(
+  data: DataPoint[],
+  labels: AxisLabels | undefined,
+  sort: Sort,
+  showLabels = false,
+  scale: ScaleType = 'linear'
+): ChartData[] {
   return listChartSignatures(data).map(({ signature, statTemplate }) =>
     buildChartForSignature(data, signature, statTemplate, labels, sort, showLabels, scale)
   )
@@ -219,7 +230,13 @@ const gridFromCells = (
 // Build the 3D render payload: sorted axis categories plus per-z series data for
 // bar3D (full grid — keeps stacked bars seated) and line3D (sparse — a 0-grid
 // would drag every line to the floor).
-export function build3DRender(points: Point3D[], zAxisAll: string[], sort: Sort, showLabels = false, scale: ScaleType = 'linear'): Render3D {
+export function build3DRender(
+  points: Point3D[],
+  zAxisAll: string[],
+  sort: Sort,
+  showLabels = false,
+  scale: ScaleType = 'linear'
+): Render3D {
   let xValues = Array.from(new Set(points.map((p) => p.xAxis)))
   let yValues = Array.from(new Set(points.map((p) => p.yAxis)))
   let zValues = zAxisAll.filter((z) => z !== '')
@@ -243,7 +260,10 @@ export function build3DRender(points: Point3D[], zAxisAll: string[], sort: Sort,
   for (const z of zValues) {
     const cells = cellsFor(points, z, xIndex, yIndex)
     if (isLog) for (const [k, v] of cells) if (v <= 0) cells.delete(k)
-    barSeries.push({ name: z, data: isLog ? sparseFromCells(cells) : gridFromCells(cells, xIndex, yIndex) })
+    barSeries.push({
+      name: z,
+      data: isLog ? sparseFromCells(cells) : gridFromCells(cells, xIndex, yIndex),
+    })
     lineSeries.push({ name: z, data: sparseFromCells(cells) })
   }
 
@@ -289,7 +309,7 @@ const chartIs3D = (c: ChartData): boolean => {
 export function projectAndGroup(
   raw: DataPoint[],
   identityKeys: AxisKey[],
-  targetKeys: AxisKey[],
+  targetKeys: AxisKey[]
 ): { grouped: Map<string, DataPoint[]>; groupNames: string[] } {
   const grouped = new Map<string, DataPoint[]>()
 

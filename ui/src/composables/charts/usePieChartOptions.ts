@@ -3,7 +3,12 @@ import type { EChartsOption } from 'echarts'
 import type { TitleOption } from 'echarts/types/dist/shared'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
 import { getNextColorFor, hasXAxis, hasYAxis, hasZAxis } from '../../lib/utils'
-import { getChartStyling, createPieSeriesConfig, getTooltipTheme, formatTooltipValue } from './shared'
+import {
+  getChartStyling,
+  createPieSeriesConfig,
+  getTooltipTheme,
+  formatTooltipValue,
+} from './shared'
 import { fontSize, sortByTotal, sortByValue } from './shared/common'
 import type { Point3D } from '../../types'
 
@@ -12,7 +17,10 @@ type SeriesWithTotal = { xAxis: string; values: number[]; total: number }
 const computeYAxisTotals = (yAxis: string[], series: SeriesWithTotal[]): Map<string, number> => {
   const totals = new Map<string, number>()
   yAxis.forEach((y, i) => {
-    totals.set(y, series.reduce((sum, s) => sum + (s.values[i] || 0), 0))
+    totals.set(
+      y,
+      series.reduce((sum, s) => sum + (s.values[i] || 0), 0)
+    )
   })
   return totals
 }
@@ -25,7 +33,11 @@ const computeZAxisTotals = (points: Point3D[]): Map<string, number> => {
   return totals
 }
 
-const makePieTitle = (text: string, left: string, styling: ReturnType<typeof getChartStyling>): TitleOption => ({
+const makePieTitle = (
+  text: string,
+  left: string,
+  styling: ReturnType<typeof getChartStyling>
+): TitleOption => ({
   text,
   left,
   top: '5%',
@@ -79,7 +91,15 @@ export function usePieChartOptions(config: BaseChartConfig) {
     const options: EChartsOption = {
       ...baseOptions,
       legend: { show: false },
-      series: [createPieSeriesConfig(chartData.value.statType, xAxisPieData, showLabels.value, styling, formatter)],
+      series: [
+        createPieSeriesConfig(
+          chartData.value.statType,
+          xAxisPieData,
+          showLabels.value,
+          styling,
+          formatter
+        ),
+      ],
     }
 
     if (!hasYAxis(chartData)) return options
@@ -97,7 +117,13 @@ export function usePieChartOptions(config: BaseChartConfig) {
 
     if (!hasXAxis(chartData)) {
       options.series = [
-        createPieSeriesConfig(chartData.value.statType, yAxisPieData, showLabels.value, styling, formatter),
+        createPieSeriesConfig(
+          chartData.value.statType,
+          yAxisPieData,
+          showLabels.value,
+          styling,
+          formatter
+        ),
       ]
       return options
     }
@@ -124,9 +150,24 @@ export function usePieChartOptions(config: BaseChartConfig) {
       ]
 
       const specs3D = [
-        { name: 'By X-Axis', data: xAxisPieData, radius: ['25%', '50%'] as [string, string], center: ['16.66%', '50%'] as [string, string] },
-        { name: 'By Y-Axis', data: yAxisPieData, radius: ['25%', '50%'] as [string, string], center: ['50%', '50%'] as [string, string] },
-        { name: 'By Z-Axis', data: zAxisPieData, radius: ['25%', '50%'] as [string, string], center: ['83.33%', '50%'] as [string, string] },
+        {
+          name: 'By X-Axis',
+          data: xAxisPieData,
+          radius: ['25%', '50%'] as [string, string],
+          center: ['16.66%', '50%'] as [string, string],
+        },
+        {
+          name: 'By Y-Axis',
+          data: yAxisPieData,
+          radius: ['25%', '50%'] as [string, string],
+          center: ['50%', '50%'] as [string, string],
+        },
+        {
+          name: 'By Z-Axis',
+          data: zAxisPieData,
+          radius: ['25%', '50%'] as [string, string],
+          center: ['83.33%', '50%'] as [string, string],
+        },
       ]
       options.series = specs3D.map(({ name, data, radius, center }) =>
         createPieSeriesConfig(name, data, showLabels.value, styling, formatter, radius, center)
@@ -141,8 +182,18 @@ export function usePieChartOptions(config: BaseChartConfig) {
     ]
 
     const specs2D = [
-      { name: 'By X-Axis', data: xAxisPieData, radius: ['30%', '60%'] as [string, string], center: ['25%', '50%'] as [string, string] },
-      { name: 'By Y-Axis', data: yAxisPieData, radius: ['30%', '60%'] as [string, string], center: ['75%', '50%'] as [string, string] },
+      {
+        name: 'By X-Axis',
+        data: xAxisPieData,
+        radius: ['30%', '60%'] as [string, string],
+        center: ['25%', '50%'] as [string, string],
+      },
+      {
+        name: 'By Y-Axis',
+        data: yAxisPieData,
+        radius: ['30%', '60%'] as [string, string],
+        center: ['75%', '50%'] as [string, string],
+      },
     ]
     options.series = specs2D.map(({ name, data, radius, center }) =>
       createPieSeriesConfig(name, data, showLabels.value, styling, formatter, radius, center)

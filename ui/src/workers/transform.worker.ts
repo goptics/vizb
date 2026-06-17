@@ -1,6 +1,6 @@
 // Dedicated Web Worker that runs the heavy chart transform off the main thread,
 // one chart at a time. Bundled and base64-inlined via `?worker&inline` so the
-// single-file HTML output stays self-contained (no external worker asset).
+// embedded HTML template stays self-contained (no external worker asset).
 //
 // The worker owns the FULL raw dataset and treats arrangement + group + sort +
 // scale + showLabels all as compute params — the rows never change on a setting
@@ -23,7 +23,12 @@
 //   jobEpoch  — the compute batch's identity. Bumped on every recompute (arrangement,
 //     group, sort, scale, labels). Echoed back so the main thread can drop a reply
 //     from a superseded batch without it flashing on screen.
-import { listChartSignatures, buildChartForSignature, projectAndGroup, type ChartSignature } from '../lib/transform'
+import {
+  listChartSignatures,
+  buildChartForSignature,
+  projectAndGroup,
+  type ChartSignature,
+} from '../lib/transform'
 import { translateAxisKey } from '../lib/swap'
 import type { DataPoint, AxisLabels, Sort, ChartData, ScaleType } from '../types'
 
@@ -59,7 +64,13 @@ export type ReadyMessage = {
   signatures: { signature: string; title: string }[]
   groupNames: string[]
 }
-export type ChartMessage = { type: 'chart'; dataEpoch: number; jobEpoch: number; signature: string; chart: ChartData }
+export type ChartMessage = {
+  type: 'chart'
+  dataEpoch: number
+  jobEpoch: number
+  signature: string
+  chart: ChartData
+}
 export type WorkerResponse = ReadyMessage | ChartMessage
 
 type State = {
@@ -103,25 +114,25 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
   const msg = e.data
 
   switch (msg.type) {
-    case 'init': { 
-    state = {
-      dataEpoch: msg.dataEpoch,
-      raw: msg.data,
-      grouped: new Map(),
-      groupNames: [],
-      labels: msg.labels,
-      bySignature: new Map(),
-    }
-    applyArrangement(state, msg.identityString, msg.targetString)
+    case 'init': {
+      state = {
+        dataEpoch: msg.dataEpoch,
+        raw: msg.data,
+        grouped: new Map(),
+        groupNames: [],
+        labels: msg.labels,
+        bySignature: new Map(),
+      }
+      applyArrangement(state, msg.identityString, msg.targetString)
       post(readyReply(state))
-    return
+      return
     }
-    case 'setArrangement': { 
-    if (!state) return
-    if (msg.labels !== undefined) state.labels = msg.labels ?? undefined
-    applyArrangement(state, msg.identityString, msg.targetString)
-    post(readyReply(state))
-    return
+    case 'setArrangement': {
+      if (!state) return
+      if (msg.labels !== undefined) state.labels = msg.labels ?? undefined
+      applyArrangement(state, msg.identityString, msg.targetString)
+      post(readyReply(state))
+      return
     }
   }
 
@@ -143,5 +154,11 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
     msg.showLabels,
     msg.scale
   )
-  post({ type: 'chart', dataEpoch: msg.dataEpoch, jobEpoch: msg.jobEpoch, signature: msg.signature, chart })
+  post({
+    type: 'chart',
+    dataEpoch: msg.dataEpoch,
+    jobEpoch: msg.jobEpoch,
+    signature: msg.signature,
+    chart,
+  })
 }

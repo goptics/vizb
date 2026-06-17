@@ -1,15 +1,19 @@
 // Package radar registers the `vizb radar` subcommand: a radar chart. Radar data
-// is non-linear, so --scale and --rotate are intentionally absent.
+// is non-linear, so --scale and --3d-rotate are intentionally absent.
 package radar
 
 import (
 	"github.com/goptics/vizb/cmd/cli"
+	config_charts "github.com/goptics/vizb/config/charts"
+	radarchart "github.com/goptics/vizb/config/charts/radar"
+	"github.com/goptics/vizb/pkg/parser"
+	"github.com/goptics/vizb/shared"
 	"github.com/spf13/cobra"
 )
 
 func init() { cli.Register(NewCommand) }
 
-// Options carries only the shared chart flags; no --scale/--rotate.
+// Options carries only the shared chart flags; no --scale/--3d-rotate.
 type Options struct {
 	cli.ChartOptions
 }
@@ -25,10 +29,18 @@ func NewCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			o.LinearOptions.Validate()
 
-			cli.RunSingleChart(cmd, args, o.CommonOptions, cli.LinearDefaults{
+			cfg := radarchart.Materialise(radarchart.Flags{
+				Swap:       o.Swap,
 				Sort:       o.Sort,
 				ShowLabels: o.ShowLabels,
-			}, "radar", o.Swap, nil)
+			}, nil)
+
+			axes := parser.GroupAxes(o.CommonOptions.ParseConfig())
+			if err := shared.ValidateSwap(cfg.Swap, axes); err != nil {
+				shared.ExitWithError(err.Error(), nil)
+			}
+
+			cli.RunSingleChart(cmd, args, o.CommonOptions, []config_charts.ChartConfig{cfg})
 		},
 	}
 	o.ChartOptions.Bind(cmd.Flags())

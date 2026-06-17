@@ -78,7 +78,7 @@ vizb data.csv -g algo,input_size,variant,run_type -p n/x/y/z -c bar -o out.html
 
 ## Settings
 
-Most settings apply to every chart type. The exceptions are `scale` (log), which only affects cartesian charts, and `rotate` (3D auto-spin), which only applies when bar or line renders in WebGL mode.
+Most settings apply to every chart type. The exceptions are `scale` (log), which only affects cartesian charts, and `3d-rotate` (3D auto-spin), which only applies when bar or line renders in WebGL mode.
 
 | Setting | `bar` | `line` | `pie` | `radar` | `heatmap` |
 |---------|:-----:|:------:|:-----:|:-------:|:---------:|
@@ -86,7 +86,7 @@ Most settings apply to every chart type. The exceptions are `scale` (log), which
 | `labels` / `--show-labels` | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `swap` (axis reorder) | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `scale` log | ✓ | ✓ | ✗ | ✗ | ✗ |
-| `rotate` (3D auto-rotate) | ✓ 3D only | ✓ 3D only | ✗ | ✗ | ✗ |
+| `3d-rotate` (3D auto-rotate) | ✓ 3D only | ✓ 3D only | ✗ | ✗ | ✗ |
 
 To override a setting for a single chart type without affecting the others, use the `--chart <type>:key=val` syntax:
 
@@ -102,11 +102,13 @@ See [Commands: root](/commands/root) for the full flag reference.
 
 ## Selecting Chart Types
 
-The `--charts` flag (short: `-c`) controls which renderers are compiled into the output HTML. The default includes all five:
+The `--charts` flag (short: `-c`) controls which renderers are compiled into the output HTML. The default is:
 
 ```
-bar,line,pie,heatmap,radar
+bar,line,pie
 ```
+
+Add `heatmap` or `radar` explicitly when you need them: `-c bar,line,pie,heatmap,radar`.
 
 Each chart renderer ships as a separate compressed chunk; only the ones you select are embedded. This keeps the output small when you only need one or two shapes:
 
