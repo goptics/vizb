@@ -5,29 +5,32 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestNewTmpFileManager(t *testing.T) {
-	manager := NewTmpFileManager()
-	assert.Empty(t, manager.files)
+type TmpFilesManagerSuite struct {
+	suite.Suite
 }
 
-func TestTmpFilesManager_Store(t *testing.T) {
+func (s *TmpFilesManagerSuite) TestNewTmpFileManager() {
+	manager := NewTmpFileManager()
+	s.Empty(manager.files)
+}
+
+func (s *TmpFilesManagerSuite) TestTmpFilesManagerStore() {
 	manager := NewTmpFileManager()
 
 	manager.Store("file1.txt")
-	assert.Len(t, manager.files, 1)
-	assert.Equal(t, "file1.txt", manager.files[0])
+	s.Len(manager.files, 1)
+	s.Equal("file1.txt", manager.files[0])
 
 	manager.Store("file2.txt", "file3.txt")
-	assert.Len(t, manager.files, 3)
-	assert.Equal(t, []string{"file1.txt", "file2.txt", "file3.txt"}, manager.files)
+	s.Len(manager.files, 3)
+	s.Equal([]string{"file1.txt", "file2.txt", "file3.txt"}, manager.files)
 }
 
-func TestTmpFilesManager_RemoveAll(t *testing.T) {
-	tempDir := t.TempDir()
+func (s *TmpFilesManagerSuite) TestTmpFilesManagerRemoveAll() {
+	tempDir := s.T().TempDir()
 
 	file1 := filepath.Join(tempDir, "test1.txt")
 	file2 := filepath.Join(tempDir, "test2.txt")
@@ -35,13 +38,13 @@ func TestTmpFilesManager_RemoveAll(t *testing.T) {
 
 	for _, file := range []string{file1, file2, file3} {
 		f, err := os.Create(file)
-		require.NoError(t, err, "Failed to create test file")
+		s.Require().NoError(err, "Failed to create test file")
 		f.Close()
 	}
 
 	for _, file := range []string{file1, file2, file3} {
 		_, err := os.Stat(file)
-		require.False(t, os.IsNotExist(err), "Test file should exist")
+		s.Require().False(os.IsNotExist(err), "Test file should exist")
 	}
 
 	manager := NewTmpFileManager()
@@ -51,22 +54,22 @@ func TestTmpFilesManager_RemoveAll(t *testing.T) {
 
 	for _, file := range []string{file1, file2, file3} {
 		_, err := os.Stat(file)
-		assert.True(t, os.IsNotExist(err), "File should have been deleted")
+		s.True(os.IsNotExist(err), "File should have been deleted")
 	}
 
-	assert.Empty(t, manager.files)
+	s.Empty(manager.files)
 }
 
-func TestTmpFilesManager_RemoveAll_NonExistentFiles(t *testing.T) {
+func (s *TmpFilesManagerSuite) TestTmpFilesManagerRemoveAllNonExistentFiles() {
 	manager := NewTmpFileManager()
 	manager.Store("nonexistent1.txt", "nonexistent2.txt")
 
 	manager.RemoveAll()
 
-	assert.Empty(t, manager.files)
+	s.Empty(manager.files)
 }
 
-func TestGlobalTempFiles(t *testing.T) {
+func (s *TmpFilesManagerSuite) TestGlobalTempFiles() {
 	originalFiles := make([]string, len(TempFiles.files))
 	copy(originalFiles, TempFiles.files)
 
@@ -77,23 +80,23 @@ func TestGlobalTempFiles(t *testing.T) {
 	initialLen := len(TempFiles.files)
 	TempFiles.Store("global_test.txt")
 
-	assert.Len(t, TempFiles.files, initialLen+1)
+	s.Len(TempFiles.files, initialLen+1)
 
 	TempFiles.RemoveAll()
 
-	assert.Empty(t, TempFiles.files)
+	s.Empty(TempFiles.files)
 }
 
-func TestTmpFilesManager_EmptyStore(t *testing.T) {
+func (s *TmpFilesManagerSuite) TestTmpFilesManagerEmptyStore() {
 	manager := NewTmpFileManager()
 
 	manager.Store()
 
-	assert.Empty(t, manager.files)
+	s.Empty(manager.files)
 }
 
-func TestTmpFilesManager_Integration(t *testing.T) {
-	tempDir := t.TempDir()
+func (s *TmpFilesManagerSuite) TestTmpFilesManagerIntegration() {
+	tempDir := s.T().TempDir()
 
 	manager := NewTmpFileManager()
 
@@ -101,7 +104,7 @@ func TestTmpFilesManager_Integration(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		file := filepath.Join(tempDir, "integration_test_"+string(rune('1'+i))+".txt")
 		f, err := os.Create(file)
-		require.NoError(t, err, "Failed to create test file")
+		s.Require().NoError(err, "Failed to create test file")
 		f.Close()
 		files[i] = file
 	}
@@ -109,19 +112,23 @@ func TestTmpFilesManager_Integration(t *testing.T) {
 	manager.Store(files[0])
 	manager.Store(files[1], files[2])
 
-	assert.Len(t, manager.files, 3)
+	s.Len(manager.files, 3)
 
 	for _, file := range files {
 		_, err := os.Stat(file)
-		assert.False(t, os.IsNotExist(err), "File should exist before RemoveAll")
+		s.False(os.IsNotExist(err), "File should exist before RemoveAll")
 	}
 
 	manager.RemoveAll()
 
 	for _, file := range files {
 		_, err := os.Stat(file)
-		assert.True(t, os.IsNotExist(err), "File should be deleted after RemoveAll")
+		s.True(os.IsNotExist(err), "File should be deleted after RemoveAll")
 	}
 
-	assert.Empty(t, manager.files)
+	s.Empty(manager.files)
+}
+
+func TestTmpFilesManagerSuite(t *testing.T) {
+	suite.Run(t, new(TmpFilesManagerSuite))
 }

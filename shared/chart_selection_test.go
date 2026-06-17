@@ -4,13 +4,9 @@ import (
 	"testing"
 
 	config_charts "github.com/goptics/vizb/config/charts"
+	"github.com/stretchr/testify/suite"
 )
 
-// stubChartConfig is a minimal ChartConfig used by the internal test below.
-// The test only exercises DatasetNeeds3D, which reads ChartType() from each
-// entry — the per-chart typed Configs are not required. The internal test
-// file is in package shared, so it cannot import the per-chart subpackages
-// (bar/line/pie/heatmap/radar each import shared, which would cycle).
 type stubChartConfig struct {
 	typ string
 }
@@ -19,11 +15,6 @@ func (s stubChartConfig) ChartType() string { return s.typ }
 
 func dsWith(types []string, zValues ...string) *Dataset {
 	ds := &Dataset{}
-	// Build Settings from the requested chart types. The test only cares
-	// about ChartType() values, so a stub config that satisfies
-	// config_charts.ChartConfig is sufficient — no need to go through the
-	// registry (which lives in config/charts and imports shared, so we
-	// can't import the per-chart subpackages from this internal test).
 	for _, t := range types {
 		ds.Settings = append(ds.Settings, stubChartConfig{typ: t})
 	}
@@ -33,7 +24,11 @@ func dsWith(types []string, zValues ...string) *Dataset {
 	return ds
 }
 
-func TestChartsHave3DCapable(t *testing.T) {
+type ChartSelectionSuite struct {
+	suite.Suite
+}
+
+func (s *ChartSelectionSuite) TestChartsHave3DCapable() {
 	cases := []struct {
 		name  string
 		types []string
@@ -48,15 +43,13 @@ func TestChartsHave3DCapable(t *testing.T) {
 		{"empty", nil, false},
 	}
 	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			if got := ChartsHave3DCapable(c.types); got != c.want {
-				t.Fatalf("ChartsHave3DCapable(%v) = %v, want %v", c.types, got, c.want)
-			}
+		s.Run(c.name, func() {
+			s.Equal(c.want, ChartsHave3DCapable(c.types))
 		})
 	}
 }
 
-func TestDatasetNeeds3D(t *testing.T) {
+func (s *ChartSelectionSuite) TestDatasetNeeds3D() {
 	cases := []struct {
 		name string
 		ds   *Dataset
@@ -71,14 +64,14 @@ func TestDatasetNeeds3D(t *testing.T) {
 		{"mixed charts with z, one z point", dsWith([]string{"pie", "bar"}, "", "3"), true},
 	}
 	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			if got := DatasetNeeds3D(c.ds); got != c.want {
-				t.Fatalf("DatasetNeeds3D() = %v, want %v", got, c.want)
-			}
+		s.Run(c.name, func() {
+			s.Equal(c.want, DatasetNeeds3D(c.ds))
 		})
 	}
 }
 
-// silence unused-import warning if Go's tooling ever flags it; the test
-// references config_charts via the stub type assignment above.
 var _ config_charts.ChartConfig = stubChartConfig{}
+
+func TestChartSelectionSuite(t *testing.T) {
+	suite.Run(t, new(ChartSelectionSuite))
+}

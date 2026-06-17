@@ -1,13 +1,11 @@
 package line
 
 import (
-	"encoding/json"
-	"os"
 	"path/filepath"
 	"testing"
 
 	linechart "github.com/goptics/vizb/config/charts/line"
-	"github.com/goptics/vizb/shared"
+	"github.com/goptics/vizb/testutil"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -15,15 +13,15 @@ import (
 // bakes a line-only selection into the new Settings shape.
 type LineSuite struct {
 	suite.Suite
-	origOsExit func(int)
+	restoreOsExit func()
 }
 
 func (s *LineSuite) SetupTest() {
-	s.origOsExit = shared.OsExit
+	s.restoreOsExit, _ = testutil.TrapOsExitPanic(s.T())
 }
 
 func (s *LineSuite) TearDownTest() {
-	shared.OsExit = s.origOsExit
+	s.restoreOsExit()
 }
 
 func (s *LineSuite) TestCommandFlags() {
@@ -33,22 +31,37 @@ func (s *LineSuite) TestCommandFlags() {
 	s.NotNil(cmd.Flags().Lookup("3d-rotate"))
 	s.NotNil(cmd.Flags().Lookup("swap"))
 	s.NotNil(cmd.Flags().Lookup("sort"))
+	s.NotNil(cmd.Flags().Lookup("show-labels"))
 }
 
-func (s *LineSuite) TestLineCommand_NewShape() {
+func (s *LineSuite) TestBakesLineOnlySelection() {
 	dir := s.T().TempDir()
-	input := filepath.Join(dir, "bench.txt")
-	s.Require().NoError(os.WriteFile(input, []byte("BenchmarkExample-8 1000000 1234 ns/op"), 0644))
+	input := testutil.WriteBenchFile(s.T(), dir, "bench.txt", "")
+	out := filepath.Join(dir, "out.json")
+
+	cmd := NewCommand()
+	cmd.SetArgs([]string{"-o", out, "-P", "go", "-p", "y", input})
+	s.Require().NoError(cmd.Execute())
+
+	ds := testutil.ReadDataset(s.T(), out)
+	s.Require().Len(ds.Settings, 1)
+	s.Equal("line", ds.Settings[0].ChartType())
+
+	lineCfg, ok := ds.Settings[0].(*linechart.Config)
+	s.Require().True(ok, "expected *linechart.Config, got %T", ds.Settings[0])
+	s.Equal("linear", lineCfg.Scale)
+}
+
+func (s *LineSuite) TestLineCommandNewShape() {
+	dir := s.T().TempDir()
+	input := testutil.WriteBenchFile(s.T(), dir, "bench.txt", "")
 	out := filepath.Join(dir, "out.json")
 
 	cmd := NewCommand()
 	cmd.SetArgs([]string{"-o", out, "-P", "go", "-p", "n/x/y", "--swap", "yxn", "-l", "-s", "desc", input})
 	s.Require().NoError(cmd.Execute())
 
-	content, err := os.ReadFile(out)
-	s.Require().NoError(err)
-	var ds shared.Dataset
-	s.Require().NoError(json.Unmarshal(content, &ds))
+	ds := testutil.ReadDataset(s.T(), out)
 	s.Require().Len(ds.Settings, 1)
 	s.Equal("line", ds.Settings[0].ChartType())
 
@@ -60,6 +73,20 @@ func (s *LineSuite) TestLineCommand_NewShape() {
 	s.Require().NotNil(lineCfg.Sort)
 	s.True(lineCfg.Sort.Enabled)
 	s.Equal("desc", lineCfg.Sort.Order)
+}
+
+func (s *LineSuite) TestLineCommandBadSwapExits() {
+	dir := s.T().TempDir()
+	input := testutil.WriteBenchFile(s.T(), dir, "bench.txt", "")
+	out := filepath.Join(dir, "out.json")
+
+	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
+	defer restore()
+
+	cmd := NewCommand()
+	cmd.SetArgs([]string{"-o", out, "-P", "go", "-p", "y", "--swap", "xyz", input})
+	s.Panics(func() { _ = cmd.Execute() })
+	s.True(*exitCalled, "expected shared.OsExit to be invoked for bad --swap")
 }
 
 func TestLineSuite(t *testing.T) {

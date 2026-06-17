@@ -10,6 +10,7 @@ import (
 	barchart "github.com/goptics/vizb/config/charts/bar"
 	"github.com/goptics/vizb/pkg/parser"
 	"github.com/goptics/vizb/shared"
+	"github.com/goptics/vizb/testutil"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/suite"
 )
@@ -18,15 +19,15 @@ import (
 // The "go" parser is registered transitively via pipeline.go's goparser import.
 type PipelineSuite struct {
 	suite.Suite
-	origOsExit func(int)
+	restoreOsExit func()
 }
 
 func (s *PipelineSuite) SetupTest() {
-	s.origOsExit = shared.OsExit
+	s.restoreOsExit, _ = testutil.TrapOsExitPanic(s.T())
 }
 
 func (s *PipelineSuite) TearDownTest() {
-	shared.OsExit = s.origOsExit
+	s.restoreOsExit()
 }
 
 func (s *PipelineSuite) writeFile(name, content string) string {
@@ -64,9 +65,11 @@ BenchmarkAnother-8    2000000    2345 ns/op    2000 B/op    20 allocs/op`)
 	})
 
 	s.Run("empty results call OsExit", func() {
-		shared.OsExit = func(int) { panic("exit") }
+		restore, exitCalled := testutil.TrapOsExitPanic(s.T())
+		defer restore()
 		emptyFile := s.writeFile("empty.txt", "")
 		s.Panics(func() { prepareData(emptyFile, "go", cfg) })
+		s.True(*exitCalled)
 	})
 }
 
@@ -118,15 +121,14 @@ func (s *PipelineSuite) TestWriteOutput() {
 func (s *PipelineSuite) TestCheckTargetFile() {
 	s.Run("existing file does not exit", func() {
 		valid := s.writeFile("valid.txt", "content")
-		exitCalled := false
-		shared.OsExit = func(int) { exitCalled = true; panic("exit") }
 		s.NotPanics(func() { checkTargetFile(valid) })
-		s.False(exitCalled)
 	})
 
 	s.Run("missing file exits", func() {
-		shared.OsExit = func(int) { panic("exit") }
+		restore, exitCalled := testutil.TrapOsExitPanic(s.T())
+		defer restore()
 		s.Panics(func() { checkTargetFile(filepath.Join(s.T().TempDir(), "nope.txt")) })
+		s.True(*exitCalled)
 	})
 }
 
@@ -167,7 +169,7 @@ func (s *PipelineSuite) TestRunLinearGeneratesOutputFile() {
 	})
 }
 
-func (s *PipelineSuite) TestRunSingleChart_EmptyConfigs() {
+func (s *PipelineSuite) TestRunSingleChartEmptyConfigs() {
 	dir := s.T().TempDir()
 	out := filepath.Join(dir, "out.json")
 	common := CommonOptions{Parser: "go", GroupPattern: "y", TimeUnit: "ns", MemUnit: "B", OutputFile: out}

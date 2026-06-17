@@ -11,111 +11,112 @@ import (
 	_ "github.com/goptics/vizb/config/charts/pie"
 	_ "github.com/goptics/vizb/config/charts/radar"
 	"github.com/goptics/vizb/shared"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestRegistered(t *testing.T) {
+// BarSuite covers bar config registry, decode, and Materialise precedence.
+type BarSuite struct {
+	suite.Suite
+}
+
+func (s *BarSuite) TestRegistryListsChartTypes() {
 	got := charts.Registered()
 	sort.Strings(got)
 	want := []string{"bar", "heatmap", "line", "pie", "radar"}
-	assert.Equal(t, want, got, "Registered() should report all five chart types")
+	s.Equal(want, got)
 }
 
-func TestRegister_Duplicate(t *testing.T) {
+func (s *BarSuite) TestRegistryRejectsDuplicate() {
 	factory := func() charts.ChartConfig { return &Config{} }
 	charts.Register("test_dup", factory)
-	assert.Panics(t, func() {
+	s.Panics(func() {
 		charts.Register("test_dup", factory)
-	}, "Registering the same type twice should panic")
+	})
 }
 
-func TestNew_UnknownType(t *testing.T) {
+func (s *BarSuite) TestNewUnknownType() {
 	_, err := charts.New("graph")
-	assert.Error(t, err, "New should fail for unregistered types")
+	s.Error(err)
 }
 
-func TestNew_KnownType(t *testing.T) {
+func (s *BarSuite) TestNewKnownType() {
 	cfg, err := charts.New("bar")
-	assert.NoError(t, err)
-	bar, ok := cfg.(*Config)
-	assert.True(t, ok, "bar factory should return a *Config value")
-	assert.Equal(t, "bar", bar.ChartType())
+	s.NoError(err)
+	barCfg, ok := cfg.(*Config)
+	s.Require().True(ok)
+	s.Equal("bar", barCfg.ChartType())
 }
 
-func TestDecode_BarRoundTrip(t *testing.T) {
+func (s *BarSuite) TestDecodeBarRoundTrip() {
 	original := Config{Type: "bar", Swap: "yxn", Scale: "log"}
 	raw, err := json.Marshal(original)
-	assert.NoError(t, err)
+	s.Require().NoError(err)
 
 	cfg, err := charts.Decode("bar", raw)
-	assert.NoError(t, err)
+	s.NoError(err)
 	got, ok := cfg.(*Config)
-	assert.True(t, ok)
-	assert.Equal(t, original, *got)
+	s.Require().True(ok)
+	s.Equal(original, *got)
 }
 
-func TestDecode_UnknownType(t *testing.T) {
+func (s *BarSuite) TestDecodeUnknownType() {
 	_, err := charts.Decode("graph", json.RawMessage(`{"type":"graph"}`))
-	assert.Error(t, err)
+	s.Error(err)
 }
 
-func TestMaterialise_BarPrecedence(t *testing.T) {
-	// Shared assertion helpers — pointer values are compared via deref.
+func (s *BarSuite) TestMaterialiseBarPrecedence() {
 	tr := true
 	fa := false
 
-	// Step 1: override beats flags (Swap overridden, Scale overridden).
 	override := &Config{Swap: "yxn", Scale: "log", ShowLabels: &tr, AutoRotate: &tr}
 	got := Materialise(Flags{Swap: "xyn", Scale: "linear", ShowLabels: false, AutoRotate: false}, override)
-	assert.Equal(t, "yxn", got.Swap, "override.Swap beats flags.Swap")
-	assert.Equal(t, "log", got.Scale, "override.Scale beats flags.Scale")
-	assert.NotNil(t, got.ShowLabels)
-	assert.True(t, *got.ShowLabels, "override.ShowLabels beats flags.ShowLabels")
-	assert.NotNil(t, got.AutoRotate)
-	assert.True(t, *got.AutoRotate, "override.AutoRotate beats flags.AutoRotate")
+	s.Equal("yxn", got.Swap)
+	s.Equal("log", got.Scale)
+	s.Require().NotNil(got.ShowLabels)
+	s.True(*got.ShowLabels)
+	s.Require().NotNil(got.AutoRotate)
+	s.True(*got.AutoRotate)
 
-	// Step 2: flags seed when no override.
 	got = Materialise(Flags{Swap: "xyn", Scale: "linear", ShowLabels: true, AutoRotate: true}, nil)
-	assert.Equal(t, "xyn", got.Swap)
-	assert.Equal(t, "linear", got.Scale)
-	assert.NotNil(t, got.ShowLabels)
-	assert.True(t, *got.ShowLabels)
-	assert.NotNil(t, got.AutoRotate)
-	assert.True(t, *got.AutoRotate)
+	s.Equal("xyn", got.Swap)
+	s.Equal("linear", got.Scale)
+	s.Require().NotNil(got.ShowLabels)
+	s.True(*got.ShowLabels)
+	s.Require().NotNil(got.AutoRotate)
+	s.True(*got.AutoRotate)
 
-	// Step 3: when override only fills a subset, the unfilled fields come from flags.
-	partial := &Config{Swap: "n"} // only Swap set
+	partial := &Config{Swap: "n"}
 	got = Materialise(Flags{Swap: "xyn", Scale: "log", ShowLabels: true, AutoRotate: true}, partial)
-	assert.Equal(t, "n", got.Swap, "override.Swap wins")
-	assert.Equal(t, "log", got.Scale, "flags.Scale fills un-overridden Scale")
-	assert.NotNil(t, got.ShowLabels)
-	assert.True(t, *got.ShowLabels)
-	assert.NotNil(t, got.AutoRotate)
-	assert.True(t, *got.AutoRotate)
+	s.Equal("n", got.Swap)
+	s.Equal("log", got.Scale)
+	s.Require().NotNil(got.ShowLabels)
+	s.True(*got.ShowLabels)
+	s.Require().NotNil(got.AutoRotate)
+	s.True(*got.AutoRotate)
 
-	// Step 4: internal default kicks in when nothing is set.
 	got = Materialise(Flags{}, nil)
-	assert.Equal(t, "", got.Swap)
-	assert.Equal(t, "linear", got.Scale, "internal default Scale=linear when unset")
-	assert.Nil(t, got.ShowLabels, "ShowLabels nil = JSON absent (user default)")
-	assert.Nil(t, got.AutoRotate, "AutoRotate nil = JSON absent (user default)")
-	assert.Nil(t, got.Sort, "Sort nil = JSON absent (user default)")
+	s.Equal("", got.Swap)
+	s.Equal("linear", got.Scale)
+	s.Nil(got.ShowLabels)
+	s.Nil(got.AutoRotate)
+	s.Nil(got.Sort)
 
-	// *bool false from override (not unset) must round-trip as a non-nil pointer.
 	got = Materialise(Flags{ShowLabels: true}, &Config{ShowLabels: &fa})
-	assert.NotNil(t, got.ShowLabels)
-	assert.False(t, *got.ShowLabels, "override.ShowLabels=false must win over flags.ShowLabels=true")
+	s.Require().NotNil(got.ShowLabels)
+	s.False(*got.ShowLabels)
 
-	// *Sort round-trip: override.Sort fills even when flags.Sort is empty.
 	overrideSort := &shared.Sort{Enabled: true, Order: "desc"}
 	got = Materialise(Flags{}, &Config{Sort: overrideSort})
-	assert.NotNil(t, got.Sort)
-	assert.True(t, got.Sort.Enabled)
-	assert.Equal(t, "desc", got.Sort.Order)
+	s.Require().NotNil(got.Sort)
+	s.True(got.Sort.Enabled)
+	s.Equal("desc", got.Sort.Order)
 
-	// flags.Sort builds a Sort struct when non-empty.
 	got = Materialise(Flags{Sort: "asc"}, nil)
-	assert.NotNil(t, got.Sort)
-	assert.True(t, got.Sort.Enabled)
-	assert.Equal(t, "asc", got.Sort.Order)
+	s.Require().NotNil(got.Sort)
+	s.True(got.Sort.Enabled)
+	s.Equal("asc", got.Sort.Order)
+}
+
+func TestBarSuite(t *testing.T) {
+	suite.Run(t, new(BarSuite))
 }

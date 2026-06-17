@@ -25,7 +25,7 @@ func (s *ChartSpecSuite) SetupTest() {
 //
 // We verify the concrete type via JSON roundtrip to avoid an import cycle
 // (config/charts/bar imports shared, so shared cannot import it back).
-func (s *ChartSpecSuite) TestParseOverrides_BarSwap() {
+func (s *ChartSpecSuite) TestParseOverridesBarSwap() {
 	got, err := ParseOverrides([]string{"bar:swap=yxn"}, []string{"bar"}, s.xynAxes)
 	s.Require().NoError(err)
 	s.Require().NotNil(got)
@@ -45,7 +45,7 @@ func (s *ChartSpecSuite) TestParseOverrides_BarSwap() {
 
 // TestParseOverrides_AllFields exercises every supported key in a single spec
 // to confirm the typed config receives all the values.
-func (s *ChartSpecSuite) TestParseOverrides_AllFields() {
+func (s *ChartSpecSuite) TestParseOverridesAllFields() {
 	got, err := ParseOverrides(
 		[]string{"bar:swap=yxn,sort=asc,scale=log,labels=true,3d-rotate=false"},
 		[]string{"bar"},
@@ -67,7 +67,7 @@ func (s *ChartSpecSuite) TestParseOverrides_AllFields() {
 }
 
 // TestParseOverrides_BareLabels confirms a bare flag (no =val) parses correctly.
-func (s *ChartSpecSuite) TestParseOverrides_BareLabels() {
+func (s *ChartSpecSuite) TestParseOverridesBareLabels() {
 	got, err := ParseOverrides([]string{"bar:labels"}, []string{"bar"}, s.xynAxes)
 	s.Require().NoError(err)
 
@@ -79,7 +79,7 @@ func (s *ChartSpecSuite) TestParseOverrides_BareLabels() {
 }
 
 // TestParseOverrides_BareRotate confirms `3d-rotate` (no =val) sets autoRotate=true.
-func (s *ChartSpecSuite) TestParseOverrides_BareRotate() {
+func (s *ChartSpecSuite) TestParseOverridesBareRotate() {
 	got, err := ParseOverrides([]string{"bar:3d-rotate"}, []string{"bar"}, s.xynAxes)
 	s.Require().NoError(err)
 
@@ -92,7 +92,7 @@ func (s *ChartSpecSuite) TestParseOverrides_BareRotate() {
 
 // TestParseOverrides_MultipleSpecsSameType confirms two specs for the same
 // type are merged into a single entry in the map.
-func (s *ChartSpecSuite) TestParseOverrides_MultipleSpecsSameType() {
+func (s *ChartSpecSuite) TestParseOverridesMultipleSpecsSameType() {
 	got, err := ParseOverrides(
 		[]string{"bar:sort=asc", "bar:scale=log"},
 		[]string{"bar"},
@@ -110,7 +110,7 @@ func (s *ChartSpecSuite) TestParseOverrides_MultipleSpecsSameType() {
 }
 
 // TestParseOverrides_Empty confirms the function returns (nil, nil) for empty input.
-func (s *ChartSpecSuite) TestParseOverrides_Empty() {
+func (s *ChartSpecSuite) TestParseOverridesEmpty() {
 	got, err := ParseOverrides(nil, []string{"bar"}, s.xynAxes)
 	s.Require().NoError(err)
 	s.Nil(got)
@@ -123,7 +123,7 @@ func (s *ChartSpecSuite) TestParseOverrides_Empty() {
 // TestParseOverrides_Errors covers the validation failures the new contract
 // still surfaces. Per-chart Validate is deferred to a future task, so
 // "pie:scale=log" is silently accepted — see TestParseOverrides_NoLimitedChartCheck.
-func (s *ChartSpecSuite) TestParseOverrides_Errors() {
+func (s *ChartSpecSuite) TestParseOverridesErrors() {
 	cases := []struct {
 		name  string
 		specs []string
@@ -149,7 +149,7 @@ func (s *ChartSpecSuite) TestParseOverrides_Errors() {
 // contract: pie/heatmap/radar accept keys they don't carry (scale, 3d-rotate) in
 // the payload; the values are silently dropped by Decode. The per-chart
 // Validate(axes) method (future task) will surface this as an error.
-func (s *ChartSpecSuite) TestParseOverrides_NoLimitedChartCheck() {
+func (s *ChartSpecSuite) TestParseOverridesNoLimitedChartCheck() {
 	got, err := ParseOverrides([]string{"pie:scale=log"}, []string{"pie"}, s.xynAxes)
 	s.Require().NoError(err)
 	s.Require().Contains(got, "pie")

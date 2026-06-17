@@ -12,12 +12,25 @@ import (
 	linechart "github.com/goptics/vizb/config/charts/line"
 	"github.com/goptics/vizb/pkg/template"
 	"github.com/goptics/vizb/shared"
+	"github.com/goptics/vizb/testutil"
 	"github.com/stretchr/testify/suite"
 )
 
-// barFromJSON round-trips a map through JSON to produce a *barchart.Config
-// whose fields are populated per the map. Mirrors what MigrateDataset does
-// for legacy settings: we get a typed Config without manually setting fields.
+// UISuite covers the ui/html subcommand end-to-end via rootCmd.Execute.
+type UISuite struct {
+	suite.Suite
+	restoreOsExit func()
+}
+
+func (s *UISuite) SetupTest() {
+	ResetTestState()
+	s.restoreOsExit, _ = testutil.TrapOsExitPanic(s.T())
+}
+
+func (s *UISuite) TearDownTest() {
+	s.restoreOsExit()
+}
+
 func (s *UISuite) barFromJSON(payload map[string]any) *barchart.Config {
 	raw, err := json.Marshal(payload)
 	s.Require().NoError(err)
@@ -28,42 +41,14 @@ func (s *UISuite) barFromJSON(payload map[string]any) *barchart.Config {
 	return c
 }
 
-// UISuite covers the ui/html subcommand end-to-end via rootCmd.Execute.
-type UISuite struct {
-	suite.Suite
-	origOsExit func(int)
-	exitCode   int
-}
-
-func (s *UISuite) SetupTest() {
-	s.origOsExit = shared.OsExit
-	s.exitCode = 0
-	shared.OsExit = func(code int) { s.exitCode = code }
-
-	// Reset the ui flag bindings so an un-passed flag doesn't inherit a prior
-	// test's value (cobra retains bound values between Execute calls).
-	uiOpts = uiOptions{Charts: shared.DefaultChartTypes}
-}
-
-func (s *UISuite) TearDownTest() {
-	shared.OsExit = s.origOsExit
-}
-
-func (s *UISuite) writeJSON(path string, v any) {
-	data, err := json.Marshal(v)
-	s.Require().NoError(err)
-	s.Require().NoError(os.WriteFile(path, data, 0644))
-}
-
 func (s *UISuite) TestSingleObject() {
 	dir := s.T().TempDir()
 	input := filepath.Join(dir, "bench.json")
-	s.writeJSON(input, shared.Dataset{Name: "Bench1", Data: []shared.DataPoint{{Name: "Test1", XAxis: "1", YAxis: "100"}}})
+	testutil.WriteJSON(s.T(), input, shared.Dataset{Name: "Bench1", Data: []shared.DataPoint{{Name: "Test1", XAxis: "1", YAxis: "100"}}})
 	out := filepath.Join(dir, "output.html")
 
 	rootCmd.SetArgs([]string{"ui", "-o", out, input})
 	s.Require().NoError(rootCmd.Execute())
-	s.Equal(0, s.exitCode)
 
 	html := s.read(out)
 	s.Contains(html, "Bench1")
@@ -75,7 +60,7 @@ func (s *UISuite) TestSingleObject() {
 func (s *UISuite) TestArrayInput() {
 	dir := s.T().TempDir()
 	input := filepath.Join(dir, "benches.json")
-	s.writeJSON(input, []shared.Dataset{
+	testutil.WriteJSON(s.T(), input, []shared.Dataset{
 		{Name: "Bench1", Data: []shared.DataPoint{{Name: "Test1", XAxis: "1", YAxis: "100"}}},
 		{Name: "Bench2", Data: []shared.DataPoint{{Name: "Test2", XAxis: "2", YAxis: "200"}}},
 	})
@@ -83,7 +68,6 @@ func (s *UISuite) TestArrayInput() {
 
 	rootCmd.SetArgs([]string{"ui", "-o", out, input})
 	s.Require().NoError(rootCmd.Execute())
-	s.Equal(0, s.exitCode)
 
 	html := s.read(out)
 	s.Contains(html, "Bench1")
@@ -91,24 +75,29 @@ func (s *UISuite) TestArrayInput() {
 }
 
 func (s *UISuite) TestMissingFileExits() {
+	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
+	defer restore()
+
 	rootCmd.SetArgs([]string{"ui", "/nonexistent/path.json"})
-	rootCmd.Execute()
-	s.Equal(1, s.exitCode)
+	s.Panics(func() { _ = rootCmd.Execute() })
+	s.True(*exitCalled)
 }
 
 func (s *UISuite) TestNoArgsExits() {
+	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
+	defer restore()
+
 	rootCmd.SetArgs([]string{"ui"})
-	rootCmd.Execute()
-	s.Equal(1, s.exitCode)
+	s.Panics(func() { _ = rootCmd.Execute() })
+	s.True(*exitCalled)
 }
 
-func (s *UISuite) TestAPIFlag() {
+func (s *UISuite) TestUIRemoteDataURL() {
 	dir := s.T().TempDir()
 	out := filepath.Join(dir, "remote.html")
 
 	rootCmd.SetArgs([]string{"ui", "-o", out, "--data-url", "https://example.com/bench.json"})
 	s.Require().NoError(rootCmd.Execute())
-	s.Equal(0, s.exitCode)
 
 	html := s.read(out)
 	s.Contains(html, "https://example.com/bench.json")
@@ -118,21 +107,23 @@ func (s *UISuite) TestAPIFlag() {
 	s.False(s.htmlContains3DChunk(html), "remote UI without --3d must not bundle the 3D chunk")
 }
 
-func (s *UISuite) TestAPIFlagWith3D() {
+func (s *UISuite) TestUIRemoteDataURLWith3D() {
 	dir := s.T().TempDir()
 	out := filepath.Join(dir, "remote-3d.html")
 
 	rootCmd.SetArgs([]string{"ui", "-o", out, "--data-url", "https://example.com/bench.json", "--3d"})
 	s.Require().NoError(rootCmd.Execute())
-	s.Equal(0, s.exitCode)
 
 	s.True(s.htmlContains3DChunk(s.read(out)), "remote UI with --3d must bundle the 3D chunk")
 }
 
-func (s *UISuite) TestAPIFlagInvalidURLExits() {
+func (s *UISuite) TestUIRemoteDataURLInvalidExits() {
+	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
+	defer restore()
+
 	rootCmd.SetArgs([]string{"ui", "--data-url", "not-a-url"})
-	rootCmd.Execute()
-	s.Equal(1, s.exitCode)
+	s.Panics(func() { _ = rootCmd.Execute() })
+	s.True(*exitCalled)
 }
 
 func (s *UISuite) TestInvalidJSONExits() {
@@ -140,9 +131,12 @@ func (s *UISuite) TestInvalidJSONExits() {
 	input := filepath.Join(dir, "invalid.json")
 	s.Require().NoError(os.WriteFile(input, []byte("not json"), 0644))
 
+	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
+	defer restore()
+
 	rootCmd.SetArgs([]string{"ui", input})
-	rootCmd.Execute()
-	s.Equal(1, s.exitCode)
+	s.Panics(func() { _ = rootCmd.Execute() })
+	s.True(*exitCalled)
 }
 
 func (s *UISuite) TestEmptyFileExits() {
@@ -150,15 +144,18 @@ func (s *UISuite) TestEmptyFileExits() {
 	input := filepath.Join(dir, "empty.json")
 	s.Require().NoError(os.WriteFile(input, []byte(""), 0644))
 
+	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
+	defer restore()
+
 	rootCmd.SetArgs([]string{"ui", input})
-	rootCmd.Execute()
-	s.Equal(1, s.exitCode)
+	s.Panics(func() { _ = rootCmd.Execute() })
+	s.True(*exitCalled)
 }
 
 func (s *UISuite) TestMergedOutput() {
 	dir := s.T().TempDir()
 	input := filepath.Join(dir, "merged.json")
-	s.writeJSON(input, []shared.Dataset{{
+	testutil.WriteJSON(s.T(), input, []shared.Dataset{{
 		Tag:       "v1.0.0",
 		Timestamp: "2024-01-01T00:00:00Z",
 		Name:      "Sort Benchmarks",
@@ -169,7 +166,6 @@ func (s *UISuite) TestMergedOutput() {
 
 	rootCmd.SetArgs([]string{"ui", "-o", out, input})
 	s.Require().NoError(rootCmd.Execute())
-	s.Equal(0, s.exitCode)
 
 	html := s.read(out)
 	s.Contains(html, "v1.0.0")
@@ -177,16 +173,14 @@ func (s *UISuite) TestMergedOutput() {
 	s.Contains(html, "Sort Benchmarks")
 }
 
-// TestHtmlAlias verifies the legacy `html` alias still resolves to the ui command.
-func (s *UISuite) TestHtmlAlias() {
+func (s *UISuite) TestHTMLAlias() {
 	dir := s.T().TempDir()
 	input := filepath.Join(dir, "bench.json")
-	s.writeJSON(input, shared.Dataset{Name: "Bench1", Data: []shared.DataPoint{{Name: "Test1", XAxis: "1", YAxis: "100"}}})
+	testutil.WriteJSON(s.T(), input, shared.Dataset{Name: "Bench1", Data: []shared.DataPoint{{Name: "Test1", XAxis: "1", YAxis: "100"}}})
 	out := filepath.Join(dir, "output.html")
 
 	rootCmd.SetArgs([]string{"html", "-o", out, input})
 	s.Require().NoError(rootCmd.Execute())
-	s.Equal(0, s.exitCode)
 
 	s.Contains(s.read(out), "Bench1")
 }
@@ -197,10 +191,6 @@ func (s *UISuite) read(path string) string {
 	return string(content)
 }
 
-// extractVIZBDataArray parses the JSON array assigned to `window.VIZB_DATA` in
-// the generated HTML. The data is inlined by the template (see
-// pkg/template/generate-ui.go) as a single JS literal; for the ui subcommand
-// the value is always a JSON array of datasets.
 func (s *UISuite) extractVIZBDataArray(html string) []any {
 	const prefix = "window.VIZB_DATA = "
 	start := strings.Index(html, prefix)
@@ -231,12 +221,10 @@ func (s *UISuite) htmlContains3DChunk(html string) bool {
 	return strings.Contains(html, `"`+root3D+`"`)
 }
 
-// TestRunUI_FiltersChartsOnExplicitFlag verifies that `-c bar` trims embedded
-// settings to match the bundled chart list.
-func (s *UISuite) TestRunUI_FiltersChartsOnExplicitFlag() {
+func (s *UISuite) TestRunUIFiltersChartsOnExplicitFlag() {
 	dir := s.T().TempDir()
 	input := filepath.Join(dir, "multi.json")
-	s.writeJSON(input, shared.Dataset{
+	testutil.WriteJSON(s.T(), input, shared.Dataset{
 		Name: "Test",
 		Settings: []config_charts.ChartConfig{
 			s.barFromJSON(map[string]any{"type": "bar", "scale": "linear"}),
@@ -248,7 +236,6 @@ func (s *UISuite) TestRunUI_FiltersChartsOnExplicitFlag() {
 
 	rootCmd.SetArgs([]string{"ui", "-o", out, "-c", "bar", input})
 	s.Require().NoError(rootCmd.Execute())
-	s.Equal(0, s.exitCode)
 
 	html := s.read(out)
 	s.Equal([]string{"bar"}, s.extractVIZBCharts(html))
@@ -261,16 +248,10 @@ func (s *UISuite) TestRunUI_FiltersChartsOnExplicitFlag() {
 	s.Equal("bar", settings[0].(map[string]any)["type"])
 }
 
-// TestRunUI_AppliesOverrides verifies that `--chart bar:swap=yxn` on the
-// `vizb ui` subcommand is applied to the bar setting baked into the input
-// dataset. The override should appear in the embedded VIZB_DATA, not just
-// the chunk-pruning list.
-func (s *UISuite) TestRunUI_AppliesOverrides() {
+func (s *UISuite) TestRunUIAppliesOverrides() {
 	dir := s.T().TempDir()
 	input := filepath.Join(dir, "old.json")
-	// Dataset with a bar config whose initial swap is "xyn" (different from
-	// the override), so the assertion distinguishes override from no-op.
-	s.writeJSON(input, shared.Dataset{
+	testutil.WriteJSON(s.T(), input, shared.Dataset{
 		Name: "Test",
 		Axes: []shared.Axis{{Key: "x"}, {Key: "y"}, {Key: "name"}},
 		Settings: []config_charts.ChartConfig{s.barFromJSON(map[string]any{
@@ -284,7 +265,6 @@ func (s *UISuite) TestRunUI_AppliesOverrides() {
 
 	rootCmd.SetArgs([]string{"ui", "-o", out, "--chart", "bar:swap=yxn", input})
 	s.Require().NoError(rootCmd.Execute())
-	s.Equal(0, s.exitCode)
 
 	html := s.read(out)
 	datasets := s.extractVIZBDataArray(html)

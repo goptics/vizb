@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
 // Test constants for consistency
@@ -30,7 +30,11 @@ const (
 	smallValue     = 0.0001
 )
 
-func TestRoundToTwo(t *testing.T) {
+type FormatterSuite struct {
+	suite.Suite
+}
+
+func (s *FormatterSuite) TestRoundToTwo() {
 	tests := []struct {
 		name     string
 		input    float64
@@ -47,20 +51,20 @@ func TestRoundToTwo(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		s.Run(tt.name, func() {
 			result := RoundToTwo(tt.input)
-			assert.Equal(t, tt.expected, result, "RoundToTwo(%f) should equal %f", tt.input, tt.expected)
+			s.Equal(tt.expected, result, "RoundToTwo(%f) should equal %f", tt.input, tt.expected)
 
 			// Verify logic consistency manually as well for critical path
 			if tt.input != 0 {
 				expectedMath := math.Round(tt.input*100) / 100
-				assert.Equal(t, expectedMath, result, "Should match direct math.Round logic")
+				s.Equal(expectedMath, result, "Should match direct math.Round logic")
 			}
 		})
 	}
 }
 
-func TestFormatTime(t *testing.T) {
+func (s *FormatterSuite) TestFormatTime() {
 	tests := []struct {
 		name     string
 		input    float64
@@ -77,14 +81,14 @@ func TestFormatTime(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		s.Run(tt.name, func() {
 			result := FormatTime(tt.input, tt.unit)
-			assert.Equal(t, tt.expected, result, "FormatTime(%f, %s) should equal %f", tt.input, tt.unit, tt.expected)
+			s.Equal(tt.expected, result, "FormatTime(%f, %s) should equal %f", tt.input, tt.unit, tt.expected)
 		})
 	}
 }
 
-func TestFormatMem(t *testing.T) {
+func (s *FormatterSuite) TestFormatMem() {
 	tests := []struct {
 		name     string
 		input    float64
@@ -102,14 +106,14 @@ func TestFormatMem(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		s.Run(tt.name, func() {
 			result := FormatMem(tt.input, tt.unit)
-			assert.Equal(t, tt.expected, result, "FormatMem(%f, %s) should equal %f", tt.input, tt.unit, tt.expected)
+			s.Equal(tt.expected, result, "FormatMem(%f, %s) should equal %f", tt.input, tt.unit, tt.expected)
 		})
 	}
 }
 
-func TestFormatNumber(t *testing.T) {
+func (s *FormatterSuite) TestFormatNumber() {
 	tests := []struct {
 		name     string
 		input    float64
@@ -127,131 +131,126 @@ func TestFormatNumber(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		s.Run(tt.name, func() {
 			result := FormatNumber(tt.input, tt.unit)
-			assert.Equal(t, tt.expected, result, "FormatNumber(%f, %s) should equal %f", tt.input, tt.unit, tt.expected)
+			s.Equal(tt.expected, result, "FormatNumber(%f, %s) should equal %f", tt.input, tt.unit, tt.expected)
 		})
 	}
 }
 
-// Edge case tests for all formatters
-func TestFormatterEdgeCases(t *testing.T) {
-	// Test boundary values and special cases
-
-	t.Run("FormatTime Edge Cases", func(t *testing.T) {
+func (s *FormatterSuite) TestFormatterEdgeCases() {
+	s.Run("FormatTime Edge Cases", func() {
 		// Test with very large values
 		expectedLarge := RoundToTwo(veryLargeValue / nanoToSecond)
-		assert.Equal(t, expectedLarge, FormatTime(veryLargeValue, "s"), "Should handle very large values")
+		s.Equal(expectedLarge, FormatTime(veryLargeValue, "s"), "Should handle very large values")
 
 		// Test with negative values (though these are unlikely in benchmarks)
-		assert.Equal(t, -5.0, FormatTime(-5*nanoToSecond, "s"), "Should handle negative values")
+		s.Equal(-5.0, FormatTime(-5*nanoToSecond, "s"), "Should handle negative values")
 
 		// Test with very small positive values - rounds to 0
-		assert.Equal(t, 0.0, FormatTime(smallValue, "ns"), "Should round very small values to 0")
+		s.Equal(0.0, FormatTime(smallValue, "ns"), "Should round very small values to 0")
 
 		// Test boundary values for each unit
-		assert.Equal(t, 1.0, FormatTime(nanoToSecond, "s"), "Should convert exactly 1 second")
-		assert.Equal(t, 1.0, FormatTime(nanoToMilli, "ms"), "Should convert exactly 1 millisecond")
-		assert.Equal(t, 1.0, FormatTime(nanoToMicro, "us"), "Should convert exactly 1 microsecond")
+		s.Equal(1.0, FormatTime(nanoToSecond, "s"), "Should convert exactly 1 second")
+		s.Equal(1.0, FormatTime(nanoToMilli, "ms"), "Should convert exactly 1 millisecond")
+		s.Equal(1.0, FormatTime(nanoToMicro, "us"), "Should convert exactly 1 microsecond")
 
 		// Test with invalid unit - should use default
-		assert.Equal(t, 1000.0, FormatTime(1000, "invalid"), "Should default to ns with invalid unit")
+		s.Equal(1000.0, FormatTime(1000, "invalid"), "Should default to ns with invalid unit")
 
 		// Test zero with different units
-		assert.Equal(t, 0.0, FormatTime(0, "s"), "Zero should remain zero for seconds")
-		assert.Equal(t, 0.0, FormatTime(0, "ms"), "Zero should remain zero for milliseconds")
+		s.Equal(0.0, FormatTime(0, "s"), "Zero should remain zero for seconds")
+		s.Equal(0.0, FormatTime(0, "ms"), "Zero should remain zero for milliseconds")
 	})
 
-	t.Run("FormatMem Edge Cases", func(t *testing.T) {
+	s.Run("FormatMem Edge Cases", func() {
 		// Test with small value and large unit conversion - rounds to 0
-		assert.Equal(t, 0.0, FormatMem(1, "GB"), "Should round small values with large units to 0")
+		s.Equal(0.0, FormatMem(1, "GB"), "Should round small values with large units to 0")
 
 		// Test with very large values
 		expectedLarge := RoundToTwo(veryLargeValue / byteToKb)
-		assert.Equal(t, expectedLarge, FormatMem(veryLargeValue, "KB"), "Should handle very large values")
+		s.Equal(expectedLarge, FormatMem(veryLargeValue, "KB"), "Should handle very large values")
 
 		// Test with negative values (though these are unlikely in benchmarks)
-		assert.Equal(t, -2.0, FormatMem(-2*byteToKb, "KB"), "Should handle negative values")
+		s.Equal(-2.0, FormatMem(-2*byteToKb, "KB"), "Should handle negative values")
 
 		// Test with very small positive values - rounds to 0
-		assert.Equal(t, 0.0, FormatMem(smallValue, "B"), "Should round very small values to 0")
+		s.Equal(0.0, FormatMem(smallValue, "B"), "Should round very small values to 0")
 
 		// Test boundary values for each unit
-		assert.Equal(t, 8.0, FormatMem(1, "b"), "1 byte should equal 8 bits")
-		assert.Equal(t, 1.0, FormatMem(byteToKb, "KB"), "Should convert exactly 1 KB")
-		assert.Equal(t, 1.0, FormatMem(byteToMb, "MB"), "Should convert exactly 1 MB")
-		assert.Equal(t, 1.0, FormatMem(byteToGb, "GB"), "Should convert exactly 1 GB")
+		s.Equal(8.0, FormatMem(1, "b"), "1 byte should equal 8 bits")
+		s.Equal(1.0, FormatMem(byteToKb, "KB"), "Should convert exactly 1 KB")
+		s.Equal(1.0, FormatMem(byteToMb, "MB"), "Should convert exactly 1 MB")
+		s.Equal(1.0, FormatMem(byteToGb, "GB"), "Should convert exactly 1 GB")
 
 		// Test with invalid unit - should use default
-		assert.Equal(t, 1024.0, FormatMem(1024, "invalid"), "Should default to bytes with invalid unit")
+		s.Equal(1024.0, FormatMem(1024, "invalid"), "Should default to bytes with invalid unit")
 
 		// Test zero with different units
-		assert.Equal(t, 0.0, FormatMem(0, "KB"), "Zero should remain zero for kilobytes")
-		assert.Equal(t, 0.0, FormatMem(0, "GB"), "Zero should remain zero for gigabytes")
+		s.Equal(0.0, FormatMem(0, "KB"), "Zero should remain zero for kilobytes")
+		s.Equal(0.0, FormatMem(0, "GB"), "Zero should remain zero for gigabytes")
 	})
 
-	t.Run("FormatNumber Edge Cases", func(t *testing.T) {
+	s.Run("FormatNumber Edge Cases", func() {
 		// Test with very large values
 		expectedLarge := RoundToTwo(veryLargeValue)
-		assert.Equal(t, expectedLarge, FormatNumber(veryLargeValue, ""), "Should handle very large values")
+		s.Equal(expectedLarge, FormatNumber(veryLargeValue, ""), "Should handle very large values")
 
 		// Test with negative values (though these are unlikely in benchmarks)
-		assert.Equal(t, -5.0, FormatNumber(-5*allocToK, "K"), "Should handle negative values")
+		s.Equal(-5.0, FormatNumber(-5*allocToK, "K"), "Should handle negative values")
 
 		// Test with very small positive values - rounds to 0
-		assert.Equal(t, 0.0, FormatNumber(smallValue, ""), "Should round very small values to 0")
+		s.Equal(0.0, FormatNumber(smallValue, ""), "Should round very small values to 0")
 
 		// Test boundary values for each unit
-		assert.Equal(t, 1.0, FormatNumber(allocToK, "K"), "Should convert exactly 1K allocations")
-		assert.Equal(t, 1.0, FormatNumber(allocToM, "M"), "Should convert exactly 1M allocations")
-		assert.Equal(t, 1.0, FormatNumber(allocToB, "B"), "Should convert exactly 1B allocations")
-		assert.Equal(t, 1.0, FormatNumber(allocToT, "T"), "Should convert exactly 1T allocations")
+		s.Equal(1.0, FormatNumber(allocToK, "K"), "Should convert exactly 1K allocations")
+		s.Equal(1.0, FormatNumber(allocToM, "M"), "Should convert exactly 1M allocations")
+		s.Equal(1.0, FormatNumber(allocToB, "B"), "Should convert exactly 1B allocations")
+		s.Equal(1.0, FormatNumber(allocToT, "T"), "Should convert exactly 1T allocations")
 
 		// Test with small values that result in fractional results
-		assert.Equal(t, 1.0, FormatNumber(999, "K"), "Should round 0.999 to 1.0")
+		s.Equal(1.0, FormatNumber(999, "K"), "Should round 0.999 to 1.0")
 
 		// Test with invalid unit - should use default
-		assert.Equal(t, 1024.0, FormatNumber(1024, "invalid"), "Should default to raw value with invalid unit")
+		s.Equal(1024.0, FormatNumber(1024, "invalid"), "Should default to raw value with invalid unit")
 
 		// Test zero with different units
-		assert.Equal(t, 0.0, FormatNumber(0, "K"), "Zero should remain zero for K")
-		assert.Equal(t, 0.0, FormatNumber(0, "M"), "Zero should remain zero for M")
+		s.Equal(0.0, FormatNumber(0, "K"), "Zero should remain zero for K")
+		s.Equal(0.0, FormatNumber(0, "M"), "Zero should remain zero for M")
 	})
 }
 
-// Test rounding behavior
-func TestFormatterPrecision(t *testing.T) {
-	t.Run("FormatTime Rounding", func(t *testing.T) {
+func (s *FormatterSuite) TestFormatterPrecision() {
+	s.Run("FormatTime Rounding", func() {
 		// Test with non-integer values
-		assert.Equal(t, 1.5, FormatTime(1.5*nanoToSecond, "s"), "Should handle fractional values")
-		assert.Equal(t, 0.0, FormatTime(nanoToMilli, "s"), "Should round small fractional values to 0")
+		s.Equal(1.5, FormatTime(1.5*nanoToSecond, "s"), "Should handle fractional values")
+		s.Equal(0.0, FormatTime(nanoToMilli, "s"), "Should round small fractional values to 0")
 
 		// Test precision boundaries
-		assert.Equal(t, 1.0, FormatTime(1000001*nanoToMicro, "s"), "Should round to 2 decimal places")
+		s.Equal(1.0, FormatTime(1000001*nanoToMicro, "s"), "Should round to 2 decimal places")
 	})
 
-	t.Run("FormatMem Rounding", func(t *testing.T) {
+	s.Run("FormatMem Rounding", func() {
 		// Test with non-integer values
-		assert.Equal(t, 1.5, FormatMem(1.5*byteToKb, "KB"), "Should handle fractional values")
-		assert.Equal(t, 0.0, FormatMem(1024, "MB"), "Should round small fractional values to 0")
+		s.Equal(1.5, FormatMem(1.5*byteToKb, "KB"), "Should handle fractional values")
+		s.Equal(0.0, FormatMem(1024, "MB"), "Should round small fractional values to 0")
 
 		// Test precision with bits conversion
-		assert.Equal(t, 4096.0, FormatMem(512, "b"), "Should precisely convert bytes to bits")
+		s.Equal(4096.0, FormatMem(512, "b"), "Should precisely convert bytes to bits")
 	})
 
-	t.Run("FormatNumber Rounding", func(t *testing.T) {
+	s.Run("FormatNumber Rounding", func() {
 		// Test with non-integer values
-		assert.Equal(t, 1.5, FormatNumber(1.5*allocToK, "K"), "Should handle fractional values")
-		assert.Equal(t, 0.0, FormatNumber(1, "M"), "Should round very small fractional values to 0")
+		s.Equal(1.5, FormatNumber(1.5*allocToK, "K"), "Should handle fractional values")
+		s.Equal(0.0, FormatNumber(1, "M"), "Should round very small fractional values to 0")
 
 		// Test precision boundaries
-		assert.Equal(t, 1.0, FormatNumber(1000001, "M"), "Should round to 2 decimal places")
+		s.Equal(1.0, FormatNumber(1000001, "M"), "Should round to 2 decimal places")
 	})
 }
 
-// Test concurrent usage to ensure thread safety
-func TestFormatterConcurrency(t *testing.T) {
-	t.Run("Concurrent FormatTime", func(t *testing.T) {
+func (s *FormatterSuite) TestFormatterConcurrency() {
+	s.Run("Concurrent FormatTime", func() {
 		const numGoroutines = 100
 		const numIterations = 1000
 
@@ -271,11 +270,11 @@ func TestFormatterConcurrency(t *testing.T) {
 			<-results
 		}
 
-		assert.True(t, true, "Concurrent execution completed without issues")
+		s.True(true, "Concurrent execution completed without issues")
 	})
 }
 
-func TestConvertTime(t *testing.T) {
+func (s *FormatterSuite) TestConvertTime() {
 	tests := []struct {
 		name     string
 		input    float64
@@ -302,41 +301,44 @@ func TestConvertTime(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		s.Run(tt.name, func() {
 			result := ConvertTime(tt.input, tt.from, tt.to)
-			assert.Equal(t, tt.expected, result, "ConvertTime(%f, %s, %s) should equal %f", tt.input, tt.from, tt.to, tt.expected)
+			s.Equal(tt.expected, result, "ConvertTime(%f, %s, %s) should equal %f", tt.input, tt.from, tt.to, tt.expected)
 		})
 	}
 }
 
-// Test comprehensive input validation
-func TestInputValidation(t *testing.T) {
-	t.Run("All Units Coverage", func(t *testing.T) {
+func (s *FormatterSuite) TestInputValidation() {
+	s.Run("All Units Coverage", func() {
 		// Test all valid time units
 		timeUnits := []string{"", "ns", "us", "ms", "s"}
 		for _, unit := range timeUnits {
 			result := FormatTime(1000, unit)
-			assert.NotNil(t, result, "FormatTime should handle unit: %s", unit)
+			s.NotNil(result, "FormatTime should handle unit: %s", unit)
 		}
 
 		// Test all valid memory units
 		memUnits := []string{"", "B", "b", "KB", "MB", "GB"}
 		for _, unit := range memUnits {
 			result := FormatMem(1024, unit)
-			assert.NotNil(t, result, "FormatMem should handle unit: %s", unit)
+			s.NotNil(result, "FormatMem should handle unit: %s", unit)
 		}
 
 		// Test all valid number units
 		numberUnits := []string{"", "K", "M", "B", "T"}
 		for _, unit := range numberUnits {
 			result := FormatNumber(1000, unit)
-			assert.NotNil(t, result, "FormatNumber should handle unit: %s", unit)
+			s.NotNil(result, "FormatNumber should handle unit: %s", unit)
 		}
 	})
 
-	t.Run("Case Sensitivity", func(t *testing.T) {
+	s.Run("Case Sensitivity", func() {
 		// Test that units are case sensitive (as per implementation)
-		assert.NotEqual(t, FormatNumber(1000, "k"), FormatNumber(1000, "K"), "Units should be case sensitive")
-		assert.NotEqual(t, FormatMem(1024, "kb"), FormatMem(1024, "KB"), "Units should be case sensitive")
+		s.NotEqual(FormatNumber(1000, "k"), FormatNumber(1000, "K"), "Units should be case sensitive")
+		s.NotEqual(FormatMem(1024, "kb"), FormatMem(1024, "KB"), "Units should be case sensitive")
 	})
+}
+
+func TestFormatterSuite(t *testing.T) {
+	suite.Run(t, new(FormatterSuite))
 }

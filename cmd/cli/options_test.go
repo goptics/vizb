@@ -1,11 +1,9 @@
 package cli
 
 import (
-	"bytes"
-	"io"
-	"os"
 	"testing"
 
+	"github.com/goptics/vizb/testutil"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -13,22 +11,6 @@ import (
 // selection assembly.
 type OptionsSuite struct {
 	suite.Suite
-}
-
-// captureStderr runs fn with os.Stderr redirected and returns what it printed
-// (validation warnings go to stderr).
-func (s *OptionsSuite) captureStderr(fn func()) string {
-	old := os.Stderr
-	r, w, _ := os.Pipe()
-	os.Stderr = w
-	defer func() { os.Stderr = old }()
-
-	fn()
-
-	w.Close()
-	var buf bytes.Buffer
-	io.Copy(&buf, r)
-	return buf.String()
 }
 
 func (s *OptionsSuite) TestCommonValidateNormalisesUnits() {
@@ -40,14 +22,14 @@ func (s *OptionsSuite) TestCommonValidateNormalisesUnits() {
 
 func (s *OptionsSuite) TestCommonValidateWarnsAndDefaultsInvalid() {
 	o := &CommonOptions{MemUnit: "invalid", TimeUnit: "ns", GroupPattern: "x", Parser: "auto"}
-	out := s.captureStderr(func() { o.Validate() })
+	out := testutil.CaptureStderr(func() { o.Validate() })
 	s.Equal("B", o.MemUnit)
 	s.Contains(out, "Invalid memory unit")
 }
 
 func (s *OptionsSuite) TestCommonValidateRejectsUnknownParser() {
 	o := &CommonOptions{TimeUnit: "ns", MemUnit: "B", GroupPattern: "x", Parser: "nope"}
-	s.captureStderr(func() { o.Validate() })
+	testutil.CaptureStderr(func() { o.Validate() })
 	s.Equal("auto", o.Parser)
 }
 
@@ -81,7 +63,7 @@ func (s *OptionsSuite) TestValidateScale() {
 	})
 	s.Run("invalid falls back to linear", func() {
 		scale := "bogus"
-		s.captureStderr(func() { ValidateScale(&scale) })
+		testutil.CaptureStderr(func() { ValidateScale(&scale) })
 		s.Equal("linear", scale)
 	})
 }

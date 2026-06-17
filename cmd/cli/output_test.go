@@ -1,15 +1,14 @@
 package cli
 
 import (
-	"bytes"
 	"encoding/json"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/goptics/vizb/shared"
+	"github.com/goptics/vizb/testutil"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -105,7 +104,7 @@ func (s *OutputSuite) TestHandleOutputResultWithNamedOutputShowsPath() {
 	s.Require().NoError(err)
 	defer file.Close()
 
-	output := s.captureStdout(func() {
+	output := testutil.CaptureStdout(func() {
 		HandleOutputResult(file, "specified_output.html")
 	})
 
@@ -123,7 +122,7 @@ func (s *OutputSuite) TestHandleOutputResultWithStdoutShowsContent() {
 	s.Require().NoError(err)
 	defer file.Close()
 
-	output := s.captureStdout(func() {
+	output := testutil.CaptureStdout(func() {
 		HandleOutputResult(file, "")
 	})
 
@@ -153,21 +152,6 @@ func (s *OutputSuite) TestConvertToDataset() {
 		s.Require().NoError(os.WriteFile(invalid, []byte("not json"), 0644))
 		s.Nil(convertToDataset(invalid))
 	})
-}
-
-// captureStdout runs fn with os.Stdout redirected and returns what it printed.
-func (s *OutputSuite) captureStdout(fn func()) string {
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-	defer func() { os.Stdout = old }()
-
-	fn()
-
-	w.Close()
-	var buf bytes.Buffer
-	io.Copy(&buf, r)
-	return buf.String()
 }
 
 func TestOutputSuite(t *testing.T) {

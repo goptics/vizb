@@ -15,7 +15,12 @@ import (
 	_ "github.com/goptics/vizb/config/charts/pie"
 	_ "github.com/goptics/vizb/config/charts/radar"
 	"github.com/goptics/vizb/shared"
+	"github.com/stretchr/testify/suite"
 )
+
+type MigrateExternalSuite struct {
+	suite.Suite
+}
 
 // fieldValue returns the value of a named field via reflection. Used to
 // assert on the typed Config fields from a test that needs to peek at
@@ -38,7 +43,7 @@ func fieldValue(t *testing.T, v any, name string) any {
 // v0.12.0 fixture: settings is a single object with charts/sort/showLabels/scale.
 // After MigrateDataset, ds.Settings must hold typed per-chart Configs derived
 // from those legacy fields, and ds.Axes must be populated from the data points.
-func TestMigrateDataset_V0120Settings(t *testing.T) {
+func (s *MigrateExternalSuite) TestMigrateDatasetV0120Settings() {
 	raw := []byte(`{
 		"name":"test",
 		"settings":{
@@ -54,65 +59,40 @@ func TestMigrateDataset_V0120Settings(t *testing.T) {
 	}`)
 
 	var ds shared.Dataset
-	if err := json.Unmarshal(raw, &ds); err != nil {
-		t.Fatal(err)
-	}
-	if len(ds.Settings) != 0 {
-		t.Fatalf("expected empty Settings before migration, got %d entries", len(ds.Settings))
-	}
+	s.Require().NoError(json.Unmarshal(raw, &ds))
+	s.Require().Empty(ds.Settings, "expected empty Settings before migration")
 	shared.MigrateDataset(&ds, raw)
 
-	if len(ds.Settings) != 2 {
-		t.Fatalf("expected 2 settings after migration, got %d", len(ds.Settings))
-	}
+	s.Require().Len(ds.Settings, 2)
 
 	// settings[0] should be a *bar.Config.
 	barCfg, ok := ds.Settings[0].(*bar.Config)
-	if !ok {
-		t.Fatalf("settings[0] = %T, want *bar.Config", ds.Settings[0])
-	}
-	if barCfg.Type != "bar" {
-		t.Errorf("settings[0].Type = %q, want %q", barCfg.Type, "bar")
-	}
-	if barCfg.Scale != "log" {
-		t.Errorf("settings[0].Scale = %q, want %q", barCfg.Scale, "log")
-	}
-	if barCfg.Sort == nil || !barCfg.Sort.Enabled || barCfg.Sort.Order != "desc" {
-		t.Errorf("settings[0].Sort = %+v, want Enabled=true Order=desc", barCfg.Sort)
-	}
-	if barCfg.ShowLabels == nil || !*barCfg.ShowLabels {
-		t.Errorf("settings[0].ShowLabels = %v, want &true", barCfg.ShowLabels)
-	}
+	s.Require().True(ok, "settings[0] = %T, want *bar.Config", ds.Settings[0])
+	s.Equal("bar", barCfg.Type)
+	s.Equal("log", barCfg.Scale)
+	s.Require().NotNil(barCfg.Sort)
+	s.True(barCfg.Sort.Enabled)
+	s.Equal("desc", barCfg.Sort.Order)
+	s.Require().NotNil(barCfg.ShowLabels)
+	s.True(*barCfg.ShowLabels)
 
 	// settings[1] should be a *line.Config.
 	lineCfg, ok := ds.Settings[1].(*line.Config)
-	if !ok {
-		t.Fatalf("settings[1] = %T, want *line.Config", ds.Settings[1])
-	}
-	if lineCfg.Type != "line" {
-		t.Errorf("settings[1].Type = %q, want %q", lineCfg.Type, "line")
-	}
-	if lineCfg.Scale != "log" {
-		t.Errorf("settings[1].Scale = %q, want %q", lineCfg.Scale, "log")
-	}
+	s.Require().True(ok, "settings[1] = %T, want *line.Config", ds.Settings[1])
+	s.Equal("line", lineCfg.Type)
+	s.Equal("log", lineCfg.Scale)
 
 	// Axes derived from data points: XAxis and YAxis are non-empty, ZAxis is empty.
-	if len(ds.Axes) != 2 {
-		t.Fatalf("expected 2 axes derived from data, got %d: %+v", len(ds.Axes), ds.Axes)
-	}
+	s.Require().Len(ds.Axes, 2)
 	wantKeys := []string{"x", "y"}
 	for i, ax := range ds.Axes {
-		if ax.Key != wantKeys[i] {
-			t.Errorf("Axes[%d].Key = %q, want %q", i, ax.Key, wantKeys[i])
-		}
-		if ax.Label != "" {
-			t.Errorf("Axes[%d].Label = %q, want empty (v0.12.0 didn't store labels)", i, ax.Label)
-		}
+		s.Equal(wantKeys[i], ax.Key)
+		s.Empty(ax.Label, "v0.12.0 didn't store labels")
 	}
 }
 
 // Empty legacy settings.charts → migration is a no-op. ds.Settings stays nil.
-func TestMigrateDataset_V0120EmptyCharts(t *testing.T) {
+func (s *MigrateExternalSuite) TestMigrateDatasetV0120EmptyCharts() {
 	raw := []byte(`{
 		"name":"test",
 		"settings":{
@@ -125,18 +105,14 @@ func TestMigrateDataset_V0120EmptyCharts(t *testing.T) {
 	}`)
 
 	var ds shared.Dataset
-	if err := json.Unmarshal(raw, &ds); err != nil {
-		t.Fatal(err)
-	}
+	s.Require().NoError(json.Unmarshal(raw, &ds))
 	shared.MigrateDataset(&ds, raw)
-	if len(ds.Settings) != 0 {
-		t.Errorf("expected empty Settings (no-op migration), got %d entries", len(ds.Settings))
-	}
+	s.Empty(ds.Settings, "expected empty Settings (no-op migration)")
 }
 
 // New-shape JSON: settings is an array. MigrateDataset must NOT touch it
 // (it's already in the new shape).
-func TestMigrateDataset_Passthrough(t *testing.T) {
+func (s *MigrateExternalSuite) TestMigrateDatasetPassthrough() {
 	raw := []byte(`{
 		"name":"test",
 		"axes":[{"key":"x","label":"size"}],
@@ -147,9 +123,7 @@ func TestMigrateDataset_Passthrough(t *testing.T) {
 	}`)
 
 	var ds shared.Dataset
-	if err := json.Unmarshal(raw, &ds); err != nil {
-		t.Fatal(err)
-	}
+	s.Require().NoError(json.Unmarshal(raw, &ds))
 	preCount := len(ds.Settings)
 	preType := ""
 	if preCount > 0 {
@@ -158,18 +132,16 @@ func TestMigrateDataset_Passthrough(t *testing.T) {
 
 	shared.MigrateDataset(&ds, raw)
 
-	if len(ds.Settings) != preCount {
-		t.Errorf("Settings length changed: pre=%d post=%d", preCount, len(ds.Settings))
-	}
-	if preCount > 0 && ds.Settings[0].ChartType() != preType {
-		t.Errorf("Settings[0] type changed: pre=%q post=%q", preType, ds.Settings[0].ChartType())
+	s.Len(ds.Settings, preCount)
+	if preCount > 0 {
+		s.Equal(preType, ds.Settings[0].ChartType())
 	}
 }
 
 // v0.12.0 file with a mix of known and unknown chart types. The known types
 // (bar, pie) must be migrated; the unknown type (graph) must be silently
 // dropped.
-func TestMigrateDataset_V0120WithUnknownChartType(t *testing.T) {
+func (s *MigrateExternalSuite) TestMigrateDatasetV0120WithUnknownChartType() {
 	raw := []byte(`{
 		"name":"test",
 		"settings":{
@@ -182,24 +154,16 @@ func TestMigrateDataset_V0120WithUnknownChartType(t *testing.T) {
 	}`)
 
 	var ds shared.Dataset
-	if err := json.Unmarshal(raw, &ds); err != nil {
-		t.Fatal(err)
-	}
+	s.Require().NoError(json.Unmarshal(raw, &ds))
 	shared.MigrateDataset(&ds, raw)
 
-	if len(ds.Settings) != 2 {
-		t.Fatalf("expected 2 settings (bar, pie; graph dropped), got %d", len(ds.Settings))
-	}
-	if ds.Settings[0].ChartType() != "bar" {
-		t.Errorf("settings[0] = %q, want %q", ds.Settings[0].ChartType(), "bar")
-	}
-	if ds.Settings[1].ChartType() != "pie" {
-		t.Errorf("settings[1] = %q, want %q", ds.Settings[1].ChartType(), "pie")
-	}
+	s.Require().Len(ds.Settings, 2, "expected 2 settings (bar, pie; graph dropped)")
+	s.Equal("bar", ds.Settings[0].ChartType())
+	s.Equal("pie", ds.Settings[1].ChartType())
 }
 
 // v0.12.0 file with no scale and no charts: skip migration (no-op).
-func TestMigrateDataset_V0120NoScaleNoCharts(t *testing.T) {
+func (s *MigrateExternalSuite) TestMigrateDatasetV0120NoScaleNoCharts() {
 	raw := []byte(`{
 		"name":"test",
 		"settings":{
@@ -210,60 +174,43 @@ func TestMigrateDataset_V0120NoScaleNoCharts(t *testing.T) {
 	}`)
 
 	var ds shared.Dataset
-	if err := json.Unmarshal(raw, &ds); err != nil {
-		t.Fatal(err)
-	}
+	s.Require().NoError(json.Unmarshal(raw, &ds))
 	shared.MigrateDataset(&ds, raw)
-	if len(ds.Settings) != 0 {
-		t.Errorf("expected empty Settings, got %d", len(ds.Settings))
-	}
+	s.Empty(ds.Settings)
 }
 
 // buildLegacyConfig's per-chart field assignment is verified end-to-end via
 // the v0.12.0 migration; this test exercises it directly via reflection to
 // lock in the "always include scale" behaviour: empty legacy scale defaults
 // to "linear" for bar/line, and is silently dropped for pie/heatmap/radar.
-func TestBuildLegacyConfig_PerChartFieldAssignment(t *testing.T) {
-	t.Run("bar with empty scale defaults to linear", func(t *testing.T) {
-		cfg := mustBuildLegacyConfig(t, "bar", shared.Sort{Enabled: true, Order: "asc"}, true, "")
+func (s *MigrateExternalSuite) TestBuildLegacyConfigPerChartFieldAssignment() {
+	s.Run("bar with empty scale defaults to linear", func() {
+		cfg := mustBuildLegacyConfig(s.T(), "bar", shared.Sort{Enabled: true, Order: "asc"}, true, "")
 		barCfg, ok := cfg.(*bar.Config)
-		if !ok {
-			t.Fatalf("cfg = %T, want *bar.Config", cfg)
-		}
-		if barCfg.Scale != "linear" {
-			t.Errorf("Scale = %q, want %q", barCfg.Scale, "linear")
-		}
-		if !barCfg.Sort.Enabled || barCfg.Sort.Order != "asc" {
-			t.Errorf("Sort = %+v, want Enabled=true Order=asc", barCfg.Sort)
-		}
-		if barCfg.ShowLabels == nil || !*barCfg.ShowLabels {
-			t.Errorf("ShowLabels = %v, want &true", barCfg.ShowLabels)
-		}
+		s.Require().True(ok, "cfg = %T, want *bar.Config", cfg)
+		s.Equal("linear", barCfg.Scale)
+		s.True(barCfg.Sort.Enabled)
+		s.Equal("asc", barCfg.Sort.Order)
+		s.Require().NotNil(barCfg.ShowLabels)
+		s.True(*barCfg.ShowLabels)
 	})
 
-	t.Run("pie drops the scale field", func(t *testing.T) {
-		cfg := mustBuildLegacyConfig(t, "pie", shared.Sort{}, false, "linear")
+	s.Run("pie drops the scale field", func() {
+		cfg := mustBuildLegacyConfig(s.T(), "pie", shared.Sort{}, false, "linear")
 		pieCfg, ok := cfg.(*pie.Config)
-		if !ok {
-			t.Fatalf("cfg = %T, want *pie.Config", cfg)
-		}
+		s.Require().True(ok, "cfg = %T, want *pie.Config", cfg)
 		// pie has no Scale field — verify via reflection.
 		rv := reflect.ValueOf(pieCfg).Elem()
 		_, hasScale := rv.Type().FieldByName("Scale")
-		if hasScale {
-			t.Errorf("pie.Config should not have a Scale field")
-		}
-		if pieCfg.ShowLabels == nil || *pieCfg.ShowLabels {
-			t.Errorf("ShowLabels = %v, want &false", pieCfg.ShowLabels)
-		}
-		_ = fieldValue(t, pieCfg, "Type")
+		s.False(hasScale, "pie.Config should not have a Scale field")
+		s.Require().NotNil(pieCfg.ShowLabels)
+		s.False(*pieCfg.ShowLabels)
+		_ = fieldValue(s.T(), pieCfg, "Type")
 	})
 
-	t.Run("unknown chart type returns error", func(t *testing.T) {
+	s.Run("unknown chart type returns error", func() {
 		_, err := config_charts.Decode("graph", json.RawMessage(`{"type":"graph"}`))
-		if err == nil {
-			t.Error("expected error for unknown chart type, got nil")
-		}
+		s.Require().Error(err, "expected error for unknown chart type")
 	})
 }
 
@@ -292,4 +239,8 @@ func mustBuildLegacyConfig(t *testing.T, typ string, sort shared.Sort, showLabel
 		t.Fatalf("config_charts.Decode(%q): %v", typ, err)
 	}
 	return cfg
+}
+
+func TestMigrateExternalSuite(t *testing.T) {
+	suite.Run(t, new(MigrateExternalSuite))
 }

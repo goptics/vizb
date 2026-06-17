@@ -7,21 +7,27 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestMustCreateTempFile(t *testing.T) {
-	// Save original functions
-	originalOsTempCreate := OsTempCreate
-	originalOsExit := OsExit
+type OsSuite struct {
+	suite.Suite
+	originalOsExit       func(int)
+	originalOsTempCreate func(string, string) (*os.File, error)
+}
 
-	defer func() {
-		OsTempCreate = originalOsTempCreate
-		OsExit = originalOsExit
-	}()
+func (s *OsSuite) SetupTest() {
+	s.originalOsExit = OsExit
+	s.originalOsTempCreate = OsTempCreate
+}
 
-	t.Run("Successful temp file creation", func(t *testing.T) {
+func (s *OsSuite) TearDownTest() {
+	OsExit = s.originalOsExit
+	OsTempCreate = s.originalOsTempCreate
+}
+
+func (s *OsSuite) TestMustCreateTempFile() {
+	s.Run("Successful temp file creation", func() {
 		tests := []struct {
 			name      string
 			prefix    string
@@ -60,88 +66,60 @@ func TestMustCreateTempFile(t *testing.T) {
 		}
 
 		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				// Call the function
+			s.Run(tt.name, func() {
 				filename := MustCreateTempFile(tt.prefix, tt.extension)
 
-				// Verify file was created
-				assert.NotEmpty(t, filename, "Filename should not be empty")
+				s.NotEmpty(filename, "Filename should not be empty")
 
-				// Check file exists
 				_, err := os.Stat(filename)
-				assert.NoError(t, err, "File should exist")
-
-				// Verify filename pattern
-				_ = fmt.Sprintf("%s*", tt.prefix) // Pattern for reference
+				s.NoError(err, "File should exist")
 
 				basename := filepath.Base(filename)
 				if tt.prefix != "" {
-					assert.True(t, strings.HasPrefix(basename, tt.prefix),
+					s.True(strings.HasPrefix(basename, tt.prefix),
 						"Filename should start with prefix: %s, got: %s", tt.prefix, basename)
 				}
 
 				if tt.extension != "" {
-					assert.True(t, strings.HasSuffix(basename, "."+tt.extension),
+					s.True(strings.HasSuffix(basename, "."+tt.extension),
 						"Filename should end with extension: .%s, got: %s", tt.extension, basename)
 				}
 
-				// Clean up
 				os.Remove(filename)
 			})
 		}
 	})
 
-	t.Run("Temp file creation failure", func(t *testing.T) {
-		// Mock OsTempCreate to return an error
+	s.Run("Temp file creation failure", func() {
 		OsTempCreate = func(dir, pattern string) (*os.File, error) {
 			return nil, fmt.Errorf("permission denied")
 		}
+		defer func() { OsTempCreate = s.originalOsTempCreate }()
 
-		// Mock OsExit to track calls
-		exitCalled := false
-		exitCode := -1
-		OsExit = func(code int) {
-			exitCalled = true
-			exitCode = code
-			panic(fmt.Sprintf("OsExit(%d) was called", code))
-		}
+		restore, exitCalled := TrapOsExitPanic(s.T())
+		defer restore()
 
-		// Test function should panic due to OsExit
-		assert.Panics(t, func() {
+		s.Panics(func() {
 			MustCreateTempFile("test", "txt")
 		}, "Function should panic when temp file creation fails")
 
-		// Verify OsExit was called
-		assert.True(t, exitCalled, "OsExit should be called on error")
-		assert.Equal(t, 1, exitCode, "Should exit with code 1")
+		s.True(*exitCalled, "OsExit should be called on error")
 	})
 
-	t.Run("File handle management", func(t *testing.T) {
-		// Ensure we use the original functions for this test
-		OsTempCreate = originalOsTempCreate
-		OsExit = originalOsExit
-
-		// Test that the file handle is properly closed
+	s.Run("File handle management", func() {
 		filename := MustCreateTempFile("handle-test", "tmp")
 		defer os.Remove(filename)
 
-		// Try to open the file to verify it's not locked
 		file, err := os.OpenFile(filename, os.O_RDWR, 0666)
-		require.NoError(t, err, "Should be able to open the created temp file")
+		s.Require().NoError(err, "Should be able to open the created temp file")
 
-		// Write to it to verify it's accessible
 		_, err = file.WriteString("test content")
-		assert.NoError(t, err, "Should be able to write to temp file")
+		s.NoError(err, "Should be able to write to temp file")
 
 		file.Close()
 	})
 
-	t.Run("Multiple temp files uniqueness", func(t *testing.T) {
-		// Ensure we use the original functions for this test
-		OsTempCreate = originalOsTempCreate
-		OsExit = originalOsExit
-
-		// Create multiple temp files and ensure they're unique
+	s.Run("Multiple temp files uniqueness", func() {
 		const numFiles = 10
 		filenames := make([]string, numFiles)
 
@@ -149,29 +127,57 @@ func TestMustCreateTempFile(t *testing.T) {
 			filenames[i] = MustCreateTempFile("unique", "test")
 		}
 
-		// Clean up
 		defer func() {
 			for _, filename := range filenames {
 				os.Remove(filename)
 			}
 		}()
 
-		// Verify all filenames are unique
 		filenameSet := make(map[string]bool)
 		for _, filename := range filenames {
-			assert.False(t, filenameSet[filename], "All filenames should be unique, found duplicate: %s", filename)
+			s.False(filenameSet[filename], "All filenames should be unique, found duplicate: %s", filename)
 			filenameSet[filename] = true
 		}
 	})
+
+	s.Run("Create temp file with prefix and extension", func() {
+		tempFile := MustCreateTempFile("test-prefix", "json")
+		defer os.Remove(tempFile)
+
+		s.FileExists(tempFile)
+		basename := filepath.Base(tempFile)
+		s.Contains(basename, "test-prefix")
+		s.Contains(basename, ".json")
+	})
+
+	s.Run("Create temp file with empty prefix", func() {
+		tempFile := MustCreateTempFile("", "txt")
+		defer os.Remove(tempFile)
+
+		s.FileExists(tempFile)
+		s.Contains(filepath.Base(tempFile), ".txt")
+	})
+
+	s.Run("Create temp file with empty extension", func() {
+		tempFile := MustCreateTempFile("test", "")
+		defer os.Remove(tempFile)
+
+		s.FileExists(tempFile)
+		s.Contains(filepath.Base(tempFile), "test")
+	})
+
+	s.Run("Special characters in prefix and extension", func() {
+		tempFile := MustCreateTempFile("test-with_chars.123", "ext.json")
+		defer os.Remove(tempFile)
+
+		s.FileExists(tempFile)
+		s.Contains(filepath.Base(tempFile), "test-with_chars.123")
+	})
 }
 
-func TestMustCreateFile(t *testing.T) {
-	// Save original functions
-	originalOsExit := OsExit
-	defer func() { OsExit = originalOsExit }()
-
-	t.Run("Successful file creation", func(t *testing.T) {
-		tempDir := t.TempDir()
+func (s *OsSuite) TestMustCreateFile() {
+	s.Run("Successful file creation", func() {
+		tempDir := s.T().TempDir()
 
 		tests := []struct {
 			name     string
@@ -200,40 +206,34 @@ func TestMustCreateFile(t *testing.T) {
 		}
 
 		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				// Create parent directory if needed
+			s.Run(tt.name, func() {
 				parentDir := filepath.Dir(tt.filename)
 				os.MkdirAll(parentDir, 0755)
 
-				// Call the function
 				file := MustCreateFile(tt.filename)
-				assert.NotNil(t, file, "File handle should not be nil")
+				s.NotNil(file, "File handle should not be nil")
 
-				// Verify file was created
 				_, err := os.Stat(tt.filename)
-				assert.NoError(t, err, "File should exist")
+				s.NoError(err, "File should exist")
 
-				// Verify file is writable
 				_, err = file.WriteString("test content")
-				assert.NoError(t, err, "Should be able to write to file")
+				s.NoError(err, "Should be able to write to file")
 
-				// Clean up
 				file.Close()
 				os.Remove(tt.filename)
 			})
 		}
 	})
 
-	t.Run("File creation failure scenarios", func(t *testing.T) {
+	s.Run("File creation failure scenarios", func() {
 		tests := []struct {
 			name        string
-			setupFunc   func() (string, func()) // returns filepath and cleanup func
+			setupFunc   func() (string, func())
 			expectPanic bool
 		}{
 			{
 				name: "Invalid directory path",
 				setupFunc: func() (string, func()) {
-					// Try to create file in non-existent directory without creating it
 					return "/non/existent/directory/test.txt", func() {}
 				},
 				expectPanic: true,
@@ -241,12 +241,11 @@ func TestMustCreateFile(t *testing.T) {
 			{
 				name: "Permission denied",
 				setupFunc: func() (string, func()) {
-					// Create a read-only directory
-					tempDir := t.TempDir()
+					tempDir := s.T().TempDir()
 					readOnlyDir := filepath.Join(tempDir, "readonly")
-					os.Mkdir(readOnlyDir, 0400) // read-only
+					os.Mkdir(readOnlyDir, 0400)
 					return filepath.Join(readOnlyDir, "test.txt"), func() {
-						os.Chmod(readOnlyDir, 0755) // restore permissions for cleanup
+						os.Chmod(readOnlyDir, 0755)
 					}
 				},
 				expectPanic: true,
@@ -254,25 +253,21 @@ func TestMustCreateFile(t *testing.T) {
 		}
 
 		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
+			s.Run(tt.name, func() {
 				filepath, cleanup := tt.setupFunc()
 				defer cleanup()
 
-				// Mock OsExit to track calls
-				exitCalled := false
-				OsExit = func(code int) {
-					exitCalled = true
-					panic(fmt.Sprintf("OsExit(%d) was called", code))
-				}
+				restore, exitCalled := TrapOsExitPanic(s.T())
+				defer restore()
 
 				if tt.expectPanic {
-					assert.Panics(t, func() {
+					s.Panics(func() {
 						MustCreateFile(filepath)
 					}, "Function should panic when file creation fails")
-					assert.True(t, exitCalled, "OsExit should be called on error")
+					s.True(*exitCalled, "OsExit should be called on error")
 				} else {
 					file := MustCreateFile(filepath)
-					assert.NotNil(t, file, "File should be created successfully")
+					s.NotNil(file, "File should be created successfully")
 					file.Close()
 					os.Remove(filepath)
 				}
@@ -280,117 +275,95 @@ func TestMustCreateFile(t *testing.T) {
 		}
 	})
 
-	t.Run("Overwrite existing file", func(t *testing.T) {
-		tempDir := t.TempDir()
+	s.Run("Overwrite existing file", func() {
+		tempDir := s.T().TempDir()
 		filename := filepath.Join(tempDir, "existing.txt")
 
-		// Create initial file
 		initialFile, err := os.Create(filename)
-		require.NoError(t, err)
+		s.Require().NoError(err)
 		initialFile.WriteString("initial content")
 		initialFile.Close()
 
-		// Use MustCreateFile to overwrite
 		newFile := MustCreateFile(filename)
-		assert.NotNil(t, newFile, "Should create new file handle")
+		s.NotNil(newFile, "Should create new file handle")
 
-		// Write new content
 		_, err = newFile.WriteString("new content")
-		assert.NoError(t, err)
+		s.NoError(err)
 		newFile.Close()
 
-		// Verify content was overwritten
 		content, err := os.ReadFile(filename)
-		require.NoError(t, err)
-		assert.Equal(t, "new content", string(content), "File content should be overwritten")
+		s.Require().NoError(err)
+		s.Equal("new content", string(content), "File content should be overwritten")
 	})
 
-	t.Run("File handle properties", func(t *testing.T) {
-		tempDir := t.TempDir()
+	s.Run("File handle properties", func() {
+		tempDir := s.T().TempDir()
 		filename := filepath.Join(tempDir, "properties.txt")
 
 		file := MustCreateFile(filename)
 		defer file.Close()
 
-		// Verify file is writable
 		n, err := file.Write([]byte("test"))
-		assert.NoError(t, err)
-		assert.Equal(t, 4, n, "Should write 4 bytes")
+		s.NoError(err)
+		s.Equal(4, n, "Should write 4 bytes")
 
-		// Verify file position
-		pos, err := file.Seek(0, 1) // Get current position
-		assert.NoError(t, err)
-		assert.Equal(t, int64(4), pos, "File position should be at 4")
+		pos, err := file.Seek(0, 1)
+		s.NoError(err)
+		s.Equal(int64(4), pos, "File position should be at 4")
 
-		// Verify we can seek
-		pos, err = file.Seek(0, 0) // Seek to beginning
-		assert.NoError(t, err)
-		assert.Equal(t, int64(0), pos, "Should be able to seek to beginning")
+		pos, err = file.Seek(0, 0)
+		s.NoError(err)
+		s.Equal(int64(0), pos, "Should be able to seek to beginning")
 	})
 }
 
-// TestOsVariableAssignment tests that the os function variables are properly assigned
-func TestOsVariableAssignment(t *testing.T) {
-	// Test that OsExit is assigned to os.Exit by default
-	assert.NotNil(t, OsExit, "OsExit should be assigned")
-
-	// Test that OsTempCreate is assigned to os.CreateTemp by default
-	assert.NotNil(t, OsTempCreate, "OsTempCreate should be assigned")
-
-	// Test that we can reassign them (for mocking)
-	originalOsExit := OsExit
-	originalOsTempCreate := OsTempCreate
-
-	OsExit = func(code int) { /* mock exit */ }
+func (s *OsSuite) TestOsVariableAssignment() {
+	s.NotNil(OsExit, "OsExit should be assigned")
+	s.NotNil(OsTempCreate, "OsTempCreate should be assigned")
 
 	mockTempCreateCalled := false
+	OsExit = func(code int) { /* mock exit */ }
 	OsTempCreate = func(dir, pattern string) (*os.File, error) {
 		mockTempCreateCalled = true
-		return originalOsTempCreate(dir, pattern)
+		return s.originalOsTempCreate(dir, pattern)
 	}
 
-	// Create a temp file to test the mock
 	filename := MustCreateTempFile("mock-test", "tmp")
 	defer os.Remove(filename)
 
-	assert.True(t, mockTempCreateCalled, "Mock OsTempCreate should be called")
-
-	// Restore original functions
-	OsExit = originalOsExit
-	OsTempCreate = originalOsTempCreate
+	s.True(mockTempCreateCalled, "Mock OsTempCreate should be called")
 }
 
-// TestEdgeCases tests edge cases and boundary conditions
-func TestEdgeCases(t *testing.T) {
-	t.Run("Empty strings", func(t *testing.T) {
-		// Test MustCreateTempFile with empty strings
+func (s *OsSuite) TestEdgeCases() {
+	s.Run("Empty strings", func() {
 		filename := MustCreateTempFile("", "")
 		defer os.Remove(filename)
-		assert.NotEmpty(t, filename, "Should create temp file even with empty prefix and extension")
+		s.NotEmpty(filename, "Should create temp file even with empty prefix and extension")
 
-		// Verify file exists
 		_, err := os.Stat(filename)
-		assert.NoError(t, err, "File should exist")
+		s.NoError(err, "File should exist")
 	})
 
-	t.Run("Very long strings", func(t *testing.T) {
-		tempDir := t.TempDir()
+	s.Run("Very long strings", func() {
+		tempDir := s.T().TempDir()
 
-		// Test with long prefix (but reasonable for filesystem)
 		longPrefix := strings.Repeat("a", 50)
 		filename := MustCreateTempFile(longPrefix, "txt")
 		defer os.Remove(filename)
 
 		basename := filepath.Base(filename)
-		assert.True(t, strings.HasPrefix(basename, longPrefix), "Should handle long prefix")
+		s.True(strings.HasPrefix(basename, longPrefix), "Should handle long prefix")
 
-		// Test MustCreateFile with reasonably long filename
 		longFilename := filepath.Join(tempDir, strings.Repeat("b", 100)+".txt")
 		file := MustCreateFile(longFilename)
 		file.Close()
 		defer os.Remove(longFilename)
 
 		_, err := os.Stat(longFilename)
-		assert.NoError(t, err, "Should create file with long name")
+		s.NoError(err, "Should create file with long name")
 	})
+}
+
+func TestOsSuite(t *testing.T) {
+	suite.Run(t, new(OsSuite))
 }

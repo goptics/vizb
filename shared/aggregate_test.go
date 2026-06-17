@@ -1,6 +1,14 @@
 package shared
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/suite"
+)
+
+type AggregateSuite struct {
+	suite.Suite
+}
 
 func statVal(stats []Stat, typ string) (float64, bool) {
 	for _, s := range stats {
@@ -11,7 +19,7 @@ func statVal(stats []Stat, typ string) (float64, bool) {
 	return 0, false
 }
 
-func TestAggregateDataPoints_SumsDuplicateKeys(t *testing.T) {
+func (s *AggregateSuite) TestAggregateDataPointsSumsDuplicateKeys() {
 	in := []DataPoint{
 		{Name: "sales", XAxis: "2024-01-01", YAxis: "East", Stats: []Stat{{Type: "amount", Value: 100}}},
 		{Name: "sales", XAxis: "2024-01-01", YAxis: "East", Stats: []Stat{{Type: "amount", Value: 250}}},
@@ -19,61 +27,48 @@ func TestAggregateDataPoints_SumsDuplicateKeys(t *testing.T) {
 	}
 
 	out := AggregateDataPoints(in)
-
-	if len(out) != 2 {
-		t.Fatalf("expected 2 grouped points, got %d", len(out))
-	}
+	s.Require().Len(out, 2)
 
 	v, ok := statVal(out[0].Stats, "amount")
-	if !ok || v != 350 {
-		t.Fatalf("East amount: want 350, got %v (ok=%v)", v, ok)
-	}
-	if out[0].YAxis != "East" {
-		t.Fatalf("first group should preserve first-seen order (East), got %q", out[0].YAxis)
-	}
+	s.Require().True(ok)
+	s.Equal(350.0, v)
+	s.Equal("East", out[0].YAxis)
 }
 
-func TestAggregateDataPoints_PreservesUniqueKeys(t *testing.T) {
+func (s *AggregateSuite) TestAggregateDataPointsPreservesUniqueKeys() {
 	in := []DataPoint{
 		{XAxis: "A", Stats: []Stat{{Type: "v", Value: 1}}},
 		{XAxis: "B", Stats: []Stat{{Type: "v", Value: 2}}},
 	}
 
 	out := AggregateDataPoints(in)
-
-	if len(out) != 2 {
-		t.Fatalf("unique keys must stay separate, got %d", len(out))
-	}
+	s.Require().Len(out, 2)
 }
 
-func TestAggregateDataPoints_SumsPerStatType(t *testing.T) {
+func (s *AggregateSuite) TestAggregateDataPointsSumsPerStatType() {
 	in := []DataPoint{
 		{XAxis: "A", Stats: []Stat{{Type: "amount", Value: 10}, {Type: "tax", Value: 1}}},
 		{XAxis: "A", Stats: []Stat{{Type: "amount", Value: 20}, {Type: "tax", Value: 3}}},
 	}
 
 	out := AggregateDataPoints(in)
-
-	if len(out) != 1 {
-		t.Fatalf("expected 1 group, got %d", len(out))
-	}
-	if v, _ := statVal(out[0].Stats, "amount"); v != 30 {
-		t.Fatalf("amount: want 30, got %v", v)
-	}
-	if v, _ := statVal(out[0].Stats, "tax"); v != 4 {
-		t.Fatalf("tax: want 4, got %v", v)
-	}
+	s.Require().Len(out, 1)
+	v, _ := statVal(out[0].Stats, "amount")
+	s.Equal(30.0, v)
+	v, _ = statVal(out[0].Stats, "tax")
+	s.Equal(4.0, v)
 }
 
-func TestAggregateDataPoints_DoesNotMutateInput(t *testing.T) {
+func (s *AggregateSuite) TestAggregateDataPointsDoesNotMutateInput() {
 	in := []DataPoint{
 		{XAxis: "A", Stats: []Stat{{Type: "v", Value: 5}}},
 		{XAxis: "A", Stats: []Stat{{Type: "v", Value: 7}}},
 	}
 
 	AggregateDataPoints(in)
+	s.Equal(5.0, in[0].Stats[0].Value)
+}
 
-	if in[0].Stats[0].Value != 5 {
-		t.Fatalf("input mutated: first point value changed to %v", in[0].Stats[0].Value)
-	}
+func TestAggregateSuite(t *testing.T) {
+	suite.Run(t, new(AggregateSuite))
 }
