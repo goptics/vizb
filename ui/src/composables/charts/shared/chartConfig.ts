@@ -19,21 +19,39 @@ export function createHeatmapDataZoomConfig(
   largeY: boolean,
   xLen: number,
   yLen: number,
-  styling: ChartStyling,
+  styling: ChartStyling
 ): any[] {
   const result: any[] = []
   if (largeX) {
     const end = Math.max(5, Math.ceil((30 / xLen) * 100))
     result.push(
       { type: 'inside', xAxisIndex: 0, start: 0, end, filterMode: 'filter' },
-      { type: 'slider', xAxisIndex: 0, start: 0, end, bottom: 55, height: 28, filterMode: 'filter', textStyle: { color: styling.textColor } },
+      {
+        type: 'slider',
+        xAxisIndex: 0,
+        start: 0,
+        end,
+        bottom: 55,
+        height: 28,
+        filterMode: 'filter',
+        textStyle: { color: styling.textColor },
+      }
     )
   }
   if (largeY) {
     const end = Math.max(5, Math.ceil((30 / yLen) * 100))
     result.push(
       { type: 'inside', yAxisIndex: 0, start: 0, end, filterMode: 'filter' },
-      { type: 'slider', yAxisIndex: 0, start: 0, end, left: 10, width: 20, filterMode: 'filter', textStyle: { color: styling.textColor } },
+      {
+        type: 'slider',
+        yAxisIndex: 0,
+        start: 0,
+        end,
+        left: 10,
+        width: 20,
+        filterMode: 'filter',
+        textStyle: { color: styling.textColor },
+      }
     )
   }
   return result
@@ -183,7 +201,7 @@ export function formatRadarItemTooltip(
   },
   indicatorNames: string[],
   isDark: boolean,
-  colorFor?: (name: string) => string | undefined,
+  colorFor?: (name: string) => string | undefined
 ): string {
   if (!params?.data) return ''
 
@@ -219,7 +237,7 @@ export function formatRadarItemTooltip(
       name,
       value: typeof vals[i] === 'number' ? vals[i]! : 0,
       color: color(name),
-    })),
+    }))
   )
   const donutBlock = donut ? `${tooltipDivider(isDark)}${donut}` : ''
 
@@ -285,8 +303,10 @@ export function renderDonutSvg(
   }
 
   const path = (start: number, end: number) => {
-    const s1 = xy(outerR, start), e1 = xy(outerR, end)
-    const s2 = xy(innerR, end),   e2 = xy(innerR, start)
+    const s1 = xy(outerR, start),
+      e1 = xy(outerR, end)
+    const s2 = xy(innerR, end),
+      e2 = xy(innerR, start)
     const lg = end - start > 180 ? 1 : 0
     const f = (n: number) => n.toFixed(2)
     return [

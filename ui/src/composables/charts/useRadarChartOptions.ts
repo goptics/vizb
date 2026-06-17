@@ -8,10 +8,7 @@ import { fontSize, sortByTotal } from './shared/common'
 const makeIndicators = (names: string[], perSpokeMax: number[]) =>
   names.map((name, i) => ({ name, max: Math.max((perSpokeMax[i] ?? 0) * 1.1, 1) }))
 
-const makeTooltip = (
-  isDark: boolean,
-  indicatorNames: string[],
-): EChartsOption['tooltip'] =>
+const makeTooltip = (isDark: boolean, indicatorNames: string[]): EChartsOption['tooltip'] =>
   ({
     trigger: 'item',
     ...getTooltipTheme(isDark),
@@ -21,7 +18,7 @@ const makeTooltip = (
 
 const radarConfig = (
   indicators: { name: string; max: number }[],
-  styling: ReturnType<typeof getChartStyling>,
+  styling: ReturnType<typeof getChartStyling>
 ) => ({
   indicator: indicators,
   axisName: { color: styling.textColor },
@@ -65,7 +62,7 @@ export function useRadarChartOptions(config: BaseChartConfig) {
     // Y only: yAxis values as spokes, single polygon with column totals
     if (!hasXAxis(chartData)) {
       const spokeTotals = yAxis.map((_, i) =>
-        cd.series.reduce((sum, s) => sum + (s.values[i] ?? 0), 0),
+        cd.series.reduce((sum, s) => sum + (s.values[i] ?? 0), 0)
       )
       return {
         ...baseOptions,
@@ -115,7 +112,7 @@ export function useRadarChartOptions(config: BaseChartConfig) {
         zValues = [...zValues].sort((a, b) =>
           sort.value.order === 'asc'
             ? (zTotals.get(a) ?? 0) - (zTotals.get(b) ?? 0)
-            : (zTotals.get(b) ?? 0) - (zTotals.get(a) ?? 0),
+            : (zTotals.get(b) ?? 0) - (zTotals.get(a) ?? 0)
         )
       }
 
@@ -127,7 +124,7 @@ export function useRadarChartOptions(config: BaseChartConfig) {
         zTotalsForRender.set(z, t)
       }
       const renderZValues = [...zValues].sort(
-        (a, b) => (zTotalsForRender.get(b) ?? 0) - (zTotalsForRender.get(a) ?? 0),
+        (a, b) => (zTotalsForRender.get(b) ?? 0) - (zTotalsForRender.get(a) ?? 0)
       )
 
       return {

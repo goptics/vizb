@@ -35,13 +35,15 @@ const swapOptions = computed(() => {
   // k = number of values; pool = full axis set. Selecting an arrangement that
   // omits z (e.g. nxy) renders 2D, while one using z (xyz) renders 3D.
   // z is only valid alongside both x and y (3D needs an x/y floor).
-  return kPermutations(AXIS_ORDER, presentKeys(data).length)
-    .filter((key) => !key.includes('z') || (key.includes('x') && key.includes('y')))
-    // 1D data: drop the bare `n` arrangement — putting the lone value on `name`
-    // gives one chart per point, which is useless. Offer only x / y placement.
-    // (Multi-axis arrangements are never exactly 'n', so this is 1D-only.)
-    .filter((key) => key !== 'n')
-    .map((key) => ({ name: key }))
+  return (
+    kPermutations(AXIS_ORDER, presentKeys(data).length)
+      .filter((key) => !key.includes('z') || (key.includes('x') && key.includes('y')))
+      // 1D data: drop the bare `n` arrangement — putting the lone value on `name`
+      // gives one chart per point, which is useless. Offer only x / y placement.
+      // (Multi-axis arrangements are never exactly 'n', so this is 1D-only.)
+      .filter((key) => key !== 'n')
+      .map((key) => ({ name: key }))
+  )
 })
 
 const props = defineProps<{

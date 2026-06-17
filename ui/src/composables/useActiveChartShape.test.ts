@@ -17,9 +17,7 @@ vi.mock('./useDataPoint', () => ({
 
 vi.mock('./useSettingsStore', () => ({
   useSettingsStore: () => ({
-    activeConfig: computed(
-      () => holder.ref?.value?.settings[holder.activeIndex]
-    ),
+    activeConfig: computed(() => holder.ref?.value?.settings[holder.activeIndex]),
   }),
 }))
 

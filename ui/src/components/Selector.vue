@@ -115,11 +115,7 @@ watch(open, (isOpen) => {
       <ComboboxTrigger
         class="inline-flex h-10 w-full items-center rounded-lg border border-border bg-card px-4 text-sm font-medium text-card-foreground shadow-sm hover:bg-accent hover:text-accent-foreground"
       >
-        <span
-          :class="
-            value?.icon ? 'flex flex-1 items-center gap-2' : 'flex-1 text-center'
-          "
-        >
+        <span :class="value?.icon ? 'flex flex-1 items-center gap-2' : 'flex-1 text-center'">
           <component :is="value.icon" v-if="value?.icon" class="h-4 w-4" />
           <span>{{ value?.label }}</span>
         </span>

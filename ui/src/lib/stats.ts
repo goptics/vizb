@@ -6,12 +6,7 @@
 // the /n divisor, skewness/kurtosis use population moments. Non-finite values
 // (NaN / ±Inf) are dropped up front — callers pass NaN for "missing cell" so a
 // zero-fill never biases a stat (see transform.ts).
-import type {
-  DescriptiveStats,
-  SeriesProfile,
-  CorrelationMatrix,
-  Point3D,
-} from '../types'
+import type { DescriptiveStats, SeriesProfile, CorrelationMatrix, Point3D } from '../types'
 
 const finite = (xs: number[]): number[] => xs.filter((x) => Number.isFinite(x))
 
@@ -108,10 +103,23 @@ export function describe(xs: number[]): DescriptiveStats {
       count: 0,
       missing: xs.length,
       unique: 0,
-      mean: nan, median: nan, mode: nan,
-      variance: nan, stdDev: nan, min: nan, max: nan, range: nan,
-      iqr: nan, mad: nan, cv: nan, skewness: nan, kurtosis: nan,
-      p5: nan, p25: nan, p75: nan, p95: nan,
+      mean: nan,
+      median: nan,
+      mode: nan,
+      variance: nan,
+      stdDev: nan,
+      min: nan,
+      max: nan,
+      range: nan,
+      iqr: nan,
+      mad: nan,
+      cv: nan,
+      skewness: nan,
+      kurtosis: nan,
+      p5: nan,
+      p25: nan,
+      p75: nan,
+      p95: nan,
     }
   }
   const sorted = v.toSorted((a, b) => a - b)
@@ -214,10 +222,7 @@ export type CorrelationMethod = 'pearson' | 'spearman'
 
 // Symmetric K×K correlation matrix over the given columns (each an aligned
 // number[] of equal conceptual length). Diagonal is 1.
-export function correlationMatrix(
-  columns: number[][],
-  method: CorrelationMethod
-): number[][] {
+export function correlationMatrix(columns: number[][], method: CorrelationMethod): number[][] {
   const corr = method === 'spearman' ? spearman : pearson
   const k = columns.length
   const m: number[][] = Array.from({ length: k }, () => new Array<number>(k).fill(NaN))
@@ -389,9 +394,15 @@ export function computeCorrelation(
 ): CorrelationMatrix | undefined {
   const usable = usableCorrelationAxes(seriesOrder, yAxis, zAxis)
   if (usable.length === 0) return undefined
-  const resolved: CorrelationAxis = (axis && usable.includes(axis)) ? axis : usable[0]!
+  const resolved: CorrelationAxis = axis && usable.includes(axis) ? axis : usable[0]!
   const labels = resolved === 'x' ? seriesOrder : resolved === 'y' ? yAxis : zAxis
-  const { labels: resolvedLabels, columns } = buildCorrelationColumns(points, resolved, seriesOrder, yAxis, zAxis)
+  const { labels: resolvedLabels, columns } = buildCorrelationColumns(
+    points,
+    resolved,
+    seriesOrder,
+    yAxis,
+    zAxis
+  )
   return {
     axis: resolved,
     labels: resolvedLabels.length ? resolvedLabels : labels.slice(),

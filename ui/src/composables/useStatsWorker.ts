@@ -40,7 +40,11 @@ function getWorker(): Worker {
 }
 
 // Post one kinded request and resolve when its matching reply lands.
-function request(chartData: ChartData, kind: StatsKind, axis?: CorrelationAxis): Promise<StatsResponse> {
+function request(
+  chartData: ChartData,
+  kind: StatsKind,
+  axis?: CorrelationAxis
+): Promise<StatsResponse> {
   return new Promise<StatsResponse>((resolve) => {
     const id = nextId++
     pending.set(id, resolve)

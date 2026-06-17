@@ -9,11 +9,7 @@ describe('formatRadarItemTooltip', () => {
   })
 
   it('single spoke: rows only, no Σ / spread / donut', () => {
-    const html = formatRadarItemTooltip(
-      { data: { name: 'Series', value: [10] } },
-      ['A'],
-      false,
-    )
+    const html = formatRadarItemTooltip({ data: { name: 'Series', value: [10] } }, ['A'], false)
     expect(html).toContain('<b>Series</b>')
     expect(html).toContain('A: <b>10</b>')
     expect(html).not.toContain('Σ')
@@ -25,7 +21,7 @@ describe('formatRadarItemTooltip', () => {
     const html = formatRadarItemTooltip(
       { data: { name: 'Series', value: [10, 20, 30] } },
       indicators,
-      false,
+      false
     )
     expect(html).toContain('Σ Series: <b>60</b>')
     expect(html).toContain('Median:')
@@ -41,7 +37,7 @@ describe('formatRadarItemTooltip', () => {
         data: { name: 'alloc', value: [1, 2] },
       },
       ['Y1', 'Y2'],
-      false,
+      false
     )
     expect(html).toContain('<b>Pool1 / alloc</b>')
   })

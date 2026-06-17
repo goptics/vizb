@@ -27,7 +27,8 @@ const {
   setSwap,
 } = useSettingsStore()
 
-const { activeDataSet, activeDataSetId, activeDataDimension, setArrangement, activeGroupId } = useDataPoint()
+const { activeDataSet, activeDataSetId, activeDataDimension, setArrangement, activeGroupId } =
+  useDataPoint()
 
 const CHART_ICONS: Record<ChartType, Component> = {
   bar: BarChart3,
@@ -63,9 +64,7 @@ const onChartTypeSelect = (id: number) => {
 // chart-type check here, and a 2D bar config also skips `autoRotate` (3D-only).
 const fields = computed(() => {
   const cfg = activeConfig.value
-  return cfg
-    ? getRenderableFields(cfg, { dimension: activeDataDimension.value })
-    : []
+  return cfg ? getRenderableFields(cfg, { dimension: activeDataDimension.value }) : []
 })
 
 // Each control emits `update:modelValue` with the appropriate type for its

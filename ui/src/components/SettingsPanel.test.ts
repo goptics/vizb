@@ -9,8 +9,12 @@ import type { BarConfig, LineConfig, PieConfig, HeatmapConfig, RadarConfig } fro
 // panel's declarative contract.
 vi.mock('../components/settings/SortControl.vue', () => ({ default: { name: 'SortControl' } }))
 vi.mock('../components/settings/ScaleControl.vue', () => ({ default: { name: 'ScaleControl' } }))
-vi.mock('../components/settings/ShowLabelsControl.vue', () => ({ default: { name: 'ShowLabelsControl' } }))
-vi.mock('../components/settings/AutoRotateControl.vue', () => ({ default: { name: 'AutoRotateControl' } }))
+vi.mock('../components/settings/ShowLabelsControl.vue', () => ({
+  default: { name: 'ShowLabelsControl' },
+}))
+vi.mock('../components/settings/AutoRotateControl.vue', () => ({
+  default: { name: 'AutoRotateControl' },
+}))
 vi.mock('../components/settings/SwapControl.vue', () => ({ default: { name: 'SwapControl' } }))
 vi.mock('../components/Selector.vue', () => ({ default: { name: 'Selector' } }))
 vi.mock('../components/SettingHeader.vue', () => ({ default: { name: 'SettingHeader' } }))
@@ -149,4 +153,3 @@ describe('SettingsPanel field selection', () => {
     ])
   })
 })
-

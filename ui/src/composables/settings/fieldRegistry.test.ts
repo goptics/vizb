@@ -8,8 +8,12 @@ import type { BarConfig, LineConfig, PieConfig, HeatmapConfig, RadarConfig } fro
 // actually exercises; the .vue bodies are exercised by the runtime / browser.
 vi.mock('../../components/settings/SortControl.vue', () => ({ default: { name: 'SortControl' } }))
 vi.mock('../../components/settings/ScaleControl.vue', () => ({ default: { name: 'ScaleControl' } }))
-vi.mock('../../components/settings/ShowLabelsControl.vue', () => ({ default: { name: 'ShowLabelsControl' } }))
-vi.mock('../../components/settings/AutoRotateControl.vue', () => ({ default: { name: 'AutoRotateControl' } }))
+vi.mock('../../components/settings/ShowLabelsControl.vue', () => ({
+  default: { name: 'ShowLabelsControl' },
+}))
+vi.mock('../../components/settings/AutoRotateControl.vue', () => ({
+  default: { name: 'AutoRotateControl' },
+}))
 vi.mock('../../components/settings/SwapControl.vue', () => ({ default: { name: 'SwapControl' } }))
 
 const { fieldRegistry, getControl, getRenderableFields } = await import('./fieldRegistry')
@@ -145,7 +149,10 @@ describe('getRenderableFields', () => {
     // The panel must show every available field, not just the keys the user
     // populated. The control components display in their default state when
     // the field is absent.
-    const cfg = { type: 'bar', sort: { enabled: false, order: 'asc' as const } } as unknown as BarConfig
+    const cfg = {
+      type: 'bar',
+      sort: { enabled: false, order: 'asc' as const },
+    } as unknown as BarConfig
     expect(getRenderableFields(cfg, { dimension: '3D' }).map((f) => f.key)).toEqual([
       'sort',
       'scale',

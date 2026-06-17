@@ -42,10 +42,7 @@ describe('listChartSignatures', () => {
   })
 
   it('deduplicates same signature from multiple rows', () => {
-    const data: DataPoint[] = [
-      { stats: [{ type: 'val' }] },
-      { stats: [{ type: 'val' }] },
-    ]
+    const data: DataPoint[] = [{ stats: [{ type: 'val' }] }, { stats: [{ type: 'val' }] }]
     expect(listChartSignatures(data)).toHaveLength(1)
   })
 
@@ -109,13 +106,18 @@ describe('buildChartForSignature — additional branches', () => {
     const data: DataPoint[] = [dp('A', '', '', 'val', 10)]
     const { signature, statTemplate } = listChartSignatures(data)[0]!
     const chart = buildChartForSignature(
-      data, 'nonexistent-sig', { type: 'nonexistent' }, undefined, noSort,
+      data,
+      'nonexistent-sig',
+      { type: 'nonexistent' },
+      undefined,
+      noSort
     )
     expect(chart.series).toEqual([])
     expect(chart.points).toEqual([])
     expect(chart.render3D).toBeUndefined()
     // suppress unused-var warning on purpose — we read from listChartSignatures to get a valid sig
-    void signature; void statTemplate
+    void signature
+    void statTemplate
   })
 
   it('attaches render3D only when x, y, and z are all populated', () => {
@@ -132,9 +134,9 @@ describe('buildChartForSignature — additional branches', () => {
 
   it('desc sort places highest-total xAxis series first', () => {
     const data: DataPoint[] = [
-      dp('Low',  '', '', 'v', 1),
+      dp('Low', '', '', 'v', 1),
       dp('High', '', '', 'v', 9),
-      dp('Mid',  '', '', 'v', 5),
+      dp('Mid', '', '', 'v', 5),
     ]
     const { signature, statTemplate } = listChartSignatures(data)[0]!
     const chart = buildChartForSignature(data, signature, statTemplate, undefined, descSort)
@@ -147,16 +149,19 @@ describe('buildChartForSignature — additional branches', () => {
 // build3DRender
 // ---------------------------------------------------------------------------
 describe('build3DRender', () => {
-  const p3 = (xAxis: string, yAxis: string, zAxis: string, value: number): Point3D =>
-    ({ xAxis, yAxis, zAxis, value })
+  const p3 = (xAxis: string, yAxis: string, zAxis: string, value: number): Point3D => ({
+    xAxis,
+    yAxis,
+    zAxis,
+    value,
+  })
 
   it('log scale drops non-positive cells from both bar and line series', () => {
     const points = [p3('A', '1', 'Z1', -5), p3('B', '1', 'Z1', 10)]
     const render = build3DRender(points, ['Z1'], noSort, false, 'log')
-    const allValues = [
-      ...render.barSeries[0]!.data,
-      ...render.lineSeries[0]!.data,
-    ].map((d) => d.value[2])
+    const allValues = [...render.barSeries[0]!.data, ...render.lineSeries[0]!.data].map(
+      (d) => d.value[2]
+    )
     expect(allValues).not.toContain(-5)
     expect(allValues).not.toContain(0)
     expect(allValues.some((v) => v === 10)).toBe(true)
@@ -166,7 +171,13 @@ describe('build3DRender', () => {
     // Two x values, two y values, only one data point → barSeries has 4 entries (full
     // xi×yi grid), lineSeries has 1 entry (only the cell that actually has data).
     const points = [p3('A', '1', 'Z1', 5)]
-    const render = build3DRender([...points, p3('B', '2', 'Z1', 0)], ['Z1'], noSort, false, 'linear')
+    const render = build3DRender(
+      [...points, p3('B', '2', 'Z1', 0)],
+      ['Z1'],
+      noSort,
+      false,
+      'linear'
+    )
     // bar: full grid = 2x×2y = 4 cells
     expect(render.barSeries[0]!.data).toHaveLength(4)
     // line: sparse = only 2 actual cells (A/1 and B/2)
@@ -214,11 +225,9 @@ describe('projectAndGroup', () => {
   it('"name" in targetKeys becomes group discriminator and is excluded from output row', () => {
     const raw: DataPoint[] = [
       { name: 'Alpha', xAxis: 'A', stats: [] },
-      { name: 'Beta',  xAxis: 'B', stats: [] },
+      { name: 'Beta', xAxis: 'B', stats: [] },
     ]
-    const { grouped, groupNames } = projectAndGroup(
-      raw, ['name', 'xAxis'], ['name', 'xAxis'],
-    )
+    const { grouped, groupNames } = projectAndGroup(raw, ['name', 'xAxis'], ['name', 'xAxis'])
     expect(groupNames).toEqual(['Alpha', 'Beta'])
     expect(grouped.get('Alpha')![0]).not.toHaveProperty('name')
     expect(grouped.get('Alpha')![0]!.xAxis).toBe('A')
@@ -226,18 +235,14 @@ describe('projectAndGroup', () => {
 
   it('no "name" in targetKeys → all rows go to Default', () => {
     const raw: DataPoint[] = [dp('A', 'Y1'), dp('B', 'Y2')]
-    const { grouped, groupNames } = projectAndGroup(
-      raw, ['xAxis', 'yAxis'], ['xAxis', 'yAxis'],
-    )
+    const { grouped, groupNames } = projectAndGroup(raw, ['xAxis', 'yAxis'], ['xAxis', 'yAxis'])
     expect(groupNames).toEqual(['Default'])
     expect(grouped.get('Default')).toHaveLength(2)
   })
 
   it('empty name value falls back to Default group', () => {
     const raw: DataPoint[] = [{ name: '', xAxis: 'A', stats: [] }]
-    const { groupNames } = projectAndGroup(
-      raw, ['name', 'xAxis'], ['name', 'xAxis'],
-    )
+    const { groupNames } = projectAndGroup(raw, ['name', 'xAxis'], ['name', 'xAxis'])
     expect(groupNames).toEqual(['Default'])
   })
 
@@ -255,7 +260,13 @@ describe('projectAndGroup', () => {
 describe('buildChartData', () => {
   it('returns one ChartData per unique signature', () => {
     const data: DataPoint[] = [
-      { xAxis: 'A', stats: [{ type: 'val', unit: 'ms' }, { type: 'mem', unit: 'B' }] },
+      {
+        xAxis: 'A',
+        stats: [
+          { type: 'val', unit: 'ms' },
+          { type: 'mem', unit: 'B' },
+        ],
+      },
     ]
     const charts = buildChartData(data, undefined, noSort)
     expect(charts).toHaveLength(2)

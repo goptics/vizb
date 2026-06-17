@@ -16,8 +16,7 @@ export function useActiveChartShape() {
   )
 
   const autoRotate = computed<boolean>(
-    () =>
-      (activeConfig.value as { autoRotate?: boolean } | undefined)?.autoRotate ?? false
+    () => (activeConfig.value as { autoRotate?: boolean } | undefined)?.autoRotate ?? false
   )
 
   const showLabels = computed<boolean>(() => activeConfig.value?.showLabels ?? false)

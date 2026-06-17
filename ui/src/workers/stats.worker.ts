@@ -9,11 +9,7 @@
 // full-dataset clone). The `id` lets the caller match replies to requests.
 import { computeDescriptive, computeCorrelation } from '../lib/stats'
 import type { CorrelationAxis } from '../lib/stats'
-import type {
-  Point3D,
-  SeriesProfile,
-  CorrelationMatrix,
-} from '../types'
+import type { Point3D, SeriesProfile, CorrelationMatrix } from '../types'
 
 // `kind` selects which (potentially expensive) piece to compute, so the panel can
 // pull descriptive eagerly and defer correlation until its tab opens.

@@ -11,8 +11,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export const isValidIndex = (id: number, length: number): boolean =>
-  id >= 0 && id < length
+export const isValidIndex = (id: number, length: number): boolean => id >= 0 && id < length
 
 export const COLOR_PALETTE = [
   '#5470C6', // Blue
@@ -34,7 +33,6 @@ export function getNextColorFor(key: string) {
   if (colorMap.has(key)) {
     return COLOR_PALETTE[colorMap.get(key)!]
   }
-
 
   const colorIndex = i % COLOR_PALETTE.length
   const color = COLOR_PALETTE[colorIndex]

@@ -1,5 +1,11 @@
 import type { EChartsOption } from 'echarts'
-import { getChartStyling, getTooltipTheme, createToolboxConfig, isLargeXAxis, createHeatmapDataZoomConfig } from './shared'
+import {
+  getChartStyling,
+  getTooltipTheme,
+  createToolboxConfig,
+  isLargeXAxis,
+  createHeatmapDataZoomConfig,
+} from './shared'
 import { fontSize } from './shared/common'
 
 // Build a correlation heatmap option from a symmetric K×K matrix. Rows/cols are
@@ -34,7 +40,9 @@ export function buildCorrelationOption(
     grid: large
       ? { left: 60, right: '3%', bottom: 110, top: 8, containLabel: false }
       : { left: 8, right: 8, top: 8, bottom: 48, containLabel: true },
-    ...(large ? { dataZoom: createHeatmapDataZoomConfig(true, true, labels.length, labels.length, styling) } : {}),
+    ...(large
+      ? { dataZoom: createHeatmapDataZoomConfig(true, true, labels.length, labels.length, styling) }
+      : {}),
     tooltip: {
       position: 'top',
       ...getTooltipTheme(isDark),
