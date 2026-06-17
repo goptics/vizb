@@ -4,6 +4,13 @@ import { tooltipDivider, tooltipSpreadRows, renderDonutSvg, type ChartStyling } 
 
 export const round2 = (v: number) => Math.round(v * 100) / 100
 
+/** grid3D boxWidth / boxDepth tier from axis category count (max 200). */
+export function boxSizeForAxisCount(len: number): number {
+  if (len < 5) return 80
+  if (len < 15) return 100
+  return 200
+}
+
 // Empty render payload when a chart lacks precomputed 3D data (shouldn't happen:
 // the worker attaches render3D to every 3D chart).
 export const EMPTY_RENDER: Render3D = {
@@ -143,15 +150,20 @@ export function create3DGridConfig(opts: {
   styling: ChartStyling
   autoRotate: boolean
   orthographic?: boolean
+  xCount: number
+  yCount: number
 }) {
-  const { styling, autoRotate, orthographic } = opts
+  const { styling, autoRotate, orthographic, xCount, yCount } = opts
+  const xWidth = boxSizeForAxisCount(xCount)
+  const yWidth = boxSizeForAxisCount(yCount)
+
   return {
-    boxWidth: 200,
-    boxDepth: 100,
+    boxWidth: xWidth,
+    boxDepth: yWidth,
     axisLine: { lineStyle: { color: styling.axisColor } },
     splitLine: { lineStyle: { color: styling.axisColor, opacity: styling.opacity } },
     viewControl: {
-      distance: 200,
+      distance: xWidth + yWidth,
       // `autoRotate` is optional on BaseChartConfig (relaxed in Task 7) —
       // pie/heatmap/radar pass a config without it. Default to off at the
       // call site; 3D bar/line are the only consumers.

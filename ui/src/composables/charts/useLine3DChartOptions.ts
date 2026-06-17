@@ -122,6 +122,8 @@ export function useLine3DChartOptions(config: BaseChartConfig) {
         styling,
         autoRotate: autoRotate?.value ?? false,
         orthographic: true,
+        xCount: xValues.length,
+        yCount: yValues.length,
       }),
       series: [...series, ...labelSeries],
     } as unknown as EChartsOption

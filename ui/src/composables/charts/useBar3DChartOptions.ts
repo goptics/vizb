@@ -107,6 +107,8 @@ export function useBar3DChartOptions(config: BaseChartConfig) {
       grid3D: create3DGridConfig({
         styling,
         autoRotate: autoRotate?.value ?? false,
+        xCount: xValues.length,
+        yCount: yValues.length,
       }),
       series,
     } as unknown as EChartsOption
