@@ -76,23 +76,22 @@ Produces series `sells`, `stocks`, and `mem.alloc`. `date` (string) is ignored.
 
 ## Grouping with `--group` / `-g`
 
-`--group` names one or more **non-numeric** columns/fields. Their per-row values are joined with
-`/` and fed through the existing grouping machinery (`--group-pattern`/`-p`,
-`--group-regex`/`-r`) — exactly like benchmark names.
+`--group` names one or more **non-numeric** columns/fields. Each column maps to one **slot** in
+`--group-pattern`/`-p`. Use **bracket slots** `[...]` when a single column's cell value encodes
+multiple dimensions (dates, slash paths, etc.).
 
 ```bash
 vizb sales.csv -g name                  # name → X axis (default pattern "x")
-vizb sales.csv -g name,date -p name/x   # name → series name, date → X axis
-vizb data.json -g name,date -p name/x   # same, for JSON
+vizb sales.csv -g name,date -p name,x   # name → series name, date → X axis
+vizb data.json -g name,date -p name,x   # same, for JSON
+vizb sales.csv -g "name category" -p "x y"   # space-separated columns
+vizb sales.csv -g date,category -p "[x-y-n],z"   # split date cell 2022-2-30 → x/y/n; category → z
+vizb results.csv -g benchmark -p "[n/x/y]"       # Sort/1024/QuickSort from one column
 ```
 
-See the [Grouping Guide](/guides/grouping) for pattern and regex syntax.
+Comma-separated `-g` (e.g. `-g region,product,month`) requires comma-separated top-level `-p` (e.g. `-p x,y,z` or `-p "[n-y-x],y,z"`). Brackets are **CSV/JSON only** — benchmarks keep flat `-p n/x/y`.
 
-<Aside type="note">
-  `--group` values are stringified (numbers included) before joining. A value that itself
-  contains `/` or `_` is re-split by the grouping pattern — that's inherent to the grouping
-  engine, not the data parsers.
-</Aside>
+See the [Grouping Guide](/guides/grouping) for bracket slots, pattern syntax, and regex fallback.
 
 ## Aggregation
 
@@ -103,7 +102,7 @@ same date. So when a `--group` is active for the `csv`/`json` parsers, vizb
 key are merged into a single point by **summing** their values.
 
 ```bash
-vizb sales.csv -g region,product,month -p name/x/y -o sales.html
+vizb sales.csv -g region,product,month -p name,x,y -o sales.html
 # 🧮 Aggregating 200000 rows...
 # ✅ Aggregated into 4200 grouped data points
 ```

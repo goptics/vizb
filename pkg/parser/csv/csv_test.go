@@ -62,9 +62,60 @@ func (s *CSVSuite) TestGroupSingleColumnToXAxis() {
 	s.Equal([]string{"sells"}, statTypes(results[0].Stats))
 }
 
+func (s *CSVSuite) TestGroupBracketValueSplitDateCategory() {
+	cfg, err := parser.ResolveGroupConfig(parser.Config{
+		Group:        []string{"date", "category"},
+		GroupPattern: "[x-y-n],z",
+	})
+	s.Require().NoError(err)
+
+	csv := "date,category,sales\n2022-2-30,Widget,100\n"
+	results := ParseCSV(s.writeFile(csv), cfg)
+
+	s.Len(results, 1)
+	s.Equal("2022", results[0].XAxis)
+	s.Equal("2", results[0].YAxis)
+	s.Equal("30", results[0].Name)
+	s.Equal("Widget", results[0].ZAxis)
+	s.Equal(100.0, results[0].Stats[0].Value)
+}
+
+func (s *CSVSuite) TestGroupBracketValueSplitSlashBenchmark() {
+	cfg, err := parser.ResolveGroupConfig(parser.Config{
+		Group:        []string{"benchmark"},
+		GroupPattern: "[n/x/y]",
+	})
+	s.Require().NoError(err)
+
+	csv := "benchmark,latency\nSort/1024/QuickSort,12\n"
+	results := ParseCSV(s.writeFile(csv), cfg)
+
+	s.Len(results, 1)
+	s.Equal("Sort", results[0].Name)
+	s.Equal("1024", results[0].XAxis)
+	s.Equal("QuickSort", results[0].YAxis)
+}
+
+func (s *CSVSuite) TestGroupBracketValueSplitMixedWithWholeColumn() {
+	cfg, err := parser.ResolveGroupConfig(parser.Config{
+		Group:        []string{"date", "region"},
+		GroupPattern: "[n-y-x],z",
+	})
+	s.Require().NoError(err)
+
+	csv := "date,region,sales\n2022-2-30,USA,80\n"
+	results := ParseCSV(s.writeFile(csv), cfg)
+
+	s.Len(results, 1)
+	s.Equal("2022", results[0].Name)
+	s.Equal("2", results[0].YAxis)
+	s.Equal("30", results[0].XAxis)
+	s.Equal("USA", results[0].ZAxis)
+}
+
 func (s *CSVSuite) TestGroupMultiColumnRoutedByPattern() {
 	s.cfg.Group = []string{"name", "date"}
-	s.cfg.GroupPattern = "name/x"
+	s.cfg.GroupPattern = "name,x"
 	csv := "name,sells,date\nalpha,10,2024-01\nbeta,20,2025-02\n"
 
 	results := ParseCSV(s.writeFile(csv), s.cfg)
@@ -72,6 +123,22 @@ func (s *CSVSuite) TestGroupMultiColumnRoutedByPattern() {
 	s.Len(results, 2)
 	s.Equal("alpha", results[0].Name)
 	s.Equal("2024-01", results[0].XAxis)
+}
+
+func (s *CSVSuite) TestGroupSpaceSeparatedPattern() {
+	cfg, err := parser.ResolveGroupConfig(parser.Config{
+		Group:        []string{"name category region"},
+		GroupPattern: "x n y",
+	})
+	s.Require().NoError(err)
+
+	csv := "name,category,region,sells\nalpha,beta,gamma,10\n"
+	results := ParseCSV(s.writeFile(csv), cfg)
+
+	s.Len(results, 1)
+	s.Equal("alpha", results[0].XAxis)
+	s.Equal("beta", results[0].Name)
+	s.Equal("gamma", results[0].YAxis)
 }
 
 func (s *CSVSuite) TestGroupColumnExcludedFromCharts() {

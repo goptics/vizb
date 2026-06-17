@@ -44,8 +44,15 @@ export function create3DTooltipFormatter(params: {
   zValues: string[]
   aggPoints: Point3D[]
   isDark: boolean
+  xAxisLabel?: string
+  yAxisLabel?: string
+  zAxisLabel?: string
 }) {
-  const { xValues, yValues, zValues, aggPoints, isDark } = params
+  const { xValues, yValues, zValues, aggPoints, isDark, xAxisLabel, yAxisLabel, zAxisLabel } =
+    params
+  const xLabel = xAxisLabel ?? 'x'
+  const yLabel = yAxisLabel ?? 'y'
+  const zSumLabel = zAxisLabel ?? 'z'
 
   return (p: { value: number[] }) => {
     const [xi = 0, yi = 0] = p.value
@@ -82,14 +89,14 @@ export function create3DTooltipFormatter(params: {
 
     // Σ over z = stacked bar height at this (x,y). First line under the divider,
     // above the x/y marginals, when there's more than one z to sum.
-    const zSumLine = zmap.size > 1 ? `Σ z: <b>${round2(cellTotal)}</b><br/>` : ''
+    const zSumLine = zmap.size > 1 ? `Σ ${zSumLabel}: <b>${round2(cellTotal)}</b><br/>` : ''
 
     // Marginal totals: sum over the other two axes for this x / this y.
     const margins =
       tooltipDivider(isDark) +
       zSumLine +
-      `Σ ${xName}: <b>${round2(xMarginal)}</b><br/>` +
-      `Σ ${yName}: <b>${round2(yMarginal)}</b>`
+      `Σ ${xLabel}(${xName}): <b>${round2(xMarginal)}</b><br/>` +
+      `Σ ${yLabel}(${yName}): <b>${round2(yMarginal)}</b>`
 
     // Spread of the z-values in this cell (median / IQR / CV), mirroring the 2D
     // tooltip. Only meaningful with >1 z.
@@ -103,7 +110,7 @@ export function create3DTooltipFormatter(params: {
               .map((z) => ({ value: zmap.get(z)!, color: getNextColorFor(z) ?? '', name: z }))
           )
         : ''
-    return `<b>${xName} / ${yName}</b><br/>${rows.join('<br/>')}${margins}${spread}${donut ? tooltipDivider(isDark) + donut : ''}`
+    return `<b>${xLabel}: ${xName} / ${yLabel}: ${yName}</b><br/>${rows.join('<br/>')}${margins}${spread}${donut ? tooltipDivider(isDark) + donut : ''}`
   }
 }
 
@@ -139,7 +146,7 @@ export function create3DGridConfig(opts: {
 }) {
   const { styling, autoRotate, orthographic } = opts
   return {
-    boxWidth: 100,
+    boxWidth: 200,
     boxDepth: 100,
     axisLine: { lineStyle: { color: styling.axisColor } },
     splitLine: { lineStyle: { color: styling.axisColor, opacity: styling.opacity } },
@@ -149,10 +156,6 @@ export function create3DGridConfig(opts: {
       // pie/heatmap/radar pass a config without it. Default to off at the
       // call site; 3D bar/line are the only consumers.
       autoRotate,
-      // No camera tween: echarts-gl otherwise animates the camera in to
-      // `distance` on (re)render, which reads as a jarring zoom flash when
-      // switching chart type. Snap straight to the final position.
-      animation: false,
       ...(orthographic ? { projection: 'orthographic' } : {}),
     },
     light: {

@@ -12,13 +12,17 @@ import (
 // former global shared.FlagState reads, making parsers pure functions of
 // (input, config).
 type Config struct {
-	GroupPattern string
-	GroupRegex   string
-	Group        []string
-	Filter       string
-	MemUnit      string
-	TimeUnit     string
-	NumberUnit   string
+	GroupPattern    string
+	GroupRegex      string
+	Group           []string
+	GroupColumns    []string
+	LabelSeparators []string
+	GroupStructured bool
+	TabularPattern  *TabularPattern
+	Filter          string
+	MemUnit         string
+	TimeUnit        string
+	NumberUnit      string
 }
 
 type ParseFunc func(filename string, cfg Config) []shared.DataPoint

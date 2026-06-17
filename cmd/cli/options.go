@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/goptics/vizb/pkg/parser"
+	"github.com/goptics/vizb/shared"
 	"github.com/goptics/vizb/shared/utils"
 	"github.com/spf13/pflag"
 )
@@ -34,9 +35,9 @@ func (o *CommonOptions) Bind(fs *pflag.FlagSet) {
 	fs.StringVarP(&o.MemUnit, "mem-unit", "M", "B", "Memory unit available: b, B, KB, MB, GB")
 	fs.StringVarP(&o.TimeUnit, "time-unit", "T", "ns", "Time unit available: ns, us, ms, s")
 	fs.StringVarP(&o.NumberUnit, "number-unit", "N", "", "Number unit available: K, M, B, T (default: as-is)")
-	fs.StringVarP(&o.GroupPattern, "group-pattern", "p", "x", "Pattern to extract grouping information from data labels / series names")
+	fs.StringVarP(&o.GroupPattern, "group-pattern", "p", "x", "Pattern to extract grouping information from data labels / series names; CSV/JSON: bracket slots [x-y-n] split a column value; {label} sets axis titles (e.g. -p '[n{year}-y{months}],z{category}')")
 	fs.StringVarP(&o.GroupRegex, "group-regex", "r", "", "Regex pattern to extract grouping information from data labels / series names")
-	fs.StringSliceVarP(&o.Group, "group", "g", nil, "Names each dimension in --group-pattern/regex order. csv/json: column/field names whose values feed the dimensions; benchmark parsers: human-readable labels for the name/x/y/z axes")
+	fs.StringSliceVarP(&o.Group, "group", "g", nil, "Names dimensions in --group-pattern order; use the same separators as -p (e.g. -g \"name category region\" -p \"x n y\", or -g name,category/region -p x,y/z). csv/json: column/field names; benchmark parsers: axis labels")
 	fs.StringVarP(&o.Filter, "filter", "f", "", "Regex pattern to include only matching data labels / series names")
 	fs.StringVarP(&o.Tag, "tag", "t", "", "Tag/identifier for the comparison")
 	fs.StringVarP(&o.Parser, "parser", "P", "auto", "Benchmark parser to use; 'auto' detects from input content (one of: auto, "+strings.Join(parser.AvailableParsers(), ", ")+")")
@@ -94,7 +95,7 @@ func (o *CommonOptions) Validate() {
 
 // ParseConfig converts the common flags into the parser.Config that parsers consume.
 func (o *CommonOptions) ParseConfig() parser.Config {
-	return parser.Config{
+	cfg, err := parser.ResolveGroupConfig(parser.Config{
 		GroupPattern: o.GroupPattern,
 		GroupRegex:   o.GroupRegex,
 		Group:        o.Group,
@@ -102,7 +103,11 @@ func (o *CommonOptions) ParseConfig() parser.Config {
 		MemUnit:      o.MemUnit,
 		TimeUnit:     o.TimeUnit,
 		NumberUnit:   o.NumberUnit,
+	})
+	if err != nil {
+		shared.ExitWithError(err.Error(), nil)
 	}
+	return cfg
 }
 
 // LinearOptions adds the dataset-level sort/labels flags shared by linear data

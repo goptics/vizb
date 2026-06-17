@@ -177,7 +177,7 @@ Vizb auto-detects the input format:
 2. **Preprocess** — JSON bench events converted to text (if needed)
 3. **Detect Parser** — `DetectParser` inspects the content and picks a parser via the registry (CSV/JSON/Go/Vitest/TinyBench/Criterion/Divan), unless `--parser` forces one
 4. **Parse** — the selected parser extracts names and stats from the input
-5. **Group** — `--group-pattern` or `--group-regex` splits data labels into dimensions (n, x, y); `--group` feeds CSV/JSON columns in first
+5. **Group** — `--group` picks CSV/JSON columns and builds a label (separators from `-p`); `--group-pattern` or `--group-regex` splits that label into dimensions (n, x, y, z)
 6. **Build** — assemble `Dataset` struct with metadata and settings
 7. **Prune** — `SelectChunks` (`pkg/template/chunks.go`) walks the chunk reference
    graph built at Vite build time and keeps only chunks reachable from the selected

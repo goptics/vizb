@@ -28,7 +28,7 @@ Slice sizes are proportional to the sum of values for that axis entry. Labels sh
 One pie chart: each unique X value is a slice. The slice size is proportional to its total value. This is the clearest way to see which X category dominates.
 
 ```bash
-vizb data.csv -g category -c pie -o out.html
+vizb pie data.csv -g category -o out.html
 ```
 
 {/* TODO: Add GIF showing a 1D pie chart with labeled slices */}
@@ -38,7 +38,7 @@ vizb data.csv -g category -c pie -o out.html
 Two pies side-by-side: **By X-Axis** and **By Y-Axis**. Each pie breaks the total differently — the first by X category, the second by Y column. Comparing the two lets you see which axis has more evenly-distributed weight.
 
 ```bash
-vizb data.csv -g category,metric -p x/y -c pie -o out.html
+vizb pie data.csv -g category,metric -p x,y -o out.html
 ```
 
 {/* TODO: Add GIF showing two pies side-by-side with slice labels */}
@@ -48,7 +48,7 @@ vizb data.csv -g category,metric -p x/y -c pie -o out.html
 Three pies in a row: **By X-Axis**, **By Y-Axis**, and **By Z-Axis**. Each pie slices the total along a different axis, giving you a three-way breakdown of the same dataset in a single view.
 
 ```bash
-vizb data.csv -g category,metric,group -p x/y/z -c pie -o out.html
+vizb pie data.csv -g category,metric,group -p x,y,z -o out.html
 ```
 
 {/* TODO: Add GIF showing three pies in a row for a 3D dataset */}
@@ -72,8 +72,8 @@ These settings apply to pie charts:
 Override settings for just this chart type without affecting others:
 
 ```bash
-# Sort slices descending and show labels on the pie only
-vizb data.csv -g category,metric --chart pie:sort=desc,labels -o out.html
+# Sort slices descending and show labels
+vizb pie data.csv -g category,metric --sort desc -l -o out.html
 ```
 
 ## Next Steps

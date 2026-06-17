@@ -66,6 +66,9 @@ export function useBar3DChartOptions(config: BaseChartConfig) {
       zValues,
       aggPoints,
       isDark: isDark.value,
+      xAxisLabel: chartData.value.axisLabels?.x,
+      yAxisLabel: chartData.value.axisLabels?.y,
+      zAxisLabel: chartData.value.axisLabels?.z,
     })
 
     return {

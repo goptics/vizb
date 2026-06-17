@@ -29,9 +29,21 @@ func parseFinite(s string) (float64, bool) {
 
 // ParseCSV turns a generic CSV into benchmark data. Each numeric column
 // becomes a chart series (column name = Stat.Type); non-numeric columns are
-// ignored unless named in --group/-g, whose values are '/'-joined and routed
-// through the existing grouping machinery (-p/-r) for name/xAxis/yAxis placement.
+// ignored unless named in --group/-g, whose values are joined with the
+// separators from --group-pattern/-p and routed through the grouping machinery
+// (-p/-r) for name/xAxis/yAxis placement.
 func ParseCSV(filename string, cfg parser.Config) []shared.DataPoint {
+	if len(cfg.Group) > 0 && cfg.GroupRegex == "" {
+		var err error
+		cfg, err = parser.ResolveGroupConfig(cfg)
+		if err != nil {
+			shared.ExitWithError(err.Error(), nil)
+		}
+		if err := parser.ValidateTabularGroupAlignment(cfg); err != nil {
+			shared.ExitWithError(err.Error(), nil)
+		}
+	}
+
 	f, err := os.Open(filename)
 	if err != nil {
 		shared.ExitWithError("Error opening file", err)
@@ -53,7 +65,7 @@ func ParseCSV(filename string, cfg parser.Config) []shared.DataPoint {
 	headers := normalizeHeaders(rows[0])
 	dataRows := rows[1:]
 
-	groupIdx, groupSet := resolveGroupColumns(headers, cfg.Group)
+	groupIdx, groupSet := resolveGroupColumns(headers, parser.EffectiveGroupColumns(cfg))
 
 	chartCols := chartColumns(headers, groupSet, dataRows)
 	if len(chartCols) == 0 {
@@ -63,15 +75,16 @@ func ParseCSV(filename string, cfg parser.Config) []shared.DataPoint {
 	var results []shared.DataPoint
 
 	for _, row := range dataRows {
-		label := buildLabel(row, groupIdx)
+		groupValues := groupColumnValues(row, groupIdx)
 
 		var name, xAxis, yAxis, zAxis string
-		if label != "" {
+		if len(groupValues) > 0 {
+			label := parser.TabularFilterLabel(groupValues, cfg)
 			if !parser.ShouldIncludeBenchmark(label, cfg) {
 				continue
 			}
 
-			group, gerr := parser.GroupBenchmarkName(label, cfg)
+			group, gerr := parser.GroupTabularRow(groupValues, cfg)
 			if gerr != nil {
 				shared.ExitWithError("Error parsing CSV group name", gerr)
 			}
@@ -196,13 +209,7 @@ func chartColumns(headers []string, groupSet map[int]bool, dataRows [][]string) 
 	return cols
 }
 
-// buildLabel joins the trimmed group-column values for a row with '/'. Returns
-// "" when no group columns are configured.
-func buildLabel(row []string, groupIdx []int) string {
-	if len(groupIdx) == 0 {
-		return ""
-	}
-
+func groupColumnValues(row []string, groupIdx []int) []string {
 	parts := make([]string, 0, len(groupIdx))
 	for _, idx := range groupIdx {
 		val := ""
@@ -211,8 +218,7 @@ func buildLabel(row []string, groupIdx []int) string {
 		}
 		parts = append(parts, val)
 	}
-
-	return strings.Join(parts, "/")
+	return parts
 }
 
 // nonEmpty returns the non-empty header names (for error messages).

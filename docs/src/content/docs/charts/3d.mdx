@@ -27,25 +27,28 @@ charts. Without a z-axis, charts render as the usual 2D bar/line/pie.
 
 Add a `z` segment to your grouping pattern or a `(?<z>…)` capture to your regex.
 
-**Pattern — `x/y/z`:**
+**Pattern — CSV (`x,y,z`) or benchmarks (`x/y/z`):**
 
 ```bash
-vizb data.csv -g category,metric,group --group-pattern "x/y/z" -o output.html
+# CSV/JSON — comma-separated columns and pattern
+vizb bar data.csv -g category,metric,group -p x,y,z -o output.html
+
+# Benchmarks — slash-separated names
+go test -bench . | vizb -p x/y/z -o output.html
 ```
 
-| Source Label | Name | XAxis | YAxis | ZAxis |
+| Source | Label example | XAxis | YAxis | ZAxis |
 |---|---|---|---|---|
-| `BenchmarkSort/1024/QuickSort/warm` | Sort | 1024 | QuickSort | warm |
-| `BenchmarkSort/2048/MergeSort/cold` | Sort | 2048 | MergeSort | cold |
+| CSV row | `alpha,beta,gamma` | alpha | beta | gamma |
+| Benchmark | `BenchmarkSort/1024/QuickSort/warm` | 1024 | QuickSort | warm |
 
-The same `z` dimension can come from a CSV or JSON column instead of a benchmark
-name segment — pass the column as the fourth `--group` field. See the
+Pass each CSV/JSON column as a `--group` field in pattern order. See the
 [Tabular Data guide](/guides/data).
 
 **Regex — named `z` capture:**
 
 ```bash
-vizb data.csv -g category,metric,group,series --group-regex "(?<n>.*)/(?<x>.*)/(?<y>.*)/(?<z>.*)" -o output.html
+vizb bar data.csv -g category,metric,group,series --group-regex "(?<n>.*)/(?<x>.*)/(?<y>.*)/(?<z>.*)" -o output.html
 ```
 
 If you supply a `z` without both `x` and `y`, vizb rejects the pattern:

@@ -18,7 +18,7 @@ vizb <chart> [target] [flags]
 `<chart>` is one of `bar`, `line`, `pie`, `heatmap`, `radar`. Output is HTML by default, or JSON when `-o` ends in `.json` (same rules as the root command).
 
 ```bash
-vizb bar data.csv -g impl,size -p n/x -o bar.html
+vizb bar data.csv -g impl,size -p n,x -o bar.html
 vizb pie data.csv -g impl -o pie.html
 go test -bench . | vizb line -p n/y -o line.html
 ```
@@ -34,9 +34,9 @@ Every chart subcommand accepts the common data, grouping, and metadata flags:
 | `--name` | `-n` | `Comparisons` | Dataset name |
 | `--description` | `-d` | `""` | Dataset description |
 | `--tag` | `-t` | `""` | Tag identifier for release tracking |
-| `--group-pattern` | `-p` | `x` | Pattern-based grouping (`n`/`x`/`y`/`z`) |
+| `--group-pattern` | `-p` | `x` | Pattern-based grouping (`n`/`x`/`y`/`z` with separators matching `-g` for CSV/JSON) |
 | `--group-regex` | `-r` | `""` | Regex-based grouping (named captures) |
-| `--group` | `-g` | `""` | Names each dimension in `--group-pattern` order |
+| `--group` | `-g` | `""` | Names each dimension in `--group-pattern` order; csv/json column names must use matching separators in `-p` |
 | `--filter` | `-f` | `""` | Regex to include only matching labels / series |
 | `--sort` | `-s` | `""` | Sort order: `asc` or `desc` |
 | `--swap` | | `""` | Axis permutation override, e.g. `yx`, `yxn` |
@@ -62,7 +62,7 @@ vizb pie data.csv --scale log   # Error: unknown flag: --scale
 
 ```bash
 # 3D bar with log scale and auto-rotation
-vizb bar data.csv -p n/x/y/z --scale log --3d-rotate -o bar3d.html
+vizb bar data.csv -g category,metric,group -p n,x,y,z --scale log --3d-rotate -o bar3d.html
 
 # Pie with value labels, ascending sort
 vizb pie data.csv -g impl --sort asc --show-labels -o pie.html

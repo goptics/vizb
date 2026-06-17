@@ -140,7 +140,7 @@ Uses `vi.useFakeTimers()`. Each test instantiates the composable inside an
 
 | Case | Asserts |
 | --- | --- |
-| Non-empty data | `init` posted on mount, `ready` populates `charts` with skeleton slots |
+| Non-empty data passed at call time | `init` posted synchronously (the `watch(..., { immediate: true })` fires), `ready` populates `charts` with skeleton slots |
 | `ready` triggers one `compute` per signature | order matches signature list |
 | Multiple charts | chart-1 reply unblocks chart-2's `compute` (queue pump) |
 | Stale `ready` (mismatched `dataEpoch`) | no chart updates |

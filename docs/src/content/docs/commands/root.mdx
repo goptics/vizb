@@ -78,9 +78,9 @@ for how the format is chosen.
 | `--name` | `-n` | `Benchmarks` | Dataset name |
 | `--description` | `-d` | `""` | Dataset description |
 | `--tag` | `-t` | `""` | Tag identifier for release tracking |
-| `--group-pattern` | `-p` | `x` | Pattern-based grouping (`n`/`x`/`y`/`z` with `/` or `_`; `z` → 3D) |
+| `--group-pattern` | `-p` | `x` | Pattern-based grouping (`n`/`x`/`y`/`z` with your chosen separators; `z` → 3D). Benchmarks: `/` or `_`. CSV/JSON: match `-g` (commas for `-g a,b,c`, spaces for quoted `-g "a b"`, etc.) |
 | `--group-regex` | `-r` | `""` | Regex-based grouping (named captures) |
-| `--group` | `-g` | `""` | Labels each dimension in `--group-pattern` order. csv/json: column/field names whose values populate dimensions; benchmark parsers: human-readable labels for name/x/y/z axes |
+| `--group` | `-g` | `""` | Names dimensions in `--group-pattern` order. csv/json: column/field names (separators must match `-p`); benchmark parsers: human-readable axis labels |
 | `--scale` | `-S` | `linear` | Scale type: `linear` or `log` |
 | `--sort` | `-s` | `""` | Sort order: `asc` or `desc` (default: as-is) |
 | `--charts` | `-c` | `bar,line,pie` | Chart types to generate (`bar`, `line`, `pie`, `heatmap`, `radar`) |

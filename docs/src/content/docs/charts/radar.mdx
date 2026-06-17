@@ -28,7 +28,7 @@ Each polygon is filled with a semi-transparent area so overlapping shapes stay v
 One polygon on the radar. The X values become the spokes, and the single data point is plotted as a stat-total shape. Best for a quick profile of one subject.
 
 ```bash
-vizb data.csv -g category -c radar -o out.html
+vizb radar data.csv -g category -o out.html
 ```
 
 {/* TODO: Add GIF showing a 1D radar chart with a single polygon */}
@@ -38,7 +38,7 @@ vizb data.csv -g category -c radar -o out.html
 Multiple polygons, one per X value, all sharing the same set of spokes (Y values). The legend lists the X values so you can show or hide individual polygons. This is the core use case: compare how several subjects score across the same set of metrics.
 
 ```bash
-vizb data.csv -g category,metric -p x/y -c radar -o out.html
+vizb radar data.csv -g category,metric -p x,y -o out.html
 ```
 
 {/* TODO: Add GIF showing a 2D radar chart with multiple overlapping polygons and legend toggles */}
@@ -50,7 +50,7 @@ Multiple polygon sets, one set per Z value. Within each Z series, X values becom
 Spoke vertices are rendered as circle symbols, so you can hover individual points on each polygon to inspect a specific metric value.
 
 ```bash
-vizb data.csv -g category,metric,group -p x/y/z -c radar -o out.html
+vizb radar data.csv -g category,metric,group -p x,y,z -o out.html
 ```
 
 {/* TODO: Add GIF showing a 3D radar chart with multiple Z polygon sets and hoverable spoke vertices */}
@@ -73,8 +73,8 @@ These settings apply to radar charts:
 Override settings for just this chart type without affecting others:
 
 ```bash
-# Sort and show labels on the radar only
-vizb data.csv -g category,metric --chart radar:sort=asc,labels -o out.html
+# Sort ascending and show labels
+vizb radar data.csv -g category,metric --sort asc -l -o out.html
 ```
 
 ## Next Steps

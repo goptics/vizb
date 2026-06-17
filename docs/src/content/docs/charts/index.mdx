@@ -5,7 +5,7 @@ description: How vizb's five chart types share the same x/y/z dimension model �
 
 import { CardGrid, Card, LinkCard, Aside } from '@astrojs/starlight/components';
 
-Vizb folds the same **x/y/z dimension model** into every chart type — you describe your data once with `-p x/y/z`, and all five renderers interpret it in parallel. One pipeline, five different shapes. Use `--charts` (or `-c`) to control which renderers are bundled into the output file.
+Vizb folds the same **x/y/z dimension model** into every chart type — you describe your data once with a group pattern (e.g. `-p x,y,z` for CSV or `-p x/y/z` for benchmarks), and all five renderers interpret it in parallel. One pipeline, five different shapes. Use `--charts` (or `-c`) to control which renderers are bundled into the output file.
 
 ## Chart Types
 
@@ -34,12 +34,12 @@ Every vizb chart is driven by up to three chart dimensions: **X-axis** (`x`), **
 | Pattern | Dimensionality | What you get |
 |---------|---------------|--------------|
 | `-p x` | **1D** — X only | X is the only axis |
-| `-p x/y` | **2D** — X + Y | Y subdivides each X point into groups or series |
-| `-p x/y/z` | **3D** — X + Y + Z | Z adds a third dimension; bar/line go WebGL, pie/radar add a third slice set, heatmap blends Z into cell color |
+| `-p x,y` (CSV) or `-p x/y` (bench) | **2D** — X + Y | Y subdivides each X point into groups or series |
+| `-p x,y,z` (CSV) or `-p x/y/z` (bench) | **3D** — X + Y + Z | Z adds a third dimension; bar/line go WebGL, pie/radar add a third slice set, heatmap blends Z into cell color |
 
 Pie and radar have no cartesian axes, but the same `-p` pattern governs how many series or spokes they render:
 
-| Chart | 1D (`-p x`) | 2D (`-p x/y`) | 3D (`-p x/y/z`) |
+| Chart | 1D (`-p x`) | 2D (`-p x,y` / `-p x/y`) | 3D (`-p x,y,z` / `-p x/y/z`) |
 |-------|--------------|----------------|------------------|
 | **Bar** | Single bar series over X | Grouped bars, one series per Y value | WebGL bar3D — Z stacked per (X, Y) cell |
 | **Line** | Single line over X | One line per Y value across X | WebGL line3D — sparse points per Z |
@@ -50,7 +50,7 @@ Pie and radar have no cartesian axes, but the same `-p` pattern governs how many
 {/* TODO: Add GIF showing all five charts rendered side by side */}
 
 <Aside type="note">
-  Heatmap requires at least a 2D pattern (`-p x/y`). Passing `-p x` with `-c heatmap` will produce an empty chart panel.
+  Heatmap requires at least a 2D pattern (`-p x,y` for CSV or `-p x/y` for benchmarks). Passing `-p x` with `-c heatmap` will produce an empty chart panel.
 </Aside>
 
 ## 4D: Named Chart Groups
@@ -67,7 +67,7 @@ For CSV, `-g` maps columns to pattern slots positionally:
 
 ```bash
 # 4D: name=algo, x=input_size, y=variant, z=run_type
-vizb data.csv -g algo,input_size,variant,run_type -p n/x/y/z -c bar -o out.html
+vizb data.csv -g algo,input_size,variant,run_type -p n,x,y,z -c bar -o out.html
 ```
 
 {/* TODO: Add GIF showing multiple named chart panels side by side */}
@@ -95,7 +95,7 @@ To override a setting for a single chart type without affecting the others, use 
 vizb data.csv -g category --chart bar:labels=true -o output.html
 
 # Enable sort on radar, keep others unsorted
-vizb data.csv -g category,metric -p x/y -c bar,radar --chart radar:sort=asc -o output.html
+vizb data.csv -g category,metric -p x,y -c bar,radar --chart radar:sort=asc -o output.html
 ```
 
 See [Commands: root](/commands/root) for the full flag reference.
@@ -114,7 +114,7 @@ Each chart renderer ships as a separate compressed chunk; only the ones you sele
 
 ```bash
 # Radar and bar only
-vizb data.csv -g category,metric -p x/y -c bar,radar -o output.html
+vizb data.csv -g category,metric -p x,y -c bar,radar -o output.html
 
 # Single chart — smallest possible output
 vizb data.csv -g category -c bar -o output.html
