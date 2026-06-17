@@ -1,5 +1,5 @@
 // Package heatmap registers the `vizb heatmap` subcommand: a heatmap chart.
-// Heatmap folds z onto the legend and is always 2D, so --scale and --rotate are
+// Heatmap folds z onto the legend and is always 2D, so --scale and --3d-rotate are
 // intentionally absent.
 package heatmap
 
@@ -14,7 +14,7 @@ import (
 
 func init() { cli.Register(NewCommand) }
 
-// Options carries only the shared chart flags; no --scale/--rotate.
+// Options carries only the shared chart flags; no --scale/--3d-rotate.
 type Options struct {
 	cli.ChartOptions
 }

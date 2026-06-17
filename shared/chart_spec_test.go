@@ -47,7 +47,7 @@ func (s *ChartSpecSuite) TestParseOverrides_BarSwap() {
 // to confirm the typed config receives all the values.
 func (s *ChartSpecSuite) TestParseOverrides_AllFields() {
 	got, err := ParseOverrides(
-		[]string{"bar:swap=yxn,sort=asc,scale=log,labels=true,rotate=false"},
+		[]string{"bar:swap=yxn,sort=asc,scale=log,labels=true,3d-rotate=false"},
 		[]string{"bar"},
 		s.xynAxes,
 	)
@@ -78,9 +78,9 @@ func (s *ChartSpecSuite) TestParseOverrides_BareLabels() {
 	s.Equal(true, m["showLabels"])
 }
 
-// TestParseOverrides_BareRotate confirms `rotate` (no =val) sets autoRotate=true.
+// TestParseOverrides_BareRotate confirms `3d-rotate` (no =val) sets autoRotate=true.
 func (s *ChartSpecSuite) TestParseOverrides_BareRotate() {
-	got, err := ParseOverrides([]string{"bar:rotate"}, []string{"bar"}, s.xynAxes)
+	got, err := ParseOverrides([]string{"bar:3d-rotate"}, []string{"bar"}, s.xynAxes)
 	s.Require().NoError(err)
 
 	raw, err := json.Marshal(got["bar"])
@@ -146,7 +146,7 @@ func (s *ChartSpecSuite) TestParseOverrides_Errors() {
 }
 
 // TestParseOverrides_NoLimitedChartCheck documents the deferred-validation
-// contract: pie/heatmap/radar accept keys they don't carry (scale, rotate) in
+// contract: pie/heatmap/radar accept keys they don't carry (scale, 3d-rotate) in
 // the payload; the values are silently dropped by Decode. The per-chart
 // Validate(axes) method (future task) will surface this as an error.
 func (s *ChartSpecSuite) TestParseOverrides_NoLimitedChartCheck() {

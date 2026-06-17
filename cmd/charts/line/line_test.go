@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-// LineSuite verifies the line command exposes scale + rotate like bar and
+// LineSuite verifies the line command exposes scale + 3d-rotate like bar and
 // bakes a line-only selection into the new Settings shape.
 type LineSuite struct {
 	suite.Suite
@@ -30,7 +30,7 @@ func (s *LineSuite) TestCommandFlags() {
 	cmd := NewCommand()
 	s.Equal("line [target]", cmd.Use)
 	s.NotNil(cmd.Flags().Lookup("scale"))
-	s.NotNil(cmd.Flags().Lookup("rotate"))
+	s.NotNil(cmd.Flags().Lookup("3d-rotate"))
 	s.NotNil(cmd.Flags().Lookup("swap"))
 	s.NotNil(cmd.Flags().Lookup("sort"))
 }

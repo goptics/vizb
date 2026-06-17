@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-// HeatmapSuite verifies the heatmap command omits --scale/--rotate and bakes
+// HeatmapSuite verifies the heatmap command omits --scale/--3d-rotate and bakes
 // a heatmap-only selection into the new Settings shape.
 type HeatmapSuite struct {
 	suite.Suite
@@ -30,7 +30,7 @@ func (s *HeatmapSuite) TestCommandFlags() {
 	cmd := NewCommand()
 	s.Equal("heatmap [target]", cmd.Use)
 	s.Nil(cmd.Flags().Lookup("scale"), "heatmap must not expose --scale")
-	s.Nil(cmd.Flags().Lookup("rotate"), "heatmap must not expose --rotate")
+	s.Nil(cmd.Flags().Lookup("3d-rotate"), "heatmap must not expose --3d-rotate")
 	s.NotNil(cmd.Flags().Lookup("swap"))
 	s.NotNil(cmd.Flags().Lookup("sort"))
 }

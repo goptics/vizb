@@ -29,9 +29,9 @@ func (s *BarSuite) TearDownTest() {
 func (s *BarSuite) TestCommandFlags() {
 	cmd := NewCommand()
 	s.Equal("bar [target]", cmd.Use)
-	// bar supports scale + rotate (3D) in addition to the shared chart flags.
+	// bar supports scale + 3d-rotate in addition to the shared chart flags.
 	s.NotNil(cmd.Flags().Lookup("scale"))
-	s.NotNil(cmd.Flags().Lookup("rotate"))
+	s.NotNil(cmd.Flags().Lookup("3d-rotate"))
 	s.NotNil(cmd.Flags().Lookup("swap"))
 	s.NotNil(cmd.Flags().Lookup("sort"))
 	s.NotNil(cmd.Flags().Lookup("show-labels"))

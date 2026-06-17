@@ -1,5 +1,5 @@
 // Package radar registers the `vizb radar` subcommand: a radar chart. Radar data
-// is non-linear, so --scale and --rotate are intentionally absent.
+// is non-linear, so --scale and --3d-rotate are intentionally absent.
 package radar
 
 import (
@@ -13,7 +13,7 @@ import (
 
 func init() { cli.Register(NewCommand) }
 
-// Options carries only the shared chart flags; no --scale/--rotate.
+// Options carries only the shared chart flags; no --scale/--3d-rotate.
 type Options struct {
 	cli.ChartOptions
 }

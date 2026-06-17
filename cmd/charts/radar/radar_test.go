@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-// RadarSuite verifies the radar command omits --scale/--rotate and bakes a
+// RadarSuite verifies the radar command omits --scale/--3d-rotate and bakes a
 // radar-only selection into the new Settings shape.
 type RadarSuite struct {
 	suite.Suite
@@ -30,7 +30,7 @@ func (s *RadarSuite) TestCommandFlags() {
 	cmd := NewCommand()
 	s.Equal("radar [target]", cmd.Use)
 	s.Nil(cmd.Flags().Lookup("scale"), "radar must not expose --scale")
-	s.Nil(cmd.Flags().Lookup("rotate"), "radar must not expose --rotate")
+	s.Nil(cmd.Flags().Lookup("3d-rotate"), "radar must not expose --3d-rotate")
 	s.NotNil(cmd.Flags().Lookup("swap"))
 	s.NotNil(cmd.Flags().Lookup("sort"))
 }

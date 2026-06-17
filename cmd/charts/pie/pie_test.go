@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-// PieSuite verifies the pie command omits --scale/--rotate (non-linear chart)
+// PieSuite verifies the pie command omits --scale/--3d-rotate (non-linear chart)
 // while keeping the shared chart flags, and bakes a pie-only selection into
 // the new Settings shape.
 type PieSuite struct {
@@ -31,7 +31,7 @@ func (s *PieSuite) TestCommandFlags() {
 	cmd := NewCommand()
 	s.Equal("pie [target]", cmd.Use)
 	s.Nil(cmd.Flags().Lookup("scale"), "pie must not expose --scale")
-	s.Nil(cmd.Flags().Lookup("rotate"), "pie must not expose --rotate")
+	s.Nil(cmd.Flags().Lookup("3d-rotate"), "pie must not expose --3d-rotate")
 	s.NotNil(cmd.Flags().Lookup("swap"))
 	s.NotNil(cmd.Flags().Lookup("sort"))
 	s.NotNil(cmd.Flags().Lookup("show-labels"))

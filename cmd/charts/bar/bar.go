@@ -1,5 +1,5 @@
 // Package bar registers the `vizb bar` subcommand: a bar chart with the full
-// set of linear flags plus --scale and --rotate (3D-only).
+// set of linear flags plus --scale and --3d-rotate (3D-only).
 package bar
 
 import (
@@ -14,7 +14,7 @@ import (
 
 func init() { cli.Register(NewCommand) }
 
-// Options adds the bar-specific flags (--scale, --rotate) on top of the shared
+// Options adds the bar-specific flags (--scale, --3d-rotate) on top of the shared
 // chart options. pie/heatmap/radar omit these, enforced at compile time.
 type Options struct {
 	cli.ChartOptions
@@ -22,11 +22,11 @@ type Options struct {
 	AutoRotate bool
 }
 
-// Bind registers the shared chart flags plus --scale and --rotate.
+// Bind registers the shared chart flags plus --scale and --3d-rotate.
 func (o *Options) Bind(fs *pflag.FlagSet) {
 	o.ChartOptions.Bind(fs)
 	fs.StringVarP(&o.Scale, "scale", "S", "linear", "Scale type (linear, log)")
-	fs.BoolVar(&o.AutoRotate, "rotate", false, "Auto-rotate the 3D chart")
+	fs.BoolVar(&o.AutoRotate, "3d-rotate", false, "Auto-rotate the 3D scene (only applies when z-axis data is present)")
 }
 
 // NewCommand builds the `vizb bar` cobra command.

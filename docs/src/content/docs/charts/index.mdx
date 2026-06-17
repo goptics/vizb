@@ -78,7 +78,7 @@ vizb data.csv -g algo,input_size,variant,run_type -p n/x/y/z -c bar -o out.html
 
 ## Settings
 
-Most settings apply to every chart type. The exceptions are `scale` (log), which only affects cartesian charts, and `rotate` (3D auto-spin), which only applies when bar or line renders in WebGL mode.
+Most settings apply to every chart type. The exceptions are `scale` (log), which only affects cartesian charts, and `3d-rotate` (3D auto-spin), which only applies when bar or line renders in WebGL mode.
 
 | Setting | `bar` | `line` | `pie` | `radar` | `heatmap` |
 |---------|:-----:|:------:|:-----:|:-------:|:---------:|
@@ -86,7 +86,7 @@ Most settings apply to every chart type. The exceptions are `scale` (log), which
 | `labels` / `--show-labels` | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `swap` (axis reorder) | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `scale` log | ✓ | ✓ | ✗ | ✗ | ✗ |
-| `rotate` (3D auto-rotate) | ✓ 3D only | ✓ 3D only | ✗ | ✗ | ✗ |
+| `3d-rotate` (3D auto-rotate) | ✓ 3D only | ✓ 3D only | ✗ | ✗ | ✗ |
 
 To override a setting for a single chart type without affecting the others, use the `--chart <type>:key=val` syntax:
 
