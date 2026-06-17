@@ -12,16 +12,10 @@ vi.mock('../components/settings/ScaleControl.vue', () => ({ default: { name: 'Sc
 vi.mock('../components/settings/ShowLabelsControl.vue', () => ({ default: { name: 'ShowLabelsControl' } }))
 vi.mock('../components/settings/AutoRotateControl.vue', () => ({ default: { name: 'AutoRotateControl' } }))
 vi.mock('../components/settings/SwapControl.vue', () => ({ default: { name: 'SwapControl' } }))
-// The chart-type picker branches between SelectionTabs and Selector. The
-// panel's threshold logic is covered by `shouldUseTabPicker` tests below, so
-// the template branch is type-checked but not rendered here.
-vi.mock('../components/SelectionTabs.vue', () => ({ default: { name: 'SelectionTabs' } }))
 vi.mock('../components/Selector.vue', () => ({ default: { name: 'Selector' } }))
 vi.mock('../components/SettingHeader.vue', () => ({ default: { name: 'SettingHeader' } }))
 
-const { getRenderableFields, shouldUseTabPicker } = await import(
-  '../composables/settings/fieldRegistry'
-)
+const { getRenderableFields } = await import('../composables/settings/fieldRegistry')
 
 // SettingsPanel.vue is declarative: it walks `Object.keys(activeConfig)` via
 // `getRenderableFields` and renders the registered control for each match. The
@@ -156,26 +150,3 @@ describe('SettingsPanel field selection', () => {
   })
 })
 
-// The chart-type picker switches from a tabs row to an icon+name combobox
-// when the dataset exposes more than CHART_PICKER_TAB_THRESHOLD chart types.
-// The threshold function is a pure unit; the template branch in
-// SettingsPanel.vue uses it as the only chart-type-aware conditional, so
-// regression here would silently change the picker UI for every dataset.
-describe('SettingsPanel chart-type picker threshold', () => {
-  it('returns true for ≤ 3 chart types (use tabs row)', () => {
-    expect(shouldUseTabPicker(1)).toBe(true)
-    expect(shouldUseTabPicker(2)).toBe(true)
-    expect(shouldUseTabPicker(3)).toBe(true)
-  })
-
-  it('returns false for > 3 chart types (use combobox)', () => {
-    expect(shouldUseTabPicker(4)).toBe(false)
-    expect(shouldUseTabPicker(5)).toBe(false)
-    expect(shouldUseTabPicker(6)).toBe(false)
-  })
-
-  it('threshold is exactly 3 (boundary documented in pickerRule.ts)', () => {
-    expect(shouldUseTabPicker(3)).toBe(true)
-    expect(shouldUseTabPicker(4)).toBe(false)
-  })
-})
