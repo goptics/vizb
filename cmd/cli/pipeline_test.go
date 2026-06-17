@@ -8,7 +8,9 @@ import (
 
 	config_charts "github.com/goptics/vizb/config/charts"
 	barchart "github.com/goptics/vizb/config/charts/bar"
+	linechart "github.com/goptics/vizb/config/charts/line"
 	"github.com/goptics/vizb/pkg/parser"
+	_ "github.com/goptics/vizb/pkg/parser/csv"
 	"github.com/goptics/vizb/shared"
 	"github.com/goptics/vizb/testutil"
 	"github.com/spf13/cobra"
@@ -178,6 +180,163 @@ func (s *PipelineSuite) TestRunSingleChartEmptyConfigs() {
 
 	_, err := os.Stat(out)
 	s.True(os.IsNotExist(err), "empty configs should be a no-op (no file written)")
+}
+
+func (s *PipelineSuite) TestRunLinearDatasetPassthrough() {
+	dir := s.T().TempDir()
+	input := filepath.Join(dir, "baked.json")
+	testutil.WriteJSON(s.T(), input, shared.Dataset{
+		Name: "Baked",
+		Settings: []config_charts.ChartConfig{
+			&linechart.Config{Type: "line", Scale: "linear"},
+		},
+		Data: []shared.DataPoint{{Name: "P1", XAxis: "1", YAxis: "100"}},
+	})
+	out := filepath.Join(dir, "out.json")
+
+	barCfg := barchart.Materialise(barchart.Flags{Scale: "log"}, nil)
+	common := CommonOptions{Parser: "go", GroupPattern: "y", TimeUnit: "ns", MemUnit: "B", OutputFile: out}
+
+	oldStdout, oldStderr := os.Stdout, os.Stderr
+	devnull, _ := os.Open(os.DevNull)
+	os.Stdout, os.Stderr = devnull, devnull
+	defer func() { os.Stdout, os.Stderr = oldStdout, oldStderr; devnull.Close() }()
+
+	RunLinear(&cobra.Command{}, []string{input}, common, []config_charts.ChartConfig{barCfg}, true)
+
+	ds := testutil.ReadDataset(s.T(), out)
+	s.Require().Len(ds.Settings, 1)
+	s.Equal("bar", ds.Settings[0].ChartType())
+	typed, ok := ds.Settings[0].(*barchart.Config)
+	s.Require().True(ok)
+	s.Equal("log", typed.Scale)
+}
+
+func (s *PipelineSuite) TestRunLinearPreservesDatasetOnRoot() {
+	dir := s.T().TempDir()
+	input := filepath.Join(dir, "baked.json")
+	testutil.WriteJSON(s.T(), input, shared.Dataset{
+		Name: "Baked",
+		Settings: []config_charts.ChartConfig{
+			barchart.Materialise(barchart.Flags{Scale: "linear"}, nil),
+			&linechart.Config{Type: "line", Scale: "log"},
+		},
+		Data: []shared.DataPoint{{Name: "P1", XAxis: "1", YAxis: "100"}},
+	})
+	out := filepath.Join(dir, "out.json")
+
+	barCfg := barchart.Materialise(barchart.Flags{Scale: "log"}, nil)
+	common := CommonOptions{Parser: "go", GroupPattern: "y", TimeUnit: "ns", MemUnit: "B", OutputFile: out}
+
+	oldStdout, oldStderr := os.Stdout, os.Stderr
+	devnull, _ := os.Open(os.DevNull)
+	os.Stdout, os.Stderr = devnull, devnull
+	defer func() { os.Stdout, os.Stderr = oldStdout, oldStderr; devnull.Close() }()
+
+	RunLinear(&cobra.Command{}, []string{input}, common, []config_charts.ChartConfig{barCfg}, false)
+
+	ds := testutil.ReadDataset(s.T(), out)
+	s.Require().Len(ds.Settings, 2)
+	s.Equal("bar", ds.Settings[0].ChartType())
+	s.Equal("line", ds.Settings[1].ChartType())
+	lineCfg, ok := ds.Settings[1].(*linechart.Config)
+	s.Require().True(ok)
+	s.Equal("log", lineCfg.Scale)
+}
+
+func (s *PipelineSuite) TestRunLinearAutoParser() {
+	csvFile := s.writeFile("data.csv", "name,value\na,10\nb,20\n")
+	out := filepath.Join(s.T().TempDir(), "out.json")
+	common := CommonOptions{
+		Parser:       "auto",
+		GroupPattern: "x",
+		TimeUnit:     "ns",
+		MemUnit:      "B",
+		OutputFile:   out,
+	}
+	barCfg := barchart.Materialise(barchart.Flags{Scale: "linear"}, nil)
+
+	oldStdout, oldStderr := os.Stdout, os.Stderr
+	devnull, _ := os.Open(os.DevNull)
+	os.Stdout, os.Stderr = devnull, devnull
+	defer func() { os.Stdout, os.Stderr = oldStdout, oldStderr; devnull.Close() }()
+
+	RunLinear(&cobra.Command{}, []string{csvFile}, common, []config_charts.ChartConfig{barCfg}, false)
+
+	s.FileExists(out)
+}
+
+func (s *PipelineSuite) TestPrepareDataAggregatesCSV() {
+	csvFile := s.writeFile("grouped.csv", "name,sells,date\nalpha,10,2024-01\nalpha,20,2024-01\nbeta,5,2025-02\n")
+	cfg := parser.Config{GroupPattern: "name/x", Group: []string{"name", "date"}}
+
+	oldStdout, oldStderr := os.Stdout, os.Stderr
+	devnull, _ := os.Open(os.DevNull)
+	os.Stdout, os.Stderr = devnull, devnull
+	defer func() { os.Stdout, os.Stderr = oldStdout, oldStderr; devnull.Close() }()
+
+	results := prepareData(csvFile, "csv", cfg)
+	s.Len(results, 2)
+	s.Equal("alpha", results[0].Name)
+	s.Equal("2024-01", results[0].XAxis)
+	s.Equal(30.0, results[0].Stats[0].Value)
+}
+
+func (s *PipelineSuite) TestPrepareDataUnknownParserExits() {
+	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
+	defer restore()
+
+	s.Panics(func() {
+		prepareData(s.writeFile("x.csv", "a,b\n1,2"), "nope", parser.Config{})
+	})
+	s.True(*exitCalled)
+}
+
+func (s *PipelineSuite) TestResolveInputStdin() {
+	origStdin := os.Stdin
+	defer func() { os.Stdin = origStdin }()
+
+	oldStdout, oldStderr := os.Stdout, os.Stderr
+	devnull, _ := os.Open(os.DevNull)
+	os.Stdout, os.Stderr = devnull, devnull
+	defer func() { os.Stdout, os.Stderr = oldStdout, oldStderr; devnull.Close() }()
+
+	stdinFile, err := os.CreateTemp("", "stdin_linear")
+	s.Require().NoError(err)
+	defer os.Remove(stdinFile.Name())
+
+	s.Require().NoError(os.WriteFile(stdinFile.Name(), []byte(
+		"BenchmarkExample-8    1000000    1234 ns/op    1000 B/op    10 allocs/op\n",
+	), 0644))
+	f, err := os.Open(stdinFile.Name())
+	s.Require().NoError(err)
+	os.Stdin = f
+	defer f.Close()
+
+	out := filepath.Join(s.T().TempDir(), "out.json")
+	common := CommonOptions{Parser: "go", GroupPattern: "y", TimeUnit: "ns", MemUnit: "B", OutputFile: out}
+	barCfg := barchart.Materialise(barchart.Flags{Scale: "linear"}, nil)
+
+	RunLinear(&cobra.Command{}, nil, common, []config_charts.ChartConfig{barCfg}, false)
+	s.FileExists(out)
+}
+
+func (s *PipelineSuite) TestResolveInputNoArgsShowsHelp() {
+	origStdin := os.Stdin
+	defer func() { os.Stdin = origStdin }()
+
+	// /dev/null is a character device → not treated as piped stdin.
+	devnull, err := os.Open(os.DevNull)
+	s.Require().NoError(err)
+	os.Stdin = devnull
+	defer devnull.Close()
+
+	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
+	defer restore()
+
+	cmd := &cobra.Command{Use: "test"}
+	s.Panics(func() { resolveInput(cmd, nil) })
+	s.True(*exitCalled)
 }
 
 func (s *PipelineSuite) TestWriteStdinPipedInputs() {

@@ -155,6 +155,11 @@ func (s *ChartSpecSuite) TestParseOverridesNoLimitedChartCheck() {
 	s.Require().Contains(got, "pie")
 }
 
+func (s *ChartSpecSuite) TestParseOverridesInvalidSwap() {
+	_, err := ParseOverrides([]string{"bar:swap=abc"}, []string{"bar"}, s.xynAxes)
+	s.Error(err)
+}
+
 func (s *ChartSpecSuite) TestValidateSwap() {
 	s.Run("empty swap is always valid", func() {
 		s.NoError(ValidateSwap("", s.xynAxes))
@@ -164,6 +169,9 @@ func (s *ChartSpecSuite) TestValidateSwap() {
 	})
 	s.Run("non-permutation fails", func() {
 		s.Error(ValidateSwap("abc", s.xynAxes))
+	})
+	s.Run("unknown axis char fails", func() {
+		s.Error(ValidateSwap("xyz", s.xynAxes))
 	})
 	s.Run("no axes accepts any non-empty swap", func() {
 		s.NoError(ValidateSwap("anything", nil))

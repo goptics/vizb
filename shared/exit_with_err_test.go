@@ -127,6 +127,21 @@ func (s *ExitWithErrorSuite) TestExitWithErrorStderrFailure() {
 	s.True(*exitCalled, "OsExit should be called even if stderr write fails")
 }
 
+func (s *ExitWithErrorSuite) TestPrintWarning() {
+	oldStderr := os.Stderr
+	r, w, _ := os.Pipe()
+	os.Stderr = w
+
+	PrintWarning("disk nearly full")
+
+	w.Close()
+	os.Stderr = oldStderr
+
+	var buf bytes.Buffer
+	io.Copy(&buf, r)
+	s.Contains(buf.String(), "disk nearly full")
+}
+
 func TestExitWithErrorSuite(t *testing.T) {
 	suite.Run(t, new(ExitWithErrorSuite))
 }

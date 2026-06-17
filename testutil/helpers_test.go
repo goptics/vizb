@@ -1,6 +1,8 @@
 package testutil
 
 import (
+	"fmt"
+	"os"
 	"testing"
 
 	"github.com/goptics/vizb/shared"
@@ -28,6 +30,16 @@ func (s *HelpersSuite) TestWriteBenchFileAndReadDataset() {
 	ds := ReadDataset(s.T(), out)
 	s.Equal("Test", ds.Name)
 	s.FileExists(input)
+}
+
+func (s *HelpersSuite) TestCaptureStdout() {
+	out := CaptureStdout(func() { fmt.Print("hello-capture") })
+	s.Contains(out, "hello-capture")
+}
+
+func (s *HelpersSuite) TestCaptureStderr() {
+	out := CaptureStderr(func() { fmt.Fprint(os.Stderr, "warn-capture") })
+	s.Contains(out, "warn-capture")
 }
 
 func TestHelpersSuite(t *testing.T) {

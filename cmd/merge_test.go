@@ -86,6 +86,71 @@ func (s *MergeSuite) TestMergeNoArgsExits() {
 	s.True(*exitCalled)
 }
 
+func (s *MergeSuite) TestMergeEmptyDirectoryExits() {
+	dir := s.T().TempDir()
+
+	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
+	defer restore()
+
+	rootCmd.SetArgs([]string{"merge", "-o", filepath.Join(dir, "out.json"), dir})
+	s.Panics(func() { _ = rootCmd.Execute() })
+	s.True(*exitCalled)
+}
+
+func (s *MergeSuite) TestMergeDefaultTempOutput() {
+	dir := s.T().TempDir()
+	file1 := filepath.Join(dir, "bench1.json")
+	testutil.WriteJSON(s.T(), file1, shared.Dataset{Name: "Bench1", Data: []shared.DataPoint{{Name: "T1"}}})
+
+	outStr := testutil.CaptureStdout(func() {
+		rootCmd.SetArgs([]string{"merge", file1})
+		s.Require().NoError(rootCmd.Execute())
+	})
+
+	s.Contains(outStr, "Generated merged JSON")
+}
+
+func (s *MergeSuite) TestMergeOutputWithoutExtension() {
+	dir := s.T().TempDir()
+	file1 := filepath.Join(dir, "bench1.json")
+	testutil.WriteJSON(s.T(), file1, shared.Dataset{Name: "Bench1", Data: []shared.DataPoint{{Name: "T1"}}})
+	out := filepath.Join(dir, "merged")
+
+	rootCmd.SetArgs([]string{"merge", "-o", out, file1})
+	s.Require().NoError(rootCmd.Execute())
+
+	s.FileExists(out + ".json")
+}
+
+func (s *MergeSuite) TestMergeDirectoryWithNoJSONExits() {
+	dir := s.T().TempDir()
+	s.Require().NoError(os.WriteFile(filepath.Join(dir, "notes.txt"), []byte("x"), 0644))
+
+	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
+	defer restore()
+
+	rootCmd.SetArgs([]string{"merge", "-o", filepath.Join(dir, "out.json"), dir})
+	s.Panics(func() { _ = rootCmd.Execute() })
+	s.True(*exitCalled)
+}
+
+func (s *MergeSuite) TestMergeSkipsInaccessiblePath() {
+	dir := s.T().TempDir()
+	file1 := filepath.Join(dir, "bench1.json")
+	testutil.WriteJSON(s.T(), file1, shared.Dataset{Name: "Bench1", Data: []shared.DataPoint{{Name: "T1"}}})
+	out := filepath.Join(dir, "merged.json")
+
+	stderr := testutil.CaptureStderr(func() {
+		rootCmd.SetArgs([]string{"merge", "-o", out, file1, "/nonexistent/bench.json"})
+		s.Require().NoError(rootCmd.Execute())
+	})
+
+	s.Contains(stderr, "Warning")
+	s.Contains(stderr, "cannot access")
+	parsed := s.readDatasets(out)
+	s.Require().Len(parsed, 1)
+}
+
 func (s *MergeSuite) TestMergeNoValidFilesExits() {
 	dir := s.T().TempDir()
 	invalid := filepath.Join(dir, "invalid.json")

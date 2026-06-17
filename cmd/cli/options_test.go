@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/goptics/vizb/testutil"
+	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -53,6 +54,34 @@ func (s *OptionsSuite) TestParseConfigMapsFields() {
 	s.Equal("KB", cfg.MemUnit)
 	s.Equal("us", cfg.TimeUnit)
 	s.Equal("M", cfg.NumberUnit)
+}
+
+func (s *OptionsSuite) TestLinearOptionsBind() {
+	var common CommonOptions
+	commonFS := pflag.NewFlagSet("common", pflag.ContinueOnError)
+	common.Bind(commonFS)
+	s.NotNil(commonFS.Lookup("name"))
+	s.NotNil(commonFS.Lookup("parser"))
+	s.NotNil(commonFS.Lookup("group-pattern"))
+
+	var linear LinearOptions
+	linearFS := pflag.NewFlagSet("linear", pflag.ContinueOnError)
+	linear.Bind(linearFS)
+	s.NotNil(linearFS.Lookup("sort"))
+	s.NotNil(linearFS.Lookup("show-labels"))
+	s.NotNil(linearFS.Lookup("name"))
+
+	var chart ChartOptions
+	chartFS := pflag.NewFlagSet("chart", pflag.ContinueOnError)
+	chart.Bind(chartFS)
+	s.NotNil(chartFS.Lookup("swap"))
+	s.NotNil(chartFS.Lookup("sort"))
+}
+
+func (s *OptionsSuite) TestValidateParserInvalid() {
+	err := validateParser("nope")
+	s.Error(err)
+	s.Contains(err.Error(), "unknown parser")
 }
 
 func (s *OptionsSuite) TestValidateScale() {

@@ -364,6 +364,16 @@ func (s *OsSuite) TestEdgeCases() {
 	})
 }
 
+func (s *OsSuite) TestMustOpenFileMissingExits() {
+	restore, exitCalled := TrapOsExitPanic(s.T())
+	defer restore()
+
+	s.Panics(func() {
+		MustOpenFile(filepath.Join(s.T().TempDir(), "missing.txt"))
+	})
+	s.True(*exitCalled)
+}
+
 func TestOsSuite(t *testing.T) {
 	suite.Run(t, new(OsSuite))
 }

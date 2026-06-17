@@ -72,3 +72,14 @@ func TestDetectParser(t *testing.T) {
 		})
 	}
 }
+
+func TestLooksLikeCSVEdgeCases(t *testing.T) {
+	t.Run("single line is not CSV", func(t *testing.T) {
+		path := writeDetectFile(t, "one.txt", "just one line")
+		assert.Equal(t, "go", DetectParser(path))
+	})
+	t.Run("header only without data rows is not CSV", func(t *testing.T) {
+		path := writeDetectFile(t, "header.txt", "a,b,c\n")
+		assert.Equal(t, "go", DetectParser(path))
+	})
+}

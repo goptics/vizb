@@ -60,6 +60,13 @@ tasks:
       - go test -count=1 ./...
       - cd ui; pnpm test; cd -
 
+  # Pragmatic Go coverage (excludes main.go, vizb-ui.gen.go, pkg/style from review).
+  test:cover:
+    desc: Go cross-package coverage report
+    cmds:
+      - go test -count=1 -coverpkg=./... -coverprofile=coverage.out ./...
+      - go tool cover -func=coverage.out | tail -1
+
   lint:
     desc: Run linter
     cmds:

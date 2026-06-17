@@ -19,6 +19,27 @@ func makeBench(tag, name, timestamp string, data []DataPoint) Dataset {
 	}
 }
 
+func (s *MergeSuite) TestMergeInjectsTagIntoEmptyDimension() {
+	bench := makeBench("v2", "DS", "2026-01-01T00:00:00Z", []DataPoint{
+		{XAxis: "", YAxis: "10", Stats: []Stat{{Type: "time", Value: 1}}},
+	})
+
+	result := MergeDatasets([]Dataset{bench}, DimensionXAxis)
+	s.Require().Len(result, 1)
+	s.Equal("v2", result[0].Data[0].XAxis)
+}
+
+func (s *MergeSuite) TestDeepCloneDatasetCopiesStats() {
+	bench1 := makeBench("1", "D", "t1", []DataPoint{{Name: "p1", Stats: []Stat{{Type: "time", Value: 1}}}})
+	bench2 := makeBench("2", "D", "t2", []DataPoint{{Name: "p2", Stats: []Stat{{Type: "time", Value: 2}}}})
+
+	result := MergeDatasets([]Dataset{bench1, bench2}, DimensionName)
+	s.Require().Len(result, 1)
+	s.Require().Len(result[0].Data, 2)
+	s.Equal(1.0, result[0].Data[0].Stats[0].Value)
+	s.Equal(2.0, result[0].Data[1].Stats[0].Value)
+}
+
 func (s *MergeSuite) TestMergeDatasetsSmartMerge() {
 	bench1 := makeBench("1", "My Dataset", "2026-05-13T10:00:00Z", []DataPoint{
 		{Name: "", XAxis: "speed", YAxis: "1e4"},

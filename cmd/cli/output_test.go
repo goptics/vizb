@@ -152,6 +152,51 @@ func (s *OutputSuite) TestConvertToDataset() {
 		s.Require().NoError(os.WriteFile(invalid, []byte("not json"), 0644))
 		s.Nil(convertToDataset(invalid))
 	})
+
+	s.Run("plain text returns nil", func() {
+		plain := filepath.Join(dir, "bench.txt")
+		s.Require().NoError(os.WriteFile(plain, []byte("BenchmarkFoo-8 1000 1234 ns/op"), 0644))
+		s.Nil(convertToDataset(plain))
+	})
+}
+
+func (s *OutputSuite) TestParseDatasetFileRoundTrip() {
+	dir := s.T().TempDir()
+
+	s.Run("single object", func() {
+		path := filepath.Join(dir, "one.json")
+		testutil.WriteJSON(s.T(), path, shared.Dataset{Name: "One", Data: []shared.DataPoint{{Name: "A"}}})
+		got, err := ParseDatasetFile(path)
+		s.Require().NoError(err)
+		s.Require().Len(got, 1)
+		s.Equal("One", got[0].Name)
+	})
+
+	s.Run("array", func() {
+		path := filepath.Join(dir, "many.json")
+		testutil.WriteJSON(s.T(), path, []shared.Dataset{
+			{Name: "A"},
+			{Name: "B"},
+		})
+		got, err := ParseDatasetFile(path)
+		s.Require().NoError(err)
+		s.Require().Len(got, 2)
+	})
+
+	s.Run("empty file", func() {
+		path := filepath.Join(dir, "empty.json")
+		s.Require().NoError(os.WriteFile(path, nil, 0644))
+		_, err := ParseDatasetFile(path)
+		s.Error(err)
+		s.Contains(err.Error(), "empty")
+	})
+
+	s.Run("not JSON", func() {
+		path := filepath.Join(dir, "bad.json")
+		s.Require().NoError(os.WriteFile(path, []byte("not json"), 0644))
+		_, err := ParseDatasetFile(path)
+		s.Error(err)
+	})
 }
 
 func TestOutputSuite(t *testing.T) {

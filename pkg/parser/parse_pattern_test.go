@@ -405,6 +405,22 @@ func (s *ParsePatternSuite) TestGroupAxes() {
 	}
 }
 
+func (s *ParsePatternSuite) TestGroupBenchmarkNameRegex() {
+	cfg := Config{GroupRegex: `(?P<name>[^/]+)/(?P<xAxis>[^/]+)`}
+	got, err := GroupBenchmarkName("alpha/2024", cfg)
+	s.Require().NoError(err)
+	s.Equal("alpha", got["name"])
+	s.Equal("2024", got["xAxis"])
+}
+
+func (s *ParsePatternSuite) TestGroupBenchmarkNamePatternFallback() {
+	cfg := Config{GroupPattern: "name/xAxis"}
+	got, err := GroupBenchmarkName("alpha/2024", cfg)
+	s.Require().NoError(err)
+	s.Equal("alpha", got["name"])
+	s.Equal("2024", got["xAxis"])
+}
+
 func TestParsePatternSuite(t *testing.T) {
 	suite.Run(t, new(ParsePatternSuite))
 }

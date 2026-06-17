@@ -70,6 +70,18 @@ func (s *DatasetSuite) TestDatasetUnmarshalJSONDispatchesByType() {
 	s.False(hasScale, "pie.Config should not have a Scale field")
 }
 
+func (s *DatasetSuite) TestDatasetUnmarshalJSONLegacySettingsObject() {
+	raw := []byte(`{
+		"name":"legacy",
+		"settings":{"charts":["bar"],"scale":"linear"},
+		"data":[]
+	}`)
+
+	var ds shared.Dataset
+	s.Require().NoError(json.Unmarshal(raw, &ds))
+	s.Nil(ds.Settings, "legacy object settings should stay nil for MigrateDataset")
+}
+
 func (s *DatasetSuite) TestDatasetUnmarshalJSONEmptySettings() {
 	raw := []byte(`{"name":"bench","data":[]}`)
 
