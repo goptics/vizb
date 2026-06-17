@@ -9,6 +9,8 @@ import (
 
 	config_charts "github.com/goptics/vizb/config/charts"
 	barchart "github.com/goptics/vizb/config/charts/bar"
+	linechart "github.com/goptics/vizb/config/charts/line"
+	"github.com/goptics/vizb/pkg/template"
 	"github.com/goptics/vizb/shared"
 	"github.com/stretchr/testify/suite"
 )
@@ -40,7 +42,7 @@ func (s *UISuite) SetupTest() {
 
 	// Reset the ui flag bindings so an un-passed flag doesn't inherit a prior
 	// test's value (cobra retains bound values between Execute calls).
-	uiOpts = uiOptions{Charts: []string{"bar", "line", "pie", "heatmap"}}
+	uiOpts = uiOptions{Charts: shared.DefaultChartTypes}
 }
 
 func (s *UISuite) TearDownTest() {
@@ -112,6 +114,19 @@ func (s *UISuite) TestAPIFlag() {
 	s.Contains(html, "https://example.com/bench.json")
 	s.Contains(html, "<html")
 	s.NotContains(html, `"name":"Bench`)
+	s.Equal([]string{"bar", "line", "pie"}, s.extractVIZBCharts(html))
+	s.False(s.htmlContains3DChunk(html), "remote UI without --3d must not bundle the 3D chunk")
+}
+
+func (s *UISuite) TestAPIFlagWith3D() {
+	dir := s.T().TempDir()
+	out := filepath.Join(dir, "remote-3d.html")
+
+	rootCmd.SetArgs([]string{"ui", "-o", out, "--data-url", "https://example.com/bench.json", "--3d"})
+	s.Require().NoError(rootCmd.Execute())
+	s.Equal(0, s.exitCode)
+
+	s.True(s.htmlContains3DChunk(s.read(out)), "remote UI with --3d must bundle the 3D chunk")
 }
 
 func (s *UISuite) TestAPIFlagInvalidURLExits() {
@@ -196,6 +211,54 @@ func (s *UISuite) extractVIZBDataArray(html string) []any {
 	var data []any
 	s.Require().NoError(json.Unmarshal([]byte(html[start:start+end]), &data))
 	return data
+}
+
+func (s *UISuite) extractVIZBCharts(html string) []string {
+	const prefix = "window.VIZB_CHARTS = "
+	start := strings.Index(html, prefix)
+	s.Require().NotEqual(-1, start, "expected window.VIZB_CHARTS in HTML")
+	start += len(prefix)
+	end := strings.Index(html[start:], ";")
+	s.Require().NotEqual(-1, end, "expected ';' after window.VIZB_CHARTS")
+	var charts []string
+	s.Require().NoError(json.Unmarshal([]byte(html[start:start+end]), &charts))
+	return charts
+}
+
+func (s *UISuite) htmlContains3DChunk(html string) bool {
+	root3D := template.VizbChartRoots["3d"]
+	s.Require().NotEmpty(root3D, "generated VizbChartRoots must contain 3d")
+	return strings.Contains(html, `"`+root3D+`"`)
+}
+
+// TestRunUI_FiltersChartsOnExplicitFlag verifies that `-c bar` trims embedded
+// settings to match the bundled chart list.
+func (s *UISuite) TestRunUI_FiltersChartsOnExplicitFlag() {
+	dir := s.T().TempDir()
+	input := filepath.Join(dir, "multi.json")
+	s.writeJSON(input, shared.Dataset{
+		Name: "Test",
+		Settings: []config_charts.ChartConfig{
+			s.barFromJSON(map[string]any{"type": "bar", "scale": "linear"}),
+			&linechart.Config{Type: "line", Scale: "linear"},
+		},
+		Data: []shared.DataPoint{{Name: "Test1", XAxis: "1", YAxis: "100"}},
+	})
+	out := filepath.Join(dir, "output.html")
+
+	rootCmd.SetArgs([]string{"ui", "-o", out, "-c", "bar", input})
+	s.Require().NoError(rootCmd.Execute())
+	s.Equal(0, s.exitCode)
+
+	html := s.read(out)
+	s.Equal([]string{"bar"}, s.extractVIZBCharts(html))
+
+	datasets := s.extractVIZBDataArray(html)
+	s.Require().Len(datasets, 1)
+	ds := datasets[0].(map[string]any)
+	settings := ds["settings"].([]any)
+	s.Require().Len(settings, 1)
+	s.Equal("bar", settings[0].(map[string]any)["type"])
 }
 
 // TestRunUI_AppliesOverrides verifies that `--chart bar:swap=yxn` on the

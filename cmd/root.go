@@ -29,8 +29,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// allChartTypes is the default/validation set for the root --charts flag.
-var allChartTypes = []string{"bar", "line", "pie", "heatmap", "radar"}
+// defaultChartTypes and validChartTypes alias shared constants for the root
+// --charts flag: bar/line/pie by default, all five accepted when explicit.
+var (
+	defaultChartTypes = shared.DefaultChartTypes
+	validChartTypes   = shared.ValidChartTypes
+)
 
 // rootOptions holds the root command's flags: the shared linear data flags plus
 // the multi-chart selection (--charts) and the per-chart --chart override specs.
@@ -67,7 +71,7 @@ func Execute() {
 
 func init() {
 	rootOpts.LinearOptions.Bind(rootCmd.Flags())
-	rootCmd.Flags().StringSliceVarP(&rootOpts.Charts, "charts", "c", allChartTypes, "Chart types to generate (bar, line, pie, heatmap, radar)")
+	rootCmd.Flags().StringSliceVarP(&rootOpts.Charts, "charts", "c", defaultChartTypes, "Chart types to generate (bar, line, pie, heatmap, radar)")
 	rootCmd.Flags().StringArrayVar(&rootOpts.ChartSpecs, "chart", nil,
 		"Per-chart settings override: <type>:<key>=<val>(,<key>=<val>)* or bare flags (labels, 3d-rotate). "+
 			"Keys: swap, sort, scale, labels, 3d-rotate. E.g. --chart bar:swap=yxn,sort=asc --chart pie:labels")
@@ -161,8 +165,8 @@ func validateRootOptions() {
 	utils.ApplyValidationRules([]utils.ValidationRule{{
 		Label:        "charts",
 		SliceValue:   &rootOpts.Charts,
-		ValidSet:     allChartTypes,
+		ValidSet:     validChartTypes,
 		Normalizer:   strings.ToLower,
-		SliceDefault: allChartTypes,
+		SliceDefault: defaultChartTypes,
 	}})
 }

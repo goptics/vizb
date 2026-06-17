@@ -2,6 +2,12 @@ package shared
 
 import "slices"
 
+// ValidChartTypes is every chart type the CLI accepts via --charts.
+var ValidChartTypes = []string{"bar", "line", "pie", "heatmap", "radar"}
+
+// DefaultChartTypes is the --charts default when the user does not pass -c.
+var DefaultChartTypes = []string{"bar", "line", "pie"}
+
 // chartNeeds3D reports whether a selected chart type can ever render in 3D.
 // Only bar and line have a 3D form; pie and heatmap always render 2D (pie folds
 // dimensions into per-dimension pies, heatmap folds z onto the legend). This

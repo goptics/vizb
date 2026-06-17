@@ -46,7 +46,7 @@ func (s *RootSuite) SetupTest() {
 	rootOpts.GroupPattern = "x"
 	rootOpts.MemUnit = "B"
 	rootOpts.TimeUnit = "ns"
-	rootOpts.Charts = allChartTypes
+	rootOpts.Charts = defaultChartTypes
 	s.origOsExit = shared.OsExit
 }
 

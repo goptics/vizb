@@ -119,12 +119,14 @@ ones you select are embedded at generation time.
 | Selection | Approx. file size |
 |-----------|------------------|
 | `bar` only | ~400 kB |
-| `bar,line,pie,heatmap,radar` (default, 2D data) | ~445 kB |
-| `bar` or `line` with z-axis data | ~570 kB |
+| `bar,line,pie` (default, 2D data) | ~400 kB |
+| `bar,line,pie,heatmap,radar` | ~445 kB |
+| `bar` or `line` with z-axis data (embedded JSON) | ~570 kB |
 
-The 3D engine (echarts-gl, ~380 kB encoded) is the heaviest component. Vizb includes
-it automatically when your data has a z-axis and `bar` or `line` is selected — and
-omits it otherwise, even at the default five-chart selection.
+The 3D engine (echarts-gl, ~380 kB encoded) is the heaviest component. For embedded
+data, Vizb includes it automatically when the dataset has a z-axis and `bar` or
+`line` is selected. For `vizb ui --data-url`, pass `--3d` to opt in — the remote
+shape is unknown at build time.
 
 To reduce file size, pass `--charts` to bundle only the renderers you need:
 
@@ -135,8 +137,8 @@ vizb bench.txt -c bar,line -o output.html  # ~415 kB
 
 <Aside type="tip">
   For sharing or deploying reports, use `--charts` to include only the charts your
-  audience needs. The default bundles all five 2D renderers, which is fine for local
-  exploration.
+  audience needs. The default bundles bar, line, and pie — add heatmap or radar
+  with `-c` when you need them.
 </Aside>
 
 ## Next Steps

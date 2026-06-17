@@ -181,6 +181,9 @@ Vizb auto-detects the input format:
 6. **Build** — assemble `Dataset` struct with metadata and settings
 7. **Prune** — `SelectChunks` (`pkg/template/chunks.go`) walks the chunk reference
    graph built at Vite build time and keeps only chunks reachable from the selected
-   chart renderers. The 3D engine is gated separately: included when `--charts`
-   contains `bar` or `line` and data has a z-axis.
-8. **Output** — JSON (`json.Marshal`) or HTML (Vue template + embedded JSON + pruned chunk map)
+   chart renderers (default: `bar,line,pie`). The 3D engine is gated separately:
+   included when `--charts` contains `bar` or `line` and embedded data has a z-axis,
+   or when `vizb ui --data-url` is run with `--3d`.
+8. **Output** — JSON (`json.Marshal`) or HTML (Vue template + embedded JSON +
+   `VIZB_CHARTS` + pruned chunk map). The UI intersects each dataset's `settings`
+   with `VIZB_CHARTS` on load so pruned chart types never appear as tabs.

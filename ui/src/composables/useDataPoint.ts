@@ -1,6 +1,7 @@
 import { ref, shallowRef, markRaw, reactive, computed, nextTick } from 'vue'
 import type { DataSet, DataPoint, ChartType } from '../types'
 import type { Arrangement } from './useChartPipeline'
+import { filterDataSetSettings } from '../lib/filterDataSetSettings'
 import { resetColor, isValidIndex, datasetDimension } from '../lib/utils'
 import { useSettingsStore } from './useSettingsStore'
 
@@ -79,7 +80,11 @@ getDataSets()
     // and never mutated in place, so dropping per-row reactivity is the
     // intended perf trade-off.
     const raw = Array.isArray(data) ? data : [data]
-    dataSets.value = raw.map((ds) => reactive({ ...ds, data: markRaw(ds.data) }))
+    const allowed = window.VIZB_CHARTS
+    dataSets.value = raw.map((ds) => {
+      const filtered = filterDataSetSettings(ds, allowed)
+      return reactive({ ...filtered, data: markRaw(filtered.data) })
+    })
   })
   .catch((err: unknown) => {
     loadError.value = err instanceof Error ? err.message : String(err)

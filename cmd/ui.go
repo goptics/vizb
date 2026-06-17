@@ -24,6 +24,7 @@ type uiOptions struct {
 	Charts     []string
 	ChartSpecs []string
 	DataURL    string
+	Enable3D   bool
 }
 
 var uiOpts uiOptions
@@ -48,8 +49,9 @@ func init() {
 	uiCmd.Flags().StringVarP(&uiOpts.DataURL, "data-url", "U", "", "URL to fetch DataSet JSON from at runtime (no input file needed)")
 	// --charts lets `vizb ui` prune chart chunks (incl. --data-url, where it's the
 	// only source of the selection since the data is fetched at runtime).
-	uiCmd.Flags().StringSliceVarP(&uiOpts.Charts, "charts", "c", []string{"bar", "line", "pie", "heatmap"}, "Chart types to bundle (bar, line, pie, heatmap)")
+	uiCmd.Flags().StringSliceVarP(&uiOpts.Charts, "charts", "c", shared.DefaultChartTypes, "Chart types to bundle (bar, line, pie, heatmap, radar)")
 	uiCmd.Flags().StringArrayVar(&uiOpts.ChartSpecs, "chart", nil, "Per-chart type settings override: <type>:<key>=<val>,... (repeatable)")
+	uiCmd.Flags().BoolVar(&uiOpts.Enable3D, "3d", false, "Bundle the 3D renderer for --data-url (remote data shape is unknown at build time)")
 }
 
 func runUI(cmd *cobra.Command, args []string) {
@@ -69,12 +71,12 @@ func runUI(cmd *cobra.Command, args []string) {
 	defer cli.HandleOutputResult(f, uiOpts.OutputFile)
 
 	if uiOpts.DataURL != "" {
-		// No data at generation time: --charts is the authoritative selection, and
-		// 3D is kept whenever a 3D-capable type (bar/line) is bundled, since the
-		// remote data might carry a z dimension.
+		// No data at generation time: --charts is the authoritative selection.
+		// 3D is opt-in via --3d because the remote data shape is unknown.
 		charts := uiOpts.Charts
+		needs3D := uiOpts.Enable3D && shared.ChartsHave3DCapable(charts)
 		htmlContent := template.GenerateRemoteUI(
-			uiOpts.DataURL, charts, shared.ChartsHave3DCapable(charts), template.VizbHTMLTemplate,
+			uiOpts.DataURL, charts, needs3D, template.VizbHTMLTemplate,
 		)
 		if _, err := f.WriteString(htmlContent); err != nil {
 			shared.ExitWithError("Failed to write output file: %v", err)
@@ -108,6 +110,12 @@ func runUI(cmd *cobra.Command, args []string) {
 		charts = unionCharts(benches)
 	}
 
+	if cmd.Flags().Changed("charts") {
+		for i := range benches {
+			benches[i].Settings = filterSettings(benches[i].Settings, charts)
+		}
+	}
+
 	if len(uiOpts.ChartSpecs) > 0 {
 		// Collect the union of every active chart type across the input
 		// datasets so --chart overrides can be validated against the actual
@@ -134,6 +142,25 @@ func runUI(cmd *cobra.Command, args []string) {
 		shared.ExitWithError("Failed to write output file: %v", err)
 	}
 	fmt.Println(style.Success.Render(fmt.Sprintf("🎉 Generated UI successfully: %s", outFile)))
+}
+
+// filterSettings keeps only configs whose chart type is in the allowed list,
+// preserving the original settings order.
+func filterSettings(settings []config_charts.ChartConfig, allowed []string) []config_charts.ChartConfig {
+	if len(allowed) == 0 {
+		return settings
+	}
+	permitted := make(map[string]bool, len(allowed))
+	for _, c := range allowed {
+		permitted[c] = true
+	}
+	filtered := make([]config_charts.ChartConfig, 0, len(settings))
+	for _, s := range settings {
+		if permitted[s.ChartType()] {
+			filtered = append(filtered, s)
+		}
+	}
+	return filtered
 }
 
 // unionCharts collects the distinct chart types across datasets, preserving first
