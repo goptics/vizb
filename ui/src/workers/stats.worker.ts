@@ -1,7 +1,7 @@
 // Dedicated Web Worker for descriptive statistics, kept OFF the chart's critical
 // path. The transform worker builds and replies the chart immediately; stats are
 // computed here only when the user opens a chart's stats panel (lazy). Bundled and
-// base64-inlined via `?worker&inline` so the single-file HTML output stays
+// base64-inlined via `?worker&inline` so the embedded HTML template stays
 // self-contained (no external worker asset).
 //
 // Stateless: each request carries one chart's point cloud (already plain /

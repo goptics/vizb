@@ -75,9 +75,6 @@ importers:
       vite-plugin-html:
         specifier: ^3.2.2
         version: 3.2.2(vite@7.1.9(@types/node@24.7.2)(jiti@1.21.7)(terser@5.44.0))
-      vite-plugin-singlefile:
-        specifier: ^2.3.0
-        version: 2.3.0(rollup@4.52.4)(vite@7.1.9(@types/node@24.7.2)(jiti@1.21.7)(terser@5.44.0))
       vitest:
         specifier: ^3.2.4
         version: 3.2.6(@types/node@24.7.2)(jiti@1.21.7)(terser@5.44.0)
@@ -1427,13 +1424,6 @@ packages:
     resolution: {integrity: sha512-vb9C9kcdzcIo/Oc3CLZVS03dL5pDlOFuhGlZYDCJ840BhWl/0nGeZWf3Qy7NlOayscY4Cm/QRgULCQkEZige5Q==}
     peerDependencies:
       vite: '>=2.0.0'
-
-  vite-plugin-singlefile@2.3.0:
-    resolution: {integrity: sha512-DAcHzYypM0CasNLSz/WG0VdKOCxGHErfrjOoyIPiNxTPTGmO6rRD/te93n1YL/s+miXq66ipF1brMBikf99c6A==}
-    engines: {node: '>18.0.0'}
-    peerDependencies:
-      rollup: ^4.44.1
-      vite: ^5.4.11 || ^6.0.0 || ^7.0.0
 
   vite@7.1.9:
     resolution: {integrity: sha512-4nVGliEpxmhCL8DslSAUdxlB6+SMrhB0a1v5ijlh1xB1nEPuy1mxaHxysVucLHuWryAxLWg6a5ei+U4TLn/rFg==}
@@ -2813,12 +2803,6 @@ snapshots:
       html-minifier-terser: 6.1.0
       node-html-parser: 5.4.2
       pathe: 0.2.0
-      vite: 7.1.9(@types/node@24.7.2)(jiti@1.21.7)(terser@5.44.0)
-
-  vite-plugin-singlefile@2.3.0(rollup@4.52.4)(vite@7.1.9(@types/node@24.7.2)(jiti@1.21.7)(terser@5.44.0)):
-    dependencies:
-      micromatch: 4.0.8
-      rollup: 4.52.4
       vite: 7.1.9(@types/node@24.7.2)(jiti@1.21.7)(terser@5.44.0)
 
   vite@7.1.9(@types/node@24.7.2)(jiti@1.21.7)(terser@5.44.0):

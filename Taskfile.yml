@@ -34,7 +34,7 @@ tasks:
   build:ui:
     desc: Build Vue UI template
     cmds:
-      - cd ui; SINGLEFILE=True pnpm build; cd -
+      - cd ui; EMBED_UI=True pnpm build; cd -
 
   build:cli:
     desc: Build the binary (production-ready, stripped)

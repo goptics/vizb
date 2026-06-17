@@ -1,6 +1,6 @@
 // Dedicated Web Worker that runs the heavy chart transform off the main thread,
 // one chart at a time. Bundled and base64-inlined via `?worker&inline` so the
-// single-file HTML output stays self-contained (no external worker asset).
+// embedded HTML template stays self-contained (no external worker asset).
 //
 // The worker owns the FULL raw dataset and treats arrangement + group + sort +
 // scale + showLabels all as compute params — the rows never change on a setting
