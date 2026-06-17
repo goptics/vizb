@@ -115,7 +115,11 @@ watch(open, (isOpen) => {
       <ComboboxTrigger
         class="inline-flex h-10 w-full items-center rounded-lg border border-border bg-card px-4 text-sm font-medium text-card-foreground shadow-sm hover:bg-accent hover:text-accent-foreground"
       >
-        <span class="flex flex-1 items-center justify-center gap-2">
+        <span
+          :class="
+            value?.icon ? 'flex flex-1 items-center gap-2' : 'flex-1 text-center'
+          "
+        >
           <component :is="value.icon" v-if="value?.icon" class="h-4 w-4" />
           <span>{{ value?.label }}</span>
         </span>
@@ -143,8 +147,11 @@ watch(open, (isOpen) => {
           :text-value="option.label"
           class="flex items-center gap-2 data-[state=checked]:font-medium data-[state=checked]:text-primary"
         >
-          <component :is="option.icon" v-if="option.icon" class="h-4 w-4" />
-          <span>{{ option.label }}</span>
+          <template v-if="option.icon">
+            <component :is="option.icon" class="h-4 w-4" />
+            <span>{{ option.label }}</span>
+          </template>
+          <span v-else class="flex-1 text-center">{{ option.label }}</span>
         </ComboboxItem>
       </ComboboxGroup>
     </ComboboxList>
