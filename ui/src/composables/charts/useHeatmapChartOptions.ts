@@ -14,25 +14,6 @@ import {
 
 const round2 = (v: number) => Math.round(v * 100) / 100
 
-function hexToRgb(hex: string): [number, number, number] {
-  const n = parseInt(hex.slice(1), 16)
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
-}
-
-function blendColors(entries: { color: string; weight: number }[]): string {
-  let r = 0,
-    g = 0,
-    b = 0
-  for (const { color, weight } of entries) {
-    const [cr, cg, cb] = hexToRgb(color)
-    r += cr * weight
-    g += cg * weight
-    b += cb * weight
-  }
-  const clamp = (v: number) => Math.round(Math.min(255, Math.max(0, v)))
-  return `rgb(${clamp(r)},${clamp(g)},${clamp(b)})`
-}
-
 function formatCellNumber(v: number): string {
   if (Math.abs(v) >= 1e6) return (v / 1e6).toFixed(1) + 'M'
   if (Math.abs(v) >= 1e3) return (v / 1e3).toFixed(1) + 'K'
@@ -47,8 +28,8 @@ function heatmapGrid(
 ): any {
   const legendSpace = hasLegend ? Math.min(15 + Math.floor((seriesLength - 1) / 15) * 2, 35) : 5
   return {
-    left: largeY ? 60 : largeX ? 100 : '3%',
-    right: '3%',
+    left: largeX ? 100 : '3%',
+    right: largeY ? 50 : '3%',
     bottom: largeX ? 110 : '13%',
     top: `${legendSpace}%`,
     containLabel: !largeX,
@@ -244,7 +225,6 @@ function build3DHeatmap(config: BaseChartConfig): EChartsOption {
   }
 
   const heatmapData: number[][] = []
-  const blendColorSet = new Set<string>()
   const cellDataMap = new Map<string, { zBreakdown: Map<string, number>; total: number }>()
   let minTotal = Infinity
   let maxTotal = -Infinity
@@ -260,22 +240,7 @@ function build3DHeatmap(config: BaseChartConfig): EChartsOption {
 
       cellDataMap.set(`${xi},${yi}`, { zBreakdown: zmap, total: cellTotal })
 
-      let cellColor: string
-      if (cellTotal === 0 || zmap.size === 0) {
-        cellColor = 'rgba(0,0,0,0)'
-      } else if (zmap.size === 1) {
-        const zName = zmap.keys().next().value!
-        cellColor = getNextColorFor(zName) ?? COLOR_PALETTE[0]!
-      } else {
-        const entries = Array.from(zmap.entries()).map(([z, v]) => ({
-          color: getNextColorFor(z) ?? COLOR_PALETTE[0]!,
-          weight: v / cellTotal,
-        }))
-        cellColor = blendColors(entries)
-      }
-
       if (cellTotal > 0) {
-        blendColorSet.add(cellColor)
         if (cellTotal < minTotal) minTotal = cellTotal
         if (cellTotal > maxTotal) maxTotal = cellTotal
       }
@@ -288,14 +253,6 @@ function build3DHeatmap(config: BaseChartConfig): EChartsOption {
     minTotal = minTotal - 1
     maxTotal = maxTotal + 1
   }
-
-  const uniqueColors = Array.from(blendColorSet)
-  const rangeColors =
-    uniqueColors.length >= 2
-      ? uniqueColors
-      : uniqueColors.length === 1
-        ? [uniqueColors[0]!, uniqueColors[0]!]
-        : ['#ccc', '#333']
 
   const xLabel = data.axisLabels?.x ?? 'x'
   const yLabel = data.axisLabels?.y ?? 'y'
@@ -415,7 +372,13 @@ function build3DHeatmap(config: BaseChartConfig): EChartsOption {
           }
         : {}),
     },
-    visualMap: heatmapVisualMap(minTotal, maxTotal, rangeColors, styling, largeX),
+    visualMap: heatmapVisualMap(
+      minTotal,
+      maxTotal,
+      [COLOR_PALETTE[0]!, COLOR_PALETTE[4]!],
+      styling,
+      largeX
+    ),
     series: [
       {
         type: 'heatmap',
