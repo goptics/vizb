@@ -31,6 +31,11 @@ export const translateAxisKey = (key: string): AxisKey[] => {
   return key.split('').map((k) => keyMap[k as keyof typeof keyMap]) as AxisKey[]
 }
 
+// True when the active swap places z on a chart axis (grouped 3D). Value-mode
+// "3D view" is only offered when z is folded off the chart (e.g. xyn vs xyz).
+export const arrangementHasChartZ = (targetKey: string): boolean =>
+  translateAxisKey(targetKey).includes('zAxis')
+
 // Axis values move between dimensions on swap; the dataset's axisLabels are keyed
 // by dimension, so permute them by the same currentKeys → targetKeys mapping or
 // they'd point at the wrong axis. Returns a fresh object so the chart computeds

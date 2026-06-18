@@ -2,7 +2,7 @@ import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
 import type { TitleOption } from 'echarts/types/dist/shared'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
-import { getNextColorFor, hasXAxis, hasYAxis, hasZAxis } from '../../lib/utils'
+import { getNextColorFor, hasXAxis, hasYAxis, hasZAxis } from '@/lib/utils'
 import {
   getChartStyling,
   createPieSeriesConfig,
@@ -10,7 +10,7 @@ import {
   formatTooltipValue,
 } from './shared'
 import { fontSize, sortByTotal, sortByValue } from './shared/common'
-import type { Point3D } from '../../types'
+import type { Point3D } from '@/types'
 
 type SeriesWithTotal = { xAxis: string; values: number[]; total: number }
 

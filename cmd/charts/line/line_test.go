@@ -75,6 +75,27 @@ func (s *LineSuite) TestLineCommandNewShape() {
 	s.Equal("desc", lineCfg.Sort.Order)
 }
 
+func (s *LineSuite) TestLineCommandThreeDWithoutXYWarns() {
+	dir := s.T().TempDir()
+	input := testutil.WriteBenchFile(s.T(), dir, "bench.txt", "")
+	out := filepath.Join(dir, "out.json")
+
+	cmd := NewCommand()
+	cmd.SetArgs([]string{"-o", out, "-P", "go", "-p", "x", "--3d", input})
+
+	stderr := testutil.CaptureStderr(func() {
+		s.Require().NoError(cmd.Execute())
+	})
+	s.Contains(stderr, "Warning")
+	s.Contains(stderr, "--3d requires both x and y")
+
+	ds := testutil.ReadDataset(s.T(), out)
+	lineCfg, ok := ds.Settings[0].(*linechart.Config)
+	s.Require().True(ok)
+	s.Require().NotNil(lineCfg.ThreeD)
+	s.True(*lineCfg.ThreeD)
+}
+
 func (s *LineSuite) TestLineCommandBadSwapExits() {
 	dir := s.T().TempDir()
 	input := testutil.WriteBenchFile(s.T(), dir, "bench.txt", "")

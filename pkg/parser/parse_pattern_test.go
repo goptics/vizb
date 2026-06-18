@@ -120,6 +120,24 @@ func (s *ParsePatternSuite) TestParseNameToGroups() {
 			expected:      map[string]string{"name": "2022", "yAxis": "2", "xAxis": "30", "zAxis": ""},
 		},
 		{
+			name:          "Pattern Match: trailing separator drops extra segment",
+			benchmarkName: "2024-01-01",
+			pattern:       "n{Year}-x{Month}-",
+			expected:      map[string]string{"name": "2024", "xAxis": "01", "yAxis": "", "zAxis": ""},
+		},
+		{
+			name:          "Pattern Match: consecutive separators skip middle segment",
+			benchmarkName: "2024-01-01",
+			pattern:       "n{Year}--x{Date}",
+			expected:      map[string]string{"name": "2024", "xAxis": "01", "yAxis": "", "zAxis": ""},
+		},
+		{
+			name:          "Pattern Match: consecutive slash separators skip middle segment",
+			benchmarkName: "alpha/beta/gamma",
+			pattern:       "n//y",
+			expected:      map[string]string{"name": "alpha", "yAxis": "gamma", "xAxis": "", "zAxis": ""},
+		},
+		{
 			name:          "Pattern Match: mixed comma and slash x,y/z",
 			benchmarkName: "USA,Widget/EU",
 			pattern:       "x,y/z",
@@ -181,6 +199,54 @@ func (s *ParsePatternSuite) TestValidateGroupPattern() {
 			}
 
 			s.NoError(err)
+		})
+	}
+}
+
+func (s *ParsePatternSuite) TestPatternHasBothXY() {
+	tests := []struct {
+		name    string
+		cfg     Config
+		resolve bool
+		want    bool
+	}{
+		{name: "x only", cfg: Config{GroupPattern: "x"}, want: false},
+		{name: "y only", cfg: Config{GroupPattern: "y"}, want: false},
+		{name: "n/x/y", cfg: Config{GroupPattern: "n/x/y"}, want: true},
+		{name: "n/x/y/z", cfg: Config{GroupPattern: "n/x/y/z"}, want: true},
+		{
+			name: "regex x and y",
+			cfg:  Config{GroupRegex: `(?<n>.*)/(?<x>\d+)/(?<y>.*)`},
+			want: true,
+		},
+		{
+			name: "regex x only",
+			cfg:  Config{GroupRegex: `(?<n>.*)/(?<x>\d+)`},
+			want: false,
+		},
+		{
+			name:    "tabular y,x",
+			cfg:     Config{GroupPattern: "y,x"},
+			resolve: true,
+			want:    true,
+		},
+		{
+			name:    "tabular y only",
+			cfg:     Config{GroupPattern: "y"},
+			resolve: true,
+			want:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			cfg := tt.cfg
+			if tt.resolve {
+				var err error
+				cfg, err = ResolveGroupConfig(cfg)
+				s.Require().NoError(err)
+			}
+			s.Equal(tt.want, PatternHasBothXY(cfg))
 		})
 	}
 }

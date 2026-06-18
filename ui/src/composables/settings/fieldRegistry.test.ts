@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import type { BarConfig, LineConfig, PieConfig, HeatmapConfig, RadarConfig } from '../../types'
+import type { BarConfig, LineConfig, PieConfig, HeatmapConfig, RadarConfig } from '@/types'
 
 // fieldRegistry imports the .vue control components directly. The vitest config
 // intentionally excludes the Vue plugin (pure-function tests only, per project
@@ -114,6 +114,18 @@ describe('getRenderableFields', () => {
         hasZAxis: false,
       }).map((f) => f.key)
     ).toEqual(['sort', 'scale', 'showLabels', 'threeD', 'threeDVisualMap', 'threeDRotate', 'swap'])
+  })
+
+  it('hides threeD when z is on chart axes in the active swap (xyz)', () => {
+    const cfg: BarConfig = { type: 'bar', threeD: true }
+    expect(
+      getRenderableFields(cfg, {
+        dimension: '3D',
+        rendering3D: true,
+        hasThreeDOption: true,
+        hasZAxis: true,
+      }).map((f) => f.key)
+    ).toEqual(['sort', 'scale', 'showLabels', 'threeDVisualMap', 'threeDRotate', 'swap'])
   })
 
   it('returns 4 entries for a 2D line config without value-3D active', () => {

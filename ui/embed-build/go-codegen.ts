@@ -30,8 +30,10 @@ export const detectChartRoots = (
   for (const file of files) {
     const fileKey = chunkKeyOf(file)
     for (const prefix of Object.keys(prefixMap)) {
+      const chartName = prefixMap[prefix]
+      if (!chartName) continue
       if (file.startsWith(`${prefix}-`) || file === `${prefix}.js`) {
-        roots[prefixMap[prefix]] = fileKey
+        roots[chartName] = fileKey
       }
     }
   }

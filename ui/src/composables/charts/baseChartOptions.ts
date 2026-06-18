@@ -1,9 +1,9 @@
 import type { Ref } from 'vue'
 import type { EChartsOption } from 'echarts'
-import type { ChartData, Sort, ScaleType } from '../../types'
+import type { ChartData, Sort, ScaleType } from '@/types'
 import { createTooltipConfig, createToolboxConfig, getChartStyling } from './shared/chartConfig'
 import { fontSize } from './shared/common'
-import { is3D } from '../../lib/utils'
+import { is3D } from '@/lib/utils'
 
 export interface BaseChartConfig {
   chartData: Ref<ChartData>

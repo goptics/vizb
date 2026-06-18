@@ -13,6 +13,7 @@ import {
   type SettingFieldKey,
   type SettingFieldValueMap,
 } from '../composables/settings/fieldRegistry'
+import { arrangementHasChartZ } from '../lib/swap'
 import type { BarConfig, ChartType, LineConfig } from '../types'
 
 // Generic, schema-less settings panel: walks `Object.keys(activeConfig)` via
@@ -34,8 +35,15 @@ const {
   setThreeDVisualMap,
 } = useSettingsStore()
 
-const { activeDataSet, activeDataSetId, activeDataDimension, setArrangement, activeGroupId } =
-  useDataPoint()
+const {
+  activeDataSet,
+  activeDataSetId,
+  activeDataDimension,
+  activeArrangement,
+  getArrangement,
+  setArrangement,
+  activeGroupId,
+} = useDataPoint()
 
 const CHART_ICONS: Record<ChartType, Component> = {
   bar: BarChart3,
@@ -65,7 +73,14 @@ const onChartTypeSelect = (id: number) => {
   if (opt) setChartType(opt.value)
 }
 
-const hasZAxis = computed(() => activeDataSet.value?.data?.some((p) => !!p.zAxis) ?? false)
+// z on a chart axis under the effective swap (map → wire → identity).
+const effectiveSwapTarget = computed(() => {
+  const fromMap = getArrangement(activeDataSetId.value, chartType.value)
+  if (fromMap) return fromMap
+  const wire = (activeConfig.value as BarConfig | LineConfig | undefined)?.swap
+  return wire || activeArrangement.value.targetString
+})
+const hasZAxis = computed(() => arrangementHasChartZ(effectiveSwapTarget.value))
 
 const hasThreeDOption = computed(
   () => (activeConfig.value as BarConfig | LineConfig | undefined)?.threeD !== undefined

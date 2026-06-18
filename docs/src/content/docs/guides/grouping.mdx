@@ -144,6 +144,40 @@ vizb sales.csv -g date,category -p "[x-y-n],z" -o sales.html
 |---|---|---|---|
 | `2022-2-30` | `Widget` | `[x-y-n]` splits on `-`, `z` ← category | x=2022, y=2, n=30, z=Widget |
 
+**ISO dates (`YYYY-MM-DD`)** — use a bracket slot when the date is one column. `{year}`, `{months}`, and `{dates}` only set axis titles; splitting is driven by `-` between dimension tokens.
+
+Full year / month / day:
+
+```bash
+vizb sales.csv -g date,category -p '[n{year}-y{months}-x{dates}],z' -o sales.html
+```
+
+| date | Pattern | Result |
+|---|---|---|
+| `2024-01-01` | `[n{year}-y{months}-x{dates}]` | n=2024, y=01, x=01 |
+
+Drop the **last** segment (day) — add a **trailing** separator after the last token:
+
+```bash
+vizb sales.csv -g date -p '[n{year}-x{months}-]' -o sales.html
+```
+
+| date | Pattern | Result |
+|---|---|---|
+| `2024-01-01` | `[n{year}-x{months}-]` | n=2024, x=01 (day dropped) |
+
+Skip the **middle** segment (month) — use **consecutive** separators (`--`) between tokens:
+
+```bash
+vizb sales.csv -g date -p '[n{year}--x{dates}]' -o sales.html
+```
+
+| date | Pattern | Result |
+|---|---|---|
+| `2024-02-15` | `[n{year}--x{dates}]` | n=2024, x=15 (month skipped) |
+
+On `2024-01-01` the month and day are both `01`, so year+month and year+day patterns look the same — use a date like `2024-02-15` to confirm which segment maps to `x`.
+
 **Slash-encoded benchmark column** — same layout as Go bench names, stored in CSV:
 
 ```bash
@@ -284,7 +318,17 @@ Any single character works between dimension tokens — vizb reads them from you
 | ` ` (space) | Quoted `--group` specs (`"y x"` with `-g "region product"`) |
 | `#`, `.`, etc. | Any single character works when `-g` and `-p` agree (e.g. `-g "a#b#c" -p "x#y#z"`) |
 
-Consecutive separators (e.g. `x//y`) and a leading separator (e.g. `/n/y` to skip a prefix segment) are supported.
+Three skip patterns drop segments without assigning them to a dimension:
+
+| Pattern | Example | Effect |
+|---|---|---|
+| Leading separator | `/n/y` | First value segment is unused (prefix skip) |
+| Consecutive separators | `n--x` or `x//y` | Middle segment is unused |
+| Trailing separator | `n-x-` | Last value segment is unused |
+
+Each repeated separator character adds one more split point and one empty dimension slot. A single trailing `-` after the last token is enough to drop the final segment — you do not need `---`.
+
+Works in flat benchmark patterns and inside bracket slots (e.g. `[n{year}-x{month}-]` on a CSV date column).
 
 ### Components
 
@@ -343,6 +387,26 @@ vizb bench.txt --group-pattern "/n/y" -o output.html
 |---|---|---|
 | `BenchmarkTest/JSON/Marshal` | JSON | Marshal |
 | `BenchmarkTest/XML/Parse` | XML | Parse |
+
+**Middle skip with `n//y` (consecutive separators discard the middle segment):**
+
+```bash
+vizb bench.txt --group-pattern "n//y" -o output.html
+```
+
+| Label | Name | YAxis |
+|---|---|---|
+| `Sort/1024/QuickSort` | Sort | QuickSort |
+
+**Trailing skip with `n-x-` (trailing separator discards the last segment):**
+
+```bash
+vizb bench.txt --group-pattern "n-x-" -o output.html
+```
+
+| Label | Name | XAxis |
+|---|---|---|
+| `2024-01-01` | 2024 | 01 |
 
 **4D with `n/x/y/z` (renders a 3D chart):**
 

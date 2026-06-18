@@ -1,18 +1,18 @@
 import type { Component } from 'vue'
-import type { ChartConfig, ChartType, ScaleType, Sort } from '../../types'
-import type { Dimension } from '../../lib/utils'
-import SortControl from '../../components/settings/SortControl.vue'
-import ScaleControl from '../../components/settings/ScaleControl.vue'
-import ShowLabelsControl from '../../components/settings/ShowLabelsControl.vue'
-import ThreeDRotateControl from '../../components/settings/ThreeDRotateControl.vue'
-import ThreeDControl from '../../components/settings/ThreeDControl.vue'
-import ThreeDVisualMapControl from '../../components/settings/ThreeDVisualMapControl.vue'
-import SwapControl from '../../components/settings/SwapControl.vue'
+import type { ChartConfig, ChartType, ScaleType, Sort } from '@/types'
+import type { Dimension } from '@/lib/utils'
+import SortControl from '@/components/settings/SortControl.vue'
+import ScaleControl from '@/components/settings/ScaleControl.vue'
+import ShowLabelsControl from '@/components/settings/ShowLabelsControl.vue'
+import ThreeDRotateControl from '@/components/settings/ThreeDRotateControl.vue'
+import ThreeDControl from '@/components/settings/ThreeDControl.vue'
+import ThreeDVisualMapControl from '@/components/settings/ThreeDVisualMapControl.vue'
+import SwapControl from '@/components/settings/SwapControl.vue'
 
 // Re-exported so SettingsPanel can import the chart-type picker threshold
 // from the same module as the field registry — both are "what to render in the
 // settings panel" decisions.
-export { shouldUseTabPicker, CHART_PICKER_TAB_THRESHOLD } from '../../lib/pickerRule'
+export { shouldUseTabPicker, CHART_PICKER_TAB_THRESHOLD } from '@/lib/pickerRule'
 
 /** Value type each settings control emits for its field key. */
 export type SettingFieldValueMap = {
@@ -57,7 +57,8 @@ export const fieldRegistry: Record<SettingFieldKey, FieldMeta> = {
   threeD: {
     component: ThreeDControl,
     appliesTo: ['bar', 'line'],
-    visible: (ctx) => ctx.hasThreeDOption === true && ctx.hasZAxis === false,
+    // Value-mode toggle only when z is off chart axes (e.g. xyz → xyn swap).
+    visible: (ctx) => ctx.hasThreeDOption === true && ctx.hasZAxis !== true,
   },
   threeDVisualMap: {
     component: ThreeDVisualMapControl,
@@ -91,6 +92,7 @@ export type RenderContext = {
   dimension?: Dimension
   rendering3D?: boolean
   hasThreeDOption?: boolean
+  /** z mapped to chart zAxis in the active swap (not raw-data z presence). */
   hasZAxis?: boolean
 }
 
