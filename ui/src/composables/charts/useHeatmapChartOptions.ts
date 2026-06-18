@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
-import { getNextColorFor, is3D, COLOR_PALETTE } from '../../lib/utils'
+import { getNextColorFor, isGrouped3D, COLOR_PALETTE } from '../../lib/utils'
 import {
   getChartStyling,
   getTooltipTheme,
@@ -451,8 +451,8 @@ export function useHeatmapChartOptions(config: BaseChartConfig) {
   const { chartData } = config
 
   const options = computed<EChartsOption>(() => {
-    const threeD = is3D(chartData)
-    return threeD ? build3DHeatmap(config) : build2DHeatmap(config)
+    const grouped3D = isGrouped3D(chartData.value)
+    return grouped3D ? build3DHeatmap(config) : build2DHeatmap(config)
   })
 
   return { options }

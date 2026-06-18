@@ -57,21 +57,21 @@ describe('useSettingsStore', () => {
   })
 
   // Regression: a freshly migrated config (or a config created in the UI) may
-  // not carry `scale` / `autoRotate` yet — the Go migration does not pre-
-  // populate `autoRotate` (it didn't exist in v0.12.0). The setters used to
+  // not carry `scale` / `threeDRotate` yet — the Go migration does not pre-
+  // populate `threeDRotate` (it didn't exist in v0.12.0). The setters used to
   // guard on `'field' in cfg`, which silently no-oped the first toggle. The
   // panel already filters by `appliesTo`, so writing the field is always safe.
-  it('setAutoRotate writes even when the field is absent on the config', async () => {
+  it('setThreeDRotate writes even when the field is absent on the config', async () => {
     holder.ref = ref(
       ds([
-        // No autoRotate field — mimics a Go-migrated v0.12.0 config.
+        // No threeDRotate field — mimics a Go-migrated v0.12.0 config.
         { type: 'bar', sort: { enabled: false, order: 'asc' }, scale: 'linear' } as ChartConfig,
       ])
     )
     const { useSettingsStore } = await import('./useSettingsStore')
-    const { activeConfig, setAutoRotate } = useSettingsStore()
-    setAutoRotate(true)
-    expect((activeConfig.value as { autoRotate?: boolean } | undefined)?.autoRotate).toBe(true)
+    const { activeConfig, setThreeDRotate } = useSettingsStore()
+    setThreeDRotate(true)
+    expect((activeConfig.value as { threeDRotate?: boolean } | undefined)?.threeDRotate).toBe(true)
   })
 
   it('setScale writes even when the field is absent on the config', async () => {

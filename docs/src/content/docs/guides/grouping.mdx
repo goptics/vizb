@@ -51,33 +51,52 @@ CSV and JSON rows have no benchmark name, so you tell vizb which columns carry t
 
 ### Matching separators
 
-For tabular data, **`-g` and `-p` must agree on separators**:
+For tabular data, **`-g` and `-p` must use the same separators** between column slots. If they disagree, vizb exits before parsing:
+
+```text
+--group "<g>" and --group-pattern "<p>" separators do not match (expected "<from g>", got "<from p>")
+```
+
+The `expected` side is derived from how `-g` declares column boundaries; `got` is what `-p` declares. Fix whichever flag is wrong so both use the same separator sequence.
+
+| Mismatch | Error (abbreviated) |
+|---|---|
+| `-g region,product,category -p x/y/z` | `expected ", ,", got "/ /"` — comma `-g` needs comma `-p` (`x,y,z`) |
+| `-g region/product/category -p x,y/z` | `expected "/ /", got ", /"` — slash `-g` needs slash `-p` (`x/y/z`) |
+| `-g "region#product#category" -p x#y,z` | `expected "# #", got "# ,"` — every separator in `-g` must appear in `-p` at the same positions |
 
 | `--group` style | Matching `-p` | Row label (example) |
 |---|---|---|
-| Comma list (`-g region,product`) | Commas (`-p y,x`) | `USA,Widget` |
-| Quoted string (`-g "region product"`) | Spaces (`-p "y x"`) | `USA Widget` |
-| Structured (`-g region,product/category`) | Same shape (`-p y,x/z`) | `USA,Widget/EU` |
+| Comma list (`-g region,product`) | Commas (`-p y,x`) | `Asia,Widget` |
+| Quoted string (`-g "region product"`) | Spaces (`-p "y x"`) | `UAE Gadget` |
+| Single value (`-g "region/product/category"`) | Same separators (`-p x/y/z`) | `EU/Widget/Sports` |
+| Structured (`-g region,product/category`) | Same shape (`-p y,x/z`) | `Asia,Widget/Electronics` |
 
-Comma-separated `-g` (the usual pflag form) **requires** comma-separated `-p`. Passing `-g region,product,month -p x/y/z` is rejected — use `-p x,y,z` instead.
+Comma-separated `-g` (the usual pflag form) **requires** comma-separated `-p` — e.g. `-g region,product,category` with `-p x,y,z`, not `x/y/z`.
+
+When `-g` and `-p` define a different **number** of slots (common with bracket patterns), vizb reports a separate dimension-count error:
+
+```text
+--group and --group-pattern dimension count do not match: N column(s) in "<g>", M slot(s) in --group-pattern "<p>"
+```
 
 Take this `sales.csv`:
 
-| region | product | sales | latency |
-|---|---|---|---|
-| USA | Widget | 100 | 12 |
-| USA | Gadget | 80 | 15 |
-| EU | Widget | 60 | 11 |
+| region | product | category | sales | latency |
+|---|---|---|---|---|
+| Asia | Widget | Electronics | 100 | 12 |
+| UAE | Gadget | Home | 80 | 15 |
+| EU | Gizmo | Sports | 60 | 11 |
 
 ```bash
 vizb sales.csv --group region,product -p y,x -o sales.html
 ```
 
-For the first row, vizb joins the selected columns into the label `USA,Widget`, then the pattern `y,x` splits it:
+For the first row, vizb joins the selected columns into the label `Asia,Widget`, then the pattern `y,x` splits it:
 
 | Selected columns | Label | Pattern `y,x` | Result |
 |---|---|---|---|
-| `region`, `product` | `USA,Widget` | `y` → `USA`, `x` → `Widget` | YAxis = USA, XAxis = Widget |
+| `region`, `product` | `Asia,Widget` | `y` → `Asia`, `x` → `Widget` | YAxis = Asia, XAxis = Widget |
 
 **Space-separated columns** — pass one quoted `-g` value and use spaces in `-p`:
 
@@ -85,10 +104,11 @@ For the first row, vizb joins the selected columns into the label `USA,Widget`, 
 vizb sales.csv -g "region product" -p "y x" -o sales.html
 ```
 
-**Structured grouping** — embed `/` or `_` inside `-g` to declare a hierarchy; `-p` must mirror it:
+**Structured grouping** — mix separators inside `-g` (commas between pflag values, `/` or `_` inside a value) to declare a hierarchy; `-p` must mirror the same shape:
 
 ```bash
 vizb sales.csv -g region,product/category -p y,x/z -o sales.html
+vizb sales.csv -g "region/product/category" -p x/y/z -o sales.html
 ```
 
 ### Bracket slots — split a column's cell value
@@ -104,33 +124,15 @@ When one column holds an encoded string (not separate columns), wrap the inner p
 
 Top-level separators between slots still match `-g` (commas for `-g a,b`, spaces for `-g "a b"`). **Benchmarks do not use brackets** — keep flat `-p n/x/y` for `bench.txt`.
 
-<Aside type="caution">
-  **Quote `-p` when it contains brackets or braces.** In zsh, unquoted `[...]` is a filename glob and `{...}` triggers brace expansion. Use single quotes:
+<Aside type="tip">
+  Use **single quotes** around `-p` when it contains `[...]` bracket slots:
 
   ```bash
-  ./bin/vizb heatmap sales.csv -g order_date,category -p '[n{year}-y{months}-x{dates}],z{category}' -o out.html
+  vizb sales.csv -g date,category -p '[n{year}-y{months}-x{dates}],z' -o sales.html
   ```
 </Aside>
 
-**Custom axis titles with `{label}`** — append `{title}` after any dimension token to override the default axis label (column name for CSV/JSON, or `--group` entry for benchmarks):
-
-```bash
-vizb sales.csv -g order_date,category -p '[n{year}-y{months}-x{dates}],z{category}' -o sales.html
-```
-
-| Column | Cell | Slot | Axis titles |
-|---|---|---|---|
-| `order_date` | `2022-2-30` | `[n{year}-y{months}-x{dates}]` | name→**year**, y→**months**, x→**dates** |
-| `category` | `Widget` | `z{category}` | z→**category** (not the raw column name `category` unless you want that) |
-
-Works on **plain slots** and **flat patterns** too — no brackets required:
-
-```bash
-vizb sales.csv -g region,product -p 'y{Region},x{Product}' -o sales.html
-vizb bench.txt -p 'n{Algorithm}/x{Size}/y{Variant}' -o out.html
-```
-
-`{label}` overrides the column/`--group` label for that dimension; omit `{}` to keep the column name as the axis title.
+Bracket slots can attach `{label}` to each inner dimension — see [Axis labels](#axis-labels).
 
 **Date + category** — split `2022-2-30` into year/month/day, keep category whole:
 
@@ -200,7 +202,7 @@ vizb sales.csv -g date,region -p "[n-y-x],z" -o sales.html
 
 | date | region | Result |
 |---|---|---|
-| `2022-2-30` | `USA` | n=2022, y=2, x=30, z=USA |
+| `2022-2-30` | `Asia` | n=2022, y=2, x=30, z=Asia |
 
 **Comma value inside one column** (tuple-style cell):
 
@@ -210,7 +212,7 @@ vizb data.csv -g tuple -p "[y,x]" -o out.html
 
 | tuple | Result |
 |---|---|
-| `USA,Widget` | y=USA, x=Widget |
+| `Asia,Widget` | y=Asia, x=Widget |
 
 **Mixed inner separators** (underscore then slash in the same cell):
 
@@ -253,7 +255,7 @@ See [Tabular Data (CSV & JSON)](/guides/data) for the full parser rules.
 
 ## Grouping benchmarks
 
-Benchmark names already encode structure. A name like `BenchmarkSort/1024/QuickSort` carries the function, the input size, and the variant. There are no columns to pick, so `--group-pattern` / `--group-regex` do all the extraction, and `--group` only supplies human-readable axis **labels** (see [Axis labels](#axis-labels-with---group---g)).
+Benchmark names already encode structure. A name like `BenchmarkSort/1024/QuickSort` carries the function, the input size, and the variant. There are no columns to pick, so `--group-pattern` / `--group-regex` do all the extraction. Set axis titles with `{label}` suffixes in `-p` (see [Axis labels](#axis-labels)).
 
 ```bash
 go test -bench . | vizb -p n/x/y -o output.html
@@ -276,10 +278,11 @@ Any single character works between dimension tokens — vizb reads them from you
 
 | Separator | Typical use |
 |---|---|
-| `/` | Go/Rust/JS benchmark names (`n/x/y`) |
-| `_` | Underscore-delimited bench names (`n_y_x`) |
+| `/` | Go/Rust/JS benchmark names (`n/x/y`) and slash-structured `-g` (`region/product`) |
+| `_` | Underscore-delimited bench names (`n_y_x`) and structured `-g` specs |
 | `,` | Comma-separated `--group` lists (`y,x` with `-g region,product`) |
 | ` ` (space) | Quoted `--group` specs (`"y x"` with `-g "region product"`) |
+| `#`, `.`, etc. | Any single character works when `-g` and `-p` agree (e.g. `-g "a#b#c" -p "x#y#z"`) |
 
 Consecutive separators (e.g. `x//y`) and a leading separator (e.g. `/n/y` to skip a prefix segment) are supported.
 
@@ -385,28 +388,41 @@ vizb bench.txt --group-regex "(?<n>.*)/text=(?<x>.*)/level=(?<y>.*)" -o output.h
   The regex must capture `x` or `y` (`regex '...' does not contain x (xAxis) or y (yAxis)`), and a captured `z` still requires both `x` and `y`.
 </Aside>
 
-## Axis labels with `--group` / `-g`
+## Axis labels
 
-`--group` carries human-readable labels for each dimension so charts render meaningful axis titles instead of raw identifiers. Labels map **positionally** to the `--group-pattern` parts, in order:
+Set chart axis titles in **`--group-pattern` / `-p`** by appending `{title}` immediately after a dimension token (no space):
+
+| Shorthand | Syntax | Chart title |
+|---|---|---|
+| `n` | `n{Algorithm}` | Algorithm |
+| `x` | `x{Product}` | Product |
+| `y` | `y{Region}` | Region |
+| `z` | `z{Category}` | Category |
+
+Works on **flat patterns**, **bracket slots**, and **benchmarks** — the same syntax everywhere `-p` is used.
 
 ```bash
-# Pattern n/y/x → --group labels: Sort=name, algorithm=y, size=x
-go test -bench . | vizb -p n/y/x --group Sort,algorithm,size -o output.html
+# CSV — titles independent of column names
+vizb sales.csv -g region,product -p 'y{Region},x{Product}' -o sales.html
+
+# Bracket slot — one column, multiple titled dimensions
+vizb sales.csv -g date,category -p '[n{year}-y{months}-x{dates}],z{Category}' -o sales.html
+
+# Benchmark — no --group required
+vizb bench.txt -p 'n{Algorithm}/x{Size}/y{Variant}' -o out.html
 ```
 
-| Pattern slot | `--group` entry | Axis label |
+| `-p` fragment | Default title (no `{}`) | With `{label}` |
 |---|---|---|
-| `n` (name) | `Sort` | chart group label |
-| `y` | `algorithm` | Y-axis title |
-| `x` | `size` | X-axis title |
+| `y` with `-g region,product` | `region` (column name) | `y{Region}` → **Region** |
+| `x` with `-g region,product` | `product` (column name) | `x{Product}` → **Product** |
+| `[n{year}-y{months}-x{dates}]` | `date` for each split dim | **year**, **months**, **dates** |
+| `n/x/y` on benchmarks | (empty) | `n{Algorithm}/x{Size}/y{Variant}` → titled axes |
 
-The same flag plays a different role depending on the parser:
-
-- **Benchmark parsers** (`go`, `rs:*`, `js:*`): `--group` is **labels only** — there are no columns. It names the dimensions that `--group-pattern` already extracted from the benchmark name.
-- **CSV/JSON parsers**: `--group` entries are **column/field names** (or a structured spec with the same separators as `-p`). They select which columns build the label *and* serve as that dimension's label — one flag, both jobs. Comma-separated `-g` requires comma-separated `-p`.
+Omit `{label}` on CSV/JSON and the matching `--group` column name becomes the axis title. When `{label}` is present, it **always** overrides that default.
 
 <Aside type="note">
-  Labels are included in the JSON output under `axisLabels` and displayed on the chart axes. The `name` label is preserved for the UI axis-swap feature, which lets you rotate dimensions while carrying their labels.
+  Titles are emitted as `axisLabels` in the JSON output and rendered on chart axes. The `name` title is preserved for the UI axis-swap feature.
 </Aside>
 
 ## Choosing a Method

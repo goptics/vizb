@@ -61,12 +61,12 @@ const props = defineProps<{
 // Convert props to refs
 const { chartData } = toRefs(props)
 
-// Drives which renderer mounts; only the 3D branch loads echarts-gl.
-const is3DChart = computed(() => is3D(chartData))
-
 // Pull active-chart shape + theme state from the centralized store.
 const { isDark, chartType } = useSettingsStore()
-const { sort, showLabels, scale, autoRotate } = useActiveChartShape()
+const { sort, showLabels, scale, threeDRotate, threeD, threeDVisualMap } = useActiveChartShape()
+
+// Drives which renderer mounts; only the 3D branch loads echarts-gl.
+const is3DChart = computed(() => is3D(chartData, threeD.value))
 
 // Resolved sort gets a no-op default for the worker when the active config has
 // no `sort` field set — keeps the consumer pipeline shape stable.
@@ -99,8 +99,10 @@ const { options } = useChartOptions(
   isDark,
   chartType,
   scale,
-  autoRotate,
-  visibleZ
+  threeDRotate,
+  visibleZ,
+  threeD,
+  threeDVisualMap
 )
 
 const initOptions = {

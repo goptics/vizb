@@ -73,8 +73,8 @@ func init() {
 	rootOpts.LinearOptions.Bind(rootCmd.Flags())
 	rootCmd.Flags().StringSliceVarP(&rootOpts.Charts, "charts", "c", defaultChartTypes, "Chart types to generate (bar, line, pie, heatmap, radar)")
 	rootCmd.Flags().StringArrayVar(&rootOpts.ChartSpecs, "chart", nil,
-		"Per-chart settings override: <type>:<key>=<val>(,<key>=<val>)* or bare flags (labels, 3d-rotate). "+
-			"Keys: swap, sort, scale, labels, 3d-rotate. E.g. --chart bar:swap=yxn,sort=asc --chart pie:labels")
+		"Per-chart settings override: <type>:<key>=<val>(,<key>=<val>)* or bare flags (labels, 3d-rotate, 3d). "+
+			"Keys: swap, sort, scale, labels, 3d-rotate, 3d. E.g. --chart bar:swap=yxn,sort=asc --chart pie:labels")
 
 	// Register the chart subcommands (bar/line/pie/heatmap/radar) from the registry.
 	rootCmd.AddCommand(cli.Commands()...)

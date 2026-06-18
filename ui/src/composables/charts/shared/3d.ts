@@ -4,6 +4,79 @@ import { tooltipDivider, tooltipSpreadRows, renderDonutSvg, type ChartStyling } 
 
 export const round2 = (v: number) => Math.round(v * 100) / 100
 
+/** Blue-to-red gradient for value-mode 3D visualMap (metric height). */
+export const VALUE_3D_COLOR_RANGE = [
+  '#313695',
+  '#4575b4',
+  '#74add1',
+  '#abd9e9',
+  '#e0f3f8',
+  '#ffffbf',
+  '#fee090',
+  '#fdae61',
+  '#f46d43',
+  '#d73027',
+  '#a50026',
+]
+
+export function maxFrom3DData(series: { data: { value: number[] }[] }[]): number {
+  let max = 0
+  for (const s of series) {
+    for (const item of s.data) {
+      const v = item.value[2] ?? 0
+      if (v > max) max = v
+    }
+  }
+  return max
+}
+
+export function create3DVisualMap(max: number, styling: ChartStyling) {
+  return {
+    show: true,
+    min: 0,
+    max: max || 1,
+    dimension: 2,
+    calculable: true,
+    orient: 'vertical' as const,
+    right: '0%',
+    top: 'center',
+    inRange: { color: VALUE_3D_COLOR_RANGE },
+    textStyle: { color: styling.textColor },
+  }
+}
+
+/** ECharts merge keeps omitted visualMap — pass `[]` when off (with replaceMerge). */
+export function resolve3DVisualMap(
+  enabled: boolean,
+  series: { data: { value: number[] }[] }[],
+  styling: ChartStyling
+) {
+  return enabled ? create3DVisualMap(maxFrom3DData(series), styling) : []
+}
+
+/** @deprecated Use create3DVisualMap */
+export const createValue3DVisualMap = create3DVisualMap
+
+export function createValue3DTooltipFormatter(params: {
+  xValues: string[]
+  yValues: string[]
+  xAxisLabel?: string
+  yAxisLabel?: string
+  valueLabel?: string
+}) {
+  const { xValues, yValues, xAxisLabel, yAxisLabel, valueLabel } = params
+  const xLabel = xAxisLabel ?? 'x'
+  const yLabel = yAxisLabel ?? 'y'
+  const zLabel = valueLabel ?? 'value'
+
+  return (p: { value: number[] }) => {
+    const [xi = 0, yi = 0, v = 0] = p.value
+    const xName = xValues[xi] ?? String(xi)
+    const yName = yValues[yi] ?? String(yi)
+    return `<b>${xLabel}: ${xName}</b><br/>${yLabel}: ${yName}<br/>${zLabel}: <b>${round2(v)}</b>`
+  }
+}
+
 /** grid3D boxWidth / boxDepth tier from axis category count (max 200). */
 export function boxSizeForAxisCount(len: number): number {
   if (len < 5) return 80
@@ -136,6 +209,12 @@ export function createZLegendConfig(
     left: 'left',
     top: 'middle',
     textStyle: { color: styling.textColor },
+    // Pin palette swatches so visualMap (value-based bar colors) does not
+    // rewrite legend markers; tooltips use the same getNextColorFor keys.
+    data: zValues.map((z) => ({
+      name: z,
+      itemStyle: { color: getNextColorFor(z) },
+    })),
     // Controlled selection: persist toggles across recomputes (without this,
     // re-applying the option would reset every z back to visible).
     selected,

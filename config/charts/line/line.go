@@ -1,5 +1,5 @@
 // Package line defines the typed Config for line charts. Structurally
-// identical to bar — line is a linear chart and shares Scale + AutoRotate —
+// identical to bar — line is a linear chart and shares Scale + ThreeDRotate —
 // but kept as its own type so the per-chart Materialise remains typed.
 package line
 
@@ -11,12 +11,14 @@ import (
 const Type = "line"
 
 type Config struct {
-	Type       string       `json:"type"`
-	Swap       string       `json:"swap,omitempty"`
-	Sort       *shared.Sort `json:"sort,omitempty"`
-	Scale      string       `json:"scale,omitempty"`
-	ShowLabels *bool        `json:"showLabels,omitempty"`
-	AutoRotate *bool        `json:"autoRotate,omitempty"`
+	Type            string       `json:"type"`
+	Swap            string       `json:"swap,omitempty"`
+	Sort            *shared.Sort `json:"sort,omitempty"`
+	Scale           string       `json:"scale,omitempty"`
+	ShowLabels      *bool        `json:"showLabels,omitempty"`
+	ThreeDRotate    *bool        `json:"threeDRotate,omitempty"`
+	ThreeD          *bool        `json:"threeD,omitempty"`
+	ThreeDVisualMap *bool        `json:"threeDVisualMap,omitempty"`
 }
 
 func (Config) ChartType() string { return Type }
@@ -28,7 +30,9 @@ func init() {
 type Flags struct {
 	Swap, Scale, Sort string
 	ShowLabels        bool
-	AutoRotate        bool
+	ThreeDRotate      bool
+	ThreeD            bool
+	ThreeDVisualMap   *bool
 }
 
 func Materialise(flags Flags, override *Config) Config {
@@ -43,9 +47,19 @@ func Materialise(flags Flags, override *Config) Config {
 		v := true
 		out.ShowLabels = &v
 	}
-	if flags.AutoRotate {
+	if flags.ThreeDRotate {
 		v := true
-		out.AutoRotate = &v
+		out.ThreeDRotate = &v
+	}
+	if flags.ThreeD {
+		v := true
+		out.ThreeD = &v
+	}
+	if flags.ThreeDVisualMap != nil {
+		out.ThreeDVisualMap = flags.ThreeDVisualMap
+	} else if flags.ThreeD {
+		v := true
+		out.ThreeDVisualMap = &v
 	}
 
 	if override != nil {
@@ -61,8 +75,14 @@ func Materialise(flags Flags, override *Config) Config {
 		if override.ShowLabels != nil {
 			out.ShowLabels = override.ShowLabels
 		}
-		if override.AutoRotate != nil {
-			out.AutoRotate = override.AutoRotate
+		if override.ThreeDRotate != nil {
+			out.ThreeDRotate = override.ThreeDRotate
+		}
+		if override.ThreeD != nil {
+			out.ThreeD = override.ThreeD
+		}
+		if override.ThreeDVisualMap != nil {
+			out.ThreeDVisualMap = override.ThreeDVisualMap
 		}
 	}
 

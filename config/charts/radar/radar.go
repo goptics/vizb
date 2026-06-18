@@ -1,5 +1,5 @@
 // Package radar defines the typed Config for radar charts. Radar data is
-// non-linear, so Config intentionally omits Scale and AutoRotate.
+// non-linear, so Config intentionally omits Scale and ThreeDRotate.
 package radar
 
 import (

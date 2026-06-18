@@ -11,17 +11,24 @@ vi.mock('../../components/settings/ScaleControl.vue', () => ({ default: { name: 
 vi.mock('../../components/settings/ShowLabelsControl.vue', () => ({
   default: { name: 'ShowLabelsControl' },
 }))
-vi.mock('../../components/settings/AutoRotateControl.vue', () => ({
-  default: { name: 'AutoRotateControl' },
+vi.mock('../../components/settings/ThreeDRotateControl.vue', () => ({
+  default: { name: 'ThreeDRotateControl' },
+}))
+vi.mock('../../components/settings/ThreeDControl.vue', () => ({
+  default: { name: 'ThreeDControl' },
+}))
+vi.mock('../../components/settings/ThreeDVisualMapControl.vue', () => ({
+  default: { name: 'ThreeDVisualMapControl' },
 }))
 vi.mock('../../components/settings/SwapControl.vue', () => ({ default: { name: 'SwapControl' } }))
 
-const { fieldRegistry, getControl, getRenderableFields } = await import('./fieldRegistry')
+const { fieldRegistry, getControl, getRenderableFields, partitionRenderableFields } =
+  await import('./fieldRegistry')
 
 describe('fieldRegistry', () => {
-  it('exposes the five known field controls', () => {
+  it('exposes the seven known field controls', () => {
     expect(Object.keys(fieldRegistry).sort()).toEqual(
-      ['autoRotate', 'scale', 'showLabels', 'sort', 'swap'].sort()
+      ['threeDRotate', 'scale', 'showLabels', 'sort', 'swap', 'threeD', 'threeDVisualMap'].sort()
     )
   })
 
@@ -29,7 +36,7 @@ describe('fieldRegistry', () => {
     expect(getControl('sort')).toBeDefined()
     expect(getControl('scale')).toBeDefined()
     expect(getControl('showLabels')).toBeDefined()
-    expect(getControl('autoRotate')).toBeDefined()
+    expect(getControl('threeDRotate')).toBeDefined()
     expect(getControl('swap')).toBeDefined()
   })
 
@@ -38,15 +45,13 @@ describe('fieldRegistry', () => {
     expect(getControl('type')).toBeUndefined()
   })
 
-  it('scale and autoRotate are restricted to bar/line', () => {
+  it('scale and threeDRotate are restricted to bar/line', () => {
     expect(fieldRegistry['scale']!.appliesTo).toEqual(['bar', 'line'])
-    expect(fieldRegistry['autoRotate']!.appliesTo).toEqual(['bar', 'line'])
+    expect(fieldRegistry['threeDRotate']!.appliesTo).toEqual(['bar', 'line'])
   })
 
-  it('autoRotate is constrained to 3D data', () => {
-    // autoRotate writes grid3D.viewControl.autoRotate — only meaningful when
-    // the chart actually renders as 3D (i.e. z axis is present in the data).
-    expect(fieldRegistry['autoRotate']!.appliesOn).toEqual(['3D'])
+  it('threeDRotate uses rendering3D visibility', () => {
+    expect(fieldRegistry['threeDRotate']!.visible).toBeDefined()
   })
 
   it('fields with no appliesOn have no dimension constraint', () => {
@@ -66,45 +71,59 @@ describe('fieldRegistry', () => {
 })
 
 describe('getRenderableFields', () => {
-  it('returns 5 entries for a 3D bar config (sort/scale/showLabels/autoRotate/swap)', () => {
+  it('returns 6 entries for a 3D bar config (sort/scale/showLabels/threeDVisualMap/threeDRotate/swap)', () => {
     const cfg: BarConfig = { type: 'bar' }
     const fields = getRenderableFields(cfg, { dimension: '3D' })
-    expect(fields.map((f) => f.key)).toEqual(['sort', 'scale', 'showLabels', 'autoRotate', 'swap'])
+    expect(fields.map((f) => f.key)).toEqual([
+      'sort',
+      'scale',
+      'showLabels',
+      'threeDVisualMap',
+      'threeDRotate',
+      'swap',
+    ])
     for (const f of fields) expect(f.component).toBeDefined()
   })
 
-  it('returns 5 entries for a 3D line config', () => {
+  it('returns 6 entries for a 3D line config', () => {
     const cfg: LineConfig = { type: 'line' }
     expect(getRenderableFields(cfg, { dimension: '3D' }).map((f) => f.key)).toEqual([
       'sort',
       'scale',
       'showLabels',
-      'autoRotate',
+      'threeDVisualMap',
+      'threeDRotate',
       'swap',
     ])
   })
 
-  it('returns 4 entries for a 2D bar config (no autoRotate — 3D-only)', () => {
+  it('returns 4 entries for a 2D bar config without value-3D active', () => {
     const cfg: BarConfig = { type: 'bar' }
-    expect(getRenderableFields(cfg, { dimension: '2D' }).map((f) => f.key)).toEqual([
-      'sort',
-      'scale',
-      'showLabels',
-      'swap',
-    ])
+    expect(
+      getRenderableFields(cfg, { dimension: '2D', rendering3D: false }).map((f) => f.key)
+    ).toEqual(['sort', 'scale', 'showLabels', 'swap'])
   })
 
-  it('returns 4 entries for a 2D line config (no autoRotate)', () => {
+  it('returns 6 entries for a 2D bar config with value-3D active', () => {
+    const cfg: BarConfig = { type: 'bar', threeD: true }
+    expect(
+      getRenderableFields(cfg, {
+        dimension: '2D',
+        rendering3D: true,
+        hasThreeDOption: true,
+        hasZAxis: false,
+      }).map((f) => f.key)
+    ).toEqual(['sort', 'scale', 'showLabels', 'threeD', 'threeDVisualMap', 'threeDRotate', 'swap'])
+  })
+
+  it('returns 4 entries for a 2D line config without value-3D active', () => {
     const cfg: LineConfig = { type: 'line' }
-    expect(getRenderableFields(cfg, { dimension: '2D' }).map((f) => f.key)).toEqual([
-      'sort',
-      'scale',
-      'showLabels',
-      'swap',
-    ])
+    expect(
+      getRenderableFields(cfg, { dimension: '2D', rendering3D: false }).map((f) => f.key)
+    ).toEqual(['sort', 'scale', 'showLabels', 'swap'])
   })
 
-  it('returns 3 entries for a pie config (no scale/autoRotate; dimension is irrelevant)', () => {
+  it('returns 3 entries for a pie config (no scale/threeDRotate; dimension is irrelevant)', () => {
     const cfg: PieConfig = { type: 'pie' }
     expect(getRenderableFields(cfg, { dimension: '2D' }).map((f) => f.key)).toEqual([
       'sort',
@@ -113,7 +132,7 @@ describe('getRenderableFields', () => {
     ])
   })
 
-  it('returns 3 entries for a heatmap config (no scale/autoRotate; dimension is irrelevant)', () => {
+  it('returns 3 entries for a heatmap config (no scale/threeDRotate; dimension is irrelevant)', () => {
     const cfg: HeatmapConfig = { type: 'heatmap' }
     expect(getRenderableFields(cfg, { dimension: '2D' }).map((f) => f.key)).toEqual([
       'sort',
@@ -122,7 +141,7 @@ describe('getRenderableFields', () => {
     ])
   })
 
-  it('returns 3 entries for a radar config (no scale/autoRotate; dimension is irrelevant)', () => {
+  it('returns 3 entries for a radar config (no scale/threeDRotate; dimension is irrelevant)', () => {
     const cfg: RadarConfig = { type: 'radar' }
     expect(getRenderableFields(cfg, { dimension: '2D' }).map((f) => f.key)).toEqual([
       'sort',
@@ -140,9 +159,23 @@ describe('getRenderableFields', () => {
       'sort',
       'scale',
       'showLabels',
-      'autoRotate',
+      'threeDVisualMap',
+      'threeDRotate',
       'swap',
     ])
+  })
+
+  it('partitions 3D fields into a dedicated section', () => {
+    const cfg: BarConfig = { type: 'bar', threeD: true }
+    const fields = getRenderableFields(cfg, {
+      dimension: '2D',
+      rendering3D: true,
+      hasThreeDOption: true,
+      hasZAxis: false,
+    })
+    const { general, threeD } = partitionRenderableFields(fields)
+    expect(general.map((f) => f.key)).toEqual(['sort', 'scale', 'showLabels', 'swap'])
+    expect(threeD.map((f) => f.key)).toEqual(['threeD', 'threeDVisualMap', 'threeDRotate'])
   })
 
   it('renders all applicable fields even when most keys are absent from the config', () => {
@@ -157,7 +190,8 @@ describe('getRenderableFields', () => {
       'sort',
       'scale',
       'showLabels',
-      'autoRotate',
+      'threeDVisualMap',
+      'threeDRotate',
       'swap',
     ])
   })

@@ -8,6 +8,7 @@ import {
   LegendComponent,
   GridComponent,
   ToolboxComponent,
+  VisualMapComponent,
 } from 'echarts/components'
 import { Bar3DChart, Line3DChart, Scatter3DChart } from 'echarts-gl/charts'
 import { Grid3DComponent } from 'echarts-gl/components'
@@ -24,6 +25,7 @@ use([
   LegendComponent,
   GridComponent,
   ToolboxComponent,
+  VisualMapComponent,
   Bar3DChart,
   Line3DChart,
   Scatter3DChart,
@@ -55,15 +57,16 @@ defineEmits<{
     `grid3D.viewControl.autoRotate` — just patch in place; the ViewGL flips
     the rotation animation without rebuilding the scene.
 
-    Heavy changes are still handled correctly: ECharts' default
-    `replaceMerge: ['series']` replaces series wholesale on dataset swaps,
-    so a new dataset doesn't leave stale series behind. The merge vs.
-    replace is decided per top-level component by `replaceMerge`, not by us.
+    Heavy changes are still handled correctly: `replaceMerge: ['series']`
+    replaces series wholesale on dataset swaps, so a new dataset doesn't leave
+    stale series behind. `visualMap` is also replace-merged so toggling the
+    3D visual-map setting off clears the gradient controller (merge alone
+    would keep the previous visualMap mounted).
   -->
   <VChart
     :option="option"
     :init-options="initOptions"
-    :update-options="{ notMerge: false }"
+    :update-options="{ notMerge: false, replaceMerge: ['series', 'visualMap'] }"
     :autoresize="true"
     @legendselectchanged="$emit('legendselectchanged', $event)"
   />

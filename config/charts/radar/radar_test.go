@@ -50,12 +50,12 @@ func (s *RadarSuite) TestMaterialiseRadarPrecedence() {
 	s.Equal("asc", got.Sort.Order)
 }
 
-func (s *RadarSuite) TestRadarConfigNoScaleOrAutoRotate() {
+func (s *RadarSuite) TestRadarConfigNoScaleOrThreeDRotate() {
 	typ := reflect.TypeOf(Config{})
 	_, hasScale := typ.FieldByName("Scale")
-	_, hasAutoRotate := typ.FieldByName("AutoRotate")
+	_, hasThreeDRotate := typ.FieldByName("ThreeDRotate")
 	s.False(hasScale, "radar Config should not have a Scale field")
-	s.False(hasAutoRotate, "radar Config should not have an AutoRotate field")
+	s.False(hasThreeDRotate, "radar Config should not have an ThreeDRotate field")
 }
 
 func TestRadarSuite(t *testing.T) {

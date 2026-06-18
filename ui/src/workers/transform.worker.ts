@@ -56,6 +56,7 @@ export type ComputeMessage = {
   sort: Sort
   showLabels: boolean
   scale: ScaleType
+  threeD: boolean
 }
 export type WorkerRequest = InitMessage | SetArrangementMessage | ComputeMessage
 
@@ -166,7 +167,8 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
     msg.sort,
     msg.showLabels,
     msg.scale,
-    canonical
+    canonical,
+    msg.threeD
   )
   post({
     type: 'chart',

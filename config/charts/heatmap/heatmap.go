@@ -1,5 +1,5 @@
 // Package heatmap defines the typed Config for heatmap charts. Heatmap data
-// is non-linear, so Config intentionally omits Scale and AutoRotate.
+// is non-linear, so Config intentionally omits Scale and ThreeDRotate.
 package heatmap
 
 import (

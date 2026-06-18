@@ -1,10 +1,12 @@
 import type { Component } from 'vue'
-import type { ChartConfig, ChartType } from '../../types'
+import type { ChartConfig, ChartType, ScaleType, Sort } from '../../types'
 import type { Dimension } from '../../lib/utils'
 import SortControl from '../../components/settings/SortControl.vue'
 import ScaleControl from '../../components/settings/ScaleControl.vue'
 import ShowLabelsControl from '../../components/settings/ShowLabelsControl.vue'
-import AutoRotateControl from '../../components/settings/AutoRotateControl.vue'
+import ThreeDRotateControl from '../../components/settings/ThreeDRotateControl.vue'
+import ThreeDControl from '../../components/settings/ThreeDControl.vue'
+import ThreeDVisualMapControl from '../../components/settings/ThreeDVisualMapControl.vue'
 import SwapControl from '../../components/settings/SwapControl.vue'
 
 // Re-exported so SettingsPanel can import the chart-type picker threshold
@@ -12,32 +14,34 @@ import SwapControl from '../../components/settings/SwapControl.vue'
 // settings panel" decisions.
 export { shouldUseTabPicker, CHART_PICKER_TAB_THRESHOLD } from '../../lib/pickerRule'
 
-// Field registry: maps a JSON field name to the control component that renders
-// it. `SettingsPanel.vue` uses `getRenderableFields(activeConfig, ctx)` to
-// discover which fields are AVAILABLE for the active chart — the result is
-// filtered by:
-//   - `appliesTo` : which chart types see the field (e.g. pie vs bar)
-//   - `appliesOn` : which data shape the field makes sense for
-//     (e.g. `autoRotate` is 3D-only — it writes `grid3D.viewControl.autoRotate`
-//     and has no visual effect on a 2D bar/line chart).
-//
-// `appliesOn` is a list of dimensions on which the field is applicable.
-// `undefined` (or the property being absent) means "no dimension constraint" —
-// the field renders on every dimension. When the active data's dimension is
-// unknown (empty dataset) the constraint is also skipped, so the panel still
-// shows every field by default until data arrives.
-//
-// Adding a new field = one entry here + a Vue control file. Adding a new
-// chart type = update the `appliesTo` matrix on existing fields. Adding a new
-// dimension-specific field = set `appliesOn: ['3D']` (or whatever the
-// constraint is).
+/** Value type each settings control emits for its field key. */
+export type SettingFieldValueMap = {
+  sort: Sort
+  scale: ScaleType
+  showLabels: boolean
+  threeDRotate: boolean
+  threeD: boolean
+  threeDVisualMap: boolean
+  swap: string | undefined
+}
+
+export type SettingFieldKey = keyof SettingFieldValueMap
+
+/** 3D-related settings rendered in a dedicated panel section. */
+export const THREE_D_FIELD_KEYS: readonly SettingFieldKey[] = [
+  'threeD',
+  'threeDVisualMap',
+  'threeDRotate',
+]
+
 type FieldMeta = {
   component: Component
   appliesTo: ChartType[]
   appliesOn?: Dimension[]
+  visible?: (ctx: RenderContext) => boolean
 }
 
-export const fieldRegistry: Record<string, FieldMeta> = {
+export const fieldRegistry: Record<SettingFieldKey, FieldMeta> = {
   sort: {
     component: SortControl,
     appliesTo: ['bar', 'line', 'pie', 'heatmap', 'radar'],
@@ -50,10 +54,22 @@ export const fieldRegistry: Record<string, FieldMeta> = {
     component: ShowLabelsControl,
     appliesTo: ['bar', 'line', 'pie', 'heatmap', 'radar'],
   },
-  autoRotate: {
-    component: AutoRotateControl,
+  threeD: {
+    component: ThreeDControl,
     appliesTo: ['bar', 'line'],
-    appliesOn: ['3D'],
+    visible: (ctx) => ctx.hasThreeDOption === true && ctx.hasZAxis === false,
+  },
+  threeDVisualMap: {
+    component: ThreeDVisualMapControl,
+    appliesTo: ['bar', 'line'],
+    visible: (ctx) =>
+      ctx.rendering3D === true || ctx.dimension === '3D' || ctx.dimension === undefined,
+  },
+  threeDRotate: {
+    component: ThreeDRotateControl,
+    appliesTo: ['bar', 'line'],
+    visible: (ctx) =>
+      ctx.rendering3D === true || ctx.dimension === '3D' || ctx.dimension === undefined,
   },
   swap: {
     component: SwapControl,
@@ -61,30 +77,21 @@ export const fieldRegistry: Record<string, FieldMeta> = {
   },
 }
 
-// Returns the control component registered for `key`, or undefined if the key
-// is the `type` discriminator or an unrecognised field.
 export function getControl(key: string): Component | undefined {
-  if (key === 'type') return undefined
-  const meta = fieldRegistry[key]
-  return meta?.component
+  if (key === 'type' || !(key in fieldRegistry)) return undefined
+  return fieldRegistry[key as SettingFieldKey].component
 }
 
-// Renderable field metadata for the active chart's config: an ordered list of
-// `{ key, component }` pairs for every registered field that applies to the
-// chart's `type` AND (if constrained) the active data's dimension. Independent
-// of which fields the config currently populates — the panel shows all
-// available fields, each control displays in default/off state until the user
-// opts in.
-export type RenderableField = {
-  key: string
+export type RenderableField<K extends SettingFieldKey = SettingFieldKey> = {
+  key: K
   component: Component
 }
 
 export type RenderContext = {
-  // Active data's dimensionality. `undefined` means unknown / not yet loaded;
-  // the dimension constraint is skipped in that case so the panel still shows
-  // every field by default.
   dimension?: Dimension
+  rendering3D?: boolean
+  hasThreeDOption?: boolean
+  hasZAxis?: boolean
 }
 
 export function getRenderableFields(
@@ -92,12 +99,25 @@ export function getRenderableFields(
   ctx: RenderContext = {}
 ): RenderableField[] {
   const fields: RenderableField[] = []
-  for (const [key, meta] of Object.entries(fieldRegistry)) {
+  for (const key of Object.keys(fieldRegistry) as SettingFieldKey[]) {
+    const meta = fieldRegistry[key]
     if (!meta.appliesTo.includes(config.type)) continue
-    if (meta.appliesOn && ctx.dimension && !meta.appliesOn.includes(ctx.dimension)) {
+    if (meta.visible) {
+      if (!meta.visible(ctx)) continue
+    } else if (meta.appliesOn && ctx.dimension && !meta.appliesOn.includes(ctx.dimension)) {
       continue
     }
     fields.push({ key, component: meta.component })
   }
   return fields
+}
+
+export function partitionRenderableFields(fields: RenderableField[]) {
+  const threeDKeySet = new Set<string>(THREE_D_FIELD_KEYS)
+  const threeD = THREE_D_FIELD_KEYS.flatMap((key) => {
+    const field = fields.find((f) => f.key === key)
+    return field ? [field] : []
+  })
+  const general = fields.filter((f) => !threeDKeySet.has(f.key))
+  return { general, threeD }
 }

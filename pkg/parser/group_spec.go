@@ -72,9 +72,27 @@ func isColumnNameRune(r rune) bool {
 	return unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_' || r == '.' || r == '-'
 }
 
+func formatGroupDisplay(group []string, structured bool) string {
+	if len(group) == 1 {
+		return group[0]
+	}
+	if structured {
+		return reconstructGroupSpec(group)
+	}
+	return strings.Join(group, ",")
+}
+
+func errGroupPatternSeparatorMismatch(groupDisplay, pattern string, expectedSeps, actualSeps []string) error {
+	return fmt.Errorf(
+		"--group %q and --group-pattern %q separators do not match (expected %q, got %q)",
+		groupDisplay, pattern,
+		formatSeparators(expectedSeps), formatSeparators(actualSeps),
+	)
+}
+
 // parseGroupSpec resolves column names and separators from the raw --group flag values
 // and the separators declared in --group-pattern.
-func parseGroupSpec(group []string, patternSeps []string) (GroupSpec, error) {
+func parseGroupSpec(group []string, pattern string, patternSeps []string) (GroupSpec, error) {
 	if len(group) == 0 {
 		return GroupSpec{}, nil
 	}
@@ -99,9 +117,9 @@ func parseGroupSpec(group []string, patternSeps []string) (GroupSpec, error) {
 		if len(columns) == 1 && strings.TrimSpace(columns[0]) == strings.TrimSpace(group[0]) {
 			return GroupSpec{Columns: columns, Separators: nil, Structured: false}, nil
 		}
-		return GroupSpec{}, fmt.Errorf(
-			"--group %q does not match --group-pattern separators: expected %d column(s), found %d",
-			group[0], expected, len(columns),
+		return GroupSpec{}, errGroupPatternSeparatorMismatch(
+			group[0], pattern,
+			extractSpecSeparators(group[0]), patternSeps,
 		)
 	}
 
@@ -138,7 +156,7 @@ func ResolveGroupConfig(cfg Config) (Config, error) {
 	}
 	cfg.TabularPattern = &tp
 
-	spec, err := parseGroupSpec(cfg.Group, tp.TopSeparators)
+	spec, err := parseGroupSpec(cfg.Group, cfg.GroupPattern, tp.TopSeparators)
 	if err != nil {
 		return cfg, err
 	}
@@ -149,9 +167,9 @@ func ResolveGroupConfig(cfg Config) (Config, error) {
 
 	if spec.Structured {
 		if !separatorsMatch(spec.Separators, tp.TopSeparators) {
-			return cfg, fmt.Errorf(
-				"--group-pattern %q separators do not match --group structure (expected %q, got %q)",
-				cfg.GroupPattern, formatSeparators(spec.Separators), formatSeparators(tp.TopSeparators),
+			return cfg, errGroupPatternSeparatorMismatch(
+				formatGroupDisplay(cfg.Group, true), cfg.GroupPattern,
+				spec.Separators, tp.TopSeparators,
 			)
 		}
 	}
@@ -183,8 +201,8 @@ func ValidateTabularGroupAlignment(cfg Config) error {
 	slotCount := len(cfg.TabularPattern.Slots)
 	if len(cols) != slotCount {
 		return fmt.Errorf(
-			"--group defines %d column(s) but --group-pattern %q defines %d slot(s)",
-			len(cols), cfg.GroupPattern, slotCount,
+			"--group and --group-pattern dimension count do not match: %d column(s) in %q, %d slot(s) in --group-pattern %q",
+			len(cols), formatGroupDisplay(cfg.Group, cfg.GroupStructured), slotCount, cfg.GroupPattern,
 		)
 	}
 
@@ -192,9 +210,9 @@ func ValidateTabularGroupAlignment(cfg Config) error {
 	if len(cols) > 1 && len(cfg.Group) > 1 && !isStructuredGroup(cfg.Group) {
 		expected := repeatSep(",", len(cols)-1)
 		if !separatorsMatch(expected, patternSeps) {
-			return fmt.Errorf(
-				"comma-separated --group requires comma-separated --group-pattern (e.g. -p x,y,z), not %q",
-				cfg.GroupPattern,
+			return errGroupPatternSeparatorMismatch(
+				formatGroupDisplay(cfg.Group, false), cfg.GroupPattern,
+				expected, patternSeps,
 			)
 		}
 	}

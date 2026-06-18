@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Separator } from '../ui'
 import SettingsToggle from '../SettingsToggle.vue'
 
 const props = defineProps<{
@@ -16,11 +15,10 @@ const value = computed(() => props.modelValue ?? false)
 
 <template>
   <SettingsToggle
-    id="auto-rotate-switch"
+    id="three-d-rotate-switch"
     label="Auto rotate"
     description="Continuously rotate the 3D chart."
     :checked="value"
     @update:checked="emit('update:modelValue', $event)"
   />
-  <Separator />
 </template>

@@ -33,23 +33,23 @@ describe('useActiveChartShape', () => {
     holder.activeIndex = 0
   })
 
-  it('bar config returns scale/autoRotate/showLabels defaults when fields are absent', async () => {
+  it('bar config returns scale/threeDRotate/showLabels defaults when fields are absent', async () => {
     holder.ref = ref(ds([{ type: 'bar' as ChartType }]))
     const { useActiveChartShape } = await import('./useActiveChartShape')
-    const { scale, autoRotate, showLabels } = useActiveChartShape()
+    const { scale, threeDRotate, showLabels } = useActiveChartShape()
     expect(scale.value).toBe('linear')
-    expect(autoRotate.value).toBe(false)
+    expect(threeDRotate.value).toBe(false)
     expect(showLabels.value).toBe(false)
   })
 
   it('pie config returns the same defaults without runtime branching', async () => {
-    // PieConfig has no `scale` / `autoRotate` field at all — `??` fallback
+    // PieConfig has no `scale` / `threeDRotate` field at all — `??` fallback
     // gives the same defaults. No `cfg.type === 'bar' || ...` guard needed.
     holder.ref = ref(ds([{ type: 'pie' as ChartType }]))
     const { useActiveChartShape } = await import('./useActiveChartShape')
-    const { scale, autoRotate, showLabels } = useActiveChartShape()
+    const { scale, threeDRotate, showLabels } = useActiveChartShape()
     expect(scale.value).toBe('linear')
-    expect(autoRotate.value).toBe(false)
+    expect(threeDRotate.value).toBe(false)
     expect(showLabels.value).toBe(false)
   })
 
@@ -59,15 +59,15 @@ describe('useActiveChartShape', () => {
         {
           type: 'bar' as ChartType,
           scale: 'log',
-          autoRotate: true,
+          threeDRotate: true,
           showLabels: true,
         },
       ])
     )
     const { useActiveChartShape } = await import('./useActiveChartShape')
-    const { scale, autoRotate, showLabels } = useActiveChartShape()
+    const { scale, threeDRotate, showLabels } = useActiveChartShape()
     expect(scale.value).toBe('log')
-    expect(autoRotate.value).toBe(true)
+    expect(threeDRotate.value).toBe(true)
     expect(showLabels.value).toBe(true)
   })
 })

@@ -122,7 +122,7 @@ describe('buildChartForSignature — additional branches', () => {
     void statTemplate
   })
 
-  it('attaches render3D only when x, y, and z are all populated', () => {
+  it('attaches grouped render3D only when x, y, and z are all populated', () => {
     const with3D: DataPoint[] = [dp('X1', 'Y1', 'Z1', 'v', 5)]
     const without3D: DataPoint[] = [dp('X1', 'Y1', '', 'v', 5)]
 
@@ -131,7 +131,51 @@ describe('buildChartForSignature — additional branches', () => {
     const chart2D = buildChartForSignature(without3D, signature, statTemplate, undefined, noSort)
 
     expect(chart3D.render3D).toBeDefined()
+    expect(chart3D.render3D!.mode).toBe('grouped')
     expect(chart2D.render3D).toBeUndefined()
+  })
+
+  it('attaches value render3D when threeD is on for x+y data', () => {
+    const data: DataPoint[] = [
+      dp('X1', 'Y1', '', 'v', 5),
+      dp('X2', 'Y1', '', 'v', 3),
+      dp('X1', 'Y2', '', 'v', 7),
+    ]
+    const { signature, statTemplate } = listChartSignatures(data)[0]!
+    const chart = buildChartForSignature(
+      data,
+      signature,
+      statTemplate,
+      undefined,
+      noSort,
+      false,
+      'linear',
+      undefined,
+      true
+    )
+
+    expect(chart.render3D).toBeDefined()
+    expect(chart.render3D!.mode).toBe('value')
+    expect(chart.render3D!.zValues).toEqual([])
+    expect(chart.render3D!.barSeries).toHaveLength(1)
+    expect(chart.render3D!.barSeries[0]!.data[0]!.value).toEqual([0, 0, 5])
+  })
+
+  it('skips value render3D when threeD toggle is off', () => {
+    const data: DataPoint[] = [dp('X1', 'Y1', '', 'v', 5)]
+    const { signature, statTemplate } = listChartSignatures(data)[0]!
+    const chart = buildChartForSignature(
+      data,
+      signature,
+      statTemplate,
+      undefined,
+      noSort,
+      false,
+      'linear',
+      undefined,
+      false
+    )
+    expect(chart.render3D).toBeUndefined()
   })
 
   it('desc sort places highest-total xAxis series first', () => {

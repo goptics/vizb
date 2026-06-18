@@ -50,12 +50,12 @@ func (s *HeatmapSuite) TestMaterialiseHeatmapPrecedence() {
 	s.Equal("asc", got.Sort.Order)
 }
 
-func (s *HeatmapSuite) TestHeatmapConfigNoScaleOrAutoRotate() {
+func (s *HeatmapSuite) TestHeatmapConfigNoScaleOrThreeDRotate() {
 	typ := reflect.TypeOf(Config{})
 	_, hasScale := typ.FieldByName("Scale")
-	_, hasAutoRotate := typ.FieldByName("AutoRotate")
+	_, hasThreeDRotate := typ.FieldByName("ThreeDRotate")
 	s.False(hasScale, "heatmap Config should not have a Scale field")
-	s.False(hasAutoRotate, "heatmap Config should not have an AutoRotate field")
+	s.False(hasThreeDRotate, "heatmap Config should not have an ThreeDRotate field")
 }
 
 func TestHeatmapSuite(t *testing.T) {

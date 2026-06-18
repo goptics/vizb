@@ -38,7 +38,8 @@ export function useChartPipeline(
   activeGroupId: Ref<number>,
   sort: Ref<Sort>,
   showLabels: Ref<boolean>,
-  scale: Ref<ScaleType>
+  scale: Ref<ScaleType>,
+  threeD: Ref<boolean>
 ) {
   const charts = ref<ChartState[]>([])
   // True once any chart has data — gates the first-load full-page skeleton.
@@ -95,6 +96,7 @@ export function useChartPipeline(
       sort: currentSort(),
       showLabels: showLabels.value,
       scale: scale.value,
+      threeD: threeD.value,
     })
   }
 
@@ -267,6 +269,7 @@ export function useChartPipeline(
         sort.value.order,
         showLabels.value,
         scale.value,
+        threeD.value,
       ] as const,
     () => {
       startBatch()

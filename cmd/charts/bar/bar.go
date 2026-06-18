@@ -18,15 +18,19 @@ func init() { cli.Register(NewCommand) }
 // chart options. pie/heatmap/radar omit these, enforced at compile time.
 type Options struct {
 	cli.ChartOptions
-	Scale      string
-	AutoRotate bool
+	Scale           string
+	ThreeDRotate    bool
+	ThreeD          bool
+	ThreeDVisualMap bool
 }
 
 // Bind registers the shared chart flags plus --scale and --3d-rotate.
 func (o *Options) Bind(fs *pflag.FlagSet) {
 	o.ChartOptions.Bind(fs)
 	fs.StringVarP(&o.Scale, "scale", "S", "linear", "Scale type (linear, log)")
-	fs.BoolVar(&o.AutoRotate, "3d-rotate", false, "Auto-rotate the 3D scene (only applies when z-axis data is present)")
+	fs.BoolVar(&o.ThreeDRotate, "3d-rotate", false, "Auto-rotate the 3D scene (only applies when z-axis data is present)")
+	fs.BoolVar(&o.ThreeD, "3d", false, "Enable value 3D for x+y data (y categories on depth, metric on height)")
+	fs.BoolVar(&o.ThreeDVisualMap, "3d-visualmap", false, "Color 3D bars/lines by metric value (visualMap gradient)")
 }
 
 // NewCommand builds the `vizb bar` cobra command.
@@ -41,12 +45,20 @@ func NewCommand() *cobra.Command {
 			o.LinearOptions.Validate()
 			cli.ValidateScale(&o.Scale)
 
+			var threeDVisualMap *bool
+			if cmd.Flags().Changed("3d-visualmap") {
+				v := o.ThreeDVisualMap
+				threeDVisualMap = &v
+			}
+
 			cfg := barchart.Materialise(barchart.Flags{
-				Swap:       o.Swap,
-				Scale:      o.Scale,
-				Sort:       o.Sort,
-				ShowLabels: o.ShowLabels,
-				AutoRotate: o.AutoRotate,
+				Swap:            o.Swap,
+				Scale:           o.Scale,
+				Sort:            o.Sort,
+				ShowLabels:      o.ShowLabels,
+				ThreeDRotate:    o.ThreeDRotate,
+				ThreeD:          o.ThreeD,
+				ThreeDVisualMap: threeDVisualMap,
 			}, nil)
 
 			axes := parser.GroupAxes(o.CommonOptions.ParseConfig())

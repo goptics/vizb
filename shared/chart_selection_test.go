@@ -24,6 +24,14 @@ func dsWith(types []string, zValues ...string) *Dataset {
 	return ds
 }
 
+func dsWithThreeDOption(chartType string) *Dataset {
+	cfg, err := config_charts.Decode(chartType, []byte(`{"type":"`+chartType+`","threeD":true}`))
+	if err != nil {
+		panic(err)
+	}
+	return &Dataset{Settings: []config_charts.ChartConfig{cfg}}
+}
+
 type ChartSelectionSuite struct {
 	suite.Suite
 }
@@ -62,6 +70,9 @@ func (s *ChartSelectionSuite) TestDatasetNeeds3D() {
 		{"bar but no z => no", dsWith([]string{"bar"}, "", ""), false},
 		{"bar but empty data => no", dsWith([]string{"bar"}), false},
 		{"mixed charts with z, one z point", dsWith([]string{"pie", "bar"}, "", "3"), true},
+		{"threeD bar without z => needs 3D", dsWithThreeDOption("bar"), true},
+		{"threeD line without z => needs 3D", dsWithThreeDOption("line"), true},
+		{"threeD pie without z => no", dsWithThreeDOption("pie"), false},
 	}
 	for _, c := range cases {
 		s.Run(c.name, func() {

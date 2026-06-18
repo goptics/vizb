@@ -11,21 +11,21 @@ type GroupSpecSuite struct {
 }
 
 func (s *GroupSpecSuite) TestParseGroupSpecFlatSlice() {
-	spec, err := parseGroupSpec([]string{"name", "category", "region"}, []string{",", ","})
+	spec, err := parseGroupSpec([]string{"name", "category", "region"}, "", []string{",", ","})
 	s.Require().NoError(err)
 	s.Equal([]string{"name", "category", "region"}, spec.Columns)
 	s.False(spec.Structured)
 }
 
 func (s *GroupSpecSuite) TestParseGroupSpecSpaceSingleValue() {
-	spec, err := parseGroupSpec([]string{"name category region"}, []string{" ", " "})
+	spec, err := parseGroupSpec([]string{"name category region"}, "x n y", []string{" ", " "})
 	s.Require().NoError(err)
 	s.Equal([]string{"name", "category", "region"}, spec.Columns)
 	s.Equal([]string{" ", " "}, spec.Separators)
 }
 
 func (s *GroupSpecSuite) TestParseGroupSpecStructured() {
-	spec, err := parseGroupSpec([]string{"name", "category/region"}, nil)
+	spec, err := parseGroupSpec([]string{"name", "category/region"}, "", nil)
 	s.Require().NoError(err)
 	s.True(spec.Structured)
 	s.Equal([]string{"name", "category", "region"}, spec.Columns)
@@ -52,24 +52,52 @@ func (s *GroupSpecSuite) TestResolveGroupConfigCommaPatternFlat() {
 	s.Equal([]string{","}, cfg.LabelSeparators)
 }
 
-func (s *GroupSpecSuite) TestResolveGroupConfigStructuredMismatch() {
-	_, err := ResolveGroupConfig(Config{
-		Group:        []string{"name", "category/region"},
-		GroupPattern: "x/y/z",
-	})
-	s.Require().Error(err)
-	s.Contains(err.Error(), "separators do not match")
-}
+func (s *GroupSpecSuite) TestGroupPatternSeparatorMismatch() {
+	cases := []struct {
+		name    string
+		group   []string
+		pattern string
+		want    string
+	}{
+		{
+			name:    "comma_group_slash_pattern",
+			group:   []string{"product", "category", "region"},
+			pattern: "x/y/z",
+			want:    `--group "product,category,region" and --group-pattern "x/y/z" separators do not match (expected ", ,", got "/ /")`,
+		},
+		{
+			name:    "slash_group_mixed_pattern",
+			group:   []string{"product/category/region"},
+			pattern: "x,y/z",
+			want:    `--group "product/category/region" and --group-pattern "x,y/z" separators do not match (expected "/ /", got ", /")`,
+		},
+		{
+			name:    "hash_group_mixed_pattern",
+			group:   []string{"product#category#region"},
+			pattern: "x#y,z",
+			want:    `--group "product#category#region" and --group-pattern "x#y,z" separators do not match (expected "# #", got "# ,")`,
+		},
+		{
+			name:    "structured_multi_arg",
+			group:   []string{"name", "category/region"},
+			pattern: "x/y/z",
+			want:    `--group "name,category/region" and --group-pattern "x/y/z" separators do not match (expected ", /", got "/ /")`,
+		},
+	}
 
-func (s *GroupSpecSuite) TestValidateTabularGroupRejectsSlashPattern() {
-	cfg, err := ResolveGroupConfig(Config{
-		Group:        []string{"region", "product", "month"},
-		GroupPattern: "x/y/z",
-	})
-	s.Require().NoError(err)
-	err = ValidateTabularGroupAlignment(cfg)
-	s.Require().Error(err)
-	s.Contains(err.Error(), "comma-separated --group")
+	for _, tc := range cases {
+		s.Run(tc.name, func() {
+			cfg, err := ResolveGroupConfig(Config{
+				Group:        tc.group,
+				GroupPattern: tc.pattern,
+			})
+			if err == nil {
+				err = ValidateTabularGroupAlignment(cfg)
+			}
+			s.Require().Error(err)
+			s.Equal(tc.want, err.Error())
+		})
+	}
 }
 
 func (s *GroupSpecSuite) TestValidateTabularGroupAcceptsCommaPattern() {

@@ -16,27 +16,27 @@ func (s *LineSuite) TestMaterialiseLinePrecedence() {
 	tr := true
 	fa := false
 
-	override := &Config{Swap: "yxn", Scale: "log", ShowLabels: &tr, AutoRotate: &tr}
-	got := Materialise(Flags{Swap: "xyn", Scale: "linear", ShowLabels: false, AutoRotate: false}, override)
+	override := &Config{Swap: "yxn", Scale: "log", ShowLabels: &tr, ThreeDRotate: &tr}
+	got := Materialise(Flags{Swap: "xyn", Scale: "linear", ShowLabels: false, ThreeDRotate: false}, override)
 	s.Equal("yxn", got.Swap)
 	s.Equal("log", got.Scale)
 	s.Require().NotNil(got.ShowLabels)
 	s.True(*got.ShowLabels)
-	s.Require().NotNil(got.AutoRotate)
-	s.True(*got.AutoRotate)
+	s.Require().NotNil(got.ThreeDRotate)
+	s.True(*got.ThreeDRotate)
 
-	got = Materialise(Flags{Swap: "xyn", Scale: "linear", ShowLabels: true, AutoRotate: true}, nil)
+	got = Materialise(Flags{Swap: "xyn", Scale: "linear", ShowLabels: true, ThreeDRotate: true}, nil)
 	s.Equal("xyn", got.Swap)
 	s.Equal("linear", got.Scale)
 	s.Require().NotNil(got.ShowLabels)
 	s.True(*got.ShowLabels)
-	s.Require().NotNil(got.AutoRotate)
-	s.True(*got.AutoRotate)
+	s.Require().NotNil(got.ThreeDRotate)
+	s.True(*got.ThreeDRotate)
 
 	got = Materialise(Flags{}, nil)
 	s.Equal("linear", got.Scale)
 	s.Nil(got.ShowLabels)
-	s.Nil(got.AutoRotate)
+	s.Nil(got.ThreeDRotate)
 
 	got = Materialise(Flags{ShowLabels: true}, &Config{ShowLabels: &fa})
 	s.Require().NotNil(got.ShowLabels)
@@ -54,11 +54,11 @@ func (s *LineSuite) TestMaterialiseLinePrecedence() {
 	s.Equal("asc", got.Sort.Order)
 }
 
-func (s *LineSuite) TestLineConfigHasScaleAndAutoRotate() {
-	got := Materialise(Flags{Scale: "log", AutoRotate: true}, nil)
+func (s *LineSuite) TestLineConfigHasScaleAndThreeDRotate() {
+	got := Materialise(Flags{Scale: "log", ThreeDRotate: true}, nil)
 	s.Equal("log", got.Scale)
-	s.Require().NotNil(got.AutoRotate)
-	s.True(*got.AutoRotate)
+	s.Require().NotNil(got.ThreeDRotate)
+	s.True(*got.ThreeDRotate)
 }
 
 func TestLineSuite(t *testing.T) {

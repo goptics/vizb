@@ -79,12 +79,12 @@ export function useSettingsStore() {
 
   // Per-field setters write back to the active config in place. Each config
   // shape carries only the fields that apply to its chart type, so `scale` and
-  // `autoRotate` are only set on bar/line configs (the others have no such
+  // `threeDRotate` are only set on bar/line configs (the others have no such
   // field). The narrowing uses TypeScript's optional-field semantics — no
   // runtime type-guard. The SettingsPanel already gates by `appliesTo` in
   // `fieldRegistry`, so the setters are only ever called for the chart types
-  // that carry the field. The Go migration does NOT pre-populate `autoRotate`
-  // (it didn't exist in v0.12.0), so an `'autoRotate' in cfg` guard here would
+  // that carry the field. The Go migration does NOT pre-populate `threeDRotate`
+  // (it didn't exist in v0.12.0), so an `'threeDRotate' in cfg` guard here would
   // silently no-op the first toggle on a freshly migrated config.
   const setSort = (sort: Sort) => {
     const cfg = activeConfig.value
@@ -101,14 +101,24 @@ export function useSettingsStore() {
     if (cfg) cfg.showLabels = show
   }
 
-  const setAutoRotate = (rotate: boolean) => {
-    const cfg = activeConfig.value as { autoRotate?: boolean } | undefined
-    if (cfg) cfg.autoRotate = rotate
+  const setThreeDRotate = (rotate: boolean) => {
+    const cfg = activeConfig.value as { threeDRotate?: boolean } | undefined
+    if (cfg) cfg.threeDRotate = rotate
   }
 
   const setSwap = (swap: string | undefined) => {
     const cfg = activeConfig.value
     if (cfg) cfg.swap = swap
+  }
+
+  const setThreeD = (enabled: boolean) => {
+    const cfg = activeConfig.value as { threeD?: boolean } | undefined
+    if (cfg) cfg.threeD = enabled
+  }
+
+  const setThreeDVisualMap = (enabled: boolean) => {
+    const cfg = activeConfig.value as { threeDVisualMap?: boolean } | undefined
+    if (cfg) cfg.threeDVisualMap = enabled
   }
 
   return {
@@ -121,8 +131,10 @@ export function useSettingsStore() {
     setSort,
     setScale,
     setShowLabels,
-    setAutoRotate,
+    setThreeDRotate,
     setSwap,
+    setThreeD,
+    setThreeDVisualMap,
     toggleDark,
   }
 }

@@ -12,8 +12,14 @@ vi.mock('../components/settings/ScaleControl.vue', () => ({ default: { name: 'Sc
 vi.mock('../components/settings/ShowLabelsControl.vue', () => ({
   default: { name: 'ShowLabelsControl' },
 }))
-vi.mock('../components/settings/AutoRotateControl.vue', () => ({
-  default: { name: 'AutoRotateControl' },
+vi.mock('../components/settings/ThreeDRotateControl.vue', () => ({
+  default: { name: 'ThreeDRotateControl' },
+}))
+vi.mock('../components/settings/ThreeDControl.vue', () => ({
+  default: { name: 'ThreeDControl' },
+}))
+vi.mock('../components/settings/ThreeDVisualMapControl.vue', () => ({
+  default: { name: 'ThreeDVisualMapControl' },
 }))
 vi.mock('../components/settings/SwapControl.vue', () => ({ default: { name: 'SwapControl' } }))
 vi.mock('../components/Selector.vue', () => ({ default: { name: 'Selector' } }))
@@ -30,45 +36,45 @@ const { getRenderableFields } = await import('../composables/settings/fieldRegis
 // of controls.
 
 describe('SettingsPanel field selection', () => {
-  it('renders 5 controls for a 3D bar config (sort/scale/showLabels/autoRotate/swap)', () => {
+  it('renders 6 controls for a 3D bar config (sort/scale/showLabels/threeDVisualMap/threeDRotate/swap)', () => {
     const cfg: BarConfig = {
       type: 'bar',
       sort: { enabled: false, order: 'asc' },
       scale: 'linear',
       showLabels: false,
-      autoRotate: false,
+      threeDRotate: false,
       swap: '',
     }
     expect(getRenderableFields(cfg, { dimension: '3D' }).map((f) => f.key)).toEqual([
       'sort',
       'scale',
       'showLabels',
-      'autoRotate',
+      'threeDVisualMap',
+      'threeDRotate',
       'swap',
     ])
   })
 
-  it('renders 5 controls for a 3D line config (sort/scale/showLabels/autoRotate/swap)', () => {
+  it('renders 6 controls for a 3D line config (sort/scale/showLabels/threeDVisualMap/threeDRotate/swap)', () => {
     const cfg: LineConfig = {
       type: 'line',
       sort: { enabled: false, order: 'asc' },
       scale: 'linear',
       showLabels: false,
-      autoRotate: false,
+      threeDRotate: false,
       swap: '',
     }
     expect(getRenderableFields(cfg, { dimension: '3D' }).map((f) => f.key)).toEqual([
       'sort',
       'scale',
       'showLabels',
-      'autoRotate',
+      'threeDVisualMap',
+      'threeDRotate',
       'swap',
     ])
   })
 
-  it('renders 4 controls for a 2D bar config (no autoRotate — 3D-only)', () => {
-    // A 2D bar chart has no grid3D, so autoRotate has no effect. The panel
-    // must drop the control when the data has no z axis.
+  it('renders 4 controls for a 2D bar config without value-3D active', () => {
     const cfg: BarConfig = {
       type: 'bar',
       sort: { enabled: false, order: 'asc' },
@@ -76,15 +82,31 @@ describe('SettingsPanel field selection', () => {
       showLabels: false,
       swap: '',
     }
-    expect(getRenderableFields(cfg, { dimension: '2D' }).map((f) => f.key)).toEqual([
-      'sort',
-      'scale',
-      'showLabels',
-      'swap',
-    ])
+    expect(
+      getRenderableFields(cfg, { dimension: '2D', rendering3D: false }).map((f) => f.key)
+    ).toEqual(['sort', 'scale', 'showLabels', 'swap'])
   })
 
-  it('renders 4 controls for a 2D line config (no autoRotate)', () => {
+  it('renders 6 controls for a 2D bar config with value-3D active', () => {
+    const cfg: BarConfig = {
+      type: 'bar',
+      threeD: true,
+      sort: { enabled: false, order: 'asc' },
+      scale: 'linear',
+      showLabels: false,
+      swap: '',
+    }
+    expect(
+      getRenderableFields(cfg, {
+        dimension: '2D',
+        rendering3D: true,
+        hasThreeDOption: true,
+        hasZAxis: false,
+      }).map((f) => f.key)
+    ).toEqual(['sort', 'scale', 'showLabels', 'threeD', 'threeDVisualMap', 'threeDRotate', 'swap'])
+  })
+
+  it('renders 4 controls for a 2D line config without value-3D active', () => {
     const cfg: LineConfig = {
       type: 'line',
       sort: { enabled: false, order: 'asc' },
@@ -92,15 +114,12 @@ describe('SettingsPanel field selection', () => {
       showLabels: false,
       swap: '',
     }
-    expect(getRenderableFields(cfg, { dimension: '2D' }).map((f) => f.key)).toEqual([
-      'sort',
-      'scale',
-      'showLabels',
-      'swap',
-    ])
+    expect(
+      getRenderableFields(cfg, { dimension: '2D', rendering3D: false }).map((f) => f.key)
+    ).toEqual(['sort', 'scale', 'showLabels', 'swap'])
   })
 
-  it('renders 3 controls for a pie config (no scale/autoRotate)', () => {
+  it('renders 3 controls for a pie config (no scale/threeDRotate)', () => {
     const cfg: PieConfig = {
       type: 'pie',
       sort: { enabled: false, order: 'asc' },
@@ -114,7 +133,7 @@ describe('SettingsPanel field selection', () => {
     ])
   })
 
-  it('renders 3 controls for a heatmap config (no scale/autoRotate)', () => {
+  it('renders 3 controls for a heatmap config (no scale/threeDRotate)', () => {
     const cfg: HeatmapConfig = {
       type: 'heatmap',
       sort: { enabled: false, order: 'asc' },
@@ -128,7 +147,7 @@ describe('SettingsPanel field selection', () => {
     ])
   })
 
-  it('renders 3 controls for a radar config (no scale/autoRotate)', () => {
+  it('renders 3 controls for a radar config (no scale/threeDRotate)', () => {
     const cfg: RadarConfig = {
       type: 'radar',
       sort: { enabled: false, order: 'asc' },
@@ -148,7 +167,8 @@ describe('SettingsPanel field selection', () => {
       'sort',
       'scale',
       'showLabels',
-      'autoRotate',
+      'threeDVisualMap',
+      'threeDRotate',
       'swap',
     ])
   })

@@ -33,7 +33,7 @@ const makeChartData = (): ChartData => ({
   points: [],
 })
 
-// Build a BaseChartConfig WITHOUT the (now optional) scale / autoRotate fields.
+// Build a BaseChartConfig WITHOUT the (now optional) scale / threeDRotate fields.
 // TypeScript will reject this if those fields are still marked required, so the
 // test acts as a compile-time guard for the relaxation.
 const makeMinimalConfig = (): BaseChartConfig => {
@@ -44,8 +44,8 @@ const makeMinimalConfig = (): BaseChartConfig => {
   return { chartData, sort, showLabels, isDark }
 }
 
-describe('BaseChartConfig (relaxed scale/autoRotate)', () => {
-  it('getBaseOptions works without scale/autoRotate in the config', () => {
+describe('BaseChartConfig (relaxed scale/threeDRotate)', () => {
+  it('getBaseOptions works without scale/threeDRotate in the config', () => {
     const opts = getBaseOptions(makeMinimalConfig())
     expect(opts.tooltip).toBeDefined()
     expect(opts.toolbox).toBeDefined()
@@ -53,20 +53,20 @@ describe('BaseChartConfig (relaxed scale/autoRotate)', () => {
     expect(opts.emphasis).toEqual({ focus: 'series' })
   })
 
-  it('getBaseOptions still works when scale/autoRotate are provided', () => {
+  it('getBaseOptions still works when scale/threeDRotate are provided', () => {
     const chartData: Ref<ChartData> = ref(makeChartData())
     const sort: Ref<Sort> = ref({ enabled: false, order: 'asc' })
     const showLabels = ref(false)
     const isDark = ref(false)
     const scale = ref<'linear' | 'log'>('log')
-    const autoRotate = ref(true)
+    const threeDRotate = ref(true)
     const cfg: BaseChartConfig = {
       chartData,
       sort,
       showLabels,
       isDark,
       scale,
-      autoRotate,
+      threeDRotate,
     }
     const opts = getBaseOptions(cfg)
     expect(opts.tooltip).toBeDefined()
