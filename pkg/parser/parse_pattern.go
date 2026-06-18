@@ -90,6 +90,43 @@ func invalidPatternRemainder(s string) error {
 	return nil
 }
 
+// expandSeparatorRun splits a run of repeated separator characters into single-character
+// separators with empty dimension slots between them (e.g. "--" → "-", empty, "-").
+// Heterogeneous or alphanumeric runs are kept as a single literal separator.
+func expandSeparatorRun(sep string) ([]string, int) {
+	if sep == "" || len(sep) == 1 {
+		if sep == "" {
+			return nil, 0
+		}
+		return []string{sep}, 0
+	}
+	if invalidPatternRemainder(sep) != nil {
+		return []string{sep}, 0
+	}
+	first := sep[0]
+	for i := 1; i < len(sep); i++ {
+		if sep[i] != first {
+			return []string{sep}, 0
+		}
+	}
+	out := make([]string, len(sep))
+	for i := range out {
+		out[i] = string(first)
+	}
+	return out, len(sep) - 1
+}
+
+func appendSeparatorRun(parts, separators []string, sep string) ([]string, []string) {
+	seps, emptyCount := expandSeparatorRun(sep)
+	for j, s := range seps {
+		separators = append(separators, s)
+		if j < emptyCount {
+			parts = append(parts, "")
+		}
+	}
+	return parts, separators
+}
+
 // tokenizePattern splits a group pattern into expanded dimension parts and separators between them.
 // Leading or skipped segments produce empty parts so name splitting stays index-aligned.
 func tokenizePattern(pattern string) (parts []string, separators []string, err error) {
@@ -108,7 +145,8 @@ func tokenizePattern(pattern string) (parts []string, separators []string, err e
 	}
 
 	lastEnd := matches[len(matches)-1].start + len(matches[len(matches)-1].raw)
-	if err := invalidPatternRemainder(pattern[lastEnd:]); err != nil {
+	remainder := pattern[lastEnd:]
+	if err := invalidPatternRemainder(remainder); err != nil {
 		return nil, nil, err
 	}
 
@@ -121,8 +159,15 @@ func tokenizePattern(pattern string) (parts []string, separators []string, err e
 		parts = append(parts, m.expanded)
 		if i+1 < len(matches) {
 			prevEnd := m.start + len(m.raw)
-			separators = append(separators, pattern[prevEnd:matches[i+1].start])
+			parts, separators = appendSeparatorRun(parts, separators, pattern[prevEnd:matches[i+1].start])
 		}
+	}
+
+	// Trailing separators (e.g. n-x-) declare an empty tail slot so extra value
+	// segments are dropped instead of glomming onto the last dimension.
+	if strings.TrimSpace(remainder) != "" {
+		parts, separators = appendSeparatorRun(parts, separators, remainder)
+		parts = append(parts, "")
 	}
 
 	return parts, separators, nil

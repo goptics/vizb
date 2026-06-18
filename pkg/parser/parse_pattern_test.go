@@ -120,6 +120,24 @@ func (s *ParsePatternSuite) TestParseNameToGroups() {
 			expected:      map[string]string{"name": "2022", "yAxis": "2", "xAxis": "30", "zAxis": ""},
 		},
 		{
+			name:          "Pattern Match: trailing separator drops extra segment",
+			benchmarkName: "2024-01-01",
+			pattern:       "n{Year}-x{Month}-",
+			expected:      map[string]string{"name": "2024", "xAxis": "01", "yAxis": "", "zAxis": ""},
+		},
+		{
+			name:          "Pattern Match: consecutive separators skip middle segment",
+			benchmarkName: "2024-01-01",
+			pattern:       "n{Year}--x{Date}",
+			expected:      map[string]string{"name": "2024", "xAxis": "01", "yAxis": "", "zAxis": ""},
+		},
+		{
+			name:          "Pattern Match: consecutive slash separators skip middle segment",
+			benchmarkName: "alpha/beta/gamma",
+			pattern:       "n//y",
+			expected:      map[string]string{"name": "alpha", "yAxis": "gamma", "xAxis": "", "zAxis": ""},
+		},
+		{
 			name:          "Pattern Match: mixed comma and slash x,y/z",
 			benchmarkName: "USA,Widget/EU",
 			pattern:       "x,y/z",

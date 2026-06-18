@@ -104,6 +104,34 @@ func (s *TabularPatternSuite) TestGroupTabularRowUnderscoreID() {
 	s.Equal("case", got["xAxis"])
 }
 
+func (s *TabularPatternSuite) TestGroupTabularRowConsecutiveSeparatorsSkipMiddle() {
+	cfg, err := ResolveGroupConfig(Config{
+		Group:        []string{"date"},
+		GroupPattern: "[n{Year}--x{Date}]",
+	})
+	s.Require().NoError(err)
+
+	got, err := GroupTabularRow([]string{"2024-01-01"}, cfg)
+	s.Require().NoError(err)
+	s.Equal("2024", got["name"])
+	s.Equal("01", got["xAxis"])
+	s.Equal("", got["yAxis"])
+}
+
+func (s *TabularPatternSuite) TestGroupTabularRowTrailingSeparatorDropsDay() {
+	cfg, err := ResolveGroupConfig(Config{
+		Group:        []string{"date"},
+		GroupPattern: "[n{Year}-x{Month}-]",
+	})
+	s.Require().NoError(err)
+
+	got, err := GroupTabularRow([]string{"2024-01-01"}, cfg)
+	s.Require().NoError(err)
+	s.Equal("2024", got["name"])
+	s.Equal("01", got["xAxis"])
+	s.Equal("", got["yAxis"])
+}
+
 func (s *TabularPatternSuite) TestGroupTabularRowPrefixSkip() {
 	cfg, err := ResolveGroupConfig(Config{
 		Group:        []string{"name"},
