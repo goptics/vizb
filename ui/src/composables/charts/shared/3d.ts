@@ -134,6 +134,12 @@ export function create3DTooltipFormatter(params: {
   const yLabel = yAxisLabel ?? 'y'
   const zSumLabel = zAxisLabel ?? 'z'
 
+  // Per-legend total across all visible cells — mirrors 2D "(Σtotal)" tag.
+  const legendTotals = new Map<string, number>()
+  for (const pt of aggPoints) {
+    legendTotals.set(pt.zAxis, (legendTotals.get(pt.zAxis) ?? 0) + pt.value)
+  }
+
   return (p: { value: number[] }) => {
     const [xi = 0, yi = 0] = p.value
     const xName = xValues[xi]
@@ -163,7 +169,9 @@ export function create3DTooltipFormatter(params: {
         const v = zmap.get(z)
         if (v === undefined) return ''
         const dot = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${getNextColorFor(z)};margin-right:6px"></span>`
-        return `${dot}${z}: <b>${round2(v)}</b>`
+        const zTotal = legendTotals.get(z)
+        const sumTag = zTotal !== undefined ? ` (Σ${round2(zTotal)})` : ''
+        return `${dot}${z}${sumTag}: <b>${round2(v)}</b>`
       })
       .filter(Boolean)
 
