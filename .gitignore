@@ -1,11 +1,53 @@
+# ─── Go ───────────────────────────────────────────────────────────────
+# Test artifacts + coverage
 *.out
+*.test
+*.prof
+coverage.txt
+coverage.html
+
+# Vendored deps (not used today, ignore if added later)
+vendor/
+
+# Build output
 bin/
+
+# ─── Node / UI / Docs ────────────────────────────────────────────────
 node_modules
 dist
+.vite
+.astro
+.pnpm-store
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+npm-debug.log*
 
-.claude
+# ─── Environment ─────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ─── Editors / OS ────────────────────────────────────────────────────
+# IDE / editor configs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.bak
+*.tmp
+
+# OS junk
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ─── Project ──────────────────────────────────────────────────────────
+# Agent instruction files
 CLAUDE.md
-
-.opencode
 AGENTS.md
+superpowers
+.claude
+.opencode
 .worktrees
