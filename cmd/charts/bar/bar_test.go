@@ -117,6 +117,47 @@ func (s *BarSuite) TestBarCommandWithThreeDVisualMapFlag() {
 	s.False(*barCfg.ThreeDVisualMap)
 }
 
+func (s *BarSuite) TestBarCommandThreeDWithoutXYWarns() {
+	dir := s.T().TempDir()
+	input := testutil.WriteBenchFile(s.T(), dir, "bench.txt", "")
+	out := filepath.Join(dir, "out.json")
+
+	cmd := NewCommand()
+	cmd.SetArgs([]string{"-o", out, "-P", "go", "-p", "x", "--3d", input})
+
+	stderr := testutil.CaptureStderr(func() {
+		s.Require().NoError(cmd.Execute())
+	})
+	s.Contains(stderr, "Warning")
+	s.Contains(stderr, "--3d requires both x and y")
+
+	ds := testutil.ReadDataset(s.T(), out)
+	barCfg, ok := ds.Settings[0].(*barchart.Config)
+	s.Require().True(ok)
+	s.Require().NotNil(barCfg.ThreeD)
+	s.True(*barCfg.ThreeD)
+}
+
+func (s *BarSuite) TestBarCommandThreeDWithXYZNoWarn() {
+	dir := s.T().TempDir()
+	input := testutil.WriteBenchFile(s.T(), dir, "bench.txt", "")
+	out := filepath.Join(dir, "out.json")
+
+	cmd := NewCommand()
+	cmd.SetArgs([]string{"-o", out, "-P", "go", "-p", "n/x/y/z", "--3d", input})
+
+	stderr := testutil.CaptureStderr(func() {
+		s.Require().NoError(cmd.Execute())
+	})
+	s.NotContains(stderr, "--3d requires both x and y")
+
+	ds := testutil.ReadDataset(s.T(), out)
+	barCfg, ok := ds.Settings[0].(*barchart.Config)
+	s.Require().True(ok)
+	s.Require().NotNil(barCfg.ThreeD)
+	s.True(*barCfg.ThreeD)
+}
+
 func (s *BarSuite) TestBarCommandThreeDVisualMapWithoutThreeD() {
 	dir := s.T().TempDir()
 	input := testutil.WriteBenchFile(s.T(), dir, "bench.txt", "")

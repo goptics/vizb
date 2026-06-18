@@ -43,6 +43,7 @@ func RunLinear(cmd *cobra.Command, args []string, common CommonOptions, configs 
 	}
 
 	cfg := common.ParseConfig()
+	WarnThreeDIfIneligible(cfg, configs)
 	outFile := ResolveOutputFileName(common.OutputFile)
 
 	// First try to read the input as an existing vizb Dataset JSON.
@@ -73,6 +74,15 @@ func RunSingleChart(cmd *cobra.Command, args []string, common CommonOptions, con
 		return
 	}
 	RunLinear(cmd, args, common, configs, true)
+}
+
+// WarnThreeDIfIneligible prints a warning when threeD is baked on a bar/line
+// config but the group pattern does not declare both x and y. The flag is kept.
+func WarnThreeDIfIneligible(cfg parser.Config, configs []config_charts.ChartConfig) {
+	if parser.PatternHasBothXY(cfg) || !shared.SettingsHasThreeDOption(configs) {
+		return
+	}
+	shared.PrintWarning("Warning: --3d requires both x and y in --group-pattern; value 3D will not render.")
 }
 
 // ValidateScale normalises and validates a scale flag (linear/log), falling back

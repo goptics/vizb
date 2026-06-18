@@ -116,6 +116,18 @@ describe('getRenderableFields', () => {
     ).toEqual(['sort', 'scale', 'showLabels', 'threeD', 'threeDVisualMap', 'threeDRotate', 'swap'])
   })
 
+  it('hides threeD when z is on chart axes in the active swap (xyz)', () => {
+    const cfg: BarConfig = { type: 'bar', threeD: true }
+    expect(
+      getRenderableFields(cfg, {
+        dimension: '3D',
+        rendering3D: true,
+        hasThreeDOption: true,
+        hasZAxis: true,
+      }).map((f) => f.key)
+    ).toEqual(['sort', 'scale', 'showLabels', 'threeDVisualMap', 'threeDRotate', 'swap'])
+  })
+
   it('returns 4 entries for a 2D line config without value-3D active', () => {
     const cfg: LineConfig = { type: 'line' }
     expect(

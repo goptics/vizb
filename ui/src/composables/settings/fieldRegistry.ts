@@ -57,7 +57,8 @@ export const fieldRegistry: Record<SettingFieldKey, FieldMeta> = {
   threeD: {
     component: ThreeDControl,
     appliesTo: ['bar', 'line'],
-    visible: (ctx) => ctx.hasThreeDOption === true && ctx.hasZAxis === false,
+    // Value-mode toggle only when z is off chart axes (e.g. xyz → xyn swap).
+    visible: (ctx) => ctx.hasThreeDOption === true && ctx.hasZAxis !== true,
   },
   threeDVisualMap: {
     component: ThreeDVisualMapControl,
@@ -91,6 +92,7 @@ export type RenderContext = {
   dimension?: Dimension
   rendering3D?: boolean
   hasThreeDOption?: boolean
+  /** z mapped to chart zAxis in the active swap (not raw-data z presence). */
   hasZAxis?: boolean
 }
 

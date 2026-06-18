@@ -301,6 +301,53 @@ describe('projectAndGroup', () => {
 })
 
 // ---------------------------------------------------------------------------
+// 3-axis swap: grouped 3D (xyz) vs value 3D (xyn/nxy) when threeD is baked
+// ---------------------------------------------------------------------------
+describe('3-axis swap with threeD', () => {
+  const identity: Array<'xAxis' | 'yAxis' | 'zAxis'> = ['xAxis', 'yAxis', 'zAxis']
+  const raw: DataPoint[] = [
+    dp('X1', 'Y1', 'Z1', 'v', 1),
+    dp('X2', 'Y1', 'Z1', 'v', 2),
+    dp('X1', 'Y2', 'Z2', 'v', 3),
+  ]
+
+  const renderModeForSwap = (swap: string, threeD: boolean) => {
+    const { grouped } = projectAndGroup(raw, identity, translateAxisKey(swap))
+    const rows = grouped.values().next().value ?? []
+    const { signature, statTemplate } = listChartSignatures(raw)[0]!
+    const chart = buildChartForSignature(
+      rows,
+      signature,
+      statTemplate,
+      undefined,
+      noSort,
+      false,
+      'linear',
+      undefined,
+      threeD
+    )
+    return chart.render3D?.mode
+  }
+
+  it('xyz + threeD renders grouped 3D', () => {
+    expect(renderModeForSwap('xyz', true)).toBe('grouped')
+  })
+
+  it('xyn + threeD renders value 3D', () => {
+    expect(renderModeForSwap('xyn', true)).toBe('value')
+  })
+
+  it('nxy + threeD renders value 3D', () => {
+    expect(renderModeForSwap('nxy', true)).toBe('value')
+  })
+
+  it('swap back to xyz + threeD renders grouped 3D again', () => {
+    expect(renderModeForSwap('xyn', true)).toBe('value')
+    expect(renderModeForSwap('xyz', true)).toBe('grouped')
+  })
+})
+
+// ---------------------------------------------------------------------------
 // canonical axis order (3D z stability on arrangement change)
 // ---------------------------------------------------------------------------
 describe('canonical axis order', () => {
