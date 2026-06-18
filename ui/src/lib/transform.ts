@@ -15,7 +15,66 @@ import type {
   Series3DData,
   ScaleType,
 } from '../types'
-import type { AxisKey } from './swap'
+import { sourceFieldForChartAxis, translateAxisKey, type AxisKey } from './swap'
+
+export type CanonicalAxisOrders = {
+  x?: string[]
+  y?: string[]
+  z?: string[]
+}
+
+const fieldValue = (row: DataPoint, field: AxisKey): string => {
+  if (field === 'name') return row.name ?? ''
+  const rec = row as unknown as Record<string, string | undefined>
+  return rec[field] ?? ''
+}
+
+// First-seen category order for a raw field — stable across group/arrangement changes.
+export function canonicalValuesForField(raw: DataPoint[], field: AxisKey): string[] {
+  const order: string[] = []
+  const seen = new Set<string>()
+  for (const row of raw) {
+    const val = fieldValue(row, field)
+    if (val && !seen.has(val)) {
+      seen.add(val)
+      order.push(val)
+    }
+  }
+  return order
+}
+
+export function canonicalAxisOrders(
+  raw: DataPoint[],
+  identityKeys: AxisKey[],
+  targetKeys: AxisKey[]
+): CanonicalAxisOrders {
+  const axes = ['xAxis', 'yAxis', 'zAxis'] as const
+  const keyFor: Record<(typeof axes)[number], keyof CanonicalAxisOrders> = {
+    xAxis: 'x',
+    yAxis: 'y',
+    zAxis: 'z',
+  }
+  const result: CanonicalAxisOrders = {}
+  for (const axis of axes) {
+    const field = sourceFieldForChartAxis(identityKeys, targetKeys, axis)
+    if (field) result[keyFor[axis]] = canonicalValuesForField(raw, field)
+  }
+  return result
+}
+
+export function canonicalAxisOrdersFromStrings(
+  raw: DataPoint[],
+  identityString: string,
+  targetString: string
+): CanonicalAxisOrders {
+  return canonicalAxisOrders(raw, translateAxisKey(identityString), translateAxisKey(targetString))
+}
+
+const applyCanonicalOrder = (values: string[], canonical: string[] | undefined): string[] => {
+  if (!canonical?.length) return values
+  const present = new Set(values)
+  return canonical.filter((v) => present.has(v))
+}
 
 const toStatSignature = (stat: Stat): string => {
   if (!stat.per) {
@@ -76,7 +135,9 @@ export function buildChartForSignature(
   labels: AxisLabels | undefined,
   sort: Sort,
   showLabels = false,
-  scale: ScaleType = 'linear'
+  scale: ScaleType = 'linear',
+  canonical?: CanonicalAxisOrders,
+  threeD = false
 ): ChartData {
   const dataMap = new Map<string, Map<string, number>>()
   const countMap = new Map<string, Map<string, number>>()
@@ -115,9 +176,14 @@ export function buildChartForSignature(
     for (const [xAxis, sum] of xMap) xMap.set(xAxis, sum / cMap.get(xAxis)!)
   }
 
-  const xAxisValues = Array.from(xAxisSet)
-  const yAxisValues = Array.from(yAxisSet)
-  const zAxisValues = Array.from(zAxisSet)
+  let xAxisValues = Array.from(xAxisSet)
+  let yAxisValues = Array.from(yAxisSet)
+  let zAxisValues = Array.from(zAxisSet)
+  if (!sort.enabled && canonical) {
+    xAxisValues = applyCanonicalOrder(xAxisValues, canonical.x)
+    yAxisValues = applyCanonicalOrder(yAxisValues, canonical.y)
+    zAxisValues = applyCanonicalOrder(zAxisValues, canonical.z)
+  }
 
   const series: SeriesData[] = xAxisValues.map((xAxis) => ({
     xAxis,
@@ -147,8 +213,12 @@ export function buildChartForSignature(
     axisLabels: labels,
   }
 
-  if (chartIs3D(chart))
-    chart.render3D = build3DRender(chart.points, chart.zAxis, sort, showLabels, scale)
+  if (chartIsGrouped3D(chart)) {
+    chart.render3D = build3DRender(chart.points, chart.zAxis, sort, showLabels, scale, canonical)
+    chart.render3D.mode = 'grouped'
+  } else if (threeD && chartIsValue3DEligible(chart)) {
+    chart.render3D = buildValue3DRender(chart, sort, showLabels, scale, canonical)
+  }
 
   return chart
 }
@@ -235,11 +305,18 @@ export function build3DRender(
   zAxisAll: string[],
   sort: Sort,
   showLabels = false,
-  scale: ScaleType = 'linear'
+  scale: ScaleType = 'linear',
+  canonical?: CanonicalAxisOrders
 ): Render3D {
   let xValues = Array.from(new Set(points.map((p) => p.xAxis)))
   let yValues = Array.from(new Set(points.map((p) => p.yAxis)))
   let zValues = zAxisAll.filter((z) => z !== '')
+
+  if (!sort.enabled && canonical) {
+    xValues = applyCanonicalOrder(xValues, canonical.x)
+    yValues = applyCanonicalOrder(yValues, canonical.y)
+    zValues = applyCanonicalOrder(zValues, canonical.z)
+  }
 
   if (sort.enabled) {
     xValues = sortByAxisTotal(xValues, 'xAxis', points, sort.order)
@@ -280,14 +357,85 @@ export function build3DRender(
     }
   }
 
-  return { xValues, yValues, zValues, barSeries, lineSeries, cellTotals }
+  return { xValues, yValues, zValues, barSeries, lineSeries, cellTotals, mode: 'grouped' }
 }
 
-const chartIs3D = (c: ChartData): boolean => {
+export const chartIsGrouped3D = (c: ChartData): boolean => {
   const hasX = c.series.some((s) => s.xAxis && s.xAxis.trim() !== '')
   const hasY = c.yAxis.length > 0 && c.yAxis[0] !== ''
   const hasZ = c.zAxis.length > 0 && c.zAxis[0] !== ''
   return hasX && hasY && hasZ
+}
+
+export const chartIsValue3DEligible = (c: ChartData): boolean => {
+  const hasX = c.series.some((s) => s.xAxis && s.xAxis.trim() !== '')
+  const hasY = c.yAxis.length > 0 && c.yAxis[0] !== ''
+  const hasZ = c.zAxis.length > 0 && c.zAxis[0] !== ''
+  return hasX && hasY && !hasZ
+}
+
+// Value-mode 3D: project the 2D x×y matrix onto a single bar3D/line3D series
+// with metric height on zAxis3D (no z grouping / legend).
+export function buildValue3DRender(
+  chart: ChartData,
+  sort: Sort,
+  showLabels = false,
+  scale: ScaleType = 'linear',
+  canonical?: CanonicalAxisOrders
+): Render3D {
+  let xValues = chart.series.map((s) => s.xAxis).filter((x) => x.trim() !== '')
+  let yValues = chart.yAxis.filter((y) => y !== '')
+
+  if (!sort.enabled && canonical) {
+    xValues = applyCanonicalOrder(xValues, canonical.x)
+    yValues = applyCanonicalOrder(yValues, canonical.y)
+  }
+
+  if (sort.enabled) {
+    const points: Point3D[] = []
+    for (let yi = 0; yi < yValues.length; yi++) {
+      const yAxis = yValues[yi]!
+      for (const s of chart.series) {
+        points.push({ xAxis: s.xAxis, yAxis, zAxis: '', value: s.values[yi] ?? 0 })
+      }
+    }
+    xValues = sortByAxisTotal(xValues, 'xAxis', points, sort.order)
+    yValues = sortByAxisTotal(yValues, 'yAxis', points, sort.order)
+  }
+
+  const xIndex = new Map(xValues.map((v, i) => [v, i]))
+  const yIndex = new Map(yValues.map((v, i) => [v, i]))
+  const cells = new Map<string, number>()
+
+  for (let yi = 0; yi < yValues.length; yi++) {
+    for (const s of chart.series) {
+      const xi = xIndex.get(s.xAxis)
+      if (xi === undefined) continue
+      cells.set(`${xi},${yi}`, s.values[yi] ?? 0)
+    }
+  }
+
+  const isLog = scale === 'log'
+  if (isLog) for (const [k, v] of cells) if (v <= 0) cells.delete(k)
+
+  const barData = isLog ? sparseFromCells(cells) : gridFromCells(cells, xIndex, yIndex)
+  const lineData = sparseFromCells(cells)
+  const seriesName = chart.title
+
+  const cellTotals: Record<string, number> = {}
+  if (showLabels) {
+    for (const [key, v] of cells) cellTotals[key] = v
+  }
+
+  return {
+    mode: 'value',
+    xValues,
+    yValues,
+    zValues: [],
+    barSeries: [{ name: seriesName, data: barData }],
+    lineSeries: [{ name: seriesName, data: lineData }],
+    cellTotals,
+  }
 }
 
 // Arrangement-aware, non-mutating grouping for the chart pipeline. Given a set

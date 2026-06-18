@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
-import { getNextColorFor, is3D, COLOR_PALETTE } from '../../lib/utils'
+import { getNextColorFor, isGrouped3D, COLOR_PALETTE } from '../../lib/utils'
 import {
   getChartStyling,
   getTooltipTheme,
@@ -297,6 +297,10 @@ function build3DHeatmap(config: BaseChartConfig): EChartsOption {
         ? [uniqueColors[0]!, uniqueColors[0]!]
         : ['#ccc', '#333']
 
+  const xLabel = data.axisLabels?.x ?? 'x'
+  const yLabel = data.axisLabels?.y ?? 'y'
+  const zLabel = data.axisLabels?.z ?? 'z'
+
   const tooltipFormatter = (params: any) => {
     const val = Array.isArray(params.value) ? params.value : params.data
     const [xi, yi] = val
@@ -317,7 +321,7 @@ function build3DHeatmap(config: BaseChartConfig): EChartsOption {
       })
       .filter(Boolean)
 
-    const zSumLine = zBreakdown.size > 1 ? `Σ z: <b>${round2(total)}</b><br/>` : ''
+    const zSumLine = zBreakdown.size > 1 ? `Σ ${zLabel}: <b>${round2(total)}</b><br/>` : ''
 
     const xMarginal = xMarginals.get(xName) ?? 0
     const yMarginal = yMarginals.get(yName) ?? 0
@@ -325,8 +329,8 @@ function build3DHeatmap(config: BaseChartConfig): EChartsOption {
     const margins =
       tooltipDivider(isDark.value) +
       zSumLine +
-      `Σ ${xName}: <b>${round2(xMarginal)}</b><br/>` +
-      `Σ ${yName}: <b>${round2(yMarginal)}</b>`
+      `Σ ${xLabel}(${xName}): <b>${round2(xMarginal)}</b><br/>` +
+      `Σ ${yLabel}(${yName}): <b>${round2(yMarginal)}</b>`
 
     const spread = tooltipSpreadRows(Array.from(zBreakdown.values()), isDark.value)
 
@@ -343,7 +347,7 @@ function build3DHeatmap(config: BaseChartConfig): EChartsOption {
           )
         : ''
 
-    return `<b>${xName} / ${yName}</b><br/>${rows.join('<br/>')}${margins}${spread}${donut ? tooltipDivider(isDark.value) + donut : ''}`
+    return `<b>${xLabel}: ${xName} / ${yLabel}: ${yName}</b><br/>${rows.join('<br/>')}${margins}${spread}${donut ? tooltipDivider(isDark.value) + donut : ''}`
   }
 
   return {
@@ -447,8 +451,8 @@ export function useHeatmapChartOptions(config: BaseChartConfig) {
   const { chartData } = config
 
   const options = computed<EChartsOption>(() => {
-    const threeD = is3D(chartData)
-    return threeD ? build3DHeatmap(config) : build2DHeatmap(config)
+    const grouped3D = isGrouped3D(chartData.value)
+    return grouped3D ? build3DHeatmap(config) : build2DHeatmap(config)
   })
 
   return { options }

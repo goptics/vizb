@@ -73,7 +73,7 @@ const setArrangement = (datasetId: number, ct: ChartType, targetString: string) 
 getDataSets()
   .then((data) => {
     // Each DataSet is wrapped in reactive() so settings mutations (sort/scale/
-    // showLabels/autoRotate/swap) propagate to the chart pipeline's watchers.
+    // showLabels/threeDRotate/swap) propagate to the chart pipeline's watchers.
     // The `data` field (raw rows) is markRaw'd so it stays proxy-free: the
     // transform worker clones it natively via postMessage structured clone,
     // which would otherwise reject Vue's reactive Proxy. Rows are display-only
@@ -110,7 +110,7 @@ const activeDataAxisCount = computed(() =>
 )
 
 // Data-shape dimensionality tag for the active dataset, used by the settings
-// panel to filter fields (e.g. `autoRotate` is 3D-only). `undefined` for
+// panel to filter fields (e.g. `threeDRotate` is 3D-only). `undefined` for
 // empty/unknown data — the panel treats that as "no dimension constraint".
 const activeDataDimension = computed(() =>
   datasetDimension(dataSetsProcessed.value[activeDataSetId.value]?.data)

@@ -26,6 +26,7 @@
 import {
   listChartSignatures,
   buildChartForSignature,
+  canonicalAxisOrdersFromStrings,
   projectAndGroup,
   type ChartSignature,
 } from '../lib/transform'
@@ -55,6 +56,7 @@ export type ComputeMessage = {
   sort: Sort
   showLabels: boolean
   scale: ScaleType
+  threeD: boolean
 }
 export type WorkerRequest = InitMessage | SetArrangementMessage | ComputeMessage
 
@@ -76,6 +78,8 @@ export type WorkerResponse = ReadyMessage | ChartMessage
 type State = {
   dataEpoch: number
   raw: DataPoint[]
+  identityString: string
+  targetString: string
   grouped: Map<string, DataPoint[]>
   groupNames: string[]
   labels?: AxisLabels
@@ -89,6 +93,8 @@ const post = (msg: WorkerResponse) => (self as unknown as Worker).postMessage(ms
 // Project + group the raw dataset under an arrangement, and re-derive the stat
 // signatures (signatures are arrangement-independent, computed off the raw rows).
 const applyArrangement = (s: State, identityString: string, targetString: string) => {
+  s.identityString = identityString
+  s.targetString = targetString
   const { grouped, groupNames } = projectAndGroup(
     s.raw,
     translateAxisKey(identityString),
@@ -118,6 +124,8 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
       state = {
         dataEpoch: msg.dataEpoch,
         raw: msg.data,
+        identityString: msg.identityString,
+        targetString: msg.targetString,
         grouped: new Map(),
         groupNames: [],
         labels: msg.labels,
@@ -145,6 +153,12 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
   // stale/unknown groupName still produces a renderable chart instead of dropping.
   const rows = state.grouped.get(msg.groupName) ?? state.grouped.values().next().value ?? []
 
+  const canonical = canonicalAxisOrdersFromStrings(
+    state.raw,
+    state.identityString,
+    state.targetString
+  )
+
   const chart = buildChartForSignature(
     rows,
     entry.signature,
@@ -152,7 +166,9 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
     state.labels,
     msg.sort,
     msg.showLabels,
-    msg.scale
+    msg.scale,
+    canonical,
+    msg.threeD
   )
   post({
     type: 'chart',

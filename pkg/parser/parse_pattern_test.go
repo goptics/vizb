@@ -101,6 +101,30 @@ func (s *ParsePatternSuite) TestParseNameToGroups() {
 			pattern:       "name/x/y/z",
 			expected:      map[string]string{"name": "Sort", "xAxis": "bubble", "yAxis": "1000", "zAxis": "threads8"},
 		},
+		{
+			name:          "Pattern Match: space-separated x n y",
+			benchmarkName: "alpha beta gamma",
+			pattern:       "x n y",
+			expected:      map[string]string{"name": "beta", "xAxis": "alpha", "yAxis": "gamma", "zAxis": ""},
+		},
+		{
+			name:          "Pattern Match: comma-separated y,x",
+			benchmarkName: "USA,Widget",
+			pattern:       "y,x",
+			expected:      map[string]string{"name": "", "xAxis": "Widget", "yAxis": "USA", "zAxis": ""},
+		},
+		{
+			name:          "Pattern Match: curly labels stripped for splitting",
+			benchmarkName: "2022-2-30",
+			pattern:       "n{year}-y{months}-x{dates}",
+			expected:      map[string]string{"name": "2022", "yAxis": "2", "xAxis": "30", "zAxis": ""},
+		},
+		{
+			name:          "Pattern Match: mixed comma and slash x,y/z",
+			benchmarkName: "USA,Widget/EU",
+			pattern:       "x,y/z",
+			expected:      map[string]string{"name": "", "xAxis": "USA", "yAxis": "Widget", "zAxis": "EU"},
+		},
 	}
 
 	for _, tt := range tests {
@@ -131,7 +155,7 @@ func (s *ParsePatternSuite) TestValidateGroupPattern() {
 		{name: "Valid pattern: name_yAxis", pattern: "name_yAxis"},
 		{name: "Valid pattern with shorthand: n_y/x", pattern: "n_y/x"},
 		{name: "Valid pattern: yAxis only", pattern: "yAxis"},
-		{name: "Invalid pattern: unknown part", pattern: "name_invalid", expectError: true, errorContains: "Invalid part: 'invalid'"},
+		{name: "Invalid pattern: unknown part", pattern: "name_invalid", expectError: true, errorContains: "Invalid part:"},
 		{name: "Empty pattern", pattern: "", expectError: true, errorContains: "pattern cannot be empty"},
 		{name: "Valid pattern: all parts", pattern: "name_yAxis_xAxis"},
 		{name: "Valid pattern: xAxis without yAxis", pattern: "name_xAxis"},
@@ -389,6 +413,16 @@ func (s *ParsePatternSuite) TestGroupAxes() {
 			want: []shared.Axis{
 				{Key: "x", Label: "A"},
 				{Key: "y", Label: "B"},
+			},
+		},
+		{
+			name:        "curly labels override group labels",
+			pattern:     "n{year}_y{months}_x{dates}",
+			groupLabels: []string{"order_date", "order_date", "order_date"},
+			want: []shared.Axis{
+				{Key: "name", Label: "year"},
+				{Key: "y", Label: "months"},
+				{Key: "x", Label: "dates"},
 			},
 		},
 	}

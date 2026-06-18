@@ -1,5 +1,5 @@
 // Package pie defines the typed Config for pie charts. Pie data is
-// non-linear, so Config intentionally omits Scale and AutoRotate — the
+// non-linear, so Config intentionally omits Scale and ThreeDRotate — the
 // fields don't apply.
 package pie
 

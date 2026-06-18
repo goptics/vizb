@@ -60,10 +60,22 @@ func stringify(v any) string {
 
 // ParseJSON turns a JSON array of objects into benchmark data. Each
 // numeric field becomes a chart series (field name = Stat.Type); non-numeric
-// fields are ignored unless named in --group/-g, whose values are '/'-joined and
-// routed through the existing grouping machinery (-p/-r). Nested objects are
+// fields are ignored unless named in --group/-g, whose values are joined with
+// the separators from --group-pattern/-p and routed through the grouping
+// machinery (-p/-r). Nested objects are
 // flattened to dotted keys; array-valued fields are skipped.
 func ParseJSON(filename string, cfg parser.Config) []shared.DataPoint {
+	if len(cfg.Group) > 0 && cfg.GroupRegex == "" {
+		var err error
+		cfg, err = parser.ResolveGroupConfig(cfg)
+		if err != nil {
+			shared.ExitWithError(err.Error(), nil)
+		}
+		if err := parser.ValidateTabularGroupAlignment(cfg); err != nil {
+			shared.ExitWithError(err.Error(), nil)
+		}
+	}
+
 	f, err := os.Open(filename)
 	if err != nil {
 		shared.ExitWithError("Error opening file", err)
@@ -107,7 +119,7 @@ func ParseJSON(filename string, cfg parser.Config) []shared.DataPoint {
 		return nil
 	}
 
-	groupKeys, groupSet := resolveGroupKeys(colOrder, seenCol, cfg.Group)
+	groupKeys, groupSet := resolveGroupKeys(colOrder, seenCol, parser.EffectiveGroupColumns(cfg))
 
 	chartCols := chartColumns(colOrder, groupSet, rows)
 	if len(chartCols) == 0 {
@@ -117,15 +129,16 @@ func ParseJSON(filename string, cfg parser.Config) []shared.DataPoint {
 	var results []shared.DataPoint
 
 	for _, row := range rows {
-		label := buildLabel(row, groupKeys)
+		groupValues := groupFieldValues(row, groupKeys)
 
 		var name, xAxis, yAxis, zAxis string
-		if label != "" {
+		if len(groupValues) > 0 {
+			label := parser.TabularFilterLabel(groupValues, cfg)
 			if !parser.ShouldIncludeBenchmark(label, cfg) {
 				continue
 			}
 
-			group, gerr := parser.GroupBenchmarkName(label, cfg)
+			group, gerr := parser.GroupTabularRow(groupValues, cfg)
 			if gerr != nil {
 				shared.ExitWithError("Error parsing JSON group name", gerr)
 			}
@@ -213,18 +226,13 @@ func chartColumns(colOrder []string, groupSet map[string]bool, rows []map[string
 	return cols
 }
 
-// buildLabel joins the stringified group-field values for a row with '/'.
-func buildLabel(row map[string]any, groupKeys []string) string {
-	if len(groupKeys) == 0 {
-		return ""
-	}
-
+// buildLabel joins the stringified group-field values using the configured separators.
+func groupFieldValues(row map[string]any, groupKeys []string) []string {
 	parts := make([]string, 0, len(groupKeys))
 	for _, k := range groupKeys {
 		parts = append(parts, stringify(row[k]))
 	}
-
-	return strings.Join(parts, "/")
+	return parts
 }
 
 // decodeElement decodes one array element. Objects are flattened to leaves;

@@ -38,6 +38,7 @@ function buildCompute(overrides: Partial<ComputeMessage> = {}): ComputeMessage {
     sort: noSort,
     showLabels: false,
     scale: 'linear' as ScaleType,
+    threeD: false,
     ...overrides,
   }
 }

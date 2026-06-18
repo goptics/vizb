@@ -4,6 +4,86 @@ import { tooltipDivider, tooltipSpreadRows, renderDonutSvg, type ChartStyling } 
 
 export const round2 = (v: number) => Math.round(v * 100) / 100
 
+/** Blue-to-red gradient for value-mode 3D visualMap (metric height). */
+export const VALUE_3D_COLOR_RANGE = [
+  '#313695',
+  '#4575b4',
+  '#74add1',
+  '#abd9e9',
+  '#e0f3f8',
+  '#ffffbf',
+  '#fee090',
+  '#fdae61',
+  '#f46d43',
+  '#d73027',
+  '#a50026',
+]
+
+export function maxFrom3DData(series: { data: { value: number[] }[] }[]): number {
+  let max = 0
+  for (const s of series) {
+    for (const item of s.data) {
+      const v = item.value[2] ?? 0
+      if (v > max) max = v
+    }
+  }
+  return max
+}
+
+export function create3DVisualMap(max: number, styling: ChartStyling) {
+  return {
+    show: true,
+    min: 0,
+    max: max || 1,
+    dimension: 2,
+    calculable: true,
+    orient: 'vertical' as const,
+    right: '0%',
+    top: 'center',
+    inRange: { color: VALUE_3D_COLOR_RANGE },
+    textStyle: { color: styling.textColor },
+  }
+}
+
+/** ECharts merge keeps omitted visualMap — pass `[]` when off (with replaceMerge). */
+export function resolve3DVisualMap(
+  enabled: boolean,
+  series: { data: { value: number[] }[] }[],
+  styling: ChartStyling
+) {
+  return enabled ? create3DVisualMap(maxFrom3DData(series), styling) : []
+}
+
+/** @deprecated Use create3DVisualMap */
+export const createValue3DVisualMap = create3DVisualMap
+
+export function createValue3DTooltipFormatter(params: {
+  xValues: string[]
+  yValues: string[]
+  xAxisLabel?: string
+  yAxisLabel?: string
+  valueLabel?: string
+}) {
+  const { xValues, yValues, xAxisLabel, yAxisLabel, valueLabel } = params
+  const xLabel = xAxisLabel ?? 'x'
+  const yLabel = yAxisLabel ?? 'y'
+  const zLabel = valueLabel ?? 'value'
+
+  return (p: { value: number[] }) => {
+    const [xi = 0, yi = 0, v = 0] = p.value
+    const xName = xValues[xi] ?? String(xi)
+    const yName = yValues[yi] ?? String(yi)
+    return `<b>${xLabel}: ${xName}</b><br/>${yLabel}: ${yName}<br/>${zLabel}: <b>${round2(v)}</b>`
+  }
+}
+
+/** grid3D boxWidth / boxDepth tier from axis category count (max 200). */
+export function boxSizeForAxisCount(len: number): number {
+  if (len < 5) return 80
+  if (len < 15) return 100
+  return 200
+}
+
 // Empty render payload when a chart lacks precomputed 3D data (shouldn't happen:
 // the worker attaches render3D to every 3D chart).
 export const EMPTY_RENDER: Render3D = {
@@ -44,8 +124,15 @@ export function create3DTooltipFormatter(params: {
   zValues: string[]
   aggPoints: Point3D[]
   isDark: boolean
+  xAxisLabel?: string
+  yAxisLabel?: string
+  zAxisLabel?: string
 }) {
-  const { xValues, yValues, zValues, aggPoints, isDark } = params
+  const { xValues, yValues, zValues, aggPoints, isDark, xAxisLabel, yAxisLabel, zAxisLabel } =
+    params
+  const xLabel = xAxisLabel ?? 'x'
+  const yLabel = yAxisLabel ?? 'y'
+  const zSumLabel = zAxisLabel ?? 'z'
 
   return (p: { value: number[] }) => {
     const [xi = 0, yi = 0] = p.value
@@ -82,14 +169,14 @@ export function create3DTooltipFormatter(params: {
 
     // Σ over z = stacked bar height at this (x,y). First line under the divider,
     // above the x/y marginals, when there's more than one z to sum.
-    const zSumLine = zmap.size > 1 ? `Σ z: <b>${round2(cellTotal)}</b><br/>` : ''
+    const zSumLine = zmap.size > 1 ? `Σ ${zSumLabel}: <b>${round2(cellTotal)}</b><br/>` : ''
 
     // Marginal totals: sum over the other two axes for this x / this y.
     const margins =
       tooltipDivider(isDark) +
       zSumLine +
-      `Σ ${xName}: <b>${round2(xMarginal)}</b><br/>` +
-      `Σ ${yName}: <b>${round2(yMarginal)}</b>`
+      `Σ ${xLabel}(${xName}): <b>${round2(xMarginal)}</b><br/>` +
+      `Σ ${yLabel}(${yName}): <b>${round2(yMarginal)}</b>`
 
     // Spread of the z-values in this cell (median / IQR / CV), mirroring the 2D
     // tooltip. Only meaningful with >1 z.
@@ -103,7 +190,7 @@ export function create3DTooltipFormatter(params: {
               .map((z) => ({ value: zmap.get(z)!, color: getNextColorFor(z) ?? '', name: z }))
           )
         : ''
-    return `<b>${xName} / ${yName}</b><br/>${rows.join('<br/>')}${margins}${spread}${donut ? tooltipDivider(isDark) + donut : ''}`
+    return `<b>${xLabel}: ${xName} / ${yLabel}: ${yName}</b><br/>${rows.join('<br/>')}${margins}${spread}${donut ? tooltipDivider(isDark) + donut : ''}`
   }
 }
 
@@ -122,6 +209,12 @@ export function createZLegendConfig(
     left: 'left',
     top: 'middle',
     textStyle: { color: styling.textColor },
+    // Pin palette swatches so visualMap (value-based bar colors) does not
+    // rewrite legend markers; tooltips use the same getNextColorFor keys.
+    data: zValues.map((z) => ({
+      name: z,
+      itemStyle: { color: getNextColorFor(z) },
+    })),
     // Controlled selection: persist toggles across recomputes (without this,
     // re-applying the option would reset every z back to visible).
     selected,
@@ -136,23 +229,24 @@ export function create3DGridConfig(opts: {
   styling: ChartStyling
   autoRotate: boolean
   orthographic?: boolean
+  xCount: number
+  yCount: number
 }) {
-  const { styling, autoRotate, orthographic } = opts
+  const { styling, autoRotate, orthographic, xCount, yCount } = opts
+  const xWidth = boxSizeForAxisCount(xCount)
+  const yWidth = boxSizeForAxisCount(yCount)
+
   return {
-    boxWidth: 100,
-    boxDepth: 100,
+    boxWidth: xWidth,
+    boxDepth: yWidth,
     axisLine: { lineStyle: { color: styling.axisColor } },
     splitLine: { lineStyle: { color: styling.axisColor, opacity: styling.opacity } },
     viewControl: {
-      distance: 200,
+      distance: xWidth + yWidth,
       // `autoRotate` is optional on BaseChartConfig (relaxed in Task 7) —
       // pie/heatmap/radar pass a config without it. Default to off at the
       // call site; 3D bar/line are the only consumers.
       autoRotate,
-      // No camera tween: echarts-gl otherwise animates the camera in to
-      // `distance` on (re)render, which reads as a jarring zoom flash when
-      // switching chart type. Snap straight to the final position.
-      animation: false,
       ...(orthographic ? { projection: 'orthographic' } : {}),
     },
     light: {

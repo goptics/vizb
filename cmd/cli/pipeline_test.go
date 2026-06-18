@@ -268,7 +268,7 @@ func (s *PipelineSuite) TestRunLinearAutoParser() {
 
 func (s *PipelineSuite) TestPrepareDataAggregatesCSV() {
 	csvFile := s.writeFile("grouped.csv", "name,sells,date\nalpha,10,2024-01\nalpha,20,2024-01\nbeta,5,2025-02\n")
-	cfg := parser.Config{GroupPattern: "name/x", Group: []string{"name", "date"}}
+	cfg := parser.Config{GroupPattern: "name,x", Group: []string{"name", "date"}}
 
 	oldStdout, oldStderr := os.Stdout, os.Stderr
 	devnull, _ := os.Open(os.DevNull)

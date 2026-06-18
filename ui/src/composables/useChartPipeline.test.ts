@@ -40,6 +40,7 @@ let activeGroupId: Ref<number>
 let sort: Ref<Sort>
 let showLabels: Ref<boolean>
 let scale: Ref<ScaleType>
+let threeD: Ref<boolean>
 
 beforeEach(async () => {
   vi.useFakeTimers()
@@ -52,6 +53,7 @@ beforeEach(async () => {
   sort = ref(noSort)
   showLabels = ref(false)
   scale = ref('linear' as ScaleType)
+  threeD = ref(false)
 
   scope = effectScope()
   result = scope.run(() =>
@@ -62,7 +64,8 @@ beforeEach(async () => {
       activeGroupId,
       sort,
       showLabels,
-      scale
+      scale,
+      threeD
     )
   )!
   // Flush the immediate watch + 50 ms debounce.

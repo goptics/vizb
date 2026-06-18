@@ -38,7 +38,7 @@ export type Axis = {
 // Each chart type carries only the fields that apply to it. The `type`
 // discriminator narrows the union at the call site — chart-rendering code may
 // still use `cfg.type === 'bar' || cfg.type === 'line'` to access `scale` /
-// `autoRotate` (those fields are absent on pie/heatmap/radar). The settings
+// `threeDRotate` (those fields are absent on pie/heatmap/radar). The settings
 // panel is fully schema-less: it walks `Object.keys(activeConfig)` and renders
 // the registered control for each non-`type` key.
 export type BarConfig = {
@@ -47,7 +47,9 @@ export type BarConfig = {
   sort?: Sort
   scale?: ScaleType
   showLabels?: boolean
-  autoRotate?: boolean
+  threeDRotate?: boolean
+  threeD?: boolean
+  threeDVisualMap?: boolean
 }
 
 export type LineConfig = {
@@ -56,7 +58,9 @@ export type LineConfig = {
   sort?: Sort
   scale?: ScaleType
   showLabels?: boolean
-  autoRotate?: boolean
+  threeDRotate?: boolean
+  threeD?: boolean
+  threeDVisualMap?: boolean
 }
 
 export type PieConfig = {
@@ -187,6 +191,7 @@ export type Series3DData = {
 }
 
 export type Render3D = {
+  mode?: 'grouped' | 'value'
   xValues: string[]
   yValues: string[]
   zValues: string[]

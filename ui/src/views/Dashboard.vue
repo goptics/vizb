@@ -33,7 +33,7 @@ const {
 } = useDataPoint()
 
 const { isDark, toggleDark } = useSettingsStore()
-const { sort, showLabels, scale } = useActiveChartShape()
+const { sort, showLabels, scale, threeD } = useActiveChartShape()
 
 // Build an AxisLabels flat map from dataset.axes for swapAxisLabels.
 const axisLabelsFromAxes = (axes: Axis[] | undefined): AxisLabels | undefined => {
@@ -72,7 +72,8 @@ const { charts, groupNames } = useChartPipeline(
   activeGroupId,
   resolvedSort,
   showLabels,
-  scale
+  scale,
+  threeD
 )
 
 // The worker owns grouping; feed its group list back into useDataPoint so the

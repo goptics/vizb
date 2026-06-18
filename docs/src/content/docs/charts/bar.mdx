@@ -26,7 +26,7 @@ vizb maps your grouping columns to the chart's visual axes:
 A single series of bars — one bar per X category. The height is the raw value. This is the simplest view: run a benchmark, pick one grouping column, get a bar per result.
 
 ```bash
-vizb data.csv -g category -c bar -o out.html
+vizb bar data.csv -g category -o out.html
 ```
 
 {/* TODO: Add GIF showing a 1D bar chart with single series */}
@@ -36,7 +36,7 @@ vizb data.csv -g category -c bar -o out.html
 Grouped bars: X stays on the category axis, and each distinct Y value becomes its own bar series side-by-side within each X group. The legend lists the Y values so you can toggle individual series on and off.
 
 ```bash
-vizb data.csv -g category,metric -p x/y -c bar -o out.html
+vizb bar data.csv -g category,metric -p x,y -o out.html
 ```
 
 {/* TODO: Add GIF showing a 2D grouped bar chart with legend toggles */}
@@ -46,7 +46,7 @@ vizb data.csv -g category,metric -p x/y -c bar -o out.html
 WebGL `bar3D` scene: X and Y form a grid floor, and Z values stack as depth layers on each (X, Y) cell. Rotate, zoom, and pan the scene in the browser. Requires echarts-gl (bundled automatically).
 
 ```bash
-vizb data.csv -g category,metric,group -p x/y/z -c bar -o out.html
+vizb bar data.csv -g category,metric,group -p x,y,z -o out.html
 ```
 
 {/* TODO: Add GIF showing a 3D bar chart rotating */}
@@ -65,16 +65,18 @@ These settings apply to bar charts:
 | Labels | `--show-labels` | Show labels | Displays value on each bar |
 | Swap | `--swap` | Axis switcher | Rotates which column maps to X vs Y |
 | Scale (log) | `--log-scale` | Scale toggle | Log Y axis — 2D only |
+| 3D view | `--3d` | 3D view | Value 3D for x+y data (y → depth, metric → height) |
+| 3D visual map | `--3d-visualmap` | 3D visual map | Metric gradient coloring — on by default with `--3d`; grouped/value 3D |
 | Auto-rotate | `--3d-rotate` | Auto rotate | Spins the 3D scene — 3D only |
 
 Override settings for just this chart type without affecting others:
 
 ```bash
 # Sort ascending and show labels on bars only
-vizb data.csv -g category,metric --chart bar:sort=asc,labels -o out.html
+vizb bar data.csv -g category,metric --sort asc -l -o out.html
 
 # Log scale on the bar chart only
-vizb data.csv -g category,metric --chart bar:scale=log -o out.html
+vizb bar data.csv -g category,metric --scale log -o out.html
 ```
 
 ## Next Steps

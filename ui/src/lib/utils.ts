@@ -52,25 +52,36 @@ export const resetColor = () => {
   colorMap.clear()
 }
 
+export const chartHasXAxis = (chart: ChartData) =>
+  chart.series.some((series) => series.xAxis && series.xAxis.trim() !== '')
+
 export const chartHasYAxis = (chart: ChartData) =>
   chart.yAxis && chart.yAxis.length > 0 && chart.yAxis[0] !== ''
 
 export const chartHasZAxis = (chart: ChartData) =>
   chart.zAxis && chart.zAxis.length > 0 && chart.zAxis[0] !== ''
 
-export const hasXAxis = (chartData: Ref<ChartData, ChartData>) =>
-  chartData.value.series.some((series) => series.xAxis && series.xAxis.trim() !== '')
+export const hasXAxis = (chartData: Ref<ChartData, ChartData>) => chartHasXAxis(chartData.value)
 
 export const hasYAxis = (chartData: Ref<ChartData, ChartData>) => chartHasYAxis(chartData.value)
 
 export const hasZAxis = (chartData: Ref<ChartData, ChartData>) => chartHasZAxis(chartData.value)
 
-// 3D rendering kicks in only when x, y AND z dimensions are all present
-export const is3D = (chartData: Ref<ChartData, ChartData>) =>
-  hasXAxis(chartData) && hasYAxis(chartData) && hasZAxis(chartData)
+// Grouped 3D: x, y, and z dimensions are all present in the chart data.
+export const isGrouped3D = (chart: ChartData) =>
+  chartHasXAxis(chart) && chartHasYAxis(chart) && chartHasZAxis(chart)
+
+// Value 3D: x+y only — y categories become depth, metric becomes height.
+export const isValue3DEligible = (chart: ChartData) =>
+  chartHasXAxis(chart) && chartHasYAxis(chart) && !chartHasZAxis(chart)
+
+export const is3D = (chartData: Ref<ChartData, ChartData>, threeD?: boolean) => {
+  const chart = chartData.value
+  return isGrouped3D(chart) || (isValue3DEligible(chart) && threeD === true)
+}
 
 // Data-shape dimensionality tag, derived from the raw `DataPoint[]` rows. The
-// panel uses this to decide which fields render (e.g. `autoRotate` is 3D-only).
+// panel uses this to decide which fields render (e.g. `threeDRotate` is 3D-only).
 // Independent of the chart's post-group `ChartData` — purely the source shape.
 // `undefined` (empty/unknown data) means "no constraint" so the panel still
 // shows every field by default until data arrives.

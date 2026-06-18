@@ -26,7 +26,7 @@ A cell with one z-series shows that series' pure color. A cell mixing two z-seri
 Classic heatmap: one value per X × Y cell, colored on a continuous gradient with a `visualMap` scale. No z-series, no blending — magnitude as color.
 
 ```bash
-vizb data.csv -g category,metric -p x/y -c heatmap -o out.html
+vizb heatmap data.csv -g category,metric -p x,y -o out.html
 ```
 
 {/* TODO: Add GIF showing a 2D gradient heatmap with visualMap scale */}
@@ -36,7 +36,7 @@ vizb data.csv -g category,metric -p x/y -c heatmap -o out.html
 Z values are folded into each cell rather than rendered as depth. Each cell sums its z-series values and blends their palette colors by contribution weight. Toggle z-series in the legend — cells recompute and re-blend live.
 
 ```bash
-vizb data.csv -g category,metric,group -p x/y/z -c heatmap -o out.html
+vizb heatmap data.csv -g category,metric,group -p x,y,z -o out.html
 ```
 
 {/* TODO: Add GIF showing a z-blended heatmap with legend toggles */}
@@ -53,16 +53,16 @@ These settings apply to heatmap charts:
 |---------|----------|-----------|-------|
 | Sort | `--sort asc\|desc` | Sort control | Orders the matrix axes |
 | Labels | `--show-labels` | Show labels | Shows the summed value inside each cell |
-| Swap | `--chart heatmap:swap=yx` | Axis switcher | Swaps X and Y axes |
+| Swap | `--swap yx` | Axis switcher | Swaps X and Y axes |
 
 Override settings for just the heatmap without affecting other charts:
 
 ```bash
-# Show per-cell labels on the heatmap only
-vizb data.csv -g category,metric,group -p x/y/z --chart heatmap:labels -o out.html
+# Show per-cell labels
+vizb heatmap data.csv -g category,metric,group -p x,y,z -l -o out.html
 
 # Sort the axes descending
-vizb data.csv -g category,metric,group -p x/y/z --chart heatmap:sort=desc -o out.html
+vizb heatmap data.csv -g category,metric,group -p x,y,z --sort desc -o out.html
 ```
 
 <Aside type="note">

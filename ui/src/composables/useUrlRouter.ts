@@ -1,5 +1,5 @@
 import { watch, computed } from 'vue'
-import type { ChartType, ChartConfig, SortOrder, ScaleType } from '../types'
+import type { ChartType, ChartConfig, SortOrder, ScaleType, BarConfig, LineConfig } from '../types'
 import { SORT_ORDERS, SCALE_TYPES } from '../types'
 import { useSettingsStore } from './useSettingsStore'
 import { useDataPoint } from './useDataPoint'
@@ -30,13 +30,15 @@ const applyIndexParam = (
 
 // Field update payload accepted by `applyConfigUpdate`. Only the keys present
 // in the URL get touched; missing fields stay at whatever the config already
-// holds. `scale` and `autoRotate` are skipped for pie/heatmap/radar (those
+// holds. `scale` and 3D fields are skipped for pie/heatmap/radar (those
 // types don't carry the field) so a malformed URL can't widen the config.
 type ConfigUpdate = {
   sort?: { enabled: boolean; order: SortOrder }
   showLabels?: boolean
   scale?: ScaleType
-  autoRotate?: boolean
+  threeD?: boolean
+  threeDRotate?: boolean
+  threeDVisualMap?: boolean
 }
 
 // Find the first config of the given chart type and apply a partial update in
@@ -51,10 +53,13 @@ const applyConfigUpdate = (type: ChartType, update: ConfigUpdate): boolean => {
 
   if (update.sort) cfg.sort = update.sort
   if (update.showLabels !== undefined) cfg.showLabels = update.showLabels
-  // Only bar/line carry `scale`/`autoRotate`; the union narrows on `cfg.type`.
+  // Only bar/line carry `scale` and 3D options; the union narrows on `cfg.type`.
   if (cfg.type === 'bar' || cfg.type === 'line') {
-    if (update.scale) cfg.scale = update.scale
-    if (update.autoRotate !== undefined) cfg.autoRotate = update.autoRotate
+    const cartesian = cfg as BarConfig | LineConfig
+    if (update.scale) cartesian.scale = update.scale
+    if (update.threeD !== undefined) cartesian.threeD = update.threeD
+    if (update.threeDRotate !== undefined) cartesian.threeDRotate = update.threeDRotate
+    if (update.threeDVisualMap !== undefined) cartesian.threeDVisualMap = update.threeDVisualMap
   }
   return true
 }
@@ -133,7 +138,9 @@ export function useUrlRouter() {
       const so = params[`${ct}.so`] as SortOrder | undefined
       const l = params[`${ct}.l`]
       const sc = params[`${ct}.sc`] as ScaleType | undefined
-      const rt = params[`${ct}.rt`]
+      const d3 = params[`${ct}.3d`]
+      const d3rt = params[`${ct}.3d-rt`]
+      const d3vm = params[`${ct}.3d-vm`]
       const sw = params[`${ct}.sw`]
 
       const update: ConfigUpdate = {}
@@ -143,7 +150,11 @@ export function useUrlRouter() {
       if (l === 'true') update.showLabels = true
       else if (l === 'false') update.showLabels = false
       if (sc && SCALE_TYPES.includes(sc)) update.scale = sc
-      if (rt === 'true') update.autoRotate = true
+      if (d3 === 'true') update.threeD = true
+      else if (d3 === 'false') update.threeD = false
+      if (d3rt === 'true') update.threeDRotate = true
+      if (d3vm === 'true') update.threeDVisualMap = true
+      else if (d3vm === 'false') update.threeDVisualMap = false
 
       if (Object.keys(update).length > 0) {
         applyConfigUpdate(ct, update)
@@ -189,8 +200,12 @@ export function useUrlRouter() {
       if (cfg.showLabels === true) params[`${ct}.l`] = 'true'
       else if (cfg.showLabels === false) params[`${ct}.l`] = 'false'
       if (cfg.type === 'bar' || cfg.type === 'line') {
-        if (cfg.scale && cfg.scale !== 'linear') params[`${ct}.sc`] = cfg.scale
-        if (cfg.autoRotate === true) params[`${ct}.rt`] = 'true'
+        const cartesian = cfg as BarConfig | LineConfig
+        if (cartesian.scale && cartesian.scale !== 'linear') params[`${ct}.sc`] = cartesian.scale
+        if (cartesian.threeD === true) params[`${ct}.3d`] = 'true'
+        if (cartesian.threeDRotate === true) params[`${ct}.3d-rt`] = 'true'
+        if (cartesian.threeDVisualMap === true) params[`${ct}.3d-vm`] = 'true'
+        else if (cartesian.threeDVisualMap === false) params[`${ct}.3d-vm`] = 'false'
       }
 
       const arr = arrangementMap.get(`${activeDataSetId.value}:${ct}`)

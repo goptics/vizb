@@ -5,11 +5,20 @@ description: Add a z-axis to render interactive visual 3D bar and line charts in
 
 import { CardGrid, Card, Aside, LinkCard } from '@astrojs/starlight/components';
 
-When a **z-axis** is present and the active chart is **bar** or **line**, vizb automatically switches to a visual WebGL 3D scene instead of a flat 2D chart. Rotate, zoom, and pan directly in the browser. Other chart types (pie, radar, heatmap) receive z-axis data differently — they don't render a 3D scene.
+vizb supports two 3D modes for **bar** and **line** charts. Both render in a WebGL scene you can rotate, zoom, and pan in the browser. Other chart types (pie, radar, heatmap) receive z-axis data differently — they don't render a 3D scene.
 
-## What Makes a Chart 3D
+## Two 3D Modes
 
-A chart renders in 3D when a data point has **all three** plotting axes present:
+| Mode | How to enable | X (width) | Y (depth) | Z (height) |
+|------|---------------|-----------|-----------|------------|
+| **Grouped** | Add `z` to `--group-pattern` / `--group-regex` | categories | categories | metric value (stacked per z group) |
+| **Value** | `vizb bar` / `vizb line` with `--3d` on x+y-only data | categories | categories (former 2D legend) | metric value (single series, visualMap) |
+
+Grouped 3D takes precedence: if your data already has a z dimension, `--3d` is ignored.
+
+## Grouped 3D (z in the pattern)
+
+A chart renders in grouped 3D when a data point has **all three** plotting axes present:
 
 - **XAxis** — categories along the width
 - **YAxis** — categories along the depth's base
@@ -27,25 +36,28 @@ charts. Without a z-axis, charts render as the usual 2D bar/line/pie.
 
 Add a `z` segment to your grouping pattern or a `(?<z>…)` capture to your regex.
 
-**Pattern — `x/y/z`:**
+**Pattern — CSV (`x,y,z`) or benchmarks (`x/y/z`):**
 
 ```bash
-vizb data.csv -g category,metric,group --group-pattern "x/y/z" -o output.html
+# CSV/JSON — comma-separated columns and pattern
+vizb bar data.csv -g category,metric,group -p x,y,z -o output.html
+
+# Benchmarks — slash-separated names
+go test -bench . | vizb -p x/y/z -o output.html
 ```
 
-| Source Label | Name | XAxis | YAxis | ZAxis |
+| Source | Label example | XAxis | YAxis | ZAxis |
 |---|---|---|---|---|
-| `BenchmarkSort/1024/QuickSort/warm` | Sort | 1024 | QuickSort | warm |
-| `BenchmarkSort/2048/MergeSort/cold` | Sort | 2048 | MergeSort | cold |
+| CSV row | `alpha,beta,gamma` | alpha | beta | gamma |
+| Benchmark | `BenchmarkSort/1024/QuickSort/warm` | 1024 | QuickSort | warm |
 
-The same `z` dimension can come from a CSV or JSON column instead of a benchmark
-name segment — pass the column as the fourth `--group` field. See the
+Pass each CSV/JSON column as a `--group` field in pattern order. See the
 [Tabular Data guide](/guides/data).
 
 **Regex — named `z` capture:**
 
 ```bash
-vizb data.csv -g category,metric,group,series --group-regex "(?<n>.*)/(?<x>.*)/(?<y>.*)/(?<z>.*)" -o output.html
+vizb bar data.csv -g category,metric,group,series --group-regex "(?<n>.*)/(?<x>.*)/(?<y>.*)/(?<z>.*)" -o output.html
 ```
 
 If you supply a `z` without both `x` and `y`, vizb rejects the pattern:
@@ -55,6 +67,28 @@ zAxis (z) requires both xAxis (x) and yAxis (y)
 ```
 
 See the [Grouping Guide](/guides/grouping) for full pattern and regex syntax.
+
+## Value 3D (`--3d` on x+y data)
+
+When you have only **x** and **y** dimensions, a 2D bar/line chart puts every y category in the legend — hard to read with many series. Pass `--3d` on `vizb bar` or `vizb line` to project the same data into 3D: y categories move to depth, and the metric value becomes bar/line height. With `--3d`, a **visualMap** gradient colors bars/lines by metric value (on by default).
+
+```bash
+# CSV with x+y columns — no z grouping needed
+vizb bar data.csv -g category,series -p x,y --3d -o output.html
+vizb line data.csv -g category,series -p x,y --3d -o output.html
+
+# Disable the gradient while keeping value 3D
+vizb bar data.csv -g category,series -p x,y --3d --3d-visualmap=false -o output.html
+
+# Grouped z 3D with visualMap only
+vizb bar data.csv -g x,y,z -p x,y,z --3d-visualmap -o output.html
+```
+
+The HTML bundles **3D view** and **3D visual map** toggles in settings (both on by default when `--3d` was passed). Turn 3D view off to return to the flat 2D chart without re-running the CLI.
+
+<Aside type="note">
+  `--3d` on `vizb bar` / `vizb line` is separate from `vizb ui --3d`, which only opts in to bundling the 3D engine for remote `--data-url` pages.
+</Aside>
 
 ## 3D Chart Types
 

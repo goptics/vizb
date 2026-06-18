@@ -50,12 +50,12 @@ func (s *PieSuite) TestMaterialisePiePrecedence() {
 	s.Equal("asc", got.Sort.Order)
 }
 
-func (s *PieSuite) TestPieConfigNoScaleOrAutoRotate() {
+func (s *PieSuite) TestPieConfigNoScaleOrThreeDRotate() {
 	typ := reflect.TypeOf(Config{})
 	_, hasScale := typ.FieldByName("Scale")
-	_, hasAutoRotate := typ.FieldByName("AutoRotate")
+	_, hasThreeDRotate := typ.FieldByName("ThreeDRotate")
 	s.False(hasScale, "pie Config should not have a Scale field")
-	s.False(hasAutoRotate, "pie Config should not have an AutoRotate field")
+	s.False(hasThreeDRotate, "pie Config should not have an ThreeDRotate field")
 }
 
 func TestPieSuite(t *testing.T) {

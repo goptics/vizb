@@ -7,8 +7,13 @@ import SettingHeader from './SettingHeader.vue'
 import { useSettingsStore } from '../composables/useSettingsStore'
 import { useDataPoint } from '../composables/useDataPoint'
 import { resetColor } from '../lib/utils'
-import { getRenderableFields } from '../composables/settings/fieldRegistry'
-import type { ChartType } from '../types'
+import {
+  getRenderableFields,
+  partitionRenderableFields,
+  type SettingFieldKey,
+  type SettingFieldValueMap,
+} from '../composables/settings/fieldRegistry'
+import type { BarConfig, ChartType, LineConfig } from '../types'
 
 // Generic, schema-less settings panel: walks `Object.keys(activeConfig)` via
 // `getRenderableFields` and renders the registered control for each key. The
@@ -23,8 +28,10 @@ const {
   setSort,
   setScale,
   setShowLabels,
-  setAutoRotate,
+  setThreeDRotate,
   setSwap,
+  setThreeD,
+  setThreeDVisualMap,
 } = useSettingsStore()
 
 const { activeDataSet, activeDataSetId, activeDataDimension, setArrangement, activeGroupId } =
@@ -58,13 +65,28 @@ const onChartTypeSelect = (id: number) => {
   if (opt) setChartType(opt.value)
 }
 
-// The field list for the active chart. `getRenderableFields` walks the config's
-// own keys (filtered by `appliesTo` + the active data's dimension) so pie/
-// heatmap/radar configs naturally skip `scale` and `autoRotate` without any
-// chart-type check here, and a 2D bar config also skips `autoRotate` (3D-only).
-const fields = computed(() => {
+const hasZAxis = computed(() => activeDataSet.value?.data?.some((p) => !!p.zAxis) ?? false)
+
+const hasThreeDOption = computed(
+  () => (activeConfig.value as BarConfig | LineConfig | undefined)?.threeD !== undefined
+)
+
+const rendering3D = computed(() => {
+  if (activeDataDimension.value === '3D') return true
+  const cfg = activeConfig.value as BarConfig | LineConfig | undefined
+  return !!(cfg?.threeD && activeDataDimension.value === '2D')
+})
+
+const fieldGroups = computed(() => {
   const cfg = activeConfig.value
-  return cfg ? getRenderableFields(cfg, { dimension: activeDataDimension.value }) : []
+  if (!cfg) return { general: [], threeD: [] }
+  const fields = getRenderableFields(cfg, {
+    dimension: activeDataDimension.value,
+    rendering3D: rendering3D.value,
+    hasThreeDOption: hasThreeDOption.value,
+    hasZAxis: hasZAxis.value,
+  })
+  return partitionRenderableFields(fields)
 })
 
 // Each control emits `update:modelValue` with the appropriate type for its
@@ -74,13 +96,18 @@ const fields = computed(() => {
 // wire format: it must also update useDataPoint's arrangement (which the
 // pipeline watches to post `setArrangement` to the worker so it re-projects /
 // re-groups off-thread) and reset the group + recolor on a new arrangement.
-const handlers: Record<string, (val: unknown) => void> = {
-  sort: (val) => setSort(val as Parameters<typeof setSort>[0]),
-  scale: (val) => setScale(val as Parameters<typeof setScale>[0]),
-  showLabels: (val) => setShowLabels(val as boolean),
-  autoRotate: (val) => setAutoRotate(val as boolean),
-  swap: (val) => {
-    const target = val as string | undefined
+type SettingsHandlers = {
+  [K in SettingFieldKey]: (val: SettingFieldValueMap[K]) => void
+}
+
+const handlers: SettingsHandlers = {
+  sort: setSort,
+  scale: setScale,
+  showLabels: setShowLabels,
+  threeDRotate: setThreeDRotate,
+  threeD: setThreeD,
+  threeDVisualMap: setThreeDVisualMap,
+  swap: (target) => {
     if (target === undefined) return
     setArrangement(activeDataSetId.value, chartType.value, target)
     activeGroupId.value = 0
@@ -89,12 +116,16 @@ const handlers: Record<string, (val: unknown) => void> = {
   },
 }
 
-const valueFor = (key: string) =>
-  activeConfig.value ? (activeConfig.value as Record<string, unknown>)[key] : undefined
+const valueFor = (key: SettingFieldKey) =>
+  activeConfig.value ? (activeConfig.value as Partial<SettingFieldValueMap>)[key] : undefined
 
-const onUpdate = (key: string, value: unknown) => {
-  const fn = handlers[key]
-  if (fn) fn(value)
+// Generic keeps key/value correlated; Vue emits force a single cast at the boundary.
+const updateSetting = <K extends SettingFieldKey>(key: K, value: SettingFieldValueMap[K]) => {
+  handlers[key](value)
+}
+
+const onUpdate = (key: SettingFieldKey, value: unknown) => {
+  updateSetting(key, value as SettingFieldValueMap[SettingFieldKey])
 }
 </script>
 
@@ -117,12 +148,23 @@ const onUpdate = (key: string, value: unknown) => {
         <Separator />
       </template>
 
-      <template v-for="field in fields" :key="field.key">
+      <template v-for="field in fieldGroups.general" :key="field.key">
         <component
           :is="field.component"
           :model-value="valueFor(field.key)"
           @update:model-value="(val: unknown) => onUpdate(field.key, val)"
         />
+      </template>
+
+      <template v-if="fieldGroups.threeD.length > 0">
+        <Separator />
+        <template v-for="field in fieldGroups.threeD" :key="field.key">
+          <component
+            :is="field.component"
+            :model-value="valueFor(field.key)"
+            @update:model-value="(val: unknown) => onUpdate(field.key, val)"
+          />
+        </template>
       </template>
     </CardContent>
   </Card>

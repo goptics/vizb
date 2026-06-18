@@ -28,10 +28,12 @@ func (s *BarSuite) TestCommandFlags() {
 	cmd := NewCommand()
 	s.Equal("bar [target]", cmd.Use)
 	s.NotNil(cmd.Flags().Lookup("scale"))
-	s.NotNil(cmd.Flags().Lookup("3d-rotate"))
 	s.NotNil(cmd.Flags().Lookup("swap"))
 	s.NotNil(cmd.Flags().Lookup("sort"))
 	s.NotNil(cmd.Flags().Lookup("show-labels"))
+	s.NotNil(cmd.Flags().Lookup("3d"))
+	s.NotNil(cmd.Flags().Lookup("3d-rotate"))
+	s.NotNil(cmd.Flags().Lookup("3d-visualmap"))
 }
 
 func (s *BarSuite) TestBakesBarOnlySelection() {
@@ -73,6 +75,65 @@ func (s *BarSuite) TestBarCommandNewShape() {
 	s.Require().NotNil(barCfg.Sort)
 	s.True(barCfg.Sort.Enabled)
 	s.Equal("desc", barCfg.Sort.Order)
+}
+
+func (s *BarSuite) TestBarCommandWithThreeDFlag() {
+	dir := s.T().TempDir()
+	input := testutil.WriteBenchFile(s.T(), dir, "bench.txt", "")
+	out := filepath.Join(dir, "out.json")
+
+	cmd := NewCommand()
+	cmd.SetArgs([]string{"-o", out, "-P", "go", "-p", "n/x/y", "--3d", input})
+	s.Require().NoError(cmd.Execute())
+
+	ds := testutil.ReadDataset(s.T(), out)
+	s.Require().Len(ds.Settings, 1)
+
+	barCfg, ok := ds.Settings[0].(*barchart.Config)
+	s.Require().True(ok)
+	s.Require().NotNil(barCfg.ThreeD)
+	s.True(*barCfg.ThreeD)
+	s.Require().NotNil(barCfg.ThreeDVisualMap)
+	s.True(*barCfg.ThreeDVisualMap)
+}
+
+func (s *BarSuite) TestBarCommandWithThreeDVisualMapFlag() {
+	dir := s.T().TempDir()
+	input := testutil.WriteBenchFile(s.T(), dir, "bench.txt", "")
+	out := filepath.Join(dir, "out.json")
+
+	cmd := NewCommand()
+	cmd.SetArgs([]string{"-o", out, "-P", "go", "-p", "n/x/y", "--3d", "--3d-visualmap=false", input})
+	s.Require().NoError(cmd.Execute())
+
+	ds := testutil.ReadDataset(s.T(), out)
+	s.Require().Len(ds.Settings, 1)
+
+	barCfg, ok := ds.Settings[0].(*barchart.Config)
+	s.Require().True(ok)
+	s.Require().NotNil(barCfg.ThreeD)
+	s.True(*barCfg.ThreeD)
+	s.Require().NotNil(barCfg.ThreeDVisualMap)
+	s.False(*barCfg.ThreeDVisualMap)
+}
+
+func (s *BarSuite) TestBarCommandThreeDVisualMapWithoutThreeD() {
+	dir := s.T().TempDir()
+	input := testutil.WriteBenchFile(s.T(), dir, "bench.txt", "")
+	out := filepath.Join(dir, "out.json")
+
+	cmd := NewCommand()
+	cmd.SetArgs([]string{"-o", out, "-P", "go", "-p", "n/x/y", "--3d-visualmap", input})
+	s.Require().NoError(cmd.Execute())
+
+	ds := testutil.ReadDataset(s.T(), out)
+	s.Require().Len(ds.Settings, 1)
+
+	barCfg, ok := ds.Settings[0].(*barchart.Config)
+	s.Require().True(ok)
+	s.Nil(barCfg.ThreeD)
+	s.Require().NotNil(barCfg.ThreeDVisualMap)
+	s.True(*barCfg.ThreeDVisualMap)
 }
 
 func (s *BarSuite) TestBarCommandBadSwapExits() {

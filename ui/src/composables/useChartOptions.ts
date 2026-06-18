@@ -18,8 +18,10 @@ export function useChartOptions(
   isDark: Ref<boolean>,
   chartType: Ref<ChartType>,
   scale: Ref<ScaleType>,
-  autoRotate: Ref<boolean>,
-  visibleZ: Ref<Record<string, boolean>>
+  threeDRotate: Ref<boolean>,
+  visibleZ: Ref<Record<string, boolean>>,
+  threeD: Ref<boolean>,
+  threeDVisualMap: Ref<boolean>
 ) {
   const config: BaseChartConfig = {
     chartData,
@@ -27,8 +29,10 @@ export function useChartOptions(
     showLabels,
     isDark,
     scale,
-    autoRotate,
+    threeDRotate,
     visibleZ,
+    threeD,
+    threeDVisualMap,
   }
 
   const barOptions = useBarChartOptions(config)
@@ -42,13 +46,13 @@ export function useChartOptions(
   const options = computed<EChartsOption>(() => {
     // When x, y AND z are all present, bar/line render as 3D charts.
     // Pie has no 3D equivalent, so it falls through to the 3-up pie layout.
-    const threeD = is3D(chartData)
+    const use3D = is3D(chartData, threeD.value)
 
     switch (chartType.value) {
       case 'bar':
-        return threeD ? bar3DOptions.options.value : barOptions.options.value
+        return use3D ? bar3DOptions.options.value : barOptions.options.value
       case 'line':
-        return threeD ? line3DOptions.options.value : lineOptions.options.value
+        return use3D ? line3DOptions.options.value : lineOptions.options.value
       case 'pie':
         return pieOptions.options.value
       case 'heatmap':
@@ -56,7 +60,7 @@ export function useChartOptions(
       case 'radar':
         return radarOptions.options.value
       default:
-        return threeD ? bar3DOptions.options.value : barOptions.options.value
+        return use3D ? bar3DOptions.options.value : barOptions.options.value
     }
   })
 

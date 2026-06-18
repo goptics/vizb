@@ -63,7 +63,7 @@ func (s *ChartSpecSuite) TestParseOverridesAllFields() {
 	s.Equal("asc", m["sort"].(map[string]any)["order"])
 	s.Equal(true, m["sort"].(map[string]any)["enabled"])
 	s.Equal(true, m["showLabels"])
-	s.Equal(false, m["autoRotate"])
+	s.Equal(false, m["threeDRotate"])
 }
 
 // TestParseOverrides_BareLabels confirms a bare flag (no =val) parses correctly.
@@ -78,7 +78,31 @@ func (s *ChartSpecSuite) TestParseOverridesBareLabels() {
 	s.Equal(true, m["showLabels"])
 }
 
-// TestParseOverrides_BareRotate confirms `3d-rotate` (no =val) sets autoRotate=true.
+// TestParseOverrides_BareThreeD confirms `3d` (no =val) enables value-mode 3D.
+func (s *ChartSpecSuite) TestParseOverridesBareThreeD() {
+	got, err := ParseOverrides([]string{"bar:3d"}, []string{"bar"}, s.xynAxes)
+	s.Require().NoError(err)
+
+	raw, err := json.Marshal(got["bar"])
+	s.Require().NoError(err)
+	var m map[string]any
+	s.Require().NoError(json.Unmarshal(raw, &m))
+	s.Equal(true, m["threeD"])
+}
+
+// TestParseOverrides_BareThreeDVisualMap confirms `3d-visualmap` enables the gradient.
+func (s *ChartSpecSuite) TestParseOverridesBareThreeDVisualMap() {
+	got, err := ParseOverrides([]string{"bar:3d-visualmap"}, []string{"bar"}, s.xynAxes)
+	s.Require().NoError(err)
+
+	raw, err := json.Marshal(got["bar"])
+	s.Require().NoError(err)
+	var m map[string]any
+	s.Require().NoError(json.Unmarshal(raw, &m))
+	s.Equal(true, m["threeDVisualMap"])
+}
+
+// TestParseOverrides_BareRotate confirms `3d-rotate` (no =val) sets threeDRotate=true.
 func (s *ChartSpecSuite) TestParseOverridesBareRotate() {
 	got, err := ParseOverrides([]string{"bar:3d-rotate"}, []string{"bar"}, s.xynAxes)
 	s.Require().NoError(err)
@@ -87,7 +111,7 @@ func (s *ChartSpecSuite) TestParseOverridesBareRotate() {
 	s.Require().NoError(err)
 	var m map[string]any
 	s.Require().NoError(json.Unmarshal(raw, &m))
-	s.Equal(true, m["autoRotate"])
+	s.Equal(true, m["threeDRotate"])
 }
 
 // TestParseOverrides_MultipleSpecsSameType confirms two specs for the same

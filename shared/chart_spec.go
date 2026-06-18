@@ -160,9 +160,13 @@ func ParseOverrides(specs []string, charts []string, axes []Axis) (map[string]co
 				case "labels":
 					payload["showLabels"] = true
 				case "3d-rotate":
-					payload["autoRotate"] = true
+					payload["threeDRotate"] = true
+				case "3d":
+					payload["threeD"] = true
+				case "3d-visualmap":
+					payload["threeDVisualMap"] = true
 				default:
-					return nil, fmt.Errorf("--chart: malformed token %q in spec %q: unknown bare flag (valid bare flags: labels, 3d-rotate)", token, spec)
+					return nil, fmt.Errorf("--chart: malformed token %q in spec %q: unknown bare flag (valid bare flags: labels, 3d-rotate, 3d, 3d-visualmap)", token, spec)
 				}
 				continue
 			}
@@ -200,10 +204,24 @@ func ParseOverrides(specs []string, charts []string, axes []Axis) (map[string]co
 				if err != nil {
 					return nil, fmt.Errorf("--chart: key %q value %q must be true or false", key, val)
 				}
-				payload["autoRotate"] = b
+				payload["threeDRotate"] = b
+
+			case "3d":
+				b, err := strconv.ParseBool(val)
+				if err != nil {
+					return nil, fmt.Errorf("--chart: key %q value %q must be true or false", key, val)
+				}
+				payload["threeD"] = b
+
+			case "3d-visualmap":
+				b, err := strconv.ParseBool(val)
+				if err != nil {
+					return nil, fmt.Errorf("--chart: key %q value %q must be true or false", key, val)
+				}
+				payload["threeDVisualMap"] = b
 
 			default:
-				return nil, fmt.Errorf("--chart: unknown key %q in spec %q (valid keys: swap, sort, scale, labels, 3d-rotate)", key, spec)
+				return nil, fmt.Errorf("--chart: unknown key %q in spec %q (valid keys: swap, sort, scale, labels, 3d-rotate, 3d, 3d-visualmap)", key, spec)
 			}
 		}
 	}

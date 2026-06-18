@@ -1,6 +1,11 @@
 package shared
 
-import "slices"
+import (
+	"encoding/json"
+	"slices"
+
+	config_charts "github.com/goptics/vizb/config/charts"
+)
 
 // ValidChartTypes is every chart type the CLI accepts via --charts.
 var ValidChartTypes = []string{"bar", "line", "pie", "heatmap", "radar"}
@@ -32,18 +37,40 @@ func DatasetHasZAxis(ds *Dataset) bool {
 	return false
 }
 
-// DatasetNeeds3D reports whether a dataset will render a 3D chart, matching the
-// UI's is3D = hasX && hasY && hasZ combined with the bar/line-only 3D routing.
-// Used to decide whether the echarts-gl (3D) chunk must ship. Settings is
-// []ChartConfig in the new model, so we extract the chart-type discriminators
-// before checking 3D capability.
-func DatasetNeeds3D(ds *Dataset) bool {
-	if !DatasetHasZAxis(ds) {
+// SettingsHasThreeDOption reports whether any bar/line config was baked with
+// threeD (via --3d), which unlocks value-mode 3D for x+y-only data.
+func SettingsHasThreeDOption(settings []config_charts.ChartConfig) bool {
+	for _, c := range settings {
+		if configHasThreeDOption(c) {
+			return true
+		}
+	}
+	return false
+}
+
+func configHasThreeDOption(c config_charts.ChartConfig) bool {
+	raw, err := json.Marshal(c)
+	if err != nil {
 		return false
 	}
+	var m map[string]any
+	if err := json.Unmarshal(raw, &m); err != nil {
+		return false
+	}
+	_, ok := m["threeD"]
+	return ok
+}
+
+// DatasetNeeds3D reports whether a dataset will render a 3D chart: grouped 3D
+// when z-axis data is present, or value 3D when threeD is baked on bar/line.
+// Used to decide whether the echarts-gl (3D) chunk must ship.
+func DatasetNeeds3D(ds *Dataset) bool {
 	types := make([]string, len(ds.Settings))
 	for i, c := range ds.Settings {
 		types[i] = c.ChartType()
 	}
-	return ChartsHave3DCapable(types)
+	if !ChartsHave3DCapable(types) {
+		return false
+	}
+	return DatasetHasZAxis(ds) || SettingsHasThreeDOption(ds.Settings)
 }

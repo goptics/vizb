@@ -5,7 +5,9 @@ import {
   listChartSignatures,
   build3DRender,
   projectAndGroup,
+  canonicalAxisOrdersFromStrings,
 } from './transform'
+import { translateAxisKey } from './swap'
 import type { DataPoint, Sort, Point3D } from '../types'
 
 const noSort: Sort = { enabled: false, order: 'asc' }
@@ -120,7 +122,7 @@ describe('buildChartForSignature — additional branches', () => {
     void statTemplate
   })
 
-  it('attaches render3D only when x, y, and z are all populated', () => {
+  it('attaches grouped render3D only when x, y, and z are all populated', () => {
     const with3D: DataPoint[] = [dp('X1', 'Y1', 'Z1', 'v', 5)]
     const without3D: DataPoint[] = [dp('X1', 'Y1', '', 'v', 5)]
 
@@ -129,7 +131,51 @@ describe('buildChartForSignature — additional branches', () => {
     const chart2D = buildChartForSignature(without3D, signature, statTemplate, undefined, noSort)
 
     expect(chart3D.render3D).toBeDefined()
+    expect(chart3D.render3D!.mode).toBe('grouped')
     expect(chart2D.render3D).toBeUndefined()
+  })
+
+  it('attaches value render3D when threeD is on for x+y data', () => {
+    const data: DataPoint[] = [
+      dp('X1', 'Y1', '', 'v', 5),
+      dp('X2', 'Y1', '', 'v', 3),
+      dp('X1', 'Y2', '', 'v', 7),
+    ]
+    const { signature, statTemplate } = listChartSignatures(data)[0]!
+    const chart = buildChartForSignature(
+      data,
+      signature,
+      statTemplate,
+      undefined,
+      noSort,
+      false,
+      'linear',
+      undefined,
+      true
+    )
+
+    expect(chart.render3D).toBeDefined()
+    expect(chart.render3D!.mode).toBe('value')
+    expect(chart.render3D!.zValues).toEqual([])
+    expect(chart.render3D!.barSeries).toHaveLength(1)
+    expect(chart.render3D!.barSeries[0]!.data[0]!.value).toEqual([0, 0, 5])
+  })
+
+  it('skips value render3D when threeD toggle is off', () => {
+    const data: DataPoint[] = [dp('X1', 'Y1', '', 'v', 5)]
+    const { signature, statTemplate } = listChartSignatures(data)[0]!
+    const chart = buildChartForSignature(
+      data,
+      signature,
+      statTemplate,
+      undefined,
+      noSort,
+      false,
+      'linear',
+      undefined,
+      false
+    )
+    expect(chart.render3D).toBeUndefined()
   })
 
   it('desc sort places highest-total xAxis series first', () => {
@@ -251,6 +297,69 @@ describe('projectAndGroup', () => {
     const raw: DataPoint[] = [{ name: 'G', xAxis: 'X', stats: [stat] }]
     const { grouped } = projectAndGroup(raw, ['name', 'xAxis'], ['name', 'xAxis'])
     expect(grouped.get('G')![0]!.stats).toEqual([stat])
+  })
+})
+
+// ---------------------------------------------------------------------------
+// canonical axis order (3D z stability on arrangement change)
+// ---------------------------------------------------------------------------
+describe('canonical axis order', () => {
+  const identityString = 'nxyz'
+
+  it('orders zValues by raw first-seen when sort is off', () => {
+    const raw: DataPoint[] = [
+      dp('X1', 'Y1', 'Z3', 'v', 1),
+      dp('X1', 'Y1', 'Z1', 'v', 2),
+      dp('X1', 'Y1', 'Z2', 'v', 3),
+    ]
+    const canonical = canonicalAxisOrdersFromStrings(raw, 'xyz', 'xyz')
+    const { signature, statTemplate } = listChartSignatures(raw)[0]!
+    const chart = buildChartForSignature(
+      raw,
+      signature,
+      statTemplate,
+      undefined,
+      noSort,
+      false,
+      'linear',
+      canonical
+    )
+    expect(chart.render3D!.zValues).toEqual(['Z3', 'Z1', 'Z2'])
+  })
+
+  it('keeps zValues order stable when chart axes permute but z source is unchanged (sort off)', () => {
+    const raw: DataPoint[] = [
+      { name: 'G1', xAxis: 'X1', yAxis: 'Y1', zAxis: 'Z2', stats: [{ type: 'v', value: 1 }] },
+      { name: 'G1', xAxis: 'X1', yAxis: 'Y1', zAxis: 'Z1', stats: [{ type: 'v', value: 2 }] },
+      { name: 'G2', xAxis: 'X2', yAxis: 'Y1', zAxis: 'Z3', stats: [{ type: 'v', value: 3 }] },
+    ]
+    const { signature, statTemplate } = listChartSignatures(raw)[0]!
+
+    const identity = translateAxisKey(identityString)
+
+    const zForTarget = (targetString: string) => {
+      const target = translateAxisKey(targetString)
+      const canonical = canonicalAxisOrdersFromStrings(raw, identityString, targetString)
+      expect(canonical.z).toEqual(['Z2', 'Z1', 'Z3'])
+      const { grouped } = projectAndGroup(raw, identity, target)
+      expect(grouped.has('G1'), `missing G1 group for ${targetString}`).toBe(true)
+      const rows = grouped.get('G1')!
+      const chart = buildChartForSignature(
+        rows,
+        signature,
+        statTemplate,
+        undefined,
+        noSort,
+        false,
+        'linear',
+        canonical
+      )
+      expect(chart.render3D, `expected 3D chart for ${targetString}`).toBeDefined()
+      return chart.render3D!.zValues
+    }
+
+    expect(zForTarget('nxyz')).toEqual(['Z2', 'Z1'])
+    expect(zForTarget('nyxz')).toEqual(['Z2', 'Z1'])
   })
 })
 

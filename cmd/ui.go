@@ -235,8 +235,8 @@ func mergeBarConfig(to, from *barchart.Config) {
 	if from.ShowLabels != nil {
 		to.ShowLabels = from.ShowLabels
 	}
-	if from.AutoRotate != nil {
-		to.AutoRotate = from.AutoRotate
+	if from.ThreeDRotate != nil {
+		to.ThreeDRotate = from.ThreeDRotate
 	}
 }
 
@@ -255,13 +255,13 @@ func mergeLineConfig(to, from *linechart.Config) {
 	if from.ShowLabels != nil {
 		to.ShowLabels = from.ShowLabels
 	}
-	if from.AutoRotate != nil {
-		to.AutoRotate = from.AutoRotate
+	if from.ThreeDRotate != nil {
+		to.ThreeDRotate = from.ThreeDRotate
 	}
 }
 
 // mergePieConfig copies the non-zero fields of `from` into `to`. pie has no
-// Scale / AutoRotate.
+// Scale / ThreeDRotate.
 func mergePieConfig(to, from *piechart.Config) {
 	if from.Swap != "" {
 		to.Swap = from.Swap
@@ -275,7 +275,7 @@ func mergePieConfig(to, from *piechart.Config) {
 }
 
 // mergeHeatmapConfig copies the non-zero fields of `from` into `to`. heatmap
-// has no Scale / AutoRotate.
+// has no Scale / ThreeDRotate.
 func mergeHeatmapConfig(to, from *heatmapchart.Config) {
 	if from.Swap != "" {
 		to.Swap = from.Swap
@@ -289,7 +289,7 @@ func mergeHeatmapConfig(to, from *heatmapchart.Config) {
 }
 
 // mergeRadarConfig copies the non-zero fields of `from` into `to`. radar has
-// no Scale / AutoRotate.
+// no Scale / ThreeDRotate.
 func mergeRadarConfig(to, from *radarchart.Config) {
 	if from.Swap != "" {
 		to.Swap = from.Swap

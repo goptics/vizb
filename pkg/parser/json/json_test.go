@@ -126,9 +126,26 @@ func (s *JSONSuite) TestGroupSingleFieldToXAxis() {
 	s.Equal([]string{"sells"}, statTypes(results[0].Stats))
 }
 
+func (s *JSONSuite) TestGroupBracketValueSplitDateCategory() {
+	cfg, err := parser.ResolveGroupConfig(parser.Config{
+		Group:        []string{"date", "category"},
+		GroupPattern: "[x-y-n],z",
+	})
+	s.Require().NoError(err)
+
+	j := `[{"date":"2022-2-30","category":"Widget","sales":100}]`
+	results := ParseJSON(s.writeFile(j), cfg)
+
+	s.Len(results, 1)
+	s.Equal("2022", results[0].XAxis)
+	s.Equal("2", results[0].YAxis)
+	s.Equal("30", results[0].Name)
+	s.Equal("Widget", results[0].ZAxis)
+}
+
 func (s *JSONSuite) TestGroupMultiFieldRoutedByPattern() {
 	s.cfg.Group = []string{"name", "date"}
-	s.cfg.GroupPattern = "name/x"
+	s.cfg.GroupPattern = "name,x"
 	j := `[{"name":"alpha","sells":10,"date":"2024-01"}]`
 
 	results := ParseJSON(s.writeFile(j), s.cfg)
