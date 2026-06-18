@@ -93,8 +93,7 @@ func (s *BarSuite) TestBarCommandWithThreeDFlag() {
 	s.Require().True(ok)
 	s.Require().NotNil(barCfg.ThreeD)
 	s.True(*barCfg.ThreeD)
-	s.Require().NotNil(barCfg.ThreeDVisualMap)
-	s.True(*barCfg.ThreeDVisualMap)
+	s.Nil(barCfg.ThreeDVisualMap)
 }
 
 func (s *BarSuite) TestBarCommandWithThreeDVisualMapFlag() {

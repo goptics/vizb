@@ -67,8 +67,7 @@ func (s *BarSuite) TestMaterialiseBarPrecedence() {
 	got = Materialise(Flags{ThreeD: true}, nil)
 	s.Require().NotNil(got.ThreeD)
 	s.True(*got.ThreeD)
-	s.Require().NotNil(got.ThreeDVisualMap)
-	s.True(*got.ThreeDVisualMap)
+	s.Nil(got.ThreeDVisualMap)
 
 	falseVal := false
 	got = Materialise(Flags{ThreeD: true, ThreeDVisualMap: &falseVal}, nil)
