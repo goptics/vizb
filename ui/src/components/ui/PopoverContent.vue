@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { PopoverContent } from 'radix-vue'
-import { cn } from '../../lib/utils'
+import { cn } from '@/lib/utils'
 
 const props = defineProps<{ class?: string; align?: 'start' | 'center' | 'end' }>()
 </script>

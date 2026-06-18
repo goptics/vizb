@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
-import { getNextColorFor } from '../../lib/utils'
+import { getNextColorFor } from '@/lib/utils'
 import {
   createAxisConfig,
   createDataZoomConfig,

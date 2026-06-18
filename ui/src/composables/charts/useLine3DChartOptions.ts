@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
-import { COLOR_PALETTE, getNextColorFor } from '../../lib/utils'
+import { COLOR_PALETTE, getNextColorFor } from '@/lib/utils'
 import { getChartStyling, getTooltipTheme } from './shared'
 import {
   EMPTY_RENDER,
@@ -14,7 +14,7 @@ import {
   resolve3DVisualMap,
   createValue3DTooltipFormatter,
 } from './shared'
-import type { Series3DData } from '../../types'
+import type { Series3DData } from '@/types'
 
 export function useLine3DChartOptions(config: BaseChartConfig) {
   const { chartData, isDark, threeDRotate, visibleZ, showLabels, scale, threeDVisualMap } = config

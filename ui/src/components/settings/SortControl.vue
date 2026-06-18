@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { SortAsc, SortDesc } from 'lucide-vue-next'
 import { Separator } from '../ui'
-import type { Sort, SortOrder } from '../../types'
+import type { Sort, SortOrder } from '@/types'
 import SettingsToggle from '../SettingsToggle.vue'
 import SelectionTabs from '../SelectionTabs.vue'
 

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import type { BarConfig, LineConfig, PieConfig, HeatmapConfig, RadarConfig } from '../../types'
+import type { BarConfig, LineConfig, PieConfig, HeatmapConfig, RadarConfig } from '@/types'
 
 // fieldRegistry imports the .vue control components directly. The vitest config
 // intentionally excludes the Vue plugin (pure-function tests only, per project

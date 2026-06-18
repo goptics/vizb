@@ -1,7 +1,7 @@
 import type { EChartsOption } from 'echarts/types/dist/shared'
-import type { ScaleType } from '../../../types'
+import type { ScaleType } from '@/types'
 import { fontSize } from './common'
-import { describe } from '../../../lib/stats'
+import { describe } from '@/lib/stats'
 
 export const LARGE_X_THRESHOLD = 50
 

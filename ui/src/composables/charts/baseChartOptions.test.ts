@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { ref, type Ref } from 'vue'
-import type { ChartData, Sort } from '../../types'
+import type { ChartData, Sort } from '@/types'
 import { getBaseOptions, type BaseChartConfig } from './baseChartOptions'
 
 // vitest runs in node — stub window.devicePixelRatio so getBaseOptions's

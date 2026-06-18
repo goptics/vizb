@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { BarChart3, TrendingUp } from 'lucide-vue-next'
 import { Separator } from '../ui'
 import SelectionTabs from '../SelectionTabs.vue'
-import type { ScaleType } from '../../types'
+import type { ScaleType } from '@/types'
 
 const props = defineProps<{
   modelValue: ScaleType | undefined

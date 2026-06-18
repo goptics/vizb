@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
-import { getNextColorFor, isGrouped3D, COLOR_PALETTE } from '../../lib/utils'
+import { getNextColorFor, isGrouped3D, COLOR_PALETTE } from '@/lib/utils'
 import {
   getChartStyling,
   getTooltipTheme,

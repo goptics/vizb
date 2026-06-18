@@ -1,8 +1,8 @@
 import { computed } from 'vue'
 import type { Ref } from 'vue'
-import type { SortOrder, ScaleType, ChartData, SeriesData, Sort } from '../../../types'
-import type { Point3D } from '../../../types'
-import { hasYAxis } from '../../../lib/utils'
+import type { SortOrder, ScaleType, ChartData, SeriesData, Sort } from '@/types'
+import type { Point3D } from '@/types'
+import { hasYAxis } from '@/lib/utils'
 
 export const fontSize = 12
 

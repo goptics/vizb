@@ -6,7 +6,7 @@ import {
   createZLegendConfig,
   resolve3DVisualMap,
 } from './3d'
-import { resetColor } from '../../../lib/utils'
+import { resetColor } from '@/lib/utils'
 
 const styling = {
   textColor: '#111',

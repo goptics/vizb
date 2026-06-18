@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ComboboxContent, type ComboboxContentProps } from 'radix-vue'
 import { computed, type HTMLAttributes } from 'vue'
-import { cn } from '../../lib/utils'
+import { cn } from '@/lib/utils'
 
 const props = defineProps<ComboboxContentProps & { class?: HTMLAttributes['class'] }>()
 

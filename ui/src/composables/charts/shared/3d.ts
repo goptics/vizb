@@ -1,5 +1,5 @@
-import type { Render3D, Point3D } from '../../../types'
-import { getNextColorFor } from '../../../lib/utils'
+import type { Render3D, Point3D } from '@/types'
+import { getNextColorFor } from '@/lib/utils'
 import { tooltipDivider, tooltipSpreadRows, renderDonutSvg, type ChartStyling } from './chartConfig'
 
 export const round2 = (v: number) => Math.round(v * 100) / 100

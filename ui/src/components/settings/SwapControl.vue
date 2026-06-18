@@ -2,8 +2,8 @@
 import { computed } from 'vue'
 import SettingHeader from '../SettingHeader.vue'
 import Selector from '../Selector.vue'
-import { useDataPoint } from '../../composables/useDataPoint'
-import type { DataPoint } from '../../types'
+import { useDataPoint } from '@/composables/useDataPoint'
+import type { DataPoint } from '@/types'
 
 const { activeDataSet, activeArrangement } = useDataPoint()
 
