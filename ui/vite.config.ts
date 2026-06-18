@@ -2,7 +2,7 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { createHtmlPlugin } from 'vite-plugin-html'
 import path from 'path'
-import { createEmbedPlugins, embedBuildOptions } from './vite/index.ts'
+import { createEmbedPlugins, embedBuildOptions } from './embed-build/index.ts'
 
 const embedUi = process.env.EMBED_UI === 'True'
 console.info('EMBED_UI env var:', process.env.EMBED_UI)
