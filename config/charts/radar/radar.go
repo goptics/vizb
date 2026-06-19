@@ -10,13 +10,17 @@ import (
 const Type = "radar"
 
 type Config struct {
-	Type       string       `json:"type"`
-	Swap       string       `json:"swap,omitempty"`
-	Sort       *shared.Sort `json:"sort,omitempty"`
-	ShowLabels *bool        `json:"showLabels,omitempty"`
+	Type       string             `json:"type"`
+	Swap       string             `json:"swap,omitempty"`
+	Sort       *shared.Sort       `json:"sort,omitempty"`
+	ShowLabels *bool              `json:"showLabels,omitempty"`
+	Stat       *shared.StatConfig `json:"stat,omitempty"`
 }
 
 func (Config) ChartType() string { return Type }
+
+func (c Config) StatEnabled() bool  { return c.Stat.StatEnabled() }
+func (c Config) StatMath() []string { return c.Stat.StatMath() }
 
 func init() {
 	charts.Register(Type, func() charts.ChartConfig { return &Config{} })
@@ -25,6 +29,7 @@ func init() {
 type Flags struct {
 	Swap, Sort string
 	ShowLabels bool
+	Stat       []string
 }
 
 func Materialise(flags Flags, override *Config) Config {
@@ -39,6 +44,8 @@ func Materialise(flags Flags, override *Config) Config {
 		out.ShowLabels = &v
 	}
 
+	out.Stat = shared.MaterialiseStatFlags(flags.Stat)
+
 	if override != nil {
 		if override.Swap != "" {
 			out.Swap = override.Swap
@@ -48,6 +55,9 @@ func Materialise(flags Flags, override *Config) Config {
 		}
 		if override.ShowLabels != nil {
 			out.ShowLabels = override.ShowLabels
+		}
+		if override.Stat != nil {
+			out.Stat = override.Stat
 		}
 	}
 

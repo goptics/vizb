@@ -17,18 +17,22 @@ const Type = "bar"
 // chart types that carry a Scale (linear/log) and ThreeDRotate (3D) — pie,
 // heatmap, and radar omit them.
 type Config struct {
-	Type            string       `json:"type"` // always "bar"
-	Swap            string       `json:"swap,omitempty"`
-	Sort            *shared.Sort `json:"sort,omitempty"`
-	Scale           string       `json:"scale,omitempty"`
-	ShowLabels      *bool        `json:"showLabels,omitempty"`
-	ThreeDRotate    *bool        `json:"threeDRotate,omitempty"`
-	ThreeD          *bool        `json:"threeD,omitempty"`
-	ThreeDVisualMap *bool        `json:"threeDVisualMap,omitempty"`
+	Type            string             `json:"type"` // always "bar"
+	Swap            string             `json:"swap,omitempty"`
+	Sort            *shared.Sort       `json:"sort,omitempty"`
+	Scale           string             `json:"scale,omitempty"`
+	ShowLabels      *bool              `json:"showLabels,omitempty"`
+	ThreeDRotate    *bool              `json:"threeDRotate,omitempty"`
+	ThreeD          *bool              `json:"threeD,omitempty"`
+	ThreeDVisualMap *bool              `json:"threeDVisualMap,omitempty"`
+	Stat            *shared.StatConfig `json:"stat,omitempty"`
 }
 
 // ChartType returns the chart-type discriminator; satisfies charts.ChartConfig.
 func (Config) ChartType() string { return Type }
+
+func (c Config) StatEnabled() bool  { return c.Stat.StatEnabled() }
+func (c Config) StatMath() []string { return c.Stat.StatMath() }
 
 func init() {
 	charts.Register(Type, func() charts.ChartConfig { return &Config{} })
@@ -44,6 +48,7 @@ type Flags struct {
 	ThreeDRotate      bool
 	ThreeD            bool
 	ThreeDVisualMap   *bool
+	Stat              []string
 }
 
 // Materialise produces a fully-resolved Config from the 4-step precedence:
@@ -76,6 +81,8 @@ func Materialise(flags Flags, override *Config) Config {
 		out.ThreeDVisualMap = &v
 	}
 
+	out.Stat = shared.MaterialiseStatFlags(flags.Stat)
+
 	if override != nil {
 		if override.Swap != "" {
 			out.Swap = override.Swap
@@ -97,6 +104,9 @@ func Materialise(flags Flags, override *Config) Config {
 		}
 		if override.ThreeDVisualMap != nil {
 			out.ThreeDVisualMap = override.ThreeDVisualMap
+		}
+		if override.Stat != nil {
+			out.Stat = override.Stat
 		}
 	}
 
