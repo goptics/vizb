@@ -33,6 +33,7 @@ func NewCommand() *cobra.Command {
 				Swap:       o.Swap,
 				Sort:       o.Sort,
 				ShowLabels: o.ShowLabels,
+				Stat:       o.Stat,
 			}, nil)
 
 			axes := parser.GroupAxes(o.CommonOptions.ParseConfig())

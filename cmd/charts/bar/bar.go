@@ -59,6 +59,7 @@ func NewCommand() *cobra.Command {
 				ThreeDRotate:    o.ThreeDRotate,
 				ThreeD:          o.ThreeD,
 				ThreeDVisualMap: threeDVisualMap,
+				Stat:            o.Stat,
 			}, nil)
 
 			axes := parser.GroupAxes(o.CommonOptions.ParseConfig())
