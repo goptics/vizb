@@ -8,10 +8,14 @@ import (
 )
 
 type Stat struct {
-	Type   string  `json:"type"`
-	Value  float64 `json:"value,omitempty"`
-	Symbol string  `json:"symbol,omitempty"`
+	Type   string   `json:"type"`
+	Value  *float64 `json:"value,omitempty"`
+	Symbol string   `json:"symbol,omitempty"`
 }
+
+// F64 returns a pointer to f, used when setting Stat.Value so that zero
+// measurements serialize as "value":0 rather than being omitted.
+func F64(f float64) *float64 { return &f }
 
 type DataPoint struct {
 	Name  string `json:"name,omitempty"`
