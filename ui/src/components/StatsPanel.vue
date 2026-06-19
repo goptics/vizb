@@ -498,13 +498,6 @@ function downloadCsv() {
         <span class="font-normal text-muted-foreground">· {{ chartData.statType }}</span>
       </p>
       <div class="flex items-center gap-2">
-        <Selector
-          v-if="view === 'correlation'"
-          :items="METHOD_ITEMS"
-          :activeId="corrMethodIndex"
-          class="w-36"
-          @select="onMethodSelect"
-        />
         <SelectionTabs v-if="viewOptions.length > 1" v-model="view" :options="viewOptions" />
         <button
           type="button"
@@ -621,6 +614,12 @@ function downloadCsv() {
           Correlating <span class="font-medium">{{ corrEntityLabel }}</span> across
           {{ corrObsLabel }}.
         </p>
+        <Selector
+          :items="METHOD_ITEMS"
+          :activeId="corrMethodIndex"
+          class="w-36"
+          @select="onMethodSelect"
+        />
         <Selector
           v-if="corrAxisItems.length > 1"
           :items="corrAxisItems"
