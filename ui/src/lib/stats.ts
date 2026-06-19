@@ -301,7 +301,7 @@ export function kendall(a: number[], b: number[]): number {
 
 // Bias-corrected distance correlation (Székely & Rizzo 2014).
 // Uses double-centered pairwise Euclidean distance matrices. O(n²) time/space.
-// Returns 0–1 (measures dependence, not direction). NaN for < 3 pairs or zero var.
+// Returns 0–1 (measures dependence, not direction). NaN for < 4 pairs or zero var.
 export function distanceCorr(a: number[], b: number[]): number {
   const xs: number[] = []
   const ys: number[] = []

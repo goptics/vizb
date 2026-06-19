@@ -191,7 +191,10 @@ describe('distanceCorr', () => {
     expect(pearson(xs, ys)).toBeCloseTo(0, P)
   })
   it('constant input → NaN', () => expect(distanceCorr([1, 1, 1, 1], [1, 2, 3, 4])).toBeNaN())
-  it('< 3 complete pairs → NaN', () => expect(distanceCorr([1, 2], [3, 4])).toBeNaN())
+  it('< 4 complete pairs → NaN', () => {
+    expect(distanceCorr([1, 2], [3, 4])).toBeNaN() // n=2
+    expect(distanceCorr([1, 2, 3], [3, 4, 5])).toBeNaN() // n=3 (1/(m*(m-3)) undefined)
+  })
   it('output is in [0, 1]', () => {
     const v = distanceCorr([1, 3, 2, 5, 4], [4, 2, 5, 1, 3])
     expect(v).toBeGreaterThanOrEqual(0)
