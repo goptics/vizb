@@ -42,8 +42,8 @@ func (s *CSVSuite) TestNumericColumnsBecomeChartsNoGroup() {
 
 	s.Len(results, 2)
 	s.Equal([]string{"sells", "stocks"}, statTypes(results[0].Stats))
-	s.Equal(10.0, results[0].Stats[0].Value)
-	s.Equal(5.0, results[0].Stats[1].Value)
+	s.Equal(10.0, *results[0].Stats[0].Value)
+	s.Equal(5.0, *results[0].Stats[1].Value)
 	// no -g → empty labels
 	s.Empty(results[0].Name)
 	s.Empty(results[0].XAxis)
@@ -77,7 +77,7 @@ func (s *CSVSuite) TestGroupBracketValueSplitDateCategory() {
 	s.Equal("2", results[0].YAxis)
 	s.Equal("30", results[0].Name)
 	s.Equal("Widget", results[0].ZAxis)
-	s.Equal(100.0, results[0].Stats[0].Value)
+	s.Equal(100.0, *results[0].Stats[0].Value)
 }
 
 func (s *CSVSuite) TestGroupBracketValueSplitSlashBenchmark() {
@@ -161,7 +161,7 @@ func (s *CSVSuite) TestAnyOneParsesMakesJunkChartColumn() {
 	// row a has no numeric cell → dropped, row b kept.
 	s.Len(results, 1)
 	s.Equal([]string{"mostlytext"}, statTypes(results[0].Stats))
-	s.Equal(42.0, results[0].Stats[0].Value)
+	s.Equal(42.0, *results[0].Stats[0].Value)
 }
 
 func (s *CSVSuite) TestNaNAndInfCellsSkipped() {
@@ -171,7 +171,7 @@ func (s *CSVSuite) TestNaNAndInfCellsSkipped() {
 
 	// only c has a finite value
 	s.Len(results, 1)
-	s.Equal(3.0, results[0].Stats[0].Value)
+	s.Equal(3.0, *results[0].Stats[0].Value)
 }
 
 func (s *CSVSuite) TestPureNonNumericColumnIgnored() {
@@ -202,7 +202,7 @@ func (s *CSVSuite) TestWhitespaceTrimmedInHeadersAndGroupValues() {
 	s.Len(results, 1)
 	s.Equal("alpha", results[0].XAxis)
 	s.Equal([]string{"sells"}, statTypes(results[0].Stats))
-	s.Equal(10.0, results[0].Stats[0].Value)
+	s.Equal(10.0, *results[0].Stats[0].Value)
 }
 
 func (s *CSVSuite) TestRaggedRowsTolerated() {
@@ -267,7 +267,7 @@ func (s *CSVSuite) TestNumberUnitScaling() {
 
 	s.Len(results, 1)
 	s.Equal("sells (M)", results[0].Stats[0].Type)
-	s.Equal(2.0, results[0].Stats[0].Value)
+	s.Equal(2.0, *results[0].Stats[0].Value)
 }
 
 func (s *CSVSuite) TestLessThanTwoRowsReturnsNil() {

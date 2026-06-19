@@ -41,8 +41,8 @@ func (s *JSONSuite) TestNumericFieldsBecomeChartsNoGroup() {
 
 	s.Len(results, 2)
 	s.Equal([]string{"sells", "stocks"}, statTypes(results[0].Stats))
-	s.Equal(10.0, results[0].Stats[0].Value)
-	s.Equal(5.0, results[0].Stats[1].Value)
+	s.Equal(10.0, *results[0].Stats[0].Value)
+	s.Equal(5.0, *results[0].Stats[1].Value)
 	s.Empty(results[0].XAxis)
 }
 
@@ -62,7 +62,7 @@ func (s *JSONSuite) TestNumericStringParsed() {
 
 	s.Len(results, 1)
 	s.Equal([]string{"sells"}, statTypes(results[0].Stats))
-	s.Equal(42.0, results[0].Stats[0].Value)
+	s.Equal(42.0, *results[0].Stats[0].Value)
 }
 
 func (s *JSONSuite) TestNestedObjectFlattenedToDottedKeys() {
@@ -72,7 +72,7 @@ func (s *JSONSuite) TestNestedObjectFlattenedToDottedKeys() {
 
 	s.Len(results, 1)
 	s.Equal([]string{"mem.alloc", "mem.bytes"}, statTypes(results[0].Stats))
-	s.Equal(5.0, results[0].Stats[0].Value)
+	s.Equal(5.0, *results[0].Stats[0].Value)
 }
 
 func (s *JSONSuite) TestArrayValuedFieldSkipped() {
@@ -111,7 +111,7 @@ func (s *JSONSuite) TestMixedTypePerKeyNumericWhereParseable() {
 
 	// v qualifies as a chart column (>=1 numeric); row 2 has no stats → dropped
 	s.Len(results, 1)
-	s.Equal(3.0, results[0].Stats[0].Value)
+	s.Equal(3.0, *results[0].Stats[0].Value)
 }
 
 func (s *JSONSuite) TestGroupSingleFieldToXAxis() {
@@ -187,7 +187,7 @@ func (s *JSONSuite) TestNumberUnitScaling() {
 
 	s.Len(results, 1)
 	s.Equal("sells (M)", results[0].Stats[0].Type)
-	s.Equal(2.0, results[0].Stats[0].Value)
+	s.Equal(2.0, *results[0].Stats[0].Value)
 }
 
 func (s *JSONSuite) TestNonArrayInputReturnsNil() {

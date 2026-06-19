@@ -43,7 +43,7 @@ func assertStat(t *testing.T, s shared.Stat, expectedType string, expectedValue 
 	if s.Type != expectedType {
 		t.Errorf("stat type mismatch: got %v want %v", s.Type, expectedType)
 	}
-	if s.Value != expectedValue {
+	if s.Value == nil || *s.Value != expectedValue {
 		t.Errorf("stat value mismatch: got %v want %v", s.Value, expectedValue)
 	}
 	if s.Symbol != expectedSymbol {

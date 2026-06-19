@@ -105,7 +105,7 @@ func ParseCSV(filename string, cfg parser.Config) []shared.DataPoint {
 
 			stats = append(stats, shared.Stat{
 				Type:  utils.CreateStatType(headers[c], cfg.NumberUnit, ""),
-				Value: utils.FormatNumber(v, cfg.NumberUnit),
+				Value: shared.F64(utils.FormatNumber(v, cfg.NumberUnit)),
 			})
 		}
 

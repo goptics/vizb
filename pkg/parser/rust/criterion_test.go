@@ -74,7 +74,11 @@ func assertStat(t *testing.T, s shared.Stat, expectedType string, expectedValue 
 		}
 	}
 	require(s.Type, expectedType, "stat type mismatch")
-	require(s.Value, expectedValue, "stat value mismatch")
+	var gotValue any
+	if s.Value != nil {
+		gotValue = *s.Value
+	}
+	require(gotValue, expectedValue, "stat value mismatch")
 	require(s.Symbol, expectedSymbol, "stat symbol mismatch")
 }
 

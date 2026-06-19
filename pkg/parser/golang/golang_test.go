@@ -64,8 +64,8 @@ func (s *GoBenchmarkSuite) TestParseGoBenchmark() {
 			timeUnit: "ns",
 			pattern:  "y",
 			expected: []shared.DataPoint{
-				{YAxis: "Simple", Stats: []shared.Stat{{Type: "Execution Time (ns/op)", Value: 123.45}}},
-				{YAxis: "SimpleBench", Stats: []shared.Stat{{Type: "Execution Time (ns/op)", Value: 100.45}}},
+				{YAxis: "Simple", Stats: []shared.Stat{{Type: "Execution Time (ns/op)", Value: shared.F64(123.45)}}},
+				{YAxis: "SimpleBench", Stats: []shared.Stat{{Type: "Execution Time (ns/op)", Value: shared.F64(100.45)}}},
 			},
 			expectCPUCount: 0,
 		},
@@ -80,9 +80,9 @@ func (s *GoBenchmarkSuite) TestParseGoBenchmark() {
 			allocUnit: "K",
 			expected: []shared.DataPoint{
 				{YAxis: "WithMem", Stats: []shared.Stat{
-					{Type: "Execution Time (ms/op)", Value: 0.00},
-					{Type: "Memory Usage (KB/op)", Value: 0.06},
-					{Type: "Allocations (K/op)", Value: 0.00},
+					{Type: "Execution Time (ms/op)", Value: shared.F64(0.00)},
+					{Type: "Memory Usage (KB/op)", Value: shared.F64(0.06)},
+					{Type: "Allocations (K/op)", Value: shared.F64(0.00)},
 				}},
 			},
 			expectMemStats: true,
@@ -98,14 +98,14 @@ func (s *GoBenchmarkSuite) TestParseGoBenchmark() {
 			memUnit:  "b",
 			expected: []shared.DataPoint{
 				{Name: "Group", XAxis: "Task", YAxis: "SubjectA", Stats: []shared.Stat{
-					{Type: "Execution Time (ns/op)", Value: 123.45},
-					{Type: "Memory Usage (b/op)", Value: 512.0},
-					{Type: "Allocations/op", Value: 2.0},
+					{Type: "Execution Time (ns/op)", Value: shared.F64(123.45)},
+					{Type: "Memory Usage (b/op)", Value: shared.F64(512.0)},
+					{Type: "Allocations/op", Value: shared.F64(2.0)},
 				}},
 				{Name: "Group", XAxis: "Task", YAxis: "SubjectB", Stats: []shared.Stat{
-					{Type: "Execution Time (ns/op)", Value: 234.56},
-					{Type: "Memory Usage (b/op)", Value: 1024.0},
-					{Type: "Allocations/op", Value: 4.0},
+					{Type: "Execution Time (ns/op)", Value: shared.F64(234.56)},
+					{Type: "Memory Usage (b/op)", Value: shared.F64(1024.0)},
+					{Type: "Allocations/op", Value: shared.F64(4.0)},
 				}},
 			},
 			expectMemStats: true,
@@ -119,7 +119,7 @@ func (s *GoBenchmarkSuite) TestParseGoBenchmark() {
 			timeUnit: "ns",
 			expected: []shared.DataPoint{
 				{Name: "Parallel", YAxis: "SubjectA", Stats: []shared.Stat{
-					{Type: "Execution Time (ns/op)", Value: 123.45},
+					{Type: "Execution Time (ns/op)", Value: shared.F64(123.45)},
 				}},
 			},
 			expectCPUCount: 8,
@@ -134,7 +134,7 @@ func (s *GoBenchmarkSuite) TestParseGoBenchmark() {
 			timeUnit: "ns",
 			pattern:  "y",
 			expected: []shared.DataPoint{
-				{YAxis: "Test", Stats: []shared.Stat{{Type: "Execution Time (ns/op)", Value: 123.45}}},
+				{YAxis: "Test", Stats: []shared.Stat{{Type: "Execution Time (ns/op)", Value: shared.F64(123.45)}}},
 			},
 		},
 		{
@@ -147,12 +147,12 @@ func (s *GoBenchmarkSuite) TestParseGoBenchmark() {
 			pattern:  "y",
 			expected: []shared.DataPoint{
 				{YAxis: "A", Stats: []shared.Stat{
-					{Type: "Execution Time (ns/op)", Value: 100.0},
-					{Type: "Iterations", Value: 100},
+					{Type: "Execution Time (ns/op)", Value: shared.F64(100.0)},
+					{Type: "Iterations", Value: shared.F64(100)},
 				}},
 				{YAxis: "B", Stats: []shared.Stat{
-					{Type: "Execution Time (ns/op)", Value: 100.0},
-					{Type: "Iterations", Value: 200},
+					{Type: "Execution Time (ns/op)", Value: shared.F64(100.0)},
+					{Type: "Iterations", Value: shared.F64(200)},
 				}},
 			},
 		},
@@ -171,8 +171,8 @@ func (s *GoBenchmarkSuite) TestParseGoBenchmark() {
 			timeUnit: "ns",
 			expected: []shared.DataPoint{
 				{YAxis: "Throughput", Stats: []shared.Stat{
-					{Type: "Execution Time (ns/op)", Value: 123.45},
-					{Type: "Throughput (B/s)", Value: 512.0},
+					{Type: "Execution Time (ns/op)", Value: shared.F64(123.45)},
+					{Type: "Throughput (B/s)", Value: shared.F64(512.0)},
 				}},
 			},
 		},
@@ -185,8 +185,8 @@ func (s *GoBenchmarkSuite) TestParseGoBenchmark() {
 			timeUnit: "ns",
 			expected: []shared.DataPoint{
 				{YAxis: "Throughput", Stats: []shared.Stat{
-					{Type: "Execution Time (ns/op)", Value: 123.45},
-					{Type: "Throughput (MB/s)", Value: 1024.0},
+					{Type: "Execution Time (ns/op)", Value: shared.F64(123.45)},
+					{Type: "Throughput (MB/s)", Value: shared.F64(1024.0)},
 				}},
 			},
 		},
@@ -199,8 +199,8 @@ func (s *GoBenchmarkSuite) TestParseGoBenchmark() {
 			timeUnit: "ns",
 			expected: []shared.DataPoint{
 				{YAxis: "Throughput", Stats: []shared.Stat{
-					{Type: "Execution Time (ns/op)", Value: 123.45},
-					{Type: "Throughput (GB/s)", Value: 2.5},
+					{Type: "Execution Time (ns/op)", Value: shared.F64(123.45)},
+					{Type: "Throughput (GB/s)", Value: shared.F64(2.5)},
 				}},
 			},
 		},
@@ -213,8 +213,8 @@ func (s *GoBenchmarkSuite) TestParseGoBenchmark() {
 			timeUnit: "ns",
 			expected: []shared.DataPoint{
 				{YAxis: "Custom", Stats: []shared.Stat{
-					{Type: "Execution Time (ns/op)", Value: 123.45},
-					{Type: "Throughput (res/s)", Value: 5000.0},
+					{Type: "Execution Time (ns/op)", Value: shared.F64(123.45)},
+					{Type: "Throughput (res/s)", Value: shared.F64(5000.0)},
 				}},
 			},
 		},
@@ -227,8 +227,8 @@ func (s *GoBenchmarkSuite) TestParseGoBenchmark() {
 			timeUnit: "ns",
 			expected: []shared.DataPoint{
 				{YAxis: "Custom", Stats: []shared.Stat{
-					{Type: "Execution Time (ns/op)", Value: 123.45},
-					{Type: "Metric (customUnit)", Value: 42.5},
+					{Type: "Execution Time (ns/op)", Value: shared.F64(123.45)},
+					{Type: "Metric (customUnit)", Value: shared.F64(42.5)},
 				}},
 			},
 		},
@@ -259,7 +259,7 @@ func (s *GoBenchmarkSuite) TestParseGoBenchmark() {
 				for j, expectedStat := range expected.Stats {
 					actualStat := actual.Stats[j]
 					s.Equal(expectedStat.Type, actualStat.Type, "Result[%d].Stats[%d].Type", i, j)
-					s.InDelta(expectedStat.Value, actualStat.Value, 0.001, "Result[%d].Stats[%d].Value", i, j)
+					s.InDelta(*expectedStat.Value, *actualStat.Value, 0.001, "Result[%d].Stats[%d].Value", i, j)
 				}
 			}
 
