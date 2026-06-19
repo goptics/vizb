@@ -1,10 +1,16 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, onMounted, ref, watch, nextTick } from 'vue'
 import { Download, ArrowUp, ArrowDown } from 'lucide-vue-next'
-import type { ChartData, DescriptiveStats, SeriesProfile, CorrelationMatrix } from '../types'
+import type {
+  ChartData,
+  DescriptiveStats,
+  SeriesProfile,
+  CorrelationMatrix,
+  StatMath,
+} from '../types'
 import { computeDescriptive, computeCorrelation } from '../composables/useStatsWorker'
 import { availableViews, usableCorrelationAxes } from '../lib/stats'
-import type { CorrelationAxis } from '../lib/stats'
+import type { CorrelationAxis, CorrelationMethod } from '../lib/stats'
 import { buildCorrelationOption } from '../composables/charts/useCorrelationOption'
 import { useSettingsStore } from '../composables/useSettingsStore'
 import { useFullscreen } from '../composables/useFullscreen'
@@ -16,7 +22,10 @@ import Selector from './Selector.vue'
 // its echarts modules parse only when the correlation tab actually renders.
 const ChartHeatmap = defineAsyncComponent(() => import('./ChartHeatmap.vue'))
 
-const props = defineProps<{ chartData: ChartData }>()
+const props = defineProps<{
+  chartData: ChartData
+  math?: StatMath[] // undefined or empty = all categories
+}>()
 
 const { isDark } = useSettingsStore()
 const initOptions = { renderer: 'canvas', devicePixelRatio: window.devicePixelRatio } as const
@@ -30,7 +39,7 @@ const {
 // Active view + its sub-toggles. Widened to string|number so SelectionTabs'
 // v-model (emits string|number) types cleanly; only ever set to literal values.
 const view = ref<string | number>('descriptive')
-const method = ref<string | number>('pearson')
+const method = ref<string>('pearson')
 
 // Descriptive stats are computed eagerly off-thread when the panel opens;
 // correlation is deferred until its tab is first clicked (lazy), then cached per
@@ -96,7 +105,8 @@ async function load() {
   debouncedQuery.value = ''
   // If the active tab is no longer valid for this data shape, fall back so the
   // view isn't blank.
-  if (!viewOptions.value.some((o) => o.value === view.value)) view.value = 'descriptive'
+  if (!viewOptions.value.some((o) => o.value === view.value))
+    view.value = viewOptions.value[0]?.value ?? 'descriptive'
 
   const result = await computeDescriptive(props.chartData)
   if (mine !== token) return // a newer chartData superseded this request
@@ -114,31 +124,84 @@ watch(view, (v) => ensureForView(v))
 
 // Descriptive table columns, in display order. `key` indexes DescriptiveStats.
 const COLUMNS: { key: keyof DescriptiveStats; label: string }[] = [
+  // counts
   { key: 'count', label: 'Count' },
   { key: 'missing', label: 'Missing' },
   { key: 'unique', label: 'Unique' },
+  { key: 'zeros', label: 'Zeros' },
+  { key: 'negatives', label: 'Negatives' },
+  // center
   { key: 'mean', label: 'Mean' },
   { key: 'median', label: 'Median' },
   { key: 'mode', label: 'Mode' },
+  { key: 'geoMean', label: 'Geo Mean' },
+  { key: 'harmMean', label: 'Harm Mean' },
+  { key: 'trimMean', label: 'Trim Mean' },
+  // spread
   { key: 'stdDev', label: 'SD' },
   { key: 'variance', label: 'Variance' },
+  { key: 'cv', label: 'CV' },
+  { key: 'sem', label: 'SEM' },
+  { key: 'cqv', label: 'CQV' },
+  // extremes
   { key: 'min', label: 'Min' },
   { key: 'max', label: 'Max' },
   { key: 'range', label: 'Range' },
   { key: 'iqr', label: 'IQR' },
   { key: 'mad', label: 'MAD' },
-  { key: 'cv', label: 'CV' },
+  { key: 'lowerFence', label: 'Lower Fence' },
+  { key: 'upperFence', label: 'Upper Fence' },
+  { key: 'outliers', label: 'Outliers' },
+  // shape
   { key: 'skewness', label: 'Skew' },
   { key: 'kurtosis', label: 'Kurtosis' },
+  // percentiles
+  { key: 'p1', label: 'P1' },
   { key: 'p5', label: 'P5' },
+  { key: 'p10', label: 'P10' },
   { key: 'p25', label: 'P25' },
   { key: 'p75', label: 'P75' },
+  { key: 'p90', label: 'P90' },
   { key: 'p95', label: 'P95' },
+  { key: 'p99', label: 'P99' },
+  // confidence
+  { key: 'ci95Lower', label: '95% CI Low' },
+  { key: 'ci95Upper', label: '95% CI High' },
 ]
+
+// Maps each stat category to its DescriptiveStats keys.
+// 'correlations' is a tab, not columns — handled separately via showCorrelationTab.
+const CATEGORY_KEYS: Record<Exclude<StatMath, 'correlations'>, (keyof DescriptiveStats)[]> = {
+  counts: ['count', 'missing', 'unique', 'zeros', 'negatives'],
+  center: ['mean', 'median', 'mode', 'geoMean', 'harmMean', 'trimMean'],
+  spread: ['stdDev', 'variance', 'cv', 'sem', 'cqv'],
+  extremes: ['min', 'max', 'range', 'iqr', 'mad', 'lowerFence', 'upperFence', 'outliers'],
+  shape: ['skewness', 'kurtosis'],
+  percentiles: ['p1', 'p5', 'p10', 'p25', 'p75', 'p90', 'p95', 'p99'],
+  confidence: ['ci95Lower', 'ci95Upper'],
+}
+
+const visibleColumns = computed(() => {
+  const m = props.math
+  if (!m || m.length === 0) return COLUMNS
+  const allowed = new Set(
+    m
+      .filter((x): x is Exclude<StatMath, 'correlations'> => x !== 'correlations')
+      .flatMap((cat) => CATEGORY_KEYS[cat])
+  )
+  return COLUMNS.filter((c) => allowed.has(c.key))
+})
 
 // Integer-valued metadata columns shown as plain integers; CV as a percentage;
 // everything else as a compact significant-figure number.
-const INT_KEYS = new Set<keyof DescriptiveStats>(['count', 'missing', 'unique'])
+const INT_KEYS = new Set<keyof DescriptiveStats>([
+  'count',
+  'missing',
+  'unique',
+  'zeros',
+  'negatives',
+  'outliers',
+])
 
 function fmt(key: keyof DescriptiveStats, v: number): string {
   if (!Number.isFinite(v)) return '—'
@@ -279,21 +342,33 @@ const filteredProfiles = computed(() => {
 // Tabs are driven by the cheap availability flags, not by whether the heavy
 // result is already in memory — so a tab can show (and trigger its lazy compute)
 // before its data exists.
+const showDescriptiveTab = computed(() => visibleColumns.value.length > 0)
+
+const showCorrelationTab = computed(() => {
+  const m = props.math
+  return !m || m.length === 0 || m.includes('correlations')
+})
+
 const viewOptions = computed(() => {
-  const opts = [{ value: 'descriptive', label: 'Descriptive' }]
-  const a = available.value
-  if (a.correlation) opts.push({ value: 'correlation', label: 'Correlation' })
+  const opts: { value: string; label: string }[] = []
+  if (showDescriptiveTab.value) opts.push({ value: 'descriptive', label: 'Descriptive' })
+  if (available.value.correlation && showCorrelationTab.value)
+    opts.push({ value: 'correlation', label: 'Correlation' })
   return opts
 })
-const methodOptions = [
-  { value: 'pearson', label: 'Pearson' },
-  { value: 'spearman', label: 'Spearman' },
-]
-
 const corrMatrix = computed(() => {
   const c = correlation.value
   if (!c) return []
-  return method.value === 'spearman' ? c.spearman : c.pearson
+  switch (method.value as CorrelationMethod) {
+    case 'spearman':
+      return c.spearman
+    case 'kendall':
+      return c.kendall
+    case 'dcor':
+      return c.dcor
+    default:
+      return c.pearson
+  }
 })
 
 // Heatmap option for the active correlation method, re-themed on dark-mode toggle.
@@ -302,7 +377,13 @@ const corrOption = computed(() => {
   const c = correlation.value
   if (!c) return null
   return withFullscreenToolbox(
-    buildCorrelationOption(c.labels, corrMatrix.value, isDark.value, props.chartData.statType)
+    buildCorrelationOption(
+      c.labels,
+      corrMatrix.value,
+      isDark.value,
+      props.chartData.statType,
+      method.value as CorrelationMethod
+    )
   )
 })
 
@@ -380,7 +461,7 @@ function downloadCsv() {
     csv = correlationCsv(correlation.value.labels, corrMatrix.value)
     suffix = `correlation-${method.value}`
   } else {
-    csv = descriptiveCsv(filteredProfiles.value, COLUMNS)
+    csv = descriptiveCsv(filteredProfiles.value, visibleColumns.value)
     suffix = 'descriptive'
   }
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
@@ -401,7 +482,16 @@ function downloadCsv() {
         <span class="font-normal text-muted-foreground">· {{ chartData.statType }}</span>
       </p>
       <div class="flex items-center gap-2">
-        <SelectionTabs v-if="view === 'correlation'" v-model="method" :options="methodOptions" />
+        <select
+          v-if="view === 'correlation'"
+          v-model="method"
+          class="h-8 rounded-md border border-border bg-background px-2 text-xs text-card-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+        >
+          <option value="pearson">Pearson r</option>
+          <option value="spearman">Spearman ρ</option>
+          <option value="kendall">Kendall τ</option>
+          <option value="dcor">Distance</option>
+        </select>
         <SelectionTabs v-if="viewOptions.length > 1" v-model="view" :options="viewOptions" />
         <button
           type="button"
@@ -424,7 +514,7 @@ function downloadCsv() {
       <div class="h-8 w-full animate-pulse rounded bg-muted" />
     </div>
 
-    <p v-else-if="!profiles.length" class="py-6 text-center text-sm text-muted-foreground">
+    <p v-else-if="viewOptions.length === 0" class="py-6 text-center text-sm text-muted-foreground">
       No statistics available for this chart.
     </p>
 
@@ -457,7 +547,7 @@ function downloadCsv() {
                 </span>
               </th>
               <th
-                v-for="col in COLUMNS"
+                v-for="col in visibleColumns"
                 :key="col.key"
                 class="sticky top-0 z-10 cursor-pointer select-none bg-muted px-2 py-1.5 font-medium hover:text-primary"
                 @click="toggleSort(col.key)"
@@ -472,10 +562,13 @@ function downloadCsv() {
           </thead>
           <tbody>
             <tr v-if="topPad" :style="{ height: topPad + 'px' }">
-              <td :colspan="COLUMNS.length + 1" class="p-0" />
+              <td :colspan="visibleColumns.length + 1" class="p-0" />
             </tr>
             <tr v-if="debouncedQuery && !filteredProfiles.length">
-              <td :colspan="COLUMNS.length + 1" class="py-6 text-center text-muted-foreground">
+              <td
+                :colspan="visibleColumns.length + 1"
+                class="py-6 text-center text-muted-foreground"
+              >
                 No series match "{{ debouncedQuery }}"
               </td>
             </tr>
@@ -492,7 +585,7 @@ function downloadCsv() {
                 {{ p.name || '—' }}
               </th>
               <td
-                v-for="col in COLUMNS"
+                v-for="col in visibleColumns"
                 :key="col.key"
                 class="px-2 tabular-nums text-card-foreground"
               >
@@ -500,7 +593,7 @@ function downloadCsv() {
               </td>
             </tr>
             <tr v-if="bottomPad" :style="{ height: bottomPad + 'px' }">
-              <td :colspan="COLUMNS.length + 1" class="p-0" />
+              <td :colspan="visibleColumns.length + 1" class="p-0" />
             </tr>
           </tbody>
         </table>
