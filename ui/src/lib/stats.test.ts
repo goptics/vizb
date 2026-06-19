@@ -230,6 +230,35 @@ describe('correlationMatrix', () => {
     expect(m[1]![0]).toBeNaN()
     expect(m[0]![0]).toBeCloseTo(1, P)
   })
+  it('kendall: diagonal=1, symmetric, perfect relationships', () => {
+    const m = correlationMatrix(
+      [
+        [1, 2, 3],
+        [2, 4, 6],
+        [3, 2, 1],
+      ],
+      'kendall'
+    )
+    expect(m[0]![0]).toBeCloseTo(1, P) // diagonal
+    expect(m[0]![1]).toBeCloseTo(m[1]![0]!, P) // symmetric
+    expect(m[0]![1]).toBeCloseTo(1, P) // [1,2,3] and [2,4,6] perfectly correlated
+    expect(m[0]![2]).toBeCloseTo(-1, P) // [3,2,1] perfectly anti-correlated
+  })
+  it('dcor: diagonal=1, symmetric, non-negative off-diagonal', () => {
+    // Need at least 4 points per column for dcor; use [1,2,3,4,5]
+    const m = correlationMatrix(
+      [
+        [1, 2, 3, 4, 5],
+        [2, 4, 6, 8, 10],
+        [5, 4, 3, 2, 1],
+      ],
+      'dcor'
+    )
+    expect(m[0]![0]).toBeCloseTo(1, P)
+    expect(m[0]![1]).toBeCloseTo(m[1]![0]!, P)
+    expect(m[0]![1]).toBeGreaterThanOrEqual(0) // dcor ≥ 0
+    expect(m[0]![2]).toBeGreaterThanOrEqual(0)
+  })
 })
 
 describe('computeProfiles', () => {
@@ -358,6 +387,27 @@ describe('computeCorrelation axis pick', () => {
     expect(corr!.axis).toBe('x')
     expect(corr!.labels).toEqual(['A', 'B'])
     expect(corr!.pearson[0]![1]).toBeCloseTo(1, P) // B = 2·A → perfectly correlated
+  })
+
+  it('result carries kendall and dcor matrices', () => {
+    // Need at least 4 categories for dcor (≥4 complete pairs per series)
+    const points = pts2d(
+      ['A', 'p', 1],
+      ['A', 'q', 2],
+      ['A', 'r', 3],
+      ['A', 's', 4],
+      ['B', 'p', 2],
+      ['B', 'q', 4],
+      ['B', 'r', 6],
+      ['B', 's', 8]
+    )
+    const corr = computeCorrelation(points, ['A', 'B'], ['p', 'q', 'r', 's'])
+    expect(corr!.kendall).toBeDefined()
+    expect(corr!.dcor).toBeDefined()
+    expect(corr!.kendall[0]![0]).toBeCloseTo(1, P) // diagonal
+    expect(corr!.dcor[0]![0]).toBeCloseTo(1, P)
+    expect(corr!.kendall[0]![1]).toBeCloseTo(corr!.kendall[1]![0]!, P) // symmetric
+    expect(corr!.dcor[0]![1]).toBeCloseTo(corr!.dcor[1]![0]!, P)
   })
 
   it('transposes to y (categories) when the series axis is too wide', () => {

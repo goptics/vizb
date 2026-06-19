@@ -374,12 +374,19 @@ export function distanceCorr(a: number[], b: number[]): number {
   return Math.sqrt(Math.max(0, dCor2))
 }
 
-export type CorrelationMethod = 'pearson' | 'spearman'
+export type CorrelationMethod = 'pearson' | 'spearman' | 'kendall' | 'dcor'
 
 // Symmetric K×K correlation matrix over the given columns (each an aligned
 // number[] of equal conceptual length). Diagonal is 1.
 export function correlationMatrix(columns: number[][], method: CorrelationMethod): number[][] {
-  const corr = method === 'spearman' ? spearman : pearson
+  const corr =
+    method === 'spearman'
+      ? spearman
+      : method === 'kendall'
+        ? kendall
+        : method === 'dcor'
+          ? distanceCorr
+          : pearson
   const k = columns.length
   const m: number[][] = Array.from({ length: k }, () => new Array<number>(k).fill(NaN))
   for (let i = 0; i < k; i++) {
@@ -613,6 +620,8 @@ export function computeCorrelation(
     labels: resolvedLabels.length ? resolvedLabels : labels.slice(),
     pearson: correlationMatrix(columns, 'pearson'),
     spearman: correlationMatrix(columns, 'spearman'),
+    kendall: correlationMatrix(columns, 'kendall'),
+    dcor: correlationMatrix(columns, 'dcor'),
   }
 }
 
