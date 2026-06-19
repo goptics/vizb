@@ -11,6 +11,7 @@ import {
   createPinnedAxisTooltip,
   createTooltipConfig,
   getChartStyling,
+  hasRotatedXLabels,
   isLargeXAxis,
   makeLegendTitle,
   LARGE_DATA_THRESHOLD,
@@ -39,19 +40,16 @@ export function useLineChartOptions(config: BaseChartConfig) {
     // so we default at the call site.
     const { minValue, effectiveScale } = getEffectiveScale(series, scale?.value ?? 'linear')
     const largeX = isLargeXAxis(xAxisData)
+    const xLabel = chartData.value.axisLabels?.x
+    const rotatedX = hasRotatedXLabels(xAxisData, largeX)
+    const gridOpts = { hasXAxisName: !!xLabel, hasRotatedLabels: rotatedX }
 
     if (!hasYAxis) {
       return {
         ...baseOptions,
-        grid: createGridConfig(1, largeX),
+        grid: createGridConfig(1, largeX, gridOpts),
         tooltip: createPinnedAxisTooltip(isDark.value),
-        ...createAxisConfig(
-          styling,
-          xAxisData,
-          effectiveScale,
-          minValue,
-          chartData.value.axisLabels?.x
-        ),
+        ...createAxisConfig(styling, xAxisData, effectiveScale, minValue, xLabel, largeX),
         ...(largeX ? { dataZoom: createDataZoomConfig(xAxisData, styling) } : {}),
         legend: { show: false },
         series: [
@@ -92,15 +90,9 @@ export function useLineChartOptions(config: BaseChartConfig) {
     return {
       ...baseOptions,
       ...(yLabel ? { title: makeLegendTitle(yLabel, styling) } : {}),
-      grid: createGridConfig(transposedSeries.length, largeX),
+      grid: createGridConfig(transposedSeries.length, largeX, gridOpts),
       tooltip: createTooltipConfig(true, isDark.value, seriesTotals),
-      ...createAxisConfig(
-        styling,
-        xAxisData,
-        effectiveScale,
-        minValue,
-        chartData.value.axisLabels?.x
-      ),
+      ...createAxisConfig(styling, xAxisData, effectiveScale, minValue, xLabel, largeX),
       ...(largeX ? { dataZoom: createDataZoomConfig(xAxisData, styling) } : {}),
       legend: createLegendConfig(
         transposedSeries.map((s) => ({ xAxis: s.name })),
