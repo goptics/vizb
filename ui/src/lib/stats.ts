@@ -299,6 +299,79 @@ export function kendall(a: number[], b: number[]): number {
   return den === 0 ? NaN : (C - D) / den
 }
 
+// Bias-corrected distance correlation (Székely & Rizzo 2014).
+// Uses double-centered pairwise Euclidean distance matrices. O(n²) time/space.
+// Returns 0–1 (measures dependence, not direction). NaN for < 3 pairs or zero var.
+export function distanceCorr(a: number[], b: number[]): number {
+  const xs: number[] = []
+  const ys: number[] = []
+  const n = Math.min(a.length, b.length)
+  for (let i = 0; i < n; i++) {
+    const x = a[i]!
+    const y = b[i]!
+    if (Number.isFinite(x) && Number.isFinite(y)) {
+      xs.push(x)
+      ys.push(y)
+    }
+  }
+  const m = xs.length
+  if (m < 3) return NaN
+
+  // Bias-corrected double-centered distance matrix for a 1D vector.
+  // A[i,j] (i≠j) = |v_i - v_j| - rowMean_i - rowMean_j + grandMean; diagonal = 0.
+  function bcCenter(v: number[]): number[][] {
+    const k = v.length
+    const D: number[][] = Array.from({ length: k }, () => new Array<number>(k).fill(0))
+    const rowMean = new Array<number>(k).fill(0)
+    let grandMean = 0
+    for (let i = 0; i < k; i++) {
+      for (let j = 0; j < k; j++) {
+        D[i]![j] = Math.abs(v[i]! - v[j]!)
+      }
+    }
+    for (let i = 0; i < k; i++) {
+      rowMean[i] = D[i]!.reduce((s, x) => s + x, 0) / k
+      grandMean += rowMean[i]!
+    }
+    grandMean /= k
+    const A: number[][] = Array.from({ length: k }, () => new Array<number>(k).fill(0))
+    for (let i = 0; i < k; i++) {
+      for (let j = 0; j < k; j++) {
+        if (i !== j) {
+          A[i]![j] = D[i]![j]! - rowMean[i]! - rowMean[j]! + grandMean
+        }
+      }
+    }
+    return A
+  }
+
+  const A = bcCenter(xs)
+  const B = bcCenter(ys)
+
+  // dCov²*(X,Y) = (1/(n(n-3))) * Σ_{i≠j} A[i,j]·B[i,j]
+  const factor = 1 / (m * (m - 3))
+  let dCovXY = 0,
+    dVarX = 0,
+    dVarY = 0
+  for (let i = 0; i < m; i++) {
+    for (let j = 0; j < m; j++) {
+      if (i !== j) {
+        dCovXY += A[i]![j]! * B[i]![j]!
+        dVarX += A[i]![j]! * A[i]![j]!
+        dVarY += B[i]![j]! * B[i]![j]!
+      }
+    }
+  }
+  dCovXY *= factor
+  dVarX *= factor
+  dVarY *= factor
+
+  if (dVarX <= 0 || dVarY <= 0) return NaN
+  // dCor²* = dCov²* / sqrt(dVar²*(X) · dVar²*(Y)); clamp to 0 before sqrt
+  const dCor2 = dCovXY / Math.sqrt(dVarX * dVarY)
+  return Math.sqrt(Math.abs(dCor2))
+}
+
 export type CorrelationMethod = 'pearson' | 'spearman'
 
 // Symmetric K×K correlation matrix over the given columns (each an aligned

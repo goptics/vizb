@@ -13,6 +13,7 @@ import {
   pearson,
   spearman,
   kendall,
+  distanceCorr,
   correlationMatrix,
   computeProfiles,
   buildColumns,
@@ -177,6 +178,25 @@ describe('kendall', () => {
   it('< 2 complete pairs → NaN', () => expect(kendall([1], [2])).toBeNaN())
   it('pairwise-complete: NaN positions skipped', () =>
     expect(kendall([1, NaN, 3], [2, 5, 6])).toBeCloseTo(1, P))
+})
+
+describe('distanceCorr', () => {
+  it('identical vectors → 1', () =>
+    expect(distanceCorr([1, 2, 3, 4, 5], [1, 2, 3, 4, 5])).toBeCloseTo(1, P))
+  it('detects V-shape (non-linear) dependence that pearson misses', () => {
+    // Symmetric V-shape: pearson=0, dcor>0
+    const xs = [-3, -2, -1, 0, 1, 2, 3]
+    const ys = [9, 4, 1, 0, 1, 4, 9]
+    expect(distanceCorr(xs, ys)).toBeGreaterThan(0)
+    expect(pearson(xs, ys)).toBeCloseTo(0, P)
+  })
+  it('constant input → NaN', () => expect(distanceCorr([1, 1, 1, 1], [1, 2, 3, 4])).toBeNaN())
+  it('< 3 complete pairs → NaN', () => expect(distanceCorr([1, 2], [3, 4])).toBeNaN())
+  it('output is in [0, 1]', () => {
+    const v = distanceCorr([1, 3, 2, 5, 4], [4, 2, 5, 1, 3])
+    expect(v).toBeGreaterThanOrEqual(0)
+    expect(v).toBeLessThanOrEqual(1)
+  })
 })
 
 describe('correlationMatrix', () => {
