@@ -356,6 +356,22 @@ const viewOptions = computed(() => {
     opts.push({ value: 'correlation', label: 'Correlation' })
   return opts
 })
+
+const METHOD_VALUES = ['pearson', 'spearman', 'kendall', 'dcor'] as const
+const METHOD_ITEMS = [
+  { name: 'Pearson r' },
+  { name: 'Spearman ρ' },
+  { name: 'Kendall τ' },
+  { name: 'Distance' },
+]
+const corrMethodIndex = computed(() => {
+  const idx = METHOD_VALUES.indexOf(method.value as CorrelationMethod)
+  return idx >= 0 ? idx : 0
+})
+function onMethodSelect(index: number) {
+  const m = METHOD_VALUES[index]
+  if (m) method.value = m
+}
 const corrMatrix = computed(() => {
   const c = correlation.value
   if (!c) return []
@@ -482,16 +498,13 @@ function downloadCsv() {
         <span class="font-normal text-muted-foreground">· {{ chartData.statType }}</span>
       </p>
       <div class="flex items-center gap-2">
-        <select
+        <Selector
           v-if="view === 'correlation'"
-          v-model="method"
-          class="h-8 rounded-md border border-border bg-background px-2 text-xs text-card-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-        >
-          <option value="pearson">Pearson r</option>
-          <option value="spearman">Spearman ρ</option>
-          <option value="kendall">Kendall τ</option>
-          <option value="dcor">Distance</option>
-        </select>
+          :items="METHOD_ITEMS"
+          :activeId="corrMethodIndex"
+          class="w-36"
+          @select="onMethodSelect"
+        />
         <SelectionTabs v-if="viewOptions.length > 1" v-model="view" :options="viewOptions" />
         <button
           type="button"
