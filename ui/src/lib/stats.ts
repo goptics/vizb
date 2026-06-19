@@ -315,30 +315,32 @@ export function distanceCorr(a: number[], b: number[]): number {
     }
   }
   const m = xs.length
-  if (m < 3) return NaN
+  if (m < 4) return NaN
 
-  // Bias-corrected double-centered distance matrix for a 1D vector.
-  // A[i,j] (i≠j) = |v_i - v_j| - rowMean_i - rowMean_j + grandMean; diagonal = 0.
+  // Bias-corrected U-centered distance matrix for a 1D vector (Székely & Rizzo 2014).
+  // A[i,j] (i≠j) = |v_i - v_j| - rowSum_i/(k-2) - rowSum_j/(k-2) + grandSum/((k-1)(k-2)); diagonal = 0.
   function bcCenter(v: number[]): number[][] {
     const k = v.length
     const D: number[][] = Array.from({ length: k }, () => new Array<number>(k).fill(0))
-    const rowMean = new Array<number>(k).fill(0)
-    let grandMean = 0
+    const rowSum = new Array<number>(k).fill(0)
+    let grandSum = 0
     for (let i = 0; i < k; i++) {
       for (let j = 0; j < k; j++) {
         D[i]![j] = Math.abs(v[i]! - v[j]!)
       }
     }
     for (let i = 0; i < k; i++) {
-      rowMean[i] = D[i]!.reduce((s, x) => s + x, 0) / k
-      grandMean += rowMean[i]!
+      for (let j = 0; j < k; j++) {
+        rowSum[i]! += D[i]![j]!
+      }
+      grandSum += rowSum[i]!
     }
-    grandMean /= k
     const A: number[][] = Array.from({ length: k }, () => new Array<number>(k).fill(0))
     for (let i = 0; i < k; i++) {
       for (let j = 0; j < k; j++) {
         if (i !== j) {
-          A[i]![j] = D[i]![j]! - rowMean[i]! - rowMean[j]! + grandMean
+          A[i]![j] =
+            D[i]![j]! - rowSum[i]! / (k - 2) - rowSum[j]! / (k - 2) + grandSum / ((k - 1) * (k - 2))
         }
       }
     }
@@ -369,7 +371,7 @@ export function distanceCorr(a: number[], b: number[]): number {
   if (dVarX <= 0 || dVarY <= 0) return NaN
   // dCor²* = dCov²* / sqrt(dVar²*(X) · dVar²*(Y)); clamp to 0 before sqrt
   const dCor2 = dCovXY / Math.sqrt(dVarX * dVarY)
-  return Math.sqrt(Math.abs(dCor2))
+  return Math.sqrt(Math.max(0, dCor2))
 }
 
 export type CorrelationMethod = 'pearson' | 'spearman'

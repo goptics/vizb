@@ -184,9 +184,9 @@ describe('distanceCorr', () => {
   it('identical vectors → 1', () =>
     expect(distanceCorr([1, 2, 3, 4, 5], [1, 2, 3, 4, 5])).toBeCloseTo(1, P))
   it('detects V-shape (non-linear) dependence that pearson misses', () => {
-    // Symmetric V-shape: pearson=0, dcor>0
-    const xs = [-3, -2, -1, 0, 1, 2, 3]
-    const ys = [9, 4, 1, 0, 1, 4, 9]
+    // 15-point centered parabola: pearson=0, dcor>0 (U-centering requires n≥15 for this shape)
+    const xs = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+    const ys = [49, 36, 25, 16, 9, 4, 1, 0, 1, 4, 9, 16, 25, 36, 49]
     expect(distanceCorr(xs, ys)).toBeGreaterThan(0)
     expect(pearson(xs, ys)).toBeCloseTo(0, P)
   })
