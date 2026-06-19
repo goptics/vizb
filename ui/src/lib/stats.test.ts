@@ -12,6 +12,7 @@ import {
   describe as describeStats,
   pearson,
   spearman,
+  kendall,
   correlationMatrix,
   computeProfiles,
   buildColumns,
@@ -79,7 +80,13 @@ describe('describe', () => {
     expect(d.count).toBe(0)
     expect(d.missing).toBe(2)
     expect(d.unique).toBe(0)
+    expect(d.zeros).toBe(0)
+    expect(d.negatives).toBe(0)
+    expect(d.outliers).toBe(0)
     expect(d.mean).toBeNaN()
+    expect(d.geoMean).toBeNaN()
+    expect(d.harmMean).toBeNaN()
+    expect(d.ci95Lower).toBeNaN()
   })
   it('drops non-finite, computes count/missing/unique/range/iqr', () => {
     const d = describeStats([1, 2, NaN, 4])
@@ -91,6 +98,52 @@ describe('describe', () => {
     expect(d.range).toBeCloseTo(3, P)
     expect(d.iqr).toBeCloseTo(1.5, P)
     expect(d.mean).toBeCloseTo(7 / 3, P)
+  })
+  it('zeros and negatives count correctly', () => {
+    const d = describeStats([-2, -1, 0, 0, 1, 2])
+    expect(d.zeros).toBe(2)
+    expect(d.negatives).toBe(2)
+  })
+  it('geoMean and harmMean NaN when any value ≤ 0', () => {
+    expect(describeStats([-1, 2, 3]).geoMean).toBeNaN()
+    expect(describeStats([0, 2, 3]).harmMean).toBeNaN()
+  })
+  it('geoMean and harmMean correct for positive data', () => {
+    // geoMean([1,4]) = sqrt(4) = 2; harmMean([1,4]) = 2/(1+1/4) = 8/5
+    const d = describeStats([1, 4])
+    expect(d.geoMean).toBeCloseTo(2, P)
+    expect(d.harmMean).toBeCloseTo(8 / 5, P)
+  })
+  it('trimMean trims 10% from each end', () => {
+    // [1..10]: trim 1 from each → [2..9] → mean = 5.5
+    const d = describeStats([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    expect(d.trimMean).toBeCloseTo(5.5, P)
+  })
+  it('sem = stdDev / sqrt(n)', () => {
+    const d = describeStats([2, 4, 6])
+    expect(d.sem).toBeCloseTo(d.stdDev / Math.sqrt(3), P)
+  })
+  it('ci95 bounds = mean ± 1.96·sem', () => {
+    const d = describeStats([2, 4, 6])
+    expect(d.ci95Lower).toBeCloseTo(d.mean - 1.96 * d.sem, P)
+    expect(d.ci95Upper).toBeCloseTo(d.mean + 1.96 * d.sem, P)
+  })
+  it('fences and outlier count', () => {
+    // [1,2,3,4,5]: q1=2, q3=4, iqr=2, lf=−1, uf=7 → no outliers
+    const d = describeStats([1, 2, 3, 4, 5])
+    expect(d.lowerFence).toBeCloseTo(-1, P)
+    expect(d.upperFence).toBeCloseTo(7, P)
+    expect(d.outliers).toBe(0)
+    // adding an outlier at 100
+    const d2 = describeStats([1, 2, 3, 4, 5, 100])
+    expect(d2.outliers).toBe(1)
+  })
+  it('p1/p10/p90/p99 are computed', () => {
+    const d = describeStats([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    expect(d.p1).toBeCloseTo(1.09, 1)
+    expect(d.p10).toBeCloseTo(1.9, 1)
+    expect(d.p90).toBeCloseTo(9.1, 1)
+    expect(d.p99).toBeCloseTo(9.91, 1)
   })
 })
 
@@ -108,6 +161,22 @@ describe('spearman', () => {
   it('tie-averaged ranks', () =>
     // ranks_a=[1,2.5,2.5,4] vs ranks_b=[1,2,3,4] → 4.5/sqrt(22.5)
     expect(spearman([1, 2, 2, 3], [1, 2, 3, 4])).toBeCloseTo(0.9486832980505138, P))
+})
+
+describe('kendall', () => {
+  it('perfect positive monotonic → 1', () =>
+    expect(kendall([1, 2, 3], [2, 4, 6])).toBeCloseTo(1, P))
+  it('perfect negative monotonic → -1', () =>
+    expect(kendall([1, 2, 3], [6, 4, 2])).toBeCloseTo(-1, P))
+  it('ties in x → τ-b (denominator reduced)', () => {
+    // xs=[1,2,2,3] ys=[1,2,3,4]: C=5, D=0, Tx=1, Ty=0
+    // τ_b = 5 / sqrt((5+0+1)(5+0+0)) = 5/sqrt(30)
+    expect(kendall([1, 2, 2, 3], [1, 2, 3, 4])).toBeCloseTo(5 / Math.sqrt(30), P)
+  })
+  it('constant input (all ties) → NaN', () => expect(kendall([1, 1, 1], [1, 2, 3])).toBeNaN())
+  it('< 2 complete pairs → NaN', () => expect(kendall([1], [2])).toBeNaN())
+  it('pairwise-complete: NaN positions skipped', () =>
+    expect(kendall([1, NaN, 3], [2, 5, 6])).toBeCloseTo(1, P))
 })
 
 describe('correlationMatrix', () => {
