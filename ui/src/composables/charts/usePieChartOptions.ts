@@ -12,14 +12,14 @@ import {
 import { fontSize, sortByTotal, sortByValue } from './shared/common'
 import type { Point3D } from '@/types'
 
-type SeriesWithTotal = { xAxis: string; values: number[]; total: number }
+type SeriesWithTotal = { xAxis: string; values: (number | null)[]; total: number }
 
 const computeYAxisTotals = (yAxis: string[], series: SeriesWithTotal[]): Map<string, number> => {
   const totals = new Map<string, number>()
   yAxis.forEach((y, i) => {
     totals.set(
       y,
-      series.reduce((sum, s) => sum + (s.values[i] || 0), 0)
+      series.reduce((sum, s) => sum + (s.values[i] ?? 0), 0)
     )
   })
   return totals
@@ -52,8 +52,8 @@ export function usePieChartOptions(config: BaseChartConfig) {
     const seriesWithTotals = chartData.value.series.map((series) => ({
       ...series,
       total: hasYAxis(chartData)
-        ? series.values.reduce((sum, val) => sum + val, 0)
-        : series.values[0] || 0,
+        ? series.values.reduce<number>((sum, val) => sum + (val ?? 0), 0)
+        : (series.values[0] ?? 0),
     }))
 
     if (sort.value.enabled) {

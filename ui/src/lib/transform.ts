@@ -95,7 +95,7 @@ function sortSeriesByTotal(series: SeriesData[], order: SortOrder): void {
   for (const s of series)
     totals.set(
       s,
-      s.values.reduce((sum, v) => sum + v, 0)
+      s.values.reduce<number>((sum, v) => sum + (v ?? 0), 0)
     )
   series.sort((a, b) => {
     const diff = totals.get(a)! - totals.get(b)!
@@ -187,7 +187,7 @@ export function buildChartForSignature(
 
   const series: SeriesData[] = xAxisValues.map((xAxis) => ({
     xAxis,
-    values: yAxisValues.map((yAxis) => dataMap.get(yAxis)?.get(xAxis) || 0),
+    values: yAxisValues.map((yAxis) => dataMap.get(yAxis)?.get(xAxis) ?? null),
     benchmarkId: data[0]?.name || '',
   }))
 

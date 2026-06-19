@@ -63,7 +63,8 @@ const { chartData } = toRefs(props)
 
 // Pull active-chart shape + theme state from the centralized store.
 const { isDark, chartType } = useSettingsStore()
-const { sort, showLabels, scale, threeDRotate, threeD, threeDVisualMap } = useActiveChartShape()
+const { sort, showLabels, scale, threeDRotate, threeD, threeDVisualMap, stat } =
+  useActiveChartShape()
 
 // Drives which renderer mounts; only the 3D branch loads echarts-gl.
 const is3DChart = computed(() => is3D(chartData, threeD.value))
@@ -117,7 +118,7 @@ const { containerRef, isFullscreen, withFullscreenToolbox } = useFullscreen()
 // profiles/correlation are computed lazily off-thread when the panel opens
 // (see StatsPanel.vue + useStatsWorker.ts), so this check stays payload-free.
 const showStats = ref(false)
-const hasStats = computed(() => chartData.value.series.length > 0)
+const hasStats = computed(() => chartData.value.series.length > 0 && stat.value?.enabled === true)
 
 const mergedOptions = computed<EChartsOption>(() => withFullscreenToolbox(options.value))
 
@@ -173,7 +174,7 @@ watch(
       <h3 class="text-lg font-semibold text-card-foreground">
         {{ chartData.title }}
       </h3>
-      <div class="flex flex-wrap justify-end gap-1.5">
+      <div class="flex flex-wrap items-center justify-end gap-1.5">
         <Badge
           :label="chartData.axisLabels?.x || 'Series'"
           :value="String(chartData.series.length)"
@@ -187,6 +188,19 @@ watch(
           :label="chartData.axisLabels?.z || 'Z-axis'"
           :value="String(chartData.zAxis.length)"
         />
+        <Button
+          v-if="hasStats"
+          class="h-7 border border-border bg-transparent px-2.5 py-0 text-xs leading-none text-muted-foreground transition-colors hover:bg-accent hover:text-primary"
+          :class="{ 'bg-accent text-primary': showStats }"
+          :aria-pressed="showStats"
+          title="Toggle statistics"
+          @click="showStats = !showStats"
+        >
+          <template #icon>
+            <Sigma class="h-3.5 w-3.5" />
+          </template>
+          Stats
+        </Button>
       </div>
     </div>
     <!-- Keep the chart mounted and overlay the skeleton; unmounting would reset
@@ -200,20 +214,7 @@ watch(
         @legendselectchanged="onLegendSelectChanged"
       />
       <div v-if="showSkeleton" class="absolute inset-0 z-10 animate-pulse rounded bg-muted" />
-      <Button
-        v-if="hasStats"
-        class="absolute bottom-2 right-2 z-20 h-8 border border-border bg-transparent px-2.5 py-0 text-xs leading-none text-muted-foreground transition-colors hover:bg-accent hover:text-primary"
-        :class="{ 'bg-accent text-primary': showStats }"
-        :aria-pressed="showStats"
-        title="Toggle statistics"
-        @click="showStats = !showStats"
-      >
-        <template #icon>
-          <Sigma class="h-4 w-4" />
-        </template>
-        Stats
-      </Button>
     </div>
-    <StatsPanel v-if="hasStats && showStats" :chart-data="chartData" />
+    <StatsPanel v-if="hasStats && showStats" :chart-data="chartData" :math="stat?.math" />
   </div>
 </template>

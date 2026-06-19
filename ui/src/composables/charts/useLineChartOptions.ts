@@ -58,7 +58,7 @@ export function useLineChartOptions(config: BaseChartConfig) {
           {
             name: chartData.value.title,
             type: 'line' as const,
-            data: series.map((s) => adjustForLogScaleLine(s.values[0] ?? 0, effectiveScale)),
+            data: series.map((s) => adjustForLogScaleLine(s.values[0] ?? null, effectiveScale)),
             label: createLabelConfig(showLabels.value, styling),
             large: true,
             largeThreshold: LARGE_DATA_THRESHOLD,
@@ -75,7 +75,7 @@ export function useLineChartOptions(config: BaseChartConfig) {
     const transposedSeries = yAxisLabels.map((yAxisLabel, yIndex) => ({
       name: yAxisLabel,
       type: 'line' as const,
-      data: series.map((s) => adjustForLogScaleLine(s.values[yIndex] ?? 0, effectiveScale)),
+      data: series.map((s) => adjustForLogScaleLine(s.values[yIndex] ?? null, effectiveScale)),
       label: createLabelConfig(showLabels.value, styling),
       large: true,
       largeThreshold: LARGE_DATA_THRESHOLD,

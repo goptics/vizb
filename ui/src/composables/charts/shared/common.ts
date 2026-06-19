@@ -21,7 +21,8 @@ export const sortByTotal = sortBy('total')
 export const sortByValue = sortBy('value')
 
 // For line charts: use null for zero values to create gaps instead of dropping below axis
-export const adjustForLogScaleLine = (value: number, scale: ScaleType): number | null => {
+export const adjustForLogScaleLine = (value: number | null, scale: ScaleType): number | null => {
+  if (value === null) return null
   if (scale !== 'log') return value
   return value <= 0 ? null : value
 }
@@ -52,6 +53,7 @@ export function getEffectiveScale(
   let any = false
   for (const s of series) {
     for (const v of s.values) {
+      if (v === null) continue
       if (!any) {
         maxValue = v
         any = true

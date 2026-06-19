@@ -625,7 +625,7 @@ function downloadCsv() {
             v-if="corrAxisItems.length > 1"
             :items="corrAxisItems"
             :activeId="corrAxisActiveIndex"
-            class="w-40"
+            class="w-36"
             @select="onCorrAxisSelect"
           />
         </div>

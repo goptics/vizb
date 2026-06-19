@@ -16,8 +16,8 @@ import {
 } from './shared'
 import { useSortedSeriesData, getEffectiveScale, computeSeriesTotals } from './shared/common'
 
-const barNullable = (val: number, scale: string): number | null =>
-  scale === 'log' && val <= 0 ? null : val
+const barNullable = (val: number | null, scale: string): number | null =>
+  val === null ? null : scale === 'log' && val <= 0 ? null : val
 
 export function useBarChartOptions(config: BaseChartConfig) {
   const { chartData, sort, showLabels, isDark, scale } = config
@@ -56,7 +56,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
             // object — a 100k-bar chart would otherwise allocate 100k label configs
             // on every recompute. `large` keeps the draw on one frame past the
             // threshold.
-            data: series.map((s) => barNullable(s.values[0] ?? 0, effectiveScale)),
+            data: series.map((s) => barNullable(s.values[0] ?? null, effectiveScale)),
             label: createLabelConfig(showLabels.value, styling),
             large: true,
             largeThreshold: LARGE_DATA_THRESHOLD,
@@ -71,7 +71,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
     const transposedSeries = yAxisLabels.map((yAxisLabel, yIndex) => ({
       name: yAxisLabel,
       type: 'bar' as const,
-      data: series.map((s) => barNullable(s.values[yIndex] || 0, effectiveScale)),
+      data: series.map((s) => barNullable(s.values[yIndex] ?? null, effectiveScale)),
       label: createLabelConfig(showLabels.value, styling),
       large: true,
       largeThreshold: LARGE_DATA_THRESHOLD,

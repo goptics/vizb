@@ -152,14 +152,14 @@ export function useRadarChartOptions(config: BaseChartConfig) {
     // X + Y: one polygon per X value, Y = spokes, legend = X values
     const rows = cd.series.map((s) => ({
       ...s,
-      total: s.values.reduce((sum, v) => sum + v, 0),
+      total: s.values.reduce<number>((sum, v) => sum + (v ?? 0), 0),
     }))
     if (sort.value.enabled) rows.sort(sortByTotal(sort.value.order))
 
     const perSpokeMax = new Array<number>(yAxis.length).fill(0)
     for (const s of rows) {
       s.values.forEach((v, i) => {
-        if (v > (perSpokeMax[i] ?? 0)) perSpokeMax[i] = v
+        if (v !== null && v > (perSpokeMax[i] ?? 0)) perSpokeMax[i] = v
       })
     }
 
@@ -181,7 +181,7 @@ export function useRadarChartOptions(config: BaseChartConfig) {
         itemStyle: { color: getNextColorFor(s.xAxis) },
         lineStyle: { width: 1.5, opacity: 0.7 },
         areaStyle: { opacity: 0.1 },
-        data: [{ value: s.values.map((v) => Math.max(0, v)), name: s.xAxis }],
+        data: [{ value: s.values.map((v) => Math.max(0, v ?? 0)), name: s.xAxis }],
       })),
     }
   })
