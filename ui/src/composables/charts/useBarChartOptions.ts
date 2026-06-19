@@ -10,7 +10,6 @@ import {
   createLegendConfig,
   createTooltipConfig,
   getChartStyling,
-  hasRotatedXLabels,
   isLargeXAxis,
   makeLegendTitle,
   LARGE_DATA_THRESHOLD,
@@ -35,13 +34,11 @@ export function useBarChartOptions(config: BaseChartConfig) {
     const { minValue, effectiveScale } = getEffectiveScale(series, scale?.value ?? 'linear')
     const largeX = isLargeXAxis(xAxisData)
     const xLabel = chartData.value.axisLabels?.x
-    const rotatedX = hasRotatedXLabels(xAxisData, largeX)
-    const gridOpts = { hasXAxisName: !!xLabel, hasRotatedLabels: rotatedX }
 
     if (!hasYAxis) {
       return {
         ...baseOptions,
-        grid: createGridConfig(1, largeX, gridOpts),
+        grid: createGridConfig(1, largeX),
         tooltip: createTooltipConfig(false, isDark.value),
         legend: { show: false },
         ...createAxisConfig(styling, xAxisData, effectiveScale, minValue, xLabel, largeX),
@@ -96,7 +93,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
     return {
       ...baseOptions,
       ...(showLegendTitle ? { title: makeLegendTitle(yLabel!, styling) } : {}),
-      grid: createGridConfig(transposedSeries.length, largeX, gridOpts),
+      grid: createGridConfig(transposedSeries.length, largeX),
       tooltip: createTooltipConfig(hasXAxis(chartData), isDark.value, seriesTotals),
       legend: createLegendConfig(
         transposedSeries.map((s) => ({ xAxis: s.name })),
