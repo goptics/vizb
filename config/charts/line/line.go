@@ -62,9 +62,6 @@ func Materialise(flags Flags, override *Config) Config {
 	}
 	if flags.ThreeDVisualMap != nil {
 		out.ThreeDVisualMap = flags.ThreeDVisualMap
-	} else if flags.ThreeD {
-		v := true
-		out.ThreeDVisualMap = &v
 	}
 
 	out.Stat = shared.MaterialiseStatFlags(flags.Stat)

@@ -47,7 +47,7 @@ export function createHeatmapDataZoomConfig(
         yAxisIndex: 0,
         start: 0,
         end,
-        left: 10,
+        right: 20,
         width: 20,
         filterMode: 'filter',
         textStyle: { color: styling.textColor },
@@ -58,7 +58,7 @@ export function createHeatmapDataZoomConfig(
 }
 
 export function createDataZoomConfig(xAxisData: string[], styling: ChartStyling): any[] {
-  const end = Math.max(5, Math.ceil((30 / xAxisData.length) * 100))
+  const end = Math.min(100, Math.max(5, Math.ceil((30 / xAxisData.length) * 100)))
   return [
     { type: 'inside', start: 0, end },
     // Slider sits between the (auto-thinned) tick labels and the category-axis

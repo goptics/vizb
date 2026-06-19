@@ -1,13 +1,13 @@
 ---
 title: Heatmap Chart
-description: Compare values across two dimensions in a colored grid — optionally fold a z-axis into each cell for blended composition.
+description: Compare values across two dimensions in a colored grid — optionally fold a z-axis into each cell.
 ---
 
 import { Aside, LinkCard } from '@astrojs/starlight/components';
 
 The **heatmap** packs X and Y into a flat grid of colored cells. Each cell shows a value and a color — spot high/low combinations at a glance across the full matrix.
 
-Use heatmaps when you have two categorical dimensions. A z-axis is optional: without z you get a single-gradient matrix; with z each cell sums its z-series values and blends their colors.
+Use heatmaps when you have two categorical dimensions. A z-axis is optional: without z you get a single-gradient matrix; with z each cell shows the sum of its z-series values on the same gradient.
 
 ## How vizb builds it
 
@@ -15,15 +15,15 @@ Use heatmaps when you have two categorical dimensions. A z-axis is optional: wit
 |-----------|------|
 | **XAxis** | Columns of the grid |
 | **YAxis** | Rows of the grid |
-| **ZAxis** | Folded into each cell: cell **value** = `Σ z`, cell **color** = value-weighted blend of z-series colors |
+| **ZAxis** | Folded into each cell: cell **value** = `Σ z`, colored on a shared gradient |
 
-A cell with one z-series shows that series' pure color. A cell mixing two z-series blends them proportionally — color reads as composition while the number reads as magnitude.
+A cell with multiple z-series shows their summed value. Hover to see the per-z breakdown in the tooltip.
 
 ## Dimensions
 
 ### 2D (X + Y axes)
 
-Classic heatmap: one value per X × Y cell, colored on a continuous gradient with a `visualMap` scale. No z-series, no blending — magnitude as color.
+Classic heatmap: one value per X × Y cell, colored on a continuous gradient with a `visualMap` scale. No z-series — magnitude as color.
 
 ```bash
 vizb heatmap data.csv -g category,metric -p x,y -o out.html
@@ -33,13 +33,13 @@ vizb heatmap data.csv -g category,metric -p x,y -o out.html
 
 ### 3D (X + Y + Z axes)
 
-Z values are folded into each cell rather than rendered as depth. Each cell sums its z-series values and blends their palette colors by contribution weight. Toggle z-series in the legend — cells recompute and re-blend live.
+Z values are folded into each cell rather than rendered as depth. Each cell displays `Σ z` and is colored on the same continuous gradient as the 2D heatmap. Hover a cell to see the individual z-series breakdown with colored dots. Toggle z-series in the legend — cells recompute live.
 
 ```bash
 vizb heatmap data.csv -g category,metric,group -p x,y,z -o out.html
 ```
 
-{/* TODO: Add GIF showing a z-blended heatmap with legend toggles */}
+{/* TODO: Add GIF showing a 3D heatmap with legend toggles and tooltip breakdown */}
 
 <Aside type="note">
   The y-axis stays flat intentionally. Splitting each row by z made the grid tall and sparse — so z is folded into the cell instead.
