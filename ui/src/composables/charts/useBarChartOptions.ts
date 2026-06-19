@@ -10,6 +10,7 @@ import {
   createLegendConfig,
   createTooltipConfig,
   getChartStyling,
+  hasRotatedXLabels,
   isLargeXAxis,
   makeLegendTitle,
   LARGE_DATA_THRESHOLD,
@@ -33,20 +34,17 @@ export function useBarChartOptions(config: BaseChartConfig) {
     // so we default at the call site.
     const { minValue, effectiveScale } = getEffectiveScale(series, scale?.value ?? 'linear')
     const largeX = isLargeXAxis(xAxisData)
+    const xLabel = chartData.value.axisLabels?.x
+    const rotatedX = hasRotatedXLabels(xAxisData, largeX)
+    const gridOpts = { hasXAxisName: !!xLabel, hasRotatedLabels: rotatedX }
 
     if (!hasYAxis) {
       return {
         ...baseOptions,
-        grid: createGridConfig(1, largeX),
+        grid: createGridConfig(1, largeX, gridOpts),
         tooltip: createTooltipConfig(false, isDark.value),
         legend: { show: false },
-        ...createAxisConfig(
-          styling,
-          xAxisData,
-          effectiveScale,
-          minValue,
-          chartData.value.axisLabels?.x
-        ),
+        ...createAxisConfig(styling, xAxisData, effectiveScale, minValue, xLabel, largeX),
         ...(largeX ? { dataZoom: createDataZoomConfig(xAxisData, styling) } : {}),
         series: [
           {
@@ -98,7 +96,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
     return {
       ...baseOptions,
       ...(showLegendTitle ? { title: makeLegendTitle(yLabel!, styling) } : {}),
-      grid: createGridConfig(transposedSeries.length, largeX),
+      grid: createGridConfig(transposedSeries.length, largeX, gridOpts),
       tooltip: createTooltipConfig(hasXAxis(chartData), isDark.value, seriesTotals),
       legend: createLegendConfig(
         transposedSeries.map((s) => ({ xAxis: s.name })),
@@ -106,13 +104,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
         hasMultipleSeries,
         showLegendTitle ? { top: 24 } : undefined
       ),
-      ...createAxisConfig(
-        styling,
-        xAxisData,
-        effectiveScale,
-        minValue,
-        chartData.value.axisLabels?.x
-      ),
+      ...createAxisConfig(styling, xAxisData, effectiveScale, minValue, xLabel, largeX),
       ...(largeX ? { dataZoom: createDataZoomConfig(xAxisData, styling) } : {}),
       series: transposedSeries,
     } as EChartsOption

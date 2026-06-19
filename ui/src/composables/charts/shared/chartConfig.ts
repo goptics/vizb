@@ -117,12 +117,18 @@ export function getChartStyling(isDark: boolean): ChartStyling {
 /**
  * Creates common axis configuration
  */
+export function hasRotatedXLabels(xAxisData: string[], hasDataZoom = false): boolean {
+  if (hasDataZoom) return false
+  return xAxisData.reduce((acc, cur) => acc + cur.length, 0) > 100
+}
+
 export function createAxisConfig(
   styling: ChartStyling,
   xAxisData: string[],
   scale: ScaleType = 'linear',
   minValue?: number,
-  xAxisName?: string
+  xAxisName?: string,
+  hasDataZoom = false
 ): { xAxis: any; yAxis: any } {
   const yAxisConfig: any = {
     type: scale === 'log' ? 'log' : 'value',
@@ -157,8 +163,8 @@ export function createAxisConfig(
         ? {
             name: xAxisName,
             nameLocation: 'middle',
-            // Large axis: extra gap drops the name below the dataZoom slider.
-            nameGap: isLargeXAxis(xAxisData) ? 88 : 45,
+            // DataZoom slider: extra gap drops the name below the slider.
+            nameGap: hasDataZoom ? 88 : 45,
             nameTextStyle: { color: styling.textColor, fontSize, fontWeight: 'bold' },
           }
         : {}),
@@ -166,11 +172,7 @@ export function createAxisConfig(
         // Large axis: let ECharts auto-thin ticks (dataZoom drives navigation)
         // so labels don't overlap. Small axis: force every label visible.
         interval: isLargeXAxis(xAxisData) ? 'auto' : 0,
-        rotate: isLargeXAxis(xAxisData)
-          ? 0
-          : xAxisData.reduce((acc, cur) => acc + cur.length, 0) > 100
-            ? 30
-            : 0,
+        rotate: hasRotatedXLabels(xAxisData, hasDataZoom) ? 30 : 0,
         fontSize,
         color: styling.textColor,
       },
@@ -486,8 +488,25 @@ export function makeLegendTitle(text: string, styling: ChartStyling): any {
   }
 }
 
-export function createGridConfig(seriesLength = 1, hasDataZoom = false): any {
+export interface GridConfigOptions {
+  hasXAxisName?: boolean
+  hasRotatedLabels?: boolean
+}
+
+function gridBottomWithoutDataZoom(hasXAxisName: boolean, hasRotatedLabels: boolean): string {
+  if (hasXAxisName && hasRotatedLabels) return '13%'
+  if (hasXAxisName || hasRotatedLabels) return '8%'
+  return '3%'
+}
+
+export function createGridConfig(
+  seriesLength = 1,
+  hasDataZoom = false,
+  options: GridConfigOptions = {}
+): any {
   const legendSpace = Math.min(15 + Math.floor((seriesLength - 1) / 15) * 2, 35)
+  const hasXAxisName = options.hasXAxisName ?? false
+  const hasRotatedLabels = options.hasRotatedLabels ?? false
 
   // With a dataZoom slider we turn containLabel OFF and reserve label space in
   // fixed px. containLabel pins both the tick labels and the axis name to the
@@ -508,8 +527,7 @@ export function createGridConfig(seriesLength = 1, hasDataZoom = false): any {
   return {
     left: '3%',
     right: '3%',
-    // Extra bottom room so a category-axis name (group label) isn't clipped.
-    bottom: '13%',
+    bottom: gridBottomWithoutDataZoom(hasXAxisName, hasRotatedLabels),
     top: `${legendSpace}%`,
     containLabel: true,
   }
