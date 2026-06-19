@@ -30,7 +30,7 @@ func TestSelectChunks(t *testing.T) {
 	require.NotEmpty(t, radarRoot, "generated VizbChartRoots must contain radar")
 
 	t.Run("bar only, no 3D drops other renderers and the 3D stack", func(t *testing.T) {
-		got := decodeChunks(t, string(SelectChunks([]string{"bar"}, false)))
+		got := decodeChunks(t, string(SelectChunks([]string{"bar"}, false, false)))
 
 		assert.Contains(t, got, entry, "entry chunk is always shipped")
 		assert.Contains(t, got, barRoot, "selected chart's renderer is kept")
@@ -41,7 +41,7 @@ func TestSelectChunks(t *testing.T) {
 	})
 
 	t.Run("bar with needs3D keeps the 3D stack", func(t *testing.T) {
-		got := decodeChunks(t, string(SelectChunks([]string{"bar"}, true)))
+		got := decodeChunks(t, string(SelectChunks([]string{"bar"}, true, false)))
 
 		assert.Contains(t, got, barRoot)
 		assert.Contains(t, got, root3D, "3D renderer is kept when needs3D is true")
@@ -51,7 +51,7 @@ func TestSelectChunks(t *testing.T) {
 		// needs3D should never be true for pie in practice, but even if forced the
 		// 3D root is only added when 3d is among the enabled roots, which it is via
 		// the needs3D flag — so assert the realistic pie-without-3D case.
-		got := decodeChunks(t, string(SelectChunks([]string{"pie"}, false)))
+		got := decodeChunks(t, string(SelectChunks([]string{"pie"}, false, false)))
 
 		assert.Contains(t, got, pieRoot)
 		assert.NotContains(t, got, root3D)
@@ -59,7 +59,7 @@ func TestSelectChunks(t *testing.T) {
 	})
 
 	t.Run("radar keeps radar, prunes unrelated renderers", func(t *testing.T) {
-		got := decodeChunks(t, string(SelectChunks([]string{"radar"}, false)))
+		got := decodeChunks(t, string(SelectChunks([]string{"radar"}, false, false)))
 
 		assert.Contains(t, got, radarRoot, "radar renderer is kept")
 		assert.NotContains(t, got, barRoot, "unselected bar renderer is pruned")
@@ -70,7 +70,7 @@ func TestSelectChunks(t *testing.T) {
 	})
 
 	t.Run("empty selection ships default renderers", func(t *testing.T) {
-		got := decodeChunks(t, string(SelectChunks(nil, false)))
+		got := decodeChunks(t, string(SelectChunks(nil, false, false)))
 
 		for _, name := range []string{"bar", "line", "pie"} {
 			root := VizbChartRoots[name]
@@ -83,7 +83,7 @@ func TestSelectChunks(t *testing.T) {
 	})
 
 	t.Run("kept chunks never reference a pruned chunk", func(t *testing.T) {
-		got := decodeChunks(t, string(SelectChunks([]string{"bar"}, false)))
+		got := decodeChunks(t, string(SelectChunks([]string{"bar"}, false, false)))
 		for key := range got {
 			for _, dep := range VizbChunkImports[key] {
 				// A pruned dep is only allowed if it's a gated renderer root.

@@ -13,14 +13,14 @@ func hasBenchmark(line string) bool {
 	return strings.Contains(line, "ns/op")
 }
 
-type BenchmarkLine interface {
+type DataLine interface {
 	ExtractName(string) string
 }
 
-// RawBenchmark is the base implementation for raw benchmark text.
-type RawBenchmark struct{}
+// RawDataLine is the base implementation for raw benchmark text.
+type RawDataLine struct{}
 
-func (r *RawBenchmark) ExtractName(line string) string {
+func (r *RawDataLine) ExtractName(line string) string {
 	if !hasBenchmark(line) {
 		return ""
 	}
@@ -41,12 +41,12 @@ func (r *RawBenchmark) ExtractName(line string) string {
 	return name
 }
 
-// JSONBenchmark extends RawBenchmark but overrides ExtractName.
-type JSONBenchmark struct {
+// JSONDataLine extends RawDataLine but overrides ExtractName.
+type JSONDataLine struct {
 	Event *shared.BenchEvent
 }
 
-func (j *JSONBenchmark) ExtractName(_ string) string {
+func (j *JSONDataLine) ExtractName(_ string) string {
 	if j.Event != nil && j.Event.Test != "" && strings.HasPrefix(j.Event.Test, "Benchmark") {
 		return j.Event.Test
 	}
@@ -60,49 +60,49 @@ type ProgressBar interface {
 	Finish() error
 }
 
-// BenchmarkProgressManager holds state + orchestrates benchmark processing.
-type BenchmarkProgressManager struct {
-	bar              ProgressBar
-	benchmarkCount   int
-	currentBenchName string
+// DataProgressManager holds state + orchestrates data processing progress display.
+type DataProgressManager struct {
+	bar             ProgressBar
+	dataCount       int
+	currentDataName string
 }
 
-// NewBenchmarkProgressManager creates a new instance of BenchmarkProgressManager
-// with the provided progress bar interface for displaying benchmark execution progress.
-func NewBenchmarkProgressManager(bar ProgressBar) *BenchmarkProgressManager {
-	return &BenchmarkProgressManager{bar: bar}
+// NewDataProgressManager creates a new instance of DataProgressManager
+// with the provided progress bar interface for displaying data processing progress.
+func NewDataProgressManager(bar ProgressBar) *DataProgressManager {
+	return &DataProgressManager{bar: bar}
 }
 
-func (m *BenchmarkProgressManager) updateProgress() {
+func (m *DataProgressManager) updateProgress() {
 	desc := fmt.Sprintf(
-		"Running Benchmarks [%s] (%d completed)",
-		m.currentBenchName,
-		m.benchmarkCount,
+		"Processing Data [%s] (%d records)",
+		m.currentDataName,
+		m.dataCount,
 	)
 
 	m.bar.Describe(style.Info.Render(desc))
 }
 
-func (m *BenchmarkProgressManager) Finish() error {
+func (m *DataProgressManager) Finish() error {
 	return m.bar.Finish()
 }
 
-func (m *BenchmarkProgressManager) ProcessLine(line string) {
+func (m *DataProgressManager) ProcessLine(line string) {
 	var ev shared.BenchEvent
-	var p BenchmarkLine
+	var p DataLine
 
 	if err := json.Unmarshal([]byte(line), &ev); err == nil {
-		p = &JSONBenchmark{Event: &ev}
+		p = &JSONDataLine{Event: &ev}
 	} else {
-		p = &RawBenchmark{}
+		p = &RawDataLine{}
 	}
 
 	if hasBenchmark(line) {
-		m.benchmarkCount++
+		m.dataCount++
 	}
 
 	if name := p.ExtractName(line); name != "" {
-		m.currentBenchName = name
+		m.currentDataName = name
 		m.updateProgress()
 	}
 }

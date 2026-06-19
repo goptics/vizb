@@ -1,6 +1,21 @@
 export type SortOrder = 'asc' | 'desc'
 export const SORT_ORDERS: SortOrder[] = ['asc', 'desc']
 
+export type StatMath =
+  | 'counts'
+  | 'center'
+  | 'spread'
+  | 'extremes'
+  | 'shape'
+  | 'percentiles'
+  | 'confidence'
+  | 'correlations'
+
+export type StatConfig = {
+  enabled: boolean
+  math: StatMath[] // empty = all categories
+}
+
 export type ChartType = 'bar' | 'line' | 'pie' | 'heatmap' | 'radar'
 
 export type ScaleType = 'linear' | 'log'
@@ -50,6 +65,7 @@ export type BarConfig = {
   threeDRotate?: boolean
   threeD?: boolean
   threeDVisualMap?: boolean
+  stat?: StatConfig
 }
 
 export type LineConfig = {
@@ -61,6 +77,7 @@ export type LineConfig = {
   threeDRotate?: boolean
   threeD?: boolean
   threeDVisualMap?: boolean
+  stat?: StatConfig
 }
 
 export type PieConfig = {
@@ -68,6 +85,7 @@ export type PieConfig = {
   swap?: string
   sort?: Sort
   showLabels?: boolean
+  stat?: StatConfig
 }
 
 export type HeatmapConfig = {
@@ -75,6 +93,7 @@ export type HeatmapConfig = {
   swap?: string
   sort?: Sort
   showLabels?: boolean
+  stat?: StatConfig
 }
 
 export type RadarConfig = {
@@ -82,6 +101,7 @@ export type RadarConfig = {
   swap?: string
   sort?: Sort
   showLabels?: boolean
+  stat?: StatConfig
 }
 
 export type ChartConfig = BarConfig | LineConfig | PieConfig | HeatmapConfig | RadarConfig
@@ -130,26 +150,49 @@ export type DataSet = {
 // across categories). Produced by lib/stats.ts `describe`. NaN where undefined
 // (e.g. cv when mean is 0, shape stats for n<2).
 export type DescriptiveStats = {
+  // counts
   count: number
   missing: number
   unique: number
+  zeros: number
+  negatives: number
+  // center
   mean: number
   median: number
   mode: number
+  geoMean: number
+  harmMean: number
+  trimMean: number
+  // spread
   variance: number
   stdDev: number
+  cv: number
+  sem: number
+  cqv: number
+  // extremes
   min: number
   max: number
   range: number
   iqr: number
   mad: number
-  cv: number
+  lowerFence: number
+  upperFence: number
+  outliers: number
+  // shape
   skewness: number
   kurtosis: number
+  // percentiles
+  p1: number
   p5: number
+  p10: number
   p25: number
   p75: number
+  p90: number
   p95: number
+  p99: number
+  // confidence
+  ci95Lower: number
+  ci95Upper: number
 }
 
 // One series' descriptive profile (column profile, YData/D-Tale style).
@@ -161,12 +204,14 @@ export type SeriesProfile = {
 // Symmetric correlation matrices across the chart's auto-picked entity axis (the
 // series, the category axis, or the z axis — see `selectCorrelationAxis`). `axis`
 // names which one so the panel can caption it; `labels` are that axis's values.
-// Both methods are precomputed so the panel toggles with no recompute.
+// All 4 methods are precomputed so the panel toggles with no recompute.
 export type CorrelationMatrix = {
   axis: 'x' | 'y' | 'z'
   labels: string[]
   pearson: number[][]
   spearman: number[][]
+  kendall: number[][]
+  dcor: number[][]
 }
 
 export type ChartData = {
@@ -204,7 +249,7 @@ export type Render3D = {
 
 export type SeriesData = {
   xAxis: string
-  values: number[]
+  values: (number | null)[] // null = no data for that category (missing cell)
   benchmarkId: string
 }
 

@@ -57,8 +57,11 @@ func reachableChunks(enabled map[string]bool) map[string]bool {
 
 // SelectChunks returns the gzip+base64 chunk map (as a JS object literal) holding
 // only the chunks reachable from the selected charts. needs3D additionally keeps
-// the 3D renderer + echarts-gl. An empty selection is treated as all charts.
-func SelectChunks(charts []string, needs3D bool) htmlTemplate.JS {
+// the 3D renderer + echarts-gl. needsHeatmapChunk ensures the heatmap echarts
+// module is shipped even when "heatmap" is not a visible chart tab — required
+// when correlations are enabled so StatsPanel's correlation renderer works.
+// An empty selection is treated as all charts.
+func SelectChunks(charts []string, needs3D bool, needsHeatmapChunk bool) htmlTemplate.JS {
 	if len(charts) == 0 {
 		charts = defaultCharts
 	}
@@ -71,6 +74,11 @@ func SelectChunks(charts []string, needs3D bool) htmlTemplate.JS {
 	}
 	if needs3D {
 		if key, ok := VizbChartRoots["3d"]; ok {
+			enabled[key] = true
+		}
+	}
+	if needsHeatmapChunk {
+		if key, ok := VizbChartRoots["heatmap"]; ok {
 			enabled[key] = true
 		}
 	}

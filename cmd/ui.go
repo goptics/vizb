@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/goptics/vizb/cmd/cli"
 	config_charts "github.com/goptics/vizb/config/charts"
@@ -15,6 +16,7 @@ import (
 	"github.com/goptics/vizb/pkg/style"
 	"github.com/goptics/vizb/pkg/template"
 	"github.com/goptics/vizb/shared"
+	"github.com/goptics/vizb/shared/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -25,6 +27,7 @@ type uiOptions struct {
 	ChartSpecs []string
 	DataURL    string
 	Enable3D   bool
+	Stat       []string
 }
 
 var uiOpts uiOptions
@@ -52,6 +55,7 @@ func init() {
 	uiCmd.Flags().StringSliceVarP(&uiOpts.Charts, "charts", "c", shared.DefaultChartTypes, "Chart types to bundle (bar, line, pie, heatmap, radar)")
 	uiCmd.Flags().StringArrayVar(&uiOpts.ChartSpecs, "chart", nil, "Per-chart type settings override: <type>:<key>=<val>,... (repeatable)")
 	uiCmd.Flags().BoolVar(&uiOpts.Enable3D, "3d", false, "Bundle the 3D renderer for --data-url (remote data shape is unknown at build time)")
+	cli.BindStatFlag(uiCmd.Flags(), &uiOpts.Stat)
 }
 
 func runUI(cmd *cobra.Command, args []string) {
@@ -73,10 +77,17 @@ func runUI(cmd *cobra.Command, args []string) {
 	if uiOpts.DataURL != "" {
 		// No data at generation time: --charts is the authoritative selection.
 		// 3D is opt-in via --3d because the remote data shape is unknown.
+		// Heatmap chunk ships by default (remote stat config unknown); pruned
+		// only when --stat is given and excludes correlations.
 		charts := uiOpts.Charts
 		needs3D := uiOpts.Enable3D && shared.ChartsHave3DCapable(charts)
+		statChanged := cmd.Flags().Changed("stat")
+		if statChanged {
+			validateStat(&uiOpts.Stat)
+		}
+		needsHeatmapChunk := !statChanged || shared.StatNeedsCorrelation(uiOpts.Stat)
 		htmlContent := template.GenerateRemoteUI(
-			uiOpts.DataURL, charts, needs3D, template.VizbHTMLTemplate,
+			uiOpts.DataURL, charts, needs3D, needsHeatmapChunk, template.VizbHTMLTemplate,
 		)
 		if _, err := f.WriteString(htmlContent); err != nil {
 			shared.ExitWithError("Failed to write output file: %v", err)
@@ -90,12 +101,12 @@ func runUI(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	benches, err := cli.ParseDatasetFile(args[0])
+	datasets, err := cli.ParseDatasetFile(args[0])
 	if err != nil {
 		shared.ExitWithError("Failed to parse DataSet file: %v", err)
 	}
 
-	if len(benches) == 0 {
+	if len(datasets) == 0 {
 		shared.ExitWithError("No DataSet data found in file", nil)
 	}
 
@@ -107,12 +118,12 @@ func runUI(cmd *cobra.Command, args []string) {
 	if cmd.Flags().Changed("charts") {
 		charts = uiOpts.Charts
 	} else {
-		charts = unionCharts(benches)
+		charts = unionCharts(datasets)
 	}
 
 	if cmd.Flags().Changed("charts") {
-		for i := range benches {
-			benches[i].Settings = filterSettings(benches[i].Settings, charts)
+		for i := range datasets {
+			datasets[i].Settings = filterSettings(datasets[i].Settings, charts)
 		}
 	}
 
@@ -120,28 +131,50 @@ func runUI(cmd *cobra.Command, args []string) {
 		// Collect the union of every active chart type across the input
 		// datasets so --chart overrides can be validated against the actual
 		// selection (matches the same rule as the root command).
-		active := unionCharts(benches)
+		active := unionCharts(datasets)
 		overrides, err := shared.ParseOverrides(uiOpts.ChartSpecs, active, nil)
 		if err != nil {
 			shared.ExitWithError(err.Error(), nil)
 		}
-		for i := range benches {
-			applyOverrides(&benches[i].Settings, overrides)
+		for i := range datasets {
+			applyOverrides(&datasets[i].Settings, overrides)
 		}
 	}
 
-	needs3D := shared.ChartsHave3DCapable(charts) && anyDatasetHasZAxis(benches)
+	if cmd.Flags().Changed("stat") {
+		validateStat(&uiOpts.Stat)
+		statCfg := &shared.StatConfig{Enabled: true, Math: uiOpts.Stat}
+		for i := range datasets {
+			applyStatToSettings(datasets[i].Settings, statCfg)
+		}
+	}
 
-	jsonData, err := json.Marshal(benches)
+	needs3D := shared.ChartsHave3DCapable(charts) && anyDatasetHasZAxis(datasets)
+
+	jsonData, err := json.Marshal(datasets)
 	if err != nil {
 		shared.ExitWithError("Failed to marshal DataSet data: %v", err)
 	}
 
-	htmlContent := template.GenerateUI(jsonData, charts, needs3D, template.VizbHTMLTemplate)
+	needsHeatmapChunk := anyDatasetNeedsCorrelation(datasets)
+	htmlContent := template.GenerateUI(jsonData, charts, needs3D, needsHeatmapChunk, template.VizbHTMLTemplate)
 	if _, err := f.WriteString(htmlContent); err != nil {
 		shared.ExitWithError("Failed to write output file: %v", err)
 	}
 	fmt.Println(style.Success.Render(fmt.Sprintf("🎉 Generated UI successfully: %s", outFile)))
+}
+
+// anyDatasetNeedsCorrelation reports whether any dataset setting requires the
+// correlation heatmap renderer chunk to be shipped.
+func anyDatasetNeedsCorrelation(datasets []shared.Dataset) bool {
+	for i := range datasets {
+		for _, cfg := range datasets[i].Settings {
+			if shared.ChartConfigNeedsCorrelation(cfg) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // filterSettings keeps only configs whose chart type is in the allowed list,
@@ -165,11 +198,11 @@ func filterSettings(settings []config_charts.ChartConfig, allowed []string) []co
 
 // unionCharts collects the distinct chart types across datasets, preserving first
 // appearance order, so every chart any input requests stays bundled.
-func unionCharts(benches []shared.Dataset) []string {
+func unionCharts(datasets []shared.Dataset) []string {
 	seen := make(map[string]bool)
 	var charts []string
-	for i := range benches {
-		for _, c := range benches[i].Settings {
+	for i := range datasets {
+		for _, c := range datasets[i].Settings {
 			if !seen[c.ChartType()] {
 				seen[c.ChartType()] = true
 				charts = append(charts, c.ChartType())
@@ -303,9 +336,9 @@ func mergeRadarConfig(to, from *radarchart.Config) {
 }
 
 // anyDatasetHasZAxis reports whether any dataset carries a z dimension.
-func anyDatasetHasZAxis(benches []shared.Dataset) bool {
-	for i := range benches {
-		if shared.DatasetHasZAxis(&benches[i]) {
+func anyDatasetHasZAxis(datasets []shared.Dataset) bool {
+	for i := range datasets {
+		if shared.DatasetHasZAxis(&datasets[i]) {
 			return true
 		}
 	}
@@ -319,4 +352,35 @@ func validateAPIURL(rawURL string) error {
 		return fmt.Errorf("must be a valid http:// or https:// URL")
 	}
 	return nil
+}
+
+func validateStat(stat *[]string) {
+	utils.ApplyValidationRules([]utils.ValidationRule{{
+		Label:        "stat",
+		SliceValue:   stat,
+		ValidSet:     shared.ValidStatMath,
+		Normalizer:   strings.ToLower,
+		SliceDefault: nil,
+	}})
+}
+
+// applyStatToSettings sets the same stat config on every chart config in settings.
+func applyStatToSettings(settings []config_charts.ChartConfig, stat *shared.StatConfig) {
+	for _, cfg := range settings {
+		switch c := cfg.(type) {
+		case *barchart.Config:
+			c.Stat = stat
+		case *linechart.Config:
+			c.Stat = stat
+		case *piechart.Config:
+			c.Stat = stat
+		case *heatmapchart.Config:
+			c.Stat = stat
+		case *radarchart.Config:
+			c.Stat = stat
+		default:
+			// ponytail: new chart type — add a case above and wire c.Stat = stat
+			panic(fmt.Sprintf("applyStatToSettings: unhandled chart type %T", c))
+		}
+	}
 }

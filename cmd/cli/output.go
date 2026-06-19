@@ -106,12 +106,12 @@ func ParseDatasetFile(file string) ([]shared.Dataset, error) {
 		}
 		return dataSets, nil
 	case '{':
-		var bench shared.Dataset
-		if err := json.Unmarshal(content, &bench); err != nil {
+		var ds shared.Dataset
+		if err := json.Unmarshal(content, &ds); err != nil {
 			return nil, fmt.Errorf("invalid data set object: %w", err)
 		}
-		shared.MigrateDataset(&bench, content)
-		return []shared.Dataset{bench}, nil
+		shared.MigrateDataset(&ds, content)
+		return []shared.Dataset{ds}, nil
 	default:
 		return nil, fmt.Errorf("not valid JSON")
 	}

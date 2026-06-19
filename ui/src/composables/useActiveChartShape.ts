@@ -1,5 +1,5 @@
 import { computed } from 'vue'
-import type { BarConfig, LineConfig, ScaleType, Sort } from '../types'
+import type { BarConfig, LineConfig, ScaleType, Sort, StatConfig } from '../types'
 import { useSettingsStore } from './useSettingsStore'
 
 // Pure read-only composable: derives everything from the store's `activeConfig`
@@ -36,5 +36,7 @@ export function useActiveChartShape() {
     () => (activeConfig.value as BarConfig | LineConfig | undefined)?.threeDVisualMap ?? false
   )
 
-  return { scale, threeDRotate, showLabels, sort, threeD, hasThreeDOption, threeDVisualMap }
+  const stat = computed<StatConfig | undefined>(() => activeConfig.value?.stat)
+
+  return { scale, threeDRotate, showLabels, sort, threeD, hasThreeDOption, threeDVisualMap, stat }
 }

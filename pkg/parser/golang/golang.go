@@ -84,17 +84,17 @@ func ParseGoBenchmark(filePath string, cfg parser.Config) (results []shared.Data
 			case "sec/op":
 				benchStat = shared.Stat{
 					Type:  utils.CreateStatType("Execution Time", cfg.TimeUnit, "op"),
-					Value: utils.FormatTime(value.OrigValue, cfg.TimeUnit),
+					Value: shared.F64(utils.FormatTime(value.OrigValue, cfg.TimeUnit)),
 				}
 			case "B/op":
 				benchStat = shared.Stat{
 					Type:  utils.CreateStatType("Memory Usage", cfg.MemUnit, "op"),
-					Value: utils.FormatMem(value.Value, cfg.MemUnit),
+					Value: shared.F64(utils.FormatMem(value.Value, cfg.MemUnit)),
 				}
 			case "allocs/op":
 				benchStat = shared.Stat{
 					Type:  utils.CreateStatType("Allocations", cfg.NumberUnit, "op"),
-					Value: utils.FormatNumber(value.Value, cfg.NumberUnit),
+					Value: shared.F64(utils.FormatNumber(value.Value, cfg.NumberUnit)),
 				}
 			case "B/s", "MB/s", "GB/s":
 				val, unit := value.OrigValue, value.OrigUnit
@@ -105,7 +105,7 @@ func ParseGoBenchmark(filePath string, cfg parser.Config) (results []shared.Data
 
 				benchStat = shared.Stat{
 					Type:  utils.CreateStatType("Throughput", unit, ""),
-					Value: val,
+					Value: shared.F64(val),
 				}
 			default:
 				customType := "Metric"
@@ -116,7 +116,7 @@ func ParseGoBenchmark(filePath string, cfg parser.Config) (results []shared.Data
 
 				benchStat = shared.Stat{
 					Type:  utils.CreateStatType(customType, value.Unit, ""),
-					Value: value.Value,
+					Value: shared.F64(value.Value),
 				}
 			}
 
@@ -149,7 +149,7 @@ func ParseGoBenchmark(filePath string, cfg parser.Config) (results []shared.Data
 		for i := range results {
 			results[i].Stats = append(results[i].Stats, shared.Stat{
 				Type:  utils.CreateStatType("Iterations", cfg.NumberUnit, ""),
-				Value: utils.FormatNumber(float64(allIters[i]), cfg.NumberUnit),
+				Value: shared.F64(utils.FormatNumber(float64(allIters[i]), cfg.NumberUnit)),
 			})
 		}
 	}

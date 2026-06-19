@@ -24,7 +24,7 @@ func TestGenerateUI(t *testing.T) {
 
 		benchmarkJSON := []byte(`[{"name":"test","data":[]}]`)
 
-		result := GenerateUI(benchmarkJSON, []string{"bar"}, false, testTemplate)
+		result := GenerateUI(benchmarkJSON, []string{"bar"}, false, false, testTemplate)
 
 		assert.False(t, exitCalled, "Expected OsExit not to be called for valid input")
 		require.NotEmpty(t, result, "Expected non-empty HTML output")
@@ -44,7 +44,7 @@ func TestGenerateUI(t *testing.T) {
 
 		benchmarkJSON := []byte(`[]`)
 
-		result := GenerateUI(benchmarkJSON, []string{"bar"}, false, testTemplate)
+		result := GenerateUI(benchmarkJSON, []string{"bar"}, false, false, testTemplate)
 
 		assert.False(t, exitCalled, "Expected OsExit not to be called for empty JSON array")
 		require.NotEmpty(t, result, "Expected non-empty HTML output")
@@ -62,7 +62,7 @@ func TestGenerateUI(t *testing.T) {
 		invalidTemplate := `<!DOCTYPE html><html><body>[[VIZB .InvalidField VIZB]]</body></html>`
 
 		err := shared.WithSafe("GenerateUI", func() {
-			_ = GenerateUI(benchmarkJSON, []string{"bar"}, false, invalidTemplate)
+			_ = GenerateUI(benchmarkJSON, []string{"bar"}, false, false, invalidTemplate)
 		})
 
 		assert.True(t, exitCalled, "Expected OsExit to be called for invalid template execution")
@@ -80,7 +80,7 @@ func TestGenerateUI(t *testing.T) {
 		malformedTemplate := `<!DOCTYPE html><html><body>[[VIZB .Version</body></html>`
 
 		err := shared.WithSafe("GenerateUI", func() {
-			_ = GenerateUI(benchmarkJSON, []string{"bar"}, false, malformedTemplate)
+			_ = GenerateUI(benchmarkJSON, []string{"bar"}, false, false, malformedTemplate)
 		})
 
 		assert.True(t, exitCalled, "Expected OsExit to be called for malformed template syntax")
@@ -94,7 +94,7 @@ func TestGenerateRemoteUI(t *testing.T) {
 		`window.VIZB_DATA_URL = [[VIZB .DataURL VIZB]];` +
 		`window.VIZB_CHARTS = [[VIZB .ChartList VIZB]];</script></body></html>`
 
-	result := GenerateRemoteUI("https://example.com/data.json", []string{"bar"}, false, testTemplate)
+	result := GenerateRemoteUI("https://example.com/data.json", []string{"bar"}, false, false, testTemplate)
 
 	require.NotEmpty(t, result)
 	assert.Contains(t, result, "https://example.com/data.json")
@@ -104,7 +104,7 @@ func TestGenerateRemoteUI(t *testing.T) {
 
 func TestChartListJSEmptyDefaults(t *testing.T) {
 	testTemplate := `<!DOCTYPE html><html><body><script>window.VIZB_CHARTS = [[VIZB .ChartList VIZB]];</script></body></html>`
-	result := GenerateUI([]byte(`[]`), nil, false, testTemplate)
+	result := GenerateUI([]byte(`[]`), nil, false, false, testTemplate)
 
 	assert.Contains(t, result, `"bar"`)
 	assert.Contains(t, result, `"line"`)

@@ -97,29 +97,45 @@ export function mad(xs: number[]): number {
 export function describe(xs: number[]): DescriptiveStats {
   const v = finite(xs)
   const n = v.length
+  const nan = NaN
   if (!n) {
-    const nan = NaN
     return {
       count: 0,
       missing: xs.length,
       unique: 0,
+      zeros: 0,
+      negatives: 0,
       mean: nan,
       median: nan,
       mode: nan,
+      geoMean: nan,
+      harmMean: nan,
+      trimMean: nan,
       variance: nan,
       stdDev: nan,
+      cv: nan,
+      sem: nan,
+      cqv: nan,
       min: nan,
       max: nan,
       range: nan,
       iqr: nan,
       mad: nan,
-      cv: nan,
+      lowerFence: nan,
+      upperFence: nan,
+      outliers: 0,
       skewness: nan,
       kurtosis: nan,
+      p1: nan,
       p5: nan,
+      p10: nan,
       p25: nan,
       p75: nan,
+      p90: nan,
       p95: nan,
+      p99: nan,
+      ci95Lower: nan,
+      ci95Upper: nan,
     }
   }
   const sorted = v.toSorted((a, b) => a - b)
@@ -129,27 +145,56 @@ export function describe(xs: number[]): DescriptiveStats {
   const sd = stdDev(v)
   const p25 = quantileSorted(sorted, 0.25)
   const p75 = quantileSorted(sorted, 0.75)
+  const iqr = p75 - p25
+  const lowerFence = p25 - 1.5 * iqr
+  const upperFence = p75 + 1.5 * iqr
+  const sem = sd / Math.sqrt(n)
+  const allPositive = v.every((x) => x > 0)
+  const trimK = Math.floor(n * 0.1)
   return {
+    // counts
     count: n,
     missing: xs.length - n,
     unique: new Set(v).size,
+    zeros: v.filter((x) => x === 0).length,
+    negatives: v.filter((x) => x < 0).length,
+    // center
     mean: m,
     median: quantileSorted(sorted, 0.5),
     mode: mode(v),
+    geoMean: allPositive ? Math.exp(mean(v.map((x) => Math.log(x)))) : nan,
+    harmMean: allPositive ? n / v.reduce((s, x) => s + 1 / x, 0) : nan,
+    trimMean: mean(trimK > 0 ? sorted.slice(trimK, n - trimK) : sorted),
+    // spread
     variance: variance(v),
     stdDev: sd,
+    cv: m === 0 ? nan : sd / m,
+    sem,
+    cqv: p25 + p75 !== 0 ? iqr / (p25 + p75) : nan,
+    // extremes
     min,
     max,
     range: max - min,
-    iqr: p75 - p25,
+    iqr,
     mad: mad(v),
-    cv: m === 0 ? NaN : sd / m,
+    lowerFence,
+    upperFence,
+    outliers: v.filter((x) => x < lowerFence || x > upperFence).length,
+    // shape
     skewness: skewness(v),
     kurtosis: kurtosis(v),
+    // percentiles
+    p1: quantileSorted(sorted, 0.01),
     p5: quantileSorted(sorted, 0.05),
+    p10: quantileSorted(sorted, 0.1),
     p25,
     p75,
+    p90: quantileSorted(sorted, 0.9),
     p95: quantileSorted(sorted, 0.95),
+    p99: quantileSorted(sorted, 0.99),
+    // confidence
+    ci95Lower: m - 1.96 * sem,
+    ci95Upper: m + 1.96 * sem,
   }
 }
 
@@ -187,7 +232,7 @@ export function pearson(a: number[], b: number[]): number {
 
 // Fractional ranks (ties share the average rank). Used by Spearman.
 function ranks(xs: number[]): number[] {
-  const idx = xs.map((v, i) => [v, i] as [number, number])
+  const idx = xs.map<[number, number]>((v, i) => [v, i])
   idx.sort((p, q) => p[0] - q[0])
   const r = new Array<number>(xs.length)
   let i = 0
@@ -218,12 +263,130 @@ export function spearman(a: number[], b: number[]): number {
   return pearson(ranks(xs), ranks(ys))
 }
 
-export type CorrelationMethod = 'pearson' | 'spearman'
+// Kendall's τ-b: concordant/discordant pair counting over pairwise-complete
+// observations. τ-b formula handles ties; denominator = 0 → NaN (constant input).
+export function kendall(a: number[], b: number[]): number {
+  const xs: number[] = []
+  const ys: number[] = []
+  const n = Math.min(a.length, b.length)
+  for (let i = 0; i < n; i++) {
+    const x = a[i]!
+    const y = b[i]!
+    if (Number.isFinite(x) && Number.isFinite(y)) {
+      xs.push(x)
+      ys.push(y)
+    }
+  }
+  if (xs.length < 2) return NaN
+  const m = xs.length
+  let C = 0,
+    D = 0,
+    Tx = 0,
+    Ty = 0
+  for (let i = 0; i < m - 1; i++) {
+    for (let j = i + 1; j < m; j++) {
+      const dx = xs[i]! - xs[j]!
+      const dy = ys[i]! - ys[j]!
+      const sign = dx * dy
+      if (sign > 0) C++
+      else if (sign < 0) D++
+      else if (dx === 0 && dy !== 0) Tx++
+      else if (dy === 0 && dx !== 0) Ty++
+      // joint tie (dx===0 && dy===0): contributes to neither count
+    }
+  }
+  const den = Math.sqrt((C + D + Tx) * (C + D + Ty))
+  return den === 0 ? NaN : (C - D) / den
+}
+
+// Bias-corrected distance correlation (Székely & Rizzo 2014).
+// Uses double-centered pairwise Euclidean distance matrices. O(n²) time/space.
+// Returns 0–1 (measures dependence, not direction). NaN for < 4 pairs or zero var.
+export function distanceCorr(a: number[], b: number[]): number {
+  const xs: number[] = []
+  const ys: number[] = []
+  const n = Math.min(a.length, b.length)
+  for (let i = 0; i < n; i++) {
+    const x = a[i]!
+    const y = b[i]!
+    if (Number.isFinite(x) && Number.isFinite(y)) {
+      xs.push(x)
+      ys.push(y)
+    }
+  }
+  const m = xs.length
+  if (m < 4) return NaN
+
+  // Bias-corrected U-centered distance matrix for a 1D vector (Székely & Rizzo 2014).
+  // A[i,j] (i≠j) = |v_i - v_j| - rowSum_i/(k-2) - rowSum_j/(k-2) + grandSum/((k-1)(k-2)); diagonal = 0.
+  function bcCenter(v: number[]): number[][] {
+    const k = v.length
+    const D: number[][] = Array.from({ length: k }, () => new Array<number>(k).fill(0))
+    const rowSum = new Array<number>(k).fill(0)
+    let grandSum = 0
+    for (let i = 0; i < k; i++) {
+      for (let j = 0; j < k; j++) {
+        D[i]![j] = Math.abs(v[i]! - v[j]!)
+      }
+    }
+    for (let i = 0; i < k; i++) {
+      for (let j = 0; j < k; j++) {
+        rowSum[i]! += D[i]![j]!
+      }
+      grandSum += rowSum[i]!
+    }
+    const A: number[][] = Array.from({ length: k }, () => new Array<number>(k).fill(0))
+    for (let i = 0; i < k; i++) {
+      for (let j = 0; j < k; j++) {
+        if (i !== j) {
+          A[i]![j] =
+            D[i]![j]! - rowSum[i]! / (k - 2) - rowSum[j]! / (k - 2) + grandSum / ((k - 1) * (k - 2))
+        }
+      }
+    }
+    return A
+  }
+
+  const A = bcCenter(xs)
+  const B = bcCenter(ys)
+
+  // dCov²*(X,Y) = (1/(n(n-3))) * Σ_{i≠j} A[i,j]·B[i,j]
+  const factor = 1 / (m * (m - 3))
+  let dCovXY = 0,
+    dVarX = 0,
+    dVarY = 0
+  for (let i = 0; i < m; i++) {
+    for (let j = 0; j < m; j++) {
+      if (i !== j) {
+        dCovXY += A[i]![j]! * B[i]![j]!
+        dVarX += A[i]![j]! * A[i]![j]!
+        dVarY += B[i]![j]! * B[i]![j]!
+      }
+    }
+  }
+  dCovXY *= factor
+  dVarX *= factor
+  dVarY *= factor
+
+  if (dVarX <= 0 || dVarY <= 0) return NaN
+  // dCor²* = dCov²* / sqrt(dVar²*(X) · dVar²*(Y)); clamp to 0 before sqrt
+  const dCor2 = dCovXY / Math.sqrt(dVarX * dVarY)
+  return Math.sqrt(Math.max(0, dCor2))
+}
+
+export type CorrelationMethod = 'pearson' | 'spearman' | 'kendall' | 'dcor'
 
 // Symmetric K×K correlation matrix over the given columns (each an aligned
 // number[] of equal conceptual length). Diagonal is 1.
 export function correlationMatrix(columns: number[][], method: CorrelationMethod): number[][] {
-  const corr = method === 'spearman' ? spearman : pearson
+  const corr =
+    method === 'spearman'
+      ? spearman
+      : method === 'kendall'
+        ? kendall
+        : method === 'dcor'
+          ? distanceCorr
+          : pearson
   const k = columns.length
   const m: number[][] = Array.from({ length: k }, () => new Array<number>(k).fill(NaN))
   for (let i = 0; i < k; i++) {
@@ -370,14 +533,63 @@ export function availableViews(
   }
 }
 
+// Groups by (xAxis, zAxis) pair for 3D charts. Key uses null-byte separator so
+// labels can be split cleanly without colliding on slash-containing values.
+export function buildColumnsGroupedByZ(
+  points: Point3D[],
+  seriesOrder: string[],
+  zAxis: string[],
+  yAxis: string[]
+): { labels: string[]; columns: number[][] } {
+  const labels: string[] = []
+  const labelSet = new Set<string>()
+  for (const x of seriesOrder) {
+    for (const z of zAxis) {
+      const key = `${x}\0${z}`
+      if (!labelSet.has(key)) {
+        labelSet.add(key)
+        labels.push(key)
+      }
+    }
+  }
+  const byKey = new Map<string, Map<string, number>>()
+  for (const p of points) {
+    const key = `${p.xAxis}\0${p.zAxis}`
+    let row = byKey.get(key)
+    if (!row) {
+      row = new Map()
+      byKey.set(key, row)
+    }
+    row.set(p.yAxis, p.value)
+  }
+  const columns = labels.map((key) => {
+    const row = byKey.get(key)
+    return yAxis.map((y) => {
+      const v = row?.get(y)
+      return v === undefined ? NaN : v
+    })
+  })
+  return { labels, columns }
+}
+
 // Per-series descriptive profiles. The eager part — always computed when a stats
-// panel opens.
+// panel opens. When zAxis has ≥2 distinct non-empty values (3D charts), profiles
+// are split per (series × z) pair so each z-slice gets its own stats row.
 export function computeDescriptive(
   points: Point3D[],
   seriesOrder: string[],
-  yAxis: string[]
+  yAxis: string[],
+  zAxis: string[] = []
 ): SeriesProfile[] {
   if (seriesOrder.length === 0) return []
+  const distinctZ = [...new Set(zAxis.filter(Boolean))]
+  if (distinctZ.length >= 2) {
+    const { labels, columns } = buildColumnsGroupedByZ(points, seriesOrder, distinctZ, yAxis)
+    return labels.map((key, i) => {
+      const [x, z] = key.split('\0') as [string, string]
+      return { name: `${x} / ${z}`, stats: describe(columns[i]!) }
+    })
+  }
   const columns = buildColumns(points, seriesOrder, yAxis)
   return seriesOrder.map((name, i) => ({ name, stats: describe(columns[i]!) }))
 }
@@ -408,6 +620,8 @@ export function computeCorrelation(
     labels: resolvedLabels.length ? resolvedLabels : labels.slice(),
     pearson: correlationMatrix(columns, 'pearson'),
     spearman: correlationMatrix(columns, 'spearman'),
+    kendall: correlationMatrix(columns, 'kendall'),
+    dcor: correlationMatrix(columns, 'dcor'),
   }
 }
 

@@ -77,7 +77,7 @@ BenchmarkAnother-8    2000000    2345 ns/op    2000 B/op    20 allocs/op`)
 
 func (s *PipelineSuite) TestWriteOutput() {
 	dataSet := &shared.Dataset{Data: []shared.DataPoint{
-		{Name: "B1", Stats: []shared.Stat{{Type: "time", Value: 1234}}},
+		{Name: "B1", Stats: []shared.Stat{{Type: "time", Value: shared.F64(1234)}}},
 	}}
 
 	s.Run("HTML output is non-empty", func() {
@@ -279,7 +279,7 @@ func (s *PipelineSuite) TestPrepareDataAggregatesCSV() {
 	s.Len(results, 2)
 	s.Equal("alpha", results[0].Name)
 	s.Equal("2024-01", results[0].XAxis)
-	s.Equal(30.0, results[0].Stats[0].Value)
+	s.Equal(30.0, *results[0].Stats[0].Value)
 }
 
 func (s *PipelineSuite) TestPrepareDataUnknownParserExits() {

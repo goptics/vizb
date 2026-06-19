@@ -40,7 +40,14 @@ func AggregateDataPoints(points []DataPoint) []DataPoint {
 		for _, s := range dp.Stats {
 			sk := fmt.Sprintf("%s|%s", s.Type, s.Symbol)
 			if idx, ok := statIdx[sk]; ok {
-				existing.Stats[idx].Value += s.Value
+				if s.Value != nil {
+					var base float64
+					if existing.Stats[idx].Value != nil {
+						base = *existing.Stats[idx].Value
+					}
+					v := base + *s.Value
+					existing.Stats[idx].Value = &v
+				}
 			} else {
 				existing.Stats = append(existing.Stats, s)
 				statIdx[sk] = len(existing.Stats) - 1

@@ -60,9 +60,9 @@ func ParseCriterionBenchmark(filename string, cfg parser.Config) []shared.DataPo
 			YAxis: yAxis,
 			ZAxis: zAxis,
 			Stats: []shared.Stat{
-				{Type: utils.CreateStatType("Latency avg", cfg.TimeUnit, ""), Value: utils.ConvertTime(estimateNs, "ns", cfg.TimeUnit)},
-				{Type: utils.CreateStatType("Latency lower", cfg.TimeUnit, ""), Value: utils.ConvertTime(lowerNs, "ns", cfg.TimeUnit)},
-				{Type: utils.CreateStatType("Latency upper", cfg.TimeUnit, ""), Value: utils.ConvertTime(upperNs, "ns", cfg.TimeUnit), Symbol: "±"},
+				{Type: utils.CreateStatType("Latency avg", cfg.TimeUnit, ""), Value: shared.F64(utils.ConvertTime(estimateNs, "ns", cfg.TimeUnit))},
+				{Type: utils.CreateStatType("Latency lower", cfg.TimeUnit, ""), Value: shared.F64(utils.ConvertTime(lowerNs, "ns", cfg.TimeUnit))},
+				{Type: utils.CreateStatType("Latency upper", cfg.TimeUnit, ""), Value: shared.F64(utils.ConvertTime(upperNs, "ns", cfg.TimeUnit)), Symbol: "±"},
 			},
 		})
 	}

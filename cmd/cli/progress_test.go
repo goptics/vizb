@@ -66,7 +66,7 @@ func (s *ProgressSuite) TestRawBenchmarkExtractName() {
 
 	for _, tt := range tests {
 		s.Run(tt.name, func() {
-			raw := &RawBenchmark{}
+			raw := &RawDataLine{}
 			s.Equal(tt.expected, raw.ExtractName(tt.line))
 		})
 	}
@@ -88,67 +88,67 @@ func (s *ProgressSuite) TestJSONBenchmarkExtractName() {
 
 	for _, tt := range tests {
 		s.Run(tt.name, func() {
-			jsonBench := &JSONBenchmark{Event: tt.event}
+			jsonBench := &JSONDataLine{Event: tt.event}
 			s.Equal(tt.expected, jsonBench.ExtractName(""))
 		})
 	}
 }
 
-func (s *ProgressSuite) TestNewBenchmarkProgressManager() {
+func (s *ProgressSuite) TestNewDataProgressManager() {
 	mockBar := &MockProgressBar{}
-	manager := NewBenchmarkProgressManager(mockBar)
+	manager := NewDataProgressManager(mockBar)
 
 	s.NotNil(manager)
 	s.Equal(mockBar, manager.bar)
-	s.Equal(0, manager.benchmarkCount)
-	s.Equal("", manager.currentBenchName)
+	s.Equal(0, manager.dataCount)
+	s.Equal("", manager.currentDataName)
 }
 
 func (s *ProgressSuite) TestUpdateProgress() {
 	mockBar := &MockProgressBar{}
-	manager := NewBenchmarkProgressManager(mockBar)
+	manager := NewDataProgressManager(mockBar)
 
-	manager.currentBenchName = "BenchmarkExample"
-	manager.benchmarkCount = 5
+	manager.currentDataName = "BenchmarkExample"
+	manager.dataCount = 5
 	manager.updateProgress()
 
 	s.Len(mockBar.descriptions, 1)
 	s.Contains(mockBar.descriptions[0], "BenchmarkExample")
-	s.Contains(mockBar.descriptions[0], "5 completed")
-	s.Contains(mockBar.descriptions[0], "Running Benchmarks")
+	s.Contains(mockBar.descriptions[0], "5 records")
+	s.Contains(mockBar.descriptions[0], "Processing Data")
 }
 
 func (s *ProgressSuite) TestProcessLineWithJSON() {
 	mockBar := &MockProgressBar{}
-	manager := NewBenchmarkProgressManager(mockBar)
+	manager := NewDataProgressManager(mockBar)
 
 	manager.ProcessLine(`{"Action":"run","Test":"BenchmarkMemoryAlloc"}`)
-	s.Equal("BenchmarkMemoryAlloc", manager.currentBenchName)
-	s.Equal(0, manager.benchmarkCount)
+	s.Equal("BenchmarkMemoryAlloc", manager.currentDataName)
+	s.Equal(0, manager.dataCount)
 	s.GreaterOrEqual(len(mockBar.descriptions), 1)
 
 	manager.ProcessLine(`{"Action":"pass","Test":"BenchmarkMemoryAlloc","Output":"1000 ns/op"}`)
-	s.Equal(1, manager.benchmarkCount)
+	s.Equal(1, manager.dataCount)
 }
 
 func (s *ProgressSuite) TestProcessLineWithRawText() {
 	mockBar := &MockProgressBar{}
-	manager := NewBenchmarkProgressManager(mockBar)
+	manager := NewDataProgressManager(mockBar)
 
 	manager.ProcessLine("=== RUN   BenchmarkStringConcat-8")
-	s.Equal("", manager.currentBenchName)
-	s.Equal(0, manager.benchmarkCount)
+	s.Equal("", manager.currentDataName)
+	s.Equal(0, manager.dataCount)
 	s.Len(mockBar.descriptions, 0)
 
 	manager.ProcessLine("BenchmarkStringConcat-8    1000000    1234 ns/op")
-	s.Equal(1, manager.benchmarkCount)
-	s.Equal("BenchmarkStringConcat", manager.currentBenchName)
+	s.Equal(1, manager.dataCount)
+	s.Equal("BenchmarkStringConcat", manager.currentDataName)
 	s.Len(mockBar.descriptions, 1)
 }
 
 func (s *ProgressSuite) TestProcessLineWithMixedContent() {
 	mockBar := &MockProgressBar{}
-	manager := NewBenchmarkProgressManager(mockBar)
+	manager := NewDataProgressManager(mockBar)
 
 	lines := []string{
 		"=== RUN   BenchmarkFirst",
@@ -162,36 +162,36 @@ func (s *ProgressSuite) TestProcessLineWithMixedContent() {
 		manager.ProcessLine(line)
 	}
 
-	s.Equal("BenchmarkThird", manager.currentBenchName)
-	s.Equal(3, manager.benchmarkCount)
+	s.Equal("BenchmarkThird", manager.currentDataName)
+	s.Equal(3, manager.dataCount)
 	s.GreaterOrEqual(len(mockBar.descriptions), 2)
 }
 
 func (s *ProgressSuite) TestProcessLineWithInvalidJSON() {
 	mockBar := &MockProgressBar{}
-	manager := NewBenchmarkProgressManager(mockBar)
+	manager := NewDataProgressManager(mockBar)
 
 	manager.ProcessLine(`{"Action":"run","Test":invalid}`)
-	s.Equal(0, manager.benchmarkCount)
-	s.Equal("", manager.currentBenchName)
+	s.Equal(0, manager.dataCount)
+	s.Equal("", manager.currentDataName)
 }
 
 func (s *ProgressSuite) TestProcessLineWithEmptyLines() {
 	mockBar := &MockProgressBar{}
-	manager := NewBenchmarkProgressManager(mockBar)
+	manager := NewDataProgressManager(mockBar)
 
 	for _, line := range []string{"", "   ", "\n", "\t"} {
 		manager.ProcessLine(line)
 	}
 
-	s.Equal(0, manager.benchmarkCount)
-	s.Equal("", manager.currentBenchName)
+	s.Equal(0, manager.dataCount)
+	s.Equal("", manager.currentDataName)
 	s.Len(mockBar.descriptions, 0)
 }
 
 func (s *ProgressSuite) TestProcessLineIncrementsBenchmarkCount() {
 	mockBar := &MockProgressBar{}
-	manager := NewBenchmarkProgressManager(mockBar)
+	manager := NewDataProgressManager(mockBar)
 
 	for _, line := range []string{
 		"BenchmarkA-8    1000    1000 ns/op",
@@ -202,12 +202,12 @@ func (s *ProgressSuite) TestProcessLineIncrementsBenchmarkCount() {
 		manager.ProcessLine(line)
 	}
 
-	s.Equal(4, manager.benchmarkCount)
+	s.Equal(4, manager.dataCount)
 }
 
 func (s *ProgressSuite) TestRealWorldBenchmarkOutput() {
 	mockBar := &MockProgressBar{}
-	manager := NewBenchmarkProgressManager(mockBar)
+	manager := NewDataProgressManager(mockBar)
 
 	realOutput := []string{
 		"goos: linux",
@@ -230,14 +230,14 @@ func (s *ProgressSuite) TestRealWorldBenchmarkOutput() {
 		manager.ProcessLine(line)
 	}
 
-	s.GreaterOrEqual(manager.benchmarkCount, 4)
-	s.Equal("BenchmarkSliceAppend", manager.currentBenchName)
+	s.GreaterOrEqual(manager.dataCount, 4)
+	s.Equal("BenchmarkSliceAppend", manager.currentDataName)
 	s.Greater(len(mockBar.descriptions), 0)
 }
 
 func (s *ProgressSuite) TestJSONBenchmarkOutput() {
 	mockBar := &MockProgressBar{}
-	manager := NewBenchmarkProgressManager(mockBar)
+	manager := NewDataProgressManager(mockBar)
 
 	jsonEvents := []shared.BenchEvent{
 		{Action: "start", Test: ""},
@@ -252,8 +252,8 @@ func (s *ProgressSuite) TestJSONBenchmarkOutput() {
 		manager.ProcessLine(string(jsonLine))
 	}
 
-	s.Equal("BenchmarkExample", manager.currentBenchName)
-	s.GreaterOrEqual(manager.benchmarkCount, 1)
+	s.Equal("BenchmarkExample", manager.currentDataName)
+	s.GreaterOrEqual(manager.dataCount, 1)
 }
 
 func TestProgressSuite(t *testing.T) {

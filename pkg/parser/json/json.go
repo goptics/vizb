@@ -160,7 +160,7 @@ func ParseJSON(filename string, cfg parser.Config) []shared.DataPoint {
 
 			stats = append(stats, shared.Stat{
 				Type:  utils.CreateStatType(k, cfg.NumberUnit, ""),
-				Value: utils.FormatNumber(num, cfg.NumberUnit),
+				Value: shared.F64(utils.FormatNumber(num, cfg.NumberUnit)),
 			})
 		}
 

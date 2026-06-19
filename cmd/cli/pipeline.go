@@ -136,7 +136,7 @@ func writeStdinPipedInputs(tempfilePath string) {
 	reader := bufio.NewReader(os.Stdin)
 	writer := bufio.NewWriter(inputTempFile)
 
-	dataSetProgressManager := NewBenchmarkProgressManager(
+	dataSetProgressManager := NewDataProgressManager(
 		progressbar.NewOptions(-1,
 			progressbar.OptionSetDescription(style.Info.Render("Processing data sets")),
 			progressbar.OptionSetWidth(50),
@@ -235,6 +235,17 @@ func applySelections(dataSet *shared.Dataset, configs []config_charts.ChartConfi
 	dataSet.Settings = configs
 }
 
+// settingsNeedCorrelation reports whether any chart setting in the slice needs
+// the correlation heatmap renderer shipped (math empty = all, or contains "correlations").
+func settingsNeedCorrelation(settings []config_charts.ChartConfig) bool {
+	for _, cfg := range settings {
+		if shared.ChartConfigNeedsCorrelation(cfg) {
+			return true
+		}
+	}
+	return false
+}
+
 // chartTypeNames extracts the chart-type discriminators from a slice of
 // per-chart Configs. Used by callers that need a []string (e.g. HTML chunk
 // pruning) in place of the old dataSet.Settings.Charts list.
@@ -257,7 +268,8 @@ func writeOutput(f *os.File, dataSet *shared.Dataset, format string) {
 			shared.ExitWithError("Failed to marshal dataSet data: %v", err)
 		}
 
-		htmlContent := template.GenerateUI(jsonData, chartTypeNames(dataSet.Settings), shared.DatasetNeeds3D(dataSet), template.VizbHTMLTemplate)
+		needsHeatmapChunk := settingsNeedCorrelation(dataSet.Settings)
+		htmlContent := template.GenerateUI(jsonData, chartTypeNames(dataSet.Settings), shared.DatasetNeeds3D(dataSet), needsHeatmapChunk, template.VizbHTMLTemplate)
 		if _, err := f.WriteString(htmlContent); err != nil {
 			shared.ExitWithError("Failed to write output file: %v", err)
 		}

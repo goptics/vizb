@@ -47,24 +47,24 @@ func renderPage(pd PageData, HTMLtemplate string) string {
 }
 
 // GenerateUI renders the embedded-data page, shipping only the chunks the
-// selected charts (+ needs3D) can reach.
-func GenerateUI(benchmarkJSON []byte, charts []string, needs3D bool, HTMLtemplate string) string {
+// selected charts (+ needs3D + needsHeatmapChunk) can reach.
+func GenerateUI(benchmarkJSON []byte, charts []string, needs3D bool, needsHeatmapChunk bool, HTMLtemplate string) string {
 	return renderPage(PageData{
 		Version:   version.Version,
 		Data:      htmlTemplate.JS(benchmarkJSON),
-		Chunks:    SelectChunks(charts, needs3D),
+		Chunks:    SelectChunks(charts, needs3D, needsHeatmapChunk),
 		ChartList: chartListJS(charts),
 	}, HTMLtemplate)
 }
 
 // GenerateRemoteUI renders the runtime-fetch page. Data is unknown at generation
 // time, so chunk pruning follows the --charts selection directly.
-func GenerateRemoteUI(dataURL string, charts []string, needs3D bool, HTMLtemplate string) string {
+func GenerateRemoteUI(dataURL string, charts []string, needs3D bool, needsHeatmapChunk bool, HTMLtemplate string) string {
 	return renderPage(PageData{
 		Version:   version.Version,
 		Data:      htmlTemplate.JS("null"),
 		DataURL:   dataURL,
-		Chunks:    SelectChunks(charts, needs3D),
+		Chunks:    SelectChunks(charts, needs3D, needsHeatmapChunk),
 		ChartList: chartListJS(charts),
 	}, HTMLtemplate)
 }

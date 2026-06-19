@@ -13,7 +13,10 @@ type AggregateSuite struct {
 func statVal(stats []Stat, typ string) (float64, bool) {
 	for _, s := range stats {
 		if s.Type == typ {
-			return s.Value, true
+			if s.Value == nil {
+				return 0, true
+			}
+			return *s.Value, true
 		}
 	}
 	return 0, false
@@ -21,9 +24,9 @@ func statVal(stats []Stat, typ string) (float64, bool) {
 
 func (s *AggregateSuite) TestAggregateDataPointsSumsDuplicateKeys() {
 	in := []DataPoint{
-		{Name: "sales", XAxis: "2024-01-01", YAxis: "East", Stats: []Stat{{Type: "amount", Value: 100}}},
-		{Name: "sales", XAxis: "2024-01-01", YAxis: "East", Stats: []Stat{{Type: "amount", Value: 250}}},
-		{Name: "sales", XAxis: "2024-01-01", YAxis: "West", Stats: []Stat{{Type: "amount", Value: 40}}},
+		{Name: "sales", XAxis: "2024-01-01", YAxis: "East", Stats: []Stat{{Type: "amount", Value: F64(100)}}},
+		{Name: "sales", XAxis: "2024-01-01", YAxis: "East", Stats: []Stat{{Type: "amount", Value: F64(250)}}},
+		{Name: "sales", XAxis: "2024-01-01", YAxis: "West", Stats: []Stat{{Type: "amount", Value: F64(40)}}},
 	}
 
 	out := AggregateDataPoints(in)
@@ -37,8 +40,8 @@ func (s *AggregateSuite) TestAggregateDataPointsSumsDuplicateKeys() {
 
 func (s *AggregateSuite) TestAggregateDataPointsPreservesUniqueKeys() {
 	in := []DataPoint{
-		{XAxis: "A", Stats: []Stat{{Type: "v", Value: 1}}},
-		{XAxis: "B", Stats: []Stat{{Type: "v", Value: 2}}},
+		{XAxis: "A", Stats: []Stat{{Type: "v", Value: F64(1)}}},
+		{XAxis: "B", Stats: []Stat{{Type: "v", Value: F64(2)}}},
 	}
 
 	out := AggregateDataPoints(in)
@@ -47,8 +50,8 @@ func (s *AggregateSuite) TestAggregateDataPointsPreservesUniqueKeys() {
 
 func (s *AggregateSuite) TestAggregateDataPointsSumsPerStatType() {
 	in := []DataPoint{
-		{XAxis: "A", Stats: []Stat{{Type: "amount", Value: 10}, {Type: "tax", Value: 1}}},
-		{XAxis: "A", Stats: []Stat{{Type: "amount", Value: 20}, {Type: "tax", Value: 3}}},
+		{XAxis: "A", Stats: []Stat{{Type: "amount", Value: F64(10)}, {Type: "tax", Value: F64(1)}}},
+		{XAxis: "A", Stats: []Stat{{Type: "amount", Value: F64(20)}, {Type: "tax", Value: F64(3)}}},
 	}
 
 	out := AggregateDataPoints(in)
@@ -61,12 +64,12 @@ func (s *AggregateSuite) TestAggregateDataPointsSumsPerStatType() {
 
 func (s *AggregateSuite) TestAggregateDataPointsDoesNotMutateInput() {
 	in := []DataPoint{
-		{XAxis: "A", Stats: []Stat{{Type: "v", Value: 5}}},
-		{XAxis: "A", Stats: []Stat{{Type: "v", Value: 7}}},
+		{XAxis: "A", Stats: []Stat{{Type: "v", Value: F64(5)}}},
+		{XAxis: "A", Stats: []Stat{{Type: "v", Value: F64(7)}}},
 	}
 
 	AggregateDataPoints(in)
-	s.Equal(5.0, in[0].Stats[0].Value)
+	s.Equal(5.0, *in[0].Stats[0].Value)
 }
 
 func TestAggregateSuite(t *testing.T) {

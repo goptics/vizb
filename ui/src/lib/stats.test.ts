@@ -12,6 +12,8 @@ import {
   describe as describeStats,
   pearson,
   spearman,
+  kendall,
+  distanceCorr,
   correlationMatrix,
   computeProfiles,
   buildColumns,
@@ -79,7 +81,13 @@ describe('describe', () => {
     expect(d.count).toBe(0)
     expect(d.missing).toBe(2)
     expect(d.unique).toBe(0)
+    expect(d.zeros).toBe(0)
+    expect(d.negatives).toBe(0)
+    expect(d.outliers).toBe(0)
     expect(d.mean).toBeNaN()
+    expect(d.geoMean).toBeNaN()
+    expect(d.harmMean).toBeNaN()
+    expect(d.ci95Lower).toBeNaN()
   })
   it('drops non-finite, computes count/missing/unique/range/iqr', () => {
     const d = describeStats([1, 2, NaN, 4])
@@ -91,6 +99,52 @@ describe('describe', () => {
     expect(d.range).toBeCloseTo(3, P)
     expect(d.iqr).toBeCloseTo(1.5, P)
     expect(d.mean).toBeCloseTo(7 / 3, P)
+  })
+  it('zeros and negatives count correctly', () => {
+    const d = describeStats([-2, -1, 0, 0, 1, 2])
+    expect(d.zeros).toBe(2)
+    expect(d.negatives).toBe(2)
+  })
+  it('geoMean and harmMean NaN when any value ≤ 0', () => {
+    expect(describeStats([-1, 2, 3]).geoMean).toBeNaN()
+    expect(describeStats([0, 2, 3]).harmMean).toBeNaN()
+  })
+  it('geoMean and harmMean correct for positive data', () => {
+    // geoMean([1,4]) = sqrt(4) = 2; harmMean([1,4]) = 2/(1+1/4) = 8/5
+    const d = describeStats([1, 4])
+    expect(d.geoMean).toBeCloseTo(2, P)
+    expect(d.harmMean).toBeCloseTo(8 / 5, P)
+  })
+  it('trimMean trims 10% from each end', () => {
+    // [1..10]: trim 1 from each → [2..9] → mean = 5.5
+    const d = describeStats([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    expect(d.trimMean).toBeCloseTo(5.5, P)
+  })
+  it('sem = stdDev / sqrt(n)', () => {
+    const d = describeStats([2, 4, 6])
+    expect(d.sem).toBeCloseTo(d.stdDev / Math.sqrt(3), P)
+  })
+  it('ci95 bounds = mean ± 1.96·sem', () => {
+    const d = describeStats([2, 4, 6])
+    expect(d.ci95Lower).toBeCloseTo(d.mean - 1.96 * d.sem, P)
+    expect(d.ci95Upper).toBeCloseTo(d.mean + 1.96 * d.sem, P)
+  })
+  it('fences and outlier count', () => {
+    // [1,2,3,4,5]: q1=2, q3=4, iqr=2, lf=−1, uf=7 → no outliers
+    const d = describeStats([1, 2, 3, 4, 5])
+    expect(d.lowerFence).toBeCloseTo(-1, P)
+    expect(d.upperFence).toBeCloseTo(7, P)
+    expect(d.outliers).toBe(0)
+    // adding an outlier at 100
+    const d2 = describeStats([1, 2, 3, 4, 5, 100])
+    expect(d2.outliers).toBe(1)
+  })
+  it('p1/p10/p90/p99 are computed', () => {
+    const d = describeStats([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    expect(d.p1).toBeCloseTo(1.09, 1)
+    expect(d.p10).toBeCloseTo(1.9, 1)
+    expect(d.p90).toBeCloseTo(9.1, 1)
+    expect(d.p99).toBeCloseTo(9.91, 1)
   })
 })
 
@@ -108,6 +162,44 @@ describe('spearman', () => {
   it('tie-averaged ranks', () =>
     // ranks_a=[1,2.5,2.5,4] vs ranks_b=[1,2,3,4] → 4.5/sqrt(22.5)
     expect(spearman([1, 2, 2, 3], [1, 2, 3, 4])).toBeCloseTo(0.9486832980505138, P))
+})
+
+describe('kendall', () => {
+  it('perfect positive monotonic → 1', () =>
+    expect(kendall([1, 2, 3], [2, 4, 6])).toBeCloseTo(1, P))
+  it('perfect negative monotonic → -1', () =>
+    expect(kendall([1, 2, 3], [6, 4, 2])).toBeCloseTo(-1, P))
+  it('ties in x → τ-b (denominator reduced)', () => {
+    // xs=[1,2,2,3] ys=[1,2,3,4]: C=5, D=0, Tx=1, Ty=0
+    // τ_b = 5 / sqrt((5+0+1)(5+0+0)) = 5/sqrt(30)
+    expect(kendall([1, 2, 2, 3], [1, 2, 3, 4])).toBeCloseTo(5 / Math.sqrt(30), P)
+  })
+  it('constant input (all ties) → NaN', () => expect(kendall([1, 1, 1], [1, 2, 3])).toBeNaN())
+  it('< 2 complete pairs → NaN', () => expect(kendall([1], [2])).toBeNaN())
+  it('pairwise-complete: NaN positions skipped', () =>
+    expect(kendall([1, NaN, 3], [2, 5, 6])).toBeCloseTo(1, P))
+})
+
+describe('distanceCorr', () => {
+  it('identical vectors → 1', () =>
+    expect(distanceCorr([1, 2, 3, 4, 5], [1, 2, 3, 4, 5])).toBeCloseTo(1, P))
+  it('detects V-shape (non-linear) dependence that pearson misses', () => {
+    // 15-point centered parabola: pearson=0, dcor>0 (U-centering requires n≥15 for this shape)
+    const xs = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+    const ys = [49, 36, 25, 16, 9, 4, 1, 0, 1, 4, 9, 16, 25, 36, 49]
+    expect(distanceCorr(xs, ys)).toBeGreaterThan(0)
+    expect(pearson(xs, ys)).toBeCloseTo(0, P)
+  })
+  it('constant input → NaN', () => expect(distanceCorr([1, 1, 1, 1], [1, 2, 3, 4])).toBeNaN())
+  it('< 4 complete pairs → NaN', () => {
+    expect(distanceCorr([1, 2], [3, 4])).toBeNaN() // n=2
+    expect(distanceCorr([1, 2, 3], [3, 4, 5])).toBeNaN() // n=3 (1/(m*(m-3)) undefined)
+  })
+  it('output is in [0, 1]', () => {
+    const v = distanceCorr([1, 3, 2, 5, 4], [4, 2, 5, 1, 3])
+    expect(v).toBeGreaterThanOrEqual(0)
+    expect(v).toBeLessThanOrEqual(1)
+  })
 })
 
 describe('correlationMatrix', () => {
@@ -137,6 +229,35 @@ describe('correlationMatrix', () => {
     expect(m[0]![1]).toBeNaN()
     expect(m[1]![0]).toBeNaN()
     expect(m[0]![0]).toBeCloseTo(1, P)
+  })
+  it('kendall: diagonal=1, symmetric, perfect relationships', () => {
+    const m = correlationMatrix(
+      [
+        [1, 2, 3],
+        [2, 4, 6],
+        [3, 2, 1],
+      ],
+      'kendall'
+    )
+    expect(m[0]![0]).toBeCloseTo(1, P) // diagonal
+    expect(m[0]![1]).toBeCloseTo(m[1]![0]!, P) // symmetric
+    expect(m[0]![1]).toBeCloseTo(1, P) // [1,2,3] and [2,4,6] perfectly correlated
+    expect(m[0]![2]).toBeCloseTo(-1, P) // [3,2,1] perfectly anti-correlated
+  })
+  it('dcor: diagonal=1, symmetric, non-negative off-diagonal', () => {
+    // Need at least 4 points per column for dcor; use [1,2,3,4,5]
+    const m = correlationMatrix(
+      [
+        [1, 2, 3, 4, 5],
+        [2, 4, 6, 8, 10],
+        [5, 4, 3, 2, 1],
+      ],
+      'dcor'
+    )
+    expect(m[0]![0]).toBeCloseTo(1, P)
+    expect(m[0]![1]).toBeCloseTo(m[1]![0]!, P)
+    expect(m[0]![1]).toBeGreaterThanOrEqual(0) // dcor ≥ 0
+    expect(m[0]![2]).toBeGreaterThanOrEqual(0)
   })
 })
 
@@ -266,6 +387,27 @@ describe('computeCorrelation axis pick', () => {
     expect(corr!.axis).toBe('x')
     expect(corr!.labels).toEqual(['A', 'B'])
     expect(corr!.pearson[0]![1]).toBeCloseTo(1, P) // B = 2·A → perfectly correlated
+  })
+
+  it('result carries kendall and dcor matrices', () => {
+    // Need at least 4 categories for dcor (≥4 complete pairs per series)
+    const points = pts2d(
+      ['A', 'p', 1],
+      ['A', 'q', 2],
+      ['A', 'r', 3],
+      ['A', 's', 4],
+      ['B', 'p', 2],
+      ['B', 'q', 4],
+      ['B', 'r', 6],
+      ['B', 's', 8]
+    )
+    const corr = computeCorrelation(points, ['A', 'B'], ['p', 'q', 'r', 's'])
+    expect(corr!.kendall).toBeDefined()
+    expect(corr!.dcor).toBeDefined()
+    expect(corr!.kendall[0]![0]).toBeCloseTo(1, P) // diagonal
+    expect(corr!.dcor[0]![0]).toBeCloseTo(1, P)
+    expect(corr!.kendall[0]![1]).toBeCloseTo(corr!.kendall[1]![0]!, P) // symmetric
+    expect(corr!.dcor[0]![1]).toBeCloseTo(corr!.dcor[1]![0]!, P)
   })
 
   it('transposes to y (categories) when the series axis is too wide', () => {

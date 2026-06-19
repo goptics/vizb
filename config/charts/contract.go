@@ -9,4 +9,6 @@ package charts
 // each config package, co-located with the data the rules apply to.
 type ChartConfig interface {
 	ChartType() string
+	StatEnabled() bool
+	StatMath() []string
 }

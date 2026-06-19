@@ -39,7 +39,7 @@ self.onmessage = (e: MessageEvent<StatsRequest>) => {
   const res: StatsResponse = { type: 'result', id }
   switch (kind) {
     case 'descriptive':
-      res.seriesProfiles = computeDescriptive(points, seriesOrder, yAxis)
+      res.seriesProfiles = computeDescriptive(points, seriesOrder, yAxis, zAxis)
       break
     case 'correlation':
       res.correlation = computeCorrelation(points, seriesOrder, yAxis, zAxis, axis)

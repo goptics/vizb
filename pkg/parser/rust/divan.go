@@ -82,11 +82,11 @@ func ParseDivanBenchmark(filename string, cfg parser.Config) []shared.DataPoint 
 			YAxis: yAxis,
 			ZAxis: zAxis,
 			Stats: []shared.Stat{
-				{Type: utils.CreateStatType("Latency fastest", cfg.TimeUnit, ""), Value: utils.ConvertTime(fastestNs, "ns", cfg.TimeUnit)},
-				{Type: utils.CreateStatType("Latency slowest", cfg.TimeUnit, ""), Value: utils.ConvertTime(slowestNs, "ns", cfg.TimeUnit), Symbol: "±"},
-				{Type: utils.CreateStatType("Latency median", cfg.TimeUnit, ""), Value: utils.ConvertTime(medianNs, "ns", cfg.TimeUnit)},
-				{Type: utils.CreateStatType("Latency mean", cfg.TimeUnit, ""), Value: utils.ConvertTime(meanNs, "ns", cfg.TimeUnit)},
-				{Type: "Samples", Value: samples},
+				{Type: utils.CreateStatType("Latency fastest", cfg.TimeUnit, ""), Value: shared.F64(utils.ConvertTime(fastestNs, "ns", cfg.TimeUnit))},
+				{Type: utils.CreateStatType("Latency slowest", cfg.TimeUnit, ""), Value: shared.F64(utils.ConvertTime(slowestNs, "ns", cfg.TimeUnit)), Symbol: "±"},
+				{Type: utils.CreateStatType("Latency median", cfg.TimeUnit, ""), Value: shared.F64(utils.ConvertTime(medianNs, "ns", cfg.TimeUnit))},
+				{Type: utils.CreateStatType("Latency mean", cfg.TimeUnit, ""), Value: shared.F64(utils.ConvertTime(meanNs, "ns", cfg.TimeUnit))},
+				{Type: "Samples", Value: shared.F64(samples)},
 			},
 		})
 	}

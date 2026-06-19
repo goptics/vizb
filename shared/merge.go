@@ -18,24 +18,24 @@ func MergeDatasets(benchmarks []Dataset, dim Dimension) []Dataset {
 	nameOrder := make([]string, 0)
 	groups := make(map[string]map[string]*Dataset)
 
-	for _, bench := range benchmarks {
-		tags, ok := groups[bench.Name]
+	for _, ds := range benchmarks {
+		tags, ok := groups[ds.Name]
 		if !ok {
 			tags = make(map[string]*Dataset)
-			groups[bench.Name] = tags
-			nameOrder = append(nameOrder, bench.Name)
+			groups[ds.Name] = tags
+			nameOrder = append(nameOrder, ds.Name)
 		}
 
-		tag := bench.Tag
+		tag := ds.Tag
 		if tag == "" {
 			tag = noTagKey
 		}
 
-		if existing, exists := tags[tag]; exists && existing.Timestamp >= bench.Timestamp {
+		if existing, exists := tags[tag]; exists && existing.Timestamp >= ds.Timestamp {
 			continue
 		}
 
-		tags[tag] = &bench
+		tags[tag] = &ds
 	}
 
 	result := make([]Dataset, 0, len(nameOrder))
@@ -59,15 +59,15 @@ func MergeDatasets(benchmarks []Dataset, dim Dimension) []Dataset {
 			result = append(result, *noTag)
 		default:
 			if noTag != nil {
-				allBenches := make([]Dataset, 0, 1+len(tagged))
-				allBenches = append(allBenches, *noTag)
-				allBenches = append(allBenches, tagged...)
+				allDatasets := make([]Dataset, 0, 1+len(tagged))
+				allDatasets = append(allDatasets, *noTag)
+				allDatasets = append(allDatasets, tagged...)
 				base := deepCloneDataset(*noTag)
 				latest := tagged[len(tagged)-1]
 				base.Tag = latest.Tag
 				base.Timestamp = latest.Timestamp
-				base.History = buildHistory(allBenches, latest.Tag)
-				base.Data = mergeData(allBenches, dim)
+				base.History = buildHistory(allDatasets, latest.Tag)
+				base.Data = mergeData(allDatasets, dim)
 				result = append(result, base)
 				continue
 			}
@@ -127,22 +127,22 @@ type historyCandidate struct {
 // by tag (keeping the latest timestamp per tag) and sorted chronologically.
 func buildHistory(benchmarks []Dataset, latestTag string) []HistoryEntry {
 	seen := make(map[string]historyCandidate)
-	for _, bench := range benchmarks {
-		if bench.Tag != "" && bench.Tag != latestTag {
-			if c, ok := seen[bench.Tag]; !ok || bench.Timestamp > c.timestamp {
+	for _, ds := range benchmarks {
+		if ds.Tag != "" && ds.Tag != latestTag {
+			if c, ok := seen[ds.Tag]; !ok || ds.Timestamp > c.timestamp {
 				var metaPtr *Meta
-				if bench.Meta != nil {
-					metaCopy := *bench.Meta
-					if bench.Meta.CPU != nil {
-						cpu := *bench.Meta.CPU
+				if ds.Meta != nil {
+					metaCopy := *ds.Meta
+					if ds.Meta.CPU != nil {
+						cpu := *ds.Meta.CPU
 						metaCopy.CPU = &cpu
 					}
 					metaPtr = &metaCopy
 				}
-				seen[bench.Tag] = historyCandidate{timestamp: bench.Timestamp, meta: metaPtr}
+				seen[ds.Tag] = historyCandidate{timestamp: ds.Timestamp, meta: metaPtr}
 			}
 		}
-		for _, entry := range bench.History {
+		for _, entry := range ds.History {
 			if entry.Tag == latestTag {
 				continue
 			}
@@ -177,10 +177,10 @@ func buildHistory(benchmarks []Dataset, latestTag string) []HistoryEntry {
 
 func mergeData(benchmarks []Dataset, dim Dimension) []DataPoint {
 	var result []DataPoint
-	for _, bench := range benchmarks {
-		for _, item := range bench.Data {
+	for _, ds := range benchmarks {
+		for _, item := range ds.Data {
 			if dimFieldEmpty(item, dim) {
-				result = append(result, injectTag(item, bench.Tag, dim))
+				result = append(result, injectTag(item, ds.Tag, dim))
 			} else {
 				result = append(result, deepCloneData(item))
 			}
@@ -231,6 +231,12 @@ func deepCloneData(src DataPoint) DataPoint {
 	if src.Stats != nil {
 		dst.Stats = make([]Stat, len(src.Stats))
 		copy(dst.Stats, src.Stats)
+		for i, s := range src.Stats {
+			if s.Value != nil {
+				v := *s.Value
+				dst.Stats[i].Value = &v
+			}
+		}
 	}
 	return dst
 }

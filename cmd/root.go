@@ -2,6 +2,7 @@
 package cmd
 
 import (
+	"os"
 	"strings"
 
 	"github.com/goptics/vizb/cmd/cli"
@@ -63,6 +64,7 @@ and renders bar, line, pie, heatmap, and radar charts you can explore in the bro
 // Execute runs the main command-line interface for vizb.
 func Execute() {
 	defer shared.TempFiles.RemoveAll()
+	os.Args = cli.RewriteStatArg(os.Args)
 
 	if err := rootCmd.Execute(); err != nil {
 		shared.ExitWithError(err.Error(), nil)
@@ -104,6 +106,7 @@ func runBenchmark(cmd *cobra.Command, args []string) {
 				Scale:      "linear",
 				Sort:       rootOpts.Sort,
 				ShowLabels: rootOpts.ShowLabels,
+				Stat:       rootOpts.Stat,
 			}
 			var override *barchart.Config
 			if o, ok := overrides["bar"]; ok {
@@ -115,6 +118,7 @@ func runBenchmark(cmd *cobra.Command, args []string) {
 				Scale:      "linear",
 				Sort:       rootOpts.Sort,
 				ShowLabels: rootOpts.ShowLabels,
+				Stat:       rootOpts.Stat,
 			}
 			var override *linechart.Config
 			if o, ok := overrides["line"]; ok {
@@ -125,6 +129,7 @@ func runBenchmark(cmd *cobra.Command, args []string) {
 			flags := piechart.Flags{
 				Sort:       rootOpts.Sort,
 				ShowLabels: rootOpts.ShowLabels,
+				Stat:       rootOpts.Stat,
 			}
 			var override *piechart.Config
 			if o, ok := overrides["pie"]; ok {
@@ -135,6 +140,7 @@ func runBenchmark(cmd *cobra.Command, args []string) {
 			flags := heatmapchart.Flags{
 				Sort:       rootOpts.Sort,
 				ShowLabels: rootOpts.ShowLabels,
+				Stat:       rootOpts.Stat,
 			}
 			var override *heatmapchart.Config
 			if o, ok := overrides["heatmap"]; ok {
@@ -145,6 +151,7 @@ func runBenchmark(cmd *cobra.Command, args []string) {
 			flags := radarchart.Flags{
 				Sort:       rootOpts.Sort,
 				ShowLabels: rootOpts.ShowLabels,
+				Stat:       rootOpts.Stat,
 			}
 			var override *radarchart.Config
 			if o, ok := overrides["radar"]; ok {

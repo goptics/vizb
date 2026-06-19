@@ -186,7 +186,7 @@ export function createAxisConfig(
  * Format a tooltip value, showing 0 for null/undefined values
  */
 export function formatTooltipValue(value: any): string {
-  if (value === null || value === undefined) return '0'
+  if (value === null || value === undefined) return '—'
   if (typeof value === 'number') return String(Math.round(value * 100) / 100)
   return String(value)
 }
@@ -393,7 +393,11 @@ export function createTooltipConfig(
       formatter: (params) => {
         if (!Array.isArray(params)) return ''
 
-        const body = params.reduce((acc, cur) => {
+        // null = missing cell (no data for that series at this category) — skip from tooltip
+        const present = params.filter((p) => p.value !== null && p.value !== undefined)
+        if (!present.length) return ''
+
+        const body = present.reduce((acc, cur) => {
           const seriesSum = seriesTotals?.get(cur.seriesName ?? '')
           const sumTag = seriesSum === undefined ? '' : ` (Σ${Math.round(seriesSum * 100) / 100})`
           return `${acc}${cur.marker} ${cur.seriesName}${sumTag}: ${formatTooltipValue(cur.value)}<br/>`
@@ -401,15 +405,15 @@ export function createTooltipConfig(
 
         // Σ across all series at this x = the x marginal. Label with the x name
         // to match the 3D tooltip's "Σ <name>" lines. Only meaningful with >1 series.
-        if (params.length <= 1) return body
-        const total = params.reduce(
+        if (present.length <= 1) return body
+        const total = present.reduce(
           (sum, cur) => sum + (typeof cur.value === 'number' ? cur.value : 0),
           0
         )
         const xName = params[0]?.name ?? ''
         const sumLine = `${tooltipDivider(isDark)}Σ ${xName}: <b>${Math.round(total * 100) / 100}</b>`
         const spread = tooltipSpreadRows(
-          params.map((p) => (typeof p.value === 'number' ? p.value : NaN)),
+          present.map((p) => (typeof p.value === 'number' ? p.value : NaN)),
           isDark
         )
         const donut = renderDonutSvg(

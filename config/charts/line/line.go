@@ -11,17 +11,21 @@ import (
 const Type = "line"
 
 type Config struct {
-	Type            string       `json:"type"`
-	Swap            string       `json:"swap,omitempty"`
-	Sort            *shared.Sort `json:"sort,omitempty"`
-	Scale           string       `json:"scale,omitempty"`
-	ShowLabels      *bool        `json:"showLabels,omitempty"`
-	ThreeDRotate    *bool        `json:"threeDRotate,omitempty"`
-	ThreeD          *bool        `json:"threeD,omitempty"`
-	ThreeDVisualMap *bool        `json:"threeDVisualMap,omitempty"`
+	Type            string             `json:"type"`
+	Swap            string             `json:"swap,omitempty"`
+	Sort            *shared.Sort       `json:"sort,omitempty"`
+	Scale           string             `json:"scale,omitempty"`
+	ShowLabels      *bool              `json:"showLabels,omitempty"`
+	ThreeDRotate    *bool              `json:"threeDRotate,omitempty"`
+	ThreeD          *bool              `json:"threeD,omitempty"`
+	ThreeDVisualMap *bool              `json:"threeDVisualMap,omitempty"`
+	Stat            *shared.StatConfig `json:"stat,omitempty"`
 }
 
 func (Config) ChartType() string { return Type }
+
+func (c Config) StatEnabled() bool  { return c.Stat.StatEnabled() }
+func (c Config) StatMath() []string { return c.Stat.StatMath() }
 
 func init() {
 	charts.Register(Type, func() charts.ChartConfig { return &Config{} })
@@ -33,6 +37,7 @@ type Flags struct {
 	ThreeDRotate      bool
 	ThreeD            bool
 	ThreeDVisualMap   *bool
+	Stat              []string
 }
 
 func Materialise(flags Flags, override *Config) Config {
@@ -59,6 +64,8 @@ func Materialise(flags Flags, override *Config) Config {
 		out.ThreeDVisualMap = flags.ThreeDVisualMap
 	}
 
+	out.Stat = shared.MaterialiseStatFlags(flags.Stat)
+
 	if override != nil {
 		if override.Swap != "" {
 			out.Swap = override.Swap
@@ -80,6 +87,9 @@ func Materialise(flags Flags, override *Config) Config {
 		}
 		if override.ThreeDVisualMap != nil {
 			out.ThreeDVisualMap = override.ThreeDVisualMap
+		}
+		if override.Stat != nil {
+			out.Stat = override.Stat
 		}
 	}
 
