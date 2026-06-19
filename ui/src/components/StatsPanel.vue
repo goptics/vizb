@@ -614,19 +614,21 @@ function downloadCsv() {
           Correlating <span class="font-medium">{{ corrEntityLabel }}</span> across
           {{ corrObsLabel }}.
         </p>
-        <Selector
-          :items="METHOD_ITEMS"
-          :activeId="corrMethodIndex"
-          class="w-36"
-          @select="onMethodSelect"
-        />
-        <Selector
-          v-if="corrAxisItems.length > 1"
-          :items="corrAxisItems"
-          :activeId="corrAxisActiveIndex"
-          class="w-40"
-          @select="onCorrAxisSelect"
-        />
+        <div class="flex items-center gap-2">
+          <Selector
+            :items="METHOD_ITEMS"
+            :activeId="corrMethodIndex"
+            class="w-36"
+            @select="onMethodSelect"
+          />
+          <Selector
+            v-if="corrAxisItems.length > 1"
+            :items="corrAxisItems"
+            :activeId="corrAxisActiveIndex"
+            class="w-40"
+            @select="onCorrAxisSelect"
+          />
+        </div>
       </div>
       <div
         ref="corrContainerRef"
