@@ -10,6 +10,10 @@ import { isValueMode } from '../lib/utils'
 // (targetString, e.g. "yx"). Same length and value set.
 export type Arrangement = { identityString: string; targetString: string }
 
+// Plain (proxy-free) copy of axes for postMessage — structured clone rejects Vue Proxies.
+const plainAxes = (axisList: Axis[] | undefined): Axis[] | undefined =>
+  axisList?.map((a) => ({ key: a.key, label: a.label, type: a.type }))
+
 // One chart's reactive slot. `key` is the stat signature — the chart's stable
 // identity across swap/sort/group within a dataset — so the ChartCard keyed by
 // it persists (echarts instance + double-buffer survive recomputes). `data` is
@@ -234,7 +238,7 @@ export function useChartPipeline(
       identityString: arrangement.value.identityString,
       targetString: arrangement.value.targetString,
       labels: unref(labels) ?? null,
-      axes: unref(axes) ?? undefined,
+      axes: plainAxes(unref(axes)),
     })
   }
 
@@ -267,6 +271,8 @@ export function useChartPipeline(
   watch(
     () => [arrangement.value.identityString, arrangement.value.targetString] as const,
     () => {
+      // Arrangement/swap is a no-op in value mode — skip to avoid pending=true with no compute.
+      if (isValueMode(unref(axes))) return
       startBatch()
       clearTimeout(arrangeDebounce)
       arrangeDebounce = setTimeout(setArrangement, 50)

@@ -1,6 +1,6 @@
 // ui/src/composables/useChartPipeline.test.ts
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { effectScope, ref, type Ref } from 'vue'
+import { effectScope, reactive, ref, type Ref } from 'vue'
 import type { WorkerResponse, ReadyMessage, ChartMessage } from '../workers/transform.worker'
 import type { DataPoint, AxisLabels, Sort, ScaleType, ChartData, Axis } from '../types'
 
@@ -247,5 +247,41 @@ describe('useChartPipeline — value mode axes forwarding', () => {
     )
     expect(initCall).toBeDefined()
     expect((initCall![0] as { axes: Axis[] }).axes).toEqual(axes)
+  })
+
+  it('posts plain (non-proxy) axes so structured clone succeeds', async () => {
+    const axes = reactive<Axis[]>([
+      { key: 'x', label: 'price', type: 'value' },
+      { key: 'y', label: 'latency', type: 'value' },
+    ])
+
+    scope.stop()
+    TrackedMockWorker.instances.length = 0
+    scope = effectScope()
+    scope.run(() =>
+      useChartPipeline(
+        rawData,
+        arrangement,
+        ref(defaultLabels),
+        activeGroupId,
+        sort,
+        showLabels,
+        scale,
+        threeD,
+        ref(axes)
+      )
+    )
+    await vi.advanceTimersByTimeAsync(50)
+    const w = TrackedMockWorker.instances[0]!
+    const initCall = w.postMessage.mock.calls.find(
+      (c: unknown[]) => (c[0] as { type: string }).type === 'init'
+    )
+    const posted = (initCall![0] as { axes: Axis[] }).axes
+    expect(posted).toEqual([
+      { key: 'x', label: 'price', type: 'value' },
+      { key: 'y', label: 'latency', type: 'value' },
+    ])
+    // structuredClone throws on Vue reactive proxies — must be plain objects.
+    expect(() => structuredClone(posted)).not.toThrow()
   })
 })
