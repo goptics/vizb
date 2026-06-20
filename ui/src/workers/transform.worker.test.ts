@@ -9,7 +9,7 @@ import type {
   ReadyMessage,
   ChartMessage,
 } from './transform.worker'
-import type { DataPoint, Sort, ScaleType, ChartData } from '../types'
+import type { DataPoint, Sort, ScaleType, ChartData, Axis } from '../types'
 
 const noSort: Sort = { enabled: false, order: 'asc' }
 
@@ -164,5 +164,82 @@ describe('transform.worker — compute', () => {
   it('is a no-op when called before init', () => {
     send(buildCompute({ signature: 'anything' }))
     expect(postSpy).not.toHaveBeenCalled()
+  })
+})
+
+const VALUE_AXES: Axis[] = [
+  { key: 'x', label: 'price', type: 'value' },
+  { key: 'y', label: 'latency', type: 'value' },
+]
+
+function valueDp(xAxis: string, yAxis: string): DataPoint {
+  return { xAxis, yAxis, stats: [] }
+}
+
+describe('transform.worker — value mode init', () => {
+  it('replies with one synthetic signature when axes are value-mode', () => {
+    send(
+      buildInit({
+        data: [valueDp('100', '12'), valueDp('200', '8')],
+        axes: VALUE_AXES,
+      })
+    )
+
+    const r = ready()
+    expect(r).toBeDefined()
+    expect(r!.signatures).toHaveLength(1)
+    expect(r!.signatures[0]!.signature).toBe('__value_mode__')
+    expect(r!.groupNames).toEqual([])
+  })
+})
+
+describe('transform.worker — value mode compute', () => {
+  it('returns a ChartData with valueTuples for __value_mode__ signature', () => {
+    send(
+      buildInit({
+        data: [valueDp('100', '12'), valueDp('200', '8')],
+        axes: VALUE_AXES,
+      })
+    )
+    postSpy.mockClear()
+
+    send(buildCompute({ signature: '__value_mode__', groupName: '' }))
+
+    const out = charts()
+    expect(out).toHaveLength(1)
+    const chart = out[0]!.chart as ChartData
+    expect(chart.valueTuples).toEqual([
+      [100, 12],
+      [200, 8],
+    ])
+    expect(chart.series).toEqual([])
+  })
+
+  it('drops non-finite rows in value mode', () => {
+    send(
+      buildInit({
+        data: [valueDp('1', '2'), valueDp('bad', '3')],
+        axes: VALUE_AXES,
+      })
+    )
+    postSpy.mockClear()
+
+    send(buildCompute({ signature: '__value_mode__', groupName: '' }))
+
+    const chart = charts()[0]!.chart as ChartData
+    expect(chart.valueTuples).toHaveLength(1)
+    expect(chart.valueTuples![0]).toEqual([1, 2])
+  })
+
+  it('value mode init still allows normal category compute after re-init', () => {
+    // Re-init with category data on the same worker instance
+    send(buildInit())
+    const r = ready()
+    const sig = r!.signatures[0]!.signature
+    postSpy.mockClear()
+
+    send(buildCompute({ signature: sig, groupName: '' }))
+    expect(charts()).toHaveLength(1)
+    expect((charts()[0]!.chart as ChartData).valueTuples).toBeUndefined()
   })
 })

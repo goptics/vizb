@@ -26,12 +26,14 @@
 import {
   listChartSignatures,
   buildChartForSignature,
+  buildValueModeChart,
   canonicalAxisOrdersFromStrings,
   projectAndGroup,
   type ChartSignature,
 } from '../lib/transform'
+import { isValueMode } from '../lib/utils'
 import { translateAxisKey } from '../lib/swap'
-import type { DataPoint, AxisLabels, Sort, ChartData, ScaleType } from '../types'
+import type { DataPoint, AxisLabels, Sort, ChartData, ScaleType, Axis } from '../types'
 
 export type InitMessage = {
   type: 'init'
@@ -40,6 +42,7 @@ export type InitMessage = {
   identityString: string
   targetString: string
   labels?: AxisLabels
+  axes?: Axis[] // value-mode: present when --axes was used
 }
 export type SetArrangementMessage = {
   type: 'setArrangement'
@@ -84,6 +87,8 @@ type State = {
   groupNames: string[]
   labels?: AxisLabels
   bySignature: Map<string, ChartSignature>
+  valueMode: boolean
+  axes?: Axis[]
 }
 
 let state: State | null = null
@@ -121,6 +126,9 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
 
   switch (msg.type) {
     case 'init': {
+      const axes = msg.axes
+      const valueModeDetected = isValueMode(axes)
+
       state = {
         dataEpoch: msg.dataEpoch,
         raw: msg.data,
@@ -130,7 +138,28 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
         groupNames: [],
         labels: msg.labels,
         bySignature: new Map(),
+        valueMode: valueModeDetected,
+        axes,
       }
+
+      if (valueModeDetected) {
+        // Value mode: one synthetic chart, no grouping needed.
+        const xLabel = axes?.find((a) => a.key === 'x')?.label ?? 'x'
+        const yLabel = axes?.find((a) => a.key === 'y')?.label ?? 'y'
+        const title = `${xLabel} vs ${yLabel}`
+        state.bySignature.set('__value_mode__', {
+          signature: '__value_mode__',
+          statTemplate: { type: 'value' },
+        })
+        post({
+          type: 'ready',
+          dataEpoch: state.dataEpoch,
+          signatures: [{ signature: '__value_mode__', title }],
+          groupNames: [],
+        })
+        return
+      }
+
       applyArrangement(state, msg.identityString, msg.targetString)
       post(readyReply(state))
       return
@@ -146,6 +175,20 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
 
   // compute: ignore jobs aimed at a superseded dataset (a newer init landed).
   if (!state || msg.dataEpoch !== state.dataEpoch) return
+
+  // Value-mode compute: bypass grouping/signature/stat pipeline entirely.
+  if (state.valueMode && msg.signature === '__value_mode__' && state.axes) {
+    const chart = buildValueModeChart(state.raw, state.axes)
+    post({
+      type: 'chart',
+      dataEpoch: msg.dataEpoch,
+      jobEpoch: msg.jobEpoch,
+      signature: msg.signature,
+      chart,
+    })
+    return
+  }
+
   const entry = state.bySignature.get(msg.signature)
   if (!entry) return
 
