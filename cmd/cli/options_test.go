@@ -66,6 +66,18 @@ func (s *OptionsSuite) TestParseConfigRejectsSelectGroupOverlap() {
 	s.True(*exitCalled)
 }
 
+func (s *OptionsSuite) TestParseConfigRejectsInvalidSelect() {
+	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
+	defer restore()
+
+	o := &CommonOptions{
+		GroupPattern: "x",
+		Select:       "price{unclosed",
+	}
+	s.Panics(func() { o.ParseConfig() })
+	s.True(*exitCalled)
+}
+
 func (s *OptionsSuite) TestParseConfigMapsFields() {
 	o := &CommonOptions{
 		GroupPattern: "n/x", GroupRegex: "re", Group: []string{"a", "b"},

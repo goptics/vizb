@@ -41,6 +41,51 @@ func (s *SelectSpecSuite) TestParseSelectFlagDuplicateError() {
 	s.Contains(err.Error(), "duplicate column 'price'")
 }
 
+func (s *SelectSpecSuite) TestParseSelectFlagEmpty() {
+	specs, err := ParseSelectFlag("")
+	s.Require().NoError(err)
+	s.Nil(specs)
+
+	specs, err = ParseSelectFlag("   ")
+	s.Require().NoError(err)
+	s.Nil(specs)
+}
+
+func (s *SelectSpecSuite) TestParseSelectFlagUnclosedBrace() {
+	_, err := ParseSelectFlag("price{unclosed")
+	s.Error(err)
+	s.Contains(err.Error(), "in --select")
+}
+
+func (s *SelectSpecSuite) TestParseSelectFlagEmptyLabel() {
+	_, err := ParseSelectFlag("price{}")
+	s.Error(err)
+}
+
+func (s *SelectSpecSuite) TestParseSelectFlagEmptyColumnName() {
+	_, err := ParseSelectFlag("{OnlyLabel}")
+	s.Error(err)
+	s.Contains(err.Error(), "empty column name")
+}
+
+func (s *SelectSpecSuite) TestParseSelectFlagUnexpectedQuote() {
+	_, err := ParseSelectFlag(`price"x,count`)
+	s.Error(err)
+	s.Contains(err.Error(), `unexpected '"'`)
+}
+
+func (s *SelectSpecSuite) TestParseSelectFlagUnclosedQuote() {
+	_, err := ParseSelectFlag(`"unclosed`)
+	s.Error(err)
+	s.Contains(err.Error(), `unclosed '"'`)
+}
+
+func (s *SelectSpecSuite) TestParseSelectFlagInvalidQuotedColumn() {
+	_, err := ParseSelectFlag(`"bad\q"`)
+	s.Error(err)
+	s.Contains(err.Error(), "invalid quoted column")
+}
+
 func TestSelectSpecSuite(t *testing.T) {
 	suite.Run(t, new(SelectSpecSuite))
 }

@@ -264,6 +264,20 @@ func (s *JSONFatalSuite) TestNoNumericFieldsIsFatal() {
 	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
 }
 
+func (s *JSONFatalSuite) TestExplicitColsMissingColumnErrors() {
+	s.cfg.Select = []parser.ColumnSpec{{Source: "missing"}}
+	path := s.writeFile(`[{"name":"a","sells":10}]`)
+
+	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
+}
+
+func (s *JSONFatalSuite) TestExplicitColsNonNumericErrors() {
+	s.cfg.Select = []parser.ColumnSpec{{Source: "name"}}
+	path := s.writeFile(`[{"name":"alpha","sells":10}]`)
+
+	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
+}
+
 func TestJSONFatalSuite(t *testing.T) {
 	suite.Run(t, new(JSONFatalSuite))
 }
