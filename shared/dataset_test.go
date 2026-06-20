@@ -1,12 +1,106 @@
-package shared
+package shared_test
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
+
+	_ "github.com/goptics/vizb/config/charts/bar"
+	_ "github.com/goptics/vizb/config/charts/line"
+	_ "github.com/goptics/vizb/config/charts/pie"
+	"github.com/goptics/vizb/shared"
+	"github.com/stretchr/testify/suite"
 )
 
+type DatasetSuite struct {
+	suite.Suite
+}
+
+func (s *DatasetSuite) fieldByName(v any, name string) any {
+	val := reflect.ValueOf(v)
+	for val.Kind() == reflect.Pointer {
+		val = val.Elem()
+	}
+	f := val.FieldByName(name)
+	s.Require().True(f.IsValid(), "field %q not present on %T", name, v)
+	return f.Interface()
+}
+
+func (s *DatasetSuite) TestDatasetUnmarshalJSONDispatchesByType() {
+	raw := []byte(`{
+		"name":"bench",
+		"settings":[
+			{"type":"bar","swap":"yxn","scale":"log","showLabels":true},
+			{"type":"pie","swap":"n","showLabels":false}
+		],
+		"data":[]
+	}`)
+
+	var ds shared.Dataset
+	s.Require().NoError(json.Unmarshal(raw, &ds))
+	s.Require().Len(ds.Settings, 2, "expected two settings entries")
+
+	s.Equal("bar", ds.Settings[0].ChartType())
+	s.Equal("yxn", s.fieldByName(ds.Settings[0], "Swap"))
+	s.Equal("log", s.fieldByName(ds.Settings[0], "Scale"))
+	showLabels, ok := s.fieldByName(ds.Settings[0], "ShowLabels").(*bool)
+	s.Require().True(ok, "ShowLabels should be *bool, got %T", s.fieldByName(ds.Settings[0], "ShowLabels"))
+	s.Require().NotNil(showLabels)
+	s.True(*showLabels)
+
+	s.Equal("pie", ds.Settings[1].ChartType())
+	s.Equal("n", s.fieldByName(ds.Settings[1], "Swap"))
+	pieLabels, ok := s.fieldByName(ds.Settings[1], "ShowLabels").(*bool)
+	s.Require().True(ok, "ShowLabels should be *bool, got %T", s.fieldByName(ds.Settings[1], "ShowLabels"))
+	s.Require().NotNil(pieLabels)
+	s.False(*pieLabels)
+
+	pieVal := reflect.ValueOf(ds.Settings[1])
+	for pieVal.Kind() == reflect.Pointer {
+		pieVal = pieVal.Elem()
+	}
+	_, hasScale := pieVal.Type().FieldByName("Scale")
+	s.False(hasScale, "pie.Config should not have a Scale field")
+}
+
+func (s *DatasetSuite) TestDatasetUnmarshalJSONLegacySettingsObject() {
+	raw := []byte(`{
+		"name":"legacy",
+		"settings":{"charts":["bar"],"scale":"linear"},
+		"data":[]
+	}`)
+
+	var ds shared.Dataset
+	s.Require().NoError(json.Unmarshal(raw, &ds))
+	s.Nil(ds.Settings, "legacy object settings should stay nil for MigrateDataset")
+}
+
+func (s *DatasetSuite) TestDatasetUnmarshalJSONEmptySettings() {
+	raw := []byte(`{"name":"bench","data":[]}`)
+
+	var ds shared.Dataset
+	s.Require().NoError(json.Unmarshal(raw, &ds))
+	s.Nil(ds.Settings, "missing settings field should leave Settings nil")
+}
+
+func (s *DatasetSuite) TestDatasetUnmarshalJSONLegacySingleObject() {
+	raw := []byte(`{
+		"name":"bench",
+		"settings":{"charts":["bar"],"sort":{"enabled":false,"order":"asc"},"showLabels":false,"scale":"linear"},
+		"data":[]
+	}`)
+
+	var ds shared.Dataset
+	s.Require().NoError(json.Unmarshal(raw, &ds))
+	s.Nil(ds.Settings, "legacy single-object settings should leave Settings nil (MigrateDataset handles conversion)")
+}
+
+func TestDatasetSuite(t *testing.T) {
+	suite.Run(t, new(DatasetSuite))
+}
+
 func TestAxisTypeOmittedWhenCategory(t *testing.T) {
-	b, err := json.Marshal(Axis{Key: "x", Label: "Price"})
+	b, err := json.Marshal(shared.Axis{Key: "x", Label: "Price"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -16,7 +110,7 @@ func TestAxisTypeOmittedWhenCategory(t *testing.T) {
 }
 
 func TestAxisTypeEmittedWhenValue(t *testing.T) {
-	b, err := json.Marshal(Axis{Key: "x", Label: "Price", Type: "value"})
+	b, err := json.Marshal(shared.Axis{Key: "x", Label: "Price", Type: "value"})
 	if err != nil {
 		t.Fatal(err)
 	}
