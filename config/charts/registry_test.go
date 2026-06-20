@@ -11,6 +11,7 @@ import (
 	_ "github.com/goptics/vizb/config/charts/line"
 	_ "github.com/goptics/vizb/config/charts/pie"
 	_ "github.com/goptics/vizb/config/charts/radar"
+	_ "github.com/goptics/vizb/config/charts/scatter"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -22,7 +23,7 @@ type RegistrySuite struct {
 func (s *RegistrySuite) TestRegistryListsChartTypes() {
 	got := charts.Registered()
 	sort.Strings(got)
-	want := []string{"bar", "heatmap", "line", "pie", "radar"}
+	want := []string{"bar", "heatmap", "line", "pie", "radar", "scatter"}
 	s.Equal(want, got)
 }
 

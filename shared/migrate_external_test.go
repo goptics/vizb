@@ -14,6 +14,7 @@ import (
 	"github.com/goptics/vizb/config/charts/pie"
 	_ "github.com/goptics/vizb/config/charts/pie"
 	_ "github.com/goptics/vizb/config/charts/radar"
+	_ "github.com/goptics/vizb/config/charts/scatter"
 	"github.com/goptics/vizb/shared"
 	"github.com/stretchr/testify/suite"
 )

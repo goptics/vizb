@@ -8,7 +8,7 @@ import (
 )
 
 // ValidChartTypes is every chart type the CLI accepts via --charts.
-var ValidChartTypes = []string{"bar", "line", "pie", "heatmap", "radar"}
+var ValidChartTypes = []string{"bar", "line", "scatter", "pie", "heatmap", "radar"}
 
 // DefaultChartTypes is the --charts default when the user does not pass -c.
 var DefaultChartTypes = []string{"bar", "line", "pie"}
@@ -18,7 +18,7 @@ var DefaultChartTypes = []string{"bar", "line", "pie"}
 // dimensions into per-dimension pies, heatmap folds z onto the legend). This
 // mirrors the UI routing in ui/src/components/ChartCard.vue.
 func chartNeeds3D(chart string) bool {
-	return chart == "bar" || chart == "line"
+	return chart == "bar" || chart == "line" || chart == "scatter"
 }
 
 // ChartsHave3DCapable reports whether any selected chart type has a 3D form.

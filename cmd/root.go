@@ -12,12 +12,14 @@ import (
 	linechart "github.com/goptics/vizb/config/charts/line"
 	piechart "github.com/goptics/vizb/config/charts/pie"
 	radarchart "github.com/goptics/vizb/config/charts/radar"
+	scatterchart "github.com/goptics/vizb/config/charts/scatter"
 	// Chart subcommands self-register into cli's registry via their init().
 	_ "github.com/goptics/vizb/cmd/charts/bar"
 	_ "github.com/goptics/vizb/cmd/charts/heatmap"
 	_ "github.com/goptics/vizb/cmd/charts/line"
 	_ "github.com/goptics/vizb/cmd/charts/pie"
 	_ "github.com/goptics/vizb/cmd/charts/radar"
+	_ "github.com/goptics/vizb/cmd/charts/scatter"
 	// Parsers self-register into pkg/parser via their init().
 	_ "github.com/goptics/vizb/pkg/parser/csv"
 	_ "github.com/goptics/vizb/pkg/parser/golang"
@@ -73,7 +75,7 @@ func Execute() {
 
 func init() {
 	rootOpts.LinearOptions.Bind(rootCmd.Flags())
-	rootCmd.Flags().StringSliceVarP(&rootOpts.Charts, "charts", "c", defaultChartTypes, "Chart types to generate (bar, line, pie, heatmap, radar)")
+	rootCmd.Flags().StringSliceVarP(&rootOpts.Charts, "charts", "c", defaultChartTypes, "Chart types to generate (bar, line, scatter, pie, heatmap, radar)")
 	rootCmd.Flags().StringArrayVar(&rootOpts.ChartSpecs, "chart", nil,
 		"Per-chart settings override: <type>:<key>=<val>(,<key>=<val>)* or bare flags (labels, 3d-rotate, 3d). "+
 			"Keys: swap, sort, scale, labels, 3d-rotate, 3d. E.g. --chart bar:swap=yxn,sort=asc --chart pie:labels")
@@ -125,6 +127,18 @@ func runBenchmark(cmd *cobra.Command, args []string) {
 				override = o.(*linechart.Config)
 			}
 			cfg = linechart.Materialise(flags, override)
+		case "scatter":
+			flags := scatterchart.Flags{
+				Scale:      "linear",
+				Sort:       rootOpts.Sort,
+				ShowLabels: rootOpts.ShowLabels,
+				Stat:       rootOpts.Stat,
+			}
+			var override *scatterchart.Config
+			if o, ok := overrides["scatter"]; ok {
+				override = o.(*scatterchart.Config)
+			}
+			cfg = scatterchart.Materialise(flags, override)
 		case "pie":
 			flags := piechart.Flags{
 				Sort:       rootOpts.Sort,
