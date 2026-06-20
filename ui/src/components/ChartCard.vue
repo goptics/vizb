@@ -20,7 +20,7 @@ import { useFullscreen } from '../composables/useFullscreen'
 import { is3D } from '../lib/utils'
 import StatsPanel from './StatsPanel.vue'
 import Badge from './Badge.vue'
-import Button from './ui/Button.vue'
+import BadgeButton from './BadgeButton.vue'
 
 // Every chart renderer (2D bar/line/pie + 3D) is loaded via defineAsyncComponent
 // so the echarts runtime stays out of the eager startup bundle: nothing in the
@@ -188,19 +188,14 @@ watch(
           :label="chartData.axisLabels?.z || 'Z-axis'"
           :value="String(chartData.zAxis.length)"
         />
-        <Button
+        <BadgeButton
           v-if="hasStats"
-          class="h-7 border border-border bg-transparent px-2.5 py-0 text-xs leading-none text-muted-foreground transition-colors hover:bg-accent hover:text-primary"
-          :class="{ 'bg-accent text-primary': showStats }"
-          :aria-pressed="showStats"
+          :icon="Sigma"
+          label="Stats"
+          :active="showStats"
           title="Toggle statistics"
           @click="showStats = !showStats"
-        >
-          <template #icon>
-            <Sigma class="h-3.5 w-3.5" />
-          </template>
-          Stats
-        </Button>
+        />
       </div>
     </div>
     <!-- Keep the chart mounted and overlay the skeleton; unmounting would reset

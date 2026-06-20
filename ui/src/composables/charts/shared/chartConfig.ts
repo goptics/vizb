@@ -5,6 +5,8 @@ import { describe } from '@/lib/stats'
 
 export const LARGE_X_THRESHOLD = 50
 
+const axisTitleFontSize = 16
+
 export function isLargeXAxis(xAxisData: string[]): boolean {
   return xAxisData.length > LARGE_X_THRESHOLD
 }
@@ -157,24 +159,28 @@ export function createAxisConfig(
     xAxis: {
       type: 'category',
       data: xAxisData,
-      // Group/axis label (e.g. "category") under the category axis, when known.
-      // Bold + extra gap so it clears the (often rotated) tick labels.
+      // Axis title (group name) under the category axis — not the series ticks.
       ...(xAxisName
         ? {
             name: xAxisName,
             nameLocation: 'middle',
             // DataZoom slider: extra gap drops the name below the slider.
-            nameGap: hasDataZoom ? 88 : 45,
-            nameTextStyle: { color: styling.textColor, fontSize, fontWeight: 'bold' },
+            nameGap: hasDataZoom ? 88 : 30,
+            nameTextStyle: {
+              color: styling.textColor,
+              fontSize: axisTitleFontSize,
+              fontWeight: 'bold',
+            },
           }
         : {}),
       axisLabel: {
-        // Large axis: let ECharts auto-thin ticks (dataZoom drives navigation)
-        // so labels don't overlap. Small axis: force every label visible.
+        // Series names on the x axis — keep at the default tick size.
         interval: isLargeXAxis(xAxisData) ? 'auto' : 0,
         rotate: hasRotatedXLabels(xAxisData, hasDataZoom) ? 30 : 0,
         fontSize,
         color: styling.textColor,
+        // No axis title / slider: sit series ticks in the expanded bottom band.
+        ...(!hasDataZoom && !xAxisName ? { margin: 14 } : {}),
       },
       axisLine: {
         lineStyle: { color: styling.axisColor },
@@ -484,29 +490,15 @@ export function makeLegendTitle(text: string, styling: ChartStyling): any {
     text,
     left: 'center',
     top: 0,
-    textStyle: { color: styling.textColor, fontSize, fontWeight: 'bold' },
+    textStyle: { color: styling.textColor, fontSize: axisTitleFontSize, fontWeight: 'bold' },
   }
 }
 
-export interface GridConfigOptions {
-  hasXAxisName?: boolean
-  hasRotatedLabels?: boolean
-}
+// Fixed px (not %) so the plot area stays predictable across card heights.
+const SERIES_TICK_BAND = 28 // series names on the x axis (no slider)
 
-function gridBottomWithoutDataZoom(hasXAxisName: boolean, hasRotatedLabels: boolean): string {
-  if (hasXAxisName && hasRotatedLabels) return '13%'
-  if (hasXAxisName || hasRotatedLabels) return '8%'
-  return '3%'
-}
-
-export function createGridConfig(
-  seriesLength = 1,
-  hasDataZoom = false,
-  options: GridConfigOptions = {}
-): any {
+export function createGridConfig(seriesLength = 1, hasDataZoom = false): any {
   const legendSpace = Math.min(15 + Math.floor((seriesLength - 1) / 15) * 2, 35)
-  const hasXAxisName = options.hasXAxisName ?? false
-  const hasRotatedLabels = options.hasRotatedLabels ?? false
 
   // With a dataZoom slider we turn containLabel OFF and reserve label space in
   // fixed px. containLabel pins both the tick labels and the axis name to the
@@ -524,10 +516,12 @@ export function createGridConfig(
     }
   }
 
+  // No slider: containLabel absorbs axis title and rotated tick space so plot
+  // height stays the same whether or not an axis title is present.
   return {
     left: '3%',
     right: '3%',
-    bottom: gridBottomWithoutDataZoom(hasXAxisName, hasRotatedLabels),
+    bottom: SERIES_TICK_BAND,
     top: `${legendSpace}%`,
     containLabel: true,
   }
