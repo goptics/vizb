@@ -18,7 +18,7 @@ import {
   continuous3DGridCounts,
   round2,
 } from './shared'
-import type { Series3DData } from '@/types'
+import type { ScaleType, Series3DData } from '@/types'
 
 function valuePoints3DToSeries(points: [number, number, number][], title: string): Series3DData[] {
   return [
@@ -37,7 +37,7 @@ type ContinuousScatter3DParams = {
   useVisualMap: boolean
   defaultColor: string
   threeDRotate: boolean
-  scale: string
+  scale: ScaleType
   seriesData: Series3DData[]
   axisLabels?: { x?: string; y?: string; z?: string }
 }
