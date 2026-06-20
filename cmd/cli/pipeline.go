@@ -188,6 +188,10 @@ func prepareData(filePath, parserKey string, cfg parser.Config) []shared.DataPoi
 		fmt.Fprintln(os.Stderr, "warning: --select is only supported for csv/json parsers; ignoring")
 	}
 
+	if len(cfg.Axes) > 0 && parserKey != "csv" && parserKey != "json" {
+		shared.ExitWithError("--axes is only supported for csv/json parsers", nil)
+	}
+
 	fmt.Println(style.Info.Render("⚙️  Parsing data..."))
 	data := parseFn(filePath, cfg)
 
@@ -211,12 +215,17 @@ func prepareData(filePath, parserKey string, cfg parser.Config) []shared.DataPoi
 // assembleDataset builds the output Dataset from parsed results plus the
 // command's metadata and the resolved per-chart configs.
 func assembleDataset(results []shared.DataPoint, common CommonOptions, configs []config_charts.ChartConfig, cfg parser.Config) *shared.Dataset {
+	axes := parser.GroupAxes(cfg)
+	if len(cfg.Axes) > 0 {
+		axes = parser.ValueAxes(cfg)
+	}
+
 	dataSet := &shared.Dataset{
 		Name:        common.Name,
 		Description: common.Description,
 		Data:        results,
 		Settings:    configs,
-		Axes:        parser.GroupAxes(cfg),
+		Axes:        axes,
 	}
 
 	meta := shared.Meta{OS: shared.OS, Arch: shared.Arch, Pkg: shared.Pkg}

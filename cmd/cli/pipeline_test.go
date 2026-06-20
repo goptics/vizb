@@ -298,6 +298,23 @@ func (s *PipelineSuite) TestPrepareDataAggregatesCSV() {
 	s.Equal(30.0, *results[0].Stats[0].Value)
 }
 
+func (s *PipelineSuite) TestPrepareDataAxesRejectsNonTabularParser() {
+	cfg := parser.Config{Axes: []parser.ColumnSpec{{Source: "x"}, {Source: "y"}}}
+	s.Panics(func() { prepareData("ignored.txt", "go", cfg) })
+}
+
+func (s *PipelineSuite) TestAssembleDatasetUsesValueAxes() {
+	cfg := parser.Config{Axes: []parser.ColumnSpec{{Source: "price"}, {Source: "latency"}}}
+	results := []shared.DataPoint{{XAxis: "100", YAxis: "12", Stats: []shared.Stat{}}}
+
+	ds := assembleDataset(results, CommonOptions{Name: "T"}, nil, cfg)
+
+	s.Len(ds.Axes, 2)
+	s.Equal("value", ds.Axes[0].Type)
+	s.Equal("x", ds.Axes[0].Key)
+	s.Equal("latency", ds.Axes[1].Label)
+}
+
 func (s *PipelineSuite) TestPrepareDataUnknownParserExits() {
 	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
 	defer restore()
