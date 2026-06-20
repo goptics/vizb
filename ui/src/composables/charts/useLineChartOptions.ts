@@ -31,6 +31,60 @@ export function useLineChartOptions(config: BaseChartConfig) {
   const sortedData = useSortedSeriesData(chartData, sort)
 
   const options = computed<EChartsOption>(() => {
+    const tuples = chartData.value.valueTuples
+    if (tuples?.length) {
+      const xLabel = chartData.value.axisLabels?.x
+      const yLabel = chartData.value.axisLabels?.y
+      const styling = getChartStyling(isDark.value)
+      return {
+        ...getBaseOptions(config),
+        legend: { show: false },
+        grid: createGridConfig(1, false),
+        tooltip: {
+          trigger: 'item' as const,
+          backgroundColor: isDark.value ? '#1f2937' : '#ffffff',
+          borderColor: isDark.value ? '#4b5563' : '#e5e7eb',
+          textStyle: { color: styling.textColor },
+          formatter: (params: unknown) => {
+            const [x, y] = (params as { data: [number, number] }).data
+            return `<strong>${xLabel ?? 'x'}: ${x}</strong><br/>${yLabel ?? 'y'}: ${y}`
+          },
+        },
+        xAxis: {
+          type: 'value' as const,
+          name: xLabel,
+          nameLocation: 'middle' as const,
+          nameGap: 30,
+          axisLabel: { color: styling.textColor },
+          axisLine: { lineStyle: { color: styling.axisColor } },
+          splitLine: { lineStyle: { opacity: styling.opacity } },
+        },
+        yAxis: {
+          type: 'value' as const,
+          name: yLabel,
+          nameLocation: 'middle' as const,
+          nameGap: 45,
+          axisLabel: { color: styling.textColor },
+          axisLine: { lineStyle: { color: styling.axisColor } },
+          splitLine: { lineStyle: { opacity: styling.opacity } },
+        },
+        dataZoom: [
+          { type: 'inside', xAxisIndex: 0 },
+          { type: 'inside', yAxisIndex: 0 },
+        ],
+        series: [
+          {
+            type: 'line' as const,
+            data: tuples,
+            showSymbol: tuples.length <= 200,
+            symbol: 'circle',
+            symbolSize: 5,
+            itemStyle: { color: getNextColorFor(chartData.value.title) },
+          },
+        ],
+      } as EChartsOption
+    }
+
     const { series, xAxisData, hasYAxis } = sortedData.value
     const baseOptions = getBaseOptions(config)
     const styling = getChartStyling(isDark.value)
