@@ -320,6 +320,57 @@ func (s *CSVSuite) TestLessThanTwoRowsReturnsNil() {
 	s.Nil(ParseCSV(s.writeFile(""), s.cfg))
 }
 
+func (s *CSVSuite) TestAxesValueModeTwoColumns() {
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "price"}, {Source: "latency"}}
+	csv := "name,price,latency\na,100,12\nb,200,8\n"
+
+	results := ParseCSV(s.writeFile(csv), s.cfg)
+
+	s.Len(results, 2)
+	s.Equal("100", results[0].XAxis)
+	s.Equal("12", results[0].YAxis)
+	s.Equal("", results[0].ZAxis)
+	s.Empty(results[0].Stats)
+	s.Equal("200", results[1].XAxis)
+	s.Equal("8", results[1].YAxis)
+}
+
+func (s *CSVSuite) TestAxesValueModeThreeColumns() {
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "x"}, {Source: "y"}, {Source: "z"}}
+	csv := "x,y,z\n1,2,3\n"
+
+	results := ParseCSV(s.writeFile(csv), s.cfg)
+
+	s.Len(results, 1)
+	s.Equal("1", results[0].XAxis)
+	s.Equal("2", results[0].YAxis)
+	s.Equal("3", results[0].ZAxis)
+}
+
+func (s *CSVSuite) TestAxesValueModeSkipsNonNumericRow() {
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "x"}, {Source: "y"}}
+	csv := "x,y\n1,2\nbad,3\n4,5\n"
+
+	results := ParseCSV(s.writeFile(csv), s.cfg)
+
+	s.Len(results, 2) // the "bad" row is dropped
+	s.Equal("4", results[1].XAxis)
+}
+
+func (s *CSVSuite) TestAxesValueModeMissingColumnErrors() {
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "missing"}, {Source: "y"}}
+	csv := "x,y\n1,2\n"
+
+	s.Panics(func() { ParseCSV(s.writeFile(csv), s.cfg) })
+}
+
+func (s *CSVSuite) TestAxesValueModeNonNumericColumnErrors() {
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "name"}, {Source: "y"}}
+	csv := "name,y\nalpha,2\n"
+
+	s.Panics(func() { ParseCSV(s.writeFile(csv), s.cfg) })
+}
+
 func TestCSVSuite(t *testing.T) {
 	suite.Run(t, new(CSVSuite))
 }
