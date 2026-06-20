@@ -121,6 +121,38 @@ func (s *OptionsSuite) TestValidateParserInvalid() {
 	s.Contains(err.Error(), "unknown parser")
 }
 
+func (s *OptionsSuite) TestParseConfigMapsAxes() {
+	o := &CommonOptions{GroupPattern: "x", Axes: "price,latency"}
+	cfg := o.ParseConfig()
+	s.Require().Len(cfg.Axes, 2)
+	s.Equal("price", cfg.Axes[0].Source)
+	s.Equal("latency", cfg.Axes[1].Source)
+}
+
+func (s *OptionsSuite) TestParseConfigRejectsAxesWithGroup() {
+	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
+	defer restore()
+	o := &CommonOptions{GroupPattern: "x", Group: []string{"region"}, Axes: "price,latency"}
+	s.Panics(func() { o.ParseConfig() })
+	s.True(*exitCalled)
+}
+
+func (s *OptionsSuite) TestParseConfigRejectsAxesWithSelect() {
+	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
+	defer restore()
+	o := &CommonOptions{GroupPattern: "x", Select: "mem", Axes: "price,latency"}
+	s.Panics(func() { o.ParseConfig() })
+	s.True(*exitCalled)
+}
+
+func (s *OptionsSuite) TestParseConfigRejectsAxesArity() {
+	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
+	defer restore()
+	o := &CommonOptions{GroupPattern: "x", Axes: "price"}
+	s.Panics(func() { o.ParseConfig() })
+	s.True(*exitCalled)
+}
+
 func (s *OptionsSuite) TestValidateScale() {
 	s.Run("log is accepted", func() {
 		scale := "LOG"

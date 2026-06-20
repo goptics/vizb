@@ -28,6 +28,7 @@ type CommonOptions struct {
 	TimeUnit     string
 	NumberUnit   string
 	Select       string
+	Axes         string
 }
 
 // Bind registers the common flags onto fs.
@@ -126,6 +127,19 @@ func (o *CommonOptions) ParseConfig() parser.Config {
 				shared.ExitWithError(fmt.Sprintf("column '%s' cannot be in both --select and --group", col.Source), nil)
 			}
 		}
+	}
+	if strings.TrimSpace(o.Axes) != "" {
+		if len(o.Group) > 0 || strings.TrimSpace(o.GroupRegex) != "" {
+			shared.ExitWithError("--axes cannot be combined with --group or --group-regex", nil)
+		}
+		if strings.TrimSpace(o.Select) != "" {
+			shared.ExitWithError("--axes cannot be combined with --select", nil)
+		}
+		axes, err := parser.ParseAxesFlag(o.Axes)
+		if err != nil {
+			shared.ExitWithError(err.Error(), nil)
+		}
+		cfg.Axes = axes
 	}
 	return cfg
 }
