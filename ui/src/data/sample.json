@@ -3,6 +3,14 @@
     "name": "HTTP Routing Benchmarks",
     "description": "Performance comparison of popular Go HTTP Routers",
     "timestamp": "2025-11-15T10:30:00Z",
+    "axes": [
+      {
+        "key": "x"
+      },
+      {
+        "key": "y"
+      }
+    ],
     "settings": [
       {
         "type": "line",
@@ -11,7 +19,11 @@
           "order": "asc"
         },
         "showLabels": false,
-        "scale": "log"
+        "scale": "log",
+        "stat": {
+          "enabled": true,
+          "math": []
+        }
       },
       {
         "type": "pie",

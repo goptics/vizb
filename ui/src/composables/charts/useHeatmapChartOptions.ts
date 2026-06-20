@@ -10,6 +10,7 @@ import {
   renderDonutSvg,
   isLargeXAxis,
   createHeatmapDataZoomConfig,
+  createHeatmapLayoutConfig,
 } from './shared'
 
 const round2 = (v: number) => Math.round(v * 100) / 100
@@ -26,14 +27,12 @@ function heatmapGrid(
   largeY: boolean,
   hasLegend = true
 ): any {
-  const legendSpace = hasLegend ? Math.min(15 + Math.floor((seriesLength - 1) / 15) * 2, 35) : 5
-  return {
-    left: largeX ? 100 : '3%',
-    right: largeY ? 50 : '3%',
-    bottom: largeX ? 110 : '13%',
-    top: `${legendSpace}%`,
-    containLabel: !largeX,
-  }
+  return createHeatmapLayoutConfig({
+    hasXDataZoom: largeX,
+    hasYDataZoom: largeY,
+    seriesLength,
+    hasLegend,
+  }).grid
 }
 
 function heatmapVisualMap(
@@ -41,15 +40,20 @@ function heatmapVisualMap(
   max: number,
   colors: string[],
   styling: any,
-  largeX: boolean
+  largeX: boolean,
+  largeY: boolean
 ): any {
+  const { visualMapBottom } = createHeatmapLayoutConfig({
+    hasXDataZoom: largeX,
+    hasYDataZoom: largeY,
+  })
   return {
     min,
     max,
     calculable: true,
     orient: 'horizontal',
     left: 'center',
-    bottom: largeX ? 5 : '5%',
+    bottom: visualMapBottom,
     inRange: { color: colors },
     textStyle: { color: styling.textColor },
   }
@@ -166,7 +170,8 @@ function build2DHeatmap(config: BaseChartConfig): EChartsOption {
       maxVal,
       [COLOR_PALETTE[0]!, COLOR_PALETTE[4]!],
       styling,
-      largeX
+      largeX,
+      largeY
     ),
     series: [
       {
@@ -377,7 +382,8 @@ function build3DHeatmap(config: BaseChartConfig): EChartsOption {
       maxTotal,
       [COLOR_PALETTE[0]!, COLOR_PALETTE[4]!],
       styling,
-      largeX
+      largeX,
+      largeY
     ),
     series: [
       {
