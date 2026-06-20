@@ -167,6 +167,20 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
     case 'setArrangement': {
       if (!state) return
       if (msg.labels !== undefined) state.labels = msg.labels ?? undefined
+      // Swap/arrangement is a no-op in value mode (coordinates are fixed).
+      // applyArrangement would call listChartSignatures on stats-less rows and
+      // wipe the synthetic __value_mode__ signature.
+      if (state.valueMode) {
+        const xLabel = state.axes?.find((a) => a.key === 'x')?.label ?? 'x'
+        const yLabel = state.axes?.find((a) => a.key === 'y')?.label ?? 'y'
+        post({
+          type: 'ready',
+          dataEpoch: state.dataEpoch,
+          signatures: [{ signature: '__value_mode__', title: `${xLabel} vs ${yLabel}` }],
+          groupNames: [],
+        })
+        return
+      }
       applyArrangement(state, msg.identityString, msg.targetString)
       post(readyReply(state))
       return

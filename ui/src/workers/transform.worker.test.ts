@@ -231,6 +231,22 @@ describe('transform.worker — value mode compute', () => {
     expect(chart.valueTuples![0]).toEqual([1, 2])
   })
 
+  it('setArrangement after value mode init preserves __value_mode__ signature', () => {
+    send(
+      buildInit({
+        data: [valueDp('100', '12')],
+        axes: VALUE_AXES,
+      })
+    )
+    postSpy.mockClear()
+
+    send({ type: 'setArrangement', identityString: 'xy', targetString: 'yx' })
+
+    const r = ready()
+    expect(r!.signatures).toHaveLength(1)
+    expect(r!.signatures[0]!.signature).toBe('__value_mode__')
+  })
+
   it('value mode init still allows normal category compute after re-init', () => {
     // Re-init with category data on the same worker instance
     send(buildInit())

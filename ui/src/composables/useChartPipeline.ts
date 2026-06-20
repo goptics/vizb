@@ -3,6 +3,7 @@ import type { AxisLabels, DataPoint, ChartData, Sort, ScaleType, Axis } from '..
 import TransformWorker from '../workers/transform.worker.ts?worker&inline'
 import type { WorkerResponse } from '../workers/transform.worker'
 import { listChartSignatures } from '../lib/transform'
+import { isValueMode } from '../lib/utils'
 
 // The arrangement the worker projects/groups under: present source axes in
 // canonical order (identityString, e.g. "nx") and the selected target order
@@ -154,6 +155,8 @@ export function useChartPipeline(
   // are dropped.
   const setArrangement = () => {
     if (!lastSignatures.length || readyInFlight || dataPending) return
+    // Arrangement/swap is a no-op in value mode — skip to avoid racing init.
+    if (isValueMode(unref(axes))) return
     readyInFlight = true
     // labels is a fresh plain object from swapAxisLabels (off now-plain axisLabels),
     // so postMessage clones it natively — no proxy stripping needed.
@@ -197,14 +200,28 @@ export function useChartPipeline(
     // clones and groups the dataset. Signatures are arrangement-independent (raw
     // rows only), so they match what ready will return. The ready handler reconciles
     // via its own prev-map: same keys → same ChartCard instances, no flicker.
-    const sigs = listChartSignatures(data)
+    const axisList = unref(axes)
     const prev = new Map(charts.value.map((c) => [c.key, c]))
-    charts.value = sigs.map(({ signature, statTemplate }) => ({
-      key: signature,
-      title: statTemplate.type,
-      data: prev.get(signature)?.data ?? null,
-      pending: true,
-    }))
+    if (isValueMode(axisList)) {
+      const xLabel = axisList?.find((a) => a.key === 'x')?.label ?? 'x'
+      const yLabel = axisList?.find((a) => a.key === 'y')?.label ?? 'y'
+      charts.value = [
+        {
+          key: '__value_mode__',
+          title: `${xLabel} vs ${yLabel}`,
+          data: prev.get('__value_mode__')?.data ?? null,
+          pending: true,
+        },
+      ]
+    } else {
+      const sigs = listChartSignatures(data)
+      charts.value = sigs.map(({ signature, statTemplate }) => ({
+        key: signature,
+        title: statTemplate.type,
+        data: prev.get(signature)?.data ?? null,
+        pending: true,
+      }))
+    }
 
     // The rows are kept non-reactive (shallowRef + markRaw in useDataPoint), so
     // postMessage's structured clone takes them directly — a single native pass,
