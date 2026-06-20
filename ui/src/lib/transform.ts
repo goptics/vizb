@@ -4,6 +4,7 @@
 // no echarts — pure data in, plain (clone-safe) data out.
 import type {
   DataPoint,
+  Axis,
   AxisLabels,
   ChartData,
   Point3D,
@@ -235,6 +236,35 @@ export function buildChartData(
   return listChartSignatures(data).map(({ signature, statTemplate }) =>
     buildChartForSignature(data, signature, statTemplate, labels, sort, showLabels, scale)
   )
+}
+
+// Build one ChartData for a value-mode dataset (--axes pipeline). Each DataPoint's
+// xAxis/yAxis strings are parsed as floats; rows with non-finite values are dropped.
+// The result has no stat series — coordinates are the full content.
+export function buildValueModeChart(data: DataPoint[], axes: Axis[]): ChartData {
+  const xAxis = axes.find((a) => a.key === 'x')
+  const yAxis = axes.find((a) => a.key === 'y')
+  const xLabel = xAxis?.label ?? xAxis?.key ?? 'x'
+  const yLabel = yAxis?.label ?? yAxis?.key ?? 'y'
+
+  const valueTuples: [number, number][] = []
+  for (const dp of data) {
+    const x = Number(dp.xAxis)
+    const y = Number(dp.yAxis)
+    if (!isFinite(x) || !isFinite(y)) continue
+    valueTuples.push([x, y])
+  }
+
+  return {
+    title: `${xLabel} vs ${yLabel}`,
+    statType: 'value',
+    yAxis: [],
+    zAxis: [],
+    series: [],
+    points: [],
+    axisLabels: { x: xLabel, y: yLabel },
+    valueTuples,
+  }
 }
 
 // Sort category values by their summed value across all points on that axis.

@@ -433,3 +433,71 @@ describe('buildChartData', () => {
     expect(buildChartData([], undefined, noSort)).toEqual([])
   })
 })
+
+// ---------------------------------------------------------------------------
+// buildValueModeChart
+// ---------------------------------------------------------------------------
+import { buildValueModeChart } from './transform'
+import type { Axis } from '../types'
+
+describe('buildValueModeChart', () => {
+  const valueAxes: Axis[] = [
+    { key: 'x', label: 'price', type: 'value' },
+    { key: 'y', label: 'latency', type: 'value' },
+  ]
+
+  function vdp(xAxis: string, yAxis: string): DataPoint {
+    return { xAxis, yAxis, stats: [] }
+  }
+
+  it('parses string coordinates into [number, number] tuples', () => {
+    const data = [vdp('100', '12'), vdp('200', '8')]
+
+    const chart = buildValueModeChart(data, valueAxes)
+
+    expect(chart.valueTuples).toEqual([
+      [100, 12],
+      [200, 8],
+    ])
+  })
+
+  it('drops rows with non-finite x or y', () => {
+    const data = [vdp('1', '2'), vdp('bad', '3'), vdp('4', 'NaN')]
+
+    const chart = buildValueModeChart(data, valueAxes)
+
+    expect(chart.valueTuples).toEqual([[1, 2]])
+  })
+
+  it('title combines x and y labels', () => {
+    const chart = buildValueModeChart([vdp('1', '2')], valueAxes)
+    expect(chart.title).toBe('price vs latency')
+  })
+
+  it('falls back to axis key when label is absent', () => {
+    const axes: Axis[] = [
+      { key: 'x', type: 'value' },
+      { key: 'y', type: 'value' },
+    ]
+    const chart = buildValueModeChart([vdp('1', '2')], axes)
+    expect(chart.title).toBe('x vs y')
+  })
+
+  it('sets axisLabels from axes', () => {
+    const chart = buildValueModeChart([vdp('1', '2')], valueAxes)
+    expect(chart.axisLabels).toEqual({ x: 'price', y: 'latency' })
+  })
+
+  it('emits empty series, points, yAxis, zAxis', () => {
+    const chart = buildValueModeChart([vdp('1', '2')], valueAxes)
+    expect(chart.series).toEqual([])
+    expect(chart.points).toEqual([])
+    expect(chart.yAxis).toEqual([])
+    expect(chart.zAxis).toEqual([])
+  })
+
+  it('returns empty valueTuples for empty data', () => {
+    const chart = buildValueModeChart([], valueAxes)
+    expect(chart.valueTuples).toEqual([])
+  })
+})
