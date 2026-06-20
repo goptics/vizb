@@ -5,14 +5,16 @@ description: Add a z-axis to render interactive visual 3D bar and line charts in
 
 import { CardGrid, Card, Aside, LinkCard } from '@astrojs/starlight/components';
 
-vizb supports two 3D modes for **bar** and **line** charts. Both render in a WebGL scene you can rotate, zoom, and pan in the browser. Other chart types (pie, radar, heatmap) receive z-axis data differently — they don't render a 3D scene.
+vizb supports two 3D modes for **bar**, **line**, and **scatter** charts. Both render in a WebGL scene you can rotate, zoom, and pan in the browser. Other chart types (pie, radar, heatmap) receive z-axis data differently — they don't render a 3D scene.
+
+**Scatter** adds a third path: continuous 3D from `--axes x,y,z` (no grouping columns). See the [Scatter Chart](/charts/scatter) page for value and hybrid modes.
 
 ## Two 3D Modes
 
 | Mode | How to enable | X (width) | Y (depth) | Z (height) |
 |------|---------------|-----------|-----------|------------|
 | **Grouped** | Add `z` to `--group-pattern` / `--group-regex` | categories | categories | metric value (stacked per z group) |
-| **Value** | `vizb bar` / `vizb line` with `--3d` on x+y-only data | categories | categories (former 2D legend) | metric value (single series, visualMap) |
+| **Value** | `vizb bar` / `vizb line` / `vizb scatter` with `--3d` on x+y-only data | categories | categories (former 2D legend) | metric value (single series, visualMap) |
 
 Grouped 3D takes precedence: if your data already has a z dimension, `--3d` is ignored.
 
@@ -70,7 +72,7 @@ See the [Grouping Guide](/guides/grouping) for full pattern and regex syntax.
 
 ## Value 3D (`--3d` on x+y data)
 
-When you have only **x** and **y** dimensions, a 2D bar/line chart puts every y category in the legend — hard to read with many series. Pass `--3d` on `vizb bar` or `vizb line` to project the same data into 3D: y categories move to depth, and the metric value becomes bar/line height. With `--3d`, a **visualMap** gradient colors bars/lines by metric value (on by default).
+When you have only **x** and **y** dimensions, a 2D bar/line/scatter chart puts every y category in the legend — hard to read with many series. Pass `--3d` on `vizb bar`, `vizb line`, or `vizb scatter` to project the same data into 3D: y categories move to depth, and the metric value becomes bar/line/point height. With `--3d`, a **visualMap** gradient colors the geometry by metric value (on by default).
 
 ```bash
 # CSV with x+y columns — no z grouping needed
@@ -100,6 +102,10 @@ The HTML bundles **3D view** and **3D visual map** toggles in settings (both on 
   <Card title="3D Line" icon="analytics">
     3D polylines across the x/y grid, with scatter markers at each vertex so
     individual points stay readable.
+  </Card>
+  <Card title="3D Scatter" icon="magnifier">
+    `scatter3D` points — grouped z series, continuous `--axes x,y,z`, or hybrid
+    categorical x/y with a numeric z column.
   </Card>
 </CardGrid>
 
@@ -137,5 +143,6 @@ only what's visible. Tooltips follow light/dark mode automatically.
 <LinkCard title="Heatmap" href="/charts/heatmap" description="X × Y colored grid — works great with or without z, never renders WebGL." />
 <LinkCard title="Bar Chart" href="/charts/bar" description="Bar chart in all three dimensions — 1D, 2D, and 3D." />
 <LinkCard title="Line Chart" href="/charts/line" description="Line chart in all three dimensions — 1D, 2D, and 3D." />
+<LinkCard title="Scatter Chart" href="/charts/scatter" description="Coordinate plotting with grouped, value, and hybrid modes." />
 <LinkCard title="Axis Swapping" href="/ui/swapping" description="Swap z in and out interactively to toggle between 3D and 2D." />
 <LinkCard title="Settings" href="/ui/settings" description="Auto-rotate and other runtime controls." />

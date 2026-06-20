@@ -5,7 +5,7 @@ description: Generate a single chart type with only the flags that chart support
 
 import { Aside } from '@astrojs/starlight/components';
 
-Each chart type has its own subcommand: `vizb bar`, `vizb line`, `vizb pie`, `vizb heatmap`, and `vizb radar`. A chart subcommand is equivalent to the root command restricted to one chart — `vizb bar data.csv` produces the same output as `vizb data.csv --charts bar` — but it exposes **only the flags valid for that chart**. For example, `--scale` and `--3d-rotate` exist on `bar`/`line` but not on `pie`/`heatmap`/`radar`, so an unsupported flag fails fast instead of being silently ignored.
+Each chart type has its own subcommand: `vizb bar`, `vizb line`, `vizb scatter`, `vizb pie`, `vizb heatmap`, and `vizb radar`. A chart subcommand is equivalent to the root command restricted to one chart — `vizb bar data.csv` produces the same output as `vizb data.csv --charts bar` — but it exposes **only the flags valid for that chart**. For example, `--scale` and `--3d-rotate` exist on `bar`/`line`/`scatter` but not on `pie`/`heatmap`/`radar`, and only `scatter` accepts `--axes`, so an unsupported flag fails fast instead of being silently ignored.
 
 Use a subcommand when you want a single focused chart; use the [root command](/commands/root) with `--charts` when you want several chart types from one dataset.
 
@@ -15,7 +15,7 @@ Use a subcommand when you want a single focused chart; use the [root command](/c
 vizb <chart> [target] [flags]
 ```
 
-`<chart>` is one of `bar`, `line`, `pie`, `heatmap`, `radar`. Output is HTML by default, or JSON when `-o` ends in `.json` (same rules as the root command).
+`<chart>` is one of `bar`, `line`, `scatter`, `pie`, `heatmap`, `radar`. Output is HTML by default, or JSON when `-o` ends in `.json` (same rules as the root command).
 
 ```bash
 vizb bar data.csv -g impl,size -p n,x -o bar.html
@@ -48,12 +48,15 @@ Every chart subcommand accepts the common data, grouping, and metadata flags:
 
 ## Chart-specific flags
 
-| Flag | `bar` | `line` | `pie` | `heatmap` | `radar` | Description |
-|------|:---:|:---:|:---:|:---:|:---:|-------------|
-| `--scale` (`-S`) | ✅ | ✅ | — | — | — | Value scale: `linear` or `log` |
-| `--3d-rotate` | ✅ | ✅ | — | — | — | Auto-rotate the 3D scene (only meaningful with z-axis data) |
+| Flag | `bar` | `line` | `scatter` | `pie` | `heatmap` | `radar` | Description |
+|------|:---:|:---:|:---------:|:---:|:---:|:---:|-------------|
+| `--scale` (`-S`) | ✅ | ✅ | ✅ | — | — | — | Value scale: `linear` or `log` |
+| `--3d` | ✅ | ✅ | ✅ | — | — | — | Pseudo-3D for grouped x+y data (y → depth, metric → height) |
+| `--3d-visualmap` | ✅ | ✅ | ✅ | — | — | — | Color 3D geometry by metric value |
+| `--3d-rotate` | ✅ | ✅ | ✅ | — | — | — | Auto-rotate the 3D scene (only meaningful with 3D data) |
+| `--axes` | — | — | ✅ | — | — | — | csv/json only: 2–3 numeric columns as raw coordinates, or 1 column with exactly 2 group dims (hybrid) |
 
-`bar` and `line` render in 3D when the data has a z dimension (`-p n/x/y/z`), which is why they accept `--scale` and `--3d-rotate`. The other chart types are 2D-only, so those flags are intentionally absent — passing them is an error:
+`bar`, `line`, and `scatter` render in 3D when the data has a z dimension (`-p n/x/y/z`) or scatter uses `--axes` with three columns. Pie, heatmap, and radar are 2D-only for those flags — passing an unsupported flag is an error:
 
 ```bash
 vizb pie data.csv --scale log   # Error: unknown flag: --scale
@@ -70,6 +73,9 @@ vizb pie data.csv -g impl --sort asc --show-labels -o pie.html
 
 # Line from Go benchmarks via stdin, swapping axes
 go test -bench . | vizb line -p n/y --swap yn -o line.html
+
+# Scatter from raw numeric columns (value mode)
+vizb scatter data.csv --axes price,latency -o scatter.html
 
 # JSON output for later merging / re-rendering
 vizb radar data.csv -g impl -o radar.json

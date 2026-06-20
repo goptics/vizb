@@ -9,7 +9,7 @@ Vizb generates a single self-contained HTML file with a Vue.js-powered interacti
 
 ## Chart Types
 
-Vizb supports five chart types, all rendered in a single view:
+Vizb supports six chart types, all rendered in a single view:
 
 <CardGrid>
   <Card title="Bar Chart" icon="bars">
@@ -17,6 +17,9 @@ Vizb supports five chart types, all rendered in a single view:
   </Card>
   <Card title="Line Chart" icon="analytics">
     Track trends across X-axis values. Best for sequential data like input sizes or concurrency levels.
+  </Card>
+  <Card title="Scatter Chart" icon="magnifier">
+    Plot individual points in 2D or 3D. Supports grouped categories, `--axes` coordinate mode, and hybrid layouts. See [Scatter Chart](/charts/scatter).
   </Card>
   <Card title="Pie Chart" icon="puzzle">
     Show proportional distribution. Useful for comparing relative sizes of benchmark results.
@@ -35,10 +38,10 @@ Control which charts appear with `--charts` (this also controls output file size
 vizb bench.txt -c bar,line -o output.html
 ```
 
-When your data has a z-axis, bar and line charts render in **3D** instead of 2D.
+When your data has a z-axis, bar, line, and scatter charts render in **3D** instead of 2D.
 See [3D Charts](/charts/3d).
 
-{/* TODO: Add GIF showing all five chart types rendered side by side */}
+{/* TODO: Add GIF showing all six chart types rendered side by side */}
 
 ## Scale Options
 

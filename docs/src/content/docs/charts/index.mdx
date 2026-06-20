@@ -1,11 +1,11 @@
 ---
 title: Charts Overview
-description: How vizb's five chart types share the same x/y/z dimension model — and how to pick the right shape for your data.
+description: How vizb's six chart types share the same x/y/z dimension model — and how to pick the right shape for your data.
 ---
 
 import { CardGrid, Card, LinkCard, Aside } from '@astrojs/starlight/components';
 
-Vizb folds the same **x/y/z dimension model** into every chart type — you describe your data once with a group pattern (e.g. `-p x,y,z` for CSV or `-p x/y/z` for benchmarks), and all five renderers interpret it in parallel. One pipeline, five different shapes. Use `--charts` (or `-c`) to control which renderers are bundled into the output file.
+Vizb folds the same **x/y/z dimension model** into every chart type — you describe your data once with a group pattern (e.g. `-p x,y,z` for CSV or `-p x/y/z` for benchmarks), and each selected renderer interprets it in parallel. One pipeline, six different shapes. Use `--charts` (or `-c`) to control which renderers are bundled into the output file.
 
 ## Chart Types
 
@@ -15,6 +15,9 @@ Vizb folds the same **x/y/z dimension model** into every chart type — you desc
   </Card>
   <Card title="Line Chart" icon="analytics" href="/charts/line">
     Track trends across X-axis values. One line per Y-series in 2D; switches to WebGL line3D with a z-axis.
+  </Card>
+  <Card title="Scatter Chart" icon="magnifier" href="/charts/scatter">
+    Plot individual points in 2D or 3D. Grouped categories, raw numeric coordinates via `--axes`, or hybrid x/y + numeric z.
   </Card>
   <Card title="Pie Chart" icon="puzzle" href="/charts/pie">
     Show proportional distribution. Scales from one pie (1D) to two side-by-side (2D) to three pies (3D).
@@ -43,11 +46,12 @@ Pie and radar have no cartesian axes, but the same `-p` pattern governs how many
 |-------|--------------|----------------|------------------|
 | **Bar** | Single bar series over X | Grouped bars, one series per Y value | WebGL bar3D — Z stacked per (X, Y) cell |
 | **Line** | Single line over X | One line per Y value across X | WebGL line3D — sparse points per Z |
+| **Scatter** | One point per X | One series per Y value across X | WebGL scatter3D — points per Z; or `--axes x,y,z` for continuous 3D |
 | **Pie** | One pie (X = slices) | Two pies side-by-side (By X / By Y) | Three pies (By X / By Y / By Z) |
 | **Radar** | One polygon, X = spokes, value = stat total | One polygon per X, Y = spokes, legend = X | One polygon per Z, X = data points, Y = spokes |
 | **Heatmap** | n/a — needs at least X + Y | Matrix X × Y, single-series gradient | Same matrix; cell = Σ z, color blends z palette |
 
-{/* TODO: Add GIF showing all five charts rendered side by side */}
+{/* TODO: Add GIF showing all six charts rendered side by side */}
 
 <Aside type="note">
   Heatmap requires at least a 2D pattern (`-p x,y` for CSV or `-p x/y` for benchmarks). Passing `-p x` with `-c heatmap` will produce an empty chart panel.
@@ -78,15 +82,15 @@ vizb data.csv -g algo,input_size,variant,run_type -p n,x,y,z -c bar -o out.html
 
 ## Settings
 
-Most settings apply to every chart type. The exceptions are `scale` (log), which only affects cartesian charts, and `3d-rotate` (3D auto-spin), which only applies when bar or line renders in WebGL mode.
+Most settings apply to every chart type. The exceptions are `scale` (log), which only affects cartesian charts, and `3d-rotate` (3D auto-spin), which only applies when bar, line, or scatter renders in WebGL mode.
 
-| Setting | `bar` | `line` | `pie` | `radar` | `heatmap` |
-|---------|:-----:|:------:|:-----:|:-------:|:---------:|
-| `sort` / `--sort` | ✓ | ✓ | ✓ | ✓ | ✓ |
-| `labels` / `--show-labels` | ✓ | ✓ | ✓ | ✓ | ✓ |
-| `swap` (axis reorder) | ✓ | ✓ | ✓ | ✓ | ✓ |
-| `scale` log | ✓ | ✓ | ✗ | ✗ | ✗ |
-| `3d-rotate` (3D auto-rotate) | ✓ 3D only | ✓ 3D only | ✗ | ✗ | ✗ |
+| Setting | `bar` | `line` | `scatter` | `pie` | `radar` | `heatmap` |
+|---------|:-----:|:------:|:---------:|:-----:|:-------:|:---------:|
+| `sort` / `--sort` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `labels` / `--show-labels` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `swap` (axis reorder) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `scale` log | ✓ | ✓ | ✓ | ✗ | ✗ | ✗ |
+| `3d-rotate` (3D auto-rotate) | ✓ 3D only | ✓ 3D only | ✓ 3D only | ✗ | ✗ | ✗ |
 
 To override a setting for a single chart type without affecting the others, use the `--chart <type>:key=val` syntax:
 
@@ -108,7 +112,7 @@ The `--charts` flag (short: `-c`) controls which renderers are compiled into the
 bar,line,pie
 ```
 
-Add `heatmap` or `radar` explicitly when you need them: `-c bar,line,pie,heatmap,radar`.
+Add `scatter`, `heatmap`, or `radar` explicitly when you need them: `-c bar,line,pie,scatter,heatmap,radar`.
 
 Each chart renderer ships as a separate compressed chunk; only the ones you select are embedded. This keeps the output small when you only need one or two shapes:
 
@@ -121,7 +125,7 @@ vizb data.csv -g category -c bar -o output.html
 ```
 
 <Aside type="tip">
-  For sharing or deploying reports, pass `--charts` to include only what your audience needs. The 3D engine (~380 kB encoded) is pulled in automatically when bar or line is selected *and* your data has a z-axis — and omitted otherwise. See [Output File Size](/ui#output-file-size) for the size breakdown.
+  For sharing or deploying reports, pass `--charts` to include only what your audience needs. The 3D engine (~380 kB encoded) is pulled in automatically when bar, line, or scatter is selected *and* your data needs a 3D scene — and omitted otherwise. See [Output File Size](/ui#output-file-size) for the size breakdown.
 </Aside>
 
 ## Next Steps
