@@ -123,7 +123,7 @@ func ParseJSON(filename string, cfg parser.Config) []shared.DataPoint {
 
 	var chartCols []string
 	var fieldLabels map[string]string
-	if len(cfg.Cols) > 0 {
+	if len(cfg.Select) > 0 {
 		var err error
 		chartCols, fieldLabels, err = resolveExplicitChartFields(colOrder, cfg, rows)
 		if err != nil {
@@ -230,15 +230,15 @@ func resolveExplicitChartFields(colOrder []string, cfg parser.Config, rows []map
 		numeric[k] = true
 	}
 
-	fields := make([]string, 0, len(cfg.Cols))
-	labels := make(map[string]string, len(cfg.Cols))
+	fields := make([]string, 0, len(cfg.Select))
+	labels := make(map[string]string, len(cfg.Select))
 
-	for _, spec := range cfg.Cols {
+	for _, spec := range cfg.Select {
 		if !seen[spec.Source] {
-			return nil, nil, fmt.Errorf("column '%s' not found in --cols; available: %v", spec.Source, colOrder)
+			return nil, nil, fmt.Errorf("column '%s' not found in --select; available: %v", spec.Source, colOrder)
 		}
 		if !numeric[spec.Source] {
-			return nil, nil, fmt.Errorf("column '%s' in --cols is not numeric", spec.Source)
+			return nil, nil, fmt.Errorf("column '%s' in --select is not numeric", spec.Source)
 		}
 
 		label := spec.Source

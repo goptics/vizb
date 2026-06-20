@@ -55,20 +55,20 @@ func (s *PipelineSuite) TestPreprocessInputFile() {
 	})
 }
 
-func (s *PipelineSuite) TestPrepareDataWarnsColsIgnoredForGoParser() {
+func (s *PipelineSuite) TestPrepareDataWarnsSelectIgnoredForGoParser() {
 	benchFile := s.writeFile("valid.txt", `BenchmarkExample-8    1000000    1234 ns/op    1000 B/op    10 allocs/op`)
 	cfg := parser.Config{
 		GroupPattern: "y",
 		TimeUnit:     "ns",
 		MemUnit:      "B",
-		Cols:         []parser.ColumnSpec{{Source: "price"}},
+		Select:       []parser.ColumnSpec{{Source: "price"}},
 	}
 
 	errOut := testutil.CaptureStderr(func() {
 		results := prepareData(benchFile, "go", cfg)
 		s.NotEmpty(results)
 	})
-	s.Contains(errOut, "--cols is only supported for csv/json parsers")
+	s.Contains(errOut, "--select is only supported for csv/json parsers")
 }
 
 func (s *PipelineSuite) TestPrepareData() {

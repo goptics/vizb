@@ -69,7 +69,7 @@ func ParseCSV(filename string, cfg parser.Config) []shared.DataPoint {
 
 	var chartCols []int
 	var colLabels map[int]string
-	if len(cfg.Cols) > 0 {
+	if len(cfg.Select) > 0 {
 		var err error
 		chartCols, colLabels, err = resolveExplicitChartColumns(headers, cfg, dataRows)
 		if err != nil {
@@ -206,10 +206,10 @@ func resolveExplicitChartColumns(headers []string, cfg parser.Config, dataRows [
 		numeric[c] = true
 	}
 
-	indices := make([]int, 0, len(cfg.Cols))
-	labels := make(map[int]string, len(cfg.Cols))
+	indices := make([]int, 0, len(cfg.Select))
+	labels := make(map[int]string, len(cfg.Select))
 
-	for _, spec := range cfg.Cols {
+	for _, spec := range cfg.Select {
 		idx := -1
 		for i, h := range headers {
 			if h == spec.Source {
@@ -218,10 +218,10 @@ func resolveExplicitChartColumns(headers []string, cfg parser.Config, dataRows [
 			}
 		}
 		if idx == -1 {
-			return nil, nil, fmt.Errorf("column '%s' not found in --cols; available: %v", spec.Source, nonEmpty(headers))
+			return nil, nil, fmt.Errorf("column '%s' not found in --select; available: %v", spec.Source, nonEmpty(headers))
 		}
 		if !numeric[idx] {
-			return nil, nil, fmt.Errorf("column '%s' in --cols is not numeric", spec.Source)
+			return nil, nil, fmt.Errorf("column '%s' in --select is not numeric", spec.Source)
 		}
 
 		label := spec.Source

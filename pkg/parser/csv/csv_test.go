@@ -43,7 +43,7 @@ func (s *CSVSuite) writeFile(content string) string {
 }
 
 func (s *CSVSuite) TestExplicitColsSelectsAndOrders() {
-	s.cfg.Cols = []parser.ColumnSpec{{Source: "price"}, {Source: "count"}}
+	s.cfg.Select = []parser.ColumnSpec{{Source: "price"}, {Source: "count"}}
 	csv := "name,date,count,level,price\na,2024-01,10,1,100\n"
 
 	results := ParseCSV(s.writeFile(csv), s.cfg)
@@ -55,7 +55,7 @@ func (s *CSVSuite) TestExplicitColsSelectsAndOrders() {
 }
 
 func (s *CSVSuite) TestExplicitColsRename() {
-	s.cfg.Cols = []parser.ColumnSpec{
+	s.cfg.Select = []parser.ColumnSpec{
 		{Source: "price", Label: "Unit price"},
 		{Source: "count", Label: "Total"},
 	}
@@ -67,14 +67,14 @@ func (s *CSVSuite) TestExplicitColsRename() {
 }
 
 func (s *CSVSuite) TestExplicitColsMissingColumnErrors() {
-	s.cfg.Cols = []parser.ColumnSpec{{Source: "missing"}}
+	s.cfg.Select = []parser.ColumnSpec{{Source: "missing"}}
 	csv := "name,price\na,10\n"
 
 	s.Panics(func() { ParseCSV(s.writeFile(csv), s.cfg) })
 }
 
 func (s *CSVSuite) TestExplicitColsNonNumericErrors() {
-	s.cfg.Cols = []parser.ColumnSpec{{Source: "name"}}
+	s.cfg.Select = []parser.ColumnSpec{{Source: "name"}}
 	csv := "name,price\nalpha,10\n"
 
 	s.Panics(func() { ParseCSV(s.writeFile(csv), s.cfg) })

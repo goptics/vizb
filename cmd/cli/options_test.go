@@ -41,26 +41,26 @@ func (s *OptionsSuite) TestLinearValidateNormalisesSort() {
 	s.Equal("asc", o.Sort)
 }
 
-func (s *OptionsSuite) TestParseConfigMapsCols() {
+func (s *OptionsSuite) TestParseConfigMapsSelect() {
 	o := &CommonOptions{
 		GroupPattern: "x",
-		Cols:         "price{Unit price},count",
+		Select:       "price{Unit price},count",
 	}
 	cfg := o.ParseConfig()
-	s.Require().Len(cfg.Cols, 2)
-	s.Equal("price", cfg.Cols[0].Source)
-	s.Equal("Unit price", cfg.Cols[0].Label)
-	s.Equal("count", cfg.Cols[1].Source)
+	s.Require().Len(cfg.Select, 2)
+	s.Equal("price", cfg.Select[0].Source)
+	s.Equal("Unit price", cfg.Select[0].Label)
+	s.Equal("count", cfg.Select[1].Source)
 }
 
-func (s *OptionsSuite) TestParseConfigRejectsColsGroupOverlap() {
+func (s *OptionsSuite) TestParseConfigRejectsSelectGroupOverlap() {
 	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
 	defer restore()
 
 	o := &CommonOptions{
 		GroupPattern: "x",
 		Group:        []string{"date"},
-		Cols:         "price,date",
+		Select:       "price,date",
 	}
 	s.Panics(func() { o.ParseConfig() })
 	s.True(*exitCalled)

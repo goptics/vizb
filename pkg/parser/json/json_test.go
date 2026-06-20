@@ -35,7 +35,7 @@ func (s *JSONSuite) writeFile(content string) string {
 }
 
 func (s *JSONSuite) TestExplicitColsSelectsAndOrders() {
-	s.cfg.Cols = []parser.ColumnSpec{{Source: "stocks"}, {Source: "sells"}}
+	s.cfg.Select = []parser.ColumnSpec{{Source: "stocks"}, {Source: "sells"}}
 	j := `[{"name":"a","sells":10,"stocks":5},{"name":"b","sells":20,"stocks":7}]`
 
 	results := ParseJSON(s.writeFile(j), s.cfg)
@@ -44,7 +44,7 @@ func (s *JSONSuite) TestExplicitColsSelectsAndOrders() {
 }
 
 func (s *JSONSuite) TestExplicitColsRename() {
-	s.cfg.Cols = []parser.ColumnSpec{{Source: "sells", Label: "Revenue"}}
+	s.cfg.Select = []parser.ColumnSpec{{Source: "sells", Label: "Revenue"}}
 	j := `[{"name":"a","sells":10}]`
 
 	results := ParseJSON(s.writeFile(j), s.cfg)
@@ -53,7 +53,7 @@ func (s *JSONSuite) TestExplicitColsRename() {
 }
 
 func (s *JSONSuite) TestExplicitColsNestedKey() {
-	s.cfg.Cols = []parser.ColumnSpec{{Source: "mem.alloc"}}
+	s.cfg.Select = []parser.ColumnSpec{{Source: "mem.alloc"}}
 	j := `[{"name":"a","mem":{"alloc":3}}]`
 
 	results := ParseJSON(s.writeFile(j), s.cfg)

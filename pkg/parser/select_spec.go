@@ -12,13 +12,13 @@ type ColumnSpec struct {
 	Label  string
 }
 
-// ParseColsFlag parses --cols=price{Unit price},count into column specs.
-func ParseColsFlag(raw string) ([]ColumnSpec, error) {
+// ParseSelectFlag parses --select=price{Unit price},count into column specs.
+func ParseSelectFlag(raw string) ([]ColumnSpec, error) {
 	if strings.TrimSpace(raw) == "" {
 		return nil, nil
 	}
 
-	tokens, err := tokenizeColsFlag(raw)
+	tokens, err := tokenizeSelectFlag(raw)
 	if err != nil {
 		return nil, err
 	}
@@ -31,10 +31,10 @@ func ParseColsFlag(raw string) ([]ColumnSpec, error) {
 			return nil, err
 		}
 		if spec.Source == "" {
-			return nil, fmt.Errorf("empty column name in --cols")
+			return nil, fmt.Errorf("empty column name in --select")
 		}
 		if seen[spec.Source] {
-			return nil, fmt.Errorf("duplicate column '%s' in --cols", spec.Source)
+			return nil, fmt.Errorf("duplicate column '%s' in --select", spec.Source)
 		}
 		seen[spec.Source] = true
 		specs = append(specs, spec)
@@ -46,7 +46,7 @@ func parseColumnToken(tok string) (ColumnSpec, error) {
 	if len(tok) >= 2 && tok[0] == '"' {
 		source, err := strconv.Unquote(tok)
 		if err != nil {
-			return ColumnSpec{}, fmt.Errorf("invalid quoted column in --cols: %v", err)
+			return ColumnSpec{}, fmt.Errorf("invalid quoted column in --select: %v", err)
 		}
 		return ColumnSpec{Source: source}, nil
 	}
@@ -59,12 +59,12 @@ func parseColumnToken(tok string) (ColumnSpec, error) {
 	source := strings.TrimSpace(tok[:open])
 	label, _, err := parseCurlyLabel(tok, open)
 	if err != nil {
-		return ColumnSpec{}, fmt.Errorf("%w in --cols", err)
+		return ColumnSpec{}, fmt.Errorf("%w in --select", err)
 	}
 	return ColumnSpec{Source: source, Label: label}, nil
 }
 
-func tokenizeColsFlag(raw string) ([]string, error) {
+func tokenizeSelectFlag(raw string) ([]string, error) {
 	var tokens []string
 	var cur strings.Builder
 	inQuote := false
@@ -74,7 +74,7 @@ func tokenizeColsFlag(raw string) ([]string, error) {
 		switch {
 		case c == '"' && !inQuote:
 			if cur.Len() > 0 {
-				return nil, fmt.Errorf("unexpected '\"' in --cols")
+				return nil, fmt.Errorf("unexpected '\"' in --select")
 			}
 			inQuote = true
 			cur.WriteByte(c)
@@ -92,7 +92,7 @@ func tokenizeColsFlag(raw string) ([]string, error) {
 	}
 
 	if inQuote {
-		return nil, fmt.Errorf("unclosed '\"' in --cols")
+		return nil, fmt.Errorf("unclosed '\"' in --select")
 	}
 	if cur.Len() > 0 {
 		tokens = append(tokens, cur.String())
