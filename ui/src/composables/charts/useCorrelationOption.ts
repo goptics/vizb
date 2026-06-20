@@ -6,6 +6,8 @@ import {
   createToolboxConfig,
   isLargeXAxis,
   createHeatmapDataZoomConfig,
+  createHeatmapLayoutConfig,
+  hasRotatedXLabels,
 } from './shared'
 import { fontSize } from './shared/common'
 
@@ -36,6 +38,11 @@ export function buildCorrelationOption(
   }
 
   const large = isLargeXAxis(labels)
+  const layout = createHeatmapLayoutConfig({
+    hasXDataZoom: large,
+    hasYDataZoom: large,
+    compact: true,
+  })
 
   const isDiverging = method !== 'dcor'
   const vmMin = isDiverging ? -1 : 0
@@ -48,9 +55,7 @@ export function buildCorrelationOption(
   return {
     backgroundColor: styling.backgroundColor,
     toolbox: createToolboxConfig(isDark, title, 2),
-    grid: large
-      ? { left: 60, right: '3%', bottom: 110, top: 8, containLabel: false }
-      : { left: 8, right: 8, top: 8, bottom: 48, containLabel: true },
+    grid: layout.grid,
     ...(large
       ? { dataZoom: createHeatmapDataZoomConfig(true, true, labels.length, labels.length, styling) }
       : {}),
@@ -67,7 +72,12 @@ export function buildCorrelationOption(
       type: 'category',
       data: labels,
       splitArea: { show: true },
-      axisLabel: { show: false },
+      axisLabel: {
+        color: styling.textColor,
+        fontSize,
+        interval: large ? 'auto' : 0,
+        rotate: hasRotatedXLabels(labels, large) ? 30 : 0,
+      },
       axisTick: { show: false },
       axisLine: { lineStyle: { color: styling.axisColor } },
     },
@@ -85,7 +95,7 @@ export function buildCorrelationOption(
       calculable: true,
       orient: 'horizontal',
       left: 'center',
-      bottom: 4,
+      bottom: layout.visualMapBottom,
       precision: 2,
       textStyle: { color: styling.textColor, fontSize },
       inRange: { color: vmColors },

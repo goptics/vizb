@@ -409,10 +409,11 @@ const corrOption = computed(() => {
 // rows so the scrollbar still reflects the full height.
 const ROW_H = 32 // px; must match the fixed row height in the template
 const OVERSCAN = 8
+const PANEL_BODY_H = 600 // px; matches chart card height (ChartCard.vue)
 
 const scrollEl = ref<HTMLElement | null>(null)
 const scrollTop = ref(0)
-const viewportH = ref(448) // ≈ max-h-[28rem]; replaced by the real height on mount
+const viewportH = ref(PANEL_BODY_H) // replaced by the real height on mount
 
 function measure() {
   if (scrollEl.value) {
@@ -538,7 +539,7 @@ function downloadCsv() {
           {{ filteredProfiles.length }} / {{ profiles.length }}
         </span>
       </div>
-      <div ref="scrollEl" class="max-h-[28rem] overflow-auto" @scroll="onScroll">
+      <div ref="scrollEl" class="max-h-[600px] overflow-auto" @scroll="onScroll">
         <table class="w-full border-collapse text-right text-xs">
           <thead>
             <tr class="border-b border-border text-muted-foreground">
@@ -632,7 +633,7 @@ function downloadCsv() {
       </div>
       <div
         ref="corrContainerRef"
-        class="h-[28rem]"
+        class="h-[600px]"
         :class="{ 'fixed inset-0 z-50 h-auto bg-background': corrIsFullscreen }"
       >
         <ChartHeatmap :option="corrOption" :init-options="initOptions" class="h-full w-full" />

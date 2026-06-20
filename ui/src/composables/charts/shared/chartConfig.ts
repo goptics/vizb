@@ -5,6 +5,62 @@ import { describe } from '@/lib/stats'
 
 export const LARGE_X_THRESHOLD = 50
 
+// Bottom chrome for heatmap / correlation — visualMap always, dataZoom when len > 50.
+export const HEATMAP_VISUAL_MAP_BOTTOM = 8
+export const HEATMAP_VISUAL_MAP_BAND = 48
+export const HEATMAP_DATAZOOM_X_HEIGHT = 28
+export const HEATMAP_DATAZOOM_X_GAP = 10
+export const HEATMAP_X_TICK_BAND = 28 // x-axis series name ticks
+export const HEATMAP_Y_ZOOM_INSET = 48
+export const HEATMAP_Y_LABEL_LEFT = 100
+
+export function heatmapDataZoomXBottom(): number {
+  return HEATMAP_VISUAL_MAP_BOTTOM + HEATMAP_VISUAL_MAP_BAND + HEATMAP_DATAZOOM_X_GAP
+}
+
+export interface HeatmapLayoutOptions {
+  hasXDataZoom?: boolean
+  hasYDataZoom?: boolean
+  seriesLength?: number
+  hasLegend?: boolean
+  top?: number | string
+  /** Tight padding for correlation panel (8px) vs chart default ('3%'). */
+  compact?: boolean
+}
+
+export function createHeatmapLayoutConfig(options: HeatmapLayoutOptions = {}) {
+  const hasXDataZoom = options.hasXDataZoom ?? false
+  const hasYDataZoom = options.hasYDataZoom ?? false
+  const seriesLength = options.seriesLength ?? 1
+  const hasLegend = options.hasLegend ?? false
+  const compact = options.compact ?? false
+
+  const legendSpace = hasLegend ? Math.min(15 + Math.floor((seriesLength - 1) / 15) * 2, 35) : 5
+
+  const visualMapBottom = HEATMAP_VISUAL_MAP_BOTTOM
+  const dataZoomXBottom = hasXDataZoom ? heatmapDataZoomXBottom() : undefined
+
+  const gridBottom = hasXDataZoom
+    ? dataZoomXBottom! + HEATMAP_DATAZOOM_X_HEIGHT + HEATMAP_X_TICK_BAND
+    : visualMapBottom + HEATMAP_VISUAL_MAP_BAND + HEATMAP_X_TICK_BAND
+
+  const needsFixedLeft = hasXDataZoom || hasYDataZoom
+  const left = needsFixedLeft ? HEATMAP_Y_LABEL_LEFT : compact ? 8 : '3%'
+  const right = hasYDataZoom ? HEATMAP_Y_ZOOM_INSET : compact ? 8 : '3%'
+
+  return {
+    visualMapBottom,
+    dataZoomXBottom,
+    grid: {
+      left,
+      right,
+      bottom: gridBottom,
+      top: options.top ?? (hasLegend ? `${legendSpace}%` : 8),
+      containLabel: !hasXDataZoom,
+    },
+  }
+}
+
 export function isLargeXAxis(xAxisData: string[]): boolean {
   return xAxisData.length > LARGE_X_THRESHOLD
 }
@@ -31,8 +87,8 @@ export function createHeatmapDataZoomConfig(
         xAxisIndex: 0,
         start: 0,
         end,
-        bottom: 55,
-        height: 28,
+        bottom: heatmapDataZoomXBottom(),
+        height: HEATMAP_DATAZOOM_X_HEIGHT,
         filterMode: 'filter',
         textStyle: { color: styling.textColor },
       }

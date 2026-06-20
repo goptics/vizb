@@ -1,5 +1,17 @@
 import { describe, it, expect } from 'vitest'
-import { createGridConfig, formatRadarItemTooltip, hasRotatedXLabels } from './chartConfig'
+import {
+  createGridConfig,
+  createHeatmapLayoutConfig,
+  heatmapDataZoomXBottom,
+  HEATMAP_DATAZOOM_X_HEIGHT,
+  HEATMAP_VISUAL_MAP_BAND,
+  HEATMAP_VISUAL_MAP_BOTTOM,
+  HEATMAP_X_TICK_BAND,
+  HEATMAP_Y_LABEL_LEFT,
+  HEATMAP_Y_ZOOM_INSET,
+  formatRadarItemTooltip,
+  hasRotatedXLabels,
+} from './chartConfig'
 
 const indicators = ['A', 'B', 'C']
 
@@ -20,6 +32,41 @@ describe('createGridConfig', () => {
     expect(createGridConfig(1, false, { hasXAxisName: true, hasRotatedLabels: true }).bottom).toBe(
       '13%'
     )
+  })
+})
+
+describe('createHeatmapLayoutConfig', () => {
+  it('reserves visualMap + tick band only when dataZoom is absent', () => {
+    const layout = createHeatmapLayoutConfig({ compact: true })
+    expect(layout.visualMapBottom).toBe(HEATMAP_VISUAL_MAP_BOTTOM)
+    expect(layout.dataZoomXBottom).toBeUndefined()
+    expect(layout.grid.bottom).toBe(
+      HEATMAP_VISUAL_MAP_BOTTOM + HEATMAP_VISUAL_MAP_BAND + HEATMAP_X_TICK_BAND
+    )
+    expect(layout.grid.containLabel).toBe(true)
+    expect(layout.grid.left).toBe(8)
+    expect(layout.grid.right).toBe(8)
+  })
+
+  it('stacks dataZoom above visualMap and enlarges bottom when x dataZoom is present', () => {
+    const layout = createHeatmapLayoutConfig({ hasXDataZoom: true, hasYDataZoom: true })
+    expect(layout.dataZoomXBottom).toBe(heatmapDataZoomXBottom())
+    expect(layout.dataZoomXBottom).toBeGreaterThan(
+      HEATMAP_VISUAL_MAP_BOTTOM + HEATMAP_VISUAL_MAP_BAND
+    )
+    expect(layout.grid.bottom).toBe(
+      heatmapDataZoomXBottom() + HEATMAP_DATAZOOM_X_HEIGHT + HEATMAP_X_TICK_BAND
+    )
+    expect(layout.grid.containLabel).toBe(false)
+    expect(layout.grid.bottom).toBeGreaterThan(
+      createHeatmapLayoutConfig({ compact: true }).grid.bottom
+    )
+  })
+
+  it('reserves fixed left/right for y-axis dataZoom slider', () => {
+    const layout = createHeatmapLayoutConfig({ hasYDataZoom: true })
+    expect(layout.grid.left).toBe(HEATMAP_Y_LABEL_LEFT)
+    expect(layout.grid.right).toBe(HEATMAP_Y_ZOOM_INSET)
   })
 })
 
