@@ -1,4 +1,4 @@
-import { ref, watch, unref, markRaw, onScopeDispose, type MaybeRef, type Ref } from 'vue'
+import { ref, watch, unref, toRaw, markRaw, onScopeDispose, type MaybeRef, type Ref } from 'vue'
 import type { AxisLabels, DataPoint, ChartData, Sort, ScaleType, Axis } from '../types'
 import TransformWorker from '../workers/transform.worker.ts?worker&inline'
 import type { WorkerResponse } from '../workers/transform.worker'
@@ -10,9 +10,19 @@ import { isValueMode } from '../lib/utils'
 // (targetString, e.g. "yx"). Same length and value set.
 export type Arrangement = { identityString: string; targetString: string }
 
-// Plain (proxy-free) copy of axes for postMessage — structured clone rejects Vue Proxies.
+// Plain (proxy-free) copies for postMessage — structured clone rejects Vue Proxies.
 const plainAxes = (axisList: Axis[] | undefined): Axis[] | undefined =>
   axisList?.map((a) => ({ key: a.key, label: a.label, type: a.type }))
+
+const plainLabels = (labels: AxisLabels | undefined | null): AxisLabels | null => {
+  if (!labels) return null
+  const out: AxisLabels = {}
+  if (labels.name !== undefined) out.name = labels.name
+  if (labels.x !== undefined) out.x = labels.x
+  if (labels.y !== undefined) out.y = labels.y
+  if (labels.z !== undefined) out.z = labels.z
+  return Object.keys(out).length ? out : null
+}
 
 // One chart's reactive slot. `key` is the stat signature — the chart's stable
 // identity across swap/sort/group within a dataset — so the ChartCard keyed by
@@ -160,7 +170,7 @@ export function useChartPipeline(
   const setArrangement = () => {
     if (!lastSignatures.length || readyInFlight || dataPending) return
     // Arrangement/swap is a no-op in value mode — skip to avoid racing init.
-    if (isValueMode(unref(axes))) return
+    if (isValueMode(toRaw(unref(axes)))) return
     readyInFlight = true
     // labels is a fresh plain object from swapAxisLabels (off now-plain axisLabels),
     // so postMessage clones it natively — no proxy stripping needed.
@@ -168,7 +178,7 @@ export function useChartPipeline(
       type: 'setArrangement',
       identityString: arrangement.value.identityString,
       targetString: arrangement.value.targetString,
-      labels: unref(labels) ?? null,
+      labels: plainLabels(toRaw(unref(labels))),
     })
   }
 
@@ -185,7 +195,7 @@ export function useChartPipeline(
   // Heavy (a structured clone of every row) — only runs on a real dataset change.
   const reinit = () => {
     dataPending = false
-    const data = rows()
+    const data = toRaw(rows())
     if (!data?.length) {
       charts.value = []
       lastSignatures = []
@@ -204,7 +214,7 @@ export function useChartPipeline(
     // clones and groups the dataset. Signatures are arrangement-independent (raw
     // rows only), so they match what ready will return. The ready handler reconciles
     // via its own prev-map: same keys → same ChartCard instances, no flicker.
-    const axisList = unref(axes)
+    const axisList = toRaw(unref(axes))
     const prev = new Map(charts.value.map((c) => [c.key, c]))
     if (isValueMode(axisList)) {
       const xLabel = axisList?.find((a) => a.key === 'x')?.label ?? 'x'
@@ -237,8 +247,8 @@ export function useChartPipeline(
       data,
       identityString: arrangement.value.identityString,
       targetString: arrangement.value.targetString,
-      labels: unref(labels) ?? null,
-      axes: plainAxes(unref(axes)),
+      labels: plainLabels(toRaw(unref(labels))),
+      axes: plainAxes(toRaw(unref(axes))),
     })
   }
 
@@ -272,7 +282,7 @@ export function useChartPipeline(
     () => [arrangement.value.identityString, arrangement.value.targetString] as const,
     () => {
       // Arrangement/swap is a no-op in value mode — skip to avoid pending=true with no compute.
-      if (isValueMode(unref(axes))) return
+      if (isValueMode(toRaw(unref(axes)))) return
       startBatch()
       clearTimeout(arrangeDebounce)
       arrangeDebounce = setTimeout(setArrangement, 50)

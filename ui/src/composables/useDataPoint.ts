@@ -88,7 +88,18 @@ getDataSets()
     const allowed = window.VIZB_CHARTS
     dataSets.value = raw.map((ds) => {
       const filtered = filterDataSetSettings(ds, allowed)
-      return reactive({ ...filtered, data: markRaw(filtered.data) })
+      // data + axes are markRaw'd so postMessage structured-clone succeeds (Vue
+      // reactive Proxies on the worker init payload throw DataCloneError).
+      const axes = filtered.axes?.map((a) => ({
+        key: a.key,
+        label: a.label,
+        type: a.type,
+      }))
+      return reactive({
+        ...filtered,
+        data: markRaw(filtered.data),
+        ...(axes?.length ? { axes: markRaw(axes) } : {}),
+      })
     })
   })
   .catch((err: unknown) => {
