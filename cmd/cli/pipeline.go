@@ -29,6 +29,10 @@ import (
 // (explicit single chart intent); the root command passes false (preserve the
 // dataset as-is).
 func RunLinear(cmd *cobra.Command, args []string, common CommonOptions, configs []config_charts.ChartConfig, applyOnPassthrough bool) {
+	RunLinearWithConfig(cmd, args, common, common.ParseConfig(), configs, applyOnPassthrough)
+}
+
+func RunLinearWithConfig(cmd *cobra.Command, args []string, common CommonOptions, cfg parser.Config, configs []config_charts.ChartConfig, applyOnPassthrough bool) {
 	target, ok := resolveInput(cmd, args)
 	if !ok {
 		return
@@ -41,8 +45,6 @@ func RunLinear(cmd *cobra.Command, args []string, common CommonOptions, configs 
 		common.Parser = detected
 		fmt.Println(style.Info.Render("✨ Auto-detected parser: " + detected))
 	}
-
-	cfg := common.ParseConfig()
 	WarnThreeDIfIneligible(cfg, configs)
 	outFile := ResolveOutputFileName(common.OutputFile)
 
@@ -70,10 +72,14 @@ func RunLinear(cmd *cobra.Command, args []string, common CommonOptions, configs 
 // the shared linear pipeline. An empty configs slice is treated as a no-op so
 // callers can defensively guard against misconfiguration.
 func RunSingleChart(cmd *cobra.Command, args []string, common CommonOptions, configs []config_charts.ChartConfig) {
+	RunSingleChartWithConfig(cmd, args, common, common.ParseConfig(), configs)
+}
+
+func RunSingleChartWithConfig(cmd *cobra.Command, args []string, common CommonOptions, cfg parser.Config, configs []config_charts.ChartConfig) {
 	if len(configs) == 0 {
 		return
 	}
-	RunLinear(cmd, args, common, configs, true)
+	RunLinearWithConfig(cmd, args, common, cfg, configs, true)
 }
 
 // WarnThreeDIfIneligible prints a warning when threeD is baked on a bar/line

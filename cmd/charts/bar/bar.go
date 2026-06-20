@@ -31,7 +31,6 @@ func (o *Options) Bind(fs *pflag.FlagSet) {
 	fs.BoolVar(&o.ThreeDRotate, "3d-rotate", false, "Auto-rotate the 3D scene (only applies when z-axis data is present)")
 	fs.BoolVar(&o.ThreeD, "3d", false, "Enable value 3D for x+y data (y categories on depth, metric on height)")
 	fs.BoolVar(&o.ThreeDVisualMap, "3d-visualmap", false, "Color 3D bars/lines by metric value (visualMap gradient)")
-	fs.StringVar(&o.Axes, "axes", "", "csv/json only: plot 2-3 numeric columns as raw x,y[,z] coordinates; mutually exclusive with --group/--select")
 }
 
 // NewCommand builds the `vizb bar` cobra command.

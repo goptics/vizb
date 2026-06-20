@@ -1,10 +1,12 @@
 package scatter
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
 	scatterchart "github.com/goptics/vizb/config/charts/scatter"
+	_ "github.com/goptics/vizb/pkg/parser/csv"
 	"github.com/goptics/vizb/testutil"
 	"github.com/stretchr/testify/suite"
 )
@@ -95,6 +97,76 @@ func (s *ScatterSuite) TestScatterCommandThreeDWithoutXYWarns() {
 	s.Require().True(ok)
 	s.Require().NotNil(scatterCfg.ThreeD)
 	s.True(*scatterCfg.ThreeD)
+}
+
+func (s *ScatterSuite) TestParseConfigMapsAxesAlone() {
+	o := &Options{Axes: "price,latency"}
+	o.GroupPattern = "x"
+	cfg := o.ParseConfig()
+	s.Require().Len(cfg.Axes, 2)
+	s.Equal("price", cfg.Axes[0].Source)
+	s.Equal("latency", cfg.Axes[1].Source)
+}
+
+func (s *ScatterSuite) TestParseConfigAcceptsHybridGroupAxes() {
+	o := &Options{Axes: "latency"}
+	o.GroupPattern = "x,y"
+	o.Group = []string{"region", "category"}
+	cfg := o.ParseConfig()
+	s.Require().Len(cfg.Axes, 1)
+	s.Equal("latency", cfg.Axes[0].Source)
+	s.Equal([]string{"region", "category"}, cfg.Group)
+}
+
+func (s *ScatterSuite) TestParseConfigRejectsHybridOverlap() {
+	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
+	defer restore()
+
+	o := &Options{Axes: "region"}
+	o.GroupPattern = "x,y"
+	o.Group = []string{"region", "category"}
+	s.Panics(func() { o.ParseConfig() })
+	s.True(*exitCalled)
+}
+
+func (s *ScatterSuite) TestParseConfigRejectsHybridWrongArity() {
+	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
+	defer restore()
+
+	o := &Options{Axes: "price,latency"}
+	o.GroupPattern = "x,y"
+	o.Group = []string{"region", "category"}
+	s.Panics(func() { o.ParseConfig() })
+	s.True(*exitCalled)
+}
+
+func (s *ScatterSuite) TestParseConfigRejectsAxesWithSelect() {
+	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
+	defer restore()
+
+	o := &Options{Axes: "price,latency"}
+	o.GroupPattern = "x"
+	o.Select = "mem"
+	s.Panics(func() { o.ParseConfig() })
+	s.True(*exitCalled)
+}
+
+func (s *ScatterSuite) TestScatterCommandAxesAloneWorks() {
+	dir := s.T().TempDir()
+	csv := filepath.Join(dir, "data.csv")
+	s.Require().NoError(os.WriteFile(csv, []byte("price,latency\n100,12\n200,18\n"), 0644))
+	out := filepath.Join(dir, "out.json")
+
+	cmd := NewCommand()
+	cmd.SetArgs([]string{"-o", out, "-P", "auto", "--axes", "price,latency", csv})
+	s.Require().NoError(cmd.Execute())
+
+	ds := testutil.ReadDataset(s.T(), out)
+	s.Require().Len(ds.Axes, 2)
+	s.Equal("value", ds.Axes[0].Type)
+	s.Equal("x", ds.Axes[0].Key)
+	s.Equal("price", ds.Axes[0].Label)
+	s.Equal("latency", ds.Axes[1].Label)
 }
 
 func (s *ScatterSuite) TestScatterCommandBadSwapExits() {
