@@ -29,12 +29,12 @@ tasks:
   build:docs:
     desc: Build docs for production
     cmds:
-      - cd docs; pnpm build; cd -
+      - cd docs; [ -d node_modules ] || pnpm install; pnpm build; cd -
 
   build:ui:
     desc: Build Vue UI template
     cmds:
-      - cd ui; EMBED_UI=True pnpm build; cd -
+      - cd ui; [ -d node_modules ] || pnpm install; EMBED_UI=True pnpm build; cd -
       - gofmt -w ./pkg/template
 
   build:cli:
@@ -77,7 +77,7 @@ tasks:
     desc: Format codes
     cmds:
       - gofmt -w .
-      - cd ui; pnpm format; cd -
+      - cd ui; [ -d node_modules ] || pnpm install; pnpm format; cd -
 
   release:check:
     desc: Check Goreleaser configuration

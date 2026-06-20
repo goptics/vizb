@@ -34,6 +34,34 @@ func (s *JSONSuite) writeFile(content string) string {
 	return path
 }
 
+func (s *JSONSuite) TestExplicitColsSelectsAndOrders() {
+	s.cfg.Select = []parser.ColumnSpec{{Source: "stocks"}, {Source: "sells"}}
+	j := `[{"name":"a","sells":10,"stocks":5},{"name":"b","sells":20,"stocks":7}]`
+
+	results := ParseJSON(s.writeFile(j), s.cfg)
+
+	s.Equal([]string{"stocks", "sells"}, statTypes(results[0].Stats))
+}
+
+func (s *JSONSuite) TestExplicitColsRename() {
+	s.cfg.Select = []parser.ColumnSpec{{Source: "sells", Label: "Revenue"}}
+	j := `[{"name":"a","sells":10}]`
+
+	results := ParseJSON(s.writeFile(j), s.cfg)
+
+	s.Equal([]string{"Revenue"}, statTypes(results[0].Stats))
+}
+
+func (s *JSONSuite) TestExplicitColsNestedKey() {
+	s.cfg.Select = []parser.ColumnSpec{{Source: "mem.alloc"}}
+	j := `[{"name":"a","mem":{"alloc":3}}]`
+
+	results := ParseJSON(s.writeFile(j), s.cfg)
+
+	s.Equal([]string{"mem.alloc"}, statTypes(results[0].Stats))
+	s.Equal(3.0, *results[0].Stats[0].Value)
+}
+
 func (s *JSONSuite) TestNumericFieldsBecomeChartsNoGroup() {
 	j := `[{"name":"a","sells":10,"stocks":5,"date":"2024-01"},{"name":"b","sells":20,"stocks":7,"date":"2025-02"}]`
 
@@ -232,6 +260,20 @@ func (s *JSONFatalSuite) TestMissingGroupFieldIsFatal() {
 
 func (s *JSONFatalSuite) TestNoNumericFieldsIsFatal() {
 	path := s.writeFile(`[{"name":"a","label":"foo"}]`)
+
+	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
+}
+
+func (s *JSONFatalSuite) TestExplicitColsMissingColumnErrors() {
+	s.cfg.Select = []parser.ColumnSpec{{Source: "missing"}}
+	path := s.writeFile(`[{"name":"a","sells":10}]`)
+
+	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
+}
+
+func (s *JSONFatalSuite) TestExplicitColsNonNumericErrors() {
+	s.cfg.Select = []parser.ColumnSpec{{Source: "name"}}
+	path := s.writeFile(`[{"name":"alpha","sells":10}]`)
 
 	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
 }

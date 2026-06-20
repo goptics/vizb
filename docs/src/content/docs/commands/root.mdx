@@ -81,6 +81,7 @@ for how the format is chosen.
 | `--group-pattern` | `-p` | `x` | Pattern-based grouping (`n`/`x`/`y`/`z` with your chosen separators; `z` → 3D). Benchmarks: `/` or `_`. CSV/JSON: match `-g` (commas for `-g a,b,c`, spaces for quoted `-g "a b"`, etc.) |
 | `--group-regex` | `-r` | `""` | Regex-based grouping (named captures) |
 | `--group` | `-g` | `""` | Names dimensions in `--group-pattern` order. csv/json: column/field names (separators must match `-p`); benchmark parsers: human-readable axis labels |
+| `--select` | | `""` | csv/json only: select value columns; optional rename with `{label}` (e.g. `--select=price{Unit price},count`) |
 | `--scale` | `-S` | `linear` | Scale type: `linear` or `log` |
 | `--sort` | `-s` | `""` | Sort order: `asc` or `desc` (default: as-is) |
 | `--charts` | `-c` | `bar,line,pie` | Chart types to generate (`bar`, `line`, `pie`, `heatmap`, `radar`) |

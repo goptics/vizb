@@ -27,6 +27,7 @@ type CommonOptions struct {
 	MemUnit      string
 	TimeUnit     string
 	NumberUnit   string
+	Select       string
 }
 
 // Bind registers the common flags onto fs.
@@ -43,6 +44,7 @@ func (o *CommonOptions) Bind(fs *pflag.FlagSet) {
 	fs.StringVarP(&o.Filter, "filter", "f", "", "Regex pattern to include only matching data labels / series names")
 	fs.StringVarP(&o.Tag, "tag", "t", "", "Tag/identifier for the comparison")
 	fs.StringVarP(&o.Parser, "parser", "P", "auto", "Benchmark parser to use; 'auto' detects from input content (one of: auto, "+strings.Join(parser.AvailableParsers(), ", ")+")")
+	fs.StringVar(&o.Select, "select", "", "csv/json only: select value columns; optional rename with {label} (e.g. --select=price{Unit price},count)")
 }
 
 // validationRules returns the warn-and-default rules for the common fields,
@@ -108,6 +110,22 @@ func (o *CommonOptions) ParseConfig() parser.Config {
 	})
 	if err != nil {
 		shared.ExitWithError(err.Error(), nil)
+	}
+	if strings.TrimSpace(o.Select) != "" {
+		selected, err := parser.ParseSelectFlag(o.Select)
+		if err != nil {
+			shared.ExitWithError(err.Error(), nil)
+		}
+		cfg.Select = selected
+		groupSet := map[string]bool{}
+		for _, g := range parser.EffectiveGroupColumns(cfg) {
+			groupSet[g] = true
+		}
+		for _, col := range selected {
+			if groupSet[col.Source] {
+				shared.ExitWithError(fmt.Sprintf("column '%s' cannot be in both --select and --group", col.Source), nil)
+			}
+		}
 	}
 	return cfg
 }
