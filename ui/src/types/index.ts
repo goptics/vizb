@@ -47,6 +47,7 @@ export type Sort = {
 export type Axis = {
   key: 'name' | 'x' | 'y' | 'z'
   label?: string
+  type?: string // 'value' = continuous numeric axis; absent or '' = category (default)
 }
 
 // Per-chart typed configs (wire format: `Dataset.Settings []ChartConfig`).
@@ -223,6 +224,7 @@ export type ChartData = {
   series: SeriesData[]
   points: Point3D[]
   axisLabels?: AxisLabels
+  valueTuples?: [number, number][] // value-mode: raw [x, y] coordinate pairs
   // Precomputed 3D render data (built in the transform worker for charts that
   // have x, y and z). Absent for 2D charts. Holds the sorted axis category
   // arrays plus the per-z series data for both bar3D (filled grid) and line3D

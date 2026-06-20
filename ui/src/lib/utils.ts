@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
-import type { ChartType, Meta, ChartData, DataPoint } from '../types'
+import type { ChartType, Meta, ChartData, DataPoint, Axis } from '../types'
 import type { Ref } from 'vue'
 
 /**
@@ -165,3 +165,6 @@ export const CPUtoString = (cpu: Meta['cpu']) => {
 
   return ''
 }
+
+export const isValueMode = (axes: Axis[] | undefined): boolean =>
+  !!axes?.some((a) => a.type === 'value')

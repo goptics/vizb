@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { DataPoint } from '../types'
-import type { ChartData } from '../types'
+import type { ChartData, Axis } from '../types'
 import {
   canOfferValue3D,
   computeChartGrandTotal,
@@ -8,6 +8,7 @@ import {
   datasetHasBothXY,
   datasetDimension,
   formatChartTotal,
+  isValueMode,
 } from './utils'
 
 const dp = (x: string, y: string, z = ''): DataPoint => ({
@@ -145,5 +146,36 @@ describe('computeChartGrandTotal', () => {
 describe('formatChartTotal', () => {
   it('rounds to two decimals', () => {
     expect(formatChartTotal(10.126)).toBe('10.13')
+  })
+})
+
+describe('isValueMode', () => {
+  it('returns false for undefined axes', () => {
+    expect(isValueMode(undefined)).toBe(false)
+  })
+
+  it('returns false for empty axes', () => {
+    expect(isValueMode([])).toBe(false)
+  })
+
+  it('returns false when no axis has type value', () => {
+    const axes: Axis[] = [{ key: 'x', label: 'Price' }]
+    expect(isValueMode(axes)).toBe(false)
+  })
+
+  it('returns true when any axis has type value', () => {
+    const axes: Axis[] = [
+      { key: 'x', label: 'Price', type: 'value' },
+      { key: 'y', label: 'Latency', type: 'value' },
+    ]
+    expect(isValueMode(axes)).toBe(true)
+  })
+
+  it('returns true with mixed category and value axes', () => {
+    const axes: Axis[] = [
+      { key: 'x', label: 'Name' },
+      { key: 'y', label: 'Score', type: 'value' },
+    ]
+    expect(isValueMode(axes)).toBe(true)
   })
 })
