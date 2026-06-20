@@ -31,10 +31,13 @@ type CPUInfo struct {
 }
 
 // Axis holds the key and optional human-readable label for a data dimension.
-// Key is one of "name", "x", "y", "z" (in serial order).
+// Key is one of "name", "x", "y", "z" (in serial order). Type is "" (category,
+// the default) or "value" (a continuous numeric coordinate axis, used by --axes
+// value mode).
 type Axis struct {
 	Key   string `json:"key"`
 	Label string `json:"label,omitempty"`
+	Type  string `json:"type,omitempty"`
 }
 
 // Sort controls sort direction for chart data.
