@@ -180,6 +180,69 @@ export function hasRotatedXLabels(xAxisData: string[], hasDataZoom = false): boo
   return xAxisData.reduce((acc, cur) => acc + cur.length, 0) > 100
 }
 
+/** Dual numeric axes for scatter --axes value mode — mirrors createAxisConfig styling. */
+export function createValueAxisConfig(
+  styling: ChartStyling,
+  xAxisName?: string,
+  yAxisName?: string,
+  yScale: ScaleType = 'linear',
+  minValue?: number
+): { xAxis: any; yAxis: any } {
+  const nameStyle = {
+    color: styling.textColor,
+    fontSize: axisTitleFontSize,
+    fontWeight: 'bold' as const,
+  }
+
+  const yAxisConfig: any = {
+    type: yScale === 'log' ? 'log' : 'value',
+    logBase: 10,
+    ...(yAxisName
+      ? { name: yAxisName, nameLocation: 'middle', nameGap: 45, nameTextStyle: nameStyle }
+      : {}),
+    splitLine: { lineStyle: { opacity: styling.opacity } },
+    axisLabel: { color: styling.textColor, fontSize },
+    axisLine: { lineStyle: { color: styling.axisColor } },
+  }
+
+  if (yScale === 'log' && minValue !== undefined) {
+    const minLog = Math.pow(10, Math.floor(Math.log10(minValue)))
+    yAxisConfig.min = Math.max(1, minLog)
+  }
+
+  return {
+    xAxis: {
+      type: 'value',
+      ...(xAxisName
+        ? { name: xAxisName, nameLocation: 'middle', nameGap: 30, nameTextStyle: nameStyle }
+        : {}),
+      axisLabel: { color: styling.textColor, fontSize },
+      axisLine: { lineStyle: { color: styling.axisColor } },
+      splitLine: { lineStyle: { opacity: styling.opacity } },
+    },
+    yAxis: yAxisConfig,
+  }
+}
+
+/** Item tooltip for [x, y] value-mode points — same box theme as grouping charts. */
+export function createValueModeTooltip(
+  isDark: boolean,
+  xLabel?: string,
+  yLabel?: string
+): EChartsOption['tooltip'] {
+  const theme = getTooltipTheme(isDark)
+  const xName = xLabel ?? 'x'
+  const yName = yLabel ?? 'y'
+  return {
+    trigger: 'item',
+    ...theme,
+    formatter: (params: unknown) => {
+      const [x, y] = (params as { data: [number, number | null] }).data
+      return `<strong>${xName}: ${formatTooltipValue(x)}</strong><br/>${yName}: ${formatTooltipValue(y)}`
+    },
+  }
+}
+
 export function createAxisConfig(
   styling: ChartStyling,
   xAxisData: string[],

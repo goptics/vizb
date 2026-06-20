@@ -78,7 +78,13 @@ const activeAxes = computed(() => activeDataSet.value?.axes)
 
 // Drives which renderer mounts; only the 3D branch loads echarts-gl.
 const is3DChart = computed(() =>
-  is3D(chartData, threeD.value, activeArrangement.value.targetString, activeAxes.value)
+  is3D(
+    chartData,
+    threeD.value,
+    activeArrangement.value.targetString,
+    activeAxes.value,
+    chartType.value
+  )
 )
 
 // Resolved sort gets a no-op default for the worker when the active config has

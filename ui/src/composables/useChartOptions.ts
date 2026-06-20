@@ -39,6 +39,7 @@ export function useChartOptions(
     threeDVisualMap,
     arrangementTarget,
     chartAxes,
+    chartType,
   }
 
   const barOptions = useBarChartOptions(config)
@@ -54,7 +55,13 @@ export function useChartOptions(
   const options = computed<EChartsOption>(() => {
     // When x, y AND z are all present, bar/line render as 3D charts.
     // Pie has no 3D equivalent, so it falls through to the 3-up pie layout.
-    const use3D = is3D(chartData, threeD.value, arrangementTarget.value, chartAxes.value)
+    const use3D = is3D(
+      chartData,
+      threeD.value,
+      arrangementTarget.value,
+      chartAxes.value,
+      chartType.value
+    )
 
     switch (chartType.value) {
       case 'bar':

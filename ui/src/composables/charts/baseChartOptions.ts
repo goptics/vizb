@@ -1,6 +1,6 @@
 import type { Ref } from 'vue'
 import type { EChartsOption } from 'echarts'
-import type { ChartData, Sort, ScaleType } from '@/types'
+import type { Axis, ChartData, Sort, ScaleType, ChartType } from '@/types'
 import { createTooltipConfig, createToolboxConfig, getChartStyling } from './shared/chartConfig'
 import { fontSize } from './shared/common'
 import { is3D } from '@/lib/utils'
@@ -21,6 +21,10 @@ export interface BaseChartConfig {
   // Runtime value-3D toggle (x+y only, when threeD is baked via --3d).
   threeD?: Ref<boolean>
   threeDVisualMap?: Ref<boolean>
+  /** Active swap target (e.g. xyz) — scatter value-mode 3D is swap-driven. */
+  arrangementTarget?: Ref<string>
+  chartAxes?: Ref<Axis[] | undefined>
+  chartType?: Ref<ChartType>
 }
 
 export const getBaseOptions = (config: BaseChartConfig): Partial<EChartsOption> => {
@@ -30,7 +34,15 @@ export const getBaseOptions = (config: BaseChartConfig): Partial<EChartsOption> 
   // saveAsImage's pixelRatio <= the chart dpr; a larger ratio falls back to a
   // 2D-only redraw that drops the 3D content. Cap 3D exports at the device dpr.
   const dpr = window.devicePixelRatio || 1
-  const saveAsImagePixelRatio = is3D(config.chartData, config.threeD?.value) ? dpr : 2
+  const saveAsImagePixelRatio = is3D(
+    config.chartData,
+    config.threeD?.value,
+    config.arrangementTarget?.value,
+    config.chartAxes?.value,
+    config.chartType?.value
+  )
+    ? dpr
+    : 2
   return {
     backgroundColor,
     tooltip: createTooltipConfig(false, isDark.value) as EChartsOption['tooltip'],

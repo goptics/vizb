@@ -1,6 +1,12 @@
-import type { Render3D, Point3D } from '@/types'
+import type { Render3D, Point3D, ScaleType } from '@/types'
 import { COLOR_PALETTE, getNextColorFor } from '@/lib/utils'
-import { tooltipDivider, tooltipSpreadRows, renderDonutSvg, type ChartStyling } from './chartConfig'
+import {
+  formatTooltipValue,
+  tooltipDivider,
+  tooltipSpreadRows,
+  renderDonutSvg,
+  type ChartStyling,
+} from './chartConfig'
 
 export const round2 = (v: number) => Math.round(v * 100) / 100
 
@@ -131,6 +137,61 @@ export const EMPTY_RENDER: Render3D = {
   barSeries: [],
   lineSeries: [],
   cellTotals: {},
+}
+
+/** Value axes for --axes x,y,z continuous 3D (swap-driven, not category indices). */
+export function createContinuous3DAxes(
+  styling: ChartStyling,
+  xLabel?: string,
+  yLabel?: string,
+  zLabel?: string,
+  scale: ScaleType = 'linear'
+) {
+  const valueType = scale === 'log' ? ('log' as const) : ('value' as const)
+  const log = scale === 'log' ? { logBase: 10 } : {}
+  const axisCommon = makeAxis3DCommon(styling)
+  return {
+    xAxis3D: {
+      type: valueType,
+      ...log,
+      ...axisCommon,
+      ...axis3DName(xLabel, styling),
+    },
+    yAxis3D: {
+      type: valueType,
+      ...log,
+      ...axisCommon,
+      ...axis3DName(yLabel, styling),
+    },
+    zAxis3D: {
+      type: valueType,
+      ...log,
+      ...axisCommon,
+      ...axis3DName(zLabel, styling),
+    },
+  }
+}
+
+export function createContinuous3DTooltipFormatter(
+  _isDark: boolean,
+  labels: { x?: string; y?: string; z?: string }
+) {
+  const xName = labels.x ?? 'x'
+  const yName = labels.y ?? 'y'
+  const zName = labels.z ?? 'z'
+  return (p: { value: number[] }) => {
+    const [x = 0, y = 0, z = 0] = p.value
+    return (
+      `<b>${xName}: ${formatTooltipValue(x)}</b><br/>` +
+      `${yName}: ${formatTooltipValue(y)}<br/>` +
+      `${zName}: ${formatTooltipValue(z)}`
+    )
+  }
+}
+
+export function continuous3DGridCounts(pointCount: number): { xCount: number; yCount: number } {
+  const tier = pointCount < 50 ? 10 : pointCount < 500 ? 50 : 100
+  return { xCount: tier, yCount: tier }
 }
 
 export function makeAxis3DCommon(styling: ChartStyling) {

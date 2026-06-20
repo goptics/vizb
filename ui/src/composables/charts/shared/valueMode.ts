@@ -13,13 +13,8 @@ import {
 } from './chartConfig'
 import { adjustForLogScaleLine, getEffectiveScale } from './common'
 
-const defaultLineSymbol = { symbol: 'circle' as const, symbolSize: 7 }
-const largeLineSymbol = { symbol: 'none' as const, sampling: 'lttb' as const }
 const defaultScatterSymbol = { symbol: 'circle' as const, symbolSize: 8 }
 const largeScatterSymbol = { symbol: 'circle' as const, symbolSize: 5 }
-
-const barNullableY = (y: number, scale: ScaleType): number | null =>
-  scale === 'log' && y <= 0 ? null : y
 
 export function sortValueTuples(
   tuples: [number, number][],
@@ -33,20 +28,13 @@ export function sortValueTuples(
 
 export function scaleValueTuples(
   tuples: [number, number][],
-  scale: ScaleType,
-  seriesType: 'line' | 'bar' | 'scatter'
+  scale: ScaleType
 ): [number, number | null][] {
   if (scale !== 'log') return tuples
-  return tuples.map(([x, y]) => {
-    const scaledY = seriesType === 'bar' ? barNullableY(y, scale) : adjustForLogScaleLine(y, scale)
-    return [x, scaledY]
-  })
+  return tuples.map(([x, y]) => [x, adjustForLogScaleLine(y, scale)])
 }
 
-function buildAxes2DValueOptions(
-  config: BaseChartConfig,
-  seriesType: 'line' | 'bar' | 'scatter'
-): EChartsOption {
+function buildScatterAxes2DValueOptions(config: BaseChartConfig): EChartsOption {
   const { chartData, sort, showLabels, isDark, scale } = config
   const tuples = chartData.value.valueTuples ?? []
   const xLabel = chartData.value.axisLabels?.x
@@ -60,7 +48,7 @@ function buildAxes2DValueOptions(
   )
 
   const sorted = sortValueTuples(tuples, sort.value.enabled, sort.value.order)
-  const data = scaleValueTuples(sorted, yScale, seriesType)
+  const data = scaleValueTuples(sorted, yScale)
   const largeX = isLargeXAxis(data.map((_, i) => String(i)))
 
   const label = {
@@ -71,31 +59,16 @@ function buildAxes2DValueOptions(
     },
   }
 
-  const seriesBase = {
+  const series = {
     name: chartData.value.title,
+    type: 'scatter' as const,
     data,
     label,
     large: true,
     largeThreshold: LARGE_DATA_THRESHOLD,
     itemStyle: { color: getNextColorFor(chartData.value.title) },
+    ...(largeX ? largeScatterSymbol : defaultScatterSymbol),
   }
-
-  const series =
-    seriesType === 'scatter'
-      ? {
-          ...seriesBase,
-          type: 'scatter' as const,
-          ...(largeX ? largeScatterSymbol : defaultScatterSymbol),
-        }
-      : seriesType === 'line'
-        ? {
-            ...seriesBase,
-            type: 'line' as const,
-            connectNulls: true,
-            showSymbol: data.length <= 200,
-            ...(largeX ? largeLineSymbol : defaultLineSymbol),
-          }
-        : { ...seriesBase, type: 'bar' as const }
 
   return {
     ...baseOptions,
@@ -113,13 +86,5 @@ function buildAxes2DValueOptions(
 
 /** 2D scatter for --axes value mode (continuous x/y on value axes). */
 export function buildScatterAxes2DOptions(config: BaseChartConfig): EChartsOption {
-  return buildAxes2DValueOptions(config, 'scatter')
-}
-
-/** Shared 2D options for value-mode bar/line — inherits grouping chart theme + layout. */
-export function buildValueMode2DOptions(
-  config: BaseChartConfig,
-  seriesType: 'line' | 'bar'
-): EChartsOption {
-  return buildAxes2DValueOptions(config, seriesType)
+  return buildScatterAxes2DValueOptions(config)
 }

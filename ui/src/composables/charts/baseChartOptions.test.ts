@@ -2,8 +2,6 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { ref, type Ref } from 'vue'
 import type { ChartData, Sort } from '@/types'
 import { getBaseOptions, type BaseChartConfig } from './baseChartOptions'
-import { useLineChartOptions } from './useLineChartOptions'
-import { useBarChartOptions } from './useBarChartOptions'
 
 // vitest runs in node — stub window.devicePixelRatio so getBaseOptions's
 // is3D-pixelRatio branch has something to read.
@@ -74,73 +72,5 @@ describe('BaseChartConfig (relaxed scale/threeDRotate)', () => {
     expect(opts.tooltip).toBeDefined()
     expect(opts.toolbox).toBeDefined()
     expect(opts.legend).toBeDefined()
-  })
-})
-
-const makeValueChartData = (): ChartData => ({
-  title: 'price vs latency',
-  statType: 'value',
-  yAxis: [],
-  zAxis: [],
-  series: [],
-  points: [],
-  axisLabels: { x: 'price', y: 'latency' },
-  valueTuples: [
-    [100, 12],
-    [200, 8],
-  ],
-})
-
-const makeValueConfig = (): BaseChartConfig => ({
-  chartData: ref(makeValueChartData()),
-  sort: ref({ enabled: false, order: 'asc' }),
-  showLabels: ref(false),
-  isDark: ref(false),
-})
-
-describe('useLineChartOptions — value mode', () => {
-  it('emits xAxis.type=value when valueTuples present', () => {
-    const { options } = useLineChartOptions(makeValueConfig())
-    expect((options.value.xAxis as { type: string }).type).toBe('value')
-  })
-
-  it('emits yAxis.type=value when valueTuples present', () => {
-    const { options } = useLineChartOptions(makeValueConfig())
-    expect((options.value.yAxis as { type: string }).type).toBe('value')
-  })
-
-  it('emits line series with valueTuples as data', () => {
-    const { options } = useLineChartOptions(makeValueConfig())
-    const s = (options.value.series as { type: string; data: [number, number][] }[])[0]!
-    expect(s.type).toBe('line')
-    expect(s.data).toEqual([
-      [100, 12],
-      [200, 8],
-    ])
-  })
-
-  it('includes dataZoom for both axes', () => {
-    const { options } = useLineChartOptions(makeValueConfig())
-    const dz = options.value.dataZoom as { xAxisIndex?: number; yAxisIndex?: number }[]
-    expect(dz).toBeDefined()
-    expect(dz.some((z) => z.xAxisIndex === 0)).toBe(true)
-    expect(dz.some((z) => z.yAxisIndex === 0)).toBe(true)
-  })
-})
-
-describe('useBarChartOptions — value mode', () => {
-  it('emits xAxis.type=value when valueTuples present', () => {
-    const { options } = useBarChartOptions(makeValueConfig())
-    expect((options.value.xAxis as { type: string }).type).toBe('value')
-  })
-
-  it('emits bar series with valueTuples as data', () => {
-    const { options } = useBarChartOptions(makeValueConfig())
-    const s = (options.value.series as { type: string; data: [number, number][] }[])[0]!
-    expect(s.type).toBe('bar')
-    expect(s.data).toEqual([
-      [100, 12],
-      [200, 8],
-    ])
   })
 })

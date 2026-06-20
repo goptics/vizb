@@ -83,11 +83,14 @@ export const valueModeHasZAxis = (axes: Axis[] | undefined): boolean =>
 export const valueModeSwapEnabled = (axes: Axis[] | undefined): boolean =>
   isValueMode(axes) && valueModeHasZAxis(axes)
 
+/** Scatter --axes x,y,z continuous 3D (swap-driven, not category --3d). */
 export const isValueModeContinuous3D = (
   chart: ChartData,
   axes: Axis[] | undefined,
-  targetString?: string
+  targetString?: string,
+  chartType?: ChartType
 ): boolean =>
+  chartType === 'scatter' &&
   isValueMode(axes) &&
   valueModeHasZAxis(axes) &&
   !!targetString &&
@@ -98,13 +101,14 @@ export const is3D = (
   chartData: Ref<ChartData, ChartData>,
   threeD?: boolean,
   targetString?: string,
-  axes?: Axis[]
+  axes?: Axis[],
+  chartType?: ChartType
 ) => {
   const chart = chartData.value
   return (
     isGrouped3D(chart) ||
     (isValue3DEligible(chart) && threeD === true) ||
-    isValueModeContinuous3D(chart, axes, targetString)
+    isValueModeContinuous3D(chart, axes, targetString, chartType)
   )
 }
 
