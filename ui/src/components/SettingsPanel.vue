@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, type Component } from 'vue'
-import { BarChart3, TrendingUp, PieChart, Table, Radar } from 'lucide-vue-next'
+import { BarChart3, TrendingUp, CircleDot, PieChart, Table, Radar } from 'lucide-vue-next'
 import { Card, CardContent, CardHeader, CardTitle, Separator } from './ui'
 import Selector from './Selector.vue'
 import SettingHeader from './SettingHeader.vue'
@@ -14,7 +14,7 @@ import {
   type SettingFieldValueMap,
 } from '../composables/settings/fieldRegistry'
 import { arrangementHasChartZ } from '../lib/swap'
-import { canOfferValue3D } from '../lib/utils'
+import { canOfferValue3D, valueModeSwapEnabled } from '../lib/utils'
 import type { BarConfig, ChartType, LineConfig } from '../types'
 
 // Generic, schema-less settings panel: walks `Object.keys(activeConfig)` via
@@ -50,6 +50,7 @@ const {
 const CHART_ICONS: Record<ChartType, Component> = {
   bar: BarChart3,
   line: TrendingUp,
+  scatter: CircleDot,
   pie: PieChart,
   heatmap: Table,
   radar: Radar,
@@ -89,7 +90,8 @@ const hasThreeDOption = computed(() =>
     chartType.value,
     activeDataSet.value?.data,
     hasZAxis.value,
-    activeConfig.value as BarConfig | LineConfig | undefined
+    activeConfig.value as BarConfig | LineConfig | undefined,
+    activeDataSet.value?.axes
   )
 )
 
@@ -110,12 +112,16 @@ const fieldGroups = computed(() => {
   return partitionRenderableFields(fields)
 })
 
-// In value mode, sort and swap are no-ops (coordinates are fixed) — hide them.
-const filteredGeneral = computed(() =>
-  isValueMode.value
-    ? fieldGroups.value.general.filter((f) => f.key !== 'sort' && f.key !== 'swap')
-    : fieldGroups.value.general
-)
+// Value mode: hide sort always; hide swap only for 2-col --axes (no z column).
+const filteredGeneral = computed(() => {
+  if (!isValueMode.value) return fieldGroups.value.general
+  const axes = activeDataSet.value?.axes
+  return fieldGroups.value.general.filter((f) => {
+    if (f.key === 'sort') return false
+    if (f.key === 'swap') return valueModeSwapEnabled(axes)
+    return true
+  })
+})
 
 // Each control emits `update:modelValue` with the appropriate type for its
 // field. The store's setters handle the writeback to `dataset.value.settings[i]`

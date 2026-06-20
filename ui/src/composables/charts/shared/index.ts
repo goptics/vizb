@@ -5,4 +5,5 @@
 
 export * from './chartConfig'
 export * from './seriesConfig'
+export * from './valueMode'
 export * from './3d'

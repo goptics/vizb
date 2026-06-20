@@ -15,9 +15,16 @@ import { Sigma } from 'lucide-vue-next'
 import { useChartOptions } from '../composables/useChartOptions'
 import type { ChartData, ChartType } from '../types'
 import { useSettingsStore } from '../composables/useSettingsStore'
+import { useDataPoint } from '../composables/useDataPoint'
 import { useActiveChartShape } from '../composables/useActiveChartShape'
 import { useFullscreen } from '../composables/useFullscreen'
-import { is3D, computeChartGrandTotal, formatChartTotal } from '../lib/utils'
+import {
+  is3D,
+  computeChartGrandTotal,
+  formatChartTotal,
+  chartAxisBadgeCount,
+  chartHasPlottableData,
+} from '../lib/utils'
 import StatsPanel from './StatsPanel.vue'
 import Badge from './Badge.vue'
 import BadgeButton from './BadgeButton.vue'
@@ -45,6 +52,7 @@ const mk = (loader: () => Promise<Component>) =>
 const RENDERERS: Record<ChartType, Component> = {
   bar: mk(() => import('./ChartBar.vue')),
   line: mk(() => import('./ChartLine.vue')),
+  scatter: mk(() => import('./ChartScatter.vue')),
   pie: mk(() => import('./ChartPie.vue')),
   heatmap: mk(() => import('./ChartHeatmap.vue')),
   radar: mk(() => import('./ChartRadar.vue')),
@@ -65,9 +73,13 @@ const { chartData } = toRefs(props)
 const { isDark, chartType } = useSettingsStore()
 const { sort, showLabels, scale, threeDRotate, threeD, threeDVisualMap, stat } =
   useActiveChartShape()
+const { activeArrangement, activeDataSet } = useDataPoint()
+const activeAxes = computed(() => activeDataSet.value?.axes)
 
 // Drives which renderer mounts; only the 3D branch loads echarts-gl.
-const is3DChart = computed(() => is3D(chartData, threeD.value))
+const is3DChart = computed(() =>
+  is3D(chartData, threeD.value, activeArrangement.value.targetString, activeAxes.value)
+)
 
 // Resolved sort gets a no-op default for the worker when the active config has
 // no `sort` field set — keeps the consumer pipeline shape stable.
@@ -103,7 +115,9 @@ const { options } = useChartOptions(
   threeDRotate,
   visibleZ,
   threeD,
-  threeDVisualMap
+  threeDVisualMap,
+  computed(() => activeArrangement.value.targetString),
+  activeAxes
 )
 
 const initOptions = {
@@ -120,9 +134,10 @@ const { containerRef, isFullscreen, withFullscreenToolbox } = useFullscreen()
 const showStats = ref(false)
 const hasStats = computed(() => chartData.value.series.length > 0 && stat.value?.enabled === true)
 
-const showTotal = computed(
-  () => chartData.value.series.length > 0 || chartData.value.points.length > 0
-)
+const showTotal = computed(() => chartHasPlottableData(chartData.value))
+const xAxisBadgeCount = computed(() => chartAxisBadgeCount(chartData.value, 'x'))
+const yAxisBadgeCount = computed(() => chartAxisBadgeCount(chartData.value, 'y'))
+const zAxisBadgeCount = computed(() => chartAxisBadgeCount(chartData.value, 'z'))
 const chartTotal = computed(() =>
   formatChartTotal(computeChartGrandTotal(chartData.value, visibleZ.value))
 )
@@ -182,18 +197,12 @@ watch(
         {{ chartData.title }}
       </h3>
       <div class="flex flex-wrap items-center justify-end gap-1.5">
-        <Badge
-          :label="chartData.axisLabels?.x || 'Series'"
-          :value="String(chartData.series.length)"
-        />
-        <Badge
-          :label="chartData.axisLabels?.y || 'Y-axis'"
-          :value="String(chartData.yAxis.length)"
-        />
+        <Badge :label="chartData.axisLabels?.x || 'Series'" :value="String(xAxisBadgeCount)" />
+        <Badge :label="chartData.axisLabels?.y || 'Y-axis'" :value="String(yAxisBadgeCount)" />
         <Badge
           v-if="is3DChart"
           :label="chartData.axisLabels?.z || 'Z-axis'"
-          :value="String(chartData.zAxis.length)"
+          :value="String(zAxisBadgeCount)"
         />
         <Badge v-if="showTotal" label="Total" :value="chartTotal" />
         <BadgeButton
