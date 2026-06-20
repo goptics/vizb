@@ -57,20 +57,18 @@ export const fieldRegistry: Record<SettingFieldKey, FieldMeta> = {
   threeD: {
     component: ThreeDControl,
     appliesTo: ['bar', 'line'],
-    // Value-mode toggle only when z is off chart axes (e.g. xyz → xyn swap).
+    // Value-mode toggle when the 3D engine is bundled and z is off chart axes.
     visible: (ctx) => ctx.hasThreeDOption === true && ctx.hasZAxis !== true,
   },
   threeDVisualMap: {
     component: ThreeDVisualMapControl,
     appliesTo: ['bar', 'line'],
-    visible: (ctx) =>
-      ctx.rendering3D === true || ctx.dimension === '3D' || ctx.dimension === undefined,
+    visible: (ctx) => ctx.rendering3D === true || ctx.dimension === undefined,
   },
   threeDRotate: {
     component: ThreeDRotateControl,
     appliesTo: ['bar', 'line'],
-    visible: (ctx) =>
-      ctx.rendering3D === true || ctx.dimension === '3D' || ctx.dimension === undefined,
+    visible: (ctx) => ctx.rendering3D === true || ctx.dimension === undefined,
   },
   swap: {
     component: SwapControl,

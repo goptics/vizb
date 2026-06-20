@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
-import type { Meta, ChartData, DataPoint } from '../types'
+import type { ChartType, Meta, ChartData, DataPoint } from '../types'
 import type { Ref } from 'vue'
 
 /**
@@ -92,6 +92,58 @@ export const datasetDimension = (data: DataPoint[] | undefined): Dimension | und
   if (data.some((p) => !!p.zAxis)) return '3D'
   if (data.some((p) => !!p.xAxis && !!p.yAxis)) return '2D'
   return '1D'
+}
+
+export const datasetHasBothXY = (data: DataPoint[] | undefined): boolean =>
+  !!data?.some((p) => !!p.xAxis && !!p.yAxis)
+
+/** 3D engine is present in the HTML bundle (z in raw data, or --3d was baked). */
+export const datasetHas3DEngine = (
+  data: DataPoint[] | undefined,
+  cfg?: { threeD?: boolean }
+): boolean => datasetDimension(data) === '3D' || cfg?.threeD !== undefined
+
+/** Value-mode 3D toggle should appear in settings. */
+export const canOfferValue3D = (
+  chartType: ChartType,
+  data: DataPoint[] | undefined,
+  hasZOnChart: boolean,
+  cfg?: { threeD?: boolean }
+): boolean =>
+  (chartType === 'bar' || chartType === 'line') &&
+  datasetHasBothXY(data) &&
+  !hasZOnChart &&
+  datasetHas3DEngine(data, cfg)
+
+/** Round to 2 decimals — matches tooltip number formatting. */
+export const formatChartTotal = (value: number) => String(Math.round(value * 100) / 100)
+
+/**
+ * Sum every plotted metric value in the chart. Works for 1D (x only), 2D (x×y),
+ * grouped 3D (x×y×z), and value-mode 3D. When a z legend is active, hidden z
+ * series are excluded — same contract as grouped 3D tooltips.
+ */
+export const computeChartGrandTotal = (
+  chart: ChartData,
+  visibleZ?: Record<string, boolean>
+): number => {
+  if (chart.points.length > 0) {
+    const filterZ = chartHasZAxis(chart)
+    let total = 0
+    for (const pt of chart.points) {
+      if (filterZ && pt.zAxis && visibleZ?.[pt.zAxis] === false) continue
+      total += pt.value
+    }
+    return total
+  }
+
+  let total = 0
+  for (const s of chart.series) {
+    for (const v of s.values) {
+      if (v != null) total += v
+    }
+  }
+  return total
 }
 
 export const CPUtoString = (cpu: Meta['cpu']) => {

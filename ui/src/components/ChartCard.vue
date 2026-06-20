@@ -17,7 +17,7 @@ import type { ChartData, ChartType } from '../types'
 import { useSettingsStore } from '../composables/useSettingsStore'
 import { useActiveChartShape } from '../composables/useActiveChartShape'
 import { useFullscreen } from '../composables/useFullscreen'
-import { is3D } from '../lib/utils'
+import { is3D, computeChartGrandTotal, formatChartTotal } from '../lib/utils'
 import StatsPanel from './StatsPanel.vue'
 import Badge from './Badge.vue'
 import BadgeButton from './BadgeButton.vue'
@@ -120,6 +120,13 @@ const { containerRef, isFullscreen, withFullscreenToolbox } = useFullscreen()
 const showStats = ref(false)
 const hasStats = computed(() => chartData.value.series.length > 0 && stat.value?.enabled === true)
 
+const showTotal = computed(
+  () => chartData.value.series.length > 0 || chartData.value.points.length > 0
+)
+const chartTotal = computed(() =>
+  formatChartTotal(computeChartGrandTotal(chartData.value, visibleZ.value))
+)
+
 const mergedOptions = computed<EChartsOption>(() => withFullscreenToolbox(options.value))
 
 // Double-buffer the chart so a worker recompute never flashes a stale or
@@ -188,6 +195,7 @@ watch(
           :label="chartData.axisLabels?.z || 'Z-axis'"
           :value="String(chartData.zAxis.length)"
         />
+        <Badge v-if="showTotal" label="Total" :value="chartTotal" />
         <BadgeButton
           v-if="hasStats"
           :icon="Sigma"

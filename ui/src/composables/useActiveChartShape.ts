@@ -1,5 +1,8 @@
 import { computed } from 'vue'
 import type { BarConfig, LineConfig, ScaleType, Sort, StatConfig } from '../types'
+import { arrangementHasChartZ } from '../lib/swap'
+import { canOfferValue3D } from '../lib/utils'
+import { useDataPoint } from './useDataPoint'
 import { useSettingsStore } from './useSettingsStore'
 
 // Pure read-only composable: derives everything from the store's `activeConfig`
@@ -9,7 +12,17 @@ import { useSettingsStore } from './useSettingsStore'
 // on the type at all, so `?? default` is the only mechanism that produces a
 // value (TypeScript's optional-field semantics in place of a runtime guard).
 export function useActiveChartShape() {
-  const { activeConfig } = useSettingsStore()
+  const { activeConfig, chartType } = useSettingsStore()
+  const { activeDataSet, activeDataSetId, activeArrangement, getArrangement } = useDataPoint()
+
+  const effectiveSwapTarget = computed(() => {
+    const fromMap = getArrangement(activeDataSetId.value, chartType.value)
+    if (fromMap) return fromMap
+    const wire = (activeConfig.value as BarConfig | LineConfig | undefined)?.swap
+    return wire || activeArrangement.value.targetString
+  })
+
+  const hasZOnChart = computed(() => arrangementHasChartZ(effectiveSwapTarget.value))
 
   const scale = computed<ScaleType>(
     () => (activeConfig.value as { scale?: ScaleType } | undefined)?.scale ?? 'linear'
@@ -27,10 +40,14 @@ export function useActiveChartShape() {
     () => (activeConfig.value as BarConfig | LineConfig | undefined)?.threeD ?? false
   )
 
-  const hasThreeDOption = computed<boolean>(() => {
-    const cfg = activeConfig.value as BarConfig | LineConfig | undefined
-    return cfg?.threeD !== undefined
-  })
+  const hasThreeDOption = computed<boolean>(() =>
+    canOfferValue3D(
+      chartType.value,
+      activeDataSet.value?.data,
+      hasZOnChart.value,
+      activeConfig.value as BarConfig | LineConfig | undefined
+    )
+  )
 
   const threeDVisualMap = computed<boolean>(
     () => (activeConfig.value as BarConfig | LineConfig | undefined)?.threeDVisualMap ?? false

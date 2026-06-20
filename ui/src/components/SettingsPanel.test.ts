@@ -45,14 +45,11 @@ describe('SettingsPanel field selection', () => {
       threeDRotate: false,
       swap: '',
     }
-    expect(getRenderableFields(cfg, { dimension: '3D' }).map((f) => f.key)).toEqual([
-      'sort',
-      'scale',
-      'showLabels',
-      'threeDVisualMap',
-      'threeDRotate',
-      'swap',
-    ])
+    expect(
+      getRenderableFields(cfg, { dimension: '3D', rendering3D: true, hasZAxis: true }).map(
+        (f) => f.key
+      )
+    ).toEqual(['sort', 'scale', 'showLabels', 'threeDVisualMap', 'threeDRotate', 'swap'])
   })
 
   it('renders 6 controls for a 3D line config (sort/scale/showLabels/threeDVisualMap/threeDRotate/swap)', () => {
@@ -64,14 +61,29 @@ describe('SettingsPanel field selection', () => {
       threeDRotate: false,
       swap: '',
     }
-    expect(getRenderableFields(cfg, { dimension: '3D' }).map((f) => f.key)).toEqual([
-      'sort',
-      'scale',
-      'showLabels',
-      'threeDVisualMap',
-      'threeDRotate',
-      'swap',
-    ])
+    expect(
+      getRenderableFields(cfg, { dimension: '3D', rendering3D: true, hasZAxis: true }).map(
+        (f) => f.key
+      )
+    ).toEqual(['sort', 'scale', 'showLabels', 'threeDVisualMap', 'threeDRotate', 'swap'])
+  })
+
+  it('renders 5 controls for z-data bar on xyn swap without baked --3d', () => {
+    const cfg: BarConfig = {
+      type: 'bar',
+      sort: { enabled: false, order: 'asc' },
+      scale: 'linear',
+      showLabels: false,
+      swap: 'xyn',
+    }
+    expect(
+      getRenderableFields(cfg, {
+        dimension: '3D',
+        rendering3D: false,
+        hasThreeDOption: true,
+        hasZAxis: false,
+      }).map((f) => f.key)
+    ).toEqual(['sort', 'scale', 'showLabels', 'threeD', 'swap'])
   })
 
   it('renders 4 controls for a 2D bar config without value-3D active', () => {
@@ -163,13 +175,10 @@ describe('SettingsPanel field selection', () => {
 
   it('renders all available fields even when most keys are absent from the config', () => {
     const cfg: BarConfig = { type: 'bar', sort: { enabled: false, order: 'asc' } }
-    expect(getRenderableFields(cfg, { dimension: '3D' }).map((f) => f.key)).toEqual([
-      'sort',
-      'scale',
-      'showLabels',
-      'threeDVisualMap',
-      'threeDRotate',
-      'swap',
-    ])
+    expect(
+      getRenderableFields(cfg, { dimension: '3D', rendering3D: true, hasZAxis: true }).map(
+        (f) => f.key
+      )
+    ).toEqual(['sort', 'scale', 'showLabels', 'threeDVisualMap', 'threeDRotate', 'swap'])
   })
 })
