@@ -14166,5 +14166,26 @@
         ]
       }
     ]
+  },
+  {
+    "name": "Value Mode Demo",
+    "description": "Example: price vs latency (--axes price,latency)",
+    "settings": [{ "type": "line" }, { "type": "bar" }],
+    "axes": [
+      { "key": "x", "label": "price", "type": "value" },
+      { "key": "y", "label": "latency", "type": "value" }
+    ],
+    "data": [
+      { "xAxis": "10", "yAxis": "120", "stats": [] },
+      { "xAxis": "20", "yAxis": "95", "stats": [] },
+      { "xAxis": "35", "yAxis": "80", "stats": [] },
+      { "xAxis": "50", "yAxis": "65", "stats": [] },
+      { "xAxis": "70", "yAxis": "55", "stats": [] },
+      { "xAxis": "90", "yAxis": "42", "stats": [] },
+      { "xAxis": "120", "yAxis": "35", "stats": [] },
+      { "xAxis": "150", "yAxis": "28", "stats": [] },
+      { "xAxis": "200", "yAxis": "20", "stats": [] },
+      { "xAxis": "300", "yAxis": "14", "stats": [] }
+    ]
   }
 ]

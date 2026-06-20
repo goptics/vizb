@@ -44,6 +44,7 @@ const {
   getArrangement,
   setArrangement,
   activeGroupId,
+  isValueMode,
 } = useDataPoint()
 
 const CHART_ICONS: Record<ChartType, Component> = {
@@ -109,6 +110,13 @@ const fieldGroups = computed(() => {
   return partitionRenderableFields(fields)
 })
 
+// In value mode, sort and swap are no-ops (coordinates are fixed) — hide them.
+const filteredGeneral = computed(() =>
+  isValueMode.value
+    ? fieldGroups.value.general.filter((f) => f.key !== 'sort' && f.key !== 'swap')
+    : fieldGroups.value.general
+)
+
 // Each control emits `update:modelValue` with the appropriate type for its
 // field. The store's setters handle the writeback to `dataset.value.settings[i]`
 // and ignore writes for fields that don't exist on the active chart's config
@@ -168,7 +176,7 @@ const onUpdate = (key: SettingFieldKey, value: unknown) => {
         <Separator />
       </template>
 
-      <template v-for="field in fieldGroups.general" :key="field.key">
+      <template v-for="field in filteredGeneral" :key="field.key">
         <component
           :is="field.component"
           :model-value="valueFor(field.key)"
