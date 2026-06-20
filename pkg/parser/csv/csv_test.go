@@ -7,6 +7,7 @@ import (
 
 	"github.com/goptics/vizb/pkg/parser"
 	"github.com/goptics/vizb/shared"
+	"github.com/goptics/vizb/testutil"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -22,17 +23,61 @@ func statTypes(stats []shared.Stat) []string {
 // SetupTest), replacing the former global shared.FlagState mutation.
 type CSVSuite struct {
 	suite.Suite
-	cfg parser.Config
+	cfg           parser.Config
+	restoreOsExit func()
 }
 
 func (s *CSVSuite) SetupTest() {
+	s.restoreOsExit, _ = testutil.TrapOsExitPanic(s.T())
 	s.cfg = parser.Config{GroupPattern: "x"}
+}
+
+func (s *CSVSuite) TearDownTest() {
+	s.restoreOsExit()
 }
 
 func (s *CSVSuite) writeFile(content string) string {
 	path := filepath.Join(s.T().TempDir(), "data.csv")
 	s.Require().NoError(os.WriteFile(path, []byte(content), 0644))
 	return path
+}
+
+func (s *CSVSuite) TestExplicitColsSelectsAndOrders() {
+	s.cfg.Cols = []parser.ColumnSpec{{Source: "price"}, {Source: "count"}}
+	csv := "name,date,count,level,price\na,2024-01,10,1,100\n"
+
+	results := ParseCSV(s.writeFile(csv), s.cfg)
+
+	s.Len(results, 1)
+	s.Equal([]string{"price", "count"}, statTypes(results[0].Stats))
+	s.Equal(100.0, *results[0].Stats[0].Value)
+	s.Equal(10.0, *results[0].Stats[1].Value)
+}
+
+func (s *CSVSuite) TestExplicitColsRename() {
+	s.cfg.Cols = []parser.ColumnSpec{
+		{Source: "price", Label: "Unit price"},
+		{Source: "count", Label: "Total"},
+	}
+	csv := "name,price,count\na,100,10\n"
+
+	results := ParseCSV(s.writeFile(csv), s.cfg)
+
+	s.Equal([]string{"Unit price", "Total"}, statTypes(results[0].Stats))
+}
+
+func (s *CSVSuite) TestExplicitColsMissingColumnErrors() {
+	s.cfg.Cols = []parser.ColumnSpec{{Source: "missing"}}
+	csv := "name,price\na,10\n"
+
+	s.Panics(func() { ParseCSV(s.writeFile(csv), s.cfg) })
+}
+
+func (s *CSVSuite) TestExplicitColsNonNumericErrors() {
+	s.cfg.Cols = []parser.ColumnSpec{{Source: "name"}}
+	csv := "name,price\nalpha,10\n"
+
+	s.Panics(func() { ParseCSV(s.writeFile(csv), s.cfg) })
 }
 
 func (s *CSVSuite) TestNumericColumnsBecomeChartsNoGroup() {

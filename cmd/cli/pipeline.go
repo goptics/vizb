@@ -184,6 +184,10 @@ func prepareData(filePath, parserKey string, cfg parser.Config) []shared.DataPoi
 		shared.ExitWithError(err.Error(), nil)
 	}
 
+	if len(cfg.Cols) > 0 && parserKey != "csv" && parserKey != "json" {
+		fmt.Fprintln(os.Stderr, "warning: --cols is only supported for csv/json parsers; ignoring")
+	}
+
 	fmt.Println(style.Info.Render("⚙️  Parsing data..."))
 	data := parseFn(filePath, cfg)
 

@@ -67,7 +67,17 @@ func ParseCSV(filename string, cfg parser.Config) []shared.DataPoint {
 
 	groupIdx, groupSet := resolveGroupColumns(headers, parser.EffectiveGroupColumns(cfg))
 
-	chartCols := chartColumns(headers, groupSet, dataRows)
+	var chartCols []int
+	var colLabels map[int]string
+	if len(cfg.Cols) > 0 {
+		var err error
+		chartCols, colLabels, err = resolveExplicitChartColumns(headers, cfg, dataRows)
+		if err != nil {
+			shared.ExitWithError(err.Error(), nil)
+		}
+	} else {
+		chartCols = chartColumns(headers, groupSet, dataRows)
+	}
 	if len(chartCols) == 0 {
 		shared.ExitWithError("no numeric columns found in CSV", nil)
 	}
@@ -103,8 +113,14 @@ func ParseCSV(filename string, cfg parser.Config) []shared.DataPoint {
 				continue // non-numeric/empty cell: gap
 			}
 
+			label := headers[c]
+			if colLabels != nil {
+				if l, ok := colLabels[c]; ok {
+					label = l
+				}
+			}
 			stats = append(stats, shared.Stat{
-				Type:  utils.CreateStatType(headers[c], cfg.NumberUnit, ""),
+				Type:  utils.CreateStatType(label, cfg.NumberUnit, ""),
 				Value: shared.F64(utils.FormatNumber(v, cfg.NumberUnit)),
 			})
 		}
@@ -182,6 +198,42 @@ func resolveGroupColumns(headers []string, group []string) ([]int, map[int]bool)
 	}
 
 	return idx, set
+}
+
+func resolveExplicitChartColumns(headers []string, cfg parser.Config, dataRows [][]string) ([]int, map[int]string, error) {
+	indices := make([]int, 0, len(cfg.Cols))
+	labels := make(map[int]string, len(cfg.Cols))
+
+	for _, spec := range cfg.Cols {
+		idx := -1
+		for i, h := range headers {
+			if h == spec.Source {
+				idx = i
+				break
+			}
+		}
+		if idx == -1 {
+			return nil, nil, fmt.Errorf("column '%s' not found in --cols; available: %v", spec.Source, nonEmpty(headers))
+		}
+
+		numeric := false
+		for _, row := range dataRows {
+			if idx >= len(row) {
+				continue
+			}
+			if _, ok := parseFinite(row[idx]); ok {
+				numeric = true
+				break
+			}
+		}
+		if !numeric {
+			return nil, nil, fmt.Errorf("column '%s' in --cols is not numeric", spec.Source)
+		}
+
+		indices = append(indices, idx)
+		labels[idx] = spec.DisplayLabel()
+	}
+	return indices, labels, nil
 }
 
 // chartColumns returns, in column order, indices of columns that have a non-empty

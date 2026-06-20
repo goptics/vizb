@@ -27,6 +27,7 @@ type CommonOptions struct {
 	MemUnit      string
 	TimeUnit     string
 	NumberUnit   string
+	Cols         string
 }
 
 // Bind registers the common flags onto fs.
@@ -43,6 +44,7 @@ func (o *CommonOptions) Bind(fs *pflag.FlagSet) {
 	fs.StringVarP(&o.Filter, "filter", "f", "", "Regex pattern to include only matching data labels / series names")
 	fs.StringVarP(&o.Tag, "tag", "t", "", "Tag/identifier for the comparison")
 	fs.StringVarP(&o.Parser, "parser", "P", "auto", "Benchmark parser to use; 'auto' detects from input content (one of: auto, "+strings.Join(parser.AvailableParsers(), ", ")+")")
+	fs.StringVar(&o.Cols, "cols", "", "csv/json only: select value columns; optional rename with {label} (e.g. --cols=price{Unit price},count)")
 }
 
 // validationRules returns the warn-and-default rules for the common fields,
@@ -108,6 +110,16 @@ func (o *CommonOptions) ParseConfig() parser.Config {
 	})
 	if err != nil {
 		shared.ExitWithError(err.Error(), nil)
+	}
+	if strings.TrimSpace(o.Cols) != "" {
+		cols, err := parser.ParseColsFlag(o.Cols)
+		if err != nil {
+			shared.ExitWithError(err.Error(), nil)
+		}
+		cfg.Cols = cols
+		if err := parser.ValidateColsGroupOverlap(cfg); err != nil {
+			shared.ExitWithError(err.Error(), nil)
+		}
 	}
 	return cfg
 }

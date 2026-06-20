@@ -121,7 +121,17 @@ func ParseJSON(filename string, cfg parser.Config) []shared.DataPoint {
 
 	groupKeys, groupSet := resolveGroupKeys(colOrder, seenCol, parser.EffectiveGroupColumns(cfg))
 
-	chartCols := chartColumns(colOrder, groupSet, rows)
+	var chartCols []string
+	var fieldLabels map[string]string
+	if len(cfg.Cols) > 0 {
+		var err error
+		chartCols, fieldLabels, err = resolveExplicitChartFields(colOrder, cfg, rows)
+		if err != nil {
+			shared.ExitWithError(err.Error(), nil)
+		}
+	} else {
+		chartCols = chartColumns(colOrder, groupSet, rows)
+	}
 	if len(chartCols) == 0 {
 		shared.ExitWithError("no numeric fields found in JSON", nil)
 	}
@@ -158,8 +168,14 @@ func ParseJSON(filename string, cfg parser.Config) []shared.DataPoint {
 				continue
 			}
 
+			label := k
+			if fieldLabels != nil {
+				if l, ok := fieldLabels[k]; ok {
+					label = l
+				}
+			}
 			stats = append(stats, shared.Stat{
-				Type:  utils.CreateStatType(k, cfg.NumberUnit, ""),
+				Type:  utils.CreateStatType(label, cfg.NumberUnit, ""),
 				Value: shared.F64(utils.FormatNumber(num, cfg.NumberUnit)),
 			})
 		}
@@ -201,6 +217,39 @@ func resolveGroupKeys(colOrder []string, seenCol map[string]bool, group []string
 	}
 
 	return keys, set
+}
+
+func resolveExplicitChartFields(colOrder []string, cfg parser.Config, rows []map[string]any) ([]string, map[string]string, error) {
+	seen := map[string]bool{}
+	for _, k := range colOrder {
+		seen[k] = true
+	}
+
+	fields := make([]string, 0, len(cfg.Cols))
+	labels := make(map[string]string, len(cfg.Cols))
+
+	for _, spec := range cfg.Cols {
+		if !seen[spec.Source] {
+			return nil, nil, fmt.Errorf("column '%s' not found in --cols; available: %v", spec.Source, colOrder)
+		}
+
+		numeric := false
+		for _, row := range rows {
+			if v, ok := row[spec.Source]; ok {
+				if _, isNum := leafNumber(v); isNum {
+					numeric = true
+					break
+				}
+			}
+		}
+		if !numeric {
+			return nil, nil, fmt.Errorf("column '%s' in --cols is not numeric", spec.Source)
+		}
+
+		fields = append(fields, spec.Source)
+		labels[spec.Source] = spec.DisplayLabel()
+	}
+	return fields, labels, nil
 }
 
 // chartColumns returns, in first-seen order, fields that have at least one

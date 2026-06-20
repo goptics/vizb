@@ -41,6 +41,25 @@ func (s *OptionsSuite) TestLinearValidateNormalisesSort() {
 	s.Equal("asc", o.Sort)
 }
 
+func (s *OptionsSuite) TestParseConfigMapsCols() {
+	o := &CommonOptions{
+		GroupPattern: "x",
+		Cols:         "price{Unit price},count",
+	}
+	cfg := o.ParseConfig()
+	s.Require().Len(cfg.Cols, 2)
+	s.Equal("price", cfg.Cols[0].Source)
+	s.Equal("Unit price", cfg.Cols[0].Label)
+	s.Equal("count", cfg.Cols[1].Source)
+}
+
+func (s *OptionsSuite) TestCommonOptionsBindRegistersCols() {
+	var o CommonOptions
+	fs := pflag.NewFlagSet("common", pflag.ContinueOnError)
+	o.Bind(fs)
+	s.NotNil(fs.Lookup("cols"))
+}
+
 func (s *OptionsSuite) TestParseConfigMapsFields() {
 	o := &CommonOptions{
 		GroupPattern: "n/x", GroupRegex: "re", Group: []string{"a", "b"},

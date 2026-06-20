@@ -93,6 +93,25 @@ Comma-separated `-g` (e.g. `-g region,product,month`) requires comma-separated t
 
 See the [Grouping Guide](/guides/grouping) for bracket slots, pattern syntax, and regex fallback.
 
+## Selecting value columns with `--cols`
+
+By default, every numeric column/field becomes a chart series. Use `--cols` to pick
+specific value columns and optionally rename their series labels:
+
+```bash
+vizb sales.csv --cols=price,count
+vizb sales.csv --cols=price{Unit price},count{Total count per week}
+vizb sales.csv --cols="price{USD}",count   # quote names with , { or }
+```
+
+| Topic | Behaviour |
+|-------|-----------|
+| Scope | `csv` and `json` parsers only; ignored (with warning) for benchmark parsers |
+| Order | Series appear in `--cols` flag order |
+| Rename | Trailing `{label}` on unquoted names; quoted names treat `{` as literal |
+| Overlap | A column cannot be in both `--cols` and `--group` |
+| Omitted | Auto-detect numeric columns (unchanged default) |
+
 ## Aggregation
 
 CSV and JSON emit **one data point per row**. Raw tables routinely have many rows that

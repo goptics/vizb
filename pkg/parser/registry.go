@@ -23,6 +23,7 @@ type Config struct {
 	MemUnit         string
 	TimeUnit        string
 	NumberUnit      string
+	Cols            []ColumnSpec
 }
 
 type ParseFunc func(filename string, cfg Config) []shared.DataPoint
