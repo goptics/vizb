@@ -41,21 +41,6 @@ func (s *ColsSpecSuite) TestParseColsFlagDuplicateError() {
 	s.Contains(err.Error(), "duplicate column 'price'")
 }
 
-func (s *ColsSpecSuite) TestValidateColsGroupOverlap() {
-	cfg := Config{
-		Group: []string{"name", "date"},
-		Cols:  []ColumnSpec{{Source: "price"}, {Source: "date"}},
-	}
-	err := ValidateColsGroupOverlap(cfg)
-	s.Error(err)
-	s.Contains(err.Error(), "cannot be in both --cols and --group")
-}
-
-func (s *ColsSpecSuite) TestDisplayLabel() {
-	s.Equal("price", ColumnSpec{Source: "price"}.DisplayLabel())
-	s.Equal("Unit price", ColumnSpec{Source: "price", Label: "Unit price"}.DisplayLabel())
-}
-
 func TestColsSpecSuite(t *testing.T) {
 	suite.Run(t, new(ColsSpecSuite))
 }

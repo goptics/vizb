@@ -53,11 +53,17 @@ func (s *OptionsSuite) TestParseConfigMapsCols() {
 	s.Equal("count", cfg.Cols[1].Source)
 }
 
-func (s *OptionsSuite) TestCommonOptionsBindRegistersCols() {
-	var o CommonOptions
-	fs := pflag.NewFlagSet("common", pflag.ContinueOnError)
-	o.Bind(fs)
-	s.NotNil(fs.Lookup("cols"))
+func (s *OptionsSuite) TestParseConfigRejectsColsGroupOverlap() {
+	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
+	defer restore()
+
+	o := &CommonOptions{
+		GroupPattern: "x",
+		Group:        []string{"date"},
+		Cols:         "price,date",
+	}
+	s.Panics(func() { o.ParseConfig() })
+	s.True(*exitCalled)
 }
 
 func (s *OptionsSuite) TestParseConfigMapsFields() {

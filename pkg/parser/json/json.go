@@ -220,9 +220,14 @@ func resolveGroupKeys(colOrder []string, seenCol map[string]bool, group []string
 }
 
 func resolveExplicitChartFields(colOrder []string, cfg parser.Config, rows []map[string]any) ([]string, map[string]string, error) {
-	seen := map[string]bool{}
+	seen := make(map[string]bool, len(colOrder))
 	for _, k := range colOrder {
 		seen[k] = true
+	}
+
+	numeric := make(map[string]bool, len(colOrder))
+	for _, k := range chartColumns(colOrder, map[string]bool{}, rows) {
+		numeric[k] = true
 	}
 
 	fields := make([]string, 0, len(cfg.Cols))
@@ -232,22 +237,16 @@ func resolveExplicitChartFields(colOrder []string, cfg parser.Config, rows []map
 		if !seen[spec.Source] {
 			return nil, nil, fmt.Errorf("column '%s' not found in --cols; available: %v", spec.Source, colOrder)
 		}
-
-		numeric := false
-		for _, row := range rows {
-			if v, ok := row[spec.Source]; ok {
-				if _, isNum := leafNumber(v); isNum {
-					numeric = true
-					break
-				}
-			}
-		}
-		if !numeric {
+		if !numeric[spec.Source] {
 			return nil, nil, fmt.Errorf("column '%s' in --cols is not numeric", spec.Source)
 		}
 
+		label := spec.Source
+		if spec.Label != "" {
+			label = spec.Label
+		}
 		fields = append(fields, spec.Source)
-		labels[spec.Source] = spec.DisplayLabel()
+		labels[spec.Source] = label
 	}
 	return fields, labels, nil
 }

@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -9,14 +10,6 @@ import (
 type ColumnSpec struct {
 	Source string
 	Label  string
-}
-
-// DisplayLabel returns the chart series label, defaulting to Source.
-func (c ColumnSpec) DisplayLabel() string {
-	if c.Label != "" {
-		return c.Label
-	}
-	return c.Source
 }
 
 // ParseColsFlag parses --cols=price{Unit price},count into column specs.
@@ -51,9 +44,9 @@ func ParseColsFlag(raw string) ([]ColumnSpec, error) {
 
 func parseColumnToken(tok string) (ColumnSpec, error) {
 	if len(tok) >= 2 && tok[0] == '"' {
-		source, err := parseQuotedColumnSource(tok)
+		source, err := strconv.Unquote(tok)
 		if err != nil {
-			return ColumnSpec{}, err
+			return ColumnSpec{}, fmt.Errorf("invalid quoted column in --cols: %v", err)
 		}
 		return ColumnSpec{Source: source}, nil
 	}
@@ -69,23 +62,6 @@ func parseColumnToken(tok string) (ColumnSpec, error) {
 		return ColumnSpec{}, fmt.Errorf("%w in --cols", err)
 	}
 	return ColumnSpec{Source: source, Label: label}, nil
-}
-
-func parseQuotedColumnSource(tok string) (string, error) {
-	if tok[len(tok)-1] != '"' {
-		return "", fmt.Errorf("unclosed '\"' in --cols")
-	}
-	inner := tok[1 : len(tok)-1]
-	var b strings.Builder
-	for i := 0; i < len(inner); i++ {
-		if inner[i] == '\\' && i+1 < len(inner) {
-			b.WriteByte(inner[i+1])
-			i++
-			continue
-		}
-		b.WriteByte(inner[i])
-	}
-	return b.String(), nil
 }
 
 func tokenizeColsFlag(raw string) ([]string, error) {
@@ -110,10 +86,6 @@ func tokenizeColsFlag(raw string) ([]string, error) {
 				tokens = append(tokens, cur.String())
 				cur.Reset()
 			}
-		case c == '\\' && inQuote && i+1 < len(raw):
-			cur.WriteByte(c)
-			cur.WriteByte(raw[i+1])
-			i++
 		default:
 			cur.WriteByte(c)
 		}
@@ -126,21 +98,4 @@ func tokenizeColsFlag(raw string) ([]string, error) {
 		tokens = append(tokens, cur.String())
 	}
 	return tokens, nil
-}
-
-// ValidateColsGroupOverlap rejects columns named in both --cols and --group.
-func ValidateColsGroupOverlap(cfg Config) error {
-	if len(cfg.Cols) == 0 {
-		return nil
-	}
-	groupSet := map[string]bool{}
-	for _, g := range EffectiveGroupColumns(cfg) {
-		groupSet[g] = true
-	}
-	for _, col := range cfg.Cols {
-		if groupSet[col.Source] {
-			return fmt.Errorf("column '%s' cannot be in both --cols and --group", col.Source)
-		}
-	}
-	return nil
 }

@@ -117,8 +117,14 @@ func (o *CommonOptions) ParseConfig() parser.Config {
 			shared.ExitWithError(err.Error(), nil)
 		}
 		cfg.Cols = cols
-		if err := parser.ValidateColsGroupOverlap(cfg); err != nil {
-			shared.ExitWithError(err.Error(), nil)
+		groupSet := map[string]bool{}
+		for _, g := range parser.EffectiveGroupColumns(cfg) {
+			groupSet[g] = true
+		}
+		for _, col := range cols {
+			if groupSet[col.Source] {
+				shared.ExitWithError(fmt.Sprintf("column '%s' cannot be in both --cols and --group", col.Source), nil)
+			}
 		}
 	}
 	return cfg

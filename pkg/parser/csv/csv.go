@@ -201,6 +201,11 @@ func resolveGroupColumns(headers []string, group []string) ([]int, map[int]bool)
 }
 
 func resolveExplicitChartColumns(headers []string, cfg parser.Config, dataRows [][]string) ([]int, map[int]string, error) {
+	numeric := make(map[int]bool, len(headers))
+	for _, c := range chartColumns(headers, map[int]bool{}, dataRows) {
+		numeric[c] = true
+	}
+
 	indices := make([]int, 0, len(cfg.Cols))
 	labels := make(map[int]string, len(cfg.Cols))
 
@@ -215,23 +220,16 @@ func resolveExplicitChartColumns(headers []string, cfg parser.Config, dataRows [
 		if idx == -1 {
 			return nil, nil, fmt.Errorf("column '%s' not found in --cols; available: %v", spec.Source, nonEmpty(headers))
 		}
-
-		numeric := false
-		for _, row := range dataRows {
-			if idx >= len(row) {
-				continue
-			}
-			if _, ok := parseFinite(row[idx]); ok {
-				numeric = true
-				break
-			}
-		}
-		if !numeric {
+		if !numeric[idx] {
 			return nil, nil, fmt.Errorf("column '%s' in --cols is not numeric", spec.Source)
 		}
 
+		label := spec.Source
+		if spec.Label != "" {
+			label = spec.Label
+		}
 		indices = append(indices, idx)
-		labels[idx] = spec.DisplayLabel()
+		labels[idx] = label
 	}
 	return indices, labels, nil
 }
