@@ -224,6 +224,30 @@ func (s *JSONSuite) TestNonArrayInputReturnsNil() {
 	s.Nil(ParseJSON(s.writeFile(``), s.cfg))
 }
 
+func (s *JSONSuite) TestAxesValueModeTwoColumns() {
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "price"}, {Source: "latency"}}
+	js := `[{"name":"a","price":100,"latency":12},{"name":"b","price":200,"latency":8}]`
+
+	results := ParseJSON(s.writeFile(js), s.cfg)
+
+	s.Len(results, 2)
+	s.Equal("100", results[0].XAxis)
+	s.Equal("12", results[0].YAxis)
+	s.Equal("", results[0].ZAxis)
+	s.Empty(results[0].Stats)
+}
+
+func (s *JSONSuite) TestAxesValueModeNumericStringField() {
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "x"}, {Source: "y"}}
+	js := `[{"x":"1.5","y":2}]`
+
+	results := ParseJSON(s.writeFile(js), s.cfg)
+
+	s.Len(results, 1)
+	s.Equal("1.5", results[0].XAxis)
+	s.Equal("2", results[0].YAxis)
+}
+
 func TestJSONSuite(t *testing.T) {
 	suite.Run(t, new(JSONSuite))
 }
@@ -274,6 +298,20 @@ func (s *JSONFatalSuite) TestExplicitColsMissingColumnErrors() {
 func (s *JSONFatalSuite) TestExplicitColsNonNumericErrors() {
 	s.cfg.Select = []parser.ColumnSpec{{Source: "name"}}
 	path := s.writeFile(`[{"name":"alpha","sells":10}]`)
+
+	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
+}
+
+func (s *JSONFatalSuite) TestAxesValueModeMissingFieldErrors() {
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "missing"}, {Source: "y"}}
+	path := s.writeFile(`[{"x":1,"y":2}]`)
+
+	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
+}
+
+func (s *JSONFatalSuite) TestAxesValueModeNonNumericFieldErrors() {
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "name"}, {Source: "y"}}
+	path := s.writeFile(`[{"name":"alpha","y":2}]`)
 
 	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
 }

@@ -119,6 +119,10 @@ func ParseJSON(filename string, cfg parser.Config) []shared.DataPoint {
 		return nil
 	}
 
+	if len(cfg.Axes) > 0 {
+		return parseJSONValueMode(rows, colOrder, seenCol, cfg)
+	}
+
 	groupKeys, groupSet := resolveGroupKeys(colOrder, seenCol, parser.EffectiveGroupColumns(cfg))
 
 	var chartCols []string
@@ -193,6 +197,58 @@ func ParseJSON(filename string, cfg parser.Config) []shared.DataPoint {
 		})
 	}
 
+	return results
+}
+
+// parseJSONValueMode implements --axes value mode for JSON: each named numeric
+// field becomes a coordinate on x, y[, z] (by --axes order); each row becomes a
+// raw point with no stat series. A missing or fully non-numeric axis field is
+// fatal; a row missing a finite value for any axis is skipped.
+func parseJSONValueMode(rows []map[string]any, colOrder []string, seenCol map[string]bool, cfg parser.Config) []shared.DataPoint {
+	keys := make([]string, len(cfg.Axes))
+	for i, spec := range cfg.Axes {
+		if !seenCol[spec.Source] {
+			shared.ExitWithError(fmt.Sprintf("--axes field '%s' not found; available: %v", spec.Source, colOrder), nil)
+		}
+
+		numeric := false
+		for _, row := range rows {
+			if v, ok := row[spec.Source]; ok {
+				if _, ok := leafNumber(v); ok {
+					numeric = true
+					break
+				}
+			}
+		}
+		if !numeric {
+			shared.ExitWithError(fmt.Sprintf("--axes field '%s' is not numeric", spec.Source), nil)
+		}
+		keys[i] = spec.Source
+	}
+
+	var results []shared.DataPoint
+	for _, row := range rows {
+		dp := shared.DataPoint{Stats: []shared.Stat{}}
+		dst := []*string{&dp.XAxis, &dp.YAxis, &dp.ZAxis}
+		complete := true
+		for i, k := range keys {
+			v, ok := row[k]
+			if !ok {
+				complete = false
+				break
+			}
+			num, ok := leafNumber(v)
+			if !ok {
+				complete = false
+				break
+			}
+			*dst[i] = strconv.FormatFloat(utils.FormatNumber(num, cfg.NumberUnit), 'g', -1, 64)
+		}
+		if !complete {
+			continue
+		}
+		results = append(results, dp)
+	}
 	return results
 }
 
