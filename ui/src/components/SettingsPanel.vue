@@ -15,7 +15,7 @@ import {
 } from '../composables/settings/fieldRegistry'
 import { arrangementHasChartZ } from '../lib/swap'
 import { canOfferValue3D, valueModeSwapEnabled } from '../lib/utils'
-import type { BarConfig, ChartType, LineConfig } from '../types'
+import type { BarConfig, ChartType, LineConfig, ScatterConfig } from '../types'
 
 // Generic, schema-less settings panel: walks `Object.keys(activeConfig)` via
 // `getRenderableFields` and renders the registered control for each key. The
@@ -45,6 +45,7 @@ const {
   setArrangement,
   activeGroupId,
   isValueMode,
+  isValueModeDataset,
 } = useDataPoint()
 
 const CHART_ICONS: Record<ChartType, Component> = {
@@ -80,7 +81,7 @@ const onChartTypeSelect = (id: number) => {
 const effectiveSwapTarget = computed(() => {
   const fromMap = getArrangement(activeDataSetId.value, chartType.value)
   if (fromMap) return fromMap
-  const wire = (activeConfig.value as BarConfig | LineConfig | undefined)?.swap
+  const wire = (activeConfig.value as BarConfig | LineConfig | ScatterConfig | undefined)?.swap
   return wire || activeArrangement.value.targetString
 })
 const hasZAxis = computed(() => arrangementHasChartZ(effectiveSwapTarget.value))
@@ -90,13 +91,13 @@ const hasThreeDOption = computed(() =>
     chartType.value,
     activeDataSet.value?.data,
     hasZAxis.value,
-    activeConfig.value as BarConfig | LineConfig | undefined,
+    activeConfig.value as BarConfig | LineConfig | ScatterConfig | undefined,
     activeDataSet.value?.axes
   )
 )
 
 const rendering3D = computed(() => {
-  const cfg = activeConfig.value as BarConfig | LineConfig | undefined
+  const cfg = activeConfig.value as BarConfig | LineConfig | ScatterConfig | undefined
   return hasZAxis.value || cfg?.threeD === true
 })
 
@@ -113,7 +114,11 @@ const fieldGroups = computed(() => {
 })
 
 // Value mode: hide sort always; hide swap only for 2-col --axes (no z column).
+// Scatter value/hybrid transform: sort and swap are no-ops — hide both.
 const filteredGeneral = computed(() => {
+  if (isValueModeDataset.value) {
+    return fieldGroups.value.general.filter((f) => f.key !== 'sort' && f.key !== 'swap')
+  }
   if (!isValueMode.value) return fieldGroups.value.general
   const axes = activeDataSet.value?.axes
   return fieldGroups.value.general.filter((f) => {

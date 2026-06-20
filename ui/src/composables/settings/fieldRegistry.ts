@@ -44,35 +44,35 @@ type FieldMeta = {
 export const fieldRegistry: Record<SettingFieldKey, FieldMeta> = {
   sort: {
     component: SortControl,
-    appliesTo: ['bar', 'line', 'pie', 'heatmap', 'radar'],
+    appliesTo: ['bar', 'line', 'scatter', 'pie', 'heatmap', 'radar'],
   },
   scale: {
     component: ScaleControl,
-    appliesTo: ['bar', 'line'],
+    appliesTo: ['bar', 'line', 'scatter'],
   },
   showLabels: {
     component: ShowLabelsControl,
-    appliesTo: ['bar', 'line', 'pie', 'heatmap', 'radar'],
+    appliesTo: ['bar', 'line', 'scatter', 'pie', 'heatmap', 'radar'],
   },
   threeD: {
     component: ThreeDControl,
-    appliesTo: ['bar', 'line'],
+    appliesTo: ['bar', 'line', 'scatter'],
     // Value-mode toggle when the 3D engine is bundled and z is off chart axes.
     visible: (ctx) => ctx.hasThreeDOption === true && ctx.hasZAxis !== true,
   },
   threeDVisualMap: {
     component: ThreeDVisualMapControl,
-    appliesTo: ['bar', 'line'],
+    appliesTo: ['bar', 'line', 'scatter'],
     visible: (ctx) => ctx.rendering3D === true || ctx.dimension === undefined,
   },
   threeDRotate: {
     component: ThreeDRotateControl,
-    appliesTo: ['bar', 'line'],
+    appliesTo: ['bar', 'line', 'scatter'],
     visible: (ctx) => ctx.rendering3D === true || ctx.dimension === undefined,
   },
   swap: {
     component: SwapControl,
-    appliesTo: ['bar', 'line', 'pie', 'heatmap', 'radar'],
+    appliesTo: ['bar', 'line', 'scatter', 'pie', 'heatmap', 'radar'],
   },
 }
 

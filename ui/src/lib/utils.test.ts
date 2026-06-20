@@ -84,6 +84,24 @@ describe('canOfferValue3D', () => {
     expect(canOfferValue3D('bar', [dp('1', '2', '3')], false, undefined, valueAxes2)).toBe(false)
     expect(canOfferValue3D('line', [dp('1', '2', '3')], false, undefined, valueAxes3)).toBe(false)
   })
+
+  it('offers toggle for scatter with z-data when z is off chart axes', () => {
+    expect(canOfferValue3D('scatter', zData, false)).toBe(true)
+  })
+
+  it('hides toggle for scatter in value or hybrid axes mode', () => {
+    const valueAxes: Axis[] = [
+      { key: 'x', type: 'value' },
+      { key: 'y', type: 'value' },
+    ]
+    const hybridAxes: Axis[] = [
+      { key: 'x', type: 'category' },
+      { key: 'y', type: 'category' },
+      { key: 'z', type: 'value' },
+    ]
+    expect(canOfferValue3D('scatter', zData, false, undefined, valueAxes)).toBe(false)
+    expect(canOfferValue3D('scatter', zData, false, undefined, hybridAxes)).toBe(false)
+  })
 })
 
 describe('datasetDimension', () => {

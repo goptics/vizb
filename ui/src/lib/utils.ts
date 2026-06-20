@@ -131,7 +131,7 @@ export const datasetHas3DEngine = (
   cfg?: { threeD?: boolean }
 ): boolean => datasetDimension(data) === '3D' || cfg?.threeD !== undefined
 
-/** Category value-mode 3D toggle (--3d on x+y grouped data). Hidden for --axes value mode. */
+/** Category value-mode 3D toggle (--3d on x+y grouped data). Hidden for --axes value/hybrid mode. */
 export const canOfferValue3D = (
   chartType: ChartType,
   data: DataPoint[] | undefined,
@@ -139,6 +139,10 @@ export const canOfferValue3D = (
   cfg?: { threeD?: boolean },
   axes?: Axis[]
 ): boolean => {
+  if (chartType === 'scatter') {
+    if (isValueMode(axes) || isHybridMode(axes)) return false
+    return datasetHasBothXY(data) && !hasZOnChart && datasetHas3DEngine(data, cfg)
+  }
   if (isValueMode(axes)) return false
   return (
     (chartType === 'bar' || chartType === 'line') &&
