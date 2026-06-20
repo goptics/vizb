@@ -11,7 +11,6 @@ import {
   createPinnedAxisTooltip,
   createTooltipConfig,
   getChartStyling,
-  hasRotatedXLabels,
   isLargeXAxis,
   makeLegendTitle,
   LARGE_DATA_THRESHOLD,
@@ -41,13 +40,11 @@ export function useLineChartOptions(config: BaseChartConfig) {
     const { minValue, effectiveScale } = getEffectiveScale(series, scale?.value ?? 'linear')
     const largeX = isLargeXAxis(xAxisData)
     const xLabel = chartData.value.axisLabels?.x
-    const rotatedX = hasRotatedXLabels(xAxisData, largeX)
-    const gridOpts = { hasXAxisName: !!xLabel, hasRotatedLabels: rotatedX }
 
     if (!hasYAxis) {
       return {
         ...baseOptions,
-        grid: createGridConfig(1, largeX, gridOpts),
+        grid: createGridConfig(1, largeX),
         tooltip: createPinnedAxisTooltip(isDark.value),
         ...createAxisConfig(styling, xAxisData, effectiveScale, minValue, xLabel, largeX),
         ...(largeX ? { dataZoom: createDataZoomConfig(xAxisData, styling) } : {}),
@@ -90,7 +87,7 @@ export function useLineChartOptions(config: BaseChartConfig) {
     return {
       ...baseOptions,
       ...(yLabel ? { title: makeLegendTitle(yLabel, styling) } : {}),
-      grid: createGridConfig(transposedSeries.length, largeX, gridOpts),
+      grid: createGridConfig(transposedSeries.length, largeX),
       tooltip: createTooltipConfig(true, isDark.value, seriesTotals),
       ...createAxisConfig(styling, xAxisData, effectiveScale, minValue, xLabel, largeX),
       ...(largeX ? { dataZoom: createDataZoomConfig(xAxisData, styling) } : {}),

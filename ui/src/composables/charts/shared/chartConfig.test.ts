@@ -21,17 +21,13 @@ describe('createGridConfig', () => {
     expect(createGridConfig(1, true).containLabel).toBe(false)
   })
 
-  it('uses minimal bottom when dataZoom is absent and no x-axis extras', () => {
-    expect(createGridConfig(1, false).bottom).toBe('3%')
+  it('uses containLabel for no-dataZoom layout (axis title space is automatic)', () => {
+    expect(createGridConfig(1, false).bottom).toBe(28)
     expect(createGridConfig(1, false).containLabel).toBe(true)
   })
 
-  it('expands bottom when axis name or rotated labels need room', () => {
-    expect(createGridConfig(1, false, { hasXAxisName: true }).bottom).toBe('8%')
-    expect(createGridConfig(1, false, { hasRotatedLabels: true }).bottom).toBe('8%')
-    expect(createGridConfig(1, false, { hasXAxisName: true, hasRotatedLabels: true }).bottom).toBe(
-      '13%'
-    )
+  it('keeps dataZoom bottom larger than the no-zoom tier', () => {
+    expect(createGridConfig(1, true).bottom).toBeGreaterThan(createGridConfig(1, false).bottom)
   })
 })
 
