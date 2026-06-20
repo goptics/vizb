@@ -1,5 +1,5 @@
 import { ref, watch, unref, markRaw, onScopeDispose, type MaybeRef, type Ref } from 'vue'
-import type { AxisLabels, DataPoint, ChartData, Sort, ScaleType } from '../types'
+import type { AxisLabels, DataPoint, ChartData, Sort, ScaleType, Axis } from '../types'
 import TransformWorker from '../workers/transform.worker.ts?worker&inline'
 import type { WorkerResponse } from '../workers/transform.worker'
 import { listChartSignatures } from '../lib/transform'
@@ -39,7 +39,8 @@ export function useChartPipeline(
   sort: Ref<Sort>,
   showLabels: Ref<boolean>,
   scale: Ref<ScaleType>,
-  threeD: Ref<boolean>
+  threeD: Ref<boolean>,
+  axes?: MaybeRef<Axis[] | undefined>
 ) {
   const charts = ref<ChartState[]>([])
   // True once any chart has data — gates the first-load full-page skeleton.
@@ -216,6 +217,7 @@ export function useChartPipeline(
       identityString: arrangement.value.identityString,
       targetString: arrangement.value.targetString,
       labels: unref(labels) ?? null,
+      axes: unref(axes) ?? undefined,
     })
   }
 

@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { effectScope, ref, type Ref } from 'vue'
 import type { WorkerResponse, ReadyMessage, ChartMessage } from '../workers/transform.worker'
-import type { DataPoint, AxisLabels, Sort, ScaleType, ChartData } from '../types'
+import type { DataPoint, AxisLabels, Sort, ScaleType, ChartData, Axis } from '../types'
 
 const ctorSpy = vi.fn()
 class TrackedMockWorker {
@@ -212,5 +212,40 @@ describe('useChartPipeline — empty data', () => {
     expect(initCall).toBeUndefined()
     expect(result.charts.value).toEqual([])
     expect(result.hasAny.value).toBe(false)
+  })
+})
+
+describe('useChartPipeline — value mode axes forwarding', () => {
+  it('includes axes in the init postMessage when provided', async () => {
+    const axes: Axis[] = [
+      { key: 'x', label: 'price', type: 'value' },
+      { key: 'y', label: 'latency', type: 'value' },
+    ]
+
+    // Re-mount pipeline with axes ref
+    scope.stop()
+    TrackedMockWorker.instances.length = 0
+    scope = effectScope()
+    scope.run(() =>
+      useChartPipeline(
+        rawData,
+        arrangement,
+        ref(defaultLabels),
+        activeGroupId,
+        sort,
+        showLabels,
+        scale,
+        threeD,
+        ref(axes) // new axes param
+      )
+    )
+    await vi.advanceTimersByTimeAsync(50)
+    const w = TrackedMockWorker.instances[0]!
+
+    const initCall = w.postMessage.mock.calls.find(
+      (c: unknown[]) => (c[0] as { type: string }).type === 'init'
+    )
+    expect(initCall).toBeDefined()
+    expect((initCall![0] as { axes: Axis[] }).axes).toEqual(axes)
   })
 })

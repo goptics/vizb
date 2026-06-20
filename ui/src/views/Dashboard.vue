@@ -62,6 +62,9 @@ const activeLabels = computed(() =>
 // `sort` defaults to disabled when absent so the worker treats it as a no-op.
 const resolvedSort = computed(() => sort.value ?? { enabled: false, order: 'asc' as const })
 
+// Value-mode axes from the active dataset (undefined for category-mode datasets).
+const activeAxes = computed(() => activeDataSet.value?.axes)
+
 // Charts are computed off-thread in a worker, one at a time (queue-based). Each
 // slot carries its own `pending` so its card drives an independent skeleton and
 // reveals progressively.
@@ -73,7 +76,8 @@ const { charts, groupNames } = useChartPipeline(
   resolvedSort,
   showLabels,
   scale,
-  threeD
+  threeD,
+  activeAxes // new: forward axes to worker
 )
 
 // The worker owns grouping; feed its group list back into useDataPoint so the

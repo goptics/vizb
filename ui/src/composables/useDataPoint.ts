@@ -2,7 +2,12 @@ import { ref, shallowRef, markRaw, reactive, computed, nextTick } from 'vue'
 import type { DataSet, DataPoint, ChartType } from '../types'
 import type { Arrangement } from './useChartPipeline'
 import { filterDataSetSettings } from '../lib/filterDataSetSettings'
-import { resetColor, isValidIndex, datasetDimension } from '../lib/utils'
+import {
+  resetColor,
+  isValidIndex,
+  datasetDimension,
+  isValueMode as checkValueMode,
+} from '../lib/utils'
 import { useSettingsStore } from './useSettingsStore'
 
 const getStatDimensions = (points: DataPoint[]) => {
@@ -122,6 +127,10 @@ const activeDataSet = computed(
 
 export { activeDataSet }
 
+// True when the active dataset uses value-mode axes (--axes was used).
+// Used to disable sort/swap controls that are no-ops in value mode.
+const isValueModeActive = computed(() => checkValueMode(activeDataSet.value?.axes))
+
 const { chartType } = useSettingsStore()
 
 // Derive identity from axes[] key order if present, else fall back to presentKeys(data).
@@ -191,5 +200,7 @@ export function useDataPoint() {
 
     loading,
     loadError,
+
+    isValueMode: isValueModeActive,
   }
 }
