@@ -29,6 +29,77 @@ function valuePoints3DToSeries(points: [number, number, number][], title: string
   ]
 }
 
+type ContinuousScatter3DParams = {
+  base: EChartsOption
+  styling: ReturnType<typeof getChartStyling>
+  isDark: boolean
+  showLabels: boolean
+  useVisualMap: boolean
+  defaultColor: string
+  threeDRotate: boolean
+  scale: string
+  seriesData: Series3DData[]
+  axisLabels?: { x?: string; y?: string; z?: string }
+}
+
+function buildContinuousScatter3DOptions(params: ContinuousScatter3DParams): EChartsOption {
+  const {
+    base,
+    styling,
+    isDark,
+    showLabels,
+    useVisualMap,
+    defaultColor,
+    threeDRotate,
+    scale,
+    seriesData,
+    axisLabels,
+  } = params
+  const pointCount = seriesData[0]?.data.length ?? 0
+  const { xCount, yCount } = continuous3DGridCounts(pointCount)
+  const axes3D = createContinuous3DAxes(styling, axisLabels?.x, axisLabels?.y, axisLabels?.z, scale)
+  const grid3D = create3DGridConfig({
+    styling,
+    autoRotate: threeDRotate,
+    orthographic: true,
+    xCount,
+    yCount,
+  })
+
+  return {
+    ...base,
+    legend: { show: false },
+    visualMap: resolve3DVisualMap(useVisualMap, seriesData, styling),
+    tooltip: {
+      ...base.tooltip,
+      ...getTooltipTheme(isDark),
+      formatter: createContinuous3DTooltipFormatter(isDark, {
+        x: axisLabels?.x,
+        y: axisLabels?.y,
+        z: axisLabels?.z,
+      }),
+    },
+    ...axes3D,
+    grid3D,
+    series: seriesData.map((s: Series3DData) => ({
+      name: s.name,
+      type: 'scatter3D' as const,
+      data: s.data,
+      symbolSize: 8,
+      ...(useVisualMap ? {} : { itemStyle: { color: defaultColor } }),
+      label: {
+        show: showLabels,
+        formatter: (p: { value: number[] }) => {
+          const z = p.value[2]
+          return z === undefined ? '' : String(round2(z))
+        },
+        textStyle: { fontSize: 12, color: styling.textColor },
+      },
+      emphasis: { label: { show: false } },
+    })),
+  } as unknown as EChartsOption
+}
+
 export function useScatter3DChartOptions(config: BaseChartConfig) {
   const { chartData, isDark, threeDRotate, visibleZ, showLabels, scale, threeDVisualMap } = config
 
@@ -53,112 +124,29 @@ export function useScatter3DChartOptions(config: BaseChartConfig) {
       xCount: xValues.length,
       yCount: yValues.length,
     })
+    const axisLabels = chartData.value.axisLabels
+    const continuousParams = (seriesData: Series3DData[]): ContinuousScatter3DParams => ({
+      base,
+      styling,
+      isDark: isDark.value,
+      showLabels: showLabels.value,
+      useVisualMap,
+      defaultColor,
+      threeDRotate: threeDRotate?.value ?? false,
+      scale: scale?.value ?? 'linear',
+      seriesData,
+      axisLabels,
+    })
 
     const valuePoints3D = chartData.value.valuePoints3D
     if (!render.lineSeries.length && valuePoints3D?.length) {
-      const seriesData = valuePoints3DToSeries(valuePoints3D, chartData.value.title)
-      const pointCount = seriesData[0]?.data.length ?? 0
-      const { xCount, yCount } = continuous3DGridCounts(pointCount)
-      const axes3D = createContinuous3DAxes(
-        styling,
-        chartData.value.axisLabels?.x,
-        chartData.value.axisLabels?.y,
-        chartData.value.axisLabels?.z,
-        scale?.value ?? 'linear'
+      return buildContinuousScatter3DOptions(
+        continuousParams(valuePoints3DToSeries(valuePoints3D, chartData.value.title))
       )
-      const fallbackGrid3D = create3DGridConfig({
-        styling,
-        autoRotate: threeDRotate?.value ?? false,
-        orthographic: true,
-        xCount,
-        yCount,
-      })
-
-      return {
-        ...base,
-        legend: { show: false },
-        visualMap: resolve3DVisualMap(useVisualMap, seriesData, styling),
-        tooltip: {
-          ...base.tooltip,
-          ...getTooltipTheme(isDark.value),
-          formatter: createContinuous3DTooltipFormatter(isDark.value, {
-            x: chartData.value.axisLabels?.x,
-            y: chartData.value.axisLabels?.y,
-            z: chartData.value.axisLabels?.z,
-          }),
-        },
-        ...axes3D,
-        grid3D: fallbackGrid3D,
-        series: seriesData.map((s: Series3DData) => ({
-          name: s.name,
-          type: 'scatter3D' as const,
-          data: s.data,
-          symbolSize: 8,
-          ...(useVisualMap ? {} : { itemStyle: { color: defaultColor } }),
-          label: {
-            show: showLabels.value,
-            formatter: (p: { value: number[] }) => {
-              const z = p.value[2]
-              return z === undefined ? '' : String(round2(z))
-            },
-            textStyle: { fontSize: 12, color: styling.textColor },
-          },
-          emphasis: { label: { show: false } },
-        })),
-      } as unknown as EChartsOption
     }
 
     if (render.mode === 'continuous') {
-      const seriesData = render.lineSeries
-      const pointCount = seriesData[0]?.data.length ?? 0
-      const { xCount, yCount } = continuous3DGridCounts(pointCount)
-      const axes3D = createContinuous3DAxes(
-        styling,
-        chartData.value.axisLabels?.x,
-        chartData.value.axisLabels?.y,
-        chartData.value.axisLabels?.z,
-        scale?.value ?? 'linear'
-      )
-      const continuousGrid3D = create3DGridConfig({
-        styling,
-        autoRotate: threeDRotate?.value ?? false,
-        orthographic: true,
-        xCount,
-        yCount,
-      })
-
-      return {
-        ...base,
-        legend: { show: false },
-        visualMap: resolve3DVisualMap(useVisualMap, seriesData, styling),
-        tooltip: {
-          ...base.tooltip,
-          ...getTooltipTheme(isDark.value),
-          formatter: createContinuous3DTooltipFormatter(isDark.value, {
-            x: chartData.value.axisLabels?.x,
-            y: chartData.value.axisLabels?.y,
-            z: chartData.value.axisLabels?.z,
-          }),
-        },
-        ...axes3D,
-        grid3D: continuousGrid3D,
-        series: seriesData.map((s: Series3DData) => ({
-          name: s.name,
-          type: 'scatter3D' as const,
-          data: s.data,
-          symbolSize: 8,
-          ...(useVisualMap ? {} : { itemStyle: { color: defaultColor } }),
-          label: {
-            show: showLabels.value,
-            formatter: (p: { value: number[] }) => {
-              const z = p.value[2]
-              return z === undefined ? '' : String(round2(z))
-            },
-            textStyle: { fontSize: 12, color: styling.textColor },
-          },
-          emphasis: { label: { show: false } },
-        })),
-      } as unknown as EChartsOption
+      return buildContinuousScatter3DOptions(continuousParams(render.lineSeries))
     }
 
     if (render.mode === 'value') {
@@ -180,8 +168,8 @@ export function useScatter3DChartOptions(config: BaseChartConfig) {
             yValues,
             seriesData: seriesData[0]?.data ?? [],
             isDark: isDark.value,
-            xAxisLabel: chartData.value.axisLabels?.x,
-            yAxisLabel: chartData.value.axisLabels?.y,
+            xAxisLabel: axisLabels?.x,
+            yAxisLabel: axisLabels?.y,
             valueLabel,
             seriesColor: defaultColor,
           }),
@@ -190,13 +178,13 @@ export function useScatter3DChartOptions(config: BaseChartConfig) {
           type: 'category',
           data: xValues,
           ...axisCommon,
-          ...axis3DName(chartData.value.axisLabels?.x, styling),
+          ...axis3DName(axisLabels?.x, styling),
         },
         yAxis3D: {
           type: 'category',
           data: yValues,
           ...axisCommon,
-          ...axis3DName(chartData.value.axisLabels?.y, styling),
+          ...axis3DName(axisLabels?.y, styling),
         },
         zAxis3D: {
           ...zAxis3DBase,
@@ -229,9 +217,9 @@ export function useScatter3DChartOptions(config: BaseChartConfig) {
       zValues,
       aggPoints,
       isDark: isDark.value,
-      xAxisLabel: chartData.value.axisLabels?.x,
-      yAxisLabel: chartData.value.axisLabels?.y,
-      zAxisLabel: chartData.value.axisLabels?.z,
+      xAxisLabel: axisLabels?.x,
+      yAxisLabel: axisLabels?.y,
+      zAxisLabel: axisLabels?.z,
     })
 
     return {
@@ -250,17 +238,17 @@ export function useScatter3DChartOptions(config: BaseChartConfig) {
         type: 'category',
         data: xValues,
         ...axisCommon,
-        ...axis3DName(chartData.value.axisLabels?.x, styling),
+        ...axis3DName(axisLabels?.x, styling),
       },
       yAxis3D: {
         type: 'category',
         data: yValues,
         ...axisCommon,
-        ...axis3DName(chartData.value.axisLabels?.y, styling),
+        ...axis3DName(axisLabels?.y, styling),
       },
       zAxis3D: {
         ...zAxis3DBase,
-        ...axis3DName(chartData.value.axisLabels?.z, styling),
+        ...axis3DName(axisLabels?.z, styling),
       },
       grid3D,
       series: seriesData.map((s: Series3DData) => {

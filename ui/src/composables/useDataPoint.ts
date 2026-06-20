@@ -7,7 +7,7 @@ import {
   isValidIndex,
   datasetDimension,
   isValueMode as checkValueMode,
-  isScatterTransformMode,
+  isHybridMode,
 } from '../lib/utils'
 import { useSettingsStore } from './useSettingsStore'
 
@@ -146,9 +146,10 @@ const { chartType } = useSettingsStore()
 const isValueModeActive = computed(() => checkValueMode(activeDataSet.value?.axes))
 
 // Scatter-only: value or hybrid transform paths are active for this dataset.
-const isValueModeDataset = computed(() =>
-  isScatterTransformMode(chartType.value, activeDataSet.value?.axes)
-)
+const isValueModeDataset = computed(() => {
+  const axes = activeDataSet.value?.axes
+  return chartType.value === 'scatter' && (checkValueMode(axes) || isHybridMode(axes))
+})
 
 // Derive identity from axes[] key order if present, else fall back to presentKeys(data).
 // axes[] preserves the serial dimension order from --group-pattern / --group-regex.

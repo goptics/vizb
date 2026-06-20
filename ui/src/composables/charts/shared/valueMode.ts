@@ -34,7 +34,7 @@ export function scaleValueTuples(
   return tuples.map(([x, y]) => [x, adjustForLogScaleLine(y, scale)])
 }
 
-function buildScatterAxes2DValueOptions(config: BaseChartConfig): EChartsOption {
+export function buildScatterAxes2DValueOptions(config: BaseChartConfig): EChartsOption {
   const { chartData, sort, showLabels, isDark, scale } = config
   const tuples = chartData.value.valueTuples ?? []
   const xLabel = chartData.value.axisLabels?.x
@@ -82,9 +82,4 @@ function buildScatterAxes2DValueOptions(config: BaseChartConfig): EChartsOption 
     ],
     series: [series],
   } as EChartsOption
-}
-
-/** 2D scatter for --axes value mode (continuous x/y on value axes). */
-export function buildScatterAxes2DOptions(config: BaseChartConfig): EChartsOption {
-  return buildScatterAxes2DValueOptions(config)
 }

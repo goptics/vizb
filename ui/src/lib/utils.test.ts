@@ -12,7 +12,6 @@ import {
   formatChartTotal,
   isValueMode,
   isHybridMode,
-  isScatterTransformMode,
 } from './utils'
 
 const dp = (x: string, y: string, z = ''): DataPoint => ({
@@ -317,33 +316,5 @@ describe('isHybridMode', () => {
       { key: 'y', label: 'Score', type: 'value' },
     ]
     expect(isHybridMode(axes)).toBe(false)
-  })
-})
-
-describe('isScatterTransformMode', () => {
-  const hybridAxes: Axis[] = [
-    { key: 'x', label: 'Region' },
-    { key: 'y', label: 'Category' },
-    { key: 'z', label: 'Latency (ms)', type: 'value' },
-  ]
-
-  it('is true for scatter with value or hybrid axes', () => {
-    expect(
-      isScatterTransformMode('scatter', [
-        { key: 'x', type: 'value' },
-        { key: 'y', type: 'value' },
-      ])
-    ).toBe(true)
-    expect(isScatterTransformMode('scatter', hybridAxes)).toBe(true)
-  })
-
-  it('is false for non-scatter chart types', () => {
-    expect(
-      isScatterTransformMode('bar', [
-        { key: 'x', type: 'value' },
-        { key: 'y', type: 'value' },
-      ])
-    ).toBe(false)
-    expect(isScatterTransformMode('line', hybridAxes)).toBe(false)
   })
 })

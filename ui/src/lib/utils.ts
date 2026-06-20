@@ -265,7 +265,3 @@ export const isHybridMode = (axes: Axis[] | undefined): boolean => {
     categoryAxes.some((a) => a.key === 'y')
   )
 }
-
-/** Value or hybrid transform paths apply only on scatter chart type. */
-export const isScatterTransformMode = (chartType: ChartType, axes: Axis[] | undefined): boolean =>
-  chartType === 'scatter' && (isValueMode(axes) || isHybridMode(axes))
