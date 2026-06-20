@@ -66,6 +66,9 @@ func ParseCSV(filename string, cfg parser.Config) []shared.DataPoint {
 	dataRows := rows[1:]
 
 	if len(cfg.Axes) > 0 {
+		if parser.IsHybridMode(cfg) {
+			return parseCSVHybridMode(headers, dataRows, cfg)
+		}
 		return parseCSVValueMode(headers, dataRows, cfg)
 	}
 
@@ -142,6 +145,78 @@ func ParseCSV(filename string, cfg parser.Config) []shared.DataPoint {
 		})
 	}
 
+	return results
+}
+
+// parseCSVHybridMode implements scatter hybrid mode: 2 categorical group dims
+// on x,y plus one numeric --axes column stored as a single stat (z coordinate).
+func parseCSVHybridMode(headers []string, dataRows [][]string, cfg parser.Config) []shared.DataPoint {
+	groupIdx, _ := resolveGroupColumns(headers, parser.EffectiveGroupColumns(cfg))
+
+	zSpec := cfg.Axes[0]
+	zCol := -1
+	for h, name := range headers {
+		if name == zSpec.Source {
+			zCol = h
+			break
+		}
+	}
+	if zCol == -1 {
+		shared.ExitWithError(fmt.Sprintf("--axes column '%s' not found; available: %v", zSpec.Source, nonEmpty(headers)), nil)
+	}
+
+	numeric := false
+	for _, row := range dataRows {
+		if zCol < len(row) {
+			if _, ok := parseFinite(row[zCol]); ok {
+				numeric = true
+				break
+			}
+		}
+	}
+	if !numeric {
+		shared.ExitWithError(fmt.Sprintf("--axes column '%s' is not numeric", zSpec.Source), nil)
+	}
+
+	zLabel := zSpec.Label
+	if zLabel == "" {
+		zLabel = zSpec.Source
+	}
+	zStatType := utils.CreateStatType(zLabel, cfg.NumberUnit, "")
+
+	var results []shared.DataPoint
+	for _, row := range dataRows {
+		groupValues := groupColumnValues(row, groupIdx)
+
+		label := parser.TabularFilterLabel(groupValues, cfg)
+		if !parser.ShouldIncludeBenchmark(label, cfg) {
+			continue
+		}
+
+		group, gerr := parser.GroupTabularRow(groupValues, cfg)
+		if gerr != nil {
+			shared.ExitWithError("Error parsing CSV group name", gerr)
+		}
+
+		if zCol >= len(row) {
+			continue
+		}
+		v, ok := parseFinite(row[zCol])
+		if !ok {
+			continue
+		}
+
+		results = append(results, shared.DataPoint{
+			Name:  group["name"],
+			XAxis: group["xAxis"],
+			YAxis: group["yAxis"],
+			ZAxis: group["zAxis"],
+			Stats: []shared.Stat{{
+				Type:  zStatType,
+				Value: shared.F64(utils.FormatNumber(v, cfg.NumberUnit)),
+			}},
+		})
+	}
 	return results
 }
 

@@ -116,7 +116,9 @@ func NewCommand() *cobra.Command {
 
 			parserCfg := o.ParseConfig()
 			axes := parser.GroupAxes(parserCfg)
-			if len(parserCfg.Axes) > 0 && len(parserCfg.Group) == 0 {
+			if parser.IsHybridMode(parserCfg) {
+				axes = parser.HybridAxes(parserCfg)
+			} else if len(parserCfg.Axes) > 0 {
 				axes = parser.ValueAxes(parserCfg)
 			}
 			if err := shared.ValidateSwap(cfg.Swap, axes); err != nil {

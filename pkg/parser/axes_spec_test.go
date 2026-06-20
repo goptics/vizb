@@ -53,3 +53,41 @@ func TestValueAxes(t *testing.T) {
 		t.Fatalf("axis[1] wrong: %+v", axes[1])
 	}
 }
+
+func TestIsHybridMode(t *testing.T) {
+	hybrid := Config{
+		Group:        []string{"region", "category"},
+		GroupPattern: "x,y",
+		Axes:         []ColumnSpec{{Source: "latency"}},
+	}
+	if !IsHybridMode(hybrid) {
+		t.Fatal("expected hybrid mode")
+	}
+	if IsHybridMode(Config{Axes: []ColumnSpec{{Source: "x"}, {Source: "y"}}}) {
+		t.Fatal("pure value mode should not be hybrid")
+	}
+	if IsHybridMode(Config{Group: []string{"a"}, GroupPattern: "x"}) {
+		t.Fatal("group-only should not be hybrid")
+	}
+}
+
+func TestHybridAxes(t *testing.T) {
+	cfg := Config{
+		Group:        []string{"region", "category"},
+		GroupPattern: "x,y",
+		Axes:         []ColumnSpec{{Source: "latency", Label: "Latency (ms)"}},
+	}
+	axes := HybridAxes(cfg)
+	if len(axes) != 3 {
+		t.Fatalf("want 3 axes, got %d: %+v", len(axes), axes)
+	}
+	if axes[0].Key != "x" || axes[0].Label != "region" || axes[0].Type != "" {
+		t.Fatalf("axis[0] wrong: %+v", axes[0])
+	}
+	if axes[1].Key != "y" || axes[1].Label != "category" || axes[1].Type != "" {
+		t.Fatalf("axis[1] wrong: %+v", axes[1])
+	}
+	if axes[2].Key != "z" || axes[2].Label != "Latency (ms)" || axes[2].Type != "value" {
+		t.Fatalf("axis[2] wrong: %+v", axes[2])
+	}
+}

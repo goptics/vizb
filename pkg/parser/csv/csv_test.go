@@ -371,6 +371,39 @@ func (s *CSVSuite) TestAxesValueModeNonNumericColumnErrors() {
 	s.Panics(func() { ParseCSV(s.writeFile(csv), s.cfg) })
 }
 
+func (s *CSVSuite) TestHybridModeGroupPlusAxesColumn() {
+	s.cfg.Group = []string{"region", "category"}
+	s.cfg.GroupPattern = "x,y"
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "latency", Label: "Latency (ms)"}}
+	csv := "region,category,latency\nUS,Widget,12\nEU,Gadget,8\n"
+
+	results := ParseCSV(s.writeFile(csv), s.cfg)
+
+	s.Len(results, 2)
+	s.Equal("US", results[0].XAxis)
+	s.Equal("Widget", results[0].YAxis)
+	s.Empty(results[0].ZAxis)
+	s.Len(results[0].Stats, 1)
+	s.Equal("Latency (ms)", results[0].Stats[0].Type)
+	s.Equal(12.0, *results[0].Stats[0].Value)
+	s.Equal("EU", results[1].XAxis)
+	s.Equal("Gadget", results[1].YAxis)
+	s.Equal(8.0, *results[1].Stats[0].Value)
+}
+
+func (s *CSVSuite) TestHybridModeSkipsNonNumericZRow() {
+	s.cfg.Group = []string{"region", "category"}
+	s.cfg.GroupPattern = "x,y"
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "latency"}}
+	csv := "region,category,latency\nUS,Widget,12\nEU,Gadget,bad\nFR,Tool,5\n"
+
+	results := ParseCSV(s.writeFile(csv), s.cfg)
+
+	s.Len(results, 2)
+	s.Equal("US", results[0].XAxis)
+	s.Equal("FR", results[1].XAxis)
+}
+
 func TestCSVSuite(t *testing.T) {
 	suite.Run(t, new(CSVSuite))
 }
@@ -407,6 +440,24 @@ func (s *CSVFatalSuite) TestMissingGroupColumnIsFatal() {
 
 func (s *CSVFatalSuite) TestNoNumericColumnsIsFatal() {
 	path := s.writeFile("name,label\na,foo\nb,bar\n")
+
+	s.PanicsWithValue("exit", func() { ParseCSV(path, s.cfg) })
+}
+
+func (s *CSVFatalSuite) TestHybridModeNonNumericZColumnErrors() {
+	s.cfg.Group = []string{"region", "category"}
+	s.cfg.GroupPattern = "x,y"
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "label"}}
+	path := s.writeFile("region,category,label\nUS,Widget,foo\n")
+
+	s.PanicsWithValue("exit", func() { ParseCSV(path, s.cfg) })
+}
+
+func (s *CSVFatalSuite) TestHybridModeMissingZColumnErrors() {
+	s.cfg.Group = []string{"region", "category"}
+	s.cfg.GroupPattern = "x,y"
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "missing"}}
+	path := s.writeFile("region,category,latency\nUS,Widget,12\n")
 
 	s.PanicsWithValue("exit", func() { ParseCSV(path, s.cfg) })
 }

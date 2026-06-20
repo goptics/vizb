@@ -222,7 +222,9 @@ func prepareData(filePath, parserKey string, cfg parser.Config) []shared.DataPoi
 // command's metadata and the resolved per-chart configs.
 func assembleDataset(results []shared.DataPoint, common CommonOptions, configs []config_charts.ChartConfig, cfg parser.Config) *shared.Dataset {
 	axes := parser.GroupAxes(cfg)
-	if len(cfg.Axes) > 0 {
+	if parser.IsHybridMode(cfg) {
+		axes = parser.HybridAxes(cfg)
+	} else if len(cfg.Axes) > 0 {
 		axes = parser.ValueAxes(cfg)
 	}
 

@@ -248,6 +248,35 @@ func (s *JSONSuite) TestAxesValueModeNumericStringField() {
 	s.Equal("2", results[0].YAxis)
 }
 
+func (s *JSONSuite) TestHybridModeGroupPlusAxesField() {
+	s.cfg.Group = []string{"region", "category"}
+	s.cfg.GroupPattern = "x,y"
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "latency", Label: "Latency (ms)"}}
+	js := `[{"region":"US","category":"Widget","latency":12},{"region":"EU","category":"Gadget","latency":8}]`
+
+	results := ParseJSON(s.writeFile(js), s.cfg)
+
+	s.Len(results, 2)
+	s.Equal("US", results[0].XAxis)
+	s.Equal("Widget", results[0].YAxis)
+	s.Empty(results[0].ZAxis)
+	s.Len(results[0].Stats, 1)
+	s.Equal("Latency (ms)", results[0].Stats[0].Type)
+	s.Equal(12.0, *results[0].Stats[0].Value)
+}
+
+func (s *JSONSuite) TestHybridModeNumericStringZField() {
+	s.cfg.Group = []string{"region", "category"}
+	s.cfg.GroupPattern = "x,y"
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "latency"}}
+	js := `[{"region":"US","category":"Widget","latency":"3.5"}]`
+
+	results := ParseJSON(s.writeFile(js), s.cfg)
+
+	s.Len(results, 1)
+	s.Equal(3.5, *results[0].Stats[0].Value)
+}
+
 func TestJSONSuite(t *testing.T) {
 	suite.Run(t, new(JSONSuite))
 }
@@ -312,6 +341,15 @@ func (s *JSONFatalSuite) TestAxesValueModeMissingFieldErrors() {
 func (s *JSONFatalSuite) TestAxesValueModeNonNumericFieldErrors() {
 	s.cfg.Axes = []parser.ColumnSpec{{Source: "name"}, {Source: "y"}}
 	path := s.writeFile(`[{"name":"alpha","y":2}]`)
+
+	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
+}
+
+func (s *JSONFatalSuite) TestHybridModeNonNumericZFieldErrors() {
+	s.cfg.Group = []string{"region", "category"}
+	s.cfg.GroupPattern = "x,y"
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "label"}}
+	path := s.writeFile(`[{"region":"US","category":"Widget","label":"foo"}]`)
 
 	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
 }

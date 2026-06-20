@@ -21,6 +21,30 @@ func ParseAxesFlag(raw string) ([]ColumnSpec, error) {
 	return specs, nil
 }
 
+// IsHybridMode reports scatter hybrid parsing: 2 categorical group dims plus
+// exactly 1 numeric --axes column (z).
+func IsHybridMode(cfg Config) bool {
+	return len(cfg.Axes) == 1 && len(EffectiveGroupColumns(cfg)) == 2
+}
+
+// HybridAxes returns dataset axis descriptors for scatter hybrid mode: x and y
+// category axes from the group pattern plus a value-type z axis from --axes.
+func HybridAxes(cfg Config) []shared.Axis {
+	groupAxes := GroupAxes(cfg)
+	axes := make([]shared.Axis, 0, 3)
+	for _, a := range groupAxes {
+		if a.Key == "x" || a.Key == "y" {
+			axes = append(axes, a)
+		}
+	}
+	zLabel := cfg.Axes[0].Label
+	if zLabel == "" {
+		zLabel = cfg.Axes[0].Source
+	}
+	axes = append(axes, shared.Axis{Key: "z", Label: zLabel, Type: "value"})
+	return axes
+}
+
 // ValueAxes returns the dataset axis descriptors for --axes value mode: each
 // selected column becomes a value-type axis on x, y[, z] in order, carrying its
 // {label} (falling back to the column name when no label was given).

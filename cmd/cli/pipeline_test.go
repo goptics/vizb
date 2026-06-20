@@ -315,6 +315,27 @@ func (s *PipelineSuite) TestAssembleDatasetUsesValueAxes() {
 	s.Equal("latency", ds.Axes[1].Label)
 }
 
+func (s *PipelineSuite) TestAssembleDatasetUsesHybridAxes() {
+	cfg := parser.Config{
+		Group:        []string{"region", "category"},
+		GroupPattern: "x,y",
+		Axes:         []parser.ColumnSpec{{Source: "latency", Label: "Latency (ms)"}},
+	}
+	results := []shared.DataPoint{{XAxis: "US", YAxis: "Widget", Stats: []shared.Stat{{Type: "Latency (ms)", Value: shared.F64(12)}}}}
+
+	ds := assembleDataset(results, CommonOptions{Name: "T"}, nil, cfg)
+
+	s.Len(ds.Axes, 3)
+	s.Equal("x", ds.Axes[0].Key)
+	s.Equal("region", ds.Axes[0].Label)
+	s.Equal("", ds.Axes[0].Type)
+	s.Equal("y", ds.Axes[1].Key)
+	s.Equal("category", ds.Axes[1].Label)
+	s.Equal("z", ds.Axes[2].Key)
+	s.Equal("Latency (ms)", ds.Axes[2].Label)
+	s.Equal("value", ds.Axes[2].Type)
+}
+
 func (s *PipelineSuite) TestPrepareDataUnknownParserExits() {
 	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
 	defer restore()

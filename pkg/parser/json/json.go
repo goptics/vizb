@@ -120,6 +120,9 @@ func ParseJSON(filename string, cfg parser.Config) []shared.DataPoint {
 	}
 
 	if len(cfg.Axes) > 0 {
+		if parser.IsHybridMode(cfg) {
+			return parseJSONHybridMode(rows, colOrder, seenCol, cfg)
+		}
 		return parseJSONValueMode(rows, colOrder, seenCol, cfg)
 	}
 
@@ -197,6 +200,72 @@ func ParseJSON(filename string, cfg parser.Config) []shared.DataPoint {
 		})
 	}
 
+	return results
+}
+
+// parseJSONHybridMode implements scatter hybrid mode for JSON: 2 categorical
+// group dims on x,y plus one numeric --axes field stored as a single stat.
+func parseJSONHybridMode(rows []map[string]any, colOrder []string, seenCol map[string]bool, cfg parser.Config) []shared.DataPoint {
+	groupKeys, _ := resolveGroupKeys(colOrder, seenCol, parser.EffectiveGroupColumns(cfg))
+
+	zSpec := cfg.Axes[0]
+	if !seenCol[zSpec.Source] {
+		shared.ExitWithError(fmt.Sprintf("--axes field '%s' not found; available: %v", zSpec.Source, colOrder), nil)
+	}
+
+	numeric := false
+	for _, row := range rows {
+		if v, ok := row[zSpec.Source]; ok {
+			if _, ok := leafNumber(v); ok {
+				numeric = true
+				break
+			}
+		}
+	}
+	if !numeric {
+		shared.ExitWithError(fmt.Sprintf("--axes field '%s' is not numeric", zSpec.Source), nil)
+	}
+
+	zLabel := zSpec.Label
+	if zLabel == "" {
+		zLabel = zSpec.Source
+	}
+	zStatType := utils.CreateStatType(zLabel, cfg.NumberUnit, "")
+
+	var results []shared.DataPoint
+	for _, row := range rows {
+		groupValues := groupFieldValues(row, groupKeys)
+
+		label := parser.TabularFilterLabel(groupValues, cfg)
+		if !parser.ShouldIncludeBenchmark(label, cfg) {
+			continue
+		}
+
+		group, gerr := parser.GroupTabularRow(groupValues, cfg)
+		if gerr != nil {
+			shared.ExitWithError("Error parsing JSON group name", gerr)
+		}
+
+		v, ok := row[zSpec.Source]
+		if !ok {
+			continue
+		}
+		num, ok := leafNumber(v)
+		if !ok {
+			continue
+		}
+
+		results = append(results, shared.DataPoint{
+			Name:  group["name"],
+			XAxis: group["xAxis"],
+			YAxis: group["yAxis"],
+			ZAxis: group["zAxis"],
+			Stats: []shared.Stat{{
+				Type:  zStatType,
+				Value: shared.F64(utils.FormatNumber(num, cfg.NumberUnit)),
+			}},
+		})
+	}
 	return results
 }
 
