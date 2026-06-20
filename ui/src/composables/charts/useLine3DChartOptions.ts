@@ -79,9 +79,12 @@ export function useLine3DChartOptions(config: BaseChartConfig) {
           formatter: createValue3DTooltipFormatter({
             xValues,
             yValues,
+            seriesData: seriesData[0]?.data ?? [],
+            isDark: isDark.value,
             xAxisLabel: chartData.value.axisLabels?.x,
             yAxisLabel: chartData.value.axisLabels?.y,
             valueLabel,
+            seriesColor: defaultColor,
           }),
         },
         xAxis3D: {

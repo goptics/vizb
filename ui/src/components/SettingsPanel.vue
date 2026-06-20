@@ -14,6 +14,7 @@ import {
   type SettingFieldValueMap,
 } from '../composables/settings/fieldRegistry'
 import { arrangementHasChartZ } from '../lib/swap'
+import { canOfferValue3D } from '../lib/utils'
 import type { BarConfig, ChartType, LineConfig } from '../types'
 
 // Generic, schema-less settings panel: walks `Object.keys(activeConfig)` via
@@ -82,14 +83,18 @@ const effectiveSwapTarget = computed(() => {
 })
 const hasZAxis = computed(() => arrangementHasChartZ(effectiveSwapTarget.value))
 
-const hasThreeDOption = computed(
-  () => (activeConfig.value as BarConfig | LineConfig | undefined)?.threeD !== undefined
+const hasThreeDOption = computed(() =>
+  canOfferValue3D(
+    chartType.value,
+    activeDataSet.value?.data,
+    hasZAxis.value,
+    activeConfig.value as BarConfig | LineConfig | undefined
+  )
 )
 
 const rendering3D = computed(() => {
-  if (activeDataDimension.value === '3D') return true
   const cfg = activeConfig.value as BarConfig | LineConfig | undefined
-  return !!(cfg?.threeD && activeDataDimension.value === '2D')
+  return hasZAxis.value || cfg?.threeD === true
 })
 
 const fieldGroups = computed(() => {

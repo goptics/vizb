@@ -1,5 +1,5 @@
 import type { Render3D, Point3D } from '@/types'
-import { getNextColorFor } from '@/lib/utils'
+import { COLOR_PALETTE, getNextColorFor } from '@/lib/utils'
 import { tooltipDivider, tooltipSpreadRows, renderDonutSvg, type ChartStyling } from './chartConfig'
 
 export const round2 = (v: number) => Math.round(v * 100) / 100
@@ -60,20 +60,58 @@ export const createValue3DVisualMap = create3DVisualMap
 export function createValue3DTooltipFormatter(params: {
   xValues: string[]
   yValues: string[]
+  seriesData: { value: number[] }[]
+  isDark: boolean
   xAxisLabel?: string
   yAxisLabel?: string
   valueLabel?: string
+  seriesColor?: string
 }) {
-  const { xValues, yValues, xAxisLabel, yAxisLabel, valueLabel } = params
+  const {
+    xValues,
+    yValues,
+    seriesData,
+    isDark,
+    xAxisLabel,
+    yAxisLabel,
+    valueLabel,
+    seriesColor = COLOR_PALETTE[0]!,
+  } = params
   const xLabel = xAxisLabel ?? 'x'
   const yLabel = yAxisLabel ?? 'y'
-  const zLabel = valueLabel ?? 'value'
+  const metricLabel = valueLabel ?? 'value'
+
+  const xMarginals = new Map<string, number>()
+  const yMarginals = new Map<string, number>()
+  for (const item of seriesData) {
+    const [xi = 0, yi = 0, v = 0] = item.value
+    const xName = xValues[xi] ?? String(xi)
+    const yName = yValues[yi] ?? String(yi)
+    xMarginals.set(xName, (xMarginals.get(xName) ?? 0) + v)
+    yMarginals.set(yName, (yMarginals.get(yName) ?? 0) + v)
+  }
+
+  const dot = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${seriesColor};margin-right:6px"></span>`
 
   return (p: { value: number[] }) => {
     const [xi = 0, yi = 0, v = 0] = p.value
     const xName = xValues[xi] ?? String(xi)
     const yName = yValues[yi] ?? String(yi)
-    return `<b>${xLabel}: ${xName}</b><br/>${yLabel}: ${yName}<br/>${zLabel}: <b>${round2(v)}</b>`
+    const xMarginal = xMarginals.get(xName) ?? 0
+    const yMarginal = yMarginals.get(yName) ?? 0
+    const xyTotal = xMarginal + yMarginal
+
+    const margins =
+      tooltipDivider(isDark) +
+      `Σ ${xLabel}(${xName}): <b>${round2(xMarginal)}</b><br/>` +
+      `Σ ${yLabel}(${yName}): <b>${round2(yMarginal)}</b><br/>` +
+      `Σ (${xLabel}+${yLabel}): <b>${round2(xyTotal)}</b>`
+
+    return (
+      `<b>${xLabel}: ${xName} / ${yLabel}: ${yName}</b><br/>` +
+      `${dot}${metricLabel}: <b>${round2(v)}</b><br/>` +
+      margins
+    )
   }
 }
 
@@ -175,16 +213,20 @@ export function create3DTooltipFormatter(params: {
       })
       .filter(Boolean)
 
-    // Σ over z = stacked bar height at this (x,y). First line under the divider,
-    // above the x/y marginals, when there's more than one z to sum.
+    // Σ over z = stacked bar height at this (x,y), when there's more than one z.
     const zSumLine = zmap.size > 1 ? `Σ ${zSumLabel}: <b>${round2(cellTotal)}</b><br/>` : ''
 
-    // Marginal totals: sum over the other two axes for this x / this y.
+    const xyTotal = xMarginal + yMarginal
+    const xyzTotal = xyTotal + cellTotal
+
+    // Per-axis marginals first, then combined axis sums.
     const margins =
       tooltipDivider(isDark) +
-      zSumLine +
       `Σ ${xLabel}(${xName}): <b>${round2(xMarginal)}</b><br/>` +
-      `Σ ${yLabel}(${yName}): <b>${round2(yMarginal)}</b>`
+      `Σ ${yLabel}(${yName}): <b>${round2(yMarginal)}</b><br/>` +
+      zSumLine +
+      `Σ (${xLabel}+${yLabel}): <b>${round2(xyTotal)}</b><br/>` +
+      `Σ (${xLabel}+${yLabel}+${zSumLabel}): <b>${round2(xyzTotal)}</b>`
 
     // Spread of the z-values in this cell (median / IQR / CV), mirroring the 2D
     // tooltip. Only meaningful with >1 z.
@@ -198,7 +240,9 @@ export function create3DTooltipFormatter(params: {
               .map((z) => ({ value: zmap.get(z)!, color: getNextColorFor(z) ?? '', name: z }))
           )
         : ''
-    return `<b>${xLabel}: ${xName} / ${yLabel}: ${yName}</b><br/>${rows.join('<br/>')}${margins}${spread}${donut ? tooltipDivider(isDark) + donut : ''}`
+    const legendBlock = rows.length > 0 ? `${rows.join('<br/>')}<br/>` : ''
+
+    return `<b>${xLabel}: ${xName} / ${yLabel}: ${yName}</b><br/>${legendBlock}${margins}${spread}${donut ? tooltipDivider(isDark) + donut : ''}`
   }
 }
 

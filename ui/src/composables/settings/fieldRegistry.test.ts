@@ -73,7 +73,7 @@ describe('fieldRegistry', () => {
 describe('getRenderableFields', () => {
   it('returns 6 entries for a 3D bar config (sort/scale/showLabels/threeDVisualMap/threeDRotate/swap)', () => {
     const cfg: BarConfig = { type: 'bar' }
-    const fields = getRenderableFields(cfg, { dimension: '3D' })
+    const fields = getRenderableFields(cfg, { dimension: '3D', rendering3D: true, hasZAxis: true })
     expect(fields.map((f) => f.key)).toEqual([
       'sort',
       'scale',
@@ -87,14 +87,11 @@ describe('getRenderableFields', () => {
 
   it('returns 6 entries for a 3D line config', () => {
     const cfg: LineConfig = { type: 'line' }
-    expect(getRenderableFields(cfg, { dimension: '3D' }).map((f) => f.key)).toEqual([
-      'sort',
-      'scale',
-      'showLabels',
-      'threeDVisualMap',
-      'threeDRotate',
-      'swap',
-    ])
+    expect(
+      getRenderableFields(cfg, { dimension: '3D', rendering3D: true, hasZAxis: true }).map(
+        (f) => f.key
+      )
+    ).toEqual(['sort', 'scale', 'showLabels', 'threeDVisualMap', 'threeDRotate', 'swap'])
   })
 
   it('returns 4 entries for a 2D bar config without value-3D active', () => {
@@ -126,6 +123,38 @@ describe('getRenderableFields', () => {
         hasZAxis: true,
       }).map((f) => f.key)
     ).toEqual(['sort', 'scale', 'showLabels', 'threeDVisualMap', 'threeDRotate', 'swap'])
+  })
+
+  it('shows threeD toggle without baked threeD when engine is available (xyn swap)', () => {
+    const cfg: BarConfig = { type: 'bar' }
+    expect(
+      getRenderableFields(cfg, {
+        dimension: '3D',
+        rendering3D: false,
+        hasThreeDOption: true,
+        hasZAxis: false,
+      }).map((f) => f.key)
+    ).toEqual(['sort', 'scale', 'showLabels', 'threeD', 'swap'])
+  })
+
+  it('hides rotate/visualMap on flat 2D xyn chart until value 3D is enabled', () => {
+    const cfg: BarConfig = { type: 'bar' }
+    expect(
+      getRenderableFields(cfg, {
+        dimension: '3D',
+        rendering3D: false,
+        hasThreeDOption: true,
+        hasZAxis: false,
+      }).map((f) => f.key)
+    ).not.toContain('threeDRotate')
+    expect(
+      getRenderableFields(cfg, {
+        dimension: '3D',
+        rendering3D: false,
+        hasThreeDOption: true,
+        hasZAxis: false,
+      }).map((f) => f.key)
+    ).not.toContain('threeDVisualMap')
   })
 
   it('returns 4 entries for a 2D line config without value-3D active', () => {
@@ -198,13 +227,10 @@ describe('getRenderableFields', () => {
       type: 'bar',
       sort: { enabled: false, order: 'asc' as const },
     } as unknown as BarConfig
-    expect(getRenderableFields(cfg, { dimension: '3D' }).map((f) => f.key)).toEqual([
-      'sort',
-      'scale',
-      'showLabels',
-      'threeDVisualMap',
-      'threeDRotate',
-      'swap',
-    ])
+    expect(
+      getRenderableFields(cfg, { dimension: '3D', rendering3D: true, hasZAxis: true }).map(
+        (f) => f.key
+      )
+    ).toEqual(['sort', 'scale', 'showLabels', 'threeDVisualMap', 'threeDRotate', 'swap'])
   })
 })

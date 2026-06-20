@@ -13,18 +13,27 @@ vi.mock('./useDataPoint', () => ({
     if (!holder.ref) throw new Error('forgot beforeEach')
     return holder.ref
   },
+  useDataPoint: () => ({
+    activeDataSet: holder.ref,
+    activeDataSetId: { value: 0 },
+    activeArrangement: { value: { identityString: 'xyz', targetString: 'xyz' } },
+    getArrangement: () => undefined,
+  }),
 }))
 
 vi.mock('./useSettingsStore', () => ({
   useSettingsStore: () => ({
     activeConfig: computed(() => holder.ref?.value?.settings[holder.activeIndex]),
+    chartType: computed(
+      () => holder.ref?.value?.settings[holder.activeIndex]?.type ?? ('bar' as ChartType)
+    ),
   }),
 }))
 
-const ds = (settings: ChartConfig[]): DataSet => ({
+const ds = (settings: ChartConfig[], data: DataSet['data'] = []): DataSet => ({
   name: 'test',
   settings,
-  data: [],
+  data,
 })
 
 describe('useActiveChartShape', () => {
@@ -51,6 +60,30 @@ describe('useActiveChartShape', () => {
     expect(scale.value).toBe('linear')
     expect(threeDRotate.value).toBe(false)
     expect(showLabels.value).toBe(false)
+  })
+
+  it('hasThreeDOption is true for z-data bar when z is off chart axes', async () => {
+    holder.ref = ref(
+      ds(
+        [{ type: 'bar' as ChartType, swap: 'xyn' }],
+        [{ name: '', xAxis: 'a', yAxis: 'b', zAxis: 'z1', stats: [] }]
+      )
+    )
+    const { useActiveChartShape } = await import('./useActiveChartShape')
+    const { hasThreeDOption } = useActiveChartShape()
+    expect(hasThreeDOption.value).toBe(true)
+  })
+
+  it('hasThreeDOption is false for pie even with z-data', async () => {
+    holder.ref = ref(
+      ds(
+        [{ type: 'pie' as ChartType }],
+        [{ name: '', xAxis: 'a', yAxis: 'b', zAxis: 'z1', stats: [] }]
+      )
+    )
+    const { useActiveChartShape } = await import('./useActiveChartShape')
+    const { hasThreeDOption } = useActiveChartShape()
+    expect(hasThreeDOption.value).toBe(false)
   })
 
   it('reads set values from the active config', async () => {
