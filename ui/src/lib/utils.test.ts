@@ -3,12 +3,16 @@ import type { DataPoint } from '../types'
 import type { ChartData, Axis } from '../types'
 import {
   canOfferValue3D,
+  chartAxisBadgeCount,
+  chartHasPlottableData,
   computeChartGrandTotal,
   datasetHas3DEngine,
   datasetHasBothXY,
   datasetDimension,
   formatChartTotal,
   isValueMode,
+  isHybridMode,
+  isScatterTransformMode,
 } from './utils'
 
 const dp = (x: string, y: string, z = ''): DataPoint => ({
@@ -69,6 +73,16 @@ describe('canOfferValue3D', () => {
 
   it('offers toggle for x+y data when --3d was baked', () => {
     expect(canOfferValue3D('bar', [dp('a', 'b')], false, { threeD: false })).toBe(true)
+  })
+
+  it('hides toggle for --axes value mode (2-col or 3-col)', () => {
+    const valueAxes2: Axis[] = [
+      { key: 'x', type: 'value' },
+      { key: 'y', type: 'value' },
+    ]
+    const valueAxes3: Axis[] = [...valueAxes2, { key: 'z', type: 'value' }]
+    expect(canOfferValue3D('bar', [dp('1', '2', '3')], false, undefined, valueAxes2)).toBe(false)
+    expect(canOfferValue3D('line', [dp('1', '2', '3')], false, undefined, valueAxes3)).toBe(false)
   })
 })
 
@@ -149,6 +163,81 @@ describe('formatChartTotal', () => {
   })
 })
 
+describe('chartAxisBadgeCount', () => {
+  const chart = (partial: Partial<ChartData>): ChartData => ({
+    title: 'v',
+    statType: 'v',
+    yAxis: [],
+    zAxis: [],
+    series: [],
+    points: [],
+    ...partial,
+  })
+
+  it('uses series/y/z lengths for grouped charts', () => {
+    const grouped = chart({
+      yAxis: ['Y1', 'Y2'],
+      zAxis: ['Z1'],
+      series: [
+        { xAxis: 'A', values: [1, 2], benchmarkId: '' },
+        { xAxis: 'B', values: [3, 4], benchmarkId: '' },
+      ],
+    })
+    expect(chartAxisBadgeCount(grouped, 'x')).toBe(2)
+    expect(chartAxisBadgeCount(grouped, 'y')).toBe(2)
+    expect(chartAxisBadgeCount(grouped, 'z')).toBe(1)
+  })
+
+  it('counts unique value-mode 2D coordinates per axis', () => {
+    const value2d = chart({
+      statType: 'value',
+      valueTuples: [
+        [1, 10],
+        [1, 20],
+        [2, 30],
+      ],
+    })
+    expect(chartAxisBadgeCount(value2d, 'x')).toBe(2)
+    expect(chartAxisBadgeCount(value2d, 'y')).toBe(3)
+    expect(chartAxisBadgeCount(value2d, 'z')).toBe(0)
+  })
+
+  it('counts unique value-mode 3D coordinates per axis', () => {
+    const value3d = chart({
+      statType: 'value',
+      valuePoints3D: [
+        [1, 2, 3],
+        [1, 2, 4],
+        [5, 6, 7],
+      ],
+    })
+    expect(chartAxisBadgeCount(value3d, 'x')).toBe(2)
+    expect(chartAxisBadgeCount(value3d, 'y')).toBe(2)
+    expect(chartAxisBadgeCount(value3d, 'z')).toBe(3)
+  })
+})
+
+describe('chartHasPlottableData', () => {
+  const chart = (partial: Partial<ChartData>): ChartData => ({
+    title: 'v',
+    statType: 'v',
+    yAxis: [],
+    zAxis: [],
+    series: [],
+    points: [],
+    ...partial,
+  })
+
+  it('is true for value-mode tuples and 3D points', () => {
+    expect(chartHasPlottableData(chart({ valueTuples: [[1, 2]] }))).toBe(true)
+    expect(chartHasPlottableData(chart({ valuePoints3D: [[1, 2, 3]] }))).toBe(true)
+  })
+
+  it('is false for empty value-mode chart', () => {
+    expect(chartHasPlottableData(chart({ statType: 'value' }))).toBe(false)
+  })
+})
+
 describe('isValueMode', () => {
   it('returns false for undefined axes', () => {
     expect(isValueMode(undefined)).toBe(false)
@@ -171,11 +260,72 @@ describe('isValueMode', () => {
     expect(isValueMode(axes)).toBe(true)
   })
 
-  it('returns true with mixed category and value axes', () => {
+  it('returns false with mixed category and value axes (hybrid, not value mode)', () => {
+    const axes: Axis[] = [
+      { key: 'x', label: 'Region' },
+      { key: 'y', label: 'Category' },
+      { key: 'z', label: 'Latency (ms)', type: 'value' },
+    ]
+    expect(isValueMode(axes)).toBe(false)
+  })
+})
+
+describe('isHybridMode', () => {
+  it('returns false for undefined or empty axes', () => {
+    expect(isHybridMode(undefined)).toBe(false)
+    expect(isHybridMode([])).toBe(false)
+  })
+
+  it('returns false for pure value mode', () => {
+    const axes: Axis[] = [
+      { key: 'x', label: 'x', type: 'value' },
+      { key: 'y', label: 'y', type: 'value' },
+    ]
+    expect(isHybridMode(axes)).toBe(false)
+  })
+
+  it('returns true for 2 category axes + z value axis', () => {
+    const axes: Axis[] = [
+      { key: 'x', label: 'Region' },
+      { key: 'y', label: 'Category' },
+      { key: 'z', label: 'Latency (ms)', type: 'value' },
+    ]
+    expect(isHybridMode(axes)).toBe(true)
+  })
+
+  it('returns false when value axis is not z', () => {
     const axes: Axis[] = [
       { key: 'x', label: 'Name' },
       { key: 'y', label: 'Score', type: 'value' },
     ]
-    expect(isValueMode(axes)).toBe(true)
+    expect(isHybridMode(axes)).toBe(false)
+  })
+})
+
+describe('isScatterTransformMode', () => {
+  const hybridAxes: Axis[] = [
+    { key: 'x', label: 'Region' },
+    { key: 'y', label: 'Category' },
+    { key: 'z', label: 'Latency (ms)', type: 'value' },
+  ]
+
+  it('is true for scatter with value or hybrid axes', () => {
+    expect(
+      isScatterTransformMode('scatter', [
+        { key: 'x', type: 'value' },
+        { key: 'y', type: 'value' },
+      ])
+    ).toBe(true)
+    expect(isScatterTransformMode('scatter', hybridAxes)).toBe(true)
+  })
+
+  it('is false for non-scatter chart types', () => {
+    expect(
+      isScatterTransformMode('bar', [
+        { key: 'x', type: 'value' },
+        { key: 'y', type: 'value' },
+      ])
+    ).toBe(false)
+    expect(isScatterTransformMode('line', hybridAxes)).toBe(false)
   })
 })

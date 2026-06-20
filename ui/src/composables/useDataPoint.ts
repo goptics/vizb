@@ -7,6 +7,7 @@ import {
   isValidIndex,
   datasetDimension,
   isValueMode as checkValueMode,
+  isScatterTransformMode,
 } from '../lib/utils'
 import { useSettingsStore } from './useSettingsStore'
 
@@ -138,11 +139,16 @@ const activeDataSet = computed(
 
 export { activeDataSet }
 
-// True when the active dataset uses value-mode axes (--axes was used).
+const { chartType } = useSettingsStore()
+
+// True when the active dataset uses pure value-mode axes (--axes x,y[,z]).
 // Used to disable sort/swap controls that are no-ops in value mode.
 const isValueModeActive = computed(() => checkValueMode(activeDataSet.value?.axes))
 
-const { chartType } = useSettingsStore()
+// Scatter-only: value or hybrid transform paths are active for this dataset.
+const isValueModeDataset = computed(() =>
+  isScatterTransformMode(chartType.value, activeDataSet.value?.axes)
+)
 
 // Derive identity from axes[] key order if present, else fall back to presentKeys(data).
 // axes[] preserves the serial dimension order from --group-pattern / --group-regex.
@@ -213,5 +219,6 @@ export function useDataPoint() {
     loadError,
 
     isValueMode: isValueModeActive,
+    isValueModeDataset,
   }
 }

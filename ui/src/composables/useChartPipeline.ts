@@ -1,9 +1,9 @@
 import { ref, watch, unref, toRaw, markRaw, onScopeDispose, type MaybeRef, type Ref } from 'vue'
-import type { AxisLabels, DataPoint, ChartData, Sort, ScaleType, Axis } from '../types'
+import type { AxisLabels, DataPoint, ChartData, Sort, ScaleType, Axis, ChartType } from '../types'
 import TransformWorker from '../workers/transform.worker.ts?worker&inline'
 import type { WorkerResponse } from '../workers/transform.worker'
 import { listChartSignatures } from '../lib/transform'
-import { isValueMode } from '../lib/utils'
+import { isValueMode, isHybridMode, valueModeSwapEnabled } from '../lib/utils'
 
 // The arrangement the worker projects/groups under: present source axes in
 // canonical order (identityString, e.g. "nx") and the selected target order
@@ -55,7 +55,8 @@ export function useChartPipeline(
   showLabels: Ref<boolean>,
   scale: Ref<ScaleType>,
   threeD: Ref<boolean>,
-  axes?: MaybeRef<Axis[] | undefined>
+  axes?: MaybeRef<Axis[] | undefined>,
+  chartType?: MaybeRef<ChartType>
 ) {
   const charts = ref<ChartState[]>([])
   // True once any chart has data — gates the first-load full-page skeleton.
@@ -167,10 +168,14 @@ export function useChartPipeline(
   // re-groups its cached raw data off-thread and replies `ready`, which re-queues
   // the compute jobs. Bumps the batch so in-flight replies from the old arrangement
   // are dropped.
+  const activeChartType = () => unref(chartType) ?? 'bar'
+  const axisList = () => toRaw(unref(axes))
+  const scatterValueMode = () => activeChartType() === 'scatter' && isValueMode(axisList())
+
   const setArrangement = () => {
     if (!lastSignatures.length || readyInFlight || dataPending) return
-    // Arrangement/swap is a no-op in value mode — skip to avoid racing init.
-    if (isValueMode(toRaw(unref(axes)))) return
+    // 2-col scatter value mode: swap is a no-op. 3-col (--axes x,y,z) re-projects on swap.
+    if (scatterValueMode() && !valueModeSwapEnabled(axisList())) return
     readyInFlight = true
     // labels is a fresh plain object from swapAxisLabels (off now-plain axisLabels),
     // so postMessage clones it natively — no proxy stripping needed.
@@ -214,16 +219,27 @@ export function useChartPipeline(
     // clones and groups the dataset. Signatures are arrangement-independent (raw
     // rows only), so they match what ready will return. The ready handler reconciles
     // via its own prev-map: same keys → same ChartCard instances, no flicker.
-    const axisList = toRaw(unref(axes))
+    const axesNow = axisList()
+    const ct = activeChartType()
     const prev = new Map(charts.value.map((c) => [c.key, c]))
-    if (isValueMode(axisList)) {
-      const xLabel = axisList?.find((a) => a.key === 'x')?.label ?? 'x'
-      const yLabel = axisList?.find((a) => a.key === 'y')?.label ?? 'y'
+    if (ct === 'scatter' && isValueMode(axesNow)) {
+      const xLabel = axesNow?.find((a) => a.key === 'x')?.label ?? 'x'
+      const yLabel = axesNow?.find((a) => a.key === 'y')?.label ?? 'y'
       charts.value = [
         {
           key: '__value_mode__',
           title: `${xLabel} vs ${yLabel}`,
           data: prev.get('__value_mode__')?.data ?? null,
+          pending: true,
+        },
+      ]
+    } else if (ct === 'scatter' && isHybridMode(axesNow)) {
+      const zLabel = axesNow?.find((a) => a.key === 'z')?.label ?? 'z'
+      charts.value = [
+        {
+          key: '__hybrid_mode__',
+          title: zLabel,
+          data: prev.get('__hybrid_mode__')?.data ?? null,
           pending: true,
         },
       ]
@@ -248,7 +264,8 @@ export function useChartPipeline(
       identityString: arrangement.value.identityString,
       targetString: arrangement.value.targetString,
       labels: plainLabels(toRaw(unref(labels))),
-      axes: plainAxes(toRaw(unref(axes))),
+      axes: plainAxes(axesNow),
+      chartType: ct,
     })
   }
 
@@ -281,8 +298,7 @@ export function useChartPipeline(
   watch(
     () => [arrangement.value.identityString, arrangement.value.targetString] as const,
     () => {
-      // Arrangement/swap is a no-op in value mode — skip to avoid pending=true with no compute.
-      if (isValueMode(toRaw(unref(axes)))) return
+      if (scatterValueMode() && !valueModeSwapEnabled(axisList())) return
       startBatch()
       clearTimeout(arrangeDebounce)
       arrangeDebounce = setTimeout(setArrangement, 50)

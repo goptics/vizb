@@ -16,7 +16,13 @@ import type {
   Series3DData,
   ScaleType,
 } from '../types'
-import { sourceFieldForChartAxis, translateAxisKey, type AxisKey } from './swap'
+import {
+  arrangementHasChartZ,
+  sourceFieldForChartAxis,
+  swapAxisLabels,
+  translateAxisKey,
+  type AxisKey,
+} from './swap'
 
 export type CanonicalAxisOrders = {
   x?: string[]
@@ -238,33 +244,228 @@ export function buildChartData(
   )
 }
 
-// Build one ChartData for a value-mode dataset (--axes pipeline). Each DataPoint's
-// xAxis/yAxis strings are parsed as floats; rows with non-finite values are dropped.
-// The result has no stat series — coordinates are the full content.
-export function buildValueModeChart(data: DataPoint[], axes: Axis[]): ChartData {
-  const xAxis = axes.find((a) => a.key === 'x')
-  const yAxis = axes.find((a) => a.key === 'y')
-  const xLabel = xAxis?.label ?? xAxis?.key ?? 'x'
-  const yLabel = yAxis?.label ?? yAxis?.key ?? 'y'
+const identityStringFromAxes = (axes: Axis[]): string =>
+  axes.map((a) => (a.key === 'name' ? 'n' : a.key.charAt(0))).join('')
 
-  const valueTuples: [number, number][] = []
-  for (const dp of data) {
-    const x = Number(dp.xAxis)
-    const y = Number(dp.yAxis)
-    if (!isFinite(x) || !isFinite(y)) continue
-    valueTuples.push([x, y])
+const axisLabelsFromAxes = (axes: Axis[]): AxisLabels => {
+  const out: AxisLabels = {}
+  for (const a of axes) {
+    const label = a.label ?? a.key
+    ;(out as Record<string, string>)[a.key] = label
+  }
+  return out
+}
+
+const projectValueCoords = (
+  row: DataPoint,
+  identityString: string,
+  targetString: string
+): Partial<Record<'xAxis' | 'yAxis' | 'zAxis', number>> | null => {
+  const identityKeys = translateAxisKey(identityString)
+  const targetKeys = translateAxisKey(targetString)
+  if (identityKeys.length !== targetKeys.length) return null
+
+  const out: Partial<Record<'xAxis' | 'yAxis' | 'zAxis', number>> = {}
+  for (let i = 0; i < identityKeys.length; i++) {
+    const src = identityKeys[i]!
+    const dst = targetKeys[i]!
+    if (dst === 'name') continue
+    const n = Number(fieldValue(row, src))
+    if (!isFinite(n)) return null
+    out[dst] = n
+  }
+  return out
+}
+
+// Value-mode 3D: continuous [x,y,z] path through space (--axes x,y,z + swap with z on chart).
+export function buildValueMode3DRender(
+  points: [number, number, number][],
+  title: string,
+  showLabels = false,
+  scale: ScaleType = 'linear'
+): Render3D {
+  const filtered = scale === 'log' ? points.filter(([x, y, z]) => x > 0 && y > 0 && z > 0) : points
+
+  const seriesData = filtered.map(([x, y, z]) => ({ value: [x, y, z] }))
+  const cellTotals: Record<string, number> = {}
+  if (showLabels) {
+    filtered.forEach(([, , z], i) => {
+      cellTotals[String(i)] = z
+    })
   }
 
   return {
-    title: `${xLabel} vs ${yLabel}`,
+    mode: 'continuous',
+    xValues: [],
+    yValues: [],
+    zValues: [],
+    barSeries: [{ name: title, data: seriesData }],
+    lineSeries: [{ name: title, data: seriesData }],
+    cellTotals,
+  }
+}
+
+// Build one ChartData for a value-mode dataset (--axes pipeline). Coordinates are
+// projected onto chart axes per the active swap (identity → target). Swap with z
+// on a chart axis yields continuous 3D; otherwise 2D valueTuples for chart x vs y.
+export function buildValueModeChart(
+  data: DataPoint[],
+  axes: Axis[],
+  identityString?: string,
+  targetString?: string,
+  opts?: { scale?: ScaleType; showLabels?: boolean }
+): ChartData {
+  const identity = identityString ?? identityStringFromAxes(axes)
+  const target = targetString ?? identity
+  const scale = opts?.scale ?? 'linear'
+  const baseLabels = axisLabelsFromAxes(axes)
+  const labels = swapAxisLabels(identity, target, baseLabels) ?? baseLabels
+  const use3D = arrangementHasChartZ(target)
+
+  const valueTuples: [number, number][] = []
+  const valuePoints3D: [number, number, number][] = []
+
+  for (const row of data) {
+    const coords = projectValueCoords(row, identity, target)
+    if (!coords) continue
+
+    if (use3D) {
+      const cx = coords.xAxis
+      const cy = coords.yAxis
+      const cz = coords.zAxis
+      if (cx === undefined || cy === undefined || cz === undefined) continue
+      if (scale === 'log' && (cx <= 0 || cy <= 0 || cz <= 0)) continue
+      valuePoints3D.push([cx, cy, cz])
+    } else {
+      const cx = coords.xAxis
+      const cy = coords.yAxis
+      if (cx === undefined || cy === undefined) continue
+      if (scale === 'log' && cy <= 0) continue
+      valueTuples.push([cx, cy])
+    }
+  }
+
+  const xLabel = labels.x ?? 'x'
+  const yLabel = labels.y ?? 'y'
+  const zLabel = labels.z ?? 'z'
+  const title = use3D ? `${xLabel} · ${yLabel} · ${zLabel}` : `${xLabel} vs ${yLabel}`
+
+  const chart: ChartData = {
+    title,
     statType: 'value',
     yAxis: [],
     zAxis: [],
     series: [],
     points: [],
-    axisLabels: { x: xLabel, y: yLabel },
-    valueTuples,
+    axisLabels: labels,
+    ...(!use3D ? { valueTuples } : {}),
+    ...(valuePoints3D.length ? { valuePoints3D } : {}),
   }
+
+  if (use3D && valuePoints3D.length) {
+    chart.render3D = buildValueMode3DRender(valuePoints3D, title, opts?.showLabels ?? false, scale)
+  }
+
+  return chart
+}
+
+const hybridZStatType = (axes: Axis[]): string => {
+  const z = axes.find((a) => a.key === 'z')
+  return z?.label ?? z?.key ?? 'z'
+}
+
+/** Scatter hybrid: categorical x,y from DataPoint fields + numeric z from stats. */
+export function buildHybridScatterChart(
+  data: DataPoint[],
+  axes: Axis[],
+  identityString?: string,
+  targetString?: string,
+  opts?: {
+    labels?: AxisLabels
+    sort?: Sort
+    showLabels?: boolean
+    scale?: ScaleType
+    threeD?: boolean
+    canonical?: CanonicalAxisOrders
+  }
+): ChartData {
+  const identity = identityString ?? identityStringFromAxes(axes)
+  const target = targetString ?? identity
+  const scale = opts?.scale ?? 'linear'
+  const sort = opts?.sort ?? { enabled: false, order: 'asc' as const }
+  const zStatType = hybridZStatType(axes)
+  const baseLabels = axisLabelsFromAxes(axes)
+  const labels = opts?.labels ?? swapAxisLabels(identity, target, baseLabels) ?? baseLabels
+
+  const dataMap = new Map<string, Map<string, number>>()
+  const countMap = new Map<string, Map<string, number>>()
+  const xAxisSet = new Set<string>()
+  const yAxisSet = new Set<string>()
+  const points: Point3D[] = []
+
+  for (const row of data) {
+    const matchingStat = row.stats?.find((s) => s.type === zStatType)
+    const value = matchingStat?.value
+    if (value === undefined) continue
+
+    const xAxis = row.xAxis ?? ''
+    const yAxis = row.yAxis ?? ''
+    xAxisSet.add(xAxis)
+    yAxisSet.add(yAxis)
+    points.push({ xAxis, yAxis, zAxis: '', value })
+
+    if (!dataMap.has(yAxis)) {
+      dataMap.set(yAxis, new Map())
+      countMap.set(yAxis, new Map())
+    }
+    const yMap = dataMap.get(yAxis)!
+    const cMap = countMap.get(yAxis)!
+    yMap.set(xAxis, (yMap.get(xAxis) ?? 0) + value)
+    cMap.set(xAxis, (cMap.get(xAxis) ?? 0) + 1)
+  }
+
+  for (const [yAxis, xMap] of dataMap) {
+    const cMap = countMap.get(yAxis)!
+    for (const [xAxis, sum] of xMap) xMap.set(xAxis, sum / cMap.get(xAxis)!)
+  }
+
+  let xAxisValues = Array.from(xAxisSet)
+  let yAxisValues = Array.from(yAxisSet)
+  if (!sort.enabled && opts?.canonical) {
+    xAxisValues = applyCanonicalOrder(xAxisValues, opts.canonical.x)
+    yAxisValues = applyCanonicalOrder(yAxisValues, opts.canonical.y)
+  }
+
+  const series: SeriesData[] = xAxisValues.map((xAxis) => ({
+    xAxis,
+    values: yAxisValues.map((yAxis) => dataMap.get(yAxis)?.get(xAxis) ?? null),
+    benchmarkId: data[0]?.name ?? '',
+  }))
+
+  if (sort.enabled) sortSeriesByTotal(series, sort.order)
+
+  const chart: ChartData = {
+    title: zStatType,
+    statType: zStatType,
+    statUnit: data[0]?.stats?.find((s) => s.type === zStatType)?.unit,
+    yAxis: yAxisValues,
+    zAxis: [],
+    series,
+    points,
+    axisLabels: labels,
+  }
+
+  if (opts?.threeD && chartIsValue3DEligible(chart)) {
+    chart.render3D = buildValue3DRender(
+      chart,
+      sort,
+      opts?.showLabels ?? false,
+      scale,
+      opts?.canonical
+    )
+  }
+
+  return chart
 }
 
 // Sort category values by their summed value across all points on that axis.
