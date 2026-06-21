@@ -1,5 +1,5 @@
 import { ref, shallowRef, markRaw, reactive, computed, nextTick } from 'vue'
-import type { DataSet, DataPoint, ChartType } from '../types'
+import type { DataSet, ChartType } from '../types'
 import type { Arrangement } from './useChartPipeline'
 import { filterDataSetSettings } from '../lib/filterDataSetSettings'
 import {
