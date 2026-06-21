@@ -66,7 +66,7 @@ Produces series `sells`, `stocks`, and `mem.alloc`. `date` (string) is ignored.
 
 | Topic | Behaviour |
 |-------|-----------|
-| Shape | Top-level **array of objects**. A single top-level object is not supported (it is consumed by vizb's own dataset-JSON path). |
+| Shape | Top-level **array of objects**. A single top-level object is consumed by vizb's own dataset-JSON path; reach a nested array inside an envelope with [`--json-path`](#selecting-a-nested-array-with---json-path). |
 | Numeric value | A finite JSON **number** *or* a **numeric string** (`"10"` → 10). `bool`/`null` are ignored. |
 | Nested objects | Flattened to dotted keys: `{"mem":{"alloc":5}}` → `mem.alloc`. |
 | Arrays as values | Skipped. |
@@ -112,6 +112,29 @@ vizb sales.csv --select="price{USD}",count   # quote names with , { or }
 | Overlap | A column cannot be in both `--select` and `--group` |
 | Omitted | Auto-detect numeric columns (unchanged default) |
 
+## Selecting a nested array with `--json-path`
+
+The `json` parser expects a **top-level array**. When your rows are wrapped in an
+envelope — `{"data":{"results":[...]}}`, `{"runs":[{"samples":[...]}]}` — point
+`--json-path` at the nested array with a jq-like dot path:
+
+```bash
+vizb api.json --json-path '.data.results'              # auto-detected as json
+vizb api.json -P json --json-path '.runs[0].samples'   # array index then key
+vizb api.json --json-path '.items[]'                   # trailing [] = the array itself
+```
+
+| Topic | Behaviour |
+|-------|-----------|
+| Scope | `json` parser only; ignored (with warning) for other parsers |
+| Auto-detect | Supplying `--json-path` forces the `json` parser, so envelope files (which start with `{`) still resolve correctly |
+| Path grammar | Object keys (`.a.b`), array indices (`[n]`), optional leading `.`, trailing `[]` sugar. A **subset of jq**, no expressions or filters |
+| Result | An array is used as-is; a single object is wrapped into a one-element array; a scalar is a hard error |
+| Errors | A missing key, out-of-range index, or wrong-type step names the failing segment |
+
+The selected array is then parsed exactly like a normal top-level JSON array — all
+`--group`, `--select`, and aggregation rules above still apply.
+
 ## Aggregation
 
 CSV and JSON emit **one data point per row**. Raw tables routinely have many rows that
@@ -138,5 +161,5 @@ keeps the chart (and the [statistics panel](/ui/stats)) fast.
 ## Limitations
 
 - **CSV:** no thousands separators / currency / `%` parsing; comma delimiter only; no headerless files.
-- **JSON:** a single top-level object is unsupported; arrays-of-scalars are not exploded into series.
+- **JSON:** a single top-level object is treated as a vizb Dataset, not a row — use [`--json-path`](#selecting-a-nested-array-with---json-path) to chart a nested array inside an envelope; arrays-of-scalars are not exploded into series.
 - `--number-unit`/`-N` scales every numeric column/field uniformly.

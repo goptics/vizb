@@ -1,0 +1,33 @@
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+<Tabs syncKey="os">
+  <TabItem label="Linux / macOS" icon="seti:shell">
+
+```bash
+# Fetch GitHub contribution history from a public API
+curl -s "https://github-contributions-api.jogruber.de/v4/<your-github-username>" \
+  | vizb bar \
+      --group date \                                  # group rows by date
+      --group-pattern '[z{Year}-y{Month}-x{Date}]' \  # YYYY-MM-DD → Year / Month / Day axes
+      --json-path '.contributions' \                  # pull nested array from API envelope
+      --select 'count{Contributions}' \               # keep only count; rename to Contributions
+      --stat \                                        # add statistics panel
+      --output index.html                             # self-contained HTML output
+```
+
+  </TabItem>
+  <TabItem label="Windows" icon="seti:powershell">
+
+```ps1
+# Fetch GitHub contribution history from a public API
+(iwr "https://github-contributions-api.jogruber.de/v4/<your-github-username>").Content `
+  | vizb bar `
+      --group date `                                  # group rows by date
+      --group-pattern '[z{Year}-y{Month}-x{Date}]' `  # YYYY-MM-DD → Year / Month / Day axes
+      --json-path '.contributions' `                  # pull nested array from API envelope
+      --select 'count{Contributions}' `               # keep only count; rename to Contributions
+      --stat `                                        # add statistics panel
+      --output index.html                             # self-contained HTML output
+```
+  </TabItem>
+</Tabs>

@@ -12,6 +12,7 @@ import (
 	config_charts "github.com/goptics/vizb/config/charts"
 	"github.com/goptics/vizb/pkg/parser"
 	goparser "github.com/goptics/vizb/pkg/parser/golang"
+	jsonparser "github.com/goptics/vizb/pkg/parser/json"
 	"github.com/goptics/vizb/pkg/style"
 	"github.com/goptics/vizb/pkg/template"
 	"github.com/goptics/vizb/shared"
@@ -42,17 +43,31 @@ func RunLinearWithConfig(cmd *cobra.Command, args []string, common CommonOptions
 	// auto-selected parser so the choice is never silent.
 	if common.Parser == "auto" {
 		detected := parser.DetectParser(target)
+		// --json-path only makes sense for JSON; an envelope file starts with '{'
+		// which auto-detect reads as the "go" fallback, so nudge it to json.
+		if cfg.JSONPath != "" && detected != "json" {
+			detected = "json"
+		}
 		common.Parser = detected
 		fmt.Println(style.Info.Render("✨ Auto-detected parser: " + detected))
 	}
 	WarnThreeDIfIneligible(cfg, configs)
 	outFile := ResolveOutputFileName(common.OutputFile)
 
-	// First try to read the input as an existing vizb Dataset JSON.
-	dataSet := convertToDataset(target)
+	// First try to read the input as an existing vizb Dataset JSON. --json-path
+	// explicitly marks the input as raw enveloped data, not a vizb Dataset, so
+	// skip the passthrough (an envelope object would otherwise unmarshal into an
+	// empty Dataset and silently produce no output).
+	var dataSet *shared.Dataset
+	if cfg.JSONPath == "" {
+		dataSet = convertToDataset(target)
+	}
 	if dataSet == nil {
 		// Not Dataset JSON: parse raw/bench input into data points.
 		target = preprocessInputFile(target, common.Parser)
+		if common.Parser == "json" && cfg.JSONPath != "" {
+			target = applyJSONPath(target, cfg.JSONPath)
+		}
 		results := prepareData(target, common.Parser, cfg)
 		dataSet = assembleDataset(results, common, configs, cfg)
 	} else if applyOnPassthrough {
@@ -154,18 +169,23 @@ func writeStdinPipedInputs(tempfilePath string) {
 
 	for {
 		line, err := reader.ReadString('\n')
+
+		// ReadString returns the final chunk alongside io.EOF when the input has
+		// no trailing newline, so write it before handling the error — else a
+		// single-line, newline-less payload (e.g. a curl'd JSON envelope) is lost.
+		if len(line) > 0 {
+			if _, werr := writer.WriteString(line); werr != nil {
+				shared.ExitWithError("Error writing to file", werr)
+			}
+			dataSetProgressManager.ProcessLine(line)
+		}
+
 		if err != nil {
 			if err == io.EOF {
 				break
 			}
 			shared.ExitWithError("Error reading from stdin", err)
 		}
-
-		if _, err := writer.WriteString(line); err != nil {
-			shared.ExitWithError("Error writing to file", err)
-		}
-
-		dataSetProgressManager.ProcessLine(line)
 	}
 
 	dataSetProgressManager.Finish()
@@ -183,11 +203,31 @@ func preprocessInputFile(filePath, parserKey string) string {
 	return filePath
 }
 
+// applyJSONPath extracts the array named by cfg.JSONPath from the input file and
+// writes it to a temp file, which is returned for the JSON parser to consume.
+func applyJSONPath(filePath, path string) string {
+	bytes, err := jsonparser.SelectPath(filePath, path)
+	if err != nil {
+		shared.ExitWithError(err.Error(), nil)
+	}
+
+	out := shared.MustCreateTempFile(shared.TempBenchFilePrefix, "json")
+	shared.TempFiles.Store(out)
+	if err := os.WriteFile(out, bytes, 0o600); err != nil {
+		shared.ExitWithError("Error writing json-path result", err)
+	}
+	return out
+}
+
 // prepareData parses input into data points, aggregating grouped csv/json rows.
 func prepareData(filePath, parserKey string, cfg parser.Config) []shared.DataPoint {
 	parseFn, err := parser.GetParser(parserKey)
 	if err != nil {
 		shared.ExitWithError(err.Error(), nil)
+	}
+
+	if cfg.JSONPath != "" && parserKey != "json" {
+		fmt.Fprintln(os.Stderr, "warning: --json-path is only supported for the json parser; ignoring")
 	}
 
 	if len(cfg.Select) > 0 && parserKey != "csv" && parserKey != "json" {
@@ -198,7 +238,7 @@ func prepareData(filePath, parserKey string, cfg parser.Config) []shared.DataPoi
 		shared.ExitWithError("--axes is only supported for csv/json parsers", nil)
 	}
 
-	fmt.Println(style.Info.Render("⚙️ Parsing data..."))
+	fmt.Println(style.Info.Render("🧲 Parsing data..."))
 	data := parseFn(filePath, cfg)
 
 	// CSV/JSON emit one DataPoint per row; when grouping is active, multiple rows
