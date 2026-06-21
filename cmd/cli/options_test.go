@@ -121,6 +121,13 @@ func (s *OptionsSuite) TestValidateParserInvalid() {
 	s.Contains(err.Error(), "unknown parser")
 }
 
+func (s *OptionsSuite) TestCommonOptionsBindOmitsAxes() {
+	var common CommonOptions
+	commonFS := pflag.NewFlagSet("common", pflag.ContinueOnError)
+	common.Bind(commonFS)
+	s.Nil(commonFS.Lookup("axes"))
+}
+
 func (s *OptionsSuite) TestValidateScale() {
 	s.Run("log is accepted", func() {
 		scale := "LOG"

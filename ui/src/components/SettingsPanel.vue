@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, type Component } from 'vue'
-import { BarChart3, TrendingUp, PieChart, Table, Radar } from 'lucide-vue-next'
+import { BarChart3, TrendingUp, CircleDot, PieChart, Table, Radar } from 'lucide-vue-next'
 import { Card, CardContent, CardHeader, CardTitle, Separator } from './ui'
 import Selector from './Selector.vue'
 import SettingHeader from './SettingHeader.vue'
@@ -15,7 +15,7 @@ import {
 } from '../composables/settings/fieldRegistry'
 import { arrangementHasChartZ } from '../lib/swap'
 import { canOfferValue3D } from '../lib/utils'
-import type { BarConfig, ChartType, LineConfig } from '../types'
+import type { BarConfig, ChartType, LineConfig, ScatterConfig } from '../types'
 
 // Generic, schema-less settings panel: walks `Object.keys(activeConfig)` via
 // `getRenderableFields` and renders the registered control for each key. The
@@ -44,11 +44,14 @@ const {
   getArrangement,
   setArrangement,
   activeGroupId,
+  isValueMode,
+  isValueModeDataset,
 } = useDataPoint()
 
 const CHART_ICONS: Record<ChartType, Component> = {
   bar: BarChart3,
   line: TrendingUp,
+  scatter: CircleDot,
   pie: PieChart,
   heatmap: Table,
   radar: Radar,
@@ -78,7 +81,7 @@ const onChartTypeSelect = (id: number) => {
 const effectiveSwapTarget = computed(() => {
   const fromMap = getArrangement(activeDataSetId.value, chartType.value)
   if (fromMap) return fromMap
-  const wire = (activeConfig.value as BarConfig | LineConfig | undefined)?.swap
+  const wire = (activeConfig.value as BarConfig | LineConfig | ScatterConfig | undefined)?.swap
   return wire || activeArrangement.value.targetString
 })
 const hasZAxis = computed(() => arrangementHasChartZ(effectiveSwapTarget.value))
@@ -88,12 +91,13 @@ const hasThreeDOption = computed(() =>
     chartType.value,
     activeDataSet.value?.data,
     hasZAxis.value,
-    activeConfig.value as BarConfig | LineConfig | undefined
+    activeConfig.value as BarConfig | LineConfig | ScatterConfig | undefined,
+    activeDataSet.value?.axes
   )
 )
 
 const rendering3D = computed(() => {
-  const cfg = activeConfig.value as BarConfig | LineConfig | undefined
+  const cfg = activeConfig.value as BarConfig | LineConfig | ScatterConfig | undefined
   return hasZAxis.value || cfg?.threeD === true
 })
 
@@ -107,6 +111,18 @@ const fieldGroups = computed(() => {
     hasZAxis: hasZAxis.value,
   })
   return partitionRenderableFields(fields)
+})
+
+// Value/hybrid axes: hide sort; swap only for pure value mode (not hybrid).
+const filterValueModeFields = computed(() => isValueModeDataset.value || isValueMode.value)
+
+const filteredGeneral = computed(() => {
+  if (!filterValueModeFields.value) return fieldGroups.value.general
+  return fieldGroups.value.general.filter((f) => {
+    if (f.key === 'sort') return false
+    if (f.key === 'swap') return isValueMode.value
+    return true
+  })
 })
 
 // Each control emits `update:modelValue` with the appropriate type for its
@@ -168,7 +184,7 @@ const onUpdate = (key: SettingFieldKey, value: unknown) => {
         <Separator />
       </template>
 
-      <template v-for="field in fieldGroups.general" :key="field.key">
+      <template v-for="field in filteredGeneral" :key="field.key">
         <component
           :is="field.component"
           :model-value="valueFor(field.key)"

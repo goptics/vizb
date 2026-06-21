@@ -1,13 +1,28 @@
-import { ref, watch, unref, markRaw, onScopeDispose, type MaybeRef, type Ref } from 'vue'
-import type { AxisLabels, DataPoint, ChartData, Sort, ScaleType } from '../types'
+import { ref, watch, unref, toRaw, markRaw, onScopeDispose, type MaybeRef, type Ref } from 'vue'
+import type { AxisLabels, DataPoint, ChartData, Sort, ScaleType, Axis, ChartType } from '../types'
 import TransformWorker from '../workers/transform.worker.ts?worker&inline'
 import type { WorkerResponse } from '../workers/transform.worker'
 import { listChartSignatures } from '../lib/transform'
+import { isValueMode, isHybridMode } from '../lib/utils'
 
 // The arrangement the worker projects/groups under: present source axes in
 // canonical order (identityString, e.g. "nx") and the selected target order
 // (targetString, e.g. "yx"). Same length and value set.
 export type Arrangement = { identityString: string; targetString: string }
+
+// Plain (proxy-free) copies for postMessage — structured clone rejects Vue Proxies.
+const plainAxes = (axisList: Axis[] | undefined): Axis[] | undefined =>
+  axisList?.map((a) => ({ key: a.key, label: a.label, type: a.type }))
+
+const plainLabels = (labels: AxisLabels | undefined | null): AxisLabels | null => {
+  if (!labels) return null
+  const out: AxisLabels = {}
+  if (labels.name !== undefined) out.name = labels.name
+  if (labels.x !== undefined) out.x = labels.x
+  if (labels.y !== undefined) out.y = labels.y
+  if (labels.z !== undefined) out.z = labels.z
+  return Object.keys(out).length ? out : null
+}
 
 // One chart's reactive slot. `key` is the stat signature — the chart's stable
 // identity across swap/sort/group within a dataset — so the ChartCard keyed by
@@ -39,7 +54,9 @@ export function useChartPipeline(
   sort: Ref<Sort>,
   showLabels: Ref<boolean>,
   scale: Ref<ScaleType>,
-  threeD: Ref<boolean>
+  threeD: Ref<boolean>,
+  axes?: MaybeRef<Axis[] | undefined>,
+  chartType?: MaybeRef<ChartType>
 ) {
   const charts = ref<ChartState[]>([])
   // True once any chart has data — gates the first-load full-page skeleton.
@@ -151,6 +168,8 @@ export function useChartPipeline(
   // re-groups its cached raw data off-thread and replies `ready`, which re-queues
   // the compute jobs. Bumps the batch so in-flight replies from the old arrangement
   // are dropped.
+  const activeChartType = () => unref(chartType) ?? 'bar'
+  const axisList = () => toRaw(unref(axes))
   const setArrangement = () => {
     if (!lastSignatures.length || readyInFlight || dataPending) return
     readyInFlight = true
@@ -160,7 +179,7 @@ export function useChartPipeline(
       type: 'setArrangement',
       identityString: arrangement.value.identityString,
       targetString: arrangement.value.targetString,
-      labels: unref(labels) ?? null,
+      labels: plainLabels(toRaw(unref(labels))),
     })
   }
 
@@ -177,7 +196,7 @@ export function useChartPipeline(
   // Heavy (a structured clone of every row) — only runs on a real dataset change.
   const reinit = () => {
     dataPending = false
-    const data = rows()
+    const data = toRaw(rows())
     if (!data?.length) {
       charts.value = []
       lastSignatures = []
@@ -196,14 +215,39 @@ export function useChartPipeline(
     // clones and groups the dataset. Signatures are arrangement-independent (raw
     // rows only), so they match what ready will return. The ready handler reconciles
     // via its own prev-map: same keys → same ChartCard instances, no flicker.
-    const sigs = listChartSignatures(data)
+    const axesNow = axisList()
+    const ct = activeChartType()
     const prev = new Map(charts.value.map((c) => [c.key, c]))
-    charts.value = sigs.map(({ signature, statTemplate }) => ({
-      key: signature,
-      title: statTemplate.type,
-      data: prev.get(signature)?.data ?? null,
-      pending: true,
-    }))
+    if (ct === 'scatter' && isValueMode(axesNow)) {
+      const xLabel = axesNow?.find((a) => a.key === 'x')?.label ?? 'x'
+      const yLabel = axesNow?.find((a) => a.key === 'y')?.label ?? 'y'
+      charts.value = [
+        {
+          key: '__value_mode__',
+          title: `${xLabel} vs ${yLabel}`,
+          data: prev.get('__value_mode__')?.data ?? null,
+          pending: true,
+        },
+      ]
+    } else if (ct === 'scatter' && isHybridMode(axesNow)) {
+      const zLabel = axesNow?.find((a) => a.key === 'z')?.label ?? 'z'
+      charts.value = [
+        {
+          key: '__hybrid_mode__',
+          title: zLabel,
+          data: prev.get('__hybrid_mode__')?.data ?? null,
+          pending: true,
+        },
+      ]
+    } else {
+      const sigs = listChartSignatures(data)
+      charts.value = sigs.map(({ signature, statTemplate }) => ({
+        key: signature,
+        title: statTemplate.type,
+        data: prev.get(signature)?.data ?? null,
+        pending: true,
+      }))
+    }
 
     // The rows are kept non-reactive (shallowRef + markRaw in useDataPoint), so
     // postMessage's structured clone takes them directly — a single native pass,
@@ -215,7 +259,9 @@ export function useChartPipeline(
       data,
       identityString: arrangement.value.identityString,
       targetString: arrangement.value.targetString,
-      labels: unref(labels) ?? null,
+      labels: plainLabels(toRaw(unref(labels))),
+      axes: plainAxes(axesNow),
+      chartType: ct,
     })
   }
 

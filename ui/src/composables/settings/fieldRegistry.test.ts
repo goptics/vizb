@@ -1,5 +1,12 @@
 import { describe, it, expect, vi } from 'vitest'
-import type { BarConfig, LineConfig, PieConfig, HeatmapConfig, RadarConfig } from '@/types'
+import type {
+  BarConfig,
+  LineConfig,
+  ScatterConfig,
+  PieConfig,
+  HeatmapConfig,
+  RadarConfig,
+} from '@/types'
 
 // fieldRegistry imports the .vue control components directly. The vitest config
 // intentionally excludes the Vue plugin (pure-function tests only, per project
@@ -45,9 +52,9 @@ describe('fieldRegistry', () => {
     expect(getControl('type')).toBeUndefined()
   })
 
-  it('scale and threeDRotate are restricted to bar/line', () => {
-    expect(fieldRegistry['scale']!.appliesTo).toEqual(['bar', 'line'])
-    expect(fieldRegistry['threeDRotate']!.appliesTo).toEqual(['bar', 'line'])
+  it('scale and threeDRotate apply to bar, line, and scatter', () => {
+    expect(fieldRegistry['scale']!.appliesTo).toEqual(['bar', 'line', 'scatter'])
+    expect(fieldRegistry['threeDRotate']!.appliesTo).toEqual(['bar', 'line', 'scatter'])
   })
 
   it('threeDRotate uses rendering3D visibility', () => {
@@ -63,9 +70,16 @@ describe('fieldRegistry', () => {
     }
   })
 
-  it('sort, showLabels, and swap apply to all five chart types', () => {
+  it('sort, showLabels, and swap apply to all six chart types', () => {
     for (const key of ['sort', 'showLabels', 'swap'] as const) {
-      expect(fieldRegistry[key]!.appliesTo).toEqual(['bar', 'line', 'pie', 'heatmap', 'radar'])
+      expect(fieldRegistry[key]!.appliesTo).toEqual([
+        'bar',
+        'line',
+        'scatter',
+        'pie',
+        'heatmap',
+        'radar',
+      ])
     }
   })
 })
@@ -204,6 +218,34 @@ describe('getRenderableFields', () => {
       'threeDRotate',
       'swap',
     ])
+  })
+
+  it('returns scale and 3D fields for a scatter config with value-3D active', () => {
+    const cfg: ScatterConfig = { type: 'scatter', threeD: true }
+    expect(
+      getRenderableFields(cfg, {
+        dimension: '2D',
+        rendering3D: true,
+        hasThreeDOption: true,
+        hasZAxis: false,
+      }).map((f) => f.key)
+    ).toEqual(['sort', 'scale', 'showLabels', 'threeD', 'threeDVisualMap', 'threeDRotate', 'swap'])
+  })
+
+  it('returns 6 entries for a 3D scatter config (grouped x+y+z)', () => {
+    const cfg: ScatterConfig = { type: 'scatter' }
+    expect(
+      getRenderableFields(cfg, { dimension: '3D', rendering3D: true, hasZAxis: true }).map(
+        (f) => f.key
+      )
+    ).toEqual(['sort', 'scale', 'showLabels', 'threeDVisualMap', 'threeDRotate', 'swap'])
+  })
+
+  it('returns 4 entries for a 2D scatter config without value-3D active', () => {
+    const cfg: ScatterConfig = { type: 'scatter' }
+    expect(
+      getRenderableFields(cfg, { dimension: '2D', rendering3D: false }).map((f) => f.key)
+    ).toEqual(['sort', 'scale', 'showLabels', 'swap'])
   })
 
   it('partitions 3D fields into a dedicated section', () => {

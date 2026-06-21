@@ -5,6 +5,7 @@
 export const CHART_ROOT_PREFIX: Record<string, string> = {
   ChartBar: 'bar',
   ChartLine: 'line',
+  ChartScatter: 'scatter',
   ChartPie: 'pie',
   ChartHeatmap: 'heatmap',
   ChartRadar: 'radar',

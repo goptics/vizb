@@ -65,6 +65,13 @@ func ParseCSV(filename string, cfg parser.Config) []shared.DataPoint {
 	headers := normalizeHeaders(rows[0])
 	dataRows := rows[1:]
 
+	if len(cfg.Axes) > 0 {
+		if parser.IsHybridMode(cfg) {
+			return parseCSVHybridMode(headers, dataRows, cfg)
+		}
+		return parseCSVValueMode(headers, dataRows, cfg)
+	}
+
 	groupIdx, groupSet := resolveGroupColumns(headers, parser.EffectiveGroupColumns(cfg))
 
 	var chartCols []int
@@ -138,6 +145,136 @@ func ParseCSV(filename string, cfg parser.Config) []shared.DataPoint {
 		})
 	}
 
+	return results
+}
+
+// parseCSVHybridMode implements scatter hybrid mode: 2 categorical group dims
+// on x,y plus one numeric --axes column stored as a single stat (z coordinate).
+func parseCSVHybridMode(headers []string, dataRows [][]string, cfg parser.Config) []shared.DataPoint {
+	groupIdx, _ := resolveGroupColumns(headers, parser.EffectiveGroupColumns(cfg))
+
+	zSpec := cfg.Axes[0]
+	zCol := -1
+	for h, name := range headers {
+		if name == zSpec.Source {
+			zCol = h
+			break
+		}
+	}
+	if zCol == -1 {
+		shared.ExitWithError(fmt.Sprintf("--axes column '%s' not found; available: %v", zSpec.Source, nonEmpty(headers)), nil)
+	}
+
+	numeric := false
+	for _, row := range dataRows {
+		if zCol < len(row) {
+			if _, ok := parseFinite(row[zCol]); ok {
+				numeric = true
+				break
+			}
+		}
+	}
+	if !numeric {
+		shared.ExitWithError(fmt.Sprintf("--axes column '%s' is not numeric", zSpec.Source), nil)
+	}
+
+	zLabel := zSpec.Label
+	if zLabel == "" {
+		zLabel = zSpec.Source
+	}
+	zStatType := utils.CreateStatType(zLabel, cfg.NumberUnit, "")
+
+	var results []shared.DataPoint
+	for _, row := range dataRows {
+		groupValues := groupColumnValues(row, groupIdx)
+
+		label := parser.TabularFilterLabel(groupValues, cfg)
+		if !parser.ShouldIncludeBenchmark(label, cfg) {
+			continue
+		}
+
+		group, gerr := parser.GroupTabularRow(groupValues, cfg)
+		if gerr != nil {
+			shared.ExitWithError("Error parsing CSV group name", gerr)
+		}
+
+		if zCol >= len(row) {
+			continue
+		}
+		v, ok := parseFinite(row[zCol])
+		if !ok {
+			continue
+		}
+
+		results = append(results, shared.DataPoint{
+			Name:  group["name"],
+			XAxis: group["xAxis"],
+			YAxis: group["yAxis"],
+			ZAxis: group["zAxis"],
+			Stats: []shared.Stat{{
+				Type:  zStatType,
+				Value: shared.F64(utils.FormatNumber(v, cfg.NumberUnit)),
+			}},
+		})
+	}
+	return results
+}
+
+// parseCSVValueMode implements --axes value mode: each named numeric column
+// becomes a coordinate on x, y[, z] (by --axes order); each row becomes a raw
+// point with no stat series. A missing or fully non-numeric axis column is
+// fatal; an individual row missing a finite cell for any axis is skipped.
+func parseCSVValueMode(headers []string, dataRows [][]string, cfg parser.Config) []shared.DataPoint {
+	idx := make([]int, len(cfg.Axes))
+	for i, spec := range cfg.Axes {
+		col := -1
+		for h, name := range headers {
+			if name == spec.Source {
+				col = h
+				break
+			}
+		}
+		if col == -1 {
+			shared.ExitWithError(fmt.Sprintf("--axes column '%s' not found; available: %v", spec.Source, nonEmpty(headers)), nil)
+		}
+
+		numeric := false
+		for _, row := range dataRows {
+			if col < len(row) {
+				if _, ok := parseFinite(row[col]); ok {
+					numeric = true
+					break
+				}
+			}
+		}
+		if !numeric {
+			shared.ExitWithError(fmt.Sprintf("--axes column '%s' is not numeric", spec.Source), nil)
+		}
+		idx[i] = col
+	}
+
+	var results []shared.DataPoint
+	for _, row := range dataRows {
+		dp := shared.DataPoint{Stats: []shared.Stat{}}
+		dst := []*string{&dp.XAxis, &dp.YAxis, &dp.ZAxis}
+		complete := true
+		for i, col := range idx {
+			if col >= len(row) {
+				complete = false
+				break
+			}
+			v, ok := parseFinite(row[col])
+			if !ok {
+				complete = false
+				break
+			}
+			*dst[i] = strconv.FormatFloat(utils.FormatNumber(v, cfg.NumberUnit), 'g', -1, 64)
+		}
+		if !complete {
+			continue
+		}
+		results = append(results, dp)
+	}
 	return results
 }
 

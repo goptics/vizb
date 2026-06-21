@@ -1,5 +1,5 @@
 import { computed } from 'vue'
-import type { BarConfig, LineConfig, ScaleType, Sort, StatConfig } from '../types'
+import type { BarConfig, LineConfig, ScatterConfig, ScaleType, Sort, StatConfig } from '../types'
 import { arrangementHasChartZ } from '../lib/swap'
 import { canOfferValue3D } from '../lib/utils'
 import { useDataPoint } from './useDataPoint'
@@ -18,7 +18,7 @@ export function useActiveChartShape() {
   const effectiveSwapTarget = computed(() => {
     const fromMap = getArrangement(activeDataSetId.value, chartType.value)
     if (fromMap) return fromMap
-    const wire = (activeConfig.value as BarConfig | LineConfig | undefined)?.swap
+    const wire = (activeConfig.value as BarConfig | LineConfig | ScatterConfig | undefined)?.swap
     return wire || activeArrangement.value.targetString
   })
 
@@ -37,7 +37,8 @@ export function useActiveChartShape() {
   const sort = computed<Sort | undefined>(() => activeConfig.value?.sort)
 
   const threeD = computed<boolean>(
-    () => (activeConfig.value as BarConfig | LineConfig | undefined)?.threeD ?? false
+    () =>
+      (activeConfig.value as BarConfig | LineConfig | ScatterConfig | undefined)?.threeD ?? false
   )
 
   const hasThreeDOption = computed<boolean>(() =>
@@ -45,12 +46,15 @@ export function useActiveChartShape() {
       chartType.value,
       activeDataSet.value?.data,
       hasZOnChart.value,
-      activeConfig.value as BarConfig | LineConfig | undefined
+      activeConfig.value as BarConfig | LineConfig | ScatterConfig | undefined,
+      activeDataSet.value?.axes
     )
   )
 
   const threeDVisualMap = computed<boolean>(
-    () => (activeConfig.value as BarConfig | LineConfig | undefined)?.threeDVisualMap ?? false
+    () =>
+      (activeConfig.value as BarConfig | LineConfig | ScatterConfig | undefined)?.threeDVisualMap ??
+      false
   )
 
   const stat = computed<StatConfig | undefined>(() => activeConfig.value?.stat)

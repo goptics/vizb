@@ -48,6 +48,7 @@ export default defineConfig({
 					{ label: 'Overview', slug: 'charts' },
 					{ label: 'Bar Chart', slug: 'charts/bar' },
 					{ label: 'Line Chart', slug: 'charts/line' },
+					{ label: 'Scatter Chart', slug: 'charts/scatter' },
 					{ label: 'Pie Chart', slug: 'charts/pie' },
 					{ label: 'Radar Chart', slug: 'charts/radar' },
 					{ label: 'Heatmap', slug: 'charts/heatmap' },

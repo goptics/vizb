@@ -86,6 +86,43 @@ describe('useActiveChartShape', () => {
     expect(hasThreeDOption.value).toBe(false)
   })
 
+  it('scatter config returns scale/threeDRotate/showLabels defaults when fields are absent', async () => {
+    holder.ref = ref(ds([{ type: 'scatter' as ChartType }]))
+    const { useActiveChartShape } = await import('./useActiveChartShape')
+    const { scale, threeDRotate, showLabels } = useActiveChartShape()
+    expect(scale.value).toBe('linear')
+    expect(threeDRotate.value).toBe(false)
+    expect(showLabels.value).toBe(false)
+  })
+
+  it('hasThreeDOption is true for z-data scatter when z is off chart axes', async () => {
+    holder.ref = ref(
+      ds(
+        [{ type: 'scatter' as ChartType, swap: 'xyn' }],
+        [{ name: '', xAxis: 'a', yAxis: 'b', zAxis: 'z1', stats: [] }]
+      )
+    )
+    const { useActiveChartShape } = await import('./useActiveChartShape')
+    const { hasThreeDOption } = useActiveChartShape()
+    expect(hasThreeDOption.value).toBe(true)
+  })
+
+  it('hasThreeDOption is false for scatter in value-mode axes', async () => {
+    holder.ref = ref({
+      ...ds(
+        [{ type: 'scatter' as ChartType }],
+        [{ name: '', xAxis: '1', yAxis: '2', zAxis: '3', stats: [] }]
+      ),
+      axes: [
+        { key: 'x', label: 'x', type: 'value' },
+        { key: 'y', label: 'y', type: 'value' },
+      ],
+    })
+    const { useActiveChartShape } = await import('./useActiveChartShape')
+    const { hasThreeDOption } = useActiveChartShape()
+    expect(hasThreeDOption.value).toBe(false)
+  })
+
   it('reads set values from the active config', async () => {
     holder.ref = ref(
       ds([

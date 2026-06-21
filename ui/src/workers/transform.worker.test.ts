@@ -9,7 +9,7 @@ import type {
   ReadyMessage,
   ChartMessage,
 } from './transform.worker'
-import type { DataPoint, Sort, ScaleType, ChartData } from '../types'
+import type { DataPoint, Sort, ScaleType, ChartData, Axis } from '../types'
 
 const noSort: Sort = { enabled: false, order: 'asc' }
 
@@ -164,5 +164,200 @@ describe('transform.worker — compute', () => {
   it('is a no-op when called before init', () => {
     send(buildCompute({ signature: 'anything' }))
     expect(postSpy).not.toHaveBeenCalled()
+  })
+})
+
+const VALUE_AXES: Axis[] = [
+  { key: 'x', label: 'price', type: 'value' },
+  { key: 'y', label: 'latency', type: 'value' },
+]
+
+function valueDp(xAxis: string, yAxis: string): DataPoint {
+  return { xAxis, yAxis, stats: [] }
+}
+
+describe('transform.worker — value mode init', () => {
+  it('replies with one synthetic signature when scatter + value-mode axes', () => {
+    send(
+      buildInit({
+        data: [valueDp('100', '12'), valueDp('200', '8')],
+        axes: VALUE_AXES,
+        chartType: 'scatter',
+      })
+    )
+
+    const r = ready()
+    expect(r).toBeDefined()
+    expect(r!.signatures).toHaveLength(1)
+    expect(r!.signatures[0]!.signature).toBe('__value_mode__')
+    expect(r!.groupNames).toEqual([])
+  })
+
+  it('uses normal stat signatures when value axes but chart is not scatter', () => {
+    send(
+      buildInit({
+        data: [dp('x1', 'y1', '', 'val', 10)],
+        axes: VALUE_AXES,
+        chartType: 'bar',
+      })
+    )
+
+    const r = ready()
+    expect(r!.signatures[0]!.signature).not.toBe('__value_mode__')
+    expect(r!.signatures.length).toBeGreaterThan(0)
+  })
+})
+
+describe('transform.worker — value mode compute', () => {
+  it('returns a ChartData with valueTuples for __value_mode__ signature', () => {
+    send(
+      buildInit({
+        data: [valueDp('100', '12'), valueDp('200', '8')],
+        axes: VALUE_AXES,
+        chartType: 'scatter',
+      })
+    )
+    postSpy.mockClear()
+
+    send(buildCompute({ signature: '__value_mode__', groupName: '' }))
+
+    const out = charts()
+    expect(out).toHaveLength(1)
+    const chart = out[0]!.chart as ChartData
+    expect(chart.valueTuples).toEqual([
+      [100, 12],
+      [200, 8],
+    ])
+    expect(chart.series).toEqual([])
+  })
+
+  it('drops non-finite rows in value mode', () => {
+    send(
+      buildInit({
+        data: [valueDp('1', '2'), valueDp('bad', '3')],
+        axes: VALUE_AXES,
+        chartType: 'scatter',
+      })
+    )
+    postSpy.mockClear()
+
+    send(buildCompute({ signature: '__value_mode__', groupName: '' }))
+
+    const chart = charts()[0]!.chart as ChartData
+    expect(chart.valueTuples).toHaveLength(1)
+    expect(chart.valueTuples![0]).toEqual([1, 2])
+  })
+
+  it('setArrangement xy→yx flips valueTuples on 2-col value mode', () => {
+    send(
+      buildInit({
+        data: [valueDp('100', '12')],
+        axes: VALUE_AXES,
+        chartType: 'scatter',
+      })
+    )
+    postSpy.mockClear()
+
+    send({ type: 'setArrangement', identityString: 'xy', targetString: 'yx' })
+    ready()
+
+    send(buildCompute({ signature: '__value_mode__', groupName: '' }))
+    const chart = charts()[0]!.chart as ChartData
+    expect(chart.valueTuples).toEqual([[12, 100]])
+  })
+
+  it('3-col value mode compute with xyz swap yields continuous render3D', () => {
+    const VALUE_AXES_3 = [
+      { key: 'x' as const, label: 'x', type: 'value' as const },
+      { key: 'y' as const, label: 'y', type: 'value' as const },
+      { key: 'z' as const, label: 'z', type: 'value' as const },
+    ]
+    send(
+      buildInit({
+        data: [{ xAxis: '1', yAxis: '2', zAxis: '3', stats: [] }],
+        axes: VALUE_AXES_3,
+        identityString: 'xyz',
+        targetString: 'xyz',
+        chartType: 'scatter',
+      })
+    )
+    postSpy.mockClear()
+    send(buildCompute({ signature: '__value_mode__', groupName: '' }))
+    const chart = charts()[0]!.chart as ChartData
+    expect(chart.render3D?.mode).toBe('continuous')
+    expect(chart.valuePoints3D).toEqual([[1, 2, 3]])
+  })
+
+  it('value mode init still allows normal category compute after re-init', () => {
+    // Re-init with category data on the same worker instance
+    send(buildInit())
+    const r = ready()
+    const sig = r!.signatures[0]!.signature
+    postSpy.mockClear()
+
+    send(buildCompute({ signature: sig, groupName: '' }))
+    expect(charts()).toHaveLength(1)
+    expect((charts()[0]!.chart as ChartData).valueTuples).toBeUndefined()
+  })
+})
+
+const HYBRID_AXES: Axis[] = [
+  { key: 'x', label: 'Region' },
+  { key: 'y', label: 'Category' },
+  { key: 'z', label: 'Latency (ms)', type: 'value' },
+]
+
+function hybridDp(xAxis: string, yAxis: string, value: number): DataPoint {
+  return { xAxis, yAxis, stats: [{ type: 'Latency (ms)', value }] }
+}
+
+describe('transform.worker — hybrid mode', () => {
+  it('replies with __hybrid_mode__ signature for scatter + hybrid axes', () => {
+    send(
+      buildInit({
+        data: [hybridDp('US', 'Widget', 12), hybridDp('EU', 'Gadget', 8)],
+        axes: HYBRID_AXES,
+        chartType: 'scatter',
+        identityString: 'xy',
+        targetString: 'xy',
+      })
+    )
+
+    const r = ready()
+    expect(r!.signatures).toHaveLength(1)
+    expect(r!.signatures[0]!.signature).toBe('__hybrid_mode__')
+    expect(r!.signatures[0]!.title).toBe('Latency (ms)')
+  })
+
+  it('compute builds series from categorical x,y and z in stats', () => {
+    send(
+      buildInit({
+        data: [hybridDp('US', 'Widget', 12), hybridDp('EU', 'Gadget', 8)],
+        axes: HYBRID_AXES,
+        chartType: 'scatter',
+      })
+    )
+    postSpy.mockClear()
+
+    send(buildCompute({ signature: '__hybrid_mode__', groupName: '' }))
+
+    const chart = charts()[0]!.chart as ChartData
+    expect(chart.statType).toBe('Latency (ms)')
+    expect(chart.series.length).toBeGreaterThan(0)
+    expect(chart.points).toHaveLength(2)
+  })
+
+  it('does not enter hybrid path for bar chart type', () => {
+    send(
+      buildInit({
+        data: [hybridDp('US', 'Widget', 12)],
+        axes: HYBRID_AXES,
+        chartType: 'bar',
+      })
+    )
+
+    const r = ready()
+    expect(r!.signatures[0]!.signature).not.toBe('__hybrid_mode__')
+    expect(r!.signatures[0]!.title).toBe('Latency (ms)')
   })
 })

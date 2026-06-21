@@ -1,0 +1,132 @@
+---
+title: Scatter Chart
+description: Plot individual points in 2D or 3D — grouped categories, raw numeric coordinates via --axes, or a hybrid of both.
+---
+
+import { LinkCard, Aside } from '@astrojs/starlight/components';
+
+The **scatter chart** plots each row as a point in coordinate space. Unlike bar and line charts, scatter is built for coordinate plotting: you can map grouping columns to categorical axes, pass raw numeric columns with `--axes`, or combine two group dimensions with one numeric depth column.
+
+Use scatter charts when individual `(x, y[, z])` positions matter — latency vs. price, a 3D point cloud, or categorical x/y with a continuous z metric. Scatter is **opt-in**: add `-c scatter` or run `vizb scatter`; it is not in the default `bar,line,pie` bundle.
+
+## How vizb builds it
+
+Scatter supports three input modes. Only one applies per dataset:
+
+| Mode | CLI | What each row becomes |
+|------|-----|----------------------|
+| **Grouped** | `-g` / `-p` (no `--axes`) | Categorical x, optional y series, optional z depth — same dimension model as bar/line, rendered as `scatter` / `scatter3D` |
+| **Value** | `--axes col1,col2[,col3]` (no `-g`) | Raw numeric coordinates on continuous value axes (`type: "value"`) |
+| **Hybrid** | `-g` with exactly 2 dims + `--axes zcol` | Categorical x and y; the axes column supplies numeric z in stats |
+
+`--axes` is **scatter-only**. Bar and line no longer accept it. `--axes` cannot be combined with `--select` or `--group-regex`.
+
+## Grouped mode
+
+Grouped scatter follows the same x/y/z dimension model as bar and line — each point is a dot instead of a bar or connected line.
+
+### 1D (X axis)
+
+One point per X category.
+
+```bash
+vizb scatter data.csv -g category -o out.html
+```
+
+{/* TODO: Add GIF showing a 1D grouped scatter chart */}
+
+### 2D (X + Y axes)
+
+One series per Y value across the X axis. Toggle series in the legend.
+
+```bash
+vizb scatter data.csv -g category,metric -p x,y -o out.html
+```
+
+{/* TODO: Add GIF showing a 2D grouped scatter with legend toggles */}
+
+### 3D (X + Y + Z axes)
+
+WebGL `scatter3D` scene: each Z value is a separate point series across the X/Y grid. Rotate, zoom, and pan in the browser. Requires echarts-gl (bundled automatically).
+
+```bash
+vizb scatter data.csv -g category,metric,group -p x,y,z -o out.html
+```
+
+{/* TODO: Add GIF showing a grouped 3D scatter chart rotating */}
+
+When you have only **x** and **y** grouping (no z column), pass `--3d` to project the same data into pseudo-3D: y categories move to depth and the metric becomes height — the same value-3D toggle bar and line use. See [3D Charts](/charts/3d).
+
+<Aside type="note">
+  The Z axis requires **both** X and Y to be present. Passing a Z without an X/Y floor will be rejected with an error.
+</Aside>
+
+## Value mode (`--axes`)
+
+Pass two or three numeric CSV/JSON columns as raw coordinates. No grouping columns are required — each row maps directly to `(x, y)` or `(x, y, z)` on continuous axes.
+
+```bash
+# 2D: price vs latency
+vizb scatter data.csv --axes price,latency -o out.html
+
+# 3D point cloud with visualMap coloring
+vizb scatter spiral.csv --axes x,y,z --3d-visualmap -o out.html
+```
+
+Optional axis labels use the same `{label}` syntax as `--select`:
+
+```bash
+vizb scatter data.csv --axes price{Price (USD)},latency -o out.html
+```
+
+{/* TODO: Add GIF showing a 2D value-mode scatter and a 3D spiral */}
+
+With three axes columns, vizb renders continuous `scatter3D`. Use the axis swapper in the UI to include or drop `z` and toggle between 2D and 3D without re-running the CLI.
+
+<Aside type="tip">
+  In value mode with only two axes (`--axes x,y`), sort and swap are hidden in the settings panel — they have no effect on a flat coordinate plot. With three axes, swap is available so you can rearrange which columns map to x, y, and z.
+</Aside>
+
+## Hybrid mode (`--group` + `--axes`)
+
+Combine two categorical group dimensions with one numeric column for depth. Requires exactly **two** `-g` columns and **one** `--axes` column; the axes column must not overlap with the group columns.
+
+```bash
+# region × category on x/y, latency as numeric z
+vizb scatter data.csv -g region,category -p x,y --axes latency -o out.html
+```
+
+Hybrid data renders as `scatter3D`: x and y stay categorical, z is continuous from the axes column.
+
+{/* TODO: Add GIF showing a hybrid scatter3D chart */}
+
+## Settings
+
+These settings apply to scatter charts:
+
+| Setting | CLI flag | UI toggle | Notes |
+|---------|----------|-----------|-------|
+| Sort | `--sort asc\|desc` | Sort control | Grouped mode only — hidden for value/hybrid |
+| Labels | `--show-labels` | Show labels | Point labels where supported |
+| Swap | `--swap` | Axis switcher | Grouped mode; value mode when `--axes` has a z column |
+| Scale (log) | `--scale log` | Scale toggle | Log axes — 2D grouped and value mode |
+| 3D view | `--3d` | 3D view | Pseudo-3D for grouped x+y (no z column) |
+| 3D visual map | `--3d-visualmap` | 3D visual map | Metric gradient on 3D points |
+| Auto-rotate | `--3d-rotate` | Auto rotate | Spins the 3D scene — 3D only |
+
+Override settings for just this chart type:
+
+```bash
+# Log scale and labels on a grouped scatter
+vizb scatter data.csv -g category,metric --scale log -l -o out.html
+
+# 3D spiral with auto-rotate
+vizb scatter spiral.csv --axes x,y,z --3d-visualmap --3d-rotate -o out.html
+```
+
+## Next Steps
+
+<LinkCard title="3D Charts" href="/charts/3d" description="Grouped pseudo-3D, WebGL scenes, auto-rotate, and how scatter fits in." />
+<LinkCard title="Line Chart" href="/charts/line" description="Same grouped dimension model, but draws connected lines instead of points." />
+<LinkCard title="Heatmap" href="/charts/heatmap" description="Flatten two categorical dimensions into a colored grid." />
+<LinkCard title="Settings" href="/ui/settings" description="All runtime controls — sort, labels, scale, and more." />

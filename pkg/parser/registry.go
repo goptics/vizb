@@ -24,6 +24,7 @@ type Config struct {
 	TimeUnit        string
 	NumberUnit      string
 	Select          []ColumnSpec
+	Axes            []ColumnSpec // --axes value mode: numeric cols placed on x,y[,z]
 }
 
 type ParseFunc func(filename string, cfg Config) []shared.DataPoint

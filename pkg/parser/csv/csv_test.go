@@ -320,6 +320,128 @@ func (s *CSVSuite) TestLessThanTwoRowsReturnsNil() {
 	s.Nil(ParseCSV(s.writeFile(""), s.cfg))
 }
 
+func (s *CSVSuite) TestAxesValueModeTwoColumns() {
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "price"}, {Source: "latency"}}
+	csv := "name,price,latency\na,100,12\nb,200,8\n"
+
+	results := ParseCSV(s.writeFile(csv), s.cfg)
+
+	s.Len(results, 2)
+	s.Equal("100", results[0].XAxis)
+	s.Equal("12", results[0].YAxis)
+	s.Equal("", results[0].ZAxis)
+	s.Empty(results[0].Stats)
+	s.Equal("200", results[1].XAxis)
+	s.Equal("8", results[1].YAxis)
+}
+
+func (s *CSVSuite) TestAxesValueModeThreeColumns() {
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "x"}, {Source: "y"}, {Source: "z"}}
+	csv := "x,y,z\n1,2,3\n"
+
+	results := ParseCSV(s.writeFile(csv), s.cfg)
+
+	s.Len(results, 1)
+	s.Equal("1", results[0].XAxis)
+	s.Equal("2", results[0].YAxis)
+	s.Equal("3", results[0].ZAxis)
+}
+
+func (s *CSVSuite) TestAxesValueModeSkipsNonNumericRow() {
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "x"}, {Source: "y"}}
+	csv := "x,y\n1,2\nbad,3\n4,5\n"
+
+	results := ParseCSV(s.writeFile(csv), s.cfg)
+
+	s.Len(results, 2) // the "bad" row is dropped
+	s.Equal("4", results[1].XAxis)
+}
+
+func (s *CSVSuite) TestAxesValueModeMissingColumnErrors() {
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "missing"}, {Source: "y"}}
+	csv := "x,y\n1,2\n"
+
+	s.Panics(func() { ParseCSV(s.writeFile(csv), s.cfg) })
+}
+
+func (s *CSVSuite) TestAxesValueModeNonNumericColumnErrors() {
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "name"}, {Source: "y"}}
+	csv := "name,y\nalpha,2\n"
+
+	s.Panics(func() { ParseCSV(s.writeFile(csv), s.cfg) })
+}
+
+func (s *CSVSuite) TestHybridModeGroupPlusAxesColumn() {
+	s.cfg.Group = []string{"region", "category"}
+	s.cfg.GroupPattern = "x,y"
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "latency", Label: "Latency (ms)"}}
+	csv := "region,category,latency\nUS,Widget,12\nEU,Gadget,8\n"
+
+	results := ParseCSV(s.writeFile(csv), s.cfg)
+
+	s.Len(results, 2)
+	s.Equal("US", results[0].XAxis)
+	s.Equal("Widget", results[0].YAxis)
+	s.Empty(results[0].ZAxis)
+	s.Len(results[0].Stats, 1)
+	s.Equal("Latency (ms)", results[0].Stats[0].Type)
+	s.Equal(12.0, *results[0].Stats[0].Value)
+	s.Equal("EU", results[1].XAxis)
+	s.Equal("Gadget", results[1].YAxis)
+	s.Equal(8.0, *results[1].Stats[0].Value)
+}
+
+func (s *CSVSuite) TestHybridModeZLabelFallsBackToSource() {
+	s.cfg.Group = []string{"region", "category"}
+	s.cfg.GroupPattern = "x,y"
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "latency"}}
+	csv := "region,category,latency\nUS,Widget,12\n"
+
+	results := ParseCSV(s.writeFile(csv), s.cfg)
+
+	s.Len(results, 1)
+	s.Equal("latency", results[0].Stats[0].Type)
+}
+
+func (s *CSVSuite) TestHybridModeSkipsRaggedZRow() {
+	s.cfg.Group = []string{"region", "category"}
+	s.cfg.GroupPattern = "x,y"
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "latency"}}
+	csv := "region,category,latency\nUS,Widget,12\nEU,Gadget\nFR,Tool,5\n"
+
+	results := ParseCSV(s.writeFile(csv), s.cfg)
+
+	s.Len(results, 2)
+	s.Equal("US", results[0].XAxis)
+	s.Equal("FR", results[1].XAxis)
+}
+
+func (s *CSVSuite) TestHybridModeFilterRegex() {
+	s.cfg.Group = []string{"region", "category"}
+	s.cfg.GroupPattern = "x,y"
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "latency"}}
+	s.cfg.Filter = "US"
+	csv := "region,category,latency\nUS,Widget,12\nEU,Gadget,8\n"
+
+	results := ParseCSV(s.writeFile(csv), s.cfg)
+
+	s.Len(results, 1)
+	s.Equal("US", results[0].XAxis)
+}
+
+func (s *CSVSuite) TestHybridModeSkipsNonNumericZRow() {
+	s.cfg.Group = []string{"region", "category"}
+	s.cfg.GroupPattern = "x,y"
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "latency"}}
+	csv := "region,category,latency\nUS,Widget,12\nEU,Gadget,bad\nFR,Tool,5\n"
+
+	results := ParseCSV(s.writeFile(csv), s.cfg)
+
+	s.Len(results, 2)
+	s.Equal("US", results[0].XAxis)
+	s.Equal("FR", results[1].XAxis)
+}
+
 func TestCSVSuite(t *testing.T) {
 	suite.Run(t, new(CSVSuite))
 }
@@ -356,6 +478,36 @@ func (s *CSVFatalSuite) TestMissingGroupColumnIsFatal() {
 
 func (s *CSVFatalSuite) TestNoNumericColumnsIsFatal() {
 	path := s.writeFile("name,label\na,foo\nb,bar\n")
+
+	s.PanicsWithValue("exit", func() { ParseCSV(path, s.cfg) })
+}
+
+func (s *CSVFatalSuite) TestHybridModeNonNumericZColumnErrors() {
+	s.cfg.Group = []string{"region", "category"}
+	s.cfg.GroupPattern = "x,y"
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "label"}}
+	path := s.writeFile("region,category,label\nUS,Widget,foo\n")
+
+	s.PanicsWithValue("exit", func() { ParseCSV(path, s.cfg) })
+}
+
+func (s *CSVFatalSuite) TestHybridModeGroupParseError() {
+	cfg, err := parser.ResolveGroupConfig(parser.Config{
+		Group:        []string{"date", "category"},
+		GroupPattern: "[x-y-n],z",
+	})
+	s.Require().NoError(err)
+	cfg.Axes = []parser.ColumnSpec{{Source: "latency"}}
+	path := s.writeFile("region,category,latency\n2022-2-30,Widget,12\n")
+
+	s.PanicsWithValue("exit", func() { ParseCSV(path, cfg) })
+}
+
+func (s *CSVFatalSuite) TestHybridModeMissingZColumnErrors() {
+	s.cfg.Group = []string{"region", "category"}
+	s.cfg.GroupPattern = "x,y"
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "missing"}}
+	path := s.writeFile("region,category,latency\nUS,Widget,12\n")
 
 	s.PanicsWithValue("exit", func() { ParseCSV(path, s.cfg) })
 }

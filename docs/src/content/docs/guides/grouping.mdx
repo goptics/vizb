@@ -277,7 +277,7 @@ The columns you **don't** select decide the chart values:
 When `--group` is set, multiple rows can share the same `(name, x, y, z)` key. Vizb **sums** their values into a single point so a 200k-row export collapses into a few thousand chart points. You'll see it in the CLI output:
 
 ```text
-🧮 Aggregating 50000 rows...
+🧮 Aggregating 50000 rows by columns: region, product, month (name: region, x: product, y: month)...
 ✅ Aggregated into 1200 grouped data points
 ```
 

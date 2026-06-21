@@ -2,6 +2,7 @@ package cli
 
 import (
 	"encoding/json"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -282,20 +283,110 @@ func (s *PipelineSuite) TestRunLinearAutoParser() {
 	s.FileExists(out)
 }
 
+func (s *PipelineSuite) TestFormatAggregationGroup() {
+	tests := []struct {
+		name string
+		cfg  parser.Config
+		want string
+	}{
+		{
+			name: "two columns with name and x dimensions",
+			cfg:  parser.Config{GroupPattern: "name,x", Group: []string{"name", "date"}},
+			want: "by columns: name, date (name: name, x: date)",
+		},
+		{
+			name: "three columns with name x y dimensions",
+			cfg:  parser.Config{GroupPattern: "name,x,y", Group: []string{"region", "product", "month"}},
+			want: "by columns: region, product, month (name: region, x: product, y: month)",
+		},
+		{
+			name: "single column singular phrasing",
+			cfg:  parser.Config{GroupPattern: "x", Group: []string{"name"}},
+			want: "by column: name (x: name)",
+		},
+		{
+			name: "curly axis labels override column names",
+			cfg:  parser.Config{GroupPattern: "y{Region},x{Product}", Group: []string{"region", "product"}},
+			want: "by columns: region, product (y: Region, x: Product)",
+		},
+		{
+			name: "columns only when no group pattern",
+			cfg:  parser.Config{Group: []string{"name", "date"}},
+			want: "by columns: name, date",
+		},
+		{
+			name: "regex axes without labels use key only",
+			cfg:  parser.Config{GroupRegex: `(?P<name>.*)/(?P<x>.*)`, Group: []string{"benchmark"}},
+			want: "by column: benchmark (name, x)",
+		},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			s.Equal(tt.want, formatAggregationGroup(tt.cfg))
+		})
+	}
+}
+
 func (s *PipelineSuite) TestPrepareDataAggregatesCSV() {
 	csvFile := s.writeFile("grouped.csv", "name,sells,date\nalpha,10,2024-01\nalpha,20,2024-01\nbeta,5,2025-02\n")
 	cfg := parser.Config{GroupPattern: "name,x", Group: []string{"name", "date"}}
 
-	oldStdout, oldStderr := os.Stdout, os.Stderr
-	devnull, _ := os.Open(os.DevNull)
-	os.Stdout, os.Stderr = devnull, devnull
-	defer func() { os.Stdout, os.Stderr = oldStdout, oldStderr; devnull.Close() }()
+	r, w, err := os.Pipe()
+	s.Require().NoError(err)
+	oldStdout := os.Stdout
+	os.Stdout = w
+	defer func() { os.Stdout = oldStdout }()
 
 	results := prepareData(csvFile, "csv", cfg)
+	w.Close()
+
+	output, err := io.ReadAll(r)
+	s.Require().NoError(err)
+	s.Contains(string(output), "by columns: name, date (name: name, x: date)")
+
 	s.Len(results, 2)
 	s.Equal("alpha", results[0].Name)
 	s.Equal("2024-01", results[0].XAxis)
 	s.Equal(30.0, *results[0].Stats[0].Value)
+}
+
+func (s *PipelineSuite) TestPrepareDataAxesRejectsNonTabularParser() {
+	cfg := parser.Config{Axes: []parser.ColumnSpec{{Source: "x"}, {Source: "y"}}}
+	s.Panics(func() { prepareData("ignored.txt", "go", cfg) })
+}
+
+func (s *PipelineSuite) TestAssembleDatasetUsesValueAxes() {
+	cfg := parser.Config{Axes: []parser.ColumnSpec{{Source: "price"}, {Source: "latency"}}}
+	results := []shared.DataPoint{{XAxis: "100", YAxis: "12", Stats: []shared.Stat{}}}
+
+	ds := assembleDataset(results, CommonOptions{Name: "T"}, nil, cfg)
+
+	s.Len(ds.Axes, 2)
+	s.Equal("value", ds.Axes[0].Type)
+	s.Equal("x", ds.Axes[0].Key)
+	s.Equal("latency", ds.Axes[1].Label)
+}
+
+func (s *PipelineSuite) TestAssembleDatasetUsesHybridAxes() {
+	cfg := parser.Config{
+		Group:        []string{"region", "category"},
+		GroupPattern: "x,y",
+		Axes:         []parser.ColumnSpec{{Source: "latency", Label: "Latency (ms)"}},
+	}
+	results := []shared.DataPoint{{XAxis: "US", YAxis: "Widget", Stats: []shared.Stat{{Type: "Latency (ms)", Value: shared.F64(12)}}}}
+
+	ds := assembleDataset(results, CommonOptions{Name: "T"}, nil, cfg)
+
+	s.Len(ds.Axes, 3)
+	s.Equal("x", ds.Axes[0].Key)
+	s.Equal("region", ds.Axes[0].Label)
+	s.Equal("", ds.Axes[0].Type)
+	s.Equal("y", ds.Axes[1].Key)
+	s.Equal("category", ds.Axes[1].Label)
+	s.Equal("z", ds.Axes[2].Key)
+	s.Equal("Latency (ms)", ds.Axes[2].Label)
+	s.Equal("value", ds.Axes[2].Type)
 }
 
 func (s *PipelineSuite) TestPrepareDataUnknownParserExits() {

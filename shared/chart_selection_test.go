@@ -46,6 +46,7 @@ func (s *ChartSelectionSuite) TestChartsHave3DCapable() {
 	}{
 		{"bar is 3D-capable", []string{"bar"}, true},
 		{"line is 3D-capable", []string{"line"}, true},
+		{"scatter is 3D-capable", []string{"scatter"}, true},
 		{"pie is not", []string{"pie"}, false},
 		{"heatmap is not", []string{"heatmap"}, false},
 		{"pie+heatmap only", []string{"pie", "heatmap"}, false},
@@ -67,6 +68,7 @@ func (s *ChartSelectionSuite) TestDatasetNeeds3D() {
 	}{
 		{"z + bar => needs 3D", dsWith([]string{"bar"}, "1"), true},
 		{"z + line => needs 3D", dsWith([]string{"line"}, "2"), true},
+		{"z + scatter => needs 3D", dsWith([]string{"scatter"}, "2"), true},
 		{"z but pie only => no", dsWith([]string{"pie"}, "1"), false},
 		{"z but heatmap only => no", dsWith([]string{"heatmap"}, "1"), false},
 		{"bar but no z => no", dsWith([]string{"bar"}, "", ""), false},
@@ -74,6 +76,7 @@ func (s *ChartSelectionSuite) TestDatasetNeeds3D() {
 		{"mixed charts with z, one z point", dsWith([]string{"pie", "bar"}, "", "3"), true},
 		{"threeD bar without z => needs 3D", dsWithThreeDOption("bar"), true},
 		{"threeD line without z => needs 3D", dsWithThreeDOption("line"), true},
+		{"threeD scatter without z => needs 3D", dsWithThreeDOption("scatter"), true},
 		{"threeD pie without z => no", dsWithThreeDOption("pie"), false},
 	}
 	for _, c := range cases {

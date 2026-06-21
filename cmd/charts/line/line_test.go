@@ -32,6 +32,19 @@ func (s *LineSuite) TestCommandFlags() {
 	s.NotNil(cmd.Flags().Lookup("swap"))
 	s.NotNil(cmd.Flags().Lookup("sort"))
 	s.NotNil(cmd.Flags().Lookup("show-labels"))
+	s.Nil(cmd.Flags().Lookup("axes"))
+}
+
+func (s *LineSuite) TestLineCommandRejectsUnknownAxesFlag() {
+	dir := s.T().TempDir()
+	input := testutil.WriteBenchFile(s.T(), dir, "bench.txt", "")
+	out := filepath.Join(dir, "out.json")
+
+	cmd := NewCommand()
+	cmd.SetArgs([]string{"-o", out, "-P", "go", "--axes", "x,y", input})
+	err := cmd.Execute()
+	s.Require().Error(err)
+	s.Contains(err.Error(), "unknown flag")
 }
 
 func (s *LineSuite) TestBakesLineOnlySelection() {

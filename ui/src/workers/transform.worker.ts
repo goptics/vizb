@@ -26,12 +26,15 @@
 import {
   listChartSignatures,
   buildChartForSignature,
+  buildValueModeChart,
+  buildHybridScatterChart,
   canonicalAxisOrdersFromStrings,
   projectAndGroup,
   type ChartSignature,
 } from '../lib/transform'
+import { isValueMode, isHybridMode } from '../lib/utils'
 import { translateAxisKey } from '../lib/swap'
-import type { DataPoint, AxisLabels, Sort, ChartData, ScaleType } from '../types'
+import type { DataPoint, AxisLabels, Sort, ChartData, ScaleType, Axis, ChartType } from '../types'
 
 export type InitMessage = {
   type: 'init'
@@ -40,6 +43,8 @@ export type InitMessage = {
   identityString: string
   targetString: string
   labels?: AxisLabels
+  axes?: Axis[] // value/hybrid-mode: present when --axes was used
+  chartType?: ChartType
 }
 export type SetArrangementMessage = {
   type: 'setArrangement'
@@ -84,6 +89,10 @@ type State = {
   groupNames: string[]
   labels?: AxisLabels
   bySignature: Map<string, ChartSignature>
+  valueMode: boolean
+  hybridMode: boolean
+  axes?: Axis[]
+  chartType?: ChartType
 }
 
 let state: State | null = null
@@ -116,11 +125,41 @@ const readyReply = (s: State): ReadyMessage => ({
   groupNames: s.groupNames,
 })
 
+const valueModeReadyReply = (s: State): ReadyMessage => ({
+  type: 'ready',
+  dataEpoch: s.dataEpoch,
+  signatures: [
+    {
+      signature: '__value_mode__',
+      title: buildValueModeChart([], s.axes ?? [], s.identityString, s.targetString).title,
+    },
+  ],
+  groupNames: [],
+})
+
+const hybridModeReadyReply = (s: State): ReadyMessage => ({
+  type: 'ready',
+  dataEpoch: s.dataEpoch,
+  signatures: [
+    {
+      signature: '__hybrid_mode__',
+      title: buildHybridScatterChart([], s.axes ?? [], s.identityString, s.targetString).title,
+    },
+  ],
+  groupNames: s.groupNames,
+})
+
 self.onmessage = (e: MessageEvent<WorkerRequest>) => {
   const msg = e.data
 
   switch (msg.type) {
     case 'init': {
+      const axes = msg.axes
+      const chartType = msg.chartType
+      const scatter = chartType === 'scatter'
+      const valueModeDetected = scatter && isValueMode(axes)
+      const hybridModeDetected = scatter && isHybridMode(axes)
+
       state = {
         dataEpoch: msg.dataEpoch,
         raw: msg.data,
@@ -130,7 +169,31 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
         groupNames: [],
         labels: msg.labels,
         bySignature: new Map(),
+        valueMode: valueModeDetected,
+        hybridMode: hybridModeDetected,
+        axes,
+        chartType,
       }
+
+      if (valueModeDetected) {
+        state.bySignature.set('__value_mode__', {
+          signature: '__value_mode__',
+          statTemplate: { type: 'value' },
+        })
+        post(valueModeReadyReply(state))
+        return
+      }
+
+      if (hybridModeDetected) {
+        applyArrangement(state, msg.identityString, msg.targetString)
+        state.bySignature.set('__hybrid_mode__', {
+          signature: '__hybrid_mode__',
+          statTemplate: { type: 'hybrid' },
+        })
+        post(hybridModeReadyReply(state))
+        return
+      }
+
       applyArrangement(state, msg.identityString, msg.targetString)
       post(readyReply(state))
       return
@@ -138,6 +201,20 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
     case 'setArrangement': {
       if (!state) return
       if (msg.labels !== undefined) state.labels = msg.labels ?? undefined
+      // Swap/arrangement is a no-op in value mode (coordinates are fixed).
+      // applyArrangement would call listChartSignatures on stats-less rows and
+      // wipe the synthetic __value_mode__ signature.
+      if (state.valueMode) {
+        state.identityString = msg.identityString
+        state.targetString = msg.targetString
+        post(valueModeReadyReply(state))
+        return
+      }
+      if (state.hybridMode) {
+        applyArrangement(state, msg.identityString, msg.targetString)
+        post(hybridModeReadyReply(state))
+        return
+      }
       applyArrangement(state, msg.identityString, msg.targetString)
       post(readyReply(state))
       return
@@ -146,6 +223,58 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
 
   // compute: ignore jobs aimed at a superseded dataset (a newer init landed).
   if (!state || msg.dataEpoch !== state.dataEpoch) return
+
+  // Value-mode compute: bypass grouping/signature/stat pipeline entirely.
+  if (state.valueMode && msg.signature === '__value_mode__' && state.axes) {
+    const chart = buildValueModeChart(
+      state.raw,
+      state.axes,
+      state.identityString,
+      state.targetString,
+      { scale: msg.scale, showLabels: msg.showLabels }
+    )
+    post({
+      type: 'chart',
+      dataEpoch: msg.dataEpoch,
+      jobEpoch: msg.jobEpoch,
+      signature: msg.signature,
+      chart,
+    })
+    return
+  }
+
+  // Hybrid scatter compute: categorical x,y + z from stats.
+  if (state.hybridMode && msg.signature === '__hybrid_mode__' && state.axes) {
+    const rows = state.grouped.get(msg.groupName) ?? state.grouped.values().next().value ?? []
+    const canonical = canonicalAxisOrdersFromStrings(
+      state.raw,
+      state.identityString,
+      state.targetString
+    )
+    const chart = buildHybridScatterChart(
+      rows,
+      state.axes,
+      state.identityString,
+      state.targetString,
+      {
+        labels: state.labels,
+        sort: msg.sort,
+        showLabels: msg.showLabels,
+        scale: msg.scale,
+        threeD: msg.threeD,
+        canonical,
+      }
+    )
+    post({
+      type: 'chart',
+      dataEpoch: msg.dataEpoch,
+      jobEpoch: msg.jobEpoch,
+      signature: msg.signature,
+      chart,
+    })
+    return
+  }
+
   const entry = state.bySignature.get(msg.signature)
   if (!entry) return
 

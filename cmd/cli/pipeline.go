@@ -29,6 +29,10 @@ import (
 // (explicit single chart intent); the root command passes false (preserve the
 // dataset as-is).
 func RunLinear(cmd *cobra.Command, args []string, common CommonOptions, configs []config_charts.ChartConfig, applyOnPassthrough bool) {
+	RunLinearWithConfig(cmd, args, common, common.ParseConfig(), configs, applyOnPassthrough)
+}
+
+func RunLinearWithConfig(cmd *cobra.Command, args []string, common CommonOptions, cfg parser.Config, configs []config_charts.ChartConfig, applyOnPassthrough bool) {
 	target, ok := resolveInput(cmd, args)
 	if !ok {
 		return
@@ -41,8 +45,6 @@ func RunLinear(cmd *cobra.Command, args []string, common CommonOptions, configs 
 		common.Parser = detected
 		fmt.Println(style.Info.Render("✨ Auto-detected parser: " + detected))
 	}
-
-	cfg := common.ParseConfig()
 	WarnThreeDIfIneligible(cfg, configs)
 	outFile := ResolveOutputFileName(common.OutputFile)
 
@@ -70,10 +72,14 @@ func RunLinear(cmd *cobra.Command, args []string, common CommonOptions, configs 
 // the shared linear pipeline. An empty configs slice is treated as a no-op so
 // callers can defensively guard against misconfiguration.
 func RunSingleChart(cmd *cobra.Command, args []string, common CommonOptions, configs []config_charts.ChartConfig) {
+	RunSingleChartWithConfig(cmd, args, common, common.ParseConfig(), configs)
+}
+
+func RunSingleChartWithConfig(cmd *cobra.Command, args []string, common CommonOptions, cfg parser.Config, configs []config_charts.ChartConfig) {
 	if len(configs) == 0 {
 		return
 	}
-	RunLinear(cmd, args, common, configs, true)
+	RunLinearWithConfig(cmd, args, common, cfg, configs, true)
 }
 
 // WarnThreeDIfIneligible prints a warning when threeD is baked on a bar/line
@@ -188,7 +194,11 @@ func prepareData(filePath, parserKey string, cfg parser.Config) []shared.DataPoi
 		fmt.Fprintln(os.Stderr, "warning: --select is only supported for csv/json parsers; ignoring")
 	}
 
-	fmt.Println(style.Info.Render("⚙️  Parsing data..."))
+	if len(cfg.Axes) > 0 && parserKey != "csv" && parserKey != "json" {
+		shared.ExitWithError("--axes is only supported for csv/json parsers", nil)
+	}
+
+	fmt.Println(style.Info.Render("⚙️ Parsing data..."))
 	data := parseFn(filePath, cfg)
 
 	// CSV/JSON emit one DataPoint per row; when grouping is active, multiple rows
@@ -196,7 +206,7 @@ func prepareData(filePath, parserKey string, cfg parser.Config) []shared.DataPoi
 	// so the output isn't a row-per-record dump. Benchmark parsers are excluded.
 	if (parserKey == "csv" || parserKey == "json") && len(cfg.Group) > 0 {
 		before := len(data)
-		fmt.Println(style.Info.Render(fmt.Sprintf("🧮 Aggregating %d rows...", before)))
+		fmt.Println(style.Info.Render(fmt.Sprintf("🧮 Aggregating %d rows %s...", before, formatAggregationGroup(cfg))))
 		data = shared.AggregateDataPoints(data)
 		fmt.Println(style.Info.Render(fmt.Sprintf("✅ Aggregated into %d grouped data points", len(data))))
 	}
@@ -208,15 +218,48 @@ func prepareData(filePath, parserKey string, cfg parser.Config) []shared.DataPoi
 	return data
 }
 
+// formatAggregationGroup describes the --group columns and dimension keys used
+// when collapsing duplicate CSV/JSON rows.
+func formatAggregationGroup(cfg parser.Config) string {
+	cols := parser.EffectiveGroupColumns(cfg)
+	colList := strings.Join(cols, ", ")
+	colPhrase := "by columns: " + colList
+	if len(cols) == 1 {
+		colPhrase = "by column: " + colList
+	}
+
+	axes := parser.GroupAxes(cfg)
+	if len(axes) == 0 {
+		return colPhrase
+	}
+
+	dims := make([]string, 0, len(axes))
+	for _, ax := range axes {
+		if ax.Label != "" {
+			dims = append(dims, ax.Key+": "+ax.Label)
+			continue
+		}
+		dims = append(dims, ax.Key)
+	}
+	return colPhrase + " (" + strings.Join(dims, ", ") + ")"
+}
+
 // assembleDataset builds the output Dataset from parsed results plus the
 // command's metadata and the resolved per-chart configs.
 func assembleDataset(results []shared.DataPoint, common CommonOptions, configs []config_charts.ChartConfig, cfg parser.Config) *shared.Dataset {
+	axes := parser.GroupAxes(cfg)
+	if parser.IsHybridMode(cfg) {
+		axes = parser.HybridAxes(cfg)
+	} else if len(cfg.Axes) > 0 {
+		axes = parser.ValueAxes(cfg)
+	}
+
 	dataSet := &shared.Dataset{
 		Name:        common.Name,
 		Description: common.Description,
 		Data:        results,
 		Settings:    configs,
-		Axes:        parser.GroupAxes(cfg),
+		Axes:        axes,
 	}
 
 	meta := shared.Meta{OS: shared.OS, Arch: shared.Arch, Pkg: shared.Pkg}

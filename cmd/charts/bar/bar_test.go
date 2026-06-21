@@ -34,6 +34,19 @@ func (s *BarSuite) TestCommandFlags() {
 	s.NotNil(cmd.Flags().Lookup("3d"))
 	s.NotNil(cmd.Flags().Lookup("3d-rotate"))
 	s.NotNil(cmd.Flags().Lookup("3d-visualmap"))
+	s.Nil(cmd.Flags().Lookup("axes"))
+}
+
+func (s *BarSuite) TestBarCommandRejectsUnknownAxesFlag() {
+	dir := s.T().TempDir()
+	input := testutil.WriteBenchFile(s.T(), dir, "bench.txt", "")
+	out := filepath.Join(dir, "out.json")
+
+	cmd := NewCommand()
+	cmd.SetArgs([]string{"-o", out, "-P", "go", "--axes", "x,y", input})
+	err := cmd.Execute()
+	s.Require().Error(err)
+	s.Contains(err.Error(), "unknown flag")
 }
 
 func (s *BarSuite) TestBakesBarOnlySelection() {

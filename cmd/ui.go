@@ -52,7 +52,7 @@ func init() {
 	uiCmd.Flags().StringVarP(&uiOpts.DataURL, "data-url", "U", "", "URL to fetch DataSet JSON from at runtime (no input file needed)")
 	// --charts lets `vizb ui` prune chart chunks (incl. --data-url, where it's the
 	// only source of the selection since the data is fetched at runtime).
-	uiCmd.Flags().StringSliceVarP(&uiOpts.Charts, "charts", "c", shared.DefaultChartTypes, "Chart types to bundle (bar, line, pie, heatmap, radar)")
+	uiCmd.Flags().StringSliceVarP(&uiOpts.Charts, "charts", "c", shared.DefaultChartTypes, "Chart types to bundle (bar, line, pie, heatmap, radar, scatter)")
 	uiCmd.Flags().StringArrayVar(&uiOpts.ChartSpecs, "chart", nil, "Per-chart type settings override: <type>:<key>=<val>,... (repeatable)")
 	uiCmd.Flags().BoolVar(&uiOpts.Enable3D, "3d", false, "Bundle the 3D renderer for --data-url (remote data shape is unknown at build time)")
 	cli.BindStatFlag(uiCmd.Flags(), &uiOpts.Stat)
@@ -149,7 +149,7 @@ func runUI(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	needs3D := shared.ChartsHave3DCapable(charts) && anyDatasetHasZAxis(datasets)
+	needs3D := anyDatasetNeeds3D(datasets)
 
 	jsonData, err := json.Marshal(datasets)
 	if err != nil {
@@ -335,10 +335,11 @@ func mergeRadarConfig(to, from *radarchart.Config) {
 	}
 }
 
-// anyDatasetHasZAxis reports whether any dataset carries a z dimension.
-func anyDatasetHasZAxis(datasets []shared.Dataset) bool {
+// anyDatasetNeeds3D reports whether any dataset will render a 3D chart
+// (grouped z, baked threeD, or value axes with z). Mirrors pipeline writeOutput.
+func anyDatasetNeeds3D(datasets []shared.Dataset) bool {
 	for i := range datasets {
-		if shared.DatasetHasZAxis(&datasets[i]) {
+		if shared.DatasetNeeds3D(&datasets[i]) {
 			return true
 		}
 	}
