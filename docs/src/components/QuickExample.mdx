@@ -1,0 +1,36 @@
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+<Tabs syncKey="os">
+  <TabItem label="Linux / macOS" icon="seti:shell">
+
+```bash
+# Fetch GitHub contribution history from a public API and chart it in 3D
+curl -s "https://github-contributions-api.jogruber.de/v4/<your-github-username>" \
+  | vizb bar \
+      --group date \
+      --group-pattern '[z{Year}-y{Month}-x{Date}]' \
+      --json-path '.contributions' \
+      --select 'count{Contributions}' \
+      --stat \
+      --output index.html
+```
+
+  </TabItem>
+  <TabItem label="Windows" icon="seti:powershell">
+
+```ps1
+# Fetch GitHub contribution history from a public API and chart it in 3D
+(iwr "https://github-contributions-api.jogruber.de/v4/<your-github-username>").Content `
+  | vizb bar `
+      --group date `
+      --group-pattern '[z{Year}-y{Month}-x{Date}]' `
+      --json-path '.contributions' `
+      --select 'count{Contributions}' `
+      --stat `
+      --output index.html
+```
+
+  </TabItem>
+</Tabs>
+
+Each flag, top to bottom: **`--group date`** charts by the `date` field; **`--group-pattern '[z{Year}-y{Month}-x{Date}]'`** splits each `YYYY-MM-DD` cell into **z = Year, y = Month, x = Day** for a 3D scene; **`--json-path '.contributions'`** pulls the nested array out of the API envelope (and forces the `json` parser); **`--select 'count{Contributions}'`** plots the daily count as bar height; **`--stat`** adds the statistics panel. Swap in your own username and open `index.html`.

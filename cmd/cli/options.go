@@ -28,6 +28,7 @@ type CommonOptions struct {
 	TimeUnit     string
 	NumberUnit   string
 	Select       string
+	JSONPath     string
 }
 
 // Bind registers the common flags onto fs.
@@ -45,6 +46,7 @@ func (o *CommonOptions) Bind(fs *pflag.FlagSet) {
 	fs.StringVarP(&o.Tag, "tag", "t", "", "Tag/identifier for the comparison")
 	fs.StringVarP(&o.Parser, "parser", "P", "auto", "Benchmark parser to use; 'auto' detects from input content (one of: auto, "+strings.Join(parser.AvailableParsers(), ", ")+")")
 	fs.StringVar(&o.Select, "select", "", "csv/json only: select value columns; optional rename with {label} (e.g. --select=price{Unit price},count)")
+	fs.StringVar(&o.JSONPath, "json-path", "", "json only: select a nested array to chart via a jq-like dot path (e.g. --json-path '.data.results')")
 }
 
 // validationRules returns the warn-and-default rules for the common fields,
@@ -111,6 +113,7 @@ func (o *CommonOptions) ParseConfig() parser.Config {
 	if err != nil {
 		shared.ExitWithError(err.Error(), nil)
 	}
+	cfg.JSONPath = o.JSONPath
 	if strings.TrimSpace(o.Select) != "" {
 		selected, err := parser.ParseSelectFlag(o.Select)
 		if err != nil {

@@ -82,6 +82,7 @@ for how the format is chosen.
 | `--group-regex` | `-r` | `""` | Regex-based grouping (named captures) |
 | `--group` | `-g` | `""` | Names dimensions in `--group-pattern` order. csv/json: column/field names (separators must match `-p`); benchmark parsers: human-readable axis labels |
 | `--select` | | `""` | csv/json only: select value columns; optional rename with `{label}` (e.g. `--select=price{Unit price},count`) |
+| `--json-path` | | `""` | json only: select a nested array to chart via a jq-like dot path (e.g. `--json-path '.data.results'`) |
 | `--scale` | `-S` | `linear` | Scale type: `linear` or `log` |
 | `--sort` | `-s` | `""` | Sort order: `asc` or `desc` (default: as-is) |
 | `--charts` | `-c` | `bar,line,pie` | Chart types to generate (`bar`, `line`, `scatter`, `pie`, `heatmap`, `radar`) |

@@ -25,6 +25,7 @@ type Config struct {
 	NumberUnit      string
 	Select          []ColumnSpec
 	Axes            []ColumnSpec // --axes value mode: numeric cols placed on x,y[,z]
+	JSONPath        string       // json only: jq-like dot path to the nested array to chart
 }
 
 type ParseFunc func(filename string, cfg Config) []shared.DataPoint

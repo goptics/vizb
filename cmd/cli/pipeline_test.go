@@ -56,6 +56,29 @@ func (s *PipelineSuite) TestPreprocessInputFile() {
 	})
 }
 
+func (s *PipelineSuite) TestApplyJSONPathEnvelope() {
+	envelope := s.writeFile("env.json", `{"data":[{"impl":"a","ops":120},{"impl":"b","ops":80}]}`)
+
+	extracted := applyJSONPath(envelope, ".data")
+	s.FileExists(extracted)
+
+	cfg := parser.Config{GroupPattern: "x", Group: []string{"impl"}, JSONPath: ".data"}
+	results := prepareData(extracted, "json", cfg)
+	s.Len(results, 2)
+	s.ElementsMatch([]string{"a", "b"}, []string{results[0].XAxis, results[1].XAxis})
+}
+
+func (s *PipelineSuite) TestPrepareDataWarnsJSONPathIgnoredForNonJSONParser() {
+	benchFile := s.writeFile("valid.txt", `BenchmarkExample-8    1000000    1234 ns/op`)
+	cfg := parser.Config{GroupPattern: "y", TimeUnit: "ns", MemUnit: "B", JSONPath: ".data"}
+
+	errOut := testutil.CaptureStderr(func() {
+		results := prepareData(benchFile, "go", cfg)
+		s.NotEmpty(results)
+	})
+	s.Contains(errOut, "--json-path is only supported for the json parser")
+}
+
 func (s *PipelineSuite) TestPrepareDataWarnsSelectIgnoredForGoParser() {
 	benchFile := s.writeFile("valid.txt", `BenchmarkExample-8    1000000    1234 ns/op    1000 B/op    10 allocs/op`)
 	cfg := parser.Config{
