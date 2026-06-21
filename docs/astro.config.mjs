@@ -22,6 +22,7 @@ export default defineConfig({
 		social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/goptics/vizb' }],
 		sidebar: [
 			{ label: 'Getting Started', slug: 'getting-started' },
+			{ label: 'Troubleshooting', slug: 'troubleshooting' },
 			{ label: 'Installation', slug: 'installation' },
 			{ label: 'Features', slug: 'features' },
 			{

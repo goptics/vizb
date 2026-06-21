@@ -146,6 +146,9 @@ vizb sales.csv -g date,category -p "[x-y-n],z" -o sales.html
 |---|---|---|---|
 | `2022-2-30` | `Widget` | `[x-y-n]` splits on `-`, `z` ← category | x=2022, y=2, n=30, z=Widget |
 
+<details>
+<summary><strong>More bracket-slot examples</strong> (ISO dates, slash paths, underscore IDs, mixed separators)</summary>
+
 **ISO dates (`YYYY-MM-DD`)** — use a bracket slot when the date is one column. `{year}`, `{months}`, and `{dates}` only set axis titles. Splitting is driven by `-` between dimension tokens.
 
 Full year / month / day:
@@ -259,6 +262,8 @@ vizb data.csv -g code -p "[n_y/x]" -o out.html
 | code | Result |
 |---|---|
 | `Rivet_GPlusStatic/100k` | n=Rivet, y=GPlusStatic, x=100k |
+
+</details>
 
 <Aside type="note">
   Bracket splitting is **literal**. Vizb does not parse dates or semver semantically. Values must match the separator layout in `-p`. For irregular strings without stable separators (e.g. `Hashing64MD5`), use [`--group-regex`](#regex-syntax) instead.

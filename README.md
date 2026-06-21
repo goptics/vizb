@@ -1,10 +1,10 @@
 <div align="center">
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="./assests/logo-dark.gif">
+  <source media="(prefers-color-scheme: dark)" srcset="./assets/logo-dark.gif">
   
-  <source media="(prefers-color-scheme: light)" srcset="./assests/logo-light.gif">
+  <source media="(prefers-color-scheme: light)" srcset="./assets/logo-light.gif">
   
-  <img alt="My Logo" width="100px" src="./assests/logo-light.gif">
+  <img alt="Vizb" width="100px" src="./assets/logo-light.gif">
 </picture>
 
   <h1>Vizb</h1>
@@ -22,7 +22,19 @@
   </p>
 
   <p>
-    A CLI tool that turns benchmark output from <strong>Go</strong>, <strong>Rust</strong>, and <strong>JavaScript</strong> frameworks — or <strong>any tabular CSV/JSON data</strong> — into interactive <strong>5D visualizations</strong>. Pipe in results, apply multi-dimensional grouping, merge across runs, and explore everything in a single self-contained HTML file — no server, no dependencies, no build step. The input format is auto-detected, so <code>vizb data.csv</code> just works.
+    A CLI that turns any <strong>CSV or JSON table</strong> into interactive <strong>4D charts</strong> in a single self-contained HTML file — no server, no dependencies, no build step. Hand it a spreadsheet export or API dump and get explorable, multi-dimensional charts instead of raw rows. Benchmark output from Go, Rust, and JavaScript is supported too, with grouping and merge tools for comparing runs across releases.
+  </p>
+
+  <p>
+    <a href="https://vizb.goptics.org/getting-started/">Getting Started</a> ·
+    <a href="https://vizb.goptics.org/guides/parsers/">Parser Guide</a> ·
+    <a href="https://vizb.goptics.org/guides/data/">Tabular Data</a> ·
+    <a href="https://vizb.goptics.org/commands/root/">CLI Commands</a> ·
+    <a href="https://vizb.goptics.org/guides/grouping/">Grouping</a> ·
+    <a href="https://vizb.goptics.org/guides/merging/">Merging</a> ·
+    <a href="https://vizb.goptics.org/ci-cd/github-action/">CI/CD</a>
+    <br />
+    <sub>Full documentation at <a href="https://vizb.goptics.org/"><strong>vizb.goptics.org</strong></a></sub>
   </p>
 </div>
 
@@ -48,19 +60,6 @@ go install github.com/goptics/vizb@latest
 
 Pre-built binaries for Linux, macOS, and Windows are available on the [releases page](https://github.com/goptics/vizb/releases).
 
-## Documentation
-
-Full documentation is available at **[vizb.goptics.org](https://vizb.goptics.org/)**:
-
-- [Getting Started](https://vizb.goptics.org/getting-started/)
-- [Parser Guide](https://vizb.goptics.org/guides/parsers/)
-- [Tabular Data (CSV & JSON)](https://vizb.goptics.org/guides/data/)
-- [Automatic Parser Detection](https://vizb.goptics.org/guides/auto-detection/)
-- [CLI Commands](https://vizb.goptics.org/commands/root/)
-- [Grouping Guide](https://vizb.goptics.org/guides/grouping/)
-- [Merging Guide](https://vizb.goptics.org/guides/merging/)
-- [CI/CD Integration](https://vizb.goptics.org/ci-cd/github-action/)
-
 ## Development
 
 This project uses [Task](https://taskfile.dev/) for managing development workflows.
@@ -78,7 +77,7 @@ task init
 task dev:ui      # Run the UI in development mode
 task dev:docs    # Run the docs site in development mode
 task build:ui    # Build the UI
-task build:cli   # Build the binary (run from ./bin/vizb)
+task build:cli   # Build the binary to ./bin/vizb
 task build:docs  # Build the docs for production
 task build       # Build everything
 task test        # Run tests
@@ -86,7 +85,7 @@ task test        # Run tests
 
 ## Contributing
 
-Contributions are welcome! Feel free to open issues or submit pull requests.
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, build/test commands, and how to add a parser.
 
 ## License
 

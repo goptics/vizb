@@ -1,0 +1,117 @@
+---
+title: Troubleshooting
+description: Common vizb errors and how to fix them.
+---
+
+import { Aside, LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+Quick fixes for the errors beginners hit most often. Each entry shows the message, what it means, and what to try next.
+
+## Grouping errors
+
+### Separator mismatch
+
+```text
+--group "<g>" and --group-pattern "<p>" separators do not match (expected "<from g>", got "<from p>")
+```
+
+`-g` and `-p` must declare the same separators between dimension slots. A comma-separated `-g region,product,category` needs a comma-separated `-p x,y,z`, not `x/y/z`.
+
+**Fix:** Make `-p` mirror `-g` — same separator characters in the same positions. See [Matching separators](/guides/grouping/#matching-separators).
+
+### Dimension count mismatch
+
+```text
+--group and --group-pattern dimension count do not match: N column(s) in "<g>", M slot(s) in --group-pattern "<p>"
+```
+
+`-g` selects N columns but `-p` defines a different number of top-level slots. Common with bracket patterns where one column splits into multiple dimensions.
+
+**Fix:** Count top-level slots in `-p` (each `[...]` bracket counts as one slot). They must match the number of `-g` columns. See [Bracket slots](/guides/grouping/#bracket-slots--split-a-columns-cell-value).
+
+### Missing group column
+
+```text
+group column 'X' not found; available: [...]
+```
+
+The column name in `-g` does not match a CSV header or JSON field exactly (case-sensitive).
+
+**Fix:** Check spelling and run `vizb data.csv -o out.html` without `-g` first to confirm headers. See [Grouping CSV/JSON data](/guides/grouping/#grouping-csvjson-data).
+
+### Pattern needs x or y
+
+```text
+pattern must contain xAxis (x) or yAxis (y)
+```
+
+`-p` only assigned a `name` (`n`) or `z` dimension. At least one of `x` or `y` is required for grouping to take effect.
+
+**Fix:** Add `x` or `y` to the pattern, e.g. `-p n/x/y` instead of `-p n`. See [The Dimensions](/guides/grouping/#the-dimensions).
+
+### z requires x and y
+
+```text
+zAxis (z) requires both xAxis (x) and yAxis (y)
+```
+
+A `z` segment in `-p` or `--group-regex` needs both `x` and `y` to be present. `z` alone is not enough.
+
+**Fix:** Include both `x` and `y` before adding `z`, e.g. `-p n/x/y/z`. See [3D Charts](/charts/3d).
+
+### Regex missing x or y
+
+```text
+regex '...' does not contain x (xAxis) or y (yAxis)
+```
+
+Same rule as pattern syntax — the named capture groups must include `(?<x>...)` or `(?<y>...)`.
+
+**Fix:** Add `(?<x>...)` or `(?<y>...)` to the regex. See [Regex Syntax](/guides/grouping/#regex-syntax).
+
+## Data errors
+
+### No numeric columns (CSV)
+
+```text
+no numeric columns found in CSV
+```
+
+Every column is non-numeric, or the file has no data rows after the header.
+
+**Fix:** Ensure at least one column contains numbers. Text-only columns can be used with `-g` for dimensions but cannot be charted as series. See [Tabular Data](/guides/data).
+
+### No numeric fields (JSON)
+
+```text
+no numeric fields found in JSON
+```
+
+The JSON objects have no numeric keys (after flattening nested objects to dotted keys).
+
+**Fix:** Include at least one numeric field per object. See [Tabular Data](/guides/data).
+
+## Parser errors
+
+### Unknown parser
+
+```text
+unknown parser 'X'; available: auto, [...]
+```
+
+`-P` / `--parser` was set to a key vizb does not recognize.
+
+**Fix:** Omit `-P` and let vizb auto-detect, or pick a valid key from the list in the error. See [Parser Guide](/guides/parsers).
+
+<Aside type="tip">
+  When auto-detection works, vizb prints `✨ Auto-detected parser: …` before parsing. If you never see that line, check that input is reaching stdin or the file path is correct.
+</Aside>
+
+## Still stuck?
+
+<CardGrid cols={2}>
+  <LinkCard title="Grouping Guide" description="Pattern syntax, bracket slots, and regex." href="/guides/grouping" />
+  <LinkCard title="Tabular Data" description="CSV and JSON parser rules." href="/guides/data" />
+  <LinkCard title="Parser Guide" description="Supported inputs and metrics." href="/guides/parsers" />
+  <LinkCard title="GitHub Issues" description="Report a bug or ask for help." href="https://github.com/goptics/vizb/issues" />
+</CardGrid>
