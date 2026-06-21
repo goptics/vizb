@@ -238,7 +238,7 @@ func prepareData(filePath, parserKey string, cfg parser.Config) []shared.DataPoi
 		shared.ExitWithError("--axes is only supported for csv/json parsers", nil)
 	}
 
-	fmt.Println(style.Info.Render("⚙️ Parsing data..."))
+	fmt.Println(style.Info.Render("🧲 Parsing data..."))
 	data := parseFn(filePath, cfg)
 
 	// CSV/JSON emit one DataPoint per row; when grouping is active, multiple rows
