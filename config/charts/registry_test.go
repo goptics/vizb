@@ -12,6 +12,7 @@ import (
 	_ "github.com/goptics/vizb/config/charts/pie"
 	_ "github.com/goptics/vizb/config/charts/radar"
 	_ "github.com/goptics/vizb/config/charts/scatter"
+	scatterchart "github.com/goptics/vizb/config/charts/scatter"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -46,6 +47,14 @@ func (s *RegistrySuite) TestNewKnownType() {
 	barCfg, ok := cfg.(*barchart.Config)
 	s.Require().True(ok)
 	s.Equal("bar", barCfg.ChartType())
+}
+
+func (s *RegistrySuite) TestNewScatterKnownType() {
+	cfg, err := charts.New("scatter")
+	s.NoError(err)
+	scatterCfg, ok := cfg.(*scatterchart.Config)
+	s.Require().True(ok)
+	s.Equal("scatter", scatterCfg.ChartType())
 }
 
 func (s *RegistrySuite) TestDecodeBarRoundTrip() {

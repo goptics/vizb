@@ -9,6 +9,7 @@ import (
 	barchart "github.com/goptics/vizb/config/charts/bar"
 	linechart "github.com/goptics/vizb/config/charts/line"
 	piechart "github.com/goptics/vizb/config/charts/pie"
+	scatterchart "github.com/goptics/vizb/config/charts/scatter"
 	"github.com/goptics/vizb/shared"
 	"github.com/goptics/vizb/testutil"
 	"github.com/stretchr/testify/suite"
@@ -189,6 +190,43 @@ func (s *RootSuite) TestRunBenchmarkChartOverride() {
 	barCfg, ok := ds.Settings[0].(*barchart.Config)
 	s.Require().True(ok)
 	s.Equal("yxn", barCfg.Swap)
+}
+
+func (s *RootSuite) TestRunBenchmarkScatterChart() {
+	dir := s.T().TempDir()
+	input := testutil.WriteBenchFile(s.T(), dir, "valid.txt",
+		`BenchmarkTest-8    1000000    1234 ns/op    1000 B/op    10 allocs/op`)
+	out := filepath.Join(dir, "out.json")
+	rootOpts.Charts = nil
+
+	rootCmd.SetArgs([]string{"-o", out, "-c", "scatter", input})
+	s.Require().NoError(rootCmd.Execute())
+
+	ds := testutil.ReadDataset(s.T(), out)
+	s.Require().Len(ds.Settings, 1)
+	s.Equal("scatter", ds.Settings[0].ChartType())
+
+	scatterCfg, ok := ds.Settings[0].(*scatterchart.Config)
+	s.Require().True(ok)
+	s.Equal("linear", scatterCfg.Scale)
+}
+
+func (s *RootSuite) TestRunBenchmarkScatterChartOverride() {
+	dir := s.T().TempDir()
+	input := testutil.WriteBenchFile(s.T(), dir, "valid.txt",
+		`BenchmarkTest-8    1000000    1234 ns/op    1000 B/op    10 allocs/op`)
+	out := filepath.Join(dir, "out.json")
+	rootOpts.Charts = nil
+
+	rootCmd.SetArgs([]string{"-o", out, "-c", "scatter", "--chart", "scatter:scale=log", input})
+	s.Require().NoError(rootCmd.Execute())
+
+	ds := testutil.ReadDataset(s.T(), out)
+	s.Require().Len(ds.Settings, 1)
+
+	scatterCfg, ok := ds.Settings[0].(*scatterchart.Config)
+	s.Require().True(ok)
+	s.Equal("log", scatterCfg.Scale)
 }
 
 func (s *RootSuite) TestBakesDefaultCharts() {

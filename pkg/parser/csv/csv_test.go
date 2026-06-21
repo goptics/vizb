@@ -391,6 +391,44 @@ func (s *CSVSuite) TestHybridModeGroupPlusAxesColumn() {
 	s.Equal(8.0, *results[1].Stats[0].Value)
 }
 
+func (s *CSVSuite) TestHybridModeZLabelFallsBackToSource() {
+	s.cfg.Group = []string{"region", "category"}
+	s.cfg.GroupPattern = "x,y"
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "latency"}}
+	csv := "region,category,latency\nUS,Widget,12\n"
+
+	results := ParseCSV(s.writeFile(csv), s.cfg)
+
+	s.Len(results, 1)
+	s.Equal("latency", results[0].Stats[0].Type)
+}
+
+func (s *CSVSuite) TestHybridModeSkipsRaggedZRow() {
+	s.cfg.Group = []string{"region", "category"}
+	s.cfg.GroupPattern = "x,y"
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "latency"}}
+	csv := "region,category,latency\nUS,Widget,12\nEU,Gadget\nFR,Tool,5\n"
+
+	results := ParseCSV(s.writeFile(csv), s.cfg)
+
+	s.Len(results, 2)
+	s.Equal("US", results[0].XAxis)
+	s.Equal("FR", results[1].XAxis)
+}
+
+func (s *CSVSuite) TestHybridModeFilterRegex() {
+	s.cfg.Group = []string{"region", "category"}
+	s.cfg.GroupPattern = "x,y"
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "latency"}}
+	s.cfg.Filter = "US"
+	csv := "region,category,latency\nUS,Widget,12\nEU,Gadget,8\n"
+
+	results := ParseCSV(s.writeFile(csv), s.cfg)
+
+	s.Len(results, 1)
+	s.Equal("US", results[0].XAxis)
+}
+
 func (s *CSVSuite) TestHybridModeSkipsNonNumericZRow() {
 	s.cfg.Group = []string{"region", "category"}
 	s.cfg.GroupPattern = "x,y"
@@ -451,6 +489,18 @@ func (s *CSVFatalSuite) TestHybridModeNonNumericZColumnErrors() {
 	path := s.writeFile("region,category,label\nUS,Widget,foo\n")
 
 	s.PanicsWithValue("exit", func() { ParseCSV(path, s.cfg) })
+}
+
+func (s *CSVFatalSuite) TestHybridModeGroupParseError() {
+	cfg, err := parser.ResolveGroupConfig(parser.Config{
+		Group:        []string{"date", "category"},
+		GroupPattern: "[x-y-n],z",
+	})
+	s.Require().NoError(err)
+	cfg.Axes = []parser.ColumnSpec{{Source: "latency"}}
+	path := s.writeFile("region,category,latency\n2022-2-30,Widget,12\n")
+
+	s.PanicsWithValue("exit", func() { ParseCSV(path, cfg) })
 }
 
 func (s *CSVFatalSuite) TestHybridModeMissingZColumnErrors() {

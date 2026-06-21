@@ -71,6 +71,51 @@ func TestIsHybridMode(t *testing.T) {
 	}
 }
 
+func TestValueAxesThreeColumns(t *testing.T) {
+	cfg := Config{Axes: []ColumnSpec{
+		{Source: "x", Label: "X"},
+		{Source: "y", Label: "Y"},
+		{Source: "z", Label: "Z"},
+	}}
+	axes := ValueAxes(cfg)
+	if len(axes) != 3 {
+		t.Fatalf("want 3 axes, got %d", len(axes))
+	}
+	if axes[0].Label != "X" || axes[1].Label != "Y" || axes[2].Key != "z" || axes[2].Label != "Z" {
+		t.Fatalf("unexpected axes: %+v", axes)
+	}
+}
+
+func TestHybridAxesFallsBackToSourceLabel(t *testing.T) {
+	cfg := Config{
+		Group:        []string{"region", "category"},
+		GroupPattern: "x,y",
+		Axes:         []ColumnSpec{{Source: "latency"}},
+	}
+	axes := HybridAxes(cfg)
+	if len(axes) != 3 {
+		t.Fatalf("want 3 axes, got %d", len(axes))
+	}
+	if axes[2].Label != "latency" {
+		t.Fatalf("expected source fallback label, got %+v", axes[2])
+	}
+}
+
+func TestHybridAxesIgnoresExtraGroupDims(t *testing.T) {
+	cfg := Config{
+		Group:        []string{"region", "category"},
+		GroupPattern: "x,y,z",
+		Axes:         []ColumnSpec{{Source: "latency"}},
+	}
+	axes := HybridAxes(cfg)
+	if len(axes) != 3 {
+		t.Fatalf("want 3 axes, got %d: %+v", len(axes), axes)
+	}
+	if axes[0].Key != "x" || axes[1].Key != "y" || axes[2].Key != "z" {
+		t.Fatalf("unexpected axis keys: %+v", axes)
+	}
+}
+
 func TestHybridAxes(t *testing.T) {
 	cfg := Config{
 		Group:        []string{"region", "category"},

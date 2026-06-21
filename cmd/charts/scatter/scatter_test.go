@@ -151,6 +151,48 @@ func (s *ScatterSuite) TestParseConfigRejectsAxesWithSelect() {
 	s.True(*exitCalled)
 }
 
+func (s *ScatterSuite) TestParseConfigRejectsAxesWithGroupRegex() {
+	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
+	defer restore()
+
+	o := &Options{Axes: "latency"}
+	o.GroupRegex = `(?P<x>.*)`
+	o.Group = []string{"benchmark"}
+	s.Panics(func() { o.ParseConfig() })
+	s.True(*exitCalled)
+}
+
+func (s *ScatterSuite) TestParseConfigRejectsHybridWrongGroupCount() {
+	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
+	defer restore()
+
+	o := &Options{Axes: "latency"}
+	o.GroupPattern = "x"
+	o.Group = []string{"region"}
+	s.Panics(func() { o.ParseConfig() })
+	s.True(*exitCalled)
+}
+
+func (s *ScatterSuite) TestParseConfigRejectsInvalidValueAxesArity() {
+	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
+	defer restore()
+
+	o := &Options{Axes: "price"}
+	s.Panics(func() { o.ParseConfig() })
+	s.True(*exitCalled)
+}
+
+func (s *ScatterSuite) TestParseConfigRejectsInvalidHybridAxesSyntax() {
+	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
+	defer restore()
+
+	o := &Options{Axes: "latency{"}
+	o.GroupPattern = "x,y"
+	o.Group = []string{"region", "category"}
+	s.Panics(func() { o.ParseConfig() })
+	s.True(*exitCalled)
+}
+
 func (s *ScatterSuite) TestScatterCommandAxesAloneWorks() {
 	dir := s.T().TempDir()
 	csv := filepath.Join(dir, "data.csv")
@@ -167,6 +209,77 @@ func (s *ScatterSuite) TestScatterCommandAxesAloneWorks() {
 	s.Equal("x", ds.Axes[0].Key)
 	s.Equal("price", ds.Axes[0].Label)
 	s.Equal("latency", ds.Axes[1].Label)
+}
+
+func (s *ScatterSuite) TestScatterCommandHybridModeWorks() {
+	dir := s.T().TempDir()
+	csv := filepath.Join(dir, "data.csv")
+	s.Require().NoError(os.WriteFile(csv, []byte("region,category,latency\nUS,Widget,12\nEU,Gadget,8\n"), 0644))
+	out := filepath.Join(dir, "out.json")
+
+	cmd := NewCommand()
+	cmd.SetArgs([]string{"-o", out, "-P", "auto", "-g", "region,category", "-p", "x,y", "--axes", "latency", csv})
+	s.Require().NoError(cmd.Execute())
+
+	ds := testutil.ReadDataset(s.T(), out)
+	s.Require().Len(ds.Axes, 3)
+	s.Equal("z", ds.Axes[2].Key)
+	s.Equal("value", ds.Axes[2].Type)
+	s.Equal("latency", ds.Axes[2].Label)
+	s.NotEmpty(ds.Data)
+}
+
+func (s *ScatterSuite) TestScatterCommandValueModeThreeAxes() {
+	dir := s.T().TempDir()
+	csv := filepath.Join(dir, "data.csv")
+	s.Require().NoError(os.WriteFile(csv, []byte("x,y,z\n1,2,3\n4,5,6\n"), 0644))
+	out := filepath.Join(dir, "out.json")
+
+	cmd := NewCommand()
+	cmd.SetArgs([]string{"-o", out, "-P", "auto", "--axes", "x,y,z", csv})
+	s.Require().NoError(cmd.Execute())
+
+	ds := testutil.ReadDataset(s.T(), out)
+	s.Require().Len(ds.Axes, 3)
+	s.Equal("x", ds.Axes[0].Key)
+	s.Equal("y", ds.Axes[1].Key)
+	s.Equal("z", ds.Axes[2].Key)
+	s.Len(ds.Data, 2)
+}
+
+func (s *ScatterSuite) TestScatterCommandWithThreeDVisualMapFlag() {
+	dir := s.T().TempDir()
+	input := testutil.WriteBenchFile(s.T(), dir, "bench.txt", "")
+	out := filepath.Join(dir, "out.json")
+
+	cmd := NewCommand()
+	cmd.SetArgs([]string{"-o", out, "-P", "go", "-p", "n/x/y", "--3d", "--3d-visualmap=false", input})
+	s.Require().NoError(cmd.Execute())
+
+	ds := testutil.ReadDataset(s.T(), out)
+	scatterCfg, ok := ds.Settings[0].(*scatterchart.Config)
+	s.Require().True(ok)
+	s.Require().NotNil(scatterCfg.ThreeD)
+	s.True(*scatterCfg.ThreeD)
+	s.Require().NotNil(scatterCfg.ThreeDVisualMap)
+	s.False(*scatterCfg.ThreeDVisualMap)
+}
+
+func (s *ScatterSuite) TestScatterCommandThreeDVisualMapWithoutThreeD() {
+	dir := s.T().TempDir()
+	input := testutil.WriteBenchFile(s.T(), dir, "bench.txt", "")
+	out := filepath.Join(dir, "out.json")
+
+	cmd := NewCommand()
+	cmd.SetArgs([]string{"-o", out, "-P", "go", "-p", "n/x/y", "--3d-visualmap", input})
+	s.Require().NoError(cmd.Execute())
+
+	ds := testutil.ReadDataset(s.T(), out)
+	scatterCfg, ok := ds.Settings[0].(*scatterchart.Config)
+	s.Require().True(ok)
+	s.Nil(scatterCfg.ThreeD)
+	s.Require().NotNil(scatterCfg.ThreeDVisualMap)
+	s.True(*scatterCfg.ThreeDVisualMap)
 }
 
 func (s *ScatterSuite) TestScatterCommandBadSwapExits() {

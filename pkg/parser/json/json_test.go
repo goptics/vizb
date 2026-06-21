@@ -1,8 +1,11 @@
 package json
 
 import (
+	"encoding/json"
+	"math"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/goptics/vizb/pkg/parser"
@@ -265,6 +268,103 @@ func (s *JSONSuite) TestHybridModeGroupPlusAxesField() {
 	s.Equal(12.0, *results[0].Stats[0].Value)
 }
 
+func (s *JSONSuite) TestAxesValueModeThreeColumns() {
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "x"}, {Source: "y"}, {Source: "z"}}
+	js := `[{"x":1,"y":2,"z":3},{"x":4,"y":5,"z":6}]`
+
+	results := ParseJSON(s.writeFile(js), s.cfg)
+
+	s.Len(results, 2)
+	s.Equal("1", results[0].XAxis)
+	s.Equal("2", results[0].YAxis)
+	s.Equal("3", results[0].ZAxis)
+	s.Equal("6", results[1].ZAxis)
+}
+
+func (s *JSONSuite) TestAxesValueModeSkipsIncompleteRow() {
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "x"}, {Source: "y"}}
+	js := `[{"x":1,"y":2},{"x":3}]`
+
+	results := ParseJSON(s.writeFile(js), s.cfg)
+
+	s.Len(results, 1)
+	s.Equal("1", results[0].XAxis)
+}
+
+func (s *JSONSuite) TestHybridModeSkipsMissingZField() {
+	s.cfg.Group = []string{"region", "category"}
+	s.cfg.GroupPattern = "x,y"
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "latency"}}
+	js := `[{"region":"US","category":"Widget","latency":12},{"region":"EU","category":"Gadget"}]`
+
+	results := ParseJSON(s.writeFile(js), s.cfg)
+
+	s.Len(results, 1)
+	s.Equal("US", results[0].XAxis)
+}
+
+func (s *JSONSuite) TestHybridModeFilterRegex() {
+	s.cfg.Group = []string{"region", "category"}
+	s.cfg.GroupPattern = "x,y"
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "latency"}}
+	s.cfg.Filter = "US"
+	js := `[{"region":"US","category":"Widget","latency":12},{"region":"EU","category":"Gadget","latency":8}]`
+
+	results := ParseJSON(s.writeFile(js), s.cfg)
+
+	s.Len(results, 1)
+	s.Equal("US", results[0].XAxis)
+}
+
+func (s *JSONSuite) TestHybridModeZLabelFallsBackToSource() {
+	s.cfg.Group = []string{"region", "category"}
+	s.cfg.GroupPattern = "x,y"
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "latency"}}
+	js := `[{"region":"US","category":"Widget","latency":12}]`
+
+	results := ParseJSON(s.writeFile(js), s.cfg)
+
+	s.Len(results, 1)
+	s.Equal("latency", results[0].Stats[0].Type)
+}
+
+func (s *JSONSuite) TestStringifyNumericAndString() {
+	s.Equal("3.5", stringify(3.5))
+	s.Equal("alpha", stringify("alpha"))
+	s.Equal("", stringify(true))
+}
+
+func (s *JSONSuite) TestLeafNumberRejectsNonNumeric() {
+	_, ok := leafNumber(true)
+	s.False(ok)
+	_, ok = leafNumber(nil)
+	s.False(ok)
+	_, ok = leafNumber(math.NaN())
+	s.False(ok)
+}
+
+func (s *JSONSuite) TestDecodeElementSkipsNonObjectRows() {
+	dec := json.NewDecoder(strings.NewReader(`[1, {"x":1}, [2,3]]`))
+	tok, err := dec.Token()
+	s.Require().NoError(err)
+	open, ok := tok.(json.Delim)
+	s.Require().True(ok)
+	s.Equal(json.Delim('['), open)
+
+	leaves, err := decodeElement(dec)
+	s.Require().NoError(err)
+	s.Nil(leaves)
+
+	leaves, err = decodeElement(dec)
+	s.Require().NoError(err)
+	s.Len(leaves, 1)
+	s.Equal("x", leaves[0].key)
+
+	leaves, err = decodeElement(dec)
+	s.Require().NoError(err)
+	s.Nil(leaves)
+}
+
 func (s *JSONSuite) TestHybridModeNumericStringZField() {
 	s.cfg.Group = []string{"region", "category"}
 	s.cfg.GroupPattern = "x,y"
@@ -350,6 +450,15 @@ func (s *JSONFatalSuite) TestHybridModeNonNumericZFieldErrors() {
 	s.cfg.GroupPattern = "x,y"
 	s.cfg.Axes = []parser.ColumnSpec{{Source: "label"}}
 	path := s.writeFile(`[{"region":"US","category":"Widget","label":"foo"}]`)
+
+	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
+}
+
+func (s *JSONFatalSuite) TestHybridModeMissingZFieldErrors() {
+	s.cfg.Group = []string{"region", "category"}
+	s.cfg.GroupPattern = "x,y"
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "missing"}}
+	path := s.writeFile(`[{"region":"US","category":"Widget","latency":12}]`)
 
 	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
 }

@@ -309,6 +309,16 @@ func (s *PipelineSuite) TestFormatAggregationGroup() {
 			cfg:  parser.Config{GroupPattern: "y{Region},x{Product}", Group: []string{"region", "product"}},
 			want: "by columns: region, product (y: Region, x: Product)",
 		},
+		{
+			name: "columns only when no group pattern",
+			cfg:  parser.Config{Group: []string{"name", "date"}},
+			want: "by columns: name, date",
+		},
+		{
+			name: "regex axes without labels use key only",
+			cfg:  parser.Config{GroupRegex: `(?P<name>.*)/(?P<x>.*)`, Group: []string{"benchmark"}},
+			want: "by column: benchmark (name, x)",
+		},
 	}
 
 	for _, tt := range tests {
