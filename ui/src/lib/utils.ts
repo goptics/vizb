@@ -79,9 +79,6 @@ export const isValue3DEligible = (chart: ChartData) =>
 export const valueModeHasZAxis = (axes: Axis[] | undefined): boolean =>
   !!axes?.some((a) => a.key === 'z')
 
-/** Swap is meaningful for scatter value mode (--axes); not hybrid. */
-export const valueModeSwapEnabled = (axes: Axis[] | undefined): boolean => isValueMode(axes)
-
 /** Scatter --axes x,y,z continuous 3D (swap-driven, not category --3d). */
 export const isValueModeContinuous3D = (
   chart: ChartData,

@@ -3,12 +3,22 @@ import { computed } from 'vue'
 import SettingHeader from '../SettingHeader.vue'
 import Selector from '../Selector.vue'
 import { useDataPoint } from '@/composables/useDataPoint'
+import { useSettingsStore } from '@/composables/useSettingsStore'
 import { swapOptionKeys } from '@/lib/swap'
+import { datasetHas3DEngine } from '@/lib/utils'
 
 const { activeDataSet, activeArrangement, isValueMode } = useDataPoint()
+const { activeConfig } = useSettingsStore()
 
 const swapOptions = computed(() =>
-  swapOptionKeys(activeDataSet.value?.data, isValueMode.value).map((key) => ({ name: key }))
+  swapOptionKeys(
+    activeDataSet.value?.data,
+    isValueMode.value,
+    datasetHas3DEngine(
+      activeDataSet.value?.data,
+      activeConfig.value as { threeD?: boolean } | undefined
+    )
+  ).map((key) => ({ name: key }))
 )
 
 const props = defineProps<{

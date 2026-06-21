@@ -26,10 +26,15 @@ export const presentAxisKeys = (data: DataPoint[] | undefined): string[] => {
 }
 
 /** Swap dropdown options for SwapControl; value mode permutes x/y/z only. */
-export const swapOptionKeys = (data: DataPoint[] | undefined, valueMode = false): string[] => {
+export const swapOptionKeys = (
+  data: DataPoint[] | undefined,
+  valueMode = false,
+  has3DEngine = false
+): string[] => {
   if (!data?.length) return []
   const present = presentAxisKeys(data)
-  const pool = valueMode ? VALUE_MODE_POOL : AXIS_ORDER
+  let pool: readonly string[] = valueMode ? VALUE_MODE_POOL : AXIS_ORDER
+  if (!present.includes('z') && !has3DEngine) pool = pool.filter((key) => key !== 'z')
   const k = valueMode ? present.filter((key) => key !== 'n').length : present.length
   return kPermutations(pool, k)
     .filter((key) => !key.includes('z') || (key.includes('x') && key.includes('y')))

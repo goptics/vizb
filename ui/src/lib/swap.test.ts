@@ -30,6 +30,21 @@ describe('swapOptionKeys', () => {
     const keys = swapOptionKeys(data, false)
     expect(keys.some((k) => k.includes('n'))).toBe(true)
   })
+
+  it('2D grouped data without 3D engine omits z arrangements', () => {
+    const data = [dp({ name: 'bench', xAxis: '1', yAxis: '2' })]
+    const keys = swapOptionKeys(data, false, false)
+    expect(keys.every((k) => !k.includes('z'))).toBe(true)
+    expect(keys).toContain('nxy')
+    expect(keys).not.toContain('xyz')
+  })
+
+  it('2D grouped data with baked --3d offers z arrangements', () => {
+    const data = [dp({ name: 'bench', xAxis: '1', yAxis: '2' })]
+    const keys = swapOptionKeys(data, false, true)
+    expect(keys.some((k) => k.includes('z'))).toBe(true)
+    expect(keys).toContain('xyz')
+  })
 })
 
 describe('arrangementHasChartZ', () => {

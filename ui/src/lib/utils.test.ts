@@ -12,7 +12,6 @@ import {
   formatChartTotal,
   isValueMode,
   isHybridMode,
-  valueModeSwapEnabled,
 } from './utils'
 
 const dp = (x: string, y: string, z = ''): DataPoint => ({
@@ -285,29 +284,6 @@ describe('isValueMode', () => {
       { key: 'z', label: 'Latency (ms)', type: 'value' },
     ]
     expect(isValueMode(axes)).toBe(false)
-  })
-})
-
-describe('valueModeSwapEnabled', () => {
-  const valueAxes2: Axis[] = [
-    { key: 'x', type: 'value' },
-    { key: 'y', type: 'value' },
-  ]
-  const valueAxes3: Axis[] = [...valueAxes2, { key: 'z', type: 'value' }]
-  const hybridAxes: Axis[] = [
-    { key: 'x', type: 'category' },
-    { key: 'y', type: 'category' },
-    { key: 'z', type: 'value' },
-  ]
-
-  it('returns true for 2-col and 3-col value axes', () => {
-    expect(valueModeSwapEnabled(valueAxes2)).toBe(true)
-    expect(valueModeSwapEnabled(valueAxes3)).toBe(true)
-  })
-
-  it('returns false for hybrid and undefined axes', () => {
-    expect(valueModeSwapEnabled(hybridAxes)).toBe(false)
-    expect(valueModeSwapEnabled(undefined)).toBe(false)
   })
 })
 
