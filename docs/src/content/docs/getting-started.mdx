@@ -5,18 +5,15 @@ description: Get up and running with vizb in under a minute.
 
 import { Aside, LinkCard, CardGrid, Tabs, TabItem } from '@astrojs/starlight/components';
 
-Vizb does two distinct jobs: chart **any tabular CSV/JSON data**, and visualize **benchmark
-output** from Go, Rust, and JavaScript. Either way, the input format is **auto-detected from
-content** — `--parser`/`-P` is optional and only needed to override the guess.
+Vizb turns tables and benchmark output into interactive HTML charts. Feed it a CSV file, a JSON file, or benchmark results from Go, Rust, or JavaScript. Vizb detects the input format from the content. You only need `--parser`/`-P` when you want to override the guess.
 
 <Aside type="tip">
-  Just run `vizb <input> -o output.html`. vizb inspects the content, picks the parser, and prints
-  its choice (`✨ Auto-detected parser: …`). See [Auto-Detection](/guides/auto-detection).
+  Just run `vizb <input> -o output.html`. Vizb inspects the content, picks the parser, and prints its choice (`✨ Auto-detected parser: …`).
 </Aside>
 
 ## Visualize Tabular Data
 
-Turn any CSV or JSON table into charts — numeric columns/fields become series.
+Turn any CSV or JSON table into charts. Numeric columns/fields become series.
 
 <Tabs syncKey="data">
   <TabItem label="CSV" icon="seti:csv">
@@ -33,7 +30,7 @@ Turn any CSV or JSON table into charts — numeric columns/fields become series.
   </TabItem>
   <TabItem label="JSON" icon="seti:json">
 
-  A JSON array of objects (each object a row, each numeric key a series). Nested objects flatten to dotted keys.
+  A JSON array of objects. Each object is a row. Each numeric key is a series. Nested objects flatten to dotted keys.
 
   ```bash
   vizb data.json -o output.html
@@ -48,16 +45,14 @@ Turn any CSV or JSON table into charts — numeric columns/fields become series.
 </Tabs>
 
 <Aside type="note">
-  A `go test -bench -json` event stream is **not** treated as tabular JSON — it stays a Go
-  benchmark. Full rules in the [Tabular Data guide](/guides/data).
+  A `go test -bench -json` event stream is **not** treated as tabular JSON. It stays a Go benchmark. Full rules are in the [Tabular Data guide](/guides/data).
 </Aside>
 
-Detection is automatic, but you can force the parser with `-P csv` or `-P json`.
+Detection is automatic. You can force the parser with `-P csv` or `-P json`.
 
 ## Visualize Benchmarks
 
-Pipe benchmark output straight in. The framework is detected from the content, so no `--parser` is
-needed in most cases.
+Pipe benchmark output straight in. The framework is detected from the content. No `--parser` is needed in most cases.
 
 <Tabs syncKey="lang">
   <TabItem label="Go" icon="seti:go">
@@ -115,13 +110,13 @@ needed in most cases.
   ```
 
   <Aside type="caution" title="Experimental">
-    Vitest benchmarking is experimental and does not follow SemVer — output-format changes may break the parser. See the [Parser Guide](/guides/parsers).
+    Vitest benchmarking is experimental and does not follow SemVer. Output-format changes may break the parser. See the [Parser Guide](/guides/parsers).
   </Aside>
 
   </TabItem>
 </Tabs>
 
-Detection is automatic, but you can force the parser with `-P go`, `-P rs:criterion`, `-P rs:divan`, `-P js:vitest`, or `-P js:tinybench`.
+Detection is automatic. You can force the parser with `-P go`, `-P rs:criterion`, `-P rs:divan`, `-P js:vitest`, or `-P js:tinybench`.
 
 <Aside type="tip">
   Save any run as JSON to merge it later — `vizb bench.txt -o output.json`, then `vizb output.json -o output.html`. Every supported format and the metrics each one extracts are covered in the [Parser Guide](/guides/parsers).
@@ -131,7 +126,9 @@ Detection is automatic, but you can force the parser with `-P go`, `-P rs:criter
 
 <CardGrid cols={2}>
   <LinkCard title="Installation" description="Go install, binary download, and PATH setup." href="/installation" />
-  <LinkCard title="Parser Guide" description="Choose the right parser — Go, Rust, JavaScript, or generic CSV/JSON." href="/guides/parsers" />
+  <LinkCard title="Tabular Data" description="Chart any CSV or JSON table." href="/guides/data" />
+  <LinkCard title="Parser Guide" description="Supported inputs — CSV, JSON, Go, Rust, JavaScript." href="/guides/parsers" />
   <LinkCard title="Commands" description="All CLI flags and options." href="/commands/root" />
   <LinkCard title="Grouping Guide" description="Multi-dimensional data with patterns and regex." href="/guides/grouping" />
+  <LinkCard title="Charts" description="Pick the right chart type for your data." href="/charts" />
 </CardGrid>

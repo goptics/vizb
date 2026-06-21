@@ -1,13 +1,37 @@
 ---
 title: Examples
-description: Live benchmark visualizations and example data across Go, JavaScript, and Rust.
+description: Example datasets and live dashboards for data visualization and benchmarks.
 ---
 
 import { LinkCard, Aside } from '@astrojs/starlight/components';
 
-Benchmark files are organized by language under [`examples/`](https://github.com/goptics/vizb/tree/main/examples). Push changes to `examples/{go,javascript,rust}/` to trigger a per-language CI pipeline that converts `.txt` bench files into an interactive HTML dashboard and deploys it to `vizb.goptics.org/examples/{lang}`.
+## Generic Data Visualization
 
-## Live Dashboards
+Vizb can chart any CSV or JSON table. Here is a simple sales CSV:
+
+```csv
+region,product,month,sales,latency
+Asia,Widget,2024-01,100,12
+UAE,Gadget,2024-01,80,15
+EU,Gizmo,2024-01,60,11
+Asia,Widget,2024-02,120,10
+UAE,Gadget,2024-02,90,14
+EU,Gizmo,2024-02,70,12
+```
+
+Save it as `sales.csv` and run:
+
+```bash
+vizb sales.csv -g region,product,month -p n,x,y -c bar,line -o sales.html
+```
+
+This creates one chart per region. The X-axis shows the product. The Y-axis shows the month. Both `sales` and `latency` become series.
+
+## Benchmark Dashboards
+
+Benchmark files are organized by language under [`examples/`](https://github.com/goptics/vizb/tree/main/examples). Push changes to `examples/{go,javascript,rust}/` to trigger a per-language CI pipeline. The pipeline converts `.txt` bench files into an interactive HTML dashboard and deploys it to `vizb.goptics.org/examples/{lang}`.
+
+### Live Dashboards
 
 | Language   | Workflow | Dashboard |
 |------------|----------|-----------|
@@ -15,7 +39,7 @@ Benchmark files are organized by language under [`examples/`](https://github.com
 | JavaScript | [deploy-examples-javascript.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/deploy-examples-javascript.yml) | [vizb.goptics.org/examples/javascript/](https://vizb.goptics.org/examples/javascript/) |
 | Rust       | [deploy-examples-rust.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/deploy-examples-rust.yml)     | [vizb.goptics.org/examples/rust/](https://vizb.goptics.org/examples/rust/)     |
 
-## Go Benchmarks Inputs
+### Go Benchmarks Inputs
 
 | Benchmark | Input File | Pattern | Regex | Dashboard |
 |-----------|-----------|---------|-------|-----------|
@@ -29,14 +53,14 @@ Benchmark files are organized by language under [`examples/`](https://github.com
 | Worker Pools | [worker-pools.txt](https://github.com/goptics/vizb/blob/main/examples/go/06-worker-pools.txt) | `n/y/x` | — | [Live](https://vizb.goptics.org/examples/go/?b=7) |
 
 
-## JavaScript Benchmarks Inputs
+### JavaScript Benchmarks Inputs
 
 | Benchmark | Input File | Pattern | Regex | Dashboard |
 |-----------|-----------|---------|-------|-----------|
 | Tinybench | [tinybench.txt](https://github.com/goptics/vizb/blob/main/examples/javascript/00-tinybench.txt) | `x/y` | — | [Live](https://vizb.goptics.org/examples/javascript/) |
 | Vitest | [vitest.txt](https://github.com/goptics/vizb/blob/main/examples/javascript/01-vitest.txt) | — | `n=(?<y>.*)/(?<x>.*)` | [Live](https://vizb.goptics.org/examples/javascript/?b=1) |
 
-## Rust Benchmarks Inputs
+### Rust Benchmarks Inputs
 
 | Benchmark | Input File | Pattern | Regex | Dashboard |
 |-----------|-----------|---------|-------|-----------|
@@ -47,10 +71,10 @@ Benchmark files are organized by language under [`examples/`](https://github.com
 
 | Repository | Short Description | Workflow | Dashboard |
 |------------|-------------------|----------|-----------|
-| [goptics/vizb](https://github.com/goptics/vizb) | Vizb's own benchmark dashboards for Go, JavaScript, and Rust manges CI/CD pipeline by vizb action | [deploy-examples-*.yml](https://github.com/goptics/vizb/tree/main/.github/workflows) | [Live](https://vizb.goptics.org/examples/) |
-| [goptics/varmq-benchmarks](https://github.com/goptics/varmq-benchmarks) | Worker pool benchmarks comparing VarMQ vs PondV2 across workload patterns and CPU configs | [bench.yml](https://github.com/goptics/varmq-benchmarks/blob/main/.github/workflows/bench.yml) | [Live](https://goptics.github.io/varmq-benchmarks/) |
-| [goptics/sortbench](https://github.com/goptics/sortbench) | Sorting algorithm benchmarks across git versions using per-tag vizb merging (bubble, insertion, shell, quicksort, merge) | [bench.yml](https://github.com/goptics/sortbench/blob/main/.github/workflows/bench.yml) | [Live](https://goptics.github.io/sortbench/) |
-| [goptics/varmq](https://github.com/goptics/varmq) | Tracks benchmark evolution across VarMQ release versions, generating a cumulative bench log dashboard via vizb action on each release | [deploy-bench-log.yml](https://github.com/goptics/varmq/blob/main/.github/workflows/deploy-bench-log.yml) | [Live](https://varmq.goptics.org/bench-log/) |
+| [goptics/vizb](https://github.com/goptics/vizb) | Vizb's own benchmark dashboards for Go, JavaScript, and Rust. Manages CI/CD pipeline by vizb action. | [deploy-examples-*.yml](https://github.com/goptics/vizb/tree/main/.github/workflows) | [Live](https://vizb.goptics.org/examples/) |
+| [goptics/varmq-benchmarks](https://github.com/goptics/varmq-benchmarks) | Worker pool benchmarks comparing VarMQ vs PondV2 across workload patterns and CPU configs. | [bench.yml](https://github.com/goptics/varmq-benchmarks/blob/main/.github/workflows/bench.yml) | [Live](https://goptics.github.io/varmq-benchmarks/) |
+| [goptics/sortbench](https://github.com/goptics/sortbench) | Sorting algorithm benchmarks across git versions using per-tag vizb merging (bubble, insertion, shell, quicksort, merge). | [bench.yml](https://github.com/goptics/sortbench/blob/main/.github/workflows/bench.yml) | [Live](https://goptics.github.io/sortbench/) |
+| [goptics/varmq](https://github.com/goptics/varmq) | Tracks benchmark evolution across VarMQ release versions, generating a cumulative bench log dashboard via vizb action on each release. | [deploy-bench-log.yml](https://github.com/goptics/varmq/blob/main/.github/workflows/deploy-bench-log.yml) | [Live](https://varmq.goptics.org/bench-log/) |
 
 **Using vizb in your project?** [Open a PR](https://github.com/goptics/vizb/edit/main/docs/src/content/docs/examples.mdx) to add your entry!
 

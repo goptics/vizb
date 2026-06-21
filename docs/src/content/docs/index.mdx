@@ -1,9 +1,9 @@
 ---
 title: Vizb
-description: Render any CSV or JSON table — or benchmark output from Go, Rust, and JavaScript — as interactive 4D charts in one HTML file.
+description: Turn any CSV or JSON table into interactive 4D charts in one HTML file. Also supports benchmark output from Go, Rust, and JavaScript.
 template: splash
 hero:
-  tagline: Any CSV, JSON, or benchmark output → interactive 4D charts. One self-contained HTML file. No server, no build step.
+  tagline: Any CSV or JSON table → interactive 4D charts. One self-contained HTML file. No server, no build step.
   image:
     html: <svg class="vizb-hero" viewBox="0 0 300 300" fill="none" aria-label="Vizb" stroke-linejoin="round" stroke-width="2"><path class="viz-path" d="M32.8125 56.25L107.797 290.625H173.438L98.4375 56.25H32.8125Z" fill="#5470C6" stroke="#5470C6"/><path class="viz-path" d="M107.797 290.625H173.422L192.172 234.375H126.547L107.797 290.625Z" fill="#1A202C" stroke="#1A202C"/><path class="viz-path" d="M126.562 234.375L145.424 178.022H211.017L192.187 234.375H126.562Z" fill="#3BA272" stroke="#3BA272"/><path class="viz-path" d="M145.424 178.022L164.237 121.429H229.831L211.017 178.022H145.424Z" fill="#FC8452" stroke="#FC8452"/><path class="viz-path" d="M164.237 121.429L201.563 9.375H267.188L229.831 121.429H164.237Z" fill="#EE6666" stroke="#EE6666"/></svg>
   actions:
@@ -36,25 +36,28 @@ Pipe a public JSON API into vizb — no file, no build step. Open `index.html` a
 
 <CardGrid stagger>
   <Card title="Any CSV or JSON" icon="seti:csv">
-    Hand vizb a table and it charts it. Numeric columns become series; vizb detects the format from the content — no flags required.
+    Hand vizb a table and it charts it. Numeric columns become series. Vizb detects the format from the content. No flags required.
+  </Card>
+  <Card title="Interactive UI" icon="laptop">
+    Vue.js-powered interface in a single HTML file. Sort, swap axes, toggle scale, open statistics, and export JPEG. No server needed.
   </Card>
   <Card title="Multi-Chart" icon="analytics">
-    Bar, line, pie, and heatmap charts in a single view. Sort, swap axes, and toggle logarithmic scale.
+    Bar, line, scatter, pie, heatmap, and radar charts in one view. Choose which renderers to embed with `--charts`.
   </Card>
   <Card title="Smart Grouping" icon="list-format">
-    Extract dimensions from data labels and series names using pattern matching or regex. 1D, 2D, or 3D data — vizb handles it.
+    Extract dimensions from labels and column values using pattern matching or regex. Handle 1D, 2D, 3D, or 4D data.
+  </Card>
+  <Card title="Flexible Input" icon="document">
+    Read CSV and JSON tables. Also read benchmark output from Go, Rust (Criterion, Divan), and JavaScript (Vitest, Tinybench). Vizb auto-detects the format.
   </Card>
   <Card title="Merge & Compare" icon="code-branch">
     Merge datasets from multiple runs, machines, or releases. Tag with version labels for cross-release comparison.
   </Card>
-  <Card title="Interactive UI" icon="laptop">
-    Vue.js-powered interface with sortable charts, axis swapping, scale toggles, a statistics panel, and JPEG export. All in a single HTML file.
-  </Card>
-  <Card title="Flexible Input" icon="document">
-    One tool, many sources: CSV and JSON tables, plus benchmark output from Go, Rust (Criterion, Divan), and JavaScript (Vitest, Tinybench). Read a file or pipe from stdin — vizb detects the rest.
+  <Card title="Statistics Panel" icon="approve-check">
+    Per-series descriptive stats and a Pearson/Spearman correlation matrix. Computed off-thread so the UI stays responsive.
   </Card>
   <Card title="CI Ready" icon="seti:puppet">
-    First-class GitHub Action. Run benchmarks, tag releases, merge history, and deploy — all from your workflow.
+    First-class GitHub Action. Run benchmarks, tag releases, merge history, and deploy from your workflow.
   </Card>
 </CardGrid>
 

@@ -37,7 +37,7 @@ vizb [target] [flags]
   vizb data.json -o output.html                   # ✨ json
   go test -bench . -json | vizb -o output.html    # ✨ go
   ```
-  With `--parser auto` (the default), vizb inspects the input content, picks the right parser, and prints its choice. See [Auto-Detection](/guides/auto-detection).
+  With `--parser auto` (the default), vizb inspects the input content, picks the right parser, and prints its choice.
   </TabItem>
 </Tabs>
 
@@ -65,9 +65,8 @@ npx vitest bench | vizb --parser js:vitest -o output.html
 node bench.js | vizb --parser js:tinybench -o output.html
 ```
 
-See the [Parser Guide](/guides/parsers) for each parser's metrics, the
-[Tabular Data guide](/guides/data) for CSV/JSON rules, and [Auto-Detection](/guides/auto-detection)
-for how the format is chosen.
+See the [Parser Guide](/guides/parsers) for each parser's metrics, and the
+[Tabular Data guide](/guides/data) for CSV/JSON rules.
 
 ## Flags
 

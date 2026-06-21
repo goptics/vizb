@@ -5,66 +5,73 @@ description: Per-series descriptive statistics and a correlation matrix, compute
 
 import { CardGrid, Card, Aside } from '@astrojs/starlight/components';
 
-Every chart has a **statistics** button that opens a panel over the chart area. It
-has two tabs — a **descriptive** table and a **correlation** matrix — both computed
-in a Web Worker so the UI never blocks, even on large datasets.
+Every chart has a **statistics** button. It opens a panel over the chart area. The panel has two tabs — a **descriptive** table and a **correlation** matrix. Both are computed in a Web Worker. The UI never blocks, even on large datasets.
 
-These stats work on any dataset, and they're especially handy for exploring an
-unfamiliar CSV or JSON table before you decide what to chart.
+These stats work on any dataset. They are especially handy for exploring an unfamiliar CSV or JSON table before you decide what to chart.
 
 <Aside type="note">
-  Statistics run **off the main thread**. The descriptive table fills in as soon as
-  the panel opens; the correlation matrix is computed lazily the first time you open
-  its tab, then cached — re-opening a tab never recomputes.
+  Statistics run **off the main thread**. The descriptive table fills in as soon as the panel opens. The correlation matrix is computed lazily the first time you open its tab, then cached. Re-opening a tab never recomputes.
 </Aside>
 
 {/* TODO: Add GIF showing the stats button opening the panel */}
 
 ## Descriptive Statistics
 
-A sortable, searchable table with one row per series and 20 metrics per row:
+A sortable, searchable table with one row per series and **33 metrics per row** across seven groups:
 
 | Group | Metrics |
 |-------|---------|
-| Counts | Count, Missing, Unique |
-| Center | Mean, Median, Mode |
-| Spread | SD, Variance, Range, IQR, MAD, CV |
-| Extremes | Min, Max |
+| Counts | Count, Missing, Unique, Zeros, Negatives |
+| Center | Mean, Median, Mode, Geo Mean, Harm Mean, Trim Mean |
+| Spread | SD, Variance, CV, SEM, CQV |
+| Extremes | Min, Max, Range, IQR, MAD, Lower Fence, Upper Fence, Outliers |
 | Shape | Skew, Kurtosis |
-| Percentiles | P5, P25, P75, P95 |
+| Percentiles | P1, P5, P10, P25, P75, P90, P95, P99 |
+| Confidence | 95% CI Low, 95% CI High |
 
-- **Sort** any column ascending/descending by clicking its header.
-- **Search** to filter the visible series; a result count shows how many match.
+- **Sort** any column ascending/descending by clicking its header. Click the same header a third time to return to natural series order.
+- **Search** to filter the visible series. A search box appears when the table has more than 20 series. The result count shows how many match.
+- **Virtualized rendering** keeps the table fast even with thousands of series — only the visible rows mount.
+- **Format hints** are built in. CV renders as a percentage. Count, Missing, Unique, Zeros, Negatives, and Outliers render as plain integers. Everything else renders as a compact significant-figure number with `NaN` shown as `—`.
 - **Export** the table to CSV with the download button.
 
 <Aside type="note">
-  Values are treated as a **finite population** (variance/SD use the `/n` divisor;
-  skewness and kurtosis use population moments). Non-finite values (`NaN` / `±Inf`,
-  including missing cells from CSV/JSON) are dropped before computing, so gaps never
-  bias a statistic.
+  Values are treated as a **finite population** (variance/SD use the `/n` divisor; skewness and kurtosis use population moments). Non-finite values (`NaN` / `±Inf`, including missing cells from CSV/JSON) are dropped before computing. Gaps never bias a statistic.
 </Aside>
+
+<Aside type="tip">
+  A few of the metrics have caveats worth knowing. **Geo Mean** and **Harm Mean** are `NaN` when any value is zero or negative — they are only defined on strictly positive data. **Trim Mean** drops 10% from each end. **Lower Fence** and **Upper Fence** are Tukey's fences (`Q1 − 1.5·IQR` and `Q3 + 1.5·IQR`); **Outliers** counts points outside them. The 95% confidence interval uses `mean ± 1.96·SEM`.
+</Aside>
+
+### 3D Charts
+
+For charts that use the z-axis (3D bars, 3D lines, 3D scatter), the descriptive table splits each series into per-z rows labeled `Series / Z`. Each row gets its own 33-metric profile so you can compare slices of a z-group separately instead of averaging them.
 
 {/* TODO: Add GIF showing sorting and searching the descriptive table */}
 
 ## Correlation Matrix
 
-A symmetric matrix of pairwise correlations between the data's series, rendered as an
-echarts heatmap. Cells are colored on a diverging **red → neutral → green** scale for
-`r ∈ [-1, 1]`.
+A symmetric matrix of pairwise correlations between the chart's entities — the **series** (x-axis), **categories** (y-axis), or **z-axis values**, depending on the data shape. Rendered as an echarts heatmap. Cells are colored on a diverging **red → neutral → green** scale for `r ∈ [-1, 1]`.
 
-- **Method toggle** — switch between **Pearson** (linear) and **Spearman** (rank)
-  correlation. Both are precomputed, so toggling is instant.
-- **Fullscreen** — expand the matrix to the full viewport for large series counts.
-- **Export** the matrix to CSV.
+- **Method toggle** — pick any of four correlation methods. All are precomputed, so toggling is instant:
+  - **Pearson r** — linear correlation. The default. Best for roughly linear, roughly normal data.
+  - **Spearman ρ** — rank correlation. Robust to monotonic non-linear relationships and outliers.
+  - **Kendall τ** — rank-based, pair-counted. Also robust to non-linearity, often preferred on small samples with many ties.
+  - **Distance** — bias-corrected distance correlation (Székely & Rizzo 2014). Detects *any* dependence, not just monotonic — but values are in `[0, 1]` and direction is lost. Requires at least four complete pairs per entity.
+- **Axis selector** — choose which dimension supplies the matrix's entities. The default auto-picks the smallest usable axis (x → y → z) so the matrix stays readable. You can override to correlate a different dimension when the data has more than one.
+- **Fullscreen** — expand the matrix to the full viewport for large entity counts.
+- **Export** the matrix to CSV (the file is suffixed with the active method, e.g. `descriptive-correlation-pearson.csv`).
 
-Cell labels are hidden once there are many series (so the grid stays readable); the
-tooltip always names both series and shows the exact `r`. Cells that can't be computed
-(a constant series, or too few overlapping points) are dropped and render empty.
+Cell labels are hidden once there are many entities. This keeps the grid readable. The tooltip always names both entities and shows the exact `r`. Cells that can't be computed (a constant series, or too few overlapping points) are dropped and render empty.
+
+<Aside type="note">
+  All four methods use **pairwise-complete observations** — only positions where *both* series are finite contribute to a cell. Entities with fewer than two complete pairs get `NaN`. Distance correlation additionally needs at least four complete pairs.
+</Aside>
 
 {/* TODO: Add GIF showing the correlation matrix with the Pearson/Spearman toggle */}
 
 ## Next Steps
 
 - [Heatmap Chart](/charts/heatmap) — the chart-area heatmap (distinct from this matrix)
-- [3D Charts](/charts/3d) — z-axis visualization
+- [3D Charts](/charts/3d) — z-axis visualization (also where per-z stats come from)
 - [Tabular Data](/guides/data) — charting CSV/JSON, where descriptive stats shine

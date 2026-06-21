@@ -1,28 +1,51 @@
 ---
-title: Parser Guide
-description: Choose the right parser — generic CSV/JSON, or benchmark output from Go, Rust (Criterion, Divan), and JavaScript (Vitest, Tinybench).
+title: Supported Inputs
+description: Vizb reads CSV/JSON tables and benchmark output from Go, Rust (Criterion, Divan), and JavaScript (Vitest, Tinybench).
 ---
 
 import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 
-Vizb reads **generic CSV/JSON tables and multiple benchmark frameworks** through its parser
-registry. Use `--parser` to select one — or leave it as the default `auto` and let vizb detect
-the format from the input content.
+Vizb reads generic tables and benchmark output. Use `--parser` to pick one. Or leave it as the default `auto` and let vizb detect the format from the content.
 
 <Aside type="tip">
-  `--parser` defaults to **`auto`**: vizb inspects the content, picks the right parser, and prints
-  its choice. See [Automatic Parser Detection](/guides/auto-detection). The CSV and JSON parsers
-  are documented in depth in the [Tabular Data guide](/guides/data).
+  `--parser` defaults to **`auto`**. Vizb inspects the content, picks the right parser, and prints its choice. The CSV and JSON parsers are documented in depth in the [Tabular Data guide](/guides/data).
 </Aside>
+
+## Generic Tables
+
+CSV and JSON are the simplest inputs. Hand vizb a table and it charts the numeric columns.
+
+<Tabs syncKey="parser">
+  <TabItem label="CSV" icon="seti:csv">
+  Comma-separated tables. Numeric columns become series. Use `--group` to promote other columns into chart dimensions.
+
+  ```bash
+  vizb data.csv -o output.html
+  vizb data.csv -P csv -o output.html
+  ```
+
+  See the [Tabular Data guide](/guides/data) for full rules on delimiters, headers, grouping, and aggregation.
+  </TabItem>
+
+  <TabItem label="JSON" icon="seti:json">
+  A JSON array of objects. Each object is a row. Each numeric key is a series. Nested objects flatten to dotted keys.
+
+  ```bash
+  vizb data.json -o output.html
+  vizb data.json -P json -o output.html
+  ```
+
+  See the [Tabular Data guide](/guides/data) for full rules on shape, `--json-path`, grouping, and aggregation.
+  </TabItem>
+</Tabs>
 
 ## Why Multiple Parsers
 
-Each tabular format — and each benchmark framework — produces output in a different shape. Vizb's
-parser registry knows how to read them all and convert the results into a common structure, so
-your charts, grouping, filtering, and merging work identically regardless of where the data came
-from.
+Each input format has a different shape. Vizb's parser registry reads them all. It converts the results into one common structure. Your charts, grouping, filtering, and merging then work the same way regardless of where the data came from.
 
-## Choosing a Benchmark Parser
+## Benchmark Parsers
+
+Vizb also parses benchmark output from three languages and five frameworks.
 
 <Tabs syncKey="parser">
   <TabItem label="Go" icon="seti:go">
@@ -34,7 +57,7 @@ from.
   go test -bench . | vizb --parser go -o output.html
   ```
 
-  **JSON bench events:** the `go test -bench -json` event stream is detected automatically (no `--parser` needed) and converted before charting. It is never mistaken for tabular JSON.
+  **JSON bench events:** `go test -bench -json` is detected automatically. No `--parser` is needed. It is converted before charting. It is never mistaken for tabular JSON.
 
   **Metrics extracted:**
 
@@ -63,7 +86,7 @@ from.
   | Latency upper | Upper bound (±) |
 
   <Aside type="note">
-    Criterion output contains ANSI color codes — vizb strips these automatically before parsing.
+    Criterion output contains ANSI color codes. Vizb strips these automatically.
   </Aside>
   </TabItem>
 
@@ -85,7 +108,7 @@ from.
   | Samples | Number of samples collected |
 
   <Aside type="note">
-    The `iters` column from Divan output is not extracted — it represents per-sample iteration counts rather than an aggregate metric.
+    The `iters` column from Divan output is not extracted. It represents per-sample iteration counts rather than an aggregate metric.
   </Aside>
   </TabItem>
 
@@ -122,7 +145,7 @@ from.
 
   Produces names `n=100/bubbleSort` and `n=100/insertionSort`. Use `--group-pattern` with any valid 2D combination (`n/x`, `n/y`, `x/n`, `y/n`, `x/y`, `y/x`) to split the suite name into its own dimension.
 
-  See the [Grouping Guide](/guides/grouping) for detailed pattern and regex syntax.
+  See the [Grouping Guide](/guides/grouping) for pattern and regex syntax.
   </TabItem>
 
   <TabItem label="Tinybench" icon="seti:javascript">
@@ -149,24 +172,24 @@ from.
 | Key | Framework / Format | Language |
 |-----|--------------------|----------|
 | `auto` | Detect from content (default) | — |
+| `csv` | Generic CSV table | Any |
+| `json` | Generic JSON array of objects | Any |
 | `go` | Go testing (benchfmt) | Go |
 | `rs:criterion` | Criterion | Rust |
 | `rs:divan` | Divan | Rust |
 | `js:vitest` | Vitest | JavaScript / TypeScript |
 | `js:tinybench` | Tinybench | JavaScript / TypeScript |
-| `csv` | Generic CSV table | Any |
-| `json` | Generic JSON array of objects | Any |
 
 ## Add a New Parser
 
-Want to add support for a benchmark framework or language not listed here? Parser contributions are welcome. Here's what the process looks like:
+Want to add support for a format or framework not listed here? Parser contributions are welcome. The process looks like this:
 
-1. **Choose a key** following the `<lang>:<framework>` convention (e.g., `py:pytest`, `java:jmh`)
-2. **Implement a parse function** that extracts `[]shared.DataPoint` from the framework's output
-3. **Register it** via `parser.Register("your-key", YourParseFunc)` in an `init()` block
-4. **Add tests** with real output samples and edge cases
-5. **Open a PR** on [GitHub](https://github.com/goptics/vizb) — the existing parsers in `pkg/parser/` are good references to follow
+1. **Choose a key** following the `<lang>:<framework>` convention (e.g., `py:pytest`, `java:jmh`).
+2. **Implement a parse function** that extracts `[]shared.DataPoint` from the framework's output.
+3. **Register it** via `parser.Register("your-key", YourParseFunc)` in an `init()` block.
+4. **Add tests** with real output samples and edge cases.
+5. **Open a PR** on [GitHub](https://github.com/goptics/vizb). The existing parsers in `pkg/parser/` are good references.
 
 <Aside type="tip">
-  The parser registry is designed to be extensible. As long as your parse function returns benchmark data with names, values, and optional metadata, everything else — grouping, filtering, merging, time unit conversion — works automatically.
+  The parser registry is designed to be extensible. As long as your parse function returns data with names, values, and optional metadata, everything else — grouping, filtering, merging, time unit conversion — works automatically.
 </Aside>
