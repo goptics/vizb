@@ -215,6 +215,50 @@ describe('useChartPipeline — empty data', () => {
   })
 })
 
+describe('useChartPipeline — value mode setArrangement', () => {
+  it('posts setArrangement when arrangement changes with value-mode axes', async () => {
+    const axes: Axis[] = [
+      { key: 'x', label: 'price', type: 'value' },
+      { key: 'y', label: 'latency', type: 'value' },
+    ]
+
+    scope.stop()
+    TrackedMockWorker.instances.length = 0
+    scope = effectScope()
+    scope.run(() =>
+      useChartPipeline(
+        rawData,
+        arrangement,
+        ref(defaultLabels),
+        activeGroupId,
+        sort,
+        showLabels,
+        scale,
+        threeD,
+        ref(axes),
+        ref('scatter')
+      )
+    )
+    await vi.advanceTimersByTimeAsync(50)
+    const w = TrackedMockWorker.instances[0]!
+    w.postMessage.mock.calls.find((c) => c[0].type === 'init')
+    w.__emit({
+      type: 'ready',
+      dataEpoch: 1,
+      signatures: [{ signature: '__value_mode__', statTemplate: { type: 'value' } }],
+      groupNames: [],
+    })
+    w.postMessage.mockClear()
+
+    arrangement.value = { identityString: 'xy', targetString: 'yx' }
+    await vi.advanceTimersByTimeAsync(50)
+
+    const setCall = w.postMessage.mock.calls.find((c) => c[0].type === 'setArrangement')
+    expect(setCall).toBeDefined()
+    expect(setCall![0]).toMatchObject({ targetString: 'yx', identityString: 'xy' })
+  })
+})
+
 describe('useChartPipeline — value mode axes forwarding', () => {
   it('includes axes in the init postMessage when provided', async () => {
     const axes: Axis[] = [

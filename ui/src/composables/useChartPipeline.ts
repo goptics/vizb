@@ -3,7 +3,7 @@ import type { AxisLabels, DataPoint, ChartData, Sort, ScaleType, Axis, ChartType
 import TransformWorker from '../workers/transform.worker.ts?worker&inline'
 import type { WorkerResponse } from '../workers/transform.worker'
 import { listChartSignatures } from '../lib/transform'
-import { isValueMode, isHybridMode, valueModeSwapEnabled } from '../lib/utils'
+import { isValueMode, isHybridMode } from '../lib/utils'
 
 // The arrangement the worker projects/groups under: present source axes in
 // canonical order (identityString, e.g. "nx") and the selected target order
@@ -170,12 +170,8 @@ export function useChartPipeline(
   // are dropped.
   const activeChartType = () => unref(chartType) ?? 'bar'
   const axisList = () => toRaw(unref(axes))
-  const scatterValueMode = () => activeChartType() === 'scatter' && isValueMode(axisList())
-
   const setArrangement = () => {
     if (!lastSignatures.length || readyInFlight || dataPending) return
-    // 2-col scatter value mode: swap is a no-op. 3-col (--axes x,y,z) re-projects on swap.
-    if (scatterValueMode() && !valueModeSwapEnabled(axisList())) return
     readyInFlight = true
     // labels is a fresh plain object from swapAxisLabels (off now-plain axisLabels),
     // so postMessage clones it natively — no proxy stripping needed.
@@ -298,7 +294,6 @@ export function useChartPipeline(
   watch(
     () => [arrangement.value.identityString, arrangement.value.targetString] as const,
     () => {
-      if (scatterValueMode() && !valueModeSwapEnabled(axisList())) return
       startBatch()
       clearTimeout(arrangeDebounce)
       arrangeDebounce = setTimeout(setArrangement, 50)

@@ -248,7 +248,7 @@ describe('transform.worker — value mode compute', () => {
     expect(chart.valueTuples![0]).toEqual([1, 2])
   })
 
-  it('setArrangement after value mode init preserves __value_mode__ signature', () => {
+  it('setArrangement xy→yx flips valueTuples on 2-col value mode', () => {
     send(
       buildInit({
         data: [valueDp('100', '12')],
@@ -259,10 +259,11 @@ describe('transform.worker — value mode compute', () => {
     postSpy.mockClear()
 
     send({ type: 'setArrangement', identityString: 'xy', targetString: 'yx' })
+    ready()
 
-    const r = ready()
-    expect(r!.signatures).toHaveLength(1)
-    expect(r!.signatures[0]!.signature).toBe('__value_mode__')
+    send(buildCompute({ signature: '__value_mode__', groupName: '' }))
+    const chart = charts()[0]!.chart as ChartData
+    expect(chart.valueTuples).toEqual([[12, 100]])
   })
 
   it('3-col value mode compute with xyz swap yields continuous render3D', () => {

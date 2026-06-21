@@ -32,7 +32,7 @@ import {
   projectAndGroup,
   type ChartSignature,
 } from '../lib/transform'
-import { isValueMode, isHybridMode, valueModeHasZAxis } from '../lib/utils'
+import { isValueMode, isHybridMode } from '../lib/utils'
 import { translateAxisKey } from '../lib/swap'
 import type { DataPoint, AxisLabels, Sort, ChartData, ScaleType, Axis, ChartType } from '../types'
 
@@ -205,10 +205,6 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
       // applyArrangement would call listChartSignatures on stats-less rows and
       // wipe the synthetic __value_mode__ signature.
       if (state.valueMode) {
-        if (!valueModeHasZAxis(state.axes)) {
-          post(valueModeReadyReply(state))
-          return
-        }
         state.identityString = msg.identityString
         state.targetString = msg.targetString
         post(valueModeReadyReply(state))

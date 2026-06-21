@@ -13,6 +13,7 @@ import {
   type SettingFieldKey,
   type SettingFieldValueMap,
 } from '../composables/settings/fieldRegistry'
+import { filterScatterDatasetFields } from '../composables/settings/settingsPanelFilter'
 import { arrangementHasChartZ } from '../lib/swap'
 import { canOfferValue3D, valueModeSwapEnabled } from '../lib/utils'
 import type { BarConfig, ChartType, LineConfig, ScatterConfig } from '../types'
@@ -113,11 +114,10 @@ const fieldGroups = computed(() => {
   return partitionRenderableFields(fields)
 })
 
-// Value mode: hide sort always; hide swap only for 2-col --axes (no z column).
-// Scatter value/hybrid transform: sort and swap are no-ops — hide both.
+// Scatter value/hybrid: hide sort. Swap only for value mode (x/y/z permutations).
 const filteredGeneral = computed(() => {
   if (isValueModeDataset.value) {
-    return fieldGroups.value.general.filter((f) => f.key !== 'sort' && f.key !== 'swap')
+    return filterScatterDatasetFields(fieldGroups.value.general, activeDataSet.value?.axes)
   }
   if (!isValueMode.value) return fieldGroups.value.general
   const axes = activeDataSet.value?.axes
