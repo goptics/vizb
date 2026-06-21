@@ -2,6 +2,7 @@ package cli
 
 import (
 	"encoding/json"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -282,16 +283,58 @@ func (s *PipelineSuite) TestRunLinearAutoParser() {
 	s.FileExists(out)
 }
 
+func (s *PipelineSuite) TestFormatAggregationGroup() {
+	tests := []struct {
+		name string
+		cfg  parser.Config
+		want string
+	}{
+		{
+			name: "two columns with name and x dimensions",
+			cfg:  parser.Config{GroupPattern: "name,x", Group: []string{"name", "date"}},
+			want: "by columns: name, date (name: name, x: date)",
+		},
+		{
+			name: "three columns with name x y dimensions",
+			cfg:  parser.Config{GroupPattern: "name,x,y", Group: []string{"region", "product", "month"}},
+			want: "by columns: region, product, month (name: region, x: product, y: month)",
+		},
+		{
+			name: "single column singular phrasing",
+			cfg:  parser.Config{GroupPattern: "x", Group: []string{"name"}},
+			want: "by column: name (x: name)",
+		},
+		{
+			name: "curly axis labels override column names",
+			cfg:  parser.Config{GroupPattern: "y{Region},x{Product}", Group: []string{"region", "product"}},
+			want: "by columns: region, product (y: Region, x: Product)",
+		},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			s.Equal(tt.want, formatAggregationGroup(tt.cfg))
+		})
+	}
+}
+
 func (s *PipelineSuite) TestPrepareDataAggregatesCSV() {
 	csvFile := s.writeFile("grouped.csv", "name,sells,date\nalpha,10,2024-01\nalpha,20,2024-01\nbeta,5,2025-02\n")
 	cfg := parser.Config{GroupPattern: "name,x", Group: []string{"name", "date"}}
 
-	oldStdout, oldStderr := os.Stdout, os.Stderr
-	devnull, _ := os.Open(os.DevNull)
-	os.Stdout, os.Stderr = devnull, devnull
-	defer func() { os.Stdout, os.Stderr = oldStdout, oldStderr; devnull.Close() }()
+	r, w, err := os.Pipe()
+	s.Require().NoError(err)
+	oldStdout := os.Stdout
+	os.Stdout = w
+	defer func() { os.Stdout = oldStdout }()
 
 	results := prepareData(csvFile, "csv", cfg)
+	w.Close()
+
+	output, err := io.ReadAll(r)
+	s.Require().NoError(err)
+	s.Contains(string(output), "by columns: name, date (name: name, x: date)")
+
 	s.Len(results, 2)
 	s.Equal("alpha", results[0].Name)
 	s.Equal("2024-01", results[0].XAxis)

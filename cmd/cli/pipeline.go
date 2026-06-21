@@ -198,7 +198,7 @@ func prepareData(filePath, parserKey string, cfg parser.Config) []shared.DataPoi
 		shared.ExitWithError("--axes is only supported for csv/json parsers", nil)
 	}
 
-	fmt.Println(style.Info.Render("⚙️  Parsing data..."))
+	fmt.Println(style.Info.Render("⚙️ Parsing data..."))
 	data := parseFn(filePath, cfg)
 
 	// CSV/JSON emit one DataPoint per row; when grouping is active, multiple rows
@@ -206,7 +206,7 @@ func prepareData(filePath, parserKey string, cfg parser.Config) []shared.DataPoi
 	// so the output isn't a row-per-record dump. Benchmark parsers are excluded.
 	if (parserKey == "csv" || parserKey == "json") && len(cfg.Group) > 0 {
 		before := len(data)
-		fmt.Println(style.Info.Render(fmt.Sprintf("🧮 Aggregating %d rows...", before)))
+		fmt.Println(style.Info.Render(fmt.Sprintf("🧮 Aggregating %d rows %s...", before, formatAggregationGroup(cfg))))
 		data = shared.AggregateDataPoints(data)
 		fmt.Println(style.Info.Render(fmt.Sprintf("✅ Aggregated into %d grouped data points", len(data))))
 	}
@@ -216,6 +216,32 @@ func prepareData(filePath, parserKey string, cfg parser.Config) []shared.DataPoi
 	}
 
 	return data
+}
+
+// formatAggregationGroup describes the --group columns and dimension keys used
+// when collapsing duplicate CSV/JSON rows.
+func formatAggregationGroup(cfg parser.Config) string {
+	cols := parser.EffectiveGroupColumns(cfg)
+	colList := strings.Join(cols, ", ")
+	colPhrase := "by columns: " + colList
+	if len(cols) == 1 {
+		colPhrase = "by column: " + colList
+	}
+
+	axes := parser.GroupAxes(cfg)
+	if len(axes) == 0 {
+		return colPhrase
+	}
+
+	dims := make([]string, 0, len(axes))
+	for _, ax := range axes {
+		if ax.Label != "" {
+			dims = append(dims, ax.Key+": "+ax.Label)
+			continue
+		}
+		dims = append(dims, ax.Key)
+	}
+	return colPhrase + " (" + strings.Join(dims, ", ") + ")"
 }
 
 // assembleDataset builds the output Dataset from parsed results plus the
