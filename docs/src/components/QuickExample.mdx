@@ -1,22 +1,20 @@
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
+Fetch your GitHub contribution history from a public API and turn it into an interactive chart. Replace `<your-github-username>` with your GitHub username.
+
+Flags used below:
+
+- `--group date` — group rows by date
+- `--group-pattern '[z{Year}-y{Month}-x{Date}]'` — split each date into Year / Month / Day axes (z / y / x)
+- `--json-path '.contributions'` — pull the nested contributions array out of the API envelope
+- `--select 'count{Contributions}'` — keep only the count column and rename it to `Contributions`
+- `--stat` — add the statistics panel
+- `--output index.html` — write a self-contained HTML file
+
 <Tabs syncKey="os">
   <TabItem label="Linux / macOS" icon="seti:shell">
 
 ```bash
-# Fetch GitHub contribution history from a public API.
-# Replace <your-github-username> with your GitHub username.
-#
-#   --group date                                    group rows by date
-#   --group-pattern '[z{Year}-y{Month}-x{Date}]'    YYYY-MM-DD → Year / Month / Day axes
-#   --json-path '.contributions'                    pull nested array from API envelope
-#   --select 'count{Contributions}'                 keep only count; rename to Contributions
-#   --stat                                          add statistics panel
-#   --output index.html                             self-contained HTML output
-#
-# Comments must sit on their own line — a `# comment` after the trailing `\`
-# makes zsh/bash treat the line continuation as part of the comment and break
-# the command into pieces.
 curl -s "https://github-contributions-api.jogruber.de/v4/<your-github-username>" \
   | vizb bar \
       --group date \
@@ -31,20 +29,6 @@ curl -s "https://github-contributions-api.jogruber.de/v4/<your-github-username>"
   <TabItem label="Windows" icon="seti:powershell">
 
 ```ps1
-# Fetch GitHub contribution history from a public API.
-# Replace <your-github-username> with your GitHub username.
-#
-#   --group date                                    group rows by date
-#   --group-pattern '[z{Year}-y{Month}-x{Date}]'    YYYY-MM-DD → Year / Month / Day axes
-#   --json-path '.contributions'                    pull nested array from API envelope
-#   --select 'count{Contributions}'                 keep only count; rename to Contributions
-#   --stat                                          add statistics panel
-#   --output index.html                             self-contained HTML output
-#
-# PowerShell uses a backtick (`` ` ``) for line continuation, not `\`.
-# Comments must sit on their own line — a `# comment` after the trailing
-# backtick makes PowerShell treat the line continuation as part of the
-# comment and break the command into pieces.
 (iwr "https://github-contributions-api.jogruber.de/v4/<your-github-username>").Content `
   | vizb bar `
       --group date `
