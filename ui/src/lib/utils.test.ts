@@ -6,7 +6,7 @@ import {
   chartAxisBadgeCount,
   chartHasPlottableData,
   computeChartGrandTotal,
-  datasetHas3DEngine,
+  bundleHas3DChunk,
   datasetHasBothXY,
   datasetDimension,
   formatChartTotal,
@@ -35,18 +35,18 @@ describe('datasetHasBothXY', () => {
   })
 })
 
-describe('datasetHas3DEngine', () => {
+describe('bundleHas3DChunk', () => {
   it('is true when raw data has z', () => {
-    expect(datasetHas3DEngine([dp('a', 'b', 'z1')])).toBe(true)
+    expect(bundleHas3DChunk([dp('a', 'b', 'z1')])).toBe(true)
   })
 
   it('is true when threeD was baked via --3d', () => {
-    expect(datasetHas3DEngine([dp('a', 'b')], { threeD: true })).toBe(true)
-    expect(datasetHas3DEngine([dp('a', 'b')], { threeD: false })).toBe(true)
+    expect(bundleHas3DChunk([dp('a', 'b')], { threeD: true })).toBe(true)
+    expect(bundleHas3DChunk([dp('a', 'b')], { threeD: false })).toBe(true)
   })
 
   it('is false for pure x+y without --3d', () => {
-    expect(datasetHas3DEngine([dp('a', 'b')])).toBe(false)
+    expect(bundleHas3DChunk([dp('a', 'b')])).toBe(false)
   })
 })
 

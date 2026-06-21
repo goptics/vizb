@@ -4,7 +4,7 @@
 // raw dataset under the new arrangement (see `projectAndGroup`); these helpers
 // translate the compact arrangement strings and permute the display labels. No
 // Vue, no echarts — pure data in/out.
-import type { AxisLabels, DataPoint } from '../types'
+import type { Axis, AxisLabels, DataPoint } from '../types'
 
 const AXIS_ORDER = ['n', 'x', 'y', 'z'] as const
 const VALUE_MODE_POOL = ['x', 'y', 'z'] as const
@@ -25,16 +25,21 @@ export const presentAxisKeys = (data: DataPoint[] | undefined): string[] => {
   return AXIS_ORDER.filter((k) => data.some((d) => d[fieldFor[k]]))
 }
 
+export const presentAxisString = (data: DataPoint[] | undefined): string =>
+  presentAxisKeys(data).join('')
+
 /** Swap dropdown options for SwapControl; value mode permutes x/y/z only. */
 export const swapOptionKeys = (
   data: DataPoint[] | undefined,
   valueMode = false,
-  has3DEngine = false
+  has3DEngine = false,
+  axes?: Axis[]
 ): string[] => {
   if (!data?.length) return []
   const present = presentAxisKeys(data)
+  const hasZ = axes?.some((a) => a.key === 'z') ?? present.includes('z')
   let pool: readonly string[] = valueMode ? VALUE_MODE_POOL : AXIS_ORDER
-  if (!present.includes('z') && !has3DEngine) pool = pool.filter((key) => key !== 'z')
+  if (!hasZ && !has3DEngine) pool = pool.filter((key) => key !== 'z')
   const k = valueMode ? present.filter((key) => key !== 'n').length : present.length
   return kPermutations(pool, k)
     .filter((key) => !key.includes('z') || (key.includes('x') && key.includes('y')))

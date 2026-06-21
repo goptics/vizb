@@ -125,8 +125,8 @@ export const datasetDimension = (data: DataPoint[] | undefined): Dimension | und
 export const datasetHasBothXY = (data: DataPoint[] | undefined): boolean =>
   !!data?.some((p) => !!p.xAxis && !!p.yAxis)
 
-/** 3D engine is present in the HTML bundle (z in raw data, or --3d was baked). */
-export const datasetHas3DEngine = (
+/** 3D chunk is baked into the HTML bundle (z in raw data, or --3d flag was set). */
+export const bundleHas3DChunk = (
   data: DataPoint[] | undefined,
   cfg?: { threeD?: boolean }
 ): boolean => datasetDimension(data) === '3D' || cfg?.threeD !== undefined
@@ -141,24 +141,21 @@ export const canOfferValue3D = (
 ): boolean => {
   if (chartType === 'scatter') {
     if (isValueMode(axes) || isHybridMode(axes)) return false
-    return datasetHasBothXY(data) && !hasZOnChart && datasetHas3DEngine(data, cfg)
+    return datasetHasBothXY(data) && !hasZOnChart && bundleHas3DChunk(data, cfg)
   }
   if (isValueMode(axes)) return false
   return (
     (chartType === 'bar' || chartType === 'line') &&
     datasetHasBothXY(data) &&
     !hasZOnChart &&
-    datasetHas3DEngine(data, cfg)
+    bundleHas3DChunk(data, cfg)
   )
 }
 
 /** Round to 2 decimals — matches tooltip number formatting. */
 export const formatChartTotal = (value: number) => String(Math.round(value * 100) / 100)
 
-export const isValueModeChart = (chart: ChartData): boolean =>
-  chart.statType === 'value' ||
-  (chart.valueTuples?.length ?? 0) > 0 ||
-  (chart.valuePoints3D?.length ?? 0) > 0
+export const isValueModeChart = (chart: ChartData): boolean => chart.statType === 'value'
 
 export const chartHasPlottableData = (chart: ChartData): boolean =>
   chart.series.length > 0 ||

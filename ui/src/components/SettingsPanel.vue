@@ -114,9 +114,10 @@ const fieldGroups = computed(() => {
 })
 
 // Value/hybrid axes: hide sort; swap only for pure value mode (not hybrid).
+const filterValueModeFields = computed(() => isValueModeDataset.value || isValueMode.value)
+
 const filteredGeneral = computed(() => {
-  if (!isValueModeDataset.value && !isValueMode.value) return fieldGroups.value.general
-  const axes = activeDataSet.value?.axes
+  if (!filterValueModeFields.value) return fieldGroups.value.general
   return fieldGroups.value.general.filter((f) => {
     if (f.key === 'sort') return false
     if (f.key === 'swap') return isValueMode.value

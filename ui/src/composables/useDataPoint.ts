@@ -9,30 +9,8 @@ import {
   isValueMode as checkValueMode,
   isHybridMode,
 } from '../lib/utils'
+import { presentAxisString } from '../lib/swap'
 import { useSettingsStore } from './useSettingsStore'
-
-const getStatDimensions = (points: DataPoint[]) => {
-  let dimension = 0
-
-  if (points.some((b) => b.name)) dimension++
-  if (points.some((b) => b.xAxis)) dimension++
-  if (points.some((b) => b.yAxis)) dimension++
-  if (points.some((b) => b.zAxis)) dimension++
-
-  return dimension
-}
-
-// Canonical axis order; the identity arrangement is the present source axes in
-// this order (e.g. a dataset with name+xAxis → "nx").
-const AXIS_ORDER = ['n', 'x', 'y', 'z'] as const
-
-// The present source axes of a dataset, as a compact arrangement string. Cheap
-// (a few `.some()` passes, no grouping). Mirrors SwapControl's identity check.
-const presentKeys = (data: DataPoint[] | undefined): string => {
-  if (!data?.length) return ''
-  const fieldFor = { n: 'name', x: 'xAxis', y: 'yAxis', z: 'zAxis' } as const
-  return AXIS_ORDER.filter((k) => data.some((d) => d[fieldFor[k]])).join('')
-}
 
 const getDataSets = async (): Promise<DataSet[]> => {
   if (import.meta.env.DEV) {
@@ -120,12 +98,6 @@ const dataSetsProcessed = computed<DataSet[]>(() => {
   return dataSets.value
 })
 
-// Number of present axes in the active dataset (0..4: name, x, y, z). Used
-// for the "rows: N cols: M" subtitle in the dashboard.
-const activeDataAxisCount = computed(() =>
-  getStatDimensions(dataSetsProcessed.value[activeDataSetId.value]?.data ?? [])
-)
-
 // Data-shape dimensionality tag for the active dataset, used by the settings
 // panel to filter fields (e.g. `threeDRotate` is 3D-only). `undefined` for
 // empty/unknown data — the panel treats that as "no dimension constraint".
@@ -142,7 +114,6 @@ export { activeDataSet }
 const { chartType } = useSettingsStore()
 
 // True when the active dataset uses pure value-mode axes (--axes x,y[,z]).
-// Used to disable sort/swap controls that are no-ops in value mode.
 const isValueModeActive = computed(() => checkValueMode(activeDataSet.value?.axes))
 
 // Scatter-only: value or hybrid transform paths are active for this dataset.
@@ -151,13 +122,13 @@ const isValueModeDataset = computed(() => {
   return chartType.value === 'scatter' && (checkValueMode(axes) || isHybridMode(axes))
 })
 
-// Derive identity from axes[] key order if present, else fall back to presentKeys(data).
+// Derive identity from axes[] key order if present, else fall back to data shape.
 // axes[] preserves the serial dimension order from --group-pattern / --group-regex.
 const identityFromDataSet = (ds: DataSet | undefined): string => {
   if (ds?.axes?.length) {
     return ds.axes.map((a) => (a.key === 'name' ? 'n' : a.key.charAt(0))).join('')
   }
-  return presentKeys(ds?.data)
+  return presentAxisString(ds?.data)
 }
 
 // The active arrangement: per-(dataset, chartType) target with identity fallback.
@@ -202,7 +173,6 @@ export function useDataPoint() {
     dataSets,
     activeDataSet,
     activeDataSetId,
-    activeDataAxisCount,
     activeDataDimension,
     selectDataSet,
 
