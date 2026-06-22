@@ -99,7 +99,7 @@ inputs:
 outputs:
   output-file-html:
     description: Path to HTML output file
-    value: ${{ steps.generate-html.outputs.html }}
+    value: ${{ inputs.output-html }}
   output-file-json:
     description: Path to JSON output file
     value: ${{ inputs.output-json }}
@@ -163,11 +163,10 @@ runs:
 
         URL="https://github.com/goptics/vizb/releases/download/${TAG}/vizb@${VERSION}-${OS}-${ARCH}${EXT}"
 
-        curl -sfL "$URL" -o vizb-archive
-        if [ $? -ne 0 ]; then
+        curl -sfL "$URL" -o vizb-archive || {
           echo "::error::Failed to download vizb from $URL. Check that release ${TAG} exists."
           exit 1
-        fi
+        }
 
         if [ "$OS" = "windows" ]; then
           unzip -o vizb-archive -d ~/.local/bin
@@ -178,44 +177,43 @@ runs:
 
         echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
-    - name: Show vizb version
-      if: steps.version.outputs.is-major == 'true'
-      shell: bash
-      run: echo "::notice::$(vizb -v 2>&1)"
-
-    # ── Resolve input source ───────────────────────────────────
-
     - name: Resolve input
       id: resolve
       shell: bash
       run: |
+        printf '%s\n' \
+          'append_chart_stat_flags() {' \
+          '  local -n _args=$1' \
+          '  local _charts="$2" _chart_input="$3" _stat_val="$4"' \
+          '  [ -n "$_charts" ] && _args+=(-c "$_charts")' \
+          '  while IFS= read -r line; do' \
+          '    line="${line#"${line%%[![:space:]]*}"}"' \
+          '    [ -z "$line" ] && continue' \
+          '    case "$line" in \#*) continue ;; esac' \
+          '    _args+=(--chart "$line")' \
+          '  done <<< "$_chart_input"' \
+          '  if [ "$_stat_val" = "all" ] || [ "$_stat_val" = "true" ]; then' \
+          '    _args+=(--stat)' \
+          '  elif [ -n "$_stat_val" ]; then' \
+          '    _args+=("--stat=$_stat_val")' \
+          '  fi' \
+          '}' > "$RUNNER_TEMP/vizb-chart-flags.sh"
+
         # New generic inputs take priority; fall back to deprecated bench-* aliases.
         FILE="${{ inputs.file }}"
         [ -z "$FILE" ] && FILE="${{ inputs.bench-file }}"
         CMD="${{ inputs.cmd }}"
         [ -z "$CMD" ] && CMD="${{ inputs.bench-cmd }}"
-        HAS_MERGE=""
-        [ -n "${{ inputs.merge-files }}" ] && HAS_MERGE="true"
-        [ -n "${{ inputs.merge-dir }}" ] && HAS_MERGE="true"
 
-        if [ -n "$FILE" ]; then
-          echo "source=file" >> "$GITHUB_OUTPUT"
+        if [ -n "$FILE" ] || [ -n "$CMD" ]; then
           echo "has_input=true" >> "$GITHUB_OUTPUT"
-        elif [ -n "$CMD" ]; then
-          echo "source=command" >> "$GITHUB_OUTPUT"
-          echo "has_input=true" >> "$GITHUB_OUTPUT"
-        elif [ -n "$HAS_MERGE" ]; then
-          echo "source=merge-only" >> "$GITHUB_OUTPUT"
-          echo "has_input=false" >> "$GITHUB_OUTPUT"
-        elif [ -n "${{ inputs.data-url }}" ]; then
-          echo "source=data-url" >> "$GITHUB_OUTPUT"
+        elif [ -n "${{ inputs.merge-files }}" ] || [ -n "${{ inputs.merge-dir }}" ] || [ -n "${{ inputs.data-url }}" ]; then
           echo "has_input=false" >> "$GITHUB_OUTPUT"
         else
           echo "::error::No input provided. Specify cmd, file, merge-files, merge-dir, or data-url."
           exit 1
         fi
 
-        # Expose resolved source so later steps don't re-derive the fallback.
         {
           echo "file<<__VIZB_EOF__"
           echo "$FILE"
@@ -232,14 +230,12 @@ runs:
           echo "json_file=bench.json" >> "$GITHUB_OUTPUT"
         fi
 
-    # ── Convert to JSON ────────────────────────────────────────
-
     - name: Convert to JSON
       id: convert
       if: steps.resolve.outputs.has_input == 'true'
       shell: bash
       run: |
-        # Build vizb flags
+        source "$RUNNER_TEMP/vizb-chart-flags.sh"
         VIZB_ARGS=()
         [ -n "${{ inputs.tag }}" ] && VIZB_ARGS+=(--tag "${{ inputs.tag }}")
         [ -n "${{ inputs.name }}" ] && VIZB_ARGS+=(-n "${{ inputs.name }}")
@@ -254,38 +250,18 @@ runs:
         [ -n "${{ inputs.number-unit }}" ] && VIZB_ARGS+=(-N "${{ inputs.number-unit }}")
         [ -n "${{ inputs.select }}" ] && VIZB_ARGS+=(--select "${{ inputs.select }}")
         [ -n "${{ inputs.json-path }}" ] && VIZB_ARGS+=(--json-path "${{ inputs.json-path }}")
-        [ -n "${{ inputs.charts }}" ] && VIZB_ARGS+=(-c "${{ inputs.charts }}")
         [ "${{ inputs.show-labels }}" = "true" ] && VIZB_ARGS+=(-l)
         [ -n "${{ inputs.parser }}" ] && VIZB_ARGS+=(-P "${{ inputs.parser }}")
+        append_chart_stat_flags VIZB_ARGS "${{ inputs.charts }}" "${{ inputs.chart }}" "${{ inputs.stat }}"
 
-        # --stat: bare flag for 'all'/'true', otherwise --stat=<value>
-        STAT_VAL="${{ inputs.stat }}"
-        if [ "$STAT_VAL" = "all" ] || [ "$STAT_VAL" = "true" ]; then
-          VIZB_ARGS+=(--stat)
-        elif [ -n "$STAT_VAL" ]; then
-          VIZB_ARGS+=("--stat=$STAT_VAL")
-        fi
-
-        # --chart: one --chart per non-blank, non-# line
-        while IFS= read -r CHART_LINE; do
-          CHART_LINE="${CHART_LINE#"${CHART_LINE%%[![:space:]]*}"}"
-          [ -z "$CHART_LINE" ] && continue
-          case "$CHART_LINE" in \#*) continue ;; esac
-          VIZB_ARGS+=(--chart "$CHART_LINE")
-        done <<< "${{ inputs.chart }}"
-
-        if [ "${{ steps.resolve.outputs.source }}" = "file" ]; then
-          # Pass the original file so its extension (.csv/.json) survives for auto-detection.
+        if [ -n "${{ steps.resolve.outputs.file }}" ]; then
           INPUT="${{ steps.resolve.outputs.file }}"
         else
-          # Command stdout has no extension; vizb detects the format from content.
           ${{ steps.resolve.outputs.cmd }} > data-input.txt
           INPUT="data-input.txt"
         fi
 
         vizb "$INPUT" -o "${{ steps.resolve.outputs.json_file }}" "${VIZB_ARGS[@]}"
-
-    # ── Merge ──────────────────────────────────────────────────
 
     - name: Merge
       if: inputs.merge-files != '' || inputs.merge-dir != ''
@@ -299,33 +275,13 @@ runs:
         [ -n "${{ inputs.merge-dir }}" ] && FILES+=("${{ inputs.merge-dir }}")
         vizb merge "${FILES[@]}" -o "$JSON_FILE" --tag-axis "${{ inputs.tag-axis }}"
 
-    # ── Generate html  ────────────────────────────────────────
-
     - name: Generate HTML
-      id: generate-html
       if: inputs.output-html != ''
       shell: bash
       run: |
-        # Build vizb ui flags (chart selection, overrides, stat, 3d)
+        source "$RUNNER_TEMP/vizb-chart-flags.sh"
         VIZB_UI_ARGS=()
-        [ -n "${{ inputs.charts }}" ] && VIZB_UI_ARGS+=(-c "${{ inputs.charts }}")
-
-        # --chart: one --chart per non-blank, non-# line
-        while IFS= read -r CHART_LINE; do
-          CHART_LINE="${CHART_LINE#"${CHART_LINE%%[![:space:]]*}"}"
-          [ -z "$CHART_LINE" ] && continue
-          case "$CHART_LINE" in \#*) continue ;; esac
-          VIZB_UI_ARGS+=(--chart "$CHART_LINE")
-        done <<< "${{ inputs.chart }}"
-
-        # --stat: bare flag for 'all'/'true', otherwise --stat=<value>
-        STAT_VAL="${{ inputs.stat }}"
-        if [ "$STAT_VAL" = "all" ] || [ "$STAT_VAL" = "true" ]; then
-          VIZB_UI_ARGS+=(--stat)
-        elif [ -n "$STAT_VAL" ]; then
-          VIZB_UI_ARGS+=("--stat=$STAT_VAL")
-        fi
-
+        append_chart_stat_flags VIZB_UI_ARGS "${{ inputs.charts }}" "${{ inputs.chart }}" "${{ inputs.stat }}"
         [ "${{ inputs.enable-3d }}" = "true" ] && VIZB_UI_ARGS+=(--3d)
 
         if [ -n "${{ inputs.data-url }}" ]; then
@@ -333,4 +289,3 @@ runs:
         else
           vizb ui "${{ steps.resolve.outputs.json_file }}" -o "${{ inputs.output-html }}" "${VIZB_UI_ARGS[@]}"
         fi
-        echo "html=${{ inputs.output-html }}" >> "$GITHUB_OUTPUT"
