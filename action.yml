@@ -1,5 +1,5 @@
 name: Vizb Action
-description: Run benchmarks or produce CSV/JSON data and generate interactive HTML visualizations with vizb
+description: Turn CSV/JSON tabular data or benchmark output (Go, Rust, JavaScript) into interactive HTML visualizations with vizb
 author: fahimfaisaal
 branding:
   icon: 'bar-chart-2'
@@ -7,7 +7,7 @@ branding:
 
 inputs:
   cmd:
-    description: "Command whose stdout is visualized (e.g., go test -bench=., cargo bench, or any command emitting benchmark/CSV/JSON output)."
+    description: "Command whose stdout is visualized — any command emitting CSV/JSON tabular data or benchmark output (e.g., go test -bench=., cargo bench, cat data.csv)."
     default: ""
   file:
     description: "Path to an existing input file to visualize — benchmark output, CSV, or JSON (takes priority over cmd)"
@@ -28,7 +28,7 @@ inputs:
     description: "Tag/identifier for the dataset (-t flag)"
     default: ""
   group:
-    description: "Comma-separated column/field names merged into the group name; parsed by -p/-r (-g flag, csv/json parsers)"
+    description: "Column/field names merged into the group name; forwarded as -g (accepts space- or comma-separated, e.g. 'name category region' or 'name,category/region'); parsed by -p/-r"
     default: ""
   group-pattern:
     description: "Group pattern (-p flag)"
@@ -36,11 +36,8 @@ inputs:
   group-regex:
     description: "Group regex (-r flag)"
     default: ""
-  scale:
-    description: "Scale type: linear or log (-S flag)"
-    default: linear
   sort:
-    description: "Sort order: asc or desc (-s flag)"
+    description: "DEPRECATED: use 'chart' input instead (e.g. chart: 'bar:sort=asc'). Sort order: asc or desc (-s flag)"
     default: ""
   filter:
     description: "Regex filter for data labels / series names (-f flag)"
@@ -54,14 +51,29 @@ inputs:
   number-unit:
     description: "Number unit: K, M, B, T (-N flag)"
     default: ""
+  select:
+    description: "csv/json only: select value columns; optional rename with {label} (e.g. 'price{Unit price},count') (--select flag)"
+    default: ""
+  json-path:
+    description: "json only: select a nested array to chart via a jq-like dot path (e.g. '.data.results') (--json-path flag)"
+    default: ""
+  stat:
+    description: "Enable stats panel (--stat flag). Empty = disabled; 'all' or 'true' = all categories; otherwise comma-separated from: counts, center, spread, extremes, shape, percentiles, confidence, correlations"
+    default: ""
+  chart:
+    description: "Per-chart overrides (--chart flag, repeatable). One override per line: '<type>:<key>=<val>,...'. Keys: swap, sort, scale, labels, 3d-rotate, 3d. E.g. 'bar:scale=log' or 'pie:labels'. Blank lines and #-prefixed lines are ignored."
+    default: ""
   charts:
-    description: "Chart types to generate (-c flag)"
+    description: "Chart types to generate (-c flag): bar, line, scatter, pie, heatmap, radar"
     default: "bar,line,pie"
   parser:
     description: "Parser to use: csv, json, go, js:tinybench, js:vitest, rs:criterion, rs:divan (-P flag)"
     default: "auto"
   show-labels:
-    description: "Show labels on charts (-l flag)"
+    description: "DEPRECATED: use 'chart' input instead (e.g. chart: 'pie:labels'). Show labels on charts (-l flag)"
+    default: "false"
+  enable-3d:
+    description: "Bundle the 3D renderer for vizb ui (--3d flag, mainly useful with data-url when remote data shape is unknown at build time)"
     default: "false"
   merge-files:
     description: "Space-separated JSON files to merge"
@@ -70,7 +82,7 @@ inputs:
     description: "Directory to scan for JSON files to merge"
     default: ""
   tag-axis:
-    description: "Tag injection axis: n, x, or y (-A flag)"
+    description: "Tag injection axis: n, x, y, or z (-A flag)"
     default: n
   output-json:
     description: "Path for JSON output file (leave empty to skip JSON generation)"
@@ -79,7 +91,10 @@ inputs:
     description: "Path for HTML output file (leave empty to skip HTML generation)"
     default: ""
   data-url:
-    description: "URL to fetch benchmark JSON from at runtime (-U flag). When set, no input file is needed and the HTML fetches data remotely."
+    description: "URL to fetch vizb JSON from at runtime (-U flag). When set, no input file is needed and the HTML fetches data remotely."
+    default: ""
+  vizb-binary:
+    description: "Path to a pre-built vizb binary on the runner. When set, skips release download/cache and installs this binary instead — useful for testing local builds or unreleased changes."
     default: ""
 outputs:
   output-file-html:
@@ -114,17 +129,28 @@ runs:
         fi
 
     - name: Cache vizb binary
-      if: steps.version.outputs.is-major != 'true'
+      if: steps.version.outputs.is-major != 'true' && inputs.vizb-binary == ''
       id: cache-vizb
       uses: actions/cache@v5
       with:
         path: ~/.local/bin/vizb
         key: vizb-${{ steps.version.outputs.tag }}-${{ runner.os }}-${{ runner.arch }}
 
-    - name: Download vizb
+    - name: Install vizb
       if: steps.cache-vizb.outputs.cache-hit != 'true'
       shell: bash
       run: |
+        mkdir -p ~/.local/bin
+
+        VIZB_BINARY="${{ inputs.vizb-binary }}"
+        if [ -n "$VIZB_BINARY" ]; then
+          echo "::notice::Installing local vizb binary from $VIZB_BINARY"
+          cp "$VIZB_BINARY" ~/.local/bin/vizb
+          chmod +x ~/.local/bin/vizb
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          exit 0
+        fi
+
         OS=$(echo "${{ runner.os }}" | tr '[:upper:]' '[:lower:]')
         [ "$OS" = "macos" ] && OS="darwin"
         ARCH=$(echo "${{ runner.arch }}" | tr '[:upper:]' '[:lower:]')
@@ -137,7 +163,6 @@ runs:
 
         URL="https://github.com/goptics/vizb/releases/download/${TAG}/vizb@${VERSION}-${OS}-${ARCH}${EXT}"
 
-        mkdir -p ~/.local/bin
         curl -sfL "$URL" -o vizb-archive
         if [ $? -ne 0 ]; then
           echo "::error::Failed to download vizb from $URL. Check that release ${TAG} exists."
@@ -219,17 +244,35 @@ runs:
         [ -n "${{ inputs.tag }}" ] && VIZB_ARGS+=(--tag "${{ inputs.tag }}")
         [ -n "${{ inputs.name }}" ] && VIZB_ARGS+=(-n "${{ inputs.name }}")
         [ -n "${{ inputs.description }}" ] && VIZB_ARGS+=(-d "${{ inputs.description }}")
+        [ -n "${{ inputs.group }}" ] && VIZB_ARGS+=(-g "${{ inputs.group }}")
         [ -n "${{ inputs.group-pattern }}" ] && VIZB_ARGS+=(-p "${{ inputs.group-pattern }}")
         [ -n "${{ inputs.group-regex }}" ] && VIZB_ARGS+=(-r "${{ inputs.group-regex }}")
-        [ "${{ inputs.scale }}" != "linear" ] && VIZB_ARGS+=(--scale "${{ inputs.scale }}")
         [ -n "${{ inputs.sort }}" ] && VIZB_ARGS+=(--sort "${{ inputs.sort }}")
         [ -n "${{ inputs.filter }}" ] && VIZB_ARGS+=(--filter "${{ inputs.filter }}")
         [ -n "${{ inputs.mem-unit }}" ] && VIZB_ARGS+=(-M "${{ inputs.mem-unit }}")
         [ -n "${{ inputs.time-unit }}" ] && VIZB_ARGS+=(-T "${{ inputs.time-unit }}")
         [ -n "${{ inputs.number-unit }}" ] && VIZB_ARGS+=(-N "${{ inputs.number-unit }}")
+        [ -n "${{ inputs.select }}" ] && VIZB_ARGS+=(--select "${{ inputs.select }}")
+        [ -n "${{ inputs.json-path }}" ] && VIZB_ARGS+=(--json-path "${{ inputs.json-path }}")
         [ -n "${{ inputs.charts }}" ] && VIZB_ARGS+=(-c "${{ inputs.charts }}")
         [ "${{ inputs.show-labels }}" = "true" ] && VIZB_ARGS+=(-l)
         [ -n "${{ inputs.parser }}" ] && VIZB_ARGS+=(-P "${{ inputs.parser }}")
+
+        # --stat: bare flag for 'all'/'true', otherwise --stat=<value>
+        STAT_VAL="${{ inputs.stat }}"
+        if [ "$STAT_VAL" = "all" ] || [ "$STAT_VAL" = "true" ]; then
+          VIZB_ARGS+=(--stat)
+        elif [ -n "$STAT_VAL" ]; then
+          VIZB_ARGS+=("--stat=$STAT_VAL")
+        fi
+
+        # --chart: one --chart per non-blank, non-# line
+        while IFS= read -r CHART_LINE; do
+          CHART_LINE="${CHART_LINE#"${CHART_LINE%%[![:space:]]*}"}"
+          [ -z "$CHART_LINE" ] && continue
+          case "$CHART_LINE" in \#*) continue ;; esac
+          VIZB_ARGS+=(--chart "$CHART_LINE")
+        done <<< "${{ inputs.chart }}"
 
         if [ "${{ steps.resolve.outputs.source }}" = "file" ]; then
           # Pass the original file so its extension (.csv/.json) survives for auto-detection.
@@ -263,9 +306,31 @@ runs:
       if: inputs.output-html != ''
       shell: bash
       run: |
+        # Build vizb ui flags (chart selection, overrides, stat, 3d)
+        VIZB_UI_ARGS=()
+        [ -n "${{ inputs.charts }}" ] && VIZB_UI_ARGS+=(-c "${{ inputs.charts }}")
+
+        # --chart: one --chart per non-blank, non-# line
+        while IFS= read -r CHART_LINE; do
+          CHART_LINE="${CHART_LINE#"${CHART_LINE%%[![:space:]]*}"}"
+          [ -z "$CHART_LINE" ] && continue
+          case "$CHART_LINE" in \#*) continue ;; esac
+          VIZB_UI_ARGS+=(--chart "$CHART_LINE")
+        done <<< "${{ inputs.chart }}"
+
+        # --stat: bare flag for 'all'/'true', otherwise --stat=<value>
+        STAT_VAL="${{ inputs.stat }}"
+        if [ "$STAT_VAL" = "all" ] || [ "$STAT_VAL" = "true" ]; then
+          VIZB_UI_ARGS+=(--stat)
+        elif [ -n "$STAT_VAL" ]; then
+          VIZB_UI_ARGS+=("--stat=$STAT_VAL")
+        fi
+
+        [ "${{ inputs.enable-3d }}" = "true" ] && VIZB_UI_ARGS+=(--3d)
+
         if [ -n "${{ inputs.data-url }}" ]; then
-          vizb ui -U "${{ inputs.data-url }}" -o "${{ inputs.output-html }}"
+          vizb ui -U "${{ inputs.data-url }}" -o "${{ inputs.output-html }}" "${VIZB_UI_ARGS[@]}"
         else
-          vizb ui "${{ steps.resolve.outputs.json_file }}" -o "${{ inputs.output-html }}"
+          vizb ui "${{ steps.resolve.outputs.json_file }}" -o "${{ inputs.output-html }}" "${VIZB_UI_ARGS[@]}"
         fi
         echo "html=${{ inputs.output-html }}" >> "$GITHUB_OUTPUT"
