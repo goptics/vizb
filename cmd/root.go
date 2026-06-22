@@ -2,6 +2,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
@@ -13,6 +14,7 @@ import (
 	piechart "github.com/goptics/vizb/config/charts/pie"
 	radarchart "github.com/goptics/vizb/config/charts/radar"
 	scatterchart "github.com/goptics/vizb/config/charts/scatter"
+	"github.com/goptics/vizb/pkg/style"
 	// Chart subcommands self-register into cli's registry via their init().
 	_ "github.com/goptics/vizb/cmd/charts/bar"
 	_ "github.com/goptics/vizb/cmd/charts/heatmap"
@@ -85,6 +87,7 @@ func init() {
 }
 
 func runBenchmark(cmd *cobra.Command, args []string) {
+	warnDeprecatedRootFlags(cmd)
 	validateRootOptions()
 
 	// Parse the per-chart --chart overrides into a typed map. An unknown
@@ -190,4 +193,20 @@ func validateRootOptions() {
 		Normalizer:   strings.ToLower,
 		SliceDefault: defaultChartTypes,
 	}})
+}
+
+// warnDeprecatedRootFlags emits a stderr warning when the root command's global
+// --sort or --show-labels flag is explicitly set, recommending the per-chart
+// --chart override equivalent. The flags remain functional — this is a
+// deprecation notice only, not a removal. Chart subcommands (vizb bar, etc.)
+// have their own per-chart --sort/--show-labels and are NOT deprecated.
+func warnDeprecatedRootFlags(cmd *cobra.Command) {
+	if cmd.Flags().Changed("sort") {
+		fmt.Fprintln(os.Stderr, style.Warning.Render(
+			"Warning: --sort is deprecated on the root command; use --chart <type>:sort=<asc|desc> instead (e.g. --chart bar:sort=asc)"))
+	}
+	if cmd.Flags().Changed("show-labels") {
+		fmt.Fprintln(os.Stderr, style.Warning.Render(
+			"Warning: --show-labels is deprecated on the root command; use --chart <type>:labels instead (e.g. --chart pie:labels)"))
+	}
 }
