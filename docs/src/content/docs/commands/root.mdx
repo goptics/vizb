@@ -82,11 +82,10 @@ See the [Parser Guide](/guides/parsers) for each parser's metrics, and the
 | `--group` | `-g` | `""` | Names dimensions in `--group-pattern` order. csv/json: column/field names (separators must match `-p`); benchmark parsers: human-readable axis labels |
 | `--select` | | `""` | csv/json only: select value columns; optional rename with `{label}` (e.g. `--select=price{Unit price},count`) |
 | `--json-path` | | `""` | json only: select a nested array to chart via a jq-like dot path (e.g. `--json-path '.data.results'`) |
-| `--scale` | `-S` | `linear` | Scale type: `linear` or `log` |
-| `--sort` | `-s` | `""` | Sort order: `asc` or `desc` (default: as-is) |
+| `--sort` | `-s` | `""` | **Deprecated on root:** use `--chart <type>:sort=<asc\|desc>`. Sort order: `asc` or `desc` (default: as-is) |
 | `--charts` | `-c` | `bar,line,pie` | Chart types to generate (`bar`, `line`, `scatter`, `pie`, `heatmap`, `radar`) |
 | `--chart` | | | Per-chart type settings override (repeatable): `<type>:<key>=<val>,...` — see below |
-| `--show-labels` | `-l` | `false` | Show value labels on charts |
+| `--show-labels` | `-l` | `false` | **Deprecated on root:** use `--chart <type>:labels`. Show value labels on charts |
 | `--filter` | `-f` | `""` | Regex to include only matching data labels / series names |
 | `--mem-unit` | `-M` | `B` | Memory unit: `b`, `B`, `KB`, `MB`, `GB` |
 | `--time-unit` | `-T` | `ns` | Time unit: `ns`, `us`, `ms`, `s` |
@@ -132,7 +131,7 @@ See the [Grouping Guide](/guides/grouping) and [3D Charts](/charts/3d) for detai
 ### Logarithmic scale
 
 ```bash
-vizb bench.txt --scale log -o output.html
+vizb bench.txt --chart bar:scale=log -o output.html
 ```
 
 ### Filtering
@@ -183,7 +182,7 @@ vizb bench.txt -p n/x/y/z --chart bar:3d-rotate --chart line:labels=false -o out
 | `scale` | — | `linear`, `log` | `bar`, `line` only |
 | `3d-rotate` | `3d-rotate` | `true`, `false` | `bar`, `line` 3D only |
 
-Bare flags (no `=`) default to `true`. Per-chart settings layer over the global `--sort`, `--scale`, `--show-labels` defaults.
+Bare flags (no `=`) default to `true`. Per-chart settings override the chart's own defaults. The root-level `--sort` and `--show-labels` flags are deprecated — use `--chart` overrides instead.
 
 ### Tagging for release tracking
 
