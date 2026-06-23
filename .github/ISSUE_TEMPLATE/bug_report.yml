@@ -1,0 +1,49 @@
+name: Bug Report
+description: Something isn't working as expected
+title: "[bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. A minimal repro (input + command + expected vs actual) helps us fix it fast.
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe the bug and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Command
+      description: The exact `vizb` command you ran.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: input
+    attributes:
+      label: Input sample
+      description: Paste a small CSV/JSON snippet or benchmark output (or attach a file).
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Vizb version
+      description: Output of `vizb --version` or the release tag you installed.
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: OS
+      options:
+        - Linux
+        - macOS
+        - Windows
+        - Other
+    validations:
+      required: true

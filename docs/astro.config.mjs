@@ -12,8 +12,8 @@ export default defineConfig({
 	},
 	integrations: [
 	starlight({
-		title: 'Turn any table into interactive charts',
-		description: 'Vizb renders any CSV or JSON table — and benchmark output from Go, Rust, and JavaScript — as interactive 4D charts in a single self-contained HTML file.',
+		title: 'Tabular data visualization engine',
+		description: 'Vizb is a tabular visualization engine for CSV, JSON, and benchmark output — interactive charts and descriptive statistics in one self-contained HTML file.',
 		logo: {
 			dark: './src/assets/logo-dark.svg',
 			light: './src/assets/logo-light.svg',
@@ -22,6 +22,7 @@ export default defineConfig({
 		social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/goptics/vizb' }],
 		sidebar: [
 			{ label: 'Getting Started', slug: 'getting-started' },
+			{ label: 'Troubleshooting', slug: 'troubleshooting' },
 			{ label: 'Installation', slug: 'installation' },
 			{ label: 'Features', slug: 'features' },
 			{
@@ -62,7 +63,6 @@ export default defineConfig({
 					{ label: 'Merging', slug: 'guides/merging' },
 					{ label: 'Parser Guide', slug: 'guides/parsers' },
 					{ label: 'Tabular Data (CSV & JSON)', slug: 'guides/data' },
-					{ label: 'Auto-Detection', slug: 'guides/auto-detection' },
 				],
 			},
 			{

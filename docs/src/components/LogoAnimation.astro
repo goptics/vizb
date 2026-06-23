@@ -65,6 +65,38 @@
     d="M21.97 127.43A130 130 0 0 1 150 20L150 80A70 70 0 0 0 81.06 137.84Z"
   ></path>
 </svg>
+<svg
+  aria-hidden="true"
+  style="position:absolute;width:0;height:0;overflow:hidden"
+>
+  <path class="scatter-ref" d="M50 225m-14,0a14,14 0 1,0 28,0a14,14 0 1,0 -28,0"></path>
+  <path class="scatter-ref" d="M130 270m-14,0a14,14 0 1,0 28,0a14,14 0 1,0 -28,0"></path>
+  <path class="scatter-ref" d="M90 145m-14,0a14,14 0 1,0 28,0a14,14 0 1,0 -28,0"></path>
+  <path class="scatter-ref" d="M210 100m-14,0a14,14 0 1,0 28,0a14,14 0 1,0 -28,0"></path>
+  <path class="scatter-ref" d="M250 190m-14,0a14,14 0 1,0 28,0a14,14 0 1,0 -28,0"></path>
+</svg>
+
+<svg
+  aria-hidden="true"
+  style="position:absolute;width:0;height:0;overflow:hidden"
+>
+  <path class="heatmap-ref" d="M122 68H176V122H122Z"></path>
+  <path class="heatmap-ref" d="M232 68H286V122H232Z"></path>
+  <path class="heatmap-ref" d="M67 123H121V177H67Z"></path>
+  <path class="heatmap-ref" d="M12 178H66V232H12Z"></path>
+  <path class="heatmap-ref" d="M177 178H231V232H177Z"></path>
+</svg>
+
+<svg
+  aria-hidden="true"
+  style="position:absolute;width:0;height:0;overflow:hidden"
+>
+  <path class="radar-ref" d="M150 55m-7,0a7,7 0 1,0 14,0a7,7 0 1,0 -14,0"></path>
+  <path class="radar-ref" d="M218 128m-7,0a7,7 0 1,0 14,0a7,7 0 1,0 -14,0"></path>
+  <path class="radar-ref" d="M214 237m-7,0a7,7 0 1,0 14,0a7,7 0 1,0 -14,0"></path>
+  <path class="radar-ref" d="M112 202m-7,0a7,7 0 1,0 14,0a7,7 0 1,0 -14,0"></path>
+  <path class="radar-ref" d="M67 124m-7,0a7,7 0 1,0 14,0a7,7 0 1,0 -14,0"></path>
+</svg>
 
 <svg
   aria-hidden="true"
@@ -72,7 +104,8 @@
 >
   <path
     class="logo-ref"
-    d="M32.8125 56.25L107.797 290.625H173.438L98.4375 56.25H32.8125Z"></path>
+    d="M32.8125 56.25L107.797 290.625H173.438L98.4375 56.25H32.8125Z"
+  ></path>
   <path
     class="logo-ref"
     d="M107.797 290.625H173.422L192.172 234.375H126.547L107.797 290.625Z"
@@ -87,46 +120,279 @@
   ></path>
   <path
     class="logo-ref"
-    d="M164.237 121.429L201.563 9.375H267.188L229.831 121.429H164.237Z"></path>
+    d="M164.237 121.429L201.563 9.375H267.188L229.831 121.429H164.237Z"
+  ></path>
 </svg>
 
 <script>
   import { createTimeline, svg } from "animejs";
 
+  const SVG_NS = "http://www.w3.org/2000/svg";
+  const hero = document.querySelector(".vizb-hero");
   const vizPaths = [...document.querySelectorAll(".vizb-hero .viz-path")];
   const barRefs = [...document.querySelectorAll(".bar-ref")];
   const lineRefs = [...document.querySelectorAll(".line-ref")];
   const pieRefs = [...document.querySelectorAll(".pie-ref")];
+  const scatterRefs = [...document.querySelectorAll(".scatter-ref")];
+  const heatmapRefs = [...document.querySelectorAll(".heatmap-ref")];
+  const radarRefs = [...document.querySelectorAll(".radar-ref")];
   const logoRefs = [...document.querySelectorAll(".logo-ref")];
 
-  const PAUSE = 2750;
   const DUR = 400;
+  const OVERLAY_DUR = 200;
+  const STAGGER = 30;
 
-  const tl = createTimeline({ loop: true });
+  const LOGO_COLORS = [
+    "#5470C6",
+    "#1A202C",
+    "#3BA272",
+    "#FC8452",
+    "#EE6666",
+  ];
+  const HEATMAP_LOW = "#5470C6";
+  const HEATMAP_HIGH = "#EE6666";
+  const GRID_GRAY = "#4a5568";
 
-  vizPaths.forEach((p, i) => {
-    tl.set(p, { d: svg.morphTo(logoRefs[i]) }, 0);
-  });
+  const HEAT_ROWS = 3;
+  const HEAT_COLS = 5;
+  const HEAT_CELL_SIZE = 54;
+  const HEAT_GAP = 1;
+  const HEAT_PAD_X = 12;
+  const HEAT_PAD_Y =
+    (300 - HEAT_ROWS * HEAT_CELL_SIZE - (HEAT_ROWS - 1) * HEAT_GAP) / 2;
 
-  const phases = [
-    { refs: barRefs, label: "bar" },
-    { refs: lineRefs, label: "line" },
-    { refs: pieRefs, label: "pie" },
-    { refs: logoRefs, label: "logo" },
+  const RED_CELLS = [
+    [0, 2],
+    [0, 4],
+    [1, 1],
+    [2, 0],
+    [2, 3],
   ];
 
-  for (const { refs, label } of phases) {
-    tl.label(label, `+=${PAUSE}`);
-    vizPaths.forEach((p, i) => {
-      tl.add(
-        p,
-        {
-          d: svg.morphTo(refs[i]),
-          duration: DUR,
-          ease: "inOutCubic",
-        },
-        label,
+  const RADAR_CX = 150;
+  const RADAR_CY = 150;
+  const RADAR_MAX_R = 108;
+  const RADAR_SERIES_DATA = [
+    [95, 72, 108, 65, 88],
+    [88, 95, 60, 100, 75],
+    [70, 55, 90, 80, 105],
+    [100, 78, 72, 92, 58],
+    [62, 102, 85, 68, 95],
+  ];
+
+  function heatCellRect(row: number, col: number) {
+    const x = HEAT_PAD_X + col * (HEAT_CELL_SIZE + HEAT_GAP);
+    const y = HEAT_PAD_Y + row * (HEAT_CELL_SIZE + HEAT_GAP);
+    return { x, y, size: HEAT_CELL_SIZE };
+  }
+
+  function radarPoint(index: number, radius: number) {
+    const angle = ((-90 + index * 72) * Math.PI) / 180;
+    return {
+      x: RADAR_CX + radius * Math.cos(angle),
+      y: RADAR_CY + radius * Math.sin(angle),
+    };
+  }
+
+  function el(name: string, attrs: Record<string, string | number> = {}) {
+    const node = document.createElementNS(SVG_NS, name);
+    for (const [key, value] of Object.entries(attrs)) {
+      node.setAttribute(key, String(value));
+    }
+    return node;
+  }
+
+  function buildHeatmapGrid() {
+    const group = el("g", { class: "heatmap-grid", opacity: 0 });
+    const redSet = new Set(RED_CELLS.map(([r, c]) => `${r},${c}`));
+
+    for (let row = 0; row < HEAT_ROWS; row++) {
+      for (let col = 0; col < HEAT_COLS; col++) {
+        if (redSet.has(`${row},${col}`)) continue;
+        const { x, y, size } = heatCellRect(row, col);
+        group.appendChild(
+          el("rect", {
+            x,
+            y,
+            width: size,
+            height: size,
+            fill: HEATMAP_LOW,
+            stroke: HEATMAP_LOW,
+            "stroke-width": 1,
+          }),
+        );
+      }
+    }
+
+    return group;
+  }
+
+  function buildRadarGrid() {
+    const group = el("g", { class: "radar-grid", opacity: 0 });
+
+    for (const scale of [0.25, 0.5, 0.75, 1]) {
+      const points = Array.from({ length: 5 }, (_, i) => {
+        const p = radarPoint(i, RADAR_MAX_R * scale);
+        return `${p.x},${p.y}`;
+      }).join(" ");
+      group.appendChild(
+        el("polygon", {
+          points,
+          fill: "none",
+          stroke: GRID_GRAY,
+          "stroke-width": 1,
+          opacity: 0.55,
+        }),
+      );
+    }
+
+    for (let i = 0; i < 5; i++) {
+      const tip = radarPoint(i, RADAR_MAX_R);
+      group.appendChild(
+        el("line", {
+          x1: RADAR_CX,
+          y1: RADAR_CY,
+          x2: tip.x,
+          y2: tip.y,
+          stroke: GRID_GRAY,
+          "stroke-width": 1,
+          opacity: 0.55,
+        }),
+      );
+    }
+
+    return group;
+  }
+
+  function buildRadarSeries() {
+    const group = el("g", { class: "radar-series", opacity: 0 });
+
+    RADAR_SERIES_DATA.forEach((radii, seriesIdx) => {
+      const points = radii
+        .map((r, i) => {
+          const p = radarPoint(i, r);
+          return `${p.x},${p.y}`;
+        })
+        .join(" ");
+
+      group.appendChild(
+        el("polygon", {
+          points,
+          fill: LOGO_COLORS[seriesIdx],
+          "fill-opacity": 0.12,
+          stroke: LOGO_COLORS[seriesIdx],
+          "stroke-width": 2,
+          "stroke-linejoin": "round",
+        }),
       );
     });
+
+    return group;
+  }
+
+  const canAnimate =
+    hero &&
+    vizPaths.length === 5 &&
+    !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  if (canAnimate) {
+    if (!hero.querySelector(".heatmap-grid")) {
+      hero.insertBefore(buildHeatmapGrid(), hero.firstChild);
+      hero.insertBefore(buildRadarGrid(), hero.firstChild);
+      hero.insertBefore(buildRadarSeries(), hero.firstChild);
+    }
+
+    const heatmapGrid = hero.querySelector(".heatmap-grid");
+    const radarGrid = hero.querySelector(".radar-grid");
+    const radarSeries = hero.querySelector(".radar-series");
+
+    const tl = createTimeline({ loop: true });
+
+    vizPaths.forEach((p, i) => {
+      tl.set(p, { d: svg.morphTo(logoRefs[i]) }, 0);
+    });
+
+    if (heatmapGrid) tl.set(heatmapGrid, { opacity: 0 }, 0);
+    if (radarGrid) tl.set(radarGrid, { opacity: 0 }, 0);
+    if (radarSeries) tl.set(radarSeries, { opacity: 0 }, 0);
+
+    type OverlayMode = "hidden" | "heatmap" | "radar";
+    type ColorMode = "logo" | "heat-high";
+
+    const phases: {
+      refs: Element[];
+      label: string;
+      pause: number;
+      ease: "outCubic" | "outBack" | "inOutCubic";
+      overlay: OverlayMode;
+      colors?: ColorMode;
+    }[] = [
+      { refs: barRefs, label: "bar", pause: 2000, ease: "outCubic", overlay: "hidden" },
+      { refs: lineRefs, label: "line", pause: 2000, ease: "outCubic", overlay: "hidden" },
+      { refs: scatterRefs, label: "scatter", pause: 1500, ease: "outBack", overlay: "hidden" },
+      { refs: pieRefs, label: "pie", pause: 1500, ease: "inOutCubic", overlay: "hidden" },
+      { refs: heatmapRefs, label: "heatmap", pause: 2000, ease: "inOutCubic", overlay: "heatmap", colors: "heat-high" },
+      { refs: radarRefs, label: "radar", pause: 2500, ease: "inOutCubic", overlay: "radar", colors: "logo" },
+      { refs: logoRefs, label: "logo", pause: 2500, ease: "inOutCubic", overlay: "hidden", colors: "logo" },
+    ];
+
+    function fadeOverlay(
+      node: Element | null,
+      opacity: number,
+      at: string,
+    ) {
+      if (!node) return;
+      tl.add(
+        node,
+        { opacity, duration: OVERLAY_DUR, ease: "inOutCubic" },
+        at,
+      );
+    }
+
+    for (const { refs, label, pause, ease, overlay, colors } of phases) {
+      tl.label(label, `+=${pause}`);
+
+      const overlayOpacity =
+        overlay === "heatmap"
+          ? { heatmap: 1, radar: 0, series: 0 }
+          : overlay === "radar"
+            ? { heatmap: 0, radar: 1, series: 1 }
+            : { heatmap: 0, radar: 0, series: 0 };
+      fadeOverlay(heatmapGrid, overlayOpacity.heatmap, label);
+      fadeOverlay(radarGrid, overlayOpacity.radar, label);
+      fadeOverlay(radarSeries, overlayOpacity.series, label);
+
+      vizPaths.forEach((p, i) => {
+        const at = `${label}+=${i * STAGGER}`;
+        tl.add(
+          p,
+          {
+            d: svg.morphTo(refs[i]),
+            duration: DUR,
+            ease,
+          },
+          at,
+        );
+
+        if (colors === "heat-high") {
+          tl.add(
+            p,
+            { fill: HEATMAP_HIGH, stroke: HEATMAP_HIGH, duration: DUR, ease },
+            at,
+          );
+        } else if (colors === "logo") {
+          tl.add(
+            p,
+            {
+              fill: LOGO_COLORS[i],
+              stroke: LOGO_COLORS[i],
+              duration: DUR,
+              ease,
+            },
+            at,
+          );
+        }
+      });
+    }
   }
 </script>

@@ -116,12 +116,14 @@ tasks:
 
   act:test:stateless:
     desc: Test action in stateless mode (bench file → HTML)
+    deps: [build:cli]
     cmds:
       - task: act:check
       - act --bind --container-options "--user $(id -u):$(id -g)" workflow_dispatch -W .github/workflows/test-action.yml --job stateless --matrix os:ubuntu-latest
 
   act:test:stateful:
     desc: Test action in stateful mode (merge + HTML + JSON)
+    deps: [build:cli]
     cmds:
       - task: act:check
       - act --bind --container-options "--user $(id -u):$(id -g)" workflow_dispatch -W .github/workflows/test-action.yml --job stateful --matrix os:ubuntu-latest

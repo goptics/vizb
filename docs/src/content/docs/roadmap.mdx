@@ -7,19 +7,23 @@ import { CardGrid, Card } from '@astrojs/starlight/components';
 
 ## Current State
 
-Vizb charts any CSV or JSON table today. On top of that foundation, it ships parsers that normalize benchmark output from three languages across five frameworks:
+Vizb is a data-visualization tool. It turns CSV and JSON tables into interactive 4D HTML charts. It also ships parsers that normalize benchmark output from three languages across five frameworks:
 
 - **Go** — `go test -bench` output (raw text and `-json`)
 - **Rust** — `cargo bench` via [Criterion](https://github.com/bheisler/criterion.rs) (`rs:criterion`) and [Divan](https://github.com/nvzqz/divan) (`rs:divan`)
 - **JavaScript / TypeScript** — [Vitest](https://vitest.dev) bench (`js:vitest`) and [Tinybench](https://github.com/tinylibs/tinybench) console.table (`js:tinybench`)
 
-Every parser — CSV, JSON, and benchmark — supports multi-dimensional grouping, tag-based merging, time unit conversion, filtering, and auto-aggregation of grouped rows. See the [Parser Guide](/guides/parsers) for setup.
+Every parser — CSV, JSON, and benchmark — supports multi-dimensional grouping, tag-based merging, time unit conversion, filtering, and auto-aggregation of grouped rows. See the [Supported Inputs guide](/guides/parsers) for setup.
 
-All of it visualizes the same way, up to **four dimensions**: add a z-axis for interactive [3D charts](/charts/3d) with auto-rotate and axis-sum tooltips, or a flat [heatmap](/charts/heatmap). Charts ship as bar, line, pie, heatmap, and radar, and each comes with a [statistics panel](/ui/stats) (descriptive metrics + a Pearson/Spearman correlation matrix).
+All inputs visualize the same way, up to **four dimensions**. Add a z-axis for interactive [3D charts](/charts/3d) with auto-rotate and axis-sum tooltips. Or use a flat [heatmap](/charts/heatmap). Charts ship as bar, line, scatter, pie, heatmap, and radar. Each has a [statistics panel](/ui/stats) with descriptive metrics and a four-method correlation matrix (Pearson, Spearman, Kendall, distance correlation).
 
 ## Planned
 
-Tabular CSV/JSON is already first-class. The work below extends the **benchmark** adapters to more languages — each new parser normalizes another tool's output into the same table vizb already charts.
+Vizb currently focuses on linear, tabular data. The work below extends supported inputs and visual shapes.
+
+### More Inputs
+
+New benchmark adapters normalize another tool's output into the same table vizb already charts.
 
 <CardGrid>
   <Card title="Python" icon="seti:python">
@@ -35,6 +39,16 @@ Tabular CSV/JSON is already first-class. The work below extends the **benchmark*
     Parse output from JMH (Java Microbenchmark Harness) and similar Java benchmarking frameworks. Bring multi-dimensional visualization to JVM performance testing.
   </Card>
 </CardGrid>
+
+### Non-Linear Visualizations
+
+We are exploring visualization types for data that is not well served by linear x/y/z charts:
+
+- **Network / graph views** for relationship data.
+- **Tree and hierarchy layouts** for nested or path-like data.
+- **Geospatial maps** for location-based datasets.
+
+These are research areas. They will land after the input-parser ecosystem is stable.
 
 ## Contributing
 

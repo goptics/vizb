@@ -2,6 +2,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
@@ -13,6 +14,7 @@ import (
 	piechart "github.com/goptics/vizb/config/charts/pie"
 	radarchart "github.com/goptics/vizb/config/charts/radar"
 	scatterchart "github.com/goptics/vizb/config/charts/scatter"
+	"github.com/goptics/vizb/pkg/style"
 	// Chart subcommands self-register into cli's registry via their init().
 	_ "github.com/goptics/vizb/cmd/charts/bar"
 	_ "github.com/goptics/vizb/cmd/charts/heatmap"
@@ -53,11 +55,12 @@ var rootOpts rootOptions
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "vizb [target]",
-	Short: "Visualize dataSets or tabular CSV/JSON data as interactive 4D charts",
-	Long: `A CLI tool that turns dataSet output (Go, Rust, JavaScript) or any tabular
-CSV/JSON data into an interactive, self-contained HTML chart application.
-It reads a file or piped stdin, auto-detects the input format (override with --parser),
-and renders bar, line, pie, heatmap, and radar charts you can explore in the browser.`,
+	Short: "Tabular visualization engine — charts and stats from CSV, JSON, and benchmarks",
+	Long: `A tabular visualization engine for CSV, JSON, and benchmark output.
+Turns numeric rows into interactive charts and descriptive statistics in one
+self-contained HTML file. Reads a file or piped stdin, auto-detects the input
+format (override with --parser), and renders bar, line, scatter, pie, heatmap,
+and radar charts you can explore in the browser.`,
 	Version: version.Version,
 	Args:    cobra.ArbitraryArgs,
 	Run:     runBenchmark,
@@ -85,6 +88,7 @@ func init() {
 }
 
 func runBenchmark(cmd *cobra.Command, args []string) {
+	warnDeprecatedRootFlags(cmd)
 	validateRootOptions()
 
 	// Parse the per-chart --chart overrides into a typed map. An unknown
@@ -190,4 +194,20 @@ func validateRootOptions() {
 		Normalizer:   strings.ToLower,
 		SliceDefault: defaultChartTypes,
 	}})
+}
+
+// warnDeprecatedRootFlags emits a stderr warning when the root command's global
+// --sort or --show-labels flag is explicitly set, recommending the per-chart
+// --chart override equivalent. The flags remain functional — this is a
+// deprecation notice only, not a removal. Chart subcommands (vizb bar, etc.)
+// have their own per-chart --sort/--show-labels and are NOT deprecated.
+func warnDeprecatedRootFlags(cmd *cobra.Command) {
+	if cmd.Flags().Changed("sort") {
+		fmt.Fprintln(os.Stderr, style.Warning.Render(
+			"Warning: --sort is deprecated on the root command; use --chart <type>:sort=<asc|desc> instead (e.g. --chart bar:sort=asc)"))
+	}
+	if cmd.Flags().Changed("show-labels") {
+		fmt.Fprintln(os.Stderr, style.Warning.Render(
+			"Warning: --show-labels is deprecated on the root command; use --chart <type>:labels instead (e.g. --chart pie:labels)"))
+	}
 }

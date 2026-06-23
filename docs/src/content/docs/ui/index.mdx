@@ -5,11 +5,11 @@ description: Interactive visualization features in the vizb HTML output.
 
 import { CardGrid, Card, Aside } from '@astrojs/starlight/components';
 
-Vizb generates a single self-contained HTML file with a Vue.js-powered interactive UI. No server needed — open the file in any browser.
+Vizb generates a single self-contained HTML file with a Vue.js-powered interactive UI. No server needed. Open the file in any browser.
 
 ## Chart Types
 
-Vizb supports six chart types, all rendered in a single view:
+Vizb supports six chart types. All render in a single view:
 
 <CardGrid>
   <Card title="Bar Chart" icon="bars">
@@ -22,24 +22,23 @@ Vizb supports six chart types, all rendered in a single view:
     Plot individual points in 2D or 3D. Supports grouped categories, `--axes` coordinate mode, and hybrid layouts. See [Scatter Chart](/charts/scatter).
   </Card>
   <Card title="Pie Chart" icon="puzzle">
-    Show proportional distribution. Useful for comparing relative sizes of benchmark results.
+    Show proportional distribution. Useful for comparing relative sizes of categories.
   </Card>
   <Card title="Radar Chart" icon="star">
-    Compare multiple series across shared dimensions. Y values become spoke indicators; X values (or Z series) become the polygon overlays. See [Radar Chart](/charts/radar).
+    Compare multiple series across shared dimensions. Y values become spoke indicators. X values (or Z series) become the polygon overlays. See [Radar Chart](/charts/radar).
   </Card>
   <Card title="Heatmap" icon="seti:default">
-    Fold X, Y, and Z into a colored grid. Cell value sums the z-axis; cell color blends the z palette. See [Heatmap](/charts/heatmap).
+    Fold X, Y, and Z into a colored grid. Cell value sums the z-axis. Cell color blends the z palette. See [Heatmap](/charts/heatmap).
   </Card>
 </CardGrid>
 
-Control which charts appear with `--charts` (this also controls output file size — see [Output File Size](#output-file-size)):
+Control which charts appear with `--charts`. This also controls output file size — see [Output File Size](#output-file-size):
 
 ```bash
-vizb bench.txt -c bar,line -o output.html
+vizb data.csv -c bar,line -o output.html
 ```
 
-When your data has a z-axis, bar, line, and scatter charts render in **3D** instead of 2D.
-See [3D Charts](/charts/3d).
+When your data has a z-axis, bar, line, and scatter charts render in **3D** instead of 2D. See [3D Charts](/charts/3d).
 
 {/* TODO: Add GIF showing all six chart types rendered side by side */}
 
@@ -49,52 +48,41 @@ Toggle between linear and logarithmic Y-axis scale:
 
 ```bash
 # Linear (default)
-vizb bench.txt -o output.html
+vizb data.csv -o output.html
 
 # Logarithmic — better for high-variance data
-vizb bench.txt --scale log -o output.html
+vizb data.csv --scale log -o output.html
 ```
 
 <Aside type="tip">
-  Use `--scale log` when benchmark values span several orders of magnitude (e.g., 1 to 1,000,000).
+  Use `--scale log` when values span several orders of magnitude (e.g., 1 to 1,000,000).
 </Aside>
 
 {/* TODO: Add GIF showing linear vs logarithmic scale comparison */}
 
 ## Tooltips & Axis Sums
 
-Hovering a data point shows its value alongside **axis-sum** totals. 2D charts
-add per-series totals after each series name and a labeled x-marginal at the
-bottom of the tooltip. 3D charts add `Σ z` / `Σ x` / `Σ y` marginals — see
-[3D Charts](/charts/3d). Tooltips follow light/dark mode automatically.
+Hovering a data point shows its value alongside **axis-sum** totals. 2D charts add per-series totals after each series name. They also add a labeled x-marginal at the bottom of the tooltip. 3D charts add `Σ z` / `Σ x` / `Σ y` marginals — see [3D Charts](/charts/3d). Tooltips follow light/dark mode automatically.
 
 {/* TODO: Add GIF showing tooltip with axis sums */}
 
 ## Fullscreen
 
-Every chart has a **fullscreen** button in its toolbar (next to export). Click it
-to expand the chart to the full viewport, and again to exit.
+Every chart has a **fullscreen** button in its toolbar (next to export). Click it to expand the chart to the full viewport. Click again to exit.
 
 {/* TODO: Add GIF showing fullscreen toggle */}
 
 ## Statistics Panel
 
-Each chart has a **statistics** button that opens a panel with a per-series
-descriptive table (20 metrics, sortable, searchable, CSV export) and a Pearson /
-Spearman **correlation matrix**. Everything is computed off the main thread, so the
-UI never blocks. See [Statistics](/ui/stats).
+Each chart has a **statistics** button. It opens a panel with a per-series descriptive table (20 metrics, sortable, searchable, CSV export) and a Pearson / Spearman **correlation matrix**. Everything is computed off the main thread. The UI never blocks. See [Statistics](/ui/stats).
 
 {/* TODO: Add GIF showing the statistics panel */}
 
 ## Large Datasets
 
-Vizb stays responsive on big inputs. When the X-axis has more than ~50 categories, a
-**dataZoom slider** appears so you can scroll and zoom into a window of the data
-(starting zoomed to a readable slice). Datasets above a few thousand points switch to
-ECharts' optimized large-data render path, keeping the draw on a single frame.
+Vizb stays responsive on big inputs. When the X-axis has more than ~50 categories, a **dataZoom slider** appears. You can scroll and zoom into a window of the data (starting zoomed to a readable slice). Datasets above a few thousand points switch to ECharts' optimized large-data render path. This keeps the draw on a single frame.
 
-For CSV/JSON specifically, vizb also **aggregates rows** before charting when
-`--group` is set — see [Tabular Data](/guides/data#aggregation).
+For CSV/JSON specifically, vizb also **aggregates rows** before charting when `--group` is set — see [Tabular Data](/guides/data#aggregation).
 
 {/* TODO: Add GIF showing the dataZoom slider on a large dataset */}
 
@@ -112,12 +100,11 @@ The generated HTML is fully self-contained:
 - No external dependencies or network requests
 - Works offline
 
-Open with any browser — no build step, no server.
+Open with any browser. No build step, no server.
 
 ## Output File Size
 
-Each chart renderer ships as a separate compressed chunk inside the HTML; only the
-ones you select are embedded at generation time.
+Each chart renderer ships as a separate compressed chunk inside the HTML. Only the ones you select are embedded at generation time.
 
 | Selection | Approx. file size |
 |-----------|------------------|
@@ -126,22 +113,17 @@ ones you select are embedded at generation time.
 | `bar,line,pie,heatmap,radar` | ~445 kB |
 | `bar` or `line` with z-axis data (embedded JSON) | ~570 kB |
 
-The 3D engine (echarts-gl, ~380 kB encoded) is the heaviest component. For embedded
-data, Vizb includes it automatically when the dataset has a z-axis and `bar` or
-`line` is selected. For `vizb ui --data-url`, pass `--3d` to opt in — the remote
-shape is unknown at build time.
+The 3D engine (echarts-gl, ~380 kB encoded) is the heaviest component. For embedded data, Vizb includes it automatically when the dataset has a z-axis and `bar` or `line` is selected. For `vizb ui --data-url`, pass `--3d` to opt in — the remote shape is unknown at build time.
 
 To reduce file size, pass `--charts` to bundle only the renderers you need:
 
 ```bash
-vizb bench.txt -c bar -o output.html       # bar only, ~400 kB
-vizb bench.txt -c bar,line -o output.html  # ~415 kB
+vizb data.csv -c bar -o output.html       # bar only, ~400 kB
+vizb data.csv -c bar,line -o output.html  # ~415 kB
 ```
 
 <Aside type="tip">
-  For sharing or deploying reports, use `--charts` to include only the charts your
-  audience needs. The default bundles bar, line, and pie — add heatmap or radar
-  with `-c` when you need them.
+  For sharing or deploying reports, use `--charts` to include only the charts your audience needs. The default bundles bar, line, and pie. Add heatmap or radar with `-c` when you need them.
 </Aside>
 
 ## Next Steps

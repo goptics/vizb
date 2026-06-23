@@ -12,11 +12,22 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Set up Go
+        if: env.ACT != 'true'
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Build vizb
+        if: env.ACT != 'true'
+        run: go build -o ./bin/vizb .
+
       - name: Run action (stateless)
         uses: ./
         with:
           file: examples/go/01-hash.txt
           output-html: index.html
+          vizb-binary: ./bin/vizb
 
   stateful:
     strategy:
@@ -26,12 +37,23 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Set up Go
+        if: env.ACT != 'true'
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Build vizb
+        if: env.ACT != 'true'
+        run: go build -o ./bin/vizb .
+
       - name: Generate previous JSON
         uses: ./
         with:
           name: Hash
           file: examples/go/01-hash.txt
           output-json: results/prev/hash.json
+          vizb-binary: ./bin/vizb
 
       - name: Run action (stateful)
         uses: ./
@@ -43,3 +65,4 @@ jobs:
           merge-dir: results/prev
           output-html: index.html
           output-json: results/bench.json
+          vizb-binary: ./bin/vizb

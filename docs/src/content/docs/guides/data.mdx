@@ -5,12 +5,9 @@ description: Chart any CSV or JSON table with vizb — numeric columns become ch
 
 import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 
-Vizb charts any tabular data. The **`csv`** and **`json`** parsers turn a table into
-the same interactive 4D charts: each **numeric column/field becomes a chart series**, and
-non-numeric columns can be promoted into the Name / X / Y dimensions with `--group`.
+Vizb charts any tabular data. The `csv` and `json` parsers turn a table into the same interactive charts. Each numeric column/field becomes a chart series. Non-numeric columns can become the Name / X / Y dimensions with `--group`.
 
-Both formats are **auto-detected from content** — `vizb data.csv` and `vizb data.json` just work
-without `--parser`. See [Automatic Parser Detection](/guides/auto-detection).
+Both formats are auto-detected from content. `vizb data.csv` and `vizb data.json` just work without `--parser`.
 
 ## CSV
 
@@ -37,14 +34,14 @@ gamma,150,9,2024-06
 |-------|-----------|
 | Numeric column | A column is charted if **at least one cell** parses as a finite number ("any-one-parses"). Non-numeric cells in that column become gaps. |
 | Delimiter | Comma only. Quoted fields with embedded commas/newlines are handled by the standard CSV reader. |
-| Header | First row. A leading UTF-8 BOM is stripped; cells are trimmed; duplicate names are suffixed (`sells`, `sells (2)`). |
-| Ragged rows | Short/long rows are tolerated; missing cells become gaps. |
+| Header | First row. A leading UTF-8 BOM is stripped. Cells are trimmed. Duplicate names are suffixed (`sells`, `sells (2)`). |
+| Ragged rows | Short/long rows are tolerated. Missing cells become gaps. |
 | `NaN` / `Inf` | Rejected. |
 | No numeric columns | Hard error: `no numeric columns found in CSV`. |
 
 ## JSON
 
-A **JSON array of objects**, where each object is a row and each key is a column.
+A JSON array of objects. Each object is a row. Each key is a column.
 
 ```bash
 vizb data.json -o data.html           # auto-detected as json
@@ -66,19 +63,17 @@ Produces series `sells`, `stocks`, and `mem.alloc`. `date` (string) is ignored.
 
 | Topic | Behaviour |
 |-------|-----------|
-| Shape | Top-level **array of objects**. A single top-level object is consumed by vizb's own dataset-JSON path; reach a nested array inside an envelope with [`--json-path`](#selecting-a-nested-array-with---json-path). |
+| Shape | Top-level **array of objects**. A single top-level object is consumed by vizb's own dataset-JSON path. Reach a nested array inside an envelope with [`--json-path`](#selecting-a-nested-array-with---json-path). |
 | Numeric value | A finite JSON **number** *or* a **numeric string** (`"10"` → 10). `bool`/`null` are ignored. |
 | Nested objects | Flattened to dotted keys: `{"mem":{"alloc":5}}` → `mem.alloc`. |
 | Arrays as values | Skipped. |
 | Column order | **First-seen** key order across the array (preserved, not alphabetical). |
-| Heterogeneous rows | Keys are unioned; a missing key in a row is a gap; a key numeric in some rows and text in others is charted where numeric. |
+| Heterogeneous rows | Keys are unioned. A missing key in a row is a gap. A key numeric in some rows and text in others is charted where numeric. |
 | No numeric fields | Hard error: `no numeric fields found in JSON`. |
 
 ## Grouping with `--group` / `-g`
 
-`--group` names one or more **non-numeric** columns/fields. Each column maps to one **slot** in
-`--group-pattern`/`-p`. Use **bracket slots** `[...]` when a single column's cell value encodes
-multiple dimensions (dates, slash paths, etc.).
+`--group` names one or more non-numeric columns/fields. Each column maps to one slot in `--group-pattern`/`-p`. Use bracket slots `[...]` when a single column's cell value encodes multiple dimensions (dates, slash paths, etc.).
 
 ```bash
 vizb sales.csv -g name                  # name → X axis (default pattern "x")
@@ -89,14 +84,13 @@ vizb sales.csv -g date,category -p "[x-y-n],z"   # split date cell 2022-2-30 →
 vizb results.csv -g benchmark -p "[n/x/y]"       # Sort/1024/QuickSort from one column
 ```
 
-Comma-separated `-g` (e.g. `-g region,product,month`) requires comma-separated top-level `-p` (e.g. `-p x,y,z` or `-p "[n-y-x],y,z"`). Brackets are **CSV/JSON only** — benchmarks keep flat `-p n/x/y`.
+Comma-separated `-g` (e.g. `-g region,product,month`) requires comma-separated top-level `-p` (e.g. `-p x,y,z` or `-p "[n-y-x],y,z"`). Brackets are **CSV/JSON only**. Benchmarks keep flat `-p n/x/y`.
 
 See the [Grouping Guide](/guides/grouping) for bracket slots, pattern syntax, and regex fallback.
 
 ## Selecting value columns with `--select`
 
-By default, every numeric column/field becomes a chart series. Use `--select` to pick
-specific value columns and optionally rename their series labels:
+By default, every numeric column/field becomes a chart series. Use `--select` to pick specific value columns and optionally rename their series labels:
 
 ```bash
 vizb sales.csv --select=price,count
@@ -106,17 +100,15 @@ vizb sales.csv --select="price{USD}",count   # quote names with , { or }
 
 | Topic | Behaviour |
 |-------|-----------|
-| Scope | `csv` and `json` parsers only; ignored (with warning) for benchmark parsers |
-| Order | Series appear in `--select` flag order |
-| Rename | Trailing `{label}` on unquoted names; quoted names treat `{` as literal |
-| Overlap | A column cannot be in both `--select` and `--group` |
-| Omitted | Auto-detect numeric columns (unchanged default) |
+| Scope | `csv` and `json` parsers only. Ignored (with warning) for benchmark parsers. |
+| Order | Series appear in `--select` flag order. |
+| Rename | Trailing `{label}` on unquoted names. Quoted names treat `{` as literal. |
+| Overlap | A column cannot be in both `--select` and `--group`. |
+| Omitted | Auto-detect numeric columns (unchanged default). |
 
 ## Selecting a nested array with `--json-path`
 
-The `json` parser expects a **top-level array**. When your rows are wrapped in an
-envelope — `{"data":{"results":[...]}}`, `{"runs":[{"samples":[...]}]}` — point
-`--json-path` at the nested array with a jq-like dot path:
+The `json` parser expects a top-level array. When your rows are wrapped in an envelope — `{"data":{"results":[...]}}`, `{"runs":[{"samples":[...]}]}` — point `--json-path` at the nested array with a jq-like dot path:
 
 ```bash
 vizb api.json --json-path '.data.results'              # auto-detected as json
@@ -126,22 +118,17 @@ vizb api.json --json-path '.items[]'                   # trailing [] = the array
 
 | Topic | Behaviour |
 |-------|-----------|
-| Scope | `json` parser only; ignored (with warning) for other parsers |
-| Auto-detect | Supplying `--json-path` forces the `json` parser, so envelope files (which start with `{`) still resolve correctly |
-| Path grammar | Object keys (`.a.b`), array indices (`[n]`), optional leading `.`, trailing `[]` sugar. A **subset of jq**, no expressions or filters |
-| Result | An array is used as-is; a single object is wrapped into a one-element array; a scalar is a hard error |
-| Errors | A missing key, out-of-range index, or wrong-type step names the failing segment |
+| Scope | `json` parser only. Ignored (with warning) for other parsers. |
+| Auto-detect | Supplying `--json-path` forces the `json` parser. Envelope files (which start with `{`) still resolve correctly. |
+| Path grammar | Object keys (`.a.b`), array indices (`[n]`), optional leading `.`, trailing `[]` sugar. A subset of jq. No expressions or filters. |
+| Result | An array is used as-is. A single object is wrapped into a one-element array. A scalar is a hard error. |
+| Errors | A missing key, out-of-range index, or wrong-type step names the failing segment. |
 
-The selected array is then parsed exactly like a normal top-level JSON array — all
-`--group`, `--select`, and aggregation rules above still apply.
+The selected array is then parsed exactly like a normal top-level JSON array. All `--group`, `--select`, and aggregation rules above still apply.
 
 ## Aggregation
 
-CSV and JSON emit **one data point per row**. Raw tables routinely have many rows that
-collapse to the same dimensions — e.g. hundreds of sales for the same region on the
-same date. So when a `--group` is active for the `csv`/`json` parsers, vizb
-**aggregates** before charting: rows sharing the same `(Name, XAxis, YAxis, ZAxis)`
-key are merged into a single point by **summing** their values.
+CSV and JSON emit one data point per row. Raw tables often have many rows that collapse to the same dimensions. For example, hundreds of sales for the same region on the same date. So when `--group` is active for the `csv`/`json` parsers, vizb aggregates before charting. Rows sharing the same `(Name, XAxis, YAxis, ZAxis)` key are merged into a single point by summing their values.
 
 ```bash
 vizb sales.csv -g region,product,month -p name,x,y -o sales.html
@@ -149,17 +136,14 @@ vizb sales.csv -g region,product,month -p name,x,y -o sales.html
 # ✅ Aggregated into 4200 grouped data points
 ```
 
-This turns a row-per-record dump into a handful of meaningful grouped points, and
-keeps the chart (and the [statistics panel](/ui/stats)) fast.
+This turns a row-per-record dump into a handful of meaningful grouped points. It keeps the chart and the [statistics panel](/ui/stats) fast.
 
 <Aside type="note">
-  Aggregation runs **only** for the `csv`/`json` parsers **with** `--group`. Benchmark
-  parsers are never summed — their repeated `count=N` rows share a key on purpose and
-  are **averaged** by the UI instead. Without `--group`, every row is kept as-is.
+  Aggregation runs only for the `csv`/`json` parsers with `--group`. Benchmark parsers are never summed. Their repeated `count=N` rows share a key on purpose and are averaged by the UI instead. Without `--group`, every row is kept as-is.
 </Aside>
 
 ## Limitations
 
-- **CSV:** no thousands separators / currency / `%` parsing; comma delimiter only; no headerless files.
-- **JSON:** a single top-level object is treated as a vizb Dataset, not a row — use [`--json-path`](#selecting-a-nested-array-with---json-path) to chart a nested array inside an envelope; arrays-of-scalars are not exploded into series.
+- **CSV:** no thousands separators / currency / `%` parsing. Comma delimiter only. No headerless files.
+- **JSON:** a single top-level object is treated as a vizb Dataset, not a row. Use [`--json-path`](#selecting-a-nested-array-with---json-path) to chart a nested array inside an envelope. Arrays-of-scalars are not exploded into series.
 - `--number-unit`/`-N` scales every numeric column/field uniformly.

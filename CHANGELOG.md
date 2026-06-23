@@ -4,6 +4,28 @@ Notable changes to Vizb documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [Unreleased]
+
+### Added
+
+- **GitHub Action: `select` input** — select value columns for CSV/JSON data (forwards `--select`).
+- **GitHub Action: `json-path` input** — chart a nested JSON array via a jq-like dot path (forwards `--json-path`).
+- **GitHub Action: `stat` input** — enable the stats panel (forwards `--stat`).
+- **GitHub Action: `chart` input** — per-chart overrides as a multi-line string, one `--chart` per line (e.g. `bar:scale=log`).
+- **GitHub Action: `enable-3d` input** — bundle the 3D renderer for `vizb ui` (forwards `--3d`).
+- **GitHub Action: `vizb-binary` input** — path to a pre-built binary on the runner; skips release download/cache, useful for testing local builds or unreleased changes.
+- **GitHub Action: `group` input** — forwards `-g` with column/field names for grouping.
+- **CLI: Deprecation warnings** — `vizb` (root) now prints a stderr warning when `--sort` or `--show-labels` is used, recommending the `--chart` equivalent.
+
+### Removed
+
+- **GitHub Action: `scale` input** — **BREAKING.** `scale` no longer exists; it errored at runtime since v0.12.0. Use the `chart` input instead (e.g. `chart: 'bar:scale=log'`).
+
+### Deprecated
+
+- **GitHub Action: `sort` input** — use `chart` instead (e.g. `chart: 'bar:sort=asc'`).
+- **GitHub Action: `show-labels` input** — use `chart` instead (e.g. `chart: 'pie:labels'`).
+
 # [0.12.0] - 2026-06-03
 
 ### Added

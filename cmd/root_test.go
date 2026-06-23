@@ -81,12 +81,16 @@ func (s *RootSuite) TestRunBenchmarkGlobalSortApplied() {
 	out := filepath.Join(dir, "out.json")
 	rootOpts.Charts = nil
 
-	outStr := testutil.CaptureStdout(func() {
-		rootCmd.SetArgs([]string{"-o", out, "-c", "bar", "-c", "line", "-s", "desc", input})
-		s.Require().NoError(rootCmd.Execute())
+	var outStr string
+	errStr := testutil.CaptureStderr(func() {
+		outStr = testutil.CaptureStdout(func() {
+			rootCmd.SetArgs([]string{"-o", out, "-c", "bar", "-c", "line", "-s", "desc", input})
+			s.Require().NoError(rootCmd.Execute())
+		})
 	})
 
 	s.Contains(outStr, "Generated")
+	s.Contains(errStr, "--sort is deprecated")
 
 	ds := testutil.ReadDataset(s.T(), out)
 	s.Require().Len(ds.Settings, 2)
@@ -259,6 +263,80 @@ func (s *RootSuite) TestExecuteRunsRootCommand() {
 
 	rootCmd.SetArgs([]string{"-o", out, input})
 	Execute()
+	s.FileExists(out)
+}
+
+func (s *RootSuite) TestRunBenchmarkSortDeprecationWarning() {
+	dir := s.T().TempDir()
+	input := testutil.WriteBenchFile(s.T(), dir, "valid.txt",
+		`BenchmarkTest-8    1000000    1234 ns/op    1000 B/op    10 allocs/op`)
+	out := filepath.Join(dir, "out.json")
+
+	var outStr string
+	errStr := testutil.CaptureStderr(func() {
+		outStr = testutil.CaptureStdout(func() {
+			rootCmd.SetArgs([]string{"-o", out, "-s", "asc", input})
+			s.Require().NoError(rootCmd.Execute())
+		})
+	})
+
+	s.Contains(errStr, "--sort is deprecated")
+	s.Contains(errStr, "--chart")
+	s.Contains(outStr, "Generated")
+	s.FileExists(out)
+}
+
+func (s *RootSuite) TestRunBenchmarkShowLabelsDeprecationWarning() {
+	dir := s.T().TempDir()
+	input := testutil.WriteBenchFile(s.T(), dir, "valid.txt",
+		`BenchmarkTest-8    1000000    1234 ns/op    1000 B/op    10 allocs/op`)
+	out := filepath.Join(dir, "out.json")
+
+	var outStr string
+	errStr := testutil.CaptureStderr(func() {
+		outStr = testutil.CaptureStdout(func() {
+			rootCmd.SetArgs([]string{"-o", out, "-l", input})
+			s.Require().NoError(rootCmd.Execute())
+		})
+	})
+
+	s.Contains(errStr, "--show-labels is deprecated")
+	s.Contains(errStr, "--chart")
+	s.Contains(outStr, "Generated")
+	s.FileExists(out)
+}
+
+func (s *RootSuite) TestRunBenchmarkNoDeprecationWarningWhenFlagsUnset() {
+	dir := s.T().TempDir()
+	input := testutil.WriteBenchFile(s.T(), dir, "valid.txt",
+		`BenchmarkTest-8    1000000    1234 ns/op    1000 B/op    10 allocs/op`)
+	out := filepath.Join(dir, "out.json")
+
+	var outStr string
+	errStr := testutil.CaptureStderr(func() {
+		outStr = testutil.CaptureStdout(func() {
+			rootCmd.SetArgs([]string{"-o", out, input})
+			s.Require().NoError(rootCmd.Execute())
+		})
+	})
+
+	s.NotContains(errStr, "deprecated")
+	s.Contains(outStr, "Generated")
+	s.FileExists(out)
+}
+
+func (s *RootSuite) TestChartSubcommandSortNoDeprecationWarning() {
+	dir := s.T().TempDir()
+	input := testutil.WriteBenchFile(s.T(), dir, "valid.txt",
+		`BenchmarkTest-8    1000000    1234 ns/op    1000 B/op    10 allocs/op`)
+	out := filepath.Join(dir, "out.json")
+
+	errStr := testutil.CaptureStderr(func() {
+		rootCmd.SetArgs([]string{"bar", "-o", out, "-s", "asc", input})
+		s.Require().NoError(rootCmd.Execute())
+	})
+
+	s.NotContains(errStr, "deprecated")
 	s.FileExists(out)
 }
 
