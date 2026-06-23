@@ -374,7 +374,7 @@ type CSVAutoGroupSuite struct {
 
 func (s *CSVAutoGroupSuite) SetupTest() {
 	s.restoreOsExit, _ = testutil.TrapOsExitPanic(s.T())
-	s.cfg = parser.Config{GroupPattern: "x", AutoGroup: true}
+	s.cfg = parser.Config{GroupPattern: "x", AutoGroup: true, ChartTypes: []string{"scatter"}}
 }
 
 func (s *CSVAutoGroupSuite) TearDownTest() {
@@ -459,7 +459,7 @@ type CSVAutoValueSuite struct {
 
 func (s *CSVAutoValueSuite) SetupTest() {
 	s.restoreOsExit, _ = testutil.TrapOsExitPanic(s.T())
-	s.cfg = parser.Config{GroupPattern: "x", AutoGroup: true}
+	s.cfg = parser.Config{GroupPattern: "x", AutoGroup: true, ChartTypes: []string{"scatter"}}
 }
 
 func (s *CSVAutoValueSuite) TearDownTest() {
@@ -532,6 +532,25 @@ func (s *CSVAutoValueSuite) TestMixedTypesSkipsNonNumeric() {
 	// region has 2 distinct, product has 2 distinct → auto-group picks region as xAxis
 	s.Require().Len(results, 2)
 	s.NotEmpty(results[0].XAxis)
+	s.NotEmpty(results[0].Stats)
+}
+
+func (s *CSVAutoValueSuite) TestPieChartFallsBackToFlat() {
+	// pie chart type → auto-value is NOT eligible, falls back to flat series
+	s.cfg.ChartTypes = []string{"pie"}
+	csv := "price,latency\n10,5\n20,7\n"
+	results := ParseCSV(s.writeFile(csv), s.cfg)
+	s.Require().Len(results, 2)
+	s.Empty(results[0].XAxis)
+	s.NotEmpty(results[0].Stats)
+}
+
+func (s *CSVAutoValueSuite) TestHeatmapChartFallsBackToFlat() {
+	s.cfg.ChartTypes = []string{"heatmap"}
+	csv := "price,latency\n10,5\n20,7\n"
+	results := ParseCSV(s.writeFile(csv), s.cfg)
+	s.Require().Len(results, 2)
+	s.Empty(results[0].XAxis)
 	s.NotEmpty(results[0].Stats)
 }
 

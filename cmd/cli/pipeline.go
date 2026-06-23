@@ -61,6 +61,9 @@ func RunLinearWithConfig(cmd *cobra.Command, args []string, common CommonOptions
 			cfg.WantsBothXY = true
 		}
 	}
+	for _, c := range configs {
+		cfg.ChartTypes = append(cfg.ChartTypes, c.ChartType())
+	}
 
 	WarnThreeDIfIneligible(cfg, configs)
 	outFile := ResolveOutputFileName(common.OutputFile)

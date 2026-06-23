@@ -302,6 +302,18 @@ func AutoValueColumns(headers []string, rows [][]string) (cols []string, ok bool
 	return cols, true
 }
 
+// AutoValueEligible reports whether the given chart types are eligible for
+// auto-value-mode. Currently only scatter, bar, and line are supported;
+// pie/heatmap/radar fall back to flat series when all columns are numeric.
+func AutoValueEligible(types []string) bool {
+	for _, t := range types {
+		if t == "scatter" || t == "bar" || t == "line" {
+			return true
+		}
+	}
+	return false
+}
+
 // LogAutoGroup prints the inferred group column(s). The csv/json parsers call
 // it from their prelude so the inference is non-silent, mirroring the CLI's
 // "Auto-detected parser" message. wantXY distinguishes the two-column 3D

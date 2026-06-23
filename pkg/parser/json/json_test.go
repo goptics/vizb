@@ -331,7 +331,7 @@ type JSONAutoGroupSuite struct {
 }
 
 func (s *JSONAutoGroupSuite) SetupTest() {
-	s.cfg = parser.Config{GroupPattern: "x", AutoGroup: true}
+	s.cfg = parser.Config{GroupPattern: "x", AutoGroup: true, ChartTypes: []string{"scatter"}}
 }
 
 func (s *JSONAutoGroupSuite) writeFile(content string) string {
@@ -411,7 +411,7 @@ type JSONAutoValueSuite struct {
 
 func (s *JSONAutoValueSuite) SetupTest() {
 	s.restoreOsExit, _ = testutil.TrapOsExitPanic(s.T())
-	s.cfg = parser.Config{GroupPattern: "x", AutoGroup: true}
+	s.cfg = parser.Config{GroupPattern: "x", AutoGroup: true, ChartTypes: []string{"scatter"}}
 }
 
 func (s *JSONAutoValueSuite) TearDownTest() {
@@ -464,6 +464,24 @@ func (s *JSONAutoValueSuite) TestAutoGroupTakesPriority() {
 
 func (s *JSONAutoValueSuite) TestOneNumericFieldFallsBackToFlat() {
 	j := `[{"price":10},{"price":20}]`
+	results := ParseJSON(s.writeFile(j), s.cfg)
+	s.Require().Len(results, 2)
+	s.Empty(results[0].XAxis)
+	s.NotEmpty(results[0].Stats)
+}
+
+func (s *JSONAutoValueSuite) TestPieChartFallsBackToFlat() {
+	s.cfg.ChartTypes = []string{"pie"}
+	j := `[{"price":10,"latency":5},{"price":20,"latency":7}]`
+	results := ParseJSON(s.writeFile(j), s.cfg)
+	s.Require().Len(results, 2)
+	s.Empty(results[0].XAxis)
+	s.NotEmpty(results[0].Stats)
+}
+
+func (s *JSONAutoValueSuite) TestRadarChartFallsBackToFlat() {
+	s.cfg.ChartTypes = []string{"radar"}
+	j := `[{"price":10,"latency":5},{"price":20,"latency":7}]`
 	results := ParseJSON(s.writeFile(j), s.cfg)
 	s.Require().Len(results, 2)
 	s.Empty(results[0].XAxis)

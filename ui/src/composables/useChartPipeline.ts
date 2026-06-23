@@ -3,7 +3,7 @@ import type { AxisLabels, DataPoint, ChartData, Sort, ScaleType, Axis, ChartType
 import TransformWorker from '../workers/transform.worker.ts?worker&inline'
 import type { WorkerResponse } from '../workers/transform.worker'
 import { listChartSignatures } from '../lib/transform'
-import { isValueMode, isHybridMode } from '../lib/utils'
+import { isValueMode } from '../lib/utils'
 
 // The arrangement the worker projects/groups under: present source axes in
 // canonical order (identityString, e.g. "nx") and the selected target order
@@ -226,16 +226,6 @@ export function useChartPipeline(
           key: '__value_mode__',
           title: `${xLabel} vs ${yLabel}`,
           data: prev.get('__value_mode__')?.data ?? null,
-          pending: true,
-        },
-      ]
-    } else if (ct === 'scatter' && isHybridMode(axesNow)) {
-      const zLabel = axesNow?.find((a) => a.key === 'z')?.label ?? 'z'
-      charts.value = [
-        {
-          key: '__hybrid_mode__',
-          title: zLabel,
-          data: prev.get('__hybrid_mode__')?.data ?? null,
           pending: true,
         },
       ]

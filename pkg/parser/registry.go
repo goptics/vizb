@@ -28,6 +28,7 @@ type Config struct {
 	JSONPath        string       // json only: jq-like dot path to the nested array to chart
 	AutoGroup       bool         // csv/json: infer group columns when no explicit grouping is configured
 	WantsBothXY     bool         // csv/json auto-group: also pick a yAxis (pattern "x,y") to enable 3D
+	ChartTypes      []string     // csv/json auto-value eligibility check (scatter/bar/line only)
 }
 
 type ParseFunc func(filename string, cfg Config) []shared.DataPoint

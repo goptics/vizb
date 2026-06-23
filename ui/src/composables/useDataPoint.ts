@@ -7,7 +7,6 @@ import {
   isValidIndex,
   datasetDimension,
   isValueMode as checkValueMode,
-  isHybridMode,
 } from '../lib/utils'
 import { presentAxisString } from '../lib/swap'
 import { useSettingsStore } from './useSettingsStore'
@@ -116,10 +115,10 @@ const { chartType } = useSettingsStore()
 // True when the active dataset uses pure value-mode axes (--axes x,y[,z]).
 const isValueModeActive = computed(() => checkValueMode(activeDataSet.value?.axes))
 
-// Scatter-only: value or hybrid transform paths are active for this dataset.
+// Value-mode transform path is active for this dataset.
 const isValueModeDataset = computed(() => {
   const axes = activeDataSet.value?.axes
-  return chartType.value === 'scatter' && (checkValueMode(axes) || isHybridMode(axes))
+  return checkValueMode(axes)
 })
 
 // Derive identity from axes[] key order if present, else fall back to data shape.

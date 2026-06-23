@@ -376,3 +376,29 @@ func (s *AutoValueColumnsSuite) TestSingleColumnOnlyReturnsFalse() {
 func TestAutoValueColumnsSuite(t *testing.T) {
 	suite.Run(t, new(AutoValueColumnsSuite))
 }
+
+func TestAutoValueEligible(t *testing.T) {
+	tests := []struct {
+		name  string
+		types []string
+		want  bool
+	}{
+		{"scatter only", []string{"scatter"}, true},
+		{"bar only", []string{"bar"}, true},
+		{"line only", []string{"line"}, true},
+		{"pie only", []string{"pie"}, false},
+		{"heatmap only", []string{"heatmap"}, false},
+		{"radar only", []string{"radar"}, false},
+		{"mixed with eligible", []string{"pie", "bar", "radar"}, true},
+		{"mixed without eligible", []string{"pie", "heatmap", "radar"}, false},
+		{"empty slice", []string{}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := AutoValueEligible(tt.types)
+			if got != tt.want {
+				t.Errorf("AutoValueEligible(%v) = %v, want %v", tt.types, got, tt.want)
+			}
+		})
+	}
+}

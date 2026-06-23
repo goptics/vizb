@@ -131,7 +131,7 @@ export const bundleHas3DChunk = (
   cfg?: { threeD?: boolean }
 ): boolean => datasetDimension(data) === '3D' || cfg?.threeD !== undefined
 
-/** Category value-mode 3D toggle (--3d on x+y grouped data). Hidden for --axes value/hybrid mode. */
+/** Category value-mode 3D toggle (--3d on x+y grouped data). Hidden for --axes value mode. */
 export const canOfferValue3D = (
   chartType: ChartType,
   data: DataPoint[] | undefined,
@@ -140,7 +140,7 @@ export const canOfferValue3D = (
   axes?: Axis[]
 ): boolean => {
   if (chartType === 'scatter') {
-    if (isValueMode(axes) || isHybridMode(axes)) return false
+    if (isValueMode(axes)) return false
     return datasetHasBothXY(data) && !hasZOnChart && bundleHas3DChunk(data, cfg)
   }
   if (isValueMode(axes)) return false
@@ -244,17 +244,3 @@ export const CPUtoString = (cpu: Meta['cpu']) => {
 /** All axes are continuous numeric (--axes x,y[,z] value mode). */
 export const isValueMode = (axes: Axis[] | undefined): boolean =>
   !!axes?.length && axes.every((a) => a.type === 'value')
-
-/** Scatter hybrid: 2 category axes (x,y) + 1 value axis (z). */
-export const isHybridMode = (axes: Axis[] | undefined): boolean => {
-  if (!axes?.length || isValueMode(axes)) return false
-  const valueAxes = axes.filter((a) => a.type === 'value')
-  const categoryAxes = axes.filter((a) => a.type !== 'value')
-  return (
-    valueAxes.length === 1 &&
-    valueAxes[0]!.key === 'z' &&
-    categoryAxes.length === 2 &&
-    categoryAxes.some((a) => a.key === 'x') &&
-    categoryAxes.some((a) => a.key === 'y')
-  )
-}

@@ -147,12 +147,14 @@ func ParseJSON(filename string, cfg parser.Config) []shared.DataPoint {
 				shared.ExitWithError(err.Error(), nil)
 			}
 			parser.LogAutoGroup(cols, cfg.WantsBothXY)
-		} else if valCols, vok := parser.AutoValueColumns(headers, stringRows); vok {
-			cfg.Axes = make([]parser.ColumnSpec, len(valCols))
-			for i, name := range valCols {
-				cfg.Axes[i] = parser.ColumnSpec{Source: name}
+		} else if parser.AutoValueEligible(cfg.ChartTypes) {
+			if valCols, vok := parser.AutoValueColumns(headers, stringRows); vok {
+				cfg.Axes = make([]parser.ColumnSpec, len(valCols))
+				for i, name := range valCols {
+					cfg.Axes[i] = parser.ColumnSpec{Source: name}
+				}
+				parser.LogAutoValue(valCols)
 			}
-			parser.LogAutoValue(valCols)
 		}
 	}
 
