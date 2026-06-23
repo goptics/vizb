@@ -22,7 +22,7 @@
   </p>
 
   <p>
-    A CLI that turns any <strong>CSV or JSON table</strong> into interactive <strong>4D charts</strong> in a single self-contained HTML file — no server, no dependencies, no build step. Hand it a spreadsheet export or API dump and get explorable, multi-dimensional charts instead of raw rows. Benchmark output from Go, Rust, and JavaScript is supported too, with grouping and merge tools for comparing runs across releases.
+    A CLI that turns any <strong>CSV or JSON table</strong> into interactive charts in a single self-contained HTML file — no server, no dependencies, no build step. Hand it a spreadsheet export or API dump and get explorable, multi-dimensional charts instead of raw rows. Benchmark output from Go, Rust, and JavaScript is supported too, with grouping and merge tools for comparing runs across releases.
   </p>
 
   <p>
@@ -59,29 +59,6 @@ go install github.com/goptics/vizb@latest
 ### Download Binary
 
 Pre-built binaries for Linux, macOS, and Windows are available on the [releases page](https://github.com/goptics/vizb/releases).
-
-## Development
-
-This project uses [Task](https://taskfile.dev/) for managing development workflows.
-
-### Setup
-
-```bash
-go install github.com/go-task/task/v3/cmd/task@latest
-task init
-```
-
-### Available Tasks
-
-```bash
-task dev:ui      # Run the UI in development mode
-task dev:docs    # Run the docs site in development mode
-task build:ui    # Build the UI
-task build:cli   # Build the binary to ./bin/vizb
-task build:docs  # Build the docs for production
-task build       # Build everything
-task test        # Run tests
-```
 
 ## Contributing
 
