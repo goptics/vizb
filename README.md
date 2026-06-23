@@ -22,7 +22,7 @@
   </p>
 
   <p>
-    A CLI that turns any <strong>CSV or JSON table</strong> into interactive charts in a single self-contained HTML file — no server, no dependencies, no build step. Hand it a spreadsheet export or API dump and get explorable, multi-dimensional charts instead of raw rows. Benchmark output from Go, Rust, and JavaScript is supported too, with grouping and merge tools for comparing runs across releases.
+    A tabular visualization engine for <strong>CSV, JSON, and benchmark output</strong>. Turns numeric rows into interactive charts and descriptive statistics in one self-contained HTML file — no server, no dependencies, no build step.
   </p>
 
   <p>

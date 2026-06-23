@@ -55,10 +55,12 @@ var rootOpts rootOptions
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "vizb [target]",
-	Short: "Visualize tabular CSV/JSON data as interactive charts",
-	Long: `A CLI tool that turns any tabular CSV/JSON data into an interactive, self-contained HTML chart application. 
-	It reads a file or piped stdin, auto-detects the input format (override with --parser),
-and renders bar, line, pie, heatmap, and radar charts you can explore in the browser.`,
+	Short: "Tabular visualization engine — charts and stats from CSV, JSON, and benchmarks",
+	Long: `A tabular visualization engine for CSV, JSON, and benchmark output.
+Turns numeric rows into interactive charts and descriptive statistics in one
+self-contained HTML file. Reads a file or piped stdin, auto-detects the input
+format (override with --parser), and renders bar, line, scatter, pie, heatmap,
+and radar charts you can explore in the browser.`,
 	Version: version.Version,
 	Args:    cobra.ArbitraryArgs,
 	Run:     runBenchmark,

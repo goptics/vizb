@@ -5,9 +5,9 @@ description: Generate a single chart type with only the flags that chart support
 
 import { Aside } from '@astrojs/starlight/components';
 
-Each chart type has its own subcommand: `vizb bar`, `vizb line`, `vizb scatter`, `vizb pie`, `vizb heatmap`, and `vizb radar`. A chart subcommand is equivalent to the root command restricted to one chart — `vizb bar data.csv` produces the same output as `vizb data.csv --charts bar` — but it exposes **only the flags valid for that chart**. For example, `--scale` and `--3d-rotate` exist on `bar`/`line`/`scatter` but not on `pie`/`heatmap`/`radar`, and only `scatter` accepts `--axes`, so an unsupported flag fails fast instead of being silently ignored.
+Chart subcommands (`vizb bar`, `vizb line`, `vizb scatter`, `vizb pie`, `vizb heatmap`, `vizb radar`) generate one chart at a time. They produce the same output as the root command with `--charts` limited to that type, but accept only the flags valid for the chart — unsupported flags fail fast.
 
-Use a subcommand when you want a single focused chart; use the [root command](/commands/root) with `--charts` when you want several chart types from one dataset.
+Use a subcommand for a single chart; use the [root command](/commands/root) with `--charts` for multiple chart types from one dataset.
 
 ## Usage
 

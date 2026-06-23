@@ -12,8 +12,8 @@ export default defineConfig({
 	},
 	integrations: [
 	starlight({
-		title: 'Turn any table into interactive charts',
-		description: 'Vizb renders any CSV or JSON table — and benchmark output from Go, Rust, and JavaScript — as interactive charts in a single self-contained HTML file.',
+		title: 'Tabular data visualization engine',
+		description: 'Vizb is a tabular visualization engine for CSV, JSON, and benchmark output — interactive charts and descriptive statistics in one self-contained HTML file.',
 		logo: {
 			dark: './src/assets/logo-dark.svg',
 			light: './src/assets/logo-light.svg',

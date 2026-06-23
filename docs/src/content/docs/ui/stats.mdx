@@ -5,7 +5,17 @@ description: Per-series descriptive statistics and a correlation matrix, compute
 
 import { CardGrid, Card, Aside } from '@astrojs/starlight/components';
 
-Every chart has a **statistics** button. It opens a panel over the chart area. The panel has two tabs — a **descriptive** table and a **correlation** matrix. Both are computed in a Web Worker. The UI never blocks, even on large datasets.
+The statistics panel is **opt-in**. Pass `--stat` when you generate HTML — on the [root command](/commands/root), a [chart subcommand](/commands/charts), or [`vizb ui`](/commands/ui) — to add a **statistics** button on each chart. Omit `--stat` and charts render without the panel.
+
+```bash
+vizb data.csv --stat -o output.html              # all categories
+vizb bar data.csv --stat=center,spread -o bar.html   # specific groups only
+vizb ui data.json --stat -o report.html          # JSON → HTML pipeline
+```
+
+Use `--stat` alone (or `--stat=all`) for every metric group and the correlation matrix. Pass a comma-separated list to limit what appears: `counts`, `center`, `spread`, `extremes`, `shape`, `percentiles`, `confidence`, `correlations`.
+
+When enabled, the button opens a panel over the chart area with two tabs — a **descriptive** table and a **correlation** matrix. Both are computed in a Web Worker. The UI never blocks, even on large datasets.
 
 These stats work on any dataset. They are especially handy for exploring an unfamiliar CSV or JSON table before you decide what to chart.
 
