@@ -320,128 +320,6 @@ func (s *CSVSuite) TestLessThanTwoRowsReturnsNil() {
 	s.Nil(ParseCSV(s.writeFile(""), s.cfg))
 }
 
-func (s *CSVSuite) TestAxesValueModeTwoColumns() {
-	s.cfg.Axes = []parser.ColumnSpec{{Source: "price"}, {Source: "latency"}}
-	csv := "name,price,latency\na,100,12\nb,200,8\n"
-
-	results := ParseCSV(s.writeFile(csv), s.cfg)
-
-	s.Len(results, 2)
-	s.Equal("100", results[0].XAxis)
-	s.Equal("12", results[0].YAxis)
-	s.Equal("", results[0].ZAxis)
-	s.Empty(results[0].Stats)
-	s.Equal("200", results[1].XAxis)
-	s.Equal("8", results[1].YAxis)
-}
-
-func (s *CSVSuite) TestAxesValueModeThreeColumns() {
-	s.cfg.Axes = []parser.ColumnSpec{{Source: "x"}, {Source: "y"}, {Source: "z"}}
-	csv := "x,y,z\n1,2,3\n"
-
-	results := ParseCSV(s.writeFile(csv), s.cfg)
-
-	s.Len(results, 1)
-	s.Equal("1", results[0].XAxis)
-	s.Equal("2", results[0].YAxis)
-	s.Equal("3", results[0].ZAxis)
-}
-
-func (s *CSVSuite) TestAxesValueModeSkipsNonNumericRow() {
-	s.cfg.Axes = []parser.ColumnSpec{{Source: "x"}, {Source: "y"}}
-	csv := "x,y\n1,2\nbad,3\n4,5\n"
-
-	results := ParseCSV(s.writeFile(csv), s.cfg)
-
-	s.Len(results, 2) // the "bad" row is dropped
-	s.Equal("4", results[1].XAxis)
-}
-
-func (s *CSVSuite) TestAxesValueModeMissingColumnErrors() {
-	s.cfg.Axes = []parser.ColumnSpec{{Source: "missing"}, {Source: "y"}}
-	csv := "x,y\n1,2\n"
-
-	s.Panics(func() { ParseCSV(s.writeFile(csv), s.cfg) })
-}
-
-func (s *CSVSuite) TestAxesValueModeNonNumericColumnErrors() {
-	s.cfg.Axes = []parser.ColumnSpec{{Source: "name"}, {Source: "y"}}
-	csv := "name,y\nalpha,2\n"
-
-	s.Panics(func() { ParseCSV(s.writeFile(csv), s.cfg) })
-}
-
-func (s *CSVSuite) TestHybridModeGroupPlusAxesColumn() {
-	s.cfg.Group = []string{"region", "category"}
-	s.cfg.GroupPattern = "x,y"
-	s.cfg.Axes = []parser.ColumnSpec{{Source: "latency", Label: "Latency (ms)"}}
-	csv := "region,category,latency\nUS,Widget,12\nEU,Gadget,8\n"
-
-	results := ParseCSV(s.writeFile(csv), s.cfg)
-
-	s.Len(results, 2)
-	s.Equal("US", results[0].XAxis)
-	s.Equal("Widget", results[0].YAxis)
-	s.Empty(results[0].ZAxis)
-	s.Len(results[0].Stats, 1)
-	s.Equal("Latency (ms)", results[0].Stats[0].Type)
-	s.Equal(12.0, *results[0].Stats[0].Value)
-	s.Equal("EU", results[1].XAxis)
-	s.Equal("Gadget", results[1].YAxis)
-	s.Equal(8.0, *results[1].Stats[0].Value)
-}
-
-func (s *CSVSuite) TestHybridModeZLabelFallsBackToSource() {
-	s.cfg.Group = []string{"region", "category"}
-	s.cfg.GroupPattern = "x,y"
-	s.cfg.Axes = []parser.ColumnSpec{{Source: "latency"}}
-	csv := "region,category,latency\nUS,Widget,12\n"
-
-	results := ParseCSV(s.writeFile(csv), s.cfg)
-
-	s.Len(results, 1)
-	s.Equal("latency", results[0].Stats[0].Type)
-}
-
-func (s *CSVSuite) TestHybridModeSkipsRaggedZRow() {
-	s.cfg.Group = []string{"region", "category"}
-	s.cfg.GroupPattern = "x,y"
-	s.cfg.Axes = []parser.ColumnSpec{{Source: "latency"}}
-	csv := "region,category,latency\nUS,Widget,12\nEU,Gadget\nFR,Tool,5\n"
-
-	results := ParseCSV(s.writeFile(csv), s.cfg)
-
-	s.Len(results, 2)
-	s.Equal("US", results[0].XAxis)
-	s.Equal("FR", results[1].XAxis)
-}
-
-func (s *CSVSuite) TestHybridModeFilterRegex() {
-	s.cfg.Group = []string{"region", "category"}
-	s.cfg.GroupPattern = "x,y"
-	s.cfg.Axes = []parser.ColumnSpec{{Source: "latency"}}
-	s.cfg.Filter = "US"
-	csv := "region,category,latency\nUS,Widget,12\nEU,Gadget,8\n"
-
-	results := ParseCSV(s.writeFile(csv), s.cfg)
-
-	s.Len(results, 1)
-	s.Equal("US", results[0].XAxis)
-}
-
-func (s *CSVSuite) TestHybridModeSkipsNonNumericZRow() {
-	s.cfg.Group = []string{"region", "category"}
-	s.cfg.GroupPattern = "x,y"
-	s.cfg.Axes = []parser.ColumnSpec{{Source: "latency"}}
-	csv := "region,category,latency\nUS,Widget,12\nEU,Gadget,bad\nFR,Tool,5\n"
-
-	results := ParseCSV(s.writeFile(csv), s.cfg)
-
-	s.Len(results, 2)
-	s.Equal("US", results[0].XAxis)
-	s.Equal("FR", results[1].XAxis)
-}
-
 func TestCSVSuite(t *testing.T) {
 	suite.Run(t, new(CSVSuite))
 }
@@ -482,36 +360,181 @@ func (s *CSVFatalSuite) TestNoNumericColumnsIsFatal() {
 	s.PanicsWithValue("exit", func() { ParseCSV(path, s.cfg) })
 }
 
-func (s *CSVFatalSuite) TestHybridModeNonNumericZColumnErrors() {
-	s.cfg.Group = []string{"region", "category"}
-	s.cfg.GroupPattern = "x,y"
-	s.cfg.Axes = []parser.ColumnSpec{{Source: "label"}}
-	path := s.writeFile("region,category,label\nUS,Widget,foo\n")
-
-	s.PanicsWithValue("exit", func() { ParseCSV(path, s.cfg) })
-}
-
-func (s *CSVFatalSuite) TestHybridModeGroupParseError() {
-	cfg, err := parser.ResolveGroupConfig(parser.Config{
-		Group:        []string{"date", "category"},
-		GroupPattern: "[x-y-n],z",
-	})
-	s.Require().NoError(err)
-	cfg.Axes = []parser.ColumnSpec{{Source: "latency"}}
-	path := s.writeFile("region,category,latency\n2022-2-30,Widget,12\n")
-
-	s.PanicsWithValue("exit", func() { ParseCSV(path, cfg) })
-}
-
-func (s *CSVFatalSuite) TestHybridModeMissingZColumnErrors() {
-	s.cfg.Group = []string{"region", "category"}
-	s.cfg.GroupPattern = "x,y"
-	s.cfg.Axes = []parser.ColumnSpec{{Source: "missing"}}
-	path := s.writeFile("region,category,latency\nUS,Widget,12\n")
-
-	s.PanicsWithValue("exit", func() { ParseCSV(path, s.cfg) })
-}
-
 func TestCSVFatalSuite(t *testing.T) {
 	suite.Run(t, new(CSVFatalSuite))
+}
+
+// CSVAutoGroupSuite exercises ParseCSV with cfg.AutoGroup set, simulating the
+// pipeline's "no grouping configured" case.
+type CSVAutoGroupSuite struct {
+	suite.Suite
+	cfg           parser.Config
+	restoreOsExit func()
+}
+
+func (s *CSVAutoGroupSuite) SetupTest() {
+	s.restoreOsExit, _ = testutil.TrapOsExitPanic(s.T())
+	s.cfg = parser.Config{GroupPattern: "x", AutoGroup: true}
+}
+
+func (s *CSVAutoGroupSuite) TearDownTest() {
+	s.restoreOsExit()
+}
+
+func (s *CSVAutoGroupSuite) writeFile(content string) string {
+	path := filepath.Join(s.T().TempDir(), "data.csv")
+	s.Require().NoError(os.WriteFile(path, []byte(content), 0644))
+	return path
+}
+
+func (s *CSVAutoGroupSuite) TestCategoricalColumnBecomesXAxis() {
+	csv := "region,sells\nWest,10\nEast,20\n"
+	results := ParseCSV(s.writeFile(csv), s.cfg)
+	s.Require().Len(results, 2)
+	s.Equal("West", results[0].XAxis)
+	s.Equal("East", results[1].XAxis)
+	s.Equal([]string{"sells"}, statTypes(results[0].Stats))
+}
+
+func (s *CSVAutoGroupSuite) TestHighestCardinalityCategoricalWins() {
+	// product has 3 distinct values; region has 2 → xAxis=product
+	csv := "region,product,sells\nWest,A,10\nEast,B,20\nWest,C,30\n"
+	results := ParseCSV(s.writeFile(csv), s.cfg)
+	s.Require().Len(results, 3)
+	s.Equal("A", results[0].XAxis)
+	s.Equal("B", results[1].XAxis)
+	s.Equal("C", results[2].XAxis)
+	s.Equal([]string{"sells"}, statTypes(results[0].Stats))
+}
+
+func (s *CSVAutoGroupSuite) TestAllNumericAutoValues() {
+	// all numeric → auto-value-mode kicks in: first 2 cols become x,y value axes
+	csv := "id,sells\n1,10\n2,20\n3,30\n"
+	results := ParseCSV(s.writeFile(csv), s.cfg)
+	s.Require().Len(results, 3)
+	s.Equal("1", results[0].XAxis)
+	s.Equal("10", results[0].YAxis)
+	s.Empty(results[0].Stats)
+}
+
+func (s *CSVAutoGroupSuite) TestWantXYPicksTwoColumnsFor3D() {
+	s.cfg.WantsBothXY = true
+	csv := "region,product,sells\nWest,A,10\nEast,B,20\nNorth,C,30\nSouth,D,40\nCentral,E,50\nWest,F,60\nEast,G,70\n"
+	// product 7 distinct > region 5 → xAxis=product, yAxis=region
+	results := ParseCSV(s.writeFile(csv), s.cfg)
+	s.Require().NotEmpty(results)
+	for _, r := range results {
+		s.NotEmpty(r.YAxis) // 3D path populates yAxis too
+	}
+}
+
+func (s *CSVAutoGroupSuite) TestExplicitGroupDisablesAutoGroup() {
+	// Even though AutoGroup is true, explicit --group wins (AutoGroupApplies
+	// checks len(cfg.Group)==0).
+	s.cfg.Group = []string{"region"}
+	csv := "region,product,sells\nWest,A,10\nEast,B,20\n"
+	results := ParseCSV(s.writeFile(csv), s.cfg)
+	s.Require().Len(results, 2)
+	s.Equal("West", results[0].XAxis)
+	s.Empty(results[0].YAxis) // explicit single-col group, no yAxis
+}
+
+func (s *CSVAutoGroupSuite) TestSingleColumnNoOp() {
+	csv := "sells\n10\n20\n"
+	results := ParseCSV(s.writeFile(csv), s.cfg)
+	// single column: auto-group cannot pick an axis; numeric col becomes a stat
+	s.Require().Len(results, 2)
+	s.Empty(results[0].XAxis)
+}
+
+func TestCSVAutoGroupSuite(t *testing.T) {
+	suite.Run(t, new(CSVAutoGroupSuite))
+}
+
+type CSVAutoValueSuite struct {
+	suite.Suite
+	cfg           parser.Config
+	restoreOsExit func()
+}
+
+func (s *CSVAutoValueSuite) SetupTest() {
+	s.restoreOsExit, _ = testutil.TrapOsExitPanic(s.T())
+	s.cfg = parser.Config{GroupPattern: "x", AutoGroup: true}
+}
+
+func (s *CSVAutoValueSuite) TearDownTest() {
+	s.restoreOsExit()
+}
+
+func (s *CSVAutoValueSuite) writeFile(content string) string {
+	path := filepath.Join(s.T().TempDir(), "data.csv")
+	s.Require().NoError(os.WriteFile(path, []byte(content), 0644))
+	return path
+}
+
+func (s *CSVAutoValueSuite) TestTwoNumericColsProduceValueAxes() {
+	csv := "price,latency\n10,5\n20,7\n30,9\n"
+	results := ParseCSV(s.writeFile(csv), s.cfg)
+	s.Require().Len(results, 3)
+	s.Equal("10", results[0].XAxis)
+	s.Equal("5", results[0].YAxis)
+	s.Equal("20", results[1].XAxis)
+	s.Equal("7", results[1].YAxis)
+	s.Empty(results[0].Stats)
+}
+
+func (s *CSVAutoValueSuite) TestThreeNumericColsProduceValueAxes() {
+	csv := "price,latency,memory\n10,5,100\n20,7,200\n30,9,300\n"
+	results := ParseCSV(s.writeFile(csv), s.cfg)
+	s.Require().Len(results, 3)
+	s.Equal("10", results[0].XAxis)
+	s.Equal("5", results[0].YAxis)
+	s.Equal("100", results[0].ZAxis)
+	s.Empty(results[0].Stats)
+}
+
+func (s *CSVAutoValueSuite) TestFourNumericColsTakeFirstThree() {
+	csv := "a,b,c,d\n1,2,3,4\n5,6,7,8\n"
+	results := ParseCSV(s.writeFile(csv), s.cfg)
+	s.Require().Len(results, 2)
+	s.Equal("1", results[0].XAxis)
+	s.Equal("2", results[0].YAxis)
+	s.Equal("3", results[0].ZAxis)
+	s.Empty(results[0].Stats)
+	// column d is silently dropped
+}
+
+func (s *CSVAutoValueSuite) TestOneNumericColFallsBackToFlat() {
+	// single numeric column → auto-group and auto-value both skip, flat series
+	csv := "price\n10\n20\n"
+	results := ParseCSV(s.writeFile(csv), s.cfg)
+	s.Require().Len(results, 2)
+	s.Empty(results[0].XAxis)
+	s.NotEmpty(results[0].Stats)
+}
+
+func (s *CSVAutoValueSuite) TestAutoGroupTakesPriorityOverAutoValue() {
+	// categorical columns exist → auto-group fires, not auto-value
+	csv := "region,price,product\nWest,10,foo\nEast,20,bar\n"
+	results := ParseCSV(s.writeFile(csv), s.cfg)
+	s.Require().Len(results, 2)
+	s.NotEmpty(results[0].XAxis) // categorical xAxis from auto-group
+	s.Empty(results[0].YAxis)    // single-col group
+	s.NotEmpty(results[0].Stats) // price becomes chart column
+}
+
+func (s *CSVAutoValueSuite) TestMixedTypesSkipsNonNumeric() {
+	// region (non-numeric), price (numeric), product (non-numeric), latency (numeric)
+	// auto-group picks the categorical with highest cardinality
+	// auto-value only fires when NO categoricals exist
+	csv := "region,price,product,latency\nWest,10,foo,5\nEast,20,bar,7\n"
+	results := ParseCSV(s.writeFile(csv), s.cfg)
+	// region has 2 distinct, product has 2 distinct → auto-group picks region as xAxis
+	s.Require().Len(results, 2)
+	s.NotEmpty(results[0].XAxis)
+	s.NotEmpty(results[0].Stats)
+}
+
+func TestCSVAutoValueSuite(t *testing.T) {
+	suite.Run(t, new(CSVAutoValueSuite))
 }

@@ -34,7 +34,6 @@ func (s *ScatterSuite) TestCommandFlags() {
 	s.NotNil(cmd.Flags().Lookup("swap"))
 	s.NotNil(cmd.Flags().Lookup("sort"))
 	s.NotNil(cmd.Flags().Lookup("show-labels"))
-	s.NotNil(cmd.Flags().Lookup("axes"))
 }
 
 func (s *ScatterSuite) TestBakesScatterOnlySelection() {
@@ -99,144 +98,32 @@ func (s *ScatterSuite) TestScatterCommandThreeDWithoutXYWarns() {
 	s.True(*scatterCfg.ThreeD)
 }
 
-func (s *ScatterSuite) TestParseConfigMapsAxesAlone() {
-	o := &Options{Axes: "price,latency"}
-	o.GroupPattern = "x"
-	cfg := o.ParseConfig()
-	s.Require().Len(cfg.Axes, 2)
-	s.Equal("price", cfg.Axes[0].Source)
-	s.Equal("latency", cfg.Axes[1].Source)
-}
-
-func (s *ScatterSuite) TestParseConfigAcceptsHybridGroupAxes() {
-	o := &Options{Axes: "latency"}
-	o.GroupPattern = "x,y"
-	o.Group = []string{"region", "category"}
-	cfg := o.ParseConfig()
-	s.Require().Len(cfg.Axes, 1)
-	s.Equal("latency", cfg.Axes[0].Source)
-	s.Equal([]string{"region", "category"}, cfg.Group)
-}
-
-func (s *ScatterSuite) TestParseConfigRejectsHybridOverlap() {
-	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
-	defer restore()
-
-	o := &Options{Axes: "region"}
-	o.GroupPattern = "x,y"
-	o.Group = []string{"region", "category"}
-	s.Panics(func() { o.ParseConfig() })
-	s.True(*exitCalled)
-}
-
-func (s *ScatterSuite) TestParseConfigRejectsHybridWrongArity() {
-	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
-	defer restore()
-
-	o := &Options{Axes: "price,latency"}
-	o.GroupPattern = "x,y"
-	o.Group = []string{"region", "category"}
-	s.Panics(func() { o.ParseConfig() })
-	s.True(*exitCalled)
-}
-
-func (s *ScatterSuite) TestParseConfigRejectsAxesWithSelect() {
-	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
-	defer restore()
-
-	o := &Options{Axes: "price,latency"}
-	o.GroupPattern = "x"
-	o.Select = "mem"
-	s.Panics(func() { o.ParseConfig() })
-	s.True(*exitCalled)
-}
-
-func (s *ScatterSuite) TestParseConfigRejectsAxesWithGroupRegex() {
-	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
-	defer restore()
-
-	o := &Options{Axes: "latency"}
-	o.GroupRegex = `(?P<x>.*)`
-	o.Group = []string{"benchmark"}
-	s.Panics(func() { o.ParseConfig() })
-	s.True(*exitCalled)
-}
-
-func (s *ScatterSuite) TestParseConfigRejectsHybridWrongGroupCount() {
-	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
-	defer restore()
-
-	o := &Options{Axes: "latency"}
-	o.GroupPattern = "x"
-	o.Group = []string{"region"}
-	s.Panics(func() { o.ParseConfig() })
-	s.True(*exitCalled)
-}
-
-func (s *ScatterSuite) TestParseConfigRejectsInvalidValueAxesArity() {
-	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
-	defer restore()
-
-	o := &Options{Axes: "price"}
-	s.Panics(func() { o.ParseConfig() })
-	s.True(*exitCalled)
-}
-
-func (s *ScatterSuite) TestParseConfigRejectsInvalidHybridAxesSyntax() {
-	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
-	defer restore()
-
-	o := &Options{Axes: "latency{"}
-	o.GroupPattern = "x,y"
-	o.Group = []string{"region", "category"}
-	s.Panics(func() { o.ParseConfig() })
-	s.True(*exitCalled)
-}
-
-func (s *ScatterSuite) TestScatterCommandAxesAloneWorks() {
+func (s *ScatterSuite) TestScatterCommandAutoValueTwoCols() {
 	dir := s.T().TempDir()
 	csv := filepath.Join(dir, "data.csv")
 	s.Require().NoError(os.WriteFile(csv, []byte("price,latency\n100,12\n200,18\n"), 0644))
 	out := filepath.Join(dir, "out.json")
 
 	cmd := NewCommand()
-	cmd.SetArgs([]string{"-o", out, "-P", "auto", "--axes", "price,latency", csv})
+	cmd.SetArgs([]string{"-o", out, "-P", "auto", csv})
 	s.Require().NoError(cmd.Execute())
 
 	ds := testutil.ReadDataset(s.T(), out)
 	s.Require().Len(ds.Axes, 2)
 	s.Equal("value", ds.Axes[0].Type)
 	s.Equal("x", ds.Axes[0].Key)
-	s.Equal("price", ds.Axes[0].Label)
-	s.Equal("latency", ds.Axes[1].Label)
+	s.Equal("value", ds.Axes[1].Type)
+	s.Equal("y", ds.Axes[1].Key)
 }
 
-func (s *ScatterSuite) TestScatterCommandHybridModeWorks() {
-	dir := s.T().TempDir()
-	csv := filepath.Join(dir, "data.csv")
-	s.Require().NoError(os.WriteFile(csv, []byte("region,category,latency\nUS,Widget,12\nEU,Gadget,8\n"), 0644))
-	out := filepath.Join(dir, "out.json")
-
-	cmd := NewCommand()
-	cmd.SetArgs([]string{"-o", out, "-P", "auto", "-g", "region,category", "-p", "x,y", "--axes", "latency", csv})
-	s.Require().NoError(cmd.Execute())
-
-	ds := testutil.ReadDataset(s.T(), out)
-	s.Require().Len(ds.Axes, 3)
-	s.Equal("z", ds.Axes[2].Key)
-	s.Equal("value", ds.Axes[2].Type)
-	s.Equal("latency", ds.Axes[2].Label)
-	s.NotEmpty(ds.Data)
-}
-
-func (s *ScatterSuite) TestScatterCommandValueModeThreeAxes() {
+func (s *ScatterSuite) TestScatterCommandAutoValueThreeCols() {
 	dir := s.T().TempDir()
 	csv := filepath.Join(dir, "data.csv")
 	s.Require().NoError(os.WriteFile(csv, []byte("x,y,z\n1,2,3\n4,5,6\n"), 0644))
 	out := filepath.Join(dir, "out.json")
 
 	cmd := NewCommand()
-	cmd.SetArgs([]string{"-o", out, "-P", "auto", "--axes", "x,y,z", csv})
+	cmd.SetArgs([]string{"-o", out, "-P", "auto", csv})
 	s.Require().NoError(cmd.Execute())
 
 	ds := testutil.ReadDataset(s.T(), out)

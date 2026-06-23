@@ -51,6 +51,39 @@ Grouping extracts up to four dimensions from each label:
 
 CSV and JSON rows have no benchmark name. You tell vizb which columns carry the structure. The `--group` / `-g` flag selects columns. The `--group-pattern` / `-p` flag assigns each column to a dimension. By default each column maps to one dimension (`-p y,x`). Use **bracket slots** `[...]` when a single column's **cell value** encodes multiple dimensions (dates, slash paths, underscore IDs, etc.).
 
+### Auto-grouping (no flags needed)
+
+If you run vizb on a CSV or JSON file **without** any of `--group`, `--group-pattern` (beyond its default), or `--group-regex`, vizb infers the category axis for you so `vizb sales.csv` "just works":
+
+1. It collects **non-numeric columns** as candidates (numeric columns are ignored entirely).
+2. It ranks candidates by **distinct-value count** (highest cardinality wins; ties go to the leftmost column) and picks the top one as the **XAxis** (`-p x`).
+3. When you request a 3D chart (e.g. `--chart bar:3d` or `vizb scatter --3d …`), it also picks the 2nd-most-unique candidate as the **YAxis** (`-p x,y`) so the 3D renderer has both axes. A single categorical column leaves the pattern as `-p x` and warns that 3D needs both `x` and `y`.
+
+The choice is logged to stdout (`🧠 Auto-grouped by column: region`), so you can override it with an explicit `--group` whenever the inference is wrong. Benchmark parsers (Go, Rust, JavaScript) are unaffected — auto-grouping applies only to the `csv` and `json` parsers.
+
+```bash
+vizb sales.csv -o sales.html            # auto-picks region (or similar) as the X axis
+vizb sales.csv --chart bar:3d -o 3d.html  # also picks a Y axis if a 2nd categorical exists
+vizb sales.csv -g product -p y -o o.html  # explicit --group disables auto-grouping
+```
+
+### Auto-value-mode (all-numeric data)
+
+When every column in a CSV/JSON file is numeric (no categorical columns exist), auto-grouping has nothing to pick. Instead, vizb **auto-assigns the first 2-3 columns** as value-type coordinate axes (`x`, `y`, `z`) — no flag needed.
+
+| Columns | Axes | Pattern |
+|---|---|---|
+| 2+ | `x`, `y` | 2D value |
+| 3+ | `x`, `y`, `z` (first 3 only; extras ignored) | 3D value |
+
+This makes scatter charts on all-numeric data work out of the box. The inference is logged: `🧠 Auto-valued by columns: price, latency, memory (3D pattern x-y-z)`.
+
+```bash
+vizb scatter prices.csv -o scatter.html       # auto-value x,y from first 2 columns
+vizb scatter points.csv --3d -o 3d.html        # auto-value x,y,z from first 3 columns
+vizb bar allnums.csv -o bars.html              # also auto-value (UI render deferred)
+```
+
 ### Matching separators
 
 For tabular data, `-g` and `-p` must use the same separators between column slots. If they disagree, vizb exits before parsing:

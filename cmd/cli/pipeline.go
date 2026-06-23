@@ -51,6 +51,17 @@ func RunLinearWithConfig(cmd *cobra.Command, args []string, common CommonOptions
 		common.Parser = detected
 		fmt.Println(style.Info.Render("✨ Auto-detected parser: " + detected))
 	}
+
+	// Enable auto-grouping for the csv/json parsers when the user supplied no
+	// explicit grouping. The csv/json parsers infer the category axis from the
+	// data so `vizb data.csv` produces a usable chart without -g/-p/-r.
+	if (common.Parser == "csv" || common.Parser == "json") && parser.NoExplicitGrouping(cfg) {
+		cfg.AutoGroup = true
+		if chartConfigsRequest3D(configs) {
+			cfg.WantsBothXY = true
+		}
+	}
+
 	WarnThreeDIfIneligible(cfg, configs)
 	outFile := ResolveOutputFileName(common.OutputFile)
 
@@ -70,6 +81,17 @@ func RunLinearWithConfig(cmd *cobra.Command, args []string, common CommonOptions
 		}
 		results := prepareData(target, common.Parser, cfg)
 		dataSet = assembleDataset(results, common, configs, cfg)
+		// Validate swap only for chart subcommands (applyOnPassthrough true).
+		// The root command stores swap as-is, trusting the UI to handle it.
+		if applyOnPassthrough {
+			for _, cc := range configs {
+				if swp := cc.SwapString(); swp != "" {
+					if err := shared.ValidateSwap(swp, dataSet.Axes); err != nil {
+						shared.ExitWithError(err.Error(), nil)
+					}
+				}
+			}
+		}
 	} else if applyOnPassthrough {
 		applySelections(dataSet, configs)
 	}
@@ -99,11 +121,29 @@ func RunSingleChartWithConfig(cmd *cobra.Command, args []string, common CommonOp
 
 // WarnThreeDIfIneligible prints a warning when threeD is baked on a bar/line
 // config but the group pattern does not declare both x and y. The flag is kept.
+// When auto-grouping will set both axes (AutoGroup && WantsBothXY), the warning
+// is deferred to the parser — it fires only if the parser's auto-inference
+// cannot find enough categorical columns.
 func WarnThreeDIfIneligible(cfg parser.Config, configs []config_charts.ChartConfig) {
+	if cfg.AutoGroup && cfg.WantsBothXY {
+		return
+	}
 	if parser.PatternHasBothXY(cfg) || !shared.SettingsHasThreeDOption(configs) {
 		return
 	}
 	shared.PrintWarning("Warning: --3d requires both x and y in --group-pattern; value 3D will not render.")
+}
+
+// chartConfigsRequest3D reports whether the per-chart configs include a 3D-
+// capable chart type with a 3D option baked in (--3d). Used to tell the
+// csv/json auto-group path to also populate yAxis so the 3D renderer has both
+// axes (mirrors the DatasetNeeds3D decision in shared/chart_selection.go).
+func chartConfigsRequest3D(configs []config_charts.ChartConfig) bool {
+	types := make([]string, len(configs))
+	for i, c := range configs {
+		types[i] = c.ChartType()
+	}
+	return shared.ChartsHave3DCapable(types) && shared.SettingsHasThreeDOption(configs)
 }
 
 // ValidateScale normalises and validates a scale flag (linear/log), falling back
@@ -284,14 +324,63 @@ func formatAggregationGroup(cfg parser.Config) string {
 	return colPhrase + " (" + strings.Join(dims, ", ") + ")"
 }
 
+// deriveAxesFromData scans parsed data points to determine which axes are
+// populated. Used when auto-grouping modified the config inside the parser
+// (invisible to the caller since Config is passed by value).
+func deriveAxesFromData(results []shared.DataPoint) []shared.Axis {
+	var axes []shared.Axis
+	if len(results) == 0 {
+		return axes
+	}
+	// Value mode is signaled by empty Stats + populated coordinate axes.
+	valueMode := len(results[0].Stats) == 0
+	hasName, hasX, hasY, hasZ := false, false, false, false
+	for _, dp := range results {
+		if dp.Name != "" {
+			hasName = true
+		}
+		if dp.XAxis != "" {
+			hasX = true
+		}
+		if dp.YAxis != "" {
+			hasY = true
+		}
+		if dp.ZAxis != "" {
+			hasZ = true
+		}
+	}
+	axisType := ""
+	if valueMode {
+		axisType = "value"
+	}
+	if hasName {
+		axes = append(axes, shared.Axis{Key: "name", Type: axisType})
+	}
+	if hasX {
+		axes = append(axes, shared.Axis{Key: "x", Type: axisType})
+	}
+	if hasY {
+		axes = append(axes, shared.Axis{Key: "y", Type: axisType})
+	}
+	if hasZ {
+		axes = append(axes, shared.Axis{Key: "z", Type: axisType})
+	}
+	return axes
+}
+
 // assembleDataset builds the output Dataset from parsed results plus the
 // command's metadata and the resolved per-chart configs.
 func assembleDataset(results []shared.DataPoint, common CommonOptions, configs []config_charts.ChartConfig, cfg parser.Config) *shared.Dataset {
-	axes := parser.GroupAxes(cfg)
-	if parser.IsHybridMode(cfg) {
-		axes = parser.HybridAxes(cfg)
-	} else if len(cfg.Axes) > 0 {
-		axes = parser.ValueAxes(cfg)
+	var axes []shared.Axis
+	if cfg.AutoGroup {
+		// Auto-grouping modified the config inside the parser; derive axes
+		// from the actual data points since the caller's cfg is unchanged.
+		axes = deriveAxesFromData(results)
+	} else {
+		axes = parser.GroupAxes(cfg)
+		if len(cfg.Axes) > 0 {
+			axes = parser.ValueAxes(cfg)
+		}
 	}
 
 	dataSet := &shared.Dataset{

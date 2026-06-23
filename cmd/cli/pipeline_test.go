@@ -379,37 +379,31 @@ func (s *PipelineSuite) TestPrepareDataAxesRejectsNonTabularParser() {
 	s.Panics(func() { prepareData("ignored.txt", "go", cfg) })
 }
 
-func (s *PipelineSuite) TestAssembleDatasetUsesValueAxes() {
-	cfg := parser.Config{Axes: []parser.ColumnSpec{{Source: "price"}, {Source: "latency"}}}
-	results := []shared.DataPoint{{XAxis: "100", YAxis: "12", Stats: []shared.Stat{}}}
-
-	ds := assembleDataset(results, CommonOptions{Name: "T"}, nil, cfg)
-
-	s.Len(ds.Axes, 2)
-	s.Equal("value", ds.Axes[0].Type)
-	s.Equal("x", ds.Axes[0].Key)
-	s.Equal("latency", ds.Axes[1].Label)
-}
-
-func (s *PipelineSuite) TestAssembleDatasetUsesHybridAxes() {
-	cfg := parser.Config{
-		Group:        []string{"region", "category"},
-		GroupPattern: "x,y",
-		Axes:         []parser.ColumnSpec{{Source: "latency", Label: "Latency (ms)"}},
-	}
-	results := []shared.DataPoint{{XAxis: "US", YAxis: "Widget", Stats: []shared.Stat{{Type: "Latency (ms)", Value: shared.F64(12)}}}}
-
+func (s *PipelineSuite) TestAssembleDatasetUsesAutoValueAxesFromData() {
+	// Auto-group path: Stats empty + axes populated → value-type axes
+	results := []shared.DataPoint{{XAxis: "100", YAxis: "12", ZAxis: "5", Stats: []shared.Stat{}}}
+	cfg := parser.Config{AutoGroup: true}
 	ds := assembleDataset(results, CommonOptions{Name: "T"}, nil, cfg)
 
 	s.Len(ds.Axes, 3)
+	for _, ax := range ds.Axes {
+		s.Equal("value", ax.Type)
+	}
 	s.Equal("x", ds.Axes[0].Key)
-	s.Equal("region", ds.Axes[0].Label)
-	s.Equal("", ds.Axes[0].Type)
 	s.Equal("y", ds.Axes[1].Key)
-	s.Equal("category", ds.Axes[1].Label)
 	s.Equal("z", ds.Axes[2].Key)
-	s.Equal("Latency (ms)", ds.Axes[2].Label)
-	s.Equal("value", ds.Axes[2].Type)
+}
+
+func (s *PipelineSuite) TestAssembleDatasetUsesCategoryAxesFromData() {
+	// Auto-group path: Stats populated → category-type axes
+	results := []shared.DataPoint{{XAxis: "US", YAxis: "Widget", Stats: []shared.Stat{{Type: "sells", Value: shared.F64(10)}}}}
+	cfg := parser.Config{AutoGroup: true}
+	ds := assembleDataset(results, CommonOptions{Name: "T"}, nil, cfg)
+
+	s.Len(ds.Axes, 2)
+	for _, ax := range ds.Axes {
+		s.Equal("", ax.Type)
+	}
 }
 
 func (s *PipelineSuite) TestPrepareDataUnknownParserExits() {

@@ -24,10 +24,17 @@ jobs:
         include:
           - output: sales
             file: sales
-            name: "Sales data Visualization from CSV file"
+            name: "Sales data Visualization from CSV file 2D"
             group: "product,region,category"
             group-pattern: n/x/y
-            scale: "log"
+            charts: bar
+            chart: "bar:scale=log"
+          - output: sales
+            file: sales
+            name: "Sales data Visualization from CSV file 2D"
+            group: "order_date,category"
+            group-pattern: "[n{Year}-y{Month}-x{Date}],z{Category}"
+            charts: bar
 
     runs-on: ubuntu-latest
     steps:
@@ -39,9 +46,9 @@ jobs:
           file: examples/csv/${{ matrix.file }}.csv
           name: ${{ matrix.name }}
           group-pattern: ${{ matrix.group-pattern }}
-          scale: ${{ matrix.scale }}
+          charts: ${{matrix.charts}}
+          chart: ${{ matrix.chart }}
           output-json: ${{ matrix.output }}.json
-          sort: asc
 
       - name: Uploading json artifacts
         uses: actions/upload-artifact@v4

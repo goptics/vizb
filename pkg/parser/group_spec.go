@@ -2,6 +2,9 @@ package parser
 
 import (
 	"fmt"
+	"math"
+	"sort"
+	"strconv"
 	"strings"
 	"unicode"
 )
@@ -142,6 +145,200 @@ func separatorsMatch(a, b []string) bool {
 		}
 	}
 	return true
+}
+
+// isNumericCell reports whether a single cell string is a finite number.
+// Mirrors the csv parser's parseFinite rule so AutoGroupColumns classifies
+// columns the same way chartColumns does.
+func isNumericCell(s string) bool {
+	v, err := strconv.ParseFloat(strings.TrimSpace(s), 64)
+	return err == nil && !math.IsNaN(v) && !math.IsInf(v, 0)
+}
+
+// AutoGroupColumns infers one or two group columns for the csv/json parsers
+// when the user supplies no explicit grouping. Only non-numeric (categorical)
+// columns are considered candidates; numeric columns are completely ignored.
+// If no categorical column exists, auto-grouping is silently skipped (ok=false).
+// Candidates are ranked by descending distinct-value count (leftmost
+// tie-break); the top 1 (or 2 when wantXY and a 2nd candidate exists) are
+// returned alongside a default pattern ("x" or "x,y"). ok is false when no
+// inference is possible (single column, zero categorical columns, or no chart
+// column would remain).
+func AutoGroupColumns(headers []string, rows [][]string, wantXY bool) (cols []string, pattern string, ok bool) {
+	if len(headers) < 2 {
+		return nil, "", false
+	}
+
+	type col struct {
+		idx      int
+		distinct int
+	}
+
+	// Gather distinct values per column; classify as categorical when any
+	// non-numeric cell is seen.
+	distinct := make([]map[string]struct{}, len(headers))
+	anyNonNumeric := make([]bool, len(headers))
+	for i := range headers {
+		distinct[i] = make(map[string]struct{})
+	}
+	for _, row := range rows {
+		for i := range headers {
+			if i >= len(row) {
+				continue
+			}
+			cell := strings.TrimSpace(row[i])
+			if cell == "" {
+				continue
+			}
+			distinct[i][cell] = struct{}{}
+			if !isNumericCell(cell) {
+				anyNonNumeric[i] = true
+			}
+		}
+	}
+
+	// Candidate pool: only non-numeric (categorical) columns.
+	candidates := make([]col, 0, len(headers))
+	for i, h := range headers {
+		if h == "" {
+			continue
+		}
+		if !anyNonNumeric[i] {
+			continue // numeric columns are ignored
+		}
+		candidates = append(candidates, col{
+			idx:      i,
+			distinct: len(distinct[i]),
+		})
+	}
+	if len(candidates) == 0 {
+		return nil, "", false
+	}
+
+	// Rank by descending distinct-value count, leftmost tie-break.
+	sort.SliceStable(candidates, func(a, b int) bool {
+		if candidates[a].distinct != candidates[b].distinct {
+			return candidates[a].distinct > candidates[b].distinct
+		}
+		return candidates[a].idx < candidates[b].idx
+	})
+
+	// The chosen axis column must leave at least one other column to act as
+	// a chart (Stat) series; otherwise auto-grouping would consume the only
+	// numeric column. wantXY additionally requires a 2nd candidate AND that
+	// ≥2 chart columns remain after consuming both.
+	pick := wantXY && len(candidates) >= 2 && len(headers) >= 3
+	chartColsAfter := len(headers) - 1
+	if pick {
+		chartColsAfter = len(headers) - 2
+		if chartColsAfter < 1 {
+			pick = false
+		}
+	}
+	if chartColsAfter < 1 {
+		return nil, "", false
+	}
+
+	picked := []string{headers[candidates[0].idx]}
+	pattern = "x"
+	if pick {
+		picked = append(picked, headers[candidates[1].idx])
+		pattern = "x,y"
+	}
+	return picked, pattern, true
+}
+
+// NoExplicitGrouping reports whether the user supplied no explicit grouping
+// configuration (no --group, no --group-regex, default --group-pattern "x",
+// no --axes). The pipeline uses it to decide whether to opt the csv/json
+// parsers into auto-grouping.
+func NoExplicitGrouping(cfg Config) bool {
+	return len(cfg.Group) == 0 &&
+		cfg.GroupRegex == "" &&
+		cfg.GroupPattern == "x" &&
+		len(cfg.Axes) == 0
+}
+
+// AutoGroupApplies reports whether auto-grouping should run inside the parser:
+// the pipeline has opted this config in (cfg.AutoGroup) AND the user supplied
+// no explicit grouping configuration. Any explicit grouping flag disables it.
+func AutoGroupApplies(cfg Config) bool {
+	return cfg.AutoGroup && NoExplicitGrouping(cfg)
+}
+
+// AutoValueColumns returns the first 2-3 purely numeric columns (in file
+// order) for auto-value-mode value axes (x, y, z). A column is numeric when
+// all non-empty cells parse as finite floats. Returns ok=false when <2 such
+// columns exist — caller falls back to flat-series.
+func AutoValueColumns(headers []string, rows [][]string) (cols []string, ok bool) {
+	for i, h := range headers {
+		if h == "" {
+			continue
+		}
+		allNumeric := true
+		for _, row := range rows {
+			if i >= len(row) {
+				continue
+			}
+			cell := strings.TrimSpace(row[i])
+			if cell == "" {
+				continue
+			}
+			if !isNumericCell(cell) {
+				allNumeric = false
+				break
+			}
+		}
+		if allNumeric {
+			cols = append(cols, h)
+			if len(cols) >= 3 {
+				break
+			}
+		}
+	}
+	if len(cols) < 2 {
+		return nil, false
+	}
+	return cols, true
+}
+
+// LogAutoGroup prints the inferred group column(s). The csv/json parsers call
+// it from their prelude so the inference is non-silent, mirroring the CLI's
+// "Auto-detected parser" message. wantXY distinguishes the two-column 3D
+// pattern ("x,y").
+
+func LogAutoGroup(cols []string, wantXY bool) {
+	if len(cols) == 0 {
+		return
+	}
+	noun := "column"
+	if len(cols) > 1 {
+		noun = "columns"
+	}
+	joined := strings.Join(cols, ", ")
+	var extras []string
+	if wantXY && len(cols) > 1 {
+		extras = append(extras, "3D pattern x-y")
+	}
+	suffix := ""
+	if len(extras) > 0 {
+		suffix = " (" + strings.Join(extras, ", ") + ")"
+	}
+	fmt.Printf("🧠 Auto-grouped by %s: %s%s\n", noun, joined, suffix)
+}
+
+// LogAutoValue prints the inferred value axis columns (parallel to LogAutoGroup).
+func LogAutoValue(cols []string) {
+	if len(cols) == 0 {
+		return
+	}
+	noun := "columns"
+	if len(cols) == 2 {
+		noun = "columns (2D pattern x-y)"
+	} else if len(cols) == 3 {
+		noun = "columns (3D pattern x-y-z)"
+	}
+	fmt.Printf("🧠 Auto-valued by %s: %s\n", noun, strings.Join(cols, ", "))
 }
 
 // ResolveGroupConfig fills GroupColumns and LabelSeparators from --group and --group-pattern.

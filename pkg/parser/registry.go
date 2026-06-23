@@ -26,6 +26,8 @@ type Config struct {
 	Select          []ColumnSpec
 	Axes            []ColumnSpec // --axes value mode: numeric cols placed on x,y[,z]
 	JSONPath        string       // json only: jq-like dot path to the nested array to chart
+	AutoGroup       bool         // csv/json: infer group columns when no explicit grouping is configured
+	WantsBothXY     bool         // csv/json auto-group: also pick a yAxis (pattern "x,y") to enable 3D
 }
 
 type ParseFunc func(filename string, cfg Config) []shared.DataPoint
