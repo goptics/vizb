@@ -3,7 +3,7 @@ import type { AxisLabels, DataPoint, ChartData, Sort, ScaleType, Axis, ChartType
 import TransformWorker from '../workers/transform.worker.ts?worker&inline'
 import type { WorkerResponse } from '../workers/transform.worker'
 import { listChartSignatures } from '../lib/transform'
-import { isValueMode } from '../lib/utils'
+import { isValueChartType, isValueMode } from '../lib/utils'
 
 // The arrangement the worker projects/groups under: present source axes in
 // canonical order (identityString, e.g. "nx") and the selected target order
@@ -218,7 +218,7 @@ export function useChartPipeline(
     const axesNow = axisList()
     const ct = activeChartType()
     const prev = new Map(charts.value.map((c) => [c.key, c]))
-    if (ct === 'scatter' && isValueMode(axesNow)) {
+    if (isValueChartType(ct) && isValueMode(axesNow)) {
       const xLabel = axesNow?.find((a) => a.key === 'x')?.label ?? 'x'
       const yLabel = axesNow?.find((a) => a.key === 'y')?.label ?? 'y'
       charts.value = [

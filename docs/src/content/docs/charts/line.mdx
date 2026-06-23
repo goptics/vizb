@@ -59,6 +59,24 @@ vizb line data.csv -g category,metric,group -p x,y,z -o out.html
   The Z axis requires **both** X and Y to be present. Passing a Z without an X/Y floor will be rejected with an error.
 </Aside>
 
+## Auto-value mode (all-numeric data)
+
+When every column in a CSV/JSON file is numeric (no categorical columns), vizb auto-detects the first 2–3 columns as coordinate axes and renders them as value-type lines — no `--group` needed. With 3+ columns, line auto-enables 3D (`line3D`).
+
+```bash
+# Two columns → x, y lines
+vizb line prices.csv -o line.html
+
+# Three columns → x, y, z line3D
+vizb line spiral.csv -o line.html
+```
+
+Use `--select` to choose specific columns. With `--select` limiting to 2 columns, it stays 2D:
+
+```bash
+vizb line data.csv --select price,latency -o line.html
+```
+
 ## Settings
 
 These settings apply to line charts:

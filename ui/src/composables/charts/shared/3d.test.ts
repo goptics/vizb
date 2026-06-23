@@ -1,12 +1,21 @@
 import { describe, it, expect } from 'vitest'
 import {
+  bandFillRatioForCount,
+  barSizeFor3DGrid,
+  barSizeForContinuous3D,
   boxSizeForAxisCount,
+  VALUE_MODE_3D_BOX_SIZE,
+  VALUE_MODE_3D_VIEW_DISTANCE,
+  orthographicSizeFor3DBox,
+  viewDistanceFor3DBox,
   create3DGridConfig,
   create3DTooltipFormatter,
   create3DVisualMap,
   createValue3DTooltipFormatter,
   createZLegendConfig,
   resolve3DVisualMap,
+  symbolSizeFor3DGrid,
+  symbolSizeForContinuous3D,
 } from './3d'
 import { resetColor } from '@/lib/utils'
 
@@ -34,6 +43,59 @@ describe('boxSizeForAxisCount', () => {
   })
 })
 
+describe('bandFillRatioForCount', () => {
+  it('clamps sparse grids to low fill and dense grids to high fill', () => {
+    expect(bandFillRatioForCount(1)).toBe(0.45)
+    expect(bandFillRatioForCount(2)).toBe(0.45)
+    expect(bandFillRatioForCount(40)).toBe(0.92)
+    expect(bandFillRatioForCount(100)).toBe(0.92)
+  })
+
+  it('ramps monotonically between sparse and dense', () => {
+    const mid = bandFillRatioForCount(20)
+    expect(mid).toBeGreaterThan(0.45)
+    expect(mid).toBeLessThan(0.92)
+    expect(bandFillRatioForCount(10)).toBeLessThan(bandFillRatioForCount(30))
+  })
+})
+
+describe('barSizeFor3DGrid', () => {
+  it('uses a larger fill fraction on dense grids than sparse grids', () => {
+    const sparse = barSizeFor3DGrid(3, 3, 80, 80)
+    const dense = barSizeFor3DGrid(30, 30, 200, 200)
+    const sparseFillX = sparse[0]! / (80 / 3)
+    const denseFillX = dense[0]! / (200 / 30)
+    expect(denseFillX).toBeGreaterThan(sparseFillX)
+  })
+})
+
+describe('symbolSizeFor3DGrid', () => {
+  it('fills a smaller fraction of each cell on sparse grids than dense grids', () => {
+    const sparse = symbolSizeFor3DGrid(3, 3, 80, 80)
+    const dense = symbolSizeFor3DGrid(30, 30, 80, 80)
+    const sparseBand = 80 / 3
+    const denseBand = 80 / 30
+    expect(sparse / sparseBand).toBeCloseTo(bandFillRatioForCount(3), 5)
+    expect(dense / denseBand).toBeCloseTo(bandFillRatioForCount(30), 5)
+  })
+})
+
+describe('continuous 3D spacing', () => {
+  it('shrinks bar footprint as point count grows', () => {
+    const few = barSizeForContinuous3D(10, 80, 80)
+    const many = barSizeForContinuous3D(1000, 200, 200)
+    expect(many[0]!).toBeLessThan(few[0]!)
+  })
+
+  it('fills more of each synthetic grid cell as point count grows', () => {
+    const few = symbolSizeForContinuous3D(10, 80, 80)
+    const many = symbolSizeForContinuous3D(1000, 200, 200)
+    const fewBand = 80 / 10
+    const manyBand = 200 / 100
+    expect(many / manyBand).toBeGreaterThan(few / fewBand)
+  })
+})
+
 describe('create3DGridConfig', () => {
   it('boxWidth follows xCount and boxDepth follows yCount independently', () => {
     const grid = create3DGridConfig({
@@ -44,16 +106,55 @@ describe('create3DGridConfig', () => {
     })
     expect(grid.boxWidth).toBe(80)
     expect(grid.boxDepth).toBe(100)
+    expect('boxHeight' in grid).toBe(false)
+    expect(grid.viewControl.distance).toBe(180)
   })
 
-  it('viewControl distance is sum of boxWidth and boxDepth', () => {
+  it('continuous mode uses a cubic box and scaled orthographic framing', () => {
+    const grid = create3DGridConfig({
+      styling,
+      autoRotate: false,
+      orthographic: true,
+      xCount: 100,
+      yCount: 100,
+      mode: 'continuous',
+    })
+    expect(grid.boxWidth).toBe(200)
+    expect(grid.boxDepth).toBe(200)
+    expect('boxHeight' in grid && grid.boxHeight).toBe(200)
+    if ('orthographicSize' in grid.viewControl) {
+      expect(grid.viewControl.projection).toBe('orthographic')
+      expect(grid.viewControl.orthographicSize).toBe(orthographicSizeFor3DBox(200, 200, 200))
+      expect(grid.viewControl.maxOrthographicSize).toBeGreaterThanOrEqual(400)
+    }
+  })
+
+  it('continuous perspective viewControl distance is 2× the largest box edge', () => {
     const grid = create3DGridConfig({
       styling,
       autoRotate: false,
       xCount: 15,
       yCount: 5,
+      mode: 'continuous',
     })
-    expect(grid.viewControl.distance).toBe(300)
+    expect(grid.viewControl.distance).toBe(viewDistanceFor3DBox(200, 100, 200))
+    if ('maxDistance' in grid.viewControl) {
+      expect(grid.viewControl.maxDistance).toBeGreaterThanOrEqual(400)
+    }
+  })
+
+  it('value mode uses fixed box size and view distance regardless of category count', () => {
+    const grid = create3DGridConfig({
+      styling,
+      autoRotate: false,
+      xCount: 3,
+      yCount: 30,
+      mode: 'value',
+    })
+    expect(grid.boxWidth).toBe(VALUE_MODE_3D_BOX_SIZE)
+    expect(grid.boxDepth).toBe(VALUE_MODE_3D_BOX_SIZE)
+    expect('boxHeight' in grid && grid.boxHeight).toBe(VALUE_MODE_3D_BOX_SIZE)
+    expect(grid.viewControl.distance).toBe(VALUE_MODE_3D_VIEW_DISTANCE)
   })
 })
 

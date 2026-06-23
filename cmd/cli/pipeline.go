@@ -10,6 +10,9 @@ import (
 	"time"
 
 	config_charts "github.com/goptics/vizb/config/charts"
+	barchart "github.com/goptics/vizb/config/charts/bar"
+	linechart "github.com/goptics/vizb/config/charts/line"
+	scatterchart "github.com/goptics/vizb/config/charts/scatter"
 	"github.com/goptics/vizb/pkg/parser"
 	goparser "github.com/goptics/vizb/pkg/parser/golang"
 	jsonparser "github.com/goptics/vizb/pkg/parser/json"
@@ -57,9 +60,6 @@ func RunLinearWithConfig(cmd *cobra.Command, args []string, common CommonOptions
 	// data so `vizb data.csv` produces a usable chart without -g/-p/-r.
 	if (common.Parser == "csv" || common.Parser == "json") && parser.NoExplicitGrouping(cfg) {
 		cfg.AutoGroup = true
-		if chartConfigsRequest3D(configs) {
-			cfg.WantsBothXY = true
-		}
 	}
 	for _, c := range configs {
 		cfg.ChartTypes = append(cfg.ChartTypes, c.ChartType())
@@ -124,29 +124,11 @@ func RunSingleChartWithConfig(cmd *cobra.Command, args []string, common CommonOp
 
 // WarnThreeDIfIneligible prints a warning when threeD is baked on a bar/line
 // config but the group pattern does not declare both x and y. The flag is kept.
-// When auto-grouping will set both axes (AutoGroup && WantsBothXY), the warning
-// is deferred to the parser — it fires only if the parser's auto-inference
-// cannot find enough categorical columns.
 func WarnThreeDIfIneligible(cfg parser.Config, configs []config_charts.ChartConfig) {
-	if cfg.AutoGroup && cfg.WantsBothXY {
-		return
-	}
 	if parser.PatternHasBothXY(cfg) || !shared.SettingsHasThreeDOption(configs) {
 		return
 	}
 	shared.PrintWarning("Warning: --3d requires both x and y in --group-pattern; value 3D will not render.")
-}
-
-// chartConfigsRequest3D reports whether the per-chart configs include a 3D-
-// capable chart type with a 3D option baked in (--3d). Used to tell the
-// csv/json auto-group path to also populate yAxis so the 3D renderer has both
-// axes (mirrors the DatasetNeeds3D decision in shared/chart_selection.go).
-func chartConfigsRequest3D(configs []config_charts.ChartConfig) bool {
-	types := make([]string, len(configs))
-	for i, c := range configs {
-		types[i] = c.ChartType()
-	}
-	return shared.ChartsHave3DCapable(types) && shared.SettingsHasThreeDOption(configs)
 }
 
 // ValidateScale normalises and validates a scale flag (linear/log), falling back
@@ -371,6 +353,45 @@ func deriveAxesFromData(results []shared.DataPoint) []shared.Axis {
 	return axes
 }
 
+func isValueXYZAxes(axes []shared.Axis) bool {
+	if len(axes) != 3 {
+		return false
+	}
+	keys := map[string]bool{}
+	for _, a := range axes {
+		if a.Type != "value" {
+			return false
+		}
+		keys[a.Key] = true
+	}
+	return keys["x"] && keys["y"] && keys["z"]
+}
+
+// autoEnable3DForValueMode sets ThreeD on 3D-capable configs when value-mode
+// has 3 coordinates (x, y, z), so `vizb bar spiral-3d.csv` auto-enables 3D.
+func autoEnable3DForValueMode(configs []config_charts.ChartConfig, axes []shared.Axis) {
+	if !isValueXYZAxes(axes) {
+		return
+	}
+	v := true
+	for i, c := range configs {
+		switch c.(type) {
+		case barchart.Config:
+			bc := configs[i].(barchart.Config)
+			bc.ThreeD = &v
+			configs[i] = bc
+		case linechart.Config:
+			lc := configs[i].(linechart.Config)
+			lc.ThreeD = &v
+			configs[i] = lc
+		case scatterchart.Config:
+			sc := configs[i].(scatterchart.Config)
+			sc.ThreeD = &v
+			configs[i] = sc
+		}
+	}
+}
+
 // assembleDataset builds the output Dataset from parsed results plus the
 // command's metadata and the resolved per-chart configs.
 func assembleDataset(results []shared.DataPoint, common CommonOptions, configs []config_charts.ChartConfig, cfg parser.Config) *shared.Dataset {
@@ -379,6 +400,7 @@ func assembleDataset(results []shared.DataPoint, common CommonOptions, configs [
 		// Auto-grouping modified the config inside the parser; derive axes
 		// from the actual data points since the caller's cfg is unchanged.
 		axes = deriveAxesFromData(results)
+		autoEnable3DForValueMode(configs, axes)
 	} else {
 		axes = parser.GroupAxes(cfg)
 		if len(cfg.Axes) > 0 {

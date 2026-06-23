@@ -31,7 +31,7 @@ import {
   projectAndGroup,
   type ChartSignature,
 } from '../lib/transform'
-import { isValueMode } from '../lib/utils'
+import { isValueChartType, isValueMode } from '../lib/utils'
 import { translateAxisKey } from '../lib/swap'
 import type { DataPoint, AxisLabels, Sort, ChartData, ScaleType, Axis, ChartType } from '../types'
 
@@ -142,8 +142,7 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
     case 'init': {
       const axes = msg.axes
       const chartType = msg.chartType
-      const scatter = chartType === 'scatter'
-      const valueModeDetected = scatter && isValueMode(axes)
+      const valueModeDetected = isValueChartType(chartType) && isValueMode(axes)
 
       state = {
         dataEpoch: msg.dataEpoch,
@@ -200,7 +199,7 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
       state.axes,
       state.identityString,
       state.targetString,
-      { scale: msg.scale, showLabels: msg.showLabels }
+      { scale: msg.scale, showLabels: msg.showLabels, threeD: msg.threeD }
     )
     post({
       type: 'chart',

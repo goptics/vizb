@@ -79,14 +79,19 @@ export const isValue3DEligible = (chart: ChartData) =>
 export const valueModeHasZAxis = (axes: Axis[] | undefined): boolean =>
   !!axes?.some((a) => a.key === 'z')
 
-/** Scatter --axes x,y,z continuous 3D (swap-driven, not category --3d). */
+export const VALUE_CHART_TYPES = new Set<ChartType>(['scatter', 'bar', 'line'])
+
+export const isValueChartType = (chartType?: ChartType): boolean =>
+  !!chartType && VALUE_CHART_TYPES.has(chartType)
+
+/** Value-mode continuous 3D (swap-driven, not category --3d). */
 export const isValueModeContinuous3D = (
   chart: ChartData,
   axes: Axis[] | undefined,
   targetString?: string,
   chartType?: ChartType
 ): boolean =>
-  chartType === 'scatter' &&
+  isValueChartType(chartType) &&
   isValueMode(axes) &&
   valueModeHasZAxis(axes) &&
   !!targetString &&

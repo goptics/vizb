@@ -370,9 +370,8 @@ func (s *JSONAutoGroupSuite) TestAllNumericAutoValues() {
 	s.Empty(results[0].Stats)
 }
 
-func (s *JSONAutoGroupSuite) TestWantXYPicksTwoFieldsFor3D() {
-	s.cfg.WantsBothXY = true
-	// product 7 distinct > region 5 → xAxis=product, yAxis=region
+func (s *JSONAutoGroupSuite) TestAutoGroupPicksSingleFieldEvenWithMultipleCategoricals() {
+	// product 7 distinct > region 5 → xAxis=product only
 	j := `[{"region":"West","product":"A","sells":10},{"region":"East","product":"B","sells":20},` +
 		`{"region":"North","product":"C","sells":30},{"region":"South","product":"D","sells":40},` +
 		`{"region":"Central","product":"E","sells":50},{"region":"West","product":"F","sells":60},` +
@@ -380,7 +379,8 @@ func (s *JSONAutoGroupSuite) TestWantXYPicksTwoFieldsFor3D() {
 	results := ParseJSON(s.writeFile(j), s.cfg)
 	s.Require().NotEmpty(results)
 	for _, r := range results {
-		s.NotEmpty(r.YAxis)
+		s.NotEmpty(r.XAxis)
+		s.Empty(r.YAxis)
 	}
 }
 

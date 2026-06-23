@@ -5,16 +5,17 @@ description: Add a z-axis to render interactive visual 3D bar and line charts in
 
 import { CardGrid, Card, Aside, LinkCard } from '@astrojs/starlight/components';
 
-vizb supports two 3D modes for **bar**, **line**, and **scatter** charts. Both render in a WebGL scene you can rotate, zoom, and pan in the browser. Other chart types (pie, radar, heatmap) receive z-axis data differently — they don't render a 3D scene.
+vizb supports three 3D modes for **bar**, **line**, and **scatter** charts. Both render in a WebGL scene you can rotate, zoom, and pan in the browser. Other chart types (pie, radar, heatmap) receive z-axis data differently — they don't render a 3D scene.
 
-**Scatter** adds a third path: continuous 3D from `--axes x,y,z` (no grouping columns). See the [Scatter Chart](/charts/scatter) page for value and hybrid modes.
+**Scatter** also supports continuous 3D from auto-value (all-numeric columns, no flags). Bar and line do the same when the data has 3+ numeric columns. See the [Scatter Chart](/charts/scatter) page for auto-value mode.
 
-## Two 3D Modes
+## Three 3D Modes
 
 | Mode | How to enable | X (width) | Y (depth) | Z (height) |
 |------|---------------|-----------|-----------|------------|
 | **Grouped** | Add `z` to `--group-pattern` / `--group-regex` | categories | categories | metric value (stacked per z group) |
-| **Value** | `vizb bar` / `vizb line` / `vizb scatter` with `--3d` on x+y-only data | categories | categories (former 2D legend) | metric value (single series, visualMap) |
+| **Value (pseudo-3D)** | `vizb bar` / `vizb line` / `vizb scatter` with `--3d` on x+y-only data | categories | categories (former 2D legend) | metric value (single series, visualMap) |
+| **Value (continuous 3D)** | All-numeric CSV/JSON with 3+ columns (auto-value) | numeric | numeric | numeric |
 
 Grouped 3D takes precedence: if your data already has a z dimension, `--3d` is ignored.
 
@@ -70,7 +71,7 @@ zAxis (z) requires both xAxis (x) and yAxis (y)
 
 See the [Grouping Guide](/guides/grouping) for full pattern and regex syntax.
 
-## Value 3D (`--3d` on x+y data)
+## Value (pseudo) 3D (`--3d` on x+y data)
 
 When you have only **x** and **y** dimensions, a 2D bar/line/scatter chart puts every y category in the legend — hard to read with many series. Pass `--3d` on `vizb bar`, `vizb line`, or `vizb scatter` to project the same data into 3D: y categories move to depth, and the metric value becomes bar/line/point height. With `--3d`, a **visualMap** gradient colors the geometry by metric value (on by default).
 
@@ -92,6 +93,23 @@ The HTML bundles **3D view** and **3D visual map** toggles in settings (both on 
   `--3d` on `vizb bar` / `vizb line` is separate from `vizb ui --3d`, which only opts in to bundling the 3D engine for remote `--data-url` pages.
 </Aside>
 
+## Continuous 3D (auto-value)
+
+When your CSV/JSON data has 3+ numeric columns, vizb auto-value detects them as `x`, `y`, `z` coordinates and renders continuous 3D — no `--3d` flag needed. This works on bar, line, and scatter:
+
+```bash
+# All-numeric CSV — auto-detects x, y, z → bar3D
+vizb bar spiral.csv -o bar.html
+
+# Same for line and scatter
+vizb line spiral.csv -o line.html
+vizb scatter spiral.csv -o scatter.html
+```
+
+Use `--select` to pick specific columns. With auto-value, 3D is automatically enabled when 3 coordinate columns are detected; `--select` limiting to 2 columns keeps it 2D.
+
+Continuous 3D uses the same WebGL scene as grouped 3D — rotate, zoom, pan, and the auto-rotate toggle all apply.
+
 ## 3D Chart Types
 
 <CardGrid>
@@ -104,8 +122,7 @@ The HTML bundles **3D view** and **3D visual map** toggles in settings (both on 
     individual points stay readable.
   </Card>
   <Card title="3D Scatter" icon="magnifier">
-    `scatter3D` points — grouped z series, continuous `--axes x,y,z`, or hybrid
-    categorical x/y with a numeric z column.
+    `scatter3D` points — grouped z series or auto-value continuous coordinates.
   </Card>
 </CardGrid>
 

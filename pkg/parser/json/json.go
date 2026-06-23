@@ -65,15 +65,10 @@ func stringify(v any) string {
 // machinery (-p/-r). Nested objects are
 // flattened to dotted keys; array-valued fields are skipped.
 func ParseJSON(filename string, cfg parser.Config) []shared.DataPoint {
-	if len(cfg.Group) > 0 && cfg.GroupRegex == "" {
-		var err error
-		cfg, err = parser.ResolveGroupConfig(cfg)
-		if err != nil {
-			shared.ExitWithError(err.Error(), nil)
-		}
-		if err := parser.ValidateTabularGroupAlignment(cfg); err != nil {
-			shared.ExitWithError(err.Error(), nil)
-		}
+	var err error
+	cfg, err = parser.FinalizeGroupConfig(cfg)
+	if err != nil {
+		shared.ExitWithError(err.Error(), nil)
 	}
 
 	f, err := os.Open(filename)
@@ -121,40 +116,21 @@ func ParseJSON(filename string, cfg parser.Config) []shared.DataPoint {
 
 	// Auto-group: when no grouping is configured, infer the category axis from
 	// the data so `vizb data.json` produces a usable chart without -g/-p/-r/-x.
+	autoHeaders := parser.FilterHeadersForAutoDetect(colOrder, cfg.Select)
 	if parser.AutoGroupApplies(cfg) {
-		headers := make([]string, len(colOrder))
-		copy(headers, colOrder)
 		stringRows := make([][]string, len(rows))
 		for i, row := range rows {
-			cells := make([]string, len(colOrder))
-			for j, k := range colOrder {
+			cells := make([]string, len(autoHeaders))
+			for j, k := range autoHeaders {
 				if v, ok := row[k]; ok {
 					cells[j] = stringify(v)
 				}
 			}
 			stringRows[i] = cells
 		}
-		cols, pattern, ok := parser.AutoGroupColumns(headers, stringRows, cfg.WantsBothXY)
-		if ok {
-			cfg.Group = cols
-			cfg.GroupPattern = pattern
-			var err error
-			cfg, err = parser.ResolveGroupConfig(cfg)
-			if err != nil {
-				shared.ExitWithError(err.Error(), nil)
-			}
-			if err := parser.ValidateTabularGroupAlignment(cfg); err != nil {
-				shared.ExitWithError(err.Error(), nil)
-			}
-			parser.LogAutoGroup(cols, cfg.WantsBothXY)
-		} else if parser.AutoValueEligible(cfg.ChartTypes) {
-			if valCols, vok := parser.AutoValueColumns(headers, stringRows); vok {
-				cfg.Axes = make([]parser.ColumnSpec, len(valCols))
-				for i, name := range valCols {
-					cfg.Axes[i] = parser.ColumnSpec{Source: name}
-				}
-				parser.LogAutoValue(valCols)
-			}
+		cfg, err = parser.AutoDetectTabularConfig(cfg, autoHeaders, stringRows)
+		if err != nil {
+			shared.ExitWithError(err.Error(), nil)
 		}
 	}
 
@@ -164,16 +140,13 @@ func ParseJSON(filename string, cfg parser.Config) []shared.DataPoint {
 
 	groupKeys, groupSet := resolveGroupKeys(colOrder, seenCol, parser.EffectiveGroupColumns(cfg))
 
-	var chartCols []string
+	chartCols := chartColumns(colOrder, groupSet, rows)
 	var fieldLabels map[string]string
 	if len(cfg.Select) > 0 {
-		var err error
 		chartCols, fieldLabels, err = resolveExplicitChartFields(colOrder, cfg, rows)
 		if err != nil {
 			shared.ExitWithError(err.Error(), nil)
 		}
-	} else {
-		chartCols = chartColumns(colOrder, groupSet, rows)
 	}
 	if len(chartCols) == 0 {
 		shared.ExitWithError("no numeric fields found in JSON", nil)
@@ -212,10 +185,8 @@ func ParseJSON(filename string, cfg parser.Config) []shared.DataPoint {
 			}
 
 			label := k
-			if fieldLabels != nil {
-				if l, ok := fieldLabels[k]; ok {
-					label = l
-				}
+			if l, ok := fieldLabels[k]; ok {
+				label = l
 			}
 			stats = append(stats, shared.Stat{
 				Type:  utils.CreateStatType(label, cfg.NumberUnit, ""),
@@ -252,11 +223,13 @@ func parseJSONValueMode(rows []map[string]any, colOrder []string, seenCol map[st
 
 		numeric := false
 		for _, row := range rows {
-			if v, ok := row[spec.Source]; ok {
-				if _, ok := leafNumber(v); ok {
-					numeric = true
-					break
-				}
+			v, ok := row[spec.Source]
+			if !ok {
+				continue
+			}
+			if _, ok := leafNumber(v); ok {
+				numeric = true
+				break
 			}
 		}
 		if !numeric {

@@ -33,15 +33,10 @@ func parseFinite(s string) (float64, bool) {
 // separators from --group-pattern/-p and routed through the grouping machinery
 // (-p/-r) for name/xAxis/yAxis placement.
 func ParseCSV(filename string, cfg parser.Config) []shared.DataPoint {
-	if len(cfg.Group) > 0 && cfg.GroupRegex == "" {
-		var err error
-		cfg, err = parser.ResolveGroupConfig(cfg)
-		if err != nil {
-			shared.ExitWithError(err.Error(), nil)
-		}
-		if err := parser.ValidateTabularGroupAlignment(cfg); err != nil {
-			shared.ExitWithError(err.Error(), nil)
-		}
+	var err error
+	cfg, err = parser.FinalizeGroupConfig(cfg)
+	if err != nil {
+		shared.ExitWithError(err.Error(), nil)
 	}
 
 	f, err := os.Open(filename)
@@ -67,29 +62,10 @@ func ParseCSV(filename string, cfg parser.Config) []shared.DataPoint {
 
 	// Auto-group: when no grouping is configured, infer the category axis from
 	// the data so `vizb data.csv` produces a usable chart without -g/-p/-r/-x.
-	if parser.AutoGroupApplies(cfg) {
-		cols, pattern, ok := parser.AutoGroupColumns(headers, dataRows, cfg.WantsBothXY)
-		if ok {
-			cfg.Group = cols
-			cfg.GroupPattern = pattern
-			var err error
-			cfg, err = parser.ResolveGroupConfig(cfg)
-			if err != nil {
-				shared.ExitWithError(err.Error(), nil)
-			}
-			if err := parser.ValidateTabularGroupAlignment(cfg); err != nil {
-				shared.ExitWithError(err.Error(), nil)
-			}
-			parser.LogAutoGroup(cols, cfg.WantsBothXY)
-		} else if parser.AutoValueEligible(cfg.ChartTypes) {
-			if valCols, vok := parser.AutoValueColumns(headers, dataRows); vok {
-				cfg.Axes = make([]parser.ColumnSpec, len(valCols))
-				for i, name := range valCols {
-					cfg.Axes[i] = parser.ColumnSpec{Source: name}
-				}
-				parser.LogAutoValue(valCols)
-			}
-		}
+	autoHeaders := parser.FilterHeadersForAutoDetect(headers, cfg.Select)
+	cfg, err = parser.AutoDetectTabularConfig(cfg, autoHeaders, dataRows)
+	if err != nil {
+		shared.ExitWithError(err.Error(), nil)
 	}
 
 	if len(cfg.Axes) > 0 {
@@ -98,16 +74,13 @@ func ParseCSV(filename string, cfg parser.Config) []shared.DataPoint {
 
 	groupIdx, groupSet := resolveGroupColumns(headers, parser.EffectiveGroupColumns(cfg))
 
-	var chartCols []int
+	chartCols := chartColumns(headers, groupSet, dataRows)
 	var colLabels map[int]string
 	if len(cfg.Select) > 0 {
-		var err error
 		chartCols, colLabels, err = resolveExplicitChartColumns(headers, cfg, dataRows)
 		if err != nil {
 			shared.ExitWithError(err.Error(), nil)
 		}
-	} else {
-		chartCols = chartColumns(headers, groupSet, dataRows)
 	}
 	if len(chartCols) == 0 {
 		shared.ExitWithError("no numeric columns found in CSV", nil)
@@ -145,10 +118,8 @@ func ParseCSV(filename string, cfg parser.Config) []shared.DataPoint {
 			}
 
 			label := headers[c]
-			if colLabels != nil {
-				if l, ok := colLabels[c]; ok {
-					label = l
-				}
+			if l, ok := colLabels[c]; ok {
+				label = l
 			}
 			stats = append(stats, shared.Stat{
 				Type:  utils.CreateStatType(label, cfg.NumberUnit, ""),
@@ -192,11 +163,12 @@ func parseCSVValueMode(headers []string, dataRows [][]string, cfg parser.Config)
 
 		numeric := false
 		for _, row := range dataRows {
-			if col < len(row) {
-				if _, ok := parseFinite(row[col]); ok {
-					numeric = true
-					break
-				}
+			if col >= len(row) {
+				continue
+			}
+			if _, ok := parseFinite(row[col]); ok {
+				numeric = true
+				break
 			}
 		}
 		if !numeric {

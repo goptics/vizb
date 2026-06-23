@@ -193,12 +193,12 @@ describe('transform.worker — value mode init', () => {
     expect(r!.groupNames).toEqual([])
   })
 
-  it('uses normal stat signatures when value axes but chart is not scatter', () => {
+  it('uses normal stat signatures when value axes but chart is not in eligible set', () => {
     send(
       buildInit({
         data: [dp('x1', 'y1', '', 'val', 10)],
         axes: VALUE_AXES,
-        chartType: 'bar',
+        chartType: 'pie',
       })
     )
 
@@ -282,7 +282,7 @@ describe('transform.worker — value mode compute', () => {
       })
     )
     postSpy.mockClear()
-    send(buildCompute({ signature: '__value_mode__', groupName: '' }))
+    send(buildCompute({ signature: '__value_mode__', groupName: '', threeD: true }))
     const chart = charts()[0]!.chart as ChartData
     expect(chart.render3D?.mode).toBe('continuous')
     expect(chart.valuePoints3D).toEqual([[1, 2, 3]])

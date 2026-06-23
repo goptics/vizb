@@ -401,29 +401,31 @@ func (s *RootAutoGroupSuite) TestCSVAutoGroupsXAxisNoFlags() {
 	}
 }
 
-func (s *RootAutoGroupSuite) TestCSVAutoGroup3DPicksTwoColumns() {
+func (s *RootAutoGroupSuite) TestCSVAutoGroup3DPicksSingleColumnAndWarns() {
 	dir := s.T().TempDir()
 	csv := "region,product,sells\nWest,A,10\nEast,B,20\nNorth,C,30\nSouth,D,40\nCentral,E,50\nWest,F,60\nEast,G,70\n"
 	input := s.writeCSV(dir, csv)
 	out := filepath.Join(dir, "out.json")
 
-	_ = testutil.CaptureStdout(func() {
-		rootCmd.SetArgs([]string{"-c", "bar", "--chart", "bar:3d", "-o", out, input})
-		s.Require().NoError(rootCmd.Execute())
+	var stdout string
+	stderr := testutil.CaptureStderr(func() {
+		stdout = testutil.CaptureStdout(func() {
+			rootCmd.SetArgs([]string{"-c", "bar", "--chart", "bar:3d", "-o", out, input})
+			s.Require().NoError(rootCmd.Execute())
+		})
 	})
 
 	s.FileExists(out)
+	s.Contains(stdout, "Auto-grouped by column")
+	s.Contains(stderr, "Warning")
+	s.Contains(stderr, "--3d requires both x and y")
+
 	ds := testutil.ReadDataset(s.T(), out)
-	// 3D bar with 2 categoricals → xAxis AND yAxis populated
 	s.NotEmpty(ds.Data)
-	sawY := false
 	for _, dp := range ds.Data {
 		s.NotEmpty(dp.XAxis)
-		if dp.YAxis != "" {
-			sawY = true
-		}
+		s.Empty(dp.YAxis)
 	}
-	s.True(sawY, "expected some yAxis values for 3D bar")
 }
 
 func (s *RootAutoGroupSuite) TestJSONAutoGroupsXAxisNoFlags() {

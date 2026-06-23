@@ -417,14 +417,14 @@ func (s *CSVAutoGroupSuite) TestAllNumericAutoValues() {
 	s.Empty(results[0].Stats)
 }
 
-func (s *CSVAutoGroupSuite) TestWantXYPicksTwoColumnsFor3D() {
-	s.cfg.WantsBothXY = true
+func (s *CSVAutoGroupSuite) TestAutoGroupPicksSingleColumnEvenWithMultipleCategoricals() {
 	csv := "region,product,sells\nWest,A,10\nEast,B,20\nNorth,C,30\nSouth,D,40\nCentral,E,50\nWest,F,60\nEast,G,70\n"
-	// product 7 distinct > region 5 → xAxis=product, yAxis=region
+	// product 7 distinct > region 5 → xAxis=product only
 	results := ParseCSV(s.writeFile(csv), s.cfg)
 	s.Require().NotEmpty(results)
 	for _, r := range results {
-		s.NotEmpty(r.YAxis) // 3D path populates yAxis too
+		s.NotEmpty(r.XAxis)
+		s.Empty(r.YAxis)
 	}
 }
 

@@ -313,14 +313,14 @@ export function buildValueModeChart(
   axes: Axis[],
   identityString?: string,
   targetString?: string,
-  opts?: { scale?: ScaleType; showLabels?: boolean }
+  opts?: { scale?: ScaleType; showLabels?: boolean; threeD?: boolean }
 ): ChartData {
   const identity = identityString ?? identityStringFromAxes(axes)
   const target = targetString ?? identity
   const scale = opts?.scale ?? 'linear'
   const baseLabels = axisLabelsFromAxes(axes)
   const labels = swapAxisLabels(identity, target, baseLabels) ?? baseLabels
-  const use3D = arrangementHasChartZ(target)
+  const use3D = (opts?.threeD ?? true) && arrangementHasChartZ(target)
 
   const valueTuples: [number, number][] = []
   const valuePoints3D: [number, number, number][] = []

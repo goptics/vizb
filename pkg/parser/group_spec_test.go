@@ -137,7 +137,7 @@ func (s *AutoGroupColumnsSuite) TestNonNumericPickedOverNumeric() {
 		{"East", "20", "7"},
 		{"West", "30", "9"},
 	}
-	cols, pattern, ok := AutoGroupColumns(headers, rows, false)
+	cols, pattern, ok := AutoGroupColumns(headers, rows)
 	s.Require().True(ok)
 	s.Equal([]string{"region"}, cols)
 	s.Equal("x", pattern)
@@ -152,7 +152,7 @@ func (s *AutoGroupColumnsSuite) TestAllNumericNoAutoGroup() {
 		{"3", "30", "9"},
 		{"4", "40", "11"},
 	}
-	cols, pattern, ok := AutoGroupColumns(headers, rows, false)
+	cols, pattern, ok := AutoGroupColumns(headers, rows)
 	s.False(ok)
 	s.Empty(cols)
 	s.Empty(pattern)
@@ -175,7 +175,7 @@ func (s *AutoGroupColumnsSuite) TestHighestCardinalityWins() {
 		{"East", "L"},
 	}
 	// region has 5 distinct, product has 12 distinct → product wins
-	cols, _, ok := AutoGroupColumns(headers, rows, false)
+	cols, _, ok := AutoGroupColumns(headers, rows)
 	s.Require().True(ok)
 	s.Equal([]string{"product"}, cols)
 }
@@ -188,51 +188,15 @@ func (s *AutoGroupColumnsSuite) TestLeftmostTieBreak() {
 		{"North", "C"},
 	}
 	// both have 3 distinct, equal → leftmost (region) wins
-	cols, _, ok := AutoGroupColumns(headers, rows, false)
+	cols, _, ok := AutoGroupColumns(headers, rows)
 	s.Require().True(ok)
 	s.Equal([]string{"region"}, cols)
-}
-
-func (s *AutoGroupColumnsSuite) TestWantXYPicksTwo() {
-	headers := []string{"region", "product", "sells", "stocks"}
-	rows := [][]string{
-		{"West", "A", "10", "5"},
-		{"East", "B", "20", "7"},
-		{"North", "C", "30", "9"},
-		{"South", "D", "40", "11"},
-		{"Central", "E", "50", "13"},
-		{"West", "F", "60", "15"},
-		{"East", "G", "70", "17"},
-		{"North", "H", "80", "19"},
-		{"South", "I", "90", "21"},
-		{"Central", "J", "100", "23"},
-		{"West", "K", "110", "25"},
-		{"East", "L", "120", "27"},
-	}
-	cols, pattern, ok := AutoGroupColumns(headers, rows, true)
-	s.Require().True(ok)
-	// product 12 distinct > region 5 → xAxis=product, yAxis=region
-	s.Equal([]string{"product", "region"}, cols)
-	s.Equal("x,y", pattern)
-}
-
-func (s *AutoGroupColumnsSuite) TestWantXYWithOneCandidatePicksOne() {
-	headers := []string{"region", "sells", "stocks"}
-	rows := [][]string{
-		{"West", "10", "5"},
-		{"East", "20", "7"},
-		{"North", "30", "9"},
-	}
-	cols, pattern, ok := AutoGroupColumns(headers, rows, true)
-	s.Require().True(ok)
-	s.Equal([]string{"region"}, cols)
-	s.Equal("x", pattern)
 }
 
 func (s *AutoGroupColumnsSuite) TestSingleColumnNoOp() {
 	headers := []string{"sells"}
 	rows := [][]string{{"10"}, {"20"}}
-	cols, pattern, ok := AutoGroupColumns(headers, rows, false)
+	cols, pattern, ok := AutoGroupColumns(headers, rows)
 	s.False(ok)
 	s.Empty(cols)
 	s.Empty(pattern)
@@ -245,7 +209,7 @@ func (s *AutoGroupColumnsSuite) TestNoChartColumnRemainsNoOp() {
 	// Use one column to test the "<2 headers" path (true no-op).
 	headers := []string{"region"}
 	rows := [][]string{{"West"}, {"East"}}
-	cols, _, ok := AutoGroupColumns(headers, rows, false)
+	cols, _, ok := AutoGroupColumns(headers, rows)
 	s.False(ok)
 	s.Empty(cols)
 }
@@ -259,7 +223,7 @@ func (s *AutoGroupColumnsSuite) TestNumericStringValuesClassifiedNumeric() {
 		{"20", "30"},
 		{"30", "40"},
 	}
-	cols, _, ok := AutoGroupColumns(headers, rows, false)
+	cols, _, ok := AutoGroupColumns(headers, rows)
 	s.Require().True(ok)
 	s.Equal([]string{"mix"}, cols) // mix is categorical (has "West")
 }
