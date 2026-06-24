@@ -108,6 +108,8 @@ vizb scatter spiral.csv -o scatter.html
 
 Use `--select` to pick specific columns. With auto-value, 3D is automatically enabled when 3 coordinate columns are detected; `--select` limiting to 2 columns keeps it 2D.
 
+When a CSV/JSON has **four** numeric columns, vizb treats the first three as `x`, `y`, `z` positions and the fourth as a **visual metric** — `3d-visualmap` is enabled automatically so point color and size follow the metric.
+
 Continuous 3D uses the same WebGL scene as grouped 3D — rotate, zoom, pan, and the auto-rotate toggle all apply.
 
 ## 3D Chart Types

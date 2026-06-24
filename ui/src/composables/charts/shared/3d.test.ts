@@ -10,6 +10,7 @@ import {
   viewDistanceFor3DBox,
   create3DGridConfig,
   create3DTooltipFormatter,
+  createContinuous3DTooltipFormatter,
   create3DVisualMap,
   createValue3DTooltipFormatter,
   createZLegendConfig,
@@ -158,8 +159,35 @@ describe('create3DGridConfig', () => {
   })
 })
 
+describe('createContinuous3DTooltipFormatter', () => {
+  it('shows x, y, z coordinates without metric row for 3-tuples', () => {
+    const formatter = createContinuous3DTooltipFormatter(false, {
+      x: 'i',
+      y: 'j',
+      z: 'k',
+    })
+    const html = formatter({ value: [1, 2, 3] })
+    expect(html).toContain('<b>i: 1</b>')
+    expect(html).toContain('j: 2')
+    expect(html).toContain('k: 3')
+    expect(html).not.toContain('value:')
+  })
+
+  it('appends metric row when a 4th value is present', () => {
+    const formatter = createContinuous3DTooltipFormatter(false, {
+      x: 'i',
+      y: 'j',
+      z: 'k',
+      metric: 'value',
+    })
+    const html = formatter({ value: [0, 1, 2, 4.5] })
+    expect(html).toContain('k: 2')
+    expect(html).toContain('value: <b>4.5</b>')
+  })
+})
+
 describe('create3DVisualMap', () => {
-  it('positions visualMap vertically at the right-center with metric dimension', () => {
+  it('category mode colors by z height (dimension 2) without symbolSize or colorAlpha', () => {
     const visualMap = create3DVisualMap(42, styling)
     expect(visualMap).toMatchObject({
       show: true,
@@ -170,8 +198,23 @@ describe('create3DVisualMap', () => {
       orient: 'vertical',
       right: '0%',
       top: 'center',
+      inRange: { color: expect.any(Array) },
     })
-    expect(visualMap.inRange.color.length).toBeGreaterThan(1)
+    expect(visualMap.inRange).not.toHaveProperty('symbolSize')
+    expect(visualMap.inRange).not.toHaveProperty('colorAlpha')
+  })
+
+  it('metric mode uses dimension 3 with symbolSize and colorAlpha', () => {
+    const visualMap = create3DVisualMap(6, styling, 3)
+    expect(visualMap).toMatchObject({
+      dimension: 3,
+      min: 0,
+      max: 6,
+      inRange: {
+        symbolSize: [0.5, 25],
+        colorAlpha: [0.2, 1],
+      },
+    })
   })
 })
 
@@ -319,13 +362,27 @@ describe('create3DTooltipFormatter', () => {
 })
 
 describe('resolve3DVisualMap', () => {
-  const series = [{ data: [{ value: [0, 0, 42] }] }]
+  const categorySeries = [{ data: [{ value: [0, 0, 42] }] }]
+  const metricSeries = [{ data: [{ value: [0, 0, 1, 4.5] }] }]
 
-  it('returns config when enabled', () => {
-    expect(resolve3DVisualMap(true, series, styling)).toMatchObject({ show: true, max: 42 })
+  it('returns category config on dimension 2 when no metric column', () => {
+    expect(resolve3DVisualMap(true, categorySeries, styling)).toMatchObject({
+      show: true,
+      dimension: 2,
+      max: 42,
+    })
+  })
+
+  it('returns metric config on dimension 3 when a 4th value is present', () => {
+    expect(resolve3DVisualMap(true, metricSeries, styling)).toMatchObject({
+      show: true,
+      dimension: 3,
+      max: 4.5,
+      inRange: { symbolSize: [0.5, 25], colorAlpha: [0.2, 1] },
+    })
   })
 
   it('returns empty array when disabled so ECharts can replace-merge it away', () => {
-    expect(resolve3DVisualMap(false, series, styling)).toEqual([])
+    expect(resolve3DVisualMap(false, metricSeries, styling)).toEqual([])
   })
 })

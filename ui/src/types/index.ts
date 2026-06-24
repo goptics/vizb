@@ -33,7 +33,8 @@ export type DataPoint = {
   xAxis?: string
   yAxis?: string
   zAxis?: string
-  stats: Stat[]
+  metric?: string
+  stats?: Stat[]
 }
 
 export type Sort = {
@@ -45,7 +46,7 @@ export type Sort = {
 // `key` is the canonical short key ("name" | "x" | "y" | "z");
 // `label` is the human-readable column name from --group.
 export type Axis = {
-  key: 'name' | 'x' | 'y' | 'z'
+  key: 'name' | 'x' | 'y' | 'z' | 'metric'
   label?: string
   type?: string // 'value' = continuous numeric axis; absent or '' = category (default)
 }
@@ -133,6 +134,7 @@ export type AxisLabels = {
   x?: string
   y?: string
   z?: string
+  metric?: string
 }
 
 // Machine metadata, nested under `meta` on both the dataset and each history
@@ -161,6 +163,7 @@ export type DataSet = {
   history?: HistoryEntry[]
   meta?: Meta
   axes?: Axis[]
+
   settings: ChartConfig[]
   data: DataPoint[]
 }
@@ -243,7 +246,7 @@ export type ChartData = {
   points: Point3D[]
   axisLabels?: AxisLabels
   valueTuples?: [number, number][] // value-mode 2D: chart [x, y] coordinate pairs
-  valuePoints3D?: [number, number, number][] // value-mode 3D: chart [x, y, z] coordinates
+  valuePoints3D?: [number, number, number, number?][] // value-mode 3D: [x, y, z] or [x, y, z, metric]
   // Precomputed 3D render data (built in the transform worker for charts that
   // have x, y and z). Absent for 2D charts. Holds the sorted axis category
   // arrays plus the per-z series data for both bar3D (filled grid) and line3D

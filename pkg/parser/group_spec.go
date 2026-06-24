@@ -271,11 +271,10 @@ func AutoGroupApplies(cfg Config) bool {
 	return cfg.AutoGroup && NoExplicitGrouping(cfg)
 }
 
-// AutoValueColumns returns the first 2-3 purely numeric columns (in file
-// order) for auto-value-mode value axes (x, y, z). A column is numeric when
-// all non-empty cells parse as finite floats. Returns ok=false when <2 such
-// columns exist — caller falls back to flat-series.
-func AutoValueColumns(headers []string, rows [][]string) (cols []string, ok bool) {
+// numericColumns returns purely numeric column names in file order. A column is
+// numeric when all non-empty cells parse as finite floats.
+func numericColumns(headers []string, rows [][]string) []string {
+	var cols []string
 	for i, h := range headers {
 		if h == "" {
 			continue
@@ -296,15 +295,24 @@ func AutoValueColumns(headers []string, rows [][]string) (cols []string, ok bool
 		}
 		if allNumeric {
 			cols = append(cols, h)
-			if len(cols) >= 3 {
-				break
-			}
 		}
 	}
-	if len(cols) < 2 {
+	return cols
+}
+
+// AutoValueColumns returns the first 2-3 purely numeric columns (in file
+// order) for auto-value-mode value axes (x, y, z). A column is numeric when
+// all non-empty cells parse as finite floats. Returns ok=false when <2 such
+// columns exist — caller falls back to flat-series.
+func AutoValueColumns(headers []string, rows [][]string) (cols []string, ok bool) {
+	all := numericColumns(headers, rows)
+	if len(all) < 2 {
 		return nil, false
 	}
-	return cols, true
+	if len(all) > 3 {
+		return all[:3], true
+	}
+	return all, true
 }
 
 // AutoValueEligible reports whether the given chart types are eligible for
@@ -334,7 +342,7 @@ func LogAutoGroup(cols []string) {
 }
 
 // LogAutoValue prints the inferred value axis columns (parallel to LogAutoGroup).
-func LogAutoValue(cols []string) {
+func LogAutoValue(cols []string, metricCol string) {
 	if len(cols) == 0 {
 		return
 	}
@@ -344,7 +352,11 @@ func LogAutoValue(cols []string) {
 	} else if len(cols) == 3 {
 		noun = "columns (3D pattern x-y-z)"
 	}
-	fmt.Println(style.Info.Render(fmt.Sprintf("🧠 Auto-valued by %s: %s", noun, strings.Join(cols, ", "))))
+	msg := fmt.Sprintf("🧠 Auto-valued by %s: %s", noun, strings.Join(cols, ", "))
+	if metricCol != "" {
+		msg += fmt.Sprintf(", metric: %s", metricCol)
+	}
+	fmt.Println(style.Info.Render(msg))
 }
 
 // FinalizeGroupConfig resolves and validates explicit --group config for tabular parsers.
@@ -382,15 +394,22 @@ func AutoDetectTabularConfig(cfg Config, autoHeaders []string, rows [][]string) 
 	if !AutoValueEligible(cfg.ChartTypes) {
 		return cfg, nil
 	}
-	valCols, vok := AutoValueColumns(autoHeaders, rows)
-	if !vok {
+	allNumeric := numericColumns(autoHeaders, rows)
+	if len(allNumeric) < 2 {
 		return cfg, nil
+	}
+	valCols := allNumeric
+	if len(valCols) > 3 {
+		valCols = valCols[:3]
 	}
 	cfg.Axes = make([]ColumnSpec, len(valCols))
 	for i, name := range valCols {
 		cfg.Axes[i] = ColumnSpec{Source: name}
 	}
-	LogAutoValue(valCols)
+	if len(allNumeric) >= 4 {
+		cfg.MetricColumn = allNumeric[3]
+	}
+	LogAutoValue(valCols, cfg.MetricColumn)
 	return cfg, nil
 }
 

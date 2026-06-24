@@ -76,9 +76,10 @@ When every column in a CSV/JSON file is numeric (no categorical columns exist), 
 | Columns | Axes | Pattern |
 |---|---|---|
 | 2+ | `x`, `y` | 2D value |
-| 3+ | `x`, `y`, `z` (first 3 only; extras ignored) | **3D value** (auto-enables 3D) |
+| 3+ | `x`, `y`, `z` (first 3) | **3D value** (auto-enables 3D) |
+| 4+ | `x`, `y`, `z` + 4th as **metric** | **3D value** + auto visualMap (color/size by metric) |
 
-With 2+ numeric columns, vizb creates a 2D value-mode chart. With 3+, it automatically enables 3D (`bar3D` / `line3D` / `scatter3D`). The inference is logged: `🧠 Auto-valued by columns: price, latency, memory (3D pattern x-y-z)`.
+With 2+ numeric columns, vizb creates a 2D value-mode chart. With 3+, it automatically enables 3D (`bar3D` / `line3D` / `scatter3D`). With 4+, the first three columns are coordinates and the fourth becomes a visual metric. The inference is logged: `🧠 Auto-valued by columns: x, y, z (3D pattern x-y-z), metric: value`.
 
 Use `--select` to control which columns participate. When `--select` limits to 2 columns, auto-value stays 2D even if the data has more numeric columns:
 

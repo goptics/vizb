@@ -21,6 +21,7 @@ const plainLabels = (labels: AxisLabels | undefined | null): AxisLabels | null =
   if (labels.x !== undefined) out.x = labels.x
   if (labels.y !== undefined) out.y = labels.y
   if (labels.z !== undefined) out.z = labels.z
+  if (labels.metric !== undefined) out.metric = labels.metric
   return Object.keys(out).length ? out : null
 }
 

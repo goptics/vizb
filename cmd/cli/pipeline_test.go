@@ -10,6 +10,7 @@ import (
 	config_charts "github.com/goptics/vizb/config/charts"
 	barchart "github.com/goptics/vizb/config/charts/bar"
 	linechart "github.com/goptics/vizb/config/charts/line"
+	scatterchart "github.com/goptics/vizb/config/charts/scatter"
 	"github.com/goptics/vizb/pkg/parser"
 	_ "github.com/goptics/vizb/pkg/parser/csv"
 	"github.com/goptics/vizb/shared"
@@ -404,6 +405,27 @@ func (s *PipelineSuite) TestAssembleDatasetUsesCategoryAxesFromData() {
 	for _, ax := range ds.Axes {
 		s.Equal("", ax.Type)
 	}
+}
+
+func (s *PipelineSuite) TestAssembleDatasetAutoEnablesVisualMapForValueMetric() {
+	results := []shared.DataPoint{
+		{XAxis: "0", YAxis: "0", ZAxis: "0", Metric: "4", Stats: []shared.Stat{}},
+	}
+	cfg := parser.Config{AutoGroup: true}
+	configs := []config_charts.ChartConfig{
+		scatterchart.Materialise(scatterchart.Flags{}, nil),
+	}
+	ds := assembleDataset(results, CommonOptions{Name: "Noise"}, configs, cfg)
+
+	s.Require().Len(ds.Settings, 1)
+	sc := ds.Settings[0].(scatterchart.Config)
+	s.Require().NotNil(sc.ThreeDVisualMap)
+	s.True(*sc.ThreeDVisualMap)
+	s.Require().NotNil(sc.ThreeD)
+	s.True(*sc.ThreeD)
+	s.Require().Len(ds.Axes, 4)
+	s.Equal("metric", ds.Axes[3].Key)
+	s.Equal("value", ds.Axes[3].Label)
 }
 
 func (s *PipelineSuite) TestPrepareDataUnknownParserExits() {

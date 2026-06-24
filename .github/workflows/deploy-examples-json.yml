@@ -22,12 +22,13 @@ jobs:
     strategy:
       matrix:
         include:
-          - output: sales
+          - output: 00-sales
             file: sales
-            name: "Sales data Visualization from JSON file"
+            name: "Sales by Product"
+            description: "Grouped bar chart by product, region, and category"
             group: "product,region,category"
-            group-pattern: n/x/y
-            scale: "log"
+            group-pattern: n,x,y
+            charts: bar,line,pie
 
     runs-on: ubuntu-latest
     steps:
@@ -38,10 +39,15 @@ jobs:
         with:
           file: examples/json/${{ matrix.file }}.json
           name: ${{ matrix.name }}
+          description: ${{ matrix.description }}
+          group: ${{ matrix.group }}
           group-pattern: ${{ matrix.group-pattern }}
-          scale: ${{ matrix.scale }}
+          charts: ${{ matrix.charts }}
+          chart: |
+            bar:scale=log,sort=asc
+            line:scale=log,sort=asc
+            pie:sort=asc
           output-json: ${{ matrix.output }}.json
-          sort: asc
 
       - name: Uploading json artifacts
         uses: actions/upload-artifact@v4
@@ -50,7 +56,7 @@ jobs:
           path: ${{ matrix.output }}.json
 
   merge-deploy:
-    name: Merge and Deploy json Data
+    name: Merge and Deploy JSON Data
     needs: convert
     permissions:
       contents: write

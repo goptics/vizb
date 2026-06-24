@@ -1,5 +1,6 @@
 import type { EChartsOption } from 'echarts'
 import type { Render3D, Point3D, ScaleType, Series3DData } from '@/types'
+import { valuePoints3DToSeries } from '@/lib/transform'
 import { COLOR_PALETTE, getNextColorFor } from '@/lib/utils'
 import {
   formatTooltipValue,
@@ -27,28 +28,40 @@ export const VALUE_3D_COLOR_RANGE = [
   '#a50026',
 ]
 
-export function maxFrom3DData(series: { data: { value: number[] }[] }[]): number {
+export function seriesHasMetricDimension(series: { data: { value: number[] }[] }[]): boolean {
+  const first = series[0]?.data[0]?.value
+  return (first?.length ?? 0) >= 4
+}
+
+export function maxFrom3DData(series: { data: { value: number[] }[] }[], dimension = 2): number {
   let max = 0
   for (const s of series) {
     for (const item of s.data) {
-      const v = item.value[2] ?? 0
+      const v = item.value[dimension] ?? 0
       if (v > max) max = v
     }
   }
-  return max
+  return max || 1
 }
 
-export function create3DVisualMap(max: number, styling: ChartStyling) {
+export function create3DVisualMap(max: number, styling: ChartStyling, dimension: 2 | 3 = 2) {
   return {
     show: true,
     min: 0,
     max: max || 1,
-    dimension: 2,
+    dimension,
     calculable: true,
     orient: 'vertical' as const,
     right: '0%',
     top: 'center',
-    inRange: { color: VALUE_3D_COLOR_RANGE },
+    inRange:
+      dimension === 3
+        ? {
+            color: VALUE_3D_COLOR_RANGE,
+            symbolSize: [0.5, 25],
+            colorAlpha: [0.2, 1],
+          }
+        : { color: VALUE_3D_COLOR_RANGE },
     textStyle: { color: styling.textColor },
   }
 }
@@ -59,11 +72,10 @@ export function resolve3DVisualMap(
   series: { data: { value: number[] }[] }[],
   styling: ChartStyling
 ) {
-  return enabled ? create3DVisualMap(maxFrom3DData(series), styling) : []
+  if (!enabled) return []
+  const dim = seriesHasMetricDimension(series) ? 3 : 2
+  return create3DVisualMap(maxFrom3DData(series, dim), styling, dim)
 }
-
-/** @deprecated Use create3DVisualMap */
-export const createValue3DVisualMap = create3DVisualMap
 
 export function createValue3DTooltipFormatter(params: {
   xValues: string[]
@@ -273,18 +285,22 @@ export function createContinuous3DAxes(
 
 export function createContinuous3DTooltipFormatter(
   _isDark: boolean,
-  labels: { x?: string; y?: string; z?: string }
+  labels: { x?: string; y?: string; z?: string; metric?: string }
 ) {
   const xName = labels.x ?? 'x'
   const yName = labels.y ?? 'y'
   const zName = labels.z ?? 'z'
+  const metricName = labels.metric ?? 'value'
   return (p: { value: number[] }) => {
-    const [x = 0, y = 0, z = 0] = p.value
-    return (
+    const [x = 0, y = 0, z = 0, metric] = p.value
+    const coords =
       `<b>${xName}: ${formatTooltipValue(x)}</b><br/>` +
       `${yName}: ${formatTooltipValue(y)}<br/>` +
       `${zName}: ${formatTooltipValue(z)}`
-    )
+    if (metric !== undefined) {
+      return coords + `<br/>${metricName}: <b>${formatTooltipValue(metric)}</b>`
+    }
+    return coords
   }
 }
 
@@ -443,17 +459,12 @@ export type Continuous3DParams = {
   threeDRotate: boolean
   scale: ScaleType
   seriesData: Series3DData[]
-  axisLabels?: { x?: string; y?: string; z?: string }
+  axisLabels?: { x?: string; y?: string; z?: string; metric?: string }
 }
 
 export type Continuous3DContext = Omit<Continuous3DParams, 'seriesData'>
 
-export function valuePoints3DToSeries(
-  points: [number, number, number][],
-  title: string
-): Series3DData[] {
-  return [{ name: title, data: points.map(([x, y, z]) => ({ value: [x, y, z] })) }]
-}
+export { valuePoints3DToSeries }
 
 export function makeContinuous3DParams(
   ctx: Continuous3DContext,
@@ -494,7 +505,10 @@ export function buildContinuous3DOptions(
   const lineStyle = seriesType === 'line3D' ? { width: 3, color: defaultColor } : undefined
   const isBar = seriesType === 'bar3D'
   const barSize = barSizeForContinuous3D(pointCount, grid3D.boxWidth, grid3D.boxDepth)
-  const symbolSize = symbolSizeForContinuous3D(pointCount, grid3D.boxWidth, grid3D.boxDepth)
+  const metricDimension = seriesHasMetricDimension(seriesData)
+  const useMetricVisualMap = useVisualMap && metricDimension
+  const defaultSymbolSize = symbolSizeForContinuous3D(pointCount, grid3D.boxWidth, grid3D.boxDepth)
+  const scatterSymbolSize = useMetricVisualMap ? undefined : defaultSymbolSize
   const barProps = isBar
     ? { bevelSize: 0.3, bevelSmoothness: 3, shading: 'lambert' as const, barSize }
     : {}
@@ -510,6 +524,7 @@ export function buildContinuous3DOptions(
         x: axisLabels?.x,
         y: axisLabels?.y,
         z: axisLabels?.z,
+        metric: axisLabels?.metric,
       }),
     },
     ...axes3D,
@@ -518,15 +533,15 @@ export function buildContinuous3DOptions(
       name: s.name,
       type: seriesType,
       data: s.data,
-      symbolSize: isBar ? undefined : seriesType === 'line3D' ? 0 : symbolSize,
+      symbolSize: isBar ? undefined : seriesType === 'line3D' ? 0 : scatterSymbolSize,
       ...(lineStyle ? { lineStyle } : {}),
-      ...(useVisualMap ? {} : { itemStyle: { color: defaultColor } }),
+      ...(useMetricVisualMap ? {} : { itemStyle: { color: defaultColor } }),
       ...barProps,
       label: {
         show: showLabels,
         formatter: (p: { value: number[] }) => {
-          const z = p.value[2]
-          return z === undefined ? '' : String(round2(z))
+          const labelVal = metricDimension ? p.value[3] : p.value[2]
+          return labelVal === undefined ? '' : String(round2(labelVal))
         },
         textStyle: { fontSize: 12, color: styling.textColor },
       },

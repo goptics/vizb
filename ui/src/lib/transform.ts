@@ -244,8 +244,13 @@ export function buildChartData(
   )
 }
 
+const SWAP_AXIS_KEYS = new Set(['name', 'x', 'y', 'z'])
+
 const identityStringFromAxes = (axes: Axis[]): string =>
-  axes.map((a) => (a.key === 'name' ? 'n' : a.key.charAt(0))).join('')
+  axes
+    .filter((a) => SWAP_AXIS_KEYS.has(a.key))
+    .map((a) => (a.key === 'name' ? 'n' : a.key.charAt(0)))
+    .join('')
 
 const axisLabelsFromAxes = (axes: Axis[]): AxisLabels => {
   const out: AxisLabels = {}
@@ -277,20 +282,35 @@ const projectValueCoords = (
   return out
 }
 
+export type ValuePoint3D = [number, number, number, number?]
+
+export function valuePoints3DToSeries(points: ValuePoint3D[], title: string): Series3DData[] {
+  const withMetric = (points[0]?.length ?? 0) >= 4
+  return [
+    {
+      name: title,
+      data: points.map(([x, y, z, m]) =>
+        withMetric && m !== undefined ? { value: [x, y, z, m] } : { value: [x, y, z] }
+      ),
+    },
+  ]
+}
+
 // Value-mode 3D: continuous [x,y,z] path through space (--axes x,y,z + swap with z on chart).
 export function buildValueMode3DRender(
-  points: [number, number, number][],
+  points: ValuePoint3D[],
   title: string,
   showLabels = false,
   scale: ScaleType = 'linear'
 ): Render3D {
   const filtered = scale === 'log' ? points.filter(([x, y, z]) => x > 0 && y > 0 && z > 0) : points
-
-  const seriesData = filtered.map(([x, y, z]) => ({ value: [x, y, z] }))
+  const withMetric = (filtered[0]?.length ?? 0) >= 4
+  const seriesData = valuePoints3DToSeries(filtered, title)[0]!.data
   const cellTotals: Record<string, number> = {}
   if (showLabels) {
-    filtered.forEach(([, , z], i) => {
-      cellTotals[String(i)] = z
+    filtered.forEach((p, i) => {
+      const labelVal = withMetric && p[3] !== undefined ? p[3] : p[2]
+      cellTotals[String(i)] = labelVal ?? 0
     })
   }
 
@@ -319,11 +339,11 @@ export function buildValueModeChart(
   const target = targetString ?? identity
   const scale = opts?.scale ?? 'linear'
   const baseLabels = axisLabelsFromAxes(axes)
-  const labels = swapAxisLabels(identity, target, baseLabels) ?? baseLabels
+  const labels = { ...(swapAxisLabels(identity, target, baseLabels) ?? baseLabels) }
   const use3D = (opts?.threeD ?? true) && arrangementHasChartZ(target)
 
   const valueTuples: [number, number][] = []
-  const valuePoints3D: [number, number, number][] = []
+  const valuePoints3D: ValuePoint3D[] = []
 
   for (const row of data) {
     const coords = projectValueCoords(row, identity, target)
@@ -335,7 +355,13 @@ export function buildValueModeChart(
       const cz = coords.zAxis
       if (cx === undefined || cy === undefined || cz === undefined) continue
       if (scale === 'log' && (cx <= 0 || cy <= 0 || cz <= 0)) continue
-      valuePoints3D.push([cx, cy, cz])
+      const metricRaw = row.metric
+      const metricNum = metricRaw !== undefined && metricRaw !== '' ? Number(metricRaw) : undefined
+      if (metricNum !== undefined && isFinite(metricNum)) {
+        valuePoints3D.push([cx, cy, cz, metricNum])
+      } else {
+        valuePoints3D.push([cx, cy, cz])
+      }
     } else {
       const cx = coords.xAxis
       const cy = coords.yAxis
@@ -602,7 +628,7 @@ export function projectAndGroup(
 
   for (const row of raw) {
     let groupKey = 'Default'
-    const out: DataPoint = { stats: row.stats }
+    const out: DataPoint = row.stats ? { stats: row.stats } : {}
 
     const rowRec = row as Record<string, unknown>
     for (let i = 0; i < identityKeys.length; i++) {

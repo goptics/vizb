@@ -290,6 +290,9 @@ func (s *AutoValueColumnsSuite) TestFourNumericColsReturnsFirstThree() {
 	cols, ok := AutoValueColumns(headers, rows)
 	s.Require().True(ok)
 	s.Equal([]string{"a", "b", "c"}, cols)
+	all := numericColumns(headers, rows)
+	s.Require().GreaterOrEqual(len(all), 4)
+	s.Equal("d", all[3])
 }
 
 func (s *AutoValueColumnsSuite) TestMixedTypesSkipsNonNumeric() {

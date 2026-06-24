@@ -25,14 +25,14 @@ jobs:
           - output: 00-tinybench
             file: 00-tinybench
             name: "Bubble Vs Insertion Sort (tinybench)"
+            description: "Tinybench output — algorithm on X, input size on Y"
             group-pattern: x/y
-            parser: js:tinybench
-
           - output: 01-vitest
             file: 01-vitest
             name: "Bubble Vs Insertion Sort (vitest)"
+            description: "Vitest bench output — benchmark name and case from regex groups"
             group-regex: "n=(?<y>.*)/(?<x>.*)"
-            parser: js:vitest
+
 
     runs-on: ubuntu-latest
     steps:
@@ -43,11 +43,14 @@ jobs:
         with:
           file: examples/javascript/${{ matrix.file }}.txt
           name: ${{ matrix.name }}
+          description: ${{ matrix.description }}
           group-pattern: ${{ matrix.group-pattern }}
           group-regex: ${{ matrix.group-regex }}
+          chart: |
+            bar:scale=log,sort=asc
+            line:scale=log,sort=asc
+            pie:sort=asc
           output-json: ${{ matrix.output }}.json
-          parser: ${{matrix.parser}}
-          sort: asc
 
       - name: Uploading json artifacts
         uses: actions/upload-artifact@v4
@@ -56,7 +59,7 @@ jobs:
           path: ${{ matrix.output }}.json
 
   merge-deploy:
-    name: Merge Javascript Benchmarks
+    name: Merge and Deploy Javascript Benchmarks
     needs: convert
     permissions:
       contents: write

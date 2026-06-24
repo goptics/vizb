@@ -354,11 +354,11 @@ func deriveAxesFromData(results []shared.DataPoint) []shared.Axis {
 }
 
 func isValueXYZAxes(axes []shared.Axis) bool {
-	if len(axes) != 3 {
-		return false
-	}
 	keys := map[string]bool{}
 	for _, a := range axes {
+		if a.Key == "metric" {
+			continue
+		}
 		if a.Type != "value" {
 			return false
 		}
@@ -367,27 +367,59 @@ func isValueXYZAxes(axes []shared.Axis) bool {
 	return keys["x"] && keys["y"] && keys["z"]
 }
 
-// autoEnable3DForValueMode sets ThreeD on 3D-capable configs when value-mode
-// has 3 coordinates (x, y, z), so `vizb bar spiral-3d.csv` auto-enables 3D.
-func autoEnable3DForValueMode(configs []config_charts.ChartConfig, axes []shared.Axis) {
+func appendMetricAxis(axes []shared.Axis, cfg parser.Config, results []shared.DataPoint) []shared.Axis {
+	if !valueModeHasMetric(cfg, results) {
+		return axes
+	}
+	for _, a := range axes {
+		if a.Key == "metric" {
+			return axes
+		}
+	}
+	label := cfg.MetricColumn
+	if label == "" {
+		label = "value"
+	}
+	return append(axes, shared.Axis{Key: "metric", Label: label, Type: "value"})
+}
+
+func valueModeHasMetric(cfg parser.Config, results []shared.DataPoint) bool {
+	if cfg.MetricColumn != "" {
+		return true
+	}
+	for _, dp := range results {
+		if dp.Metric != "" {
+			return true
+		}
+	}
+	return false
+}
+
+func applyValueMode3DFlags(threeD **bool, visualMap **bool, v bool, enableVM bool) {
+	*threeD = &v
+	if enableVM {
+		*visualMap = &v
+	}
+}
+
+// autoEnableValueMode3D sets ThreeD (and ThreeDVisualMap when metric present) on
+// bar/line/scatter configs for continuous xyz value mode.
+func autoEnableValueMode3D(configs []config_charts.ChartConfig, axes []shared.Axis, visualMap bool) {
 	if !isValueXYZAxes(axes) {
 		return
 	}
 	v := true
 	for i, c := range configs {
-		switch c.(type) {
+		switch bc := c.(type) {
 		case barchart.Config:
-			bc := configs[i].(barchart.Config)
-			bc.ThreeD = &v
+			applyValueMode3DFlags(&bc.ThreeD, &bc.ThreeDVisualMap, v, visualMap)
 			configs[i] = bc
 		case linechart.Config:
-			lc := configs[i].(linechart.Config)
-			lc.ThreeD = &v
-			configs[i] = lc
+			applyValueMode3DFlags(&bc.ThreeD, &bc.ThreeDVisualMap, v, visualMap)
+			configs[i] = bc
 		case scatterchart.Config:
-			sc := configs[i].(scatterchart.Config)
-			sc.ThreeD = &v
-			configs[i] = sc
+			applyValueMode3DFlags(&bc.ThreeD, &bc.ThreeDVisualMap, v, visualMap)
+			configs[i] = bc
 		}
 	}
 }
@@ -400,13 +432,14 @@ func assembleDataset(results []shared.DataPoint, common CommonOptions, configs [
 		// Auto-grouping modified the config inside the parser; derive axes
 		// from the actual data points since the caller's cfg is unchanged.
 		axes = deriveAxesFromData(results)
-		autoEnable3DForValueMode(configs, axes)
+		autoEnableValueMode3D(configs, axes, valueModeHasMetric(cfg, results))
 	} else {
 		axes = parser.GroupAxes(cfg)
 		if len(cfg.Axes) > 0 {
 			axes = parser.ValueAxes(cfg)
 		}
 	}
+	axes = appendMetricAxis(axes, cfg, results)
 
 	dataSet := &shared.Dataset{
 		Name:        common.Name,

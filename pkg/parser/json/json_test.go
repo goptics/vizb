@@ -450,6 +450,7 @@ func (s *JSONAutoValueSuite) TestFourNumericFieldsTakeFirstThree() {
 	s.Equal("1", results[0].XAxis)
 	s.Equal("2", results[0].YAxis)
 	s.Equal("3", results[0].ZAxis)
+	s.Equal("4", results[0].Metric)
 	s.Empty(results[0].Stats)
 }
 

@@ -520,6 +520,15 @@ describe('buildValueModeChart — 3-col swap-driven 3D', () => {
     expect(chart.valueTuples).toBeUndefined()
   })
 
+  it('includes 4th metric column in valuePoints3D and render3D series', () => {
+    const row: DataPoint = { xAxis: '0', yAxis: '0', zAxis: '0', metric: '4.5', stats: [] }
+    const axesWithMetric: Axis[] = [...valueAxes3, { key: 'metric', label: 'value', type: 'value' }]
+    const chart = buildValueModeChart([row], axesWithMetric, 'xyz', 'xyz')
+    expect(chart.valuePoints3D).toEqual([[0, 0, 0, 4.5]])
+    expect(chart.render3D?.lineSeries[0]?.data[0]?.value).toEqual([0, 0, 0, 4.5])
+    expect(chart.axisLabels?.metric).toBe('value')
+  })
+
   it('nxy swap emits 2D tuples projecting y and z onto chart axes', () => {
     const chart = buildValueModeChart([vdp3('1', '2', '3')], valueAxes3, 'xyz', 'nxy')
     expect(chart.render3D).toBeUndefined()

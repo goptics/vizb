@@ -125,7 +125,10 @@ const isValueModeDataset = computed(() => {
 // axes[] preserves the serial dimension order from --group-pattern / --group-regex.
 const identityFromDataSet = (ds: DataSet | undefined): string => {
   if (ds?.axes?.length) {
-    return ds.axes.map((a) => (a.key === 'name' ? 'n' : a.key.charAt(0))).join('')
+    return ds.axes
+      .filter((a) => a.key !== 'metric')
+      .map((a) => (a.key === 'name' ? 'n' : a.key.charAt(0)))
+      .join('')
   }
   return presentAxisString(ds?.data)
 }

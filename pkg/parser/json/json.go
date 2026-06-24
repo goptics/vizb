@@ -238,9 +238,31 @@ func parseJSONValueMode(rows []map[string]any, colOrder []string, seenCol map[st
 		keys[i] = spec.Source
 	}
 
+	metricKey := ""
+	if cfg.MetricColumn != "" {
+		if !seenCol[cfg.MetricColumn] {
+			shared.ExitWithError(fmt.Sprintf("metric field '%s' not found; available: %v", cfg.MetricColumn, colOrder), nil)
+		}
+		hasNumeric := false
+		for _, row := range rows {
+			v, ok := row[cfg.MetricColumn]
+			if !ok {
+				continue
+			}
+			if _, ok := leafNumber(v); ok {
+				hasNumeric = true
+				break
+			}
+		}
+		if !hasNumeric {
+			shared.ExitWithError(fmt.Sprintf("metric field '%s' is not numeric", cfg.MetricColumn), nil)
+		}
+		metricKey = cfg.MetricColumn
+	}
+
 	var results []shared.DataPoint
 	for _, row := range rows {
-		dp := shared.DataPoint{Stats: []shared.Stat{}}
+		var dp shared.DataPoint
 		dst := []*string{&dp.XAxis, &dp.YAxis, &dp.ZAxis}
 		complete := true
 		for i, k := range keys {
@@ -258,6 +280,17 @@ func parseJSONValueMode(rows []map[string]any, colOrder []string, seenCol map[st
 		}
 		if !complete {
 			continue
+		}
+		if metricKey != "" {
+			v, ok := row[metricKey]
+			if !ok {
+				continue
+			}
+			mv, ok := leafNumber(v)
+			if !ok {
+				continue
+			}
+			dp.Metric = strconv.FormatFloat(utils.FormatNumber(mv, cfg.NumberUnit), 'g', -1, 64)
 		}
 		results = append(results, dp)
 	}

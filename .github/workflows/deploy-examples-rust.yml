@@ -25,16 +25,14 @@ jobs:
           - output: 00-criterion
             file: 00-criterion
             name: "Bubble vs Insertion Sort (Criterion)"
+            description: "Criterion.rs output — algorithm on X, input size on Y"
             group-regex: "(?<x>.*)/n=(?<y>.*)"
-            scale: "log"
-            parser: rs:criterion
 
           - output: 01-divan
             file: 01-divan
             name: "Bubble vs Insertion Sort (Divan)"
-            group-pattern: "x__y"
-            scale: "log"
-            parser: rs:divan
+            description: "Divan output — algorithm and input size from group pattern"
+            group-pattern: x__y
 
     runs-on: ubuntu-latest
     steps:
@@ -45,12 +43,14 @@ jobs:
         with:
           file: examples/rust/${{ matrix.file }}.txt
           name: ${{ matrix.name }}
+          description: ${{ matrix.description }}
           group-pattern: ${{ matrix.group-pattern }}
           group-regex: ${{ matrix.group-regex }}
-          scale: ${{ matrix.scale }}
+          chart: |
+            bar:scale=log,sort=asc
+            line:scale=log,sort=asc
+            pie:sort=asc
           output-json: ${{ matrix.output }}.json
-          parser: ${{matrix.parser}}
-          sort: asc
 
       - name: Uploading json artifacts
         uses: actions/upload-artifact@v4
@@ -59,7 +59,7 @@ jobs:
           path: ${{ matrix.output }}.json
 
   merge-deploy:
-    name: Merge Rust Benchmarks
+    name: Merge and Deploy Rust Benchmarks
     needs: convert
     permissions:
       contents: write

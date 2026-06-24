@@ -18,11 +18,12 @@ type Stat struct {
 func F64(f float64) *float64 { return &f }
 
 type DataPoint struct {
-	Name  string `json:"name,omitempty"`
-	XAxis string `json:"xAxis,omitempty"`
-	YAxis string `json:"yAxis,omitempty"`
-	ZAxis string `json:"zAxis,omitempty"`
-	Stats []Stat `json:"stats"`
+	Name   string `json:"name,omitempty"`
+	XAxis  string `json:"xAxis,omitempty"`
+	YAxis  string `json:"yAxis,omitempty"`
+	ZAxis  string `json:"zAxis,omitempty"`
+	Metric string `json:"metric,omitempty"` // value-mode visual metric (4th numeric column)
+	Stats  []Stat `json:"stats,omitempty"`
 }
 
 type CPUInfo struct {

@@ -25,6 +25,7 @@ type Config struct {
 	NumberUnit      string
 	Select          []ColumnSpec
 	Axes            []ColumnSpec // --axes value mode: numeric cols placed on x,y[,z]
+	MetricColumn    string       // auto-value: 4th numeric col → visualMap metric
 	JSONPath        string       // json only: jq-like dot path to the nested array to chart
 	AutoGroup       bool         // csv/json: infer group columns when no explicit grouping is configured
 	ChartTypes      []string     // csv/json auto-value eligibility check (scatter/bar/line only)

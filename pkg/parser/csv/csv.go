@@ -177,9 +177,35 @@ func parseCSVValueMode(headers []string, dataRows [][]string, cfg parser.Config)
 		idx[i] = col
 	}
 
+	metricIdx := -1
+	if cfg.MetricColumn != "" {
+		for h, name := range headers {
+			if name == cfg.MetricColumn {
+				metricIdx = h
+				break
+			}
+		}
+		if metricIdx == -1 {
+			shared.ExitWithError(fmt.Sprintf("metric column '%s' not found; available: %v", cfg.MetricColumn, nonEmpty(headers)), nil)
+		}
+		hasNumeric := false
+		for _, row := range dataRows {
+			if metricIdx >= len(row) {
+				continue
+			}
+			if _, ok := parseFinite(row[metricIdx]); ok {
+				hasNumeric = true
+				break
+			}
+		}
+		if !hasNumeric {
+			shared.ExitWithError(fmt.Sprintf("metric column '%s' is not numeric", cfg.MetricColumn), nil)
+		}
+	}
+
 	var results []shared.DataPoint
 	for _, row := range dataRows {
-		dp := shared.DataPoint{Stats: []shared.Stat{}}
+		var dp shared.DataPoint
 		dst := []*string{&dp.XAxis, &dp.YAxis, &dp.ZAxis}
 		complete := true
 		for i, col := range idx {
@@ -196,6 +222,16 @@ func parseCSVValueMode(headers []string, dataRows [][]string, cfg parser.Config)
 		}
 		if !complete {
 			continue
+		}
+		if metricIdx >= 0 {
+			if metricIdx >= len(row) {
+				continue
+			}
+			mv, ok := parseFinite(row[metricIdx])
+			if !ok {
+				continue
+			}
+			dp.Metric = strconv.FormatFloat(utils.FormatNumber(mv, cfg.NumberUnit), 'g', -1, 64)
 		}
 		results = append(results, dp)
 	}

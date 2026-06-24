@@ -199,7 +199,11 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
       state.axes,
       state.identityString,
       state.targetString,
-      { scale: msg.scale, showLabels: msg.showLabels, threeD: msg.threeD }
+      {
+        scale: msg.scale,
+        showLabels: msg.showLabels,
+        threeD: msg.threeD,
+      }
     )
     post({
       type: 'chart',
