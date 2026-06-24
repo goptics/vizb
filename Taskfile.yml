@@ -118,14 +118,14 @@ tasks:
     deps: [build:cli]
     cmds:
       - task: act:check
-      - act --bind --container-options "--user $(id -u):$(id -g)" workflow_dispatch -W .github/workflows/test-action.yml --job stateless --matrix os:ubuntu-latest
+      - act --bind --container-options "--user $(id -u):$(id -g)" workflow_dispatch -W .github/workflows/action-ci.yml --job stateless --matrix os:ubuntu-latest
 
   act:test:stateful:
     desc: Test action in stateful mode (merge + HTML + JSON)
     deps: [build:cli]
     cmds:
       - task: act:check
-      - act --bind --container-options "--user $(id -u):$(id -g)" workflow_dispatch -W .github/workflows/test-action.yml --job stateful --matrix os:ubuntu-latest
+      - act --bind --container-options "--user $(id -u):$(id -g)" workflow_dispatch -W .github/workflows/action-ci.yml --job stateful --matrix os:ubuntu-latest
 
   act:clean:
     desc: Clean up act test artifacts

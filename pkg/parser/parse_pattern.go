@@ -72,7 +72,7 @@ func findPatternMatches(pattern string) ([]patternMatch, error) {
 		}
 	}
 	if len(matches) == 0 {
-		return nil, fmt.Errorf("Invalid part: %q; only name(n), xAxis(x), yAxis(y), zAxis(z) allowed", pattern)
+		return nil, fmt.Errorf("invalid part: %q; only name(n), xAxis(x), yAxis(y), zAxis(z) allowed", pattern)
 	}
 	return matches, nil
 }
@@ -84,7 +84,7 @@ func invalidPatternRemainder(s string) error {
 	}
 	for _, r := range s {
 		if unicode.IsLetter(r) || unicode.IsDigit(r) {
-			return fmt.Errorf("Invalid part: %q; only name(n), xAxis(x), yAxis(y), zAxis(z) allowed", s)
+			return fmt.Errorf("invalid part: %q; only name(n), xAxis(x), yAxis(y), zAxis(z) allowed", s)
 		}
 	}
 	return nil

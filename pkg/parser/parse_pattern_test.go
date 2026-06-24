@@ -173,7 +173,7 @@ func (s *ParsePatternSuite) TestValidateGroupPattern() {
 		{name: "Valid pattern: name_yAxis", pattern: "name_yAxis"},
 		{name: "Valid pattern with shorthand: n_y/x", pattern: "n_y/x"},
 		{name: "Valid pattern: yAxis only", pattern: "yAxis"},
-		{name: "Invalid pattern: unknown part", pattern: "name_invalid", expectError: true, errorContains: "Invalid part:"},
+		{name: "Invalid pattern: unknown part", pattern: "name_invalid", expectError: true, errorContains: "invalid part:"},
 		{name: "Empty pattern", pattern: "", expectError: true, errorContains: "pattern cannot be empty"},
 		{name: "Valid pattern: all parts", pattern: "name_yAxis_xAxis"},
 		{name: "Valid pattern: xAxis without yAxis", pattern: "name_xAxis"},

@@ -1,4 +1,4 @@
-name: test-action
+name: action
 on:
   workflow_call:
   workflow_dispatch:
@@ -10,13 +10,14 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Set up Go
         if: env.ACT != 'true'
         uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
+          cache: true
 
       - name: Build vizb
         if: env.ACT != 'true'
@@ -35,13 +36,14 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Set up Go
         if: env.ACT != 'true'
         uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
+          cache: true
 
       - name: Build vizb
         if: env.ACT != 'true'

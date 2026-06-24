@@ -27,7 +27,7 @@ func NewCommand() *cobra.Command {
 		Long:  "Generate an interactive radar chart (HTML or JSON) from benchmark output or tabular CSV/JSON data.",
 		Args:  cobra.ArbitraryArgs,
 		Run: func(cmd *cobra.Command, args []string) {
-			o.LinearOptions.Validate()
+			o.Validate()
 
 			cfg := radarchart.Materialise(radarchart.Flags{
 				Swap:       o.Swap,
@@ -36,7 +36,7 @@ func NewCommand() *cobra.Command {
 				Stat:       o.Stat,
 			}, nil)
 
-			axes := parser.GroupAxes(o.CommonOptions.ParseConfig())
+			axes := parser.GroupAxes(o.ParseConfig())
 			if err := shared.ValidateSwap(cfg.Swap, axes); err != nil {
 				shared.ExitWithError(err.Error(), nil)
 			}
@@ -44,6 +44,6 @@ func NewCommand() *cobra.Command {
 			cli.RunSingleChart(cmd, args, o.CommonOptions, []config_charts.ChartConfig{cfg})
 		},
 	}
-	o.ChartOptions.Bind(cmd.Flags())
+	o.Bind(cmd.Flags())
 	return cmd
 }
