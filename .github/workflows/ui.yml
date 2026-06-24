@@ -112,8 +112,5 @@ jobs:
         run: |
           git show HEAD:pkg/template/vizb-ui.gen.go > /tmp/vizb-ui.gen.go.committed
           gofmt -w /tmp/vizb-ui.gen.go.committed pkg/template/vizb-ui.gen.go
-          if ! diff -q /tmp/vizb-ui.gen.go.committed pkg/template/vizb-ui.gen.go; then
-            echo "::error::pkg/template/vizb-ui.gen.go is out of sync. Run: task build:ui && git add pkg/template/vizb-ui.gen.go"
-            diff -u /tmp/vizb-ui.gen.go.committed pkg/template/vizb-ui.gen.go | head -80
-            exit 1
-          fi
+          node embed-build/verify-gen-sync.ts /tmp/vizb-ui.gen.go.committed ../pkg/template/vizb-ui.gen.go
+        working-directory: ui
