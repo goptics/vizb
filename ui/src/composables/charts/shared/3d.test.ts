@@ -157,6 +157,43 @@ describe('create3DGridConfig', () => {
     expect('boxHeight' in grid && grid.boxHeight).toBe(VALUE_MODE_3D_BOX_SIZE)
     expect(grid.viewControl.distance).toBe(VALUE_MODE_3D_VIEW_DISTANCE)
   })
+
+  it('fades grid split lines and keeps axisPointer on axisColor', () => {
+    const darkGrid = create3DGridConfig({
+      styling: {
+        textColor: '#e5e7eb',
+        axisColor: '#4b5563',
+        opacity: 0.15,
+        backgroundColor: 'transparent',
+      },
+      autoRotate: false,
+      xCount: 3,
+      yCount: 3,
+    })
+    const lightGrid = create3DGridConfig({
+      styling: {
+        ...styling,
+        axisColor: '#d1d5db',
+        opacity: 0.4,
+      },
+      autoRotate: false,
+      xCount: 3,
+      yCount: 3,
+    })
+    expect(darkGrid.splitLine.lineStyle.opacity).toBeCloseTo(0.1125)
+    expect(lightGrid.splitLine.lineStyle.opacity).toBeCloseTo(0.3)
+    expect(darkGrid.axisPointer.lineStyle).toEqual({
+      color: '#4b5563',
+      width: 2,
+      opacity: 1,
+    })
+    expect(darkGrid.axisPointer.label).toEqual({
+      color: '#e5e7eb',
+      textStyle: { color: '#e5e7eb' },
+    })
+    expect(lightGrid.axisPointer.lineStyle.color).toBe('#d1d5db')
+    expect(lightGrid.axisPointer.label.textStyle.color).toBe('#111')
+  })
 })
 
 describe('createContinuous3DTooltipFormatter', () => {

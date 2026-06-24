@@ -562,7 +562,6 @@ export function create3DGridConfig(opts: {
   orthographic?: boolean
   xCount: number
   yCount: number
-  /** grouped = legacy sizing; value = fixed 100³ box; continuous = cubic auto-value grid. */
   mode?: Grid3DLayoutMode
 }) {
   const { styling, autoRotate, orthographic, xCount, yCount } = opts
@@ -574,42 +573,45 @@ export function create3DGridConfig(opts: {
     boxWidth: xWidth,
     boxDepth: yWidth,
     axisLine: { lineStyle: { color: styling.axisColor } },
-    splitLine: { lineStyle: { color: styling.axisColor, opacity: styling.opacity } },
+    splitLine: { lineStyle: { color: styling.axisColor, opacity: styling.opacity * 0.75 } },
+    axisPointer: {
+      lineStyle: { color: styling.axisColor, width: 2, opacity: 1 },
+      label: { color: styling.textColor, textStyle: { color: styling.textColor } },
+    },
     light: {
       main: { intensity: 0.3, shadow: false },
       ambient: { intensity: 0.9 },
     },
   }
 
-  if (mode === 'grouped') {
-    return {
-      ...shell,
-      viewControl: {
-        distance: xWidth + yWidth,
-        autoRotate,
-        ...(orthographic ? { projection: 'orthographic' as const } : {}),
-      },
-    }
-  }
-
-  if (mode === 'value') {
-    const boxHeight = VALUE_MODE_3D_BOX_SIZE
-    const orthographicSize = orthographicSizeFor3DBox(xWidth, yWidth, boxHeight)
-    return {
-      ...shell,
-      boxHeight,
-      viewControl: {
-        distance: VALUE_MODE_3D_VIEW_DISTANCE,
-        autoRotate,
-        ...(orthographic
-          ? {
-              projection: 'orthographic' as const,
-              orthographicSize,
-              maxOrthographicSize: Math.max(400, orthographicSize * 2),
-            }
-          : {}),
-      },
-    }
+  switch (mode) {
+    case 'grouped':
+      return {
+        ...shell,
+        viewControl: {
+          distance: xWidth + yWidth,
+          autoRotate,
+          ...(orthographic ? { projection: 'orthographic' as const } : {}),
+        },
+      }
+    case 'value':
+      const boxHeight = VALUE_MODE_3D_BOX_SIZE
+      const orthographicSize = orthographicSizeFor3DBox(xWidth, yWidth, boxHeight)
+      return {
+        ...shell,
+        boxHeight,
+        viewControl: {
+          distance: VALUE_MODE_3D_VIEW_DISTANCE,
+          autoRotate,
+          ...(orthographic
+            ? {
+                projection: 'orthographic' as const,
+                orthographicSize,
+                maxOrthographicSize: Math.max(400, orthographicSize * 2),
+              }
+            : {}),
+        },
+      }
   }
 
   const boxHeight = Math.max(xWidth, yWidth)

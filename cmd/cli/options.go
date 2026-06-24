@@ -42,7 +42,7 @@ func (o *CommonOptions) Bind(fs *pflag.FlagSet) {
 	fs.StringVarP(&o.GroupPattern, "group-pattern", "p", "x", "Pattern to extract grouping information from data labels / series names; CSV/JSON: bracket slots [x-y-n] split a column value; {label} sets axis titles (e.g. -p '[n{year}-y{months}],z{category}')")
 	fs.StringVarP(&o.GroupRegex, "group-regex", "r", "", "Regex pattern to extract grouping information from data labels / series names")
 	fs.StringSliceVarP(&o.Group, "group", "g", nil, "Names dimensions in --group-pattern order; use the same separators as -p (e.g. -g \"name category region\" -p \"x n y\", or -g name,category/region -p x,y/z). csv/json: column/field names; benchmark parsers: axis labels")
-	fs.StringVarP(&o.Filter, "filter", "f", "", "Regex pattern to include only matching data labels / series names")
+	fs.StringVarP(&o.Filter, "filter", "f", "", "Regex to include only matching rows (CSV/JSON: --group label) or benchmark names")
 	fs.StringVarP(&o.Tag, "tag", "t", "", "Tag/identifier for the comparison")
 	fs.StringVarP(&o.Parser, "parser", "P", "auto", "Benchmark parser to use; 'auto' detects from input content (one of: auto, "+strings.Join(parser.AvailableParsers(), ", ")+")")
 	fs.StringVar(&o.Select, "select", "", "csv/json only: select value columns; optional rename with {label} (e.g. --select=price{Unit price},count)")
