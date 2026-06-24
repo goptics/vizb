@@ -181,23 +181,26 @@ runs:
       id: resolve
       shell: bash
       run: |
-        printf '%s\n' \
-          'append_chart_stat_flags() {' \
-          '  local -n _args=$1' \
-          '  local _charts="$2" _chart_input="$3" _stat_val="$4"' \
-          '  [ -n "$_charts" ] && _args+=(-c "$_charts")' \
-          '  while IFS= read -r line; do' \
-          '    line="${line#"${line%%[![:space:]]*}"}"' \
-          '    [ -z "$line" ] && continue' \
-          '    case "$line" in \#*) continue ;; esac' \
-          '    _args+=(--chart "$line")' \
-          '  done <<< "$_chart_input"' \
-          '  if [ "$_stat_val" = "all" ] || [ "$_stat_val" = "true" ]; then' \
-          '    _args+=(--stat)' \
-          '  elif [ -n "$_stat_val" ]; then' \
-          '    _args+=("--stat=$_stat_val")' \
-          '  fi' \
-          '}' > "$RUNNER_TEMP/vizb-chart-flags.sh"
+        cat > "$RUNNER_TEMP/vizb-chart-flags.sh" <<'EOF'
+        append_chart_stat_flags() {
+          local _args_name=$1
+          local _charts="$2" _chart_input="$3" _stat_val="$4"
+          if [ -n "$_charts" ]; then
+            eval "${_args_name}+=( -c $(printf '%q' "$_charts") )"
+          fi
+          while IFS= read -r line; do
+            line="${line#"${line%%[![:space:]]*}"}"
+            [ -z "$line" ] && continue
+            case "$line" in \#*) continue ;; esac
+            eval "${_args_name}+=( --chart $(printf '%q' "$line") )"
+          done <<< "$_chart_input"
+          if [ "$_stat_val" = "all" ] || [ "$_stat_val" = "true" ]; then
+            eval "${_args_name}+=( --stat )"
+          elif [ -n "$_stat_val" ]; then
+            eval "${_args_name}+=( $(printf '%q' "--stat=${_stat_val}") )"
+          fi
+        }
+        EOF
 
         # New generic inputs take priority; fall back to deprecated bench-* aliases.
         FILE="${{ inputs.file }}"
