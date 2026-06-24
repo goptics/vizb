@@ -360,6 +360,47 @@ func (s *CSVFatalSuite) TestNoNumericColumnsIsFatal() {
 	s.PanicsWithValue("exit", func() { ParseCSV(path, s.cfg) })
 }
 
+func (s *CSVFatalSuite) TestValueModeMissingAxisColumnErrors() {
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "missing"}, {Source: "y"}}
+	path := s.writeFile("x,y\n1,2\n")
+
+	s.PanicsWithValue("exit", func() { ParseCSV(path, s.cfg) })
+}
+
+func (s *CSVFatalSuite) TestValueModeNonNumericAxisColumnErrors() {
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "name"}, {Source: "y"}}
+	path := s.writeFile("name,y\nalpha,2\n")
+
+	s.PanicsWithValue("exit", func() { ParseCSV(path, s.cfg) })
+}
+
+func (s *CSVFatalSuite) TestValueModeMetricColumnMissingErrors() {
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "x"}, {Source: "y"}}
+	s.cfg.MetricColumn = "m"
+	path := s.writeFile("x,y\n1,2\n")
+
+	s.PanicsWithValue("exit", func() { ParseCSV(path, s.cfg) })
+}
+
+func (s *CSVFatalSuite) TestValueModeMetricColumnNonNumericErrors() {
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "x"}, {Source: "y"}}
+	s.cfg.MetricColumn = "label"
+	path := s.writeFile("x,y,label\n1,2,foo\n")
+
+	s.PanicsWithValue("exit", func() { ParseCSV(path, s.cfg) })
+}
+
+func (s *CSVFatalSuite) TestValueModeSkipsRowWithBadMetric() {
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "x"}, {Source: "y"}}
+	s.cfg.MetricColumn = "m"
+	path := s.writeFile("x,y,m\n1,2,3\n4,5,bad\n6,7,8\n")
+
+	results := ParseCSV(path, s.cfg)
+	s.Len(results, 2)
+	s.Equal("3", results[0].Metric)
+	s.Equal("8", results[1].Metric)
+}
+
 func TestCSVFatalSuite(t *testing.T) {
 	suite.Run(t, new(CSVFatalSuite))
 }
@@ -552,6 +593,16 @@ func (s *CSVAutoValueSuite) TestHeatmapChartFallsBackToFlat() {
 	s.Require().Len(results, 2)
 	s.Empty(results[0].XAxis)
 	s.NotEmpty(results[0].Stats)
+}
+
+func (s *CSVAutoValueSuite) TestSelectScopesAutoDetect() {
+	s.cfg.Select = []parser.ColumnSpec{{Source: "x"}, {Source: "y"}}
+	csv := "x,y,z,w\n1,2,3,4\n"
+	results := ParseCSV(s.writeFile(csv), s.cfg)
+	s.Require().Len(results, 1)
+	s.Equal("1", results[0].XAxis)
+	s.Equal("2", results[0].YAxis)
+	s.Empty(results[0].ZAxis)
 }
 
 func TestCSVAutoValueSuite(t *testing.T) {

@@ -50,6 +50,10 @@ func (s *RadarSuite) TestMaterialiseRadarPrecedence() {
 	s.Equal("asc", got.Sort.Order)
 }
 
+func (s *RadarSuite) TestSwapString() {
+	s.Equal("yxn", Config{Swap: "yxn"}.SwapString())
+}
+
 func (s *RadarSuite) TestRadarConfigNoScaleOrThreeDRotate() {
 	typ := reflect.TypeOf(Config{})
 	_, hasScale := typ.FieldByName("Scale")

@@ -319,6 +319,58 @@ func (s *JSONFatalSuite) TestExplicitColsNonNumericErrors() {
 	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
 }
 
+func (s *JSONFatalSuite) TestValueModeMissingAxisFieldErrors() {
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "missing"}, {Source: "y"}}
+	path := s.writeFile(`[{"x":1,"y":2}]`)
+
+	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
+}
+
+func (s *JSONFatalSuite) TestValueModeNonNumericAxisFieldErrors() {
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "name"}, {Source: "y"}}
+	path := s.writeFile(`[{"name":"alpha","y":2}]`)
+
+	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
+}
+
+func (s *JSONFatalSuite) TestValueModeMetricFieldMissingErrors() {
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "x"}, {Source: "y"}}
+	s.cfg.MetricColumn = "m"
+	path := s.writeFile(`[{"x":1,"y":2}]`)
+
+	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
+}
+
+func (s *JSONFatalSuite) TestValueModeMetricFieldNonNumericErrors() {
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "x"}, {Source: "y"}}
+	s.cfg.MetricColumn = "label"
+	path := s.writeFile(`[{"x":1,"y":2,"label":"foo"}]`)
+
+	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
+}
+
+func (s *JSONFatalSuite) TestValueModeSkipsRowWithBadMetric() {
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "x"}, {Source: "y"}}
+	s.cfg.MetricColumn = "m"
+	path := s.writeFile(`[{"x":1,"y":2,"m":3},{"x":4,"y":5,"m":"bad"},{"x":6,"y":7,"m":8}]`)
+
+	results := ParseJSON(path, s.cfg)
+	s.Len(results, 2)
+	s.Equal("3", results[0].Metric)
+	s.Equal("8", results[1].Metric)
+}
+
+func (s *JSONAutoValueSuite) TestSelectScopesAutoDetect() {
+	s.cfg.Select = []parser.ColumnSpec{{Source: "x"}, {Source: "y"}}
+	path := s.writeFile(`[{"x":1,"y":2,"z":3,"w":4}]`)
+
+	results := ParseJSON(path, s.cfg)
+	s.Require().Len(results, 1)
+	s.Equal("1", results[0].XAxis)
+	s.Equal("2", results[0].YAxis)
+	s.Empty(results[0].ZAxis)
+}
+
 func TestJSONFatalSuite(t *testing.T) {
 	suite.Run(t, new(JSONFatalSuite))
 }

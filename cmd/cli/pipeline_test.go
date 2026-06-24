@@ -428,6 +428,59 @@ func (s *PipelineSuite) TestAssembleDatasetAutoEnablesVisualMapForValueMetric() 
 	s.Equal("value", ds.Axes[3].Label)
 }
 
+func (s *PipelineSuite) TestAssembleDatasetAutoEnables3DForBarAndLine() {
+	results := []shared.DataPoint{
+		{XAxis: "1", YAxis: "2", ZAxis: "3", Stats: []shared.Stat{}},
+	}
+	cfg := parser.Config{AutoGroup: true}
+	configs := []config_charts.ChartConfig{
+		barchart.Materialise(barchart.Flags{}, nil),
+		linechart.Materialise(linechart.Flags{}, nil),
+	}
+	ds := assembleDataset(results, CommonOptions{Name: "Grid"}, configs, cfg)
+
+	s.Require().Len(ds.Settings, 2)
+	bc := ds.Settings[0].(barchart.Config)
+	s.Require().NotNil(bc.ThreeD)
+	s.True(*bc.ThreeD)
+	s.Nil(bc.ThreeDVisualMap)
+
+	lc, ok := ds.Settings[1].(linechart.Config)
+	if !ok {
+		ptr, ok := ds.Settings[1].(*linechart.Config)
+		s.Require().True(ok)
+		lc = *ptr
+	}
+	s.Require().NotNil(lc.ThreeD)
+	s.True(*lc.ThreeD)
+	s.Nil(lc.ThreeDVisualMap)
+}
+
+func (s *PipelineSuite) TestAssembleDatasetAppendMetricAxisFromConfig() {
+	results := []shared.DataPoint{{XAxis: "0", YAxis: "0", ZAxis: "0", Stats: []shared.Stat{}}}
+	cfg := parser.Config{AutoGroup: true, MetricColumn: "noise"}
+	ds := assembleDataset(results, CommonOptions{Name: "T"}, nil, cfg)
+
+	s.Require().Len(ds.Axes, 4)
+	s.Equal("metric", ds.Axes[3].Key)
+	s.Equal("noise", ds.Axes[3].Label)
+}
+
+func (s *PipelineSuite) TestAssembleDatasetCategoryAxesSkipAuto3D() {
+	results := []shared.DataPoint{
+		{XAxis: "US", YAxis: "Widget", ZAxis: "Q1", Stats: []shared.Stat{{Type: "sells", Value: shared.F64(10)}}},
+	}
+	cfg := parser.Config{AutoGroup: true}
+	configs := []config_charts.ChartConfig{
+		scatterchart.Materialise(scatterchart.Flags{}, nil),
+	}
+	ds := assembleDataset(results, CommonOptions{Name: "Grouped"}, configs, cfg)
+
+	sc := ds.Settings[0].(scatterchart.Config)
+	s.Nil(sc.ThreeD)
+	s.Nil(sc.ThreeDVisualMap)
+}
+
 func (s *PipelineSuite) TestPrepareDataUnknownParserExits() {
 	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
 	defer restore()
