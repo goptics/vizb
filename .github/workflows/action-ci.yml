@@ -17,6 +17,7 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
+          cache: true
 
       - name: Build vizb
         if: env.ACT != 'true'
@@ -42,6 +43,7 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
+          cache: true
 
       - name: Build vizb
         if: env.ACT != 'true'
