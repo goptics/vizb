@@ -5,9 +5,12 @@ export const chunkKeyOf = (file: string): string => `vizb:${file.replace(/\.js$/
 // Emit a Go `map[string]string{…}` body from a JS object. base64 chunk blobs and
 // import-map keys are ASCII with no Go-string-breaking chars, so JSON.stringify
 // yields valid Go double-quoted string literals.
+const sortedEntries = <T>(m: Record<string, T>): Array<[string, T]> =>
+  Object.entries(m).sort(([a], [b]) => a.localeCompare(b))
+
 export const goStringMap = (m: Record<string, string>): string =>
   '{\n' +
-  Object.entries(m)
+  sortedEntries(m)
     .map(([k, v]) => `\t${JSON.stringify(k)}: ${JSON.stringify(v)},`)
     .join('\n') +
   '\n}'
@@ -15,8 +18,11 @@ export const goStringMap = (m: Record<string, string>): string =>
 // Emit a Go `map[string][]string{…}` body from a JS object of string arrays.
 export const goStringSliceMap = (m: Record<string, string[]>): string =>
   '{\n' +
-  Object.entries(m)
-    .map(([k, arr]) => `\t${JSON.stringify(k)}: {${arr.map((s) => JSON.stringify(s)).join(', ')}},`)
+  sortedEntries(m)
+    .map(([k, arr]) => {
+      const refs = [...arr].sort((a, b) => a.localeCompare(b))
+      return `\t${JSON.stringify(k)}: {${refs.map((s) => JSON.stringify(s)).join(', ')}},`
+    })
     .join('\n') +
   '\n}'
 

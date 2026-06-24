@@ -60,7 +60,10 @@ export const embedUiPlugin = (rootDir: string): PluginOption => {
       const entrySrc = entryScript.getAttribute('src')!.replace(/^\//, '')
       const entryFile = path.basename(entrySrc)
       const assetsDir = path.resolve(distDir, path.dirname(entrySrc))
-      const chunkFiles = fs.readdirSync(assetsDir).filter((f: string) => f.endsWith('.js'))
+      const chunkFiles = fs
+        .readdirSync(assetsDir)
+        .filter((f: string) => f.endsWith('.js'))
+        .sort()
 
       // gzip each chunk, rewriting rollup's relative sibling/dynamic-import
       // specifiers ("./<chunk>.js") to stable import-map keys so they resolve
@@ -80,7 +83,7 @@ export const embedUiPlugin = (rootDir: string): PluginOption => {
             code = code.split(`./${other}`).join(chunkKeyOf(other))
           }
         }
-        chunkImports[fileKey] = refs
+        chunkImports[fileKey] = refs.sort((a, b) => a.localeCompare(b))
         const rawBuf = Buffer.from(code, 'utf-8')
         const gzBuf = zlib.gzipSync(rawBuf, { level: 9 })
         const b64 = gzBuf.toString('base64')
