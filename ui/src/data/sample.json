@@ -14166,58 +14166,5 @@
         ]
       }
     ]
-  },
-  {
-    "name": "Value Mode Demo",
-    "description": "Example: price vs latency (--axes price,latency)",
-    "settings": [{ "type": "scatter" }],
-    "axes": [
-      { "key": "x", "label": "price", "type": "value" },
-      { "key": "y", "label": "latency", "type": "value" }
-    ],
-    "data": [
-      { "xAxis": "10", "yAxis": "120", "stats": [] },
-      { "xAxis": "20", "yAxis": "95", "stats": [] },
-      { "xAxis": "35", "yAxis": "80", "stats": [] },
-      { "xAxis": "50", "yAxis": "65", "stats": [] },
-      { "xAxis": "70", "yAxis": "55", "stats": [] },
-      { "xAxis": "90", "yAxis": "42", "stats": [] },
-      { "xAxis": "120", "yAxis": "35", "stats": [] },
-      { "xAxis": "150", "yAxis": "28", "stats": [] },
-      { "xAxis": "200", "yAxis": "20", "stats": [] },
-      { "xAxis": "300", "yAxis": "14", "stats": [] }
-    ]
-  },
-  {
-    "name": "Spiral 3D Demo",
-    "description": "Example: 3D spiral (--axes x,y,z). Swap to xyz for 3D; swap away from z for 2D.",
-    "settings": [{ "type": "scatter", "threeDVisualMap": true }],
-    "axes": [
-      { "key": "x", "label": "x", "type": "value" },
-      { "key": "y", "label": "y", "type": "value" },
-      { "key": "z", "label": "z", "type": "value" }
-    ],
-    "data": [
-      { "xAxis": "1.25", "yAxis": "0", "zAxis": "0", "stats": [] },
-      { "xAxis": "1.24", "yAxis": "0.01", "zAxis": "0.15", "stats": [] },
-      { "xAxis": "1.23", "yAxis": "0.02", "zAxis": "0.3", "stats": [] },
-      { "xAxis": "1.22", "yAxis": "0.03", "zAxis": "0.45", "stats": [] },
-      { "xAxis": "1.21", "yAxis": "0.04", "zAxis": "0.6", "stats": [] },
-      { "xAxis": "1.2", "yAxis": "0.05", "zAxis": "0.74", "stats": [] },
-      { "xAxis": "1.19", "yAxis": "0.06", "zAxis": "0.88", "stats": [] },
-      { "xAxis": "1.18", "yAxis": "0.07", "zAxis": "1.01", "stats": [] },
-      { "xAxis": "1.17", "yAxis": "0.08", "zAxis": "1.14", "stats": [] },
-      { "xAxis": "1.16", "yAxis": "0.09", "zAxis": "1.26", "stats": [] },
-      { "xAxis": "1.15", "yAxis": "0.1", "zAxis": "1.37", "stats": [] },
-      { "xAxis": "1.14", "yAxis": "0.11", "zAxis": "1.48", "stats": [] },
-      { "xAxis": "1.13", "yAxis": "0.12", "zAxis": "1.58", "stats": [] },
-      { "xAxis": "1.12", "yAxis": "0.13", "zAxis": "1.67", "stats": [] },
-      { "xAxis": "1.11", "yAxis": "0.14", "zAxis": "1.75", "stats": [] },
-      { "xAxis": "1.1", "yAxis": "0.15", "zAxis": "1.82", "stats": [] },
-      { "xAxis": "1.09", "yAxis": "0.16", "zAxis": "1.88", "stats": [] },
-      { "xAxis": "1.08", "yAxis": "0.17", "zAxis": "1.93", "stats": [] },
-      { "xAxis": "1.07", "yAxis": "0.18", "zAxis": "1.97", "stats": [] },
-      { "xAxis": "1.06", "yAxis": "0.19", "zAxis": "2", "stats": [] }
-    ]
   }
 ]
