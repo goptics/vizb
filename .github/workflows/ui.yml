@@ -107,12 +107,12 @@ jobs:
       - run: EMBED_UI=True pnpm build
         working-directory: ui
 
-      - run: gofmt -w pkg/template/vizb-ui.gen.go
-
       - name: Verify vizb-ui.gen.go is committed
         run: |
-          if ! git diff --quiet -- pkg/template/vizb-ui.gen.go; then
+          git show HEAD:pkg/template/vizb-ui.gen.go > /tmp/vizb-ui.gen.go.committed
+          gofmt -w /tmp/vizb-ui.gen.go.committed pkg/template/vizb-ui.gen.go
+          if ! diff -q /tmp/vizb-ui.gen.go.committed pkg/template/vizb-ui.gen.go; then
             echo "::error::pkg/template/vizb-ui.gen.go is out of sync. Run: task build:ui && git add pkg/template/vizb-ui.gen.go"
-            git diff -- pkg/template/vizb-ui.gen.go
+            diff -u /tmp/vizb-ui.gen.go.committed pkg/template/vizb-ui.gen.go | head -80
             exit 1
           fi

@@ -1,3 +1,4 @@
+import { execSync } from 'node:child_process'
 import fs from 'node:fs'
 import zlib from 'node:zlib'
 import path from 'path'
@@ -15,6 +16,16 @@ import type { GoChunkArtifacts } from '../types.ts'
 // chunk's parse until its dynamic import() actually fires — while the output
 // stays a self-contained HTML template embedded in the Go binary. It then emits
 // pkg/template/vizb-ui.gen.go.
+const formatGoFile = (filePath: string): void => {
+  try {
+    execSync(`gofmt -w ${JSON.stringify(filePath)}`, { stdio: 'pipe' })
+  } catch {
+    console.warn(
+      '[embed-ui] gofmt skipped — install Go or run: gofmt -w pkg/template/vizb-ui.gen.go'
+    )
+  }
+}
+
 export const embedUiPlugin = (rootDir: string): PluginOption => {
   const distDir = path.resolve(rootDir, 'dist')
   const distHtmlPath = path.resolve(distDir, 'index.html')
@@ -161,6 +172,7 @@ const VizbHTMLTemplate = \`${goRawString}\`
 `
 
       fs.writeFileSync(goFilePath, goFileContent, 'utf-8')
+      formatGoFile(goFilePath)
     },
   }
 }

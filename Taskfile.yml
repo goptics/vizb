@@ -35,7 +35,6 @@ tasks:
     desc: Build Vue UI template
     cmds:
       - cd ui; [ -d node_modules ] || pnpm install; EMBED_UI=True pnpm build; cd -
-      - gofmt -w ./pkg/template
 
   build:cli:
     desc: Build the binary (production-ready, stripped)
