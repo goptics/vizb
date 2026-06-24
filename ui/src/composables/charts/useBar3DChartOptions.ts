@@ -11,8 +11,13 @@ import {
   createZLegendConfig,
   create3DGridConfig,
   create3DCellLabel,
+  barSizeFor3DGrid,
   resolve3DVisualMap,
   createValue3DTooltipFormatter,
+  buildContinuous3DOptions,
+  makeContinuous3DParams,
+  valuePoints3DToSeries,
+  type Continuous3DContext,
 } from './shared'
 import type { Series3DData } from '@/types'
 
@@ -25,6 +30,7 @@ export function useBar3DChartOptions(config: BaseChartConfig) {
     const render = chartData.value.render3D ?? EMPTY_RENDER
     const { xValues, yValues, zValues } = render
     const useVisualMap = threeDVisualMap?.value === true
+    const defaultColor = COLOR_PALETTE[0]!
     const axisCommon = makeAxis3DCommon(styling)
     const zAxis3DBase = {
       ...(scale?.value === 'log'
@@ -32,20 +38,24 @@ export function useBar3DChartOptions(config: BaseChartConfig) {
         : { type: 'value' as const }),
       ...axisCommon,
     }
+    const isValueMode = render.mode === 'value'
     const grid3D = create3DGridConfig({
       styling,
       autoRotate: threeDRotate?.value ?? false,
       xCount: xValues.length,
       yCount: yValues.length,
+      mode: isValueMode ? 'value' : 'grouped',
     })
+    const barSize = isValueMode
+      ? barSizeFor3DGrid(xValues.length, yValues.length, grid3D.boxWidth, grid3D.boxDepth)
+      : undefined
 
-    if (render.mode === 'value') {
+    if (isValueMode) {
       const seriesData = render.barSeries
       const valueLabel = chartData.value.statUnit
         ? `${chartData.value.title} (${chartData.value.statUnit})`
         : chartData.value.title
       const cellTotals = render.cellTotals ?? {}
-      const defaultColor = COLOR_PALETTE[0]!
 
       return {
         ...base,
@@ -87,6 +97,7 @@ export function useBar3DChartOptions(config: BaseChartConfig) {
           type: 'bar3D' as const,
           bevelSize: 0.3,
           bevelSmoothness: 3,
+          ...(barSize ? { barSize } : {}),
           data: s.data,
           ...(useVisualMap ? {} : { itemStyle: { color: defaultColor } }),
           shading: 'lambert',
@@ -94,6 +105,36 @@ export function useBar3DChartOptions(config: BaseChartConfig) {
           emphasis: { label: { show: false } },
         })),
       } as unknown as EChartsOption
+    }
+
+    const continuousCtx: Continuous3DContext = {
+      base,
+      styling,
+      isDark: isDark.value,
+      showLabels: showLabels.value,
+      useVisualMap,
+      defaultColor,
+      threeDRotate: threeDRotate?.value ?? false,
+      scale: scale?.value ?? 'linear',
+      axisLabels: chartData.value.axisLabels,
+    }
+
+    const valuePoints3D = chartData.value.valuePoints3D
+    if (!render.barSeries.length && valuePoints3D?.length) {
+      return buildContinuous3DOptions(
+        makeContinuous3DParams(
+          continuousCtx,
+          valuePoints3DToSeries(valuePoints3D, chartData.value.title)
+        ),
+        'bar3D'
+      )
+    }
+
+    if (render.mode === 'continuous') {
+      return buildContinuous3DOptions(
+        makeContinuous3DParams(continuousCtx, render.barSeries),
+        'bar3D'
+      )
     }
 
     const points = chartData.value.points ?? []

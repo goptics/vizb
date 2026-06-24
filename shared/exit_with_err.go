@@ -14,7 +14,7 @@ func ExitWithError(msg string, err error) {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, style.Error.Render(fmt.Sprintf("%s: %v", msg, err)))
 	} else {
-		fmt.Fprintln(os.Stderr, style.Error.Render(fmt.Sprintf("%s", msg)))
+		fmt.Fprintln(os.Stderr, style.Error.Render(msg))
 	}
 
 	TempFiles.RemoveAll()

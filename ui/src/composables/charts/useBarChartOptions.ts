@@ -15,6 +15,7 @@ import {
   LARGE_DATA_THRESHOLD,
 } from './shared'
 import { useSortedSeriesData, getEffectiveScale, computeSeriesTotals } from './shared/common'
+import { buildValueAxes2DOptions } from './shared/valueMode'
 
 const barNullable = (val: number | null, scale: string): number | null =>
   val === null ? null : scale === 'log' && val <= 0 ? null : val
@@ -25,6 +26,10 @@ export function useBarChartOptions(config: BaseChartConfig) {
   const sortedData = useSortedSeriesData(chartData, sort)
 
   const options = computed<EChartsOption>(() => {
+    if (chartData.value.valueTuples?.length) {
+      return buildValueAxes2DOptions(config, 'bar')
+    }
+
     const { series, xAxisData, hasYAxis } = sortedData.value
     const baseOptions = getBaseOptions(config)
     const styling = getChartStyling(isDark.value)

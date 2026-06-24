@@ -65,15 +65,10 @@ func stringify(v any) string {
 // machinery (-p/-r). Nested objects are
 // flattened to dotted keys; array-valued fields are skipped.
 func ParseJSON(filename string, cfg parser.Config) []shared.DataPoint {
-	if len(cfg.Group) > 0 && cfg.GroupRegex == "" {
-		var err error
-		cfg, err = parser.ResolveGroupConfig(cfg)
-		if err != nil {
-			shared.ExitWithError(err.Error(), nil)
-		}
-		if err := parser.ValidateTabularGroupAlignment(cfg); err != nil {
-			shared.ExitWithError(err.Error(), nil)
-		}
+	var err error
+	cfg, err = parser.FinalizeGroupConfig(cfg)
+	if err != nil {
+		shared.ExitWithError(err.Error(), nil)
 	}
 
 	f, err := os.Open(filename)
@@ -119,25 +114,39 @@ func ParseJSON(filename string, cfg parser.Config) []shared.DataPoint {
 		return nil
 	}
 
-	if len(cfg.Axes) > 0 {
-		if parser.IsHybridMode(cfg) {
-			return parseJSONHybridMode(rows, colOrder, seenCol, cfg)
+	// Auto-group: when no grouping is configured, infer the category axis from
+	// the data so `vizb data.json` produces a usable chart without -g/-p/-r/-x.
+	autoHeaders := parser.FilterHeadersForAutoDetect(colOrder, cfg.Select)
+	if parser.AutoGroupApplies(cfg) {
+		stringRows := make([][]string, len(rows))
+		for i, row := range rows {
+			cells := make([]string, len(autoHeaders))
+			for j, k := range autoHeaders {
+				if v, ok := row[k]; ok {
+					cells[j] = stringify(v)
+				}
+			}
+			stringRows[i] = cells
 		}
+		cfg, err = parser.AutoDetectTabularConfig(cfg, autoHeaders, stringRows)
+		if err != nil {
+			shared.ExitWithError(err.Error(), nil)
+		}
+	}
+
+	if len(cfg.Axes) > 0 {
 		return parseJSONValueMode(rows, colOrder, seenCol, cfg)
 	}
 
 	groupKeys, groupSet := resolveGroupKeys(colOrder, seenCol, parser.EffectiveGroupColumns(cfg))
 
-	var chartCols []string
+	chartCols := chartColumns(colOrder, groupSet, rows)
 	var fieldLabels map[string]string
 	if len(cfg.Select) > 0 {
-		var err error
 		chartCols, fieldLabels, err = resolveExplicitChartFields(colOrder, cfg, rows)
 		if err != nil {
 			shared.ExitWithError(err.Error(), nil)
 		}
-	} else {
-		chartCols = chartColumns(colOrder, groupSet, rows)
 	}
 	if len(chartCols) == 0 {
 		shared.ExitWithError("no numeric fields found in JSON", nil)
@@ -176,10 +185,8 @@ func ParseJSON(filename string, cfg parser.Config) []shared.DataPoint {
 			}
 
 			label := k
-			if fieldLabels != nil {
-				if l, ok := fieldLabels[k]; ok {
-					label = l
-				}
+			if l, ok := fieldLabels[k]; ok {
+				label = l
 			}
 			stats = append(stats, shared.Stat{
 				Type:  utils.CreateStatType(label, cfg.NumberUnit, ""),
@@ -203,73 +210,7 @@ func ParseJSON(filename string, cfg parser.Config) []shared.DataPoint {
 	return results
 }
 
-// parseJSONHybridMode implements scatter hybrid mode for JSON: 2 categorical
-// group dims on x,y plus one numeric --axes field stored as a single stat.
-func parseJSONHybridMode(rows []map[string]any, colOrder []string, seenCol map[string]bool, cfg parser.Config) []shared.DataPoint {
-	groupKeys, _ := resolveGroupKeys(colOrder, seenCol, parser.EffectiveGroupColumns(cfg))
-
-	zSpec := cfg.Axes[0]
-	if !seenCol[zSpec.Source] {
-		shared.ExitWithError(fmt.Sprintf("--axes field '%s' not found; available: %v", zSpec.Source, colOrder), nil)
-	}
-
-	numeric := false
-	for _, row := range rows {
-		if v, ok := row[zSpec.Source]; ok {
-			if _, ok := leafNumber(v); ok {
-				numeric = true
-				break
-			}
-		}
-	}
-	if !numeric {
-		shared.ExitWithError(fmt.Sprintf("--axes field '%s' is not numeric", zSpec.Source), nil)
-	}
-
-	zLabel := zSpec.Label
-	if zLabel == "" {
-		zLabel = zSpec.Source
-	}
-	zStatType := utils.CreateStatType(zLabel, cfg.NumberUnit, "")
-
-	var results []shared.DataPoint
-	for _, row := range rows {
-		groupValues := groupFieldValues(row, groupKeys)
-
-		label := parser.TabularFilterLabel(groupValues, cfg)
-		if !parser.ShouldIncludeBenchmark(label, cfg) {
-			continue
-		}
-
-		group, gerr := parser.GroupTabularRow(groupValues, cfg)
-		if gerr != nil {
-			shared.ExitWithError("Error parsing JSON group name", gerr)
-		}
-
-		v, ok := row[zSpec.Source]
-		if !ok {
-			continue
-		}
-		num, ok := leafNumber(v)
-		if !ok {
-			continue
-		}
-
-		results = append(results, shared.DataPoint{
-			Name:  group["name"],
-			XAxis: group["xAxis"],
-			YAxis: group["yAxis"],
-			ZAxis: group["zAxis"],
-			Stats: []shared.Stat{{
-				Type:  zStatType,
-				Value: shared.F64(utils.FormatNumber(num, cfg.NumberUnit)),
-			}},
-		})
-	}
-	return results
-}
-
-// parseJSONValueMode implements --axes value mode for JSON: each named numeric
+// parseJSONValueMode implements value mode for JSON: each named numeric
 // field becomes a coordinate on x, y[, z] (by --axes order); each row becomes a
 // raw point with no stat series. A missing or fully non-numeric axis field is
 // fatal; a row missing a finite value for any axis is skipped.
@@ -282,11 +223,13 @@ func parseJSONValueMode(rows []map[string]any, colOrder []string, seenCol map[st
 
 		numeric := false
 		for _, row := range rows {
-			if v, ok := row[spec.Source]; ok {
-				if _, ok := leafNumber(v); ok {
-					numeric = true
-					break
-				}
+			v, ok := row[spec.Source]
+			if !ok {
+				continue
+			}
+			if _, ok := leafNumber(v); ok {
+				numeric = true
+				break
 			}
 		}
 		if !numeric {
@@ -295,9 +238,31 @@ func parseJSONValueMode(rows []map[string]any, colOrder []string, seenCol map[st
 		keys[i] = spec.Source
 	}
 
+	metricKey := ""
+	if cfg.MetricColumn != "" {
+		if !seenCol[cfg.MetricColumn] {
+			shared.ExitWithError(fmt.Sprintf("metric field '%s' not found; available: %v", cfg.MetricColumn, colOrder), nil)
+		}
+		hasNumeric := false
+		for _, row := range rows {
+			v, ok := row[cfg.MetricColumn]
+			if !ok {
+				continue
+			}
+			if _, ok := leafNumber(v); ok {
+				hasNumeric = true
+				break
+			}
+		}
+		if !hasNumeric {
+			shared.ExitWithError(fmt.Sprintf("metric field '%s' is not numeric", cfg.MetricColumn), nil)
+		}
+		metricKey = cfg.MetricColumn
+	}
+
 	var results []shared.DataPoint
 	for _, row := range rows {
-		dp := shared.DataPoint{Stats: []shared.Stat{}}
+		var dp shared.DataPoint
 		dst := []*string{&dp.XAxis, &dp.YAxis, &dp.ZAxis}
 		complete := true
 		for i, k := range keys {
@@ -315,6 +280,17 @@ func parseJSONValueMode(rows []map[string]any, colOrder []string, seenCol map[st
 		}
 		if !complete {
 			continue
+		}
+		if metricKey != "" {
+			v, ok := row[metricKey]
+			if !ok {
+				continue
+			}
+			mv, ok := leafNumber(v)
+			if !ok {
+				continue
+			}
+			dp.Metric = strconv.FormatFloat(utils.FormatNumber(mv, cfg.NumberUnit), 'g', -1, 64)
 		}
 		results = append(results, dp)
 	}

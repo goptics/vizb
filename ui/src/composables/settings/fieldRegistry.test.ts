@@ -206,9 +206,6 @@ describe('getRenderableFields', () => {
   })
 
   it('treats an unknown dimension (no ctx) as "no dimension constraint" — shows all applicable fields', () => {
-    // The panel passes `activeDataDimension` which is `undefined` until the
-    // dataset loads. The dimension constraint must be skipped in that case so
-    // the panel still shows every field by default.
     const cfg: BarConfig = { type: 'bar' }
     expect(getRenderableFields(cfg).map((f) => f.key)).toEqual([
       'sort',
@@ -262,9 +259,6 @@ describe('getRenderableFields', () => {
   })
 
   it('renders all applicable fields even when most keys are absent from the config', () => {
-    // The panel must show every available field, not just the keys the user
-    // populated. The control components display in their default state when
-    // the field is absent.
     const cfg = {
       type: 'bar',
       sort: { enabled: false, order: 'asc' as const },

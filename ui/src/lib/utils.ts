@@ -79,14 +79,19 @@ export const isValue3DEligible = (chart: ChartData) =>
 export const valueModeHasZAxis = (axes: Axis[] | undefined): boolean =>
   !!axes?.some((a) => a.key === 'z')
 
-/** Scatter --axes x,y,z continuous 3D (swap-driven, not category --3d). */
+export const VALUE_CHART_TYPES = new Set<ChartType>(['scatter', 'bar', 'line'])
+
+export const isValueChartType = (chartType?: ChartType): boolean =>
+  !!chartType && VALUE_CHART_TYPES.has(chartType)
+
+/** Value-mode continuous 3D (swap-driven, not category --3d). */
 export const isValueModeContinuous3D = (
   chart: ChartData,
   axes: Axis[] | undefined,
   targetString?: string,
   chartType?: ChartType
 ): boolean =>
-  chartType === 'scatter' &&
+  isValueChartType(chartType) &&
   isValueMode(axes) &&
   valueModeHasZAxis(axes) &&
   !!targetString &&
@@ -131,7 +136,7 @@ export const bundleHas3DChunk = (
   cfg?: { threeD?: boolean }
 ): boolean => datasetDimension(data) === '3D' || cfg?.threeD !== undefined
 
-/** Category value-mode 3D toggle (--3d on x+y grouped data). Hidden for --axes value/hybrid mode. */
+/** Category value-mode 3D toggle (--3d on x+y grouped data). Hidden for --axes value mode. */
 export const canOfferValue3D = (
   chartType: ChartType,
   data: DataPoint[] | undefined,
@@ -140,7 +145,7 @@ export const canOfferValue3D = (
   axes?: Axis[]
 ): boolean => {
   if (chartType === 'scatter') {
-    if (isValueMode(axes) || isHybridMode(axes)) return false
+    if (isValueMode(axes)) return false
     return datasetHasBothXY(data) && !hasZOnChart && bundleHas3DChunk(data, cfg)
   }
   if (isValueMode(axes)) return false
@@ -244,17 +249,3 @@ export const CPUtoString = (cpu: Meta['cpu']) => {
 /** All axes are continuous numeric (--axes x,y[,z] value mode). */
 export const isValueMode = (axes: Axis[] | undefined): boolean =>
   !!axes?.length && axes.every((a) => a.type === 'value')
-
-/** Scatter hybrid: 2 category axes (x,y) + 1 value axis (z). */
-export const isHybridMode = (axes: Axis[] | undefined): boolean => {
-  if (!axes?.length || isValueMode(axes)) return false
-  const valueAxes = axes.filter((a) => a.type === 'value')
-  const categoryAxes = axes.filter((a) => a.type !== 'value')
-  return (
-    valueAxes.length === 1 &&
-    valueAxes[0]!.key === 'z' &&
-    categoryAxes.length === 2 &&
-    categoryAxes.some((a) => a.key === 'x') &&
-    categoryAxes.some((a) => a.key === 'y')
-  )
-}

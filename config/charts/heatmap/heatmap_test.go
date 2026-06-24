@@ -50,6 +50,10 @@ func (s *HeatmapSuite) TestMaterialiseHeatmapPrecedence() {
 	s.Equal("asc", got.Sort.Order)
 }
 
+func (s *HeatmapSuite) TestSwapString() {
+	s.Equal("yxn", Config{Swap: "yxn"}.SwapString())
+}
+
 func (s *HeatmapSuite) TestHeatmapConfigNoScaleOrThreeDRotate() {
 	typ := reflect.TypeOf(Config{})
 	_, hasScale := typ.FieldByName("Scale")

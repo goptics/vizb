@@ -11,8 +11,13 @@ import {
   createZLegendConfig,
   create3DGridConfig,
   create3DCellLabel,
+  symbolSizeFor3DGrid,
   resolve3DVisualMap,
   createValue3DTooltipFormatter,
+  buildContinuous3DOptions,
+  makeContinuous3DParams,
+  valuePoints3DToSeries,
+  type Continuous3DContext,
 } from './shared'
 import type { Series3DData } from '@/types'
 
@@ -33,15 +38,21 @@ export function useLine3DChartOptions(config: BaseChartConfig) {
         : { type: 'value' as const }),
       ...axisCommon,
     }
+    const isValueMode = render.mode === 'value'
     const grid3D = create3DGridConfig({
       styling,
       autoRotate: threeDRotate?.value ?? false,
       orthographic: true,
       xCount: xValues.length,
       yCount: yValues.length,
+      mode: isValueMode ? 'value' : 'grouped',
     })
+    const valueSymbolSize = isValueMode
+      ? symbolSizeFor3DGrid(xValues.length, yValues.length, grid3D.boxWidth, grid3D.boxDepth)
+      : undefined
+    const groupedSymbolSize = 10
 
-    if (render.mode === 'value') {
+    if (isValueMode) {
       const seriesData = render.lineSeries
       const valueLabel = chartData.value.statUnit
         ? `${chartData.value.title} (${chartData.value.statUnit})`
@@ -63,7 +74,7 @@ export function useLine3DChartOptions(config: BaseChartConfig) {
         name: s.name,
         type: 'scatter3D',
         data: s.data,
-        symbolSize: 10,
+        symbolSize: valueSymbolSize!,
         itemStyle: { color: defaultColor },
         label: create3DCellLabel(showLabels.value, cellTotals, styling.textColor),
         emphasis: { label: { show: false } },
@@ -108,6 +119,36 @@ export function useLine3DChartOptions(config: BaseChartConfig) {
       } as unknown as EChartsOption
     }
 
+    const continuousCtx: Continuous3DContext = {
+      base,
+      styling,
+      isDark: isDark.value,
+      showLabels: showLabels.value,
+      useVisualMap,
+      defaultColor,
+      threeDRotate: threeDRotate?.value ?? false,
+      scale: scale?.value ?? 'linear',
+      axisLabels: chartData.value.axisLabels,
+    }
+
+    const valuePoints3D = chartData.value.valuePoints3D
+    if (!render.lineSeries.length && valuePoints3D?.length) {
+      return buildContinuous3DOptions(
+        makeContinuous3DParams(
+          continuousCtx,
+          valuePoints3DToSeries(valuePoints3D, chartData.value.title)
+        ),
+        'line3D'
+      )
+    }
+
+    if (render.mode === 'continuous') {
+      return buildContinuous3DOptions(
+        makeContinuous3DParams(continuousCtx, render.lineSeries),
+        'line3D'
+      )
+    }
+
     const points = chartData.value.points ?? []
     const seriesData = render.lineSeries
     const sel = visibleZ?.value ?? {}
@@ -136,7 +177,7 @@ export function useLine3DChartOptions(config: BaseChartConfig) {
         name: s.name,
         type: 'scatter3D',
         data: s.data,
-        symbolSize: 10,
+        symbolSize: groupedSymbolSize,
         itemStyle: { color },
         label: create3DCellLabel(
           showLabels.value && s.name === lastVisibleZName,

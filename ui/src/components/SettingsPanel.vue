@@ -113,7 +113,7 @@ const fieldGroups = computed(() => {
   return partitionRenderableFields(fields)
 })
 
-// Value/hybrid axes: hide sort; swap only for pure value mode (not hybrid).
+// Value axes: hide sort; swap only for pure value mode.
 const filterValueModeFields = computed(() => isValueModeDataset.value || isValueMode.value)
 
 const filteredGeneral = computed(() => {

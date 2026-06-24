@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adhere
 
 # [Unreleased]
 
+### Changed
+
+- **CI: split CLI and UI workflows** — renamed `ci.yml` to `cli.yml` with layered lint → format → test → build gates; added `ui.yml` for the Vue app with the same pipeline shape.
+
 ### Added
 
 - **GitHub Action: `select` input** — select value columns for CSV/JSON data (forwards `--select`).

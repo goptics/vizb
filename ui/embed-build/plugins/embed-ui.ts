@@ -1,3 +1,4 @@
+import { execSync } from 'node:child_process'
 import fs from 'node:fs'
 import zlib from 'node:zlib'
 import path from 'path'
@@ -15,6 +16,16 @@ import type { GoChunkArtifacts } from '../types.ts'
 // chunk's parse until its dynamic import() actually fires — while the output
 // stays a self-contained HTML template embedded in the Go binary. It then emits
 // pkg/template/vizb-ui.gen.go.
+const formatGoFile = (filePath: string): void => {
+  try {
+    execSync(`gofmt -w ${JSON.stringify(filePath)}`, { stdio: 'pipe' })
+  } catch {
+    console.warn(
+      '[embed-ui] gofmt skipped — install Go or run: gofmt -w pkg/template/vizb-ui.gen.go'
+    )
+  }
+}
+
 export const embedUiPlugin = (rootDir: string): PluginOption => {
   const distDir = path.resolve(rootDir, 'dist')
   const distHtmlPath = path.resolve(distDir, 'index.html')
@@ -49,7 +60,10 @@ export const embedUiPlugin = (rootDir: string): PluginOption => {
       const entrySrc = entryScript.getAttribute('src')!.replace(/^\//, '')
       const entryFile = path.basename(entrySrc)
       const assetsDir = path.resolve(distDir, path.dirname(entrySrc))
-      const chunkFiles = fs.readdirSync(assetsDir).filter((f: string) => f.endsWith('.js'))
+      const chunkFiles = fs
+        .readdirSync(assetsDir)
+        .filter((f: string) => f.endsWith('.js'))
+        .sort()
 
       // gzip each chunk, rewriting rollup's relative sibling/dynamic-import
       // specifiers ("./<chunk>.js") to stable import-map keys so they resolve
@@ -69,7 +83,7 @@ export const embedUiPlugin = (rootDir: string): PluginOption => {
             code = code.split(`./${other}`).join(chunkKeyOf(other))
           }
         }
-        chunkImports[fileKey] = refs
+        chunkImports[fileKey] = refs.sort((a, b) => a.localeCompare(b))
         const rawBuf = Buffer.from(code, 'utf-8')
         const gzBuf = zlib.gzipSync(rawBuf, { level: 9 })
         const b64 = gzBuf.toString('base64')
@@ -161,6 +175,7 @@ const VizbHTMLTemplate = \`${goRawString}\`
 `
 
       fs.writeFileSync(goFilePath, goFileContent, 'utf-8')
+      formatGoFile(goFilePath)
     },
   }
 }

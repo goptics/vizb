@@ -200,6 +200,11 @@ func (s *ChartSpecSuite) TestValidateSwap() {
 	s.Run("no axes accepts any non-empty swap", func() {
 		s.NoError(ValidateSwap("anything", nil))
 	})
+	s.Run("metric axis excluded from identity", func() {
+		axes := []Axis{{Key: "x"}, {Key: "y"}, {Key: "metric"}, {Key: "name"}}
+		s.NoError(ValidateSwap("yxn", axes))
+		s.Error(ValidateSwap("xym", axes))
+	})
 }
 
 func TestChartSpecSuite(t *testing.T) {

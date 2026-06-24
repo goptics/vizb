@@ -25,59 +25,52 @@ jobs:
           - output: 00-decode
             file: 00-decode-encode
             name: "Decode"
-            description: "Decode Performance Comparison"
+            description: "Decode performance across text, level, and size"
             group-regex: "/text=(?<n>.*)/level=(?<x>.*)/size=(?<y>.*)"
             filter: "Decode"
-            scale: "log"
 
           - output: 01-encode
             file: 00-decode-encode
             name: "Encode"
-            description: "Encode Performance Comparison"
+            description: "Encode performance across text, level, and size"
             group-regex: "/text=(?<n>.*)/level=(?<x>.*)/size=(?<y>.*)"
             filter: "Encode"
-            scale: "log"
 
           - output: 02-hash
             file: 01-hash
             name: "Hashing"
             description: "Comparison of different hash functions"
             group-regex: "Hashing64(?<x>.*)"
-            scale: "log"
 
           - output: 03-http-routing
             file: 02-http-routing
             name: "HTTP Routing"
-            description: "Performance comparison of popular Go HTTP Routers"
-            group-pattern: "x_n"
-            scale: "log"
+            description: "Performance comparison of popular Go HTTP routers"
+            group-pattern: x_n
 
           - output: 04-serialization
             file: 03-serialization
             name: "Serialization"
             description: "Comparison of different serialization methods"
             group-regex: "(?<x>.*)By(?<y>.*)"
-            scale: "log"
 
           - output: 05-validator
             file: 04-validator
             name: "Validator"
-            description: ""
+            description: "Validation success vs failure across rule sets"
             group-regex: "(?<y>.*?)(?:(?<x>Success|Failure)(?<n>.*)|$)"
-            scale: "log"
 
           - output: 06-varmq
             file: 05-varmq
             name: "Varmq"
-            description: "Variadic Queue Benchmark"
-            group-pattern: "x/y"
-            scale: "log"
+            description: "Variadic queue benchmark"
+            group-pattern: x/y
 
           - output: 07-worker-pools
             file: 06-worker-pools
             name: "Worker Pools"
             description: "Performance comparison of different worker pool implementations"
-            group-pattern: "n/y/x"
+            group-pattern: n/y/x
 
     runs-on: ubuntu-latest
     steps:
@@ -92,9 +85,11 @@ jobs:
           group-pattern: ${{ matrix.group-pattern }}
           group-regex: ${{ matrix.group-regex }}
           filter: ${{ matrix.filter }}
-          scale: ${{ matrix.scale }}
+          chart: |
+            bar:scale=log,sort=asc
+            line:scale=log,sort=asc
+            pie:sort=asc
           output-json: ${{ matrix.output }}.json
-          sort: asc
 
       - name: Uploading json artifacts
         uses: actions/upload-artifact@v4
@@ -103,7 +98,7 @@ jobs:
           path: ${{ matrix.output }}.json
 
   merge-deploy:
-    name: Merge Go Benchmarks
+    name: Merge and Deploy Go Benchmarks
     needs: convert
     permissions:
       contents: write

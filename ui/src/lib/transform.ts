@@ -244,8 +244,13 @@ export function buildChartData(
   )
 }
 
+const SWAP_AXIS_KEYS = new Set(['name', 'x', 'y', 'z'])
+
 const identityStringFromAxes = (axes: Axis[]): string =>
-  axes.map((a) => (a.key === 'name' ? 'n' : a.key.charAt(0))).join('')
+  axes
+    .filter((a) => SWAP_AXIS_KEYS.has(a.key))
+    .map((a) => (a.key === 'name' ? 'n' : a.key.charAt(0)))
+    .join('')
 
 const axisLabelsFromAxes = (axes: Axis[]): AxisLabels => {
   const out: AxisLabels = {}
@@ -277,20 +282,35 @@ const projectValueCoords = (
   return out
 }
 
+export type ValuePoint3D = [number, number, number, number?]
+
+export function valuePoints3DToSeries(points: ValuePoint3D[], title: string): Series3DData[] {
+  const withMetric = (points[0]?.length ?? 0) >= 4
+  return [
+    {
+      name: title,
+      data: points.map(([x, y, z, m]) =>
+        withMetric && m !== undefined ? { value: [x, y, z, m] } : { value: [x, y, z] }
+      ),
+    },
+  ]
+}
+
 // Value-mode 3D: continuous [x,y,z] path through space (--axes x,y,z + swap with z on chart).
 export function buildValueMode3DRender(
-  points: [number, number, number][],
+  points: ValuePoint3D[],
   title: string,
   showLabels = false,
   scale: ScaleType = 'linear'
 ): Render3D {
   const filtered = scale === 'log' ? points.filter(([x, y, z]) => x > 0 && y > 0 && z > 0) : points
-
-  const seriesData = filtered.map(([x, y, z]) => ({ value: [x, y, z] }))
+  const withMetric = (filtered[0]?.length ?? 0) >= 4
+  const seriesData = valuePoints3DToSeries(filtered, title)[0]!.data
   const cellTotals: Record<string, number> = {}
   if (showLabels) {
-    filtered.forEach(([, , z], i) => {
-      cellTotals[String(i)] = z
+    filtered.forEach((p, i) => {
+      const labelVal = withMetric && p[3] !== undefined ? p[3] : p[2]
+      cellTotals[String(i)] = labelVal ?? 0
     })
   }
 
@@ -313,17 +333,17 @@ export function buildValueModeChart(
   axes: Axis[],
   identityString?: string,
   targetString?: string,
-  opts?: { scale?: ScaleType; showLabels?: boolean }
+  opts?: { scale?: ScaleType; showLabels?: boolean; threeD?: boolean }
 ): ChartData {
   const identity = identityString ?? identityStringFromAxes(axes)
   const target = targetString ?? identity
   const scale = opts?.scale ?? 'linear'
   const baseLabels = axisLabelsFromAxes(axes)
-  const labels = swapAxisLabels(identity, target, baseLabels) ?? baseLabels
-  const use3D = arrangementHasChartZ(target)
+  const labels = { ...(swapAxisLabels(identity, target, baseLabels) ?? baseLabels) }
+  const use3D = (opts?.threeD ?? true) && arrangementHasChartZ(target)
 
   const valueTuples: [number, number][] = []
-  const valuePoints3D: [number, number, number][] = []
+  const valuePoints3D: ValuePoint3D[] = []
 
   for (const row of data) {
     const coords = projectValueCoords(row, identity, target)
@@ -335,7 +355,13 @@ export function buildValueModeChart(
       const cz = coords.zAxis
       if (cx === undefined || cy === undefined || cz === undefined) continue
       if (scale === 'log' && (cx <= 0 || cy <= 0 || cz <= 0)) continue
-      valuePoints3D.push([cx, cy, cz])
+      const metricRaw = row.metric
+      const metricNum = metricRaw !== undefined && metricRaw !== '' ? Number(metricRaw) : undefined
+      if (metricNum !== undefined && isFinite(metricNum)) {
+        valuePoints3D.push([cx, cy, cz, metricNum])
+      } else {
+        valuePoints3D.push([cx, cy, cz])
+      }
     } else {
       const cx = coords.xAxis
       const cy = coords.yAxis
@@ -364,105 +390,6 @@ export function buildValueModeChart(
 
   if (use3D && valuePoints3D.length) {
     chart.render3D = buildValueMode3DRender(valuePoints3D, title, opts?.showLabels ?? false, scale)
-  }
-
-  return chart
-}
-
-const hybridZStatType = (axes: Axis[]): string => {
-  const z = axes.find((a) => a.key === 'z')
-  return z?.label ?? z?.key ?? 'z'
-}
-
-/** Scatter hybrid: categorical x,y from DataPoint fields + numeric z from stats. */
-export function buildHybridScatterChart(
-  data: DataPoint[],
-  axes: Axis[],
-  identityString?: string,
-  targetString?: string,
-  opts?: {
-    labels?: AxisLabels
-    sort?: Sort
-    showLabels?: boolean
-    scale?: ScaleType
-    threeD?: boolean
-    canonical?: CanonicalAxisOrders
-  }
-): ChartData {
-  const identity = identityString ?? identityStringFromAxes(axes)
-  const target = targetString ?? identity
-  const scale = opts?.scale ?? 'linear'
-  const sort = opts?.sort ?? { enabled: false, order: 'asc' as const }
-  const zStatType = hybridZStatType(axes)
-  const baseLabels = axisLabelsFromAxes(axes)
-  const labels = opts?.labels ?? swapAxisLabels(identity, target, baseLabels) ?? baseLabels
-
-  const dataMap = new Map<string, Map<string, number>>()
-  const countMap = new Map<string, Map<string, number>>()
-  const xAxisSet = new Set<string>()
-  const yAxisSet = new Set<string>()
-  const points: Point3D[] = []
-
-  for (const row of data) {
-    const matchingStat = row.stats?.find((s) => s.type === zStatType)
-    const value = matchingStat?.value
-    if (value === undefined) continue
-
-    const xAxis = row.xAxis ?? ''
-    const yAxis = row.yAxis ?? ''
-    xAxisSet.add(xAxis)
-    yAxisSet.add(yAxis)
-    points.push({ xAxis, yAxis, zAxis: '', value })
-
-    if (!dataMap.has(yAxis)) {
-      dataMap.set(yAxis, new Map())
-      countMap.set(yAxis, new Map())
-    }
-    const yMap = dataMap.get(yAxis)!
-    const cMap = countMap.get(yAxis)!
-    yMap.set(xAxis, (yMap.get(xAxis) ?? 0) + value)
-    cMap.set(xAxis, (cMap.get(xAxis) ?? 0) + 1)
-  }
-
-  for (const [yAxis, xMap] of dataMap) {
-    const cMap = countMap.get(yAxis)!
-    for (const [xAxis, sum] of xMap) xMap.set(xAxis, sum / cMap.get(xAxis)!)
-  }
-
-  let xAxisValues = Array.from(xAxisSet)
-  let yAxisValues = Array.from(yAxisSet)
-  if (!sort.enabled && opts?.canonical) {
-    xAxisValues = applyCanonicalOrder(xAxisValues, opts.canonical.x)
-    yAxisValues = applyCanonicalOrder(yAxisValues, opts.canonical.y)
-  }
-
-  const series: SeriesData[] = xAxisValues.map((xAxis) => ({
-    xAxis,
-    values: yAxisValues.map((yAxis) => dataMap.get(yAxis)?.get(xAxis) ?? null),
-    benchmarkId: data[0]?.name ?? '',
-  }))
-
-  if (sort.enabled) sortSeriesByTotal(series, sort.order)
-
-  const chart: ChartData = {
-    title: zStatType,
-    statType: zStatType,
-    statUnit: data[0]?.stats?.find((s) => s.type === zStatType)?.unit,
-    yAxis: yAxisValues,
-    zAxis: [],
-    series,
-    points,
-    axisLabels: labels,
-  }
-
-  if (opts?.threeD && chartIsValue3DEligible(chart)) {
-    chart.render3D = buildValue3DRender(
-      chart,
-      sort,
-      opts?.showLabels ?? false,
-      scale,
-      opts?.canonical
-    )
   }
 
   return chart
@@ -701,7 +628,7 @@ export function projectAndGroup(
 
   for (const row of raw) {
     let groupKey = 'Default'
-    const out: DataPoint = { stats: row.stats }
+    const out: DataPoint = row.stats ? { stats: row.stats } : {}
 
     const rowRec = row as Record<string, unknown>
     for (let i = 0; i < identityKeys.length; i++) {

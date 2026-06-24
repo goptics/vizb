@@ -27,12 +27,11 @@ import {
   listChartSignatures,
   buildChartForSignature,
   buildValueModeChart,
-  buildHybridScatterChart,
   canonicalAxisOrdersFromStrings,
   projectAndGroup,
   type ChartSignature,
 } from '../lib/transform'
-import { isValueMode, isHybridMode } from '../lib/utils'
+import { isValueChartType, isValueMode } from '../lib/utils'
 import { translateAxisKey } from '../lib/swap'
 import type { DataPoint, AxisLabels, Sort, ChartData, ScaleType, Axis, ChartType } from '../types'
 
@@ -43,7 +42,7 @@ export type InitMessage = {
   identityString: string
   targetString: string
   labels?: AxisLabels
-  axes?: Axis[] // value/hybrid-mode: present when --axes was used
+  axes?: Axis[] // present when axes metadata is available from the dataset
   chartType?: ChartType
 }
 export type SetArrangementMessage = {
@@ -90,7 +89,6 @@ type State = {
   labels?: AxisLabels
   bySignature: Map<string, ChartSignature>
   valueMode: boolean
-  hybridMode: boolean
   axes?: Axis[]
   chartType?: ChartType
 }
@@ -137,18 +135,6 @@ const valueModeReadyReply = (s: State): ReadyMessage => ({
   groupNames: [],
 })
 
-const hybridModeReadyReply = (s: State): ReadyMessage => ({
-  type: 'ready',
-  dataEpoch: s.dataEpoch,
-  signatures: [
-    {
-      signature: '__hybrid_mode__',
-      title: buildHybridScatterChart([], s.axes ?? [], s.identityString, s.targetString).title,
-    },
-  ],
-  groupNames: s.groupNames,
-})
-
 self.onmessage = (e: MessageEvent<WorkerRequest>) => {
   const msg = e.data
 
@@ -156,9 +142,7 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
     case 'init': {
       const axes = msg.axes
       const chartType = msg.chartType
-      const scatter = chartType === 'scatter'
-      const valueModeDetected = scatter && isValueMode(axes)
-      const hybridModeDetected = scatter && isHybridMode(axes)
+      const valueModeDetected = isValueChartType(chartType) && isValueMode(axes)
 
       state = {
         dataEpoch: msg.dataEpoch,
@@ -170,7 +154,6 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
         labels: msg.labels,
         bySignature: new Map(),
         valueMode: valueModeDetected,
-        hybridMode: hybridModeDetected,
         axes,
         chartType,
       }
@@ -181,16 +164,6 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
           statTemplate: { type: 'value' },
         })
         post(valueModeReadyReply(state))
-        return
-      }
-
-      if (hybridModeDetected) {
-        applyArrangement(state, msg.identityString, msg.targetString)
-        state.bySignature.set('__hybrid_mode__', {
-          signature: '__hybrid_mode__',
-          statTemplate: { type: 'hybrid' },
-        })
-        post(hybridModeReadyReply(state))
         return
       }
 
@@ -210,11 +183,6 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
         post(valueModeReadyReply(state))
         return
       }
-      if (state.hybridMode) {
-        applyArrangement(state, msg.identityString, msg.targetString)
-        post(hybridModeReadyReply(state))
-        return
-      }
       applyArrangement(state, msg.identityString, msg.targetString)
       post(readyReply(state))
       return
@@ -231,38 +199,10 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
       state.axes,
       state.identityString,
       state.targetString,
-      { scale: msg.scale, showLabels: msg.showLabels }
-    )
-    post({
-      type: 'chart',
-      dataEpoch: msg.dataEpoch,
-      jobEpoch: msg.jobEpoch,
-      signature: msg.signature,
-      chart,
-    })
-    return
-  }
-
-  // Hybrid scatter compute: categorical x,y + z from stats.
-  if (state.hybridMode && msg.signature === '__hybrid_mode__' && state.axes) {
-    const rows = state.grouped.get(msg.groupName) ?? state.grouped.values().next().value ?? []
-    const canonical = canonicalAxisOrdersFromStrings(
-      state.raw,
-      state.identityString,
-      state.targetString
-    )
-    const chart = buildHybridScatterChart(
-      rows,
-      state.axes,
-      state.identityString,
-      state.targetString,
       {
-        labels: state.labels,
-        sort: msg.sort,
-        showLabels: msg.showLabels,
         scale: msg.scale,
+        showLabels: msg.showLabels,
         threeD: msg.threeD,
-        canonical,
       }
     )
     post({

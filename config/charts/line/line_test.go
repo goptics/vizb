@@ -61,6 +61,20 @@ func (s *LineSuite) TestLineConfigHasScaleAndThreeDRotate() {
 	s.True(*got.ThreeDRotate)
 }
 
+func (s *LineSuite) TestMaterialiseThreeDVisualMapOverride() {
+	falseVal := false
+	trueVal := true
+	got := Materialise(Flags{ThreeD: true, ThreeDVisualMap: &falseVal}, &Config{
+		ThreeDVisualMap: &trueVal,
+	})
+	s.Require().NotNil(got.ThreeDVisualMap)
+	s.True(*got.ThreeDVisualMap)
+}
+
+func (s *LineSuite) TestSwapString() {
+	s.Equal("yxn", Config{Swap: "yxn"}.SwapString())
+}
+
 func TestLineSuite(t *testing.T) {
 	suite.Run(t, new(LineSuite))
 }

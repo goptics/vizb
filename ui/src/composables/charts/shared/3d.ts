@@ -1,10 +1,13 @@
-import type { Render3D, Point3D, ScaleType } from '@/types'
+import type { EChartsOption } from 'echarts'
+import type { Render3D, Point3D, ScaleType, Series3DData } from '@/types'
+import { valuePoints3DToSeries } from '@/lib/transform'
 import { COLOR_PALETTE, getNextColorFor } from '@/lib/utils'
 import {
   formatTooltipValue,
   tooltipDivider,
   tooltipSpreadRows,
   renderDonutSvg,
+  getTooltipTheme,
   type ChartStyling,
 } from './chartConfig'
 
@@ -25,28 +28,40 @@ export const VALUE_3D_COLOR_RANGE = [
   '#a50026',
 ]
 
-export function maxFrom3DData(series: { data: { value: number[] }[] }[]): number {
+export function seriesHasMetricDimension(series: { data: { value: number[] }[] }[]): boolean {
+  const first = series[0]?.data[0]?.value
+  return (first?.length ?? 0) >= 4
+}
+
+export function maxFrom3DData(series: { data: { value: number[] }[] }[], dimension = 2): number {
   let max = 0
   for (const s of series) {
     for (const item of s.data) {
-      const v = item.value[2] ?? 0
+      const v = item.value[dimension] ?? 0
       if (v > max) max = v
     }
   }
-  return max
+  return max || 1
 }
 
-export function create3DVisualMap(max: number, styling: ChartStyling) {
+export function create3DVisualMap(max: number, styling: ChartStyling, dimension: 2 | 3 = 2) {
   return {
     show: true,
     min: 0,
     max: max || 1,
-    dimension: 2,
+    dimension,
     calculable: true,
     orient: 'vertical' as const,
     right: '0%',
     top: 'center',
-    inRange: { color: VALUE_3D_COLOR_RANGE },
+    inRange:
+      dimension === 3
+        ? {
+            color: VALUE_3D_COLOR_RANGE,
+            symbolSize: [0.5, 25],
+            colorAlpha: [0.2, 1],
+          }
+        : { color: VALUE_3D_COLOR_RANGE },
     textStyle: { color: styling.textColor },
   }
 }
@@ -57,11 +72,10 @@ export function resolve3DVisualMap(
   series: { data: { value: number[] }[] }[],
   styling: ChartStyling
 ) {
-  return enabled ? create3DVisualMap(maxFrom3DData(series), styling) : []
+  if (!enabled) return []
+  const dim = seriesHasMetricDimension(series) ? 3 : 2
+  return create3DVisualMap(maxFrom3DData(series, dim), styling, dim)
 }
-
-/** @deprecated Use create3DVisualMap */
-export const createValue3DVisualMap = create3DVisualMap
 
 export function createValue3DTooltipFormatter(params: {
   xValues: string[]
@@ -128,6 +142,103 @@ export function boxSizeForAxisCount(len: number): number {
   return 200
 }
 
+/** Fixed grid footprint for pseudo value 3D (`--3d` on x+y category data). */
+export const VALUE_MODE_3D_BOX_SIZE = 100
+export const VALUE_MODE_3D_VIEW_DISTANCE = 200
+
+/** Largest grid3D edge — used to scale camera framing. */
+export function boxExtent3D(boxWidth: number, boxDepth: number, boxHeight: number): number {
+  return Math.max(boxWidth, boxDepth, boxHeight)
+}
+
+/**
+ * Perspective camera distance (bar3D). ECharts default is 200 for a 100³ box → 2× extent.
+ */
+export function viewDistanceFor3DBox(
+  boxWidth: number,
+  boxDepth: number,
+  boxHeight: number
+): number {
+  return boxExtent3D(boxWidth, boxDepth, boxHeight) * 2
+}
+
+/**
+ * Orthographic viewing volume (scatter3D / line3D). ECharts default is 150 for a 100³ box → 1.5× extent.
+ */
+export function orthographicSizeFor3DBox(
+  boxWidth: number,
+  boxDepth: number,
+  boxHeight: number
+): number {
+  return boxExtent3D(boxWidth, boxDepth, boxHeight) * 1.5
+}
+
+const BAND_FILL_MIN = 0.45
+const BAND_FILL_MAX = 0.92
+const BAND_FILL_LO = 2
+const BAND_FILL_HI = 40
+
+/** Fraction of each category band filled by bars/markers (sparse → low, dense → high). */
+export function bandFillRatioForCount(count: number): number {
+  const c = Math.max(1, count)
+  if (c <= BAND_FILL_LO) return BAND_FILL_MIN
+  if (c >= BAND_FILL_HI) return BAND_FILL_MAX
+  const t = (c - BAND_FILL_LO) / (BAND_FILL_HI - BAND_FILL_LO)
+  return BAND_FILL_MIN + t * (BAND_FILL_MAX - BAND_FILL_MIN)
+}
+
+function clamp3DSpacing(v: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, v))
+}
+
+/** bar3D footprint on category grids — replaces ECharts' fixed bandWidth × 0.7 default. */
+export function barSizeFor3DGrid(
+  xCount: number,
+  yCount: number,
+  boxWidth: number,
+  boxDepth: number
+): [number, number] {
+  const ratio = bandFillRatioForCount(Math.max(xCount, yCount, 1))
+  const bandX = boxWidth / Math.max(xCount, 1)
+  const bandY = boxDepth / Math.max(yCount, 1)
+  return [bandX * ratio, bandY * ratio]
+}
+
+/** scatter3D marker size on category grids — diameter tracks cell size × fill ratio. */
+export function symbolSizeFor3DGrid(
+  xCount: number,
+  yCount: number,
+  boxWidth: number,
+  boxDepth: number
+): number {
+  const ratio = bandFillRatioForCount(Math.max(xCount, yCount, 1))
+  const minBand = Math.min(boxWidth / Math.max(xCount, 1), boxDepth / Math.max(yCount, 1))
+  return clamp3DSpacing(minBand * ratio, 2, 24)
+}
+
+/** bar3D footprint for continuous value-axis point clouds. */
+export function barSizeForContinuous3D(
+  pointCount: number,
+  boxWidth: number,
+  boxDepth: number
+): [number, number] {
+  const n = Math.max(pointCount, 1)
+  const ratio = bandFillRatioForCount(n)
+  const baseX = Math.round(boxWidth / Math.sqrt(n))
+  const baseY = Math.round(boxDepth / Math.sqrt(n))
+  return [baseX * ratio, baseY * ratio]
+}
+
+/** scatter3D marker size for continuous value-axis point clouds. */
+export function symbolSizeForContinuous3D(
+  pointCount: number,
+  boxWidth: number,
+  boxDepth: number
+): number {
+  const { xCount, yCount } = continuous3DGridCounts(pointCount)
+  return symbolSizeFor3DGrid(xCount, yCount, boxWidth, boxDepth)
+}
+
 // Empty render payload when a chart lacks precomputed 3D data (shouldn't happen:
 // the worker attaches render3D to every 3D chart).
 export const EMPTY_RENDER: Render3D = {
@@ -174,18 +285,22 @@ export function createContinuous3DAxes(
 
 export function createContinuous3DTooltipFormatter(
   _isDark: boolean,
-  labels: { x?: string; y?: string; z?: string }
+  labels: { x?: string; y?: string; z?: string; metric?: string }
 ) {
   const xName = labels.x ?? 'x'
   const yName = labels.y ?? 'y'
   const zName = labels.z ?? 'z'
+  const metricName = labels.metric ?? 'value'
   return (p: { value: number[] }) => {
-    const [x = 0, y = 0, z = 0] = p.value
-    return (
+    const [x = 0, y = 0, z = 0, metric] = p.value
+    const coords =
       `<b>${xName}: ${formatTooltipValue(x)}</b><br/>` +
       `${yName}: ${formatTooltipValue(y)}<br/>` +
       `${zName}: ${formatTooltipValue(z)}`
-    )
+    if (metric !== undefined) {
+      return coords + `<br/>${metricName}: <b>${formatTooltipValue(metric)}</b>`
+    }
+    return coords
   }
 }
 
@@ -334,37 +449,185 @@ export function createZLegendConfig(
   }
 }
 
+export type Continuous3DParams = {
+  base: EChartsOption
+  styling: ChartStyling
+  isDark: boolean
+  showLabels: boolean
+  useVisualMap: boolean
+  defaultColor: string
+  threeDRotate: boolean
+  scale: ScaleType
+  seriesData: Series3DData[]
+  axisLabels?: { x?: string; y?: string; z?: string; metric?: string }
+}
+
+export type Continuous3DContext = Omit<Continuous3DParams, 'seriesData'>
+
+export { valuePoints3DToSeries }
+
+export function makeContinuous3DParams(
+  ctx: Continuous3DContext,
+  seriesData: Series3DData[]
+): Continuous3DParams {
+  return { ...ctx, seriesData }
+}
+
+/** Continuous [x,y,z] point cloud rendered as scatter3D, line3D, or bar3D. */
+export function buildContinuous3DOptions(
+  params: Continuous3DParams,
+  seriesType: 'scatter3D' | 'line3D' | 'bar3D' = 'scatter3D'
+): EChartsOption {
+  const {
+    base,
+    styling,
+    isDark,
+    showLabels,
+    useVisualMap,
+    defaultColor,
+    threeDRotate,
+    scale,
+    seriesData,
+    axisLabels,
+  } = params
+  const pointCount = seriesData[0]?.data.length ?? 0
+  const { xCount, yCount } = continuous3DGridCounts(pointCount)
+  const axes3D = createContinuous3DAxes(styling, axisLabels?.x, axisLabels?.y, axisLabels?.z, scale)
+  const grid3D = create3DGridConfig({
+    styling,
+    autoRotate: threeDRotate,
+    orthographic: true,
+    xCount,
+    yCount,
+    mode: 'continuous',
+  })
+
+  const lineStyle = seriesType === 'line3D' ? { width: 3, color: defaultColor } : undefined
+  const isBar = seriesType === 'bar3D'
+  const barSize = barSizeForContinuous3D(pointCount, grid3D.boxWidth, grid3D.boxDepth)
+  const metricDimension = seriesHasMetricDimension(seriesData)
+  const useMetricVisualMap = useVisualMap && metricDimension
+  const defaultSymbolSize = symbolSizeForContinuous3D(pointCount, grid3D.boxWidth, grid3D.boxDepth)
+  const scatterSymbolSize = useMetricVisualMap ? undefined : defaultSymbolSize
+  const barProps = isBar
+    ? { bevelSize: 0.3, bevelSmoothness: 3, shading: 'lambert' as const, barSize }
+    : {}
+
+  return {
+    ...base,
+    legend: { show: false },
+    visualMap: resolve3DVisualMap(useVisualMap, seriesData, styling),
+    tooltip: {
+      ...base.tooltip,
+      ...getTooltipTheme(isDark),
+      formatter: createContinuous3DTooltipFormatter(isDark, {
+        x: axisLabels?.x,
+        y: axisLabels?.y,
+        z: axisLabels?.z,
+        metric: axisLabels?.metric,
+      }),
+    },
+    ...axes3D,
+    grid3D,
+    series: seriesData.map((s: Series3DData) => ({
+      name: s.name,
+      type: seriesType,
+      data: s.data,
+      symbolSize: isBar ? undefined : seriesType === 'line3D' ? 0 : scatterSymbolSize,
+      ...(lineStyle ? { lineStyle } : {}),
+      ...(useMetricVisualMap ? {} : { itemStyle: { color: defaultColor } }),
+      ...barProps,
+      label: {
+        show: showLabels,
+        formatter: (p: { value: number[] }) => {
+          const labelVal = metricDimension ? p.value[3] : p.value[2]
+          return labelVal === undefined ? '' : String(round2(labelVal))
+        },
+        textStyle: { fontSize: 12, color: styling.textColor },
+      },
+      emphasis: { label: { show: false } },
+    })),
+  } as unknown as EChartsOption
+}
+
 /**
  * Build the common grid3D block. The caller supplies the one or two differing
  * pieces (autoRotate + optional orthographic projection for line3D).
  */
+export type Grid3DLayoutMode = 'grouped' | 'value' | 'continuous'
+
 export function create3DGridConfig(opts: {
   styling: ChartStyling
   autoRotate: boolean
   orthographic?: boolean
   xCount: number
   yCount: number
+  /** grouped = legacy sizing; value = fixed 100³ box; continuous = cubic auto-value grid. */
+  mode?: Grid3DLayoutMode
 }) {
   const { styling, autoRotate, orthographic, xCount, yCount } = opts
-  const xWidth = boxSizeForAxisCount(xCount)
-  const yWidth = boxSizeForAxisCount(yCount)
+  const mode = opts.mode ?? 'grouped'
+  const xWidth = mode === 'value' ? VALUE_MODE_3D_BOX_SIZE : boxSizeForAxisCount(xCount)
+  const yWidth = mode === 'value' ? VALUE_MODE_3D_BOX_SIZE : boxSizeForAxisCount(yCount)
 
-  return {
+  const shell = {
     boxWidth: xWidth,
     boxDepth: yWidth,
     axisLine: { lineStyle: { color: styling.axisColor } },
     splitLine: { lineStyle: { color: styling.axisColor, opacity: styling.opacity } },
-    viewControl: {
-      distance: xWidth + yWidth,
-      // `autoRotate` is optional on BaseChartConfig (relaxed in Task 7) —
-      // pie/heatmap/radar pass a config without it. Default to off at the
-      // call site; 3D bar/line are the only consumers.
-      autoRotate,
-      ...(orthographic ? { projection: 'orthographic' } : {}),
-    },
     light: {
       main: { intensity: 0.3, shadow: false },
       ambient: { intensity: 0.9 },
+    },
+  }
+
+  if (mode === 'grouped') {
+    return {
+      ...shell,
+      viewControl: {
+        distance: xWidth + yWidth,
+        autoRotate,
+        ...(orthographic ? { projection: 'orthographic' as const } : {}),
+      },
+    }
+  }
+
+  if (mode === 'value') {
+    const boxHeight = VALUE_MODE_3D_BOX_SIZE
+    const orthographicSize = orthographicSizeFor3DBox(xWidth, yWidth, boxHeight)
+    return {
+      ...shell,
+      boxHeight,
+      viewControl: {
+        distance: VALUE_MODE_3D_VIEW_DISTANCE,
+        autoRotate,
+        ...(orthographic
+          ? {
+              projection: 'orthographic' as const,
+              orthographicSize,
+              maxOrthographicSize: Math.max(400, orthographicSize * 2),
+            }
+          : {}),
+      },
+    }
+  }
+
+  const boxHeight = Math.max(xWidth, yWidth)
+  const distance = viewDistanceFor3DBox(xWidth, yWidth, boxHeight)
+  const orthographicSize = orthographicSizeFor3DBox(xWidth, yWidth, boxHeight)
+  return {
+    ...shell,
+    boxHeight,
+    viewControl: {
+      distance,
+      autoRotate,
+      ...(orthographic
+        ? {
+            projection: 'orthographic' as const,
+            orthographicSize,
+            maxOrthographicSize: Math.max(400, orthographicSize * 2),
+          }
+        : { maxDistance: Math.max(400, distance * 1.5) }),
     },
   }
 }

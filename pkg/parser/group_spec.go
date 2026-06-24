@@ -2,8 +2,13 @@ package parser
 
 import (
 	"fmt"
+	"math"
+	"sort"
+	"strconv"
 	"strings"
 	"unicode"
+
+	"github.com/goptics/vizb/pkg/style"
 )
 
 // GroupSpec describes how --group column names are laid out and joined into labels.
@@ -142,6 +147,270 @@ func separatorsMatch(a, b []string) bool {
 		}
 	}
 	return true
+}
+
+// isNumericCell reports whether a single cell string is a finite number.
+// Mirrors the csv parser's parseFinite rule so AutoGroupColumns classifies
+// columns the same way chartColumns does.
+func isNumericCell(s string) bool {
+	v, err := strconv.ParseFloat(strings.TrimSpace(s), 64)
+	return err == nil && !math.IsNaN(v) && !math.IsInf(v, 0)
+}
+
+// AutoGroupColumns infers one group column for the csv/json parsers when the
+// user supplies no explicit grouping. Only non-numeric (categorical) columns
+// are considered candidates; numeric columns are completely ignored. If no
+// categorical column exists, auto-grouping is silently skipped (ok=false).
+// Candidates are ranked by descending distinct-value count (leftmost
+// tie-break); the top one is returned alongside pattern "x". ok is false when
+// no inference is possible (single column, zero categorical columns, or no
+// chart column would remain).
+func AutoGroupColumns(headers []string, rows [][]string) (cols []string, pattern string, ok bool) {
+	if len(headers) < 2 {
+		return nil, "", false
+	}
+
+	type col struct {
+		idx      int
+		distinct int
+	}
+
+	// Gather distinct values per column; classify as categorical when any
+	// non-numeric cell is seen.
+	distinct := make([]map[string]struct{}, len(headers))
+	anyNonNumeric := make([]bool, len(headers))
+	for i := range headers {
+		distinct[i] = make(map[string]struct{})
+	}
+	for _, row := range rows {
+		for i := range headers {
+			if i >= len(row) {
+				continue
+			}
+			cell := strings.TrimSpace(row[i])
+			if cell == "" {
+				continue
+			}
+			distinct[i][cell] = struct{}{}
+			if !isNumericCell(cell) {
+				anyNonNumeric[i] = true
+			}
+		}
+	}
+
+	// Candidate pool: only non-numeric (categorical) columns.
+	candidates := make([]col, 0, len(headers))
+	for i, h := range headers {
+		if h == "" {
+			continue
+		}
+		if !anyNonNumeric[i] {
+			continue // numeric columns are ignored
+		}
+		candidates = append(candidates, col{
+			idx:      i,
+			distinct: len(distinct[i]),
+		})
+	}
+	if len(candidates) == 0 {
+		return nil, "", false
+	}
+
+	// Rank by descending distinct-value count, leftmost tie-break.
+	sort.SliceStable(candidates, func(a, b int) bool {
+		if candidates[a].distinct != candidates[b].distinct {
+			return candidates[a].distinct > candidates[b].distinct
+		}
+		return candidates[a].idx < candidates[b].idx
+	})
+
+	// The chosen axis column must leave at least one other column to act as
+	// a chart (Stat) series; otherwise auto-grouping would consume the only
+	// numeric column.
+	if len(headers)-1 < 1 {
+		return nil, "", false
+	}
+
+	return []string{headers[candidates[0].idx]}, "x", true
+}
+
+// NoExplicitGrouping reports whether the user supplied no explicit grouping
+// configuration (no --group, no --group-regex, default --group-pattern "x",
+// no --axes). The pipeline uses it to decide whether to opt the csv/json
+// parsers into auto-grouping.
+func NoExplicitGrouping(cfg Config) bool {
+	return len(cfg.Group) == 0 &&
+		cfg.GroupRegex == "" &&
+		cfg.GroupPattern == "x" &&
+		len(cfg.Axes) == 0
+}
+
+// FilterHeadersForAutoDetect returns headers restricted to select sources (file
+// order) when --select is set; otherwise all headers.
+func FilterHeadersForAutoDetect(headers []string, selectCols []ColumnSpec) []string {
+	if len(selectCols) == 0 {
+		return headers
+	}
+	selSet := make(map[string]bool, len(selectCols))
+	for _, spec := range selectCols {
+		selSet[spec.Source] = true
+	}
+	out := make([]string, 0, len(selectCols))
+	for _, h := range headers {
+		if selSet[h] {
+			out = append(out, h)
+		}
+	}
+	return out
+}
+
+// AutoGroupApplies reports whether auto-grouping should run inside the parser:
+// the pipeline has opted this config in (cfg.AutoGroup) AND the user supplied
+// no explicit grouping configuration. Any explicit grouping flag disables it.
+func AutoGroupApplies(cfg Config) bool {
+	return cfg.AutoGroup && NoExplicitGrouping(cfg)
+}
+
+// numericColumns returns purely numeric column names in file order. A column is
+// numeric when all non-empty cells parse as finite floats.
+func numericColumns(headers []string, rows [][]string) []string {
+	var cols []string
+	for i, h := range headers {
+		if h == "" {
+			continue
+		}
+		allNumeric := true
+		for _, row := range rows {
+			if i >= len(row) {
+				continue
+			}
+			cell := strings.TrimSpace(row[i])
+			if cell == "" {
+				continue
+			}
+			if !isNumericCell(cell) {
+				allNumeric = false
+				break
+			}
+		}
+		if allNumeric {
+			cols = append(cols, h)
+		}
+	}
+	return cols
+}
+
+// AutoValueColumns returns the first 2-3 purely numeric columns (in file
+// order) for auto-value-mode value axes (x, y, z). A column is numeric when
+// all non-empty cells parse as finite floats. Returns ok=false when <2 such
+// columns exist — caller falls back to flat-series.
+func AutoValueColumns(headers []string, rows [][]string) (cols []string, ok bool) {
+	all := numericColumns(headers, rows)
+	if len(all) < 2 {
+		return nil, false
+	}
+	if len(all) > 3 {
+		return all[:3], true
+	}
+	return all, true
+}
+
+// AutoValueEligible reports whether the given chart types are eligible for
+// auto-value-mode. Currently only scatter, bar, and line are supported;
+// pie/heatmap/radar fall back to flat series when all columns are numeric.
+func AutoValueEligible(types []string) bool {
+	for _, t := range types {
+		if t == "scatter" || t == "bar" || t == "line" {
+			return true
+		}
+	}
+	return false
+}
+
+// LogAutoGroup prints the inferred group column. The csv/json parsers call it
+// from their prelude so the inference is non-silent, mirroring the CLI's
+// "Auto-detected parser" message.
+func LogAutoGroup(cols []string) {
+	if len(cols) == 0 {
+		return
+	}
+	noun := "column"
+	if len(cols) > 1 {
+		noun = "columns"
+	}
+	fmt.Println(style.Info.Render(fmt.Sprintf("🧠 Auto-grouped by %s: %s", noun, strings.Join(cols, ", "))))
+}
+
+// LogAutoValue prints the inferred value axis columns (parallel to LogAutoGroup).
+func LogAutoValue(cols []string, metricCol string) {
+	if len(cols) == 0 {
+		return
+	}
+	noun := "columns"
+	if len(cols) == 2 {
+		noun = "columns (2D pattern x-y)"
+	} else if len(cols) == 3 {
+		noun = "columns (3D pattern x-y-z)"
+	}
+	msg := fmt.Sprintf("🧠 Auto-valued by %s: %s", noun, strings.Join(cols, ", "))
+	if metricCol != "" {
+		msg += fmt.Sprintf(", metric: %s", metricCol)
+	}
+	fmt.Println(style.Info.Render(msg))
+}
+
+// FinalizeGroupConfig resolves and validates explicit --group config for tabular parsers.
+func FinalizeGroupConfig(cfg Config) (Config, error) {
+	if len(cfg.Group) == 0 || cfg.GroupRegex != "" {
+		return cfg, nil
+	}
+	var err error
+	cfg, err = ResolveGroupConfig(cfg)
+	if err != nil {
+		return cfg, err
+	}
+	return cfg, ValidateTabularGroupAlignment(cfg)
+}
+
+// AutoDetectTabularConfig infers group columns or value axes when auto-group is enabled.
+func AutoDetectTabularConfig(cfg Config, autoHeaders []string, rows [][]string) (Config, error) {
+	if !AutoGroupApplies(cfg) {
+		return cfg, nil
+	}
+
+	cols, pattern, ok := AutoGroupColumns(autoHeaders, rows)
+	if ok {
+		cfg.Group = cols
+		cfg.GroupPattern = pattern
+		var err error
+		cfg, err = FinalizeGroupConfig(cfg)
+		if err != nil {
+			return cfg, err
+		}
+		LogAutoGroup(cols)
+		return cfg, nil
+	}
+
+	if !AutoValueEligible(cfg.ChartTypes) {
+		return cfg, nil
+	}
+	allNumeric := numericColumns(autoHeaders, rows)
+	if len(allNumeric) < 2 {
+		return cfg, nil
+	}
+	valCols := allNumeric
+	if len(valCols) > 3 {
+		valCols = valCols[:3]
+	}
+	cfg.Axes = make([]ColumnSpec, len(valCols))
+	for i, name := range valCols {
+		cfg.Axes[i] = ColumnSpec{Source: name}
+	}
+	if len(allNumeric) >= 4 {
+		cfg.MetricColumn = allNumeric[3]
+	}
+	LogAutoValue(valCols, cfg.MetricColumn)
+	return cfg, nil
 }
 
 // ResolveGroupConfig fills GroupColumns and LabelSeparators from --group and --group-pattern.

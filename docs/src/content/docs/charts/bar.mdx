@@ -55,6 +55,24 @@ vizb bar data.csv -g category,metric,group -p x,y,z -o out.html
   The Z axis requires **both** X and Y to be present. Passing a Z without an X/Y floor will be rejected with an error.
 </Aside>
 
+## Auto-value mode (all-numeric data)
+
+When every column in a CSV/JSON file is numeric (no categorical columns), vizb auto-detects the first 2–3 columns as coordinate axes and renders them as value-type bars — no `--group` needed. With 3+ columns, bar auto-enables 3D (`bar3D`).
+
+```bash
+# Two columns → x, y bars
+vizb bar prices.csv -o bar.html
+
+# Three columns → x, y, z bar3D
+vizb bar spiral.csv -o bar.html
+```
+
+Use `--select` to choose specific columns. With `--select` limiting to 2 columns, it stays 2D:
+
+```bash
+vizb bar data.csv --select price,latency -o bar.html
+```
+
 ## Settings
 
 These settings apply to bar charts:

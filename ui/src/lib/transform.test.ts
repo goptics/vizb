@@ -437,7 +437,7 @@ describe('buildChartData', () => {
 // ---------------------------------------------------------------------------
 // buildValueModeChart
 // ---------------------------------------------------------------------------
-import { buildValueModeChart, buildHybridScatterChart } from './transform'
+import { buildValueModeChart } from './transform'
 import type { Axis } from '../types'
 
 describe('buildValueModeChart', () => {
@@ -520,6 +520,15 @@ describe('buildValueModeChart — 3-col swap-driven 3D', () => {
     expect(chart.valueTuples).toBeUndefined()
   })
 
+  it('includes 4th metric column in valuePoints3D and render3D series', () => {
+    const row: DataPoint = { xAxis: '0', yAxis: '0', zAxis: '0', metric: '4.5', stats: [] }
+    const axesWithMetric: Axis[] = [...valueAxes3, { key: 'metric', label: 'value', type: 'value' }]
+    const chart = buildValueModeChart([row], axesWithMetric, 'xyz', 'xyz')
+    expect(chart.valuePoints3D).toEqual([[0, 0, 0, 4.5]])
+    expect(chart.render3D?.lineSeries[0]?.data[0]?.value).toEqual([0, 0, 0, 4.5])
+    expect(chart.axisLabels?.metric).toBe('value')
+  })
+
   it('nxy swap emits 2D tuples projecting y and z onto chart axes', () => {
     const chart = buildValueModeChart([vdp3('1', '2', '3')], valueAxes3, 'xyz', 'nxy')
     expect(chart.render3D).toBeUndefined()
@@ -532,49 +541,5 @@ describe('buildValueModeChart — 3-col swap-driven 3D', () => {
     })
     expect(chart.valuePoints3D).toBeUndefined()
     expect(chart.render3D).toBeUndefined()
-  })
-})
-
-describe('buildHybridScatterChart', () => {
-  const hybridAxes: Axis[] = [
-    { key: 'x', label: 'Region' },
-    { key: 'y', label: 'Category' },
-    { key: 'z', label: 'Latency (ms)', type: 'value' },
-  ]
-
-  function hdp(xAxis: string, yAxis: string, value: number): DataPoint {
-    return {
-      xAxis,
-      yAxis,
-      stats: [{ type: 'Latency (ms)', value }],
-    }
-  }
-
-  it('reads z from stats and builds grouped series', () => {
-    const data = [hdp('US', 'Widget', 12), hdp('EU', 'Gadget', 8), hdp('US', 'Gadget', 5)]
-    const chart = buildHybridScatterChart(data, hybridAxes)
-
-    expect(chart.statType).toBe('Latency (ms)')
-    expect(chart.yAxis).toEqual(expect.arrayContaining(['Widget', 'Gadget']))
-    expect(chart.series).toHaveLength(2)
-    const us = chart.series.find((s) => s.xAxis === 'US')
-    expect(us?.values).toEqual(expect.arrayContaining([12, 5]))
-  })
-
-  it('attaches value render3D when threeD is on', () => {
-    const data = [hdp('US', 'Widget', 12), hdp('EU', 'Gadget', 8)]
-    const chart = buildHybridScatterChart(data, hybridAxes, 'xy', 'xy', { threeD: true })
-
-    expect(chart.render3D?.mode).toBe('value')
-    expect(chart.render3D?.zValues).toEqual([])
-  })
-
-  it('skips rows without a matching z stat', () => {
-    const data: DataPoint[] = [
-      hdp('US', 'Widget', 12),
-      { xAxis: 'EU', yAxis: 'Gadget', stats: [{ type: 'other', value: 99 }] },
-    ]
-    const chart = buildHybridScatterChart(data, hybridAxes)
-    expect(chart.points).toHaveLength(1)
   })
 })

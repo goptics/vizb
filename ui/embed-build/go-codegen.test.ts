@@ -12,10 +12,9 @@ describe('goStringMap', () => {
     expect(goStringMap({})).toBe('{\n\n}')
   })
 
-  it('emits Go double-quoted string literals', () => {
+  it('emits Go double-quoted string literals in stable key order', () => {
     const out = goStringMap({ foo: 'bar', baz: 'qux' })
-    expect(out).toContain('\t"foo": "bar",')
-    expect(out).toContain('\t"baz": "qux",')
+    expect(out).toBe('{\n\t"baz": "qux",\n\t"foo": "bar",\n}')
   })
 })
 
@@ -24,9 +23,9 @@ describe('goStringSliceMap', () => {
     expect(goStringSliceMap({})).toBe('{\n\n}')
   })
 
-  it('emits Go string slices', () => {
-    const out = goStringSliceMap({ key: ['a', 'b'] })
-    expect(out).toContain('\t"key": {"a", "b"},')
+  it('emits Go string slices with sorted refs', () => {
+    const out = goStringSliceMap({ key: ['b', 'a'] })
+    expect(out).toBe('{\n\t"key": {"a", "b"},\n}')
   })
 })
 

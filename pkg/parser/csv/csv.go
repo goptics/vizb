@@ -33,15 +33,10 @@ func parseFinite(s string) (float64, bool) {
 // separators from --group-pattern/-p and routed through the grouping machinery
 // (-p/-r) for name/xAxis/yAxis placement.
 func ParseCSV(filename string, cfg parser.Config) []shared.DataPoint {
-	if len(cfg.Group) > 0 && cfg.GroupRegex == "" {
-		var err error
-		cfg, err = parser.ResolveGroupConfig(cfg)
-		if err != nil {
-			shared.ExitWithError(err.Error(), nil)
-		}
-		if err := parser.ValidateTabularGroupAlignment(cfg); err != nil {
-			shared.ExitWithError(err.Error(), nil)
-		}
+	var err error
+	cfg, err = parser.FinalizeGroupConfig(cfg)
+	if err != nil {
+		shared.ExitWithError(err.Error(), nil)
 	}
 
 	f, err := os.Open(filename)
@@ -65,25 +60,27 @@ func ParseCSV(filename string, cfg parser.Config) []shared.DataPoint {
 	headers := normalizeHeaders(rows[0])
 	dataRows := rows[1:]
 
+	// Auto-group: when no grouping is configured, infer the category axis from
+	// the data so `vizb data.csv` produces a usable chart without -g/-p/-r/-x.
+	autoHeaders := parser.FilterHeadersForAutoDetect(headers, cfg.Select)
+	cfg, err = parser.AutoDetectTabularConfig(cfg, autoHeaders, dataRows)
+	if err != nil {
+		shared.ExitWithError(err.Error(), nil)
+	}
+
 	if len(cfg.Axes) > 0 {
-		if parser.IsHybridMode(cfg) {
-			return parseCSVHybridMode(headers, dataRows, cfg)
-		}
 		return parseCSVValueMode(headers, dataRows, cfg)
 	}
 
 	groupIdx, groupSet := resolveGroupColumns(headers, parser.EffectiveGroupColumns(cfg))
 
-	var chartCols []int
+	chartCols := chartColumns(headers, groupSet, dataRows)
 	var colLabels map[int]string
 	if len(cfg.Select) > 0 {
-		var err error
 		chartCols, colLabels, err = resolveExplicitChartColumns(headers, cfg, dataRows)
 		if err != nil {
 			shared.ExitWithError(err.Error(), nil)
 		}
-	} else {
-		chartCols = chartColumns(headers, groupSet, dataRows)
 	}
 	if len(chartCols) == 0 {
 		shared.ExitWithError("no numeric columns found in CSV", nil)
@@ -121,10 +118,8 @@ func ParseCSV(filename string, cfg parser.Config) []shared.DataPoint {
 			}
 
 			label := headers[c]
-			if colLabels != nil {
-				if l, ok := colLabels[c]; ok {
-					label = l
-				}
+			if l, ok := colLabels[c]; ok {
+				label = l
 			}
 			stats = append(stats, shared.Stat{
 				Type:  utils.CreateStatType(label, cfg.NumberUnit, ""),
@@ -148,79 +143,7 @@ func ParseCSV(filename string, cfg parser.Config) []shared.DataPoint {
 	return results
 }
 
-// parseCSVHybridMode implements scatter hybrid mode: 2 categorical group dims
-// on x,y plus one numeric --axes column stored as a single stat (z coordinate).
-func parseCSVHybridMode(headers []string, dataRows [][]string, cfg parser.Config) []shared.DataPoint {
-	groupIdx, _ := resolveGroupColumns(headers, parser.EffectiveGroupColumns(cfg))
-
-	zSpec := cfg.Axes[0]
-	zCol := -1
-	for h, name := range headers {
-		if name == zSpec.Source {
-			zCol = h
-			break
-		}
-	}
-	if zCol == -1 {
-		shared.ExitWithError(fmt.Sprintf("--axes column '%s' not found; available: %v", zSpec.Source, nonEmpty(headers)), nil)
-	}
-
-	numeric := false
-	for _, row := range dataRows {
-		if zCol < len(row) {
-			if _, ok := parseFinite(row[zCol]); ok {
-				numeric = true
-				break
-			}
-		}
-	}
-	if !numeric {
-		shared.ExitWithError(fmt.Sprintf("--axes column '%s' is not numeric", zSpec.Source), nil)
-	}
-
-	zLabel := zSpec.Label
-	if zLabel == "" {
-		zLabel = zSpec.Source
-	}
-	zStatType := utils.CreateStatType(zLabel, cfg.NumberUnit, "")
-
-	var results []shared.DataPoint
-	for _, row := range dataRows {
-		groupValues := groupColumnValues(row, groupIdx)
-
-		label := parser.TabularFilterLabel(groupValues, cfg)
-		if !parser.ShouldIncludeBenchmark(label, cfg) {
-			continue
-		}
-
-		group, gerr := parser.GroupTabularRow(groupValues, cfg)
-		if gerr != nil {
-			shared.ExitWithError("Error parsing CSV group name", gerr)
-		}
-
-		if zCol >= len(row) {
-			continue
-		}
-		v, ok := parseFinite(row[zCol])
-		if !ok {
-			continue
-		}
-
-		results = append(results, shared.DataPoint{
-			Name:  group["name"],
-			XAxis: group["xAxis"],
-			YAxis: group["yAxis"],
-			ZAxis: group["zAxis"],
-			Stats: []shared.Stat{{
-				Type:  zStatType,
-				Value: shared.F64(utils.FormatNumber(v, cfg.NumberUnit)),
-			}},
-		})
-	}
-	return results
-}
-
-// parseCSVValueMode implements --axes value mode: each named numeric column
+// parseCSVValueMode implements value mode: each named numeric column
 // becomes a coordinate on x, y[, z] (by --axes order); each row becomes a raw
 // point with no stat series. A missing or fully non-numeric axis column is
 // fatal; an individual row missing a finite cell for any axis is skipped.
@@ -240,11 +163,12 @@ func parseCSVValueMode(headers []string, dataRows [][]string, cfg parser.Config)
 
 		numeric := false
 		for _, row := range dataRows {
-			if col < len(row) {
-				if _, ok := parseFinite(row[col]); ok {
-					numeric = true
-					break
-				}
+			if col >= len(row) {
+				continue
+			}
+			if _, ok := parseFinite(row[col]); ok {
+				numeric = true
+				break
 			}
 		}
 		if !numeric {
@@ -253,9 +177,35 @@ func parseCSVValueMode(headers []string, dataRows [][]string, cfg parser.Config)
 		idx[i] = col
 	}
 
+	metricIdx := -1
+	if cfg.MetricColumn != "" {
+		for h, name := range headers {
+			if name == cfg.MetricColumn {
+				metricIdx = h
+				break
+			}
+		}
+		if metricIdx == -1 {
+			shared.ExitWithError(fmt.Sprintf("metric column '%s' not found; available: %v", cfg.MetricColumn, nonEmpty(headers)), nil)
+		}
+		hasNumeric := false
+		for _, row := range dataRows {
+			if metricIdx >= len(row) {
+				continue
+			}
+			if _, ok := parseFinite(row[metricIdx]); ok {
+				hasNumeric = true
+				break
+			}
+		}
+		if !hasNumeric {
+			shared.ExitWithError(fmt.Sprintf("metric column '%s' is not numeric", cfg.MetricColumn), nil)
+		}
+	}
+
 	var results []shared.DataPoint
 	for _, row := range dataRows {
-		dp := shared.DataPoint{Stats: []shared.Stat{}}
+		var dp shared.DataPoint
 		dst := []*string{&dp.XAxis, &dp.YAxis, &dp.ZAxis}
 		complete := true
 		for i, col := range idx {
@@ -272,6 +222,16 @@ func parseCSVValueMode(headers []string, dataRows [][]string, cfg parser.Config)
 		}
 		if !complete {
 			continue
+		}
+		if metricIdx >= 0 {
+			if metricIdx >= len(row) {
+				continue
+			}
+			mv, ok := parseFinite(row[metricIdx])
+			if !ok {
+				continue
+			}
+			dp.Metric = strconv.FormatFloat(utils.FormatNumber(mv, cfg.NumberUnit), 'g', -1, 64)
 		}
 		results = append(results, dp)
 	}

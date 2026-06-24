@@ -11,4 +11,5 @@ type ChartConfig interface {
 	ChartType() string
 	StatEnabled() bool
 	StatMath() []string
+	SwapString() string
 }

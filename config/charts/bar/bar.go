@@ -33,6 +33,7 @@ func (Config) ChartType() string { return Type }
 
 func (c Config) StatEnabled() bool  { return c.Stat.StatEnabled() }
 func (c Config) StatMath() []string { return c.Stat.StatMath() }
+func (c Config) SwapString() string { return c.Swap }
 
 func init() {
 	charts.Register(Type, func() charts.ChartConfig { return &Config{} })

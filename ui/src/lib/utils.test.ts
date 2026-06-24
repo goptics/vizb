@@ -11,7 +11,6 @@ import {
   datasetDimension,
   formatChartTotal,
   isValueMode,
-  isHybridMode,
 } from './utils'
 
 const dp = (x: string, y: string, z = ''): DataPoint => ({
@@ -88,18 +87,12 @@ describe('canOfferValue3D', () => {
     expect(canOfferValue3D('scatter', zData, false)).toBe(true)
   })
 
-  it('hides toggle for scatter in value or hybrid axes mode', () => {
+  it('hides toggle for scatter in value axes mode', () => {
     const valueAxes: Axis[] = [
       { key: 'x', type: 'value' },
       { key: 'y', type: 'value' },
     ]
-    const hybridAxes: Axis[] = [
-      { key: 'x', type: 'category' },
-      { key: 'y', type: 'category' },
-      { key: 'z', type: 'value' },
-    ]
     expect(canOfferValue3D('scatter', zData, false, undefined, valueAxes)).toBe(false)
-    expect(canOfferValue3D('scatter', zData, false, undefined, hybridAxes)).toBe(false)
   })
 })
 
@@ -277,44 +270,12 @@ describe('isValueMode', () => {
     expect(isValueMode(axes)).toBe(true)
   })
 
-  it('returns false with mixed category and value axes (hybrid, not value mode)', () => {
+  it('returns false with mixed category and value axes', () => {
     const axes: Axis[] = [
       { key: 'x', label: 'Region' },
       { key: 'y', label: 'Category' },
       { key: 'z', label: 'Latency (ms)', type: 'value' },
     ]
     expect(isValueMode(axes)).toBe(false)
-  })
-})
-
-describe('isHybridMode', () => {
-  it('returns false for undefined or empty axes', () => {
-    expect(isHybridMode(undefined)).toBe(false)
-    expect(isHybridMode([])).toBe(false)
-  })
-
-  it('returns false for pure value mode', () => {
-    const axes: Axis[] = [
-      { key: 'x', label: 'x', type: 'value' },
-      { key: 'y', label: 'y', type: 'value' },
-    ]
-    expect(isHybridMode(axes)).toBe(false)
-  })
-
-  it('returns true for 2 category axes + z value axis', () => {
-    const axes: Axis[] = [
-      { key: 'x', label: 'Region' },
-      { key: 'y', label: 'Category' },
-      { key: 'z', label: 'Latency (ms)', type: 'value' },
-    ]
-    expect(isHybridMode(axes)).toBe(true)
-  })
-
-  it('returns false when value axis is not z', () => {
-    const axes: Axis[] = [
-      { key: 'x', label: 'Name' },
-      { key: 'y', label: 'Score', type: 'value' },
-    ]
-    expect(isHybridMode(axes)).toBe(false)
   })
 })

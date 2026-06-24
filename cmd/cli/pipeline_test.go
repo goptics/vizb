@@ -10,6 +10,7 @@ import (
 	config_charts "github.com/goptics/vizb/config/charts"
 	barchart "github.com/goptics/vizb/config/charts/bar"
 	linechart "github.com/goptics/vizb/config/charts/line"
+	scatterchart "github.com/goptics/vizb/config/charts/scatter"
 	"github.com/goptics/vizb/pkg/parser"
 	_ "github.com/goptics/vizb/pkg/parser/csv"
 	"github.com/goptics/vizb/shared"
@@ -379,37 +380,105 @@ func (s *PipelineSuite) TestPrepareDataAxesRejectsNonTabularParser() {
 	s.Panics(func() { prepareData("ignored.txt", "go", cfg) })
 }
 
-func (s *PipelineSuite) TestAssembleDatasetUsesValueAxes() {
-	cfg := parser.Config{Axes: []parser.ColumnSpec{{Source: "price"}, {Source: "latency"}}}
-	results := []shared.DataPoint{{XAxis: "100", YAxis: "12", Stats: []shared.Stat{}}}
-
-	ds := assembleDataset(results, CommonOptions{Name: "T"}, nil, cfg)
-
-	s.Len(ds.Axes, 2)
-	s.Equal("value", ds.Axes[0].Type)
-	s.Equal("x", ds.Axes[0].Key)
-	s.Equal("latency", ds.Axes[1].Label)
-}
-
-func (s *PipelineSuite) TestAssembleDatasetUsesHybridAxes() {
-	cfg := parser.Config{
-		Group:        []string{"region", "category"},
-		GroupPattern: "x,y",
-		Axes:         []parser.ColumnSpec{{Source: "latency", Label: "Latency (ms)"}},
-	}
-	results := []shared.DataPoint{{XAxis: "US", YAxis: "Widget", Stats: []shared.Stat{{Type: "Latency (ms)", Value: shared.F64(12)}}}}
-
+func (s *PipelineSuite) TestAssembleDatasetUsesAutoValueAxesFromData() {
+	// Auto-group path: Stats empty + axes populated → value-type axes
+	results := []shared.DataPoint{{XAxis: "100", YAxis: "12", ZAxis: "5", Stats: []shared.Stat{}}}
+	cfg := parser.Config{AutoGroup: true}
 	ds := assembleDataset(results, CommonOptions{Name: "T"}, nil, cfg)
 
 	s.Len(ds.Axes, 3)
+	for _, ax := range ds.Axes {
+		s.Equal("value", ax.Type)
+	}
 	s.Equal("x", ds.Axes[0].Key)
-	s.Equal("region", ds.Axes[0].Label)
-	s.Equal("", ds.Axes[0].Type)
 	s.Equal("y", ds.Axes[1].Key)
-	s.Equal("category", ds.Axes[1].Label)
 	s.Equal("z", ds.Axes[2].Key)
-	s.Equal("Latency (ms)", ds.Axes[2].Label)
-	s.Equal("value", ds.Axes[2].Type)
+}
+
+func (s *PipelineSuite) TestAssembleDatasetUsesCategoryAxesFromData() {
+	// Auto-group path: Stats populated → category-type axes
+	results := []shared.DataPoint{{XAxis: "US", YAxis: "Widget", Stats: []shared.Stat{{Type: "sells", Value: shared.F64(10)}}}}
+	cfg := parser.Config{AutoGroup: true}
+	ds := assembleDataset(results, CommonOptions{Name: "T"}, nil, cfg)
+
+	s.Len(ds.Axes, 2)
+	for _, ax := range ds.Axes {
+		s.Equal("", ax.Type)
+	}
+}
+
+func (s *PipelineSuite) TestAssembleDatasetAutoEnablesVisualMapForValueMetric() {
+	results := []shared.DataPoint{
+		{XAxis: "0", YAxis: "0", ZAxis: "0", Metric: "4", Stats: []shared.Stat{}},
+	}
+	cfg := parser.Config{AutoGroup: true}
+	configs := []config_charts.ChartConfig{
+		scatterchart.Materialise(scatterchart.Flags{}, nil),
+	}
+	ds := assembleDataset(results, CommonOptions{Name: "Noise"}, configs, cfg)
+
+	s.Require().Len(ds.Settings, 1)
+	sc := ds.Settings[0].(scatterchart.Config)
+	s.Require().NotNil(sc.ThreeDVisualMap)
+	s.True(*sc.ThreeDVisualMap)
+	s.Require().NotNil(sc.ThreeD)
+	s.True(*sc.ThreeD)
+	s.Require().Len(ds.Axes, 4)
+	s.Equal("metric", ds.Axes[3].Key)
+	s.Equal("value", ds.Axes[3].Label)
+}
+
+func (s *PipelineSuite) TestAssembleDatasetAutoEnables3DForBarAndLine() {
+	results := []shared.DataPoint{
+		{XAxis: "1", YAxis: "2", ZAxis: "3", Stats: []shared.Stat{}},
+	}
+	cfg := parser.Config{AutoGroup: true}
+	configs := []config_charts.ChartConfig{
+		barchart.Materialise(barchart.Flags{}, nil),
+		linechart.Materialise(linechart.Flags{}, nil),
+	}
+	ds := assembleDataset(results, CommonOptions{Name: "Grid"}, configs, cfg)
+
+	s.Require().Len(ds.Settings, 2)
+	bc := ds.Settings[0].(barchart.Config)
+	s.Require().NotNil(bc.ThreeD)
+	s.True(*bc.ThreeD)
+	s.Nil(bc.ThreeDVisualMap)
+
+	lc, ok := ds.Settings[1].(linechart.Config)
+	if !ok {
+		ptr, ok := ds.Settings[1].(*linechart.Config)
+		s.Require().True(ok)
+		lc = *ptr
+	}
+	s.Require().NotNil(lc.ThreeD)
+	s.True(*lc.ThreeD)
+	s.Nil(lc.ThreeDVisualMap)
+}
+
+func (s *PipelineSuite) TestAssembleDatasetAppendMetricAxisFromConfig() {
+	results := []shared.DataPoint{{XAxis: "0", YAxis: "0", ZAxis: "0", Stats: []shared.Stat{}}}
+	cfg := parser.Config{AutoGroup: true, MetricColumn: "noise"}
+	ds := assembleDataset(results, CommonOptions{Name: "T"}, nil, cfg)
+
+	s.Require().Len(ds.Axes, 4)
+	s.Equal("metric", ds.Axes[3].Key)
+	s.Equal("noise", ds.Axes[3].Label)
+}
+
+func (s *PipelineSuite) TestAssembleDatasetCategoryAxesSkipAuto3D() {
+	results := []shared.DataPoint{
+		{XAxis: "US", YAxis: "Widget", ZAxis: "Q1", Stats: []shared.Stat{{Type: "sells", Value: shared.F64(10)}}},
+	}
+	cfg := parser.Config{AutoGroup: true}
+	configs := []config_charts.ChartConfig{
+		scatterchart.Materialise(scatterchart.Flags{}, nil),
+	}
+	ds := assembleDataset(results, CommonOptions{Name: "Grouped"}, configs, cfg)
+
+	sc := ds.Settings[0].(scatterchart.Config)
+	s.Nil(sc.ThreeD)
+	s.Nil(sc.ThreeDVisualMap)
 }
 
 func (s *PipelineSuite) TestPrepareDataUnknownParserExits() {
@@ -487,9 +556,11 @@ func (s *PipelineSuite) TestWriteStdinPipedInputs() {
 		`{"Action":"run","Test":"BenchmarkExample"}`,
 		"BenchmarkAnotherTest-8 \t1000\t2000 ns/op",
 	} {
-		stdinFile.WriteString(line + "\n")
+		_, err := stdinFile.WriteString(line + "\n")
+		s.Require().NoError(err)
 	}
-	stdinFile.Seek(0, 0)
+	_, err = stdinFile.Seek(0, 0)
+	s.Require().NoError(err)
 	os.Stdin = stdinFile
 
 	out := filepath.Join(s.T().TempDir(), "out.txt")

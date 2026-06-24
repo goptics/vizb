@@ -10,6 +10,7 @@ import (
 
 	"github.com/goptics/vizb/pkg/parser"
 	"github.com/goptics/vizb/shared"
+	"github.com/goptics/vizb/testutil"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -227,107 +228,6 @@ func (s *JSONSuite) TestNonArrayInputReturnsNil() {
 	s.Nil(ParseJSON(s.writeFile(``), s.cfg))
 }
 
-func (s *JSONSuite) TestAxesValueModeTwoColumns() {
-	s.cfg.Axes = []parser.ColumnSpec{{Source: "price"}, {Source: "latency"}}
-	js := `[{"name":"a","price":100,"latency":12},{"name":"b","price":200,"latency":8}]`
-
-	results := ParseJSON(s.writeFile(js), s.cfg)
-
-	s.Len(results, 2)
-	s.Equal("100", results[0].XAxis)
-	s.Equal("12", results[0].YAxis)
-	s.Equal("", results[0].ZAxis)
-	s.Empty(results[0].Stats)
-}
-
-func (s *JSONSuite) TestAxesValueModeNumericStringField() {
-	s.cfg.Axes = []parser.ColumnSpec{{Source: "x"}, {Source: "y"}}
-	js := `[{"x":"1.5","y":2}]`
-
-	results := ParseJSON(s.writeFile(js), s.cfg)
-
-	s.Len(results, 1)
-	s.Equal("1.5", results[0].XAxis)
-	s.Equal("2", results[0].YAxis)
-}
-
-func (s *JSONSuite) TestHybridModeGroupPlusAxesField() {
-	s.cfg.Group = []string{"region", "category"}
-	s.cfg.GroupPattern = "x,y"
-	s.cfg.Axes = []parser.ColumnSpec{{Source: "latency", Label: "Latency (ms)"}}
-	js := `[{"region":"US","category":"Widget","latency":12},{"region":"EU","category":"Gadget","latency":8}]`
-
-	results := ParseJSON(s.writeFile(js), s.cfg)
-
-	s.Len(results, 2)
-	s.Equal("US", results[0].XAxis)
-	s.Equal("Widget", results[0].YAxis)
-	s.Empty(results[0].ZAxis)
-	s.Len(results[0].Stats, 1)
-	s.Equal("Latency (ms)", results[0].Stats[0].Type)
-	s.Equal(12.0, *results[0].Stats[0].Value)
-}
-
-func (s *JSONSuite) TestAxesValueModeThreeColumns() {
-	s.cfg.Axes = []parser.ColumnSpec{{Source: "x"}, {Source: "y"}, {Source: "z"}}
-	js := `[{"x":1,"y":2,"z":3},{"x":4,"y":5,"z":6}]`
-
-	results := ParseJSON(s.writeFile(js), s.cfg)
-
-	s.Len(results, 2)
-	s.Equal("1", results[0].XAxis)
-	s.Equal("2", results[0].YAxis)
-	s.Equal("3", results[0].ZAxis)
-	s.Equal("6", results[1].ZAxis)
-}
-
-func (s *JSONSuite) TestAxesValueModeSkipsIncompleteRow() {
-	s.cfg.Axes = []parser.ColumnSpec{{Source: "x"}, {Source: "y"}}
-	js := `[{"x":1,"y":2},{"x":3}]`
-
-	results := ParseJSON(s.writeFile(js), s.cfg)
-
-	s.Len(results, 1)
-	s.Equal("1", results[0].XAxis)
-}
-
-func (s *JSONSuite) TestHybridModeSkipsMissingZField() {
-	s.cfg.Group = []string{"region", "category"}
-	s.cfg.GroupPattern = "x,y"
-	s.cfg.Axes = []parser.ColumnSpec{{Source: "latency"}}
-	js := `[{"region":"US","category":"Widget","latency":12},{"region":"EU","category":"Gadget"}]`
-
-	results := ParseJSON(s.writeFile(js), s.cfg)
-
-	s.Len(results, 1)
-	s.Equal("US", results[0].XAxis)
-}
-
-func (s *JSONSuite) TestHybridModeFilterRegex() {
-	s.cfg.Group = []string{"region", "category"}
-	s.cfg.GroupPattern = "x,y"
-	s.cfg.Axes = []parser.ColumnSpec{{Source: "latency"}}
-	s.cfg.Filter = "US"
-	js := `[{"region":"US","category":"Widget","latency":12},{"region":"EU","category":"Gadget","latency":8}]`
-
-	results := ParseJSON(s.writeFile(js), s.cfg)
-
-	s.Len(results, 1)
-	s.Equal("US", results[0].XAxis)
-}
-
-func (s *JSONSuite) TestHybridModeZLabelFallsBackToSource() {
-	s.cfg.Group = []string{"region", "category"}
-	s.cfg.GroupPattern = "x,y"
-	s.cfg.Axes = []parser.ColumnSpec{{Source: "latency"}}
-	js := `[{"region":"US","category":"Widget","latency":12}]`
-
-	results := ParseJSON(s.writeFile(js), s.cfg)
-
-	s.Len(results, 1)
-	s.Equal("latency", results[0].Stats[0].Type)
-}
-
 func (s *JSONSuite) TestStringifyNumericAndString() {
 	s.Equal("3.5", stringify(3.5))
 	s.Equal("alpha", stringify("alpha"))
@@ -363,18 +263,6 @@ func (s *JSONSuite) TestDecodeElementSkipsNonObjectRows() {
 	leaves, err = decodeElement(dec)
 	s.Require().NoError(err)
 	s.Nil(leaves)
-}
-
-func (s *JSONSuite) TestHybridModeNumericStringZField() {
-	s.cfg.Group = []string{"region", "category"}
-	s.cfg.GroupPattern = "x,y"
-	s.cfg.Axes = []parser.ColumnSpec{{Source: "latency"}}
-	js := `[{"region":"US","category":"Widget","latency":"3.5"}]`
-
-	results := ParseJSON(s.writeFile(js), s.cfg)
-
-	s.Len(results, 1)
-	s.Equal(3.5, *results[0].Stats[0].Value)
 }
 
 func TestJSONSuite(t *testing.T) {
@@ -431,38 +319,228 @@ func (s *JSONFatalSuite) TestExplicitColsNonNumericErrors() {
 	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
 }
 
-func (s *JSONFatalSuite) TestAxesValueModeMissingFieldErrors() {
+func (s *JSONFatalSuite) TestValueModeMissingAxisFieldErrors() {
 	s.cfg.Axes = []parser.ColumnSpec{{Source: "missing"}, {Source: "y"}}
 	path := s.writeFile(`[{"x":1,"y":2}]`)
 
 	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
 }
 
-func (s *JSONFatalSuite) TestAxesValueModeNonNumericFieldErrors() {
+func (s *JSONFatalSuite) TestValueModeNonNumericAxisFieldErrors() {
 	s.cfg.Axes = []parser.ColumnSpec{{Source: "name"}, {Source: "y"}}
 	path := s.writeFile(`[{"name":"alpha","y":2}]`)
 
 	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
 }
 
-func (s *JSONFatalSuite) TestHybridModeNonNumericZFieldErrors() {
-	s.cfg.Group = []string{"region", "category"}
-	s.cfg.GroupPattern = "x,y"
-	s.cfg.Axes = []parser.ColumnSpec{{Source: "label"}}
-	path := s.writeFile(`[{"region":"US","category":"Widget","label":"foo"}]`)
+func (s *JSONFatalSuite) TestValueModeMetricFieldMissingErrors() {
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "x"}, {Source: "y"}}
+	s.cfg.MetricColumn = "m"
+	path := s.writeFile(`[{"x":1,"y":2}]`)
 
 	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
 }
 
-func (s *JSONFatalSuite) TestHybridModeMissingZFieldErrors() {
-	s.cfg.Group = []string{"region", "category"}
-	s.cfg.GroupPattern = "x,y"
-	s.cfg.Axes = []parser.ColumnSpec{{Source: "missing"}}
-	path := s.writeFile(`[{"region":"US","category":"Widget","latency":12}]`)
+func (s *JSONFatalSuite) TestValueModeMetricFieldNonNumericErrors() {
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "x"}, {Source: "y"}}
+	s.cfg.MetricColumn = "label"
+	path := s.writeFile(`[{"x":1,"y":2,"label":"foo"}]`)
 
 	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
+}
+
+func (s *JSONFatalSuite) TestValueModeSkipsRowWithBadMetric() {
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "x"}, {Source: "y"}}
+	s.cfg.MetricColumn = "m"
+	path := s.writeFile(`[{"x":1,"y":2,"m":3},{"x":4,"y":5,"m":"bad"},{"x":6,"y":7,"m":8}]`)
+
+	results := ParseJSON(path, s.cfg)
+	s.Len(results, 2)
+	s.Equal("3", results[0].Metric)
+	s.Equal("8", results[1].Metric)
+}
+
+func (s *JSONAutoValueSuite) TestSelectScopesAutoDetect() {
+	s.cfg.Select = []parser.ColumnSpec{{Source: "x"}, {Source: "y"}}
+	path := s.writeFile(`[{"x":1,"y":2,"z":3,"w":4}]`)
+
+	results := ParseJSON(path, s.cfg)
+	s.Require().Len(results, 1)
+	s.Equal("1", results[0].XAxis)
+	s.Equal("2", results[0].YAxis)
+	s.Empty(results[0].ZAxis)
 }
 
 func TestJSONFatalSuite(t *testing.T) {
 	suite.Run(t, new(JSONFatalSuite))
+}
+
+// JSONAutoGroupSuite exercises ParseJSON with cfg.AutoGroup set, simulating
+// the pipeline's "no grouping configured" case.
+type JSONAutoGroupSuite struct {
+	suite.Suite
+	cfg parser.Config
+}
+
+func (s *JSONAutoGroupSuite) SetupTest() {
+	s.cfg = parser.Config{GroupPattern: "x", AutoGroup: true, ChartTypes: []string{"scatter"}}
+}
+
+func (s *JSONAutoGroupSuite) writeFile(content string) string {
+	path := filepath.Join(s.T().TempDir(), "data.json")
+	s.Require().NoError(os.WriteFile(path, []byte(content), 0644))
+	return path
+}
+
+func (s *JSONAutoGroupSuite) TestCategoricalFieldBecomesXAxis() {
+	j := `[{"region":"West","sells":10},{"region":"East","sells":20}]`
+	results := ParseJSON(s.writeFile(j), s.cfg)
+	s.Require().Len(results, 2)
+	s.Equal("West", results[0].XAxis)
+	s.Equal("East", results[1].XAxis)
+	s.Equal([]string{"sells"}, statTypes(results[0].Stats))
+}
+
+func (s *JSONAutoGroupSuite) TestNestedFlattenedFieldChosen() {
+	// nested object flattened to "addr.city"; along with region (also categorical)
+	// the most-unique categorical wins. Both have 2 distinct here; leftmost in
+	// first-seen order wins → region (appears first).
+	j := `[{"region":"West","addr":{"city":"NY"},"sells":10},{"region":"East","addr":{"city":"LA"},"sells":20}]`
+	results := ParseJSON(s.writeFile(j), s.cfg)
+	s.Require().Len(results, 2)
+	s.NotEmpty(results[0].XAxis)
+	s.Equal([]string{"sells"}, statTypes(results[0].Stats))
+}
+
+func (s *JSONAutoGroupSuite) TestAllNumericAutoValues() {
+	// all numeric → auto-value-mode: first 2 cols become x,y value axes
+	j := `[{"id":1,"sells":10},{"id":2,"sells":20},{"id":3,"sells":30}]`
+	results := ParseJSON(s.writeFile(j), s.cfg)
+	s.Require().Len(results, 3)
+	s.Equal("1", results[0].XAxis)
+	s.Equal("10", results[0].YAxis)
+	s.Empty(results[0].Stats)
+}
+
+func (s *JSONAutoGroupSuite) TestAutoGroupPicksSingleFieldEvenWithMultipleCategoricals() {
+	// product 7 distinct > region 5 → xAxis=product only
+	j := `[{"region":"West","product":"A","sells":10},{"region":"East","product":"B","sells":20},` +
+		`{"region":"North","product":"C","sells":30},{"region":"South","product":"D","sells":40},` +
+		`{"region":"Central","product":"E","sells":50},{"region":"West","product":"F","sells":60},` +
+		`{"region":"East","product":"G","sells":70}]`
+	results := ParseJSON(s.writeFile(j), s.cfg)
+	s.Require().NotEmpty(results)
+	for _, r := range results {
+		s.NotEmpty(r.XAxis)
+		s.Empty(r.YAxis)
+	}
+}
+
+func (s *JSONAutoGroupSuite) TestExplicitGroupDisablesAutoGroup() {
+	s.cfg.Group = []string{"region"}
+	j := `[{"region":"West","sells":10},{"region":"East","sells":20}]`
+	results := ParseJSON(s.writeFile(j), s.cfg)
+	s.Require().Len(results, 2)
+	s.Equal("West", results[0].XAxis)
+	s.Empty(results[0].YAxis)
+}
+
+func (s *JSONAutoGroupSuite) TestAxesDisablesAutoGroup() {
+	s.cfg.Axes = []parser.ColumnSpec{{Source: "sells"}}
+	j := `[{"region":"West","sells":10},{"region":"East","sells":20}]`
+	_ = ParseJSON(s.writeFile(j), s.cfg) // no panic; value mode handled elsewhere
+}
+
+func TestJSONAutoGroupSuite(t *testing.T) {
+	suite.Run(t, new(JSONAutoGroupSuite))
+}
+
+type JSONAutoValueSuite struct {
+	suite.Suite
+	cfg           parser.Config
+	restoreOsExit func()
+}
+
+func (s *JSONAutoValueSuite) SetupTest() {
+	s.restoreOsExit, _ = testutil.TrapOsExitPanic(s.T())
+	s.cfg = parser.Config{GroupPattern: "x", AutoGroup: true, ChartTypes: []string{"scatter"}}
+}
+
+func (s *JSONAutoValueSuite) TearDownTest() {
+	s.restoreOsExit()
+}
+
+func (s *JSONAutoValueSuite) writeFile(content string) string {
+	path := filepath.Join(s.T().TempDir(), "data.json")
+	s.Require().NoError(os.WriteFile(path, []byte(content), 0644))
+	return path
+}
+
+func (s *JSONAutoValueSuite) TestTwoNumericFields() {
+	j := `[{"price":10,"latency":5},{"price":20,"latency":7}]`
+	results := ParseJSON(s.writeFile(j), s.cfg)
+	s.Require().Len(results, 2)
+	s.Equal("10", results[0].XAxis)
+	s.Equal("5", results[0].YAxis)
+	s.Empty(results[0].Stats)
+}
+
+func (s *JSONAutoValueSuite) TestThreeNumericFields() {
+	j := `[{"price":10,"latency":5,"mem":100},{"price":20,"latency":7,"mem":200}]`
+	results := ParseJSON(s.writeFile(j), s.cfg)
+	s.Require().Len(results, 2)
+	s.Equal("10", results[0].XAxis)
+	s.Equal("5", results[0].YAxis)
+	s.Equal("100", results[0].ZAxis)
+	s.Empty(results[0].Stats)
+}
+
+func (s *JSONAutoValueSuite) TestFourNumericFieldsTakeFirstThree() {
+	j := `[{"a":1,"b":2,"c":3,"d":4},{"a":5,"b":6,"c":7,"d":8}]`
+	results := ParseJSON(s.writeFile(j), s.cfg)
+	s.Require().Len(results, 2)
+	s.Equal("1", results[0].XAxis)
+	s.Equal("2", results[0].YAxis)
+	s.Equal("3", results[0].ZAxis)
+	s.Equal("4", results[0].Metric)
+	s.Empty(results[0].Stats)
+}
+
+func (s *JSONAutoValueSuite) TestAutoGroupTakesPriority() {
+	// categorical exists → auto-group fires
+	j := `[{"region":"West","price":10},{"region":"East","price":20}]`
+	results := ParseJSON(s.writeFile(j), s.cfg)
+	s.Require().Len(results, 2)
+	s.Equal("West", results[0].XAxis)
+	s.NotEmpty(results[0].Stats)
+}
+
+func (s *JSONAutoValueSuite) TestOneNumericFieldFallsBackToFlat() {
+	j := `[{"price":10},{"price":20}]`
+	results := ParseJSON(s.writeFile(j), s.cfg)
+	s.Require().Len(results, 2)
+	s.Empty(results[0].XAxis)
+	s.NotEmpty(results[0].Stats)
+}
+
+func (s *JSONAutoValueSuite) TestPieChartFallsBackToFlat() {
+	s.cfg.ChartTypes = []string{"pie"}
+	j := `[{"price":10,"latency":5},{"price":20,"latency":7}]`
+	results := ParseJSON(s.writeFile(j), s.cfg)
+	s.Require().Len(results, 2)
+	s.Empty(results[0].XAxis)
+	s.NotEmpty(results[0].Stats)
+}
+
+func (s *JSONAutoValueSuite) TestRadarChartFallsBackToFlat() {
+	s.cfg.ChartTypes = []string{"radar"}
+	j := `[{"price":10,"latency":5},{"price":20,"latency":7}]`
+	results := ParseJSON(s.writeFile(j), s.cfg)
+	s.Require().Len(results, 2)
+	s.Empty(results[0].XAxis)
+	s.NotEmpty(results[0].Stats)
+}
+
+func TestJSONAutoValueSuite(t *testing.T) {
+	suite.Run(t, new(JSONAutoValueSuite))
 }

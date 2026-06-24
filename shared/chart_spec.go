@@ -27,6 +27,9 @@ func axisChar(key string) byte {
 func axisIdentity(axes []Axis) string {
 	b := make([]byte, 0, len(axes))
 	for _, a := range axes {
+		if a.Key == "metric" {
+			continue
+		}
 		c := axisChar(a.Key)
 		if c != 0 {
 			b = append(b, c)

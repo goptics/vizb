@@ -3,7 +3,7 @@ import type { AxisLabels, DataPoint, ChartData, Sort, ScaleType, Axis, ChartType
 import TransformWorker from '../workers/transform.worker.ts?worker&inline'
 import type { WorkerResponse } from '../workers/transform.worker'
 import { listChartSignatures } from '../lib/transform'
-import { isValueMode, isHybridMode } from '../lib/utils'
+import { isValueChartType, isValueMode } from '../lib/utils'
 
 // The arrangement the worker projects/groups under: present source axes in
 // canonical order (identityString, e.g. "nx") and the selected target order
@@ -21,6 +21,7 @@ const plainLabels = (labels: AxisLabels | undefined | null): AxisLabels | null =
   if (labels.x !== undefined) out.x = labels.x
   if (labels.y !== undefined) out.y = labels.y
   if (labels.z !== undefined) out.z = labels.z
+  if (labels.metric !== undefined) out.metric = labels.metric
   return Object.keys(out).length ? out : null
 }
 
@@ -218,7 +219,7 @@ export function useChartPipeline(
     const axesNow = axisList()
     const ct = activeChartType()
     const prev = new Map(charts.value.map((c) => [c.key, c]))
-    if (ct === 'scatter' && isValueMode(axesNow)) {
+    if (isValueChartType(ct) && isValueMode(axesNow)) {
       const xLabel = axesNow?.find((a) => a.key === 'x')?.label ?? 'x'
       const yLabel = axesNow?.find((a) => a.key === 'y')?.label ?? 'y'
       charts.value = [
@@ -226,16 +227,6 @@ export function useChartPipeline(
           key: '__value_mode__',
           title: `${xLabel} vs ${yLabel}`,
           data: prev.get('__value_mode__')?.data ?? null,
-          pending: true,
-        },
-      ]
-    } else if (ct === 'scatter' && isHybridMode(axesNow)) {
-      const zLabel = axesNow?.find((a) => a.key === 'z')?.label ?? 'z'
-      charts.value = [
-        {
-          key: '__hybrid_mode__',
-          title: zLabel,
-          data: prev.get('__hybrid_mode__')?.data ?? null,
           pending: true,
         },
       ]

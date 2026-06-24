@@ -38,11 +38,11 @@ const { sort, showLabels, scale, threeD } = useActiveChartShape()
 // Build an AxisLabels flat map from dataset.axes for swapAxisLabels.
 const axisLabelsFromAxes = (axes: Axis[] | undefined): AxisLabels | undefined => {
   if (!axes?.length) return undefined
-  const result: AxisLabels = {}
+  const result: Record<string, string> = {}
   for (const a of axes) {
-    if (a.label) (result as Record<string, string>)[a.key] = a.label
+    result[a.key] = a.label ?? a.key
   }
-  return Object.keys(result).length ? result : undefined
+  return Object.keys(result).length ? (result as AxisLabels) : undefined
 }
 
 // The full raw rows — the worker owns grouping/projection, so we pass the dataset

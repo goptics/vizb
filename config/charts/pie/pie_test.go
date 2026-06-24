@@ -50,6 +50,10 @@ func (s *PieSuite) TestMaterialisePiePrecedence() {
 	s.Equal("asc", got.Sort.Order)
 }
 
+func (s *PieSuite) TestSwapString() {
+	s.Equal("yxn", Config{Swap: "yxn"}.SwapString())
+}
+
 func (s *PieSuite) TestPieConfigNoScaleOrThreeDRotate() {
 	typ := reflect.TypeOf(Config{})
 	_, hasScale := typ.FieldByName("Scale")

@@ -343,3 +343,145 @@ func (s *RootSuite) TestChartSubcommandSortNoDeprecationWarning() {
 func TestRootSuite(t *testing.T) {
 	suite.Run(t, new(RootSuite))
 }
+
+// RootAutoGroupSuite covers the csv/json auto-grouping end-to-end via
+// rootCmd.Execute, mirroring how a user runs `vizb data.csv`.
+type RootAutoGroupSuite struct {
+	suite.Suite
+	restoreOsExit func()
+}
+
+func (s *RootAutoGroupSuite) SetupTest() {
+	ResetTestState()
+	s.restoreOsExit, _ = testutil.TrapOsExitPanic(s.T())
+}
+
+func (s *RootAutoGroupSuite) TearDownTest() {
+	s.restoreOsExit()
+}
+
+func (s *RootAutoGroupSuite) writeCSV(dir, content string) string {
+	p := filepath.Join(dir, "data.csv")
+	s.Require().NoError(os.WriteFile(p, []byte(content), 0644))
+	return p
+}
+
+func (s *RootAutoGroupSuite) writeJSON(dir, content string) string {
+	p := filepath.Join(dir, "data.json")
+	s.Require().NoError(os.WriteFile(p, []byte(content), 0644))
+	return p
+}
+
+func (s *RootAutoGroupSuite) TestCSVAutoGroupsXAxisNoFlags() {
+	dir := s.T().TempDir()
+	input := s.writeCSV(dir, "region,sells\nWest,10\nEast,20\nNorth,30\n")
+	out := filepath.Join(dir, "out.json")
+
+	outStr := testutil.CaptureStdout(func() {
+		rootCmd.SetArgs([]string{"-c", "bar", "-o", out, input})
+		s.Require().NoError(rootCmd.Execute())
+	})
+
+	s.FileExists(out)
+	s.Contains(outStr, "Auto-grouped by column")
+	ds := testutil.ReadDataset(s.T(), out)
+	// Auto-group picked the region column → every data point carries its
+	// region value on xAxis. (Axis.Label stays empty without {label} slots.)
+	s.Require().NotEmpty(ds.Axes)
+	var hasX bool
+	for _, ax := range ds.Axes {
+		if ax.Key == "x" {
+			hasX = true
+		}
+	}
+	s.True(hasX)
+	s.NotEmpty(ds.Data)
+	for _, dp := range ds.Data {
+		s.NotEmpty(dp.XAxis)
+	}
+}
+
+func (s *RootAutoGroupSuite) TestCSVAutoGroup3DPicksSingleColumnAndWarns() {
+	dir := s.T().TempDir()
+	csv := "region,product,sells\nWest,A,10\nEast,B,20\nNorth,C,30\nSouth,D,40\nCentral,E,50\nWest,F,60\nEast,G,70\n"
+	input := s.writeCSV(dir, csv)
+	out := filepath.Join(dir, "out.json")
+
+	var stdout string
+	stderr := testutil.CaptureStderr(func() {
+		stdout = testutil.CaptureStdout(func() {
+			rootCmd.SetArgs([]string{"-c", "bar", "--chart", "bar:3d", "-o", out, input})
+			s.Require().NoError(rootCmd.Execute())
+		})
+	})
+
+	s.FileExists(out)
+	s.Contains(stdout, "Auto-grouped by column")
+	s.Contains(stderr, "Warning")
+	s.Contains(stderr, "--3d requires both x and y")
+
+	ds := testutil.ReadDataset(s.T(), out)
+	s.NotEmpty(ds.Data)
+	for _, dp := range ds.Data {
+		s.NotEmpty(dp.XAxis)
+		s.Empty(dp.YAxis)
+	}
+}
+
+func (s *RootAutoGroupSuite) TestJSONAutoGroupsXAxisNoFlags() {
+	dir := s.T().TempDir()
+	input := s.writeJSON(dir, `[{"region":"West","sells":10},{"region":"East","sells":20}]`)
+	out := filepath.Join(dir, "out.json")
+
+	_ = testutil.CaptureStdout(func() {
+		rootCmd.SetArgs([]string{"-c", "bar", "-o", out, input})
+		s.Require().NoError(rootCmd.Execute())
+	})
+
+	s.FileExists(out)
+	ds := testutil.ReadDataset(s.T(), out)
+	s.Require().NotEmpty(ds.Axes)
+	for _, dp := range ds.Data {
+		s.NotEmpty(dp.XAxis)
+	}
+}
+
+func (s *RootAutoGroupSuite) TestExplicitGroupOverridesAutoGroup() {
+	dir := s.T().TempDir()
+	input := s.writeCSV(dir, "region,product,sells\nWest,A,10\nEast,B,20\n")
+	out := filepath.Join(dir, "out.json")
+
+	outStr := testutil.CaptureStdout(func() {
+		rootCmd.SetArgs([]string{"-c", "bar", "-g", "product", "-o", out, input})
+		s.Require().NoError(rootCmd.Execute())
+	})
+
+	s.FileExists(out)
+	s.NotContains(outStr, "Auto-grouped")
+	ds := testutil.ReadDataset(s.T(), out)
+	// Explicit -g product → xAxis values are the product column values.
+	xAxisVals := make([]string, 0, len(ds.Data))
+	for _, dp := range ds.Data {
+		xAxisVals = append(xAxisVals, dp.XAxis)
+	}
+	s.ElementsMatch([]string{"A", "B"}, xAxisVals)
+}
+
+func (s *RootAutoGroupSuite) TestBenchmarkParserUnchangedNoGroup() {
+	dir := s.T().TempDir()
+	input := testutil.WriteBenchFile(s.T(), dir, "valid.txt",
+		`BenchmarkTest-8    1000000    1234 ns/op    1000 B/op    10 allocs/op`)
+	out := filepath.Join(dir, "out.json")
+
+	outStr := testutil.CaptureStdout(func() {
+		rootCmd.SetArgs([]string{"-c", "bar", "-o", out, input})
+		s.Require().NoError(rootCmd.Execute())
+	})
+
+	s.FileExists(out)
+	s.NotContains(outStr, "Auto-grouped")
+}
+
+func TestRootAutoGroupSuite(t *testing.T) {
+	suite.Run(t, new(RootAutoGroupSuite))
+}

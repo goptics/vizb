@@ -1,6 +1,6 @@
 import type { EChartsOption } from 'echarts'
-import type { ScaleType } from '@/types'
-import { getNextColorFor } from '@/lib/utils'
+import type { ScaleType, ChartType } from '@/types'
+import { getNextColorFor, VALUE_CHART_TYPES } from '@/lib/utils'
 import { type BaseChartConfig, getBaseOptions } from '../baseChartOptions'
 import {
   createGridConfig,
@@ -15,6 +15,8 @@ import { adjustForLogScaleLine, getEffectiveScale } from './common'
 
 const defaultScatterSymbol = { symbol: 'circle' as const, symbolSize: 8 }
 const largeScatterSymbol = { symbol: 'circle' as const, symbolSize: 5 }
+const defaultLineSymbol = { symbol: 'circle' as const, symbolSize: 7 }
+const largeLineSymbol = { symbol: 'none', sampling: 'lttb' as const }
 
 export function sortValueTuples(
   tuples: [number, number][],
@@ -34,7 +36,19 @@ export function scaleValueTuples(
   return tuples.map(([x, y]) => [x, adjustForLogScaleLine(y, scale)])
 }
 
-export function buildScatterAxes2DValueOptions(config: BaseChartConfig): EChartsOption {
+const chartTypeForECharts = (chartType: ChartType): string =>
+  VALUE_CHART_TYPES.has(chartType) ? chartType : 'scatter'
+
+const seriesSymbol = (chartType: ChartType, largeX: boolean) => {
+  if (chartType === 'scatter') return largeX ? largeScatterSymbol : defaultScatterSymbol
+  if (chartType === 'line') return largeX ? largeLineSymbol : defaultLineSymbol
+  return {}
+}
+
+export function buildValueAxes2DOptions(
+  config: BaseChartConfig,
+  chartType: ChartType = 'scatter'
+): EChartsOption {
   const { chartData, sort, showLabels, isDark, scale } = config
   const tuples = chartData.value.valueTuples ?? []
   const xLabel = chartData.value.axisLabels?.x
@@ -61,13 +75,13 @@ export function buildScatterAxes2DValueOptions(config: BaseChartConfig): ECharts
 
   const series = {
     name: chartData.value.title,
-    type: 'scatter' as const,
+    type: chartTypeForECharts(chartType) as 'scatter' | 'bar' | 'line',
     data,
     label,
     large: true,
     largeThreshold: LARGE_DATA_THRESHOLD,
     itemStyle: { color: getNextColorFor(chartData.value.title) },
-    ...(largeX ? largeScatterSymbol : defaultScatterSymbol),
+    ...seriesSymbol(chartType, largeX),
   }
 
   return {

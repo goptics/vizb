@@ -28,7 +28,7 @@ inputs:
     description: "Tag/identifier for the dataset (-t flag)"
     default: ""
   group:
-    description: "Column/field names merged into the group name; forwarded as -g (accepts space- or comma-separated, e.g. 'name category region' or 'name,category/region'); parsed by -p/-r"
+    description: "Column/field names merged into the group name; forwarded as -g (accepts space- or comma-separated, e.g. 'name category region' or 'name,category/region'); parsed by -p/-r. Omit for csv/json to let vizb auto-group the most-unique categorical column onto the X axis"
     default: ""
   group-pattern:
     description: "Group pattern (-p flag)"

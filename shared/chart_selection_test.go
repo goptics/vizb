@@ -14,6 +14,7 @@ type stubChartConfig struct {
 func (s stubChartConfig) ChartType() string { return s.typ }
 func (stubChartConfig) StatEnabled() bool   { return false }
 func (stubChartConfig) StatMath() []string  { return nil }
+func (stubChartConfig) SwapString() string  { return "" }
 
 func dsWith(types []string, zValues ...string) *Dataset {
 	ds := &Dataset{}

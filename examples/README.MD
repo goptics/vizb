@@ -1,39 +1,64 @@
-# Vizb Examples
+# Vizb examples
 
-Benchmark output files used to generate the vizb examples dashboard, organized by language.
+Sample inputs for the live dashboards on [vizb.goptics.org/examples/](https://vizb.goptics.org/examples/). CI turns each file into JSON, merges them into one HTML page per category, and deploys to the `website` branch.
 
-## How it works
+## Categories
 
-Push changes to `examples/{go,javascript,rust}/` to trigger a per-language CI pipeline that:
+| Category | Folder | File | Workflow |
+|----------|--------|------|----------|
+| CSV | `examples/csv/` | `.csv` | [deploy-examples-csv.yml](../.github/workflows/deploy-examples-csv.yml) |
+| JSON | `examples/json/` | `.json` | [deploy-examples-json.yml](../.github/workflows/deploy-examples-json.yml) |
+| Go | `examples/go/` | `.txt` | [deploy-examples-go.yml](../.github/workflows/deploy-examples-go.yml) |
+| JavaScript | `examples/javascript/` | `.txt` | [deploy-examples-javascript.yml](../.github/workflows/deploy-examples-javascript.yml) |
+| Rust | `examples/rust/` | `.txt` | [deploy-examples-rust.yml](../.github/workflows/deploy-examples-rust.yml) |
 
-1. Converts each `.txt` bench file to JSON with per-benchmark name, description, and group pattern
-2. Merges all JSONs into a single HTML dashboard for that language
-3. Deploys to GitHub Pages on the `website` branch
+Tabular CSV recipes (auto-group, auto-value, 3D): [csv/README.md](csv/README.md).
 
 ## Live dashboards
 
-| Language | Workflow | Dashboard |
-|----------|----------|-----------|
-| Go       | `.github/workflows/deploy-examples-go.yml`       | [vizb.goptics.org/examples/go/][go-dash]       |
-| JavaScript | `.github/workflows/deploy-examples-javascript.yml` | [vizb.goptics.org/examples/javascript/][js-dash] |
-| Rust     | `.github/workflows/deploy-examples-rust.yml`     | [vizb.goptics.org/examples/rust/][rust-dash]     |
+| Dashboard | URL |
+|-----------|-----|
+| CSV | [vizb.goptics.org/examples/csv/](https://vizb.goptics.org/examples/csv/) |
+| JSON | [vizb.goptics.org/examples/json/](https://vizb.goptics.org/examples/json/) |
+| Go | [vizb.goptics.org/examples/go/](https://vizb.goptics.org/examples/go/) |
+| JavaScript | [vizb.goptics.org/examples/javascript/](https://vizb.goptics.org/examples/javascript/) |
+| Rust | [vizb.goptics.org/examples/rust/](https://vizb.goptics.org/examples/rust/) |
 
-[go-dash]: https://vizb.goptics.org/examples/go/
-[js-dash]: https://vizb.goptics.org/examples/javascript/
-[rust-dash]: https://vizb.goptics.org/examples/rust/
+Open a specific chart with `?d=0`, `?d=1`, … — index matches matrix order in the workflow file.
 
-## Adding a new benchmark
+## Adding an example
 
-1. Drop a `.txt` bench output file into `examples/{language}/`
-2. Add a matrix entry in the corresponding workflow (e.g. `.github/workflows/deploy-examples-go.yml`):
+Same steps for every category:
+
+1. **Add the file** — `examples/{category}/my-data.{csv,json,txt}`
+2. **Add a matrix entry** — in `.github/workflows/deploy-examples-{category}.yml`, under `strategy.matrix.include`:
+3. **Push** — CI rebuilds that dashboard on [vizb.goptics.org](https://vizb.goptics.org)
 
 ```yaml
-- output: my-benchmark
-  file: my-benchmark.txt
-  name: "My Benchmark"
-  description: "What this benchmark measures"
-  group-pattern: "x/y"      # or group-regex for regex grouping
-  scale: "linear"            # or "log"
+- output: 07-my-chart       # required — numbered id + sort order + ?d= index
+  file: my-data            # required — basename only (no extension)
+  name: "My Chart"         # required — title in the dashboard
+  description: "…"         # optional — subtitle / tooltip
+  charts: bar              # optional — csv/json: bar | line | scatter | …
+  chart: |                 # optional — per-chart overrides (see action.yml)
+    bar:scale=log,sort=asc
+    line:scale=log,sort=asc
+  group: "a,b,c"           # optional — csv/json; omit for auto-group / auto-value
+  group-pattern: "n,x,y"   # optional — with group (commas for csv/json, slashes for benchmarks)
+  group-regex: "…"         # optional — benchmarks; use instead of group-pattern
+  filter: "Decode"         # optional — benchmarks: filter rows by name
+  parser: rs:criterion     # optional — when auto-detect is not enough
 ```
 
-3. Push — the CI rebuilds and deploys automatically.
+Only `output`, `file`, and `name` are required. Use `chart` for scale, sort, and 3D flags — not the deprecated `sort` input or a bare `scale` field (action.yml has no `scale` input). Copy a nearby matrix row and edit.
+
+For a new **CSV** file, also add a short blurb to [csv/README.md](csv/README.md).
+
+## Try locally
+
+```bash
+vizb bar examples/csv/sales.csv -o out.html
+vizb -P go examples/go/01-hash.txt -o out.html
+```
+
+Docs and install: [vizb.goptics.org](https://vizb.goptics.org)
