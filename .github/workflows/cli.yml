@@ -7,6 +7,8 @@ on:
       - '**.go'
       - go.mod
       - go.sum
+      - action.yml
+      - .github/workflows/action-ci.yml
       - .github/workflows/cli.yml
   pull_request:
     branches: [main]
@@ -14,6 +16,8 @@ on:
       - '**.go'
       - go.mod
       - go.sum
+      - action.yml
+      - .github/workflows/action-ci.yml
       - .github/workflows/cli.yml
 
 jobs:
@@ -32,7 +36,6 @@ jobs:
           version: v1.64
 
   format:
-    needs: lint
     runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v6
@@ -50,7 +53,6 @@ jobs:
           fi
 
   test:
-    needs: format
     runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v6
@@ -70,15 +72,6 @@ jobs:
         with:
           files: ./coverage.txt
 
-  build:
-    needs: test
-    runs-on: ubuntu-slim
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: actions/setup-go@v6
-        with:
-          go-version-file: go.mod
-          cache: true
-
-      - run: go build -ldflags="-s -w" -o ./bin/vizb .
+  action:
+    needs: [lint, format, test]
+    uses: ./.github/workflows/action-ci.yml

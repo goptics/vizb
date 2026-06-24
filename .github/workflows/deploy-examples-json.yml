@@ -5,7 +5,6 @@ on:
     paths:
       - examples/json/**
       - action.yml
-      - .github/workflows/test-action.yml
       - .github/workflows/deploy-examples-json.yml
   workflow_run:
     workflows: [Release]
@@ -13,12 +12,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
-    uses: ./.github/workflows/test-action.yml
-
   convert:
     name: Convert JSON Data
-    needs: test
     strategy:
       matrix:
         include:

@@ -37,7 +37,6 @@ jobs:
       - run: pnpm typecheck
 
   format:
-    needs: lint
     runs-on: ubuntu-slim
     defaults:
       run:
@@ -60,7 +59,6 @@ jobs:
       - run: pnpm format:check
 
   test:
-    needs: format
     runs-on: ubuntu-slim
     defaults:
       run:
@@ -83,7 +81,7 @@ jobs:
       - run: pnpm test
 
   build:
-    needs: test
+    needs: [lint, format, test]
     runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v6
