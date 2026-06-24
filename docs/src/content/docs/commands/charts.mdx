@@ -38,7 +38,7 @@ Every chart subcommand accepts the common data, grouping, and metadata flags:
 | `--group-regex` | `-r` | `""` | Regex-based grouping (named captures) |
 | `--group` | `-g` | `""` | Names each dimension in `--group-pattern` order; csv/json column names must use matching separators in `-p` |
 | `--select` | | `""` | csv/json only: select value columns; optional rename with `{label}` |
-| `--filter` | `-f` | `""` | Regex to include only matching labels / series |
+| `--filter` | `-f` | `""` | Regex to include only matching rows (CSV/JSON: `--group` label) or benchmark names |
 | `--sort` | `-s` | `""` | Sort order: `asc` or `desc` |
 | `--swap` | | `""` | Axis permutation override, e.g. `yx`, `yxn` |
 | `--show-labels` | `-l` | `false` | Show value labels on the chart |

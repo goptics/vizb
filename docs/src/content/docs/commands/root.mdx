@@ -86,7 +86,7 @@ See the [Parser Guide](/guides/parsers) for each parser's metrics, and the
 | `--charts` | `-c` | `bar,line,pie` | Chart types to generate (`bar`, `line`, `scatter`, `pie`, `heatmap`, `radar`) |
 | `--chart` | | | Per-chart type settings override (repeatable): `<type>:<key>=<val>,...` — see below |
 | `--show-labels` | `-l` | `false` | **Deprecated on root:** use `--chart <type>:labels`. Show value labels on charts |
-| `--filter` | `-f` | `""` | Regex to include only matching data labels / series names |
+| `--filter` | `-f` | `""` | Regex to include only matching rows (CSV/JSON: `--group` label) or benchmark names |
 | `--mem-unit` | `-M` | `B` | Memory unit: `b`, `B`, `KB`, `MB`, `GB` |
 | `--time-unit` | `-T` | `ns` | Time unit: `ns`, `us`, `ms`, `s` |
 | `--number-unit` | `-N` | `""` | Number unit: `K`, `M`, `B`, `T` (default: as-is) |

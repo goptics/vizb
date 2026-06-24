@@ -40,7 +40,7 @@ inputs:
     description: "DEPRECATED: use 'chart' input instead (e.g. chart: 'bar:sort=asc'). Sort order: asc or desc (-s flag)"
     default: ""
   filter:
-    description: "Regex filter for data labels / series names (-f flag)"
+    description: "Regex to include only matching rows (CSV/JSON: --group label) or benchmark names (-f flag)"
     default: ""
   mem-unit:
     description: "Memory unit: b, B, KB, MB, GB (-M flag)"
