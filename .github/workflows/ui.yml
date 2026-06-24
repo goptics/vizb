@@ -2,14 +2,15 @@ name: UI
 
 on:
   push:
-    branches: [main]
     paths:
       - 'ui/**'
+      - 'pkg/template/vizb-ui.gen.go'
       - '.github/workflows/ui.yml'
   pull_request:
     branches: [main]
     paths:
       - 'ui/**'
+      - 'pkg/template/vizb-ui.gen.go'
       - '.github/workflows/ui.yml'
 
 jobs:
