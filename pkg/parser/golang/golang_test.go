@@ -45,8 +45,10 @@ func (s *GoBenchmarkSuite) writeFile(lines []string) string {
 
 	writer := bufio.NewWriter(file)
 	for _, event := range lines {
-		writer.WriteString(event)
-		writer.WriteString("\n")
+		_, err := writer.WriteString(event)
+		s.Require().NoError(err)
+		_, err = writer.WriteString("\n")
+		s.Require().NoError(err)
 	}
 	s.Require().NoError(writer.Flush())
 	file.Close()

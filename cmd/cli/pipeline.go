@@ -162,7 +162,7 @@ func resolveInput(cmd *cobra.Command, args []string) (string, bool) {
 		return target, true
 	}
 
-	cmd.Help()
+	_ = cmd.Help()
 	shared.OsExit(0)
 	return "", false
 }
@@ -213,10 +213,14 @@ func writeStdinPipedInputs(tempfilePath string) {
 		}
 	}
 
-	dataSetProgressManager.Finish()
+	if err := dataSetProgressManager.Finish(); err != nil {
+		shared.ExitWithError("Error finishing progress bar", err)
+	}
 
-	writer.Flush()
-	inputTempFile.Sync()
+	if err := writer.Flush(); err != nil {
+		shared.ExitWithError("Error writing to file", err)
+	}
+	_ = inputTempFile.Sync()
 }
 
 // preprocessInputFile handles Go bench JSON → TXT conversion when needed.
@@ -516,7 +520,9 @@ func writeOutput(f *os.File, dataSet *shared.Dataset, format string) {
 		if err != nil {
 			shared.ExitWithError("Error marshaling dataSet data", err)
 		}
-		f.Write(bytes)
+		if _, err := f.Write(bytes); err != nil {
+			shared.ExitWithError("Failed to write output file", err)
+		}
 		fmt.Println(style.Success.Render("🎉 Generated JSON successfully!"))
 	}
 }

@@ -208,7 +208,7 @@ func (s *OsSuite) TestMustCreateFile() {
 		for _, tt := range tests {
 			s.Run(tt.name, func() {
 				parentDir := filepath.Dir(tt.filename)
-				os.MkdirAll(parentDir, 0755)
+				s.Require().NoError(os.MkdirAll(parentDir, 0755))
 
 				file := MustCreateFile(tt.filename)
 				s.NotNil(file, "File handle should not be nil")
@@ -243,9 +243,9 @@ func (s *OsSuite) TestMustCreateFile() {
 				setupFunc: func() (string, func()) {
 					tempDir := s.T().TempDir()
 					readOnlyDir := filepath.Join(tempDir, "readonly")
-					os.Mkdir(readOnlyDir, 0400)
+					s.Require().NoError(os.Mkdir(readOnlyDir, 0400))
 					return filepath.Join(readOnlyDir, "test.txt"), func() {
-						os.Chmod(readOnlyDir, 0755)
+						_ = os.Chmod(readOnlyDir, 0755)
 					}
 				},
 				expectPanic: true,
@@ -281,7 +281,8 @@ func (s *OsSuite) TestMustCreateFile() {
 
 		initialFile, err := os.Create(filename)
 		s.Require().NoError(err)
-		initialFile.WriteString("initial content")
+		_, err = initialFile.WriteString("initial content")
+		s.Require().NoError(err)
 		initialFile.Close()
 
 		newFile := MustCreateFile(filename)

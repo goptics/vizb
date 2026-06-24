@@ -47,7 +47,7 @@ func (s *ValidatorsSuite) TestApplyValidationRules() {
 		os.Stderr = oldStderr
 
 		var buf bytes.Buffer
-		buf.ReadFrom(r)
+		_, _ = buf.ReadFrom(r)
 
 		s.Equal(validFormat1, value, "Valid value should remain unchanged")
 		s.Empty(buf.String(), "No warning should be printed for valid value")
@@ -73,7 +73,7 @@ func (s *ValidatorsSuite) TestApplyValidationRules() {
 		os.Stderr = oldStderr
 
 		var buf bytes.Buffer
-		buf.ReadFrom(r)
+		_, _ = buf.ReadFrom(r)
 
 		s.Equal(defaultFormat, value, "Invalid value should be replaced with default")
 		s.Contains(buf.String(), "Warning: Invalid format", "Warning should be printed")
@@ -163,7 +163,7 @@ func (s *ValidatorsSuite) TestApplyValidationRules() {
 		os.Stderr = oldStderr
 
 		var buf bytes.Buffer
-		buf.ReadFrom(r)
+		_, _ = buf.ReadFrom(r)
 
 		s.Equal(defaultFormat, value, "Invalid normalized value should use default")
 		s.Contains(buf.String(), "invalid", "Warning should contain normalized invalid value")
@@ -480,7 +480,7 @@ func (s *ValidatorsSuite) TestApplyValidationRulesSlice() {
 		os.Stderr = oldStderr
 
 		var buf bytes.Buffer
-		buf.ReadFrom(r)
+		_, _ = buf.ReadFrom(r)
 
 		s.Equal([]string{"bar", "line"}, values, "Valid slice should remain unchanged")
 		s.Empty(buf.String(), "No warning should be printed for valid slice")
@@ -505,7 +505,7 @@ func (s *ValidatorsSuite) TestApplyValidationRulesSlice() {
 		os.Stderr = oldStderr
 
 		var buf bytes.Buffer
-		buf.ReadFrom(r)
+		_, _ = buf.ReadFrom(r)
 
 		s.Equal([]string{"bar", "line", "pie"}, values, "Invalid slice should be replaced with default")
 		s.Contains(buf.String(), "Warning: Invalid charts", "Warning should be printed")
@@ -579,7 +579,7 @@ func (s *ValidatorsSuite) TestApplyValidationRulesWithCustomValidator() {
 		os.Stderr = oldStderr
 
 		var buf bytes.Buffer
-		buf.ReadFrom(r)
+		_, _ = buf.ReadFrom(r)
 
 		s.Equal("default-pattern", value, "Value should be replaced with default when validator returns error")
 		s.Contains(buf.String(), "Warning: Invalid pattern", "Warning should be printed")
@@ -611,7 +611,7 @@ func (s *ValidatorsSuite) TestApplyValidationRulesWithCustomValidator() {
 		os.Stderr = oldStderr
 
 		var buf bytes.Buffer
-		buf.ReadFrom(r)
+		_, _ = buf.ReadFrom(r)
 
 		s.Equal("xAxis", value, "Invalid pattern should be replaced with default")
 		s.Contains(buf.String(), "group pattern", "Warning should mention the label")
@@ -661,7 +661,7 @@ func (s *ValidatorsSuite) TestApplyValidationRulesWithCustomValidator() {
 		os.Stderr = oldStderr
 
 		var buf bytes.Buffer
-		buf.ReadFrom(r)
+		_, _ = buf.ReadFrom(r)
 
 		s.Equal([]string{"default"}, values, "Slice with invalid item should be replaced with default")
 		s.Contains(buf.String(), "Warning: Invalid items", "Warning should be printed")

@@ -87,7 +87,7 @@ func (s *ExitWithErrorSuite) TestExitWithErrorConcurrent() {
 	done := make(chan bool, 5)
 	for i := range 5 {
 		go func(id int) {
-			WithSafe(fmt.Sprintf("goroutine-%d", id), func() {
+			_ = WithSafe(fmt.Sprintf("goroutine-%d", id), func() {
 				ExitWithError(fmt.Sprintf("Error from goroutine %d", id), errors.New("test error"))
 			})
 			done <- true
@@ -100,7 +100,7 @@ func (s *ExitWithErrorSuite) TestExitWithErrorConcurrent() {
 
 	w.Close()
 	var buf bytes.Buffer
-	io.Copy(&buf, r)
+	_, _ = io.Copy(&buf, r)
 	os.Stderr = oldStderr
 
 	s.True(*exitCalled, "Should have received at least one OsExit call")
@@ -138,7 +138,7 @@ func (s *ExitWithErrorSuite) TestPrintWarning() {
 	os.Stderr = oldStderr
 
 	var buf bytes.Buffer
-	io.Copy(&buf, r)
+	_, _ = io.Copy(&buf, r)
 	s.Contains(buf.String(), "disk nearly full")
 }
 

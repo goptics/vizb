@@ -14,7 +14,8 @@
     <a href="https://vizb.goptics.org"><img src="https://img.shields.io/badge/Docs-00ADD8?style=for&logo=readthedocs" alt="Docs" /></a>
     <a href="https://vizb.goptics.org/examples"><img src="https://img.shields.io/badge/Live-Examples-orange?style=for" alt="Examples" /></a>
     <a href="https://goreportcard.com/report/github.com/goptics/vizb"><img src="https://goreportcard.com/badge/github.com/goptics/vizb" alt="Go Report Card" /></a>
-    <a href="https://github.com/goptics/vizb/actions/workflows/ci.yml"><img src="https://github.com/goptics/vizb/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+    <a href="https://github.com/goptics/vizb/actions/workflows/cli.yml"><img src="https://github.com/goptics/vizb/actions/workflows/cli.yml/badge.svg" alt="CLI" /></a>
+    <a href="https://github.com/goptics/vizb/actions/workflows/ui.yml"><img src="https://github.com/goptics/vizb/actions/workflows/ui.yml/badge.svg" alt="UI" /></a>
     <a href="https://codecov.io/gh/goptics/vizb"><img src="https://codecov.io/gh/goptics/vizb/branch/main/graph/badge.svg" alt="Codecov" /></a>
     <a href="https://github.com/goptics/vizb/releases"><img src="https://img.shields.io/github/downloads/goptics/vizb/total?color=green&label=downloads" alt="Downloads" /></a>
     <a href="https://golang.org/doc/devel/release.html"><img src="https://img.shields.io/badge/Go-1.24+-00ADD8?style=for&logo=go" alt="Go Version" /></a>

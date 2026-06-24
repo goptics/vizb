@@ -556,9 +556,11 @@ func (s *PipelineSuite) TestWriteStdinPipedInputs() {
 		`{"Action":"run","Test":"BenchmarkExample"}`,
 		"BenchmarkAnotherTest-8 \t1000\t2000 ns/op",
 	} {
-		stdinFile.WriteString(line + "\n")
+		_, err := stdinFile.WriteString(line + "\n")
+		s.Require().NoError(err)
 	}
-	stdinFile.Seek(0, 0)
+	_, err = stdinFile.Seek(0, 0)
+	s.Require().NoError(err)
 	os.Stdin = stdinFile
 
 	out := filepath.Join(s.T().TempDir(), "out.txt")

@@ -180,7 +180,9 @@ func ConvertGoJsonBenchToText(filePath string) string {
 		}
 
 		if ev.Action == "output" {
-			writer.WriteString(ev.Output)
+			if _, err := writer.WriteString(ev.Output); err != nil {
+				shared.ExitWithError("Error on converting json to text", err)
+			}
 		}
 	}
 
@@ -188,7 +190,7 @@ func ConvertGoJsonBenchToText(filePath string) string {
 		shared.ExitWithError("Error on converting json to text", err)
 	}
 
-	tempFile.Sync()
+	_ = tempFile.Sync()
 
 	return tempFilePath
 }
