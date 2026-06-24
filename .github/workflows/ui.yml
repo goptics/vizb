@@ -112,5 +112,4 @@ jobs:
         run: |
           git show HEAD:pkg/template/vizb-ui.gen.go > /tmp/vizb-ui.gen.go.committed
           gofmt -w /tmp/vizb-ui.gen.go.committed pkg/template/vizb-ui.gen.go
-          node embed-build/verify-gen-sync.ts /tmp/vizb-ui.gen.go.committed ../pkg/template/vizb-ui.gen.go
-        working-directory: ui
+          node ui/embed-build/verify-gen-sync.ts /tmp/vizb-ui.gen.go.committed pkg/template/vizb-ui.gen.go
