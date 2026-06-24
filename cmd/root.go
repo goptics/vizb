@@ -77,7 +77,7 @@ func Execute() {
 }
 
 func init() {
-	rootOpts.LinearOptions.Bind(rootCmd.Flags())
+	rootOpts.Bind(rootCmd.Flags())
 	rootCmd.Flags().StringSliceVarP(&rootOpts.Charts, "charts", "c", defaultChartTypes, "Chart types to generate (bar, line, scatter, pie, heatmap, radar)")
 	rootCmd.Flags().StringArrayVar(&rootOpts.ChartSpecs, "chart", nil,
 		"Per-chart settings override: <type>:<key>=<val>(,<key>=<val>)* or bare flags (labels, 3d-rotate, 3d). "+
@@ -186,7 +186,7 @@ func runBenchmark(cmd *cobra.Command, args []string) {
 }
 
 func validateRootOptions() {
-	rootOpts.LinearOptions.Validate()
+	rootOpts.Validate()
 	utils.ApplyValidationRules([]utils.ValidationRule{{
 		Label:        "charts",
 		SliceValue:   &rootOpts.Charts,

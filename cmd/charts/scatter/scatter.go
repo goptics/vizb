@@ -40,7 +40,7 @@ func NewCommand() *cobra.Command {
 		Long:  "Generate an interactive scatter chart (HTML or JSON) from benchmark output or tabular CSV/JSON data.",
 		Args:  cobra.ArbitraryArgs,
 		Run: func(cmd *cobra.Command, args []string) {
-			o.LinearOptions.Validate()
+			o.Validate()
 			cli.ValidateScale(&o.Scale)
 
 			var threeDVisualMap *bool

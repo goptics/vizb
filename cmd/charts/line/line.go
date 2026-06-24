@@ -42,7 +42,7 @@ func NewCommand() *cobra.Command {
 		Long:  "Generate an interactive line chart (HTML or JSON) from benchmark output or tabular CSV/JSON data.",
 		Args:  cobra.ArbitraryArgs,
 		Run: func(cmd *cobra.Command, args []string) {
-			o.LinearOptions.Validate()
+			o.Validate()
 			cli.ValidateScale(&o.Scale)
 
 			var threeDVisualMap *bool
@@ -62,7 +62,7 @@ func NewCommand() *cobra.Command {
 				Stat:            o.Stat,
 			}, nil)
 
-			axes := parser.GroupAxes(o.CommonOptions.ParseConfig())
+			axes := parser.GroupAxes(o.ParseConfig())
 			if err := shared.ValidateSwap(cfg.Swap, axes); err != nil {
 				shared.ExitWithError(err.Error(), nil)
 			}
