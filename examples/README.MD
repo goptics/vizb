@@ -7,7 +7,7 @@ Sample inputs for the live dashboards on [vizb.goptics.org/examples/](https://vi
 | Category | Folder | File | Workflow |
 |----------|--------|------|----------|
 | CSV | `examples/csv/` | `.csv` | [deploy-examples-csv.yml](../.github/workflows/deploy-examples-csv.yml) |
-| JSON | `examples/json/` | `.json` | [deploy-examples-json.yml](../.github/workflows/deploy-examples-json.yml) |
+| JSON | _(API-fetched in CI)_ | jogruber contributions API | [deploy-examples-json.yml](../.github/workflows/deploy-examples-json.yml) |
 | Go | `examples/go/` | `.txt` | [deploy-examples-go.yml](../.github/workflows/deploy-examples-go.yml) |
 | JavaScript | `examples/javascript/` | `.txt` | [deploy-examples-javascript.yml](../.github/workflows/deploy-examples-javascript.yml) |
 | Rust | `examples/rust/` | `.txt` | [deploy-examples-rust.yml](../.github/workflows/deploy-examples-rust.yml) |
@@ -28,10 +28,23 @@ Open a specific chart with `?d=0`, `?d=1`, … — index matches matrix order in
 
 ## Adding an example
 
-Same steps for every category:
+### JSON (GitHub contributions)
 
-1. **Add the file** — `examples/{category}/my-data.{csv,json,txt}`
-2. **Add a matrix entry** — in `.github/workflows/deploy-examples-{category}.yml`, under `strategy.matrix.include`:
+No repo file to add. Append one row to the matrix in [deploy-examples-json.yml](../.github/workflows/deploy-examples-json.yml) — only `output` and `user`, in order:
+
+```yaml
+- output: 07-octocat    # next index + username — sets ?d= index and artifact name
+  user: octocat         # chart title and API path; no other matrix fields needed
+```
+
+`output` must stay numbered (`00-`, `01-`, …) so merge order matches `?d=0`, `?d=1`, …. The workflow step already wires `curl`, `--json-path`, `--select`, date grouping, and 3D bar flags — copy a row, bump the number, set `user`.
+
+Optionally add a row to [docs/src/content/docs/examples.mdx](../docs/src/content/docs/examples.mdx) under **JSON examples**.
+
+### CSV / Go / JavaScript / Rust
+
+1. **Add the file** — `examples/{category}/my-data.{csv,txt}`
+2. **Add a matrix entry** — in `.github/workflows/deploy-examples-{category}.yml`, under `strategy.matrix.include`
 3. **Push** — CI rebuilds that dashboard on [vizb.goptics.org](https://vizb.goptics.org)
 
 ```yaml
@@ -39,12 +52,12 @@ Same steps for every category:
   file: my-data            # required — basename only (no extension)
   name: "My Chart"         # required — title in the dashboard
   description: "…"         # optional — subtitle / tooltip
-  charts: bar              # optional — csv/json: bar | line | scatter | …
+  charts: bar              # optional — csv: bar | line | scatter | …
   chart: |                 # optional — per-chart overrides (see action.yml)
     bar:scale=log,sort=asc
     line:scale=log,sort=asc
-  group: "a,b,c"           # optional — csv/json; omit for auto-group / auto-value
-  group-pattern: "n,x,y"   # optional — with group (commas for csv/json, slashes for benchmarks)
+  group: "a,b,c"           # optional — csv; omit for auto-group / auto-value
+  group-pattern: "n,x,y"   # optional — with group (commas for csv, slashes for benchmarks)
   group-regex: "…"         # optional — benchmarks; use instead of group-pattern
   filter: "Decode"         # optional — benchmarks: filter rows by name
   parser: rs:criterion     # optional — when auto-detect is not enough
