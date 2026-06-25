@@ -5,10 +5,12 @@ set -euo pipefail
 
 show_logo() {
 cat <<'EOF'
-\    ####
- \ ++++        vizb installer
-  \**   izb    vizb.goptics.org
-   =
+
+    \    ####
+     \ ++++        vizb installer
+      \**   izb    vizb.goptics.org
+       =
+
 EOF
 }
 show_logo
@@ -18,8 +20,8 @@ BIN="vizb"
 INSTALL_DIR="${HOME}/.local/bin"
 
 # ----- helpers -----
-die() { echo "error: $*" >&2; exit 1; }
-info() { echo " info: $*"; }
+die() { printf "  \033[31m>\033[0m error: %s\n" "$*" >&2; exit 1; }
+log() { printf "  \033[32m>\033[0m %s\n" "$*"; }
 
 # ----- detect platform -----
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
@@ -28,7 +30,7 @@ ARCH=$(uname -m)
 case "$OS" in
   linux)  ;;
   darwin) ;;
-  *) die "unsupported OS: $OS (only linux and macOS are supported)" ;;
+  *) die "unsupported OS: $OS" ;;
 esac
 
 case "$ARCH" in
@@ -37,12 +39,14 @@ case "$ARCH" in
   *) die "unsupported architecture: $ARCH" ;;
 esac
 
+log "detected ${OS}/${ARCH}"
+
 # ----- check prerequisites -----
 command -v curl >/dev/null 2>&1 || die "curl is required but not installed"
 command -v tar >/dev/null 2>&1 || die "tar is required but not installed"
 
-# ----- fetch latest version (uses redirect, no API call) -----
-info "fetching latest release…"
+# ----- fetch latest version -----
+log "fetching latest release..."
 LATEST=$(curl -fsSL -o /dev/null -w '%{url_effective}' \
   "https://github.com/${REPO}/releases/latest" \
   | grep -oP '[^/]+(?=/?$)')
@@ -50,7 +54,6 @@ if [[ -z "$LATEST" ]]; then
   die "failed to determine latest version"
 fi
 VERSION="${LATEST#v}"
-info "latest version: ${VERSION}"
 
 # ----- download & extract -----
 ARCHIVE="vizb@${VERSION}-${OS}-${ARCH}.tar.gz"
@@ -59,10 +62,10 @@ URL="https://github.com/${REPO}/releases/download/${LATEST}/${ARCHIVE}"
 TMPDIR=$(mktemp -d)
 trap 'rm -rf "$TMPDIR"' EXIT
 
-info "downloading ${URL}…"
+log "downloading v${VERSION}..."
 curl -fsSL "$URL" -o "${TMPDIR}/${ARCHIVE}" || die "download failed"
 
-info "extracting…"
+log "extracting..."
 tar -xzf "${TMPDIR}/${ARCHIVE}" -C "$TMPDIR"
 if [[ ! -f "${TMPDIR}/${BIN}" ]]; then
   die "binary not found in archive"
@@ -71,19 +74,20 @@ fi
 # ----- install -----
 mkdir -p "$INSTALL_DIR"
 
-info "installing to ${INSTALL_DIR}…"
 cp "${TMPDIR}/${BIN}" "${INSTALL_DIR}/${BIN}"
 chmod +x "${INSTALL_DIR}/${BIN}"
 
 # ----- verify -----
-info "verifying installation…"
-if "${INSTALL_DIR}/${BIN}" --version >/dev/null 2>&1; then
-  info "vizb ${VERSION} installed successfully to ${INSTALL_DIR}/${BIN}"
-else
+if ! "${INSTALL_DIR}/${BIN}" --version >/dev/null 2>&1; then
   die "installation verification failed"
 fi
 
+log "installed vizb to ${INSTALL_DIR}/${BIN}"
+echo
+
 if [[ ":$PATH:" != *":${INSTALL_DIR}:"* ]]; then
-  info "note: ${INSTALL_DIR} is not in your PATH"
-  info "      add it with: echo 'export PATH=\"${INSTALL_DIR}:\$PATH\"' >> ~/.bashrc"
+  log "note: add ${INSTALL_DIR} to your PATH"
+  log "      echo 'export PATH=\"${INSTALL_DIR}:\$PATH\"' >> ~/.bashrc"
 fi
+
+log "ready. run 'vizb' to get started"
