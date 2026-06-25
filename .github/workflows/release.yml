@@ -34,6 +34,8 @@ jobs:
   goreleaser:
     needs: approve
     runs-on: ubuntu-slim
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -60,7 +62,22 @@ jobs:
           version: latest
           args: release --clean
         env:
-          GITHUB_TOKEN: ${{ secrets.GORELEASER_TOKEN }}
+          # Workflow GITHUB_TOKEN has contents:write. A PAT in GORELEASER_TOKEN often
+          # lacks release scope (403 on POST /releases). Releases created with the
+          # default token do not re-fire `on: release` workflows, so winget runs below.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  winget:
+    needs: goreleaser
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: vedantmgoyal2009/winget-releaser@v2
+        with:
+          identifier: goptics.vizb
+          installers-regex: '\.zip$'
+          token: ${{ secrets.WINGET_TOKEN }}
 
   deploy-docs:
     needs: goreleaser
