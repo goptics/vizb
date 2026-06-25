@@ -6,10 +6,6 @@ import starlightThemeRapide from 'starlight-theme-rapide'
 // https://astro.build/config
 export default defineConfig({
 	site: 'https://vizb.goptics.org',
-	redirects: {
-		'/ui/heatmap': '/charts/heatmap',
-		'/ui/3d-charts': '/charts/3d',
-	},
 	integrations: [
 	starlight({
 		title: 'Tabular data visualization engine',
