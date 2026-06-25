@@ -5,10 +5,12 @@ $ErrorActionPreference = "Stop"
 
 function Show-Logo {
 Write-Host @'
-\    ####
- \ ++++        vizb installer
-  \**   izb    vizb.goptics.org
-   =
+
+    \    ####
+     \ ++++        vizb installer
+      \**   izb    vizb.goptics.org
+       =
+
 '@
 }
 Show-Logo

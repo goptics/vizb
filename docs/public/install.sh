@@ -5,10 +5,12 @@ set -euo pipefail
 
 show_logo() {
 cat <<'EOF'
-\    ####
- \ ++++        vizb installer
-  \**   izb    vizb.goptics.org
-   =
+
+    \    ####
+     \ ++++        vizb installer
+      \**   izb    vizb.goptics.org
+       =
+
 EOF
 }
 show_logo
