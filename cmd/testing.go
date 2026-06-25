@@ -40,6 +40,8 @@ func ResetTestState() {
 	mergeOpts.TagAxis = "n"
 
 	resetChanged(rootCmd.Flags())
+	resetChanged(uiCmd.Flags())
+	resetChanged(mergeCmd.Flags())
 }
 
 // resetChanged clears the Changed flag on every flag in fs so

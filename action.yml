@@ -65,7 +65,7 @@ inputs:
     default: ""
   charts:
     description: "Chart types to generate (-c flag): bar, line, scatter, pie, heatmap, radar"
-    default: "bar,line,pie"
+    default: ""
   parser:
     description: "Parser to use: csv, json, go, js:tinybench, js:vitest, rs:criterion, rs:divan (-P flag)"
     default: "auto"
