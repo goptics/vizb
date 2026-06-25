@@ -16,7 +16,9 @@ jobs:
     steps:
       - uses: trstringer/manual-approval@v1
         with:
-          secret: ${{ secrets.GORELEASER_TOKEN }}
+          # Issue creation uses workflow permissions (issues: write). GORELEASER_TOKEN
+          # is a release PAT and often lacks Issues scope — that causes 403 on POST /issues.
+          secret: ${{ secrets.GITHUB_TOKEN }}
           approvers: fahimfaisaal
           minimum-approvals: 1
           issue-title: 'Release Approval: ${{ github.ref_name }}'

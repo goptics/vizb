@@ -101,6 +101,19 @@ tasks:
       - git push origin {{.VERSION}}
       - echo "Tag {{.VERSION}} pushed. GitHub Actions will create the release."
 
+  release:remove:
+    desc: Remove a botched release (GitHub release + local and remote tag)
+    prompt: Delete release/tag {{.VERSION}} on GitHub and locally?
+    vars:
+      VERSION: "{{.CLI_ARGS}}"
+    cmds:
+      - |
+        test -n "{{.VERSION}}" || { echo "Usage: task release:remove -- v1.2.3"; exit 1; }
+      - gh release delete "{{.VERSION}}" --yes --cleanup-tag 2>/dev/null || true
+      - git push origin --delete "{{.VERSION}}" 2>/dev/null || true
+      - git tag -d "{{.VERSION}}" 2>/dev/null || true
+      - echo "Removed {{.VERSION}} (GitHub release and tags, where present)"
+
   # ── Act: Local GitHub Actions Testing ──────────────────────
 
   act:install:
