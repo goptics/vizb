@@ -2,6 +2,17 @@
 # Usage: irm https://vizb.goptics.org/install.ps1 | iex
 
 $ErrorActionPreference = "Stop"
+
+function Show-Logo {
+Write-Host @'
+\    ####
+ \ ++++        vizb installer
+  \**   izb    vizb.goptics.org
+   =
+'@
+}
+Show-Logo
+
 $InstallDir = "$env:LOCALAPPDATA\vizb"
 $Repo = "goptics/vizb"
 $Bin = "vizb.exe"
