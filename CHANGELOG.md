@@ -4,31 +4,74 @@ Notable changes to Vizb documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased]
-
-### Changed
-
-- **CI: split CLI and UI workflows** — renamed `ci.yml` to `cli.yml` with layered lint → format → test → build gates; added `ui.yml` for the Vue app with the same pipeline shape.
+# [v0.13.0]
 
 ### Added
 
+- **Tabular visualization engine** — Vizb now charts any CSV or JSON table alongside Go, Rust, and JavaScript benchmark output. `--parser` defaults to `auto` and inspects input content to pick the right parser ([#123](https://github.com/goptics/vizb/pull/123)).
+- **CSV parser** — comma-delimited tables; numeric columns become series; quoted fields, BOM strip, and ragged rows supported ([#123](https://github.com/goptics/vizb/pull/123)).
+- **JSON parser** — array-of-objects input; nested objects flattened to dotted keys (`mem.alloc`); numeric strings accepted ([#123](https://github.com/goptics/vizb/pull/123)).
+- **`--group` / `-g` flag** — map CSV/JSON columns to Name / X / Y / Z dimensions ([#123](https://github.com/goptics/vizb/pull/123)).
+- **Bracket slot grouping** — single column cell encodes multiple dimensions via `[...]` slots in `--group-pattern` (e.g. `-p "[x-y-n],z"` for dates or slash paths); CSV/JSON only ([#123](https://github.com/goptics/vizb/pull/123)).
+- **Column-value parser in group pattern** — parse cell contents inside bracket slots ([#131](https://github.com/goptics/vizb/pull/131)).
+- **Trailing and consecutive separator skips** in pattern parsing ([#132](https://github.com/goptics/vizb/pull/132)).
+- **`--select` flag** — pick specific value columns for CSV/JSON; optional `{label}` rename ([#140](https://github.com/goptics/vizb/pull/140)).
+- **`--json-path` flag** — jq-like dot path to chart a nested array inside a JSON envelope (e.g. `.data.results`) ([#143](https://github.com/goptics/vizb/pull/143)).
+- **Row aggregation** — when `--group` is active on csv/json, rows sharing the same `(Name, XAxis, YAxis, ZAxis)` key are summed before charting ([#123](https://github.com/goptics/vizb/pull/123)).
+- **Auto-group mode** — with no `-g`/`-r`, infers the highest-cardinality non-numeric column as the X axis so `vizb data.csv` just works ([#145](https://github.com/goptics/vizb/pull/145)).
+- **Auto-value mode** — when all columns are numeric, auto-assigns the first 2–3 columns as coordinate axes (`x`, `y`, `z`); a 4th column becomes a visualMap metric; works on bar, line, and scatter ([#145](https://github.com/goptics/vizb/pull/145)).
+- **Scatter chart** — coordinate plotting in grouped or auto-value mode; 2D and 3D ([#142](https://github.com/goptics/vizb/pull/142)).
+- **Heatmap chart** — X×Y colored grid; z-axis folded into per-cell sums ([#126](https://github.com/goptics/vizb/pull/126)).
+- **Radar chart** — spider/web polygons for multi-metric profile comparison ([#128](https://github.com/goptics/vizb/pull/128)).
+- **3D charts** — interactive WebGL bar3D, line3D, and scatter3D via echarts-gl; grouped (`-p n/x/y/z`), pseudo-3D (`--3d`), or continuous auto-value 3D ([#122](https://github.com/goptics/vizb/pull/122)).
+- **3D flags** — `--3d`, `--3d-rotate`, and `--3d-visualmap` on bar, line, and scatter subcommands ([#122](https://github.com/goptics/vizb/pull/122), [#135](https://github.com/goptics/vizb/pull/135)).
+- **3D tooltip totals** — per-legend Σ sums in 3D tooltip rows; chart total badge on hover ([#133](https://github.com/goptics/vizb/pull/133), [#141](https://github.com/goptics/vizb/pull/141)).
+- **Statistics panel (`--stat`)** — opt-in per-chart analytics: 33 descriptive metrics across 7 groups, plus a correlation matrix (Pearson, Spearman, Kendall, distance correlation); computed off-thread in a Web Worker ([#126](https://github.com/goptics/vizb/pull/126)).
+- **Stats panel UX** — sortable/searchable table with virtualization, 3D-aware per-z sub-rows, and CSV export ([#126](https://github.com/goptics/vizb/pull/126), [#136](https://github.com/goptics/vizb/pull/136), [#137](https://github.com/goptics/vizb/pull/137)).
+- **Chart subcommands** — `vizb bar`, `vizb line`, `vizb scatter`, `vizb pie`, `vizb heatmap`, `vizb radar`; each accepts only flags valid for that chart type ([#129](https://github.com/goptics/vizb/pull/129)).
+- **`--chart` per-chart overrides** — repeatable flag for per-type settings (e.g. `--chart bar:swap=yx,scale=log --chart pie:labels`) ([#129](https://github.com/goptics/vizb/pull/129)).
+- **`--swap` flag** — axis permutation at generation time (e.g. `--swap yxn`) ([#127](https://github.com/goptics/vizb/pull/127)).
+- **`vizb ui` command** — renamed from `vizb html`; `html` kept as a backward-compatible alias ([#121](https://github.com/goptics/vizb/pull/121)).
+- **v0.12.0 settings migration** — old single-object `settings` shape auto-migrated to per-chart typed configs on JSON read ([#130](https://github.com/goptics/vizb/pull/130)).
+- **Async chart pipeline** — transform Web Worker re-renders charts off the main thread; charts reveal progressively as each job completes ([#125](https://github.com/goptics/vizb/pull/125)).
+- **Go-stage chunk pruning** — HTML bundle includes only JS chunks for active chart types ([#126](https://github.com/goptics/vizb/pull/126)).
+- **Field-registry settings panel** — UI settings driven by per-chart field registry instead of a flat toggle list ([#130](https://github.com/goptics/vizb/pull/130)).
+- **Per-chart URL sync** — query parameters target individual chart configs, not one global settings blob ([#127](https://github.com/goptics/vizb/pull/127)).
+- **CSV example suite** — auto-group, auto-value, and 3D recipes ([#145](https://github.com/goptics/vizb/pull/145)).
+- **Live GitHub contribution skylines example** — fetched from API at deploy time; demonstrates `--json-path`, `--select`, and `--stat` ([#148](https://github.com/goptics/vizb/pull/148)).
+- **GitHub Action: `cmd` / `file` inputs** — replace `bench-cmd`/`bench-file`; support any tabular or benchmark input.
+- **GitHub Action: `group` input** — forwards `-g`; omit to enable auto-group on csv/json.
 - **GitHub Action: `select` input** — select value columns for CSV/JSON data (forwards `--select`).
 - **GitHub Action: `json-path` input** — chart a nested JSON array via a jq-like dot path (forwards `--json-path`).
 - **GitHub Action: `stat` input** — enable the stats panel (forwards `--stat`).
 - **GitHub Action: `chart` input** — per-chart overrides as a multi-line string, one `--chart` per line (e.g. `bar:scale=log`).
 - **GitHub Action: `enable-3d` input** — bundle the 3D renderer for `vizb ui` (forwards `--3d`).
 - **GitHub Action: `vizb-binary` input** — path to a pre-built binary on the runner; skips release download/cache, useful for testing local builds or unreleased changes.
-- **GitHub Action: `group` input** — forwards `-g` with column/field names for grouping.
-- **CLI: Deprecation warnings** — `vizb` (root) now prints a stderr warning when `--sort` or `--show-labels` is used, recommending the `--chart` equivalent.
+
+### Changed
+
+- **Data model: `Benchmark` → `Dataset`** — `DataPoint` gains `zAxis` and serial `axes[]` metadata; per-chart typed `settings` array replaces the global settings blob ([#124](https://github.com/goptics/vizb/pull/124), [#127](https://github.com/goptics/vizb/pull/127), [#130](https://github.com/goptics/vizb/pull/130)).
+- **Per-chart settings architecture** — scale, sort, labels, swap, and 3D options are scoped per chart type; bar/line/scatter carry scale and 3D fields; pie/heatmap/radar do not ([#127](https://github.com/goptics/vizb/pull/127), [#130](https://github.com/goptics/vizb/pull/130)).
+- **`--scale` moved to per-chart scope** — removed from root command; available on `vizb bar`, `vizb line`, `vizb scatter`, and via `--chart` overrides ([#129](https://github.com/goptics/vizb/pull/129)).
+- **Default chart types unchanged** — root still defaults to `bar,line,pie`; scatter, heatmap, and radar are opt-in via `-c` or subcommands.
+- **GitHub Action: `parser` default** — changed from `go` to `auto` for content-based format detection.
+- **GitHub Action: `charts` input** — now accepts `scatter`, `heatmap`, and `radar`.
+- **GitHub Action: `tag-axis` input** — now accepts `z` in addition to `n`, `x`, and `y`.
+- **CI: split CLI and UI workflows** — renamed `ci.yml` to `cli.yml` with layered lint → format → test → build gates; added `ui.yml` for the Vue app with the same pipeline shape ([#147](https://github.com/goptics/vizb/pull/147)).
+- **CI: parallelized gates** — action tests centralized in CLI workflow ([#147](https://github.com/goptics/vizb/pull/147)).
 
 ### Removed
 
-- **GitHub Action: `scale` input** — **BREAKING.** `scale` no longer exists; it errored at runtime since v0.12.0. Use the `chart` input instead (e.g. `chart: 'bar:scale=log'`).
+- **Root `--scale` flag** — use `--chart bar:scale=log` or a chart subcommand instead ([#129](https://github.com/goptics/vizb/pull/129)).
+- **Global `FlagState`** — replaced by typed per-command options and per-chart config materialisation ([#129](https://github.com/goptics/vizb/pull/129)).
+- **GitHub Action: `scale` input** — **BREAKING.** Use the `chart` input instead (e.g. `chart: 'bar:scale=log'`).
 
 ### Deprecated
 
+- **Root `--sort` and `--show-labels`** — `vizb` (root) prints a stderr warning recommending the `--chart` equivalent (e.g. `--chart bar:sort=asc`, `--chart pie:labels`) ([#129](https://github.com/goptics/vizb/pull/129)).
 - **GitHub Action: `sort` input** — use `chart` instead (e.g. `chart: 'bar:sort=asc'`).
 - **GitHub Action: `show-labels` input** — use `chart` instead (e.g. `chart: 'pie:labels'`).
+- **GitHub Action: `bench-cmd` / `bench-file` inputs** — use `cmd` / `file` instead.
 
 # [0.12.0] - 2026-06-03
 
