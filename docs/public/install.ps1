@@ -5,19 +5,27 @@ $ErrorActionPreference = "Stop"
 
 function Show-Logo {
 Write-Host @'
-\    ####
- \ ++++        vizb installer
-  \**   izb    vizb.goptics.org
-   =
+
+    \    ####
+     \ ++++        vizb installer
+      \**   izb    vizb.goptics.org
+       =
+
 '@
 }
 Show-Logo
+
+$E = [char]27
+function Log($msg) { Write-Host "  $E[32m>$E[0m $msg" }
+function LogError($msg) { Write-Host "  $E[31m>$E[0m error: $msg"; exit 1 }
 
 $InstallDir = "$env:LOCALAPPDATA\vizb"
 $Repo = "goptics/vizb"
 $Bin = "vizb.exe"
 
-Write-Host " info: fetching latest release..." -ForegroundColor Cyan
+Log "detected windows/$([Environment]::Is64BitOperatingSystem ? 'amd64' : 'arm64')"
+Log "fetching latest release..."
+
 $LatestUrl = "https://github.com/$Repo/releases/latest"
 $Request = [System.Net.WebRequest]::Create($LatestUrl)
 $Request.AllowAutoRedirect = $false
@@ -28,10 +36,8 @@ $VersionTag = $Redirect -replace '.*/', ''
 $Version = $VersionTag -replace '^v', ''
 
 if (-not $Version) {
-    Write-Host "error: failed to determine latest version" -ForegroundColor Red
-    exit 1
+    LogError "failed to determine latest version"
 }
-Write-Host " info: latest version: $Version"
 
 $Arch = if ([Environment]::Is64BitOperatingSystem) { "amd64" } else { "arm64" }
 $Archive = "vizb@$Version-windows-$Arch.zip"
@@ -42,33 +48,33 @@ New-Item -ItemType Directory -Path $TmpDir | Out-Null
 
 try {
     $ZipPath = Join-Path $TmpDir $Archive
-    Write-Host " info: downloading $Url..." -ForegroundColor Cyan
+    Log "downloading v$Version..."
     Invoke-WebRequest -Uri $Url -OutFile $ZipPath
 
-    Write-Host " info: extracting..." -ForegroundColor Cyan
+    Log "extracting..."
     Expand-Archive -Path $ZipPath -DestinationPath $TmpDir
 
     $ExePath = Join-Path $InstallDir $Bin
     New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
 
-    Write-Host " info: installing to $InstallDir..." -ForegroundColor Cyan
     Copy-Item (Join-Path $TmpDir $Bin) $ExePath -Force
 
-    Write-Host " info: verifying installation..." -ForegroundColor Cyan
     $Output = & $ExePath --version 2>&1
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host " info: vizb $($Output) installed successfully to $ExePath" -ForegroundColor Green
-    } else {
-        Write-Host "error: installation verification failed" -ForegroundColor Red
-        exit 1
+    if ($LASTEXITCODE -ne 0) {
+        LogError "installation verification failed"
     }
+
+    Log "installed vizb to $ExePath"
+    Write-Host ""
 
     $CurrentPath = [Environment]::GetEnvironmentVariable("Path", "User")
     if ($CurrentPath -notlike "*$InstallDir*") {
         [Environment]::SetEnvironmentVariable("Path", "$CurrentPath;$InstallDir", "User")
         $env:Path += ";$InstallDir"
-        Write-Host " info: added $InstallDir to user PATH" -ForegroundColor Cyan
+        Log "note: added $InstallDir to user PATH"
     }
+
+    Log "ready. run 'vizb' to get started"
 } finally {
     Remove-Item -Recurse -Force $TmpDir -ErrorAction SilentlyContinue
 }
