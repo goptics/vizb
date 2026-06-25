@@ -7,7 +7,7 @@ Sample inputs for the live dashboards on [vizb.goptics.org/examples/](https://vi
 | Category | Folder | File | Workflow |
 |----------|--------|------|----------|
 | CSV | `examples/csv/` | `.csv` | [deploy-examples-csv.yml](../.github/workflows/deploy-examples-csv.yml) |
-| JSON | `examples/json/` | `.json` | [deploy-examples-json.yml](../.github/workflows/deploy-examples-json.yml) |
+| JSON | _(API-fetched in CI)_ | jogruber contributions API | [deploy-examples-json.yml](../.github/workflows/deploy-examples-json.yml) |
 | Go | `examples/go/` | `.txt` | [deploy-examples-go.yml](../.github/workflows/deploy-examples-go.yml) |
 | JavaScript | `examples/javascript/` | `.txt` | [deploy-examples-javascript.yml](../.github/workflows/deploy-examples-javascript.yml) |
 | Rust | `examples/rust/` | `.txt` | [deploy-examples-rust.yml](../.github/workflows/deploy-examples-rust.yml) |
@@ -30,13 +30,13 @@ Open a specific chart with `?d=0`, `?d=1`, … — index matches matrix order in
 
 Same steps for every category:
 
-1. **Add the file** — `examples/{category}/my-data.{csv,json,txt}`
+1. **Add the input** — `examples/{category}/my-data.{csv,txt}` or, for JSON, a matrix `user` + `cmd` curl to a live API (see [deploy-examples-json.yml](../.github/workflows/deploy-examples-json.yml))
 2. **Add a matrix entry** — in `.github/workflows/deploy-examples-{category}.yml`, under `strategy.matrix.include`:
 3. **Push** — CI rebuilds that dashboard on [vizb.goptics.org](https://vizb.goptics.org)
 
 ```yaml
 - output: 07-my-chart       # required — numbered id + sort order + ?d= index
-  file: my-data            # required — basename only (no extension)
+  file: my-data            # csv/go/js/rust — basename only (no extension)
   name: "My Chart"         # required — title in the dashboard
   description: "…"         # optional — subtitle / tooltip
   charts: bar              # optional — csv/json: bar | line | scatter | …
@@ -50,7 +50,20 @@ Same steps for every category:
   parser: rs:criterion     # optional — when auto-detect is not enough
 ```
 
-Only `output`, `file`, and `name` are required. Use `chart` for scale, sort, and 3D flags — not the deprecated `sort` input or a bare `scale` field (action.yml has no `scale` input). Copy a nearby matrix row and edit.
+For **JSON API examples**, use `cmd` + `json-path` + `select` instead of `file`:
+
+```yaml
+- output: 07-my-user
+  user: octocat
+  # in the action step: name: ${{ matrix.user }}
+  # cmd: curl -sfL "https://github-contributions-api.jogruber.de/v4/${{ matrix.user }}"
+  json-path: ".contributions"
+  select: "count{Contributions}"
+  group: date
+  group-pattern: "[z{Year}-y{Month}-x{Date}]"
+```
+
+Only `output` is required (`file` for static inputs, `user` + `cmd` for API-fetched JSON; chart title comes from `user`). Use `chart` for scale, sort, and 3D flags — not the deprecated `sort` input or a bare `scale` field (action.yml has no `scale` input). Copy a nearby matrix row and edit.
 
 For a new **CSV** file, also add a short blurb to [csv/README.md](csv/README.md).
 

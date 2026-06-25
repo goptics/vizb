@@ -3,9 +3,8 @@ on:
   push:
     branches: [main]
     paths:
-      - examples/json/**
-      - action.yml
       - .github/workflows/deploy-examples-json.yml
+      - action.yml
   workflow_run:
     workflows: [Release]
     types: [completed]
@@ -17,31 +16,44 @@ jobs:
     strategy:
       matrix:
         include:
-          - output: 00-sales
-            file: sales
-            name: "Sales by Product"
-            description: "Grouped bar chart by product, region, and category"
-            group: "product,region,category"
-            group-pattern: n,x,y
-            charts: bar,line,pie
+          - output: 00-torvalds
+            user: torvalds
+
+          - output: 01-sindresorhus
+            user: sindresorhus
+
+          - output: 02-yyx990803
+            user: yyx990803
+
+          - output: 03-gaearon
+            user: gaearon
+
+          - output: 04-isaacs
+            user: isaacs
+
+          - output: 05-antirez
+            user: antirez
+
+          - output: 06-gvanrossum
+            user: gvanrossum
 
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
 
-      - name: ${{ matrix.name }}
+      - name: ${{ matrix.user }}
         uses: ./
         with:
-          file: examples/json/${{ matrix.file }}.json
-          name: ${{ matrix.name }}
-          description: ${{ matrix.description }}
-          group: ${{ matrix.group }}
-          group-pattern: ${{ matrix.group-pattern }}
-          charts: ${{ matrix.charts }}
-          chart: |
-            bar:scale=log,sort=asc
-            line:scale=log,sort=asc
-            pie:sort=asc
+          cmd: curl -sfL "https://github-contributions-api.jogruber.de/v4/${{ matrix.user }}"
+          name: ${{ matrix.user }}
+          description: "3D GitHub contribution skyline from jogruber API of the top OSS contributors"
+          group: date
+          group-pattern: "[z{Year}-y{Month}-x{Date}]"
+          json-path: ".contributions"
+          select: "count{Contributions}"
+          stat: all
+          charts: bar
+          chart: "bar:3d"
           output-json: ${{ matrix.output }}.json
 
       - name: Uploading json artifacts

@@ -41,9 +41,17 @@ Tabular recipes (auto-group, auto-value, 3D): [examples/csv/README.md](https://g
 
 ## JSON examples
 
-| Chart | Input file | Pattern | Dashboard |
-|-------|-----------|---------|-----------|
-| Sales by product | [sales.json](https://github.com/goptics/vizb/blob/main/examples/json/sales.json) | `n,x,y` with `product,region,category` | [Open](https://vizb.goptics.org/examples/json/?d=0) |
+Fetched live in CI from the [jogruber GitHub contributions API](https://github-contributions-api.jogruber.de/v4/) — no static repo files. Demonstrates `--json-path`, `--select`, and date axis splitting.
+
+| Chart | Source | Pattern | Dashboard |
+|-------|--------|---------|-----------|
+| torvalds skyline | [API](https://github-contributions-api.jogruber.de/v4/torvalds) | `[z{Year}-y{Month}-x{Date}]` | [Open](https://vizb.goptics.org/examples/json/?d=0) |
+| sindresorhus skyline | [API](https://github-contributions-api.jogruber.de/v4/sindresorhus) | same | [Open](https://vizb.goptics.org/examples/json/?d=1) |
+| yyx990803 skyline | [API](https://github-contributions-api.jogruber.de/v4/yyx990803) | same | [Open](https://vizb.goptics.org/examples/json/?d=2) |
+| gaearon skyline | [API](https://github-contributions-api.jogruber.de/v4/gaearon) | same | [Open](https://vizb.goptics.org/examples/json/?d=3) |
+| isaacs skyline | [API](https://github-contributions-api.jogruber.de/v4/isaacs) | same | [Open](https://vizb.goptics.org/examples/json/?d=4) |
+| antirez skyline | [API](https://github-contributions-api.jogruber.de/v4/antirez) | same | [Open](https://vizb.goptics.org/examples/json/?d=5) |
+| gvanrossum skyline | [API](https://github-contributions-api.jogruber.de/v4/gvanrossum) | same | [Open](https://vizb.goptics.org/examples/json/?d=6) |
 
 ## Go benchmarks
 
