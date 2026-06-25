@@ -12,6 +12,7 @@ import (
 	heatmapchart "github.com/goptics/vizb/config/charts/heatmap"
 	linechart "github.com/goptics/vizb/config/charts/line"
 	radarchart "github.com/goptics/vizb/config/charts/radar"
+	scatterchart "github.com/goptics/vizb/config/charts/scatter"
 	"github.com/goptics/vizb/pkg/template"
 	"github.com/goptics/vizb/shared"
 	"github.com/goptics/vizb/testutil"
@@ -265,6 +266,52 @@ func (s *UISuite) TestRunUIFiltersChartsOnExplicitFlag() {
 	settings := ds["settings"].([]any)
 	s.Require().Len(settings, 1)
 	s.Equal("bar", settings[0].(map[string]any)["type"])
+}
+
+func (s *UISuite) TestRunUIPreservesScatterSettingsWithoutChartsFlag() {
+	dir := s.T().TempDir()
+	input := filepath.Join(dir, "scatter.json")
+	threeD := true
+	threeDVisualMap := true
+	testutil.WriteJSON(s.T(), input, shared.Dataset{
+		Name: "Noise Grid",
+		Settings: []config_charts.ChartConfig{
+			&scatterchart.Config{
+				Type:            "scatter",
+				Scale:           "linear",
+				ThreeDRotate:    &threeD,
+				ThreeDVisualMap: &threeDVisualMap,
+			},
+		},
+		Data: []shared.DataPoint{{XAxis: "0", YAxis: "0", ZAxis: "0", Stats: []shared.Stat{{Type: "value", Value: shared.F64(1)}}}},
+	})
+
+	outFiltered := filepath.Join(dir, "filtered.html")
+	rootCmd.SetArgs([]string{"ui", "-o", outFiltered, "-c", "bar,line,pie", input})
+	s.Require().NoError(rootCmd.Execute())
+
+	filtered := s.extractVIZBDataArray(s.read(outFiltered))
+	s.Require().Len(filtered, 1)
+	filteredSettings := filtered[0].(map[string]any)["settings"].([]any)
+	s.Empty(filteredSettings, "explicit -c bar,line,pie should strip scatter settings")
+
+	ResetTestState()
+
+	outPreserved := filepath.Join(dir, "preserved.html")
+	rootCmd.SetArgs([]string{"ui", "-o", outPreserved, input})
+	s.Require().NoError(rootCmd.Execute())
+
+	html := s.read(outPreserved)
+	s.Equal([]string{"scatter"}, s.extractVIZBCharts(html))
+
+	preserved := s.extractVIZBDataArray(html)
+	s.Require().Len(preserved, 1)
+	preservedSettings := preserved[0].(map[string]any)["settings"].([]any)
+	s.Require().Len(preservedSettings, 1)
+	scatter := preservedSettings[0].(map[string]any)
+	s.Equal("scatter", scatter["type"])
+	s.Equal(true, scatter["threeDRotate"])
+	s.Equal(true, scatter["threeDVisualMap"])
 }
 
 func (s *UISuite) TestRunUIAppliesOverrides() {
