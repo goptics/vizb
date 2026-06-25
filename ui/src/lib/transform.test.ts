@@ -488,6 +488,15 @@ describe('buildValueModeChart', () => {
     expect(chart.axisLabels).toEqual({ x: 'price', y: 'latency' })
   })
 
+  it('omits axisLabels when axes have no label', () => {
+    const axes: Axis[] = [
+      { key: 'x', type: 'value' },
+      { key: 'y', type: 'value' },
+    ]
+    const chart = buildValueModeChart([vdp('1', '2')], axes)
+    expect(chart.axisLabels).toEqual({})
+  })
+
   it('emits empty series, points, yAxis, zAxis', () => {
     const chart = buildValueModeChart([vdp('1', '2')], valueAxes)
     expect(chart.series).toEqual([])

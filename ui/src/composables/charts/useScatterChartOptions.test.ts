@@ -63,6 +63,16 @@ const makeGroupedConfig = (): BaseChartConfig => ({
 })
 
 describe('useScatterChartOptions — axes value mode', () => {
+  it('omits axis names when axisLabels are absent', () => {
+    const cfg = makeValueConfig()
+    cfg.chartData.value = { ...makeValueChartData(), axisLabels: {} }
+    const { options } = useScatterChartOptions(cfg)
+    const xAxis = options.value.xAxis as { name?: string }
+    const yAxis = options.value.yAxis as { name?: string }
+    expect(xAxis.name).toBeUndefined()
+    expect(yAxis.name).toBeUndefined()
+  })
+
   it('emits xAxis.type=value when valueTuples present', () => {
     const { options } = useScatterChartOptions(makeValueConfig())
     expect((options.value.xAxis as { type: string }).type).toBe('value')
@@ -121,6 +131,14 @@ describe('useScatterChartOptions — axes value mode', () => {
 })
 
 describe('useScatterChartOptions — group mode', () => {
+  it('omits x-axis name when axisLabels.x is absent', () => {
+    const cfg = makeGroupedConfig()
+    cfg.chartData.value = { ...makeGroupedChartData(), axisLabels: { y: 'group' } }
+    const { options } = useScatterChartOptions(cfg)
+    const xAxis = options.value.xAxis as { name?: string }
+    expect(xAxis.name).toBeUndefined()
+  })
+
   it('emits category axes for grouped data', () => {
     const { options } = useScatterChartOptions(makeGroupedConfig())
     expect((options.value.xAxis as { type: string }).type).toBe('category')

@@ -40,7 +40,7 @@ const axisLabelsFromAxes = (axes: Axis[] | undefined): AxisLabels | undefined =>
   if (!axes?.length) return undefined
   const result: Record<string, string> = {}
   for (const a of axes) {
-    result[a.key] = a.label ?? a.key
+    if (a.label) result[a.key] = a.label
   }
   return Object.keys(result).length ? (result as AxisLabels) : undefined
 }

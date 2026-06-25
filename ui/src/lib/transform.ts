@@ -255,8 +255,7 @@ const identityStringFromAxes = (axes: Axis[]): string =>
 const axisLabelsFromAxes = (axes: Axis[]): AxisLabels => {
   const out: AxisLabels = {}
   for (const a of axes) {
-    const label = a.label ?? a.key
-    ;(out as Record<string, string>)[a.key] = label
+    if (a.label) (out as Record<string, string>)[a.key] = a.label
   }
   return out
 }
