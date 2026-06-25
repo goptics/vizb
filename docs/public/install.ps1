@@ -23,7 +23,8 @@ $InstallDir = "$env:LOCALAPPDATA\vizb"
 $Repo = "goptics/vizb"
 $Bin = "vizb.exe"
 
-Log "detected windows/$([Environment]::Is64BitOperatingSystem ? 'amd64' : 'arm64')"
+$ArchName = if ([Environment]::Is64BitOperatingSystem) { "amd64" } else { "arm64" }
+Log "detected windows/$ArchName"
 Log "fetching latest release..."
 
 $LatestUrl = "https://github.com/$Repo/releases/latest"
