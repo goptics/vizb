@@ -3,6 +3,16 @@
 
 set -euo pipefail
 
+show_logo() {
+cat <<'EOF'
+\    ####
+ \ ++++        vizb installer
+  \**   izb    vizb.goptics.org
+   =
+EOF
+}
+show_logo
+
 REPO="goptics/vizb"
 BIN="vizb"
 INSTALL_DIR="${HOME}/.local/bin"
