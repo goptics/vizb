@@ -318,6 +318,30 @@ export function formatTooltipValue(value: any): string {
   return String(value)
 }
 
+/** Max legend rows per column before flowing into additional columns. */
+export const TOOLTIP_LEGEND_MAX_ROWS_PER_COL = 10
+
+/** Flow tooltip legend rows into balanced columns when count exceeds the threshold. */
+export function renderTooltipLegendColumns(
+  rows: string[],
+  maxRowsPerCol = TOOLTIP_LEGEND_MAX_ROWS_PER_COL,
+  gridExtraStyle = ''
+): string {
+  if (!rows.length) return ''
+  if (rows.length <= maxRowsPerCol) {
+    const content = rows.join('<br/>')
+    return gridExtraStyle ? `<div style="${gridExtraStyle}">${content}</div>` : content
+  }
+
+  const cols = Math.ceil(rows.length / maxRowsPerCol)
+  const rowsPerCol = Math.ceil(rows.length / cols)
+  const cells = rows
+    .map((r) => `<div style="display:flex;align-items:center;white-space:nowrap">${r}</div>`)
+    .join('')
+  const gridStyle = `display:grid;grid-auto-flow:column;grid-template-rows:repeat(${rowsPerCol},auto);gap:2px 12px;width:max-content${gridExtraStyle ? `;${gridExtraStyle}` : ''}`
+  return `<div style="${gridStyle}">${cells}</div>`
+}
+
 /** Item-trigger radar tooltip: spoke rows + Σ + spread + donut (parity with 3D/heatmap). */
 export function formatRadarItemTooltip(
   params: {
@@ -344,12 +368,11 @@ export function formatRadarItemTooltip(
   const seriesColor = typeof params.color === 'string' ? params.color : undefined
   const color = (name: string) => colorFor?.(name) ?? seriesColor ?? '#888'
 
-  const rows = indicatorNames
-    .map((name, i) => {
-      const dot = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color(name)};margin-right:6px"></span>`
-      return `${dot}${name}: <b>${formatTooltipValue(vals[i])}</b>`
-    })
-    .join('<br/>')
+  const rows = indicatorNames.map((name, i) => {
+    const dot = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color(name)};margin-right:6px"></span>`
+    return `${dot}${name}: <b>${formatTooltipValue(vals[i])}</b>`
+  })
+  const legend = renderTooltipLegendColumns(rows)
 
   const finiteVals = vals.filter((v) => Number.isFinite(v))
   const sigmaBlock =
@@ -368,7 +391,7 @@ export function formatRadarItemTooltip(
   )
   const donutBlock = donut ? `${tooltipDivider(isDark)}${donut}` : ''
 
-  return `<b>${title}</b><br/>${rows}${sigmaBlock}${spread}${donutBlock}`
+  return `<b>${title}</b><br/>${legend}${sigmaBlock}${spread}${donutBlock}`
 }
 
 /**
@@ -380,6 +403,8 @@ export function getTooltipTheme(isDark: boolean) {
     backgroundColor: isDark ? '#1f2937' : '#ffffff',
     borderColor: isDark ? '#4b5563' : '#e5e7eb',
     textStyle: { color: getChartStyling(isDark).textColor },
+    enterable: true,
+    extraCssText: 'user-select:text;max-height:60vh;overflow:auto;',
   }
 }
 
@@ -458,20 +483,15 @@ export function renderDonutSvg(
 
   // Side legend: one row per slice (swatch + name + share %). Scrolls with the
   // tooltip when there are many slices.
-  const legendRows = pos
-    .map((s) => {
-      const pct = ((s.value / total) * 100).toFixed(1)
-      const swatch = `<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${s.color};margin-right:6px;flex:none"></span>`
-      return `<div style="display:flex;align-items:center;white-space:nowrap">${swatch}<span>${s.name}</span><b style="margin-left:6px">${pct}%</b></div>`
-    })
-    .join('')
-  // Flow into balanced columns when there are many slices, so a long legend
-  // stays compact instead of one tall stack. ≤12 slices → single column.
-  const cols = Math.ceil(pos.length / 12)
-  const rowsPerCol = Math.ceil(pos.length / cols)
-  const legend = `<div style="display:grid;grid-auto-flow:column;grid-template-rows:repeat(${rowsPerCol},auto);gap:2px 12px;font-size:11px">${legendRows}</div>`
+  const legendRows = pos.map((s) => {
+    const pct = ((s.value / total) * 100).toFixed(1)
+    const swatch = `<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${s.color};margin-right:6px;flex:none"></span>`
+    return `${swatch}<span>${s.name}</span><b style="margin-left:6px">${pct}%</b>`
+  })
+  const legend = renderTooltipLegendColumns(legendRows, TOOLTIP_LEGEND_MAX_ROWS_PER_COL, 'font-size:11px')
 
-  return `<div style="display:flex;align-items:center;gap:8px;margin-top:4px">${svg}${legend}</div>`
+  // Donut stays left; legend flows in a single column or multi-column grid beside it.
+  return `<div style="display:flex;align-items:center;gap:8px;margin-top:4px;width:max-content">${svg}${legend}</div>`
 }
 
 /**
@@ -512,10 +532,6 @@ export function createTooltipConfig(
     return {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },
-      // Many-series charts can produce a long row list + donut legend; cap the
-      // height and let the user scroll into the tooltip rather than overflow.
-      enterable: true,
-      extraCssText: 'max-height:60vh;overflow:auto;',
       ...theme,
       formatter: (params) => {
         if (!Array.isArray(params)) return ''
@@ -524,11 +540,12 @@ export function createTooltipConfig(
         const present = params.filter((p) => p.value !== null && p.value !== undefined)
         if (!present.length) return ''
 
-        const body = present.reduce((acc, cur) => {
+        const legendRows = present.map((cur) => {
           const seriesSum = seriesTotals?.get(cur.seriesName ?? '')
           const sumTag = seriesSum === undefined ? '' : ` (Σ${Math.round(seriesSum * 100) / 100})`
-          return `${acc}${cur.marker} ${cur.seriesName}${sumTag}: ${formatTooltipValue(cur.value)}<br/>`
-        }, `<strong>${params[0]?.name}</strong><br/>`)
+          return `${cur.marker} ${cur.seriesName}${sumTag}: ${formatTooltipValue(cur.value)}`
+        })
+        const body = `<strong>${params[0]?.name}</strong><br/>${renderTooltipLegendColumns(legendRows)}`
 
         // Σ across all series at this x = the x marginal. Label with the x name
         // to match the 3D tooltip's "Σ <name>" lines. Only meaningful with >1 series.

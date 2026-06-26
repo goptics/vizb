@@ -11,6 +11,9 @@ import {
   HEATMAP_Y_ZOOM_INSET,
   formatRadarItemTooltip,
   hasRotatedXLabels,
+  renderTooltipLegendColumns,
+  TOOLTIP_LEGEND_MAX_ROWS_PER_COL,
+  getTooltipTheme,
 } from './chartConfig'
 
 const indicators = ['A', 'B', 'C']
@@ -78,6 +81,41 @@ describe('hasRotatedXLabels', () => {
   })
 })
 
+describe('getTooltipTheme', () => {
+  it('enables enterable tooltips with selectable text', () => {
+    const theme = getTooltipTheme(false)
+    expect(theme.enterable).toBe(true)
+    expect(theme.extraCssText).toContain('user-select:text')
+  })
+})
+
+describe('renderTooltipLegendColumns', () => {
+  it('returns empty string for no rows', () => {
+    expect(renderTooltipLegendColumns([])).toBe('')
+  })
+
+  it('joins up to max rows in a single column', () => {
+    const rows = Array.from({ length: TOOLTIP_LEGEND_MAX_ROWS_PER_COL }, (_, i) => `row${i}`)
+    const html = renderTooltipLegendColumns(rows)
+    expect(html).toBe(rows.join('<br/>'))
+    expect(html).not.toContain('display:grid')
+  })
+
+  it('flows into balanced columns when count exceeds threshold', () => {
+    const rows = Array.from({ length: 11 }, (_, i) => `row${i}`)
+    const html = renderTooltipLegendColumns(rows)
+    expect(html).toContain('display:grid')
+    expect(html).toContain('grid-auto-flow:column')
+    expect(html).toContain('grid-template-rows:repeat(6,auto)')
+  })
+
+  it('never exceeds max rows per column for large lists', () => {
+    const rows = Array.from({ length: 25 }, (_, i) => `row${i}`)
+    const html = renderTooltipLegendColumns(rows)
+    expect(html).toContain('grid-template-rows:repeat(9,auto)')
+  })
+})
+
 describe('formatRadarItemTooltip', () => {
   it('returns empty string when params.data is missing', () => {
     expect(formatRadarItemTooltip({}, indicators, false)).toBe('')
@@ -115,5 +153,17 @@ describe('formatRadarItemTooltip', () => {
       false
     )
     expect(html).toContain('<b>Pool1 / alloc</b>')
+  })
+
+  it('uses multi-column grid for many spokes', () => {
+    const indicators = Array.from({ length: 11 }, (_, i) => `S${i}`)
+    const values = indicators.map((_, i) => i + 1)
+    const html = formatRadarItemTooltip(
+      { data: { name: 'Series', value: values } },
+      indicators,
+      false
+    )
+    expect(html).toContain('display:grid')
+    expect(html).toContain('grid-auto-flow:column')
   })
 })

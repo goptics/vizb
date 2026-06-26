@@ -7,6 +7,7 @@ import {
   tooltipDivider,
   tooltipSpreadRows,
   renderDonutSvg,
+  renderTooltipLegendColumns,
   getTooltipTheme,
   type ChartStyling,
 } from './chartConfig'
@@ -119,13 +120,14 @@ export function createValue3DTooltipFormatter(params: {
     const yName = yValues[yi] ?? String(yi)
     const xMarginal = xMarginals.get(xName) ?? 0
     const yMarginal = yMarginals.get(yName) ?? 0
-    const xyTotal = xMarginal + yMarginal
+    // Row ∪ column: subtract cell so the hovered (x,y) is not double-counted.
+    const xyUnion = xMarginal + yMarginal - v
 
     const margins =
       tooltipDivider(isDark) +
       `Σ ${xLabel}(${xName}): <b>${round2(xMarginal)}</b><br/>` +
       `Σ ${yLabel}(${yName}): <b>${round2(yMarginal)}</b><br/>` +
-      `Σ (${xLabel}+${yLabel}): <b>${round2(xyTotal)}</b>`
+      `Σ (${xLabel}∪${yLabel}): <b>${round2(xyUnion)}</b>`
 
     return (
       `<b>${xLabel}: ${xName} / ${yLabel}: ${yName}</b><br/>` +
@@ -389,20 +391,20 @@ export function create3DTooltipFormatter(params: {
       })
       .filter(Boolean)
 
-    // Σ over z = stacked bar height at this (x,y), when there's more than one z.
-    const zSumLine = zmap.size > 1 ? `Σ ${zSumLabel}: <b>${round2(cellTotal)}</b><br/>` : ''
+    // Row ∪ column (inclusion–exclusion). Σ (x,y,z) = sum over z at this cell
+    // (x,y fixed by hover) — chart-wide total lives on the ChartCard badge.
+    const xyUnion = xMarginal + yMarginal - cellTotal
+    const cellSumLine =
+      zmap.size > 0
+        ? `Σ (${xLabel},${yLabel},${zSumLabel}): <b>${round2(cellTotal)}</b><br/>`
+        : ''
 
-    const xyTotal = xMarginal + yMarginal
-    const xyzTotal = xyTotal + cellTotal
-
-    // Per-axis marginals first, then combined axis sums.
     const margins =
       tooltipDivider(isDark) +
       `Σ ${xLabel}(${xName}): <b>${round2(xMarginal)}</b><br/>` +
       `Σ ${yLabel}(${yName}): <b>${round2(yMarginal)}</b><br/>` +
-      zSumLine +
-      `Σ (${xLabel}+${yLabel}): <b>${round2(xyTotal)}</b><br/>` +
-      `Σ (${xLabel}+${yLabel}+${zSumLabel}): <b>${round2(xyzTotal)}</b>`
+      cellSumLine +
+      `Σ (${xLabel}∪${yLabel}): <b>${round2(xyUnion)}</b>`
 
     // Spread of the z-values in this cell (median / IQR / CV), mirroring the 2D
     // tooltip. Only meaningful with >1 z.
@@ -416,7 +418,8 @@ export function create3DTooltipFormatter(params: {
               .map((z) => ({ value: zmap.get(z)!, color: getNextColorFor(z) ?? '', name: z }))
           )
         : ''
-    const legendBlock = rows.length > 0 ? `${rows.join('<br/>')}<br/>` : ''
+    const legendBlock =
+      rows.length > 0 ? `${renderTooltipLegendColumns(rows)}<br/>` : ''
 
     return `<b>${xLabel}: ${xName} / ${yLabel}: ${yName}</b><br/>${legendBlock}${margins}${spread}${donut ? tooltipDivider(isDark) + donut : ''}`
   }
