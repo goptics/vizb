@@ -57,7 +57,7 @@ irm https://vizb.goptics.org/install.ps1 | iex
 
 ### Quick Example
 
-Turn your GitHub contribution history into a 3D skyline of your activity over time. Each year stacks as a new layer; within it, every day is a column whose height is your contribution count. Replace `<your-github-username>` with your GitHub username.
+Run one command to turn your GitHub contribution history into a 3D skyline of your activity over time. Each year stacks as a new layer; within it, every day is a column whose height is your contribution count. Replace `<your-github-username>` with your GitHub username and open the generated `index.html`.
 
 <p align="center">
   <video src="https://github.com/user-attachments/assets/7c949be7-165a-4f9f-9c59-bf85526b1c1e" controls width="100%"></video>
