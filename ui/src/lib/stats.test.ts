@@ -120,14 +120,40 @@ describe('describe', () => {
     const d = describeStats([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
     expect(d.trimMean).toBeCloseTo(5.5, P)
   })
-  it('sem = stdDev / sqrt(n)', () => {
+  it('sem = sample SD / sqrt(n) (n-1 divisor, for inference)', () => {
     const d = describeStats([2, 4, 6])
-    expect(d.sem).toBeCloseTo(d.stdDev / Math.sqrt(3), P)
+    // sample variance = 4 → sample SD = 2; sem = 2/√3
+    expect(d.sem).toBeCloseTo(2 / Math.sqrt(3), P)
   })
-  it('ci95 bounds = mean ± 1.96·sem', () => {
+  it('ci95 bounds = mean ± t*_{n-1} · sem (Student-t, not z=1.96)', () => {
     const d = describeStats([2, 4, 6])
-    expect(d.ci95Lower).toBeCloseTo(d.mean - 1.96 * d.sem, P)
-    expect(d.ci95Upper).toBeCloseTo(d.mean + 1.96 * d.sem, P)
+    // df=2 is an exact table breakpoint → t* = 4.3026527
+    const tcrit = 4.3026527
+    expect(d.ci95Lower).toBeCloseTo(d.mean - tcrit * d.sem, P)
+    expect(d.ci95Upper).toBeCloseTo(d.mean + tcrit * d.sem, P)
+  })
+  it('t* interpolates in 1/df: df=6 (between breakpoints 5 and 7) ≈ 2.4469', () => {
+    // n=7 → df=6; exact t*_{6}=2.4469, table interpolates to ~2.4504 (<0.15% off)
+    const d = describeStats([1, 2, 3, 4, 5, 6, 7])
+    const tcrit = (d.ci95Upper - d.ci95Lower) / 2 / d.sem
+    expect(tcrit).toBeCloseTo(2.4469, 1)
+  })
+  it('t* → z=1.959964 in the large-df limit', () => {
+    const big = Array.from({ length: 500 }, (_, i) => i)
+    const d = describeStats(big)
+    const tcrit = (d.ci95Upper - d.ci95Lower) / 2 / d.sem
+    expect(tcrit).toBeCloseTo(1.96, 2)
+  })
+  it('ci95 is wider than the old z-interval for small n', () => {
+    const d = describeStats([2, 4, 6])
+    const zWidth = 1.96 * d.sem
+    const tWidth = (d.ci95Upper - d.ci95Lower) / 2
+    expect(tWidth).toBeGreaterThan(zWidth)
+  })
+  it('ci95 → NaN for n<2 (no degrees of freedom)', () => {
+    expect(describeStats([5]).ci95Lower).toBeNaN()
+    expect(describeStats([5]).ci95Upper).toBeNaN()
+    expect(describeStats([5]).sem).toBeNaN()
   })
   it('fences and outlier count', () => {
     // [1,2,3,4,5]: q1=2, q3=4, iqr=2, lf=−1, uf=7 → no outliers
@@ -218,7 +244,7 @@ describe('correlationMatrix', () => {
     expect(m[0]![2]).toBeCloseTo(-1, P)
     expect(m[0]![1]).toBeCloseTo(m[1]![0]!, P)
   })
-  it('NaN preserved for constant column', () => {
+  it('NaN preserved for constant column; constant diagonal is NaN (not 1)', () => {
     const m = correlationMatrix(
       [
         [1, 2, 3],
@@ -228,7 +254,8 @@ describe('correlationMatrix', () => {
     )
     expect(m[0]![1]).toBeNaN()
     expect(m[1]![0]).toBeNaN()
-    expect(m[0]![0]).toBeCloseTo(1, P)
+    expect(m[0]![0]).toBeCloseTo(1, P) // non-constant column → 1
+    expect(m[1]![1]).toBeNaN() // constant column → NaN, consistent with off-diagonal
   })
   it('kendall: diagonal=1, symmetric, perfect relationships', () => {
     const m = correlationMatrix(
@@ -302,6 +329,26 @@ describe('computeProfiles', () => {
 
   it('empty series order → no profiles', () => {
     expect(computeProfiles([], [], []).seriesProfiles).toEqual([])
+  })
+
+  it('3D: descriptive profiles are split per (series × z) when zAxis ≥2', () => {
+    // Regression: computeProfiles previously dropped zAxis for the descriptive
+    // piece, collapsing across the z dimension while correlation used z.
+    const pts3 = (...t: [string, string, string, number][]): Point3D[] =>
+      t.map(([xAxis, yAxis, zAxis, value]) => ({ xAxis, yAxis, zAxis, value }))
+    const points = pts3(
+      ['A', 'p', 'z1', 1],
+      ['A', 'p', 'z2', 2],
+      ['A', 'q', 'z1', 3],
+      ['A', 'q', 'z2', 4]
+    )
+    const { seriesProfiles, correlation } = computeProfiles(points, ['A'], ['p', 'q'], ['z1', 'z2'])
+    // One profile per (series × z) slice → "A / z1" and "A / z2"
+    expect(seriesProfiles.map((s) => s.name).sort()).toEqual(['A / z1', 'A / z2'])
+    expect(seriesProfiles[0]!.stats.count).toBe(2)
+    // Correlation still uses z (smallest usable axis: x=1, y=2, z=2 → ties x<y? x=1
+    // is <2 so unusable; y and z both 2 → smallest tie → y first).
+    expect(correlation).toBeDefined()
   })
 })
 

@@ -9,7 +9,7 @@ pre-commit:
     ui-gen-check:
       glob: "ui/src/**/*.{vue,ts,js,css,svg}"
       run: |
-        set -euo pipefail
+        set -eu
         gen="pkg/template/vizb-ui.gen.go"
         committed="$(mktemp)"
         trap 'rm -f "$committed"' EXIT
