@@ -8,6 +8,7 @@ import {
   tooltipDivider,
   tooltipSpreadRows,
   renderDonutSvg,
+  renderTooltipLegendColumns,
   isLargeXAxis,
   createHeatmapDataZoomConfig,
   createHeatmapLayoutConfig,
@@ -309,7 +310,7 @@ function build3DHeatmap(config: BaseChartConfig): EChartsOption {
           )
         : ''
 
-    return `<b>${xLabel}: ${xName} / ${yLabel}: ${yName}</b><br/>${rows.join('<br/>')}${margins}${spread}${donut ? tooltipDivider(isDark.value) + donut : ''}`
+    return `<b>${xLabel}: ${xName} / ${yLabel}: ${yName}</b><br/>${renderTooltipLegendColumns(rows)}${margins}${spread}${donut ? tooltipDivider(isDark.value) + donut : ''}`
   }
 
   return {

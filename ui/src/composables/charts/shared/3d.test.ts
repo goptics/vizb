@@ -302,18 +302,18 @@ describe('createValue3DTooltipFormatter', () => {
     expect(html).not.toContain('(Σ100)')
   })
 
-  it('includes combined x+y total and per-axis marginal totals', () => {
+  it('includes row∪column total (no double-count) and per-axis marginal totals', () => {
     const html = formatter({ value: [0, 0, 10] })
-    expect(html).toContain('Σ (Region+Product): <b>70</b>')
+    expect(html).toContain('Σ (Region∪Product): <b>60</b>')
     expect(html).toContain('Σ Region(East): <b>30</b>')
     expect(html).toContain('Σ Product(A): <b>40</b>')
-    expect(html).not.toContain('Σ (Region+Product+')
+    expect(html).not.toContain('Σ (Region,Product,Category)')
   })
 
-  it('lists per-axis marginals before combined x+y total', () => {
+  it('lists per-axis marginals before row∪column total', () => {
     const html = formatter({ value: [0, 0, 10] })
-    expect(html.indexOf('Σ Region(East)')).toBeLessThan(html.indexOf('Σ (Region+Product)'))
-    expect(html.indexOf('Σ Product(A)')).toBeLessThan(html.indexOf('Σ (Region+Product)'))
+    expect(html.indexOf('Σ Region(East)')).toBeLessThan(html.indexOf('Σ (Region∪Product)'))
+    expect(html.indexOf('Σ Product(A)')).toBeLessThan(html.indexOf('Σ (Region∪Product)'))
   })
 
   it('omits spread and donut sections for single-value cells', () => {
@@ -352,35 +352,35 @@ describe('create3DTooltipFormatter', () => {
   it('omits chart-wide grand total (shown on ChartCard badge instead)', () => {
     const html = formatter({ value: [0, 0, 0] })
     expect(html).not.toContain('Σ Total')
+    expect(html).not.toContain('Σ (Region,Product,Category): <b>155</b>')
   })
 
-  it('includes combined x+y and x+y+z totals plus per-axis marginals', () => {
+  it('includes row∪column and cell-level x,y,z sum plus per-axis marginals', () => {
     const html = formatter({ value: [0, 0, 0] })
-    expect(html).toContain('Σ (Region+Product): <b>105</b>')
-    expect(html).toContain('Σ (Region+Product+Category): <b>120</b>')
+    expect(html).toContain('Σ (Region∪Product): <b>90</b>')
+    expect(html).toContain('Σ (Region,Product,Category): <b>15</b>')
     expect(html).toContain('Σ Region(East): <b>55</b>')
     expect(html).toContain('Σ Product(A): <b>50</b>')
   })
 
-  it('includes cell-level z sum when multiple z groups share the cell', () => {
+  it('uses Σ (x,y,z) for the cell z-sum at the hovered (x,y)', () => {
     const html = formatter({ value: [0, 0, 0] })
-    expect(html).toContain('Σ Category: <b>15</b>')
+    expect(html).toContain('Σ (Region,Product,Category): <b>15</b>')
+    expect(html).not.toMatch(/Σ Category: <b>15<\/b>/)
   })
 
-  it('lists per-axis marginals and z sum before combined totals', () => {
+  it('lists per-axis marginals and cell sum before row∪column total', () => {
     const html = formatter({ value: [0, 0, 0] })
     const xIdx = html.indexOf('Σ Region(East)')
     const yIdx = html.indexOf('Σ Product(A)')
-    const zIdx = html.indexOf('Σ Category:')
-    const xyIdx = html.indexOf('Σ (Region+Product):')
-    const xyzIdx = html.indexOf('Σ (Region+Product+Category):')
+    const xyzIdx = html.indexOf('Σ (Region,Product,Category):')
+    const xyIdx = html.indexOf('Σ (Region∪Product):')
     expect(xIdx).toBeLessThan(xyIdx)
     expect(yIdx).toBeLessThan(xyIdx)
-    expect(zIdx).toBeLessThan(xyIdx)
-    expect(xyIdx).toBeLessThan(xyzIdx)
+    expect(xyzIdx).toBeLessThan(xyIdx)
   })
 
-  it('includes x+y+z total for single-z cells', () => {
+  it('includes row∪column and cell x,y,z sum for single-z cells', () => {
     const singleZFormatter = create3DTooltipFormatter({
       xValues: ['East'],
       yValues: ['A'],
@@ -392,9 +392,9 @@ describe('create3DTooltipFormatter', () => {
       zAxisLabel: 'Category',
     })
     const html = singleZFormatter({ value: [0, 0, 0] })
-    expect(html).toContain('Σ (Region+Product): <b>20</b>')
-    expect(html).toContain('Σ (Region+Product+Category): <b>30</b>')
-    expect(html).not.toMatch(/Σ Category: <b>10<\/b><br\/>/)
+    expect(html).toContain('Σ (Region∪Product): <b>10</b>')
+    expect(html).toContain('Σ (Region,Product,Category): <b>10</b>')
+    expect(html).not.toMatch(/Σ Category: <b>10<\/b>/)
   })
 })
 
