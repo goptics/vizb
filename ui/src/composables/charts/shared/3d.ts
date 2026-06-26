@@ -395,9 +395,7 @@ export function create3DTooltipFormatter(params: {
     // (x,y fixed by hover) — chart-wide total lives on the ChartCard badge.
     const xyUnion = xMarginal + yMarginal - cellTotal
     const cellSumLine =
-      zmap.size > 0
-        ? `Σ (${xLabel},${yLabel},${zSumLabel}): <b>${round2(cellTotal)}</b><br/>`
-        : ''
+      zmap.size > 0 ? `Σ (${xLabel},${yLabel},${zSumLabel}): <b>${round2(cellTotal)}</b><br/>` : ''
 
     const margins =
       tooltipDivider(isDark) +
@@ -418,8 +416,7 @@ export function create3DTooltipFormatter(params: {
               .map((z) => ({ value: zmap.get(z)!, color: getNextColorFor(z) ?? '', name: z }))
           )
         : ''
-    const legendBlock =
-      rows.length > 0 ? `${renderTooltipLegendColumns(rows)}<br/>` : ''
+    const legendBlock = rows.length > 0 ? `${renderTooltipLegendColumns(rows)}<br/>` : ''
 
     return `<b>${xLabel}: ${xName} / ${yLabel}: ${yName}</b><br/>${legendBlock}${margins}${spread}${donut ? tooltipDivider(isDark) + donut : ''}`
   }

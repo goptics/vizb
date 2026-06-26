@@ -488,7 +488,11 @@ export function renderDonutSvg(
     const swatch = `<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${s.color};margin-right:6px;flex:none"></span>`
     return `${swatch}<span>${s.name}</span><b style="margin-left:6px">${pct}%</b>`
   })
-  const legend = renderTooltipLegendColumns(legendRows, TOOLTIP_LEGEND_MAX_ROWS_PER_COL, 'font-size:11px')
+  const legend = renderTooltipLegendColumns(
+    legendRows,
+    TOOLTIP_LEGEND_MAX_ROWS_PER_COL,
+    'font-size:11px'
+  )
 
   // Donut stays left; legend flows in a single column or multi-column grid beside it.
   return `<div style="display:flex;align-items:center;gap:8px;margin-top:4px;width:max-content">${svg}${legend}</div>`
