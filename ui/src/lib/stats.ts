@@ -3,12 +3,71 @@
 // Web Worker alongside lib/transform.ts.
 //
 // All inputs are treated as a finite population (not a sample): variance/SD use
-// the /n divisor, skewness/kurtosis use population moments. Non-finite values
-// (NaN / ±Inf) are dropped up front — callers pass NaN for "missing cell" so a
-// zero-fill never biases a stat (see transform.ts).
+// the /n divisor, skewness/kurtosis use population moments. The one exception is
+// the 95% confidence interval for the mean, which is a *sample* inference and so
+// uses the sample SD (n-1) as the standard error and the Student-t critical value
+// with df = n-1 (z=1.96 would be systematically too narrow for small n). Non-finite
+// values (NaN / ±Inf) are dropped up front — callers pass NaN for "missing cell"
+// so a zero-fill never biases a stat (see transform.ts).
 import type { DescriptiveStats, SeriesProfile, CorrelationMatrix, Point3D } from '../types'
 
 const finite = (xs: number[]): number[] => xs.filter((x) => Number.isFinite(x))
+
+// ── Student-t critical value (for the 95% CI) ─────────────────────────────────
+// The two-sided 95% critical value t*_{df} is monotone decreasing in df toward
+// the normal z=1.95996. df here is always n-1 (an integer), and the value is only
+// ever surfaced in a UI table, so a compact lookup with linear interpolation in
+// 1/df space (where t* is near-linear) is more than enough — <0.15% max error
+// across df=1…1000 vs the exact quantile, invisible at any render precision.
+// Breakpoints are denser at low df where the curve is steepest.
+
+const T95_TABLE: ReadonlyArray<readonly [df: number, t: number]> = [
+  [1, 12.706205],
+  [2, 4.3026527],
+  [3, 3.1824463],
+  [4, 2.7764451],
+  [5, 2.5705818],
+  [7, 2.3646243],
+  [10, 2.2281389],
+  [20, 2.0859634],
+  [30, 2.0422725],
+  [60, 2.0002978],
+  [120, 1.9799304],
+]
+const T95_INF = 1.959964 // normal-limit critical value (df → ∞)
+
+function tCritical95(df: number): number {
+  if (df < 1) return NaN
+  if (!Number.isFinite(df)) return T95_INF
+  // Linear interpolation in 1/df between bracketing breakpoints; t* is
+  // near-affine in 1/df, so this tracks the curve closely with few points.
+  const interp = (d0: number, t0: number, d1: number, t1: number): number => {
+    const u = 1 / d0
+    const v = 1 / d1
+    const w = 1 / df
+    return t0 + ((t1 - t0) * (u - w)) / (u - v)
+  }
+  for (let i = 0; i < T95_TABLE.length - 1; i++) {
+    const [d0, t0] = T95_TABLE[i]!
+    const [d1, t1] = T95_TABLE[i + 1]!
+    if (df >= d0 && df <= d1) return interp(d0, t0, d1, t1)
+  }
+  // Beyond the last finite breakpoint, interpolate toward the normal limit.
+  return interp(
+    T95_TABLE[T95_TABLE.length - 1]![0],
+    T95_TABLE[T95_TABLE.length - 1]![1],
+    Infinity,
+    T95_INF
+  )
+}
+
+// Sample variance (divisor n-1) — used only for the SEM/CI (sample inference).
+const sampleVariance = (xs: number[]): number => {
+  const v = finite(xs)
+  if (v.length < 2) return NaN
+  const m = mean(v)
+  return v.reduce((s, x) => s + (x - m) ** 2, 0) / (v.length - 1)
+}
 
 export const mean = (xs: number[]): number =>
   xs.length ? xs.reduce((s, x) => s + x, 0) / xs.length : NaN
@@ -84,7 +143,9 @@ export function kurtosis(xs: number[]): number {
   return m4 / sd ** 4 - 3
 }
 
-// Median absolute deviation: median(|x - median(x)|).
+// Median absolute deviation: median(|x - median(x)|). Returned unscaled (no
+// 1.4826 consistency factor), so it is NOT σ-equivalent for normal data — the
+// UI labels it as the raw MAD, not as a robust-SD surrogate.
 export function mad(xs: number[]): number {
   const v = finite(xs)
   if (!v.length) return NaN
@@ -148,7 +209,11 @@ export function describe(xs: number[]): DescriptiveStats {
   const iqr = p75 - p25
   const lowerFence = p25 - 1.5 * iqr
   const upperFence = p75 + 1.5 * iqr
-  const sem = sd / Math.sqrt(n)
+  // SEM uses the *sample* SD (n-1) since the CI is a sample inference about the
+  // mean; the population `sd` above is for the spread descriptor, not inference.
+  const sampleSd = Math.sqrt(sampleVariance(v))
+  const sem = n >= 2 ? sampleSd / Math.sqrt(n) : nan
+  const tcrit = tCritical95(n - 1)
   const allPositive = v.every((x) => x > 0)
   const trimK = Math.floor(n * 0.1)
   return {
@@ -170,7 +235,10 @@ export function describe(xs: number[]): DescriptiveStats {
     stdDev: sd,
     cv: m === 0 ? nan : sd / m,
     sem,
-    cqv: p25 + p75 !== 0 ? iqr / (p25 + p75) : nan,
+    // CQV (quartile dispersion coefficient) is defined for non-negative data;
+    // guard against a non-positive denominator (p25+p75 ≤ 0), which otherwise
+    // yields unstable/negative values for distributions spanning negative quantiles.
+    cqv: p25 + p75 > 0 ? iqr / (p25 + p75) : nan,
     // extremes
     min,
     max,
@@ -192,9 +260,9 @@ export function describe(xs: number[]): DescriptiveStats {
     p90: quantileSorted(sorted, 0.9),
     p95: quantileSorted(sorted, 0.95),
     p99: quantileSorted(sorted, 0.99),
-    // confidence
-    ci95Lower: m - 1.96 * sem,
-    ci95Upper: m + 1.96 * sem,
+    // 95% CI for the mean: mean ± t*_{n-1} · SEM (t critical, not z=1.96).
+    ci95Lower: n >= 2 ? m - tcrit * sem : nan,
+    ci95Upper: n >= 2 ? m + tcrit * sem : nan,
   }
 }
 
@@ -377,7 +445,10 @@ export function distanceCorr(a: number[], b: number[]): number {
 export type CorrelationMethod = 'pearson' | 'spearman' | 'kendall' | 'dcor'
 
 // Symmetric K×K correlation matrix over the given columns (each an aligned
-// number[] of equal conceptual length). Diagonal is 1.
+// number[] of equal conceptual length). The diagonal is 1 for a non-degenerate
+// column and NaN for a constant (zero-variance) column — consistent with the
+// NaN that the same column produces off-diagonal, so a constant series never
+// shows a misleading self-correlation of 1.
 export function correlationMatrix(columns: number[][], method: CorrelationMethod): number[][] {
   const corr =
     method === 'spearman'
@@ -389,8 +460,17 @@ export function correlationMatrix(columns: number[][], method: CorrelationMethod
           : pearson
   const k = columns.length
   const m: number[][] = Array.from({ length: k }, () => new Array<number>(k).fill(NaN))
+  // A column is degenerate when it has <2 finite values or all finite values
+  // coincide (zero spread) — every method returns NaN off-diagonal for it.
+  const isConstant = (col: number[]): boolean => {
+    const f = finite(col)
+    if (f.length < 2) return true
+    const lo = Math.min(...f)
+    const hi = Math.max(...f)
+    return lo === hi
+  }
   for (let i = 0; i < k; i++) {
-    m[i]![i] = 1
+    m[i]![i] = isConstant(columns[i]!) ? NaN : 1
     for (let j = i + 1; j < k; j++) {
       const c = corr(columns[i]!, columns[j]!)
       m[i]![j] = c
@@ -453,8 +533,9 @@ export function usableCorrelationAxes(
     .map(([ax]) => ax)
 }
 
-// Pick the axis to correlate along: prefer x (series), fall back to y, then z.
-// Single source of truth shared by `availableViews` (gate) and `computeCorrelation`.
+// Pick the axis to correlate along: the usable axis with the fewest entities
+// (cheapest K×K matrix), breaking ties x → y → z. Single source of truth shared
+// by `availableViews` (gate) and `computeCorrelation`.
 export function selectCorrelationAxis(
   seriesOrder: string[],
   yAxis: string[],
@@ -488,6 +569,9 @@ export function buildCorrelationColumns(
   const labels = axis === 'x' ? seriesOrder : axis === 'y' ? yAxis : zAxis
 
   // entity → (obsKey → value); plus a stable first-seen ordering of obs keys.
+  // The obs key joins the two other-axis values with a NUL byte so that distinct
+  // tuples can never collide (e.g. ("a b","c") vs ("a","b c")); mirrors
+  // buildColumnsGroupedByZ.
   const byEntity = new Map<string, Map<string, number>>()
   const obsKeys: string[] = []
   const seenObs = new Set<string>()
@@ -638,7 +722,7 @@ export function computeProfiles(
   correlation?: CorrelationMatrix
 } {
   return {
-    seriesProfiles: computeDescriptive(points, seriesOrder, yAxis),
+    seriesProfiles: computeDescriptive(points, seriesOrder, yAxis, zAxis),
     correlation: computeCorrelation(points, seriesOrder, yAxis, zAxis),
   }
 }
