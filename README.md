@@ -43,13 +43,62 @@
 
 ### Quick Install
 
-```bash
-# Linux / macOS
-curl -fsSL https://vizb.goptics.org/install.sh | bash
+#### Linux / macOS
 
-# Windows
+```bash
+curl -fsSL https://vizb.goptics.org/install.sh | bash
+```
+
+#### Windows
+
+```powershell
 irm https://vizb.goptics.org/install.ps1 | iex
 ```
+
+### Quick Example
+
+Turn your GitHub contribution history into a 3D skyline of your activity over time. Each year stacks as a new layer; within it, every day is a column whose height is your contribution count. Replace `<your-github-username>` with your GitHub username.
+
+<p align="center">
+  <video src="https://github.com/user-attachments/assets/7c949be7-165a-4f9f-9c59-bf85526b1c1e" controls width="100%"></video>
+  <br />
+  <sub>Example: <a href="https://github.com/torvalds">torvalds</a> contribution history</sub>
+</p>
+
+#### Linux / macOS
+
+```bash
+curl -s "https://github-contributions-api.jogruber.de/v4/<your-github-username>" \
+  | vizb bar \
+      --group date \
+      --group-pattern '[z{Year}-y{Month}-x{Date}]' \
+      --json-path '.contributions' \
+      --select 'count{Contributions}' \
+      --stat \
+      --output index.html
+```
+
+#### Windows
+
+```powershell
+(iwr "https://github-contributions-api.jogruber.de/v4/<your-github-username>").Content `
+  | vizb bar `
+      --group date `
+      --group-pattern '[z{Year}-y{Month}-x{Date}]' `
+      --json-path '.contributions' `
+      --select 'count{Contributions}' `
+      --stat `
+      --output index.html
+```
+
+Flags used:
+
+- `--group date` — group rows by date
+- `--group-pattern '[z{Year}-y{Month}-x{Date}]'` — split each date into Year / Month / Day axes (z / y / x)
+- `--json-path '.contributions'` — pull the nested contributions array out of the API envelope
+- `--select 'count{Contributions}'` — keep only the count column and rename it to `Contributions`
+- `--stat` — add the statistics panel
+- `--output index.html` — write a self-contained HTML file
 
 ### Go Toolchain
 
