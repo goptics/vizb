@@ -144,14 +144,12 @@ export function boxSizeForAxisCount(len: number): number {
   return 200
 }
 
-/** Fixed grid footprint for pseudo value 3D (`--3d` on x+y category data). */
-export const VALUE_MODE_3D_BOX_SIZE = 100
-export const VALUE_MODE_3D_VIEW_DISTANCE = 200
-
 /** Largest grid3D edge — used to scale camera framing. */
 export function boxExtent3D(boxWidth: number, boxDepth: number, boxHeight: number): number {
   return Math.max(boxWidth, boxDepth, boxHeight)
 }
+
+export const MAX_3D_VIEW_DISTANCE = 300
 
 /**
  * Perspective camera distance (bar3D). ECharts default is 200 for a 100³ box → 2× extent.
@@ -161,7 +159,12 @@ export function viewDistanceFor3DBox(
   boxDepth: number,
   boxHeight: number
 ): number {
-  return boxExtent3D(boxWidth, boxDepth, boxHeight) * 2
+  return Math.min(MAX_3D_VIEW_DISTANCE, boxExtent3D(boxWidth, boxDepth, boxHeight) * 2)
+}
+
+/** Cap grouped-mode distance (xWidth + yWidth) to the same ceiling. */
+export function groupedViewDistanceFor3DBox(boxWidth: number, boxDepth: number): number {
+  return Math.min(MAX_3D_VIEW_DISTANCE, boxWidth + boxDepth)
 }
 
 /**
@@ -566,8 +569,8 @@ export function create3DGridConfig(opts: {
 }) {
   const { styling, autoRotate, orthographic, xCount, yCount } = opts
   const mode = opts.mode ?? 'grouped'
-  const xWidth = mode === 'value' ? VALUE_MODE_3D_BOX_SIZE : boxSizeForAxisCount(xCount)
-  const yWidth = mode === 'value' ? VALUE_MODE_3D_BOX_SIZE : boxSizeForAxisCount(yCount)
+  const xWidth = boxSizeForAxisCount(xCount)
+  const yWidth = boxSizeForAxisCount(yCount)
 
   const shell = {
     boxWidth: xWidth,
@@ -589,19 +592,20 @@ export function create3DGridConfig(opts: {
       return {
         ...shell,
         viewControl: {
-          distance: xWidth + yWidth,
+          distance: groupedViewDistanceFor3DBox(xWidth, yWidth),
           autoRotate,
           ...(orthographic ? { projection: 'orthographic' as const } : {}),
         },
       }
-    case 'value':
-      const boxHeight = VALUE_MODE_3D_BOX_SIZE
+    case 'value': {
+      const boxHeight = Math.min(xWidth, yWidth)
+      const distance = viewDistanceFor3DBox(xWidth, yWidth, boxHeight)
       const orthographicSize = orthographicSizeFor3DBox(xWidth, yWidth, boxHeight)
       return {
         ...shell,
         boxHeight,
         viewControl: {
-          distance: VALUE_MODE_3D_VIEW_DISTANCE,
+          distance,
           autoRotate,
           ...(orthographic
             ? {
@@ -612,6 +616,7 @@ export function create3DGridConfig(opts: {
             : {}),
         },
       }
+    }
   }
 
   const boxHeight = Math.max(xWidth, yWidth)
@@ -629,7 +634,7 @@ export function create3DGridConfig(opts: {
             orthographicSize,
             maxOrthographicSize: Math.max(400, orthographicSize * 2),
           }
-        : { maxDistance: Math.max(400, distance * 1.5) }),
+        : { maxDistance: MAX_3D_VIEW_DISTANCE }),
     },
   }
 }
