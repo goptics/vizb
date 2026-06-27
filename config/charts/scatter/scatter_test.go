@@ -61,6 +61,19 @@ func (s *ScatterSuite) TestScatterConfigHasScaleAndThreeDRotate() {
 	s.True(*got.ThreeDRotate)
 }
 
+func (s *ScatterSuite) TestMaterialiseSymbolFields() {
+	size := 11.0
+	got := Materialise(Flags{Symbol: "pin", SymbolSize: &size}, nil)
+	s.Equal("pin", got.Symbol)
+	s.Require().NotNil(got.SymbolSize)
+	s.Equal(11.0, *got.SymbolSize)
+
+	overrideSize := 16.0
+	got = Materialise(Flags{Symbol: "circle"}, &Config{Symbol: "diamond", SymbolSize: &overrideSize})
+	s.Equal("diamond", got.Symbol)
+	s.Equal(16.0, *got.SymbolSize)
+}
+
 func (s *ScatterSuite) TestMaterialiseThreeDAndVisualMap() {
 	got := Materialise(Flags{ThreeD: true}, nil)
 	s.Require().NotNil(got.ThreeD)

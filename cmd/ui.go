@@ -13,6 +13,7 @@ import (
 	linechart "github.com/goptics/vizb/config/charts/line"
 	piechart "github.com/goptics/vizb/config/charts/pie"
 	radarchart "github.com/goptics/vizb/config/charts/radar"
+	scatterchart "github.com/goptics/vizb/config/charts/scatter"
 	"github.com/goptics/vizb/pkg/style"
 	"github.com/goptics/vizb/pkg/template"
 	"github.com/goptics/vizb/shared"
@@ -237,6 +238,10 @@ func applyOverrides(settings *[]config_charts.ChartConfig, overrides map[string]
 			if o, ok := ov.(*linechart.Config); ok {
 				mergeLineConfig(s, o)
 			}
+		case *scatterchart.Config:
+			if o, ok := ov.(*scatterchart.Config); ok {
+				mergeScatterConfig(s, o)
+			}
 		case *piechart.Config:
 			if o, ok := ov.(*piechart.Config); ok {
 				mergePieConfig(s, o)
@@ -290,6 +295,37 @@ func mergeLineConfig(to, from *linechart.Config) {
 	}
 	if from.ThreeDRotate != nil {
 		to.ThreeDRotate = from.ThreeDRotate
+	}
+	if from.Symbol != "" {
+		to.Symbol = from.Symbol
+	}
+	if from.SymbolSize != nil {
+		to.SymbolSize = from.SymbolSize
+	}
+}
+
+// mergeScatterConfig copies the non-zero fields of `from` into `to`.
+func mergeScatterConfig(to, from *scatterchart.Config) {
+	if from.Swap != "" {
+		to.Swap = from.Swap
+	}
+	if from.Sort != nil {
+		to.Sort = from.Sort
+	}
+	if from.Scale != "" {
+		to.Scale = from.Scale
+	}
+	if from.ShowLabels != nil {
+		to.ShowLabels = from.ShowLabels
+	}
+	if from.ThreeDRotate != nil {
+		to.ThreeDRotate = from.ThreeDRotate
+	}
+	if from.Symbol != "" {
+		to.Symbol = from.Symbol
+	}
+	if from.SymbolSize != nil {
+		to.SymbolSize = from.SymbolSize
 	}
 }
 

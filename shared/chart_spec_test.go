@@ -118,6 +118,23 @@ func (s *ChartSpecSuite) TestParseOverridesBareThreeDVisualMap() {
 	s.Equal(true, m["threeDVisualMap"])
 }
 
+// TestParseOverrides_SymbolFields confirms symbol + symbol-size parse into typed config.
+func (s *ChartSpecSuite) TestParseOverridesSymbolFields() {
+	got, err := ParseOverrides(
+		[]string{"scatter:symbol=triangle,symbol-size=12"},
+		[]string{"scatter"},
+		s.xynAxes,
+	)
+	s.Require().NoError(err)
+
+	raw, err := json.Marshal(got["scatter"])
+	s.Require().NoError(err)
+	var m map[string]any
+	s.Require().NoError(json.Unmarshal(raw, &m))
+	s.Equal("triangle", m["symbol"])
+	s.Equal(12.0, m["symbolSize"])
+}
+
 // TestParseOverrides_BareRotate confirms `3d-rotate` (no =val) sets threeDRotate=true.
 func (s *ChartSpecSuite) TestParseOverridesBareRotate() {
 	got, err := ParseOverrides([]string{"bar:3d-rotate"}, []string{"bar"}, s.xynAxes)

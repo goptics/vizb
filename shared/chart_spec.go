@@ -238,8 +238,24 @@ func ParseOverrides(specs []string, charts []string, axes []Axis) (map[string]co
 				}
 				payload["visualMap"] = b
 
+			case "symbol":
+				if err := ValidateSymbol(val); err != nil {
+					return nil, fmt.Errorf("--chart: %w", err)
+				}
+				payload["symbol"] = val
+
+			case "symbol-size":
+				size, err := strconv.ParseFloat(val, 64)
+				if err != nil {
+					return nil, fmt.Errorf("--chart: key %q value %q must be a number", key, val)
+				}
+				if err := ValidateSymbolSize(size); err != nil {
+					return nil, fmt.Errorf("--chart: %w", err)
+				}
+				payload["symbolSize"] = size
+
 			default:
-				return nil, fmt.Errorf("--chart: unknown key %q in spec %q (valid keys: swap, sort, scale, labels, 3d-rotate, 3d, 3d-visualmap, visualmap)", key, spec)
+				return nil, fmt.Errorf("--chart: unknown key %q in spec %q (valid keys: swap, sort, scale, labels, 3d-rotate, 3d, 3d-visualmap, visualmap, symbol, symbol-size)", key, spec)
 			}
 		}
 	}

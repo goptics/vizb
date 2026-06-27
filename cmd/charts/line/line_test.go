@@ -123,6 +123,23 @@ func (s *LineSuite) TestLineCommandBadSwapExits() {
 	s.True(*exitCalled, "expected shared.OsExit to be invoked for bad --swap")
 }
 
+func (s *LineSuite) TestSymbolFlagsBakedIntoSettings() {
+	dir := s.T().TempDir()
+	input := testutil.WriteBenchFile(s.T(), dir, "bench.txt", "")
+	out := filepath.Join(dir, "out.json")
+
+	cmd := NewCommand()
+	cmd.SetArgs([]string{"-o", out, "-P", "go", "-p", "y", "--symbol", "diamond", "--symbol-size", "14", input})
+	s.Require().NoError(cmd.Execute())
+
+	ds := testutil.ReadDataset(s.T(), out)
+	lineCfg, ok := ds.Settings[0].(*linechart.Config)
+	s.Require().True(ok)
+	s.Equal("diamond", lineCfg.Symbol)
+	s.Require().NotNil(lineCfg.SymbolSize)
+	s.Equal(14.0, *lineCfg.SymbolSize)
+}
+
 func TestLineSuite(t *testing.T) {
 	suite.Run(t, new(LineSuite))
 }
