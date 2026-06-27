@@ -89,7 +89,14 @@ export function buildValueAxes2DOptions(
     legend: { show: false },
     grid: createGridConfig(1, false),
     tooltip: createValueModeTooltip(isDark.value, xLabel, yLabel),
-    ...createValueAxisConfig(styling, xLabel, yLabel, yScale, minValue),
+    ...createValueAxisConfig(
+      styling,
+      xLabel,
+      yLabel,
+      yScale,
+      minValue,
+      chartType === 'line' || chartType === 'scatter'
+    ),
     dataZoom: [
       { type: 'inside', xAxisIndex: 0 },
       { type: 'inside', yAxisIndex: 0 },

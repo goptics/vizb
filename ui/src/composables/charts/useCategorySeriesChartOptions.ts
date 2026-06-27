@@ -62,7 +62,7 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
         ...baseOptions,
         grid: createGridConfig(1, largeX),
         tooltip: createPinnedAxisTooltip(isDark.value),
-        ...createAxisConfig(styling, xAxisData, effectiveScale, minValue, xLabel, largeX),
+        ...createAxisConfig(styling, xAxisData, effectiveScale, minValue, xLabel, largeX, true),
         ...(largeX ? { dataZoom: createDataZoomConfig(xAxisData, styling) } : {}),
         legend: { show: false },
         series: [
@@ -103,7 +103,7 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
       ...(yLabel ? { title: makeLegendTitle(yLabel, styling) } : {}),
       grid: createGridConfig(transposedSeries.length, largeX),
       tooltip: createTooltipConfig(showXBreakdown, isDark.value, seriesTotals),
-      ...createAxisConfig(styling, xAxisData, effectiveScale, minValue, xLabel, largeX),
+      ...createAxisConfig(styling, xAxisData, effectiveScale, minValue, xLabel, largeX, true),
       ...(largeX ? { dataZoom: createDataZoomConfig(xAxisData, styling) } : {}),
       legend: createLegendConfig(
         transposedSeries.map((s) => ({ xAxis: s.name })),

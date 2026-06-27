@@ -186,7 +186,8 @@ export function createValueAxisConfig(
   xAxisName?: string,
   yAxisName?: string,
   yScale: ScaleType = 'linear',
-  minValue?: number
+  minValue?: number,
+  fitYAxisToData = false
 ): { xAxis: any; yAxis: any } {
   const nameStyle = {
     color: styling.textColor,
@@ -208,6 +209,8 @@ export function createValueAxisConfig(
   if (yScale === 'log' && minValue !== undefined) {
     const minLog = Math.pow(10, Math.floor(Math.log10(minValue)))
     yAxisConfig.min = Math.max(1, minLog)
+  } else if (fitYAxisToData && yScale === 'linear') {
+    yAxisConfig.scale = true
   }
 
   return {
@@ -249,7 +252,8 @@ export function createAxisConfig(
   scale: ScaleType = 'linear',
   minValue?: number,
   xAxisName?: string,
-  hasDataZoom = false
+  hasDataZoom = false,
+  fitYAxisToData = false
 ): { xAxis: any; yAxis: any } {
   const yAxisConfig: any = {
     type: scale === 'log' ? 'log' : 'value',
@@ -272,6 +276,9 @@ export function createAxisConfig(
     // Round down to nearest power of 10, but minimum is 1
     const minLog = Math.pow(10, Math.floor(Math.log10(minValue)))
     yAxisConfig.min = Math.max(1, minLog)
+  } else if (fitYAxisToData && scale === 'linear') {
+    // ECharts default includes zero; scale the axis to the series min/max instead.
+    yAxisConfig.scale = true
   }
 
   return {
