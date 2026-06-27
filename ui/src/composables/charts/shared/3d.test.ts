@@ -4,9 +4,9 @@ import {
   barSizeFor3DGrid,
   barSizeForContinuous3D,
   boxSizeForAxisCount,
-  VALUE_MODE_3D_BOX_SIZE,
-  VALUE_MODE_3D_VIEW_DISTANCE,
   orthographicSizeFor3DBox,
+  MAX_3D_VIEW_DISTANCE,
+  groupedViewDistanceFor3DBox,
   viewDistanceFor3DBox,
   create3DGridConfig,
   create3DTooltipFormatter,
@@ -140,11 +140,22 @@ describe('create3DGridConfig', () => {
     })
     expect(grid.viewControl.distance).toBe(viewDistanceFor3DBox(200, 100, 200))
     if ('maxDistance' in grid.viewControl) {
-      expect(grid.viewControl.maxDistance).toBeGreaterThanOrEqual(400)
+      expect(grid.viewControl.maxDistance).toBe(MAX_3D_VIEW_DISTANCE)
     }
   })
 
-  it('value mode uses fixed box size and view distance regardless of category count', () => {
+  it('caps viewControl distance at 300 for large grouped grids', () => {
+    const grid = create3DGridConfig({
+      styling,
+      autoRotate: false,
+      xCount: 100,
+      yCount: 100,
+    })
+    expect(groupedViewDistanceFor3DBox(200, 200)).toBe(MAX_3D_VIEW_DISTANCE)
+    expect(grid.viewControl.distance).toBe(MAX_3D_VIEW_DISTANCE)
+  })
+
+  it('value mode sizes footprint from category counts for rectangular data', () => {
     const grid = create3DGridConfig({
       styling,
       autoRotate: false,
@@ -152,10 +163,28 @@ describe('create3DGridConfig', () => {
       yCount: 30,
       mode: 'value',
     })
-    expect(grid.boxWidth).toBe(VALUE_MODE_3D_BOX_SIZE)
-    expect(grid.boxDepth).toBe(VALUE_MODE_3D_BOX_SIZE)
-    expect('boxHeight' in grid && grid.boxHeight).toBe(VALUE_MODE_3D_BOX_SIZE)
-    expect(grid.viewControl.distance).toBe(VALUE_MODE_3D_VIEW_DISTANCE)
+    expect(grid.boxWidth).toBe(80)
+    expect(grid.boxDepth).toBe(200)
+    expect('boxHeight' in grid && grid.boxHeight).toBe(80)
+    expect(grid.viewControl.distance).toBe(viewDistanceFor3DBox(80, 200, 80))
+  })
+
+  it('value mode uses a cube only when x and y category counts match', () => {
+    const grid = create3DGridConfig({
+      styling,
+      autoRotate: false,
+      orthographic: true,
+      xCount: 10,
+      yCount: 10,
+      mode: 'value',
+    })
+    expect(grid.boxWidth).toBe(100)
+    expect(grid.boxDepth).toBe(100)
+    expect('boxHeight' in grid && grid.boxHeight).toBe(100)
+    expect(grid.viewControl.distance).toBe(viewDistanceFor3DBox(100, 100, 100))
+    if ('orthographicSize' in grid.viewControl) {
+      expect(grid.viewControl.orthographicSize).toBe(orthographicSizeFor3DBox(100, 100, 100))
+    }
   })
 
   it('fades grid split lines and keeps axisPointer on axisColor', () => {
