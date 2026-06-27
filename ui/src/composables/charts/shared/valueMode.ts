@@ -12,6 +12,7 @@ import {
   LARGE_DATA_THRESHOLD,
 } from './chartConfig'
 import { adjustForLogScaleLine, getEffectiveScale } from './common'
+import { resolve2DScatterVisualMap } from './visualMap'
 
 const defaultScatterSymbol = { symbol: 'circle' as const, symbolSize: 8 }
 const largeScatterSymbol = { symbol: 'circle' as const, symbolSize: 5 }
@@ -19,21 +20,21 @@ const defaultLineSymbol = { symbol: 'circle' as const, symbolSize: 7 }
 const largeLineSymbol = { symbol: 'none', sampling: 'lttb' as const }
 
 export function sortValueTuples(
-  tuples: [number, number][],
+  tuples: [number, number, number?][],
   enabled: boolean,
   order: 'asc' | 'desc'
-): [number, number][] {
+): [number, number, number?][] {
   if (!enabled) return tuples
   const sorted = [...tuples].sort((a, b) => a[1] - b[1])
   return order === 'asc' ? sorted : sorted.reverse()
 }
 
 export function scaleValueTuples(
-  tuples: [number, number][],
+  tuples: [number, number, number?][],
   scale: ScaleType
-): [number, number | null][] {
+): [number, number | null, number?][] {
   if (scale !== 'log') return tuples
-  return tuples.map(([x, y]) => [x, adjustForLogScaleLine(y, scale)])
+  return tuples.map(([x, y, c]) => [x, adjustForLogScaleLine(y, scale), c])
 }
 
 const chartTypeForECharts = (chartType: ChartType): string =>
@@ -65,9 +66,16 @@ export function buildValueAxes2DOptions(
   const data = scaleValueTuples(sorted, yScale)
   const largeX = isLargeXAxis(data.map((_, i) => String(i)))
 
+  const useVisualMap = chartType === 'scatter' && config.visualMap?.value === true
+  const hasColorDim = tuples.some((t) => t[2] !== undefined)
+  const colorDimension = (hasColorDim ? 2 : 1) as 1 | 2
+  const colorValues = sorted
+    .map((t) => (hasColorDim ? t[2] : t[1]))
+    .filter((v): v is number => v !== undefined && v !== null && isFinite(v))
+
   const label = {
     ...createLabelConfig(showLabels.value, styling),
-    formatter: (p: { data: [number, number | null] }) => {
+    formatter: (p: { data: [number, number | null, number?] }) => {
       const y = p.data[1]
       return y === null || y === undefined ? '' : String(Math.round(y * 100) / 100)
     },
@@ -80,14 +88,18 @@ export function buildValueAxes2DOptions(
     label,
     large: true,
     largeThreshold: LARGE_DATA_THRESHOLD,
-    itemStyle: { color: getNextColorFor(chartData.value.title) },
+    ...(useVisualMap ? {} : { itemStyle: { color: getNextColorFor(chartData.value.title) } }),
     ...seriesSymbol(chartType, largeX),
   }
+
+  const grid = createGridConfig(1, false)
+  if (useVisualMap) grid.right = '12%'
 
   return {
     ...baseOptions,
     legend: { show: false },
-    grid: createGridConfig(1, false),
+    grid,
+    visualMap: resolve2DScatterVisualMap(useVisualMap, colorValues, styling, colorDimension),
     tooltip: createValueModeTooltip(isDark.value, xLabel, yLabel),
     ...createValueAxisConfig(
       styling,

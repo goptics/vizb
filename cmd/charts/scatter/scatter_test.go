@@ -152,6 +152,37 @@ func (s *ScatterSuite) TestScatterCommandWithThreeDVisualMapFlag() {
 	s.False(*scatterCfg.ThreeDVisualMap)
 }
 
+func (s *ScatterSuite) TestScatterCommandWithVisualMapFlag() {
+	dir := s.T().TempDir()
+	input := testutil.WriteBenchFile(s.T(), dir, "bench.txt", "")
+	out := filepath.Join(dir, "out.json")
+
+	cmd := NewCommand()
+	cmd.SetArgs([]string{"-o", out, "-P", "go", "-p", "n/x/y", "--visualmap", input})
+	s.Require().NoError(cmd.Execute())
+
+	ds := testutil.ReadDataset(s.T(), out)
+	scatterCfg, ok := ds.Settings[0].(*scatterchart.Config)
+	s.Require().True(ok)
+	s.Require().NotNil(scatterCfg.VisualMap)
+	s.True(*scatterCfg.VisualMap)
+}
+
+func (s *ScatterSuite) TestScatterCommandVisualMapDefaultOff() {
+	dir := s.T().TempDir()
+	input := testutil.WriteBenchFile(s.T(), dir, "bench.txt", "")
+	out := filepath.Join(dir, "out.json")
+
+	cmd := NewCommand()
+	cmd.SetArgs([]string{"-o", out, "-P", "go", "-p", "n/x/y", input})
+	s.Require().NoError(cmd.Execute())
+
+	ds := testutil.ReadDataset(s.T(), out)
+	scatterCfg, ok := ds.Settings[0].(*scatterchart.Config)
+	s.Require().True(ok)
+	s.Nil(scatterCfg.VisualMap)
+}
+
 func (s *ScatterSuite) TestScatterCommandThreeDVisualMapWithoutThreeD() {
 	dir := s.T().TempDir()
 	input := testutil.WriteBenchFile(s.T(), dir, "bench.txt", "")

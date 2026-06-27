@@ -57,7 +57,21 @@ export function useActiveChartShape() {
       false
   )
 
+  const visualMap = computed<boolean>(
+    () => (activeConfig.value as ScatterConfig | undefined)?.visualMap ?? false
+  )
+
   const stat = computed<StatConfig | undefined>(() => activeConfig.value?.stat)
 
-  return { scale, threeDRotate, showLabels, sort, threeD, hasThreeDOption, threeDVisualMap, stat }
+  return {
+    scale,
+    threeDRotate,
+    showLabels,
+    sort,
+    threeD,
+    hasThreeDOption,
+    threeDVisualMap,
+    visualMap,
+    stat,
+  }
 }

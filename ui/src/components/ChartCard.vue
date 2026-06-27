@@ -71,7 +71,7 @@ const { chartData } = toRefs(props)
 
 // Pull active-chart shape + theme state from the centralized store.
 const { isDark, chartType } = useSettingsStore()
-const { sort, showLabels, scale, threeDRotate, threeD, threeDVisualMap, stat } =
+const { sort, showLabels, scale, threeDRotate, threeD, threeDVisualMap, visualMap, stat } =
   useActiveChartShape()
 const { activeArrangement, activeDataSet } = useDataPoint()
 const activeAxes = computed(() => activeDataSet.value?.axes)
@@ -122,6 +122,7 @@ const { options } = useChartOptions(
   visibleZ,
   threeD,
   threeDVisualMap,
+  visualMap,
   computed(() => activeArrangement.value.targetString),
   activeAxes
 )

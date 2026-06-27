@@ -544,6 +544,11 @@ describe('buildValueModeChart — 3-col swap-driven 3D', () => {
     expect(chart.valueTuples).toEqual([[2, 3]])
   })
 
+  it('xyn swap with off-chart z attaches z as color dimension on 2D tuples', () => {
+    const chart = buildValueModeChart([vdp3('1', '2', '3')], valueAxes3, 'xyz', 'xyn')
+    expect(chart.valueTuples).toEqual([[1, 2, 3]])
+  })
+
   it('respects log scale on 3D path', () => {
     const chart = buildValueModeChart([vdp3('1', '2', '0')], valueAxes3, 'xyz', 'xyz', {
       scale: 'log',

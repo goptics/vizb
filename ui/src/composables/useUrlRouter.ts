@@ -1,5 +1,13 @@
 import { watch, computed } from 'vue'
-import type { ChartType, ChartConfig, SortOrder, ScaleType, BarConfig, LineConfig } from '../types'
+import type {
+  ChartType,
+  ChartConfig,
+  SortOrder,
+  ScaleType,
+  BarConfig,
+  LineConfig,
+  ScatterConfig,
+} from '../types'
 import { SORT_ORDERS, SCALE_TYPES } from '../types'
 import { useSettingsStore } from './useSettingsStore'
 import { useDataPoint } from './useDataPoint'
@@ -39,6 +47,7 @@ type ConfigUpdate = {
   threeD?: boolean
   threeDRotate?: boolean
   threeDVisualMap?: boolean
+  visualMap?: boolean
 }
 
 // Find the first config of the given chart type and apply a partial update in
@@ -53,13 +62,15 @@ const applyConfigUpdate = (type: ChartType, update: ConfigUpdate): boolean => {
 
   if (update.sort) cfg.sort = update.sort
   if (update.showLabels !== undefined) cfg.showLabels = update.showLabels
-  // Only bar/line carry `scale` and 3D options; the union narrows on `cfg.type`.
-  if (cfg.type === 'bar' || cfg.type === 'line') {
-    const cartesian = cfg as BarConfig | LineConfig
+  if (cfg.type === 'bar' || cfg.type === 'line' || cfg.type === 'scatter') {
+    const cartesian = cfg as BarConfig | LineConfig | ScatterConfig
     if (update.scale) cartesian.scale = update.scale
     if (update.threeD !== undefined) cartesian.threeD = update.threeD
     if (update.threeDRotate !== undefined) cartesian.threeDRotate = update.threeDRotate
     if (update.threeDVisualMap !== undefined) cartesian.threeDVisualMap = update.threeDVisualMap
+    if (cfg.type === 'scatter' && update.visualMap !== undefined) {
+      ;(cartesian as ScatterConfig).visualMap = update.visualMap
+    }
   }
   return true
 }
@@ -141,6 +152,7 @@ export function useUrlRouter() {
       const d3 = params[`${ct}.3d`]
       const d3rt = params[`${ct}.3d-rt`]
       const d3vm = params[`${ct}.3d-vm`]
+      const vm = params[`${ct}.vm`]
       const sw = params[`${ct}.sw`]
 
       const update: ConfigUpdate = {}
@@ -155,6 +167,10 @@ export function useUrlRouter() {
       if (d3rt === 'true') update.threeDRotate = true
       if (d3vm === 'true') update.threeDVisualMap = true
       else if (d3vm === 'false') update.threeDVisualMap = false
+      if (ct === 'scatter') {
+        if (vm === 'true') update.visualMap = true
+        else if (vm === 'false') update.visualMap = false
+      }
 
       if (Object.keys(update).length > 0) {
         applyConfigUpdate(ct, update)
@@ -199,13 +215,18 @@ export function useUrlRouter() {
       if (cfg.sort?.enabled) params[`${ct}.so`] = cfg.sort.order
       if (cfg.showLabels === true) params[`${ct}.l`] = 'true'
       else if (cfg.showLabels === false) params[`${ct}.l`] = 'false'
-      if (cfg.type === 'bar' || cfg.type === 'line') {
-        const cartesian = cfg as BarConfig | LineConfig
+      if (cfg.type === 'bar' || cfg.type === 'line' || cfg.type === 'scatter') {
+        const cartesian = cfg as BarConfig | LineConfig | ScatterConfig
         if (cartesian.scale && cartesian.scale !== 'linear') params[`${ct}.sc`] = cartesian.scale
         if (cartesian.threeD === true) params[`${ct}.3d`] = 'true'
         if (cartesian.threeDRotate === true) params[`${ct}.3d-rt`] = 'true'
         if (cartesian.threeDVisualMap === true) params[`${ct}.3d-vm`] = 'true'
         else if (cartesian.threeDVisualMap === false) params[`${ct}.3d-vm`] = 'false'
+        if (cfg.type === 'scatter') {
+          const scatter = cartesian as ScatterConfig
+          if (scatter.visualMap === true) params[`${ct}.vm`] = 'true'
+          else if (scatter.visualMap === false) params[`${ct}.vm`] = 'false'
+        }
       }
 
       const arr = arrangementMap.get(`${activeDataSetId.value}:${ct}`)

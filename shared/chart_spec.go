@@ -168,8 +168,13 @@ func ParseOverrides(specs []string, charts []string, axes []Axis) (map[string]co
 					payload["threeD"] = true
 				case "3d-visualmap":
 					payload["threeDVisualMap"] = true
+				case "visualmap":
+					if chartType != "scatter" {
+						return nil, fmt.Errorf("--chart: bare flag %q is only valid for scatter charts", key)
+					}
+					payload["visualMap"] = true
 				default:
-					return nil, fmt.Errorf("--chart: malformed token %q in spec %q: unknown bare flag (valid bare flags: labels, 3d-rotate, 3d, 3d-visualmap)", token, spec)
+					return nil, fmt.Errorf("--chart: malformed token %q in spec %q: unknown bare flag (valid bare flags: labels, 3d-rotate, 3d, 3d-visualmap, visualmap)", token, spec)
 				}
 				continue
 			}
@@ -223,8 +228,18 @@ func ParseOverrides(specs []string, charts []string, axes []Axis) (map[string]co
 				}
 				payload["threeDVisualMap"] = b
 
+			case "visualmap":
+				if chartType != "scatter" {
+					return nil, fmt.Errorf("--chart: key %q is only valid for scatter charts", key)
+				}
+				b, err := strconv.ParseBool(val)
+				if err != nil {
+					return nil, fmt.Errorf("--chart: key %q value %q must be true or false", key, val)
+				}
+				payload["visualMap"] = b
+
 			default:
-				return nil, fmt.Errorf("--chart: unknown key %q in spec %q (valid keys: swap, sort, scale, labels, 3d-rotate, 3d, 3d-visualmap)", key, spec)
+				return nil, fmt.Errorf("--chart: unknown key %q in spec %q (valid keys: swap, sort, scale, labels, 3d-rotate, 3d, 3d-visualmap, visualmap)", key, spec)
 			}
 		}
 	}

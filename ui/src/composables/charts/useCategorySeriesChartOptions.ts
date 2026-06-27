@@ -21,6 +21,7 @@ import {
   getEffectiveScale,
   computeSeriesTotals,
 } from './shared/common'
+import { resolve2DScatterVisualMap } from './shared/visualMap'
 
 export type CategorySeriesKind = 'line' | 'scatter'
 
@@ -43,8 +44,18 @@ const SERIES_STYLE: Record<
   },
 }
 
+const groupedScatterColorValues = (seriesList: { data: (number | null)[] }[]): number[] => {
+  const vals: number[] = []
+  for (const s of seriesList) {
+    for (const v of s.data) {
+      if (v != null && isFinite(v)) vals.push(v)
+    }
+  }
+  return vals
+}
+
 export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: CategorySeriesKind) {
-  const { chartData, sort, isDark, showLabels, scale } = config
+  const { chartData, sort, isDark, showLabels, scale, visualMap } = config
   const sortedData = useSortedSeriesData(chartData, sort)
   const style = SERIES_STYLE[kind]
 
@@ -56,28 +67,37 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
     const largeX = isLargeXAxis(xAxisData)
     const xLabel = chartData.value.axisLabels?.x
     const seriesExtras = largeX ? style.largeSymbol : style.defaultSymbol
+    const useVisualMap = kind === 'scatter' && visualMap?.value === true
 
     if (!hasYAxis) {
+      const singleSeries = {
+        name: chartData.value.title,
+        type: kind,
+        data: series.map((s) => adjustForLogScaleLine(s.values[0] ?? null, effectiveScale)),
+        label: createLabelConfig(showLabels.value, styling),
+        large: true,
+        largeThreshold: LARGE_DATA_THRESHOLD,
+        ...(style.connectNulls ? { connectNulls: true } : {}),
+        ...(useVisualMap ? {} : { itemStyle: { color: getNextColorFor(chartData.value.title) } }),
+        ...seriesExtras,
+      }
+      const grid = createGridConfig(1, largeX)
+      if (useVisualMap) grid.right = '12%'
+
       return {
         ...baseOptions,
-        grid: createGridConfig(1, largeX),
+        grid,
         tooltip: createPinnedAxisTooltip(isDark.value),
         ...createAxisConfig(styling, xAxisData, effectiveScale, minValue, xLabel, largeX, true),
         ...(largeX ? { dataZoom: createDataZoomConfig(xAxisData, styling) } : {}),
         legend: { show: false },
-        series: [
-          {
-            name: chartData.value.title,
-            type: kind,
-            data: series.map((s) => adjustForLogScaleLine(s.values[0] ?? null, effectiveScale)),
-            label: createLabelConfig(showLabels.value, styling),
-            large: true,
-            largeThreshold: LARGE_DATA_THRESHOLD,
-            ...(style.connectNulls ? { connectNulls: true } : {}),
-            itemStyle: { color: getNextColorFor(chartData.value.title) },
-            ...seriesExtras,
-          },
-        ],
+        visualMap: resolve2DScatterVisualMap(
+          useVisualMap,
+          groupedScatterColorValues([singleSeries]),
+          styling,
+          0
+        ),
+        series: [singleSeries],
       } as EChartsOption
     }
 
@@ -90,7 +110,7 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
       large: true,
       largeThreshold: LARGE_DATA_THRESHOLD,
       ...(style.connectNulls ? { connectNulls: true } : {}),
-      itemStyle: { color: getNextColorFor(yAxisLabel) },
+      ...(useVisualMap ? {} : { itemStyle: { color: getNextColorFor(yAxisLabel) } }),
       ...seriesExtras,
     }))
 
@@ -98,10 +118,19 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
     const yLabel = chartData.value.axisLabels?.y
     const showXBreakdown = kind === 'line' || hasXAxis(chartData)
 
+    const grid = createGridConfig(transposedSeries.length, largeX)
+    if (useVisualMap) grid.right = '12%'
+
     return {
       ...baseOptions,
       ...(yLabel ? { title: makeLegendTitle(yLabel, styling) } : {}),
-      grid: createGridConfig(transposedSeries.length, largeX),
+      grid,
+      visualMap: resolve2DScatterVisualMap(
+        useVisualMap,
+        groupedScatterColorValues(transposedSeries),
+        styling,
+        0
+      ),
       tooltip: createTooltipConfig(showXBreakdown, isDark.value, seriesTotals),
       ...createAxisConfig(styling, xAxisData, effectiveScale, minValue, xLabel, largeX, true),
       ...(largeX ? { dataZoom: createDataZoomConfig(xAxisData, styling) } : {}),
