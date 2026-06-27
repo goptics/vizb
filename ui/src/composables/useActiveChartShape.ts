@@ -59,5 +59,24 @@ export function useActiveChartShape() {
 
   const stat = computed<StatConfig | undefined>(() => activeConfig.value?.stat)
 
-  return { scale, threeDRotate, showLabels, sort, threeD, hasThreeDOption, threeDVisualMap, stat }
+  const symbol = computed<string | undefined>(
+    () => (activeConfig.value as LineConfig | ScatterConfig | undefined)?.symbol
+  )
+
+  const symbolSize = computed<number | undefined>(
+    () => (activeConfig.value as LineConfig | ScatterConfig | undefined)?.symbolSize
+  )
+
+  return {
+    scale,
+    threeDRotate,
+    showLabels,
+    sort,
+    threeD,
+    hasThreeDOption,
+    threeDVisualMap,
+    stat,
+    symbol,
+    symbolSize,
+  }
 }

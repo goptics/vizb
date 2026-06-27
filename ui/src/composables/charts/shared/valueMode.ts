@@ -12,6 +12,7 @@ import {
   LARGE_DATA_THRESHOLD,
 } from './chartConfig'
 import { adjustForLogScaleLine, getEffectiveScale } from './common'
+import { resolveSeriesSymbol } from './seriesConfig'
 
 const defaultScatterSymbol = { symbol: 'circle' as const, symbolSize: 8 }
 const largeScatterSymbol = { symbol: 'circle' as const, symbolSize: 5 }
@@ -39,9 +40,22 @@ export function scaleValueTuples(
 const chartTypeForECharts = (chartType: ChartType): string =>
   VALUE_CHART_TYPES.has(chartType) ? chartType : 'scatter'
 
-const seriesSymbol = (chartType: ChartType, largeX: boolean) => {
-  if (chartType === 'scatter') return largeX ? largeScatterSymbol : defaultScatterSymbol
-  if (chartType === 'line') return largeX ? largeLineSymbol : defaultLineSymbol
+const seriesSymbol = (
+  chartType: ChartType,
+  largeX: boolean,
+  symbol?: string,
+  symbolSize?: number
+) => {
+  if (chartType === 'scatter') {
+    return resolveSeriesSymbol(
+      largeX ? largeScatterSymbol : defaultScatterSymbol,
+      symbol,
+      symbolSize
+    )
+  }
+  if (chartType === 'line') {
+    return resolveSeriesSymbol(largeX ? largeLineSymbol : defaultLineSymbol, symbol, symbolSize)
+  }
   return {}
 }
 
@@ -81,7 +95,7 @@ export function buildValueAxes2DOptions(
     large: true,
     largeThreshold: LARGE_DATA_THRESHOLD,
     itemStyle: { color: getNextColorFor(chartData.value.title) },
-    ...seriesSymbol(chartType, largeX),
+    ...seriesSymbol(chartType, largeX, config.symbol?.value, config.symbolSize?.value),
   }
 
   return {
