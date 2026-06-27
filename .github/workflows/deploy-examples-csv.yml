@@ -26,11 +26,10 @@ jobs:
           - output: 01-sales-grouped
             file: sales
             name: "Sales by Product"
-            description: "Grouped 3D bar chart by product, region, and category"
+            description: "Grouped 2D bar chart by product, region, and category"
             group: "product,region,category"
             group-pattern: n,x,y
-            charts: bar
-            chart: "bar:3d"
+            charts: bar,pie
 
           - output: 02-sales-by-date
             file: sales
@@ -38,7 +37,7 @@ jobs:
             description: "Monthly sales by category with year/month/date axis splitting"
             group: "order_date,category"
             group-pattern: "[n{Year}-y{Month}-x{Date}],z{Category}"
-            charts: bar
+            charts: bar,pie
 
           - output: 03-spiral-3d
             file: spiral-3d

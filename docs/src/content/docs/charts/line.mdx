@@ -4,6 +4,11 @@ description: Trace trends across categories with connected lines — one series 
 ---
 
 import { CardGrid, Card, LinkCard, Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+import { Image } from 'astro:assets';
+import line1D from '../../../assets/line-1D.png';
+import line2D from '../../../assets/line-2D.png';
+import line3D from '../../../assets/line-3D.png';
+import line2DValue from '../../../assets/line-2D-value.png';
 
 The **line chart** draws connected data points across your X-axis categories, making it easy to spot trends, regressions, and performance curves. It follows the same dimension model as the bar chart — run the `line` subcommand and your data renders as lines instead of bars.
 
@@ -21,35 +26,39 @@ vizb maps your grouping columns to the chart's visual axes:
 
 ## Dimensions
 
+The 1D and 2D examples use [`sales.csv`](https://github.com/goptics/vizb/blob/main/sales.csv) — 10,000 order rows with categorical columns (`order_date`, `region`, `category`, …) and numeric metrics (`quantity`, `amount`, `total`, …). You can also browse [live CSV dashboards](https://vizb.goptics.org/examples/csv) built from the same file.
+
 ### 1D (X axis)
 
 A single line tracing one value per X category. The simplest view: one grouping column, one continuous curve from left to right.
 
 ```bash
-vizb line data.csv -g category -o out.html
+vizb line sales.csv -g order_date -p x -o out.html
 ```
 
-{/* TODO: Add GIF showing a 1D line chart with a single series */}
+<Image src={line1D} alt="1D line chart with a single blue series tracing daily totals over dates" />
 
 ### 2D (X + Y axes)
 
 One line per Y value, all sharing the same X axis. The legend lists the Y values so you can show or hide individual lines. Great for comparing multiple algorithms or configurations across the same input sweep.
 
 ```bash
-vizb line data.csv -g category,metric -p x,y -o out.html
+vizb line sales.csv -g region,category -p x,y -o out.html
 ```
 
-{/* TODO: Add GIF showing a 2D multi-line chart with legend toggles */}
+<Image src={line2D} alt="2D multi-line chart with five category series per region and a color category legend" />
 
 ### 3D (X + Y + Z axes)
 
 WebGL `line3D` scene: each Z value becomes a separate 3D polyline with scatter markers at each vertex. The markers keep individual data points readable when lines converge or overlap. Rotate, zoom, and pan the scene in the browser. Requires echarts-gl (bundled automatically).
 
+This example uses [Go benchmark output](https://github.com/goptics/vizb/blob/main/examples/go/06-worker-pools.txt) comparing worker pool implementations. Slash-separated names like `BenchmarkAllSleep10ms/1u-1Mt/Pond-Eager-8` map to `z/y/x` — benchmark suite on Z, workload config on Y, pool implementation on X.
+
 ```bash
-vizb line data.csv -g category,metric,group -p x,y,z -o out.html
+vizb line examples/go/06-worker-pools.txt -p z/y/x --scale log -o out.html
 ```
 
-{/* TODO: Add GIF showing a 3D line chart rotating with scatter markers */}
+<Image src={line3D} alt="3D line chart of worker pool benchmarks with suite, workload, and implementation axes in a WebGL scene" />
 
 <Aside type="tip">
   Log scale is supported in 2D mode. When enabled, gaps appear at X values where the value is zero or negative — those points are skipped rather than breaking the chart.
@@ -64,12 +73,14 @@ vizb line data.csv -g category,metric,group -p x,y,z -o out.html
 When every column in a CSV/JSON file is numeric (no categorical columns), vizb auto-detects the first 2–3 columns as coordinate axes and renders them as value-type lines — no `--group` needed. With 3+ columns, line auto-enables 3D (`line3D`).
 
 ```bash
-# Two columns → x, y lines
-vizb line prices.csv -o line.html
+# Two columns → x, y value lines
+vizb line spiral-3d.csv --select x,y -o line.html
 
 # Three columns → x, y, z line3D
-vizb line spiral.csv -o line.html
+vizb line spiral-3d.csv -o line.html --3d-visualmap --3d-rotate
 ```
+
+<Image src={line2DValue} alt="2D value-type line chart plotting x and y coordinates from numeric columns" />
 
 Use `--select` to choose specific columns. With `--select` limiting to 2 columns, it stays 2D:
 
@@ -95,10 +106,10 @@ Override settings for just this chart type without affecting others:
 
 ```bash
 # Log scale and labels
-vizb line data.csv -g category,metric --scale log -l -o out.html
+vizb line sales.csv -g region,category --scale log -l -o out.html
 
 # Sort descending
-vizb line data.csv -g category,metric --sort desc -o out.html
+vizb line sales.csv -g region,category --sort desc -o out.html
 ```
 
 ## Next Steps

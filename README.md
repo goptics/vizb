@@ -55,6 +55,16 @@ curl -fsSL https://vizb.goptics.org/install.sh | bash
 irm https://vizb.goptics.org/install.ps1 | iex
 ```
 
+### Go Toolchain
+
+```bash
+go install github.com/goptics/vizb@latest
+```
+
+### Download Binary
+
+Pre-built binaries for Linux, macOS, and Windows are available on the [releases page](https://github.com/goptics/vizb/releases).
+
 ### Quick Example
 
 Run one command to turn your GitHub contribution history into a 3D skyline of your activity over time. Each year stacks as a new layer; within it, every day is a column whose height is your contribution count. Replace `<your-github-username>` with your GitHub username and open the generated `index.html`.
@@ -99,16 +109,6 @@ Flags used:
 - `--select 'count{Contributions}'` — keep only the count column and rename it to `Contributions`
 - `--stat` — add the statistics panel
 - `--output index.html` — write a self-contained HTML file
-
-### Go Toolchain
-
-```bash
-go install github.com/goptics/vizb@latest
-```
-
-### Download Binary
-
-Pre-built binaries for Linux, macOS, and Windows are available on the [releases page](https://github.com/goptics/vizb/releases).
 
 ## Contributing
 
