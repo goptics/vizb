@@ -95,6 +95,11 @@ describe('useScatterChartOptions — axes value mode', () => {
     ])
   })
 
+  it('uses a taller plot grid (minimal top) without a legend band', () => {
+    const { options } = useScatterChartOptions(makeValueConfig())
+    expect((options.value.grid as { top?: number }).top).toBe(8)
+  })
+
   it('includes dataZoom for both axes', () => {
     const { options } = useScatterChartOptions(makeValueConfig())
     const dz = options.value.dataZoom as { xAxisIndex?: number; yAxisIndex?: number }[]

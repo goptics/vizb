@@ -644,6 +644,16 @@ export function makeLegendTitle(text: string, styling: ChartStyling): any {
 // Fixed px (not %) so the plot area stays predictable across card heights.
 const SERIES_TICK_BAND = 28 // series names on the x axis (no slider)
 
+/** Value-mode charts hide the legend — skip the legend % top band (see heatmap). */
+export const VALUE_MODE_GRID_TOP = 8
+
+export function createValueModeGridConfig(hasDataZoom = false): any {
+  return {
+    ...createGridConfig(1, hasDataZoom),
+    top: VALUE_MODE_GRID_TOP,
+  }
+}
+
 export function createGridConfig(seriesLength = 1, hasDataZoom = false): any {
   const legendSpace = Math.min(15 + Math.floor((seriesLength - 1) / 15) * 2, 35)
 

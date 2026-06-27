@@ -3,7 +3,7 @@ import type { ScaleType, ChartType } from '@/types'
 import { getNextColorFor, VALUE_CHART_TYPES } from '@/lib/utils'
 import { type BaseChartConfig, getBaseOptions } from '../baseChartOptions'
 import {
-  createGridConfig,
+  createValueModeGridConfig,
   createLabelConfig,
   createValueAxisConfig,
   createValueModeTooltip,
@@ -95,7 +95,7 @@ export function buildValueAxes2DOptions(
   return {
     ...baseOptions,
     legend: { show: false },
-    grid: createGridConfig(1, false),
+    grid: createValueModeGridConfig(false),
     visualMap: resolve2DScatterVisualMap(useVisualMap, colorValues, styling, colorDimension),
     tooltip: createValueModeTooltip(isDark.value, xLabel, yLabel),
     ...createValueAxisConfig(
