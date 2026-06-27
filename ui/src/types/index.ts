@@ -76,6 +76,8 @@ export type LineConfig = {
   sort?: Sort
   scale?: ScaleType
   showLabels?: boolean
+  symbol?: string
+  symbolSize?: number
   threeDRotate?: boolean
   threeD?: boolean
   threeDVisualMap?: boolean
@@ -88,6 +90,8 @@ export type ScatterConfig = {
   sort?: Sort
   scale?: ScaleType
   showLabels?: boolean
+  symbol?: string
+  symbolSize?: number
   threeDRotate?: boolean
   threeD?: boolean
   threeDVisualMap?: boolean

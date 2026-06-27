@@ -20,10 +20,21 @@ import {
   valuePoints3DToSeries,
   type Continuous3DContext,
 } from './shared'
+import { resolve3DSymbolProps } from './shared/seriesConfig'
 import type { Series3DData } from '@/types'
 
 export function useScatter3DChartOptions(config: BaseChartConfig) {
-  const { chartData, isDark, threeDRotate, visibleZ, showLabels, scale, threeDVisualMap } = config
+  const {
+    chartData,
+    isDark,
+    threeDRotate,
+    visibleZ,
+    showLabels,
+    scale,
+    threeDVisualMap,
+    symbol,
+    symbolSize,
+  } = config
 
   const options = computed<EChartsOption>(() => {
     const styling = getChartStyling(isDark.value)
@@ -53,6 +64,8 @@ export function useScatter3DChartOptions(config: BaseChartConfig) {
       : undefined
     const groupedSymbolSize = 10
     const axisLabels = chartData.value.axisLabels
+    const symbolOverride = symbol?.value
+    const symbolSizeOverride = symbolSize?.value
     const continuousCtx: Continuous3DContext = {
       base,
       styling,
@@ -63,6 +76,8 @@ export function useScatter3DChartOptions(config: BaseChartConfig) {
       threeDRotate: threeDRotate?.value ?? false,
       scale: scale?.value ?? 'linear',
       axisLabels,
+      symbol: symbolOverride,
+      symbolSize: symbolSizeOverride,
     }
 
     const valuePoints3D = chartData.value.valuePoints3D
@@ -125,7 +140,7 @@ export function useScatter3DChartOptions(config: BaseChartConfig) {
           name: s.name,
           type: 'scatter3D' as const,
           data: s.data,
-          symbolSize: valueSymbolSize!,
+          ...resolve3DSymbolProps(valueSymbolSize, symbolOverride, symbolSizeOverride),
           ...(useVisualMap ? {} : { itemStyle: { color: defaultColor } }),
           label: create3DCellLabel(showLabels.value, cellTotals, styling.textColor),
           emphasis: { label: { show: false } },
@@ -187,7 +202,7 @@ export function useScatter3DChartOptions(config: BaseChartConfig) {
           name: s.name,
           type: 'scatter3D' as const,
           data: s.data,
-          symbolSize: groupedSymbolSize,
+          ...resolve3DSymbolProps(groupedSymbolSize, symbolOverride, symbolSizeOverride),
           itemStyle: { color },
           label: create3DCellLabel(
             showLabels.value && s.name === lastVisibleZName,

@@ -21,6 +21,7 @@ import {
   getEffectiveScale,
   computeSeriesTotals,
 } from './shared/common'
+import { resolveSeriesSymbol } from './shared/seriesConfig'
 
 export type CategorySeriesKind = 'line' | 'scatter'
 
@@ -55,7 +56,11 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
     const { minValue, effectiveScale } = getEffectiveScale(series, scale?.value ?? 'linear')
     const largeX = isLargeXAxis(xAxisData)
     const xLabel = chartData.value.axisLabels?.x
-    const seriesExtras = largeX ? style.largeSymbol : style.defaultSymbol
+    const seriesExtras = resolveSeriesSymbol(
+      largeX ? style.largeSymbol : style.defaultSymbol,
+      config.symbol?.value,
+      config.symbolSize?.value
+    )
 
     if (!hasYAxis) {
       return {

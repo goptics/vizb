@@ -143,6 +143,20 @@ func ValidateScale(scale *string) {
 	}})
 }
 
+// ValidateSymbolFlags validates --symbol and --symbol-size when set.
+func ValidateSymbolFlags(symbol string, symbolSize *float64) {
+	if symbol != "" {
+		if err := shared.ValidateSymbol(symbol); err != nil {
+			shared.ExitWithError(err.Error(), nil)
+		}
+	}
+	if symbolSize != nil {
+		if err := shared.ValidateSymbolSize(*symbolSize); err != nil {
+			shared.ExitWithError(err.Error(), nil)
+		}
+	}
+}
+
 // resolveInput returns the input file path. It accepts a file arg, else reads
 // piped stdin into a temp file. With neither, it prints help and exits.
 func resolveInput(cmd *cobra.Command, args []string) (string, bool) {

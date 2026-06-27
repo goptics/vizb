@@ -16,6 +16,8 @@ type Config struct {
 	Sort            *shared.Sort       `json:"sort,omitempty"`
 	Scale           string             `json:"scale,omitempty"`
 	ShowLabels      *bool              `json:"showLabels,omitempty"`
+	Symbol          string             `json:"symbol,omitempty"`
+	SymbolSize      *float64           `json:"symbolSize,omitempty"`
 	ThreeDRotate    *bool              `json:"threeDRotate,omitempty"`
 	ThreeD          *bool              `json:"threeD,omitempty"`
 	ThreeDVisualMap *bool              `json:"threeDVisualMap,omitempty"`
@@ -35,6 +37,8 @@ func init() {
 type Flags struct {
 	Swap, Scale, Sort string
 	ShowLabels        bool
+	Symbol            string
+	SymbolSize        *float64
 	ThreeDRotate      bool
 	ThreeD            bool
 	ThreeDVisualMap   *bool
@@ -52,6 +56,12 @@ func Materialise(flags Flags, override *Config) Config {
 	if flags.ShowLabels {
 		v := true
 		out.ShowLabels = &v
+	}
+	if flags.Symbol != "" {
+		out.Symbol = flags.Symbol
+	}
+	if flags.SymbolSize != nil {
+		out.SymbolSize = flags.SymbolSize
 	}
 	if flags.ThreeDRotate {
 		v := true
@@ -79,6 +89,12 @@ func Materialise(flags Flags, override *Config) Config {
 		}
 		if override.ShowLabels != nil {
 			out.ShowLabels = override.ShowLabels
+		}
+		if override.Symbol != "" {
+			out.Symbol = override.Symbol
+		}
+		if override.SymbolSize != nil {
+			out.SymbolSize = override.SymbolSize
 		}
 		if override.ThreeDRotate != nil {
 			out.ThreeDRotate = override.ThreeDRotate

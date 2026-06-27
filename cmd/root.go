@@ -15,6 +15,7 @@ import (
 	radarchart "github.com/goptics/vizb/config/charts/radar"
 	scatterchart "github.com/goptics/vizb/config/charts/scatter"
 	"github.com/goptics/vizb/pkg/style"
+
 	// Chart subcommands self-register into cli's registry via their init().
 	_ "github.com/goptics/vizb/cmd/charts/bar"
 	_ "github.com/goptics/vizb/cmd/charts/heatmap"
@@ -22,6 +23,7 @@ import (
 	_ "github.com/goptics/vizb/cmd/charts/pie"
 	_ "github.com/goptics/vizb/cmd/charts/radar"
 	_ "github.com/goptics/vizb/cmd/charts/scatter"
+
 	// Parsers self-register into pkg/parser via their init().
 	_ "github.com/goptics/vizb/pkg/parser/csv"
 	_ "github.com/goptics/vizb/pkg/parser/golang"
@@ -81,7 +83,7 @@ func init() {
 	rootCmd.Flags().StringSliceVarP(&rootOpts.Charts, "charts", "c", defaultChartTypes, "Chart types to generate (bar, line, scatter, pie, heatmap, radar)")
 	rootCmd.Flags().StringArrayVar(&rootOpts.ChartSpecs, "chart", nil,
 		"Per-chart settings override: <type>:<key>=<val>(,<key>=<val>)* or bare flags (labels, 3d-rotate, 3d). "+
-			"Keys: swap, sort, scale, labels, 3d-rotate, 3d. E.g. --chart bar:swap=yxn,sort=asc --chart pie:labels")
+			"Keys: swap, sort, scale, labels, 3d-rotate, 3d, symbol, symbol-size. E.g. --chart bar:swap=yxn,sort=asc --chart scatter:symbol=diamond,symbol-size=12")
 
 	// Register the chart subcommands (bar/line/pie/heatmap/radar) from the registry.
 	rootCmd.AddCommand(cli.Commands()...)
