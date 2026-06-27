@@ -23,14 +23,23 @@ import {
 import type { Series3DData } from '@/types'
 
 export function useScatter3DChartOptions(config: BaseChartConfig) {
-  const { chartData, isDark, threeDRotate, visibleZ, showLabels, scale, threeDVisualMap } = config
+  const {
+    chartData,
+    isDark,
+    threeDRotate,
+    visibleZ,
+    showLabels,
+    scale,
+    threeDVisualMap,
+    visualMap,
+  } = config
 
   const options = computed<EChartsOption>(() => {
     const styling = getChartStyling(isDark.value)
     const base = getBaseOptions(config)
     const render = chartData.value.render3D ?? EMPTY_RENDER
     const { xValues, yValues, zValues } = render
-    const useVisualMap = threeDVisualMap?.value === true
+    const useVisualMap = threeDVisualMap?.value === true || visualMap?.value === true
     const defaultColor = COLOR_PALETTE[0]!
     const axisCommon = makeAxis3DCommon(styling)
     const zAxis3DBase = {

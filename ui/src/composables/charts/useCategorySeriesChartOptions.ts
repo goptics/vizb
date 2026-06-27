@@ -95,7 +95,7 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
           useVisualMap,
           groupedScatterColorValues([singleSeries]),
           styling,
-          0
+          1
         ),
         series: [singleSeries],
       } as EChartsOption
@@ -129,7 +129,7 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
         useVisualMap,
         groupedScatterColorValues(transposedSeries),
         styling,
-        0
+        1
       ),
       tooltip: createTooltipConfig(showXBreakdown, isDark.value, seriesTotals),
       ...createAxisConfig(styling, xAxisData, effectiveScale, minValue, xLabel, largeX, true),
