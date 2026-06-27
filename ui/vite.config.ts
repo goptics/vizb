@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig, type ESBuildOptions } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { createHtmlPlugin } from 'vite-plugin-html'
 import path from 'path'
@@ -6,6 +6,11 @@ import { createEmbedPlugins, embedBuildOptions } from './embed-build/index.ts'
 
 const embedUi = process.env.EMBED_UI === 'True'
 console.info('EMBED_UI env var:', process.env.EMBED_UI)
+
+const esbuildOptions = {
+  legalComments: 'none',
+  pure: ['console.log', 'console.info', 'console.warn', 'console.debug', 'console.trace'],
+} as ESBuildOptions
 
 // https://vite.dev/config/
 export default defineConfig(({ command }) => ({
@@ -30,10 +35,7 @@ export default defineConfig(({ command }) => ({
       '@': path.resolve(__dirname, './src'),
     },
   },
-  esbuild: {
-    legalComments: 'none',
-    pure: ['console.log', 'console.info', 'console.warn', 'console.debug', 'console.trace'],
-  },
+  esbuild: esbuildOptions,
   define: {
     'process.env.NODE_ENV': command === 'serve' ? '"development"' : '"production"',
   },
