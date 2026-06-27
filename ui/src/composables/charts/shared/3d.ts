@@ -45,7 +45,7 @@ export function maxFrom3DData(series: { data: { value: number[] }[] }[], dimensi
   return max || 1
 }
 
-export function create3DVisualMap(max: number, styling: ChartStyling, dimension: 2 | 3 = 2) {
+export function create3DVisualMap(max: number, styling: ChartStyling, dimension: 1 | 2 | 3 = 2) {
   return {
     show: true,
     min: 0,

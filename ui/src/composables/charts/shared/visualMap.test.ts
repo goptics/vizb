@@ -1,30 +1,25 @@
 import { describe, it, expect } from 'vitest'
 import { getChartStyling } from './chartConfig'
-import { createScatterVisualMap, resolve2DScatterVisualMap } from './visualMap'
+import { resolve2DScatterVisualMap } from './visualMap'
 
 const styling = getChartStyling(false)
 
-describe('createScatterVisualMap', () => {
-  it('returns vertical gradient config on dimension 2', () => {
-    const visualMap = createScatterVisualMap(42, styling, 2)
+describe('resolve2DScatterVisualMap', () => {
+  it('matches 3D visualMap layout (vertical, right edge)', () => {
+    const visualMap = resolve2DScatterVisualMap(true, [1, 5, 3], styling, 2)
+    expect(Array.isArray(visualMap)).toBe(false)
     expect(visualMap).toMatchObject({
       show: true,
       min: 0,
-      max: 42,
+      max: 5,
       dimension: 2,
       orient: 'vertical',
       right: '0%',
+      top: 'center',
     })
-    expect(visualMap.inRange).not.toHaveProperty('symbolSize')
-  })
-})
-
-describe('resolve2DScatterVisualMap', () => {
-  it('returns config when enabled with values', () => {
-    expect(resolve2DScatterVisualMap(true, [1, 5, 3], styling)).toMatchObject({
-      show: true,
-      max: 5,
-    })
+    if (!Array.isArray(visualMap)) {
+      expect(visualMap.inRange).not.toHaveProperty('symbolSize')
+    }
   })
 
   it('returns empty array when disabled', () => {

@@ -92,13 +92,10 @@ export function buildValueAxes2DOptions(
     ...seriesSymbol(chartType, largeX),
   }
 
-  const grid = createGridConfig(1, false)
-  if (useVisualMap) grid.right = '12%'
-
   return {
     ...baseOptions,
     legend: { show: false },
-    grid,
+    grid: createGridConfig(1, false),
     visualMap: resolve2DScatterVisualMap(useVisualMap, colorValues, styling, colorDimension),
     tooltip: createValueModeTooltip(isDark.value, xLabel, yLabel),
     ...createValueAxisConfig(

@@ -81,12 +81,9 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
         ...(useVisualMap ? {} : { itemStyle: { color: getNextColorFor(chartData.value.title) } }),
         ...seriesExtras,
       }
-      const grid = createGridConfig(1, largeX)
-      if (useVisualMap) grid.right = '12%'
-
       return {
         ...baseOptions,
-        grid,
+        grid: createGridConfig(1, largeX),
         tooltip: createPinnedAxisTooltip(isDark.value),
         ...createAxisConfig(styling, xAxisData, effectiveScale, minValue, xLabel, largeX, true),
         ...(largeX ? { dataZoom: createDataZoomConfig(xAxisData, styling) } : {}),
@@ -118,13 +115,10 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
     const yLabel = chartData.value.axisLabels?.y
     const showXBreakdown = kind === 'line' || hasXAxis(chartData)
 
-    const grid = createGridConfig(transposedSeries.length, largeX)
-    if (useVisualMap) grid.right = '12%'
-
     return {
       ...baseOptions,
       ...(yLabel ? { title: makeLegendTitle(yLabel, styling) } : {}),
-      grid,
+      grid: createGridConfig(transposedSeries.length, largeX),
       visualMap: resolve2DScatterVisualMap(
         useVisualMap,
         groupedScatterColorValues(transposedSeries),
