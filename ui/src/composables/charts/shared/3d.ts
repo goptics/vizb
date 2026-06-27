@@ -178,8 +178,8 @@ export function orthographicSizeFor3DBox(
   return boxExtent3D(boxWidth, boxDepth, boxHeight) * 1.5
 }
 
-const BAND_FILL_MIN = 0.45
-const BAND_FILL_MAX = 0.92
+const BAND_FILL_MIN = 0.52
+const BAND_FILL_MAX = 0.96
 const BAND_FILL_LO = 2
 const BAND_FILL_HI = 40
 

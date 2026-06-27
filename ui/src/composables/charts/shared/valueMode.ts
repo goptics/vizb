@@ -13,9 +13,9 @@ import {
 } from './chartConfig'
 import { adjustForLogScaleLine, getEffectiveScale } from './common'
 
-const defaultScatterSymbol = { symbol: 'circle' as const, symbolSize: 8 }
-const largeScatterSymbol = { symbol: 'circle' as const, symbolSize: 5 }
-const defaultLineSymbol = { symbol: 'circle' as const, symbolSize: 7 }
+const defaultScatterSymbol = { symbol: 'circle' as const, symbolSize: 10 }
+const largeScatterSymbol = { symbol: 'circle' as const, symbolSize: 6 }
+const defaultLineSymbol = { symbol: 'circle' as const, symbolSize: 9 }
 const largeLineSymbol = { symbol: 'none', sampling: 'lttb' as const }
 
 export function sortValueTuples(

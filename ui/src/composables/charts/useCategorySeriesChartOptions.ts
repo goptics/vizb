@@ -33,13 +33,13 @@ const SERIES_STYLE: Record<
   }
 > = {
   line: {
-    defaultSymbol: { symbol: 'circle', symbolSize: 7 },
+    defaultSymbol: { symbol: 'circle', symbolSize: 9 },
     largeSymbol: { symbol: 'none', sampling: 'lttb' },
     connectNulls: true,
   },
   scatter: {
-    defaultSymbol: { symbol: 'circle', symbolSize: 8 },
-    largeSymbol: { symbol: 'circle', symbolSize: 5 },
+    defaultSymbol: { symbol: 'circle', symbolSize: 10 },
+    largeSymbol: { symbol: 'circle', symbolSize: 6 },
   },
 }
 

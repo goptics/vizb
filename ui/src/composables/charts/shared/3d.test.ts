@@ -46,16 +46,16 @@ describe('boxSizeForAxisCount', () => {
 
 describe('bandFillRatioForCount', () => {
   it('clamps sparse grids to low fill and dense grids to high fill', () => {
-    expect(bandFillRatioForCount(1)).toBe(0.45)
-    expect(bandFillRatioForCount(2)).toBe(0.45)
-    expect(bandFillRatioForCount(40)).toBe(0.92)
-    expect(bandFillRatioForCount(100)).toBe(0.92)
+    expect(bandFillRatioForCount(1)).toBe(0.52)
+    expect(bandFillRatioForCount(2)).toBe(0.52)
+    expect(bandFillRatioForCount(40)).toBe(0.96)
+    expect(bandFillRatioForCount(100)).toBe(0.96)
   })
 
   it('ramps monotonically between sparse and dense', () => {
     const mid = bandFillRatioForCount(20)
-    expect(mid).toBeGreaterThan(0.45)
-    expect(mid).toBeLessThan(0.92)
+    expect(mid).toBeGreaterThan(0.52)
+    expect(mid).toBeLessThan(0.96)
     expect(bandFillRatioForCount(10)).toBeLessThan(bandFillRatioForCount(30))
   })
 })
