@@ -1,7 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import {
+  createAxisConfig,
+  createValueAxisConfig,
   createGridConfig,
   createHeatmapLayoutConfig,
+  getChartStyling,
   heatmapDataZoomXBottom,
   HEATMAP_DATAZOOM_X_HEIGHT,
   HEATMAP_VISUAL_MAP_BAND,
@@ -17,6 +20,45 @@ import {
 } from './chartConfig'
 
 const indicators = ['A', 'B', 'C']
+const styling = getChartStyling(true)
+
+describe('createAxisConfig (y-axis range)', () => {
+  it('includes zero on linear scale by default (bar-style baseline)', () => {
+    const { yAxis } = createAxisConfig(styling, ['a', 'b'], 'linear')
+    expect(yAxis.scale).toBeUndefined()
+  })
+
+  it('fits y-axis to data range for line/scatter (scale: true)', () => {
+    const { yAxis } = createAxisConfig(
+      styling,
+      ['a', 'b'],
+      'linear',
+      undefined,
+      undefined,
+      false,
+      true
+    )
+    expect(yAxis.scale).toBe(true)
+  })
+
+  it('sets log min from data instead of scale when log scale is active', () => {
+    const { yAxis } = createAxisConfig(styling, ['a', 'b'], 'log', 2500, undefined, false, true)
+    expect(yAxis.scale).toBeUndefined()
+    expect(yAxis.min).toBe(1000)
+  })
+})
+
+describe('createValueAxisConfig (y-axis range)', () => {
+  it('fits y-axis to data for value-mode line/scatter', () => {
+    const { yAxis } = createValueAxisConfig(styling, 'x', 'y', 'linear', undefined, true)
+    expect(yAxis.scale).toBe(true)
+  })
+
+  it('keeps zero baseline for value-mode bar charts', () => {
+    const { yAxis } = createValueAxisConfig(styling, 'x', 'y', 'linear', undefined, false)
+    expect(yAxis.scale).toBeUndefined()
+  })
+})
 
 describe('createGridConfig', () => {
   it('reserves fixed px bottom only when dataZoom is present', () => {
