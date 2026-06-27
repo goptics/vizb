@@ -3,6 +3,8 @@ import {
   createAxisConfig,
   createValueAxisConfig,
   createGridConfig,
+  createValueModeGridConfig,
+  VALUE_MODE_GRID_TOP,
   createHeatmapLayoutConfig,
   getChartStyling,
   heatmapDataZoomXBottom,
@@ -57,6 +59,13 @@ describe('createValueAxisConfig (y-axis range)', () => {
   it('keeps zero baseline for value-mode bar charts', () => {
     const { yAxis } = createValueAxisConfig(styling, 'x', 'y', 'linear', undefined, false)
     expect(yAxis.scale).toBeUndefined()
+  })
+})
+
+describe('createValueModeGridConfig', () => {
+  it('uses minimal fixed top because value mode hides the legend', () => {
+    expect(createValueModeGridConfig(false).top).toBe(VALUE_MODE_GRID_TOP)
+    expect(createValueModeGridConfig(false).top).not.toBe(createGridConfig(1, false).top)
   })
 })
 

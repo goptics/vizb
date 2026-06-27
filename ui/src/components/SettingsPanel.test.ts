@@ -1,5 +1,12 @@
 import { describe, it, expect, vi } from 'vitest'
-import type { BarConfig, LineConfig, PieConfig, HeatmapConfig, RadarConfig } from '../types'
+import type {
+  BarConfig,
+  LineConfig,
+  ScatterConfig,
+  PieConfig,
+  HeatmapConfig,
+  RadarConfig,
+} from '../types'
 
 // SettingsPanel.vue renders the controls registered in fieldRegistry. Those
 // controls are .vue SFCs; the vitest config intentionally excludes the Vue
@@ -20,6 +27,9 @@ vi.mock('../components/settings/ThreeDControl.vue', () => ({
 }))
 vi.mock('../components/settings/ThreeDVisualMapControl.vue', () => ({
   default: { name: 'ThreeDVisualMapControl' },
+}))
+vi.mock('../components/settings/VisualMapControl.vue', () => ({
+  default: { name: 'VisualMapControl' },
 }))
 vi.mock('../components/settings/SwapControl.vue', () => ({ default: { name: 'SwapControl' } }))
 vi.mock('../components/Selector.vue', () => ({ default: { name: 'Selector' } }))
@@ -116,6 +126,19 @@ describe('SettingsPanel field selection', () => {
         hasZAxis: false,
       }).map((f) => f.key)
     ).toEqual(['sort', 'scale', 'showLabels', 'threeD', 'threeDVisualMap', 'threeDRotate', 'swap'])
+  })
+
+  it('renders 5 controls for a 2D scatter config (includes visualMap)', () => {
+    const cfg: ScatterConfig = {
+      type: 'scatter',
+      sort: { enabled: false, order: 'asc' },
+      scale: 'linear',
+      showLabels: false,
+      swap: '',
+    }
+    expect(
+      getRenderableFields(cfg, { dimension: '2D', rendering3D: false }).map((f) => f.key)
+    ).toEqual(['sort', 'scale', 'showLabels', 'visualMap', 'swap'])
   })
 
   it('renders 4 controls for a 2D line config without value-3D active', () => {

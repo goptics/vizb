@@ -22,6 +22,7 @@ type Options struct {
 	ThreeDRotate    bool
 	ThreeD          bool
 	ThreeDVisualMap bool
+	VisualMap       bool
 }
 
 // Bind registers the shared chart flags plus --scale and --3d-rotate.
@@ -31,6 +32,7 @@ func (o *Options) Bind(fs *pflag.FlagSet) {
 	fs.BoolVar(&o.ThreeD, "3d", false, "Enable value 3D for x+y data (y categories on depth, metric on height)")
 	fs.BoolVar(&o.ThreeDRotate, "3d-rotate", false, "Auto-rotate the 3D scene (only applies when z-axis data is present)")
 	fs.BoolVar(&o.ThreeDVisualMap, "3d-visualmap", false, "Color 3D bars/lines by metric value (visualMap gradient)")
+	fs.BoolVar(&o.VisualMap, "visualmap", false, "Color 2D scatter points by metric (visualMap gradient)")
 	fs.StringVar(&o.Symbol, "symbol", "", "Marker symbol (ECharts built-in: circle, rect, roundRect, triangle, diamond, pin, arrow, none; or path:// / image:// / SVG path)")
 	fs.Float64Var(&o.SymbolSize, "symbol-size", 0, "Marker size in pixels (overrides default sizing)")
 }
@@ -59,6 +61,12 @@ func NewCommand() *cobra.Command {
 			}
 			cli.ValidateSymbolFlags(o.Symbol, symbolSize)
 
+			var visualMap *bool
+			if cmd.Flags().Changed("visualmap") {
+				v := o.VisualMap
+				visualMap = &v
+			}
+
 			cfg := scatterchart.Materialise(scatterchart.Flags{
 				Swap:            o.Swap,
 				Scale:           o.Scale,
@@ -69,6 +77,7 @@ func NewCommand() *cobra.Command {
 				ThreeDRotate:    o.ThreeDRotate,
 				ThreeD:          o.ThreeD,
 				ThreeDVisualMap: threeDVisualMap,
+				VisualMap:       visualMap,
 				Stat:            o.Stat,
 			}, nil)
 

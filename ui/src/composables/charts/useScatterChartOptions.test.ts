@@ -40,6 +40,7 @@ const makeValueConfig = (): BaseChartConfig => ({
   sort: ref({ enabled: false, order: 'asc' }),
   showLabels: ref(false),
   isDark: ref(false),
+  visualMap: ref(false),
 })
 
 const makeGroupedChartData = (): ChartData => ({
@@ -60,6 +61,7 @@ const makeGroupedConfig = (): BaseChartConfig => ({
   sort: ref({ enabled: false, order: 'asc' }),
   showLabels: ref(false),
   isDark: ref(false),
+  visualMap: ref(false),
 })
 
 describe('useScatterChartOptions — axes value mode', () => {
@@ -91,6 +93,11 @@ describe('useScatterChartOptions — axes value mode', () => {
       [100, 12],
       [200, 8],
     ])
+  })
+
+  it('uses a taller plot grid (minimal top) without a legend band', () => {
+    const { options } = useScatterChartOptions(makeValueConfig())
+    expect((options.value.grid as { top?: number }).top).toBe(8)
   })
 
   it('includes dataZoom for both axes', () => {
@@ -128,6 +135,20 @@ describe('useScatterChartOptions — axes value mode', () => {
     const s = (options.value.series as { label?: { show?: boolean } }[])[0]!
     expect(s.label?.show).toBe(true)
   })
+
+  it('emits visualMap when enabled in value mode', () => {
+    const cfg = makeValueConfig()
+    cfg.visualMap!.value = true
+    const { options } = useScatterChartOptions(cfg)
+    expect(options.value.visualMap).toMatchObject({ show: true, dimension: 1 })
+    const s = (options.value.series as { itemStyle?: { color?: string } }[])[0]!
+    expect(s.itemStyle?.color).toBeUndefined()
+  })
+
+  it('omits visualMap when disabled', () => {
+    const { options } = useScatterChartOptions(makeValueConfig())
+    expect(options.value.visualMap).toEqual([])
+  })
 })
 
 describe('useScatterChartOptions — group mode', () => {
@@ -159,5 +180,12 @@ describe('useScatterChartOptions — group mode', () => {
   it('shows legend for multi-series grouped scatter', () => {
     const { options } = useScatterChartOptions(makeGroupedConfig())
     expect((options.value.legend as { show?: boolean }).show).toBe(true)
+  })
+
+  it('emits visualMap for grouped scatter when enabled', () => {
+    const cfg = makeGroupedConfig()
+    cfg.visualMap!.value = true
+    const { options } = useScatterChartOptions(cfg)
+    expect(options.value.visualMap).toMatchObject({ show: true })
   })
 })

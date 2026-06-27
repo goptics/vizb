@@ -90,6 +90,22 @@ func (s *ChartSpecSuite) TestParseOverridesBareThreeD() {
 	s.Equal(true, m["threeD"])
 }
 
+// TestParseOverrides_ScatterVisualMap confirms `visualmap` is scatter-only.
+func (s *ChartSpecSuite) TestParseOverridesScatterVisualMap() {
+	got, err := ParseOverrides([]string{"scatter:visualmap"}, []string{"scatter"}, s.xynAxes)
+	s.Require().NoError(err)
+
+	raw, err := json.Marshal(got["scatter"])
+	s.Require().NoError(err)
+	var m map[string]any
+	s.Require().NoError(json.Unmarshal(raw, &m))
+	s.Equal(true, m["visualMap"])
+
+	_, err = ParseOverrides([]string{"bar:visualmap"}, []string{"bar"}, s.xynAxes)
+	s.Require().Error(err)
+	s.Contains(err.Error(), "only valid for scatter")
+}
+
 // TestParseOverrides_BareThreeDVisualMap confirms `3d-visualmap` enables the gradient.
 func (s *ChartSpecSuite) TestParseOverridesBareThreeDVisualMap() {
 	got, err := ParseOverrides([]string{"bar:3d-visualmap"}, []string{"bar"}, s.xynAxes)

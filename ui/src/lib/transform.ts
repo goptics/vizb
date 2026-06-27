@@ -260,6 +260,20 @@ const axisLabelsFromAxes = (axes: Axis[]): AxisLabels => {
   return out
 }
 
+const CHART_AXIS_KEYS = new Set(['xAxis', 'yAxis', 'zAxis'])
+
+const isSourceFieldOnChart = (
+  identityString: string,
+  targetString: string,
+  source: 'xAxis' | 'yAxis' | 'zAxis'
+): boolean => {
+  const identityKeys = translateAxisKey(identityString)
+  const targetKeys = translateAxisKey(targetString)
+  const i = identityKeys.indexOf(source)
+  if (i < 0 || i >= targetKeys.length) return false
+  return CHART_AXIS_KEYS.has(targetKeys[i]!)
+}
+
 const projectValueCoords = (
   row: DataPoint,
   identityString: string,
@@ -341,7 +355,7 @@ export function buildValueModeChart(
   const labels = { ...(swapAxisLabels(identity, target, baseLabels) ?? baseLabels) }
   const use3D = (opts?.threeD ?? true) && arrangementHasChartZ(target)
 
-  const valueTuples: [number, number][] = []
+  const valueTuples: [number, number, number?][] = []
   const valuePoints3D: ValuePoint3D[] = []
 
   for (const row of data) {
@@ -366,7 +380,20 @@ export function buildValueModeChart(
       const cy = coords.yAxis
       if (cx === undefined || cy === undefined) continue
       if (scale === 'log' && cy <= 0) continue
-      valueTuples.push([cx, cy])
+
+      let colorDim: number | undefined
+      const metricRaw = row.metric
+      const metricNum = metricRaw !== undefined && metricRaw !== '' ? Number(metricRaw) : undefined
+      if (metricNum !== undefined && isFinite(metricNum)) {
+        colorDim = metricNum
+      } else if (!isSourceFieldOnChart(identity, target, 'zAxis')) {
+        const zNum = Number(row.zAxis)
+        if (row.zAxis !== undefined && row.zAxis !== '' && isFinite(zNum)) {
+          colorDim = zNum
+        }
+      }
+
+      valueTuples.push(colorDim !== undefined ? [cx, cy, colorDim] : [cx, cy])
     }
   }
 

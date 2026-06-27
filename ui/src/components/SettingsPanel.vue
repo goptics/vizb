@@ -34,6 +34,7 @@ const {
   setSwap,
   setThreeD,
   setThreeDVisualMap,
+  setVisualMap,
 } = useSettingsStore()
 
 const {
@@ -143,6 +144,7 @@ const handlers: SettingsHandlers = {
   threeDRotate: setThreeDRotate,
   threeD: setThreeD,
   threeDVisualMap: setThreeDVisualMap,
+  visualMap: setVisualMap,
   swap: (target) => {
     if (target === undefined) return
     setArrangement(activeDataSetId.value, chartType.value, target)

@@ -107,6 +107,21 @@ func (s *ScatterSuite) TestMaterialiseThreeDAndVisualMap() {
 	s.Equal([]string{"mean"}, got.Stat.Math)
 }
 
+func (s *ScatterSuite) TestMaterialiseVisualMap() {
+	got := Materialise(Flags{}, nil)
+	s.Nil(got.VisualMap)
+
+	trueVal := true
+	got = Materialise(Flags{VisualMap: &trueVal}, nil)
+	s.Require().NotNil(got.VisualMap)
+	s.True(*got.VisualMap)
+
+	falseVal := false
+	got = Materialise(Flags{VisualMap: &trueVal}, &Config{VisualMap: &falseVal})
+	s.Require().NotNil(got.VisualMap)
+	s.False(*got.VisualMap)
+}
+
 func (s *ScatterSuite) TestChartConfigInterface() {
 	cfg := Config{Type: Type, Stat: &shared.StatConfig{Enabled: true, Math: []string{"median"}}}
 	s.Equal("scatter", cfg.ChartType())

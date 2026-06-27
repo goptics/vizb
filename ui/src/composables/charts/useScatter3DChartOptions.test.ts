@@ -108,6 +108,23 @@ describe('useScatter3DChartOptions — grouped mode', () => {
     expect((options.value.legend as { show?: boolean }).show).toBe(true)
   })
 
+  it('honors 2D visualMap flag on 3D scatter when threeDVisualMap is off', () => {
+    const config = makeConfig({
+      title: 'avg',
+      statType: 'avg',
+      yAxis: ['y1'],
+      zAxis: ['zA'],
+      series: [],
+      points: [{ xAxis: 'x1', yAxis: 'y1', zAxis: 'zA', value: 5 }],
+      axisLabels: { x: 'x', y: 'y', z: 'z' },
+      render3D: groupedRender,
+    })
+    config.threeDVisualMap = ref(false)
+    config.visualMap = ref(true)
+    const { options } = useScatter3DChartOptions(config)
+    expect(options.value.visualMap).toMatchObject({ show: true })
+  })
+
   it('applies category visualMap (dimension 2) on grouped series when enabled', () => {
     const config = makeConfig({
       title: 'avg',

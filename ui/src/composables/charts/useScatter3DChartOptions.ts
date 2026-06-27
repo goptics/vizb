@@ -32,6 +32,7 @@ export function useScatter3DChartOptions(config: BaseChartConfig) {
     showLabels,
     scale,
     threeDVisualMap,
+    visualMap,
     symbol,
     symbolSize,
   } = config
@@ -41,7 +42,7 @@ export function useScatter3DChartOptions(config: BaseChartConfig) {
     const base = getBaseOptions(config)
     const render = chartData.value.render3D ?? EMPTY_RENDER
     const { xValues, yValues, zValues } = render
-    const useVisualMap = threeDVisualMap?.value === true
+    const useVisualMap = threeDVisualMap?.value === true || visualMap?.value === true
     const defaultColor = COLOR_PALETTE[0]!
     const axisCommon = makeAxis3DCommon(styling)
     const zAxis3DBase = {

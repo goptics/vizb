@@ -7,6 +7,7 @@ import ShowLabelsControl from '@/components/settings/ShowLabelsControl.vue'
 import ThreeDRotateControl from '@/components/settings/ThreeDRotateControl.vue'
 import ThreeDControl from '@/components/settings/ThreeDControl.vue'
 import ThreeDVisualMapControl from '@/components/settings/ThreeDVisualMapControl.vue'
+import VisualMapControl from '@/components/settings/VisualMapControl.vue'
 import SwapControl from '@/components/settings/SwapControl.vue'
 
 // Re-exported so SettingsPanel can import the chart-type picker threshold
@@ -22,6 +23,7 @@ export type SettingFieldValueMap = {
   threeDRotate: boolean
   threeD: boolean
   threeDVisualMap: boolean
+  visualMap: boolean
   swap: string | undefined
 }
 
@@ -64,6 +66,11 @@ export const fieldRegistry: Record<SettingFieldKey, FieldMeta> = {
     component: ThreeDVisualMapControl,
     appliesTo: ['bar', 'line', 'scatter'],
     visible: (ctx) => ctx.rendering3D === true || ctx.dimension === undefined,
+  },
+  visualMap: {
+    component: VisualMapControl,
+    appliesTo: ['scatter'],
+    visible: (ctx) => ctx.rendering3D !== true,
   },
   threeDRotate: {
     component: ThreeDRotateControl,

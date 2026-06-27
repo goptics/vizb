@@ -21,6 +21,7 @@ type Config struct {
 	ThreeDRotate    *bool              `json:"threeDRotate,omitempty"`
 	ThreeD          *bool              `json:"threeD,omitempty"`
 	ThreeDVisualMap *bool              `json:"threeDVisualMap,omitempty"`
+	VisualMap       *bool              `json:"visualMap,omitempty"`
 	Stat            *shared.StatConfig `json:"stat,omitempty"`
 }
 
@@ -42,6 +43,7 @@ type Flags struct {
 	ThreeDRotate      bool
 	ThreeD            bool
 	ThreeDVisualMap   *bool
+	VisualMap         *bool
 	Stat              []string
 }
 
@@ -74,6 +76,9 @@ func Materialise(flags Flags, override *Config) Config {
 	if flags.ThreeDVisualMap != nil {
 		out.ThreeDVisualMap = flags.ThreeDVisualMap
 	}
+	if flags.VisualMap != nil {
+		out.VisualMap = flags.VisualMap
+	}
 
 	out.Stat = shared.MaterialiseStatFlags(flags.Stat)
 
@@ -104,6 +109,9 @@ func Materialise(flags Flags, override *Config) Config {
 		}
 		if override.ThreeDVisualMap != nil {
 			out.ThreeDVisualMap = override.ThreeDVisualMap
+		}
+		if override.VisualMap != nil {
+			out.VisualMap = override.VisualMap
 		}
 		if override.Stat != nil {
 			out.Stat = override.Stat
