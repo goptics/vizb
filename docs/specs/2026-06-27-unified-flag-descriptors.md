@@ -179,7 +179,131 @@ Byte-identical `settings`/`axes`/`name` JSON for all VALID invocations:
 Accepted message-only change: `--chart bar:bogus` valid-key list now also lists
 `stat` (stat became a real chart descriptor). Value outputs unchanged.
 
-## Out of scope
+## Addendum — Applicability rules (Phases A–E)
 
-- UI / gen.go (no UI change).
-- merge command flags (no chart/parser flag overlap to unify).
+Added June 2026: a declarative applicability-rule pipeline that replaces bespoke
+post-hoc checks with rules attached to flag descriptors.
+
+### Outcome types (`config/flags`)
+
+```go
+type Outcome int8
+const ( Keep Outcome = iota; WarnKeep; Skip; Fatal )
+```
+
+Precedence: `Fatal > Skip > WarnKeep > Keep`. Multiple rules on one flag:
+any `Fatal` short-circuits; otherwise the worst non-Fatal outcome wins.
+
+### RuleFn — opaque closure (`config/flags`)
+
+```go
+type RuleFn func(ctx any) (Outcome, string)
+```
+
+`config/flags` is a stdlib-only leaf, so the context type is opaque `any`.
+The concrete `RuleContext` lives in `config/charts/rules.go`.
+
+### Flag.Rule — descriptor field
+
+```go
+type Flag struct {
+    ...existing fields...
+    Rule []RuleFn  // 0+ rules; nil ⇒ always Keep (unconditionally applicable)
+}
+```
+
+### RuleContext + builders (`config/charts/rules.go`)
+
+```go
+type AxisInfo struct {
+    Key  string // "x", "y", "z", "name"
+    Type string // "value" for continuous, "" for categorical
+}
+
+type RuleContext struct {
+    ChartType string
+    Axes      []AxisInfo
+    Value     any
+}
+```
+
+AxisInfo avoids importing shared (cycle: shared → config/charts). The caller
+converts shared.Axis → AxisInfo at the call site.
+
+| Builder | Checks | Attached to |
+|---------|--------|-------------|
+| `RequiresAxes("x","y")` | x + y axes present | `ThreeDFlag` |
+| `RequiresZAxis()` | z axis present | `ThreeDRotateFlag` |
+| `Requires3DMode()` | z axis in data (covers both explicit 3D and auto-enabled value-mode xyz) | `ThreeDVisualMapFlag` |
+| `OnlyScatter2D()` | NOT in xyz value-mode | `VisualMapFlag` |
+
+Adding a new rule: write a builder function returning `flags.RuleFn`, attach
+to the descriptor's `Rule` slice. No other code change needed.
+
+### ApplyRules — pipeline pass
+
+```go
+func ApplyRules(ctx RuleContext, configs []ChartConfig) (warnings []string, fatal error)
+```
+
+Evaluates every chart-flag descriptor's `Rule` list against each materialised
+Config, post-parse, with data-derived axes. Per Config:
+
+1. Marshal to `map[string]any` (same JSON round-trip as `Materialise`).
+2. Walk the chart's flag descriptors via `FlagsFor(chartType)`.
+3. For each flag where `len(Rule) > 0` and `JSONKey` is present in the map:
+   a. Build `RuleContext{ChartType, Axes, Value: map[JSONKey]}`.
+   b. Evaluate every `RuleFn`; worst outcome per flag wins.
+   c. `Fatal` → return immediately (caller exits non-zero).
+   d. `Skip` → delete `JSONKey` from map, append warning.
+   e. `WarnKeep` → append warning (keep value in map).
+4. Re-decode filtered map back to typed `ChartConfig` via `Decode`.
+5. Replace entry in configs slice.
+
+Call site: `cmd/cli/pipeline.go` — `RunLinear()`, after `assembleDataset()`
+(so `dataSet.Axes` is final, including AutoGroup-derived value-mode xyz axes).
+
+Warnings go to stderr with per-chart prefix (e.g. `bar: --3d requires x and y
+axes in --group-pattern; ignoring`). This format is produced by the rule
+builder (message) + the calling code (chart-type prefix).
+
+### Behaviour change vs pre-rule
+
+| Scenario | Old behaviour | New behaviour (Skip) |
+|----------|---------------|---------------------|
+| `--3d` without x+y axes | `WarnThreeDIfIneligible` warned + kept the flag | ApplyRules warns + **drops** the flag (Skip) |
+| `--3d-rotate` without z axis | silent (ignored at render) | warns + drops the flag |
+| `--3d-visualmap` without 3D data | silent (ignored at render) | warns + drops the flag |
+| `--visualmap` in value-mode xyz | silently toggled (autoEnable sets both) | warns + drops the flag |
+
+This matches the project owner's explicit decision: "Warn + skip the flag."
+
+### Layering constraint (validated)
+
+`config/charts.Spec` (`{Type, Flags, Factory}`) remains in `config/charts`
+because shared-level code consumes it at runtime without depending on `cmd/cli`:
+
+- `shared.Dataset.UnmarshalJSON` (`shared/dataset.go:144`) calls
+  `config_charts.Decode` → needs `Spec.Factory`.
+- `shared.ParseOverrides` (`shared/chart_spec.go:96`) calls
+  `config_charts.New`, `FlagsFor`, `AllFlagNames`, `Decode` → needs `Spec`
+  registry.
+- `config_charts.Materialise` calls `FlagsFor` to seed defaults.
+
+Moving Spec to `cmd/` would create a `shared↔cmd` import cycle. The cosmetic
+ChartMeta registry at `cmd/charts/<c>/<c>.go` holds the cobra-facing metadata
+(Use/Short/Long); the data-facing Spec stays at config.
+
+### Phase D — registry split
+
+`config/charts.Spec` shrank from `{Type, Use, Short, Long, Flags, Factory}`
+to `{Type, Factory}`. Flags moved to a separate `registeredFlags` map
+accessed via `SetFlags(type, []flags.Flag)` and `FlagsFor(type)`.
+Cobra-facing metadata (Use/Short/Long + flag-list composition) registers
+in `cmd/cli` via `SetChartMeta(ChartMeta)`. `cmd/cli/command.go`'s
+`ChartCommands()` merges by Type key.
+
+Adding a new chart: create `cmd/charts/<c>/<c>.go` (Spec + SetFlags +
+ChartMeta) and `config/charts/<c>/<c>.go` (typed Config + `New()` factory).
+No more "moves in and out" — `cmd/charts/<c>/<c>.go` is the single
+at-a-glance command surface.
