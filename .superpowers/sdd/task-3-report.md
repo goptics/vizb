@@ -6,7 +6,7 @@
 
 ## Commits
 
-- `3eb976f` — `feat(cli): multi-dataset pipeline for repeatable --select views`
+- `0ab3c51` — `feat(cli): multi-dataset pipeline for repeatable --select views`
 
 ## Summary
 
