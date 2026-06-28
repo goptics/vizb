@@ -6,7 +6,7 @@
 
 ## Commits
 
-- `daf589a` — `feat(ui): add mixed-axis scatter transform and rendering`
+- `8892f72` — `feat(ui): add mixed-axis scatter transform and rendering`
 
 ## Summary
 
