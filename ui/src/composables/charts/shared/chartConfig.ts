@@ -72,6 +72,13 @@ export function isLargeXAxis(xAxisData: string[]): boolean {
 // above it the optimized path keeps a 100k-point dataset's draw on one frame.
 export const LARGE_DATA_THRESHOLD = 2000
 
+// ponytail: ECharts skips visualMap in scatter `large` mode — flip off when gradient is on.
+export function scatterSeriesLargeOpts(useVisualMap: boolean) {
+  return useVisualMap
+    ? { large: false as const }
+    : { large: true as const, largeThreshold: LARGE_DATA_THRESHOLD }
+}
+
 export function createHeatmapDataZoomConfig(
   largeX: boolean,
   largeY: boolean,
@@ -231,14 +238,28 @@ export function createValueAxisConfig(
 export function createValueModeTooltip(
   isDark: boolean,
   xLabel?: string,
-  yLabel?: string
+  yLabel?: string,
+  crossAxisPointer = false
 ): EChartsOption['tooltip'] {
   const theme = getTooltipTheme(isDark)
+  const styling = getChartStyling(isDark)
   const xName = xLabel ?? 'x'
   const yName = yLabel ?? 'y'
   return {
     trigger: 'item',
     ...theme,
+    ...(crossAxisPointer
+      ? {
+          axisPointer: {
+            type: 'cross',
+            crossStyle: { color: styling.axisColor },
+            label: {
+              backgroundColor: theme.backgroundColor,
+              color: styling.textColor,
+            },
+          },
+        }
+      : {}),
     formatter: (params: unknown) => {
       const [x, y] = (params as { data: [number, number | null] }).data
       return `<strong>${xName}: ${formatTooltipValue(x)}</strong><br/>${yName}: ${formatTooltipValue(y)}`

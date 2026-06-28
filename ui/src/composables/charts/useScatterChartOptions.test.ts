@@ -95,6 +95,15 @@ describe('useScatterChartOptions — axes value mode', () => {
     ])
   })
 
+  it('uses cross axisPointer when both axes are value type', () => {
+    const { options } = useScatterChartOptions(makeValueConfig())
+    expect((options.value.xAxis as { type: string }).type).toBe('value')
+    expect((options.value.yAxis as { type: string }).type).toBe('value')
+    expect((options.value.tooltip as { axisPointer?: { type?: string } }).axisPointer?.type).toBe(
+      'cross'
+    )
+  })
+
   it('uses a taller plot grid (minimal top) without a legend band', () => {
     const { options } = useScatterChartOptions(makeValueConfig())
     expect((options.value.grid as { top?: number }).top).toBe(8)
@@ -141,8 +150,16 @@ describe('useScatterChartOptions — axes value mode', () => {
     cfg.visualMap!.value = true
     const { options } = useScatterChartOptions(cfg)
     expect(options.value.visualMap).toMatchObject({ show: true, dimension: 1 })
-    const s = (options.value.series as { itemStyle?: { color?: string } }[])[0]!
+    const s = (
+      options.value.series as {
+        itemStyle?: { color?: string }
+        large?: boolean
+        largeThreshold?: number
+      }[]
+    )[0]!
     expect(s.itemStyle?.color).toBeUndefined()
+    expect(s.large).toBe(false)
+    expect(s.largeThreshold).toBeUndefined()
   })
 
   it('omits visualMap when disabled', () => {
@@ -166,6 +183,13 @@ describe('useScatterChartOptions — group mode', () => {
     expect((options.value.yAxis as { type: string }).type).toBe('value')
   })
 
+  it('keeps shadow axisPointer for grouped scatter (category x)', () => {
+    const { options } = useScatterChartOptions(makeGroupedConfig())
+    expect((options.value.tooltip as { axisPointer?: { type?: string } }).axisPointer?.type).toBe(
+      'shadow'
+    )
+  })
+
   it('transposes y groups into scatter series', () => {
     const { options } = useScatterChartOptions(makeGroupedConfig())
     const series = options.value.series as { type: string; name: string; data: number[] }[]
@@ -187,5 +211,10 @@ describe('useScatterChartOptions — group mode', () => {
     cfg.visualMap!.value = true
     const { options } = useScatterChartOptions(cfg)
     expect(options.value.visualMap).toMatchObject({ show: true })
+    const series = options.value.series as { large?: boolean; largeThreshold?: number }[]
+    for (const s of series) {
+      expect(s.large).toBe(false)
+      expect(s.largeThreshold).toBeUndefined()
+    }
   })
 })

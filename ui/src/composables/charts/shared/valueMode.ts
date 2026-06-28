@@ -10,6 +10,7 @@ import {
   getChartStyling,
   isLargeXAxis,
   LARGE_DATA_THRESHOLD,
+  scatterSeriesLargeOpts,
 } from './chartConfig'
 import { adjustForLogScaleLine, getEffectiveScale } from './common'
 import { resolveSeriesSymbol } from './seriesConfig'
@@ -100,8 +101,9 @@ export function buildValueAxes2DOptions(
     type: chartTypeForECharts(chartType) as 'scatter' | 'bar' | 'line',
     data,
     label,
-    large: true,
-    largeThreshold: LARGE_DATA_THRESHOLD,
+    ...(chartType === 'scatter'
+      ? scatterSeriesLargeOpts(useVisualMap)
+      : { large: true as const, largeThreshold: LARGE_DATA_THRESHOLD }),
     ...(useVisualMap ? {} : { itemStyle: { color: getNextColorFor(chartData.value.title) } }),
     ...seriesSymbol(chartType, largeX, config.symbol?.value, config.symbolSize?.value),
   }
@@ -111,7 +113,7 @@ export function buildValueAxes2DOptions(
     legend: { show: false },
     grid: createValueModeGridConfig(false),
     visualMap: resolve2DScatterVisualMap(useVisualMap, colorValues, styling, colorDimension),
-    tooltip: createValueModeTooltip(isDark.value, xLabel, yLabel),
+    tooltip: createValueModeTooltip(isDark.value, xLabel, yLabel, chartType === 'scatter'),
     ...createValueAxisConfig(
       styling,
       xLabel,
