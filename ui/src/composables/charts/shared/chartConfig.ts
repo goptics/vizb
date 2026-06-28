@@ -72,7 +72,7 @@ export function isLargeXAxis(xAxisData: string[]): boolean {
 // above it the optimized path keeps a 100k-point dataset's draw on one frame.
 export const LARGE_DATA_THRESHOLD = 2000
 
-// ponytail: ECharts skips visualMap in scatter `large` mode — flip off when gradient is on.
+// ECharts skips visualMap on scatter when `large` is on — disable it for gradient mode.
 export function scatterSeriesLargeOpts(useVisualMap: boolean) {
   return useVisualMap
     ? { large: false as const }
