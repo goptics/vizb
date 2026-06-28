@@ -121,3 +121,16 @@ func TestIsSelectAxisMode(t *testing.T) {
 		t.Fatal("expected false for grouped numeric select")
 	}
 }
+
+func TestSelectViewDatasetName(t *testing.T) {
+	view := []ColumnSpec{
+		{Source: "region", Label: "Region", AxisKey: "x"},
+		{Source: "latency", AxisKey: "y"},
+	}
+	if got := SelectViewDatasetName(view, 0); got != "Region × latency" {
+		t.Fatalf("got %q, want Region × latency", got)
+	}
+	if got := SelectViewDatasetName(nil, 2); got != "View 3" {
+		t.Fatalf("got %q, want View 3", got)
+	}
+}

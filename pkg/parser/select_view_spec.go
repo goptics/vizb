@@ -3,6 +3,8 @@ package parser
 import (
 	"fmt"
 	"strings"
+
+	"github.com/goptics/vizb/shared"
 )
 
 // ParseSelectViewFlag parses one solo --select value (e.g. "region,latency" or
@@ -117,6 +119,30 @@ func IsExplicitGrouping(cfg Config) bool {
 // IsSelectAxisMode reports solo --select axis mode: select views without explicit grouping.
 func IsSelectAxisMode(cfg Config) bool {
 	return len(cfg.SelectViews) > 0 && !IsExplicitGrouping(cfg)
+}
+
+// SelectViewData holds parsed rows for one solo --select view.
+type SelectViewData struct {
+	View []ColumnSpec
+	Data []shared.DataPoint
+	Name string
+}
+
+// SelectViewDatasetName auto-names a dataset from its column sources (e.g.
+// "region × latency"). Labels take precedence over source names.
+func SelectViewDatasetName(view []ColumnSpec, index int) string {
+	if len(view) == 0 {
+		return fmt.Sprintf("View %d", index+1)
+	}
+	parts := make([]string, len(view))
+	for i, spec := range view {
+		if spec.Label != "" {
+			parts[i] = spec.Label
+			continue
+		}
+		parts[i] = spec.Source
+	}
+	return strings.Join(parts, " × ")
 }
 
 // AxisColumnLabel returns the flag name for axis-column error messages.

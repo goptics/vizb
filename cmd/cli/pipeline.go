@@ -11,9 +11,13 @@ import (
 
 	internal_charts "github.com/goptics/vizb/internal/charts"
 	barchart "github.com/goptics/vizb/internal/charts/bar"
+	heatmapchart "github.com/goptics/vizb/internal/charts/heatmap"
 	linechart "github.com/goptics/vizb/internal/charts/line"
+	piechart "github.com/goptics/vizb/internal/charts/pie"
+	radarchart "github.com/goptics/vizb/internal/charts/radar"
 	scatterchart "github.com/goptics/vizb/internal/charts/scatter"
 	"github.com/goptics/vizb/pkg/parser"
+	csvparser "github.com/goptics/vizb/pkg/parser/csv"
 	goparser "github.com/goptics/vizb/pkg/parser/golang"
 	jsonparser "github.com/goptics/vizb/pkg/parser/json"
 	"github.com/goptics/vizb/pkg/style"
@@ -71,37 +75,46 @@ func RunLinear(cmd *cobra.Command, args []string, meta RunMeta, cfg parser.Confi
 	// explicitly marks the input as raw enveloped data, not a vizb Dataset, so
 	// skip the passthrough (an envelope object would otherwise unmarshal into an
 	// empty Dataset and silently produce no output).
-	var dataSet *shared.Dataset
+	var datasets []*shared.Dataset
 	if cfg.JSONPath == "" {
-		dataSet = convertToDataset(target)
+		if ds := convertToDataset(target); ds != nil {
+			datasets = []*shared.Dataset{ds}
+		}
 	}
-	if dataSet == nil {
+	if len(datasets) == 0 {
 		// Not Dataset JSON: parse raw/bench input into data points.
 		target = preprocessInputFile(target, meta.Parser)
 		if meta.Parser == "json" && cfg.JSONPath != "" {
 			target = applyJSONPath(target, cfg.JSONPath)
 		}
-		results := prepareData(target, meta.Parser, cfg)
-		dataSet = assembleDataset(results, meta, configs, cfg)
+		if parser.IsSelectAxisMode(cfg) && len(cfg.SelectViews) > 1 {
+			views := prepareDataViews(target, meta.Parser, cfg)
+			datasets = assembleDatasets(views, meta, configs, cfg)
+		} else {
+			results := prepareData(target, meta.Parser, cfg)
+			datasets = []*shared.Dataset{assembleDataset(results, meta, configs, cfg)}
+		}
 		// Validate swap only for chart subcommands (applyOnPassthrough true).
 		// The root command stores swap as-is, trusting the UI to handle it.
 		if applyOnPassthrough {
-			for _, cc := range configs {
-				if swp := cc.SwapString(); swp != "" {
-					if err := shared.ValidateSwap(swp, dataSet.Axes); err != nil {
-						shared.ExitWithError(err.Error(), nil)
+			for _, dataSet := range datasets {
+				for _, cc := range configs {
+					if swp := cc.SwapString(); swp != "" {
+						if err := shared.ValidateSwap(swp, dataSet.Axes); err != nil {
+							shared.ExitWithError(err.Error(), nil)
+						}
 					}
 				}
 			}
 		}
 	} else if applyOnPassthrough {
-		applySelections(dataSet, configs)
+		applySelections(datasets[0], configs)
 	}
 
 	// Phase B: evaluate applicability rules on materialised configs with
 	// data-derived axes. Rules are nil on every descriptor yet (Phase C adds
 	// them), so this is a no-op in Phase B.
-	{
+	for _, dataSet := range datasets {
 		var ruleAxes []internal_charts.AxisInfo
 		for _, a := range dataSet.Axes {
 			ruleAxes = append(ruleAxes, internal_charts.AxisInfo{Key: a.Key, Type: a.Type})
@@ -119,7 +132,7 @@ func RunLinear(cmd *cobra.Command, args []string, meta RunMeta, cfg parser.Confi
 	f := shared.MustCreateFile(outFile)
 	defer f.Close()
 
-	writeOutput(f, dataSet, InferFormatFromExtension(outFile))
+	writeOutput(f, datasets, InferFormatFromExtension(outFile))
 
 	HandleOutputResult(f, meta.OutputFile)
 }
@@ -291,6 +304,36 @@ func prepareData(filePath, parserKey string, cfg parser.Config) []shared.DataPoi
 	return data
 }
 
+// prepareDataViews parses input into one data slice per solo --select view.
+// A single view (or non-select mode) returns one entry via prepareData.
+func prepareDataViews(filePath, parserKey string, cfg parser.Config) []parser.SelectViewData {
+	if parser.IsSelectAxisMode(cfg) && len(cfg.SelectViews) > 1 {
+		if parserKey != "csv" && parserKey != "json" {
+			fmt.Fprintln(os.Stderr, "warning: multi --select is only supported for csv/json parsers; using first view")
+			cfg.SelectViews = cfg.SelectViews[:1]
+		} else {
+			fmt.Println(style.Info.Render("🧲 Parsing data..."))
+			switch parserKey {
+			case "csv":
+				return csvparser.ParseSelectViews(filePath, cfg)
+			case "json":
+				return jsonparser.ParseSelectViews(filePath, cfg)
+			}
+		}
+	}
+
+	data := prepareData(filePath, parserKey, cfg)
+	var view []parser.ColumnSpec
+	if parser.IsSelectAxisMode(cfg) && len(cfg.SelectViews) > 0 {
+		view = cfg.SelectViews[0]
+	}
+	name := ""
+	if len(view) > 0 {
+		name = parser.SelectViewDatasetName(view, 0)
+	}
+	return []parser.SelectViewData{{View: view, Data: data, Name: name}}
+}
+
 // formatAggregationGroup describes the --group columns and dimension keys used
 // when collapsing duplicate CSV/JSON rows.
 func formatAggregationGroup(cfg parser.Config) string {
@@ -429,14 +472,74 @@ func autoEnableValueMode3D(configs []internal_charts.ChartConfig, axes []shared.
 	}
 }
 
+// assembleDatasets builds one Dataset per select view, cloning chart configs so
+// per-view 3D auto-enable does not leak across views.
+func assembleDatasets(views []parser.SelectViewData, m RunMeta, configs []internal_charts.ChartConfig, cfg parser.Config) []*shared.Dataset {
+	multiView := parser.IsSelectAxisMode(cfg) && len(cfg.SelectViews) > 1
+	out := make([]*shared.Dataset, 0, len(views))
+	for i, v := range views {
+		viewConfigs := cloneChartConfigs(configs)
+		ds := buildDataset(v.Data, m, viewConfigs, cfg, v.View, v.Name, multiView)
+		if multiView && strings.TrimSpace(m.ID) != "" && i > 0 {
+			ds.ID = strings.TrimSpace(m.ID) + fmt.Sprintf("-%d", i+1)
+		}
+		out = append(out, ds)
+	}
+	return out
+}
+
+func cloneChartConfigs(src []internal_charts.ChartConfig) []internal_charts.ChartConfig {
+	out := make([]internal_charts.ChartConfig, len(src))
+	for i, c := range src {
+		switch bc := c.(type) {
+		case *barchart.Config:
+			cp := *bc
+			out[i] = &cp
+		case *linechart.Config:
+			cp := *bc
+			out[i] = &cp
+		case *scatterchart.Config:
+			cp := *bc
+			out[i] = &cp
+		case *piechart.Config:
+			cp := *bc
+			out[i] = &cp
+		case *heatmapchart.Config:
+			cp := *bc
+			out[i] = &cp
+		case *radarchart.Config:
+			cp := *bc
+			out[i] = &cp
+		default:
+			out[i] = c
+		}
+	}
+	return out
+}
+
 // assembleDataset builds the output Dataset from parsed results plus the
 // command's metadata and the resolved per-chart configs.
 func assembleDataset(results []shared.DataPoint, m RunMeta, configs []internal_charts.ChartConfig, cfg parser.Config) *shared.Dataset {
+	var view []parser.ColumnSpec
+	if parser.IsSelectAxisMode(cfg) && len(cfg.SelectViews) > 0 {
+		view = cfg.SelectViews[0]
+	}
+	name := ""
+	if len(view) > 0 && parser.IsSelectAxisMode(cfg) {
+		name = parser.SelectViewDatasetName(view, 0)
+	}
+	return buildDataset(results, m, configs, cfg, view, name, false)
+}
+
+func buildDataset(results []shared.DataPoint, m RunMeta, configs []internal_charts.ChartConfig, cfg parser.Config, view []parser.ColumnSpec, viewName string, multiView bool) *shared.Dataset {
 	var axes []shared.Axis
 	if cfg.AutoGroup {
 		// Auto-grouping modified the config inside the parser; derive axes
 		// from the actual data points since the caller's cfg is unchanged.
 		axes = deriveAxesFromData(results)
+		autoEnableValueMode3D(configs, axes, valueModeHasMetric(cfg, results))
+	} else if len(view) > 0 {
+		axes = parser.DatasetAxesForSelectView(view, results)
 		autoEnableValueMode3D(configs, axes, valueModeHasMetric(cfg, results))
 	} else if parser.IsSelectAxisMode(cfg) {
 		axes = parser.DatasetAxesForSelectView(cfg.SelectViews[0], results)
@@ -453,8 +556,15 @@ func assembleDataset(results []shared.DataPoint, m RunMeta, configs []internal_c
 	}
 	axes = appendMetricAxis(axes, cfg, results)
 
+	name := m.Name
+	if multiView && viewName != "" {
+		name = viewName
+	} else if name == "" && viewName != "" {
+		name = viewName
+	}
+
 	dataSet := &shared.Dataset{
-		Name:        m.Name,
+		Name:        name,
 		Description: m.Description,
 		Data:        results,
 		Settings:    configs,
@@ -506,19 +616,26 @@ func chartTypeNames(settings []internal_charts.ChartConfig) []string {
 	return out
 }
 
-// writeOutput writes the dataset to f as HTML or JSON.
-func writeOutput(f *os.File, dataSet *shared.Dataset, format string) {
+// writeOutput writes one or more datasets to f as HTML or JSON. HTML embeds an
+// array when N>1 (like vizb ui); JSON keeps a single object when N=1 for backward
+// compatibility.
+func writeOutput(f *os.File, datasets []*shared.Dataset, format string) {
+	if len(datasets) == 0 {
+		return
+	}
+
 	switch format {
 	case "html":
 		fmt.Println(style.Info.Render("🔄 Generating UI..."))
 
-		jsonData, err := json.Marshal(dataSet)
+		jsonData, err := marshalDatasetsForOutput(datasets)
 		if err != nil {
 			shared.ExitWithError("Failed to marshal dataSet data: %v", err)
 		}
 
-		needsHeatmapChunk := settingsNeedCorrelation(dataSet.Settings)
-		htmlContent := template.GenerateUI(jsonData, chartTypeNames(dataSet.Settings), shared.DatasetNeeds3D(dataSet), needsHeatmapChunk, template.VizbHTMLTemplate)
+		needsHeatmapChunk := datasetsNeedCorrelation(datasets)
+		needs3D := datasetsNeed3D(datasets)
+		htmlContent := template.GenerateUI(jsonData, chartTypeNames(datasets[0].Settings), needs3D, needsHeatmapChunk, template.VizbHTMLTemplate)
 		if _, err := f.WriteString(htmlContent); err != nil {
 			shared.ExitWithError("Failed to write output file: %v", err)
 		}
@@ -527,7 +644,7 @@ func writeOutput(f *os.File, dataSet *shared.Dataset, format string) {
 
 	case "json":
 		fmt.Println(style.Info.Render("🔄 Generating JSON..."))
-		bytes, err := json.Marshal(dataSet)
+		bytes, err := marshalDatasetsForOutput(datasets)
 		if err != nil {
 			shared.ExitWithError("Error marshaling dataSet data", err)
 		}
@@ -536,4 +653,33 @@ func writeOutput(f *os.File, dataSet *shared.Dataset, format string) {
 		}
 		fmt.Println(style.Success.Render("🎉 Generated JSON successfully!"))
 	}
+}
+
+func marshalDatasetsForOutput(datasets []*shared.Dataset) ([]byte, error) {
+	if len(datasets) == 1 {
+		return json.Marshal(datasets[0])
+	}
+	slice := make([]shared.Dataset, len(datasets))
+	for i, ds := range datasets {
+		slice[i] = *ds
+	}
+	return json.Marshal(slice)
+}
+
+func datasetsNeed3D(datasets []*shared.Dataset) bool {
+	for _, ds := range datasets {
+		if shared.DatasetNeeds3D(ds) {
+			return true
+		}
+	}
+	return false
+}
+
+func datasetsNeedCorrelation(datasets []*shared.Dataset) bool {
+	for _, ds := range datasets {
+		if settingsNeedCorrelation(ds.Settings) {
+			return true
+		}
+	}
+	return false
 }

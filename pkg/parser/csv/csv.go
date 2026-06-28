@@ -391,6 +391,63 @@ func parseCSVValueMode(headers []string, dataRows [][]string, cfg parser.Config,
 	return results
 }
 
+// ParseSelectViews reads a CSV once and parses each solo --select view into
+// separate data slices. cfg must be in select axis mode with len(SelectViews) > 1.
+func ParseSelectViews(filename string, cfg parser.Config) []parser.SelectViewData {
+	headers, dataRows := readCSVTable(filename)
+	flag := parser.AxisColumnLabel(true)
+	kindFn := csvAxisColumnKind(headers, dataRows, flag)
+
+	views := make([]parser.SelectViewData, 0, len(cfg.SelectViews))
+	for i, view := range cfg.SelectViews {
+		axesCfg := parser.Config{
+			Axes:         append([]parser.ColumnSpec(nil), view...),
+			NumberUnit:   cfg.NumberUnit,
+			MetricColumn: cfg.MetricColumn,
+		}
+		if err := parser.ResolveAxesTypes(&axesCfg, kindFn); err != nil {
+			shared.ExitWithError(err.Error(), nil)
+		}
+		var data []shared.DataPoint
+		if parser.IsMixedMode(axesCfg) {
+			data = parseCSVMixedMode(headers, dataRows, axesCfg, flag)
+		} else {
+			data = parseCSVValueMode(headers, dataRows, axesCfg, flag)
+		}
+		if len(data) == 0 {
+			shared.ExitWithError("No dataSet data found", nil)
+		}
+		views = append(views, parser.SelectViewData{
+			View: view,
+			Data: data,
+			Name: parser.SelectViewDatasetName(view, i),
+		})
+	}
+	return views
+}
+
+func readCSVTable(filename string) (headers []string, dataRows [][]string) {
+	f, err := os.Open(filename)
+	if err != nil {
+		shared.ExitWithError("Error opening file", err)
+	}
+	defer f.Close()
+
+	reader := csv.NewReader(f)
+	reader.FieldsPerRecord = -1
+
+	rows, err := reader.ReadAll()
+	if err != nil {
+		shared.ExitWithError("Error reading CSV", err)
+	}
+
+	if len(rows) < 2 {
+		shared.ExitWithError("No dataSet data found", nil)
+	}
+
+	return normalizeHeaders(rows[0]), rows[1:]
+}
+
 // normalizeHeaders strips a leading UTF-8 BOM, trims whitespace, and de-duplicates
 // repeated names by suffixing (sells, "sells (2)") so same-named columns don't
 // collapse into one lost series. Empty header cells stay empty (unusable column).

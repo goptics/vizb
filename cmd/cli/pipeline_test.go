@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	internal_charts "github.com/goptics/vizb/internal/charts"
@@ -128,7 +129,7 @@ func (s *PipelineSuite) TestWriteOutput() {
 		s.Require().NoError(err)
 		defer file.Close()
 
-		writeOutput(file, dataSet, "html")
+		writeOutput(file, []*shared.Dataset{dataSet}, "html")
 		stat, err := file.Stat()
 		s.Require().NoError(err)
 		s.Greater(stat.Size(), int64(0))
@@ -149,7 +150,7 @@ func (s *PipelineSuite) TestWriteOutput() {
 			},
 			Data: dataSet.Data,
 		}
-		writeOutput(file, ds, "html")
+		writeOutput(file, []*shared.Dataset{ds}, "html")
 
 		content, err := os.ReadFile(htmlFile)
 		s.Require().NoError(err)
@@ -164,7 +165,7 @@ func (s *PipelineSuite) TestWriteOutput() {
 		s.Require().NoError(err)
 		defer file.Close()
 
-		writeOutput(file, dataSet, "json")
+		writeOutput(file, []*shared.Dataset{dataSet}, "json")
 
 		content, err := os.ReadFile(jsonFile)
 		s.Require().NoError(err)
@@ -179,7 +180,7 @@ func (s *PipelineSuite) TestWriteOutput() {
 		s.Require().NoError(err)
 		defer file.Close()
 
-		writeOutput(file, dataSet, "invalid")
+		writeOutput(file, []*shared.Dataset{dataSet}, "invalid")
 		stat, err := file.Stat()
 		s.Require().NoError(err)
 		s.Equal(int64(0), stat.Size())
@@ -632,6 +633,123 @@ func (s *PipelineSuite) TestWriteStdinPipedInputs() {
 	content, err := os.ReadFile(out)
 	s.Require().NoError(err)
 	s.Contains(string(content), "BenchmarkAnotherTest")
+}
+
+func (s *PipelineSuite) TestSelectViewDatasetName() {
+	view := []parser.ColumnSpec{
+		{Source: "region", AxisKey: "x"},
+		{Source: "latency", AxisKey: "y"},
+	}
+	s.Equal("region × latency", parser.SelectViewDatasetName(view, 0))
+}
+
+func (s *PipelineSuite) TestPrepareDataViewsMultiSelect() {
+	csvFile := s.writeFile("multi.csv", "region,latency,sales\nAsia,12,100\nEurope,8,80\n")
+	cfg := parser.Config{
+		SelectViews: [][]parser.ColumnSpec{
+			{{Source: "region", AxisKey: "x"}, {Source: "latency", AxisKey: "y"}},
+			{{Source: "region", AxisKey: "x"}, {Source: "sales", AxisKey: "y"}},
+		},
+	}
+
+	views := prepareDataViews(csvFile, "csv", cfg)
+	s.Require().Len(views, 2)
+	s.Equal("region × latency", views[0].Name)
+	s.Equal("region × sales", views[1].Name)
+	s.Len(views[0].Data, 2)
+	s.Len(views[1].Data, 2)
+	s.Equal("12", views[0].Data[0].YAxis)
+	s.Equal("100", views[1].Data[0].YAxis)
+}
+
+func (s *PipelineSuite) TestAssembleDatasetsMultiSelectPerView3D() {
+	views := []parser.SelectViewData{
+		{
+			View: []parser.ColumnSpec{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}},
+			Data: []shared.DataPoint{{XAxis: "US", YAxis: "Widget", Stats: []shared.Stat{{Type: "sells", Value: shared.F64(10)}}}},
+			Name: "x × y",
+		},
+		{
+			View: []parser.ColumnSpec{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}, {Source: "z", AxisKey: "z"}},
+			Data: []shared.DataPoint{{XAxis: "1", YAxis: "2", ZAxis: "3", Stats: []shared.Stat{}}},
+			Name: "x × y × z",
+		},
+	}
+	cfg := parser.Config{
+		SelectViews: [][]parser.ColumnSpec{views[0].View, views[1].View},
+	}
+	configs := []internal_charts.ChartConfig{&scatterchart.Config{Type: "scatter"}}
+
+	datasets := assembleDatasets(views, RunMeta{Name: "Ignored"}, configs, cfg)
+	s.Require().Len(datasets, 2)
+	s.Equal("x × y", datasets[0].Name)
+	s.Equal("x × y × z", datasets[1].Name)
+	s.Nil(datasets[0].Settings[0].(*scatterchart.Config).ThreeD)
+	s.Require().NotNil(datasets[1].Settings[0].(*scatterchart.Config).ThreeD)
+	s.True(*datasets[1].Settings[0].(*scatterchart.Config).ThreeD)
+}
+
+func (s *PipelineSuite) TestWriteOutputMultiDatasetJSON() {
+	ds1 := &shared.Dataset{Name: "View A", Data: []shared.DataPoint{{XAxis: "1", YAxis: "2"}}}
+	ds2 := &shared.Dataset{Name: "View B", Data: []shared.DataPoint{{XAxis: "3", YAxis: "4"}}}
+
+	jsonFile := filepath.Join(s.T().TempDir(), "out.json")
+	file, err := os.Create(jsonFile)
+	s.Require().NoError(err)
+	defer file.Close()
+
+	writeOutput(file, []*shared.Dataset{ds1, ds2}, "json")
+
+	content, err := os.ReadFile(jsonFile)
+	s.Require().NoError(err)
+	var got []shared.Dataset
+	s.Require().NoError(json.Unmarshal(content, &got))
+	s.Len(got, 2)
+	s.Equal("View A", got[0].Name)
+	s.Equal("View B", got[1].Name)
+}
+
+func (s *PipelineSuite) TestRunLinearMultiSelectProducesTwoDatasetsInHTML() {
+	csvFile := s.writeFile("sales.csv", "region,latency,sales\nAsia,12,100\nEurope,8,80\n")
+	out := filepath.Join(s.T().TempDir(), "out.html")
+	cfg := parser.Config{
+		SelectViews: [][]parser.ColumnSpec{
+			{{Source: "region", AxisKey: "x"}, {Source: "latency", AxisKey: "y"}},
+			{{Source: "region", AxisKey: "x"}, {Source: "sales", AxisKey: "y"}},
+		},
+	}
+	scatterCfg := &scatterchart.Config{Type: "scatter", Scale: "linear"}
+	meta := RunMeta{Parser: "csv", OutputFile: out}
+
+	oldStdout, oldStderr := os.Stdout, os.Stderr
+	devnull, _ := os.Open(os.DevNull)
+	os.Stdout, os.Stderr = devnull, devnull
+	defer func() { os.Stdout, os.Stderr = oldStdout, oldStderr; devnull.Close() }()
+
+	RunLinear(&cobra.Command{}, []string{csvFile}, meta, cfg, []internal_charts.ChartConfig{scatterCfg}, false)
+
+	content, err := os.ReadFile(out)
+	s.Require().NoError(err)
+	embedded := extractVIZBDataFromHTML(string(content))
+	s.Len(embedded, 2)
+	s.Equal("region × latency", embedded[0].(map[string]any)["name"])
+	s.Equal("region × sales", embedded[1].(map[string]any)["name"])
+}
+
+func extractVIZBDataFromHTML(html string) []any {
+	const prefix = "window.VIZB_DATA = "
+	start := strings.Index(html, prefix)
+	if start == -1 {
+		return nil
+	}
+	start += len(prefix)
+	end := strings.Index(html[start:], ";")
+	if end == -1 {
+		return nil
+	}
+	var data []any
+	_ = json.Unmarshal([]byte(html[start:start+end]), &data)
+	return data
 }
 
 func TestPipelineSuite(t *testing.T) {

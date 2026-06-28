@@ -435,6 +435,81 @@ func parseJSONValueMode(rows []map[string]any, colOrder []string, seenCol map[st
 	return results
 }
 
+// ParseSelectViews reads a JSON array once and parses each solo --select view
+// into separate data slices. cfg must be in select axis mode with len(SelectViews) > 1.
+func ParseSelectViews(filename string, cfg parser.Config) []parser.SelectViewData {
+	rows, colOrder, seenCol := readJSONArray(filename)
+	flag := parser.AxisColumnLabel(true)
+	kindFn := jsonAxisColumnKind(rows, seenCol, colOrder, flag)
+
+	views := make([]parser.SelectViewData, 0, len(cfg.SelectViews))
+	for i, view := range cfg.SelectViews {
+		axesCfg := parser.Config{
+			Axes:         append([]parser.ColumnSpec(nil), view...),
+			NumberUnit:   cfg.NumberUnit,
+			MetricColumn: cfg.MetricColumn,
+		}
+		if err := parser.ResolveAxesTypes(&axesCfg, kindFn); err != nil {
+			shared.ExitWithError(err.Error(), nil)
+		}
+		var data []shared.DataPoint
+		if parser.IsMixedMode(axesCfg) {
+			data = parseJSONMixedMode(rows, colOrder, seenCol, axesCfg, flag)
+		} else {
+			data = parseJSONValueMode(rows, colOrder, seenCol, axesCfg, flag)
+		}
+		if len(data) == 0 {
+			shared.ExitWithError("No dataSet data found", nil)
+		}
+		views = append(views, parser.SelectViewData{
+			View: view,
+			Data: data,
+			Name: parser.SelectViewDatasetName(view, i),
+		})
+	}
+	return views
+}
+
+func readJSONArray(filename string) (rows []map[string]any, colOrder []string, seenCol map[string]bool) {
+	f, err := os.Open(filename)
+	if err != nil {
+		shared.ExitWithError("Error opening file", err)
+	}
+	defer f.Close()
+
+	dec := json.NewDecoder(f)
+	tok, err := dec.Token()
+	if err != nil {
+		shared.ExitWithError("No dataSet data found", nil)
+	}
+	if d, ok := tok.(json.Delim); !ok || d != '[' {
+		shared.ExitWithError("No dataSet data found", nil)
+	}
+
+	seenCol = map[string]bool{}
+	for dec.More() {
+		leaves, derr := decodeElement(dec)
+		if derr != nil {
+			shared.ExitWithError("Error reading JSON", derr)
+		}
+
+		row := make(map[string]any, len(leaves))
+		for _, lf := range leaves {
+			row[lf.key] = lf.val
+			if !seenCol[lf.key] {
+				seenCol[lf.key] = true
+				colOrder = append(colOrder, lf.key)
+			}
+		}
+		rows = append(rows, row)
+	}
+
+	if len(rows) == 0 {
+		shared.ExitWithError("No dataSet data found", nil)
+	}
+	return rows, colOrder, seenCol
+}
+
 // resolveGroupKeys maps each non-empty --group name to a known field (preserving
 // flag order). A missing name is fatal and lists available fields.
 func resolveGroupKeys(colOrder []string, seenCol map[string]bool, group []string) ([]string, map[string]bool) {
