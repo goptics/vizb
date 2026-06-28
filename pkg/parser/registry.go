@@ -23,12 +23,13 @@ type Config struct {
 	MemUnit         string
 	TimeUnit        string
 	NumberUnit      string
-	Select          []ColumnSpec
-	Axes            []ColumnSpec // --axes value mode: numeric cols placed on x,y[,z]
-	MetricColumn    string       // auto-value: 4th numeric col → visualMap metric
-	JSONPath        string       // json only: jq-like dot path to the nested array to chart
-	AutoGroup       bool         // csv/json: infer group columns when no explicit grouping is configured
-	ChartTypes      []string     // csv/json auto-value eligibility check (scatter/bar/line only)
+	Select          []ColumnSpec   // grouped mode: numeric stat columns
+	SelectViews     [][]ColumnSpec // solo axis mode: one entry per --select occurrence
+	Axes            []ColumnSpec   // auto-value mode: numeric cols placed on x,y[,z]
+	MetricColumn    string         // auto-value: 4th numeric col → visualMap metric
+	JSONPath        string         // json only: jq-like dot path to the nested array to chart
+	AutoGroup       bool           // csv/json: infer group columns when no explicit grouping is configured
+	ChartTypes      []string       // csv/json auto-value eligibility check (scatter/bar/line only)
 }
 
 type ParseFunc func(filename string, cfg Config) []shared.DataPoint

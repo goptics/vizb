@@ -116,8 +116,8 @@ func ParseJSON(filename string, cfg parser.Config) []shared.DataPoint {
 
 	// Auto-group: when no grouping is configured, infer the category axis from
 	// the data so `vizb data.json` produces a usable chart without -g/-p/-r/-x.
-	autoHeaders := parser.FilterHeadersForAutoDetect(colOrder, cfg.Select)
-	if parser.AutoGroupApplies(cfg) {
+	if !parser.HasSelect(cfg) && parser.AutoGroupApplies(cfg) {
+		autoHeaders := parser.FilterHeadersForAutoDetect(colOrder, cfg.Select)
 		stringRows := make([][]string, len(rows))
 		for i, row := range rows {
 			cells := make([]string, len(autoHeaders))

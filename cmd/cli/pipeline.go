@@ -58,7 +58,7 @@ func RunLinear(cmd *cobra.Command, args []string, meta RunMeta, cfg parser.Confi
 	// Enable auto-grouping for the csv/json parsers when the user supplied no
 	// explicit grouping. The csv/json parsers infer the category axis from the
 	// data so `vizb data.csv` produces a usable chart without -g/-p/-r.
-	if (meta.Parser == "csv" || meta.Parser == "json") && parser.NoExplicitGrouping(cfg) {
+	if (meta.Parser == "csv" || meta.Parser == "json") && parser.NoExplicitGrouping(cfg) && !parser.HasSelect(cfg) {
 		cfg.AutoGroup = true
 	}
 	for _, c := range configs {
@@ -263,7 +263,7 @@ func prepareData(filePath, parserKey string, cfg parser.Config) []shared.DataPoi
 		fmt.Fprintln(os.Stderr, "warning: --json-path is only supported for the json parser; ignoring")
 	}
 
-	if len(cfg.Select) > 0 && parserKey != "csv" && parserKey != "json" {
+	if parser.HasSelect(cfg) && parserKey != "csv" && parserKey != "json" {
 		fmt.Fprintln(os.Stderr, "warning: --select is only supported for csv/json parsers; ignoring")
 	}
 

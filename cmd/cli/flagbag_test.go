@@ -71,14 +71,60 @@ func (s *FlagBagSuite) TestScaleWarnDefault() {
 	})
 }
 
-func (s *FlagBagSuite) TestParseConfigMapsSelect() {
+func (s *FlagBagSuite) TestParseConfigMapsSelectGrouped() {
 	cmd, bag := s.newCmdBag(slices.Clone(DataFlags))
+	s.Require().NoError(cmd.Flags().Set("group", "date"))
 	s.Require().NoError(cmd.Flags().Set("select", "price{Unit price},count"))
 	cfg := bag.ParseConfig()
 	s.Require().Len(cfg.Select, 2)
+	s.Empty(cfg.SelectViews)
 	s.Equal("price", cfg.Select[0].Source)
 	s.Equal("Unit price", cfg.Select[0].Label)
 	s.Equal("count", cfg.Select[1].Source)
+}
+
+func (s *FlagBagSuite) TestParseConfigMapsSelectSoloAxisMode() {
+	cmd, bag := s.newCmdBag(slices.Clone(DataFlags))
+	s.Require().NoError(cmd.Flags().Set("select", "region,latency"))
+	cfg := bag.ParseConfig()
+	s.Empty(cfg.Select)
+	s.Require().Len(cfg.SelectViews, 1)
+	s.Require().Len(cfg.SelectViews[0], 2)
+	s.Equal("region", cfg.SelectViews[0][0].Source)
+	s.Equal("x", cfg.SelectViews[0][0].AxisKey)
+	s.Equal("latency", cfg.SelectViews[0][1].Source)
+	s.Equal("y", cfg.SelectViews[0][1].AxisKey)
+}
+
+func (s *FlagBagSuite) TestParseConfigMapsRepeatableSelectSolo() {
+	cmd, bag := s.newCmdBag(slices.Clone(DataFlags))
+	s.Require().NoError(cmd.Flags().Set("select", "region,latency"))
+	s.Require().NoError(cmd.Flags().Set("select", "region,sales"))
+	cfg := bag.ParseConfig()
+	s.Require().Len(cfg.SelectViews, 2)
+	s.Len(cfg.SelectViews[0], 2)
+	s.Len(cfg.SelectViews[1], 2)
+}
+
+func (s *FlagBagSuite) TestParseConfigMergesRepeatableSelectGrouped() {
+	cmd, bag := s.newCmdBag(slices.Clone(DataFlags))
+	s.Require().NoError(cmd.Flags().Set("group", "date"))
+	s.Require().NoError(cmd.Flags().Set("select", "price"))
+	s.Require().NoError(cmd.Flags().Set("select", "count"))
+	cfg := bag.ParseConfig()
+	s.Require().Len(cfg.Select, 2)
+	s.Equal("price", cfg.Select[0].Source)
+	s.Equal("count", cfg.Select[1].Source)
+}
+
+func (s *FlagBagSuite) TestParseConfigRejectsSoloSelectArity() {
+	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
+	defer restore()
+
+	cmd, bag := s.newCmdBag(slices.Clone(DataFlags))
+	s.Require().NoError(cmd.Flags().Set("select", "region"))
+	s.Panics(func() { bag.ParseConfig() })
+	s.True(*exitCalled)
 }
 
 func (s *FlagBagSuite) TestParseConfigRejectsSelectGroupOverlap() {

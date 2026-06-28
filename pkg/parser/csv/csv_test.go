@@ -595,14 +595,17 @@ func (s *CSVAutoValueSuite) TestHeatmapChartFallsBackToFlat() {
 	s.NotEmpty(results[0].Stats)
 }
 
-func (s *CSVAutoValueSuite) TestSelectScopesAutoDetect() {
-	s.cfg.Select = []parser.ColumnSpec{{Source: "x"}, {Source: "y"}}
+func (s *CSVAutoValueSuite) TestSelectSkipsAutoDetect() {
+	// Solo --select (SelectViews) disables auto-value inference (Task 1 gate).
+	s.cfg.SelectViews = [][]parser.ColumnSpec{
+		{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}},
+	}
 	csv := "x,y,z,w\n1,2,3,4\n"
 	results := ParseCSV(s.writeFile(csv), s.cfg)
 	s.Require().Len(results, 1)
-	s.Equal("1", results[0].XAxis)
-	s.Equal("2", results[0].YAxis)
-	s.Empty(results[0].ZAxis)
+	s.Empty(results[0].XAxis)
+	s.Empty(results[0].YAxis)
+	s.NotEmpty(results[0].Stats) // parser routing for select views is Task 2
 }
 
 func TestCSVAutoValueSuite(t *testing.T) {

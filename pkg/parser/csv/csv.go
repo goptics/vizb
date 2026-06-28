@@ -62,10 +62,12 @@ func ParseCSV(filename string, cfg parser.Config) []shared.DataPoint {
 
 	// Auto-group: when no grouping is configured, infer the category axis from
 	// the data so `vizb data.csv` produces a usable chart without -g/-p/-r/-x.
-	autoHeaders := parser.FilterHeadersForAutoDetect(headers, cfg.Select)
-	cfg, err = parser.AutoDetectTabularConfig(cfg, autoHeaders, dataRows)
-	if err != nil {
-		shared.ExitWithError(err.Error(), nil)
+	if !parser.HasSelect(cfg) {
+		autoHeaders := parser.FilterHeadersForAutoDetect(headers, cfg.Select)
+		cfg, err = parser.AutoDetectTabularConfig(cfg, autoHeaders, dataRows)
+		if err != nil {
+			shared.ExitWithError(err.Error(), nil)
+		}
 	}
 
 	if len(cfg.Axes) > 0 {

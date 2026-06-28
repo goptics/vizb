@@ -24,6 +24,7 @@ type FlagBag struct {
 	bools  map[string]*bool
 	floats map[string]*float64
 	slices map[string]*[]string // backs KindStringSlice and KindStat
+	arrays map[string]*[]string // backs KindStringArray (repeatable flags)
 }
 
 // NewFlagBag allocates a bag and one typed pointer per flag.
@@ -34,6 +35,7 @@ func NewFlagBag(fl []flags.Flag) *FlagBag {
 		bools:  map[string]*bool{},
 		floats: map[string]*float64{},
 		slices: map[string]*[]string{},
+		arrays: map[string]*[]string{},
 	}
 	for _, f := range fl {
 		switch f.Kind {
@@ -45,6 +47,8 @@ func NewFlagBag(fl []flags.Flag) *FlagBag {
 			b.floats[f.Name] = new(float64)
 		case flags.KindStringSlice, flags.KindStat:
 			b.slices[f.Name] = new([]string)
+		case flags.KindStringArray:
+			b.arrays[f.Name] = new([]string)
 		}
 	}
 	return b
@@ -90,6 +94,12 @@ func (b *FlagBag) Bind(fs *pflag.FlagSet) {
 				fs.Var(sv, f.Name, f.Usage)
 			}
 			fs.Lookup(f.Name).NoOptDefVal = statFlagAll
+		case flags.KindStringArray:
+			if f.Shorthand != "" {
+				fs.StringArrayVarP(b.arrays[f.Name], f.Name, f.Shorthand, nil, f.Usage)
+			} else {
+				fs.StringArrayVar(b.arrays[f.Name], f.Name, nil, f.Usage)
+			}
 		}
 	}
 }
@@ -180,6 +190,14 @@ func (b *FlagBag) StringSlice(name string) []string {
 	return nil
 }
 
+// StringArray returns the parsed value of a repeatable string-array flag.
+func (b *FlagBag) StringArray(name string) []string {
+	if p := b.arrays[name]; p != nil {
+		return *p
+	}
+	return nil
+}
+
 // StringSliceRef exposes the backing pointer of a slice flag (test helper for
 // resetting/forcing values; cobra StringSlice appends to a non-nil default).
 func (b *FlagBag) StringSliceRef(name string) *[]string { return b.slices[name] }
@@ -235,6 +253,9 @@ func (b *FlagBag) Reset() {
 		case flags.KindStringSlice, flags.KindStat:
 			def, _ := f.Default.([]string)
 			*b.slices[f.Name] = def
+		case flags.KindStringArray:
+			def, _ := f.Default.([]string)
+			*b.arrays[f.Name] = def
 		}
 	}
 }
@@ -255,19 +276,39 @@ func (b *FlagBag) ParseConfig() parser.Config {
 		shared.ExitWithError(err.Error(), nil)
 	}
 	cfg.JSONPath = b.String("json-path")
-	if sel := strings.TrimSpace(b.String("select")); sel != "" {
-		selected, err := parser.ParseSelectFlag(sel)
-		if err != nil {
-			shared.ExitWithError(err.Error(), nil)
-		}
-		cfg.Select = selected
-		groupSet := map[string]bool{}
-		for _, g := range parser.EffectiveGroupColumns(cfg) {
-			groupSet[g] = true
-		}
-		for _, col := range selected {
-			if groupSet[col.Source] {
-				shared.ExitWithError("column '"+col.Source+"' cannot be in both --select and --group", nil)
+	selectRaws := b.StringArray("select")
+	if len(selectRaws) > 0 {
+		if parser.IsExplicitGrouping(cfg) {
+			seen := map[string]bool{}
+			for _, raw := range selectRaws {
+				selected, err := parser.ParseSelectFlag(raw)
+				if err != nil {
+					shared.ExitWithError(err.Error(), nil)
+				}
+				for _, col := range selected {
+					if seen[col.Source] {
+						shared.ExitWithError("duplicate column '"+col.Source+"' in --select", nil)
+					}
+					seen[col.Source] = true
+					cfg.Select = append(cfg.Select, col)
+				}
+			}
+			groupSet := map[string]bool{}
+			for _, g := range parser.EffectiveGroupColumns(cfg) {
+				groupSet[g] = true
+			}
+			for _, col := range cfg.Select {
+				if groupSet[col.Source] {
+					shared.ExitWithError("column '"+col.Source+"' cannot be in both --select and --group", nil)
+				}
+			}
+		} else {
+			for _, raw := range selectRaws {
+				view, err := parser.ParseSelectViewFlag(raw)
+				if err != nil {
+					shared.ExitWithError(err.Error(), nil)
+				}
+				cfg.SelectViews = append(cfg.SelectViews, view)
 			}
 		}
 	}

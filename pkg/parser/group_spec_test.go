@@ -381,6 +381,12 @@ func TestNoExplicitGrouping(t *testing.T) {
 	if NoExplicitGrouping(Config{Axes: []ColumnSpec{{Source: "x"}, {Source: "y"}}}) {
 		t.Fatal("expected false when axes set")
 	}
+	if NoExplicitGrouping(Config{Select: []ColumnSpec{{Source: "price"}}}) {
+		t.Fatal("expected false when grouped select set")
+	}
+	if NoExplicitGrouping(Config{SelectViews: [][]ColumnSpec{{{Source: "region"}, {Source: "latency"}}}}) {
+		t.Fatal("expected false when solo select views set")
+	}
 }
 
 func TestAutoGroupApplies(t *testing.T) {

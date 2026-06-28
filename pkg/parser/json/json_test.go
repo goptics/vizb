@@ -360,15 +360,18 @@ func (s *JSONFatalSuite) TestValueModeSkipsRowWithBadMetric() {
 	s.Equal("8", results[1].Metric)
 }
 
-func (s *JSONAutoValueSuite) TestSelectScopesAutoDetect() {
-	s.cfg.Select = []parser.ColumnSpec{{Source: "x"}, {Source: "y"}}
+func (s *JSONAutoValueSuite) TestSelectSkipsAutoDetect() {
+	// Solo --select (SelectViews) disables auto-value inference (Task 1 gate).
+	s.cfg.SelectViews = [][]parser.ColumnSpec{
+		{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}},
+	}
 	path := s.writeFile(`[{"x":1,"y":2,"z":3,"w":4}]`)
 
 	results := ParseJSON(path, s.cfg)
 	s.Require().Len(results, 1)
-	s.Equal("1", results[0].XAxis)
-	s.Equal("2", results[0].YAxis)
-	s.Empty(results[0].ZAxis)
+	s.Empty(results[0].XAxis)
+	s.Empty(results[0].YAxis)
+	s.NotEmpty(results[0].Stats) // parser routing for select views is Task 2
 }
 
 func TestJSONFatalSuite(t *testing.T) {
