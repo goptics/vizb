@@ -1,15 +1,16 @@
-package cli
+package cli_test
 
 import (
 	"testing"
 
 	// Chart configs self-register so ChartCommands has specs to build from.
-	_ "github.com/goptics/vizb/config/charts/bar"
-	_ "github.com/goptics/vizb/config/charts/heatmap"
-	_ "github.com/goptics/vizb/config/charts/line"
-	_ "github.com/goptics/vizb/config/charts/pie"
-	_ "github.com/goptics/vizb/config/charts/radar"
-	_ "github.com/goptics/vizb/config/charts/scatter"
+	_ "github.com/goptics/vizb/cmd/charts/bar"
+	_ "github.com/goptics/vizb/cmd/charts/heatmap"
+	_ "github.com/goptics/vizb/cmd/charts/line"
+	_ "github.com/goptics/vizb/cmd/charts/pie"
+	_ "github.com/goptics/vizb/cmd/charts/radar"
+	_ "github.com/goptics/vizb/cmd/charts/scatter"
+	"github.com/goptics/vizb/cmd/cli"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/suite"
 )
@@ -22,7 +23,7 @@ type CommandSuite struct {
 
 func (s *CommandSuite) SetupTest() {
 	s.byUse = map[string]*cobra.Command{}
-	for _, c := range ChartCommands() {
+	for _, c := range cli.ChartCommands() {
 		s.byUse[c.Name()] = c
 	}
 }

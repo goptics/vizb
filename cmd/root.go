@@ -12,15 +12,15 @@ import (
 	"github.com/goptics/vizb/config/flags"
 	"github.com/goptics/vizb/pkg/style"
 
-	// Chart configs self-register into the config/charts registry via init();
-	// blank-importing them makes the registry (and thus the subcommands and
-	// --chart key set) complete.
-	_ "github.com/goptics/vizb/config/charts/bar"
-	_ "github.com/goptics/vizb/config/charts/heatmap"
-	_ "github.com/goptics/vizb/config/charts/line"
-	_ "github.com/goptics/vizb/config/charts/pie"
-	_ "github.com/goptics/vizb/config/charts/radar"
-	_ "github.com/goptics/vizb/config/charts/scatter"
+	// Chart configs self-register into the charts registry and cli metadata
+	// via init() in cmd/charts/<c>; blank-importing them makes the registry
+	// (and thus the subcommands and --chart key set) complete.
+	_ "github.com/goptics/vizb/cmd/charts/bar"
+	_ "github.com/goptics/vizb/cmd/charts/heatmap"
+	_ "github.com/goptics/vizb/cmd/charts/line"
+	_ "github.com/goptics/vizb/cmd/charts/pie"
+	_ "github.com/goptics/vizb/cmd/charts/radar"
+	_ "github.com/goptics/vizb/cmd/charts/scatter"
 
 	// Parsers self-register into pkg/parser via their init().
 	_ "github.com/goptics/vizb/pkg/parser/csv"

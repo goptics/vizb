@@ -24,13 +24,5 @@ func (c Config) StatEnabled() bool  { return c.Stat.StatEnabled() }
 func (c Config) StatMath() []string { return c.Stat.StatMath() }
 func (c Config) SwapString() string { return c.Swap }
 
-func init() {
-	charts.Register(charts.Spec{
-		Type:    Type,
-		Use:     "pie [target]",
-		Short:   "Generate a pie chart from data",
-		Long:    "Generate an interactive pie chart (HTML or JSON) from benchmark output or tabular CSV/JSON data.",
-		Factory: func() charts.ChartConfig { return &Config{} },
-		Flags:   charts.BaseChartFlags,
-	})
-}
+// New returns a fresh zero-value pie chart Config.
+func New() charts.ChartConfig { return &Config{} }

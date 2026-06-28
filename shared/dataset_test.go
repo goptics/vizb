@@ -5,10 +5,10 @@ import (
 	"reflect"
 	"testing"
 
-	_ "github.com/goptics/vizb/config/charts/bar"
-	_ "github.com/goptics/vizb/config/charts/line"
-	_ "github.com/goptics/vizb/config/charts/pie"
-	_ "github.com/goptics/vizb/config/charts/scatter"
+	_ "github.com/goptics/vizb/cmd/charts/bar"
+	_ "github.com/goptics/vizb/cmd/charts/line"
+	_ "github.com/goptics/vizb/cmd/charts/pie"
+	_ "github.com/goptics/vizb/cmd/charts/scatter"
 	"github.com/goptics/vizb/shared"
 	"github.com/stretchr/testify/suite"
 )

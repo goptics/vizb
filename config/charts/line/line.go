@@ -4,8 +4,6 @@
 package line
 
 import (
-	"slices"
-
 	"github.com/goptics/vizb/config/charts"
 	"github.com/goptics/vizb/shared"
 )
@@ -32,16 +30,5 @@ func (c Config) StatEnabled() bool  { return c.Stat.StatEnabled() }
 func (c Config) StatMath() []string { return c.Stat.StatMath() }
 func (c Config) SwapString() string { return c.Swap }
 
-func init() {
-	charts.Register(charts.Spec{
-		Type:    Type,
-		Use:     "line [target]",
-		Short:   "Generate a line chart from data",
-		Long:    "Generate an interactive line chart (HTML or JSON) from benchmark output or tabular CSV/JSON data.",
-		Factory: func() charts.ChartConfig { return &Config{} },
-		Flags: append(slices.Clone(charts.BaseChartFlags),
-			charts.ScaleFlag, charts.ThreeDFlag, charts.ThreeDRotateFlag, charts.ThreeDVisualMapFlag,
-			charts.SymbolFlag, charts.SymbolSizeFlag,
-		),
-	})
-}
+// New returns a fresh zero-value line chart Config.
+func New() charts.ChartConfig { return &Config{} }

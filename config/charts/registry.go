@@ -12,17 +12,23 @@ import (
 // by Decode to build a typed instance before unmarshalling JSON into it.
 type Factory func() ChartConfig
 
-// Spec is everything the rest of the program needs to know about a chart type:
-// how to build its config, its cobra command metadata, and its variable flag
-// set. Each chart subpackage registers one Spec in init(), mirroring how
-// pkg/parser parsers self-register.
+// Spec is the factory for a chart type: how to build its config. Cobra
+// metadata (Use/Short/Long) lives in cmd/cli.ChartMeta; flag descriptors
+// are stored separately via SetFlags. Each chart subpackage registers one
+// Spec via cmd/charts/<c> in init().
 type Spec struct {
-	Type    string       // discriminator and registry key, e.g. "bar"
-	Use     string       // cobra Use line, e.g. "bar [target]"
-	Short   string       // cobra Short help
-	Long    string       // cobra Long help
-	Factory Factory      // builds a fresh zero-value Config
-	Flags   []flags.Flag // per-chart flags; each chart's init prepends BaseChartFlags
+	Type    string  // discriminator and registry key, e.g. "bar"
+	Factory Factory // builds a fresh zero-value Config
+}
+
+// registeredFlags maps a chart type to its variable flag descriptors. Set by
+// SetFlags from cmd/charts/<c> init() and read by FlagsFor / AllFlagNames.
+var registeredFlags = map[string][]flags.Flag{}
+
+// SetFlags stores the per-chart flag descriptors for chartType. It must be
+// called before FlagsFor / AllFlagNames are consumed (it is, from init()).
+func SetFlags(chartType string, ff []flags.Flag) {
+	registeredFlags[chartType] = ff
 }
 
 // registry maps a chart type to its Spec. Populated by per-chart init() calls.
@@ -90,15 +96,10 @@ func Specs() []Spec {
 	return out
 }
 
-// FlagsFor returns the full --chart key set for a chart type: the chart's own
-// Flags slice (which each chart init prepends with BaseChartFlags). Empty for
-// an unregistered type.
+// FlagsFor returns the full --chart key set for a chart type. Empty for an
+// unregistered type.
 func FlagsFor(chartType string) []flags.Flag {
-	s, ok := registry[chartType]
-	if !ok {
-		return nil
-	}
-	return s.Flags
+	return registeredFlags[chartType]
 }
 
 // AllFlagNames returns the set of every flag name registered by any chart.
@@ -106,8 +107,8 @@ func FlagsFor(chartType string) []flags.Flag {
 // (valid nowhere).
 func AllFlagNames() map[string]bool {
 	names := map[string]bool{}
-	for _, s := range registry {
-		for _, f := range s.Flags {
+	for _, ff := range registeredFlags {
+		for _, f := range ff {
 			names[f.EffectiveKey()] = true
 		}
 	}

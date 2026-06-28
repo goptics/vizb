@@ -23,13 +23,5 @@ func (c Config) StatEnabled() bool  { return c.Stat.StatEnabled() }
 func (c Config) StatMath() []string { return c.Stat.StatMath() }
 func (c Config) SwapString() string { return c.Swap }
 
-func init() {
-	charts.Register(charts.Spec{
-		Type:    Type,
-		Use:     "heatmap [target]",
-		Short:   "Generate a heatmap chart from data",
-		Long:    "Generate an interactive heatmap chart (HTML or JSON) from benchmark output or tabular CSV/JSON data.",
-		Factory: func() charts.ChartConfig { return &Config{} },
-		Flags:   charts.BaseChartFlags,
-	})
-}
+// New returns a fresh zero-value heatmap chart Config.
+func New() charts.ChartConfig { return &Config{} }

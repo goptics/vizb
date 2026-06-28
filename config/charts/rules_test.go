@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"testing"
 
+	_ "github.com/goptics/vizb/cmd/charts/bar"
+	_ "github.com/goptics/vizb/cmd/charts/line"
+	_ "github.com/goptics/vizb/cmd/charts/scatter"
 	"github.com/goptics/vizb/config/charts"
 	barchart "github.com/goptics/vizb/config/charts/bar"
-	_ "github.com/goptics/vizb/config/charts/line"
-	_ "github.com/goptics/vizb/config/charts/scatter"
 	"github.com/goptics/vizb/config/flags"
 	"github.com/stretchr/testify/suite"
 )
@@ -39,17 +40,17 @@ func (s *RulesSuite) SetupSuite() {
 	charts.Register(charts.Spec{
 		Type:    "_test_rules_chart",
 		Factory: func() charts.ChartConfig { return &testRuleConfig{} },
-		Flags: []flags.Flag{
-			{Name: "x-flag", JSONKey: "xFlag"},
-			{Name: "y-flag", JSONKey: "yFlag"},
-			{Name: "both-flag", JSONKey: "bothFlag"},
-			{Name: "x-flag-r", JSONKey: "xFlagR", Rule: []flags.RuleFn{charts.RequiresAxes("x")}},
-			{Name: "y-flag-r", JSONKey: "yFlagR", Rule: []flags.RuleFn{charts.RequiresAxes("y")}},
-			{
-				Name:    "both-flag-r",
-				JSONKey: "bothFlagR",
-				Rule:    []flags.RuleFn{charts.RequiresAxes("x"), charts.RequiresAxes("y")},
-			},
+	})
+	charts.SetFlags("_test_rules_chart", []flags.Flag{
+		{Name: "x-flag", JSONKey: "xFlag"},
+		{Name: "y-flag", JSONKey: "yFlag"},
+		{Name: "both-flag", JSONKey: "bothFlag"},
+		{Name: "x-flag-r", JSONKey: "xFlagR", Rule: []flags.RuleFn{charts.RequiresAxes("x")}},
+		{Name: "y-flag-r", JSONKey: "yFlagR", Rule: []flags.RuleFn{charts.RequiresAxes("y")}},
+		{
+			Name:    "both-flag-r",
+			JSONKey: "bothFlagR",
+			Rule:    []flags.RuleFn{charts.RequiresAxes("x"), charts.RequiresAxes("y")},
 		},
 	})
 }

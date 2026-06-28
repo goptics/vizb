@@ -3,12 +3,13 @@ package charts_test
 import (
 	"testing"
 
+	_ "github.com/goptics/vizb/cmd/charts/bar"
+	_ "github.com/goptics/vizb/cmd/charts/heatmap"
+	_ "github.com/goptics/vizb/cmd/charts/line"
+	_ "github.com/goptics/vizb/cmd/charts/radar"
 	"github.com/goptics/vizb/config/charts"
 	barchart "github.com/goptics/vizb/config/charts/bar"
-	_ "github.com/goptics/vizb/config/charts/heatmap"
-	_ "github.com/goptics/vizb/config/charts/line"
 	piechart "github.com/goptics/vizb/config/charts/pie"
-	_ "github.com/goptics/vizb/config/charts/radar"
 	scatterchart "github.com/goptics/vizb/config/charts/scatter"
 	"github.com/goptics/vizb/shared"
 	"github.com/stretchr/testify/suite"

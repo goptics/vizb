@@ -14,29 +14,52 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// ChartMeta holds the cobra command metadata for a chart type. Set by
+// cmd/charts/<c> init() via SetChartMeta, consumed by ChartCommands.
+type ChartMeta struct {
+	Type  string
+	Use   string
+	Short string
+	Long  string
+}
+
+// chartMetas maps chart type to its cobra metadata. Populated by
+// cmd/charts/<c> init() (blank-imported from cmd/root.go).
+var chartMetas = map[string]ChartMeta{}
+
+// SetChartMeta registers cobra command metadata for a chart type. Called
+// from cmd/charts/<c> init().
+func SetChartMeta(m ChartMeta) {
+	chartMetas[m.Type] = m
+}
+
 // ChartCommands builds one cobra subcommand per registered chart Spec. The set
-// of subcommands and their flags is therefore derived entirely from the
-// config/charts registry — adding a chart or a chart flag needs no change here.
+// of subcommands and their flags is derived from the config/charts registry
+// and the cmd-side chart metadata — adding a chart needs no change here.
 func ChartCommands() []*cobra.Command {
 	specs := config_charts.Specs()
 	cmds := make([]*cobra.Command, 0, len(specs))
 	for _, spec := range specs {
-		cmds = append(cmds, newChartCommand(spec))
+		meta, ok := chartMetas[spec.Type]
+		if !ok {
+			continue
+		}
+		cmds = append(cmds, newChartCommand(spec, meta))
 	}
 	return cmds
 }
 
-// newChartCommand builds the `vizb <type>` command from a Spec. It binds the
-// data flags plus the chart's own descriptors into one FlagBag, then on Run
-// validates, builds the chart seed from the changed flags, materialises a single
-// typed Config, and runs the linear pipeline.
-func newChartCommand(spec config_charts.Spec) *cobra.Command {
-	bag := NewFlagBag(append(slices.Clone(DataFlags), spec.Flags...))
+// newChartCommand builds the `vizb <type>` command from a Spec and ChartMeta.
+// It binds the data flags plus the chart's own flag descriptors into one
+// FlagBag, then on Run validates, builds the chart seed from the changed
+// flags, materialises a single typed Config, and runs the linear pipeline.
+func newChartCommand(spec config_charts.Spec, meta ChartMeta) *cobra.Command {
+	bag := NewFlagBag(append(slices.Clone(DataFlags), config_charts.FlagsFor(meta.Type)...))
 
 	cmd := &cobra.Command{
-		Use:   spec.Use,
-		Short: spec.Short,
-		Long:  spec.Long,
+		Use:   meta.Use,
+		Short: meta.Short,
+		Long:  meta.Long,
 		Args:  cobra.ArbitraryArgs,
 		Run: func(cmd *cobra.Command, args []string) {
 			bag.Validate(cmd)
