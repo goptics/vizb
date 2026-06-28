@@ -421,6 +421,80 @@ export function buildValueModeChart(
   return chart
 }
 
+const mixedModeHasZ = (axes: Axis[]): boolean =>
+  axes.some((a) => a.key === 'z' && a.type === 'value')
+
+// Build one ChartData for mixed-axis scatter (--select category x + value y[,z]).
+// Each row is one point; x is categorical, y/z are continuous.
+export function buildMixedModeChart(
+  data: DataPoint[],
+  axes: Axis[],
+  opts?: { scale?: ScaleType; showLabels?: boolean }
+): ChartData {
+  const scale = opts?.scale ?? 'linear'
+  const labels = axisLabelsFromAxes(axes)
+  const xLabel = labels.x ?? 'x'
+  const yLabel = labels.y ?? 'y'
+  const zLabel = labels.z ?? 'z'
+  const use3D = mixedModeHasZ(axes)
+  const title = use3D ? `${xLabel} · ${yLabel} · ${zLabel}` : `${xLabel} vs ${yLabel}`
+
+  const xCategories: string[] = []
+  const xIndex = new Map<string, number>()
+  const mixedTuples: [number, number][] = []
+  const points3D: { value: number[] }[] = []
+
+  for (const row of data) {
+    const x = row.xAxis ?? ''
+    if (!x) continue
+
+    const y = Number(row.yAxis)
+    if (!isFinite(y)) continue
+
+    if (!xIndex.has(x)) {
+      xIndex.set(x, xCategories.length)
+      xCategories.push(x)
+    }
+    const xi = xIndex.get(x)!
+
+    if (use3D) {
+      const z = Number(row.zAxis)
+      if (!isFinite(z)) continue
+      if (scale === 'log' && (y <= 0 || z <= 0)) continue
+      points3D.push({ value: [xi, y, z] })
+    } else {
+      if (scale === 'log' && y <= 0) continue
+      mixedTuples.push([xi, y])
+    }
+  }
+
+  const chart: ChartData = {
+    title,
+    statType: 'mixed',
+    yAxis: [],
+    zAxis: [],
+    series: [],
+    points: [],
+    axisLabels: labels,
+    xCategories,
+    ...(!use3D ? { mixedTuples } : {}),
+  }
+
+  if (use3D && points3D.length) {
+    chart.render3D = {
+      mode: 'mixed',
+      xValues: xCategories,
+      yValues: [],
+      zValues: [],
+      barSeries: [],
+      lineSeries: [{ name: title, data: points3D }],
+      cellTotals: {},
+    }
+  }
+
+  return chart
+}
+
 // Sort category values by their summed value across all points on that axis.
 function sortByAxisTotal(
   values: string[],

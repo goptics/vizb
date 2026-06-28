@@ -47,6 +47,7 @@ const {
   activeGroupId,
   isValueMode,
   isValueModeDataset,
+  isMixedModeDataset,
 } = useDataPoint()
 
 const CHART_ICONS: Record<ChartType, Component> = {
@@ -114,11 +115,13 @@ const fieldGroups = computed(() => {
   return partitionRenderableFields(fields)
 })
 
-// Value axes: hide sort; swap only for pure value mode.
-const filterValueModeFields = computed(() => isValueModeDataset.value || isValueMode.value)
+// Value/mixed axes: hide sort; swap only for pure value mode.
+const filterTransformModeFields = computed(
+  () => isValueModeDataset.value || isValueMode.value || isMixedModeDataset.value
+)
 
 const filteredGeneral = computed(() => {
-  if (!filterValueModeFields.value) return fieldGroups.value.general
+  if (!filterTransformModeFields.value) return fieldGroups.value.general
   return fieldGroups.value.general.filter((f) => {
     if (f.key === 'sort') return false
     if (f.key === 'swap') return isValueMode.value

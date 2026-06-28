@@ -557,3 +557,65 @@ describe('buildValueModeChart — 3-col swap-driven 3D', () => {
     expect(chart.render3D).toBeUndefined()
   })
 })
+
+// ---------------------------------------------------------------------------
+// buildMixedModeChart
+// ---------------------------------------------------------------------------
+import { buildMixedModeChart } from './transform'
+
+describe('buildMixedModeChart', () => {
+  const mixedAxes2D: Axis[] = [
+    { key: 'x', label: 'region' },
+    { key: 'y', label: 'latency', type: 'value' },
+  ]
+
+  function mdp(xAxis: string, yAxis: string, zAxis = ''): DataPoint {
+    return { xAxis, yAxis, zAxis, stats: [] }
+  }
+
+  it('maps category x to indices with value y', () => {
+    const chart = buildMixedModeChart(
+      [mdp('Asia', '12'), mdp('EU', '11'), mdp('Asia', '10')],
+      mixedAxes2D
+    )
+
+    expect(chart.statType).toBe('mixed')
+    expect(chart.xCategories).toEqual(['Asia', 'EU'])
+    expect(chart.mixedTuples).toEqual([
+      [0, 12],
+      [1, 11],
+      [0, 10],
+    ])
+  })
+
+  it('drops rows with non-finite y', () => {
+    const chart = buildMixedModeChart([mdp('Asia', '12'), mdp('EU', 'bad')], mixedAxes2D)
+    expect(chart.mixedTuples).toEqual([[0, 12]])
+  })
+
+  it('title combines x and y labels', () => {
+    const chart = buildMixedModeChart([mdp('Asia', '12')], mixedAxes2D)
+    expect(chart.title).toBe('region vs latency')
+  })
+
+  it('3-col mixed emits render3D with mode mixed', () => {
+    const mixedAxes3D: Axis[] = [
+      { key: 'x', label: 'region' },
+      { key: 'y', label: 'latency', type: 'value' },
+      { key: 'z', label: 'sales', type: 'value' },
+    ]
+    const chart = buildMixedModeChart([mdp('Asia', '12', '100')], mixedAxes3D)
+
+    expect(chart.mixedTuples).toBeUndefined()
+    expect(chart.render3D?.mode).toBe('mixed')
+    expect(chart.render3D?.xValues).toEqual(['Asia'])
+    expect(chart.render3D?.lineSeries[0]?.data[0]?.value).toEqual([0, 12, 100])
+  })
+
+  it('respects log scale on 2D path', () => {
+    const chart = buildMixedModeChart([mdp('Asia', '12'), mdp('EU', '0')], mixedAxes2D, {
+      scale: 'log',
+    })
+    expect(chart.mixedTuples).toEqual([[0, 12]])
+  })
+})

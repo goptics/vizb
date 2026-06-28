@@ -11,6 +11,8 @@ import {
   datasetDimension,
   formatChartTotal,
   isValueMode,
+  isMixedMode,
+  isScatterTransformMode,
 } from './utils'
 
 const dp = (x: string, y: string, z = ''): DataPoint => ({
@@ -277,5 +279,69 @@ describe('isValueMode', () => {
       { key: 'z', label: 'Latency (ms)', type: 'value' },
     ]
     expect(isValueMode(axes)).toBe(false)
+  })
+})
+
+describe('isMixedMode', () => {
+  it('returns false for undefined or empty axes', () => {
+    expect(isMixedMode(undefined)).toBe(false)
+    expect(isMixedMode([])).toBe(false)
+  })
+
+  it('returns true for category x + value y', () => {
+    const axes: Axis[] = [
+      { key: 'x', label: 'region' },
+      { key: 'y', label: 'latency', type: 'value' },
+    ]
+    expect(isMixedMode(axes)).toBe(true)
+  })
+
+  it('returns false for all-value axes', () => {
+    const axes: Axis[] = [
+      { key: 'x', label: 'x', type: 'value' },
+      { key: 'y', label: 'y', type: 'value' },
+    ]
+    expect(isMixedMode(axes)).toBe(false)
+  })
+
+  it('returns false for all-category axes', () => {
+    const axes: Axis[] = [
+      { key: 'x', label: 'region' },
+      { key: 'y', label: 'group' },
+    ]
+    expect(isMixedMode(axes)).toBe(false)
+  })
+})
+
+describe('isScatterTransformMode', () => {
+  it('is true for value or mixed scatter axes', () => {
+    expect(
+      isScatterTransformMode([
+        { key: 'x', type: 'value' },
+        { key: 'y', type: 'value' },
+      ])
+    ).toBe(true)
+    expect(
+      isScatterTransformMode([
+        { key: 'x', label: 'region' },
+        { key: 'y', type: 'value' },
+      ])
+    ).toBe(true)
+    expect(
+      isScatterTransformMode([
+        { key: 'x', label: 'region' },
+        { key: 'y', label: 'group' },
+      ])
+    ).toBe(false)
+  })
+})
+
+describe('canOfferValue3D with mixed axes', () => {
+  it('returns false for mixed-axis datasets', () => {
+    const axes: Axis[] = [
+      { key: 'x', label: 'region' },
+      { key: 'y', label: 'latency', type: 'value' },
+    ]
+    expect(canOfferValue3D('scatter', [dp('a', 'b')], false, undefined, axes)).toBe(false)
   })
 })

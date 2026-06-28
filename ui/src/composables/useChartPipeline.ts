@@ -3,7 +3,7 @@ import type { AxisLabels, DataPoint, ChartData, Sort, ScaleType, Axis, ChartType
 import TransformWorker from '../workers/transform.worker.ts?worker&inline'
 import type { WorkerResponse } from '../workers/transform.worker'
 import { listChartSignatures } from '../lib/transform'
-import { isValueChartType, isValueMode } from '../lib/utils'
+import { isValueChartType, isValueMode, isMixedMode } from '../lib/utils'
 
 // The arrangement the worker projects/groups under: present source axes in
 // canonical order (identityString, e.g. "nx") and the selected target order
@@ -227,6 +227,19 @@ export function useChartPipeline(
           key: '__value_mode__',
           title: `${xLabel} vs ${yLabel}`,
           data: prev.get('__value_mode__')?.data ?? null,
+          pending: true,
+        },
+      ]
+    } else if (ct === 'scatter' && isMixedMode(axesNow)) {
+      const xLabel = axesNow?.find((a) => a.key === 'x')?.label ?? 'x'
+      const yLabel = axesNow?.find((a) => a.key === 'y')?.label ?? 'y'
+      const zLabel = axesNow?.find((a) => a.key === 'z')?.label ?? 'z'
+      const use3D = axesNow?.some((a) => a.key === 'z' && a.type === 'value') ?? false
+      charts.value = [
+        {
+          key: '__mixed_mode__',
+          title: use3D ? `${xLabel} · ${yLabel} · ${zLabel}` : `${xLabel} vs ${yLabel}`,
+          data: prev.get('__mixed_mode__')?.data ?? null,
           pending: true,
         },
       ]

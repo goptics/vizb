@@ -288,6 +288,56 @@ describe('transform.worker — value mode compute', () => {
     expect(chart.valuePoints3D).toEqual([[1, 2, 3]])
   })
 
+  it('replies with __mixed_mode__ signature for scatter + mixed axes', () => {
+    const MIXED_AXES: Axis[] = [
+      { key: 'x', label: 'region' },
+      { key: 'y', label: 'latency', type: 'value' },
+    ]
+    send(
+      buildInit({
+        data: [
+          { xAxis: 'Asia', yAxis: '12', stats: [] },
+          { xAxis: 'EU', yAxis: '11', stats: [] },
+        ],
+        axes: MIXED_AXES,
+        chartType: 'scatter',
+      })
+    )
+
+    const r = ready()
+    expect(r!.signatures).toHaveLength(1)
+    expect(r!.signatures[0]!.signature).toBe('__mixed_mode__')
+    expect(r!.groupNames).toEqual([])
+  })
+
+  it('returns mixedTuples for __mixed_mode__ compute', () => {
+    const MIXED_AXES: Axis[] = [
+      { key: 'x', label: 'region' },
+      { key: 'y', label: 'latency', type: 'value' },
+    ]
+    send(
+      buildInit({
+        data: [
+          { xAxis: 'Asia', yAxis: '12', stats: [] },
+          { xAxis: 'EU', yAxis: '11', stats: [] },
+        ],
+        axes: MIXED_AXES,
+        chartType: 'scatter',
+      })
+    )
+    postSpy.mockClear()
+
+    send(buildCompute({ signature: '__mixed_mode__', groupName: '' }))
+
+    const chart = charts()[0]!.chart as ChartData
+    expect(chart.statType).toBe('mixed')
+    expect(chart.xCategories).toEqual(['Asia', 'EU'])
+    expect(chart.mixedTuples).toEqual([
+      [0, 12],
+      [1, 11],
+    ])
+  })
+
   it('value mode init still allows normal category compute after re-init', () => {
     // Re-init with category data on the same worker instance
     send(buildInit())

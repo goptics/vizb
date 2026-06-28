@@ -253,6 +253,8 @@ export type ChartData = {
   axisLabels?: AxisLabels
   valueTuples?: [number, number, number?][] // value-mode 2D: [x, y] or [x, y, colorDim]
   valuePoints3D?: [number, number, number, number?][] // value-mode 3D: [x, y, z] or [x, y, z, metric]
+  mixedTuples?: [number, number][] // mixed-mode 2D: [xCategoryIndex, yValue]
+  xCategories?: string[] // mixed-mode category labels for the x axis
   // Precomputed 3D render data (built in the transform worker for charts that
   // have x, y and z). Absent for 2D charts. Holds the sorted axis category
   // arrays plus the per-z series data for both bar3D (filled grid) and line3D
@@ -266,7 +268,7 @@ export type Series3DData = {
 }
 
 export type Render3D = {
-  mode?: 'grouped' | 'value' | 'continuous'
+  mode?: 'grouped' | 'value' | 'continuous' | 'mixed'
   xValues: string[]
   yValues: string[]
   zValues: string[]

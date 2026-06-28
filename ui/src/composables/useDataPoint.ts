@@ -7,6 +7,7 @@ import {
   isValidIndex,
   datasetDimension,
   isValueMode as checkValueMode,
+  isMixedMode as checkMixedMode,
 } from '../lib/utils'
 import { presentAxisString } from '../lib/swap'
 import { useSettingsStore } from './useSettingsStore'
@@ -115,10 +116,19 @@ const { chartType } = useSettingsStore()
 // True when the active dataset uses pure value-mode axes (--axes x,y[,z]).
 const isValueModeActive = computed(() => checkValueMode(activeDataSet.value?.axes))
 
+// True when the active dataset uses mixed-axis scatter (category x + value y[,z]).
+const isMixedModeActive = computed(() => checkMixedMode(activeDataSet.value?.axes))
+
 // Value-mode transform path is active for this dataset.
 const isValueModeDataset = computed(() => {
   const axes = activeDataSet.value?.axes
   return checkValueMode(axes)
+})
+
+// Mixed-mode transform path is active for this dataset.
+const isMixedModeDataset = computed(() => {
+  const axes = activeDataSet.value?.axes
+  return checkMixedMode(axes)
 })
 
 // Derive identity from axes[] key order if present, else fall back to data shape.
@@ -193,5 +203,7 @@ export function useDataPoint() {
 
     isValueMode: isValueModeActive,
     isValueModeDataset,
+    isMixedMode: isMixedModeActive,
+    isMixedModeDataset,
   }
 }

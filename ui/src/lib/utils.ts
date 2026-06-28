@@ -79,6 +79,9 @@ export const isValue3DEligible = (chart: ChartData) =>
 export const valueModeHasZAxis = (axes: Axis[] | undefined): boolean =>
   !!axes?.some((a) => a.key === 'z')
 
+export const mixedModeHasZAxis = (axes: Axis[] | undefined): boolean =>
+  !!axes?.some((a) => a.key === 'z' && a.type === 'value')
+
 export const VALUE_CHART_TYPES = new Set<ChartType>(['scatter', 'bar', 'line'])
 
 export const isValueChartType = (chartType?: ChartType): boolean =>
@@ -109,7 +112,9 @@ export const is3D = (
   return (
     isGrouped3D(chart) ||
     (isValue3DEligible(chart) && threeD === true) ||
-    isValueModeContinuous3D(chart, axes, targetString, chartType)
+    isValueModeContinuous3D(chart, axes, targetString, chartType) ||
+    chart.render3D?.mode === 'mixed' ||
+    (chartType === 'scatter' && isMixedMode(axes) && mixedModeHasZAxis(axes))
   )
 }
 
@@ -144,6 +149,7 @@ export const canOfferValue3D = (
   cfg?: { threeD?: boolean },
   axes?: Axis[]
 ): boolean => {
+  if (isMixedMode(axes)) return false
   if (chartType === 'scatter') {
     if (isValueMode(axes)) return false
     return datasetHasBothXY(data) && !hasZOnChart && bundleHas3DChunk(data, cfg)
@@ -166,10 +172,22 @@ export const chartHasPlottableData = (chart: ChartData): boolean =>
   chart.series.length > 0 ||
   chart.points.length > 0 ||
   (chart.valueTuples?.length ?? 0) > 0 ||
-  (chart.valuePoints3D?.length ?? 0) > 0
+  (chart.valuePoints3D?.length ?? 0) > 0 ||
+  (chart.mixedTuples?.length ?? 0) > 0 ||
+  (chart.render3D?.mode === 'mixed' && (chart.render3D.lineSeries[0]?.data.length ?? 0) > 0)
 
 /** Cardinality shown on ChartCard axis badges (category count or unique value-mode coords). */
 export const chartAxisBadgeCount = (chart: ChartData, axis: 'x' | 'y' | 'z'): number => {
+  if (isMixedModeChart(chart)) {
+    if (axis === 'x') return chart.xCategories?.length ?? 0
+    if (axis === 'z') return 0
+    if (chart.mixedTuples?.length) {
+      return new Set(chart.mixedTuples.map(([, y]) => y)).size
+    }
+    const pts = chart.render3D?.lineSeries[0]?.data ?? []
+    return new Set(pts.map((p) => p.value[1])).size
+  }
+
   if (!isValueModeChart(chart)) {
     if (axis === 'x') return chart.series.length
     if (axis === 'y') return chart.yAxis.length
@@ -217,6 +235,14 @@ export const computeChartGrandTotal = (
     return chart.valueTuples.reduce((sum, [, y]) => sum + y, 0)
   }
 
+  if (chart.mixedTuples?.length) {
+    return chart.mixedTuples.reduce((sum, [, y]) => sum + y, 0)
+  }
+
+  if (chart.render3D?.mode === 'mixed') {
+    return (chart.render3D.lineSeries[0]?.data ?? []).reduce((sum, p) => sum + (p.value[1] ?? 0), 0)
+  }
+
   let total = 0
   for (const s of chart.series) {
     for (const v of s.values) {
@@ -249,3 +275,13 @@ export const CPUtoString = (cpu: Meta['cpu']) => {
 /** All axes are continuous numeric (--axes x,y[,z] value mode). */
 export const isValueMode = (axes: Axis[] | undefined): boolean =>
   !!axes?.length && axes.every((a) => a.type === 'value')
+
+/** Category x + value y[,z] (--select / mixed-axis scatter). */
+export const isMixedMode = (axes: Axis[] | undefined): boolean =>
+  !!axes?.length && axes.some((a) => a.type === 'value') && axes.some((a) => a.type !== 'value')
+
+export const isMixedModeChart = (chart: ChartData): boolean => chart.statType === 'mixed'
+
+/** Scatter datasets routed through value or mixed transform paths. */
+export const isScatterTransformMode = (axes: Axis[] | undefined): boolean =>
+  isValueMode(axes) || isMixedMode(axes)

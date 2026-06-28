@@ -27,11 +27,12 @@ import {
   listChartSignatures,
   buildChartForSignature,
   buildValueModeChart,
+  buildMixedModeChart,
   canonicalAxisOrdersFromStrings,
   projectAndGroup,
   type ChartSignature,
 } from '../lib/transform'
-import { isValueChartType, isValueMode } from '../lib/utils'
+import { isValueChartType, isValueMode, isMixedMode } from '../lib/utils'
 import { translateAxisKey } from '../lib/swap'
 import type { DataPoint, AxisLabels, Sort, ChartData, ScaleType, Axis, ChartType } from '../types'
 
@@ -89,6 +90,7 @@ type State = {
   labels?: AxisLabels
   bySignature: Map<string, ChartSignature>
   valueMode: boolean
+  mixedMode: boolean
   axes?: Axis[]
   chartType?: ChartType
 }
@@ -135,6 +137,18 @@ const valueModeReadyReply = (s: State): ReadyMessage => ({
   groupNames: [],
 })
 
+const mixedModeReadyReply = (s: State): ReadyMessage => ({
+  type: 'ready',
+  dataEpoch: s.dataEpoch,
+  signatures: [
+    {
+      signature: '__mixed_mode__',
+      title: buildMixedModeChart([], s.axes ?? []).title,
+    },
+  ],
+  groupNames: [],
+})
+
 self.onmessage = (e: MessageEvent<WorkerRequest>) => {
   const msg = e.data
 
@@ -143,6 +157,7 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
       const axes = msg.axes
       const chartType = msg.chartType
       const valueModeDetected = isValueChartType(chartType) && isValueMode(axes)
+      const mixedModeDetected = chartType === 'scatter' && isMixedMode(axes)
 
       state = {
         dataEpoch: msg.dataEpoch,
@@ -154,6 +169,7 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
         labels: msg.labels,
         bySignature: new Map(),
         valueMode: valueModeDetected,
+        mixedMode: mixedModeDetected,
         axes,
         chartType,
       }
@@ -164,6 +180,15 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
           statTemplate: { type: 'value' },
         })
         post(valueModeReadyReply(state))
+        return
+      }
+
+      if (mixedModeDetected) {
+        state.bySignature.set('__mixed_mode__', {
+          signature: '__mixed_mode__',
+          statTemplate: { type: 'mixed' },
+        })
+        post(mixedModeReadyReply(state))
         return
       }
 
@@ -183,6 +208,10 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
         post(valueModeReadyReply(state))
         return
       }
+      if (state.mixedMode) {
+        post(mixedModeReadyReply(state))
+        return
+      }
       applyArrangement(state, msg.identityString, msg.targetString)
       post(readyReply(state))
       return
@@ -191,6 +220,22 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
 
   // compute: ignore jobs aimed at a superseded dataset (a newer init landed).
   if (!state || msg.dataEpoch !== state.dataEpoch) return
+
+  // Mixed-mode compute: category x + value y[,z], no grouping/stat pipeline.
+  if (state.mixedMode && msg.signature === '__mixed_mode__' && state.axes) {
+    const chart = buildMixedModeChart(state.raw, state.axes, {
+      scale: msg.scale,
+      showLabels: msg.showLabels,
+    })
+    post({
+      type: 'chart',
+      dataEpoch: msg.dataEpoch,
+      jobEpoch: msg.jobEpoch,
+      signature: msg.signature,
+      chart,
+    })
+    return
+  }
 
   // Value-mode compute: bypass grouping/signature/stat pipeline entirely.
   if (state.valueMode && msg.signature === '__value_mode__' && state.axes) {
