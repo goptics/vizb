@@ -35,8 +35,8 @@ var (
 )
 
 // BaseChartFlags are the --chart keys valid for every chart type. Each chart's
-// Spec.Flags is built by prepending a clone of BaseChartFlags before the
-// chart's own variable flags.
+// flag list is composed by prepending a clone of BaseChartFlags before the
+// chart's own variable flags (declared in cmd/charts/<c>/<c>.go).
 var BaseChartFlags = []flags.Flag{SwapFlag, SortFlag, LabelsFlag, StatFlag}
 
 // --- Variable flags: composed by the charts that carry them. ---

@@ -1,7 +1,4 @@
-// Package bar defines the typed Config for bar charts and the Materialise
-// function that applies the 4-step precedence (override > flags > defaults >
-// internal default) to produce a fully-resolved config. Self-registers into
-// the charts registry in init().
+// Package bar defines the typed Config for bar charts.
 package bar
 
 import (
