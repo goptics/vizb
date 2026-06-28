@@ -11,6 +11,7 @@ import (
 	barchart "github.com/goptics/vizb/internal/charts/bar"
 	heatmapchart "github.com/goptics/vizb/internal/charts/heatmap"
 	linechart "github.com/goptics/vizb/internal/charts/line"
+	piechart "github.com/goptics/vizb/internal/charts/pie"
 	radarchart "github.com/goptics/vizb/internal/charts/radar"
 	scatterchart "github.com/goptics/vizb/internal/charts/scatter"
 	"github.com/goptics/vizb/pkg/template"
@@ -239,6 +240,12 @@ func (s *UISuite) htmlContains3DChunk(html string) bool {
 	root3D := template.VizbChartRoots["3d"]
 	s.Require().NotEmpty(root3D, "generated VizbChartRoots must contain 3d")
 	return strings.Contains(html, `"`+root3D+`"`)
+}
+
+func (s *UISuite) htmlContainsHeatmapChunk(html string) bool {
+	rootHeat := template.VizbChartRoots["heatmap"]
+	s.Require().NotEmpty(rootHeat, "generated VizbChartRoots must contain heatmap")
+	return strings.Contains(html, `"`+rootHeat+`"`)
 }
 
 func (s *UISuite) TestRunUIFiltersChartsOnExplicitFlag() {
@@ -486,6 +493,91 @@ func (s *UISuite) TestRunUIAppliesBarPartialOverride() {
 	bar := ds["settings"].([]any)[0].(map[string]any)
 	s.Equal("yxn", bar["swap"])
 	s.Equal("linear", bar["scale"])
+}
+
+func (s *UISuite) TestRunUIAppliesStatToMultipleChartTypes() {
+	dir := s.T().TempDir()
+	input := filepath.Join(dir, "multi.json")
+	testutil.WriteJSON(s.T(), input, shared.Dataset{
+		Name: "Test",
+		Settings: []internal_charts.ChartConfig{
+			s.barFromJSON(map[string]any{"type": "bar", "scale": "linear"}),
+			&linechart.Config{Type: "line", Scale: "linear"},
+			&piechart.Config{Type: "pie"},
+			&heatmapchart.Config{Type: "heatmap"},
+			&radarchart.Config{Type: "radar"},
+		},
+		Data: []shared.DataPoint{{Name: "T1", XAxis: "1", YAxis: "100"}},
+	})
+	out := filepath.Join(dir, "out.html")
+
+	rootCmd.SetArgs([]string{"ui", "-o", out, "--stat=shape", input})
+	s.Require().NoError(rootCmd.Execute())
+
+	datasets := s.extractVIZBDataArray(s.read(out))
+	settings := datasets[0].(map[string]any)["settings"].([]any)
+	s.Require().Len(settings, 5)
+	for _, raw := range settings {
+		stat := raw.(map[string]any)["stat"].(map[string]any)
+		s.Equal([]any{"shape"}, stat["math"])
+	}
+}
+
+func (s *UISuite) TestRunUIAppliesStatToEmbeddedData() {
+	dir := s.T().TempDir()
+	input := filepath.Join(dir, "bench.json")
+	testutil.WriteJSON(s.T(), input, shared.Dataset{
+		Name: "Test",
+		Settings: []internal_charts.ChartConfig{
+			s.barFromJSON(map[string]any{"type": "bar", "scale": "linear"}),
+		},
+		Data: []shared.DataPoint{{Name: "T1", XAxis: "1", YAxis: "100"}},
+	})
+	out := filepath.Join(dir, "out.html")
+
+	rootCmd.SetArgs([]string{"ui", "-o", out, "--stat=counts", input})
+	s.Require().NoError(rootCmd.Execute())
+
+	html := s.read(out)
+	s.False(s.htmlContainsHeatmapChunk(html))
+
+	datasets := s.extractVIZBDataArray(html)
+	bar := datasets[0].(map[string]any)["settings"].([]any)[0].(map[string]any)
+	stat := bar["stat"].(map[string]any)
+	s.True(stat["enabled"].(bool))
+	s.Equal([]any{"counts"}, stat["math"])
+}
+
+func (s *UISuite) TestRunUIShipsHeatmapChunkForCorrelationsStat() {
+	dir := s.T().TempDir()
+	input := filepath.Join(dir, "bench.json")
+	testutil.WriteJSON(s.T(), input, shared.Dataset{
+		Name: "Test",
+		Settings: []internal_charts.ChartConfig{
+			s.barFromJSON(map[string]any{"type": "bar", "scale": "linear"}),
+		},
+		Data: []shared.DataPoint{{Name: "T1", XAxis: "1", YAxis: "100"}},
+	})
+	out := filepath.Join(dir, "out.html")
+
+	rootCmd.SetArgs([]string{"ui", "-o", out, "--stat=correlations", input})
+	s.Require().NoError(rootCmd.Execute())
+	s.True(s.htmlContainsHeatmapChunk(s.read(out)))
+}
+
+func (s *UISuite) TestUIRemoteStatPrunesHeatmapChunk() {
+	dir := s.T().TempDir()
+	outDefault := filepath.Join(dir, "remote-default.html")
+	rootCmd.SetArgs([]string{"ui", "-o", outDefault, "--data-url", "https://example.com/bench.json"})
+	s.Require().NoError(rootCmd.Execute())
+	s.True(s.htmlContainsHeatmapChunk(s.read(outDefault)))
+
+	ResetTestState()
+
+	outCounts := filepath.Join(dir, "remote-counts.html")
+	rootCmd.SetArgs([]string{"ui", "-o", outCounts, "--data-url", "https://example.com/bench.json", "--stat=counts"})
+	s.Require().NoError(rootCmd.Execute())
+	s.False(s.htmlContainsHeatmapChunk(s.read(outCounts)))
 }
 
 func TestUISuite(t *testing.T) {

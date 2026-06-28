@@ -163,6 +163,31 @@ func (s *FlagBagSuite) TestValidateParserInvalid() {
 	s.Contains(err.Error(), "unknown parser")
 }
 
+func (s *FlagBagSuite) TestReadersAndRefs() {
+	fl := append(slices.Clone(DataFlags), internal_charts.BaseChartFlags...)
+	fl = append(fl, internal_charts.ScaleFlag, internal_charts.SymbolSizeFlag)
+	cmd, bag := s.newCmdBag(fl)
+
+	s.Require().NoError(cmd.Flags().Set("show-labels", "true"))
+	s.Require().NoError(cmd.Flags().Set("symbol-size", "8"))
+	s.Require().NoError(cmd.Flags().Set("group", "a,b"))
+	s.True(bag.Bool("show-labels"))
+	s.Equal(8.0, bag.Float("symbol-size"))
+	s.Equal([]string{"a", "b"}, bag.StringSlice("group"))
+	s.Require().NotNil(bag.StringSliceRef("group"))
+}
+
+func (s *FlagBagSuite) TestValidateRejectsInvalidSymbolSize() {
+	fl := append(slices.Clone(DataFlags), internal_charts.SymbolSizeFlag)
+	cmd, bag := s.newCmdBag(fl)
+	s.Require().NoError(cmd.Flags().Set("symbol-size", "0"))
+
+	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
+	defer restore()
+	s.Panics(func() { bag.Validate(cmd) })
+	s.True(*exitCalled)
+}
+
 func TestFlagBagSuite(t *testing.T) {
 	suite.Run(t, new(FlagBagSuite))
 }

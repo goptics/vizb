@@ -13,7 +13,12 @@ import (
 	_ "github.com/goptics/vizb/cmd/charts/scatter"
 	"github.com/goptics/vizb/internal/charts"
 	barchart "github.com/goptics/vizb/internal/charts/bar"
+	heatmapchart "github.com/goptics/vizb/internal/charts/heatmap"
+	linechart "github.com/goptics/vizb/internal/charts/line"
+	piechart "github.com/goptics/vizb/internal/charts/pie"
+	radarchart "github.com/goptics/vizb/internal/charts/radar"
 	scatterchart "github.com/goptics/vizb/internal/charts/scatter"
+	"github.com/goptics/vizb/shared"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -78,6 +83,32 @@ func (s *RegistrySuite) TestDecodeUnknownType() {
 func (s *RegistrySuite) TestDecodeInvalidJSON() {
 	_, err := charts.Decode("bar", json.RawMessage(`{invalid`))
 	s.Error(err)
+}
+
+func (s *RegistrySuite) TestGetKnownAndUnknown() {
+	spec, ok := charts.Get("bar")
+	s.True(ok)
+	s.Equal("bar", spec.Type)
+
+	_, ok = charts.Get("graph")
+	s.False(ok)
+}
+
+func (s *RegistrySuite) TestChartConfigAccessors() {
+	stat := &shared.StatConfig{Enabled: true, Math: []string{"counts"}}
+	cases := []charts.ChartConfig{
+		&barchart.Config{Type: "bar", Swap: "yxn", Stat: stat},
+		&linechart.Config{Type: "line", Swap: "nxy", Stat: stat},
+		&scatterchart.Config{Type: "scatter", Swap: "xyn", Stat: stat},
+		&piechart.Config{Type: "pie", Swap: "ynx", Stat: stat},
+		&heatmapchart.Config{Type: "heatmap", Swap: "xy", Stat: stat},
+		&radarchart.Config{Type: "radar", Swap: "yx", Stat: stat},
+	}
+	for _, cfg := range cases {
+		s.True(cfg.StatEnabled())
+		s.Equal([]string{"counts"}, cfg.StatMath())
+		s.NotEmpty(cfg.SwapString())
+	}
 }
 
 func TestRegistrySuite(t *testing.T) {

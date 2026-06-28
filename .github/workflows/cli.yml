@@ -64,7 +64,7 @@ jobs:
 
       - run: go mod download
 
-      - run: go test -coverprofile=coverage.txt -covermode=atomic ./...
+      - run: go test -count=1 -coverpkg=./... -coverprofile=coverage.txt -covermode=atomic ./...
 
       - uses: codecov/codecov-action@v7
         env:

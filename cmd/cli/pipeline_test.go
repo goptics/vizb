@@ -13,6 +13,7 @@ import (
 	scatterchart "github.com/goptics/vizb/internal/charts/scatter"
 	"github.com/goptics/vizb/pkg/parser"
 	_ "github.com/goptics/vizb/pkg/parser/csv"
+	"github.com/goptics/vizb/pkg/template"
 	"github.com/goptics/vizb/shared"
 	"github.com/goptics/vizb/testutil"
 	"github.com/spf13/cobra"
@@ -131,6 +132,30 @@ func (s *PipelineSuite) TestWriteOutput() {
 		stat, err := file.Stat()
 		s.Require().NoError(err)
 		s.Greater(stat.Size(), int64(0))
+	})
+
+	s.Run("HTML ships heatmap chunk when stat needs correlation", func() {
+		htmlFile := filepath.Join(s.T().TempDir(), "corr.html")
+		file, err := os.Create(htmlFile)
+		s.Require().NoError(err)
+		defer file.Close()
+
+		ds := &shared.Dataset{
+			Settings: []internal_charts.ChartConfig{
+				&barchart.Config{
+					Type: "bar",
+					Stat: &shared.StatConfig{Enabled: true, Math: []string{"correlations"}},
+				},
+			},
+			Data: dataSet.Data,
+		}
+		writeOutput(file, ds, "html")
+
+		content, err := os.ReadFile(htmlFile)
+		s.Require().NoError(err)
+		heatRoot := template.VizbChartRoots["heatmap"]
+		s.Require().NotEmpty(heatRoot)
+		s.Contains(string(content), `"`+heatRoot+`"`)
 	})
 
 	s.Run("JSON output round-trips", func() {

@@ -1,0 +1,8 @@
+# Pragmatic ignores: entrypoints, generated assets, and init-only registration.
+coverage:
+  ignore:
+    - main.go
+    - version/**
+    - pkg/style/**
+    - pkg/template/vizb-ui.gen.go
+    - cmd/charts/**
