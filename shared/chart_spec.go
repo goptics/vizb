@@ -3,11 +3,13 @@ package shared
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
 
-	config_charts "github.com/goptics/vizb/config/charts"
+	internal_charts "github.com/goptics/vizb/internal/charts"
+	"github.com/goptics/vizb/internal/flags"
 )
 
 // axisChar returns the single character that represents an axis key in a swap
@@ -81,22 +83,19 @@ func ValidateSwap(swap string, axes []Axis) error {
 // charts: the active chart types from --charts (e.g. ["bar","line","pie"])
 // axes: ordered axes from GroupAxes() — used to validate swap permutations
 //
-// Returns a map keyed by chart type, with values being the typed *<chart>.Config
-// (e.g. *bar.Config for "bar"). The chart-type set is taken from the registry
-// in config/charts; unknown chart types in specs return an error. The map is
-// nil when no specs are supplied.
+// Returns a map keyed by chart type (values are the typed *<chart>.Config),
+// plus a slice of human-readable warnings for keys that were dropped because
+// they are not applicable to the target chart. Each valid --chart key is the
+// Name of a flag descriptor registered by the chart in config/charts; the key
+// set is therefore derived, not hard-coded.
 //
-// Multiple specs for the same chart type are merged into a single Config
-// (later tokens in a spec override earlier ones; later specs for the same
-// chart type merge into the same Config).
-//
-// Chart-type-specific field validation (e.g. "pie has no Scale") is
-// intentionally deferred to per-chart Validate(axes) methods. The
-// JSON-payload approach used here lets any field be set in the payload; Decode
-// drops fields that don't exist on the target Config struct.
-func ParseOverrides(specs []string, charts []string, axes []Axis) (map[string]config_charts.ChartConfig, error) {
+// Key handling is uniform: a key valid for the target chart is applied; a key
+// valid for some other chart (e.g. `pie:scale`, `bar:visualmap`) is dropped
+// with a warning; a key valid for no chart (a typo) is a hard error. Swap is
+// validated against the runtime axes here, since descriptors are axis-unaware.
+func ParseOverrides(specs []string, charts []string, axes []Axis) (map[string]internal_charts.ChartConfig, []string, error) {
 	if len(specs) == 0 {
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	// Build a fast lookup for active chart types.
@@ -105,24 +104,27 @@ func ParseOverrides(specs []string, charts []string, axes []Axis) (map[string]co
 		activeCharts[strings.ToLower(c)] = true
 	}
 
+	allFlagNames := internal_charts.AllFlagNames()
+
 	// Accumulate per-chart payloads; multiple specs for the same chart type
 	// merge into the same payload rather than overwriting.
 	payloads := make(map[string]map[string]any)
 	var order []string
+	var warnings []string
 
 	for _, spec := range specs {
 		chartType, rest, ok := strings.Cut(spec, ":")
 		if !ok {
-			return nil, fmt.Errorf("--chart: malformed spec %q: expected <type>:<key>=<val>,... or <type>:<flag>", spec)
+			return nil, nil, fmt.Errorf("--chart: malformed spec %q: expected <type>:<key>=<val>,... or <type>:<flag>", spec)
 		}
 		if rest == "" {
-			return nil, fmt.Errorf("--chart: spec %q has no settings after ':'; expected <type>:<key>=<val> or <type>:<flag>", spec)
+			return nil, nil, fmt.Errorf("--chart: spec %q has no settings after ':'; expected <type>:<key>=<val> or <type>:<flag>", spec)
 		}
 		chartType = strings.ToLower(chartType)
 
-		// Validate the chart type is registered (replaces the old validChartTypes map).
-		if _, err := config_charts.New(chartType); err != nil {
-			return nil, fmt.Errorf("--chart: %w", err)
+		// Validate the chart type is registered.
+		if _, err := internal_charts.New(chartType); err != nil {
+			return nil, nil, fmt.Errorf("--chart: %w", err)
 		}
 
 		// Validate the chart type is active (selected via --charts).
@@ -132,7 +134,14 @@ func ParseOverrides(specs []string, charts []string, axes []Axis) (map[string]co
 				activeList = append(activeList, k)
 			}
 			sort.Strings(activeList)
-			return nil, fmt.Errorf("--chart: chart type %q is not in the active --charts list (%s)", chartType, strings.Join(activeList, ", "))
+			return nil, nil, fmt.Errorf("--chart: chart type %q is not in the active --charts list (%s)", chartType, strings.Join(activeList, ", "))
+		}
+
+		// Build a name → descriptor lookup for this chart's valid keys.
+		chartFlags := internal_charts.FlagsFor(chartType)
+		flagByName := make(map[string]flags.Flag, len(chartFlags))
+		for _, f := range chartFlags {
+			flagByName[f.EffectiveKey()] = f
 		}
 
 		payload, ok := payloads[chartType]
@@ -142,12 +151,7 @@ func ParseOverrides(specs []string, charts []string, axes []Axis) (map[string]co
 			order = append(order, chartType)
 		}
 
-		// The payload approach (also used by shared/migrate.go) lets us populate
-		// any typed Config without importing the per-chart subpackages — which
-		// would cycle through this package (per-chart subpackages import shared
-		// for *Sort).
-		tokens := strings.Split(rest, ",")
-		for _, token := range tokens {
+		for token := range strings.SplitSeq(rest, ",") {
 			token = strings.TrimSpace(token)
 			if token == "" {
 				continue
@@ -157,125 +161,114 @@ func ParseOverrides(specs []string, charts []string, axes []Axis) (map[string]co
 			key = strings.TrimSpace(key)
 			val = strings.TrimSpace(val)
 
-			if !hasEq {
-				// Bare flag.
-				switch key {
-				case "labels":
-					payload["showLabels"] = true
-				case "3d-rotate":
-					payload["threeDRotate"] = true
-				case "3d":
-					payload["threeD"] = true
-				case "3d-visualmap":
-					payload["threeDVisualMap"] = true
-				case "visualmap":
-					if chartType != "scatter" {
-						return nil, fmt.Errorf("--chart: bare flag %q is only valid for scatter charts", key)
-					}
-					payload["visualMap"] = true
-				default:
-					return nil, fmt.Errorf("--chart: malformed token %q in spec %q: unknown bare flag (valid bare flags: labels, 3d-rotate, 3d, 3d-visualmap, visualmap)", token, spec)
+			f, known := flagByName[key]
+			if !known {
+				// Valid for another chart → drop with a warning; valid nowhere → typo.
+				if allFlagNames[key] {
+					warnings = append(warnings, fmt.Sprintf("--chart: key %q is not applicable to %s charts; ignored", key, chartType))
+					continue
 				}
-				continue
+				if !hasEq {
+					return nil, nil, fmt.Errorf("--chart: malformed token %q in spec %q: unknown bare flag (valid: %s)", token, spec, flagNameList(chartFlags))
+				}
+				return nil, nil, fmt.Errorf("--chart: unknown key %q in spec %q (valid keys: %s)", key, spec, flagNameList(chartFlags))
 			}
 
-			switch key {
-			case "swap":
-				if err := ValidateSwap(val, axes); err != nil {
-					return nil, fmt.Errorf("--chart: %w", err)
-				}
-				payload["swap"] = val
-
-			case "sort":
-				normalized := strings.ToLower(val)
-				if normalized != "asc" && normalized != "desc" {
-					return nil, fmt.Errorf("--chart: sort value %q is invalid (must be \"asc\" or \"desc\")", val)
-				}
-				payload["sort"] = Sort{Enabled: true, Order: normalized}
-
-			case "scale":
-				normalized := strings.ToLower(val)
-				if normalized != "linear" && normalized != "log" {
-					return nil, fmt.Errorf("--chart: scale value %q is invalid (must be \"linear\" or \"log\")", val)
-				}
-				payload["scale"] = normalized
-
-			case "labels":
-				b, err := strconv.ParseBool(val)
-				if err != nil {
-					return nil, fmt.Errorf("--chart: key %q value %q must be true or false", key, val)
-				}
-				payload["showLabels"] = b
-
-			case "3d-rotate":
-				b, err := strconv.ParseBool(val)
-				if err != nil {
-					return nil, fmt.Errorf("--chart: key %q value %q must be true or false", key, val)
-				}
-				payload["threeDRotate"] = b
-
-			case "3d":
-				b, err := strconv.ParseBool(val)
-				if err != nil {
-					return nil, fmt.Errorf("--chart: key %q value %q must be true or false", key, val)
-				}
-				payload["threeD"] = b
-
-			case "3d-visualmap":
-				b, err := strconv.ParseBool(val)
-				if err != nil {
-					return nil, fmt.Errorf("--chart: key %q value %q must be true or false", key, val)
-				}
-				payload["threeDVisualMap"] = b
-
-			case "visualmap":
-				if chartType != "scatter" {
-					return nil, fmt.Errorf("--chart: key %q is only valid for scatter charts", key)
-				}
-				b, err := strconv.ParseBool(val)
-				if err != nil {
-					return nil, fmt.Errorf("--chart: key %q value %q must be true or false", key, val)
-				}
-				payload["visualMap"] = b
-
-			case "symbol":
-				if err := ValidateSymbol(val); err != nil {
-					return nil, fmt.Errorf("--chart: %w", err)
-				}
-				payload["symbol"] = val
-
-			case "symbol-size":
-				size, err := strconv.ParseFloat(val, 64)
-				if err != nil {
-					return nil, fmt.Errorf("--chart: key %q value %q must be a number", key, val)
-				}
-				if err := ValidateSymbolSize(size); err != nil {
-					return nil, fmt.Errorf("--chart: %w", err)
-				}
-				payload["symbolSize"] = size
-
-			default:
-				return nil, fmt.Errorf("--chart: unknown key %q in spec %q (valid keys: swap, sort, scale, labels, 3d-rotate, 3d, 3d-visualmap, visualmap, symbol, symbol-size)", key, spec)
+			pv, err := convertFlagValue(f, val, hasEq, axes)
+			if err != nil {
+				return nil, nil, err
 			}
+			payload[f.JSONKey] = pv
 		}
 	}
 
-	if len(payloads) == 0 {
-		return nil, nil
-	}
-
-	result := make(map[string]config_charts.ChartConfig, len(payloads))
+	result := make(map[string]internal_charts.ChartConfig, len(payloads))
 	for _, chartType := range order {
 		raw, err := json.Marshal(payloads[chartType])
 		if err != nil {
-			return nil, fmt.Errorf("--chart: marshal payload: %w", err)
+			return nil, nil, fmt.Errorf("--chart: marshal payload: %w", err)
 		}
-		cfg, err := config_charts.Decode(chartType, raw)
+		cfg, err := internal_charts.Decode(chartType, raw)
 		if err != nil {
-			return nil, fmt.Errorf("--chart: decode %s: %w", chartType, err)
+			return nil, nil, fmt.Errorf("--chart: decode %s: %w", chartType, err)
 		}
 		result[chartType] = cfg
 	}
 
-	return result, nil
+	return result, warnings, nil
+}
+
+// convertFlagValue converts a --chart token value for flag f into its
+// JSON-primitive payload value, validating along the way. hasEq reports whether
+// the token had an `=value`; bare bool and stat flags (no `=`) are valid.
+// Swap is validated against axes (descriptors are axis-unaware).
+func convertFlagValue(f flags.Flag, val string, hasEq bool, axes []Axis) (any, error) {
+	switch f.Kind {
+	case flags.KindBool:
+		v := true
+		if hasEq {
+			b, err := strconv.ParseBool(val)
+			if err != nil {
+				return nil, fmt.Errorf("--chart: key %q value %q must be true or false", f.Name, val)
+			}
+			v = b
+		}
+		return encode(f, v), nil
+
+	case flags.KindStat:
+		if !hasEq {
+			// bare stat token: enable stats with all categories
+			return map[string]any{"enabled": true, "math": []string{}}, nil
+		}
+		// stat=a,b — validate each category and produce the typed payload
+		parts := strings.Split(val, ",")
+		math := make([]string, 0, len(parts))
+		for _, p := range parts {
+			p = strings.TrimSpace(p)
+			if p == "" {
+				continue
+			}
+			if !slices.Contains(ValidStatMath, p) {
+				return nil, fmt.Errorf("--chart: stat category %q is invalid (valid: %s)", p, strings.Join(ValidStatMath, ", "))
+			}
+			math = append(math, p)
+		}
+		return map[string]any{"enabled": true, "math": math}, nil
+
+	default: // KindString, KindFloat
+		if !hasEq {
+			return nil, fmt.Errorf("--chart: key %q requires a value (e.g. %s=<value>)", f.Name, f.Name)
+		}
+		if f.Name == "swap" {
+			if err := ValidateSwap(val, axes); err != nil {
+				return nil, fmt.Errorf("--chart: %w", err)
+			}
+		} else if f.Validate != nil {
+			if err := f.Validate(val); err != nil {
+				return nil, fmt.Errorf("--chart: %w", err)
+			}
+		}
+		if f.Kind == flags.KindFloat {
+			n, _ := strconv.ParseFloat(val, 64) // Validate already ensured it parses
+			return encode(f, n), nil
+		}
+		return encode(f, val), nil
+	}
+}
+
+// encode applies the flag's payload transform when present.
+func encode(f flags.Flag, v any) any {
+	if f.Encode != nil {
+		return f.Encode(v)
+	}
+	return v
+}
+
+// flagNameList renders the comma-separated valid key names for an error message.
+func flagNameList(fs []flags.Flag) string {
+	names := make([]string, len(fs))
+	for i, f := range fs {
+		names[i] = f.EffectiveKey()
+	}
+	return strings.Join(names, ", ")
 }

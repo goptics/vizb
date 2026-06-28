@@ -2,34 +2,15 @@ package shared
 
 import (
 	"fmt"
-	"strings"
+
+	internal_charts "github.com/goptics/vizb/internal/charts"
 )
 
-// ECharts built-in series symbols (case-insensitive on CLI).
-var echartsBuiltinSymbols = map[string]struct{}{
-	"circle": {}, "rect": {}, "roundrect": {}, "triangle": {},
-	"diamond": {}, "pin": {}, "arrow": {}, "none": {},
-}
-
-// ValidateSymbol reports whether s is an ECharts-accepted series symbol:
-// built-in name, image://, path://, or raw SVG path (starts with M/m).
+// ValidateSymbol reports whether s is an ECharts-accepted series symbol. The
+// canonical implementation lives in config/charts (shared-free so chart flag
+// descriptors can reference it); this delegates to keep existing callers stable.
 func ValidateSymbol(s string) error {
-	if s == "" {
-		return nil
-	}
-	if _, ok := echartsBuiltinSymbols[strings.ToLower(s)]; ok {
-		return nil
-	}
-	if strings.HasPrefix(s, "image://") || strings.HasPrefix(s, "path://") {
-		return nil
-	}
-	if len(s) > 0 && (s[0] == 'M' || s[0] == 'm') {
-		return nil
-	}
-	return fmt.Errorf(
-		"unknown symbol %q; use ECharts built-ins (circle, rect, roundRect, triangle, diamond, pin, arrow, none) or image:// / path:// / SVG path",
-		s,
-	)
+	return internal_charts.ValidateSymbolValue(s)
 }
 
 // ValidateSymbolSize reports whether size is a positive marker diameter.

@@ -3,7 +3,7 @@ package shared
 import (
 	"slices"
 
-	config_charts "github.com/goptics/vizb/config/charts"
+	internal_charts "github.com/goptics/vizb/internal/charts"
 )
 
 // ValidStatMath is the ordered list of accepted stat category values.
@@ -56,6 +56,6 @@ func (s *StatConfig) NeedsCorrelation() bool {
 
 // ChartConfigNeedsCorrelation reports whether a chart config requires the
 // correlation heatmap chunk to be shipped.
-func ChartConfigNeedsCorrelation(cfg config_charts.ChartConfig) bool {
+func ChartConfigNeedsCorrelation(cfg internal_charts.ChartConfig) bool {
 	return cfg.StatEnabled() && StatNeedsCorrelation(cfg.StatMath())
 }

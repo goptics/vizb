@@ -5,11 +5,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	config_charts "github.com/goptics/vizb/config/charts"
-	barchart "github.com/goptics/vizb/config/charts/bar"
-	linechart "github.com/goptics/vizb/config/charts/line"
-	piechart "github.com/goptics/vizb/config/charts/pie"
-	scatterchart "github.com/goptics/vizb/config/charts/scatter"
+	internal_charts "github.com/goptics/vizb/internal/charts"
+	barchart "github.com/goptics/vizb/internal/charts/bar"
+	linechart "github.com/goptics/vizb/internal/charts/line"
+	piechart "github.com/goptics/vizb/internal/charts/pie"
+	scatterchart "github.com/goptics/vizb/internal/charts/scatter"
 	"github.com/goptics/vizb/shared"
 	"github.com/goptics/vizb/testutil"
 	"github.com/stretchr/testify/suite"
@@ -34,13 +34,13 @@ func (s *RootSuite) TestCommandFlags() {
 	s.NotNil(rootCmd.Flags().Lookup("charts"))
 	s.NotNil(rootCmd.Flags().Lookup("sort"))
 	s.NotNil(rootCmd.Flags().Lookup("parser"))
-	s.Equal(defaultChartTypes, rootOpts.Charts)
+	s.Equal(defaultChartTypes, rootCharts)
 }
 
 func (s *RootSuite) TestValidateRootOptionsWarnsAndDefaults() {
-	rootOpts.MemUnit = "invalid"
-	out := testutil.CaptureStderr(func() { validateRootOptions() })
-	s.Equal("B", rootOpts.MemUnit)
+	s.Require().NoError(rootCmd.Flags().Set("mem-unit", "invalid"))
+	out := testutil.CaptureStderr(func() { validateRootOptions(rootCmd) })
+	s.Equal("B", rootBag.String("mem-unit"))
 	s.Contains(out, "Invalid memory unit")
 }
 
@@ -79,7 +79,7 @@ func (s *RootSuite) TestRunBenchmarkGlobalSortApplied() {
 	input := testutil.WriteBenchFile(s.T(), dir, "valid.txt",
 		`BenchmarkTest-8    1000000    1234 ns/op    1000 B/op    10 allocs/op`)
 	out := filepath.Join(dir, "out.json")
-	rootOpts.Charts = nil
+	rootCharts = nil
 
 	var outStr string
 	errStr := testutil.CaptureStderr(func() {
@@ -145,14 +145,14 @@ func (s *RootSuite) TestRunBenchmarkDatasetPassthrough() {
 	input := filepath.Join(dir, "baked.json")
 	testutil.WriteJSON(s.T(), input, shared.Dataset{
 		Name: "Baked",
-		Settings: []config_charts.ChartConfig{
-			barchart.Materialise(barchart.Flags{Scale: "log"}, nil),
+		Settings: []internal_charts.ChartConfig{
+			&barchart.Config{Type: "bar", Scale: "log"},
 			&linechart.Config{Type: "line", Scale: "log"},
 		},
 		Data: []shared.DataPoint{{Name: "P1", XAxis: "1", YAxis: "100"}},
 	})
 	out := filepath.Join(dir, "out.json")
-	rootOpts.Charts = nil
+	rootCharts = nil
 
 	rootCmd.SetArgs([]string{"-o", out, "-c", "bar", input})
 	s.Require().NoError(rootCmd.Execute())
@@ -184,7 +184,7 @@ func (s *RootSuite) TestRunBenchmarkChartOverride() {
 	input := testutil.WriteBenchFile(s.T(), dir, "valid.txt",
 		`BenchmarkTest-8    1000000    1234 ns/op    1000 B/op    10 allocs/op`)
 	out := filepath.Join(dir, "out.json")
-	rootOpts.Charts = nil
+	rootCharts = nil
 
 	rootCmd.SetArgs([]string{"-o", out, "-c", "bar", "--chart", "bar:swap=yxn", input})
 	s.Require().NoError(rootCmd.Execute())
@@ -201,7 +201,7 @@ func (s *RootSuite) TestRunBenchmarkScatterChart() {
 	input := testutil.WriteBenchFile(s.T(), dir, "valid.txt",
 		`BenchmarkTest-8    1000000    1234 ns/op    1000 B/op    10 allocs/op`)
 	out := filepath.Join(dir, "out.json")
-	rootOpts.Charts = nil
+	rootCharts = nil
 
 	rootCmd.SetArgs([]string{"-o", out, "-c", "scatter", input})
 	s.Require().NoError(rootCmd.Execute())
@@ -220,7 +220,7 @@ func (s *RootSuite) TestRunBenchmarkScatterChartOverride() {
 	input := testutil.WriteBenchFile(s.T(), dir, "valid.txt",
 		`BenchmarkTest-8    1000000    1234 ns/op    1000 B/op    10 allocs/op`)
 	out := filepath.Join(dir, "out.json")
-	rootOpts.Charts = nil
+	rootCharts = nil
 
 	rootCmd.SetArgs([]string{"-o", out, "-c", "scatter", "--chart", "scatter:scale=log", input})
 	s.Require().NoError(rootCmd.Execute())
@@ -417,8 +417,8 @@ func (s *RootAutoGroupSuite) TestCSVAutoGroup3DPicksSingleColumnAndWarns() {
 
 	s.FileExists(out)
 	s.Contains(stdout, "Auto-grouped by column")
-	s.Contains(stderr, "Warning")
-	s.Contains(stderr, "--3d requires both x and y")
+	s.Contains(stderr, `flag "3d" skipped`)
+	s.Contains(stderr, "requires axis \"y\"")
 
 	ds := testutil.ReadDataset(s.T(), out)
 	s.NotEmpty(ds.Data)
@@ -426,6 +426,11 @@ func (s *RootAutoGroupSuite) TestCSVAutoGroup3DPicksSingleColumnAndWarns() {
 		s.NotEmpty(dp.XAxis)
 		s.Empty(dp.YAxis)
 	}
+
+	// The threeD flag was skipped (dropped) from the config.
+	barCfg, ok := ds.Settings[0].(*barchart.Config)
+	s.Require().True(ok)
+	s.Nil(barCfg.ThreeD)
 }
 
 func (s *RootAutoGroupSuite) TestJSONAutoGroupsXAxisNoFlags() {

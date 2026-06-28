@@ -3,7 +3,7 @@ package shared
 import (
 	"sort"
 
-	config_charts "github.com/goptics/vizb/config/charts"
+	internal_charts "github.com/goptics/vizb/internal/charts"
 )
 
 const noTagKey = "__no_tag__"
@@ -110,7 +110,7 @@ func deepCloneDataset(src Dataset) Dataset {
 	}
 
 	if src.Settings != nil {
-		dst.Settings = make([]config_charts.ChartConfig, len(src.Settings))
+		dst.Settings = make([]internal_charts.ChartConfig, len(src.Settings))
 		copy(dst.Settings, src.Settings)
 	}
 

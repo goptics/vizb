@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"slices"
 
-	config_charts "github.com/goptics/vizb/config/charts"
+	internal_charts "github.com/goptics/vizb/internal/charts"
 )
 
 // ValidChartTypes is every chart type the CLI accepts via --charts.
@@ -39,7 +39,7 @@ func DatasetHasZAxis(ds *Dataset) bool {
 
 // SettingsHasThreeDOption reports whether any bar/line config was baked with
 // threeD (via --3d), which unlocks value-mode 3D for x+y-only data.
-func SettingsHasThreeDOption(settings []config_charts.ChartConfig) bool {
+func SettingsHasThreeDOption(settings []internal_charts.ChartConfig) bool {
 	for _, c := range settings {
 		if configHasThreeDOption(c) {
 			return true
@@ -48,7 +48,7 @@ func SettingsHasThreeDOption(settings []config_charts.ChartConfig) bool {
 	return false
 }
 
-func configHasThreeDOption(c config_charts.ChartConfig) bool {
+func configHasThreeDOption(c internal_charts.ChartConfig) bool {
 	raw, err := json.Marshal(c)
 	if err != nil {
 		return false
