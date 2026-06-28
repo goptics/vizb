@@ -81,7 +81,7 @@ See the [Parser Guide](/guides/parsers) for each parser's metrics, and the
 | `--group-pattern` | `-p` | `x` | Pattern-based grouping (`n`/`x`/`y`/`z` with your chosen separators; `z` → 3D). Benchmarks: `/` or `_`. CSV/JSON: match `-g` (commas for `-g a,b,c`, spaces for quoted `-g "a b"`, etc.) |
 | `--group-regex` | `-r` | `""` | Regex-based grouping (named captures) |
 | `--group` | `-g` | `""` | Names dimensions in `--group-pattern` order. csv/json: column/field names (separators must match `-p`); benchmark parsers: human-readable axis labels |
-| `--select` | | `""` | csv/json only: select value columns; optional rename with `{label}` (e.g. `--select=price{Unit price},count`) |
+| `--select` | | *(repeatable)* | csv/json only: see [`--select` mode matrix](#--select-mode-matrix) below |
 | `--json-path` | | `""` | json only: select a nested array to chart via a jq-like dot path (e.g. `--json-path '.data.results'`) |
 | `--sort` | `-s` | `""` | **Deprecated on root:** use `--chart <type>:sort=<asc\|desc>`. Sort order: `asc` or `desc` (default: as-is) |
 | `--charts` | `-c` | `bar,line,pie` | Chart types to generate (`bar`, `line`, `scatter`, `pie`, `heatmap`, `radar`) |
@@ -128,6 +128,47 @@ vizb bench.txt -r '(?<n>.*)/text=(?<x>.*)/level=(?<y>.*)' -o output.html
 ```
 
 See the [Grouping Guide](/guides/grouping) and [3D Charts](/charts/3d) for detailed examples.
+
+### `--select` mode matrix
+
+`--select` is **repeatable** (`csv` and `json` parsers only). Its role depends on whether grouping is explicit:
+
+| Mode | Trigger | `--select` syntax | What it does |
+|------|---------|-------------------|--------------|
+| **Grouped stat pick** | `-g`, `-r`, or non-default `-p` | Any number of numeric columns; optional `{label}` | Picks which numeric columns become chart series |
+| **Solo value axes** | `--select` only; all selected cols numeric | 2–3 cols per flag: `x,y` or `x,y,z` | Assigns columns to continuous coordinate axes; disables auto-group and auto-value |
+| **Solo mixed axes** | `--select` only; categorical `x` + numeric `y[,z]` | 2–3 cols per flag: `region,latency` | Category on x, values on y/z; [scatter](/charts/scatter) is the primary chart |
+| **Auto-group** | No flags; mixed categorical + numeric file | — | Picks highest-cardinality categorical column as x |
+| **Auto-value** | No flags; all-numeric file | — | First 2–3 numeric columns as coordinate axes |
+
+**Solo `--select` rules:**
+
+- Each flag value needs **2–3 columns** (assigned to `x`, `y`, optional `z` by position).
+- **Explicit placement:** `x:region,y:latency,z:sales` — use for every column or omit prefixes for all.
+- **Repeatable** for multi-view output: each `--select` produces one dataset; HTML embeds all views (tabs in the UI).
+- **No overlap** with `--group` columns.
+- Other parsers warn and ignore `--select`.
+
+```bash
+# Grouped: pick stat columns
+vizb bar sales.csv -g region,product -p x,y --select amount,total -o bars.html
+
+# Solo value: numeric x,y from spiral data
+vizb scatter spiral-3d.csv --select x,y -o xy.html
+
+# Solo mixed: category region + value latency (scatter)
+vizb scatter examples/csv/region-metrics.csv --select region,latency -o mixed.html
+
+# Multi-view: two datasets in one HTML
+vizb scatter examples/csv/region-metrics.csv \
+  --select region,latency \
+  --select region,sales \
+  -o dual.html
+```
+
+JSON output is a single dataset object when there is one view, or a **JSON array** when `--select` is repeated. Dataset names auto-generate as `region × latency`, `region × sales`, etc. With `--id`, additional views get suffixed ids (`my-id-2`, …).
+
+See [Grouping → Choosing: `--group` + select vs solo `--select`](/guides/grouping#choosing---group--select-vs-solo---select) for when to use each approach.
 
 ### Logarithmic scale
 
