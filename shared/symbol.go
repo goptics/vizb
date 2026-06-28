@@ -3,14 +3,14 @@ package shared
 import (
 	"fmt"
 
-	config_charts "github.com/goptics/vizb/config/charts"
+	internal_charts "github.com/goptics/vizb/internal/charts"
 )
 
 // ValidateSymbol reports whether s is an ECharts-accepted series symbol. The
 // canonical implementation lives in config/charts (shared-free so chart flag
 // descriptors can reference it); this delegates to keep existing callers stable.
 func ValidateSymbol(s string) error {
-	return config_charts.ValidateSymbolValue(s)
+	return internal_charts.ValidateSymbolValue(s)
 }
 
 // ValidateSymbolSize reports whether size is a positive marker diameter.

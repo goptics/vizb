@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	config_charts "github.com/goptics/vizb/config/charts"
-	barchart "github.com/goptics/vizb/config/charts/bar"
-	linechart "github.com/goptics/vizb/config/charts/line"
-	scatterchart "github.com/goptics/vizb/config/charts/scatter"
+	internal_charts "github.com/goptics/vizb/internal/charts"
+	barchart "github.com/goptics/vizb/internal/charts/bar"
+	linechart "github.com/goptics/vizb/internal/charts/line"
+	scatterchart "github.com/goptics/vizb/internal/charts/scatter"
 	"github.com/goptics/vizb/pkg/parser"
 	_ "github.com/goptics/vizb/pkg/parser/csv"
 	"github.com/goptics/vizb/shared"
@@ -181,7 +181,7 @@ func (s *PipelineSuite) TestRunLinearGeneratesOutputFile() {
 	meta := RunMeta{Parser: "go"}
 	cfg := parser.Config{GroupPattern: "y", TimeUnit: "ns", MemUnit: "B"}
 	barCfg := &barchart.Config{Type: "bar", Scale: "linear"}
-	configs := []config_charts.ChartConfig{barCfg}
+	configs := []internal_charts.ChartConfig{barCfg}
 
 	s.Run("HTML output", func() {
 		out := filepath.Join(s.T().TempDir(), "out.html")
@@ -229,7 +229,7 @@ func (s *PipelineSuite) TestRunLinearDatasetPassthrough() {
 	input := filepath.Join(dir, "baked.json")
 	testutil.WriteJSON(s.T(), input, shared.Dataset{
 		Name: "Baked",
-		Settings: []config_charts.ChartConfig{
+		Settings: []internal_charts.ChartConfig{
 			&linechart.Config{Type: "line", Scale: "linear"},
 		},
 		Data: []shared.DataPoint{{Name: "P1", XAxis: "1", YAxis: "100"}},
@@ -245,7 +245,7 @@ func (s *PipelineSuite) TestRunLinearDatasetPassthrough() {
 	os.Stdout, os.Stderr = devnull, devnull
 	defer func() { os.Stdout, os.Stderr = oldStdout, oldStderr; devnull.Close() }()
 
-	RunLinear(&cobra.Command{}, []string{input}, meta, cfg, []config_charts.ChartConfig{barCfg}, true)
+	RunLinear(&cobra.Command{}, []string{input}, meta, cfg, []internal_charts.ChartConfig{barCfg}, true)
 
 	ds := testutil.ReadDataset(s.T(), out)
 	s.Require().Len(ds.Settings, 1)
@@ -260,7 +260,7 @@ func (s *PipelineSuite) TestRunLinearPreservesDatasetOnRoot() {
 	input := filepath.Join(dir, "baked.json")
 	testutil.WriteJSON(s.T(), input, shared.Dataset{
 		Name: "Baked",
-		Settings: []config_charts.ChartConfig{
+		Settings: []internal_charts.ChartConfig{
 			&barchart.Config{Type: "bar", Scale: "linear"},
 			&linechart.Config{Type: "line", Scale: "log"},
 		},
@@ -277,7 +277,7 @@ func (s *PipelineSuite) TestRunLinearPreservesDatasetOnRoot() {
 	os.Stdout, os.Stderr = devnull, devnull
 	defer func() { os.Stdout, os.Stderr = oldStdout, oldStderr; devnull.Close() }()
 
-	RunLinear(&cobra.Command{}, []string{input}, meta, cfg, []config_charts.ChartConfig{barCfg}, false)
+	RunLinear(&cobra.Command{}, []string{input}, meta, cfg, []internal_charts.ChartConfig{barCfg}, false)
 
 	ds := testutil.ReadDataset(s.T(), out)
 	s.Require().Len(ds.Settings, 2)
@@ -300,7 +300,7 @@ func (s *PipelineSuite) TestRunLinearAutoParser() {
 	os.Stdout, os.Stderr = devnull, devnull
 	defer func() { os.Stdout, os.Stderr = oldStdout, oldStderr; devnull.Close() }()
 
-	RunLinear(&cobra.Command{}, []string{csvFile}, meta, cfg, []config_charts.ChartConfig{barCfg}, false)
+	RunLinear(&cobra.Command{}, []string{csvFile}, meta, cfg, []internal_charts.ChartConfig{barCfg}, false)
 
 	s.FileExists(out)
 }
@@ -410,7 +410,7 @@ func (s *PipelineSuite) TestAssembleDatasetAutoEnablesVisualMapForValueMetric() 
 		{XAxis: "0", YAxis: "0", ZAxis: "0", Metric: "4", Stats: []shared.Stat{}},
 	}
 	cfg := parser.Config{AutoGroup: true}
-	configs := []config_charts.ChartConfig{
+	configs := []internal_charts.ChartConfig{
 		&scatterchart.Config{Type: "scatter"},
 	}
 	ds := assembleDataset(results, RunMeta{Name: "Noise"}, configs, cfg)
@@ -431,7 +431,7 @@ func (s *PipelineSuite) TestAssembleDatasetAutoEnables3DForBarAndLine() {
 		{XAxis: "1", YAxis: "2", ZAxis: "3", Stats: []shared.Stat{}},
 	}
 	cfg := parser.Config{AutoGroup: true}
-	configs := []config_charts.ChartConfig{
+	configs := []internal_charts.ChartConfig{
 		&barchart.Config{Type: "bar"},
 		&linechart.Config{Type: "line"},
 	}
@@ -464,7 +464,7 @@ func (s *PipelineSuite) TestAssembleDatasetCategoryAxesSkipAuto3D() {
 		{XAxis: "US", YAxis: "Widget", ZAxis: "Q1", Stats: []shared.Stat{{Type: "sells", Value: shared.F64(10)}}},
 	}
 	cfg := parser.Config{AutoGroup: true}
-	configs := []config_charts.ChartConfig{
+	configs := []internal_charts.ChartConfig{
 		&scatterchart.Config{Type: "scatter"},
 	}
 	ds := assembleDataset(results, RunMeta{Name: "Grouped"}, configs, cfg)
@@ -510,7 +510,7 @@ func (s *PipelineSuite) TestResolveInputStdin() {
 	cfg := parser.Config{GroupPattern: "y", TimeUnit: "ns", MemUnit: "B"}
 	barCfg := &barchart.Config{Type: "bar", Scale: "linear"}
 
-	RunLinear(&cobra.Command{}, nil, meta, cfg, []config_charts.ChartConfig{barCfg}, false)
+	RunLinear(&cobra.Command{}, nil, meta, cfg, []internal_charts.ChartConfig{barCfg}, false)
 	s.FileExists(out)
 }
 

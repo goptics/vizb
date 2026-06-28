@@ -4,8 +4,8 @@ import (
 	"slices"
 
 	"github.com/goptics/vizb/cmd/cli"
-	"github.com/goptics/vizb/config/charts"
-	heatmapchart "github.com/goptics/vizb/config/charts/heatmap"
+	"github.com/goptics/vizb/internal/charts"
+	heatmapchart "github.com/goptics/vizb/internal/charts/heatmap"
 )
 
 func init() {

@@ -7,12 +7,12 @@ import (
 	"strings"
 	"testing"
 
-	config_charts "github.com/goptics/vizb/config/charts"
-	barchart "github.com/goptics/vizb/config/charts/bar"
-	heatmapchart "github.com/goptics/vizb/config/charts/heatmap"
-	linechart "github.com/goptics/vizb/config/charts/line"
-	radarchart "github.com/goptics/vizb/config/charts/radar"
-	scatterchart "github.com/goptics/vizb/config/charts/scatter"
+	internal_charts "github.com/goptics/vizb/internal/charts"
+	barchart "github.com/goptics/vizb/internal/charts/bar"
+	heatmapchart "github.com/goptics/vizb/internal/charts/heatmap"
+	linechart "github.com/goptics/vizb/internal/charts/line"
+	radarchart "github.com/goptics/vizb/internal/charts/radar"
+	scatterchart "github.com/goptics/vizb/internal/charts/scatter"
 	"github.com/goptics/vizb/pkg/template"
 	"github.com/goptics/vizb/shared"
 	"github.com/goptics/vizb/testutil"
@@ -37,17 +37,17 @@ func (s *UISuite) TearDownTest() {
 func (s *UISuite) barFromJSON(payload map[string]any) *barchart.Config {
 	raw, err := json.Marshal(payload)
 	s.Require().NoError(err)
-	cfg, err := config_charts.Decode("bar", raw)
+	cfg, err := internal_charts.Decode("bar", raw)
 	s.Require().NoError(err)
 	c, ok := cfg.(*barchart.Config)
 	s.Require().True(ok, "expected *barchart.Config, got %T", cfg)
 	return c
 }
 
-func (s *UISuite) chartFromJSON(chartType string, payload map[string]any) config_charts.ChartConfig {
+func (s *UISuite) chartFromJSON(chartType string, payload map[string]any) internal_charts.ChartConfig {
 	raw, err := json.Marshal(payload)
 	s.Require().NoError(err)
-	cfg, err := config_charts.Decode(chartType, raw)
+	cfg, err := internal_charts.Decode(chartType, raw)
 	s.Require().NoError(err)
 	return cfg
 }
@@ -246,7 +246,7 @@ func (s *UISuite) TestRunUIFiltersChartsOnExplicitFlag() {
 	input := filepath.Join(dir, "multi.json")
 	testutil.WriteJSON(s.T(), input, shared.Dataset{
 		Name: "Test",
-		Settings: []config_charts.ChartConfig{
+		Settings: []internal_charts.ChartConfig{
 			s.barFromJSON(map[string]any{"type": "bar", "scale": "linear"}),
 			&linechart.Config{Type: "line", Scale: "linear"},
 		},
@@ -275,7 +275,7 @@ func (s *UISuite) TestRunUIPreservesScatterSettingsWithoutChartsFlag() {
 	threeDVisualMap := true
 	testutil.WriteJSON(s.T(), input, shared.Dataset{
 		Name: "Noise Grid",
-		Settings: []config_charts.ChartConfig{
+		Settings: []internal_charts.ChartConfig{
 			&scatterchart.Config{
 				Type:            "scatter",
 				Scale:           "linear",
@@ -320,7 +320,7 @@ func (s *UISuite) TestRunUIAppliesOverrides() {
 	testutil.WriteJSON(s.T(), input, shared.Dataset{
 		Name: "Test",
 		Axes: []shared.Axis{{Key: "x"}, {Key: "y"}, {Key: "name"}},
-		Settings: []config_charts.ChartConfig{s.barFromJSON(map[string]any{
+		Settings: []internal_charts.ChartConfig{s.barFromJSON(map[string]any{
 			"type":  "bar",
 			"swap":  "xyn",
 			"scale": "linear",
@@ -353,7 +353,7 @@ func (s *UISuite) TestRunUIAppliesLineSortOverride() {
 	input := filepath.Join(dir, "line.json")
 	testutil.WriteJSON(s.T(), input, shared.Dataset{
 		Name: "Test",
-		Settings: []config_charts.ChartConfig{
+		Settings: []internal_charts.ChartConfig{
 			s.chartFromJSON("line", map[string]any{"type": "line", "swap": "xyn", "scale": "linear"}),
 		},
 		Data: []shared.DataPoint{{Name: "T1", XAxis: "1", YAxis: "100"}},
@@ -375,7 +375,7 @@ func (s *UISuite) TestRunUIAppliesLineOverride() {
 	input := filepath.Join(dir, "line.json")
 	testutil.WriteJSON(s.T(), input, shared.Dataset{
 		Name: "Test",
-		Settings: []config_charts.ChartConfig{
+		Settings: []internal_charts.ChartConfig{
 			s.chartFromJSON("line", map[string]any{"type": "line", "swap": "xyn", "scale": "linear"}),
 		},
 		Data: []shared.DataPoint{{Name: "T1", XAxis: "1", YAxis: "100"}},
@@ -392,7 +392,7 @@ func (s *UISuite) TestRunUIAppliesPieSortOverride() {
 	input := filepath.Join(dir, "pie.json")
 	testutil.WriteJSON(s.T(), input, shared.Dataset{
 		Name: "Test",
-		Settings: []config_charts.ChartConfig{
+		Settings: []internal_charts.ChartConfig{
 			s.chartFromJSON("pie", map[string]any{"type": "pie", "swap": "xyn"}),
 		},
 		Data: []shared.DataPoint{{Name: "T1", XAxis: "1", YAxis: "100"}},
@@ -415,7 +415,7 @@ func (s *UISuite) TestRunUIAppliesPieOverride() {
 	input := filepath.Join(dir, "pie.json")
 	testutil.WriteJSON(s.T(), input, shared.Dataset{
 		Name: "Test",
-		Settings: []config_charts.ChartConfig{
+		Settings: []internal_charts.ChartConfig{
 			s.chartFromJSON("pie", map[string]any{"type": "pie", "swap": "xyn"}),
 		},
 		Data: []shared.DataPoint{{Name: "T1", XAxis: "1", YAxis: "100"}},
@@ -432,7 +432,7 @@ func (s *UISuite) TestRunUIAppliesHeatmapOverride() {
 	input := filepath.Join(dir, "heatmap.json")
 	testutil.WriteJSON(s.T(), input, shared.Dataset{
 		Name: "Test",
-		Settings: []config_charts.ChartConfig{
+		Settings: []internal_charts.ChartConfig{
 			&heatmapchart.Config{Type: "heatmap", Swap: "xyn"},
 		},
 		Data: []shared.DataPoint{{Name: "T1", XAxis: "1", YAxis: "100"}},
@@ -449,7 +449,7 @@ func (s *UISuite) TestRunUIAppliesRadarOverride() {
 	input := filepath.Join(dir, "radar.json")
 	testutil.WriteJSON(s.T(), input, shared.Dataset{
 		Name: "Test",
-		Settings: []config_charts.ChartConfig{
+		Settings: []internal_charts.ChartConfig{
 			&radarchart.Config{Type: "radar", Swap: "xyn"},
 		},
 		Data: []shared.DataPoint{{Name: "T1", XAxis: "1", YAxis: "100"}},
@@ -466,7 +466,7 @@ func (s *UISuite) TestRunUI3DWithEmbeddedData() {
 	input := filepath.Join(dir, "z.json")
 	testutil.WriteJSON(s.T(), input, shared.Dataset{
 		Name: "Test",
-		Settings: []config_charts.ChartConfig{
+		Settings: []internal_charts.ChartConfig{
 			s.barFromJSON(map[string]any{"type": "bar", "scale": "linear"}),
 		},
 		Data: []shared.DataPoint{{Name: "T1", XAxis: "1", YAxis: "100", ZAxis: "5"}},
@@ -483,7 +483,7 @@ func (s *UISuite) TestRunUIAppliesBarSortAndLabelsOverride() {
 	input := filepath.Join(dir, "bar.json")
 	testutil.WriteJSON(s.T(), input, shared.Dataset{
 		Name: "Test",
-		Settings: []config_charts.ChartConfig{
+		Settings: []internal_charts.ChartConfig{
 			s.barFromJSON(map[string]any{"type": "bar", "swap": "xyn", "scale": "linear"}),
 		},
 		Data: []shared.DataPoint{{Name: "T1", XAxis: "1", YAxis: "100"}},
@@ -507,7 +507,7 @@ func (s *UISuite) TestRunUIAppliesBarPartialOverride() {
 	input := filepath.Join(dir, "bar-only.json")
 	testutil.WriteJSON(s.T(), input, shared.Dataset{
 		Name: "Test",
-		Settings: []config_charts.ChartConfig{
+		Settings: []internal_charts.ChartConfig{
 			s.barFromJSON(map[string]any{"type": "bar", "swap": "xyn", "scale": "linear"}),
 		},
 		Data: []shared.DataPoint{{Name: "T1", XAxis: "1", YAxis: "100"}},

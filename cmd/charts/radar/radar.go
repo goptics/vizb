@@ -4,8 +4,8 @@ import (
 	"slices"
 
 	"github.com/goptics/vizb/cmd/cli"
-	"github.com/goptics/vizb/config/charts"
-	radarchart "github.com/goptics/vizb/config/charts/radar"
+	"github.com/goptics/vizb/internal/charts"
+	radarchart "github.com/goptics/vizb/internal/charts/radar"
 )
 
 func init() {

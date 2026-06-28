@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/goptics/vizb/config/flags"
+	"github.com/goptics/vizb/internal/flags"
 	"github.com/goptics/vizb/pkg/parser"
 	"github.com/goptics/vizb/shared"
 	"github.com/goptics/vizb/shared/utils"

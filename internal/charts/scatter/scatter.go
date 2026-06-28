@@ -4,7 +4,7 @@
 package scatter
 
 import (
-	"github.com/goptics/vizb/config/charts"
+	"github.com/goptics/vizb/internal/charts"
 	"github.com/goptics/vizb/shared"
 )
 

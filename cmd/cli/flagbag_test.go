@@ -4,8 +4,8 @@ import (
 	"slices"
 	"testing"
 
-	config_charts "github.com/goptics/vizb/config/charts"
-	"github.com/goptics/vizb/config/flags"
+	internal_charts "github.com/goptics/vizb/internal/charts"
+	"github.com/goptics/vizb/internal/flags"
 	"github.com/goptics/vizb/testutil"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/suite"
@@ -50,7 +50,7 @@ func (s *FlagBagSuite) TestValidateRejectsUnknownParser() {
 }
 
 func (s *FlagBagSuite) TestValidateNormalisesSort() {
-	cmd, bag := s.newCmdBag(append(slices.Clone(DataFlags), config_charts.SortFlag))
+	cmd, bag := s.newCmdBag(append(slices.Clone(DataFlags), internal_charts.SortFlag))
 	s.Require().NoError(cmd.Flags().Set("sort", "ASC"))
 	bag.Validate(cmd)
 	s.Equal("asc", bag.String("sort"))
@@ -58,13 +58,13 @@ func (s *FlagBagSuite) TestValidateNormalisesSort() {
 
 func (s *FlagBagSuite) TestScaleWarnDefault() {
 	s.Run("LOG is normalised", func() {
-		cmd, bag := s.newCmdBag(append(slices.Clone(DataFlags), config_charts.ScaleFlag))
+		cmd, bag := s.newCmdBag(append(slices.Clone(DataFlags), internal_charts.ScaleFlag))
 		s.Require().NoError(cmd.Flags().Set("scale", "LOG"))
 		bag.Validate(cmd)
 		s.Equal("log", bag.String("scale"))
 	})
 	s.Run("invalid falls back to linear", func() {
-		cmd, bag := s.newCmdBag(append(slices.Clone(DataFlags), config_charts.ScaleFlag))
+		cmd, bag := s.newCmdBag(append(slices.Clone(DataFlags), internal_charts.ScaleFlag))
 		s.Require().NoError(cmd.Flags().Set("scale", "bogus"))
 		testutil.CaptureStderr(func() { bag.Validate(cmd) })
 		s.Equal("linear", bag.String("scale"))
@@ -122,8 +122,8 @@ func (s *FlagBagSuite) TestParseConfigMapsFields() {
 }
 
 func (s *FlagBagSuite) TestBindRegistersFlags() {
-	fl := append(slices.Clone(DataFlags), config_charts.BaseChartFlags...)
-	fl = append(fl, config_charts.ScaleFlag)
+	fl := append(slices.Clone(DataFlags), internal_charts.BaseChartFlags...)
+	fl = append(fl, internal_charts.ScaleFlag)
 	cmd, _ := s.newCmdBag(fl)
 	for _, name := range []string{"name", "parser", "group-pattern", "sort", "show-labels", "swap", "scale", "stat"} {
 		s.NotNil(cmd.Flags().Lookup(name), "missing --%s", name)
@@ -132,8 +132,8 @@ func (s *FlagBagSuite) TestBindRegistersFlags() {
 }
 
 func (s *FlagBagSuite) TestChartSeedTriStateStatAndScale() {
-	fl := append(slices.Clone(DataFlags), config_charts.BaseChartFlags...)
-	fl = append(fl, config_charts.ScaleFlag)
+	fl := append(slices.Clone(DataFlags), internal_charts.BaseChartFlags...)
+	fl = append(fl, internal_charts.ScaleFlag)
 
 	s.Run("unset: stat omitted, scale defaulted", func() {
 		cmd, bag := s.newCmdBag(fl)

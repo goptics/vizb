@@ -3,7 +3,7 @@ package shared
 import (
 	"encoding/json"
 
-	config_charts "github.com/goptics/vizb/config/charts"
+	internal_charts "github.com/goptics/vizb/internal/charts"
 )
 
 // MigrateDataset applies in-memory schema migrations to ds. The raw bytes from
@@ -155,7 +155,7 @@ func axesFromDataPoints(data []DataPoint) []Axis {
 // populate the typed Config without importing the per-chart subpackages
 // directly (bar/line/pie/heatmap/radar each import shared, which would
 // cycle through this package).
-func buildLegacyConfig(typ string, sort Sort, showLabels bool, scale string) (config_charts.ChartConfig, error) {
+func buildLegacyConfig(typ string, sort Sort, showLabels bool, scale string) (internal_charts.ChartConfig, error) {
 	// Build the legacy payload as a generic map. We always include "scale";
 	// bar/line decode it into their Scale field, and pie/heatmap/radar
 	// silently drop it (they have no Scale field).
@@ -173,5 +173,5 @@ func buildLegacyConfig(typ string, sort Sort, showLabels bool, scale string) (co
 	if err != nil {
 		return nil, err
 	}
-	return config_charts.Decode(typ, raw)
+	return internal_charts.Decode(typ, raw)
 }

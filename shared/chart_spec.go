@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	config_charts "github.com/goptics/vizb/config/charts"
-	"github.com/goptics/vizb/config/flags"
+	internal_charts "github.com/goptics/vizb/internal/charts"
+	"github.com/goptics/vizb/internal/flags"
 )
 
 // axisChar returns the single character that represents an axis key in a swap
@@ -93,7 +93,7 @@ func ValidateSwap(swap string, axes []Axis) error {
 // valid for some other chart (e.g. `pie:scale`, `bar:visualmap`) is dropped
 // with a warning; a key valid for no chart (a typo) is a hard error. Swap is
 // validated against the runtime axes here, since descriptors are axis-unaware.
-func ParseOverrides(specs []string, charts []string, axes []Axis) (map[string]config_charts.ChartConfig, []string, error) {
+func ParseOverrides(specs []string, charts []string, axes []Axis) (map[string]internal_charts.ChartConfig, []string, error) {
 	if len(specs) == 0 {
 		return nil, nil, nil
 	}
@@ -104,7 +104,7 @@ func ParseOverrides(specs []string, charts []string, axes []Axis) (map[string]co
 		activeCharts[strings.ToLower(c)] = true
 	}
 
-	allFlagNames := config_charts.AllFlagNames()
+	allFlagNames := internal_charts.AllFlagNames()
 
 	// Accumulate per-chart payloads; multiple specs for the same chart type
 	// merge into the same payload rather than overwriting.
@@ -123,7 +123,7 @@ func ParseOverrides(specs []string, charts []string, axes []Axis) (map[string]co
 		chartType = strings.ToLower(chartType)
 
 		// Validate the chart type is registered.
-		if _, err := config_charts.New(chartType); err != nil {
+		if _, err := internal_charts.New(chartType); err != nil {
 			return nil, nil, fmt.Errorf("--chart: %w", err)
 		}
 
@@ -138,7 +138,7 @@ func ParseOverrides(specs []string, charts []string, axes []Axis) (map[string]co
 		}
 
 		// Build a name → descriptor lookup for this chart's valid keys.
-		chartFlags := config_charts.FlagsFor(chartType)
+		chartFlags := internal_charts.FlagsFor(chartType)
 		flagByName := make(map[string]flags.Flag, len(chartFlags))
 		for _, f := range chartFlags {
 			flagByName[f.EffectiveKey()] = f
@@ -182,13 +182,13 @@ func ParseOverrides(specs []string, charts []string, axes []Axis) (map[string]co
 		}
 	}
 
-	result := make(map[string]config_charts.ChartConfig, len(payloads))
+	result := make(map[string]internal_charts.ChartConfig, len(payloads))
 	for _, chartType := range order {
 		raw, err := json.Marshal(payloads[chartType])
 		if err != nil {
 			return nil, nil, fmt.Errorf("--chart: marshal payload: %w", err)
 		}
-		cfg, err := config_charts.Decode(chartType, raw)
+		cfg, err := internal_charts.Decode(chartType, raw)
 		if err != nil {
 			return nil, nil, fmt.Errorf("--chart: decode %s: %w", chartType, err)
 		}

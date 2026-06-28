@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/goptics/vizb/config/flags"
+	"github.com/goptics/vizb/internal/flags"
 	"github.com/goptics/vizb/pkg/parser"
 )
 

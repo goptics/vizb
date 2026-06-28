@@ -1,14 +1,13 @@
-// Package pie defines the typed Config for pie charts. Pie data is
-// non-linear, so Config intentionally omits Scale and ThreeDRotate — the
-// fields don't apply.
-package pie
+// Package heatmap defines the typed Config for heatmap charts. Heatmap data
+// is non-linear, so Config intentionally omits Scale and ThreeDRotate.
+package heatmap
 
 import (
-	"github.com/goptics/vizb/config/charts"
+	"github.com/goptics/vizb/internal/charts"
 	"github.com/goptics/vizb/shared"
 )
 
-const Type = "pie"
+const Type = "heatmap"
 
 type Config struct {
 	Type       string             `json:"type"`
@@ -24,5 +23,5 @@ func (c Config) StatEnabled() bool  { return c.Stat.StatEnabled() }
 func (c Config) StatMath() []string { return c.Stat.StatMath() }
 func (c Config) SwapString() string { return c.Swap }
 
-// New returns a fresh zero-value pie chart Config.
+// New returns a fresh zero-value heatmap chart Config.
 func New() charts.ChartConfig { return &Config{} }

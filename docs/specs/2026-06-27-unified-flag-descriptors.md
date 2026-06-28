@@ -12,16 +12,16 @@ No "universal" bucket, no hand-written `CommonOptions/LinearOptions/ChartOptions
 
 ## Layering (hard constraint)
 
-`shared` imports `config/charts`. So the generic `Flag` type cannot live in
-`shared`. It lives in **new leaf pkg `config/flags`** (stdlib-only). Both
-`config/charts` (chart descriptors) and `cmd/cli` (data descriptors) import it.
-No cycle: `config/flags` imports nothing internal.
+`shared` imports `internal/charts`. So the generic `Flag` type cannot live in
+`shared`. It lives in **new leaf pkg `internal/flags`** (stdlib-only). Both
+`internal/charts` (chart descriptors) and `cmd/cli` (data descriptors) import it.
+No cycle: `internal/flags` imports nothing internal.
 
 Parser-specific validators (`parser.ValidateGroupPattern`, `validateParser`) and
 `shared.ValidStatMath` are referenced only at descriptor *definition* sites in
-`cmd/cli` — never inside `config/flags` or `config/charts`.
+`cmd/cli` — never inside `internal/flags` or `internal/charts`.
 
-## The descriptor — `config/flags`
+## The descriptor — `internal/flags`
 
 ```go
 type Kind int
@@ -119,7 +119,7 @@ Routing rule:
 
 ## Descriptor catalogs
 
-### `config/charts/flag.go` — chart descriptors (all carry JSONKey)
+### `internal/charts/flag.go` — chart descriptors (all carry JSONKey)
 
 - Move swap/sort/labels here as before; **add `StatFlag`** (`KindStat`,
   `JSONKey:"stat"`). swap: no `Validate` (axis check done by override parser).
@@ -130,7 +130,7 @@ Routing rule:
 - **Delete `UniversalFlags`**; `FlagsFor(type)` returns `spec.Flags` verbatim;
   `AllFlagNames` iterates every spec's flags.
 
-### `config/charts/<c>/<c>.go` (×6)
+### `internal/charts/<c>/<c>.go` (×6)
 
 `Flags: append(slices.Clone(charts.BaseChartFlags), <variable flags>)`
 - bar/line: `+ ScaleFlag, ThreeDFlag, ThreeDRotateFlag, ThreeDVisualMapFlag`
@@ -184,7 +184,7 @@ Accepted message-only change: `--chart bar:bogus` valid-key list now also lists
 Added June 2026: a declarative applicability-rule pipeline that replaces bespoke
 post-hoc checks with rules attached to flag descriptors.
 
-### Outcome types (`config/flags`)
+### Outcome types (`internal/flags`)
 
 ```go
 type Outcome int8
@@ -194,14 +194,14 @@ const ( Keep Outcome = iota; WarnKeep; Skip; Fatal )
 Precedence: `Fatal > Skip > WarnKeep > Keep`. Multiple rules on one flag:
 any `Fatal` short-circuits; otherwise the worst non-Fatal outcome wins.
 
-### RuleFn — opaque closure (`config/flags`)
+### RuleFn — opaque closure (`internal/flags`)
 
 ```go
 type RuleFn func(ctx any) (Outcome, string)
 ```
 
-`config/flags` is a stdlib-only leaf, so the context type is opaque `any`.
-The concrete `RuleContext` lives in `config/charts/rules.go`.
+`internal/flags` is a stdlib-only leaf, so the context type is opaque `any`.
+The concrete `RuleContext` lives in `internal/charts/rules.go`.
 
 ### Flag.Rule — descriptor field
 
@@ -212,7 +212,7 @@ type Flag struct {
 }
 ```
 
-### RuleContext + builders (`config/charts/rules.go`)
+### RuleContext + builders (`internal/charts/rules.go`)
 
 ```go
 type AxisInfo struct {
@@ -227,7 +227,7 @@ type RuleContext struct {
 }
 ```
 
-AxisInfo avoids importing shared (cycle: shared → config/charts). The caller
+AxisInfo avoids importing shared (cycle: shared → internal/charts). The caller
 converts shared.Axis → AxisInfo at the call site.
 
 | Builder | Checks | Attached to |
@@ -280,7 +280,7 @@ This matches the project owner's explicit decision: "Warn + skip the flag."
 
 ### Layering constraint (validated)
 
-`config/charts.Spec` (`{Type, Flags, Factory}`) remains in `config/charts`
+`internal/charts.Spec` (`{Type, Flags, Factory}`) remains in `internal/charts`
 because shared-level code consumes it at runtime without depending on `cmd/cli`:
 
 - `shared.Dataset.UnmarshalJSON` (`shared/dataset.go:144`) calls
@@ -296,7 +296,7 @@ ChartMeta registry at `cmd/charts/<c>/<c>.go` holds the cobra-facing metadata
 
 ### Phase D — registry split
 
-`config/charts.Spec` shrank from `{Type, Use, Short, Long, Flags, Factory}`
+`internal/charts.Spec` shrank from `{Type, Use, Short, Long, Flags, Factory}`
 to `{Type, Factory}`. Flags moved to a separate `registeredFlags` map
 accessed via `SetFlags(type, []flags.Flag)` and `FlagsFor(type)`.
 Cobra-facing metadata (Use/Short/Long + flag-list composition) registers
@@ -304,6 +304,6 @@ in `cmd/cli` via `SetChartMeta(ChartMeta)`. `cmd/cli/command.go`'s
 `ChartCommands()` merges by Type key.
 
 Adding a new chart: create `cmd/charts/<c>/<c>.go` (Spec + SetFlags +
-ChartMeta) and `config/charts/<c>/<c>.go` (typed Config + `New()` factory).
+ChartMeta) and `internal/charts/<c>/<c>.go` (typed Config + `New()` factory).
 No more "moves in and out" — `cmd/charts/<c>/<c>.go` is the single
 at-a-glance command surface.

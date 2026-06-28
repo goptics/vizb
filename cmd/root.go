@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/goptics/vizb/cmd/cli"
-	config_charts "github.com/goptics/vizb/config/charts"
-	"github.com/goptics/vizb/config/flags"
+	internal_charts "github.com/goptics/vizb/internal/charts"
+	"github.com/goptics/vizb/internal/flags"
 	"github.com/goptics/vizb/pkg/style"
 
 	// Chart configs self-register into the charts registry and cli metadata
@@ -46,7 +46,7 @@ var (
 // Scale is per-chart only (bar/line); the root command has no global --scale.
 func rootFlags() []flags.Flag {
 	return append(slices.Clone(cli.DataFlags),
-		config_charts.SortFlag, config_charts.LabelsFlag, config_charts.StatFlag)
+		internal_charts.SortFlag, internal_charts.LabelsFlag, internal_charts.StatFlag)
 }
 
 // rootBag binds and validates the root flags; rootCharts/rootChartSpecs are the
@@ -114,9 +114,9 @@ func runBenchmark(cmd *cobra.Command, args []string) {
 	// default from the chart's own ScaleFlag.
 	seed := rootBag.ChartSeed(cmd)
 
-	configs := make([]config_charts.ChartConfig, 0, len(rootCharts))
+	configs := make([]internal_charts.ChartConfig, 0, len(rootCharts))
 	for _, chartType := range rootCharts {
-		cfg, err := config_charts.Materialise(chartType, seed, overrides[chartType])
+		cfg, err := internal_charts.Materialise(chartType, seed, overrides[chartType])
 		if err != nil {
 			shared.ExitWithError(err.Error(), nil)
 		}

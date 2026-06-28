@@ -11,9 +11,9 @@ import (
 	_ "github.com/goptics/vizb/cmd/charts/pie"
 	_ "github.com/goptics/vizb/cmd/charts/radar"
 	_ "github.com/goptics/vizb/cmd/charts/scatter"
-	"github.com/goptics/vizb/config/charts"
-	barchart "github.com/goptics/vizb/config/charts/bar"
-	scatterchart "github.com/goptics/vizb/config/charts/scatter"
+	"github.com/goptics/vizb/internal/charts"
+	barchart "github.com/goptics/vizb/internal/charts/bar"
+	scatterchart "github.com/goptics/vizb/internal/charts/scatter"
 	"github.com/stretchr/testify/suite"
 )
 

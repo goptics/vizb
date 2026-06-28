@@ -3,7 +3,7 @@ package shared
 import (
 	"testing"
 
-	config_charts "github.com/goptics/vizb/config/charts"
+	internal_charts "github.com/goptics/vizb/internal/charts"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -28,11 +28,11 @@ func dsWith(types []string, zValues ...string) *Dataset {
 }
 
 func dsWithThreeDOption(chartType string) *Dataset {
-	cfg, err := config_charts.Decode(chartType, []byte(`{"type":"`+chartType+`","threeD":true}`))
+	cfg, err := internal_charts.Decode(chartType, []byte(`{"type":"`+chartType+`","threeD":true}`))
 	if err != nil {
 		panic(err)
 	}
-	return &Dataset{Settings: []config_charts.ChartConfig{cfg}}
+	return &Dataset{Settings: []internal_charts.ChartConfig{cfg}}
 }
 
 type ChartSelectionSuite struct {
@@ -87,7 +87,7 @@ func (s *ChartSelectionSuite) TestDatasetNeeds3D() {
 	}
 }
 
-var _ config_charts.ChartConfig = stubChartConfig{}
+var _ internal_charts.ChartConfig = stubChartConfig{}
 
 func TestChartSelectionSuite(t *testing.T) {
 	suite.Run(t, new(ChartSelectionSuite))

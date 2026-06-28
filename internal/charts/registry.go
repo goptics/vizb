@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/goptics/vizb/config/flags"
+	"github.com/goptics/vizb/internal/flags"
 )
 
 // Factory produces a fresh zero-value ChartConfig of a registered type. Used

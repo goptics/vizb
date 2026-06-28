@@ -4,8 +4,8 @@ import (
 	"slices"
 
 	"github.com/goptics/vizb/cmd/cli"
-	"github.com/goptics/vizb/config/charts"
-	scatterchart "github.com/goptics/vizb/config/charts/scatter"
+	"github.com/goptics/vizb/internal/charts"
+	scatterchart "github.com/goptics/vizb/internal/charts/scatter"
 )
 
 func init() {

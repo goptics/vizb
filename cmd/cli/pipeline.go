@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
-	config_charts "github.com/goptics/vizb/config/charts"
-	barchart "github.com/goptics/vizb/config/charts/bar"
-	linechart "github.com/goptics/vizb/config/charts/line"
-	scatterchart "github.com/goptics/vizb/config/charts/scatter"
+	internal_charts "github.com/goptics/vizb/internal/charts"
+	barchart "github.com/goptics/vizb/internal/charts/bar"
+	linechart "github.com/goptics/vizb/internal/charts/line"
+	scatterchart "github.com/goptics/vizb/internal/charts/scatter"
 	"github.com/goptics/vizb/pkg/parser"
 	goparser "github.com/goptics/vizb/pkg/parser/golang"
 	jsonparser "github.com/goptics/vizb/pkg/parser/json"
@@ -36,7 +36,7 @@ import (
 // meta carries the dataset metadata (name/description/tag/output) and the
 // selected parser; cfg is the resolved parser.Config (built by the caller's
 // FlagBag.ParseConfig).
-func RunLinear(cmd *cobra.Command, args []string, meta RunMeta, cfg parser.Config, configs []config_charts.ChartConfig, applyOnPassthrough bool) {
+func RunLinear(cmd *cobra.Command, args []string, meta RunMeta, cfg parser.Config, configs []internal_charts.ChartConfig, applyOnPassthrough bool) {
 	target, ok := resolveInput(cmd, args)
 	if !ok {
 		return
@@ -102,12 +102,12 @@ func RunLinear(cmd *cobra.Command, args []string, meta RunMeta, cfg parser.Confi
 	// data-derived axes. Rules are nil on every descriptor yet (Phase C adds
 	// them), so this is a no-op in Phase B.
 	{
-		var ruleAxes []config_charts.AxisInfo
+		var ruleAxes []internal_charts.AxisInfo
 		for _, a := range dataSet.Axes {
-			ruleAxes = append(ruleAxes, config_charts.AxisInfo{Key: a.Key, Type: a.Type})
+			ruleAxes = append(ruleAxes, internal_charts.AxisInfo{Key: a.Key, Type: a.Type})
 		}
-		ruleCtx := config_charts.RuleContext{Axes: ruleAxes}
-		warnings, fatal := config_charts.ApplyRules(ruleCtx, configs)
+		ruleCtx := internal_charts.RuleContext{Axes: ruleAxes}
+		warnings, fatal := internal_charts.ApplyRules(ruleCtx, configs)
 		if fatal != nil {
 			shared.ExitWithError(fatal.Error(), nil)
 		}
@@ -128,7 +128,7 @@ func RunLinear(cmd *cobra.Command, args []string, meta RunMeta, cfg parser.Confi
 // the per-chart Config (built by the subcommand via its chart's Materialise) to
 // the shared linear pipeline. An empty configs slice is treated as a no-op so
 // callers can defensively guard against misconfiguration.
-func RunSingleChart(cmd *cobra.Command, args []string, meta RunMeta, cfg parser.Config, configs []config_charts.ChartConfig) {
+func RunSingleChart(cmd *cobra.Command, args []string, meta RunMeta, cfg parser.Config, configs []internal_charts.ChartConfig) {
 	if len(configs) == 0 {
 		return
 	}
@@ -411,7 +411,7 @@ func applyValueMode3DFlags(threeD **bool, visualMap **bool, v bool, enableVM boo
 
 // autoEnableValueMode3D sets ThreeD (and ThreeDVisualMap when metric present) on
 // bar/line/scatter configs for continuous xyz value mode.
-func autoEnableValueMode3D(configs []config_charts.ChartConfig, axes []shared.Axis, visualMap bool) {
+func autoEnableValueMode3D(configs []internal_charts.ChartConfig, axes []shared.Axis, visualMap bool) {
 	if !isValueXYZAxes(axes) {
 		return
 	}
@@ -430,7 +430,7 @@ func autoEnableValueMode3D(configs []config_charts.ChartConfig, axes []shared.Ax
 
 // assembleDataset builds the output Dataset from parsed results plus the
 // command's metadata and the resolved per-chart configs.
-func assembleDataset(results []shared.DataPoint, m RunMeta, configs []config_charts.ChartConfig, cfg parser.Config) *shared.Dataset {
+func assembleDataset(results []shared.DataPoint, m RunMeta, configs []internal_charts.ChartConfig, cfg parser.Config) *shared.Dataset {
 	var axes []shared.Axis
 	if cfg.AutoGroup {
 		// Auto-grouping modified the config inside the parser; derive axes
@@ -469,13 +469,13 @@ func assembleDataset(results []shared.DataPoint, m RunMeta, configs []config_cha
 
 // applySelections overrides a passed-through Dataset's chart selection so e.g.
 // `vizb bar data.json` re-renders with the new configs.
-func applySelections(dataSet *shared.Dataset, configs []config_charts.ChartConfig) {
+func applySelections(dataSet *shared.Dataset, configs []internal_charts.ChartConfig) {
 	dataSet.Settings = configs
 }
 
 // settingsNeedCorrelation reports whether any chart setting in the slice needs
 // the correlation heatmap renderer shipped (math empty = all, or contains "correlations").
-func settingsNeedCorrelation(settings []config_charts.ChartConfig) bool {
+func settingsNeedCorrelation(settings []internal_charts.ChartConfig) bool {
 	for _, cfg := range settings {
 		if shared.ChartConfigNeedsCorrelation(cfg) {
 			return true
@@ -487,7 +487,7 @@ func settingsNeedCorrelation(settings []config_charts.ChartConfig) bool {
 // chartTypeNames extracts the chart-type discriminators from a slice of
 // per-chart Configs. Used by callers that need a []string (e.g. HTML chunk
 // pruning) in place of the old dataSet.Settings.Charts list.
-func chartTypeNames(settings []config_charts.ChartConfig) []string {
+func chartTypeNames(settings []internal_charts.ChartConfig) []string {
 	out := make([]string, 0, len(settings))
 	for _, c := range settings {
 		out = append(out, c.ChartType())

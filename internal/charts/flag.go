@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/goptics/vizb/config/flags"
+	"github.com/goptics/vizb/internal/flags"
 )
 
 // --- Base flags: every chart accepts these as --chart keys. ---

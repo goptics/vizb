@@ -7,8 +7,8 @@ import (
 	"slices"
 
 	"github.com/goptics/vizb/cmd/cli"
-	"github.com/goptics/vizb/config/charts"
-	barchart "github.com/goptics/vizb/config/charts/bar"
+	"github.com/goptics/vizb/internal/charts"
+	barchart "github.com/goptics/vizb/internal/charts/bar"
 )
 
 func init() {

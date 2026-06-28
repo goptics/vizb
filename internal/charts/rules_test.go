@@ -7,9 +7,9 @@ import (
 	_ "github.com/goptics/vizb/cmd/charts/bar"
 	_ "github.com/goptics/vizb/cmd/charts/line"
 	_ "github.com/goptics/vizb/cmd/charts/scatter"
-	"github.com/goptics/vizb/config/charts"
-	barchart "github.com/goptics/vizb/config/charts/bar"
-	"github.com/goptics/vizb/config/flags"
+	"github.com/goptics/vizb/internal/charts"
+	barchart "github.com/goptics/vizb/internal/charts/bar"
+	"github.com/goptics/vizb/internal/flags"
 	"github.com/stretchr/testify/suite"
 )
 

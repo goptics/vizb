@@ -4,8 +4,8 @@ import (
 	"slices"
 
 	"github.com/goptics/vizb/cmd/cli"
-	"github.com/goptics/vizb/config/charts"
-	piechart "github.com/goptics/vizb/config/charts/pie"
+	"github.com/goptics/vizb/internal/charts"
+	piechart "github.com/goptics/vizb/internal/charts/pie"
 )
 
 func init() {

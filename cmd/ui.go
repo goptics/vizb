@@ -8,13 +8,13 @@ import (
 	"strings"
 
 	"github.com/goptics/vizb/cmd/cli"
-	config_charts "github.com/goptics/vizb/config/charts"
-	barchart "github.com/goptics/vizb/config/charts/bar"
-	heatmapchart "github.com/goptics/vizb/config/charts/heatmap"
-	linechart "github.com/goptics/vizb/config/charts/line"
-	piechart "github.com/goptics/vizb/config/charts/pie"
-	radarchart "github.com/goptics/vizb/config/charts/radar"
-	scatterchart "github.com/goptics/vizb/config/charts/scatter"
+	internal_charts "github.com/goptics/vizb/internal/charts"
+	barchart "github.com/goptics/vizb/internal/charts/bar"
+	heatmapchart "github.com/goptics/vizb/internal/charts/heatmap"
+	linechart "github.com/goptics/vizb/internal/charts/line"
+	piechart "github.com/goptics/vizb/internal/charts/pie"
+	radarchart "github.com/goptics/vizb/internal/charts/radar"
+	scatterchart "github.com/goptics/vizb/internal/charts/scatter"
 	"github.com/goptics/vizb/pkg/style"
 	"github.com/goptics/vizb/pkg/template"
 	"github.com/goptics/vizb/shared"
@@ -184,7 +184,7 @@ func anyDatasetNeedsCorrelation(datasets []shared.Dataset) bool {
 
 // filterSettings keeps only configs whose chart type is in the allowed list,
 // preserving the original settings order.
-func filterSettings(settings []config_charts.ChartConfig, allowed []string) []config_charts.ChartConfig {
+func filterSettings(settings []internal_charts.ChartConfig, allowed []string) []internal_charts.ChartConfig {
 	if len(allowed) == 0 {
 		return settings
 	}
@@ -192,7 +192,7 @@ func filterSettings(settings []config_charts.ChartConfig, allowed []string) []co
 	for _, c := range allowed {
 		permitted[c] = true
 	}
-	filtered := make([]config_charts.ChartConfig, 0, len(settings))
+	filtered := make([]internal_charts.ChartConfig, 0, len(settings))
 	for _, s := range settings {
 		if permitted[s.ChartType()] {
 			filtered = append(filtered, s)
@@ -224,7 +224,7 @@ func unionCharts(datasets []shared.Dataset) []string {
 // any existing setting is silently dropped (the user can't add a chart type
 // via --chart in the ui subcommand — the chart list is locked to what's
 // already in the input file).
-func applyOverrides(settings *[]config_charts.ChartConfig, overrides map[string]config_charts.ChartConfig) {
+func applyOverrides(settings *[]internal_charts.ChartConfig, overrides map[string]internal_charts.ChartConfig) {
 	if len(overrides) == 0 {
 		return
 	}
@@ -406,7 +406,7 @@ func validateStat(stat *[]string) {
 }
 
 // applyStatToSettings sets the same stat config on every chart config in settings.
-func applyStatToSettings(settings []config_charts.ChartConfig, stat *shared.StatConfig) {
+func applyStatToSettings(settings []internal_charts.ChartConfig, stat *shared.StatConfig) {
 	for _, cfg := range settings {
 		switch c := cfg.(type) {
 		case *barchart.Config:

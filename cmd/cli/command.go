@@ -8,7 +8,7 @@ package cli
 import (
 	"slices"
 
-	config_charts "github.com/goptics/vizb/config/charts"
+	internal_charts "github.com/goptics/vizb/internal/charts"
 	"github.com/goptics/vizb/pkg/parser"
 	"github.com/goptics/vizb/shared"
 	"github.com/spf13/cobra"
@@ -37,7 +37,7 @@ func SetChartMeta(m ChartMeta) {
 // of subcommands and their flags is derived from the config/charts registry
 // and the cmd-side chart metadata — adding a chart needs no change here.
 func ChartCommands() []*cobra.Command {
-	specs := config_charts.Specs()
+	specs := internal_charts.Specs()
 	cmds := make([]*cobra.Command, 0, len(specs))
 	for _, spec := range specs {
 		meta, ok := chartMetas[spec.Type]
@@ -53,8 +53,8 @@ func ChartCommands() []*cobra.Command {
 // It binds the data flags plus the chart's own flag descriptors into one
 // FlagBag, then on Run validates, builds the chart seed from the changed
 // flags, materialises a single typed Config, and runs the linear pipeline.
-func newChartCommand(spec config_charts.Spec, meta ChartMeta) *cobra.Command {
-	bag := NewFlagBag(append(slices.Clone(DataFlags), config_charts.FlagsFor(meta.Type)...))
+func newChartCommand(spec internal_charts.Spec, meta ChartMeta) *cobra.Command {
+	bag := NewFlagBag(append(slices.Clone(DataFlags), internal_charts.FlagsFor(meta.Type)...))
 
 	cmd := &cobra.Command{
 		Use:   meta.Use,
@@ -65,7 +65,7 @@ func newChartCommand(spec config_charts.Spec, meta ChartMeta) *cobra.Command {
 			bag.Validate(cmd)
 
 			seed := bag.ChartSeed(cmd)
-			cfg, err := config_charts.Materialise(spec.Type, seed, nil)
+			cfg, err := internal_charts.Materialise(spec.Type, seed, nil)
 			if err != nil {
 				shared.ExitWithError(err.Error(), nil)
 			}
@@ -76,7 +76,7 @@ func newChartCommand(spec config_charts.Spec, meta ChartMeta) *cobra.Command {
 				shared.ExitWithError(err.Error(), nil)
 			}
 
-			RunSingleChart(cmd, args, bag.Meta(), parseCfg, []config_charts.ChartConfig{cfg})
+			RunSingleChart(cmd, args, bag.Meta(), parseCfg, []internal_charts.ChartConfig{cfg})
 		},
 	}
 

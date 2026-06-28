@@ -5,11 +5,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	config_charts "github.com/goptics/vizb/config/charts"
-	barchart "github.com/goptics/vizb/config/charts/bar"
-	linechart "github.com/goptics/vizb/config/charts/line"
-	piechart "github.com/goptics/vizb/config/charts/pie"
-	scatterchart "github.com/goptics/vizb/config/charts/scatter"
+	internal_charts "github.com/goptics/vizb/internal/charts"
+	barchart "github.com/goptics/vizb/internal/charts/bar"
+	linechart "github.com/goptics/vizb/internal/charts/line"
+	piechart "github.com/goptics/vizb/internal/charts/pie"
+	scatterchart "github.com/goptics/vizb/internal/charts/scatter"
 	"github.com/goptics/vizb/shared"
 	"github.com/goptics/vizb/testutil"
 	"github.com/stretchr/testify/suite"
@@ -145,7 +145,7 @@ func (s *RootSuite) TestRunBenchmarkDatasetPassthrough() {
 	input := filepath.Join(dir, "baked.json")
 	testutil.WriteJSON(s.T(), input, shared.Dataset{
 		Name: "Baked",
-		Settings: []config_charts.ChartConfig{
+		Settings: []internal_charts.ChartConfig{
 			&barchart.Config{Type: "bar", Scale: "log"},
 			&linechart.Config{Type: "line", Scale: "log"},
 		},

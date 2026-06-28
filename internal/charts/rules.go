@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/goptics/vizb/config/flags"
+	"github.com/goptics/vizb/internal/flags"
 )
 
 // AxisInfo is the lightweight axis metadata rules need. Avoids importing
