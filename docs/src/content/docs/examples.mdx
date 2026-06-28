@@ -5,7 +5,7 @@ description: Example datasets and live dashboards for data visualization and ben
 
 import { LinkCard, Aside } from '@astrojs/starlight/components';
 
-Sample inputs live under [`examples/`](https://github.com/goptics/vizb/tree/main/examples). CI converts each file to JSON, merges them into one HTML page per category, and deploys to [vizb.goptics.org/examples/](https://vizb.goptics.org/examples/). Open a specific dataset with `?d=0`, `?d=1`, … — index matches matrix order in the workflow file.
+Sample inputs live under [`examples/`](https://github.com/goptics/vizb/tree/main/examples). CI converts each file to JSON, merges them into one HTML page per category, and deploys to [vizb.goptics.org/examples/](https://vizb.goptics.org/examples/). Open a specific dataset with `?id=<id>` when the build set `--id`, or `?d=0`, `?d=1`, … by index — index matches matrix order in the workflow file. The live links below use `?d=` because CI does not set ids yet.
 
 ## Live dashboards
 

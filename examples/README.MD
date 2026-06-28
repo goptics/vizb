@@ -24,7 +24,7 @@ Tabular CSV recipes (auto-group, auto-value, 3D): [csv/README.md](csv/README.md)
 | JavaScript | [vizb.goptics.org/examples/javascript/](https://vizb.goptics.org/examples/javascript/) |
 | Rust | [vizb.goptics.org/examples/rust/](https://vizb.goptics.org/examples/rust/) |
 
-Open a specific chart with `?d=0`, `?d=1`, … — index matches matrix order in the workflow file.
+Open a specific chart with `?id=<id>` when the build set `--id`, or `?d=0`, `?d=1`, … by index — index matches matrix order in the workflow file. Current CI workflows use index links only.
 
 ## Adding an example
 

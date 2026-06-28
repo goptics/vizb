@@ -139,6 +139,7 @@ func RunSingleChart(cmd *cobra.Command, args []string, meta RunMeta, cfg parser.
 // FlagBag into the linear pipeline. It is plain value passing — flag declaration
 // and validation live in the FlagBag, not here.
 type RunMeta struct {
+	ID          string
 	Name        string
 	Description string
 	Tag         string
@@ -451,6 +452,9 @@ func assembleDataset(results []shared.DataPoint, m RunMeta, configs []internal_c
 		Data:        results,
 		Settings:    configs,
 		Axes:        axes,
+	}
+	if id := strings.TrimSpace(m.ID); id != "" {
+		dataSet.ID = id
 	}
 
 	meta := shared.Meta{OS: shared.OS, Arch: shared.Arch, Pkg: shared.Pkg}
