@@ -157,7 +157,7 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
       const axes = msg.axes
       const chartType = msg.chartType
       const valueModeDetected = isValueChartType(chartType) && isValueMode(axes)
-      const mixedModeDetected = chartType === 'scatter' && isMixedMode(axes)
+      const mixedModeDetected = isValueChartType(chartType) && isMixedMode(axes)
 
       state = {
         dataEpoch: msg.dataEpoch,

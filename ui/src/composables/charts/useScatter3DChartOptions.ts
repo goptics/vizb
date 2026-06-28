@@ -13,17 +13,15 @@ import {
   symbolSizeFor3DGrid,
   resolve3DVisualMap,
   createValue3DTooltipFormatter,
-  createMixed3DTooltipFormatter,
   buildContinuous3DOptions,
-  continuous3DGridCounts,
   getChartStyling,
   getTooltipTheme,
   makeContinuous3DParams,
-  symbolSizeForContinuous3D,
   valuePoints3DToSeries,
   type Continuous3DContext,
 } from './shared'
 import { resolve3DSymbolProps } from './shared/seriesConfig'
+import { buildMixedAxes3DOptions } from './shared/mixedMode'
 import type { Series3DData } from '@/types'
 
 export function useScatter3DChartOptions(config: BaseChartConfig) {
@@ -99,70 +97,7 @@ export function useScatter3DChartOptions(config: BaseChartConfig) {
     }
 
     if (render.mode === 'mixed') {
-      const seriesData = render.lineSeries
-      const pointCount = seriesData[0]?.data.length ?? 0
-      const { yCount } = continuous3DGridCounts(pointCount)
-      const yScale = scale?.value ?? 'linear'
-      const valueType = yScale === 'log' ? ('log' as const) : ('value' as const)
-      const logOpts = yScale === 'log' ? { logBase: 10 } : {}
-      const grid3D = create3DGridConfig({
-        styling,
-        autoRotate: threeDRotate?.value ?? false,
-        orthographic: true,
-        xCount: xValues.length,
-        yCount,
-        mode: 'mixed',
-      })
-      const mixedSymbolSize = symbolSizeForContinuous3D(
-        pointCount,
-        grid3D.boxWidth,
-        grid3D.boxDepth
-      )
-
-      return {
-        ...base,
-        legend: { show: false },
-        visualMap: resolve3DVisualMap(useVisualMap, seriesData, styling),
-        tooltip: {
-          ...base.tooltip,
-          ...getTooltipTheme(isDark.value),
-          formatter: createMixed3DTooltipFormatter({
-            xValues,
-            isDark: isDark.value,
-            xAxisLabel: axisLabels?.x,
-            yAxisLabel: axisLabels?.y,
-            zAxisLabel: axisLabels?.z,
-          }),
-        },
-        xAxis3D: {
-          type: 'category',
-          data: xValues,
-          ...axisCommon,
-          ...axis3DName(axisLabels?.x, styling),
-        },
-        yAxis3D: {
-          type: valueType,
-          ...logOpts,
-          ...axisCommon,
-          ...axis3DName(axisLabels?.y, styling),
-        },
-        zAxis3D: {
-          type: valueType,
-          ...logOpts,
-          ...axisCommon,
-          ...axis3DName(axisLabels?.z, styling),
-        },
-        grid3D,
-        series: seriesData.map((s: Series3DData) => ({
-          name: s.name,
-          type: 'scatter3D' as const,
-          data: s.data,
-          ...resolve3DSymbolProps(mixedSymbolSize, symbolOverride, symbolSizeOverride),
-          ...(useVisualMap ? {} : { itemStyle: { color: defaultColor } }),
-          label: { show: false },
-          emphasis: { label: { show: false } },
-        })),
-      } as unknown as EChartsOption
+      return buildMixedAxes3DOptions(config, 'scatter3D')
     }
 
     if (isValueMode) {

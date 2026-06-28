@@ -362,8 +362,8 @@ func (s *JSONFatalSuite) TestValueModeSkipsRowWithBadMetric() {
 
 func (s *JSONAutoValueSuite) TestSelectSkipsAutoDetect() {
 	// Solo --select (SelectViews) disables auto-value inference and routes value mode.
-	s.cfg.SelectViews = [][]parser.ColumnSpec{
-		{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}},
+	s.cfg.SelectViews = []parser.SelectView{
+		{Columns: []parser.ColumnSpec{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}}},
 	}
 	path := s.writeFile(`[{"x":1,"y":2,"z":3,"w":4}]`)
 
@@ -375,8 +375,8 @@ func (s *JSONAutoValueSuite) TestSelectSkipsAutoDetect() {
 }
 
 func (s *JSONFatalSuite) TestSelectMixedModeMapsCategoryXAndValueY() {
-	s.cfg.SelectViews = [][]parser.ColumnSpec{
-		{{Source: "region", AxisKey: "x"}, {Source: "latency", AxisKey: "y"}},
+	s.cfg.SelectViews = []parser.SelectView{
+		{Columns: []parser.ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "latency", AxisKey: "y"}}},
 	}
 	path := s.writeFile(`[
 		{"region":"Asia","latency":12,"sales":100},
@@ -391,8 +391,8 @@ func (s *JSONFatalSuite) TestSelectMixedModeMapsCategoryXAndValueY() {
 }
 
 func (s *JSONFatalSuite) TestSelectValueModeAllNumeric() {
-	s.cfg.SelectViews = [][]parser.ColumnSpec{
-		{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}},
+	s.cfg.SelectViews = []parser.SelectView{
+		{Columns: []parser.ColumnSpec{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}}},
 	}
 	path := s.writeFile(`[{"x":1,"y":2},{"x":3,"y":4}]`)
 

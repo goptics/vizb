@@ -114,7 +114,7 @@ func ValueAxes(cfg Config) []shared.Axis {
 func SelectViewAxesCfg(cfg Config) Config {
 	c := cfg
 	if len(cfg.SelectViews) > 0 {
-		c.Axes = append([]ColumnSpec(nil), cfg.SelectViews[0]...)
+		c.Axes = append([]ColumnSpec(nil), cfg.SelectViews[0].Columns...)
 	}
 	return c
 }

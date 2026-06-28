@@ -114,7 +114,7 @@ export const is3D = (
     (isValue3DEligible(chart) && threeD === true) ||
     isValueModeContinuous3D(chart, axes, targetString, chartType) ||
     chart.render3D?.mode === 'mixed' ||
-    (chartType === 'scatter' && isMixedMode(axes) && mixedModeHasZAxis(axes))
+    (isValueChartType(chartType) && isMixedMode(axes) && mixedModeHasZAxis(axes))
   )
 }
 
@@ -276,7 +276,7 @@ export const CPUtoString = (cpu: Meta['cpu']) => {
 export const isValueMode = (axes: Axis[] | undefined): boolean =>
   !!axes?.length && axes.every((a) => a.type === 'value')
 
-/** Category x + value y[,z] (--select / mixed-axis scatter). */
+/** Category x + value y[,z] (solo --select mixed mode). */
 export const isMixedMode = (axes: Axis[] | undefined): boolean =>
   !!axes?.length && axes.some((a) => a.type === 'value') && axes.some((a) => a.type !== 'value')
 

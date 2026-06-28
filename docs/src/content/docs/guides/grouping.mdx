@@ -96,7 +96,7 @@ When you pass `--select` **without** explicit grouping (`-g`, `-r`, or non-defau
 |---|---|
 | All numeric | **Value mode** — continuous coordinate axes |
 | One categorical + numeric | **Mixed mode** — category on x, values on y[,z]; [scatter](/charts/scatter) is the primary chart |
-| Repeatable flags | Multiple datasets in one HTML (tabs in the UI) |
+| Repeatable flags (2 cols each) | One dataset; each flag → stat type (`latency by region`); chart tabs by stat |
 
 ```bash
 # Value mode: pick two numeric columns as x,y
@@ -105,7 +105,7 @@ vizb scatter spiral-3d.csv --select x,y -o 2d.html
 # Mixed mode: category region + numeric latency
 vizb scatter examples/csv/region-metrics.csv --select region,latency -o mixed.html
 
-# Multi-view: two plots from one CSV
+# Multi-stat: one dataset, charts by stat type
 vizb scatter examples/csv/region-metrics.csv \
   --select region,latency \
   --select region,sales \
@@ -123,7 +123,7 @@ Use this decision guide when your CSV/JSON has both categorical and numeric colu
 | Compare metrics **across categories** with legend series | Grouped + numeric `--select` | `-g region,product -p x,y --select latency,sales` |
 | Plot **one metric per category label** on a coordinate chart | Solo mixed `--select` | `--select region,latency` → scatter |
 | Plot **raw numeric coordinates** (no categories) | Solo value `--select` or auto-value | `--select x,y` or no flags on all-numeric file |
-| **Several coordinate views** from one file | Repeatable solo `--select` | `--select region,latency --select region,sales` |
+| **Several metric views** from one file (no grouping) | Repeatable solo `--select` | `--select region,latency --select region,sales` → charts `latency by region`, `sales by region` |
 | Split a column into year/month/day on axes | Grouped with bracket `-p` | `-g date,category -p '[n-y-x],z'` |
 | Quick chart with no flags on mixed data | Auto-group | `vizb bar sales.csv` picks highest-cardinality categorical column |
 

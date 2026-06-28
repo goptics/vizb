@@ -3,10 +3,11 @@ package parser
 import "testing"
 
 func TestParseSelectViewFlagTwoColumns(t *testing.T) {
-	specs, err := ParseSelectViewFlag("region,latency")
+	view, err := ParseSelectViewFlag("region,latency")
 	if err != nil {
 		t.Fatal(err)
 	}
+	specs := view.Columns
 	if len(specs) != 2 {
 		t.Fatalf("want 2 specs, got %d", len(specs))
 	}
@@ -19,20 +20,22 @@ func TestParseSelectViewFlagTwoColumns(t *testing.T) {
 }
 
 func TestParseSelectViewFlagThreeColumnsWithLabel(t *testing.T) {
-	specs, err := ParseSelectViewFlag("region{Region},latency{Latency (ms)},sales")
+	view, err := ParseSelectViewFlag("region{Region},latency{Latency (ms)},sales")
 	if err != nil {
 		t.Fatal(err)
 	}
+	specs := view.Columns
 	if len(specs) != 3 || specs[0].Label != "Region" || specs[2].AxisKey != "z" {
 		t.Fatalf("unexpected specs: %+v", specs)
 	}
 }
 
 func TestParseSelectViewFlagExplicitSyntax(t *testing.T) {
-	specs, err := ParseSelectViewFlag("x:region,y:latency,z:sales")
+	view, err := ParseSelectViewFlag("x:region,y:latency,z:sales")
 	if err != nil {
 		t.Fatal(err)
 	}
+	specs := view.Columns
 	want := []struct{ key, src string }{
 		{"x", "region"},
 		{"y", "latency"},
@@ -42,6 +45,45 @@ func TestParseSelectViewFlagExplicitSyntax(t *testing.T) {
 		if specs[i].AxisKey != w.key || specs[i].Source != w.src {
 			t.Fatalf("spec[%d] = %+v, want key=%s src=%s", i, specs[i], w.key, w.src)
 		}
+	}
+}
+
+func TestParseSelectViewFlagTrailingParenTypeLabel(t *testing.T) {
+	view, err := ParseSelectViewFlag("region,latency (Latency by Region)")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if view.TypeLabel != "Latency by Region" {
+		t.Fatalf("TypeLabel = %q", view.TypeLabel)
+	}
+	if len(view.Columns) != 2 || view.Columns[1].Source != "latency" {
+		t.Fatalf("unexpected columns: %+v", view.Columns)
+	}
+}
+
+func TestParseSelectViewFlagAxisLabelAndParenTypeLabel(t *testing.T) {
+	view, err := ParseSelectViewFlag("region{Region},latency (Custom Title)")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if view.TypeLabel != "Custom Title" {
+		t.Fatalf("TypeLabel = %q", view.TypeLabel)
+	}
+	if view.Columns[0].Label != "Region" {
+		t.Fatalf("axis label = %q", view.Columns[0].Label)
+	}
+}
+
+func TestParseSelectViewFlagParenOverridesMetricBraceLabel(t *testing.T) {
+	view, err := ParseSelectViewFlag("region,latency{Legacy} (New Title)")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if view.TypeLabel != "New Title" {
+		t.Fatalf("TypeLabel = %q", view.TypeLabel)
+	}
+	if got := SelectStatType(view); got != "New Title" {
+		t.Fatalf("SelectStatType = %q", got)
 	}
 }
 
@@ -72,6 +114,12 @@ func TestParseSelectViewFlagRejectsIncompleteExplicitSyntax(t *testing.T) {
 	}
 }
 
+func TestParseSelectViewFlagRejectsEmptyParenTitle(t *testing.T) {
+	if _, err := ParseSelectViewFlag("region,latency ()"); err == nil {
+		t.Fatal("want error for empty ()")
+	}
+}
+
 func TestHasSelect(t *testing.T) {
 	if HasSelect(Config{}) {
 		t.Fatal("expected false for empty config")
@@ -79,7 +127,7 @@ func TestHasSelect(t *testing.T) {
 	if !HasSelect(Config{Select: []ColumnSpec{{Source: "a"}}}) {
 		t.Fatal("expected true for grouped select")
 	}
-	if !HasSelect(Config{SelectViews: [][]ColumnSpec{{{Source: "a"}, {Source: "b"}}}}) {
+	if !HasSelect(Config{SelectViews: []SelectView{{Columns: []ColumnSpec{{Source: "a"}, {Source: "b"}}}}}) {
 		t.Fatal("expected true for select views")
 	}
 }
@@ -104,7 +152,7 @@ func TestIsExplicitGrouping(t *testing.T) {
 
 func TestIsSelectAxisMode(t *testing.T) {
 	cfg := Config{
-		SelectViews: [][]ColumnSpec{{{Source: "a"}, {Source: "b"}}},
+		SelectViews: []SelectView{{Columns: []ColumnSpec{{Source: "a"}, {Source: "b"}}}},
 	}
 	if !IsSelectAxisMode(cfg) {
 		t.Fatal("expected solo select axis mode")
@@ -119,6 +167,88 @@ func TestIsSelectAxisMode(t *testing.T) {
 	}
 	if IsSelectAxisMode(Config{Select: []ColumnSpec{{Source: "price"}}}) {
 		t.Fatal("expected false for grouped numeric select")
+	}
+}
+
+func TestIsMultiSelectStatMode(t *testing.T) {
+	cfg := Config{SelectViews: []SelectView{
+		{Columns: []ColumnSpec{{Source: "a"}, {Source: "b"}}},
+		{Columns: []ColumnSpec{{Source: "c"}, {Source: "d"}}},
+	}}
+	if !IsMultiSelectStatMode(cfg) {
+		t.Fatal("expected multi-stat mode")
+	}
+	cfg.SelectViews = cfg.SelectViews[:1]
+	if IsMultiSelectStatMode(cfg) {
+		t.Fatal("expected false for single view")
+	}
+}
+
+func TestSelectStatType(t *testing.T) {
+	view := SelectView{Columns: []ColumnSpec{{Source: "region"}, {Source: "latency"}}}
+	if got := SelectStatType(view); got != "latency by region" {
+		t.Fatalf("got %q", got)
+	}
+	view = SelectView{Columns: []ColumnSpec{{Source: "region", Label: "Geo"}, {Source: "latency"}}}
+	if got := SelectStatType(view); got != "latency by Geo" {
+		t.Fatalf("got %q", got)
+	}
+	view = SelectView{Columns: []ColumnSpec{{Source: "region"}, {Source: "latency", Label: "Custom"}}}
+	if got := SelectStatType(view); got != "Custom" {
+		t.Fatalf("got %q", got)
+	}
+	view = SelectView{
+		Columns:   []ColumnSpec{{Source: "region"}, {Source: "latency"}},
+		TypeLabel: "Latency by Region",
+	}
+	if got := SelectStatType(view); got != "Latency by Region" {
+		t.Fatalf("got %q", got)
+	}
+}
+
+func TestValidateMultiSelectStatViews(t *testing.T) {
+	if err := ValidateMultiSelectStatViews([]SelectView{{Columns: []ColumnSpec{{Source: "a"}, {Source: "b"}}}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := ValidateMultiSelectStatViews([]SelectView{{Columns: []ColumnSpec{{Source: "a"}, {Source: "b"}, {Source: "c"}}}}); err == nil {
+		t.Fatal("want error for 3-column view")
+	}
+}
+
+func TestMultiSelectSharedDim(t *testing.T) {
+	shared := []SelectView{
+		{Columns: []ColumnSpec{{Source: "region"}, {Source: "tax"}}},
+		{Columns: []ColumnSpec{{Source: "region"}, {Source: "amount"}}},
+	}
+	if !MultiSelectSharedDim(shared) {
+		t.Fatal("expected shared dim")
+	}
+	mixed := []SelectView{
+		{Columns: []ColumnSpec{{Source: "region"}, {Source: "tax"}}},
+		{Columns: []ColumnSpec{{Source: "product"}, {Source: "sales"}}},
+	}
+	if MultiSelectSharedDim(mixed) {
+		t.Fatal("expected different dims")
+	}
+}
+
+func TestMultiSelectStatAxesUsesDimLabel(t *testing.T) {
+	views := []SelectView{{
+		Columns: []ColumnSpec{{Source: "region", Label: "Region", AxisKey: "x"}, {Source: "tax", AxisKey: "y"}},
+	}}
+	axes := MultiSelectStatAxes(views)
+	if len(axes) != 1 || axes[0].Key != "x" || axes[0].Label != "Region" {
+		t.Fatalf("got %+v, want x/Region", axes)
+	}
+}
+
+func TestMultiSelectStatAxesFallsBackToSource(t *testing.T) {
+	views := []SelectView{{
+		Columns: []ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "tax", AxisKey: "y"}},
+	}}
+	axes := MultiSelectStatAxes(views)
+	if axes[0].Label != "region" {
+		t.Fatalf("got label %q", axes[0].Label)
 	}
 }
 

@@ -70,6 +70,10 @@ func ParseCSV(filename string, cfg parser.Config) []shared.DataPoint {
 		}
 	}
 
+	if parser.IsMultiSelectStatMode(cfg) {
+		return parseCSVSelectStatMode(headers, dataRows, cfg)
+	}
+
 	if parser.IsSelectAxisMode(cfg) {
 		axesCfg := parser.SelectViewAxesCfg(cfg)
 		flag := parser.AxisColumnLabel(true)
@@ -391,39 +395,51 @@ func parseCSVValueMode(headers []string, dataRows [][]string, cfg parser.Config,
 	return results
 }
 
-// ParseSelectViews reads a CSV once and parses each solo --select view into
-// separate data slices. cfg must be in select axis mode with len(SelectViews) > 1.
-func ParseSelectViews(filename string, cfg parser.Config) []parser.SelectViewData {
-	headers, dataRows := readCSVTable(filename)
+// parseCSVSelectStatMode parses repeatable solo --select into one dataset. When
+// every flag shares the same dimension column, each input row becomes one point
+// with multiple stats; otherwise each (row × view) stays a separate point.
+func parseCSVSelectStatMode(headers []string, dataRows [][]string, cfg parser.Config) []shared.DataPoint {
+	colIdx := map[string]int{}
+	for i, h := range headers {
+		if h != "" {
+			colIdx[h] = i
+		}
+	}
 	flag := parser.AxisColumnLabel(true)
-	kindFn := csvAxisColumnKind(headers, dataRows, flag)
+	merge := parser.MultiSelectSharedDim(cfg.SelectViews)
 
-	views := make([]parser.SelectViewData, 0, len(cfg.SelectViews))
-	for i, view := range cfg.SelectViews {
-		axesCfg := parser.Config{
-			Axes:         append([]parser.ColumnSpec(nil), view...),
-			NumberUnit:   cfg.NumberUnit,
-			MetricColumn: cfg.MetricColumn,
+	for _, view := range cfg.SelectViews {
+		for _, spec := range view.Columns {
+			if _, ok := colIdx[spec.Source]; !ok {
+				shared.ExitWithError(fmt.Sprintf("%s column %q not found; available: %v", flag, spec.Source, nonEmpty(headers)), nil)
+			}
 		}
-		if err := parser.ResolveAxesTypes(&axesCfg, kindFn); err != nil {
-			shared.ExitWithError(err.Error(), nil)
-		}
-		var data []shared.DataPoint
-		if parser.IsMixedMode(axesCfg) {
-			data = parseCSVMixedMode(headers, dataRows, axesCfg, flag)
-		} else {
-			data = parseCSVValueMode(headers, dataRows, axesCfg, flag)
-		}
-		if len(data) == 0 {
-			shared.ExitWithError("No dataSet data found", nil)
-		}
-		views = append(views, parser.SelectViewData{
-			View: view,
-			Data: data,
-			Name: parser.SelectViewDatasetName(view, i),
+	}
+
+	var results []shared.DataPoint
+	for _, row := range dataRows {
+		parser.AppendMultiSelectStatPoint(&results, cfg.SelectViews, cfg.NumberUnit, merge, func(view parser.SelectView) (parser.MultiSelectRowStat, bool) {
+			dim, metric := view.Columns[0], view.Columns[1]
+			dimCol := colIdx[dim.Source]
+			metricCol := colIdx[metric.Source]
+			if dimCol >= len(row) || metricCol >= len(row) {
+				return parser.MultiSelectRowStat{}, false
+			}
+			dimVal := strings.TrimSpace(row[dimCol])
+			if dimVal == "" {
+				return parser.MultiSelectRowStat{}, false
+			}
+			v, ok := parseFinite(row[metricCol])
+			if !ok {
+				return parser.MultiSelectRowStat{}, false
+			}
+			return parser.MultiSelectRowStat{DimVal: dimVal, Value: v}, true
 		})
 	}
-	return views
+	if len(results) == 0 {
+		shared.ExitWithError("No dataSet data found", nil)
+	}
+	return results
 }
 
 func readCSVTable(filename string) (headers []string, dataRows [][]string) {

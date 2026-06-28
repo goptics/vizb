@@ -137,16 +137,17 @@ See the [Grouping Guide](/guides/grouping) and [3D Charts](/charts/3d) for detai
 |------|---------|-------------------|--------------|
 | **Grouped stat pick** | `-g`, `-r`, or non-default `-p` | Any number of numeric columns; optional `{label}` | Picks which numeric columns become chart series |
 | **Solo value axes** | `--select` only; all selected cols numeric | 2–3 cols per flag: `x,y` or `x,y,z` | Assigns columns to continuous coordinate axes; disables auto-group and auto-value |
-| **Solo mixed axes** | `--select` only; categorical `x` + numeric `y[,z]` | 2–3 cols per flag: `region,latency` | Category on x, values on y/z; [scatter](/charts/scatter) is the primary chart |
+| **Solo mixed axes** | One `--select` only; categorical `x` + numeric `y[,z]` | 2–3 cols: `region,latency` | Category on x, values on y/z; [scatter](/charts/scatter) is the primary chart |
+| **Solo multi-stat** | Repeatable `--select` only; 2 cols per flag | `region,latency` + `region,sales` | One dataset; each flag is an independent `dim,metric` pair; charts split by `stat.type` (default `latency by region`) |
 | **Auto-group** | No flags; mixed categorical + numeric file | — | Picks highest-cardinality categorical column as x |
 | **Auto-value** | No flags; all-numeric file | — | First 2–3 numeric columns as coordinate axes |
 
 **Solo `--select` rules:**
 
-- Each flag value needs **2–3 columns** (assigned to `x`, `y`, optional `z` by position).
-- **Explicit placement:** `x:region,y:latency,z:sales` — use for every column or omit prefixes for all.
-- **Repeatable** for multi-view output: each `--select` produces one dataset; HTML embeds all views (tabs in the UI).
-- **No overlap** with `--group` columns.
+- A **single** `--select` needs **2–3 columns** (assigned to `x`, `y`, optional `z` by position).
+- **Repeatable** `--select` (2 columns per flag only): each flag is `dim,metric` → one stat type in a **single dataset**; charts separate by stat name (default `metric by dim`, e.g. `latency by region`). Rename axis labels with `{label}` on the dimension column (`region{Region}`). Rename chart tabs with a trailing `(Title)`: `--select region{Region},latency (Latency by Region)`. Legacy: `{label}` on the metric column still overrides the stat name when `()` is omitted.
+- **Explicit placement** (single `--select` only): `x:region,y:latency,z:sales` — use for every column or omit prefixes for all.
+- **No overlap** with `--group` columns. Repeatable solo `--select` does **not** imply grouping.
 - Other parsers warn and ignore `--select`.
 
 ```bash
@@ -159,14 +160,14 @@ vizb scatter spiral-3d.csv --select x,y -o xy.html
 # Solo mixed: category region + value latency (scatter)
 vizb scatter examples/csv/region-metrics.csv --select region,latency -o mixed.html
 
-# Multi-view: two datasets in one HTML
+# Multi-stat: one dataset, charts by stat type
 vizb scatter examples/csv/region-metrics.csv \
   --select region,latency \
   --select region,sales \
   -o dual.html
 ```
 
-JSON output is a single dataset object when there is one view, or a **JSON array** when `--select` is repeated. Dataset names auto-generate as `region × latency`, `region × sales`, etc. With `--id`, additional views get suffixed ids (`my-id-2`, …).
+A single solo `--select` auto-names the dataset from its columns (`region × latency`). Repeatable `--select` keeps one dataset; chart tabs follow stat types (`latency by region`, `sales by region`).
 
 See [Grouping → Choosing: `--group` + select vs solo `--select`](/guides/grouping#choosing---group--select-vs-solo---select) for when to use each approach.
 

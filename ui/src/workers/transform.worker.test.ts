@@ -288,6 +288,28 @@ describe('transform.worker — value mode compute', () => {
     expect(chart.valuePoints3D).toEqual([[1, 2, 3]])
   })
 
+  it('replies with __mixed_mode__ signature for bar + mixed axes', () => {
+    const MIXED_AXES: Axis[] = [
+      { key: 'x', label: 'region' },
+      { key: 'y', label: 'latency', type: 'value' },
+    ]
+    send(
+      buildInit({
+        data: [
+          { xAxis: 'Asia', yAxis: '12', stats: [] },
+          { xAxis: 'EU', yAxis: '11', stats: [] },
+        ],
+        axes: MIXED_AXES,
+        chartType: 'bar',
+      })
+    )
+
+    const r = ready()
+    expect(r!.signatures).toHaveLength(1)
+    expect(r!.signatures[0]!.signature).toBe('__mixed_mode__')
+    expect(r!.groupNames).toEqual([])
+  })
+
   it('replies with __mixed_mode__ signature for scatter + mixed axes', () => {
     const MIXED_AXES: Axis[] = [
       { key: 'x', label: 'region' },

@@ -89,11 +89,21 @@ func (s *FlagBagSuite) TestParseConfigMapsSelectSoloAxisMode() {
 	cfg := bag.ParseConfig()
 	s.Empty(cfg.Select)
 	s.Require().Len(cfg.SelectViews, 1)
-	s.Require().Len(cfg.SelectViews[0], 2)
-	s.Equal("region", cfg.SelectViews[0][0].Source)
-	s.Equal("x", cfg.SelectViews[0][0].AxisKey)
-	s.Equal("latency", cfg.SelectViews[0][1].Source)
-	s.Equal("y", cfg.SelectViews[0][1].AxisKey)
+	s.Require().Len(cfg.SelectViews[0].Columns, 2)
+	s.Equal("region", cfg.SelectViews[0].Columns[0].Source)
+	s.Equal("x", cfg.SelectViews[0].Columns[0].AxisKey)
+	s.Equal("latency", cfg.SelectViews[0].Columns[1].Source)
+	s.Equal("y", cfg.SelectViews[0].Columns[1].AxisKey)
+}
+
+func (s *FlagBagSuite) TestParseConfigMapsSelectParenTypeLabel() {
+	cmd, bag := s.newCmdBag(slices.Clone(DataFlags))
+	s.Require().NoError(cmd.Flags().Set("select", "region{Region},latency (Latency by Region)"))
+	cfg := bag.ParseConfig()
+	s.Require().Len(cfg.SelectViews, 1)
+	s.Equal("Latency by Region", cfg.SelectViews[0].TypeLabel)
+	s.Equal("Region", cfg.SelectViews[0].Columns[0].Label)
+	s.Equal("latency", cfg.SelectViews[0].Columns[1].Source)
 }
 
 func (s *FlagBagSuite) TestParseConfigMapsRepeatableSelectSolo() {
@@ -102,8 +112,8 @@ func (s *FlagBagSuite) TestParseConfigMapsRepeatableSelectSolo() {
 	s.Require().NoError(cmd.Flags().Set("select", "region,sales"))
 	cfg := bag.ParseConfig()
 	s.Require().Len(cfg.SelectViews, 2)
-	s.Len(cfg.SelectViews[0], 2)
-	s.Len(cfg.SelectViews[1], 2)
+	s.Len(cfg.SelectViews[0].Columns, 2)
+	s.Len(cfg.SelectViews[1].Columns, 2)
 }
 
 func (s *FlagBagSuite) TestParseConfigMergesRepeatableSelectGrouped() {

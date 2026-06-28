@@ -310,6 +310,11 @@ func (b *FlagBag) ParseConfig() parser.Config {
 				}
 				cfg.SelectViews = append(cfg.SelectViews, view)
 			}
+			if len(cfg.SelectViews) > 1 {
+				if err := parser.ValidateMultiSelectStatViews(cfg.SelectViews); err != nil {
+					shared.ExitWithError(err.Error(), nil)
+				}
+			}
 		}
 	}
 	return cfg

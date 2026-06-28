@@ -105,9 +105,9 @@ vizb scatter data.csv --select x:region,y:latency,z:sales{Revenue} -o out.html
   At most one categorical column is allowed per view, and it must be on **x**. If a non-numeric column would land on y or z, vizb exits with an error suggesting `x:col,y:col` syntax.
 </Aside>
 
-### Multi-view output
+### Repeatable `--select` (multi-stat)
 
-Repeat `--select` to produce **multiple datasets** in one HTML file (dataset tabs in the UI). Each view needs 2–3 columns.
+Repeat `--select` with **two columns per flag** (`dim,metric`) to add independent stat combinations in **one dataset**. Charts separate by stat type (default `metric by dim`). Rename chart tabs with a trailing `(Title)`: `--select region{Region},latency (Latency by Region)`.
 
 ```bash
 vizb scatter examples/csv/region-metrics.csv \
@@ -116,7 +116,7 @@ vizb scatter examples/csv/region-metrics.csv \
   -o dual.html
 ```
 
-Dataset names are auto-generated (`region × latency`, `region × sales`). JSON output is an array when there is more than one view.
+This does not enable grouping — use `-g`/`-p` when you need explicit group axes or aggregation. A **single** `--select` with 2–3 columns still uses coordinate mixed/value mode.
 
 ## Auto-value mode (no flags)
 

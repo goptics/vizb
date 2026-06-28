@@ -134,6 +134,10 @@ func ParseJSON(filename string, cfg parser.Config) []shared.DataPoint {
 		}
 	}
 
+	if parser.IsMultiSelectStatMode(cfg) {
+		return parseJSONSelectStatMode(rows, seenCol, cfg)
+	}
+
 	if parser.IsSelectAxisMode(cfg) {
 		axesCfg := parser.SelectViewAxesCfg(cfg)
 		flag := parser.AxisColumnLabel(true)
@@ -435,39 +439,40 @@ func parseJSONValueMode(rows []map[string]any, colOrder []string, seenCol map[st
 	return results
 }
 
-// ParseSelectViews reads a JSON array once and parses each solo --select view
-// into separate data slices. cfg must be in select axis mode with len(SelectViews) > 1.
-func ParseSelectViews(filename string, cfg parser.Config) []parser.SelectViewData {
-	rows, colOrder, seenCol := readJSONArray(filename)
+// parseJSONSelectStatMode parses repeatable solo --select into one dataset. When
+// every flag shares the same dimension column, each input row becomes one point
+// with multiple stats; otherwise each (row × view) stays a separate point.
+func parseJSONSelectStatMode(rows []map[string]any, seenCol map[string]bool, cfg parser.Config) []shared.DataPoint {
 	flag := parser.AxisColumnLabel(true)
-	kindFn := jsonAxisColumnKind(rows, seenCol, colOrder, flag)
+	merge := parser.MultiSelectSharedDim(cfg.SelectViews)
 
-	views := make([]parser.SelectViewData, 0, len(cfg.SelectViews))
-	for i, view := range cfg.SelectViews {
-		axesCfg := parser.Config{
-			Axes:         append([]parser.ColumnSpec(nil), view...),
-			NumberUnit:   cfg.NumberUnit,
-			MetricColumn: cfg.MetricColumn,
+	for _, view := range cfg.SelectViews {
+		for _, spec := range view.Columns {
+			if !seenCol[spec.Source] {
+				shared.ExitWithError(fmt.Sprintf("%s field %q not found", flag, spec.Source), nil)
+			}
 		}
-		if err := parser.ResolveAxesTypes(&axesCfg, kindFn); err != nil {
-			shared.ExitWithError(err.Error(), nil)
-		}
-		var data []shared.DataPoint
-		if parser.IsMixedMode(axesCfg) {
-			data = parseJSONMixedMode(rows, colOrder, seenCol, axesCfg, flag)
-		} else {
-			data = parseJSONValueMode(rows, colOrder, seenCol, axesCfg, flag)
-		}
-		if len(data) == 0 {
-			shared.ExitWithError("No dataSet data found", nil)
-		}
-		views = append(views, parser.SelectViewData{
-			View: view,
-			Data: data,
-			Name: parser.SelectViewDatasetName(view, i),
+	}
+
+	var results []shared.DataPoint
+	for _, row := range rows {
+		parser.AppendMultiSelectStatPoint(&results, cfg.SelectViews, cfg.NumberUnit, merge, func(view parser.SelectView) (parser.MultiSelectRowStat, bool) {
+			dim, metric := view.Columns[0], view.Columns[1]
+			dimVal := strings.TrimSpace(stringify(row[dim.Source]))
+			if dimVal == "" {
+				return parser.MultiSelectRowStat{}, false
+			}
+			v, ok := leafNumber(row[metric.Source])
+			if !ok {
+				return parser.MultiSelectRowStat{}, false
+			}
+			return parser.MultiSelectRowStat{DimVal: dimVal, Value: v}, true
 		})
 	}
-	return views
+	if len(results) == 0 {
+		shared.ExitWithError("No dataSet data found", nil)
+	}
+	return results
 }
 
 func readJSONArray(filename string) (rows []map[string]any, colOrder []string, seenCol map[string]bool) {
