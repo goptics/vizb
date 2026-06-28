@@ -417,8 +417,8 @@ func (s *RootAutoGroupSuite) TestCSVAutoGroup3DPicksSingleColumnAndWarns() {
 
 	s.FileExists(out)
 	s.Contains(stdout, "Auto-grouped by column")
-	s.Contains(stderr, "Warning")
-	s.Contains(stderr, "--3d requires both x and y")
+	s.Contains(stderr, `flag "3d" skipped`)
+	s.Contains(stderr, "requires axis \"y\"")
 
 	ds := testutil.ReadDataset(s.T(), out)
 	s.NotEmpty(ds.Data)
@@ -426,6 +426,11 @@ func (s *RootAutoGroupSuite) TestCSVAutoGroup3DPicksSingleColumnAndWarns() {
 		s.NotEmpty(dp.XAxis)
 		s.Empty(dp.YAxis)
 	}
+
+	// The threeD flag was skipped (dropped) from the config.
+	barCfg, ok := ds.Settings[0].(*barchart.Config)
+	s.Require().True(ok)
+	s.Nil(barCfg.ThreeD)
 }
 
 func (s *RootAutoGroupSuite) TestJSONAutoGroupsXAxisNoFlags() {

@@ -109,6 +109,42 @@ func (s *RulesSuite) TestRequiresZAxis_SkipWhenZMissing() {
 	s.Contains(msg, "requires axis \"z\"")
 }
 
+// --- Requires3DMode ---
+
+func (s *RulesSuite) TestRequires3DMode_KeepWhenZPresent() {
+	rule := charts.Requires3DMode()
+	out, msg := rule(charts.RuleContext{
+		Axes: []charts.AxisInfo{{Key: "z", Type: ""}},
+	})
+	s.Equal(flags.Keep, out)
+	s.Empty(msg)
+}
+
+func (s *RulesSuite) TestRequires3DMode_KeepWhenXYZValueMode() {
+	rule := charts.Requires3DMode()
+	out, msg := rule(charts.RuleContext{
+		Axes: []charts.AxisInfo{
+			{Key: "x", Type: "value"},
+			{Key: "y", Type: "value"},
+			{Key: "z", Type: "value"},
+		},
+	})
+	s.Equal(flags.Keep, out)
+	s.Empty(msg)
+}
+
+func (s *RulesSuite) TestRequires3DMode_SkipWhenNo3DData() {
+	rule := charts.Requires3DMode()
+	out, msg := rule(charts.RuleContext{
+		Axes: []charts.AxisInfo{
+			{Key: "x"},
+			{Key: "y"},
+		},
+	})
+	s.Equal(flags.Skip, out)
+	s.Contains(msg, "requires 3D-capable axes")
+}
+
 // --- OnlyScatter2D ---
 
 func (s *RulesSuite) TestOnlyScatter2D_KeepWhenNoXYZValueMode() {

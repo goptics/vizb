@@ -65,6 +65,47 @@ func RequiresZAxis() flags.RuleFn {
 	return RequiresAxes("z")
 }
 
+// Requires3DMode returns a rule that Skips the flag when the runtime context
+// doesn't support 3D rendering. 3D rendering is supported when either:
+//   - a z-axis is present (explicit 3D data), or
+//   - x, y, and z axes are all present with type "value" (value-mode xyz,
+//     detected by auto-enable logic too late for the flag descriptor to see).
+func Requires3DMode() flags.RuleFn {
+	return func(ctx any) (flags.Outcome, string) {
+		rc, ok := ctx.(RuleContext)
+		if !ok {
+			return flags.Fatal, "internal: expected charts.RuleContext"
+		}
+		hasZ := false
+		hasX, hasY := false, false
+		xyzValue := true
+		for _, a := range rc.Axes {
+			switch a.Key {
+			case "x":
+				hasX = true
+				if a.Type != "value" {
+					xyzValue = false
+				}
+			case "y":
+				hasY = true
+				if a.Type != "value" {
+					xyzValue = false
+				}
+			case "z":
+				hasZ = true
+				if a.Type != "value" {
+					xyzValue = false
+				}
+			}
+		}
+		// 3D mode is active if z-axis data exists, or if value-mode xyz.
+		if hasZ || (hasX && hasY && hasX == hasY && hasX == xyzValue) {
+			return flags.Keep, ""
+		}
+		return flags.Skip, "requires 3D-capable axes (z-axis or value-mode xyz); ignoring"
+	}
+}
+
 // OnlyScatter2D returns a rule that Skips --visualmap when scatter is in xyz
 // value-mode (where autoEnableValueMode3D forces 3D rendering). Checks that
 // x, y, and z axes are all present with type "value".

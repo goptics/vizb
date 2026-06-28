@@ -54,18 +54,22 @@ var (
 	ThreeDFlag = flags.Flag{
 		Name: "3d", Usage: "Enable value 3D for x+y data (y categories on depth, metric on height)",
 		Kind: flags.KindBool, JSONKey: "threeD",
+		Rule: []flags.RuleFn{RequiresAxes("x", "y")},
 	}
 	ThreeDRotateFlag = flags.Flag{
 		Name: "3d-rotate", Usage: "Auto-rotate the 3D scene (only applies when z-axis data is present)",
 		Kind: flags.KindBool, JSONKey: "threeDRotate",
+		Rule: []flags.RuleFn{RequiresZAxis()},
 	}
 	ThreeDVisualMapFlag = flags.Flag{
 		Name: "3d-visualmap", Usage: "Color 3D bars/lines by metric value (visualMap gradient)",
 		Kind: flags.KindBool, JSONKey: "threeDVisualMap",
+		Rule: []flags.RuleFn{Requires3DMode()},
 	}
 	VisualMapFlag = flags.Flag{
 		Name: "visualmap", Usage: "Color 2D scatter points by metric (visualMap gradient)",
 		Kind: flags.KindBool, JSONKey: "visualMap",
+		Rule: []flags.RuleFn{OnlyScatter2D()},
 	}
 	SymbolFlag = flags.Flag{
 		Name:     "symbol",
