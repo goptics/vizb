@@ -99,6 +99,24 @@ func RunLinear(cmd *cobra.Command, args []string, meta RunMeta, cfg parser.Confi
 		applySelections(dataSet, configs)
 	}
 
+	// Phase B: evaluate applicability rules on materialised configs with
+	// data-derived axes. Rules are nil on every descriptor yet (Phase C adds
+	// them), so this is a no-op in Phase B.
+	{
+		var ruleAxes []config_charts.AxisInfo
+		for _, a := range dataSet.Axes {
+			ruleAxes = append(ruleAxes, config_charts.AxisInfo{Key: a.Key, Type: a.Type})
+		}
+		ruleCtx := config_charts.RuleContext{Axes: ruleAxes}
+		warnings, fatal := config_charts.ApplyRules(ruleCtx, configs)
+		if fatal != nil {
+			shared.ExitWithError(fatal.Error(), nil)
+		}
+		for _, w := range warnings {
+			fmt.Fprintln(os.Stderr, style.Warning.Render(w))
+		}
+	}
+
 	f := shared.MustCreateFile(outFile)
 	defer f.Close()
 
