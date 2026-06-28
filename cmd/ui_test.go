@@ -314,38 +314,70 @@ func (s *UISuite) TestRunUIPreservesScatterSettingsWithoutChartsFlag() {
 	s.Equal(true, scatter["threeDVisualMap"])
 }
 
-func (s *UISuite) TestRunUIAppliesOverrides() {
-	dir := s.T().TempDir()
-	input := filepath.Join(dir, "old.json")
-	testutil.WriteJSON(s.T(), input, shared.Dataset{
-		Name: "Test",
-		Axes: []shared.Axis{{Key: "x"}, {Key: "y"}, {Key: "name"}},
-		Settings: []internal_charts.ChartConfig{s.barFromJSON(map[string]any{
-			"type":  "bar",
-			"swap":  "xyn",
-			"scale": "linear",
-		})},
-		Data: []shared.DataPoint{{Name: "Test1", XAxis: "1", YAxis: "100"}},
-	})
-	out := filepath.Join(dir, "output.html")
-
-	rootCmd.SetArgs([]string{"ui", "-o", out, "--chart", "bar:swap=yxn", input})
-	s.Require().NoError(rootCmd.Execute())
-
-	html := s.read(out)
-	datasets := s.extractVIZBDataArray(html)
-	s.Require().Len(datasets, 1)
-
-	ds, ok := datasets[0].(map[string]any)
-	s.Require().True(ok, "expected dataset object, got %T", datasets[0])
-
-	settings, ok := ds["settings"].([]any)
-	s.Require().True(ok, "expected settings array in VIZB_DATA, got %T", ds["settings"])
-	s.Require().Len(settings, 1)
-
-	bar, ok := settings[0].(map[string]any)
-	s.Require().True(ok, "expected bar config object, got %T", settings[0])
-	s.Equal("yxn", bar["swap"], "override should replace baked swap value")
+func (s *UISuite) TestRunUIAppliesSwapOverride() {
+	tests := []struct {
+		chartType string
+		swapIn    string
+		swapOut   string
+		settings  []internal_charts.ChartConfig
+	}{
+		{
+			chartType: "bar",
+			swapIn:    "xyn",
+			swapOut:   "yxn",
+			settings: []internal_charts.ChartConfig{
+				s.barFromJSON(map[string]any{"type": "bar", "swap": "xyn", "scale": "linear"}),
+			},
+		},
+		{
+			chartType: "line",
+			swapIn:    "xyn",
+			swapOut:   "yxn",
+			settings: []internal_charts.ChartConfig{
+				s.chartFromJSON("line", map[string]any{"type": "line", "swap": "xyn", "scale": "linear"}),
+			},
+		},
+		{
+			chartType: "pie",
+			swapIn:    "xyn",
+			swapOut:   "nxy",
+			settings: []internal_charts.ChartConfig{
+				s.chartFromJSON("pie", map[string]any{"type": "pie", "swap": "xyn"}),
+			},
+		},
+		{
+			chartType: "heatmap",
+			swapIn:    "xyn",
+			swapOut:   "yxn",
+			settings: []internal_charts.ChartConfig{
+				&heatmapchart.Config{Type: "heatmap", Swap: "xyn"},
+			},
+		},
+		{
+			chartType: "radar",
+			swapIn:    "xyn",
+			swapOut:   "yxn",
+			settings: []internal_charts.ChartConfig{
+				&radarchart.Config{Type: "radar", Swap: "xyn"},
+			},
+		},
+	}
+	for _, tt := range tests {
+		s.Run(tt.chartType, func() {
+			dir := s.T().TempDir()
+			input := filepath.Join(dir, tt.chartType+".json")
+			testutil.WriteJSON(s.T(), input, shared.Dataset{
+				Name:     "Test",
+				Settings: tt.settings,
+				Data:     []shared.DataPoint{{Name: "T1", XAxis: "1", YAxis: "100"}},
+			})
+			out := filepath.Join(dir, "out.html")
+			rootCmd.SetArgs([]string{"ui", "-o", out, "--chart", tt.chartType + ":swap=" + tt.swapOut, input})
+			s.Require().NoError(rootCmd.Execute())
+			s.Equal(tt.swapOut, s.settingsSwap(s.read(out)))
+			ResetTestState()
+		})
+	}
 }
 
 func (s *UISuite) TestRunUIAppliesLineSortOverride() {
@@ -370,23 +402,6 @@ func (s *UISuite) TestRunUIAppliesLineSortOverride() {
 	s.Equal("asc", sortCfg["order"])
 }
 
-func (s *UISuite) TestRunUIAppliesLineOverride() {
-	dir := s.T().TempDir()
-	input := filepath.Join(dir, "line.json")
-	testutil.WriteJSON(s.T(), input, shared.Dataset{
-		Name: "Test",
-		Settings: []internal_charts.ChartConfig{
-			s.chartFromJSON("line", map[string]any{"type": "line", "swap": "xyn", "scale": "linear"}),
-		},
-		Data: []shared.DataPoint{{Name: "T1", XAxis: "1", YAxis: "100"}},
-	})
-	out := filepath.Join(dir, "out.html")
-
-	rootCmd.SetArgs([]string{"ui", "-o", out, "--chart", "line:swap=yxn", input})
-	s.Require().NoError(rootCmd.Execute())
-	s.Equal("yxn", s.settingsSwap(s.read(out)))
-}
-
 func (s *UISuite) TestRunUIAppliesPieSortOverride() {
 	dir := s.T().TempDir()
 	input := filepath.Join(dir, "pie.json")
@@ -408,57 +423,6 @@ func (s *UISuite) TestRunUIAppliesPieSortOverride() {
 	s.True(sortCfg["enabled"].(bool))
 	s.Equal("desc", sortCfg["order"])
 	s.True(pie["showLabels"].(bool))
-}
-
-func (s *UISuite) TestRunUIAppliesPieOverride() {
-	dir := s.T().TempDir()
-	input := filepath.Join(dir, "pie.json")
-	testutil.WriteJSON(s.T(), input, shared.Dataset{
-		Name: "Test",
-		Settings: []internal_charts.ChartConfig{
-			s.chartFromJSON("pie", map[string]any{"type": "pie", "swap": "xyn"}),
-		},
-		Data: []shared.DataPoint{{Name: "T1", XAxis: "1", YAxis: "100"}},
-	})
-	out := filepath.Join(dir, "out.html")
-
-	rootCmd.SetArgs([]string{"ui", "-o", out, "--chart", "pie:swap=nxy", input})
-	s.Require().NoError(rootCmd.Execute())
-	s.Equal("nxy", s.settingsSwap(s.read(out)))
-}
-
-func (s *UISuite) TestRunUIAppliesHeatmapOverride() {
-	dir := s.T().TempDir()
-	input := filepath.Join(dir, "heatmap.json")
-	testutil.WriteJSON(s.T(), input, shared.Dataset{
-		Name: "Test",
-		Settings: []internal_charts.ChartConfig{
-			&heatmapchart.Config{Type: "heatmap", Swap: "xyn"},
-		},
-		Data: []shared.DataPoint{{Name: "T1", XAxis: "1", YAxis: "100"}},
-	})
-	out := filepath.Join(dir, "out.html")
-
-	rootCmd.SetArgs([]string{"ui", "-o", out, "--chart", "heatmap:swap=yxn", input})
-	s.Require().NoError(rootCmd.Execute())
-	s.Equal("yxn", s.settingsSwap(s.read(out)))
-}
-
-func (s *UISuite) TestRunUIAppliesRadarOverride() {
-	dir := s.T().TempDir()
-	input := filepath.Join(dir, "radar.json")
-	testutil.WriteJSON(s.T(), input, shared.Dataset{
-		Name: "Test",
-		Settings: []internal_charts.ChartConfig{
-			&radarchart.Config{Type: "radar", Swap: "xyn"},
-		},
-		Data: []shared.DataPoint{{Name: "T1", XAxis: "1", YAxis: "100"}},
-	})
-	out := filepath.Join(dir, "out.html")
-
-	rootCmd.SetArgs([]string{"ui", "-o", out, "--chart", "radar:swap=yxn", input})
-	s.Require().NoError(rootCmd.Execute())
-	s.Equal("yxn", s.settingsSwap(s.read(out)))
 }
 
 func (s *UISuite) TestRunUI3DWithEmbeddedData() {

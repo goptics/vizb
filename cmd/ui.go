@@ -3,8 +3,10 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"net/url"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/goptics/vizb/cmd/cli"
@@ -14,7 +16,6 @@ import (
 	linechart "github.com/goptics/vizb/internal/charts/line"
 	piechart "github.com/goptics/vizb/internal/charts/pie"
 	radarchart "github.com/goptics/vizb/internal/charts/radar"
-	scatterchart "github.com/goptics/vizb/internal/charts/scatter"
 	"github.com/goptics/vizb/pkg/style"
 	"github.com/goptics/vizb/pkg/template"
 	"github.com/goptics/vizb/shared"
@@ -154,14 +155,15 @@ func runUI(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	needs3D := anyDatasetNeeds3D(datasets)
+	needs3D := anyDataset(datasets, shared.DatasetNeeds3D)
+	needsHeatmapChunk := anyDataset(datasets, func(ds *shared.Dataset) bool {
+		return slices.ContainsFunc(ds.Settings, shared.ChartConfigNeedsCorrelation)
+	})
 
 	jsonData, err := json.Marshal(datasets)
 	if err != nil {
 		shared.ExitWithError("Failed to marshal DataSet data: %v", err)
 	}
-
-	needsHeatmapChunk := anyDatasetNeedsCorrelation(datasets)
 	htmlContent := template.GenerateUI(jsonData, charts, needs3D, needsHeatmapChunk, template.VizbHTMLTemplate)
 	if _, err := f.WriteString(htmlContent); err != nil {
 		shared.ExitWithError("Failed to write output file: %v", err)
@@ -169,14 +171,10 @@ func runUI(cmd *cobra.Command, args []string) {
 	fmt.Println(style.Success.Render(fmt.Sprintf("🎉 Generated UI successfully: %s", outFile)))
 }
 
-// anyDatasetNeedsCorrelation reports whether any dataset setting requires the
-// correlation heatmap renderer chunk to be shipped.
-func anyDatasetNeedsCorrelation(datasets []shared.Dataset) bool {
+func anyDataset(datasets []shared.Dataset, pred func(*shared.Dataset) bool) bool {
 	for i := range datasets {
-		for _, cfg := range datasets[i].Settings {
-			if shared.ChartConfigNeedsCorrelation(cfg) {
-				return true
-			}
+		if pred(&datasets[i]) {
+			return true
 		}
 	}
 	return false
@@ -188,13 +186,9 @@ func filterSettings(settings []internal_charts.ChartConfig, allowed []string) []
 	if len(allowed) == 0 {
 		return settings
 	}
-	permitted := make(map[string]bool, len(allowed))
-	for _, c := range allowed {
-		permitted[c] = true
-	}
 	filtered := make([]internal_charts.ChartConfig, 0, len(settings))
 	for _, s := range settings {
-		if permitted[s.ChartType()] {
+		if slices.Contains(allowed, s.ChartType()) {
 			filtered = append(filtered, s)
 		}
 	}
@@ -217,173 +211,42 @@ func unionCharts(datasets []shared.Dataset) []string {
 	return charts
 }
 
-// applyOverrides mutates settings in place, applying any matching override
-// from the per-chart map. The per-chart-type switch is required because each
-// Config struct has a distinct concrete type, and the override values only
-// apply when both sides are the same type. An override whose key doesn't match
-// any existing setting is silently dropped (the user can't add a chart type
-// via --chart in the ui subcommand — the chart list is locked to what's
-// already in the input file).
+// applyOverrides merges sparse --chart overrides into existing settings via the
+// same JSON omitempty round-trip Materialise uses. Overrides whose chart type
+// is not already in the input file are silently dropped.
 func applyOverrides(settings *[]internal_charts.ChartConfig, overrides map[string]internal_charts.ChartConfig) {
-	if len(overrides) == 0 {
-		return
-	}
-	for _, s := range *settings {
-		ov, ok := overrides[s.ChartType()]
+	for i, cfg := range *settings {
+		ov, ok := overrides[cfg.ChartType()]
 		if !ok {
 			continue
 		}
-		switch s := s.(type) {
-		case *barchart.Config:
-			if o, ok := ov.(*barchart.Config); ok {
-				mergeBarConfig(s, o)
-			}
-		case *linechart.Config:
-			if o, ok := ov.(*linechart.Config); ok {
-				mergeLineConfig(s, o)
-			}
-		case *scatterchart.Config:
-			if o, ok := ov.(*scatterchart.Config); ok {
-				mergeScatterConfig(s, o)
-			}
-		case *piechart.Config:
-			if o, ok := ov.(*piechart.Config); ok {
-				mergePieConfig(s, o)
-			}
-		case *heatmapchart.Config:
-			if o, ok := ov.(*heatmapchart.Config); ok {
-				mergeHeatmapConfig(s, o)
-			}
-		case *radarchart.Config:
-			if o, ok := ov.(*radarchart.Config); ok {
-				mergeRadarConfig(s, o)
-			}
+		raw, err := json.Marshal(cfg)
+		if err != nil {
+			shared.ExitWithError("Failed to marshal chart config: %v", err)
 		}
-	}
-}
-
-// mergeBarConfig copies the non-zero fields of `from` into `to`. Mirrors the
-// override-merge logic in barchart.Materialise.
-func mergeBarConfig(to, from *barchart.Config) {
-	if from.Swap != "" {
-		to.Swap = from.Swap
-	}
-	if from.Sort != nil {
-		to.Sort = from.Sort
-	}
-	if from.Scale != "" {
-		to.Scale = from.Scale
-	}
-	if from.ShowLabels != nil {
-		to.ShowLabels = from.ShowLabels
-	}
-	if from.ThreeDRotate != nil {
-		to.ThreeDRotate = from.ThreeDRotate
-	}
-}
-
-// mergeLineConfig copies the non-zero fields of `from` into `to`. Mirrors the
-// override-merge logic in linechart.Materialise.
-func mergeLineConfig(to, from *linechart.Config) {
-	if from.Swap != "" {
-		to.Swap = from.Swap
-	}
-	if from.Sort != nil {
-		to.Sort = from.Sort
-	}
-	if from.Scale != "" {
-		to.Scale = from.Scale
-	}
-	if from.ShowLabels != nil {
-		to.ShowLabels = from.ShowLabels
-	}
-	if from.ThreeDRotate != nil {
-		to.ThreeDRotate = from.ThreeDRotate
-	}
-	if from.Symbol != "" {
-		to.Symbol = from.Symbol
-	}
-	if from.SymbolSize != nil {
-		to.SymbolSize = from.SymbolSize
-	}
-}
-
-// mergeScatterConfig copies the non-zero fields of `from` into `to`.
-func mergeScatterConfig(to, from *scatterchart.Config) {
-	if from.Swap != "" {
-		to.Swap = from.Swap
-	}
-	if from.Sort != nil {
-		to.Sort = from.Sort
-	}
-	if from.Scale != "" {
-		to.Scale = from.Scale
-	}
-	if from.ShowLabels != nil {
-		to.ShowLabels = from.ShowLabels
-	}
-	if from.ThreeDRotate != nil {
-		to.ThreeDRotate = from.ThreeDRotate
-	}
-	if from.Symbol != "" {
-		to.Symbol = from.Symbol
-	}
-	if from.SymbolSize != nil {
-		to.SymbolSize = from.SymbolSize
-	}
-}
-
-// mergePieConfig copies the non-zero fields of `from` into `to`. pie has no
-// Scale / ThreeDRotate.
-func mergePieConfig(to, from *piechart.Config) {
-	if from.Swap != "" {
-		to.Swap = from.Swap
-	}
-	if from.Sort != nil {
-		to.Sort = from.Sort
-	}
-	if from.ShowLabels != nil {
-		to.ShowLabels = from.ShowLabels
-	}
-}
-
-// mergeHeatmapConfig copies the non-zero fields of `from` into `to`. heatmap
-// has no Scale / ThreeDRotate.
-func mergeHeatmapConfig(to, from *heatmapchart.Config) {
-	if from.Swap != "" {
-		to.Swap = from.Swap
-	}
-	if from.Sort != nil {
-		to.Sort = from.Sort
-	}
-	if from.ShowLabels != nil {
-		to.ShowLabels = from.ShowLabels
-	}
-}
-
-// mergeRadarConfig copies the non-zero fields of `from` into `to`. radar has
-// no Scale / ThreeDRotate.
-func mergeRadarConfig(to, from *radarchart.Config) {
-	if from.Swap != "" {
-		to.Swap = from.Swap
-	}
-	if from.Sort != nil {
-		to.Sort = from.Sort
-	}
-	if from.ShowLabels != nil {
-		to.ShowLabels = from.ShowLabels
-	}
-}
-
-// anyDatasetNeeds3D reports whether any dataset will render a 3D chart
-// (grouped z, baked threeD, or value axes with z). Mirrors pipeline writeOutput.
-func anyDatasetNeeds3D(datasets []shared.Dataset) bool {
-	for i := range datasets {
-		if shared.DatasetNeeds3D(&datasets[i]) {
-			return true
+		var merged map[string]any
+		if err := json.Unmarshal(raw, &merged); err != nil {
+			shared.ExitWithError("Failed to decode chart config: %v", err)
 		}
+		ob, err := json.Marshal(ov)
+		if err != nil {
+			shared.ExitWithError("Failed to marshal chart override: %v", err)
+		}
+		var om map[string]any
+		if err := json.Unmarshal(ob, &om); err != nil {
+			shared.ExitWithError("Failed to decode chart override: %v", err)
+		}
+		maps.Copy(merged, om)
+		out, err := json.Marshal(merged)
+		if err != nil {
+			shared.ExitWithError("Failed to marshal merged chart config: %v", err)
+		}
+		decoded, err := internal_charts.Decode(cfg.ChartType(), out)
+		if err != nil {
+			shared.ExitWithError("Failed to decode merged chart config: %v", err)
+		}
+		(*settings)[i] = decoded
 	}
-	return false
 }
 
 // validateAPIURL ensures a string is a valid http(s) URL.

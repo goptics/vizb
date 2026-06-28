@@ -3,6 +3,7 @@ package charts
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 
 	"github.com/goptics/vizb/internal/flags"
 )
@@ -20,14 +21,6 @@ type RuleContext struct {
 	ChartType string     // e.g. "bar", "line"
 	Axes      []AxisInfo // data-derived axes (post-parse, includes AutoGroup cases)
 	Value     any        // this flag's current value from the marshalled Config
-}
-
-func axisMap(axes []AxisInfo) map[string]AxisInfo {
-	m := make(map[string]AxisInfo, len(axes))
-	for _, a := range axes {
-		m[a.Key] = a
-	}
-	return m
 }
 
 func axisKeys(axes []AxisInfo) []string {
@@ -50,19 +43,13 @@ func RequiresAxes(keys ...string) flags.RuleFn {
 		if !ok {
 			return flags.Fatal, "internal: expected charts.RuleContext"
 		}
-		present := axisMap(rc.Axes)
 		for _, k := range keys {
-			if _, exists := present[k]; !exists {
+			if !slices.ContainsFunc(rc.Axes, func(a AxisInfo) bool { return a.Key == k }) {
 				return flags.Skip, fmt.Sprintf("requires axis %q (present: %v)", k, axisKeys(rc.Axes))
 			}
 		}
 		return flags.Keep, ""
 	}
-}
-
-// RequiresZAxis is a convenience wrapper: RequiresAxes("z").
-func RequiresZAxis() flags.RuleFn {
-	return RequiresAxes("z")
 }
 
 // Requires3DMode returns a rule that Skips the flag when no z-axis is present.

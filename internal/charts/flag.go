@@ -59,7 +59,7 @@ var (
 	ThreeDRotateFlag = flags.Flag{
 		Name: "3d-rotate", Usage: "Auto-rotate the 3D scene (only applies when z-axis data is present)",
 		Kind: flags.KindBool, JSONKey: "threeDRotate",
-		Rule: []flags.RuleFn{RequiresZAxis()},
+		Rule: []flags.RuleFn{RequiresAxes("z")},
 	}
 	ThreeDVisualMapFlag = flags.Flag{
 		Name: "3d-visualmap", Usage: "Color 3D bars/lines by metric value (visualMap gradient)",

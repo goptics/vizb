@@ -30,8 +30,8 @@ func (testRuleConfig) StatEnabled() bool  { return false }
 func (testRuleConfig) StatMath() []string { return nil }
 func (testRuleConfig) SwapString() string { return "" }
 
-// RulesSuite covers rule builders (RequiresAxes, RequiresZAxis, OnlyScatter2D)
-// and the ApplyRules pipeline pass.
+// RulesSuite covers rule builders (RequiresAxes, OnlyScatter2D) and the
+// ApplyRules pipeline pass.
 type RulesSuite struct {
 	suite.Suite
 }
@@ -88,26 +88,6 @@ func (s *RulesSuite) TestRequiresAxes_PanicsOnEmptyKeys() {
 	s.Panics(func() {
 		charts.RequiresAxes()
 	})
-}
-
-// --- RequiresZAxis convenience ---
-
-func (s *RulesSuite) TestRequiresZAxis_KeepWhenZPresent() {
-	rule := charts.RequiresZAxis()
-	out, msg := rule(charts.RuleContext{
-		Axes: []charts.AxisInfo{{Key: "z"}},
-	})
-	s.Equal(flags.Keep, out)
-	s.Empty(msg)
-}
-
-func (s *RulesSuite) TestRequiresZAxis_SkipWhenZMissing() {
-	rule := charts.RequiresZAxis()
-	out, msg := rule(charts.RuleContext{
-		Axes: []charts.AxisInfo{{Key: "x"}, {Key: "y"}},
-	})
-	s.Equal(flags.Skip, out)
-	s.Contains(msg, "requires axis \"z\"")
 }
 
 // --- Requires3DMode ---
