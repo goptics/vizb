@@ -29,10 +29,10 @@ func (s *RegistrySuite) TestRegistryListsChartTypes() {
 }
 
 func (s *RegistrySuite) TestRegistryRejectsDuplicate() {
-	factory := func() charts.ChartConfig { return &barchart.Config{} }
-	charts.Register("test_dup", factory)
+	spec := charts.Spec{Type: "test_dup", Factory: func() charts.ChartConfig { return &barchart.Config{} }}
+	charts.Register(spec)
 	s.Panics(func() {
-		charts.Register("test_dup", factory)
+		charts.Register(spec)
 	})
 }
 

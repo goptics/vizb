@@ -24,43 +24,12 @@ func (c Config) StatMath() []string { return c.Stat.StatMath() }
 func (c Config) SwapString() string { return c.Swap }
 
 func init() {
-	charts.Register(Type, func() charts.ChartConfig { return &Config{} })
-}
-
-type Flags struct {
-	Swap, Sort string
-	ShowLabels bool
-	Stat       []string
-}
-
-func Materialise(flags Flags, override *Config) Config {
-	out := Config{Type: Type}
-
-	out.Swap = flags.Swap
-	if flags.Sort != "" {
-		out.Sort = &shared.Sort{Enabled: true, Order: flags.Sort}
-	}
-	if flags.ShowLabels {
-		v := true
-		out.ShowLabels = &v
-	}
-
-	out.Stat = shared.MaterialiseStatFlags(flags.Stat)
-
-	if override != nil {
-		if override.Swap != "" {
-			out.Swap = override.Swap
-		}
-		if override.Sort != nil {
-			out.Sort = override.Sort
-		}
-		if override.ShowLabels != nil {
-			out.ShowLabels = override.ShowLabels
-		}
-		if override.Stat != nil {
-			out.Stat = override.Stat
-		}
-	}
-
-	return out
+	charts.Register(charts.Spec{
+		Type:    Type,
+		Use:     "radar [target]",
+		Short:   "Generate a radar chart from data",
+		Long:    "Generate an interactive radar chart (HTML or JSON) from benchmark output or tabular CSV/JSON data.",
+		Factory: func() charts.ChartConfig { return &Config{} },
+		Flags:   charts.BaseChartFlags,
+	})
 }

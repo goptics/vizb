@@ -4,6 +4,8 @@
 package line
 
 import (
+	"slices"
+
 	"github.com/goptics/vizb/config/charts"
 	"github.com/goptics/vizb/shared"
 )
@@ -31,87 +33,15 @@ func (c Config) StatMath() []string { return c.Stat.StatMath() }
 func (c Config) SwapString() string { return c.Swap }
 
 func init() {
-	charts.Register(Type, func() charts.ChartConfig { return &Config{} })
-}
-
-type Flags struct {
-	Swap, Scale, Sort string
-	ShowLabels        bool
-	Symbol            string
-	SymbolSize        *float64
-	ThreeDRotate      bool
-	ThreeD            bool
-	ThreeDVisualMap   *bool
-	Stat              []string
-}
-
-func Materialise(flags Flags, override *Config) Config {
-	out := Config{Type: Type}
-
-	out.Swap = flags.Swap
-	out.Scale = flags.Scale
-	if flags.Sort != "" {
-		out.Sort = &shared.Sort{Enabled: true, Order: flags.Sort}
-	}
-	if flags.ShowLabels {
-		v := true
-		out.ShowLabels = &v
-	}
-	if flags.Symbol != "" {
-		out.Symbol = flags.Symbol
-	}
-	if flags.SymbolSize != nil {
-		out.SymbolSize = flags.SymbolSize
-	}
-	if flags.ThreeDRotate {
-		v := true
-		out.ThreeDRotate = &v
-	}
-	if flags.ThreeD {
-		v := true
-		out.ThreeD = &v
-	}
-	if flags.ThreeDVisualMap != nil {
-		out.ThreeDVisualMap = flags.ThreeDVisualMap
-	}
-
-	out.Stat = shared.MaterialiseStatFlags(flags.Stat)
-
-	if override != nil {
-		if override.Swap != "" {
-			out.Swap = override.Swap
-		}
-		if override.Sort != nil {
-			out.Sort = override.Sort
-		}
-		if override.Scale != "" {
-			out.Scale = override.Scale
-		}
-		if override.ShowLabels != nil {
-			out.ShowLabels = override.ShowLabels
-		}
-		if override.Symbol != "" {
-			out.Symbol = override.Symbol
-		}
-		if override.SymbolSize != nil {
-			out.SymbolSize = override.SymbolSize
-		}
-		if override.ThreeDRotate != nil {
-			out.ThreeDRotate = override.ThreeDRotate
-		}
-		if override.ThreeD != nil {
-			out.ThreeD = override.ThreeD
-		}
-		if override.ThreeDVisualMap != nil {
-			out.ThreeDVisualMap = override.ThreeDVisualMap
-		}
-		if override.Stat != nil {
-			out.Stat = override.Stat
-		}
-	}
-
-	if out.Scale == "" {
-		out.Scale = "linear"
-	}
-	return out
+	charts.Register(charts.Spec{
+		Type:    Type,
+		Use:     "line [target]",
+		Short:   "Generate a line chart from data",
+		Long:    "Generate an interactive line chart (HTML or JSON) from benchmark output or tabular CSV/JSON data.",
+		Factory: func() charts.ChartConfig { return &Config{} },
+		Flags: append(slices.Clone(charts.BaseChartFlags),
+			charts.ScaleFlag, charts.ThreeDFlag, charts.ThreeDRotateFlag, charts.ThreeDVisualMapFlag,
+			charts.SymbolFlag, charts.SymbolSizeFlag,
+		),
+	})
 }

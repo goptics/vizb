@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"os"
 	"strings"
 
 	"github.com/goptics/vizb/cmd/cli"
@@ -133,9 +134,12 @@ func runUI(cmd *cobra.Command, args []string) {
 		// datasets so --chart overrides can be validated against the actual
 		// selection (matches the same rule as the root command).
 		active := unionCharts(datasets)
-		overrides, err := shared.ParseOverrides(uiOpts.ChartSpecs, active, nil)
+		overrides, warnings, err := shared.ParseOverrides(uiOpts.ChartSpecs, active, nil)
 		if err != nil {
 			shared.ExitWithError(err.Error(), nil)
+		}
+		for _, w := range warnings {
+			fmt.Fprintln(os.Stderr, style.Warning.Render(w))
 		}
 		for i := range datasets {
 			applyOverrides(&datasets[i].Settings, overrides)

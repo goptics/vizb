@@ -13,22 +13,9 @@ import (
 // Flags().Changed("sort") etc. reflect only the current test's args.
 // Test-only entrypoint — production code must not call this.
 func ResetTestState() {
-	rootOpts.Name = ""
-	rootOpts.Description = ""
-	rootOpts.Tag = ""
-	rootOpts.OutputFile = ""
-	rootOpts.Parser = "auto"
-	rootOpts.Group = nil
-	rootOpts.GroupPattern = "x"
-	rootOpts.GroupRegex = ""
-	rootOpts.Filter = ""
-	rootOpts.MemUnit = "B"
-	rootOpts.TimeUnit = "ns"
-	rootOpts.NumberUnit = ""
-	rootOpts.Sort = ""
-	rootOpts.ShowLabels = false
-	rootOpts.ChartSpecs = nil
-	rootOpts.Charts = append([]string(nil), defaultChartTypes...)
+	rootBag.Reset()
+	rootChartSpecs = nil
+	rootCharts = append([]string(nil), defaultChartTypes...)
 
 	uiOpts.OutputFile = ""
 	uiOpts.ChartSpecs = nil

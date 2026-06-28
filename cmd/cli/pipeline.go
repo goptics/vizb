@@ -32,11 +32,11 @@ import (
 // passed-through Dataset's baked chart selection. Chart subcommands pass true
 // (explicit single chart intent); the root command passes false (preserve the
 // dataset as-is).
-func RunLinear(cmd *cobra.Command, args []string, common CommonOptions, configs []config_charts.ChartConfig, applyOnPassthrough bool) {
-	RunLinearWithConfig(cmd, args, common, common.ParseConfig(), configs, applyOnPassthrough)
-}
-
-func RunLinearWithConfig(cmd *cobra.Command, args []string, common CommonOptions, cfg parser.Config, configs []config_charts.ChartConfig, applyOnPassthrough bool) {
+//
+// meta carries the dataset metadata (name/description/tag/output) and the
+// selected parser; cfg is the resolved parser.Config (built by the caller's
+// FlagBag.ParseConfig).
+func RunLinear(cmd *cobra.Command, args []string, meta RunMeta, cfg parser.Config, configs []config_charts.ChartConfig, applyOnPassthrough bool) {
 	target, ok := resolveInput(cmd, args)
 	if !ok {
 		return
@@ -44,21 +44,21 @@ func RunLinearWithConfig(cmd *cobra.Command, args []string, common CommonOptions
 
 	// In 'auto' mode (the default), sniff the input content and surface the
 	// auto-selected parser so the choice is never silent.
-	if common.Parser == "auto" {
+	if meta.Parser == "auto" {
 		detected := parser.DetectParser(target)
 		// --json-path only makes sense for JSON; an envelope file starts with '{'
 		// which auto-detect reads as the "go" fallback, so nudge it to json.
 		if cfg.JSONPath != "" && detected != "json" {
 			detected = "json"
 		}
-		common.Parser = detected
+		meta.Parser = detected
 		fmt.Println(style.Info.Render("✨ Auto-detected parser: " + detected))
 	}
 
 	// Enable auto-grouping for the csv/json parsers when the user supplied no
 	// explicit grouping. The csv/json parsers infer the category axis from the
 	// data so `vizb data.csv` produces a usable chart without -g/-p/-r.
-	if (common.Parser == "csv" || common.Parser == "json") && parser.NoExplicitGrouping(cfg) {
+	if (meta.Parser == "csv" || meta.Parser == "json") && parser.NoExplicitGrouping(cfg) {
 		cfg.AutoGroup = true
 	}
 	for _, c := range configs {
@@ -66,7 +66,7 @@ func RunLinearWithConfig(cmd *cobra.Command, args []string, common CommonOptions
 	}
 
 	WarnThreeDIfIneligible(cfg, configs)
-	outFile := ResolveOutputFileName(common.OutputFile)
+	outFile := ResolveOutputFileName(meta.OutputFile)
 
 	// First try to read the input as an existing vizb Dataset JSON. --json-path
 	// explicitly marks the input as raw enveloped data, not a vizb Dataset, so
@@ -78,12 +78,12 @@ func RunLinearWithConfig(cmd *cobra.Command, args []string, common CommonOptions
 	}
 	if dataSet == nil {
 		// Not Dataset JSON: parse raw/bench input into data points.
-		target = preprocessInputFile(target, common.Parser)
-		if common.Parser == "json" && cfg.JSONPath != "" {
+		target = preprocessInputFile(target, meta.Parser)
+		if meta.Parser == "json" && cfg.JSONPath != "" {
 			target = applyJSONPath(target, cfg.JSONPath)
 		}
-		results := prepareData(target, common.Parser, cfg)
-		dataSet = assembleDataset(results, common, configs, cfg)
+		results := prepareData(target, meta.Parser, cfg)
+		dataSet = assembleDataset(results, meta, configs, cfg)
 		// Validate swap only for chart subcommands (applyOnPassthrough true).
 		// The root command stores swap as-is, trusting the UI to handle it.
 		if applyOnPassthrough {
@@ -104,22 +104,18 @@ func RunLinearWithConfig(cmd *cobra.Command, args []string, common CommonOptions
 
 	writeOutput(f, dataSet, InferFormatFromExtension(outFile))
 
-	HandleOutputResult(f, common.OutputFile)
+	HandleOutputResult(f, meta.OutputFile)
 }
 
 // RunSingleChart is the entry point for a single-chart subcommand. It forwards
 // the per-chart Config (built by the subcommand via its chart's Materialise) to
 // the shared linear pipeline. An empty configs slice is treated as a no-op so
 // callers can defensively guard against misconfiguration.
-func RunSingleChart(cmd *cobra.Command, args []string, common CommonOptions, configs []config_charts.ChartConfig) {
-	RunSingleChartWithConfig(cmd, args, common, common.ParseConfig(), configs)
-}
-
-func RunSingleChartWithConfig(cmd *cobra.Command, args []string, common CommonOptions, cfg parser.Config, configs []config_charts.ChartConfig) {
+func RunSingleChart(cmd *cobra.Command, args []string, meta RunMeta, cfg parser.Config, configs []config_charts.ChartConfig) {
 	if len(configs) == 0 {
 		return
 	}
-	RunLinearWithConfig(cmd, args, common, cfg, configs, true)
+	RunLinear(cmd, args, meta, cfg, configs, true)
 }
 
 // WarnThreeDIfIneligible prints a warning when threeD is baked on a bar/line
@@ -131,30 +127,15 @@ func WarnThreeDIfIneligible(cfg parser.Config, configs []config_charts.ChartConf
 	shared.PrintWarning("Warning: --3d requires both x and y in --group-pattern; value 3D will not render.")
 }
 
-// ValidateScale normalises and validates a scale flag (linear/log), falling back
-// to "linear" with a warning. Used by bar/line which expose --scale.
-func ValidateScale(scale *string) {
-	utils.ApplyValidationRules([]utils.ValidationRule{{
-		Label:      "scale",
-		Value:      scale,
-		ValidSet:   []string{"linear", "log"},
-		Normalizer: strings.ToLower,
-		Default:    "linear",
-	}})
-}
-
-// ValidateSymbolFlags validates --symbol and --symbol-size when set.
-func ValidateSymbolFlags(symbol string, symbolSize *float64) {
-	if symbol != "" {
-		if err := shared.ValidateSymbol(symbol); err != nil {
-			shared.ExitWithError(err.Error(), nil)
-		}
-	}
-	if symbolSize != nil {
-		if err := shared.ValidateSymbolSize(*symbolSize); err != nil {
-			shared.ExitWithError(err.Error(), nil)
-		}
-	}
+// RunMeta carries the dataset metadata and selected parser from a command's
+// FlagBag into the linear pipeline. It is plain value passing — flag declaration
+// and validation live in the FlagBag, not here.
+type RunMeta struct {
+	Name        string
+	Description string
+	Tag         string
+	OutputFile  string
+	Parser      string
 }
 
 // resolveInput returns the input file path. It accepts a file arg, else reads
@@ -427,24 +408,21 @@ func autoEnableValueMode3D(configs []config_charts.ChartConfig, axes []shared.Ax
 		return
 	}
 	v := true
-	for i, c := range configs {
+	for _, c := range configs {
 		switch bc := c.(type) {
-		case barchart.Config:
+		case *barchart.Config:
 			applyValueMode3DFlags(&bc.ThreeD, &bc.ThreeDVisualMap, v, visualMap)
-			configs[i] = bc
-		case linechart.Config:
+		case *linechart.Config:
 			applyValueMode3DFlags(&bc.ThreeD, &bc.ThreeDVisualMap, v, visualMap)
-			configs[i] = bc
-		case scatterchart.Config:
+		case *scatterchart.Config:
 			applyValueMode3DFlags(&bc.ThreeD, &bc.ThreeDVisualMap, v, visualMap)
-			configs[i] = bc
 		}
 	}
 }
 
 // assembleDataset builds the output Dataset from parsed results plus the
 // command's metadata and the resolved per-chart configs.
-func assembleDataset(results []shared.DataPoint, common CommonOptions, configs []config_charts.ChartConfig, cfg parser.Config) *shared.Dataset {
+func assembleDataset(results []shared.DataPoint, m RunMeta, configs []config_charts.ChartConfig, cfg parser.Config) *shared.Dataset {
 	var axes []shared.Axis
 	if cfg.AutoGroup {
 		// Auto-grouping modified the config inside the parser; derive axes
@@ -460,8 +438,8 @@ func assembleDataset(results []shared.DataPoint, common CommonOptions, configs [
 	axes = appendMetricAxis(axes, cfg, results)
 
 	dataSet := &shared.Dataset{
-		Name:        common.Name,
-		Description: common.Description,
+		Name:        m.Name,
+		Description: m.Description,
 		Data:        results,
 		Settings:    configs,
 		Axes:        axes,
@@ -475,7 +453,7 @@ func assembleDataset(results []shared.DataPoint, common CommonOptions, configs [
 		dataSet.Meta = &meta
 	}
 
-	dataSet.Tag = common.Tag
+	dataSet.Tag = m.Tag
 	dataSet.Timestamp = time.Now().UTC().Format(time.RFC3339)
 
 	return dataSet

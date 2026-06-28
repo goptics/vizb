@@ -4,25 +4,23 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/goptics/vizb/cmd/cli"
 	config_charts "github.com/goptics/vizb/config/charts"
-	barchart "github.com/goptics/vizb/config/charts/bar"
-	heatmapchart "github.com/goptics/vizb/config/charts/heatmap"
-	linechart "github.com/goptics/vizb/config/charts/line"
-	piechart "github.com/goptics/vizb/config/charts/pie"
-	radarchart "github.com/goptics/vizb/config/charts/radar"
-	scatterchart "github.com/goptics/vizb/config/charts/scatter"
+	"github.com/goptics/vizb/config/flags"
 	"github.com/goptics/vizb/pkg/style"
 
-	// Chart subcommands self-register into cli's registry via their init().
-	_ "github.com/goptics/vizb/cmd/charts/bar"
-	_ "github.com/goptics/vizb/cmd/charts/heatmap"
-	_ "github.com/goptics/vizb/cmd/charts/line"
-	_ "github.com/goptics/vizb/cmd/charts/pie"
-	_ "github.com/goptics/vizb/cmd/charts/radar"
-	_ "github.com/goptics/vizb/cmd/charts/scatter"
+	// Chart configs self-register into the config/charts registry via init();
+	// blank-importing them makes the registry (and thus the subcommands and
+	// --chart key set) complete.
+	_ "github.com/goptics/vizb/config/charts/bar"
+	_ "github.com/goptics/vizb/config/charts/heatmap"
+	_ "github.com/goptics/vizb/config/charts/line"
+	_ "github.com/goptics/vizb/config/charts/pie"
+	_ "github.com/goptics/vizb/config/charts/radar"
+	_ "github.com/goptics/vizb/config/charts/scatter"
 
 	// Parsers self-register into pkg/parser via their init().
 	_ "github.com/goptics/vizb/pkg/parser/csv"
@@ -43,16 +41,21 @@ var (
 	validChartTypes   = shared.ValidChartTypes
 )
 
-// rootOptions holds the root command's flags: the shared linear data flags plus
-// the multi-chart selection (--charts) and the per-chart --chart override specs.
+// rootFlags are the descriptors the root command binds: every data flag plus the
+// shared chart-seed flags (sort/labels/stat) that seed every selected chart.
 // Scale is per-chart only (bar/line); the root command has no global --scale.
-type rootOptions struct {
-	cli.LinearOptions
-	Charts     []string
-	ChartSpecs []string
+func rootFlags() []flags.Flag {
+	return append(slices.Clone(cli.DataFlags),
+		config_charts.SortFlag, config_charts.LabelsFlag, config_charts.StatFlag)
 }
 
-var rootOpts rootOptions
+// rootBag binds and validates the root flags; rootCharts/rootChartSpecs are the
+// root-only chart selection (--charts) and per-chart override specs (--chart).
+var (
+	rootBag        = cli.NewFlagBag(rootFlags())
+	rootCharts     []string
+	rootChartSpecs []string
+)
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -79,119 +82,57 @@ func Execute() {
 }
 
 func init() {
-	rootOpts.Bind(rootCmd.Flags())
-	rootCmd.Flags().StringSliceVarP(&rootOpts.Charts, "charts", "c", defaultChartTypes, "Chart types to generate (bar, line, scatter, pie, heatmap, radar)")
-	rootCmd.Flags().StringArrayVar(&rootOpts.ChartSpecs, "chart", nil,
+	rootBag.Bind(rootCmd.Flags())
+	rootCmd.Flags().StringSliceVarP(&rootCharts, "charts", "c", defaultChartTypes, "Chart types to generate (bar, line, scatter, pie, heatmap, radar)")
+	rootCmd.Flags().StringArrayVar(&rootChartSpecs, "chart", nil,
 		"Per-chart settings override: <type>:<key>=<val>(,<key>=<val>)* or bare flags (labels, 3d-rotate, 3d). "+
 			"Keys: swap, sort, scale, labels, 3d-rotate, 3d, symbol, symbol-size. E.g. --chart bar:swap=yxn,sort=asc --chart scatter:symbol=diamond,symbol-size=12")
 
-	// Register the chart subcommands (bar/line/pie/heatmap/radar) from the registry.
-	rootCmd.AddCommand(cli.Commands()...)
+	// Build the chart subcommands (bar/line/pie/heatmap/radar/scatter) from the
+	// config/charts registry.
+	rootCmd.AddCommand(cli.ChartCommands()...)
 }
 
 func runBenchmark(cmd *cobra.Command, args []string) {
 	warnDeprecatedRootFlags(cmd)
-	validateRootOptions()
+	validateRootOptions(cmd)
 
-	// Parse the per-chart --chart overrides into a typed map. An unknown
-	// chart type or out-of-range value short-circuits with a CLI error.
-	overrides, err := shared.ParseOverrides(rootOpts.ChartSpecs, rootOpts.Charts, nil)
+	// Parse the per-chart --chart overrides into typed Configs. Unknown chart
+	// types or out-of-range values are CLI errors; keys valid for another chart
+	// type are dropped with a warning.
+	overrides, warnings, err := shared.ParseOverrides(rootChartSpecs, rootCharts, nil)
 	if err != nil {
 		shared.ExitWithError(err.Error(), nil)
 	}
+	for _, w := range warnings {
+		fmt.Fprintln(os.Stderr, style.Warning.Render(w))
+	}
 
-	// Build a per-chart Config for every active chart type. The switch is
-	// required because each chart's Materialise is typed to that chart's Flags
-	// struct. The override from `overrides[chartType]` is passed as the
-	// second arg so per-chart values (e.g. --chart bar:swap=yxn) win over the
-	// global -s/--sort/-l/--show-labels defaults seeded via flagsFromDefaults.
-	configs := make([]config_charts.ChartConfig, 0, len(rootOpts.Charts))
-	for _, chartType := range rootOpts.Charts {
-		var cfg config_charts.ChartConfig
-		switch chartType {
-		case "bar":
-			flags := barchart.Flags{
-				Scale:      "linear",
-				Sort:       rootOpts.Sort,
-				ShowLabels: rootOpts.ShowLabels,
-				Stat:       rootOpts.Stat,
-			}
-			var override *barchart.Config
-			if o, ok := overrides["bar"]; ok {
-				override = o.(*barchart.Config)
-			}
-			cfg = barchart.Materialise(flags, override)
-		case "line":
-			flags := linechart.Flags{
-				Scale:      "linear",
-				Sort:       rootOpts.Sort,
-				ShowLabels: rootOpts.ShowLabels,
-				Stat:       rootOpts.Stat,
-			}
-			var override *linechart.Config
-			if o, ok := overrides["line"]; ok {
-				override = o.(*linechart.Config)
-			}
-			cfg = linechart.Materialise(flags, override)
-		case "scatter":
-			flags := scatterchart.Flags{
-				Scale:      "linear",
-				Sort:       rootOpts.Sort,
-				ShowLabels: rootOpts.ShowLabels,
-				Stat:       rootOpts.Stat,
-			}
-			var override *scatterchart.Config
-			if o, ok := overrides["scatter"]; ok {
-				override = o.(*scatterchart.Config)
-			}
-			cfg = scatterchart.Materialise(flags, override)
-		case "pie":
-			flags := piechart.Flags{
-				Sort:       rootOpts.Sort,
-				ShowLabels: rootOpts.ShowLabels,
-				Stat:       rootOpts.Stat,
-			}
-			var override *piechart.Config
-			if o, ok := overrides["pie"]; ok {
-				override = o.(*piechart.Config)
-			}
-			cfg = piechart.Materialise(flags, override)
-		case "heatmap":
-			flags := heatmapchart.Flags{
-				Sort:       rootOpts.Sort,
-				ShowLabels: rootOpts.ShowLabels,
-				Stat:       rootOpts.Stat,
-			}
-			var override *heatmapchart.Config
-			if o, ok := overrides["heatmap"]; ok {
-				override = o.(*heatmapchart.Config)
-			}
-			cfg = heatmapchart.Materialise(flags, override)
-		case "radar":
-			flags := radarchart.Flags{
-				Sort:       rootOpts.Sort,
-				ShowLabels: rootOpts.ShowLabels,
-				Stat:       rootOpts.Stat,
-			}
-			var override *radarchart.Config
-			if o, ok := overrides["radar"]; ok {
-				override = o.(*radarchart.Config)
-			}
-			cfg = radarchart.Materialise(flags, override)
+	// The root command's chart-seed flags (sort/labels/stat) seed every chart;
+	// the per-chart --chart override (when present) wins over the seed. Scale is
+	// per-chart only, so it is not seeded here — Materialise applies the "linear"
+	// default from the chart's own ScaleFlag.
+	seed := rootBag.ChartSeed(cmd)
+
+	configs := make([]config_charts.ChartConfig, 0, len(rootCharts))
+	for _, chartType := range rootCharts {
+		cfg, err := config_charts.Materialise(chartType, seed, overrides[chartType])
+		if err != nil {
+			shared.ExitWithError(err.Error(), nil)
 		}
 		configs = append(configs, cfg)
 	}
 
 	// applyOnPassthrough is false: the root command preserves an existing Dataset
 	// JSON as-is (matching historical behaviour).
-	cli.RunLinear(cmd, args, rootOpts.CommonOptions, configs, false)
+	cli.RunLinear(cmd, args, rootBag.Meta(), rootBag.ParseConfig(), configs, false)
 }
 
-func validateRootOptions() {
-	rootOpts.Validate()
+func validateRootOptions(cmd *cobra.Command) {
+	rootBag.Validate(cmd)
 	utils.ApplyValidationRules([]utils.ValidationRule{{
 		Label:        "charts",
-		SliceValue:   &rootOpts.Charts,
+		SliceValue:   &rootCharts,
 		ValidSet:     validChartTypes,
 		Normalizer:   strings.ToLower,
 		SliceDefault: defaultChartTypes,
