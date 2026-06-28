@@ -142,7 +142,7 @@ func (s *RulesSuite) TestRequires3DMode_SkipWhenNo3DData() {
 		},
 	})
 	s.Equal(flags.Skip, out)
-	s.Contains(msg, "requires 3D-capable axes")
+	s.Contains(msg, "requires z-axis in data")
 }
 
 // --- OnlyScatter2D ---

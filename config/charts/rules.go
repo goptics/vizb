@@ -65,44 +65,21 @@ func RequiresZAxis() flags.RuleFn {
 	return RequiresAxes("z")
 }
 
-// Requires3DMode returns a rule that Skips the flag when the runtime context
-// doesn't support 3D rendering. 3D rendering is supported when either:
-//   - a z-axis is present (explicit 3D data), or
-//   - x, y, and z axes are all present with type "value" (value-mode xyz,
-//     detected by auto-enable logic too late for the flag descriptor to see).
+// Requires3DMode returns a rule that Skips the flag when no z-axis is present.
+// Both explicit z-axis data and auto-enabled value-mode xyz add a z axis to
+// the runtime axes, so a single z-axis check covers both cases.
 func Requires3DMode() flags.RuleFn {
 	return func(ctx any) (flags.Outcome, string) {
 		rc, ok := ctx.(RuleContext)
 		if !ok {
 			return flags.Fatal, "internal: expected charts.RuleContext"
 		}
-		hasZ := false
-		hasX, hasY := false, false
-		xyzValue := true
 		for _, a := range rc.Axes {
-			switch a.Key {
-			case "x":
-				hasX = true
-				if a.Type != "value" {
-					xyzValue = false
-				}
-			case "y":
-				hasY = true
-				if a.Type != "value" {
-					xyzValue = false
-				}
-			case "z":
-				hasZ = true
-				if a.Type != "value" {
-					xyzValue = false
-				}
+			if a.Key == "z" {
+				return flags.Keep, ""
 			}
 		}
-		// 3D mode is active if z-axis data exists, or if value-mode xyz.
-		if hasZ || (hasX && hasY && hasX == hasY && hasX == xyzValue) {
-			return flags.Keep, ""
-		}
-		return flags.Skip, "requires 3D-capable axes (z-axis or value-mode xyz); ignoring"
+		return flags.Skip, "requires z-axis in data; ignoring"
 	}
 }
 
