@@ -7,6 +7,7 @@ import type {
   BarConfig,
   LineConfig,
   ScatterConfig,
+  DataSet,
 } from '../types'
 import { SORT_ORDERS, SCALE_TYPES } from '../types'
 import { useSettingsStore } from './useSettingsStore'
@@ -34,6 +35,22 @@ const applyIndexParam = (
   if (value === undefined) return
   const id = parseInt(value, 10)
   if (!isNaN(id) && isValidIndex(id, maxLength)) setter(id)
+}
+
+const resolveDatasetIndex = (
+  params: Record<string, string | undefined>,
+  datasets: DataSet[]
+): number => {
+  const idParam = params.id?.trim()
+  if (idParam) {
+    const idx = datasets.findIndex((ds) => ds.id === idParam)
+    if (idx >= 0) return idx
+  }
+  if (params.d !== undefined) {
+    const n = parseInt(params.d, 10)
+    if (!isNaN(n) && isValidIndex(n, datasets.length)) return n
+  }
+  return 0
 }
 
 // Field update payload accepted by `applyConfigUpdate`. Only the keys present
@@ -105,8 +122,19 @@ export function useUrlRouter() {
   }
 
   const applyParams = (params: Record<string, string | undefined>) => {
-    // 1. Dataset ID
-    applyIndexParam(params.d, dataSets.value.length, selectDataSet)
+    // 1. Dataset selection (?id= wins over ?d=)
+    const datasetIndex = resolveDatasetIndex(params, dataSets.value)
+    if (dataSets.value.length > 0) {
+      selectDataSet(datasetIndex)
+    } else {
+      watch(
+        () => dataSets.value.length,
+        (len) => {
+          if (len > 0) selectDataSet(resolveDatasetIndex(params, dataSets.value))
+        },
+        { once: true }
+      )
+    }
 
     // 2. Group ID — deferred if groups not yet populated (worker populates asynchronously)
     const gParam = params.g
@@ -144,7 +172,7 @@ export function useUrlRouter() {
     }
 
     // 5. Per-chart settings
-    const datasetId = params.d !== undefined ? parseInt(params.d, 10) || 0 : 0
+    const datasetId = resolveDatasetIndex(params, dataSets.value)
     for (const ct of ALL_CHART_TYPES) {
       const so = params[`${ct}.so`] as SortOrder | undefined
       const l = params[`${ct}.l`]
@@ -205,8 +233,13 @@ export function useUrlRouter() {
       params.c = activeCfg.type
     }
 
-    // Dataset / group (omit if first)
-    if (activeDataSetId.value > 0) params.d = activeDataSetId.value.toString()
+    // Dataset / group
+    const datasetId = activeDataSet.value?.id?.trim()
+    if (datasetId) {
+      params.id = datasetId
+    } else if (activeDataSetId.value > 0) {
+      params.d = activeDataSetId.value.toString()
+    }
     if (activeGroupId.value > 0) params.g = activeGroupId.value.toString()
 
     // Per-chart settings

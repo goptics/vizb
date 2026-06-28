@@ -136,13 +136,18 @@ func (s *OutputSuite) TestConvertToDataset() {
 
 	s.Run("valid dataset JSON", func() {
 		valid := filepath.Join(dir, "valid.json")
-		ds := shared.Dataset{Name: "Test", Data: []shared.DataPoint{{Name: "B1", Stats: []shared.Stat{{Type: "time", Value: shared.F64(100)}}}}}
+		ds := shared.Dataset{
+			ID:   "bench-v1",
+			Name: "Test",
+			Data: []shared.DataPoint{{Name: "B1", Stats: []shared.Stat{{Type: "time", Value: shared.F64(100)}}}},
+		}
 		data, err := json.Marshal(ds)
 		s.Require().NoError(err)
 		s.Require().NoError(os.WriteFile(valid, data, 0644))
 
 		result := convertToDataset(valid)
 		s.Require().NotNil(result)
+		s.Equal("bench-v1", result.ID)
 		s.Equal("Test", result.Name)
 		s.Len(result.Data, 1)
 	})

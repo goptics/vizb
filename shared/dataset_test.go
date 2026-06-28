@@ -84,6 +84,27 @@ func (s *DatasetSuite) TestDatasetUnmarshalJSONEmptySettings() {
 	s.Nil(ds.Settings, "missing settings field should leave Settings nil")
 }
 
+func (s *DatasetSuite) TestDatasetIDTopLevelRoundTrip() {
+	raw := []byte(`{
+		"id":"bench-v1",
+		"name":"bench",
+		"meta":{"os":"linux"},
+		"settings":[{"type":"bar"}],
+		"data":[]
+	}`)
+
+	var ds shared.Dataset
+	s.Require().NoError(json.Unmarshal(raw, &ds))
+	s.Equal("bench-v1", ds.ID)
+	s.Require().NotNil(ds.Meta)
+	s.Equal("linux", ds.Meta.OS)
+
+	out, err := json.Marshal(ds)
+	s.Require().NoError(err)
+	s.Contains(string(out), `"id":"bench-v1"`)
+	s.NotContains(string(out), `"meta":{"id"`)
+}
+
 func (s *DatasetSuite) TestDatasetUnmarshalJSONLegacySingleObject() {
 	raw := []byte(`{
 		"name":"bench",

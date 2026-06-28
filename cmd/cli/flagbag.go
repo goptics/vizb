@@ -277,6 +277,7 @@ func (b *FlagBag) ParseConfig() parser.Config {
 // Meta builds the pipeline RunMeta from the bag's metadata/parser data flags.
 func (b *FlagBag) Meta() RunMeta {
 	return RunMeta{
+		ID:          b.String("id"),
 		Name:        b.String("name"),
 		Description: b.String("description"),
 		Tag:         b.String("tag"),

@@ -161,6 +161,7 @@ export type HistoryEntry = {
 }
 
 export type DataSet = {
+  id?: string
   name: string
   description?: string
   tag?: string

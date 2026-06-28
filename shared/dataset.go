@@ -66,6 +66,7 @@ type HistoryEntry struct {
 }
 
 type Dataset struct {
+	ID          string                        `json:"id,omitempty"`
 	Tag         string                        `json:"tag,omitempty"`
 	Timestamp   string                        `json:"timestamp,omitempty"`
 	Name        string                        `json:"name"`
@@ -92,6 +93,7 @@ type Dataset struct {
 // slice and writes each struct's `type` field naturally.
 func (d *Dataset) UnmarshalJSON(data []byte) error {
 	var raw struct {
+		ID          string          `json:"id,omitempty"`
 		Tag         string          `json:"tag,omitempty"`
 		Timestamp   string          `json:"timestamp,omitempty"`
 		Name        string          `json:"name"`
@@ -105,6 +107,7 @@ func (d *Dataset) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return err
 	}
+	d.ID = raw.ID
 	d.Tag = raw.Tag
 	d.Timestamp = raw.Timestamp
 	d.Name = raw.Name
