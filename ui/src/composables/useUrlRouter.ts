@@ -123,18 +123,7 @@ export function useUrlRouter() {
 
   const applyParams = (params: Record<string, string | undefined>) => {
     // 1. Dataset selection (?id= wins over ?d=)
-    const datasetIndex = resolveDatasetIndex(params, dataSets.value)
-    if (dataSets.value.length > 0) {
-      selectDataSet(datasetIndex)
-    } else {
-      watch(
-        () => dataSets.value.length,
-        (len) => {
-          if (len > 0) selectDataSet(resolveDatasetIndex(params, dataSets.value))
-        },
-        { once: true }
-      )
-    }
+    selectDataSet(resolveDatasetIndex(params, dataSets.value))
 
     // 2. Group ID — deferred if groups not yet populated (worker populates asynchronously)
     const gParam = params.g

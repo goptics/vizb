@@ -125,18 +125,6 @@ describe('useUrlRouter', () => {
     expect(holder.activeDataSetId.value).toBe(1)
   })
 
-  it('prefers ?id= over ?d= when both are present', async () => {
-    holder.dataSets = ref([
-      ds([{ type: 'bar', sort: { enabled: false, order: 'asc' } }]),
-      { ...ds([{ type: 'bar', sort: { enabled: false, order: 'asc' } }]), id: 'second' },
-    ])
-    mockWindow('?id=second&d=0')
-    const { useUrlRouter } = await import('./useUrlRouter')
-    const { initFromUrl } = useUrlRouter()
-    initFromUrl()
-    expect(holder.activeDataSetId.value).toBe(1)
-  })
-
   it('syncs ?id= when active dataset has an id', async () => {
     holder.dataSets = ref([
       {

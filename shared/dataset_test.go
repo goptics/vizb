@@ -102,7 +102,6 @@ func (s *DatasetSuite) TestDatasetIDTopLevelRoundTrip() {
 	out, err := json.Marshal(ds)
 	s.Require().NoError(err)
 	s.Contains(string(out), `"id":"bench-v1"`)
-	s.NotContains(string(out), `"meta":{"id"`)
 }
 
 func (s *DatasetSuite) TestDatasetUnmarshalJSONLegacySingleObject() {

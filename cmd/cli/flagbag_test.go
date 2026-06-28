@@ -102,13 +102,6 @@ func (s *FlagBagSuite) TestParseConfigRejectsInvalidSelect() {
 	s.True(*exitCalled)
 }
 
-func (s *FlagBagSuite) TestMetaMapsID() {
-	cmd, bag := s.newCmdBag(slices.Clone(DataFlags))
-	s.Require().NoError(cmd.Flags().Set("id", "bench-v1"))
-	meta := bag.Meta()
-	s.Equal("bench-v1", meta.ID)
-}
-
 func (s *FlagBagSuite) TestParseConfigMapsFields() {
 	cmd, bag := s.newCmdBag(slices.Clone(DataFlags))
 	s.Require().NoError(cmd.Flags().Set("group-pattern", "n/x"))

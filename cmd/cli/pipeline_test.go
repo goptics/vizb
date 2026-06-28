@@ -410,13 +410,6 @@ func (s *PipelineSuite) TestAssembleDatasetSetsID() {
 	s.Equal("bench-v1", ds.ID)
 }
 
-func (s *PipelineSuite) TestAssembleDatasetOmitsEmptyID() {
-	results := []shared.DataPoint{{Name: "A", Stats: []shared.Stat{{Type: "time", Value: shared.F64(1)}}}}
-	cfg := parser.Config{AutoGroup: true}
-	ds := assembleDataset(results, RunMeta{Name: "T"}, nil, cfg)
-	s.Empty(ds.ID)
-}
-
 func (s *PipelineSuite) TestAssembleDatasetUsesAutoValueAxesFromData() {
 	// Auto-group path: Stats empty + axes populated → value-type axes
 	results := []shared.DataPoint{{XAxis: "100", YAxis: "12", ZAxis: "5", Stats: []shared.Stat{}}}

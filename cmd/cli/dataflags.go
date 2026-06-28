@@ -18,7 +18,7 @@ var DataFlags = []flags.Flag{
 	{Name: "description", Shorthand: "d", Usage: "Description of the comparison", Kind: flags.KindString},
 	{Name: "output", Shorthand: "o", Usage: "Output file path/name", Kind: flags.KindString},
 	{Name: "tag", Shorthand: "t", Usage: "Tag/identifier for the comparison", Kind: flags.KindString},
-	{Name: "id", Usage: "Stable dataset identifier for UI deep links (?id=...); set once, never overridden", Kind: flags.KindString},
+	{Name: "id", Usage: "Dataset id for ?id= deep links", Kind: flags.KindString},
 	{
 		Name: "parser", Shorthand: "P", Default: "auto", Kind: flags.KindString,
 		Usage:        "Benchmark parser to use; 'auto' detects from input content (one of: auto, " + strings.Join(parser.AvailableParsers(), ", ") + ")",
