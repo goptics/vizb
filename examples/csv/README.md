@@ -114,7 +114,7 @@ Use `noise-grid.csv` for faster loads; use this file when you need the complete 
 ## More detail
 
 - **Official site:** [vizb.goptics.org](https://vizb.goptics.org) — install, docs, and interactive dashboards
-- **Live CSV dashboards:** [vizb.goptics.org/examples/csv/](https://vizb.goptics.org/examples/csv/) — CI builds each recipe below from these files (switch charts with `?d=`)
+- **Live CSV dashboards:** [vizb.goptics.org/examples/csv/](https://vizb.goptics.org/examples/csv/) — CI builds each recipe below from these files (switch charts with `?d=` or `?id=` when `--id` is set at build time)
 
 | Dashboard | Source file | Live |
 |-----------|-------------|------|

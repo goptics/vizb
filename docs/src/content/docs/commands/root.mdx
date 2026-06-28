@@ -77,6 +77,7 @@ See the [Parser Guide](/guides/parsers) for each parser's metrics, and the
 | `--name` | `-n` | `Benchmarks` | Dataset name |
 | `--description` | `-d` | `""` | Dataset description |
 | `--tag` | `-t` | `""` | Tag identifier for release tracking |
+| `--id` | | `""` | Stable dataset id for `?id=` deep links in the HTML UI |
 | `--group-pattern` | `-p` | `x` | Pattern-based grouping (`n`/`x`/`y`/`z` with your chosen separators; `z` → 3D). Benchmarks: `/` or `_`. CSV/JSON: match `-g` (commas for `-g a,b,c`, spaces for quoted `-g "a b"`, etc.) |
 | `--group-regex` | `-r` | `""` | Regex-based grouping (named captures) |
 | `--group` | `-g` | `""` | Names dimensions in `--group-pattern` order. csv/json: column/field names (separators must match `-p`); benchmark parsers: human-readable axis labels |
@@ -191,3 +192,14 @@ vizb bench.txt -o v1.json --tag v1.0 -n "MyBench"
 ```
 
 See [Merging Guide](/guides/merging) for tag-based comparison.
+
+### Deep links
+
+Set `--id` when generating HTML so the UI can link to a dataset by name instead of index:
+
+```bash
+vizb sales.csv -g date,region -p x,y --id sales-by-date -o report.html
+# Share: report.html?id=sales-by-date
+```
+
+The id is stored as a top-level field on the dataset JSON. Passthrough JSON keeps any id already present — `--id` only applies on fresh assembly. When a dataset has an id, the UI syncs `?id=` in the URL; otherwise it falls back to `?d=0`, `?d=1`, … See [UI Overview → Deep links](/ui#deep-links).
