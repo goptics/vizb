@@ -21,6 +21,10 @@ export interface BaseChartConfig {
   // Runtime value-3D toggle (x+y only, when threeD is baked via --3d).
   threeD?: Ref<boolean>
   threeDVisualMap?: Ref<boolean>
+  visualMap?: Ref<boolean>
+  /** CLI-baked marker overrides (--symbol / --symbol-size); line and scatter only. */
+  symbol?: Ref<string | undefined>
+  symbolSize?: Ref<number | undefined>
   /** Active swap target (e.g. xyz) — scatter value-mode 3D is swap-driven. */
   arrangementTarget?: Ref<string>
   chartAxes?: Ref<Axis[] | undefined>

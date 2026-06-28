@@ -121,6 +121,11 @@ export function useSettingsStore() {
     if (cfg) cfg.threeDVisualMap = enabled
   }
 
+  const setVisualMap = (enabled: boolean) => {
+    const cfg = activeConfig.value
+    if (cfg?.type === 'scatter') cfg.visualMap = enabled
+  }
+
   return {
     activeChartIndex,
     activeConfig,
@@ -135,6 +140,7 @@ export function useSettingsStore() {
     setSwap,
     setThreeD,
     setThreeDVisualMap,
+    setVisualMap,
     toggleDark,
   }
 }

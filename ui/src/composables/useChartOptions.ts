@@ -24,8 +24,11 @@ export function useChartOptions(
   visibleZ: Ref<Record<string, boolean>>,
   threeD: Ref<boolean>,
   threeDVisualMap: Ref<boolean>,
+  visualMap: Ref<boolean>,
   arrangementTarget: Ref<string>,
-  chartAxes: Ref<Axis[] | undefined>
+  chartAxes: Ref<Axis[] | undefined>,
+  symbol: Ref<string | undefined>,
+  symbolSize: Ref<number | undefined>
 ) {
   const config: BaseChartConfig = {
     chartData,
@@ -37,6 +40,9 @@ export function useChartOptions(
     visibleZ,
     threeD,
     threeDVisualMap,
+    visualMap,
+    symbol,
+    symbolSize,
     arrangementTarget,
     chartAxes,
     chartType,

@@ -23,7 +23,7 @@
   </p>
 
   <p>
-    A tabular visualization engine for <strong>CSV, JSON, and benchmark output</strong>. Turns numeric rows into interactive charts and descriptive statistics in one self-contained HTML file — no server, no dependencies, no build step.
+    A tabular visualization engine for <strong>CSV, JSON, and benchmark output</strong>. Turns numeric columns into interactive charts and descriptive statistics in one self-contained HTML file — no server, no dependencies, no build step.
   </p>
 
   <p>

@@ -76,6 +76,8 @@ export type LineConfig = {
   sort?: Sort
   scale?: ScaleType
   showLabels?: boolean
+  symbol?: string
+  symbolSize?: number
   threeDRotate?: boolean
   threeD?: boolean
   threeDVisualMap?: boolean
@@ -88,9 +90,12 @@ export type ScatterConfig = {
   sort?: Sort
   scale?: ScaleType
   showLabels?: boolean
+  symbol?: string
+  symbolSize?: number
   threeDRotate?: boolean
   threeD?: boolean
   threeDVisualMap?: boolean
+  visualMap?: boolean
   stat?: StatConfig
 }
 
@@ -156,6 +161,7 @@ export type HistoryEntry = {
 }
 
 export type DataSet = {
+  id?: string
   name: string
   description?: string
   tag?: string
@@ -245,7 +251,7 @@ export type ChartData = {
   series: SeriesData[]
   points: Point3D[]
   axisLabels?: AxisLabels
-  valueTuples?: [number, number][] // value-mode 2D: chart [x, y] coordinate pairs
+  valueTuples?: [number, number, number?][] // value-mode 2D: [x, y] or [x, y, colorDim]
   valuePoints3D?: [number, number, number, number?][] // value-mode 3D: [x, y, z] or [x, y, z, metric]
   // Precomputed 3D render data (built in the transform worker for charts that
   // have x, y and z). Absent for 2D charts. Holds the sorted axis category

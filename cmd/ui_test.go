@@ -7,12 +7,13 @@ import (
 	"strings"
 	"testing"
 
-	config_charts "github.com/goptics/vizb/config/charts"
-	barchart "github.com/goptics/vizb/config/charts/bar"
-	heatmapchart "github.com/goptics/vizb/config/charts/heatmap"
-	linechart "github.com/goptics/vizb/config/charts/line"
-	radarchart "github.com/goptics/vizb/config/charts/radar"
-	scatterchart "github.com/goptics/vizb/config/charts/scatter"
+	internal_charts "github.com/goptics/vizb/internal/charts"
+	barchart "github.com/goptics/vizb/internal/charts/bar"
+	heatmapchart "github.com/goptics/vizb/internal/charts/heatmap"
+	linechart "github.com/goptics/vizb/internal/charts/line"
+	piechart "github.com/goptics/vizb/internal/charts/pie"
+	radarchart "github.com/goptics/vizb/internal/charts/radar"
+	scatterchart "github.com/goptics/vizb/internal/charts/scatter"
 	"github.com/goptics/vizb/pkg/template"
 	"github.com/goptics/vizb/shared"
 	"github.com/goptics/vizb/testutil"
@@ -37,17 +38,17 @@ func (s *UISuite) TearDownTest() {
 func (s *UISuite) barFromJSON(payload map[string]any) *barchart.Config {
 	raw, err := json.Marshal(payload)
 	s.Require().NoError(err)
-	cfg, err := config_charts.Decode("bar", raw)
+	cfg, err := internal_charts.Decode("bar", raw)
 	s.Require().NoError(err)
 	c, ok := cfg.(*barchart.Config)
 	s.Require().True(ok, "expected *barchart.Config, got %T", cfg)
 	return c
 }
 
-func (s *UISuite) chartFromJSON(chartType string, payload map[string]any) config_charts.ChartConfig {
+func (s *UISuite) chartFromJSON(chartType string, payload map[string]any) internal_charts.ChartConfig {
 	raw, err := json.Marshal(payload)
 	s.Require().NoError(err)
-	cfg, err := config_charts.Decode(chartType, raw)
+	cfg, err := internal_charts.Decode(chartType, raw)
 	s.Require().NoError(err)
 	return cfg
 }
@@ -241,12 +242,18 @@ func (s *UISuite) htmlContains3DChunk(html string) bool {
 	return strings.Contains(html, `"`+root3D+`"`)
 }
 
+func (s *UISuite) htmlContainsHeatmapChunk(html string) bool {
+	rootHeat := template.VizbChartRoots["heatmap"]
+	s.Require().NotEmpty(rootHeat, "generated VizbChartRoots must contain heatmap")
+	return strings.Contains(html, `"`+rootHeat+`"`)
+}
+
 func (s *UISuite) TestRunUIFiltersChartsOnExplicitFlag() {
 	dir := s.T().TempDir()
 	input := filepath.Join(dir, "multi.json")
 	testutil.WriteJSON(s.T(), input, shared.Dataset{
 		Name: "Test",
-		Settings: []config_charts.ChartConfig{
+		Settings: []internal_charts.ChartConfig{
 			s.barFromJSON(map[string]any{"type": "bar", "scale": "linear"}),
 			&linechart.Config{Type: "line", Scale: "linear"},
 		},
@@ -275,7 +282,7 @@ func (s *UISuite) TestRunUIPreservesScatterSettingsWithoutChartsFlag() {
 	threeDVisualMap := true
 	testutil.WriteJSON(s.T(), input, shared.Dataset{
 		Name: "Noise Grid",
-		Settings: []config_charts.ChartConfig{
+		Settings: []internal_charts.ChartConfig{
 			&scatterchart.Config{
 				Type:            "scatter",
 				Scale:           "linear",
@@ -314,38 +321,70 @@ func (s *UISuite) TestRunUIPreservesScatterSettingsWithoutChartsFlag() {
 	s.Equal(true, scatter["threeDVisualMap"])
 }
 
-func (s *UISuite) TestRunUIAppliesOverrides() {
-	dir := s.T().TempDir()
-	input := filepath.Join(dir, "old.json")
-	testutil.WriteJSON(s.T(), input, shared.Dataset{
-		Name: "Test",
-		Axes: []shared.Axis{{Key: "x"}, {Key: "y"}, {Key: "name"}},
-		Settings: []config_charts.ChartConfig{s.barFromJSON(map[string]any{
-			"type":  "bar",
-			"swap":  "xyn",
-			"scale": "linear",
-		})},
-		Data: []shared.DataPoint{{Name: "Test1", XAxis: "1", YAxis: "100"}},
-	})
-	out := filepath.Join(dir, "output.html")
-
-	rootCmd.SetArgs([]string{"ui", "-o", out, "--chart", "bar:swap=yxn", input})
-	s.Require().NoError(rootCmd.Execute())
-
-	html := s.read(out)
-	datasets := s.extractVIZBDataArray(html)
-	s.Require().Len(datasets, 1)
-
-	ds, ok := datasets[0].(map[string]any)
-	s.Require().True(ok, "expected dataset object, got %T", datasets[0])
-
-	settings, ok := ds["settings"].([]any)
-	s.Require().True(ok, "expected settings array in VIZB_DATA, got %T", ds["settings"])
-	s.Require().Len(settings, 1)
-
-	bar, ok := settings[0].(map[string]any)
-	s.Require().True(ok, "expected bar config object, got %T", settings[0])
-	s.Equal("yxn", bar["swap"], "override should replace baked swap value")
+func (s *UISuite) TestRunUIAppliesSwapOverride() {
+	tests := []struct {
+		chartType string
+		swapIn    string
+		swapOut   string
+		settings  []internal_charts.ChartConfig
+	}{
+		{
+			chartType: "bar",
+			swapIn:    "xyn",
+			swapOut:   "yxn",
+			settings: []internal_charts.ChartConfig{
+				s.barFromJSON(map[string]any{"type": "bar", "swap": "xyn", "scale": "linear"}),
+			},
+		},
+		{
+			chartType: "line",
+			swapIn:    "xyn",
+			swapOut:   "yxn",
+			settings: []internal_charts.ChartConfig{
+				s.chartFromJSON("line", map[string]any{"type": "line", "swap": "xyn", "scale": "linear"}),
+			},
+		},
+		{
+			chartType: "pie",
+			swapIn:    "xyn",
+			swapOut:   "nxy",
+			settings: []internal_charts.ChartConfig{
+				s.chartFromJSON("pie", map[string]any{"type": "pie", "swap": "xyn"}),
+			},
+		},
+		{
+			chartType: "heatmap",
+			swapIn:    "xyn",
+			swapOut:   "yxn",
+			settings: []internal_charts.ChartConfig{
+				&heatmapchart.Config{Type: "heatmap", Swap: "xyn"},
+			},
+		},
+		{
+			chartType: "radar",
+			swapIn:    "xyn",
+			swapOut:   "yxn",
+			settings: []internal_charts.ChartConfig{
+				&radarchart.Config{Type: "radar", Swap: "xyn"},
+			},
+		},
+	}
+	for _, tt := range tests {
+		s.Run(tt.chartType, func() {
+			dir := s.T().TempDir()
+			input := filepath.Join(dir, tt.chartType+".json")
+			testutil.WriteJSON(s.T(), input, shared.Dataset{
+				Name:     "Test",
+				Settings: tt.settings,
+				Data:     []shared.DataPoint{{Name: "T1", XAxis: "1", YAxis: "100"}},
+			})
+			out := filepath.Join(dir, "out.html")
+			rootCmd.SetArgs([]string{"ui", "-o", out, "--chart", tt.chartType + ":swap=" + tt.swapOut, input})
+			s.Require().NoError(rootCmd.Execute())
+			s.Equal(tt.swapOut, s.settingsSwap(s.read(out)))
+			ResetTestState()
+		})
+	}
 }
 
 func (s *UISuite) TestRunUIAppliesLineSortOverride() {
@@ -353,7 +392,7 @@ func (s *UISuite) TestRunUIAppliesLineSortOverride() {
 	input := filepath.Join(dir, "line.json")
 	testutil.WriteJSON(s.T(), input, shared.Dataset{
 		Name: "Test",
-		Settings: []config_charts.ChartConfig{
+		Settings: []internal_charts.ChartConfig{
 			s.chartFromJSON("line", map[string]any{"type": "line", "swap": "xyn", "scale": "linear"}),
 		},
 		Data: []shared.DataPoint{{Name: "T1", XAxis: "1", YAxis: "100"}},
@@ -370,29 +409,12 @@ func (s *UISuite) TestRunUIAppliesLineSortOverride() {
 	s.Equal("asc", sortCfg["order"])
 }
 
-func (s *UISuite) TestRunUIAppliesLineOverride() {
-	dir := s.T().TempDir()
-	input := filepath.Join(dir, "line.json")
-	testutil.WriteJSON(s.T(), input, shared.Dataset{
-		Name: "Test",
-		Settings: []config_charts.ChartConfig{
-			s.chartFromJSON("line", map[string]any{"type": "line", "swap": "xyn", "scale": "linear"}),
-		},
-		Data: []shared.DataPoint{{Name: "T1", XAxis: "1", YAxis: "100"}},
-	})
-	out := filepath.Join(dir, "out.html")
-
-	rootCmd.SetArgs([]string{"ui", "-o", out, "--chart", "line:swap=yxn", input})
-	s.Require().NoError(rootCmd.Execute())
-	s.Equal("yxn", s.settingsSwap(s.read(out)))
-}
-
 func (s *UISuite) TestRunUIAppliesPieSortOverride() {
 	dir := s.T().TempDir()
 	input := filepath.Join(dir, "pie.json")
 	testutil.WriteJSON(s.T(), input, shared.Dataset{
 		Name: "Test",
-		Settings: []config_charts.ChartConfig{
+		Settings: []internal_charts.ChartConfig{
 			s.chartFromJSON("pie", map[string]any{"type": "pie", "swap": "xyn"}),
 		},
 		Data: []shared.DataPoint{{Name: "T1", XAxis: "1", YAxis: "100"}},
@@ -410,63 +432,12 @@ func (s *UISuite) TestRunUIAppliesPieSortOverride() {
 	s.True(pie["showLabels"].(bool))
 }
 
-func (s *UISuite) TestRunUIAppliesPieOverride() {
-	dir := s.T().TempDir()
-	input := filepath.Join(dir, "pie.json")
-	testutil.WriteJSON(s.T(), input, shared.Dataset{
-		Name: "Test",
-		Settings: []config_charts.ChartConfig{
-			s.chartFromJSON("pie", map[string]any{"type": "pie", "swap": "xyn"}),
-		},
-		Data: []shared.DataPoint{{Name: "T1", XAxis: "1", YAxis: "100"}},
-	})
-	out := filepath.Join(dir, "out.html")
-
-	rootCmd.SetArgs([]string{"ui", "-o", out, "--chart", "pie:swap=nxy", input})
-	s.Require().NoError(rootCmd.Execute())
-	s.Equal("nxy", s.settingsSwap(s.read(out)))
-}
-
-func (s *UISuite) TestRunUIAppliesHeatmapOverride() {
-	dir := s.T().TempDir()
-	input := filepath.Join(dir, "heatmap.json")
-	testutil.WriteJSON(s.T(), input, shared.Dataset{
-		Name: "Test",
-		Settings: []config_charts.ChartConfig{
-			&heatmapchart.Config{Type: "heatmap", Swap: "xyn"},
-		},
-		Data: []shared.DataPoint{{Name: "T1", XAxis: "1", YAxis: "100"}},
-	})
-	out := filepath.Join(dir, "out.html")
-
-	rootCmd.SetArgs([]string{"ui", "-o", out, "--chart", "heatmap:swap=yxn", input})
-	s.Require().NoError(rootCmd.Execute())
-	s.Equal("yxn", s.settingsSwap(s.read(out)))
-}
-
-func (s *UISuite) TestRunUIAppliesRadarOverride() {
-	dir := s.T().TempDir()
-	input := filepath.Join(dir, "radar.json")
-	testutil.WriteJSON(s.T(), input, shared.Dataset{
-		Name: "Test",
-		Settings: []config_charts.ChartConfig{
-			&radarchart.Config{Type: "radar", Swap: "xyn"},
-		},
-		Data: []shared.DataPoint{{Name: "T1", XAxis: "1", YAxis: "100"}},
-	})
-	out := filepath.Join(dir, "out.html")
-
-	rootCmd.SetArgs([]string{"ui", "-o", out, "--chart", "radar:swap=yxn", input})
-	s.Require().NoError(rootCmd.Execute())
-	s.Equal("yxn", s.settingsSwap(s.read(out)))
-}
-
 func (s *UISuite) TestRunUI3DWithEmbeddedData() {
 	dir := s.T().TempDir()
 	input := filepath.Join(dir, "z.json")
 	testutil.WriteJSON(s.T(), input, shared.Dataset{
 		Name: "Test",
-		Settings: []config_charts.ChartConfig{
+		Settings: []internal_charts.ChartConfig{
 			s.barFromJSON(map[string]any{"type": "bar", "scale": "linear"}),
 		},
 		Data: []shared.DataPoint{{Name: "T1", XAxis: "1", YAxis: "100", ZAxis: "5"}},
@@ -483,7 +454,7 @@ func (s *UISuite) TestRunUIAppliesBarSortAndLabelsOverride() {
 	input := filepath.Join(dir, "bar.json")
 	testutil.WriteJSON(s.T(), input, shared.Dataset{
 		Name: "Test",
-		Settings: []config_charts.ChartConfig{
+		Settings: []internal_charts.ChartConfig{
 			s.barFromJSON(map[string]any{"type": "bar", "swap": "xyn", "scale": "linear"}),
 		},
 		Data: []shared.DataPoint{{Name: "T1", XAxis: "1", YAxis: "100"}},
@@ -507,7 +478,7 @@ func (s *UISuite) TestRunUIAppliesBarPartialOverride() {
 	input := filepath.Join(dir, "bar-only.json")
 	testutil.WriteJSON(s.T(), input, shared.Dataset{
 		Name: "Test",
-		Settings: []config_charts.ChartConfig{
+		Settings: []internal_charts.ChartConfig{
 			s.barFromJSON(map[string]any{"type": "bar", "swap": "xyn", "scale": "linear"}),
 		},
 		Data: []shared.DataPoint{{Name: "T1", XAxis: "1", YAxis: "100"}},
@@ -522,6 +493,91 @@ func (s *UISuite) TestRunUIAppliesBarPartialOverride() {
 	bar := ds["settings"].([]any)[0].(map[string]any)
 	s.Equal("yxn", bar["swap"])
 	s.Equal("linear", bar["scale"])
+}
+
+func (s *UISuite) TestRunUIAppliesStatToMultipleChartTypes() {
+	dir := s.T().TempDir()
+	input := filepath.Join(dir, "multi.json")
+	testutil.WriteJSON(s.T(), input, shared.Dataset{
+		Name: "Test",
+		Settings: []internal_charts.ChartConfig{
+			s.barFromJSON(map[string]any{"type": "bar", "scale": "linear"}),
+			&linechart.Config{Type: "line", Scale: "linear"},
+			&piechart.Config{Type: "pie"},
+			&heatmapchart.Config{Type: "heatmap"},
+			&radarchart.Config{Type: "radar"},
+		},
+		Data: []shared.DataPoint{{Name: "T1", XAxis: "1", YAxis: "100"}},
+	})
+	out := filepath.Join(dir, "out.html")
+
+	rootCmd.SetArgs([]string{"ui", "-o", out, "--stat=shape", input})
+	s.Require().NoError(rootCmd.Execute())
+
+	datasets := s.extractVIZBDataArray(s.read(out))
+	settings := datasets[0].(map[string]any)["settings"].([]any)
+	s.Require().Len(settings, 5)
+	for _, raw := range settings {
+		stat := raw.(map[string]any)["stat"].(map[string]any)
+		s.Equal([]any{"shape"}, stat["math"])
+	}
+}
+
+func (s *UISuite) TestRunUIAppliesStatToEmbeddedData() {
+	dir := s.T().TempDir()
+	input := filepath.Join(dir, "bench.json")
+	testutil.WriteJSON(s.T(), input, shared.Dataset{
+		Name: "Test",
+		Settings: []internal_charts.ChartConfig{
+			s.barFromJSON(map[string]any{"type": "bar", "scale": "linear"}),
+		},
+		Data: []shared.DataPoint{{Name: "T1", XAxis: "1", YAxis: "100"}},
+	})
+	out := filepath.Join(dir, "out.html")
+
+	rootCmd.SetArgs([]string{"ui", "-o", out, "--stat=counts", input})
+	s.Require().NoError(rootCmd.Execute())
+
+	html := s.read(out)
+	s.False(s.htmlContainsHeatmapChunk(html))
+
+	datasets := s.extractVIZBDataArray(html)
+	bar := datasets[0].(map[string]any)["settings"].([]any)[0].(map[string]any)
+	stat := bar["stat"].(map[string]any)
+	s.True(stat["enabled"].(bool))
+	s.Equal([]any{"counts"}, stat["math"])
+}
+
+func (s *UISuite) TestRunUIShipsHeatmapChunkForCorrelationsStat() {
+	dir := s.T().TempDir()
+	input := filepath.Join(dir, "bench.json")
+	testutil.WriteJSON(s.T(), input, shared.Dataset{
+		Name: "Test",
+		Settings: []internal_charts.ChartConfig{
+			s.barFromJSON(map[string]any{"type": "bar", "scale": "linear"}),
+		},
+		Data: []shared.DataPoint{{Name: "T1", XAxis: "1", YAxis: "100"}},
+	})
+	out := filepath.Join(dir, "out.html")
+
+	rootCmd.SetArgs([]string{"ui", "-o", out, "--stat=correlations", input})
+	s.Require().NoError(rootCmd.Execute())
+	s.True(s.htmlContainsHeatmapChunk(s.read(out)))
+}
+
+func (s *UISuite) TestUIRemoteStatPrunesHeatmapChunk() {
+	dir := s.T().TempDir()
+	outDefault := filepath.Join(dir, "remote-default.html")
+	rootCmd.SetArgs([]string{"ui", "-o", outDefault, "--data-url", "https://example.com/bench.json"})
+	s.Require().NoError(rootCmd.Execute())
+	s.True(s.htmlContainsHeatmapChunk(s.read(outDefault)))
+
+	ResetTestState()
+
+	outCounts := filepath.Join(dir, "remote-counts.html")
+	rootCmd.SetArgs([]string{"ui", "-o", outCounts, "--data-url", "https://example.com/bench.json", "--stat=counts"})
+	s.Require().NoError(rootCmd.Execute())
+	s.False(s.htmlContainsHeatmapChunk(s.read(outCounts)))
 }
 
 func TestUISuite(t *testing.T) {

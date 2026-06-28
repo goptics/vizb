@@ -14,6 +14,7 @@ import {
   isLargeXAxis,
   makeLegendTitle,
   LARGE_DATA_THRESHOLD,
+  scatterSeriesLargeOpts,
 } from './shared'
 import {
   adjustForLogScaleLine,
@@ -21,6 +22,8 @@ import {
   getEffectiveScale,
   computeSeriesTotals,
 } from './shared/common'
+import { resolveSeriesSymbol } from './shared/seriesConfig'
+import { resolve2DScatterVisualMap } from './shared/visualMap'
 
 export type CategorySeriesKind = 'line' | 'scatter'
 
@@ -43,8 +46,18 @@ const SERIES_STYLE: Record<
   },
 }
 
+const groupedScatterColorValues = (seriesList: { data: (number | null)[] }[]): number[] => {
+  const vals: number[] = []
+  for (const s of seriesList) {
+    for (const v of s.data) {
+      if (v != null && isFinite(v)) vals.push(v)
+    }
+  }
+  return vals
+}
+
 export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: CategorySeriesKind) {
-  const { chartData, sort, isDark, showLabels, scale } = config
+  const { chartData, sort, isDark, showLabels, scale, visualMap } = config
   const sortedData = useSortedSeriesData(chartData, sort)
   const style = SERIES_STYLE[kind]
 
@@ -55,9 +68,26 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
     const { minValue, effectiveScale } = getEffectiveScale(series, scale?.value ?? 'linear')
     const largeX = isLargeXAxis(xAxisData)
     const xLabel = chartData.value.axisLabels?.x
-    const seriesExtras = largeX ? style.largeSymbol : style.defaultSymbol
+    const seriesExtras = resolveSeriesSymbol(
+      largeX ? style.largeSymbol : style.defaultSymbol,
+      config.symbol?.value,
+      config.symbolSize?.value
+    )
+    const useVisualMap = kind === 'scatter' && visualMap?.value === true
 
     if (!hasYAxis) {
+      const singleSeries = {
+        name: chartData.value.title,
+        type: kind,
+        data: series.map((s) => adjustForLogScaleLine(s.values[0] ?? null, effectiveScale)),
+        label: createLabelConfig(showLabels.value, styling),
+        ...(kind === 'scatter'
+          ? scatterSeriesLargeOpts(useVisualMap)
+          : { large: true as const, largeThreshold: LARGE_DATA_THRESHOLD }),
+        ...(style.connectNulls ? { connectNulls: true } : {}),
+        ...(useVisualMap ? {} : { itemStyle: { color: getNextColorFor(chartData.value.title) } }),
+        ...seriesExtras,
+      }
       return {
         ...baseOptions,
         grid: createGridConfig(1, largeX),
@@ -65,19 +95,13 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
         ...createAxisConfig(styling, xAxisData, effectiveScale, minValue, xLabel, largeX, true),
         ...(largeX ? { dataZoom: createDataZoomConfig(xAxisData, styling) } : {}),
         legend: { show: false },
-        series: [
-          {
-            name: chartData.value.title,
-            type: kind,
-            data: series.map((s) => adjustForLogScaleLine(s.values[0] ?? null, effectiveScale)),
-            label: createLabelConfig(showLabels.value, styling),
-            large: true,
-            largeThreshold: LARGE_DATA_THRESHOLD,
-            ...(style.connectNulls ? { connectNulls: true } : {}),
-            itemStyle: { color: getNextColorFor(chartData.value.title) },
-            ...seriesExtras,
-          },
-        ],
+        visualMap: resolve2DScatterVisualMap(
+          useVisualMap,
+          groupedScatterColorValues([singleSeries]),
+          styling,
+          1
+        ),
+        series: [singleSeries],
       } as EChartsOption
     }
 
@@ -87,10 +111,11 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
       type: kind,
       data: series.map((s) => adjustForLogScaleLine(s.values[yIndex] ?? null, effectiveScale)),
       label: createLabelConfig(showLabels.value, styling),
-      large: true,
-      largeThreshold: LARGE_DATA_THRESHOLD,
+      ...(kind === 'scatter'
+        ? scatterSeriesLargeOpts(useVisualMap)
+        : { large: true as const, largeThreshold: LARGE_DATA_THRESHOLD }),
       ...(style.connectNulls ? { connectNulls: true } : {}),
-      itemStyle: { color: getNextColorFor(yAxisLabel) },
+      ...(useVisualMap ? {} : { itemStyle: { color: getNextColorFor(yAxisLabel) } }),
       ...seriesExtras,
     }))
 
@@ -102,6 +127,12 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
       ...baseOptions,
       ...(yLabel ? { title: makeLegendTitle(yLabel, styling) } : {}),
       grid: createGridConfig(transposedSeries.length, largeX),
+      visualMap: resolve2DScatterVisualMap(
+        useVisualMap,
+        groupedScatterColorValues(transposedSeries),
+        styling,
+        1
+      ),
       tooltip: createTooltipConfig(showXBreakdown, isDark.value, seriesTotals),
       ...createAxisConfig(styling, xAxisData, effectiveScale, minValue, xLabel, largeX, true),
       ...(largeX ? { dataZoom: createDataZoomConfig(xAxisData, styling) } : {}),

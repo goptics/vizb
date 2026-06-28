@@ -5,16 +5,16 @@ import (
 	"reflect"
 	"testing"
 
-	config_charts "github.com/goptics/vizb/config/charts"
-	"github.com/goptics/vizb/config/charts/bar"
-	_ "github.com/goptics/vizb/config/charts/bar"
-	_ "github.com/goptics/vizb/config/charts/heatmap"
-	"github.com/goptics/vizb/config/charts/line"
-	_ "github.com/goptics/vizb/config/charts/line"
-	"github.com/goptics/vizb/config/charts/pie"
-	_ "github.com/goptics/vizb/config/charts/pie"
-	_ "github.com/goptics/vizb/config/charts/radar"
-	_ "github.com/goptics/vizb/config/charts/scatter"
+	_ "github.com/goptics/vizb/cmd/charts/bar"
+	_ "github.com/goptics/vizb/cmd/charts/heatmap"
+	_ "github.com/goptics/vizb/cmd/charts/line"
+	_ "github.com/goptics/vizb/cmd/charts/pie"
+	_ "github.com/goptics/vizb/cmd/charts/radar"
+	_ "github.com/goptics/vizb/cmd/charts/scatter"
+	internal_charts "github.com/goptics/vizb/internal/charts"
+	"github.com/goptics/vizb/internal/charts/bar"
+	"github.com/goptics/vizb/internal/charts/line"
+	"github.com/goptics/vizb/internal/charts/pie"
 	"github.com/goptics/vizb/shared"
 	"github.com/stretchr/testify/suite"
 )
@@ -210,16 +210,16 @@ func (s *MigrateExternalSuite) TestBuildLegacyConfigPerChartFieldAssignment() {
 	})
 
 	s.Run("unknown chart type returns error", func() {
-		_, err := config_charts.Decode("graph", json.RawMessage(`{"type":"graph"}`))
+		_, err := internal_charts.Decode("graph", json.RawMessage(`{"type":"graph"}`))
 		s.Require().Error(err, "expected error for unknown chart type")
 	})
 }
 
 // mustBuildLegacyConfig mirrors the migration's buildLegacyConfig (same
-// payload + Decode) but is public-ish via the config_charts registry, so
+// payload + Decode) but is public-ish via the internal_charts registry, so
 // external tests can exercise the field-assignment contract without going
 // through MigrateDataset's full JSON path.
-func mustBuildLegacyConfig(t *testing.T, typ string, sort shared.Sort, showLabels bool, scale string) config_charts.ChartConfig {
+func mustBuildLegacyConfig(t *testing.T, typ string, sort shared.Sort, showLabels bool, scale string) internal_charts.ChartConfig {
 	t.Helper()
 	scaleVal := scale
 	if scaleVal == "" {
@@ -235,9 +235,9 @@ func mustBuildLegacyConfig(t *testing.T, typ string, sort shared.Sort, showLabel
 	if err != nil {
 		t.Fatal(err)
 	}
-	cfg, err := config_charts.Decode(typ, raw)
+	cfg, err := internal_charts.Decode(typ, raw)
 	if err != nil {
-		t.Fatalf("config_charts.Decode(%q): %v", typ, err)
+		t.Fatalf("internal_charts.Decode(%q): %v", typ, err)
 	}
 	return cfg
 }

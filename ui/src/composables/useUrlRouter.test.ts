@@ -6,9 +6,10 @@ const holder = vi.hoisted(() => ({
   dataSets: undefined as Ref<DataSet[]> | undefined,
   activeChartIndex: { value: 0 },
   chartType: { value: 'bar' as 'bar' | 'line' | 'pie' | 'heatmap' | 'radar' },
+  activeDataSetId: { value: 0 },
   activeDataSetRef: {
     get value() {
-      return holder.dataSets?.value[0]
+      return holder.dataSets?.value[holder.activeDataSetId.value]
     },
   },
 }))
@@ -23,10 +24,14 @@ vi.mock('./useDataPoint', () => ({
       },
     },
     resultGroups: { value: [] },
-    activeDataSetId: { value: 0 },
+    get activeDataSetId() {
+      return holder.activeDataSetId
+    },
     activeGroupId: { value: 0 },
     activeArrangement: { value: { identityString: 'xy', targetString: 'xy' } },
-    selectDataSet: vi.fn(),
+    selectDataSet: (id: number) => {
+      holder.activeDataSetId.value = id
+    },
     selectGroup: vi.fn(),
     setArrangement: vi.fn(),
     arrangementMap: new Map<string, string>(),
@@ -64,6 +69,7 @@ describe('useUrlRouter', () => {
   beforeEach(() => {
     vi.resetModules()
     holder.activeChartIndex.value = 0
+    holder.activeDataSetId.value = 0
     holder.chartType.value = 'bar'
     holder.dataSets = ref([
       ds([
@@ -105,6 +111,46 @@ describe('useUrlRouter', () => {
     const bar = holder.dataSets!.value[0]!.settings[0] as BarConfig
     expect(bar.threeD).toBe(true)
     expect(bar.threeDRotate).toBe(true)
+  })
+
+  it('selects dataset by ?id= when present', async () => {
+    holder.dataSets = ref([
+      ds([{ type: 'bar', sort: { enabled: false, order: 'asc' } }]),
+      { ...ds([{ type: 'bar', sort: { enabled: false, order: 'asc' } }]), id: 'second' },
+    ])
+    mockWindow('?id=second')
+    const { useUrlRouter } = await import('./useUrlRouter')
+    const { initFromUrl } = useUrlRouter()
+    initFromUrl()
+    expect(holder.activeDataSetId.value).toBe(1)
+  })
+
+  it('syncs ?id= when active dataset has an id', async () => {
+    holder.dataSets = ref([
+      {
+        ...ds([{ type: 'bar', sort: { enabled: false, order: 'asc' }, threeD: true }]),
+        id: 'bench-v1',
+      },
+    ])
+    holder.activeDataSetId.value = 0
+    const replaceState = mockWindow('')
+    const { useUrlRouter } = await import('./useUrlRouter')
+    const { syncUrlToState } = useUrlRouter()
+    syncUrlToState()
+    expect(replaceState).toHaveBeenCalledWith(null, '', '/?id=bench-v1&bar.3d=true')
+  })
+
+  it('syncs ?d= when active dataset has no id and index > 0', async () => {
+    holder.dataSets = ref([
+      ds([{ type: 'bar', sort: { enabled: false, order: 'asc' } }]),
+      ds([{ type: 'bar', sort: { enabled: false, order: 'asc' } }]),
+    ])
+    holder.activeDataSetId.value = 1
+    const replaceState = mockWindow('')
+    const { useUrlRouter } = await import('./useUrlRouter')
+    const { syncUrlToState } = useUrlRouter()
+    syncUrlToState()
+    expect(replaceState).toHaveBeenCalledWith(null, '', '/?d=1')
   })
 
   it('syncs 3D settings to bar.3d / bar.3d-vm in the URL', async () => {

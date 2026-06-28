@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	config_charts "github.com/goptics/vizb/config/charts"
+	internal_charts "github.com/goptics/vizb/internal/charts"
 )
 
 type Stat struct {
@@ -49,7 +49,7 @@ type Sort struct {
 
 // ChartConfig is the tiny contract every per-chart config implements. The
 // canonical definition lives in config/charts/contract.go. The interface is
-// imported here (under the config_charts alias) so Dataset.Settings can be
+// imported here (under the internal_charts alias) so Dataset.Settings can be
 // []ChartConfig without a per-chart package needing to know about shared.
 
 type Meta struct {
@@ -66,15 +66,16 @@ type HistoryEntry struct {
 }
 
 type Dataset struct {
-	Tag         string                      `json:"tag,omitempty"`
-	Timestamp   string                      `json:"timestamp,omitempty"`
-	Name        string                      `json:"name"`
-	History     []HistoryEntry              `json:"history,omitempty"`
-	Description string                      `json:"description,omitempty"`
-	Meta        *Meta                       `json:"meta,omitempty"`
-	Axes        []Axis                      `json:"axes"`
-	Settings    []config_charts.ChartConfig `json:"settings"`
-	Data        []DataPoint                 `json:"data"`
+	ID          string                        `json:"id,omitempty"`
+	Tag         string                        `json:"tag,omitempty"`
+	Timestamp   string                        `json:"timestamp,omitempty"`
+	Name        string                        `json:"name"`
+	History     []HistoryEntry                `json:"history,omitempty"`
+	Description string                        `json:"description,omitempty"`
+	Meta        *Meta                         `json:"meta,omitempty"`
+	Axes        []Axis                        `json:"axes"`
+	Settings    []internal_charts.ChartConfig `json:"settings"`
+	Data        []DataPoint                   `json:"data"`
 }
 
 // UnmarshalJSON decodes a Dataset, dispatching each entry in "settings" to the
@@ -92,6 +93,7 @@ type Dataset struct {
 // slice and writes each struct's `type` field naturally.
 func (d *Dataset) UnmarshalJSON(data []byte) error {
 	var raw struct {
+		ID          string          `json:"id,omitempty"`
 		Tag         string          `json:"tag,omitempty"`
 		Timestamp   string          `json:"timestamp,omitempty"`
 		Name        string          `json:"name"`
@@ -105,6 +107,7 @@ func (d *Dataset) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return err
 	}
+	d.ID = raw.ID
 	d.Tag = raw.Tag
 	d.Timestamp = raw.Timestamp
 	d.Name = raw.Name
@@ -130,7 +133,7 @@ func (d *Dataset) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	d.Settings = make([]config_charts.ChartConfig, 0, len(entries))
+	d.Settings = make([]internal_charts.ChartConfig, 0, len(entries))
 	for _, entry := range entries {
 		var peek struct {
 			Type string `json:"type"`
@@ -141,7 +144,7 @@ func (d *Dataset) UnmarshalJSON(data []byte) error {
 		if peek.Type == "" {
 			return fmt.Errorf("dataset settings entry missing 'type' field: %s", entry)
 		}
-		cfg, err := config_charts.Decode(peek.Type, entry)
+		cfg, err := internal_charts.Decode(peek.Type, entry)
 		if err != nil {
 			return err
 		}

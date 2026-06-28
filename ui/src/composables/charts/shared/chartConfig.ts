@@ -72,6 +72,13 @@ export function isLargeXAxis(xAxisData: string[]): boolean {
 // above it the optimized path keeps a 100k-point dataset's draw on one frame.
 export const LARGE_DATA_THRESHOLD = 2000
 
+// ECharts skips visualMap on scatter when `large` is on — disable it for gradient mode.
+export function scatterSeriesLargeOpts(useVisualMap: boolean) {
+  return useVisualMap
+    ? { large: false as const }
+    : { large: true as const, largeThreshold: LARGE_DATA_THRESHOLD }
+}
+
 export function createHeatmapDataZoomConfig(
   largeX: boolean,
   largeY: boolean,
@@ -231,14 +238,28 @@ export function createValueAxisConfig(
 export function createValueModeTooltip(
   isDark: boolean,
   xLabel?: string,
-  yLabel?: string
+  yLabel?: string,
+  crossAxisPointer = false
 ): EChartsOption['tooltip'] {
   const theme = getTooltipTheme(isDark)
+  const styling = getChartStyling(isDark)
   const xName = xLabel ?? 'x'
   const yName = yLabel ?? 'y'
   return {
     trigger: 'item',
     ...theme,
+    ...(crossAxisPointer
+      ? {
+          axisPointer: {
+            type: 'cross',
+            crossStyle: { color: styling.axisColor },
+            label: {
+              backgroundColor: theme.backgroundColor,
+              color: styling.textColor,
+            },
+          },
+        }
+      : {}),
     formatter: (params: unknown) => {
       const [x, y] = (params as { data: [number, number | null] }).data
       return `<strong>${xName}: ${formatTooltipValue(x)}</strong><br/>${yName}: ${formatTooltipValue(y)}`
@@ -643,6 +664,16 @@ export function makeLegendTitle(text: string, styling: ChartStyling): any {
 
 // Fixed px (not %) so the plot area stays predictable across card heights.
 const SERIES_TICK_BAND = 28 // series names on the x axis (no slider)
+
+/** Value-mode charts hide the legend — skip the legend % top band (see heatmap). */
+export const VALUE_MODE_GRID_TOP = 8
+
+export function createValueModeGridConfig(hasDataZoom = false): any {
+  return {
+    ...createGridConfig(1, hasDataZoom),
+    top: VALUE_MODE_GRID_TOP,
+  }
+}
 
 export function createGridConfig(seriesLength = 1, hasDataZoom = false): any {
   const legendSpace = Math.min(15 + Math.floor((seriesLength - 1) / 15) * 2, 35)

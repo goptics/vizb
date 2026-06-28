@@ -45,7 +45,7 @@ export function maxFrom3DData(series: { data: { value: number[] }[] }[], dimensi
   return max || 1
 }
 
-export function create3DVisualMap(max: number, styling: ChartStyling, dimension: 2 | 3 = 2) {
+export function create3DVisualMap(max: number, styling: ChartStyling, dimension: 1 | 2 | 3 = 2) {
   return {
     show: true,
     min: 0,
@@ -463,6 +463,8 @@ export type Continuous3DParams = {
   scale: ScaleType
   seriesData: Series3DData[]
   axisLabels?: { x?: string; y?: string; z?: string; metric?: string }
+  symbol?: string
+  symbolSize?: number
 }
 
 export type Continuous3DContext = Omit<Continuous3DParams, 'seriesData'>
@@ -492,6 +494,8 @@ export function buildContinuous3DOptions(
     scale,
     seriesData,
     axisLabels,
+    symbol,
+    symbolSize,
   } = params
   const pointCount = seriesData[0]?.data.length ?? 0
   const { xCount, yCount } = continuous3DGridCounts(pointCount)
@@ -511,7 +515,11 @@ export function buildContinuous3DOptions(
   const metricDimension = seriesHasMetricDimension(seriesData)
   const useMetricVisualMap = useVisualMap && metricDimension
   const defaultSymbolSize = symbolSizeForContinuous3D(pointCount, grid3D.boxWidth, grid3D.boxDepth)
-  const scatterSymbolSize = useMetricVisualMap ? undefined : defaultSymbolSize
+  const scatterSymbolSize = useMetricVisualMap
+    ? undefined
+    : symbolSize !== undefined
+      ? symbolSize
+      : defaultSymbolSize
   const barProps = isBar
     ? { bevelSize: 0.3, bevelSmoothness: 3, shading: 'lambert' as const, barSize }
     : {}
@@ -536,6 +544,7 @@ export function buildContinuous3DOptions(
       name: s.name,
       type: seriesType,
       data: s.data,
+      ...(symbol && !isBar && seriesType !== 'line3D' ? { symbol } : {}),
       symbolSize: isBar ? undefined : seriesType === 'line3D' ? 0 : scatterSymbolSize,
       ...(lineStyle ? { lineStyle } : {}),
       ...(useMetricVisualMap ? {} : { itemStyle: { color: defaultColor } }),

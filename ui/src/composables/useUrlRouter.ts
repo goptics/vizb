@@ -1,5 +1,14 @@
 import { watch, computed } from 'vue'
-import type { ChartType, ChartConfig, SortOrder, ScaleType, BarConfig, LineConfig } from '../types'
+import type {
+  ChartType,
+  ChartConfig,
+  SortOrder,
+  ScaleType,
+  BarConfig,
+  LineConfig,
+  ScatterConfig,
+  DataSet,
+} from '../types'
 import { SORT_ORDERS, SCALE_TYPES } from '../types'
 import { useSettingsStore } from './useSettingsStore'
 import { useDataPoint } from './useDataPoint'
@@ -28,6 +37,22 @@ const applyIndexParam = (
   if (!isNaN(id) && isValidIndex(id, maxLength)) setter(id)
 }
 
+const resolveDatasetIndex = (
+  params: Record<string, string | undefined>,
+  datasets: DataSet[]
+): number => {
+  const idParam = params.id?.trim()
+  if (idParam) {
+    const idx = datasets.findIndex((ds) => ds.id === idParam)
+    if (idx >= 0) return idx
+  }
+  if (params.d !== undefined) {
+    const n = parseInt(params.d, 10)
+    if (!isNaN(n) && isValidIndex(n, datasets.length)) return n
+  }
+  return 0
+}
+
 // Field update payload accepted by `applyConfigUpdate`. Only the keys present
 // in the URL get touched; missing fields stay at whatever the config already
 // holds. `scale` and 3D fields are skipped for pie/heatmap/radar (those
@@ -39,6 +64,7 @@ type ConfigUpdate = {
   threeD?: boolean
   threeDRotate?: boolean
   threeDVisualMap?: boolean
+  visualMap?: boolean
 }
 
 // Find the first config of the given chart type and apply a partial update in
@@ -53,13 +79,15 @@ const applyConfigUpdate = (type: ChartType, update: ConfigUpdate): boolean => {
 
   if (update.sort) cfg.sort = update.sort
   if (update.showLabels !== undefined) cfg.showLabels = update.showLabels
-  // Only bar/line carry `scale` and 3D options; the union narrows on `cfg.type`.
-  if (cfg.type === 'bar' || cfg.type === 'line') {
-    const cartesian = cfg as BarConfig | LineConfig
+  if (cfg.type === 'bar' || cfg.type === 'line' || cfg.type === 'scatter') {
+    const cartesian = cfg as BarConfig | LineConfig | ScatterConfig
     if (update.scale) cartesian.scale = update.scale
     if (update.threeD !== undefined) cartesian.threeD = update.threeD
     if (update.threeDRotate !== undefined) cartesian.threeDRotate = update.threeDRotate
     if (update.threeDVisualMap !== undefined) cartesian.threeDVisualMap = update.threeDVisualMap
+    if (cfg.type === 'scatter' && update.visualMap !== undefined) {
+      ;(cartesian as ScatterConfig).visualMap = update.visualMap
+    }
   }
   return true
 }
@@ -94,8 +122,8 @@ export function useUrlRouter() {
   }
 
   const applyParams = (params: Record<string, string | undefined>) => {
-    // 1. Dataset ID
-    applyIndexParam(params.d, dataSets.value.length, selectDataSet)
+    // 1. Dataset selection (?id= wins over ?d=)
+    selectDataSet(resolveDatasetIndex(params, dataSets.value))
 
     // 2. Group ID — deferred if groups not yet populated (worker populates asynchronously)
     const gParam = params.g
@@ -133,7 +161,7 @@ export function useUrlRouter() {
     }
 
     // 5. Per-chart settings
-    const datasetId = params.d !== undefined ? parseInt(params.d, 10) || 0 : 0
+    const datasetId = resolveDatasetIndex(params, dataSets.value)
     for (const ct of ALL_CHART_TYPES) {
       const so = params[`${ct}.so`] as SortOrder | undefined
       const l = params[`${ct}.l`]
@@ -141,6 +169,7 @@ export function useUrlRouter() {
       const d3 = params[`${ct}.3d`]
       const d3rt = params[`${ct}.3d-rt`]
       const d3vm = params[`${ct}.3d-vm`]
+      const vm = params[`${ct}.vm`]
       const sw = params[`${ct}.sw`]
 
       const update: ConfigUpdate = {}
@@ -155,6 +184,10 @@ export function useUrlRouter() {
       if (d3rt === 'true') update.threeDRotate = true
       if (d3vm === 'true') update.threeDVisualMap = true
       else if (d3vm === 'false') update.threeDVisualMap = false
+      if (ct === 'scatter') {
+        if (vm === 'true') update.visualMap = true
+        else if (vm === 'false') update.visualMap = false
+      }
 
       if (Object.keys(update).length > 0) {
         applyConfigUpdate(ct, update)
@@ -189,8 +222,13 @@ export function useUrlRouter() {
       params.c = activeCfg.type
     }
 
-    // Dataset / group (omit if first)
-    if (activeDataSetId.value > 0) params.d = activeDataSetId.value.toString()
+    // Dataset / group
+    const datasetId = activeDataSet.value?.id?.trim()
+    if (datasetId) {
+      params.id = datasetId
+    } else if (activeDataSetId.value > 0) {
+      params.d = activeDataSetId.value.toString()
+    }
     if (activeGroupId.value > 0) params.g = activeGroupId.value.toString()
 
     // Per-chart settings
@@ -199,13 +237,18 @@ export function useUrlRouter() {
       if (cfg.sort?.enabled) params[`${ct}.so`] = cfg.sort.order
       if (cfg.showLabels === true) params[`${ct}.l`] = 'true'
       else if (cfg.showLabels === false) params[`${ct}.l`] = 'false'
-      if (cfg.type === 'bar' || cfg.type === 'line') {
-        const cartesian = cfg as BarConfig | LineConfig
+      if (cfg.type === 'bar' || cfg.type === 'line' || cfg.type === 'scatter') {
+        const cartesian = cfg as BarConfig | LineConfig | ScatterConfig
         if (cartesian.scale && cartesian.scale !== 'linear') params[`${ct}.sc`] = cartesian.scale
         if (cartesian.threeD === true) params[`${ct}.3d`] = 'true'
         if (cartesian.threeDRotate === true) params[`${ct}.3d-rt`] = 'true'
         if (cartesian.threeDVisualMap === true) params[`${ct}.3d-vm`] = 'true'
         else if (cartesian.threeDVisualMap === false) params[`${ct}.3d-vm`] = 'false'
+        if (cfg.type === 'scatter') {
+          const scatter = cartesian as ScatterConfig
+          if (scatter.visualMap === true) params[`${ct}.vm`] = 'true'
+          else if (scatter.visualMap === false) params[`${ct}.vm`] = 'false'
+        }
       }
 
       const arr = arrangementMap.get(`${activeDataSetId.value}:${ct}`)

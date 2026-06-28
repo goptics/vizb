@@ -27,15 +27,27 @@ vi.mock('../../components/settings/ThreeDControl.vue', () => ({
 vi.mock('../../components/settings/ThreeDVisualMapControl.vue', () => ({
   default: { name: 'ThreeDVisualMapControl' },
 }))
+vi.mock('../../components/settings/VisualMapControl.vue', () => ({
+  default: { name: 'VisualMapControl' },
+}))
 vi.mock('../../components/settings/SwapControl.vue', () => ({ default: { name: 'SwapControl' } }))
 
 const { fieldRegistry, getControl, getRenderableFields, partitionRenderableFields } =
   await import('./fieldRegistry')
 
 describe('fieldRegistry', () => {
-  it('exposes the seven known field controls', () => {
+  it('exposes the eight known field controls', () => {
     expect(Object.keys(fieldRegistry).sort()).toEqual(
-      ['threeDRotate', 'scale', 'showLabels', 'sort', 'swap', 'threeD', 'threeDVisualMap'].sort()
+      [
+        'threeDRotate',
+        'scale',
+        'showLabels',
+        'sort',
+        'swap',
+        'threeD',
+        'threeDVisualMap',
+        'visualMap',
+      ].sort()
     )
   })
 
@@ -238,11 +250,20 @@ describe('getRenderableFields', () => {
     ).toEqual(['sort', 'scale', 'showLabels', 'threeDVisualMap', 'threeDRotate', 'swap'])
   })
 
-  it('returns 4 entries for a 2D scatter config without value-3D active', () => {
+  it('returns 5 entries for a 2D scatter config without value-3D active', () => {
     const cfg: ScatterConfig = { type: 'scatter' }
     expect(
       getRenderableFields(cfg, { dimension: '2D', rendering3D: false }).map((f) => f.key)
-    ).toEqual(['sort', 'scale', 'showLabels', 'swap'])
+    ).toEqual(['sort', 'scale', 'showLabels', 'visualMap', 'swap'])
+  })
+
+  it('hides 2D visualMap on 3D scatter', () => {
+    const cfg: ScatterConfig = { type: 'scatter' }
+    expect(
+      getRenderableFields(cfg, { dimension: '3D', rendering3D: true, hasZAxis: true }).map(
+        (f) => f.key
+      )
+    ).not.toContain('visualMap')
   })
 
   it('partitions 3D fields into a dedicated section', () => {

@@ -34,6 +34,7 @@ Every chart subcommand accepts the common data, grouping, and metadata flags:
 | `--name` | `-n` | `Comparisons` | Dataset name |
 | `--description` | `-d` | `""` | Dataset description |
 | `--tag` | `-t` | `""` | Tag identifier for release tracking |
+| `--id` | | `""` | Stable dataset id for `?id=` deep links in the HTML UI |
 | `--group-pattern` | `-p` | `x` | Pattern-based grouping (`n`/`x`/`y`/`z` with separators matching `-g` for CSV/JSON) |
 | `--group-regex` | `-r` | `""` | Regex-based grouping (named captures) |
 | `--group` | `-g` | `""` | Names each dimension in `--group-pattern` order; csv/json column names must use matching separators in `-p` |
@@ -53,6 +54,7 @@ Every chart subcommand accepts the common data, grouping, and metadata flags:
 | `--scale` (`-S`) | ✅ | ✅ | ✅ | — | — | — | Value scale: `linear` or `log` |
 | `--3d` | ✅ | ✅ | ✅ | — | — | — | Pseudo-3D for grouped x+y data (y → depth, metric → height) |
 | `--3d-visualmap` | ✅ | ✅ | ✅ | — | — | — | Color 3D geometry by metric value |
+| `--visualmap` | — | — | ✅ | — | — | — | Color 2D scatter points by metric (off by default) |
 | `--3d-rotate` | ✅ | ✅ | ✅ | — | — | — | Auto-rotate the 3D scene (only meaningful with 3D data) |
 `bar`, `line`, and `scatter` render in 3D when the data has a z dimension (`-p n/x/y/z`) or auto-value detects 3+ numeric columns. Pie, heatmap, and radar are 2D-only for those flags — passing an unsupported flag is an error:
 
