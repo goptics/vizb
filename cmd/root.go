@@ -62,7 +62,7 @@ var rootCmd = &cobra.Command{
 	Use:   "vizb [target]",
 	Short: "Tabular visualization engine — charts and stats from CSV, JSON, and benchmarks",
 	Long: `A tabular visualization engine for CSV, JSON, and benchmark output.
-Turns numeric rows into interactive charts and descriptive statistics in one
+Turns numeric columns into interactive charts and descriptive statistics in one
 self-contained HTML file. Reads a file or piped stdin, auto-detects the input
 format (override with --parser), and renders bar, line, scatter, pie, heatmap,
 and radar charts you can explore in the browser.`,
