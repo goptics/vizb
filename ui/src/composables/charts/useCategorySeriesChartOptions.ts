@@ -14,6 +14,7 @@ import {
   isLargeXAxis,
   makeLegendTitle,
   LARGE_DATA_THRESHOLD,
+  scatterSeriesLargeOpts,
 } from './shared'
 import {
   adjustForLogScaleLine,
@@ -80,8 +81,9 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
         type: kind,
         data: series.map((s) => adjustForLogScaleLine(s.values[0] ?? null, effectiveScale)),
         label: createLabelConfig(showLabels.value, styling),
-        large: true,
-        largeThreshold: LARGE_DATA_THRESHOLD,
+        ...(kind === 'scatter'
+          ? scatterSeriesLargeOpts(useVisualMap)
+          : { large: true as const, largeThreshold: LARGE_DATA_THRESHOLD }),
         ...(style.connectNulls ? { connectNulls: true } : {}),
         ...(useVisualMap ? {} : { itemStyle: { color: getNextColorFor(chartData.value.title) } }),
         ...seriesExtras,
@@ -109,8 +111,9 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
       type: kind,
       data: series.map((s) => adjustForLogScaleLine(s.values[yIndex] ?? null, effectiveScale)),
       label: createLabelConfig(showLabels.value, styling),
-      large: true,
-      largeThreshold: LARGE_DATA_THRESHOLD,
+      ...(kind === 'scatter'
+        ? scatterSeriesLargeOpts(useVisualMap)
+        : { large: true as const, largeThreshold: LARGE_DATA_THRESHOLD }),
       ...(style.connectNulls ? { connectNulls: true } : {}),
       ...(useVisualMap ? {} : { itemStyle: { color: getNextColorFor(yAxisLabel) } }),
       ...seriesExtras,

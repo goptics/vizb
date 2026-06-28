@@ -67,6 +67,13 @@ jobs:
             charts: scatter
             chart: "scatter:3d-visualmap,3d-rotate"
 
+          - output: 07-house-price-area2
+            file: house-price-area2
+            name: "House Price vs Area"
+            description: "2D scatter — auto-value area/price with visualMap gradient (16k points, ECharts house-price demo)"
+            charts: scatter
+            chart: "scatter:visualmap"
+
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

@@ -25,7 +25,7 @@ defineEmits<{
     :option="option"
     :init-options="initOptions"
     :autoresize="true"
-    :update-options="{ notMerge: false, replaceMerge: ['visualMap'] }"
+    :update-options="{ notMerge: false, replaceMerge: ['series', 'visualMap'] }"
     @legendselectchanged="$emit('legendselectchanged', $event)"
   />
 </template>
