@@ -85,6 +85,9 @@ func TestHasSelect(t *testing.T) {
 }
 
 func TestIsExplicitGrouping(t *testing.T) {
+	if IsExplicitGrouping(Config{}) {
+		t.Fatal("expected false for empty config")
+	}
 	if IsExplicitGrouping(Config{GroupPattern: "x"}) {
 		t.Fatal("expected false for default pattern")
 	}
@@ -101,11 +104,14 @@ func TestIsExplicitGrouping(t *testing.T) {
 
 func TestIsSelectAxisMode(t *testing.T) {
 	cfg := Config{
-		SelectViews:  [][]ColumnSpec{{{Source: "a"}, {Source: "b"}}},
-		GroupPattern: "x",
+		SelectViews: [][]ColumnSpec{{{Source: "a"}, {Source: "b"}}},
 	}
 	if !IsSelectAxisMode(cfg) {
 		t.Fatal("expected solo select axis mode")
+	}
+	cfg.GroupPattern = "x"
+	if !IsSelectAxisMode(cfg) {
+		t.Fatal("expected solo select axis mode with default pattern")
 	}
 	cfg.Group = []string{"region"}
 	if IsSelectAxisMode(cfg) {

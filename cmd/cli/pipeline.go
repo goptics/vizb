@@ -438,10 +438,17 @@ func assembleDataset(results []shared.DataPoint, m RunMeta, configs []internal_c
 		// from the actual data points since the caller's cfg is unchanged.
 		axes = deriveAxesFromData(results)
 		autoEnableValueMode3D(configs, axes, valueModeHasMetric(cfg, results))
+	} else if parser.IsSelectAxisMode(cfg) {
+		axes = parser.DatasetAxesForSelectView(cfg.SelectViews[0], results)
+		autoEnableValueMode3D(configs, axes, valueModeHasMetric(cfg, results))
 	} else {
 		axes = parser.GroupAxes(cfg)
 		if len(cfg.Axes) > 0 {
-			axes = parser.ValueAxes(cfg)
+			if parser.IsMixedMode(cfg) {
+				axes = parser.MixedAxes(cfg)
+			} else {
+				axes = parser.ValueAxes(cfg)
+			}
 		}
 	}
 	axes = appendMetricAxis(axes, cfg, results)

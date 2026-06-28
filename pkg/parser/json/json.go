@@ -134,8 +134,27 @@ func ParseJSON(filename string, cfg parser.Config) []shared.DataPoint {
 		}
 	}
 
+	if parser.IsSelectAxisMode(cfg) {
+		axesCfg := parser.SelectViewAxesCfg(cfg)
+		flag := parser.AxisColumnLabel(true)
+		if err := parser.ResolveAxesTypes(&axesCfg, jsonAxisColumnKind(rows, seenCol, colOrder, flag)); err != nil {
+			shared.ExitWithError(err.Error(), nil)
+		}
+		if parser.IsMixedMode(axesCfg) {
+			return parseJSONMixedMode(rows, colOrder, seenCol, axesCfg, flag)
+		}
+		return parseJSONValueMode(rows, colOrder, seenCol, axesCfg, flag)
+	}
+
 	if len(cfg.Axes) > 0 {
-		return parseJSONValueMode(rows, colOrder, seenCol, cfg)
+		flag := parser.AxisColumnLabel(false)
+		if err := parser.ResolveAxesTypes(&cfg, jsonAxisColumnKind(rows, seenCol, colOrder, flag)); err != nil {
+			shared.ExitWithError(err.Error(), nil)
+		}
+		if parser.IsMixedMode(cfg) {
+			return parseJSONMixedMode(rows, colOrder, seenCol, cfg, flag)
+		}
+		return parseJSONValueMode(rows, colOrder, seenCol, cfg, flag)
 	}
 
 	groupKeys, groupSet := resolveGroupKeys(colOrder, seenCol, parser.EffectiveGroupColumns(cfg))
@@ -210,15 +229,134 @@ func ParseJSON(filename string, cfg parser.Config) []shared.DataPoint {
 	return results
 }
 
+// jsonAxisColumnKind classifies axis fields for mixed vs value routing.
+func jsonAxisColumnKind(rows []map[string]any, seenCol map[string]bool, colOrder []string, flagLabel string) parser.AxisColumnKind {
+	return func(source, axisKey string) (string, error) {
+		if !seenCol[source] {
+			return "", fmt.Errorf("%s field %q not found; available: %v", flagLabel, source, colOrder)
+		}
+		anyNumeric := false
+		allNumeric := true
+		sawCell := false
+		for _, row := range rows {
+			v, ok := row[source]
+			if !ok {
+				continue
+			}
+			if strings.TrimSpace(stringify(v)) == "" {
+				continue
+			}
+			sawCell = true
+			if _, ok := leafNumber(v); ok {
+				anyNumeric = true
+			} else {
+				allNumeric = false
+			}
+		}
+		if !sawCell {
+			return "", fmt.Errorf("%s field %q has no data", flagLabel, source)
+		}
+		if axisKey == "x" {
+			if allNumeric {
+				return "value", nil
+			}
+			return "category", nil
+		}
+		if !anyNumeric {
+			return "", fmt.Errorf("%s field %q is not numeric", flagLabel, source)
+		}
+		return "value", nil
+	}
+}
+
+// parseJSONMixedMode maps one categorical field to x and numeric fields to y[,z].
+func parseJSONMixedMode(rows []map[string]any, colOrder []string, seenCol map[string]bool, cfg parser.Config, flagLabel string) []shared.DataPoint {
+	type slot struct {
+		key  string
+		kind string
+	}
+	slots := make(map[string]slot, len(cfg.Axes))
+	for _, spec := range cfg.Axes {
+		if !seenCol[spec.Source] {
+			shared.ExitWithError(fmt.Sprintf("%s field '%s' not found; available: %v", flagLabel, spec.Source, colOrder), nil)
+		}
+		if spec.AxisType == "value" {
+			numeric := false
+			for _, row := range rows {
+				v, ok := row[spec.Source]
+				if !ok {
+					continue
+				}
+				if _, ok := leafNumber(v); ok {
+					numeric = true
+					break
+				}
+			}
+			if !numeric {
+				shared.ExitWithError(fmt.Sprintf("%s field '%s' is not numeric", flagLabel, spec.Source), nil)
+			}
+		}
+		slots[spec.AxisKey] = slot{key: spec.Source, kind: spec.AxisType}
+	}
+
+	var results []shared.DataPoint
+	for _, row := range rows {
+		var dp shared.DataPoint
+		complete := true
+		for axisKey, sl := range slots {
+			v, ok := row[sl.key]
+			if !ok {
+				complete = false
+				break
+			}
+			if sl.kind == "category" {
+				s := strings.TrimSpace(stringify(v))
+				if s == "" {
+					complete = false
+					break
+				}
+				switch axisKey {
+				case "x":
+					dp.XAxis = s
+				case "y":
+					dp.YAxis = s
+				case "z":
+					dp.ZAxis = s
+				}
+				continue
+			}
+			num, ok := leafNumber(v)
+			if !ok {
+				complete = false
+				break
+			}
+			formatted := strconv.FormatFloat(utils.FormatNumber(num, cfg.NumberUnit), 'g', -1, 64)
+			switch axisKey {
+			case "x":
+				dp.XAxis = formatted
+			case "y":
+				dp.YAxis = formatted
+			case "z":
+				dp.ZAxis = formatted
+			}
+		}
+		if !complete {
+			continue
+		}
+		results = append(results, dp)
+	}
+	return results
+}
+
 // parseJSONValueMode implements value mode for JSON: each named numeric
-// field becomes a coordinate on x, y[, z] (by --axes order); each row becomes a
+// field becomes a coordinate on x, y[, z] (by axis order); each row becomes a
 // raw point with no stat series. A missing or fully non-numeric axis field is
 // fatal; a row missing a finite value for any axis is skipped.
-func parseJSONValueMode(rows []map[string]any, colOrder []string, seenCol map[string]bool, cfg parser.Config) []shared.DataPoint {
+func parseJSONValueMode(rows []map[string]any, colOrder []string, seenCol map[string]bool, cfg parser.Config, flagLabel string) []shared.DataPoint {
 	keys := make([]string, len(cfg.Axes))
 	for i, spec := range cfg.Axes {
 		if !seenCol[spec.Source] {
-			shared.ExitWithError(fmt.Sprintf("--axes field '%s' not found; available: %v", spec.Source, colOrder), nil)
+			shared.ExitWithError(fmt.Sprintf("%s field '%s' not found; available: %v", flagLabel, spec.Source, colOrder), nil)
 		}
 
 		numeric := false
@@ -233,7 +371,7 @@ func parseJSONValueMode(rows []map[string]any, colOrder []string, seenCol map[st
 			}
 		}
 		if !numeric {
-			shared.ExitWithError(fmt.Sprintf("--axes field '%s' is not numeric", spec.Source), nil)
+			shared.ExitWithError(fmt.Sprintf("%s field '%s' is not numeric", flagLabel, spec.Source), nil)
 		}
 		keys[i] = spec.Source
 	}

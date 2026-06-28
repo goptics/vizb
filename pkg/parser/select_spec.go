@@ -8,10 +8,12 @@ import (
 
 // ColumnSpec selects one csv/json column and an optional chart label.
 // AxisKey is set when --select solo mode uses explicit placement (x:col,y:col).
+// AxisType is category or value after ResolveAxesTypes (mixed/value routing).
 type ColumnSpec struct {
-	Source  string
-	Label   string
-	AxisKey string // x, y, or z from solo --select axis placement
+	Source   string
+	Label    string
+	AxisKey  string // x, y, or z from solo --select axis placement
+	AxisType string // category | value (set by ResolveAxesTypes)
 }
 
 // ParseSelectFlag parses --select=price{Unit price},count into column specs.

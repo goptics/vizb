@@ -491,6 +491,43 @@ func (s *PipelineSuite) TestAssembleDatasetAppendMetricAxisFromConfig() {
 	s.Equal("noise", ds.Axes[3].Label)
 }
 
+func (s *PipelineSuite) TestAssembleDatasetSelectViewMixedAxes() {
+	results := []shared.DataPoint{{XAxis: "Asia", YAxis: "12", Stats: []shared.Stat{}}}
+	cfg := parser.Config{
+		SelectViews: [][]parser.ColumnSpec{
+			{{Source: "region", AxisKey: "x"}, {Source: "latency", AxisKey: "y"}},
+		},
+	}
+	ds := assembleDataset(results, RunMeta{Name: "T"}, nil, cfg)
+
+	s.Require().Len(ds.Axes, 2)
+	s.Equal("x", ds.Axes[0].Key)
+	s.Equal("", ds.Axes[0].Type)
+	s.Equal("y", ds.Axes[1].Key)
+	s.Equal("value", ds.Axes[1].Type)
+}
+
+func (s *PipelineSuite) TestAssembleDatasetSelectViewValueAxesEnables3D() {
+	results := []shared.DataPoint{
+		{XAxis: "1", YAxis: "2", ZAxis: "3", Stats: []shared.Stat{}},
+	}
+	cfg := parser.Config{
+		SelectViews: [][]parser.ColumnSpec{
+			{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}, {Source: "z", AxisKey: "z"}},
+		},
+	}
+	configs := []internal_charts.ChartConfig{&scatterchart.Config{Type: "scatter"}}
+	ds := assembleDataset(results, RunMeta{Name: "T"}, configs, cfg)
+
+	s.Require().Len(ds.Axes, 3)
+	for _, ax := range ds.Axes {
+		s.Equal("value", ax.Type)
+	}
+	sc := ds.Settings[0].(*scatterchart.Config)
+	s.Require().NotNil(sc.ThreeD)
+	s.True(*sc.ThreeD)
+}
+
 func (s *PipelineSuite) TestAssembleDatasetCategoryAxesSkipAuto3D() {
 	results := []shared.DataPoint{
 		{XAxis: "US", YAxis: "Widget", ZAxis: "Q1", Stats: []shared.Stat{{Type: "sells", Value: shared.F64(10)}}},

@@ -70,8 +70,27 @@ func ParseCSV(filename string, cfg parser.Config) []shared.DataPoint {
 		}
 	}
 
+	if parser.IsSelectAxisMode(cfg) {
+		axesCfg := parser.SelectViewAxesCfg(cfg)
+		flag := parser.AxisColumnLabel(true)
+		if err := parser.ResolveAxesTypes(&axesCfg, csvAxisColumnKind(headers, dataRows, flag)); err != nil {
+			shared.ExitWithError(err.Error(), nil)
+		}
+		if parser.IsMixedMode(axesCfg) {
+			return parseCSVMixedMode(headers, dataRows, axesCfg, flag)
+		}
+		return parseCSVValueMode(headers, dataRows, axesCfg, flag)
+	}
+
 	if len(cfg.Axes) > 0 {
-		return parseCSVValueMode(headers, dataRows, cfg)
+		flag := parser.AxisColumnLabel(false)
+		if err := parser.ResolveAxesTypes(&cfg, csvAxisColumnKind(headers, dataRows, flag)); err != nil {
+			shared.ExitWithError(err.Error(), nil)
+		}
+		if parser.IsMixedMode(cfg) {
+			return parseCSVMixedMode(headers, dataRows, cfg, flag)
+		}
+		return parseCSVValueMode(headers, dataRows, cfg, flag)
 	}
 
 	groupIdx, groupSet := resolveGroupColumns(headers, parser.EffectiveGroupColumns(cfg))
@@ -145,11 +164,143 @@ func ParseCSV(filename string, cfg parser.Config) []shared.DataPoint {
 	return results
 }
 
+// csvAxisColumnKind classifies axis columns for mixed vs value routing.
+func csvAxisColumnKind(headers []string, dataRows [][]string, flagLabel string) parser.AxisColumnKind {
+	colIdx := map[string]int{}
+	for i, h := range headers {
+		if h != "" {
+			colIdx[h] = i
+		}
+	}
+	return func(source, axisKey string) (string, error) {
+		col, ok := colIdx[source]
+		if !ok {
+			return "", fmt.Errorf("%s column %q not found; available: %v", flagLabel, source, nonEmpty(headers))
+		}
+		anyNumeric := false
+		allNumeric := true
+		sawCell := false
+		for _, row := range dataRows {
+			if col >= len(row) {
+				continue
+			}
+			cell := strings.TrimSpace(row[col])
+			if cell == "" {
+				continue
+			}
+			sawCell = true
+			if _, ok := parseFinite(cell); ok {
+				anyNumeric = true
+			} else {
+				allNumeric = false
+			}
+		}
+		if !sawCell {
+			return "", fmt.Errorf("%s column %q has no data", flagLabel, source)
+		}
+		if axisKey == "x" {
+			if allNumeric {
+				return "value", nil
+			}
+			return "category", nil
+		}
+		if !anyNumeric {
+			return "", fmt.Errorf("%s column %q is not numeric", flagLabel, source)
+		}
+		return "value", nil
+	}
+}
+
+// parseCSVMixedMode maps one categorical column to x and numeric columns to y[,z];
+// each row becomes a point with empty stats (no aggregation).
+func parseCSVMixedMode(headers []string, dataRows [][]string, cfg parser.Config, flagLabel string) []shared.DataPoint {
+	type slot struct {
+		col  int
+		kind string // category | value
+	}
+	slots := make(map[string]slot, len(cfg.Axes))
+	for _, spec := range cfg.Axes {
+		col := -1
+		for h, name := range headers {
+			if name == spec.Source {
+				col = h
+				break
+			}
+		}
+		if col == -1 {
+			shared.ExitWithError(fmt.Sprintf("%s column '%s' not found; available: %v", flagLabel, spec.Source, nonEmpty(headers)), nil)
+		}
+		if spec.AxisType == "value" {
+			numeric := false
+			for _, row := range dataRows {
+				if col >= len(row) {
+					continue
+				}
+				if _, ok := parseFinite(row[col]); ok {
+					numeric = true
+					break
+				}
+			}
+			if !numeric {
+				shared.ExitWithError(fmt.Sprintf("%s column '%s' is not numeric", flagLabel, spec.Source), nil)
+			}
+		}
+		slots[spec.AxisKey] = slot{col: col, kind: spec.AxisType}
+	}
+
+	var results []shared.DataPoint
+	for _, row := range dataRows {
+		var dp shared.DataPoint
+		complete := true
+		for key, sl := range slots {
+			if sl.col >= len(row) {
+				complete = false
+				break
+			}
+			cell := strings.TrimSpace(row[sl.col])
+			if sl.kind == "category" {
+				if cell == "" {
+					complete = false
+					break
+				}
+				switch key {
+				case "x":
+					dp.XAxis = cell
+				case "y":
+					dp.YAxis = cell
+				case "z":
+					dp.ZAxis = cell
+				}
+				continue
+			}
+			v, ok := parseFinite(cell)
+			if !ok {
+				complete = false
+				break
+			}
+			formatted := strconv.FormatFloat(utils.FormatNumber(v, cfg.NumberUnit), 'g', -1, 64)
+			switch key {
+			case "x":
+				dp.XAxis = formatted
+			case "y":
+				dp.YAxis = formatted
+			case "z":
+				dp.ZAxis = formatted
+			}
+		}
+		if !complete {
+			continue
+		}
+		results = append(results, dp)
+	}
+	return results
+}
+
 // parseCSVValueMode implements value mode: each named numeric column
-// becomes a coordinate on x, y[, z] (by --axes order); each row becomes a raw
+// becomes a coordinate on x, y[, z] (by axis order); each row becomes a raw
 // point with no stat series. A missing or fully non-numeric axis column is
 // fatal; an individual row missing a finite cell for any axis is skipped.
-func parseCSVValueMode(headers []string, dataRows [][]string, cfg parser.Config) []shared.DataPoint {
+func parseCSVValueMode(headers []string, dataRows [][]string, cfg parser.Config, flagLabel string) []shared.DataPoint {
 	idx := make([]int, len(cfg.Axes))
 	for i, spec := range cfg.Axes {
 		col := -1
@@ -160,7 +311,7 @@ func parseCSVValueMode(headers []string, dataRows [][]string, cfg parser.Config)
 			}
 		}
 		if col == -1 {
-			shared.ExitWithError(fmt.Sprintf("--axes column '%s' not found; available: %v", spec.Source, nonEmpty(headers)), nil)
+			shared.ExitWithError(fmt.Sprintf("%s column '%s' not found; available: %v", flagLabel, spec.Source, nonEmpty(headers)), nil)
 		}
 
 		numeric := false
@@ -174,7 +325,7 @@ func parseCSVValueMode(headers []string, dataRows [][]string, cfg parser.Config)
 			}
 		}
 		if !numeric {
-			shared.ExitWithError(fmt.Sprintf("--axes column '%s' is not numeric", spec.Source), nil)
+			shared.ExitWithError(fmt.Sprintf("%s column '%s' is not numeric", flagLabel, spec.Source), nil)
 		}
 		idx[i] = col
 	}

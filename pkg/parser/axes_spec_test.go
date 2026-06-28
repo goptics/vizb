@@ -1,6 +1,102 @@
 package parser
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/goptics/vizb/shared"
+)
+
+func TestResolveAxesTypesMixed(t *testing.T) {
+	cfg := Config{Axes: []ColumnSpec{
+		{Source: "region", AxisKey: "x"},
+		{Source: "latency", AxisKey: "y"},
+		{Source: "sales", AxisKey: "z"},
+	}}
+	kindFn := func(source, axisKey string) (string, error) {
+		if source == "region" {
+			return "category", nil
+		}
+		return "value", nil
+	}
+	if err := ResolveAxesTypes(&cfg, kindFn); err != nil {
+		t.Fatal(err)
+	}
+	if !IsMixedMode(cfg) {
+		t.Fatal("expected mixed mode")
+	}
+	axes := MixedAxes(cfg)
+	if len(axes) != 3 || axes[0].Type != "" || axes[1].Type != "value" || axes[2].Type != "value" {
+		t.Fatalf("unexpected mixed axes: %+v", axes)
+	}
+}
+
+func TestResolveAxesTypesAllValue(t *testing.T) {
+	cfg := Config{Axes: []ColumnSpec{
+		{Source: "x", AxisKey: "x"},
+		{Source: "y", AxisKey: "y"},
+	}}
+	kindFn := func(_, _ string) (string, error) { return "value", nil }
+	if err := ResolveAxesTypes(&cfg, kindFn); err != nil {
+		t.Fatal(err)
+	}
+	if IsMixedMode(cfg) {
+		t.Fatal("expected pure value mode")
+	}
+}
+
+func TestResolveAxesTypesRejectsCategoryNotOnX(t *testing.T) {
+	cfg := Config{Axes: []ColumnSpec{
+		{Source: "latency", AxisKey: "x"},
+		{Source: "region", AxisKey: "y"},
+	}}
+	kindFn := func(source, _ string) (string, error) {
+		if source == "region" {
+			return "category", nil
+		}
+		return "value", nil
+	}
+	if err := ResolveAxesTypes(&cfg, kindFn); err == nil {
+		t.Fatal("expected error when category is not on x")
+	}
+}
+
+func TestResolveAxesTypesRejectsMultipleCategories(t *testing.T) {
+	cfg := Config{Axes: []ColumnSpec{
+		{Source: "region", AxisKey: "x"},
+		{Source: "product", AxisKey: "y"},
+		{Source: "latency", AxisKey: "z"},
+	}}
+	kindFn := func(source, _ string) (string, error) {
+		if source == "latency" {
+			return "value", nil
+		}
+		return "category", nil
+	}
+	if err := ResolveAxesTypes(&cfg, kindFn); err == nil {
+		t.Fatal("expected error for multiple categoricals")
+	}
+}
+
+func TestDatasetAxesForSelectViewMixed(t *testing.T) {
+	view := []ColumnSpec{
+		{Source: "region", AxisKey: "x", Label: "Region"},
+		{Source: "latency", AxisKey: "y"},
+	}
+	results := []shared.DataPoint{{XAxis: "Asia", YAxis: "12"}}
+	axes := DatasetAxesForSelectView(view, results)
+	if len(axes) != 2 || axes[0].Type != "" || axes[1].Type != "value" {
+		t.Fatalf("unexpected mixed select axes: %+v", axes)
+	}
+}
+
+func TestDatasetAxesForSelectViewValue(t *testing.T) {
+	view := []ColumnSpec{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}}
+	results := []shared.DataPoint{{XAxis: "1", YAxis: "2"}}
+	axes := DatasetAxesForSelectView(view, results)
+	if len(axes) != 2 || axes[0].Type != "value" || axes[1].Type != "value" {
+		t.Fatalf("unexpected value select axes: %+v", axes)
+	}
+}
 
 func TestValueAxes(t *testing.T) {
 	cfg := Config{Axes: []ColumnSpec{{Source: "price"}, {Source: "latency", Label: "Lat"}}}

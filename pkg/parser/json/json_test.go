@@ -361,7 +361,7 @@ func (s *JSONFatalSuite) TestValueModeSkipsRowWithBadMetric() {
 }
 
 func (s *JSONAutoValueSuite) TestSelectSkipsAutoDetect() {
-	// Solo --select (SelectViews) disables auto-value inference (Task 1 gate).
+	// Solo --select (SelectViews) disables auto-value inference and routes value mode.
 	s.cfg.SelectViews = [][]parser.ColumnSpec{
 		{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}},
 	}
@@ -369,9 +369,38 @@ func (s *JSONAutoValueSuite) TestSelectSkipsAutoDetect() {
 
 	results := ParseJSON(path, s.cfg)
 	s.Require().Len(results, 1)
-	s.Empty(results[0].XAxis)
-	s.Empty(results[0].YAxis)
-	s.NotEmpty(results[0].Stats) // parser routing for select views is Task 2
+	s.Equal("1", results[0].XAxis)
+	s.Equal("2", results[0].YAxis)
+	s.Empty(results[0].Stats)
+}
+
+func (s *JSONFatalSuite) TestSelectMixedModeMapsCategoryXAndValueY() {
+	s.cfg.SelectViews = [][]parser.ColumnSpec{
+		{{Source: "region", AxisKey: "x"}, {Source: "latency", AxisKey: "y"}},
+	}
+	path := s.writeFile(`[
+		{"region":"Asia","latency":12,"sales":100},
+		{"region":"EU","latency":11,"sales":60}
+	]`)
+
+	results := ParseJSON(path, s.cfg)
+	s.Require().Len(results, 2)
+	s.Equal("Asia", results[0].XAxis)
+	s.Equal("12", results[0].YAxis)
+	s.Empty(results[0].Stats)
+}
+
+func (s *JSONFatalSuite) TestSelectValueModeAllNumeric() {
+	s.cfg.SelectViews = [][]parser.ColumnSpec{
+		{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}},
+	}
+	path := s.writeFile(`[{"x":1,"y":2},{"x":3,"y":4}]`)
+
+	results := ParseJSON(path, s.cfg)
+	s.Require().Len(results, 2)
+	s.Equal("1", results[0].XAxis)
+	s.Equal("2", results[0].YAxis)
+	s.Empty(results[0].Stats)
 }
 
 func TestJSONFatalSuite(t *testing.T) {

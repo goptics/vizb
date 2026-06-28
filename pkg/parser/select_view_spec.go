@@ -111,10 +111,18 @@ func HasSelect(cfg Config) bool {
 func IsExplicitGrouping(cfg Config) bool {
 	return len(cfg.Group) > 0 ||
 		cfg.GroupRegex != "" ||
-		cfg.GroupPattern != "x"
+		(cfg.GroupPattern != "" && cfg.GroupPattern != "x")
 }
 
 // IsSelectAxisMode reports solo --select axis mode: select views without explicit grouping.
 func IsSelectAxisMode(cfg Config) bool {
 	return len(cfg.SelectViews) > 0 && !IsExplicitGrouping(cfg)
+}
+
+// AxisColumnLabel returns the flag name for axis-column error messages.
+func AxisColumnLabel(selectMode bool) string {
+	if selectMode {
+		return "--select"
+	}
+	return "--axes"
 }

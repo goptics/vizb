@@ -596,16 +596,42 @@ func (s *CSVAutoValueSuite) TestHeatmapChartFallsBackToFlat() {
 }
 
 func (s *CSVAutoValueSuite) TestSelectSkipsAutoDetect() {
-	// Solo --select (SelectViews) disables auto-value inference (Task 1 gate).
+	// Solo --select (SelectViews) disables auto-value inference and routes value mode.
 	s.cfg.SelectViews = [][]parser.ColumnSpec{
 		{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}},
 	}
 	csv := "x,y,z,w\n1,2,3,4\n"
 	results := ParseCSV(s.writeFile(csv), s.cfg)
 	s.Require().Len(results, 1)
-	s.Empty(results[0].XAxis)
-	s.Empty(results[0].YAxis)
-	s.NotEmpty(results[0].Stats) // parser routing for select views is Task 2
+	s.Equal("1", results[0].XAxis)
+	s.Equal("2", results[0].YAxis)
+	s.Empty(results[0].Stats)
+}
+
+func (s *CSVFatalSuite) TestSelectMixedModeMapsCategoryXAndValueY() {
+	s.cfg.SelectViews = [][]parser.ColumnSpec{
+		{{Source: "region", AxisKey: "x"}, {Source: "latency", AxisKey: "y"}},
+	}
+	path := s.writeFile("region,latency,sales\nAsia,12,100\nEU,11,60\n")
+
+	results := ParseCSV(path, s.cfg)
+	s.Require().Len(results, 2)
+	s.Equal("Asia", results[0].XAxis)
+	s.Equal("12", results[0].YAxis)
+	s.Empty(results[0].Stats)
+}
+
+func (s *CSVFatalSuite) TestSelectValueModeAllNumeric() {
+	s.cfg.SelectViews = [][]parser.ColumnSpec{
+		{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}},
+	}
+	path := s.writeFile("x,y\n1,2\n3,4\n")
+
+	results := ParseCSV(path, s.cfg)
+	s.Require().Len(results, 2)
+	s.Equal("1", results[0].XAxis)
+	s.Equal("2", results[0].YAxis)
+	s.Empty(results[0].Stats)
 }
 
 func TestCSVAutoValueSuite(t *testing.T) {
