@@ -176,8 +176,21 @@ export const chartHasPlottableData = (chart: ChartData): boolean =>
   (chart.mixedTuples?.length ?? 0) > 0 ||
   (chart.render3D?.mode === 'mixed' && (chart.render3D.lineSeries[0]?.data.length ?? 0) > 0)
 
+/** Category labels for the x/series dimension across chart shapes. */
+export const chartSeriesLabels = (chart: ChartData): string[] => {
+  if (chart.series.length) return chart.series.map((s) => s.xAxis)
+  if (chart.xCategories?.length) return chart.xCategories
+  return [...new Set(chart.points.map((p) => p.xAxis))]
+}
+
 /** Cardinality shown on ChartCard axis badges (category count or unique value-mode coords). */
 export const chartAxisBadgeCount = (chart: ChartData, axis: 'x' | 'y' | 'z'): number => {
+  if (chart.mixedTuples?.length && chart.xCategories?.length) {
+    if (axis === 'x') return chart.xCategories.length
+    if (axis === 'z') return 0
+    return chart.mixedTuples.length
+  }
+
   if (isMixedModeChart(chart)) {
     if (axis === 'x') return chart.xCategories?.length ?? 0
     if (axis === 'z') return 0

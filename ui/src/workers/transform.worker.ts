@@ -45,6 +45,7 @@ export type InitMessage = {
   labels?: AxisLabels
   axes?: Axis[] // present when axes metadata is available from the dataset
   chartType?: ChartType
+  preserveRows?: boolean
 }
 export type SetArrangementMessage = {
   type: 'setArrangement'
@@ -93,6 +94,7 @@ type State = {
   mixedMode: boolean
   axes?: Axis[]
   chartType?: ChartType
+  preserveRows: boolean
 }
 
 let state: State | null = null
@@ -172,6 +174,7 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
         mixedMode: mixedModeDetected,
         axes,
         chartType,
+        preserveRows: msg.preserveRows === true,
       }
 
       if (valueModeDetected) {
@@ -282,7 +285,8 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
     msg.showLabels,
     msg.scale,
     canonical,
-    msg.threeD
+    msg.threeD,
+    state.preserveRows
   )
   post({
     type: 'chart',

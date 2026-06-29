@@ -227,6 +227,19 @@ describe('chartAxisBadgeCount', () => {
     expect(chartAxisBadgeCount(value3d, 'y')).toBe(2)
     expect(chartAxisBadgeCount(value3d, 'z')).toBe(3)
   })
+
+  it('counts mixedTuples points for overlay y badge', () => {
+    const overlay = chart({
+      xCategories: ['West', 'East'],
+      mixedTuples: [
+        [0, 10],
+        [0, 20],
+        [1, 30],
+      ],
+    })
+    expect(chartAxisBadgeCount(overlay, 'x')).toBe(2)
+    expect(chartAxisBadgeCount(overlay, 'y')).toBe(3)
+  })
 })
 
 describe('chartHasPlottableData', () => {

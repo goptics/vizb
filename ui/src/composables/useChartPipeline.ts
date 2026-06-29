@@ -57,7 +57,8 @@ export function useChartPipeline(
   scale: Ref<ScaleType>,
   threeD: Ref<boolean>,
   axes?: MaybeRef<Axis[] | undefined>,
-  chartType?: MaybeRef<ChartType>
+  chartType?: MaybeRef<ChartType>,
+  preserveRows?: MaybeRef<boolean | undefined>
 ) {
   const charts = ref<ChartState[]>([])
   // True once any chart has data — gates the first-load full-page skeleton.
@@ -266,6 +267,7 @@ export function useChartPipeline(
       labels: plainLabels(toRaw(unref(labels))),
       axes: plainAxes(axesNow),
       chartType: ct,
+      preserveRows: unref(preserveRows) === true,
     })
   }
 

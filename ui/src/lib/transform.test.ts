@@ -81,6 +81,66 @@ describe('buildChartForSignature — duplicate (xAxis,yAxis) handling', () => {
     expect(valuesFor(data, 'BenchFoo')).toEqual([125])
   })
 
+  it('preserveRows overlays duplicate x at one category (tabular --select)', () => {
+    const data: DataPoint[] = [
+      { xAxis: 'Asia', yAxis: '', stats: [{ type: 'val', value: 12 }] },
+      { xAxis: 'Asia', yAxis: '', stats: [{ type: 'val', value: 10 }] },
+      { xAxis: 'EU', yAxis: '', stats: [{ type: 'val', value: 8 }] },
+    ]
+    const { signature, statTemplate } = listChartSignatures(data)[0]!
+    const chart = buildChartForSignature(
+      data,
+      signature,
+      statTemplate,
+      undefined,
+      noSort,
+      false,
+      'linear',
+      undefined,
+      false,
+      true
+    )
+    expect(chart.xCategories).toEqual(['Asia', 'EU'])
+    expect(chart.mixedTuples).toEqual([
+      [0, 12],
+      [0, 10],
+      [1, 8],
+    ])
+    expect(chart.series).toEqual([])
+  })
+
+  it('preserveRows expands collapsed stats[] on one DataPoint', () => {
+    const data: DataPoint[] = [
+      {
+        xAxis: 'West',
+        yAxis: '',
+        stats: [
+          { type: 'tax', value: 10 },
+          { type: 'amount', value: 100 },
+          { type: 'tax', value: 20 },
+          { type: 'amount', value: 200 },
+        ],
+      },
+    ]
+    const tax = listChartSignatures(data).find((s) => s.statTemplate.type === 'tax')!
+    const chart = buildChartForSignature(
+      data,
+      tax.signature,
+      tax.statTemplate,
+      undefined,
+      noSort,
+      false,
+      'linear',
+      undefined,
+      false,
+      true
+    )
+    expect(chart.mixedTuples).toEqual([
+      [0, 10],
+      [0, 20],
+    ])
+  })
+
   it('keeps distinct keys separate', () => {
     const data: DataPoint[] = [
       { xAxis: 'A', yAxis: '', stats: [{ type: 'val', value: 100 }] },
@@ -97,6 +157,31 @@ describe('buildChartForSignature — duplicate (xAxis,yAxis) handling', () => {
     ]
     expect(valuesFor(data, 'East')).toEqual([5000])
     expect(valuesFor(data, 'West')).toEqual([3000])
+  })
+
+  it('grouped region×category uses one series row per x when preserveRows is false', () => {
+    const data: DataPoint[] = [
+      { xAxis: 'West', yAxis: 'Mechanical', stats: [{ type: 'amount', value: 10 }] },
+      { xAxis: 'West', yAxis: 'Hardware', stats: [{ type: 'amount', value: 20 }] },
+      { xAxis: 'East', yAxis: 'Mechanical', stats: [{ type: 'amount', value: 30 }] },
+    ]
+    const { signature, statTemplate } = listChartSignatures(data)[0]!
+    const chart = buildChartForSignature(
+      data,
+      signature,
+      statTemplate,
+      { x: 'region', y: 'category' },
+      noSort,
+      false,
+      'linear',
+      undefined,
+      false,
+      false
+    )
+    expect(chart.series.map((s) => s.xAxis)).toEqual(['West', 'East'])
+    expect(chart.yAxis).toEqual(['Mechanical', 'Hardware'])
+    expect(chart.series[0]!.values).toEqual([10, 20])
+    expect(chart.series[1]!.values).toEqual([30, null])
   })
 })
 
@@ -247,6 +332,13 @@ describe('build3DRender', () => {
     const render = build3DRender(points, ['Z1'], noSort, false, 'linear')
     const cell = render.barSeries[0]!.data.find((d) => d.value[0] === 0 && d.value[1] === 0)
     expect(cell!.value[2]).toBe(20)
+  })
+
+  it('preserveRows emits one 3D point per input row at duplicate cells', () => {
+    const points = [p3('A', '1', 'Z1', 10), p3('A', '1', 'Z1', 30)]
+    const render = build3DRender(points, ['Z1'], noSort, false, 'linear', undefined, true)
+    const atCell = render.lineSeries[0]!.data.filter((d) => d.value[0] === 0 && d.value[1] === 0)
+    expect(atCell.map((d) => d.value[2])).toEqual([10, 30])
   })
 
   it('filters empty-string z values from zAxisAll', () => {

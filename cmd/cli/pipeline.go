@@ -278,10 +278,16 @@ func prepareData(filePath, parserKey string, cfg parser.Config) []shared.DataPoi
 	fmt.Println(style.Info.Render("🧲 Parsing data..."))
 	data := parseFn(filePath, cfg)
 
+	// CSV/JSON emit one DataPoint per row; when grouping is inactive, collapse rows
+	// that share the same (name, x, y, z) by appending stats (no sum/average).
+	if tabularParser(parserKey) && len(cfg.Group) == 0 {
+		data = shared.CollapseDataPointsByKey(data)
+	}
+
 	// CSV/JSON emit one DataPoint per row; when grouping is active, multiple rows
 	// can share the same (name, xAxis, yAxis, zAxis) key. Collapse them by summing
 	// so the output isn't a row-per-record dump. Benchmark parsers are excluded.
-	if (parserKey == "csv" || parserKey == "json") && len(cfg.Group) > 0 {
+	if tabularParser(parserKey) && len(cfg.Group) > 0 {
 		before := len(data)
 		fmt.Println(style.Info.Render(fmt.Sprintf("🧮 Aggregating %d rows %s...", before, formatAggregationGroup(cfg))))
 		data = shared.AggregateDataPoints(data)
@@ -447,6 +453,18 @@ func assembleDataset(results []shared.DataPoint, m RunMeta, configs []internal_c
 	return buildDataset(results, m, configs, cfg, view, name)
 }
 
+func tabularParser(parserKey string) bool {
+	return parserKey == "csv" || parserKey == "json"
+}
+
+// preserveRowsForDataset is true for csv/json tabular data where the UI must
+// expand collapsed stats[] or keep duplicate (x,y,z) keys (solo/multi --select).
+// Grouped output is pre-aggregated to one point per cell; preserveRows there
+// makes the UI emit one series row per DataPoint and duplicates x categories.
+func preserveRowsForDataset(parserKey string, cfg parser.Config) bool {
+	return tabularParser(parserKey) && len(cfg.Group) == 0
+}
+
 func buildDataset(results []shared.DataPoint, m RunMeta, configs []internal_charts.ChartConfig, cfg parser.Config, view []parser.ColumnSpec, viewName string) *shared.Dataset {
 	var axes []shared.Axis
 	if cfg.AutoGroup {
@@ -480,11 +498,12 @@ func buildDataset(results []shared.DataPoint, m RunMeta, configs []internal_char
 	}
 
 	dataSet := &shared.Dataset{
-		Name:        name,
-		Description: m.Description,
-		Data:        results,
-		Settings:    configs,
-		Axes:        axes,
+		Name:         name,
+		Description:  m.Description,
+		Data:         results,
+		Settings:     configs,
+		Axes:         axes,
+		PreserveRows: preserveRowsForDataset(m.Parser, cfg),
 	}
 	if id := strings.TrimSpace(m.ID); id != "" {
 		dataSet.ID = id

@@ -9,6 +9,7 @@ import type {
   StatMath,
 } from '../types'
 import { computeDescriptive, computeCorrelation } from '../composables/useStatsWorker'
+import { chartSeriesLabels } from '../lib/utils'
 import { availableViews, usableCorrelationAxes } from '../lib/stats'
 import type { CorrelationAxis, CorrelationMethod } from '../lib/stats'
 import { buildCorrelationOption } from '../composables/charts/useCorrelationOption'
@@ -94,7 +95,7 @@ async function load() {
   correlation.value = undefined
   corrAxisOverride.value = null
   available.value = availableViews(
-    props.chartData.series.map((s) => s.xAxis),
+    chartSeriesLabels(props.chartData),
     props.chartData.yAxis,
     props.chartData.zAxis
   )
@@ -270,7 +271,7 @@ const corrAxisOverride = ref<CorrelationAxis | null>(null)
 
 const corrAxes = computed<CorrelationAxis[]>(() =>
   usableCorrelationAxes(
-    props.chartData.series.map((s) => s.xAxis),
+    chartSeriesLabels(props.chartData),
     props.chartData.yAxis,
     props.chartData.zAxis ?? []
   )
@@ -307,7 +308,7 @@ const corrEntityLabel = computed(() => {
 const corrObsLabel = computed(() => {
   const a = corrAxis.value
   const counts = {
-    x: props.chartData.series.length,
+    x: chartSeriesLabels(props.chartData).length,
     y: props.chartData.yAxis.length,
     z: props.chartData.zAxis.length,
   }

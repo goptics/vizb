@@ -367,6 +367,16 @@ describe('buildColumns', () => {
     expect(cols[1]![1]).toBeNaN() // B has no q
     expect(cols[1]![2]).toBeNaN()
   })
+
+  it('collects all values per category in overlay mode (empty y)', () => {
+    const cols = buildColumns(
+      pts(['West', '', 10], ['West', '', 20], ['East', '', 30]),
+      ['West', 'East'],
+      ['']
+    )
+    expect(cols[0]).toEqual([10, 20])
+    expect(cols[1]).toEqual([30])
+  })
 })
 
 describe('selectCorrelationAxis', () => {

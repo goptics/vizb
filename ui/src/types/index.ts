@@ -169,6 +169,8 @@ export type DataSet = {
   history?: HistoryEntry[]
   meta?: Meta
   axes?: Axis[]
+  /** Tabular csv/json: keep every input row; do not average duplicate axis keys. */
+  preserveRows?: boolean
 
   settings: ChartConfig[]
   data: DataPoint[]

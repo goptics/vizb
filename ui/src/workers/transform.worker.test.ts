@@ -360,6 +360,37 @@ describe('transform.worker — value mode compute', () => {
     ])
   })
 
+  it('preserveRows expands collapsed stats[] on one DataPoint', () => {
+    send(
+      buildInit({
+        data: [
+          {
+            xAxis: 'West',
+            yAxis: '',
+            stats: [
+              { type: 'tax', value: 10 },
+              { type: 'amount', value: 100 },
+              { type: 'tax', value: 20 },
+              { type: 'amount', value: 200 },
+            ],
+          },
+        ],
+        preserveRows: true,
+      })
+    )
+    const taxSig = ready()!.signatures.find((s) => s.title === 'tax')!.signature
+    postSpy.mockClear()
+
+    send(buildCompute({ signature: taxSig, groupName: '' }))
+
+    const chart = charts()[0]!.chart as ChartData
+    expect(chart.mixedTuples).toEqual([
+      [0, 10],
+      [0, 20],
+    ])
+    expect(chart.xCategories).toEqual(['West'])
+  })
+
   it('value mode init still allows normal category compute after re-init', () => {
     // Re-init with category data on the same worker instance
     send(buildInit())
