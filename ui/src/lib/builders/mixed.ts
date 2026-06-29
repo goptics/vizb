@@ -78,11 +78,13 @@ export class MixedBuilder implements ChartBuilder {
   }
 
   badgeCount(chart: ChartData, axis: 'x' | 'y' | 'z'): number {
+    if (chart.mixedTuples?.length && chart.xCategories?.length) {
+      if (axis === 'x') return chart.xCategories.length
+      if (axis === 'z') return 0
+      return chart.mixedTuples.length
+    }
     if (axis === 'x') return chart.xCategories?.length ?? 0
     if (axis === 'z') return 0
-    if (chart.mixedTuples?.length) {
-      return new Set(chart.mixedTuples.map(([, y]) => y)).size
-    }
     const pts = chart.render3D?.lineSeries[0]?.data ?? []
     return new Set(pts.map((p) => p.value[1])).size
   }

@@ -67,10 +67,17 @@ export class GroupedBuilder implements ChartBuilder {
   }
 
   plottable(chart: ChartData): boolean {
-    return chart.series.length > 0 || chart.points.length > 0
+    return (
+      chart.series.length > 0 || chart.points.length > 0 || (chart.mixedTuples?.length ?? 0) > 0
+    )
   }
 
   badgeCount(chart: ChartData, axis: 'x' | 'y' | 'z'): number {
+    if (chart.mixedTuples?.length && chart.xCategories?.length) {
+      if (axis === 'x') return chart.xCategories.length
+      if (axis === 'z') return 0
+      return chart.mixedTuples.length
+    }
     if (axis === 'x') return chart.series.length
     if (axis === 'y') return chart.yAxis.length
     return chart.zAxis.length
@@ -85,6 +92,9 @@ export class GroupedBuilder implements ChartBuilder {
         total += pt.value
       }
       return total
+    }
+    if (chart.mixedTuples?.length) {
+      return chart.mixedTuples.reduce((sum, [, y]) => sum + y, 0)
     }
     let total = 0
     for (const s of chart.series) {
