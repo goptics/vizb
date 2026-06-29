@@ -2,8 +2,6 @@ package parser
 
 import (
 	"fmt"
-	"strconv"
-	"strings"
 
 	"github.com/goptics/vizb/shared"
 )
@@ -50,24 +48,6 @@ func ResolveAxesTypes(cfg *Config, kindFn AxisColumnKind) error {
 		)
 	}
 	return nil
-}
-
-// IsMixedMode reports scatter mixed-axis mode: one category axis and at least one
-// value axis after ResolveAxesTypes.
-func IsMixedMode(cfg Config) bool {
-	if len(cfg.Axes) == 0 {
-		return false
-	}
-	hasCat, hasVal := false, false
-	for _, s := range cfg.Axes {
-		switch s.AxisType {
-		case "category":
-			hasCat = true
-		case "value":
-			hasVal = true
-		}
-	}
-	return hasCat && hasVal
 }
 
 // MixedAxes returns dataset axis descriptors for mixed mode (category x + value y[,z]).
@@ -120,43 +100,13 @@ func SelectViewAxesCfg(cfg Config) Config {
 }
 
 // DatasetAxesForSelectView builds mixed or value dataset axes from a solo --select
-// view. When results are present, mixed mode is inferred when x-axis values are
-// not all numeric (parser resolves types on a local cfg copy).
-func DatasetAxesForSelectView(view []ColumnSpec, results []shared.DataPoint) []shared.Axis {
+// view. The parser sets AxisType on each column via ResolveAxesTypes inside
+// DispatchSelectMode; this helper only projects the carried types into axis
+// descriptors. The results parameter is unused (kept for API stability).
+func DatasetAxesForSelectView(view []ColumnSpec, _ []shared.DataPoint) []shared.Axis {
 	cfg := Config{Axes: append([]ColumnSpec(nil), view...)}
-	if inferSelectViewMixed(results) {
-		for i := range cfg.Axes {
-			switch cfg.Axes[i].AxisKey {
-			case "x":
-				cfg.Axes[i].AxisType = "category"
-			default:
-				cfg.Axes[i].AxisType = "value"
-			}
-		}
+	if isMixedAxes(cfg) {
 		return MixedAxes(cfg)
 	}
 	return ValueAxes(cfg)
-}
-
-func inferSelectViewMixed(results []shared.DataPoint) bool {
-	if len(results) == 0 {
-		return false
-	}
-	for _, dp := range results {
-		if dp.XAxis == "" {
-			continue
-		}
-		if _, ok := parseAxisFloat(dp.XAxis); !ok {
-			return true
-		}
-	}
-	return false
-}
-
-func parseAxisFloat(s string) (float64, bool) {
-	v, err := strconv.ParseFloat(strings.TrimSpace(s), 64)
-	if err != nil {
-		return 0, false
-	}
-	return v, true
 }

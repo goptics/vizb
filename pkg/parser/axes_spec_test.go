@@ -21,7 +21,7 @@ func TestResolveAxesTypesMixed(t *testing.T) {
 	if err := ResolveAxesTypes(&cfg, kindFn); err != nil {
 		t.Fatal(err)
 	}
-	if !IsMixedMode(cfg) {
+	if !IsMixedAxes(cfg) {
 		t.Fatal("expected mixed mode")
 	}
 	axes := MixedAxes(cfg)
@@ -39,7 +39,7 @@ func TestResolveAxesTypesAllValue(t *testing.T) {
 	if err := ResolveAxesTypes(&cfg, kindFn); err != nil {
 		t.Fatal(err)
 	}
-	if IsMixedMode(cfg) {
+	if IsMixedAxes(cfg) {
 		t.Fatal("expected pure value mode")
 	}
 }
@@ -79,8 +79,8 @@ func TestResolveAxesTypesRejectsMultipleCategories(t *testing.T) {
 
 func TestDatasetAxesForSelectViewMixed(t *testing.T) {
 	view := []ColumnSpec{
-		{Source: "region", AxisKey: "x", Label: "Region"},
-		{Source: "latency", AxisKey: "y"},
+		{Source: "region", AxisKey: "x", Label: "Region", AxisType: "category"},
+		{Source: "latency", AxisKey: "y", AxisType: "value"},
 	}
 	results := []shared.DataPoint{{XAxis: "Asia", YAxis: "12"}}
 	axes := DatasetAxesForSelectView(view, results)
@@ -90,7 +90,10 @@ func TestDatasetAxesForSelectViewMixed(t *testing.T) {
 }
 
 func TestDatasetAxesForSelectViewValue(t *testing.T) {
-	view := []ColumnSpec{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}}
+	view := []ColumnSpec{
+		{Source: "x", AxisKey: "x", AxisType: "value"},
+		{Source: "y", AxisKey: "y", AxisType: "value"},
+	}
 	results := []shared.DataPoint{{XAxis: "1", YAxis: "2"}}
 	axes := DatasetAxesForSelectView(view, results)
 	if len(axes) != 2 || axes[0].Type != "value" || axes[1].Type != "value" {

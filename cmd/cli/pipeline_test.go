@@ -495,8 +495,9 @@ func (s *PipelineSuite) TestAssembleDatasetAppendMetricAxisFromConfig() {
 func (s *PipelineSuite) TestAssembleDatasetSelectViewMixedAxes() {
 	results := []shared.DataPoint{{XAxis: "Asia", YAxis: "12", Stats: []shared.Stat{}}}
 	cfg := parser.Config{
+		Mode: parser.ModeValue,
 		SelectViews: []parser.SelectView{
-			{Columns: []parser.ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "latency", AxisKey: "y"}}},
+			{Columns: []parser.ColumnSpec{{Source: "region", AxisKey: "x", AxisType: "category"}, {Source: "latency", AxisKey: "y", AxisType: "value"}}},
 		},
 	}
 	ds := assembleDataset(results, RunMeta{Name: "T", Parser: "csv"}, nil, cfg)
@@ -514,8 +515,9 @@ func (s *PipelineSuite) TestAssembleDatasetSelectViewValueAxesEnables3D() {
 		{XAxis: "1", YAxis: "2", ZAxis: "3", Stats: []shared.Stat{}},
 	}
 	cfg := parser.Config{
+		Mode: parser.ModeValue,
 		SelectViews: []parser.SelectView{
-			{Columns: []parser.ColumnSpec{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}, {Source: "z", AxisKey: "z"}}},
+			{Columns: []parser.ColumnSpec{{Source: "x", AxisKey: "x", AxisType: "value"}, {Source: "y", AxisKey: "y", AxisType: "value"}, {Source: "z", AxisKey: "z", AxisType: "value"}}},
 		},
 	}
 	configs := []internal_charts.ChartConfig{&scatterchart.Config{Type: "scatter"}}
@@ -723,6 +725,7 @@ func (s *PipelineSuite) TestAssembleDatasetGroupedClearsPreserveRows() {
 func (s *PipelineSuite) TestAssembleDatasetMultiSelectStatAxesLabel() {
 	results := []shared.DataPoint{{XAxis: "West", Stats: []shared.Stat{{Type: "tax by region", Value: shared.F64(1)}}}}
 	cfg := parser.Config{
+		Mode: parser.ModeMultiStat,
 		SelectViews: []parser.SelectView{
 			{Columns: []parser.ColumnSpec{{Source: "region", Label: "Region", AxisKey: "x"}, {Source: "tax", AxisKey: "y"}}},
 			{Columns: []parser.ColumnSpec{{Source: "region", Label: "Region", AxisKey: "x"}, {Source: "amount", AxisKey: "y"}}},

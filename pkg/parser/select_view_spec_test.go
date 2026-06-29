@@ -150,37 +150,22 @@ func TestIsExplicitGrouping(t *testing.T) {
 	}
 }
 
-func TestIsSelectAxisMode(t *testing.T) {
-	cfg := Config{
-		SelectViews: []SelectView{{Columns: []ColumnSpec{{Source: "a"}, {Source: "b"}}}},
+func TestResolveMode(t *testing.T) {
+	if ResolveMode(Config{}) != ModeAuto {
+		t.Fatal("empty config should be ModeAuto")
 	}
-	if !IsSelectAxisMode(cfg) {
-		t.Fatal("expected solo select axis mode")
+	cfg := Config{SelectViews: []SelectView{{Columns: []ColumnSpec{{Source: "a"}, {Source: "b"}}}}}
+	if m := ResolveMode(cfg); m != ModeValue {
+		t.Fatalf("single solo view should be ModeValue, got %d", m)
 	}
-	cfg.GroupPattern = "x"
-	if !IsSelectAxisMode(cfg) {
-		t.Fatal("expected solo select axis mode with default pattern")
+	cfg.SelectViews = append(cfg.SelectViews, SelectView{Columns: []ColumnSpec{{Source: "a"}, {Source: "c"}}})
+	if m := ResolveMode(cfg); m != ModeMultiStat {
+		t.Fatalf("two solo views should be ModeMultiStat, got %d", m)
 	}
 	cfg.Group = []string{"region"}
-	if IsSelectAxisMode(cfg) {
-		t.Fatal("expected false when grouped")
-	}
-	if IsSelectAxisMode(Config{Select: []ColumnSpec{{Source: "price"}}}) {
-		t.Fatal("expected false for grouped numeric select")
-	}
-}
-
-func TestIsMultiSelectStatMode(t *testing.T) {
-	cfg := Config{SelectViews: []SelectView{
-		{Columns: []ColumnSpec{{Source: "a"}, {Source: "b"}}},
-		{Columns: []ColumnSpec{{Source: "c"}, {Source: "d"}}},
-	}}
-	if !IsMultiSelectStatMode(cfg) {
-		t.Fatal("expected multi-stat mode")
-	}
-	cfg.SelectViews = cfg.SelectViews[:1]
-	if IsMultiSelectStatMode(cfg) {
-		t.Fatal("expected false for single view")
+	cfg.Select = []ColumnSpec{{Source: "price"}}
+	if m := ResolveMode(cfg); m != ModeGrouped {
+		t.Fatalf("grouped + select should be ModeGrouped, got %d", m)
 	}
 }
 

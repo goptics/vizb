@@ -70,31 +70,21 @@ func ParseCSV(filename string, cfg parser.Config) []shared.DataPoint {
 		}
 	}
 
-	if parser.IsMultiSelectStatMode(cfg) {
-		return parseCSVSelectStatMode(headers, dataRows, cfg)
-	}
-
-	if parser.IsSelectAxisMode(cfg) {
-		axesCfg := parser.SelectViewAxesCfg(cfg)
-		flag := parser.AxisColumnLabel(true)
-		if err := parser.ResolveAxesTypes(&axesCfg, csvAxisColumnKind(headers, dataRows, flag)); err != nil {
-			shared.ExitWithError(err.Error(), nil)
+	if (len(cfg.SelectViews) > 0 && !parser.IsExplicitGrouping(cfg)) || len(cfg.Axes) > 0 {
+		cfg.Mode = parser.ResolveMode(cfg)
+		selectAxis := len(cfg.SelectViews) > 0 && !parser.IsExplicitGrouping(cfg)
+		flag := parser.AxisColumnLabel(selectAxis)
+		colIdx := map[string]int{}
+		for i, h := range headers {
+			if h != "" {
+				colIdx[h] = i
+			}
 		}
-		if parser.IsMixedMode(axesCfg) {
-			return parseCSVMixedMode(headers, dataRows, axesCfg, flag)
+		readers := make([]parser.RowReader, len(dataRows))
+		for i, row := range dataRows {
+			readers[i] = csvRowReader{row: row, colIdx: colIdx, flag: flag, headers: headers}
 		}
-		return parseCSVValueMode(headers, dataRows, axesCfg, flag)
-	}
-
-	if len(cfg.Axes) > 0 {
-		flag := parser.AxisColumnLabel(false)
-		if err := parser.ResolveAxesTypes(&cfg, csvAxisColumnKind(headers, dataRows, flag)); err != nil {
-			shared.ExitWithError(err.Error(), nil)
-		}
-		if parser.IsMixedMode(cfg) {
-			return parseCSVMixedMode(headers, dataRows, cfg, flag)
-		}
-		return parseCSVValueMode(headers, dataRows, cfg, flag)
+		return parser.DispatchSelectMode(readers, &cfg, csvKindFn(headers, dataRows, flag))
 	}
 
 	groupIdx, groupSet := resolveGroupColumns(headers, parser.EffectiveGroupColumns(cfg))
@@ -168,8 +158,34 @@ func ParseCSV(filename string, cfg parser.Config) []shared.DataPoint {
 	return results
 }
 
-// csvAxisColumnKind classifies axis columns for mixed vs value routing.
-func csvAxisColumnKind(headers []string, dataRows [][]string, flagLabel string) parser.AxisColumnKind {
+// csvRowReader adapts one CSV row to the parser.RowReader interface.
+type csvRowReader struct {
+	row     []string
+	colIdx  map[string]int
+	flag    string
+	headers []string
+}
+
+func (r csvRowReader) Cell(source string) (string, bool) {
+	col, ok := r.colIdx[source]
+	if !ok || col >= len(r.row) {
+		return "", false
+	}
+	return strings.TrimSpace(r.row[col]), true
+}
+
+func (r csvRowReader) Numeric(source string) (float64, bool) {
+	s, ok := r.Cell(source)
+	if !ok || s == "" {
+		return 0, false
+	}
+	return parseFinite(s)
+}
+
+func (r csvRowReader) AvailableColumns() []string { return nonEmpty(r.headers) }
+func (r csvRowReader) FlagLabel() string          { return r.flag }
+
+func csvKindFn(headers []string, dataRows [][]string, flag string) parser.AxisColumnKind {
 	colIdx := map[string]int{}
 	for i, h := range headers {
 		if h != "" {
@@ -179,11 +195,9 @@ func csvAxisColumnKind(headers []string, dataRows [][]string, flagLabel string) 
 	return func(source, axisKey string) (string, error) {
 		col, ok := colIdx[source]
 		if !ok {
-			return "", fmt.Errorf("%s column %q not found; available: %v", flagLabel, source, nonEmpty(headers))
+			return "", fmt.Errorf("%s column %q not found; available: %v", flag, source, nonEmpty(headers))
 		}
-		anyNumeric := false
-		allNumeric := true
-		sawCell := false
+		anyNumeric, allNumeric, sawCell := false, true, false
 		for _, row := range dataRows {
 			if col >= len(row) {
 				continue
@@ -200,7 +214,7 @@ func csvAxisColumnKind(headers []string, dataRows [][]string, flagLabel string) 
 			}
 		}
 		if !sawCell {
-			return "", fmt.Errorf("%s column %q has no data", flagLabel, source)
+			return "", fmt.Errorf("%s column %q has no data", flag, source)
 		}
 		if axisKey == "x" {
 			if allNumeric {
@@ -209,237 +223,10 @@ func csvAxisColumnKind(headers []string, dataRows [][]string, flagLabel string) 
 			return "category", nil
 		}
 		if !anyNumeric {
-			return "", fmt.Errorf("%s column %q is not numeric", flagLabel, source)
+			return "", fmt.Errorf("%s column %q is not numeric", flag, source)
 		}
 		return "value", nil
 	}
-}
-
-// parseCSVMixedMode maps one categorical column to x and numeric columns to y[,z];
-// each row becomes a point with empty stats (no aggregation).
-func parseCSVMixedMode(headers []string, dataRows [][]string, cfg parser.Config, flagLabel string) []shared.DataPoint {
-	type slot struct {
-		col  int
-		kind string // category | value
-	}
-	slots := make(map[string]slot, len(cfg.Axes))
-	for _, spec := range cfg.Axes {
-		col := -1
-		for h, name := range headers {
-			if name == spec.Source {
-				col = h
-				break
-			}
-		}
-		if col == -1 {
-			shared.ExitWithError(fmt.Sprintf("%s column '%s' not found; available: %v", flagLabel, spec.Source, nonEmpty(headers)), nil)
-		}
-		if spec.AxisType == "value" {
-			numeric := false
-			for _, row := range dataRows {
-				if col >= len(row) {
-					continue
-				}
-				if _, ok := parseFinite(row[col]); ok {
-					numeric = true
-					break
-				}
-			}
-			if !numeric {
-				shared.ExitWithError(fmt.Sprintf("%s column '%s' is not numeric", flagLabel, spec.Source), nil)
-			}
-		}
-		slots[spec.AxisKey] = slot{col: col, kind: spec.AxisType}
-	}
-
-	var results []shared.DataPoint
-	for _, row := range dataRows {
-		var dp shared.DataPoint
-		complete := true
-		for key, sl := range slots {
-			if sl.col >= len(row) {
-				complete = false
-				break
-			}
-			cell := strings.TrimSpace(row[sl.col])
-			if sl.kind == "category" {
-				if cell == "" {
-					complete = false
-					break
-				}
-				switch key {
-				case "x":
-					dp.XAxis = cell
-				case "y":
-					dp.YAxis = cell
-				case "z":
-					dp.ZAxis = cell
-				}
-				continue
-			}
-			v, ok := parseFinite(cell)
-			if !ok {
-				complete = false
-				break
-			}
-			formatted := strconv.FormatFloat(utils.FormatNumber(v, cfg.NumberUnit), 'g', -1, 64)
-			switch key {
-			case "x":
-				dp.XAxis = formatted
-			case "y":
-				dp.YAxis = formatted
-			case "z":
-				dp.ZAxis = formatted
-			}
-		}
-		if !complete {
-			continue
-		}
-		results = append(results, dp)
-	}
-	return results
-}
-
-// parseCSVValueMode implements value mode: each named numeric column
-// becomes a coordinate on x, y[, z] (by axis order); each row becomes a raw
-// point with no stat series. A missing or fully non-numeric axis column is
-// fatal; an individual row missing a finite cell for any axis is skipped.
-func parseCSVValueMode(headers []string, dataRows [][]string, cfg parser.Config, flagLabel string) []shared.DataPoint {
-	idx := make([]int, len(cfg.Axes))
-	for i, spec := range cfg.Axes {
-		col := -1
-		for h, name := range headers {
-			if name == spec.Source {
-				col = h
-				break
-			}
-		}
-		if col == -1 {
-			shared.ExitWithError(fmt.Sprintf("%s column '%s' not found; available: %v", flagLabel, spec.Source, nonEmpty(headers)), nil)
-		}
-
-		numeric := false
-		for _, row := range dataRows {
-			if col >= len(row) {
-				continue
-			}
-			if _, ok := parseFinite(row[col]); ok {
-				numeric = true
-				break
-			}
-		}
-		if !numeric {
-			shared.ExitWithError(fmt.Sprintf("%s column '%s' is not numeric", flagLabel, spec.Source), nil)
-		}
-		idx[i] = col
-	}
-
-	metricIdx := -1
-	if cfg.MetricColumn != "" {
-		for h, name := range headers {
-			if name == cfg.MetricColumn {
-				metricIdx = h
-				break
-			}
-		}
-		if metricIdx == -1 {
-			shared.ExitWithError(fmt.Sprintf("metric column '%s' not found; available: %v", cfg.MetricColumn, nonEmpty(headers)), nil)
-		}
-		hasNumeric := false
-		for _, row := range dataRows {
-			if metricIdx >= len(row) {
-				continue
-			}
-			if _, ok := parseFinite(row[metricIdx]); ok {
-				hasNumeric = true
-				break
-			}
-		}
-		if !hasNumeric {
-			shared.ExitWithError(fmt.Sprintf("metric column '%s' is not numeric", cfg.MetricColumn), nil)
-		}
-	}
-
-	var results []shared.DataPoint
-	for _, row := range dataRows {
-		var dp shared.DataPoint
-		dst := []*string{&dp.XAxis, &dp.YAxis, &dp.ZAxis}
-		complete := true
-		for i, col := range idx {
-			if col >= len(row) {
-				complete = false
-				break
-			}
-			v, ok := parseFinite(row[col])
-			if !ok {
-				complete = false
-				break
-			}
-			*dst[i] = strconv.FormatFloat(utils.FormatNumber(v, cfg.NumberUnit), 'g', -1, 64)
-		}
-		if !complete {
-			continue
-		}
-		if metricIdx >= 0 {
-			if metricIdx >= len(row) {
-				continue
-			}
-			mv, ok := parseFinite(row[metricIdx])
-			if !ok {
-				continue
-			}
-			dp.Metric = strconv.FormatFloat(utils.FormatNumber(mv, cfg.NumberUnit), 'g', -1, 64)
-		}
-		results = append(results, dp)
-	}
-	return results
-}
-
-// parseCSVSelectStatMode parses repeatable solo --select into one dataset. When
-// every flag shares the same dimension column, each input row becomes one point
-// with multiple stats; otherwise each (row × view) stays a separate point.
-func parseCSVSelectStatMode(headers []string, dataRows [][]string, cfg parser.Config) []shared.DataPoint {
-	colIdx := map[string]int{}
-	for i, h := range headers {
-		if h != "" {
-			colIdx[h] = i
-		}
-	}
-	flag := parser.AxisColumnLabel(true)
-	merge := parser.MultiSelectSharedDim(cfg.SelectViews)
-
-	for _, view := range cfg.SelectViews {
-		for _, spec := range view.Columns {
-			if _, ok := colIdx[spec.Source]; !ok {
-				shared.ExitWithError(fmt.Sprintf("%s column %q not found; available: %v", flag, spec.Source, nonEmpty(headers)), nil)
-			}
-		}
-	}
-
-	var results []shared.DataPoint
-	for _, row := range dataRows {
-		parser.AppendMultiSelectStatPoint(&results, cfg.SelectViews, cfg.NumberUnit, merge, func(view parser.SelectView) (parser.MultiSelectRowStat, bool) {
-			dim, metric := view.Columns[0], view.Columns[1]
-			dimCol := colIdx[dim.Source]
-			metricCol := colIdx[metric.Source]
-			if dimCol >= len(row) || metricCol >= len(row) {
-				return parser.MultiSelectRowStat{}, false
-			}
-			dimVal := strings.TrimSpace(row[dimCol])
-			if dimVal == "" {
-				return parser.MultiSelectRowStat{}, false
-			}
-			v, ok := parseFinite(row[metricCol])
-			if !ok {
-				return parser.MultiSelectRowStat{}, false
-			}
-			return parser.MultiSelectRowStat{DimVal: dimVal, Value: v}, true
-		})
-	}
-	if len(results) == 0 {
-		shared.ExitWithError("No dataSet data found", nil)
-	}
-	return results
 }
 
 // normalizeHeaders strips a leading UTF-8 BOM, trims whitespace, and de-duplicates

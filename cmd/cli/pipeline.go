@@ -443,11 +443,11 @@ func autoEnableValueMode3D(configs []internal_charts.ChartConfig, axes []shared.
 // command's metadata and the resolved per-chart configs.
 func assembleDataset(results []shared.DataPoint, m RunMeta, configs []internal_charts.ChartConfig, cfg parser.Config) *shared.Dataset {
 	var view []parser.ColumnSpec
-	if parser.IsSelectAxisMode(cfg) && len(cfg.SelectViews) == 1 {
+	if cfg.Mode.IsSelectAxis() && len(cfg.SelectViews) == 1 {
 		view = cfg.SelectViews[0].Columns
 	}
 	name := ""
-	if len(view) > 0 && parser.IsSelectAxisMode(cfg) && !parser.IsMultiSelectStatMode(cfg) {
+	if len(view) > 0 && cfg.Mode.IsSelectAxis() && !cfg.Mode.IsMultiStat() {
 		name = parser.SelectViewDatasetName(view, 0)
 	}
 	return buildDataset(results, m, configs, cfg, view, name)
@@ -472,18 +472,18 @@ func buildDataset(results []shared.DataPoint, m RunMeta, configs []internal_char
 		// from the actual data points since the caller's cfg is unchanged.
 		axes = deriveAxesFromData(results)
 		autoEnableValueMode3D(configs, axes, valueModeHasMetric(cfg, results))
-	} else if parser.IsMultiSelectStatMode(cfg) {
+	} else if cfg.Mode.IsMultiStat() {
 		axes = parser.MultiSelectStatAxes(cfg.SelectViews)
 	} else if len(view) > 0 {
 		axes = parser.DatasetAxesForSelectView(view, results)
 		autoEnableValueMode3D(configs, axes, valueModeHasMetric(cfg, results))
-	} else if parser.IsSelectAxisMode(cfg) {
+	} else if cfg.Mode.IsSelectAxis() {
 		axes = parser.DatasetAxesForSelectView(cfg.SelectViews[0].Columns, results)
 		autoEnableValueMode3D(configs, axes, valueModeHasMetric(cfg, results))
 	} else {
 		axes = parser.GroupAxes(cfg)
 		if len(cfg.Axes) > 0 {
-			if parser.IsMixedMode(cfg) {
+			if parser.IsMixedAxes(cfg) {
 				axes = parser.MixedAxes(cfg)
 			} else {
 				axes = parser.ValueAxes(cfg)

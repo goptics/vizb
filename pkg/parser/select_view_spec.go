@@ -161,17 +161,6 @@ func IsExplicitGrouping(cfg Config) bool {
 		(cfg.GroupPattern != "" && cfg.GroupPattern != "x")
 }
 
-// IsSelectAxisMode reports solo --select axis mode: select views without explicit grouping.
-func IsSelectAxisMode(cfg Config) bool {
-	return len(cfg.SelectViews) > 0 && !IsExplicitGrouping(cfg)
-}
-
-// IsMultiSelectStatMode reports repeatable solo --select: each flag is an independent
-// (dim, metric) pair merged into one dataset with stats[] chart separation.
-func IsMultiSelectStatMode(cfg Config) bool {
-	return IsSelectAxisMode(cfg) && len(cfg.SelectViews) > 1
-}
-
 // ValidateMultiSelectStatViews ensures each repeatable --select has exactly two
 // columns (dimension, metric). Three-column coordinate views use a single --select.
 func ValidateMultiSelectStatViews(views []SelectView) error {

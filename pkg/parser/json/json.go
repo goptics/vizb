@@ -134,31 +134,15 @@ func ParseJSON(filename string, cfg parser.Config) []shared.DataPoint {
 		}
 	}
 
-	if parser.IsMultiSelectStatMode(cfg) {
-		return parseJSONSelectStatMode(rows, seenCol, cfg)
-	}
-
-	if parser.IsSelectAxisMode(cfg) {
-		axesCfg := parser.SelectViewAxesCfg(cfg)
-		flag := parser.AxisColumnLabel(true)
-		if err := parser.ResolveAxesTypes(&axesCfg, jsonAxisColumnKind(rows, seenCol, colOrder, flag)); err != nil {
-			shared.ExitWithError(err.Error(), nil)
+	if (len(cfg.SelectViews) > 0 && !parser.IsExplicitGrouping(cfg)) || len(cfg.Axes) > 0 {
+		cfg.Mode = parser.ResolveMode(cfg)
+		selectAxis := len(cfg.SelectViews) > 0 && !parser.IsExplicitGrouping(cfg)
+		flag := parser.AxisColumnLabel(selectAxis)
+		readers := make([]parser.RowReader, len(rows))
+		for i, row := range rows {
+			readers[i] = jsonRowReader{row: row, seenCol: seenCol, colOrder: colOrder, flag: flag}
 		}
-		if parser.IsMixedMode(axesCfg) {
-			return parseJSONMixedMode(rows, colOrder, seenCol, axesCfg, flag)
-		}
-		return parseJSONValueMode(rows, colOrder, seenCol, axesCfg, flag)
-	}
-
-	if len(cfg.Axes) > 0 {
-		flag := parser.AxisColumnLabel(false)
-		if err := parser.ResolveAxesTypes(&cfg, jsonAxisColumnKind(rows, seenCol, colOrder, flag)); err != nil {
-			shared.ExitWithError(err.Error(), nil)
-		}
-		if parser.IsMixedMode(cfg) {
-			return parseJSONMixedMode(rows, colOrder, seenCol, cfg, flag)
-		}
-		return parseJSONValueMode(rows, colOrder, seenCol, cfg, flag)
+		return parser.DispatchSelectMode(readers, &cfg, jsonKindFn(rows, seenCol, colOrder, flag))
 	}
 
 	groupKeys, groupSet := resolveGroupKeys(colOrder, seenCol, parser.EffectiveGroupColumns(cfg))
@@ -233,15 +217,39 @@ func ParseJSON(filename string, cfg parser.Config) []shared.DataPoint {
 	return results
 }
 
-// jsonAxisColumnKind classifies axis fields for mixed vs value routing.
-func jsonAxisColumnKind(rows []map[string]any, seenCol map[string]bool, colOrder []string, flagLabel string) parser.AxisColumnKind {
+// jsonRowReader adapts one JSON row to the parser.RowReader interface.
+type jsonRowReader struct {
+	row      map[string]any
+	seenCol  map[string]bool
+	colOrder []string
+	flag     string
+}
+
+func (r jsonRowReader) Cell(source string) (string, bool) {
+	v, ok := r.row[source]
+	if !ok {
+		return "", false
+	}
+	return strings.TrimSpace(stringify(v)), true
+}
+
+func (r jsonRowReader) Numeric(source string) (float64, bool) {
+	v, ok := r.row[source]
+	if !ok {
+		return 0, false
+	}
+	return leafNumber(v)
+}
+
+func (r jsonRowReader) AvailableColumns() []string { return r.colOrder }
+func (r jsonRowReader) FlagLabel() string          { return r.flag }
+
+func jsonKindFn(rows []map[string]any, seenCol map[string]bool, colOrder []string, flag string) parser.AxisColumnKind {
 	return func(source, axisKey string) (string, error) {
 		if !seenCol[source] {
-			return "", fmt.Errorf("%s field %q not found; available: %v", flagLabel, source, colOrder)
+			return "", fmt.Errorf("%s field %q not found; available: %v", flag, source, colOrder)
 		}
-		anyNumeric := false
-		allNumeric := true
-		sawCell := false
+		anyNumeric, allNumeric, sawCell := false, true, false
 		for _, row := range rows {
 			v, ok := row[source]
 			if !ok {
@@ -258,7 +266,7 @@ func jsonAxisColumnKind(rows []map[string]any, seenCol map[string]bool, colOrder
 			}
 		}
 		if !sawCell {
-			return "", fmt.Errorf("%s field %q has no data", flagLabel, source)
+			return "", fmt.Errorf("%s field %q has no data", flag, source)
 		}
 		if axisKey == "x" {
 			if allNumeric {
@@ -267,212 +275,10 @@ func jsonAxisColumnKind(rows []map[string]any, seenCol map[string]bool, colOrder
 			return "category", nil
 		}
 		if !anyNumeric {
-			return "", fmt.Errorf("%s field %q is not numeric", flagLabel, source)
+			return "", fmt.Errorf("%s field %q is not numeric", flag, source)
 		}
 		return "value", nil
 	}
-}
-
-// parseJSONMixedMode maps one categorical field to x and numeric fields to y[,z].
-func parseJSONMixedMode(rows []map[string]any, colOrder []string, seenCol map[string]bool, cfg parser.Config, flagLabel string) []shared.DataPoint {
-	type slot struct {
-		key  string
-		kind string
-	}
-	slots := make(map[string]slot, len(cfg.Axes))
-	for _, spec := range cfg.Axes {
-		if !seenCol[spec.Source] {
-			shared.ExitWithError(fmt.Sprintf("%s field '%s' not found; available: %v", flagLabel, spec.Source, colOrder), nil)
-		}
-		if spec.AxisType == "value" {
-			numeric := false
-			for _, row := range rows {
-				v, ok := row[spec.Source]
-				if !ok {
-					continue
-				}
-				if _, ok := leafNumber(v); ok {
-					numeric = true
-					break
-				}
-			}
-			if !numeric {
-				shared.ExitWithError(fmt.Sprintf("%s field '%s' is not numeric", flagLabel, spec.Source), nil)
-			}
-		}
-		slots[spec.AxisKey] = slot{key: spec.Source, kind: spec.AxisType}
-	}
-
-	var results []shared.DataPoint
-	for _, row := range rows {
-		var dp shared.DataPoint
-		complete := true
-		for axisKey, sl := range slots {
-			v, ok := row[sl.key]
-			if !ok {
-				complete = false
-				break
-			}
-			if sl.kind == "category" {
-				s := strings.TrimSpace(stringify(v))
-				if s == "" {
-					complete = false
-					break
-				}
-				switch axisKey {
-				case "x":
-					dp.XAxis = s
-				case "y":
-					dp.YAxis = s
-				case "z":
-					dp.ZAxis = s
-				}
-				continue
-			}
-			num, ok := leafNumber(v)
-			if !ok {
-				complete = false
-				break
-			}
-			formatted := strconv.FormatFloat(utils.FormatNumber(num, cfg.NumberUnit), 'g', -1, 64)
-			switch axisKey {
-			case "x":
-				dp.XAxis = formatted
-			case "y":
-				dp.YAxis = formatted
-			case "z":
-				dp.ZAxis = formatted
-			}
-		}
-		if !complete {
-			continue
-		}
-		results = append(results, dp)
-	}
-	return results
-}
-
-// parseJSONValueMode implements value mode for JSON: each named numeric
-// field becomes a coordinate on x, y[, z] (by axis order); each row becomes a
-// raw point with no stat series. A missing or fully non-numeric axis field is
-// fatal; a row missing a finite value for any axis is skipped.
-func parseJSONValueMode(rows []map[string]any, colOrder []string, seenCol map[string]bool, cfg parser.Config, flagLabel string) []shared.DataPoint {
-	keys := make([]string, len(cfg.Axes))
-	for i, spec := range cfg.Axes {
-		if !seenCol[spec.Source] {
-			shared.ExitWithError(fmt.Sprintf("%s field '%s' not found; available: %v", flagLabel, spec.Source, colOrder), nil)
-		}
-
-		numeric := false
-		for _, row := range rows {
-			v, ok := row[spec.Source]
-			if !ok {
-				continue
-			}
-			if _, ok := leafNumber(v); ok {
-				numeric = true
-				break
-			}
-		}
-		if !numeric {
-			shared.ExitWithError(fmt.Sprintf("%s field '%s' is not numeric", flagLabel, spec.Source), nil)
-		}
-		keys[i] = spec.Source
-	}
-
-	metricKey := ""
-	if cfg.MetricColumn != "" {
-		if !seenCol[cfg.MetricColumn] {
-			shared.ExitWithError(fmt.Sprintf("metric field '%s' not found; available: %v", cfg.MetricColumn, colOrder), nil)
-		}
-		hasNumeric := false
-		for _, row := range rows {
-			v, ok := row[cfg.MetricColumn]
-			if !ok {
-				continue
-			}
-			if _, ok := leafNumber(v); ok {
-				hasNumeric = true
-				break
-			}
-		}
-		if !hasNumeric {
-			shared.ExitWithError(fmt.Sprintf("metric field '%s' is not numeric", cfg.MetricColumn), nil)
-		}
-		metricKey = cfg.MetricColumn
-	}
-
-	var results []shared.DataPoint
-	for _, row := range rows {
-		var dp shared.DataPoint
-		dst := []*string{&dp.XAxis, &dp.YAxis, &dp.ZAxis}
-		complete := true
-		for i, k := range keys {
-			v, ok := row[k]
-			if !ok {
-				complete = false
-				break
-			}
-			num, ok := leafNumber(v)
-			if !ok {
-				complete = false
-				break
-			}
-			*dst[i] = strconv.FormatFloat(utils.FormatNumber(num, cfg.NumberUnit), 'g', -1, 64)
-		}
-		if !complete {
-			continue
-		}
-		if metricKey != "" {
-			v, ok := row[metricKey]
-			if !ok {
-				continue
-			}
-			mv, ok := leafNumber(v)
-			if !ok {
-				continue
-			}
-			dp.Metric = strconv.FormatFloat(utils.FormatNumber(mv, cfg.NumberUnit), 'g', -1, 64)
-		}
-		results = append(results, dp)
-	}
-	return results
-}
-
-// parseJSONSelectStatMode parses repeatable solo --select into one dataset. When
-// every flag shares the same dimension column, each input row becomes one point
-// with multiple stats; otherwise each (row × view) stays a separate point.
-func parseJSONSelectStatMode(rows []map[string]any, seenCol map[string]bool, cfg parser.Config) []shared.DataPoint {
-	flag := parser.AxisColumnLabel(true)
-	merge := parser.MultiSelectSharedDim(cfg.SelectViews)
-
-	for _, view := range cfg.SelectViews {
-		for _, spec := range view.Columns {
-			if !seenCol[spec.Source] {
-				shared.ExitWithError(fmt.Sprintf("%s field %q not found", flag, spec.Source), nil)
-			}
-		}
-	}
-
-	var results []shared.DataPoint
-	for _, row := range rows {
-		parser.AppendMultiSelectStatPoint(&results, cfg.SelectViews, cfg.NumberUnit, merge, func(view parser.SelectView) (parser.MultiSelectRowStat, bool) {
-			dim, metric := view.Columns[0], view.Columns[1]
-			dimVal := strings.TrimSpace(stringify(row[dim.Source]))
-			if dimVal == "" {
-				return parser.MultiSelectRowStat{}, false
-			}
-			v, ok := leafNumber(row[metric.Source])
-			if !ok {
-				return parser.MultiSelectRowStat{}, false
-			}
-			return parser.MultiSelectRowStat{DimVal: dimVal, Value: v}, true
-		})
-	}
-	if len(results) == 0 {
-		shared.ExitWithError("No dataSet data found", nil)
-	}
-	return results
 }
 
 // resolveGroupKeys maps each non-empty --group name to a known field (preserving
