@@ -46,8 +46,7 @@ const {
   setArrangement,
   activeGroupId,
   isValueMode,
-  isValueModeDataset,
-  isMixedModeDataset,
+  chartMode,
 } = useDataPoint()
 
 const CHART_ICONS: Record<ChartType, Component> = {
@@ -116,9 +115,7 @@ const fieldGroups = computed(() => {
 })
 
 // Value/mixed axes: hide sort; swap only for pure value mode.
-const filterTransformModeFields = computed(
-  () => isValueModeDataset.value || isValueMode.value || isMixedModeDataset.value
-)
+const filterTransformModeFields = computed(() => chartMode.value !== 'grouped')
 
 const filteredGeneral = computed(() => {
   if (!filterTransformModeFields.value) return fieldGroups.value.general
