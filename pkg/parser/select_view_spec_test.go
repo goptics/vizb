@@ -1,6 +1,10 @@
 package parser
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/goptics/vizb/shared"
+)
 
 func TestParseSelectViewFlagTwoColumns(t *testing.T) {
 	view, err := ParseSelectViewFlag("region,latency")
@@ -247,5 +251,68 @@ func TestSelectViewDatasetName(t *testing.T) {
 	}
 	if got := SelectViewDatasetName(nil, 2); got != "View 3" {
 		t.Fatalf("got %q, want View 3", got)
+	}
+}
+
+func TestParseSelectViewFlagQuotedParenInColumn(t *testing.T) {
+	view, err := ParseSelectViewFlag(`"region (EU)",latency (Latency by Region)`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if view.TypeLabel != "Latency by Region" {
+		t.Fatalf("TypeLabel = %q", view.TypeLabel)
+	}
+	if len(view.Columns) != 2 || view.Columns[0].Source != "region (EU)" {
+		t.Fatalf("unexpected columns: %+v", view.Columns)
+	}
+}
+
+func TestParseSelectViewFlagInvalidAxisKeyTreatedAsColumnName(t *testing.T) {
+	view, err := ParseSelectViewFlag("w:region,latency")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(view.Columns) != 2 || view.Columns[0].Source != "w:region" || view.Columns[0].AxisKey != "x" {
+		t.Fatalf("unexpected specs: %+v", view.Columns)
+	}
+}
+
+func TestParseSelectViewFlagExplicitMissingY(t *testing.T) {
+	if _, err := ParseSelectViewFlag("x:region,z:latency"); err == nil {
+		t.Fatal("want missing y error")
+	}
+}
+
+func TestMultiSelectSharedDimEmptyViews(t *testing.T) {
+	if MultiSelectSharedDim(nil) {
+		t.Fatal("expected false for empty views")
+	}
+}
+
+func TestAppendMultiSelectStatPointNonMergeSkipsFailedRead(t *testing.T) {
+	views := []SelectView{
+		{Columns: []ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "tax", AxisKey: "y"}}},
+		{Columns: []ColumnSpec{{Source: "product", AxisKey: "x"}, {Source: "sales", AxisKey: "y"}}},
+	}
+	var results []shared.DataPoint
+	AppendMultiSelectStatPoint(&results, views, "", false, func(view SelectView) (MultiSelectRowStat, bool) {
+		if view.Columns[0].Source == "product" {
+			return MultiSelectRowStat{}, false
+		}
+		return MultiSelectRowStat{DimVal: "Asia", Value: 12}, true
+	})
+	if len(results) != 1 || results[0].XAxis != "Asia" {
+		t.Fatalf("unexpected results: %+v", results)
+	}
+}
+
+func TestModeIsGrouped(t *testing.T) {
+	if !ModeGrouped.IsGrouped() {
+		t.Fatal("ModeGrouped should report grouped")
+	}
+	for _, m := range []Mode{ModeAuto, ModeValue, ModeMixed, ModeMultiStat} {
+		if m.IsGrouped() {
+			t.Fatalf("mode %v should not be grouped", m)
+		}
 	}
 }

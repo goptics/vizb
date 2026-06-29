@@ -390,6 +390,22 @@ func (s *JSONFatalSuite) TestSelectMixedModeMapsCategoryXAndValueY() {
 	s.Empty(results[0].Stats)
 }
 
+func (s *JSONFatalSuite) TestSelectColumnNotFoundExits() {
+	s.cfg.SelectViews = []parser.SelectView{
+		{Columns: []parser.ColumnSpec{{Source: "missing", AxisKey: "x"}, {Source: "latency", AxisKey: "y"}}},
+	}
+	path := s.writeFile(`[{"region":"Asia","latency":12}]`)
+	s.Panics(func() { ParseJSON(path, s.cfg) })
+}
+
+func (s *JSONFatalSuite) TestSelectNonNumericYFieldExits() {
+	s.cfg.SelectViews = []parser.SelectView{
+		{Columns: []parser.ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "label", AxisKey: "y"}}},
+	}
+	path := s.writeFile(`[{"region":"Asia","label":"fast"}]`)
+	s.Panics(func() { ParseJSON(path, s.cfg) })
+}
+
 func (s *JSONFatalSuite) TestSelectValueModeAllNumeric() {
 	s.cfg.SelectViews = []parser.SelectView{
 		{Columns: []parser.ColumnSpec{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}}},

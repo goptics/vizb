@@ -621,6 +621,22 @@ func (s *CSVFatalSuite) TestSelectMixedModeMapsCategoryXAndValueY() {
 	s.Empty(results[0].Stats)
 }
 
+func (s *CSVFatalSuite) TestSelectColumnNotFoundExits() {
+	s.cfg.SelectViews = []parser.SelectView{
+		{Columns: []parser.ColumnSpec{{Source: "missing", AxisKey: "x"}, {Source: "latency", AxisKey: "y"}}},
+	}
+	path := s.writeFile("region,latency\nAsia,12\n")
+	s.Panics(func() { ParseCSV(path, s.cfg) })
+}
+
+func (s *CSVFatalSuite) TestSelectNonNumericYColumnExits() {
+	s.cfg.SelectViews = []parser.SelectView{
+		{Columns: []parser.ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "label", AxisKey: "y"}}},
+	}
+	path := s.writeFile("region,label\nAsia,fast\n")
+	s.Panics(func() { ParseCSV(path, s.cfg) })
+}
+
 func (s *CSVFatalSuite) TestSelectValueModeAllNumeric() {
 	s.cfg.SelectViews = []parser.SelectView{
 		{Columns: []parser.ColumnSpec{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}}},

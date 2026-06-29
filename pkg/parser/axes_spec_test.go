@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/goptics/vizb/shared"
@@ -127,5 +128,76 @@ func TestValueAxesThreeColumns(t *testing.T) {
 	}
 	if axes[0].Label != "X" || axes[1].Label != "Y" || axes[2].Key != "z" || axes[2].Label != "Z" {
 		t.Fatalf("unexpected axes: %+v", axes)
+	}
+}
+
+func TestResolveAxesTypesEmptyAxes(t *testing.T) {
+	cfg := Config{}
+	err := ResolveAxesTypes(&cfg, func(_, _ string) (string, error) {
+		return "", fmt.Errorf("kindFn should not run")
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestResolveAxesTypesKindFnError(t *testing.T) {
+	cfg := Config{Axes: []ColumnSpec{{Source: "x", AxisKey: "x"}}}
+	err := ResolveAxesTypes(&cfg, func(_, _ string) (string, error) {
+		return "", fmt.Errorf("kind error")
+	})
+	if err == nil || err.Error() != "kind error" {
+		t.Fatalf("got %v", err)
+	}
+}
+
+func TestDatasetAxesForSelectViewInfersMixed(t *testing.T) {
+	view := []ColumnSpec{
+		{Source: "region", AxisKey: "x"},
+		{Source: "latency", AxisKey: "y"},
+	}
+	results := []shared.DataPoint{{XAxis: "Asia", YAxis: "12"}}
+	axes := DatasetAxesForSelectView(view, results)
+	if len(axes) != 2 || axes[0].Type != "" || axes[1].Type != "value" {
+		t.Fatalf("unexpected inferred mixed axes: %+v", axes)
+	}
+}
+
+func TestDatasetAxesForSelectViewInfersValue(t *testing.T) {
+	view := []ColumnSpec{
+		{Source: "x", AxisKey: "x"},
+		{Source: "y", AxisKey: "y"},
+	}
+	results := []shared.DataPoint{{XAxis: "1.5", YAxis: "2"}}
+	axes := DatasetAxesForSelectView(view, results)
+	if len(axes) != 2 || axes[0].Type != "value" || axes[1].Type != "value" {
+		t.Fatalf("unexpected inferred value axes: %+v", axes)
+	}
+}
+
+func TestDatasetAxesForSelectViewSkipsInferenceWhenEmptyResults(t *testing.T) {
+	view := []ColumnSpec{
+		{Source: "region", AxisKey: "x"},
+		{Source: "latency", AxisKey: "y"},
+	}
+	axes := DatasetAxesForSelectView(view, nil)
+	if len(axes) != 2 || axes[0].Type != "value" || axes[1].Type != "value" {
+		t.Fatalf("expected value axes when results empty: %+v", axes)
+	}
+}
+
+func TestValueAxesExplicitAxisKeyAndCap(t *testing.T) {
+	cfg := Config{Axes: []ColumnSpec{
+		{Source: "a", AxisKey: "y"},
+		{Source: "b", AxisKey: "x"},
+		{Source: "c", AxisKey: "z"},
+		{Source: "d", AxisKey: "w"},
+	}}
+	axes := ValueAxes(cfg)
+	if len(axes) != 3 {
+		t.Fatalf("want 3 axes, got %d", len(axes))
+	}
+	if axes[0].Key != "y" || axes[1].Key != "x" || axes[2].Key != "z" {
+		t.Fatalf("unexpected axis keys: %+v", axes)
 	}
 }

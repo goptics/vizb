@@ -244,6 +244,14 @@ func (s *FlagBagSuite) TestValidateRejectsInvalidSymbolSize() {
 	s.True(*exitCalled)
 }
 
+func (s *FlagBagSuite) TestAccessorsReturnZeroWhenUnset() {
+	bag := NewFlagBag(nil)
+	s.Equal("", bag.String("missing"))
+	s.False(bag.Bool("missing"))
+	s.Equal(0.0, bag.Float("missing"))
+	s.Nil(bag.StringSlice("missing"))
+}
+
 func TestFlagBagSuite(t *testing.T) {
 	suite.Run(t, new(FlagBagSuite))
 }

@@ -537,6 +537,55 @@ func (s *PipelineSuite) TestParseCSVToAssembleDatasetMixedSelect() {
 	s.True(ds.PreserveRows)
 }
 
+func (s *PipelineSuite) TestBuildDatasetInfersAxesWithoutAxisType() {
+	view := append([]parser.ColumnSpec(nil),
+		parser.ColumnSpec{Source: "region", AxisKey: "x"},
+		parser.ColumnSpec{Source: "latency", AxisKey: "y"},
+	)
+	results := []shared.DataPoint{{XAxis: "Asia", YAxis: "12", Stats: []shared.Stat{}}}
+	cfg := parser.Config{
+		Mode: parser.ModeValue,
+		SelectViews: []parser.SelectView{
+			{Columns: append([]parser.ColumnSpec(nil), view...)},
+		},
+	}
+	ds := buildDataset(results, RunMeta{Name: "T", Parser: "csv"}, nil, cfg, view, "")
+	s.Require().Len(ds.Axes, 2)
+	s.Equal("", ds.Axes[0].Type)
+	s.Equal("value", ds.Axes[1].Type)
+}
+
+func (s *PipelineSuite) TestDatasetsNeed3D() {
+	ds := &shared.Dataset{
+		Data: []shared.DataPoint{{XAxis: "1", YAxis: "2", ZAxis: "3"}},
+		Settings: []internal_charts.ChartConfig{
+			&scatterchart.Config{Type: "scatter"},
+		},
+	}
+	s.True(datasetsNeed3D([]*shared.Dataset{ds}))
+	s.False(datasetsNeed3D(nil))
+}
+
+func (s *PipelineSuite) TestWriteOutputEmptyDatasets() {
+	file, err := os.Create(filepath.Join(s.T().TempDir(), "empty.html"))
+	s.Require().NoError(err)
+	defer file.Close()
+
+	writeOutput(file, nil, "html")
+	stat, err := file.Stat()
+	s.Require().NoError(err)
+	s.Equal(int64(0), stat.Size())
+}
+
+func (s *PipelineSuite) TestApplyJSONPathInvalidExits() {
+	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
+	defer restore()
+
+	bad := s.writeFile("bad.json", `{"items":[]}`)
+	s.Panics(func() { applyJSONPath(bad, ".missing.path") })
+	s.True(*exitCalled)
+}
+
 func (s *PipelineSuite) TestAssembleDatasetSelectViewValueAxesEnables3D() {
 	results := []shared.DataPoint{
 		{XAxis: "1", YAxis: "2", ZAxis: "3", Stats: []shared.Stat{}},
