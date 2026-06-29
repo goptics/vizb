@@ -252,6 +252,34 @@ func (s *FlagBagSuite) TestAccessorsReturnZeroWhenUnset() {
 	s.Nil(bag.StringSlice("missing"))
 }
 
+func (s *FlagBagSuite) TestParseConfigSetsJSONPath() {
+	cmd, bag := s.newCmdBag(slices.Clone(DataFlags))
+	s.Require().NoError(cmd.Flags().Set("json-path", ".data.items"))
+	cfg := bag.ParseConfig()
+	s.Equal(".data.items", cfg.JSONPath)
+}
+
+func (s *FlagBagSuite) TestResetRestoresDefaults() {
+	fl := append(slices.Clone(DataFlags), internal_charts.SymbolSizeFlag)
+	cmd, bag := s.newCmdBag(fl)
+	s.Require().NoError(cmd.Flags().Set("name", "Custom"))
+	s.Require().NoError(cmd.Flags().Set("symbol-size", "12"))
+	bag.Reset()
+	s.Equal("Comparisons", bag.String("name"))
+	s.Equal(0.0, bag.Float("symbol-size"))
+}
+
+func (s *FlagBagSuite) TestChartSeedEncodesChangedFloatAndBool() {
+	fl := append(slices.Clone(DataFlags), internal_charts.BaseChartFlags...)
+	fl = append(fl, internal_charts.SymbolSizeFlag)
+	cmd, bag := s.newCmdBag(fl)
+	s.Require().NoError(cmd.Flags().Set("show-labels", "true"))
+	s.Require().NoError(cmd.Flags().Set("symbol-size", "9"))
+	seed := bag.ChartSeed(cmd)
+	s.Equal(true, seed["showLabels"])
+	s.Equal(9.0, seed["symbolSize"])
+}
+
 func TestFlagBagSuite(t *testing.T) {
 	suite.Run(t, new(FlagBagSuite))
 }

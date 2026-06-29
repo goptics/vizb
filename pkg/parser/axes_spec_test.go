@@ -163,6 +163,21 @@ func TestDatasetAxesForSelectViewInfersMixed(t *testing.T) {
 	}
 }
 
+func TestDatasetAxesForSelectViewInfersMixedAfterEmptyXAxis(t *testing.T) {
+	view := []ColumnSpec{
+		{Source: "region", AxisKey: "x"},
+		{Source: "latency", AxisKey: "y"},
+	}
+	results := []shared.DataPoint{
+		{XAxis: "", YAxis: "12"},
+		{XAxis: "Asia", YAxis: "12"},
+	}
+	axes := DatasetAxesForSelectView(view, results)
+	if len(axes) != 2 || axes[0].Type != "" || axes[1].Type != "value" {
+		t.Fatalf("unexpected inferred mixed axes: %+v", axes)
+	}
+}
+
 func TestDatasetAxesForSelectViewInfersValue(t *testing.T) {
 	view := []ColumnSpec{
 		{Source: "x", AxisKey: "x"},

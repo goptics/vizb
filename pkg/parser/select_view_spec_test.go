@@ -306,6 +306,25 @@ func TestAppendMultiSelectStatPointNonMergeSkipsFailedRead(t *testing.T) {
 	}
 }
 
+func TestParseSelectViewFlagDuplicateExplicitAxisKey(t *testing.T) {
+	if _, err := ParseSelectViewFlag("x:region,y:latency,y:sales"); err == nil {
+		t.Fatal("want duplicate axis key error")
+	}
+}
+
+func TestParseSelectViewFlagExplicitMissingZ(t *testing.T) {
+	if _, err := ParseSelectViewFlag("x:region,y:latency,sales"); err == nil {
+		t.Fatal("want mixed explicit/implicit error")
+	}
+}
+
+func TestSelectStatTypeUsesSourceWhenDimLabelEmpty(t *testing.T) {
+	view := SelectView{Columns: []ColumnSpec{{Source: "region"}, {Source: "latency", Label: ""}}}
+	if got := SelectStatType(view); got != "latency by region" {
+		t.Fatalf("got %q", got)
+	}
+}
+
 func TestModeIsGrouped(t *testing.T) {
 	if !ModeGrouped.IsGrouped() {
 		t.Fatal("ModeGrouped should report grouped")

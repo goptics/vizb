@@ -537,6 +537,34 @@ func (s *PipelineSuite) TestParseCSVToAssembleDatasetMixedSelect() {
 	s.True(ds.PreserveRows)
 }
 
+func (s *PipelineSuite) TestBuildDatasetGroupedAxesFromConfig() {
+	results := []shared.DataPoint{{XAxis: "Asia", YAxis: "12", Stats: []shared.Stat{}}}
+	cfg := parser.Config{
+		Axes: []parser.ColumnSpec{
+			{Source: "region", AxisKey: "x", AxisType: "category"},
+			{Source: "latency", AxisKey: "y", AxisType: "value"},
+		},
+	}
+	ds := buildDataset(results, RunMeta{Parser: "csv"}, nil, cfg, nil, "")
+	s.Require().Len(ds.Axes, 2)
+	s.Equal("", ds.Axes[0].Type)
+	s.Equal("value", ds.Axes[1].Type)
+}
+
+func (s *PipelineSuite) TestBuildDatasetSelectAxisWithoutViewSlice() {
+	results := []shared.DataPoint{{XAxis: "1", YAxis: "2", Stats: []shared.Stat{}}}
+	cfg := parser.Config{
+		Mode: parser.ModeValue,
+		SelectViews: []parser.SelectView{
+			{Columns: []parser.ColumnSpec{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}}},
+		},
+	}
+	ds := buildDataset(results, RunMeta{Parser: "csv"}, nil, cfg, nil, "")
+	s.Require().Len(ds.Axes, 2)
+	s.Equal("value", ds.Axes[0].Type)
+	s.Equal("value", ds.Axes[1].Type)
+}
+
 func (s *PipelineSuite) TestBuildDatasetInfersAxesWithoutAxisType() {
 	view := append([]parser.ColumnSpec(nil),
 		parser.ColumnSpec{Source: "region", AxisKey: "x"},
@@ -679,6 +707,33 @@ func (s *PipelineSuite) TestResolveInputNoArgsShowsHelp() {
 	cmd := &cobra.Command{Use: "test"}
 	s.Panics(func() { resolveInput(cmd, nil) })
 	s.True(*exitCalled)
+}
+
+func (s *PipelineSuite) TestWriteStdinPipedInputsNoTrailingNewline() {
+	origStdin := os.Stdin
+	defer func() { os.Stdin = origStdin }()
+
+	oldStdout, oldStderr := os.Stdout, os.Stderr
+	devnull, _ := os.Open(os.DevNull)
+	os.Stdout, os.Stderr = devnull, devnull
+	defer func() { os.Stdout, os.Stderr = oldStdout, oldStderr; devnull.Close() }()
+
+	stdinFile, err := os.CreateTemp("", "stdin_no_nl")
+	s.Require().NoError(err)
+	defer os.Remove(stdinFile.Name())
+
+	s.Require().NoError(os.WriteFile(stdinFile.Name(), []byte(`{"Action":"run"}`), 0644))
+	f, err := os.Open(stdinFile.Name())
+	s.Require().NoError(err)
+	os.Stdin = f
+	defer f.Close()
+
+	out := filepath.Join(s.T().TempDir(), "out.txt")
+	writeStdinPipedInputs(out)
+
+	content, err := os.ReadFile(out)
+	s.Require().NoError(err)
+	s.Equal(`{"Action":"run"}`, string(content))
 }
 
 func (s *PipelineSuite) TestWriteStdinPipedInputs() {

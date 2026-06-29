@@ -150,6 +150,67 @@ func TestParseSelectStatModeEmptyResultsExits(t *testing.T) {
 	}
 }
 
+func TestParseMixedModeSkipsUnknownAxisKey(t *testing.T) {
+	cfg := Config{Axes: []ColumnSpec{
+		{Source: "region", AxisKey: "x", AxisType: "category"},
+		{Source: "missing", AxisKey: "w", AxisType: "value"},
+	}}
+	rows := []RowReader{
+		mockRowReader{cells: map[string]string{"region": "Asia"}},
+	}
+	if got := ParseMixedMode(rows, cfg); len(got) != 0 {
+		t.Fatalf("want 0 rows, got %+v", got)
+	}
+}
+
+func TestParseValueModeRejectsNonNumericMetric(t *testing.T) {
+	restore, exitCalled := shared.TrapOsExitPanic(t)
+	defer restore()
+
+	cfg := Config{
+		Axes:         []ColumnSpec{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}},
+		MetricColumn: "noise",
+	}
+	rows := []RowReader{
+		mockRowReader{
+			cells:   map[string]string{"noise": "loud"},
+			numeric: map[string]float64{"x": 1, "y": 2},
+			headers: []string{"x", "y", "noise"},
+			flag:    "--select",
+		},
+	}
+	func() {
+		defer func() {
+			if recover() == nil {
+				t.Fatal("expected panic")
+			}
+		}()
+		ParseValueMode(rows, cfg)
+	}()
+	if !*exitCalled {
+		t.Fatal("expected OsExit")
+	}
+}
+
+func TestParseSelectStatModeNonMerge(t *testing.T) {
+	cfg := Config{
+		SelectViews: []SelectView{
+			{Columns: []ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "tax", AxisKey: "y"}}},
+			{Columns: []ColumnSpec{{Source: "product", AxisKey: "x"}, {Source: "sales", AxisKey: "y"}}},
+		},
+	}
+	rows := []RowReader{
+		mockRowReader{
+			cells:   map[string]string{"region": "Asia", "product": "Widget"},
+			numeric: map[string]float64{"tax": 12, "sales": 100},
+		},
+	}
+	results := ParseSelectStatMode(rows, cfg)
+	if len(results) != 2 {
+		t.Fatalf("want 2 points, got %d", len(results))
+	}
+}
+
 func TestDispatchSelectModePropagatesAxisType(t *testing.T) {
 	cfg := Config{
 		Mode: ModeValue,

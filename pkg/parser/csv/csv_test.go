@@ -637,6 +637,14 @@ func (s *CSVFatalSuite) TestSelectNonNumericYColumnExits() {
 	s.Panics(func() { ParseCSV(path, s.cfg) })
 }
 
+func (s *CSVFatalSuite) TestSelectEmptyColumnExits() {
+	s.cfg.SelectViews = []parser.SelectView{
+		{Columns: []parser.ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "latency", AxisKey: "y"}}},
+	}
+	path := s.writeFile("region,latency\n,\n")
+	s.Panics(func() { ParseCSV(path, s.cfg) })
+}
+
 func (s *CSVFatalSuite) TestSelectValueModeAllNumeric() {
 	s.cfg.SelectViews = []parser.SelectView{
 		{Columns: []parser.ColumnSpec{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}}},

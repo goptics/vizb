@@ -406,6 +406,14 @@ func (s *JSONFatalSuite) TestSelectNonNumericYFieldExits() {
 	s.Panics(func() { ParseJSON(path, s.cfg) })
 }
 
+func (s *JSONFatalSuite) TestSelectEmptyFieldExits() {
+	s.cfg.SelectViews = []parser.SelectView{
+		{Columns: []parser.ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "latency", AxisKey: "y"}}},
+	}
+	path := s.writeFile(`[{"region":"","latency":12}]`)
+	s.Panics(func() { ParseJSON(path, s.cfg) })
+}
+
 func (s *JSONFatalSuite) TestSelectValueModeAllNumeric() {
 	s.cfg.SelectViews = []parser.SelectView{
 		{Columns: []parser.ColumnSpec{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}}},
