@@ -105,4 +105,8 @@ export class MixedBuilder implements ChartBuilder {
   is3D(chart: ChartData): boolean {
     return chart.render3D?.mode === 'mixed'
   }
+
+  canOfferValue3D(): boolean {
+    return false
+  }
 }

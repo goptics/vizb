@@ -121,4 +121,8 @@ export class ValueBuilder implements ChartBuilder {
   is3D(chart: ChartData): boolean {
     return chart.render3D?.mode === 'continuous'
   }
+
+  canOfferValue3D(): boolean {
+    return false
+  }
 }

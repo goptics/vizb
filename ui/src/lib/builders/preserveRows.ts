@@ -144,4 +144,8 @@ export class PreserveRowsBuilder implements ChartBuilder {
     const hasZ = chart.zAxis.length > 0 && chart.zAxis[0] !== ''
     return (hasX && hasY && hasZ) || (hasX && hasY && !hasZ && cfg?.threeD === true)
   }
+
+  canOfferValue3D(): boolean {
+    return false
+  }
 }

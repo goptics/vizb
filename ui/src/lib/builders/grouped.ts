@@ -1,4 +1,4 @@
-import type { ChartData, DataPoint, SeriesData, Point3D } from '@/types'
+import type { ChartData, DataPoint, SeriesData, Point3D, ChartType } from '@/types'
 import type { ChartBuilder, BuildContext } from './types'
 import { finalizeChart } from './finalize'
 import { toStatSignature } from '../transform'
@@ -110,5 +110,19 @@ export class GroupedBuilder implements ChartBuilder {
     const hasY = chart.yAxis.length > 0 && chart.yAxis[0] !== ''
     const hasZ = chart.zAxis.length > 0 && chart.zAxis[0] !== ''
     return (hasX && hasY && hasZ) || (hasX && hasY && !hasZ && cfg?.threeD === true)
+  }
+
+  canOfferValue3D(
+    chartType: ChartType,
+    data: DataPoint[] | undefined,
+    hasZOnChart: boolean,
+    cfg?: { threeD?: boolean }
+  ): boolean {
+    const hasBothXY = !!data?.some((p) => !!p.xAxis && !!p.yAxis)
+    const has3DChunk = !!data?.some((p) => !!p.zAxis) || cfg?.threeD !== undefined
+    if (chartType === 'scatter') {
+      return hasBothXY && !hasZOnChart && has3DChunk
+    }
+    return (chartType === 'bar' || chartType === 'line') && hasBothXY && !hasZOnChart && has3DChunk
   }
 }

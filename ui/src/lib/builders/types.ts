@@ -1,4 +1,13 @@
-import type { ChartData, DataPoint, AxisLabels, Sort, ScaleType, Stat, Axis } from '@/types'
+import type {
+  ChartData,
+  DataPoint,
+  AxisLabels,
+  Sort,
+  ScaleType,
+  Stat,
+  Axis,
+  ChartType,
+} from '@/types'
 import type { CanonicalAxisOrders } from '../transform'
 
 export interface BuildContext {
@@ -28,6 +37,13 @@ export interface ChartBuilder {
   grandTotal(chart: ChartData, visibleZ?: Record<string, boolean>): number
   /** Whether this chart should render as 3D. */
   is3D(chart: ChartData, cfg?: { threeD?: boolean }, axes?: Axis[]): boolean
+  /** Whether the category --3d toggle can be offered for this shape. */
+  canOfferValue3D(
+    chartType: ChartType,
+    data: DataPoint[] | undefined,
+    hasZOnChart: boolean,
+    cfg?: { threeD?: boolean }
+  ): boolean
 }
 
 export const builderStatType = (chart: ChartData): string => chart.statType ?? 'grouped'

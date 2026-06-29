@@ -3,6 +3,7 @@ import { twMerge } from 'tailwind-merge'
 import type { ChartType, Meta, ChartData, DataPoint, Axis } from '../types'
 import type { Ref } from 'vue'
 import { arrangementHasChartZ } from './swap'
+import { builderForChart, pickBuilder } from './builders'
 
 /**
  * Utility function to merge Tailwind CSS classes
@@ -109,13 +110,16 @@ export const is3D = (
   chartType?: ChartType
 ) => {
   const chart = chartData.value
-  return (
-    isGrouped3D(chart) ||
-    (isValue3DEligible(chart) && threeD === true) ||
-    isValueModeContinuous3D(chart, axes, targetString, chartType) ||
-    chart.render3D?.mode === 'mixed' ||
-    (isValueChartType(chartType) && isMixedMode(axes) && mixedModeHasZAxis(axes))
-  )
+  if (chart.statType === 'value') {
+    return isValueModeContinuous3D(chart, axes, targetString, chartType)
+  }
+  if (chart.statType === 'mixed') {
+    return (
+      chart.render3D?.mode === 'mixed' ||
+      (isValueChartType(chartType) && isMixedMode(axes) && mixedModeHasZAxis(axes))
+    )
+  }
+  return builderForChart(chart).is3D(chart, { threeD })
 }
 
 // Data-shape dimensionality tag, derived from the raw `DataPoint[]` rows. The
@@ -149,18 +153,11 @@ export const canOfferValue3D = (
   cfg?: { threeD?: boolean },
   axes?: Axis[]
 ): boolean => {
-  if (isMixedMode(axes)) return false
-  if (chartType === 'scatter') {
-    if (isValueMode(axes)) return false
-    return datasetHasBothXY(data) && !hasZOnChart && bundleHas3DChunk(data, cfg)
-  }
-  if (isValueMode(axes)) return false
-  return (
-    (chartType === 'bar' || chartType === 'line') &&
-    datasetHasBothXY(data) &&
-    !hasZOnChart &&
-    bundleHas3DChunk(data, cfg)
-  )
+  const builder = pickBuilder({
+    valueMode: isValueMode(axes),
+    mixedMode: isMixedMode(axes),
+  })
+  return builder.canOfferValue3D(chartType, data, hasZOnChart, cfg)
 }
 
 /** Round to 2 decimals — matches tooltip number formatting. */
@@ -184,42 +181,8 @@ export const chartSeriesLabels = (chart: ChartData): string[] => {
 }
 
 /** Cardinality shown on ChartCard axis badges (category count or unique value-mode coords). */
-export const chartAxisBadgeCount = (chart: ChartData, axis: 'x' | 'y' | 'z'): number => {
-  if (chart.mixedTuples?.length && chart.xCategories?.length) {
-    if (axis === 'x') return chart.xCategories.length
-    if (axis === 'z') return 0
-    return chart.mixedTuples.length
-  }
-
-  if (isMixedModeChart(chart)) {
-    if (axis === 'x') return chart.xCategories?.length ?? 0
-    if (axis === 'z') return 0
-    if (chart.mixedTuples?.length) {
-      return new Set(chart.mixedTuples.map(([, y]) => y)).size
-    }
-    const pts = chart.render3D?.lineSeries[0]?.data ?? []
-    return new Set(pts.map((p) => p.value[1])).size
-  }
-
-  if (!isValueModeChart(chart)) {
-    if (axis === 'x') return chart.series.length
-    if (axis === 'y') return chart.yAxis.length
-    return chart.zAxis.length
-  }
-
-  if (chart.valuePoints3D?.length) {
-    const idx = axis === 'x' ? 0 : axis === 'y' ? 1 : 2
-    return new Set(chart.valuePoints3D.map((p) => p[idx])).size
-  }
-
-  if (chart.valueTuples?.length) {
-    if (axis === 'z') return 0
-    const idx = axis === 'x' ? 0 : 1
-    return new Set(chart.valueTuples.map((p) => p[idx])).size
-  }
-
-  return 0
-}
+export const chartAxisBadgeCount = (chart: ChartData, axis: 'x' | 'y' | 'z'): number =>
+  builderForChart(chart).badgeCount(chart, axis)
 
 /**
  * Sum every plotted metric value in the chart. Works for 1D (x only), 2D (x×y),
@@ -229,41 +192,7 @@ export const chartAxisBadgeCount = (chart: ChartData, axis: 'x' | 'y' | 'z'): nu
 export const computeChartGrandTotal = (
   chart: ChartData,
   visibleZ?: Record<string, boolean>
-): number => {
-  if (chart.points.length > 0) {
-    const filterZ = chartHasZAxis(chart)
-    let total = 0
-    for (const pt of chart.points) {
-      if (filterZ && pt.zAxis && visibleZ?.[pt.zAxis] === false) continue
-      total += pt.value
-    }
-    return total
-  }
-
-  if (chart.valuePoints3D?.length) {
-    return chart.valuePoints3D.reduce((sum, [, , z]) => sum + z, 0)
-  }
-
-  if (chart.valueTuples?.length) {
-    return chart.valueTuples.reduce((sum, [, y]) => sum + y, 0)
-  }
-
-  if (chart.mixedTuples?.length) {
-    return chart.mixedTuples.reduce((sum, [, y]) => sum + y, 0)
-  }
-
-  if (chart.render3D?.mode === 'mixed') {
-    return (chart.render3D.lineSeries[0]?.data ?? []).reduce((sum, p) => sum + (p.value[1] ?? 0), 0)
-  }
-
-  let total = 0
-  for (const s of chart.series) {
-    for (const v of s.values) {
-      if (v != null) total += v
-    }
-  }
-  return total
-}
+): number => builderForChart(chart).grandTotal(chart, visibleZ)
 
 export const CPUtoString = (cpu: Meta['cpu']) => {
   if (!cpu) {
