@@ -99,6 +99,22 @@ Use `noise-grid.csv` for faster loads; use this file when you need the complete 
 
 ---
 
+## `region-metrics.csv`
+
+**Shape:** Mixed categorical + numeric — `region` (category), `latency`, `sales` (8 rows).
+
+**What vizb does:** Solo `--select` axis mode. `--select region,latency` enters **mixed mode** (category x + value y). Repeat `--select` for multi-view output (e.g. `region,latency` and `region,sales` in one HTML).
+
+**Good for:** Mixed scatter demos, multi-dataset tabs, `--select` axis mode docs.
+
+| Goal | Command |
+|------|---------|
+| Mixed scatter (region vs latency) | `vizb scatter examples/csv/region-metrics.csv --select region,latency` |
+| Mixed 3D (region × latency × sales) | `vizb scatter examples/csv/region-metrics.csv --select region,latency,sales` |
+| Multi-view (two datasets) | `vizb scatter examples/csv/region-metrics.csv --select region,latency --select region,sales` |
+
+---
+
 ## `house-price-area2.csv`
 
 **Shape:** `area`, `price` — 16,174 rows ([ECharts house-price scatter](https://echarts.apache.org/examples/en/editor.html?c=scatter-large)). Auto-value xy; add `--visualmap` for price gradient. CI: `07-house-price-area2`.
@@ -114,6 +130,7 @@ Use `noise-grid.csv` for faster loads; use this file when you need the complete 
 | `noise-surface.csv` | 441 | Auto-value (xyz grid) | Bar3D surface |
 | `noise-grid.csv` | 9,261 | Auto-value (xyz + metric) | Scatter3D + visualMap |
 | `noise-grid-41.csv` | 68,921 | Auto-value (xyz + metric) | Scatter3D + visualMap (full grid) |
+| `region-metrics.csv` | 8 | Solo `--select` mixed | Scatter mixed (region × metric) |
 | `house-price-area2.csv` | 16,174 | Auto-value (xy) | Scatter2D + visualMap |
 
 **Auto-group** applies when the file has categorical columns and you did not pass `--group`. **Auto-value** applies when every column is numeric — vizb assigns `x`, `y`, `z` (and optional 4th metric) without flags.

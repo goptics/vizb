@@ -78,7 +78,14 @@ const { charts, groupNames } = useChartPipeline(
   scale,
   threeD,
   activeAxes,
-  chartType
+  chartType,
+  computed(() => {
+    const ds = activeDataSet.value
+    if (ds?.preserveRows) return true
+    // Legacy csv/select embeds without preserveRows: multi-stat solo --select (x only).
+    const axes = ds?.axes
+    return axes?.length === 1 && axes[0]?.key === 'x' && axes[0]?.type !== 'value'
+  })
 )
 
 // The worker owns grouping; feed its group list back into useDataPoint so the

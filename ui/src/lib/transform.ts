@@ -23,6 +23,7 @@ import {
   translateAxisKey,
   type AxisKey,
 } from './swap'
+import { pickBuilder } from './builders'
 
 export type CanonicalAxisOrders = {
   x?: string[]
@@ -77,13 +78,16 @@ export function canonicalAxisOrdersFromStrings(
   return canonicalAxisOrders(raw, translateAxisKey(identityString), translateAxisKey(targetString))
 }
 
-const applyCanonicalOrder = (values: string[], canonical: string[] | undefined): string[] => {
+export const applyCanonicalOrder = (
+  values: string[],
+  canonical: string[] | undefined
+): string[] => {
   if (!canonical?.length) return values
   const present = new Set(values)
   return canonical.filter((v) => present.has(v))
 }
 
-const toStatSignature = (stat: Stat): string => {
+export const toStatSignature = (stat: Stat): string => {
   if (!stat.per) {
     return `${stat.type}-${stat.unit}`
   }
@@ -95,9 +99,12 @@ const toStatSignature = (stat: Stat): string => {
   return `${stat.type}-${stat.unit}-${stat.per}`
 }
 
+export const statsForSignature = (stats: Stat[] | undefined, signature: string): Stat[] =>
+  stats?.filter((s) => toStatSignature(s) === signature) ?? []
+
 // Sort series in place by their summed value across all y, mirroring the old
 // main-thread `useSortedSeriesData`. Totals are computed once (not per compare).
-function sortSeriesByTotal(series: SeriesData[], order: SortOrder): void {
+export function sortSeriesByTotal(series: SeriesData[], order: SortOrder): void {
   const totals = new Map<SeriesData, number>()
   for (const s of series)
     totals.set(
@@ -134,7 +141,8 @@ export function listChartSignatures(data: DataPoint[]): ChartSignature[] {
 
 // Build the ChartData for a single stat signature: group rows into a y→x value
 // map plus a flat Point3D list and the per-dimension category sets, then attach
-// the 3D render payload when the chart has x, y and z.
+// the 3D render payload when the chart has x, y and z. Delegates to the
+// ChartBuilder strategy picked by the preserveRows flag.
 export function buildChartForSignature(
   data: DataPoint[],
   signature: string,
@@ -144,90 +152,21 @@ export function buildChartForSignature(
   showLabels = false,
   scale: ScaleType = 'linear',
   canonical?: CanonicalAxisOrders,
-  threeD = false
+  threeD = false,
+  preserveRows = false
 ): ChartData {
-  const dataMap = new Map<string, Map<string, number>>()
-  const countMap = new Map<string, Map<string, number>>()
-  const xAxisSet = new Set<string>()
-  const yAxisSet = new Set<string>()
-  const zAxisSet = new Set<string>()
-  const points: Point3D[] = []
-
-  for (const benchmarkData of data) {
-    const { xAxis = '', yAxis = '', zAxis = '' } = benchmarkData
-    const matchingStat = benchmarkData.stats?.find((s) => toStatSignature(s) === signature)
-    const value = matchingStat?.value
-    if (value === undefined) continue
-
-    yAxisSet.add(yAxis)
-    xAxisSet.add(xAxis)
-    zAxisSet.add(zAxis)
-    points.push({ xAxis, yAxis, zAxis, value })
-
-    // Accumulate sum + count per (yAxis, xAxis) so duplicates are averaged below,
-    // never silently overwritten. Grouped CSV/JSON arrives pre-summed from the Go
-    // layer (one point per key → mean == value), so this only meaningfully fires
-    // for benchmark count=N repeats, where the mean is the correct measurement.
-    if (!dataMap.has(yAxis)) {
-      dataMap.set(yAxis, new Map())
-      countMap.set(yAxis, new Map())
-    }
-    const yMap = dataMap.get(yAxis)!
-    const cMap = countMap.get(yAxis)!
-    yMap.set(xAxis, (yMap.get(xAxis) ?? 0) + value)
-    cMap.set(xAxis, (cMap.get(xAxis) ?? 0) + 1)
-  }
-
-  for (const [yAxis, xMap] of dataMap) {
-    const cMap = countMap.get(yAxis)!
-    for (const [xAxis, sum] of xMap) xMap.set(xAxis, sum / cMap.get(xAxis)!)
-  }
-
-  let xAxisValues = Array.from(xAxisSet)
-  let yAxisValues = Array.from(yAxisSet)
-  let zAxisValues = Array.from(zAxisSet)
-  if (!sort.enabled && canonical) {
-    xAxisValues = applyCanonicalOrder(xAxisValues, canonical.x)
-    yAxisValues = applyCanonicalOrder(yAxisValues, canonical.y)
-    zAxisValues = applyCanonicalOrder(zAxisValues, canonical.z)
-  }
-
-  const series: SeriesData[] = xAxisValues.map((xAxis) => ({
-    xAxis,
-    values: yAxisValues.map((yAxis) => dataMap.get(yAxis)?.get(xAxis) ?? null),
-    benchmarkId: data[0]?.name || '',
-  }))
-
-  // Sort the 2D series here (in the worker) rather than in the chart-option
-  // computed on the main thread — for a wide x-axis (up to 100k series) the
-  // per-series total + sort is the expensive bit and belongs off-thread. 3D
-  // charts render off `render3D` (sorted separately below), so this only shapes
-  // the 2D bar/line x order; harmless for the 3D path.
-  if (sort.enabled) sortSeriesByTotal(series, sort.order)
-
-  // Descriptive stats + correlation are NOT computed here — they're off the chart
-  // critical path now, computed lazily in the dedicated stats worker only when a
-  // panel is opened (see composables/useStatsWorker.ts). This keeps every
-  // sort/group/scale recompute from blocking the chart reply behind stat work.
-  const chart: ChartData = {
-    title: statTemplate.type,
-    statType: statTemplate.type,
-    statUnit: statTemplate.unit,
-    yAxis: yAxisValues,
-    zAxis: zAxisValues,
-    series,
-    points,
-    axisLabels: labels,
-  }
-
-  if (chartIsGrouped3D(chart)) {
-    chart.render3D = build3DRender(chart.points, chart.zAxis, sort, showLabels, scale, canonical)
-    chart.render3D.mode = 'grouped'
-  } else if (threeD && chartIsValue3DEligible(chart)) {
-    chart.render3D = buildValue3DRender(chart, sort, showLabels, scale, canonical)
-  }
-
-  return chart
+  const builder = pickBuilder({ preserveRows })
+  return builder.build(data, {
+    signature,
+    statTemplate,
+    labels,
+    sort,
+    showLabels,
+    scale,
+    canonical,
+    threeD,
+    preserveRows,
+  })
 }
 
 // Build one ChartData per unique stat signature. Kept as the bulk entry point
@@ -246,13 +185,13 @@ export function buildChartData(
 
 const SWAP_AXIS_KEYS = new Set(['name', 'x', 'y', 'z'])
 
-const identityStringFromAxes = (axes: Axis[]): string =>
+export const identityStringFromAxes = (axes: Axis[]): string =>
   axes
     .filter((a) => SWAP_AXIS_KEYS.has(a.key))
     .map((a) => (a.key === 'name' ? 'n' : a.key.charAt(0)))
     .join('')
 
-const axisLabelsFromAxes = (axes: Axis[]): AxisLabels => {
+export const axisLabelsFromAxes = (axes: Axis[]): AxisLabels => {
   const out: AxisLabels = {}
   for (const a of axes) {
     if (a.label) (out as Record<string, string>)[a.key] = a.label
@@ -262,7 +201,7 @@ const axisLabelsFromAxes = (axes: Axis[]): AxisLabels => {
 
 const CHART_AXIS_KEYS = new Set(['xAxis', 'yAxis', 'zAxis'])
 
-const isSourceFieldOnChart = (
+export const isSourceFieldOnChart = (
   identityString: string,
   targetString: string,
   source: 'xAxis' | 'yAxis' | 'zAxis'
@@ -274,7 +213,7 @@ const isSourceFieldOnChart = (
   return CHART_AXIS_KEYS.has(targetKeys[i]!)
 }
 
-const projectValueCoords = (
+export const projectValueCoords = (
   row: DataPoint,
   identityString: string,
   targetString: string
@@ -421,6 +360,80 @@ export function buildValueModeChart(
   return chart
 }
 
+export const mixedModeHasZ = (axes: Axis[]): boolean =>
+  axes.some((a) => a.key === 'z' && a.type === 'value')
+
+// Build one ChartData for mixed-axis scatter (--select category x + value y[,z]).
+// Each row is one point; x is categorical, y/z are continuous.
+export function buildMixedModeChart(
+  data: DataPoint[],
+  axes: Axis[],
+  opts?: { scale?: ScaleType; showLabels?: boolean }
+): ChartData {
+  const scale = opts?.scale ?? 'linear'
+  const labels = axisLabelsFromAxes(axes)
+  const xLabel = labels.x ?? 'x'
+  const yLabel = labels.y ?? 'y'
+  const zLabel = labels.z ?? 'z'
+  const use3D = mixedModeHasZ(axes)
+  const title = use3D ? `${xLabel} · ${yLabel} · ${zLabel}` : `${xLabel} vs ${yLabel}`
+
+  const xCategories: string[] = []
+  const xIndex = new Map<string, number>()
+  const mixedTuples: [number, number][] = []
+  const points3D: { value: number[] }[] = []
+
+  for (const row of data) {
+    const x = row.xAxis ?? ''
+    if (!x) continue
+
+    const y = Number(row.yAxis)
+    if (!isFinite(y)) continue
+
+    if (!xIndex.has(x)) {
+      xIndex.set(x, xCategories.length)
+      xCategories.push(x)
+    }
+    const xi = xIndex.get(x)!
+
+    if (use3D) {
+      const z = Number(row.zAxis)
+      if (!isFinite(z)) continue
+      if (scale === 'log' && (y <= 0 || z <= 0)) continue
+      points3D.push({ value: [xi, y, z] })
+    } else {
+      if (scale === 'log' && y <= 0) continue
+      mixedTuples.push([xi, y])
+    }
+  }
+
+  const chart: ChartData = {
+    title,
+    statType: 'mixed',
+    yAxis: [],
+    zAxis: [],
+    series: [],
+    points: [],
+    axisLabels: labels,
+    xCategories,
+    ...(!use3D ? { mixedTuples } : {}),
+  }
+
+  if (use3D && points3D.length) {
+    chart.render3D = {
+      mode: 'mixed',
+      xValues: xCategories,
+      yValues: [],
+      zValues: [],
+      barSeries: [],
+      lineSeries: [{ name: title, data: points3D }],
+      cellTotals: {},
+    }
+  }
+
+  return chart
+}
+
 // Sort category values by their summed value across all points on that axis.
 function sortByAxisTotal(
   values: string[],
@@ -440,6 +453,23 @@ function sortByAxisTotal(
 // the same (x,y,z); we average them (matching the 2D path) so benchmark count=N
 // repeats render as their mean rather than a meaningless sum. Grouped CSV/JSON is
 // pre-summed in the Go layer (one point per cell → mean == value).
+const sparseFromPoints = (
+  points: Point3D[],
+  z: string,
+  xIndex: Map<string, number>,
+  yIndex: Map<string, number>
+): { value: number[] }[] => {
+  const data: { value: number[] }[] = []
+  for (const p of points) {
+    if (p.zAxis !== z) continue
+    const xi = xIndex.get(p.xAxis)
+    const yi = yIndex.get(p.yAxis)
+    if (xi === undefined || yi === undefined) continue
+    data.push({ value: [xi, yi, p.value] })
+  }
+  return data
+}
+
 function cellsFor(
   points: Point3D[],
   z: string,
@@ -490,7 +520,8 @@ export function build3DRender(
   sort: Sort,
   showLabels = false,
   scale: ScaleType = 'linear',
-  canonical?: CanonicalAxisOrders
+  canonical?: CanonicalAxisOrders,
+  preserveRows = false
 ): Render3D {
   let xValues = Array.from(new Set(points.map((p) => p.xAxis)))
   let yValues = Array.from(new Set(points.map((p) => p.yAxis)))
@@ -519,6 +550,14 @@ export function build3DRender(
   const barSeries: Series3DData[] = []
   const lineSeries: Series3DData[] = []
   for (const z of zValues) {
+    if (preserveRows) {
+      const sparse = sparseFromPoints(points, z, xIndex, yIndex)
+      const filtered = isLog ? sparse.filter((d) => (d.value[2] ?? 0) > 0) : sparse
+      barSeries.push({ name: z, data: filtered })
+      lineSeries.push({ name: z, data: filtered })
+      continue
+    }
+
     const cells = cellsFor(points, z, xIndex, yIndex)
     if (isLog) for (const [k, v] of cells) if (v <= 0) cells.delete(k)
     barSeries.push({

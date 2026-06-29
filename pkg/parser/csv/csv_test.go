@@ -595,14 +595,120 @@ func (s *CSVAutoValueSuite) TestHeatmapChartFallsBackToFlat() {
 	s.NotEmpty(results[0].Stats)
 }
 
-func (s *CSVAutoValueSuite) TestSelectScopesAutoDetect() {
-	s.cfg.Select = []parser.ColumnSpec{{Source: "x"}, {Source: "y"}}
+func (s *CSVAutoValueSuite) TestSelectSkipsAutoDetect() {
+	// Solo --select (SelectViews) disables auto-value inference and routes value mode.
+	s.cfg.SelectViews = []parser.SelectView{
+		{Columns: []parser.ColumnSpec{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}}},
+	}
 	csv := "x,y,z,w\n1,2,3,4\n"
 	results := ParseCSV(s.writeFile(csv), s.cfg)
 	s.Require().Len(results, 1)
 	s.Equal("1", results[0].XAxis)
 	s.Equal("2", results[0].YAxis)
-	s.Empty(results[0].ZAxis)
+	s.Empty(results[0].Stats)
+}
+
+func (s *CSVFatalSuite) TestSelectMixedModeMapsCategoryXAndValueY() {
+	s.cfg.SelectViews = []parser.SelectView{
+		{Columns: []parser.ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "latency", AxisKey: "y"}}},
+	}
+	path := s.writeFile("region,latency,sales\nAsia,12,100\nEU,11,60\n")
+
+	results := ParseCSV(path, s.cfg)
+	s.Require().Len(results, 2)
+	s.Equal("Asia", results[0].XAxis)
+	s.Equal("12", results[0].YAxis)
+	s.Empty(results[0].Stats)
+}
+
+func (s *CSVFatalSuite) TestSelectColumnNotFoundExits() {
+	s.cfg.SelectViews = []parser.SelectView{
+		{Columns: []parser.ColumnSpec{{Source: "missing", AxisKey: "x"}, {Source: "latency", AxisKey: "y"}}},
+	}
+	path := s.writeFile("region,latency\nAsia,12\n")
+	s.Panics(func() { ParseCSV(path, s.cfg) })
+}
+
+func (s *CSVFatalSuite) TestSelectNonNumericYColumnExits() {
+	s.cfg.SelectViews = []parser.SelectView{
+		{Columns: []parser.ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "label", AxisKey: "y"}}},
+	}
+	path := s.writeFile("region,label\nAsia,fast\n")
+	s.Panics(func() { ParseCSV(path, s.cfg) })
+}
+
+func (s *CSVFatalSuite) TestSelectEmptyColumnExits() {
+	s.cfg.SelectViews = []parser.SelectView{
+		{Columns: []parser.ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "latency", AxisKey: "y"}}},
+	}
+	path := s.writeFile("region,latency\n,\n")
+	s.Panics(func() { ParseCSV(path, s.cfg) })
+}
+
+func (s *CSVFatalSuite) TestSelectValueModeAllNumeric() {
+	s.cfg.SelectViews = []parser.SelectView{
+		{Columns: []parser.ColumnSpec{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}}},
+	}
+	path := s.writeFile("x,y\n1,2\n3,4\n")
+
+	results := ParseCSV(path, s.cfg)
+	s.Require().Len(results, 2)
+	s.Equal("1", results[0].XAxis)
+	s.Equal("2", results[0].YAxis)
+	s.Empty(results[0].Stats)
+}
+
+func (s *CSVFatalSuite) TestSelectMultiStatModeIndependentCombinations() {
+	s.cfg.SelectViews = []parser.SelectView{
+		{Columns: []parser.ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "latency", AxisKey: "y"}}},
+		{Columns: []parser.ColumnSpec{{Source: "product", AxisKey: "x"}, {Source: "sales", AxisKey: "y"}}},
+	}
+	path := s.writeFile("region,latency,sales,product\nAsia,12,100,Widget\n")
+
+	results := ParseCSV(path, s.cfg)
+	s.Require().Len(results, 2)
+	s.Equal("Asia", results[0].XAxis)
+	s.Require().Len(results[0].Stats, 1)
+	s.Equal("latency by region", results[0].Stats[0].Type)
+	s.Equal(12.0, *results[0].Stats[0].Value)
+	s.Equal("Widget", results[1].XAxis)
+	s.Equal("sales by product", results[1].Stats[0].Type)
+	s.Equal(100.0, *results[1].Stats[0].Value)
+}
+
+func (s *CSVFatalSuite) TestSelectMultiStatModeParenTypeLabel() {
+	s.cfg.SelectViews = []parser.SelectView{
+		{
+			Columns:   []parser.ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "latency", AxisKey: "y"}},
+			TypeLabel: "Latency by Region",
+		},
+		{
+			Columns:   []parser.ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "sales", AxisKey: "y"}},
+			TypeLabel: "Sales by Region",
+		},
+	}
+	path := s.writeFile("region,latency,sales\nAsia,12,100\n")
+
+	results := ParseCSV(path, s.cfg)
+	s.Require().Len(results, 1)
+	s.Equal("Asia", results[0].XAxis)
+	s.Require().Len(results[0].Stats, 2)
+	s.Equal("Latency by Region", results[0].Stats[0].Type)
+	s.Equal("Sales by Region", results[0].Stats[1].Type)
+}
+
+func (s *CSVFatalSuite) TestSelectMultiStatModeCustomTypeLabel() {
+	s.cfg.SelectViews = []parser.SelectView{
+		{Columns: []parser.ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "latency", AxisKey: "y", Label: "Custom"}}},
+		{Columns: []parser.ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "sales", AxisKey: "y"}}},
+	}
+	path := s.writeFile("region,latency,sales\nAsia,12,100\n")
+
+	results := ParseCSV(path, s.cfg)
+	s.Require().Len(results, 1)
+	s.Require().Len(results[0].Stats, 2)
+	s.Equal("Custom", results[0].Stats[0].Type)
+	s.Equal("sales by region", results[0].Stats[1].Type)
 }
 
 func TestCSVAutoValueSuite(t *testing.T) {

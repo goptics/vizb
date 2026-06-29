@@ -3,7 +3,7 @@ import type { AxisLabels, DataPoint, ChartData, Sort, ScaleType, Axis, ChartType
 import TransformWorker from '../workers/transform.worker.ts?worker&inline'
 import type { WorkerResponse } from '../workers/transform.worker'
 import { listChartSignatures } from '../lib/transform'
-import { isValueChartType, isValueMode } from '../lib/utils'
+import { isValueChartType, isValueMode, isMixedMode } from '../lib/utils'
 
 // The arrangement the worker projects/groups under: present source axes in
 // canonical order (identityString, e.g. "nx") and the selected target order
@@ -57,7 +57,8 @@ export function useChartPipeline(
   scale: Ref<ScaleType>,
   threeD: Ref<boolean>,
   axes?: MaybeRef<Axis[] | undefined>,
-  chartType?: MaybeRef<ChartType>
+  chartType?: MaybeRef<ChartType>,
+  preserveRows?: MaybeRef<boolean | undefined>
 ) {
   const charts = ref<ChartState[]>([])
   // True once any chart has data — gates the first-load full-page skeleton.
@@ -230,6 +231,19 @@ export function useChartPipeline(
           pending: true,
         },
       ]
+    } else if (isValueChartType(ct) && isMixedMode(axesNow)) {
+      const xLabel = axesNow?.find((a) => a.key === 'x')?.label ?? 'x'
+      const yLabel = axesNow?.find((a) => a.key === 'y')?.label ?? 'y'
+      const zLabel = axesNow?.find((a) => a.key === 'z')?.label ?? 'z'
+      const use3D = axesNow?.some((a) => a.key === 'z' && a.type === 'value') ?? false
+      charts.value = [
+        {
+          key: '__mixed_mode__',
+          title: use3D ? `${xLabel} · ${yLabel} · ${zLabel}` : `${xLabel} vs ${yLabel}`,
+          data: prev.get('__mixed_mode__')?.data ?? null,
+          pending: true,
+        },
+      ]
     } else {
       const sigs = listChartSignatures(data)
       charts.value = sigs.map(({ signature, statTemplate }) => ({
@@ -253,6 +267,7 @@ export function useChartPipeline(
       labels: plainLabels(toRaw(unref(labels))),
       axes: plainAxes(axesNow),
       chartType: ct,
+      preserveRows: unref(preserveRows) === true,
     })
   }
 

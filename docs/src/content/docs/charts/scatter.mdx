@@ -1,21 +1,22 @@
 ---
 title: Scatter Chart
-description: Plot individual points in 2D or 3D — grouped categories or auto-value from all-numeric columns.
+description: Plot individual points in 2D or 3D — grouped categories, solo --select axis mode, or auto-value from all-numeric columns.
 ---
 
 import { LinkCard, Aside } from '@astrojs/starlight/components';
 
-The **scatter chart** plots each row as a point in coordinate space. Unlike bar and line charts, scatter is built for coordinate plotting: you can map grouping columns to categorical axes or auto-value from all-numeric columns.
+The **scatter chart** plots each row as a point in coordinate space. Unlike bar and line charts, scatter is built for coordinate plotting: you can map grouping columns to categorical axes, use solo `--select` for mixed or value axes, or auto-value from all-numeric columns.
 
-Use scatter charts when individual `(x, y[, z])` positions matter — latency vs. price, a 3D point cloud, or categorical x/y with a continuous z metric. Scatter is **opt-in**: add `-c scatter` or run `vizb scatter`; it is not in the default `bar,line,pie` bundle.
+Use scatter charts when individual `(x, y[, z])` positions matter — latency vs. price, a 3D point cloud, or categorical x with a continuous y metric. Scatter is **opt-in**: add `-c scatter` or run `vizb scatter`; it is not in the default `bar,line,pie` bundle.
 
 ## How vizb builds it
 
-Scatter supports two input modes. Only one applies per dataset:
+Scatter supports three input modes. Only one applies per dataset:
 
 | Mode | CLI | What each row becomes |
 |------|-----|----------------------|
 | **Grouped** | `-g` / `-p` | Categorical x, optional y series, optional z depth — same dimension model as bar/line, rendered as `scatter` / `scatter3D` |
+| **Solo `--select`** | `--select` (no `-g` / `-r` / non-default `-p`) | 2–3 columns assigned to `x,y[,z]` — value axes (all numeric) or **mixed** (category x + value y[,z]) |
 | **Auto-value** | No flags (all-numeric CSV/JSON) | Auto-detected numeric columns as raw coordinates on value axes (`type: "value"`) |
 
 ## Grouped mode
@@ -58,9 +59,68 @@ When you have only **x** and **y** grouping (no z column), pass `--3d` to projec
   The Z axis requires **both** X and Y to be present. Passing a Z without an X/Y floor will be rejected with an error.
 </Aside>
 
+## `--select` (csv/json)
+
+`--select` is **repeatable** and plays three roles depending on whether grouping is explicit. See the [mode matrix](/commands/root#--select-mode-matrix) for a full comparison.
+
+### Role 1 — Grouped + numeric select
+
+With explicit `-g` / `-p` / `-r`, `--select` picks which **numeric columns** become series (same as bar/line). Optional `{label}` renames series.
+
+```bash
+vizb scatter sales.csv -g region,product -p x,y --select latency,sales -o out.html
+```
+
+### Role 2 — Solo all-numeric value axes
+
+Without grouping, each `--select` defines one **value-mode** view: 2–3 numeric columns become continuous `x`, `y`, and optional `z` axes. Auto-group and auto-value are disabled.
+
+```bash
+# Two numeric columns → 2D value scatter
+vizb scatter spiral-3d.csv --select x,y -o scatter.html
+
+# Three numeric columns → 3D value scatter (auto-enables 3D)
+vizb scatter spiral-3d.csv --select x,y,z -o scatter3d.html
+```
+
+### Role 3 — Solo mixed category + value (scatter primary)
+
+Without grouping, when the first selected column is categorical and the rest are numeric, vizb enters **mixed mode**: category labels on the x axis, continuous values on y (and optional z). This is the primary chart type for plots like region vs. latency.
+
+```bash
+# Category region on x, numeric latency on y
+vizb scatter examples/csv/region-metrics.csv --select region,latency -o mixed.html
+
+# Three columns: category x + value y + value z
+vizb scatter examples/csv/region-metrics.csv --select region,latency,sales -o mixed3d.html
+```
+
+Use explicit axis syntax when column order alone is not enough:
+
+```bash
+vizb scatter data.csv --select x:region,y:latency,z:sales{Revenue} -o out.html
+```
+
+<Aside type="tip">
+  At most one categorical column is allowed per view, and it must be on **x**. If a non-numeric column would land on y or z, vizb exits with an error suggesting `x:col,y:col` syntax.
+</Aside>
+
+### Repeatable `--select` (multi-stat)
+
+Repeat `--select` with **two columns per flag** (`dim,metric`) to add independent stat combinations in **one dataset**. Charts separate by stat type (default `metric by dim`). Rename chart tabs with a trailing `(Title)`: `--select region{Region},latency (Latency by Region)`.
+
+```bash
+vizb scatter examples/csv/region-metrics.csv \
+  --select region,latency \
+  --select region,sales \
+  -o dual.html
+```
+
+This does not enable grouping — use `-g`/`-p` when you need explicit group axes or aggregation. A **single** `--select` with 2–3 columns still uses coordinate mixed/value mode.
+
 ## Auto-value mode (no flags)
 
-When every column in a CSV/JSON file is numeric, vizb auto-detects the first 2–3 columns as coordinate axes and enters value mode automatically — no `--axes` needed. The inference is logged to stdout:
+When every column in a CSV/JSON file is numeric, vizb auto-detects the first 2–3 columns as coordinate axes and enters value mode automatically. The inference is logged to stdout:
 
 ```
 🧠 Auto-valued by columns: price, latency (2D pattern x-y)
@@ -74,21 +134,14 @@ vizb scatter prices.csv -o scatter.html
 vizb scatter spiral.csv -o scatter.html
 ```
 
-Use `--select` to pick specific columns when you don't want the first 2–3:
-
-```bash
-# Only columns price and latency as coordinate axes
-vizb scatter data.csv --select price,latency -o scatter.html
-```
-
-Auto-value respects the chart type: scatter auto-enables continuous 3D with 3+ columns, same as bar and line. With `--select` limiting to 2 columns, it stays 2D.
+Solo `--select` overrides auto-value: it disables inference and uses only the columns you name. With 2 columns selected, the chart stays 2D even if the file has more numeric columns.
 
 {/* TODO: Add GIF showing a 2D value-mode scatter and a 3D spiral */}
 
 With three axes columns, vizb renders continuous `scatter3D`. Use the axis swapper in the UI to include or drop `z` and toggle between 2D and 3D without re-running the CLI.
 
 <Aside type="tip">
-  In auto-value mode with only two axes, sort and swap are hidden in the settings panel — they have no effect on a flat coordinate plot. With three axes, swap is available so you can rearrange which columns map to x, y, and z.
+  In auto-value mode with only two axes, sort and swap are hidden in the settings panel — they have no effect on a flat coordinate plot. With three axes, swap is available so you can rearrange which columns map to x, y, and z. In mixed mode, sort and swap are also hidden — the axes are fixed by `--select`.
 </Aside>
 
 ## Settings
@@ -97,10 +150,10 @@ These settings apply to scatter charts:
 
 | Setting | CLI flag | UI toggle | Notes |
 |---------|----------|-----------|-------|
-| Sort | `--sort asc\|desc` | Sort control | Grouped mode only — hidden for auto-value |
+| Sort | `--sort asc\|desc` | Sort control | Grouped mode only — hidden for auto-value and mixed |
 | Labels | `--show-labels` | Show labels | Point labels where supported |
 | Swap | `--swap` | Axis switcher | Grouped mode; auto-value with 3 columns |
-| Scale (log) | `--scale log` | Scale toggle | Log axes — 2D grouped and value mode |
+| Scale (log) | `--scale log` | Scale toggle | Log axes — 2D grouped, value, and mixed mode |
 | 3D view | `--3d` | 3D view | Pseudo-3D for grouped x+y (no z column) |
 | 3D visual map | `--3d-visualmap` | 3D visual map | Metric gradient on 3D points |
 | 2D visual map | `--visualmap` | Visual map | Gradient coloring on 2D scatter — off by default |
@@ -111,6 +164,9 @@ Override settings for just this chart type:
 ```bash
 # Log scale and labels on a grouped scatter
 vizb scatter data.csv -g category,metric --scale log -l -o out.html
+
+# Mixed region vs latency with log y
+vizb scatter examples/csv/region-metrics.csv --select region,latency --scale log -o out.html
 
 # 3D spiral with auto-rotate
 vizb scatter spiral.csv -o out.html  # auto-value x,y,z → 3D
