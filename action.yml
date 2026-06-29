@@ -111,6 +111,12 @@ runs:
       id: version
       shell: bash
       run: |
+        if [ -n "${{ inputs.vizb-binary }}" ]; then
+          echo "tag=local" >> "$GITHUB_OUTPUT"
+          echo "is-major=false" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
         REF="${{ github.action_ref }}"
         if [ -z "$REF" ]; then
           REF="v0"

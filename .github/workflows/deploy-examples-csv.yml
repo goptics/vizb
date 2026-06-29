@@ -89,8 +89,14 @@ jobs:
           charts: ${{ matrix.charts }}
           chart: ${{ matrix.chart }}
           output-json: ${{ matrix.output }}.json
+          vizb-binary: ${{ env.ACT == 'true' && './bin/vizb' || '' }}
+
+      - name: Stage json for local merge
+        if: env.ACT == 'true'
+        run: mkdir -p .act/jsons && cp ${{ matrix.output }}.json .act/jsons/
 
       - name: Uploading json artifacts
+        if: env.ACT != 'true'
         uses: actions/upload-artifact@v7
         with:
           name: json-${{ matrix.output }}
