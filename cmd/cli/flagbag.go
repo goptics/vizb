@@ -19,23 +19,21 @@ import (
 // + the shared chart-seed flags. Adding a flag is adding a descriptor — no code
 // changes here.
 type FlagBag struct {
-	flags  []flags.Flag
-	strs   map[string]*string
-	bools  map[string]*bool
-	floats map[string]*float64
-	slices map[string]*[]string // backs KindStringSlice and KindStat
-	arrays map[string]*[]string // backs KindStringArray (repeatable flags)
+	flags        []flags.Flag
+	strs         map[string]*string
+	bools        map[string]*bool
+	floats       map[string]*float64
+	stringSlices map[string]*[]string // backs KindStringSlice, KindStat, and KindStringArray
 }
 
 // NewFlagBag allocates a bag and one typed pointer per flag.
 func NewFlagBag(fl []flags.Flag) *FlagBag {
 	b := &FlagBag{
-		flags:  fl,
-		strs:   map[string]*string{},
-		bools:  map[string]*bool{},
-		floats: map[string]*float64{},
-		slices: map[string]*[]string{},
-		arrays: map[string]*[]string{},
+		flags:        fl,
+		strs:         map[string]*string{},
+		bools:        map[string]*bool{},
+		floats:       map[string]*float64{},
+		stringSlices: map[string]*[]string{},
 	}
 	for _, f := range fl {
 		switch f.Kind {
@@ -45,10 +43,8 @@ func NewFlagBag(fl []flags.Flag) *FlagBag {
 			b.bools[f.Name] = new(bool)
 		case flags.KindFloat:
 			b.floats[f.Name] = new(float64)
-		case flags.KindStringSlice, flags.KindStat:
-			b.slices[f.Name] = new([]string)
-		case flags.KindStringArray:
-			b.arrays[f.Name] = new([]string)
+		case flags.KindStringSlice, flags.KindStat, flags.KindStringArray:
+			b.stringSlices[f.Name] = new([]string)
 		}
 	}
 	return b
@@ -82,12 +78,12 @@ func (b *FlagBag) Bind(fs *pflag.FlagSet) {
 		case flags.KindStringSlice:
 			def, _ := f.Default.([]string)
 			if f.Shorthand != "" {
-				fs.StringSliceVarP(b.slices[f.Name], f.Name, f.Shorthand, def, f.Usage)
+				fs.StringSliceVarP(b.stringSlices[f.Name], f.Name, f.Shorthand, def, f.Usage)
 			} else {
-				fs.StringSliceVar(b.slices[f.Name], f.Name, def, f.Usage)
+				fs.StringSliceVar(b.stringSlices[f.Name], f.Name, def, f.Usage)
 			}
 		case flags.KindStat:
-			sv := &statValue{value: b.slices[f.Name]}
+			sv := &statValue{value: b.stringSlices[f.Name]}
 			if f.Shorthand != "" {
 				fs.VarP(sv, f.Name, f.Shorthand, f.Usage)
 			} else {
@@ -96,9 +92,9 @@ func (b *FlagBag) Bind(fs *pflag.FlagSet) {
 			fs.Lookup(f.Name).NoOptDefVal = statFlagAll
 		case flags.KindStringArray:
 			if f.Shorthand != "" {
-				fs.StringArrayVarP(b.arrays[f.Name], f.Name, f.Shorthand, nil, f.Usage)
+				fs.StringArrayVarP(b.stringSlices[f.Name], f.Name, f.Shorthand, nil, f.Usage)
 			} else {
-				fs.StringArrayVar(b.arrays[f.Name], f.Name, nil, f.Usage)
+				fs.StringArrayVar(b.stringSlices[f.Name], f.Name, nil, f.Usage)
 			}
 		}
 	}
@@ -114,7 +110,7 @@ func (b *FlagBag) Validate(cmd *cobra.Command) {
 		case f.Kind == flags.KindStat:
 			utils.ApplyValidationRules([]utils.ValidationRule{{
 				Label:        "stat",
-				SliceValue:   b.slices[f.Name],
+				SliceValue:   b.stringSlices[f.Name],
 				ValidSet:     shared.ValidStatMath,
 				Normalizer:   strings.ToLower,
 				SliceDefault: nil,
@@ -138,7 +134,7 @@ func (b *FlagBag) applySoftRule(f flags.Flag) {
 		Validator:  f.SoftValidate,
 	}
 	if f.Kind == flags.KindStringSlice {
-		rule.SliceValue = b.slices[f.Name]
+		rule.SliceValue = b.stringSlices[f.Name]
 		rule.SliceDefault, _ = f.Default.([]string)
 	} else {
 		rule.Value = b.strs[f.Name]
@@ -182,9 +178,9 @@ func (b *FlagBag) Float(name string) float64 {
 	return 0
 }
 
-// StringSlice returns the parsed value of a slice/stat flag.
+// StringSlice returns the parsed value of a slice/stat/array flag.
 func (b *FlagBag) StringSlice(name string) []string {
-	if p := b.slices[name]; p != nil {
+	if p := b.stringSlices[name]; p != nil {
 		return *p
 	}
 	return nil
@@ -192,15 +188,12 @@ func (b *FlagBag) StringSlice(name string) []string {
 
 // StringArray returns the parsed value of a repeatable string-array flag.
 func (b *FlagBag) StringArray(name string) []string {
-	if p := b.arrays[name]; p != nil {
-		return *p
-	}
-	return nil
+	return b.StringSlice(name) // same store; semantics differ only at Bind
 }
 
 // StringSliceRef exposes the backing pointer of a slice flag (test helper for
 // resetting/forcing values; cobra StringSlice appends to a non-nil default).
-func (b *FlagBag) StringSliceRef(name string) *[]string { return b.slices[name] }
+func (b *FlagBag) StringSliceRef(name string) *[]string { return b.stringSlices[name] }
 
 // ChartSeed builds the chart-config seed from the chart flags in the bag. A
 // chart flag contributes when the user changed it, or when it carries a default
@@ -217,7 +210,7 @@ func (b *FlagBag) ChartSeed(cmd *cobra.Command) map[string]any {
 			if !changed {
 				continue
 			}
-			math := *b.slices[f.Name]
+			math := *b.stringSlices[f.Name]
 			if math == nil {
 				math = []string{}
 			}
@@ -250,12 +243,9 @@ func (b *FlagBag) Reset() {
 			*b.bools[f.Name], _ = f.Default.(bool)
 		case flags.KindFloat:
 			*b.floats[f.Name], _ = f.Default.(float64)
-		case flags.KindStringSlice, flags.KindStat:
+		case flags.KindStringSlice, flags.KindStat, flags.KindStringArray:
 			def, _ := f.Default.([]string)
-			*b.slices[f.Name] = def
-		case flags.KindStringArray:
-			def, _ := f.Default.([]string)
-			*b.arrays[f.Name] = def
+			*b.stringSlices[f.Name] = def
 		}
 	}
 }
