@@ -77,13 +77,16 @@ export function canonicalAxisOrdersFromStrings(
   return canonicalAxisOrders(raw, translateAxisKey(identityString), translateAxisKey(targetString))
 }
 
-const applyCanonicalOrder = (values: string[], canonical: string[] | undefined): string[] => {
+export const applyCanonicalOrder = (
+  values: string[],
+  canonical: string[] | undefined
+): string[] => {
   if (!canonical?.length) return values
   const present = new Set(values)
   return canonical.filter((v) => present.has(v))
 }
 
-const toStatSignature = (stat: Stat): string => {
+export const toStatSignature = (stat: Stat): string => {
   if (!stat.per) {
     return `${stat.type}-${stat.unit}`
   }
@@ -95,12 +98,12 @@ const toStatSignature = (stat: Stat): string => {
   return `${stat.type}-${stat.unit}-${stat.per}`
 }
 
-const statsForSignature = (stats: Stat[] | undefined, signature: string): Stat[] =>
+export const statsForSignature = (stats: Stat[] | undefined, signature: string): Stat[] =>
   stats?.filter((s) => toStatSignature(s) === signature) ?? []
 
 // Sort series in place by their summed value across all y, mirroring the old
 // main-thread `useSortedSeriesData`. Totals are computed once (not per compare).
-function sortSeriesByTotal(series: SeriesData[], order: SortOrder): void {
+export function sortSeriesByTotal(series: SeriesData[], order: SortOrder): void {
   const totals = new Map<SeriesData, number>()
   for (const s of series)
     totals.set(
@@ -344,13 +347,13 @@ export function buildChartData(
 
 const SWAP_AXIS_KEYS = new Set(['name', 'x', 'y', 'z'])
 
-const identityStringFromAxes = (axes: Axis[]): string =>
+export const identityStringFromAxes = (axes: Axis[]): string =>
   axes
     .filter((a) => SWAP_AXIS_KEYS.has(a.key))
     .map((a) => (a.key === 'name' ? 'n' : a.key.charAt(0)))
     .join('')
 
-const axisLabelsFromAxes = (axes: Axis[]): AxisLabels => {
+export const axisLabelsFromAxes = (axes: Axis[]): AxisLabels => {
   const out: AxisLabels = {}
   for (const a of axes) {
     if (a.label) (out as Record<string, string>)[a.key] = a.label
@@ -360,7 +363,7 @@ const axisLabelsFromAxes = (axes: Axis[]): AxisLabels => {
 
 const CHART_AXIS_KEYS = new Set(['xAxis', 'yAxis', 'zAxis'])
 
-const isSourceFieldOnChart = (
+export const isSourceFieldOnChart = (
   identityString: string,
   targetString: string,
   source: 'xAxis' | 'yAxis' | 'zAxis'
@@ -372,7 +375,7 @@ const isSourceFieldOnChart = (
   return CHART_AXIS_KEYS.has(targetKeys[i]!)
 }
 
-const projectValueCoords = (
+export const projectValueCoords = (
   row: DataPoint,
   identityString: string,
   targetString: string
@@ -519,7 +522,7 @@ export function buildValueModeChart(
   return chart
 }
 
-const mixedModeHasZ = (axes: Axis[]): boolean =>
+export const mixedModeHasZ = (axes: Axis[]): boolean =>
   axes.some((a) => a.key === 'z' && a.type === 'value')
 
 // Build one ChartData for mixed-axis scatter (--select category x + value y[,z]).
