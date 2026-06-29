@@ -2,6 +2,8 @@ package parser
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/goptics/vizb/shared"
 )
@@ -100,13 +102,59 @@ func SelectViewAxesCfg(cfg Config) Config {
 }
 
 // DatasetAxesForSelectView builds mixed or value dataset axes from a solo --select
-// view. The parser sets AxisType on each column via ResolveAxesTypes inside
-// DispatchSelectMode; this helper only projects the carried types into axis
-// descriptors. The results parameter is unused (kept for API stability).
-func DatasetAxesForSelectView(view []ColumnSpec, _ []shared.DataPoint) []shared.Axis {
+// view. When the parser already set AxisType via ResolveAxesTypes (carried through
+// the view columns), it projects those types directly. When AxisType is empty
+// (the parser's local cfg copy didn't propagate back through the ParseFunc value
+// boundary), it falls back to inferring mixed-ness from the parsed DataPoint
+// XAxis values.
+func DatasetAxesForSelectView(view []ColumnSpec, results []shared.DataPoint) []shared.Axis {
 	cfg := Config{Axes: append([]ColumnSpec(nil), view...)}
+	if !hasResolvedAxisTypes(cfg) {
+		if inferSelectViewMixed(results) {
+			for i := range cfg.Axes {
+				switch cfg.Axes[i].AxisKey {
+				case "x":
+					cfg.Axes[i].AxisType = "category"
+				default:
+					cfg.Axes[i].AxisType = "value"
+				}
+			}
+		}
+	}
 	if isMixedAxes(cfg) {
 		return MixedAxes(cfg)
 	}
 	return ValueAxes(cfg)
+}
+
+func hasResolvedAxisTypes(cfg Config) bool {
+	for _, s := range cfg.Axes {
+		if s.AxisType != "" {
+			return true
+		}
+	}
+	return false
+}
+
+func inferSelectViewMixed(results []shared.DataPoint) bool {
+	if len(results) == 0 {
+		return false
+	}
+	for _, dp := range results {
+		if dp.XAxis == "" {
+			continue
+		}
+		if _, ok := parseAxisFloat(dp.XAxis); !ok {
+			return true
+		}
+	}
+	return false
+}
+
+func parseAxisFloat(s string) (float64, bool) {
+	v, err := strconv.ParseFloat(strings.TrimSpace(s), 64)
+	if err != nil {
+		return 0, false
+	}
+	return v, true
 }

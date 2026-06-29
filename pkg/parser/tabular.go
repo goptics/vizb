@@ -162,7 +162,16 @@ func DispatchSelectMode(rows []RowReader, cfg *Config, kindFn AxisColumnKind) []
 	if err := ResolveAxesTypes(&axesCfg, kindFn); err != nil {
 		shared.ExitWithError(err.Error(), nil)
 	}
+	// Propagate resolved AxisType back to the caller's SelectViews so
+	// DatasetAxesForSelectView can pick MixedAxes vs ValueAxes without
+	// re-inferring from DataPoint strings.
+	if len(cfg.SelectViews) > 0 && len(axesCfg.Axes) == len(cfg.SelectViews[0].Columns) {
+		for i := range axesCfg.Axes {
+			cfg.SelectViews[0].Columns[i].AxisType = axesCfg.Axes[i].AxisType
+		}
+	}
 	if isMixedAxes(axesCfg) {
+		cfg.Mode = ModeMixed
 		return ParseMixedMode(rows, axesCfg)
 	}
 	return ParseValueMode(rows, axesCfg)

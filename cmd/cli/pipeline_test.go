@@ -510,6 +510,33 @@ func (s *PipelineSuite) TestAssembleDatasetSelectViewMixedAxes() {
 	s.True(ds.PreserveRows)
 }
 
+// TestParseCSVToAssembleDatasetMixedSelect verifies the end-to-end flow
+// ParseCSV → assembleDataset for a solo mixed --select (categorical x + value y).
+// Regression guard: DatasetAxesForSelectView must infer mixed-ness from the
+// parsed DataPoints when AxisType didn't propagate through the ParseFunc value
+// boundary, emitting a category x (empty Type) + value y.
+func (s *PipelineSuite) TestParseCSVToAssembleDatasetMixedSelect() {
+	csvFile := s.writeFile("region-metrics.csv",
+		"region,latency,sales\nAsia,12,100\nEurope,8,80\nAmericas,15,120\n")
+	cfg := parser.Config{
+		SelectViews: []parser.SelectView{
+			{Columns: []parser.ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "latency", AxisKey: "y"}}},
+		},
+	}
+	cfg.Mode = parser.ResolveMode(cfg)
+
+	results := parser.Parsers["csv"](csvFile, cfg)
+	s.Require().NotEmpty(results)
+
+	ds := assembleDataset(results, RunMeta{Name: "T", Parser: "csv"}, nil, cfg)
+	s.Require().Len(ds.Axes, 2)
+	s.Equal("x", ds.Axes[0].Key)
+	s.Equal("", ds.Axes[0].Type, "mixed x axis must be category (empty Type)")
+	s.Equal("y", ds.Axes[1].Key)
+	s.Equal("value", ds.Axes[1].Type)
+	s.True(ds.PreserveRows)
+}
+
 func (s *PipelineSuite) TestAssembleDatasetSelectViewValueAxesEnables3D() {
 	results := []shared.DataPoint{
 		{XAxis: "1", YAxis: "2", ZAxis: "3", Stats: []shared.Stat{}},
