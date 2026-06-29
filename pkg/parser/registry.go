@@ -30,7 +30,21 @@ type Config struct {
 	JSONPath        string       // json only: jq-like dot path to the nested array to chart
 	AutoGroup       bool         // csv/json: infer group columns when no explicit grouping is configured
 	ChartTypes      []string     // csv/json auto-value eligibility check (scatter/bar/line only)
+	Mode            Mode         // resolved once in ParseConfig so downstream switches on cfg.Mode
 }
+
+// Mode is the resolved parse mode for a Config. Set once in ParseConfig so
+// every downstream call site switches on cfg.Mode instead of re-deriving it
+// from overlapping predicates.
+type Mode int
+
+const (
+	ModeAuto      Mode = iota // no --select and no explicit grouping → auto-group/auto-value
+	ModeGrouped               // explicit grouping (-g/-r/-p) + --select numeric stat columns
+	ModeValue                 // solo --select, all numeric columns → value axes x,y[,z]
+	ModeMixed                 // solo --select, one categorical x + numeric y[,z]
+	ModeMultiStat             // repeatable solo --select (dim,metric) pairs merged into stats
+)
 
 // SelectView is one solo --select flag: column placement plus an optional
 // chart-tab name from a trailing (Title) suffix in multi-stat mode.

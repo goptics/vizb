@@ -317,6 +317,8 @@ func (b *FlagBag) ParseConfig() parser.Config {
 			}
 		}
 	}
+
+	cfg.Mode = parser.ResolveMode(cfg)
 	return cfg
 }
 
