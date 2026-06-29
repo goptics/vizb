@@ -168,6 +168,55 @@ describe('useScatterChartOptions — axes value mode', () => {
   })
 })
 
+const makeMixedChartData = (): ChartData => ({
+  title: 'region vs latency',
+  statType: 'mixed',
+  yAxis: [],
+  zAxis: [],
+  series: [],
+  points: [],
+  axisLabels: { x: 'region', y: 'latency' },
+  xCategories: ['Asia', 'EU'],
+  mixedTuples: [
+    [0, 12],
+    [1, 11],
+  ],
+})
+
+const makeMixedConfig = (): BaseChartConfig => ({
+  chartData: ref(makeMixedChartData()),
+  sort: ref({ enabled: false, order: 'asc' }),
+  showLabels: ref(false),
+  isDark: ref(false),
+  visualMap: ref(false),
+})
+
+describe('useScatterChartOptions — mixed mode', () => {
+  it('emits category xAxis and value yAxis', () => {
+    const { options } = useScatterChartOptions(makeMixedConfig())
+    expect((options.value.xAxis as { type: string; data: string[] }).type).toBe('category')
+    expect((options.value.xAxis as { data: string[] }).data).toEqual(['Asia', 'EU'])
+    expect((options.value.yAxis as { type: string }).type).toBe('value')
+  })
+
+  it('emits scatter series with mixedTuples as data', () => {
+    const { options } = useScatterChartOptions(makeMixedConfig())
+    const s = (options.value.series as { type: string; data: [number, number][] }[])[0]!
+    expect(s.type).toBe('scatter')
+    expect(s.data).toEqual([
+      [0, 12],
+      [1, 11],
+    ])
+  })
+
+  it('uses shadow axisPointer for category x', () => {
+    const { options } = useScatterChartOptions(makeMixedConfig())
+    expect((options.value.tooltip as { axisPointer?: { type?: string } }).axisPointer?.type).toBe(
+      'shadow'
+    )
+  })
+})
+
 describe('useScatterChartOptions — group mode', () => {
   it('omits x-axis name when axisLabels.x is absent', () => {
     const cfg = makeGroupedConfig()

@@ -19,6 +19,7 @@ import {
   valuePoints3DToSeries,
   type Continuous3DContext,
 } from './shared'
+import { buildMixedAxes3DOptions } from './shared/mixedMode'
 import type { Series3DData } from '@/types'
 
 export function useBar3DChartOptions(config: BaseChartConfig) {
@@ -38,6 +39,10 @@ export function useBar3DChartOptions(config: BaseChartConfig) {
         : { type: 'value' as const }),
       ...axisCommon,
     }
+    if (render.mode === 'mixed') {
+      return buildMixedAxes3DOptions(config, 'bar3D')
+    }
+
     const isValueMode = render.mode === 'value'
     const grid3D = create3DGridConfig({
       styling,

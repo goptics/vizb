@@ -360,15 +360,71 @@ func (s *JSONFatalSuite) TestValueModeSkipsRowWithBadMetric() {
 	s.Equal("8", results[1].Metric)
 }
 
-func (s *JSONAutoValueSuite) TestSelectScopesAutoDetect() {
-	s.cfg.Select = []parser.ColumnSpec{{Source: "x"}, {Source: "y"}}
+func (s *JSONAutoValueSuite) TestSelectSkipsAutoDetect() {
+	// Solo --select (SelectViews) disables auto-value inference and routes value mode.
+	s.cfg.SelectViews = []parser.SelectView{
+		{Columns: []parser.ColumnSpec{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}}},
+	}
 	path := s.writeFile(`[{"x":1,"y":2,"z":3,"w":4}]`)
 
 	results := ParseJSON(path, s.cfg)
 	s.Require().Len(results, 1)
 	s.Equal("1", results[0].XAxis)
 	s.Equal("2", results[0].YAxis)
-	s.Empty(results[0].ZAxis)
+	s.Empty(results[0].Stats)
+}
+
+func (s *JSONFatalSuite) TestSelectMixedModeMapsCategoryXAndValueY() {
+	s.cfg.SelectViews = []parser.SelectView{
+		{Columns: []parser.ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "latency", AxisKey: "y"}}},
+	}
+	path := s.writeFile(`[
+		{"region":"Asia","latency":12,"sales":100},
+		{"region":"EU","latency":11,"sales":60}
+	]`)
+
+	results := ParseJSON(path, s.cfg)
+	s.Require().Len(results, 2)
+	s.Equal("Asia", results[0].XAxis)
+	s.Equal("12", results[0].YAxis)
+	s.Empty(results[0].Stats)
+}
+
+func (s *JSONFatalSuite) TestSelectColumnNotFoundExits() {
+	s.cfg.SelectViews = []parser.SelectView{
+		{Columns: []parser.ColumnSpec{{Source: "missing", AxisKey: "x"}, {Source: "latency", AxisKey: "y"}}},
+	}
+	path := s.writeFile(`[{"region":"Asia","latency":12}]`)
+	s.Panics(func() { ParseJSON(path, s.cfg) })
+}
+
+func (s *JSONFatalSuite) TestSelectNonNumericYFieldExits() {
+	s.cfg.SelectViews = []parser.SelectView{
+		{Columns: []parser.ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "label", AxisKey: "y"}}},
+	}
+	path := s.writeFile(`[{"region":"Asia","label":"fast"}]`)
+	s.Panics(func() { ParseJSON(path, s.cfg) })
+}
+
+func (s *JSONFatalSuite) TestSelectEmptyFieldExits() {
+	s.cfg.SelectViews = []parser.SelectView{
+		{Columns: []parser.ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "latency", AxisKey: "y"}}},
+	}
+	path := s.writeFile(`[{"region":"","latency":12}]`)
+	s.Panics(func() { ParseJSON(path, s.cfg) })
+}
+
+func (s *JSONFatalSuite) TestSelectValueModeAllNumeric() {
+	s.cfg.SelectViews = []parser.SelectView{
+		{Columns: []parser.ColumnSpec{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}}},
+	}
+	path := s.writeFile(`[{"x":1,"y":2},{"x":3,"y":4}]`)
+
+	results := ParseJSON(path, s.cfg)
+	s.Require().Len(results, 2)
+	s.Equal("1", results[0].XAxis)
+	s.Equal("2", results[0].YAxis)
+	s.Empty(results[0].Stats)
 }
 
 func TestJSONFatalSuite(t *testing.T) {

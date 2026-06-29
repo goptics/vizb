@@ -58,7 +58,7 @@ func RunLinear(cmd *cobra.Command, args []string, meta RunMeta, cfg parser.Confi
 	// Enable auto-grouping for the csv/json parsers when the user supplied no
 	// explicit grouping. The csv/json parsers infer the category axis from the
 	// data so `vizb data.csv` produces a usable chart without -g/-p/-r.
-	if (meta.Parser == "csv" || meta.Parser == "json") && parser.NoExplicitGrouping(cfg) {
+	if (meta.Parser == "csv" || meta.Parser == "json") && parser.NoExplicitGrouping(cfg) && !parser.HasSelect(cfg) {
 		cfg.AutoGroup = true
 	}
 	for _, c := range configs {
@@ -71,37 +71,41 @@ func RunLinear(cmd *cobra.Command, args []string, meta RunMeta, cfg parser.Confi
 	// explicitly marks the input as raw enveloped data, not a vizb Dataset, so
 	// skip the passthrough (an envelope object would otherwise unmarshal into an
 	// empty Dataset and silently produce no output).
-	var dataSet *shared.Dataset
+	var datasets []*shared.Dataset
 	if cfg.JSONPath == "" {
-		dataSet = convertToDataset(target)
+		if ds := convertToDataset(target); ds != nil {
+			datasets = []*shared.Dataset{ds}
+		}
 	}
-	if dataSet == nil {
+	if len(datasets) == 0 {
 		// Not Dataset JSON: parse raw/bench input into data points.
 		target = preprocessInputFile(target, meta.Parser)
 		if meta.Parser == "json" && cfg.JSONPath != "" {
 			target = applyJSONPath(target, cfg.JSONPath)
 		}
 		results := prepareData(target, meta.Parser, cfg)
-		dataSet = assembleDataset(results, meta, configs, cfg)
+		datasets = []*shared.Dataset{assembleDataset(results, meta, configs, cfg)}
 		// Validate swap only for chart subcommands (applyOnPassthrough true).
 		// The root command stores swap as-is, trusting the UI to handle it.
 		if applyOnPassthrough {
-			for _, cc := range configs {
-				if swp := cc.SwapString(); swp != "" {
-					if err := shared.ValidateSwap(swp, dataSet.Axes); err != nil {
-						shared.ExitWithError(err.Error(), nil)
+			for _, dataSet := range datasets {
+				for _, cc := range configs {
+					if swp := cc.SwapString(); swp != "" {
+						if err := shared.ValidateSwap(swp, dataSet.Axes); err != nil {
+							shared.ExitWithError(err.Error(), nil)
+						}
 					}
 				}
 			}
 		}
 	} else if applyOnPassthrough {
-		applySelections(dataSet, configs)
+		applySelections(datasets[0], configs)
 	}
 
 	// Phase B: evaluate applicability rules on materialised configs with
 	// data-derived axes. Rules are nil on every descriptor yet (Phase C adds
 	// them), so this is a no-op in Phase B.
-	{
+	for _, dataSet := range datasets {
 		var ruleAxes []internal_charts.AxisInfo
 		for _, a := range dataSet.Axes {
 			ruleAxes = append(ruleAxes, internal_charts.AxisInfo{Key: a.Key, Type: a.Type})
@@ -119,7 +123,7 @@ func RunLinear(cmd *cobra.Command, args []string, meta RunMeta, cfg parser.Confi
 	f := shared.MustCreateFile(outFile)
 	defer f.Close()
 
-	writeOutput(f, dataSet, InferFormatFromExtension(outFile))
+	writeOutput(f, datasets, InferFormatFromExtension(outFile))
 
 	HandleOutputResult(f, meta.OutputFile)
 }
@@ -263,7 +267,7 @@ func prepareData(filePath, parserKey string, cfg parser.Config) []shared.DataPoi
 		fmt.Fprintln(os.Stderr, "warning: --json-path is only supported for the json parser; ignoring")
 	}
 
-	if len(cfg.Select) > 0 && parserKey != "csv" && parserKey != "json" {
+	if parser.HasSelect(cfg) && parserKey != "csv" && parserKey != "json" {
 		fmt.Fprintln(os.Stderr, "warning: --select is only supported for csv/json parsers; ignoring")
 	}
 
@@ -274,10 +278,16 @@ func prepareData(filePath, parserKey string, cfg parser.Config) []shared.DataPoi
 	fmt.Println(style.Info.Render("🧲 Parsing data..."))
 	data := parseFn(filePath, cfg)
 
+	// CSV/JSON emit one DataPoint per row; when grouping is inactive, collapse rows
+	// that share the same (name, x, y, z) by appending stats (no sum/average).
+	if tabularParser(parserKey) && len(cfg.Group) == 0 {
+		data = shared.CollapseDataPointsByKey(data)
+	}
+
 	// CSV/JSON emit one DataPoint per row; when grouping is active, multiple rows
 	// can share the same (name, xAxis, yAxis, zAxis) key. Collapse them by summing
 	// so the output isn't a row-per-record dump. Benchmark parsers are excluded.
-	if (parserKey == "csv" || parserKey == "json") && len(cfg.Group) > 0 {
+	if tabularParser(parserKey) && len(cfg.Group) > 0 {
 		before := len(data)
 		fmt.Println(style.Info.Render(fmt.Sprintf("🧮 Aggregating %d rows %s...", before, formatAggregationGroup(cfg))))
 		data = shared.AggregateDataPoints(data)
@@ -432,26 +442,68 @@ func autoEnableValueMode3D(configs []internal_charts.ChartConfig, axes []shared.
 // assembleDataset builds the output Dataset from parsed results plus the
 // command's metadata and the resolved per-chart configs.
 func assembleDataset(results []shared.DataPoint, m RunMeta, configs []internal_charts.ChartConfig, cfg parser.Config) *shared.Dataset {
+	var view []parser.ColumnSpec
+	if cfg.Mode.IsSelectAxis() && len(cfg.SelectViews) == 1 {
+		view = cfg.SelectViews[0].Columns
+	}
+	name := ""
+	if len(view) > 0 && cfg.Mode.IsSelectAxis() && !cfg.Mode.IsMultiStat() {
+		name = parser.SelectViewDatasetName(view, 0)
+	}
+	return buildDataset(results, m, configs, cfg, view, name)
+}
+
+func tabularParser(parserKey string) bool {
+	return parserKey == "csv" || parserKey == "json"
+}
+
+// preserveRowsForDataset is true for csv/json tabular data where the UI must
+// expand collapsed stats[] or keep duplicate (x,y,z) keys (solo/multi --select).
+// Grouped output is pre-aggregated to one point per cell; preserveRows there
+// makes the UI emit one series row per DataPoint and duplicates x categories.
+func preserveRowsForDataset(parserKey string, cfg parser.Config) bool {
+	return tabularParser(parserKey) && len(cfg.Group) == 0
+}
+
+func buildDataset(results []shared.DataPoint, m RunMeta, configs []internal_charts.ChartConfig, cfg parser.Config, view []parser.ColumnSpec, viewName string) *shared.Dataset {
 	var axes []shared.Axis
 	if cfg.AutoGroup {
 		// Auto-grouping modified the config inside the parser; derive axes
 		// from the actual data points since the caller's cfg is unchanged.
 		axes = deriveAxesFromData(results)
 		autoEnableValueMode3D(configs, axes, valueModeHasMetric(cfg, results))
+	} else if cfg.Mode.IsMultiStat() {
+		axes = parser.MultiSelectStatAxes(cfg.SelectViews)
+	} else if len(view) > 0 {
+		axes = parser.DatasetAxesForSelectView(view, results)
+		autoEnableValueMode3D(configs, axes, valueModeHasMetric(cfg, results))
+	} else if cfg.Mode.IsSelectAxis() {
+		axes = parser.DatasetAxesForSelectView(cfg.SelectViews[0].Columns, results)
+		autoEnableValueMode3D(configs, axes, valueModeHasMetric(cfg, results))
 	} else {
 		axes = parser.GroupAxes(cfg)
 		if len(cfg.Axes) > 0 {
-			axes = parser.ValueAxes(cfg)
+			if parser.IsMixedAxes(cfg) {
+				axes = parser.MixedAxes(cfg)
+			} else {
+				axes = parser.ValueAxes(cfg)
+			}
 		}
 	}
 	axes = appendMetricAxis(axes, cfg, results)
 
+	name := m.Name
+	if name == "" && viewName != "" {
+		name = viewName
+	}
+
 	dataSet := &shared.Dataset{
-		Name:        m.Name,
-		Description: m.Description,
-		Data:        results,
-		Settings:    configs,
-		Axes:        axes,
+		Name:         name,
+		Description:  m.Description,
+		Data:         results,
+		Settings:     configs,
+		Axes:         axes,
+		PreserveRows: preserveRowsForDataset(m.Parser, cfg),
 	}
 	if id := strings.TrimSpace(m.ID); id != "" {
 		dataSet.ID = id
@@ -499,19 +551,26 @@ func chartTypeNames(settings []internal_charts.ChartConfig) []string {
 	return out
 }
 
-// writeOutput writes the dataset to f as HTML or JSON.
-func writeOutput(f *os.File, dataSet *shared.Dataset, format string) {
+// writeOutput writes one or more datasets to f as HTML or JSON. HTML embeds an
+// array when N>1 (like vizb ui); JSON keeps a single object when N=1 for backward
+// compatibility.
+func writeOutput(f *os.File, datasets []*shared.Dataset, format string) {
+	if len(datasets) == 0 {
+		return
+	}
+
 	switch format {
 	case "html":
 		fmt.Println(style.Info.Render("🔄 Generating UI..."))
 
-		jsonData, err := json.Marshal(dataSet)
+		jsonData, err := marshalDatasetsForOutput(datasets)
 		if err != nil {
 			shared.ExitWithError("Failed to marshal dataSet data: %v", err)
 		}
 
-		needsHeatmapChunk := settingsNeedCorrelation(dataSet.Settings)
-		htmlContent := template.GenerateUI(jsonData, chartTypeNames(dataSet.Settings), shared.DatasetNeeds3D(dataSet), needsHeatmapChunk, template.VizbHTMLTemplate)
+		needsHeatmapChunk := datasetsNeedCorrelation(datasets)
+		needs3D := datasetsNeed3D(datasets)
+		htmlContent := template.GenerateUI(jsonData, chartTypeNames(datasets[0].Settings), needs3D, needsHeatmapChunk, template.VizbHTMLTemplate)
 		if _, err := f.WriteString(htmlContent); err != nil {
 			shared.ExitWithError("Failed to write output file: %v", err)
 		}
@@ -520,7 +579,7 @@ func writeOutput(f *os.File, dataSet *shared.Dataset, format string) {
 
 	case "json":
 		fmt.Println(style.Info.Render("🔄 Generating JSON..."))
-		bytes, err := json.Marshal(dataSet)
+		bytes, err := marshalDatasetsForOutput(datasets)
 		if err != nil {
 			shared.ExitWithError("Error marshaling dataSet data", err)
 		}
@@ -529,4 +588,33 @@ func writeOutput(f *os.File, dataSet *shared.Dataset, format string) {
 		}
 		fmt.Println(style.Success.Render("🎉 Generated JSON successfully!"))
 	}
+}
+
+func marshalDatasetsForOutput(datasets []*shared.Dataset) ([]byte, error) {
+	if len(datasets) == 1 {
+		return json.Marshal(datasets[0])
+	}
+	slice := make([]shared.Dataset, len(datasets))
+	for i, ds := range datasets {
+		slice[i] = *ds
+	}
+	return json.Marshal(slice)
+}
+
+func datasetsNeed3D(datasets []*shared.Dataset) bool {
+	for _, ds := range datasets {
+		if shared.DatasetNeeds3D(ds) {
+			return true
+		}
+	}
+	return false
+}
+
+func datasetsNeedCorrelation(datasets []*shared.Dataset) bool {
+	for _, ds := range datasets {
+		if settingsNeedCorrelation(ds.Settings) {
+			return true
+		}
+	}
+	return false
 }

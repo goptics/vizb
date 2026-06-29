@@ -485,11 +485,30 @@ export function correlationMatrix(columns: number[][], method: CorrelationMethod
 // each indexed by `yAxis` with NaN for an absent (x,y) cell so the chart's
 // zero-fill never biases a stat. Last point wins per (x,y), mirroring the
 // transform's dataMap collapse.
+const isOverlayYAxis = (yAxis: string[]): boolean =>
+  yAxis.length === 0 || (yAxis.length === 1 && yAxis[0] === '')
+
+/** Collect every value per x category when rows overlay at one category (empty y). */
+export function buildOverlayColumns(points: Point3D[], seriesOrder: string[]): number[][] {
+  const byX = new Map<string, number[]>()
+  for (const p of points) {
+    let col = byX.get(p.xAxis)
+    if (!col) {
+      col = []
+      byX.set(p.xAxis, col)
+    }
+    col.push(p.value)
+  }
+  return seriesOrder.map((x) => byX.get(x) ?? [])
+}
+
 export function buildColumns(
   points: Point3D[],
   seriesOrder: string[],
   yAxis: string[]
 ): number[][] {
+  if (isOverlayYAxis(yAxis)) return buildOverlayColumns(points, seriesOrder)
+
   const byX = new Map<string, Map<string, number>>()
   for (const p of points) {
     let row = byX.get(p.xAxis)
