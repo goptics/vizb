@@ -269,6 +269,48 @@ func (s *FlagBagSuite) TestResetRestoresDefaults() {
 	s.Equal(0.0, bag.Float("symbol-size"))
 }
 
+func (s *FlagBagSuite) TestParseConfigRejectsMultiSelectThreeColumnView() {
+	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
+	defer restore()
+
+	cmd, bag := s.newCmdBag(slices.Clone(DataFlags))
+	s.Require().NoError(cmd.Flags().Set("select", "region,latency,sales"))
+	s.Require().NoError(cmd.Flags().Set("select", "region,tax"))
+	s.Panics(func() { bag.ParseConfig() })
+	s.True(*exitCalled)
+}
+
+func (s *FlagBagSuite) TestParseConfigRejectsDuplicateGroupedSelect() {
+	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
+	defer restore()
+
+	cmd, bag := s.newCmdBag(slices.Clone(DataFlags))
+	s.Require().NoError(cmd.Flags().Set("group", "date"))
+	s.Require().NoError(cmd.Flags().Set("select", "price"))
+	s.Require().NoError(cmd.Flags().Set("select", "price"))
+	s.Panics(func() { bag.ParseConfig() })
+	s.True(*exitCalled)
+}
+
+func (s *FlagBagSuite) TestValidateRejectsInvalidSymbol() {
+	fl := append(slices.Clone(DataFlags), internal_charts.SymbolFlag)
+	cmd, bag := s.newCmdBag(fl)
+	s.Require().NoError(cmd.Flags().Set("symbol", "bogus"))
+
+	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
+	defer restore()
+	s.Panics(func() { bag.Validate(cmd) })
+	s.True(*exitCalled)
+}
+
+func (s *FlagBagSuite) TestValidateAppliesSoftRuleToGroupSlice() {
+	cmd, bag := s.newCmdBag(slices.Clone(DataFlags))
+	s.Require().NoError(cmd.Flags().Set("group", "a,b"))
+	out := testutil.CaptureStderr(func() { bag.Validate(cmd) })
+	s.Equal([]string{"a", "b"}, bag.StringSlice("group"))
+	s.Empty(out)
+}
+
 func (s *FlagBagSuite) TestChartSeedEncodesChangedFloatAndBool() {
 	fl := append(slices.Clone(DataFlags), internal_charts.BaseChartFlags...)
 	fl = append(fl, internal_charts.SymbolSizeFlag)
