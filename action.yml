@@ -260,8 +260,8 @@ runs:
         if [ -n "${{ steps.resolve.outputs.file }}" ]; then
           INPUT="${{ steps.resolve.outputs.file }}"
         else
-          ${{ steps.resolve.outputs.cmd }} > data-input.txt
-          INPUT="data-input.txt"
+          INPUT="${RUNNER_TEMP}/vizb-data-input-$$.txt"
+          ${{ steps.resolve.outputs.cmd }} > "$INPUT"
         fi
 
         vizb "$INPUT" -o "${{ steps.resolve.outputs.json_file }}" "${VIZB_ARGS[@]}"
