@@ -475,46 +475,6 @@ func parseJSONSelectStatMode(rows []map[string]any, seenCol map[string]bool, cfg
 	return results
 }
 
-func readJSONArray(filename string) (rows []map[string]any, colOrder []string, seenCol map[string]bool) {
-	f, err := os.Open(filename)
-	if err != nil {
-		shared.ExitWithError("Error opening file", err)
-	}
-	defer f.Close()
-
-	dec := json.NewDecoder(f)
-	tok, err := dec.Token()
-	if err != nil {
-		shared.ExitWithError("No dataSet data found", nil)
-	}
-	if d, ok := tok.(json.Delim); !ok || d != '[' {
-		shared.ExitWithError("No dataSet data found", nil)
-	}
-
-	seenCol = map[string]bool{}
-	for dec.More() {
-		leaves, derr := decodeElement(dec)
-		if derr != nil {
-			shared.ExitWithError("Error reading JSON", derr)
-		}
-
-		row := make(map[string]any, len(leaves))
-		for _, lf := range leaves {
-			row[lf.key] = lf.val
-			if !seenCol[lf.key] {
-				seenCol[lf.key] = true
-				colOrder = append(colOrder, lf.key)
-			}
-		}
-		rows = append(rows, row)
-	}
-
-	if len(rows) == 0 {
-		shared.ExitWithError("No dataSet data found", nil)
-	}
-	return rows, colOrder, seenCol
-}
-
 // resolveGroupKeys maps each non-empty --group name to a known field (preserving
 // flag order). A missing name is fatal and lists available fields.
 func resolveGroupKeys(colOrder []string, seenCol map[string]bool, group []string) ([]string, map[string]bool) {

@@ -442,28 +442,6 @@ func parseCSVSelectStatMode(headers []string, dataRows [][]string, cfg parser.Co
 	return results
 }
 
-func readCSVTable(filename string) (headers []string, dataRows [][]string) {
-	f, err := os.Open(filename)
-	if err != nil {
-		shared.ExitWithError("Error opening file", err)
-	}
-	defer f.Close()
-
-	reader := csv.NewReader(f)
-	reader.FieldsPerRecord = -1
-
-	rows, err := reader.ReadAll()
-	if err != nil {
-		shared.ExitWithError("Error reading CSV", err)
-	}
-
-	if len(rows) < 2 {
-		shared.ExitWithError("No dataSet data found", nil)
-	}
-
-	return normalizeHeaders(rows[0]), rows[1:]
-}
-
 // normalizeHeaders strips a leading UTF-8 BOM, trims whitespace, and de-duplicates
 // repeated names by suffixing (sells, "sells (2)") so same-named columns don't
 // collapse into one lost series. Empty header cells stay empty (unusable column).
