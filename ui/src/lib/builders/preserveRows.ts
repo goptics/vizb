@@ -138,10 +138,10 @@ export class PreserveRowsBuilder implements ChartBuilder {
     return total
   }
 
-  is3D(chart: ChartData): boolean {
+  is3D(chart: ChartData, cfg?: { threeD?: boolean }): boolean {
     const hasX = chart.series.some((s) => s.xAxis && s.xAxis.trim() !== '')
     const hasY = chart.yAxis.length > 0 && chart.yAxis[0] !== ''
     const hasZ = chart.zAxis.length > 0 && chart.zAxis[0] !== ''
-    return hasX && hasY && hasZ
+    return (hasX && hasY && hasZ) || (hasX && hasY && !hasZ && cfg?.threeD === true)
   }
 }
