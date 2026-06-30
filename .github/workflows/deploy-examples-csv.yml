@@ -30,7 +30,6 @@ jobs:
             group: "product,region,category"
             group-pattern: n,x,y
             charts: bar
-            chart: "bar:3d"
 
           - output: 02-sales-by-date
             file: sales
@@ -52,6 +51,7 @@ jobs:
             name: "Noise Surface"
             description: "Simplex noise height field on a 2D grid as continuous 3D"
             charts: bar
+            chart: "bar:3d-visualmap"
 
           - output: 05-noise-grid
             file: noise-grid
@@ -74,6 +74,13 @@ jobs:
             charts: scatter
             chart: "scatter:visualmap"
 
+          - output: 08-life-expentency-income
+            file: life-expentency-income
+            name: "Life Expentency vs Income"
+            description: ""
+            select: 'Country,"Life Expectancy",Income'
+            charts: scatter
+
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -86,6 +93,7 @@ jobs:
           description: ${{ matrix.description }}
           group: ${{ matrix.group }}
           group-pattern: ${{ matrix.group-pattern }}
+          select: ${{ matrix.select }}
           charts: ${{ matrix.charts }}
           chart: ${{ matrix.chart }}
           output-json: ${{ matrix.output }}.json

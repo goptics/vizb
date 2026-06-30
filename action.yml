@@ -242,6 +242,8 @@ runs:
     - name: Convert to JSON
       id: convert
       if: steps.resolve.outputs.has_input == 'true'
+      env:
+        INPUT_SELECT: ${{ inputs.select }}
       shell: bash
       run: |
         source "$RUNNER_TEMP/vizb-chart-flags.sh"
@@ -257,7 +259,7 @@ runs:
         [ -n "${{ inputs.mem-unit }}" ] && VIZB_ARGS+=(-M "${{ inputs.mem-unit }}")
         [ -n "${{ inputs.time-unit }}" ] && VIZB_ARGS+=(-T "${{ inputs.time-unit }}")
         [ -n "${{ inputs.number-unit }}" ] && VIZB_ARGS+=(-N "${{ inputs.number-unit }}")
-        [ -n "${{ inputs.select }}" ] && VIZB_ARGS+=(--select "${{ inputs.select }}")
+        [ -n "$INPUT_SELECT" ] && VIZB_ARGS+=(--select "$INPUT_SELECT")
         [ -n "${{ inputs.json-path }}" ] && VIZB_ARGS+=(--json-path "${{ inputs.json-path }}")
         [ "${{ inputs.show-labels }}" = "true" ] && VIZB_ARGS+=(-l)
         [ -n "${{ inputs.parser }}" ] && VIZB_ARGS+=(-P "${{ inputs.parser }}")
