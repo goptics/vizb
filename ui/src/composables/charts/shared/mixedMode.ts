@@ -4,8 +4,12 @@ import { COLOR_PALETTE, getNextColorFor } from '@/lib/utils'
 import { type BaseChartConfig, getBaseOptions } from '../baseChartOptions'
 import {
   createAxisConfig,
+  createDataZoomConfig,
   createLabelConfig,
   createValueModeGridConfig,
+  createLineAxisPointer,
+  createShadowAxisPointer,
+  formatTooltipValue,
   getChartStyling,
   getTooltipTheme,
   isLargeXAxis,
@@ -42,25 +46,54 @@ export function scaleMixedTuples(
   return tuples.map(([x, y]) => [x, adjustForLogScaleLine(y, scale)])
 }
 
+type AxisTooltipParam = {
+  name?: string
+  value?: number | [number, number | null]
+  data?: [number, number | null]
+  marker?: string
+}
+
+const mixedAxisYValue = (p: AxisTooltipParam): number | null | undefined => {
+  const raw = p.value
+  if (Array.isArray(raw)) return raw[1]
+  if (typeof raw === 'number') return raw
+  return p.data?.[1]
+}
+
 export function createMixedModeTooltip(
   isDark: boolean,
   xCategories: string[],
+  chartType: Mixed2DChartType,
   xLabel?: string,
   yLabel?: string
 ): EChartsOption['tooltip'] {
   const theme = getTooltipTheme(isDark)
+  const styling = getChartStyling(isDark)
   const xName = xLabel ?? 'x'
   const yName = yLabel ?? 'y'
+  const snapToCategory = chartType === 'line' || chartType === 'scatter'
 
   return {
-    trigger: 'item',
+    trigger: 'axis',
     ...theme,
-    axisPointer: { type: 'shadow' },
+    axisPointer: snapToCategory
+      ? createLineAxisPointer(styling, theme, true)
+      : createShadowAxisPointer(styling, theme),
     formatter: (params: unknown) => {
-      const [xi, y] = (params as { data: [number, number | null] }).data
-      const category = xCategories[xi] ?? String(xi)
-      const yText = y === null || y === undefined ? '' : String(Math.round(y * 100) / 100)
-      return `<strong>${xName}: ${category}</strong><br/>${yName}: <b>${yText}</b>`
+      const items = (Array.isArray(params) ? params : [params]) as AxisTooltipParam[]
+      const p = items[0]
+      if (!p) return ''
+
+      const category =
+        p.name ??
+        (() => {
+          const xi = p.data?.[0]
+          return xi === undefined ? '' : (xCategories[xi] ?? String(xi))
+        })()
+      const y = mixedAxisYValue(p)
+      const yText = y === null || y === undefined ? '' : formatTooltipValue(y)
+      const marker = p.marker ?? ''
+      return `<strong>${xName}: ${category}</strong><br/>${marker} ${yName}: <b>${yText}</b>`
     },
   }
 }
@@ -150,13 +183,10 @@ export function buildMixedAxes2DOptions(
     legend: { show: false },
     grid: createValueModeGridConfig(largeX),
     visualMap: resolve2DScatterVisualMap(useVisualMap, colorValues, styling, 1),
-    tooltip: createMixedModeTooltip(isDark.value, xCategories, xLabel, yLabel),
+    tooltip: createMixedModeTooltip(isDark.value, xCategories, chartType, xLabel, yLabel),
     ...axisConfig,
     dataZoom: largeX
-      ? [
-          { type: 'inside', xAxisIndex: 0 },
-          { type: 'slider', xAxisIndex: 0, bottom: 34, height: 28 },
-        ]
+      ? createDataZoomConfig(xCategories, styling)
       : [
           { type: 'inside', xAxisIndex: 0 },
           { type: 'inside', yAxisIndex: 0 },
