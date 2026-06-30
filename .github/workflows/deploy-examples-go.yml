@@ -22,7 +22,7 @@ jobs:
             name: "HTTP Routing"
             description: "Performance comparison of popular Go HTTP routers"
             group-pattern: x_y
-            charts: line
+            charts: line,pie
             chart: "line:sort=asc,scale=log"
 
           - id: 01-decode
@@ -31,6 +31,8 @@ jobs:
             description: "Decode performance across text, level, and size"
             group-regex: "/text=(?<n>.*)/level=(?<x>.*)/size=(?<y>.*)"
             filter: "Decode"
+            charts: bar
+            chart: "bar:scale=log,sort=asc"
 
           - id: 02-encode
             file: decode-encode
@@ -38,36 +40,48 @@ jobs:
             description: "Encode performance across text, level, and size"
             group-regex: "/text=(?<n>.*)/level=(?<x>.*)/size=(?<y>.*)"
             filter: "Encode"
+            charts: bar
+            chart: "bar:scale=log,sort=asc"
 
           - id: 03-hash
             file: hash
             name: "Hashing"
             description: "Comparison of different hash functions"
             group-regex: "Hashing64(?<x>.*)"
+            charts: bar
+            chart: "bar:sort=asc"
 
           - id: 04-serialization
             file: serialization
             name: "Serialization"
             description: "Comparison of different serialization methods"
             group-regex: "(?<x>.*)By(?<y>.*)"
+            charts: bar
+            chart: "bar:sort=asc,scale=log"
 
           - id: 05-validator
             file: validator
             name: "Validator"
             description: "Validation success vs failure across rule sets"
             group-regex: "(?<y>.*?)(?:(?<x>Success|Failure)(?<n>.*)|$)"
+            charts: bar
+            chart: "bar:sort=asc,scale=log"
 
           - id: 06-varmq
             file: varmq
             name: "Varmq"
             description: "Variadic queue benchmark"
             group-pattern: x/y
+            charts: bar
+            chart: "bar:sort=asc"
 
           - id: 07-worker-pools
             file: worker-pools
             name: "Worker Pools"
             description: "Performance comparison of different worker pool implementations"
             group-pattern: n/y/x
+            charts: bar
+            chart: "bar:sort=asc"
 
     runs-on: ubuntu-latest
     steps:
@@ -83,10 +97,8 @@ jobs:
           group-pattern: ${{ matrix.group-pattern }}
           group-regex: ${{ matrix.group-regex }}
           filter: ${{ matrix.filter }}
-          chart: |
-            bar:scale=log,sort=asc
-            line:scale=log,sort=asc
-            pie:sort=asc
+          charts: ${{ matrix.charts }}
+          chart: ${{ matrix.chart }}
           output-json: ${{ matrix.id }}.json
           vizb-binary: ${{ env.ACT == 'true' && './bin/vizb' || '' }}
 
