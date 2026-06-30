@@ -53,7 +53,7 @@ type SelectView struct {
 	TypeLabel string
 }
 
-type ParseFunc func(filename string, cfg Config) []shared.DataPoint
+type ParseFunc func(filename string, cfg Config) ([]shared.DataPoint, Config)
 
 var Parsers = map[string]ParseFunc{}
 

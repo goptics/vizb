@@ -50,7 +50,7 @@ func parseMedWithMAD(s string) (med, mad float64) {
 	return
 }
 
-func ParseTinyBenchBenchmark(filename string, cfg parser.Config) []shared.DataPoint {
+func ParseTinyBenchBenchmark(filename string, cfg parser.Config) ([]shared.DataPoint, parser.Config) {
 	f, err := os.Open(filename)
 	if err != nil {
 		shared.ExitWithError("Error opening file", err)
@@ -125,5 +125,5 @@ func ParseTinyBenchBenchmark(filename string, cfg parser.Config) []shared.DataPo
 		shared.ExitWithError("failed to read file", err)
 	}
 
-	return results
+	return results, cfg
 }

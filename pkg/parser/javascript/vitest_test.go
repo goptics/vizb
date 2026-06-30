@@ -62,7 +62,7 @@ func (s *VitestSuite) SetupTest() {
 }
 
 func (s *VitestSuite) TestRealVitestOutput() {
-	results := ParseVitestBenchmark(writeJSTestFile(s.T(), testVitestTable), s.cfg)
+	results, _ := ParseVitestBenchmark(writeJSTestFile(s.T(), testVitestTable), s.cfg)
 	s.Len(results, 6)
 
 	assertStat(s.T(), results[0].Stats[0], "Throughput avg (ops/s)", 264413.96, "")
@@ -89,7 +89,7 @@ func (s *VitestSuite) TestRealVitestOutput() {
 func (s *VitestSuite) TestUnitConversionToUs() {
 	s.cfg.TimeUnit = "us"
 
-	results := ParseVitestBenchmark(writeJSTestFile(s.T(), testVitestTable), s.cfg)
+	results, _ := ParseVitestBenchmark(writeJSTestFile(s.T(), testVitestTable), s.cfg)
 	s.Len(results, 6)
 
 	assertStat(s.T(), results[0].Stats[3], "Latency avg (us)", 3.8, "")
@@ -99,7 +99,7 @@ func (s *VitestSuite) TestUnitConversionToUs() {
 func (s *VitestSuite) TestFilterRegex() {
 	s.cfg.Filter = "bubbleSort"
 
-	results := ParseVitestBenchmark(writeJSTestFile(s.T(), testVitestTable), s.cfg)
+	results, _ := ParseVitestBenchmark(writeJSTestFile(s.T(), testVitestTable), s.cfg)
 	s.Len(results, 3)
 	for _, r := range results {
 		s.Equal("bubbleSort", r.Name)
@@ -109,7 +109,7 @@ func (s *VitestSuite) TestFilterRegex() {
 func (s *VitestSuite) TestEmptyFile() {
 	s.cfg.GroupPattern = "y"
 
-	results := ParseVitestBenchmark(writeJSTestFile(s.T(), ""), s.cfg)
+	results, _ := ParseVitestBenchmark(writeJSTestFile(s.T(), ""), s.cfg)
 	s.Empty(results)
 }
 

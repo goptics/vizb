@@ -18,7 +18,7 @@ func init() {
 
 var criterionRe = regexp.MustCompile(`^(\S+)\s+time:\s+\[([\d.]+)\s*(ns|µs|μs|ms|s)\s+([\d.]+)\s*(ns|µs|μs|ms|s)\s+([\d.]+)\s*(ns|µs|μs|ms|s)\]`)
 
-func ParseCriterionBenchmark(filename string, cfg parser.Config) []shared.DataPoint {
+func ParseCriterionBenchmark(filename string, cfg parser.Config) ([]shared.DataPoint, parser.Config) {
 	f, err := os.Open(filename)
 	if err != nil {
 		shared.ExitWithError("Error opening file", err)
@@ -71,5 +71,5 @@ func ParseCriterionBenchmark(filename string, cfg parser.Config) []shared.DataPo
 		shared.ExitWithError("failed to read file", err)
 	}
 
-	return results
+	return results, cfg
 }

@@ -25,7 +25,7 @@ func parseNum(s string) float64 {
 	return n
 }
 
-func ParseVitestBenchmark(filename string, cfg parser.Config) []shared.DataPoint {
+func ParseVitestBenchmark(filename string, cfg parser.Config) ([]shared.DataPoint, parser.Config) {
 	f, err := os.Open(filename)
 	if err != nil {
 		shared.ExitWithError("Error opening file", err)
@@ -115,5 +115,5 @@ func ParseVitestBenchmark(filename string, cfg parser.Config) []shared.DataPoint
 		shared.ExitWithError("failed to read file", err)
 	}
 
-	return results
+	return results, cfg
 }

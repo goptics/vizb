@@ -128,18 +128,22 @@ The selected array is then parsed exactly like a normal top-level JSON array. Al
 
 ## Aggregation
 
-CSV and JSON emit one data point per row. Raw tables often have many rows that collapse to the same dimensions. For example, hundreds of sales for the same region on the same date. So when `--group` is active for the `csv`/`json` parsers, vizb aggregates before charting. Rows sharing the same `(Name, XAxis, YAxis, ZAxis)` key are merged into a single point by summing their values.
+CSV and JSON emit one data point per row. Raw tables often have many rows that collapse to the same dimensions. For example, hundreds of sales for the same region on the same date. So when grouping is active for the `csv`/`json` parsers — explicit `--group` **or** auto-group — vizb aggregates before charting. Rows sharing the same `(Name, XAxis, YAxis, ZAxis)` key are merged into a single point by summing their values.
 
 ```bash
 vizb sales.csv -g region,product,month -p name,x,y -o sales.html
 # 🧮 Aggregating 200000 rows by columns: region, product, month (name: region, x: product, y: month)...
 # ✅ Aggregated into 4200 grouped data points
+
+# When every row is already unique under the group key:
+# 🧮 Aggregating 10000 rows by column: customer_name (x: customer_name)...
+# ✅ 10000 grouped rows — all unique (no duplicates to sum)
 ```
 
 This turns a row-per-record dump into a handful of meaningful grouped points. It keeps the chart and the [statistics panel](/ui/stats) fast.
 
 <Aside type="note">
-  Aggregation runs only for the `csv`/`json` parsers with `--group`. Benchmark parsers are never summed. Their repeated `count=N` rows share a key on purpose and are averaged by the UI instead. Without `--group`, every row is kept as-is.
+  Aggregation runs only for the `csv`/`json` parsers with grouping active (`--group` or auto-group). Benchmark parsers are never summed. Their repeated `count=N` rows share a key on purpose and are averaged by the UI instead. Solo `--select` and ungrouped flat series keep every row as-is.
 </Aside>
 
 ## Limitations

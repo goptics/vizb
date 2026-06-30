@@ -83,8 +83,8 @@ func RunLinear(cmd *cobra.Command, args []string, meta RunMeta, cfg parser.Confi
 		if meta.Parser == "json" && cfg.JSONPath != "" {
 			target = applyJSONPath(target, cfg.JSONPath)
 		}
-		results := prepareData(target, meta.Parser, cfg)
-		datasets = []*shared.Dataset{assembleDataset(results, meta, configs, cfg)}
+		results, effectiveCfg := prepareData(target, meta.Parser, cfg)
+		datasets = []*shared.Dataset{assembleDataset(results, meta, configs, effectiveCfg)}
 		// Validate swap only for chart subcommands (applyOnPassthrough true).
 		// The root command stores swap as-is, trusting the UI to handle it.
 		if applyOnPassthrough {
@@ -257,7 +257,9 @@ func applyJSONPath(filePath, path string) string {
 }
 
 // prepareData parses input into data points, aggregating grouped csv/json rows.
-func prepareData(filePath, parserKey string, cfg parser.Config) []shared.DataPoint {
+// The returned Config is the parser's effective config (auto-group/auto-value
+// mutations included) for aggregation and dataset assembly.
+func prepareData(filePath, parserKey string, cfg parser.Config) ([]shared.DataPoint, parser.Config) {
 	parseFn, err := parser.GetParser(parserKey)
 	if err != nil {
 		shared.ExitWithError(err.Error(), nil)
@@ -276,29 +278,44 @@ func prepareData(filePath, parserKey string, cfg parser.Config) []shared.DataPoi
 	}
 
 	fmt.Println(style.Info.Render("🧲 Parsing data..."))
-	data := parseFn(filePath, cfg)
+	data, effectiveCfg := parseFn(filePath, cfg)
 
 	// CSV/JSON emit one DataPoint per row; when grouping is inactive, collapse rows
 	// that share the same (name, x, y, z) by appending stats (no sum/average).
-	if tabularParser(parserKey) && len(cfg.Group) == 0 {
+	if tabularParser(parserKey) && len(effectiveCfg.Group) == 0 {
 		data = shared.CollapseDataPointsByKey(data)
 	}
 
 	// CSV/JSON emit one DataPoint per row; when grouping is active, multiple rows
 	// can share the same (name, xAxis, yAxis, zAxis) key. Collapse them by summing
 	// so the output isn't a row-per-record dump. Benchmark parsers are excluded.
-	if tabularParser(parserKey) && len(cfg.Group) > 0 {
+	if tabularParser(parserKey) && len(effectiveCfg.Group) > 0 {
 		before := len(data)
-		fmt.Println(style.Info.Render(fmt.Sprintf("🧮 Aggregating %d rows %s...", before, formatAggregationGroup(cfg))))
 		data = shared.AggregateDataPoints(data)
-		fmt.Println(style.Info.Render(fmt.Sprintf("✅ Aggregated into %d grouped data points", len(data))))
+		logAggregationResult(before, len(data), effectiveCfg)
 	}
 
 	if len(data) == 0 {
 		shared.ExitWithError("No dataSet data found", nil)
 	}
 
-	return data
+	return data, effectiveCfg
+}
+
+// logAggregationResult prints CLI feedback after summing grouped CSV/JSON rows.
+// The opening line always reports the row count and group columns; the closing
+// line differs when every key was already unique (no duplicates to sum).
+func logAggregationResult(before, after int, cfg parser.Config) {
+	if before == 0 {
+		return
+	}
+	groupDesc := formatAggregationGroup(cfg)
+	fmt.Println(style.Info.Render(fmt.Sprintf("🧮 Aggregating %d rows %s...", before, groupDesc)))
+	if after < before {
+		fmt.Println(style.Info.Render(fmt.Sprintf("✅ Aggregated into %d grouped data points", after)))
+		return
+	}
+	fmt.Println(style.Info.Render(fmt.Sprintf("✅ %d grouped rows — all unique (no duplicates to sum)", after)))
 }
 
 // formatAggregationGroup describes the --group columns and dimension keys used
@@ -325,50 +342,6 @@ func formatAggregationGroup(cfg parser.Config) string {
 		dims = append(dims, ax.Key)
 	}
 	return colPhrase + " (" + strings.Join(dims, ", ") + ")"
-}
-
-// deriveAxesFromData scans parsed data points to determine which axes are
-// populated. Used when auto-grouping modified the config inside the parser
-// (invisible to the caller since Config is passed by value).
-func deriveAxesFromData(results []shared.DataPoint) []shared.Axis {
-	var axes []shared.Axis
-	if len(results) == 0 {
-		return axes
-	}
-	// Value mode is signaled by empty Stats + populated coordinate axes.
-	valueMode := len(results[0].Stats) == 0
-	hasName, hasX, hasY, hasZ := false, false, false, false
-	for _, dp := range results {
-		if dp.Name != "" {
-			hasName = true
-		}
-		if dp.XAxis != "" {
-			hasX = true
-		}
-		if dp.YAxis != "" {
-			hasY = true
-		}
-		if dp.ZAxis != "" {
-			hasZ = true
-		}
-	}
-	axisType := ""
-	if valueMode {
-		axisType = "value"
-	}
-	if hasName {
-		axes = append(axes, shared.Axis{Key: "name", Type: axisType})
-	}
-	if hasX {
-		axes = append(axes, shared.Axis{Key: "x", Type: axisType})
-	}
-	if hasY {
-		axes = append(axes, shared.Axis{Key: "y", Type: axisType})
-	}
-	if hasZ {
-		axes = append(axes, shared.Axis{Key: "z", Type: axisType})
-	}
-	return axes
 }
 
 func isValueXYZAxes(axes []shared.Axis) bool {
@@ -467,12 +440,7 @@ func preserveRowsForDataset(parserKey string, cfg parser.Config) bool {
 
 func buildDataset(results []shared.DataPoint, m RunMeta, configs []internal_charts.ChartConfig, cfg parser.Config, view []parser.ColumnSpec, viewName string) *shared.Dataset {
 	var axes []shared.Axis
-	if cfg.AutoGroup {
-		// Auto-grouping modified the config inside the parser; derive axes
-		// from the actual data points since the caller's cfg is unchanged.
-		axes = deriveAxesFromData(results)
-		autoEnableValueMode3D(configs, axes, valueModeHasMetric(cfg, results))
-	} else if cfg.Mode.IsMultiStat() {
+	if cfg.Mode.IsMultiStat() {
 		axes = parser.MultiSelectStatAxes(cfg.SelectViews)
 	} else if len(view) > 0 {
 		axes = parser.DatasetAxesForSelectView(view, results)
@@ -488,6 +456,7 @@ func buildDataset(results []shared.DataPoint, m RunMeta, configs []internal_char
 			} else {
 				axes = parser.ValueAxes(cfg)
 			}
+			autoEnableValueMode3D(configs, axes, valueModeHasMetric(cfg, results))
 		}
 	}
 	axes = appendMetricAxis(axes, cfg, results)

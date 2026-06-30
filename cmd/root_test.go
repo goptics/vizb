@@ -372,6 +372,30 @@ func (s *RootAutoGroupSuite) writeJSON(dir, content string) string {
 	return p
 }
 
+func (s *RootAutoGroupSuite) TestCSVAutoGroupAggregatesDuplicateKeys() {
+	dir := s.T().TempDir()
+	input := s.writeCSV(dir, "region,sells\nWest,10\nWest,20\nEast,5\n")
+	out := filepath.Join(dir, "out.json")
+
+	outStr := testutil.CaptureStdout(func() {
+		rootCmd.SetArgs([]string{"-c", "bar", "-o", out, input})
+		s.Require().NoError(rootCmd.Execute())
+	})
+
+	s.Contains(outStr, "Auto-grouped by column")
+	s.Contains(outStr, "Aggregating")
+	ds := testutil.ReadDataset(s.T(), out)
+	s.False(ds.PreserveRows)
+	s.Len(ds.Data, 2)
+	byX := map[string]float64{}
+	for _, dp := range ds.Data {
+		s.Require().Len(dp.Stats, 1)
+		byX[dp.XAxis] = *dp.Stats[0].Value
+	}
+	s.Equal(30.0, byX["West"])
+	s.Equal(5.0, byX["East"])
+}
+
 func (s *RootAutoGroupSuite) TestCSVAutoGroupsXAxisNoFlags() {
 	dir := s.T().TempDir()
 	input := s.writeCSV(dir, "region,sells\nWest,10\nEast,20\nNorth,30\n")
@@ -384,6 +408,9 @@ func (s *RootAutoGroupSuite) TestCSVAutoGroupsXAxisNoFlags() {
 
 	s.FileExists(out)
 	s.Contains(outStr, "Auto-grouped by column")
+	s.Contains(outStr, "Aggregating 3 rows")
+	s.Contains(outStr, "all unique (no duplicates to sum)")
+	s.NotContains(outStr, "Aggregated into")
 	ds := testutil.ReadDataset(s.T(), out)
 	// Auto-group picked the region column → every data point carries its
 	// region value on xAxis. (Axis.Label stays empty without {label} slots.)

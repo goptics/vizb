@@ -64,7 +64,7 @@ func stringify(v any) string {
 // the separators from --group-pattern/-p and routed through the grouping
 // machinery (-p/-r). Nested objects are
 // flattened to dotted keys; array-valued fields are skipped.
-func ParseJSON(filename string, cfg parser.Config) []shared.DataPoint {
+func ParseJSON(filename string, cfg parser.Config) ([]shared.DataPoint, parser.Config) {
 	var err error
 	cfg, err = parser.FinalizeGroupConfig(cfg)
 	if err != nil {
@@ -83,10 +83,10 @@ func ParseJSON(filename string, cfg parser.Config) []shared.DataPoint {
 	// consumed earlier by convertToBenchmark).
 	tok, err := dec.Token()
 	if err != nil {
-		return nil
+		return nil, cfg
 	}
 	if d, ok := tok.(json.Delim); !ok || d != '[' {
-		return nil
+		return nil, cfg
 	}
 
 	var rows []map[string]any
@@ -111,7 +111,7 @@ func ParseJSON(filename string, cfg parser.Config) []shared.DataPoint {
 	}
 
 	if len(rows) == 0 {
-		return nil
+		return nil, cfg
 	}
 
 	// Auto-group: when no grouping is configured, infer the category axis from
@@ -142,7 +142,8 @@ func ParseJSON(filename string, cfg parser.Config) []shared.DataPoint {
 		for i, row := range rows {
 			readers[i] = jsonRowReader{row: row, seenCol: seenCol, colOrder: colOrder, flag: flag}
 		}
-		return parser.DispatchSelectMode(readers, &cfg, jsonKindFn(rows, seenCol, colOrder, flag))
+		results := parser.DispatchSelectMode(readers, &cfg, jsonKindFn(rows, seenCol, colOrder, flag))
+		return results, cfg
 	}
 
 	groupKeys, groupSet := resolveGroupKeys(colOrder, seenCol, parser.EffectiveGroupColumns(cfg))
@@ -214,7 +215,7 @@ func ParseJSON(filename string, cfg parser.Config) []shared.DataPoint {
 		})
 	}
 
-	return results
+	return results, cfg
 }
 
 // jsonRowReader adapts one JSON row to the parser.RowReader interface.

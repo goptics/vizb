@@ -58,7 +58,7 @@ If you run vizb on a CSV or JSON file **without** any of `--group`, `--group-pat
 1. It collects **non-numeric columns** as candidates (numeric columns are ignored entirely).
 2. It ranks candidates by **distinct-value count** (highest cardinality wins; ties go to the leftmost column) and picks the top one as the **XAxis** (`-p x`).
 
-The choice is logged to stdout (`🧠 Auto-grouped by column: date`), so you can override it with an explicit `--group` whenever the inference is wrong. Benchmark parsers (Go, Rust, JavaScript) are unaffected — auto-grouping applies only to the `csv` and `json` parsers.
+The choice is logged to stdout (`🧠 Auto-grouped by column: date`), so you can override it with an explicit `--group` whenever the inference is wrong. Auto-group uses the same row summing as explicit `--group` — duplicate `(name, x, y, z)` keys are collapsed before charting. Benchmark parsers (Go, Rust, JavaScript) are unaffected — auto-grouping applies only to the `csv` and `json` parsers.
 
 Grouped 3D charts need both `x` and `y` in `--group-pattern`. Auto-grouping always sets `-p x` only, so `--3d` with auto-group logs a warning and grouped 3D will not render until you supply both axes explicitly (e.g. `-g region,product -p x,y --3d`).
 
@@ -361,11 +361,18 @@ The columns you **don't** select decide the chart values:
 
 ### Aggregation
 
-When `--group` is set, multiple rows can share the same `(name, x, y, z)` key. Vizb **sums** their values into a single point. A 200k-row export collapses into a few thousand chart points. You'll see it in the CLI output:
+When grouping is active (`--group` or auto-group), multiple rows can share the same `(name, x, y, z)` key. Vizb **sums** their values into a single point. A 200k-row export collapses into a few thousand chart points. You'll see it in the CLI output when duplicates were merged:
 
 ```text
 🧮 Aggregating 50000 rows by columns: region, product, month (name: region, x: product, y: month)...
 ✅ Aggregated into 1200 grouped data points
+```
+
+When every row already has a unique group key (e.g. auto-group picked a high-cardinality ID column), vizb still runs the sum step but nothing collapses. The opening line is the same; the closing line notes that every key was unique:
+
+```text
+🧮 Aggregating 10000 rows by column: customer_name (x: customer_name)...
+✅ 10000 grouped rows — all unique (no duplicates to sum)
 ```
 
 <Aside type="caution">

@@ -93,7 +93,7 @@ func (s *CriterionSuite) SetupTest() {
 }
 
 func (s *CriterionSuite) TestRealCargoCriterionOutput() {
-	results := ParseCriterionBenchmark(writeRustTestFile(s.T(), testCargoTable), s.cfg)
+	results, _ := ParseCriterionBenchmark(writeRustTestFile(s.T(), testCargoTable), s.cfg)
 	s.Len(results, 6)
 
 	// First: bubbleSort/n=100 → 3.0524 µs = 3052.4 ns
@@ -121,7 +121,7 @@ func (s *CriterionSuite) TestRealCargoCriterionOutput() {
 func (s *CriterionSuite) TestUnitConversionToUs() {
 	s.cfg.TimeUnit = "us"
 
-	results := ParseCriterionBenchmark(writeRustTestFile(s.T(), testCargoTable), s.cfg)
+	results, _ := ParseCriterionBenchmark(writeRustTestFile(s.T(), testCargoTable), s.cfg)
 	s.Len(results, 6)
 
 	assertStat(s.T(), results[0].Stats[0], "Latency avg (us)", 3.05, "")
@@ -132,7 +132,7 @@ func (s *CriterionSuite) TestUnitConversionToUs() {
 func (s *CriterionSuite) TestFilterRegex() {
 	s.cfg.Filter = "bubbleSort"
 
-	results := ParseCriterionBenchmark(writeRustTestFile(s.T(), testCargoTable), s.cfg)
+	results, _ := ParseCriterionBenchmark(writeRustTestFile(s.T(), testCargoTable), s.cfg)
 	s.Len(results, 3)
 	for _, r := range results {
 		s.Equal("bubbleSort", r.Name)
@@ -142,7 +142,7 @@ func (s *CriterionSuite) TestFilterRegex() {
 func (s *CriterionSuite) TestEmptyFile() {
 	s.cfg.GroupPattern = "y"
 
-	results := ParseCriterionBenchmark(writeRustTestFile(s.T(), ""), s.cfg)
+	results, _ := ParseCriterionBenchmark(writeRustTestFile(s.T(), ""), s.cfg)
 	s.Empty(results)
 }
 
