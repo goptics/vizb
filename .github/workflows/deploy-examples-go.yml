@@ -17,51 +17,53 @@ jobs:
     strategy:
       matrix:
         include:
-          - id: decode
+          - id: 00-decode
             file: decode-encode
             name: "Decode"
             description: "Decode performance across text, level, and size"
             group-regex: "/text=(?<n>.*)/level=(?<x>.*)/size=(?<y>.*)"
             filter: "Decode"
 
-          - id: encode
+          - id: 01-encode
             file: decode-encode
             name: "Encode"
             description: "Encode performance across text, level, and size"
             group-regex: "/text=(?<n>.*)/level=(?<x>.*)/size=(?<y>.*)"
             filter: "Encode"
 
-          - id: hash
+          - id: 02-hash
             file: hash
             name: "Hashing"
             description: "Comparison of different hash functions"
             group-regex: "Hashing64(?<x>.*)"
 
-          - id: http-routing
+          - id: 03-http-routing
             file: http-routing
             name: "HTTP Routing"
             description: "Performance comparison of popular Go HTTP routers"
-            group-pattern: x_n
+            group-pattern: x_y
+            charts: line
+            chart: "line:sort=asc,scale=log"
 
-          - id: serialization
+          - id: 04-serialization
             file: serialization
             name: "Serialization"
             description: "Comparison of different serialization methods"
             group-regex: "(?<x>.*)By(?<y>.*)"
 
-          - id: validator
+          - id: 05-validator
             file: validator
             name: "Validator"
             description: "Validation success vs failure across rule sets"
             group-regex: "(?<y>.*?)(?:(?<x>Success|Failure)(?<n>.*)|$)"
 
-          - id: varmq
+          - id: 06-varmq
             file: varmq
             name: "Varmq"
             description: "Variadic queue benchmark"
             group-pattern: x/y
 
-          - id: worker-pools
+          - id: 07-worker-pools
             file: worker-pools
             name: "Worker Pools"
             description: "Performance comparison of different worker pool implementations"

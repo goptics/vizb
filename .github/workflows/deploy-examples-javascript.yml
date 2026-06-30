@@ -17,12 +17,12 @@ jobs:
     strategy:
       matrix:
         include:
-          - id: tinybench
+          - id: 00-tinybench
             file: tinybench
             name: "Bubble Vs Insertion Sort (tinybench)"
             description: "Tinybench output — algorithm on X, input size on Y"
             group-pattern: x/y
-          - id: vitest
+          - id: 01-vitest
             file: vitest
             name: "Bubble Vs Insertion Sort (vitest)"
             description: "Vitest bench output — benchmark name and case from regex groups"

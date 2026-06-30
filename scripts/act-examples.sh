@@ -77,7 +77,7 @@ for lang in "${LANGS[@]}"; do
 
   # act bind-mount leaves ephemeral json at repo root
   rm -f bench.json
-  find . -maxdepth 1 -name '*.json' ! -name 'bench.json' -delete
+  find . -maxdepth 1 \( -name '[0-9][0-9]-*.json' -o -name '*.json' \) ! -name 'bench.json' -delete
 done
 
 write_overview() {

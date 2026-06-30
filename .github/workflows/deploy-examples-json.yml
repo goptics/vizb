@@ -16,25 +16,25 @@ jobs:
     strategy:
       matrix:
         include:
-          - id: torvalds
+          - id: 00-torvalds
             user: torvalds
 
-          - id: sindresorhus
+          - id: 01-sindresorhus
             user: sindresorhus
 
-          - id: yyx990803
+          - id: 02-yyx990803
             user: yyx990803
 
-          - id: gaearon
+          - id: 03-gaearon
             user: gaearon
 
-          - id: isaacs
+          - id: 04-isaacs
             user: isaacs
 
-          - id: antirez
+          - id: 05-antirez
             user: antirez
 
-          - id: gvanrossum
+          - id: 06-gvanrossum
             user: gvanrossum
 
     runs-on: ubuntu-latest

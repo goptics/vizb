@@ -24,7 +24,7 @@ Tabular CSV recipes (auto-group, auto-value, 3D): [csv/README.md](csv/README.md)
 | JavaScript | [vizb.goptics.org/examples/javascript/](https://vizb.goptics.org/examples/javascript/) |
 | Rust | [vizb.goptics.org/examples/rust/](https://vizb.goptics.org/examples/rust/) |
 
-Open a specific chart with `?id=<id>` — each matrix entry sets a stable id via the action `id` input (forwarded as `--id`).
+Open a specific chart with `?id=<id>` — each matrix entry sets a numbered id via the action `id` input (forwarded as `--id`). Keep ids chronological (`00-`, `01-`, …) so the prefix stays in sync with `?d=0`, `?d=1`, … index in the same matrix order.
 
 ## Adding an example
 
@@ -33,11 +33,11 @@ Open a specific chart with `?id=<id>` — each matrix entry sets a stable id via
 No repo file to add. Append one row to the matrix in [deploy-examples-json.yml](../.github/workflows/deploy-examples-json.yml) — only `id` and `user`:
 
 ```yaml
-- id: octocat           # stable ?id= deep link and artifact basename
+- id: 07-octocat        # numbered ?id= deep link; prefix matches ?d=7 in matrix order
   user: octocat         # chart title and API path; no other matrix fields needed
 ```
 
-The workflow step already wires `curl`, `--json-path`, `--select`, date grouping, and 3D bar flags — copy a row and set `id` + `user`.
+`id` must stay numbered (`00-`, `01-`, …) in matrix order. The workflow step already wires `curl`, `--json-path`, `--select`, date grouping, and 3D bar flags — copy a row, bump the number, set `user`.
 
 Optionally add a row to [docs/src/content/docs/examples.mdx](../docs/src/content/docs/examples.mdx) under **JSON examples**.
 
@@ -48,7 +48,7 @@ Optionally add a row to [docs/src/content/docs/examples.mdx](../docs/src/content
 3. **Push** — CI rebuilds that dashboard on [vizb.goptics.org](https://vizb.goptics.org)
 
 ```yaml
-- id: my-chart             # required — stable ?id= deep link and artifact basename
+- id: 07-my-chart          # required — numbered ?id= deep link; prefix matches ?d=7
   file: my-data            # required — basename only (no extension)
   name: "My Chart"         # required — title in the dashboard
   description: "…"         # optional — subtitle / tooltip

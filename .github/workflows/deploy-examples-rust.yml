@@ -17,13 +17,13 @@ jobs:
     strategy:
       matrix:
         include:
-          - id: criterion
+          - id: 00-criterion
             file: criterion
             name: "Bubble vs Insertion Sort (Criterion)"
             description: "Criterion.rs output — algorithm on X, input size on Y"
             group-regex: "(?<x>.*)/n=(?<y>.*)"
 
-          - id: divan
+          - id: 01-divan
             file: divan
             name: "Bubble vs Insertion Sort (Divan)"
             description: "Divan output — algorithm and input size from group pattern"
