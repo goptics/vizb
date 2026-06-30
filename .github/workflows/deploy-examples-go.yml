@@ -17,33 +17,33 @@ jobs:
     strategy:
       matrix:
         include:
-          - id: 00-decode
-            file: decode-encode
-            name: "Decode"
-            description: "Decode performance across text, level, and size"
-            group-regex: "/text=(?<n>.*)/level=(?<x>.*)/size=(?<y>.*)"
-            filter: "Decode"
-
-          - id: 01-encode
-            file: decode-encode
-            name: "Encode"
-            description: "Encode performance across text, level, and size"
-            group-regex: "/text=(?<n>.*)/level=(?<x>.*)/size=(?<y>.*)"
-            filter: "Encode"
-
-          - id: 02-hash
-            file: hash
-            name: "Hashing"
-            description: "Comparison of different hash functions"
-            group-regex: "Hashing64(?<x>.*)"
-
-          - id: 03-http-routing
+          - id: 00-http-routing
             file: http-routing
             name: "HTTP Routing"
             description: "Performance comparison of popular Go HTTP routers"
             group-pattern: x_y
             charts: line
             chart: "line:sort=asc,scale=log"
+
+          - id: 01-decode
+            file: decode-encode
+            name: "Decode"
+            description: "Decode performance across text, level, and size"
+            group-regex: "/text=(?<n>.*)/level=(?<x>.*)/size=(?<y>.*)"
+            filter: "Decode"
+
+          - id: 02-encode
+            file: decode-encode
+            name: "Encode"
+            description: "Encode performance across text, level, and size"
+            group-regex: "/text=(?<n>.*)/level=(?<x>.*)/size=(?<y>.*)"
+            filter: "Encode"
+
+          - id: 03-hash
+            file: hash
+            name: "Hashing"
+            description: "Comparison of different hash functions"
+            group-regex: "Hashing64(?<x>.*)"
 
           - id: 04-serialization
             file: serialization
