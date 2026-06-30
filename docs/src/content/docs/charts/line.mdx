@@ -68,6 +68,41 @@ vizb line examples/go/06-worker-pools.txt -p z/y/x --scale log -o out.html
   The Z axis requires **both** X and Y to be present. Passing a Z without an X/Y floor will be rejected with an error.
 </Aside>
 
+## `--select` (csv/json)
+
+`--select` is **repeatable** and plays three roles depending on whether grouping is explicit. See the [mode matrix](/commands/root#--select-mode-matrix) for a full comparison.
+
+### Role 1 — Grouped + numeric select
+
+With explicit `-g` / `-p` / `-r`, `--select` picks which **numeric columns** become line series. Optional `{label}` renames series.
+
+```bash
+vizb line sales.csv -g region,product -p x,y --select latency,sales -o out.html
+```
+
+### Role 2 — Solo all-numeric value axes
+
+Without grouping, each `--select` defines one **value-mode** view: 2–3 numeric columns become continuous `x`, `y`, and optional `z` axes. Auto-group and auto-value are disabled. With 3 columns, line auto-enables 3D (`line3D`).
+
+```bash
+# Two numeric columns → 2D value lines
+vizb line spiral-3d.csv --select x,y -o line.html
+
+# Three numeric columns → 3D value lines
+vizb line spiral-3d.csv --select x,y,z -o line3d.html
+```
+
+### Role 3 — Solo mixed category + value
+
+Without grouping, when the first selected column is categorical and the rest are numeric, vizb parses **mixed-axis** data (category x + value y[,z]). Line accepts this shape at parse time; [scatter](/charts/scatter) is the primary chart for category × value plots.
+
+```bash
+vizb line examples/csv/region-metrics.csv --select region,latency -o lines.html
+vizb scatter examples/csv/region-metrics.csv --select region,latency -o scatter.html
+```
+
+Repeat `--select` for multiple datasets in one HTML file (dataset tabs in the UI).
+
 ## Auto-value mode (all-numeric data)
 
 When every column in a CSV/JSON file is numeric (no categorical columns), vizb auto-detects the first 2–3 columns as coordinate axes and renders them as value-type lines — no `--group` needed. With 3+ columns, line auto-enables 3D (`line3D`).
@@ -82,7 +117,7 @@ vizb line spiral-3d.csv -o line.html --3d-visualmap --3d-rotate
 
 <Image src={line2DValue} alt="2D value-type line chart plotting x and y coordinates from numeric columns" />
 
-Use `--select` to choose specific columns. With `--select` limiting to 2 columns, it stays 2D:
+Solo `--select` overrides auto-value: it disables inference and uses only the columns you name. With 2 columns selected, the chart stays 2D even if the file has more numeric columns.
 
 ```bash
 vizb line data.csv --select price,latency -o line.html

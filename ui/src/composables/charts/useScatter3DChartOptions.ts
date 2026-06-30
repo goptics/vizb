@@ -21,6 +21,7 @@ import {
   type Continuous3DContext,
 } from './shared'
 import { resolve3DSymbolProps } from './shared/seriesConfig'
+import { buildMixedAxes3DOptions } from './shared/mixedMode'
 import type { Series3DData } from '@/types'
 
 export function useScatter3DChartOptions(config: BaseChartConfig) {
@@ -93,6 +94,10 @@ export function useScatter3DChartOptions(config: BaseChartConfig) {
 
     if (render.mode === 'continuous') {
       return buildContinuous3DOptions(makeContinuous3DParams(continuousCtx, render.lineSeries))
+    }
+
+    if (render.mode === 'mixed') {
+      return buildMixedAxes3DOptions(config, 'scatter3D')
     }
 
     if (isValueMode) {

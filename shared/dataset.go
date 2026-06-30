@@ -76,6 +76,10 @@ type Dataset struct {
 	Axes        []Axis                        `json:"axes"`
 	Settings    []internal_charts.ChartConfig `json:"settings"`
 	Data        []DataPoint                   `json:"data"`
+	// PreserveRows tells the UI not to average duplicate (x,y,z) keys. True for
+	// ungrouped csv/json tabular data (including solo/multi --select); false for
+	// --group aggregations and benchmark parsers where rows are already collapsed.
+	PreserveRows bool `json:"preserveRows,omitempty"`
 }
 
 // UnmarshalJSON decodes a Dataset, dispatching each entry in "settings" to the
@@ -93,16 +97,17 @@ type Dataset struct {
 // slice and writes each struct's `type` field naturally.
 func (d *Dataset) UnmarshalJSON(data []byte) error {
 	var raw struct {
-		ID          string          `json:"id,omitempty"`
-		Tag         string          `json:"tag,omitempty"`
-		Timestamp   string          `json:"timestamp,omitempty"`
-		Name        string          `json:"name"`
-		History     []HistoryEntry  `json:"history,omitempty"`
-		Description string          `json:"description,omitempty"`
-		Meta        *Meta           `json:"meta,omitempty"`
-		Axes        []Axis          `json:"axes"`
-		Settings    json.RawMessage `json:"settings"`
-		Data        []DataPoint     `json:"data"`
+		ID           string          `json:"id,omitempty"`
+		Tag          string          `json:"tag,omitempty"`
+		Timestamp    string          `json:"timestamp,omitempty"`
+		Name         string          `json:"name"`
+		History      []HistoryEntry  `json:"history,omitempty"`
+		Description  string          `json:"description,omitempty"`
+		Meta         *Meta           `json:"meta,omitempty"`
+		Axes         []Axis          `json:"axes"`
+		Settings     json.RawMessage `json:"settings"`
+		Data         []DataPoint     `json:"data"`
+		PreserveRows bool            `json:"preserveRows,omitempty"`
 	}
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return err
@@ -116,6 +121,7 @@ func (d *Dataset) UnmarshalJSON(data []byte) error {
 	d.Meta = raw.Meta
 	d.Axes = raw.Axes
 	d.Data = raw.Data
+	d.PreserveRows = raw.PreserveRows
 
 	// No settings, JSON null, or legacy v0.12.0 single object — leave
 	// Settings nil so MigrateDataset can populate it from the legacy struct.

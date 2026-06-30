@@ -7,6 +7,7 @@ import {
   isValidIndex,
   datasetDimension,
   isValueMode as checkValueMode,
+  isMixedMode as checkMixedMode,
 } from '../lib/utils'
 import { presentAxisString } from '../lib/swap'
 import { useSettingsStore } from './useSettingsStore'
@@ -112,14 +113,20 @@ export { activeDataSet }
 
 const { chartType } = useSettingsStore()
 
-// True when the active dataset uses pure value-mode axes (--axes x,y[,z]).
-const isValueModeActive = computed(() => checkValueMode(activeDataSet.value?.axes))
+export type ChartMode = 'grouped' | 'value' | 'mixed'
 
-// Value-mode transform path is active for this dataset.
-const isValueModeDataset = computed(() => {
+const chartMode = computed<ChartMode>(() => {
   const axes = activeDataSet.value?.axes
-  return checkValueMode(axes)
+  if (!axes?.length) return 'grouped'
+  if (checkValueMode(axes)) return 'value'
+  if (checkMixedMode(axes)) return 'mixed'
+  return 'grouped'
 })
+
+const isValueMode = computed(() => chartMode.value === 'value')
+const isMixedMode = computed(() => chartMode.value === 'mixed')
+const isValueModeDataset = computed(() => chartMode.value === 'value')
+const isMixedModeDataset = computed(() => chartMode.value === 'mixed')
 
 // Derive identity from axes[] key order if present, else fall back to data shape.
 // axes[] preserves the serial dimension order from --group-pattern / --group-regex.
@@ -191,7 +198,10 @@ export function useDataPoint() {
     loading,
     loadError,
 
-    isValueMode: isValueModeActive,
+    chartMode,
+    isValueMode,
     isValueModeDataset,
+    isMixedMode,
+    isMixedModeDataset,
   }
 }

@@ -16,6 +16,7 @@ import {
 } from './shared'
 import { useSortedSeriesData, getEffectiveScale, computeSeriesTotals } from './shared/common'
 import { buildValueAxes2DOptions } from './shared/valueMode'
+import { buildMixedAxes2DOptions } from './shared/mixedMode'
 
 const barNullable = (val: number | null, scale: string): number | null =>
   val === null ? null : scale === 'log' && val <= 0 ? null : val
@@ -26,6 +27,9 @@ export function useBarChartOptions(config: BaseChartConfig) {
   const sortedData = useSortedSeriesData(chartData, sort)
 
   const options = computed<EChartsOption>(() => {
+    if (chartData.value.mixedTuples?.length) {
+      return buildMixedAxes2DOptions(config, 'bar')
+    }
     if (chartData.value.valueTuples?.length) {
       return buildValueAxes2DOptions(config, 'bar')
     }

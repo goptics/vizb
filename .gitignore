@@ -12,6 +12,9 @@ vendor/
 # Build output
 bin/
 
+# act local workflow runs
+.act/
+
 # ─── Node / UI / Docs ────────────────────────────────────────────────
 node_modules
 dist
@@ -48,6 +51,7 @@ Desktop.ini
 CLAUDE.md
 AGENTS.md
 superpowers
+.superpowers
 openspec
 
 .agent

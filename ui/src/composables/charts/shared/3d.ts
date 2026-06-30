@@ -78,6 +78,29 @@ export function resolve3DVisualMap(
   return create3DVisualMap(maxFrom3DData(series, dim), styling, dim)
 }
 
+export function createMixed3DTooltipFormatter(params: {
+  xValues: string[]
+  isDark: boolean
+  xAxisLabel?: string
+  yAxisLabel?: string
+  zAxisLabel?: string
+}) {
+  const { xValues, xAxisLabel, yAxisLabel, zAxisLabel } = params
+  const xLabel = xAxisLabel ?? 'x'
+  const yLabel = yAxisLabel ?? 'y'
+  const zLabel = zAxisLabel ?? 'z'
+
+  return (p: { value: number[] }) => {
+    const [xi = 0, y = 0, z = 0] = p.value
+    const xName = xValues[xi] ?? String(xi)
+    return (
+      `<b>${xLabel}: ${xName}</b><br/>` +
+      `${yLabel}: <b>${round2(y)}</b><br/>` +
+      `${zLabel}: <b>${round2(z)}</b>`
+    )
+  }
+}
+
 export function createValue3DTooltipFormatter(params: {
   xValues: string[]
   yValues: string[]
@@ -566,7 +589,7 @@ export function buildContinuous3DOptions(
  * Build the common grid3D block. The caller supplies the one or two differing
  * pieces (autoRotate + optional orthographic projection for line3D).
  */
-export type Grid3DLayoutMode = 'grouped' | 'value' | 'continuous'
+export type Grid3DLayoutMode = 'grouped' | 'value' | 'continuous' | 'mixed'
 
 export function create3DGridConfig(opts: {
   styling: ChartStyling
@@ -623,6 +646,26 @@ export function create3DGridConfig(opts: {
                 maxOrthographicSize: Math.max(400, orthographicSize * 2),
               }
             : {}),
+        },
+      }
+    }
+    case 'mixed': {
+      const boxHeight = Math.max(xWidth, yWidth)
+      const distance = viewDistanceFor3DBox(xWidth, yWidth, boxHeight)
+      const orthographicSize = orthographicSizeFor3DBox(xWidth, yWidth, boxHeight)
+      return {
+        ...shell,
+        boxHeight,
+        viewControl: {
+          distance,
+          autoRotate,
+          ...(orthographic
+            ? {
+                projection: 'orthographic' as const,
+                orthographicSize,
+                maxOrthographicSize: Math.max(400, orthographicSize * 2),
+              }
+            : { maxDistance: MAX_3D_VIEW_DISTANCE }),
         },
       }
     }

@@ -72,6 +72,66 @@ func (s *AggregateSuite) TestAggregateDataPointsDoesNotMutateInput() {
 	s.Equal(5.0, *in[0].Stats[0].Value)
 }
 
+func (s *AggregateSuite) TestCollapseDataPointsByKeyUnionsDisjointTypes() {
+	in := []DataPoint{
+		{XAxis: "West", Stats: []Stat{{Type: "tax", Value: F64(10)}}},
+		{XAxis: "West", Stats: []Stat{{Type: "amount", Value: F64(100)}}},
+	}
+
+	out := CollapseDataPointsByKey(in)
+	s.Require().Len(out, 1)
+	s.Require().Len(out[0].Stats, 2)
+	s.Equal(10.0, *out[0].Stats[0].Value)
+	s.Equal(100.0, *out[0].Stats[1].Value)
+}
+
+func (s *AggregateSuite) TestCollapseDataPointsByKeyAppendsOverlappingTypes() {
+	in := []DataPoint{
+		{XAxis: "West", Stats: []Stat{{Type: "tax", Value: F64(10)}, {Type: "amount", Value: F64(100)}}},
+		{XAxis: "West", Stats: []Stat{{Type: "tax", Value: F64(20)}, {Type: "amount", Value: F64(200)}}},
+	}
+
+	out := CollapseDataPointsByKey(in)
+	s.Require().Len(out, 1)
+	s.Require().Len(out[0].Stats, 4)
+	s.Equal(10.0, *out[0].Stats[0].Value)
+	s.Equal(100.0, *out[0].Stats[1].Value)
+	s.Equal(20.0, *out[0].Stats[2].Value)
+	s.Equal(200.0, *out[0].Stats[3].Value)
+}
+
+func (s *AggregateSuite) TestCollapseDataPointsByKeyRespectsYZ() {
+	in := []DataPoint{
+		{XAxis: "A", YAxis: "1", Stats: []Stat{{Type: "v", Value: F64(1)}}},
+		{XAxis: "A", YAxis: "2", Stats: []Stat{{Type: "v", Value: F64(2)}}},
+	}
+
+	out := CollapseDataPointsByKey(in)
+	s.Require().Len(out, 2)
+}
+
+func (s *AggregateSuite) TestCollapseDataPointsByKeyPreservesMetric() {
+	in := []DataPoint{
+		{XAxis: "0", YAxis: "0", ZAxis: "0", Metric: "4"},
+		{XAxis: "0", YAxis: "0", ZAxis: "1", Metric: "3.22"},
+	}
+
+	out := CollapseDataPointsByKey(in)
+	s.Require().Len(out, 2)
+	s.Equal("4", out[0].Metric)
+	s.Equal("3.22", out[1].Metric)
+}
+
+func (s *AggregateSuite) TestAggregateDataPointsPreservesMetric() {
+	in := []DataPoint{
+		{XAxis: "0", YAxis: "0", ZAxis: "0", Metric: "4", Stats: []Stat{{Type: "v", Value: F64(1)}}},
+	}
+
+	out := AggregateDataPoints(in)
+	s.Require().Len(out, 1)
+	s.Equal("4", out[0].Metric)
+}
+
 func TestAggregateSuite(t *testing.T) {
 	suite.Run(t, new(AggregateSuite))
 }

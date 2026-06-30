@@ -7,6 +7,7 @@
 import StatsWorker from '../workers/stats.worker.ts?worker&inline'
 import type { StatsResponse, StatsKind } from '../workers/stats.worker'
 import type { CorrelationAxis } from '../lib/stats'
+import { chartSeriesLabels } from '../lib/utils'
 import type { ChartData, SeriesProfile, CorrelationMatrix } from '../types'
 
 let worker: Worker | null = null
@@ -56,7 +57,7 @@ function request(
       points: chartData.points,
       yAxis: chartData.yAxis,
       zAxis: chartData.zAxis,
-      seriesOrder: chartData.series.map((s) => s.xAxis),
+      seriesOrder: chartSeriesLabels(chartData),
       axis,
     })
   })

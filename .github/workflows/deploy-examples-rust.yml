@@ -17,14 +17,14 @@ jobs:
     strategy:
       matrix:
         include:
-          - output: 00-criterion
-            file: 00-criterion
+          - id: 00-criterion
+            file: criterion
             name: "Bubble vs Insertion Sort (Criterion)"
             description: "Criterion.rs output — algorithm on X, input size on Y"
             group-regex: "(?<x>.*)/n=(?<y>.*)"
 
-          - output: 01-divan
-            file: 01-divan
+          - id: 01-divan
+            file: divan
             name: "Bubble vs Insertion Sort (Divan)"
             description: "Divan output — algorithm and input size from group pattern"
             group-pattern: x__y
@@ -37,6 +37,7 @@ jobs:
         uses: ./
         with:
           file: examples/rust/${{ matrix.file }}.txt
+          id: ${{ matrix.id }}
           name: ${{ matrix.name }}
           description: ${{ matrix.description }}
           group-pattern: ${{ matrix.group-pattern }}
@@ -45,13 +46,19 @@ jobs:
             bar:scale=log,sort=asc
             line:scale=log,sort=asc
             pie:sort=asc
-          output-json: ${{ matrix.output }}.json
+          output-json: ${{ matrix.id }}.json
+          vizb-binary: ${{ env.ACT == 'true' && './bin/vizb' || '' }}
+
+      - name: Stage json for local merge
+        if: env.ACT == 'true'
+        run: mkdir -p .act/jsons && cp ${{ matrix.id }}.json .act/jsons/
 
       - name: Uploading json artifacts
+        if: env.ACT != 'true'
         uses: actions/upload-artifact@v7
         with:
-          name: json-${{ matrix.output }}
-          path: ${{ matrix.output }}.json
+          name: json-${{ matrix.id }}
+          path: ${{ matrix.id }}.json
 
   merge-deploy:
     name: Merge and Deploy Rust Benchmarks

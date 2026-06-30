@@ -71,14 +71,70 @@ func (s *FlagBagSuite) TestScaleWarnDefault() {
 	})
 }
 
-func (s *FlagBagSuite) TestParseConfigMapsSelect() {
+func (s *FlagBagSuite) TestParseConfigMapsSelectGrouped() {
 	cmd, bag := s.newCmdBag(slices.Clone(DataFlags))
+	s.Require().NoError(cmd.Flags().Set("group", "date"))
 	s.Require().NoError(cmd.Flags().Set("select", "price{Unit price},count"))
 	cfg := bag.ParseConfig()
 	s.Require().Len(cfg.Select, 2)
+	s.Empty(cfg.SelectViews)
 	s.Equal("price", cfg.Select[0].Source)
 	s.Equal("Unit price", cfg.Select[0].Label)
 	s.Equal("count", cfg.Select[1].Source)
+}
+
+func (s *FlagBagSuite) TestParseConfigMapsSelectSoloAxisMode() {
+	cmd, bag := s.newCmdBag(slices.Clone(DataFlags))
+	s.Require().NoError(cmd.Flags().Set("select", "region,latency"))
+	cfg := bag.ParseConfig()
+	s.Empty(cfg.Select)
+	s.Require().Len(cfg.SelectViews, 1)
+	s.Require().Len(cfg.SelectViews[0].Columns, 2)
+	s.Equal("region", cfg.SelectViews[0].Columns[0].Source)
+	s.Equal("x", cfg.SelectViews[0].Columns[0].AxisKey)
+	s.Equal("latency", cfg.SelectViews[0].Columns[1].Source)
+	s.Equal("y", cfg.SelectViews[0].Columns[1].AxisKey)
+}
+
+func (s *FlagBagSuite) TestParseConfigMapsSelectParenTypeLabel() {
+	cmd, bag := s.newCmdBag(slices.Clone(DataFlags))
+	s.Require().NoError(cmd.Flags().Set("select", "region{Region},latency (Latency by Region)"))
+	cfg := bag.ParseConfig()
+	s.Require().Len(cfg.SelectViews, 1)
+	s.Equal("Latency by Region", cfg.SelectViews[0].TypeLabel)
+	s.Equal("Region", cfg.SelectViews[0].Columns[0].Label)
+	s.Equal("latency", cfg.SelectViews[0].Columns[1].Source)
+}
+
+func (s *FlagBagSuite) TestParseConfigMapsRepeatableSelectSolo() {
+	cmd, bag := s.newCmdBag(slices.Clone(DataFlags))
+	s.Require().NoError(cmd.Flags().Set("select", "region,latency"))
+	s.Require().NoError(cmd.Flags().Set("select", "region,sales"))
+	cfg := bag.ParseConfig()
+	s.Require().Len(cfg.SelectViews, 2)
+	s.Len(cfg.SelectViews[0].Columns, 2)
+	s.Len(cfg.SelectViews[1].Columns, 2)
+}
+
+func (s *FlagBagSuite) TestParseConfigMergesRepeatableSelectGrouped() {
+	cmd, bag := s.newCmdBag(slices.Clone(DataFlags))
+	s.Require().NoError(cmd.Flags().Set("group", "date"))
+	s.Require().NoError(cmd.Flags().Set("select", "price"))
+	s.Require().NoError(cmd.Flags().Set("select", "count"))
+	cfg := bag.ParseConfig()
+	s.Require().Len(cfg.Select, 2)
+	s.Equal("price", cfg.Select[0].Source)
+	s.Equal("count", cfg.Select[1].Source)
+}
+
+func (s *FlagBagSuite) TestParseConfigRejectsSoloSelectArity() {
+	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
+	defer restore()
+
+	cmd, bag := s.newCmdBag(slices.Clone(DataFlags))
+	s.Require().NoError(cmd.Flags().Set("select", "region"))
+	s.Panics(func() { bag.ParseConfig() })
+	s.True(*exitCalled)
 }
 
 func (s *FlagBagSuite) TestParseConfigRejectsSelectGroupOverlap() {
@@ -186,6 +242,84 @@ func (s *FlagBagSuite) TestValidateRejectsInvalidSymbolSize() {
 	defer restore()
 	s.Panics(func() { bag.Validate(cmd) })
 	s.True(*exitCalled)
+}
+
+func (s *FlagBagSuite) TestAccessorsReturnZeroWhenUnset() {
+	bag := NewFlagBag(nil)
+	s.Equal("", bag.String("missing"))
+	s.False(bag.Bool("missing"))
+	s.Equal(0.0, bag.Float("missing"))
+	s.Nil(bag.StringSlice("missing"))
+}
+
+func (s *FlagBagSuite) TestParseConfigSetsJSONPath() {
+	cmd, bag := s.newCmdBag(slices.Clone(DataFlags))
+	s.Require().NoError(cmd.Flags().Set("json-path", ".data.items"))
+	cfg := bag.ParseConfig()
+	s.Equal(".data.items", cfg.JSONPath)
+}
+
+func (s *FlagBagSuite) TestResetRestoresDefaults() {
+	fl := append(slices.Clone(DataFlags), internal_charts.SymbolSizeFlag)
+	cmd, bag := s.newCmdBag(fl)
+	s.Require().NoError(cmd.Flags().Set("name", "Custom"))
+	s.Require().NoError(cmd.Flags().Set("symbol-size", "12"))
+	bag.Reset()
+	s.Equal("Comparisons", bag.String("name"))
+	s.Equal(0.0, bag.Float("symbol-size"))
+}
+
+func (s *FlagBagSuite) TestParseConfigRejectsMultiSelectThreeColumnView() {
+	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
+	defer restore()
+
+	cmd, bag := s.newCmdBag(slices.Clone(DataFlags))
+	s.Require().NoError(cmd.Flags().Set("select", "region,latency,sales"))
+	s.Require().NoError(cmd.Flags().Set("select", "region,tax"))
+	s.Panics(func() { bag.ParseConfig() })
+	s.True(*exitCalled)
+}
+
+func (s *FlagBagSuite) TestParseConfigRejectsDuplicateGroupedSelect() {
+	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
+	defer restore()
+
+	cmd, bag := s.newCmdBag(slices.Clone(DataFlags))
+	s.Require().NoError(cmd.Flags().Set("group", "date"))
+	s.Require().NoError(cmd.Flags().Set("select", "price"))
+	s.Require().NoError(cmd.Flags().Set("select", "price"))
+	s.Panics(func() { bag.ParseConfig() })
+	s.True(*exitCalled)
+}
+
+func (s *FlagBagSuite) TestValidateRejectsInvalidSymbol() {
+	fl := append(slices.Clone(DataFlags), internal_charts.SymbolFlag)
+	cmd, bag := s.newCmdBag(fl)
+	s.Require().NoError(cmd.Flags().Set("symbol", "bogus"))
+
+	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
+	defer restore()
+	s.Panics(func() { bag.Validate(cmd) })
+	s.True(*exitCalled)
+}
+
+func (s *FlagBagSuite) TestValidateAppliesSoftRuleToGroupSlice() {
+	cmd, bag := s.newCmdBag(slices.Clone(DataFlags))
+	s.Require().NoError(cmd.Flags().Set("group", "a,b"))
+	out := testutil.CaptureStderr(func() { bag.Validate(cmd) })
+	s.Equal([]string{"a", "b"}, bag.StringSlice("group"))
+	s.Empty(out)
+}
+
+func (s *FlagBagSuite) TestChartSeedEncodesChangedFloatAndBool() {
+	fl := append(slices.Clone(DataFlags), internal_charts.BaseChartFlags...)
+	fl = append(fl, internal_charts.SymbolSizeFlag)
+	cmd, bag := s.newCmdBag(fl)
+	s.Require().NoError(cmd.Flags().Set("show-labels", "true"))
+	s.Require().NoError(cmd.Flags().Set("symbol-size", "9"))
+	seed := bag.ChartSeed(cmd)
+	s.Equal(true, seed["showLabels"])
+	s.Equal(9.0, seed["symbolSize"])
 }
 
 func TestFlagBagSuite(t *testing.T) {

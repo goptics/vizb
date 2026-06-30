@@ -168,6 +168,76 @@ describe('useScatterChartOptions — axes value mode', () => {
   })
 })
 
+const makeMixedChartData = (): ChartData => ({
+  title: 'region vs latency',
+  statType: 'mixed',
+  yAxis: [],
+  zAxis: [],
+  series: [],
+  points: [],
+  axisLabels: { x: 'region', y: 'latency' },
+  xCategories: ['Asia', 'EU'],
+  mixedTuples: [
+    [0, 12],
+    [1, 11],
+  ],
+})
+
+const makeMixedConfig = (): BaseChartConfig => ({
+  chartData: ref(makeMixedChartData()),
+  sort: ref({ enabled: false, order: 'asc' }),
+  showLabels: ref(false),
+  isDark: ref(false),
+  visualMap: ref(false),
+})
+
+describe('useScatterChartOptions — mixed mode', () => {
+  it('emits category xAxis and value yAxis', () => {
+    const { options } = useScatterChartOptions(makeMixedConfig())
+    expect((options.value.xAxis as { type: string; data: string[] }).type).toBe('category')
+    expect((options.value.xAxis as { data: string[] }).data).toEqual(['Asia', 'EU'])
+    expect((options.value.yAxis as { type: string }).type).toBe('value')
+  })
+
+  it('emits scatter series with mixedTuples as data', () => {
+    const { options } = useScatterChartOptions(makeMixedConfig())
+    const s = (options.value.series as { type: string; data: [number, number][] }[])[0]!
+    expect(s.type).toBe('scatter')
+    expect(s.data).toEqual([
+      [0, 12],
+      [1, 11],
+    ])
+  })
+
+  it('uses axis trigger with themed snap line pointer for category x', () => {
+    const { options } = useScatterChartOptions(makeMixedConfig())
+    const tooltip = options.value.tooltip as {
+      trigger?: string
+      axisPointer?: { type?: string; snap?: boolean; lineStyle?: { color?: string } }
+    }
+    expect(tooltip.trigger).toBe('axis')
+    expect(tooltip.axisPointer?.type).toBe('line')
+    expect(tooltip.axisPointer?.snap).toBe(true)
+    expect(tooltip.axisPointer?.lineStyle?.color).toBe('#d1d5db')
+  })
+
+  it('starts large mixed category axes at a 20% dataZoom window', () => {
+    const cats = Array.from({ length: 60 }, (_, i) => `2024-01-${String(i + 1).padStart(2, '0')}`)
+    const cfg = makeMixedConfig()
+    cfg.chartData.value = {
+      ...makeMixedChartData(),
+      xCategories: cats,
+      mixedTuples: cats.map((_, i) => [i, i + 1] as [number, number]),
+    }
+    const { options } = useScatterChartOptions(cfg)
+    const dataZoom = options.value.dataZoom as { type: string; end: number }[]
+    expect(dataZoom).toBeDefined()
+    for (const entry of dataZoom) {
+      expect(entry.end).toBe(20)
+    }
+  })
+})
+
 describe('useScatterChartOptions — group mode', () => {
   it('omits x-axis name when axisLabels.x is absent', () => {
     const cfg = makeGroupedConfig()

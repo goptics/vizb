@@ -42,7 +42,7 @@ func (s *JSONSuite) TestExplicitColsSelectsAndOrders() {
 	s.cfg.Select = []parser.ColumnSpec{{Source: "stocks"}, {Source: "sells"}}
 	j := `[{"name":"a","sells":10,"stocks":5},{"name":"b","sells":20,"stocks":7}]`
 
-	results := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
 
 	s.Equal([]string{"stocks", "sells"}, statTypes(results[0].Stats))
 }
@@ -51,7 +51,7 @@ func (s *JSONSuite) TestExplicitColsRename() {
 	s.cfg.Select = []parser.ColumnSpec{{Source: "sells", Label: "Revenue"}}
 	j := `[{"name":"a","sells":10}]`
 
-	results := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
 
 	s.Equal([]string{"Revenue"}, statTypes(results[0].Stats))
 }
@@ -60,7 +60,7 @@ func (s *JSONSuite) TestExplicitColsNestedKey() {
 	s.cfg.Select = []parser.ColumnSpec{{Source: "mem.alloc"}}
 	j := `[{"name":"a","mem":{"alloc":3}}]`
 
-	results := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
 
 	s.Equal([]string{"mem.alloc"}, statTypes(results[0].Stats))
 	s.Equal(3.0, *results[0].Stats[0].Value)
@@ -69,7 +69,7 @@ func (s *JSONSuite) TestExplicitColsNestedKey() {
 func (s *JSONSuite) TestNumericFieldsBecomeChartsNoGroup() {
 	j := `[{"name":"a","sells":10,"stocks":5,"date":"2024-01"},{"name":"b","sells":20,"stocks":7,"date":"2025-02"}]`
 
-	results := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
 
 	s.Len(results, 2)
 	s.Equal([]string{"sells", "stocks"}, statTypes(results[0].Stats))
@@ -81,7 +81,7 @@ func (s *JSONSuite) TestNumericFieldsBecomeChartsNoGroup() {
 func (s *JSONSuite) TestFirstSeenColumnOrderPreserved() {
 	j := `[{"zeta":1,"alpha":2,"mid":3}]`
 
-	results := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
 
 	s.Len(results, 1)
 	s.Equal([]string{"zeta", "alpha", "mid"}, statTypes(results[0].Stats))
@@ -90,7 +90,7 @@ func (s *JSONSuite) TestFirstSeenColumnOrderPreserved() {
 func (s *JSONSuite) TestNumericStringParsed() {
 	j := `[{"name":"a","sells":"42"}]`
 
-	results := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
 
 	s.Len(results, 1)
 	s.Equal([]string{"sells"}, statTypes(results[0].Stats))
@@ -100,7 +100,7 @@ func (s *JSONSuite) TestNumericStringParsed() {
 func (s *JSONSuite) TestNestedObjectFlattenedToDottedKeys() {
 	j := `[{"name":"a","mem":{"alloc":5,"bytes":100}}]`
 
-	results := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
 
 	s.Len(results, 1)
 	s.Equal([]string{"mem.alloc", "mem.bytes"}, statTypes(results[0].Stats))
@@ -110,7 +110,7 @@ func (s *JSONSuite) TestNestedObjectFlattenedToDottedKeys() {
 func (s *JSONSuite) TestArrayValuedFieldSkipped() {
 	j := `[{"name":"a","sells":10,"tags":[1,2,3]}]`
 
-	results := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
 
 	s.Len(results, 1)
 	s.Equal([]string{"sells"}, statTypes(results[0].Stats))
@@ -119,7 +119,7 @@ func (s *JSONSuite) TestArrayValuedFieldSkipped() {
 func (s *JSONSuite) TestBoolAndNullSkipped() {
 	j := `[{"name":"a","sells":10,"active":true,"note":null}]`
 
-	results := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
 
 	s.Len(results, 1)
 	s.Equal([]string{"sells"}, statTypes(results[0].Stats))
@@ -128,7 +128,7 @@ func (s *JSONSuite) TestBoolAndNullSkipped() {
 func (s *JSONSuite) TestHeterogeneousRowsMissingKeyIsGap() {
 	j := `[{"name":"a","sells":10},{"name":"b","stocks":7}]`
 
-	results := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
 
 	s.Len(results, 2)
 	s.Equal([]string{"sells"}, statTypes(results[0].Stats))
@@ -139,7 +139,7 @@ func (s *JSONSuite) TestMixedTypePerKeyNumericWhereParseable() {
 	// v is a number in row 1, non-numeric string in row 2
 	j := `[{"v":3},{"v":"foo"}]`
 
-	results := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
 
 	// v qualifies as a chart column (>=1 numeric); row 2 has no stats → dropped
 	s.Len(results, 1)
@@ -150,7 +150,7 @@ func (s *JSONSuite) TestGroupSingleFieldToXAxis() {
 	s.cfg.Group = []string{"name"}
 	j := `[{"name":"alpha","sells":10},{"name":"beta","sells":20}]`
 
-	results := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
 
 	s.Len(results, 2)
 	s.Equal("alpha", results[0].XAxis)
@@ -166,7 +166,7 @@ func (s *JSONSuite) TestGroupBracketValueSplitDateCategory() {
 	s.Require().NoError(err)
 
 	j := `[{"date":"2022-2-30","category":"Widget","sales":100}]`
-	results := ParseJSON(s.writeFile(j), cfg)
+	results, _ := ParseJSON(s.writeFile(j), cfg)
 
 	s.Len(results, 1)
 	s.Equal("2022", results[0].XAxis)
@@ -180,7 +180,7 @@ func (s *JSONSuite) TestGroupMultiFieldRoutedByPattern() {
 	s.cfg.GroupPattern = "name,x"
 	j := `[{"name":"alpha","sells":10,"date":"2024-01"}]`
 
-	results := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
 
 	s.Len(results, 1)
 	s.Equal("alpha", results[0].Name)
@@ -191,7 +191,7 @@ func (s *JSONSuite) TestGroupOnNumericFieldStringified() {
 	s.cfg.Group = []string{"id"}
 	j := `[{"id":7,"sells":10}]`
 
-	results := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
 
 	s.Len(results, 1)
 	s.Equal("7", results[0].XAxis)
@@ -203,7 +203,7 @@ func (s *JSONSuite) TestFilterRegexOnGroupLabel() {
 	s.cfg.Filter = "keep"
 	j := `[{"name":"keep_a","sells":10},{"name":"drop_b","sells":20},{"name":"keep_c","sells":30}]`
 
-	results := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
 
 	s.Len(results, 2)
 	for _, r := range results {
@@ -215,7 +215,7 @@ func (s *JSONSuite) TestNumberUnitScaling() {
 	s.cfg.NumberUnit = "M"
 	j := `[{"name":"a","sells":2000000}]`
 
-	results := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
 
 	s.Len(results, 1)
 	s.Equal("sells (M)", results[0].Stats[0].Type)
@@ -223,9 +223,12 @@ func (s *JSONSuite) TestNumberUnitScaling() {
 }
 
 func (s *JSONSuite) TestNonArrayInputReturnsNil() {
-	s.Nil(ParseJSON(s.writeFile(`{"name":"a","sells":10}`), s.cfg))
-	s.Nil(ParseJSON(s.writeFile(`[]`), s.cfg))
-	s.Nil(ParseJSON(s.writeFile(``), s.cfg))
+	pts, _ := ParseJSON(s.writeFile(`{"name":"a","sells":10}`), s.cfg)
+	s.Nil(pts)
+	pts, _ = ParseJSON(s.writeFile(`[]`), s.cfg)
+	s.Nil(pts)
+	pts, _ = ParseJSON(s.writeFile(``), s.cfg)
+	s.Nil(pts)
 }
 
 func (s *JSONSuite) TestStringifyNumericAndString() {
@@ -354,21 +357,77 @@ func (s *JSONFatalSuite) TestValueModeSkipsRowWithBadMetric() {
 	s.cfg.MetricColumn = "m"
 	path := s.writeFile(`[{"x":1,"y":2,"m":3},{"x":4,"y":5,"m":"bad"},{"x":6,"y":7,"m":8}]`)
 
-	results := ParseJSON(path, s.cfg)
+	results, _ := ParseJSON(path, s.cfg)
 	s.Len(results, 2)
 	s.Equal("3", results[0].Metric)
 	s.Equal("8", results[1].Metric)
 }
 
-func (s *JSONAutoValueSuite) TestSelectScopesAutoDetect() {
-	s.cfg.Select = []parser.ColumnSpec{{Source: "x"}, {Source: "y"}}
+func (s *JSONAutoValueSuite) TestSelectSkipsAutoDetect() {
+	// Solo --select (SelectViews) disables auto-value inference and routes value mode.
+	s.cfg.SelectViews = []parser.SelectView{
+		{Columns: []parser.ColumnSpec{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}}},
+	}
 	path := s.writeFile(`[{"x":1,"y":2,"z":3,"w":4}]`)
 
-	results := ParseJSON(path, s.cfg)
+	results, _ := ParseJSON(path, s.cfg)
 	s.Require().Len(results, 1)
 	s.Equal("1", results[0].XAxis)
 	s.Equal("2", results[0].YAxis)
-	s.Empty(results[0].ZAxis)
+	s.Empty(results[0].Stats)
+}
+
+func (s *JSONFatalSuite) TestSelectMixedModeMapsCategoryXAndValueY() {
+	s.cfg.SelectViews = []parser.SelectView{
+		{Columns: []parser.ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "latency", AxisKey: "y"}}},
+	}
+	path := s.writeFile(`[
+		{"region":"Asia","latency":12,"sales":100},
+		{"region":"EU","latency":11,"sales":60}
+	]`)
+
+	results, _ := ParseJSON(path, s.cfg)
+	s.Require().Len(results, 2)
+	s.Equal("Asia", results[0].XAxis)
+	s.Equal("12", results[0].YAxis)
+	s.Empty(results[0].Stats)
+}
+
+func (s *JSONFatalSuite) TestSelectColumnNotFoundExits() {
+	s.cfg.SelectViews = []parser.SelectView{
+		{Columns: []parser.ColumnSpec{{Source: "missing", AxisKey: "x"}, {Source: "latency", AxisKey: "y"}}},
+	}
+	path := s.writeFile(`[{"region":"Asia","latency":12}]`)
+	s.Panics(func() { ParseJSON(path, s.cfg) })
+}
+
+func (s *JSONFatalSuite) TestSelectNonNumericYFieldExits() {
+	s.cfg.SelectViews = []parser.SelectView{
+		{Columns: []parser.ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "label", AxisKey: "y"}}},
+	}
+	path := s.writeFile(`[{"region":"Asia","label":"fast"}]`)
+	s.Panics(func() { ParseJSON(path, s.cfg) })
+}
+
+func (s *JSONFatalSuite) TestSelectEmptyFieldExits() {
+	s.cfg.SelectViews = []parser.SelectView{
+		{Columns: []parser.ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "latency", AxisKey: "y"}}},
+	}
+	path := s.writeFile(`[{"region":"","latency":12}]`)
+	s.Panics(func() { ParseJSON(path, s.cfg) })
+}
+
+func (s *JSONFatalSuite) TestSelectValueModeAllNumeric() {
+	s.cfg.SelectViews = []parser.SelectView{
+		{Columns: []parser.ColumnSpec{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}}},
+	}
+	path := s.writeFile(`[{"x":1,"y":2},{"x":3,"y":4}]`)
+
+	results, _ := ParseJSON(path, s.cfg)
+	s.Require().Len(results, 2)
+	s.Equal("1", results[0].XAxis)
+	s.Equal("2", results[0].YAxis)
+	s.Empty(results[0].Stats)
 }
 
 func TestJSONFatalSuite(t *testing.T) {
@@ -394,7 +453,7 @@ func (s *JSONAutoGroupSuite) writeFile(content string) string {
 
 func (s *JSONAutoGroupSuite) TestCategoricalFieldBecomesXAxis() {
 	j := `[{"region":"West","sells":10},{"region":"East","sells":20}]`
-	results := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
 	s.Require().Len(results, 2)
 	s.Equal("West", results[0].XAxis)
 	s.Equal("East", results[1].XAxis)
@@ -406,7 +465,7 @@ func (s *JSONAutoGroupSuite) TestNestedFlattenedFieldChosen() {
 	// the most-unique categorical wins. Both have 2 distinct here; leftmost in
 	// first-seen order wins → region (appears first).
 	j := `[{"region":"West","addr":{"city":"NY"},"sells":10},{"region":"East","addr":{"city":"LA"},"sells":20}]`
-	results := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
 	s.Require().Len(results, 2)
 	s.NotEmpty(results[0].XAxis)
 	s.Equal([]string{"sells"}, statTypes(results[0].Stats))
@@ -415,7 +474,7 @@ func (s *JSONAutoGroupSuite) TestNestedFlattenedFieldChosen() {
 func (s *JSONAutoGroupSuite) TestAllNumericAutoValues() {
 	// all numeric → auto-value-mode: first 2 cols become x,y value axes
 	j := `[{"id":1,"sells":10},{"id":2,"sells":20},{"id":3,"sells":30}]`
-	results := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
 	s.Require().Len(results, 3)
 	s.Equal("1", results[0].XAxis)
 	s.Equal("10", results[0].YAxis)
@@ -428,7 +487,7 @@ func (s *JSONAutoGroupSuite) TestAutoGroupPicksSingleFieldEvenWithMultipleCatego
 		`{"region":"North","product":"C","sells":30},{"region":"South","product":"D","sells":40},` +
 		`{"region":"Central","product":"E","sells":50},{"region":"West","product":"F","sells":60},` +
 		`{"region":"East","product":"G","sells":70}]`
-	results := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
 	s.Require().NotEmpty(results)
 	for _, r := range results {
 		s.NotEmpty(r.XAxis)
@@ -439,7 +498,7 @@ func (s *JSONAutoGroupSuite) TestAutoGroupPicksSingleFieldEvenWithMultipleCatego
 func (s *JSONAutoGroupSuite) TestExplicitGroupDisablesAutoGroup() {
 	s.cfg.Group = []string{"region"}
 	j := `[{"region":"West","sells":10},{"region":"East","sells":20}]`
-	results := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
 	s.Require().Len(results, 2)
 	s.Equal("West", results[0].XAxis)
 	s.Empty(results[0].YAxis)
@@ -448,7 +507,7 @@ func (s *JSONAutoGroupSuite) TestExplicitGroupDisablesAutoGroup() {
 func (s *JSONAutoGroupSuite) TestAxesDisablesAutoGroup() {
 	s.cfg.Axes = []parser.ColumnSpec{{Source: "sells"}}
 	j := `[{"region":"West","sells":10},{"region":"East","sells":20}]`
-	_ = ParseJSON(s.writeFile(j), s.cfg) // no panic; value mode handled elsewhere
+	_, _ = ParseJSON(s.writeFile(j), s.cfg) // no panic; value mode handled elsewhere
 }
 
 func TestJSONAutoGroupSuite(t *testing.T) {
@@ -478,7 +537,7 @@ func (s *JSONAutoValueSuite) writeFile(content string) string {
 
 func (s *JSONAutoValueSuite) TestTwoNumericFields() {
 	j := `[{"price":10,"latency":5},{"price":20,"latency":7}]`
-	results := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
 	s.Require().Len(results, 2)
 	s.Equal("10", results[0].XAxis)
 	s.Equal("5", results[0].YAxis)
@@ -487,7 +546,7 @@ func (s *JSONAutoValueSuite) TestTwoNumericFields() {
 
 func (s *JSONAutoValueSuite) TestThreeNumericFields() {
 	j := `[{"price":10,"latency":5,"mem":100},{"price":20,"latency":7,"mem":200}]`
-	results := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
 	s.Require().Len(results, 2)
 	s.Equal("10", results[0].XAxis)
 	s.Equal("5", results[0].YAxis)
@@ -497,7 +556,7 @@ func (s *JSONAutoValueSuite) TestThreeNumericFields() {
 
 func (s *JSONAutoValueSuite) TestFourNumericFieldsTakeFirstThree() {
 	j := `[{"a":1,"b":2,"c":3,"d":4},{"a":5,"b":6,"c":7,"d":8}]`
-	results := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
 	s.Require().Len(results, 2)
 	s.Equal("1", results[0].XAxis)
 	s.Equal("2", results[0].YAxis)
@@ -509,7 +568,7 @@ func (s *JSONAutoValueSuite) TestFourNumericFieldsTakeFirstThree() {
 func (s *JSONAutoValueSuite) TestAutoGroupTakesPriority() {
 	// categorical exists → auto-group fires
 	j := `[{"region":"West","price":10},{"region":"East","price":20}]`
-	results := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
 	s.Require().Len(results, 2)
 	s.Equal("West", results[0].XAxis)
 	s.NotEmpty(results[0].Stats)
@@ -517,7 +576,7 @@ func (s *JSONAutoValueSuite) TestAutoGroupTakesPriority() {
 
 func (s *JSONAutoValueSuite) TestOneNumericFieldFallsBackToFlat() {
 	j := `[{"price":10},{"price":20}]`
-	results := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
 	s.Require().Len(results, 2)
 	s.Empty(results[0].XAxis)
 	s.NotEmpty(results[0].Stats)
@@ -526,7 +585,7 @@ func (s *JSONAutoValueSuite) TestOneNumericFieldFallsBackToFlat() {
 func (s *JSONAutoValueSuite) TestPieChartFallsBackToFlat() {
 	s.cfg.ChartTypes = []string{"pie"}
 	j := `[{"price":10,"latency":5},{"price":20,"latency":7}]`
-	results := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
 	s.Require().Len(results, 2)
 	s.Empty(results[0].XAxis)
 	s.NotEmpty(results[0].Stats)
@@ -535,7 +594,7 @@ func (s *JSONAutoValueSuite) TestPieChartFallsBackToFlat() {
 func (s *JSONAutoValueSuite) TestRadarChartFallsBackToFlat() {
 	s.cfg.ChartTypes = []string{"radar"}
 	j := `[{"price":10,"latency":5},{"price":20,"latency":7}]`
-	results := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
 	s.Require().Len(results, 2)
 	s.Empty(results[0].XAxis)
 	s.NotEmpty(results[0].Stats)

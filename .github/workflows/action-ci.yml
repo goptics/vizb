@@ -26,7 +26,7 @@ jobs:
       - name: Run action (stateless)
         uses: ./
         with:
-          file: examples/go/01-hash.txt
+          file: examples/go/hash.txt
           output-html: index.html
           vizb-binary: ./bin/vizb
 
@@ -53,7 +53,7 @@ jobs:
         uses: ./
         with:
           name: Hash
-          file: examples/go/01-hash.txt
+          file: examples/go/hash.txt
           output-json: results/prev/hash.json
           vizb-binary: ./bin/vizb
 
@@ -63,7 +63,7 @@ jobs:
           name: HTTP Frameworks Comparisons
           group-pattern: x_n
           sort: asc
-          file: examples/go/02-http-routing.txt
+          file: examples/go/http-routing.txt
           merge-dir: results/prev
           output-html: index.html
           output-json: results/bench.json

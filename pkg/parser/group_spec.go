@@ -236,12 +236,11 @@ func AutoGroupColumns(headers []string, rows [][]string) (cols []string, pattern
 
 // NoExplicitGrouping reports whether the user supplied no explicit grouping
 // configuration (no --group, no --group-regex, default --group-pattern "x",
-// no --axes). The pipeline uses it to decide whether to opt the csv/json
-// parsers into auto-grouping.
+// no --select, no auto-value axes). The pipeline uses it to decide whether to
+// opt the csv/json parsers into auto-grouping.
 func NoExplicitGrouping(cfg Config) bool {
-	return len(cfg.Group) == 0 &&
-		cfg.GroupRegex == "" &&
-		cfg.GroupPattern == "x" &&
+	return !IsExplicitGrouping(cfg) &&
+		!HasSelect(cfg) &&
 		len(cfg.Axes) == 0
 }
 

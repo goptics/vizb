@@ -20,7 +20,7 @@ var divanRowRe = regexp.MustCompile(`^[├╰]─\s+(\S+)\s+(.+)$`)
 
 var divanValRe = regexp.MustCompile(`([\d.]+)\s*(ns|µs|μs|ms|s)`)
 
-func ParseDivanBenchmark(filename string, cfg parser.Config) []shared.DataPoint {
+func ParseDivanBenchmark(filename string, cfg parser.Config) ([]shared.DataPoint, parser.Config) {
 	f, err := os.Open(filename)
 	if err != nil {
 		shared.ExitWithError("Error opening file", err)
@@ -95,5 +95,5 @@ func ParseDivanBenchmark(filename string, cfg parser.Config) []shared.DataPoint 
 		shared.ExitWithError("failed to read file", err)
 	}
 
-	return results
+	return results, cfg
 }

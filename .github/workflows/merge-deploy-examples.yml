@@ -17,11 +17,18 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Downloading json artifacts
+        if: env.ACT != 'true'
         uses: actions/download-artifact@v8
         with:
           pattern: json-*
           path: /tmp/jsons
           merge-multiple: true
+
+      - name: Collect local json artifacts
+        if: env.ACT == 'true'
+        run: |
+          mkdir -p /tmp/jsons
+          cp .act/jsons/*.json /tmp/jsons/
 
       - name: Prepare output directory
         run: mkdir -p dist/examples/${{ inputs.language }}
@@ -31,8 +38,14 @@ jobs:
         with:
           merge-dir: /tmp/jsons
           output-html: dist/examples/${{ inputs.language }}/index.html
+          vizb-binary: ${{ env.ACT == 'true' && './bin/vizb' || '' }}
+
+      - name: Local preview ready
+        if: env.ACT == 'true'
+        run: echo "::notice::Local preview at dist/examples/${{ inputs.language }}/index.html"
 
       - name: Deploying to Github pages
+        if: env.ACT != 'true'
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}

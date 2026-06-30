@@ -11,6 +11,7 @@ import { translateAxisKey } from './swap'
 import type { DataPoint, Sort, Point3D } from '../types'
 
 const noSort: Sort = { enabled: false, order: 'asc' }
+const ascSort: Sort = { enabled: true, order: 'asc' }
 const descSort: Sort = { enabled: true, order: 'desc' }
 
 function dp(xAxis: string, yAxis = '', zAxis = '', type = 'val', value = 1): DataPoint {
@@ -81,6 +82,66 @@ describe('buildChartForSignature — duplicate (xAxis,yAxis) handling', () => {
     expect(valuesFor(data, 'BenchFoo')).toEqual([125])
   })
 
+  it('preserveRows overlays duplicate x at one category (tabular --select)', () => {
+    const data: DataPoint[] = [
+      { xAxis: 'Asia', yAxis: '', stats: [{ type: 'val', value: 12 }] },
+      { xAxis: 'Asia', yAxis: '', stats: [{ type: 'val', value: 10 }] },
+      { xAxis: 'EU', yAxis: '', stats: [{ type: 'val', value: 8 }] },
+    ]
+    const { signature, statTemplate } = listChartSignatures(data)[0]!
+    const chart = buildChartForSignature(
+      data,
+      signature,
+      statTemplate,
+      undefined,
+      noSort,
+      false,
+      'linear',
+      undefined,
+      false,
+      true
+    )
+    expect(chart.xCategories).toEqual(['Asia', 'EU'])
+    expect(chart.mixedTuples).toEqual([
+      [0, 12],
+      [0, 10],
+      [1, 8],
+    ])
+    expect(chart.series).toEqual([])
+  })
+
+  it('preserveRows expands collapsed stats[] on one DataPoint', () => {
+    const data: DataPoint[] = [
+      {
+        xAxis: 'West',
+        yAxis: '',
+        stats: [
+          { type: 'tax', value: 10 },
+          { type: 'amount', value: 100 },
+          { type: 'tax', value: 20 },
+          { type: 'amount', value: 200 },
+        ],
+      },
+    ]
+    const tax = listChartSignatures(data).find((s) => s.statTemplate.type === 'tax')!
+    const chart = buildChartForSignature(
+      data,
+      tax.signature,
+      tax.statTemplate,
+      undefined,
+      noSort,
+      false,
+      'linear',
+      undefined,
+      false,
+      true
+    )
+    expect(chart.mixedTuples).toEqual([
+      [0, 10],
+      [0, 20],
+    ])
+  })
+
   it('keeps distinct keys separate', () => {
     const data: DataPoint[] = [
       { xAxis: 'A', yAxis: '', stats: [{ type: 'val', value: 100 }] },
@@ -97,6 +158,31 @@ describe('buildChartForSignature — duplicate (xAxis,yAxis) handling', () => {
     ]
     expect(valuesFor(data, 'East')).toEqual([5000])
     expect(valuesFor(data, 'West')).toEqual([3000])
+  })
+
+  it('grouped region×category uses one series row per x when preserveRows is false', () => {
+    const data: DataPoint[] = [
+      { xAxis: 'West', yAxis: 'Mechanical', stats: [{ type: 'amount', value: 10 }] },
+      { xAxis: 'West', yAxis: 'Hardware', stats: [{ type: 'amount', value: 20 }] },
+      { xAxis: 'East', yAxis: 'Mechanical', stats: [{ type: 'amount', value: 30 }] },
+    ]
+    const { signature, statTemplate } = listChartSignatures(data)[0]!
+    const chart = buildChartForSignature(
+      data,
+      signature,
+      statTemplate,
+      { x: 'region', y: 'category' },
+      noSort,
+      false,
+      'linear',
+      undefined,
+      false,
+      false
+    )
+    expect(chart.series.map((s) => s.xAxis)).toEqual(['West', 'East'])
+    expect(chart.yAxis).toEqual(['Mechanical', 'Hardware'])
+    expect(chart.series[0]!.values).toEqual([10, 20])
+    expect(chart.series[1]!.values).toEqual([30, null])
   })
 })
 
@@ -191,6 +277,56 @@ describe('buildChartForSignature — additional branches', () => {
   })
 })
 
+describe('buildChartForSignature — preserveRows 1D sort', () => {
+  it.each([
+    [ascSort, ['Low', 'Mid', 'High']],
+    [descSort, ['High', 'Mid', 'Low']],
+  ])('sort reorders xCategories by category total', (sort, expected) => {
+    const data: DataPoint[] = [
+      dp('High', '', '', 'v', 9),
+      dp('Low', '', '', 'v', 1),
+      dp('Mid', '', '', 'v', 5),
+    ]
+    const { signature, statTemplate } = listChartSignatures(data)[0]!
+    const chart = buildChartForSignature(
+      data,
+      signature,
+      statTemplate,
+      undefined,
+      sort,
+      false,
+      'linear',
+      undefined,
+      false,
+      true
+    )
+    expect(chart.xCategories).toEqual(expected)
+  })
+
+  it('sorts by summed total when multiple tuples share a category', () => {
+    const data: DataPoint[] = [
+      dp('Asia', '', '', 'v', 12),
+      dp('Asia', '', '', 'v', 10),
+      dp('EU', '', '', 'v', 8),
+    ]
+    const { signature, statTemplate } = listChartSignatures(data)[0]!
+    const chart = buildChartForSignature(
+      data,
+      signature,
+      statTemplate,
+      undefined,
+      descSort,
+      false,
+      'linear',
+      undefined,
+      false,
+      true
+    )
+    expect(chart.xCategories).toEqual(['Asia', 'EU'])
+    expect(chart.mixedTuples?.every(([xi]) => xi === 0 || xi === 1)).toBe(true)
+  })
+})
+
 // ---------------------------------------------------------------------------
 // build3DRender
 // ---------------------------------------------------------------------------
@@ -247,6 +383,13 @@ describe('build3DRender', () => {
     const render = build3DRender(points, ['Z1'], noSort, false, 'linear')
     const cell = render.barSeries[0]!.data.find((d) => d.value[0] === 0 && d.value[1] === 0)
     expect(cell!.value[2]).toBe(20)
+  })
+
+  it('preserveRows emits one 3D point per input row at duplicate cells', () => {
+    const points = [p3('A', '1', 'Z1', 10), p3('A', '1', 'Z1', 30)]
+    const render = build3DRender(points, ['Z1'], noSort, false, 'linear', undefined, true)
+    const atCell = render.lineSeries[0]!.data.filter((d) => d.value[0] === 0 && d.value[1] === 0)
+    expect(atCell.map((d) => d.value[2])).toEqual([10, 30])
   })
 
   it('filters empty-string z values from zAxisAll', () => {
@@ -555,5 +698,67 @@ describe('buildValueModeChart — 3-col swap-driven 3D', () => {
     })
     expect(chart.valuePoints3D).toBeUndefined()
     expect(chart.render3D).toBeUndefined()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// buildMixedModeChart
+// ---------------------------------------------------------------------------
+import { buildMixedModeChart } from './transform'
+
+describe('buildMixedModeChart', () => {
+  const mixedAxes2D: Axis[] = [
+    { key: 'x', label: 'region' },
+    { key: 'y', label: 'latency', type: 'value' },
+  ]
+
+  function mdp(xAxis: string, yAxis: string, zAxis = ''): DataPoint {
+    return { xAxis, yAxis, zAxis, stats: [] }
+  }
+
+  it('maps category x to indices with value y', () => {
+    const chart = buildMixedModeChart(
+      [mdp('Asia', '12'), mdp('EU', '11'), mdp('Asia', '10')],
+      mixedAxes2D
+    )
+
+    expect(chart.statType).toBe('mixed')
+    expect(chart.xCategories).toEqual(['Asia', 'EU'])
+    expect(chart.mixedTuples).toEqual([
+      [0, 12],
+      [1, 11],
+      [0, 10],
+    ])
+  })
+
+  it('drops rows with non-finite y', () => {
+    const chart = buildMixedModeChart([mdp('Asia', '12'), mdp('EU', 'bad')], mixedAxes2D)
+    expect(chart.mixedTuples).toEqual([[0, 12]])
+  })
+
+  it('title combines x and y labels', () => {
+    const chart = buildMixedModeChart([mdp('Asia', '12')], mixedAxes2D)
+    expect(chart.title).toBe('region vs latency')
+  })
+
+  it('3-col mixed emits render3D with mode mixed', () => {
+    const mixedAxes3D: Axis[] = [
+      { key: 'x', label: 'region' },
+      { key: 'y', label: 'latency', type: 'value' },
+      { key: 'z', label: 'sales', type: 'value' },
+    ]
+    const chart = buildMixedModeChart([mdp('Asia', '12', '100')], mixedAxes3D)
+
+    expect(chart.mixedTuples).toBeUndefined()
+    expect(chart.render3D?.mode).toBe('mixed')
+    expect(chart.render3D?.xValues).toEqual(['Asia'])
+    expect(chart.render3D?.lineSeries[0]?.data[0]?.value).toEqual([0, 12, 100])
+  })
+
+  it('respects log scale on 2D path', () => {
+    const chart = buildMixedModeChart([mdp('Asia', '12'), mdp('EU', '0')], mixedAxes2D, {
+      scale: 'log',
+    })
+    expect(chart.mixedTuples).toEqual([[0, 12]])
   })
 })

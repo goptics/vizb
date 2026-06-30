@@ -17,13 +17,13 @@ jobs:
     strategy:
       matrix:
         include:
-          - output: 00-sales-auto-group
+          - id: 00-sales-auto-group
             file: sales
             name: "Sales Auto-Group"
             description: "Auto-grouped bar chart — vizb picks order_date as the X axis (highest-cardinality categorical column)"
             charts: bar
 
-          - output: 01-sales-grouped
+          - id: 01-sales-grouped
             file: sales
             name: "Sales by Product"
             description: "Grouped 2D bar chart by product, region, and category"
@@ -31,7 +31,7 @@ jobs:
             group-pattern: n,x,y
             charts: bar,pie
 
-          - output: 02-sales-by-date
+          - id: 02-sales-by-date
             file: sales
             name: "Sales by Date"
             description: "Monthly sales by category with year/month/date axis splitting"
@@ -39,39 +39,47 @@ jobs:
             group-pattern: "[n{Year}-y{Month}-x{Date}],z{Category}"
             charts: bar,pie
 
-          - output: 03-spiral-3d
+          - id: 03-spiral-3d
             file: spiral-3d
             name: "Spiral 3D"
             description: "Auto-value 3D spiral from x, y, z coordinates"
             charts: line
             chart: "line:3d-rotate,3d-visualmap"
 
-          - output: 04-noise-surface
+          - id: 04-noise-surface
             file: noise-surface
             name: "Noise Surface"
             description: "Simplex noise height field on a 2D grid as continuous 3D"
             charts: bar
+            chart: "bar:3d-visualmap"
 
-          - output: 05-noise-grid
+          - id: 05-noise-grid
             file: noise-grid
             name: "Noise Grid 21³"
             description: "Simplex noise on a 3D voxel grid (21³) — position from x,y,z, color/size from value column"
             charts: scatter
             chart: "scatter:3d-visualmap,3d-rotate"
 
-          - output: 06-noise-grid-41
+          - id: 06-noise-grid-41
             file: noise-grid-41
             name: "Noise Grid 41³"
             description: "ECharts simplex-noise scatter3D demo — full 41³ grid (0–40), orthographic camera, visualMap on value"
             charts: scatter
             chart: "scatter:3d-visualmap,3d-rotate"
 
-          - output: 07-house-price-area2
+          - id: 07-house-price-area2
             file: house-price-area2
             name: "House Price vs Area"
             description: "2D scatter — auto-value area/price with visualMap gradient (16k points, ECharts house-price demo)"
             charts: scatter
             chart: "scatter:visualmap"
+
+          - id: 08-life-expentency-income
+            file: life-expentency-income
+            name: "Life Expentency vs Income"
+            description: ""
+            select: 'Country,"Life Expectancy",Income'
+            charts: scatter
 
     runs-on: ubuntu-latest
     steps:
@@ -81,19 +89,27 @@ jobs:
         uses: ./
         with:
           file: examples/csv/${{ matrix.file }}.csv
+          id: ${{ matrix.id }}
           name: ${{ matrix.name }}
           description: ${{ matrix.description }}
           group: ${{ matrix.group }}
           group-pattern: ${{ matrix.group-pattern }}
+          select: ${{ matrix.select }}
           charts: ${{ matrix.charts }}
           chart: ${{ matrix.chart }}
-          output-json: ${{ matrix.output }}.json
+          output-json: ${{ matrix.id }}.json
+          vizb-binary: ${{ env.ACT == 'true' && './bin/vizb' || '' }}
+
+      - name: Stage json for local merge
+        if: env.ACT == 'true'
+        run: mkdir -p .act/jsons && cp ${{ matrix.id }}.json .act/jsons/
 
       - name: Uploading json artifacts
+        if: env.ACT != 'true'
         uses: actions/upload-artifact@v7
         with:
-          name: json-${{ matrix.output }}
-          path: ${{ matrix.output }}.json
+          name: json-${{ matrix.id }}
+          path: ${{ matrix.id }}.json
 
   merge-deploy:
     name: Merge and Deploy CSV Data

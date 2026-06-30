@@ -4,6 +4,8 @@ import { fontSize } from './common'
 import { describe } from '@/lib/stats'
 
 export const LARGE_X_THRESHOLD = 50
+/** Initial visible share of a large category X-axis when dataZoom first renders. */
+export const DATAZOOM_INITIAL_END_PERCENT = 20
 
 const axisTitleFontSize = 16
 
@@ -122,10 +124,16 @@ export function createHeatmapDataZoomConfig(
   return result
 }
 
-export function createDataZoomConfig(xAxisData: string[], styling: ChartStyling): any[] {
-  const end = Math.min(100, Math.max(5, Math.ceil((30 / xAxisData.length) * 100)))
+export function createDataZoomConfig(_xAxisData: string[], styling: ChartStyling): any[] {
+  const end = DATAZOOM_INITIAL_END_PERCENT
   return [
-    { type: 'inside', start: 0, end },
+    {
+      type: 'inside',
+      xAxisIndex: 0,
+      start: 0,
+      end,
+      filterMode: 'filter',
+    },
     // Slider sits between the (auto-thinned) tick labels and the category-axis
     // name, which is pushed below it via a larger nameGap. Heights coordinated
     // with createGridConfig's fixed px bottom so spacing is stable across sizes.
@@ -133,10 +141,12 @@ export function createDataZoomConfig(xAxisData: string[], styling: ChartStyling)
     // (ECharts' default gray is too dim in dark mode).
     {
       type: 'slider',
+      xAxisIndex: 0,
       start: 0,
       end,
       bottom: 34,
       height: 28,
+      filterMode: 'filter',
       textStyle: { color: styling.textColor },
     },
   ]
@@ -234,6 +244,41 @@ export function createValueAxisConfig(
   }
 }
 
+type TooltipTheme = ReturnType<typeof getTooltipTheme>
+
+const themedAxisPointerLabel = (styling: ChartStyling, theme: TooltipTheme) => ({
+  backgroundColor: theme.backgroundColor,
+  color: styling.textColor,
+})
+
+/** Vertical/horizontal snap line — themed to axisColor. */
+export function createLineAxisPointer(styling: ChartStyling, theme: TooltipTheme, snap = false) {
+  return {
+    type: 'line' as const,
+    snap,
+    lineStyle: { color: styling.axisColor },
+    label: themedAxisPointerLabel(styling, theme),
+  }
+}
+
+/** Category band highlight — themed to axisColor. */
+export function createShadowAxisPointer(styling: ChartStyling, theme: TooltipTheme) {
+  return {
+    type: 'shadow' as const,
+    shadowStyle: { color: styling.axisColor, opacity: styling.opacity },
+    label: themedAxisPointerLabel(styling, theme),
+  }
+}
+
+/** Crosshair for value/value axes — themed to axisColor. */
+export function createCrossAxisPointer(styling: ChartStyling, theme: TooltipTheme) {
+  return {
+    type: 'cross' as const,
+    crossStyle: { color: styling.axisColor },
+    label: themedAxisPointerLabel(styling, theme),
+  }
+}
+
 /** Item tooltip for [x, y] value-mode points — same box theme as grouping charts. */
 export function createValueModeTooltip(
   isDark: boolean,
@@ -248,18 +293,7 @@ export function createValueModeTooltip(
   return {
     trigger: 'item',
     ...theme,
-    ...(crossAxisPointer
-      ? {
-          axisPointer: {
-            type: 'cross',
-            crossStyle: { color: styling.axisColor },
-            label: {
-              backgroundColor: theme.backgroundColor,
-              color: styling.textColor,
-            },
-          },
-        }
-      : {}),
+    ...(crossAxisPointer ? { axisPointer: createCrossAxisPointer(styling, theme) } : {}),
     formatter: (params: unknown) => {
       const [x, y] = (params as { data: [number, number | null] }).data
       return `<strong>${xName}: ${formatTooltipValue(x)}</strong><br/>${yName}: ${formatTooltipValue(y)}`
@@ -534,8 +568,10 @@ export function renderDonutSvg(
  */
 export function createPinnedAxisTooltip(isDark = false): EChartsOption['tooltip'] {
   const theme = getTooltipTheme(isDark)
+  const styling = getChartStyling(isDark)
   return {
     trigger: 'axis',
+    axisPointer: createLineAxisPointer(styling, theme, true),
     position: (pt: number[]) => [pt[0] ?? 0, '10%'],
     ...theme,
     formatter: (params) => {
@@ -559,11 +595,12 @@ export function createTooltipConfig(
   seriesTotals?: Map<string, number>
 ): EChartsOption['tooltip'] {
   const theme = getTooltipTheme(isDark)
+  const styling = getChartStyling(isDark)
 
   if (hasXYAxis) {
     return {
       trigger: 'axis',
-      axisPointer: { type: 'shadow' },
+      axisPointer: createShadowAxisPointer(styling, theme),
       ...theme,
       formatter: (params) => {
         if (!Array.isArray(params)) return ''

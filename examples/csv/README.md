@@ -99,9 +99,25 @@ Use `noise-grid.csv` for faster loads; use this file when you need the complete 
 
 ---
 
+## `region-metrics.csv`
+
+**Shape:** Mixed categorical + numeric — `region` (category), `latency`, `sales` (8 rows).
+
+**What vizb does:** Solo `--select` axis mode. `--select region,latency` enters **mixed mode** (category x + value y). Repeat `--select` for multi-view output (e.g. `region,latency` and `region,sales` in one HTML).
+
+**Good for:** Mixed scatter demos, multi-dataset tabs, `--select` axis mode docs.
+
+| Goal | Command |
+|------|---------|
+| Mixed scatter (region vs latency) | `vizb scatter examples/csv/region-metrics.csv --select region,latency` |
+| Mixed 3D (region × latency × sales) | `vizb scatter examples/csv/region-metrics.csv --select region,latency,sales` |
+| Multi-view (two datasets) | `vizb scatter examples/csv/region-metrics.csv --select region,latency --select region,sales` |
+
+---
+
 ## `house-price-area2.csv`
 
-**Shape:** `area`, `price` — 16,174 rows ([ECharts house-price scatter](https://echarts.apache.org/examples/en/editor.html?c=scatter-large)). Auto-value xy; add `--visualmap` for price gradient. CI: `07-house-price-area2`.
+**Shape:** `area`, `price` — 16,174 rows ([ECharts house-price scatter](https://echarts.apache.org/examples/en/editor.html?c=scatter-large)). Auto-value xy; add `--visualmap` for price gradient. CI id: `07-house-price-area2`.
 
 ---
 
@@ -114,6 +130,7 @@ Use `noise-grid.csv` for faster loads; use this file when you need the complete 
 | `noise-surface.csv` | 441 | Auto-value (xyz grid) | Bar3D surface |
 | `noise-grid.csv` | 9,261 | Auto-value (xyz + metric) | Scatter3D + visualMap |
 | `noise-grid-41.csv` | 68,921 | Auto-value (xyz + metric) | Scatter3D + visualMap (full grid) |
+| `region-metrics.csv` | 8 | Solo `--select` mixed | Scatter mixed (region × metric) |
 | `house-price-area2.csv` | 16,174 | Auto-value (xy) | Scatter2D + visualMap |
 
 **Auto-group** applies when the file has categorical columns and you did not pass `--group`. **Auto-value** applies when every column is numeric — vizb assigns `x`, `y`, `z` (and optional 4th metric) without flags.
@@ -121,17 +138,18 @@ Use `noise-grid.csv` for faster loads; use this file when you need the complete 
 ## More detail
 
 - **Official site:** [vizb.goptics.org](https://vizb.goptics.org) — install, docs, and interactive dashboards
-- **Live CSV dashboards:** [vizb.goptics.org/examples/csv/](https://vizb.goptics.org/examples/csv/) — CI builds each recipe below from these files (switch charts with `?d=` or `?id=` when `--id` is set at build time)
+- **Live CSV dashboards:** [vizb.goptics.org/examples/csv/](https://vizb.goptics.org/examples/csv/) — CI builds each recipe below from these files (switch charts with `?id=<id>`; numbered prefix matches `?d=` index)
 
 | Dashboard | Source file | Live |
 |-----------|-------------|------|
 | Sales auto-group | `sales.csv` | [Open](https://vizb.goptics.org/examples/csv/) |
-| Sales grouped 3D | `sales.csv` | [Open](https://vizb.goptics.org/examples/csv/?d=1) |
-| Sales by date | `sales.csv` | [Open](https://vizb.goptics.org/examples/csv/?d=2) |
-| Spiral 3D | `spiral-3d.csv` | [Open](https://vizb.goptics.org/examples/csv/?d=3) |
-| Noise surface | `noise-surface.csv` | [Open](https://vizb.goptics.org/examples/csv/?d=4) |
-| Noise grid (21³) | `noise-grid.csv` | [Open](https://vizb.goptics.org/examples/csv/?d=5) |
-| Noise grid (41³) | `noise-grid-41.csv` | [Open](https://vizb.goptics.org/examples/csv/?d=6) |
-| House price vs area | `house-price-area2.csv` | [Open](https://vizb.goptics.org/examples/csv/?d=7) |
+| Sales grouped 3D | `sales.csv` | [Open](https://vizb.goptics.org/examples/csv/?id=01-sales-grouped) |
+| Sales by date | `sales.csv` | [Open](https://vizb.goptics.org/examples/csv/?id=02-sales-by-date) |
+| Spiral 3D | `spiral-3d.csv` | [Open](https://vizb.goptics.org/examples/csv/?id=03-spiral-3d) |
+| Noise surface | `noise-surface.csv` | [Open](https://vizb.goptics.org/examples/csv/?id=04-noise-surface) |
+| Noise grid (21³) | `noise-grid.csv` | [Open](https://vizb.goptics.org/examples/csv/?id=05-noise-grid) |
+| Noise grid (41³) | `noise-grid-41.csv` | [Open](https://vizb.goptics.org/examples/csv/?id=06-noise-grid-41) |
+| House price vs area | `house-price-area2.csv` | [Open](https://vizb.goptics.org/examples/csv/?id=07-house-price-area2) |
+| Life expectancy vs income | `life-expentency-income.csv` | [Open](https://vizb.goptics.org/examples/csv/?id=08-life-expentency-income) |
 
 - **Docs in repo:** [Grouping guide](../../docs/src/content/docs/guides/grouping.mdx) · [3D charts](../../docs/src/content/docs/charts/3d.mdx) · [All examples](https://vizb.goptics.org/examples/)

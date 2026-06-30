@@ -27,6 +27,9 @@ inputs:
   tag:
     description: "Tag/identifier for the dataset (-t flag)"
     default: ""
+  id:
+    description: "Dataset id for ?id= deep links (--id flag)"
+    default: ""
   group:
     description: "Column/field names merged into the group name; forwarded as -g (accepts space- or comma-separated, e.g. 'name category region' or 'name,category/region'); parsed by -p/-r. Omit for csv/json to let vizb auto-group the most-unique categorical column onto the X axis"
     default: ""
@@ -111,6 +114,12 @@ runs:
       id: version
       shell: bash
       run: |
+        if [ -n "${{ inputs.vizb-binary }}" ]; then
+          echo "tag=local" >> "$GITHUB_OUTPUT"
+          echo "is-major=false" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
         REF="${{ github.action_ref }}"
         if [ -z "$REF" ]; then
           REF="v0"
@@ -236,11 +245,14 @@ runs:
     - name: Convert to JSON
       id: convert
       if: steps.resolve.outputs.has_input == 'true'
+      env:
+        INPUT_SELECT: ${{ inputs.select }}
       shell: bash
       run: |
         source "$RUNNER_TEMP/vizb-chart-flags.sh"
         VIZB_ARGS=()
         [ -n "${{ inputs.tag }}" ] && VIZB_ARGS+=(--tag "${{ inputs.tag }}")
+        [ -n "${{ inputs.id }}" ] && VIZB_ARGS+=(--id "${{ inputs.id }}")
         [ -n "${{ inputs.name }}" ] && VIZB_ARGS+=(-n "${{ inputs.name }}")
         [ -n "${{ inputs.description }}" ] && VIZB_ARGS+=(-d "${{ inputs.description }}")
         [ -n "${{ inputs.group }}" ] && VIZB_ARGS+=(-g "${{ inputs.group }}")
@@ -251,7 +263,7 @@ runs:
         [ -n "${{ inputs.mem-unit }}" ] && VIZB_ARGS+=(-M "${{ inputs.mem-unit }}")
         [ -n "${{ inputs.time-unit }}" ] && VIZB_ARGS+=(-T "${{ inputs.time-unit }}")
         [ -n "${{ inputs.number-unit }}" ] && VIZB_ARGS+=(-N "${{ inputs.number-unit }}")
-        [ -n "${{ inputs.select }}" ] && VIZB_ARGS+=(--select "${{ inputs.select }}")
+        [ -n "$INPUT_SELECT" ] && VIZB_ARGS+=(--select "$INPUT_SELECT")
         [ -n "${{ inputs.json-path }}" ] && VIZB_ARGS+=(--json-path "${{ inputs.json-path }}")
         [ "${{ inputs.show-labels }}" = "true" ] && VIZB_ARGS+=(-l)
         [ -n "${{ inputs.parser }}" ] && VIZB_ARGS+=(-P "${{ inputs.parser }}")
@@ -260,8 +272,8 @@ runs:
         if [ -n "${{ steps.resolve.outputs.file }}" ]; then
           INPUT="${{ steps.resolve.outputs.file }}"
         else
-          ${{ steps.resolve.outputs.cmd }} > data-input.txt
-          INPUT="data-input.txt"
+          INPUT="${RUNNER_TEMP}/vizb-data-input-$$.txt"
+          ${{ steps.resolve.outputs.cmd }} > "$INPUT"
         fi
 
         vizb "$INPUT" -o "${{ steps.resolve.outputs.json_file }}" "${VIZB_ARGS[@]}"

@@ -54,7 +54,7 @@ var DataFlags = []flags.Flag{
 		ValidSet:   []string{"K", "M", "B", "T"},
 		Normalizer: strings.ToUpper,
 	},
-	{Name: "select", Usage: "csv/json only: select value columns; optional rename with {label} (e.g. --select=price{Unit price},count)", Kind: flags.KindString},
+	{Name: "select", Usage: "csv/json only: select columns (repeatable); solo mode: 2–3 cols per view as x,y[,z] axes (e.g. --select region,latency); grouped mode: numeric stat columns with optional {label}", Kind: flags.KindStringArray},
 	{Name: "json-path", Usage: "json only: select a nested array to chart via a jq-like dot path (e.g. --json-path '.data.results')", Kind: flags.KindString},
 }
 

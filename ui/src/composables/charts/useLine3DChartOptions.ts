@@ -20,6 +20,7 @@ import {
   type Continuous3DContext,
 } from './shared'
 import { resolve3DSymbolProps } from './shared/seriesConfig'
+import { buildMixedAxes3DOptions } from './shared/mixedMode'
 import type { Series3DData } from '@/types'
 
 export function useLine3DChartOptions(config: BaseChartConfig) {
@@ -49,6 +50,10 @@ export function useLine3DChartOptions(config: BaseChartConfig) {
         : { type: 'value' as const }),
       ...axisCommon,
     }
+    if (render.mode === 'mixed') {
+      return buildMixedAxes3DOptions(config, 'line3D')
+    }
+
     const isValueMode = render.mode === 'value'
     const grid3D = create3DGridConfig({
       styling,
