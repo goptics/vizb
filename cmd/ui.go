@@ -110,7 +110,7 @@ func runUI(cmd *cobra.Command, args []string) {
 	}
 
 	if len(datasets) == 0 {
-		shared.ExitWithError("No DataSet data found in file", nil)
+		shared.ExitWithError("No dataset found in file", nil)
 	}
 
 	// Determine the effective chart selection that drives chunk pruning. When -c
@@ -162,7 +162,7 @@ func runUI(cmd *cobra.Command, args []string) {
 
 	jsonData, err := json.Marshal(datasets)
 	if err != nil {
-		shared.ExitWithError("Failed to marshal DataSet data: %v", err)
+		shared.ExitWithError("Failed to marshal dataset: %v", err)
 	}
 	htmlContent := template.GenerateUI(jsonData, charts, needs3D, needsHeatmapChunk, template.VizbHTMLTemplate)
 	if _, err := f.WriteString(htmlContent); err != nil {

@@ -296,7 +296,7 @@ func prepareData(filePath, parserKey string, cfg parser.Config) ([]shared.DataPo
 	}
 
 	if len(data) == 0 {
-		shared.ExitWithError("No dataSet data found", nil)
+		shared.ExitWithError("No dataset found", nil)
 	}
 
 	return data, effectiveCfg
@@ -530,11 +530,9 @@ func writeOutput(f *os.File, datasets []*shared.Dataset, format string) {
 
 	switch format {
 	case "html":
-		fmt.Println(style.Info.Render("🔄 Generating UI..."))
-
 		jsonData, err := marshalDatasetsForOutput(datasets)
 		if err != nil {
-			shared.ExitWithError("Failed to marshal dataSet data: %v", err)
+			shared.ExitWithError("Failed to marshal dataset: %v", err)
 		}
 
 		needsHeatmapChunk := datasetsNeedCorrelation(datasets)
@@ -547,10 +545,9 @@ func writeOutput(f *os.File, datasets []*shared.Dataset, format string) {
 		fmt.Println(style.Success.Render("🎉 Generated HTML UI successfully!"))
 
 	case "json":
-		fmt.Println(style.Info.Render("🔄 Generating JSON..."))
 		bytes, err := marshalDatasetsForOutput(datasets)
 		if err != nil {
-			shared.ExitWithError("Error marshaling dataSet data", err)
+			shared.ExitWithError("Error marshaling dataset", err)
 		}
 		if _, err := f.Write(bytes); err != nil {
 			shared.ExitWithError("Failed to write output file", err)
