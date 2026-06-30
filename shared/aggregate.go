@@ -20,11 +20,12 @@ func AggregateDataPoints(points []DataPoint) []DataPoint {
 		existing, found := groups[k]
 		if !found {
 			clone := DataPoint{
-				Name:  dp.Name,
-				XAxis: dp.XAxis,
-				YAxis: dp.YAxis,
-				ZAxis: dp.ZAxis,
-				Stats: make([]Stat, len(dp.Stats)),
+				Name:   dp.Name,
+				XAxis:  dp.XAxis,
+				YAxis:  dp.YAxis,
+				ZAxis:  dp.ZAxis,
+				Metric: dp.Metric,
+				Stats:  make([]Stat, len(dp.Stats)),
 			}
 			copy(clone.Stats, dp.Stats)
 			groups[k] = &clone
@@ -78,11 +79,12 @@ func CollapseDataPointsByKey(points []DataPoint) []DataPoint {
 		existing, found := groups[k]
 		if !found {
 			clone := DataPoint{
-				Name:  dp.Name,
-				XAxis: dp.XAxis,
-				YAxis: dp.YAxis,
-				ZAxis: dp.ZAxis,
-				Stats: make([]Stat, len(dp.Stats)),
+				Name:   dp.Name,
+				XAxis:  dp.XAxis,
+				YAxis:  dp.YAxis,
+				ZAxis:  dp.ZAxis,
+				Metric: dp.Metric,
+				Stats:  make([]Stat, len(dp.Stats)),
 			}
 			copy(clone.Stats, dp.Stats)
 			groups[k] = &clone

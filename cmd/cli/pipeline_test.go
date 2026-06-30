@@ -352,6 +352,18 @@ func (s *PipelineSuite) TestLogAggregationResultAllUnique() {
 	s.NotContains(out, "Aggregated into")
 }
 
+func (s *PipelineSuite) TestPrepareDataAutoValuePreservesMetric() {
+	csvFile := s.writeFile("grid.csv", "x,y,z,value\n0,0,0,4\n0,0,1,3.22\n0,1,0,3.28\n")
+	cfg := parser.Config{AutoGroup: true, ChartTypes: []string{"scatter"}}
+
+	results, effectiveCfg := prepareData(csvFile, "csv", cfg)
+	s.Equal("value", effectiveCfg.MetricColumn)
+	s.Require().Len(results, 3)
+	s.Equal("4", results[0].Metric)
+	s.Equal("3.22", results[1].Metric)
+	s.Equal("3.28", results[2].Metric)
+}
+
 func (s *PipelineSuite) TestPrepareDataAutoGroupSkipsCollapseLogWhenAllUnique() {
 	csvFile := s.writeFile("unique.csv", "region,sells\nWest,10\nEast,20\nNorth,30\n")
 	cfg := parser.Config{AutoGroup: true, GroupPattern: "x", ChartTypes: []string{"bar"}}
