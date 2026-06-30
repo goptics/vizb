@@ -33,7 +33,7 @@ Use a chart subcommand (`bar`, `line`, `scatter`, `pie`, …) or the root comman
 | Sales by date + category | `vizb bar examples/csv/sales.csv -g order_date,category -p "[n{Year}-y{Month}-x{Date}],z{Category}"` |
 | Line / scatter on same data | `vizb line examples/csv/sales.csv` · `vizb scatter examples/csv/sales.csv` |
 
-These variants are also built in CI as `00-sales-auto-group`, `01-sales-grouped`, and `02-sales-by-date` (see `.github/workflows/deploy-examples-csv.yml`).
+These variants are also built in CI as `sales-auto-group`, `sales-grouped`, and `sales-by-date` (see `.github/workflows/deploy-examples-csv.yml`).
 
 ---
 
@@ -117,7 +117,7 @@ Use `noise-grid.csv` for faster loads; use this file when you need the complete 
 
 ## `house-price-area2.csv`
 
-**Shape:** `area`, `price` — 16,174 rows ([ECharts house-price scatter](https://echarts.apache.org/examples/en/editor.html?c=scatter-large)). Auto-value xy; add `--visualmap` for price gradient. CI: `07-house-price-area2`.
+**Shape:** `area`, `price` — 16,174 rows ([ECharts house-price scatter](https://echarts.apache.org/examples/en/editor.html?c=scatter-large)). Auto-value xy; add `--visualmap` for price gradient. CI id: `house-price-area2`.
 
 ---
 
@@ -138,17 +138,18 @@ Use `noise-grid.csv` for faster loads; use this file when you need the complete 
 ## More detail
 
 - **Official site:** [vizb.goptics.org](https://vizb.goptics.org) — install, docs, and interactive dashboards
-- **Live CSV dashboards:** [vizb.goptics.org/examples/csv/](https://vizb.goptics.org/examples/csv/) — CI builds each recipe below from these files (switch charts with `?d=` or `?id=` when `--id` is set at build time)
+- **Live CSV dashboards:** [vizb.goptics.org/examples/csv/](https://vizb.goptics.org/examples/csv/) — CI builds each recipe below from these files (switch charts with `?id=<slug>`)
 
 | Dashboard | Source file | Live |
 |-----------|-------------|------|
 | Sales auto-group | `sales.csv` | [Open](https://vizb.goptics.org/examples/csv/) |
-| Sales grouped 3D | `sales.csv` | [Open](https://vizb.goptics.org/examples/csv/?d=1) |
-| Sales by date | `sales.csv` | [Open](https://vizb.goptics.org/examples/csv/?d=2) |
-| Spiral 3D | `spiral-3d.csv` | [Open](https://vizb.goptics.org/examples/csv/?d=3) |
-| Noise surface | `noise-surface.csv` | [Open](https://vizb.goptics.org/examples/csv/?d=4) |
-| Noise grid (21³) | `noise-grid.csv` | [Open](https://vizb.goptics.org/examples/csv/?d=5) |
-| Noise grid (41³) | `noise-grid-41.csv` | [Open](https://vizb.goptics.org/examples/csv/?d=6) |
-| House price vs area | `house-price-area2.csv` | [Open](https://vizb.goptics.org/examples/csv/?d=7) |
+| Sales grouped 3D | `sales.csv` | [Open](https://vizb.goptics.org/examples/csv/?id=sales-grouped) |
+| Sales by date | `sales.csv` | [Open](https://vizb.goptics.org/examples/csv/?id=sales-by-date) |
+| Spiral 3D | `spiral-3d.csv` | [Open](https://vizb.goptics.org/examples/csv/?id=spiral-3d) |
+| Noise surface | `noise-surface.csv` | [Open](https://vizb.goptics.org/examples/csv/?id=noise-surface) |
+| Noise grid (21³) | `noise-grid.csv` | [Open](https://vizb.goptics.org/examples/csv/?id=noise-grid) |
+| Noise grid (41³) | `noise-grid-41.csv` | [Open](https://vizb.goptics.org/examples/csv/?id=noise-grid-41) |
+| House price vs area | `house-price-area2.csv` | [Open](https://vizb.goptics.org/examples/csv/?id=house-price-area2) |
+| Life expectancy vs income | `life-expentency-income.csv` | [Open](https://vizb.goptics.org/examples/csv/?id=life-expentency-income) |
 
 - **Docs in repo:** [Grouping guide](../../docs/src/content/docs/guides/grouping.mdx) · [3D charts](../../docs/src/content/docs/charts/3d.mdx) · [All examples](https://vizb.goptics.org/examples/)

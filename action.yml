@@ -27,6 +27,9 @@ inputs:
   tag:
     description: "Tag/identifier for the dataset (-t flag)"
     default: ""
+  id:
+    description: "Dataset id for ?id= deep links (--id flag)"
+    default: ""
   group:
     description: "Column/field names merged into the group name; forwarded as -g (accepts space- or comma-separated, e.g. 'name category region' or 'name,category/region'); parsed by -p/-r. Omit for csv/json to let vizb auto-group the most-unique categorical column onto the X axis"
     default: ""
@@ -249,6 +252,7 @@ runs:
         source "$RUNNER_TEMP/vizb-chart-flags.sh"
         VIZB_ARGS=()
         [ -n "${{ inputs.tag }}" ] && VIZB_ARGS+=(--tag "${{ inputs.tag }}")
+        [ -n "${{ inputs.id }}" ] && VIZB_ARGS+=(--id "${{ inputs.id }}")
         [ -n "${{ inputs.name }}" ] && VIZB_ARGS+=(-n "${{ inputs.name }}")
         [ -n "${{ inputs.description }}" ] && VIZB_ARGS+=(-d "${{ inputs.description }}")
         [ -n "${{ inputs.group }}" ] && VIZB_ARGS+=(-g "${{ inputs.group }}")

@@ -16,25 +16,25 @@ jobs:
     strategy:
       matrix:
         include:
-          - output: 00-torvalds
+          - id: torvalds
             user: torvalds
 
-          - output: 01-sindresorhus
+          - id: sindresorhus
             user: sindresorhus
 
-          - output: 02-yyx990803
+          - id: yyx990803
             user: yyx990803
 
-          - output: 03-gaearon
+          - id: gaearon
             user: gaearon
 
-          - output: 04-isaacs
+          - id: isaacs
             user: isaacs
 
-          - output: 05-antirez
+          - id: antirez
             user: antirez
 
-          - output: 06-gvanrossum
+          - id: gvanrossum
             user: gvanrossum
 
     runs-on: ubuntu-latest
@@ -45,6 +45,7 @@ jobs:
         uses: ./
         with:
           cmd: curl -sfL "https://github-contributions-api.jogruber.de/v4/${{ matrix.user }}"
+          id: ${{ matrix.id }}
           name: ${{ matrix.user }}
           description: "3D GitHub contribution skyline from jogruber API of the top OSS contributors"
           group: date
@@ -53,19 +54,19 @@ jobs:
           select: "count{Contributions}"
           stat: all
           charts: bar
-          output-json: ${{ matrix.output }}.json
+          output-json: ${{ matrix.id }}.json
           vizb-binary: ${{ env.ACT == 'true' && './bin/vizb' || '' }}
 
       - name: Stage json for local merge
         if: env.ACT == 'true'
-        run: mkdir -p .act/jsons && cp ${{ matrix.output }}.json .act/jsons/
+        run: mkdir -p .act/jsons && cp ${{ matrix.id }}.json .act/jsons/
 
       - name: Uploading json artifacts
         if: env.ACT != 'true'
         uses: actions/upload-artifact@v7
         with:
-          name: json-${{ matrix.output }}
-          path: ${{ matrix.output }}.json
+          name: json-${{ matrix.id }}
+          path: ${{ matrix.id }}.json
 
   merge-deploy:
     name: Merge and Deploy JSON Data

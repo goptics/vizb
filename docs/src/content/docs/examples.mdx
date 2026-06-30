@@ -5,7 +5,7 @@ description: Example datasets and live dashboards for data visualization and ben
 
 import { LinkCard, Aside } from '@astrojs/starlight/components';
 
-Sample inputs live under [`examples/`](https://github.com/goptics/vizb/tree/main/examples). CI converts each file to JSON, merges them into one HTML page per category, and deploys to [vizb.goptics.org/examples/](https://vizb.goptics.org/examples/). Open a specific dataset with `?id=<id>` when the build set `--id`, or `?d=0`, `?d=1`, … by index — index matches matrix order in the workflow file. The live links below use `?d=` because CI does not set ids yet.
+Sample inputs live under [`examples/`](https://github.com/goptics/vizb/tree/main/examples). CI converts each file to JSON, merges them into one HTML page per category, and deploys to [vizb.goptics.org/examples/](https://vizb.goptics.org/examples/). Open a specific dataset with `?id=<id>` — each matrix entry sets a stable id via the action `id` input (forwarded as `--id`).
 
 ## Live dashboards
 
@@ -31,13 +31,15 @@ Tabular recipes (auto-group, auto-value, 3D): [examples/csv/README.md](https://g
 
 | Chart | Input file | Dashboard |
 |-------|-----------|-----------|
-| Sales auto-group | [sales.csv](https://github.com/goptics/vizb/blob/main/examples/csv/sales.csv) | [Open](https://vizb.goptics.org/examples/csv/?d=0) |
-| Sales grouped 3D | [sales.csv](https://github.com/goptics/vizb/blob/main/examples/csv/sales.csv) | [Open](https://vizb.goptics.org/examples/csv/?d=1) |
-| Sales by date | [sales.csv](https://github.com/goptics/vizb/blob/main/examples/csv/sales.csv) | [Open](https://vizb.goptics.org/examples/csv/?d=2) |
-| Spiral 3D | [spiral-3d.csv](https://github.com/goptics/vizb/blob/main/examples/csv/spiral-3d.csv) | [Open](https://vizb.goptics.org/examples/csv/?d=3) |
-| Noise surface | [noise-surface.csv](https://github.com/goptics/vizb/blob/main/examples/csv/noise-surface.csv) | [Open](https://vizb.goptics.org/examples/csv/?d=4) |
-| Noise grid (21³) | [noise-grid.csv](https://github.com/goptics/vizb/blob/main/examples/csv/noise-grid.csv) | [Open](https://vizb.goptics.org/examples/csv/?d=5) |
-| Noise grid (41³) | [noise-grid-41.csv](https://github.com/goptics/vizb/blob/main/examples/csv/noise-grid-41.csv) | [Open](https://vizb.goptics.org/examples/csv/?d=6) |
+| Sales auto-group | [sales.csv](https://github.com/goptics/vizb/blob/main/examples/csv/sales.csv) | [Open](https://vizb.goptics.org/examples/csv/) |
+| Sales grouped 3D | [sales.csv](https://github.com/goptics/vizb/blob/main/examples/csv/sales.csv) | [Open](https://vizb.goptics.org/examples/csv/?id=sales-grouped) |
+| Sales by date | [sales.csv](https://github.com/goptics/vizb/blob/main/examples/csv/sales.csv) | [Open](https://vizb.goptics.org/examples/csv/?id=sales-by-date) |
+| Spiral 3D | [spiral-3d.csv](https://github.com/goptics/vizb/blob/main/examples/csv/spiral-3d.csv) | [Open](https://vizb.goptics.org/examples/csv/?id=spiral-3d) |
+| Noise surface | [noise-surface.csv](https://github.com/goptics/vizb/blob/main/examples/csv/noise-surface.csv) | [Open](https://vizb.goptics.org/examples/csv/?id=noise-surface) |
+| Noise grid (21³) | [noise-grid.csv](https://github.com/goptics/vizb/blob/main/examples/csv/noise-grid.csv) | [Open](https://vizb.goptics.org/examples/csv/?id=noise-grid) |
+| Noise grid (41³) | [noise-grid-41.csv](https://github.com/goptics/vizb/blob/main/examples/csv/noise-grid-41.csv) | [Open](https://vizb.goptics.org/examples/csv/?id=noise-grid-41) |
+| House price vs area | [house-price-area2.csv](https://github.com/goptics/vizb/blob/main/examples/csv/house-price-area2.csv) | [Open](https://vizb.goptics.org/examples/csv/?id=house-price-area2) |
+| Life expectancy vs income | [life-expentency-income.csv](https://github.com/goptics/vizb/blob/main/examples/csv/life-expentency-income.csv) | [Open](https://vizb.goptics.org/examples/csv/?id=life-expentency-income) |
 
 ## JSON examples
 
@@ -45,40 +47,40 @@ Fetched live in CI from the [jogruber GitHub contributions API](https://github-c
 
 | Chart | Source | Pattern | Dashboard |
 |-------|--------|---------|-----------|
-| torvalds skyline | [API](https://github-contributions-api.jogruber.de/v4/torvalds) | `[z{Year}-y{Month}-x{Date}]` | [Open](https://vizb.goptics.org/examples/json/?d=0) |
-| sindresorhus skyline | [API](https://github-contributions-api.jogruber.de/v4/sindresorhus) | same | [Open](https://vizb.goptics.org/examples/json/?d=1) |
-| yyx990803 skyline | [API](https://github-contributions-api.jogruber.de/v4/yyx990803) | same | [Open](https://vizb.goptics.org/examples/json/?d=2) |
-| gaearon skyline | [API](https://github-contributions-api.jogruber.de/v4/gaearon) | same | [Open](https://vizb.goptics.org/examples/json/?d=3) |
-| isaacs skyline | [API](https://github-contributions-api.jogruber.de/v4/isaacs) | same | [Open](https://vizb.goptics.org/examples/json/?d=4) |
-| antirez skyline | [API](https://github-contributions-api.jogruber.de/v4/antirez) | same | [Open](https://vizb.goptics.org/examples/json/?d=5) |
-| gvanrossum skyline | [API](https://github-contributions-api.jogruber.de/v4/gvanrossum) | same | [Open](https://vizb.goptics.org/examples/json/?d=6) |
+| torvalds skyline | [API](https://github-contributions-api.jogruber.de/v4/torvalds) | `[z{Year}-y{Month}-x{Date}]` | [Open](https://vizb.goptics.org/examples/json/?id=torvalds) |
+| sindresorhus skyline | [API](https://github-contributions-api.jogruber.de/v4/sindresorhus) | same | [Open](https://vizb.goptics.org/examples/json/?id=sindresorhus) |
+| yyx990803 skyline | [API](https://github-contributions-api.jogruber.de/v4/yyx990803) | same | [Open](https://vizb.goptics.org/examples/json/?id=yyx990803) |
+| gaearon skyline | [API](https://github-contributions-api.jogruber.de/v4/gaearon) | same | [Open](https://vizb.goptics.org/examples/json/?id=gaearon) |
+| isaacs skyline | [API](https://github-contributions-api.jogruber.de/v4/isaacs) | same | [Open](https://vizb.goptics.org/examples/json/?id=isaacs) |
+| antirez skyline | [API](https://github-contributions-api.jogruber.de/v4/antirez) | same | [Open](https://vizb.goptics.org/examples/json/?id=antirez) |
+| gvanrossum skyline | [API](https://github-contributions-api.jogruber.de/v4/gvanrossum) | same | [Open](https://vizb.goptics.org/examples/json/?id=gvanrossum) |
 
 ## Go benchmarks
 
 | Benchmark | Input file | Pattern | Regex | Dashboard |
 |-----------|-----------|---------|-------|-----------|
-| Decode | [00-decode-encode.txt](https://github.com/goptics/vizb/blob/main/examples/go/00-decode-encode.txt) | — | `/text=(?<n>.*)/level=(?<x>.*)/size=(?<y>.*)` | [Open](https://vizb.goptics.org/examples/go/?d=0) |
-| Encode | [00-decode-encode.txt](https://github.com/goptics/vizb/blob/main/examples/go/00-decode-encode.txt) | — | `/text=(?<n>.*)/level=(?<x>.*)/size=(?<y>.*)` | [Open](https://vizb.goptics.org/examples/go/?d=1) |
-| Hashing | [01-hash.txt](https://github.com/goptics/vizb/blob/main/examples/go/01-hash.txt) | — | `Hashing64(?<x>.*)` | [Open](https://vizb.goptics.org/examples/go/?d=2) |
-| HTTP Routing | [02-http-routing.txt](https://github.com/goptics/vizb/blob/main/examples/go/02-http-routing.txt) | `x_n` | — | [Open](https://vizb.goptics.org/examples/go/?d=3) |
-| Serialization | [03-serialization.txt](https://github.com/goptics/vizb/blob/main/examples/go/03-serialization.txt) | — | `(?<x>.*)By(?<y>.*)` | [Open](https://vizb.goptics.org/examples/go/?d=4) |
-| Validator | [04-validator.txt](https://github.com/goptics/vizb/blob/main/examples/go/04-validator.txt) | — | `(?<y>.*?)(?:(?<x>Success\|Failure)(?<n>.*)\|$)` | [Open](https://vizb.goptics.org/examples/go/?d=5) |
-| Varmq | [05-varmq.txt](https://github.com/goptics/vizb/blob/main/examples/go/05-varmq.txt) | `x/y` | — | [Open](https://vizb.goptics.org/examples/go/?d=6) |
-| Worker Pools | [06-worker-pools.txt](https://github.com/goptics/vizb/blob/main/examples/go/06-worker-pools.txt) | `n/y/x` | — | [Open](https://vizb.goptics.org/examples/go/?d=7) |
+| Decode | [decode-encode.txt](https://github.com/goptics/vizb/blob/main/examples/go/decode-encode.txt) | — | `/text=(?<n>.*)/level=(?<x>.*)/size=(?<y>.*)` | [Open](https://vizb.goptics.org/examples/go/?id=decode) |
+| Encode | [decode-encode.txt](https://github.com/goptics/vizb/blob/main/examples/go/decode-encode.txt) | — | `/text=(?<n>.*)/level=(?<x>.*)/size=(?<y>.*)` | [Open](https://vizb.goptics.org/examples/go/?id=encode) |
+| Hashing | [hash.txt](https://github.com/goptics/vizb/blob/main/examples/go/hash.txt) | — | `Hashing64(?<x>.*)` | [Open](https://vizb.goptics.org/examples/go/?id=hash) |
+| HTTP Routing | [http-routing.txt](https://github.com/goptics/vizb/blob/main/examples/go/http-routing.txt) | `x_n` | — | [Open](https://vizb.goptics.org/examples/go/?id=http-routing) |
+| Serialization | [serialization.txt](https://github.com/goptics/vizb/blob/main/examples/go/serialization.txt) | — | `(?<x>.*)By(?<y>.*)` | [Open](https://vizb.goptics.org/examples/go/?id=serialization) |
+| Validator | [validator.txt](https://github.com/goptics/vizb/blob/main/examples/go/validator.txt) | — | `(?<y>.*?)(?:(?<x>Success\|Failure)(?<n>.*)\|$)` | [Open](https://vizb.goptics.org/examples/go/?id=validator) |
+| Varmq | [varmq.txt](https://github.com/goptics/vizb/blob/main/examples/go/varmq.txt) | `x/y` | — | [Open](https://vizb.goptics.org/examples/go/?id=varmq) |
+| Worker Pools | [worker-pools.txt](https://github.com/goptics/vizb/blob/main/examples/go/worker-pools.txt) | `n/y/x` | — | [Open](https://vizb.goptics.org/examples/go/?id=worker-pools) |
 
 ## JavaScript benchmarks
 
 | Benchmark | Input file | Pattern | Regex | Dashboard |
 |-----------|-----------|---------|-------|-----------|
-| Tinybench | [00-tinybench.txt](https://github.com/goptics/vizb/blob/main/examples/javascript/00-tinybench.txt) | `x/y` | — | [Open](https://vizb.goptics.org/examples/javascript/?d=0) |
-| Vitest | [01-vitest.txt](https://github.com/goptics/vizb/blob/main/examples/javascript/01-vitest.txt) | — | `n=(?<y>.*)/(?<x>.*)` | [Open](https://vizb.goptics.org/examples/javascript/?d=1) |
+| Tinybench | [tinybench.txt](https://github.com/goptics/vizb/blob/main/examples/javascript/tinybench.txt) | `x/y` | — | [Open](https://vizb.goptics.org/examples/javascript/?id=tinybench) |
+| Vitest | [vitest.txt](https://github.com/goptics/vizb/blob/main/examples/javascript/vitest.txt) | — | `n=(?<y>.*)/(?<x>.*)` | [Open](https://vizb.goptics.org/examples/javascript/?id=vitest) |
 
 ## Rust benchmarks
 
 | Benchmark | Input file | Pattern | Regex | Dashboard |
 |-----------|-----------|---------|-------|-----------|
-| Criterion | [00-criterion.txt](https://github.com/goptics/vizb/blob/main/examples/rust/00-criterion.txt) | — | `(?<x>.*)/n=(?<y>.*)` | [Open](https://vizb.goptics.org/examples/rust/?d=0) |
-| Divan | [01-divan.txt](https://github.com/goptics/vizb/blob/main/examples/rust/01-divan.txt) | `x__y` | — | [Open](https://vizb.goptics.org/examples/rust/?d=1) |
+| Criterion | [criterion.txt](https://github.com/goptics/vizb/blob/main/examples/rust/criterion.txt) | — | `(?<x>.*)/n=(?<y>.*)` | [Open](https://vizb.goptics.org/examples/rust/?id=criterion) |
+| Divan | [divan.txt](https://github.com/goptics/vizb/blob/main/examples/rust/divan.txt) | `x__y` | — | [Open](https://vizb.goptics.org/examples/rust/?id=divan) |
 
 ## How people are using Vizb
 
@@ -96,6 +98,6 @@ Fetched live in CI from the [jogruber GitHub contributions API](https://github-c
 
   ```bash
   vizb bar examples/csv/sales.csv -o sales.html
-  vizb -P go examples/go/01-hash.txt -o hash.html
+  vizb -P go examples/go/hash.txt -o hash.html
   ```
 </Aside>

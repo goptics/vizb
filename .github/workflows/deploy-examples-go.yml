@@ -17,52 +17,52 @@ jobs:
     strategy:
       matrix:
         include:
-          - output: 00-decode
-            file: 00-decode-encode
+          - id: decode
+            file: decode-encode
             name: "Decode"
             description: "Decode performance across text, level, and size"
             group-regex: "/text=(?<n>.*)/level=(?<x>.*)/size=(?<y>.*)"
             filter: "Decode"
 
-          - output: 01-encode
-            file: 00-decode-encode
+          - id: encode
+            file: decode-encode
             name: "Encode"
             description: "Encode performance across text, level, and size"
             group-regex: "/text=(?<n>.*)/level=(?<x>.*)/size=(?<y>.*)"
             filter: "Encode"
 
-          - output: 02-hash
-            file: 01-hash
+          - id: hash
+            file: hash
             name: "Hashing"
             description: "Comparison of different hash functions"
             group-regex: "Hashing64(?<x>.*)"
 
-          - output: 03-http-routing
-            file: 02-http-routing
+          - id: http-routing
+            file: http-routing
             name: "HTTP Routing"
             description: "Performance comparison of popular Go HTTP routers"
             group-pattern: x_n
 
-          - output: 04-serialization
-            file: 03-serialization
+          - id: serialization
+            file: serialization
             name: "Serialization"
             description: "Comparison of different serialization methods"
             group-regex: "(?<x>.*)By(?<y>.*)"
 
-          - output: 05-validator
-            file: 04-validator
+          - id: validator
+            file: validator
             name: "Validator"
             description: "Validation success vs failure across rule sets"
             group-regex: "(?<y>.*?)(?:(?<x>Success|Failure)(?<n>.*)|$)"
 
-          - output: 06-varmq
-            file: 05-varmq
+          - id: varmq
+            file: varmq
             name: "Varmq"
             description: "Variadic queue benchmark"
             group-pattern: x/y
 
-          - output: 07-worker-pools
-            file: 06-worker-pools
+          - id: worker-pools
+            file: worker-pools
             name: "Worker Pools"
             description: "Performance comparison of different worker pool implementations"
             group-pattern: n/y/x
@@ -75,6 +75,7 @@ jobs:
         uses: ./
         with:
           file: examples/go/${{ matrix.file }}.txt
+          id: ${{ matrix.id }}
           name: ${{ matrix.name }}
           description: ${{ matrix.description }}
           group-pattern: ${{ matrix.group-pattern }}
@@ -84,19 +85,19 @@ jobs:
             bar:scale=log,sort=asc
             line:scale=log,sort=asc
             pie:sort=asc
-          output-json: ${{ matrix.output }}.json
+          output-json: ${{ matrix.id }}.json
           vizb-binary: ${{ env.ACT == 'true' && './bin/vizb' || '' }}
 
       - name: Stage json for local merge
         if: env.ACT == 'true'
-        run: mkdir -p .act/jsons && cp ${{ matrix.output }}.json .act/jsons/
+        run: mkdir -p .act/jsons && cp ${{ matrix.id }}.json .act/jsons/
 
       - name: Uploading json artifacts
         if: env.ACT != 'true'
         uses: actions/upload-artifact@v7
         with:
-          name: json-${{ matrix.output }}
-          path: ${{ matrix.output }}.json
+          name: json-${{ matrix.id }}
+          path: ${{ matrix.id }}.json
 
   merge-deploy:
     name: Merge and Deploy Go Benchmarks
