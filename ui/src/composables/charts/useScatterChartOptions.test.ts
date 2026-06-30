@@ -209,11 +209,32 @@ describe('useScatterChartOptions — mixed mode', () => {
     ])
   })
 
-  it('uses shadow axisPointer for category x', () => {
+  it('uses axis trigger with themed snap line pointer for category x', () => {
     const { options } = useScatterChartOptions(makeMixedConfig())
-    expect((options.value.tooltip as { axisPointer?: { type?: string } }).axisPointer?.type).toBe(
-      'shadow'
-    )
+    const tooltip = options.value.tooltip as {
+      trigger?: string
+      axisPointer?: { type?: string; snap?: boolean; lineStyle?: { color?: string } }
+    }
+    expect(tooltip.trigger).toBe('axis')
+    expect(tooltip.axisPointer?.type).toBe('line')
+    expect(tooltip.axisPointer?.snap).toBe(true)
+    expect(tooltip.axisPointer?.lineStyle?.color).toBe('#d1d5db')
+  })
+
+  it('starts large mixed category axes at a 20% dataZoom window', () => {
+    const cats = Array.from({ length: 60 }, (_, i) => `2024-01-${String(i + 1).padStart(2, '0')}`)
+    const cfg = makeMixedConfig()
+    cfg.chartData.value = {
+      ...makeMixedChartData(),
+      xCategories: cats,
+      mixedTuples: cats.map((_, i) => [i, i + 1] as [number, number]),
+    }
+    const { options } = useScatterChartOptions(cfg)
+    const dataZoom = options.value.dataZoom as { type: string; end: number }[]
+    expect(dataZoom).toBeDefined()
+    for (const entry of dataZoom) {
+      expect(entry.end).toBe(20)
+    }
   })
 })
 

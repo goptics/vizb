@@ -86,7 +86,7 @@ The default embed mode inlines the dataset JSON directly into the HTML file. For
 Use `--data-url` to decouple the UI layer from the data layer: the HTML stays a lean dashboard shell and fetches the JSON from a URL at load time. The JSON file is hosted separately and can be updated without regenerating the HTML.
 
 Instead of embedding the JSON inside the HTML, point the dashboard at a hosted URL.
-Dataset data is fetched at load time; only the chart renderers you select are bundled.
+dataset is fetched at load time; only the chart renderers you select are bundled.
 
 ```bash
 vizb ui --data-url https://example.com/bench.json -o report.html

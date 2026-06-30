@@ -24,20 +24,20 @@ Tabular CSV recipes (auto-group, auto-value, 3D): [csv/README.md](csv/README.md)
 | JavaScript | [vizb.goptics.org/examples/javascript/](https://vizb.goptics.org/examples/javascript/) |
 | Rust | [vizb.goptics.org/examples/rust/](https://vizb.goptics.org/examples/rust/) |
 
-Open a specific chart with `?id=<id>` when the build set `--id`, or `?d=0`, `?d=1`, … by index — index matches matrix order in the workflow file. Current CI workflows use index links only.
+Open a specific chart with `?id=<id>` — each matrix entry sets a numbered id via the action `id` input (forwarded as `--id`). Keep ids chronological (`00-`, `01-`, …) so the prefix stays in sync with `?d=0`, `?d=1`, … index in the same matrix order.
 
 ## Adding an example
 
 ### JSON (GitHub contributions)
 
-No repo file to add. Append one row to the matrix in [deploy-examples-json.yml](../.github/workflows/deploy-examples-json.yml) — only `output` and `user`, in order:
+No repo file to add. Append one row to the matrix in [deploy-examples-json.yml](../.github/workflows/deploy-examples-json.yml) — only `id` and `user`:
 
 ```yaml
-- output: 07-octocat    # next index + username — sets ?d= index and artifact name
+- id: 07-octocat        # numbered ?id= deep link; prefix matches ?d=7 in matrix order
   user: octocat         # chart title and API path; no other matrix fields needed
 ```
 
-`output` must stay numbered (`00-`, `01-`, …) so merge order matches `?d=0`, `?d=1`, …. The workflow step already wires `curl`, `--json-path`, `--select`, date grouping, and 3D bar flags — copy a row, bump the number, set `user`.
+`id` must stay numbered (`00-`, `01-`, …) in matrix order. The workflow step already wires `curl`, `--json-path`, `--select`, date grouping, and 3D bar flags — copy a row, bump the number, set `user`.
 
 Optionally add a row to [docs/src/content/docs/examples.mdx](../docs/src/content/docs/examples.mdx) under **JSON examples**.
 
@@ -48,7 +48,7 @@ Optionally add a row to [docs/src/content/docs/examples.mdx](../docs/src/content
 3. **Push** — CI rebuilds that dashboard on [vizb.goptics.org](https://vizb.goptics.org)
 
 ```yaml
-- output: 07-my-chart       # required — numbered id + sort order + ?d= index
+- id: 07-my-chart          # required — numbered ?id= deep link; prefix matches ?d=7
   file: my-data            # required — basename only (no extension)
   name: "My Chart"         # required — title in the dashboard
   description: "…"         # optional — subtitle / tooltip
@@ -63,7 +63,7 @@ Optionally add a row to [docs/src/content/docs/examples.mdx](../docs/src/content
   parser: rs:criterion     # optional — when auto-detect is not enough
 ```
 
-Only `output`, `file`, and `name` are required. Use `chart` for scale, sort, and 3D flags — not the deprecated `sort` input or a bare `scale` field (action.yml has no `scale` input). Copy a nearby matrix row and edit.
+Only `id`, `file`, and `name` are required. Use `chart` for scale, sort, and 3D flags — not the deprecated `sort` input or a bare `scale` field (action.yml has no `scale` input). Copy a nearby matrix row and edit.
 
 For a new **CSV** file, also add a short blurb to [csv/README.md](csv/README.md).
 
@@ -71,7 +71,7 @@ For a new **CSV** file, also add a short blurb to [csv/README.md](csv/README.md)
 
 ```bash
 vizb bar examples/csv/sales.csv -o out.html
-vizb -P go examples/go/01-hash.txt -o out.html
+vizb -P go examples/go/hash.txt -o out.html
 ```
 
 Docs and install: [vizb.goptics.org](https://vizb.goptics.org)

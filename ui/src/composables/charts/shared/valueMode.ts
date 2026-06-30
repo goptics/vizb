@@ -113,7 +113,12 @@ export function buildValueAxes2DOptions(
     legend: { show: false },
     grid: createValueModeGridConfig(false),
     visualMap: resolve2DScatterVisualMap(useVisualMap, colorValues, styling, colorDimension),
-    tooltip: createValueModeTooltip(isDark.value, xLabel, yLabel, chartType === 'scatter'),
+    tooltip: createValueModeTooltip(
+      isDark.value,
+      xLabel,
+      yLabel,
+      chartType === 'scatter' || chartType === 'line'
+    ),
     ...createValueAxisConfig(
       styling,
       xLabel,

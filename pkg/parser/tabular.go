@@ -145,7 +145,7 @@ func ParseSelectStatMode(rows []RowReader, cfg Config) []shared.DataPoint {
 		})
 	}
 	if len(results) == 0 {
-		shared.ExitWithError("No dataSet data found", nil)
+		shared.ExitWithError("No dataset found", nil)
 	}
 	return results
 }

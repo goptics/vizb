@@ -59,4 +59,21 @@ describe('useBarChartOptions — mixed mode', () => {
     expect((options.value.xAxis as { type: string; data: string[] }).type).toBe('category')
     expect((options.value.xAxis as { data: string[] }).data).toEqual(['West', 'South'])
   })
+
+  it('uses axis trigger with themed shadow pointer for category x', () => {
+    const { options } = useBarChartOptions(makeMixedConfig())
+    const tooltip = options.value.tooltip as {
+      trigger?: string
+      axisPointer?: {
+        type?: string
+        snap?: boolean
+        shadowStyle?: { color?: string; opacity?: number }
+      }
+    }
+    expect(tooltip.trigger).toBe('axis')
+    expect(tooltip.axisPointer?.type).toBe('shadow')
+    expect(tooltip.axisPointer?.snap).toBeUndefined()
+    expect(tooltip.axisPointer?.shadowStyle?.color).toBe('#d1d5db')
+    expect(tooltip.axisPointer?.shadowStyle?.opacity).toBe(0.4)
+  })
 })

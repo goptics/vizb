@@ -44,6 +44,21 @@ Run a single test:
 go test -run TestName -v ./path/to/package
 ```
 
+### Local example workflows
+
+You can run the `deploy-examples` CI workflows on your machine with
+[act](https://github.com/nektos/act) and Docker (GitHub Pages deploy is skipped).
+Install act via `task act:install`, then:
+
+```bash
+task act:examples                              # all languages, opens browser preview
+task act:examples -- --only csv,go             # subset of languages
+task act:examples -- --reuse --no-open         # faster reruns, no browser
+```
+
+Output lands under `dist/examples/` with an overview at `dist/examples/index.html`.
+Equivalent script: `./scripts/act-examples.sh` (same options).
+
 > **Important:** `pkg/template/vizb-ui.gen.go` is generated from the Vue app —
 > do **not** hand-edit it. After any change under `ui/`, run `task build:ui`
 > (which regenerates it), then rebuild the binary so the embedded UI is current.

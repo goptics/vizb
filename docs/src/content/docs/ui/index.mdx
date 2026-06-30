@@ -80,7 +80,7 @@ Each chart has a **statistics** button. It opens a panel with a per-series descr
 
 ## Large Datasets
 
-Vizb stays responsive on big inputs. When the X-axis has more than ~50 categories, a **dataZoom slider** appears. You can scroll and zoom into a window of the data (starting zoomed to a readable slice). Datasets above a few thousand points switch to ECharts' optimized large-data render path. This keeps the draw on a single frame.
+Vizb stays responsive on big inputs. When the X-axis has more than ~50 categories, a **dataZoom slider** appears. You can scroll and zoom into a window of the data (starting zoomed to the first **20%** of categories). Datasets above a few thousand points switch to ECharts' optimized large-data render path. This keeps the draw on a single frame.
 
 For CSV/JSON specifically, vizb also **aggregates rows** before charting when `--group` is set — see [Tabular Data](/guides/data#aggregation).
 

@@ -2,10 +2,12 @@ import { describe, it, expect } from 'vitest'
 import {
   createAxisConfig,
   createValueAxisConfig,
+  createDataZoomConfig,
   createGridConfig,
   createValueModeGridConfig,
   VALUE_MODE_GRID_TOP,
   createHeatmapLayoutConfig,
+  DATAZOOM_INITIAL_END_PERCENT,
   getChartStyling,
   heatmapDataZoomXBottom,
   HEATMAP_DATAZOOM_X_HEIGHT,
@@ -66,6 +68,30 @@ describe('createValueModeGridConfig', () => {
   it('uses minimal fixed top because value mode hides the legend', () => {
     expect(createValueModeGridConfig(false).top).toBe(VALUE_MODE_GRID_TOP)
     expect(createValueModeGridConfig(false).top).not.toBe(createGridConfig(1, false).top)
+  })
+})
+
+describe('createDataZoomConfig', () => {
+  const xAxisData = Array.from({ length: 100 }, (_, i) => `cat${i}`)
+
+  it('starts grouped charts at a fixed 20% visible window', () => {
+    const dataZoom = createDataZoomConfig(xAxisData, styling)
+    expect(dataZoom).toHaveLength(2)
+    for (const entry of dataZoom) {
+      expect(entry.start).toBe(0)
+      expect(entry.end).toBe(DATAZOOM_INITIAL_END_PERCENT)
+      expect(entry.xAxisIndex).toBe(0)
+      expect(entry.filterMode).toBe('filter')
+    }
+  })
+
+  it('keeps slider chrome and themed boundary labels', () => {
+    const slider = createDataZoomConfig(xAxisData, styling).find((z) => z.type === 'slider')
+    expect(slider).toMatchObject({
+      bottom: 34,
+      height: 28,
+      textStyle: { color: styling.textColor },
+    })
   })
 })
 

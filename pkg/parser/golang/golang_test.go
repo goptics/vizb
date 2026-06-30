@@ -246,7 +246,7 @@ func (s *GoBenchmarkSuite) TestParseGoBenchmark() {
 				NumberUnit:   tt.allocUnit,
 			}
 
-			results := ParseGoBenchmark(s.writeFile(tt.benchContent), cfg)
+			results, _ := ParseGoBenchmark(s.writeFile(tt.benchContent), cfg)
 
 			s.Require().Len(results, len(tt.expected))
 

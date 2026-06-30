@@ -42,7 +42,8 @@ func parseBenchmarkName(name benchfmt.Name) (benchName string, cpu string) {
 	return
 }
 
-func ParseGoBenchmark(filePath string, cfg parser.Config) (results []shared.DataPoint) {
+func ParseGoBenchmark(filePath string, cfg parser.Config) ([]shared.DataPoint, parser.Config) {
+	var results []shared.DataPoint
 	f := shared.MustOpenFile(filePath)
 	defer f.Close()
 
@@ -154,7 +155,7 @@ func ParseGoBenchmark(filePath string, cfg parser.Config) (results []shared.Data
 		}
 	}
 
-	return
+	return results, cfg
 }
 
 func ConvertGoJsonBenchToText(filePath string) string {

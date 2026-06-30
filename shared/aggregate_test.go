@@ -110,6 +110,28 @@ func (s *AggregateSuite) TestCollapseDataPointsByKeyRespectsYZ() {
 	s.Require().Len(out, 2)
 }
 
+func (s *AggregateSuite) TestCollapseDataPointsByKeyPreservesMetric() {
+	in := []DataPoint{
+		{XAxis: "0", YAxis: "0", ZAxis: "0", Metric: "4"},
+		{XAxis: "0", YAxis: "0", ZAxis: "1", Metric: "3.22"},
+	}
+
+	out := CollapseDataPointsByKey(in)
+	s.Require().Len(out, 2)
+	s.Equal("4", out[0].Metric)
+	s.Equal("3.22", out[1].Metric)
+}
+
+func (s *AggregateSuite) TestAggregateDataPointsPreservesMetric() {
+	in := []DataPoint{
+		{XAxis: "0", YAxis: "0", ZAxis: "0", Metric: "4", Stats: []Stat{{Type: "v", Value: F64(1)}}},
+	}
+
+	out := AggregateDataPoints(in)
+	s.Require().Len(out, 1)
+	s.Equal("4", out[0].Metric)
+}
+
 func TestAggregateSuite(t *testing.T) {
 	suite.Run(t, new(AggregateSuite))
 }

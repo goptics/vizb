@@ -38,7 +38,7 @@ func (s *TinyBenchSuite) SetupTest() {
 }
 
 func (s *TinyBenchSuite) TestRealTinybenchOutput() {
-	results := ParseTinyBenchBenchmark(writeJSTestFile(s.T(), testSortingTable), s.cfg)
+	results, _ := ParseTinyBenchBenchmark(writeJSTestFile(s.T(), testSortingTable), s.cfg)
 	s.Len(results, 6)
 
 	assertStat(s.T(), results[0].Stats[0], "Latency avg (ns)", 3741.5, "")
@@ -64,7 +64,7 @@ func (s *TinyBenchSuite) TestRealTinybenchOutput() {
 func (s *TinyBenchSuite) TestUnitConversionToUs() {
 	s.cfg.TimeUnit = "us"
 
-	results := ParseTinyBenchBenchmark(writeJSTestFile(s.T(), testSortingTable), s.cfg)
+	results, _ := ParseTinyBenchBenchmark(writeJSTestFile(s.T(), testSortingTable), s.cfg)
 	s.Len(results, 6)
 
 	assertStat(s.T(), results[0].Stats[0], "Latency avg (us)", 3.74, "")
@@ -74,7 +74,7 @@ func (s *TinyBenchSuite) TestUnitConversionToUs() {
 func (s *TinyBenchSuite) TestFilterRegex() {
 	s.cfg.Filter = "bubbleSort"
 
-	results := ParseTinyBenchBenchmark(writeJSTestFile(s.T(), testSortingTable), s.cfg)
+	results, _ := ParseTinyBenchBenchmark(writeJSTestFile(s.T(), testSortingTable), s.cfg)
 	s.Len(results, 3)
 	for _, r := range results {
 		s.Equal("bubbleSort", r.Name)
@@ -84,7 +84,7 @@ func (s *TinyBenchSuite) TestFilterRegex() {
 func (s *TinyBenchSuite) TestEmptyFile() {
 	s.cfg.GroupPattern = "y"
 
-	results := ParseTinyBenchBenchmark(writeJSTestFile(s.T(), ""), s.cfg)
+	results, _ := ParseTinyBenchBenchmark(writeJSTestFile(s.T(), ""), s.cfg)
 	s.Empty(results)
 }
 

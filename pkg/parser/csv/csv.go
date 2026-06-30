@@ -32,7 +32,7 @@ func parseFinite(s string) (float64, bool) {
 // ignored unless named in --group/-g, whose values are joined with the
 // separators from --group-pattern/-p and routed through the grouping machinery
 // (-p/-r) for name/xAxis/yAxis placement.
-func ParseCSV(filename string, cfg parser.Config) []shared.DataPoint {
+func ParseCSV(filename string, cfg parser.Config) ([]shared.DataPoint, parser.Config) {
 	var err error
 	cfg, err = parser.FinalizeGroupConfig(cfg)
 	if err != nil {
@@ -54,7 +54,7 @@ func ParseCSV(filename string, cfg parser.Config) []shared.DataPoint {
 	}
 
 	if len(rows) < 2 { // need header + at least one data row
-		return nil
+		return nil, cfg
 	}
 
 	headers := normalizeHeaders(rows[0])
@@ -84,7 +84,8 @@ func ParseCSV(filename string, cfg parser.Config) []shared.DataPoint {
 		for i, row := range dataRows {
 			readers[i] = csvRowReader{row: row, colIdx: colIdx, flag: flag, headers: headers}
 		}
-		return parser.DispatchSelectMode(readers, &cfg, csvKindFn(headers, dataRows, flag))
+		results := parser.DispatchSelectMode(readers, &cfg, csvKindFn(headers, dataRows, flag))
+		return results, cfg
 	}
 
 	groupIdx, groupSet := resolveGroupColumns(headers, parser.EffectiveGroupColumns(cfg))
@@ -155,7 +156,7 @@ func ParseCSV(filename string, cfg parser.Config) []shared.DataPoint {
 		})
 	}
 
-	return results
+	return results, cfg
 }
 
 // csvRowReader adapts one CSV row to the parser.RowReader interface.
