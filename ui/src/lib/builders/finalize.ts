@@ -1,4 +1,4 @@
-import type { ChartData, SeriesData, Point3D, AxisLabels } from '@/types'
+import type { ChartData, SeriesData, Point3D, AxisLabels, SortOrder } from '@/types'
 import type { BuildContext } from './types'
 import {
   applyCanonicalOrder,
@@ -8,6 +8,26 @@ import {
   build3DRender,
   buildValue3DRender,
 } from '../transform'
+
+function sortMixedTuplesByCategoryTotal(
+  mixedTuples: [number, number][],
+  xCategories: string[],
+  order: SortOrder
+): { mixedTuples: [number, number][]; xCategories: string[] } {
+  const totals = new Map<number, number>()
+  for (const [xi, y] of mixedTuples) totals.set(xi, (totals.get(xi) ?? 0) + y)
+  const sortedIndices = xCategories
+    .map((_, i) => i)
+    .toSorted((a, b) => {
+      const diff = (totals.get(a) ?? 0) - (totals.get(b) ?? 0)
+      return order === 'asc' ? diff : -diff
+    })
+  const indexToNew = new Map(sortedIndices.map((oldIdx, newIdx) => [oldIdx, newIdx]))
+  return {
+    xCategories: sortedIndices.map((i) => xCategories[i]!),
+    mixedTuples: mixedTuples.map(([xi, y]) => [indexToNew.get(xi)!, y]),
+  }
+}
 
 // Shared tail for the grouped/preserveRows builders: derives the x-axis value
 // order, applies canonical ordering, sorts series, assembles the ChartData and
@@ -53,6 +73,13 @@ export function finalizeChart(
   }
 
   if (sort.enabled && pieces.series.length) sortSeriesByTotal(pieces.series, sort.order)
+  if (sort.enabled && mixedTuples?.length && xCategories?.length) {
+    ;({ mixedTuples, xCategories } = sortMixedTuplesByCategoryTotal(
+      mixedTuples,
+      xCategories,
+      sort.order
+    ))
+  }
 
   const chart: ChartData = {
     title: pieces.title,

@@ -11,6 +11,7 @@ import { translateAxisKey } from './swap'
 import type { DataPoint, Sort, Point3D } from '../types'
 
 const noSort: Sort = { enabled: false, order: 'asc' }
+const ascSort: Sort = { enabled: true, order: 'asc' }
 const descSort: Sort = { enabled: true, order: 'desc' }
 
 function dp(xAxis: string, yAxis = '', zAxis = '', type = 'val', value = 1): DataPoint {
@@ -273,6 +274,56 @@ describe('buildChartForSignature — additional branches', () => {
     const chart = buildChartForSignature(data, signature, statTemplate, undefined, descSort)
     expect(chart.series[0]!.xAxis).toBe('High')
     expect(chart.series[2]!.xAxis).toBe('Low')
+  })
+})
+
+describe('buildChartForSignature — preserveRows 1D sort', () => {
+  it.each([
+    [ascSort, ['Low', 'Mid', 'High']],
+    [descSort, ['High', 'Mid', 'Low']],
+  ])('sort reorders xCategories by category total', (sort, expected) => {
+    const data: DataPoint[] = [
+      dp('High', '', '', 'v', 9),
+      dp('Low', '', '', 'v', 1),
+      dp('Mid', '', '', 'v', 5),
+    ]
+    const { signature, statTemplate } = listChartSignatures(data)[0]!
+    const chart = buildChartForSignature(
+      data,
+      signature,
+      statTemplate,
+      undefined,
+      sort,
+      false,
+      'linear',
+      undefined,
+      false,
+      true
+    )
+    expect(chart.xCategories).toEqual(expected)
+  })
+
+  it('sorts by summed total when multiple tuples share a category', () => {
+    const data: DataPoint[] = [
+      dp('Asia', '', '', 'v', 12),
+      dp('Asia', '', '', 'v', 10),
+      dp('EU', '', '', 'v', 8),
+    ]
+    const { signature, statTemplate } = listChartSignatures(data)[0]!
+    const chart = buildChartForSignature(
+      data,
+      signature,
+      statTemplate,
+      undefined,
+      descSort,
+      false,
+      'linear',
+      undefined,
+      false,
+      true
+    )
+    expect(chart.xCategories).toEqual(['Asia', 'EU'])
+    expect(chart.mixedTuples?.every(([xi]) => xi === 0 || xi === 1)).toBe(true)
   })
 })
 
