@@ -140,6 +140,12 @@ tasks:
       - task: act:check
       - act --bind --container-options "--user $(id -u):$(id -g)" workflow_dispatch -W .github/workflows/action-ci.yml --job stateful --matrix os:ubuntu-latest
 
+  act:examples:
+    desc: Run deploy-examples workflows locally via act (opens browser preview)
+    deps: [act:check]
+    cmds:
+      - ./scripts/act-examples.sh {{.CLI_ARGS}}
+
   act:clean:
     desc: Clean up act test artifacts
     cmds:
