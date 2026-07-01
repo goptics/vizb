@@ -21,7 +21,7 @@ jobs:
             file: sales
             name: "Sales Auto-Group"
             description: "Auto-grouped bar chart — vizb picks order_date as the X axis (highest-cardinality categorical column)"
-            charts: bar
+            charts: bar,pie
 
           - id: 01-sales-grouped
             file: sales
@@ -74,12 +74,19 @@ jobs:
             charts: scatter
             chart: "scatter:visualmap"
 
-          - id: 08-life-expentency-income
-            file: life-expentency-income
-            name: "Life Expentency vs Income"
+          - id: 08-life-expectancy-income
+            file: life-expectancy-income
+            name: "Life Expectancy vs Income"
             description: ""
             select: 'Country,"Life Expectancy",Income'
             charts: scatter
+
+          - id: 09-clusters
+            file: clusters
+            name: "Clusters"
+            description: "2D scatter — auto-value x,y cluster points with visualMap and symbol size 10"
+            charts: scatter
+            chart: "scatter:visualmap,symbol-size=10"
 
     runs-on: ubuntu-latest
     steps:

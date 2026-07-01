@@ -121,6 +121,16 @@ Use `noise-grid.csv` for faster loads; use this file when you need the complete 
 
 ---
 
+## `clusters.csv`
+
+**Shape:** `x`, `y` — 60 rows of 2D cluster coordinates. Auto-value xy; `--visualmap` and `--symbol-size 10` for sized, color-mapped points. CI id: `09-clusters`.
+
+| Goal | Command |
+|------|---------|
+| Cluster scatter with visualMap | `vizb scatter examples/csv/clusters.csv --visualmap --symbol-size 10 -o out.html` |
+
+---
+
 ## Quick reference
 
 | File | Rows | Mode | Typical chart |
@@ -132,6 +142,7 @@ Use `noise-grid.csv` for faster loads; use this file when you need the complete 
 | `noise-grid-41.csv` | 68,921 | Auto-value (xyz + metric) | Scatter3D + visualMap (full grid) |
 | `region-metrics.csv` | 8 | Solo `--select` mixed | Scatter mixed (region × metric) |
 | `house-price-area2.csv` | 16,174 | Auto-value (xy) | Scatter2D + visualMap |
+| `clusters.csv` | 60 | Auto-value (xy) | Scatter2D + visualMap, symbol size 10 |
 
 **Auto-group** applies when the file has categorical columns and you did not pass `--group`. **Auto-value** applies when every column is numeric — vizb assigns `x`, `y`, `z` (and optional 4th metric) without flags.
 
@@ -150,6 +161,7 @@ Use `noise-grid.csv` for faster loads; use this file when you need the complete 
 | Noise grid (21³) | `noise-grid.csv` | [Open](https://vizb.goptics.org/examples/csv/?id=05-noise-grid) |
 | Noise grid (41³) | `noise-grid-41.csv` | [Open](https://vizb.goptics.org/examples/csv/?id=06-noise-grid-41) |
 | House price vs area | `house-price-area2.csv` | [Open](https://vizb.goptics.org/examples/csv/?id=07-house-price-area2) |
-| Life expectancy vs income | `life-expentency-income.csv` | [Open](https://vizb.goptics.org/examples/csv/?id=08-life-expentency-income) |
+| Life expectancy vs income | `life-expectancy-income.csv` | [Open](https://vizb.goptics.org/examples/csv/?id=08-life-expectancy-income) |
+| Clusters | `clusters.csv` | [Open](https://vizb.goptics.org/examples/csv/?id=09-clusters) |
 
-- **Docs in repo:** [Grouping guide](../../docs/src/content/docs/guides/grouping.mdx) · [3D charts](../../docs/src/content/docs/charts/3d.mdx) · [All examples](https://vizb.goptics.org/examples/)
+- **Docs in repo:** [Group guide](../../docs/src/content/docs/guides/group.mdx) · [3D charts](../../docs/src/content/docs/charts/3d.mdx) · [All examples](https://vizb.goptics.org/examples/)

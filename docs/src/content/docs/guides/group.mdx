@@ -1,13 +1,13 @@
 ---
-title: Grouping
+title: Group
 description: Turn rows — CSV/JSON columns or benchmark names — into structured dimensions for multi-dimensional charts.
 ---
 
-import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+import { Aside } from '@astrojs/starlight/components';
 
-## What is Grouping
+## What is group
 
-Grouping turns each row into a point with up to four dimensions: **Name**, **XAxis**, **YAxis**, and **ZAxis**. This lets vizb chart the data meaningfully instead of as a flat list.
+Group turns each row into a point with up to four dimensions: **Name**, **XAxis**, **YAxis**, and **ZAxis**. This lets vizb chart the data meaningfully instead of as a flat list.
 
 It always works in two stages:
 
@@ -18,15 +18,15 @@ It always works in two stages:
 
 The two flows differ only in stage 1 — where the label comes from. The same pattern and regex syntax serves both.
 
-## Why Grouping
+## Why group
 
-Grouping creates multi-dimensional charts. Without it, every row is an isolated bar or point. With it, vizb can:
+Group creates multi-dimensional charts. Without it, every row is an isolated bar or point. With it, vizb can:
 
 - **Separate charts** by logical category (e.g. one chart per algorithm or region).
 - **Populate axes** with meaningful values (e.g. input size on the X-axis).
 - **Create series** for variants (e.g. different data distributions on the Y-axis).
 
-| Without Grouping | With Grouping |
+| Without group | With group |
 |---|---|
 | Single flat chart with all rows | Multiple charts grouped by name |
 | No axis structure | X-axis and Y-axis with meaningful categories |
@@ -34,7 +34,7 @@ Grouping creates multi-dimensional charts. Without it, every row is an isolated 
 
 ## The Dimensions
 
-Grouping extracts up to four dimensions from each label:
+Group extracts up to four dimensions from each label:
 
 | Dimension | Role | Description |
 |---|---|---|
@@ -44,91 +44,15 @@ Grouping extracts up to four dimensions from each label:
 | **ZAxis** (`zAxis` / `z`) | Adds a depth axis → 3D chart | Each unique value becomes a stacked depth layer in a [3D chart](/charts/3d) |
 
 <Aside type="note">
-  At least one axis (`x` or `y`) is required for grouping to take effect. The `name` dimension is optional. When omitted, all rows go into a single chart. The `z` dimension requires **both** `x` and `y` to be present.
+  At least one axis (`x` or `y`) is required for group to take effect. The `name` dimension is optional. When omitted, all rows go into a single chart. The `z` dimension requires **both** `x` and `y` to be present.
 </Aside>
 
-## Grouping CSV/JSON data
+## Group CSV/JSON data
 
 CSV and JSON rows have no benchmark name. You tell vizb which columns carry the structure. The `--group` / `-g` flag selects columns. The `--group-pattern` / `-p` flag assigns each column to a dimension. By default each column maps to one dimension (`-p y,x`). Use **bracket slots** `[...]` when a single column's **cell value** encodes multiple dimensions (dates, slash paths, underscore IDs, etc.).
 
-### Auto-grouping (no flags needed)
-
-If you run vizb on a CSV or JSON file **without** any of `--group`, `--group-pattern` (beyond its default), or `--group-regex`, vizb infers the category axis for you so `vizb data.csv` "just works":
-
-1. It collects **non-numeric columns** as candidates (numeric columns are ignored entirely).
-2. It ranks candidates by **distinct-value count** (highest cardinality wins; ties go to the leftmost column) and picks the top one as the **XAxis** (`-p x`).
-
-The choice is logged to stdout (`🧠 Auto-grouped by column: date`), so you can override it with an explicit `--group` whenever the inference is wrong. Auto-group uses the same row summing as explicit `--group` — duplicate `(name, x, y, z)` keys are collapsed before charting. Benchmark parsers (Go, Rust, JavaScript) are unaffected — auto-grouping applies only to the `csv` and `json` parsers.
-
-Grouped 3D charts need both `x` and `y` in `--group-pattern`. Auto-grouping always sets `-p x` only, so `--3d` with auto-group logs a warning and grouped 3D will not render until you supply both axes explicitly (e.g. `-g region,product -p x,y --3d`).
-
-```bash
-vizb sales.csv -o sales.html                              # auto-picks region (or similar) as the X axis
-vizb sales.csv --chart bar:3d -o 3d.html                  # auto-picks X only; warns that 3D needs -p x,y
-vizb sales.csv -g region,product -p x,y --3d -o 3d.html   # grouped 3D with explicit axes
-vizb sales.csv -g product -p y -o o.html                  # explicit --group disables auto-grouping
-```
-
-### Auto-value mode (all-numeric data)
-
-When every column in a CSV/JSON file is numeric (no categorical columns exist), auto-grouping has nothing to pick. Instead, vizb **auto-assigns the first 2-3 columns** as value-type coordinate axes (`x`, `y`, `z`) — no flag needed. This works on **bar**, **line**, and **scatter** charts.
-
-| Columns | Axes | Pattern |
-|---|---|---|
-| 2+ | `x`, `y` | 2D value |
-| 3+ | `x`, `y`, `z` (first 3) | **3D value** (auto-enables 3D) |
-| 4+ | `x`, `y`, `z` + 4th as **metric** | **3D value** + auto visualMap (color/size by metric) |
-
-With 2+ numeric columns, vizb creates a 2D value-mode chart. With 3+, it automatically enables 3D (`bar3D` / `line3D` / `scatter3D`). With 4+, the first three columns are coordinates and the fourth becomes a visual metric. The inference is logged: `🧠 Auto-valued by columns: x, y, z (3D pattern x-y-z), metric: value`.
-
-```bash
-vizb scatter allnums.csv -o scatter.html        # auto-value x,y from first 2 columns
-vizb scatter allnums.csv --3d -o 3d.html         # auto-value x,y,z from 3+ columns (auto-3D)
-vizb bar allnums.csv -o bars.html                # bar auto-value (auto-3D with 3+ cols)
-vizb line allnums.csv -o lines.html              # line auto-value (auto-3D with 3+ cols)
-```
-
-### Solo `--select` axis mode (no grouping)
-
-When you pass `--select` **without** explicit grouping (`-g`, `-r`, or non-default `-p`), vizb enters **select axis mode**. Each repeatable `--select` defines one view with 2–3 columns assigned to `x`, `y`, and optional `z`. Both auto-group and auto-value are disabled.
-
-| Selected columns | Result |
-|---|---|
-| All numeric | **Value mode** — continuous coordinate axes |
-| One categorical + numeric | **Mixed mode** — category on x, values on y[,z]; [scatter](/charts/scatter) is the primary chart |
-| Repeatable flags (2 cols each) | One dataset; each flag → stat type (`latency by region`); chart tabs by stat |
-
-```bash
-# Value mode: pick two numeric columns as x,y
-vizb scatter spiral-3d.csv --select x,y -o 2d.html
-
-# Mixed mode: category region + numeric latency
-vizb scatter examples/csv/region-metrics.csv --select region,latency -o mixed.html
-
-# Multi-stat: one dataset, charts by stat type
-vizb scatter examples/csv/region-metrics.csv \
-  --select region,latency \
-  --select region,sales \
-  -o dual.html
-```
-
-Use explicit syntax when you need to pin the category column: `--select x:region,y:latency,z:sales`.
-
-### Choosing: `--group` + select vs solo `--select`
-
-Use this decision guide when your CSV/JSON has both categorical and numeric columns:
-
-| Goal | Approach | Example |
-|---|---|---|
-| Compare metrics **across categories** with legend series | Grouped + numeric `--select` | `-g region,product -p x,y --select latency,sales` |
-| Plot **one metric per category label** on a coordinate chart | Solo mixed `--select` | `--select region,latency` → scatter |
-| Plot **raw numeric coordinates** (no categories) | Solo value `--select` or auto-value | `--select x,y` or no flags on all-numeric file |
-| **Several metric views** from one file (no grouping) | Repeatable solo `--select` | `--select region,latency --select region,sales` → charts `latency by region`, `sales by region` |
-| Split a column into year/month/day on axes | Grouped with bracket `-p` | `-g date,category -p '[n-y-x],z'` |
-| Quick chart with no flags on mixed data | Auto-group | `vizb bar sales.csv` picks highest-cardinality categorical column |
-
-<Aside type="tip">
-  **Grouped** mode aggregates rows that share the same `(name, x, y, z)` key. **Solo `--select`** keeps every row as a separate point — no aggregation. Choose grouped when your table has many rows per dimension combination; choose solo select when each row is already one observation.
+<Aside type="note">
+  Not sure whether to group or to use `--select`? See [Group vs Select](/guides/group-vs-select) for the two models, auto-group / auto-value inference, and a decision matrix. Solo `--select` value, mixed, and multi-stat modes are covered in [Select](/guides/select).
 </Aside>
 
 ### Matching separators
@@ -141,20 +65,14 @@ For tabular data, `-g` and `-p` must use the same separators between column slot
 
 The `expected` side is derived from how `-g` declares column boundaries. The `got` side is what `-p` declares. Fix whichever flag is wrong so both use the same separator sequence.
 
-| Mismatch | Error (abbreviated) |
-|---|---|
-| `-g region,product,category -p x/y/z` | `expected ", ,", got "/ /"` — comma `-g` needs comma `-p` (`x,y,z`) |
-| `-g region/product/category -p x,y/z` | `expected "/ /", got ", /"` — slash `-g` needs slash `-p` (`x/y/z`) |
-| `-g "region#product#category" -p x#y,z` | `expected "# #", got "# ,"` — every separator in `-g` must appear in `-p` at the same positions |
+| `--group` style | Matching `-p` | Row label (example) | Mismatch would report |
+|---|---|---|---|
+| Comma list (`-g region,product,category`) | Commas (`-p x,y,z`) | `Asia,Widget,Electronics` | `-p x/y/z` → `expected ", ,", got "/ /"` |
+| Quoted string (`-g "region product"`) | Spaces (`-p "y x"`) | `UAE Gadget` | — |
+| Single value (`-g "region/product/category"`) | Same separators (`-p x/y/z`) | `EU/Widget/Sports` | `-p x,y/z` → `expected "/ /", got ", /"` |
+| Structured (`-g region,product/category`) | Same shape (`-p y,x/z`) | `Asia,Widget/Electronics` | — |
 
-| `--group` style | Matching `-p` | Row label (example) |
-|---|---|---|
-| Comma list (`-g region,product`) | Commas (`-p y,x`) | `Asia,Widget` |
-| Quoted string (`-g "region product"`) | Spaces (`-p "y x"`) | `UAE Gadget` |
-| Single value (`-g "region/product/category"`) | Same separators (`-p x/y/z`) | `EU/Widget/Sports` |
-| Structured (`-g region,product/category`) | Same shape (`-p y,x/z`) | `Asia,Widget/Electronics` |
-
-Comma-separated `-g` (the usual pflag form) **requires** comma-separated `-p`. For example, use `-g region,product,category` with `-p x,y,z`, not `x/y/z`.
+Comma-separated `-g` (the usual pflag form) **requires** comma-separated `-p`. For example, use `-g region,product,category` with `-p x,y,z`, not `x/y/z`. Every separator in `-g` must appear in `-p` at the same positions.
 
 When `-g` and `-p` define a different **number** of slots (common with bracket patterns), vizb reports a separate dimension-count error:
 
@@ -174,11 +92,7 @@ Take this `sales.csv`:
 vizb sales.csv --group region,product -p y,x -o sales.html
 ```
 
-For the first row, vizb joins the selected columns into the label `Asia,Widget`. Then the pattern `y,x` splits it:
-
-| Selected columns | Label | Pattern `y,x` | Result |
-|---|---|---|---|
-| `region`, `product` | `Asia,Widget` | `y` → `Asia`, `x` → `Widget` | YAxis = Asia, XAxis = Widget |
+For the first row, vizb joins the selected columns into the label `Asia,Widget`, then the pattern `y,x` splits it: `y` → `Asia` (YAxis), `x` → `Widget` (XAxis).
 
 **Space-separated columns** — pass one quoted `-g` value and use spaces in `-p`:
 
@@ -229,9 +143,7 @@ vizb sales.csv -g date,category -p "[x-y-n],z" -o sales.html
 <details>
 <summary><strong>More bracket-slot examples</strong> (ISO dates, slash paths, underscore IDs, mixed separators)</summary>
 
-**ISO dates (`YYYY-MM-DD`)** — use a bracket slot when the date is one column. `{year}`, `{months}`, and `{dates}` only set axis titles. Splitting is driven by `-` between dimension tokens.
-
-Full year / month / day:
+**ISO dates (`YYYY-MM-DD`)** — use a bracket slot when the date is one column. `{year}`, `{months}`, and `{dates}` only set axis titles. Splitting is driven by `-` between dimension tokens. The same prefix/middle/trailing skip rules from [Separators](#separators) apply inside brackets too — e.g. `[n{year}-x{months}-]` drops the day, `[n{year}--x{dates}]` skips the month.
 
 ```bash
 vizb sales.csv -g date,category -p '[n{year}-y{months}-x{dates}],z' -o sales.html
@@ -240,28 +152,6 @@ vizb sales.csv -g date,category -p '[n{year}-y{months}-x{dates}],z' -o sales.htm
 | date | Pattern | Result |
 |---|---|---|
 | `2024-01-01` | `[n{year}-y{months}-x{dates}]` | n=2024, y=01, x=01 |
-
-Drop the **last** segment (day) — add a **trailing** separator after the last token:
-
-```bash
-vizb sales.csv -g date -p '[n{year}-x{months}-]' -o sales.html
-```
-
-| date | Pattern | Result |
-|---|---|---|
-| `2024-01-01` | `[n{year}-x{months}-]` | n=2024, x=01 (day dropped) |
-
-Skip the **middle** segment (month) — use **consecutive** separators (`--`) between tokens:
-
-```bash
-vizb sales.csv -g date -p '[n{year}--x{dates}]' -o sales.html
-```
-
-| date | Pattern | Result |
-|---|---|---|
-| `2024-02-15` | `[n{year}--x{dates}]` | n=2024, x=15 (month skipped) |
-
-On `2024-01-01` the month and day are both `01`. So year+month and year+day patterns look the same. Use a date like `2024-02-15` to confirm which segment maps to `x`.
 
 **Slash-encoded benchmark column** — same layout as Go bench names, stored in CSV:
 
@@ -282,16 +172,6 @@ vizb runs.csv -g id -p "[n_y_x]" -o out.html
 | id | Result |
 |---|---|
 | `lib_func_case` | n=lib, y=func, x=case |
-
-**Dot-separated version on X/Y:**
-
-```bash
-vizb releases.csv -g version -p "[x.y]" -o out.html
-```
-
-| version | Result |
-|---|---|
-| `1.2.3` | x=1, y=2 (remaining segment unused) |
 
 **Space-separated label in one column:**
 
@@ -323,26 +203,6 @@ vizb sales.csv -g date,region -p "[n-y-x],z" -o sales.html
 |---|---|---|
 | `2022-2-30` | `Asia` | n=2022, y=2, x=30, z=Asia |
 
-**Comma value inside one column** (tuple-style cell):
-
-```bash
-vizb data.csv -g tuple -p "[y,x]" -o out.html
-```
-
-| tuple | Result |
-|---|---|
-| `Asia,Widget` | y=Asia, x=Widget |
-
-**Mixed inner separators** (underscore then slash in the same cell):
-
-```bash
-vizb data.csv -g code -p "[n_y/x]" -o out.html
-```
-
-| code | Result |
-|---|---|
-| `Rivet_GPlusStatic/100k` | n=Rivet, y=GPlusStatic, x=100k |
-
 </details>
 
 <Aside type="note">
@@ -351,9 +211,9 @@ vizb data.csv -g code -p "[n_y/x]" -o out.html
 
 The columns you **don't** select decide the chart values:
 
-- **Unselected numeric columns become series.** Here `sales` and `latency` each become a series (one `Stat` per column).
+- **Unselected numeric columns each become their own chart.** Here `sales` and `latency` each become a separate chart (one `Stat` per column).
 - **Non-numeric unselected columns are ignored.** A `notes` text column would simply be dropped.
-- **No `--group` at all** → dimensions stay empty. No rows are merged. Each row becomes one point carrying every numeric column as a series. This is useful for a quick chart of a wide table.
+- **No `--group` at all** → dimensions stay empty. No rows are merged. Each row becomes one point, and every numeric column renders as its own chart. This is useful for a quick chart of a wide table.
 
 <Aside type="note">
   Each `--group` column must match a header exactly. A missing column is fatal: `group column 'X' not found; available: [...]`.
@@ -361,19 +221,14 @@ The columns you **don't** select decide the chart values:
 
 ### Aggregation
 
-When grouping is active (`--group` or auto-group), multiple rows can share the same `(name, x, y, z)` key. Vizb **sums** their values into a single point. A 200k-row export collapses into a few thousand chart points. You'll see it in the CLI output when duplicates were merged:
+When group is active (`--group` or auto-group), multiple rows can share the same `(name, x, y, z)` key. Vizb **sums** their values into a single point. A 200k-row export collapses into a few thousand chart points. You'll see it in the CLI output when duplicates were merged:
 
 ```text
 🧮 Aggregating 50000 rows by columns: region, product, month (name: region, x: product, y: month)...
 ✅ Aggregated into 1200 grouped data points
 ```
 
-When every row already has a unique group key (e.g. auto-group picked a high-cardinality ID column), vizb still runs the sum step but nothing collapses. The opening line is the same; the closing line notes that every key was unique:
-
-```text
-🧮 Aggregating 10000 rows by column: customer_name (x: customer_name)...
-✅ 10000 grouped rows — all unique (no duplicates to sum)
-```
+If every row already has a unique group key (e.g. auto-group picked a high-cardinality ID column), vizb still runs the sum step but nothing collapses — the closing line instead reports `✅ N grouped rows — all unique (no duplicates to sum)`.
 
 <Aside type="caution">
   Aggregation is **summing**, and applies to **CSV/JSON only**. Benchmark parsers are never aggregated. Repeated runs share a key but the UI averages them instead of summing.
@@ -381,7 +236,7 @@ When every row already has a unique group key (e.g. auto-group picked a high-car
 
 See [Tabular Data (CSV & JSON)](/guides/data) for the full parser rules.
 
-## Grouping benchmarks
+## Group benchmarks
 
 Benchmark names already encode structure. A name like `BenchmarkSort/1024/QuickSort` carries the function, the input size, and the variant. There are no columns to pick. So `--group-pattern` / `--group-regex` do all the extraction. Set axis titles with `{label}` suffixes in `-p` (see [Axis labels](#axis-labels)).
 
@@ -394,7 +249,7 @@ go test -bench . | vizb -p n/x/y -o output.html
 | `BenchmarkSort/1024/QuickSort` | Sort | 1024 | QuickSort |
 | `BenchmarkSort/2048/MergeSort` | Sort | 2048 | MergeSort |
 
-Every metric the benchmark reports (time, memory, allocations, …) becomes a series automatically. You only group the name.
+Every metric the benchmark reports (time, memory, allocations, …) becomes its own chart automatically. You only group the name.
 
 ## Pattern Syntax
 
@@ -570,13 +425,6 @@ vizb sales.csv -g date,category -p '[n{year}-y{months}-x{dates}],z{Category}' -o
 vizb bench.txt -p 'n{Algorithm}/x{Size}/y{Variant}' -o out.html
 ```
 
-| `-p` fragment | Default title (no `{}`) | With `{label}` |
-|---|---|---|
-| `y` with `-g region,product` | `region` (column name) | `y{Region}` → **Region** |
-| `x` with `-g region,product` | `product` (column name) | `x{Product}` → **Product** |
-| `[n{year}-y{months}-x{dates}]` | `date` for each split dim | **year**, **months**, **dates** |
-| `n/x/y` on benchmarks | (empty) | `n{Algorithm}/x{Size}/y{Variant}` → titled axes |
-
 Omit `{label}` on CSV/JSON and the matching `--group` column name becomes the axis title. When `{label}` is present, it always overrides that default.
 
 <Aside type="note">
@@ -585,30 +433,7 @@ Omit `{label}` on CSV/JSON and the matching `--group` column name becomes the ax
 
 ## Choosing a Method
 
-<Tabs syncKey="method">
-  <TabItem label="Pattern" icon="list">
-    Use `--group-pattern` when the label follows a consistent separator format.
-
-    ```bash
-    # Benchmarks — slash-separated names
-    vizb bench.txt --group-pattern "n/x/y" -o output.html
-
-    # CSV/JSON — comma-separated columns
-    vizb sales.csv -g region,product -p y,x -o sales.html
-    ```
-
-    Best for standard Go benchmarks (`BenchmarkFunc/size/variant`) and for CSV/JSON where columns map cleanly to dimensions with matching separators.
-  </TabItem>
-  <TabItem label="Regex" icon="search">
-    Use `--group-regex` when the label has a non-standard format or you need fine-grained control over extraction.
-
-    ```bash
-    vizb bench.txt --group-regex "Hash(?<n>[A-Za-z]+)(?<x>\d+)" -o output.html
-    ```
-
-    Best for custom naming conventions or when you need to skip fixed prefixes and suffixes.
-  </TabItem>
-</Tabs>
+Use `--group-pattern` when the label follows a consistent separator format — standard Go benchmarks (`BenchmarkFunc/size/variant`) or CSV/JSON columns that map cleanly to dimensions. Use `--group-regex` when the format is non-standard or you need fine-grained extraction, e.g. `--group-regex "Hash(?<n>[A-Za-z]+)(?<x>\d+)"` to pull a name and size out of `HashingMD5Test1024` without a stable separator.
 
 <Aside type="tip">
   Either method splits the label the same way. For CSV/JSON, remember you still need `--group` to pick the columns first. Benchmarks need no `--group` to chart, since the name is already the label.

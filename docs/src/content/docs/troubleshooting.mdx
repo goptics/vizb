@@ -17,7 +17,7 @@ Quick fixes for the errors beginners hit most often. Each entry shows the messag
 
 `-g` and `-p` must declare the same separators between dimension slots. A comma-separated `-g region,product,category` needs a comma-separated `-p x,y,z`, not `x/y/z`.
 
-**Fix:** Make `-p` mirror `-g` — same separator characters in the same positions. See [Matching separators](/guides/grouping/#matching-separators).
+**Fix:** Make `-p` mirror `-g` — same separator characters in the same positions. See [Matching separators](/guides/group/#matching-separators).
 
 ### Dimension count mismatch
 
@@ -27,7 +27,7 @@ Quick fixes for the errors beginners hit most often. Each entry shows the messag
 
 `-g` selects N columns but `-p` defines a different number of top-level slots. Common with bracket patterns where one column splits into multiple dimensions.
 
-**Fix:** Count top-level slots in `-p` (each `[...]` bracket counts as one slot). They must match the number of `-g` columns. See [Bracket slots](/guides/grouping/#bracket-slots--split-a-columns-cell-value).
+**Fix:** Count top-level slots in `-p` (each `[...]` bracket counts as one slot). They must match the number of `-g` columns. See [Bracket slots](/guides/group/#bracket-slots--split-a-columns-cell-value).
 
 ### Missing group column
 
@@ -37,7 +37,7 @@ group column 'X' not found; available: [...]
 
 The column name in `-g` does not match a CSV header or JSON field exactly (case-sensitive).
 
-**Fix:** Check spelling and run `vizb data.csv -o out.html` without `-g` first to confirm headers. See [Grouping CSV/JSON data](/guides/grouping/#grouping-csvjson-data).
+**Fix:** Check spelling and run `vizb data.csv -o out.html` without `-g` first to confirm headers. See [Grouping CSV/JSON data](/guides/group/#group-csvjson-data).
 
 ### Pattern needs x or y
 
@@ -47,7 +47,7 @@ pattern must contain xAxis (x) or yAxis (y)
 
 `-p` only assigned a `name` (`n`) or `z` dimension. At least one of `x` or `y` is required for grouping to take effect.
 
-**Fix:** Add `x` or `y` to the pattern, e.g. `-p n/x/y` instead of `-p n`. See [The Dimensions](/guides/grouping/#the-dimensions).
+**Fix:** Add `x` or `y` to the pattern, e.g. `-p n/x/y` instead of `-p n`. See [The Dimensions](/guides/group/#the-dimensions).
 
 ### z requires x and y
 
@@ -67,7 +67,7 @@ regex '...' does not contain x (xAxis) or y (yAxis)
 
 Same rule as pattern syntax — the named capture groups must include `(?<x>...)` or `(?<y>...)`.
 
-**Fix:** Add `(?<x>...)` or `(?<y>...)` to the regex. See [Regex Syntax](/guides/grouping/#regex-syntax).
+**Fix:** Add `(?<x>...)` or `(?<y>...)` to the regex. See [Regex Syntax](/guides/group/#regex-syntax).
 
 ## Data errors
 
@@ -110,7 +110,7 @@ unknown parser 'X'; available: auto, [...]
 ## Still stuck?
 
 <CardGrid cols={2}>
-  <LinkCard title="Grouping Guide" description="Pattern syntax, bracket slots, and regex." href="/guides/grouping" />
+  <LinkCard title="Group guide" description="Pattern syntax, bracket slots, and regex." href="/guides/group" />
   <LinkCard title="Tabular Data" description="CSV and JSON parser rules." href="/guides/data" />
   <LinkCard title="Parser Guide" description="Supported inputs and metrics." href="/guides/parsers" />
   <LinkCard title="GitHub Issues" description="Report a bug or ask for help." href="https://github.com/goptics/vizb/issues" />

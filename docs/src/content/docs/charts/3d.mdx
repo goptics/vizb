@@ -69,7 +69,7 @@ If you supply a `z` without both `x` and `y`, vizb rejects the pattern:
 zAxis (z) requires both xAxis (x) and yAxis (y)
 ```
 
-See the [Grouping Guide](/guides/grouping) for full pattern and regex syntax.
+See the [Group guide](/guides/group) for full pattern and regex syntax.
 
 ## Value (pseudo) 3D (`--3d` on x+y data)
 
@@ -95,7 +95,7 @@ The HTML bundles **3D view** and **3D visual map** toggles in settings (both on 
 
 ## Continuous 3D (auto-value)
 
-When your CSV/JSON data has 3+ numeric columns, vizb auto-value detects them as `x`, `y`, `z` coordinates and renders continuous 3D — no `--3d` flag needed. This works on bar, line, and scatter:
+When your CSV/JSON data has 3+ numeric columns, auto-value renders continuous 3D — no `--3d` flag needed. This works on bar, line, and scatter:
 
 ```bash
 # All-numeric CSV — auto-detects x, y, z → bar3D
@@ -106,7 +106,7 @@ vizb line spiral.csv -o line.html
 vizb scatter spiral.csv -o scatter.html
 ```
 
-Use `--select` to pick specific columns. With auto-value, 3D is automatically enabled when 3 coordinate columns are detected; `--select` limiting to 2 columns keeps it 2D.
+See [Group vs Select → Auto-value](/guides/group-vs-select#auto-value-all-numeric-data) for the full inference rules. In short: 3 coordinate columns auto-enable 3D, and solo `--select` (or limiting it to 2 columns) keeps the chart 2D.
 
 When a CSV/JSON has **four** numeric columns, vizb treats the first three as `x`, `y`, `z` positions and the fourth as a **visual metric** — `3d-visualmap` is enabled automatically so point color and size follow the metric.
 

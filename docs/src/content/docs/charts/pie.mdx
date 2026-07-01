@@ -4,6 +4,10 @@ description: Break data into proportional slices — vizb renders one pie per di
 ---
 
 import { CardGrid, Card, LinkCard, Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+import { Image } from 'astro:assets';
+import pie1D from '../../../assets/pie-1D.png';
+import pie2D from '../../../assets/pie-2D.png';
+import pie3D from '../../../assets/pie-3D.png';
 
 The **pie chart** shows how a whole breaks into parts. Unlike bar and line charts, pie has no cartesian axes — vizb maps your dimensions to multiple pie charts rendered side-by-side, one per axis. Each slice carries its name and percentage, so the composition of your dataset is immediately readable.
 
@@ -23,57 +27,55 @@ Slice sizes are proportional to the sum of values for that axis entry. Labels sh
 
 ## Dimensions
 
+The examples below use [`sales.csv`](https://github.com/goptics/vizb/blob/main/sales.csv) — 10,000 order rows with categorical columns (`order_date`, `region`, `category`, …) and numeric metrics (`quantity`, `amount`, `total`, …). You can also browse [live CSV dashboards](https://vizb.goptics.org/examples/csv) built from the same file.
+
 ### 1D (X axis)
 
 One pie chart: each unique X value is a slice. The slice size is proportional to its total value. This is the clearest way to see which X category dominates.
 
 ```bash
-vizb pie data.csv -g category -o out.html
+vizb pie sales.csv -g region -o out.html
 ```
 
-{/* TODO: Add GIF showing a 1D pie chart with labeled slices */}
+<Image src={pie1D} alt="1D pie chart showing quantity share by region with labeled slices" />
 
 ### 2D (X + Y axes)
 
 Two pies side-by-side: **By X-Axis** and **By Y-Axis**. Each pie breaks the total differently — the first by X category, the second by Y column. Comparing the two lets you see which axis has more evenly-distributed weight.
 
 ```bash
-vizb pie data.csv -g category,metric -p x,y -o out.html
+vizb pie sales.csv -g region,category -p x,y -o out.html
 ```
 
-{/* TODO: Add GIF showing two pies side-by-side with slice labels */}
+<Image src={pie2D} alt="2D pie charts side by side — quantity by region and by category" />
 
 ### 3D (X + Y + Z axes)
 
 Three pies in a row: **By X-Axis**, **By Y-Axis**, and **By Z-Axis**. Each pie slices the total along a different axis, giving you a three-way breakdown of the same dataset in a single view.
 
+This example splits `order_date` into month and day slots (same grouping as the [Sales by Date](https://vizb.goptics.org/examples/csv/?id=02-sales-by-date) CSV dashboard) and maps `category` to the Z axis.
+
 ```bash
-vizb pie data.csv -g category,metric,group -p x,y,z -o out.html
+vizb pie sales.csv -g order_date,category -p "[-y{Month}-x{Date}],z{Category}" -o out.html
 ```
 
-{/* TODO: Add GIF showing three pies in a row for a 3D dataset */}
-
-<Aside type="caution">
-  **Scale (log) and auto-rotate are not available for pie charts.** Pie has no cartesian axis to scale logarithmically, and there is no 3D scene to rotate. These controls are hidden from the UI when only a pie chart is active.
-</Aside>
+<Image src={pie3D} alt="3D pie charts in a row — quantity by date, month, and category" />
 
 ## Settings
 
-These settings apply to pie charts:
+Pie charts expose three runtime settings — sort, labels, and axis swap.
 
 | Setting | CLI flag | UI toggle | Notes |
 |---------|----------|-----------|-------|
 | Sort | `--sort asc\|desc` | Sort control | Orders slices by value |
 | Labels | `--show-labels` | Show labels | Shows name + percentage on each slice |
 | Swap | `--swap` | Axis switcher | Reorders which axis maps to which pie |
-| Scale (log) | — | — | **Not available** for pie charts |
-| Auto-rotate | — | — | **Not available** for pie charts |
 
 Override settings for just this chart type without affecting others:
 
 ```bash
 # Sort slices descending and show labels
-vizb pie data.csv -g category,metric --sort desc -l -o out.html
+vizb pie sales.csv -g region,category -p x,y --sort desc -l -o out.html
 ```
 
 ## Next Steps

@@ -64,55 +64,23 @@ vizb bar sales.csv -g order_date,category -p "[-y{Month}-x{Date}],z{Category}" -
 
 ## `--select` (csv/json)
 
-`--select` is **repeatable** and plays three roles depending on whether grouping is explicit. See the [mode matrix](/commands/root#--select-mode-matrix) for a full comparison.
-
-### Role 1 — Grouped + numeric select
-
-With explicit `-g` / `-p` / `-r`, `--select` picks which **numeric columns** become bar series. Optional `{label}` renames series.
+`--select` is **repeatable** (csv/json only). With explicit `-g` / `-p` / `-r`, it picks which numeric columns get their own chart (optional `{label}` renames each chart). Without group, it switches to solo value / mixed / multi-stat modes that plot raw columns as coordinate axes.
 
 ```bash
-vizb bar sales.csv -g region,product -p x,y --select amount,total -o out.html
+vizb bar sales.csv -g region,product -p x,y --select amount,total -o bars.html
 ```
 
-### Role 2 — Solo all-numeric value axes
-
-Without grouping, each `--select` defines one **value-mode** view: 2–3 numeric columns become continuous `x`, `y`, and optional `z` axes. Auto-group and auto-value are disabled. With 3 columns, bar auto-enables 3D (`bar3D`).
-
-```bash
-# Two numeric columns → 2D value bars
-vizb bar spiral-3d.csv --select x,y -o bar.html
-
-# Three numeric columns → 3D value bars
-vizb bar spiral-3d.csv --select x,y,z -o bar3d.html
-```
-
-### Role 3 — Solo mixed category + value
-
-Without grouping, when the first selected column is categorical and the rest are numeric, vizb parses **mixed-axis** data (category x + value y[,z]). Bar accepts this shape at parse time; [scatter](/charts/scatter) is the primary chart for category × value plots.
-
-```bash
-vizb bar examples/csv/region-metrics.csv --select region,latency -o bars.html
-vizb scatter examples/csv/region-metrics.csv --select region,latency -o scatter.html
-```
-
-Repeat `--select` for multiple datasets in one HTML file (dataset tabs in the UI).
+See [Select](/guides/select) for the full mode reference, and [Group vs Select](/guides/group-vs-select) for when to use each.
 
 ## Auto-value mode (all-numeric data)
 
-When every column in a CSV/JSON file is numeric (no categorical columns), vizb auto-detects the first 2–3 columns as coordinate axes and renders them as value-type bars — no `--group` needed. With 3+ columns, bar auto-enables 3D (`bar3D`).
+On an all-numeric CSV/JSON file, vizb auto-detects the first 2–3 columns as coordinate axes and renders value-type bars — with 3+ columns it auto-enables 3D (`bar3D`). See [Auto-value](/guides/group-vs-select#auto-value-all-numeric-data) for the inference rules; solo `--select` overrides it.
 
 ```bash
-# Three columns → x, y, z bar3D
 ./bin/vizb bar noise-surface.csv -o surface.html --3d-visualmap
 ```
 
 <Image src={bar3DValue} alt="3D bar chart with value-type bars along the Z axis" />
-
-Solo `--select` overrides auto-value: it disables inference and uses only the columns you name. With 2 columns selected, the chart stays 2D even if the file has more numeric columns.
-
-```bash
-vizb bar data.csv --select price,latency -o bar.html
-```
 
 ## Settings
 
