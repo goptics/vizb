@@ -1,0 +1,795 @@
+<!DOCTYPE html><html lang="en" dir="ltr" data-theme="dark" data-has-toc data-has-sidebar class="astro-ejwtyf32"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Group | Tabular data visualization engine</title><link rel="canonical" href="https://vizb.goptics.org/guides/group/"/><link rel="sitemap" href="/sitemap-index.xml"/><link rel="shortcut icon" href="/favicon.svg" type="image/svg+xml"/><meta name="generator" content="Astro v7.0.3"/><meta name="generator" content="Starlight v0.41.1"/><meta property="og:title" content="Group"/><meta property="og:type" content="article"/><meta property="og:url" content="https://vizb.goptics.org/guides/group/"/><meta property="og:locale" content="en"/><meta property="og:description" content="Turn rows — CSV/JSON columns or benchmark names — into structured dimensions for multi-dimensional charts."/><meta property="og:site_name" content="Tabular data visualization engine"/><meta name="twitter:card" content="summary_large_image"/><meta name="description" content="Turn rows — CSV/JSON columns or benchmark names — into structured dimensions for multi-dimensional charts."/><meta property="og:image" content="/og-image.png"/><meta property="og:image:width" content="1200"/><meta property="og:image:height" content="600"/><script>
+	window.StarlightThemeProvider = (() => {
+		const storedTheme =
+			typeof localStorage !== 'undefined' && localStorage.getItem('starlight-theme');
+		const theme =
+			storedTheme ||
+			(window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+		document.documentElement.dataset.theme = theme === 'light' ? 'light' : 'dark';
+		return {
+			updatePickers(theme = storedTheme || 'auto') {
+				document.querySelectorAll('starlight-theme-select').forEach((picker) => {
+					const select = picker.querySelector('select');
+					if (select) select.value = theme;
+					/** @type {HTMLTemplateElement | null} */
+					const tmpl = document.querySelector(`#theme-icons`);
+					const newIcon = tmpl && tmpl.content.querySelector('.' + theme);
+					if (newIcon) {
+						const oldIcon = picker.querySelector('svg.label-icon');
+						if (oldIcon) {
+							oldIcon.replaceChildren(...newIcon.cloneNode(true).childNodes);
+						}
+					}
+				});
+			},
+		};
+	})();
+</script><template id="theme-icons"><svg aria-hidden="true" class="light astro-d45u3u2k" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1em;"><path d="M5 12a1 1 0 0 0-1-1H3a1 1 0 0 0 0 2h1a1 1 0 0 0 1-1Zm.64 5-.71.71a1 1 0 0 0 0 1.41 1 1 0 0 0 1.41 0l.71-.71A1 1 0 0 0 5.64 17ZM12 5a1 1 0 0 0 1-1V3a1 1 0 0 0-2 0v1a1 1 0 0 0 1 1Zm5.66 2.34a1 1 0 0 0 .7-.29l.71-.71a1 1 0 1 0-1.41-1.41l-.66.71a1 1 0 0 0 0 1.41 1 1 0 0 0 .66.29Zm-12-.29a1 1 0 0 0 1.41 0 1 1 0 0 0 0-1.41l-.71-.71a1.004 1.004 0 1 0-1.43 1.41l.73.71ZM21 11h-1a1 1 0 0 0 0 2h1a1 1 0 0 0 0-2Zm-2.64 6A1 1 0 0 0 17 18.36l.71.71a1 1 0 0 0 1.41 0 1 1 0 0 0 0-1.41l-.76-.66ZM12 6.5a5.5 5.5 0 1 0 5.5 5.5A5.51 5.51 0 0 0 12 6.5Zm0 9a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Zm0 3.5a1 1 0 0 0-1 1v1a1 1 0 0 0 2 0v-1a1 1 0 0 0-1-1Z"/></svg><svg aria-hidden="true" class="dark astro-d45u3u2k" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1em;"><path d="M21.64 13a1 1 0 0 0-1.05-.14 8.049 8.049 0 0 1-3.37.73 8.15 8.15 0 0 1-8.14-8.1 8.59 8.59 0 0 1 .25-2A1 1 0 0 0 8 2.36a10.14 10.14 0 1 0 14 11.69 1 1 0 0 0-.36-1.05Zm-9.5 6.69A8.14 8.14 0 0 1 7.08 5.22v.27a10.15 10.15 0 0 0 10.14 10.14 9.784 9.784 0 0 0 2.1-.22 8.11 8.11 0 0 1-7.18 4.32v-.04Z"/></svg><svg aria-hidden="true" class="auto astro-d45u3u2k" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1em;"><path d="M21 14h-1V7a3 3 0 0 0-3-3H7a3 3 0 0 0-3 3v7H3a1 1 0 0 0-1 1v2a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3v-2a1 1 0 0 0-1-1ZM6 7a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v7H6V7Zm14 10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-1h16v1Z"/></svg></template><link rel="stylesheet" href="/_astro/print.ehPL0gv-.css" media="print"><link rel="stylesheet" href="/_astro/common.CBbcbH9t.css"><style>@layer starlight.components{.card:where(.astro-gfxdavos){--sl-card-border:var(--sl-color-purple);--sl-card-bg:var(--sl-color-purple-low);border:1px solid var(--sl-color-gray-5);background-color:var(--sl-color-black);flex-direction:column;gap:clamp(.5rem,.125rem + 1vw,1rem);padding:clamp(1rem,.125rem + 3vw,2.5rem)}.card:where(.astro-gfxdavos):nth-child(4n+1){--sl-card-border:var(--sl-color-orange);--sl-card-bg:var(--sl-color-orange-low)}.card:where(.astro-gfxdavos):nth-child(4n+3){--sl-card-border:var(--sl-color-green);--sl-card-bg:var(--sl-color-green-low)}.card:where(.astro-gfxdavos):nth-child(4n+4){--sl-card-border:var(--sl-color-red);--sl-card-bg:var(--sl-color-red-low)}.card:where(.astro-gfxdavos):nth-child(4n+5){--sl-card-border:var(--sl-color-blue);--sl-card-bg:var(--sl-color-blue-low)}.title:where(.astro-gfxdavos){font-weight:600;font-size:var(--sl-text-h4);color:var(--sl-color-white);line-height:var(--sl-line-height-headings);align-items:center;gap:1rem}.card:where(.astro-gfxdavos) .icon:where(.astro-gfxdavos){border:1px solid var(--sl-card-border);background-color:var(--sl-card-bg);border-radius:.25rem;flex-shrink:0;padding:.2em}.card:where(.astro-gfxdavos) .body:where(.astro-gfxdavos){font-size:clamp(var(--sl-text-sm), calc(.5rem + 1vw), var(--sl-text-body));margin:0}}
+@layer starlight.components{.card-grid:where(.astro-4lb6yn2a){grid-template-columns:100%;gap:1rem;display:grid}.card-grid:where(.astro-4lb6yn2a)>*{margin-top:0!important}@media (width>=50rem){.card-grid:where(.astro-4lb6yn2a){grid-template-columns:1fr 1fr;gap:1.5rem}.stagger:where(.astro-4lb6yn2a){--stagger-height:5rem;padding-bottom:var(--stagger-height)}.stagger:where(.astro-4lb6yn2a)>:where(.astro-4lb6yn2a):nth-child(2n){transform:translateY(var(--stagger-height))}}}
+@layer starlight.components{svg:where(.astro-d45u3u2k){color:var(--sl-icon-color);font-size:var(--sl-icon-size,1em);width:1em;height:1em}}
+@layer starlight.components{starlight-tabs:where(.astro-7vjr5il6){display:block}.tablist-wrapper:where(.astro-7vjr5il6){overflow-x:auto}:where(.astro-7vjr5il6)[role=tablist]{border-bottom:2px solid var(--sl-color-gray-5);padding:0;list-style:none;display:flex}.tab:where(.astro-7vjr5il6){display:flex}.tab:where(.astro-7vjr5il6)>:where(.astro-7vjr5il6)[role=tab]{--sl-tab-color-border:var(--sl-color-gray-5);line-height:var(--sl-line-height-headings);box-shadow:0 2px 0 var(--sl-tab-color-border);color:var(--sl-color-gray-3);outline-offset:var(--sl-outline-offset-inside);overflow-wrap:initial;align-items:center;gap:.5rem;padding:.275rem 1.25rem;text-decoration:none;display:flex}.tab:where(.astro-7vjr5il6) :where(.astro-7vjr5il6)[role=tab][aria-selected=true]{--sl-tab-color-border:var(--sl-color-text-accent);color:var(--sl-color-white);font-weight:600}.tablist-wrapper:where(.astro-7vjr5il6)~[role=tabpanel]{margin-top:1rem}}
+@layer starlight.components{.sl-link-card:where(.astro-4z4dewmp){border:1px solid var(--sl-color-gray-5);box-shadow:var(--sl-shadow-sm);border-radius:.5rem;grid-template-columns:1fr auto;gap:.5rem;padding:1rem;display:grid;position:relative}a:where(.astro-4z4dewmp){line-height:var(--sl-line-height-headings);text-decoration:none}a:where(.astro-4z4dewmp):before{content:"";position:absolute;inset:0}.stack:where(.astro-4z4dewmp){flex-direction:column;gap:.5rem}.title:where(.astro-4z4dewmp){color:var(--sl-color-white);font-weight:600;font-size:var(--sl-text-lg)}.description:where(.astro-4z4dewmp){color:var(--sl-color-gray-3);line-height:1.5}.icon:where(.astro-4z4dewmp){color:var(--sl-color-gray-3)}.sl-link-card:where(.astro-4z4dewmp):hover{background:var(--sl-color-gray-7,var(--sl-color-gray-6));border-color:var(--sl-color-gray-2)}.sl-link-card:where(.astro-4z4dewmp):hover .icon:where(.astro-4z4dewmp){color:var(--sl-color-white)}}
+@layer starlight.components{.sl-steps{--bullet-size:calc(var(--sl-line-height) * 1rem);--bullet-margin:.375rem;counter-reset:steps-counter var(--sl-steps-start,0);padding-inline-start:0;list-style:none}.sl-steps>li{counter-increment:steps-counter;padding-inline-start:calc(var(--bullet-size) + 1rem);min-height:calc(var(--bullet-size) + var(--bullet-margin));padding-bottom:1px;position:relative}.sl-steps>li+li{margin-top:0}.sl-steps>li:before{content:counter(steps-counter);top:0;width:var(--bullet-size);height:var(--bullet-size);line-height:var(--bullet-size);font-size:var(--sl-text-xs);text-align:center;color:var(--sl-color-white);background-color:var(--sl-color-gray-6);box-shadow:inset 0 0 0 1px var(--sl-color-gray-5);border-radius:99rem;font-weight:600;position:absolute;inset-inline-start:0}.sl-steps>li:after{--guide-width:1px;content:"";top:calc(var(--bullet-size) + var(--bullet-margin));bottom:var(--bullet-margin);width:var(--guide-width);background-color:var(--sl-color-hairline-light);position:absolute;inset-inline-start:calc((var(--bullet-size) - var(--guide-width)) / 2)}}@layer starlight.content{.sl-steps>li>:first-child{--lh:calc(1em * var(--sl-line-height));--shift-y:calc(.5 * (var(--bullet-size) - var(--lh)));transform:translateY(var(--shift-y));margin-bottom:var(--shift-y)}.sl-steps>li>:first-child:where(h1,h2,h3,h4,h5,h6){--lh:calc(1em * var(--sl-line-height-headings))}@supports (--prop:1lh){.sl-steps>li>:first-child{--lh:1lh}}}
+@layer starlight.components{starlight-file-tree:where(.astro-clmaqipq){--x-space:1.5rem;--y-space:.125rem;--y-pad:0;border:1px solid var(--sl-color-gray-5);background-color:var(--sl-color-gray-6);font-size:var(--sl-text-xs);font-family:var(--__sl-font-mono);padding:1rem;display:block;overflow-x:auto}starlight-file-tree:where(.astro-clmaqipq) .directory>details{padding:0;background:0 0;border:0;padding-inline-start:var(--x-space)}starlight-file-tree:where(.astro-clmaqipq) .directory>details>summary{padding:var(--y-pad) .625rem;color:var(--sl-color-white);border:0;max-width:100%;margin-inline-start:calc(-1 * var(--x-space));font-weight:400}starlight-file-tree:where(.astro-clmaqipq) .directory>details>summary::marker{color:var(--sl-color-gray-3)}starlight-file-tree:where(.astro-clmaqipq) .directory>details>summary::-webkit-details-marker{color:var(--sl-color-gray-3)}starlight-file-tree:where(.astro-clmaqipq) .directory>details>summary:hover,starlight-file-tree:where(.astro-clmaqipq) .directory>details>summary:hover .tree-icon{cursor:pointer;color:var(--sl-color-text-accent);fill:currentColor}starlight-file-tree:where(.astro-clmaqipq) .directory>details>summary:hover~ul{border-color:var(--sl-color-gray-4)}starlight-file-tree:where(.astro-clmaqipq) .directory>details>summary:hover .highlight .tree-icon{color:var(--sl-color-text-invert);fill:currentColor}starlight-file-tree:where(.astro-clmaqipq) ul{border-inline-start:1px solid var(--sl-color-gray-5);margin-inline-start:.5rem;padding:0;padding-inline-start:.125rem;list-style:none}starlight-file-tree:where(.astro-clmaqipq)>ul{border:0;margin:0;padding:0}starlight-file-tree:where(.astro-clmaqipq) li{margin:var(--y-space) 0;padding:var(--y-pad) 0}starlight-file-tree:where(.astro-clmaqipq) .file{color:var(--sl-color-white);margin-inline-start:calc(var(--x-space) - .125rem)}starlight-file-tree:where(.astro-clmaqipq) .tree-entry{flex-wrap:wrap;align-items:flex-start;max-width:calc(100% - 1rem);display:inline-flex}@media (width>=30em){starlight-file-tree:where(.astro-clmaqipq) .tree-entry{flex-wrap:nowrap}}starlight-file-tree:where(.astro-clmaqipq) .tree-entry>:first-child{flex-shrink:0}starlight-file-tree:where(.astro-clmaqipq) .empty{color:var(--sl-color-gray-3);padding-inline-start:.375rem}starlight-file-tree:where(.astro-clmaqipq) .comment{color:var(--sl-color-gray-3);min-width:12rem;max-width:24rem;padding-inline-start:1.625rem}starlight-file-tree:where(.astro-clmaqipq) .highlight{color:var(--sl-color-text-invert);background-color:var(--sl-color-text-accent);border-radius:.25rem;padding-inline-end:.5rem;display:inline-block}starlight-file-tree:where(.astro-clmaqipq) svg{fill:var(--sl-color-gray-3);vertical-align:middle;width:.875rem;height:.875rem;margin-inline:.25rem .375rem;display:inline}starlight-file-tree:where(.astro-clmaqipq) .highlight svg.tree-icon{fill:currentColor}}
+</style><script type="module" src="/_astro/page.169VI7mI.js"></script></head><body class="astro-ejwtyf32"><a href="#_top" class="astro-2rnrnuqi">Skip to content</a><div class="page sl-flex astro-a4rwrqir"><header class="header astro-a4rwrqir"><div class="header astro-htld3q7n"><div class="title-wrapper sl-flex astro-htld3q7n"><a href="/" class="site-title sl-flex astro-stlnnhog"><img class="light:sl-hidden print:hidden astro-stlnnhog" alt src="/_astro/logo-dark.Divh21Ml.svg" width="556" height="308"><img class="dark:sl-hidden print:block astro-stlnnhog" alt src="/_astro/logo-light.DSMIJTCn.svg" width="556" height="308"><span class="sr-only astro-stlnnhog" translate="no">Tabular data visualization engine</span></a></div><div class="sl-flex print:hidden astro-htld3q7n"><site-search class="astro-htld3q7n astro-xkgquhww" data-translations="{&quot;placeholder&quot;:&quot;Search&quot;}"><button data-open-modal disabled aria-label="Search" aria-keyshortcuts="Control+K" class="astro-xkgquhww"><svg aria-hidden="true" class="astro-xkgquhww astro-d45u3u2k" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1em;"><path d="M21.71 20.29 18 16.61A9 9 0 1 0 16.61 18l3.68 3.68a.999.999 0 0 0 1.42 0 1 1 0 0 0 0-1.39ZM11 18a7 7 0 1 1 0-14 7 7 0 0 1 0 14Z"/></svg><span class="sl-hidden md:sl-block astro-xkgquhww" aria-hidden="true">Search</span><kbd class="sl-hidden md:sl-flex astro-xkgquhww" style="display: none;"><kbd class="astro-xkgquhww">Ctrl</kbd><kbd class="astro-xkgquhww">K</kbd></kbd></button><dialog style="padding:0" aria-label="Search" class="astro-xkgquhww"><div class="dialog-frame sl-flex astro-xkgquhww"><button data-close-modal class="sl-flex md:sl-hidden astro-xkgquhww">Cancel</button><div class="search-container astro-xkgquhww"><div id="starlight__search" class="astro-xkgquhww"></div></div></div></dialog></site-search><script>
+	(() => {
+		const openBtn = document.querySelector('button[data-open-modal]');
+		const shortcut = openBtn?.querySelector('kbd');
+		if (!openBtn || !(shortcut instanceof HTMLElement)) return;
+		const platformKey = shortcut.querySelector('kbd');
+		if (platformKey && /(Mac|iPhone|iPod|iPad)/i.test(navigator.platform)) {
+			platformKey.textContent = '⌘';
+			openBtn.setAttribute('aria-keyshortcuts', 'Meta+K');
+		}
+		shortcut.style.display = '';
+	})();
+</script><script type="module" src="/_astro/Search.astro_astro_type_script_index_0_lang.BhbZRdaS.js"></script></div><div class="sl-hidden md:sl-flex print:hidden right-group astro-htld3q7n"><div class="sl-flex social-icons astro-htld3q7n"><a href="https://github.com/goptics/vizb" rel="me" class="sl-flex astro-iy7lawri"><span class="sr-only astro-iy7lawri">GitHub</span><svg aria-hidden="true" class="astro-iy7lawri astro-d45u3u2k" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1em;"><path d="M12 .3a12 12 0 0 0-3.8 23.38c.6.12.83-.26.83-.57L9 21.07c-3.34.72-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.08-.74.09-.73.09-.73 1.2.09 1.83 1.24 1.83 1.24 1.08 1.83 2.81 1.3 3.5 1 .1-.78.42-1.31.76-1.61-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.14-.3-.54-1.52.1-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.28-1.55 3.29-1.23 3.29-1.23.64 1.66.24 2.88.12 3.18a4.65 4.65 0 0 1 1.23 3.22c0 4.61-2.8 5.63-5.48 5.92.42.36.81 1.1.81 2.22l-.01 3.29c0 .31.2.69.82.57A12 12 0 0 0 12 .3Z"/></svg></a></div><starlight-rapide-theme-select class="astro-gtikhvs2"><button aria-label="Select theme" aria-live="polite" class="sl-flex astro-gtikhvs2" title="Select theme"><svg aria-hidden="true" height="16" viewBox="0 0 24 24" width="16" class="astro-gtikhvs2"><mask class="moon astro-gtikhvs2" id="moon-mask-8a5eb0c6"><rect x="0" y="0" width="100%" height="100%" fill="white" class="astro-gtikhvs2"></rect><circle cx="24" cy="10" r="6" fill="black" class="astro-gtikhvs2"></circle></mask><circle class="sun astro-gtikhvs2" cx="12" cy="12" r="6" mask="url(#moon-mask-8a5eb0c6)"></circle><g class="sun-beams astro-gtikhvs2" stroke="currentColor"><line x1="12" y1="1" x2="12" y2="3" class="astro-gtikhvs2"></line><line x1="12" y1="21" x2="12" y2="23" class="astro-gtikhvs2"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" class="astro-gtikhvs2"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" class="astro-gtikhvs2"></line><line x1="1" y1="12" x2="3" y2="12" class="astro-gtikhvs2"></line><line x1="21" y1="12" x2="23" y2="12" class="astro-gtikhvs2"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" class="astro-gtikhvs2"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" class="astro-gtikhvs2"></line></g></svg></button></starlight-rapide-theme-select><script>
+  StarlightThemeProvider.updatePickers()
+</script><script type="module">var e=`starlight-theme`;function t(e){return e===`auto`||e===`dark`||e===`light`?e:`auto`}function n(){return t(typeof localStorage<`u`&&localStorage.getItem(e))}function r(t){typeof localStorage<`u`&&localStorage.setItem(e,t===`light`||t===`dark`?t:``)}function i(){return matchMedia(`(prefers-color-scheme: light)`).matches?`light`:`dark`}function a(e){StarlightThemeProvider.updatePickers(e),document.documentElement.dataset.theme=e===`auto`?i():e,r(e)}matchMedia(`(prefers-color-scheme: light)`).addEventListener(`change`,()=>{n()===`auto`&&a(`auto`)}),customElements.define(`starlight-rapide-theme-select`,class extends HTMLElement{constructor(){super(),a(n());let e=this.querySelector(`button`);e?.addEventListener(`click`,()=>{let n=t(document.documentElement.dataset.theme),r=n===`dark`?`light`:n===`light`?`dark`:`auto`;a(r),e?.setAttribute(`aria-label`,`${r} theme`)})}});</script></div></div></header><nav class="sidebar print:hidden astro-a4rwrqir" aria-label="Main"><starlight-menu-button class="print:hidden astro-3cbpvvnl"><button aria-expanded="false" aria-label="Menu" aria-controls="starlight__sidebar" class="sl-flex md:sl-hidden astro-3cbpvvnl"><svg aria-hidden="true" class="open-menu astro-3cbpvvnl astro-d45u3u2k" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1em;"><path d="M3 8h18a1 1 0 1 0 0-2H3a1 1 0 0 0 0 2Zm18 8H3a1 1 0 0 0 0 2h18a1 1 0 0 0 0-2Zm0-5H3a1 1 0 0 0 0 2h18a1 1 0 0 0 0-2Z"/></svg><svg aria-hidden="true" class="close-menu astro-3cbpvvnl astro-d45u3u2k" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1em;"><path d="m13.41 12 6.3-6.29a1.004 1.004 0 1 0-1.42-1.42L12 10.59l-6.29-6.3a1.004 1.004 0 0 0-1.42 1.42l6.3 6.29-6.3 6.29a1 1 0 0 0 0 1.42.998.998 0 0 0 1.42 0l6.29-6.3 6.29 6.3a.999.999 0 0 0 1.42 0 1 1 0 0 0 0-1.42L13.41 12Z"/></svg></button></starlight-menu-button><script type="module">var e=class extends HTMLElement{btn=this.querySelector(`button`);constructor(){super(),this.btn.addEventListener(`click`,()=>this.toggleExpanded());let e=this.closest(`nav`);e&&e.addEventListener(`keyup`,e=>this.closeOnEscape(e))}setExpanded(e){this.setAttribute(`aria-expanded`,String(e)),document.body.toggleAttribute(`data-mobile-menu-expanded`,e)}toggleExpanded(){this.setExpanded(this.getAttribute(`aria-expanded`)!==`true`)}closeOnEscape(e){e.code===`Escape`&&(this.setExpanded(!1),this.btn.focus())}};customElements.define(`starlight-menu-button`,e);</script><div id="starlight__sidebar" class="sidebar-pane astro-a4rwrqir"><div class="sidebar-content sl-flex astro-a4rwrqir"><sl-sidebar-state-persist data-hash="1j727g3" class="astro-ydbyvr45"><script aria-hidden="true">
+		(() => {
+			try {
+				if (!matchMedia('(min-width: 50em)').matches) return;
+				/** @type {HTMLElement | null} */
+				const target = document.querySelector('sl-sidebar-state-persist');
+				const state = JSON.parse(sessionStorage.getItem('sl-sidebar-state') || '0');
+				if (!target || !state || target.dataset.hash !== state.hash) return;
+				window._starlightScrollRestore = state.scroll;
+				customElements.define(
+					'sl-sidebar-restore',
+					class SidebarRestore extends HTMLElement {
+						connectedCallback() {
+							try {
+								const idx = parseInt(this.dataset.index || '');
+								const details = this.closest('details');
+								if (details && typeof state.open[idx] === 'boolean') details.open = state.open[idx];
+							} catch {}
+						}
+					}
+				);
+			} catch {}
+		})();
+	</script><ul class="top-level astro-jjetqzgv"><li class="astro-jjetqzgv"><a href="/getting-started/" class="large astro-jjetqzgv"><span class="astro-jjetqzgv">Getting Started</span></a></li><li class="astro-jjetqzgv"><a href="/installation/" class="large astro-jjetqzgv"><span class="astro-jjetqzgv">Installation</span></a></li><li class="astro-jjetqzgv"><a href="/features/" class="large astro-jjetqzgv"><span class="astro-jjetqzgv">Features</span></a></li><li class="astro-jjetqzgv"><details open class="astro-jjetqzgv"><summary class="astro-jjetqzgv"><span class="group-label astro-jjetqzgv"><span class="large astro-jjetqzgv">Commands</span></span><svg aria-hidden="true" class="caret astro-jjetqzgv astro-d45u3u2k" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1.25rem;"><path d="m14.83 11.29-4.24-4.24a1 1 0 1 0-1.42 1.41L12.71 12l-3.54 3.54a1 1 0 0 0 0 1.41 1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.24-4.24a1.002 1.002 0 0 0 0-1.42Z"/></svg></summary><sl-sidebar-restore data-index="0"></sl-sidebar-restore><ul class="astro-jjetqzgv"><li class="astro-jjetqzgv"><a href="/commands/root/" class="astro-jjetqzgv"><span class="astro-jjetqzgv">vizb</span></a></li><li class="astro-jjetqzgv"><a href="/commands/charts/" class="astro-jjetqzgv"><span class="astro-jjetqzgv">vizb &lt;chart&gt;</span></a></li><li class="astro-jjetqzgv"><a href="/commands/merge/" class="astro-jjetqzgv"><span class="astro-jjetqzgv">vizb merge</span></a></li><li class="astro-jjetqzgv"><a href="/commands/ui/" class="astro-jjetqzgv"><span class="astro-jjetqzgv">vizb ui</span></a></li></ul></details></li><li class="astro-jjetqzgv"><details open class="astro-jjetqzgv"><summary class="astro-jjetqzgv"><span class="group-label astro-jjetqzgv"><span class="large astro-jjetqzgv">UI</span></span><svg aria-hidden="true" class="caret astro-jjetqzgv astro-d45u3u2k" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1.25rem;"><path d="m14.83 11.29-4.24-4.24a1 1 0 1 0-1.42 1.41L12.71 12l-3.54 3.54a1 1 0 0 0 0 1.41 1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.24-4.24a1.002 1.002 0 0 0 0-1.42Z"/></svg></summary><sl-sidebar-restore data-index="1"></sl-sidebar-restore><ul class="astro-jjetqzgv"><li class="astro-jjetqzgv"><a href="/ui/" class="astro-jjetqzgv"><span class="astro-jjetqzgv">Overview</span></a></li><li class="astro-jjetqzgv"><a href="/ui/settings/" class="astro-jjetqzgv"><span class="astro-jjetqzgv">Settings</span></a></li><li class="astro-jjetqzgv"><a href="/ui/swapping/" class="astro-jjetqzgv"><span class="astro-jjetqzgv">Axis Swapping</span></a></li><li class="astro-jjetqzgv"><a href="/ui/stats/" class="astro-jjetqzgv"><span class="astro-jjetqzgv">Statistics</span></a></li></ul></details></li><li class="astro-jjetqzgv"><details open class="astro-jjetqzgv"><summary class="astro-jjetqzgv"><span class="group-label astro-jjetqzgv"><span class="large astro-jjetqzgv">Charts</span></span><svg aria-hidden="true" class="caret astro-jjetqzgv astro-d45u3u2k" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1.25rem;"><path d="m14.83 11.29-4.24-4.24a1 1 0 1 0-1.42 1.41L12.71 12l-3.54 3.54a1 1 0 0 0 0 1.41 1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.24-4.24a1.002 1.002 0 0 0 0-1.42Z"/></svg></summary><sl-sidebar-restore data-index="2"></sl-sidebar-restore><ul class="astro-jjetqzgv"><li class="astro-jjetqzgv"><a href="/charts/" class="astro-jjetqzgv"><span class="astro-jjetqzgv">Overview</span></a></li><li class="astro-jjetqzgv"><a href="/charts/bar/" class="astro-jjetqzgv"><span class="astro-jjetqzgv">Bar Chart</span></a></li><li class="astro-jjetqzgv"><a href="/charts/line/" class="astro-jjetqzgv"><span class="astro-jjetqzgv">Line Chart</span></a></li><li class="astro-jjetqzgv"><a href="/charts/scatter/" class="astro-jjetqzgv"><span class="astro-jjetqzgv">Scatter Chart</span></a></li><li class="astro-jjetqzgv"><a href="/charts/pie/" class="astro-jjetqzgv"><span class="astro-jjetqzgv">Pie Chart</span></a></li><li class="astro-jjetqzgv"><a href="/charts/radar/" class="astro-jjetqzgv"><span class="astro-jjetqzgv">Radar Chart</span></a></li><li class="astro-jjetqzgv"><a href="/charts/heatmap/" class="astro-jjetqzgv"><span class="astro-jjetqzgv">Heatmap</span></a></li><li class="astro-jjetqzgv"><a href="/charts/3d/" class="astro-jjetqzgv"><span class="astro-jjetqzgv">3D Charts (WebGL)</span></a></li></ul></details></li><li class="astro-jjetqzgv"><details open class="astro-jjetqzgv"><summary class="astro-jjetqzgv"><span class="group-label astro-jjetqzgv"><span class="large astro-jjetqzgv">Guides</span></span><svg aria-hidden="true" class="caret astro-jjetqzgv astro-d45u3u2k" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1.25rem;"><path d="m14.83 11.29-4.24-4.24a1 1 0 1 0-1.42 1.41L12.71 12l-3.54 3.54a1 1 0 0 0 0 1.41 1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.24-4.24a1.002 1.002 0 0 0 0-1.42Z"/></svg></summary><sl-sidebar-restore data-index="3"></sl-sidebar-restore><ul class="astro-jjetqzgv"><li class="astro-jjetqzgv"><a href="/guides/group/" aria-current="page" class="astro-jjetqzgv"><span class="astro-jjetqzgv">Group</span></a></li><li class="astro-jjetqzgv"><a href="/guides/select/" class="astro-jjetqzgv"><span class="astro-jjetqzgv">Select</span></a></li><li class="astro-jjetqzgv"><a href="/guides/group-vs-select/" class="astro-jjetqzgv"><span class="astro-jjetqzgv">Group vs Select</span></a></li><li class="astro-jjetqzgv"><a href="/guides/data/" class="astro-jjetqzgv"><span class="astro-jjetqzgv">Tabular Data (CSV &amp; JSON)</span></a></li><li class="astro-jjetqzgv"><a href="/guides/merging/" class="astro-jjetqzgv"><span class="astro-jjetqzgv">Merging</span></a></li><li class="astro-jjetqzgv"><a href="/guides/parsers/" class="astro-jjetqzgv"><span class="astro-jjetqzgv">Parser Guide</span></a></li></ul></details></li><li class="astro-jjetqzgv"><details open class="astro-jjetqzgv"><summary class="astro-jjetqzgv"><span class="group-label astro-jjetqzgv"><span class="large astro-jjetqzgv">CI/CD</span></span><svg aria-hidden="true" class="caret astro-jjetqzgv astro-d45u3u2k" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1.25rem;"><path d="m14.83 11.29-4.24-4.24a1 1 0 1 0-1.42 1.41L12.71 12l-3.54 3.54a1 1 0 0 0 0 1.41 1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.24-4.24a1.002 1.002 0 0 0 0-1.42Z"/></svg></summary><sl-sidebar-restore data-index="4"></sl-sidebar-restore><ul class="astro-jjetqzgv"><li class="astro-jjetqzgv"><a href="/ci-cd/github-action/" class="astro-jjetqzgv"><span class="astro-jjetqzgv">GitHub Action</span></a></li><li class="astro-jjetqzgv"><a href="/ci-cd/stateless/" class="astro-jjetqzgv"><span class="astro-jjetqzgv">Stateless CI</span></a></li><li class="astro-jjetqzgv"><a href="/ci-cd/stateful/" class="astro-jjetqzgv"><span class="astro-jjetqzgv">Stateful CI</span></a></li><li class="astro-jjetqzgv"><a href="/ci-cd/deploying/" class="astro-jjetqzgv"><span class="astro-jjetqzgv">Deploying</span></a></li></ul></details></li><li class="astro-jjetqzgv"><a href="/internals/how-it-works/" class="large astro-jjetqzgv"><span class="astro-jjetqzgv">How It Works</span></a></li><li class="astro-jjetqzgv"><a href="/troubleshooting/" class="large astro-jjetqzgv"><span class="astro-jjetqzgv">Troubleshooting</span></a></li><li class="astro-jjetqzgv"><a href="/examples/" class="large astro-jjetqzgv"><span class="astro-jjetqzgv">Examples</span></a></li><li class="astro-jjetqzgv"><a href="/roadmap/" class="large astro-jjetqzgv"><span class="astro-jjetqzgv">Roadmap</span><span class="sl-badge caution small  astro-jjetqzgv astro-yebn66om">Future</span></a></li></ul><script aria-hidden="true">
+		(() => {
+			const scroller = document.getElementById('starlight__sidebar');
+			if (!window._starlightScrollRestore || !scroller) return;
+			scroller.scrollTop = window._starlightScrollRestore;
+			delete window._starlightScrollRestore;
+		})();
+	</script></sl-sidebar-state-persist><div class="md:sl-hidden"><div class="mobile-preferences sl-flex astro-oznisjha"><div class="social-icons astro-oznisjha"><a href="https://github.com/goptics/vizb" rel="me" class="sl-flex astro-iy7lawri"><span class="sr-only astro-iy7lawri">GitHub</span><svg aria-hidden="true" class="astro-iy7lawri astro-d45u3u2k" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1em;"><path d="M12 .3a12 12 0 0 0-3.8 23.38c.6.12.83-.26.83-.57L9 21.07c-3.34.72-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.08-.74.09-.73.09-.73 1.2.09 1.83 1.24 1.83 1.24 1.08 1.83 2.81 1.3 3.5 1 .1-.78.42-1.31.76-1.61-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.14-.3-.54-1.52.1-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.28-1.55 3.29-1.23 3.29-1.23.64 1.66.24 2.88.12 3.18a4.65 4.65 0 0 1 1.23 3.22c0 4.61-2.8 5.63-5.48 5.92.42.36.81 1.1.81 2.22l-.01 3.29c0 .31.2.69.82.57A12 12 0 0 0 12 .3Z"/></svg></a></div><starlight-rapide-theme-select class="astro-gtikhvs2"><button aria-label="Select theme" aria-live="polite" class="sl-flex astro-gtikhvs2" title="Select theme"><svg aria-hidden="true" height="16" viewBox="0 0 24 24" width="16" class="astro-gtikhvs2"><mask class="moon astro-gtikhvs2" id="moon-mask-c52cc521"><rect x="0" y="0" width="100%" height="100%" fill="white" class="astro-gtikhvs2"></rect><circle cx="24" cy="10" r="6" fill="black" class="astro-gtikhvs2"></circle></mask><circle class="sun astro-gtikhvs2" cx="12" cy="12" r="6" mask="url(#moon-mask-c52cc521)"></circle><g class="sun-beams astro-gtikhvs2" stroke="currentColor"><line x1="12" y1="1" x2="12" y2="3" class="astro-gtikhvs2"></line><line x1="12" y1="21" x2="12" y2="23" class="astro-gtikhvs2"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" class="astro-gtikhvs2"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" class="astro-gtikhvs2"></line><line x1="1" y1="12" x2="3" y2="12" class="astro-gtikhvs2"></line><line x1="21" y1="12" x2="23" y2="12" class="astro-gtikhvs2"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" class="astro-gtikhvs2"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" class="astro-gtikhvs2"></line></g></svg></button></starlight-rapide-theme-select><script>
+  StarlightThemeProvider.updatePickers()
+</script></div></div></div></div></nav><div class="main-frame astro-a4rwrqir"><script type="module">var e=document.getElementById(`starlight__sidebar`),t=e?.querySelector(`sl-sidebar-state-persist`),n=`sl-sidebar-state`,r=()=>{let r=[],i=t?.dataset.hash||``;try{let e=sessionStorage.getItem(n),t=JSON.parse(e||`{}`);Array.isArray(t.open)&&t.hash===i&&(r=t.open)}catch{}return{hash:i,open:r,scroll:e?.scrollTop||0}},i=e=>{try{sessionStorage.setItem(n,JSON.stringify(e))}catch{}},a=()=>i(r()),o=(e,t)=>{let n=r();n.open[t]=e,i(n)};t?.addEventListener(`click`,e=>{if(!(e.target instanceof Element))return;let t=e.target.closest(`summary`)?.closest(`details`);if(!t)return;let n=t.querySelector(`sl-sidebar-restore`),r=parseInt(n?.dataset.index||``);isNaN(r)||o(!t.open,r)}),addEventListener(`visibilitychange`,()=>{document.visibilityState===`hidden`&&a()}),addEventListener(`pageHide`,a);</script><div class="lg:sl-flex astro-bkqruuth"><aside class="right-sidebar-container print:hidden astro-bkqruuth"><div class="right-sidebar astro-bkqruuth"><div class="lg:sl-hidden astro-d4idpg63"><mobile-starlight-toc data-min-h="2" data-max-h="4" class="astro-2skv2wq7"><nav aria-labelledby="starlight__on-this-page--mobile" class="astro-2skv2wq7"><details id="starlight__mobile-toc" class="astro-2skv2wq7"><summary id="starlight__on-this-page--mobile" class="sl-flex astro-2skv2wq7"><span class="toggle sl-flex astro-2skv2wq7">On this page<svg aria-hidden="true" class="caret astro-2skv2wq7 astro-d45u3u2k" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1rem;"><path d="m14.83 11.29-4.24-4.24a1 1 0 1 0-1.42 1.41L12.71 12l-3.54 3.54a1 1 0 0 0 0 1.41 1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.24-4.24a1.002 1.002 0 0 0 0-1.42Z"/></svg></span><span class="display-current astro-2skv2wq7"></span></summary><div class="dropdown astro-2skv2wq7"><ul class="isMobile astro-blukv66d" style="--depth: 0;"><li style="--depth: 0;" class="astro-blukv66d"><a href="#_top" style="--depth: 0;" class="astro-blukv66d"><span style="--depth: 0;" class="astro-blukv66d">Overview</span></a></li><li style="--depth: 0;" class="astro-blukv66d"><a href="#what-is-group" style="--depth: 0;" class="astro-blukv66d"><span style="--depth: 0;" class="astro-blukv66d">What is group</span></a></li><li style="--depth: 0;" class="astro-blukv66d"><a href="#why-group" style="--depth: 0;" class="astro-blukv66d"><span style="--depth: 0;" class="astro-blukv66d">Why group</span></a></li><li style="--depth: 0;" class="astro-blukv66d"><a href="#the-dimensions" style="--depth: 0;" class="astro-blukv66d"><span style="--depth: 0;" class="astro-blukv66d">The Dimensions</span></a></li><li style="--depth: 0;" class="astro-blukv66d"><a href="#group-csvjson-data" style="--depth: 0;" class="astro-blukv66d"><span style="--depth: 0;" class="astro-blukv66d">Group CSV/JSON data</span></a><ul class="isMobile astro-blukv66d" style="--depth: 1;"><li style="--depth: 1;" class="astro-blukv66d"><a href="#matching-separators" style="--depth: 1;" class="astro-blukv66d"><span style="--depth: 1;" class="astro-blukv66d">Matching separators</span></a></li><li style="--depth: 1;" class="astro-blukv66d"><a href="#bracket-slots--split-a-columns-cell-value" style="--depth: 1;" class="astro-blukv66d"><span style="--depth: 1;" class="astro-blukv66d">Bracket slots — split a column’s cell value</span></a></li><li style="--depth: 1;" class="astro-blukv66d"><a href="#aggregation" style="--depth: 1;" class="astro-blukv66d"><span style="--depth: 1;" class="astro-blukv66d">Aggregation</span></a></li></ul></li><li style="--depth: 0;" class="astro-blukv66d"><a href="#group-benchmarks" style="--depth: 0;" class="astro-blukv66d"><span style="--depth: 0;" class="astro-blukv66d">Group benchmarks</span></a></li><li style="--depth: 0;" class="astro-blukv66d"><a href="#pattern-syntax" style="--depth: 0;" class="astro-blukv66d"><span style="--depth: 0;" class="astro-blukv66d">Pattern Syntax</span></a><ul class="isMobile astro-blukv66d" style="--depth: 1;"><li style="--depth: 1;" class="astro-blukv66d"><a href="#separators" style="--depth: 1;" class="astro-blukv66d"><span style="--depth: 1;" class="astro-blukv66d">Separators</span></a></li><li style="--depth: 1;" class="astro-blukv66d"><a href="#components" style="--depth: 1;" class="astro-blukv66d"><span style="--depth: 1;" class="astro-blukv66d">Components</span></a></li><li style="--depth: 1;" class="astro-blukv66d"><a href="#examples" style="--depth: 1;" class="astro-blukv66d"><span style="--depth: 1;" class="astro-blukv66d">Examples</span></a></li></ul></li><li style="--depth: 0;" class="astro-blukv66d"><a href="#regex-syntax" style="--depth: 0;" class="astro-blukv66d"><span style="--depth: 0;" class="astro-blukv66d">Regex Syntax</span></a><ul class="isMobile astro-blukv66d" style="--depth: 1;"><li style="--depth: 1;" class="astro-blukv66d"><a href="#named-capture-groups" style="--depth: 1;" class="astro-blukv66d"><span style="--depth: 1;" class="astro-blukv66d">Named Capture Groups</span></a></li><li style="--depth: 1;" class="astro-blukv66d"><a href="#examples-1" style="--depth: 1;" class="astro-blukv66d"><span style="--depth: 1;" class="astro-blukv66d">Examples</span></a></li></ul></li><li style="--depth: 0;" class="astro-blukv66d"><a href="#axis-labels" style="--depth: 0;" class="astro-blukv66d"><span style="--depth: 0;" class="astro-blukv66d">Axis labels</span></a></li><li style="--depth: 0;" class="astro-blukv66d"><a href="#choosing-a-method" style="--depth: 0;" class="astro-blukv66d"><span style="--depth: 0;" class="astro-blukv66d">Choosing a Method</span></a></li></ul></div></details></nav></mobile-starlight-toc><script type="module" src="/_astro/MobileTableOfContents.astro_astro_type_script_index_0_lang.BcSo_yiZ.js"></script></div><div class="right-sidebar-panel sl-hidden lg:sl-block astro-d4idpg63"><div class="sl-container astro-d4idpg63"><starlight-toc data-min-h="2" data-max-h="4"><nav aria-labelledby="starlight__on-this-page"><h2 id="starlight__on-this-page">On this page</h2><ul class="astro-blukv66d" style="--depth: 0;"><li style="--depth: 0;" class="astro-blukv66d"><a href="#_top" style="--depth: 0;" class="astro-blukv66d"><span style="--depth: 0;" class="astro-blukv66d">Overview</span></a></li><li style="--depth: 0;" class="astro-blukv66d"><a href="#what-is-group" style="--depth: 0;" class="astro-blukv66d"><span style="--depth: 0;" class="astro-blukv66d">What is group</span></a></li><li style="--depth: 0;" class="astro-blukv66d"><a href="#why-group" style="--depth: 0;" class="astro-blukv66d"><span style="--depth: 0;" class="astro-blukv66d">Why group</span></a></li><li style="--depth: 0;" class="astro-blukv66d"><a href="#the-dimensions" style="--depth: 0;" class="astro-blukv66d"><span style="--depth: 0;" class="astro-blukv66d">The Dimensions</span></a></li><li style="--depth: 0;" class="astro-blukv66d"><a href="#group-csvjson-data" style="--depth: 0;" class="astro-blukv66d"><span style="--depth: 0;" class="astro-blukv66d">Group CSV/JSON data</span></a><ul class="astro-blukv66d" style="--depth: 1;"><li style="--depth: 1;" class="astro-blukv66d"><a href="#matching-separators" style="--depth: 1;" class="astro-blukv66d"><span style="--depth: 1;" class="astro-blukv66d">Matching separators</span></a></li><li style="--depth: 1;" class="astro-blukv66d"><a href="#bracket-slots--split-a-columns-cell-value" style="--depth: 1;" class="astro-blukv66d"><span style="--depth: 1;" class="astro-blukv66d">Bracket slots — split a column’s cell value</span></a></li><li style="--depth: 1;" class="astro-blukv66d"><a href="#aggregation" style="--depth: 1;" class="astro-blukv66d"><span style="--depth: 1;" class="astro-blukv66d">Aggregation</span></a></li></ul></li><li style="--depth: 0;" class="astro-blukv66d"><a href="#group-benchmarks" style="--depth: 0;" class="astro-blukv66d"><span style="--depth: 0;" class="astro-blukv66d">Group benchmarks</span></a></li><li style="--depth: 0;" class="astro-blukv66d"><a href="#pattern-syntax" style="--depth: 0;" class="astro-blukv66d"><span style="--depth: 0;" class="astro-blukv66d">Pattern Syntax</span></a><ul class="astro-blukv66d" style="--depth: 1;"><li style="--depth: 1;" class="astro-blukv66d"><a href="#separators" style="--depth: 1;" class="astro-blukv66d"><span style="--depth: 1;" class="astro-blukv66d">Separators</span></a></li><li style="--depth: 1;" class="astro-blukv66d"><a href="#components" style="--depth: 1;" class="astro-blukv66d"><span style="--depth: 1;" class="astro-blukv66d">Components</span></a></li><li style="--depth: 1;" class="astro-blukv66d"><a href="#examples" style="--depth: 1;" class="astro-blukv66d"><span style="--depth: 1;" class="astro-blukv66d">Examples</span></a></li></ul></li><li style="--depth: 0;" class="astro-blukv66d"><a href="#regex-syntax" style="--depth: 0;" class="astro-blukv66d"><span style="--depth: 0;" class="astro-blukv66d">Regex Syntax</span></a><ul class="astro-blukv66d" style="--depth: 1;"><li style="--depth: 1;" class="astro-blukv66d"><a href="#named-capture-groups" style="--depth: 1;" class="astro-blukv66d"><span style="--depth: 1;" class="astro-blukv66d">Named Capture Groups</span></a></li><li style="--depth: 1;" class="astro-blukv66d"><a href="#examples-1" style="--depth: 1;" class="astro-blukv66d"><span style="--depth: 1;" class="astro-blukv66d">Examples</span></a></li></ul></li><li style="--depth: 0;" class="astro-blukv66d"><a href="#axis-labels" style="--depth: 0;" class="astro-blukv66d"><span style="--depth: 0;" class="astro-blukv66d">Axis labels</span></a></li><li style="--depth: 0;" class="astro-blukv66d"><a href="#choosing-a-method" style="--depth: 0;" class="astro-blukv66d"><span style="--depth: 0;" class="astro-blukv66d">Choosing a Method</span></a></li></ul></nav></starlight-toc><script type="module" src="/_astro/TableOfContents.astro_astro_type_script_index_0_lang.Csloo1VZ.js"></script></div></div></div></aside><div class="main-pane astro-bkqruuth"><main data-pagefind-body class="astro-ejwtyf32" lang="en" dir="ltr"><div class="content-panel astro-x5zcvja6"><div class="sl-container astro-x5zcvja6"><h1 id="_top" class="astro-vnwi2rrt">Group</h1></div></div><div class="content-panel astro-x5zcvja6"><div class="sl-container astro-x5zcvja6"><div class="sl-markdown-content">
+<div class="sl-heading-wrapper level-h2"><h2 id="what-is-group">What is group</h2><a class="sl-anchor-link" href="#what-is-group"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 1 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 0 0-1.42-1.42m8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 1 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 0 0 0 1.42 1 1 0 0 0 1.42 0l3.88-3.89a4.49 4.49 0 0 0 0-6.33M8.83 15.17a1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.92-4.92a1 1 0 1 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “What is group”</span></a></div>
+<p>Group turns each row into a point with up to four dimensions: <strong>Name</strong>, <strong>XAxis</strong>, <strong>YAxis</strong>, and <strong>ZAxis</strong>. This lets vizb chart the data meaningfully instead of as a flat list.</p>
+<p>It always works in two stages:</p>
+<ol>
+<li><strong>Build a label</strong> for the row.
+<ul>
+<li>For <strong>CSV/JSON</strong>, you pick columns with <code dir="auto">--group</code>. Vizb joins their per-row values using the same separators declared in <code dir="auto">--group-pattern</code>.</li>
+<li>For <strong>benchmarks</strong>, the benchmark name is the label already (e.g. <code dir="auto">BenchmarkSort/1024/QuickSort</code>).</li>
+</ul>
+</li>
+<li><strong>Split the label</strong> into dimensions with <code dir="auto">--group-pattern</code> (separator-based) or <code dir="auto">--group-regex</code> (named captures). This stage is identical for both inputs.</li>
+</ol>
+<p>The two flows differ only in stage 1 — where the label comes from. The same pattern and regex syntax serves both.</p>
+<div class="sl-heading-wrapper level-h2"><h2 id="why-group">Why group</h2><a class="sl-anchor-link" href="#why-group"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 1 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 0 0-1.42-1.42m8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 1 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 0 0 0 1.42 1 1 0 0 0 1.42 0l3.88-3.89a4.49 4.49 0 0 0 0-6.33M8.83 15.17a1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.92-4.92a1 1 0 1 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “Why group”</span></a></div>
+<p>Group creates multi-dimensional charts. Without it, every row is an isolated bar or point. With it, vizb can:</p>
+<ul>
+<li><strong>Separate charts</strong> by logical category (e.g. one chart per algorithm or region).</li>
+<li><strong>Populate axes</strong> with meaningful values (e.g. input size on the X-axis).</li>
+<li><strong>Create series</strong> for variants (e.g. different data distributions on the Y-axis).</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Without group</th>
+<th>With group</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Single flat chart with all rows</td>
+<td>Multiple charts grouped by name</td>
+</tr>
+<tr>
+<td>No axis structure</td>
+<td>X-axis and Y-axis with meaningful categories</td>
+</tr>
+<tr>
+<td>Hard to compare across dimensions</td>
+<td>Easy side-by-side comparison</td>
+</tr>
+</tbody>
+</table>
+<div class="sl-heading-wrapper level-h2"><h2 id="the-dimensions">The Dimensions</h2><a class="sl-anchor-link" href="#the-dimensions"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 1 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 0 0-1.42-1.42m8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 1 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 0 0 0 1.42 1 1 0 0 0 1.42 0l3.88-3.89a4.49 4.49 0 0 0 0-6.33M8.83 15.17a1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.92-4.92a1 1 0 1 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “The Dimensions”</span></a></div>
+<p>Group extracts up to four dimensions from each label:</p>
+<table>
+<thead>
+<tr>
+<th>Dimension</th>
+<th>Role</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Name</strong> (<code dir="auto">name</code> / <code dir="auto">n</code>)</td>
+<td>Groups rows into separate charts</td>
+<td>Rows sharing the same name appear in the same chart</td>
+</tr>
+<tr>
+<td><strong>XAxis</strong> (<code dir="auto">xAxis</code> / <code dir="auto">x</code>)</td>
+<td>Sets the X-axis categories</td>
+<td>Each unique value becomes a tick on the X-axis</td>
+</tr>
+<tr>
+<td><strong>YAxis</strong> (<code dir="auto">yAxis</code> / <code dir="auto">y</code>)</td>
+<td>Creates series / variants</td>
+<td>Each unique value becomes a separate series or bar group</td>
+</tr>
+<tr>
+<td><strong>ZAxis</strong> (<code dir="auto">zAxis</code> / <code dir="auto">z</code>)</td>
+<td>Adds a depth axis → 3D chart</td>
+<td>Each unique value becomes a stacked depth layer in a <a href="/charts/3d">3D chart</a></td>
+</tr>
+</tbody>
+</table>
+<aside aria-label="Note" class="starlight-aside starlight-aside--note"><p class="starlight-aside__title" aria-hidden="true"><svg aria-hidden="true" class="starlight-aside__icon astro-d45u3u2k" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1em;"><path d="M12 11a1 1 0 0 0-1 1v4a1 1 0 0 0 2 0v-4a1 1 0 0 0-1-1Zm.38-3.92a1 1 0 0 0-.76 0 1 1 0 0 0-.33.21 1.15 1.15 0 0 0-.21.33 1 1 0 0 0 .21 1.09c.097.088.209.16.33.21A1 1 0 0 0 13 8a1.05 1.05 0 0 0-.29-.71 1 1 0 0 0-.33-.21ZM12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 18a8 8 0 1 1 0-16.001A8 8 0 0 1 12 20Z"/></svg>Note</p><div class="starlight-aside__content"><p>At least one axis (<code dir="auto">x</code> or <code dir="auto">y</code>) is required for group to take effect. The <code dir="auto">name</code> dimension is optional. When omitted, all rows go into a single chart. The <code dir="auto">z</code> dimension requires <strong>both</strong> <code dir="auto">x</code> and <code dir="auto">y</code> to be present.</p></div></aside>
+<div class="sl-heading-wrapper level-h2"><h2 id="group-csvjson-data">Group CSV/JSON data</h2><a class="sl-anchor-link" href="#group-csvjson-data"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 1 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 0 0-1.42-1.42m8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 1 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 0 0 0 1.42 1 1 0 0 0 1.42 0l3.88-3.89a4.49 4.49 0 0 0 0-6.33M8.83 15.17a1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.92-4.92a1 1 0 1 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “Group CSV/JSON data”</span></a></div>
+<p>CSV and JSON rows have no benchmark name. You tell vizb which columns carry the structure. The <code dir="auto">--group</code> / <code dir="auto">-g</code> flag selects columns. The <code dir="auto">--group-pattern</code> / <code dir="auto">-p</code> flag assigns each column to a dimension. By default each column maps to one dimension (<code dir="auto">-p y,x</code>). Use <strong>bracket slots</strong> <code dir="auto">[...]</code> when a single column’s <strong>cell value</strong> encodes multiple dimensions (dates, slash paths, underscore IDs, etc.).</p>
+<aside aria-label="Note" class="starlight-aside starlight-aside--note"><p class="starlight-aside__title" aria-hidden="true"><svg aria-hidden="true" class="starlight-aside__icon astro-d45u3u2k" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1em;"><path d="M12 11a1 1 0 0 0-1 1v4a1 1 0 0 0 2 0v-4a1 1 0 0 0-1-1Zm.38-3.92a1 1 0 0 0-.76 0 1 1 0 0 0-.33.21 1.15 1.15 0 0 0-.21.33 1 1 0 0 0 .21 1.09c.097.088.209.16.33.21A1 1 0 0 0 13 8a1.05 1.05 0 0 0-.29-.71 1 1 0 0 0-.33-.21ZM12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 18a8 8 0 1 1 0-16.001A8 8 0 0 1 12 20Z"/></svg>Note</p><div class="starlight-aside__content"><p>Not sure whether to group or to use <code dir="auto">--select</code>? See <a href="/guides/group-vs-select">Group vs Select</a> for the two models, auto-group / auto-value inference, and a decision matrix. Solo <code dir="auto">--select</code> value, mixed, and multi-stat modes are covered in <a href="/guides/select">Select</a>.</p></div></aside>
+<div class="sl-heading-wrapper level-h3"><h3 id="matching-separators">Matching separators</h3><a class="sl-anchor-link" href="#matching-separators"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 1 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 0 0-1.42-1.42m8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 1 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 0 0 0 1.42 1 1 0 0 0 1.42 0l3.88-3.89a4.49 4.49 0 0 0 0-6.33M8.83 15.17a1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.92-4.92a1 1 0 1 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “Matching separators”</span></a></div>
+<p>For tabular data, <code dir="auto">-g</code> and <code dir="auto">-p</code> must use the same separators between column slots. If they disagree, vizb exits before parsing:</p>
+<div class="expressive-code"><link rel="stylesheet" href="/_astro/ec.6oty3.css"><script type="module" src="/_astro/ec.0vx5m.js"></script><figure class="frame not-content"><figcaption class="header"></figcaption><pre data-language="text"><code><div class="ec-line"><div class="code"><span style="--0:#dbd7caee;--1:#393a34">--group "&lt;g&gt;" and --group-pattern "&lt;p&gt;" separators do not match (expected "&lt;from g&gt;", got "&lt;from p&gt;")</span></div></div></code></pre><div class="copy"><div aria-live="polite"></div><button title="Copy to clipboard" data-copied="Copied!" data-code="--group &quot;<g>&quot; and --group-pattern &quot;<p>&quot; separators do not match (expected &quot;<from g>&quot;, got &quot;<from p>&quot;)"><div></div></button></div></figure></div>
+<p>The <code dir="auto">expected</code> side is derived from how <code dir="auto">-g</code> declares column boundaries. The <code dir="auto">got</code> side is what <code dir="auto">-p</code> declares. Fix whichever flag is wrong so both use the same separator sequence.</p>
+<table>
+<thead>
+<tr>
+<th><code dir="auto">--group</code> style</th>
+<th>Matching <code dir="auto">-p</code></th>
+<th>Row label (example)</th>
+<th>Mismatch would report</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Comma list (<code dir="auto">-g region,product,category</code>)</td>
+<td>Commas (<code dir="auto">-p x,y,z</code>)</td>
+<td><code dir="auto">Asia,Widget,Electronics</code></td>
+<td><code dir="auto">-p x/y/z</code> → <code dir="auto">expected ", ,", got "/ /"</code></td>
+</tr>
+<tr>
+<td>Quoted string (<code dir="auto">-g "region product"</code>)</td>
+<td>Spaces (<code dir="auto">-p "y x"</code>)</td>
+<td><code dir="auto">UAE Gadget</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>Single value (<code dir="auto">-g "region/product/category"</code>)</td>
+<td>Same separators (<code dir="auto">-p x/y/z</code>)</td>
+<td><code dir="auto">EU/Widget/Sports</code></td>
+<td><code dir="auto">-p x,y/z</code> → <code dir="auto">expected "/ /", got ", /"</code></td>
+</tr>
+<tr>
+<td>Structured (<code dir="auto">-g region,product/category</code>)</td>
+<td>Same shape (<code dir="auto">-p y,x/z</code>)</td>
+<td><code dir="auto">Asia,Widget/Electronics</code></td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p>Comma-separated <code dir="auto">-g</code> (the usual pflag form) <strong>requires</strong> comma-separated <code dir="auto">-p</code>. For example, use <code dir="auto">-g region,product,category</code> with <code dir="auto">-p x,y,z</code>, not <code dir="auto">x/y/z</code>. Every separator in <code dir="auto">-g</code> must appear in <code dir="auto">-p</code> at the same positions.</p>
+<p>When <code dir="auto">-g</code> and <code dir="auto">-p</code> define a different <strong>number</strong> of slots (common with bracket patterns), vizb reports a separate dimension-count error:</p>
+<div class="expressive-code"><figure class="frame not-content"><figcaption class="header"></figcaption><pre data-language="text"><code><div class="ec-line"><div class="code"><span style="--0:#dbd7caee;--1:#393a34">--group and --group-pattern dimension count do not match: N column(s) in "&lt;g&gt;", M slot(s) in --group-pattern "&lt;p&gt;"</span></div></div></code></pre><div class="copy"><div aria-live="polite"></div><button title="Copy to clipboard" data-copied="Copied!" data-code="--group and --group-pattern dimension count do not match: N column(s) in &quot;<g>&quot;, M slot(s) in --group-pattern &quot;<p>&quot;"><div></div></button></div></figure></div>
+<p>Take this <code dir="auto">sales.csv</code>:</p>
+<table>
+<thead>
+<tr>
+<th>region</th>
+<th>product</th>
+<th>category</th>
+<th>sales</th>
+<th>latency</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Asia</td>
+<td>Widget</td>
+<td>Electronics</td>
+<td>100</td>
+<td>12</td>
+</tr>
+<tr>
+<td>UAE</td>
+<td>Gadget</td>
+<td>Home</td>
+<td>80</td>
+<td>15</td>
+</tr>
+<tr>
+<td>EU</td>
+<td>Gizmo</td>
+<td>Sports</td>
+<td>60</td>
+<td>11</td>
+</tr>
+</tbody>
+</table>
+<div class="expressive-code"><figure class="frame is-terminal not-content"><figcaption class="header"><span class="title"></span><span class="sr-only">Terminal window</span></figcaption><pre data-language="bash"><code><div class="ec-line"><div class="code"><span style="--0:#80A665;--1:#4B7231">vizb</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">sales.csv</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">--group</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">region,product</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-p</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">y,x</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-o</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">sales.html</span></div></div></code></pre><div class="copy"><div aria-live="polite"></div><button title="Copy to clipboard" data-copied="Copied!" data-code="vizb sales.csv --group region,product -p y,x -o sales.html"><div></div></button></div></figure></div>
+<p>For the first row, vizb joins the selected columns into the label <code dir="auto">Asia,Widget</code>, then the pattern <code dir="auto">y,x</code> splits it: <code dir="auto">y</code> → <code dir="auto">Asia</code> (YAxis), <code dir="auto">x</code> → <code dir="auto">Widget</code> (XAxis).</p>
+<p><strong>Space-separated columns</strong> — pass one quoted <code dir="auto">-g</code> value and use spaces in <code dir="auto">-p</code>:</p>
+<div class="expressive-code"><figure class="frame is-terminal not-content"><figcaption class="header"><span class="title"></span><span class="sr-only">Terminal window</span></figcaption><pre data-language="bash"><code><div class="ec-line"><div class="code"><span style="--0:#80A665;--1:#4B7231">vizb</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">sales.csv</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-g</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7DE4;--1:#96574AFD">"</span><span style="--0:#C98A7D;--1:#96574A">region product</span><span style="--0:#C98A7DE4;--1:#96574AFD">"</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-p</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7DE4;--1:#96574AFD">"</span><span style="--0:#C98A7D;--1:#96574A">y x</span><span style="--0:#C98A7DE4;--1:#96574AFD">"</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-o</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">sales.html</span></div></div></code></pre><div class="copy"><div aria-live="polite"></div><button title="Copy to clipboard" data-copied="Copied!" data-code="vizb sales.csv -g &quot;region product&quot; -p &quot;y x&quot; -o sales.html"><div></div></button></div></figure></div>
+<p><strong>Structured grouping</strong> — mix separators inside <code dir="auto">-g</code> (commas between pflag values, <code dir="auto">/</code> or <code dir="auto">_</code> inside a value) to declare a hierarchy. <code dir="auto">-p</code> must mirror the same shape:</p>
+<div class="expressive-code"><figure class="frame is-terminal not-content"><figcaption class="header"><span class="title"></span><span class="sr-only">Terminal window</span></figcaption><pre data-language="bash"><code><div class="ec-line"><div class="code"><span style="--0:#80A665;--1:#4B7231">vizb</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">sales.csv</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-g</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">region,product/category</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-p</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">y,x/z</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-o</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">sales.html</span></div></div><div class="ec-line"><div class="code"><span style="--0:#80A665;--1:#4B7231">vizb</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">sales.csv</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-g</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7DE4;--1:#96574AFD">"</span><span style="--0:#C98A7D;--1:#96574A">region/product/category</span><span style="--0:#C98A7DE4;--1:#96574AFD">"</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-p</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">x/y/z</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-o</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">sales.html</span></div></div></code></pre><div class="copy"><div aria-live="polite"></div><button title="Copy to clipboard" data-copied="Copied!" data-code="vizb sales.csv -g region,product/category -p y,x/z -o sales.htmlvizb sales.csv -g &quot;region/product/category&quot; -p x/y/z -o sales.html"><div></div></button></div></figure></div>
+<div class="sl-heading-wrapper level-h3"><h3 id="bracket-slots--split-a-columns-cell-value">Bracket slots — split a column’s cell value</h3><a class="sl-anchor-link" href="#bracket-slots--split-a-columns-cell-value"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 1 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 0 0-1.42-1.42m8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 1 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 0 0 0 1.42 1 1 0 0 0 1.42 0l3.88-3.89a4.49 4.49 0 0 0 0-6.33M8.83 15.17a1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.92-4.92a1 1 0 1 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “Bracket slots — split a column’s cell value”</span></a></div>
+<p>When one column holds an encoded string (not separate columns), wrap the inner pattern in <code dir="auto">[...]</code>. Each <strong>top-level</strong> slot lines up 1:1 with a <code dir="auto">-g</code> column:</p>
+<table>
+<thead>
+<tr>
+<th>Slot form</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code dir="auto">x</code>, <code dir="auto">y</code>, <code dir="auto">n</code>, <code dir="auto">z</code></td>
+<td>Whole cell value → that dimension</td>
+</tr>
+<tr>
+<td><code dir="auto">x{label}</code></td>
+<td>Whole cell → dimension, axis titled <strong>label</strong> (overrides column name)</td>
+</tr>
+<tr>
+<td><code dir="auto">[inner]</code></td>
+<td>Split the cell value with <strong>inner</strong> separators → multiple dimensions</td>
+</tr>
+<tr>
+<td><code dir="auto">n{year}-y{months}</code> inside <code dir="auto">[...]</code></td>
+<td>Split value <strong>and</strong> set per-dimension axis titles</td>
+</tr>
+</tbody>
+</table>
+<p>Top-level separators between slots still match <code dir="auto">-g</code> (commas for <code dir="auto">-g a,b</code>, spaces for <code dir="auto">-g "a b"</code>). <strong>Benchmarks do not use brackets</strong>. Keep flat <code dir="auto">-p n/x/y</code> for <code dir="auto">bench.txt</code>.</p>
+<aside aria-label="Tip" class="starlight-aside starlight-aside--tip"><p class="starlight-aside__title" aria-hidden="true"><svg aria-hidden="true" class="starlight-aside__icon astro-d45u3u2k" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1em;"><path fill-rule="evenodd" d="M1.44 8.855v-.001l3.527-3.516c.34-.344.802-.541 1.285-.548h6.649l.947-.947c3.07-3.07 6.207-3.072 7.62-2.868a1.821 1.821 0 0 1 1.557 1.557c.204 1.413.203 4.55-2.868 7.62l-.946.946v6.649a1.845 1.845 0 0 1-.549 1.286l-3.516 3.528a1.844 1.844 0 0 1-3.11-.944l-.858-4.275-4.52-4.52-2.31-.463-1.964-.394A1.847 1.847 0 0 1 .98 10.693a1.843 1.843 0 0 1 .46-1.838Zm5.379 2.017-3.873-.776L6.32 6.733h4.638l-4.14 4.14Zm8.403-5.655c2.459-2.46 4.856-2.463 5.89-2.33.134 1.035.13 3.432-2.329 5.891l-6.71 6.71-3.561-3.56 6.71-6.711Zm-1.318 15.837-.776-3.873 4.14-4.14v4.639l-3.364 3.374Z" clip-rule="evenodd"/><path d="M9.318 18.345a.972.972 0 0 0-1.86-.561c-.482 1.435-1.687 2.204-2.934 2.619a8.22 8.22 0 0 1-1.23.302c.062-.365.157-.79.303-1.229.415-1.247 1.184-2.452 2.62-2.935a.971.971 0 1 0-.62-1.842c-.12.04-.236.084-.35.13-2.02.828-3.012 2.588-3.493 4.033a10.383 10.383 0 0 0-.51 2.845l-.001.016v.063c0 .536.434.972.97.972H2.24a7.21 7.21 0 0 0 .878-.065c.527-.063 1.248-.19 2.02-.447 1.445-.48 3.205-1.472 4.033-3.494a5.828 5.828 0 0 0 .147-.407Z"/></svg>Tip</p><div class="starlight-aside__content"><p>Use <strong>single quotes</strong> around <code dir="auto">-p</code> when it contains <code dir="auto">[...]</code> bracket slots:</p><div class="expressive-code"><figure class="frame is-terminal not-content"><figcaption class="header"><span class="title"></span><span class="sr-only">Terminal window</span></figcaption><pre data-language="bash"><code><div class="ec-line"><div class="code"><span style="--0:#80A665;--1:#4B7231">vizb</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">sales.csv</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-g</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">date,category</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-p</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7DE4;--1:#96574AFD">'</span><span style="--0:#C98A7D;--1:#96574A">[n{year}-y{months}-x{dates}],z</span><span style="--0:#C98A7DE4;--1:#96574AFD">'</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-o</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">sales.html</span></div></div></code></pre><div class="copy"><div aria-live="polite"></div><button title="Copy to clipboard" data-copied="Copied!" data-code="vizb sales.csv -g date,category -p &#x27;[n{year}-y{months}-x{dates}],z&#x27; -o sales.html"><div></div></button></div></figure></div></div></aside>
+<p>Bracket slots can attach <code dir="auto">{label}</code> to each inner dimension — see <a href="#axis-labels">Axis labels</a>.</p>
+<p><strong>Date + category</strong> — split <code dir="auto">2022-2-30</code> into year/month/day, keep category whole:</p>
+<div class="expressive-code"><figure class="frame is-terminal not-content"><figcaption class="header"><span class="title"></span><span class="sr-only">Terminal window</span></figcaption><pre data-language="bash"><code><div class="ec-line"><div class="code"><span style="--0:#80A665;--1:#4B7231">vizb</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">sales.csv</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-g</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">date,category</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-p</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7DE4;--1:#96574AFD">"</span><span style="--0:#C98A7D;--1:#96574A">[x-y-n],z</span><span style="--0:#C98A7DE4;--1:#96574AFD">"</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-o</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">sales.html</span></div></div></code></pre><div class="copy"><div aria-live="polite"></div><button title="Copy to clipboard" data-copied="Copied!" data-code="vizb sales.csv -g date,category -p &quot;[x-y-n],z&quot; -o sales.html"><div></div></button></div></figure></div>
+<table>
+<thead>
+<tr>
+<th>date</th>
+<th>category</th>
+<th>Pattern</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code dir="auto">2022-2-30</code></td>
+<td><code dir="auto">Widget</code></td>
+<td><code dir="auto">[x-y-n]</code> splits on <code dir="auto">-</code>, <code dir="auto">z</code> ← category</td>
+<td>x=2022, y=2, n=30, z=Widget</td>
+</tr>
+</tbody>
+</table>
+<details><summary><strong>More bracket-slot examples</strong> (ISO dates, slash paths, underscore IDs, mixed separators)</summary><p><strong>ISO dates (<code dir="auto">YYYY-MM-DD</code>)</strong> — use a bracket slot when the date is one column. <code dir="auto">{year}</code>, <code dir="auto">{months}</code>, and <code dir="auto">{dates}</code> only set axis titles. Splitting is driven by <code dir="auto">-</code> between dimension tokens. The same prefix/middle/trailing skip rules from <a href="#separators">Separators</a> apply inside brackets too — e.g. <code dir="auto">[n{year}-x{months}-]</code> drops the day, <code dir="auto">[n{year}--x{dates}]</code> skips the month.</p><div class="expressive-code"><figure class="frame is-terminal not-content"><figcaption class="header"><span class="title"></span><span class="sr-only">Terminal window</span></figcaption><pre data-language="bash"><code><div class="ec-line"><div class="code"><span style="--0:#80A665;--1:#4B7231">vizb</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">sales.csv</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-g</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">date,category</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-p</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7DE4;--1:#96574AFD">'</span><span style="--0:#C98A7D;--1:#96574A">[n{year}-y{months}-x{dates}],z</span><span style="--0:#C98A7DE4;--1:#96574AFD">'</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-o</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">sales.html</span></div></div></code></pre><div class="copy"><div aria-live="polite"></div><button title="Copy to clipboard" data-copied="Copied!" data-code="vizb sales.csv -g date,category -p &#x27;[n{year}-y{months}-x{dates}],z&#x27; -o sales.html"><div></div></button></div></figure></div><table>
+<thead>
+<tr>
+<th>date</th>
+<th>Pattern</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code dir="auto">2024-01-01</code></td>
+<td><code dir="auto">[n{year}-y{months}-x{dates}]</code></td>
+<td>n=2024, y=01, x=01</td>
+</tr>
+</tbody>
+</table><p><strong>Slash-encoded benchmark column</strong> — same layout as Go bench names, stored in CSV:</p><div class="expressive-code"><figure class="frame is-terminal not-content"><figcaption class="header"><span class="title"></span><span class="sr-only">Terminal window</span></figcaption><pre data-language="bash"><code><div class="ec-line"><div class="code"><span style="--0:#80A665;--1:#4B7231">vizb</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">results.csv</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-g</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">benchmark</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-p</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7DE4;--1:#96574AFD">"</span><span style="--0:#C98A7D;--1:#96574A">[n/x/y]</span><span style="--0:#C98A7DE4;--1:#96574AFD">"</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-o</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">out.html</span></div></div></code></pre><div class="copy"><div aria-live="polite"></div><button title="Copy to clipboard" data-copied="Copied!" data-code="vizb results.csv -g benchmark -p &quot;[n/x/y]&quot; -o out.html"><div></div></button></div></figure></div><table>
+<thead>
+<tr>
+<th>benchmark</th>
+<th>Pattern</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code dir="auto">Sort/1024/QuickSort</code></td>
+<td><code dir="auto">[n/x/y]</code></td>
+<td>n=Sort, x=1024, y=QuickSort</td>
+</tr>
+</tbody>
+</table><p><strong>Underscore-delimited ID:</strong></p><div class="expressive-code"><figure class="frame is-terminal not-content"><figcaption class="header"><span class="title"></span><span class="sr-only">Terminal window</span></figcaption><pre data-language="bash"><code><div class="ec-line"><div class="code"><span style="--0:#80A665;--1:#4B7231">vizb</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">runs.csv</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-g</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">id</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-p</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7DE4;--1:#96574AFD">"</span><span style="--0:#C98A7D;--1:#96574A">[n_y_x]</span><span style="--0:#C98A7DE4;--1:#96574AFD">"</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-o</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">out.html</span></div></div></code></pre><div class="copy"><div aria-live="polite"></div><button title="Copy to clipboard" data-copied="Copied!" data-code="vizb runs.csv -g id -p &quot;[n_y_x]&quot; -o out.html"><div></div></button></div></figure></div><table>
+<thead>
+<tr>
+<th>id</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code dir="auto">lib_func_case</code></td>
+<td>n=lib, y=func, x=case</td>
+</tr>
+</tbody>
+</table><p><strong>Space-separated label in one column:</strong></p><div class="expressive-code"><figure class="frame is-terminal not-content"><figcaption class="header"><span class="title"></span><span class="sr-only">Terminal window</span></figcaption><pre data-language="bash"><code><div class="ec-line"><div class="code"><span style="--0:#80A665;--1:#4B7231">vizb</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">data.csv</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-g</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7DE4;--1:#96574AFD">"</span><span style="--0:#C98A7D;--1:#96574A">label region</span><span style="--0:#C98A7DE4;--1:#96574AFD">"</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-p</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7DE4;--1:#96574AFD">"</span><span style="--0:#C98A7D;--1:#96574A">[x n y],z</span><span style="--0:#C98A7DE4;--1:#96574AFD">"</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-o</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">out.html</span></div></div></code></pre><div class="copy"><div aria-live="polite"></div><button title="Copy to clipboard" data-copied="Copied!" data-code="vizb data.csv -g &quot;label region&quot; -p &quot;[x n y],z&quot; -o out.html"><div></div></button></div></figure></div><table>
+<thead>
+<tr>
+<th>label</th>
+<th>region</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code dir="auto">alpha beta gamma</code></td>
+<td><code dir="auto">EU</code></td>
+<td>x=alpha, n=beta, y=gamma, z=EU</td>
+</tr>
+</tbody>
+</table><p><strong>Prefix skip inside a bracket</strong> (leading <code dir="auto">/</code> drops the first segment of the cell value):</p><div class="expressive-code"><figure class="frame is-terminal not-content"><figcaption class="header"><span class="title"></span><span class="sr-only">Terminal window</span></figcaption><pre data-language="bash"><code><div class="ec-line"><div class="code"><span style="--0:#80A665;--1:#4B7231">vizb</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">data.csv</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-g</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">name</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-p</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7DE4;--1:#96574AFD">"</span><span style="--0:#C98A7D;--1:#96574A">[/n/y]</span><span style="--0:#C98A7DE4;--1:#96574AFD">"</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-o</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">out.html</span></div></div></code></pre><div class="copy"><div aria-live="polite"></div><button title="Copy to clipboard" data-copied="Copied!" data-code="vizb data.csv -g name -p &quot;[/n/y]&quot; -o out.html"><div></div></button></div></figure></div><table>
+<thead>
+<tr>
+<th>name</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code dir="auto">BenchmarkTest/JSON/Marshal</code></td>
+<td>n=JSON, y=Marshal</td>
+</tr>
+</tbody>
+</table><p><strong>Mix value-split with whole columns</strong> — date parts + region on Z:</p><div class="expressive-code"><figure class="frame is-terminal not-content"><figcaption class="header"><span class="title"></span><span class="sr-only">Terminal window</span></figcaption><pre data-language="bash"><code><div class="ec-line"><div class="code"><span style="--0:#80A665;--1:#4B7231">vizb</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">sales.csv</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-g</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">date,region</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-p</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7DE4;--1:#96574AFD">"</span><span style="--0:#C98A7D;--1:#96574A">[n-y-x],z</span><span style="--0:#C98A7DE4;--1:#96574AFD">"</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-o</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">sales.html</span></div></div></code></pre><div class="copy"><div aria-live="polite"></div><button title="Copy to clipboard" data-copied="Copied!" data-code="vizb sales.csv -g date,region -p &quot;[n-y-x],z&quot; -o sales.html"><div></div></button></div></figure></div><table>
+<thead>
+<tr>
+<th>date</th>
+<th>region</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code dir="auto">2022-2-30</code></td>
+<td><code dir="auto">Asia</code></td>
+<td>n=2022, y=2, x=30, z=Asia</td>
+</tr>
+</tbody>
+</table></details>
+<aside aria-label="Note" class="starlight-aside starlight-aside--note"><p class="starlight-aside__title" aria-hidden="true"><svg aria-hidden="true" class="starlight-aside__icon astro-d45u3u2k" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1em;"><path d="M12 11a1 1 0 0 0-1 1v4a1 1 0 0 0 2 0v-4a1 1 0 0 0-1-1Zm.38-3.92a1 1 0 0 0-.76 0 1 1 0 0 0-.33.21 1.15 1.15 0 0 0-.21.33 1 1 0 0 0 .21 1.09c.097.088.209.16.33.21A1 1 0 0 0 13 8a1.05 1.05 0 0 0-.29-.71 1 1 0 0 0-.33-.21ZM12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 18a8 8 0 1 1 0-16.001A8 8 0 0 1 12 20Z"/></svg>Note</p><div class="starlight-aside__content"><p>Bracket splitting is <strong>literal</strong>. Vizb does not parse dates or semver semantically. Values must match the separator layout in <code dir="auto">-p</code>. For irregular strings without stable separators (e.g. <code dir="auto">Hashing64MD5</code>), use <a href="#regex-syntax"><code dir="auto">--group-regex</code></a> instead.</p></div></aside>
+<p>The columns you <strong>don’t</strong> select decide the chart values:</p>
+<ul>
+<li><strong>Unselected numeric columns each become their own chart.</strong> Here <code dir="auto">sales</code> and <code dir="auto">latency</code> each become a separate chart (one <code dir="auto">Stat</code> per column).</li>
+<li><strong>Non-numeric unselected columns are ignored.</strong> A <code dir="auto">notes</code> text column would simply be dropped.</li>
+<li><strong>No <code dir="auto">--group</code> at all</strong> → dimensions stay empty. No rows are merged. Each row becomes one point, and every numeric column renders as its own chart. This is useful for a quick chart of a wide table.</li>
+</ul>
+<aside aria-label="Note" class="starlight-aside starlight-aside--note"><p class="starlight-aside__title" aria-hidden="true"><svg aria-hidden="true" class="starlight-aside__icon astro-d45u3u2k" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1em;"><path d="M12 11a1 1 0 0 0-1 1v4a1 1 0 0 0 2 0v-4a1 1 0 0 0-1-1Zm.38-3.92a1 1 0 0 0-.76 0 1 1 0 0 0-.33.21 1.15 1.15 0 0 0-.21.33 1 1 0 0 0 .21 1.09c.097.088.209.16.33.21A1 1 0 0 0 13 8a1.05 1.05 0 0 0-.29-.71 1 1 0 0 0-.33-.21ZM12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 18a8 8 0 1 1 0-16.001A8 8 0 0 1 12 20Z"/></svg>Note</p><div class="starlight-aside__content"><p>Each <code dir="auto">--group</code> column must match a header exactly. A missing column is fatal: <code dir="auto">group column 'X' not found; available: [...]</code>.</p></div></aside>
+<div class="sl-heading-wrapper level-h3"><h3 id="aggregation">Aggregation</h3><a class="sl-anchor-link" href="#aggregation"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 1 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 0 0-1.42-1.42m8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 1 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 0 0 0 1.42 1 1 0 0 0 1.42 0l3.88-3.89a4.49 4.49 0 0 0 0-6.33M8.83 15.17a1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.92-4.92a1 1 0 1 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “Aggregation”</span></a></div>
+<p>When group is active (<code dir="auto">--group</code> or auto-group), multiple rows can share the same <code dir="auto">(name, x, y, z)</code> key. Vizb <strong>sums</strong> their values into a single point. A 200k-row export collapses into a few thousand chart points. You’ll see it in the CLI output when duplicates were merged:</p>
+<div class="expressive-code"><figure class="frame not-content"><figcaption class="header"></figcaption><pre data-language="text"><code><div class="ec-line"><div class="code"><span style="--0:#dbd7caee;--1:#393a34">🧮 Aggregating 50000 rows by columns: region, product, month (name: region, x: product, y: month)...</span></div></div><div class="ec-line"><div class="code"><span style="--0:#dbd7caee;--1:#393a34">✅ Aggregated into 1200 grouped data points</span></div></div></code></pre><div class="copy"><div aria-live="polite"></div><button title="Copy to clipboard" data-copied="Copied!" data-code="🧮 Aggregating 50000 rows by columns: region, product, month (name: region, x: product, y: month)...✅ Aggregated into 1200 grouped data points"><div></div></button></div></figure></div>
+<p>If every row already has a unique group key (e.g. auto-group picked a high-cardinality ID column), vizb still runs the sum step but nothing collapses — the closing line instead reports <code dir="auto">✅ N grouped rows — all unique (no duplicates to sum)</code>.</p>
+<aside aria-label="Caution" class="starlight-aside starlight-aside--caution"><p class="starlight-aside__title" aria-hidden="true"><svg aria-hidden="true" class="starlight-aside__icon astro-d45u3u2k" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1em;"><path d="M12 16a1 1 0 1 0 0 2 1 1 0 0 0 0-2Zm10.67 1.47-8.05-14a3 3 0 0 0-5.24 0l-8 14A3 3 0 0 0 3.94 22h16.12a3 3 0 0 0 2.61-4.53Zm-1.73 2a1 1 0 0 1-.88.51H3.94a1 1 0 0 1-.88-.51 1 1 0 0 1 0-1l8-14a1 1 0 0 1 1.78 0l8.05 14a1 1 0 0 1 .05 1.02v-.02ZM12 8a1 1 0 0 0-1 1v4a1 1 0 0 0 2 0V9a1 1 0 0 0-1-1Z"/></svg>Caution</p><div class="starlight-aside__content"><p>Aggregation is <strong>summing</strong>, and applies to <strong>CSV/JSON only</strong>. Benchmark parsers are never aggregated. Repeated runs share a key but the UI averages them instead of summing.</p></div></aside>
+<p>See <a href="/guides/data">Tabular Data (CSV &amp; JSON)</a> for the full parser rules.</p>
+<div class="sl-heading-wrapper level-h2"><h2 id="group-benchmarks">Group benchmarks</h2><a class="sl-anchor-link" href="#group-benchmarks"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 1 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 0 0-1.42-1.42m8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 1 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 0 0 0 1.42 1 1 0 0 0 1.42 0l3.88-3.89a4.49 4.49 0 0 0 0-6.33M8.83 15.17a1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.92-4.92a1 1 0 1 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “Group benchmarks”</span></a></div>
+<p>Benchmark names already encode structure. A name like <code dir="auto">BenchmarkSort/1024/QuickSort</code> carries the function, the input size, and the variant. There are no columns to pick. So <code dir="auto">--group-pattern</code> / <code dir="auto">--group-regex</code> do all the extraction. Set axis titles with <code dir="auto">{label}</code> suffixes in <code dir="auto">-p</code> (see <a href="#axis-labels">Axis labels</a>).</p>
+<div class="expressive-code"><figure class="frame is-terminal not-content"><figcaption class="header"><span class="title"></span><span class="sr-only">Terminal window</span></figcaption><pre data-language="bash"><code><div class="ec-line"><div class="code"><span style="--0:#80A665;--1:#4B7231">go</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">test</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-bench</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">.</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#CB7676;--1:#9E5252">|</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#80A665;--1:#4B7231">vizb</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-p</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">n/x/y</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-o</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">output.html</span></div></div></code></pre><div class="copy"><div aria-live="polite"></div><button title="Copy to clipboard" data-copied="Copied!" data-code="go test -bench . | vizb -p n/x/y -o output.html"><div></div></button></div></figure></div>
+<table>
+<thead>
+<tr>
+<th>Benchmark Name</th>
+<th>Name</th>
+<th>XAxis</th>
+<th>YAxis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code dir="auto">BenchmarkSort/1024/QuickSort</code></td>
+<td>Sort</td>
+<td>1024</td>
+<td>QuickSort</td>
+</tr>
+<tr>
+<td><code dir="auto">BenchmarkSort/2048/MergeSort</code></td>
+<td>Sort</td>
+<td>2048</td>
+<td>MergeSort</td>
+</tr>
+</tbody>
+</table>
+<p>Every metric the benchmark reports (time, memory, allocations, …) becomes its own chart automatically. You only group the name.</p>
+<div class="sl-heading-wrapper level-h2"><h2 id="pattern-syntax">Pattern Syntax</h2><a class="sl-anchor-link" href="#pattern-syntax"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 1 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 0 0-1.42-1.42m8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 1 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 0 0 0 1.42 1 1 0 0 0 1.42 0l3.88-3.89a4.49 4.49 0 0 0 0-6.33M8.83 15.17a1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.92-4.92a1 1 0 1 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “Pattern Syntax”</span></a></div>
+<p>The <code dir="auto">--group-pattern</code> flag splits the label using the separators you declare between dimension tokens. It assigns each segment to a dimension. It applies to both flows — the benchmark name or the CSV/JSON label built from <code dir="auto">--group</code>.</p>
+<div class="sl-heading-wrapper level-h3"><h3 id="separators">Separators</h3><a class="sl-anchor-link" href="#separators"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 1 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 0 0-1.42-1.42m8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 1 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 0 0 0 1.42 1 1 0 0 0 1.42 0l3.88-3.89a4.49 4.49 0 0 0 0-6.33M8.83 15.17a1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.92-4.92a1 1 0 1 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “Separators”</span></a></div>
+<p>Any single character works between dimension tokens. Vizb reads them from your <code dir="auto">-p</code> string:</p>
+<table>
+<thead>
+<tr>
+<th>Separator</th>
+<th>Typical use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code dir="auto">/</code></td>
+<td>Go/Rust/JS benchmark names (<code dir="auto">n/x/y</code>) and slash-structured <code dir="auto">-g</code> (<code dir="auto">region/product</code>)</td>
+</tr>
+<tr>
+<td><code dir="auto">_</code></td>
+<td>Underscore-delimited bench names (<code dir="auto">n_y_x</code>) and structured <code dir="auto">-g</code> specs</td>
+</tr>
+<tr>
+<td><code dir="auto">,</code></td>
+<td>Comma-separated <code dir="auto">--group</code> lists (<code dir="auto">y,x</code> with <code dir="auto">-g region,product</code>)</td>
+</tr>
+<tr>
+<td><code dir="auto"> </code> (space)</td>
+<td>Quoted <code dir="auto">--group</code> specs (<code dir="auto">"y x"</code> with <code dir="auto">-g "region product"</code>)</td>
+</tr>
+<tr>
+<td><code dir="auto">#</code>, <code dir="auto">.</code>, etc.</td>
+<td>Any single character works when <code dir="auto">-g</code> and <code dir="auto">-p</code> agree (e.g. <code dir="auto">-g "a#b#c" -p "x#y#z"</code>)</td>
+</tr>
+</tbody>
+</table>
+<p>Three skip patterns drop segments without assigning them to a dimension:</p>
+<table>
+<thead>
+<tr>
+<th>Pattern</th>
+<th>Example</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Leading separator</td>
+<td><code dir="auto">/n/y</code></td>
+<td>First value segment is unused (prefix skip)</td>
+</tr>
+<tr>
+<td>Consecutive separators</td>
+<td><code dir="auto">n--x</code> or <code dir="auto">x//y</code></td>
+<td>Middle segment is unused</td>
+</tr>
+<tr>
+<td>Trailing separator</td>
+<td><code dir="auto">n-x-</code></td>
+<td>Last value segment is unused</td>
+</tr>
+</tbody>
+</table>
+<p>Each repeated separator character adds one more split point and one empty dimension slot. A single trailing <code dir="auto">-</code> after the last token is enough to drop the final segment. You do not need <code dir="auto">---</code>.</p>
+<p>Works in flat benchmark patterns and inside bracket slots (e.g. <code dir="auto">[n{year}-x{month}-]</code> on a CSV date column).</p>
+<div class="sl-heading-wrapper level-h3"><h3 id="components">Components</h3><a class="sl-anchor-link" href="#components"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 1 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 0 0-1.42-1.42m8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 1 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 0 0 0 1.42 1 1 0 0 0 1.42 0l3.88-3.89a4.49 4.49 0 0 0 0-6.33M8.83 15.17a1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.92-4.92a1 1 0 1 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “Components”</span></a></div>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Shorthand</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code dir="auto">name</code></td>
+<td><code dir="auto">n</code></td>
+<td>Chart group name</td>
+</tr>
+<tr>
+<td><code dir="auto">xAxis</code></td>
+<td><code dir="auto">x</code></td>
+<td>X-axis values</td>
+</tr>
+<tr>
+<td><code dir="auto">yAxis</code></td>
+<td><code dir="auto">y</code></td>
+<td>Y-axis series</td>
+</tr>
+<tr>
+<td><code dir="auto">zAxis</code></td>
+<td><code dir="auto">z</code></td>
+<td>Z-axis depth layer (3D, requires <code dir="auto">x</code> + <code dir="auto">y</code>)</td>
+</tr>
+</tbody>
+</table>
+<p>The default pattern is <code dir="auto">x</code> — a single segment mapped to the X-axis.</p>
+<div class="sl-heading-wrapper level-h3"><h3 id="examples">Examples</h3><a class="sl-anchor-link" href="#examples"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 1 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 0 0-1.42-1.42m8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 1 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 0 0 0 1.42 1 1 0 0 0 1.42 0l3.88-3.89a4.49 4.49 0 0 0 0-6.33M8.83 15.17a1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.92-4.92a1 1 0 1 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “Examples”</span></a></div>
+<p><strong>Slash-separated <code dir="auto">n/x/y</code>:</strong></p>
+<div class="expressive-code"><figure class="frame is-terminal not-content"><figcaption class="header"><span class="title"></span><span class="sr-only">Terminal window</span></figcaption><pre data-language="bash"><code><div class="ec-line"><div class="code"><span style="--0:#80A665;--1:#4B7231">vizb</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">bench.txt</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">--group-pattern</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7DE4;--1:#96574AFD">"</span><span style="--0:#C98A7D;--1:#96574A">n/x/y</span><span style="--0:#C98A7DE4;--1:#96574AFD">"</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-o</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">output.html</span></div></div></code></pre><div class="copy"><div aria-live="polite"></div><button title="Copy to clipboard" data-copied="Copied!" data-code="vizb bench.txt --group-pattern &quot;n/x/y&quot; -o output.html"><div></div></button></div></figure></div>
+<table>
+<thead>
+<tr>
+<th>Label</th>
+<th>Name</th>
+<th>XAxis</th>
+<th>YAxis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code dir="auto">BenchmarkSort/1024/QuickSort</code></td>
+<td>Sort</td>
+<td>1024</td>
+<td>QuickSort</td>
+</tr>
+<tr>
+<td><code dir="auto">BenchmarkSort/2048/MergeSort</code></td>
+<td>Sort</td>
+<td>2048</td>
+<td>MergeSort</td>
+</tr>
+<tr>
+<td><code dir="auto">BenchmarkSort/4096/QuickSort</code></td>
+<td>Sort</td>
+<td>4096</td>
+<td>QuickSort</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Underscore-separated <code dir="auto">n_y_x</code>:</strong></p>
+<div class="expressive-code"><figure class="frame is-terminal not-content"><figcaption class="header"><span class="title"></span><span class="sr-only">Terminal window</span></figcaption><pre data-language="bash"><code><div class="ec-line"><div class="code"><span style="--0:#80A665;--1:#4B7231">vizb</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">bench.txt</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">--group-pattern</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7DE4;--1:#96574AFD">"</span><span style="--0:#C98A7D;--1:#96574A">n_y_x</span><span style="--0:#C98A7DE4;--1:#96574AFD">"</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-o</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">output.html</span></div></div></code></pre><div class="copy"><div aria-live="polite"></div><button title="Copy to clipboard" data-copied="Copied!" data-code="vizb bench.txt --group-pattern &quot;n_y_x&quot; -o output.html"><div></div></button></div></figure></div>
+<table>
+<thead>
+<tr>
+<th>Label</th>
+<th>Name</th>
+<th>YAxis</th>
+<th>XAxis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code dir="auto">BenchmarkHash_SHA256_1KB</code></td>
+<td>Hash</td>
+<td>SHA256</td>
+<td>1KB</td>
+</tr>
+<tr>
+<td><code dir="auto">BenchmarkHash_MD5_4KB</code></td>
+<td>Hash</td>
+<td>MD5</td>
+<td>4KB</td>
+</tr>
+</tbody>
+</table>
+<p><strong>2D with <code dir="auto">n/y</code> (no X-axis grouping):</strong></p>
+<div class="expressive-code"><figure class="frame is-terminal not-content"><figcaption class="header"><span class="title"></span><span class="sr-only">Terminal window</span></figcaption><pre data-language="bash"><code><div class="ec-line"><div class="code"><span style="--0:#80A665;--1:#4B7231">vizb</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">bench.txt</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">--group-pattern</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7DE4;--1:#96574AFD">"</span><span style="--0:#C98A7D;--1:#96574A">n/y</span><span style="--0:#C98A7DE4;--1:#96574AFD">"</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-o</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">output.html</span></div></div></code></pre><div class="copy"><div aria-live="polite"></div><button title="Copy to clipboard" data-copied="Copied!" data-code="vizb bench.txt --group-pattern &quot;n/y&quot; -o output.html"><div></div></button></div></figure></div>
+<table>
+<thead>
+<tr>
+<th>Label</th>
+<th>Name</th>
+<th>YAxis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code dir="auto">BenchmarkJSON/Marshal</code></td>
+<td>JSON</td>
+<td>Marshal</td>
+</tr>
+<tr>
+<td><code dir="auto">BenchmarkJSON/Unmarshal</code></td>
+<td>JSON</td>
+<td>Unmarshal</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Prefix skip with <code dir="auto">/n/y</code> (leading slash discards the first segment):</strong></p>
+<div class="expressive-code"><figure class="frame is-terminal not-content"><figcaption class="header"><span class="title"></span><span class="sr-only">Terminal window</span></figcaption><pre data-language="bash"><code><div class="ec-line"><div class="code"><span style="--0:#80A665;--1:#4B7231">vizb</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">bench.txt</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">--group-pattern</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7DE4;--1:#96574AFD">"</span><span style="--0:#C98A7D;--1:#96574A">/n/y</span><span style="--0:#C98A7DE4;--1:#96574AFD">"</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-o</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">output.html</span></div></div></code></pre><div class="copy"><div aria-live="polite"></div><button title="Copy to clipboard" data-copied="Copied!" data-code="vizb bench.txt --group-pattern &quot;/n/y&quot; -o output.html"><div></div></button></div></figure></div>
+<table>
+<thead>
+<tr>
+<th>Label</th>
+<th>Name</th>
+<th>YAxis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code dir="auto">BenchmarkTest/JSON/Marshal</code></td>
+<td>JSON</td>
+<td>Marshal</td>
+</tr>
+<tr>
+<td><code dir="auto">BenchmarkTest/XML/Parse</code></td>
+<td>XML</td>
+<td>Parse</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Middle skip with <code dir="auto">n//y</code> (consecutive separators discard the middle segment):</strong></p>
+<div class="expressive-code"><figure class="frame is-terminal not-content"><figcaption class="header"><span class="title"></span><span class="sr-only">Terminal window</span></figcaption><pre data-language="bash"><code><div class="ec-line"><div class="code"><span style="--0:#80A665;--1:#4B7231">vizb</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">bench.txt</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">--group-pattern</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7DE4;--1:#96574AFD">"</span><span style="--0:#C98A7D;--1:#96574A">n//y</span><span style="--0:#C98A7DE4;--1:#96574AFD">"</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-o</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">output.html</span></div></div></code></pre><div class="copy"><div aria-live="polite"></div><button title="Copy to clipboard" data-copied="Copied!" data-code="vizb bench.txt --group-pattern &quot;n//y&quot; -o output.html"><div></div></button></div></figure></div>
+<table>
+<thead>
+<tr>
+<th>Label</th>
+<th>Name</th>
+<th>YAxis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code dir="auto">Sort/1024/QuickSort</code></td>
+<td>Sort</td>
+<td>QuickSort</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Trailing skip with <code dir="auto">n-x-</code> (trailing separator discards the last segment):</strong></p>
+<div class="expressive-code"><figure class="frame is-terminal not-content"><figcaption class="header"><span class="title"></span><span class="sr-only">Terminal window</span></figcaption><pre data-language="bash"><code><div class="ec-line"><div class="code"><span style="--0:#80A665;--1:#4B7231">vizb</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">bench.txt</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">--group-pattern</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7DE4;--1:#96574AFD">"</span><span style="--0:#C98A7D;--1:#96574A">n-x-</span><span style="--0:#C98A7DE4;--1:#96574AFD">"</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-o</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">output.html</span></div></div></code></pre><div class="copy"><div aria-live="polite"></div><button title="Copy to clipboard" data-copied="Copied!" data-code="vizb bench.txt --group-pattern &quot;n-x-&quot; -o output.html"><div></div></button></div></figure></div>
+<table>
+<thead>
+<tr>
+<th>Label</th>
+<th>Name</th>
+<th>XAxis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code dir="auto">2024-01-01</code></td>
+<td>2024</td>
+<td>01</td>
+</tr>
+</tbody>
+</table>
+<p><strong>4D with <code dir="auto">n/x/y/z</code> (renders a 3D chart):</strong></p>
+<div class="expressive-code"><figure class="frame is-terminal not-content"><figcaption class="header"><span class="title"></span><span class="sr-only">Terminal window</span></figcaption><pre data-language="bash"><code><div class="ec-line"><div class="code"><span style="--0:#80A665;--1:#4B7231">vizb</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">bench.txt</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">--group-pattern</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7DE4;--1:#96574AFD">"</span><span style="--0:#C98A7D;--1:#96574A">n/x/y/z</span><span style="--0:#C98A7DE4;--1:#96574AFD">"</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-o</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">output.html</span></div></div></code></pre><div class="copy"><div aria-live="polite"></div><button title="Copy to clipboard" data-copied="Copied!" data-code="vizb bench.txt --group-pattern &quot;n/x/y/z&quot; -o output.html"><div></div></button></div></figure></div>
+<table>
+<thead>
+<tr>
+<th>Label</th>
+<th>Name</th>
+<th>XAxis</th>
+<th>YAxis</th>
+<th>ZAxis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code dir="auto">BenchmarkSort/1024/QuickSort/warm</code></td>
+<td>Sort</td>
+<td>1024</td>
+<td>QuickSort</td>
+<td>warm</td>
+</tr>
+<tr>
+<td><code dir="auto">BenchmarkSort/2048/MergeSort/cold</code></td>
+<td>Sort</td>
+<td>2048</td>
+<td>MergeSort</td>
+<td>cold</td>
+</tr>
+</tbody>
+</table>
+<aside aria-label="Note" class="starlight-aside starlight-aside--note"><p class="starlight-aside__title" aria-hidden="true"><svg aria-hidden="true" class="starlight-aside__icon astro-d45u3u2k" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1em;"><path d="M12 11a1 1 0 0 0-1 1v4a1 1 0 0 0 2 0v-4a1 1 0 0 0-1-1Zm.38-3.92a1 1 0 0 0-.76 0 1 1 0 0 0-.33.21 1.15 1.15 0 0 0-.21.33 1 1 0 0 0 .21 1.09c.097.088.209.16.33.21A1 1 0 0 0 13 8a1.05 1.05 0 0 0-.29-.71 1 1 0 0 0-.33-.21ZM12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 18a8 8 0 1 1 0-16.001A8 8 0 0 1 12 20Z"/></svg>Note</p><div class="starlight-aside__content"><p>A pattern must contain <code dir="auto">x</code> or <code dir="auto">y</code> (<code dir="auto">pattern must contain xAxis (x) or yAxis (y)</code>). A <code dir="auto">z</code> segment requires both <code dir="auto">x</code> and <code dir="auto">y</code>. Vizb rejects <code dir="auto">z</code> otherwise with <code dir="auto">zAxis (z) requires both xAxis (x) and yAxis (y)</code>. See <a href="/charts/3d">3D Charts</a>.</p></div></aside>
+<div class="sl-heading-wrapper level-h2"><h2 id="regex-syntax">Regex Syntax</h2><a class="sl-anchor-link" href="#regex-syntax"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 1 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 0 0-1.42-1.42m8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 1 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 0 0 0 1.42 1 1 0 0 0 1.42 0l3.88-3.89a4.49 4.49 0 0 0 0-6.33M8.83 15.17a1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.92-4.92a1 1 0 1 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “Regex Syntax”</span></a></div>
+<p>The <code dir="auto">--group-regex</code> flag uses Go-style named capture groups. It runs on the label — a benchmark name, or the CSV/JSON label built from <code dir="auto">--group</code>. Use it when the label does not follow a simple separator pattern. When set, regex takes precedence over <code dir="auto">--group-pattern</code>.</p>
+<div class="sl-heading-wrapper level-h3"><h3 id="named-capture-groups">Named Capture Groups</h3><a class="sl-anchor-link" href="#named-capture-groups"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 1 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 0 0-1.42-1.42m8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 1 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 0 0 0 1.42 1 1 0 0 0 1.42 0l3.88-3.89a4.49 4.49 0 0 0 0-6.33M8.83 15.17a1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.92-4.92a1 1 0 1 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “Named Capture Groups”</span></a></div>
+<table>
+<thead>
+<tr>
+<th>Group Name</th>
+<th>Shorthand</th>
+<th>Dimension</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code dir="auto">(?&lt;name&gt;...)</code></td>
+<td><code dir="auto">(?&lt;n&gt;...)</code></td>
+<td>Chart group name</td>
+</tr>
+<tr>
+<td><code dir="auto">(?&lt;xAxis&gt;...)</code></td>
+<td><code dir="auto">(?&lt;x&gt;...)</code></td>
+<td>X-axis values</td>
+</tr>
+<tr>
+<td><code dir="auto">(?&lt;yAxis&gt;...)</code></td>
+<td><code dir="auto">(?&lt;y&gt;...)</code></td>
+<td>Y-axis series</td>
+</tr>
+<tr>
+<td><code dir="auto">(?&lt;zAxis&gt;...)</code></td>
+<td><code dir="auto">(?&lt;z&gt;...)</code></td>
+<td>Z-axis depth layer (3D, requires <code dir="auto">x</code> + <code dir="auto">y</code>)</td>
+</tr>
+</tbody>
+</table>
+<div class="sl-heading-wrapper level-h3"><h3 id="examples-1">Examples</h3><a class="sl-anchor-link" href="#examples-1"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 1 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 0 0-1.42-1.42m8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 1 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 0 0 0 1.42 1 1 0 0 0 1.42 0l3.88-3.89a4.49 4.49 0 0 0 0-6.33M8.83 15.17a1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.92-4.92a1 1 0 1 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “Examples”</span></a></div>
+<table>
+<thead>
+<tr>
+<th>Label</th>
+<th>Regex</th>
+<th>Extracted</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code dir="auto">BenchmarkHashing64MD5</code></td>
+<td><code dir="auto">Hashing64(?&lt;x&gt;.*)</code></td>
+<td>X: MD5</td>
+</tr>
+<tr>
+<td><code dir="auto">BenchmarkJSONByMarshal</code></td>
+<td><code dir="auto">(?&lt;x&gt;.*)By(?&lt;y&gt;.*)</code></td>
+<td>X: JSON, Y: Marshal</td>
+</tr>
+<tr>
+<td><code dir="auto">BenchmarkDecode/text=digits/level=speed</code></td>
+<td><code dir="auto">(?&lt;n&gt;.*)/text=(?&lt;x&gt;.*)/level=(?&lt;y&gt;.*)</code></td>
+<td>N: Decode, X: digits, Y: speed</td>
+</tr>
+</tbody>
+</table>
+<div class="expressive-code"><figure class="frame is-terminal not-content"><figcaption class="header"><span class="title"></span><span class="sr-only">Terminal window</span></figcaption><pre data-language="bash"><code><div class="ec-line"><div class="code"><span style="--0:#80A665;--1:#4B7231">vizb</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">bench.txt</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">--group-regex</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7DE4;--1:#96574AFD">"</span><span style="--0:#C98A7D;--1:#96574A">(?&lt;n&gt;.*)/text=(?&lt;x&gt;.*)/level=(?&lt;y&gt;.*)</span><span style="--0:#C98A7DE4;--1:#96574AFD">"</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-o</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">output.html</span></div></div></code></pre><div class="copy"><div aria-live="polite"></div><button title="Copy to clipboard" data-copied="Copied!" data-code="vizb bench.txt --group-regex &quot;(?<n>.*)/text=(?<x>.*)/level=(?<y>.*)&quot; -o output.html"><div></div></button></div></figure></div>
+<aside aria-label="Note" class="starlight-aside starlight-aside--note"><p class="starlight-aside__title" aria-hidden="true"><svg aria-hidden="true" class="starlight-aside__icon astro-d45u3u2k" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1em;"><path d="M12 11a1 1 0 0 0-1 1v4a1 1 0 0 0 2 0v-4a1 1 0 0 0-1-1Zm.38-3.92a1 1 0 0 0-.76 0 1 1 0 0 0-.33.21 1.15 1.15 0 0 0-.21.33 1 1 0 0 0 .21 1.09c.097.088.209.16.33.21A1 1 0 0 0 13 8a1.05 1.05 0 0 0-.29-.71 1 1 0 0 0-.33-.21ZM12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 18a8 8 0 1 1 0-16.001A8 8 0 0 1 12 20Z"/></svg>Note</p><div class="starlight-aside__content"><p>The regex must capture <code dir="auto">x</code> or <code dir="auto">y</code> (<code dir="auto">regex '...' does not contain x (xAxis) or y (yAxis)</code>). A captured <code dir="auto">z</code> still requires both <code dir="auto">x</code> and <code dir="auto">y</code>.</p></div></aside>
+<div class="sl-heading-wrapper level-h2"><h2 id="axis-labels">Axis labels</h2><a class="sl-anchor-link" href="#axis-labels"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 1 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 0 0-1.42-1.42m8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 1 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 0 0 0 1.42 1 1 0 0 0 1.42 0l3.88-3.89a4.49 4.49 0 0 0 0-6.33M8.83 15.17a1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.92-4.92a1 1 0 1 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “Axis labels”</span></a></div>
+<p>Set chart axis titles in <code dir="auto">--group-pattern</code> / <code dir="auto">-p</code> by appending <code dir="auto">{title}</code> immediately after a dimension token (no space):</p>
+<table>
+<thead>
+<tr>
+<th>Shorthand</th>
+<th>Syntax</th>
+<th>Chart title</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code dir="auto">n</code></td>
+<td><code dir="auto">n{Algorithm}</code></td>
+<td>Algorithm</td>
+</tr>
+<tr>
+<td><code dir="auto">x</code></td>
+<td><code dir="auto">x{Product}</code></td>
+<td>Product</td>
+</tr>
+<tr>
+<td><code dir="auto">y</code></td>
+<td><code dir="auto">y{Region}</code></td>
+<td>Region</td>
+</tr>
+<tr>
+<td><code dir="auto">z</code></td>
+<td><code dir="auto">z{Category}</code></td>
+<td>Category</td>
+</tr>
+</tbody>
+</table>
+<p>Works on flat patterns, bracket slots, and benchmarks. The same syntax is used everywhere <code dir="auto">-p</code> is used.</p>
+<div class="expressive-code"><figure class="frame is-terminal not-content"><figcaption class="header"><span class="title"></span><span class="sr-only">Terminal window</span></figcaption><pre data-language="bash"><code><div class="ec-line"><div class="code"><span style="--0:#818F81FE;--1:#636B63"># CSV — titles independent of column names</span></div></div><div class="ec-line"><div class="code"><span style="--0:#80A665;--1:#4B7231">vizb</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">sales.csv</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-g</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">region,product</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-p</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7DE4;--1:#96574AFD">'</span><span style="--0:#C98A7D;--1:#96574A">y{Region},x{Product}</span><span style="--0:#C98A7DE4;--1:#96574AFD">'</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-o</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">sales.html</span></div></div><div class="ec-line"><div class="code">
+</div></div><div class="ec-line"><div class="code"><span style="--0:#818F81FE;--1:#636B63"># Bracket slot — one column, multiple titled dimensions</span></div></div><div class="ec-line"><div class="code"><span style="--0:#80A665;--1:#4B7231">vizb</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">sales.csv</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-g</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">date,category</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-p</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7DE4;--1:#96574AFD">'</span><span style="--0:#C98A7D;--1:#96574A">[n{year}-y{months}-x{dates}],z{Category}</span><span style="--0:#C98A7DE4;--1:#96574AFD">'</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-o</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">sales.html</span></div></div><div class="ec-line"><div class="code">
+</div></div><div class="ec-line"><div class="code"><span style="--0:#818F81FE;--1:#636B63"># Benchmark — no --group required</span></div></div><div class="ec-line"><div class="code"><span style="--0:#80A665;--1:#4B7231">vizb</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">bench.txt</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-p</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7DE4;--1:#96574AFD">'</span><span style="--0:#C98A7D;--1:#96574A">n{Algorithm}/x{Size}/y{Variant}</span><span style="--0:#C98A7DE4;--1:#96574AFD">'</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C99076;--1:#995728">-o</span><span style="--0:#DBD7CAEE;--1:#393A34"> </span><span style="--0:#C98A7D;--1:#96574A">out.html</span></div></div></code></pre><div class="copy"><div aria-live="polite"></div><button title="Copy to clipboard" data-copied="Copied!" data-code="vizb sales.csv -g region,product -p &#x27;y{Region},x{Product}&#x27; -o sales.htmlvizb sales.csv -g date,category -p &#x27;[n{year}-y{months}-x{dates}],z{Category}&#x27; -o sales.htmlvizb bench.txt -p &#x27;n{Algorithm}/x{Size}/y{Variant}&#x27; -o out.html"><div></div></button></div></figure></div>
+<p>Omit <code dir="auto">{label}</code> on CSV/JSON and the matching <code dir="auto">--group</code> column name becomes the axis title. When <code dir="auto">{label}</code> is present, it always overrides that default.</p>
+<aside aria-label="Note" class="starlight-aside starlight-aside--note"><p class="starlight-aside__title" aria-hidden="true"><svg aria-hidden="true" class="starlight-aside__icon astro-d45u3u2k" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1em;"><path d="M12 11a1 1 0 0 0-1 1v4a1 1 0 0 0 2 0v-4a1 1 0 0 0-1-1Zm.38-3.92a1 1 0 0 0-.76 0 1 1 0 0 0-.33.21 1.15 1.15 0 0 0-.21.33 1 1 0 0 0 .21 1.09c.097.088.209.16.33.21A1 1 0 0 0 13 8a1.05 1.05 0 0 0-.29-.71 1 1 0 0 0-.33-.21ZM12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 18a8 8 0 1 1 0-16.001A8 8 0 0 1 12 20Z"/></svg>Note</p><div class="starlight-aside__content"><p>Titles are emitted as <code dir="auto">axisLabels</code> in the JSON output and rendered on chart axes. The <code dir="auto">name</code> title is preserved for the UI axis-swap feature.</p></div></aside>
+<div class="sl-heading-wrapper level-h2"><h2 id="choosing-a-method">Choosing a Method</h2><a class="sl-anchor-link" href="#choosing-a-method"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 1 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 0 0-1.42-1.42m8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 1 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 0 0 0 1.42 1 1 0 0 0 1.42 0l3.88-3.89a4.49 4.49 0 0 0 0-6.33M8.83 15.17a1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.92-4.92a1 1 0 1 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “Choosing a Method”</span></a></div>
+<p>Use <code dir="auto">--group-pattern</code> when the label follows a consistent separator format — standard Go benchmarks (<code dir="auto">BenchmarkFunc/size/variant</code>) or CSV/JSON columns that map cleanly to dimensions. Use <code dir="auto">--group-regex</code> when the format is non-standard or you need fine-grained extraction, e.g. <code dir="auto">--group-regex "Hash(?&lt;n&gt;[A-Za-z]+)(?&lt;x&gt;\d+)"</code> to pull a name and size out of <code dir="auto">HashingMD5Test1024</code> without a stable separator.</p>
+<aside aria-label="Tip" class="starlight-aside starlight-aside--tip"><p class="starlight-aside__title" aria-hidden="true"><svg aria-hidden="true" class="starlight-aside__icon astro-d45u3u2k" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1em;"><path fill-rule="evenodd" d="M1.44 8.855v-.001l3.527-3.516c.34-.344.802-.541 1.285-.548h6.649l.947-.947c3.07-3.07 6.207-3.072 7.62-2.868a1.821 1.821 0 0 1 1.557 1.557c.204 1.413.203 4.55-2.868 7.62l-.946.946v6.649a1.845 1.845 0 0 1-.549 1.286l-3.516 3.528a1.844 1.844 0 0 1-3.11-.944l-.858-4.275-4.52-4.52-2.31-.463-1.964-.394A1.847 1.847 0 0 1 .98 10.693a1.843 1.843 0 0 1 .46-1.838Zm5.379 2.017-3.873-.776L6.32 6.733h4.638l-4.14 4.14Zm8.403-5.655c2.459-2.46 4.856-2.463 5.89-2.33.134 1.035.13 3.432-2.329 5.891l-6.71 6.71-3.561-3.56 6.71-6.711Zm-1.318 15.837-.776-3.873 4.14-4.14v4.639l-3.364 3.374Z" clip-rule="evenodd"/><path d="M9.318 18.345a.972.972 0 0 0-1.86-.561c-.482 1.435-1.687 2.204-2.934 2.619a8.22 8.22 0 0 1-1.23.302c.062-.365.157-.79.303-1.229.415-1.247 1.184-2.452 2.62-2.935a.971.971 0 1 0-.62-1.842c-.12.04-.236.084-.35.13-2.02.828-3.012 2.588-3.493 4.033a10.383 10.383 0 0 0-.51 2.845l-.001.016v.063c0 .536.434.972.97.972H2.24a7.21 7.21 0 0 0 .878-.065c.527-.063 1.248-.19 2.02-.447 1.445-.48 3.205-1.472 4.033-3.494a5.828 5.828 0 0 0 .147-.407Z"/></svg>Tip</p><div class="starlight-aside__content"><p>Either method splits the label the same way. For CSV/JSON, remember you still need <code dir="auto">--group</code> to pick the columns first. Benchmarks need no <code dir="auto">--group</code> to chart, since the name is already the label.</p></div></aside></div><footer class="sl-flex astro-m5gq2llg"><div class="meta sl-flex astro-m5gq2llg"><a href="https://github.com/goptics/vizb/edit/main/docs/src/content/docs/guides/group.mdx" class="sl-flex print:hidden astro-w6ywi4hs"><svg aria-hidden="true" class="astro-w6ywi4hs astro-d45u3u2k" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1.2em;"><path d="M22 7.24a1 1 0 0 0-.29-.71l-4.24-4.24a1 1 0 0 0-1.1-.22 1 1 0 0 0-.32.22l-2.83 2.83L2.29 16.05a1 1 0 0 0-.29.71V21a1 1 0 0 0 1 1h4.24a1 1 0 0 0 .76-.29l10.87-10.93L21.71 8c.1-.1.17-.2.22-.33a1 1 0 0 0 0-.24v-.14l.07-.05ZM6.83 20H4v-2.83l9.93-9.93 2.83 2.83L6.83 20ZM18.17 8.66l-2.83-2.83 1.42-1.41 2.82 2.82-1.41 1.42Z"/></svg>Edit page</a><p>Last updated: <time datetime="2026-07-01T12:08:09.000Z">Jul 1, 2026</time></p></div><div class="pagination-links print:hidden astro-ldazyj4u" dir="ltr"><a href="/charts/3d/" rel="prev" class="astro-ldazyj4u"><span class="link-label sl-flex astro-ldazyj4u"><svg aria-hidden="true" class="astro-ldazyj4u astro-d45u3u2k" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1.25rem;"><path d="M17 11H9.41l3.3-3.29a1.004 1.004 0 1 0-1.42-1.42l-5 5a1 1 0 0 0-.21.33 1 1 0 0 0 0 .76 1 1 0 0 0 .21.33l5 5a1.002 1.002 0 0 0 1.639-.325 1 1 0 0 0-.219-1.095L9.41 13H17a1 1 0 0 0 0-2Z"/></svg>Previous</span><span class="link-title astro-ldazyj4u">3D Charts (WebGL)</span></a><a href="/guides/select/" rel="next" class="astro-ldazyj4u"><span class="link-label sl-flex astro-ldazyj4u">Next<svg aria-hidden="true" class="astro-ldazyj4u astro-d45u3u2k" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1.25rem;"><path d="M17.92 11.62a1.001 1.001 0 0 0-.21-.33l-5-5a1.003 1.003 0 1 0-1.42 1.42l3.3 3.29H7a1 1 0 0 0 0 2h7.59l-3.3 3.29a1.002 1.002 0 0 0 .325 1.639 1 1 0 0 0 1.095-.219l5-5a1 1 0 0 0 .21-.33 1 1 0 0 0 0-.76Z"/></svg></span><span class="link-title astro-ldazyj4u">Select</span></a></div></footer></div></div></main></div></div></div></div></body></html>
