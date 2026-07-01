@@ -28,10 +28,11 @@
 
   <p>
     <a href="https://vizb.goptics.org/getting-started/">Getting Started</a> ·
-    <a href="https://vizb.goptics.org/guides/parsers/">Parser Guide</a> ·
-    <a href="https://vizb.goptics.org/guides/data/">Tabular Data</a> ·
-    <a href="https://vizb.goptics.org/commands/root/">CLI Commands</a> ·
-    <a href="https://vizb.goptics.org/guides/grouping/">Grouping</a> ·
+    <a href="https://vizb.goptics.org/commands/root/">Commands</a> ·
+    <a href="https://vizb.goptics.org/charts/">Charts</a> ·
+    <a href="https://vizb.goptics.org/guides/parsers/">Parsers</a> ·
+    <a href="https://vizb.goptics.org/guides/group/">Grouping</a> ·
+    <a href="https://vizb.goptics.org/guides/select/">Select</a> ·
     <a href="https://vizb.goptics.org/guides/merging/">Merging</a> ·
     <a href="https://vizb.goptics.org/ci-cd/github-action/">CI/CD</a>
     <br />

@@ -4,6 +4,31 @@ Notable changes to Vizb documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [v0.14.0] - 2026-07-01
+
+### Added
+
+- **Solo `--select` axis mode, multi-stat, and mixed axes** — repeatable `--select x,y[,z]` without grouping; multi-stat mode merges repeatable `dim,metric` selects into one dataset with chart tabs split by stat type; mixed categorical+numeric axes now render on bar/line (2D and 3D) ([#173](https://github.com/goptics/vizb/pull/173)).
+- **`--id` flag and `?id=` URL dataset selection** — stable top-level `id` field on datasets, set via `--id`; UI prefers `?id=` deep links over the legacy `?d=` index param ([#171](https://github.com/goptics/vizb/pull/171)).
+- **`--visualmap` for 2D scatter** — opt-in gradient coloring for 2D scatter (metric → z → y fallback), separate from the existing `--3d-visualmap` path ([#169](https://github.com/goptics/vizb/pull/169)).
+- **`--symbol` / `--symbol-size` flags** — custom marker shape and size for `vizb line` and `vizb scatter` (2D and 3D) ([#166](https://github.com/goptics/vizb/pull/166)).
+
+### Changed
+
+- **Applicability-rule pipeline** — declarative per-flag rules (`Keep`/`WarnKeep`/`Skip`/`Fatal`) replace ad-hoc eligibility checks like `WarnThreeDIfIneligible`; `config/` moved to `internal/{charts,flags}/` ([#170](https://github.com/goptics/vizb/pull/170)).
+- **`dataZoom` and axis pointer behavior** improved for large categorical datasets on line/bar/scatter ([#174](https://github.com/goptics/vizb/pull/174)).
+
+### Fixed
+
+- **Sort not applied to 1-axis charts** — `--sort asc`/`desc` now affects solo-select bar/line charts; a legacy `preserveRows` override in `Dashboard.vue` was skipping the sort path ([#175](https://github.com/goptics/vizb/pull/175)).
+- **2D scatter `--visualmap` ignored on large datasets** — ECharts skips `visualMap` in `large` mode; large-mode is now disabled when visualmap is on ([#172](https://github.com/goptics/vizb/pull/172)).
+- **Pseudo-3D grid sizing** — value-mode `--3d` on 2D x+y data no longer forces a fixed 100×100×100 cube; box dimensions now size from category counts, and camera `viewControl.distance` is capped at 300 ([#161](https://github.com/goptics/vizb/pull/161)).
+- **Y-axis no longer forced to zero** on line/scatter charts — `fitYAxisToData` scales the axis to the data range instead of wasting space including zero; bar charts keep the zero baseline ([#163](https://github.com/goptics/vizb/pull/163)).
+- **Stats panel math corrections** — `computeProfiles` no longer drops `zAxis` for descriptive stats on 3D charts; 95% CI switched from a z-interval to a Student-t interval (correct for small `n`); `correlationMatrix` diagonal and `cqv` edge guards fixed for constant/negative-spanning columns ([#160](https://github.com/goptics/vizb/pull/160)).
+- **Tooltip legend layout and sigma math** — legend rows flow into balanced multi-column grids past 10 entries; 3D tooltip Σ formulas corrected to avoid double-counting the hovered cell ([#159](https://github.com/goptics/vizb/pull/159)).
+- **Metric preservation and auto-group aggregation** — `CollapseDataPointsByKey`/`AggregateDataPoints` now preserve `Metric`; tabular rows auto-grouped onto the X axis aggregate correctly ([#174](https://github.com/goptics/vizb/pull/174)).
+- **GitHub Action merge-deploy stripped scatter settings** — `merge-deploy` called the action without a `charts` input, falling back to the default `bar,line,pie` and stripping scatter config on `vizb ui`; the action default is now empty ([#155](https://github.com/goptics/vizb/pull/155)).
+
 # [v0.13.0]
 
 ### Added
