@@ -54,10 +54,12 @@ export default defineConfig({
 			{
 				label: 'Guides',
 				items: [
-					{ label: 'Grouping', slug: 'guides/grouping' },
+					{ label: 'Group', slug: 'guides/group' },
+					{ label: 'Select', slug: 'guides/select' },
+					{ label: 'Group vs Select', slug: 'guides/group-vs-select' },
+					{ label: 'Tabular Data (CSV & JSON)', slug: 'guides/data' },
 					{ label: 'Merging', slug: 'guides/merging' },
 					{ label: 'Parser Guide', slug: 'guides/parsers' },
-					{ label: 'Tabular Data (CSV & JSON)', slug: 'guides/data' },
 				],
 			},
 			{

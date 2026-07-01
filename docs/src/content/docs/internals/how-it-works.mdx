@@ -156,7 +156,7 @@ Vizb auto-detects the input format from the content (not the file extension). `-
 
 <Tabs syncKey="format">
   <TabItem label="CSV / JSON Data" icon="seti:csv">
-  Generic tabular data. A CSV table or a JSON array of objects is parsed into data points — numeric columns/fields become series, others can be promoted to Name / X / Y / Z with `--group`.
+  Generic tabular data. A CSV table or a JSON array of objects is parsed into data points — numeric columns/fields each become their own chart, others can be promoted to Name / X / Y / Z with `--group`.
 
   ```bash
   vizb data.csv -o output.html

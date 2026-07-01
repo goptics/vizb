@@ -1,11 +1,5 @@
 name: deploy-go-examples
 on:
-  push:
-    branches: [main]
-    paths:
-      - examples/go/**
-      - action.yml
-      - .github/workflows/deploy-examples-go.yml
   workflow_run:
     workflows: [Release]
     types: [completed]

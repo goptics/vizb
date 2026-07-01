@@ -13,7 +13,7 @@ Vizb turns tables and benchmark output into interactive HTML charts. Feed it a C
 
 ## Visualize Tabular Data
 
-Turn any CSV or JSON table into charts. Numeric columns/fields become series.
+Turn any CSV or JSON table into charts. Numeric columns/fields each become their own chart.
 
 <Tabs syncKey="data">
   <TabItem label="CSV" icon="seti:csv">
@@ -30,7 +30,7 @@ Turn any CSV or JSON table into charts. Numeric columns/fields become series.
   </TabItem>
   <TabItem label="JSON" icon="seti:json">
 
-  A JSON array of objects. Each object is a row. Each numeric key is a series. Nested objects flatten to dotted keys.
+  A JSON array of objects. Each object is a row. Each numeric key becomes its own chart. Nested objects flatten to dotted keys.
 
   ```bash
   vizb data.json -o output.html
@@ -129,7 +129,7 @@ Detection is automatic. You can force the parser with `-P go`, `-P rs:criterion`
   <LinkCard title="Tabular Data" description="Chart any CSV or JSON table." href="/guides/data" />
   <LinkCard title="Parser Guide" description="Supported inputs — CSV, JSON, Go, Rust, JavaScript." href="/guides/parsers" />
   <LinkCard title="Commands" description="All CLI flags and options." href="/commands/root" />
-  <LinkCard title="Grouping Guide" description="Multi-dimensional data with patterns and regex." href="/guides/grouping" />
+  <LinkCard title="Group guide" description="Multi-dimensional data with patterns and regex." href="/guides/group" />
   <LinkCard title="Charts" description="Pick the right chart type for your data." href="/charts" />
   <LinkCard title="Troubleshooting" description="Common errors and how to fix them." href="/troubleshooting" />
 </CardGrid>

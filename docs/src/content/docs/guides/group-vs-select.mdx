@@ -1,0 +1,124 @@
+---
+title: Group vs Select
+description: How vizb turns columns into charts — group gives every numeric column its own chart, bucketed by category; select merges columns into one chart as coordinate axes. Plus the auto-inference that picks for you.
+---
+
+import { Aside, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
+
+Vizb charts tabular data (CSV/JSON) two ways. The difference is what your **columns** become:
+
+- **Group** (`--group`) — each **numeric column becomes its own chart**. Your categorical columns become the chart axes (Name / X / Y / Z), and rows that share the same axes are summed into one point.
+- **Select** (`--select`) — several columns **merge into a single chart** as coordinate axes (`x` / `y` / `z`). Each row is one point; nothing is aggregated.
+
+| | **Group** | **Select** |
+|---|---|---|
+| Each numeric column → | **its own chart** (one chart per metric) | **an axis** of one chart |
+| Categorical columns → | the chart dimensions (Name / X / Y / Z) | mixed mode: the X category |
+| Rows sharing a key → | **aggregated** (summed) | kept — one point each |
+| Axis types | categories | continuous values (or one category + values) |
+| Works on benchmarks | yes — the name is the label | no — CSV/JSON only |
+
+The same data often works with either — the choice is about what you want to *see*, not what the file contains.
+
+## When to use which
+
+<Tabs syncKey="approach">
+  <TabItem label="Group" icon="list">
+    Use **group** when you want **one chart per metric**, broken down by category — a sales export becoming separate charts for `sales` and `latency`, each bucketed by region and product, with duplicate rows summed into totals. Group builds a label per row, splits it into the Name / XAxis / YAxis / ZAxis dimensions, and sums any rows that land on the same key.
+
+    ```bash
+    vizb sales.csv -g region,product -p y,x -o sales.html
+    ```
+
+    See the [Group guide](/guides/group) for pattern syntax, bracket slots, regex, and axis labels.
+  </TabItem>
+  <TabItem label="Select" icon="set">
+    Use **select** when you want to **plot several columns together in one chart** — a scatter of latency vs. price, or category vs. metric. Solo `--select` assigns 2–3 columns to coordinate axes and keeps every row as its own point.
+
+    ```bash
+    vizb scatter data.csv --select region,latency -o mixed.html
+    ```
+
+    See the [Select guide](/guides/select) for value, mixed, and multi-stat modes.
+  </TabItem>
+</Tabs>
+
+<Aside type="tip">
+  Rule of thumb: **one chart per metric, bucketed by category → group** (it aggregates); **several columns plotted together as coordinates → select** (it never merges).
+</Aside>
+
+### Decision matrix
+
+| Goal | Approach | Example |
+|---|---|---|
+| One chart **per metric across categories** | Group + numeric `--select` | `-g region,product -p x,y --select latency,sales` |
+| Plot **one metric per category label** on a coordinate chart | Solo mixed `--select` | `--select region,latency` → scatter |
+| Plot **raw numeric coordinates** (no categories) | Solo value `--select` or auto-value | `--select x,y` or no flags on all-numeric file |
+| **Several metric views** from one file (no grouping) | Repeatable solo `--select` | `--select region,latency --select region,sales` |
+| Split a column into year/month/day on axes | Group with bracket `-p` | `-g date,category -p '[n-y-x],z'` |
+| Quick chart with no flags on mixed data | Auto-group | `vizb bar sales.csv` picks highest-cardinality categorical column |
+
+## Auto-inference (no flags needed)
+
+Run vizb on a CSV/JSON file with no group flags and it infers a sensible default. There are two inference paths, picked from the shape of your data. Both are logged to stdout so you can override them with explicit flags whenever the guess is wrong.
+
+### Auto-group (categorical data)
+
+When the file has **non-numeric** columns, vizb infers the category axis so `vizb data.csv` "just works":
+
+1. It collects **non-numeric columns** as candidates (numeric columns are ignored entirely).
+2. It ranks candidates by **distinct-value count** (highest cardinality wins; ties go to the leftmost column) and picks the top one as the **XAxis** (`-p x`).
+
+The choice is logged (`🧠 Auto-grouped by column: date`), so you can override it with an explicit `--group` whenever the inference is wrong. Auto-group uses the same row summing as explicit `--group` — duplicate `(name, x, y, z)` keys are collapsed before charting. Benchmark parsers (Go, Rust, JavaScript) are unaffected — auto-group applies only to the `csv` and `json` parsers.
+
+Grouped 3D charts need both `x` and `y` in `--group-pattern`. Auto-group always sets `-p x` only, so `--3d` with auto-group logs a warning and grouped 3D will not render until you supply both axes explicitly (e.g. `-g region,product -p x,y --3d`).
+
+```bash
+vizb sales.csv -o sales.html                              # auto-picks region (or similar) as the X axis
+vizb sales.csv --chart bar:3d -o 3d.html                  # auto-picks X only; warns that 3D needs -p x,y
+vizb sales.csv -g region,product -p x,y --3d -o 3d.html   # grouped 3D with explicit axes
+vizb sales.csv -g product -p y -o o.html                  # explicit --group disables auto-group
+```
+
+### Auto-value (all-numeric data)
+
+When every column in a CSV/JSON file is numeric (no categorical columns exist), auto-group has nothing to pick. Instead, vizb **auto-assigns the first 2-3 columns** as value-type coordinate axes (`x`, `y`, `z`) — no flag needed. This works on **bar**, **line**, and **scatter** charts.
+
+| Columns | Axes | Pattern |
+|---|---|---|
+| 2+ | `x`, `y` | 2D value |
+| 3+ | `x`, `y`, `z` (first 3) | **3D value** (auto-enables 3D) |
+| 4+ | `x`, `y`, `z` + 4th as **metric** | **3D value** + auto visualMap (color/size by metric) |
+
+With 2+ numeric columns, vizb creates a 2D value-mode chart. With 3+, it automatically enables 3D (`bar3D` / `line3D` / `scatter3D`). With 4+, the first three columns are coordinates and the fourth becomes a visual metric. The inference is logged: `🧠 Auto-valued by columns: x, y, z (3D pattern x-y-z), metric: value`.
+
+```bash
+vizb scatter allnums.csv -o scatter.html        # auto-value x,y from first 2 columns
+vizb scatter allnums.csv --3d -o 3d.html         # auto-value x,y,z from 3+ columns (auto-3D)
+vizb bar allnums.csv -o bars.html                # bar auto-value (auto-3D with 3+ cols)
+vizb line allnums.csv -o lines.html              # line auto-value (auto-3D with 3+ cols)
+```
+
+<Aside type="note">
+  Solo `--select` **overrides** auto-value: it disables inference and uses only the columns you name. Selecting 2 columns keeps the chart 2D even if the file has more numeric columns.
+</Aside>
+
+## The dimensions
+
+Both approaches draw on the same four dimensions. Group assigns them categorically; select assigns them as coordinate positions.
+
+| Dimension | Shorthand | Role |
+|---|---|---|
+| **Name** | `n` | Splits rows into separate chart groups |
+| **XAxis** | `x` | Sets the X axis |
+| **YAxis** | `y` | Creates the in-chart series (group) or second coordinate (select) |
+| **ZAxis** | `z` | Adds a depth axis → 3D chart (requires `x` + `y`) |
+
+See [Group → The dimensions](/guides/group#the-dimensions) for the full reference. At least one of `x` or `y` is required for group to take effect; `z` requires both `x` and `y`.
+
+## Benchmarks
+
+Benchmark output (Go, Rust, JavaScript) is **always grouped** — the benchmark name is already the label (e.g. `BenchmarkSort/1024/QuickSort`), so there are no columns to select. Solo `--select` and auto-value do not apply. See [Group benchmarks](/guides/group#group-benchmarks).
+
+<LinkCard title="Group" href="/guides/group" description="Dimensions, --group, pattern & regex syntax, bracket slots, axis labels, aggregation." />
+<LinkCard title="Select" href="/guides/select" description="The --select flag — grouped stat pick and solo value / mixed / multi-stat modes." />

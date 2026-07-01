@@ -17,7 +17,7 @@ CSV and JSON are the simplest inputs. Hand vizb a table and it charts the numeri
 
 <Tabs syncKey="parser">
   <TabItem label="CSV" icon="seti:csv">
-  Comma-separated tables. Numeric columns become series. Use `--group` to promote other columns into chart dimensions.
+  Comma-separated tables. Numeric columns each become their own chart. Use `--group` to promote other columns into chart dimensions.
 
   ```bash
   vizb data.csv -o output.html
@@ -28,7 +28,7 @@ CSV and JSON are the simplest inputs. Hand vizb a table and it charts the numeri
   </TabItem>
 
   <TabItem label="JSON" icon="seti:json">
-  A JSON array of objects. Each object is a row. Each numeric key is a series. Nested objects flatten to dotted keys.
+  A JSON array of objects. Each object is a row. Each numeric key becomes its own chart. Nested objects flatten to dotted keys.
 
   ```bash
   vizb data.json -o output.html
@@ -145,7 +145,7 @@ Vizb also parses benchmark output from three languages and five frameworks.
 
   Produces names `n=100/bubbleSort` and `n=100/insertionSort`. Use `--group-pattern` with any valid 2D combination (`n/x`, `n/y`, `x/n`, `y/n`, `x/y`, `y/x`) to split the suite name into its own dimension.
 
-  See the [Grouping Guide](/guides/grouping) for pattern and regex syntax.
+  See the [Group guide](/guides/group) for pattern and regex syntax.
   </TabItem>
 
   <TabItem label="Tinybench" icon="seti:javascript">

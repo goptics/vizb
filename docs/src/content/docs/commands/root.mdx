@@ -127,7 +127,7 @@ vizb bench.txt -p n/x/y/z -o output.html
 vizb bench.txt -r '(?<n>.*)/text=(?<x>.*)/level=(?<y>.*)' -o output.html
 ```
 
-See the [Grouping Guide](/guides/grouping) and [3D Charts](/charts/3d) for detailed examples.
+See the [Group guide](/guides/group) and [3D Charts](/charts/3d) for detailed examples.
 
 ### `--select` mode matrix
 
@@ -135,7 +135,7 @@ See the [Grouping Guide](/guides/grouping) and [3D Charts](/charts/3d) for detai
 
 | Mode | Trigger | `--select` syntax | What it does |
 |------|---------|-------------------|--------------|
-| **Grouped stat pick** | `-g`, `-r`, or non-default `-p` | Any number of numeric columns; optional `{label}` | Picks which numeric columns become chart series |
+| **Group stat pick** | `-g`, `-r`, or non-default `-p` | Any number of numeric columns; optional `{label}` | Picks which numeric columns get their own chart |
 | **Solo value axes** | `--select` only; all selected cols numeric | 2–3 cols per flag: `x,y` or `x,y,z` | Assigns columns to continuous coordinate axes; disables auto-group and auto-value |
 | **Solo mixed axes** | One `--select` only; categorical `x` + numeric `y[,z]` | 2–3 cols: `region,latency` | Category on x, values on y/z; [scatter](/charts/scatter) is the primary chart |
 | **Solo multi-stat** | Repeatable `--select` only; 2 cols per flag | `region,latency` + `region,sales` | One dataset; each flag is an independent `dim,metric` pair; charts split by `stat.type` (default `latency by region`) |
@@ -169,7 +169,7 @@ vizb scatter examples/csv/region-metrics.csv \
 
 A single solo `--select` auto-names the dataset from its columns (`region × latency`). Repeatable `--select` keeps one dataset; chart tabs follow stat types (`latency by region`, `sales by region`).
 
-See [Grouping → Choosing: `--group` + select vs solo `--select`](/guides/grouping#choosing---group--select-vs-solo---select) for when to use each approach.
+See [Group vs Select](/guides/group-vs-select#when-to-use-which) for when to use each approach, and the [Select](/guides/select) guide for the full solo `--select` reference.
 
 ### Logarithmic scale
 

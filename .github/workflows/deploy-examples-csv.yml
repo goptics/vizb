@@ -1,11 +1,5 @@
 name: deploy-csv-examples
 on:
-  push:
-    branches: [main]
-    paths:
-      - examples/csv/**
-      - action.yml
-      - .github/workflows/deploy-examples-csv.yml
   workflow_run:
     workflows: [Release]
     types: [completed]
@@ -21,15 +15,15 @@ jobs:
             file: sales
             name: "Sales Auto-Group"
             description: "Auto-grouped bar chart — vizb picks order_date as the X axis (highest-cardinality categorical column)"
-            charts: bar
+            charts: bar,pie
 
           - id: 01-sales-grouped
             file: sales
             name: "Sales by Product"
-            description: "Grouped 3D bar chart by product, region, and category"
+            description: "Grouped 2D bar chart by product, region, and category"
             group: "product,region,category"
             group-pattern: n,x,y
-            charts: bar
+            charts: bar,pie
 
           - id: 02-sales-by-date
             file: sales
@@ -37,7 +31,7 @@ jobs:
             description: "Monthly sales by category with year/month/date axis splitting"
             group: "order_date,category"
             group-pattern: "[n{Year}-y{Month}-x{Date}],z{Category}"
-            charts: bar
+            charts: bar,pie
 
           - id: 03-spiral-3d
             file: spiral-3d
@@ -74,12 +68,19 @@ jobs:
             charts: scatter
             chart: "scatter:visualmap"
 
-          - id: 08-life-expentency-income
-            file: life-expentency-income
-            name: "Life Expentency vs Income"
+          - id: 08-life-expectancy-income
+            file: life-expectancy-income
+            name: "Life Expectancy vs Income"
             description: ""
             select: 'Country,"Life Expectancy",Income'
             charts: scatter
+
+          - id: 09-clusters
+            file: clusters
+            name: "Clusters"
+            description: "2D scatter — auto-value x,y cluster points with visualMap and symbol size 10"
+            charts: scatter
+            chart: "scatter:visualmap,symbol-size=10"
 
     runs-on: ubuntu-latest
     steps:

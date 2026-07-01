@@ -1,11 +1,11 @@
 ---
 title: Tabular Data (CSV & JSON)
-description: Chart any CSV or JSON table with vizb — numeric columns become chart series, with optional grouping.
+description: Chart any CSV or JSON table with vizb — numeric columns each become their own chart, with optional grouping.
 ---
 
 import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 
-Vizb charts any tabular data. The `csv` and `json` parsers turn a table into the same interactive charts. Each numeric column/field becomes a chart series. Non-numeric columns can become the Name / X / Y dimensions with `--group`.
+Vizb charts any tabular data. The `csv` and `json` parsers turn a table into the same interactive charts. Each numeric column/field becomes its own chart. Non-numeric columns can become the Name / X / Y dimensions with `--group`.
 
 Both formats are auto-detected from content. `vizb data.csv` and `vizb data.json` just work without `--parser`.
 
@@ -25,7 +25,7 @@ beta,200,7,2025-02
 gamma,150,9,2024-06
 ```
 
-- `sells` and `stocks` → two chart series (numeric).
+- `sells` and `stocks` → two charts, one per metric (numeric).
 - `name`, `date` → ignored by default (non-numeric), but available as `--group` fields.
 
 ### Rules
@@ -86,25 +86,18 @@ vizb results.csv -g benchmark -p "[n/x/y]"       # Sort/1024/QuickSort from one 
 
 Comma-separated `-g` (e.g. `-g region,product,month`) requires comma-separated top-level `-p` (e.g. `-p x,y,z` or `-p "[n-y-x],y,z"`). Brackets are **CSV/JSON only**. Benchmarks keep flat `-p n/x/y`.
 
-See the [Grouping Guide](/guides/grouping) for bracket slots, pattern syntax, and regex fallback.
+See the [Group guide](/guides/group) for bracket slots, pattern syntax, and regex fallback.
 
 ## Selecting value columns with `--select`
 
-By default, every numeric column/field becomes a chart series. Use `--select` to pick specific value columns and optionally rename their series labels:
+By default, every numeric column/field becomes its own chart. Use `--select` to pick specific value columns and optionally rename each chart's label:
 
 ```bash
 vizb sales.csv --select=price,count
-vizb sales.csv --select=price{Unit price},count{Total count per week}
 vizb sales.csv --select="price{USD}",count   # quote names with , { or }
 ```
 
-| Topic | Behaviour |
-|-------|-----------|
-| Scope | `csv` and `json` parsers only. Ignored (with warning) for benchmark parsers. |
-| Order | Series appear in `--select` flag order. |
-| Rename | Trailing `{label}` on unquoted names. Quoted names treat `{` as literal. |
-| Overlap | A column cannot be in both `--select` and `--group`. |
-| Omitted | Auto-detect numeric columns (unchanged default). |
+A column cannot be in both `--select` and `--group`. Without `--group`, `--select` switches to solo coordinate-axes mode (value / mixed / multi-stat) — see [Select](/guides/select) for the full reference, and [Group vs Select](/guides/group-vs-select) for when to use each.
 
 ## Selecting a nested array with `--json-path`
 

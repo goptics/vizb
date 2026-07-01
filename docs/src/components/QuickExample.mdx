@@ -1,5 +1,7 @@
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
+Run one command to turn your GitHub contribution history into a 3D skyline of your activity over time. Each year stacks as a new layer; within it, every day is a column whose height is your contribution count. Replace `<your-github-username>` with your GitHub username and open the generated `index.html`.
+
 <Tabs syncKey="os">
   <TabItem label="Linux / macOS" icon="seti:shell">
 
@@ -29,8 +31,6 @@ curl -s "https://github-contributions-api.jogruber.de/v4/<your-github-username>"
 ```
   </TabItem>
 </Tabs>
-
-Run one command to turn your GitHub contribution history into a 3D skyline of your activity over time. Each year stacks as a new layer; within it, every day is a column whose height is your contribution count. Replace `<your-github-username>` with your GitHub username and open the generated `index.html`.
 
 Flags used below:
 

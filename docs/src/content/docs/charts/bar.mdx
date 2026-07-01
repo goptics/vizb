@@ -4,6 +4,11 @@ description: Compare values across categories with grouped or 3D bars — vizb's
 ---
 
 import { CardGrid, Card, LinkCard, Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+import { Image } from 'astro:assets';
+import bar1D from '../../../assets/bar-1D.png';
+import bar2D from '../../../assets/bar-2D.png';
+import bar3D from '../../../assets/bar-3D.png';
+import bar3DValue from '../../../assets/bar-3D-value.png';
 
 The **bar chart** is vizb's default chart type. It maps categories to bars, making it easy to compare values at a glance — whether you have one series or a full three-dimensional dataset. As you add dimensions, bars group and then grow into a full 3D WebGL scene.
 
@@ -21,35 +26,37 @@ vizb maps your grouping columns to the chart's visual axes:
 
 ## Dimensions
 
+The examples below use [`sales.csv`](https://github.com/goptics/vizb/blob/main/sales.csv) — 10,000 order rows with categorical columns (`order_date`, `region`, `category`, …) and numeric metrics (`quantity`, `amount`, `total`, …). You can also browse [live CSV dashboards](https://vizb.goptics.org/examples/csv) built from the same file.
+
 ### 1D (X axis)
 
 A single series of bars — one bar per X category. The height is the raw value. This is the simplest view: run a benchmark, pick one grouping column, get a bar per result.
 
 ```bash
-vizb bar data.csv -g category -o out.html
+vizb bar sales.csv -g order_date -p x -o out.html
 ```
 
-{/* TODO: Add GIF showing a 1D bar chart with single series */}
+<Image src={bar1D} alt="1D bar chart with a single series of blue bars over daily dates" />
 
 ### 2D (X + Y axes)
 
 Grouped bars: X stays on the category axis, and each distinct Y value becomes its own bar series side-by-side within each X group. The legend lists the Y values so you can toggle individual series on and off.
 
 ```bash
-vizb bar data.csv -g category,metric -p x,y -o out.html
+vizb bar sales.csv -g region,category -p x,y -o out.html
 ```
 
-{/* TODO: Add GIF showing a 2D grouped bar chart with legend toggles */}
+<Image src={bar2D} alt="2D grouped bar chart with five category series per region and a color category legend" />
 
 ### 3D (X + Y + Z axes)
 
 WebGL `bar3D` scene: X and Y form a grid floor, and Z values stack as depth layers on each (X, Y) cell. Rotate, zoom, and pan the scene in the browser. Requires echarts-gl (bundled automatically).
 
 ```bash
-vizb bar data.csv -g category,metric,group -p x,y,z -o out.html
+vizb bar sales.csv -g order_date,category -p "[-y{Month}-x{Date}],z{Category}" -o out.html
 ```
 
-{/* TODO: Add GIF showing a 3D bar chart rotating */}
+<Image src={bar3D} alt="3D stacked bar chart with date, month, and category axes in a WebGL scene" />
 
 <Aside type="note">
   The Z axis requires **both** X and Y to be present. Passing a Z without an X/Y floor will be rejected with an error.
@@ -57,52 +64,23 @@ vizb bar data.csv -g category,metric,group -p x,y,z -o out.html
 
 ## `--select` (csv/json)
 
-`--select` is **repeatable** and plays three roles depending on whether grouping is explicit. See the [mode matrix](/commands/root#--select-mode-matrix) for a full comparison.
-
-### Role 1 — Grouped + numeric select
-
-With explicit `-g` / `-p` / `-r`, `--select` picks which **numeric columns** become bar series. Optional `{label}` renames series.
+`--select` is **repeatable** (csv/json only). With explicit `-g` / `-p` / `-r`, it picks which numeric columns get their own chart (optional `{label}` renames each chart). Without group, it switches to solo value / mixed / multi-stat modes that plot raw columns as coordinate axes.
 
 ```bash
-vizb bar sales.csv -g region,product -p x,y --select amount,total -o out.html
+vizb bar sales.csv -g region,product -p x,y --select amount,total -o bars.html
 ```
 
-### Role 2 — Solo all-numeric value axes
-
-Without grouping, each `--select` defines one **value-mode** view: 2–3 numeric columns become continuous `x`, `y`, and optional `z` axes. Auto-group and auto-value are disabled. With 3 columns, bar auto-enables 3D (`bar3D`).
-
-```bash
-# Two numeric columns → 2D value bars
-vizb bar spiral-3d.csv --select x,y -o bar.html
-
-# Three numeric columns → 3D value bars
-vizb bar spiral-3d.csv --select x,y,z -o bar3d.html
-```
-
-### Role 3 — Solo mixed category + value
-
-Without grouping, when the first selected column is categorical and the rest are numeric, vizb parses **mixed-axis** data (category x + value y[,z]). Bar accepts this shape at parse time; [scatter](/charts/scatter) is the primary chart for category × value plots.
-
-```bash
-vizb bar examples/csv/region-metrics.csv --select region,latency -o bars.html
-vizb scatter examples/csv/region-metrics.csv --select region,latency -o scatter.html
-```
-
-Repeat `--select` for multiple datasets in one HTML file (dataset tabs in the UI).
+See [Select](/guides/select) for the full mode reference, and [Group vs Select](/guides/group-vs-select) for when to use each.
 
 ## Auto-value mode (all-numeric data)
 
-When every column in a CSV/JSON file is numeric (no categorical columns), vizb auto-detects the first 2–3 columns as coordinate axes and renders them as value-type bars — no `--group` needed. With 3+ columns, bar auto-enables 3D (`bar3D`).
+On an all-numeric CSV/JSON file, vizb auto-detects the first 2–3 columns as coordinate axes and renders value-type bars — with 3+ columns it auto-enables 3D (`bar3D`). See [Auto-value](/guides/group-vs-select#auto-value-all-numeric-data) for the inference rules; solo `--select` overrides it.
 
 ```bash
-# Two columns → x, y bars
-vizb bar prices.csv -o bar.html
-
-# Three columns → x, y, z bar3D
-vizb bar spiral.csv -o bar.html
+./bin/vizb bar noise-surface.csv -o surface.html --3d-visualmap
 ```
 
-Solo `--select` overrides auto-value: it disables inference and uses only the columns you name. With 2 columns selected, the chart stays 2D even if the file has more numeric columns.
+<Image src={bar3DValue} alt="3D bar chart with value-type bars along the Z axis" />
 
 ## Settings
 
@@ -122,10 +100,10 @@ Override settings for just this chart type without affecting others:
 
 ```bash
 # Sort ascending and show labels on bars only
-vizb bar data.csv -g category,metric --sort asc -l -o out.html
+vizb bar sales.csv -g region,category --sort asc -l -o out.html
 
 # Log scale on the bar chart only
-vizb bar data.csv -g category,metric --scale log -o out.html
+vizb bar sales.csv -g region,category --scale log -o out.html
 ```
 
 ## Next Steps
