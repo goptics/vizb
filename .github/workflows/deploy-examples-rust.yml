@@ -1,11 +1,5 @@
 name: deploy-rust-examples
 on:
-  push:
-    branches: [main]
-    paths:
-      - examples/rust/**
-      - action.yml
-      - .github/workflows/deploy-examples-rust.yml
   workflow_run:
     workflows: [Release]
     types: [completed]

@@ -1,11 +1,5 @@
 name: deploy-csv-examples
 on:
-  push:
-    branches: [main]
-    paths:
-      - examples/csv/**
-      - action.yml
-      - .github/workflows/deploy-examples-csv.yml
   workflow_run:
     workflows: [Release]
     types: [completed]

@@ -1,10 +1,5 @@
 name: deploy-json-examples
 on:
-  push:
-    branches: [main]
-    paths:
-      - .github/workflows/deploy-examples-json.yml
-      - action.yml
   workflow_run:
     workflows: [Release]
     types: [completed]
