@@ -4,15 +4,15 @@ on:
   push:
     branches: [main]
     paths:
-      - 'ui/**'
-      - 'pkg/template/vizb-ui.gen.go'
-      - '.github/workflows/ui.yml'
+      - "ui/**"
+      - "pkg/template/vizb-ui.gen.go"
+      - ".github/workflows/ui.yml"
   pull_request:
     branches: [main]
     paths:
-      - 'ui/**'
-      - 'pkg/template/vizb-ui.gen.go'
-      - '.github/workflows/ui.yml'
+      - "ui/**"
+      - "pkg/template/vizb-ui.gen.go"
+      - ".github/workflows/ui.yml"
 
 jobs:
   lint:
@@ -100,6 +100,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
+          cache: true
 
       - run: pnpm install --frozen-lockfile
         working-directory: ui
