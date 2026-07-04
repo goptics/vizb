@@ -546,6 +546,33 @@ func (s *MergeSuite) TestMergeReplaceSameTagSkipsOlderIncoming() {
 	}, result[0].History)
 }
 
+func (s *MergeSuite) TestEnsureInjectAxisEmptyAxes() {
+	s.Equal([]string{"x"}, axisKeys(ensureInjectAxis(nil, DimensionXAxis)))
+	s.Equal([]string{"y"}, axisKeys(ensureInjectAxis([]Axis{}, DimensionYAxis)))
+}
+
+func (s *MergeSuite) TestEnsureInjectAxisInsertsAmongNonCanonicalAxes() {
+	axes := []Axis{{Key: "custom"}, {Key: "y"}}
+	result := ensureInjectAxis(axes, DimensionXAxis)
+	s.Equal([]string{"custom", "x", "y"}, axisKeys(result))
+}
+
+func (s *MergeSuite) TestEnsureInjectAxisNoTagMergePath() {
+	noTag := Dataset{
+		Name: "Bench",
+		Data: []DataPoint{{Name: "legacy", XAxis: "x", YAxis: "y"}},
+		Axes: []Axis{{Key: "name"}, {Key: "y"}},
+	}
+	tagged := makeBench("v1", "Bench", "2026-05-13T10:00:00Z", []DataPoint{
+		{Name: "", XAxis: "speed", YAxis: "100"},
+	})
+	tagged.Axes = []Axis{{Key: "name"}, {Key: "y"}}
+
+	result := MergeDatasets([]Dataset{noTag, tagged}, DimensionXAxis)
+	s.Require().Len(result, 1)
+	s.Equal([]string{"name", "x", "y"}, axisKeys(result[0].Axes))
+}
+
 func TestMergeSuite(t *testing.T) {
 	suite.Run(t, new(MergeSuite))
 }

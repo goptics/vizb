@@ -279,10 +279,7 @@ func ensureInjectAxis(axes []Axis, dim Dimension) []Axis {
 		return len(canonicalAxisOrder), false
 	}
 
-	newIdx, known := orderIndex(key)
-	if !known {
-		return append(axes, newAxis)
-	}
+	newIdx, _ := orderIndex(key)
 
 	var nonMetric []Axis
 	var metric []Axis
