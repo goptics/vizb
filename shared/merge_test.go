@@ -301,6 +301,172 @@ func (s *MergeSuite) TestMergeDatasetsTagOrderChronological() {
 	}, result[0].History)
 }
 
+func (s *MergeSuite) TestMergeReplaceSameTagPreservesOlderVersions() {
+	accumulated := makeBench("v1.8.0", "Bench", "2026-07-04T05:09:39Z", []DataPoint{
+		{Name: "Add", XAxis: "v1.3.0", YAxis: "Queue"},
+		{Name: "Add", XAxis: "v1.7.1", YAxis: "Queue"},
+		{Name: "Add", XAxis: "v1.8.0", YAxis: "Queue", Stats: []Stat{{Type: "time", Value: F64(99)}}},
+	})
+	accumulated.History = []HistoryEntry{
+		{Tag: "v1.3.0", Timestamp: "2026-05-25T08:44:05Z"},
+		{Tag: "v1.7.1", Timestamp: "2026-05-25T09:21:58Z"},
+	}
+
+	incoming := makeBench("v1.8.0", "Bench", "2026-07-04T05:33:48Z", []DataPoint{
+		{Name: "Add", XAxis: "", YAxis: "Queue", Stats: []Stat{{Type: "time", Value: F64(2141)}}},
+		{Name: "AddAll", XAxis: "", YAxis: "Queue", Stats: []Stat{{Type: "time", Value: F64(1489434)}}},
+	})
+
+	result := MergeDatasets([]Dataset{incoming, accumulated}, DimensionXAxis)
+	s.Require().Len(result, 1)
+	s.Equal("v1.8.0", result[0].Tag)
+	s.Equal("2026-07-04T05:33:48Z", result[0].Timestamp)
+	s.Equal([]HistoryEntry{
+		{Tag: "v1.3.0", Timestamp: "2026-05-25T08:44:05Z"},
+		{Tag: "v1.7.1", Timestamp: "2026-05-25T09:21:58Z"},
+	}, result[0].History)
+
+	s.Require().Len(result[0].Data, 4)
+	s.Equal("v1.3.0", result[0].Data[0].XAxis)
+	s.Equal("v1.7.1", result[0].Data[1].XAxis)
+	s.Equal("v1.8.0", result[0].Data[2].XAxis)
+	s.Equal(2141.0, *result[0].Data[2].Stats[0].Value)
+	s.Equal("v1.8.0", result[0].Data[3].XAxis)
+	s.Equal("AddAll", result[0].Data[3].Name)
+}
+
+func (s *MergeSuite) TestMergeNoTagNewerReplacesOlder() {
+	bench1 := Dataset{
+		Name:      "Bench",
+		Timestamp: "2026-01-01T00:00:00Z",
+		Data:      []DataPoint{{Name: "first"}},
+	}
+	bench2 := Dataset{
+		Name:      "Bench",
+		Timestamp: "2026-02-01T00:00:00Z",
+		Data:      []DataPoint{{Name: "second"}},
+	}
+
+	result := MergeDatasets([]Dataset{bench1, bench2}, DimensionName)
+	s.Require().Len(result, 1)
+	s.Equal("second", result[0].Data[0].Name)
+}
+
+func (s *MergeSuite) TestPickAccumulatedBasePrefersMoreHistory() {
+	withHistory := Dataset{History: []HistoryEntry{{Tag: "v1", Timestamp: "t1"}}}
+	withoutHistory := Dataset{Data: []DataPoint{{Name: "a"}, {Name: "b"}}}
+
+	s.Equal(withHistory, pickAccumulatedBase(withoutHistory, withHistory))
+	s.Equal(withHistory, pickAccumulatedBase(withHistory, withoutHistory))
+}
+
+func (s *MergeSuite) TestPickAccumulatedBasePrefersMoreDataWhenHistoryEqual() {
+	smaller := Dataset{Data: []DataPoint{{Name: "one"}}}
+	larger := Dataset{Data: []DataPoint{{Name: "one"}, {Name: "two"}}}
+
+	s.Equal(larger, pickAccumulatedBase(smaller, larger))
+	s.Equal(larger, pickAccumulatedBase(larger, smaller))
+}
+
+func (s *MergeSuite) TestReplaceTagDataUpdatesMeta() {
+	existing := makeBench("v1", "Bench", "2026-01-01T00:00:00Z", []DataPoint{
+		{Name: "Add", XAxis: "v1", YAxis: "Queue"},
+	})
+	incoming := makeBench("v1", "Bench", "2026-02-01T00:00:00Z", []DataPoint{
+		{Name: "Add", XAxis: "", YAxis: "Queue"},
+	})
+	incoming.Meta = &Meta{
+		CPU:  &CPUInfo{Name: "Apple M2", Cores: 10},
+		OS:   "darwin",
+		Arch: "arm64",
+		Pkg:  "github.com/example/pkg",
+	}
+
+	result := replaceTagData(existing, incoming, DimensionXAxis)
+	s.Equal("2026-02-01T00:00:00Z", result.Timestamp)
+	s.Require().NotNil(result.Meta)
+	s.Require().NotNil(result.Meta.CPU)
+	s.Equal("Apple M2", result.Meta.CPU.Name)
+	s.Equal("darwin", result.Meta.OS)
+	s.NotSame(incoming.Meta.CPU, result.Meta.CPU)
+}
+
+func (s *MergeSuite) TestMergeReplaceSameTagOnYAxis() {
+	accumulated := makeBench("v2", "Bench", "2026-07-04T05:09:39Z", []DataPoint{
+		{Name: "Add", XAxis: "Queue", YAxis: "v1"},
+		{Name: "Add", XAxis: "Queue", YAxis: "v2", Stats: []Stat{{Type: "time", Value: F64(99)}}},
+	})
+	incoming := makeBench("v2", "Bench", "2026-07-04T05:33:48Z", []DataPoint{
+		{Name: "Add", XAxis: "Queue", YAxis: "", Stats: []Stat{{Type: "time", Value: F64(200)}}},
+	})
+
+	result := MergeDatasets([]Dataset{incoming, accumulated}, DimensionYAxis)
+	s.Require().Len(result, 1)
+	s.Require().Len(result[0].Data, 2)
+	s.Equal("v1", result[0].Data[0].YAxis)
+	s.Equal("v2", result[0].Data[1].YAxis)
+	s.Equal(200.0, *result[0].Data[1].Stats[0].Value)
+}
+
+func (s *MergeSuite) TestMergeReplaceSameTagOnZAxis() {
+	accumulated := makeBench("v2", "Bench", "2026-07-04T05:09:39Z", []DataPoint{
+		{Name: "Add", XAxis: "x", YAxis: "y", ZAxis: "v1"},
+		{Name: "Add", XAxis: "x", YAxis: "y", ZAxis: "v2"},
+	})
+	incoming := makeBench("v2", "Bench", "2026-07-04T05:33:48Z", []DataPoint{
+		{Name: "Add", XAxis: "x", YAxis: "y", ZAxis: ""},
+	})
+
+	result := MergeDatasets([]Dataset{incoming, accumulated}, DimensionZAxis)
+	s.Require().Len(result, 1)
+	s.Require().Len(result[0].Data, 2)
+	s.Equal("v1", result[0].Data[0].ZAxis)
+	s.Equal("v2", result[0].Data[1].ZAxis)
+}
+
+func (s *MergeSuite) TestMergeDataForTagKeepsPreInjectedPoints() {
+	ds := makeBench("v1.8.0", "Bench", "2026-07-04T05:33:48Z", []DataPoint{
+		{Name: "Add", XAxis: "v1.8.0", YAxis: "Queue", Stats: []Stat{{Type: "time", Value: F64(42)}}},
+		{Name: "Add", XAxis: "v1.3.0", YAxis: "Queue"},
+	})
+
+	points := mergeDataForTag(ds, DimensionXAxis)
+	s.Require().Len(points, 1)
+	s.Equal("v1.8.0", points[0].XAxis)
+	s.Equal(42.0, *points[0].Stats[0].Value)
+}
+
+func (s *MergeSuite) TestDataPointBelongsToTag() {
+	s.True(dataPointBelongsToTag(DataPoint{XAxis: ""}, "v1", DimensionXAxis))
+	s.True(dataPointBelongsToTag(DataPoint{XAxis: "v1"}, "v1", DimensionXAxis))
+	s.False(dataPointBelongsToTag(DataPoint{XAxis: "v2"}, "v1", DimensionXAxis))
+	s.True(dataPointBelongsToTag(DataPoint{YAxis: "v1"}, "v1", DimensionYAxis))
+	s.True(dataPointBelongsToTag(DataPoint{ZAxis: "v1"}, "v1", DimensionZAxis))
+	s.True(dataPointBelongsToTag(DataPoint{Name: "v1"}, "v1", DimensionName))
+}
+
+func (s *MergeSuite) TestMergeReplaceSameTagSkipsOlderIncoming() {
+	accumulated := makeBench("v1.8.0", "Bench", "2026-07-04T05:33:48Z", []DataPoint{
+		{Name: "Add", XAxis: "v1.3.0", YAxis: "Queue"},
+		{Name: "Add", XAxis: "v1.8.0", YAxis: "Queue", Stats: []Stat{{Type: "time", Value: F64(2141)}}},
+	})
+	accumulated.History = []HistoryEntry{{Tag: "v1.3.0", Timestamp: "2026-05-25T08:44:05Z"}}
+
+	older := makeBench("v1.8.0", "Bench", "2026-07-04T05:09:39Z", []DataPoint{
+		{Name: "Add", XAxis: "", YAxis: "Queue", Stats: []Stat{{Type: "time", Value: F64(99)}}},
+	})
+
+	result := MergeDatasets([]Dataset{older, accumulated}, DimensionXAxis)
+	s.Require().Len(result, 1)
+	s.Equal("2026-07-04T05:33:48Z", result[0].Timestamp)
+	s.Require().Len(result[0].Data, 2)
+	s.Equal("v1.3.0", result[0].Data[0].XAxis)
+	s.Equal(2141.0, *result[0].Data[1].Stats[0].Value)
+	s.Equal([]HistoryEntry{
+		{Tag: "v1.3.0", Timestamp: "2026-05-25T08:44:05Z"},
+	}, result[0].History)
+}
+
 func TestMergeSuite(t *testing.T) {
 	suite.Run(t, new(MergeSuite))
 }
