@@ -1,10 +1,13 @@
 package shared
 
 import (
+	"slices"
 	"sort"
 
 	internal_charts "github.com/goptics/vizb/internal/charts"
 )
+
+var canonicalAxisOrder = []string{"name", "x", "y", "z"}
 
 const noTagKey = "__no_tag__"
 
@@ -84,6 +87,7 @@ func MergeDatasets(benchmarks []Dataset, dim Dimension) []Dataset {
 				base.Timestamp = latest.Timestamp
 				base.History = buildHistory(allDatasets, latest.Tag)
 				base.Data = mergeData(allDatasets, dim)
+				base.Axes = ensureInjectAxis(base.Axes, dim)
 				result = append(result, base)
 				continue
 			}
@@ -92,6 +96,7 @@ func MergeDatasets(benchmarks []Dataset, dim Dimension) []Dataset {
 			base := deepCloneDataset(latest)
 			base.History = buildHistory(tagged, latest.Tag)
 			base.Data = mergeData(tagged, dim)
+			base.Axes = ensureInjectAxis(base.Axes, dim)
 			result = append(result, base)
 		}
 	}
@@ -249,6 +254,59 @@ func dimFieldValue(item DataPoint, dim Dimension) string {
 	default:
 		return item.Name
 	}
+}
+
+// ensureInjectAxis adds the tag-axis dimension to axes when missing so injected
+// tag values remain visible to the UI identity pipeline. Non-metric axes are
+// kept in canonical name/x/y/z order; metric axes keep their trailing position.
+func ensureInjectAxis(axes []Axis, dim Dimension) []Axis {
+	key := dim.AxisKey()
+	if slices.ContainsFunc(axes, func(a Axis) bool { return a.Key == key }) {
+		return axes
+	}
+
+	newAxis := Axis{Key: key}
+	if len(axes) == 0 {
+		return []Axis{newAxis}
+	}
+
+	orderIndex := func(axisKey string) (int, bool) {
+		for i, k := range canonicalAxisOrder {
+			if k == axisKey {
+				return i, true
+			}
+		}
+		return len(canonicalAxisOrder), false
+	}
+
+	newIdx, known := orderIndex(key)
+	if !known {
+		return append(axes, newAxis)
+	}
+
+	var nonMetric []Axis
+	var metric []Axis
+	for _, a := range axes {
+		if a.Key == "metric" {
+			metric = append(metric, a)
+		} else {
+			nonMetric = append(nonMetric, a)
+		}
+	}
+
+	insertAt := len(nonMetric)
+	for i, a := range nonMetric {
+		if idx, ok := orderIndex(a.Key); ok && newIdx < idx {
+			insertAt = i
+			break
+		}
+	}
+
+	nonMetric = append(nonMetric, Axis{})
+	copy(nonMetric[insertAt+1:], nonMetric[insertAt:])
+	nonMetric[insertAt] = newAxis
+
+	return append(nonMetric, metric...)
 }
 
 func mergeData(benchmarks []Dataset, dim Dimension) []DataPoint {
