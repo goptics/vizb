@@ -11,13 +11,16 @@ import type {
 // SettingsPanel.vue renders the controls registered in fieldRegistry. Those
 // controls are .vue SFCs; the vitest config intentionally excludes the Vue
 // plugin (pure-function tests only, per project convention), so we stub the
-// five .vue control files with placeholder objects. The suite asserts which
+// .vue control files with placeholder objects. The suite asserts which
 // field keys make it through `getRenderableFields` for each chart type — the
 // panel's declarative contract.
 vi.mock('../components/settings/SortControl.vue', () => ({ default: { name: 'SortControl' } }))
 vi.mock('../components/settings/ScaleControl.vue', () => ({ default: { name: 'ScaleControl' } }))
 vi.mock('../components/settings/ShowLabelsControl.vue', () => ({
   default: { name: 'ShowLabelsControl' },
+}))
+vi.mock('../components/settings/SmoothControl.vue', () => ({
+  default: { name: 'SmoothControl' },
 }))
 vi.mock('../components/settings/ThreeDRotateControl.vue', () => ({
   default: { name: 'ThreeDRotateControl' },
@@ -141,7 +144,7 @@ describe('SettingsPanel field selection', () => {
     ).toEqual(['sort', 'scale', 'showLabels', 'visualMap', 'swap'])
   })
 
-  it('renders 4 controls for a 2D line config without value-3D active', () => {
+  it('renders 5 controls for a 2D line config without value-3D active', () => {
     const cfg: LineConfig = {
       type: 'line',
       sort: { enabled: false, order: 'asc' },
@@ -151,7 +154,7 @@ describe('SettingsPanel field selection', () => {
     }
     expect(
       getRenderableFields(cfg, { dimension: '2D', rendering3D: false }).map((f) => f.key)
-    ).toEqual(['sort', 'scale', 'showLabels', 'swap'])
+    ).toEqual(['sort', 'scale', 'showLabels', 'smooth', 'swap'])
   })
 
   it('renders 3 controls for a pie config (no scale/threeDRotate)', () => {

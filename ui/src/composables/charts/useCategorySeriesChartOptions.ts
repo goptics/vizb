@@ -74,6 +74,7 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
       config.symbolSize?.value
     )
     const useVisualMap = kind === 'scatter' && visualMap?.value === true
+    const smoothLines = kind === 'line' && config.smooth?.value === true
 
     if (!hasYAxis) {
       const singleSeries = {
@@ -85,6 +86,7 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
           ? scatterSeriesLargeOpts(useVisualMap)
           : { large: true as const, largeThreshold: LARGE_DATA_THRESHOLD }),
         ...(style.connectNulls ? { connectNulls: true } : {}),
+        ...(smoothLines ? { smooth: true } : {}),
         ...(useVisualMap ? {} : { itemStyle: { color: getNextColorFor(chartData.value.title) } }),
         ...seriesExtras,
       }
@@ -115,6 +117,7 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
         ? scatterSeriesLargeOpts(useVisualMap)
         : { large: true as const, largeThreshold: LARGE_DATA_THRESHOLD }),
       ...(style.connectNulls ? { connectNulls: true } : {}),
+      ...(smoothLines ? { smooth: true } : {}),
       ...(useVisualMap ? {} : { itemStyle: { color: getNextColorFor(yAxisLabel) } }),
       ...seriesExtras,
     }))

@@ -28,7 +28,8 @@ export function useChartOptions(
   arrangementTarget: Ref<string>,
   chartAxes: Ref<Axis[] | undefined>,
   symbol: Ref<string | undefined>,
-  symbolSize: Ref<number | undefined>
+  symbolSize: Ref<number | undefined>,
+  smooth: Ref<boolean>
 ) {
   const config: BaseChartConfig = {
     chartData,
@@ -43,6 +44,7 @@ export function useChartOptions(
     visualMap,
     symbol,
     symbolSize,
+    smooth,
     arrangementTarget,
     chartAxes,
     chartType,

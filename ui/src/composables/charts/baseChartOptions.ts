@@ -25,6 +25,8 @@ export interface BaseChartConfig {
   /** CLI-baked marker overrides (--symbol / --symbol-size); line and scatter only. */
   symbol?: Ref<string | undefined>
   symbolSize?: Ref<number | undefined>
+  /** 2D line-only curve toggle. Ignored by 3D renderers. */
+  smooth?: Ref<boolean>
   /** Active swap target (e.g. xyz) — scatter value-mode 3D is swap-driven. */
   arrangementTarget?: Ref<string>
   chartAxes?: Ref<Axis[] | undefined>

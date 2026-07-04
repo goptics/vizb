@@ -86,4 +86,22 @@ describe('useSettingsStore', () => {
     setScale('log')
     expect((activeConfig.value as { scale?: string } | undefined)?.scale).toBe('log')
   })
+
+  it('setSmooth writes only to line configs', async () => {
+    holder.ref = ref(
+      ds([
+        { type: 'line', sort: { enabled: false, order: 'asc' } },
+        { type: 'bar', sort: { enabled: false, order: 'asc' } },
+      ])
+    )
+    const { useSettingsStore } = await import('./useSettingsStore')
+    const { activeConfig, setActiveChartIndex, setSmooth } = useSettingsStore()
+
+    setSmooth(true)
+    expect((activeConfig.value as { smooth?: boolean } | undefined)?.smooth).toBe(true)
+
+    setActiveChartIndex(1)
+    setSmooth(true)
+    expect((activeConfig.value as { smooth?: boolean } | undefined)?.smooth).toBeUndefined()
+  })
 })

@@ -18,6 +18,9 @@ vi.mock('../../components/settings/ScaleControl.vue', () => ({ default: { name: 
 vi.mock('../../components/settings/ShowLabelsControl.vue', () => ({
   default: { name: 'ShowLabelsControl' },
 }))
+vi.mock('../../components/settings/SmoothControl.vue', () => ({
+  default: { name: 'SmoothControl' },
+}))
 vi.mock('../../components/settings/ThreeDRotateControl.vue', () => ({
   default: { name: 'ThreeDRotateControl' },
 }))
@@ -36,12 +39,13 @@ const { fieldRegistry, getControl, getRenderableFields, partitionRenderableField
   await import('./fieldRegistry')
 
 describe('fieldRegistry', () => {
-  it('exposes the eight known field controls', () => {
+  it('exposes the nine known field controls', () => {
     expect(Object.keys(fieldRegistry).sort()).toEqual(
       [
         'threeDRotate',
         'scale',
         'showLabels',
+        'smooth',
         'sort',
         'swap',
         'threeD',
@@ -55,6 +59,7 @@ describe('fieldRegistry', () => {
     expect(getControl('sort')).toBeDefined()
     expect(getControl('scale')).toBeDefined()
     expect(getControl('showLabels')).toBeDefined()
+    expect(getControl('smooth')).toBeDefined()
     expect(getControl('threeDRotate')).toBeDefined()
     expect(getControl('swap')).toBeDefined()
   })
@@ -71,6 +76,12 @@ describe('fieldRegistry', () => {
 
   it('threeDRotate uses rendering3D visibility', () => {
     expect(fieldRegistry['threeDRotate']!.visible).toBeDefined()
+  })
+
+  it('smooth applies only to 2D line charts', () => {
+    expect(fieldRegistry['smooth']!.appliesTo).toEqual(['line'])
+    expect(fieldRegistry['smooth']!.visible?.({ rendering3D: false })).toBe(true)
+    expect(fieldRegistry['smooth']!.visible?.({ rendering3D: true })).toBe(false)
   })
 
   it('fields with no appliesOn have no dimension constraint', () => {
@@ -183,11 +194,11 @@ describe('getRenderableFields', () => {
     ).not.toContain('threeDVisualMap')
   })
 
-  it('returns 4 entries for a 2D line config without value-3D active', () => {
+  it('returns 5 entries for a 2D line config without value-3D active', () => {
     const cfg: LineConfig = { type: 'line' }
     expect(
       getRenderableFields(cfg, { dimension: '2D', rendering3D: false }).map((f) => f.key)
-    ).toEqual(['sort', 'scale', 'showLabels', 'swap'])
+    ).toEqual(['sort', 'scale', 'showLabels', 'smooth', 'swap'])
   })
 
   it('returns 3 entries for a pie config (no scale/threeDRotate; dimension is irrelevant)', () => {
