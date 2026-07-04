@@ -85,6 +85,12 @@ var (
 		JSONKey:  "symbolSize",
 		Validate: ValidateSymbolSizeValue,
 	}
+	SmoothFlag = flags.Flag{
+		Name:    "smooth",
+		Usage:   "Render smooth curved segments between line chart points",
+		Kind:    flags.KindBool,
+		JSONKey: "smooth",
+	}
 )
 
 // --- Pure validators (no shared dependency) usable by descriptors. ---
