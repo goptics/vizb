@@ -4,6 +4,17 @@ Notable changes to Vizb documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [v0.14.1] - Unreleased
+
+### Fixed
+
+- **Same-tag merge no longer wipes accumulated history** — re-merging a dataset with an existing tag now replaces only that tag's data points on the inject axis (`-A`); older versions in `history[]` and data from other tags are preserved ([#181](https://github.com/goptics/vizb/pull/181)).
+- **Tag-axis injection invisible in UI** — merge now adds the inject dimension to `axes` when missing so injected tag values appear in charts ([#182](https://github.com/goptics/vizb/pull/182)).
+
+### Changed
+
+- **Merge documentation** — updated merge command docs, merging guide, and stateful CI guide to reflect same-tag replacement and auto-axis behavior.
+
 # [v0.14.0] - 2026-07-01
 
 ### Added

@@ -32,7 +32,7 @@ The general pipeline has three steps:
 
 ## Outer Merging (Untagged)
 
-Outer merging is a simple concatenation of data. When JSON files contain benchmarks with the same name and no tags, duplicates are resolved by keeping the first-seen entry. Use outer merging when combining different benchmark suites or independent runs.
+Outer merging is a simple concatenation of data. When JSON files contain benchmarks with the same name and no tags, duplicates are resolved by keeping the newer timestamp; if timestamps are equal or absent, the first-seen entry wins. Use outer merging when combining different benchmark suites or independent runs.
 
 ```bash
 vizb merge cpu.json memory.json -o combined.json
@@ -81,9 +81,14 @@ Inner merging compares the same benchmarks across different conditions. When ben
 
 The merge process handles tagged data as follows:
 
-- **Deduplication:** If the same benchmark name appears with the same tag, only the entry with the latest timestamp is kept.
+- **Same-tag replacement:** If the same benchmark name appears with the same tag, only that tag's data points on the inject axis (`-A`) are replaced. Older versions and `history[]` entries for other tags are preserved. Newer timestamp wins for top-level metadata.
 - **Deep merge:** Benchmarks with the same name but different tags are combined into a single benchmark entry. The data points from each tag are sorted chronologically. This creates a multi-series chart.
 - **Legacy entries:** Untagged benchmarks (those without a tag) are prepended before any tagged data. They appear as the baseline in the chart.
+
+```bash
+# Re-run v1.8.0 into an accumulated merged.json — v1.3.0/v1.7.x data is preserved
+vizb merge bench-v1.8.0.json merged.json -A x -o merged.json
+```
 
 ## Tag-Axis
 
@@ -94,6 +99,8 @@ The `-A` (or `--tag-axis`) flag controls where the tag label is injected in the 
 | `n` | Name (default) | Creates separate chart groups per tag |
 | `x` | XAxis | Places tag values on the X-axis for direct comparison |
 | `y` | YAxis | Places tag values on the Y-axis as separate series |
+
+If the inject dimension is missing from `axes`, merge adds it automatically (in canonical `name` / `x` / `y` / `z` order) so tag values appear in the chart.
 
 ```bash
 vizb merge v1.json v2.json -A x -o comparison.json
