@@ -31,7 +31,23 @@ func MergeDatasets(benchmarks []Dataset, dim Dimension) []Dataset {
 			tag = noTagKey
 		}
 
-		if existing, exists := tags[tag]; exists && existing.Timestamp >= ds.Timestamp {
+		if existing, exists := tags[tag]; exists {
+			if tag == noTagKey {
+				if existing.Timestamp >= ds.Timestamp {
+					continue
+				}
+				tags[tag] = &ds
+				continue
+			}
+
+			var newer, older Dataset
+			if existing.Timestamp >= ds.Timestamp {
+				newer, older = *existing, ds
+			} else {
+				newer, older = ds, *existing
+			}
+			replaced := replaceTagData(pickAccumulatedBase(older, newer), newer, dim)
+			tags[tag] = &replaced
 			continue
 		}
 
@@ -175,6 +191,66 @@ func buildHistory(benchmarks []Dataset, latestTag string) []HistoryEntry {
 	return entries
 }
 
+func pickAccumulatedBase(a, b Dataset) Dataset {
+	if len(a.History) != len(b.History) {
+		if len(a.History) > len(b.History) {
+			return a
+		}
+		return b
+	}
+	if len(a.Data) >= len(b.Data) {
+		return a
+	}
+	return b
+}
+
+// replaceTagData swaps only data points belonging to incoming.Tag on the inject
+// dimension, preserving accumulated versions from an already-merged dataset.
+func replaceTagData(existing, incoming Dataset, dim Dimension) Dataset {
+	tag := incoming.Tag
+	kept := make([]DataPoint, 0, len(existing.Data))
+	for _, item := range existing.Data {
+		if !dataPointBelongsToTag(item, tag, dim) {
+			kept = append(kept, deepCloneData(item))
+		}
+	}
+
+	result := deepCloneDataset(existing)
+	result.Data = append(kept, mergeDataForTag(incoming, dim)...)
+	result.Tag = incoming.Tag
+	result.Timestamp = incoming.Timestamp
+	if incoming.Meta != nil {
+		m := *incoming.Meta
+		if incoming.Meta.CPU != nil {
+			cpu := *incoming.Meta.CPU
+			m.CPU = &cpu
+		}
+		result.Meta = &m
+	}
+	return result
+}
+
+func dataPointBelongsToTag(item DataPoint, tag string, dim Dimension) bool {
+	val := dimFieldValue(item, dim)
+	if val == "" {
+		return true
+	}
+	return val == tag
+}
+
+func dimFieldValue(item DataPoint, dim Dimension) string {
+	switch dim {
+	case DimensionXAxis:
+		return item.XAxis
+	case DimensionYAxis:
+		return item.YAxis
+	case DimensionZAxis:
+		return item.ZAxis
+	default:
+		return item.Name
+	}
+}
+
 func mergeData(benchmarks []Dataset, dim Dimension) []DataPoint {
 	var result []DataPoint
 	for _, ds := range benchmarks {
@@ -184,6 +260,21 @@ func mergeData(benchmarks []Dataset, dim Dimension) []DataPoint {
 			} else {
 				result = append(result, deepCloneData(item))
 			}
+		}
+	}
+	return result
+}
+
+func mergeDataForTag(ds Dataset, dim Dimension) []DataPoint {
+	var result []DataPoint
+	for _, item := range ds.Data {
+		if !dataPointBelongsToTag(item, ds.Tag, dim) {
+			continue
+		}
+		if dimFieldEmpty(item, dim) {
+			result = append(result, injectTag(item, ds.Tag, dim))
+		} else {
+			result = append(result, deepCloneData(item))
 		}
 	}
 	return result
