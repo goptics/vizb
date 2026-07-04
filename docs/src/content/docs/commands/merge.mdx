@@ -39,7 +39,7 @@ vizb merge ./old_results/ latest.json -o comparison.json
 
 ## Outer Merge (Untagged)
 
-When merging dataset without tags, vizb concatenates all entries. Same-name dataset are deduplicated — first occurrence wins.
+When merging dataset without tags, vizb concatenates all entries. Same-name datasets are deduplicated — newer timestamp wins; if timestamps are equal or absent, first occurrence wins.
 
 ```bash
 vizb bench-a.txt -o a.json -n "Sort"
@@ -63,9 +63,14 @@ vizb merge v1.json v2.json -o comparison.json
 ```
 
 The merge process:
-1. **Deduplication** — same name + tag → keep latest timestamp
+1. **Same-tag replacement** — same name + tag → replace only that tag's data points on the inject axis (`-A`); older versions and `history[]` entries for other tags are kept. Newer timestamp wins for top-level metadata.
 2. **Deep merge** — different tags → single dataset with chronological data
 3. **Legacy** — untagged entries prepended before tagged data
+
+```bash
+# Re-run v1.8.0 into an accumulated merged.json — v1.3.0/v1.7.x data is preserved
+vizb merge bench-v1.8.0.json merged.json -A x -o merged.json
+```
 
 ## Tag-Axis
 
@@ -82,6 +87,8 @@ vizb merge v1.json v2.json -A x -o comparison.json
 | `x` | X-axis — use for version comparison |
 | `y` | Y-axis |
 | `z` | Z-axis — depth layer of a [3D chart](/charts/3d) (needs existing x + y) |
+
+If the inject dimension is missing from `axes`, merge adds it automatically (in canonical `name` / `x` / `y` / `z` order) so tag values appear in the chart.
 
 <Aside type="tip">
   Use `-A x` to display version tags on the X-axis for clean progressive comparison across releases.

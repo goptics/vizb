@@ -99,7 +99,7 @@ Stateful CI tracks benchmark performance over time. Each run merges with histori
 | `output-json` | `merged.json` | Stores the merged result as an artifact |
 
 <Aside type="tip">
-  Use `tag-axis: x` so versions appear on the X-axis. This creates a clear timeline showing performance changes across releases.
+  Use `tag-axis: x` so versions appear on the X-axis. This creates a clear timeline showing performance changes across releases, and merge ensures the X-axis is present in `axes` so injected tags stay visible in the chart.
 </Aside>
 
 ## The Merge Cycle
@@ -117,6 +117,8 @@ Each run:
 2. Runs benchmarks with the new tag
 3. Merges old data with new data (inner merge by tag)
 4. Uploads the new merged result for the next run
+
+When re-running benchmarks for an **existing tag** (e.g. re-tagging `v1.8.0` after a fix), merge replaces only that version's data points — it does not wipe accumulated history from prior releases.
 
 <Aside type="note">
   The `continue-on-error: true` on the artifact download step ensures the first run succeeds even when no previous data exists.
