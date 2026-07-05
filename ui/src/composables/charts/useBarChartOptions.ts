@@ -101,7 +101,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
       name: yAxisLabel,
       type: 'bar' as const,
       data: series.map((s) => barNullable(s.values[yIndex] ?? null, effectiveScale)),
-      label: createLabelConfig(showLabels.value, styling),
+      label: createLabelConfig(showLabels.value, styling, isHorizontal ? 'horizontal' : 'vertical'),
       large: true,
       largeThreshold: LARGE_DATA_THRESHOLD,
       itemStyle: { color: getNextColorFor(yAxisLabel) },
