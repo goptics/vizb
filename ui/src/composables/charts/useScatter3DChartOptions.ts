@@ -199,7 +199,6 @@ export function useScatter3DChartOptions(config: BaseChartConfig) {
       },
       zAxis3D: {
         ...zAxis3DBase,
-        ...axis3DName(axisLabels?.z, styling),
       },
       grid3D,
       series: seriesData.map((s: Series3DData) => {

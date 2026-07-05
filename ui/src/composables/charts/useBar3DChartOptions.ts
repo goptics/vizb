@@ -203,7 +203,6 @@ export function useBar3DChartOptions(config: BaseChartConfig) {
       },
       zAxis3D: {
         ...zAxis3DBase,
-        ...axis3DName(chartData.value.axisLabels?.z, styling),
       },
       grid3D,
       series,
