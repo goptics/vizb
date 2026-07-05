@@ -128,6 +128,8 @@ describe('useBarChartOptions — horizontal mode', () => {
     expect((opt.xAxis as { type: string }).type).toBe('value')
     expect((opt.yAxis as { type: string }).type).toBe('category')
     expect((opt.yAxis as { data: string[] }).data).toEqual(['A', 'B', 'C'])
+    expect((opt.yAxis as { name?: string }).name).toBe('category')
+    expect((opt.xAxis as { name?: string }).name).toBeUndefined()
   })
 
   it('renders horizontal grouped bars with correct series', () => {
@@ -135,11 +137,22 @@ describe('useBarChartOptions — horizontal mode', () => {
     const opt = options.value
     expect((opt.xAxis as { type: string }).type).toBe('value')
     expect((opt.yAxis as { type: string }).type).toBe('category')
+    expect((opt.yAxis as { name?: string }).name).toBe('category')
+    expect((opt.xAxis as { name?: string }).name).toBeUndefined()
     const series = opt.series as { type: string; name: string; data: number[] }[]
     expect(series.length).toBe(2)
     expect(series[0]!.name).toBe('North')
     expect(series[1]!.name).toBe('South')
     expect(series[0]!.data).toEqual([10, 15])
+  })
+
+  it('places grouped horizontal legend at bottom center', () => {
+    const { options } = useBarChartOptions(makeGroupedConfig(true))
+    const legend = options.value.legend as { left?: string; bottom?: number; top?: number }
+    expect(legend.left).toBe('center')
+    expect(legend.bottom).toBe(0)
+    expect(legend.top).toBeUndefined()
+    expect(options.value.title).toBeUndefined()
   })
 
   it('renders vertical bars by default (horizontal not set)', () => {

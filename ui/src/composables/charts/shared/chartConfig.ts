@@ -152,7 +152,7 @@ export function createDataZoomConfig(_xAxisData: string[], styling: ChartStyling
   ]
 }
 
-export function createHorizontalDataZoomConfig(_yAxisData: string[], styling: ChartStyling): any[] {
+export function createHorizontalDataZoomConfig(styling: ChartStyling): any[] {
   const end = DATAZOOM_INITIAL_END_PERCENT
   return [
     {
@@ -167,8 +167,8 @@ export function createHorizontalDataZoomConfig(_yAxisData: string[], styling: Ch
       yAxisIndex: 0,
       start: 0,
       end,
-      bottom: 34,
-      height: 28,
+      right: 20,
+      width: 20,
       filterMode: 'filter',
       textStyle: { color: styling.textColor },
     },
@@ -394,14 +394,26 @@ export function createAxisConfig(
   }
 }
 
+/** Bottom band (%) for a horizontal chart legend — mirrors createGridConfig top band. */
+export function horizontalLegendBottom(seriesLength = 1): string {
+  const legendSpace = Math.min(15 + Math.floor((seriesLength - 1) / 15) * 2, 35)
+  return `${legendSpace}%`
+}
+
 export function createHorizontalAxisConfig(
   styling: ChartStyling,
   yAxisData: string[],
   scale: ScaleType = 'linear',
   minValue?: number,
-  yAxisName?: string,
+  categoryAxisName?: string,
   hasDataZoom = false
 ): { xAxis: any; yAxis: any } {
+  const axisNameStyle = {
+    color: styling.textColor,
+    fontSize: axisTitleFontSize,
+    fontWeight: 'bold' as const,
+  }
+
   const xAxisConfig: any = {
     type: scale === 'log' ? 'log' : 'value',
     logBase: 10,
@@ -425,24 +437,21 @@ export function createHorizontalAxisConfig(
     xAxis: xAxisConfig,
     yAxis: {
       type: 'category',
+      inverse: true,
       data: yAxisData,
-      ...(yAxisName
+      ...(categoryAxisName
         ? {
-            name: yAxisName,
+            name: categoryAxisName,
             nameLocation: 'middle',
             nameGap: hasDataZoom ? 88 : 30,
-            nameTextStyle: {
-              color: styling.textColor,
-              fontSize: 16,
-              fontWeight: 'bold',
-            },
+            nameTextStyle: axisNameStyle,
           }
         : {}),
       axisLabel: {
         interval: isLargeXAxis(yAxisData) ? 'auto' : 0,
         fontSize,
         color: styling.textColor,
-        ...(!hasDataZoom && !yAxisName ? { margin: 14 } : {}),
+        ...(!hasDataZoom && !categoryAxisName ? { margin: 14 } : {}),
       },
       axisLine: {
         lineStyle: { color: styling.axisColor },

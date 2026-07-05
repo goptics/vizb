@@ -12,6 +12,7 @@ import {
   createLegendConfig,
   createTooltipConfig,
   getChartStyling,
+  horizontalLegendBottom,
   isLargeXAxis,
   makeLegendTitle,
   LARGE_DATA_THRESHOLD,
@@ -27,9 +28,10 @@ export function useBarChartOptions(config: BaseChartConfig) {
   const { chartData, sort, showLabels, isDark, scale, horizontal } = config
 
   const sortedData = useSortedSeriesData(chartData, sort)
-  const isHorizontal = horizontal?.value ?? false
 
   const options = computed<EChartsOption>(() => {
+    const isHorizontal = horizontal?.value ?? false
+
     if (chartData.value.mixedTuples?.length) {
       return buildMixedAxes2DOptions(config, 'bar')
     }
@@ -50,11 +52,17 @@ export function useBarChartOptions(config: BaseChartConfig) {
     if (!hasYAxis && isHorizontal) {
       return {
         ...baseOptions,
-        grid: { left: 100, right: 24, bottom: '3%', top: 8, containLabel: true },
+        grid: {
+          left: xLabel ? 70 : '3%',
+          right: largeX ? 44 : 24,
+          bottom: '3%',
+          top: 8,
+          containLabel: true,
+        },
         tooltip: createTooltipConfig(false, isDark.value),
         legend: { show: false },
         ...createHorizontalAxisConfig(styling, xAxisData, effectiveScale, minValue, xLabel, largeX),
-        ...(largeX ? { dataZoom: createHorizontalDataZoomConfig(xAxisData, styling) } : {}),
+        ...(largeX ? { dataZoom: createHorizontalDataZoomConfig(styling) } : {}),
         series: [
           {
             name: chartData.value.title,
@@ -120,30 +128,29 @@ export function useBarChartOptions(config: BaseChartConfig) {
     const hasMultipleSeries = transposedSeries.length > 1
     const seriesTotals = computeSeriesTotals(transposedSeries)
 
-    // The legend encodes the y group; title it above the legend when known.
     const yLabel = chartData.value.axisLabels?.y
+    // Vertical: legend encodes the y group with yLabel as a top title.
     const showLegendTitle = hasMultipleSeries && !!yLabel
 
     if (isHorizontal) {
       return {
         ...baseOptions,
-        ...(showLegendTitle ? { title: makeLegendTitle(yLabel!, styling) } : {}),
         grid: {
-          left: 100,
-          right: 24,
-          bottom: '3%',
-          top: showLegendTitle ? 24 : 8,
-          containLabel: false,
+          left: xLabel ? 70 : '3%',
+          right: largeX ? 44 : 24,
+          bottom: hasMultipleSeries ? horizontalLegendBottom(transposedSeries.length) : '3%',
+          top: 8,
+          containLabel: true,
         },
         tooltip: createTooltipConfig(hasXAxis(chartData), isDark.value, seriesTotals),
         legend: createLegendConfig(
           transposedSeries.map((s) => ({ xAxis: s.name })),
           styling,
           hasMultipleSeries,
-          showLegendTitle ? { top: 24 } : undefined
+          { bottom: 0 }
         ),
         ...createHorizontalAxisConfig(styling, xAxisData, effectiveScale, minValue, xLabel, largeX),
-        ...(largeX ? { dataZoom: createHorizontalDataZoomConfig(xAxisData, styling) } : {}),
+        ...(largeX ? { dataZoom: createHorizontalDataZoomConfig(styling) } : {}),
         series: transposedSeries,
       } as EChartsOption
     }
