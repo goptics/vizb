@@ -91,6 +91,7 @@ These settings apply to bar charts:
 | Sort | `--sort asc\|desc` | Sort control | Sorts bars along the X axis |
 | Labels | `--show-labels` | Show labels | Displays value on each bar |
 | Swap | `--swap` | Axis switcher | Rotates which column maps to X vs Y |
+| Horizontal | `--horizontal` | Horizontal toggle | Renders grouped bars horizontally — 2D only |
 | Scale (log) | `--log-scale` | Scale toggle | Log Y axis — 2D only |
 | 3D view | `--3d` | 3D view | Value 3D for x+y data (y → depth, metric → height) |
 | 3D visual map | `--3d-visualmap` | 3D visual map | Metric gradient coloring — on by default with `--3d`; grouped/value 3D |
@@ -104,6 +105,9 @@ vizb bar sales.csv -g region,category --sort asc -l -o out.html
 
 # Log scale on the bar chart only
 vizb bar sales.csv -g region,category --scale log -o out.html
+
+# Horizontal grouped bars
+vizb bar sales.csv -g region,category -p x,y --horizontal -o out.html
 ```
 
 ## Next Steps

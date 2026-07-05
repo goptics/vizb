@@ -56,6 +56,7 @@ Every chart subcommand accepts the common data, grouping, and metadata flags:
 | `--3d-visualmap` | ✅ | ✅ | ✅ | — | — | — | Color 3D geometry by metric value |
 | `--visualmap` | — | — | ✅ | — | — | — | Color 2D scatter points by metric (off by default) |
 | `--3d-rotate` | ✅ | ✅ | ✅ | — | — | — | Auto-rotate the 3D scene (only meaningful with 3D data) |
+| `--horizontal` | ✅ | — | — | — | — | — | Horizontal grouped bars — 2D only |
 `bar`, `line`, and `scatter` render in 3D when the data has a z dimension (`-p n/x/y/z`) or auto-value detects 3+ numeric columns. Pie, heatmap, and radar are 2D-only for those flags — passing an unsupported flag is an error:
 
 ```bash
@@ -73,6 +74,9 @@ vizb pie data.csv -g impl --sort asc --show-labels -o pie.html
 
 # Line from Go benchmarks via stdin, swapping axes
 go test -bench . | vizb line -p n/y --swap yn -o line.html
+
+# Bar chart with horizontal grouped bars
+vizb bar sales.csv -g region,category -p x,y --horizontal -o bar.html
 
 # Scatter from all-numeric columns (auto-value)
 vizb scatter data.csv -o scatter.html
