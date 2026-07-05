@@ -78,6 +78,7 @@ export type LineConfig = {
   showLabels?: boolean
   symbol?: string
   symbolSize?: number
+  smooth?: boolean
   threeDRotate?: boolean
   threeD?: boolean
   threeDVisualMap?: boolean

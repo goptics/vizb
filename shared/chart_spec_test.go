@@ -71,6 +71,19 @@ func (s *ChartSpecSuite) TestParseOverridesBareLabels() {
 	s.Equal(true, s.payload(got["bar"])["showLabels"])
 }
 
+func (s *ChartSpecSuite) TestParseOverridesLineSmooth() {
+	got, warnings, err := ParseOverrides([]string{"line:smooth"}, []string{"line"}, s.xynAxes)
+	s.Require().NoError(err)
+	s.Empty(warnings)
+	s.Equal(true, s.payload(got["line"])["smooth"])
+
+	got, warnings, err = ParseOverrides([]string{"bar:smooth"}, []string{"bar"}, s.xynAxes)
+	s.Require().NoError(err)
+	s.Require().NotEmpty(warnings)
+	s.Contains(warnings[0], "smooth")
+	s.Nil(s.payload(got["bar"])["smooth"])
+}
+
 // TestParseOverrides_BareThreeD confirms `3d` (no =val) enables value-mode 3D.
 func (s *ChartSpecSuite) TestParseOverridesBareThreeD() {
 	got, _, err := ParseOverrides([]string{"bar:3d"}, []string{"bar"}, s.xynAxes)

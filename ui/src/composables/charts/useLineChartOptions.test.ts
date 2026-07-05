@@ -43,6 +43,11 @@ const makeMixedConfig = (): BaseChartConfig => ({
   isDark: ref(false),
 })
 
+const makeSmoothMixedConfig = (): BaseChartConfig => ({
+  ...makeMixedConfig(),
+  smooth: ref(true),
+})
+
 const makeValueChartData = (): ChartData => ({
   title: 'price vs latency',
   statType: 'value',
@@ -64,6 +69,32 @@ const makeValueConfig = (): BaseChartConfig => ({
   isDark: ref(false),
 })
 
+const makeSmoothValueConfig = (): BaseChartConfig => ({
+  ...makeValueConfig(),
+  smooth: ref(true),
+})
+
+const makeGroupedChartData = (): ChartData => ({
+  title: 'sales by month',
+  statType: 'grouped',
+  yAxis: ['North', 'South'],
+  zAxis: [],
+  series: [
+    { xAxis: 'Jan', values: [10, 8], benchmarkId: 'jan' },
+    { xAxis: 'Feb', values: [12, 9], benchmarkId: 'feb' },
+  ],
+  points: [],
+  axisLabels: { x: 'month', y: 'region' },
+})
+
+const makeGroupedConfig = (smooth = false): BaseChartConfig => ({
+  chartData: ref(makeGroupedChartData()),
+  sort: ref({ enabled: false, order: 'asc' }),
+  showLabels: ref(false),
+  isDark: ref(false),
+  smooth: ref(smooth),
+})
+
 describe('useLineChartOptions — mixed mode', () => {
   it('emits line series with mixedTuples as data', () => {
     const { options } = useLineChartOptions(makeMixedConfig())
@@ -73,6 +104,12 @@ describe('useLineChartOptions — mixed mode', () => {
       [0, 12],
       [1, 11],
     ])
+  })
+
+  it('emits smooth line series when enabled', () => {
+    const { options } = useLineChartOptions(makeSmoothMixedConfig())
+    const s = (options.value.series as { smooth?: boolean }[])[0]!
+    expect(s.smooth).toBe(true)
   })
 
   it('uses axis trigger with themed snap line pointer for category x', () => {
@@ -94,5 +131,26 @@ describe('useLineChartOptions — axes value mode', () => {
     expect((options.value.tooltip as { axisPointer?: { type?: string } }).axisPointer?.type).toBe(
       'cross'
     )
+  })
+
+  it('emits smooth line series when enabled', () => {
+    const { options } = useLineChartOptions(makeSmoothValueConfig())
+    const s = (options.value.series as { smooth?: boolean }[])[0]!
+    expect(s.smooth).toBe(true)
+  })
+})
+
+describe('useLineChartOptions — grouped mode', () => {
+  it('preserves straight lines by default', () => {
+    const { options } = useLineChartOptions(makeGroupedConfig())
+    const series = options.value.series as { smooth?: boolean }[]
+    expect(series.every((s) => s.smooth === undefined)).toBe(true)
+  })
+
+  it('emits smooth on every grouped line series when enabled', () => {
+    const { options } = useLineChartOptions(makeGroupedConfig(true))
+    const series = options.value.series as { smooth?: boolean }[]
+    expect(series).toHaveLength(2)
+    expect(series.every((s) => s.smooth === true)).toBe(true)
   })
 })

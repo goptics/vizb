@@ -5,6 +5,7 @@
 *.prof
 coverage.txt
 coverage.html
+.gocache/
 
 # Vendored deps (not used today, ignore if added later)
 vendor/
