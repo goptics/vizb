@@ -5,6 +5,7 @@ import SortControl from '@/components/settings/SortControl.vue'
 import ScaleControl from '@/components/settings/ScaleControl.vue'
 import ShowLabelsControl from '@/components/settings/ShowLabelsControl.vue'
 import SmoothControl from '@/components/settings/SmoothControl.vue'
+import HorizontalControl from '@/components/settings/HorizontalControl.vue'
 import ThreeDRotateControl from '@/components/settings/ThreeDRotateControl.vue'
 import ThreeDControl from '@/components/settings/ThreeDControl.vue'
 import ThreeDVisualMapControl from '@/components/settings/ThreeDVisualMapControl.vue'
@@ -22,6 +23,7 @@ export type SettingFieldValueMap = {
   scale: ScaleType
   showLabels: boolean
   smooth: boolean
+  horizontal: boolean
   threeDRotate: boolean
   threeD: boolean
   threeDVisualMap: boolean
@@ -61,6 +63,11 @@ export const fieldRegistry: Record<SettingFieldKey, FieldMeta> = {
   smooth: {
     component: SmoothControl,
     appliesTo: ['line'],
+    visible: (ctx) => ctx.rendering3D !== true,
+  },
+  horizontal: {
+    component: HorizontalControl,
+    appliesTo: ['bar'],
     visible: (ctx) => ctx.rendering3D !== true,
   },
   threeD: {

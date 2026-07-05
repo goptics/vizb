@@ -21,6 +21,9 @@ vi.mock('../../components/settings/ShowLabelsControl.vue', () => ({
 vi.mock('../../components/settings/SmoothControl.vue', () => ({
   default: { name: 'SmoothControl' },
 }))
+vi.mock('../../components/settings/HorizontalControl.vue', () => ({
+  default: { name: 'HorizontalControl' },
+}))
 vi.mock('../../components/settings/ThreeDRotateControl.vue', () => ({
   default: { name: 'ThreeDRotateControl' },
 }))
@@ -39,9 +42,10 @@ const { fieldRegistry, getControl, getRenderableFields, partitionRenderableField
   await import('./fieldRegistry')
 
 describe('fieldRegistry', () => {
-  it('exposes the nine known field controls', () => {
+  it('exposes the ten known field controls', () => {
     expect(Object.keys(fieldRegistry).sort()).toEqual(
       [
+        'horizontal',
         'threeDRotate',
         'scale',
         'showLabels',
@@ -131,11 +135,11 @@ describe('getRenderableFields', () => {
     ).toEqual(['sort', 'scale', 'showLabels', 'threeDVisualMap', 'threeDRotate', 'swap'])
   })
 
-  it('returns 4 entries for a 2D bar config without value-3D active', () => {
+  it('returns 5 entries for a 2D bar config without value-3D active', () => {
     const cfg: BarConfig = { type: 'bar' }
     expect(
       getRenderableFields(cfg, { dimension: '2D', rendering3D: false }).map((f) => f.key)
-    ).toEqual(['sort', 'scale', 'showLabels', 'swap'])
+    ).toEqual(['sort', 'scale', 'showLabels', 'horizontal', 'swap'])
   })
 
   it('returns 6 entries for a 2D bar config with value-3D active', () => {
@@ -171,7 +175,7 @@ describe('getRenderableFields', () => {
         hasThreeDOption: true,
         hasZAxis: false,
       }).map((f) => f.key)
-    ).toEqual(['sort', 'scale', 'showLabels', 'threeD', 'swap'])
+    ).toEqual(['sort', 'scale', 'showLabels', 'horizontal', 'threeD', 'swap'])
   })
 
   it('hides rotate/visualMap on flat 2D xyn chart until value 3D is enabled', () => {
@@ -234,6 +238,7 @@ describe('getRenderableFields', () => {
       'sort',
       'scale',
       'showLabels',
+      'horizontal',
       'threeDVisualMap',
       'threeDRotate',
       'swap',
