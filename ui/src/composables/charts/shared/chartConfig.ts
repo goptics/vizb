@@ -152,6 +152,29 @@ export function createDataZoomConfig(_xAxisData: string[], styling: ChartStyling
   ]
 }
 
+export function createHorizontalDataZoomConfig(_yAxisData: string[], styling: ChartStyling): any[] {
+  const end = DATAZOOM_INITIAL_END_PERCENT
+  return [
+    {
+      type: 'inside',
+      yAxisIndex: 0,
+      start: 0,
+      end,
+      filterMode: 'filter',
+    },
+    {
+      type: 'slider',
+      yAxisIndex: 0,
+      start: 0,
+      end,
+      bottom: 34,
+      height: 28,
+      filterMode: 'filter',
+      textStyle: { color: styling.textColor },
+    },
+  ]
+}
+
 export interface ChartStyling {
   textColor: string
   axisColor: string
@@ -368,6 +391,63 @@ export function createAxisConfig(
       },
     },
     yAxis: yAxisConfig,
+  }
+}
+
+export function createHorizontalAxisConfig(
+  styling: ChartStyling,
+  yAxisData: string[],
+  scale: ScaleType = 'linear',
+  minValue?: number,
+  yAxisName?: string,
+  hasDataZoom = false
+): { xAxis: any; yAxis: any } {
+  const xAxisConfig: any = {
+    type: scale === 'log' ? 'log' : 'value',
+    logBase: 10,
+    splitLine: {
+      lineStyle: { opacity: styling.opacity },
+    },
+    axisLabel: {
+      color: styling.textColor,
+    },
+    axisLine: {
+      lineStyle: { color: styling.axisColor },
+    },
+  }
+
+  if (scale === 'log' && minValue !== undefined) {
+    const minLog = Math.pow(10, Math.floor(Math.log10(minValue)))
+    xAxisConfig.min = Math.max(1, minLog)
+  }
+
+  return {
+    xAxis: xAxisConfig,
+    yAxis: {
+      type: 'category',
+      data: yAxisData,
+      ...(yAxisName
+        ? {
+            name: yAxisName,
+            nameLocation: 'middle',
+            nameGap: hasDataZoom ? 88 : 30,
+            nameTextStyle: {
+              color: styling.textColor,
+              fontSize: 16,
+              fontWeight: 'bold',
+            },
+          }
+        : {}),
+      axisLabel: {
+        interval: isLargeXAxis(yAxisData) ? 'auto' : 0,
+        fontSize,
+        color: styling.textColor,
+        ...(!hasDataZoom && !yAxisName ? { margin: 14 } : {}),
+      },
+      axisLine: {
+        lineStyle: { color: styling.axisColor },
+      },
+    },
   }
 }
 
@@ -742,9 +822,13 @@ export function createGridConfig(seriesLength = 1, hasDataZoom = false): any {
   }
 }
 
-export const createLabelConfig = (showLabels: boolean, styling: ChartStyling) => ({
+export const createLabelConfig = (
+  showLabels: boolean,
+  styling: ChartStyling,
+  orient?: 'horizontal' | 'vertical'
+) => ({
   show: showLabels,
-  position: 'top' as const,
+  position: orient === 'horizontal' ? ('right' as const) : ('top' as const),
   formatter: '{c}',
   fontSize,
   color: styling.textColor,
