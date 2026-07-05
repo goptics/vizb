@@ -165,4 +165,24 @@ describe('useUrlRouter', () => {
       '/?bar.3d=true&bar.3d-vm=true&line.3d=true&line.3d-vm=true'
     )
   })
+
+  it('applies bar.h from the URL on init', async () => {
+    mockWindow('?bar.h=true')
+    const { useUrlRouter } = await import('./useUrlRouter')
+    const { initFromUrl } = useUrlRouter()
+    initFromUrl()
+
+    const bar = holder.dataSets!.value[0]!.settings[0] as BarConfig
+    expect(bar.horizontal).toBe(true)
+  })
+
+  it('syncs bar.h to the URL', async () => {
+    holder.dataSets = ref([ds([{ type: 'bar', horizontal: true }])])
+    holder.activeDataSetId.value = 0
+    const replaceState = mockWindow('')
+    const { useUrlRouter } = await import('./useUrlRouter')
+    const { syncUrlToState } = useUrlRouter()
+    syncUrlToState()
+    expect(replaceState).toHaveBeenCalledWith(null, '', '/?bar.h=true')
+  })
 })
