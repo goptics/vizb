@@ -27,6 +27,8 @@ export interface BaseChartConfig {
   symbolSize?: Ref<number | undefined>
   /** 2D line-only curve toggle. Ignored by 3D renderers. */
   smooth?: Ref<boolean>
+  /** 2D bar horizontal orientation. When true, bars grow rightward. */
+  horizontal?: Ref<boolean>
   /** Active swap target (e.g. xyz) — scatter value-mode 3D is swap-driven. */
   arrangementTarget?: Ref<string>
   chartAxes?: Ref<Axis[] | undefined>
