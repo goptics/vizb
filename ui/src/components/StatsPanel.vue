@@ -16,8 +16,14 @@ import { buildCorrelationOption } from '../composables/charts/useCorrelationOpti
 import { useSettingsStore } from '../composables/useSettingsStore'
 import { useFullscreen } from '../composables/useFullscreen'
 import { descriptiveCsv, correlationCsv } from '../lib/csv'
+import {
+  DESCRIPTIVE_COLUMNS,
+  columnsFromKeys,
+  defaultSelectedKeys,
+} from '../lib/descriptiveColumns'
 import SelectionTabs from './SelectionTabs.vue'
 import Selector from './Selector.vue'
+import DescriptiveColumnSelect from './DescriptiveColumnSelect.vue'
 
 // Correlation heatmap — same renderer as the chart-type heatmap, lazy-loaded so
 // its echarts modules parse only when the correlation tab actually renders.
@@ -50,6 +56,8 @@ const profiles = ref<SeriesProfile[]>([])
 const correlation = ref<CorrelationMatrix | undefined>(undefined)
 const descLoading = ref(true)
 const corrLoading = ref(false)
+const defaultColumnKeys = computed(() => defaultSelectedKeys(props.math))
+const selectedKeys = ref(defaultSelectedKeys(props.math))
 
 // Which views are valid for this data shape — cheap O(K) precondition flags
 // (counts + one numeric-axis parse, no heavy math), so the tabs render before any
@@ -100,6 +108,7 @@ async function load() {
     props.chartData.zAxis
   )
   // New chart starts in natural series order with no active search filter.
+  selectedKeys.value = defaultColumnKeys.value
   sortKey.value = null
   sortDir.value = 'desc'
   searchQuery.value = ''
@@ -123,75 +132,7 @@ watch(() => props.chartData, load)
 // Fetch a tab's backing data the first time it's selected.
 watch(view, (v) => ensureForView(v))
 
-// Descriptive table columns, in display order. `key` indexes DescriptiveStats.
-const COLUMNS: { key: keyof DescriptiveStats; label: string }[] = [
-  // counts
-  { key: 'count', label: 'Count' },
-  { key: 'missing', label: 'Missing' },
-  { key: 'unique', label: 'Unique' },
-  { key: 'zeros', label: 'Zeros' },
-  { key: 'negatives', label: 'Negatives' },
-  // center
-  { key: 'mean', label: 'Mean' },
-  { key: 'median', label: 'Median' },
-  { key: 'mode', label: 'Mode' },
-  { key: 'geoMean', label: 'Geo Mean' },
-  { key: 'harmMean', label: 'Harm Mean' },
-  { key: 'trimMean', label: 'Trim Mean' },
-  // spread
-  { key: 'stdDev', label: 'SD' },
-  { key: 'variance', label: 'Variance' },
-  { key: 'cv', label: 'CV' },
-  { key: 'sem', label: 'SEM' },
-  { key: 'cqv', label: 'CQV' },
-  // extremes
-  { key: 'min', label: 'Min' },
-  { key: 'max', label: 'Max' },
-  { key: 'range', label: 'Range' },
-  { key: 'iqr', label: 'IQR' },
-  { key: 'mad', label: 'MAD' },
-  { key: 'lowerFence', label: 'Lower Fence' },
-  { key: 'upperFence', label: 'Upper Fence' },
-  { key: 'outliers', label: 'Outliers' },
-  // shape
-  { key: 'skewness', label: 'Skew' },
-  { key: 'kurtosis', label: 'Kurtosis' },
-  // percentiles
-  { key: 'p1', label: 'P1' },
-  { key: 'p5', label: 'P5' },
-  { key: 'p10', label: 'P10' },
-  { key: 'p25', label: 'P25' },
-  { key: 'p75', label: 'P75' },
-  { key: 'p90', label: 'P90' },
-  { key: 'p95', label: 'P95' },
-  { key: 'p99', label: 'P99' },
-  // confidence
-  { key: 'ci95Lower', label: '95% CI Low' },
-  { key: 'ci95Upper', label: '95% CI High' },
-]
-
-// Maps each stat category to its DescriptiveStats keys.
-// 'correlations' is a tab, not columns — handled separately via showCorrelationTab.
-const CATEGORY_KEYS: Record<Exclude<StatMath, 'correlations'>, (keyof DescriptiveStats)[]> = {
-  counts: ['count', 'missing', 'unique', 'zeros', 'negatives'],
-  center: ['mean', 'median', 'mode', 'geoMean', 'harmMean', 'trimMean'],
-  spread: ['stdDev', 'variance', 'cv', 'sem', 'cqv'],
-  extremes: ['min', 'max', 'range', 'iqr', 'mad', 'lowerFence', 'upperFence', 'outliers'],
-  shape: ['skewness', 'kurtosis'],
-  percentiles: ['p1', 'p5', 'p10', 'p25', 'p75', 'p90', 'p95', 'p99'],
-  confidence: ['ci95Lower', 'ci95Upper'],
-}
-
-const visibleColumns = computed(() => {
-  const m = props.math
-  if (!m || m.length === 0) return COLUMNS
-  const allowed = new Set(
-    m
-      .filter((x): x is Exclude<StatMath, 'correlations'> => x !== 'correlations')
-      .flatMap((cat) => CATEGORY_KEYS[cat])
-  )
-  return COLUMNS.filter((c) => allowed.has(c.key))
-})
+const visibleColumns = computed(() => columnsFromKeys(selectedKeys.value))
 
 // Integer-valued metadata columns shown as plain integers; CV as a percentage;
 // everything else as a compact significant-figure number.
@@ -256,6 +197,11 @@ const sortedProfiles = computed(() => {
     if (bn) return -1
     return dir === 'asc' ? av - bv : bv - av
   })
+})
+
+watch(visibleColumns, (cols) => {
+  if (!sortKey.value || sortKey.value === 'name') return
+  if (!cols.some((col) => col.key === sortKey.value)) sortKey.value = null
 })
 
 // User-supplied label for the series (xAxis) dimension, falls back to "Series".
@@ -529,16 +475,22 @@ function downloadCsv() {
     <!-- Descriptive: series (rows) × metrics (cols). Virtualized vertically,
          horizontal scroll for the wide metric set. -->
     <template v-else-if="view === 'descriptive'">
-      <div v-if="profiles.length > 20" class="mb-2 flex items-center">
-        <input
-          v-model="searchQuery"
-          type="search"
-          :placeholder="`Search ${seriesLabel}...`"
-          class="max-w-xs rounded-md border border-border bg-background px-3 py-1.5 text-xs text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-        />
-        <span v-if="debouncedQuery" class="ml-auto text-xs text-muted-foreground">
-          {{ filteredProfiles.length }} / {{ profiles.length }}
-        </span>
+      <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <div v-if="profiles.length > 20" class="flex min-w-0 flex-1 items-center gap-2">
+          <input
+            v-model="searchQuery"
+            type="search"
+            :placeholder="`Search ${seriesLabel}...`"
+            class="max-w-xs rounded-md border border-border bg-background px-3 py-1.5 text-xs text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+          />
+          <span v-if="debouncedQuery" class="text-xs text-muted-foreground">
+            {{ filteredProfiles.length }} / {{ profiles.length }}
+          </span>
+        </div>
+        <p v-else class="text-xs text-muted-foreground">
+          Showing {{ visibleColumns.length }} of {{ DESCRIPTIVE_COLUMNS.length }} columns
+        </p>
+        <DescriptiveColumnSelect v-model="selectedKeys" :default-keys="defaultColumnKeys" />
       </div>
       <div ref="scrollEl" class="max-h-[600px] overflow-auto" @scroll="onScroll">
         <table class="w-full border-collapse text-right text-xs">

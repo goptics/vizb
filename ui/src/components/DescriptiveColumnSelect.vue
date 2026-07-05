@@ -8,7 +8,6 @@ import {
   STAT_CATEGORY_ORDER,
   columnsFromKeys,
   isDescriptiveColumnKey,
-  type DescriptiveStatCategory,
 } from '../lib/descriptiveColumns'
 import {
   Combobox,
@@ -34,20 +33,15 @@ const open = ref(false)
 const searchTerm = ref('')
 
 const allKeys = DESCRIPTIVE_COLUMNS.map((col) => col.key)
-const allKeySet = new Set<keyof DescriptiveStats>(allKeys)
 
-function normalizeKeys(keys: (string | keyof DescriptiveStats)[]): (keyof DescriptiveStats)[] {
-  const selected = new Set(
-    keys.filter((key): key is keyof DescriptiveStats =>
-      typeof key === 'string' ? isDescriptiveColumnKey(key) : allKeySet.has(key)
-    )
-  )
+function normalizeKeys(keys: readonly string[]): (keyof DescriptiveStats)[] {
+  const selected = new Set(keys.filter(isDescriptiveColumnKey))
   return allKeys.filter((key) => selected.has(key))
 }
 
-const selectedKeys = computed({
+const selectedKeys = computed<(keyof DescriptiveStats)[]>({
   get: () => modelValue.value,
-  set: (keys: (string | keyof DescriptiveStats)[]) => {
+  set: (keys) => {
     const normalized = normalizeKeys(keys)
     if (normalized.length > 0) modelValue.value = normalized
   },
@@ -70,10 +64,11 @@ const triggerLabel = computed(() => {
   return `${columns.length} columns`
 })
 
-function filterColumns(keys: (keyof DescriptiveStats)[], query: string) {
+function filterColumns(keys: string[], query: string) {
   const q = query.trim().toLowerCase()
   if (!q) return keys
   return keys.filter((key) => {
+    if (!isDescriptiveColumnKey(key)) return false
     const col = DESCRIPTIVE_COLUMNS.find((column) => column.key === key)
     if (!col) return false
     return (
@@ -95,10 +90,6 @@ function selectAll() {
 function resetToDefaults() {
   const defaults = normalizeKeys(props.defaultKeys)
   modelValue.value = defaults.length ? defaults : allKeys
-}
-
-function groupKey(category: DescriptiveStatCategory) {
-  return category
 }
 </script>
 
@@ -133,7 +124,7 @@ function groupKey(category: DescriptiveStatCategory) {
 
       <ComboboxEmpty>No columns found.</ComboboxEmpty>
 
-      <template v-for="(group, index) in groups" :key="groupKey(group.category)">
+      <template v-for="(group, index) in groups" :key="group.category">
         <ComboboxSeparator v-if="index > 0" />
         <ComboboxGroup>
           <ComboboxLabel>{{ group.label }}</ComboboxLabel>
