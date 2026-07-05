@@ -101,6 +101,11 @@ export function useSettingsStore() {
     if (cfg) cfg.showLabels = show
   }
 
+  const setSmooth = (smooth: boolean) => {
+    const cfg = activeConfig.value
+    if (cfg?.type === 'line') cfg.smooth = smooth
+  }
+
   const setThreeDRotate = (rotate: boolean) => {
     const cfg = activeConfig.value as { threeDRotate?: boolean } | undefined
     if (cfg) cfg.threeDRotate = rotate
@@ -136,6 +141,7 @@ export function useSettingsStore() {
     setSort,
     setScale,
     setShowLabels,
+    setSmooth,
     setThreeDRotate,
     setSwap,
     setThreeD,

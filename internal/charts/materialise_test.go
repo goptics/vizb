@@ -9,6 +9,7 @@ import (
 	_ "github.com/goptics/vizb/cmd/charts/radar"
 	"github.com/goptics/vizb/internal/charts"
 	barchart "github.com/goptics/vizb/internal/charts/bar"
+	linechart "github.com/goptics/vizb/internal/charts/line"
 	piechart "github.com/goptics/vizb/internal/charts/pie"
 	scatterchart "github.com/goptics/vizb/internal/charts/scatter"
 	"github.com/goptics/vizb/shared"
@@ -74,6 +75,13 @@ func (s *MaterialiseSuite) TestScatterSymbolAndVisualMap() {
 	s.Equal(11.0, *got.SymbolSize)
 	s.Require().NotNil(got.VisualMap)
 	s.True(*got.VisualMap)
+}
+
+func (s *MaterialiseSuite) TestLineSmoothSeed() {
+	seed := map[string]any{"smooth": true}
+	got := s.materialise("line", seed, nil).(*linechart.Config)
+	s.Require().NotNil(got.Smooth)
+	s.True(*got.Smooth)
 }
 
 func (s *MaterialiseSuite) TestStatSeed() {

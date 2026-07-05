@@ -82,6 +82,7 @@ const {
   stat,
   symbol,
   symbolSize,
+  smooth,
 } = useActiveChartShape()
 const { activeArrangement, activeDataSet } = useDataPoint()
 const activeAxes = computed(() => activeDataSet.value?.axes)
@@ -136,7 +137,8 @@ const { options } = useChartOptions(
   computed(() => activeArrangement.value.targetString),
   activeAxes,
   symbol,
-  symbolSize
+  symbolSize,
+  smooth
 )
 
 const initOptions = {

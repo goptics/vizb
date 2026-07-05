@@ -55,6 +55,21 @@ func (s *RegistrySuite) TestNewKnownType() {
 	s.Equal("bar", barCfg.ChartType())
 }
 
+func (s *RegistrySuite) TestSmoothFlagIsLineOnly() {
+	flagNames := func(chartType string) map[string]bool {
+		out := map[string]bool{}
+		for _, f := range charts.FlagsFor(chartType) {
+			out[f.EffectiveKey()] = true
+		}
+		return out
+	}
+
+	s.True(flagNames("line")["smooth"])
+	for _, chartType := range []string{"bar", "scatter", "pie", "heatmap", "radar"} {
+		s.False(flagNames(chartType)["smooth"], "%s should not register smooth", chartType)
+	}
+}
+
 func (s *RegistrySuite) TestNewScatterKnownType() {
 	cfg, err := charts.New("scatter")
 	s.NoError(err)
