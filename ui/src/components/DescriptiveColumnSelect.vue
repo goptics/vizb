@@ -6,8 +6,11 @@ import {
   DESCRIPTIVE_COLUMNS,
   STAT_CATEGORY_LABELS,
   STAT_CATEGORY_ORDER,
-  columnsFromKeys,
+  allDescriptiveColumnKeys,
   isDescriptiveColumnKey,
+  nextSelectedKeys,
+  resetSelectedKeys,
+  selectedColumnSummary,
 } from '../lib/descriptiveColumns'
 import {
   Combobox,
@@ -32,18 +35,12 @@ const modelValue = defineModel<(keyof DescriptiveStats)[]>({ required: true })
 const open = ref(false)
 const searchTerm = ref('')
 
-const allKeys = DESCRIPTIVE_COLUMNS.map((col) => col.key)
-
-function normalizeKeys(keys: readonly string[]): (keyof DescriptiveStats)[] {
-  const selected = new Set(keys.filter(isDescriptiveColumnKey))
-  return allKeys.filter((key) => selected.has(key))
-}
+const allKeys = allDescriptiveColumnKeys()
 
 const selectedKeys = computed<(keyof DescriptiveStats)[]>({
   get: () => modelValue.value,
   set: (keys) => {
-    const normalized = normalizeKeys(keys)
-    if (normalized.length > 0) modelValue.value = normalized
+    modelValue.value = nextSelectedKeys(modelValue.value, keys)
   },
 })
 
@@ -57,12 +54,7 @@ const groups = computed(() =>
   }))
 )
 
-const triggerLabel = computed(() => {
-  const columns = columnsFromKeys(selectedKeys.value)
-  if (columns.length === DESCRIPTIVE_COLUMNS.length) return 'All columns'
-  if (columns.length <= 2) return columns.map((col) => col.label).join(', ')
-  return `${columns.length} columns`
-})
+const triggerLabel = computed(() => selectedColumnSummary(selectedKeys.value))
 
 function filterColumns(keys: string[], query: string) {
   const q = query.trim().toLowerCase()
@@ -88,8 +80,7 @@ function selectAll() {
 }
 
 function resetToDefaults() {
-  const defaults = normalizeKeys(props.defaultKeys)
-  modelValue.value = defaults.length ? defaults : allKeys
+  modelValue.value = resetSelectedKeys(props.defaultKeys)
 }
 </script>
 

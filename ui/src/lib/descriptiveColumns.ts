@@ -83,11 +83,9 @@ const DESCRIPTIVE_COLUMN_KEYS = new Set(DESCRIPTIVE_COLUMNS.map((col) => col.key
 export function keysForMath(math?: StatMath[]): (keyof DescriptiveStats)[] {
   if (!math || math.length === 0) return DESCRIPTIVE_COLUMNS.map((col) => col.key)
 
-  const keys = math
+  return math
     .filter((category): category is DescriptiveStatCategory => category !== 'correlations')
     .flatMap((category) => CATEGORY_KEYS[category])
-
-  return keys.length ? keys : DESCRIPTIVE_COLUMNS.map((col) => col.key)
 }
 
 export function defaultSelectedKeys(math?: StatMath[]): (keyof DescriptiveStats)[] {
@@ -101,4 +99,44 @@ export function columnsFromKeys(keys: Iterable<keyof DescriptiveStats>): Descrip
 
 export function isDescriptiveColumnKey(key: string): key is keyof DescriptiveStats {
   return DESCRIPTIVE_COLUMN_KEYS.has(key as keyof DescriptiveStats)
+}
+
+export function allDescriptiveColumnKeys(): (keyof DescriptiveStats)[] {
+  return DESCRIPTIVE_COLUMNS.map((col) => col.key)
+}
+
+export function normalizeSelectedKeys(keys: Iterable<string>): (keyof DescriptiveStats)[] {
+  const selected = new Set(Array.from(keys).filter(isDescriptiveColumnKey))
+  return allDescriptiveColumnKeys().filter((key) => selected.has(key))
+}
+
+export function nextSelectedKeys(
+  currentKeys: ReadonlyArray<keyof DescriptiveStats>,
+  requestedKeys: Iterable<string>
+): (keyof DescriptiveStats)[] {
+  const normalized = normalizeSelectedKeys(requestedKeys)
+  return normalized.length ? normalized : [...currentKeys]
+}
+
+export function resetSelectedKeys(
+  defaultKeys: Iterable<string>,
+  fallbackKeys: ReadonlyArray<keyof DescriptiveStats> = allDescriptiveColumnKeys()
+): (keyof DescriptiveStats)[] {
+  const normalized = normalizeSelectedKeys(defaultKeys)
+  return normalized.length ? normalized : [...fallbackKeys]
+}
+
+export function selectedColumnSummary(keys: Iterable<keyof DescriptiveStats>): string {
+  const columns = columnsFromKeys(keys)
+  if (columns.length === DESCRIPTIVE_COLUMNS.length) return 'All columns'
+  if (columns.length <= 2) return columns.map((col) => col.label).join(', ')
+  return `${columns.length} columns`
+}
+
+export function sortKeyForVisibleColumns(
+  sortKey: keyof DescriptiveStats | 'name' | null,
+  selectedKeys: Iterable<keyof DescriptiveStats>
+): keyof DescriptiveStats | 'name' | null {
+  if (!sortKey || sortKey === 'name') return sortKey
+  return new Set(selectedKeys).has(sortKey) ? sortKey : null
 }

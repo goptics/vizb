@@ -20,6 +20,7 @@ import {
   DESCRIPTIVE_COLUMNS,
   columnsFromKeys,
   defaultSelectedKeys,
+  sortKeyForVisibleColumns,
 } from '../lib/descriptiveColumns'
 import SelectionTabs from './SelectionTabs.vue'
 import Selector from './Selector.vue'
@@ -199,9 +200,8 @@ const sortedProfiles = computed(() => {
   })
 })
 
-watch(visibleColumns, (cols) => {
-  if (!sortKey.value || sortKey.value === 'name') return
-  if (!cols.some((col) => col.key === sortKey.value)) sortKey.value = null
+watch(selectedKeys, (keys) => {
+  sortKey.value = sortKeyForVisibleColumns(sortKey.value, keys)
 })
 
 // User-supplied label for the series (xAxis) dimension, falls back to "Series".
