@@ -48,6 +48,12 @@ vizb line sales.csv -g region,category -p x,y -o out.html
 
 <Image src={line2D} alt="2D multi-line chart with five category series per region and a color category legend" />
 
+Add `--stack` to render the grouped lines as a stacked area chart, which emphasizes the total per X value and each Y series' contribution to that total.
+
+```bash
+vizb line sales.csv -g region,category -p x,y --stack -o stacked-area.html
+```
+
 ### 3D (X + Y + Z axes)
 
 WebGL `line3D` scene: each Z value becomes a separate 3D polyline with scatter markers at each vertex. The markers keep individual data points readable when lines converge or overlap. Rotate, zoom, and pan the scene in the browser. Requires echarts-gl (bundled automatically).
@@ -95,6 +101,7 @@ These settings apply to line charts:
 | Setting | CLI flag | UI toggle | Notes |
 |---------|----------|-----------|-------|
 | Sort | `--sort asc\|desc` | Sort control | Sorts points along the X axis |
+| Stack | `--stack` | Stack series | Renders 2D grouped lines as stacked areas; ignored for z data and log scale |
 | Labels | `--show-labels` | Show labels | Displays value at each data point |
 | Smooth lines | `--smooth` | Smooth lines | Curves segments between points — 2D only |
 | Swap | `--swap` | Axis switcher | Rotates which column maps to X vs Y |
@@ -111,6 +118,9 @@ vizb line sales.csv -g region,category --scale log -l -o out.html
 
 # Sort descending
 vizb line sales.csv -g region,category --sort desc -o out.html
+
+# Stacked 2D area chart
+vizb line sales.csv -g region,category -p x,y --stack -o stacked-area.html
 ```
 
 ## Next Steps

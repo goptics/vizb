@@ -48,6 +48,12 @@ vizb bar sales.csv -g region,category -p x,y -o out.html
 
 <Image src={bar2D} alt="2D grouped bar chart with five category series per region and a color category legend" />
 
+Add `--stack` to show one bar per X value with the Y series stacked inside it. This keeps the grouped data shape but changes the 2D bar rendering to a part-to-whole view.
+
+```bash
+vizb bar sales.csv -g region,category -p x,y --stack -o stacked.html
+```
+
 ### 3D (X + Y + Z axes)
 
 WebGL `bar3D` scene: X and Y form a grid floor, and Z values stack as depth layers on each (X, Y) cell. Rotate, zoom, and pan the scene in the browser. Requires echarts-gl (bundled automatically).
@@ -89,6 +95,7 @@ These settings apply to bar charts:
 | Setting | CLI flag | UI toggle | Notes |
 |---------|----------|-----------|-------|
 | Sort | `--sort asc\|desc` | Sort control | Sorts bars along the X axis |
+| Stack | `--stack` | Stack series | Stacks 2D grouped Y series into X totals; ignored for z data and log scale |
 | Labels | `--show-labels` | Show labels | Displays value on each bar |
 | Swap | `--swap` | Axis switcher | Rotates which column maps to X vs Y |
 | Horizontal | `--horizontal` | Horizontal toggle | Renders grouped bars horizontally — 2D only |
@@ -108,6 +115,9 @@ vizb bar sales.csv -g region,category --scale log -o out.html
 
 # Horizontal grouped bars
 vizb bar sales.csv -g region,category -p x,y --horizontal -o out.html
+
+# Stacked 2D bars
+vizb bar sales.csv -g region,category -p x,y --stack -o stacked.html
 ```
 
 ## Next Steps
