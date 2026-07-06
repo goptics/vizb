@@ -6,10 +6,13 @@ import {
   createAxisConfig,
   createDataZoomConfig,
   createGridConfig,
+  createHorizontalAxisConfig,
+  createHorizontalDataZoomConfig,
   createLabelConfig,
   createLegendConfig,
   createTooltipConfig,
   getChartStyling,
+  horizontalLegendBottom,
   isLargeXAxis,
   makeLegendTitle,
   LARGE_DATA_THRESHOLD,
@@ -22,11 +25,13 @@ const barNullable = (val: number | null, scale: string): number | null =>
   val === null ? null : scale === 'log' && val <= 0 ? null : val
 
 export function useBarChartOptions(config: BaseChartConfig) {
-  const { chartData, sort, showLabels, isDark, scale } = config
+  const { chartData, sort, showLabels, isDark, scale, horizontal } = config
 
   const sortedData = useSortedSeriesData(chartData, sort)
 
   const options = computed<EChartsOption>(() => {
+    const isHorizontal = horizontal?.value ?? false
+
     if (chartData.value.mixedTuples?.length) {
       return buildMixedAxes2DOptions(config, 'bar')
     }
@@ -43,6 +48,34 @@ export function useBarChartOptions(config: BaseChartConfig) {
     const { minValue, effectiveScale } = getEffectiveScale(series, scale?.value ?? 'linear')
     const largeX = isLargeXAxis(xAxisData)
     const xLabel = chartData.value.axisLabels?.x
+
+    if (!hasYAxis && isHorizontal) {
+      return {
+        ...baseOptions,
+        grid: {
+          left: xLabel ? 70 : '3%',
+          right: largeX ? 44 : 24,
+          bottom: '3%',
+          top: 8,
+          containLabel: true,
+        },
+        tooltip: createTooltipConfig(false, isDark.value),
+        legend: { show: false },
+        ...createHorizontalAxisConfig(styling, xAxisData, effectiveScale, minValue, xLabel, largeX),
+        ...(largeX ? { dataZoom: createHorizontalDataZoomConfig(styling) } : {}),
+        series: [
+          {
+            name: chartData.value.title,
+            type: 'bar' as const,
+            data: series.map((s) => barNullable(s.values[0] ?? null, effectiveScale)),
+            label: createLabelConfig(showLabels.value, styling, 'horizontal'),
+            large: true,
+            largeThreshold: LARGE_DATA_THRESHOLD,
+            itemStyle: { color: getNextColorFor(chartData.value.title) },
+          },
+        ],
+      } as EChartsOption
+    }
 
     if (!hasYAxis) {
       return {
@@ -76,7 +109,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
       name: yAxisLabel,
       type: 'bar' as const,
       data: series.map((s) => barNullable(s.values[yIndex] ?? null, effectiveScale)),
-      label: createLabelConfig(showLabels.value, styling),
+      label: createLabelConfig(showLabels.value, styling, isHorizontal ? 'horizontal' : 'vertical'),
       large: true,
       largeThreshold: LARGE_DATA_THRESHOLD,
       itemStyle: { color: getNextColorFor(yAxisLabel) },
@@ -95,9 +128,32 @@ export function useBarChartOptions(config: BaseChartConfig) {
     const hasMultipleSeries = transposedSeries.length > 1
     const seriesTotals = computeSeriesTotals(transposedSeries)
 
-    // The legend encodes the y group; title it above the legend when known.
     const yLabel = chartData.value.axisLabels?.y
+    // Vertical: legend encodes the y group with yLabel as a top title.
     const showLegendTitle = hasMultipleSeries && !!yLabel
+
+    if (isHorizontal) {
+      return {
+        ...baseOptions,
+        grid: {
+          left: xLabel ? 70 : '3%',
+          right: largeX ? 44 : 24,
+          bottom: hasMultipleSeries ? horizontalLegendBottom(transposedSeries.length) : '3%',
+          top: 8,
+          containLabel: true,
+        },
+        tooltip: createTooltipConfig(hasXAxis(chartData), isDark.value, seriesTotals),
+        legend: createLegendConfig(
+          transposedSeries.map((s) => ({ xAxis: s.name })),
+          styling,
+          hasMultipleSeries,
+          { bottom: 0 }
+        ),
+        ...createHorizontalAxisConfig(styling, xAxisData, effectiveScale, minValue, xLabel, largeX),
+        ...(largeX ? { dataZoom: createHorizontalDataZoomConfig(styling) } : {}),
+        series: transposedSeries,
+      } as EChartsOption
+    }
 
     return {
       ...baseOptions,

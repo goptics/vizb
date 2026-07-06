@@ -70,6 +70,21 @@ func (s *RegistrySuite) TestSmoothFlagIsLineOnly() {
 	}
 }
 
+func (s *RegistrySuite) TestHorizontalFlagIsBarOnly() {
+	flagNames := func(chartType string) map[string]bool {
+		out := map[string]bool{}
+		for _, f := range charts.FlagsFor(chartType) {
+			out[f.EffectiveKey()] = true
+		}
+		return out
+	}
+
+	s.True(flagNames("bar")["horizontal"])
+	for _, chartType := range []string{"line", "scatter", "pie", "heatmap", "radar"} {
+		s.False(flagNames(chartType)["horizontal"], "%s should not register horizontal", chartType)
+	}
+}
+
 func (s *RegistrySuite) TestNewScatterKnownType() {
 	cfg, err := charts.New("scatter")
 	s.NoError(err)

@@ -22,6 +22,7 @@ type Config struct {
 	ThreeDRotate    *bool              `json:"threeDRotate,omitempty"`
 	ThreeD          *bool              `json:"threeD,omitempty"`
 	ThreeDVisualMap *bool              `json:"threeDVisualMap,omitempty"`
+	Horizontal      *bool              `json:"horizontal,omitempty"`
 	Stat            *shared.StatConfig `json:"stat,omitempty"`
 }
 

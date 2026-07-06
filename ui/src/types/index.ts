@@ -64,6 +64,7 @@ export type BarConfig = {
   sort?: Sort
   scale?: ScaleType
   showLabels?: boolean
+  horizontal?: boolean
   threeDRotate?: boolean
   threeD?: boolean
   threeDVisualMap?: boolean

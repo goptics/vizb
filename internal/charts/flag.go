@@ -91,6 +91,12 @@ var (
 		Kind:    flags.KindBool,
 		JSONKey: "smooth",
 	}
+	HorizontalFlag = flags.Flag{
+		Name:    "horizontal",
+		Usage:   "Render grouped bars horizontally (categories on Y, values on X)",
+		Kind:    flags.KindBool,
+		JSONKey: "horizontal",
+	}
 )
 
 // --- Pure validators (no shared dependency) usable by descriptors. ---

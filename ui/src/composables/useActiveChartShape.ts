@@ -75,6 +75,10 @@ export function useActiveChartShape() {
     () => (activeConfig.value as LineConfig | undefined)?.smooth ?? false
   )
 
+  const horizontal = computed<boolean>(
+    () => (activeConfig.value as BarConfig | undefined)?.horizontal ?? false
+  )
+
   return {
     scale,
     threeDRotate,
@@ -88,5 +92,6 @@ export function useActiveChartShape() {
     symbol,
     symbolSize,
     smooth,
+    horizontal,
   }
 }

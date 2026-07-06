@@ -84,6 +84,13 @@ func (s *ChartSpecSuite) TestParseOverridesLineSmooth() {
 	s.Nil(s.payload(got["bar"])["smooth"])
 }
 
+func (s *ChartSpecSuite) TestParseOverridesBarHorizontal() {
+	got, warnings, err := ParseOverrides([]string{"bar:horizontal"}, []string{"bar"}, s.xynAxes)
+	s.Require().NoError(err)
+	s.Empty(warnings)
+	s.Equal(true, s.payload(got["bar"])["horizontal"])
+}
+
 // TestParseOverrides_BareThreeD confirms `3d` (no =val) enables value-mode 3D.
 func (s *ChartSpecSuite) TestParseOverridesBareThreeD() {
 	got, _, err := ParseOverrides([]string{"bar:3d"}, []string{"bar"}, s.xynAxes)
