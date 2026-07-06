@@ -110,10 +110,56 @@ func (s *RulesSuite) TestExcludesAxes_SkipWhenAxisPresent() {
 	s.Contains(msg, "excludes axis \"z\"")
 }
 
+func (s *RulesSuite) TestExcludesAxes_FatalOnWrongContext() {
+	rule := charts.ExcludesAxes("z")
+	out, msg := rule(struct{}{})
+	s.Equal(flags.Fatal, out)
+	s.Contains(msg, "expected charts.RuleContext")
+}
+
 func (s *RulesSuite) TestExcludesAxes_PanicsOnEmptyKeys() {
 	s.Panics(func() {
 		charts.ExcludesAxes()
 	})
+}
+
+// --- StackRequiresLinearScale ---
+
+func (s *RulesSuite) TestStackRequiresLinearScale_KeepWhenLinear() {
+	rule := charts.StackRequiresLinearScale()
+	out, msg := rule(charts.RuleContext{
+		Value:  true,
+		Config: map[string]any{"scale": "linear"},
+	})
+	s.Equal(flags.Keep, out)
+	s.Empty(msg)
+}
+
+func (s *RulesSuite) TestStackRequiresLinearScale_KeepWhenDisabledEvenOnLog() {
+	rule := charts.StackRequiresLinearScale()
+	out, msg := rule(charts.RuleContext{
+		Value:  false,
+		Config: map[string]any{"scale": "log"},
+	})
+	s.Equal(flags.Keep, out)
+	s.Empty(msg)
+}
+
+func (s *RulesSuite) TestStackRequiresLinearScale_SkipWhenLog() {
+	rule := charts.StackRequiresLinearScale()
+	out, msg := rule(charts.RuleContext{
+		Value:  true,
+		Config: map[string]any{"scale": "LOG"},
+	})
+	s.Equal(flags.Skip, out)
+	s.Contains(msg, "linear scale")
+}
+
+func (s *RulesSuite) TestStackRequiresLinearScale_FatalOnWrongContext() {
+	rule := charts.StackRequiresLinearScale()
+	out, msg := rule(struct{}{})
+	s.Equal(flags.Fatal, out)
+	s.Contains(msg, "expected charts.RuleContext")
 }
 
 // --- Requires3DMode ---
