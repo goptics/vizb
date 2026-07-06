@@ -29,6 +29,7 @@ const {
   setChartType,
   setSort,
   setScale,
+  setStack,
   setShowLabels,
   setSmooth,
   setHorizontal,
@@ -112,6 +113,7 @@ const fieldGroups = computed(() => {
     rendering3D: rendering3D.value,
     hasThreeDOption: hasThreeDOption.value,
     hasZAxis: hasZAxis.value,
+    chartMode: chartMode.value,
   })
   return partitionRenderableFields(fields)
 })
@@ -142,6 +144,7 @@ type SettingsHandlers = {
 const handlers: SettingsHandlers = {
   sort: setSort,
   scale: setScale,
+  stack: setStack,
   showLabels: setShowLabels,
   smooth: setSmooth,
   horizontal: setHorizontal,

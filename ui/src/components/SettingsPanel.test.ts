@@ -16,6 +16,7 @@ import type {
 // panel's declarative contract.
 vi.mock('../components/settings/SortControl.vue', () => ({ default: { name: 'SortControl' } }))
 vi.mock('../components/settings/ScaleControl.vue', () => ({ default: { name: 'ScaleControl' } }))
+vi.mock('../components/settings/StackControl.vue', () => ({ default: { name: 'StackControl' } }))
 vi.mock('../components/settings/ShowLabelsControl.vue', () => ({
   default: { name: 'ShowLabelsControl' },
 }))
@@ -112,10 +113,10 @@ describe('SettingsPanel field selection', () => {
     }
     expect(
       getRenderableFields(cfg, { dimension: '2D', rendering3D: false }).map((f) => f.key)
-    ).toEqual(['sort', 'scale', 'showLabels', 'horizontal', 'swap'])
+    ).toEqual(['sort', 'scale', 'stack', 'showLabels', 'horizontal', 'swap'])
   })
 
-  it('renders 6 controls for a 2D bar config with value-3D active', () => {
+  it('renders 7 controls for a 2D bar config with value-3D active', () => {
     const cfg: BarConfig = {
       type: 'bar',
       threeD: true,
@@ -157,7 +158,7 @@ describe('SettingsPanel field selection', () => {
     }
     expect(
       getRenderableFields(cfg, { dimension: '2D', rendering3D: false }).map((f) => f.key)
-    ).toEqual(['sort', 'scale', 'showLabels', 'smooth', 'swap'])
+    ).toEqual(['sort', 'scale', 'stack', 'showLabels', 'smooth', 'swap'])
   })
 
   it('renders 3 controls for a pie config (no scale/threeDRotate)', () => {
