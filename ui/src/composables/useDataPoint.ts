@@ -1,4 +1,4 @@
-import { ref, shallowRef, markRaw, reactive, computed, nextTick } from 'vue'
+import { ref, shallowRef, markRaw, reactive, computed, nextTick, watch } from 'vue'
 import type { DataSet, ChartType } from '../types'
 import type { Arrangement } from './useChartPipeline'
 import { filterDataSetSettings } from '../lib/filterDataSetSettings'
@@ -8,6 +8,7 @@ import {
   datasetDimension,
   isValueMode as checkValueMode,
   isMixedMode as checkMixedMode,
+  setColorTheme,
 } from '../lib/utils'
 import { presentAxisString } from '../lib/swap'
 import { useSettingsStore } from './useSettingsStore'
@@ -151,6 +152,15 @@ const activeArrangement = computed<Arrangement>(() => {
 
 // Group list as the selector consumes it: a `{ name }[]` over the worker's names.
 const resultGroups = computed(() => groupNames.value.map((name) => ({ name })))
+
+watch(
+  () => activeDataSet.value?.theme,
+  (theme) => {
+    setColorTheme(theme)
+    nextTick(() => resetColor())
+  },
+  { immediate: true }
+)
 
 const selectDataSet = (id: number) => {
   if (isValidIndex(id, dataSets.value.length)) {

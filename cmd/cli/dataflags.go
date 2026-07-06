@@ -15,6 +15,7 @@ import (
 // the former CommonOptions hand-written Bind + validationRules.
 var DataFlags = []flags.Flag{
 	{Name: "name", Shorthand: "n", Default: "Comparisons", Usage: "Name of the comparison", Kind: flags.KindString},
+	{Name: "theme", Usage: "Color theme to apply to chart series (default, cool, warm, ocean, sunset)", Kind: flags.KindString, Default: "default", ValidSet: []string{"default", "warm", "cool", "ocean", "sunset"}, Normalizer: strings.ToLower},
 	{Name: "description", Shorthand: "d", Usage: "Description of the comparison", Kind: flags.KindString},
 	{Name: "output", Shorthand: "o", Usage: "Output file path/name", Kind: flags.KindString},
 	{Name: "tag", Shorthand: "t", Usage: "Tag/identifier for the comparison", Kind: flags.KindString},

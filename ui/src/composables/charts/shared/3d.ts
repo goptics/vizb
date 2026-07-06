@@ -1,7 +1,7 @@
 import type { EChartsOption } from 'echarts'
 import type { Render3D, Point3D, ScaleType, Series3DData } from '@/types'
 import { valuePoints3DToSeries } from '@/lib/transform'
-import { COLOR_PALETTE, getNextColorFor } from '@/lib/utils'
+import { getDefaultThemeColor, getNextColorFor } from '@/lib/utils'
 import {
   formatTooltipValue,
   tooltipDivider,
@@ -119,7 +119,7 @@ export function createValue3DTooltipFormatter(params: {
     xAxisLabel,
     yAxisLabel,
     valueLabel,
-    seriesColor = COLOR_PALETTE[0]!,
+    seriesColor = getDefaultThemeColor(),
   } = params
   const xLabel = xAxisLabel ?? 'x'
   const yLabel = yAxisLabel ?? 'y'

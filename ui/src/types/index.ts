@@ -165,6 +165,7 @@ export type DataSet = {
   id?: string
   name: string
   description?: string
+  theme?: string
   tag?: string
   timestamp?: string
   history?: HistoryEntry[]

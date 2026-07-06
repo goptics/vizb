@@ -181,10 +181,30 @@ func (s *FlagBagSuite) TestBindRegistersFlags() {
 	fl := append(slices.Clone(DataFlags), internal_charts.BaseChartFlags...)
 	fl = append(fl, internal_charts.ScaleFlag)
 	cmd, _ := s.newCmdBag(fl)
-	for _, name := range []string{"name", "parser", "group-pattern", "sort", "show-labels", "swap", "scale", "stat"} {
+	for _, name := range []string{"name", "theme", "parser", "group-pattern", "sort", "show-labels", "swap", "scale", "stat"} {
 		s.NotNil(cmd.Flags().Lookup(name), "missing --%s", name)
 	}
 	s.Nil(cmd.Flags().Lookup("axes"))
+}
+
+func (s *FlagBagSuite) TestValidateNormalisesTheme() {
+	cmd, bag := s.newCmdBag(slices.Clone(DataFlags))
+	s.Require().NoError(cmd.Flags().Set("theme", "Warm"))
+	bag.Validate(cmd)
+	s.Equal("warm", bag.String("theme"))
+
+	s.Require().NoError(cmd.Flags().Set("theme", "unknown"))
+	bag.Validate(cmd)
+	s.Equal("default", bag.String("theme"), "invalid theme should reset to default")
+}
+
+func (s *FlagBagSuite) TestMetaIncludesTheme() {
+	cmd, bag := s.newCmdBag(slices.Clone(DataFlags))
+	s.Require().NoError(cmd.Flags().Set("name", "sample"))
+	s.Require().NoError(cmd.Flags().Set("theme", "sunset"))
+	meta := bag.Meta()
+	s.Equal("sample", meta.Name)
+	s.Equal("sunset", meta.Theme)
 }
 
 func (s *FlagBagSuite) TestChartSeedTriStateStatAndScale() {
@@ -263,9 +283,11 @@ func (s *FlagBagSuite) TestResetRestoresDefaults() {
 	fl := append(slices.Clone(DataFlags), internal_charts.SymbolSizeFlag)
 	cmd, bag := s.newCmdBag(fl)
 	s.Require().NoError(cmd.Flags().Set("name", "Custom"))
+	s.Require().NoError(cmd.Flags().Set("theme", "warm"))
 	s.Require().NoError(cmd.Flags().Set("symbol-size", "12"))
 	bag.Reset()
 	s.Equal("Comparisons", bag.String("name"))
+	s.Equal("default", bag.String("theme"))
 	s.Equal(0.0, bag.Float("symbol-size"))
 }
 

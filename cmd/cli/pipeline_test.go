@@ -204,7 +204,7 @@ func (s *PipelineSuite) TestCheckTargetFile() {
 func (s *PipelineSuite) TestRunLinearGeneratesOutputFile() {
 	benchFile := s.writeFile("input.txt", `BenchmarkExample-8    1000000    1234 ns/op    1000 B/op    10 allocs/op`)
 
-	meta := RunMeta{Parser: "go"}
+	meta := RunMeta{Parser: "go", Theme: "default"}
 	cfg := parser.Config{GroupPattern: "y", TimeUnit: "ns", MemUnit: "B"}
 	barCfg := &barchart.Config{Type: "bar", Scale: "linear"}
 	configs := []internal_charts.ChartConfig{barCfg}
@@ -232,11 +232,28 @@ func (s *PipelineSuite) TestRunLinearGeneratesOutputFile() {
 		var ds shared.Dataset
 		s.Require().NoError(json.Unmarshal(content, &ds))
 		s.Require().Len(ds.Settings, 1)
+		s.Equal("default", ds.Theme)
 		s.Equal("bar", ds.Settings[0].ChartType())
 		typed, ok := ds.Settings[0].(*barchart.Config)
 		s.Require().True(ok, "expected *barchart.Config, got %T", ds.Settings[0])
 		s.Equal("linear", typed.Scale)
 	})
+}
+
+func (s *PipelineSuite) TestRunLinearPreservesCustomTheme() {
+	benchFile := s.writeFile("input.txt", `BenchmarkExample-8    1000000    1234 ns/op    1000 B/op    10 allocs/op`)
+	meta := RunMeta{Parser: "go", Theme: "sunset"}
+	cfg := parser.Config{GroupPattern: "y", TimeUnit: "ns", MemUnit: "B"}
+	barCfg := &barchart.Config{Type: "bar", Scale: "linear"}
+	out := filepath.Join(s.T().TempDir(), "custom-theme.json")
+	meta.OutputFile = out
+	RunLinear(&cobra.Command{}, []string{benchFile}, meta, cfg, []internal_charts.ChartConfig{barCfg}, false)
+
+	content, err := os.ReadFile(out)
+	s.Require().NoError(err)
+	var ds shared.Dataset
+	s.Require().NoError(json.Unmarshal(content, &ds))
+	s.Equal("sunset", ds.Theme)
 }
 
 func (s *PipelineSuite) TestRunSingleChartEmptyConfigs() {
@@ -667,6 +684,18 @@ func (s *PipelineSuite) TestBuildDatasetSelectAxisWithoutViewSlice() {
 	s.Require().Len(ds.Axes, 2)
 	s.Equal("value", ds.Axes[0].Type)
 	s.Equal("value", ds.Axes[1].Type)
+}
+
+func (s *PipelineSuite) TestBuildDatasetPreservesTheme() {
+	results := []shared.DataPoint{{XAxis: "1", YAxis: "2", Stats: []shared.Stat{}}}
+	cfg := parser.Config{
+		Mode: parser.ModeValue,
+		SelectViews: []parser.SelectView{
+			{Columns: []parser.ColumnSpec{{Source: "x", AxisKey: "x", AxisType: "value"}, {Source: "y", AxisKey: "y", AxisType: "value"}}},
+		},
+	}
+	ds := buildDataset(results, RunMeta{Name: "T", Parser: "csv", Theme: "ocean"}, nil, cfg, nil, "")
+	s.Equal("ocean", ds.Theme)
 }
 
 func (s *PipelineSuite) TestBuildDatasetInfersAxesWithoutAxisType() {

@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
-import { COLOR_PALETTE, getNextColorFor } from '@/lib/utils'
+import { getDefaultThemeColor, getNextColorFor } from '@/lib/utils'
 import {
   EMPTY_RENDER,
   makeAxis3DCommon,
@@ -44,7 +44,7 @@ export function useScatter3DChartOptions(config: BaseChartConfig) {
     const render = chartData.value.render3D ?? EMPTY_RENDER
     const { xValues, yValues, zValues } = render
     const useVisualMap = threeDVisualMap?.value === true || visualMap?.value === true
-    const defaultColor = COLOR_PALETTE[0]!
+    const defaultColor = getDefaultThemeColor()
     const axisCommon = makeAxis3DCommon(styling)
     const zAxis3DBase = {
       ...(scale?.value === 'log'

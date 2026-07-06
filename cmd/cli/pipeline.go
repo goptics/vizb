@@ -145,6 +145,7 @@ func RunSingleChart(cmd *cobra.Command, args []string, meta RunMeta, cfg parser.
 type RunMeta struct {
 	ID          string
 	Name        string
+	Theme       string
 	Description string
 	Tag         string
 	OutputFile  string
@@ -469,6 +470,7 @@ func buildDataset(results []shared.DataPoint, m RunMeta, configs []internal_char
 	dataSet := &shared.Dataset{
 		Name:         name,
 		Description:  m.Description,
+		Theme:        m.Theme,
 		Data:         results,
 		Settings:     configs,
 		Axes:         axes,

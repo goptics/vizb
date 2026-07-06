@@ -1,6 +1,6 @@
 import type { EChartsOption } from 'echarts'
 import type { ScaleType } from '@/types'
-import { COLOR_PALETTE, getNextColorFor } from '@/lib/utils'
+import { getDefaultThemeColor, getNextColorFor } from '@/lib/utils'
 import { type BaseChartConfig, getBaseOptions } from '../baseChartOptions'
 import {
   createAxisConfig,
@@ -209,7 +209,7 @@ export function buildMixedAxes3DOptions(
   const { xValues } = render
   const axisLabels = chartData.value.axisLabels
   const useVisualMap = threeDVisualMap?.value === true
-  const defaultColor = COLOR_PALETTE[0]!
+  const defaultColor = getDefaultThemeColor()
   const axisCommon = makeAxis3DCommon(styling)
   const symbolOverride = symbol?.value
   const symbolSizeOverride = symbolSize?.value
