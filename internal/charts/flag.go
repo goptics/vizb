@@ -51,6 +51,12 @@ var (
 		ValidSet:   []string{"linear", "log"},
 		Normalizer: strings.ToLower,
 	}
+	StackFlag = flags.Flag{
+		Name: "stack", Usage: "Stack 2D grouped category series",
+		Kind:    flags.KindBool,
+		JSONKey: "stack",
+		Rule:    []flags.RuleFn{RequiresAxes("x", "y"), ExcludesAxes("z"), StackRequiresLinearScale()},
+	}
 	ThreeDFlag = flags.Flag{
 		Name: "3d", Usage: "Enable value 3D for x+y data (y categories on depth, metric on height)",
 		Kind: flags.KindBool, JSONKey: "threeD",
