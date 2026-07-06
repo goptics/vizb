@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { toCsvCell, descriptiveCsv, correlationCsv } from './csv'
+import { columnsFromKeys } from './descriptiveColumns'
 import type { DescriptiveStats, SeriesProfile } from '../types'
 
 // Full DescriptiveStats with every key NaN, then apply overrides — the CSV
@@ -57,6 +58,13 @@ describe('descriptiveCsv', () => {
   it('quotes a series name with a comma', () => {
     const profiles: SeriesProfile[] = [{ name: 'a,b', stats: stats({ count: 1, mean: 0 }) }]
     expect(descriptiveCsv(profiles, columns)).toBe('Series,Count,Mean\n"a,b",1,0')
+  })
+
+  it('exports only the currently visible descriptive columns', () => {
+    const profiles: SeriesProfile[] = [
+      { name: 'A', stats: stats({ count: 2, mean: 1.5, median: 1.25 }) },
+    ]
+    expect(descriptiveCsv(profiles, columnsFromKeys(['median']))).toBe('Series,Median\nA,1.25')
   })
 })
 
