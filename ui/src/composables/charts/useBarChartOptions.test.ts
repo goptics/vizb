@@ -43,6 +43,43 @@ const makeMixedConfig = (): BaseChartConfig => ({
   isDark: ref(false),
 })
 
+const makeStackedGroupedChartData = (): ChartData => ({
+  title: 'revenue',
+  statType: 'sum',
+  yAxis: ['Hardware', 'Software'],
+  zAxis: [],
+  series: [
+    { xAxis: 'West', values: [10, 30], benchmarkId: '' },
+    { xAxis: 'East', values: [20, 40], benchmarkId: '' },
+  ],
+  points: [],
+  axisLabels: { x: 'region', y: 'category' },
+})
+
+const makeStackedGroupedConfig = (stack = false): BaseChartConfig => ({
+  chartData: ref(makeStackedGroupedChartData()),
+  sort: ref({ enabled: false, order: 'asc' }),
+  showLabels: ref(false),
+  isDark: ref(false),
+  scale: ref<'linear' | 'log'>('linear'),
+  stack: ref(stack),
+})
+
+describe('useBarChartOptions — grouped mode', () => {
+  it('emits stacked bar series when stack is enabled', () => {
+    const { options } = useBarChartOptions(makeStackedGroupedConfig(true))
+    const series = options.value.series as { stack?: string }[]
+    expect(series).toHaveLength(2)
+    expect(series.every((s) => s.stack === 'total')).toBe(true)
+  })
+
+  it('does not stack grouped bars by default', () => {
+    const { options } = useBarChartOptions(makeStackedGroupedConfig(false))
+    const series = options.value.series as { stack?: string }[]
+    expect(series.every((s) => s.stack === undefined)).toBe(true)
+  })
+})
+
 describe('useBarChartOptions — mixed mode', () => {
   it('emits bar series with mixedTuples as data', () => {
     const { options } = useBarChartOptions(makeMixedConfig())

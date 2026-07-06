@@ -25,7 +25,7 @@ const barNullable = (val: number | null, scale: string): number | null =>
   val === null ? null : scale === 'log' && val <= 0 ? null : val
 
 export function useBarChartOptions(config: BaseChartConfig) {
-  const { chartData, sort, showLabels, isDark, scale, horizontal } = config
+  const { chartData, sort, showLabels, isDark, scale, stack, horizontal } = config
 
   const sortedData = useSortedSeriesData(chartData, sort)
 
@@ -48,6 +48,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
     const { minValue, effectiveScale } = getEffectiveScale(series, scale?.value ?? 'linear')
     const largeX = isLargeXAxis(xAxisData)
     const xLabel = chartData.value.axisLabels?.x
+    const useStack = stack?.value === true && effectiveScale !== 'log'
 
     if (!hasYAxis && isHorizontal) {
       return {
@@ -112,6 +113,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
       label: createLabelConfig(showLabels.value, styling, isHorizontal ? 'horizontal' : 'vertical'),
       large: true,
       largeThreshold: LARGE_DATA_THRESHOLD,
+      ...(useStack ? { stack: 'total' } : {}),
       itemStyle: { color: getNextColorFor(yAxisLabel) },
     }))
 

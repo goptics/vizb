@@ -57,7 +57,7 @@ const groupedScatterColorValues = (seriesList: { data: (number | null)[] }[]): n
 }
 
 export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: CategorySeriesKind) {
-  const { chartData, sort, isDark, showLabels, scale, visualMap } = config
+  const { chartData, sort, isDark, showLabels, scale, stack, visualMap } = config
   const sortedData = useSortedSeriesData(chartData, sort)
   const style = SERIES_STYLE[kind]
 
@@ -75,6 +75,7 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
     )
     const useVisualMap = kind === 'scatter' && visualMap?.value === true
     const smoothLines = kind === 'line' && config.smooth?.value === true
+    const useStack = kind === 'line' && stack?.value === true && effectiveScale !== 'log'
 
     if (!hasYAxis) {
       const singleSeries = {
@@ -118,6 +119,7 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
         : { large: true as const, largeThreshold: LARGE_DATA_THRESHOLD }),
       ...(style.connectNulls ? { connectNulls: true } : {}),
       ...(smoothLines ? { smooth: true } : {}),
+      ...(useStack ? { stack: 'total', areaStyle: {} } : {}),
       ...(useVisualMap ? {} : { itemStyle: { color: getNextColorFor(yAxisLabel) } }),
       ...seriesExtras,
     }))

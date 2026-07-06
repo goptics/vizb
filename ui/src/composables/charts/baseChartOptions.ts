@@ -15,6 +15,7 @@ export interface BaseChartConfig {
   // these fields, so they're relaxed to optional here; chart composables that
   // access them default at the call site (e.g. `scale?.value ?? "linear"`).
   scale?: Ref<ScaleType>
+  stack?: Ref<boolean>
   threeDRotate?: Ref<boolean>
   // Legend selection state for z series (3D); key = z name, false = hidden.
   visibleZ?: Ref<Record<string, boolean>>

@@ -28,6 +28,10 @@ export function useActiveChartShape() {
     () => (activeConfig.value as { scale?: ScaleType } | undefined)?.scale ?? 'linear'
   )
 
+  const stack = computed<boolean>(
+    () => (activeConfig.value as BarConfig | LineConfig | undefined)?.stack ?? false
+  )
+
   const threeDRotate = computed<boolean>(
     () => (activeConfig.value as { threeDRotate?: boolean } | undefined)?.threeDRotate ?? false
   )
@@ -81,6 +85,7 @@ export function useActiveChartShape() {
 
   return {
     scale,
+    stack,
     threeDRotate,
     showLabels,
     sort,

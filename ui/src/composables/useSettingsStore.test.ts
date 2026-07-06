@@ -104,4 +104,17 @@ describe('useSettingsStore', () => {
     setSmooth(true)
     expect((activeConfig.value as { smooth?: boolean } | undefined)?.smooth).toBeUndefined()
   })
+
+  it('setStack writes even when the field is absent on the config', async () => {
+    holder.ref = ref(
+      ds([
+        // No stack field — mimics a config the user hasn't toggled stacking on yet.
+        { type: 'bar', sort: { enabled: false, order: 'asc' }, scale: 'linear' } as ChartConfig,
+      ])
+    )
+    const { useSettingsStore } = await import('./useSettingsStore')
+    const { activeConfig, setStack } = useSettingsStore()
+    setStack(true)
+    expect((activeConfig.value as { stack?: boolean } | undefined)?.stack).toBe(true)
+  })
 })

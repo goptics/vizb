@@ -45,8 +45,9 @@ describe('useActiveChartShape', () => {
   it('bar config returns scale/threeDRotate/showLabels defaults when fields are absent', async () => {
     holder.ref = ref(ds([{ type: 'bar' as ChartType }]))
     const { useActiveChartShape } = await import('./useActiveChartShape')
-    const { scale, threeDRotate, showLabels } = useActiveChartShape()
+    const { scale, stack, threeDRotate, showLabels } = useActiveChartShape()
     expect(scale.value).toBe('linear')
+    expect(stack.value).toBe(false)
     expect(threeDRotate.value).toBe(false)
     expect(showLabels.value).toBe(false)
   })
@@ -129,14 +130,16 @@ describe('useActiveChartShape', () => {
         {
           type: 'bar' as ChartType,
           scale: 'log',
+          stack: true,
           threeDRotate: true,
           showLabels: true,
         },
       ])
     )
     const { useActiveChartShape } = await import('./useActiveChartShape')
-    const { scale, threeDRotate, showLabels } = useActiveChartShape()
+    const { scale, stack, threeDRotate, showLabels } = useActiveChartShape()
     expect(scale.value).toBe('log')
+    expect(stack.value).toBe(true)
     expect(threeDRotate.value).toBe(true)
     expect(showLabels.value).toBe(true)
   })
