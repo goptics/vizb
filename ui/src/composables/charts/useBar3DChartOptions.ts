@@ -201,9 +201,10 @@ export function useBar3DChartOptions(config: BaseChartConfig) {
         ...axisCommon,
         ...axis3DName(chartData.value.axisLabels?.y, styling),
       },
+      // name:'' clears sticky labels under Chart3D notMerge:false (omit does not)
       zAxis3D: {
         ...zAxis3DBase,
-        ...axis3DName(chartData.value.axisLabels?.z, styling),
+        name: '',
       },
       grid3D,
       series,
