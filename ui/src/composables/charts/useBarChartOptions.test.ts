@@ -43,6 +43,43 @@ const makeMixedConfig = (): BaseChartConfig => ({
   isDark: ref(false),
 })
 
+const makeStackedGroupedChartData = (): ChartData => ({
+  title: 'revenue',
+  statType: 'sum',
+  yAxis: ['Hardware', 'Software'],
+  zAxis: [],
+  series: [
+    { xAxis: 'West', values: [10, 30], benchmarkId: '' },
+    { xAxis: 'East', values: [20, 40], benchmarkId: '' },
+  ],
+  points: [],
+  axisLabels: { x: 'region', y: 'category' },
+})
+
+const makeStackedGroupedConfig = (stack = false): BaseChartConfig => ({
+  chartData: ref(makeStackedGroupedChartData()),
+  sort: ref({ enabled: false, order: 'asc' }),
+  showLabels: ref(false),
+  isDark: ref(false),
+  scale: ref<'linear' | 'log'>('linear'),
+  stack: ref(stack),
+})
+
+describe('useBarChartOptions — grouped mode', () => {
+  it('emits stacked bar series when stack is enabled', () => {
+    const { options } = useBarChartOptions(makeStackedGroupedConfig(true))
+    const series = options.value.series as { stack?: string }[]
+    expect(series).toHaveLength(2)
+    expect(series.every((s) => s.stack === 'total')).toBe(true)
+  })
+
+  it('does not stack grouped bars by default', () => {
+    const { options } = useBarChartOptions(makeStackedGroupedConfig(false))
+    const series = options.value.series as { stack?: string }[]
+    expect(series.every((s) => s.stack === undefined)).toBe(true)
+  })
+})
+
 describe('useBarChartOptions — mixed mode', () => {
   it('emits bar series with mixedTuples as data', () => {
     const { options } = useBarChartOptions(makeMixedConfig())
@@ -75,5 +112,90 @@ describe('useBarChartOptions — mixed mode', () => {
     expect(tooltip.axisPointer?.snap).toBeUndefined()
     expect(tooltip.axisPointer?.shadowStyle?.color).toBe('#d1d5db')
     expect(tooltip.axisPointer?.shadowStyle?.opacity).toBe(0.4)
+  })
+})
+
+const makeSimpleChartData = (): ChartData => ({
+  title: 'items',
+  statType: 'counts',
+  yAxis: [],
+  zAxis: [],
+  series: [
+    { xAxis: 'A', values: [10], benchmarkId: '' },
+    { xAxis: 'B', values: [20], benchmarkId: '' },
+    { xAxis: 'C', values: [30], benchmarkId: '' },
+  ],
+  points: [],
+  axisLabels: { x: 'category', y: 'value' },
+})
+
+const makeSimpleConfig = (horizontal: boolean): BaseChartConfig => ({
+  chartData: ref(makeSimpleChartData()),
+  sort: ref({ enabled: false, order: 'asc' }),
+  showLabels: ref(false),
+  isDark: ref(false),
+  horizontal: ref(horizontal),
+})
+
+const makeGroupedChartData = (): ChartData => ({
+  title: 'regions',
+  statType: 'counts',
+  yAxis: ['North', 'South'],
+  zAxis: [],
+  series: [
+    { xAxis: 'A', values: [10, 20], benchmarkId: '' },
+    { xAxis: 'B', values: [15, 25], benchmarkId: '' },
+  ],
+  points: [],
+  axisLabels: { x: 'category', y: 'region' },
+})
+
+const makeGroupedConfig = (horizontal: boolean): BaseChartConfig => ({
+  chartData: ref(makeGroupedChartData()),
+  sort: ref({ enabled: false, order: 'asc' }),
+  showLabels: ref(false),
+  isDark: ref(false),
+  horizontal: ref(horizontal),
+})
+
+describe('useBarChartOptions — horizontal mode', () => {
+  it('renders horizontal 1D bars with value xAxis and category yAxis', () => {
+    const { options } = useBarChartOptions(makeSimpleConfig(true))
+    const opt = options.value
+    expect((opt.xAxis as { type: string }).type).toBe('value')
+    expect((opt.yAxis as { type: string }).type).toBe('category')
+    expect((opt.yAxis as { data: string[] }).data).toEqual(['A', 'B', 'C'])
+    expect((opt.yAxis as { name?: string }).name).toBe('category')
+    expect((opt.xAxis as { name?: string }).name).toBeUndefined()
+  })
+
+  it('renders horizontal grouped bars with correct series', () => {
+    const { options } = useBarChartOptions(makeGroupedConfig(true))
+    const opt = options.value
+    expect((opt.xAxis as { type: string }).type).toBe('value')
+    expect((opt.yAxis as { type: string }).type).toBe('category')
+    expect((opt.yAxis as { name?: string }).name).toBe('category')
+    expect((opt.xAxis as { name?: string }).name).toBeUndefined()
+    const series = opt.series as { type: string; name: string; data: number[] }[]
+    expect(series.length).toBe(2)
+    expect(series[0]!.name).toBe('North')
+    expect(series[1]!.name).toBe('South')
+    expect(series[0]!.data).toEqual([10, 15])
+  })
+
+  it('places grouped horizontal legend at bottom center', () => {
+    const { options } = useBarChartOptions(makeGroupedConfig(true))
+    const legend = options.value.legend as { left?: string; bottom?: number; top?: number }
+    expect(legend.left).toBe('center')
+    expect(legend.bottom).toBe(0)
+    expect(legend.top).toBeUndefined()
+    expect(options.value.title).toBeUndefined()
+  })
+
+  it('renders vertical bars by default (horizontal not set)', () => {
+    const { options } = useBarChartOptions(makeSimpleConfig(false))
+    const opt = options.value
+    expect((opt.xAxis as { type: string }).type).toBe('category')
+    expect((opt.yAxis as { type: string }).type).toBe('value')
   })
 })

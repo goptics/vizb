@@ -75,6 +75,7 @@ const {
   sort,
   showLabels,
   scale,
+  stack,
   threeDRotate,
   threeD,
   threeDVisualMap,
@@ -83,6 +84,7 @@ const {
   symbol,
   symbolSize,
   smooth,
+  horizontal,
 } = useActiveChartShape()
 const { activeArrangement, activeDataSet } = useDataPoint()
 const activeAxes = computed(() => activeDataSet.value?.axes)
@@ -129,6 +131,7 @@ const { options } = useChartOptions(
   isDark,
   chartType,
   scale,
+  stack,
   threeDRotate,
   visibleZ,
   threeD,
@@ -138,7 +141,8 @@ const { options } = useChartOptions(
   activeAxes,
   symbol,
   symbolSize,
-  smooth
+  smooth,
+  horizontal
 )
 
 const initOptions = {

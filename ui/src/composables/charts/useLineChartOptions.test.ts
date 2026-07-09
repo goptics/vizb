@@ -87,12 +87,31 @@ const makeGroupedChartData = (): ChartData => ({
   axisLabels: { x: 'month', y: 'region' },
 })
 
-const makeGroupedConfig = (smooth = false): BaseChartConfig => ({
+const makeGroupedConfig = (opts: { smooth?: boolean; stack?: boolean } = {}): BaseChartConfig => ({
   chartData: ref(makeGroupedChartData()),
   sort: ref({ enabled: false, order: 'asc' }),
   showLabels: ref(false),
   isDark: ref(false),
-  smooth: ref(smooth),
+  scale: ref<'linear' | 'log'>('linear'),
+  smooth: ref(opts.smooth ?? false),
+  stack: ref(opts.stack ?? false),
+})
+
+describe('useLineChartOptions — grouped mode', () => {
+  it('emits stacked area line series when stack is enabled', () => {
+    const { options } = useLineChartOptions(makeGroupedConfig({ stack: true }))
+    const series = options.value.series as { stack?: string; areaStyle?: Record<string, never> }[]
+    expect(series).toHaveLength(2)
+    expect(series.every((s) => s.stack === 'total')).toBe(true)
+    expect(series.every((s) => s.areaStyle !== undefined)).toBe(true)
+  })
+
+  it('does not stack grouped lines by default', () => {
+    const { options } = useLineChartOptions(makeGroupedConfig())
+    const series = options.value.series as { stack?: string; areaStyle?: unknown }[]
+    expect(series.every((s) => s.stack === undefined)).toBe(true)
+    expect(series.every((s) => s.areaStyle === undefined)).toBe(true)
+  })
 })
 
 describe('useLineChartOptions — mixed mode', () => {
@@ -148,7 +167,7 @@ describe('useLineChartOptions — grouped mode', () => {
   })
 
   it('emits smooth on every grouped line series when enabled', () => {
-    const { options } = useLineChartOptions(makeGroupedConfig(true))
+    const { options } = useLineChartOptions(makeGroupedConfig({ smooth: true }))
     const series = options.value.series as { smooth?: boolean }[]
     expect(series).toHaveLength(2)
     expect(series.every((s) => s.smooth === true)).toBe(true)

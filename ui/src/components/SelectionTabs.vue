@@ -8,23 +8,30 @@ interface Option {
   icon?: Component
 }
 
-defineProps<{
+const props = defineProps<{
   modelValue: string | number
   options: Option[]
+  disabled?: boolean
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   (e: 'update:modelValue', value: string | number): void
 }>()
+
+const onUpdate = (value: string | number) => {
+  if (props.disabled) return
+  emit('update:modelValue', value)
+}
 </script>
 
 <template>
-  <Tabs :model-value="modelValue" @update:model-value="$emit('update:modelValue', $event)">
+  <Tabs :model-value="props.modelValue" @update:model-value="onUpdate">
     <TabsList class="flex w-full">
       <TabsTrigger
-        v-for="option in options"
+        v-for="option in props.options"
         :key="option.value"
         :value="option.value"
+        :disabled="props.disabled"
         class="flex-1"
       >
         <component :is="option.icon" v-if="option.icon" class="h-4 w-4" />
