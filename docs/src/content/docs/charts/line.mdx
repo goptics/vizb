@@ -7,6 +7,7 @@ import { CardGrid, Card, LinkCard, Tabs, TabItem, Aside } from '@astrojs/starlig
 import { Image } from 'astro:assets';
 import line1D from '../../../assets/line-1D.png';
 import line2D from '../../../assets/line-2D.png';
+import line2DStack from '../../../assets/line-2D-stack.png';
 import line3D from '../../../assets/line-3D.png';
 import line2DValue from '../../../assets/line-2D-value.png';
 
@@ -53,6 +54,8 @@ Add `--stack` to render the grouped lines as a stacked area chart, which emphasi
 ```bash
 vizb line sales.csv -g region,category -p x,y --stack -o stacked-area.html
 ```
+
+<Image src={line2DStack} alt="2D stacked area line chart showing category contributions over each region" />
 
 ### 3D (X + Y + Z axes)
 
