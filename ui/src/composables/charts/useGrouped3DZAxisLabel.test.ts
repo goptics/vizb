@@ -78,11 +78,15 @@ const chartFactories = [
 ] as const
 
 describe('grouped 3D z axis labels', () => {
-  it.each(chartFactories)('omits the grouped z-axis name for %s charts', (_name, useOptions) => {
-    const { options } = useOptions(makeConfig(groupedRender))
+  it.each(chartFactories)(
+    'clears the grouped z-axis name for %s charts (merge-safe)',
+    (_name, useOptions) => {
+      const { options } = useOptions(makeConfig(groupedRender))
 
-    expect((options.value.zAxis3D as { name?: string }).name).toBeUndefined()
-  })
+      // Empty string, not omit: Chart3D uses notMerge:false so sticky names clear.
+      expect((options.value.zAxis3D as { name?: string }).name).toBe('')
+    }
+  )
 
   it.each(chartFactories)('keeps the value-mode z-axis name for %s charts', (_name, useOptions) => {
     const { options } = useOptions(makeConfig(valueRender))

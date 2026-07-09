@@ -25,7 +25,9 @@ A chart renders in grouped 3D when a data point has **all three** plotting axes 
 
 - **XAxis** — categories along the width
 - **YAxis** — categories along the depth's base
-- **ZAxis** — the depth/height dimension stacked on top
+- **ZAxis** — grouping values for stacked layers / legend (not the vertical axis title)
+
+In grouped 3D the **vertical axis** is the **metric** (chart title); its axis title is left blank. The pattern slot `z` drives the **legend** and ChartCard badge, not the height-axis label. Value mode (`--3d`) still names the vertical axis with the metric.
 
 The **Name** dimension stays optional — it still groups points into separate
 charts. Without a z-axis, charts render as the usual 2D bar/line/pie.

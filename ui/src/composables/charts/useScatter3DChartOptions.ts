@@ -197,8 +197,10 @@ export function useScatter3DChartOptions(config: BaseChartConfig) {
         ...axisCommon,
         ...axis3DName(axisLabels?.y, styling),
       },
+      // name:'' clears sticky labels under Chart3D notMerge:false (omit does not)
       zAxis3D: {
         ...zAxis3DBase,
+        name: '',
       },
       grid3D,
       series: seriesData.map((s: Series3DData) => {
