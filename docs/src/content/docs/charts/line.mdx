@@ -7,6 +7,7 @@ import { CardGrid, Card, LinkCard, Tabs, TabItem, Aside } from '@astrojs/starlig
 import { Image } from 'astro:assets';
 import line1D from '../../../assets/line-1D.png';
 import line2D from '../../../assets/line-2D.png';
+import line2DStack from '../../../assets/line-2D-stack.png';
 import line3D from '../../../assets/line-3D.png';
 import line2DValue from '../../../assets/line-2D-value.png';
 
@@ -47,6 +48,14 @@ vizb line sales.csv -g region,category -p x,y -o out.html
 ```
 
 <Image src={line2D} alt="2D multi-line chart with five category series per region and a color category legend" />
+
+Add `--stack` to render the grouped lines as a stacked area chart, which emphasizes the total per X value and each Y series' contribution to that total.
+
+```bash
+vizb line sales.csv -g region,category -p x,y --stack -o stacked-area.html
+```
+
+<Image src={line2DStack} alt="2D stacked area line chart showing category contributions over each region" />
 
 ### 3D (X + Y + Z axes)
 
@@ -95,6 +104,7 @@ These settings apply to line charts:
 | Setting | CLI flag | UI toggle | Notes |
 |---------|----------|-----------|-------|
 | Sort | `--sort asc\|desc` | Sort control | Sorts points along the X axis |
+| Stack | `--stack` | Stack series | Renders 2D grouped lines as stacked areas; ignored for z data and log scale |
 | Labels | `--show-labels` | Show labels | Displays value at each data point |
 | Smooth lines | `--smooth` | Smooth lines | Curves segments between points — 2D only |
 | Swap | `--swap` | Axis switcher | Rotates which column maps to X vs Y |
@@ -111,6 +121,9 @@ vizb line sales.csv -g region,category --scale log -l -o out.html
 
 # Sort descending
 vizb line sales.csv -g region,category --sort desc -o out.html
+
+# Stacked 2D area chart
+vizb line sales.csv -g region,category -p x,y --stack -o stacked-area.html
 ```
 
 ## Next Steps

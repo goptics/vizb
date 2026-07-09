@@ -63,6 +63,7 @@ export type BarConfig = {
   swap?: string
   sort?: Sort
   scale?: ScaleType
+  stack?: boolean
   showLabels?: boolean
   horizontal?: boolean
   threeDRotate?: boolean
@@ -76,6 +77,7 @@ export type LineConfig = {
   swap?: string
   sort?: Sort
   scale?: ScaleType
+  stack?: boolean
   showLabels?: boolean
   symbol?: string
   symbolSize?: number

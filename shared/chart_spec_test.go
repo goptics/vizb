@@ -91,6 +91,13 @@ func (s *ChartSpecSuite) TestParseOverridesBarHorizontal() {
 	s.Equal(true, s.payload(got["bar"])["horizontal"])
 }
 
+// TestParseOverrides_BareStack confirms a bare stack flag parses correctly.
+func (s *ChartSpecSuite) TestParseOverridesBareStack() {
+	got, _, err := ParseOverrides([]string{"bar:stack"}, []string{"bar"}, s.xynAxes)
+	s.Require().NoError(err)
+	s.Equal(true, s.payload(got["bar"])["stack"])
+}
+
 // TestParseOverrides_BareThreeD confirms `3d` (no =val) enables value-mode 3D.
 func (s *ChartSpecSuite) TestParseOverridesBareThreeD() {
 	got, _, err := ParseOverrides([]string{"bar:3d"}, []string{"bar"}, s.xynAxes)

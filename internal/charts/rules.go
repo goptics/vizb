@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/goptics/vizb/internal/flags"
 )
@@ -21,6 +22,7 @@ type RuleContext struct {
 	ChartType string     // e.g. "bar", "line"
 	Axes      []AxisInfo // data-derived axes (post-parse, includes AutoGroup cases)
 	Value     any        // this flag's current value from the marshalled Config
+	Config    map[string]any
 }
 
 func axisKeys(axes []AxisInfo) []string {
@@ -47,6 +49,46 @@ func RequiresAxes(keys ...string) flags.RuleFn {
 			if !slices.ContainsFunc(rc.Axes, func(a AxisInfo) bool { return a.Key == k }) {
 				return flags.Skip, fmt.Sprintf("requires axis %q (present: %v)", k, axisKeys(rc.Axes))
 			}
+		}
+		return flags.Keep, ""
+	}
+}
+
+// ExcludesAxes returns a rule that Skips the flag when any named axis is present
+// in the rule context.
+func ExcludesAxes(keys ...string) flags.RuleFn {
+	if len(keys) == 0 {
+		panic("ExcludesAxes: at least one axis key is required")
+	}
+	return func(ctx any) (flags.Outcome, string) {
+		rc, ok := ctx.(RuleContext)
+		if !ok {
+			return flags.Fatal, "internal: expected charts.RuleContext"
+		}
+		for _, k := range keys {
+			if slices.ContainsFunc(rc.Axes, func(a AxisInfo) bool { return a.Key == k }) {
+				return flags.Skip, fmt.Sprintf("excludes axis %q (present: %v)", k, axisKeys(rc.Axes))
+			}
+		}
+		return flags.Keep, ""
+	}
+}
+
+// StackRequiresLinearScale skips --stack when the same chart config uses a log
+// scale. ECharts stacked bar/line series are not valid on log axes.
+func StackRequiresLinearScale() flags.RuleFn {
+	return func(ctx any) (flags.Outcome, string) {
+		rc, ok := ctx.(RuleContext)
+		if !ok {
+			return flags.Fatal, "internal: expected charts.RuleContext"
+		}
+		enabled, ok := rc.Value.(bool)
+		if ok && !enabled {
+			return flags.Keep, ""
+		}
+		scale, _ := rc.Config["scale"].(string)
+		if strings.EqualFold(scale, "log") {
+			return flags.Skip, "stacked bar/line charts require linear scale; ignoring"
 		}
 		return flags.Keep, ""
 	}
@@ -153,6 +195,7 @@ func ApplyRules(ctx RuleContext, configs []ChartConfig) (warnings []string, fata
 				ChartType: chartType,
 				Axes:      ctx.Axes,
 				Value:     val,
+				Config:    m,
 			}
 
 			worst := flags.Keep

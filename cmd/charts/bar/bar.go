@@ -14,7 +14,7 @@ import (
 func init() {
 	charts.Register(charts.Spec{Type: "bar", Factory: barchart.New})
 	charts.SetFlags("bar", append(slices.Clone(charts.BaseChartFlags),
-		charts.ScaleFlag, charts.ThreeDFlag, charts.ThreeDRotateFlag, charts.ThreeDVisualMapFlag,
+		charts.ScaleFlag, charts.StackFlag, charts.ThreeDFlag, charts.ThreeDRotateFlag, charts.ThreeDVisualMapFlag,
 		charts.HorizontalFlag,
 	))
 	cli.SetChartMeta(cli.ChartMeta{

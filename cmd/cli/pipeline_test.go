@@ -239,6 +239,23 @@ func (s *PipelineSuite) TestRunLinearGeneratesOutputFile() {
 	})
 }
 
+func (s *PipelineSuite) TestChartStackOverrideRoundTripsThroughMaterialise() {
+	overrides, warnings, err := shared.ParseOverrides(
+		[]string{"bar:stack"},
+		[]string{"bar"},
+		[]shared.Axis{{Key: "x"}, {Key: "y"}},
+	)
+	s.Require().NoError(err)
+	s.Empty(warnings)
+
+	cfg, err := internal_charts.Materialise("bar", nil, overrides["bar"])
+	s.Require().NoError(err)
+	typed, ok := cfg.(*barchart.Config)
+	s.Require().True(ok, "expected *barchart.Config, got %T", cfg)
+	s.Require().NotNil(typed.Stack)
+	s.True(*typed.Stack)
+}
+
 func (s *PipelineSuite) TestRunSingleChartEmptyConfigs() {
 	dir := s.T().TempDir()
 	out := filepath.Join(dir, "out.json")

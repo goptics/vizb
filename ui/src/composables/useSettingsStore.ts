@@ -96,6 +96,14 @@ export function useSettingsStore() {
     if (cfg) cfg.scale = scale
   }
 
+  const setStack = (stack: boolean) => {
+    const cfg = activeConfig.value as { stack?: boolean; scale?: ScaleType } | undefined
+    if (cfg) {
+      cfg.stack = stack
+      if (stack) cfg.scale = 'linear'
+    }
+  }
+
   const setShowLabels = (show: boolean) => {
     const cfg = activeConfig.value
     if (cfg) cfg.showLabels = show
@@ -145,6 +153,7 @@ export function useSettingsStore() {
     setChartType,
     setSort,
     setScale,
+    setStack,
     setShowLabels,
     setSmooth,
     setHorizontal,
