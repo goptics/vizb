@@ -161,8 +161,17 @@ const handlers: SettingsHandlers = {
   },
 }
 
-const valueFor = (key: SettingFieldKey) =>
-  activeConfig.value ? (activeConfig.value as Partial<SettingFieldValueMap>)[key] : undefined
+const stackEnabled = computed(
+  () => (activeConfig.value as BarConfig | LineConfig | undefined)?.stack === true
+)
+
+const valueFor = (key: SettingFieldKey) => {
+  if (!activeConfig.value) return undefined
+  if (key === 'scale' && stackEnabled.value) return 'linear'
+  return (activeConfig.value as Partial<SettingFieldValueMap>)[key]
+}
+
+const disabledFor = (key: SettingFieldKey) => key === 'scale' && stackEnabled.value
 
 // Generic keeps key/value correlated; Vue emits force a single cast at the boundary.
 const updateSetting = <K extends SettingFieldKey>(key: K, value: SettingFieldValueMap[K]) => {
@@ -197,6 +206,7 @@ const onUpdate = (key: SettingFieldKey, value: unknown) => {
         <component
           :is="field.component"
           :model-value="valueFor(field.key)"
+          :disabled="disabledFor(field.key)"
           @update:model-value="(val: unknown) => onUpdate(field.key, val)"
         />
       </template>
@@ -207,6 +217,7 @@ const onUpdate = (key: SettingFieldKey, value: unknown) => {
           <component
             :is="field.component"
             :model-value="valueFor(field.key)"
+            :disabled="disabledFor(field.key)"
             @update:model-value="(val: unknown) => onUpdate(field.key, val)"
           />
         </template>

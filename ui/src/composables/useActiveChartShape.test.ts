@@ -138,9 +138,17 @@ describe('useActiveChartShape', () => {
     )
     const { useActiveChartShape } = await import('./useActiveChartShape')
     const { scale, stack, threeDRotate, showLabels } = useActiveChartShape()
-    expect(scale.value).toBe('log')
+    expect(scale.value).toBe('linear')
     expect(stack.value).toBe(true)
     expect(threeDRotate.value).toBe(true)
     expect(showLabels.value).toBe(true)
+  })
+
+  it('uses configured scale when stack is disabled', async () => {
+    holder.ref = ref(ds([{ type: 'bar' as ChartType, scale: 'log', stack: false }]))
+    const { useActiveChartShape } = await import('./useActiveChartShape')
+    const { scale, stack } = useActiveChartShape()
+    expect(stack.value).toBe(false)
+    expect(scale.value).toBe('log')
   })
 })

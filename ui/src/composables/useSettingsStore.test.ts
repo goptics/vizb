@@ -109,12 +109,13 @@ describe('useSettingsStore', () => {
     holder.ref = ref(
       ds([
         // No stack field — mimics a config the user hasn't toggled stacking on yet.
-        { type: 'bar', sort: { enabled: false, order: 'asc' }, scale: 'linear' } as ChartConfig,
+        { type: 'bar', sort: { enabled: false, order: 'asc' }, scale: 'log' } as ChartConfig,
       ])
     )
     const { useSettingsStore } = await import('./useSettingsStore')
     const { activeConfig, setStack } = useSettingsStore()
     setStack(true)
     expect((activeConfig.value as { stack?: boolean } | undefined)?.stack).toBe(true)
+    expect((activeConfig.value as { scale?: string } | undefined)?.scale).toBe('linear')
   })
 })

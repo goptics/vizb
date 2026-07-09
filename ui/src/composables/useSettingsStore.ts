@@ -97,8 +97,11 @@ export function useSettingsStore() {
   }
 
   const setStack = (stack: boolean) => {
-    const cfg = activeConfig.value as { stack?: boolean } | undefined
-    if (cfg) cfg.stack = stack
+    const cfg = activeConfig.value as { stack?: boolean; scale?: ScaleType } | undefined
+    if (cfg) {
+      cfg.stack = stack
+      if (stack) cfg.scale = 'linear'
+    }
   }
 
   const setShowLabels = (show: boolean) => {

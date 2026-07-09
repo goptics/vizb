@@ -24,12 +24,14 @@ export function useActiveChartShape() {
 
   const hasZOnChart = computed(() => arrangementHasChartZ(effectiveSwapTarget.value))
 
-  const scale = computed<ScaleType>(
-    () => (activeConfig.value as { scale?: ScaleType } | undefined)?.scale ?? 'linear'
-  )
-
   const stack = computed<boolean>(
     () => (activeConfig.value as BarConfig | LineConfig | undefined)?.stack ?? false
+  )
+
+  const scale = computed<ScaleType>(() =>
+    stack.value
+      ? 'linear'
+      : ((activeConfig.value as { scale?: ScaleType } | undefined)?.scale ?? 'linear')
   )
 
   const threeDRotate = computed<boolean>(
