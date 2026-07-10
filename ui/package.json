@@ -11,8 +11,7 @@
     "test:watch": "vitest",
     "typecheck": "vue-tsc -b --noEmit",
     "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "verify:gen": "node embed-build/verify-gen-sync.ts"
+    "format:check": "prettier --check ."
   },
   "engines": {
     "node": "22.x"
