@@ -16,11 +16,15 @@ import type {
 // panel's declarative contract.
 vi.mock('../components/settings/SortControl.vue', () => ({ default: { name: 'SortControl' } }))
 vi.mock('../components/settings/ScaleControl.vue', () => ({ default: { name: 'ScaleControl' } }))
+vi.mock('../components/settings/StackControl.vue', () => ({ default: { name: 'StackControl' } }))
 vi.mock('../components/settings/ShowLabelsControl.vue', () => ({
   default: { name: 'ShowLabelsControl' },
 }))
 vi.mock('../components/settings/SmoothControl.vue', () => ({
   default: { name: 'SmoothControl' },
+}))
+vi.mock('../components/settings/HorizontalControl.vue', () => ({
+  default: { name: 'HorizontalControl' },
 }))
 vi.mock('../components/settings/ThreeDRotateControl.vue', () => ({
   default: { name: 'ThreeDRotateControl' },
@@ -81,7 +85,7 @@ describe('SettingsPanel field selection', () => {
     ).toEqual(['sort', 'scale', 'showLabels', 'threeDVisualMap', 'threeDRotate', 'swap'])
   })
 
-  it('renders 5 controls for z-data bar on xyn swap without baked --3d', () => {
+  it('renders 6 controls for z-data bar on xyn swap without baked --3d', () => {
     const cfg: BarConfig = {
       type: 'bar',
       sort: { enabled: false, order: 'asc' },
@@ -96,10 +100,10 @@ describe('SettingsPanel field selection', () => {
         hasThreeDOption: true,
         hasZAxis: false,
       }).map((f) => f.key)
-    ).toEqual(['sort', 'scale', 'showLabels', 'threeD', 'swap'])
+    ).toEqual(['sort', 'scale', 'showLabels', 'horizontal', 'threeD', 'swap'])
   })
 
-  it('renders 4 controls for a 2D bar config without value-3D active', () => {
+  it('renders 5 controls for a 2D bar config without value-3D active', () => {
     const cfg: BarConfig = {
       type: 'bar',
       sort: { enabled: false, order: 'asc' },
@@ -109,10 +113,10 @@ describe('SettingsPanel field selection', () => {
     }
     expect(
       getRenderableFields(cfg, { dimension: '2D', rendering3D: false }).map((f) => f.key)
-    ).toEqual(['sort', 'scale', 'showLabels', 'swap'])
+    ).toEqual(['sort', 'scale', 'stack', 'showLabels', 'horizontal', 'swap'])
   })
 
-  it('renders 6 controls for a 2D bar config with value-3D active', () => {
+  it('renders 7 controls for a 2D bar config with value-3D active', () => {
     const cfg: BarConfig = {
       type: 'bar',
       threeD: true,
@@ -154,7 +158,7 @@ describe('SettingsPanel field selection', () => {
     }
     expect(
       getRenderableFields(cfg, { dimension: '2D', rendering3D: false }).map((f) => f.key)
-    ).toEqual(['sort', 'scale', 'showLabels', 'smooth', 'swap'])
+    ).toEqual(['sort', 'scale', 'stack', 'showLabels', 'smooth', 'swap'])
   })
 
   it('renders 3 controls for a pie config (no scale/threeDRotate)', () => {

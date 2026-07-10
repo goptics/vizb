@@ -15,11 +15,15 @@ import type {
 // actually exercises; the .vue bodies are exercised by the runtime / browser.
 vi.mock('../../components/settings/SortControl.vue', () => ({ default: { name: 'SortControl' } }))
 vi.mock('../../components/settings/ScaleControl.vue', () => ({ default: { name: 'ScaleControl' } }))
+vi.mock('../../components/settings/StackControl.vue', () => ({ default: { name: 'StackControl' } }))
 vi.mock('../../components/settings/ShowLabelsControl.vue', () => ({
   default: { name: 'ShowLabelsControl' },
 }))
 vi.mock('../../components/settings/SmoothControl.vue', () => ({
   default: { name: 'SmoothControl' },
+}))
+vi.mock('../../components/settings/HorizontalControl.vue', () => ({
+  default: { name: 'HorizontalControl' },
 }))
 vi.mock('../../components/settings/ThreeDRotateControl.vue', () => ({
   default: { name: 'ThreeDRotateControl' },
@@ -39,11 +43,13 @@ const { fieldRegistry, getControl, getRenderableFields, partitionRenderableField
   await import('./fieldRegistry')
 
 describe('fieldRegistry', () => {
-  it('exposes the nine known field controls', () => {
+  it('exposes the eleven known field controls', () => {
     expect(Object.keys(fieldRegistry).sort()).toEqual(
       [
+        'horizontal',
         'threeDRotate',
         'scale',
+        'stack',
         'showLabels',
         'smooth',
         'sort',
@@ -58,7 +64,9 @@ describe('fieldRegistry', () => {
   it('getControl returns a component for a registered key', () => {
     expect(getControl('sort')).toBeDefined()
     expect(getControl('scale')).toBeDefined()
+    expect(getControl('stack')).toBeDefined()
     expect(getControl('showLabels')).toBeDefined()
+    expect(getControl('horizontal')).toBeDefined()
     expect(getControl('smooth')).toBeDefined()
     expect(getControl('threeDRotate')).toBeDefined()
     expect(getControl('swap')).toBeDefined()
@@ -72,6 +80,11 @@ describe('fieldRegistry', () => {
   it('scale and threeDRotate apply to bar, line, and scatter', () => {
     expect(fieldRegistry['scale']!.appliesTo).toEqual(['bar', 'line', 'scatter'])
     expect(fieldRegistry['threeDRotate']!.appliesTo).toEqual(['bar', 'line', 'scatter'])
+  })
+
+  it('stack applies to 2D bar and line only', () => {
+    expect(fieldRegistry['stack']!.appliesTo).toEqual(['bar', 'line'])
+    expect(fieldRegistry['stack']!.appliesOn).toEqual(['2D'])
   })
 
   it('threeDRotate uses rendering3D visibility', () => {
@@ -131,14 +144,14 @@ describe('getRenderableFields', () => {
     ).toEqual(['sort', 'scale', 'showLabels', 'threeDVisualMap', 'threeDRotate', 'swap'])
   })
 
-  it('returns 4 entries for a 2D bar config without value-3D active', () => {
+  it('returns 6 entries for a 2D bar config without value-3D active', () => {
     const cfg: BarConfig = { type: 'bar' }
     expect(
       getRenderableFields(cfg, { dimension: '2D', rendering3D: false }).map((f) => f.key)
-    ).toEqual(['sort', 'scale', 'showLabels', 'swap'])
+    ).toEqual(['sort', 'scale', 'stack', 'showLabels', 'horizontal', 'swap'])
   })
 
-  it('returns 6 entries for a 2D bar config with value-3D active', () => {
+  it('returns 7 entries for a 2D bar config with value-3D active', () => {
     const cfg: BarConfig = { type: 'bar', threeD: true }
     expect(
       getRenderableFields(cfg, {
@@ -171,7 +184,7 @@ describe('getRenderableFields', () => {
         hasThreeDOption: true,
         hasZAxis: false,
       }).map((f) => f.key)
-    ).toEqual(['sort', 'scale', 'showLabels', 'threeD', 'swap'])
+    ).toEqual(['sort', 'scale', 'showLabels', 'horizontal', 'threeD', 'swap'])
   })
 
   it('hides rotate/visualMap on flat 2D xyn chart until value 3D is enabled', () => {
@@ -194,11 +207,29 @@ describe('getRenderableFields', () => {
     ).not.toContain('threeDVisualMap')
   })
 
-  it('returns 5 entries for a 2D line config without value-3D active', () => {
+  it('returns 6 entries for a 2D line config without value-3D active', () => {
     const cfg: LineConfig = { type: 'line' }
     expect(
       getRenderableFields(cfg, { dimension: '2D', rendering3D: false }).map((f) => f.key)
-    ).toEqual(['sort', 'scale', 'showLabels', 'smooth', 'swap'])
+    ).toEqual(['sort', 'scale', 'stack', 'showLabels', 'smooth', 'swap'])
+  })
+
+  it('hides stack in value and mixed transform modes', () => {
+    const cfg: BarConfig = { type: 'bar' }
+    expect(
+      getRenderableFields(cfg, {
+        dimension: '2D',
+        rendering3D: false,
+        chartMode: 'value',
+      }).map((f) => f.key)
+    ).not.toContain('stack')
+    expect(
+      getRenderableFields(cfg, {
+        dimension: '2D',
+        rendering3D: false,
+        chartMode: 'mixed',
+      }).map((f) => f.key)
+    ).not.toContain('stack')
   })
 
   it('returns 3 entries for a pie config (no scale/threeDRotate; dimension is irrelevant)', () => {
@@ -233,7 +264,9 @@ describe('getRenderableFields', () => {
     expect(getRenderableFields(cfg).map((f) => f.key)).toEqual([
       'sort',
       'scale',
+      'stack',
       'showLabels',
+      'horizontal',
       'threeDVisualMap',
       'threeDRotate',
       'swap',

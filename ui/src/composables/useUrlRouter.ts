@@ -65,6 +65,7 @@ type ConfigUpdate = {
   threeDRotate?: boolean
   threeDVisualMap?: boolean
   visualMap?: boolean
+  horizontal?: boolean
 }
 
 // Find the first config of the given chart type and apply a partial update in
@@ -87,6 +88,9 @@ const applyConfigUpdate = (type: ChartType, update: ConfigUpdate): boolean => {
     if (update.threeDVisualMap !== undefined) cartesian.threeDVisualMap = update.threeDVisualMap
     if (cfg.type === 'scatter' && update.visualMap !== undefined) {
       ;(cartesian as ScatterConfig).visualMap = update.visualMap
+    }
+    if (cfg.type === 'bar' && update.horizontal !== undefined) {
+      ;(cfg as BarConfig).horizontal = update.horizontal
     }
   }
   return true
@@ -189,6 +193,10 @@ export function useUrlRouter() {
         else if (vm === 'false') update.visualMap = false
       }
 
+      const h = params[`${ct}.h`]
+      if (h === 'true') update.horizontal = true
+      else if (h === 'false') update.horizontal = false
+
       if (Object.keys(update).length > 0) {
         applyConfigUpdate(ct, update)
       }
@@ -248,6 +256,10 @@ export function useUrlRouter() {
           const scatter = cartesian as ScatterConfig
           if (scatter.visualMap === true) params[`${ct}.vm`] = 'true'
           else if (scatter.visualMap === false) params[`${ct}.vm`] = 'false'
+        }
+        if (cfg.type === 'bar') {
+          const barCfg = cfg as BarConfig
+          if (barCfg.horizontal === true) params[`${ct}.h`] = 'true'
         }
       }
 

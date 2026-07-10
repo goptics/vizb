@@ -90,6 +90,78 @@ func (s *RulesSuite) TestRequiresAxes_PanicsOnEmptyKeys() {
 	})
 }
 
+// --- ExcludesAxes builder ---
+
+func (s *RulesSuite) TestExcludesAxes_KeepWhenAxisAbsent() {
+	rule := charts.ExcludesAxes("z")
+	out, msg := rule(charts.RuleContext{
+		Axes: []charts.AxisInfo{{Key: "x"}, {Key: "y"}},
+	})
+	s.Equal(flags.Keep, out)
+	s.Empty(msg)
+}
+
+func (s *RulesSuite) TestExcludesAxes_SkipWhenAxisPresent() {
+	rule := charts.ExcludesAxes("z")
+	out, msg := rule(charts.RuleContext{
+		Axes: []charts.AxisInfo{{Key: "x"}, {Key: "y"}, {Key: "z"}},
+	})
+	s.Equal(flags.Skip, out)
+	s.Contains(msg, "excludes axis \"z\"")
+}
+
+func (s *RulesSuite) TestExcludesAxes_FatalOnWrongContext() {
+	rule := charts.ExcludesAxes("z")
+	out, msg := rule(struct{}{})
+	s.Equal(flags.Fatal, out)
+	s.Contains(msg, "expected charts.RuleContext")
+}
+
+func (s *RulesSuite) TestExcludesAxes_PanicsOnEmptyKeys() {
+	s.Panics(func() {
+		charts.ExcludesAxes()
+	})
+}
+
+// --- StackRequiresLinearScale ---
+
+func (s *RulesSuite) TestStackRequiresLinearScale_KeepWhenLinear() {
+	rule := charts.StackRequiresLinearScale()
+	out, msg := rule(charts.RuleContext{
+		Value:  true,
+		Config: map[string]any{"scale": "linear"},
+	})
+	s.Equal(flags.Keep, out)
+	s.Empty(msg)
+}
+
+func (s *RulesSuite) TestStackRequiresLinearScale_KeepWhenDisabledEvenOnLog() {
+	rule := charts.StackRequiresLinearScale()
+	out, msg := rule(charts.RuleContext{
+		Value:  false,
+		Config: map[string]any{"scale": "log"},
+	})
+	s.Equal(flags.Keep, out)
+	s.Empty(msg)
+}
+
+func (s *RulesSuite) TestStackRequiresLinearScale_SkipWhenLog() {
+	rule := charts.StackRequiresLinearScale()
+	out, msg := rule(charts.RuleContext{
+		Value:  true,
+		Config: map[string]any{"scale": "LOG"},
+	})
+	s.Equal(flags.Skip, out)
+	s.Contains(msg, "linear scale")
+}
+
+func (s *RulesSuite) TestStackRequiresLinearScale_FatalOnWrongContext() {
+	rule := charts.StackRequiresLinearScale()
+	out, msg := rule(struct{}{})
+	s.Equal(flags.Fatal, out)
+	s.Contains(msg, "expected charts.RuleContext")
+}
+
 // --- Requires3DMode ---
 
 func (s *RulesSuite) TestRequires3DMode_KeepWhenZPresent() {
@@ -162,7 +234,7 @@ func (s *RulesSuite) TestApplyRules_EmptyConfigs() {
 }
 
 func (s *RulesSuite) TestApplyRules_NoRulesOnDescriptors() {
-	// Phase B state: all production flags have nil Rule — no-op.
+	// A config with no rule-gated keys present is a no-op.
 	raw, err := json.Marshal(barchart.Config{Type: "bar", Scale: "log"})
 	s.Require().NoError(err)
 
@@ -252,6 +324,56 @@ func (s *RulesSuite) TestApplyRules_MultipleRulesWorstWins() {
 	var result testRuleConfig
 	s.Require().NoError(json.Unmarshal(out, &result))
 	s.Empty(result.BothFlagR)
+}
+
+func (s *RulesSuite) TestApplyRules_StackKeptForXYLinear() {
+	stack := true
+	configs := []charts.ChartConfig{
+		&barchart.Config{Type: "bar", Scale: "linear", Stack: &stack},
+	}
+	ctx := charts.RuleContext{Axes: []charts.AxisInfo{{Key: "x"}, {Key: "y"}}}
+
+	warnings, fatal := charts.ApplyRules(ctx, configs)
+	s.Nil(fatal)
+	s.Empty(warnings)
+
+	got := configs[0].(*barchart.Config)
+	s.Require().NotNil(got.Stack)
+	s.True(*got.Stack)
+}
+
+func (s *RulesSuite) TestApplyRules_StackSkippedWhenZPresent() {
+	stack := true
+	configs := []charts.ChartConfig{
+		&barchart.Config{Type: "bar", Scale: "linear", Stack: &stack},
+	}
+	ctx := charts.RuleContext{Axes: []charts.AxisInfo{{Key: "x"}, {Key: "y"}, {Key: "z"}}}
+
+	warnings, fatal := charts.ApplyRules(ctx, configs)
+	s.Nil(fatal)
+	s.Len(warnings, 1)
+	s.Contains(warnings[0], `"stack" skipped`)
+	s.Contains(warnings[0], `excludes axis "z"`)
+
+	got := configs[0].(*barchart.Config)
+	s.Nil(got.Stack)
+}
+
+func (s *RulesSuite) TestApplyRules_StackSkippedOnLogScale() {
+	stack := true
+	configs := []charts.ChartConfig{
+		&barchart.Config{Type: "bar", Scale: "log", Stack: &stack},
+	}
+	ctx := charts.RuleContext{Axes: []charts.AxisInfo{{Key: "x"}, {Key: "y"}}}
+
+	warnings, fatal := charts.ApplyRules(ctx, configs)
+	s.Nil(fatal)
+	s.Len(warnings, 1)
+	s.Contains(warnings[0], `"stack" skipped`)
+	s.Contains(warnings[0], "linear scale")
+
+	got := configs[0].(*barchart.Config)
+	s.Nil(got.Stack)
 }
 
 func TestRulesSuite(t *testing.T) {

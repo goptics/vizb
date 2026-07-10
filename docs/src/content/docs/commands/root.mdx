@@ -213,6 +213,9 @@ vizb bench.txt --chart line:scale=log --chart pie:labels -o output.html
 
 # 3D bar with auto-rotate; line with labels off
 vizb bench.txt -p n/x/y/z --chart bar:3d-rotate --chart line:labels=false -o output.html
+
+# Horizontal grouped bars (bar:horizontal)
+vizb sales.csv -g region,category -p x,y --chart bar:horizontal -o out.html
 ```
 
 **Supported keys:**

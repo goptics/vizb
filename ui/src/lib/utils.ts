@@ -100,7 +100,9 @@ export function setColorTheme(theme?: string) {
 
 export const getThemePalette = (theme?: string) => {
   const normalized = (theme || activeTheme).toLowerCase()
-  return THEME_PALETTES[THEME_NAMES.includes(normalized as ThemeKey) ? (normalized as ThemeKey) : activeTheme]
+  return THEME_PALETTES[
+    THEME_NAMES.includes(normalized as ThemeKey) ? (normalized as ThemeKey) : activeTheme
+  ]
 }
 
 export const getDefaultThemeColor = (theme?: string) => {

@@ -20,6 +20,7 @@ export function useChartOptions(
   isDark: Ref<boolean>,
   chartType: Ref<ChartType>,
   scale: Ref<ScaleType>,
+  stack: Ref<boolean>,
   threeDRotate: Ref<boolean>,
   visibleZ: Ref<Record<string, boolean>>,
   threeD: Ref<boolean>,
@@ -29,7 +30,8 @@ export function useChartOptions(
   chartAxes: Ref<Axis[] | undefined>,
   symbol: Ref<string | undefined>,
   symbolSize: Ref<number | undefined>,
-  smooth: Ref<boolean>
+  smooth: Ref<boolean>,
+  horizontal: Ref<boolean>
 ) {
   const config: BaseChartConfig = {
     chartData,
@@ -37,6 +39,7 @@ export function useChartOptions(
     showLabels,
     isDark,
     scale,
+    stack,
     threeDRotate,
     visibleZ,
     threeD,
@@ -45,6 +48,7 @@ export function useChartOptions(
     symbol,
     symbolSize,
     smooth,
+    horizontal,
     arrangementTarget,
     chartAxes,
     chartType,

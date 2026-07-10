@@ -15,6 +15,7 @@ export interface BaseChartConfig {
   // these fields, so they're relaxed to optional here; chart composables that
   // access them default at the call site (e.g. `scale?.value ?? "linear"`).
   scale?: Ref<ScaleType>
+  stack?: Ref<boolean>
   threeDRotate?: Ref<boolean>
   // Legend selection state for z series (3D); key = z name, false = hidden.
   visibleZ?: Ref<Record<string, boolean>>
@@ -27,6 +28,8 @@ export interface BaseChartConfig {
   symbolSize?: Ref<number | undefined>
   /** 2D line-only curve toggle. Ignored by 3D renderers. */
   smooth?: Ref<boolean>
+  /** 2D bar horizontal orientation. When true, bars grow rightward. */
+  horizontal?: Ref<boolean>
   /** Active swap target (e.g. xyz) — scatter value-mode 3D is swap-driven. */
   arrangementTarget?: Ref<string>
   chartAxes?: Ref<Axis[] | undefined>

@@ -3,8 +3,10 @@ import type { ChartConfig, ChartType, ScaleType, Sort } from '@/types'
 import type { Dimension } from '@/lib/utils'
 import SortControl from '@/components/settings/SortControl.vue'
 import ScaleControl from '@/components/settings/ScaleControl.vue'
+import StackControl from '@/components/settings/StackControl.vue'
 import ShowLabelsControl from '@/components/settings/ShowLabelsControl.vue'
 import SmoothControl from '@/components/settings/SmoothControl.vue'
+import HorizontalControl from '@/components/settings/HorizontalControl.vue'
 import ThreeDRotateControl from '@/components/settings/ThreeDRotateControl.vue'
 import ThreeDControl from '@/components/settings/ThreeDControl.vue'
 import ThreeDVisualMapControl from '@/components/settings/ThreeDVisualMapControl.vue'
@@ -20,8 +22,10 @@ export { shouldUseTabPicker, CHART_PICKER_TAB_THRESHOLD } from '@/lib/pickerRule
 export type SettingFieldValueMap = {
   sort: Sort
   scale: ScaleType
+  stack: boolean
   showLabels: boolean
   smooth: boolean
+  horizontal: boolean
   threeDRotate: boolean
   threeD: boolean
   threeDVisualMap: boolean
@@ -54,6 +58,16 @@ export const fieldRegistry: Record<SettingFieldKey, FieldMeta> = {
     component: ScaleControl,
     appliesTo: ['bar', 'line', 'scatter'],
   },
+  stack: {
+    component: StackControl,
+    appliesTo: ['bar', 'line'],
+    appliesOn: ['2D'],
+    visible: (ctx) =>
+      ctx.rendering3D !== true &&
+      (ctx.dimension === undefined || ctx.dimension === '2D') &&
+      ctx.chartMode !== 'value' &&
+      ctx.chartMode !== 'mixed',
+  },
   showLabels: {
     component: ShowLabelsControl,
     appliesTo: ['bar', 'line', 'scatter', 'pie', 'heatmap', 'radar'],
@@ -61,6 +75,11 @@ export const fieldRegistry: Record<SettingFieldKey, FieldMeta> = {
   smooth: {
     component: SmoothControl,
     appliesTo: ['line'],
+    visible: (ctx) => ctx.rendering3D !== true,
+  },
+  horizontal: {
+    component: HorizontalControl,
+    appliesTo: ['bar'],
     visible: (ctx) => ctx.rendering3D !== true,
   },
   threeD: {
@@ -106,6 +125,7 @@ export type RenderContext = {
   hasThreeDOption?: boolean
   /** z mapped to chart zAxis in the active swap (not raw-data z presence). */
   hasZAxis?: boolean
+  chartMode?: 'grouped' | 'value' | 'mixed'
 }
 
 export function getRenderableFields(
