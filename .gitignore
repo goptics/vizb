@@ -60,5 +60,6 @@ openspec
 
 .agent
 .claude
+.codex
 .opencode
 .worktrees
