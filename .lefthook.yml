@@ -1,37 +1,8 @@
 pre-commit:
-  # Sequential so `format` finishes (and stage_fixed lands) before ui-gen-check
-  # rebuilds the embed. `depends` is not supported on commands in lefthook 1.13.
-  parallel: false
   commands:
     format:
       run: task format
       stage_fixed: true
-    ui-gen-check:
-      glob: "ui/src/**/*.{vue,ts,js,css,svg}"
-      run: |
-        set -eu
-        gen="pkg/template/vizb-ui.gen.go"
-        committed="$(mktemp)"
-        trap 'rm -f "$committed"' EXIT
-
-        # Baseline for this commit: staged gen.go when staged, otherwise HEAD.
-        if git diff --cached --quiet -- "$gen"; then
-          git show "HEAD:$gen" > "$committed"
-        else
-          git show ":$gen" > "$committed"
-        fi
-
-        task build:ui
-        gofmt -w "$committed" "$gen"
-        node ui/embed-build/verify-gen-sync.ts "$committed" "$gen"
-
-        if ! git diff --quiet -- "$gen"; then
-          echo "❌ $gen was rebuilt but is not fully staged."
-          echo "   Run: git add $gen"
-          exit 1
-        fi
-
-        echo "✅ vizb-ui.gen.go is in sync with ui sources"
     go-test:
       glob: "*.go"
       run: task test
