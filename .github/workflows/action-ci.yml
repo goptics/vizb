@@ -19,6 +19,10 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      - name: Setup embed UI
+        if: env.ACT != 'true'
+        uses: ./.github/actions/setup-embed-ui
+
       - name: Build vizb
         if: env.ACT != 'true'
         run: go build -o ./bin/vizb .
@@ -44,6 +48,10 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+
+      - name: Setup embed UI
+        if: env.ACT != 'true'
+        uses: ./.github/actions/setup-embed-ui
 
       - name: Build vizb
         if: env.ACT != 'true'

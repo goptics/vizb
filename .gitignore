@@ -13,6 +13,9 @@ vendor/
 # Build output
 bin/
 
+# Generated Vue embed (local / CI only; rebuild with task build:ui)
+pkg/template/vizb-ui.gen.go
+
 # act local workflow runs
 .act/
 

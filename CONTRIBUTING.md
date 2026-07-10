@@ -24,14 +24,18 @@ go install github.com/go-task/task/v3/cmd/task@latest
 ## Setup
 
 ```bash
-task init    # install all deps (Go, UI, docs)
+task init    # install deps (Go, UI, docs) and generate the UI embed
 ```
+
+`task init` runs `task build:ui` so `pkg/template/vizb-ui.gen.go` exists for
+`go test` / `go build`. That file is **gitignored** (generated locally and in
+CI on Node 22). Never commit it.
 
 ## Build & test
 
 ```bash
 task build       # build UI + binary
-task build:ui    # build the Vue UI only (regenerates pkg/template/vizb-ui.gen.go)
+task build:ui    # build the Vue UI only (writes pkg/template/vizb-ui.gen.go)
 task build:cli   # build the Go binary to ./bin/vizb
 task test        # go test -count=1 ./...
 task lint        # golangci-lint run
@@ -59,9 +63,10 @@ task act:examples -- --reuse --no-open         # faster reruns, no browser
 Output lands under `dist/examples/` with an overview at `dist/examples/index.html`.
 Equivalent script: `./scripts/act-examples.sh` (same options).
 
-> **Important:** `pkg/template/vizb-ui.gen.go` is generated from the Vue app —
-> do **not** hand-edit it. After any change under `ui/`, run `task build:ui`
-> (which regenerates it), then rebuild the binary so the embedded UI is current.
+> **Important:** `pkg/template/vizb-ui.gen.go` is generated from the Vue app
+> (`EMBED_UI=True pnpm build` / `task build:ui`). Do **not** hand-edit it and
+> do **not** commit it. After any change under `ui/`, run `task build:ui` before
+> Go commands so the embedded UI is current.
 
 ## Project layout
 

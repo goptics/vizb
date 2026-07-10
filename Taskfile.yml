@@ -7,12 +7,13 @@ tasks:
       - task --list
 
   init:
-    desc: Install all dependencies
+    desc: Install all dependencies and generate the UI embed
     cmds:
       - go mod tidy
       - go mod download
       - cd ui; pnpm install; cd -
       - cd docs; pnpm install; cd -
+      - task: build:ui
       - task: act:install
       - go run github.com/evilmartians/lefthook@latest install
 

@@ -49,6 +49,9 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      - name: Setup embed UI
+        uses: ./.github/actions/setup-embed-ui
+
       - name: Download dependencies
         run: go mod download
 

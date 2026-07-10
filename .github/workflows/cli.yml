@@ -10,6 +10,7 @@ on:
       - action.yml
       - .github/workflows/action-ci.yml
       - .github/workflows/cli.yml
+      - .github/actions/setup-embed-ui/**
   pull_request:
     branches: [main]
     paths:
@@ -19,6 +20,7 @@ on:
       - action.yml
       - .github/workflows/action-ci.yml
       - .github/workflows/cli.yml
+      - .github/actions/setup-embed-ui/**
 
 jobs:
   lint:
@@ -30,6 +32,9 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+
+      # package template needs generated symbols for typecheck
+      - uses: ./.github/actions/setup-embed-ui
 
       - uses: golangci/golangci-lint-action@v9
         with:
@@ -61,6 +66,9 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+
+      - name: Setup embed UI
+        uses: ./.github/actions/setup-embed-ui
 
       - run: go mod download
 
