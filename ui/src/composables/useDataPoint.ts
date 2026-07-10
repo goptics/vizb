@@ -8,7 +8,6 @@ import {
   datasetDimension,
   isValueMode as checkValueMode,
   isMixedMode as checkMixedMode,
-  setColorTheme,
 } from '../lib/utils'
 import { presentAxisString } from '../lib/swap'
 import { useSettingsStore } from './useSettingsStore'
@@ -112,7 +111,7 @@ const activeDataSet = computed(
 
 export { activeDataSet }
 
-const { chartType } = useSettingsStore()
+const { chartType, initializeTheme } = useSettingsStore()
 
 export type ChartMode = 'grouped' | 'value' | 'mixed'
 
@@ -156,8 +155,7 @@ const resultGroups = computed(() => groupNames.value.map((name) => ({ name })))
 watch(
   () => activeDataSet.value?.theme,
   (theme) => {
-    setColorTheme(theme)
-    nextTick(() => resetColor())
+    initializeTheme(theme)
   },
   { immediate: true }
 )

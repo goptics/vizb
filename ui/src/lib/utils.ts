@@ -4,6 +4,7 @@ import type { ChartType, Meta, ChartData, DataPoint, Axis } from '../types'
 import type { Ref } from 'vue'
 import { arrangementHasChartZ } from './swap'
 import { builderForChart, pickBuilder } from './builders'
+import { activePalette, palettePrimary, THEMES } from './themes'
 
 /**
  * Utility function to merge Tailwind CSS classes
@@ -15,123 +16,23 @@ export function cn(...inputs: ClassValue[]) {
 
 export const isValidIndex = (id: number, length: number): boolean => id >= 0 && id < length
 
-const THEME_PALETTES = {
-  default: [
-    '#5470C6', // Blue
-    '#3BA272', // Green
-    '#FC8452', // Orange
-    '#73C0DE', // Light blue
-    '#EE6666', // Red
-    '#FAC858', // Yellow
-    '#9A60B4', // Purple
-    '#EA7CCC', // Pink
-    '#91CC75', // Lime
-    '#FF9F7F', // Coral
-  ],
-  warm: [
-    '#ff595e',
-    '#ffca3a',
-    '#8ac926',
-    '#1982c4',
-    '#6a4c93',
-    '#ff9248',
-    '#5f0f40',
-    '#9a031e',
-    '#1982c4',
-    '#6a4c93',
-  ],
-  cool: [
-    '#5f0f40',
-    '#00bbf9',
-    '#9b5de5',
-    '#00f5d4',
-    '#f15bb5',
-    '#fee440',
-    '#00bbf9',
-    '#7209b7',
-    '#3a86ff',
-    '#43aa8b',
-  ],
-  ocean: [
-    '#0b1320',
-    '#1c2541',
-    '#3a506b',
-    '#5bc0be',
-    '#6fffe9',
-    '#1b263b',
-    '#415a77',
-    '#778da9',
-    '#a7c7e7',
-    '#e0e1dd',
-  ],
-  sunset: [
-    '#f72585',
-    '#b5179e',
-    '#7209b7',
-    '#560bad',
-    '#480ca8',
-    '#3a0ca3',
-    '#3f37c9',
-    '#4361ee',
-    '#4895ef',
-    '#4cc9f0',
-  ],
-} as const
-
-const THEME_NAMES = Object.keys(THEME_PALETTES) as Array<keyof typeof THEME_PALETTES>
-
-type ThemeKey = (typeof THEME_NAMES)[number]
-
-export const COLOR_PALETTE = THEME_PALETTES.default
-
-let activeTheme: ThemeKey = 'default'
-
-export function setColorTheme(theme?: string) {
-  const normalized = (theme || 'default').toLowerCase()
-  const nextTheme = THEME_NAMES.includes(normalized as ThemeKey)
-    ? (normalized as ThemeKey)
-    : 'default'
-
-  if (nextTheme !== activeTheme) {
-    activeTheme = nextTheme
-    resetColor()
-  }
-}
-
-export const getThemePalette = (theme?: string) => {
-  const normalized = (theme || activeTheme).toLowerCase()
-  return THEME_PALETTES[
-    THEME_NAMES.includes(normalized as ThemeKey) ? (normalized as ThemeKey) : activeTheme
-  ]
-}
-
-export const getDefaultThemeColor = (theme?: string) => {
-  return getThemePalette(theme)[0]
-}
-
-export const getPaletteColor = (index: number, theme?: string) => {
-  const palette = getThemePalette(theme)
-  return palette[index % palette.length]
-}
+export const COLOR_PALETTE = THEMES.default
+export const getThemePalette = () => activePalette.value
+export const getDefaultThemeColor = () => palettePrimary(activePalette.value)
 
 const colorMap = new Map<string, number>()
 let i = 0
 
 export function getNextColorFor(key: string) {
   if (colorMap.has(key)) {
-    return getThemePalette()[colorMap.get(key)!]
+    const palette = activePalette.value
+    return palette[colorMap.get(key)! % palette.length]
   }
 
-  const palette = getThemePalette()
-  const colorIndex = i % palette.length
-  const color = palette[colorIndex]
-  colorMap.set(key, colorIndex)
-
-  if (i === palette.length) {
-    i = 0
-  } else {
-    i++
-  }
+  const palette = activePalette.value
+  const rawIndex = i++
+  const color = palette[rawIndex % palette.length]
+  colorMap.set(key, rawIndex)
 
   return color
 }

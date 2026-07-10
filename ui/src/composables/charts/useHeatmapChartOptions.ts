@@ -1,7 +1,8 @@
 import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
-import { getDefaultThemeColor, getNextColorFor, getPaletteColor, isGrouped3D } from '@/lib/utils'
+import { getDefaultThemeColor, getNextColorFor, isGrouped3D } from '@/lib/utils'
+import { paletteGradientEndpoints } from '@/lib/themes'
 import {
   getChartStyling,
   getTooltipTheme,
@@ -13,10 +14,6 @@ import {
   createHeatmapDataZoomConfig,
   createHeatmapLayoutConfig,
 } from './shared'
-
-function safePaletteColor(index: number) {
-  return getPaletteColor(index) ?? getDefaultThemeColor()
-}
 
 const round2 = (v: number) => Math.round(v * 100) / 100
 
@@ -173,7 +170,7 @@ function build2DHeatmap(config: BaseChartConfig): EChartsOption {
     visualMap: heatmapVisualMap(
       minVal,
       maxVal,
-      [safePaletteColor(0), safePaletteColor(4)],
+      paletteGradientEndpoints(),
       styling,
       largeX,
       largeY
@@ -385,7 +382,7 @@ function build3DHeatmap(config: BaseChartConfig): EChartsOption {
     visualMap: heatmapVisualMap(
       minTotal,
       maxTotal,
-      [safePaletteColor(0), safePaletteColor(4)],
+      paletteGradientEndpoints(),
       styling,
       largeX,
       largeY

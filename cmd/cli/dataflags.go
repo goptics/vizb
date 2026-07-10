@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/goptics/vizb/internal/flags"
@@ -15,7 +16,7 @@ import (
 // the former CommonOptions hand-written Bind + validationRules.
 var DataFlags = []flags.Flag{
 	{Name: "name", Shorthand: "n", Default: "Comparisons", Usage: "Name of the comparison", Kind: flags.KindString},
-	{Name: "theme", Usage: "Color theme to apply to chart series (default, cool, warm, ocean, sunset)", Kind: flags.KindString, Default: "default", ValidSet: []string{"default", "warm", "cool", "ocean", "sunset"}, Normalizer: strings.ToLower},
+	{Name: "theme", Usage: "Initial series color theme (a built-in name or comma-separated hex palette)", Kind: flags.KindString, Default: "default", Normalizer: normalizeThemeFlag, SoftValidate: validateTheme},
 	{Name: "description", Shorthand: "d", Usage: "Description of the comparison", Kind: flags.KindString},
 	{Name: "output", Shorthand: "o", Usage: "Output file path/name", Kind: flags.KindString},
 	{Name: "tag", Shorthand: "t", Usage: "Tag/identifier for the comparison", Kind: flags.KindString},
@@ -57,6 +58,45 @@ var DataFlags = []flags.Flag{
 	},
 	{Name: "select", Usage: "csv/json only: select columns (repeatable); solo mode: 2–3 cols per view as x,y[,z] axes (e.g. --select region,latency); grouped mode: numeric stat columns with optional {label}", Kind: flags.KindStringArray},
 	{Name: "json-path", Usage: "json only: select a nested array to chart via a jq-like dot path (e.g. --json-path '.data.results')", Kind: flags.KindString},
+}
+
+var (
+	builtInThemes = map[string]struct{}{
+		"default": {}, "vintage": {}, "dark": {}, "westeros": {}, "essos": {},
+		"wonderland": {}, "walden": {}, "chalk": {}, "infographic": {},
+		"macarons": {}, "roma": {}, "shine": {}, "purple-passion": {},
+	}
+	hexColorPattern = regexp.MustCompile(`^#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?$`)
+)
+
+// validateTheme accepts a built-in name or a custom palette containing at
+// least two comma-separated #rgb/#rrggbb colors.
+func validateTheme(value string) error {
+	if _, ok := builtInThemes[strings.ToLower(value)]; ok {
+		return nil
+	}
+	colors := strings.Split(value, ",")
+	if len(colors) < 2 {
+		return fmt.Errorf("expected a built-in theme or at least two comma-separated hex colors")
+	}
+	for _, color := range colors {
+		if !hexColorPattern.MatchString(strings.TrimSpace(color)) {
+			return fmt.Errorf("invalid hex color %q", strings.TrimSpace(color))
+		}
+	}
+	return nil
+}
+
+func normalizeThemeFlag(value string) string {
+	trimmed := strings.TrimSpace(value)
+	if _, ok := builtInThemes[strings.ToLower(trimmed)]; ok {
+		return strings.ToLower(trimmed)
+	}
+	colors := strings.Split(trimmed, ",")
+	for i := range colors {
+		colors[i] = strings.TrimSpace(colors[i])
+	}
+	return strings.Join(colors, ",")
 }
 
 // normalizeMemUnit canonicalises lowercase memory units (kb/mb/gb) to their

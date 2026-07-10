@@ -2,6 +2,7 @@ import { computed, ref, watch } from 'vue'
 import type { ChartConfig, ChartType, Sort, ScaleType } from '../types'
 import { activeDataSet } from './useDataPoint'
 import { isValidIndex } from '../lib/utils'
+import { activeThemeName, applyTheme, normalizeTheme } from '../lib/themes'
 
 // Module-level singleton state. `activeChartIndex` is the cursor into
 // `activeDataSet.value.settings`; the dataset IS the source of truth — no flat
@@ -9,6 +10,7 @@ import { isValidIndex } from '../lib/utils'
 // config in place, which the Vue reactivity propagates everywhere.
 const activeChartIndex = ref(0)
 const isDark = ref(false)
+const themeName = activeThemeName
 
 // Dark mode is gated so the module is import-safe in node/test environments
 // (no `localStorage` / `window` access at load time).
@@ -34,12 +36,32 @@ const initializeDarkMode = () => {
 
 initializeDarkMode()
 
+let hasThemePreference = false
+if (isBrowser) {
+  const savedTheme = localStorage.getItem('color-theme')
+  if (savedTheme !== null) {
+    hasThemePreference = true
+    applyTheme(savedTheme)
+  }
+}
+
 const toggleDark = () => {
   isDark.value = !isDark.value
   if (isBrowser) {
     localStorage.setItem('dark-mode', isDark.value.toString())
   }
   updateHtmlClass()
+}
+
+const initializeTheme = (datasetTheme?: string) => {
+  if (!hasThemePreference) applyTheme(datasetTheme)
+}
+
+const setTheme = (theme: string) => {
+  const normalized = normalizeTheme(theme)
+  applyTheme(normalized)
+  hasThemePreference = true
+  if (isBrowser) localStorage.setItem('color-theme', normalized)
 }
 
 export function useSettingsStore() {
@@ -149,6 +171,7 @@ export function useSettingsStore() {
     activeConfig,
     chartType,
     isDark,
+    themeName,
     setActiveChartIndex,
     setChartType,
     setSort,
@@ -162,6 +185,8 @@ export function useSettingsStore() {
     setThreeD,
     setThreeDVisualMap,
     setVisualMap,
+    initializeTheme,
+    setTheme,
     toggleDark,
   }
 }

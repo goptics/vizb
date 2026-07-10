@@ -242,7 +242,7 @@ func (s *PipelineSuite) TestRunLinearGeneratesOutputFile() {
 
 func (s *PipelineSuite) TestRunLinearPreservesCustomTheme() {
 	benchFile := s.writeFile("input.txt", `BenchmarkExample-8    1000000    1234 ns/op    1000 B/op    10 allocs/op`)
-	meta := RunMeta{Parser: "go", Theme: "sunset"}
+	meta := RunMeta{Parser: "go", Theme: "#f00,#00ff00"}
 	cfg := parser.Config{GroupPattern: "y", TimeUnit: "ns", MemUnit: "B"}
 	barCfg := &barchart.Config{Type: "bar", Scale: "linear"}
 	out := filepath.Join(s.T().TempDir(), "custom-theme.json")
@@ -253,7 +253,7 @@ func (s *PipelineSuite) TestRunLinearPreservesCustomTheme() {
 	s.Require().NoError(err)
 	var ds shared.Dataset
 	s.Require().NoError(json.Unmarshal(content, &ds))
-	s.Equal("sunset", ds.Theme)
+	s.Equal("#f00,#00ff00", ds.Theme)
 }
 
 func (s *PipelineSuite) TestChartStackOverrideRoundTripsThroughMaterialise() {
@@ -711,8 +711,8 @@ func (s *PipelineSuite) TestBuildDatasetPreservesTheme() {
 			{Columns: []parser.ColumnSpec{{Source: "x", AxisKey: "x", AxisType: "value"}, {Source: "y", AxisKey: "y", AxisType: "value"}}},
 		},
 	}
-	ds := buildDataset(results, RunMeta{Name: "T", Parser: "csv", Theme: "ocean"}, nil, cfg, nil, "")
-	s.Equal("ocean", ds.Theme)
+	ds := buildDataset(results, RunMeta{Name: "T", Parser: "csv", Theme: "walden"}, nil, cfg, nil, "")
+	s.Equal("walden", ds.Theme)
 }
 
 func (s *PipelineSuite) TestBuildDatasetInfersAxesWithoutAxisType() {

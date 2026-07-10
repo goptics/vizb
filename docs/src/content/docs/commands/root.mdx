@@ -75,6 +75,7 @@ See the [Parser Guide](/guides/parsers) for each parser's metrics, and the
 | `--output` | `-o` | *(stdout)* | Output file path. `.json` → JSON, else → HTML |
 | `--parser` | `-P` | `auto` | Parser: `auto` (detect), `go`, `js:tinybench`, `js:vitest`, `rs:criterion`, `rs:divan`, `csv`, `json` |
 | `--name` | `-n` | `Benchmarks` | Dataset name |
+| `--theme` | | `default` | Initial series palette: `default`, `vintage`, `dark`, `westeros`, `essos`, `wonderland`, `walden`, `chalk`, `infographic`, `macarons`, `roma`, `shine`, `purple-passion`, or 2+ comma-separated hex colors |
 | `--description` | `-d` | `""` | Dataset description |
 | `--tag` | `-t` | `""` | Tag identifier for release tracking |
 | `--id` | | `""` | Stable dataset id for `?id=` deep links in the HTML UI |
@@ -91,6 +92,14 @@ See the [Parser Guide](/guides/parsers) for each parser's metrics, and the
 | `--mem-unit` | `-M` | `B` | Memory unit: `b`, `B`, `KB`, `MB`, `GB` |
 | `--time-unit` | `-T` | `ns` | Time unit: `ns`, `us`, `ms`, `s` |
 | `--number-unit` | `-N` | `""` | Number unit: `K`, `M`, `B`, `T` (default: as-is) |
+
+`--theme` changes series colors only; light/dark mode remains independent. Viewers can switch
+built-in palettes from the generated report, and their choice is saved in the browser. For a
+brand palette, pass at least two `#rgb` or `#rrggbb` colors:
+
+```bash
+vizb data.csv --theme "#ff6b6b,#4ecdc4,#ffe66d" -o report.html
+```
 
 ## Examples
 

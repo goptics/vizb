@@ -85,6 +85,9 @@ func MergeDatasets(benchmarks []Dataset, dim Dimension) []Dataset {
 				latest := tagged[len(tagged)-1]
 				base.Tag = latest.Tag
 				base.Timestamp = latest.Timestamp
+				if latest.Theme != "" {
+					base.Theme = latest.Theme
+				}
 				base.History = buildHistory(allDatasets, latest.Tag)
 				base.Data = mergeData(allDatasets, dim)
 				base.Axes = ensureInjectAxis(base.Axes, dim)
@@ -224,6 +227,9 @@ func replaceTagData(existing, incoming Dataset, dim Dimension) Dataset {
 	result.Data = append(kept, mergeDataForTag(incoming, dim)...)
 	result.Tag = incoming.Tag
 	result.Timestamp = incoming.Timestamp
+	if incoming.Theme != "" {
+		result.Theme = incoming.Theme
+	}
 	if incoming.Meta != nil {
 		m := *incoming.Meta
 		if incoming.Meta.CPU != nil {

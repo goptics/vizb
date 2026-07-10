@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { ref, type Ref } from 'vue'
 import type { DataSet, ChartConfig } from '../types'
 
@@ -35,6 +35,31 @@ describe('useSettingsStore', () => {
         { type: 'pie', sort: { enabled: false, order: 'asc' } },
       ])
     )
+  })
+
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('initializes from the dataset, persists viewer choice, and does not overwrite it', async () => {
+    const values = new Map<string, string>()
+    const storage = {
+      getItem: vi.fn((key: string) => values.get(key) ?? null),
+      setItem: vi.fn((key: string, value: string) => values.set(key, value)),
+    }
+    vi.stubGlobal('localStorage', storage)
+    vi.stubGlobal('window', { matchMedia: () => ({ matches: false }) })
+    vi.stubGlobal('document', { documentElement: { classList: { toggle: vi.fn() } } })
+
+    const { useSettingsStore } = await import('./useSettingsStore')
+    const { themeName, initializeTheme, setTheme } = useSettingsStore()
+    initializeTheme('vintage')
+    expect(themeName.value).toBe('vintage')
+
+    setTheme('roma')
+    expect(themeName.value).toBe('roma')
+    expect(storage.setItem).toHaveBeenCalledWith('color-theme', 'roma')
+
+    initializeTheme('chalk')
+    expect(themeName.value).toBe('roma')
   })
 
   it('activeConfig returns the config at the active chart index', async () => {
