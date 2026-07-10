@@ -102,25 +102,6 @@ Flags used:
 - `--stat` — add the statistics panel
 - `--output index.html` — write a self-contained HTML file
 
-## Color themes
-
-Set the initial chart-series palette with `--theme`. Built-ins are `default`, `vintage`, `dark`,
-`westeros`, `essos`, `wonderland`, `walden`, `chalk`, `infographic`, `macarons`, `roma`, `shine`,
-and `purple-passion`:
-
-```bash
-vizb results.csv --theme westeros -o report.html
-```
-
-Custom palettes accept at least two comma-separated `#rgb` or `#rrggbb` colors:
-
-```bash
-vizb results.csv --theme "#ff6b6b,#4ecdc4,#ffe66d" -o report.html
-```
-
-The generated report includes a palette selector. Viewer choices persist in the browser and do
-not affect the separate light/dark mode setting.
-
 ## Contributing
 
 Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, build/test commands, and how to add a parser.

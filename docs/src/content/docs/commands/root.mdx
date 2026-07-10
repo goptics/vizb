@@ -93,9 +93,9 @@ See the [Parser Guide](/guides/parsers) for each parser's metrics, and the
 | `--time-unit` | `-T` | `ns` | Time unit: `ns`, `us`, `ms`, `s` |
 | `--number-unit` | `-N` | `""` | Number unit: `K`, `M`, `B`, `T` (default: as-is) |
 
-`--theme` changes series colors only; light/dark mode remains independent. Viewers can switch
-built-in palettes from the generated report, and their choice is saved in the browser. For a
-brand palette, pass at least two `#rgb` or `#rrggbb` colors:
+`--theme` changes series colors only; light/dark mode remains independent. See [Color
+Themes](/ui/themes) for the complete visual palette catalog, runtime behavior, and custom palette
+syntax. For a brand palette, pass at least two `#rgb` or `#rrggbb` colors:
 
 ```bash
 vizb data.csv --theme "#ff6b6b,#4ecdc4,#ffe66d" -o report.html

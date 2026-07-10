@@ -33,6 +33,7 @@ export default defineConfig({
 				label: 'UI',
 				items: [
 					{ label: 'Overview', slug: 'ui' },
+					{ label: 'Color Themes', slug: 'ui/themes' },
 					{ label: 'Settings', slug: 'ui/settings' },
 					{ label: 'Axis Swapping', slug: 'ui/swapping' },
 					{ label: 'Statistics', slug: 'ui/stats' },
