@@ -1,4 +1,4 @@
-name: merge-deploy-examples
+name: Merge Examples & Deploy
 on:
   workflow_call:
     inputs:
