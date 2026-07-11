@@ -4,6 +4,7 @@ import {
   paletteGradientEndpoints,
   parseCustomPalette,
   resolvePalette,
+  resolveVisualMapColors,
   THEMES,
   THEME_NAMES,
 } from './themes'
@@ -47,5 +48,11 @@ describe('themes', () => {
   it('uses the last available color for short-palette gradients', () => {
     expect(paletteGradientEndpoints(['#111', '#222'])).toEqual(['#111', '#222'])
     expect(paletteGradientEndpoints(['#1', '#2', '#3', '#4', '#5', '#6'])).toEqual(['#1', '#5'])
+  })
+
+  it("uses each built-in theme's dedicated visual-map gradient", () => {
+    expect(resolveVisualMapColors('default')).toEqual(['#91CC75', '#EE6666'])
+    expect(resolveVisualMapColors('macarons')).toEqual(['#5ab1ef', '#d87a80'])
+    expect(resolveVisualMapColors('#111,#222,#333')).toEqual(['#111', '#333'])
   })
 })

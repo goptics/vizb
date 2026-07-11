@@ -2,7 +2,7 @@ import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
 import { getDefaultThemeColor, getNextColorFor, isGrouped3D } from '@/lib/utils'
-import { paletteGradientEndpoints } from '@/lib/themes'
+import { resolveVisualMapColors } from '@/lib/themes'
 import {
   getChartStyling,
   getTooltipTheme,
@@ -40,7 +40,7 @@ function heatmapGrid(
 function heatmapVisualMap(
   min: number,
   max: number,
-  colors: string[],
+  colors: readonly string[],
   styling: any,
   largeX: boolean,
   largeY: boolean
@@ -167,14 +167,7 @@ function build2DHeatmap(config: BaseChartConfig): EChartsOption {
           }
         : {}),
     },
-    visualMap: heatmapVisualMap(
-      minVal,
-      maxVal,
-      paletteGradientEndpoints(),
-      styling,
-      largeX,
-      largeY
-    ),
+    visualMap: heatmapVisualMap(minVal, maxVal, resolveVisualMapColors(), styling, largeX, largeY),
     series: [
       {
         type: 'heatmap',
@@ -382,7 +375,7 @@ function build3DHeatmap(config: BaseChartConfig): EChartsOption {
     visualMap: heatmapVisualMap(
       minTotal,
       maxTotal,
-      paletteGradientEndpoints(),
+      resolveVisualMapColors(),
       styling,
       largeX,
       largeY

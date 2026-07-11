@@ -555,7 +555,7 @@ export function getTooltipTheme(isDark: boolean) {
     borderColor: isDark ? '#4b5563' : '#e5e7eb',
     textStyle: { color: getChartStyling(isDark).textColor },
     enterable: true,
-    extraCssText: 'user-select:text;max-height:60vh;overflow:auto;',
+    extraCssText: 'user-select:text;',
   }
 }
 

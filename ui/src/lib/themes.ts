@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue'
-import { THEMES, type ThemeName } from './themeCatalog'
+import { THEMES, THEME_VISUAL_MAP_COLORS, type ThemeName } from './themeCatalog'
 
-export { THEMES, THEME_NAMES, type ThemeName } from './themeCatalog'
+export { THEMES, THEME_NAMES, THEME_VISUAL_MAP_COLORS, type ThemeName } from './themeCatalog'
 const HEX_COLOR = /^#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?$/
 
 export function isThemeName(value?: string): value is ThemeName {
@@ -42,4 +42,11 @@ export function paletteGradientEndpoints(
   palette: readonly string[] = activePalette.value
 ): [string, string] {
   return [palette[0]!, palette[Math.min(4, palette.length - 1)]!]
+}
+
+export function resolveVisualMapColors(theme: string = activeThemeName.value): readonly string[] {
+  const normalized = normalizeTheme(theme)
+  return isThemeName(normalized)
+    ? THEME_VISUAL_MAP_COLORS[normalized]
+    : paletteGradientEndpoints(resolvePalette(normalized))
 }

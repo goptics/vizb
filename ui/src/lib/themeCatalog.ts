@@ -159,3 +159,21 @@ export const THEMES = {
 
 export type ThemeName = keyof typeof THEMES
 export const THEME_NAMES = Object.keys(THEMES) as ThemeName[]
+
+// Continuous value gradients are intentionally separate from categorical series
+// palettes. They stay stable when the application switches light/dark appearance.
+export const THEME_VISUAL_MAP_COLORS = {
+  default: ['#91CC75', '#EE6666'],
+  vintage: ['#919e8b', '#d87c7c'],
+  meadow: ['#8dc1a9', '#dd6b66'],
+  westeros: ['#59c4e6', '#d58fc4'],
+  essos: ['#f2d643', '#d95850'],
+  wonderland: ['#4ea397', '#d0648a'],
+  walden: ['#6be6c1', '#a0a7e6'],
+  chalk: ['#87f7cf', '#fc97af'],
+  infographic: ['#60C0DD', '#C1232B'],
+  macarons: ['#5ab1ef', '#d87a80'],
+  roma: ['#a4d8c2', '#E01F54'],
+  shine: ['#0098d9', '#c12e34'],
+  'purple-passion': ['#8fd3e8', '#cc70af'],
+} as const satisfies Record<ThemeName, readonly [string, string]>
