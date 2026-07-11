@@ -119,6 +119,9 @@ useDashboardInit()
       :activeValue="themeName"
       placeholder="Search themes"
       notFoundText="No theme found"
+      ariaLabel="Chart color theme"
+      class="w-36"
+      triggerClass="h-12 px-3"
       @selectValue="setTheme"
     />
 

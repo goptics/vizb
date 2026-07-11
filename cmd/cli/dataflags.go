@@ -62,7 +62,7 @@ var DataFlags = []flags.Flag{
 
 var (
 	builtInThemes = map[string]struct{}{
-		"default": {}, "vintage": {}, "dark": {}, "westeros": {}, "essos": {},
+		"default": {}, "vintage": {}, "meadow": {}, "westeros": {}, "essos": {},
 		"wonderland": {}, "walden": {}, "chalk": {}, "infographic": {},
 		"macarons": {}, "roma": {}, "shine": {}, "purple-passion": {},
 	}

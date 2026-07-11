@@ -13,7 +13,7 @@ describe('themes', () => {
     expect(THEME_NAMES).toEqual([
       'default',
       'vintage',
-      'dark',
+      'meadow',
       'westeros',
       'essos',
       'wonderland',

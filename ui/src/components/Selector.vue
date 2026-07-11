@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ChevronsUpDown, Search } from 'lucide-vue-next'
-import { ref, computed, watch, type Component } from 'vue'
+import { ref, computed, watch, type Component, type HTMLAttributes } from 'vue'
+import { cn } from '@/lib/utils'
 
 import {
   Combobox,
@@ -30,6 +31,9 @@ const props = defineProps<{
   activeValue?: string
   placeholder?: string
   notFoundText?: string
+  ariaLabel?: string
+  class?: HTMLAttributes['class']
+  triggerClass?: HTMLAttributes['class']
 }>()
 
 const emit = defineEmits<{
@@ -121,11 +125,17 @@ watch(open, (isOpen) => {
     v-model:searchTerm="searchTerm"
     :filter-function="filterFunction"
     by="label"
-    class="relative w-64"
+    :class="cn('relative w-64', props.class)"
   >
     <ComboboxAnchor>
       <ComboboxTrigger
-        class="inline-flex h-10 w-full items-center rounded-lg border border-border bg-card px-4 text-sm font-medium text-card-foreground shadow-sm hover:bg-accent hover:text-accent-foreground"
+        :aria-label="ariaLabel"
+        :class="
+          cn(
+            'inline-flex h-10 w-full items-center rounded-lg border border-border bg-card px-4 text-sm font-medium text-card-foreground shadow-sm hover:bg-accent hover:text-accent-foreground',
+            triggerClass
+          )
+        "
       >
         <span :class="value?.icon ? 'flex flex-1 items-center gap-2' : 'flex-1 text-center'">
           <component :is="value.icon" v-if="value?.icon" class="h-4 w-4" />

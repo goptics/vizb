@@ -204,7 +204,7 @@ func (s *FlagBagSuite) TestValidateNormalisesTheme() {
 
 func (s *FlagBagSuite) TestValidateThemeCatalogAndCustomPalettes() {
 	valid := []string{
-		"default", "vintage", "dark", "westeros", "essos", "wonderland", "walden",
+		"default", "vintage", "meadow", "westeros", "essos", "wonderland", "walden",
 		"chalk", "infographic", "macarons", "roma", "shine", "purple-passion",
 		"#f00,#0f0", "#ff0000, #00ff00, #0000ff",
 	}

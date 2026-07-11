@@ -23,7 +23,7 @@ export const THEMES = {
     '#724e58',
     '#4b565b',
   ],
-  dark: [
+  meadow: [
     '#dd6b66',
     '#759aa0',
     '#e69d87',
