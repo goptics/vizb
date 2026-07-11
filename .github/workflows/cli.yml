@@ -33,8 +33,8 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      # package template needs generated symbols for typecheck
-      - uses: ./.github/actions/setup-embed-ui
+      - name: Setup embed UI
+        uses: ./.github/actions/setup-embed-ui
 
       - uses: golangci/golangci-lint-action@v9
         with:

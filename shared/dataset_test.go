@@ -87,6 +87,7 @@ func (s *DatasetSuite) TestDatasetUnmarshalJSONEmptySettings() {
 func (s *DatasetSuite) TestDatasetIDTopLevelRoundTrip() {
 	raw := []byte(`{
 		"id":"bench-v1",
+		"theme":"purple-passion",
 		"name":"bench",
 		"meta":{"os":"linux"},
 		"settings":[{"type":"bar"}],
@@ -96,12 +97,14 @@ func (s *DatasetSuite) TestDatasetIDTopLevelRoundTrip() {
 	var ds shared.Dataset
 	s.Require().NoError(json.Unmarshal(raw, &ds))
 	s.Equal("bench-v1", ds.ID)
+	s.Equal("purple-passion", ds.Theme)
 	s.Require().NotNil(ds.Meta)
 	s.Equal("linux", ds.Meta.OS)
 
 	out, err := json.Marshal(ds)
 	s.Require().NoError(err)
 	s.Contains(string(out), `"id":"bench-v1"`)
+	s.Contains(string(out), `"theme":"purple-passion"`)
 }
 
 func (s *DatasetSuite) TestDatasetUnmarshalJSONLegacySingleObject() {

@@ -349,6 +349,39 @@ func (s *MergeSuite) TestMergeDatasetsSameNameSameTagDedup() {
 	s.Nil(result[0].History)
 }
 
+func (s *MergeSuite) TestMergeUsesNewestNonEmptyTheme() {
+	legacy := Dataset{
+		Name: "Bench", Theme: "vintage", Timestamp: "2026-05-12T10:00:00Z",
+		Data: []DataPoint{{Name: "legacy"}},
+	}
+	latest := makeBench("v2", "Bench", "2026-05-14T10:00:00Z",
+		[]DataPoint{{Name: "", XAxis: "speed", YAxis: "1e4"}})
+	latest.Theme = "roma"
+
+	result := MergeDatasets([]Dataset{legacy, latest}, DimensionName)
+	s.Require().Len(result, 1)
+	s.Equal("roma", result[0].Theme)
+
+	updated := latest
+	updated.Timestamp = "2026-05-15T10:00:00Z"
+	updated.Theme = "chalk"
+	result = MergeDatasets([]Dataset{result[0], updated}, DimensionName)
+	s.Require().Len(result, 1)
+	s.Equal("chalk", result[0].Theme)
+}
+
+func (s *MergeSuite) TestMergePreservesThemeWhenIncomingLegacyDatasetHasNone() {
+	existing := makeBench("v1", "Bench", "2026-05-13T10:00:00Z",
+		[]DataPoint{{Name: "", XAxis: "speed", YAxis: "1e4"}})
+	existing.Theme = "walden"
+	incoming := makeBench("v1", "Bench", "2026-05-14T10:00:00Z",
+		[]DataPoint{{Name: "", XAxis: "speed", YAxis: "2e4"}})
+
+	result := MergeDatasets([]Dataset{existing, incoming}, DimensionName)
+	s.Require().Len(result, 1)
+	s.Equal("walden", result[0].Theme)
+}
+
 func (s *MergeSuite) TestMergeDatasetsSameNameNoTagDedup() {
 	bench1 := Dataset{Name: "Bench", Data: []DataPoint{{Name: "first"}}}
 	bench2 := Dataset{Name: "Bench", Data: []DataPoint{{Name: "second"}}}

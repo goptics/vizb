@@ -1,7 +1,8 @@
 import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
-import { getNextColorFor, isGrouped3D, COLOR_PALETTE } from '@/lib/utils'
+import { getDefaultThemeColor, getNextColorFor, isGrouped3D } from '@/lib/utils'
+import { resolveVisualMapColors } from '@/lib/themes'
 import {
   getChartStyling,
   getTooltipTheme,
@@ -39,7 +40,7 @@ function heatmapGrid(
 function heatmapVisualMap(
   min: number,
   max: number,
-  colors: string[],
+  colors: readonly string[],
   styling: any,
   largeX: boolean,
   largeY: boolean
@@ -166,14 +167,7 @@ function build2DHeatmap(config: BaseChartConfig): EChartsOption {
           }
         : {}),
     },
-    visualMap: heatmapVisualMap(
-      minVal,
-      maxVal,
-      [COLOR_PALETTE[0]!, COLOR_PALETTE[4]!],
-      styling,
-      largeX,
-      largeY
-    ),
+    visualMap: heatmapVisualMap(minVal, maxVal, resolveVisualMapColors(), styling, largeX, largeY),
     series: [
       {
         type: 'heatmap',
@@ -278,7 +272,7 @@ function build3DHeatmap(config: BaseChartConfig): EChartsOption {
       .map((z) => {
         const v = zBreakdown.get(z)
         if (v === undefined) return ''
-        const color = getNextColorFor(z) ?? COLOR_PALETTE[0]!
+        const color = getNextColorFor(z) ?? getDefaultThemeColor()
         const dot = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};margin-right:6px"></span>`
         return `${dot}${z}: <b>${round2(v)}</b>`
       })
@@ -336,7 +330,7 @@ function build3DHeatmap(config: BaseChartConfig): EChartsOption {
       selected: sel,
       data: zValues.map((z) => ({
         name: z,
-        itemStyle: { color: getNextColorFor(z) ?? COLOR_PALETTE[0]! },
+        itemStyle: { color: getNextColorFor(z) ?? getDefaultThemeColor() },
       })),
     },
     tooltip: {
@@ -381,7 +375,7 @@ function build3DHeatmap(config: BaseChartConfig): EChartsOption {
     visualMap: heatmapVisualMap(
       minTotal,
       maxTotal,
-      [COLOR_PALETTE[0]!, COLOR_PALETTE[4]!],
+      resolveVisualMapColors(),
       styling,
       largeX,
       largeY
@@ -409,7 +403,7 @@ function build3DHeatmap(config: BaseChartConfig): EChartsOption {
         name: z,
         type: 'scatter' as const,
         data: [] as number[][],
-        itemStyle: { color: getNextColorFor(z) ?? COLOR_PALETTE[0]! },
+        itemStyle: { color: getNextColorFor(z) ?? getDefaultThemeColor() },
         symbolSize: 0,
         silent: true,
       })),

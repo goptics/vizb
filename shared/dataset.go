@@ -70,6 +70,7 @@ type Dataset struct {
 	Tag         string                        `json:"tag,omitempty"`
 	Timestamp   string                        `json:"timestamp,omitempty"`
 	Name        string                        `json:"name"`
+	Theme       string                        `json:"theme,omitempty"`
 	History     []HistoryEntry                `json:"history,omitempty"`
 	Description string                        `json:"description,omitempty"`
 	Meta        *Meta                         `json:"meta,omitempty"`
@@ -101,6 +102,7 @@ func (d *Dataset) UnmarshalJSON(data []byte) error {
 		Tag          string          `json:"tag,omitempty"`
 		Timestamp    string          `json:"timestamp,omitempty"`
 		Name         string          `json:"name"`
+		Theme        string          `json:"theme,omitempty"`
 		History      []HistoryEntry  `json:"history,omitempty"`
 		Description  string          `json:"description,omitempty"`
 		Meta         *Meta           `json:"meta,omitempty"`
@@ -116,6 +118,7 @@ func (d *Dataset) UnmarshalJSON(data []byte) error {
 	d.Tag = raw.Tag
 	d.Timestamp = raw.Timestamp
 	d.Name = raw.Name
+	d.Theme = raw.Theme
 	d.History = raw.History
 	d.Description = raw.Description
 	d.Meta = raw.Meta

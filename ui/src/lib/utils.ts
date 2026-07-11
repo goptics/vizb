@@ -4,6 +4,7 @@ import type { ChartType, Meta, ChartData, DataPoint, Axis } from '../types'
 import type { Ref } from 'vue'
 import { arrangementHasChartZ } from './swap'
 import { builderForChart, pickBuilder } from './builders'
+import { activePalette, palettePrimary, THEMES } from './themes'
 
 /**
  * Utility function to merge Tailwind CSS classes
@@ -15,36 +16,23 @@ export function cn(...inputs: ClassValue[]) {
 
 export const isValidIndex = (id: number, length: number): boolean => id >= 0 && id < length
 
-export const COLOR_PALETTE = [
-  '#5470C6', // Blue
-  '#3BA272', // Green
-  '#FC8452', // Orange
-  '#73C0DE', // Light blue
-  '#EE6666', // Red
-  '#FAC858', // Yellow
-  '#9A60B4', // Purple
-  '#EA7CCC', // Pink
-  '#91CC75', // Lime
-  '#FF9F7F', // Coral
-]
+export const COLOR_PALETTE = THEMES.default
+export const getThemePalette = () => activePalette.value
+export const getDefaultThemeColor = () => palettePrimary(activePalette.value)
 
 const colorMap = new Map<string, number>()
 let i = 0
 
 export function getNextColorFor(key: string) {
   if (colorMap.has(key)) {
-    return COLOR_PALETTE[colorMap.get(key)!]
+    const palette = activePalette.value
+    return palette[colorMap.get(key)! % palette.length]
   }
 
-  const colorIndex = i % COLOR_PALETTE.length
-  const color = COLOR_PALETTE[colorIndex]
-  colorMap.set(key, colorIndex)
-
-  if (i === COLOR_PALETTE.length) {
-    i = 0
-  } else {
-    i++
-  }
+  const palette = activePalette.value
+  const rawIndex = i++
+  const color = palette[rawIndex % palette.length]
+  colorMap.set(key, rawIndex)
 
   return color
 }

@@ -1,0 +1,119 @@
+---
+import { THEMES } from "../../../ui/src/lib/themeCatalog";
+---
+
+<div class="theme-swatches not-content">
+<div class="theme-grid">
+    {
+        Object.entries(THEMES).map(([name, colors]) => (
+            <section class="theme-card" aria-labelledby={`theme-${name}`}>
+                <h2 id={`theme-${name}`}>
+                    <code>{name}</code>
+                </h2>
+                <div class="palette" role="list" aria-label={`${name} palette`}>
+                    {colors.map((color, index) => (
+                        <span
+                            class="swatch"
+                            role="listitem"
+                            style={`--swatch-color: ${color}`}
+                            title={`${index + 1}. ${color}`}
+                            aria-label={`Color ${index + 1}: ${color}`}
+                        />
+                    ))}
+                </div>
+                <div class="values" aria-hidden="true">
+                    {colors.map((color) => (
+                        <span class="value">
+                            <span
+                                class="value-swatch"
+                                style={`--swatch-color: ${color}`}
+                            />
+                            <code>{color}</code>
+                        </span>
+                    ))}
+                </div>
+            </section>
+        ))
+    }
+</div>
+</div>
+
+<style>
+  .theme-swatches {
+    margin-block: 1.5rem 2rem;
+  }
+
+  .theme-grid {
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: repeat(
+            auto-fit,
+            minmax(min(100%, 19rem), 20rem)
+        );
+  }
+
+    .theme-card {
+        min-width: 0;
+        padding: 1rem;
+        border: 1px solid var(--sl-color-gray-5);
+        border-radius: 0.75rem;
+        background: var(--sl-color-bg-nav);
+        box-shadow: var(--sl-shadow-sm);
+    }
+
+    .theme-card h2 {
+        margin: 0 0 0.75rem;
+        font-size: 1rem;
+    }
+
+    .palette {
+        display: grid;
+        grid-template-columns: repeat(10, 1fr);
+        height: 3.25rem;
+        overflow: hidden;
+        border: 1px solid
+            color-mix(in srgb, var(--sl-color-gray-5), transparent 25%);
+        border-radius: 0.5rem;
+    }
+
+    .swatch {
+        min-width: 0;
+        background: var(--swatch-color);
+    }
+
+    .values {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.4rem 1rem;
+        margin-top: 0.75rem;
+    }
+
+    .value {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        min-width: 0;
+    }
+
+    .value-swatch {
+        flex: none;
+        width: 0.7rem;
+        height: 0.7rem;
+        border: 1px solid
+            color-mix(in srgb, var(--sl-color-gray-5), transparent 25%);
+        border-radius: 999px;
+        background: var(--swatch-color);
+    }
+
+    .values code {
+        color: var(--sl-color-gray-2);
+        font-size: 0.72rem;
+        white-space: nowrap;
+    }
+
+    @media (max-width: 30rem) {
+        .values {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>

@@ -15,6 +15,8 @@ import LoadingSkeleton from '../components/LoadingSkeleton.vue'
 import LoadError from '../components/LoadError.vue'
 import AppFooter from '../components/AppFooter.vue'
 import IconButton from '../components/IconButton.vue'
+import Selector from '../components/Selector.vue'
+import { isThemeName, THEME_NAMES } from '../lib/themes'
 
 const version = window.VIZB_VERSION || 'v0.0.0-dev'
 
@@ -32,8 +34,15 @@ const {
   loadError,
 } = useDataPoint()
 
-const { isDark, toggleDark, chartType } = useSettingsStore()
+const { isDark, toggleDark, chartType, themeName, setTheme } = useSettingsStore()
 const { sort, showLabels, scale, threeD } = useActiveChartShape()
+
+const themeItems = computed(() => {
+  const items = THEME_NAMES.map((theme) => ({ name: theme, value: theme }))
+  return isThemeName(themeName.value)
+    ? items
+    : [{ name: 'Custom palette', value: themeName.value }, ...items]
+})
 
 // Build an AxisLabels flat map from dataset.axes for swapAxisLabels.
 const axisLabelsFromAxes = (axes: Axis[] | undefined): AxisLabels | undefined => {
@@ -105,7 +114,18 @@ useDashboardInit()
 
     <ChartSettingsPopover />
 
-    <IconButton @click="toggleDark()" aria-label="Toggle theme">
+    <Selector
+      :items="themeItems"
+      :activeValue="themeName"
+      placeholder="Search themes"
+      notFoundText="No theme found"
+      ariaLabel="Chart color theme"
+      class="w-36"
+      triggerClass="h-12 px-3"
+      @selectValue="setTheme"
+    />
+
+    <IconButton @click="toggleDark()" aria-label="Toggle dark mode">
       <Sun v-if="isDark" class="h-5 w-5" />
       <Moon v-else class="h-5 w-5" />
     </IconButton>

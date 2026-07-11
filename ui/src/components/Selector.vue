@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ChevronsUpDown, Search } from 'lucide-vue-next'
-import { ref, computed, watch, type Component } from 'vue'
+import { ref, computed, watch, type Component, type HTMLAttributes } from 'vue'
+import { cn } from '@/lib/utils'
 
 import {
   Combobox,
@@ -21,17 +22,23 @@ import {
 type Item = {
   name: string
   icon?: Component
+  value?: string
 }
 
 const props = defineProps<{
   items: Item[]
-  activeId: number
+  activeId?: number
+  activeValue?: string
   placeholder?: string
   notFoundText?: string
+  ariaLabel?: string
+  class?: HTMLAttributes['class']
+  triggerClass?: HTMLAttributes['class']
 }>()
 
 const emit = defineEmits<{
   select: [id: number]
+  selectValue: [value: string]
 }>()
 
 // Convert the input array to the format expected by the combobox. Carries the
@@ -39,7 +46,7 @@ const emit = defineEmits<{
 // label without a second pass over `items`.
 const options = computed(() =>
   props.items.map((item, index) => ({
-    value: index.toString(),
+    value: item.value ?? index.toString(),
     label: item.name,
     icon: item.icon,
   }))
@@ -62,7 +69,8 @@ const filterFunction = (list: Option[], searchValue: string) => {
 
 // Initialize the value when the component mounts or when activeId changes
 const updateValue = () => {
-  const option = options.value.find((opt) => opt.value === props.activeId.toString())
+  const activeValue = props.activeValue ?? props.activeId?.toString()
+  const option = options.value.find((opt) => opt.value === activeValue)
   if (option) {
     value.value = option
   } else {
@@ -72,7 +80,7 @@ const updateValue = () => {
 
 // Watch for changes in activeId or benchmarks list
 watch(
-  [() => props.activeId, () => props.items],
+  [() => props.activeId, () => props.activeValue, () => props.items],
   () => {
     updateValue()
   },
@@ -82,6 +90,10 @@ watch(
 // Handle selection changes
 watch(value, (newValue) => {
   if (newValue) {
+    if (props.activeValue !== undefined) {
+      if (newValue.value !== props.activeValue) emit('selectValue', newValue.value)
+      return
+    }
     const index = parseInt(newValue.value)
     if (!isNaN(index) && index !== props.activeId) {
       emit('select', index)
@@ -93,6 +105,10 @@ watch(value, (newValue) => {
 watch(open, (isOpen) => {
   // Close when selection is made
   if (!isOpen && value.value) {
+    if (props.activeValue !== undefined) {
+      if (value.value.value !== props.activeValue) emit('selectValue', value.value.value)
+      return
+    }
     const index = parseInt(value.value.value)
     if (!isNaN(index) && index !== props.activeId) {
       emit('select', index)
@@ -109,11 +125,17 @@ watch(open, (isOpen) => {
     v-model:searchTerm="searchTerm"
     :filter-function="filterFunction"
     by="label"
-    class="relative w-64"
+    :class="cn('relative w-64', props.class)"
   >
     <ComboboxAnchor>
       <ComboboxTrigger
-        class="inline-flex h-10 w-full items-center rounded-lg border border-border bg-card px-4 text-sm font-medium text-card-foreground shadow-sm hover:bg-accent hover:text-accent-foreground"
+        :aria-label="ariaLabel"
+        :class="
+          cn(
+            'inline-flex h-10 w-full items-center rounded-lg border border-border bg-card px-4 text-sm font-medium text-card-foreground shadow-sm hover:bg-accent hover:text-accent-foreground',
+            triggerClass
+          )
+        "
       >
         <span :class="value?.icon ? 'flex flex-1 items-center gap-2' : 'flex-1 text-center'">
           <component :is="value.icon" v-if="value?.icon" class="h-4 w-4" />

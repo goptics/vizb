@@ -1,0 +1,39 @@
+---
+title: Color Themes
+description: Built-in and custom chart-series color palettes in Vizb.
+---
+
+import ThemeSwatches from '../../../components/ThemeSwatches.astro';
+
+Vizb themes change chart-series colors only. They do not change backgrounds, axes, or the
+separate light/dark appearance setting.
+
+Set the initial palette when generating a report:
+
+```bash
+vizb results.csv --theme westeros -o report.html
+```
+
+Viewers can switch among built-in themes from the palette selector in the generated report. The
+selection is saved in the browser and reused across reports.
+
+## Built-in palettes
+
+Every built-in contains ten unique colors. Hover a swatch to see its position and hex value.
+
+<ThemeSwatches />
+
+## Custom palettes
+
+Pass two or more comma-separated `#rgb` or `#rrggbb` colors to use a brand palette:
+
+```bash
+vizb results.csv --theme "#ff6b6b,#4ecdc4,#ffe66d" -o report.html
+```
+
+Custom palettes can contain any number of colors from two upward. Vizb cycles through them when
+there are more series keys than colors. Invalid palettes produce a warning and fall back to
+`default`.
+
+Custom palettes appear as **Custom palette** in the generated report selector. Selecting a
+built-in theme replaces that custom viewer preference.

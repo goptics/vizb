@@ -1,3 +1,4 @@
+import { computed } from 'vue'
 import { describe, it, expect } from 'vitest'
 import type { DataPoint } from '../types'
 import type { ChartData, Axis } from '../types'
@@ -13,7 +14,39 @@ import {
   isValueMode,
   isMixedMode,
   isScatterTransformMode,
+  getNextColorFor,
+  resetColor,
 } from './utils'
+import { applyTheme } from './themes'
+
+describe('theme color allocation', () => {
+  it('preserves raw key indices across differently sized palettes', () => {
+    applyTheme('#111,#222,#333')
+    resetColor()
+    expect([getNextColorFor('a'), getNextColorFor('b'), getNextColorFor('c')]).toEqual([
+      '#111',
+      '#222',
+      '#333',
+    ])
+
+    applyTheme('#aaa,#bbb')
+    expect([getNextColorFor('a'), getNextColorFor('b'), getNextColorFor('c')]).toEqual([
+      '#aaa',
+      '#bbb',
+      '#aaa',
+    ])
+    expect(getNextColorFor('d')).toBe('#bbb')
+  })
+
+  it('invalidates Vue computed options when the active palette changes', () => {
+    applyTheme('#123,#456')
+    resetColor()
+    const color = computed(() => getNextColorFor('series'))
+    expect(color.value).toBe('#123')
+    applyTheme('#abc,#def')
+    expect(color.value).toBe('#abc')
+  })
+})
 
 const dp = (x: string, y: string, z = ''): DataPoint => ({
   name: '',
