@@ -356,6 +356,25 @@ export function axis3DName(label: string | undefined, styling: ChartStyling) {
 }
 
 /**
+ * Grouped 3D vertical axis: keep name + nameGap for echarts-gl framing so the
+ * metric scale is not crushed, but paint the title transparent (z column name
+ * is already in the legend/badge; showing it on a numeric height axis misleads).
+ * Always sets `name` so Chart3D notMerge:false clears sticky titles.
+ */
+export function axis3DNameInvisible(label: string | undefined) {
+  if (!label) return { name: '' as const }
+  return {
+    name: label,
+    nameGap: 25,
+    nameTextStyle: {
+      color: 'transparent',
+      fontSize: 14,
+      fontWeight: 'bold' as const,
+    },
+  }
+}
+
+/**
  * Pure factory for the complex per-cell 3D tooltip.
  * Shared by bar3D and line3D so the aggregation, Σz, marginals, spread, and donut
  * logic never diverges.

@@ -7,6 +7,7 @@ import {
   EMPTY_RENDER,
   makeAxis3DCommon,
   axis3DName,
+  axis3DNameInvisible,
   create3DTooltipFormatter,
   createZLegendConfig,
   create3DGridConfig,
@@ -201,10 +202,10 @@ export function useBar3DChartOptions(config: BaseChartConfig) {
         ...axisCommon,
         ...axis3DName(chartData.value.axisLabels?.y, styling),
       },
-      // name:'' clears sticky labels under Chart3D notMerge:false (omit does not)
+      // Invisible name keeps nameGap framing; explicit name clears sticky merges.
       zAxis3D: {
         ...zAxis3DBase,
-        name: '',
+        ...axis3DNameInvisible(chartData.value.axisLabels?.z),
       },
       grid3D,
       series,
