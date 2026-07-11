@@ -84,13 +84,11 @@ describe('grouped 3D z axis labels', () => {
       const { options } = useOptions(makeConfig(groupedRender))
       const zAxis = options.value.zAxis3D as {
         name?: string
-        nameGap?: number
         nameTextStyle?: { color?: string }
       }
 
-      // Non-empty name + nameGap preserve framing; transparent text hides the label.
+      // Non-empty name preserves framing; transparent text hides the label.
       expect(zAxis.name).toBe('category')
-      expect(zAxis.nameGap).toBe(25)
       expect(zAxis.nameTextStyle?.color).toBe('transparent')
     }
   )

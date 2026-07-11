@@ -356,21 +356,15 @@ export function axis3DName(label: string | undefined, styling: ChartStyling) {
 }
 
 /**
- * Grouped 3D vertical axis: keep name + nameGap for echarts-gl framing so the
- * metric scale is not crushed, but paint the title transparent (z column name
- * is already in the legend/badge; showing it on a numeric height axis misleads).
- * Always sets `name` so Chart3D notMerge:false clears sticky titles.
+ * Grouped 3D vertical axis: keep a real `name` so echarts-gl still reserves
+ * title space (empty name crushed framing), but hide the text. Always sets
+ * `name` so Chart3D notMerge:false clears sticky titles.
  */
 export function axis3DNameInvisible(label: string | undefined) {
   if (!label) return { name: '' as const }
   return {
     name: label,
-    nameGap: 25,
-    nameTextStyle: {
-      color: 'transparent',
-      fontSize: 14,
-      fontWeight: 'bold' as const,
-    },
+    nameTextStyle: { color: 'transparent' },
   }
 }
 
