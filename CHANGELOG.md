@@ -4,7 +4,25 @@ Notable changes to Vizb documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [v0.14.1] - Unreleased
+# [v0.15.0]
+
+### Added
+
+- **`--smooth` for 2D line charts** — curved segments via CLI, `--chart line:smooth`, and UI toggle; unavailable for 3D and non-line charts ([#187](https://github.com/goptics/vizb/pull/187)).
+- **`--horizontal` for 2D grouped bar charts** — layout-only (categories on Y, values on X); distinct from `--swap`; CLI, `--chart bar:horizontal`, UI toggle, and `?bar.h=` deep link ([#190](https://github.com/goptics/vizb/pull/190)).
+- **Multi-select descriptive column picker** — stats panel lets viewers choose which descriptive columns drive metrics (select-all / reset) ([#191](https://github.com/goptics/vizb/pull/191)).
+- **`--stack` for 2D bar and line charts** — stacked bars / stacked area lines for grouped x+y data; skipped when z is present or scale is log ([#194](https://github.com/goptics/vizb/pull/194)).
+- **`--theme` color palette support** — 13 built-in series palettes plus custom comma-separated hex colors; theme stored on datasets and preserved through merge; UI palette selector with `localStorage` ([#195](https://github.com/goptics/vizb/pull/195)).
+
+### Changed
+
+- **Embed UI generation in CI** — stop tracking `pkg/template/vizb-ui.gen.go`; generate via `task init` / `task build:ui` and shared `setup-embed-ui` composite; drop gen-sync pre-commit/CI checks ([#197](https://github.com/goptics/vizb/pull/197)).
+
+### Fixed
+
+- **Grouped 3D z-axis sticky labels** — set empty z-axis `name` under option merge for grouped bar/line/scatter 3D so labels do not stick; value-mode still shows the metric name ([#192](https://github.com/goptics/vizb/pull/192)).
+
+# [v0.14.1] - 2026-07-04
 
 ### Fixed
 
@@ -14,6 +32,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adhere
 ### Changed
 
 - **Merge documentation** — updated merge command docs, merging guide, and stateful CI guide to reflect same-tag replacement and auto-axis behavior.
+- **Stateful CI example storage** — replace GitHub artifact storage with R2 in the stateful CI example ([#180](https://github.com/goptics/vizb/pull/180)).
 
 # [v0.14.0] - 2026-07-01
 
