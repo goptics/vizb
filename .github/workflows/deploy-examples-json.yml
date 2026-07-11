@@ -1,4 +1,4 @@
-name: deploy-json-examples
+name: Deploy JSON Examples
 on:
   workflow_run:
     workflows: [Release]

@@ -1,4 +1,4 @@
-name: deploy-go-examples
+name: Deploy Go Examples
 on:
   workflow_run:
     workflows: [Release]

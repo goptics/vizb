@@ -1,4 +1,4 @@
-name: deploy-csv-examples
+name: Deploy CSV Examples
 on:
   workflow_run:
     workflows: [Release]

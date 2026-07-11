@@ -1,4 +1,4 @@
-name: deploy-rust-examples
+name: Deploy Rust Examples
 on:
   workflow_run:
     workflows: [Release]

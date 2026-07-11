@@ -1,4 +1,4 @@
-name: deploy-javascript-examples
+name: Deploy Javascript Examples
 on:
   workflow_run:
     workflows: [Release]
