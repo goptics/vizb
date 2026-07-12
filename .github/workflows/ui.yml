@@ -107,3 +107,11 @@ jobs:
       # Smoke: prove embed generation works. gen.go is gitignored; no sync check.
       - run: EMBED_UI=True pnpm build
         working-directory: ui
+
+      - name: Upload embedded UI
+        if: github.event_name == 'workflow_call'
+        uses: actions/upload-artifact@v7
+        with:
+          name: embedded-ui-${{ github.sha }}
+          path: pkg/template/vizb-ui.gen.go
+          if-no-files-found: error

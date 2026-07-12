@@ -59,8 +59,11 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - name: Setup embed UI
-        uses: ./.github/actions/setup-embed-ui
+      - name: Download embedded UI
+        uses: actions/download-artifact@v8
+        with:
+          name: embedded-ui-${{ github.sha }}
+          path: pkg/template
 
       - name: Download dependencies
         run: go mod download
