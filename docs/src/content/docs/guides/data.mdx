@@ -41,14 +41,14 @@ gamma,150,9,2024-06
 
 ## JSON
 
-A JSON array of objects. Each object is a row. Each key is a column.
+A JSON array of objects or a 2D array. Object rows use keys as columns. Matrix rows use the first row as headers when every first-row cell is a JSON string; otherwise columns are named by position.
 
 ```bash
 vizb data.json -o data.html           # auto-detected as json
 vizb data.json -P json -o data.html   # explicit
 ```
 
-### Input
+### Object Rows
 
 ```json
 [
@@ -59,16 +59,41 @@ vizb data.json -P json -o data.html   # explicit
 
 Produces series `sells`, `stocks`, and `mem.alloc`. `date` (string) is ignored.
 
+### Matrix Rows
+
+```json
+[
+  ["region", "sales"],
+  ["West", 10],
+  ["East", 20]
+]
+```
+
+The all-string first row becomes headers, so this is equivalent to object rows with `region` and `sales` fields.
+
+For all-numeric grids, omit headers and vizb assigns `x`, `y`, `z`, `metric`, then `col5`, `col6`, ...:
+
+```json
+[
+  [1, 2, 3, 4],
+  [5, 6, 7, 8]
+]
+```
+
+That enters the same auto-value path as all-numeric CSV: `x`, `y`, and `z` become coordinate axes, and `metric` drives visualMap where supported.
+
 ### Rules
 
 | Topic | Behaviour |
 |-------|-----------|
-| Shape | Top-level **array of objects**. A single top-level object is consumed by vizb's own dataset-JSON path. Reach a nested array inside an envelope with [`--json-path`](#selecting-a-nested-array-with---json-path). |
+| Shape | Top-level **array of objects** or **array of arrays**. The first element selects the mode. A single top-level object is consumed by vizb's own dataset-JSON path. Reach a nested array inside an envelope with [`--json-path`](#selecting-a-nested-array-with---json-path). |
+| Matrix header | First row is headers only when every cell in that row is a JSON string, including `""` and numeric-looking strings like `"10"`. Header cells are trimmed; empty names are skipped; duplicates get suffixes like `sales (2)`. |
+| Matrix without header | First row is data. Columns are named `x`, `y`, `z`, `metric`, then `col5`, `col6`, ... by position. |
 | Numeric value | A finite JSON **number** *or* a **numeric string** (`"10"` → 10). `bool`/`null` are ignored. |
 | Nested objects | Flattened to dotted keys: `{"mem":{"alloc":5}}` → `mem.alloc`. |
-| Arrays as values | Skipped. |
-| Column order | **First-seen** key order across the array (preserved, not alphabetical). |
-| Heterogeneous rows | Keys are unioned. A missing key in a row is a gap. A key numeric in some rows and text in others is charted where numeric. |
+| Arrays as values | Skipped inside object rows. Nested arrays/objects inside matrix cells are skipped. |
+| Column order | **First-seen** key order for object rows; header or position order for matrix rows. |
+| Heterogeneous rows | Keys are unioned for object rows. Matrix rows may be ragged. A missing field/cell is a gap. A field numeric in some rows and text in others is charted where numeric. |
 | No numeric fields | Hard error: `no numeric fields found in JSON`. |
 
 ## Grouping with `--group` / `-g`
@@ -142,5 +167,5 @@ This turns a row-per-record dump into a handful of meaningful grouped points. It
 ## Limitations
 
 - **CSV:** no thousands separators / currency / `%` parsing. Comma delimiter only. No headerless files.
-- **JSON:** a single top-level object is treated as a vizb Dataset, not a row. Use [`--json-path`](#selecting-a-nested-array-with---json-path) to chart a nested array inside an envelope. Arrays-of-scalars are not exploded into series.
+- **JSON:** a single top-level object is treated as a vizb Dataset, not a row. Use [`--json-path`](#selecting-a-nested-array-with---json-path) to chart a nested array inside an envelope. Mixed top-level arrays are not normalized.
 - `--number-unit`/`-N` scales every numeric column/field uniformly.
