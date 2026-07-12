@@ -24,7 +24,7 @@ on:
       - .github/actions/setup-embed-ui/**
 
 jobs:
-  lint:
+  embed-ui:
     runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v7
@@ -36,6 +36,30 @@ jobs:
 
       - name: Setup embed UI
         uses: ./.github/actions/setup-embed-ui
+
+      - name: Upload embedded UI
+        uses: actions/upload-artifact@v7
+        with:
+          name: cli-embedded-ui-${{ github.sha }}
+          path: pkg/template/vizb-ui.gen.go
+          if-no-files-found: error
+
+  lint:
+    needs: embed-ui
+    runs-on: ubuntu-slim
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Download embedded UI
+        uses: actions/download-artifact@v8
+        with:
+          name: cli-embedded-ui-${{ github.sha }}
+          path: pkg/template
 
       - uses: golangci/golangci-lint-action@v9
         with:
@@ -59,6 +83,7 @@ jobs:
           fi
 
   test:
+    needs: embed-ui
     runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v7
@@ -68,8 +93,11 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - name: Setup embed UI
-        uses: ./.github/actions/setup-embed-ui
+      - name: Download embedded UI
+        uses: actions/download-artifact@v8
+        with:
+          name: cli-embedded-ui-${{ github.sha }}
+          path: pkg/template
 
       - run: go mod download
 
