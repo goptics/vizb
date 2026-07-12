@@ -322,7 +322,7 @@ func decodeMatrixDataRows(dec *json.Decoder, headers []string, first []matrixCel
 
 		d, ok := tok.(json.Delim)
 		if !ok || d != '[' {
-			if ok && (d == '{' || d == '[') {
+			if ok && d == '{' {
 				if err := skipContainerBody(dec); err != nil {
 					return nil, nil, err
 				}
@@ -375,9 +375,6 @@ func decodeMatrixCell(dec *json.Decoder) (matrixCell, error) {
 		}
 		return matrixCell{}, nil
 	case float64:
-		if math.IsNaN(v) || math.IsInf(v, 0) {
-			return matrixCell{}, nil
-		}
 		return matrixCell{val: v, ok: true}, nil
 	case string:
 		return matrixCell{val: v, ok: true, isString: true}, nil

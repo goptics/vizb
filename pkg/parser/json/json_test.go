@@ -147,6 +147,24 @@ func (s *JSONSuite) TestNumericLookingStringMatrixHeadersStayHeaders() {
 	s.Equal([]string{"10", "20"}, statTypes(results[0].Stats))
 }
 
+func (s *JSONSuite) TestMatrixHeaderEmptyAndDuplicateNames() {
+	j := `[["","sales","sales"],[99,10,20]]`
+
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+
+	s.Require().Len(results, 1)
+	s.Equal([]string{"sales", "sales (2)"}, statTypes(results[0].Stats))
+}
+
+func (s *JSONSuite) TestEmptyFirstMatrixRowUsesSyntheticNamesForLaterRows() {
+	j := `[[],[1,2]]`
+
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+
+	s.Require().Len(results, 1)
+	s.Equal([]string{"x", "y"}, statTypes(results[0].Stats))
+}
+
 func (s *JSONSuite) TestMatrixRaggedRowsAndSkippedCellsAreGaps() {
 	j := `[["a","b","c"],[1],[2,3,4],[null,5,{"nested":true}]]`
 
@@ -167,6 +185,16 @@ func (s *JSONSuite) TestMatrixBoolNullAndNestedValuesAreSkipped() {
 	s.Equal([]string{"value"}, statTypes(results[0].Stats))
 }
 
+func (s *JSONSuite) TestNoHeaderMatrixSkipsMixedTopLevelElements() {
+	j := `[[1,2],99,{"skip":true},[3,4]]`
+
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+
+	s.Require().Len(results, 2)
+	s.Equal([]string{"x", "y"}, statTypes(results[0].Stats))
+	s.Equal([]string{"x", "y"}, statTypes(results[1].Stats))
+}
+
 func (s *JSONSuite) TestNoHeaderMatrixNamesColumnsAfterMetric() {
 	j := `[[1,2,3,4,5,6]]`
 
@@ -182,6 +210,135 @@ func (s *JSONSuite) TestMatrixEmptyAndHeaderOnlyReturnNil() {
 
 	pts, _ = ParseJSON(s.writeFile(`[["x","y"]]`), s.cfg)
 	s.Nil(pts)
+}
+
+func (s *JSONSuite) TestDecodeTopLevelRowsMalformedInputsReturnErrors() {
+	cases := []struct {
+		name  string
+		input string
+	}{
+		{name: "first token", input: `[tru`},
+		{name: "object body", input: `[{"x":`},
+		{name: "object tail", input: `[{"x":1},{"y":`},
+		{name: "matrix first row", input: `[[1`},
+		{name: "matrix header data row", input: `[["x"],[`},
+		{name: "matrix data token", input: `[[1], tru`},
+		{name: "matrix data row", input: `[[1],[2`},
+		{name: "matrix skipped object", input: `[[1],{"skip":`},
+	}
+
+	for _, tc := range cases {
+		s.Run(tc.name, func() {
+			dec := json.NewDecoder(strings.NewReader(tc.input))
+			tok, err := dec.Token()
+			s.Require().NoError(err)
+			s.Equal(json.Delim('['), tok)
+
+			_, _, _, err = decodeTopLevelRows(dec)
+			s.Error(err)
+		})
+	}
+}
+
+func (s *JSONSuite) TestDecodeTopLevelRowsScalarFirstFallsBackToObjectRows() {
+	dec := json.NewDecoder(strings.NewReader(`[1,{"x":2}]`))
+	tok, err := dec.Token()
+	s.Require().NoError(err)
+	s.Equal(json.Delim('['), tok)
+
+	rows, colOrder, seenCol, err := decodeTopLevelRows(dec)
+	s.Require().NoError(err)
+	s.Equal([]string{"x"}, colOrder)
+	s.True(seenCol["x"])
+	s.Require().Len(rows, 1)
+	s.Equal(2.0, rows[0]["x"])
+}
+
+func (s *JSONSuite) TestDecodeMatrixCellErrorAndUnexpectedClose() {
+	dec := json.NewDecoder(strings.NewReader(""))
+	_, err := decodeMatrixCell(dec)
+	s.Error(err)
+
+	dec = json.NewDecoder(strings.NewReader(`[tru`))
+	tok, err := dec.Token()
+	s.Require().NoError(err)
+	s.Equal(json.Delim('['), tok)
+	_, err = decodeMatrixRowBody(dec)
+	s.Error(err)
+
+	dec = json.NewDecoder(strings.NewReader(`[]`))
+	tok, err = dec.Token()
+	s.Require().NoError(err)
+	s.Equal(json.Delim('['), tok)
+
+	cell, err := decodeMatrixCell(dec)
+	s.NoError(err)
+	s.False(cell.ok)
+}
+
+func (s *JSONSuite) TestJSONKindFnSkipsRowsMissingAxisField() {
+	rows := []map[string]any{
+		{"y": 2.0},
+		{"x": 1.0, "y": 3.0},
+	}
+	kind := jsonKindFn(rows, map[string]bool{"x": true, "y": true}, []string{"x", "y"}, "--select")
+
+	got, err := kind("x", "x")
+
+	s.NoError(err)
+	s.Equal("value", got)
+}
+
+func (s *JSONSuite) TestResolveGroupKeysSkipsEmptyNames() {
+	keys, set := resolveGroupKeys([]string{"x"}, map[string]bool{"x": true}, []string{"", "x"})
+
+	s.Equal([]string{"x"}, keys)
+	s.True(set["x"])
+}
+
+func (s *JSONSuite) TestLowLevelObjectDecodersReturnErrors() {
+	dec := json.NewDecoder(strings.NewReader(""))
+	_, err := decodeElement(dec)
+	s.Error(err)
+
+	dec = json.NewDecoder(strings.NewReader(`{"x":1`))
+	tok, err := dec.Token()
+	s.Require().NoError(err)
+	s.Equal(json.Delim('{'), tok)
+	_, err = decodeObjectBody(dec, "")
+	s.Error(err)
+
+	dec = json.NewDecoder(strings.NewReader(`{`))
+	tok, err = dec.Token()
+	s.Require().NoError(err)
+	s.Equal(json.Delim('{'), tok)
+	_, err = decodeObjectBody(dec, "")
+	s.Error(err)
+
+	dec = json.NewDecoder(strings.NewReader(`{"`))
+	tok, err = dec.Token()
+	s.Require().NoError(err)
+	s.Equal(json.Delim('{'), tok)
+	_, err = decodeObjectBody(dec, "")
+	s.Error(err)
+
+	dec = json.NewDecoder(strings.NewReader(""))
+	_, err = decodeValue(dec, "x")
+	s.Error(err)
+
+	dec = json.NewDecoder(strings.NewReader(`[]`))
+	tok, err = dec.Token()
+	s.Require().NoError(err)
+	s.Equal(json.Delim('['), tok)
+	leaves, err := decodeValue(dec, "x")
+	s.NoError(err)
+	s.Nil(leaves)
+
+	dec = json.NewDecoder(strings.NewReader(`[[1]]`))
+	tok, err = dec.Token()
+	s.Require().NoError(err)
+	s.Equal(json.Delim('['), tok)
+	s.NoError(skipContainerBody(dec))
 }
 
 func (s *JSONSuite) TestBoolAndNullSkipped() {
@@ -370,8 +527,44 @@ func (s *JSONFatalSuite) TestMissingGroupFieldIsFatal() {
 	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
 }
 
+func (s *JSONFatalSuite) TestInvalidGroupConfigIsFatal() {
+	s.cfg.Group = []string{"a", "b"}
+	s.cfg.GroupPattern = "x"
+	path := s.writeFile(`[{"a":"A","b":"B","sales":10}]`)
+
+	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
+}
+
+func (s *JSONFatalSuite) TestOpenFileErrorIsFatal() {
+	path := filepath.Join(s.T().TempDir(), "missing.json")
+
+	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
+}
+
 func (s *JSONFatalSuite) TestNoNumericFieldsIsFatal() {
 	path := s.writeFile(`[{"name":"a","label":"foo"}]`)
+
+	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
+}
+
+func (s *JSONFatalSuite) TestAutoDetectGroupConfigErrorIsFatal() {
+	s.cfg.AutoGroup = true
+	s.cfg.ChartTypes = []string{"bar"}
+	path := s.writeFile(`[{"a/b":"cat","sales":10}]`)
+
+	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
+}
+
+func (s *JSONFatalSuite) TestMalformedMatrixIsFatal() {
+	path := s.writeFile(`[["x"],[`)
+
+	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
+}
+
+func (s *JSONFatalSuite) TestGroupTabularRowErrorIsFatal() {
+	s.cfg.Group = []string{"a"}
+	s.cfg.GroupRegex = ".*"
+	path := s.writeFile(`[{"a":"A","sales":10}]`)
 
 	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
 }
