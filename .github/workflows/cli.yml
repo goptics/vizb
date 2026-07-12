@@ -1,6 +1,7 @@
 name: CLI
 
 on:
+  workflow_call:
   push:
     branches: [main]
     paths:

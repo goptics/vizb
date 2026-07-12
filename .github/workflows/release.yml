@@ -31,8 +31,18 @@ jobs:
             - A PR is auto-submitted to microsoft/winget-pkgs
             - Examples at https://goptics.github.io/vizb/examples/ are auto-redeployed
 
-  goreleaser:
+  cli:
+    name: CLI
     needs: approve
+    uses: ./.github/workflows/cli.yml
+
+  ui:
+    name: UI
+    needs: approve
+    uses: ./.github/workflows/ui.yml
+
+  goreleaser:
+    needs: [cli, ui]
     runs-on: ubuntu-slim
     permissions:
       contents: write

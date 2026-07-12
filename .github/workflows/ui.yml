@@ -1,6 +1,7 @@
 name: UI
 
 on:
+  workflow_call:
   push:
     branches: [main]
     paths:
