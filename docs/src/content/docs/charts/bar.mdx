@@ -4,7 +4,7 @@ description: Compare values across categories with grouped or 3D bars — vizb's
 ---
 
 import { CardGrid, Card, LinkCard, Tabs, TabItem, Aside } from '@astrojs/starlight/components';
-import { Image } from 'astro:assets';
+import DocImage from '../../../components/DocImage.astro';
 import bar1D from '../../../assets/bar-1D.png';
 import bar2D from '../../../assets/bar-2D.png';
 import bar2DStack from '../../../assets/bar-2D-stack.png';
@@ -37,7 +37,7 @@ A single series of bars — one bar per X category. The height is the raw value.
 vizb bar sales.csv -g order_date -p x -o out.html
 ```
 
-<Image src={bar1D} alt="1D bar chart with a single series of blue bars over daily dates" />
+<DocImage src={bar1D} alt="1D bar chart with a single series of blue bars over daily dates" />
 
 ### 2D (X + Y axes)
 
@@ -47,7 +47,7 @@ Grouped bars: X stays on the category axis, and each distinct Y value becomes it
 vizb bar sales.csv -g region,category -p x,y -o out.html
 ```
 
-<Image src={bar2D} alt="2D grouped bar chart with five category series per region and a color category legend" />
+<DocImage src={bar2D} alt="2D grouped bar chart with five category series per region and a color category legend" />
 
 Add `--stack` to show one bar per X value with the Y series stacked inside it. This keeps the grouped data shape but changes the 2D bar rendering to a part-to-whole view.
 
@@ -55,7 +55,7 @@ Add `--stack` to show one bar per X value with the Y series stacked inside it. T
 vizb bar sales.csv -g region,category -p x,y --stack -o stacked.html
 ```
 
-<Image src={bar2DStack} alt="2D stacked bar chart with each region shown as one bar split into category segments" />
+<DocImage src={bar2DStack} alt="2D stacked bar chart with each region shown as one bar split into category segments" />
 
 ### 3D (X + Y + Z axes)
 
@@ -65,7 +65,7 @@ WebGL `bar3D` scene: X and Y form a grid floor, and Z values stack as depth laye
 vizb bar sales.csv -g order_date,category -p "[-y{Month}-x{Date}],z{Category}" -o out.html
 ```
 
-<Image src={bar3D} alt="3D stacked bar chart with date, month, and category axes in a WebGL scene" />
+<DocImage src={bar3D} alt="3D stacked bar chart with date, month, and category axes in a WebGL scene" />
 
 <Aside type="note">
   The Z axis requires **both** X and Y to be present. Passing a Z without an X/Y floor will be rejected with an error.
@@ -89,7 +89,7 @@ On an all-numeric CSV/JSON file, vizb auto-detects the first 2–3 columns as co
 ./bin/vizb bar noise-surface.csv -o surface.html --3d-visualmap
 ```
 
-<Image src={bar3DValue} alt="3D bar chart with value-type bars along the Z axis" />
+<DocImage src={bar3DValue} alt="3D bar chart with value-type bars along the Z axis" />
 
 ## Settings
 

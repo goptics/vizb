@@ -4,7 +4,7 @@ description: Break data into proportional slices — vizb renders one pie per di
 ---
 
 import { CardGrid, Card, LinkCard, Tabs, TabItem, Aside } from '@astrojs/starlight/components';
-import { Image } from 'astro:assets';
+import DocImage from '../../../components/DocImage.astro';
 import pie1D from '../../../assets/pie-1D.png';
 import pie2D from '../../../assets/pie-2D.png';
 import pie3D from '../../../assets/pie-3D.png';
@@ -37,7 +37,7 @@ One pie chart: each unique X value is a slice. The slice size is proportional to
 vizb pie sales.csv -g region -o out.html
 ```
 
-<Image src={pie1D} alt="1D pie chart showing quantity share by region with labeled slices" />
+<DocImage src={pie1D} alt="1D pie chart showing quantity share by region with labeled slices" />
 
 ### 2D (X + Y axes)
 
@@ -47,7 +47,7 @@ Two pies side-by-side: **By X-Axis** and **By Y-Axis**. Each pie breaks the tota
 vizb pie sales.csv -g region,category -p x,y -o out.html
 ```
 
-<Image src={pie2D} alt="2D pie charts side by side — quantity by region and by category" />
+<DocImage src={pie2D} alt="2D pie charts side by side — quantity by region and by category" />
 
 ### 3D (X + Y + Z axes)
 
@@ -59,7 +59,7 @@ This example splits `order_date` into month and day slots (same grouping as the 
 vizb pie sales.csv -g order_date,category -p "[-y{Month}-x{Date}],z{Category}" -o out.html
 ```
 
-<Image src={pie3D} alt="3D pie charts in a row — quantity by date, month, and category" />
+<DocImage src={pie3D} alt="3D pie charts in a row — quantity by date, month, and category" />
 
 ## Settings
 

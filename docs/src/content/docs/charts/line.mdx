@@ -4,7 +4,7 @@ description: Trace trends across categories with connected lines — one series 
 ---
 
 import { CardGrid, Card, LinkCard, Tabs, TabItem, Aside } from '@astrojs/starlight/components';
-import { Image } from 'astro:assets';
+import DocImage from '../../../components/DocImage.astro';
 import line1D from '../../../assets/line-1D.png';
 import line2D from '../../../assets/line-2D.png';
 import line2DStack from '../../../assets/line-2D-stack.png';
@@ -37,7 +37,7 @@ A single line tracing one value per X category. The simplest view: one grouping 
 vizb line sales.csv -g order_date -p x -o out.html
 ```
 
-<Image src={line1D} alt="1D line chart with a single blue series tracing daily totals over dates" />
+<DocImage src={line1D} alt="1D line chart with a single blue series tracing daily totals over dates" />
 
 ### 2D (X + Y axes)
 
@@ -47,7 +47,7 @@ One line per Y value, all sharing the same X axis. The legend lists the Y values
 vizb line sales.csv -g region,category -p x,y -o out.html
 ```
 
-<Image src={line2D} alt="2D multi-line chart with five category series per region and a color category legend" />
+<DocImage src={line2D} alt="2D multi-line chart with five category series per region and a color category legend" />
 
 Add `--stack` to render the grouped lines as a stacked area chart, which emphasizes the total per X value and each Y series' contribution to that total.
 
@@ -55,7 +55,7 @@ Add `--stack` to render the grouped lines as a stacked area chart, which emphasi
 vizb line sales.csv -g region,category -p x,y --stack -o stacked-area.html
 ```
 
-<Image src={line2DStack} alt="2D stacked area line chart showing category contributions over each region" />
+<DocImage src={line2DStack} alt="2D stacked area line chart showing category contributions over each region" />
 
 ### 3D (X + Y + Z axes)
 
@@ -67,7 +67,7 @@ This example uses [Go benchmark output](https://github.com/goptics/vizb/blob/mai
 vizb line worker-pools.txt -p z/y/x --scale log -o out.html
 ```
 
-<Image src={line3D} alt="3D line chart of worker pool benchmarks with suite, workload, and implementation axes in a WebGL scene" />
+<DocImage src={line3D} alt="3D line chart of worker pool benchmarks with suite, workload, and implementation axes in a WebGL scene" />
 
 <Aside type="tip">
   Log scale is supported in 2D mode. When enabled, gaps appear at X values where the value is zero or negative — those points are skipped rather than breaking the chart.
@@ -95,7 +95,7 @@ On an all-numeric CSV/JSON file, vizb auto-detects the first 2–3 columns as co
 vizb line spiral-3d.csv -o line.html --3d-visualmap --3d-rotate
 ```
 
-<Image src={line2DValue} alt="2D value-type line chart plotting x and y coordinates from numeric columns" />
+<DocImage src={line2DValue} alt="2D value-type line chart plotting x and y coordinates from numeric columns" />
 
 ## Settings
 
