@@ -5,6 +5,7 @@ on:
 
 jobs:
   embed-ui:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -23,13 +24,13 @@ jobs:
         if: env.ACT != 'true'
         uses: actions/upload-artifact@v7
         with:
-          name: action-embedded-ui-${{ github.sha }}
+          name: cli-embedded-ui-${{ github.sha }}
           path: pkg/template/vizb-ui.gen.go
           if-no-files-found: error
 
   stateless:
     needs: embed-ui
-    if: ${{ always() && needs.embed-ui.result == 'success' }}
+    if: ${{ always() && (needs.embed-ui.result == 'success' || needs.embed-ui.result == 'skipped') }}
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
@@ -48,7 +49,7 @@ jobs:
         if: env.ACT != 'true'
         uses: actions/download-artifact@v8
         with:
-          name: action-embedded-ui-${{ github.sha }}
+          name: cli-embedded-ui-${{ github.sha }}
           path: pkg/template
 
       - name: Build vizb
@@ -64,7 +65,7 @@ jobs:
 
   stateful:
     needs: embed-ui
-    if: ${{ always() && needs.embed-ui.result == 'success' }}
+    if: ${{ always() && (needs.embed-ui.result == 'success' || needs.embed-ui.result == 'skipped') }}
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
@@ -83,7 +84,7 @@ jobs:
         if: env.ACT != 'true'
         uses: actions/download-artifact@v8
         with:
-          name: action-embedded-ui-${{ github.sha }}
+          name: cli-embedded-ui-${{ github.sha }}
           path: pkg/template
 
       - name: Build vizb
