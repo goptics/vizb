@@ -3,6 +3,7 @@
 *.out
 *.test
 *.prof
+*-out
 coverage.txt
 coverage.html
 .gocache/

@@ -6,6 +6,7 @@ import {
   EMPTY_RENDER,
   makeAxis3DCommon,
   axis3DName,
+  axis3DNameInvisible,
   create3DTooltipFormatter,
   createZLegendConfig,
   create3DGridConfig,
@@ -197,10 +198,10 @@ export function useScatter3DChartOptions(config: BaseChartConfig) {
         ...axisCommon,
         ...axis3DName(axisLabels?.y, styling),
       },
-      // name:'' clears sticky labels under Chart3D notMerge:false (omit does not)
+      // Invisible name keeps nameGap framing; explicit name clears sticky merges.
       zAxis3D: {
         ...zAxis3DBase,
-        name: '',
+        ...axis3DNameInvisible(axisLabels?.z),
       },
       grid3D,
       series: seriesData.map((s: Series3DData) => {

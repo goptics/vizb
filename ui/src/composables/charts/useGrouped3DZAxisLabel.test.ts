@@ -79,18 +79,28 @@ const chartFactories = [
 
 describe('grouped 3D z axis labels', () => {
   it.each(chartFactories)(
-    'clears the grouped z-axis name for %s charts (merge-safe)',
+    'keeps the grouped z-axis name invisible for %s charts (merge-safe)',
     (_name, useOptions) => {
       const { options } = useOptions(makeConfig(groupedRender))
+      const zAxis = options.value.zAxis3D as {
+        name?: string
+        nameTextStyle?: { color?: string }
+      }
 
-      // Empty string, not omit: Chart3D uses notMerge:false so sticky names clear.
-      expect((options.value.zAxis3D as { name?: string }).name).toBe('')
+      // Non-empty name preserves framing; transparent text hides the label.
+      expect(zAxis.name).toBe('category')
+      expect(zAxis.nameTextStyle?.color).toBe('transparent')
     }
   )
 
   it.each(chartFactories)('keeps the value-mode z-axis name for %s charts', (_name, useOptions) => {
     const { options } = useOptions(makeConfig(valueRender))
+    const zAxis = options.value.zAxis3D as {
+      name?: string
+      nameTextStyle?: { color?: string }
+    }
 
-    expect((options.value.zAxis3D as { name?: string }).name).toBe('sales')
+    expect(zAxis.name).toBe('sales')
+    expect(zAxis.nameTextStyle?.color).not.toBe('transparent')
   })
 })
