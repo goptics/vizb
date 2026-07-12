@@ -49,11 +49,16 @@ tasks:
       - task: build:ui
       - task: build:cli
 
-  preview:docs:
-    desc: Preview production build locally
+  docs:preview:
+    desc: Build docs and preview production build (localhost:4321)
     cmds:
       - task: build:docs
       - cd docs; pnpm preview; cd -
+
+  preview:docs:
+    desc: Alias for docs:preview
+    cmds:
+      - task: docs:preview
 
   test:
     desc: Run all tests (no cache)

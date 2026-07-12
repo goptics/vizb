@@ -92,6 +92,10 @@ export default defineConfig({
 		plugins: [
 			starlightThemeRapide()
 		],
+		components: {
+			// Defer Pagefind until first search open (Lighthouse TBT / network).
+			Search: './src/components/Search.astro',
+		},
 		head: [
 			{
 				tag: 'meta',

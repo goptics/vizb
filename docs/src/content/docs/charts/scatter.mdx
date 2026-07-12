@@ -4,7 +4,7 @@ description: Plot individual points in 2D or 3D — grouped categories, solo --s
 ---
 
 import { LinkCard, Aside } from '@astrojs/starlight/components';
-import { Image } from 'astro:assets';
+import DocImage from '../../../components/DocImage.astro';
 import scatter1D from '../../../assets/scatter-1D.png';
 import scatter2D from '../../../assets/scatter-2D.png';
 import scatter3D from '../../../assets/scatter-3D.png';
@@ -39,7 +39,7 @@ One point per X category.
 vizb scatter sales.csv -g order_date -p x -o out.html
 ```
 
-<Image src={scatter1D} alt="1D grouped scatter chart plotting quantity per order date" />
+<DocImage src={scatter1D} alt="1D grouped scatter chart plotting quantity per order date" />
 
 ### 2D (X + Y axes)
 
@@ -49,7 +49,7 @@ One series per Y value across the X axis. Toggle series in the legend.
 vizb scatter data.csv -g region,category -p x,y -o out.html
 ```
 
-<Image src={scatter2D} alt="2D grouped scatter chart with five category series per region and a color category legend" />
+<DocImage src={scatter2D} alt="2D grouped scatter chart with five category series per region and a color category legend" />
 
 ### 3D (X + Y + Z axes)
 
@@ -59,7 +59,7 @@ WebGL `scatter3D` scene: each Z value is a separate point series across the X/Y 
 vizb scatter sales.csv -g order_date,category -p "[-y{Month}-x{Date}],z{Category}" -o out.html
 ```
 
-<Image src={scatter3D} alt="3D stacked scatter chart with date, month, and category axes in a WebGL scene" />
+<DocImage src={scatter3D} alt="3D stacked scatter chart with date, month, and category axes in a WebGL scene" />
 
 
 When you have only **x** and **y** grouping (no z column), pass `--3d` to project the same data into pseudo-3D: y categories move to depth and the metric becomes height — the same value-3D toggle bar and line use. See [3D Charts](/charts/3d).
@@ -83,7 +83,7 @@ vizb scatter region-metrics.csv --select region,latency -o mixed.html
 vizb scatter life-expectancy-income.csv --select Country,"Life Expectancy",Income -o mixed3d.html
 ```
 
-<Image src={scatter3DMixed} alt="3D mixed scatter chart with country on the category axis and life expectancy and income on value axes" />
+<DocImage src={scatter3DMixed} alt="3D mixed scatter chart with country on the category axis and life expectancy and income on value axes" />
 
 Repeat `--select` (`dim,metric` per flag) for multi-stat datasets — charts separate by stat type. This does **not** enable grouping; use `-g`/`-p` when you need explicit group axes or aggregation. See [Select](/guides/select) for the full mode reference, and [Group vs Select](/guides/group-vs-select) for when to use each.
 
@@ -99,7 +99,7 @@ vizb scatter clusters.csv --visualmap --symbol-size 10 -o scatter.html
 vizb scatter spiral-3d.csv -o scatter.html
 ```
 
-<Image src={scatter2DValue} alt="2D value-mode scatter chart of cluster coordinates with visualMap gradient coloring" />
+<DocImage src={scatter2DValue} alt="2D value-mode scatter chart of cluster coordinates with visualMap gradient coloring" />
 
 Use the axis swapper in the UI to include or drop `z` and toggle between 2D and 3D without re-running the CLI.
 
