@@ -8,6 +8,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adhere
 
 ### Added
 
+- **JSON 2D array parser** — top-level JSON matrices now chart like CSV: all-string first rows become headers, numeric grids get synthetic `x`, `y`, `z`, `metric` columns, and auto-value / `--group` / `--select` reuse the existing tabular path.
 - **`--smooth` for 2D line charts** — curved segments via CLI, `--chart line:smooth`, and UI toggle; unavailable for 3D and non-line charts ([#187](https://github.com/goptics/vizb/pull/187)).
 - **`--horizontal` for 2D grouped bar charts** — layout-only (categories on Y, values on X); distinct from `--swap`; CLI, `--chart bar:horizontal`, UI toggle, and `?bar.h=` deep link ([#190](https://github.com/goptics/vizb/pull/190)).
 - **Multi-select descriptive column picker** — stats panel lets viewers choose which descriptive columns drive metrics (select-all / reset) ([#191](https://github.com/goptics/vizb/pull/191)).

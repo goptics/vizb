@@ -58,12 +58,12 @@ func stringify(v any) string {
 	return ""
 }
 
-// ParseJSON turns a JSON array of objects into benchmark data. Each
+// ParseJSON turns a JSON array of objects or arrays into benchmark data. Each
 // numeric field becomes a chart series (field name = Stat.Type); non-numeric
 // fields are ignored unless named in --group/-g, whose values are joined with
 // the separators from --group-pattern/-p and routed through the grouping
 // machinery (-p/-r). Nested objects are
-// flattened to dotted keys; array-valued fields are skipped.
+// flattened to dotted keys; array-valued fields inside objects are skipped.
 func ParseJSON(filename string, cfg parser.Config) ([]shared.DataPoint, parser.Config) {
 	var err error
 	cfg, err = parser.FinalizeGroupConfig(cfg)
@@ -89,25 +89,9 @@ func ParseJSON(filename string, cfg parser.Config) ([]shared.DataPoint, parser.C
 		return nil, cfg
 	}
 
-	var rows []map[string]any
-	var colOrder []string
-	seenCol := map[string]bool{}
-
-	for dec.More() {
-		leaves, derr := decodeElement(dec)
-		if derr != nil {
-			shared.ExitWithError("Error reading JSON", derr)
-		}
-
-		row := make(map[string]any, len(leaves))
-		for _, lf := range leaves {
-			row[lf.key] = lf.val // last wins on duplicate key
-			if !seenCol[lf.key] {
-				seenCol[lf.key] = true
-				colOrder = append(colOrder, lf.key)
-			}
-		}
-		rows = append(rows, row)
+	rows, colOrder, seenCol, err := decodeTopLevelRows(dec)
+	if err != nil {
+		shared.ExitWithError("Error reading JSON", err)
 	}
 
 	if len(rows) == 0 {
@@ -216,6 +200,273 @@ func ParseJSON(filename string, cfg parser.Config) ([]shared.DataPoint, parser.C
 	}
 
 	return results, cfg
+}
+
+func decodeTopLevelRows(dec *json.Decoder) ([]map[string]any, []string, map[string]bool, error) {
+	seenCol := map[string]bool{}
+
+	if !dec.More() {
+		return nil, nil, seenCol, nil
+	}
+
+	tok, err := dec.Token()
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	if d, ok := tok.(json.Delim); ok {
+		switch d {
+		case '{':
+			return decodeObjectRows(dec, seenCol)
+		case '[':
+			return decodeMatrixRows(dec, seenCol)
+		}
+	}
+
+	rows, colOrder, err := decodeRemainingObjectRows(dec, nil, seenCol)
+	return rows, colOrder, seenCol, err
+}
+
+func decodeObjectRows(dec *json.Decoder, seenCol map[string]bool) ([]map[string]any, []string, map[string]bool, error) {
+	leaves, err := decodeObjectBody(dec, "")
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	rows, colOrder, err := decodeRemainingObjectRows(dec, leaves, seenCol)
+	return rows, colOrder, seenCol, err
+}
+
+func decodeRemainingObjectRows(dec *json.Decoder, first []leaf, seenCol map[string]bool) ([]map[string]any, []string, error) {
+	var rows []map[string]any
+	var colOrder []string
+
+	if first != nil {
+		rows = append(rows, leavesToRow(first, seenCol, &colOrder))
+	}
+
+	for dec.More() {
+		leaves, derr := decodeElement(dec)
+		if derr != nil {
+			return nil, nil, derr
+		}
+		rows = append(rows, leavesToRow(leaves, seenCol, &colOrder))
+	}
+
+	return rows, colOrder, nil
+}
+
+func leavesToRow(leaves []leaf, seenCol map[string]bool, colOrder *[]string) map[string]any {
+	row := make(map[string]any, len(leaves))
+	for _, lf := range leaves {
+		row[lf.key] = lf.val // last wins on duplicate key
+		if !seenCol[lf.key] {
+			seenCol[lf.key] = true
+			*colOrder = append(*colOrder, lf.key)
+		}
+	}
+	return row
+}
+
+type matrixCell struct {
+	val      any
+	ok       bool
+	isString bool
+}
+
+func decodeMatrixRows(dec *json.Decoder, seenCol map[string]bool) ([]map[string]any, []string, map[string]bool, error) {
+	first, err := decodeMatrixRowBody(dec)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	if matrixHeaderRow(first) {
+		headers := normalizeMatrixHeaders(first)
+		rows, headers, err := decodeMatrixDataRows(dec, headers, nil, false)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		colOrder := nonEmptyMatrixHeaders(headers)
+		for _, h := range colOrder {
+			seenCol[h] = true
+		}
+		return rows, colOrder, seenCol, nil
+	}
+
+	headers := syntheticMatrixHeaders(len(first))
+	rows, headers, err := decodeMatrixDataRows(dec, headers, first, true)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	colOrder := nonEmptyMatrixHeaders(headers)
+	for _, h := range colOrder {
+		seenCol[h] = true
+	}
+	return rows, colOrder, seenCol, nil
+}
+
+func decodeMatrixDataRows(dec *json.Decoder, headers []string, first []matrixCell, extendSynthetic bool) ([]map[string]any, []string, error) {
+	var rows []map[string]any
+	if first != nil {
+		if extendSynthetic {
+			headers = ensureSyntheticMatrixHeaders(headers, len(first))
+		}
+		rows = append(rows, matrixCellsToRow(first, headers))
+	}
+
+	for dec.More() {
+		tok, err := dec.Token()
+		if err != nil {
+			return nil, nil, err
+		}
+
+		d, ok := tok.(json.Delim)
+		if !ok || d != '[' {
+			if ok && (d == '{' || d == '[') {
+				if err := skipContainerBody(dec); err != nil {
+					return nil, nil, err
+				}
+			}
+			continue
+		}
+
+		cells, err := decodeMatrixRowBody(dec)
+		if err != nil {
+			return nil, nil, err
+		}
+		if extendSynthetic {
+			headers = ensureSyntheticMatrixHeaders(headers, len(cells))
+		}
+		rows = append(rows, matrixCellsToRow(cells, headers))
+	}
+
+	return rows, headers, nil
+}
+
+func decodeMatrixRowBody(dec *json.Decoder) ([]matrixCell, error) {
+	var cells []matrixCell
+
+	for dec.More() {
+		cell, err := decodeMatrixCell(dec)
+		if err != nil {
+			return nil, err
+		}
+		cells = append(cells, cell)
+	}
+
+	if _, err := dec.Token(); err != nil { // consume ']'
+		return nil, err
+	}
+
+	return cells, nil
+}
+
+func decodeMatrixCell(dec *json.Decoder) (matrixCell, error) {
+	tok, err := dec.Token()
+	if err != nil {
+		return matrixCell{}, err
+	}
+
+	switch v := tok.(type) {
+	case json.Delim:
+		switch v {
+		case '[', '{':
+			return matrixCell{}, skipContainerBody(dec)
+		}
+		return matrixCell{}, nil
+	case float64:
+		if math.IsNaN(v) || math.IsInf(v, 0) {
+			return matrixCell{}, nil
+		}
+		return matrixCell{val: v, ok: true}, nil
+	case string:
+		return matrixCell{val: v, ok: true, isString: true}, nil
+	default: // bool, nil
+		return matrixCell{}, nil
+	}
+}
+
+func matrixHeaderRow(cells []matrixCell) bool {
+	if len(cells) == 0 {
+		return false
+	}
+	for _, c := range cells {
+		if !c.ok || !c.isString {
+			return false
+		}
+	}
+	return true
+}
+
+func normalizeMatrixHeaders(cells []matrixCell) []string {
+	headers := make([]string, len(cells))
+	seen := map[string]int{}
+
+	for i, c := range cells {
+		h, _ := c.val.(string)
+		if i == 0 {
+			h = strings.TrimPrefix(h, "\ufeff")
+		}
+		h = strings.TrimSpace(h)
+		if h == "" {
+			continue
+		}
+
+		seen[h]++
+		if seen[h] > 1 {
+			h = fmt.Sprintf("%s (%d)", h, seen[h])
+		}
+		headers[i] = h
+	}
+
+	return headers
+}
+
+func syntheticMatrixHeaders(n int) []string {
+	return ensureSyntheticMatrixHeaders(nil, n)
+}
+
+func ensureSyntheticMatrixHeaders(headers []string, n int) []string {
+	for len(headers) < n {
+		headers = append(headers, syntheticMatrixHeader(len(headers)))
+	}
+	return headers
+}
+
+func syntheticMatrixHeader(i int) string {
+	switch i {
+	case 0:
+		return "x"
+	case 1:
+		return "y"
+	case 2:
+		return "z"
+	case 3:
+		return "metric"
+	default:
+		return fmt.Sprintf("col%d", i+1)
+	}
+}
+
+func nonEmptyMatrixHeaders(headers []string) []string {
+	var out []string
+	for _, h := range headers {
+		if h != "" {
+			out = append(out, h)
+		}
+	}
+	return out
+}
+
+func matrixCellsToRow(cells []matrixCell, headers []string) map[string]any {
+	row := make(map[string]any)
+	for i, c := range cells {
+		if i >= len(headers) || headers[i] == "" || !c.ok {
+			continue
+		}
+		row[headers[i]] = c.val
+	}
+	return row
 }
 
 // jsonRowReader adapts one JSON row to the parser.RowReader interface.

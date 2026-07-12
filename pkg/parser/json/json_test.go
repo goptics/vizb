@@ -116,6 +116,56 @@ func (s *JSONSuite) TestArrayValuedFieldSkipped() {
 	s.Equal([]string{"sells"}, statTypes(results[0].Stats))
 }
 
+func (s *JSONSuite) TestHeaderMatrixUsesFirstRowAsColumns() {
+	s.cfg.Group = []string{"region"}
+	j := `[["region","sales"],["West",10],["East",20]]`
+
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+
+	s.Require().Len(results, 2)
+	s.Equal("West", results[0].XAxis)
+	s.Equal("East", results[1].XAxis)
+	s.Equal([]string{"sales"}, statTypes(results[0].Stats))
+}
+
+func (s *JSONSuite) TestMixedFirstMatrixRowUsesSyntheticColumns() {
+	j := `[["x",2],[3,4]]`
+
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+
+	s.Require().Len(results, 2)
+	s.Equal([]string{"y"}, statTypes(results[0].Stats))
+	s.Equal([]string{"x", "y"}, statTypes(results[1].Stats))
+}
+
+func (s *JSONSuite) TestNumericLookingStringMatrixHeadersStayHeaders() {
+	j := `[["10","20"],[1,2]]`
+
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+
+	s.Require().Len(results, 1)
+	s.Equal([]string{"10", "20"}, statTypes(results[0].Stats))
+}
+
+func (s *JSONSuite) TestMatrixRaggedRowsAndSkippedCellsAreGaps() {
+	j := `[["a","b","c"],[1],[2,3,4],[null,5,{"nested":true}]]`
+
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+
+	s.Require().Len(results, 3)
+	s.Equal([]string{"a"}, statTypes(results[0].Stats))
+	s.Equal([]string{"a", "b", "c"}, statTypes(results[1].Stats))
+	s.Equal([]string{"b"}, statTypes(results[2].Stats))
+}
+
+func (s *JSONSuite) TestMatrixEmptyAndHeaderOnlyReturnNil() {
+	pts, _ := ParseJSON(s.writeFile(`[]`), s.cfg)
+	s.Nil(pts)
+
+	pts, _ = ParseJSON(s.writeFile(`[["x","y"]]`), s.cfg)
+	s.Nil(pts)
+}
+
 func (s *JSONSuite) TestBoolAndNullSkipped() {
 	j := `[{"name":"a","sells":10,"active":true,"note":null}]`
 
@@ -544,6 +594,17 @@ func (s *JSONAutoValueSuite) TestTwoNumericFields() {
 	s.Empty(results[0].Stats)
 }
 
+func (s *JSONAutoValueSuite) TestNoHeaderMatrixTwoNumericColumnsAutoValue() {
+	j := `[[1,2],[3,4],[5,6]]`
+
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+
+	s.Require().Len(results, 3)
+	s.Equal("1", results[0].XAxis)
+	s.Equal("2", results[0].YAxis)
+	s.Empty(results[0].Stats)
+}
+
 func (s *JSONAutoValueSuite) TestThreeNumericFields() {
 	j := `[{"price":10,"latency":5,"mem":100},{"price":20,"latency":7,"mem":200}]`
 	results, _ := ParseJSON(s.writeFile(j), s.cfg)
@@ -551,6 +612,32 @@ func (s *JSONAutoValueSuite) TestThreeNumericFields() {
 	s.Equal("10", results[0].XAxis)
 	s.Equal("5", results[0].YAxis)
 	s.Equal("100", results[0].ZAxis)
+	s.Empty(results[0].Stats)
+}
+
+func (s *JSONAutoValueSuite) TestNoHeaderMatrixFourNumericColumnsUsesMetric() {
+	j := `[[1,2,3,4],[5,6,7,8]]`
+
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+
+	s.Require().Len(results, 2)
+	s.Equal("1", results[0].XAxis)
+	s.Equal("2", results[0].YAxis)
+	s.Equal("3", results[0].ZAxis)
+	s.Equal("4", results[0].Metric)
+	s.Empty(results[0].Stats)
+}
+
+func (s *JSONAutoValueSuite) TestNestedMatrixViaJSONPathAutoValue() {
+	source := s.writeFile(`{"payload":{"rows":[[1,2],[3,4]]}}`)
+	selected, err := SelectPath(source, ".payload.rows")
+	s.Require().NoError(err)
+
+	results, _ := ParseJSON(s.writeFile(string(selected)), s.cfg)
+
+	s.Require().Len(results, 2)
+	s.Equal("1", results[0].XAxis)
+	s.Equal("2", results[0].YAxis)
 	s.Empty(results[0].Stats)
 }
 
