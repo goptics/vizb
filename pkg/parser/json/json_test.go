@@ -158,6 +158,24 @@ func (s *JSONSuite) TestMatrixRaggedRowsAndSkippedCellsAreGaps() {
 	s.Equal([]string{"b"}, statTypes(results[2].Stats))
 }
 
+func (s *JSONSuite) TestMatrixBoolNullAndNestedValuesAreSkipped() {
+	j := `[["flag","empty","arr","obj","value"],[true,null,[1,2],{"nested":1},5]]`
+
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+
+	s.Require().Len(results, 1)
+	s.Equal([]string{"value"}, statTypes(results[0].Stats))
+}
+
+func (s *JSONSuite) TestNoHeaderMatrixNamesColumnsAfterMetric() {
+	j := `[[1,2,3,4,5,6]]`
+
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+
+	s.Require().Len(results, 1)
+	s.Equal([]string{"x", "y", "z", "metric", "col5", "col6"}, statTypes(results[0].Stats))
+}
+
 func (s *JSONSuite) TestMatrixEmptyAndHeaderOnlyReturnNil() {
 	pts, _ := ParseJSON(s.writeFile(`[]`), s.cfg)
 	s.Nil(pts)
@@ -480,6 +498,19 @@ func (s *JSONFatalSuite) TestSelectValueModeAllNumeric() {
 	s.Empty(results[0].Stats)
 }
 
+func (s *JSONFatalSuite) TestSelectValueModeNoHeaderMatrix() {
+	s.cfg.SelectViews = []parser.SelectView{
+		{Columns: []parser.ColumnSpec{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}}},
+	}
+	path := s.writeFile(`[[1,2],[3,4]]`)
+
+	results, _ := ParseJSON(path, s.cfg)
+	s.Require().Len(results, 2)
+	s.Equal("1", results[0].XAxis)
+	s.Equal("2", results[0].YAxis)
+	s.Empty(results[0].Stats)
+}
+
 func TestJSONFatalSuite(t *testing.T) {
 	suite.Run(t, new(JSONFatalSuite))
 }
@@ -508,6 +539,15 @@ func (s *JSONAutoGroupSuite) TestCategoricalFieldBecomesXAxis() {
 	s.Equal("West", results[0].XAxis)
 	s.Equal("East", results[1].XAxis)
 	s.Equal([]string{"sells"}, statTypes(results[0].Stats))
+}
+
+func (s *JSONAutoGroupSuite) TestHeaderMatrixCategoricalColumnBecomesXAxis() {
+	j := `[["region","sales"],["West",10],["East",20]]`
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	s.Require().Len(results, 2)
+	s.Equal("West", results[0].XAxis)
+	s.Equal("East", results[1].XAxis)
+	s.Equal([]string{"sales"}, statTypes(results[0].Stats))
 }
 
 func (s *JSONAutoGroupSuite) TestNestedFlattenedFieldChosen() {
@@ -667,6 +707,14 @@ func (s *JSONAutoValueSuite) TestOneNumericFieldFallsBackToFlat() {
 	s.Require().Len(results, 2)
 	s.Empty(results[0].XAxis)
 	s.NotEmpty(results[0].Stats)
+}
+
+func (s *JSONAutoValueSuite) TestOneColumnMatrixFallsBackToFlat() {
+	j := `[[10],[20]]`
+	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	s.Require().Len(results, 2)
+	s.Empty(results[0].XAxis)
+	s.Equal([]string{"x"}, statTypes(results[0].Stats))
 }
 
 func (s *JSONAutoValueSuite) TestPieChartFallsBackToFlat() {
