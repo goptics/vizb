@@ -13,13 +13,79 @@ by our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Prerequisites
 
-- **Go 1.24+**
+- **Go 1.26+**
 - **[Task](https://taskfile.dev/)** — the task runner used for all workflows
 - **pnpm** — for the Vue UI and docs site
 
 ```bash
 go install github.com/go-task/task/v3/cmd/task@latest
 ```
+
+### Dev Container (no local Go/Task/pnpm)
+
+If you use [VS Code](https://code.visualstudio.com/), [Cursor](https://cursor.com/),
+or [GitHub Codespaces](https://github.com/features/codespaces) with Docker, you
+can skip installing Go, Task, and pnpm on the host:
+
+1. Install the [Dev Containers](https://containers.dev/) extension (VS Code/Cursor)
+   and a Docker-compatible runtime.
+2. Open the repo and choose **Reopen in Container** (or create a Codespace).
+3. On first create, the container installs the toolchain and runs `task init`
+   automatically (deps + UI embed).
+
+After that, use the same commands as a local setup (`task test`, `task build`,
+`task dev:ui`, etc.). Ports **5173** (UI) and **4321** (docs) are forwarded.
+
+> **Note:** `task act:*` (local GitHub Actions via [act](https://github.com/nektos/act))
+> still needs Docker access from inside the container; that is not enabled by
+> default in this Dev Container.
+
+#### Host agent configs (Claude / Grok / Codex / OpenCode / …)
+
+The container user is **`vizber`** (UID 1000) — the Microsoft image’s default
+`vscode` login is renamed in the Dockerfile so nothing in the shell identity
+uses that name. (`customizations.vscode` in `devcontainer.json` is only the
+Dev Containers schema key for editor extensions; it is not the OS user.)
+
+To reuse **your** machine’s agent setup (auth, skills, MCP, history), the
+container bind-mounts common host directories from `$HOME` **twice**:
+
+1. Under `/home/vizber/…` — what agents see via `$HOME`
+2. Under the same absolute host path (e.g. `/home/<you>/…`) — so hardcoded
+   hooks/settings and **path-keyed** MCP/project state still resolve
+
+The repo is also mounted at the **same absolute host path**
+(`workspaceFolder` = host path, not `/workspaces/vizb`). Agents key skills/MCP
+by that path; using `/workspaces/…` would look like a different project.
+
+| Host path | Inside container |
+|-----------|------------------|
+| repo checkout | **same absolute path** as on the host |
+| `~/.claude`, `~/.agents`, `~/.grok`, `~/.codex`, … | `/home/vizber/…` **and** `$HOME/…` (host absolute) |
+| `~/.orca`, `~/.junie` | same dual mount (hooks / extra skills) |
+| `~/.local/bin` | `/home/vizber/.host-local-bin` **and** host `~/.local/bin` |
+| `~/.local/share`, `~/.local/opt` | host absolute paths only (resolves symlinks like `claude` → `…/share/claude/versions/…`) |
+
+Host CLIs are on `PATH`. Optional API keys (`ANTHROPIC_API_KEY`,
+`OPENAI_API_KEY`, `XAI_API_KEY`) are forwarded from the host when set.
+
+After changing mounts or the user rename, **fully rebuild** the Dev Container
+(delete any old container first). Host binaries that depend on host-only libraries
+may still fail inside the container; install the CLI in the container or run the
+agent on the host against the mounted workspace.
+
+If `pnpm` fails with `attempt to write a readonly database`, a root-owned
+`.pnpm-store/` is left in the repo (often from an old Docker-as-root run). On the
+**host**:
+
+```bash
+sudo rm -rf .pnpm-store
+# or without sudo:
+docker run --rm -v "$PWD":/w -w /w alpine rm -rf .pnpm-store
+```
+
+The Dev Container pins **pnpm 10.x** and forces the store under
+`/home/vizber/.local/share/pnpm/store` so installs do not use a repo-local store.
 
 ## Setup
 
@@ -29,7 +95,7 @@ task init    # install deps (Go, UI, docs) and generate the UI embed
 
 `task init` runs `task build:ui` so `pkg/template/vizb-ui.gen.go` exists for
 `go test` / `go build`. That file is **gitignored** (generated locally and in
-CI on Node 22). Never commit it.
+CI on Node 22). Never commit it. (In the Dev Container this runs once on first create.)
 
 ## Build & test
 

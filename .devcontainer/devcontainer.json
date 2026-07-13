@@ -1,0 +1,74 @@
+{
+  "name": "vizber",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "workspaceMount": "source=${localWorkspaceFolder},target=${localWorkspaceFolder},type=bind",
+  "workspaceFolder": "${localWorkspaceFolder}",
+  "initializeCommand": "mkdir -p \"${localEnv:HOME}/.claude\" \"${localEnv:HOME}/.agents\" \"${localEnv:HOME}/.grok\" \"${localEnv:HOME}/.codex\" \"${localEnv:HOME}/.config/opencode\" \"${localEnv:HOME}/.opencode\" \"${localEnv:HOME}/.local/bin\" \"${localEnv:HOME}/.local/share\" \"${localEnv:HOME}/.local/opt\" \"${localEnv:HOME}/.cursor\" \"${localEnv:HOME}/.orca\" \"${localEnv:HOME}/.junie\"",
+  "mounts": [
+    "source=${localEnv:HOME}/.claude,target=/home/vizber/.claude,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.agents,target=/home/vizber/.agents,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.grok,target=/home/vizber/.grok,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.codex,target=/home/vizber/.codex,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.config/opencode,target=/home/vizber/.config/opencode,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.opencode,target=/home/vizber/.opencode,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.cursor,target=/home/vizber/.cursor,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.local/bin,target=/home/vizber/.host-local-bin,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.orca,target=/home/vizber/.orca,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.junie,target=/home/vizber/.junie,type=bind,consistency=cached",
+
+    "source=${localEnv:HOME}/.claude,target=${localEnv:HOME}/.claude,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.agents,target=${localEnv:HOME}/.agents,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.grok,target=${localEnv:HOME}/.grok,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.codex,target=${localEnv:HOME}/.codex,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.config/opencode,target=${localEnv:HOME}/.config/opencode,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.opencode,target=${localEnv:HOME}/.opencode,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.cursor,target=${localEnv:HOME}/.cursor,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.local/bin,target=${localEnv:HOME}/.local/bin,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.local/share,target=${localEnv:HOME}/.local/share,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.local/opt,target=${localEnv:HOME}/.local/opt,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.orca,target=${localEnv:HOME}/.orca,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.junie,target=${localEnv:HOME}/.junie,type=bind,consistency=cached"
+  ],
+  "remoteEnv": {
+    "PATH": "/home/vizber/.host-local-bin:/home/vizber/.grok/bin:/home/vizber/.opencode/bin:${localEnv:HOME}/.local/bin:${localEnv:HOME}/.grok/bin:${localEnv:HOME}/.opencode/bin:${containerEnv:PATH}",
+    "HOME": "/home/vizber",
+    "GOTOOLCHAIN": "auto",
+    "ANTHROPIC_API_KEY": "${localEnv:ANTHROPIC_API_KEY}",
+    "OPENAI_API_KEY": "${localEnv:OPENAI_API_KEY}",
+    "XAI_API_KEY": "${localEnv:XAI_API_KEY}",
+    "npm_config_store_dir": "/home/vizber/.local/share/pnpm/store",
+    "npm_config_confirm_modules_purge": "false"
+  },
+  "postCreateCommand": "corepack enable && corepack prepare pnpm@10.33.2 --activate && task init",
+  "forwardPorts": [5173, 4321],
+  "portsAttributes": {
+    "5173": {
+      "label": "UI (task dev:ui)",
+      "onAutoForward": "notify"
+    },
+    "4321": {
+      "label": "Docs (task dev:docs)",
+      "onAutoForward": "notify"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.go",
+        "Vue.volar",
+        "bradlc.vscode-tailwindcss",
+        "esbenp.prettier-vscode",
+        "task.vscode-task"
+      ],
+      "settings": {
+        "go.useLanguageServer": true,
+        "go.toolsManagement.checkForUpdates": "local"
+      }
+    }
+  },
+  "remoteUser": "vizber",
+  "containerUser": "vizber"
+}
