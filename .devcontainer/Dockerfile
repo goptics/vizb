@@ -24,9 +24,11 @@ RUN set -eux; \
 # Tell Dev Container tooling the remote user is vizber (overrides image metadata).
 LABEL devcontainer.metadata='[{"remoteUser":"vizber"}]'
 
+# Base image pins GOTOOLCHAIN=local and ships 1.26.4; go.mod needs 1.26.5.
+# auto = download the newer toolchain when the module requires it.
 ENV HOME=/home/vizber \
-    PATH="/go/bin:/home/vizber/go/bin:/usr/local/go/bin:${PATH}"
-
+    PATH="/go/bin:/home/vizber/go/bin:/usr/local/go/bin:${PATH}" \
+    GOTOOLCHAIN=auto
 # Writable dirs for editor / package managers
 RUN mkdir -p \
       /home/vizber/.local/share/pnpm/store \
@@ -57,11 +59,13 @@ RUN printf '%s\n' \
       'confirm-modules-purge=false' \
       > /home/vizber/.npmrc
 
+# Pre-fetch go1.26.5 (go.mod) so first builds do not wait on download.
+RUN GOTOOLCHAIN=go1.26.5 go version
+
 # golangci-lint v2 (matches .golangci.yml version: "2")
 RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh \
   | sh -s -- -b "$(go env GOPATH)/bin" \
   && golangci-lint --version
-
 # Prompt: basename only via zsh/bash built-ins (%1~ / \W). No custom precmd.
 # Appended after the image oh-my-zsh setup so it wins over the default theme.
 RUN printf '%s\n' \

@@ -35,6 +35,7 @@
   "remoteEnv": {
     "PATH": "/home/vizber/.host-local-bin:/home/vizber/.grok/bin:/home/vizber/.opencode/bin:${localEnv:HOME}/.local/bin:${localEnv:HOME}/.grok/bin:${localEnv:HOME}/.opencode/bin:${containerEnv:PATH}",
     "HOME": "/home/vizber",
+    "GOTOOLCHAIN": "auto",
     "ANTHROPIC_API_KEY": "${localEnv:ANTHROPIC_API_KEY}",
     "OPENAI_API_KEY": "${localEnv:OPENAI_API_KEY}",
     "XAI_API_KEY": "${localEnv:XAI_API_KEY}",
