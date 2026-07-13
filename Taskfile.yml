@@ -18,14 +18,14 @@ tasks:
       - go run github.com/evilmartians/lefthook@latest install
 
   dev:docs:
-    desc: Run docs dev server on localhost:4321
+    desc: Run docs dev server on localhost:4321 (bind 0.0.0.0 for Dev Containers)
     cmds:
-      - cd docs; pnpm dev --open; cd -
+      - cd docs; pnpm dev --host 0.0.0.0; cd -
 
   dev:ui:
-    desc: Run development UI server
+    desc: Run development UI server (bind 0.0.0.0 for Dev Containers)
     cmds:
-      - cd ui; pnpm dev --open
+      - cd ui; pnpm dev --host 0.0.0.0
 
   build:docs:
     desc: Build docs for production

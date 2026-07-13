@@ -25,9 +25,11 @@
     "PATH": "/home/vscode/.host-local-bin:/home/vscode/.grok/bin:/home/vscode/.opencode/bin:${containerEnv:PATH}",
     "ANTHROPIC_API_KEY": "${localEnv:ANTHROPIC_API_KEY}",
     "OPENAI_API_KEY": "${localEnv:OPENAI_API_KEY}",
-    "XAI_API_KEY": "${localEnv:XAI_API_KEY}"
+    "XAI_API_KEY": "${localEnv:XAI_API_KEY}",
+    "npm_config_store_dir": "/home/vscode/.local/share/pnpm/store",
+    "npm_config_confirm_modules_purge": "false"
   },
-  "postCreateCommand": "corepack enable && corepack prepare pnpm@latest --activate && task init",
+  "postCreateCommand": "corepack enable && corepack prepare pnpm@10.33.2 --activate && task init",
   "forwardPorts": [5173, 4321],
   "portsAttributes": {
     "5173": {
