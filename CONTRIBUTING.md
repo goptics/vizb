@@ -47,23 +47,26 @@ The container user is **`vizber`** (UID 1000) — the Microsoft image’s defaul
 uses that name. (`customizations.vscode` in `devcontainer.json` is only the
 Dev Containers schema key for editor extensions; it is not the OS user.)
 
-To reuse **your** machine’s agent setup, the container bind-mounts common host
-directories from `$HOME` (each contributor gets their own mounts — nothing
-personal is committed):
+To reuse **your** machine’s agent setup (auth, skills, MCP, history), the
+container bind-mounts common host directories from `$HOME` **twice**:
+
+1. Under `/home/vizber/…` — what agents see via `$HOME`
+2. Under the same absolute host path (e.g. `/home/<you>/…`) — so hardcoded
+   hooks/settings and **path-keyed** MCP/project state still resolve
+
+The repo is also mounted at the **same absolute host path**
+(`workspaceFolder` = host path, not `/workspaces/vizb`). Agents key skills/MCP
+by that path; using `/workspaces/…` would look like a different project.
 
 | Host path | Inside container |
 |-----------|------------------|
-| `~/.claude` | `/home/vizber/.claude` |
-| `~/.agents` | `/home/vizber/.agents` |
-| `~/.grok` | `/home/vizber/.grok` |
-| `~/.codex` | `/home/vizber/.codex` |
-| `~/.config/opencode`, `~/.opencode` | same under `/home/vizber/…` |
-| `~/.local/bin` | `/home/vizber/.host-local-bin` (not `~/.local/bin` — that breaks Zed) |
-| `~/.cursor` | `/home/vizber/.cursor` |
+| repo checkout | **same absolute path** as on the host |
+| `~/.claude`, `~/.agents`, `~/.grok`, `~/.codex`, … | `/home/vizber/…` **and** `$HOME/…` (host absolute) |
+| `~/.orca`, `~/.junie` | same dual mount (hooks / extra skills) |
+| `~/.local/bin` | `/home/vizber/.host-local-bin` **and** host `~/.local/bin` |
 
-Host CLIs are on `PATH` via `~/.host-local-bin`, `~/.grok/bin`, and
-`~/.opencode/bin`. Optional API keys (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`,
-`XAI_API_KEY`) are forwarded from the host when set.
+Host CLIs are on `PATH`. Optional API keys (`ANTHROPIC_API_KEY`,
+`OPENAI_API_KEY`, `XAI_API_KEY`) are forwarded from the host when set.
 
 After changing mounts or the user rename, **fully rebuild** the Dev Container
 (delete any old container first). Host binaries that depend on host-only libraries

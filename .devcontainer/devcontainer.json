@@ -4,7 +4,9 @@
     "dockerfile": "Dockerfile",
     "context": ".."
   },
-  "initializeCommand": "mkdir -p \"${localEnv:HOME}/.claude\" \"${localEnv:HOME}/.agents\" \"${localEnv:HOME}/.grok\" \"${localEnv:HOME}/.codex\" \"${localEnv:HOME}/.config/opencode\" \"${localEnv:HOME}/.opencode\" \"${localEnv:HOME}/.local/bin\" \"${localEnv:HOME}/.cursor\"",
+  "workspaceMount": "source=${localWorkspaceFolder},target=${localWorkspaceFolder},type=bind",
+  "workspaceFolder": "${localWorkspaceFolder}",
+  "initializeCommand": "mkdir -p \"${localEnv:HOME}/.claude\" \"${localEnv:HOME}/.agents\" \"${localEnv:HOME}/.grok\" \"${localEnv:HOME}/.codex\" \"${localEnv:HOME}/.config/opencode\" \"${localEnv:HOME}/.opencode\" \"${localEnv:HOME}/.local/bin\" \"${localEnv:HOME}/.cursor\" \"${localEnv:HOME}/.orca\" \"${localEnv:HOME}/.junie\"",
   "mounts": [
     "source=${localEnv:HOME}/.claude,target=/home/vizber/.claude,type=bind,consistency=cached",
     "source=${localEnv:HOME}/.agents,target=/home/vizber/.agents,type=bind,consistency=cached",
@@ -13,10 +15,23 @@
     "source=${localEnv:HOME}/.config/opencode,target=/home/vizber/.config/opencode,type=bind,consistency=cached",
     "source=${localEnv:HOME}/.opencode,target=/home/vizber/.opencode,type=bind,consistency=cached",
     "source=${localEnv:HOME}/.cursor,target=/home/vizber/.cursor,type=bind,consistency=cached",
-    "source=${localEnv:HOME}/.local/bin,target=/home/vizber/.host-local-bin,type=bind,consistency=cached"
+    "source=${localEnv:HOME}/.local/bin,target=/home/vizber/.host-local-bin,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.orca,target=/home/vizber/.orca,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.junie,target=/home/vizber/.junie,type=bind,consistency=cached",
+
+    "source=${localEnv:HOME}/.claude,target=${localEnv:HOME}/.claude,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.agents,target=${localEnv:HOME}/.agents,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.grok,target=${localEnv:HOME}/.grok,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.codex,target=${localEnv:HOME}/.codex,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.config/opencode,target=${localEnv:HOME}/.config/opencode,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.opencode,target=${localEnv:HOME}/.opencode,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.cursor,target=${localEnv:HOME}/.cursor,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.local/bin,target=${localEnv:HOME}/.local/bin,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.orca,target=${localEnv:HOME}/.orca,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.junie,target=${localEnv:HOME}/.junie,type=bind,consistency=cached"
   ],
   "remoteEnv": {
-    "PATH": "/home/vizber/.host-local-bin:/home/vizber/.grok/bin:/home/vizber/.opencode/bin:${containerEnv:PATH}",
+    "PATH": "/home/vizber/.host-local-bin:/home/vizber/.grok/bin:/home/vizber/.opencode/bin:${localEnv:HOME}/.local/bin:${localEnv:HOME}/.grok/bin:${localEnv:HOME}/.opencode/bin:${containerEnv:PATH}",
     "HOME": "/home/vizber",
     "ANTHROPIC_API_KEY": "${localEnv:ANTHROPIC_API_KEY}",
     "OPENAI_API_KEY": "${localEnv:OPENAI_API_KEY}",
