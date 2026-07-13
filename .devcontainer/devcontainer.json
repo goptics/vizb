@@ -6,7 +6,7 @@
   },
   "workspaceMount": "source=${localWorkspaceFolder},target=${localWorkspaceFolder},type=bind",
   "workspaceFolder": "${localWorkspaceFolder}",
-  "initializeCommand": "mkdir -p \"${localEnv:HOME}/.claude\" \"${localEnv:HOME}/.agents\" \"${localEnv:HOME}/.grok\" \"${localEnv:HOME}/.codex\" \"${localEnv:HOME}/.config/opencode\" \"${localEnv:HOME}/.opencode\" \"${localEnv:HOME}/.local/bin\" \"${localEnv:HOME}/.cursor\" \"${localEnv:HOME}/.orca\" \"${localEnv:HOME}/.junie\"",
+  "initializeCommand": "mkdir -p \"${localEnv:HOME}/.claude\" \"${localEnv:HOME}/.agents\" \"${localEnv:HOME}/.grok\" \"${localEnv:HOME}/.codex\" \"${localEnv:HOME}/.config/opencode\" \"${localEnv:HOME}/.opencode\" \"${localEnv:HOME}/.local/bin\" \"${localEnv:HOME}/.local/share\" \"${localEnv:HOME}/.local/opt\" \"${localEnv:HOME}/.cursor\" \"${localEnv:HOME}/.orca\" \"${localEnv:HOME}/.junie\"",
   "mounts": [
     "source=${localEnv:HOME}/.claude,target=/home/vizber/.claude,type=bind,consistency=cached",
     "source=${localEnv:HOME}/.agents,target=/home/vizber/.agents,type=bind,consistency=cached",
@@ -27,6 +27,8 @@
     "source=${localEnv:HOME}/.opencode,target=${localEnv:HOME}/.opencode,type=bind,consistency=cached",
     "source=${localEnv:HOME}/.cursor,target=${localEnv:HOME}/.cursor,type=bind,consistency=cached",
     "source=${localEnv:HOME}/.local/bin,target=${localEnv:HOME}/.local/bin,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.local/share,target=${localEnv:HOME}/.local/share,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.local/opt,target=${localEnv:HOME}/.local/opt,type=bind,consistency=cached",
     "source=${localEnv:HOME}/.orca,target=${localEnv:HOME}/.orca,type=bind,consistency=cached",
     "source=${localEnv:HOME}/.junie,target=${localEnv:HOME}/.junie,type=bind,consistency=cached"
   ],

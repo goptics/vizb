@@ -64,6 +64,7 @@ by that path; using `/workspaces/…` would look like a different project.
 | `~/.claude`, `~/.agents`, `~/.grok`, `~/.codex`, … | `/home/vizber/…` **and** `$HOME/…` (host absolute) |
 | `~/.orca`, `~/.junie` | same dual mount (hooks / extra skills) |
 | `~/.local/bin` | `/home/vizber/.host-local-bin` **and** host `~/.local/bin` |
+| `~/.local/share`, `~/.local/opt` | host absolute paths only (resolves symlinks like `claude` → `…/share/claude/versions/…`) |
 
 Host CLIs are on `PATH`. Optional API keys (`ANTHROPIC_API_KEY`,
 `OPENAI_API_KEY`, `XAI_API_KEY`) are forwarded from the host when set.
