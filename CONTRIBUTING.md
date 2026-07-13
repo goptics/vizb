@@ -13,13 +13,61 @@ by our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Prerequisites
 
-- **Go 1.24+**
+- **Go 1.26+**
 - **[Task](https://taskfile.dev/)** — the task runner used for all workflows
 - **pnpm** — for the Vue UI and docs site
 
 ```bash
 go install github.com/go-task/task/v3/cmd/task@latest
 ```
+
+### Dev Container (no local Go/Task/pnpm)
+
+If you use [VS Code](https://code.visualstudio.com/), [Cursor](https://cursor.com/),
+or [GitHub Codespaces](https://github.com/features/codespaces) with Docker, you
+can skip installing Go, Task, and pnpm on the host:
+
+1. Install the [Dev Containers](https://containers.dev/) extension (VS Code/Cursor)
+   and a Docker-compatible runtime.
+2. Open the repo and choose **Reopen in Container** (or create a Codespace).
+3. On first create, the container installs the toolchain and runs `task init`
+   automatically (deps + UI embed).
+
+After that, use the same commands as a local setup (`task test`, `task build`,
+`task dev:ui`, etc.). Ports **5173** (UI) and **4321** (docs) are forwarded.
+
+> **Note:** `task act:*` (local GitHub Actions via [act](https://github.com/nektos/act))
+> still needs Docker access from inside the container; that is not enabled by
+> default in this Dev Container.
+
+#### Host agent configs (Claude / Grok / Codex / OpenCode / …)
+
+The Dev Container is named **vizber**; the Linux user stays **`vscode`** (UID 1000)
+because that is what the Microsoft Go base image and Dev Container features expect.
+Renaming the OS user breaks `docker exec` / Zed attach.
+
+To reuse **your** machine’s agent setup, the container bind-mounts common host
+directories from `$HOME` (each contributor gets their own mounts — nothing
+personal is committed):
+
+| Host path | Inside container |
+|-----------|------------------|
+| `~/.claude` | `/home/vscode/.claude` |
+| `~/.agents` | `/home/vscode/.agents` |
+| `~/.grok` | `/home/vscode/.grok` |
+| `~/.codex` | `/home/vscode/.codex` |
+| `~/.config/opencode`, `~/.opencode` | same under `/home/vscode/…` |
+| `~/.local/bin` | `/home/vscode/.host-local-bin` (not `~/.local/bin` — that breaks Zed) |
+| `~/.cursor` | `/home/vscode/.cursor` |
+
+Host CLIs are on `PATH` via `~/.host-local-bin`, `~/.grok/bin`, and
+`~/.opencode/bin`. Optional API keys (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`,
+`XAI_API_KEY`) are forwarded from the host when set.
+
+After changing mounts, **rebuild** the Dev Container (remove any old container that
+was created with `remoteUser: vizber`). Host binaries that depend on host-only
+libraries may still fail inside the container; install the CLI in the container or
+run the agent on the host against the mounted workspace.
 
 ## Setup
 
@@ -29,7 +77,7 @@ task init    # install deps (Go, UI, docs) and generate the UI embed
 
 `task init` runs `task build:ui` so `pkg/template/vizb-ui.gen.go` exists for
 `go test` / `go build`. That file is **gitignored** (generated locally and in
-CI on Node 22). Never commit it.
+CI on Node 22). Never commit it. (In the Dev Container this runs once on first create.)
 
 ## Build & test
 

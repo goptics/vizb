@@ -1,8 +1,6 @@
 module github.com/goptics/vizb
 
-go 1.24.0
-
-toolchain go1.24.3
+go 1.26.5
 
 require (
 	github.com/charmbracelet/lipgloss v1.1.0

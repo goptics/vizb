@@ -22,7 +22,7 @@ Options:
   --reuse        Reuse act containers between runs (faster reruns)
   -h, --help     Show this help
 
-Prerequisites: act (>= 0.2.50), Docker, Go 1.24+
+Prerequisites: act (>= 0.2.50), Docker, Go 1.26+
 EOF
 }
 

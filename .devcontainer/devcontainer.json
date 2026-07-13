@@ -1,0 +1,58 @@
+{
+  "name": "vizber",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "22",
+      "installYarnUsingApt": false
+    }
+  },
+  "initializeCommand": "mkdir -p \"${localEnv:HOME}/.claude\" \"${localEnv:HOME}/.agents\" \"${localEnv:HOME}/.grok\" \"${localEnv:HOME}/.codex\" \"${localEnv:HOME}/.config/opencode\" \"${localEnv:HOME}/.opencode\" \"${localEnv:HOME}/.local/bin\" \"${localEnv:HOME}/.cursor\"",
+  "mounts": [
+    "source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.agents,target=/home/vscode/.agents,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.grok,target=/home/vscode/.grok,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.codex,target=/home/vscode/.codex,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.config/opencode,target=/home/vscode/.config/opencode,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.opencode,target=/home/vscode/.opencode,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.cursor,target=/home/vscode/.cursor,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.local/bin,target=/home/vscode/.host-local-bin,type=bind,consistency=cached"
+  ],
+  "remoteEnv": {
+    "PATH": "/home/vscode/.host-local-bin:/home/vscode/.grok/bin:/home/vscode/.opencode/bin:${containerEnv:PATH}",
+    "ANTHROPIC_API_KEY": "${localEnv:ANTHROPIC_API_KEY}",
+    "OPENAI_API_KEY": "${localEnv:OPENAI_API_KEY}",
+    "XAI_API_KEY": "${localEnv:XAI_API_KEY}"
+  },
+  "postCreateCommand": "corepack enable && corepack prepare pnpm@latest --activate && task init",
+  "forwardPorts": [5173, 4321],
+  "portsAttributes": {
+    "5173": {
+      "label": "UI (task dev:ui)",
+      "onAutoForward": "notify"
+    },
+    "4321": {
+      "label": "Docs (task dev:docs)",
+      "onAutoForward": "notify"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.go",
+        "Vue.volar",
+        "bradlc.vscode-tailwindcss",
+        "esbenp.prettier-vscode",
+        "task.vscode-task"
+      ],
+      "settings": {
+        "go.useLanguageServer": true,
+        "go.toolsManagement.checkForUpdates": "local"
+      }
+    }
+  },
+  "remoteUser": "vscode"
+}
