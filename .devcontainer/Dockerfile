@@ -61,3 +61,24 @@ RUN printf '%s\n' \
 RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh \
   | sh -s -- -b "$(go env GOPATH)/bin" \
   && golangci-lint --version
+
+# Prompt: show only the project folder name (basename), not the full host path.
+# Appended after the image oh-my-zsh setup so it wins over the default theme.
+RUN printf '%s\n' \
+      '' \
+      '# vizber: short prompt (project name only — full path is still `pwd`)' \
+      'prompt_vizber() {' \
+      '  local dir="${PWD:t}"' \
+      '  local branch=""' \
+      '  if command -v git >/dev/null 2>&1 && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then' \
+      '    branch=" ($(git branch --show-current 2>/dev/null))"' \
+      '  fi' \
+      '  PROMPT="%F{magenta}vizber%f %F{cyan}${dir}%f%F{yellow}${branch}%f %# "' \
+      '}' \
+      'precmd_functions+=(prompt_vizber)' \
+      >> /home/vizber/.zshrc \
+  && printf '%s\n' \
+      '' \
+      '# vizber: short prompt (project name only)' \
+      'PS1="\[\e[35m\]vizber\[\e[0m\] \[\e[36m\]\W\[\e[0m\] \$ "' \
+      >> /home/vizber/.bashrc
