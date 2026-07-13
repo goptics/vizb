@@ -62,23 +62,15 @@ RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/ins
   | sh -s -- -b "$(go env GOPATH)/bin" \
   && golangci-lint --version
 
-# Prompt: show only the project folder name (basename), not the full host path.
+# Prompt: basename only via zsh/bash built-ins (%1~ / \W). No custom precmd.
 # Appended after the image oh-my-zsh setup so it wins over the default theme.
 RUN printf '%s\n' \
       '' \
-      '# vizber: short prompt (project name only — full path is still `pwd`)' \
-      'prompt_vizber() {' \
-      '  local dir="${PWD:t}"' \
-      '  local branch=""' \
-      '  if command -v git >/dev/null 2>&1 && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then' \
-      '    branch=" ($(git branch --show-current 2>/dev/null))"' \
-      '  fi' \
-      '  PROMPT="%F{magenta}vizber%f %F{cyan}${dir}%f%F{yellow}${branch}%f %# "' \
-      '}' \
-      'precmd_functions+=(prompt_vizber)' \
+      '# vizber: %1~ = last path segment only (project name); full path is still `pwd`' \
+      "PROMPT='%F{magenta}vizber%f %F{cyan}%1~%f %# '" \
       >> /home/vizber/.zshrc \
   && printf '%s\n' \
       '' \
-      '# vizber: short prompt (project name only)' \
+      '# vizber: \W = basename only' \
       'PS1="\[\e[35m\]vizber\[\e[0m\] \[\e[36m\]\W\[\e[0m\] \$ "' \
       >> /home/vizber/.bashrc
