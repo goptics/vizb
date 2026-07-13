@@ -42,10 +42,10 @@ After that, use the same commands as a local setup (`task test`, `task build`,
 
 #### Host agent configs (Claude / Grok / Codex / OpenCode / …)
 
-The Dev Container is named **vizber** and the shell prompt says **vizber**, but the
-Linux login stays **`vscode`** (UID 1000). That is required by the Microsoft Go base
-image and Dev Container / Zed attach (`docker exec -u …`). Renaming the OS user
-breaks the remote editor — do not change `remoteUser`.
+The container user is **`vizber`** (UID 1000) — the Microsoft image’s default
+`vscode` login is renamed in the Dockerfile so nothing in the shell identity
+uses that name. (`customizations.vscode` in `devcontainer.json` is only the
+Dev Containers schema key for editor extensions; it is not the OS user.)
 
 To reuse **your** machine’s agent setup, the container bind-mounts common host
 directories from `$HOME` (each contributor gets their own mounts — nothing
@@ -53,21 +53,22 @@ personal is committed):
 
 | Host path | Inside container |
 |-----------|------------------|
-| `~/.claude` | `/home/vscode/.claude` |
-| `~/.agents` | `/home/vscode/.agents` |
-| `~/.grok` | `/home/vscode/.grok` |
-| `~/.codex` | `/home/vscode/.codex` |
-| `~/.config/opencode`, `~/.opencode` | same under `/home/vscode/…` |
-| `~/.local/bin` | `/home/vscode/.host-local-bin` (not `~/.local/bin` — that breaks Zed) |
-| `~/.cursor` | `/home/vscode/.cursor` |
+| `~/.claude` | `/home/vizber/.claude` |
+| `~/.agents` | `/home/vizber/.agents` |
+| `~/.grok` | `/home/vizber/.grok` |
+| `~/.codex` | `/home/vizber/.codex` |
+| `~/.config/opencode`, `~/.opencode` | same under `/home/vizber/…` |
+| `~/.local/bin` | `/home/vizber/.host-local-bin` (not `~/.local/bin` — that breaks Zed) |
+| `~/.cursor` | `/home/vizber/.cursor` |
 
 Host CLIs are on `PATH` via `~/.host-local-bin`, `~/.grok/bin`, and
 `~/.opencode/bin`. Optional API keys (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`,
 `XAI_API_KEY`) are forwarded from the host when set.
 
-After changing mounts, **rebuild** the Dev Container. Host binaries that depend on
-host-only libraries may still fail inside the container; install the CLI in the
-container or run the agent on the host against the mounted workspace.
+After changing mounts or the user rename, **fully rebuild** the Dev Container
+(delete any old container first). Host binaries that depend on host-only libraries
+may still fail inside the container; install the CLI in the container or run the
+agent on the host against the mounted workspace.
 
 If `pnpm` fails with `attempt to write a readonly database`, a root-owned
 `.pnpm-store/` is left in the repo (often from an old Docker-as-root run). On the
@@ -80,7 +81,7 @@ docker run --rm -v "$PWD":/w -w /w alpine rm -rf .pnpm-store
 ```
 
 The Dev Container pins **pnpm 10.x** and forces the store under
-`~/.local/share/pnpm/store` so installs do not use a repo-local store.
+`/home/vizber/.local/share/pnpm/store` so installs do not use a repo-local store.
 
 ## Setup
 

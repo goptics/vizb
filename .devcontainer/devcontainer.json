@@ -4,29 +4,24 @@
     "dockerfile": "Dockerfile",
     "context": ".."
   },
-  "features": {
-    "ghcr.io/devcontainers/features/node:1": {
-      "version": "22",
-      "installYarnUsingApt": false
-    }
-  },
   "initializeCommand": "mkdir -p \"${localEnv:HOME}/.claude\" \"${localEnv:HOME}/.agents\" \"${localEnv:HOME}/.grok\" \"${localEnv:HOME}/.codex\" \"${localEnv:HOME}/.config/opencode\" \"${localEnv:HOME}/.opencode\" \"${localEnv:HOME}/.local/bin\" \"${localEnv:HOME}/.cursor\"",
   "mounts": [
-    "source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,type=bind,consistency=cached",
-    "source=${localEnv:HOME}/.agents,target=/home/vscode/.agents,type=bind,consistency=cached",
-    "source=${localEnv:HOME}/.grok,target=/home/vscode/.grok,type=bind,consistency=cached",
-    "source=${localEnv:HOME}/.codex,target=/home/vscode/.codex,type=bind,consistency=cached",
-    "source=${localEnv:HOME}/.config/opencode,target=/home/vscode/.config/opencode,type=bind,consistency=cached",
-    "source=${localEnv:HOME}/.opencode,target=/home/vscode/.opencode,type=bind,consistency=cached",
-    "source=${localEnv:HOME}/.cursor,target=/home/vscode/.cursor,type=bind,consistency=cached",
-    "source=${localEnv:HOME}/.local/bin,target=/home/vscode/.host-local-bin,type=bind,consistency=cached"
+    "source=${localEnv:HOME}/.claude,target=/home/vizber/.claude,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.agents,target=/home/vizber/.agents,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.grok,target=/home/vizber/.grok,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.codex,target=/home/vizber/.codex,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.config/opencode,target=/home/vizber/.config/opencode,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.opencode,target=/home/vizber/.opencode,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.cursor,target=/home/vizber/.cursor,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.local/bin,target=/home/vizber/.host-local-bin,type=bind,consistency=cached"
   ],
   "remoteEnv": {
-    "PATH": "/home/vscode/.host-local-bin:/home/vscode/.grok/bin:/home/vscode/.opencode/bin:${containerEnv:PATH}",
+    "PATH": "/home/vizber/.host-local-bin:/home/vizber/.grok/bin:/home/vizber/.opencode/bin:${containerEnv:PATH}",
+    "HOME": "/home/vizber",
     "ANTHROPIC_API_KEY": "${localEnv:ANTHROPIC_API_KEY}",
     "OPENAI_API_KEY": "${localEnv:OPENAI_API_KEY}",
     "XAI_API_KEY": "${localEnv:XAI_API_KEY}",
-    "npm_config_store_dir": "/home/vscode/.local/share/pnpm/store",
+    "npm_config_store_dir": "/home/vizber/.local/share/pnpm/store",
     "npm_config_confirm_modules_purge": "false"
   },
   "postCreateCommand": "corepack enable && corepack prepare pnpm@10.33.2 --activate && task init",
@@ -56,5 +51,6 @@
       }
     }
   },
-  "remoteUser": "vscode"
+  "remoteUser": "vizber",
+  "containerUser": "vizber"
 }
