@@ -94,3 +94,31 @@ func TestSelectPath(t *testing.T) {
 		})
 	}
 }
+
+func TestSelectPathReadAndParseErrors(t *testing.T) {
+	_, err := SelectPath(filepath.Join(t.TempDir(), "missing.json"), ".rows")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "error reading JSON")
+
+	f := filepath.Join(t.TempDir(), "bad.json")
+	require.NoError(t, os.WriteFile(f, []byte(`{"rows":`), 0o644))
+	_, err = SelectPath(f, ".rows")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "error parsing JSON")
+}
+
+func TestTokenizeLenientMalformedSegments(t *testing.T) {
+	require.Empty(t, tokenize("[]"))
+
+	gapped := tokenize(".rows..items")
+	require.Len(t, gapped, 2)
+	require.Equal(t, "rows", gapped[0].key)
+	require.Equal(t, "items", gapped[1].key)
+
+	got := tokenize(".rows[].items[x][1]")
+	require.Len(t, got, 2)
+	require.Equal(t, "rows", got[0].key)
+	require.Empty(t, got[0].indices)
+	require.Equal(t, "items", got[1].key)
+	require.Equal(t, []int{1}, got[1].indices)
+}

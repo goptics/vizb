@@ -28,7 +28,7 @@ CSV and JSON are the simplest inputs. Hand vizb a table and it charts the numeri
   </TabItem>
 
   <TabItem label="JSON" icon="seti:json">
-  A JSON array of objects. Each object is a row. Each numeric key becomes its own chart. Nested objects flatten to dotted keys.
+  A JSON array of objects or arrays. Object keys become columns; 2D arrays use an all-string first row as headers or synthetic `x`, `y`, `z`, `metric` names for numeric grids. Each numeric field becomes its own chart. Nested objects flatten to dotted keys.
 
   ```bash
   vizb data.json -o output.html
@@ -173,7 +173,7 @@ Vizb also parses benchmark output from three languages and five frameworks.
 |-----|--------------------|----------|
 | `auto` | Detect from content (default) | — |
 | `csv` | Generic CSV table | Any |
-| `json` | Generic JSON array of objects | Any |
+| `json` | Generic JSON object rows or 2D arrays | Any |
 | `go` | Go testing (benchfmt) | Go |
 | `rs:criterion` | Criterion | Rust |
 | `rs:divan` | Divan | Rust |
