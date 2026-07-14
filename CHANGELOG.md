@@ -4,6 +4,14 @@ Notable changes to Vizb documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [v0.15.1] - 2026-07-14
+
+### Fixed
+
+- **Grouped 3D z-axis labels (UI)** — grouped bar/line/scatter 3D again sets the z-axis title from data (`axisLabels.z`) but renders it with **transparent** text so ECharts keeps `nameGap` framing without a misleading categorical height label; value-mode `--3d` still shows the metric name visibly ([#199](https://github.com/goptics/vizb/pull/199)). 
+- Refines the v0.15.0 sticky-label fix ([#192](https://github.com/goptics/vizb/pull/192)).
+
+
 # [v0.15.0]
 
 ### Added
