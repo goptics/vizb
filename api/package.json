@@ -1,0 +1,12 @@
+{
+  "name": "vizb-api-contract",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "lint": "redocly lint openapi.yaml",
+    "bundle": "redocly bundle openapi.yaml --dereferenced --output /tmp/vizb-openapi.yaml"
+  },
+  "devDependencies": {
+    "@redocly/cli": "2.39.0"
+  }
+}
