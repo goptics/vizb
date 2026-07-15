@@ -534,11 +534,10 @@ export function formatRadarItemTooltip(
   const spread = tooltipSpreadRows(vals, isDark)
 
   const donut = renderDonutSvg(
-    indicatorNames.map((name, i) => ({
-      name,
-      value: typeof vals[i] === 'number' ? vals[i]! : 0,
-      color: color(name),
-    }))
+    indicatorNames.flatMap((name, i) => {
+      const value = vals[i]
+      return typeof value === 'number' ? [{ name, value, color: color(name) }] : []
+    })
   )
   const donutBlock = donut ? `${tooltipDivider(isDark)}${donut}` : ''
 
@@ -582,9 +581,9 @@ export function tooltipSpreadRows(values: number[], isDark: boolean): string {
   )
 }
 
-// Inline SVG donut + side legend (swatch, name, %) for tooltips. Non-positive
-// slices are dropped (can't show negative share). Returns '' when fewer than 2
-// positive slices — nothing to compare.
+// Inline SVG donut + side legend (swatch, name, %) for tooltips. Only positive
+// slices draw arcs; zero slices remain in the legend as n/a. Returns '' when
+// fewer than 2 positive slices are present — nothing to compare.
 export function renderDonutSvg(
   slices: { value: number; color: string; name: string }[],
   size = 96
@@ -634,11 +633,13 @@ export function renderDonutSvg(
 
   // Side legend: one row per slice (swatch + name + share %). Scrolls with the
   // tooltip when there are many slices.
-  const legendRows = pos.map((s) => {
-    const pct = ((s.value / total) * 100).toFixed(1)
-    const swatch = `<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${s.color};margin-right:6px;flex:none"></span>`
-    return `${swatch}<span>${s.name}</span><b style="margin-left:6px">${pct}%</b>`
-  })
+  const legendRows = slices
+    .filter((s) => s.value >= 0)
+    .map((s) => {
+      const share = s.value === 0 ? 'n/a' : `${((s.value / total) * 100).toFixed(1)}%`
+      const swatch = `<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${s.color};margin-right:6px;flex:none"></span>`
+      return `${swatch}<span>${s.name}</span><b style="margin-left:6px">${share}</b>`
+    })
   const legend = renderTooltipLegendColumns(
     legendRows,
     TOOLTIP_LEGEND_MAX_ROWS_PER_COL,
@@ -719,11 +720,16 @@ export function createTooltipConfig(
           isDark
         )
         const donut = renderDonutSvg(
-          params.map((p) => ({
-            value: typeof p.value === 'number' ? p.value : 0,
-            color: typeof p.color === 'string' ? p.color : String(p.color),
-            name: p.seriesName ?? '',
-          }))
+          params.flatMap((p) => {
+            if (typeof p.value !== 'number') return []
+            return [
+              {
+                value: p.value,
+                color: typeof p.color === 'string' ? p.color : String(p.color),
+                name: p.seriesName ?? '',
+              },
+            ]
+          })
         )
         return `${body}${sumLine}${spread}${donut ? tooltipDivider(isDark) + donut : ''}`
       },

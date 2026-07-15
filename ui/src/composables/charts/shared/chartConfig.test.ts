@@ -4,6 +4,7 @@ import {
   createValueAxisConfig,
   createDataZoomConfig,
   createGridConfig,
+  createTooltipConfig,
   createValueModeGridConfig,
   VALUE_MODE_GRID_TOP,
   createHeatmapLayoutConfig,
@@ -18,6 +19,7 @@ import {
   HEATMAP_Y_ZOOM_INSET,
   formatRadarItemTooltip,
   hasRotatedXLabels,
+  renderDonutSvg,
   renderTooltipLegendColumns,
   TOOLTIP_LEGEND_MAX_ROWS_PER_COL,
   getTooltipTheme,
@@ -193,6 +195,71 @@ describe('renderTooltipLegendColumns', () => {
   })
 })
 
+describe('renderDonutSvg', () => {
+  it('includes zero-valued slices in the legend without drawing their arcs', () => {
+    const html = renderDonutSvg([
+      { name: 'A', value: 10, color: '#a00' },
+      { name: 'B', value: 0, color: '#0b0' },
+      { name: 'C', value: 5, color: '#00c' },
+    ])
+
+    expect(html).toContain('<span>A</span><b style="margin-left:6px">66.7%</b>')
+    expect(html).toContain('<span>B</span><b style="margin-left:6px">n/a</b>')
+    expect(html).toContain('<span>C</span><b style="margin-left:6px">33.3%</b>')
+    expect(html.match(/<path /g) ?? []).toHaveLength(2)
+    expect(html).toMatch(/<path [^>]*fill="#a00"\/>/)
+    expect(html).not.toMatch(/<path [^>]*fill="#0b0"\/>/)
+    expect(html).toMatch(/<path [^>]*fill="#00c"\/>/)
+  })
+
+  it('returns empty when fewer than two positive slices are present', () => {
+    expect(
+      renderDonutSvg([
+        { name: 'A', value: 10, color: '#a00' },
+        { name: 'B', value: 0, color: '#0b0' },
+      ])
+    ).toBe('')
+  })
+})
+
+describe('createTooltipConfig', () => {
+  it('keeps missing and nonnumeric values out of the donut while showing numeric zero as n/a', () => {
+    const tooltip = createTooltipConfig(true, false) as any
+    const html = tooltip.formatter([
+      { name: 'X', seriesName: 'A', value: 10, color: '#a00', marker: 'A-marker' },
+      { name: 'X', seriesName: 'Zero', value: 0, color: '#0b0', marker: 'Zero-marker' },
+      { name: 'X', seriesName: 'Null', value: null, color: '#ccc', marker: 'Null-marker' },
+      {
+        name: 'X',
+        seriesName: 'Undefined',
+        value: undefined,
+        color: '#ddd',
+        marker: 'Undefined-marker',
+      },
+      {
+        name: 'X',
+        seriesName: 'Text',
+        value: 'not-a-number',
+        color: '#eee',
+        marker: 'Text-marker',
+      },
+      { name: 'X', seriesName: 'C', value: 5, color: '#00c', marker: 'C-marker' },
+    ])
+
+    expect(html).toContain('Zero-marker Zero: 0')
+    expect(html).toContain('Text-marker Text: not-a-number')
+    expect(html).not.toContain('Null-marker')
+    expect(html).not.toContain('Undefined-marker')
+
+    const donut = html.slice(html.indexOf('<svg'))
+    expect(donut).toContain('<span>Zero</span><b style="margin-left:6px">n/a</b>')
+    expect(donut.match(/>n\/a<\/b>/g) ?? []).toHaveLength(1)
+    expect(donut).not.toContain('<span>Null</span>')
+    expect(donut).not.toContain('<span>Undefined</span>')
+    expect(donut).not.toContain('<span>Text</span>')
+  })
+})
+
 describe('formatRadarItemTooltip', () => {
   it('returns empty string when params.data is missing', () => {
     expect(formatRadarItemTooltip({}, indicators, false)).toBe('')
@@ -242,5 +309,19 @@ describe('formatRadarItemTooltip', () => {
     )
     expect(html).toContain('display:grid')
     expect(html).toContain('grid-auto-flow:column')
+  })
+
+  it('omits an indicator without a corresponding numeric value from the donut', () => {
+    const html = formatRadarItemTooltip(
+      { data: { name: 'Series', value: [10, 5] } },
+      indicators,
+      false
+    )
+    const donut = html.slice(html.indexOf('<svg'))
+
+    expect(donut).toContain('<span>A</span>')
+    expect(donut).toContain('<span>B</span>')
+    expect(donut).not.toContain('<span>C</span>')
+    expect(donut).not.toContain('n/a')
   })
 })
