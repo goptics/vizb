@@ -57,11 +57,21 @@ jobs:
         run: go build -o ./bin/vizb .
 
       - name: Run action (stateless)
+        id: vizb
         uses: ./
         with:
           file: examples/go/hash.txt
           output-html: index.html
+          output-json: results/stateless.json
           vizb-binary: ./bin/vizb
+
+      - name: Verify action outputs
+        env:
+          EXPECTED_JSON_KIND: object
+          EXPECTED_NAMES: '["Comparisons"]'
+          HTML_FILE: ${{ steps.vizb.outputs.output-file-html }}
+          JSON_FILE: ${{ steps.vizb.outputs.output-file-json }}
+        run: node scripts/verify-action-output.mjs
 
   stateful:
     needs: embed-ui
@@ -100,6 +110,7 @@ jobs:
           vizb-binary: ./bin/vizb
 
       - name: Run action (stateful)
+        id: vizb
         uses: ./
         with:
           name: HTTP Frameworks Comparisons
@@ -110,3 +121,11 @@ jobs:
           output-html: index.html
           output-json: results/bench.json
           vizb-binary: ./bin/vizb
+
+      - name: Verify action outputs
+        env:
+          EXPECTED_JSON_KIND: array
+          EXPECTED_NAMES: '["Hash", "HTTP Frameworks Comparisons"]'
+          HTML_FILE: ${{ steps.vizb.outputs.output-file-html }}
+          JSON_FILE: ${{ steps.vizb.outputs.output-file-json }}
+        run: node scripts/verify-action-output.mjs
