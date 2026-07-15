@@ -114,9 +114,6 @@ components:
               value:
                 input: "region,latency\nwest,12\neast,18\n"
                 parser: csv
-                metadata:
-                  name: API latency
-                  description: Latency by region
                 select: [region, latency]
                 charts:
                   types: [bar, line]
@@ -276,8 +273,6 @@ components:
           default: auto
         grouping:
           $ref: '#/components/schemas/GroupingOptions'
-        metadata:
-          $ref: '#/components/schemas/MetadataOptions'
         units:
           $ref: '#/components/schemas/UnitOptions'
         select:
@@ -308,15 +303,6 @@ components:
           type: array
           items: { type: string, minLength: 1 }
         filter: { type: string }
-    MetadataOptions:
-      type: object
-      additionalProperties: false
-      properties:
-        id: { type: string }
-        name: { type: string }
-        tag: { type: string }
-        description: { type: string }
-        theme: { type: string }
     UnitOptions:
       type: object
       additionalProperties: false
