@@ -90,7 +90,7 @@ func MergeDatasets(benchmarks []Dataset, dim Dimension) []Dataset {
 				}
 				base.History = buildHistory(allDatasets, latest.Tag)
 				base.Data = mergeData(allDatasets, dim)
-				base.Axes = ensureInjectAxis(base.Axes, dim)
+				base.Axes = EnsureAxis(base.Axes, dim)
 				result = append(result, base)
 				continue
 			}
@@ -99,7 +99,7 @@ func MergeDatasets(benchmarks []Dataset, dim Dimension) []Dataset {
 			base := deepCloneDataset(latest)
 			base.History = buildHistory(tagged, latest.Tag)
 			base.Data = mergeData(tagged, dim)
-			base.Axes = ensureInjectAxis(base.Axes, dim)
+			base.Axes = EnsureAxis(base.Axes, dim)
 			result = append(result, base)
 		}
 	}
@@ -262,10 +262,10 @@ func dimFieldValue(item DataPoint, dim Dimension) string {
 	}
 }
 
-// ensureInjectAxis adds the tag-axis dimension to axes when missing so injected
-// tag values remain visible to the UI identity pipeline. Non-metric axes are
-// kept in canonical name/x/y/z order; metric axes keep their trailing position.
-func ensureInjectAxis(axes []Axis, dim Dimension) []Axis {
+// EnsureAxis adds dim to axes when missing so injected tag/column values stay
+// visible to the UI identity pipeline. Non-metric axes stay in canonical
+// name/x/y/z order; metric axes keep their trailing position.
+func EnsureAxis(axes []Axis, dim Dimension) []Axis {
 	key := dim.AxisKey()
 	if slices.ContainsFunc(axes, func(a Axis) bool { return a.Key == key }) {
 		return axes

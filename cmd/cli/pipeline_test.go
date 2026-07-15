@@ -1069,6 +1069,86 @@ func (s *PipelineSuite) TestPrepareDataColAxisWithoutGroupWarnsAndSkips() {
 	s.NotEmpty(results[0].Stats[0].Type)
 }
 
+func (s *PipelineSuite) TestPrepareDataColAxisNonTabularWarns() {
+	benchFile := s.writeFile("valid.txt", `BenchmarkExample-8    1000000    1234 ns/op`)
+	cfg := parser.Config{
+		ColAxis:      "x",
+		GroupPattern: "y",
+		TimeUnit:     "ns",
+		MemUnit:      "B",
+	}
+
+	var effective parser.Config
+	errOut := testutil.CaptureStderr(func() {
+		_, effective = prepareData(benchFile, "go", cfg)
+	})
+	s.Contains(errOut, "only supported for csv/json")
+	s.Empty(effective.ColAxis)
+}
+
+func (s *PipelineSuite) TestPrepareDataColAxisSelectModeSkips() {
+	// Solo value --select (not multi-stat group path): warn+skip.
+	csvFile := s.writeFile("vals.csv", "x,y\n1,2\n3,4\n")
+	cfg := parser.Config{
+		ColAxis: "z",
+		SelectViews: []parser.SelectView{
+			{Columns: []parser.ColumnSpec{
+				{Source: "x", AxisKey: "x"},
+				{Source: "y", AxisKey: "y"},
+			}},
+		},
+	}
+	cfg.Mode = parser.ResolveMode(cfg)
+
+	var results []shared.DataPoint
+	var effective parser.Config
+	errOut := testutil.CaptureStderr(func() {
+		results, effective = prepareData(csvFile, "csv", cfg)
+	})
+	s.Contains(errOut, "requires grouped multi-column stats")
+	s.Empty(effective.ColAxis)
+	s.NotEmpty(results)
+}
+
+func (s *PipelineSuite) TestPrepareDataColAxisZWithoutXYFatals() {
+	csvFile := s.writeFile("concurrency.csv", "load,default,chi\n100,1,2\n")
+	cfg, err := parser.ResolveGroupConfig(parser.Config{
+		GroupPattern: "x",
+		Group:        []string{"load"},
+		ColAxis:      "z",
+	})
+	s.Require().NoError(err)
+
+	s.Panics(func() {
+		prepareData(csvFile, "csv", cfg)
+	})
+}
+
+func (s *PipelineSuite) TestPrepareDataColAxisZWithXY() {
+	csvFile := s.writeFile("grid.csv",
+		"region,load,default,chi\nAsia,100,1,2\nEurope,100,3,4\n")
+	cfg, err := parser.ResolveGroupConfig(parser.Config{
+		GroupPattern: "x,y",
+		Group:        []string{"region", "load"},
+		ColAxis:      "z",
+	})
+	s.Require().NoError(err)
+
+	results, effective := prepareData(csvFile, "csv", cfg)
+	s.Equal("z", effective.ColAxis)
+	s.Require().NotEmpty(results)
+	zVals := map[string]struct{}{}
+	for _, dp := range results {
+		s.Require().Len(dp.Stats, 1)
+		s.Empty(dp.Stats[0].Type)
+		zVals[dp.ZAxis] = struct{}{}
+	}
+	s.ElementsMatch([]string{"default", "chi"}, keysOf(zVals))
+
+	ds := assembleDataset(results, RunMeta{Name: "T", Parser: "csv"}, nil, effective)
+	s.Contains(axisKeyList(ds.Axes), "z")
+}
+
 func keysOf(m map[string]struct{}) []string {
 	out := make([]string, 0, len(m))
 	for k := range m {

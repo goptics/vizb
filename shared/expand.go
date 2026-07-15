@@ -8,10 +8,6 @@ package shared
 //
 // Points with no stats are passed through unchanged. dim is one of n/x/y/z.
 func ExpandStatsOntoAxis(points []DataPoint, dim Dimension) []DataPoint {
-	if len(points) == 0 {
-		return points
-	}
-
 	out := make([]DataPoint, 0, len(points))
 	for i := range points {
 		p := &points[i]
@@ -48,10 +44,4 @@ func ExpandStatsOntoAxis(points []DataPoint, dim Dimension) []DataPoint {
 		}
 	}
 	return out
-}
-
-// EnsureAxis adds dim to axes when missing so injected column names stay visible
-// to the UI identity pipeline. Same ordering rules as merge tag-axis injection.
-func EnsureAxis(axes []Axis, dim Dimension) []Axis {
-	return ensureInjectAxis(axes, dim)
 }

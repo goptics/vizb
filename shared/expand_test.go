@@ -61,6 +61,21 @@ func (s *ExpandSuite) TestExpandEmptyStatsPassthrough() {
 	s.Empty(out[0].Stats)
 }
 
+func (s *ExpandSuite) TestExpandNilStatValue() {
+	out := ExpandStatsOntoAxis([]DataPoint{{
+		Stats: []Stat{{Type: "a", Value: nil}},
+	}}, DimensionXAxis)
+	s.Require().Len(out, 1)
+	s.Equal("a", out[0].XAxis)
+	s.Require().Len(out[0].Stats, 1)
+	s.Nil(out[0].Stats[0].Value)
+}
+
+func (s *ExpandSuite) TestExpandEmptyInput() {
+	s.Empty(ExpandStatsOntoAxis(nil, DimensionXAxis))
+	s.Empty(ExpandStatsOntoAxis([]DataPoint{}, DimensionXAxis))
+}
+
 func (s *ExpandSuite) TestExpandDoesNotMutateInput() {
 	in := []DataPoint{{
 		YAxis: "100",
