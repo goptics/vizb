@@ -10,6 +10,8 @@ on:
       - 'internal/charts/**'
       - 'docs/src/content/docs/commands/serve.mdx'
       - 'docs/astro.config.mjs'
+      - 'docs/package.json'
+      - 'docs/pnpm-lock.yaml'
       - '.github/workflows/api-contract.yml'
   pull_request:
     branches: [main]
@@ -20,6 +22,8 @@ on:
       - 'internal/charts/**'
       - 'docs/src/content/docs/commands/serve.mdx'
       - 'docs/astro.config.mjs'
+      - 'docs/package.json'
+      - 'docs/pnpm-lock.yaml'
       - '.github/workflows/api-contract.yml'
 
 jobs:
