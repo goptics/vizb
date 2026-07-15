@@ -296,11 +296,72 @@ func prepareData(filePath, parserKey string, cfg parser.Config) ([]shared.DataPo
 		logAggregationResult(before, len(data), effectiveCfg)
 	}
 
+	data, effectiveCfg = applyColAxis(data, effectiveCfg, parserKey)
+
 	if len(data) == 0 {
 		shared.ExitWithError("No dataset found", nil)
 	}
 
 	return data, effectiveCfg
+}
+
+// applyColAxis expands multi-stat points onto cfg.ColAxis when the flag is set.
+// Requires csv/json + active grouping; otherwise warns, clears ColAxis, and skips.
+// Fatals when the target axis already exists in the group pattern or when z is
+// used without x+y. On success ColAxis stays set so buildDataset can EnsureAxis.
+func applyColAxis(data []shared.DataPoint, cfg parser.Config, parserKey string) ([]shared.DataPoint, parser.Config) {
+	if cfg.ColAxis == "" {
+		return data, cfg
+	}
+
+	skip := func(msg string) ([]shared.DataPoint, parser.Config) {
+		fmt.Fprintln(os.Stderr, style.Warning.Render(msg))
+		cfg.ColAxis = ""
+		return data, cfg
+	}
+
+	if !tabularParser(parserKey) {
+		return skip("warning: --col-axis is only supported for csv/json parsers; ignoring")
+	}
+
+	// Solo value/mixed --select has no multi-column stats path.
+	if cfg.Mode.IsSelectAxis() && !cfg.Mode.IsMultiStat() {
+		return skip("warning: --col-axis requires grouped multi-column stats; ignoring")
+	}
+
+	// Grouping must be active (explicit -g/-r/-p or auto-group that filled Group).
+	if len(cfg.Group) == 0 && !parser.IsExplicitGrouping(cfg) {
+		return skip("warning: --col-axis requires grouping (-g/-r/-p or auto-group); ignoring")
+	}
+
+	dim := shared.Dimension(cfg.ColAxis)
+	injectKey := dim.AxisKey()
+	groupAxes := parser.GroupAxes(cfg)
+	for _, ax := range groupAxes {
+		if ax.Key == injectKey {
+			shared.ExitWithError(
+				fmt.Sprintf("--col-axis %q conflicts with group dimension (already used by --group-pattern)", cfg.ColAxis),
+				nil,
+			)
+		}
+	}
+
+	if dim == shared.DimensionZAxis {
+		hasX, hasY := false, false
+		for _, ax := range groupAxes {
+			switch ax.Key {
+			case "x":
+				hasX = true
+			case "y":
+				hasY = true
+			}
+		}
+		if !hasX || !hasY {
+			shared.ExitWithError("--col-axis z requires both x and y group dimensions", nil)
+		}
+	}
+
+	return shared.ExpandStatsOntoAxis(data, dim), cfg
 }
 
 // logAggregationResult prints CLI feedback after summing grouped CSV/JSON rows.
@@ -459,6 +520,10 @@ func buildDataset(results []shared.DataPoint, m RunMeta, configs []internal_char
 			}
 			autoEnableValueMode3D(configs, axes, valueModeHasMetric(cfg, results))
 		}
+	}
+	if cfg.ColAxis != "" {
+		// ColAxis is cleared by applyColAxis when the flag was ignored (warn+skip).
+		axes = shared.EnsureAxis(axes, shared.Dimension(cfg.ColAxis))
 	}
 	axes = appendMetricAxis(axes, cfg, results)
 

@@ -31,6 +31,7 @@ type Config struct {
 	AutoGroup       bool         // csv/json: infer group columns when no explicit grouping is configured
 	ChartTypes      []string     // csv/json auto-value eligibility check (scatter/bar/line only)
 	Mode            Mode         // resolved once in ParseConfig so downstream switches on cfg.Mode
+	ColAxis         string       // csv/json: place numeric column names on this axis (n/x/y/z); empty = one chart per column
 }
 
 // Mode is the resolved parse mode for a Config. Set once in ParseConfig so

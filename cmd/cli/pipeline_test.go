@@ -1003,6 +1003,88 @@ func (s *PipelineSuite) TestAssembleDatasetGroupedClearsPreserveRows() {
 	s.False(ds.PreserveRows)
 }
 
+func (s *PipelineSuite) TestPrepareDataColAxisExpandsOntoX() {
+	csvFile := s.writeFile("concurrency.csv",
+		"load,default,chi\n100,3103.62,3103.73\n1000,32423.67,32421.28\n")
+	cfg, err := parser.ResolveGroupConfig(parser.Config{
+		GroupPattern: "y",
+		Group:        []string{"load"},
+		ColAxis:      "x",
+	})
+	s.Require().NoError(err)
+
+	results, effective := prepareData(csvFile, "csv", cfg)
+	s.Equal("x", effective.ColAxis)
+	// 2 load rows × 2 frameworks
+	s.Require().Len(results, 4)
+
+	types := map[string]struct{}{}
+	xVals := map[string]struct{}{}
+	yVals := map[string]struct{}{}
+	for _, dp := range results {
+		s.Require().Len(dp.Stats, 1)
+		s.Empty(dp.Stats[0].Type)
+		types[dp.Stats[0].Type] = struct{}{}
+		xVals[dp.XAxis] = struct{}{}
+		yVals[dp.YAxis] = struct{}{}
+	}
+	s.Len(types, 1) // only empty type
+	s.ElementsMatch([]string{"default", "chi"}, keysOf(xVals))
+	s.ElementsMatch([]string{"100", "1000"}, keysOf(yVals))
+
+	ds := assembleDataset(results, RunMeta{Name: "HTTP frameworks", Parser: "csv"}, nil, effective)
+	s.ElementsMatch([]string{"x", "y"}, axisKeyList(ds.Axes))
+}
+
+func (s *PipelineSuite) TestPrepareDataColAxisSameAxisFatals() {
+	csvFile := s.writeFile("concurrency.csv",
+		"load,default,chi\n100,1,2\n")
+	cfg, err := parser.ResolveGroupConfig(parser.Config{
+		GroupPattern: "x",
+		Group:        []string{"load"},
+		ColAxis:      "x",
+	})
+	s.Require().NoError(err)
+
+	s.Panics(func() {
+		prepareData(csvFile, "csv", cfg)
+	})
+}
+
+func (s *PipelineSuite) TestPrepareDataColAxisWithoutGroupWarnsAndSkips() {
+	// No -g and AutoGroup off → no Group; col-axis must warn+skip (multi-stat flat).
+	csvFile := s.writeFile("wide.csv", "a,b,c\n1,2,3\n")
+	cfg := parser.Config{ColAxis: "x"}
+
+	var results []shared.DataPoint
+	var effective parser.Config
+	errOut := testutil.CaptureStderr(func() {
+		results, effective = prepareData(csvFile, "csv", cfg)
+	})
+	s.Contains(errOut, "--col-axis requires grouping")
+	s.Empty(effective.ColAxis) // cleared on skip
+	s.NotEmpty(results)
+	// Unexpanded: still multi-stat column types, not empty-type long form
+	s.Require().NotEmpty(results[0].Stats)
+	s.NotEmpty(results[0].Stats[0].Type)
+}
+
+func keysOf(m map[string]struct{}) []string {
+	out := make([]string, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	return out
+}
+
+func axisKeyList(axes []shared.Axis) []string {
+	keys := make([]string, len(axes))
+	for i, a := range axes {
+		keys[i] = a.Key
+	}
+	return keys
+}
+
 func (s *PipelineSuite) TestAssembleDatasetMultiSelectStatAxesLabel() {
 	results := []shared.DataPoint{{XAxis: "West", Stats: []shared.Stat{{Type: "tax by region", Value: shared.F64(1)}}}}
 	cfg := parser.Config{

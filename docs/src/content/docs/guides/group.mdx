@@ -215,6 +215,34 @@ The columns you **don't** select decide the chart values:
 - **Non-numeric unselected columns are ignored.** A `notes` text column would simply be dropped.
 - **No `--group` at all** → dimensions stay empty. No rows are merged. Each row becomes one point, and every numeric column renders as its own chart. This is useful for a quick chart of a wide table.
 
+### Competitor columns — `--col-axis` / `-A`
+
+When several numeric columns are **the same metric for different series** (frameworks, libraries, versions), you usually want **one chart**, not one chart per column. `--col-axis` (short `-A`) places those column names onto a free group dimension (`n`, `x`, `y`, or `z`), like merge’s `--tag-axis`.
+
+Example wide table:
+
+```csv
+load,default,chi,echo,gin,goframe,httpz
+100,3103.62,3103.73,3104.59,3103.72,3114.20,3105.10
+1000,32423.67,32421.28,32413.72,32408.85,32411.78,32413.10
+```
+
+```bash
+# Frameworks on X, load levels as Y series — single chart
+vizb bar concurrency.csv -g load -p y -A x -o out.html
+
+# Load on X, frameworks as Y series (classic grouped bar)
+vizb bar concurrency.csv -g load -p x -A y -o out.html
+```
+
+| Rule | Behaviour |
+|------|-----------|
+| Requires group | Needs `-g` / `-r` / non-default `-p` (or auto-group). Without group: warn and skip |
+| csv/json only | Other parsers: warn and skip |
+| Free axis | Target must **not** already be used by `-p` (e.g. `-p x -A x` is fatal) |
+| `z` | Requires both `x` and `y` group dimensions |
+| Chart title | Expanded points omit `stats[].type`; the UI uses the dataset name (`-n`) as the chart title |
+
 <Aside type="note">
   Each `--group` column must match a header exactly. A missing column is fatal: `group column 'X' not found; available: [...]`.
 </Aside>

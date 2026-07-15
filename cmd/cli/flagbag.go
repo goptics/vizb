@@ -266,6 +266,7 @@ func (b *FlagBag) ParseConfig() parser.Config {
 		shared.ExitWithError(err.Error(), nil)
 	}
 	cfg.JSONPath = b.String("json-path")
+	cfg.ColAxis = b.String("col-axis")
 	selectRaws := b.StringArray("select")
 	if len(selectRaws) > 0 {
 		if parser.IsExplicitGrouping(cfg) {

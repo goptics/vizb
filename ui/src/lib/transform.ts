@@ -88,15 +88,18 @@ export const applyCanonicalOrder = (
 }
 
 export const toStatSignature = (stat: Stat): string => {
+  // Empty/omitted type (e.g. --col-axis expand) still yields one stable signature.
+  const type = stat.type ?? ''
+  const unit = stat.unit ?? ''
   if (!stat.per) {
-    return `${stat.type}-${stat.unit}`
+    return `${type}-${unit}`
   }
 
-  if (!stat.unit) {
-    return stat.type
+  if (!unit) {
+    return type
   }
 
-  return `${stat.type}-${stat.unit}-${stat.per}`
+  return `${type}-${unit}-${stat.per}`
 }
 
 export const statsForSignature = (stats: Stat[] | undefined, signature: string): Stat[] =>

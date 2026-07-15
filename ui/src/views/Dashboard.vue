@@ -88,7 +88,8 @@ const { charts, groupNames } = useChartPipeline(
   threeD,
   activeAxes,
   chartType,
-  computed(() => activeDataSet.value?.preserveRows === true)
+  computed(() => activeDataSet.value?.preserveRows === true),
+  computed(() => activeDataSet.value?.name)
 )
 
 // The worker owns grouping; feed its group list back into useDataPoint so the
