@@ -16,5 +16,3 @@ The Go test resolves every local reference, validates all operation examples
 against the documented subset of JSON Schema, and compares reusable Dataset and
 chart schemas with the Go wire structs. Redocly performs the full OpenAPI 3.1
 lint and dereferenced-bundle validation.
-
-Use [REVIEW.md](REVIEW.md) for the required human public-contract review.
