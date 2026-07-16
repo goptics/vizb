@@ -56,9 +56,19 @@ tasks:
       - cd docs; pnpm preview; cd -
 
   test:
-    desc: Run all tests (no cache)
+    desc: Run all CLI and UI tests (no cache)
     cmds:
-      - go test -count=1 ./...
+      - task: test:cli
+      - task: test:ui
+
+  test:cli:
+    desc: Run CLI tests (no cache)
+    cmds:
+      - go test -v -count=1 ./...
+
+  test:ui:
+    desc: Run UI tests
+    cmds:
       - cd ui; pnpm test; cd -
 
   # Pragmatic Go coverage (excludes main.go, vizb-ui.gen.go, pkg/style from review).
@@ -69,15 +79,54 @@ tasks:
       - go tool cover -func=coverage.out | tail -1
 
   lint:
-    desc: Run linter
+    desc: Run all CLI and UI linters
+    cmds:
+      - task: lint:cli
+      - task: lint:ui
+
+  lint:cli:
+    desc: Run CLI linter
     cmds:
       - golangci-lint run
 
+  lint:ui:
+    desc: Run UI type checker
+    cmds:
+      - cd ui; pnpm typecheck; cd -
+
   format:
-    desc: Format codes
+    desc: Format all CLI and UI files
+    cmds:
+      - task: format:cli
+      - task: format:ui
+
+  format:cli:
+    desc: Format CLI files
     cmds:
       - gofmt -w .
+
+  format:ui:
+    desc: Format UI files
+    cmds:
       - cd ui; [ -d node_modules ] || pnpm install; pnpm format; cd -
+
+  format:check:
+    desc: Check all CLI and UI formatting
+    cmds:
+      - task: format:check:cli
+      - task: format:check:ui
+
+  format:check:cli:
+    desc: Check CLI formatting
+    cmds:
+      - |
+        unformatted=$(gofmt -l .)
+        test -z "$unformatted" || { echo "$unformatted"; exit 1; }
+
+  format:check:ui:
+    desc: Check UI formatting
+    cmds:
+      - cd ui; pnpm format:check; cd -
 
   release:check:
     desc: Check Goreleaser configuration

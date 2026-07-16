@@ -8,6 +8,10 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
+type GroupingHelpersSuite struct {
+	suite.Suite
+}
+
 type GroupSpecSuite struct {
 	suite.Suite
 }
@@ -365,7 +369,8 @@ func (s *GroupSpecSuite) TestParseGroupSpecSeparatorMismatch() {
 	s.Contains(err.Error(), "separators do not match")
 }
 
-func TestNoExplicitGrouping(t *testing.T) {
+func (s *GroupingHelpersSuite) TestNoExplicitGrouping() {
+	t := s.T()
 	if !NoExplicitGrouping(Config{GroupPattern: "x"}) {
 		t.Fatal("expected true for default config")
 	}
@@ -389,7 +394,8 @@ func TestNoExplicitGrouping(t *testing.T) {
 	}
 }
 
-func TestAutoGroupApplies(t *testing.T) {
+func (s *GroupingHelpersSuite) TestAutoGroupApplies() {
+	t := s.T()
 	if !AutoGroupApplies(Config{AutoGroup: true, GroupPattern: "x"}) {
 		t.Fatal("expected true")
 	}
@@ -401,7 +407,8 @@ func TestAutoGroupApplies(t *testing.T) {
 	}
 }
 
-func TestFilterHeadersForAutoDetect(t *testing.T) {
+func (s *GroupingHelpersSuite) TestFilterHeadersForAutoDetect() {
+	t := s.T()
 	headers := []string{"z", "x", "y", "w"}
 	got := FilterHeadersForAutoDetect(headers, nil)
 	if len(got) != 4 || got[0] != "z" {
@@ -413,7 +420,8 @@ func TestFilterHeadersForAutoDetect(t *testing.T) {
 	}
 }
 
-func TestEffectiveGroupColumnsFallback(t *testing.T) {
+func (s *GroupingHelpersSuite) TestEffectiveGroupColumnsFallback() {
+	t := s.T()
 	cfg := Config{Group: []string{" region ", ""}}
 	got := EffectiveGroupColumns(cfg)
 	if len(got) != 1 || got[0] != "region" {
@@ -421,21 +429,24 @@ func TestEffectiveGroupColumnsFallback(t *testing.T) {
 	}
 }
 
-func TestEffectiveLabelSeparators(t *testing.T) {
+func (s *GroupingHelpersSuite) TestEffectiveLabelSeparators() {
+	t := s.T()
 	cfg := Config{LabelSeparators: []string{",", "/"}}
 	if len(EffectiveLabelSeparators(cfg)) != 2 {
 		t.Fatal("expected label separators from config")
 	}
 }
 
-func TestLogAutoGroupEmptyIsNoOp(t *testing.T) {
+func (s *GroupingHelpersSuite) TestLogAutoGroupEmptyIsNoOp() {
+	t := s.T()
 	out := testutil.CaptureStdout(func() { LogAutoGroup(nil) })
 	if out != "" {
 		t.Fatalf("expected no output, got %q", out)
 	}
 }
 
-func TestLogAutoValueBranches(t *testing.T) {
+func (s *GroupingHelpersSuite) TestLogAutoValueBranches() {
+	t := s.T()
 	out := testutil.CaptureStdout(func() { LogAutoValue([]string{"x", "y"}, "") })
 	if !strings.Contains(out, "2D") || !strings.Contains(out, "x, y") {
 		t.Fatalf("unexpected 2D log: %q", out)
@@ -526,7 +537,8 @@ func TestAutoDetectTabularConfigSuite(t *testing.T) {
 	suite.Run(t, new(AutoDetectTabularConfigSuite))
 }
 
-func TestAutoValueEligible(t *testing.T) {
+func (s *GroupingHelpersSuite) TestAutoValueEligible() {
+	t := s.T()
 	tests := []struct {
 		name  string
 		types []string
@@ -550,4 +562,8 @@ func TestAutoValueEligible(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGroupingHelpersSuite(t *testing.T) {
+	suite.Run(t, new(GroupingHelpersSuite))
 }

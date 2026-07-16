@@ -4,9 +4,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestFlagHelpers(t *testing.T) {
+type FlagSuite struct {
+	suite.Suite
+}
+
+func (s *FlagSuite) TestFlagHelpers() {
+	t := s.T()
 	f := Flag{Name: "show-labels", Label: "labels", Key: "labels", JSONKey: "showLabels", ValidSet: []string{"a"}}
 	assert.Equal(t, "labels", f.EffectiveLabel())
 	assert.Equal(t, "labels", f.EffectiveKey())
@@ -18,4 +24,8 @@ func TestFlagHelpers(t *testing.T) {
 	assert.Equal(t, "parser", plain.EffectiveKey())
 	assert.False(t, plain.IsChart())
 	assert.False(t, plain.IsSoft())
+}
+
+func TestFlagSuite(t *testing.T) {
+	suite.Run(t, new(FlagSuite))
 }

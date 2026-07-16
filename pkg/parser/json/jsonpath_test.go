@@ -6,9 +6,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestSelectPath(t *testing.T) {
+type JSONPathSuite struct {
+	suite.Suite
+}
+
+func (s *JSONPathSuite) TestSelectPath() {
+	t := s.T()
 	cases := []struct {
 		name    string
 		input   string
@@ -95,7 +101,8 @@ func TestSelectPath(t *testing.T) {
 	}
 }
 
-func TestSelectPathReadAndParseErrors(t *testing.T) {
+func (s *JSONPathSuite) TestSelectPathReadAndParseErrors() {
+	t := s.T()
 	_, err := SelectPath(filepath.Join(t.TempDir(), "missing.json"), ".rows")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "error reading JSON")
@@ -107,7 +114,8 @@ func TestSelectPathReadAndParseErrors(t *testing.T) {
 	require.Contains(t, err.Error(), "error parsing JSON")
 }
 
-func TestTokenizeLenientMalformedSegments(t *testing.T) {
+func (s *JSONPathSuite) TestTokenizeLenientMalformedSegments() {
+	t := s.T()
 	require.Empty(t, tokenize("[]"))
 
 	gapped := tokenize(".rows..items")
@@ -121,4 +129,8 @@ func TestTokenizeLenientMalformedSegments(t *testing.T) {
 	require.Empty(t, got[0].indices)
 	require.Equal(t, "items", got[1].key)
 	require.Equal(t, []int{1}, got[1].indices)
+}
+
+func TestJSONPathSuite(t *testing.T) {
+	suite.Run(t, new(JSONPathSuite))
 }

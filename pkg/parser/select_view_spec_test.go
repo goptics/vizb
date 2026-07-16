@@ -4,9 +4,15 @@ import (
 	"testing"
 
 	"github.com/goptics/vizb/shared"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestParseSelectViewFlagTwoColumns(t *testing.T) {
+type SelectViewSpecSuite struct {
+	suite.Suite
+}
+
+func (s *SelectViewSpecSuite) TestParseSelectViewFlagTwoColumns() {
+	t := s.T()
 	view, err := ParseSelectViewFlag("region,latency")
 	if err != nil {
 		t.Fatal(err)
@@ -23,7 +29,8 @@ func TestParseSelectViewFlagTwoColumns(t *testing.T) {
 	}
 }
 
-func TestParseSelectViewFlagThreeColumnsWithLabel(t *testing.T) {
+func (s *SelectViewSpecSuite) TestParseSelectViewFlagThreeColumnsWithLabel() {
+	t := s.T()
 	view, err := ParseSelectViewFlag("region{Region},latency{Latency (ms)},sales")
 	if err != nil {
 		t.Fatal(err)
@@ -34,7 +41,8 @@ func TestParseSelectViewFlagThreeColumnsWithLabel(t *testing.T) {
 	}
 }
 
-func TestParseSelectViewFlagExplicitSyntax(t *testing.T) {
+func (s *SelectViewSpecSuite) TestParseSelectViewFlagExplicitSyntax() {
+	t := s.T()
 	view, err := ParseSelectViewFlag("x:region,y:latency,z:sales")
 	if err != nil {
 		t.Fatal(err)
@@ -52,7 +60,8 @@ func TestParseSelectViewFlagExplicitSyntax(t *testing.T) {
 	}
 }
 
-func TestParseSelectViewFlagTrailingParenTypeLabel(t *testing.T) {
+func (s *SelectViewSpecSuite) TestParseSelectViewFlagTrailingParenTypeLabel() {
+	t := s.T()
 	view, err := ParseSelectViewFlag("region,latency (Latency by Region)")
 	if err != nil {
 		t.Fatal(err)
@@ -65,7 +74,8 @@ func TestParseSelectViewFlagTrailingParenTypeLabel(t *testing.T) {
 	}
 }
 
-func TestParseSelectViewFlagAxisLabelAndParenTypeLabel(t *testing.T) {
+func (s *SelectViewSpecSuite) TestParseSelectViewFlagAxisLabelAndParenTypeLabel() {
+	t := s.T()
 	view, err := ParseSelectViewFlag("region{Region},latency (Custom Title)")
 	if err != nil {
 		t.Fatal(err)
@@ -78,7 +88,8 @@ func TestParseSelectViewFlagAxisLabelAndParenTypeLabel(t *testing.T) {
 	}
 }
 
-func TestParseSelectViewFlagParenOverridesMetricBraceLabel(t *testing.T) {
+func (s *SelectViewSpecSuite) TestParseSelectViewFlagParenOverridesMetricBraceLabel() {
+	t := s.T()
 	view, err := ParseSelectViewFlag("region,latency{Legacy} (New Title)")
 	if err != nil {
 		t.Fatal(err)
@@ -91,7 +102,8 @@ func TestParseSelectViewFlagParenOverridesMetricBraceLabel(t *testing.T) {
 	}
 }
 
-func TestParseSelectViewFlagRejectsArity(t *testing.T) {
+func (s *SelectViewSpecSuite) TestParseSelectViewFlagRejectsArity() {
+	t := s.T()
 	if _, err := ParseSelectViewFlag("region"); err == nil {
 		t.Fatal("want error for 1 column")
 	}
@@ -103,13 +115,15 @@ func TestParseSelectViewFlagRejectsArity(t *testing.T) {
 	}
 }
 
-func TestParseSelectViewFlagRejectsDuplicateColumn(t *testing.T) {
+func (s *SelectViewSpecSuite) TestParseSelectViewFlagRejectsDuplicateColumn() {
+	t := s.T()
 	if _, err := ParseSelectViewFlag("region,region"); err == nil {
 		t.Fatal("want duplicate column error")
 	}
 }
 
-func TestParseSelectViewFlagRejectsIncompleteExplicitSyntax(t *testing.T) {
+func (s *SelectViewSpecSuite) TestParseSelectViewFlagRejectsIncompleteExplicitSyntax() {
+	t := s.T()
 	if _, err := ParseSelectViewFlag("x:region,latency"); err == nil {
 		t.Fatal("want mixed explicit/implicit error")
 	}
@@ -118,13 +132,15 @@ func TestParseSelectViewFlagRejectsIncompleteExplicitSyntax(t *testing.T) {
 	}
 }
 
-func TestParseSelectViewFlagRejectsEmptyParenTitle(t *testing.T) {
+func (s *SelectViewSpecSuite) TestParseSelectViewFlagRejectsEmptyParenTitle() {
+	t := s.T()
 	if _, err := ParseSelectViewFlag("region,latency ()"); err == nil {
 		t.Fatal("want error for empty ()")
 	}
 }
 
-func TestHasSelect(t *testing.T) {
+func (s *SelectViewSpecSuite) TestHasSelect() {
+	t := s.T()
 	if HasSelect(Config{}) {
 		t.Fatal("expected false for empty config")
 	}
@@ -136,7 +152,8 @@ func TestHasSelect(t *testing.T) {
 	}
 }
 
-func TestIsExplicitGrouping(t *testing.T) {
+func (s *SelectViewSpecSuite) TestIsExplicitGrouping() {
+	t := s.T()
 	if IsExplicitGrouping(Config{}) {
 		t.Fatal("expected false for empty config")
 	}
@@ -154,7 +171,8 @@ func TestIsExplicitGrouping(t *testing.T) {
 	}
 }
 
-func TestResolveMode(t *testing.T) {
+func (s *SelectViewSpecSuite) TestResolveMode() {
+	t := s.T()
 	if ResolveMode(Config{}) != ModeAuto {
 		t.Fatal("empty config should be ModeAuto")
 	}
@@ -173,7 +191,8 @@ func TestResolveMode(t *testing.T) {
 	}
 }
 
-func TestSelectStatType(t *testing.T) {
+func (s *SelectViewSpecSuite) TestSelectStatType() {
+	t := s.T()
 	view := SelectView{Columns: []ColumnSpec{{Source: "region"}, {Source: "latency"}}}
 	if got := SelectStatType(view); got != "latency by region" {
 		t.Fatalf("got %q", got)
@@ -195,7 +214,8 @@ func TestSelectStatType(t *testing.T) {
 	}
 }
 
-func TestValidateMultiSelectStatViews(t *testing.T) {
+func (s *SelectViewSpecSuite) TestValidateMultiSelectStatViews() {
+	t := s.T()
 	if err := ValidateMultiSelectStatViews([]SelectView{{Columns: []ColumnSpec{{Source: "a"}, {Source: "b"}}}}); err != nil {
 		t.Fatal(err)
 	}
@@ -204,7 +224,8 @@ func TestValidateMultiSelectStatViews(t *testing.T) {
 	}
 }
 
-func TestMultiSelectSharedDim(t *testing.T) {
+func (s *SelectViewSpecSuite) TestMultiSelectSharedDim() {
+	t := s.T()
 	shared := []SelectView{
 		{Columns: []ColumnSpec{{Source: "region"}, {Source: "tax"}}},
 		{Columns: []ColumnSpec{{Source: "region"}, {Source: "amount"}}},
@@ -221,7 +242,8 @@ func TestMultiSelectSharedDim(t *testing.T) {
 	}
 }
 
-func TestMultiSelectStatAxesUsesDimLabel(t *testing.T) {
+func (s *SelectViewSpecSuite) TestMultiSelectStatAxesUsesDimLabel() {
+	t := s.T()
 	views := []SelectView{{
 		Columns: []ColumnSpec{{Source: "region", Label: "Region", AxisKey: "x"}, {Source: "tax", AxisKey: "y"}},
 	}}
@@ -231,7 +253,8 @@ func TestMultiSelectStatAxesUsesDimLabel(t *testing.T) {
 	}
 }
 
-func TestMultiSelectStatAxesFallsBackToSource(t *testing.T) {
+func (s *SelectViewSpecSuite) TestMultiSelectStatAxesFallsBackToSource() {
+	t := s.T()
 	views := []SelectView{{
 		Columns: []ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "tax", AxisKey: "y"}},
 	}}
@@ -241,7 +264,8 @@ func TestMultiSelectStatAxesFallsBackToSource(t *testing.T) {
 	}
 }
 
-func TestSelectViewDatasetName(t *testing.T) {
+func (s *SelectViewSpecSuite) TestSelectViewDatasetName() {
+	t := s.T()
 	view := []ColumnSpec{
 		{Source: "region", Label: "Region", AxisKey: "x"},
 		{Source: "latency", AxisKey: "y"},
@@ -254,7 +278,8 @@ func TestSelectViewDatasetName(t *testing.T) {
 	}
 }
 
-func TestParseSelectViewFlagQuotedParenInColumn(t *testing.T) {
+func (s *SelectViewSpecSuite) TestParseSelectViewFlagQuotedParenInColumn() {
+	t := s.T()
 	view, err := ParseSelectViewFlag(`"region (EU)",latency (Latency by Region)`)
 	if err != nil {
 		t.Fatal(err)
@@ -267,7 +292,8 @@ func TestParseSelectViewFlagQuotedParenInColumn(t *testing.T) {
 	}
 }
 
-func TestParseSelectViewFlagInvalidAxisKeyTreatedAsColumnName(t *testing.T) {
+func (s *SelectViewSpecSuite) TestParseSelectViewFlagInvalidAxisKeyTreatedAsColumnName() {
+	t := s.T()
 	view, err := ParseSelectViewFlag("w:region,latency")
 	if err != nil {
 		t.Fatal(err)
@@ -277,19 +303,22 @@ func TestParseSelectViewFlagInvalidAxisKeyTreatedAsColumnName(t *testing.T) {
 	}
 }
 
-func TestParseSelectViewFlagExplicitMissingY(t *testing.T) {
+func (s *SelectViewSpecSuite) TestParseSelectViewFlagExplicitMissingY() {
+	t := s.T()
 	if _, err := ParseSelectViewFlag("x:region,z:latency"); err == nil {
 		t.Fatal("want missing y error")
 	}
 }
 
-func TestMultiSelectSharedDimEmptyViews(t *testing.T) {
+func (s *SelectViewSpecSuite) TestMultiSelectSharedDimEmptyViews() {
+	t := s.T()
 	if MultiSelectSharedDim(nil) {
 		t.Fatal("expected false for empty views")
 	}
 }
 
-func TestAppendMultiSelectStatPointNonMergeSkipsFailedRead(t *testing.T) {
+func (s *SelectViewSpecSuite) TestAppendMultiSelectStatPointNonMergeSkipsFailedRead() {
+	t := s.T()
 	views := []SelectView{
 		{Columns: []ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "tax", AxisKey: "y"}}},
 		{Columns: []ColumnSpec{{Source: "product", AxisKey: "x"}, {Source: "sales", AxisKey: "y"}}},
@@ -306,26 +335,30 @@ func TestAppendMultiSelectStatPointNonMergeSkipsFailedRead(t *testing.T) {
 	}
 }
 
-func TestParseSelectViewFlagDuplicateExplicitAxisKey(t *testing.T) {
+func (s *SelectViewSpecSuite) TestParseSelectViewFlagDuplicateExplicitAxisKey() {
+	t := s.T()
 	if _, err := ParseSelectViewFlag("x:region,y:latency,y:sales"); err == nil {
 		t.Fatal("want duplicate axis key error")
 	}
 }
 
-func TestParseSelectViewFlagExplicitMissingZ(t *testing.T) {
+func (s *SelectViewSpecSuite) TestParseSelectViewFlagExplicitMissingZ() {
+	t := s.T()
 	if _, err := ParseSelectViewFlag("x:region,y:latency,sales"); err == nil {
 		t.Fatal("want mixed explicit/implicit error")
 	}
 }
 
-func TestSelectStatTypeUsesSourceWhenDimLabelEmpty(t *testing.T) {
+func (s *SelectViewSpecSuite) TestSelectStatTypeUsesSourceWhenDimLabelEmpty() {
+	t := s.T()
 	view := SelectView{Columns: []ColumnSpec{{Source: "region"}, {Source: "latency", Label: ""}}}
 	if got := SelectStatType(view); got != "latency by region" {
 		t.Fatalf("got %q", got)
 	}
 }
 
-func TestModeIsGrouped(t *testing.T) {
+func (s *SelectViewSpecSuite) TestModeIsGrouped() {
+	t := s.T()
 	if !ModeGrouped.IsGrouped() {
 		t.Fatal("ModeGrouped should report grouped")
 	}
@@ -334,4 +367,8 @@ func TestModeIsGrouped(t *testing.T) {
 			t.Fatalf("mode %v should not be grouped", m)
 		}
 	}
+}
+
+func TestSelectViewSpecSuite(t *testing.T) {
+	suite.Run(t, new(SelectViewSpecSuite))
 }

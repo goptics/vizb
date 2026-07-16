@@ -4,7 +4,12 @@ import (
 	"testing"
 
 	"github.com/goptics/vizb/shared"
+	"github.com/stretchr/testify/suite"
 )
+
+type TabularSuite struct {
+	suite.Suite
+}
 
 type mockRowReader struct {
 	cells   map[string]string
@@ -26,7 +31,8 @@ func (m mockRowReader) Numeric(source string) (float64, bool) {
 func (m mockRowReader) AvailableColumns() []string { return m.headers }
 func (m mockRowReader) FlagLabel() string          { return m.flag }
 
-func TestParseMixedMode(t *testing.T) {
+func (s *TabularSuite) TestParseMixedMode() {
+	t := s.T()
 	cfg := Config{Axes: []ColumnSpec{
 		{Source: "region", AxisKey: "x", AxisType: "category"},
 		{Source: "latency", AxisKey: "y", AxisType: "value"},
@@ -50,7 +56,8 @@ func TestParseMixedMode(t *testing.T) {
 	}
 }
 
-func TestParseValueModeSkipsIncompleteRowsAndSetsMetric(t *testing.T) {
+func (s *TabularSuite) TestParseValueModeSkipsIncompleteRowsAndSetsMetric() {
+	t := s.T()
 	cfg := Config{
 		Axes: []ColumnSpec{
 			{Source: "x", AxisKey: "x"},
@@ -78,7 +85,8 @@ func TestParseValueModeSkipsIncompleteRowsAndSetsMetric(t *testing.T) {
 	}
 }
 
-func TestParseValueModeRejectsMissingMetricColumn(t *testing.T) {
+func (s *TabularSuite) TestParseValueModeRejectsMissingMetricColumn() {
+	t := s.T()
 	restore, exitCalled := shared.TrapOsExitPanic(t)
 	defer restore()
 
@@ -106,7 +114,8 @@ func TestParseValueModeRejectsMissingMetricColumn(t *testing.T) {
 	}
 }
 
-func TestParseSelectStatModeMergedRow(t *testing.T) {
+func (s *TabularSuite) TestParseSelectStatModeMergedRow() {
+	t := s.T()
 	cfg := Config{
 		SelectViews: []SelectView{
 			{Columns: []ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "tax", AxisKey: "y"}}},
@@ -125,7 +134,8 @@ func TestParseSelectStatModeMergedRow(t *testing.T) {
 	}
 }
 
-func TestParseSelectStatModeEmptyResultsExits(t *testing.T) {
+func (s *TabularSuite) TestParseSelectStatModeEmptyResultsExits() {
+	t := s.T()
 	restore, exitCalled := shared.TrapOsExitPanic(t)
 	defer restore()
 
@@ -150,7 +160,8 @@ func TestParseSelectStatModeEmptyResultsExits(t *testing.T) {
 	}
 }
 
-func TestParseMixedModeSkipsUnknownAxisKey(t *testing.T) {
+func (s *TabularSuite) TestParseMixedModeSkipsUnknownAxisKey() {
+	t := s.T()
 	cfg := Config{Axes: []ColumnSpec{
 		{Source: "region", AxisKey: "x", AxisType: "category"},
 		{Source: "missing", AxisKey: "w", AxisType: "value"},
@@ -163,7 +174,8 @@ func TestParseMixedModeSkipsUnknownAxisKey(t *testing.T) {
 	}
 }
 
-func TestParseValueModeRejectsNonNumericMetric(t *testing.T) {
+func (s *TabularSuite) TestParseValueModeRejectsNonNumericMetric() {
+	t := s.T()
 	restore, exitCalled := shared.TrapOsExitPanic(t)
 	defer restore()
 
@@ -192,7 +204,8 @@ func TestParseValueModeRejectsNonNumericMetric(t *testing.T) {
 	}
 }
 
-func TestParseSelectStatModeNonMerge(t *testing.T) {
+func (s *TabularSuite) TestParseSelectStatModeNonMerge() {
+	t := s.T()
 	cfg := Config{
 		SelectViews: []SelectView{
 			{Columns: []ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "tax", AxisKey: "y"}}},
@@ -211,7 +224,8 @@ func TestParseSelectStatModeNonMerge(t *testing.T) {
 	}
 }
 
-func TestDispatchSelectModePropagatesAxisType(t *testing.T) {
+func (s *TabularSuite) TestDispatchSelectModePropagatesAxisType() {
+	t := s.T()
 	cfg := Config{
 		Mode: ModeValue,
 		SelectViews: []SelectView{
@@ -240,4 +254,8 @@ func TestDispatchSelectModePropagatesAxisType(t *testing.T) {
 	if cfg.SelectViews[0].Columns[0].AxisType != "category" || cfg.SelectViews[0].Columns[1].AxisType != "value" {
 		t.Fatalf("axis types not propagated: %+v", cfg.SelectViews[0].Columns)
 	}
+}
+
+func TestTabularSuite(t *testing.T) {
+	suite.Run(t, new(TabularSuite))
 }

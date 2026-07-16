@@ -6,7 +6,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
+
+type ChunksSuite struct {
+	suite.Suite
+}
 
 // decodeChunks unmarshals the JS object literal SelectChunks emits into a set of keys.
 func decodeChunks(t *testing.T, js string) map[string]string {
@@ -16,7 +21,8 @@ func decodeChunks(t *testing.T, js string) map[string]string {
 	return m
 }
 
-func TestSelectChunks(t *testing.T) {
+func (s *ChunksSuite) TestSelectChunks() {
+	t := s.T()
 	entry := VizbEntryKey
 	barRoot := VizbChartRoots["bar"]
 	lineRoot := VizbChartRoots["line"]
@@ -124,4 +130,8 @@ func chartRootSet() map[string]bool {
 		s[k] = true
 	}
 	return s
+}
+
+func TestChunksSuite(t *testing.T) {
+	suite.Run(t, new(ChunksSuite))
 }

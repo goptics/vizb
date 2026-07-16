@@ -8,9 +8,15 @@ import (
 
 	"github.com/goptics/vizb/shared"
 	"github.com/goptics/vizb/version"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestGenerateUI(t *testing.T) {
+type GenerateUISuite struct {
+	suite.Suite
+}
+
+func (s *GenerateUISuite) TestGenerateUI() {
+	t := s.T()
 	originalOsExit := shared.OsExit
 	defer func() { shared.OsExit = originalOsExit }()
 
@@ -88,7 +94,8 @@ func TestGenerateUI(t *testing.T) {
 	})
 }
 
-func TestGenerateRemoteUI(t *testing.T) {
+func (s *GenerateUISuite) TestGenerateRemoteUI() {
+	t := s.T()
 	testTemplate := `<!DOCTYPE html><html><body>` +
 		`<script>window.VIZB_DATA = [[VIZB .Data VIZB]];` +
 		`window.VIZB_DATA_URL = [[VIZB .DataURL VIZB]];` +
@@ -102,11 +109,16 @@ func TestGenerateRemoteUI(t *testing.T) {
 	assert.Contains(t, result, `"bar"`)
 }
 
-func TestChartListJSEmptyDefaults(t *testing.T) {
+func (s *GenerateUISuite) TestChartListJSEmptyDefaults() {
+	t := s.T()
 	testTemplate := `<!DOCTYPE html><html><body><script>window.VIZB_CHARTS = [[VIZB .ChartList VIZB]];</script></body></html>`
 	result := GenerateUI([]byte(`[]`), nil, false, false, testTemplate)
 
 	assert.Contains(t, result, `"bar"`)
 	assert.Contains(t, result, `"line"`)
 	assert.Contains(t, result, `"pie"`)
+}
+
+func TestGenerateUISuite(t *testing.T) {
+	suite.Run(t, new(GenerateUISuite))
 }
