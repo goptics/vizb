@@ -7,9 +7,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestStatValueSetAndString(t *testing.T) {
+type StatFlagSuite struct {
+	suite.Suite
+}
+
+func (s *StatFlagSuite) TestStatValueSetAndString() {
+	t := s.T()
 	var math []string
 	sv := &statValue{value: &math}
 
@@ -23,7 +29,8 @@ func TestStatValueSetAndString(t *testing.T) {
 	assert.Equal(t, "counts,center", sv.String())
 }
 
-func TestLooksLikeStatValue(t *testing.T) {
+func (s *StatFlagSuite) TestLooksLikeStatValue() {
+	t := s.T()
 	assert.False(t, looksLikeStatValue(""))
 	assert.False(t, looksLikeStatValue("-h"))
 	assert.True(t, looksLikeStatValue("all"))
@@ -31,7 +38,8 @@ func TestLooksLikeStatValue(t *testing.T) {
 	assert.False(t, looksLikeStatValue("counts,bogus"))
 }
 
-func TestRewriteStatArg(t *testing.T) {
+func (s *StatFlagSuite) TestRewriteStatArg() {
+	t := s.T()
 	assert.Equal(t, []string{"--stat=counts"}, RewriteStatArg([]string{"--stat", "counts"}))
 	assert.Equal(t, []string{"--stat", "-o"}, RewriteStatArg([]string{"--stat", "-o"}))
 
@@ -39,4 +47,8 @@ func TestRewriteStatArg(t *testing.T) {
 	file := filepath.Join(dir, "bench.json")
 	require.NoError(t, os.WriteFile(file, []byte("{}"), 0644))
 	assert.Equal(t, []string{"--stat", file}, RewriteStatArg([]string{"--stat", file}))
+}
+
+func TestStatFlagSuite(t *testing.T) {
+	suite.Run(t, new(StatFlagSuite))
 }

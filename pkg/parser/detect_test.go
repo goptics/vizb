@@ -6,7 +6,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
+
+type DetectSuite struct {
+	suite.Suite
+}
 
 func writeDetectFile(t *testing.T, name, content string) string {
 	t.Helper()
@@ -44,7 +49,8 @@ const (
 	vizbBenchmarkSample = `{"name":"Benchmarks","data":[{"name":"a","stats":[]}]}`
 )
 
-func TestDetectParser(t *testing.T) {
+func (s *DetectSuite) TestDetectParser() {
+	t := s.T()
 	cases := []struct {
 		name    string
 		file    string
@@ -73,7 +79,8 @@ func TestDetectParser(t *testing.T) {
 	}
 }
 
-func TestLooksLikeCSVEdgeCases(t *testing.T) {
+func (s *DetectSuite) TestLooksLikeCSVEdgeCases() {
+	t := s.T()
 	t.Run("single line is not CSV", func(t *testing.T) {
 		path := writeDetectFile(t, "one.txt", "just one line")
 		assert.Equal(t, "go", DetectParser(path))
@@ -82,4 +89,8 @@ func TestLooksLikeCSVEdgeCases(t *testing.T) {
 		path := writeDetectFile(t, "header.txt", "a,b,c\n")
 		assert.Equal(t, "go", DetectParser(path))
 	})
+}
+
+func TestDetectSuite(t *testing.T) {
+	suite.Run(t, new(DetectSuite))
 }

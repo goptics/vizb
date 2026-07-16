@@ -13,6 +13,10 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
+type AxisJSONSuite struct {
+	suite.Suite
+}
+
 type DatasetSuite struct {
 	suite.Suite
 }
@@ -123,7 +127,8 @@ func TestDatasetSuite(t *testing.T) {
 	suite.Run(t, new(DatasetSuite))
 }
 
-func TestAxisTypeOmittedWhenCategory(t *testing.T) {
+func (s *AxisJSONSuite) TestAxisTypeOmittedWhenCategory() {
+	t := s.T()
 	b, err := json.Marshal(shared.Axis{Key: "x", Label: "Price"})
 	if err != nil {
 		t.Fatal(err)
@@ -133,7 +138,8 @@ func TestAxisTypeOmittedWhenCategory(t *testing.T) {
 	}
 }
 
-func TestAxisTypeEmittedWhenValue(t *testing.T) {
+func (s *AxisJSONSuite) TestAxisTypeEmittedWhenValue() {
+	t := s.T()
 	b, err := json.Marshal(shared.Axis{Key: "x", Label: "Price", Type: "value"})
 	if err != nil {
 		t.Fatal(err)
@@ -141,4 +147,8 @@ func TestAxisTypeEmittedWhenValue(t *testing.T) {
 	if got := string(b); got != `{"key":"x","label":"Price","type":"value"}` {
 		t.Fatalf("value axis should emit type, got %s", got)
 	}
+}
+
+func TestAxisJSONSuite(t *testing.T) {
+	suite.Run(t, new(AxisJSONSuite))
 }
