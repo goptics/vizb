@@ -131,6 +131,23 @@ Use `noise-grid.csv` for faster loads; use this file when you need the complete 
 
 ---
 
+## `concurrency.csv`
+
+**Shape:** Wide competitor table — one category column (`load`) and several numeric framework columns (`default`, `chi`, `echo`, `gin`, `goframe`, `httpz`). Throughput-style values at three load levels.
+
+**What vizb does:** With `-g load -p y --col-axis x`, load becomes the Y series dimension and **framework column names land on X** as categories. All competitors share **one chart** (instead of one chart per numeric column). Chart title falls back to the dataset name (`-n`) because expanded stats omit `type`.
+
+**Good for:** Side-by-side library / framework comparison from wide CSV.
+
+| Goal | Command |
+|------|---------|
+| Frameworks on X, load as series | `vizb bar examples/csv/concurrency.csv -g load -p y -A x` |
+| Load on X, frameworks as series | `vizb bar examples/csv/concurrency.csv -g load -p x -A y` |
+
+CI id: `10-concurrency-frameworks` (see `.github/workflows/deploy-examples-csv.yml`).
+
+---
+
 ## Quick reference
 
 | File | Rows | Mode | Typical chart |
@@ -143,6 +160,7 @@ Use `noise-grid.csv` for faster loads; use this file when you need the complete 
 | `region-metrics.csv` | 8 | Solo `--select` mixed | Scatter mixed (region × metric) |
 | `house-price-area2.csv` | 16,174 | Auto-value (xy) | Scatter2D + visualMap |
 | `clusters.csv` | 60 | Auto-value (xy) | Scatter2D + visualMap, symbol size 10 |
+| `concurrency.csv` | 3 | Group + `--col-axis` | Bar/line competitor compare |
 
 **Auto-group** applies when the file has categorical columns and you did not pass `--group`. **Auto-value** applies when every column is numeric — vizb assigns `x`, `y`, `z` (and optional 4th metric) without flags.
 
@@ -163,5 +181,6 @@ Use `noise-grid.csv` for faster loads; use this file when you need the complete 
 | House price vs area | `house-price-area2.csv` | [Open](https://vizb.goptics.org/examples/csv/?id=07-house-price-area2) |
 | Life expectancy vs income | `life-expectancy-income.csv` | [Open](https://vizb.goptics.org/examples/csv/?id=08-life-expectancy-income) |
 | Clusters | `clusters.csv` | [Open](https://vizb.goptics.org/examples/csv/?id=09-clusters) |
+| HTTP framework throughput | `concurrency.csv` | [Open](https://vizb.goptics.org/examples/csv/?id=10-concurrency-frameworks) |
 
 - **Docs in repo:** [Group guide](../../docs/src/content/docs/guides/group.mdx) · [3D charts](../../docs/src/content/docs/charts/3d.mdx) · [All examples](https://vizb.goptics.org/examples/)

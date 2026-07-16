@@ -8,7 +8,7 @@ import (
 )
 
 type Stat struct {
-	Type   string   `json:"type"`
+	Type   string   `json:"type,omitempty"`
 	Value  *float64 `json:"value,omitempty"`
 	Symbol string   `json:"symbol,omitempty"`
 }

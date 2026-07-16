@@ -58,7 +58,9 @@ export function useChartPipeline(
   threeD: Ref<boolean>,
   axes?: MaybeRef<Axis[] | undefined>,
   chartType?: MaybeRef<ChartType>,
-  preserveRows?: MaybeRef<boolean | undefined>
+  preserveRows?: MaybeRef<boolean | undefined>,
+  // Fallback chart title when stats[].type is empty/omitted (--col-axis expand).
+  datasetName?: MaybeRef<string | undefined>
 ) {
   const charts = ref<ChartState[]>([])
   // True once any chart has data — gates the first-load full-page skeleton.
@@ -95,6 +97,9 @@ export function useChartPipeline(
   let draining = false
 
   const rows = () => (Array.isArray(rawData) ? rawData : rawData.value)
+
+  // Empty/omitted stat type → show dataset name (e.g. -n / default "Comparisons").
+  const chartTitle = (type: string | undefined) => type || unref(datasetName) || ''
 
   // Plain (proxy-free) copy of the sort. postMessage structured-clone rejects
   // Vue reactive Proxies, and sort.value is one (it comes off the reactive
@@ -135,7 +140,7 @@ export function useChartPipeline(
         const existing = prev.get(signature)
         return {
           key: signature,
-          title,
+          title: chartTitle(title),
           data: existing?.data ?? null,
           pending: true,
         }
@@ -158,6 +163,10 @@ export function useChartPipeline(
         // grid (up to 100k entries); deep-proxying it would tax every read echarts
         // and the option computeds make. Identity (key/title/pending) stays
         // reactive; the payload doesn't need to be.
+        // Empty stat type leaves chart.title blank after --col-axis; fill from dataset name.
+        if (!msg.chart.title) {
+          msg.chart.title = chartTitle(undefined)
+        }
         slot.data = markRaw(msg.chart)
         slot.pending = false
         hasAny.value = true
@@ -248,7 +257,7 @@ export function useChartPipeline(
       const sigs = listChartSignatures(data)
       charts.value = sigs.map(({ signature, statTemplate }) => ({
         key: signature,
-        title: statTemplate.type,
+        title: chartTitle(statTemplate.type),
         data: prev.get(signature)?.data ?? null,
         pending: true,
       }))

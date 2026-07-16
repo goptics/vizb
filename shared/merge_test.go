@@ -580,13 +580,13 @@ func (s *MergeSuite) TestMergeReplaceSameTagSkipsOlderIncoming() {
 }
 
 func (s *MergeSuite) TestEnsureInjectAxisEmptyAxes() {
-	s.Equal([]string{"x"}, axisKeys(ensureInjectAxis(nil, DimensionXAxis)))
-	s.Equal([]string{"y"}, axisKeys(ensureInjectAxis([]Axis{}, DimensionYAxis)))
+	s.Equal([]string{"x"}, axisKeys(EnsureAxis(nil, DimensionXAxis)))
+	s.Equal([]string{"y"}, axisKeys(EnsureAxis([]Axis{}, DimensionYAxis)))
 }
 
 func (s *MergeSuite) TestEnsureInjectAxisInsertsAmongNonCanonicalAxes() {
 	axes := []Axis{{Key: "custom"}, {Key: "y"}}
-	result := ensureInjectAxis(axes, DimensionXAxis)
+	result := EnsureAxis(axes, DimensionXAxis)
 	s.Equal([]string{"custom", "x", "y"}, axisKeys(result))
 }
 
