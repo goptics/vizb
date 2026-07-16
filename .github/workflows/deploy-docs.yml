@@ -2,35 +2,59 @@ name: Deploy Docs
 
 on:
   workflow_call:
+    inputs:
+      publish:
+        required: false
+        type: boolean
+        default: false
+        description: "Publish the generated docs immediately"
   workflow_dispatch:
+    inputs:
+      publish:
+        required: false
+        type: boolean
+        default: true
+        description: "Publish the generated docs immediately"
 
 permissions:
   contents: write
 
-concurrency:
-  group: pages
-  cancel-in-progress: true
-
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
         with:
           version: 9
+
       - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: pnpm
           cache-dependency-path: docs/pnpm-lock.yaml
-      - run: pnpm install
+
+      - run: pnpm install --frozen-lockfile
         working-directory: docs
+
       - run: pnpm build
         working-directory: docs
-      - uses: peaceiris/actions-gh-pages@v4
+
+      - name: Upload docs site
+        uses: actions/upload-artifact@v7
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_branch: website
-          publish_dir: docs/dist
-          keep_files: true
+          name: site-docs
+          path: docs/dist
+          if-no-files-found: error
+
+  publish:
+    if: inputs.publish
+    needs: build
+    permissions:
+      contents: write
+    uses: ./.github/workflows/publish-site.yml
+    with:
+      artifact_pattern: site-docs
+      keep_files: true

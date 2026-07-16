@@ -1,9 +1,19 @@
-name: Deploy Go Examples
+name: Prepare Go Examples
 on:
-  workflow_run:
-    workflows: [Release]
-    types: [completed]
+  workflow_call:
+    inputs:
+      publish:
+        required: false
+        type: boolean
+        default: false
+        description: "Publish the generated Go examples immediately"
   workflow_dispatch:
+    inputs:
+      publish:
+        required: false
+        type: boolean
+        default: true
+        description: "Publish the generated Go examples immediately"
 
 jobs:
   convert:
@@ -104,14 +114,15 @@ jobs:
         if: env.ACT != 'true'
         uses: actions/upload-artifact@v7
         with:
-          name: json-${{ matrix.id }}
+          name: json-go-${{ matrix.id }}
           path: ${{ matrix.id }}.json
 
-  merge-deploy:
-    name: Merge and Deploy Go Benchmarks
+  merge:
+    name: Merge Go Benchmarks
     needs: convert
     permissions:
       contents: write
-    uses: ./.github/workflows/merge-deploy-examples.yml
+    uses: ./.github/workflows/merge-examples.yml
     with:
       language: go
+      publish: ${{ inputs.publish }}

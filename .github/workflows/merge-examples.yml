@@ -1,4 +1,4 @@
-name: Merge Examples & Deploy
+name: Merge Examples
 on:
   workflow_call:
     inputs:
@@ -6,13 +6,18 @@ on:
         required: true
         type: string
         description: "Language subdirectory under examples/ (e.g. go, javascript, rust)"
+      publish:
+        required: false
+        type: boolean
+        default: false
+        description: "Publish the generated example page immediately"
 
 jobs:
-  merge-deploy:
-    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+  merge:
+    name: Merge ${{ inputs.language }} examples
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
     steps:
       - uses: actions/checkout@v7
 
@@ -20,7 +25,7 @@ jobs:
         if: env.ACT != 'true'
         uses: actions/download-artifact@v8
         with:
-          pattern: json-*
+          pattern: json-${{ inputs.language }}-*
           path: /tmp/jsons
           merge-multiple: true
 
@@ -44,11 +49,21 @@ jobs:
         if: env.ACT == 'true'
         run: echo "::notice::Local preview at dist/examples/${{ inputs.language }}/index.html"
 
-      - name: Deploying to Github pages
+      - name: Upload example site
         if: env.ACT != 'true'
-        uses: peaceiris/actions-gh-pages@v4
+        uses: actions/upload-artifact@v7
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_branch: website
-          publish_dir: dist
-          keep_files: true
+          name: site-examples-${{ inputs.language }}
+          path: dist
+          if-no-files-found: error
+
+  publish:
+    name: Publish ${{ inputs.language }} examples
+    if: inputs.publish
+    needs: merge
+    permissions:
+      contents: write
+    uses: ./.github/workflows/publish-site.yml
+    with:
+      artifact_pattern: site-examples-${{ inputs.language }}
+      keep_files: true

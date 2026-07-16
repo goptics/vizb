@@ -11,18 +11,18 @@ Sample inputs live under [`examples/`](https://github.com/goptics/vizb/tree/main
 
 | Category | Workflow | Dashboard |
 |----------|----------|-----------|
-| CSV | [deploy-examples-csv.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/deploy-examples-csv.yml) | [vizb.goptics.org/examples/csv/](https://vizb.goptics.org/examples/csv/) |
-| JSON | [deploy-examples-json.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/deploy-examples-json.yml) | [vizb.goptics.org/examples/json/](https://vizb.goptics.org/examples/json/) |
-| Go | [deploy-examples-go.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/deploy-examples-go.yml) | [vizb.goptics.org/examples/go/](https://vizb.goptics.org/examples/go/) |
-| JavaScript | [deploy-examples-javascript.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/deploy-examples-javascript.yml) | [vizb.goptics.org/examples/javascript/](https://vizb.goptics.org/examples/javascript/) |
-| Rust | [deploy-examples-rust.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/deploy-examples-rust.yml) | [vizb.goptics.org/examples/rust/](https://vizb.goptics.org/examples/rust/) |
+| CSV | [prepare-csv-examples.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/prepare-csv-examples.yml) | [vizb.goptics.org/examples/csv/](https://vizb.goptics.org/examples/csv/) |
+| JSON | [prepare-json-examples.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/prepare-json-examples.yml) | [vizb.goptics.org/examples/json/](https://vizb.goptics.org/examples/json/) |
+| Go | [prepare-go-examples.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/prepare-go-examples.yml) | [vizb.goptics.org/examples/go/](https://vizb.goptics.org/examples/go/) |
+| JavaScript | [prepare-javascript-examples.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/prepare-javascript-examples.yml) | [vizb.goptics.org/examples/javascript/](https://vizb.goptics.org/examples/javascript/) |
+| Rust | [prepare-rust-examples.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/prepare-rust-examples.yml) | [vizb.goptics.org/examples/rust/](https://vizb.goptics.org/examples/rust/) |
 
 ## Adding an example
 
 Same steps for every category — see [examples/README.MD](https://github.com/goptics/vizb/blob/main/examples/README.MD):
 
 1. Add the file under `examples/{category}/`
-2. Add a matrix entry in `.github/workflows/deploy-examples-{category}.yml`
+2. Add a matrix entry in `.github/workflows/prepare-{category}-examples.yml`
 3. Push to `main` — CI rebuilds that dashboard
 
 ## CSV examples
@@ -87,7 +87,7 @@ Fetched live in CI from the [jogruber GitHub contributions API](https://github-c
 
 | Repository | Short Description | Workflow | Dashboard |
 |------------|-------------------|----------|-----------|
-| [goptics/vizb](https://github.com/goptics/vizb) | Vizb's own example dashboards for CSV, JSON, Go, JavaScript, and Rust. | [deploy-examples-*.yml](https://github.com/goptics/vizb/tree/main/.github/workflows) | [Live](https://vizb.goptics.org/examples/) |
+| [goptics/vizb](https://github.com/goptics/vizb) | Vizb's own example dashboards for CSV, JSON, Go, JavaScript, and Rust. | [prepare-*-examples.yml](https://github.com/goptics/vizb/tree/main/.github/workflows) | [Live](https://vizb.goptics.org/examples/) |
 | [goptics/varmq-benchmarks](https://github.com/goptics/varmq-benchmarks) | Worker pool benchmarks comparing VarMQ vs PondV2 across workload patterns and CPU configs. | [bench.yml](https://github.com/goptics/varmq-benchmarks/blob/main/.github/workflows/bench.yml) | [Live](https://goptics.github.io/varmq-benchmarks/) |
 | [goptics/sortbench](https://github.com/goptics/sortbench) | Sorting algorithm benchmarks across git versions using per-tag vizb merging (bubble, insertion, shell, quicksort, merge). | [bench.yml](https://github.com/goptics/sortbench/blob/main/.github/workflows/bench.yml) | [Live](https://goptics.github.io/sortbench/) |
 | [goptics/varmq](https://github.com/goptics/varmq) | Tracks benchmark evolution across VarMQ release versions, generating a cumulative bench log dashboard via vizb action on each release. | [deploy-bench-log.yml](https://github.com/goptics/varmq/blob/main/.github/workflows/deploy-bench-log.yml) | [Live](https://varmq.goptics.org/bench-log/) |
