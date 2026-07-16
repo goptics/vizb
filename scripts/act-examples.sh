@@ -11,7 +11,7 @@ REUSE=false
 
 usage() {
   cat <<'EOF'
-Run deploy-examples workflows locally via act (skips GitHub Pages deploy).
+Run example preparation workflows locally via act (skips site publishing).
 
 Usage:
   ./scripts/act-examples.sh [options]
@@ -59,13 +59,13 @@ mkdir -p .act/jsons
 echo "Building vizb..."
 go build -o bin/vizb .
 
-ACT_ARGS=(workflow_dispatch)
+ACT_ARGS=(workflow_dispatch --input publish=false)
 if $REUSE; then
   ACT_ARGS+=(--reuse)
 fi
 
 for lang in "${LANGS[@]}"; do
-  wf=".github/workflows/deploy-examples-${lang}.yml"
+  wf=".github/workflows/prepare-${lang}-examples.yml"
   if [[ ! -f "$wf" ]]; then
     echo "Unknown language or missing workflow: $lang ($wf)" >&2
     exit 1

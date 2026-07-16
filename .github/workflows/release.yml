@@ -95,9 +95,60 @@ jobs:
           installers-regex: '\.zip$'
           token: ${{ secrets.WINGET_TOKEN }}
 
-  deploy-docs:
+  prepare-docs:
+    name: Prepare Docs
     needs: goreleaser
     uses: ./.github/workflows/deploy-docs.yml
-    secrets: inherit
     permissions:
       contents: write
+
+  prepare-csv-examples:
+    name: Prepare CSV Examples
+    needs: goreleaser
+    uses: ./.github/workflows/prepare-csv-examples.yml
+    permissions:
+      contents: write
+
+  prepare-json-examples:
+    name: Prepare JSON Examples
+    needs: goreleaser
+    uses: ./.github/workflows/prepare-json-examples.yml
+    permissions:
+      contents: write
+
+  prepare-go-examples:
+    name: Prepare Go Examples
+    needs: goreleaser
+    uses: ./.github/workflows/prepare-go-examples.yml
+    permissions:
+      contents: write
+
+  prepare-javascript-examples:
+    name: Prepare JavaScript Examples
+    needs: goreleaser
+    uses: ./.github/workflows/prepare-javascript-examples.yml
+    permissions:
+      contents: write
+
+  prepare-rust-examples:
+    name: Prepare Rust Examples
+    needs: goreleaser
+    uses: ./.github/workflows/prepare-rust-examples.yml
+    permissions:
+      contents: write
+
+  publish-site:
+    name: Publish Site
+    needs:
+      - prepare-docs
+      - prepare-csv-examples
+      - prepare-json-examples
+      - prepare-go-examples
+      - prepare-javascript-examples
+      - prepare-rust-examples
+    permissions:
+      contents: write
+    uses: ./.github/workflows/publish-site.yml
+    with:
+      artifact_pattern: site-*
+      keep_files: false

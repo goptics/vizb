@@ -6,11 +6,11 @@ Sample inputs for the live dashboards on [vizb.goptics.org/examples/](https://vi
 
 | Category | Folder | File | Workflow |
 |----------|--------|------|----------|
-| CSV | `examples/csv/` | `.csv` | [deploy-examples-csv.yml](../.github/workflows/deploy-examples-csv.yml) |
-| JSON | _(API-fetched in CI)_ | jogruber contributions API | [deploy-examples-json.yml](../.github/workflows/deploy-examples-json.yml) |
-| Go | `examples/go/` | `.txt` | [deploy-examples-go.yml](../.github/workflows/deploy-examples-go.yml) |
-| JavaScript | `examples/javascript/` | `.txt` | [deploy-examples-javascript.yml](../.github/workflows/deploy-examples-javascript.yml) |
-| Rust | `examples/rust/` | `.txt` | [deploy-examples-rust.yml](../.github/workflows/deploy-examples-rust.yml) |
+| CSV | `examples/csv/` | `.csv` | [prepare-csv-examples.yml](../.github/workflows/prepare-csv-examples.yml) |
+| JSON | _(API-fetched in CI)_ | jogruber contributions API | [prepare-json-examples.yml](../.github/workflows/prepare-json-examples.yml) |
+| Go | `examples/go/` | `.txt` | [prepare-go-examples.yml](../.github/workflows/prepare-go-examples.yml) |
+| JavaScript | `examples/javascript/` | `.txt` | [prepare-javascript-examples.yml](../.github/workflows/prepare-javascript-examples.yml) |
+| Rust | `examples/rust/` | `.txt` | [prepare-rust-examples.yml](../.github/workflows/prepare-rust-examples.yml) |
 
 Tabular CSV recipes (auto-group, auto-value, 3D): [csv/README.md](csv/README.md).
 
@@ -30,7 +30,7 @@ Open a specific chart with `?id=<id>` — each matrix entry sets a numbered id v
 
 ### JSON (GitHub contributions)
 
-No repo file to add. Append one row to the matrix in [deploy-examples-json.yml](../.github/workflows/deploy-examples-json.yml) — only `id` and `user`:
+No repo file to add. Append one row to the matrix in [prepare-json-examples.yml](../.github/workflows/prepare-json-examples.yml) — only `id` and `user`:
 
 ```yaml
 - id: 07-octocat        # numbered ?id= deep link; prefix matches ?d=7 in matrix order
@@ -44,7 +44,7 @@ Optionally add a row to [docs/src/content/docs/examples.mdx](../docs/src/content
 ### CSV / Go / JavaScript / Rust
 
 1. **Add the file** — `examples/{category}/my-data.{csv,txt}`
-2. **Add a matrix entry** — in `.github/workflows/deploy-examples-{category}.yml`, under `strategy.matrix.include`
+2. **Add a matrix entry** — in `.github/workflows/prepare-{category}-examples.yml`, under `strategy.matrix.include`
 3. **Push** — CI rebuilds that dashboard on [vizb.goptics.org](https://vizb.goptics.org)
 
 ```yaml
