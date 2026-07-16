@@ -1,7 +1,7 @@
 openapi: 3.1.1
 info:
   title: Vizb REST API
-  version: 1.0.0
+  version: 0.1.0
   description: |
     A synchronous, stateless API for converting supported input into Vizb Datasets,
     merging Datasets, and generating a self-contained Vizb UI. The server exposes
