@@ -17,10 +17,16 @@ import (
 	radar "github.com/goptics/vizb/internal/charts/radar"
 	scatter "github.com/goptics/vizb/internal/charts/scatter"
 	"github.com/goptics/vizb/shared"
+	"github.com/stretchr/testify/suite"
 	"gopkg.in/yaml.v3"
 )
 
-func TestOpenAPIContract(t *testing.T) {
+type OpenAPISuite struct {
+	suite.Suite
+}
+
+func (s *OpenAPISuite) TestOpenAPIContract() {
+	t := s.T()
 	contract := readContract(t)
 	if got := contract["openapi"]; got != "3.1.1" {
 		t.Fatalf("openapi version = %#v, want 3.1.1", got)
@@ -41,7 +47,8 @@ func TestOpenAPIContract(t *testing.T) {
 	verifyOperationExamples(t, contract)
 }
 
-func TestReusableSchemasMatchGoWireTypes(t *testing.T) {
+func (s *OpenAPISuite) TestReusableSchemasMatchGoWireTypes() {
+	t := s.T()
 	contract := readContract(t)
 	schemas := mustMap(t, mustMap(t, contract["components"], "components")["schemas"], "components.schemas")
 
@@ -88,6 +95,10 @@ func TestReusableSchemasMatchGoWireTypes(t *testing.T) {
 			t.Errorf("%s required = %v, want %v", schemaName, got, sorted(required))
 		}
 	}
+}
+
+func TestOpenAPISuite(t *testing.T) {
+	suite.Run(t, new(OpenAPISuite))
 }
 
 func readContract(t *testing.T) map[string]any {
