@@ -103,15 +103,24 @@ CI on Node 22). Never commit it. (In the Dev Container this runs once on first c
 task build       # build UI + binary
 task build:ui    # build the Vue UI only (writes pkg/template/vizb-ui.gen.go)
 task build:cli   # build the Go binary to ./bin/vizb
-task test        # go test -count=1 ./...
-task lint        # golangci-lint run
-task format      # gofmt + pnpm format
+task test        # run CLI and UI tests
+task test:cli    # run Go tests only
+task test:ui     # run Vitest tests only
+task lint        # run CLI and UI linters
+task lint:cli    # run golangci-lint only
+task lint:ui     # run Vue/TypeScript type checking only
+task format      # format CLI and UI files
+task format:cli  # format Go files only
+task format:ui   # format UI files only
+task format:check     # check all formatting without writing
+task format:check:cli # check Go formatting only
+task format:check:ui  # check UI formatting only
 ```
 
 Run a single test:
 
 ```bash
-go test -run TestName -v ./path/to/package
+go test -run 'TestSubjectSuite/TestCase' -v ./path/to/package
 ```
 
 ### Local example workflows
