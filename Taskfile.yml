@@ -71,6 +71,11 @@ tasks:
     cmds:
       - cd ui; pnpm test; cd -
 
+  test:api-contract:
+    desc: Validate the OpenAPI contract, examples, and shared schema drift checks
+    cmds:
+      - cd api; pnpm install --frozen-lockfile; pnpm lint; pnpm bundle; go test -count=1 .; cd -
+
   # Pragmatic Go coverage (excludes main.go, vizb-ui.gen.go, pkg/style from review).
   test:cover:
     desc: Go cross-package coverage report

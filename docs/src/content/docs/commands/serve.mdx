@@ -1,0 +1,146 @@
+---
+title: vizb serve
+description: Run Vizb's local synchronous REST API.
+---
+
+`vizb serve` exposes Vizb conversion, Dataset merging, and UI generation through
+a local JSON API. It is synchronous and stateless: requests do not create jobs
+or persisted server-side artifacts.
+
+## Start the server
+
+```bash
+# Listens on http://127.0.0.1:8080 by default
+vizb serve
+
+# Listen on another local port
+vizb serve --port 9090
+
+# Bind to every interface only when access from another machine is intended
+vizb serve --host 0.0.0.0 --port 8080
+```
+
+The host and port make up the API base URL. The default binding is loopback so
+that the server is not exposed to a network unintentionally.
+
+Browse the generated [API reference](/api/) for the complete OpenAPI contract,
+including request and response schemas and generated code snippets.
+
+## Conventions
+
+- Send `Content-Type: application/json` for every request.
+- The API exposes exactly `POST /`, `POST /merge`, and `POST /ui`.
+- Request objects are strict. Unknown fields and chart options that do not apply
+  to the chosen chart are rejected; they are never silently ignored or defaulted.
+- Successful Dataset responses use `application/json`; HTML responses use
+  `text/html`. Set `Accept` accordingly when requesting HTML.
+- Errors use `application/problem+json` and the Problem Details shape described
+  below.
+- The API does not accept remote URLs, server paths, directories, authentication
+  credentials, or CLI argument strings.
+
+## Convert input
+
+`POST /` converts inline text or JSON input to a Vizb Dataset. Set
+`output.format` to `html` and send `Accept: text/html` to receive a self-contained
+report instead.
+
+```bash
+curl -sS http://127.0.0.1:8080/ \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json' \
+  --data '{
+    "input": "region,latency\\nwest,12\\neast,18\\n",
+    "parser": "csv",
+    "metadata": { "name": "API latency" },
+    "select": ["region", "latency"],
+    "charts": { "types": ["bar", "line"] },
+    "output": { "format": "dataset" }
+  }'
+```
+
+## Merge Datasets
+
+`POST /merge` accepts at least two complete Vizb Dataset objects. It returns an
+array even when the merge produces one Dataset.
+
+```bash
+curl -sS http://127.0.0.1:8080/merge \
+  -H 'Content-Type: application/json' \
+  --data '{
+    "tagAxis": "x",
+    "datasets": [
+      {
+        "name": "Sort", "tag": "v1",
+        "axes": [{"key":"name"},{"key":"y"}],
+        "settings": [{"type":"bar"}],
+        "data": [{"name":"quicksort","yAxis":"12"}]
+      },
+      {
+        "name": "Sort", "tag": "v2",
+        "axes": [{"key":"name"},{"key":"y"}],
+        "settings": [{"type":"bar"}],
+        "data": [{"name":"quicksort","yAxis":"10"}]
+      }
+    ]
+  }'
+```
+
+Unlike `vizb merge`, the API does not skip invalid input: the request fails as a
+whole so a client knows every supplied Dataset participated.
+
+## Generate the UI
+
+`POST /ui` turns one Dataset or an array of Datasets into a self-contained HTML
+application. The response is HTML, so request it explicitly.
+
+```bash
+curl -sS http://127.0.0.1:8080/ui \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: text/html' \
+  --data '{
+    "datasets": {
+      "name": "API latency",
+      "axes": [{"key":"name"},{"key":"y","type":"value"}],
+      "settings": [{"type":"line","smooth":true}],
+      "data": [{"name":"west","yAxis":"12"},{"name":"east","yAxis":"18"}]
+    },
+    "charts": { "types": ["line"] }
+  }' > report.html
+```
+
+Open `report.html` locally; it contains the rendered Vizb application and does
+not depend on this server remaining available.
+
+## Errors
+
+All errors are `application/problem+json`. Every response has a stable `type`,
+`title`, `status`, and `detail`; validation errors additionally include `errors`.
+Each entry identifies the input location, a JSON Pointer-like `path`, a stable
+`code`, and a human-readable `message`.
+
+```json
+{
+  "type": "https://vizb.goptics.org/problems/validation",
+  "title": "Invalid request",
+  "status": 400,
+  "detail": "Request validation failed.",
+  "instance": "/merge",
+  "errors": [
+    {
+      "location": "body",
+      "path": "/tagAxis",
+      "code": "invalid_enum",
+      "message": "tagAxis must be one of name, x, y, or z."
+    }
+  ]
+}
+```
+
+| Status | Meaning |
+| --- | --- |
+| `400` | Invalid JSON, unknown field, or invalid/inapplicable option |
+| `406` | The requested `Accept` type cannot represent the selected output |
+| `415` | The request is not `application/json` |
+| `422` | Valid request structure, but the input could not be processed |
+| `500` | Unexpected server or template failure |

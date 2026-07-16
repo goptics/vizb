@@ -1,0 +1,599 @@
+openapi: 3.1.1
+info:
+  title: Vizb REST API
+  version: 0.1.0
+  description: |
+    A synchronous, stateless API for converting supported input into Vizb Datasets,
+    merging Datasets, and generating a self-contained Vizb UI. The server exposes
+    exactly the three operations in this document; it has no authentication,
+    persistence, asynchronous jobs, remote URL ingestion, or server-side command
+    execution.
+  license:
+    name: MIT
+    identifier: MIT
+servers:
+  - url: http://{host}:{port}
+    description: Default local listener for `vizb serve`.
+    variables:
+      host:
+        default: 127.0.0.1
+        description: Listener host configured with `--host`.
+      port:
+        default: "8080"
+        description: Listener port configured with `--port`.
+security: []
+tags:
+  - name: conversion
+    description: Convert inline supported input into a Dataset or HTML.
+  - name: datasets
+    description: Merge complete Vizb Dataset objects.
+  - name: ui
+    description: Render complete Vizb Dataset objects as self-contained HTML.
+paths:
+  /:
+    post:
+      tags: [conversion]
+      operationId: convert
+      summary: Convert supported input into a Vizb Dataset or self-contained HTML.
+      description: |
+        Input is inline text or JSON. Parser, grouping, metadata, units, selection,
+        and chart options are structured request data. Unknown or inapplicable
+        options are rejected; CLI-style option strings are not accepted.
+      requestBody:
+        $ref: '#/components/requestBodies/ConvertRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/ConvertSuccess'
+        '400':
+          $ref: '#/components/responses/ValidationProblem'
+        '406':
+          $ref: '#/components/responses/NotAcceptableProblem'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaTypeProblem'
+        '422':
+          $ref: '#/components/responses/ProcessingProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+  /merge:
+    post:
+      tags: [datasets]
+      operationId: mergeDatasets
+      summary: Merge two or more Vizb Datasets.
+      description: |
+        The operation is atomic: every supplied Dataset must be valid and take part
+        in the merge. Server file paths and directory scanning are intentionally not
+        part of this API.
+      requestBody:
+        $ref: '#/components/requestBodies/MergeRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/MergeSuccess'
+        '400':
+          $ref: '#/components/responses/ValidationProblem'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaTypeProblem'
+        '422':
+          $ref: '#/components/responses/ProcessingProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+  /ui:
+    post:
+      tags: [ui]
+      operationId: generateUI
+      summary: Generate a self-contained Vizb HTML application from Datasets.
+      description: |
+        The request accepts one Dataset or a non-empty Dataset array. The generated
+        response is returned directly and is never stored by the server. Remote
+        data URLs are deliberately absent from the request model.
+      requestBody:
+        $ref: '#/components/requestBodies/UIRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/UISuccess'
+        '400':
+          $ref: '#/components/responses/ValidationProblem'
+        '406':
+          $ref: '#/components/responses/NotAcceptableProblem'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaTypeProblem'
+        '422':
+          $ref: '#/components/responses/ProcessingProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+components:
+  requestBodies:
+    ConvertRequest:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ConvertRequest'
+          examples:
+            csvConversion:
+              summary: Convert inline CSV into a Dataset.
+              value:
+                input: "region,latency\nwest,12\neast,18\n"
+                parser: csv
+                select: [region, latency]
+                charts:
+                  types: [bar, line]
+                  configs:
+                    - type: bar
+                      showLabels: true
+                output:
+                  format: dataset
+    MergeRequest:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MergeRequest'
+          examples:
+            taggedDatasets:
+              summary: Merge two tagged runs and inject tags on the x axis.
+              value:
+                tagAxis: x
+                datasets:
+                  - name: Sort
+                    tag: v1
+                    axes: [{ key: name }, { key: y }]
+                    settings: [{ type: bar }]
+                    data: [{ name: quicksort, yAxis: "12" }]
+                  - name: Sort
+                    tag: v2
+                    axes: [{ key: name }, { key: y }]
+                    settings: [{ type: bar }]
+                    data: [{ name: quicksort, yAxis: "10" }]
+    UIRequest:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UIRequest'
+          examples:
+            datasetUI:
+              summary: Render one Dataset with a filtered chart set.
+              value:
+                datasets:
+                  name: API latency
+                  axes: [{ key: name }, { key: y, type: value }]
+                  settings: [{ type: line, smooth: true }]
+                  data: [{ name: west, yAxis: "12" }, { name: east, yAxis: "18" }]
+                charts:
+                  types: [line]
+  responses:
+    ConvertSuccess:
+      description: Conversion succeeded. The response media type is selected by `output.format` and must be acceptable to the client.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Dataset'
+          examples:
+            convertedDataset:
+              value:
+                name: API latency
+                description: Latency by region
+                axes: [{ key: name }, { key: y, type: value }]
+                settings: [{ type: bar, showLabels: true }, { type: line }]
+                data: [{ name: west, yAxis: "12" }, { name: east, yAxis: "18" }]
+        text/html:
+          schema:
+            type: string
+          examples:
+            convertedHTML:
+              value: '<!doctype html><html><head><title>Vizb</title></head><body>...</body></html>'
+    MergeSuccess:
+      description: Merge succeeded. The response is always an array, including when it contains one Dataset.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/Dataset'
+          examples:
+            mergedDatasets:
+              value:
+                - name: Sort
+                  axes: [{ key: name }, { key: x }, { key: y }]
+                  settings: [{ type: bar }]
+                  data:
+                    - { name: quicksort, xAxis: v1, yAxis: "12" }
+                    - { name: quicksort, xAxis: v2, yAxis: "10" }
+    UISuccess:
+      description: Self-contained HTML was generated successfully.
+      content:
+        text/html:
+          schema:
+            type: string
+          examples:
+            selfContainedHTML:
+              value: '<!doctype html><html><head><title>Vizb</title></head><body>...</body></html>'
+    ValidationProblem:
+      description: The request JSON is malformed or violates a strict request schema or option rule.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ValidationProblem'
+          examples:
+            unknownOption:
+              value:
+                type: https://vizb.goptics.org/problems/validation
+                title: Invalid request
+                status: 400
+                detail: Request validation failed.
+                instance: /merge
+                errors:
+                  - location: body
+                    path: /tagAxis
+                    code: invalid_enum
+                    message: tagAxis must be one of name, x, y, or z.
+    NotAcceptableProblem:
+      description: The request's Accept header does not allow an operation's selected response media type.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    UnsupportedMediaTypeProblem:
+      description: The request Content-Type is not application/json.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    ProcessingProblem:
+      description: The request passed structural validation but could not be processed.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          examples:
+            invalidCSV:
+              value:
+                type: https://vizb.goptics.org/problems/processing
+                title: Input processing failed
+                status: 422
+                detail: The selected columns could not be read from the CSV input.
+                instance: /
+    InternalProblem:
+      description: An unexpected server-side failure occurred.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+  schemas:
+    ConvertRequest:
+      type: object
+      additionalProperties: false
+      required: [input]
+      properties:
+        input:
+          $ref: '#/components/schemas/RawInput'
+        parser:
+          type: string
+          enum: [auto, csv, json, go, javascript, rust]
+          default: auto
+        grouping:
+          $ref: '#/components/schemas/GroupingOptions'
+        units:
+          $ref: '#/components/schemas/UnitOptions'
+        select:
+          type: array
+          description: Structured column selections; each item is one select expression.
+          items:
+            type: string
+            minLength: 1
+        jsonPath:
+          type: string
+          description: JSON-only path to a nested array.
+        charts:
+          $ref: '#/components/schemas/ChartSelection'
+        output:
+          $ref: '#/components/schemas/ConvertOutput'
+    RawInput:
+      oneOf:
+        - type: string
+        - type: object
+        - type: array
+    GroupingOptions:
+      type: object
+      additionalProperties: false
+      properties:
+        pattern: { type: string }
+        regex: { type: string }
+        columns:
+          type: array
+          items: { type: string, minLength: 1 }
+        filter: { type: string }
+    UnitOptions:
+      type: object
+      additionalProperties: false
+      properties:
+        memory: { type: string, enum: [b, B, KB, MB, GB] }
+        time: { type: string, enum: [ns, us, ms, s] }
+        number: { type: string, enum: [K, M, B, T] }
+    ConvertOutput:
+      type: object
+      additionalProperties: false
+      properties:
+        format:
+          type: string
+          enum: [dataset, html]
+          default: dataset
+    MergeRequest:
+      type: object
+      additionalProperties: false
+      required: [datasets]
+      properties:
+        datasets:
+          type: array
+          minItems: 2
+          items:
+            $ref: '#/components/schemas/Dataset'
+        tagAxis:
+          type: string
+          enum: [name, x, y, z]
+          default: name
+    UIRequest:
+      type: object
+      additionalProperties: false
+      required: [datasets]
+      properties:
+        datasets:
+          oneOf:
+            - $ref: '#/components/schemas/Dataset'
+            - type: array
+              minItems: 1
+              items:
+                $ref: '#/components/schemas/Dataset'
+        charts:
+          $ref: '#/components/schemas/ChartSelection'
+        statistics:
+          $ref: '#/components/schemas/StatisticsOptions'
+    ChartSelection:
+      type: object
+      additionalProperties: false
+      properties:
+        types:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+            enum: [bar, line, scatter, pie, heatmap, radar]
+        configs:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChartConfig'
+    StatisticsOptions:
+      type: object
+      additionalProperties: false
+      properties:
+        enabled: { type: boolean }
+        math:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [counts, center, spread, extremes, shape, percentiles, confidence, correlations]
+    Dataset:
+      type: object
+      additionalProperties: false
+      required: [name, axes, settings, data]
+      properties:
+        id: { type: string }
+        tag: { type: string }
+        timestamp: { type: string }
+        name: { type: string }
+        theme: { type: string }
+        history:
+          type: array
+          items: { $ref: '#/components/schemas/HistoryEntry' }
+        description: { type: string }
+        meta: { $ref: '#/components/schemas/Meta' }
+        axes:
+          type: array
+          items: { $ref: '#/components/schemas/Axis' }
+        settings:
+          type: array
+          items: { $ref: '#/components/schemas/ChartConfig' }
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/DataPoint' }
+        preserveRows: { type: boolean }
+    HistoryEntry:
+      type: object
+      additionalProperties: false
+      required: [tag, timestamp]
+      properties:
+        tag: { type: string }
+        timestamp: { type: string }
+        meta: { $ref: '#/components/schemas/Meta' }
+    Meta:
+      type: object
+      additionalProperties: false
+      properties:
+        cpu: { $ref: '#/components/schemas/CPUInfo' }
+        os: { type: string }
+        arch: { type: string }
+        pkg: { type: string }
+    CPUInfo:
+      type: object
+      additionalProperties: false
+      properties:
+        name: { type: string }
+        cores: { type: integer }
+    Axis:
+      type: object
+      additionalProperties: false
+      required: [key]
+      properties:
+        key:
+          type: string
+          enum: [name, x, y, z]
+        label: { type: string }
+        type:
+          type: string
+          enum: ["", value]
+    DataPoint:
+      type: object
+      additionalProperties: false
+      properties:
+        name: { type: string }
+        xAxis: { type: string }
+        yAxis: { type: string }
+        zAxis: { type: string }
+        metric: { type: string }
+        stats:
+          type: array
+          items: { $ref: '#/components/schemas/Stat' }
+    Stat:
+      type: object
+      additionalProperties: false
+      properties:
+        type: { type: string }
+        value: { type: number }
+        symbol: { type: string }
+    Sort:
+      type: object
+      additionalProperties: false
+      required: [enabled, order]
+      properties:
+        enabled: { type: boolean }
+        order: { type: string, enum: [asc, desc] }
+    StatisticsConfig:
+      type: object
+      additionalProperties: false
+      required: [enabled, math]
+      properties:
+        enabled: { type: boolean }
+        math:
+          type: array
+          items:
+            type: string
+            enum: [counts, center, spread, extremes, shape, percentiles, confidence, correlations]
+    ChartConfig:
+      oneOf:
+        - $ref: '#/components/schemas/BarChartConfig'
+        - $ref: '#/components/schemas/LineChartConfig'
+        - $ref: '#/components/schemas/ScatterChartConfig'
+        - $ref: '#/components/schemas/PieChartConfig'
+        - $ref: '#/components/schemas/HeatmapChartConfig'
+        - $ref: '#/components/schemas/RadarChartConfig'
+      discriminator:
+        propertyName: type
+        mapping:
+          bar: '#/components/schemas/BarChartConfig'
+          line: '#/components/schemas/LineChartConfig'
+          scatter: '#/components/schemas/ScatterChartConfig'
+          pie: '#/components/schemas/PieChartConfig'
+          heatmap: '#/components/schemas/HeatmapChartConfig'
+          radar: '#/components/schemas/RadarChartConfig'
+    BarChartConfig:
+      type: object
+      additionalProperties: false
+      required: [type]
+      properties:
+        type: { const: bar }
+        swap: { type: string }
+        sort: { $ref: '#/components/schemas/Sort' }
+        scale: { type: string, enum: [linear, log] }
+        stack: { type: boolean }
+        showLabels: { type: boolean }
+        threeDRotate: { type: boolean }
+        threeD: { type: boolean }
+        threeDVisualMap: { type: boolean }
+        horizontal: { type: boolean }
+        stat: { $ref: '#/components/schemas/StatisticsConfig' }
+    LineChartConfig:
+      type: object
+      additionalProperties: false
+      required: [type]
+      properties:
+        type: { const: line }
+        swap: { type: string }
+        sort: { $ref: '#/components/schemas/Sort' }
+        scale: { type: string, enum: [linear, log] }
+        stack: { type: boolean }
+        showLabels: { type: boolean }
+        symbol: { type: string }
+        symbolSize: { type: number, exclusiveMinimum: 0 }
+        smooth: { type: boolean }
+        threeDRotate: { type: boolean }
+        threeD: { type: boolean }
+        threeDVisualMap: { type: boolean }
+        stat: { $ref: '#/components/schemas/StatisticsConfig' }
+    ScatterChartConfig:
+      type: object
+      additionalProperties: false
+      required: [type]
+      properties:
+        type: { const: scatter }
+        swap: { type: string }
+        sort: { $ref: '#/components/schemas/Sort' }
+        scale: { type: string, enum: [linear, log] }
+        showLabels: { type: boolean }
+        symbol: { type: string }
+        symbolSize: { type: number, exclusiveMinimum: 0 }
+        threeDRotate: { type: boolean }
+        threeD: { type: boolean }
+        threeDVisualMap: { type: boolean }
+        visualMap: { type: boolean }
+        stat: { $ref: '#/components/schemas/StatisticsConfig' }
+    PieChartConfig:
+      type: object
+      additionalProperties: false
+      required: [type]
+      properties:
+        type: { const: pie }
+        swap: { type: string }
+        sort: { $ref: '#/components/schemas/Sort' }
+        showLabels: { type: boolean }
+        stat: { $ref: '#/components/schemas/StatisticsConfig' }
+    HeatmapChartConfig:
+      type: object
+      additionalProperties: false
+      required: [type]
+      properties:
+        type: { const: heatmap }
+        swap: { type: string }
+        sort: { $ref: '#/components/schemas/Sort' }
+        showLabels: { type: boolean }
+        stat: { $ref: '#/components/schemas/StatisticsConfig' }
+    RadarChartConfig:
+      type: object
+      additionalProperties: false
+      required: [type]
+      properties:
+        type: { const: radar }
+        swap: { type: string }
+        sort: { $ref: '#/components/schemas/Sort' }
+        showLabels: { type: boolean }
+        stat: { $ref: '#/components/schemas/StatisticsConfig' }
+    ProblemDetails:
+      type: object
+      required: [type, title, status, detail]
+      properties:
+        type: { type: string, format: uri-reference }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string, format: uri-reference }
+    ValidationProblem:
+      allOf:
+        - $ref: '#/components/schemas/ProblemDetails'
+        - type: object
+          required: [errors]
+          properties:
+            errors:
+              type: array
+              minItems: 1
+              items:
+                $ref: '#/components/schemas/ValidationError'
+    ValidationError:
+      type: object
+      additionalProperties: false
+      required: [location, path, code, message]
+      properties:
+        location: { type: string, enum: [body, header, query] }
+        path: { type: string, description: JSON Pointer or header/query name. }
+        code: { type: string }
+        message: { type: string }

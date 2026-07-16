@@ -2,6 +2,7 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import starlightThemeRapide from 'starlight-theme-rapide'
+import starlightOpenAPI, { openAPISidebarGroups } from 'starlight-openapi';
 
 // https://astro.build/config
 export default defineConfig({
@@ -27,8 +28,10 @@ export default defineConfig({
 					{ label: 'vizb <chart>', slug: 'commands/charts' },
 					{ label: 'vizb merge', slug: 'commands/merge' },
 					{ label: 'vizb ui', slug: 'commands/ui' },
+					{ label: 'vizb serve', slug: 'commands/serve' },
 				],
 			},
+			...openAPISidebarGroups,
 			{
 				label: 'UI',
 				items: [
@@ -90,6 +93,12 @@ export default defineConfig({
 			maxHeadingLevel: 4,
 		},
 		plugins: [
+			starlightOpenAPI([
+				{
+					base: 'api',
+					schema: '../api/openapi.yaml',
+				},
+			]),
 			starlightThemeRapide()
 		],
 		components: {
