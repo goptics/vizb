@@ -50,6 +50,14 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
 RUN sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b /usr/local/bin \
   && task --version
 
+# git-cliff — not in Debian apt; same idea as alpine's `apk add git-cliff`.
+# Host/dev: `brew install git-cliff` (task cliff:install).
+ARG GIT_CLIFF_VERSION=2.13.1
+RUN arch=$(uname -m | sed 's/aarch64/aarch64/;s/arm64/aarch64/;s/x86_64/x86_64/') \
+  && curl -fsSL "https://github.com/orhun/git-cliff/releases/download/v${GIT_CLIFF_VERSION}/git-cliff-${GIT_CLIFF_VERSION}-${arch}-unknown-linux-gnu.tar.gz" \
+    | tar -xz --strip-components=1 -C /usr/local/bin "git-cliff-${GIT_CLIFF_VERSION}/git-cliff" \
+  && git-cliff --version
+
 USER vizber
 WORKDIR /home/vizber
 

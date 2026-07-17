@@ -1,0 +1,77 @@
+# git-cliff config for Vizb CHANGELOG.md drafts.
+# Used by: task release:changelog -- vX.Y.Z
+# https://git-cliff.org/docs/configuration
+
+[changelog]
+# Header is only used for full regenerations. release:changelog uses --prepend
+# so the existing CHANGELOG.md intro is left intact.
+header = """
+# Changelog
+
+Notable changes to Vizb documented here.
+
+Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+"""
+# Match existing Vizb style: "# [v0.15.1] - YYYY-MM-DD" + ### Added/Fixed/Changed
+# Whitespace: one blank after the version heading and after each ### group title;
+# one blank between groups; no blank between list items.
+body = """
+{% if version -%}
+# [{{ version }}] - {{ timestamp | date(format="%Y-%m-%d") }}
+{% else -%}
+# [Unreleased]
+{% endif %}
+{% for group, commits in commits | group_by(attribute="group") -%}
+### {{ group | striptags | trim }}
+
+{% for commit in commits -%}
+- {% if commit.scope %}**{{ commit.scope }}** — {% endif %}\
+{% if commit.breaking %}**BREAKING** {% endif %}\
+{{ commit.message | split(pat="\n") | first | trim | upper_first }}
+{% endfor %}
+{% endfor -%}
+"""
+trim = true
+render_always = false
+postprocessors = [
+  # Turn (#123) into a GitHub PR link.
+  { pattern = '\(#([0-9]+)\)', replace = "([#${1}](https://github.com/goptics/vizb/pull/${1}))" },
+]
+
+[git]
+conventional_commits = true
+filter_unconventional = true
+require_conventional = false
+split_commits = false
+protect_breaking_commits = true
+filter_commits = false
+fail_on_unmatched_commit = false
+topo_order = false
+topo_order_commits = true
+sort_commits = "newest"
+use_branch_tags = false
+recurse_submodules = false
+
+commit_preprocessors = []
+
+# HTML comment prefixes force group order (striptags removes them in the body).
+commit_parsers = [
+  { message = "^feat", group = "<!-- 0 -->Added" },
+  { message = "^fix", group = "<!-- 1 -->Fixed" },
+  { message = "^perf", group = "<!-- 2 -->Changed" },
+  { message = "^refactor", group = "<!-- 2 -->Changed" },
+  { message = "^docs\\(changelog\\)", skip = true },
+  { message = "^chore: updated changelog", skip = true },
+  { message = "^chore: update changelog", skip = true },
+  { message = "^docs", skip = true },
+  { message = "^test", skip = true },
+  { message = "^ci", skip = true },
+  { message = "^style", skip = true },
+  { message = "^build", skip = true },
+  { message = "^chore\\(deps", skip = true },
+  { message = "^chore\\(release\\)", skip = true },
+  { message = "^chore", skip = true },
+  { message = "^revert", group = "<!-- 3 -->Changed" },
+  { body = ".*security", group = "<!-- 1 -->Fixed" },
+]
