@@ -5,7 +5,7 @@ on:
       language:
         required: true
         type: string
-        description: "Language subdirectory under examples/ (e.g. go, javascript, rust)"
+        description: "Subdirectory under examples/ (e.g. go, tabular-data, github-legends)"
       publish:
         required: false
         type: boolean

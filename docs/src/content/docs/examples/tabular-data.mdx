@@ -1,0 +1,45 @@
+---
+title: Tabular data
+description: Business and mixed categorical + numeric CSV examples — auto-group, date splitting, and 2D scatter.
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+Mixed **categorical + numeric** tables: sales orders, house prices, and life expectancy. Parser: **CSV**. Source files live under [`examples/csv/`](https://github.com/goptics/vizb/tree/main/examples/csv); live recipes are listed in [examples/csv/README.md](https://github.com/goptics/vizb/blob/main/examples/csv/README.md).
+
+**Live dashboard:** [vizb.goptics.org/examples/tabular-data/](https://vizb.goptics.org/examples/tabular-data/)
+
+| Chart | Input file | Dashboard |
+|-------|-----------|-----------|
+| Sales auto-group | [sales.csv](https://github.com/goptics/vizb/blob/main/examples/csv/sales.csv) | [Open](https://vizb.goptics.org/examples/tabular-data/) |
+| Sales grouped | [sales.csv](https://github.com/goptics/vizb/blob/main/examples/csv/sales.csv) | [Open](https://vizb.goptics.org/examples/tabular-data/?id=01-sales-grouped) |
+| Sales by date | [sales.csv](https://github.com/goptics/vizb/blob/main/examples/csv/sales.csv) | [Open](https://vizb.goptics.org/examples/tabular-data/?id=02-sales-by-date) |
+| House price vs area | [house-price-area2.csv](https://github.com/goptics/vizb/blob/main/examples/csv/house-price-area2.csv) | [Open](https://vizb.goptics.org/examples/tabular-data/?id=03-house-price-area2) |
+| Life expectancy vs income | [life-expectancy-income.csv](https://github.com/goptics/vizb/blob/main/examples/csv/life-expectancy-income.csv) | [Open](https://vizb.goptics.org/examples/tabular-data/?id=04-life-expectancy-income) |
+
+## What these teach
+
+| Recipe | Vizb mode |
+|--------|-----------|
+| Sales auto-group | Auto-group by highest-cardinality categorical column |
+| Sales grouped | Explicit `--group` / `--group-pattern` for product × region × category |
+| Sales by date | Date axis splitting with `[n{Year}-y{Month}-x{Date}]` |
+| House price | Auto-value 2D scatter + `--visualmap` |
+| Life expectancy | Mixed axes via `--select` |
+
+Local-only sample (not on the live dashboard yet): [`region-metrics.csv`](https://github.com/goptics/vizb/blob/main/examples/csv/region-metrics.csv) for multi-view `--select` demos.
+
+## Related guides
+
+- [Group](/guides/group) — patterns, date slots, auto-group
+- [Select](/guides/select) — column selection and mixed mode
+- [Tabular data](/guides/data) — CSV / JSON rules
+
+<Aside type="tip">
+  ```bash
+  vizb bar examples/csv/sales.csv -o sales.html
+  vizb scatter examples/csv/house-price-area2.csv --visualmap -o house.html
+  ```
+</Aside>
+
+<LinkCard title="Math & 3D examples" href="/examples/math-and-3d" description="All-numeric spirals, noise grids, and clusters" />

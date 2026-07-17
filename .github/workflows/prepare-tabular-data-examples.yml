@@ -1,4 +1,4 @@
-name: Prepare CSV Examples
+name: Prepare Tabular Data Examples
 on:
   workflow_call:
     inputs:
@@ -6,18 +6,18 @@ on:
         required: false
         type: boolean
         default: false
-        description: "Publish the generated CSV examples immediately"
+        description: "Publish the generated tabular-data examples immediately"
   workflow_dispatch:
     inputs:
       publish:
         required: false
         type: boolean
         default: true
-        description: "Publish the generated CSV examples immediately"
+        description: "Publish the generated tabular-data examples immediately"
 
 jobs:
   convert:
-    name: Convert CSV Data
+    name: Convert Tabular Data
     strategy:
       matrix:
         include:
@@ -43,63 +43,19 @@ jobs:
             group-pattern: "[n{Year}-y{Month}-x{Date}],z{Category}"
             charts: bar,pie
 
-          - id: 03-spiral-3d
-            file: spiral-3d
-            name: "Spiral 3D"
-            description: "Auto-value 3D spiral from x, y, z coordinates"
-            charts: line
-            chart: "line:3d-rotate,3d-visualmap"
-
-          - id: 04-noise-surface
-            file: noise-surface
-            name: "Noise Surface"
-            description: "Simplex noise height field on a 2D grid as continuous 3D"
-            charts: bar
-            chart: "bar:3d-visualmap"
-
-          - id: 05-noise-grid
-            file: noise-grid
-            name: "Noise Grid 21³"
-            description: "Simplex noise on a 3D voxel grid (21³) — position from x,y,z, color/size from value column"
-            charts: scatter
-            chart: "scatter:3d-visualmap,3d-rotate"
-
-          - id: 06-noise-grid-41
-            file: noise-grid-41
-            name: "Noise Grid 41³"
-            description: "ECharts simplex-noise scatter3D demo — full 41³ grid (0–40), orthographic camera, visualMap on value"
-            charts: scatter
-            chart: "scatter:3d-visualmap,3d-rotate"
-
-          - id: 07-house-price-area2
+          - id: 03-house-price-area2
             file: house-price-area2
             name: "House Price vs Area"
             description: "2D scatter — auto-value area/price with visualMap gradient (16k points, ECharts house-price demo)"
             charts: scatter
             chart: "scatter:visualmap"
 
-          - id: 08-life-expectancy-income
+          - id: 04-life-expectancy-income
             file: life-expectancy-income
             name: "Life Expectancy vs Income"
-            description: ""
+            description: "Mixed scatter — country category with life expectancy and income via --select"
             select: 'Country,"Life Expectancy",Income'
             charts: scatter
-
-          - id: 09-clusters
-            file: clusters
-            name: "Clusters"
-            description: "2D scatter — auto-value x,y cluster points with visualMap and symbol size 10"
-            charts: scatter
-            chart: "scatter:visualmap,symbol-size=10"
-
-          - id: 10-concurrency-frameworks
-            file: concurrency
-            name: "HTTP Framework Throughput"
-            description: "Competitor columns (frameworks) on one chart via --col-axis — load on Y, frameworks on X"
-            group: load
-            group-pattern: y
-            col-axis: x
-            charts: bar,line
 
     runs-on: ubuntu-latest
     steps:
@@ -114,7 +70,6 @@ jobs:
           description: ${{ matrix.description }}
           group: ${{ matrix.group }}
           group-pattern: ${{ matrix.group-pattern }}
-          col-axis: ${{ matrix.col-axis }}
           select: ${{ matrix.select }}
           charts: ${{ matrix.charts }}
           chart: ${{ matrix.chart }}
@@ -129,15 +84,15 @@ jobs:
         if: env.ACT != 'true'
         uses: actions/upload-artifact@v7
         with:
-          name: json-csv-${{ matrix.id }}
+          name: json-tabular-data-${{ matrix.id }}
           path: ${{ matrix.id }}.json
 
   merge:
-    name: Merge CSV Data
+    name: Merge Tabular Data
     needs: convert
     permissions:
       contents: write
     uses: ./.github/workflows/merge-examples.yml
     with:
-      language: csv
+      language: tabular-data
       publish: ${{ inputs.publish }}

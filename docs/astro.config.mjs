@@ -75,9 +75,20 @@ export default defineConfig({
 					{ label: 'Deploying', slug: 'ci-cd/deploying' },
 				],
 			},
+			{
+				label: 'Examples',
+				items: [
+					{ label: 'Overview', slug: 'examples' },
+					{ label: 'Tabular data', slug: 'examples/tabular-data' },
+					{ label: 'Math & 3D', slug: 'examples/math-and-3d' },
+					{ label: 'Comparisons', slug: 'examples/comparisons' },
+					{ label: 'GitHub Legends', slug: 'examples/github-legends' },
+					{ label: 'Benchmarks', slug: 'examples/benchmarks' },
+					{ label: 'Showcase', slug: 'examples/showcase' },
+				],
+			},
 			{ label: 'How It Works', slug: 'internals/how-it-works' },
 			{ label: 'Troubleshooting', slug: 'troubleshooting' },
-			{ label: 'Examples', slug: 'examples' },
 			{
 				label: 'Roadmap',
 				slug: 'roadmap',

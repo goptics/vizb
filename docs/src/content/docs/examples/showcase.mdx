@@ -1,0 +1,15 @@
+---
+title: Showcase
+description: Projects using Vizb for CI dashboards, benchmark tracking, and release history.
+---
+
+## How people are using Vizb
+
+| Repository | Short Description | Workflow | Dashboard |
+|------------|-------------------|----------|-----------|
+| [goptics/vizb](https://github.com/goptics/vizb) | Vizb's own topic dashboards (tabular data, math 3D, comparisons, GitHub Legends, benchmarks). | [prepare-*-examples.yml](https://github.com/goptics/vizb/tree/main/.github/workflows) | [Live](https://vizb.goptics.org/examples/) |
+| [goptics/varmq-benchmarks](https://github.com/goptics/varmq-benchmarks) | Worker pool benchmarks comparing VarMQ vs PondV2 across workload patterns and CPU configs. | [bench.yml](https://github.com/goptics/varmq-benchmarks/blob/main/.github/workflows/bench.yml) | [Live](https://goptics.github.io/varmq-benchmarks/) |
+| [goptics/sortbench](https://github.com/goptics/sortbench) | Sorting algorithm benchmarks across git versions using per-tag vizb merging (bubble, insertion, shell, quicksort, merge). | [bench.yml](https://github.com/goptics/sortbench/blob/main/.github/workflows/bench.yml) | [Live](https://goptics.github.io/sortbench/) |
+| [goptics/varmq](https://github.com/goptics/varmq) | Tracks benchmark evolution across VarMQ release versions, generating a cumulative bench log dashboard via vizb action on each release. | [deploy-bench-log.yml](https://github.com/goptics/varmq/blob/main/.github/workflows/deploy-bench-log.yml) | [Live](https://varmq.goptics.org/bench-log/) |
+
+**Using vizb in your project?** [Open a PR](https://github.com/goptics/vizb/edit/main/docs/src/content/docs/examples/showcase.mdx) to add your entry!

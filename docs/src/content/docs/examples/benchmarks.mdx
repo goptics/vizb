@@ -1,0 +1,54 @@
+---
+title: Benchmarks
+description: Go, JavaScript, and Rust benchmark examples with group patterns and regex.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Benchmark text output from **Go**, **JavaScript**, and **Rust** toolchains. Use `--group-pattern` or `--group-regex` to map suite names into n/x/y dimensions. Live pages stay language-specific under `/examples/go/`, `/examples/javascript/`, and `/examples/rust/`.
+
+## Go
+
+**Live dashboard:** [vizb.goptics.org/examples/go/](https://vizb.goptics.org/examples/go/) · workflow [prepare-go-examples.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/prepare-go-examples.yml)
+
+| Benchmark | Input file | Pattern | Regex | Dashboard |
+|-----------|-----------|---------|-------|-----------|
+| HTTP Routing | [http-routing.txt](https://github.com/goptics/vizb/blob/main/examples/go/http-routing.txt) | `x_y` | — | [Open](https://vizb.goptics.org/examples/go/) |
+| Decode | [decode-encode.txt](https://github.com/goptics/vizb/blob/main/examples/go/decode-encode.txt) | — | `/text=(?<n>.*)/level=(?<x>.*)/size=(?<y>.*)` | [Open](https://vizb.goptics.org/examples/go/?id=01-decode) |
+| Encode | [decode-encode.txt](https://github.com/goptics/vizb/blob/main/examples/go/decode-encode.txt) | — | `/text=(?<n>.*)/level=(?<x>.*)/size=(?<y>.*)` | [Open](https://vizb.goptics.org/examples/go/?id=02-encode) |
+| Hashing | [hash.txt](https://github.com/goptics/vizb/blob/main/examples/go/hash.txt) | — | `Hashing64(?<x>.*)` | [Open](https://vizb.goptics.org/examples/go/?id=03-hash) |
+| Serialization | [serialization.txt](https://github.com/goptics/vizb/blob/main/examples/go/serialization.txt) | — | `(?<x>.*)By(?<y>.*)` | [Open](https://vizb.goptics.org/examples/go/?id=04-serialization) |
+| Validator | [validator.txt](https://github.com/goptics/vizb/blob/main/examples/go/validator.txt) | — | `(?<y>.*?)(?:(?<x>Success\|Failure)(?<n>.*)\|$)` | [Open](https://vizb.goptics.org/examples/go/?id=05-validator) |
+| Varmq | [varmq.txt](https://github.com/goptics/vizb/blob/main/examples/go/varmq.txt) | `x/y` | — | [Open](https://vizb.goptics.org/examples/go/?id=06-varmq) |
+| Worker Pools | [worker-pools.txt](https://github.com/goptics/vizb/blob/main/examples/go/worker-pools.txt) | `n/y/x` | — | [Open](https://vizb.goptics.org/examples/go/?id=07-worker-pools) |
+
+## JavaScript
+
+**Live dashboard:** [vizb.goptics.org/examples/javascript/](https://vizb.goptics.org/examples/javascript/) · workflow [prepare-javascript-examples.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/prepare-javascript-examples.yml)
+
+| Benchmark | Input file | Pattern | Regex | Dashboard |
+|-----------|-----------|---------|-------|-----------|
+| Tinybench | [tinybench.txt](https://github.com/goptics/vizb/blob/main/examples/javascript/tinybench.txt) | `x/y` | — | [Open](https://vizb.goptics.org/examples/javascript/?id=00-tinybench) |
+| Vitest | [vitest.txt](https://github.com/goptics/vizb/blob/main/examples/javascript/vitest.txt) | — | `n=(?<y>.*)/(?<x>.*)` | [Open](https://vizb.goptics.org/examples/javascript/?id=01-vitest) |
+
+## Rust
+
+**Live dashboard:** [vizb.goptics.org/examples/rust/](https://vizb.goptics.org/examples/rust/) · workflow [prepare-rust-examples.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/prepare-rust-examples.yml)
+
+| Benchmark | Input file | Pattern | Regex | Dashboard |
+|-----------|-----------|---------|-------|-----------|
+| Criterion | [criterion.txt](https://github.com/goptics/vizb/blob/main/examples/rust/criterion.txt) | — | `(?<x>.*)/n=(?<y>.*)` | [Open](https://vizb.goptics.org/examples/rust/?id=00-criterion) |
+| Divan | [divan.txt](https://github.com/goptics/vizb/blob/main/examples/rust/divan.txt) | `x__y` | — | [Open](https://vizb.goptics.org/examples/rust/?id=01-divan) |
+
+## Related guides
+
+- [Parser guide](/guides/parsers) — Go, JS, Rust formats
+- [Group](/guides/group) — slash patterns and named capture groups
+
+<Aside type="tip">
+  ```bash
+  vizb -P go examples/go/hash.txt -o hash.html
+  vizb -P js examples/javascript/tinybench.txt -o tinybench.html
+  vizb -P rs examples/rust/criterion.txt -o criterion.html
+  ```
+</Aside>

@@ -33,7 +33,7 @@ Use a chart subcommand (`bar`, `line`, `scatter`, `pie`, …) or the root comman
 | Sales by date + category | `vizb bar examples/csv/sales.csv -g order_date,category -p "[n{Year}-y{Month}-x{Date}],z{Category}"` |
 | Line / scatter on same data | `vizb line examples/csv/sales.csv` · `vizb scatter examples/csv/sales.csv` |
 
-These variants are also built in CI as `00-sales-auto-group`, `01-sales-grouped`, and `02-sales-by-date` (see `.github/workflows/prepare-csv-examples.yml`).
+These variants are also built in CI as `00-sales-auto-group`, `01-sales-grouped`, and `02-sales-by-date` on the **tabular-data** dashboard (see `.github/workflows/prepare-tabular-data-examples.yml`).
 
 ---
 
@@ -117,13 +117,13 @@ Use `noise-grid.csv` for faster loads; use this file when you need the complete 
 
 ## `house-price-area2.csv`
 
-**Shape:** `area`, `price` — 16,174 rows ([ECharts house-price scatter](https://echarts.apache.org/examples/en/editor.html?c=scatter-large)). Auto-value xy; add `--visualmap` for price gradient. CI id: `07-house-price-area2`.
+**Shape:** `area`, `price` — 16,174 rows ([ECharts house-price scatter](https://echarts.apache.org/examples/en/editor.html?c=scatter-large)). Auto-value xy; add `--visualmap` for price gradient. CI id: `03-house-price-area2` (tabular-data dashboard).
 
 ---
 
 ## `clusters.csv`
 
-**Shape:** `x`, `y` — 60 rows of 2D cluster coordinates. Auto-value xy; `--visualmap` and `--symbol-size 10` for sized, color-mapped points. CI id: `09-clusters`.
+**Shape:** `x`, `y` — 60 rows of 2D cluster coordinates. Auto-value xy; `--visualmap` and `--symbol-size 10` for sized, color-mapped points. CI id: `04-clusters` (math-and-3d dashboard).
 
 | Goal | Command |
 |------|---------|
@@ -144,7 +144,7 @@ Use `noise-grid.csv` for faster loads; use this file when you need the complete 
 | Frameworks on X, load as series | `vizb bar examples/csv/concurrency.csv -g load -p y -A x` |
 | Load on X, frameworks as series | `vizb bar examples/csv/concurrency.csv -g load -p x -A y` |
 
-CI id: `10-concurrency-frameworks` (see `.github/workflows/prepare-csv-examples.yml`).
+CI id: `00-concurrency-frameworks` on the **comparisons** dashboard (see `.github/workflows/prepare-comparisons-examples.yml`).
 
 ---
 
@@ -167,20 +167,26 @@ CI id: `10-concurrency-frameworks` (see `.github/workflows/prepare-csv-examples.
 ## More detail
 
 - **Official site:** [vizb.goptics.org](https://vizb.goptics.org) — install, docs, and interactive dashboards
-- **Live CSV dashboards:** [vizb.goptics.org/examples/csv/](https://vizb.goptics.org/examples/csv/) — CI builds each recipe below from these files (switch charts with `?id=<id>`; numbered prefix matches `?d=` index)
+- **Live dashboards** (topic-split; switch charts with `?id=<id>`; numbered prefix matches `?d=` index within each page):
 
-| Dashboard | Source file | Live |
-|-----------|-------------|------|
-| Sales auto-group | `sales.csv` | [Open](https://vizb.goptics.org/examples/csv/) |
-| Sales grouped 3D | `sales.csv` | [Open](https://vizb.goptics.org/examples/csv/?id=01-sales-grouped) |
-| Sales by date | `sales.csv` | [Open](https://vizb.goptics.org/examples/csv/?id=02-sales-by-date) |
-| Spiral 3D | `spiral-3d.csv` | [Open](https://vizb.goptics.org/examples/csv/?id=03-spiral-3d) |
-| Noise surface | `noise-surface.csv` | [Open](https://vizb.goptics.org/examples/csv/?id=04-noise-surface) |
-| Noise grid (21³) | `noise-grid.csv` | [Open](https://vizb.goptics.org/examples/csv/?id=05-noise-grid) |
-| Noise grid (41³) | `noise-grid-41.csv` | [Open](https://vizb.goptics.org/examples/csv/?id=06-noise-grid-41) |
-| House price vs area | `house-price-area2.csv` | [Open](https://vizb.goptics.org/examples/csv/?id=07-house-price-area2) |
-| Life expectancy vs income | `life-expectancy-income.csv` | [Open](https://vizb.goptics.org/examples/csv/?id=08-life-expectancy-income) |
-| Clusters | `clusters.csv` | [Open](https://vizb.goptics.org/examples/csv/?id=09-clusters) |
-| HTTP framework throughput | `concurrency.csv` | [Open](https://vizb.goptics.org/examples/csv/?id=10-concurrency-frameworks) |
+| Topic | Dashboard | Source files |
+|-------|-----------|--------------|
+| Tabular data | [tabular-data](https://vizb.goptics.org/examples/tabular-data/) | sales, house-price, life-expectancy |
+| Math & 3D | [math-and-3d](https://vizb.goptics.org/examples/math-and-3d/) | spiral-3d, noise-surface, noise-grid, noise-grid-41, clusters |
+| Comparisons | [comparisons](https://vizb.goptics.org/examples/comparisons/) | concurrency |
 
-- **Docs in repo:** [Group guide](../../docs/src/content/docs/guides/group.mdx) · [3D charts](../../docs/src/content/docs/charts/3d.mdx) · [All examples](https://vizb.goptics.org/examples/)
+| Chart | Source file | Live |
+|-------|-------------|------|
+| Sales auto-group | `sales.csv` | [Open](https://vizb.goptics.org/examples/tabular-data/) |
+| Sales grouped | `sales.csv` | [Open](https://vizb.goptics.org/examples/tabular-data/?id=01-sales-grouped) |
+| Sales by date | `sales.csv` | [Open](https://vizb.goptics.org/examples/tabular-data/?id=02-sales-by-date) |
+| House price vs area | `house-price-area2.csv` | [Open](https://vizb.goptics.org/examples/tabular-data/?id=03-house-price-area2) |
+| Life expectancy vs income | `life-expectancy-income.csv` | [Open](https://vizb.goptics.org/examples/tabular-data/?id=04-life-expectancy-income) |
+| Spiral 3D | `spiral-3d.csv` | [Open](https://vizb.goptics.org/examples/math-and-3d/) |
+| Noise surface | `noise-surface.csv` | [Open](https://vizb.goptics.org/examples/math-and-3d/?id=01-noise-surface) |
+| Noise grid (21³) | `noise-grid.csv` | [Open](https://vizb.goptics.org/examples/math-and-3d/?id=02-noise-grid) |
+| Noise grid (41³) | `noise-grid-41.csv` | [Open](https://vizb.goptics.org/examples/math-and-3d/?id=03-noise-grid-41) |
+| Clusters | `clusters.csv` | [Open](https://vizb.goptics.org/examples/math-and-3d/?id=04-clusters) |
+| HTTP framework throughput | `concurrency.csv` | [Open](https://vizb.goptics.org/examples/comparisons/) |
+
+- **Docs:** [Tabular data](https://vizb.goptics.org/examples/tabular-data/) · [Math & 3D](https://vizb.goptics.org/examples/math-and-3d/) · [Comparisons](https://vizb.goptics.org/examples/comparisons/) · [Group guide](../../docs/src/content/docs/guides/group.mdx) · [3D charts](../../docs/src/content/docs/charts/3d.mdx)

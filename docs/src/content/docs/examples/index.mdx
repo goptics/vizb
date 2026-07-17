@@ -1,0 +1,74 @@
+---
+title: Examples
+description: Topic-based sample datasets and live dashboards for tabular data, math 3D, comparisons, GitHub Legends, and benchmarks.
+---
+
+import { LinkCard, CardGrid, Aside } from '@astrojs/starlight/components';
+
+Sample inputs live under [`examples/`](https://github.com/goptics/vizb/tree/main/examples). CI converts each recipe to JSON, merges them into one HTML page **per topic**, and deploys to [vizb.goptics.org/examples/](https://vizb.goptics.org/examples/). Open a specific dataset with `?id=<id>` — each matrix entry sets a numbered id (`00-`, `01-`, …) via the action `id` input; the prefix stays in sync with `?d=0`, `?d=1`, … in the same matrix order.
+
+## Browse by topic
+
+<CardGrid>
+  <LinkCard
+    title="Tabular data"
+    href="/examples/tabular-data"
+    description="Sales, house prices, life expectancy — auto-group, date splitting, and 2D scatter."
+  />
+  <LinkCard
+    title="Math & 3D"
+    href="/examples/math-and-3d"
+    description="Spirals, noise surfaces/grids, and clusters — auto-value continuous charts."
+  />
+  <LinkCard
+    title="Comparisons"
+    href="/examples/comparisons"
+    description="Wide competitor tables with --col-axis (framework throughput side-by-side)."
+  />
+  <LinkCard
+    title="GitHub Legends"
+    href="/examples/github-legends"
+    description="3D contribution skylines of well-known maintainers — refreshed every Friday."
+  />
+  <LinkCard
+    title="Benchmarks"
+    href="/examples/benchmarks"
+    description="Go, JavaScript, and Rust benchmark output with group patterns and regex."
+  />
+  <LinkCard
+    title="Showcase"
+    href="/examples/showcase"
+    description="Real projects using Vizb for CI dashboards and release tracking."
+  />
+</CardGrid>
+
+## Live dashboards
+
+| Topic | Workflow | Dashboard |
+|-------|----------|-----------|
+| Tabular data | [prepare-tabular-data-examples.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/prepare-tabular-data-examples.yml) | [vizb.goptics.org/examples/tabular-data/](https://vizb.goptics.org/examples/tabular-data/) |
+| Math & 3D | [prepare-math-and-3d-examples.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/prepare-math-and-3d-examples.yml) | [vizb.goptics.org/examples/math-and-3d/](https://vizb.goptics.org/examples/math-and-3d/) |
+| Comparisons | [prepare-comparisons-examples.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/prepare-comparisons-examples.yml) | [vizb.goptics.org/examples/comparisons/](https://vizb.goptics.org/examples/comparisons/) |
+| GitHub Legends | [prepare-github-legends.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/prepare-github-legends.yml) | [vizb.goptics.org/examples/github-legends/](https://vizb.goptics.org/examples/github-legends/) |
+| Go | [prepare-go-examples.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/prepare-go-examples.yml) | [vizb.goptics.org/examples/go/](https://vizb.goptics.org/examples/go/) |
+| JavaScript | [prepare-javascript-examples.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/prepare-javascript-examples.yml) | [vizb.goptics.org/examples/javascript/](https://vizb.goptics.org/examples/javascript/) |
+| Rust | [prepare-rust-examples.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/prepare-rust-examples.yml) | [vizb.goptics.org/examples/rust/](https://vizb.goptics.org/examples/rust/) |
+
+## Adding an example
+
+Same steps for every topic — see [examples/README.MD](https://github.com/goptics/vizb/blob/main/examples/README.MD):
+
+1. Add the file under `examples/{category}/` (CSV recipes stay under `examples/csv/`)
+2. Add a matrix entry in the matching `.github/workflows/prepare-*-examples.yml` (or `prepare-github-legends.yml`)
+3. Push to `main` — CI rebuilds that dashboard
+
+For contribution skylines, only add a user row to the GitHub Legends matrix — no repo file required.
+
+<Aside type="tip">
+  Clone the repo and run any example locally:
+
+  ```bash
+  vizb bar examples/csv/sales.csv -o sales.html
+  vizb -P go examples/go/hash.txt -o hash.html
+  ```
+</Aside>

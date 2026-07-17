@@ -1,0 +1,70 @@
+name: Prepare Comparisons Examples
+on:
+  workflow_call:
+    inputs:
+      publish:
+        required: false
+        type: boolean
+        default: false
+        description: "Publish the generated comparisons examples immediately"
+  workflow_dispatch:
+    inputs:
+      publish:
+        required: false
+        type: boolean
+        default: true
+        description: "Publish the generated comparisons examples immediately"
+
+jobs:
+  convert:
+    name: Convert Comparisons Data
+    strategy:
+      matrix:
+        include:
+          - id: 00-concurrency-frameworks
+            file: concurrency
+            name: "HTTP Framework Throughput"
+            description: "Competitor columns (frameworks) on one chart via --col-axis — load on Y, frameworks on X"
+            group: load
+            group-pattern: y
+            col-axis: x
+            charts: bar,line
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: ${{ matrix.name }}
+        uses: ./
+        with:
+          file: examples/csv/${{ matrix.file }}.csv
+          id: ${{ matrix.id }}
+          name: ${{ matrix.name }}
+          description: ${{ matrix.description }}
+          group: ${{ matrix.group }}
+          group-pattern: ${{ matrix.group-pattern }}
+          col-axis: ${{ matrix.col-axis }}
+          charts: ${{ matrix.charts }}
+          output-json: ${{ matrix.id }}.json
+          vizb-binary: ${{ env.ACT == 'true' && './bin/vizb' || '' }}
+
+      - name: Stage json for local merge
+        if: env.ACT == 'true'
+        run: mkdir -p .act/jsons && cp ${{ matrix.id }}.json .act/jsons/
+
+      - name: Uploading json artifacts
+        if: env.ACT != 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: json-comparisons-${{ matrix.id }}
+          path: ${{ matrix.id }}.json
+
+  merge:
+    name: Merge Comparisons Data
+    needs: convert
+    permissions:
+      contents: write
+    uses: ./.github/workflows/merge-examples.yml
+    with:
+      language: comparisons
+      publish: ${{ inputs.publish }}
