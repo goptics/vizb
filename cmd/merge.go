@@ -60,11 +60,15 @@ func runMerge(cmd *cobra.Command, args []string) {
 		shared.ExitWithError("No valid data set files processed", nil)
 	}
 
-	merged, err := core.Merge(dataSets, shared.Dimension(mergeOpts.TagAxis))
+	writeMergeOutput(mergeDatasets(dataSets, shared.Dimension(mergeOpts.TagAxis)))
+}
+
+func mergeDatasets(dataSets []shared.Dataset, dimension shared.Dimension) []shared.Dataset {
+	merged, err := core.Merge(dataSets, dimension)
 	if err != nil {
 		shared.ExitWithError(err.Error(), nil)
 	}
-	writeMergeOutput(merged)
+	return merged
 }
 
 func collectJSONFiles(args []string) []string {

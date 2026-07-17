@@ -1,6 +1,7 @@
 package csv
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -347,6 +348,27 @@ func (s *CSVSuite) TestParseReaderReturnsResultsAndErrors() {
 		GroupPattern: "x",
 	})
 	s.Error(err)
+}
+
+func (s *CSVSuite) TestParseReaderReturnsAutoDetectError() {
+	want := errors.New("auto detect failed")
+	_, _, err := parseReader(
+		strings.NewReader("name,sells\nalpha,10\n"),
+		parser.Config{GroupPattern: "x"},
+		func(cfg parser.Config, _ []string, _ [][]string) (parser.Config, error) {
+			return cfg, want
+		},
+	)
+	s.ErrorIs(err, want)
+}
+
+func (s *CSVSuite) TestParseReaderReturnsGroupRowError() {
+	_, _, err := ParseReader(strings.NewReader("name,sells\nalpha,10\n"), parser.Config{
+		Group:      []string{"name"},
+		GroupRegex: "explicit-regex-bypasses-tabular-pattern",
+	})
+	s.ErrorContains(err, "parse CSV group name")
+	s.ErrorContains(err, "tabular pattern is not configured")
 }
 
 func TestCSVSuite(t *testing.T) {

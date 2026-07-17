@@ -9,6 +9,7 @@ import (
 	barchart "github.com/goptics/vizb/internal/charts/bar"
 	linechart "github.com/goptics/vizb/internal/charts/line"
 	scatterchart "github.com/goptics/vizb/internal/charts/scatter"
+	"github.com/goptics/vizb/internal/flags"
 	"github.com/goptics/vizb/pkg/parser"
 	"github.com/goptics/vizb/shared"
 	"github.com/stretchr/testify/suite"
@@ -131,6 +132,26 @@ func (s *CoreSuite) TestConvertReturnsReaderLookupError() {
 	parser.ReaderParsers["csv"] = saved
 }
 
+func (s *CoreSuite) TestConvertReturnsChartRuleError() {
+	saved := internalcharts.FlagsFor("bar")
+	internalcharts.SetFlags("bar", []flags.Flag{{
+		Name:    "scale",
+		JSONKey: "scale",
+		Rule: []flags.RuleFn{func(any) (flags.Outcome, string) {
+			return flags.Fatal, "forced rule failure"
+		}},
+	}})
+	s.T().Cleanup(func() { internalcharts.SetFlags("bar", saved) })
+
+	_, err := Convert(ConvertInput{
+		Input:  []byte("region,latency\nwest,12\n"),
+		Parser: "csv",
+		Config: parser.Config{GroupPattern: "x", Group: []string{"region"}},
+		Charts: []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: "linear"}},
+	})
+	s.ErrorContains(err, "forced rule failure")
+}
+
 func (s *CoreSuite) TestMergeAndUIBranchErrors() {
 	_, err := Merge(nil, shared.DimensionName)
 	s.ErrorContains(err, "at least one dataset")
@@ -177,6 +198,15 @@ func (s *CoreSuite) TestAssembleModesAndThreeD() {
 
 	multiDataset := Assemble(AssembleInput{Points: []shared.DataPoint{{Name: "west"}}, Config: parser.Config{Mode: parser.ModeMultiStat, SelectViews: []parser.SelectView{{Columns: []parser.ColumnSpec{{Source: "region"}, {Source: "latency"}}}}}})
 	s.NotEmpty(multiDataset.Axes)
+
+	multiViewDataset := Assemble(AssembleInput{
+		Points: []shared.DataPoint{{XAxis: "west", YAxis: "12"}},
+		Config: parser.Config{Mode: parser.ModeValue, SelectViews: []parser.SelectView{
+			{Columns: []parser.ColumnSpec{{Source: "region", AxisKey: "x", AxisType: "category"}, {Source: "latency", AxisKey: "y", AxisType: "value"}}},
+			{Columns: []parser.ColumnSpec{{Source: "region", AxisKey: "x", AxisType: "category"}, {Source: "throughput", AxisKey: "y", AxisType: "value"}}},
+		}},
+	})
+	s.Len(multiViewDataset.Axes, 2)
 
 	categoryDataset := Assemble(AssembleInput{Points: []shared.DataPoint{{XAxis: "west", YAxis: "2", ZAxis: "3"}}, Config: parser.Config{Axes: []parser.ColumnSpec{{Source: "x"}, {Source: "y"}, {Source: "z"}}}, Charts: []internalcharts.ChartConfig{&barchart.Config{Type: "bar"}}})
 	s.Len(categoryDataset.Axes, 3)

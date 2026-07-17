@@ -156,14 +156,19 @@ func runUI(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	htmlContent, err := core.GenerateUI(datasets, charts)
-	if err != nil {
-		shared.ExitWithError("Failed to generate UI: %v", err)
-	}
+	htmlContent := generateEmbeddedUI(datasets, charts)
 	if _, err := f.WriteString(htmlContent); err != nil {
 		shared.ExitWithError("Failed to write output file: %v", err)
 	}
 	fmt.Println(style.Success.Render(fmt.Sprintf("🎉 Generated UI successfully: %s", outFile)))
+}
+
+func generateEmbeddedUI(datasets []shared.Dataset, charts []string) string {
+	htmlContent, err := core.GenerateUI(datasets, charts)
+	if err != nil {
+		shared.ExitWithError("Failed to generate UI: %v", err)
+	}
+	return htmlContent
 }
 
 // filterSettings keeps only configs whose chart type is in the allowed list,

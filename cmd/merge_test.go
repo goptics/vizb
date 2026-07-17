@@ -164,6 +164,12 @@ func (s *MergeSuite) TestMergeNoValidFilesExits() {
 	s.True(*exitCalled)
 }
 
+func (s *MergeSuite) TestMergeDatasetsCoreErrorExits() {
+	s.Panics(func() {
+		mergeDatasets([]shared.Dataset{{Name: "Bench"}}, shared.Dimension("invalid"))
+	})
+}
+
 func (s *MergeSuite) readDatasets(path string) []shared.Dataset {
 	content, err := os.ReadFile(path)
 	s.Require().NoError(err)

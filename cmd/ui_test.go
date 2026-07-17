@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -578,6 +579,14 @@ func (s *UISuite) TestUIRemoteStatPrunesHeatmapChunk() {
 	rootCmd.SetArgs([]string{"ui", "-o", outCounts, "--data-url", "https://example.com/bench.json", "--stat=counts"})
 	s.Require().NoError(rootCmd.Execute())
 	s.False(s.htmlContainsHeatmapChunk(s.read(outCounts)))
+}
+
+func (s *UISuite) TestGenerateEmbeddedUIErrorExits() {
+	s.Panics(func() {
+		generateEmbeddedUI([]shared.Dataset{{
+			Data: []shared.DataPoint{{Stats: []shared.Stat{{Value: shared.F64(math.NaN())}}}},
+		}}, nil)
+	})
 }
 
 func TestUISuite(t *testing.T) {

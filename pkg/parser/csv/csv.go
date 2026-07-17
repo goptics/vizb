@@ -41,7 +41,7 @@ func ParseCSV(filename string, cfg parser.Config) ([]shared.DataPoint, parser.Co
 	}
 	defer f.Close()
 
-	results, effectiveCfg, err := parseReader(f, cfg, true)
+	results, effectiveCfg, err := parseReader(f, cfg, parser.AutoDetectTabularConfig)
 	if err != nil {
 		shared.ExitWithError(err.Error(), nil)
 	}
@@ -51,10 +51,12 @@ func ParseCSV(filename string, cfg parser.Config) ([]shared.DataPoint, parser.Co
 // ParseReader parses CSV from an explicitly supplied reader. It is used by
 // request-scoped callers and never writes output or terminates the process.
 func ParseReader(input io.Reader, cfg parser.Config) ([]shared.DataPoint, parser.Config, error) {
-	return parseReader(input, cfg, false)
+	return parseReader(input, cfg, parser.AutoDetectTabularConfigQuiet)
 }
 
-func parseReader(input io.Reader, cfg parser.Config, logAuto bool) ([]shared.DataPoint, parser.Config, error) {
+type autoDetectFunc func(parser.Config, []string, [][]string) (parser.Config, error)
+
+func parseReader(input io.Reader, cfg parser.Config, autoDetect autoDetectFunc) ([]shared.DataPoint, parser.Config, error) {
 	var err error
 	cfg, err = parser.FinalizeGroupConfig(cfg)
 	if err != nil {
@@ -80,11 +82,7 @@ func parseReader(input io.Reader, cfg parser.Config, logAuto bool) ([]shared.Dat
 	// the data so `vizb data.csv` produces a usable chart without -g/-p/-r/-x.
 	if !parser.HasSelect(cfg) {
 		autoHeaders := parser.FilterHeadersForAutoDetect(headers, cfg.Select)
-		if logAuto {
-			cfg, err = parser.AutoDetectTabularConfig(cfg, autoHeaders, dataRows)
-		} else {
-			cfg, err = parser.AutoDetectTabularConfigQuiet(cfg, autoHeaders, dataRows)
-		}
+		cfg, err = autoDetect(cfg, autoHeaders, dataRows)
 		if err != nil {
 			return nil, cfg, err
 		}
