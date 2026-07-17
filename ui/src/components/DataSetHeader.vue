@@ -34,6 +34,7 @@ const hasOS = computed(() => props.dataSet.meta?.os)
       class="mx-auto min-w-80"
       placeholder="Search DataSet..."
       notFoundText="No dataSet found."
+      :resultLimit="100"
     />
 
     <h1 v-else class="text-4xl font-bold">{{ mainTitle }}</h1>

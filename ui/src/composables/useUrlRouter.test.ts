@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { ref, type Ref } from 'vue'
+import { nextTick, ref, type Ref } from 'vue'
 import type { DataSet, BarConfig, LineConfig } from '../types'
 
 const holder = vi.hoisted(() => ({
@@ -7,6 +7,11 @@ const holder = vi.hoisted(() => ({
   activeChartIndex: { value: 0 },
   chartType: { value: 'bar' as 'bar' | 'line' | 'pie' | 'heatmap' | 'radar' },
   activeDataSetId: { value: 0 },
+  selectDataSet: vi.fn(),
+  selectGroup: vi.fn(),
+  setArrangement: vi.fn(),
+  setChartType: vi.fn(),
+  resultGroups: { value: [{ name: 'first' }, { name: 'second' }] },
   activeDataSetRef: {
     get value() {
       return holder.dataSets?.value[holder.activeDataSetId.value]
@@ -23,17 +28,15 @@ vi.mock('./useDataPoint', () => ({
         return holder.dataSets?.value ?? []
       },
     },
-    resultGroups: { value: [] },
+    resultGroups: holder.resultGroups,
     get activeDataSetId() {
       return holder.activeDataSetId
     },
     activeGroupId: { value: 0 },
     activeArrangement: { value: { identityString: 'xy', targetString: 'xy' } },
-    selectDataSet: (id: number) => {
-      holder.activeDataSetId.value = id
-    },
-    selectGroup: vi.fn(),
-    setArrangement: vi.fn(),
+    selectDataSet: holder.selectDataSet,
+    selectGroup: holder.selectGroup,
+    setArrangement: holder.setArrangement,
     arrangementMap: new Map<string, string>(),
   }),
 }))
@@ -42,7 +45,7 @@ vi.mock('./useSettingsStore', () => ({
   useSettingsStore: () => ({
     activeChartIndex: holder.activeChartIndex,
     chartType: holder.chartType,
-    setChartType: vi.fn(),
+    setChartType: holder.setChartType,
   }),
 }))
 
@@ -71,6 +74,14 @@ describe('useUrlRouter', () => {
     holder.activeChartIndex.value = 0
     holder.activeDataSetId.value = 0
     holder.chartType.value = 'bar'
+    holder.selectDataSet.mockReset()
+    holder.selectDataSet.mockImplementation(async (id: number) => {
+      holder.activeDataSetId.value = id
+      return true
+    })
+    holder.setChartType.mockReset()
+    holder.selectGroup.mockReset()
+    holder.setArrangement.mockReset()
     holder.dataSets = ref([
       ds([
         {
@@ -93,7 +104,7 @@ describe('useUrlRouter', () => {
     mockWindow('?bar.3d-vm=false&line.3d-vm=true')
     const { useUrlRouter } = await import('./useUrlRouter')
     const { initFromUrl } = useUrlRouter()
-    initFromUrl()
+    await initFromUrl()
 
     const settings = holder.dataSets!.value[0]!.settings
     const bar = settings[0] as BarConfig
@@ -106,7 +117,7 @@ describe('useUrlRouter', () => {
     mockWindow('?bar.3d=true&bar.3d-rt=true')
     const { useUrlRouter } = await import('./useUrlRouter')
     const { initFromUrl } = useUrlRouter()
-    initFromUrl()
+    await initFromUrl()
 
     const bar = holder.dataSets!.value[0]!.settings[0] as BarConfig
     expect(bar.threeD).toBe(true)
@@ -121,8 +132,89 @@ describe('useUrlRouter', () => {
     mockWindow('?id=second')
     const { useUrlRouter } = await import('./useUrlRouter')
     const { initFromUrl } = useUrlRouter()
-    initFromUrl()
+    await initFromUrl()
     expect(holder.activeDataSetId.value).toBe(1)
+    expect(holder.selectDataSet).toHaveBeenCalledTimes(1)
+    expect(holder.selectDataSet).toHaveBeenCalledWith(1)
+  })
+
+  it('uses legacy ?d= when ?id= does not match', async () => {
+    holder.dataSets = ref([ds([{ type: 'bar' }]), ds([{ type: 'bar' }]), ds([{ type: 'bar' }])])
+    mockWindow('?id=missing&d=2')
+    const { useUrlRouter } = await import('./useUrlRouter')
+    const { initFromUrl } = useUrlRouter()
+    await initFromUrl()
+    expect(holder.selectDataSet).toHaveBeenCalledWith(2)
+  })
+
+  it('applies chart parameters only after the selected detail has loaded', async () => {
+    holder.dataSets = ref([
+      { id: 'one', name: 'One', data: [], settings: [] },
+      { id: 'two', name: 'Two', data: [], settings: [] },
+    ])
+    let release!: () => void
+    holder.selectDataSet.mockImplementationOnce(
+      (id: number) =>
+        new Promise<boolean>((resolve) => {
+          release = () => {
+            holder.dataSets!.value[id] = {
+              id: 'two',
+              name: 'Two',
+              data: [],
+              settings: [{ type: 'bar', horizontal: false }],
+            }
+            holder.activeDataSetId.value = id
+            resolve(true)
+          }
+        })
+    )
+    mockWindow('?id=two&g=1&c=bar&bar.h=true&bar.sw=yx')
+    const { useUrlRouter } = await import('./useUrlRouter')
+    const pending = useUrlRouter().initFromUrl()
+
+    expect(holder.selectDataSet).toHaveBeenCalledWith(1)
+    expect(holder.dataSets.value[1]!.settings).toEqual([])
+
+    release()
+    await pending
+    expect((holder.dataSets.value[1]!.settings[0] as BarConfig).horizontal).toBe(true)
+    expect(holder.setChartType).toHaveBeenCalledWith('bar')
+    expect(holder.selectGroup).toHaveBeenCalledWith(1)
+    expect(holder.setArrangement).toHaveBeenCalledWith(1, 'bar', 'yx')
+  })
+
+  it('applies deferred URL parameters after a failed detail is retried', async () => {
+    holder.dataSets = ref([
+      { id: 'one', name: 'One', data: [], settings: [] },
+      { id: 'two', name: 'Two', data: [], settings: [] },
+    ])
+    holder.selectDataSet
+      .mockImplementationOnce(async (id: number) => {
+        holder.activeDataSetId.value = id
+        return false
+      })
+      .mockImplementationOnce(async (id: number) => {
+        holder.activeDataSetId.value = id
+        return true
+      })
+    mockWindow('?id=two&bar.h=true')
+    const { useUrlRouter } = await import('./useUrlRouter')
+    await useUrlRouter().initFromUrl()
+
+    holder.dataSets.value = [
+      holder.dataSets.value[0]!,
+      {
+        id: 'two',
+        name: 'Two',
+        data: [],
+        settings: [{ type: 'bar', horizontal: false }],
+      },
+    ]
+    await nextTick()
+    await nextTick()
+
+    expect(holder.selectDataSet).toHaveBeenCalledTimes(2)
+    expect((holder.dataSets.value[1]!.settings[0] as BarConfig).horizontal).toBe(true)
   })
 
   it('syncs ?id= when active dataset has an id', async () => {
@@ -170,7 +262,7 @@ describe('useUrlRouter', () => {
     mockWindow('?bar.h=true')
     const { useUrlRouter } = await import('./useUrlRouter')
     const { initFromUrl } = useUrlRouter()
-    initFromUrl()
+    await initFromUrl()
 
     const bar = holder.dataSets!.value[0]!.settings[0] as BarConfig
     expect(bar.horizontal).toBe(true)

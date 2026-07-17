@@ -1,6 +1,15 @@
+<script setup lang="ts">
+withDefaults(defineProps<{ contentOnly?: boolean }>(), {
+  contentOnly: false,
+})
+</script>
+
 <template>
-  <div class="mx-auto min-h-screen max-w-7xl animate-pulse px-4 py-8 sm:px-6 lg:px-8">
-    <header class="space-y-3 py-5 text-center">
+  <div
+    class="animate-pulse"
+    :class="contentOnly ? '' : 'mx-auto min-h-screen max-w-7xl px-4 py-8 sm:px-6 lg:px-8'"
+  >
+    <header v-if="!contentOnly" class="space-y-3 py-5 text-center">
       <div class="mx-auto h-9 w-64 rounded-md bg-muted"></div>
       <div class="flex justify-center">
         <div class="h-6 w-28 rounded-full bg-muted"></div>

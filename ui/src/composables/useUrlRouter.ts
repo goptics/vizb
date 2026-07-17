@@ -125,9 +125,26 @@ export function useUrlRouter() {
     return result
   }
 
-  const applyParams = (params: Record<string, string | undefined>) => {
+  const applyParams = async (params: Record<string, string | undefined>) => {
     // 1. Dataset selection (?id= wins over ?d=)
-    selectDataSet(resolveDatasetIndex(params, dataSets.value))
+    const datasetId = resolveDatasetIndex(params, dataSets.value)
+    const catalogShell = dataSets.value[datasetId]
+    const selected = await selectDataSet(datasetId)
+    if (!selected) {
+      // A failed lazy detail remains retryable. When Retry replaces this catalog
+      // shell with a loaded detail, re-run initialization so group/chart/swap
+      // parameters are applied to the real settings rather than the summary.
+      watch(
+        () => dataSets.value[datasetId],
+        (dataset) => {
+          if (dataset !== catalogShell && activeDataSetId.value === datasetId) {
+            void applyParams(params)
+          }
+        },
+        { once: true }
+      )
+      return false
+    }
 
     // 2. Group ID — deferred if groups not yet populated (worker populates asynchronously)
     const gParam = params.g
@@ -165,7 +182,6 @@ export function useUrlRouter() {
     }
 
     // 5. Per-chart settings
-    const datasetId = resolveDatasetIndex(params, dataSets.value)
     for (const ct of ALL_CHART_TYPES) {
       const so = params[`${ct}.so`] as SortOrder | undefined
       const l = params[`${ct}.l`]
@@ -217,6 +233,7 @@ export function useUrlRouter() {
         }
       }
     }
+    return true
   }
 
   const syncUrlToState = () => {
@@ -274,9 +291,9 @@ export function useUrlRouter() {
     }
   }
 
-  const initFromUrl = () => {
+  const initFromUrl = async () => {
     const params = parseUrlParams()
-    applyParams(params)
+    const applied = await applyParams(params)
 
     // Re-sync the URL whenever any source of truth (active index, dataset,
     // group, per-chart swap, or per-chart config) changes. The config
@@ -295,6 +312,7 @@ export function useUrlRouter() {
       }),
       () => syncUrlToState()
     )
+    return applied
   }
 
   return { initFromUrl, syncUrlToState }

@@ -63,6 +63,10 @@ export function useChartPipeline(
   datasetName?: MaybeRef<string | undefined>
 ) {
   const charts = ref<ChartState[]>([])
+  // Dataset identity changed and the replacement skeleton slots have not been
+  // created yet. Lazy remote loading uses this to bridge the network fallback
+  // into the existing per-card pending skeletons without a blank/stale frame.
+  const datasetInitializing = ref(false)
   // True once any chart has data — gates the first-load full-page skeleton.
   const hasAny = ref(false)
   // The worker's group list from the last `ready`. Drives the group selector and
@@ -214,6 +218,7 @@ export function useChartPipeline(
       groupNames.value = []
       hasAny.value = false
       readyInFlight = false
+      datasetInitializing.value = false
       return
     }
 
@@ -278,6 +283,7 @@ export function useChartPipeline(
       chartType: ct,
       preserveRows: unref(preserveRows) === true,
     })
+    datasetInitializing.value = false
   }
 
   // Bump the batch and flip charts to pending synchronously (not after the
@@ -297,6 +303,7 @@ export function useChartPipeline(
     () => rows(),
     () => {
       dataPending = true
+      datasetInitializing.value = true
       startBatch()
       clearTimeout(dataDebounce)
       dataDebounce = setTimeout(reinit, 50)
@@ -347,5 +354,5 @@ export function useChartPipeline(
     worker.terminate()
   })
 
-  return { charts, hasAny, groupNames }
+  return { charts, hasAny, groupNames, datasetInitializing }
 }
