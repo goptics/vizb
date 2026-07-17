@@ -59,7 +59,7 @@ it. Run `task build:ui` after changing `ui/` and before Go builds or tests.
 Run deploy-example workflows locally with `task act:install` and Docker:
 
 ```bash
-task act:examples -- --only csv,go
+task act:examples -- --only tabular-data,go
 task act:examples -- --reuse --no-open
 ```
 

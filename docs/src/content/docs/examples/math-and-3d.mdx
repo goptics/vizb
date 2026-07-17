@@ -1,0 +1,43 @@
+---
+title: Math & 3D
+description: All-numeric auto-value examples — spirals, noise surfaces, and voxel grids for continuous 3D charts.
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+All-numeric CSV → **auto-value** mode (continuous `x` / `y` / `z`, optional 4th metric for color/size). Parser: **CSV**. Source files under [`examples/csv/`](https://github.com/goptics/vizb/tree/main/examples/csv).
+
+**Live dashboard:** [vizb.goptics.org/examples/math-and-3d/](https://vizb.goptics.org/examples/math-and-3d/)
+
+| Chart | Input file | Dashboard |
+|-------|-----------|-----------|
+| Spiral 3D | [spiral-3d.csv](https://github.com/goptics/vizb/blob/main/examples/csv/spiral-3d.csv) | [Open](https://vizb.goptics.org/examples/math-and-3d/) |
+| Noise surface | [noise-surface.csv](https://github.com/goptics/vizb/blob/main/examples/csv/noise-surface.csv) | [Open](https://vizb.goptics.org/examples/math-and-3d/?id=01-noise-surface) |
+| Noise grid (21³) | [noise-grid.csv](https://github.com/goptics/vizb/blob/main/examples/csv/noise-grid.csv) | [Open](https://vizb.goptics.org/examples/math-and-3d/?id=02-noise-grid) |
+| Noise grid (41³) | [noise-grid-41.csv](https://github.com/goptics/vizb/blob/main/examples/csv/noise-grid-41.csv) | [Open](https://vizb.goptics.org/examples/math-and-3d/?id=03-noise-grid-41) |
+| Clusters | [clusters.csv](https://github.com/goptics/vizb/blob/main/examples/csv/clusters.csv) | [Open](https://vizb.goptics.org/examples/math-and-3d/?id=04-clusters) |
+
+## Density notes
+
+| File | Points | Use when |
+|------|--------|----------|
+| `noise-surface.csv` | 441 (21×21) | Fast height-field demo |
+| `noise-grid.csv` | 9,261 (21³) | Manageable voxel + visualMap |
+| `noise-grid-41.csv` | 68,921 (41³) | Full ECharts-scale grid |
+
+Prefer the 21³ grid for everyday loads; use 41³ when you need every voxel.
+
+## Related guides
+
+- [3D Charts (WebGL)](/charts/3d) — bar3D / line3D / scatter3D, rotate, visualMap
+- [Tabular data](/guides/data) — auto-value when every column is numeric
+
+<Aside type="tip">
+  ```bash
+  vizb scatter examples/csv/spiral-3d.csv -o spiral.html
+  vizb scatter examples/csv/noise-grid.csv --3d-visualmap --3d-rotate -o noise.html
+  vizb scatter examples/csv/clusters.csv --visualmap --symbol-size 10 -o clusters.html
+  ```
+</Aside>
+
+<LinkCard title="Tabular data examples" href="/examples/tabular-data" description="Business tables and 2D scatter" />

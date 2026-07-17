@@ -102,17 +102,31 @@ jobs:
     permissions:
       contents: write
 
-  prepare-csv-examples:
-    name: Prepare CSV Examples
+  prepare-tabular-data-examples:
+    name: Prepare Tabular Data Examples
     needs: goreleaser
-    uses: ./.github/workflows/prepare-csv-examples.yml
+    uses: ./.github/workflows/prepare-tabular-data-examples.yml
     permissions:
       contents: write
 
-  prepare-json-examples:
-    name: Prepare JSON Examples
+  prepare-math-and-3d-examples:
+    name: Prepare Math & 3D Examples
     needs: goreleaser
-    uses: ./.github/workflows/prepare-json-examples.yml
+    uses: ./.github/workflows/prepare-math-and-3d-examples.yml
+    permissions:
+      contents: write
+
+  prepare-comparisons-examples:
+    name: Prepare Comparisons Examples
+    needs: goreleaser
+    uses: ./.github/workflows/prepare-comparisons-examples.yml
+    permissions:
+      contents: write
+
+  prepare-github-legends:
+    name: Prepare GitHub Legends
+    needs: goreleaser
+    uses: ./.github/workflows/prepare-github-legends.yml
     permissions:
       contents: write
 
@@ -141,8 +155,10 @@ jobs:
     name: Publish Site
     needs:
       - prepare-docs
-      - prepare-csv-examples
-      - prepare-json-examples
+      - prepare-tabular-data-examples
+      - prepare-math-and-3d-examples
+      - prepare-comparisons-examples
+      - prepare-github-legends
       - prepare-go-examples
       - prepare-javascript-examples
       - prepare-rust-examples

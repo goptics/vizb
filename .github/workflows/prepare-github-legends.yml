@@ -1,23 +1,26 @@
-name: Prepare JSON Examples
+name: Prepare GitHub Legends
 on:
+  schedule:
+    # Refresh contribution skylines every Friday (data is live from the API).
+    - cron: '0 12 * * 5'
   workflow_call:
     inputs:
       publish:
         required: false
         type: boolean
         default: false
-        description: "Publish the generated JSON examples immediately"
+        description: "Publish the generated GitHub Legends examples immediately"
   workflow_dispatch:
     inputs:
       publish:
         required: false
         type: boolean
         default: true
-        description: "Publish the generated JSON examples immediately"
+        description: "Publish the generated GitHub Legends examples immediately"
 
 jobs:
   convert:
-    name: Convert JSON Data
+    name: Convert GitHub Legends
     strategy:
       matrix:
         include:
@@ -70,15 +73,16 @@ jobs:
         if: env.ACT != 'true'
         uses: actions/upload-artifact@v7
         with:
-          name: json-json-${{ matrix.id }}
+          name: json-github-legends-${{ matrix.id }}
           path: ${{ matrix.id }}.json
 
   merge:
-    name: Merge JSON Data
+    name: Merge GitHub Legends
     needs: convert
     permissions:
       contents: write
     uses: ./.github/workflows/merge-examples.yml
     with:
-      language: json
-      publish: ${{ inputs.publish }}
+      language: github-legends
+      # Schedule always publishes; workflow_call/dispatch use the publish input.
+      publish: ${{ github.event_name == 'schedule' || inputs.publish }}
