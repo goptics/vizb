@@ -75,8 +75,6 @@ export default defineConfig({
 					{ label: 'Deploying', slug: 'ci-cd/deploying' },
 				],
 			},
-			{ label: 'How It Works', slug: 'internals/how-it-works' },
-			{ label: 'Troubleshooting', slug: 'troubleshooting' },
 			{
 				label: 'Examples',
 				items: [
@@ -89,6 +87,8 @@ export default defineConfig({
 					{ label: 'Showcase', slug: 'examples/showcase' },
 				],
 			},
+			{ label: 'How It Works', slug: 'internals/how-it-works' },
+			{ label: 'Troubleshooting', slug: 'troubleshooting' },
 			{
 				label: 'Roadmap',
 				slug: 'roadmap',
