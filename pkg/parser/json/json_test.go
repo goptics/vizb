@@ -290,7 +290,8 @@ func (s *JSONSuite) TestJSONKindFnSkipsRowsMissingAxisField() {
 }
 
 func (s *JSONSuite) TestResolveGroupKeysSkipsEmptyNames() {
-	keys, set := resolveGroupKeys([]string{"x"}, map[string]bool{"x": true}, []string{"", "x"})
+	keys, set, err := resolveGroupKeys([]string{"x"}, map[string]bool{"x": true}, []string{"", "x"})
+	s.Require().NoError(err)
 
 	s.Equal([]string{"x"}, keys)
 	s.True(set["x"])

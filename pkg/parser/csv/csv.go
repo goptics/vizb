@@ -3,6 +3,7 @@ package csv
 import (
 	"encoding/csv"
 	"fmt"
+	"io"
 	"math"
 	"os"
 	"strconv"
@@ -15,6 +16,7 @@ import (
 
 func init() {
 	parser.Parsers["csv"] = ParseCSV
+	parser.ReaderParsers["csv"] = ParseReader
 }
 
 // parseFinite parses a trimmed cell as a float, rejecting NaN/Inf (which would
@@ -33,28 +35,42 @@ func parseFinite(s string) (float64, bool) {
 // separators from --group-pattern/-p and routed through the grouping machinery
 // (-p/-r) for name/xAxis/yAxis placement.
 func ParseCSV(filename string, cfg parser.Config) ([]shared.DataPoint, parser.Config) {
-	var err error
-	cfg, err = parser.FinalizeGroupConfig(cfg)
-	if err != nil {
-		shared.ExitWithError(err.Error(), nil)
-	}
-
 	f, err := os.Open(filename)
 	if err != nil {
 		shared.ExitWithError("Error opening file", err)
 	}
 	defer f.Close()
 
-	reader := csv.NewReader(f)
+	results, effectiveCfg, err := parseReader(f, cfg, true)
+	if err != nil {
+		shared.ExitWithError(err.Error(), nil)
+	}
+	return results, effectiveCfg
+}
+
+// ParseReader parses CSV from an explicitly supplied reader. It is used by
+// request-scoped callers and never writes output or terminates the process.
+func ParseReader(input io.Reader, cfg parser.Config) ([]shared.DataPoint, parser.Config, error) {
+	return parseReader(input, cfg, false)
+}
+
+func parseReader(input io.Reader, cfg parser.Config, logAuto bool) ([]shared.DataPoint, parser.Config, error) {
+	var err error
+	cfg, err = parser.FinalizeGroupConfig(cfg)
+	if err != nil {
+		return nil, cfg, err
+	}
+
+	reader := csv.NewReader(input)
 	reader.FieldsPerRecord = -1 // allow ragged rows
 
 	rows, err := reader.ReadAll()
 	if err != nil {
-		shared.ExitWithError("Error reading CSV", err)
+		return nil, cfg, fmt.Errorf("read CSV: %w", err)
 	}
 
 	if len(rows) < 2 { // need header + at least one data row
-		return nil, cfg
+		return nil, cfg, nil
 	}
 
 	headers := normalizeHeaders(rows[0])
@@ -64,9 +80,13 @@ func ParseCSV(filename string, cfg parser.Config) ([]shared.DataPoint, parser.Co
 	// the data so `vizb data.csv` produces a usable chart without -g/-p/-r/-x.
 	if !parser.HasSelect(cfg) {
 		autoHeaders := parser.FilterHeadersForAutoDetect(headers, cfg.Select)
-		cfg, err = parser.AutoDetectTabularConfig(cfg, autoHeaders, dataRows)
+		if logAuto {
+			cfg, err = parser.AutoDetectTabularConfig(cfg, autoHeaders, dataRows)
+		} else {
+			cfg, err = parser.AutoDetectTabularConfigQuiet(cfg, autoHeaders, dataRows)
+		}
 		if err != nil {
-			shared.ExitWithError(err.Error(), nil)
+			return nil, cfg, err
 		}
 	}
 
@@ -84,22 +104,28 @@ func ParseCSV(filename string, cfg parser.Config) ([]shared.DataPoint, parser.Co
 		for i, row := range dataRows {
 			readers[i] = csvRowReader{row: row, colIdx: colIdx, flag: flag, headers: headers}
 		}
-		results := parser.DispatchSelectMode(readers, &cfg, csvKindFn(headers, dataRows, flag))
-		return results, cfg
+		results, err := parser.DispatchSelectModeE(readers, &cfg, csvKindFn(headers, dataRows, flag))
+		if err != nil {
+			return nil, cfg, err
+		}
+		return results, cfg, nil
 	}
 
-	groupIdx, groupSet := resolveGroupColumns(headers, parser.EffectiveGroupColumns(cfg))
+	groupIdx, groupSet, err := resolveGroupColumns(headers, parser.EffectiveGroupColumns(cfg))
+	if err != nil {
+		return nil, cfg, err
+	}
 
 	chartCols := chartColumns(headers, groupSet, dataRows)
 	var colLabels map[int]string
 	if len(cfg.Select) > 0 {
 		chartCols, colLabels, err = resolveExplicitChartColumns(headers, cfg, dataRows)
 		if err != nil {
-			shared.ExitWithError(err.Error(), nil)
+			return nil, cfg, err
 		}
 	}
 	if len(chartCols) == 0 {
-		shared.ExitWithError("no numeric columns found in CSV", nil)
+		return nil, cfg, fmt.Errorf("no numeric columns found in CSV")
 	}
 
 	var results []shared.DataPoint
@@ -116,7 +142,7 @@ func ParseCSV(filename string, cfg parser.Config) ([]shared.DataPoint, parser.Co
 
 			group, gerr := parser.GroupTabularRow(groupValues, cfg)
 			if gerr != nil {
-				shared.ExitWithError("Error parsing CSV group name", gerr)
+				return nil, cfg, fmt.Errorf("parse CSV group name: %w", gerr)
 			}
 
 			name, xAxis, yAxis, zAxis = group["name"], group["xAxis"], group["yAxis"], group["zAxis"]
@@ -156,7 +182,7 @@ func ParseCSV(filename string, cfg parser.Config) ([]shared.DataPoint, parser.Co
 		})
 	}
 
-	return results, cfg
+	return results, cfg, nil
 }
 
 // csvRowReader adapts one CSV row to the parser.RowReader interface.
@@ -260,7 +286,7 @@ func normalizeHeaders(raw []string) []string {
 
 // resolveGroupColumns maps each non-empty --group name to its header index
 // (preserving flag order). A missing column is fatal and lists available headers.
-func resolveGroupColumns(headers []string, group []string) ([]int, map[int]bool) {
+func resolveGroupColumns(headers []string, group []string) ([]int, map[int]bool, error) {
 	var idx []int
 	set := map[int]bool{}
 
@@ -279,14 +305,14 @@ func resolveGroupColumns(headers []string, group []string) ([]int, map[int]bool)
 		}
 
 		if found == -1 {
-			shared.ExitWithError(fmt.Sprintf("group column '%s' not found; available: %v", name, nonEmpty(headers)), nil)
+			return nil, nil, fmt.Errorf("group column %q not found; available: %v", name, nonEmpty(headers))
 		}
 
 		idx = append(idx, found)
 		set[found] = true
 	}
 
-	return idx, set
+	return idx, set, nil
 }
 
 func resolveExplicitChartColumns(headers []string, cfg parser.Config, dataRows [][]string) ([]int, map[int]string, error) {

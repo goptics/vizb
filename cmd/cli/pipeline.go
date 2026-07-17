@@ -13,6 +13,7 @@ import (
 	barchart "github.com/goptics/vizb/internal/charts/bar"
 	linechart "github.com/goptics/vizb/internal/charts/line"
 	scatterchart "github.com/goptics/vizb/internal/charts/scatter"
+	"github.com/goptics/vizb/pkg/core"
 	"github.com/goptics/vizb/pkg/parser"
 	goparser "github.com/goptics/vizb/pkg/parser/golang"
 	jsonparser "github.com/goptics/vizb/pkg/parser/json"
@@ -477,15 +478,24 @@ func autoEnableValueMode3D(configs []internal_charts.ChartConfig, axes []shared.
 // assembleDataset builds the output Dataset from parsed results plus the
 // command's metadata and the resolved per-chart configs.
 func assembleDataset(results []shared.DataPoint, m RunMeta, configs []internal_charts.ChartConfig, cfg parser.Config) *shared.Dataset {
-	var view []parser.ColumnSpec
-	if cfg.Mode.IsSelectAxis() && len(cfg.SelectViews) == 1 {
-		view = cfg.SelectViews[0].Columns
+	meta := shared.Meta{OS: shared.OS, Arch: shared.Arch, Pkg: shared.Pkg}
+	if cpuName := strings.TrimSpace(shared.CPU); cpuName != "" || shared.CPUCount != 0 {
+		meta.CPU = &shared.CPUInfo{Name: cpuName, Cores: shared.CPUCount}
 	}
-	name := ""
-	if len(view) > 0 && cfg.Mode.IsSelectAxis() && !cfg.Mode.IsMultiStat() {
-		name = parser.SelectViewDatasetName(view, 0)
+	var system *shared.Meta
+	if meta != (shared.Meta{}) {
+		system = &meta
 	}
-	return buildDataset(results, m, configs, cfg, view, name)
+	return core.Assemble(core.AssembleInput{
+		Points: results,
+		Parser: m.Parser,
+		Config: cfg,
+		Metadata: core.Metadata{
+			ID: m.ID, Name: m.Name, Theme: m.Theme, Description: m.Description, Tag: m.Tag,
+			System: system,
+		},
+		Charts: configs,
+	})
 }
 
 func tabularParser(parserKey string) bool {

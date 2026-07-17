@@ -28,6 +28,12 @@ func SelectPath(filename, path string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error reading JSON: %w", err)
 	}
+	return SelectBytes(raw, path)
+}
+
+// SelectBytes applies a json path to request-scoped JSON without reading from
+// the filesystem. It is the safe counterpart to SelectPath.
+func SelectBytes(raw []byte, path string) ([]byte, error) {
 
 	var root any
 	if err := json.Unmarshal(raw, &root); err != nil {

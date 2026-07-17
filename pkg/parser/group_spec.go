@@ -373,6 +373,17 @@ func FinalizeGroupConfig(cfg Config) (Config, error) {
 
 // AutoDetectTabularConfig infers group columns or value axes when auto-group is enabled.
 func AutoDetectTabularConfig(cfg Config, autoHeaders []string, rows [][]string) (Config, error) {
+	return autoDetectTabularConfig(cfg, autoHeaders, rows, true)
+}
+
+// AutoDetectTabularConfigQuiet has the same inference behaviour as
+// AutoDetectTabularConfig but does not emit CLI progress messages. Request
+// handlers use it so concurrent responses never share terminal output.
+func AutoDetectTabularConfigQuiet(cfg Config, autoHeaders []string, rows [][]string) (Config, error) {
+	return autoDetectTabularConfig(cfg, autoHeaders, rows, false)
+}
+
+func autoDetectTabularConfig(cfg Config, autoHeaders []string, rows [][]string, log bool) (Config, error) {
 	if !AutoGroupApplies(cfg) {
 		return cfg, nil
 	}
@@ -386,7 +397,9 @@ func AutoDetectTabularConfig(cfg Config, autoHeaders []string, rows [][]string) 
 		if err != nil {
 			return cfg, err
 		}
-		LogAutoGroup(cols)
+		if log {
+			LogAutoGroup(cols)
+		}
 		return cfg, nil
 	}
 
@@ -408,7 +421,9 @@ func AutoDetectTabularConfig(cfg Config, autoHeaders []string, rows [][]string) 
 	if len(allNumeric) >= 4 {
 		cfg.MetricColumn = allNumeric[3]
 	}
-	LogAutoValue(valCols, cfg.MetricColumn)
+	if log {
+		LogAutoValue(valCols, cfg.MetricColumn)
+	}
 	return cfg, nil
 }
 

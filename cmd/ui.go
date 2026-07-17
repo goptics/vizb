@@ -17,6 +17,7 @@ import (
 	piechart "github.com/goptics/vizb/internal/charts/pie"
 	radarchart "github.com/goptics/vizb/internal/charts/radar"
 	"github.com/goptics/vizb/pkg/style"
+	"github.com/goptics/vizb/pkg/core"
 	"github.com/goptics/vizb/pkg/template"
 	"github.com/goptics/vizb/shared"
 	"github.com/goptics/vizb/shared/utils"
@@ -155,29 +156,14 @@ func runUI(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	needs3D := anyDataset(datasets, shared.DatasetNeeds3D)
-	needsHeatmapChunk := anyDataset(datasets, func(ds *shared.Dataset) bool {
-		return slices.ContainsFunc(ds.Settings, shared.ChartConfigNeedsCorrelation)
-	})
-
-	jsonData, err := json.Marshal(datasets)
+	htmlContent, err := core.GenerateUI(datasets, charts)
 	if err != nil {
-		shared.ExitWithError("Failed to marshal dataset: %v", err)
+		shared.ExitWithError("Failed to generate UI: %v", err)
 	}
-	htmlContent := template.GenerateUI(jsonData, charts, needs3D, needsHeatmapChunk, template.VizbHTMLTemplate)
 	if _, err := f.WriteString(htmlContent); err != nil {
 		shared.ExitWithError("Failed to write output file: %v", err)
 	}
 	fmt.Println(style.Success.Render(fmt.Sprintf("🎉 Generated UI successfully: %s", outFile)))
-}
-
-func anyDataset(datasets []shared.Dataset, pred func(*shared.Dataset) bool) bool {
-	for i := range datasets {
-		if pred(&datasets[i]) {
-			return true
-		}
-	}
-	return false
 }
 
 // filterSettings keeps only configs whose chart type is in the allowed list,

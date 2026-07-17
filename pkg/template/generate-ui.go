@@ -3,6 +3,7 @@ package template
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	htmlTemplate "html/template"
 
 	"github.com/goptics/vizb/shared"
@@ -30,25 +31,35 @@ func chartListJS(charts []string) htmlTemplate.JS {
 	return htmlTemplate.JS(encoded)
 }
 
-func renderPage(pd PageData, HTMLtemplate string) string {
+func renderPage(pd PageData, HTMLtemplate string) (string, error) {
 	// Custom delimiters avoid clashing with echarts-gl's clay.gl GLSL shaders,
 	// which embed literal {{ }} sequences for shader loop unrolling.
 	tmpl, err := htmlTemplate.New("page").Delims("[[VIZB", "VIZB]]").Parse(HTMLtemplate)
 	if err != nil {
-		shared.ExitWithError("failed to parse HTML template:", err)
+		return "", fmt.Errorf("parse HTML template: %w", err)
 	}
 
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, pd); err != nil {
-		shared.ExitWithError("failed to execute HTML template:", err)
+		return "", fmt.Errorf("execute HTML template: %w", err)
 	}
 
-	return buf.String()
+	return buf.String(), nil
 }
 
 // GenerateUI renders the embedded-data page, shipping only the chunks the
 // selected charts (+ needs3D + needsHeatmapChunk) can reach.
 func GenerateUI(benchmarkJSON []byte, charts []string, needs3D bool, needsHeatmapChunk bool, HTMLtemplate string) string {
+	html, err := GenerateUIE(benchmarkJSON, charts, needs3D, needsHeatmapChunk, HTMLtemplate)
+	if err != nil {
+		shared.ExitWithError(err.Error(), nil)
+	}
+	return html
+}
+
+// GenerateUIE renders embedded data and returns template failures to the
+// caller. It is safe for request handlers and never writes or exits.
+func GenerateUIE(benchmarkJSON []byte, charts []string, needs3D bool, needsHeatmapChunk bool, HTMLtemplate string) (string, error) {
 	return renderPage(PageData{
 		Version:   version.Version,
 		Data:      htmlTemplate.JS(benchmarkJSON),
@@ -60,6 +71,15 @@ func GenerateUI(benchmarkJSON []byte, charts []string, needs3D bool, needsHeatma
 // GenerateRemoteUI renders the runtime-fetch page. Data is unknown at generation
 // time, so chunk pruning follows the --charts selection directly.
 func GenerateRemoteUI(dataURL string, charts []string, needs3D bool, needsHeatmapChunk bool, HTMLtemplate string) string {
+	html, err := GenerateRemoteUIE(dataURL, charts, needs3D, needsHeatmapChunk, HTMLtemplate)
+	if err != nil {
+		shared.ExitWithError(err.Error(), nil)
+	}
+	return html
+}
+
+// GenerateRemoteUIE is the error-returning remote-data variant.
+func GenerateRemoteUIE(dataURL string, charts []string, needs3D bool, needsHeatmapChunk bool, HTMLtemplate string) (string, error) {
 	return renderPage(PageData{
 		Version:   version.Version,
 		Data:      htmlTemplate.JS("null"),

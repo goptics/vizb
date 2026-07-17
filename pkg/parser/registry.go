@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"io"
 	"regexp"
 	"sort"
 
@@ -56,12 +57,29 @@ type SelectView struct {
 
 type ParseFunc func(filename string, cfg Config) ([]shared.DataPoint, Config)
 
+// ReaderParseFunc is the server-safe counterpart to ParseFunc. It accepts the
+// input explicitly and reports processing failures to its caller instead of
+// printing or terminating the process.
+type ReaderParseFunc func(io.Reader, Config) ([]shared.DataPoint, Config, error)
+
 var Parsers = map[string]ParseFunc{}
+var ReaderParsers = map[string]ReaderParseFunc{}
 
 func GetParser(key string) (ParseFunc, error) {
 	fn, ok := Parsers[key]
 	if !ok {
 		return nil, fmt.Errorf("unknown parser '%s'; available parsers: %v", key, AvailableParsers())
+	}
+	return fn, nil
+}
+
+// GetReaderParser returns a parser suitable for request-scoped input. Not all
+// legacy file parsers have a reader implementation yet, so callers get a
+// normal, actionable error rather than falling back to a process-exiting path.
+func GetReaderParser(key string) (ReaderParseFunc, error) {
+	fn, ok := ReaderParsers[key]
+	if !ok {
+		return nil, fmt.Errorf("parser %q does not support in-memory input", key)
 	}
 	return fn, nil
 }
