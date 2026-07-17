@@ -41,8 +41,13 @@ jobs:
     needs: approve
     uses: ./.github/workflows/ui.yml
 
+  api-contract:
+    name: API Contract
+    needs: approve
+    uses: ./.github/workflows/api-contract.yml
+
   goreleaser:
-    needs: [cli, ui]
+    needs: [cli, ui, api-contract]
     runs-on: ubuntu-slim
     permissions:
       contents: write

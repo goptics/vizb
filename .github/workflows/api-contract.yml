@@ -1,6 +1,7 @@
 name: API Contract
 
 on:
+  workflow_call:
   push:
     branches: [main]
     paths:
