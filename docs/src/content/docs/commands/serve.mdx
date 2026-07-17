@@ -23,6 +23,11 @@ vizb serve --host 0.0.0.0 --port 8080
 The host and port make up the API base URL. The default binding is loopback so
 that the server is not exposed to a network unintentionally.
 
+Each request body is limited to 10 MiB. The server uses a 5-second header read
+timeout, a 15-second request read timeout, and 60-second write and idle
+timeouts. On `SIGINT` or `SIGTERM`, it stops accepting requests and allows up
+to 10 seconds for in-flight work to finish.
+
 Browse the generated [API reference](/api/) for the complete OpenAPI contract,
 including request and response schemas and generated code snippets.
 
