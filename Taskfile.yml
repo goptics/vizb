@@ -15,6 +15,7 @@ tasks:
       - cd docs; pnpm install; cd -
       - task: build:ui
       - task: act:install
+      - task: cliff:install
       - go run github.com/evilmartians/lefthook@latest install
 
   dev:docs:
@@ -143,12 +144,29 @@ tasks:
     cmds:
       - goreleaser release --snapshot --clean
 
+  # CHANGELOG helpers: scripts/release-changelog.sh; install via Homebrew (or see Dockerfile).
+  cliff:install:
+    desc: Install git-cliff for CHANGELOG drafts (Homebrew)
+    cmds:
+      - (which git-cliff && echo "git-cliff already installed") || brew install git-cliff
+
+  release:changelog:
+    desc: "Draft CHANGELOG.md (git-cliff). Usage: task release:changelog -- vX.Y.Z"
+    cmds:
+      - ./scripts/release-changelog.sh draft {{.CLI_ARGS}}
+
+  release:changelog:commit:
+    desc: "Commit CHANGELOG.md only. Usage: task release:changelog:commit -- vX.Y.Z"
+    cmds:
+      - ./scripts/release-changelog.sh commit {{.CLI_ARGS}}
+
   release:
-    desc: Create and push a new tag to trigger release
+    desc: "Tag and push a release. Usage: task release -- vX.Y.Z"
     prompt: This will create and push a new release tag. Continue?
     vars:
       VERSION: "{{.CLI_ARGS}}"
     cmds:
+      - ./scripts/release-changelog.sh preflight {{.VERSION}}
       - task: release:check
       - task: release:snapshot
       - echo "Creating tag {{.VERSION}}..."
