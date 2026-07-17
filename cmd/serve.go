@@ -43,6 +43,7 @@ type serveDependencies struct {
 	newHandler    func() http.Handler
 	listen        func(network, address string) (net.Listener, error)
 	signalContext func(context.Context, ...os.Signal) (context.Context, context.CancelFunc)
+	shutdown      func(*http.Server, context.Context) error
 }
 
 var (
@@ -51,6 +52,7 @@ var (
 		newHandler:    newRESTHandler,
 		listen:        net.Listen,
 		signalContext: signal.NotifyContext,
+		shutdown:      (*http.Server).Shutdown,
 	}
 )
 
@@ -130,7 +132,11 @@ func runServer(ctx context.Context, opts serveOptions, deps serveDependencies) e
 	case <-ctx.Done():
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 		defer cancel()
-		if err := server.Shutdown(shutdownCtx); err != nil {
+		shutdown := deps.shutdown
+		if shutdown == nil {
+			shutdown = (*http.Server).Shutdown
+		}
+		if err := shutdown(server, shutdownCtx); err != nil {
 			return fmt.Errorf("shutdown HTTP server: %w", err)
 		}
 		if err := <-serveResult; err != nil && !errors.Is(err, http.ErrServerClosed) {
@@ -185,6 +191,14 @@ type uiRequest struct {
 }
 
 func handleConvert(w http.ResponseWriter, r *http.Request) {
+	handleConvertWithGenerator(w, r, core.GenerateUI)
+}
+
+func handleConvertWithGenerator(
+	w http.ResponseWriter,
+	r *http.Request,
+	generateUI func([]shared.Dataset, []string) (string, error),
+) {
 	var request convertRequest
 	if !decodeAPIRequest(w, r, &request) {
 		return
@@ -223,7 +237,7 @@ func handleConvert(w http.ResponseWriter, r *http.Request) {
 			writeAPIProblem(w, r, http.StatusNotAcceptable, "Not acceptable", "Accept must allow text/html")
 			return
 		}
-		html, err := core.GenerateUI([]shared.Dataset{*result.Dataset}, types)
+		html, err := generateUI([]shared.Dataset{*result.Dataset}, types)
 		if err != nil {
 			writeAPIProblem(w, r, http.StatusInternalServerError, "Internal server error", err.Error())
 			return
@@ -257,6 +271,14 @@ func handleMerge(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleUI(w http.ResponseWriter, r *http.Request) {
+	handleUIWithGenerator(w, r, core.GenerateUI)
+}
+
+func handleUIWithGenerator(
+	w http.ResponseWriter,
+	r *http.Request,
+	generateUI func([]shared.Dataset, []string) (string, error),
+) {
 	var request uiRequest
 	if !decodeAPIRequest(w, r, &request) {
 		return
@@ -270,7 +292,7 @@ func handleUI(w http.ResponseWriter, r *http.Request) {
 		writeAPIProblem(w, r, http.StatusBadRequest, "Invalid request", err.Error())
 		return
 	}
-	html, err := core.GenerateUI(datasets, request.Charts.Types)
+	html, err := generateUI(datasets, request.Charts.Types)
 	if err != nil {
 		writeAPIProblem(w, r, http.StatusUnprocessableEntity, "Input processing failed", err.Error())
 		return

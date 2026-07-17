@@ -13,8 +13,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
-	"time"
 
+	"github.com/goptics/vizb/shared"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -122,6 +122,16 @@ func (s *ServeSuite) TestServeFailureIsReturned() {
 	s.EqualError(err, "serve HTTP: accept failed")
 }
 
+func (s *ServeSuite) TestServerClosedIsASuccessfulServeResult() {
+	err := runServer(context.Background(), serveOptions{Host: defaultServeHost, Port: defaultServePort}, serveDependencies{
+		newHandler: http.NotFoundHandler,
+		listen: func(string, string) (net.Listener, error) {
+			return errorListener{err: http.ErrServerClosed}, nil
+		},
+	})
+	s.NoError(err)
+}
+
 func (s *ServeSuite) TestCancellationShutsDownInMemoryListener() {
 	listener := newBlockingListener()
 	ctx, cancel := context.WithCancel(context.Background())
@@ -140,29 +150,69 @@ func (s *ServeSuite) TestCancellationShutsDownInMemoryListener() {
 }
 
 func (s *ServeSuite) TestCancellationTriggersGracefulShutdown() {
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	s.Require().NoError(err)
-	defer listener.Close()
-
+	listener := newBlockingListener()
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	var shutdownCalled atomic.Bool
 	result := make(chan error, 1)
 	go func() {
 		result <- runServer(ctx, serveOptions{Host: defaultServeHost, Port: defaultServePort}, serveDependencies{
 			newHandler: http.NotFoundHandler,
 			listen:     func(string, string) (net.Listener, error) { return listener, nil },
+			shutdown: func(server *http.Server, ctx context.Context) error {
+				shutdownCalled.Store(true)
+				return server.Shutdown(ctx)
+			},
 		})
 	}()
 
-	s.Eventually(func() bool {
-		connection, err := net.DialTimeout("tcp", listener.Addr().String(), time.Second)
-		if err != nil {
-			return false
-		}
-		_ = connection.Close()
-		return true
-	}, time.Second, 10*time.Millisecond)
+	<-listener.acceptStarted
 	cancel()
 	s.Require().NoError(<-result)
+	s.True(shutdownCalled.Load())
+}
+
+func (s *ServeSuite) TestShutdownFailureIsReturned() {
+	listener := newBlockingListener()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	result := make(chan error, 1)
+	go func() {
+		result <- runServer(ctx, serveOptions{Host: defaultServeHost, Port: defaultServePort}, serveDependencies{
+			newHandler: http.NotFoundHandler,
+			listen:     func(string, string) (net.Listener, error) { return listener, nil },
+			shutdown: func(server *http.Server, _ context.Context) error {
+				_ = server.Close()
+				return errors.New("drain failed")
+			},
+		})
+	}()
+
+	<-listener.acceptStarted
+	cancel()
+	s.EqualError(<-result, "shutdown HTTP server: drain failed")
+}
+
+func (s *ServeSuite) TestServeFailureDuringShutdownIsReturned() {
+	listener := newBlockingErrorListener(errors.New("accept failed during shutdown"))
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	result := make(chan error, 1)
+	go func() {
+		result <- runServer(ctx, serveOptions{Host: defaultServeHost, Port: defaultServePort}, serveDependencies{
+			newHandler: http.NotFoundHandler,
+			listen:     func(string, string) (net.Listener, error) { return listener, nil },
+			shutdown: func(*http.Server, context.Context) error {
+				return listener.Close()
+			},
+		})
+	}()
+
+	<-listener.acceptStarted
+	cancel()
+	s.EqualError(<-result, "serve HTTP: accept failed during shutdown")
 }
 
 func (s *ServeSuite) TestServeAddress() {
@@ -198,6 +248,12 @@ func (s *ServeSuite) TestConvertEndpoint() {
 	s.Equal(http.StatusOK, recorder.Code)
 	s.Contains(recorder.Header().Get("Content-Type"), "text/html")
 	s.Contains(recorder.Body.String(), "VIZB_DATA")
+
+	recorder = s.apiRequest(handler, "/", request[:len(request)-1]+`,"output":{"format":"dataset"}}`, "application/json", "application/json")
+	s.Equal(http.StatusOK, recorder.Code)
+
+	recorder = s.apiRequest(handler, "/", `{"input":[{"region":"west","value":12}],"charts":{"types":["bar"]}}`, "application/json", "")
+	s.Equal(http.StatusOK, recorder.Code)
 }
 
 func (s *ServeSuite) TestConvertEndpointRejectsInvalidRequests() {
@@ -210,6 +266,7 @@ func (s *ServeSuite) TestConvertEndpointRejectsInvalidRequests() {
 		wantStatus  int
 	}{
 		{name: "missing input", body: `{}`, contentType: "application/json", wantStatus: http.StatusBadRequest},
+		{name: "null input", body: `{"input":null}`, contentType: "application/json", wantStatus: http.StatusBadRequest},
 		{name: "invalid input kind", body: `{"input":42}`, contentType: "application/json", wantStatus: http.StatusBadRequest},
 		{name: "unknown chart", body: `{"input":"x,y\na,1\n","charts":{"types":["unknown"]}}`, contentType: "application/json", wantStatus: http.StatusBadRequest},
 		{name: "unsupported parser", body: `{"input":"x,y\na,1\n","parser":"go"}`, contentType: "application/json", wantStatus: http.StatusUnprocessableEntity},
@@ -217,6 +274,7 @@ func (s *ServeSuite) TestConvertEndpointRejectsInvalidRequests() {
 		{name: "invalid output format", body: `{"input":"x,y\na,1\n","output":{"format":"csv"}}`, contentType: "application/json", wantStatus: http.StatusBadRequest},
 		{name: "unknown field", body: `{"input":"x,y\na,1\n","extra":true}`, contentType: "application/json", wantStatus: http.StatusBadRequest},
 		{name: "wrong content type", body: `{}`, contentType: "text/plain", wantStatus: http.StatusUnsupportedMediaType},
+		{name: "malformed content type", body: `{}`, contentType: `application/json; charset="`, wantStatus: http.StatusUnsupportedMediaType},
 		{name: "multiple JSON values", body: `{} {}`, contentType: "application/json", wantStatus: http.StatusBadRequest},
 	} {
 		s.Run(test.name, func() {
@@ -228,9 +286,24 @@ func (s *ServeSuite) TestConvertEndpointRejectsInvalidRequests() {
 	}
 }
 
+func (s *ServeSuite) TestConvertEndpointReportsUIGenerationFailure() {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handleConvertWithGenerator(w, r, func([]shared.Dataset, []string) (string, error) {
+			return "", errors.New("template failed")
+		})
+	})
+	body := `{"input":"region,value\nwest,12\n","parser":"csv","charts":{"types":["bar"]},"output":{"format":"html"}}`
+	recorder := s.apiRequest(handler, "/", body, "application/json", "text/html")
+	s.Equal(http.StatusInternalServerError, recorder.Code)
+	s.Equal(float64(http.StatusInternalServerError), s.problemStatus(recorder))
+}
+
 func (s *ServeSuite) TestMergeEndpoint() {
 	handler := newRESTHandler()
-	recorder := s.apiRequest(handler, "/merge", `{"datasets":[{"name":"one"}]}`, "application/json", "")
+	recorder := s.apiRequest(handler, "/merge", `{`, "application/json", "")
+	s.Equal(http.StatusBadRequest, recorder.Code)
+
+	recorder = s.apiRequest(handler, "/merge", `{"datasets":[{"name":"one"}]}`, "application/json", "")
 	s.Equal(http.StatusBadRequest, recorder.Code)
 
 	recorder = s.apiRequest(handler, "/merge", `{"datasets":[{"name":"Bench","tag":"v1","data":[{"name":"case","yAxis":"1"}]},{"name":"Bench","tag":"v2","data":[{"name":"case","yAxis":"2"}]}],"tagAxis":"x"}`, "application/json", "")
@@ -257,6 +330,7 @@ func (s *ServeSuite) TestUIEndpoint() {
 		accept     string
 		wantStatus int
 	}{
+		{name: "invalid request", body: `{`, accept: "text/html", wantStatus: http.StatusBadRequest},
 		{name: "not accepted", body: valid, accept: "application/json", wantStatus: http.StatusNotAcceptable},
 		{name: "missing datasets", body: `{}`, accept: "text/html", wantStatus: http.StatusBadRequest},
 		{name: "empty datasets", body: `{"datasets":[]}`, accept: "text/html", wantStatus: http.StatusBadRequest},
@@ -269,9 +343,22 @@ func (s *ServeSuite) TestUIEndpoint() {
 	}
 }
 
+func (s *ServeSuite) TestUIEndpointReportsGenerationFailure() {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handleUIWithGenerator(w, r, func([]shared.Dataset, []string) (string, error) {
+			return "", errors.New("template failed")
+		})
+	})
+	body := `{"datasets":{"name":"Bench","data":[{"name":"case","yAxis":"1"}]}}`
+	recorder := s.apiRequest(handler, "/ui", body, "application/json", "text/html")
+	s.Equal(http.StatusUnprocessableEntity, recorder.Code)
+	s.Equal(float64(http.StatusUnprocessableEntity), s.problemStatus(recorder))
+}
+
 func (s *ServeSuite) TestRequestHelpers() {
 	s.Equal([]byte("text"), s.inlineInput(`"text"`))
 	s.Equal([]byte(`{"value":1}`), s.inlineInput(`{"value":1}`))
+	s.Equal([]byte(`[{"value":1}]`), s.inlineInput(`[{"value":1}]`))
 	_, err := inlineInput(json.RawMessage(`42`))
 	s.ErrorContains(err, "input must be")
 	_, err = inlineInput(nil)
@@ -280,6 +367,11 @@ func (s *ServeSuite) TestRequestHelpers() {
 	datasets, err := decodeDatasets(json.RawMessage(`{"name":"Bench"}`))
 	s.Require().NoError(err)
 	s.Len(datasets, 1)
+	datasets, err = decodeDatasets(json.RawMessage(`[{"name":"One"},{"name":"Two"}]`))
+	s.Require().NoError(err)
+	s.Len(datasets, 2)
+	_, err = decodeDatasets(json.RawMessage(`[invalid]`))
+	s.Error(err)
 	_, err = decodeDatasets(nil)
 	s.ErrorContains(err, "datasets is required")
 
@@ -334,10 +426,19 @@ type blockingListener struct {
 	acceptStarted chan struct{}
 	closed        chan struct{}
 	once          sync.Once
+	acceptErr     error
 }
 
 func newBlockingListener() *blockingListener {
-	return &blockingListener{acceptStarted: make(chan struct{}), closed: make(chan struct{})}
+	return newBlockingErrorListener(net.ErrClosed)
+}
+
+func newBlockingErrorListener(err error) *blockingListener {
+	return &blockingListener{
+		acceptStarted: make(chan struct{}),
+		closed:        make(chan struct{}),
+		acceptErr:     err,
+	}
 }
 
 func (l *blockingListener) Accept() (net.Conn, error) {
@@ -347,7 +448,7 @@ func (l *blockingListener) Accept() (net.Conn, error) {
 		close(l.acceptStarted)
 	}
 	<-l.closed
-	return nil, net.ErrClosed
+	return nil, l.acceptErr
 }
 
 func (l *blockingListener) Close() error {
