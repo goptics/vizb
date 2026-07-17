@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/goptics/vizb/shared"
@@ -202,6 +203,59 @@ func (s *TabularSuite) TestParseValueModeRejectsNonNumericMetric() {
 	if !*exitCalled {
 		t.Fatal("expected OsExit")
 	}
+}
+
+func (s *TabularSuite) TestErrorReturningTabularParsers() {
+	rows := []RowReader{mockRowReader{
+		cells:   map[string]string{"metric": "4"},
+		numeric: map[string]float64{"x": 1, "y": 2, "metric": 4},
+		headers: []string{"x", "y", "metric"},
+		flag:    "--axes",
+	}}
+	points, err := ParseValueModeE(rows, Config{
+		Axes:         []ColumnSpec{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}},
+		MetricColumn: "metric",
+	})
+	s.Require().NoError(err)
+	s.Require().Len(points, 1)
+	s.Equal("4", points[0].Metric)
+
+	_, err = ParseValueModeE(rows, Config{MetricColumn: "missing"})
+	s.ErrorContains(err, `metric column "missing" not found`)
+
+	_, err = ParseSelectStatModeE([]RowReader{mockRowReader{}}, Config{SelectViews: []SelectView{{
+		Columns: []ColumnSpec{{Source: "region"}, {Source: "sales"}},
+	}}})
+	s.ErrorContains(err, "no dataset found")
+}
+
+func (s *TabularSuite) TestDispatchSelectModeE() {
+	cfg := Config{Mode: ModeValue, SelectViews: []SelectView{{
+		Columns: []ColumnSpec{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}},
+	}}}
+	rows := []RowReader{mockRowReader{numeric: map[string]float64{"x": 1, "y": 2}}}
+	points, err := DispatchSelectModeE(rows, &cfg, func(string, string) (string, error) { return "value", nil })
+	s.Require().NoError(err)
+	s.Require().Len(points, 1)
+	s.Equal(ModeValue, cfg.Mode)
+
+	_, err = DispatchSelectModeE(rows, &cfg, func(string, string) (string, error) {
+		return "", fmt.Errorf("invalid axis")
+	})
+	s.ErrorContains(err, "invalid axis")
+}
+
+func (s *TabularSuite) TestDispatchSelectModeExitsOnError() {
+	restore, exitCalled := shared.TrapOsExitPanic(s.T())
+	defer restore()
+
+	cfg := Config{SelectViews: []SelectView{{Columns: []ColumnSpec{{Source: "x", AxisKey: "x"}}}}}
+	s.Panics(func() {
+		DispatchSelectMode(nil, &cfg, func(string, string) (string, error) {
+			return "", fmt.Errorf("invalid axis")
+		})
+	})
+	s.True(*exitCalled)
 }
 
 func (s *TabularSuite) TestParseSelectStatModeNonMerge() {

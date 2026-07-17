@@ -3,6 +3,7 @@ package csv
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/goptics/vizb/pkg/parser"
@@ -322,6 +323,32 @@ func (s *CSVSuite) TestLessThanTwoRowsReturnsNil() {
 	s.Nil(pts)
 }
 
+func (s *CSVSuite) TestParseReaderReturnsResultsAndErrors() {
+	results, cfg, err := ParseReader(strings.NewReader("name,sells\nalpha,10\n"), parser.Config{
+		GroupPattern: "x",
+		Group:        []string{"name"},
+	})
+	s.Require().NoError(err)
+	s.Equal([]string{"name"}, cfg.Group)
+	s.Require().Len(results, 1)
+	s.Equal("alpha", results[0].XAxis)
+
+	_, _, err = ParseReader(strings.NewReader("name,sells\nalpha,10\n"), parser.Config{
+		GroupPattern: "x",
+		Group:        []string{"missing"},
+	})
+	s.ErrorContains(err, `group column "missing" not found`)
+
+	_, _, err = ParseReader(strings.NewReader("name,sells\nalpha,\"bad\n"), parser.Config{GroupPattern: "x"})
+	s.ErrorContains(err, "read CSV")
+
+	_, _, err = ParseReader(strings.NewReader("name,sells\nalpha,10\n"), parser.Config{
+		Group:        []string{"name", "sells"},
+		GroupPattern: "x",
+	})
+	s.Error(err)
+}
+
 func TestCSVSuite(t *testing.T) {
 	suite.Run(t, new(CSVSuite))
 }
@@ -354,6 +381,10 @@ func (s *CSVFatalSuite) TestMissingGroupColumnIsFatal() {
 	path := s.writeFile("name,sells\na,10\n")
 
 	s.PanicsWithValue("exit", func() { ParseCSV(path, s.cfg) })
+}
+
+func (s *CSVFatalSuite) TestOpenFileErrorIsFatal() {
+	s.PanicsWithValue("exit", func() { ParseCSV(filepath.Join(s.T().TempDir(), "missing.csv"), s.cfg) })
 }
 
 func (s *CSVFatalSuite) TestNoNumericColumnsIsFatal() {

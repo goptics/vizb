@@ -1,6 +1,7 @@
 package core
 
 import (
+	"math"
 	"strings"
 	"testing"
 
@@ -108,8 +109,26 @@ func (s *CoreSuite) TestConvertBranchErrorsAndAutoDetection() {
 	})
 	s.Require().NoError(err)
 	s.Len(result.Dataset.Data, 1)
+	result, err = Convert(ConvertInput{
+		Input:  []byte("region,latency\nwest,12\n"),
+		Parser: "  ",
+		Charts: chart,
+	})
+	s.Require().NoError(err)
+	s.Len(result.Dataset.Data, 1)
 	s.Equal("json", detectInlineParser([]byte(" [1]")))
 	s.Equal("csv", detectInlineParser([]byte("x,y\n")))
+}
+
+func (s *CoreSuite) TestConvertReturnsReaderLookupError() {
+	chart := []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: "linear"}}
+	saved := parser.ReaderParsers["csv"]
+	delete(parser.ReaderParsers, "csv")
+	s.T().Cleanup(func() { parser.ReaderParsers["csv"] = saved })
+
+	_, err := Convert(ConvertInput{Input: []byte("x,y\na,1\n"), Parser: "csv", Charts: chart})
+	s.ErrorContains(err, "does not support in-memory input")
+	parser.ReaderParsers["csv"] = saved
 }
 
 func (s *CoreSuite) TestMergeAndUIBranchErrors() {
@@ -161,6 +180,37 @@ func (s *CoreSuite) TestAssembleModesAndThreeD() {
 
 	categoryDataset := Assemble(AssembleInput{Points: []shared.DataPoint{{XAxis: "west", YAxis: "2", ZAxis: "3"}}, Config: parser.Config{Axes: []parser.ColumnSpec{{Source: "x"}, {Source: "y"}, {Source: "z"}}}, Charts: []internalcharts.ChartConfig{&barchart.Config{Type: "bar"}}})
 	s.Len(categoryDataset.Axes, 3)
+}
+
+func (s *CoreSuite) TestAssembleFallbacksAndHelpers() {
+	grouped := Assemble(AssembleInput{Config: parser.Config{GroupPattern: "name,x"}})
+	s.Len(grouped.Axes, 2)
+
+	mixed := Assemble(AssembleInput{Config: parser.Config{Axes: []parser.ColumnSpec{
+		{Source: "region", AxisKey: "x", AxisType: "category"},
+		{Source: "latency", AxisKey: "y", AxisType: "value"},
+	}}})
+	s.Equal("x", mixed.Axes[0].Key)
+
+	value := Assemble(AssembleInput{Config: parser.Config{
+		Axes:    []parser.ColumnSpec{{Source: "x", AxisKey: "x", AxisType: "value"}},
+		ColAxis: "y",
+	}})
+	s.Len(value.Axes, 2)
+
+	axes := appendMetricAxis([]shared.Axis{{Key: "metric"}}, parser.Config{MetricColumn: "score"}, nil)
+	s.Len(axes, 1)
+	axes = appendMetricAxis(nil, parser.Config{}, []shared.DataPoint{{Metric: "1"}})
+	s.Equal("value", axes[0].Label)
+
+	bar := &barchart.Config{Type: "bar"}
+	autoEnableValueMode3D([]internalcharts.ChartConfig{bar}, []shared.Axis{{Key: "x", Type: "value"}, {Key: "y", Type: "value"}}, false)
+	s.Nil(bar.ThreeD)
+}
+
+func (s *CoreSuite) TestGenerateUIReportsMarshalErrors() {
+	_, err := GenerateUI([]shared.Dataset{{Data: []shared.DataPoint{{Stats: []shared.Stat{{Value: shared.F64(math.NaN())}}}}}}, nil)
+	s.ErrorContains(err, "marshal datasets")
 }
 
 func TestCoreSuite(t *testing.T) { suite.Run(t, new(CoreSuite)) }

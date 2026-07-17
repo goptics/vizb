@@ -457,6 +457,33 @@ func (s *JSONSuite) TestNonArrayInputReturnsNil() {
 	s.Nil(pts)
 }
 
+func (s *JSONSuite) TestParseReaderReturnsResultsAndErrors() {
+	results, cfg, err := ParseReader(strings.NewReader(`[{"name":"alpha","sells":10}]`), parser.Config{
+		GroupPattern: "x",
+		Group:        []string{"name"},
+	})
+	s.Require().NoError(err)
+	s.Equal([]string{"name"}, cfg.Group)
+	s.Require().Len(results, 1)
+	s.Equal("alpha", results[0].XAxis)
+
+	_, _, err = ParseReader(strings.NewReader(`[{"name":"alpha","sells":10}]`), parser.Config{
+		GroupPattern: "x",
+		Group:        []string{"missing"},
+	})
+	s.ErrorContains(err, `group field "missing" not found`)
+
+	_, _, err = ParseReader(strings.NewReader(`[{"name":`), parser.Config{GroupPattern: "x"})
+	s.ErrorContains(err, "read JSON")
+
+	results, _, err = ParseReader(strings.NewReader(`[{"name":"alpha","sells":10}]`), parser.Config{
+		AutoGroup:  true,
+		ChartTypes: []string{"scatter"},
+	})
+	s.Require().NoError(err)
+	s.Len(results, 1)
+}
+
 func (s *JSONSuite) TestStringifyNumericAndString() {
 	s.Equal("3.5", stringify(3.5))
 	s.Equal("alpha", stringify("alpha"))

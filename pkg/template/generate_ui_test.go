@@ -109,6 +109,25 @@ func (s *GenerateUISuite) TestGenerateRemoteUI() {
 	assert.Contains(t, result, `"bar"`)
 }
 
+func (s *GenerateUISuite) TestErrorReturningGenerators() {
+	invalidTemplate := `[[VIZB .Version`
+	_, err := GenerateUIE([]byte(`[]`), []string{"bar"}, false, false, invalidTemplate)
+	s.ErrorContains(err, "parse HTML template")
+
+	_, err = GenerateRemoteUIE("https://example.com/data.json", []string{"bar"}, false, false, invalidTemplate)
+	s.ErrorContains(err, "parse HTML template")
+}
+
+func (s *GenerateUISuite) TestGenerateRemoteUIExitsOnTemplateError() {
+	restore, exitCalled := shared.TrapOsExitPanic(s.T())
+	defer restore()
+
+	s.Panics(func() {
+		GenerateRemoteUI("https://example.com/data.json", []string{"bar"}, false, false, `[[VIZB .Version`)
+	})
+	s.True(*exitCalled)
+}
+
 func (s *GenerateUISuite) TestChartListJSEmptyDefaults() {
 	t := s.T()
 	testTemplate := `<!DOCTYPE html><html><body><script>window.VIZB_CHARTS = [[VIZB .ChartList VIZB]];</script></body></html>`

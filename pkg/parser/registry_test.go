@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/goptics/vizb/pkg/parser"
+	_ "github.com/goptics/vizb/pkg/parser/csv"
 	_ "github.com/goptics/vizb/pkg/parser/golang"
 	"github.com/goptics/vizb/shared"
 	"github.com/stretchr/testify/suite"
@@ -25,6 +26,15 @@ func (s *RegistrySuite) TestGetParserKnown() {
 	fn, err := parser.GetParser("go")
 	s.NoError(err)
 	s.NotNil(fn)
+}
+
+func (s *RegistrySuite) TestGetReaderParser() {
+	reader, err := parser.GetReaderParser("csv")
+	s.Require().NoError(err)
+	s.NotNil(reader)
+
+	_, err = parser.GetReaderParser("go")
+	s.ErrorContains(err, "does not support in-memory input")
 }
 
 func (s *RegistrySuite) TestAvailableParsersSorted() {
