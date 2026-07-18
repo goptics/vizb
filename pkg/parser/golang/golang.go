@@ -35,6 +35,8 @@ func parseBenchmarkName(name benchfmt.Name) (benchName string, cpu string) {
 	return
 }
 
+// ParseGoBenchmark converts Go benchmark text or go test JSON events into data
+// points and returns any system metadata found in the benchmark configuration.
 func ParseGoBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataPoint, parser.Config, *shared.Meta, error) {
 	var results []shared.DataPoint
 	var system shared.Meta

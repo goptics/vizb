@@ -101,10 +101,12 @@ func (s *TmpFilesManagerSuite) TestTmpFilesManagerConcurrentAccess() {
 	var wg sync.WaitGroup
 
 	for range 20 {
-		wg.Go(func() {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
 			manager.Store("nonexistent.txt")
 			manager.RemoveAll()
-		})
+		}()
 	}
 	wg.Wait()
 	manager.RemoveAll()

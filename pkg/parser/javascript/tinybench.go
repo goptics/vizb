@@ -51,6 +51,7 @@ func parseMedWithMAD(s string) (med, mad float64) {
 	return
 }
 
+// ParseTinyBenchBenchmark converts Tinybench table output into data points.
 func ParseTinyBenchBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataPoint, parser.Config, *shared.Meta, error) {
 	scanner := bufio.NewScanner(input)
 	var results []shared.DataPoint

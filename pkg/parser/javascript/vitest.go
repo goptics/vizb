@@ -26,6 +26,7 @@ func parseNum(s string) float64 {
 	return n
 }
 
+// ParseVitestBenchmark converts Vitest benchmark output into data points.
 func ParseVitestBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataPoint, parser.Config, *shared.Meta, error) {
 	scanner := bufio.NewScanner(input)
 	var results []shared.DataPoint

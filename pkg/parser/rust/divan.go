@@ -21,6 +21,7 @@ var divanRowRe = regexp.MustCompile(`^[├╰]─\s+(\S+)\s+(.+)$`)
 
 var divanValRe = regexp.MustCompile(`([\d.]+)\s*(ns|µs|μs|ms|s)`)
 
+// ParseDivanBenchmark converts Divan benchmark output into data points.
 func ParseDivanBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataPoint, parser.Config, *shared.Meta, error) {
 	scanner := bufio.NewScanner(input)
 	var results []shared.DataPoint
