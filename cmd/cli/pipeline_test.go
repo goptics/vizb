@@ -42,23 +42,6 @@ func (s *PipelineSuite) writeFile(name, content string) string {
 	return path
 }
 
-func (s *PipelineSuite) TestPreprocessInputFile() {
-	s.Run("Go bench JSON is converted to text", func() {
-		jsonFile := s.writeFile("bench.json", `{"Action":"run","Test":"BenchmarkExample"}
-{"Action":"pass","Test":"BenchmarkExample","Output":"1000000    1234 ns/op"}`)
-
-		result := preprocessInputFile(jsonFile, "go")
-		s.NotEqual(jsonFile, result)
-		s.FileExists(result)
-		os.Remove(result)
-	})
-
-	s.Run("Plain text file passes through", func() {
-		textFile := s.writeFile("bench.txt", "BenchmarkExample-8 1000000 1234 ns/op")
-		s.Equal(textFile, preprocessInputFile(textFile, "go"))
-	})
-}
-
 func (s *PipelineSuite) TestApplyJSONPathEnvelope() {
 	envelope := s.writeFile("env.json", `{"data":[{"impl":"a","ops":120},{"impl":"b","ops":80}]}`)
 
@@ -69,6 +52,20 @@ func (s *PipelineSuite) TestApplyJSONPathEnvelope() {
 	results, _ := prepareData(extracted, "json", cfg)
 	s.Len(results, 2)
 	s.ElementsMatch([]string{"a", "b"}, []string{results[0].XAxis, results[1].XAxis})
+}
+
+func (s *PipelineSuite) TestPrepareDataReadsGoJSONEventsDirectly() {
+	input := s.writeFile("bench.json", `{"Action":"run","Test":"BenchmarkExample"}
+{"Action":"output","Output":"BenchmarkExample-8 100 1234 ns/op\n"}
+{"Action":"pass","Test":"BenchmarkExample"}`)
+
+	results, _ := prepareData(input, "go", parser.Config{
+		GroupPattern: "y",
+		TimeUnit:     "ns",
+	})
+
+	s.Require().Len(results, 1)
+	s.Equal("Example", results[0].YAxis)
 }
 
 func (s *PipelineSuite) TestPrepareDataWarnsJSONPathIgnoredForNonJSONParser() {
@@ -115,6 +112,22 @@ BenchmarkAnother-8    2000000    2345 ns/op    2000 B/op    20 allocs/op`)
 		emptyFile := s.writeFile("empty.txt", "")
 		s.Panics(func() { prepareData(emptyFile, "go", cfg) })
 		s.True(*exitCalled)
+	})
+
+	s.Run("missing input calls OsExit at CLI boundary", func() {
+		restore, exitCalled := testutil.TrapOsExitPanic(s.T())
+		defer restore()
+		missing := filepath.Join(s.T().TempDir(), "missing.txt")
+		s.Panics(func() { prepareData(missing, "go", cfg) })
+		s.True(*exitCalled)
+	})
+
+	s.Run("parser errors call OsExit at CLI boundary", func() {
+		benchFile := s.writeFile("invalid-filter.txt", `BenchmarkExample 100 123 ns/op`)
+		invalidCfg := cfg
+		invalidCfg.Filter = "["
+
+		s.Panics(func() { prepareData(benchFile, "go", invalidCfg) })
 	})
 }
 
@@ -184,6 +197,12 @@ func (s *PipelineSuite) TestWriteOutput() {
 		stat, err := file.Stat()
 		s.Require().NoError(err)
 		s.Equal(int64(0), stat.Size())
+	})
+
+	s.Run("HTML template errors call OsExit at CLI boundary", func() {
+		s.Panics(func() {
+			generateUI([]byte(`[]`), []string{"bar"}, false, false, "[[VIZB")
+		})
 	})
 }
 
@@ -651,8 +670,8 @@ func (s *PipelineSuite) TestAssembleDatasetSelectViewMixedAxes() {
 // TestParseCSVToAssembleDatasetMixedSelect verifies the end-to-end flow
 // ParseCSV → assembleDataset for a solo mixed --select (categorical x + value y).
 // Regression guard: DatasetAxesForSelectView must infer mixed-ness from the
-// parsed DataPoints when AxisType didn't propagate through the ParseFunc value
-// boundary, emitting a category x (empty Type) + value y.
+// parsed DataPoints when a select view has no AxisType annotations, emitting a
+// category x (empty Type) + value y.
 func (s *PipelineSuite) TestParseCSVToAssembleDatasetMixedSelect() {
 	csvFile := s.writeFile("region-metrics.csv",
 		"region,latency,sales\nAsia,12,100\nEurope,8,80\nAmericas,15,120\n")
@@ -663,10 +682,14 @@ func (s *PipelineSuite) TestParseCSVToAssembleDatasetMixedSelect() {
 	}
 	cfg.Mode = parser.ResolveMode(cfg)
 
-	results, _ := parser.Parsers["csv"](csvFile, cfg)
+	input, err := os.Open(csvFile)
+	s.Require().NoError(err)
+	defer input.Close()
+	results, effectiveCfg, err := parser.Parsers["csv"](input, cfg)
+	s.Require().NoError(err)
 	s.Require().NotEmpty(results)
 
-	ds := assembleDataset(results, RunMeta{Name: "T", Parser: "csv"}, nil, cfg)
+	ds := assembleDataset(results, RunMeta{Name: "T", Parser: "csv"}, nil, effectiveCfg)
 	s.Require().Len(ds.Axes, 2)
 	s.Equal("x", ds.Axes[0].Key)
 	s.Equal("", ds.Axes[0].Type, "mixed x axis must be category (empty Type)")
@@ -675,7 +698,7 @@ func (s *PipelineSuite) TestParseCSVToAssembleDatasetMixedSelect() {
 	s.True(ds.PreserveRows)
 }
 
-func (s *PipelineSuite) TestBuildDatasetGroupedAxesFromConfig() {
+func (s *PipelineSuite) TestAssembleDatasetGroupedAxesFromConfig() {
 	results := []shared.DataPoint{{XAxis: "Asia", YAxis: "12", Stats: []shared.Stat{}}}
 	cfg := parser.Config{
 		Axes: []parser.ColumnSpec{
@@ -683,13 +706,13 @@ func (s *PipelineSuite) TestBuildDatasetGroupedAxesFromConfig() {
 			{Source: "latency", AxisKey: "y", AxisType: "value"},
 		},
 	}
-	ds := buildDataset(results, RunMeta{Parser: "csv"}, nil, cfg, nil, "")
+	ds := assembleDataset(results, RunMeta{Parser: "csv"}, nil, cfg)
 	s.Require().Len(ds.Axes, 2)
 	s.Equal("", ds.Axes[0].Type)
 	s.Equal("value", ds.Axes[1].Type)
 }
 
-func (s *PipelineSuite) TestBuildDatasetSelectAxisWithoutViewSlice() {
+func (s *PipelineSuite) TestAssembleDatasetSelectAxis() {
 	results := []shared.DataPoint{{XAxis: "1", YAxis: "2", Stats: []shared.Stat{}}}
 	cfg := parser.Config{
 		Mode: parser.ModeValue,
@@ -697,13 +720,13 @@ func (s *PipelineSuite) TestBuildDatasetSelectAxisWithoutViewSlice() {
 			{Columns: []parser.ColumnSpec{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}}},
 		},
 	}
-	ds := buildDataset(results, RunMeta{Parser: "csv"}, nil, cfg, nil, "")
+	ds := assembleDataset(results, RunMeta{Parser: "csv"}, nil, cfg)
 	s.Require().Len(ds.Axes, 2)
 	s.Equal("value", ds.Axes[0].Type)
 	s.Equal("value", ds.Axes[1].Type)
 }
 
-func (s *PipelineSuite) TestBuildDatasetPreservesTheme() {
+func (s *PipelineSuite) TestAssembleDatasetPreservesTheme() {
 	results := []shared.DataPoint{{XAxis: "1", YAxis: "2", Stats: []shared.Stat{}}}
 	cfg := parser.Config{
 		Mode: parser.ModeValue,
@@ -711,11 +734,11 @@ func (s *PipelineSuite) TestBuildDatasetPreservesTheme() {
 			{Columns: []parser.ColumnSpec{{Source: "x", AxisKey: "x", AxisType: "value"}, {Source: "y", AxisKey: "y", AxisType: "value"}}},
 		},
 	}
-	ds := buildDataset(results, RunMeta{Name: "T", Parser: "csv", Theme: "walden"}, nil, cfg, nil, "")
+	ds := assembleDataset(results, RunMeta{Name: "T", Parser: "csv", Theme: "walden"}, nil, cfg)
 	s.Equal("walden", ds.Theme)
 }
 
-func (s *PipelineSuite) TestBuildDatasetInfersAxesWithoutAxisType() {
+func (s *PipelineSuite) TestAssembleDatasetInfersAxesWithoutAxisType() {
 	view := append([]parser.ColumnSpec(nil),
 		parser.ColumnSpec{Source: "region", AxisKey: "x"},
 		parser.ColumnSpec{Source: "latency", AxisKey: "y"},
@@ -727,7 +750,7 @@ func (s *PipelineSuite) TestBuildDatasetInfersAxesWithoutAxisType() {
 			{Columns: append([]parser.ColumnSpec(nil), view...)},
 		},
 	}
-	ds := buildDataset(results, RunMeta{Name: "T", Parser: "csv"}, nil, cfg, view, "")
+	ds := assembleDataset(results, RunMeta{Name: "T", Parser: "csv"}, nil, cfg)
 	s.Require().Len(ds.Axes, 2)
 	s.Equal("", ds.Axes[0].Type)
 	s.Equal("value", ds.Axes[1].Type)

@@ -3,6 +3,7 @@ package golang
 import (
 	"bufio"
 	"encoding/json"
+	"fmt"
 	"io"
 	"strconv"
 	"strings"
@@ -42,12 +43,14 @@ func parseBenchmarkName(name benchfmt.Name) (benchName string, cpu string) {
 	return
 }
 
-func ParseGoBenchmark(filePath string, cfg parser.Config) ([]shared.DataPoint, parser.Config) {
+func ParseGoBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataPoint, parser.Config, error) {
 	var results []shared.DataPoint
-	f := shared.MustOpenFile(filePath)
-	defer f.Close()
 
-	reader := benchfmt.NewReader(f, filePath)
+	benchmarkInput, err := prepareBenchmarkInput(input)
+	if err != nil {
+		return nil, cfg, err
+	}
+	reader := benchfmt.NewReader(benchmarkInput, "input")
 
 	var allIters []int
 
@@ -62,14 +65,18 @@ func ParseGoBenchmark(filePath string, cfg parser.Config) ([]shared.DataPoint, p
 		shared.OS, shared.Arch, shared.Pkg, shared.CPU = result.GetConfig("goos"), result.GetConfig("goarch"), result.GetConfig("pkg"), result.GetConfig("cpu")
 		rawBenchName, cpuCore := parseBenchmarkName(result.Name)
 
-		if !parser.ShouldIncludeBenchmark(rawBenchName, cfg) {
+		include, err := parser.ShouldIncludeBenchmark(rawBenchName, cfg)
+		if err != nil {
+			return nil, cfg, err
+		}
+		if !include {
 			continue
 		}
 
 		group, err := parser.GroupBenchmarkName(rawBenchName, cfg)
 
 		if err != nil {
-			shared.ExitWithError("Error on parsing group from bench name", err)
+			return nil, cfg, fmt.Errorf("parse group from benchmark name: %w", err)
 		}
 
 		benchName, xAxis, yAxis, zAxis := group["name"], group["xAxis"], group["yAxis"], group["zAxis"]
@@ -134,6 +141,9 @@ func ParseGoBenchmark(filePath string, cfg parser.Config) ([]shared.DataPoint, p
 
 		allIters = append(allIters, result.Iters)
 	}
+	if err := reader.Err(); err != nil {
+		return nil, cfg, fmt.Errorf("read Go benchmark: %w", err)
+	}
 
 	hasDifferentIters := false
 	if len(allIters) > 1 {
@@ -155,43 +165,69 @@ func ParseGoBenchmark(filePath string, cfg parser.Config) ([]shared.DataPoint, p
 		}
 	}
 
-	return results, cfg
+	return results, cfg, nil
 }
 
-func ConvertGoJsonBenchToText(filePath string) string {
-	f := shared.MustOpenFile(filePath)
-	tempFilePath := shared.MustCreateTempFile(shared.TempBenchFilePrefix, "txt")
-	tempFile := shared.MustCreateFile(tempFilePath)
-	shared.TempFiles.Store(tempFilePath)
-
-	defer f.Close()
-	defer tempFile.Close()
-
-	dec := json.NewDecoder(f)
-	writer := bufio.NewWriter(tempFile)
+// prepareBenchmarkInput converts Go test -json events to their benchmark text
+// while leaving regular benchmark output streaming through to benchfmt.
+func prepareBenchmarkInput(input io.Reader) (io.Reader, error) {
+	reader := bufio.NewReader(input)
+	var prefix strings.Builder
 
 	for {
-		var ev shared.BenchEvent
-		if err := dec.Decode(&ev); err != nil {
-			if err == io.EOF {
-				break
+		line, err := reader.ReadString('\n')
+		prefix.WriteString(line)
+		trimmed := strings.TrimSpace(line)
+		if trimmed != "" {
+			var event shared.BenchEvent
+			if json.Unmarshal([]byte(trimmed), &event) != nil {
+				return io.MultiReader(strings.NewReader(prefix.String()), reader), nil
 			}
-
-			shared.ExitWithError("Error on converting json to text", err)
+			if event.Action == "" {
+				return io.MultiReader(strings.NewReader(prefix.String()), reader), nil
+			}
+			return readBenchmarkEvents(reader, event, err)
 		}
 
-		if ev.Action == "output" {
-			if _, err := writer.WriteString(ev.Output); err != nil {
-				shared.ExitWithError("Error on converting json to text", err)
-			}
+		if err == io.EOF {
+			return strings.NewReader(prefix.String()), nil
+		}
+		if err != nil {
+			return nil, fmt.Errorf("read Go benchmark: %w", err)
 		}
 	}
+}
 
-	if err := writer.Flush(); err != nil {
-		shared.ExitWithError("Error on converting json to text", err)
+func readBenchmarkEvents(reader *bufio.Reader, first shared.BenchEvent, firstErr error) (io.Reader, error) {
+	var output strings.Builder
+	if first.Action == "output" {
+		output.WriteString(first.Output)
+	}
+	if firstErr == io.EOF {
+		return strings.NewReader(output.String()), nil
+	}
+	if firstErr != nil {
+		return nil, fmt.Errorf("read Go benchmark JSON: %w", firstErr)
 	}
 
-	_ = tempFile.Sync()
+	for {
+		line, err := reader.ReadString('\n')
+		trimmed := strings.TrimSpace(line)
+		if trimmed != "" {
+			var event shared.BenchEvent
+			if decodeErr := json.Unmarshal([]byte(trimmed), &event); decodeErr != nil {
+				return nil, fmt.Errorf("read Go benchmark JSON: %w", decodeErr)
+			}
+			if event.Action == "output" {
+				output.WriteString(event.Output)
+			}
+		}
 
-	return tempFilePath
+		if err == io.EOF {
+			return strings.NewReader(output.String()), nil
+		}
+		if err != nil {
+			return nil, fmt.Errorf("read Go benchmark JSON: %w", err)
+		}
+	}
 }

@@ -91,6 +91,29 @@ func (s *DetectSuite) TestLooksLikeCSVEdgeCases() {
 	})
 }
 
+func (s *DetectSuite) TestDetectParserBytes() {
+	cases := []struct {
+		name    string
+		content string
+		want    string
+	}{
+		{"go text", goTextSample, "go"},
+		{"go json events", goJSONSample, "go"},
+		{"rust divan", divanSample, "rs:divan"},
+		{"rust criterion", criterionSample, "rs:criterion"},
+		{"js tinybench", tinybenchSample, "js:tinybench"},
+		{"js vitest", vitestSample, "js:vitest"},
+		{"csv", csvSample, "csv"},
+		{"json", jsonArraySample, "json"},
+	}
+
+	for _, tc := range cases {
+		s.Run(tc.name, func() {
+			s.Equal(tc.want, DetectParserBytes([]byte(tc.content)))
+		})
+	}
+}
+
 func TestDetectSuite(t *testing.T) {
 	suite.Run(t, new(DetectSuite))
 }

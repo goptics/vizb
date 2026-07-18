@@ -38,7 +38,8 @@ func (s *TinyBenchSuite) SetupTest() {
 }
 
 func (s *TinyBenchSuite) TestRealTinybenchOutput() {
-	results, _ := ParseTinyBenchBenchmark(writeJSTestFile(s.T(), testSortingTable), s.cfg)
+	results, _, err := ParseTinyBenchBenchmark(javascriptTestInput(s.T(), testSortingTable), s.cfg)
+	s.Require().NoError(err)
 	s.Len(results, 6)
 
 	assertStat(s.T(), results[0].Stats[0], "Latency avg (ns)", 3741.5, "")
@@ -64,7 +65,8 @@ func (s *TinyBenchSuite) TestRealTinybenchOutput() {
 func (s *TinyBenchSuite) TestUnitConversionToUs() {
 	s.cfg.TimeUnit = "us"
 
-	results, _ := ParseTinyBenchBenchmark(writeJSTestFile(s.T(), testSortingTable), s.cfg)
+	results, _, err := ParseTinyBenchBenchmark(javascriptTestInput(s.T(), testSortingTable), s.cfg)
+	s.Require().NoError(err)
 	s.Len(results, 6)
 
 	assertStat(s.T(), results[0].Stats[0], "Latency avg (us)", 3.74, "")
@@ -74,7 +76,8 @@ func (s *TinyBenchSuite) TestUnitConversionToUs() {
 func (s *TinyBenchSuite) TestFilterRegex() {
 	s.cfg.Filter = "bubbleSort"
 
-	results, _ := ParseTinyBenchBenchmark(writeJSTestFile(s.T(), testSortingTable), s.cfg)
+	results, _, err := ParseTinyBenchBenchmark(javascriptTestInput(s.T(), testSortingTable), s.cfg)
+	s.Require().NoError(err)
 	s.Len(results, 3)
 	for _, r := range results {
 		s.Equal("bubbleSort", r.Name)
@@ -84,8 +87,30 @@ func (s *TinyBenchSuite) TestFilterRegex() {
 func (s *TinyBenchSuite) TestEmptyFile() {
 	s.cfg.GroupPattern = "y"
 
-	results, _ := ParseTinyBenchBenchmark(writeJSTestFile(s.T(), ""), s.cfg)
+	results, _, err := ParseTinyBenchBenchmark(javascriptTestInput(s.T(), ""), s.cfg)
+	s.Require().NoError(err)
 	s.Empty(results)
+}
+
+func (s *TinyBenchSuite) TestReturnsErrors() {
+	s.Run("invalid filter", func() {
+		cfg := s.cfg
+		cfg.Filter = "["
+		_, _, err := ParseTinyBenchBenchmark(javascriptTestInput(s.T(), testSortingTable), cfg)
+		s.ErrorContains(err, "invalid filter regex")
+	})
+
+	s.Run("invalid benchmark group pattern", func() {
+		cfg := s.cfg
+		cfg.GroupPattern = "[n/y]"
+		_, _, err := ParseTinyBenchBenchmark(javascriptTestInput(s.T(), testSortingTable), cfg)
+		s.ErrorContains(err, "bracket slots")
+	})
+
+	s.Run("reader failure", func() {
+		_, _, err := ParseTinyBenchBenchmark(javascriptErrorReader{}, s.cfg)
+		s.ErrorContains(err, "read tinybench benchmark")
+	})
 }
 
 func TestTinyBenchSuite(t *testing.T) {

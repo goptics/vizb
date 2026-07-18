@@ -16,6 +16,7 @@ import (
 	linechart "github.com/goptics/vizb/internal/charts/line"
 	piechart "github.com/goptics/vizb/internal/charts/pie"
 	radarchart "github.com/goptics/vizb/internal/charts/radar"
+	"github.com/goptics/vizb/pkg/core"
 	"github.com/goptics/vizb/pkg/style"
 	"github.com/goptics/vizb/pkg/template"
 	"github.com/goptics/vizb/shared"
@@ -89,7 +90,7 @@ func runUI(cmd *cobra.Command, args []string) {
 			validateStat(&uiOpts.Stat)
 		}
 		needsHeatmapChunk := !statChanged || shared.StatNeedsCorrelation(uiOpts.Stat)
-		htmlContent := template.GenerateRemoteUI(
+		htmlContent := generateRemoteUI(
 			uiOpts.DataURL, charts, needs3D, needsHeatmapChunk, template.VizbHTMLTemplate,
 		)
 		if _, err := f.WriteString(htmlContent); err != nil {
@@ -155,29 +156,27 @@ func runUI(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	needs3D := anyDataset(datasets, shared.DatasetNeeds3D)
-	needsHeatmapChunk := anyDataset(datasets, func(ds *shared.Dataset) bool {
-		return slices.ContainsFunc(ds.Settings, shared.ChartConfigNeedsCorrelation)
-	})
-
-	jsonData, err := json.Marshal(datasets)
-	if err != nil {
-		shared.ExitWithError("Failed to marshal dataset: %v", err)
-	}
-	htmlContent := template.GenerateUI(jsonData, charts, needs3D, needsHeatmapChunk, template.VizbHTMLTemplate)
+	htmlContent := generateEmbeddedUI(datasets, charts)
 	if _, err := f.WriteString(htmlContent); err != nil {
 		shared.ExitWithError("Failed to write output file: %v", err)
 	}
 	fmt.Println(style.Success.Render(fmt.Sprintf("🎉 Generated UI successfully: %s", outFile)))
 }
 
-func anyDataset(datasets []shared.Dataset, pred func(*shared.Dataset) bool) bool {
-	for i := range datasets {
-		if pred(&datasets[i]) {
-			return true
-		}
+func generateEmbeddedUI(datasets []shared.Dataset, charts []string) string {
+	htmlContent, err := core.GenerateUI(datasets, charts)
+	if err != nil {
+		shared.ExitWithError("Failed to generate UI: %v", err)
 	}
-	return false
+	return htmlContent
+}
+
+func generateRemoteUI(dataURL string, charts []string, needs3D, needsHeatmapChunk bool, htmlTemplate string) string {
+	htmlContent, err := template.GenerateRemoteUI(dataURL, charts, needs3D, needsHeatmapChunk, htmlTemplate)
+	if err != nil {
+		shared.ExitWithError("Failed to generate UI: %v", err)
+	}
+	return htmlContent
 }
 
 // filterSettings keeps only configs whose chart type is in the allowed list,

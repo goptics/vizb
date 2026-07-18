@@ -1,8 +1,9 @@
 package javascript
 
 import (
-	"os"
-	"path/filepath"
+	"errors"
+	"io"
+	"strings"
 	"testing"
 
 	"github.com/goptics/vizb/pkg/parser"
@@ -26,15 +27,16 @@ var testVitestTable = ` ✓ sort.bench.js > n=100 1356ms
    · insertionSort  1,933.38  0.5139  0.5336  0.5172  0.5181  0.5278  0.5288  0.5336  ±0.05%      967
 `
 
-// writeJSTestFile writes content to a temp bench.txt and returns its path. Shared
-// by the javascript suites.
-func writeJSTestFile(t *testing.T, content string) string {
+// javascriptTestInput returns a fresh reader shared by the JavaScript suites.
+func javascriptTestInput(t *testing.T, content string) io.Reader {
 	t.Helper()
-	path := filepath.Join(t.TempDir(), "bench.txt")
-	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-		t.Fatal(err)
-	}
-	return path
+	return strings.NewReader(content)
+}
+
+type javascriptErrorReader struct{}
+
+func (javascriptErrorReader) Read([]byte) (int, error) {
+	return 0, errors.New("injected read failure")
 }
 
 // assertStat asserts a stat's type, value, and symbol. Shared by the js suites.
@@ -62,7 +64,8 @@ func (s *VitestSuite) SetupTest() {
 }
 
 func (s *VitestSuite) TestRealVitestOutput() {
-	results, _ := ParseVitestBenchmark(writeJSTestFile(s.T(), testVitestTable), s.cfg)
+	results, _, err := ParseVitestBenchmark(javascriptTestInput(s.T(), testVitestTable), s.cfg)
+	s.Require().NoError(err)
 	s.Len(results, 6)
 
 	assertStat(s.T(), results[0].Stats[0], "Throughput avg (ops/s)", 264413.96, "")
@@ -89,7 +92,8 @@ func (s *VitestSuite) TestRealVitestOutput() {
 func (s *VitestSuite) TestUnitConversionToUs() {
 	s.cfg.TimeUnit = "us"
 
-	results, _ := ParseVitestBenchmark(writeJSTestFile(s.T(), testVitestTable), s.cfg)
+	results, _, err := ParseVitestBenchmark(javascriptTestInput(s.T(), testVitestTable), s.cfg)
+	s.Require().NoError(err)
 	s.Len(results, 6)
 
 	assertStat(s.T(), results[0].Stats[3], "Latency avg (us)", 3.8, "")
@@ -99,7 +103,8 @@ func (s *VitestSuite) TestUnitConversionToUs() {
 func (s *VitestSuite) TestFilterRegex() {
 	s.cfg.Filter = "bubbleSort"
 
-	results, _ := ParseVitestBenchmark(writeJSTestFile(s.T(), testVitestTable), s.cfg)
+	results, _, err := ParseVitestBenchmark(javascriptTestInput(s.T(), testVitestTable), s.cfg)
+	s.Require().NoError(err)
 	s.Len(results, 3)
 	for _, r := range results {
 		s.Equal("bubbleSort", r.Name)
@@ -109,8 +114,30 @@ func (s *VitestSuite) TestFilterRegex() {
 func (s *VitestSuite) TestEmptyFile() {
 	s.cfg.GroupPattern = "y"
 
-	results, _ := ParseVitestBenchmark(writeJSTestFile(s.T(), ""), s.cfg)
+	results, _, err := ParseVitestBenchmark(javascriptTestInput(s.T(), ""), s.cfg)
+	s.Require().NoError(err)
 	s.Empty(results)
+}
+
+func (s *VitestSuite) TestReturnsErrors() {
+	s.Run("invalid filter", func() {
+		cfg := s.cfg
+		cfg.Filter = "["
+		_, _, err := ParseVitestBenchmark(javascriptTestInput(s.T(), testVitestTable), cfg)
+		s.ErrorContains(err, "invalid filter regex")
+	})
+
+	s.Run("invalid benchmark group pattern", func() {
+		cfg := s.cfg
+		cfg.GroupPattern = "[n/y]"
+		_, _, err := ParseVitestBenchmark(javascriptTestInput(s.T(), testVitestTable), cfg)
+		s.ErrorContains(err, "bracket slots")
+	})
+
+	s.Run("reader failure", func() {
+		_, _, err := ParseVitestBenchmark(javascriptErrorReader{}, s.cfg)
+		s.ErrorContains(err, "read vitest benchmark")
+	})
 }
 
 func TestVitestSuite(t *testing.T) {

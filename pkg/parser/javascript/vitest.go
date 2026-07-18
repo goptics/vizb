@@ -2,7 +2,8 @@ package javascript
 
 import (
 	"bufio"
-	"os"
+	"fmt"
+	"io"
 	"regexp"
 	"strconv"
 	"strings"
@@ -25,14 +26,8 @@ func parseNum(s string) float64 {
 	return n
 }
 
-func ParseVitestBenchmark(filename string, cfg parser.Config) ([]shared.DataPoint, parser.Config) {
-	f, err := os.Open(filename)
-	if err != nil {
-		shared.ExitWithError("Error opening file", err)
-	}
-	defer f.Close()
-
-	scanner := bufio.NewScanner(f)
+func ParseVitestBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataPoint, parser.Config, error) {
+	scanner := bufio.NewScanner(input)
 	var results []shared.DataPoint
 	var currentSuite string
 
@@ -67,7 +62,11 @@ func ParseVitestBenchmark(filename string, cfg parser.Config) ([]shared.DataPoin
 			name = currentSuite + "/" + name
 		}
 
-		if !parser.ShouldIncludeBenchmark(name, cfg) {
+		include, err := parser.ShouldIncludeBenchmark(name, cfg)
+		if err != nil {
+			return nil, cfg, err
+		}
+		if !include {
 			continue
 		}
 
@@ -86,7 +85,7 @@ func ParseVitestBenchmark(filename string, cfg parser.Config) ([]shared.DataPoin
 
 		group, groupErr := parser.GroupBenchmarkName(name, cfg)
 		if groupErr != nil {
-			shared.ExitWithError("Error parsing vitest benchmark name", groupErr)
+			return nil, cfg, fmt.Errorf("parse vitest benchmark name: %w", groupErr)
 		}
 
 		benchName, xAxis, yAxis, zAxis := group["name"], group["xAxis"], group["yAxis"], group["zAxis"]
@@ -112,8 +111,8 @@ func ParseVitestBenchmark(filename string, cfg parser.Config) ([]shared.DataPoin
 	}
 
 	if err := scanner.Err(); err != nil {
-		shared.ExitWithError("failed to read file", err)
+		return nil, cfg, fmt.Errorf("read vitest benchmark: %w", err)
 	}
 
-	return results, cfg
+	return results, cfg, nil
 }

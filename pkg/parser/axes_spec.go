@@ -104,9 +104,8 @@ func SelectViewAxesCfg(cfg Config) Config {
 // DatasetAxesForSelectView builds mixed or value dataset axes from a solo --select
 // view. When the parser already set AxisType via ResolveAxesTypes (carried through
 // the view columns), it projects those types directly. When AxisType is empty
-// (the parser's local cfg copy didn't propagate back through the ParseFunc value
-// boundary), it falls back to inferring mixed-ness from the parsed DataPoint
-// XAxis values.
+// (for example, when assembling points and config directly), it falls back to
+// inferring mixed-ness from the parsed DataPoint XAxis values.
 func DatasetAxesForSelectView(view []ColumnSpec, results []shared.DataPoint) []shared.Axis {
 	cfg := Config{Axes: append([]ColumnSpec(nil), view...)}
 	if !hasResolvedAxisTypes(cfg) {

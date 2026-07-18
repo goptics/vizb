@@ -1,9 +1,9 @@
 package golang
 
 import (
-	"bufio"
-	"os"
-	"path/filepath"
+	"errors"
+	"io"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -30,29 +30,32 @@ type GoBenchmarkSuite struct {
 	suite.Suite
 }
 
+type goErrorReader struct{}
+
+func (goErrorReader) Read([]byte) (int, error) {
+	return 0, errors.New("injected read failure")
+}
+
+type dataErrorReader struct {
+	data []byte
+	err  error
+	done bool
+}
+
+func (r *dataErrorReader) Read(p []byte) (int, error) {
+	if r.done {
+		return 0, r.err
+	}
+	r.done = true
+	return copy(p, r.data), r.err
+}
+
 func (s *GoBenchmarkSuite) SetupTest() {
 	shared.CPUCount = 0
 }
 
 func (s *GoBenchmarkSuite) TearDownTest() {
 	shared.CPUCount = 0
-}
-
-func (s *GoBenchmarkSuite) writeFile(lines []string) string {
-	filePath := filepath.Join(s.T().TempDir(), "bench.txt")
-	file, err := os.Create(filePath)
-	s.Require().NoError(err, "Failed to create test file")
-
-	writer := bufio.NewWriter(file)
-	for _, event := range lines {
-		_, err := writer.WriteString(event)
-		s.Require().NoError(err)
-		_, err = writer.WriteString("\n")
-		s.Require().NoError(err)
-	}
-	s.Require().NoError(writer.Flush())
-	file.Close()
-	return filePath
 }
 
 func (s *GoBenchmarkSuite) TestParseGoBenchmark() {
@@ -246,7 +249,8 @@ func (s *GoBenchmarkSuite) TestParseGoBenchmark() {
 				NumberUnit:   tt.allocUnit,
 			}
 
-			results, _ := ParseGoBenchmark(s.writeFile(tt.benchContent), cfg)
+			results, _, err := ParseGoBenchmark(strings.NewReader(strings.Join(tt.benchContent, "\n")), cfg)
+			s.Require().NoError(err)
 
 			s.Require().Len(results, len(tt.expected))
 
@@ -270,38 +274,118 @@ func (s *GoBenchmarkSuite) TestParseGoBenchmark() {
 	}
 }
 
-func (s *GoBenchmarkSuite) TestConvertGoJsonBenchToText() {
-	tempDir := s.T().TempDir()
+func (s *GoBenchmarkSuite) TestParseGoBenchmarkReturnsErrors() {
+	benchmark := "BenchmarkExample 100 123 ns/op"
 
-	s.Run("Valid JSON events", func() {
-		jsonFile := filepath.Join(tempDir, "events.json")
-		content := `{"Action":"output","Output":"BenchmarkA 100 100 ns/op\n"}
-	{"Action":"output","Output":"BenchmarkB 200 200 ns/op\n"}`
-		s.Require().NoError(os.WriteFile(jsonFile, []byte(content), 0644))
-
-		txtFile := ConvertGoJsonBenchToText(jsonFile)
-		defer os.Remove(txtFile)
-
-		txtContent, err := os.ReadFile(txtFile)
-		s.Require().NoError(err)
-
-		s.Equal("BenchmarkA 100 100 ns/op\nBenchmarkB 200 200 ns/op\n", string(txtContent))
+	s.Run("invalid filter", func() {
+		_, _, err := ParseGoBenchmark(strings.NewReader(benchmark), parser.Config{
+			GroupPattern: "y",
+			Filter:       "[",
+		})
+		s.ErrorContains(err, "invalid filter regex")
 	})
 
-	s.Run("Mixed actions", func() {
-		jsonFile := filepath.Join(tempDir, "mixed.json")
-		content := `{"Action":"run","Test":"BenchmarkA"}
-	{"Action":"output","Output":"BenchmarkA 100 100 ns/op\n"}
-	{"Action":"pass","Test":"BenchmarkA"}`
-		s.Require().NoError(os.WriteFile(jsonFile, []byte(content), 0644))
+	s.Run("invalid benchmark group pattern", func() {
+		_, _, err := ParseGoBenchmark(strings.NewReader(benchmark), parser.Config{
+			GroupPattern: "[n/y]",
+		})
+		s.ErrorContains(err, "bracket slots")
+	})
 
-		txtFile := ConvertGoJsonBenchToText(jsonFile)
-		defer os.Remove(txtFile)
-
-		txtContent, err := os.ReadFile(txtFile)
+	s.Run("filter excludes benchmark", func() {
+		results, _, err := ParseGoBenchmark(strings.NewReader(benchmark), parser.Config{
+			GroupPattern: "y",
+			Filter:       "^Other$",
+		})
 		s.Require().NoError(err)
+		s.Empty(results)
+	})
 
-		s.Equal("BenchmarkA 100 100 ns/op\n", string(txtContent))
+	s.Run("non-result record is ignored", func() {
+		results, _, err := ParseGoBenchmark(strings.NewReader("BenchmarkBroken not-a-result\n"), parser.Config{
+			GroupPattern: "y",
+		})
+		s.Require().NoError(err)
+		s.Empty(results)
+	})
+
+	s.Run("reader failure", func() {
+		_, _, err := ParseGoBenchmark(goErrorReader{}, parser.Config{GroupPattern: "y"})
+		s.ErrorContains(err, "read Go benchmark")
+	})
+
+	s.Run("benchmark reader fails after text", func() {
+		input := &dataErrorReader{
+			data: []byte("BenchmarkExample 100 123 ns/op\n"),
+			err:  errors.New("injected trailing failure"),
+		}
+		_, _, err := ParseGoBenchmark(input, parser.Config{GroupPattern: "y"})
+		s.ErrorContains(err, "read Go benchmark")
+	})
+}
+
+func (s *GoBenchmarkSuite) TestParseGoBenchmarkJSONEvents() {
+	input := strings.Join([]string{
+		`{"Action":"run","Test":"BenchmarkExample"}`,
+		`{"Action":"output","Output":"BenchmarkExample-8 100 123 ns/op\n"}`,
+		`{"Action":"pass","Test":"BenchmarkExample"}`,
+	}, "\n")
+
+	results, _, err := ParseGoBenchmark(strings.NewReader(input), parser.Config{
+		GroupPattern: "y",
+		TimeUnit:     "ns",
+	})
+
+	s.Require().NoError(err)
+	s.Require().Len(results, 1)
+	s.Equal("Example", results[0].YAxis)
+	s.Equal(8, shared.CPUCount)
+	s.Require().Len(results[0].Stats, 1)
+	s.Equal("Execution Time (ns/op)", results[0].Stats[0].Type)
+	s.InDelta(123, *results[0].Stats[0].Value, 0.001)
+}
+
+func (s *GoBenchmarkSuite) TestParseGoBenchmarkJSONEventErrors() {
+	s.Run("malformed later event", func() {
+		input := "{\"Action\":\"run\"}\nnot-json\n"
+		_, _, err := ParseGoBenchmark(strings.NewReader(input), parser.Config{GroupPattern: "y"})
+		s.ErrorContains(err, "read Go benchmark JSON")
+	})
+
+	s.Run("first event reader failure", func() {
+		input := &dataErrorReader{
+			data: []byte(`{"Action":"run"}`),
+			err:  errors.New("injected event failure"),
+		}
+		_, _, err := ParseGoBenchmark(input, parser.Config{GroupPattern: "y"})
+		s.ErrorContains(err, "read Go benchmark JSON")
+	})
+
+	s.Run("later event reader failure", func() {
+		input := &dataErrorReader{
+			data: []byte("{\"Action\":\"run\"}\n"),
+			err:  errors.New("injected event failure"),
+		}
+		_, _, err := ParseGoBenchmark(input, parser.Config{GroupPattern: "y"})
+		s.ErrorContains(err, "read Go benchmark JSON")
+	})
+
+	s.Run("JSON object without action remains benchmark text", func() {
+		input, err := prepareBenchmarkInput(strings.NewReader(`{"Output":"not an event"}`))
+		s.Require().NoError(err)
+		content, err := io.ReadAll(input)
+		s.Require().NoError(err)
+		s.Equal(`{"Output":"not an event"}`, string(content))
+	})
+
+	s.Run("single event without trailing newline", func() {
+		input := `{"Action":"output","Output":"BenchmarkExample 100 123 ns/op\n"}`
+		results, _, err := ParseGoBenchmark(strings.NewReader(input), parser.Config{
+			GroupPattern: "y",
+			TimeUnit:     "ns",
+		})
+		s.Require().NoError(err)
+		s.Len(results, 1)
 	})
 }
 
@@ -342,7 +426,8 @@ func (s *ShouldIncludeBenchmarkSuite) TestShouldIncludeBenchmark() {
 
 	for _, tt := range tests {
 		s.Run(tt.name, func() {
-			result := parser.ShouldIncludeBenchmark(tt.benchName, parser.Config{Filter: tt.filter})
+			result, err := parser.ShouldIncludeBenchmark(tt.benchName, parser.Config{Filter: tt.filter})
+			s.Require().NoError(err)
 			s.Equal(tt.expected, result)
 		})
 	}

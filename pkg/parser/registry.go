@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"io"
 	"regexp"
 	"sort"
 
@@ -32,6 +33,7 @@ type Config struct {
 	ChartTypes      []string     // csv/json auto-value eligibility check (scatter/bar/line only)
 	Mode            Mode         // resolved once in ParseConfig so downstream switches on cfg.Mode
 	ColAxis         string       // csv/json: place numeric column names on this axis (n/x/y/z); empty = one chart per column
+	QuietAutoDetect bool         // suppress csv/json auto-detection notices for request-scoped callers
 }
 
 // Mode is the resolved parse mode for a Config. Set once in ParseConfig so
@@ -54,7 +56,7 @@ type SelectView struct {
 	TypeLabel string
 }
 
-type ParseFunc func(filename string, cfg Config) ([]shared.DataPoint, Config)
+type ParseFunc func(io.Reader, Config) ([]shared.DataPoint, Config, error)
 
 var Parsers = map[string]ParseFunc{}
 
@@ -75,15 +77,15 @@ func AvailableParsers() []string {
 	return keys
 }
 
-func ShouldIncludeBenchmark(benchName string, cfg Config) bool {
+func ShouldIncludeBenchmark(benchName string, cfg Config) (bool, error) {
 	if cfg.Filter == "" {
-		return true
+		return true, nil
 	}
 
 	filterRe, err := regexp.Compile(cfg.Filter)
 	if err != nil {
-		shared.ExitWithError("Invalid filter regex", err)
+		return false, fmt.Errorf("invalid filter regex: %w", err)
 	}
 
-	return filterRe.MatchString(benchName)
+	return filterRe.MatchString(benchName), nil
 }

@@ -67,10 +67,10 @@ func ParseMixedMode(rows []RowReader, cfg Config) []shared.DataPoint {
 
 // ParseValueMode implements value mode: each named numeric column becomes a
 // coordinate on x, y[, z]; each row becomes a raw point with no stat series.
-// A missing or fully non-numeric axis column is fatal (rejected upstream by
-// ResolveAxesTypes via the kindFn); a missing/non-numeric metric column is
-// fatal (validated here); an individual row missing a finite cell is skipped.
-func ParseValueMode(rows []RowReader, cfg Config) []shared.DataPoint {
+// A missing or fully non-numeric axis column is rejected upstream by
+// ResolveAxesTypes via the kindFn; a missing/non-numeric metric column returns
+// an error here; an individual row missing a finite cell is skipped.
+func ParseValueMode(rows []RowReader, cfg Config) ([]shared.DataPoint, error) {
 	if cfg.MetricColumn != "" && len(rows) > 0 {
 		present, anyNum := false, false
 		for _, row := range rows {
@@ -83,10 +83,10 @@ func ParseValueMode(rows []RowReader, cfg Config) []shared.DataPoint {
 			}
 		}
 		if !present {
-			shared.ExitWithError(fmt.Sprintf("%s metric column %q not found; available: %v", rows[0].FlagLabel(), cfg.MetricColumn, rows[0].AvailableColumns()), nil)
+			return nil, fmt.Errorf("%s metric column %q not found; available: %v", rows[0].FlagLabel(), cfg.MetricColumn, rows[0].AvailableColumns())
 		}
 		if !anyNum {
-			shared.ExitWithError(fmt.Sprintf("%s metric column %q is not numeric", rows[0].FlagLabel(), cfg.MetricColumn), nil)
+			return nil, fmt.Errorf("%s metric column %q is not numeric", rows[0].FlagLabel(), cfg.MetricColumn)
 		}
 	}
 
@@ -118,13 +118,13 @@ func ParseValueMode(rows []RowReader, cfg Config) []shared.DataPoint {
 		}
 		results = append(results, dp)
 	}
-	return results
+	return results, nil
 }
 
 // ParseSelectStatMode parses repeatable solo --select into one dataset. When
 // every flag shares the same dimension column, each input row becomes one point
 // with multiple stats; otherwise each (row × view) stays a separate point.
-func ParseSelectStatMode(rows []RowReader, cfg Config) []shared.DataPoint {
+func ParseSelectStatMode(rows []RowReader, cfg Config) ([]shared.DataPoint, error) {
 	merge := MultiSelectSharedDim(cfg.SelectViews)
 	var results []shared.DataPoint
 	for _, row := range rows {
@@ -145,22 +145,21 @@ func ParseSelectStatMode(rows []RowReader, cfg Config) []shared.DataPoint {
 		})
 	}
 	if len(results) == 0 {
-		shared.ExitWithError("No dataset found", nil)
+		return nil, fmt.Errorf("no dataset found")
 	}
-	return results
+	return results, nil
 }
 
 // DispatchSelectMode routes a solo --select (or --axes/auto-value) Config to the
-// right parse function after running ResolveAxesTypes. Returns the parsed
-// DataPoints. Called by the CSV/JSON entry points — they pass their RowReader
-// slice and kindFn. The flag label is baked into kindFn by the caller.
-func DispatchSelectMode(rows []RowReader, cfg *Config, kindFn AxisColumnKind) []shared.DataPoint {
+// right parse function after running ResolveAxesTypes. Called by the CSV/JSON
+// entry points; the flag label is baked into kindFn by the caller.
+func DispatchSelectMode(rows []RowReader, cfg *Config, kindFn AxisColumnKind) ([]shared.DataPoint, error) {
 	if cfg.Mode.IsMultiStat() {
 		return ParseSelectStatMode(rows, *cfg)
 	}
 	axesCfg := SelectViewAxesCfg(*cfg)
 	if err := ResolveAxesTypes(&axesCfg, kindFn); err != nil {
-		shared.ExitWithError(err.Error(), nil)
+		return nil, err
 	}
 	// Propagate resolved AxisType back to the caller's SelectViews so
 	// DatasetAxesForSelectView can pick MixedAxes vs ValueAxes without
@@ -172,7 +171,7 @@ func DispatchSelectMode(rows []RowReader, cfg *Config, kindFn AxisColumnKind) []
 	}
 	if isMixedAxes(axesCfg) {
 		cfg.Mode = ModeMixed
-		return ParseMixedMode(rows, axesCfg)
+		return ParseMixedMode(rows, axesCfg), nil
 	}
 	return ParseValueMode(rows, axesCfg)
 }

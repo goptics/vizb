@@ -2,6 +2,7 @@ package json
 
 import (
 	"encoding/json"
+	"errors"
 	"math"
 	"os"
 	"path/filepath"
@@ -20,6 +21,31 @@ func statTypes(stats []shared.Stat) []string {
 		out[i] = s.Type
 	}
 	return out
+}
+
+func parseJSONFile(t testing.TB, path string, cfg parser.Config) ([]shared.DataPoint, parser.Config, error) {
+	t.Helper()
+	input, err := os.Open(path)
+	if err != nil {
+		return nil, cfg, err
+	}
+	defer input.Close()
+	return ParseJSON(input, cfg)
+}
+
+func parseJSONFileError(t testing.TB, path string, cfg parser.Config) error {
+	t.Helper()
+	_, _, err := parseJSONFile(t, path, cfg)
+	return err
+}
+
+func mustParseJSONFile(t testing.TB, path string, cfg parser.Config) ([]shared.DataPoint, parser.Config) {
+	t.Helper()
+	points, effectiveCfg, err := parseJSONFile(t, path, cfg)
+	if err != nil {
+		t.Fatalf("ParseJSON returned an error: %v", err)
+	}
+	return points, effectiveCfg
 }
 
 // JSONSuite exercises ParseJSON with a per-test parser.Config.
@@ -42,7 +68,7 @@ func (s *JSONSuite) TestExplicitColsSelectsAndOrders() {
 	s.cfg.Select = []parser.ColumnSpec{{Source: "stocks"}, {Source: "sells"}}
 	j := `[{"name":"a","sells":10,"stocks":5},{"name":"b","sells":20,"stocks":7}]`
 
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 
 	s.Equal([]string{"stocks", "sells"}, statTypes(results[0].Stats))
 }
@@ -51,7 +77,7 @@ func (s *JSONSuite) TestExplicitColsRename() {
 	s.cfg.Select = []parser.ColumnSpec{{Source: "sells", Label: "Revenue"}}
 	j := `[{"name":"a","sells":10}]`
 
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 
 	s.Equal([]string{"Revenue"}, statTypes(results[0].Stats))
 }
@@ -60,7 +86,7 @@ func (s *JSONSuite) TestExplicitColsNestedKey() {
 	s.cfg.Select = []parser.ColumnSpec{{Source: "mem.alloc"}}
 	j := `[{"name":"a","mem":{"alloc":3}}]`
 
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 
 	s.Equal([]string{"mem.alloc"}, statTypes(results[0].Stats))
 	s.Equal(3.0, *results[0].Stats[0].Value)
@@ -69,7 +95,7 @@ func (s *JSONSuite) TestExplicitColsNestedKey() {
 func (s *JSONSuite) TestNumericFieldsBecomeChartsNoGroup() {
 	j := `[{"name":"a","sells":10,"stocks":5,"date":"2024-01"},{"name":"b","sells":20,"stocks":7,"date":"2025-02"}]`
 
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 
 	s.Len(results, 2)
 	s.Equal([]string{"sells", "stocks"}, statTypes(results[0].Stats))
@@ -81,7 +107,7 @@ func (s *JSONSuite) TestNumericFieldsBecomeChartsNoGroup() {
 func (s *JSONSuite) TestFirstSeenColumnOrderPreserved() {
 	j := `[{"zeta":1,"alpha":2,"mid":3}]`
 
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 
 	s.Len(results, 1)
 	s.Equal([]string{"zeta", "alpha", "mid"}, statTypes(results[0].Stats))
@@ -90,7 +116,7 @@ func (s *JSONSuite) TestFirstSeenColumnOrderPreserved() {
 func (s *JSONSuite) TestNumericStringParsed() {
 	j := `[{"name":"a","sells":"42"}]`
 
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 
 	s.Len(results, 1)
 	s.Equal([]string{"sells"}, statTypes(results[0].Stats))
@@ -100,7 +126,7 @@ func (s *JSONSuite) TestNumericStringParsed() {
 func (s *JSONSuite) TestNestedObjectFlattenedToDottedKeys() {
 	j := `[{"name":"a","mem":{"alloc":5,"bytes":100}}]`
 
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 
 	s.Len(results, 1)
 	s.Equal([]string{"mem.alloc", "mem.bytes"}, statTypes(results[0].Stats))
@@ -110,7 +136,7 @@ func (s *JSONSuite) TestNestedObjectFlattenedToDottedKeys() {
 func (s *JSONSuite) TestArrayValuedFieldSkipped() {
 	j := `[{"name":"a","sells":10,"tags":[1,2,3]}]`
 
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 
 	s.Len(results, 1)
 	s.Equal([]string{"sells"}, statTypes(results[0].Stats))
@@ -120,7 +146,7 @@ func (s *JSONSuite) TestHeaderMatrixUsesFirstRowAsColumns() {
 	s.cfg.Group = []string{"region"}
 	j := `[["region","sales"],["West",10],["East",20]]`
 
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 
 	s.Require().Len(results, 2)
 	s.Equal("West", results[0].XAxis)
@@ -131,7 +157,7 @@ func (s *JSONSuite) TestHeaderMatrixUsesFirstRowAsColumns() {
 func (s *JSONSuite) TestMixedFirstMatrixRowUsesSyntheticColumns() {
 	j := `[["x",2],[3,4]]`
 
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 
 	s.Require().Len(results, 2)
 	s.Equal([]string{"y"}, statTypes(results[0].Stats))
@@ -141,7 +167,7 @@ func (s *JSONSuite) TestMixedFirstMatrixRowUsesSyntheticColumns() {
 func (s *JSONSuite) TestNumericLookingStringMatrixHeadersStayHeaders() {
 	j := `[["10","20"],[1,2]]`
 
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 
 	s.Require().Len(results, 1)
 	s.Equal([]string{"10", "20"}, statTypes(results[0].Stats))
@@ -150,7 +176,7 @@ func (s *JSONSuite) TestNumericLookingStringMatrixHeadersStayHeaders() {
 func (s *JSONSuite) TestMatrixHeaderEmptyAndDuplicateNames() {
 	j := `[["","sales","sales"],[99,10,20]]`
 
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 
 	s.Require().Len(results, 1)
 	s.Equal([]string{"sales", "sales (2)"}, statTypes(results[0].Stats))
@@ -159,7 +185,7 @@ func (s *JSONSuite) TestMatrixHeaderEmptyAndDuplicateNames() {
 func (s *JSONSuite) TestEmptyFirstMatrixRowUsesSyntheticNamesForLaterRows() {
 	j := `[[],[1,2]]`
 
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 
 	s.Require().Len(results, 1)
 	s.Equal([]string{"x", "y"}, statTypes(results[0].Stats))
@@ -168,7 +194,7 @@ func (s *JSONSuite) TestEmptyFirstMatrixRowUsesSyntheticNamesForLaterRows() {
 func (s *JSONSuite) TestMatrixRaggedRowsAndSkippedCellsAreGaps() {
 	j := `[["a","b","c"],[1],[2,3,4],[null,5,{"nested":true}]]`
 
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 
 	s.Require().Len(results, 3)
 	s.Equal([]string{"a"}, statTypes(results[0].Stats))
@@ -179,7 +205,7 @@ func (s *JSONSuite) TestMatrixRaggedRowsAndSkippedCellsAreGaps() {
 func (s *JSONSuite) TestMatrixBoolNullAndNestedValuesAreSkipped() {
 	j := `[["flag","empty","arr","obj","value"],[true,null,[1,2],{"nested":1},5]]`
 
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 
 	s.Require().Len(results, 1)
 	s.Equal([]string{"value"}, statTypes(results[0].Stats))
@@ -188,7 +214,7 @@ func (s *JSONSuite) TestMatrixBoolNullAndNestedValuesAreSkipped() {
 func (s *JSONSuite) TestNoHeaderMatrixSkipsMixedTopLevelElements() {
 	j := `[[1,2],99,{"skip":true},[3,4]]`
 
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 
 	s.Require().Len(results, 2)
 	s.Equal([]string{"x", "y"}, statTypes(results[0].Stats))
@@ -198,17 +224,17 @@ func (s *JSONSuite) TestNoHeaderMatrixSkipsMixedTopLevelElements() {
 func (s *JSONSuite) TestNoHeaderMatrixNamesColumnsAfterMetric() {
 	j := `[[1,2,3,4,5,6]]`
 
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 
 	s.Require().Len(results, 1)
 	s.Equal([]string{"x", "y", "z", "metric", "col5", "col6"}, statTypes(results[0].Stats))
 }
 
 func (s *JSONSuite) TestMatrixEmptyAndHeaderOnlyReturnNil() {
-	pts, _ := ParseJSON(s.writeFile(`[]`), s.cfg)
+	pts, _ := mustParseJSONFile(s.T(), s.writeFile(`[]`), s.cfg)
 	s.Nil(pts)
 
-	pts, _ = ParseJSON(s.writeFile(`[["x","y"]]`), s.cfg)
+	pts, _ = mustParseJSONFile(s.T(), s.writeFile(`[["x","y"]]`), s.cfg)
 	s.Nil(pts)
 }
 
@@ -290,7 +316,8 @@ func (s *JSONSuite) TestJSONKindFnSkipsRowsMissingAxisField() {
 }
 
 func (s *JSONSuite) TestResolveGroupKeysSkipsEmptyNames() {
-	keys, set := resolveGroupKeys([]string{"x"}, map[string]bool{"x": true}, []string{"", "x"})
+	keys, set, err := resolveGroupKeys([]string{"x"}, map[string]bool{"x": true}, []string{"", "x"})
+	s.Require().NoError(err)
 
 	s.Equal([]string{"x"}, keys)
 	s.True(set["x"])
@@ -344,7 +371,7 @@ func (s *JSONSuite) TestLowLevelObjectDecodersReturnErrors() {
 func (s *JSONSuite) TestBoolAndNullSkipped() {
 	j := `[{"name":"a","sells":10,"active":true,"note":null}]`
 
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 
 	s.Len(results, 1)
 	s.Equal([]string{"sells"}, statTypes(results[0].Stats))
@@ -353,7 +380,7 @@ func (s *JSONSuite) TestBoolAndNullSkipped() {
 func (s *JSONSuite) TestHeterogeneousRowsMissingKeyIsGap() {
 	j := `[{"name":"a","sells":10},{"name":"b","stocks":7}]`
 
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 
 	s.Len(results, 2)
 	s.Equal([]string{"sells"}, statTypes(results[0].Stats))
@@ -364,7 +391,7 @@ func (s *JSONSuite) TestMixedTypePerKeyNumericWhereParseable() {
 	// v is a number in row 1, non-numeric string in row 2
 	j := `[{"v":3},{"v":"foo"}]`
 
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 
 	// v qualifies as a chart column (>=1 numeric); row 2 has no stats → dropped
 	s.Len(results, 1)
@@ -375,7 +402,7 @@ func (s *JSONSuite) TestGroupSingleFieldToXAxis() {
 	s.cfg.Group = []string{"name"}
 	j := `[{"name":"alpha","sells":10},{"name":"beta","sells":20}]`
 
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 
 	s.Len(results, 2)
 	s.Equal("alpha", results[0].XAxis)
@@ -391,7 +418,7 @@ func (s *JSONSuite) TestGroupBracketValueSplitDateCategory() {
 	s.Require().NoError(err)
 
 	j := `[{"date":"2022-2-30","category":"Widget","sales":100}]`
-	results, _ := ParseJSON(s.writeFile(j), cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), cfg)
 
 	s.Len(results, 1)
 	s.Equal("2022", results[0].XAxis)
@@ -405,7 +432,7 @@ func (s *JSONSuite) TestGroupMultiFieldRoutedByPattern() {
 	s.cfg.GroupPattern = "name,x"
 	j := `[{"name":"alpha","sells":10,"date":"2024-01"}]`
 
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 
 	s.Len(results, 1)
 	s.Equal("alpha", results[0].Name)
@@ -416,7 +443,7 @@ func (s *JSONSuite) TestGroupOnNumericFieldStringified() {
 	s.cfg.Group = []string{"id"}
 	j := `[{"id":7,"sells":10}]`
 
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 
 	s.Len(results, 1)
 	s.Equal("7", results[0].XAxis)
@@ -428,7 +455,7 @@ func (s *JSONSuite) TestFilterRegexOnGroupLabel() {
 	s.cfg.Filter = "keep"
 	j := `[{"name":"keep_a","sells":10},{"name":"drop_b","sells":20},{"name":"keep_c","sells":30}]`
 
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 
 	s.Len(results, 2)
 	for _, r := range results {
@@ -436,11 +463,35 @@ func (s *JSONSuite) TestFilterRegexOnGroupLabel() {
 	}
 }
 
+func (s *JSONSuite) TestInvalidFilterReturnsError() {
+	s.cfg.Group = []string{"name"}
+	s.cfg.Filter = "["
+
+	err := parseJSONFileError(s.T(), s.writeFile(`[{"name":"keep","sells":10}]`), s.cfg)
+	s.ErrorContains(err, "invalid filter regex")
+}
+
+func (s *JSONSuite) TestQuietAutoDetect() {
+	s.cfg.AutoGroup = true
+	s.cfg.ChartTypes = []string{"bar"}
+	s.cfg.QuietAutoDetect = true
+
+	results, effectiveCfg := mustParseJSONFile(
+		s.T(),
+		s.writeFile(`[{"name":"alpha","sells":10},{"name":"beta","sells":20}]`),
+		s.cfg,
+	)
+
+	s.Require().Len(results, 2)
+	s.Equal("alpha", results[0].XAxis)
+	s.Equal([]string{"name"}, effectiveCfg.Group)
+}
+
 func (s *JSONSuite) TestNumberUnitScaling() {
 	s.cfg.NumberUnit = "M"
 	j := `[{"name":"a","sells":2000000}]`
 
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 
 	s.Len(results, 1)
 	s.Equal("sells (M)", results[0].Stats[0].Type)
@@ -448,12 +499,39 @@ func (s *JSONSuite) TestNumberUnitScaling() {
 }
 
 func (s *JSONSuite) TestNonArrayInputReturnsNil() {
-	pts, _ := ParseJSON(s.writeFile(`{"name":"a","sells":10}`), s.cfg)
+	pts, _ := mustParseJSONFile(s.T(), s.writeFile(`{"name":"a","sells":10}`), s.cfg)
 	s.Nil(pts)
-	pts, _ = ParseJSON(s.writeFile(`[]`), s.cfg)
+	pts, _ = mustParseJSONFile(s.T(), s.writeFile(`[]`), s.cfg)
 	s.Nil(pts)
-	pts, _ = ParseJSON(s.writeFile(``), s.cfg)
+	pts, _ = mustParseJSONFile(s.T(), s.writeFile(``), s.cfg)
 	s.Nil(pts)
+}
+
+func (s *JSONSuite) TestParseJSONReturnsResultsAndErrors() {
+	results, cfg, err := ParseJSON(strings.NewReader(`[{"name":"alpha","sells":10}]`), parser.Config{
+		GroupPattern: "x",
+		Group:        []string{"name"},
+	})
+	s.Require().NoError(err)
+	s.Equal([]string{"name"}, cfg.Group)
+	s.Require().Len(results, 1)
+	s.Equal("alpha", results[0].XAxis)
+
+	_, _, err = ParseJSON(strings.NewReader(`[{"name":"alpha","sells":10}]`), parser.Config{
+		GroupPattern: "x",
+		Group:        []string{"missing"},
+	})
+	s.ErrorContains(err, `group field "missing" not found`)
+
+	_, _, err = ParseJSON(strings.NewReader(`[{"name":`), parser.Config{GroupPattern: "x"})
+	s.ErrorContains(err, "read JSON")
+
+	results, _, err = ParseJSON(strings.NewReader(`[{"name":"alpha","sells":10}]`), parser.Config{
+		AutoGroup:  true,
+		ChartTypes: []string{"scatter"},
+	})
+	s.Require().NoError(err)
+	s.Len(results, 1)
 }
 
 func (s *JSONSuite) TestStringifyNumericAndString() {
@@ -497,128 +575,139 @@ func TestJSONSuite(t *testing.T) {
 	suite.Run(t, new(JSONSuite))
 }
 
-// JSONFatalSuite covers the fatal (os.Exit) paths by trapping shared.OsExit.
-type JSONFatalSuite struct {
+// JSONErrorSuite covers parser failures returned to callers.
+type JSONErrorSuite struct {
 	suite.Suite
-	cfg        parser.Config
-	origOsExit func(int)
+	cfg parser.Config
 }
 
-func (s *JSONFatalSuite) SetupTest() {
+type jsonErrorReader struct{}
+
+func (jsonErrorReader) Read([]byte) (int, error) {
+	return 0, errors.New("injected read failure")
+}
+
+func (s *JSONErrorSuite) SetupTest() {
 	s.cfg = parser.Config{GroupPattern: "x"}
-	s.origOsExit = shared.OsExit
-	shared.OsExit = func(int) { panic("exit") }
 }
 
-func (s *JSONFatalSuite) TearDownTest() {
-	shared.OsExit = s.origOsExit
-}
-
-func (s *JSONFatalSuite) writeFile(content string) string {
+func (s *JSONErrorSuite) writeFile(content string) string {
 	path := filepath.Join(s.T().TempDir(), "data.json")
 	s.Require().NoError(os.WriteFile(path, []byte(content), 0644))
 	return path
 }
 
-func (s *JSONFatalSuite) TestMissingGroupFieldIsFatal() {
+func (s *JSONErrorSuite) TestMissingGroupFieldReturnsError() {
 	s.cfg.Group = []string{"nope"}
 	path := s.writeFile(`[{"name":"a","sells":10}]`)
 
-	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
+	s.Error(parseJSONFileError(s.T(), path, s.cfg))
 }
 
-func (s *JSONFatalSuite) TestInvalidGroupConfigIsFatal() {
+func (s *JSONErrorSuite) TestInvalidGroupConfigReturnsError() {
 	s.cfg.Group = []string{"a", "b"}
 	s.cfg.GroupPattern = "x"
 	path := s.writeFile(`[{"a":"A","b":"B","sales":10}]`)
 
-	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
+	s.Error(parseJSONFileError(s.T(), path, s.cfg))
 }
 
-func (s *JSONFatalSuite) TestOpenFileErrorIsFatal() {
-	path := filepath.Join(s.T().TempDir(), "missing.json")
-
-	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
-}
-
-func (s *JSONFatalSuite) TestNoNumericFieldsIsFatal() {
+func (s *JSONErrorSuite) TestNoNumericFieldsReturnsError() {
 	path := s.writeFile(`[{"name":"a","label":"foo"}]`)
 
-	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
+	s.Error(parseJSONFileError(s.T(), path, s.cfg))
 }
 
-func (s *JSONFatalSuite) TestAutoDetectGroupConfigErrorIsFatal() {
+func (s *JSONErrorSuite) TestAutoDetectGroupConfigErrorReturnsError() {
 	s.cfg.AutoGroup = true
 	s.cfg.ChartTypes = []string{"bar"}
 	path := s.writeFile(`[{"a/b":"cat","sales":10}]`)
 
-	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
+	s.Error(parseJSONFileError(s.T(), path, s.cfg))
 }
 
-func (s *JSONFatalSuite) TestMalformedMatrixIsFatal() {
+func (s *JSONErrorSuite) TestMalformedMatrixReturnsError() {
 	path := s.writeFile(`[["x"],[`)
 
-	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
+	s.Error(parseJSONFileError(s.T(), path, s.cfg))
 }
 
-func (s *JSONFatalSuite) TestGroupTabularRowErrorIsFatal() {
+func (s *JSONErrorSuite) TestInitialTokenRead() {
+	s.Run("empty input remains empty", func() {
+		results, _, err := ParseJSON(strings.NewReader(""), s.cfg)
+		s.Require().NoError(err)
+		s.Empty(results)
+	})
+
+	s.Run("malformed input returns decoder error", func() {
+		_, _, err := ParseJSON(strings.NewReader("not-json"), s.cfg)
+		s.ErrorContains(err, "read JSON")
+	})
+
+	s.Run("reader failure is preserved", func() {
+		_, _, err := ParseJSON(jsonErrorReader{}, s.cfg)
+		s.ErrorContains(err, "injected read failure")
+	})
+}
+
+func (s *JSONErrorSuite) TestGroupTabularRowErrorReturnsError() {
 	s.cfg.Group = []string{"a"}
 	s.cfg.GroupRegex = ".*"
 	path := s.writeFile(`[{"a":"A","sales":10}]`)
 
-	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
+	s.Error(parseJSONFileError(s.T(), path, s.cfg))
 }
 
-func (s *JSONFatalSuite) TestExplicitColsMissingColumnErrors() {
+func (s *JSONErrorSuite) TestExplicitColsMissingColumnErrors() {
 	s.cfg.Select = []parser.ColumnSpec{{Source: "missing"}}
 	path := s.writeFile(`[{"name":"a","sells":10}]`)
 
-	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
+	s.Error(parseJSONFileError(s.T(), path, s.cfg))
 }
 
-func (s *JSONFatalSuite) TestExplicitColsNonNumericErrors() {
+func (s *JSONErrorSuite) TestExplicitColsNonNumericErrors() {
 	s.cfg.Select = []parser.ColumnSpec{{Source: "name"}}
 	path := s.writeFile(`[{"name":"alpha","sells":10}]`)
 
-	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
+	s.Error(parseJSONFileError(s.T(), path, s.cfg))
 }
 
-func (s *JSONFatalSuite) TestValueModeMissingAxisFieldErrors() {
+func (s *JSONErrorSuite) TestValueModeMissingAxisFieldErrors() {
 	s.cfg.Axes = []parser.ColumnSpec{{Source: "missing"}, {Source: "y"}}
 	path := s.writeFile(`[{"x":1,"y":2}]`)
 
-	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
+	s.Error(parseJSONFileError(s.T(), path, s.cfg))
 }
 
-func (s *JSONFatalSuite) TestValueModeNonNumericAxisFieldErrors() {
+func (s *JSONErrorSuite) TestValueModeNonNumericAxisFieldErrors() {
 	s.cfg.Axes = []parser.ColumnSpec{{Source: "name"}, {Source: "y"}}
 	path := s.writeFile(`[{"name":"alpha","y":2}]`)
 
-	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
+	s.Error(parseJSONFileError(s.T(), path, s.cfg))
 }
 
-func (s *JSONFatalSuite) TestValueModeMetricFieldMissingErrors() {
+func (s *JSONErrorSuite) TestValueModeMetricFieldMissingErrors() {
 	s.cfg.Axes = []parser.ColumnSpec{{Source: "x"}, {Source: "y"}}
 	s.cfg.MetricColumn = "m"
 	path := s.writeFile(`[{"x":1,"y":2}]`)
 
-	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
+	s.Error(parseJSONFileError(s.T(), path, s.cfg))
 }
 
-func (s *JSONFatalSuite) TestValueModeMetricFieldNonNumericErrors() {
+func (s *JSONErrorSuite) TestValueModeMetricFieldNonNumericErrors() {
 	s.cfg.Axes = []parser.ColumnSpec{{Source: "x"}, {Source: "y"}}
 	s.cfg.MetricColumn = "label"
 	path := s.writeFile(`[{"x":1,"y":2,"label":"foo"}]`)
 
-	s.PanicsWithValue("exit", func() { ParseJSON(path, s.cfg) })
+	s.Error(parseJSONFileError(s.T(), path, s.cfg))
 }
 
-func (s *JSONFatalSuite) TestValueModeSkipsRowWithBadMetric() {
+func (s *JSONErrorSuite) TestValueModeSkipsRowWithBadMetric() {
 	s.cfg.Axes = []parser.ColumnSpec{{Source: "x"}, {Source: "y"}}
 	s.cfg.MetricColumn = "m"
 	path := s.writeFile(`[{"x":1,"y":2,"m":3},{"x":4,"y":5,"m":"bad"},{"x":6,"y":7,"m":8}]`)
 
-	results, _ := ParseJSON(path, s.cfg)
+	results, _ := mustParseJSONFile(s.T(), path, s.cfg)
 	s.Len(results, 2)
 	s.Equal("3", results[0].Metric)
 	s.Equal("8", results[1].Metric)
@@ -631,14 +720,14 @@ func (s *JSONAutoValueSuite) TestSelectSkipsAutoDetect() {
 	}
 	path := s.writeFile(`[{"x":1,"y":2,"z":3,"w":4}]`)
 
-	results, _ := ParseJSON(path, s.cfg)
+	results, _ := mustParseJSONFile(s.T(), path, s.cfg)
 	s.Require().Len(results, 1)
 	s.Equal("1", results[0].XAxis)
 	s.Equal("2", results[0].YAxis)
 	s.Empty(results[0].Stats)
 }
 
-func (s *JSONFatalSuite) TestSelectMixedModeMapsCategoryXAndValueY() {
+func (s *JSONErrorSuite) TestSelectMixedModeMapsCategoryXAndValueY() {
 	s.cfg.SelectViews = []parser.SelectView{
 		{Columns: []parser.ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "latency", AxisKey: "y"}}},
 	}
@@ -647,65 +736,65 @@ func (s *JSONFatalSuite) TestSelectMixedModeMapsCategoryXAndValueY() {
 		{"region":"EU","latency":11,"sales":60}
 	]`)
 
-	results, _ := ParseJSON(path, s.cfg)
+	results, _ := mustParseJSONFile(s.T(), path, s.cfg)
 	s.Require().Len(results, 2)
 	s.Equal("Asia", results[0].XAxis)
 	s.Equal("12", results[0].YAxis)
 	s.Empty(results[0].Stats)
 }
 
-func (s *JSONFatalSuite) TestSelectColumnNotFoundExits() {
+func (s *JSONErrorSuite) TestSelectColumnNotFoundReturnsError() {
 	s.cfg.SelectViews = []parser.SelectView{
 		{Columns: []parser.ColumnSpec{{Source: "missing", AxisKey: "x"}, {Source: "latency", AxisKey: "y"}}},
 	}
 	path := s.writeFile(`[{"region":"Asia","latency":12}]`)
-	s.Panics(func() { ParseJSON(path, s.cfg) })
+	s.Error(parseJSONFileError(s.T(), path, s.cfg))
 }
 
-func (s *JSONFatalSuite) TestSelectNonNumericYFieldExits() {
+func (s *JSONErrorSuite) TestSelectNonNumericYFieldReturnsError() {
 	s.cfg.SelectViews = []parser.SelectView{
 		{Columns: []parser.ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "label", AxisKey: "y"}}},
 	}
 	path := s.writeFile(`[{"region":"Asia","label":"fast"}]`)
-	s.Panics(func() { ParseJSON(path, s.cfg) })
+	s.Error(parseJSONFileError(s.T(), path, s.cfg))
 }
 
-func (s *JSONFatalSuite) TestSelectEmptyFieldExits() {
+func (s *JSONErrorSuite) TestSelectEmptyFieldReturnsError() {
 	s.cfg.SelectViews = []parser.SelectView{
 		{Columns: []parser.ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "latency", AxisKey: "y"}}},
 	}
 	path := s.writeFile(`[{"region":"","latency":12}]`)
-	s.Panics(func() { ParseJSON(path, s.cfg) })
+	s.Error(parseJSONFileError(s.T(), path, s.cfg))
 }
 
-func (s *JSONFatalSuite) TestSelectValueModeAllNumeric() {
+func (s *JSONErrorSuite) TestSelectValueModeAllNumeric() {
 	s.cfg.SelectViews = []parser.SelectView{
 		{Columns: []parser.ColumnSpec{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}}},
 	}
 	path := s.writeFile(`[{"x":1,"y":2},{"x":3,"y":4}]`)
 
-	results, _ := ParseJSON(path, s.cfg)
+	results, _ := mustParseJSONFile(s.T(), path, s.cfg)
 	s.Require().Len(results, 2)
 	s.Equal("1", results[0].XAxis)
 	s.Equal("2", results[0].YAxis)
 	s.Empty(results[0].Stats)
 }
 
-func (s *JSONFatalSuite) TestSelectValueModeNoHeaderMatrix() {
+func (s *JSONErrorSuite) TestSelectValueModeNoHeaderMatrix() {
 	s.cfg.SelectViews = []parser.SelectView{
 		{Columns: []parser.ColumnSpec{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}}},
 	}
 	path := s.writeFile(`[[1,2],[3,4]]`)
 
-	results, _ := ParseJSON(path, s.cfg)
+	results, _ := mustParseJSONFile(s.T(), path, s.cfg)
 	s.Require().Len(results, 2)
 	s.Equal("1", results[0].XAxis)
 	s.Equal("2", results[0].YAxis)
 	s.Empty(results[0].Stats)
 }
 
-func TestJSONFatalSuite(t *testing.T) {
-	suite.Run(t, new(JSONFatalSuite))
+func TestJSONErrorSuite(t *testing.T) {
+	suite.Run(t, new(JSONErrorSuite))
 }
 
 // JSONAutoGroupSuite exercises ParseJSON with cfg.AutoGroup set, simulating
@@ -727,7 +816,7 @@ func (s *JSONAutoGroupSuite) writeFile(content string) string {
 
 func (s *JSONAutoGroupSuite) TestCategoricalFieldBecomesXAxis() {
 	j := `[{"region":"West","sells":10},{"region":"East","sells":20}]`
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 	s.Require().Len(results, 2)
 	s.Equal("West", results[0].XAxis)
 	s.Equal("East", results[1].XAxis)
@@ -736,7 +825,7 @@ func (s *JSONAutoGroupSuite) TestCategoricalFieldBecomesXAxis() {
 
 func (s *JSONAutoGroupSuite) TestHeaderMatrixCategoricalColumnBecomesXAxis() {
 	j := `[["region","sales"],["West",10],["East",20]]`
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 	s.Require().Len(results, 2)
 	s.Equal("West", results[0].XAxis)
 	s.Equal("East", results[1].XAxis)
@@ -748,7 +837,7 @@ func (s *JSONAutoGroupSuite) TestNestedFlattenedFieldChosen() {
 	// the most-unique categorical wins. Both have 2 distinct here; leftmost in
 	// first-seen order wins → region (appears first).
 	j := `[{"region":"West","addr":{"city":"NY"},"sells":10},{"region":"East","addr":{"city":"LA"},"sells":20}]`
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 	s.Require().Len(results, 2)
 	s.NotEmpty(results[0].XAxis)
 	s.Equal([]string{"sells"}, statTypes(results[0].Stats))
@@ -757,7 +846,7 @@ func (s *JSONAutoGroupSuite) TestNestedFlattenedFieldChosen() {
 func (s *JSONAutoGroupSuite) TestAllNumericAutoValues() {
 	// all numeric → auto-value-mode: first 2 cols become x,y value axes
 	j := `[{"id":1,"sells":10},{"id":2,"sells":20},{"id":3,"sells":30}]`
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 	s.Require().Len(results, 3)
 	s.Equal("1", results[0].XAxis)
 	s.Equal("10", results[0].YAxis)
@@ -770,7 +859,7 @@ func (s *JSONAutoGroupSuite) TestAutoGroupPicksSingleFieldEvenWithMultipleCatego
 		`{"region":"North","product":"C","sells":30},{"region":"South","product":"D","sells":40},` +
 		`{"region":"Central","product":"E","sells":50},{"region":"West","product":"F","sells":60},` +
 		`{"region":"East","product":"G","sells":70}]`
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 	s.Require().NotEmpty(results)
 	for _, r := range results {
 		s.NotEmpty(r.XAxis)
@@ -781,7 +870,7 @@ func (s *JSONAutoGroupSuite) TestAutoGroupPicksSingleFieldEvenWithMultipleCatego
 func (s *JSONAutoGroupSuite) TestExplicitGroupDisablesAutoGroup() {
 	s.cfg.Group = []string{"region"}
 	j := `[{"region":"West","sells":10},{"region":"East","sells":20}]`
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 	s.Require().Len(results, 2)
 	s.Equal("West", results[0].XAxis)
 	s.Empty(results[0].YAxis)
@@ -790,7 +879,7 @@ func (s *JSONAutoGroupSuite) TestExplicitGroupDisablesAutoGroup() {
 func (s *JSONAutoGroupSuite) TestAxesDisablesAutoGroup() {
 	s.cfg.Axes = []parser.ColumnSpec{{Source: "sells"}}
 	j := `[{"region":"West","sells":10},{"region":"East","sells":20}]`
-	_, _ = ParseJSON(s.writeFile(j), s.cfg) // no panic; value mode handled elsewhere
+	_, _ = mustParseJSONFile(s.T(), s.writeFile(j), s.cfg) // no panic; value mode handled elsewhere
 }
 
 func TestJSONAutoGroupSuite(t *testing.T) {
@@ -820,7 +909,7 @@ func (s *JSONAutoValueSuite) writeFile(content string) string {
 
 func (s *JSONAutoValueSuite) TestTwoNumericFields() {
 	j := `[{"price":10,"latency":5},{"price":20,"latency":7}]`
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 	s.Require().Len(results, 2)
 	s.Equal("10", results[0].XAxis)
 	s.Equal("5", results[0].YAxis)
@@ -830,7 +919,7 @@ func (s *JSONAutoValueSuite) TestTwoNumericFields() {
 func (s *JSONAutoValueSuite) TestNoHeaderMatrixTwoNumericColumnsAutoValue() {
 	j := `[[1,2],[3,4],[5,6]]`
 
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 
 	s.Require().Len(results, 3)
 	s.Equal("1", results[0].XAxis)
@@ -840,7 +929,7 @@ func (s *JSONAutoValueSuite) TestNoHeaderMatrixTwoNumericColumnsAutoValue() {
 
 func (s *JSONAutoValueSuite) TestThreeNumericFields() {
 	j := `[{"price":10,"latency":5,"mem":100},{"price":20,"latency":7,"mem":200}]`
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 	s.Require().Len(results, 2)
 	s.Equal("10", results[0].XAxis)
 	s.Equal("5", results[0].YAxis)
@@ -851,7 +940,7 @@ func (s *JSONAutoValueSuite) TestThreeNumericFields() {
 func (s *JSONAutoValueSuite) TestNoHeaderMatrixFourNumericColumnsUsesMetric() {
 	j := `[[1,2,3,4],[5,6,7,8]]`
 
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 
 	s.Require().Len(results, 2)
 	s.Equal("1", results[0].XAxis)
@@ -866,7 +955,7 @@ func (s *JSONAutoValueSuite) TestNestedMatrixViaJSONPathAutoValue() {
 	selected, err := SelectPath(source, ".payload.rows")
 	s.Require().NoError(err)
 
-	results, _ := ParseJSON(s.writeFile(string(selected)), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(string(selected)), s.cfg)
 
 	s.Require().Len(results, 2)
 	s.Equal("1", results[0].XAxis)
@@ -876,7 +965,7 @@ func (s *JSONAutoValueSuite) TestNestedMatrixViaJSONPathAutoValue() {
 
 func (s *JSONAutoValueSuite) TestFourNumericFieldsTakeFirstThree() {
 	j := `[{"a":1,"b":2,"c":3,"d":4},{"a":5,"b":6,"c":7,"d":8}]`
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 	s.Require().Len(results, 2)
 	s.Equal("1", results[0].XAxis)
 	s.Equal("2", results[0].YAxis)
@@ -888,7 +977,7 @@ func (s *JSONAutoValueSuite) TestFourNumericFieldsTakeFirstThree() {
 func (s *JSONAutoValueSuite) TestAutoGroupTakesPriority() {
 	// categorical exists → auto-group fires
 	j := `[{"region":"West","price":10},{"region":"East","price":20}]`
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 	s.Require().Len(results, 2)
 	s.Equal("West", results[0].XAxis)
 	s.NotEmpty(results[0].Stats)
@@ -896,7 +985,7 @@ func (s *JSONAutoValueSuite) TestAutoGroupTakesPriority() {
 
 func (s *JSONAutoValueSuite) TestOneNumericFieldFallsBackToFlat() {
 	j := `[{"price":10},{"price":20}]`
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 	s.Require().Len(results, 2)
 	s.Empty(results[0].XAxis)
 	s.NotEmpty(results[0].Stats)
@@ -904,7 +993,7 @@ func (s *JSONAutoValueSuite) TestOneNumericFieldFallsBackToFlat() {
 
 func (s *JSONAutoValueSuite) TestOneColumnMatrixFallsBackToFlat() {
 	j := `[[10],[20]]`
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 	s.Require().Len(results, 2)
 	s.Empty(results[0].XAxis)
 	s.Equal([]string{"x"}, statTypes(results[0].Stats))
@@ -913,7 +1002,7 @@ func (s *JSONAutoValueSuite) TestOneColumnMatrixFallsBackToFlat() {
 func (s *JSONAutoValueSuite) TestPieChartFallsBackToFlat() {
 	s.cfg.ChartTypes = []string{"pie"}
 	j := `[{"price":10,"latency":5},{"price":20,"latency":7}]`
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 	s.Require().Len(results, 2)
 	s.Empty(results[0].XAxis)
 	s.NotEmpty(results[0].Stats)
@@ -922,7 +1011,7 @@ func (s *JSONAutoValueSuite) TestPieChartFallsBackToFlat() {
 func (s *JSONAutoValueSuite) TestRadarChartFallsBackToFlat() {
 	s.cfg.ChartTypes = []string{"radar"}
 	j := `[{"price":10,"latency":5},{"price":20,"latency":7}]`
-	results, _ := ParseJSON(s.writeFile(j), s.cfg)
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 	s.Require().Len(results, 2)
 	s.Empty(results[0].XAxis)
 	s.NotEmpty(results[0].Stats)

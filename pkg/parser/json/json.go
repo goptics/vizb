@@ -2,9 +2,10 @@ package json
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"math"
-	"os"
 	"strconv"
 	"strings"
 
@@ -64,38 +65,39 @@ func stringify(v any) string {
 // the separators from --group-pattern/-p and routed through the grouping
 // machinery (-p/-r). Nested objects are
 // flattened to dotted keys; array-valued fields inside objects are skipped.
-func ParseJSON(filename string, cfg parser.Config) ([]shared.DataPoint, parser.Config) {
+func ParseJSON(input io.Reader, cfg parser.Config) ([]shared.DataPoint, parser.Config, error) {
+	return parseReader(input, cfg, !cfg.QuietAutoDetect)
+}
+
+func parseReader(input io.Reader, cfg parser.Config, logAuto bool) ([]shared.DataPoint, parser.Config, error) {
 	var err error
 	cfg, err = parser.FinalizeGroupConfig(cfg)
 	if err != nil {
-		shared.ExitWithError(err.Error(), nil)
+		return nil, cfg, err
 	}
 
-	f, err := os.Open(filename)
-	if err != nil {
-		shared.ExitWithError("Error opening file", err)
-	}
-	defer f.Close()
-
-	dec := json.NewDecoder(f)
+	dec := json.NewDecoder(input)
 
 	// Top-level must be a JSON array; otherwise unsupported (object form is
 	// consumed earlier by convertToBenchmark).
 	tok, err := dec.Token()
 	if err != nil {
-		return nil, cfg
+		if errors.Is(err, io.EOF) {
+			return nil, cfg, nil
+		}
+		return nil, cfg, fmt.Errorf("read JSON: %w", err)
 	}
 	if d, ok := tok.(json.Delim); !ok || d != '[' {
-		return nil, cfg
+		return nil, cfg, nil
 	}
 
 	rows, colOrder, seenCol, err := decodeTopLevelRows(dec)
 	if err != nil {
-		shared.ExitWithError("Error reading JSON", err)
+		return nil, cfg, fmt.Errorf("read JSON: %w", err)
 	}
 
 	if len(rows) == 0 {
-		return nil, cfg
+		return nil, cfg, nil
 	}
 
 	// Auto-group: when no grouping is configured, infer the category axis from
@@ -112,9 +114,13 @@ func ParseJSON(filename string, cfg parser.Config) ([]shared.DataPoint, parser.C
 			}
 			stringRows[i] = cells
 		}
-		cfg, err = parser.AutoDetectTabularConfig(cfg, autoHeaders, stringRows)
+		if logAuto {
+			cfg, err = parser.AutoDetectTabularConfig(cfg, autoHeaders, stringRows)
+		} else {
+			cfg, err = parser.AutoDetectTabularConfigQuiet(cfg, autoHeaders, stringRows)
+		}
 		if err != nil {
-			shared.ExitWithError(err.Error(), nil)
+			return nil, cfg, err
 		}
 	}
 
@@ -126,22 +132,28 @@ func ParseJSON(filename string, cfg parser.Config) ([]shared.DataPoint, parser.C
 		for i, row := range rows {
 			readers[i] = jsonRowReader{row: row, seenCol: seenCol, colOrder: colOrder, flag: flag}
 		}
-		results := parser.DispatchSelectMode(readers, &cfg, jsonKindFn(rows, seenCol, colOrder, flag))
-		return results, cfg
+		results, err := parser.DispatchSelectMode(readers, &cfg, jsonKindFn(rows, seenCol, colOrder, flag))
+		if err != nil {
+			return nil, cfg, err
+		}
+		return results, cfg, nil
 	}
 
-	groupKeys, groupSet := resolveGroupKeys(colOrder, seenCol, parser.EffectiveGroupColumns(cfg))
+	groupKeys, groupSet, err := resolveGroupKeys(colOrder, seenCol, parser.EffectiveGroupColumns(cfg))
+	if err != nil {
+		return nil, cfg, err
+	}
 
 	chartCols := chartColumns(colOrder, groupSet, rows)
 	var fieldLabels map[string]string
 	if len(cfg.Select) > 0 {
 		chartCols, fieldLabels, err = resolveExplicitChartFields(colOrder, cfg, rows)
 		if err != nil {
-			shared.ExitWithError(err.Error(), nil)
+			return nil, cfg, err
 		}
 	}
 	if len(chartCols) == 0 {
-		shared.ExitWithError("no numeric fields found in JSON", nil)
+		return nil, cfg, fmt.Errorf("no numeric fields found in JSON")
 	}
 
 	var results []shared.DataPoint
@@ -152,13 +164,17 @@ func ParseJSON(filename string, cfg parser.Config) ([]shared.DataPoint, parser.C
 		var name, xAxis, yAxis, zAxis string
 		if len(groupValues) > 0 {
 			label := parser.TabularFilterLabel(groupValues, cfg)
-			if !parser.ShouldIncludeBenchmark(label, cfg) {
+			include, err := parser.ShouldIncludeBenchmark(label, cfg)
+			if err != nil {
+				return nil, cfg, err
+			}
+			if !include {
 				continue
 			}
 
 			group, gerr := parser.GroupTabularRow(groupValues, cfg)
 			if gerr != nil {
-				shared.ExitWithError("Error parsing JSON group name", gerr)
+				return nil, cfg, fmt.Errorf("parse JSON group name: %w", gerr)
 			}
 
 			name, xAxis, yAxis, zAxis = group["name"], group["xAxis"], group["yAxis"], group["zAxis"]
@@ -199,7 +215,7 @@ func ParseJSON(filename string, cfg parser.Config) ([]shared.DataPoint, parser.C
 		})
 	}
 
-	return results, cfg
+	return results, cfg, nil
 }
 
 func decodeTopLevelRows(dec *json.Decoder) ([]map[string]any, []string, map[string]bool, error) {
@@ -532,7 +548,7 @@ func jsonKindFn(rows []map[string]any, seenCol map[string]bool, colOrder []strin
 
 // resolveGroupKeys maps each non-empty --group name to a known field (preserving
 // flag order). A missing name is fatal and lists available fields.
-func resolveGroupKeys(colOrder []string, seenCol map[string]bool, group []string) ([]string, map[string]bool) {
+func resolveGroupKeys(colOrder []string, seenCol map[string]bool, group []string) ([]string, map[string]bool, error) {
 	var keys []string
 	set := map[string]bool{}
 
@@ -543,14 +559,14 @@ func resolveGroupKeys(colOrder []string, seenCol map[string]bool, group []string
 		}
 
 		if !seenCol[name] {
-			shared.ExitWithError(fmt.Sprintf("group field '%s' not found; available: %v", name, colOrder), nil)
+			return nil, nil, fmt.Errorf("group field %q not found; available: %v", name, colOrder)
 		}
 
 		keys = append(keys, name)
 		set[name] = true
 	}
 
-	return keys, set
+	return keys, set, nil
 }
 
 func resolveExplicitChartFields(colOrder []string, cfg parser.Config, rows []map[string]any) ([]string, map[string]string, error) {

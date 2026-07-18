@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/goptics/vizb/cmd/cli"
+	"github.com/goptics/vizb/pkg/core"
 	"github.com/goptics/vizb/pkg/style"
 	"github.com/goptics/vizb/shared"
 	"github.com/goptics/vizb/shared/utils"
@@ -59,8 +60,15 @@ func runMerge(cmd *cobra.Command, args []string) {
 		shared.ExitWithError("No valid data set files processed", nil)
 	}
 
-	merged := shared.MergeDatasets(dataSets, shared.Dimension(mergeOpts.TagAxis))
-	writeMergeOutput(merged)
+	writeMergeOutput(mergeDatasets(dataSets, shared.Dimension(mergeOpts.TagAxis)))
+}
+
+func mergeDatasets(dataSets []shared.Dataset, dimension shared.Dimension) []shared.Dataset {
+	merged, err := core.Merge(dataSets, dimension)
+	if err != nil {
+		shared.ExitWithError(err.Error(), nil)
+	}
+	return merged
 }
 
 func collectJSONFiles(args []string) []string {

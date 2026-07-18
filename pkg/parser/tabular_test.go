@@ -1,9 +1,9 @@
 package parser
 
 import (
+	"fmt"
 	"testing"
 
-	"github.com/goptics/vizb/shared"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -76,7 +76,10 @@ func (s *TabularSuite) TestParseValueModeSkipsIncompleteRowsAndSetsMetric() {
 			headers: []string{"x", "y", "noise"},
 		},
 	}
-	results := ParseValueMode(rows, cfg)
+	results, err := ParseValueMode(rows, cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if len(results) != 1 {
 		t.Fatalf("want 1 row, got %d", len(results))
 	}
@@ -86,10 +89,6 @@ func (s *TabularSuite) TestParseValueModeSkipsIncompleteRowsAndSetsMetric() {
 }
 
 func (s *TabularSuite) TestParseValueModeRejectsMissingMetricColumn() {
-	t := s.T()
-	restore, exitCalled := shared.TrapOsExitPanic(t)
-	defer restore()
-
 	cfg := Config{
 		Axes:         []ColumnSpec{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}},
 		MetricColumn: "noise",
@@ -101,17 +100,8 @@ func (s *TabularSuite) TestParseValueModeRejectsMissingMetricColumn() {
 			numeric: map[string]float64{"x": 1, "y": 2},
 		},
 	}
-	func() {
-		defer func() {
-			if recover() == nil {
-				t.Fatal("expected panic")
-			}
-		}()
-		ParseValueMode(rows, cfg)
-	}()
-	if !*exitCalled {
-		t.Fatal("expected OsExit")
-	}
+	_, err := ParseValueMode(rows, cfg)
+	s.ErrorContains(err, `metric column "noise" not found`)
 }
 
 func (s *TabularSuite) TestParseSelectStatModeMergedRow() {
@@ -128,17 +118,16 @@ func (s *TabularSuite) TestParseSelectStatModeMergedRow() {
 			numeric: map[string]float64{"tax": 12, "sales": 100},
 		},
 	}
-	results := ParseSelectStatMode(rows, cfg)
+	results, err := ParseSelectStatMode(rows, cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if len(results) != 1 || results[0].XAxis != "Asia" || len(results[0].Stats) != 2 {
 		t.Fatalf("unexpected merged stat point: %+v", results)
 	}
 }
 
-func (s *TabularSuite) TestParseSelectStatModeEmptyResultsExits() {
-	t := s.T()
-	restore, exitCalled := shared.TrapOsExitPanic(t)
-	defer restore()
-
+func (s *TabularSuite) TestParseSelectStatModeEmptyResultsReturnsError() {
 	cfg := Config{
 		SelectViews: []SelectView{
 			{Columns: []ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "tax", AxisKey: "y"}}},
@@ -147,17 +136,8 @@ func (s *TabularSuite) TestParseSelectStatModeEmptyResultsExits() {
 	rows := []RowReader{
 		mockRowReader{cells: map[string]string{"region": ""}},
 	}
-	func() {
-		defer func() {
-			if recover() == nil {
-				t.Fatal("expected panic")
-			}
-		}()
-		ParseSelectStatMode(rows, cfg)
-	}()
-	if !*exitCalled {
-		t.Fatal("expected OsExit")
-	}
+	_, err := ParseSelectStatMode(rows, cfg)
+	s.ErrorContains(err, "no dataset found")
 }
 
 func (s *TabularSuite) TestParseMixedModeSkipsUnknownAxisKey() {
@@ -175,10 +155,6 @@ func (s *TabularSuite) TestParseMixedModeSkipsUnknownAxisKey() {
 }
 
 func (s *TabularSuite) TestParseValueModeRejectsNonNumericMetric() {
-	t := s.T()
-	restore, exitCalled := shared.TrapOsExitPanic(t)
-	defer restore()
-
 	cfg := Config{
 		Axes:         []ColumnSpec{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}},
 		MetricColumn: "noise",
@@ -191,17 +167,48 @@ func (s *TabularSuite) TestParseValueModeRejectsNonNumericMetric() {
 			flag:    "--select",
 		},
 	}
-	func() {
-		defer func() {
-			if recover() == nil {
-				t.Fatal("expected panic")
-			}
-		}()
-		ParseValueMode(rows, cfg)
-	}()
-	if !*exitCalled {
-		t.Fatal("expected OsExit")
-	}
+	_, err := ParseValueMode(rows, cfg)
+	s.ErrorContains(err, `metric column "noise" is not numeric`)
+}
+
+func (s *TabularSuite) TestTabularParsersReturnErrors() {
+	rows := []RowReader{mockRowReader{
+		cells:   map[string]string{"metric": "4"},
+		numeric: map[string]float64{"x": 1, "y": 2, "metric": 4},
+		headers: []string{"x", "y", "metric"},
+		flag:    "--axes",
+	}}
+	points, err := ParseValueMode(rows, Config{
+		Axes:         []ColumnSpec{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}},
+		MetricColumn: "metric",
+	})
+	s.Require().NoError(err)
+	s.Require().Len(points, 1)
+	s.Equal("4", points[0].Metric)
+
+	_, err = ParseValueMode(rows, Config{MetricColumn: "missing"})
+	s.ErrorContains(err, `metric column "missing" not found`)
+
+	_, err = ParseSelectStatMode([]RowReader{mockRowReader{}}, Config{SelectViews: []SelectView{{
+		Columns: []ColumnSpec{{Source: "region"}, {Source: "sales"}},
+	}}})
+	s.ErrorContains(err, "no dataset found")
+}
+
+func (s *TabularSuite) TestDispatchSelectMode() {
+	cfg := Config{Mode: ModeValue, SelectViews: []SelectView{{
+		Columns: []ColumnSpec{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}},
+	}}}
+	rows := []RowReader{mockRowReader{numeric: map[string]float64{"x": 1, "y": 2}}}
+	points, err := DispatchSelectMode(rows, &cfg, func(string, string) (string, error) { return "value", nil })
+	s.Require().NoError(err)
+	s.Require().Len(points, 1)
+	s.Equal(ModeValue, cfg.Mode)
+
+	_, err = DispatchSelectMode(rows, &cfg, func(string, string) (string, error) {
+		return "", fmt.Errorf("invalid axis")
+	})
+	s.ErrorContains(err, "invalid axis")
 }
 
 func (s *TabularSuite) TestParseSelectStatModeNonMerge() {
@@ -218,7 +225,10 @@ func (s *TabularSuite) TestParseSelectStatModeNonMerge() {
 			numeric: map[string]float64{"tax": 12, "sales": 100},
 		},
 	}
-	results := ParseSelectStatMode(rows, cfg)
+	results, err := ParseSelectStatMode(rows, cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if len(results) != 2 {
 		t.Fatalf("want 2 points, got %d", len(results))
 	}
@@ -244,7 +254,10 @@ func (s *TabularSuite) TestDispatchSelectModePropagatesAxisType() {
 		}
 		return "value", nil
 	}
-	results := DispatchSelectMode(rows, &cfg, kindFn)
+	results, err := DispatchSelectMode(rows, &cfg, kindFn)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if len(results) != 1 || results[0].XAxis != "Asia" {
 		t.Fatalf("unexpected results: %+v", results)
 	}
