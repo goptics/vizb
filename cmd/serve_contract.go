@@ -28,19 +28,6 @@ type unitOptions struct {
 	Number string `json:"number"`
 }
 
-<<<<<<< HEAD
-=======
-type metadataOptions struct {
-	ID          string       `json:"id"`
-	Name        string       `json:"name"`
-	Theme       string       `json:"theme"`
-	Description string       `json:"description"`
-	Tag         string       `json:"tag"`
-	Timestamp   string       `json:"timestamp"`
-	Meta        *shared.Meta `json:"meta"`
-}
-
->>>>>>> bce573e (fix(api): align REST handlers with OpenAPI contract)
 type chartSelection struct {
 	Types   []string          `json:"types"`
 	Configs []json.RawMessage `json:"configs"`
@@ -54,10 +41,6 @@ type statisticsOptions struct {
 type convertRequest struct {
 	Input    json.RawMessage  `json:"input"`
 	Parser   string           `json:"parser"`
-<<<<<<< HEAD
-=======
-	Metadata *metadataOptions `json:"metadata"`
->>>>>>> bce573e (fix(api): align REST handlers with OpenAPI contract)
 	Grouping *groupingOptions `json:"grouping"`
 	Units    *unitOptions     `json:"units"`
 	Select   []string         `json:"select"`
@@ -74,13 +57,8 @@ type mergeRequest struct {
 }
 
 type uiRequest struct {
-<<<<<<< HEAD
 	Datasets   json.RawMessage    `json:"datasets"`
 	Charts     chartSelection     `json:"charts"`
-=======
-	Datasets   json.RawMessage   `json:"datasets"`
-	Charts     chartSelection    `json:"charts"`
->>>>>>> bce573e (fix(api): align REST handlers with OpenAPI contract)
 	Statistics *statisticsOptions `json:"statistics"`
 }
 
@@ -91,13 +69,10 @@ type apiValidationError struct {
 	Message  string `json:"message"`
 }
 
-<<<<<<< HEAD
 func (e apiValidationError) Error() string {
 	return e.Message
 }
 
-=======
->>>>>>> bce573e (fix(api): align REST handlers with OpenAPI contract)
 func bodyValidationError(path, code, message string) apiValidationError {
 	return apiValidationError{Location: "body", Path: path, Code: code, Message: message}
 }
@@ -121,7 +96,6 @@ func buildConvertInput(request convertRequest, input []byte) (core.ConvertInput,
 		return core.ConvertInput{}, nil, validationErr
 	}
 
-<<<<<<< HEAD
 	return core.ConvertInput{
 		Input:  input,
 		Parser: key,
@@ -131,35 +105,6 @@ func buildConvertInput(request convertRequest, input []byte) (core.ConvertInput,
 			Theme: "default",
 		},
 		Charts: configs,
-=======
-	metadata := core.Metadata{Name: "Comparisons", Theme: "default"}
-	if request.Metadata != nil {
-		if request.Metadata.Theme != "" {
-			if err := validateTheme(request.Metadata.Theme); err != nil {
-				validationErr := bodyValidationError("/metadata/theme", "invalid_value", err.Error())
-				return core.ConvertInput{}, nil, &validationErr
-			}
-		}
-		metadata = core.Metadata{
-			ID:          request.Metadata.ID,
-			Name:        request.Metadata.Name,
-			Theme:       request.Metadata.Theme,
-			Description: request.Metadata.Description,
-			Tag:         request.Metadata.Tag,
-			Timestamp:   request.Metadata.Timestamp,
-			System:      request.Metadata.Meta,
-		}
-		if metadata.Name == "" {
-			metadata.Name = "Comparisons"
-		}
-		if metadata.Theme == "" {
-			metadata.Theme = "default"
-		}
-	}
-
-	return core.ConvertInput{
-		Input: input, Parser: key, Config: cfg, Metadata: metadata, Charts: configs,
->>>>>>> bce573e (fix(api): align REST handlers with OpenAPI contract)
 	}, types, nil
 }
 
@@ -234,15 +179,12 @@ func buildParserConfig(request convertRequest, key string) (parser.Config, *apiV
 		validationErr := bodyValidationError("/grouping", "invalid_grouping", err.Error())
 		return cfg, &validationErr
 	}
-<<<<<<< HEAD
 	if (key == "csv" || key == "json") && len(cfg.Group) > 0 {
 		if err := parser.ValidateTabularGroupAlignment(cfg); err != nil {
 			validationErr := bodyValidationError("/grouping", "invalid_grouping", err.Error())
 			return cfg, &validationErr
 		}
 	}
-=======
->>>>>>> bce573e (fix(api): align REST handlers with OpenAPI contract)
 	if validationErr := applySelectOptions(&cfg, request.Select); validationErr != nil {
 		return cfg, validationErr
 	}
@@ -320,16 +262,8 @@ func materialiseConversionCharts(selection chartSelection) ([]internalcharts.Cha
 	}
 	configs := make([]internalcharts.ChartConfig, 0, len(types))
 	for _, chartType := range types {
-<<<<<<< HEAD
 		// chartType and overrides are validated above, so Materialise cannot fail.
 		config, _ := internalcharts.Materialise(chartType, nil, overrides[chartType])
-=======
-		config, err := internalcharts.Materialise(chartType, nil, overrides[chartType])
-		if err != nil {
-			validationErr := bodyValidationError("/charts/configs", "invalid_chart_config", err.Error())
-			return nil, nil, &validationErr
-		}
->>>>>>> bce573e (fix(api): align REST handlers with OpenAPI contract)
 		configs = append(configs, config)
 	}
 	return configs, types, nil
@@ -386,11 +320,7 @@ func decodeChartConfig(raw json.RawMessage, path string) (internalcharts.ChartCo
 	var discriminator struct {
 		Type string `json:"type"`
 	}
-<<<<<<< HEAD
 	if err := json.Unmarshal(raw, &discriminator); err != nil {
-=======
-	if err := strictDecode(raw, &discriminator); err != nil {
->>>>>>> bce573e (fix(api): align REST handlers with OpenAPI contract)
 		validationErr := bodyValidationError(path, "invalid_chart_config", err.Error())
 		return nil, &validationErr
 	}
@@ -537,14 +467,7 @@ func applyUIOptions(datasets []shared.Dataset, selection chartSelection, statist
 		configs := make([]internalcharts.ChartConfig, 0, len(targetTypes))
 		for _, chartType := range targetTypes {
 			base, hasBase := existing[chartType]
-<<<<<<< HEAD
 			override := overrides[chartType]
-=======
-			override, hasOverride := overrides[chartType]
-			if !hasBase && !hasOverride {
-				continue
-			}
->>>>>>> bce573e (fix(api): align REST handlers with OpenAPI contract)
 			seed := map[string]any{}
 			if hasBase {
 				raw, err := json.Marshal(base)
@@ -552,28 +475,13 @@ func applyUIOptions(datasets []shared.Dataset, selection chartSelection, statist
 					validationErr := bodyValidationError("/datasets", "invalid_dataset", err.Error())
 					return nil, nil, &validationErr
 				}
-<<<<<<< HEAD
 				_ = json.Unmarshal(raw, &seed) // json.Marshal always produces valid JSON.
-=======
-				if err := json.Unmarshal(raw, &seed); err != nil {
-					validationErr := bodyValidationError("/datasets", "invalid_dataset", err.Error())
-					return nil, nil, &validationErr
-				}
->>>>>>> bce573e (fix(api): align REST handlers with OpenAPI contract)
 			}
 			if stat != nil {
 				seed["stat"] = stat
 			}
-<<<<<<< HEAD
 			// chartType and override were validated before assembling the seed.
 			config, _ := internalcharts.Materialise(chartType, seed, override)
-=======
-			config, err := internalcharts.Materialise(chartType, seed, override)
-			if err != nil {
-				validationErr := bodyValidationError("/charts/configs", "invalid_chart_config", err.Error())
-				return nil, nil, &validationErr
-			}
->>>>>>> bce573e (fix(api): align REST handlers with OpenAPI contract)
 			configs = append(configs, config)
 		}
 		result[i].Settings = configs
@@ -582,7 +490,6 @@ func applyUIOptions(datasets []shared.Dataset, selection chartSelection, statist
 }
 
 type datasetWire struct {
-<<<<<<< HEAD
 	ID           string              `json:"id"`
 	Tag          string              `json:"tag"`
 	Timestamp    string              `json:"timestamp"`
@@ -595,20 +502,6 @@ type datasetWire struct {
 	Settings     *[]json.RawMessage  `json:"settings"`
 	Data         *[]shared.DataPoint `json:"data"`
 	PreserveRows bool                `json:"preserveRows"`
-=======
-	ID           string            `json:"id"`
-	Tag          string            `json:"tag"`
-	Timestamp    string            `json:"timestamp"`
-	Name         *string           `json:"name"`
-	Theme        string            `json:"theme"`
-	History      []historyWire     `json:"history"`
-	Description  string            `json:"description"`
-	Meta         *shared.Meta      `json:"meta"`
-	Axes         *[]axisWire       `json:"axes"`
-	Settings     *[]json.RawMessage `json:"settings"`
-	Data         *[]shared.DataPoint `json:"data"`
-	PreserveRows bool              `json:"preserveRows"`
->>>>>>> bce573e (fix(api): align REST handlers with OpenAPI contract)
 }
 
 type historyWire struct {
@@ -663,7 +556,6 @@ func decodeStrictDataset(raw json.RawMessage, path string) (shared.Dataset, *api
 	}
 
 	settings := make([]internalcharts.ChartConfig, 0, len(*wire.Settings))
-<<<<<<< HEAD
 	settingTypes := make(map[string]bool, len(*wire.Settings))
 	for i, rawConfig := range *wire.Settings {
 		configPath := fmt.Sprintf("%s/settings/%d", path, i)
@@ -676,13 +568,6 @@ func decodeStrictDataset(raw json.RawMessage, path string) (shared.Dataset, *api
 			return shared.Dataset{}, &validationErr
 		}
 		settingTypes[config.ChartType()] = true
-=======
-	for i, rawConfig := range *wire.Settings {
-		config, validationErr := decodeChartConfig(rawConfig, fmt.Sprintf("%s/settings/%d", path, i))
-		if validationErr != nil {
-			return shared.Dataset{}, validationErr
-		}
->>>>>>> bce573e (fix(api): align REST handlers with OpenAPI contract)
 		settings = append(settings, config)
 	}
 
