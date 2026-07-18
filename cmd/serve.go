@@ -288,9 +288,6 @@ func handleMerge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	tagAxis := request.TagAxis
-	if tagAxis == "" {
-		tagAxis = "name"
-	}
 	datasets, validationErr := decodeDatasetArray(request.Datasets, "/datasets")
 	if validationErr != nil {
 		writeValidationProblem(w, r, *validationErr)
@@ -298,7 +295,7 @@ func handleMerge(w http.ResponseWriter, r *http.Request) {
 	}
 	merged, err := core.Merge(datasets, shared.Dimension(tagAxis))
 	if err != nil {
-		writeValidationProblem(w, r, bodyValidationError("/tagAxis", "invalid_enum", err.Error()))
+		writeValidationProblem(w, r, bodyValidationError("/tagAxis", "invalid_enum", "tagAxis must be one of name, x, y, or z"))
 		return
 	}
 	writeAPIJSON(w, http.StatusOK, merged)

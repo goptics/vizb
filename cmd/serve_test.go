@@ -18,6 +18,7 @@ import (
 
 	"github.com/goptics/vizb/cmd/cli"
 	internalcharts "github.com/goptics/vizb/internal/charts"
+	"github.com/goptics/vizb/internal/flags"
 	"github.com/goptics/vizb/pkg/core"
 	"github.com/goptics/vizb/pkg/parser"
 	"github.com/goptics/vizb/shared"
@@ -589,6 +590,7 @@ func (s *ServeSuite) TestMergeEndpoint() {
 
 	recorder = s.apiRequest(handler, "/merge", `{"datasets":[`+firstMergeJSON+`,`+secondMergeJSON+`],"tagAxis":"invalid"}`, "application/json", "")
 	s.Equal(http.StatusUnprocessableEntity, recorder.Code)
+	s.Contains(recorder.Body.String(), `"/tagAxis"`)
 
 	recorder = s.apiRequest(handler, "/merge", `{"datasets":[{"name":"one"},{"name":"two"}]}`, "application/json", "")
 	s.Equal(http.StatusUnprocessableEntity, recorder.Code)
@@ -955,6 +957,24 @@ func (s *ServeSuite) TestRequestContractHelpers() {
 		s.Require().Len(datasets[0].History, 1)
 		s.Equal("v1", datasets[0].History[0].Tag)
 	})
+}
+
+func (s *ServeSuite) TestMaterialiseConversionChartsReportsFailure() {
+	saved := append([]flags.Flag(nil), internalcharts.FlagsFor("bar")...)
+	s.T().Cleanup(func() { internalcharts.SetFlags("bar", saved) })
+	internalcharts.SetFlags("bar", append(saved, flags.Flag{
+		Name:    "invalid-default",
+		Kind:    flags.KindString,
+		JSONKey: "invalidDefault",
+		Default: func() {},
+	}))
+
+	_, _, validationErr := materialiseConversionCharts(chartSelection{Types: []string{"bar"}})
+
+	s.Require().NotNil(validationErr)
+	s.Equal("/charts/configs", validationErr.Path)
+	s.Equal("invalid_chart_config", validationErr.Code)
+	s.ErrorContains(validationErr, "unsupported type")
 }
 
 func (s *ServeSuite) apiRequest(handler http.Handler, path, body, contentType, accept string) *httptest.ResponseRecorder {
