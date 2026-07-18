@@ -6,6 +6,7 @@ import (
 
 	internal_charts "github.com/goptics/vizb/internal/charts"
 	"github.com/goptics/vizb/internal/flags"
+	"github.com/goptics/vizb/pkg/style"
 	"github.com/goptics/vizb/testutil"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/suite"
@@ -209,10 +210,10 @@ func (s *FlagBagSuite) TestValidateThemeCatalogAndCustomPalettes() {
 		"#f00,#0f0", "#ff0000, #00ff00, #0000ff",
 	}
 	for _, value := range valid {
-		s.NoError(validateTheme(value), value)
+		s.NoError(style.ValidateTheme(value), value)
 	}
 	for _, value := range []string{"unknown", "#f00", "#ggg,#000", "#ffff,#000"} {
-		s.Error(validateTheme(value), value)
+		s.Error(style.ValidateTheme(value), value)
 	}
 }
 

@@ -121,6 +121,11 @@ components:
               summary: Convert inline CSV into a Dataset.
               value:
                 input: "region,latency\nwest,12\neast,18\n"
+                id: api-latency
+                name: API latency
+                description: Latency by region
+                tag: v2
+                theme: westeros
                 parser: csv
                 select: [region, latency]
                 charts:
@@ -130,6 +135,24 @@ components:
                       showLabels: true
                 output:
                   format: dataset
+            jsonHTMLConversion:
+              summary: Convert native JSON input into self-contained HTML.
+              value:
+                input:
+                  - { region: west, latency: 12 }
+                  - { region: east, latency: 18 }
+                name: API latency
+                parser: json
+                grouping:
+                  pattern: x
+                  columns: [region]
+                charts:
+                  types: [bar]
+                  configs:
+                    - type: bar
+                      showLabels: true
+                output:
+                  format: html
     MergeRequest:
       required: true
       content:
@@ -179,8 +202,11 @@ components:
           examples:
             convertedDataset:
               value:
+                id: api-latency
                 name: API latency
                 description: Latency by region
+                tag: v2
+                theme: westeros
                 axes: [{ key: name }, { key: y, type: value }]
                 settings: [{ type: bar, showLabels: true }, { type: line }]
                 data: [{ name: west, yAxis: "12" }, { name: east, yAxis: "18" }]
@@ -280,6 +306,25 @@ components:
       properties:
         input:
           $ref: '#/components/schemas/RawInput'
+        id:
+          type: string
+          description: Dataset identifier used by UI deep links.
+        name:
+          type: string
+          default: Comparisons
+          description: Dataset display name.
+        description:
+          type: string
+          description: Dataset description.
+        tag:
+          type: string
+          description: Dataset tag or run identifier.
+        theme:
+          type: string
+          minLength: 1
+          default: default
+          description: Built-in theme name or a comma-separated palette of at least two hex colors.
+          examples: [westeros, "#5470C6,#3BA272"]
         parser:
           type: string
           enum: [auto, csv, json, go, javascript, rust]
@@ -310,7 +355,7 @@ components:
       type: object
       additionalProperties: false
       properties:
-        pattern: { type: string }
+        pattern: { type: string, minLength: 1 }
         regex: { type: string }
         columns:
           type: array
@@ -571,7 +616,9 @@ components:
         scale: { type: string, enum: [linear, log] }
         stack: { type: boolean }
         showLabels: { type: boolean }
-        symbol: { type: string }
+        symbol:
+          type: string
+          description: ECharts built-in symbol, image:// or path:// reference, or SVG path.
         symbolSize: { type: number, exclusiveMinimum: 0 }
         smooth: { type: boolean }
         threeDRotate: { type: boolean }
@@ -588,7 +635,9 @@ components:
         sort: { $ref: '#/components/schemas/Sort' }
         scale: { type: string, enum: [linear, log] }
         showLabels: { type: boolean }
-        symbol: { type: string }
+        symbol:
+          type: string
+          description: ECharts built-in symbol, image:// or path:// reference, or SVG path.
         symbolSize: { type: number, exclusiveMinimum: 0 }
         threeDRotate: { type: boolean }
         threeD: { type: boolean }

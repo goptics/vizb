@@ -62,6 +62,22 @@ type ConvertResult struct {
 	Warnings []string
 }
 
+// OptionError identifies a caller-supplied conversion option that cannot be
+// applied. Transport adapters use it to distinguish request validation from
+// malformed or otherwise unprocessable input.
+type OptionError struct {
+	Name string
+	Err  error
+}
+
+func (e *OptionError) Error() string {
+	return e.Err.Error()
+}
+
+func (e *OptionError) Unwrap() error {
+	return e.Err
+}
+
 // Convert parses inline supported data, aggregates tabular rows, applies chart
 // rules, and builds a Dataset. Every dependency receives request-local values
 // and every failure is returned to the caller.
@@ -88,7 +104,7 @@ func Convert(in ConvertInput) (ConvertResult, error) {
 	}
 	if in.Config.Filter != "" {
 		if _, err := regexp.Compile(in.Config.Filter); err != nil {
-			return ConvertResult{}, fmt.Errorf("invalid filter regex: %w", err)
+			return ConvertResult{}, &OptionError{Name: "filter", Err: fmt.Errorf("invalid filter regex: %w", err)}
 		}
 	}
 
@@ -99,6 +115,19 @@ func Convert(in ConvertInput) (ConvertResult, error) {
 	}
 	cfg.ChartTypes = append(slices.Clone(cfg.ChartTypes), chartTypes(in.Charts)...)
 	tabular := key == "csv" || key == "json"
+	if tabular && len(cfg.Group) > 0 && cfg.GroupRegex == "" {
+		var err error
+		cfg, err = parser.FinalizeGroupConfig(cfg)
+		if err != nil {
+			return ConvertResult{}, &OptionError{Name: "grouping", Err: err}
+		}
+	}
+	if !tabular && parser.HasSelect(cfg) {
+		return ConvertResult{}, &OptionError{
+			Name: "select",
+			Err:  fmt.Errorf("select is only supported by csv and json input"),
+		}
+	}
 	if tabular && parser.NoExplicitGrouping(cfg) && !parser.HasSelect(cfg) {
 		cfg.AutoGroup = true
 	}
@@ -106,7 +135,10 @@ func Convert(in ConvertInput) (ConvertResult, error) {
 	data := in.Input
 	if cfg.JSONPath != "" {
 		if key != "json" {
-			return ConvertResult{}, fmt.Errorf("json path is only supported by the json parser")
+			return ConvertResult{}, &OptionError{
+				Name: "jsonPath",
+				Err:  fmt.Errorf("json path is only supported by the json parser"),
+			}
 		}
 		var err error
 		data, err = jsonparser.SelectBytes(data, cfg.JSONPath)
@@ -142,7 +174,7 @@ func Convert(in ConvertInput) (ConvertResult, error) {
 	for _, chart := range in.Charts {
 		if swap := chart.SwapString(); swap != "" {
 			if err := shared.ValidateSwap(swap, dataset.Axes); err != nil {
-				return ConvertResult{}, err
+				return ConvertResult{}, &OptionError{Name: "swap", Err: err}
 			}
 		}
 	}

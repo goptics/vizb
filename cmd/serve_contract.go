@@ -3,29 +3,32 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"regexp"
 	"slices"
+	"sort"
 	"strings"
 
 	internalcharts "github.com/goptics/vizb/internal/charts"
 	"github.com/goptics/vizb/pkg/core"
 	"github.com/goptics/vizb/pkg/parser"
+	"github.com/goptics/vizb/pkg/style"
 	"github.com/goptics/vizb/shared"
 )
 
 type groupingOptions struct {
-	Pattern string   `json:"pattern"`
+	Pattern *string  `json:"pattern"`
 	Regex   string   `json:"regex"`
 	Columns []string `json:"columns"`
 	Filter  string   `json:"filter"`
 }
 
 type unitOptions struct {
-	Memory string `json:"memory"`
-	Time   string `json:"time"`
-	Number string `json:"number"`
+	Memory *string `json:"memory"`
+	Time   *string `json:"time"`
+	Number *string `json:"number"`
 }
 
 type chartSelection struct {
@@ -39,16 +42,136 @@ type statisticsOptions struct {
 }
 
 type convertRequest struct {
-	Input    json.RawMessage  `json:"input"`
-	Parser   string           `json:"parser"`
-	Grouping *groupingOptions `json:"grouping"`
-	Units    *unitOptions     `json:"units"`
-	Select   []string         `json:"select"`
-	JSONPath string           `json:"jsonPath"`
-	Charts   chartSelection   `json:"charts"`
-	Output   struct {
-		Format string `json:"format"`
-	} `json:"output"`
+	Input       json.RawMessage  `json:"input"`
+	ID          *string          `json:"id"`
+	Name        *string          `json:"name"`
+	Theme       *string          `json:"theme"`
+	Description *string          `json:"description"`
+	Tag         *string          `json:"tag"`
+	Parser      *string          `json:"parser"`
+	Grouping    *groupingOptions `json:"grouping"`
+	Units       *unitOptions     `json:"units"`
+	Select      []string         `json:"select"`
+	JSONPath    string           `json:"jsonPath"`
+	Charts      chartSelection   `json:"charts"`
+	Output      *convertOutput   `json:"output"`
+}
+
+type convertOutput struct {
+	Format *string `json:"format"`
+}
+
+func (r *convertRequest) UnmarshalJSON(data []byte) error {
+	if err := rejectNullFields(data, "/", map[string]string{
+		"id": "/id", "name": "/name", "theme": "/theme", "description": "/description",
+		"tag": "/tag", "parser": "/parser", "grouping": "/grouping", "units": "/units",
+		"select": "/select", "jsonPath": "/jsonPath", "charts": "/charts", "output": "/output",
+	}); err != nil {
+		return err
+	}
+	type wire convertRequest
+	var decoded wire
+	if err := strictDecodeRequestObject(data, &decoded, ""); err != nil {
+		return err
+	}
+	*r = convertRequest(decoded)
+	return nil
+}
+
+func (o *groupingOptions) UnmarshalJSON(data []byte) error {
+	if err := rejectNullFields(data, "/grouping", map[string]string{
+		"pattern": "/grouping/pattern", "regex": "/grouping/regex",
+		"columns": "/grouping/columns", "filter": "/grouping/filter",
+	}); err != nil {
+		return err
+	}
+	type wire groupingOptions
+	var decoded wire
+	if err := strictDecodeRequestObject(data, &decoded, "/grouping"); err != nil {
+		return err
+	}
+	*o = groupingOptions(decoded)
+	return nil
+}
+
+func (o *unitOptions) UnmarshalJSON(data []byte) error {
+	if err := rejectNullFields(data, "/units", map[string]string{
+		"memory": "/units/memory", "time": "/units/time", "number": "/units/number",
+	}); err != nil {
+		return err
+	}
+	type wire unitOptions
+	var decoded wire
+	if err := strictDecodeRequestObject(data, &decoded, "/units"); err != nil {
+		return err
+	}
+	*o = unitOptions(decoded)
+	return nil
+}
+
+func (s *chartSelection) UnmarshalJSON(data []byte) error {
+	if err := rejectNullFields(data, "/charts", map[string]string{
+		"types": "/charts/types", "configs": "/charts/configs",
+	}); err != nil {
+		return err
+	}
+	type wire chartSelection
+	var decoded wire
+	if err := strictDecodeRequestObject(data, &decoded, "/charts"); err != nil {
+		return err
+	}
+	*s = chartSelection(decoded)
+	return nil
+}
+
+func (o *convertOutput) UnmarshalJSON(data []byte) error {
+	if err := rejectNullFields(data, "/output", map[string]string{"format": "/output/format"}); err != nil {
+		return err
+	}
+	type wire convertOutput
+	var decoded wire
+	if err := strictDecodeRequestObject(data, &decoded, "/output"); err != nil {
+		return err
+	}
+	*o = convertOutput(decoded)
+	return nil
+}
+
+func rejectNullFields(data []byte, nullPath string, paths map[string]string) error {
+	if bytes.Equal(bytes.TrimSpace(data), []byte("null")) {
+		return bodyValidationError(nullPath, "invalid_type", nullPath+" must not be null")
+	}
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &fields); err != nil {
+		return err
+	}
+	keys := make([]string, 0, len(paths))
+	for field := range paths {
+		keys = append(keys, field)
+	}
+	sort.Strings(keys)
+	for _, field := range keys {
+		path := paths[field]
+		if raw, ok := fields[field]; ok && bytes.Equal(bytes.TrimSpace(raw), []byte("null")) {
+			return bodyValidationError(path, "invalid_type", path+" must not be null")
+		}
+	}
+	return nil
+}
+
+func strictDecodeRequestObject(data []byte, target any, prefix string) error {
+	err := strictDecode(data, target)
+	if err == nil {
+		return nil
+	}
+	const unknownFieldPrefix = `json: unknown field "`
+	message := err.Error()
+	if strings.HasPrefix(message, unknownFieldPrefix) && strings.HasSuffix(message, `"`) {
+		field := strings.TrimSuffix(strings.TrimPrefix(message, unknownFieldPrefix), `"`)
+		path := prefix + "/" + strings.ReplaceAll(strings.ReplaceAll(field, "~", "~0"), "/", "~1")
+		return bodyValidationError(path, "unknown_field", "unknown request field "+field)
+	}
+	return err
 }
 
 type mergeRequest struct {
@@ -77,10 +200,85 @@ func bodyValidationError(path, code, message string) apiValidationError {
 	return apiValidationError{Location: "body", Path: path, Code: code, Message: message}
 }
 
+func conversionOptionValidationError(selection chartSelection, optionErr *core.OptionError) apiValidationError {
+	var path string
+	switch optionErr.Name {
+	case "filter":
+		path = "/grouping/filter"
+	case "grouping":
+		path = "/grouping"
+	case "jsonPath":
+		path = "/jsonPath"
+	case "select":
+		path = "/select"
+	case "swap":
+		path = chartConfigFieldPath(selection, "swap", 0)
+	default:
+		path = "/charts/configs"
+	}
+	return bodyValidationError(path, "inapplicable_option", optionErr.Error())
+}
+
+func conversionWarningValidationErrors(selection chartSelection, warnings []string) []apiValidationError {
+	result := make([]apiValidationError, 0, len(warnings))
+	occurrences := map[string]int{}
+	for _, warning := range warnings {
+		flagName := warningFlagName(warning)
+		jsonKey := chartFlagJSONKey(flagName)
+		path := "/charts/configs"
+		if jsonKey != "" {
+			path = chartConfigFieldPath(selection, jsonKey, occurrences[jsonKey])
+			occurrences[jsonKey]++
+		}
+		result = append(result, bodyValidationError(path, "inapplicable_option", warning))
+	}
+	return result
+}
+
+func warningFlagName(warning string) string {
+	const prefix = `flag "`
+	if !strings.HasPrefix(warning, prefix) {
+		return ""
+	}
+	name, _, ok := strings.Cut(strings.TrimPrefix(warning, prefix), `"`)
+	if !ok {
+		return ""
+	}
+	return name
+}
+
+func chartFlagJSONKey(flagName string) string {
+	for _, chartType := range internalcharts.Registered() {
+		for _, flag := range internalcharts.FlagsFor(chartType) {
+			if flag.Name == flagName {
+				return flag.JSONKey
+			}
+		}
+	}
+	return ""
+}
+
+func chartConfigFieldPath(selection chartSelection, field string, occurrence int) string {
+	matches := make([]string, 0, len(selection.Configs))
+	for i, raw := range selection.Configs {
+		var values map[string]json.RawMessage
+		if err := json.Unmarshal(raw, &values); err != nil {
+			continue
+		}
+		if _, ok := values[field]; ok {
+			matches = append(matches, fmt.Sprintf("/charts/configs/%d/%s", i, field))
+		}
+	}
+	if occurrence < len(matches) {
+		return matches[occurrence]
+	}
+	return "/charts/configs"
+}
+
 func buildConvertInput(request convertRequest, input []byte) (core.ConvertInput, []string, *apiValidationError) {
-	key := strings.TrimSpace(request.Parser)
-	if key == "" {
-		key = "auto"
+	key := "auto"
+	if request.Parser != nil {
+		key = *request.Parser
 	}
 	if !slices.Contains([]string{"auto", "csv", "json", "go", "javascript", "rust"}, key) {
 		err := bodyValidationError("/parser", "invalid_enum", "parser must be one of auto, csv, json, go, javascript, or rust")
@@ -95,25 +293,50 @@ func buildConvertInput(request convertRequest, input []byte) (core.ConvertInput,
 	if validationErr != nil {
 		return core.ConvertInput{}, nil, validationErr
 	}
+	metadata, validationErr := buildConvertMetadata(request)
+	if validationErr != nil {
+		return core.ConvertInput{}, nil, validationErr
+	}
 
 	return core.ConvertInput{
-		Input:  input,
-		Parser: key,
-		Config: cfg,
-		Metadata: core.Metadata{
-			Name:  "Comparisons",
-			Theme: "default",
-		},
-		Charts: configs,
+		Input:    input,
+		Parser:   key,
+		Config:   cfg,
+		Metadata: metadata,
+		Charts:   configs,
 	}, types, nil
+}
+
+func buildConvertMetadata(request convertRequest) (core.Metadata, *apiValidationError) {
+	metadata := core.Metadata{Name: "Comparisons", Theme: "default"}
+	if request.ID != nil {
+		metadata.ID = *request.ID
+	}
+	if request.Name != nil {
+		metadata.Name = *request.Name
+	}
+	if request.Description != nil {
+		metadata.Description = *request.Description
+	}
+	if request.Tag != nil {
+		metadata.Tag = *request.Tag
+	}
+	if request.Theme == nil {
+		return metadata, nil
+	}
+	metadata.Theme = style.NormalizeTheme(*request.Theme)
+	if err := style.ValidateTheme(metadata.Theme); err != nil {
+		validationErr := bodyValidationError("/theme", "invalid_value", err.Error())
+		return core.Metadata{}, &validationErr
+	}
+	return metadata, nil
 }
 
 func buildParserConfig(request convertRequest, key string) (parser.Config, *apiValidationError) {
 	cfg := parser.Config{GroupPattern: "x", MemUnit: "B", TimeUnit: "ns", JSONPath: request.JSONPath}
 	if request.Grouping != nil {
-		cfg.GroupPattern = request.Grouping.Pattern
-		if cfg.GroupPattern == "" {
-			cfg.GroupPattern = "x"
+		if request.Grouping.Pattern != nil {
+			cfg.GroupPattern = *request.Grouping.Pattern
 		}
 		cfg.GroupRegex = request.Grouping.Regex
 		cfg.Group = slices.Clone(request.Grouping.Columns)
@@ -143,34 +366,27 @@ func buildParserConfig(request convertRequest, key string) (parser.Config, *apiV
 	}
 
 	if request.Units != nil {
-		if request.Units.Memory != "" && !slices.Contains([]string{"b", "B", "KB", "MB", "GB"}, request.Units.Memory) {
+		if request.Units.Memory != nil && !slices.Contains([]string{"b", "B", "KB", "MB", "GB"}, *request.Units.Memory) {
 			validationErr := bodyValidationError("/units/memory", "invalid_enum", "memory unit must be one of b, B, KB, MB, or GB")
 			return cfg, &validationErr
 		}
-		if request.Units.Time != "" && !slices.Contains([]string{"ns", "us", "ms", "s"}, request.Units.Time) {
+		if request.Units.Time != nil && !slices.Contains([]string{"ns", "us", "ms", "s"}, *request.Units.Time) {
 			validationErr := bodyValidationError("/units/time", "invalid_enum", "time unit must be one of ns, us, ms, or s")
 			return cfg, &validationErr
 		}
-		if request.Units.Number != "" && !slices.Contains([]string{"K", "M", "B", "T"}, request.Units.Number) {
+		if request.Units.Number != nil && !slices.Contains([]string{"K", "M", "B", "T"}, *request.Units.Number) {
 			validationErr := bodyValidationError("/units/number", "invalid_enum", "number unit must be one of K, M, B, or T")
 			return cfg, &validationErr
 		}
-		if request.Units.Memory != "" {
-			cfg.MemUnit = request.Units.Memory
+		if request.Units.Memory != nil {
+			cfg.MemUnit = *request.Units.Memory
 		}
-		if request.Units.Time != "" {
-			cfg.TimeUnit = request.Units.Time
+		if request.Units.Time != nil {
+			cfg.TimeUnit = *request.Units.Time
 		}
-		cfg.NumberUnit = request.Units.Number
-	}
-
-	if cfg.JSONPath != "" && key != "auto" && key != "json" {
-		validationErr := bodyValidationError("/jsonPath", "inapplicable_option", "jsonPath is only supported by the json parser")
-		return cfg, &validationErr
-	}
-	if len(request.Select) > 0 && slices.Contains([]string{"go", "javascript", "rust"}, key) {
-		validationErr := bodyValidationError("/select", "inapplicable_option", "select is only supported by csv and json input")
-		return cfg, &validationErr
+		if request.Units.Number != nil {
+			cfg.NumberUnit = *request.Units.Number
+		}
 	}
 
 	var err error
@@ -178,12 +394,6 @@ func buildParserConfig(request convertRequest, key string) (parser.Config, *apiV
 	if err != nil {
 		validationErr := bodyValidationError("/grouping", "invalid_grouping", err.Error())
 		return cfg, &validationErr
-	}
-	if (key == "csv" || key == "json") && len(cfg.Group) > 0 {
-		if err := parser.ValidateTabularGroupAlignment(cfg); err != nil {
-			validationErr := bodyValidationError("/grouping", "invalid_grouping", err.Error())
-			return cfg, &validationErr
-		}
 	}
 	if validationErr := applySelectOptions(&cfg, request.Select); validationErr != nil {
 		return cfg, validationErr
@@ -333,8 +543,12 @@ func decodeChartConfig(raw json.RawMessage, path string) (internalcharts.ChartCo
 		validationErr := bodyValidationError(path+"/type", "invalid_enum", err.Error())
 		return nil, &validationErr
 	}
-	if err := strictDecode(raw, config); err != nil {
-		validationErr := bodyValidationError(path, "invalid_chart_config", err.Error())
+	if err := strictDecodeRequestObject(raw, config, path); err != nil {
+		var validationErr apiValidationError
+		if errors.As(err, &validationErr) {
+			return nil, &validationErr
+		}
+		validationErr = bodyValidationError(path, "invalid_chart_config", err.Error())
 		return nil, &validationErr
 	}
 	if validationErr := validateChartConfigValues(raw, path); validationErr != nil {
@@ -349,10 +563,24 @@ func validateChartConfigValues(raw json.RawMessage, path string) *apiValidationE
 		validationErr := bodyValidationError(path, "invalid_chart_config", err.Error())
 		return &validationErr
 	}
+	if validationErr := rejectNullObjectValues(values, path); validationErr != nil {
+		return validationErr
+	}
 	if scaleRaw, ok := values["scale"]; ok {
 		var scale string
 		if err := json.Unmarshal(scaleRaw, &scale); err != nil || (scale != "linear" && scale != "log") {
 			validationErr := bodyValidationError(path+"/scale", "invalid_enum", "scale must be linear or log")
+			return &validationErr
+		}
+	}
+	if symbolRaw, ok := values["symbol"]; ok {
+		var symbol string
+		if err := json.Unmarshal(symbolRaw, &symbol); err != nil {
+			validationErr := bodyValidationError(path+"/symbol", "invalid_type", "symbol must be a string")
+			return &validationErr
+		}
+		if err := internalcharts.ValidateSymbolValue(symbol); err != nil {
+			validationErr := bodyValidationError(path+"/symbol", "invalid_value", err.Error())
 			return &validationErr
 		}
 	}
@@ -368,6 +596,9 @@ func validateChartConfigValues(raw json.RawMessage, path string) *apiValidationE
 		if err := json.Unmarshal(sortRaw, &sortFields); err != nil {
 			validationErr := bodyValidationError(path+"/sort", "invalid_value", "sort must be an object")
 			return &validationErr
+		}
+		if validationErr := rejectNullObjectValues(sortFields, path+"/sort"); validationErr != nil {
+			return validationErr
 		}
 		if _, ok := sortFields["enabled"]; !ok {
 			validationErr := bodyValidationError(path+"/sort/enabled", "required", "sort.enabled is required")
@@ -390,6 +621,9 @@ func validateChartConfigValues(raw json.RawMessage, path string) *apiValidationE
 			validationErr := bodyValidationError(path+"/stat", "invalid_value", "stat must be an object")
 			return &validationErr
 		}
+		if validationErr := rejectNullObjectValues(statFields, path+"/stat"); validationErr != nil {
+			return validationErr
+		}
 		if _, ok := statFields["enabled"]; !ok {
 			validationErr := bodyValidationError(path+"/stat/enabled", "required", "stat.enabled is required")
 			return &validationErr
@@ -405,6 +639,21 @@ func validateChartConfigValues(raw json.RawMessage, path string) *apiValidationE
 		}
 		if validationErr := validateStatMath(stat.Math, path+"/stat/math"); validationErr != nil {
 			return validationErr
+		}
+	}
+	return nil
+}
+
+func rejectNullObjectValues(values map[string]json.RawMessage, path string) *apiValidationError {
+	keys := make([]string, 0, len(values))
+	for key := range values {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		if bytes.Equal(bytes.TrimSpace(values[key]), []byte("null")) {
+			validationErr := bodyValidationError(path+"/"+key, "invalid_type", path+"/"+key+" must not be null")
+			return &validationErr
 		}
 	}
 	return nil

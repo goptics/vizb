@@ -1,6 +1,7 @@
 package core
 
 import (
+	"errors"
 	"math"
 	"strings"
 	"sync"
@@ -120,6 +121,38 @@ func (s *CoreSuite) TestConvertBranchErrorsAndAutoDetection() {
 	})
 	s.Require().NoError(err)
 	s.Len(result.Dataset.Data, 1)
+}
+
+func (s *CoreSuite) TestConvertIdentifiesInapplicableOptions() {
+	chart := []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: "linear"}}
+	for _, input := range []ConvertInput{
+		{
+			Input:  []byte("BenchmarkFoo-8 100 123 ns/op\n"),
+			Parser: "auto",
+			Config: parser.Config{
+				SelectViews: []parser.SelectView{{Columns: []parser.ColumnSpec{{Source: "x"}, {Source: "y"}}}},
+			},
+			Charts: chart,
+		},
+		{
+			Input:  []byte("x,y\na,1\n"),
+			Parser: "csv",
+			Config: parser.Config{GroupPattern: "x", Group: []string{"x"}},
+			Charts: []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Swap: "x:z"}},
+		},
+		{
+			Input:  []byte("a,b,c\nx,y,1\n"),
+			Parser: "auto",
+			Config: parser.Config{GroupPattern: "x/y", Group: []string{"a", "b"}},
+			Charts: chart,
+		},
+	} {
+		_, err := Convert(input)
+		var optionErr *OptionError
+		s.Require().ErrorAs(err, &optionErr)
+		s.NotEmpty(optionErr.Name)
+		s.True(errors.Is(optionErr, optionErr.Err))
+	}
 }
 
 func (s *CoreSuite) TestConvertBenchmarkFormats() {

@@ -212,8 +212,12 @@ func handleConvertWithGenerator(
 	if !decodeAPIRequest(w, r, &request) {
 		return
 	}
-	if len(request.Input) == 0 || string(request.Input) == "null" {
+	if len(request.Input) == 0 {
 		writeValidationProblem(w, r, bodyValidationError("/input", "required", "input is required"))
+		return
+	}
+	if string(request.Input) == "null" {
+		writeValidationProblem(w, r, bodyValidationError("/input", "invalid_type", "input must be a string, JSON object, or JSON array"))
 		return
 	}
 	input, err := inlineInput(request.Input)
@@ -221,9 +225,9 @@ func handleConvertWithGenerator(
 		writeValidationProblem(w, r, bodyValidationError("/input", "invalid_type", err.Error()))
 		return
 	}
-	format := request.Output.Format
-	if format == "" {
-		format = "dataset"
+	format := "dataset"
+	if request.Output != nil && request.Output.Format != nil {
+		format = *request.Output.Format
 	}
 	if format != "dataset" && format != "html" {
 		writeValidationProblem(w, r, bodyValidationError("/output/format", "invalid_enum", "output.format must be dataset or html"))
@@ -245,7 +249,16 @@ func handleConvertWithGenerator(
 	}
 	result, err := core.Convert(convertInput)
 	if err != nil {
+		var optionErr *core.OptionError
+		if errors.As(err, &optionErr) {
+			writeValidationProblem(w, r, conversionOptionValidationError(request.Charts, optionErr))
+			return
+		}
 		writeAPIProblem(w, r, http.StatusUnprocessableEntity, "Input processing failed", err.Error())
+		return
+	}
+	if len(result.Warnings) > 0 {
+		writeValidationProblem(w, r, conversionWarningValidationErrors(request.Charts, result.Warnings)...)
 		return
 	}
 	if format == "html" {
@@ -352,6 +365,11 @@ func decodeAPIRequest(w http.ResponseWriter, r *http.Request, target any) bool {
 }
 
 func writeRequestDecodeProblem(w http.ResponseWriter, r *http.Request, err error) {
+	var validationErr apiValidationError
+	if errors.As(err, &validationErr) {
+		writeValidationProblem(w, r, validationErr)
+		return
+	}
 	var maxBytesErr *http.MaxBytesError
 	if errors.As(err, &maxBytesErr) {
 		writeAPIProblem(w, r, http.StatusRequestEntityTooLarge, "Content too large", fmt.Sprintf("Request body must not exceed %d bytes.", maxBytesErr.Limit))
