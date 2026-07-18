@@ -405,6 +405,15 @@ func (s *ServeSuite) TestConvertEndpoint() {
 	recorder = s.apiRequest(handler, "/", `{"input":[{"region":"west","value":12}],"charts":{"types":["bar"]}}`, "application/json", "")
 	s.Equal(http.StatusOK, recorder.Code)
 
+	recorder = s.apiRequest(
+		handler,
+		"/",
+		`{"input":"region,latency\nwest,12\neast,18\n","parser":"csv","select":["region,latency"],"charts":{"types":["bar"]}}`,
+		"application/json",
+		"application/json",
+	)
+	s.Equal(http.StatusOK, recorder.Code, recorder.Body.String())
+
 	documented := `{
 		"input":{"data":[{"region":"west","latency":12},{"region":"east","latency":18}]},
 		"parser":"auto",

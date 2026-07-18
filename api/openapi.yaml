@@ -127,7 +127,7 @@ components:
                 tag: v2
                 theme: westeros
                 parser: csv
-                select: [region, latency]
+                select: ["region,latency"]
                 charts:
                   types: [bar, line]
                   configs:
