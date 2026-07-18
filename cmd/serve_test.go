@@ -14,6 +14,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/goptics/vizb/cmd/cli"
 	"github.com/goptics/vizb/shared"
 	"github.com/stretchr/testify/suite"
 )
@@ -33,8 +34,8 @@ func (s *ServeSuite) SetupTest() {
 }
 
 func (s *ServeSuite) TestDefaultsAndHTTPPolicy() {
-	s.Equal(defaultServeHost, serveOpts.Host)
-	s.Equal(defaultServePort, serveOpts.Port)
+	s.Equal(defaultServeHost, serveBag.String("host"))
+	s.Equal(defaultServePort, serveBag.Int("port"))
 	s.NotNil(serveCmd.Flags().Lookup("host"))
 	s.NotNil(serveCmd.Flags().Lookup("port"))
 
@@ -92,9 +93,9 @@ func (s *ServeSuite) TestRoutesRegisterOnlyTheThreePOSTOperations() {
 }
 
 func (s *ServeSuite) TestInvalidConfigurationReturnsCommandError() {
-	options := serveOptions{Host: defaultServeHost, Port: defaultServePort}
+	bag := cli.NewFlagBag(serveFlags())
 	var listened atomic.Bool
-	command := newServeCommand(&options, serveDependencies{
+	command := newServeCommand(bag, serveDependencies{
 		newHandler: http.NotFoundHandler,
 		listen: func(string, string) (net.Listener, error) {
 			listened.Store(true)
@@ -406,6 +407,8 @@ func (s *ServeSuite) TestConvertEndpointReportsUIGenerationFailure() {
 	recorder := s.apiRequest(handler, "/", body, "application/json", "text/html")
 	s.Equal(http.StatusInternalServerError, recorder.Code)
 	s.Equal(float64(http.StatusInternalServerError), s.problemStatus(recorder))
+	s.NotContains(recorder.Body.String(), "template failed")
+	s.Contains(recorder.Body.String(), "could not generate the response")
 }
 
 func (s *ServeSuite) TestMergeEndpoint() {
@@ -430,6 +433,9 @@ func (s *ServeSuite) TestMergeEndpoint() {
 
 	recorder = s.apiRequest(handler, "/merge", `{"datasets":[`+firstMergeJSON[:len(firstMergeJSON)-1]+`,"extra":true},`+secondMergeJSON+`]}`, "application/json", "")
 	s.Equal(http.StatusBadRequest, recorder.Code)
+
+	recorder = s.apiRequest(handler, "/merge", `{"datasets":[`+firstMergeJSON+`,`+secondMergeJSON+`]}`, "application/json", "text/html")
+	s.Equal(http.StatusNotAcceptable, recorder.Code)
 }
 
 func (s *ServeSuite) TestUIEndpoint() {
@@ -478,6 +484,26 @@ func (s *ServeSuite) TestUIEndpointAcceptsConfigsStatisticsAndMediaRanges() {
 	s.Equal(http.StatusOK, recorder.Code, recorder.Body.String())
 }
 
+func (s *ServeSuite) TestUIEndpointMaterialisesDefaultsForSelectedChartTypes() {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handleUIWithGenerator(w, r, func(datasets []shared.Dataset, charts []string) (string, error) {
+			s.Equal([]string{"line"}, charts)
+			s.Require().Len(datasets, 1)
+			s.Require().Len(datasets[0].Settings, 1)
+			s.Equal("line", datasets[0].Settings[0].ChartType())
+			raw, err := json.Marshal(datasets[0].Settings[0])
+			s.Require().NoError(err)
+			var config map[string]any
+			s.Require().NoError(json.Unmarshal(raw, &config))
+			s.Equal("linear", config["scale"])
+			return "<html>ok</html>", nil
+		})
+	})
+	body := `{"datasets":` + validDatasetJSON + `,"charts":{"types":["line"]}}`
+	recorder := s.apiRequest(handler, "/ui", body, "application/json", "text/html")
+	s.Equal(http.StatusOK, recorder.Code, recorder.Body.String())
+}
+
 func (s *ServeSuite) TestUIEndpointValidatesDatasetsAndStatistics() {
 	handler := newRESTHandler()
 	tests := []struct {
@@ -493,6 +519,7 @@ func (s *ServeSuite) TestUIEndpointValidatesDatasetsAndStatistics() {
 		{name: "invalid axis key", datasets: `{"name":"Bench","axes":[{"key":"metric"}],"settings":[],"data":[]}`},
 		{name: "invalid axis type", datasets: `{"name":"Bench","axes":[{"key":"x","type":"category"}],"settings":[],"data":[]}`},
 		{name: "invalid setting", datasets: `{"name":"Bench","axes":[],"settings":[{"type":"unknown"}],"data":[]}`},
+		{name: "duplicate setting types", datasets: `{"name":"Bench","axes":[],"settings":[{"type":"bar"},{"type":"bar"}],"data":[]}`},
 		{name: "history missing tag", datasets: `{"name":"Bench","history":[{"timestamp":"now"}],"axes":[],"settings":[],"data":[]}`},
 		{name: "history missing timestamp", datasets: `{"name":"Bench","history":[{"tag":"v1"}],"axes":[],"settings":[],"data":[]}`},
 		{name: "invalid statistics", datasets: validDatasetJSON, suffix: `,"statistics":{"math":["bogus"]}`},
@@ -517,6 +544,8 @@ func (s *ServeSuite) TestUIEndpointReportsGenerationFailure() {
 	recorder := s.apiRequest(handler, "/ui", body, "application/json", "text/html")
 	s.Equal(http.StatusInternalServerError, recorder.Code)
 	s.Equal(float64(http.StatusInternalServerError), s.problemStatus(recorder))
+	s.NotContains(recorder.Body.String(), "template failed")
+	s.Contains(recorder.Body.String(), "could not generate the response")
 }
 
 func (s *ServeSuite) TestRequestHelpers() {

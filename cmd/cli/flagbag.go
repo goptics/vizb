@@ -23,6 +23,7 @@ type FlagBag struct {
 	strs         map[string]*string
 	bools        map[string]*bool
 	floats       map[string]*float64
+	ints         map[string]*int
 	stringSlices map[string]*[]string // backs KindStringSlice, KindStat, and KindStringArray
 }
 
@@ -33,6 +34,7 @@ func NewFlagBag(fl []flags.Flag) *FlagBag {
 		strs:         map[string]*string{},
 		bools:        map[string]*bool{},
 		floats:       map[string]*float64{},
+		ints:         map[string]*int{},
 		stringSlices: map[string]*[]string{},
 	}
 	for _, f := range fl {
@@ -43,6 +45,8 @@ func NewFlagBag(fl []flags.Flag) *FlagBag {
 			b.bools[f.Name] = new(bool)
 		case flags.KindFloat:
 			b.floats[f.Name] = new(float64)
+		case flags.KindInt:
+			b.ints[f.Name] = new(int)
 		case flags.KindStringSlice, flags.KindStat, flags.KindStringArray:
 			b.stringSlices[f.Name] = new([]string)
 		}
@@ -74,6 +78,13 @@ func (b *FlagBag) Bind(fs *pflag.FlagSet) {
 				fs.Float64VarP(b.floats[f.Name], f.Name, f.Shorthand, def, f.Usage)
 			} else {
 				fs.Float64Var(b.floats[f.Name], f.Name, def, f.Usage)
+			}
+		case flags.KindInt:
+			def, _ := f.Default.(int)
+			if f.Shorthand != "" {
+				fs.IntVarP(b.ints[f.Name], f.Name, f.Shorthand, def, f.Usage)
+			} else {
+				fs.IntVar(b.ints[f.Name], f.Name, def, f.Usage)
 			}
 		case flags.KindStringSlice:
 			def, _ := f.Default.([]string)
@@ -149,6 +160,8 @@ func (b *FlagBag) fatalValue(f flags.Flag) string {
 	switch f.Kind {
 	case flags.KindFloat:
 		return strconv.FormatFloat(*b.floats[f.Name], 'g', -1, 64)
+	case flags.KindInt:
+		return strconv.Itoa(*b.ints[f.Name])
 	default:
 		return *b.strs[f.Name]
 	}
@@ -173,6 +186,14 @@ func (b *FlagBag) Bool(name string) bool {
 // Float returns the parsed value of a float flag.
 func (b *FlagBag) Float(name string) float64 {
 	if p := b.floats[name]; p != nil {
+		return *p
+	}
+	return 0
+}
+
+// Int returns the parsed value of an integer flag.
+func (b *FlagBag) Int(name string) int {
+	if p := b.ints[name]; p != nil {
 		return *p
 	}
 	return 0
@@ -223,6 +244,10 @@ func (b *FlagBag) ChartSeed(cmd *cobra.Command) map[string]any {
 			if changed {
 				seed[f.JSONKey] = encodeFlag(f, *b.floats[f.Name])
 			}
+		case flags.KindInt:
+			if changed {
+				seed[f.JSONKey] = encodeFlag(f, *b.ints[f.Name])
+			}
 		default: // KindString
 			if changed || f.Default != nil {
 				seed[f.JSONKey] = encodeFlag(f, *b.strs[f.Name])
@@ -243,6 +268,8 @@ func (b *FlagBag) Reset() {
 			*b.bools[f.Name], _ = f.Default.(bool)
 		case flags.KindFloat:
 			*b.floats[f.Name], _ = f.Default.(float64)
+		case flags.KindInt:
+			*b.ints[f.Name], _ = f.Default.(int)
 		case flags.KindStringSlice, flags.KindStat, flags.KindStringArray:
 			def, _ := f.Default.([]string)
 			*b.stringSlices[f.Name] = def

@@ -26,8 +26,7 @@ func ResetTestState() {
 	mergeOpts.OutputFile = ""
 	mergeOpts.TagAxis = "n"
 
-	serveOpts.Host = defaultServeHost
-	serveOpts.Port = defaultServePort
+	serveBag.Reset()
 
 	resetChanged(rootCmd.Flags())
 	resetChanged(uiCmd.Flags())

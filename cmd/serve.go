@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"mime"
 	"net"
 	"net/http"
@@ -16,6 +17,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/goptics/vizb/cmd/cli"
+	"github.com/goptics/vizb/internal/flags"
 	"github.com/goptics/vizb/pkg/core"
 	"github.com/goptics/vizb/shared"
 	"github.com/spf13/cobra"
@@ -46,16 +49,16 @@ type serveDependencies struct {
 }
 
 var (
-	serveOpts = serveOptions{Host: defaultServeHost, Port: defaultServePort}
 	serveDeps = serveDependencies{
 		newHandler:    newRESTHandler,
 		listen:        net.Listen,
 		signalContext: signal.NotifyContext,
 		shutdown:      (*http.Server).Shutdown,
 	}
+	serveBag = cli.NewFlagBag(serveFlags())
 )
 
-var serveCmd = newServeCommand(&serveOpts, serveDeps)
+var serveCmd = newServeCommand(serveBag, serveDeps)
 
 func init() {
 	rootCmd.AddCommand(serveCmd)
@@ -90,7 +93,7 @@ func composeRESTRoutes(handlers restHandlers) *http.ServeMux {
 // newServeCommand wires a configured HTTP server to Cobra. Its dependencies
 // are explicit so command and lifecycle behavior can be exercised without a
 // real listener or operating-system signal.
-func newServeCommand(opts *serveOptions, deps serveDependencies) *cobra.Command {
+func newServeCommand(bag *cli.FlagBag, deps serveDependencies) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "serve",
 		Short:        "Run Vizb's local REST API server",
@@ -99,12 +102,21 @@ func newServeCommand(opts *serveOptions, deps serveDependencies) *cobra.Command 
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx, stop := deps.signalContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 			defer stop()
-			return runServer(ctx, *opts, deps)
+			return runServer(ctx, serveOptions{
+				Host: bag.String("host"),
+				Port: bag.Int("port"),
+			}, deps)
 		},
 	}
-	cmd.Flags().StringVar(&opts.Host, "host", defaultServeHost, "Host interface to listen on")
-	cmd.Flags().IntVarP(&opts.Port, "port", "p", defaultServePort, "TCP port to listen on")
+	bag.Bind(cmd.Flags())
 	return cmd
+}
+
+func serveFlags() []flags.Flag {
+	return []flags.Flag{
+		{Name: "host", Default: defaultServeHost, Usage: "Host interface to listen on", Kind: flags.KindString},
+		{Name: "port", Shorthand: "p", Default: defaultServePort, Usage: "TCP port to listen on", Kind: flags.KindInt},
+	}
 }
 
 func runServer(ctx context.Context, opts serveOptions, deps serveDependencies) error {
@@ -218,7 +230,7 @@ func handleConvertWithGenerator(
 	if format == "html" {
 		html, err := generateUI([]shared.Dataset{*result.Dataset}, types)
 		if err != nil {
-			writeAPIProblem(w, r, http.StatusInternalServerError, "Internal server error", err.Error())
+			writeInternalServerError(w, r, "generate convert HTML", err)
 			return
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -231,6 +243,10 @@ func handleConvertWithGenerator(
 func handleMerge(w http.ResponseWriter, r *http.Request) {
 	var request mergeRequest
 	if !decodeAPIRequest(w, r, &request) {
+		return
+	}
+	if !accepts(r, "application/json") {
+		writeAPIProblem(w, r, http.StatusNotAcceptable, "Not acceptable", "Accept must allow application/json")
 		return
 	}
 	if len(request.Datasets) < 2 {
@@ -287,7 +303,7 @@ func handleUIWithGenerator(
 	}
 	html, generationErr := generateUI(datasets, types)
 	if generationErr != nil {
-		writeAPIProblem(w, r, http.StatusInternalServerError, "Internal server error", generationErr.Error())
+		writeInternalServerError(w, r, "generate UI HTML", generationErr)
 		return
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -385,6 +401,11 @@ func writeAPIProblem(w http.ResponseWriter, r *http.Request, status int, title, 
 		"detail":   detail,
 		"instance": r.URL.Path,
 	})
+}
+
+func writeInternalServerError(w http.ResponseWriter, r *http.Request, operation string, err error) {
+	log.Printf("serve: %s: %v", operation, err)
+	writeAPIProblem(w, r, http.StatusInternalServerError, "Internal server error", "The server could not generate the response.")
 }
 
 func writeValidationProblem(w http.ResponseWriter, r *http.Request, validationErrors ...apiValidationError) {

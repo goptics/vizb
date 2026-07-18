@@ -470,10 +470,7 @@ func applyUIOptions(datasets []shared.Dataset, selection chartSelection, statist
 		configs := make([]internalcharts.ChartConfig, 0, len(targetTypes))
 		for _, chartType := range targetTypes {
 			base, hasBase := existing[chartType]
-			override, hasOverride := overrides[chartType]
-			if !hasBase && !hasOverride {
-				continue
-			}
+			override := overrides[chartType]
 			seed := map[string]any{}
 			if hasBase {
 				raw, err := json.Marshal(base)
@@ -568,11 +565,18 @@ func decodeStrictDataset(raw json.RawMessage, path string) (shared.Dataset, *api
 	}
 
 	settings := make([]internalcharts.ChartConfig, 0, len(*wire.Settings))
+	settingTypes := make(map[string]bool, len(*wire.Settings))
 	for i, rawConfig := range *wire.Settings {
-		config, validationErr := decodeChartConfig(rawConfig, fmt.Sprintf("%s/settings/%d", path, i))
+		configPath := fmt.Sprintf("%s/settings/%d", path, i)
+		config, validationErr := decodeChartConfig(rawConfig, configPath)
 		if validationErr != nil {
 			return shared.Dataset{}, validationErr
 		}
+		if settingTypes[config.ChartType()] {
+			validationErr := bodyValidationError(configPath+"/type", "duplicate_value", "dataset setting types must be unique")
+			return shared.Dataset{}, &validationErr
+		}
+		settingTypes[config.ChartType()] = true
 		settings = append(settings, config)
 	}
 

@@ -287,6 +287,7 @@ func (s *FlagBagSuite) TestAccessorsReturnZeroWhenUnset() {
 	s.Equal("", bag.String("missing"))
 	s.False(bag.Bool("missing"))
 	s.Equal(0.0, bag.Float("missing"))
+	s.Equal(0, bag.Int("missing"))
 	s.Nil(bag.StringSlice("missing"))
 }
 
@@ -298,15 +299,21 @@ func (s *FlagBagSuite) TestParseConfigSetsJSONPath() {
 }
 
 func (s *FlagBagSuite) TestResetRestoresDefaults() {
-	fl := append(slices.Clone(DataFlags), internal_charts.SymbolSizeFlag)
+	fl := append(slices.Clone(DataFlags),
+		internal_charts.SymbolSizeFlag,
+		flags.Flag{Name: "port", Default: 8080, Kind: flags.KindInt},
+	)
 	cmd, bag := s.newCmdBag(fl)
 	s.Require().NoError(cmd.Flags().Set("name", "Custom"))
 	s.Require().NoError(cmd.Flags().Set("theme", "vintage"))
 	s.Require().NoError(cmd.Flags().Set("symbol-size", "12"))
+	s.Require().NoError(cmd.Flags().Set("port", "9090"))
+	s.Equal(9090, bag.Int("port"))
 	bag.Reset()
 	s.Equal("Comparisons", bag.String("name"))
 	s.Equal("default", bag.String("theme"))
 	s.Equal(0.0, bag.Float("symbol-size"))
+	s.Equal(8080, bag.Int("port"))
 }
 
 func (s *FlagBagSuite) TestParseConfigRejectsMultiSelectThreeColumnView() {

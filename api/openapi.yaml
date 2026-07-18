@@ -70,6 +70,8 @@ paths:
           $ref: '#/components/responses/MergeSuccess'
         '400':
           $ref: '#/components/responses/ValidationProblem'
+        '406':
+          $ref: '#/components/responses/NotAcceptableProblem'
         '415':
           $ref: '#/components/responses/UnsupportedMediaTypeProblem'
         '422':
@@ -394,7 +396,51 @@ components:
           items: { $ref: '#/components/schemas/Axis' }
         settings:
           type: array
+          description: Each chart type may appear at most once.
           items: { $ref: '#/components/schemas/ChartConfig' }
+          allOf:
+            - contains:
+                type: object
+                required: [type]
+                properties:
+                  type: { const: bar }
+              minContains: 0
+              maxContains: 1
+            - contains:
+                type: object
+                required: [type]
+                properties:
+                  type: { const: line }
+              minContains: 0
+              maxContains: 1
+            - contains:
+                type: object
+                required: [type]
+                properties:
+                  type: { const: scatter }
+              minContains: 0
+              maxContains: 1
+            - contains:
+                type: object
+                required: [type]
+                properties:
+                  type: { const: pie }
+              minContains: 0
+              maxContains: 1
+            - contains:
+                type: object
+                required: [type]
+                properties:
+                  type: { const: heatmap }
+              minContains: 0
+              maxContains: 1
+            - contains:
+                type: object
+                required: [type]
+                properties:
+                  type: { const: radar }
+              minContains: 0
+              maxContains: 1
         data:
           type: array
           items: { $ref: '#/components/schemas/DataPoint' }
