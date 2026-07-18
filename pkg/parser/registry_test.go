@@ -27,7 +27,7 @@ func (s *RegistrySuite) TestGetParserKnown() {
 	s.NoError(err)
 	s.NotNil(fn)
 
-	points, _, err := fn(strings.NewReader(""), parser.Config{})
+	points, _, _, err := fn(strings.NewReader(""), parser.Config{})
 	s.NoError(err)
 	s.Empty(points)
 }

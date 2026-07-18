@@ -3,6 +3,7 @@ package core
 import (
 	"math"
 	"strings"
+	"sync"
 	"testing"
 
 	internalcharts "github.com/goptics/vizb/internal/charts"
@@ -149,6 +150,70 @@ func (s *CoreSuite) TestConvertBenchmarkFormats() {
 			s.Require().Len(result.Dataset.Data, 1)
 		})
 	}
+}
+
+func (s *CoreSuite) TestConvertGoBenchmarkMetadataIsRequestLocal() {
+	cases := []struct {
+		input string
+		meta  shared.Meta
+	}{
+		{
+			input: "goos: linux\ngoarch: amd64\npkg: example.com/linux\ncpu: Linux CPU\nBenchmarkFoo-4 100 123 ns/op\n",
+			meta:  shared.Meta{OS: "linux", Arch: "amd64", Pkg: "example.com/linux", CPU: &shared.CPUInfo{Name: "Linux CPU", Cores: 4}},
+		},
+		{
+			input: "goos: darwin\ngoarch: arm64\npkg: example.com/darwin\ncpu: Darwin CPU\nBenchmarkBar-12 100 456 ns/op\n",
+			meta:  shared.Meta{OS: "darwin", Arch: "arm64", Pkg: "example.com/darwin", CPU: &shared.CPUInfo{Name: "Darwin CPU", Cores: 12}},
+		},
+	}
+	type outcome struct {
+		index   int
+		dataset *shared.Dataset
+		err     error
+	}
+
+	const conversions = 64
+	start := make(chan struct{})
+	outcomes := make(chan outcome, conversions)
+	var wg sync.WaitGroup
+	for i := 0; i < conversions; i++ {
+		wg.Add(1)
+		go func(index int) {
+			defer wg.Done()
+			<-start
+			tc := cases[index%len(cases)]
+			result, err := Convert(ConvertInput{
+				Input:  []byte(tc.input),
+				Parser: "go",
+				Config: parser.Config{GroupPattern: "y", TimeUnit: "ns"},
+				Charts: []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: "linear"}},
+			})
+			outcomes <- outcome{index: index, dataset: result.Dataset, err: err}
+		}(i)
+	}
+	close(start)
+	wg.Wait()
+	close(outcomes)
+
+	for outcome := range outcomes {
+		s.Require().NoError(outcome.err)
+		s.Require().NotNil(outcome.dataset)
+		s.Equal(&cases[outcome.index%len(cases)].meta, outcome.dataset.Meta)
+	}
+}
+
+func (s *CoreSuite) TestConvertKeepsExplicitSystemMetadata() {
+	explicit := &shared.Meta{OS: "caller"}
+	result, err := Convert(ConvertInput{
+		Input:    []byte("goos: linux\nBenchmarkFoo-4 100 123 ns/op\n"),
+		Parser:   "go",
+		Config:   parser.Config{GroupPattern: "y", TimeUnit: "ns"},
+		Metadata: Metadata{System: explicit},
+		Charts:   []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: "linear"}},
+	})
+
+	s.Require().NoError(err)
+	s.Same(explicit, result.Dataset.Meta)
 }
 
 func (s *CoreSuite) TestConvertAutoJSONPathEnvelope() {

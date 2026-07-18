@@ -56,7 +56,9 @@ type SelectView struct {
 	TypeLabel string
 }
 
-type ParseFunc func(io.Reader, Config) ([]shared.DataPoint, Config, error)
+// ParseFunc parses request-local input and returns data points, the effective
+// config, and any system metadata discovered in the input.
+type ParseFunc func(io.Reader, Config) ([]shared.DataPoint, Config, *shared.Meta, error)
 
 var Parsers = map[string]ParseFunc{}
 

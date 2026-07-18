@@ -64,7 +64,7 @@ func (s *VitestSuite) SetupTest() {
 }
 
 func (s *VitestSuite) TestRealVitestOutput() {
-	results, _, err := ParseVitestBenchmark(javascriptTestInput(s.T(), testVitestTable), s.cfg)
+	results, _, _, err := ParseVitestBenchmark(javascriptTestInput(s.T(), testVitestTable), s.cfg)
 	s.Require().NoError(err)
 	s.Len(results, 6)
 
@@ -92,7 +92,7 @@ func (s *VitestSuite) TestRealVitestOutput() {
 func (s *VitestSuite) TestUnitConversionToUs() {
 	s.cfg.TimeUnit = "us"
 
-	results, _, err := ParseVitestBenchmark(javascriptTestInput(s.T(), testVitestTable), s.cfg)
+	results, _, _, err := ParseVitestBenchmark(javascriptTestInput(s.T(), testVitestTable), s.cfg)
 	s.Require().NoError(err)
 	s.Len(results, 6)
 
@@ -103,7 +103,7 @@ func (s *VitestSuite) TestUnitConversionToUs() {
 func (s *VitestSuite) TestFilterRegex() {
 	s.cfg.Filter = "bubbleSort"
 
-	results, _, err := ParseVitestBenchmark(javascriptTestInput(s.T(), testVitestTable), s.cfg)
+	results, _, _, err := ParseVitestBenchmark(javascriptTestInput(s.T(), testVitestTable), s.cfg)
 	s.Require().NoError(err)
 	s.Len(results, 3)
 	for _, r := range results {
@@ -114,7 +114,7 @@ func (s *VitestSuite) TestFilterRegex() {
 func (s *VitestSuite) TestEmptyFile() {
 	s.cfg.GroupPattern = "y"
 
-	results, _, err := ParseVitestBenchmark(javascriptTestInput(s.T(), ""), s.cfg)
+	results, _, _, err := ParseVitestBenchmark(javascriptTestInput(s.T(), ""), s.cfg)
 	s.Require().NoError(err)
 	s.Empty(results)
 }
@@ -123,19 +123,19 @@ func (s *VitestSuite) TestReturnsErrors() {
 	s.Run("invalid filter", func() {
 		cfg := s.cfg
 		cfg.Filter = "["
-		_, _, err := ParseVitestBenchmark(javascriptTestInput(s.T(), testVitestTable), cfg)
+		_, _, _, err := ParseVitestBenchmark(javascriptTestInput(s.T(), testVitestTable), cfg)
 		s.ErrorContains(err, "invalid filter regex")
 	})
 
 	s.Run("invalid benchmark group pattern", func() {
 		cfg := s.cfg
 		cfg.GroupPattern = "[n/y]"
-		_, _, err := ParseVitestBenchmark(javascriptTestInput(s.T(), testVitestTable), cfg)
+		_, _, _, err := ParseVitestBenchmark(javascriptTestInput(s.T(), testVitestTable), cfg)
 		s.ErrorContains(err, "bracket slots")
 	})
 
 	s.Run("reader failure", func() {
-		_, _, err := ParseVitestBenchmark(javascriptErrorReader{}, s.cfg)
+		_, _, _, err := ParseVitestBenchmark(javascriptErrorReader{}, s.cfg)
 		s.ErrorContains(err, "read vitest benchmark")
 	})
 }

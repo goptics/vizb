@@ -21,7 +21,7 @@ var divanRowRe = regexp.MustCompile(`^[├╰]─\s+(\S+)\s+(.+)$`)
 
 var divanValRe = regexp.MustCompile(`([\d.]+)\s*(ns|µs|μs|ms|s)`)
 
-func ParseDivanBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataPoint, parser.Config, error) {
+func ParseDivanBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataPoint, parser.Config, *shared.Meta, error) {
 	scanner := bufio.NewScanner(input)
 	var results []shared.DataPoint
 
@@ -38,7 +38,7 @@ func ParseDivanBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataPoint
 		name := match[1]
 		include, err := parser.ShouldIncludeBenchmark(name, cfg)
 		if err != nil {
-			return nil, cfg, err
+			return nil, cfg, nil, err
 		}
 		if !include {
 			continue
@@ -70,7 +70,7 @@ func ParseDivanBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataPoint
 
 		group, groupErr := parser.GroupBenchmarkName(name, cfg)
 		if groupErr != nil {
-			return nil, cfg, fmt.Errorf("parse divan benchmark name: %w", groupErr)
+			return nil, cfg, nil, fmt.Errorf("parse divan benchmark name: %w", groupErr)
 		}
 
 		benchName, xAxis, yAxis, zAxis := group["name"], group["xAxis"], group["yAxis"], group["zAxis"]
@@ -91,8 +91,8 @@ func ParseDivanBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataPoint
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, cfg, fmt.Errorf("read divan benchmark: %w", err)
+		return nil, cfg, nil, fmt.Errorf("read divan benchmark: %w", err)
 	}
 
-	return results, cfg, nil
+	return results, cfg, nil, nil
 }

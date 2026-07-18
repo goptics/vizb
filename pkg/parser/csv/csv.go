@@ -32,12 +32,13 @@ func parseFinite(s string) (float64, bool) {
 // ignored unless named in --group/-g, whose values are joined with the
 // separators from --group-pattern/-p and routed through the grouping machinery
 // (-p/-r) for name/xAxis/yAxis placement.
-func ParseCSV(input io.Reader, cfg parser.Config) ([]shared.DataPoint, parser.Config, error) {
+func ParseCSV(input io.Reader, cfg parser.Config) ([]shared.DataPoint, parser.Config, *shared.Meta, error) {
 	autoDetect := parser.AutoDetectTabularConfig
 	if cfg.QuietAutoDetect {
 		autoDetect = parser.AutoDetectTabularConfigQuiet
 	}
-	return parseReader(input, cfg, autoDetect)
+	points, effectiveCfg, err := parseReader(input, cfg, autoDetect)
+	return points, effectiveCfg, nil, err
 }
 
 type autoDetectFunc func(parser.Config, []string, [][]string) (parser.Config, error)

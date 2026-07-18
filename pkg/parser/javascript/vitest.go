@@ -26,7 +26,7 @@ func parseNum(s string) float64 {
 	return n
 }
 
-func ParseVitestBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataPoint, parser.Config, error) {
+func ParseVitestBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataPoint, parser.Config, *shared.Meta, error) {
 	scanner := bufio.NewScanner(input)
 	var results []shared.DataPoint
 	var currentSuite string
@@ -64,7 +64,7 @@ func ParseVitestBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataPoin
 
 		include, err := parser.ShouldIncludeBenchmark(name, cfg)
 		if err != nil {
-			return nil, cfg, err
+			return nil, cfg, nil, err
 		}
 		if !include {
 			continue
@@ -85,7 +85,7 @@ func ParseVitestBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataPoin
 
 		group, groupErr := parser.GroupBenchmarkName(name, cfg)
 		if groupErr != nil {
-			return nil, cfg, fmt.Errorf("parse vitest benchmark name: %w", groupErr)
+			return nil, cfg, nil, fmt.Errorf("parse vitest benchmark name: %w", groupErr)
 		}
 
 		benchName, xAxis, yAxis, zAxis := group["name"], group["xAxis"], group["yAxis"], group["zAxis"]
@@ -111,8 +111,8 @@ func ParseVitestBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataPoin
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, cfg, fmt.Errorf("read vitest benchmark: %w", err)
+		return nil, cfg, nil, fmt.Errorf("read vitest benchmark: %w", err)
 	}
 
-	return results, cfg, nil
+	return results, cfg, nil, nil
 }

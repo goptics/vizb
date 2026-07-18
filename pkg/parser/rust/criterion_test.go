@@ -96,7 +96,7 @@ func (s *CriterionSuite) SetupTest() {
 }
 
 func (s *CriterionSuite) TestRealCargoCriterionOutput() {
-	results, _, err := ParseCriterionBenchmark(rustTestInput(s.T(), testCargoTable), s.cfg)
+	results, _, _, err := ParseCriterionBenchmark(rustTestInput(s.T(), testCargoTable), s.cfg)
 	s.Require().NoError(err)
 	s.Len(results, 6)
 
@@ -125,7 +125,7 @@ func (s *CriterionSuite) TestRealCargoCriterionOutput() {
 func (s *CriterionSuite) TestUnitConversionToUs() {
 	s.cfg.TimeUnit = "us"
 
-	results, _, err := ParseCriterionBenchmark(rustTestInput(s.T(), testCargoTable), s.cfg)
+	results, _, _, err := ParseCriterionBenchmark(rustTestInput(s.T(), testCargoTable), s.cfg)
 	s.Require().NoError(err)
 	s.Len(results, 6)
 
@@ -137,7 +137,7 @@ func (s *CriterionSuite) TestUnitConversionToUs() {
 func (s *CriterionSuite) TestFilterRegex() {
 	s.cfg.Filter = "bubbleSort"
 
-	results, _, err := ParseCriterionBenchmark(rustTestInput(s.T(), testCargoTable), s.cfg)
+	results, _, _, err := ParseCriterionBenchmark(rustTestInput(s.T(), testCargoTable), s.cfg)
 	s.Require().NoError(err)
 	s.Len(results, 3)
 	for _, r := range results {
@@ -148,7 +148,7 @@ func (s *CriterionSuite) TestFilterRegex() {
 func (s *CriterionSuite) TestEmptyFile() {
 	s.cfg.GroupPattern = "y"
 
-	results, _, err := ParseCriterionBenchmark(rustTestInput(s.T(), ""), s.cfg)
+	results, _, _, err := ParseCriterionBenchmark(rustTestInput(s.T(), ""), s.cfg)
 	s.Require().NoError(err)
 	s.Empty(results)
 }
@@ -157,19 +157,19 @@ func (s *CriterionSuite) TestReturnsErrors() {
 	s.Run("invalid filter", func() {
 		cfg := s.cfg
 		cfg.Filter = "["
-		_, _, err := ParseCriterionBenchmark(rustTestInput(s.T(), testCargoTable), cfg)
+		_, _, _, err := ParseCriterionBenchmark(rustTestInput(s.T(), testCargoTable), cfg)
 		s.ErrorContains(err, "invalid filter regex")
 	})
 
 	s.Run("invalid benchmark group pattern", func() {
 		cfg := s.cfg
 		cfg.GroupPattern = "[n/y]"
-		_, _, err := ParseCriterionBenchmark(rustTestInput(s.T(), testCargoTable), cfg)
+		_, _, _, err := ParseCriterionBenchmark(rustTestInput(s.T(), testCargoTable), cfg)
 		s.ErrorContains(err, "bracket slots")
 	})
 
 	s.Run("reader failure", func() {
-		_, _, err := ParseCriterionBenchmark(rustErrorReader{}, s.cfg)
+		_, _, _, err := ParseCriterionBenchmark(rustErrorReader{}, s.cfg)
 		s.ErrorContains(err, "read criterion benchmark")
 	})
 }
