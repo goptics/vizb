@@ -3,6 +3,7 @@ package shared
 import (
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -91,6 +92,22 @@ func (s *TmpFilesManagerSuite) TestTmpFilesManagerEmptyStore() {
 	manager := NewTmpFileManager()
 
 	manager.Store()
+
+	s.Empty(manager.files)
+}
+
+func (s *TmpFilesManagerSuite) TestTmpFilesManagerConcurrentAccess() {
+	manager := NewTmpFileManager()
+	var wg sync.WaitGroup
+
+	for range 20 {
+		wg.Go(func() {
+			manager.Store("nonexistent.txt")
+			manager.RemoveAll()
+		})
+	}
+	wg.Wait()
+	manager.RemoveAll()
 
 	s.Empty(manager.files)
 }
