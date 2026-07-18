@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"os"
 	"strconv"
 	"strings"
 
@@ -16,7 +15,6 @@ import (
 
 func init() {
 	parser.Parsers["csv"] = ParseCSV
-	parser.ReaderParsers["csv"] = ParseReader
 }
 
 // parseFinite parses a trimmed cell as a float, rejecting NaN/Inf (which would
@@ -34,24 +32,12 @@ func parseFinite(s string) (float64, bool) {
 // ignored unless named in --group/-g, whose values are joined with the
 // separators from --group-pattern/-p and routed through the grouping machinery
 // (-p/-r) for name/xAxis/yAxis placement.
-func ParseCSV(filename string, cfg parser.Config) ([]shared.DataPoint, parser.Config) {
-	f, err := os.Open(filename)
-	if err != nil {
-		shared.ExitWithError("Error opening file", err)
+func ParseCSV(input io.Reader, cfg parser.Config) ([]shared.DataPoint, parser.Config, error) {
+	autoDetect := parser.AutoDetectTabularConfig
+	if cfg.QuietAutoDetect {
+		autoDetect = parser.AutoDetectTabularConfigQuiet
 	}
-	defer f.Close()
-
-	results, effectiveCfg, err := parseReader(f, cfg, parser.AutoDetectTabularConfig)
-	if err != nil {
-		shared.ExitWithError(err.Error(), nil)
-	}
-	return results, effectiveCfg
-}
-
-// ParseReader parses CSV from an explicitly supplied reader. It is used by
-// request-scoped callers and never writes output or terminates the process.
-func ParseReader(input io.Reader, cfg parser.Config) ([]shared.DataPoint, parser.Config, error) {
-	return parseReader(input, cfg, parser.AutoDetectTabularConfigQuiet)
+	return parseReader(input, cfg, autoDetect)
 }
 
 type autoDetectFunc func(parser.Config, []string, [][]string) (parser.Config, error)
@@ -102,7 +88,7 @@ func parseReader(input io.Reader, cfg parser.Config, autoDetect autoDetectFunc) 
 		for i, row := range dataRows {
 			readers[i] = csvRowReader{row: row, colIdx: colIdx, flag: flag, headers: headers}
 		}
-		results, err := parser.DispatchSelectModeE(readers, &cfg, csvKindFn(headers, dataRows, flag))
+		results, err := parser.DispatchSelectMode(readers, &cfg, csvKindFn(headers, dataRows, flag))
 		if err != nil {
 			return nil, cfg, err
 		}
@@ -134,7 +120,11 @@ func parseReader(input io.Reader, cfg parser.Config, autoDetect autoDetectFunc) 
 		var name, xAxis, yAxis, zAxis string
 		if len(groupValues) > 0 {
 			label := parser.TabularFilterLabel(groupValues, cfg)
-			if !parser.ShouldIncludeBenchmark(label, cfg) {
+			include, err := parser.ShouldIncludeBenchmark(label, cfg)
+			if err != nil {
+				return nil, cfg, err
+			}
+			if !include {
 				continue
 			}
 

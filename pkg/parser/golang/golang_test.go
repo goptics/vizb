@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -246,7 +247,8 @@ func (s *GoBenchmarkSuite) TestParseGoBenchmark() {
 				NumberUnit:   tt.allocUnit,
 			}
 
-			results, _ := ParseGoBenchmark(s.writeFile(tt.benchContent), cfg)
+			results, _, err := ParseGoBenchmark(strings.NewReader(strings.Join(tt.benchContent, "\n")), cfg)
+			s.Require().NoError(err)
 
 			s.Require().Len(results, len(tt.expected))
 
@@ -342,7 +344,8 @@ func (s *ShouldIncludeBenchmarkSuite) TestShouldIncludeBenchmark() {
 
 	for _, tt := range tests {
 		s.Run(tt.name, func() {
-			result := parser.ShouldIncludeBenchmark(tt.benchName, parser.Config{Filter: tt.filter})
+			result, err := parser.ShouldIncludeBenchmark(tt.benchName, parser.Config{Filter: tt.filter})
+			s.Require().NoError(err)
 			s.Equal(tt.expected, result)
 		})
 	}

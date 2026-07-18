@@ -7,12 +7,8 @@ import (
 	"io"
 	"os"
 	"strings"
-	"time"
 
 	internal_charts "github.com/goptics/vizb/internal/charts"
-	barchart "github.com/goptics/vizb/internal/charts/bar"
-	linechart "github.com/goptics/vizb/internal/charts/line"
-	scatterchart "github.com/goptics/vizb/internal/charts/scatter"
 	"github.com/goptics/vizb/pkg/core"
 	"github.com/goptics/vizb/pkg/parser"
 	goparser "github.com/goptics/vizb/pkg/parser/golang"
@@ -280,7 +276,16 @@ func prepareData(filePath, parserKey string, cfg parser.Config) ([]shared.DataPo
 	}
 
 	fmt.Println(style.Info.Render("🧲 Parsing data..."))
-	data, effectiveCfg := parseFn(filePath, cfg)
+	input, err := os.Open(filePath)
+	if err != nil {
+		shared.ExitWithError("Error opening file", err)
+	}
+	defer input.Close()
+
+	data, effectiveCfg, err := parseFn(input, cfg)
+	if err != nil {
+		shared.ExitWithError(err.Error(), nil)
+	}
 
 	// CSV/JSON emit one DataPoint per row; when grouping is inactive, collapse rows
 	// that share the same (name, x, y, z) by appending stats (no sum/average).
@@ -309,7 +314,7 @@ func prepareData(filePath, parserKey string, cfg parser.Config) ([]shared.DataPo
 // applyColAxis expands multi-stat points onto cfg.ColAxis when the flag is set.
 // Requires csv/json + active grouping; otherwise warns, clears ColAxis, and skips.
 // Fatals when the target axis already exists in the group pattern or when z is
-// used without x+y. On success ColAxis stays set so buildDataset can EnsureAxis.
+// used without x+y. On success ColAxis stays set so core.Assemble can EnsureAxis.
 func applyColAxis(data []shared.DataPoint, cfg parser.Config, parserKey string) ([]shared.DataPoint, parser.Config) {
 	if cfg.ColAxis == "" {
 		return data, cfg
@@ -407,74 +412,6 @@ func formatAggregationGroup(cfg parser.Config) string {
 	return colPhrase + " (" + strings.Join(dims, ", ") + ")"
 }
 
-func isValueXYZAxes(axes []shared.Axis) bool {
-	keys := map[string]bool{}
-	for _, a := range axes {
-		if a.Key == "metric" {
-			continue
-		}
-		if a.Type != "value" {
-			return false
-		}
-		keys[a.Key] = true
-	}
-	return keys["x"] && keys["y"] && keys["z"]
-}
-
-func appendMetricAxis(axes []shared.Axis, cfg parser.Config, results []shared.DataPoint) []shared.Axis {
-	if !valueModeHasMetric(cfg, results) {
-		return axes
-	}
-	for _, a := range axes {
-		if a.Key == "metric" {
-			return axes
-		}
-	}
-	label := cfg.MetricColumn
-	if label == "" {
-		label = "value"
-	}
-	return append(axes, shared.Axis{Key: "metric", Label: label, Type: "value"})
-}
-
-func valueModeHasMetric(cfg parser.Config, results []shared.DataPoint) bool {
-	if cfg.MetricColumn != "" {
-		return true
-	}
-	for _, dp := range results {
-		if dp.Metric != "" {
-			return true
-		}
-	}
-	return false
-}
-
-func applyValueMode3DFlags(threeD **bool, visualMap **bool, v bool, enableVM bool) {
-	*threeD = &v
-	if enableVM {
-		*visualMap = &v
-	}
-}
-
-// autoEnableValueMode3D sets ThreeD (and ThreeDVisualMap when metric present) on
-// bar/line/scatter configs for continuous xyz value mode.
-func autoEnableValueMode3D(configs []internal_charts.ChartConfig, axes []shared.Axis, visualMap bool) {
-	if !isValueXYZAxes(axes) {
-		return
-	}
-	v := true
-	for _, c := range configs {
-		switch bc := c.(type) {
-		case *barchart.Config:
-			applyValueMode3DFlags(&bc.ThreeD, &bc.ThreeDVisualMap, v, visualMap)
-		case *linechart.Config:
-			applyValueMode3DFlags(&bc.ThreeD, &bc.ThreeDVisualMap, v, visualMap)
-		case *scatterchart.Config:
-			applyValueMode3DFlags(&bc.ThreeD, &bc.ThreeDVisualMap, v, visualMap)
-		}
-	}
-}
-
 // assembleDataset builds the output Dataset from parsed results plus the
 // command's metadata and the resolved per-chart configs.
 func assembleDataset(results []shared.DataPoint, m RunMeta, configs []internal_charts.ChartConfig, cfg parser.Config) *shared.Dataset {
@@ -500,73 +437,6 @@ func assembleDataset(results []shared.DataPoint, m RunMeta, configs []internal_c
 
 func tabularParser(parserKey string) bool {
 	return parserKey == "csv" || parserKey == "json"
-}
-
-// preserveRowsForDataset is true for csv/json tabular data where the UI must
-// expand collapsed stats[] or keep duplicate (x,y,z) keys (solo/multi --select).
-// Grouped output is pre-aggregated to one point per cell; preserveRows there
-// makes the UI emit one series row per DataPoint and duplicates x categories.
-func preserveRowsForDataset(parserKey string, cfg parser.Config) bool {
-	return tabularParser(parserKey) && len(cfg.Group) == 0
-}
-
-func buildDataset(results []shared.DataPoint, m RunMeta, configs []internal_charts.ChartConfig, cfg parser.Config, view []parser.ColumnSpec, viewName string) *shared.Dataset {
-	var axes []shared.Axis
-	if cfg.Mode.IsMultiStat() {
-		axes = parser.MultiSelectStatAxes(cfg.SelectViews)
-	} else if len(view) > 0 {
-		axes = parser.DatasetAxesForSelectView(view, results)
-		autoEnableValueMode3D(configs, axes, valueModeHasMetric(cfg, results))
-	} else if cfg.Mode.IsSelectAxis() {
-		axes = parser.DatasetAxesForSelectView(cfg.SelectViews[0].Columns, results)
-		autoEnableValueMode3D(configs, axes, valueModeHasMetric(cfg, results))
-	} else {
-		axes = parser.GroupAxes(cfg)
-		if len(cfg.Axes) > 0 {
-			if parser.IsMixedAxes(cfg) {
-				axes = parser.MixedAxes(cfg)
-			} else {
-				axes = parser.ValueAxes(cfg)
-			}
-			autoEnableValueMode3D(configs, axes, valueModeHasMetric(cfg, results))
-		}
-	}
-	if cfg.ColAxis != "" {
-		// ColAxis is cleared by applyColAxis when the flag was ignored (warn+skip).
-		axes = shared.EnsureAxis(axes, shared.Dimension(cfg.ColAxis))
-	}
-	axes = appendMetricAxis(axes, cfg, results)
-
-	name := m.Name
-	if name == "" && viewName != "" {
-		name = viewName
-	}
-
-	dataSet := &shared.Dataset{
-		Name:         name,
-		Description:  m.Description,
-		Theme:        m.Theme,
-		Data:         results,
-		Settings:     configs,
-		Axes:         axes,
-		PreserveRows: preserveRowsForDataset(m.Parser, cfg),
-	}
-	if id := strings.TrimSpace(m.ID); id != "" {
-		dataSet.ID = id
-	}
-
-	meta := shared.Meta{OS: shared.OS, Arch: shared.Arch, Pkg: shared.Pkg}
-	if cpuName := strings.TrimSpace(shared.CPU); cpuName != "" || shared.CPUCount != 0 {
-		meta.CPU = &shared.CPUInfo{Name: cpuName, Cores: shared.CPUCount}
-	}
-	if meta != (shared.Meta{}) {
-		dataSet.Meta = &meta
-	}
-
-	dataSet.Tag = m.Tag
-	dataSet.Timestamp = time.Now().UTC().Format(time.RFC3339)
-
-	return dataSet
 }
 
 // applySelections overrides a passed-through Dataset's chart selection so e.g.
@@ -614,7 +484,10 @@ func writeOutput(f *os.File, datasets []*shared.Dataset, format string) {
 
 		needsHeatmapChunk := datasetsNeedCorrelation(datasets)
 		needs3D := datasetsNeed3D(datasets)
-		htmlContent := template.GenerateUI(jsonData, chartTypeNames(datasets[0].Settings), needs3D, needsHeatmapChunk, template.VizbHTMLTemplate)
+		htmlContent, err := template.GenerateUI(jsonData, chartTypeNames(datasets[0].Settings), needs3D, needsHeatmapChunk, template.VizbHTMLTemplate)
+		if err != nil {
+			shared.ExitWithError("Failed to generate UI: %v", err)
+		}
 		if _, err := f.WriteString(htmlContent); err != nil {
 			shared.ExitWithError("Failed to write output file: %v", err)
 		}

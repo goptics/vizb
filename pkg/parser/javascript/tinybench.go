@@ -2,7 +2,8 @@ package javascript
 
 import (
 	"bufio"
-	"os"
+	"fmt"
+	"io"
 	"regexp"
 	"strconv"
 	"strings"
@@ -50,14 +51,8 @@ func parseMedWithMAD(s string) (med, mad float64) {
 	return
 }
 
-func ParseTinyBenchBenchmark(filename string, cfg parser.Config) ([]shared.DataPoint, parser.Config) {
-	f, err := os.Open(filename)
-	if err != nil {
-		shared.ExitWithError("Error opening file", err)
-	}
-	defer f.Close()
-
-	scanner := bufio.NewScanner(f)
+func ParseTinyBenchBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataPoint, parser.Config, error) {
+	scanner := bufio.NewScanner(input)
 	var results []shared.DataPoint
 
 	for scanner.Scan() {
@@ -79,7 +74,11 @@ func ParseTinyBenchBenchmark(filename string, cfg parser.Config) ([]shared.DataP
 
 		taskName := strings.Trim(columns[0], " '")
 
-		if !parser.ShouldIncludeBenchmark(taskName, cfg) {
+		include, err := parser.ShouldIncludeBenchmark(taskName, cfg)
+		if err != nil {
+			return nil, cfg, err
+		}
+		if !include {
 			continue
 		}
 
@@ -97,7 +96,7 @@ func ParseTinyBenchBenchmark(filename string, cfg parser.Config) ([]shared.DataP
 
 		group, groupErr := parser.GroupBenchmarkName(taskName, cfg)
 		if groupErr != nil {
-			shared.ExitWithError("Error parsing tinybench name", groupErr)
+			return nil, cfg, fmt.Errorf("parse tinybench name: %w", groupErr)
 		}
 
 		benchName, xAxis, yAxis, zAxis := group["name"], group["xAxis"], group["yAxis"], group["zAxis"]
@@ -122,8 +121,8 @@ func ParseTinyBenchBenchmark(filename string, cfg parser.Config) ([]shared.DataP
 	}
 
 	if err := scanner.Err(); err != nil {
-		shared.ExitWithError("failed to read file", err)
+		return nil, cfg, fmt.Errorf("read tinybench benchmark: %w", err)
 	}
 
-	return results, cfg
+	return results, cfg, nil
 }

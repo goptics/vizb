@@ -121,15 +121,15 @@ func (s *CoreSuite) TestConvertBranchErrorsAndAutoDetection() {
 	s.Equal("csv", detectInlineParser([]byte("x,y\n")))
 }
 
-func (s *CoreSuite) TestConvertReturnsReaderLookupError() {
+func (s *CoreSuite) TestConvertReturnsParserLookupError() {
 	chart := []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: "linear"}}
-	saved := parser.ReaderParsers["csv"]
-	delete(parser.ReaderParsers, "csv")
-	s.T().Cleanup(func() { parser.ReaderParsers["csv"] = saved })
+	saved := parser.Parsers["csv"]
+	delete(parser.Parsers, "csv")
+	s.T().Cleanup(func() { parser.Parsers["csv"] = saved })
 
 	_, err := Convert(ConvertInput{Input: []byte("x,y\na,1\n"), Parser: "csv", Charts: chart})
-	s.ErrorContains(err, "does not support in-memory input")
-	parser.ReaderParsers["csv"] = saved
+	s.ErrorContains(err, "unknown parser")
+	parser.Parsers["csv"] = saved
 }
 
 func (s *CoreSuite) TestConvertReturnsChartRuleError() {

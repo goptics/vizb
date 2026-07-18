@@ -1,8 +1,8 @@
 package rust
 
 import (
-	"os"
-	"path/filepath"
+	"io"
+	"strings"
 	"testing"
 
 	"github.com/goptics/vizb/pkg/parser"
@@ -55,14 +55,10 @@ Found 3 outliers among 100 measurements (3.00%)
   3 (3.00%) high mild
 `
 
-// writeRustTestFile writes content to a temp bench.txt and returns its path.
-func writeRustTestFile(t *testing.T, content string) string {
+// rustTestInput returns a fresh reader shared by the Rust suites.
+func rustTestInput(t *testing.T, content string) io.Reader {
 	t.Helper()
-	path := filepath.Join(t.TempDir(), "bench.txt")
-	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-		t.Fatal(err)
-	}
-	return path
+	return strings.NewReader(content)
 }
 
 // assertStat asserts a stat's type, value, and symbol. Shared by the rust suites.
@@ -93,7 +89,8 @@ func (s *CriterionSuite) SetupTest() {
 }
 
 func (s *CriterionSuite) TestRealCargoCriterionOutput() {
-	results, _ := ParseCriterionBenchmark(writeRustTestFile(s.T(), testCargoTable), s.cfg)
+	results, _, err := ParseCriterionBenchmark(rustTestInput(s.T(), testCargoTable), s.cfg)
+	s.Require().NoError(err)
 	s.Len(results, 6)
 
 	// First: bubbleSort/n=100 → 3.0524 µs = 3052.4 ns
@@ -121,7 +118,8 @@ func (s *CriterionSuite) TestRealCargoCriterionOutput() {
 func (s *CriterionSuite) TestUnitConversionToUs() {
 	s.cfg.TimeUnit = "us"
 
-	results, _ := ParseCriterionBenchmark(writeRustTestFile(s.T(), testCargoTable), s.cfg)
+	results, _, err := ParseCriterionBenchmark(rustTestInput(s.T(), testCargoTable), s.cfg)
+	s.Require().NoError(err)
 	s.Len(results, 6)
 
 	assertStat(s.T(), results[0].Stats[0], "Latency avg (us)", 3.05, "")
@@ -132,7 +130,8 @@ func (s *CriterionSuite) TestUnitConversionToUs() {
 func (s *CriterionSuite) TestFilterRegex() {
 	s.cfg.Filter = "bubbleSort"
 
-	results, _ := ParseCriterionBenchmark(writeRustTestFile(s.T(), testCargoTable), s.cfg)
+	results, _, err := ParseCriterionBenchmark(rustTestInput(s.T(), testCargoTable), s.cfg)
+	s.Require().NoError(err)
 	s.Len(results, 3)
 	for _, r := range results {
 		s.Equal("bubbleSort", r.Name)
@@ -142,7 +141,8 @@ func (s *CriterionSuite) TestFilterRegex() {
 func (s *CriterionSuite) TestEmptyFile() {
 	s.cfg.GroupPattern = "y"
 
-	results, _ := ParseCriterionBenchmark(writeRustTestFile(s.T(), ""), s.cfg)
+	results, _, err := ParseCriterionBenchmark(rustTestInput(s.T(), ""), s.cfg)
+	s.Require().NoError(err)
 	s.Empty(results)
 }
 

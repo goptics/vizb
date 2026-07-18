@@ -33,6 +33,7 @@ type Config struct {
 	ChartTypes      []string     // csv/json auto-value eligibility check (scatter/bar/line only)
 	Mode            Mode         // resolved once in ParseConfig so downstream switches on cfg.Mode
 	ColAxis         string       // csv/json: place numeric column names on this axis (n/x/y/z); empty = one chart per column
+	QuietAutoDetect bool         // suppress csv/json auto-detection notices for request-scoped callers
 }
 
 // Mode is the resolved parse mode for a Config. Set once in ParseConfig so
@@ -55,31 +56,14 @@ type SelectView struct {
 	TypeLabel string
 }
 
-type ParseFunc func(filename string, cfg Config) ([]shared.DataPoint, Config)
-
-// ReaderParseFunc is the server-safe counterpart to ParseFunc. It accepts the
-// input explicitly and reports processing failures to its caller instead of
-// printing or terminating the process.
-type ReaderParseFunc func(io.Reader, Config) ([]shared.DataPoint, Config, error)
+type ParseFunc func(io.Reader, Config) ([]shared.DataPoint, Config, error)
 
 var Parsers = map[string]ParseFunc{}
-var ReaderParsers = map[string]ReaderParseFunc{}
 
 func GetParser(key string) (ParseFunc, error) {
 	fn, ok := Parsers[key]
 	if !ok {
 		return nil, fmt.Errorf("unknown parser '%s'; available parsers: %v", key, AvailableParsers())
-	}
-	return fn, nil
-}
-
-// GetReaderParser returns a parser suitable for request-scoped input. Not all
-// legacy file parsers have a reader implementation yet, so callers get a
-// normal, actionable error rather than falling back to a process-exiting path.
-func GetReaderParser(key string) (ReaderParseFunc, error) {
-	fn, ok := ReaderParsers[key]
-	if !ok {
-		return nil, fmt.Errorf("parser %q does not support in-memory input", key)
 	}
 	return fn, nil
 }
@@ -93,15 +77,15 @@ func AvailableParsers() []string {
 	return keys
 }
 
-func ShouldIncludeBenchmark(benchName string, cfg Config) bool {
+func ShouldIncludeBenchmark(benchName string, cfg Config) (bool, error) {
 	if cfg.Filter == "" {
-		return true
+		return true, nil
 	}
 
 	filterRe, err := regexp.Compile(cfg.Filter)
 	if err != nil {
-		shared.ExitWithError("Invalid filter regex", err)
+		return false, fmt.Errorf("invalid filter regex: %w", err)
 	}
 
-	return filterRe.MatchString(benchName)
+	return filterRe.MatchString(benchName), nil
 }

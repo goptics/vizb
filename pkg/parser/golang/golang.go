@@ -3,6 +3,7 @@ package golang
 import (
 	"bufio"
 	"encoding/json"
+	"fmt"
 	"io"
 	"strconv"
 	"strings"
@@ -42,12 +43,10 @@ func parseBenchmarkName(name benchfmt.Name) (benchName string, cpu string) {
 	return
 }
 
-func ParseGoBenchmark(filePath string, cfg parser.Config) ([]shared.DataPoint, parser.Config) {
+func ParseGoBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataPoint, parser.Config, error) {
 	var results []shared.DataPoint
-	f := shared.MustOpenFile(filePath)
-	defer f.Close()
 
-	reader := benchfmt.NewReader(f, filePath)
+	reader := benchfmt.NewReader(input, "input")
 
 	var allIters []int
 
@@ -62,14 +61,18 @@ func ParseGoBenchmark(filePath string, cfg parser.Config) ([]shared.DataPoint, p
 		shared.OS, shared.Arch, shared.Pkg, shared.CPU = result.GetConfig("goos"), result.GetConfig("goarch"), result.GetConfig("pkg"), result.GetConfig("cpu")
 		rawBenchName, cpuCore := parseBenchmarkName(result.Name)
 
-		if !parser.ShouldIncludeBenchmark(rawBenchName, cfg) {
+		include, err := parser.ShouldIncludeBenchmark(rawBenchName, cfg)
+		if err != nil {
+			return nil, cfg, err
+		}
+		if !include {
 			continue
 		}
 
 		group, err := parser.GroupBenchmarkName(rawBenchName, cfg)
 
 		if err != nil {
-			shared.ExitWithError("Error on parsing group from bench name", err)
+			return nil, cfg, fmt.Errorf("parse group from benchmark name: %w", err)
 		}
 
 		benchName, xAxis, yAxis, zAxis := group["name"], group["xAxis"], group["yAxis"], group["zAxis"]
@@ -134,6 +137,9 @@ func ParseGoBenchmark(filePath string, cfg parser.Config) ([]shared.DataPoint, p
 
 		allIters = append(allIters, result.Iters)
 	}
+	if err := reader.Err(); err != nil {
+		return nil, cfg, fmt.Errorf("read Go benchmark: %w", err)
+	}
 
 	hasDifferentIters := false
 	if len(allIters) > 1 {
@@ -155,7 +161,7 @@ func ParseGoBenchmark(filePath string, cfg parser.Config) ([]shared.DataPoint, p
 		}
 	}
 
-	return results, cfg
+	return results, cfg, nil
 }
 
 func ConvertGoJsonBenchToText(filePath string) string {

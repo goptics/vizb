@@ -2,7 +2,8 @@ package rust
 
 import (
 	"bufio"
-	"os"
+	"fmt"
+	"io"
 	"regexp"
 	"strings"
 	"unicode"
@@ -18,14 +19,8 @@ func init() {
 
 var criterionRe = regexp.MustCompile(`^(\S+)\s+time:\s+\[([\d.]+)\s*(ns|µs|μs|ms|s)\s+([\d.]+)\s*(ns|µs|μs|ms|s)\s+([\d.]+)\s*(ns|µs|μs|ms|s)\]`)
 
-func ParseCriterionBenchmark(filename string, cfg parser.Config) ([]shared.DataPoint, parser.Config) {
-	f, err := os.Open(filename)
-	if err != nil {
-		shared.ExitWithError("Error opening file", err)
-	}
-	defer f.Close()
-
-	scanner := bufio.NewScanner(f)
+func ParseCriterionBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataPoint, parser.Config, error) {
+	scanner := bufio.NewScanner(input)
 	var results []shared.DataPoint
 
 	for scanner.Scan() {
@@ -39,7 +34,11 @@ func ParseCriterionBenchmark(filename string, cfg parser.Config) ([]shared.DataP
 		}
 
 		name := match[1]
-		if !parser.ShouldIncludeBenchmark(name, cfg) {
+		include, err := parser.ShouldIncludeBenchmark(name, cfg)
+		if err != nil {
+			return nil, cfg, err
+		}
+		if !include {
 			continue
 		}
 
@@ -49,7 +48,7 @@ func ParseCriterionBenchmark(filename string, cfg parser.Config) ([]shared.DataP
 
 		group, groupErr := parser.GroupBenchmarkName(name, cfg)
 		if groupErr != nil {
-			shared.ExitWithError("Error parsing cargo benchmark name", groupErr)
+			return nil, cfg, fmt.Errorf("parse criterion benchmark name: %w", groupErr)
 		}
 
 		benchName, xAxis, yAxis, zAxis := group["name"], group["xAxis"], group["yAxis"], group["zAxis"]
@@ -68,8 +67,8 @@ func ParseCriterionBenchmark(filename string, cfg parser.Config) ([]shared.DataP
 	}
 
 	if err := scanner.Err(); err != nil {
-		shared.ExitWithError("failed to read file", err)
+		return nil, cfg, fmt.Errorf("read criterion benchmark: %w", err)
 	}
 
-	return results, cfg
+	return results, cfg, nil
 }

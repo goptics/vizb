@@ -2,7 +2,8 @@ package rust
 
 import (
 	"bufio"
-	"os"
+	"fmt"
+	"io"
 	"regexp"
 	"strings"
 	"unicode"
@@ -20,14 +21,8 @@ var divanRowRe = regexp.MustCompile(`^[├╰]─\s+(\S+)\s+(.+)$`)
 
 var divanValRe = regexp.MustCompile(`([\d.]+)\s*(ns|µs|μs|ms|s)`)
 
-func ParseDivanBenchmark(filename string, cfg parser.Config) ([]shared.DataPoint, parser.Config) {
-	f, err := os.Open(filename)
-	if err != nil {
-		shared.ExitWithError("Error opening file", err)
-	}
-	defer f.Close()
-
-	scanner := bufio.NewScanner(f)
+func ParseDivanBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataPoint, parser.Config, error) {
+	scanner := bufio.NewScanner(input)
 	var results []shared.DataPoint
 
 	for scanner.Scan() {
@@ -41,7 +36,11 @@ func ParseDivanBenchmark(filename string, cfg parser.Config) ([]shared.DataPoint
 		}
 
 		name := match[1]
-		if !parser.ShouldIncludeBenchmark(name, cfg) {
+		include, err := parser.ShouldIncludeBenchmark(name, cfg)
+		if err != nil {
+			return nil, cfg, err
+		}
+		if !include {
 			continue
 		}
 
@@ -71,7 +70,7 @@ func ParseDivanBenchmark(filename string, cfg parser.Config) ([]shared.DataPoint
 
 		group, groupErr := parser.GroupBenchmarkName(name, cfg)
 		if groupErr != nil {
-			shared.ExitWithError("Error parsing divan benchmark name", groupErr)
+			return nil, cfg, fmt.Errorf("parse divan benchmark name: %w", groupErr)
 		}
 
 		benchName, xAxis, yAxis, zAxis := group["name"], group["xAxis"], group["yAxis"], group["zAxis"]
@@ -92,8 +91,8 @@ func ParseDivanBenchmark(filename string, cfg parser.Config) ([]shared.DataPoint
 	}
 
 	if err := scanner.Err(); err != nil {
-		shared.ExitWithError("failed to read file", err)
+		return nil, cfg, fmt.Errorf("read divan benchmark: %w", err)
 	}
 
-	return results, cfg
+	return results, cfg, nil
 }

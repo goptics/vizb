@@ -27,7 +27,8 @@ func (s *DivanSuite) SetupTest() {
 }
 
 func (s *DivanSuite) TestRealDivanOutput() {
-	results, _ := ParseDivanBenchmark(writeRustTestFile(s.T(), testDivanTable), s.cfg)
+	results, _, err := ParseDivanBenchmark(rustTestInput(s.T(), testDivanTable), s.cfg)
+	s.Require().NoError(err)
 	s.Len(results, 6)
 
 	assertStat(s.T(), results[0].Stats[0], "Latency fastest (ns)", 4360, "")
@@ -48,7 +49,8 @@ func (s *DivanSuite) TestRealDivanOutput() {
 func (s *DivanSuite) TestUnitConversionToUs() {
 	s.cfg.TimeUnit = "us"
 
-	results, _ := ParseDivanBenchmark(writeRustTestFile(s.T(), testDivanTable), s.cfg)
+	results, _, err := ParseDivanBenchmark(rustTestInput(s.T(), testDivanTable), s.cfg)
+	s.Require().NoError(err)
 	s.Len(results, 6)
 
 	assertStat(s.T(), results[0].Stats[0], "Latency fastest (us)", 4.36, "")
@@ -59,7 +61,8 @@ func (s *DivanSuite) TestUnitConversionToUs() {
 func (s *DivanSuite) TestFilterRegex() {
 	s.cfg.Filter = "insertion"
 
-	results, _ := ParseDivanBenchmark(writeRustTestFile(s.T(), testDivanTable), s.cfg)
+	results, _, err := ParseDivanBenchmark(rustTestInput(s.T(), testDivanTable), s.cfg)
+	s.Require().NoError(err)
 	s.Len(results, 3)
 	for _, r := range results {
 		s.Contains(r.YAxis, "insertion")
@@ -67,7 +70,8 @@ func (s *DivanSuite) TestFilterRegex() {
 }
 
 func (s *DivanSuite) TestEmptyFile() {
-	results, _ := ParseDivanBenchmark(writeRustTestFile(s.T(), ""), s.cfg)
+	results, _, err := ParseDivanBenchmark(rustTestInput(s.T(), ""), s.cfg)
+	s.Require().NoError(err)
 	s.Empty(results)
 }
 

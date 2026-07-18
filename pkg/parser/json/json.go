@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"os"
 	"strconv"
 	"strings"
 
@@ -16,7 +15,6 @@ import (
 
 func init() {
 	parser.Parsers["json"] = ParseJSON
-	parser.ReaderParsers["json"] = ParseReader
 }
 
 // leaf is a single flattened scalar field of a row. val is float64 or string.
@@ -66,24 +64,8 @@ func stringify(v any) string {
 // the separators from --group-pattern/-p and routed through the grouping
 // machinery (-p/-r). Nested objects are
 // flattened to dotted keys; array-valued fields inside objects are skipped.
-func ParseJSON(filename string, cfg parser.Config) ([]shared.DataPoint, parser.Config) {
-	f, err := os.Open(filename)
-	if err != nil {
-		shared.ExitWithError("Error opening file", err)
-	}
-	defer f.Close()
-
-	results, effectiveCfg, err := parseReader(f, cfg, true)
-	if err != nil {
-		shared.ExitWithError(err.Error(), nil)
-	}
-	return results, effectiveCfg
-}
-
-// ParseReader parses a JSON array from an explicit reader. It is the
-// request-safe parser entry point: every processing failure is returned.
-func ParseReader(input io.Reader, cfg parser.Config) ([]shared.DataPoint, parser.Config, error) {
-	return parseReader(input, cfg, false)
+func ParseJSON(input io.Reader, cfg parser.Config) ([]shared.DataPoint, parser.Config, error) {
+	return parseReader(input, cfg, !cfg.QuietAutoDetect)
 }
 
 func parseReader(input io.Reader, cfg parser.Config, logAuto bool) ([]shared.DataPoint, parser.Config, error) {
@@ -146,7 +128,7 @@ func parseReader(input io.Reader, cfg parser.Config, logAuto bool) ([]shared.Dat
 		for i, row := range rows {
 			readers[i] = jsonRowReader{row: row, seenCol: seenCol, colOrder: colOrder, flag: flag}
 		}
-		results, err := parser.DispatchSelectModeE(readers, &cfg, jsonKindFn(rows, seenCol, colOrder, flag))
+		results, err := parser.DispatchSelectMode(readers, &cfg, jsonKindFn(rows, seenCol, colOrder, flag))
 		if err != nil {
 			return nil, cfg, err
 		}
@@ -178,7 +160,11 @@ func parseReader(input io.Reader, cfg parser.Config, logAuto bool) ([]shared.Dat
 		var name, xAxis, yAxis, zAxis string
 		if len(groupValues) > 0 {
 			label := parser.TabularFilterLabel(groupValues, cfg)
-			if !parser.ShouldIncludeBenchmark(label, cfg) {
+			include, err := parser.ShouldIncludeBenchmark(label, cfg)
+			if err != nil {
+				return nil, cfg, err
+			}
+			if !include {
 				continue
 			}
 

@@ -1,12 +1,12 @@
 package parser_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/goptics/vizb/pkg/parser"
 	_ "github.com/goptics/vizb/pkg/parser/csv"
 	_ "github.com/goptics/vizb/pkg/parser/golang"
-	"github.com/goptics/vizb/shared"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -26,15 +26,10 @@ func (s *RegistrySuite) TestGetParserKnown() {
 	fn, err := parser.GetParser("go")
 	s.NoError(err)
 	s.NotNil(fn)
-}
 
-func (s *RegistrySuite) TestGetReaderParser() {
-	reader, err := parser.GetReaderParser("csv")
-	s.Require().NoError(err)
-	s.NotNil(reader)
-
-	_, err = parser.GetReaderParser("go")
-	s.ErrorContains(err, "does not support in-memory input")
+	points, _, err := fn(strings.NewReader(""), parser.Config{})
+	s.NoError(err)
+	s.Empty(points)
 }
 
 func (s *RegistrySuite) TestAvailableParsersSorted() {
@@ -47,22 +42,23 @@ func (s *RegistrySuite) TestAvailableParsersSorted() {
 
 func (s *RegistrySuite) TestShouldIncludeBenchmarkMatch() {
 	cfg := parser.Config{Filter: "Foo"}
-	s.True(parser.ShouldIncludeBenchmark("BenchmarkFoo-8", cfg))
-	s.False(parser.ShouldIncludeBenchmark("BenchmarkBar-8", cfg))
+	include, err := parser.ShouldIncludeBenchmark("BenchmarkFoo-8", cfg)
+	s.NoError(err)
+	s.True(include)
+	include, err = parser.ShouldIncludeBenchmark("BenchmarkBar-8", cfg)
+	s.NoError(err)
+	s.False(include)
 }
 
 func (s *RegistrySuite) TestShouldIncludeBenchmarkEmptyFilter() {
-	s.True(parser.ShouldIncludeBenchmark("anything", parser.Config{}))
+	include, err := parser.ShouldIncludeBenchmark("anything", parser.Config{})
+	s.NoError(err)
+	s.True(include)
 }
 
-func (s *RegistrySuite) TestShouldIncludeBenchmarkInvalidRegexExits() {
-	restore, exitCalled := shared.TrapOsExitPanic(s.T())
-	defer restore()
-
-	s.Panics(func() {
-		parser.ShouldIncludeBenchmark("bench", parser.Config{Filter: "["})
-	})
-	s.True(*exitCalled)
+func (s *RegistrySuite) TestShouldIncludeBenchmarkInvalidRegexReturnsError() {
+	_, err := parser.ShouldIncludeBenchmark("bench", parser.Config{Filter: "["})
+	s.ErrorContains(err, "invalid filter regex")
 }
 
 func TestRegistrySuite(t *testing.T) {

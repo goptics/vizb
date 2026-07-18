@@ -116,6 +116,14 @@ BenchmarkAnother-8    2000000    2345 ns/op    2000 B/op    20 allocs/op`)
 		s.Panics(func() { prepareData(emptyFile, "go", cfg) })
 		s.True(*exitCalled)
 	})
+
+	s.Run("missing input calls OsExit at CLI boundary", func() {
+		restore, exitCalled := testutil.TrapOsExitPanic(s.T())
+		defer restore()
+		missing := filepath.Join(s.T().TempDir(), "missing.txt")
+		s.Panics(func() { prepareData(missing, "go", cfg) })
+		s.True(*exitCalled)
+	})
 }
 
 func (s *PipelineSuite) TestWriteOutput() {
@@ -651,8 +659,8 @@ func (s *PipelineSuite) TestAssembleDatasetSelectViewMixedAxes() {
 // TestParseCSVToAssembleDatasetMixedSelect verifies the end-to-end flow
 // ParseCSV → assembleDataset for a solo mixed --select (categorical x + value y).
 // Regression guard: DatasetAxesForSelectView must infer mixed-ness from the
-// parsed DataPoints when AxisType didn't propagate through the ParseFunc value
-// boundary, emitting a category x (empty Type) + value y.
+// parsed DataPoints when a select view has no AxisType annotations, emitting a
+// category x (empty Type) + value y.
 func (s *PipelineSuite) TestParseCSVToAssembleDatasetMixedSelect() {
 	csvFile := s.writeFile("region-metrics.csv",
 		"region,latency,sales\nAsia,12,100\nEurope,8,80\nAmericas,15,120\n")
@@ -663,10 +671,14 @@ func (s *PipelineSuite) TestParseCSVToAssembleDatasetMixedSelect() {
 	}
 	cfg.Mode = parser.ResolveMode(cfg)
 
-	results, _ := parser.Parsers["csv"](csvFile, cfg)
+	input, err := os.Open(csvFile)
+	s.Require().NoError(err)
+	defer input.Close()
+	results, effectiveCfg, err := parser.Parsers["csv"](input, cfg)
+	s.Require().NoError(err)
 	s.Require().NotEmpty(results)
 
-	ds := assembleDataset(results, RunMeta{Name: "T", Parser: "csv"}, nil, cfg)
+	ds := assembleDataset(results, RunMeta{Name: "T", Parser: "csv"}, nil, effectiveCfg)
 	s.Require().Len(ds.Axes, 2)
 	s.Equal("x", ds.Axes[0].Key)
 	s.Equal("", ds.Axes[0].Type, "mixed x axis must be category (empty Type)")
@@ -675,7 +687,7 @@ func (s *PipelineSuite) TestParseCSVToAssembleDatasetMixedSelect() {
 	s.True(ds.PreserveRows)
 }
 
-func (s *PipelineSuite) TestBuildDatasetGroupedAxesFromConfig() {
+func (s *PipelineSuite) TestAssembleDatasetGroupedAxesFromConfig() {
 	results := []shared.DataPoint{{XAxis: "Asia", YAxis: "12", Stats: []shared.Stat{}}}
 	cfg := parser.Config{
 		Axes: []parser.ColumnSpec{
@@ -683,13 +695,13 @@ func (s *PipelineSuite) TestBuildDatasetGroupedAxesFromConfig() {
 			{Source: "latency", AxisKey: "y", AxisType: "value"},
 		},
 	}
-	ds := buildDataset(results, RunMeta{Parser: "csv"}, nil, cfg, nil, "")
+	ds := assembleDataset(results, RunMeta{Parser: "csv"}, nil, cfg)
 	s.Require().Len(ds.Axes, 2)
 	s.Equal("", ds.Axes[0].Type)
 	s.Equal("value", ds.Axes[1].Type)
 }
 
-func (s *PipelineSuite) TestBuildDatasetSelectAxisWithoutViewSlice() {
+func (s *PipelineSuite) TestAssembleDatasetSelectAxis() {
 	results := []shared.DataPoint{{XAxis: "1", YAxis: "2", Stats: []shared.Stat{}}}
 	cfg := parser.Config{
 		Mode: parser.ModeValue,
@@ -697,13 +709,13 @@ func (s *PipelineSuite) TestBuildDatasetSelectAxisWithoutViewSlice() {
 			{Columns: []parser.ColumnSpec{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}}},
 		},
 	}
-	ds := buildDataset(results, RunMeta{Parser: "csv"}, nil, cfg, nil, "")
+	ds := assembleDataset(results, RunMeta{Parser: "csv"}, nil, cfg)
 	s.Require().Len(ds.Axes, 2)
 	s.Equal("value", ds.Axes[0].Type)
 	s.Equal("value", ds.Axes[1].Type)
 }
 
-func (s *PipelineSuite) TestBuildDatasetPreservesTheme() {
+func (s *PipelineSuite) TestAssembleDatasetPreservesTheme() {
 	results := []shared.DataPoint{{XAxis: "1", YAxis: "2", Stats: []shared.Stat{}}}
 	cfg := parser.Config{
 		Mode: parser.ModeValue,
@@ -711,11 +723,11 @@ func (s *PipelineSuite) TestBuildDatasetPreservesTheme() {
 			{Columns: []parser.ColumnSpec{{Source: "x", AxisKey: "x", AxisType: "value"}, {Source: "y", AxisKey: "y", AxisType: "value"}}},
 		},
 	}
-	ds := buildDataset(results, RunMeta{Name: "T", Parser: "csv", Theme: "walden"}, nil, cfg, nil, "")
+	ds := assembleDataset(results, RunMeta{Name: "T", Parser: "csv", Theme: "walden"}, nil, cfg)
 	s.Equal("walden", ds.Theme)
 }
 
-func (s *PipelineSuite) TestBuildDatasetInfersAxesWithoutAxisType() {
+func (s *PipelineSuite) TestAssembleDatasetInfersAxesWithoutAxisType() {
 	view := append([]parser.ColumnSpec(nil),
 		parser.ColumnSpec{Source: "region", AxisKey: "x"},
 		parser.ColumnSpec{Source: "latency", AxisKey: "y"},
@@ -727,7 +739,7 @@ func (s *PipelineSuite) TestBuildDatasetInfersAxesWithoutAxisType() {
 			{Columns: append([]parser.ColumnSpec(nil), view...)},
 		},
 	}
-	ds := buildDataset(results, RunMeta{Name: "T", Parser: "csv"}, nil, cfg, view, "")
+	ds := assembleDataset(results, RunMeta{Name: "T", Parser: "csv"}, nil, cfg)
 	s.Require().Len(ds.Axes, 2)
 	s.Equal("", ds.Axes[0].Type)
 	s.Equal("value", ds.Axes[1].Type)

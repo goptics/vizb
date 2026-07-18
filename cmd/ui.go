@@ -90,9 +90,12 @@ func runUI(cmd *cobra.Command, args []string) {
 			validateStat(&uiOpts.Stat)
 		}
 		needsHeatmapChunk := !statChanged || shared.StatNeedsCorrelation(uiOpts.Stat)
-		htmlContent := template.GenerateRemoteUI(
+		htmlContent, err := template.GenerateRemoteUI(
 			uiOpts.DataURL, charts, needs3D, needsHeatmapChunk, template.VizbHTMLTemplate,
 		)
+		if err != nil {
+			shared.ExitWithError("Failed to generate UI: %v", err)
+		}
 		if _, err := f.WriteString(htmlContent); err != nil {
 			shared.ExitWithError("Failed to write output file: %v", err)
 		}

@@ -87,6 +87,7 @@ func Convert(in ConvertInput) (ConvertResult, error) {
 	}
 
 	cfg := in.Config
+	cfg.QuietAutoDetect = true
 	if cfg.GroupPattern == "" {
 		cfg.GroupPattern = "x"
 	}
@@ -107,7 +108,7 @@ func Convert(in ConvertInput) (ConvertResult, error) {
 		}
 	}
 
-	parseFn, err := parser.GetReaderParser(key)
+	parseFn, err := parser.GetParser(key)
 	if err != nil {
 		return ConvertResult{}, err
 	}
@@ -182,7 +183,7 @@ func GenerateUI(datasets []shared.Dataset, charts []string) (string, error) {
 	needsHeatmap := slices.ContainsFunc(copyDatasets, func(ds shared.Dataset) bool {
 		return slices.ContainsFunc(ds.Settings, shared.ChartConfigNeedsCorrelation)
 	})
-	return template.GenerateUIE(jsonData, charts, needs3D, needsHeatmap, template.VizbHTMLTemplate)
+	return template.GenerateUI(jsonData, charts, needs3D, needsHeatmap, template.VizbHTMLTemplate)
 }
 
 func detectInlineParser(data []byte) string {
