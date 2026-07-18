@@ -71,5 +71,5 @@ jobs:
       contents: write
     uses: ./.github/workflows/merge-examples.yml
     with:
-      language: javascript
+      example_category: javascript
       publish: ${{ inputs.publish }}

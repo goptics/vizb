@@ -94,5 +94,5 @@ jobs:
       contents: write
     uses: ./.github/workflows/merge-examples.yml
     with:
-      language: tabular-data
+      example_category: tabular-data
       publish: ${{ inputs.publish }}

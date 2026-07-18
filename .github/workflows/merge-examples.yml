@@ -2,10 +2,10 @@ name: Merge Examples
 on:
   workflow_call:
     inputs:
-      language:
+      example_category:
         required: true
         type: string
-        description: "Subdirectory under examples/ (e.g. go, tabular-data, github-legends)"
+        description: "Example category subdirectory under examples/ (e.g. go, tabular-data, github-legends)"
       publish:
         required: false
         type: boolean
@@ -14,7 +14,7 @@ on:
 
 jobs:
   merge:
-    name: Merge ${{ inputs.language }} examples
+    name: Merge ${{ inputs.example_category }} examples
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -25,7 +25,7 @@ jobs:
         if: env.ACT != 'true'
         uses: actions/download-artifact@v8
         with:
-          pattern: json-${{ inputs.language }}-*
+          pattern: json-${{ inputs.example_category }}-*
           path: /tmp/jsons
           merge-multiple: true
 
@@ -36,34 +36,34 @@ jobs:
           cp .act/jsons/*.json /tmp/jsons/
 
       - name: Prepare output directory
-        run: mkdir -p dist/examples/${{ inputs.language }}
+        run: mkdir -p dist/examples/${{ inputs.example_category }}
 
       - name: Merging
         uses: ./
         with:
           merge-dir: /tmp/jsons
-          output-html: dist/examples/${{ inputs.language }}/index.html
+          output-html: dist/examples/${{ inputs.example_category }}/index.html
           vizb-binary: ${{ env.ACT == 'true' && './bin/vizb' || '' }}
 
       - name: Local preview ready
         if: env.ACT == 'true'
-        run: echo "::notice::Local preview at dist/examples/${{ inputs.language }}/index.html"
+        run: echo "::notice::Local preview at dist/examples/${{ inputs.example_category }}/index.html"
 
       - name: Upload example site
         if: env.ACT != 'true'
         uses: actions/upload-artifact@v7
         with:
-          name: site-examples-${{ inputs.language }}
+          name: site-examples-${{ inputs.example_category }}
           path: dist
           if-no-files-found: error
 
   publish:
-    name: Publish ${{ inputs.language }} examples
+    name: Publish ${{ inputs.example_category }} examples
     if: inputs.publish
     needs: merge
     permissions:
       contents: write
     uses: ./.github/workflows/publish-site.yml
     with:
-      artifact_pattern: site-examples-${{ inputs.language }}
+      artifact_pattern: site-examples-${{ inputs.example_category }}
       keep_files: true

@@ -124,5 +124,5 @@ jobs:
       contents: write
     uses: ./.github/workflows/merge-examples.yml
     with:
-      language: go
+      example_category: go
       publish: ${{ inputs.publish }}

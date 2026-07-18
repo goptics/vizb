@@ -83,6 +83,6 @@ jobs:
       contents: write
     uses: ./.github/workflows/merge-examples.yml
     with:
-      language: github-legends
+      example_category: github-legends
       # Schedule always publishes; workflow_call/dispatch use the publish input.
       publish: ${{ github.event_name == 'schedule' || inputs.publish }}

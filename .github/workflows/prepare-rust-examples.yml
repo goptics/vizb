@@ -71,5 +71,5 @@ jobs:
       contents: write
     uses: ./.github/workflows/merge-examples.yml
     with:
-      language: rust
+      example_category: rust
       publish: ${{ inputs.publish }}

@@ -90,5 +90,5 @@ jobs:
       contents: write
     uses: ./.github/workflows/merge-examples.yml
     with:
-      language: math-and-3d
+      example_category: math-and-3d
       publish: ${{ inputs.publish }}

@@ -66,5 +66,5 @@ jobs:
       contents: write
     uses: ./.github/workflows/merge-examples.yml
     with:
-      language: comparisons
+      example_category: comparisons
       publish: ${{ inputs.publish }}
