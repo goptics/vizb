@@ -12,12 +12,11 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
-	internalcharts "github.com/goptics/vizb/internal/charts"
 	"github.com/goptics/vizb/pkg/core"
-	"github.com/goptics/vizb/pkg/parser"
 	"github.com/goptics/vizb/shared"
 	"github.com/spf13/cobra"
 )
@@ -167,29 +166,6 @@ func serveAddress(opts serveOptions) (string, error) {
 	return net.JoinHostPort(opts.Host, strconv.Itoa(opts.Port)), nil
 }
 
-type convertRequest struct {
-	Input  json.RawMessage `json:"input"`
-	Parser string          `json:"parser"`
-	Charts struct {
-		Types []string `json:"types"`
-	} `json:"charts"`
-	Output struct {
-		Format string `json:"format"`
-	} `json:"output"`
-}
-
-type mergeRequest struct {
-	Datasets []shared.Dataset `json:"datasets"`
-	TagAxis  string           `json:"tagAxis"`
-}
-
-type uiRequest struct {
-	Datasets json.RawMessage `json:"datasets"`
-	Charts   struct {
-		Types []string `json:"types"`
-	} `json:"charts"`
-}
-
 func handleConvert(w http.ResponseWriter, r *http.Request) {
 	handleConvertWithGenerator(w, r, core.GenerateUI)
 }
@@ -204,39 +180,42 @@ func handleConvertWithGenerator(
 		return
 	}
 	if len(request.Input) == 0 || string(request.Input) == "null" {
-		writeAPIProblem(w, r, http.StatusBadRequest, "Invalid request", "input is required")
+		writeValidationProblem(w, r, bodyValidationError("/input", "required", "input is required"))
 		return
 	}
 	input, err := inlineInput(request.Input)
 	if err != nil {
-		writeAPIProblem(w, r, http.StatusBadRequest, "Invalid request", err.Error())
+		writeValidationProblem(w, r, bodyValidationError("/input", "invalid_type", err.Error()))
 		return
 	}
-	types := request.Charts.Types
-	if len(types) == 0 {
-		types = shared.DefaultChartTypes
+	format := request.Output.Format
+	if format == "" {
+		format = "dataset"
 	}
-	configs := make([]internalcharts.ChartConfig, 0, len(types))
-	for _, chartType := range types {
-		config, err := internalcharts.Materialise(chartType, nil, nil)
-		if err != nil {
-			writeAPIProblem(w, r, http.StatusBadRequest, "Invalid request", err.Error())
-			return
-		}
-		configs = append(configs, config)
+	if format != "dataset" && format != "html" {
+		writeValidationProblem(w, r, bodyValidationError("/output/format", "invalid_enum", "output.format must be dataset or html"))
+		return
 	}
-	result, err := core.Convert(core.ConvertInput{
-		Input: input, Parser: request.Parser, Config: parser.Config{}, Charts: configs,
-	})
+	responseType := "application/json"
+	if format == "html" {
+		responseType = "text/html"
+	}
+	if !accepts(r, responseType) {
+		writeAPIProblem(w, r, http.StatusNotAcceptable, "Not acceptable", "Accept must allow "+responseType)
+		return
+	}
+
+	convertInput, types, validationErr := buildConvertInput(request, input)
+	if validationErr != nil {
+		writeValidationProblem(w, r, *validationErr)
+		return
+	}
+	result, err := core.Convert(convertInput)
 	if err != nil {
 		writeAPIProblem(w, r, http.StatusUnprocessableEntity, "Input processing failed", err.Error())
 		return
 	}
-	if request.Output.Format == "html" {
-		if !accepts(r, "text/html") {
-			writeAPIProblem(w, r, http.StatusNotAcceptable, "Not acceptable", "Accept must allow text/html")
-			return
-		}
+	if format == "html" {
 		html, err := generateUI([]shared.Dataset{*result.Dataset}, types)
 		if err != nil {
 			writeAPIProblem(w, r, http.StatusInternalServerError, "Internal server error", err.Error())
@@ -244,10 +223,6 @@ func handleConvertWithGenerator(
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		_, _ = io.WriteString(w, html)
-		return
-	}
-	if request.Output.Format != "" && request.Output.Format != "dataset" {
-		writeAPIProblem(w, r, http.StatusBadRequest, "Invalid request", "output.format must be dataset or html")
 		return
 	}
 	writeAPIJSON(w, http.StatusOK, result.Dataset)
@@ -259,10 +234,23 @@ func handleMerge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(request.Datasets) < 2 {
-		writeAPIProblem(w, r, http.StatusBadRequest, "Invalid request", "at least two datasets are required")
+		writeValidationProblem(w, r, bodyValidationError("/datasets", "min_items", "at least two datasets are required"))
 		return
 	}
-	merged, err := core.Merge(request.Datasets, shared.Dimension(request.TagAxis))
+	tagAxis := request.TagAxis
+	if tagAxis == "" {
+		tagAxis = "name"
+	}
+	if tagAxis != "name" && tagAxis != "x" && tagAxis != "y" && tagAxis != "z" {
+		writeValidationProblem(w, r, bodyValidationError("/tagAxis", "invalid_enum", "tagAxis must be one of name, x, y, or z"))
+		return
+	}
+	datasets, validationErr := decodeDatasetArray(request.Datasets, "/datasets")
+	if validationErr != nil {
+		writeValidationProblem(w, r, *validationErr)
+		return
+	}
+	merged, err := core.Merge(datasets, shared.Dimension(tagAxis))
 	if err != nil {
 		writeAPIProblem(w, r, http.StatusUnprocessableEntity, "Input processing failed", err.Error())
 		return
@@ -289,12 +277,17 @@ func handleUIWithGenerator(
 	}
 	datasets, err := decodeDatasets(request.Datasets)
 	if err != nil {
-		writeAPIProblem(w, r, http.StatusBadRequest, "Invalid request", err.Error())
+		writeValidationProblem(w, r, *err)
 		return
 	}
-	html, err := generateUI(datasets, request.Charts.Types)
-	if err != nil {
-		writeAPIProblem(w, r, http.StatusUnprocessableEntity, "Input processing failed", err.Error())
+	datasets, types, validationErr := applyUIOptions(datasets, request.Charts, request.Statistics)
+	if validationErr != nil {
+		writeValidationProblem(w, r, *validationErr)
+		return
+	}
+	html, generationErr := generateUI(datasets, types)
+	if generationErr != nil {
+		writeAPIProblem(w, r, http.StatusInternalServerError, "Internal server error", generationErr.Error())
 		return
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -302,21 +295,20 @@ func handleUIWithGenerator(
 }
 
 func decodeAPIRequest(w http.ResponseWriter, r *http.Request, target any) bool {
-	if contentType := r.Header.Get("Content-Type"); contentType != "" {
-		mediaType, _, err := mime.ParseMediaType(contentType)
-		if err != nil || mediaType != "application/json" {
-			writeAPIProblem(w, r, http.StatusUnsupportedMediaType, "Unsupported media type", "Content-Type must be application/json")
-			return false
-		}
+	contentType := r.Header.Get("Content-Type")
+	mediaType, _, err := mime.ParseMediaType(contentType)
+	if contentType == "" || err != nil || mediaType != "application/json" {
+		writeAPIProblem(w, r, http.StatusUnsupportedMediaType, "Unsupported media type", "Content-Type must be application/json")
+		return false
 	}
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(target); err != nil {
-		writeAPIProblem(w, r, http.StatusBadRequest, "Invalid request", err.Error())
+		writeValidationProblem(w, r, bodyValidationError("/", "invalid_json", err.Error()))
 		return false
 	}
 	if decoder.Decode(&struct{}{}) != io.EOF {
-		writeAPIProblem(w, r, http.StatusBadRequest, "Invalid request", "request body must contain one JSON value")
+		writeValidationProblem(w, r, bodyValidationError("/", "multiple_values", "request body must contain one JSON value"))
 		return false
 	}
 	return true
@@ -333,31 +325,48 @@ func inlineInput(raw json.RawMessage) ([]byte, error) {
 	return raw, nil
 }
 
-func decodeDatasets(raw json.RawMessage) ([]shared.Dataset, error) {
-	if len(raw) == 0 {
-		return nil, fmt.Errorf("datasets is required")
-	}
-	var datasets []shared.Dataset
-	if raw[0] == '[' {
-		if err := json.Unmarshal(raw, &datasets); err != nil {
-			return nil, err
-		}
-	} else {
-		var dataset shared.Dataset
-		if err := json.Unmarshal(raw, &dataset); err != nil {
-			return nil, err
-		}
-		datasets = []shared.Dataset{dataset}
-	}
-	if len(datasets) == 0 {
-		return nil, fmt.Errorf("at least one dataset is required")
-	}
-	return datasets, nil
-}
-
 func accepts(r *http.Request, mediaType string) bool {
-	accept := r.Header.Get("Accept")
-	return accept == "" || accept == "*/*" || accept == mediaType
+	values := r.Header.Values("Accept")
+	if len(values) == 0 {
+		return true
+	}
+	targetType, targetSubtype, ok := strings.Cut(mediaType, "/")
+	if !ok {
+		return false
+	}
+	bestSpecificity, bestQuality := -1, -1.0
+	for _, value := range values {
+		for _, mediaRange := range strings.Split(value, ",") {
+			acceptedType, params, err := mime.ParseMediaType(strings.TrimSpace(mediaRange))
+			if err != nil {
+				continue
+			}
+			quality := 1.0
+			if rawQuality, exists := params["q"]; exists {
+				quality, err = strconv.ParseFloat(rawQuality, 64)
+				if err != nil || quality < 0 || quality > 1 {
+					continue
+				}
+			}
+			rangeType, rangeSubtype, ok := strings.Cut(acceptedType, "/")
+			if !ok {
+				continue
+			}
+			specificity := -1
+			switch {
+			case rangeType == targetType && rangeSubtype == targetSubtype:
+				specificity = 2
+			case rangeType == targetType && rangeSubtype == "*":
+				specificity = 1
+			case rangeType == "*" && rangeSubtype == "*":
+				specificity = 0
+			}
+			if specificity > bestSpecificity || (specificity == bestSpecificity && quality > bestQuality) {
+				bestSpecificity, bestQuality = specificity, quality
+			}
+		}
+	}
+	return bestSpecificity >= 0 && bestQuality > 0
 }
 
 func writeAPIJSON(w http.ResponseWriter, status int, value any) {
@@ -370,10 +379,38 @@ func writeAPIProblem(w http.ResponseWriter, r *http.Request, status int, title, 
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(map[string]any{
-		"type":     "https://vizb.goptics.org/problems/request",
+		"type":     problemType(status),
 		"title":    title,
 		"status":   status,
 		"detail":   detail,
 		"instance": r.URL.Path,
 	})
+}
+
+func writeValidationProblem(w http.ResponseWriter, r *http.Request, validationErrors ...apiValidationError) {
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(http.StatusBadRequest)
+	_ = json.NewEncoder(w).Encode(map[string]any{
+		"type":     problemType(http.StatusBadRequest),
+		"title":    "Invalid request",
+		"status":   http.StatusBadRequest,
+		"detail":   "Request validation failed.",
+		"instance": r.URL.Path,
+		"errors":   validationErrors,
+	})
+}
+
+func problemType(status int) string {
+	slug := "internal"
+	switch status {
+	case http.StatusBadRequest:
+		slug = "validation"
+	case http.StatusNotAcceptable:
+		slug = "not-acceptable"
+	case http.StatusUnsupportedMediaType:
+		slug = "unsupported-media-type"
+	case http.StatusUnprocessableEntity:
+		slug = "processing"
+	}
+	return "https://vizb.goptics.org/problems/" + slug
 }

@@ -57,7 +57,6 @@ curl -sS http://127.0.0.1:8080/ \
   --data '{
     "input": "region,latency\\nwest,12\\neast,18\\n",
     "parser": "csv",
-    "metadata": { "name": "API latency" },
     "select": ["region", "latency"],
     "charts": { "types": ["bar", "line"] },
     "output": { "format": "dataset" }

@@ -36,7 +36,7 @@ paths:
       operationId: convert
       summary: Convert supported input into a Vizb Dataset or self-contained HTML.
       description: |
-        Input is inline text or JSON. Parser, grouping, metadata, units, selection,
+        Input is inline text or JSON. Parser, grouping, units, selection,
         and chart options are structured request data. Unknown or inapplicable
         options are rejected; CLI-style option strings are not accepted.
       requestBody:

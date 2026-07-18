@@ -22,6 +22,12 @@ type ServeSuite struct {
 	suite.Suite
 }
 
+const (
+	validDatasetJSON = `{"name":"Bench","axes":[{"key":"name"},{"key":"y"}],"settings":[{"type":"bar"}],"data":[{"name":"case","yAxis":"1"}]}`
+	firstMergeJSON   = `{"name":"Bench","tag":"v1","axes":[{"key":"name"},{"key":"y"}],"settings":[{"type":"bar"}],"data":[{"name":"case","yAxis":"1"}]}`
+	secondMergeJSON  = `{"name":"Bench","tag":"v2","axes":[{"key":"name"},{"key":"y"}],"settings":[{"type":"bar"}],"data":[{"name":"case","yAxis":"2"}]}`
+)
+
 func (s *ServeSuite) SetupTest() {
 	ResetTestState()
 }
@@ -254,6 +260,45 @@ func (s *ServeSuite) TestConvertEndpoint() {
 
 	recorder = s.apiRequest(handler, "/", `{"input":[{"region":"west","value":12}],"charts":{"types":["bar"]}}`, "application/json", "")
 	s.Equal(http.StatusOK, recorder.Code)
+
+	documented := `{
+		"input":{"data":[{"region":"west","latency":12},{"region":"east","latency":18}]},
+		"parser":"auto",
+		"grouping":{"pattern":"x","columns":["region"]},
+		"units":{"memory":"KB","time":"ms","number":"K"},
+		"select":["latency"],
+		"jsonPath":".data",
+		"charts":{"types":["bar"],"configs":[{"type":"bar","showLabels":true}]},
+		"output":{"format":"dataset"}
+	}`
+	recorder = s.apiRequest(handler, "/", documented, "application/json", "application/json")
+	s.Equal(http.StatusOK, recorder.Code)
+	s.Require().NoError(json.Unmarshal(recorder.Body.Bytes(), &dataset))
+	s.Equal("Comparisons", dataset["name"])
+}
+
+func (s *ServeSuite) TestConvertEndpointSupportsBenchmarkFamilies() {
+	handler := newRESTHandler()
+	for _, test := range []struct {
+		name   string
+		parser string
+		input  string
+	}{
+		{name: "go", parser: "go", input: "BenchmarkFoo-8 100 123 ns/op\n"},
+		{name: "javascript", parser: "javascript", input: " · foo 1234 0.1 0.2 0.3 0.4 0.5 0.6 0.7 ±1.5% 100\n"},
+		{name: "rust", parser: "rust", input: "foo time: [21.234 ns 21.456 ns 21.678 ns]\n"},
+	} {
+		s.Run(test.name, func() {
+			body, err := json.Marshal(map[string]any{
+				"input":  test.input,
+				"parser": test.parser,
+				"charts": map[string]any{"types": []string{"bar"}},
+			})
+			s.Require().NoError(err)
+			recorder := s.apiRequest(handler, "/", string(body), "application/json", "application/json")
+			s.Equal(http.StatusOK, recorder.Code, recorder.Body.String())
+		})
+	}
 }
 
 func (s *ServeSuite) TestConvertEndpointRejectsInvalidRequests() {
@@ -271,8 +316,11 @@ func (s *ServeSuite) TestConvertEndpointRejectsInvalidRequests() {
 		{name: "unknown chart", body: `{"input":"x,y\na,1\n","charts":{"types":["unknown"]}}`, contentType: "application/json", wantStatus: http.StatusBadRequest},
 		{name: "unsupported parser", body: `{"input":"x,y\na,1\n","parser":"go"}`, contentType: "application/json", wantStatus: http.StatusUnprocessableEntity},
 		{name: "html not accepted", body: `{"input":"x,y\na,1\n","output":{"format":"html"}}`, contentType: "application/json", accept: "application/json", wantStatus: http.StatusNotAcceptable},
+		{name: "dataset not accepted", body: `{"input":"x,y\na,1\n"}`, contentType: "application/json", accept: "text/html", wantStatus: http.StatusNotAcceptable},
 		{name: "invalid output format", body: `{"input":"x,y\na,1\n","output":{"format":"csv"}}`, contentType: "application/json", wantStatus: http.StatusBadRequest},
+		{name: "metadata is not supported", body: `{"input":"x,y\na,1\n","metadata":{"name":"example"}}`, contentType: "application/json", wantStatus: http.StatusBadRequest},
 		{name: "unknown field", body: `{"input":"x,y\na,1\n","extra":true}`, contentType: "application/json", wantStatus: http.StatusBadRequest},
+		{name: "missing content type", body: `{}`, wantStatus: http.StatusUnsupportedMediaType},
 		{name: "wrong content type", body: `{}`, contentType: "text/plain", wantStatus: http.StatusUnsupportedMediaType},
 		{name: "malformed content type", body: `{}`, contentType: `application/json; charset="`, wantStatus: http.StatusUnsupportedMediaType},
 		{name: "multiple JSON values", body: `{} {}`, contentType: "application/json", wantStatus: http.StatusBadRequest},
@@ -282,6 +330,68 @@ func (s *ServeSuite) TestConvertEndpointRejectsInvalidRequests() {
 			s.Equal(test.wantStatus, recorder.Code)
 			s.Contains(recorder.Header().Get("Content-Type"), "application/problem+json")
 			s.Equal(float64(test.wantStatus), s.problemStatus(recorder))
+			if test.wantStatus == http.StatusBadRequest {
+				var problem struct {
+					Errors []apiValidationError `json:"errors"`
+				}
+				s.Require().NoError(json.Unmarshal(recorder.Body.Bytes(), &problem))
+				s.NotEmpty(problem.Errors)
+			}
+		})
+	}
+}
+
+func (s *ServeSuite) TestConvertEndpointValidatesStructuredOptions() {
+	handler := newRESTHandler()
+	tests := []struct {
+		name string
+		body string
+	}{
+		{name: "invalid parser", body: `{"input":"x,y\na,1\n","parser":"xml"}`},
+		{name: "invalid group pattern", body: `{"input":"x,y\na,1\n","parser":"csv","grouping":{"pattern":"["}}`},
+		{name: "empty group column", body: `{"input":"x,y\na,1\n","parser":"csv","grouping":{"pattern":"x","columns":[""]}}`},
+		{name: "invalid group regex", body: `{"input":"x,y\na,1\n","grouping":{"regex":"["}}`},
+		{name: "invalid filter regex", body: `{"input":"x,y\na,1\n","grouping":{"filter":"["}}`},
+		{name: "misaligned grouping", body: `{"input":"a,b,c\nx,y,1\n","parser":"csv","grouping":{"pattern":"x/y","columns":["a","b"]}}`},
+		{name: "invalid memory unit", body: `{"input":"x,y\na,1\n","units":{"memory":"TB"}}`},
+		{name: "invalid time unit", body: `{"input":"x,y\na,1\n","units":{"time":"minute"}}`},
+		{name: "invalid number unit", body: `{"input":"x,y\na,1\n","units":{"number":"Q"}}`},
+		{name: "json path with csv", body: `{"input":"x,y\na,1\n","parser":"csv","jsonPath":".data"}`},
+		{name: "select with benchmark", body: `{"input":"BenchmarkFoo 100 1 ns/op\n","parser":"go","select":["x,y"]}`},
+		{name: "empty select", body: `{"input":"x,y\na,1\n","select":[""]}`},
+		{name: "invalid solo select", body: `{"input":"x,y\na,1\n","select":["x"]}`},
+		{name: "invalid repeatable select", body: `{"input":"a,b,c\n1,2,3\n","select":["a,b,c","a,b"]}`},
+		{name: "duplicate grouped select", body: `{"input":"region,value\nwest,1\n","parser":"csv","grouping":{"pattern":"x","columns":["region"]},"select":["value","value"]}`},
+		{name: "group select conflict", body: `{"input":"region,value\nwest,1\n","parser":"csv","grouping":{"pattern":"x","columns":["region"]},"select":["region"]}`},
+		{name: "empty chart types", body: `{"input":"x,y\na,1\n","charts":{"types":[]}}`},
+		{name: "duplicate chart types", body: `{"input":"x,y\na,1\n","charts":{"types":["bar","bar"]}}`},
+		{name: "missing config type", body: `{"input":"x,y\na,1\n","charts":{"configs":[{"showLabels":true}]}}`},
+		{name: "unknown config type", body: `{"input":"x,y\na,1\n","charts":{"configs":[{"type":"unknown"}]}}`},
+		{name: "duplicate configs", body: `{"input":"x,y\na,1\n","charts":{"configs":[{"type":"bar"},{"type":"bar"}]}}`},
+		{name: "unselected config", body: `{"input":"x,y\na,1\n","charts":{"types":["bar"],"configs":[{"type":"line"}]}}`},
+		{name: "unknown config field", body: `{"input":"x,y\na,1\n","charts":{"configs":[{"type":"bar","bogus":true}]}}`},
+		{name: "invalid scale", body: `{"input":"x,y\na,1\n","charts":{"configs":[{"type":"bar","scale":"square"}]}}`},
+		{name: "invalid symbol size", body: `{"input":"x,y\na,1\n","charts":{"types":["line"],"configs":[{"type":"line","symbolSize":0}]}}`},
+		{name: "sort not object", body: `{"input":"x,y\na,1\n","charts":{"configs":[{"type":"bar","sort":true}]}}`},
+		{name: "sort missing enabled", body: `{"input":"x,y\na,1\n","charts":{"configs":[{"type":"bar","sort":{"order":"asc"}}]}}`},
+		{name: "sort missing order", body: `{"input":"x,y\na,1\n","charts":{"configs":[{"type":"bar","sort":{"enabled":true}}]}}`},
+		{name: "sort invalid order", body: `{"input":"x,y\na,1\n","charts":{"configs":[{"type":"bar","sort":{"enabled":true,"order":"sideways"}}]}}`},
+		{name: "stat not object", body: `{"input":"x,y\na,1\n","charts":{"configs":[{"type":"bar","stat":true}]}}`},
+		{name: "stat missing enabled", body: `{"input":"x,y\na,1\n","charts":{"configs":[{"type":"bar","stat":{"math":[]}}]}}`},
+		{name: "stat missing math", body: `{"input":"x,y\na,1\n","charts":{"configs":[{"type":"bar","stat":{"enabled":true}}]}}`},
+		{name: "stat invalid math", body: `{"input":"x,y\na,1\n","charts":{"configs":[{"type":"bar","stat":{"enabled":true,"math":["bogus"]}}]}}`},
+		{name: "stat duplicate math", body: `{"input":"x,y\na,1\n","charts":{"configs":[{"type":"bar","stat":{"enabled":true,"math":["counts","counts"]}}]}}`},
+	}
+
+	for _, test := range tests {
+		s.Run(test.name, func() {
+			recorder := s.apiRequest(handler, "/", test.body, "application/json", "application/json")
+			s.Equal(http.StatusBadRequest, recorder.Code, recorder.Body.String())
+			var problem struct {
+				Errors []apiValidationError `json:"errors"`
+			}
+			s.Require().NoError(json.Unmarshal(recorder.Body.Bytes(), &problem))
+			s.NotEmpty(problem.Errors)
 		})
 	}
 }
@@ -306,19 +416,25 @@ func (s *ServeSuite) TestMergeEndpoint() {
 	recorder = s.apiRequest(handler, "/merge", `{"datasets":[{"name":"one"}]}`, "application/json", "")
 	s.Equal(http.StatusBadRequest, recorder.Code)
 
-	recorder = s.apiRequest(handler, "/merge", `{"datasets":[{"name":"Bench","tag":"v1","data":[{"name":"case","yAxis":"1"}]},{"name":"Bench","tag":"v2","data":[{"name":"case","yAxis":"2"}]}],"tagAxis":"x"}`, "application/json", "")
+	recorder = s.apiRequest(handler, "/merge", `{"datasets":[`+firstMergeJSON+`,`+secondMergeJSON+`],"tagAxis":"x"}`, "application/json", "")
 	s.Equal(http.StatusOK, recorder.Code)
 	var merged []map[string]any
 	s.Require().NoError(json.Unmarshal(recorder.Body.Bytes(), &merged))
 	s.Len(merged, 1)
 
-	recorder = s.apiRequest(handler, "/merge", `{"datasets":[{"name":"one"},{"name":"two"}],"tagAxis":"invalid"}`, "application/json", "")
-	s.Equal(http.StatusUnprocessableEntity, recorder.Code)
+	recorder = s.apiRequest(handler, "/merge", `{"datasets":[`+firstMergeJSON+`,`+secondMergeJSON+`],"tagAxis":"invalid"}`, "application/json", "")
+	s.Equal(http.StatusBadRequest, recorder.Code)
+
+	recorder = s.apiRequest(handler, "/merge", `{"datasets":[{"name":"one"},{"name":"two"}]}`, "application/json", "")
+	s.Equal(http.StatusBadRequest, recorder.Code)
+
+	recorder = s.apiRequest(handler, "/merge", `{"datasets":[`+firstMergeJSON[:len(firstMergeJSON)-1]+`,"extra":true},`+secondMergeJSON+`]}`, "application/json", "")
+	s.Equal(http.StatusBadRequest, recorder.Code)
 }
 
 func (s *ServeSuite) TestUIEndpoint() {
 	handler := newRESTHandler()
-	valid := `{"datasets":{"name":"Bench","data":[{"name":"case","yAxis":"1"}]}}`
+	valid := `{"datasets":` + validDatasetJSON + `}`
 	recorder := s.apiRequest(handler, "/ui", valid, "application/json", "text/html")
 	s.Equal(http.StatusOK, recorder.Code)
 	s.Contains(recorder.Header().Get("Content-Type"), "text/html")
@@ -335,10 +451,58 @@ func (s *ServeSuite) TestUIEndpoint() {
 		{name: "missing datasets", body: `{}`, accept: "text/html", wantStatus: http.StatusBadRequest},
 		{name: "empty datasets", body: `{"datasets":[]}`, accept: "text/html", wantStatus: http.StatusBadRequest},
 		{name: "invalid datasets", body: `{"datasets":true}`, accept: "text/html", wantStatus: http.StatusBadRequest},
+		{name: "incomplete dataset", body: `{"datasets":{"name":"Bench"}}`, accept: "text/html", wantStatus: http.StatusBadRequest},
+		{name: "unknown nested field", body: `{"datasets":` + validDatasetJSON[:len(validDatasetJSON)-1] + `,"extra":true}}`, accept: "text/html", wantStatus: http.StatusBadRequest},
+		{name: "invalid chart type", body: `{"datasets":` + validDatasetJSON + `,"charts":{"types":["unknown"]}}`, accept: "text/html", wantStatus: http.StatusBadRequest},
 	} {
 		s.Run(test.name, func() {
 			recorder := s.apiRequest(handler, "/ui", test.body, "application/json", test.accept)
 			s.Equal(test.wantStatus, recorder.Code)
+		})
+	}
+}
+
+func (s *ServeSuite) TestUIEndpointAcceptsConfigsStatisticsAndMediaRanges() {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handleUIWithGenerator(w, r, func(datasets []shared.Dataset, charts []string) (string, error) {
+			s.Equal([]string{"bar"}, charts)
+			s.Require().Len(datasets, 1)
+			s.Require().Len(datasets[0].Settings, 1)
+			s.True(datasets[0].Settings[0].StatEnabled())
+			s.Equal([]string{"counts"}, datasets[0].Settings[0].StatMath())
+			return "<html>ok</html>", nil
+		})
+	})
+	body := `{"datasets":` + validDatasetJSON + `,"charts":{"types":["bar"],"configs":[{"type":"bar","showLabels":true}]},"statistics":{"enabled":true,"math":["counts"]}}`
+	recorder := s.apiRequest(handler, "/ui", body, "application/json", "text/html;q=0.9,application/xhtml+xml")
+	s.Equal(http.StatusOK, recorder.Code, recorder.Body.String())
+}
+
+func (s *ServeSuite) TestUIEndpointValidatesDatasetsAndStatistics() {
+	handler := newRESTHandler()
+	tests := []struct {
+		name     string
+		datasets string
+		suffix   string
+	}{
+		{name: "missing name", datasets: `{"axes":[],"settings":[],"data":[]}`},
+		{name: "missing axes", datasets: `{"name":"Bench","settings":[],"data":[]}`},
+		{name: "missing settings", datasets: `{"name":"Bench","axes":[],"data":[]}`},
+		{name: "missing data", datasets: `{"name":"Bench","axes":[],"settings":[]}`},
+		{name: "axis missing key", datasets: `{"name":"Bench","axes":[{}],"settings":[],"data":[]}`},
+		{name: "invalid axis key", datasets: `{"name":"Bench","axes":[{"key":"metric"}],"settings":[],"data":[]}`},
+		{name: "invalid axis type", datasets: `{"name":"Bench","axes":[{"key":"x","type":"category"}],"settings":[],"data":[]}`},
+		{name: "invalid setting", datasets: `{"name":"Bench","axes":[],"settings":[{"type":"unknown"}],"data":[]}`},
+		{name: "history missing tag", datasets: `{"name":"Bench","history":[{"timestamp":"now"}],"axes":[],"settings":[],"data":[]}`},
+		{name: "history missing timestamp", datasets: `{"name":"Bench","history":[{"tag":"v1"}],"axes":[],"settings":[],"data":[]}`},
+		{name: "invalid statistics", datasets: validDatasetJSON, suffix: `,"statistics":{"math":["bogus"]}`},
+		{name: "duplicate statistics", datasets: validDatasetJSON, suffix: `,"statistics":{"math":["counts","counts"]}`},
+	}
+	for _, test := range tests {
+		s.Run(test.name, func() {
+			body := `{"datasets":` + test.datasets + test.suffix + `}`
+			recorder := s.apiRequest(handler, "/ui", body, "application/json", "text/html")
+			s.Equal(http.StatusBadRequest, recorder.Code, recorder.Body.String())
 		})
 	}
 }
@@ -349,10 +513,10 @@ func (s *ServeSuite) TestUIEndpointReportsGenerationFailure() {
 			return "", errors.New("template failed")
 		})
 	})
-	body := `{"datasets":{"name":"Bench","data":[{"name":"case","yAxis":"1"}]}}`
+	body := `{"datasets":` + validDatasetJSON + `}`
 	recorder := s.apiRequest(handler, "/ui", body, "application/json", "text/html")
-	s.Equal(http.StatusUnprocessableEntity, recorder.Code)
-	s.Equal(float64(http.StatusUnprocessableEntity), s.problemStatus(recorder))
+	s.Equal(http.StatusInternalServerError, recorder.Code)
+	s.Equal(float64(http.StatusInternalServerError), s.problemStatus(recorder))
 }
 
 func (s *ServeSuite) TestRequestHelpers() {
@@ -364,16 +528,16 @@ func (s *ServeSuite) TestRequestHelpers() {
 	_, err = inlineInput(nil)
 	s.ErrorContains(err, "input must be")
 
-	datasets, err := decodeDatasets(json.RawMessage(`{"name":"Bench"}`))
-	s.Require().NoError(err)
+	datasets, validationErr := decodeDatasets(json.RawMessage(validDatasetJSON))
+	s.Nil(validationErr)
 	s.Len(datasets, 1)
-	datasets, err = decodeDatasets(json.RawMessage(`[{"name":"One"},{"name":"Two"}]`))
-	s.Require().NoError(err)
+	datasets, validationErr = decodeDatasets(json.RawMessage(`[` + validDatasetJSON + `,` + validDatasetJSON + `]`))
+	s.Nil(validationErr)
 	s.Len(datasets, 2)
-	_, err = decodeDatasets(json.RawMessage(`[invalid]`))
-	s.Error(err)
-	_, err = decodeDatasets(nil)
-	s.ErrorContains(err, "datasets is required")
+	_, validationErr = decodeDatasets(json.RawMessage(`[invalid]`))
+	s.NotNil(validationErr)
+	_, validationErr = decodeDatasets(nil)
+	s.ErrorContains(validationErr, "datasets is required")
 
 	request := httptest.NewRequest(http.MethodPost, "/", nil)
 	s.True(accepts(request, "text/html"))
@@ -381,6 +545,22 @@ func (s *ServeSuite) TestRequestHelpers() {
 	s.True(accepts(request, "text/html"))
 	request.Header.Set("Accept", "application/json")
 	s.False(accepts(request, "text/html"))
+	request.Header.Set("Accept", "text/html,application/xhtml+xml")
+	s.True(accepts(request, "text/html"))
+	request.Header.Set("Accept", "text/*;q=0.8")
+	s.True(accepts(request, "text/html"))
+	request.Header.Set("Accept", "text/html;q=0,*/*;q=1")
+	s.False(accepts(request, "text/html"))
+	request.Header.Set("Accept", "text/html;q=bogus")
+	s.False(accepts(request, "text/html"))
+	request.Header.Set("Accept", "text/html;q=2")
+	s.False(accepts(request, "text/html"))
+	request.Header.Set("Accept", "not a media range")
+	s.False(accepts(request, "text/html"))
+	s.False(accepts(request, "invalid"))
+
+	var target map[string]any
+	s.Error(strictDecode([]byte(`{} {}`), &target))
 }
 
 func (s *ServeSuite) apiRequest(handler http.Handler, path, body, contentType, accept string) *httptest.ResponseRecorder {

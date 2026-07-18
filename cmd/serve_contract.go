@@ -28,16 +28,6 @@ type unitOptions struct {
 	Number string `json:"number"`
 }
 
-type metadataOptions struct {
-	ID          string       `json:"id"`
-	Name        string       `json:"name"`
-	Theme       string       `json:"theme"`
-	Description string       `json:"description"`
-	Tag         string       `json:"tag"`
-	Timestamp   string       `json:"timestamp"`
-	Meta        *shared.Meta `json:"meta"`
-}
-
 type chartSelection struct {
 	Types   []string          `json:"types"`
 	Configs []json.RawMessage `json:"configs"`
@@ -51,7 +41,6 @@ type statisticsOptions struct {
 type convertRequest struct {
 	Input    json.RawMessage  `json:"input"`
 	Parser   string           `json:"parser"`
-	Metadata *metadataOptions `json:"metadata"`
 	Grouping *groupingOptions `json:"grouping"`
 	Units    *unitOptions     `json:"units"`
 	Select   []string         `json:"select"`
@@ -68,8 +57,8 @@ type mergeRequest struct {
 }
 
 type uiRequest struct {
-	Datasets   json.RawMessage   `json:"datasets"`
-	Charts     chartSelection    `json:"charts"`
+	Datasets   json.RawMessage    `json:"datasets"`
+	Charts     chartSelection     `json:"charts"`
 	Statistics *statisticsOptions `json:"statistics"`
 }
 
@@ -78,6 +67,10 @@ type apiValidationError struct {
 	Path     string `json:"path"`
 	Code     string `json:"code"`
 	Message  string `json:"message"`
+}
+
+func (e apiValidationError) Error() string {
+	return e.Message
 }
 
 func bodyValidationError(path, code, message string) apiValidationError {
@@ -103,33 +96,15 @@ func buildConvertInput(request convertRequest, input []byte) (core.ConvertInput,
 		return core.ConvertInput{}, nil, validationErr
 	}
 
-	metadata := core.Metadata{Name: "Comparisons", Theme: "default"}
-	if request.Metadata != nil {
-		if request.Metadata.Theme != "" {
-			if err := validateTheme(request.Metadata.Theme); err != nil {
-				validationErr := bodyValidationError("/metadata/theme", "invalid_value", err.Error())
-				return core.ConvertInput{}, nil, &validationErr
-			}
-		}
-		metadata = core.Metadata{
-			ID:          request.Metadata.ID,
-			Name:        request.Metadata.Name,
-			Theme:       request.Metadata.Theme,
-			Description: request.Metadata.Description,
-			Tag:         request.Metadata.Tag,
-			Timestamp:   request.Metadata.Timestamp,
-			System:      request.Metadata.Meta,
-		}
-		if metadata.Name == "" {
-			metadata.Name = "Comparisons"
-		}
-		if metadata.Theme == "" {
-			metadata.Theme = "default"
-		}
-	}
-
 	return core.ConvertInput{
-		Input: input, Parser: key, Config: cfg, Metadata: metadata, Charts: configs,
+		Input:  input,
+		Parser: key,
+		Config: cfg,
+		Metadata: core.Metadata{
+			Name:  "Comparisons",
+			Theme: "default",
+		},
+		Charts: configs,
 	}, types, nil
 }
 
@@ -203,6 +178,12 @@ func buildParserConfig(request convertRequest, key string) (parser.Config, *apiV
 	if err != nil {
 		validationErr := bodyValidationError("/grouping", "invalid_grouping", err.Error())
 		return cfg, &validationErr
+	}
+	if (key == "csv" || key == "json") && len(cfg.Group) > 0 {
+		if err := parser.ValidateTabularGroupAlignment(cfg); err != nil {
+			validationErr := bodyValidationError("/grouping", "invalid_grouping", err.Error())
+			return cfg, &validationErr
+		}
 	}
 	if validationErr := applySelectOptions(&cfg, request.Select); validationErr != nil {
 		return cfg, validationErr
@@ -342,7 +323,7 @@ func decodeChartConfig(raw json.RawMessage, path string) (internalcharts.ChartCo
 	var discriminator struct {
 		Type string `json:"type"`
 	}
-	if err := strictDecode(raw, &discriminator); err != nil {
+	if err := json.Unmarshal(raw, &discriminator); err != nil {
 		validationErr := bodyValidationError(path, "invalid_chart_config", err.Error())
 		return nil, &validationErr
 	}
@@ -521,18 +502,18 @@ func applyUIOptions(datasets []shared.Dataset, selection chartSelection, statist
 }
 
 type datasetWire struct {
-	ID           string            `json:"id"`
-	Tag          string            `json:"tag"`
-	Timestamp    string            `json:"timestamp"`
-	Name         *string           `json:"name"`
-	Theme        string            `json:"theme"`
-	History      []historyWire     `json:"history"`
-	Description  string            `json:"description"`
-	Meta         *shared.Meta      `json:"meta"`
-	Axes         *[]axisWire       `json:"axes"`
-	Settings     *[]json.RawMessage `json:"settings"`
+	ID           string              `json:"id"`
+	Tag          string              `json:"tag"`
+	Timestamp    string              `json:"timestamp"`
+	Name         *string             `json:"name"`
+	Theme        string              `json:"theme"`
+	History      []historyWire       `json:"history"`
+	Description  string              `json:"description"`
+	Meta         *shared.Meta        `json:"meta"`
+	Axes         *[]axisWire         `json:"axes"`
+	Settings     *[]json.RawMessage  `json:"settings"`
 	Data         *[]shared.DataPoint `json:"data"`
-	PreserveRows bool              `json:"preserveRows"`
+	PreserveRows bool                `json:"preserveRows"`
 }
 
 type historyWire struct {
