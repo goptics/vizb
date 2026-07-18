@@ -11,12 +11,11 @@ import (
 	internal_charts "github.com/goptics/vizb/internal/charts"
 	"github.com/goptics/vizb/pkg/core"
 	"github.com/goptics/vizb/pkg/parser"
-	goparser "github.com/goptics/vizb/pkg/parser/golang"
+	_ "github.com/goptics/vizb/pkg/parser/golang"
 	jsonparser "github.com/goptics/vizb/pkg/parser/json"
 	"github.com/goptics/vizb/pkg/style"
 	"github.com/goptics/vizb/pkg/template"
 	"github.com/goptics/vizb/shared"
-	"github.com/goptics/vizb/shared/utils"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 )
@@ -76,7 +75,6 @@ func RunLinear(cmd *cobra.Command, args []string, meta RunMeta, cfg parser.Confi
 	}
 	if len(datasets) == 0 {
 		// Not Dataset JSON: parse raw/bench input into data points.
-		target = preprocessInputFile(target, meta.Parser)
 		if meta.Parser == "json" && cfg.JSONPath != "" {
 			target = applyJSONPath(target, cfg.JSONPath)
 		}
@@ -227,15 +225,6 @@ func writeStdinPipedInputs(tempfilePath string) {
 		shared.ExitWithError("Error writing to file", err)
 	}
 	_ = inputTempFile.Sync()
-}
-
-// preprocessInputFile handles Go bench JSON → TXT conversion when needed.
-func preprocessInputFile(filePath, parserKey string) string {
-	if parserKey == "go" && utils.IsBenchJSONFile(filePath) {
-		return goparser.ConvertGoJsonBenchToText(filePath)
-	}
-
-	return filePath
 }
 
 // applyJSONPath extracts the array named by cfg.JSONPath from the input file and

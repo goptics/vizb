@@ -17,7 +17,10 @@ import (
 	scatterchart "github.com/goptics/vizb/internal/charts/scatter"
 	"github.com/goptics/vizb/pkg/parser"
 	_ "github.com/goptics/vizb/pkg/parser/csv"
+	_ "github.com/goptics/vizb/pkg/parser/golang"
+	_ "github.com/goptics/vizb/pkg/parser/javascript"
 	jsonparser "github.com/goptics/vizb/pkg/parser/json"
+	_ "github.com/goptics/vizb/pkg/parser/rust"
 	"github.com/goptics/vizb/pkg/template"
 	"github.com/goptics/vizb/shared"
 )
@@ -59,9 +62,9 @@ type ConvertResult struct {
 	Warnings []string
 }
 
-// Convert parses inline tabular data, aggregates it, applies chart rules, and
-// builds a Dataset. Every dependency receives request-local values and every
-// failure is returned to the caller.
+// Convert parses inline supported data, aggregates tabular rows, applies chart
+// rules, and builds a Dataset. Every dependency receives request-local values
+// and every failure is returned to the caller.
 func Convert(in ConvertInput) (ConvertResult, error) {
 	if len(in.Input) == 0 {
 		return ConvertResult{}, fmt.Errorf("input is empty")
@@ -74,11 +77,14 @@ func Convert(in ConvertInput) (ConvertResult, error) {
 	if key == "" {
 		key = "auto"
 	}
-	if key == "auto" {
-		key = detectInlineParser(in.Input)
-	}
-	if key != "csv" && key != "json" {
-		return ConvertResult{}, fmt.Errorf("parser %q does not support inline conversion", key)
+	if key == "auto" && in.Config.JSONPath != "" {
+		key = "json"
+	} else {
+		var err error
+		key, err = resolveParserKey(key, in.Input)
+		if err != nil {
+			return ConvertResult{}, err
+		}
 	}
 	if in.Config.Filter != "" {
 		if _, err := regexp.Compile(in.Config.Filter); err != nil {
@@ -92,7 +98,8 @@ func Convert(in ConvertInput) (ConvertResult, error) {
 		cfg.GroupPattern = "x"
 	}
 	cfg.ChartTypes = append(slices.Clone(cfg.ChartTypes), chartTypes(in.Charts)...)
-	if parser.NoExplicitGrouping(cfg) && !parser.HasSelect(cfg) {
+	tabular := key == "csv" || key == "json"
+	if tabular && parser.NoExplicitGrouping(cfg) && !parser.HasSelect(cfg) {
 		cfg.AutoGroup = true
 	}
 
@@ -116,10 +123,12 @@ func Convert(in ConvertInput) (ConvertResult, error) {
 	if err != nil {
 		return ConvertResult{}, err
 	}
-	if len(effectiveCfg.Group) == 0 {
-		points = shared.CollapseDataPointsByKey(points)
-	} else {
-		points = shared.AggregateDataPoints(points)
+	if tabular {
+		if len(effectiveCfg.Group) == 0 {
+			points = shared.CollapseDataPointsByKey(points)
+		} else {
+			points = shared.AggregateDataPoints(points)
+		}
 	}
 	if len(points) == 0 {
 		return ConvertResult{}, fmt.Errorf("no dataset found")
@@ -186,11 +195,24 @@ func GenerateUI(datasets []shared.Dataset, charts []string) (string, error) {
 	return template.GenerateUI(jsonData, charts, needs3D, needsHeatmap, template.VizbHTMLTemplate)
 }
 
-func detectInlineParser(data []byte) string {
-	if bytes.HasPrefix(bytes.TrimSpace(data), []byte("[")) {
-		return "json"
+func resolveParserKey(key string, data []byte) (string, error) {
+	detected := parser.DetectParserBytes(data)
+	switch key {
+	case "auto":
+		return detected, nil
+	case "javascript":
+		if strings.HasPrefix(detected, "js:") {
+			return detected, nil
+		}
+		return "", fmt.Errorf("input does not match a supported JavaScript benchmark format")
+	case "rust":
+		if strings.HasPrefix(detected, "rs:") {
+			return detected, nil
+		}
+		return "", fmt.Errorf("input does not match a supported Rust benchmark format")
+	default:
+		return key, nil
 	}
-	return "csv"
 }
 
 // Assemble creates a Dataset from already parsed points. It does not inspect

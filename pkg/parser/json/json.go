@@ -2,6 +2,7 @@ package json
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -81,7 +82,10 @@ func parseReader(input io.Reader, cfg parser.Config, logAuto bool) ([]shared.Dat
 	// consumed earlier by convertToBenchmark).
 	tok, err := dec.Token()
 	if err != nil {
-		return nil, cfg, nil
+		if errors.Is(err, io.EOF) {
+			return nil, cfg, nil
+		}
+		return nil, cfg, fmt.Errorf("read JSON: %w", err)
 	}
 	if d, ok := tok.(json.Delim); !ok || d != '[' {
 		return nil, cfg, nil

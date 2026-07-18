@@ -2,6 +2,7 @@ package json
 
 import (
 	"encoding/json"
+	"errors"
 	"math"
 	"os"
 	"path/filepath"
@@ -580,6 +581,12 @@ type JSONErrorSuite struct {
 	cfg parser.Config
 }
 
+type jsonErrorReader struct{}
+
+func (jsonErrorReader) Read([]byte) (int, error) {
+	return 0, errors.New("injected read failure")
+}
+
 func (s *JSONErrorSuite) SetupTest() {
 	s.cfg = parser.Config{GroupPattern: "x"}
 }
@@ -623,6 +630,24 @@ func (s *JSONErrorSuite) TestMalformedMatrixReturnsError() {
 	path := s.writeFile(`[["x"],[`)
 
 	s.Error(parseJSONFileError(s.T(), path, s.cfg))
+}
+
+func (s *JSONErrorSuite) TestInitialTokenRead() {
+	s.Run("empty input remains empty", func() {
+		results, _, err := ParseJSON(strings.NewReader(""), s.cfg)
+		s.Require().NoError(err)
+		s.Empty(results)
+	})
+
+	s.Run("malformed input returns decoder error", func() {
+		_, _, err := ParseJSON(strings.NewReader("not-json"), s.cfg)
+		s.ErrorContains(err, "read JSON")
+	})
+
+	s.Run("reader failure is preserved", func() {
+		_, _, err := ParseJSON(jsonErrorReader{}, s.cfg)
+		s.ErrorContains(err, "injected read failure")
+	})
 }
 
 func (s *JSONErrorSuite) TestGroupTabularRowErrorReturnsError() {

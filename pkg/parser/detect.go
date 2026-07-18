@@ -2,13 +2,16 @@ package parser
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/csv"
+	"encoding/json"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 
-	"github.com/goptics/vizb/shared/utils"
+	"github.com/goptics/vizb/shared"
 )
 
 var (
@@ -23,22 +26,29 @@ var (
 // the best-matching parser key. It never fails: when nothing matches it falls
 // back to "go" (the historical default). Signatures are tested strong→weak.
 func DetectParser(filename string) string {
-	// 1. Go benchmark -json event stream (JSONL with an "Action" field).
-	if utils.IsBenchJSONFile(filename) {
-		return "go"
-	}
-
 	f, err := os.Open(filename)
 	if err != nil {
 		return "go"
 	}
 	defer f.Close()
 
-	scanner := bufio.NewScanner(f)
+	csvHint := strings.EqualFold(filepath.Ext(filename), ".csv") || looksLikeCSV(filename)
+	return detectParser(f, csvHint)
+}
+
+// DetectParserBytes detects a parser from inline content without relying on a
+// filename or extension. It shares the same signature ordering as DetectParser.
+func DetectParserBytes(data []byte) string {
+	return detectParser(bytes.NewReader(data), looksLikeCSVReader(bytes.NewReader(data)))
+}
+
+func detectParser(input io.Reader, csvHint bool) string {
+	scanner := bufio.NewScanner(input)
 	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
 
 	var (
 		firstNonEmpty string
+		sawGoJSON     bool
 		sawDivan      bool
 		sawCriterion  bool
 		sawTinybench  bool
@@ -55,6 +65,8 @@ func DetectParser(filename string) string {
 
 		if firstNonEmpty == "" {
 			firstNonEmpty = trimmed
+			var event shared.BenchEvent
+			sawGoJSON = json.Unmarshal([]byte(trimmed), &event) == nil && event.Action != ""
 		}
 
 		switch {
@@ -84,6 +96,11 @@ func DetectParser(filename string) string {
 	// and falls back to "go" below regardless.
 	_ = scanner.Err()
 
+	// 1. Go benchmark -json event stream (JSONL with an "Action" field).
+	if sawGoJSON {
+		return "go"
+	}
+
 	// 2. Generic JSON array.
 	if strings.HasPrefix(firstNonEmpty, "[") {
 		return "json"
@@ -102,7 +119,7 @@ func DetectParser(filename string) string {
 	}
 
 	// 7. CSV — extension hint or structural sniff.
-	if strings.EqualFold(filepath.Ext(filename), ".csv") || looksLikeCSV(filename) {
+	if csvHint {
 		return "csv"
 	}
 
@@ -123,7 +140,11 @@ func looksLikeCSV(filename string) bool {
 	}
 	defer f.Close()
 
-	r := csv.NewReader(f)
+	return looksLikeCSVReader(f)
+}
+
+func looksLikeCSVReader(input io.Reader) bool {
+	r := csv.NewReader(input)
 	r.FieldsPerRecord = -1
 
 	first, err := r.Read()

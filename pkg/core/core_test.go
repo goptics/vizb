@@ -89,7 +89,9 @@ func (s *CoreSuite) TestConvertBranchErrorsAndAutoDetection() {
 	}{
 		{"empty input", ConvertInput{Charts: chart}, "input is empty"},
 		{"missing charts", ConvertInput{Input: []byte("x,y\na,1\n"), Parser: "csv"}, "at least one chart"},
-		{"unsupported parser", ConvertInput{Input: []byte("x,y\na,1\n"), Parser: "go", Charts: chart}, "does not support inline"},
+		{"unknown parser", ConvertInput{Input: []byte("x,y\na,1\n"), Parser: "unknown", Charts: chart}, "unknown parser"},
+		{"wrong JavaScript format", ConvertInput{Input: []byte("x,y\na,1\n"), Parser: "javascript", Charts: chart}, "does not match a supported JavaScript"},
+		{"wrong Rust format", ConvertInput{Input: []byte("x,y\na,1\n"), Parser: "rust", Charts: chart}, "does not match a supported Rust"},
 		{"bad filter", ConvertInput{Input: []byte("x,y\na,1\n"), Parser: "csv", Config: parser.Config{Filter: "["}, Charts: chart}, "invalid filter regex"},
 		{"json path on csv", ConvertInput{Input: []byte("x,y\na,1\n"), Parser: "csv", Config: parser.Config{JSONPath: ".data"}, Charts: chart}, "only supported by the json parser"},
 		{"missing json path", ConvertInput{Input: []byte(`[{"x":"a","y":1}]`), Parser: "json", Config: parser.Config{JSONPath: ".data"}, Charts: chart}, "cannot read key 'data'"},
@@ -117,8 +119,53 @@ func (s *CoreSuite) TestConvertBranchErrorsAndAutoDetection() {
 	})
 	s.Require().NoError(err)
 	s.Len(result.Dataset.Data, 1)
-	s.Equal("json", detectInlineParser([]byte(" [1]")))
-	s.Equal("csv", detectInlineParser([]byte("x,y\n")))
+}
+
+func (s *CoreSuite) TestConvertBenchmarkFormats() {
+	chart := []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: "linear"}}
+	cases := []struct {
+		name   string
+		parser string
+		input  string
+	}{
+		{"Go explicit", "go", "BenchmarkFoo-8 100 123 ns/op\n"},
+		{"Go auto", "auto", "BenchmarkFoo-8 100 123 ns/op\n"},
+		{"Go JSON events auto", "auto", `{"Action":"output","Output":"BenchmarkFoo-8 100 123 ns/op\n"}` + "\n"},
+		{"Vitest family", "javascript", " · foo 1234 0.1 0.2 0.3 0.4 0.5 0.6 0.7 ±1.5% 100\n"},
+		{"Tinybench auto", "auto", "│ 0 │ 'foo' │ '123 ± 1%' │ '120 ± 2' │ '8000 ± 1%' │ '8100 ± 2' │ 100 │\n"},
+		{"Criterion family", "rust", "foo time: [21.234 ns 21.456 ns 21.678 ns]\n"},
+		{"Divan auto", "auto", "├─ foo 4.36 µs │ 9.68 µs │ 4.646 µs │ 4.733 µs │ 100 │ 100\n"},
+	}
+
+	for _, tc := range cases {
+		s.Run(tc.name, func() {
+			result, err := Convert(ConvertInput{
+				Input:  []byte(tc.input),
+				Parser: tc.parser,
+				Config: parser.Config{GroupPattern: "y", TimeUnit: "ns"},
+				Charts: chart,
+			})
+			s.Require().NoError(err)
+			s.Require().Len(result.Dataset.Data, 1)
+		})
+	}
+}
+
+func (s *CoreSuite) TestConvertAutoJSONPathEnvelope() {
+	result, err := Convert(ConvertInput{
+		Input:  []byte(`{"data":[{"region":"west","latency":12},{"region":"east","latency":18}]}`),
+		Parser: "auto",
+		Config: parser.Config{
+			JSONPath:     ".data",
+			GroupPattern: "x",
+			Group:        []string{"region"},
+		},
+		Charts: []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: "linear"}},
+	})
+
+	s.Require().NoError(err)
+	s.Require().Len(result.Dataset.Data, 2)
+	s.Equal("west", result.Dataset.Data[0].XAxis)
 }
 
 func (s *CoreSuite) TestConvertReturnsParserLookupError() {

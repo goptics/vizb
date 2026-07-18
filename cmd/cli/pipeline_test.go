@@ -42,23 +42,6 @@ func (s *PipelineSuite) writeFile(name, content string) string {
 	return path
 }
 
-func (s *PipelineSuite) TestPreprocessInputFile() {
-	s.Run("Go bench JSON is converted to text", func() {
-		jsonFile := s.writeFile("bench.json", `{"Action":"run","Test":"BenchmarkExample"}
-{"Action":"pass","Test":"BenchmarkExample","Output":"1000000    1234 ns/op"}`)
-
-		result := preprocessInputFile(jsonFile, "go")
-		s.NotEqual(jsonFile, result)
-		s.FileExists(result)
-		os.Remove(result)
-	})
-
-	s.Run("Plain text file passes through", func() {
-		textFile := s.writeFile("bench.txt", "BenchmarkExample-8 1000000 1234 ns/op")
-		s.Equal(textFile, preprocessInputFile(textFile, "go"))
-	})
-}
-
 func (s *PipelineSuite) TestApplyJSONPathEnvelope() {
 	envelope := s.writeFile("env.json", `{"data":[{"impl":"a","ops":120},{"impl":"b","ops":80}]}`)
 
@@ -69,6 +52,20 @@ func (s *PipelineSuite) TestApplyJSONPathEnvelope() {
 	results, _ := prepareData(extracted, "json", cfg)
 	s.Len(results, 2)
 	s.ElementsMatch([]string{"a", "b"}, []string{results[0].XAxis, results[1].XAxis})
+}
+
+func (s *PipelineSuite) TestPrepareDataReadsGoJSONEventsDirectly() {
+	input := s.writeFile("bench.json", `{"Action":"run","Test":"BenchmarkExample"}
+{"Action":"output","Output":"BenchmarkExample-8 100 1234 ns/op\n"}
+{"Action":"pass","Test":"BenchmarkExample"}`)
+
+	results, _ := prepareData(input, "go", parser.Config{
+		GroupPattern: "y",
+		TimeUnit:     "ns",
+	})
+
+	s.Require().Len(results, 1)
+	s.Equal("Example", results[0].YAxis)
 }
 
 func (s *PipelineSuite) TestPrepareDataWarnsJSONPathIgnoredForNonJSONParser() {
