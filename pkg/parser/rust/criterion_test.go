@@ -1,6 +1,7 @@
 package rust
 
 import (
+	"errors"
 	"io"
 	"strings"
 	"testing"
@@ -59,6 +60,12 @@ Found 3 outliers among 100 measurements (3.00%)
 func rustTestInput(t *testing.T, content string) io.Reader {
 	t.Helper()
 	return strings.NewReader(content)
+}
+
+type rustErrorReader struct{}
+
+func (rustErrorReader) Read([]byte) (int, error) {
+	return 0, errors.New("injected read failure")
 }
 
 // assertStat asserts a stat's type, value, and symbol. Shared by the rust suites.
@@ -144,6 +151,27 @@ func (s *CriterionSuite) TestEmptyFile() {
 	results, _, err := ParseCriterionBenchmark(rustTestInput(s.T(), ""), s.cfg)
 	s.Require().NoError(err)
 	s.Empty(results)
+}
+
+func (s *CriterionSuite) TestReturnsErrors() {
+	s.Run("invalid filter", func() {
+		cfg := s.cfg
+		cfg.Filter = "["
+		_, _, err := ParseCriterionBenchmark(rustTestInput(s.T(), testCargoTable), cfg)
+		s.ErrorContains(err, "invalid filter regex")
+	})
+
+	s.Run("invalid benchmark group pattern", func() {
+		cfg := s.cfg
+		cfg.GroupPattern = "[n/y]"
+		_, _, err := ParseCriterionBenchmark(rustTestInput(s.T(), testCargoTable), cfg)
+		s.ErrorContains(err, "bracket slots")
+	})
+
+	s.Run("reader failure", func() {
+		_, _, err := ParseCriterionBenchmark(rustErrorReader{}, s.cfg)
+		s.ErrorContains(err, "read criterion benchmark")
+	})
 }
 
 func TestCriterionSuite(t *testing.T) {

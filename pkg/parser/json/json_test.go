@@ -462,6 +462,30 @@ func (s *JSONSuite) TestFilterRegexOnGroupLabel() {
 	}
 }
 
+func (s *JSONSuite) TestInvalidFilterReturnsError() {
+	s.cfg.Group = []string{"name"}
+	s.cfg.Filter = "["
+
+	err := parseJSONFileError(s.T(), s.writeFile(`[{"name":"keep","sells":10}]`), s.cfg)
+	s.ErrorContains(err, "invalid filter regex")
+}
+
+func (s *JSONSuite) TestQuietAutoDetect() {
+	s.cfg.AutoGroup = true
+	s.cfg.ChartTypes = []string{"bar"}
+	s.cfg.QuietAutoDetect = true
+
+	results, effectiveCfg := mustParseJSONFile(
+		s.T(),
+		s.writeFile(`[{"name":"alpha","sells":10},{"name":"beta","sells":20}]`),
+		s.cfg,
+	)
+
+	s.Require().Len(results, 2)
+	s.Equal("alpha", results[0].XAxis)
+	s.Equal([]string{"name"}, effectiveCfg.Group)
+}
+
 func (s *JSONSuite) TestNumberUnitScaling() {
 	s.cfg.NumberUnit = "M"
 	j := `[{"name":"a","sells":2000000}]`

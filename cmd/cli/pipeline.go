@@ -484,10 +484,7 @@ func writeOutput(f *os.File, datasets []*shared.Dataset, format string) {
 
 		needsHeatmapChunk := datasetsNeedCorrelation(datasets)
 		needs3D := datasetsNeed3D(datasets)
-		htmlContent, err := template.GenerateUI(jsonData, chartTypeNames(datasets[0].Settings), needs3D, needsHeatmapChunk, template.VizbHTMLTemplate)
-		if err != nil {
-			shared.ExitWithError("Failed to generate UI: %v", err)
-		}
+		htmlContent := generateUI(jsonData, chartTypeNames(datasets[0].Settings), needs3D, needsHeatmapChunk, template.VizbHTMLTemplate)
 		if _, err := f.WriteString(htmlContent); err != nil {
 			shared.ExitWithError("Failed to write output file: %v", err)
 		}
@@ -504,6 +501,14 @@ func writeOutput(f *os.File, datasets []*shared.Dataset, format string) {
 		}
 		fmt.Println(style.Success.Render("🎉 Generated JSON successfully!"))
 	}
+}
+
+func generateUI(jsonData []byte, charts []string, needs3D, needsHeatmapChunk bool, htmlTemplate string) string {
+	htmlContent, err := template.GenerateUI(jsonData, charts, needs3D, needsHeatmapChunk, htmlTemplate)
+	if err != nil {
+		shared.ExitWithError("Failed to generate UI: %v", err)
+	}
+	return htmlContent
 }
 
 func marshalDatasetsForOutput(datasets []*shared.Dataset) ([]byte, error) {

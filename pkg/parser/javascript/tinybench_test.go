@@ -92,6 +92,27 @@ func (s *TinyBenchSuite) TestEmptyFile() {
 	s.Empty(results)
 }
 
+func (s *TinyBenchSuite) TestReturnsErrors() {
+	s.Run("invalid filter", func() {
+		cfg := s.cfg
+		cfg.Filter = "["
+		_, _, err := ParseTinyBenchBenchmark(javascriptTestInput(s.T(), testSortingTable), cfg)
+		s.ErrorContains(err, "invalid filter regex")
+	})
+
+	s.Run("invalid benchmark group pattern", func() {
+		cfg := s.cfg
+		cfg.GroupPattern = "[n/y]"
+		_, _, err := ParseTinyBenchBenchmark(javascriptTestInput(s.T(), testSortingTable), cfg)
+		s.ErrorContains(err, "bracket slots")
+	})
+
+	s.Run("reader failure", func() {
+		_, _, err := ParseTinyBenchBenchmark(javascriptErrorReader{}, s.cfg)
+		s.ErrorContains(err, "read tinybench benchmark")
+	})
+}
+
 func TestTinyBenchSuite(t *testing.T) {
 	suite.Run(t, new(TinyBenchSuite))
 }

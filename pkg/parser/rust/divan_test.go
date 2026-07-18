@@ -75,6 +75,27 @@ func (s *DivanSuite) TestEmptyFile() {
 	s.Empty(results)
 }
 
+func (s *DivanSuite) TestReturnsErrors() {
+	s.Run("invalid filter", func() {
+		cfg := s.cfg
+		cfg.Filter = "["
+		_, _, err := ParseDivanBenchmark(rustTestInput(s.T(), testDivanTable), cfg)
+		s.ErrorContains(err, "invalid filter regex")
+	})
+
+	s.Run("invalid benchmark group pattern", func() {
+		cfg := s.cfg
+		cfg.GroupPattern = "[n/y]"
+		_, _, err := ParseDivanBenchmark(rustTestInput(s.T(), testDivanTable), cfg)
+		s.ErrorContains(err, "bracket slots")
+	})
+
+	s.Run("reader failure", func() {
+		_, _, err := ParseDivanBenchmark(rustErrorReader{}, s.cfg)
+		s.ErrorContains(err, "read divan benchmark")
+	})
+}
+
 func TestDivanSuite(t *testing.T) {
 	suite.Run(t, new(DivanSuite))
 }

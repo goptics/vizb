@@ -90,12 +90,9 @@ func runUI(cmd *cobra.Command, args []string) {
 			validateStat(&uiOpts.Stat)
 		}
 		needsHeatmapChunk := !statChanged || shared.StatNeedsCorrelation(uiOpts.Stat)
-		htmlContent, err := template.GenerateRemoteUI(
+		htmlContent := generateRemoteUI(
 			uiOpts.DataURL, charts, needs3D, needsHeatmapChunk, template.VizbHTMLTemplate,
 		)
-		if err != nil {
-			shared.ExitWithError("Failed to generate UI: %v", err)
-		}
 		if _, err := f.WriteString(htmlContent); err != nil {
 			shared.ExitWithError("Failed to write output file: %v", err)
 		}
@@ -168,6 +165,14 @@ func runUI(cmd *cobra.Command, args []string) {
 
 func generateEmbeddedUI(datasets []shared.Dataset, charts []string) string {
 	htmlContent, err := core.GenerateUI(datasets, charts)
+	if err != nil {
+		shared.ExitWithError("Failed to generate UI: %v", err)
+	}
+	return htmlContent
+}
+
+func generateRemoteUI(dataURL string, charts []string, needs3D, needsHeatmapChunk bool, htmlTemplate string) string {
+	htmlContent, err := template.GenerateRemoteUI(dataURL, charts, needs3D, needsHeatmapChunk, htmlTemplate)
 	if err != nil {
 		shared.ExitWithError("Failed to generate UI: %v", err)
 	}

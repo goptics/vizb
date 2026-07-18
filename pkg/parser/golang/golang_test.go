@@ -1,7 +1,7 @@
 package golang
 
 import (
-	"bufio"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -31,29 +31,18 @@ type GoBenchmarkSuite struct {
 	suite.Suite
 }
 
+type goErrorReader struct{}
+
+func (goErrorReader) Read([]byte) (int, error) {
+	return 0, errors.New("injected read failure")
+}
+
 func (s *GoBenchmarkSuite) SetupTest() {
 	shared.CPUCount = 0
 }
 
 func (s *GoBenchmarkSuite) TearDownTest() {
 	shared.CPUCount = 0
-}
-
-func (s *GoBenchmarkSuite) writeFile(lines []string) string {
-	filePath := filepath.Join(s.T().TempDir(), "bench.txt")
-	file, err := os.Create(filePath)
-	s.Require().NoError(err, "Failed to create test file")
-
-	writer := bufio.NewWriter(file)
-	for _, event := range lines {
-		_, err := writer.WriteString(event)
-		s.Require().NoError(err)
-		_, err = writer.WriteString("\n")
-		s.Require().NoError(err)
-	}
-	s.Require().NoError(writer.Flush())
-	file.Close()
-	return filePath
 }
 
 func (s *GoBenchmarkSuite) TestParseGoBenchmark() {
@@ -270,6 +259,30 @@ func (s *GoBenchmarkSuite) TestParseGoBenchmark() {
 			s.Equal(tt.expectCPUCount, shared.CPUCount, "CPUCount")
 		})
 	}
+}
+
+func (s *GoBenchmarkSuite) TestParseGoBenchmarkReturnsErrors() {
+	benchmark := "BenchmarkExample 100 123 ns/op"
+
+	s.Run("invalid filter", func() {
+		_, _, err := ParseGoBenchmark(strings.NewReader(benchmark), parser.Config{
+			GroupPattern: "y",
+			Filter:       "[",
+		})
+		s.ErrorContains(err, "invalid filter regex")
+	})
+
+	s.Run("invalid benchmark group pattern", func() {
+		_, _, err := ParseGoBenchmark(strings.NewReader(benchmark), parser.Config{
+			GroupPattern: "[n/y]",
+		})
+		s.ErrorContains(err, "bracket slots")
+	})
+
+	s.Run("reader failure", func() {
+		_, _, err := ParseGoBenchmark(goErrorReader{}, parser.Config{GroupPattern: "y"})
+		s.ErrorContains(err, "read Go benchmark")
+	})
 }
 
 func (s *GoBenchmarkSuite) TestConvertGoJsonBenchToText() {

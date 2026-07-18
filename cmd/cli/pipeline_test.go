@@ -124,6 +124,14 @@ BenchmarkAnother-8    2000000    2345 ns/op    2000 B/op    20 allocs/op`)
 		s.Panics(func() { prepareData(missing, "go", cfg) })
 		s.True(*exitCalled)
 	})
+
+	s.Run("parser errors call OsExit at CLI boundary", func() {
+		benchFile := s.writeFile("invalid-filter.txt", `BenchmarkExample 100 123 ns/op`)
+		invalidCfg := cfg
+		invalidCfg.Filter = "["
+
+		s.Panics(func() { prepareData(benchFile, "go", invalidCfg) })
+	})
 }
 
 func (s *PipelineSuite) TestWriteOutput() {
@@ -192,6 +200,12 @@ func (s *PipelineSuite) TestWriteOutput() {
 		stat, err := file.Stat()
 		s.Require().NoError(err)
 		s.Equal(int64(0), stat.Size())
+	})
+
+	s.Run("HTML template errors call OsExit at CLI boundary", func() {
+		s.Panics(func() {
+			generateUI([]byte(`[]`), []string{"bar"}, false, false, "[[VIZB")
+		})
 	})
 }
 

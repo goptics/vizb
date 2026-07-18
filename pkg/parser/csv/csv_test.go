@@ -331,6 +331,14 @@ func (s *CSVSuite) TestFilterRegexOnGroupLabel() {
 	}
 }
 
+func (s *CSVSuite) TestInvalidFilterReturnsError() {
+	s.cfg.Group = []string{"name"}
+	s.cfg.Filter = "["
+
+	err := parseCSVFileError(s.T(), s.writeFile("name,sells\nkeep,10\n"), s.cfg)
+	s.ErrorContains(err, "invalid filter regex")
+}
+
 func (s *CSVSuite) TestNumberUnitScaling() {
 	s.cfg.NumberUnit = "M"
 	csv := "name,sells\na,2000000\n"

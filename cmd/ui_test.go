@@ -589,6 +589,12 @@ func (s *UISuite) TestGenerateEmbeddedUIErrorExits() {
 	})
 }
 
+func (s *UISuite) TestGenerateRemoteUIErrorExits() {
+	s.Panics(func() {
+		generateRemoteUI("https://example.com/data.json", []string{"bar"}, false, false, "[[VIZB")
+	})
+}
+
 func TestUISuite(t *testing.T) {
 	suite.Run(t, new(UISuite))
 }
