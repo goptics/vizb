@@ -18,6 +18,7 @@ import (
 
 	"github.com/goptics/vizb/cmd/cli"
 	internalcharts "github.com/goptics/vizb/internal/charts"
+	"github.com/goptics/vizb/pkg/core"
 	"github.com/goptics/vizb/pkg/parser"
 	"github.com/goptics/vizb/shared"
 	"github.com/stretchr/testify/suite"
@@ -513,10 +514,13 @@ func (s *ServeSuite) TestConvertEndpointValidatesStructuredOptions() {
 		{name: "json path with csv", body: `{"input":"x,y\na,1\n","parser":"csv","jsonPath":".data"}`},
 		{name: "select with benchmark", body: `{"input":"BenchmarkFoo 100 1 ns/op\n","parser":"go","select":["x,y"]}`},
 		{name: "empty select", body: `{"input":"x,y\na,1\n","select":[""]}`},
+		{name: "empty grouped select", body: `{"input":"region,value\nwest,1\n","grouping":{"columns":["region"]},"select":[""]}`},
+		{name: "invalid grouped select", body: `{"input":"region,value\nwest,1\n","grouping":{"columns":["region"]},"select":["value{"]}`},
 		{name: "invalid solo select", body: `{"input":"x,y\na,1\n","select":["x"]}`},
 		{name: "invalid repeatable select", body: `{"input":"a,b,c\n1,2,3\n","select":["a,b,c","a,b"]}`},
 		{name: "duplicate grouped select", body: `{"input":"region,value\nwest,1\n","parser":"csv","grouping":{"pattern":"x","columns":["region"]},"select":["value","value"]}`},
 		{name: "group select conflict", body: `{"input":"region,value\nwest,1\n","parser":"csv","grouping":{"pattern":"x","columns":["region"]},"select":["region"]}`},
+		{name: "structured grouping separator mismatch", body: `{"input":"a,b,c\nx,y,1\n","grouping":{"pattern":"x,y,z","columns":["a/b/c"]}}`},
 		{name: "empty chart types", body: `{"input":"x,y\na,1\n","charts":{"types":[]}}`},
 		{name: "duplicate chart types", body: `{"input":"x,y\na,1\n","charts":{"types":["bar","bar"]}}`},
 		{name: "missing config type", body: `{"input":"x,y\na,1\n","charts":{"configs":[{"showLabels":true}]}}`},
@@ -533,6 +537,7 @@ func (s *ServeSuite) TestConvertEndpointValidatesStructuredOptions() {
 		{name: "stat not object", body: `{"input":"x,y\na,1\n","charts":{"configs":[{"type":"bar","stat":true}]}}`},
 		{name: "stat missing enabled", body: `{"input":"x,y\na,1\n","charts":{"configs":[{"type":"bar","stat":{"math":[]}}]}}`},
 		{name: "stat missing math", body: `{"input":"x,y\na,1\n","charts":{"configs":[{"type":"bar","stat":{"enabled":true}}]}}`},
+		{name: "null stat math", body: `{"input":"x,y\na,1\n","charts":{"configs":[{"type":"bar","stat":{"enabled":true,"math":null}}]}}`},
 		{name: "stat invalid math", body: `{"input":"x,y\na,1\n","charts":{"configs":[{"type":"bar","stat":{"enabled":true,"math":["bogus"]}}]}}`},
 		{name: "stat duplicate math", body: `{"input":"x,y\na,1\n","charts":{"configs":[{"type":"bar","stat":{"enabled":true,"math":["counts","counts"]}}]}}`},
 	}
@@ -568,6 +573,10 @@ func (s *ServeSuite) TestMergeEndpoint() {
 	handler := newRESTHandler()
 	recorder := s.apiRequest(handler, "/merge", `{`, "application/json", "")
 	s.Equal(http.StatusBadRequest, recorder.Code)
+
+	recorder = s.apiRequest(handler, "/merge", `{"datasets":[],"extra":true}`, "application/json", "")
+	s.Equal(http.StatusBadRequest, recorder.Code)
+	s.Contains(recorder.Body.String(), "/extra")
 
 	recorder = s.apiRequest(handler, "/merge", `{"datasets":[{"name":"one"}]}`, "application/json", "")
 	s.Equal(http.StatusUnprocessableEntity, recorder.Code)
@@ -669,6 +678,22 @@ func (s *ServeSuite) TestUIEndpointMaterialisesDefaultsForSelectedChartTypes() {
 	s.Equal(http.StatusOK, recorder.Code, recorder.Body.String())
 }
 
+func (s *ServeSuite) TestUIEndpointAddsAnUnselectedOverrideType() {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handleUIWithGenerator(w, r, func(datasets []shared.Dataset, charts []string) (string, error) {
+			s.Nil(charts)
+			s.Require().Len(datasets, 1)
+			s.Require().Len(datasets[0].Settings, 2)
+			s.Equal("bar", datasets[0].Settings[0].ChartType())
+			s.Equal("line", datasets[0].Settings[1].ChartType())
+			return "<html>ok</html>", nil
+		})
+	})
+	body := `{"datasets":` + validDatasetJSON + `,"charts":{"configs":[{"type":"line","smooth":true}]}}`
+	recorder := s.apiRequest(handler, "/ui", body, "application/json", "text/html")
+	s.Equal(http.StatusOK, recorder.Code, recorder.Body.String())
+}
+
 func (s *ServeSuite) TestUIEndpointValidatesDatasetsAndStatistics() {
 	handler := newRESTHandler()
 	tests := []struct {
@@ -689,6 +714,7 @@ func (s *ServeSuite) TestUIEndpointValidatesDatasetsAndStatistics() {
 		{name: "history missing timestamp", datasets: `{"name":"Bench","history":[{"tag":"v1"}],"axes":[],"settings":[],"data":[]}`},
 		{name: "invalid statistics", datasets: validDatasetJSON, suffix: `,"statistics":{"math":["bogus"]}`},
 		{name: "duplicate statistics", datasets: validDatasetJSON, suffix: `,"statistics":{"math":["counts","counts"]}`},
+		{name: "unselected chart config", datasets: validDatasetJSON, suffix: `,"charts":{"types":["bar"],"configs":[{"type":"line"}]}`},
 	}
 	for _, test := range tests {
 		s.Run(test.name, func() {
@@ -754,6 +780,7 @@ func (s *ServeSuite) TestRequestHelpers() {
 	s.False(accepts(request, "text/html"))
 	request.Header.Set("Accept", "text")
 	s.False(accepts(request, "text/html"))
+	request.Header.Set("Accept", "invalid")
 	s.False(accepts(request, "invalid"))
 
 	var target map[string]any
@@ -818,6 +845,116 @@ func (s *ServeSuite) TestRequestHelpers() {
 
 	_, validationErr = decodeStrictDataset(json.RawMessage(`{"name":"Bench","history":[{"tag":"v1","timestamp":"now"}],"axes":[],"settings":[],"data":[]}`), "/datasets/0")
 	s.Nil(validationErr)
+}
+
+func (s *ServeSuite) TestRequestContractHelpers() {
+	s.Run("nested object decoding", func() {
+		for _, test := range []struct {
+			name   string
+			raw    string
+			target any
+			path   string
+		}{
+			{name: "null grouping", raw: `null`, target: new(groupingOptions), path: "/grouping"},
+			{name: "null charts", raw: `null`, target: new(chartSelection), path: "/charts"},
+			{name: "unknown charts field", raw: `{"bogus":true}`, target: new(chartSelection), path: "/charts/bogus"},
+			{name: "null output", raw: `null`, target: new(convertOutput), path: "/output"},
+			{name: "unknown output field", raw: `{"bogus":true}`, target: new(convertOutput), path: "/output/bogus"},
+		} {
+			s.Run(test.name, func() {
+				err := json.Unmarshal([]byte(test.raw), test.target)
+				var validationErr apiValidationError
+				s.Require().ErrorAs(err, &validationErr)
+				s.Equal(test.path, validationErr.Path)
+			})
+		}
+	})
+
+	s.Run("conversion option paths", func() {
+		selection := chartSelection{Configs: []json.RawMessage{
+			json.RawMessage(`invalid`),
+			json.RawMessage(`{"type":"bar","swap":"yx"}`),
+		}}
+		for _, test := range []struct {
+			name string
+			path string
+		}{
+			{name: "filter", path: "/grouping/filter"},
+			{name: "grouping", path: "/grouping"},
+			{name: "jsonPath", path: "/jsonPath"},
+			{name: "select", path: "/select"},
+			{name: "swap", path: "/charts/configs/1/swap"},
+			{name: "other", path: "/charts/configs"},
+		} {
+			got := conversionOptionValidationError(selection, &core.OptionError{Name: test.name, Err: errors.New("not applicable")})
+			s.Equal(test.path, got.Path)
+		}
+		s.Equal("/charts/configs", chartConfigFieldPath(selection, "swap", 1))
+	})
+
+	s.Run("warning parsing", func() {
+		s.Empty(warningFlagName("unstructured warning"))
+		s.Empty(warningFlagName(`flag "unterminated`))
+		s.Empty(chartFlagJSONKey("not-a-flag"))
+	})
+
+	s.Run("chart config decoding", func() {
+		_, validationErr := decodeChartConfig(json.RawMessage(`{`), "/config")
+		s.Require().NotNil(validationErr)
+		s.Equal("/config", validationErr.Path)
+
+		_, validationErr = decodeChartConfig(json.RawMessage(`{"type":"bar","showLabels":"yes"}`), "/config")
+		s.Require().NotNil(validationErr)
+		s.Equal("/config", validationErr.Path)
+
+		for _, raw := range []string{
+			`{`,
+			`{"symbol":1}`,
+			`{"sort":true}`,
+			`{"stat":true}`,
+			`{"stat":{"enabled":"yes","math":[]}}`,
+		} {
+			s.NotNil(validateChartConfigValues(json.RawMessage(raw), "/config"), raw)
+		}
+	})
+
+	s.Run("UI materialisation errors", func() {
+		for _, test := range []struct {
+			name   string
+			config internalcharts.ChartConfig
+		}{
+			{
+				name:   "marshal base",
+				config: testChartConfig{chartType: "bar", marshalErr: errors.New("marshal failed")},
+			},
+			{
+				name:   "decode base",
+				config: testChartConfig{chartType: "bar", raw: json.RawMessage(`[]`)},
+			},
+			{
+				name:   "materialise unknown chart",
+				config: testChartConfig{chartType: "unknown", raw: json.RawMessage(`{"type":"unknown"}`)},
+			},
+		} {
+			s.Run(test.name, func() {
+				_, _, validationErr := applyUIOptions(
+					[]shared.Dataset{{Settings: []internalcharts.ChartConfig{test.config}}},
+					chartSelection{},
+					nil,
+				)
+				s.Require().NotNil(validationErr)
+			})
+		}
+	})
+
+	s.Run("valid history", func() {
+		raw := json.RawMessage(`{"name":"Bench","history":[{"tag":"v1","timestamp":"now"}],"axes":[],"settings":[],"data":[]}`)
+		datasets, validationErr := decodeDatasets(raw)
+		s.Require().Nil(validationErr)
+		s.Require().Len(datasets, 1)
+		s.Require().Len(datasets[0].History, 1)
+		s.Equal("v1", datasets[0].History[0].Tag)
+	})
 }
 
 func (s *ServeSuite) apiRequest(handler http.Handler, path, body, contentType, accept string) *httptest.ResponseRecorder {
@@ -955,6 +1092,21 @@ func (l *singleConnectionListener) Addr() net.Addr { return testAddr("in-memory"
 
 func directSignalContext(ctx context.Context, _ ...os.Signal) (context.Context, context.CancelFunc) {
 	return context.WithCancel(ctx)
+}
+
+type testChartConfig struct {
+	chartType  string
+	raw        json.RawMessage
+	marshalErr error
+}
+
+func (c testChartConfig) ChartType() string { return c.chartType }
+func (testChartConfig) StatEnabled() bool   { return false }
+func (testChartConfig) StatMath() []string  { return nil }
+func (testChartConfig) SwapString() string  { return "" }
+
+func (c testChartConfig) MarshalJSON() ([]byte, error) {
+	return c.raw, c.marshalErr
 }
 
 func TestServeSuite(t *testing.T) {
