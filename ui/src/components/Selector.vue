@@ -2,7 +2,7 @@
 import { ChevronsUpDown, Search } from 'lucide-vue-next'
 import { ref, computed, watch, type Component, type HTMLAttributes } from 'vue'
 import { cn } from '@/lib/utils'
-import { filterPickerOptions, limitPickerOptions } from '@/lib/pickerLimit'
+import { limitPickerOptions } from '@/lib/pickerLimit'
 
 import {
   Combobox,
@@ -63,14 +63,11 @@ const open = ref(false)
 // Search term for filtering
 const searchTerm = ref('')
 
-// Filter function for combobox. Limited selectors filter the complete option
-// list here and instantiate only the capped result set below.
-const filterFunction = (list: Option[], searchValue: string) => {
-  if (!searchValue) return list
-  return list.filter((item) => item.label.toLowerCase().includes(searchValue.toLowerCase()))
-}
-
-const matchingOptions = computed(() => filterPickerOptions(options.value, searchTerm.value))
+const matchingOptions = computed(() => {
+  const query = searchTerm.value.trim().toLowerCase()
+  if (!query) return options.value
+  return options.value.filter((option) => option.label.toLowerCase().includes(query))
+})
 const activeOption = computed(() => {
   const activeValue = props.activeValue ?? props.activeId?.toString()
   return options.value.find((option) => option.value === activeValue)
@@ -87,8 +84,7 @@ const visibleMatchCount = computed(
 const resultsTruncated = computed(
   () => !!props.resultLimit && visibleMatchCount.value < matchingOptions.value.length
 )
-const comboboxFilter = (list: Option[], searchValue: string) =>
-  props.resultLimit ? list : filterFunction(list, searchValue)
+const comboboxFilter = (list: Option[]) => list
 
 // Initialize the value when the component mounts or when activeId changes
 const updateValue = () => {

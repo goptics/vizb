@@ -11,12 +11,7 @@ import {
 } from '../lib/utils'
 import { presentAxisString } from '../lib/swap'
 import { useSettingsStore } from './useSettingsStore'
-import {
-  classifyRemotePayload,
-  LazyDatasetSelection,
-  type DatasetCatalogEntry,
-  type RemotePayload,
-} from '../lib/remoteData'
+import { classifyRemotePayload, fetchDatasetDetail, type RemotePayload } from '../lib/remoteData'
 
 const dataUrl = window.VIZB_DATA_URL
 const getDataSets = async (): Promise<RemotePayload> => {
@@ -48,9 +43,7 @@ const loadError = ref<string | null>(null)
 const lazyCatalog = ref(false)
 const detailLoading = ref(false)
 const detailError = ref<string | null>(null)
-const catalogEntries = shallowRef<DatasetCatalogEntry[]>([])
-const loadedDetails = new Map<string, DataSet>()
-const lazySelection = dataUrl ? new LazyDatasetSelection(dataUrl) : undefined
+const preparedDetails = new Map<string, DataSet>()
 
 const prepareDataSet = (ds: DataSet): DataSet => {
   const filtered = filterDataSetSettings(ds, window.VIZB_CHARTS)
@@ -93,7 +86,6 @@ getDataSets()
     // intended perf trade-off.
     if (payload.mode === 'catalog') {
       lazyCatalog.value = true
-      catalogEntries.value = payload.entries
       dataSets.value = payload.entries.map((entry) =>
         prepareDataSet({ ...entry, data: [], settings: [] })
       )
@@ -192,23 +184,31 @@ const selectDataSet = async (id: number): Promise<boolean> => {
     return true
   }
 
-  const entry = catalogEntries.value[id]
-  if (!entry || !lazySelection) return false
+  const dataSetId = dataSets.value[id]?.id
+  if (!dataSetId || !dataUrl) return false
+
+  let detail = preparedDetails.get(dataSetId)
+  if (detail) {
+    const next = [...dataSets.value]
+    next[id] = detail
+    dataSets.value = next
+    detailLoading.value = false
+    nextTick(() => resetColor())
+    return true
+  }
 
   detailLoading.value = true
-  const result = await lazySelection.load(entry.id)
-  if (!result.current || activeDataSetId.value !== id) return false
-  if (!result.ok) {
-    detailError.value = result.error instanceof Error ? result.error.message : String(result.error)
+  try {
+    detail = prepareDataSet(await fetchDatasetDetail(dataUrl, dataSetId))
+  } catch (error: unknown) {
+    if (activeDataSetId.value !== id) return false
+    detailError.value = error instanceof Error ? error.message : String(error)
     detailLoading.value = false
     return false
   }
 
-  let detail = loadedDetails.get(entry.id)
-  if (!detail) {
-    detail = prepareDataSet(result.dataset)
-    loadedDetails.set(entry.id, detail)
-  }
+  if (activeDataSetId.value !== id) return false
+  preparedDetails.set(dataSetId, detail)
 
   const next = [...dataSets.value]
   next[id] = detail

@@ -17,7 +17,6 @@ import AppFooter from '../components/AppFooter.vue'
 import IconButton from '../components/IconButton.vue'
 import Selector from '../components/Selector.vue'
 import { isThemeName, THEME_NAMES } from '../lib/themes'
-import { keepDetailSkeletonVisible } from '../lib/dashboardState'
 
 const version = window.VIZB_VERSION || 'v0.0.0-dev'
 
@@ -104,14 +103,13 @@ watch(groupNames, (names) => setGroupNames(names))
 // Full-page skeleton only while loading the dataset. Once data is ready the header
 // and layout appear immediately; each chart card drives its own skeleton while pending.
 const showSkeleton = computed(() => loading.value)
-const showDetailSkeleton = computed(() =>
-  keepDetailSkeletonVisible({
-    lazy: lazyCatalog.value,
-    detailLoading: detailLoading.value || datasetInitializing.value,
-    detailError: detailError.value,
-    hasDetailData: (activeDataSet.value?.data.length ?? 0) > 0,
-    chartCount: charts.value.length,
-  })
+const showDetailSkeleton = computed(
+  () =>
+    lazyCatalog.value &&
+    detailError.value === null &&
+    (detailLoading.value ||
+      datasetInitializing.value ||
+      ((activeDataSet.value?.data.length ?? 0) > 0 && charts.value.length === 0))
 )
 
 useDashboardInit()

@@ -1,12 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { DataSet } from '../types'
-import {
-  LazyDatasetSelection,
-  buildDatasetDetailUrl,
-  classifyRemotePayload,
-  clearDatasetDetailCache,
-  fetchDatasetDetail,
-} from './remoteData'
+import { buildDatasetDetailUrl, classifyRemotePayload, fetchDatasetDetail } from './remoteData'
 
 const detail = (id?: string): DataSet => ({
   ...(id === undefined ? {} : { id }),
@@ -23,7 +17,6 @@ const jsonResponse = (body: unknown, status = 200) =>
   })
 
 describe('remote data payloads', () => {
-  beforeEach(clearDatasetDetailCache)
   afterEach(() => vi.restoreAllMocks())
 
   it('keeps full object and full-array payloads in eager mode', () => {
@@ -96,13 +89,11 @@ describe('remote data payloads', () => {
     )
   })
 
-  it('fills an omitted detail ID and caches a successful response', async () => {
+  it('fills an omitted detail ID', async () => {
     const fetcher = vi.fn(async () => jsonResponse(detail()))
-    const first = await fetchDatasetDetail('https://example.com/catalog', 'requested', fetcher)
-    const second = await fetchDatasetDetail('https://example.com/catalog', 'requested', fetcher)
+    const dataset = await fetchDatasetDetail('https://example.com/catalog', 'requested', fetcher)
 
-    expect(first.id).toBe('requested')
-    expect(second).toBe(first)
+    expect(dataset.id).toBe('requested')
     expect(fetcher).toHaveBeenCalledTimes(1)
   })
 
@@ -148,24 +139,5 @@ describe('remote data payloads', () => {
     await expect(fetchDatasetDetail('https://example.com/catalog', 'one', fetcher)).rejects.toThrow(
       message
     )
-  })
-
-  it('marks a late response for an earlier selection as stale', async () => {
-    const responses = new Map<string, (response: Response) => void>()
-    const fetcher = vi.fn(
-      (input: string | URL) =>
-        new Promise<Response>((resolve) => {
-          responses.set(String(input), resolve)
-        })
-    )
-    const selection = new LazyDatasetSelection('https://example.com/catalog', fetcher)
-
-    const a = selection.load('a')
-    const b = selection.load('b')
-    responses.get('https://example.com/catalog/dataset/b')!(jsonResponse(detail('b')))
-    await expect(b).resolves.toMatchObject({ ok: true, dataset: { id: 'b' }, current: true })
-
-    responses.get('https://example.com/catalog/dataset/a')!(jsonResponse(detail('a')))
-    await expect(a).resolves.toMatchObject({ ok: true, dataset: { id: 'a' }, current: false })
   })
 })

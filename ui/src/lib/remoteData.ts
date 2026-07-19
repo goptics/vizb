@@ -11,14 +11,10 @@ export type RemotePayload =
 
 type Fetcher = (input: string | URL, init?: RequestInit) => Promise<Response>
 
-const detailCache = new Map<string, DataSet>()
 const detailRequests = new Map<string, Promise<DataSet>>()
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
-
-const hasOwn = (value: Record<string, unknown>, key: string) =>
-  Object.prototype.hasOwnProperty.call(value, key)
 
 const payloadShapeError = (message: string) =>
   new Error(
@@ -43,8 +39,8 @@ export const classifyRemotePayload = (payload: unknown): RemotePayload => {
     if (!isObject(entry)) {
       throw payloadShapeError(`Invalid entry at index ${index}.`)
     }
-    const hasData = hasOwn(entry, 'data')
-    const hasSettings = hasOwn(entry, 'settings')
+    const hasData = Object.hasOwn(entry, 'data')
+    const hasSettings = Object.hasOwn(entry, 'settings')
     if (hasData !== hasSettings) {
       throw payloadShapeError(
         `Invalid entry at index ${index}: full datasets must contain both data and settings.`
@@ -119,9 +115,6 @@ export const fetchDatasetDetail = (
   id: string,
   fetcher: Fetcher = fetch
 ): Promise<DataSet> => {
-  const cached = detailCache.get(id)
-  if (cached) return Promise.resolve(cached)
-
   const pending = detailRequests.get(id)
   if (pending) return pending
 
@@ -133,9 +126,7 @@ export const fetchDatasetDetail = (
         `Failed to load dataset "${id}": ${response.status} ${response.statusText}`.trim()
       )
     }
-    const detail = validateDetail(await response.json(), id)
-    detailCache.set(id, detail)
-    return detail
+    return validateDetail(await response.json(), id)
   })()
 
   detailRequests.set(id, request)
@@ -144,35 +135,4 @@ export const fetchDatasetDetail = (
   }
   void request.then(removeRequest, removeRequest)
   return request
-}
-
-export class LazyDatasetSelection {
-  private generation = 0
-  private readonly baseUrl: string
-  private readonly fetcher?: Fetcher
-
-  constructor(baseUrl: string, fetcher?: Fetcher) {
-    this.baseUrl = baseUrl
-    this.fetcher = fetcher
-  }
-
-  async load(
-    id: string
-  ): Promise<
-    | { ok: true; dataset: DataSet; current: boolean }
-    | { ok: false; error: unknown; current: boolean }
-  > {
-    const generation = ++this.generation
-    try {
-      const dataset = await fetchDatasetDetail(this.baseUrl, id, this.fetcher)
-      return { ok: true, dataset, current: generation === this.generation }
-    } catch (error: unknown) {
-      return { ok: false, error, current: generation === this.generation }
-    }
-  }
-}
-
-export const clearDatasetDetailCache = () => {
-  detailCache.clear()
-  detailRequests.clear()
 }

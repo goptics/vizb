@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { filterPickerOptions, limitPickerOptions } from './pickerLimit'
+import { limitPickerOptions } from './pickerLimit'
 
 const options = Array.from({ length: 1000 }, (_, index) => ({
   value: index.toString(),
@@ -14,14 +14,14 @@ describe('limited dataset picker', () => {
   })
 
   it('searches the complete catalog before applying the limit', () => {
-    const matches = filterPickerOptions(options, 'Dataset 0999')
+    const matches = options.filter((option) => option.label.includes('Dataset 0999'))
     const visible = limitPickerOptions(matches, options[0], 100)
     expect(matches).toEqual([options[999]])
     expect(visible).toEqual([options[999], options[0]])
   })
 
   it('never exceeds the limit when the active entry does not match a full result page', () => {
-    const matches = filterPickerOptions(options, 'Dataset 0')
+    const matches = options.filter((option) => option.label.includes('Dataset 0'))
     const visible = limitPickerOptions(matches, options[999], 100)
     expect(visible).toHaveLength(100)
     expect(visible.at(-1)).toBe(options[999])
