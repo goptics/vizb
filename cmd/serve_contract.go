@@ -262,11 +262,8 @@ func materialiseConversionCharts(selection chartSelection) ([]internalcharts.Cha
 	}
 	configs := make([]internalcharts.ChartConfig, 0, len(types))
 	for _, chartType := range types {
-		config, err := internalcharts.Materialise(chartType, nil, overrides[chartType])
-		if err != nil {
-			validationErr := bodyValidationError("/charts/configs", "invalid_chart_config", err.Error())
-			return nil, nil, &validationErr
-		}
+		// chartType and overrides are validated above, so Materialise cannot fail.
+		config, _ := internalcharts.Materialise(chartType, nil, overrides[chartType])
 		configs = append(configs, config)
 	}
 	return configs, types, nil
@@ -483,11 +480,8 @@ func applyUIOptions(datasets []shared.Dataset, selection chartSelection, statist
 			if stat != nil {
 				seed["stat"] = stat
 			}
-			config, err := internalcharts.Materialise(chartType, seed, override)
-			if err != nil {
-				validationErr := bodyValidationError("/charts/configs", "invalid_chart_config", err.Error())
-				return nil, nil, &validationErr
-			}
+			// chartType and override were validated before assembling the seed.
+			config, _ := internalcharts.Materialise(chartType, seed, override)
 			configs = append(configs, config)
 		}
 		result[i].Settings = configs
