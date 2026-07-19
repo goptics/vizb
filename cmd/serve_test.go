@@ -571,6 +571,26 @@ func (s *ServeSuite) TestConvertEndpointReportsUIGenerationFailure() {
 	s.Contains(recorder.Body.String(), "could not generate the response")
 }
 
+func (s *ServeSuite) TestConvertEndpointReportsInapplicableChartOptions() {
+	handler := newRESTHandler()
+	recorder := s.apiRequest(
+		handler,
+		"/",
+		`{"input":"region,value\nwest,12\n","parser":"csv","charts":{"types":["bar"],"configs":[{"type":"bar","threeDRotate":true}]}}`,
+		"application/json",
+		"application/json",
+	)
+	s.Equal(http.StatusUnprocessableEntity, recorder.Code, recorder.Body.String())
+
+	var problem struct {
+		Errors []apiValidationError `json:"errors"`
+	}
+	s.Require().NoError(json.Unmarshal(recorder.Body.Bytes(), &problem))
+	s.Require().Len(problem.Errors, 1)
+	s.Equal("/charts/configs/0/threeDRotate", problem.Errors[0].Path)
+	s.Equal("inapplicable_option", problem.Errors[0].Code)
+}
+
 func (s *ServeSuite) TestMergeEndpoint() {
 	handler := newRESTHandler()
 	recorder := s.apiRequest(handler, "/merge", `{`, "application/json", "")
@@ -931,6 +951,65 @@ func (s *ServeSuite) TestRequestContractHelpers() {
 		s.Empty(warningFlagName("unstructured warning"))
 		s.Empty(warningFlagName(`flag "unterminated`))
 		s.Empty(chartFlagJSONKey("not-a-flag"))
+		s.Equal("show-labels", warningFlagName(`flag "show-labels" skipped: unsupported`))
+		s.Equal("showLabels", chartFlagJSONKey("show-labels"))
+
+		selection := chartSelection{Configs: []json.RawMessage{
+			json.RawMessage(`{"type":"bar","showLabels":true}`),
+			json.RawMessage(`{"type":"line","showLabels":false}`),
+		}}
+		errors := conversionWarningValidationErrors(selection, []string{
+			`flag "show-labels" skipped: unsupported`,
+			`flag "show-labels" skipped: unsupported`,
+			"unstructured warning",
+		})
+		s.Equal([]string{
+			"/charts/configs/0/showLabels",
+			"/charts/configs/1/showLabels",
+			"/charts/configs",
+		}, []string{errors[0].Path, errors[1].Path, errors[2].Path})
+	})
+
+	s.Run("conversion request decoding", func() {
+		for _, test := range []struct {
+			name   string
+			raw    string
+			target any
+			path   string
+		}{
+			{name: "null convert field", raw: `{"theme":null}`, target: new(convertRequest), path: "/theme"},
+			{name: "unknown grouping field", raw: `{"unexpected":true}`, target: new(groupingOptions), path: "/grouping/unexpected"},
+			{name: "null unit field", raw: `{"memory":null}`, target: new(unitOptions), path: "/units/memory"},
+			{name: "unknown unit field", raw: `{"unexpected":true}`, target: new(unitOptions), path: "/units/unexpected"},
+		} {
+			s.Run(test.name, func() {
+				err := json.Unmarshal([]byte(test.raw), test.target)
+				var validationErr apiValidationError
+				s.Require().ErrorAs(err, &validationErr)
+				s.Equal(test.path, validationErr.Path)
+			})
+		}
+
+		s.Error(rejectNullFields([]byte(`{`), "/", map[string]string{}))
+	})
+
+	s.Run("conversion metadata", func() {
+		id, name := "run-1", "Example"
+		description, tag, theme := "Description", "release", " Westeros "
+		metadata, validationErr := buildConvertMetadata(convertRequest{
+			ID:          &id,
+			Name:        &name,
+			Description: &description,
+			Tag:         &tag,
+			Theme:       &theme,
+		})
+		s.Require().Nil(validationErr)
+		s.Equal(core.Metadata{ID: id, Name: name, Description: description, Tag: tag, Theme: "westeros"}, metadata)
+
+		invalidTheme := "not-a-theme"
+		_, _, validationErr = buildConvertInput(convertRequest{Theme: &invalidTheme}, []byte("x,y\\na,1\\n"))
+		s.Require().NotNil(validationErr)
+		s.Equal("/theme", validationErr.Path)
 	})
 
 	s.Run("chart config decoding", func() {
@@ -944,8 +1023,11 @@ func (s *ServeSuite) TestRequestContractHelpers() {
 
 		for _, raw := range []string{
 			`{`,
+			`{"scale":null}`,
 			`{"symbol":1}`,
+			`{"symbol":"not-a-symbol"}`,
 			`{"sort":true}`,
+			`{"sort":{"enabled":null,"order":"asc"}}`,
 			`{"stat":true}`,
 			`{"stat":{"enabled":"yes","math":[]}}`,
 		} {
