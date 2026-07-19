@@ -119,15 +119,16 @@ not depend on this server remaining available.
 ## Errors
 
 All errors are `application/problem+json`. Every response has a stable `type`,
-`title`, `status`, and `detail`; validation errors additionally include `errors`.
+`title`, `status`, and `detail`; malformed JSON and semantic validation errors
+additionally include `errors`.
 Each entry identifies the input location, a JSON Pointer-like `path`, a stable
 `code`, and a human-readable `message`.
 
 ```json
 {
   "type": "https://vizb.goptics.org/problems/validation",
-  "title": "Invalid request",
-  "status": 400,
+  "title": "Unprocessable content",
+  "status": 422,
   "detail": "Request validation failed.",
   "instance": "/merge",
   "errors": [
@@ -143,8 +144,11 @@ Each entry identifies the input location, a JSON Pointer-like `path`, a stable
 
 | Status | Meaning |
 | --- | --- |
-| `400` | Invalid JSON, unknown field, or invalid/inapplicable option |
+| `400` | The body is malformed JSON or contains multiple JSON values |
+| `404` | The requested API operation does not exist |
+| `405` | The operation does not support the HTTP method; `Allow: POST` is returned |
 | `406` | The requested `Accept` type cannot represent the selected output |
+| `413` | The request body exceeds the 10 MiB limit |
 | `415` | The request is not `application/json` |
-| `422` | Valid request structure, but the input could not be processed |
+| `422` | Valid JSON violates request schema or semantic rules, or the input could not be processed |
 | `500` | Unexpected server or template failure |

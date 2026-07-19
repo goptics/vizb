@@ -74,6 +74,10 @@ type restHandlers struct {
 	ui      http.Handler
 }
 
+type restRouter struct {
+	routes map[string]http.Handler
+}
+
 func newRESTHandler() http.Handler {
 	return composeRESTRoutes(restHandlers{
 		convert: http.HandlerFunc(handleConvert),
@@ -82,12 +86,26 @@ func newRESTHandler() http.Handler {
 	})
 }
 
-func composeRESTRoutes(handlers restHandlers) *http.ServeMux {
-	mux := http.NewServeMux()
-	mux.Handle("POST /{$}", handlers.convert)
-	mux.Handle("POST /merge", handlers.merge)
-	mux.Handle("POST /ui", handlers.ui)
-	return mux
+func composeRESTRoutes(handlers restHandlers) http.Handler {
+	return restRouter{routes: map[string]http.Handler{
+		"/":      handlers.convert,
+		"/merge": handlers.merge,
+		"/ui":    handlers.ui,
+	}}
+}
+
+func (router restRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	handler, ok := router.routes[r.URL.Path]
+	if !ok {
+		writeAPIProblem(w, r, http.StatusNotFound, "Not found", "The requested operation does not exist.")
+		return
+	}
+	if r.Method != http.MethodPost {
+		w.Header().Set("Allow", http.MethodPost)
+		writeAPIProblem(w, r, http.StatusMethodNotAllowed, "Method not allowed", "This operation only supports POST.")
+		return
+	}
+	handler.ServeHTTP(w, r)
 }
 
 // newServeCommand wires a configured HTTP server to Cobra. Its dependencies
@@ -148,6 +166,9 @@ func runServer(ctx context.Context, opts serveOptions, deps serveDependencies) e
 			shutdown = (*http.Server).Shutdown
 		}
 		if err := shutdown(server, shutdownCtx); err != nil {
+			if closeErr := server.Close(); closeErr != nil && !errors.Is(closeErr, http.ErrServerClosed) {
+				return fmt.Errorf("shutdown HTTP server: %w", errors.Join(err, fmt.Errorf("close HTTP server: %w", closeErr)))
+			}
 			return fmt.Errorf("shutdown HTTP server: %w", err)
 		}
 		if err := <-serveResult; err != nil && !errors.Is(err, http.ErrServerClosed) {
@@ -257,10 +278,6 @@ func handleMerge(w http.ResponseWriter, r *http.Request) {
 	if tagAxis == "" {
 		tagAxis = "name"
 	}
-	if tagAxis != "name" && tagAxis != "x" && tagAxis != "y" && tagAxis != "z" {
-		writeValidationProblem(w, r, bodyValidationError("/tagAxis", "invalid_enum", "tagAxis must be one of name, x, y, or z"))
-		return
-	}
 	datasets, validationErr := decodeDatasetArray(request.Datasets, "/datasets")
 	if validationErr != nil {
 		writeValidationProblem(w, r, *validationErr)
@@ -268,7 +285,7 @@ func handleMerge(w http.ResponseWriter, r *http.Request) {
 	}
 	merged, err := core.Merge(datasets, shared.Dimension(tagAxis))
 	if err != nil {
-		writeAPIProblem(w, r, http.StatusUnprocessableEntity, "Input processing failed", err.Error())
+		writeValidationProblem(w, r, bodyValidationError("/tagAxis", "invalid_enum", err.Error()))
 		return
 	}
 	writeAPIJSON(w, http.StatusOK, merged)
@@ -320,14 +337,36 @@ func decodeAPIRequest(w http.ResponseWriter, r *http.Request, target any) bool {
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(target); err != nil {
-		writeValidationProblem(w, r, bodyValidationError("/", "invalid_json", err.Error()))
+		writeRequestDecodeProblem(w, r, err)
 		return false
 	}
-	if decoder.Decode(&struct{}{}) != io.EOF {
-		writeValidationProblem(w, r, bodyValidationError("/", "multiple_values", "request body must contain one JSON value"))
+	if err := decoder.Decode(&struct{}{}); err != io.EOF {
+		if err == nil {
+			writeMalformedJSONProblem(w, r, bodyValidationError("/", "multiple_values", "request body must contain one JSON value"))
+		} else {
+			writeRequestDecodeProblem(w, r, err)
+		}
 		return false
 	}
 	return true
+}
+
+func writeRequestDecodeProblem(w http.ResponseWriter, r *http.Request, err error) {
+	var maxBytesErr *http.MaxBytesError
+	if errors.As(err, &maxBytesErr) {
+		writeAPIProblem(w, r, http.StatusRequestEntityTooLarge, "Content too large", fmt.Sprintf("Request body must not exceed %d bytes.", maxBytesErr.Limit))
+		return
+	}
+	if isMalformedJSON(err) {
+		writeMalformedJSONProblem(w, r, bodyValidationError("/", "invalid_json", err.Error()))
+		return
+	}
+	writeValidationProblem(w, r, bodyValidationError("/", "invalid_json", err.Error()))
+}
+
+func isMalformedJSON(err error) bool {
+	var syntaxErr *json.SyntaxError
+	return errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) || errors.As(err, &syntaxErr)
 }
 
 func inlineInput(raw json.RawMessage) ([]byte, error) {
@@ -410,12 +449,25 @@ func writeInternalServerError(w http.ResponseWriter, r *http.Request, operation 
 
 func writeValidationProblem(w http.ResponseWriter, r *http.Request, validationErrors ...apiValidationError) {
 	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(http.StatusUnprocessableEntity)
+	_ = json.NewEncoder(w).Encode(map[string]any{
+		"type":     "https://vizb.goptics.org/problems/validation",
+		"title":    "Unprocessable content",
+		"status":   http.StatusUnprocessableEntity,
+		"detail":   "Request validation failed.",
+		"instance": r.URL.Path,
+		"errors":   validationErrors,
+	})
+}
+
+func writeMalformedJSONProblem(w http.ResponseWriter, r *http.Request, validationErrors ...apiValidationError) {
+	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(http.StatusBadRequest)
 	_ = json.NewEncoder(w).Encode(map[string]any{
 		"type":     problemType(http.StatusBadRequest),
-		"title":    "Invalid request",
+		"title":    "Malformed JSON",
 		"status":   http.StatusBadRequest,
-		"detail":   "Request validation failed.",
+		"detail":   "Request body must contain valid JSON.",
 		"instance": r.URL.Path,
 		"errors":   validationErrors,
 	})
@@ -425,9 +477,15 @@ func problemType(status int) string {
 	slug := "internal"
 	switch status {
 	case http.StatusBadRequest:
-		slug = "validation"
+		slug = "malformed-json"
+	case http.StatusNotFound:
+		slug = "not-found"
+	case http.StatusMethodNotAllowed:
+		slug = "method-not-allowed"
 	case http.StatusNotAcceptable:
 		slug = "not-acceptable"
+	case http.StatusRequestEntityTooLarge:
+		slug = "content-too-large"
 	case http.StatusUnsupportedMediaType:
 		slug = "unsupported-media-type"
 	case http.StatusUnprocessableEntity:

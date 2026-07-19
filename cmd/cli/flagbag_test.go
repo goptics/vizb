@@ -369,6 +369,22 @@ func (s *FlagBagSuite) TestChartSeedEncodesChangedFloatAndBool() {
 	s.Equal(9.0, seed["symbolSize"])
 }
 
+func (s *FlagBagSuite) TestIntFlagsValidateAndSeed() {
+	fl := []flags.Flag{{
+		Name:    "retries",
+		JSONKey: "retries",
+		Kind:    flags.KindInt,
+		Validate: func(value string) error {
+			s.Equal("3", value)
+			return nil
+		},
+	}}
+	cmd, bag := s.newCmdBag(fl)
+	s.Require().NoError(cmd.Flags().Set("retries", "3"))
+	bag.Validate(cmd)
+	s.Equal(3, bag.ChartSeed(cmd)["retries"])
+}
+
 func TestFlagBagSuite(t *testing.T) {
 	suite.Run(t, new(FlagBagSuite))
 }

@@ -106,6 +106,25 @@ func (s *OpenAPISuite) TestMergeDeclaresNotAcceptableResponse() {
 	s.Equal("#/components/responses/NotAcceptableProblem", notAcceptable["$ref"])
 }
 
+func (s *OpenAPISuite) TestOperationsDeclareRequestProblemResponses() {
+	contract := readContract(s.T())
+	paths := mustMap(s.T(), contract["paths"], "paths")
+	for _, path := range []string{"/", "/merge", "/ui"} {
+		s.Run(path, func() {
+			operation := mustMap(s.T(), mustMap(s.T(), paths[path], "paths."+path)["post"], "paths."+path+".post")
+			responses := mustMap(s.T(), operation["responses"], "paths."+path+".post.responses")
+			for status, responseName := range map[string]string{
+				"400": "MalformedJSONProblem",
+				"413": "ContentTooLargeProblem",
+				"422": "UnprocessableContentProblem",
+			} {
+				response := mustMap(s.T(), responses[status], "paths."+path+".post.responses."+status)
+				s.Equal("#/components/responses/"+responseName, response["$ref"])
+			}
+		})
+	}
+}
+
 func (s *OpenAPISuite) TestDatasetSettingsRequireUniqueChartTypes() {
 	contract := readContract(s.T())
 	components := mustMap(s.T(), contract["components"], "components")

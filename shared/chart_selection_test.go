@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	internal_charts "github.com/goptics/vizb/internal/charts"
+	"github.com/goptics/vizb/internal/flags"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -85,6 +86,15 @@ func (s *ChartSelectionSuite) TestDatasetNeeds3D() {
 			s.Equal(c.want, DatasetNeeds3D(c.ds))
 		})
 	}
+}
+
+func (s *ChartSelectionSuite) TestConvertFlagValueValidatesIntegers() {
+	flag := flags.Flag{Name: "depth", Kind: flags.KindInt}
+	value, err := convertFlagValue(flag, "3", true, nil)
+	s.NoError(err)
+	s.Equal(3, value)
+	_, err = convertFlagValue(flag, "not-a-number", true, nil)
+	s.ErrorContains(err, "must be an integer")
 }
 
 var _ internal_charts.ChartConfig = stubChartConfig{}

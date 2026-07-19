@@ -10,11 +10,15 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/goptics/vizb/cmd/cli"
+	internalcharts "github.com/goptics/vizb/internal/charts"
+	"github.com/goptics/vizb/pkg/parser"
 	"github.com/goptics/vizb/shared"
 	"github.com/stretchr/testify/suite"
 )
@@ -39,19 +43,35 @@ func (s *ServeSuite) TestDefaultsAndHTTPPolicy() {
 	s.NotNil(serveCmd.Flags().Lookup("host"))
 	s.NotNil(serveCmd.Flags().Lookup("port"))
 
+	var applicationCalled atomic.Bool
 	server := newHTTPServer("127.0.0.1:8080", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, err := io.ReadAll(r.Body)
-		s.Error(err)
-		var maxErr *http.MaxBytesError
-		s.True(errors.As(err, &maxErr))
+		var request convertRequest
+		if !decodeAPIRequest(w, r, &request) {
+			return
+		}
+		applicationCalled.Store(true)
 	}))
 	s.Equal(readHeaderTimeout, server.ReadHeaderTimeout)
 	s.Equal(readTimeout, server.ReadTimeout)
 	s.Equal(writeTimeout, server.WriteTimeout)
 	s.Equal(idleTimeout, server.IdleTimeout)
 
-	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(make([]byte, maxRequestBodyBytes+1)))
-	server.Handler.ServeHTTP(httptest.NewRecorder(), req)
+	body := append([]byte(`{"input":"`), bytes.Repeat([]byte("a"), maxRequestBodyBytes)...)
+	body = append(body, '"', '}')
+	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	recorder := httptest.NewRecorder()
+	server.Handler.ServeHTTP(recorder, req)
+	s.Equal(http.StatusRequestEntityTooLarge, recorder.Code)
+	s.Equal("application/problem+json", recorder.Header().Get("Content-Type"))
+	s.JSONEq(`{
+		"type":"https://vizb.goptics.org/problems/content-too-large",
+		"title":"Content too large",
+		"status":413,
+		"detail":"Request body must not exceed 10485760 bytes.",
+		"instance":"/"
+	}`, recorder.Body.String())
+	s.False(applicationCalled.Load())
 }
 
 func (s *ServeSuite) TestRoutesRegisterOnlyTheThreePOSTOperations() {
@@ -82,13 +102,47 @@ func (s *ServeSuite) TestRoutesRegisterOnlyTheThreePOSTOperations() {
 		s.True(called[test.name])
 	}
 
-	for _, request := range []*http.Request{
-		httptest.NewRequest(http.MethodGet, "/", nil),
-		httptest.NewRequest(http.MethodPost, "/unknown", nil),
+	for _, test := range []struct {
+		name    string
+		request *http.Request
+		status  int
+		allow   string
+		body    string
+	}{
+		{
+			name:    "wrong method",
+			request: httptest.NewRequest(http.MethodGet, "/", nil),
+			status:  http.StatusMethodNotAllowed,
+			allow:   http.MethodPost,
+			body: `{
+				"type":"https://vizb.goptics.org/problems/method-not-allowed",
+				"title":"Method not allowed",
+				"status":405,
+				"detail":"This operation only supports POST.",
+				"instance":"/"
+			}`,
+		},
+		{
+			name:    "unknown path",
+			request: httptest.NewRequest(http.MethodPost, "/unknown", nil),
+			status:  http.StatusNotFound,
+			body: `{
+				"type":"https://vizb.goptics.org/problems/not-found",
+				"title":"Not found",
+				"status":404,
+				"detail":"The requested operation does not exist.",
+				"instance":"/unknown"
+			}`,
+		},
 	} {
-		recorder := httptest.NewRecorder()
-		routes.ServeHTTP(recorder, request)
-		s.Contains([]int{http.StatusMethodNotAllowed, http.StatusNotFound}, recorder.Code)
+		s.Run(test.name, func() {
+			recorder := httptest.NewRecorder()
+			routes.ServeHTTP(recorder, test.request)
+			s.Equal(test.status, recorder.Code)
+			s.Equal("application/problem+json", recorder.Header().Get("Content-Type"))
+			s.Equal(test.allow, recorder.Header().Get("Allow"))
+			s.JSONEq(test.body, recorder.Body.String())
+		})
 	}
 }
 
@@ -201,6 +255,95 @@ func (s *ServeSuite) TestShutdownFailureIsReturned() {
 	s.EqualError(<-result, "shutdown HTTP server: drain failed")
 }
 
+func (s *ServeSuite) TestShutdownFailurePreservesCloseFailure() {
+	listener := closeErrorListener{
+		blockingListener: newBlockingListener(),
+		err:              errors.New("close failed"),
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	drainErr := errors.New("drain failed")
+	result := make(chan error, 1)
+	go func() {
+		result <- runServer(ctx, serveOptions{Host: defaultServeHost, Port: defaultServePort}, serveDependencies{
+			newHandler: http.NotFoundHandler,
+			listen:     func(string, string) (net.Listener, error) { return listener, nil },
+			shutdown:   func(*http.Server, context.Context) error { return drainErr },
+		})
+	}()
+
+	<-listener.acceptStarted
+	cancel()
+	err := <-result
+	s.ErrorIs(err, drainErr)
+	s.ErrorContains(err, "close HTTP server: close failed")
+}
+
+func (s *ServeSuite) TestShutdownDeadlineForceClosesActiveConnections() {
+	serverConn, clientConn := net.Pipe()
+	defer clientConn.Close()
+	listener := newSingleConnectionListener(serverConn)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	requestStarted := make(chan struct{})
+	releaseRequest := make(chan struct{})
+	handlerFinished := make(chan struct{})
+	result := make(chan error, 1)
+	go func() {
+		result <- runServer(ctx, serveOptions{Host: defaultServeHost, Port: defaultServePort}, serveDependencies{
+			newHandler: func() http.Handler {
+				return http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+					defer close(handlerFinished)
+					close(requestStarted)
+					<-releaseRequest
+				})
+			},
+			listen: func(string, string) (net.Listener, error) { return listener, nil },
+			shutdown: func(server *http.Server, parent context.Context) error {
+				deadline, cancel := context.WithTimeout(parent, 20*time.Millisecond)
+				defer cancel()
+				return server.Shutdown(deadline)
+			},
+		})
+	}()
+
+	clientResult := make(chan struct {
+		response []byte
+		err      error
+	}, 1)
+	go func() {
+		_, err := io.WriteString(clientConn, "POST / HTTP/1.1\r\nHost: vizb\r\nContent-Length: 2\r\n\r\n{}")
+		if err != nil {
+			clientResult <- struct {
+				response []byte
+				err      error
+			}{err: err}
+			return
+		}
+		response, err := io.ReadAll(clientConn)
+		clientResult <- struct {
+			response []byte
+			err      error
+		}{response: response, err: err}
+	}()
+	<-requestStarted
+	cancel()
+	s.EqualError(<-result, "shutdown HTTP server: context deadline exceeded")
+	select {
+	case client := <-clientResult:
+		s.NoError(client.err)
+		s.Empty(client.response)
+	case <-time.After(time.Second):
+		s.Fail("active client connection was not force-closed")
+	}
+	close(releaseRequest)
+	select {
+	case <-handlerFinished:
+	case <-time.After(time.Second):
+		s.Fail("active request handler did not finish")
+	}
+}
+
 func (s *ServeSuite) TestServeFailureDuringShutdownIsReturned() {
 	listener := newBlockingErrorListener(errors.New("accept failed during shutdown"))
 	ctx, cancel := context.WithCancel(context.Background())
@@ -310,28 +453,29 @@ func (s *ServeSuite) TestConvertEndpointRejectsInvalidRequests() {
 		contentType string
 		accept      string
 		wantStatus  int
+		wantErrors  bool
 	}{
-		{name: "missing input", body: `{}`, contentType: "application/json", wantStatus: http.StatusBadRequest},
-		{name: "null input", body: `{"input":null}`, contentType: "application/json", wantStatus: http.StatusBadRequest},
-		{name: "invalid input kind", body: `{"input":42}`, contentType: "application/json", wantStatus: http.StatusBadRequest},
-		{name: "unknown chart", body: `{"input":"x,y\na,1\n","charts":{"types":["unknown"]}}`, contentType: "application/json", wantStatus: http.StatusBadRequest},
+		{name: "missing input", body: `{}`, contentType: "application/json", wantStatus: http.StatusUnprocessableEntity, wantErrors: true},
+		{name: "null input", body: `{"input":null}`, contentType: "application/json", wantStatus: http.StatusUnprocessableEntity, wantErrors: true},
+		{name: "invalid input kind", body: `{"input":42}`, contentType: "application/json", wantStatus: http.StatusUnprocessableEntity, wantErrors: true},
+		{name: "unknown chart", body: `{"input":"x,y\na,1\n","charts":{"types":["unknown"]}}`, contentType: "application/json", wantStatus: http.StatusUnprocessableEntity, wantErrors: true},
 		{name: "unsupported parser", body: `{"input":"x,y\na,1\n","parser":"go"}`, contentType: "application/json", wantStatus: http.StatusUnprocessableEntity},
 		{name: "html not accepted", body: `{"input":"x,y\na,1\n","output":{"format":"html"}}`, contentType: "application/json", accept: "application/json", wantStatus: http.StatusNotAcceptable},
 		{name: "dataset not accepted", body: `{"input":"x,y\na,1\n"}`, contentType: "application/json", accept: "text/html", wantStatus: http.StatusNotAcceptable},
-		{name: "invalid output format", body: `{"input":"x,y\na,1\n","output":{"format":"csv"}}`, contentType: "application/json", wantStatus: http.StatusBadRequest},
-		{name: "metadata is not supported", body: `{"input":"x,y\na,1\n","metadata":{"name":"example"}}`, contentType: "application/json", wantStatus: http.StatusBadRequest},
-		{name: "unknown field", body: `{"input":"x,y\na,1\n","extra":true}`, contentType: "application/json", wantStatus: http.StatusBadRequest},
+		{name: "invalid output format", body: `{"input":"x,y\na,1\n","output":{"format":"csv"}}`, contentType: "application/json", wantStatus: http.StatusUnprocessableEntity, wantErrors: true},
+		{name: "metadata is not supported", body: `{"input":"x,y\na,1\n","metadata":{"name":"example"}}`, contentType: "application/json", wantStatus: http.StatusUnprocessableEntity, wantErrors: true},
+		{name: "unknown field", body: `{"input":"x,y\na,1\n","extra":true}`, contentType: "application/json", wantStatus: http.StatusUnprocessableEntity, wantErrors: true},
 		{name: "missing content type", body: `{}`, wantStatus: http.StatusUnsupportedMediaType},
 		{name: "wrong content type", body: `{}`, contentType: "text/plain", wantStatus: http.StatusUnsupportedMediaType},
 		{name: "malformed content type", body: `{}`, contentType: `application/json; charset="`, wantStatus: http.StatusUnsupportedMediaType},
-		{name: "multiple JSON values", body: `{} {}`, contentType: "application/json", wantStatus: http.StatusBadRequest},
+		{name: "multiple JSON values", body: `{} {}`, contentType: "application/json", wantStatus: http.StatusBadRequest, wantErrors: true},
 	} {
 		s.Run(test.name, func() {
 			recorder := s.apiRequest(handler, "/", test.body, test.contentType, test.accept)
 			s.Equal(test.wantStatus, recorder.Code)
 			s.Contains(recorder.Header().Get("Content-Type"), "application/problem+json")
 			s.Equal(float64(test.wantStatus), s.problemStatus(recorder))
-			if test.wantStatus == http.StatusBadRequest {
+			if test.wantErrors {
 				var problem struct {
 					Errors []apiValidationError `json:"errors"`
 				}
@@ -387,7 +531,7 @@ func (s *ServeSuite) TestConvertEndpointValidatesStructuredOptions() {
 	for _, test := range tests {
 		s.Run(test.name, func() {
 			recorder := s.apiRequest(handler, "/", test.body, "application/json", "application/json")
-			s.Equal(http.StatusBadRequest, recorder.Code, recorder.Body.String())
+			s.Equal(http.StatusUnprocessableEntity, recorder.Code, recorder.Body.String())
 			var problem struct {
 				Errors []apiValidationError `json:"errors"`
 			}
@@ -417,7 +561,7 @@ func (s *ServeSuite) TestMergeEndpoint() {
 	s.Equal(http.StatusBadRequest, recorder.Code)
 
 	recorder = s.apiRequest(handler, "/merge", `{"datasets":[{"name":"one"}]}`, "application/json", "")
-	s.Equal(http.StatusBadRequest, recorder.Code)
+	s.Equal(http.StatusUnprocessableEntity, recorder.Code)
 
 	recorder = s.apiRequest(handler, "/merge", `{"datasets":[`+firstMergeJSON+`,`+secondMergeJSON+`],"tagAxis":"x"}`, "application/json", "")
 	s.Equal(http.StatusOK, recorder.Code)
@@ -426,13 +570,13 @@ func (s *ServeSuite) TestMergeEndpoint() {
 	s.Len(merged, 1)
 
 	recorder = s.apiRequest(handler, "/merge", `{"datasets":[`+firstMergeJSON+`,`+secondMergeJSON+`],"tagAxis":"invalid"}`, "application/json", "")
-	s.Equal(http.StatusBadRequest, recorder.Code)
+	s.Equal(http.StatusUnprocessableEntity, recorder.Code)
 
 	recorder = s.apiRequest(handler, "/merge", `{"datasets":[{"name":"one"},{"name":"two"}]}`, "application/json", "")
-	s.Equal(http.StatusBadRequest, recorder.Code)
+	s.Equal(http.StatusUnprocessableEntity, recorder.Code)
 
 	recorder = s.apiRequest(handler, "/merge", `{"datasets":[`+firstMergeJSON[:len(firstMergeJSON)-1]+`,"extra":true},`+secondMergeJSON+`]}`, "application/json", "")
-	s.Equal(http.StatusBadRequest, recorder.Code)
+	s.Equal(http.StatusUnprocessableEntity, recorder.Code)
 
 	recorder = s.apiRequest(handler, "/merge", `{"datasets":[`+firstMergeJSON+`,`+secondMergeJSON+`]}`, "application/json", "text/html")
 	s.Equal(http.StatusNotAcceptable, recorder.Code)
@@ -454,12 +598,12 @@ func (s *ServeSuite) TestUIEndpoint() {
 	}{
 		{name: "invalid request", body: `{`, accept: "text/html", wantStatus: http.StatusBadRequest},
 		{name: "not accepted", body: valid, accept: "application/json", wantStatus: http.StatusNotAcceptable},
-		{name: "missing datasets", body: `{}`, accept: "text/html", wantStatus: http.StatusBadRequest},
-		{name: "empty datasets", body: `{"datasets":[]}`, accept: "text/html", wantStatus: http.StatusBadRequest},
-		{name: "invalid datasets", body: `{"datasets":true}`, accept: "text/html", wantStatus: http.StatusBadRequest},
-		{name: "incomplete dataset", body: `{"datasets":{"name":"Bench"}}`, accept: "text/html", wantStatus: http.StatusBadRequest},
-		{name: "unknown nested field", body: `{"datasets":` + validDatasetJSON[:len(validDatasetJSON)-1] + `,"extra":true}}`, accept: "text/html", wantStatus: http.StatusBadRequest},
-		{name: "invalid chart type", body: `{"datasets":` + validDatasetJSON + `,"charts":{"types":["unknown"]}}`, accept: "text/html", wantStatus: http.StatusBadRequest},
+		{name: "missing datasets", body: `{}`, accept: "text/html", wantStatus: http.StatusUnprocessableEntity},
+		{name: "empty datasets", body: `{"datasets":[]}`, accept: "text/html", wantStatus: http.StatusUnprocessableEntity},
+		{name: "invalid datasets", body: `{"datasets":true}`, accept: "text/html", wantStatus: http.StatusUnprocessableEntity},
+		{name: "incomplete dataset", body: `{"datasets":{"name":"Bench"}}`, accept: "text/html", wantStatus: http.StatusUnprocessableEntity},
+		{name: "unknown nested field", body: `{"datasets":` + validDatasetJSON[:len(validDatasetJSON)-1] + `,"extra":true}}`, accept: "text/html", wantStatus: http.StatusUnprocessableEntity},
+		{name: "invalid chart type", body: `{"datasets":` + validDatasetJSON + `,"charts":{"types":["unknown"]}}`, accept: "text/html", wantStatus: http.StatusUnprocessableEntity},
 	} {
 		s.Run(test.name, func() {
 			recorder := s.apiRequest(handler, "/ui", test.body, "application/json", test.accept)
@@ -529,7 +673,7 @@ func (s *ServeSuite) TestUIEndpointValidatesDatasetsAndStatistics() {
 		s.Run(test.name, func() {
 			body := `{"datasets":` + test.datasets + test.suffix + `}`
 			recorder := s.apiRequest(handler, "/ui", body, "application/json", "text/html")
-			s.Equal(http.StatusBadRequest, recorder.Code, recorder.Body.String())
+			s.Equal(http.StatusUnprocessableEntity, recorder.Code, recorder.Body.String())
 		})
 	}
 }
@@ -586,10 +730,68 @@ func (s *ServeSuite) TestRequestHelpers() {
 	s.False(accepts(request, "text/html"))
 	request.Header.Set("Accept", "not a media range")
 	s.False(accepts(request, "text/html"))
+	request.Header.Set("Accept", "text")
+	s.False(accepts(request, "text/html"))
 	s.False(accepts(request, "invalid"))
 
 	var target map[string]any
 	s.Error(strictDecode([]byte(`{} {}`), &target))
+
+	request = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"input":"x,y\\na,1\\n"} trailing`))
+	request.Header.Set("Content-Type", "application/json")
+	s.False(decodeAPIRequest(httptest.NewRecorder(), request, &convertRequest{}))
+
+	_, validationErr = decodeChartConfig(json.RawMessage(`{`), "/charts/configs/0")
+	s.NotNil(validationErr)
+	validationErr = validateChartConfigValues(json.RawMessage(`{"stat":"invalid"}`), "/charts/configs/0")
+	s.NotNil(validationErr)
+
+	cfg := parser.Config{Group: []string{"region"}, GroupPattern: "x"}
+	validationErr = applySelectOptions(&cfg, []string{""})
+	s.NotNil(validationErr)
+	validationErr = applySelectOptions(&cfg, []string{"region{"})
+	s.NotNil(validationErr)
+	cfg = parser.Config{}
+	validationErr = applySelectOptions(&cfg, []string{"region,value,extra", "region,value"})
+	s.NotNil(validationErr)
+	cfg = parser.Config{}
+	validationErr = applySelectOptions(&cfg, []string{"region,value"})
+	s.Nil(validationErr)
+
+	validationErr = validateChartConfigValues(json.RawMessage(`[]`), "/charts/configs/0")
+	s.NotNil(validationErr)
+	validationErr = validateChartConfigValues(json.RawMessage(`{"sort":true}`), "/charts/configs/0")
+	s.NotNil(validationErr)
+	validationErr = validateChartConfigValues(json.RawMessage(`{"stat":{"enabled":true,"math":"invalid"}}`), "/charts/configs/0")
+	s.NotNil(validationErr)
+	_, _, validationErr = applyUIOptions(nil, chartSelection{Configs: []json.RawMessage{json.RawMessage(`{`)}}, nil)
+	s.NotNil(validationErr)
+
+	datasets, validationErr = decodeDatasets(json.RawMessage(validDatasetJSON))
+	s.Nil(validationErr)
+	var result []shared.Dataset
+	var types []string
+	result, types, validationErr = applyUIOptions(datasets, chartSelection{Configs: []json.RawMessage{json.RawMessage(`{"type":"line"}`)}}, nil)
+	s.Nil(validationErr)
+	s.Nil(types)
+	s.Len(result[0].Settings, 2)
+
+	for _, test := range []struct {
+		name   string
+		config malformedChartConfig
+	}{
+		{name: "marshal existing config", config: malformedChartConfig{chartType: "bar", marshalErr: errors.New("marshal failed")}},
+		{name: "decode existing config", config: malformedChartConfig{chartType: "bar", raw: []byte(`{`)}},
+	} {
+		s.Run(test.name, func() {
+			invalidDataset := shared.Dataset{Settings: []internalcharts.ChartConfig{test.config}}
+			_, _, validationErr := applyUIOptions([]shared.Dataset{invalidDataset}, chartSelection{Types: []string{"bar"}}, nil)
+			s.NotNil(validationErr)
+		})
+	}
+
+	_, validationErr = decodeStrictDataset(json.RawMessage(`{"name":"Bench","history":[{"tag":"v1","timestamp":"now"}],"axes":[],"settings":[],"data":[]}`), "/datasets/0")
+	s.Nil(validationErr)
 }
 
 func (s *ServeSuite) apiRequest(handler http.Handler, path, body, contentType, accept string) *httptest.ResponseRecorder {
@@ -624,6 +826,18 @@ type testAddr string
 
 func (a testAddr) Network() string { return "tcp" }
 func (a testAddr) String() string  { return string(a) }
+
+type malformedChartConfig struct {
+	chartType  string
+	raw        []byte
+	marshalErr error
+}
+
+func (c malformedChartConfig) MarshalJSON() ([]byte, error) { return c.raw, c.marshalErr }
+func (c malformedChartConfig) ChartType() string            { return c.chartType }
+func (malformedChartConfig) StatEnabled() bool              { return false }
+func (malformedChartConfig) StatMath() []string             { return nil }
+func (malformedChartConfig) SwapString() string             { return "" }
 
 type errorListener struct{ err error }
 
@@ -666,6 +880,52 @@ func (l *blockingListener) Close() error {
 }
 
 func (l *blockingListener) Addr() net.Addr { return testAddr("in-memory") }
+
+type closeErrorListener struct {
+	*blockingListener
+	err error
+}
+
+func (l closeErrorListener) Close() error {
+	_ = l.blockingListener.Close()
+	return l.err
+}
+
+type singleConnectionListener struct {
+	conn          net.Conn
+	acceptStarted chan struct{}
+	closed        chan struct{}
+	acceptOnce    sync.Once
+	closeOnce     sync.Once
+}
+
+func newSingleConnectionListener(conn net.Conn) *singleConnectionListener {
+	return &singleConnectionListener{
+		conn:          conn,
+		acceptStarted: make(chan struct{}),
+		closed:        make(chan struct{}),
+	}
+}
+
+func (l *singleConnectionListener) Accept() (net.Conn, error) {
+	accepted := false
+	l.acceptOnce.Do(func() {
+		accepted = true
+		close(l.acceptStarted)
+	})
+	if accepted {
+		return l.conn, nil
+	}
+	<-l.closed
+	return nil, net.ErrClosed
+}
+
+func (l *singleConnectionListener) Close() error {
+	l.closeOnce.Do(func() { close(l.closed) })
+	return nil
+}
+
+func (l *singleConnectionListener) Addr() net.Addr { return testAddr("in-memory") }
 
 func directSignalContext(ctx context.Context, _ ...os.Signal) (context.Context, context.CancelFunc) {
 	return context.WithCancel(ctx)
