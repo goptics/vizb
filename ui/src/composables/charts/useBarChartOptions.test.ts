@@ -56,13 +56,18 @@ const makeStackedGroupedChartData = (): ChartData => ({
   axisLabels: { x: 'region', y: 'category' },
 })
 
-const makeStackedGroupedConfig = (stack = false): BaseChartConfig => ({
+const makeStackedGroupedConfig = (
+  stack = false,
+  horizontal = false,
+  showLabels = true
+): BaseChartConfig => ({
   chartData: ref(makeStackedGroupedChartData()),
   sort: ref({ enabled: false, order: 'asc' }),
-  showLabels: ref(false),
+  showLabels: ref(showLabels),
   isDark: ref(false),
   scale: ref<'linear' | 'log'>('linear'),
   stack: ref(stack),
+  horizontal: ref(horizontal),
 })
 
 describe('useBarChartOptions — grouped mode', () => {
@@ -77,6 +82,32 @@ describe('useBarChartOptions — grouped mode', () => {
     const { options } = useBarChartOptions(makeStackedGroupedConfig(false))
     const series = options.value.series as { stack?: string }[]
     expect(series.every((s) => s.stack === undefined)).toBe(true)
+  })
+
+  it.each([false, true])('centers labels inside %s stacked bars', (horizontal) => {
+    const { options } = useBarChartOptions(makeStackedGroupedConfig(true, horizontal))
+    const series = options.value.series as { label: { show: boolean; position: string } }[]
+
+    expect(series.every((s) => s.label.show)).toBe(true)
+    expect(series.every((s) => s.label.position === 'inside')).toBe(true)
+  })
+
+  it.each([
+    [false, 'top'],
+    [true, 'right'],
+  ])('keeps labels at the bar tip when horizontal is %s', (horizontal, position) => {
+    const { options } = useBarChartOptions(makeStackedGroupedConfig(false, horizontal))
+    const series = options.value.series as { label: { position: string } }[]
+
+    expect(series.every((s) => s.label.position === position)).toBe(true)
+  })
+
+  it('keeps labels hidden when stacking is enabled and show labels is off', () => {
+    const { options } = useBarChartOptions(makeStackedGroupedConfig(true, false, false))
+    const series = options.value.series as { label: { show: boolean; position: string } }[]
+
+    expect(series.every((s) => !s.label.show)).toBe(true)
+    expect(series.every((s) => s.label.position === 'inside')).toBe(true)
   })
 })
 

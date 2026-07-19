@@ -840,10 +840,15 @@ export function createGridConfig(seriesLength = 1, hasDataZoom = false): any {
 export const createLabelConfig = (
   showLabels: boolean,
   styling: ChartStyling,
-  orient?: 'horizontal' | 'vertical'
+  orient?: 'horizontal' | 'vertical',
+  stacked = false
 ) => ({
   show: showLabels,
-  position: orient === 'horizontal' ? ('right' as const) : ('top' as const),
+  position: stacked
+    ? ('inside' as const)
+    : orient === 'horizontal'
+      ? ('right' as const)
+      : ('top' as const),
   formatter: '{c}',
   fontSize,
   color: styling.textColor,
