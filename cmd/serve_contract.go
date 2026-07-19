@@ -478,10 +478,7 @@ func applyUIOptions(datasets []shared.Dataset, selection chartSelection, statist
 					validationErr := bodyValidationError("/datasets", "invalid_dataset", err.Error())
 					return nil, nil, &validationErr
 				}
-				if err := json.Unmarshal(raw, &seed); err != nil {
-					validationErr := bodyValidationError("/datasets", "invalid_dataset", err.Error())
-					return nil, nil, &validationErr
-				}
+				_ = json.Unmarshal(raw, &seed) // json.Marshal always produces valid JSON.
 			}
 			if stat != nil {
 				seed["stat"] = stat

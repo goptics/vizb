@@ -757,6 +757,10 @@ func (s *ServeSuite) TestRequestHelpers() {
 	cfg = parser.Config{}
 	validationErr = applySelectOptions(&cfg, []string{"region,value"})
 	s.Nil(validationErr)
+	_, validationErr = buildParserConfig(convertRequest{
+		Grouping: &groupingOptions{Pattern: "x,y", Columns: []string{"region/value"}},
+	}, "csv")
+	s.NotNil(validationErr)
 
 	validationErr = validateChartConfigValues(json.RawMessage(`[]`), "/charts/configs/0")
 	s.NotNil(validationErr)
