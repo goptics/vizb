@@ -1,4 +1,4 @@
-name: Prepare JavaScript Examples
+name: "Examples: Comparisons"
 on:
   workflow_call:
     inputs:
@@ -6,32 +6,29 @@ on:
         required: false
         type: boolean
         default: false
-        description: "Publish the generated JavaScript examples immediately"
+        description: "Publish the generated comparisons examples immediately"
   workflow_dispatch:
     inputs:
       publish:
         required: false
         type: boolean
         default: true
-        description: "Publish the generated JavaScript examples immediately"
+        description: "Publish the generated comparisons examples immediately"
 
 jobs:
   convert:
-    name: Convert JavaScript Benchmarks
+    name: Convert Comparisons Data
     strategy:
       matrix:
         include:
-          - id: 00-tinybench
-            file: tinybench
-            name: "Bubble Vs Insertion Sort (tinybench)"
-            description: "Tinybench output — algorithm on X, input size on Y"
-            group-pattern: x/y
-          - id: 01-vitest
-            file: vitest
-            name: "Bubble Vs Insertion Sort (vitest)"
-            description: "Vitest bench output — benchmark name and case from regex groups"
-            group-regex: "n=(?<y>.*)/(?<x>.*)"
-
+          - id: 00-concurrency-frameworks
+            file: concurrency
+            name: "HTTP Framework Throughput"
+            description: "Competitor columns (frameworks) on one chart via --col-axis — load on Y, frameworks on X"
+            group: load
+            group-pattern: y
+            col-axis: x
+            charts: bar,line
 
     runs-on: ubuntu-latest
     steps:
@@ -40,16 +37,14 @@ jobs:
       - name: ${{ matrix.name }}
         uses: ./
         with:
-          file: examples/javascript/${{ matrix.file }}.txt
+          file: examples/csv/${{ matrix.file }}.csv
           id: ${{ matrix.id }}
           name: ${{ matrix.name }}
           description: ${{ matrix.description }}
+          group: ${{ matrix.group }}
           group-pattern: ${{ matrix.group-pattern }}
-          group-regex: ${{ matrix.group-regex }}
-          chart: |
-            bar:scale=log,sort=asc
-            line:scale=log,sort=asc
-            pie:sort=asc
+          col-axis: ${{ matrix.col-axis }}
+          charts: ${{ matrix.charts }}
           output-json: ${{ matrix.id }}.json
           vizb-binary: ${{ env.ACT == 'true' && './bin/vizb' || '' }}
 
@@ -61,15 +56,15 @@ jobs:
         if: env.ACT != 'true'
         uses: actions/upload-artifact@v7
         with:
-          name: json-javascript-${{ matrix.id }}
+          name: json-comparisons-${{ matrix.id }}
           path: ${{ matrix.id }}.json
 
   merge:
-    name: Merge JavaScript Benchmarks
+    name: Merge Comparisons Data
     needs: convert
     permissions:
       contents: write
     uses: ./.github/workflows/merge-examples.yml
     with:
-      example_category: javascript
+      example_category: comparisons
       publish: ${{ inputs.publish }}

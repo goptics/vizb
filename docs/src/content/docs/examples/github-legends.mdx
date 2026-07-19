@@ -5,11 +5,13 @@ description: 3D GitHub contribution skylines of well-known OSS maintainers — f
 
 import { Aside } from '@astrojs/starlight/components';
 
+[![GitHub Legends examples workflow status](https://github.com/goptics/vizb/actions/workflows/github-legends.yml/badge.svg)](https://github.com/goptics/vizb/actions/workflows/github-legends.yml)
+
 **GitHub Legends** turns public contribution calendars into 3D bar skylines. CI fetches each user from the [jogruber GitHub contributions API](https://github-contributions-api.jogruber.de/v4/) — no static repo files. Demonstrates `--json-path`, `--select`, and date axis splitting. Parser: **JSON**.
 
 **Live dashboard:** [vizb.goptics.org/examples/github-legends/](https://vizb.goptics.org/examples/github-legends/)
 
-The workflow [prepare-github-legends.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/prepare-github-legends.yml) runs on every release and on a **Friday schedule** (`0 12 * * 5` UTC) so skylines stay current.
+The workflow [github-legends.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/github-legends.yml) runs on every release and on a **Friday schedule** (`0 12 * * 5` UTC) so skylines stay current.
 
 | Chart | Source | Pattern | Dashboard |
 |-------|--------|---------|-----------|
@@ -23,7 +25,7 @@ The workflow [prepare-github-legends.yml](https://github.com/goptics/vizb/blob/m
 
 ## Adding a legend
 
-No repo file. Append one row to the matrix in [prepare-github-legends.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/prepare-github-legends.yml) — only `id` and `user`:
+No repo file. Append one row to the matrix in [github-legends.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/github-legends.yml) — only `id` and `user`:
 
 ```yaml
 - id: 07-octocat        # numbered ?id= deep link; prefix matches ?d=7 in matrix order

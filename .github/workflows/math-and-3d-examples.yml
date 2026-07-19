@@ -1,4 +1,4 @@
-name: Prepare Math & 3D Examples
+name: "Examples: Math & 3D"
 on:
   workflow_call:
     inputs:

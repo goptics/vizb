@@ -15,6 +15,7 @@
     <a href="https://vizb.goptics.org/examples"><img src="https://img.shields.io/badge/Live-Examples-orange?style=for" alt="Examples" /></a>
     <a href="https://github.com/goptics/vizb/actions/workflows/cli.yml"><img src="https://github.com/goptics/vizb/actions/workflows/cli.yml/badge.svg" alt="CLI" /></a>
     <a href="https://github.com/goptics/vizb/actions/workflows/ui.yml"><img src="https://github.com/goptics/vizb/actions/workflows/ui.yml/badge.svg" alt="UI" /></a>
+    <a href="https://github.com/goptics/vizb/actions/workflows/release.yml"><img src="https://github.com/goptics/vizb/actions/workflows/release.yml/badge.svg" alt="Release" /></a>
     <a href="https://codecov.io/gh/goptics/vizb"><img src="https://codecov.io/gh/goptics/vizb/branch/main/graph/badge.svg" alt="Codecov" /></a>
     <a href="https://github.com/goptics/vizb/releases"><img src="https://img.shields.io/github/downloads/goptics/vizb/total?color=green&label=downloads" alt="Downloads" /></a>
     <a href="https://golang.org/doc/devel/release.html"><img src="https://img.shields.io/badge/Go-1.26+-00ADD8?style=for&logo=go" alt="Go Version" /></a>
@@ -22,7 +23,7 @@
   </p>
 
   <p>
-    A tabular visualization engine for <strong>CSV, JSON, and benchmark output</strong>. Turns numeric columns into interactive charts and descriptive statistics in one self-contained HTML file — no server, no dependencies, no build step.
+    A tabular visualization engine for <strong>CSV, JSON, and benchmark output</strong>. Turns numeric columns into interactive charts and descriptive statistics in one self-contained HTML file - no server, no dependencies, no build step.
   </p>
 
   <p>
@@ -94,12 +95,12 @@ curl -s "https://github-contributions-api.jogruber.de/v4/<your-github-username>"
 
 Flags used:
 
-- `--group date` — group rows by date
-- `--group-pattern '[z{Year}-y{Month}-x{Date}]'` — split each date into Year / Month / Day axes (z / y / x)
-- `--json-path '.contributions'` — pull the nested contributions array out of the API envelope
-- `--select 'count{Contributions}'` — keep only the count column and rename it to `Contributions`
-- `--stat` — add the statistics panel
-- `--output index.html` — write a self-contained HTML file
+- `--group date` - group rows by date
+- `--group-pattern '[z{Year}-y{Month}-x{Date}]'` - split each date into Year / Month / Day axes (z / y / x)
+- `--json-path '.contributions'` - pull the nested contributions array out of the API envelope
+- `--select 'count{Contributions}'` - keep only the count column and rename it to `Contributions`
+- `--stat` - add the statistics panel
+- `--output index.html` - write a self-contained HTML file
 
 ## Contributing
 
@@ -107,4 +108,4 @@ Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, bui
 
 ## License
 
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
