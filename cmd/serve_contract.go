@@ -41,6 +41,21 @@ type statisticsOptions struct {
 	Math    []string `json:"math"`
 }
 
+func (o *statisticsOptions) UnmarshalJSON(data []byte) error {
+	if err := rejectNullFields(data, "/statistics", map[string]string{
+		"enabled": "/statistics/enabled", "math": "/statistics/math",
+	}); err != nil {
+		return err
+	}
+	type wire statisticsOptions
+	var decoded wire
+	if err := strictDecodeRequestObject(data, &decoded, "/statistics"); err != nil {
+		return err
+	}
+	*o = statisticsOptions(decoded)
+	return nil
+}
+
 type convertRequest struct {
 	Input       json.RawMessage  `json:"input"`
 	ID          *string          `json:"id"`
@@ -183,6 +198,19 @@ type uiRequest struct {
 	Datasets   json.RawMessage    `json:"datasets"`
 	Charts     chartSelection     `json:"charts"`
 	Statistics *statisticsOptions `json:"statistics"`
+}
+
+func (r *uiRequest) UnmarshalJSON(data []byte) error {
+	if err := rejectNullFields(data, "/", map[string]string{"statistics": "/statistics"}); err != nil {
+		return err
+	}
+	type wire uiRequest
+	var decoded wire
+	if err := strictDecodeRequestObject(data, &decoded, ""); err != nil {
+		return err
+	}
+	*r = uiRequest(decoded)
+	return nil
 }
 
 type apiValidationError struct {

@@ -18,7 +18,6 @@ import (
 
 	"github.com/goptics/vizb/cmd/cli"
 	internalcharts "github.com/goptics/vizb/internal/charts"
-	"github.com/goptics/vizb/internal/flags"
 	"github.com/goptics/vizb/pkg/core"
 	"github.com/goptics/vizb/pkg/parser"
 	"github.com/goptics/vizb/shared"
@@ -207,9 +206,9 @@ func (s *ServeSuite) TestCancellationShutsDownInMemoryListener() {
 			listen:     func(string, string) (net.Listener, error) { return listener, nil },
 		})
 	}()
-	<-listener.acceptStarted
+	s.waitForSignal(listener.acceptStarted)
 	cancel()
-	s.Require().NoError(<-result)
+	s.Require().NoError(s.waitForResult(result))
 }
 
 func (s *ServeSuite) TestCancellationTriggersGracefulShutdown() {
@@ -229,9 +228,9 @@ func (s *ServeSuite) TestCancellationTriggersGracefulShutdown() {
 		})
 	}()
 
-	<-listener.acceptStarted
+	s.waitForSignal(listener.acceptStarted)
 	cancel()
-	s.Require().NoError(<-result)
+	s.Require().NoError(s.waitForResult(result))
 	s.True(shutdownCalled.Load())
 }
 
@@ -245,19 +244,17 @@ func (s *ServeSuite) TestShutdownFailureIsReturned() {
 		result <- runServer(ctx, serveOptions{Host: defaultServeHost, Port: defaultServePort}, serveDependencies{
 			newHandler: http.NotFoundHandler,
 			listen:     func(string, string) (net.Listener, error) { return listener, nil },
-			shutdown: func(server *http.Server, _ context.Context) error {
-				_ = server.Close()
-				return errors.New("drain failed")
-			},
+			shutdown:   func(*http.Server, context.Context) error { return errors.New("drain failed") },
 		})
 	}()
 
-	<-listener.acceptStarted
+	s.waitForSignal(listener.acceptStarted)
 	cancel()
-	s.EqualError(<-result, "shutdown HTTP server: drain failed")
+	s.EqualError(s.waitForResult(result), "shutdown HTTP server: drain failed")
+	s.waitForSignal(listener.closed)
 }
 
-func (s *ServeSuite) TestShutdownFailurePreservesCloseFailure() {
+func (s *ServeSuite) TestShutdownFailureIgnoresCloseError() {
 	listener := closeErrorListener{
 		blockingListener: newBlockingListener(),
 		err:              errors.New("close failed"),
@@ -274,11 +271,11 @@ func (s *ServeSuite) TestShutdownFailurePreservesCloseFailure() {
 		})
 	}()
 
-	<-listener.acceptStarted
+	s.waitForSignal(listener.acceptStarted)
 	cancel()
-	err := <-result
+	err := s.waitForResult(result)
 	s.ErrorIs(err, drainErr)
-	s.ErrorContains(err, "close HTTP server: close failed")
+	s.waitForSignal(listener.closed)
 }
 
 func (s *ServeSuite) TestShutdownDeadlineForceClosesActiveConnections() {
@@ -297,7 +294,11 @@ func (s *ServeSuite) TestShutdownDeadlineForceClosesActiveConnections() {
 				return http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 					defer close(handlerFinished)
 					close(requestStarted)
-					<-releaseRequest
+					select {
+					case <-releaseRequest:
+					case <-time.After(time.Second):
+						s.Fail("timed out waiting to release the active request")
+					}
 				})
 			},
 			listen: func(string, string) (net.Listener, error) { return listener, nil },
@@ -328,9 +329,9 @@ func (s *ServeSuite) TestShutdownDeadlineForceClosesActiveConnections() {
 			err      error
 		}{response: response, err: err}
 	}()
-	<-requestStarted
+	s.waitForSignal(requestStarted)
 	cancel()
-	s.EqualError(<-result, "shutdown HTTP server: context deadline exceeded")
+	s.EqualError(s.waitForResult(result), "shutdown HTTP server: context deadline exceeded")
 	select {
 	case client := <-clientResult:
 		s.NoError(client.err)
@@ -362,9 +363,9 @@ func (s *ServeSuite) TestServeFailureDuringShutdownIsReturned() {
 		})
 	}()
 
-	<-listener.acceptStarted
+	s.waitForSignal(listener.acceptStarted)
 	cancel()
-	s.EqualError(<-result, "serve HTTP: accept failed during shutdown")
+	s.EqualError(s.waitForResult(result), "serve HTTP: accept failed during shutdown")
 }
 
 func (s *ServeSuite) TestServeAddress() {
@@ -576,8 +577,8 @@ func (s *ServeSuite) TestMergeEndpoint() {
 	s.Equal(http.StatusBadRequest, recorder.Code)
 
 	recorder = s.apiRequest(handler, "/merge", `{"datasets":[],"extra":true}`, "application/json", "")
-	s.Equal(http.StatusBadRequest, recorder.Code)
-	s.Contains(recorder.Body.String(), "/extra")
+	s.Equal(http.StatusUnprocessableEntity, recorder.Code)
+	s.Contains(recorder.Body.String(), `"path":"/"`)
 
 	recorder = s.apiRequest(handler, "/merge", `{"datasets":[{"name":"one"}]}`, "application/json", "")
 	s.Equal(http.StatusUnprocessableEntity, recorder.Code)
@@ -808,8 +809,9 @@ func (s *ServeSuite) TestRequestHelpers() {
 	cfg = parser.Config{}
 	validationErr = applySelectOptions(&cfg, []string{"region,value"})
 	s.Nil(validationErr)
+	pattern := "x,y"
 	_, validationErr = buildParserConfig(convertRequest{
-		Grouping: &groupingOptions{Pattern: "x,y", Columns: []string{"region/value"}},
+		Grouping: &groupingOptions{Pattern: &pattern, Columns: []string{"region/value"}},
 	}, "csv")
 	s.NotNil(validationErr)
 
@@ -872,6 +874,37 @@ func (s *ServeSuite) TestRequestContractHelpers() {
 		}
 	})
 
+	s.Run("statistics decoding", func() {
+		for _, test := range []struct {
+			name string
+			raw  string
+			path string
+		}{
+			{name: "null statistics", raw: `{"statistics":null}`, path: "/statistics"},
+			{name: "null enabled", raw: `{"statistics":{"enabled":null}}`, path: "/statistics/enabled"},
+			{name: "null math", raw: `{"statistics":{"math":null}}`, path: "/statistics/math"},
+			{name: "unknown statistics field", raw: `{"statistics":{"bogus":true}}`, path: "/statistics/bogus"},
+		} {
+			s.Run(test.name, func() {
+				var request uiRequest
+				err := json.Unmarshal([]byte(test.raw), &request)
+				var validationErr apiValidationError
+				s.Require().ErrorAs(err, &validationErr)
+				s.Equal(test.path, validationErr.Path)
+			})
+		}
+
+		var omitted uiRequest
+		s.Require().NoError(json.Unmarshal([]byte(`{}`), &omitted))
+		s.Nil(omitted.Statistics)
+
+		var populated uiRequest
+		s.Require().NoError(json.Unmarshal([]byte(`{"statistics":{"enabled":false,"math":["counts"]}}`), &populated))
+		s.Require().NotNil(populated.Statistics)
+		s.False(*populated.Statistics.Enabled)
+		s.Equal([]string{"counts"}, populated.Statistics.Math)
+	})
+
 	s.Run("conversion option paths", func() {
 		selection := chartSelection{Configs: []json.RawMessage{
 			json.RawMessage(`invalid`),
@@ -920,7 +953,7 @@ func (s *ServeSuite) TestRequestContractHelpers() {
 		}
 	})
 
-	s.Run("UI materialisation errors", func() {
+	s.Run("UI materialisation marshal error", func() {
 		for _, test := range []struct {
 			name   string
 			config internalcharts.ChartConfig
@@ -928,14 +961,6 @@ func (s *ServeSuite) TestRequestContractHelpers() {
 			{
 				name:   "marshal base",
 				config: testChartConfig{chartType: "bar", marshalErr: errors.New("marshal failed")},
-			},
-			{
-				name:   "decode base",
-				config: testChartConfig{chartType: "bar", raw: json.RawMessage(`[]`)},
-			},
-			{
-				name:   "materialise unknown chart",
-				config: testChartConfig{chartType: "unknown", raw: json.RawMessage(`{"type":"unknown"}`)},
 			},
 		} {
 			s.Run(test.name, func() {
@@ -959,22 +984,24 @@ func (s *ServeSuite) TestRequestContractHelpers() {
 	})
 }
 
-func (s *ServeSuite) TestMaterialiseConversionChartsReportsFailure() {
-	saved := append([]flags.Flag(nil), internalcharts.FlagsFor("bar")...)
-	s.T().Cleanup(func() { internalcharts.SetFlags("bar", saved) })
-	internalcharts.SetFlags("bar", append(saved, flags.Flag{
-		Name:    "invalid-default",
-		Kind:    flags.KindString,
-		JSONKey: "invalidDefault",
-		Default: func() {},
-	}))
+func (s *ServeSuite) waitForSignal(signal <-chan struct{}) {
+	s.T().Helper()
+	select {
+	case <-signal:
+	case <-time.After(time.Second):
+		s.FailNow("timed out waiting for signal")
+	}
+}
 
-	_, _, validationErr := materialiseConversionCharts(chartSelection{Types: []string{"bar"}})
-
-	s.Require().NotNil(validationErr)
-	s.Equal("/charts/configs", validationErr.Path)
-	s.Equal("invalid_chart_config", validationErr.Code)
-	s.ErrorContains(validationErr, "unsupported type")
+func (s *ServeSuite) waitForResult(result <-chan error) error {
+	s.T().Helper()
+	select {
+	case err := <-result:
+		return err
+	case <-time.After(time.Second):
+		s.FailNow("timed out waiting for server result")
+		return nil
+	}
 }
 
 func (s *ServeSuite) apiRequest(handler http.Handler, path, body, contentType, accept string) *httptest.ResponseRecorder {

@@ -166,9 +166,8 @@ func runServer(ctx context.Context, opts serveOptions, deps serveDependencies) e
 			shutdown = (*http.Server).Shutdown
 		}
 		if err := shutdown(server, shutdownCtx); err != nil {
-			if closeErr := server.Close(); closeErr != nil && !errors.Is(closeErr, http.ErrServerClosed) {
-				return fmt.Errorf("shutdown HTTP server: %w", errors.Join(err, fmt.Errorf("close HTTP server: %w", closeErr)))
-			}
+			_ = server.Close()
+			<-serveResult
 			return fmt.Errorf("shutdown HTTP server: %w", err)
 		}
 		if err := <-serveResult; err != nil && !errors.Is(err, http.ErrServerClosed) {

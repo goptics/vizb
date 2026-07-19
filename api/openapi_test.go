@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -176,6 +177,20 @@ func (s *OpenAPISuite) TestUIContractRejectsRemoteInputAndReturnsHTML() {
 	s.NotNil(successContent["text/html"])
 }
 
+func (s *OpenAPISuite) TestLineAndScatterSymbolsMatchServerValidation() {
+	contract := readContract(s.T())
+	schemas := mustMap(s.T(), mustMap(s.T(), contract["components"], "components")["schemas"], "components.schemas")
+	for _, schemaName := range []string{"LineChartConfig", "ScatterChartConfig"} {
+		s.Run(schemaName, func() {
+			schema := schemas[schemaName]
+			for _, symbol := range []string{"circle", "CIRCLE", "image://marker.svg", "path://M0 0", "M0 0"} {
+				s.NoError(validateSchema(contract, schema, map[string]any{"type": strings.TrimSuffix(strings.ToLower(schemaName), "chartconfig"), "symbol": symbol}, schemaName))
+			}
+			s.Error(validateSchema(contract, schema, map[string]any{"type": strings.TrimSuffix(strings.ToLower(schemaName), "chartconfig"), "symbol": "star"}, schemaName))
+		})
+	}
+}
+
 func (s *OpenAPISuite) TestRootConversionContract() {
 	t := s.T()
 	contract := readContract(t)
@@ -192,7 +207,7 @@ func (s *OpenAPISuite) TestRootConversionContract() {
 	paths := mustMap(t, contract["paths"], "paths")
 	root := mustMap(t, mustMap(t, paths["/"], "paths./")["post"], "paths./.post")
 	responses := mustMap(t, root["responses"], "paths./.post.responses")
-	s.Equal([]string{"200", "400", "406", "415", "422", "500"}, sortedMapKeys(responses))
+	s.Equal([]string{"200", "400", "406", "413", "415", "422", "500"}, sortedMapKeys(responses))
 
 	allResponses := mustMap(t, components["responses"], "components.responses")
 	success := mustMap(t, allResponses["ConvertSuccess"], "components.responses.ConvertSuccess")
@@ -401,6 +416,15 @@ func validateSchema(root map[string]any, rawSchema, value any, location string) 
 		}
 		if min, ok := schema["minLength"].(int); ok && len(stringValue) < min {
 			return fmt.Errorf("%s has length %d, want at least %d", location, len(stringValue), min)
+		}
+		if pattern, ok := schema["pattern"].(string); ok {
+			re, err := regexp.Compile(pattern)
+			if err != nil {
+				return fmt.Errorf("%s has invalid pattern %q: %w", location, pattern, err)
+			}
+			if !re.MatchString(stringValue) {
+				return fmt.Errorf("%s = %#v does not match pattern %q", location, stringValue, pattern)
+			}
 		}
 	case "boolean":
 		if _, ok := value.(bool); !ok {

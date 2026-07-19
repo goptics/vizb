@@ -617,8 +617,7 @@ components:
         stack: { type: boolean }
         showLabels: { type: boolean }
         symbol:
-          type: string
-          description: ECharts built-in symbol, image:// or path:// reference, or SVG path.
+          $ref: '#/components/schemas/SeriesSymbol'
         symbolSize: { type: number, exclusiveMinimum: 0 }
         smooth: { type: boolean }
         threeDRotate: { type: boolean }
@@ -636,14 +635,24 @@ components:
         scale: { type: string, enum: [linear, log] }
         showLabels: { type: boolean }
         symbol:
-          type: string
-          description: ECharts built-in symbol, image:// or path:// reference, or SVG path.
+          $ref: '#/components/schemas/SeriesSymbol'
         symbolSize: { type: number, exclusiveMinimum: 0 }
         threeDRotate: { type: boolean }
         threeD: { type: boolean }
         threeDVisualMap: { type: boolean }
         visualMap: { type: boolean }
         stat: { $ref: '#/components/schemas/StatisticsConfig' }
+    SeriesSymbol:
+      description: ECharts built-in symbol, image:// or path:// reference, or an SVG path.
+      oneOf:
+        - type: string
+          pattern: '^(?:[Cc][Ii][Rr][Cc][Ll][Ee]|[Rr][Ee][Cc][Tt]|[Rr][Oo][Uu][Nn][Dd][Rr][Ee][Cc][Tt]|[Tt][Rr][Ii][Aa][Nn][Gg][Ll][Ee]|[Dd][Ii][Aa][Mm][Oo][Nn][Dd]|[Pp][Ii][Nn]|[Aa][Rr][Rr][Oo][Ww]|[Nn][Oo][Nn][Ee])$'
+        - type: string
+          pattern: '^image://.+'
+        - type: string
+          pattern: '^path://.+'
+        - type: string
+          pattern: '^[Mm].*'
     PieChartConfig:
       type: object
       additionalProperties: false
