@@ -148,6 +148,34 @@ func (s *OpenAPISuite) TestDatasetSettingsRequireUniqueChartTypes() {
 	s.ErrorContains(validateSchema(contract, datasetSchema, dataset, "dataset"), "want at most 1")
 }
 
+func (s *OpenAPISuite) TestUIContractRejectsRemoteInputAndReturnsHTML() {
+	contract := readContract(s.T())
+	paths := mustMap(s.T(), contract["paths"], "paths")
+	operation := mustMap(s.T(), mustMap(s.T(), paths["/ui"], "paths./ui")["post"], "paths./ui.post")
+
+	requestBody, err := dereference(contract, operation["requestBody"])
+	s.Require().NoError(err)
+	requestContent := mustMap(s.T(), mustMap(s.T(), requestBody, "UI request body")["content"], "UI request content")
+	requestSchema := mustMap(s.T(), requestContent["application/json"], "UI JSON request")["schema"]
+	request := map[string]any{
+		"datasets": map[string]any{
+			"name":     "Bench",
+			"axes":     []any{},
+			"settings": []any{},
+			"data":     []any{},
+		},
+		"dataUrl": "https://example.com/data.json",
+	}
+	s.ErrorContains(validateSchema(contract, requestSchema, request, "UI request"), `unknown property "dataUrl"`)
+
+	responses := mustMap(s.T(), operation["responses"], "paths./ui.post.responses")
+	success, err := dereference(contract, responses["200"])
+	s.Require().NoError(err)
+	successContent := mustMap(s.T(), mustMap(s.T(), success, "UI success response")["content"], "UI success content")
+	s.Len(successContent, 1)
+	s.NotNil(successContent["text/html"])
+}
+
 func TestOpenAPISuite(t *testing.T) {
 	suite.Run(t, new(OpenAPISuite))
 }
