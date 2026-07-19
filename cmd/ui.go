@@ -44,8 +44,10 @@ var uiCmd = &cobra.Command{
 The input file must be a valid vizb DataSet JSON (single object or array).
 
 When --data-url is set, no input file is needed. The generated HTML will fetch
-DataSet JSON from the provided URL at runtime instead of embedding it.
-Note: the JSON host must serve Access-Control-Allow-Origin: * for file:// access.`,
+DataSet JSON from the provided URL at runtime instead of embedding it. The base
+response may also be an id/name catalog; selected details are then fetched from
+<data-url>/dataset/<encoded-id>. Both endpoints must satisfy CORS requirements.
+Note: hosts should serve Access-Control-Allow-Origin: * for file:// access.`,
 	Args: cobra.MaximumNArgs(1),
 	Run:  runUI,
 }
@@ -53,7 +55,7 @@ Note: the JSON host must serve Access-Control-Allow-Origin: * for file:// access
 func init() {
 	rootCmd.AddCommand(uiCmd)
 	uiCmd.Flags().StringVarP(&uiOpts.OutputFile, "output", "o", "", "Output file path/name")
-	uiCmd.Flags().StringVarP(&uiOpts.DataURL, "data-url", "U", "", "URL to fetch DataSet JSON from at runtime (no input file needed)")
+	uiCmd.Flags().StringVarP(&uiOpts.DataURL, "data-url", "U", "", "URL to fetch DataSet JSON or a lazy id/name catalog from at runtime (no input file needed)")
 	// --charts lets `vizb ui` prune chart chunks (incl. --data-url, where it's the
 	// only source of the selection since the data is fetched at runtime).
 	uiCmd.Flags().StringSliceVarP(&uiOpts.Charts, "charts", "c", shared.DefaultChartTypes, "Chart types to bundle (bar, line, pie, heatmap, radar, scatter)")

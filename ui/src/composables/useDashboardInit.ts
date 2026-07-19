@@ -25,8 +25,8 @@ export function useDashboardInit() {
     dataSets,
     (d) => {
       if (d.length && !urlInitialized) {
-        initFromUrl()
         urlInitialized = true
+        void initFromUrl()
       }
     },
     { immediate: true }

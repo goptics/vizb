@@ -70,7 +70,7 @@ The action:
 | `tag-axis` | `"n"` | Tag injection axis: `n`, `x`, `y`, or `z` (`-A` flag). |
 | `output-json` | `""` | Path for JSON output file. Empty = skip JSON. |
 | `output-html` | `""` | Path for HTML output file. Empty = skip HTML. |
-| `data-url` | `""` | URL to fetch vizb JSON from at runtime (`-U` flag). When set, no input file is needed — the HTML fetches data remotely. The JSON host must serve `Access-Control-Allow-Origin: *`. |
+| `data-url` | `""` | URL to fetch vizb JSON from at runtime (`-U` flag). Accepts a full dataset, a full dataset array, or an automatically detected lazy `[{id,name}]` catalog. When set, no input file is needed. |
 | `vizb-binary` | `""` | Path to a pre-built vizb binary on the runner. When set, skips release download/cache and installs this binary instead — useful for testing local builds or unreleased changes. |
 
 ## Outputs
@@ -123,8 +123,26 @@ The action resolves input in this priority order:
 ```
 
 <Aside type="note">
-  When `data-url` is set, no `cmd`, `file`, or merge input is needed. The HTML fetches the JSON at runtime. The JSON host must serve `Access-Control-Allow-Origin: *`. Set `enable-3d: true` to bundle the 3D renderer — useful when the remote data shape is unknown at build time.
+  When `data-url` is set, no `cmd`, `file`, or merge input is needed. The HTML fetches the JSON at runtime. Set `enable-3d: true` to bundle the 3D renderer — remote data shape is unknown when the HTML is generated, including in lazy catalog mode.
 </Aside>
+
+The base `data-url` may return one complete dataset, an array of complete datasets, or a
+lazy catalog such as:
+
+```json
+[
+  { "id": "linux-amd64", "name": "Linux amd64" },
+  { "id": "linux/arm64", "name": "Linux arm64" }
+]
+```
+
+Catalog IDs must be non-empty and unique, and catalog entries must omit `data` and
+`settings`. When an entry is selected, the dashboard requests one complete dataset from
+`<data-url>/dataset/<encoded-id>`. The detail may omit its `id`; an included ID must match
+the catalog ID. Base query parameters are preserved for detail requests. The base and
+detail endpoints must both satisfy the existing CORS requirement (normally
+`Access-Control-Allow-Origin: *` for a `file://` dashboard). Details are cached only in
+memory for the current page session, and failed requests expose a Retry action.
 
 ### Merge and generate
 

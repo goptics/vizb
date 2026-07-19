@@ -97,7 +97,7 @@ inputs:
     description: "Path for HTML output file (leave empty to skip HTML generation)"
     default: ""
   data-url:
-    description: "URL to fetch vizb JSON from at runtime (-U flag). When set, no input file is needed and the HTML fetches data remotely."
+    description: "URL to fetch vizb JSON from at runtime (-U flag). Accepts full dataset payloads or a lazy [{id,name}] catalog with details at /dataset/<encoded-id>."
     default: ""
   vizb-binary:
     description: "Path to a pre-built vizb binary on the runner. When set, skips release download/cache and installs this binary instead — useful for testing local builds or unreleased changes."

@@ -32,6 +32,10 @@ const {
   setGroupNames,
   loading,
   loadError,
+  lazyCatalog,
+  detailLoading,
+  detailError,
+  retryActiveDataSet,
 } = useDataPoint()
 
 const { isDark, toggleDark, chartType, themeName, setTheme } = useSettingsStore()
@@ -77,7 +81,7 @@ const activeAxes = computed(() => activeDataSet.value?.axes)
 // Charts are computed off-thread in a worker, one at a time (queue-based). Each
 // slot carries its own `pending` so its card drives an independent skeleton and
 // reveals progressively.
-const { charts, groupNames } = useChartPipeline(
+const { charts, groupNames, datasetInitializing } = useChartPipeline(
   activeResults,
   activeArrangement,
   activeLabels,
@@ -99,6 +103,14 @@ watch(groupNames, (names) => setGroupNames(names))
 // Full-page skeleton only while loading the dataset. Once data is ready the header
 // and layout appear immediately; each chart card drives its own skeleton while pending.
 const showSkeleton = computed(() => loading.value)
+const showDetailSkeleton = computed(
+  () =>
+    lazyCatalog.value &&
+    detailError.value === null &&
+    (detailLoading.value ||
+      datasetInitializing.value ||
+      ((activeDataSet.value?.data.length ?? 0) > 0 && charts.value.length === 0))
+)
 
 useDashboardInit()
 </script>
@@ -147,7 +159,11 @@ useDashboardInit()
       @selectGroup="selectGroup"
     />
 
-    <div class="space-y-5">
+    <LoadError v-if="detailError" :message="detailError" :retry="retryActiveDataSet" inline />
+
+    <LoadingSkeleton v-else-if="showDetailSkeleton" contentOnly />
+
+    <div v-else class="space-y-5">
       <template v-for="(state, index) in charts" :key="state.key">
         <ChartCard
           v-if="state.data"
@@ -164,5 +180,8 @@ useDashboardInit()
     </div>
   </main>
 
-  <AppFooter v-if="activeDataSet && !showSkeleton && !loadError" :version="version" />
+  <AppFooter
+    v-if="activeDataSet && !showSkeleton && !showDetailSkeleton && !loadError && !detailError"
+    :version="version"
+  />
 </template>

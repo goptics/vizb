@@ -2,6 +2,7 @@
 import { ChevronsUpDown, Search } from 'lucide-vue-next'
 import { ref, computed, watch, type Component, type HTMLAttributes } from 'vue'
 import { cn } from '@/lib/utils'
+import { limitPickerOptions } from '@/lib/pickerLimit'
 
 import {
   Combobox,
@@ -32,6 +33,7 @@ const props = defineProps<{
   placeholder?: string
   notFoundText?: string
   ariaLabel?: string
+  resultLimit?: number
   class?: HTMLAttributes['class']
   triggerClass?: HTMLAttributes['class']
 }>()
@@ -61,11 +63,28 @@ const open = ref(false)
 // Search term for filtering
 const searchTerm = ref('')
 
-// Filter function for combobox
-const filterFunction = (list: Option[], searchValue: string) => {
-  if (!searchValue) return list
-  return list.filter((item) => item.label.toLowerCase().includes(searchValue.toLowerCase()))
-}
+const matchingOptions = computed(() => {
+  const query = searchTerm.value.trim().toLowerCase()
+  if (!query) return options.value
+  return options.value.filter((option) => option.label.toLowerCase().includes(query))
+})
+const activeOption = computed(() => {
+  const activeValue = props.activeValue ?? props.activeId?.toString()
+  return options.value.find((option) => option.value === activeValue)
+})
+const visibleOptions = computed(() =>
+  props.resultLimit
+    ? limitPickerOptions(matchingOptions.value, activeOption.value, props.resultLimit)
+    : matchingOptions.value
+)
+const matchingValues = computed(() => new Set(matchingOptions.value.map((option) => option.value)))
+const visibleMatchCount = computed(
+  () => visibleOptions.value.filter((option) => matchingValues.value.has(option.value)).length
+)
+const resultsTruncated = computed(
+  () => !!props.resultLimit && visibleMatchCount.value < matchingOptions.value.length
+)
+const comboboxFilter = (list: Option[]) => list
 
 // Initialize the value when the component mounts or when activeId changes
 const updateValue = () => {
@@ -123,7 +142,7 @@ watch(open, (isOpen) => {
     v-model:open="open"
     v-model="value"
     v-model:searchTerm="searchTerm"
-    :filter-function="filterFunction"
+    :filter-function="comboboxFilter"
     by="label"
     :class="cn('relative w-64', props.class)"
   >
@@ -159,7 +178,7 @@ watch(open, (isOpen) => {
 
       <ComboboxGroup>
         <ComboboxItem
-          v-for="option in options"
+          v-for="option in visibleOptions"
           :key="option.value"
           :value="option"
           :text-value="option.label"
@@ -172,6 +191,13 @@ watch(open, (isOpen) => {
           <span v-else class="flex-1 text-center">{{ option.label }}</span>
         </ComboboxItem>
       </ComboboxGroup>
+
+      <p
+        v-if="resultsTruncated"
+        class="border-t px-2 py-2 text-center text-xs text-muted-foreground"
+      >
+        Showing {{ visibleMatchCount }} of {{ matchingOptions.length }} matches. Narrow your search.
+      </p>
     </ComboboxList>
   </Combobox>
 </template>

@@ -11,21 +11,23 @@ import {
 } from '../lib/utils'
 import { presentAxisString } from '../lib/swap'
 import { useSettingsStore } from './useSettingsStore'
+import { classifyRemotePayload, fetchDatasetDetail, type RemotePayload } from '../lib/remoteData'
 
-const getDataSets = async (): Promise<DataSet[]> => {
-  if (import.meta.env.DEV) {
-    const data = await import('../data/sample.json')
-    return data.default as unknown as DataSet[]
-  }
-
+const dataUrl = window.VIZB_DATA_URL
+const getDataSets = async (): Promise<RemotePayload> => {
   const url = window.VIZB_DATA_URL
   if (url) {
     const res = await fetch(url)
     if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
-    return res.json()
+    return classifyRemotePayload(await res.json())
   }
 
-  return window.VIZB_DATA ?? []
+  if (import.meta.env.DEV) {
+    const data = await import('../data/sample.json')
+    return { mode: 'full', datasets: data.default as unknown as DataSet[] }
+  }
+
+  return { mode: 'full', datasets: window.VIZB_DATA ?? [] }
 }
 
 // Global state. shallowRef (not ref): the rows are display-only and never mutated
@@ -38,6 +40,25 @@ const activeDataSetId = ref(0)
 const activeGroupId = ref(0)
 const loading = ref(true)
 const loadError = ref<string | null>(null)
+const lazyCatalog = ref(false)
+const detailLoading = ref(false)
+const detailError = ref<string | null>(null)
+const preparedDetails = new Map<string, DataSet>()
+
+const prepareDataSet = (ds: DataSet): DataSet => {
+  const filtered = filterDataSetSettings(ds, window.VIZB_CHARTS)
+  const axes = filtered.axes?.map((a) => ({
+    key: a.key,
+    label: a.label,
+    type: a.type,
+  }))
+  return reactive({
+    ...filtered,
+    settings: filtered.settings ?? [],
+    data: markRaw(filtered.data ?? []),
+    ...(axes?.length ? { axes: markRaw(axes) } : {}),
+  })
+}
 
 // Group list now comes from the worker (it owns grouping). Dashboard wires the
 // pipeline's `groupNames` into this via `setGroupNames` on every `ready`, so the
@@ -55,7 +76,7 @@ const setArrangement = (datasetId: number, ct: ChartType, targetString: string) 
 }
 
 getDataSets()
-  .then((data) => {
+  .then((payload) => {
     // Each DataSet is wrapped in reactive() so settings mutations (sort/scale/
     // showLabels/threeDRotate/swap) propagate to the chart pipeline's watchers.
     // The `data` field (raw rows) is markRaw'd so it stays proxy-free: the
@@ -63,23 +84,14 @@ getDataSets()
     // which would otherwise reject Vue's reactive Proxy. Rows are display-only
     // and never mutated in place, so dropping per-row reactivity is the
     // intended perf trade-off.
-    const raw = Array.isArray(data) ? data : [data]
-    const allowed = window.VIZB_CHARTS
-    dataSets.value = raw.map((ds) => {
-      const filtered = filterDataSetSettings(ds, allowed)
-      // data + axes are markRaw'd so postMessage structured-clone succeeds (Vue
-      // reactive Proxies on the worker init payload throw DataCloneError).
-      const axes = filtered.axes?.map((a) => ({
-        key: a.key,
-        label: a.label,
-        type: a.type,
-      }))
-      return reactive({
-        ...filtered,
-        data: markRaw(filtered.data),
-        ...(axes?.length ? { axes: markRaw(axes) } : {}),
-      })
-    })
+    if (payload.mode === 'catalog') {
+      lazyCatalog.value = true
+      dataSets.value = payload.entries.map((entry) =>
+        prepareDataSet({ ...entry, data: [], settings: [] })
+      )
+    } else {
+      dataSets.value = payload.datasets.map(prepareDataSet)
+    }
   })
   .catch((err: unknown) => {
     loadError.value = err instanceof Error ? err.message : String(err)
@@ -160,20 +172,53 @@ watch(
   { immediate: true }
 )
 
-const selectDataSet = (id: number) => {
-  if (isValidIndex(id, dataSets.value.length)) {
-    activeDataSetId.value = id
+const selectDataSet = async (id: number): Promise<boolean> => {
+  if (!isValidIndex(id, dataSets.value.length)) return false
 
-    // The new store reads `dataset.value.settings[activeChartIndex]` directly,
-    // so no init step is needed — switching the active dataset id is enough.
+  activeDataSetId.value = id
+  activeGroupId.value = 0
+  detailError.value = null
 
-    // Group names repopulate asynchronously from the worker's `ready` for the new
-    // dataset; reset to the first group until they arrive.
-    activeGroupId.value = 0
-
+  if (!lazyCatalog.value) {
     nextTick(() => resetColor())
+    return true
   }
+
+  const dataSetId = dataSets.value[id]?.id
+  if (!dataSetId || !dataUrl) return false
+
+  let detail = preparedDetails.get(dataSetId)
+  if (detail) {
+    const next = [...dataSets.value]
+    next[id] = detail
+    dataSets.value = next
+    detailLoading.value = false
+    nextTick(() => resetColor())
+    return true
+  }
+
+  detailLoading.value = true
+  try {
+    detail = prepareDataSet(await fetchDatasetDetail(dataUrl, dataSetId))
+  } catch (error: unknown) {
+    if (activeDataSetId.value !== id) return false
+    detailError.value = error instanceof Error ? error.message : String(error)
+    detailLoading.value = false
+    return false
+  }
+
+  if (activeDataSetId.value !== id) return false
+  preparedDetails.set(dataSetId, detail)
+
+  const next = [...dataSets.value]
+  next[id] = detail
+  dataSets.value = next
+  detailLoading.value = false
+  nextTick(() => resetColor())
+  return true
 }
+
+const retryActiveDataSet = () => selectDataSet(activeDataSetId.value)
 
 const selectGroup = (id: number) => {
   if (isValidIndex(id, groupNames.value.length)) {
@@ -205,6 +250,10 @@ export function useDataPoint() {
 
     loading,
     loadError,
+    lazyCatalog,
+    detailLoading,
+    detailError,
+    retryActiveDataSet,
 
     chartMode,
     isValueMode,
