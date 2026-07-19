@@ -36,7 +36,7 @@ paths:
       operationId: convert
       summary: Convert supported input into a Vizb Dataset or self-contained HTML.
       description: |
-        Input is inline text or JSON. Parser, grouping, metadata, units, selection,
+        Input is inline text or JSON. Parser, grouping, units, selection,
         and chart options are structured request data. Unknown or inapplicable
         options are rejected; CLI-style option strings are not accepted.
       requestBody:
@@ -45,13 +45,15 @@ paths:
         '200':
           $ref: '#/components/responses/ConvertSuccess'
         '400':
-          $ref: '#/components/responses/ValidationProblem'
+          $ref: '#/components/responses/MalformedJSONProblem'
         '406':
           $ref: '#/components/responses/NotAcceptableProblem'
         '415':
           $ref: '#/components/responses/UnsupportedMediaTypeProblem'
+        '413':
+          $ref: '#/components/responses/ContentTooLargeProblem'
         '422':
-          $ref: '#/components/responses/ProcessingProblem'
+          $ref: '#/components/responses/UnprocessableContentProblem'
         '500':
           $ref: '#/components/responses/InternalProblem'
   /merge:
@@ -69,11 +71,15 @@ paths:
         '200':
           $ref: '#/components/responses/MergeSuccess'
         '400':
-          $ref: '#/components/responses/ValidationProblem'
+          $ref: '#/components/responses/MalformedJSONProblem'
+        '406':
+          $ref: '#/components/responses/NotAcceptableProblem'
         '415':
           $ref: '#/components/responses/UnsupportedMediaTypeProblem'
+        '413':
+          $ref: '#/components/responses/ContentTooLargeProblem'
         '422':
-          $ref: '#/components/responses/ProcessingProblem'
+          $ref: '#/components/responses/UnprocessableContentProblem'
         '500':
           $ref: '#/components/responses/InternalProblem'
   /ui:
@@ -91,13 +97,15 @@ paths:
         '200':
           $ref: '#/components/responses/UISuccess'
         '400':
-          $ref: '#/components/responses/ValidationProblem'
+          $ref: '#/components/responses/MalformedJSONProblem'
         '406':
           $ref: '#/components/responses/NotAcceptableProblem'
         '415':
           $ref: '#/components/responses/UnsupportedMediaTypeProblem'
+        '413':
+          $ref: '#/components/responses/ContentTooLargeProblem'
         '422':
-          $ref: '#/components/responses/ProcessingProblem'
+          $ref: '#/components/responses/UnprocessableContentProblem'
         '500':
           $ref: '#/components/responses/InternalProblem'
 components:
@@ -208,18 +216,30 @@ components:
           examples:
             selfContainedHTML:
               value: '<!doctype html><html><head><title>Vizb</title></head><body>...</body></html>'
-    ValidationProblem:
-      description: The request JSON is malformed or violates a strict request schema or option rule.
+    MalformedJSONProblem:
+      description: The request body is not a single valid JSON value.
       content:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/ValidationProblem'
+    ContentTooLargeProblem:
+      description: The request body exceeds the 10 MiB limit.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    UnprocessableContentProblem:
+      description: Valid JSON violates request schema or semantic constraints, or the supplied input cannot be processed.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
           examples:
             unknownOption:
               value:
                 type: https://vizb.goptics.org/problems/validation
-                title: Invalid request
-                status: 400
+                title: Unprocessable content
+                status: 422
                 detail: Request validation failed.
                 instance: /merge
                 errors:
@@ -227,6 +247,13 @@ components:
                     path: /tagAxis
                     code: invalid_enum
                     message: tagAxis must be one of name, x, y, or z.
+            invalidCSV:
+              value:
+                type: https://vizb.goptics.org/problems/processing
+                title: Input processing failed
+                status: 422
+                detail: The selected columns could not be read from the CSV input.
+                instance: /
     NotAcceptableProblem:
       description: The request's Accept header does not allow an operation's selected response media type.
       content:
@@ -239,20 +266,6 @@ components:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/ProblemDetails'
-    ProcessingProblem:
-      description: The request passed structural validation but could not be processed.
-      content:
-        application/problem+json:
-          schema:
-            $ref: '#/components/schemas/ProblemDetails'
-          examples:
-            invalidCSV:
-              value:
-                type: https://vizb.goptics.org/problems/processing
-                title: Input processing failed
-                status: 422
-                detail: The selected columns could not be read from the CSV input.
-                instance: /
     InternalProblem:
       description: An unexpected server-side failure occurred.
       content:
@@ -394,7 +407,51 @@ components:
           items: { $ref: '#/components/schemas/Axis' }
         settings:
           type: array
+          description: Each chart type may appear at most once.
           items: { $ref: '#/components/schemas/ChartConfig' }
+          allOf:
+            - contains:
+                type: object
+                required: [type]
+                properties:
+                  type: { const: bar }
+              minContains: 0
+              maxContains: 1
+            - contains:
+                type: object
+                required: [type]
+                properties:
+                  type: { const: line }
+              minContains: 0
+              maxContains: 1
+            - contains:
+                type: object
+                required: [type]
+                properties:
+                  type: { const: scatter }
+              minContains: 0
+              maxContains: 1
+            - contains:
+                type: object
+                required: [type]
+                properties:
+                  type: { const: pie }
+              minContains: 0
+              maxContains: 1
+            - contains:
+                type: object
+                required: [type]
+                properties:
+                  type: { const: heatmap }
+              minContains: 0
+              maxContains: 1
+            - contains:
+                type: object
+                required: [type]
+                properties:
+                  type: { const: radar }
+              minContains: 0
+              maxContains: 1
         data:
           type: array
           items: { $ref: '#/components/schemas/DataPoint' }

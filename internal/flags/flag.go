@@ -25,6 +25,7 @@ const (
 	KindString      Kind = iota // string
 	KindBool                    // bool
 	KindFloat                   // float64
+	KindInt                     // int
 	KindStringSlice             // []string (comma-separated), e.g. --group, --charts
 	KindStringArray             // []string (repeatable flag), e.g. --select, --chart
 	KindStat                    // optional-value string slice, e.g. --stat

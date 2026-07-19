@@ -23,6 +23,11 @@ vizb serve --host 0.0.0.0 --port 8080
 The host and port make up the API base URL. The default binding is loopback so
 that the server is not exposed to a network unintentionally.
 
+Each request body is limited to 10 MiB. The server uses a 5-second header read
+timeout, a 15-second request read timeout, and 60-second write and idle
+timeouts. On `SIGINT` or `SIGTERM`, it stops accepting requests and allows up
+to 10 seconds for in-flight work to finish.
+
 Browse the generated [API reference](/api/) for the complete OpenAPI contract,
 including request and response schemas and generated code snippets.
 
@@ -52,7 +57,6 @@ curl -sS http://127.0.0.1:8080/ \
   --data '{
     "input": "region,latency\\nwest,12\\neast,18\\n",
     "parser": "csv",
-    "metadata": { "name": "API latency" },
     "select": ["region", "latency"],
     "charts": { "types": ["bar", "line"] },
     "output": { "format": "dataset" }
@@ -115,15 +119,16 @@ not depend on this server remaining available.
 ## Errors
 
 All errors are `application/problem+json`. Every response has a stable `type`,
-`title`, `status`, and `detail`; validation errors additionally include `errors`.
+`title`, `status`, and `detail`; malformed JSON and semantic validation errors
+additionally include `errors`.
 Each entry identifies the input location, a JSON Pointer-like `path`, a stable
 `code`, and a human-readable `message`.
 
 ```json
 {
   "type": "https://vizb.goptics.org/problems/validation",
-  "title": "Invalid request",
-  "status": 400,
+  "title": "Unprocessable content",
+  "status": 422,
   "detail": "Request validation failed.",
   "instance": "/merge",
   "errors": [
@@ -139,8 +144,11 @@ Each entry identifies the input location, a JSON Pointer-like `path`, a stable
 
 | Status | Meaning |
 | --- | --- |
-| `400` | Invalid JSON, unknown field, or invalid/inapplicable option |
+| `400` | The body is malformed JSON or contains multiple JSON values |
+| `404` | The requested API operation does not exist |
+| `405` | The operation does not support the HTTP method; `Allow: POST` is returned |
 | `406` | The requested `Accept` type cannot represent the selected output |
+| `413` | The request body exceeds the 10 MiB limit |
 | `415` | The request is not `application/json` |
-| `422` | Valid request structure, but the input could not be processed |
+| `422` | Valid JSON violates request schema or semantic rules, or the input could not be processed |
 | `500` | Unexpected server or template failure |

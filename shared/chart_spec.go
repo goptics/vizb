@@ -235,7 +235,7 @@ func convertFlagValue(f flags.Flag, val string, hasEq bool, axes []Axis) (any, e
 		}
 		return map[string]any{"enabled": true, "math": math}, nil
 
-	default: // KindString, KindFloat
+	default: // KindString, KindFloat, KindInt
 		if !hasEq {
 			return nil, fmt.Errorf("--chart: key %q requires a value (e.g. %s=<value>)", f.Name, f.Name)
 		}
@@ -250,6 +250,13 @@ func convertFlagValue(f flags.Flag, val string, hasEq bool, axes []Axis) (any, e
 		}
 		if f.Kind == flags.KindFloat {
 			n, _ := strconv.ParseFloat(val, 64) // Validate already ensured it parses
+			return encode(f, n), nil
+		}
+		if f.Kind == flags.KindInt {
+			n, err := strconv.Atoi(val)
+			if err != nil {
+				return nil, fmt.Errorf("--chart: key %q value %q must be an integer", f.Name, val)
+			}
 			return encode(f, n), nil
 		}
 		return encode(f, val), nil

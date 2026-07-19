@@ -97,6 +97,57 @@ func (s *OpenAPISuite) TestReusableSchemasMatchGoWireTypes() {
 	}
 }
 
+func (s *OpenAPISuite) TestMergeDeclaresNotAcceptableResponse() {
+	contract := readContract(s.T())
+	paths := mustMap(s.T(), contract["paths"], "paths")
+	merge := mustMap(s.T(), mustMap(s.T(), paths["/merge"], "paths./merge")["post"], "paths./merge.post")
+	responses := mustMap(s.T(), merge["responses"], "paths./merge.post.responses")
+	notAcceptable := mustMap(s.T(), responses["406"], "paths./merge.post.responses.406")
+	s.Equal("#/components/responses/NotAcceptableProblem", notAcceptable["$ref"])
+}
+
+func (s *OpenAPISuite) TestOperationsDeclareRequestProblemResponses() {
+	contract := readContract(s.T())
+	paths := mustMap(s.T(), contract["paths"], "paths")
+	for _, path := range []string{"/", "/merge", "/ui"} {
+		s.Run(path, func() {
+			operation := mustMap(s.T(), mustMap(s.T(), paths[path], "paths."+path)["post"], "paths."+path+".post")
+			responses := mustMap(s.T(), operation["responses"], "paths."+path+".post.responses")
+			for status, responseName := range map[string]string{
+				"400": "MalformedJSONProblem",
+				"413": "ContentTooLargeProblem",
+				"422": "UnprocessableContentProblem",
+			} {
+				response := mustMap(s.T(), responses[status], "paths."+path+".post.responses."+status)
+				s.Equal("#/components/responses/"+responseName, response["$ref"])
+			}
+		})
+	}
+}
+
+func (s *OpenAPISuite) TestDatasetSettingsRequireUniqueChartTypes() {
+	contract := readContract(s.T())
+	components := mustMap(s.T(), contract["components"], "components")
+	schemas := mustMap(s.T(), components["schemas"], "components.schemas")
+	datasetSchema := schemas["Dataset"]
+	dataset := map[string]any{
+		"name": "Bench",
+		"axes": []any{},
+		"settings": []any{
+			map[string]any{"type": "bar"},
+			map[string]any{"type": "line"},
+		},
+		"data": []any{},
+	}
+	s.NoError(validateSchema(contract, datasetSchema, dataset, "dataset"))
+
+	dataset["settings"] = []any{
+		map[string]any{"type": "bar"},
+		map[string]any{"type": "bar", "showLabels": true},
+	}
+	s.ErrorContains(validateSchema(contract, datasetSchema, dataset, "dataset"), "want at most 1")
+}
+
 func TestOpenAPISuite(t *testing.T) {
 	suite.Run(t, new(OpenAPISuite))
 }
@@ -221,6 +272,28 @@ func validateSchema(root map[string]any, rawSchema, value any, location string) 
 		}
 		if matches != 1 {
 			return fmt.Errorf("%s matches %d oneOf schemas, want 1", location, matches)
+		}
+	}
+	if contains, exists := schema["contains"]; exists {
+		array, ok := value.([]any)
+		if !ok {
+			return fmt.Errorf("%s must be an array for contains, got %T", location, value)
+		}
+		matches := 0
+		for i, childValue := range array {
+			if validateSchema(root, contains, childValue, location+"/"+strconv.Itoa(i)) == nil {
+				matches++
+			}
+		}
+		minMatches := 1
+		if min, ok := schema["minContains"].(int); ok {
+			minMatches = min
+		}
+		if matches < minMatches {
+			return fmt.Errorf("%s matches %d items, want at least %d", location, matches, minMatches)
+		}
+		if maxMatches, ok := schema["maxContains"].(int); ok && matches > maxMatches {
+			return fmt.Errorf("%s matches %d items, want at most %d", location, matches, maxMatches)
 		}
 	}
 
