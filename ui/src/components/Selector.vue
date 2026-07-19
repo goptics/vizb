@@ -75,7 +75,7 @@ const activeOption = computed(() => {
 const visibleOptions = computed(() =>
   props.resultLimit
     ? limitPickerOptions(matchingOptions.value, activeOption.value, props.resultLimit)
-    : options.value
+    : matchingOptions.value
 )
 const matchingValues = computed(() => new Set(matchingOptions.value.map((option) => option.value)))
 const visibleMatchCount = computed(
