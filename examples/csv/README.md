@@ -33,7 +33,7 @@ Use a chart subcommand (`bar`, `line`, `scatter`, `pie`, …) or the root comman
 | Sales by date + category | `vizb bar examples/csv/sales.csv -g order_date,category -p "[n{Year}-y{Month}-x{Date}],z{Category}"` |
 | Line / scatter on same data | `vizb line examples/csv/sales.csv` · `vizb scatter examples/csv/sales.csv` |
 
-These variants are also built in CI as `00-sales-auto-group`, `01-sales-grouped`, and `02-sales-by-date` on the **tabular-data** dashboard (see `.github/workflows/prepare-tabular-data-examples.yml`).
+These variants are also built in CI as `00-sales-auto-group`, `01-sales-grouped`, and `02-sales-by-date` on the **tabular-data** dashboard (see `.github/workflows/tabular-data-examples.yml`).
 
 ---
 
@@ -144,7 +144,7 @@ Use `noise-grid.csv` for faster loads; use this file when you need the complete 
 | Frameworks on X, load as series | `vizb bar examples/csv/concurrency.csv -g load -p y -A x` |
 | Load on X, frameworks as series | `vizb bar examples/csv/concurrency.csv -g load -p x -A y` |
 
-CI id: `00-concurrency-frameworks` on the **comparisons** dashboard (see `.github/workflows/prepare-comparisons-examples.yml`).
+CI id: `00-concurrency-frameworks` on the **comparisons** dashboard (see `.github/workflows/comparisons-examples.yml`).
 
 ---
 

@@ -108,51 +108,51 @@ jobs:
       contents: write
 
   prepare-tabular-data-examples:
-    name: Prepare Tabular Data Examples
+    name: "Examples: Tabular Data"
     needs: goreleaser
-    uses: ./.github/workflows/prepare-tabular-data-examples.yml
+    uses: ./.github/workflows/tabular-data-examples.yml
     permissions:
       contents: write
 
   prepare-math-and-3d-examples:
-    name: Prepare Math & 3D Examples
+    name: "Examples: Math & 3D"
     needs: goreleaser
-    uses: ./.github/workflows/prepare-math-and-3d-examples.yml
+    uses: ./.github/workflows/math-and-3d-examples.yml
     permissions:
       contents: write
 
   prepare-comparisons-examples:
-    name: Prepare Comparisons Examples
+    name: "Examples: Comparisons"
     needs: goreleaser
-    uses: ./.github/workflows/prepare-comparisons-examples.yml
+    uses: ./.github/workflows/comparisons-examples.yml
     permissions:
       contents: write
 
   prepare-github-legends:
-    name: Prepare GitHub Legends
+    name: "Examples: GitHub Legends"
     needs: goreleaser
-    uses: ./.github/workflows/prepare-github-legends.yml
+    uses: ./.github/workflows/github-legends.yml
     permissions:
       contents: write
 
   prepare-go-examples:
-    name: Prepare Go Examples
+    name: "Examples: Go"
     needs: goreleaser
-    uses: ./.github/workflows/prepare-go-examples.yml
+    uses: ./.github/workflows/go-examples.yml
     permissions:
       contents: write
 
   prepare-javascript-examples:
-    name: Prepare JavaScript Examples
+    name: "Examples: JavaScript"
     needs: goreleaser
-    uses: ./.github/workflows/prepare-javascript-examples.yml
+    uses: ./.github/workflows/javascript-examples.yml
     permissions:
       contents: write
 
   prepare-rust-examples:
-    name: Prepare Rust Examples
+    name: "Examples: Rust"
     needs: goreleaser
-    uses: ./.github/workflows/prepare-rust-examples.yml
+    uses: ./.github/workflows/rust-examples.yml
     permissions:
       contents: write
 

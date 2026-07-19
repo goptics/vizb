@@ -4,8 +4,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-# Topic slugs match dist/examples/<topic>/ and prepare workflow names
-# (github-legends uses prepare-github-legends.yml without the -examples suffix).
+# Topic slugs match dist/examples/<topic>/ and example workflow names
+# (github-legends uses github-legends.yml without the -examples suffix).
 ALL_TOPICS=(tabular-data math-and-3d comparisons github-legends go rust javascript)
 ONLY_TOPICS=()
 NO_OPEN=false
@@ -33,10 +33,10 @@ workflow_for() {
   local topic="$1"
   case "$topic" in
     github-legends)
-      echo ".github/workflows/prepare-github-legends.yml"
+      echo ".github/workflows/github-legends.yml"
       ;;
     *)
-      echo ".github/workflows/prepare-${topic}-examples.yml"
+      echo ".github/workflows/${topic}-examples.yml"
       ;;
   esac
 }

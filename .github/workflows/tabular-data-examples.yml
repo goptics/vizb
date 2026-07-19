@@ -1,4 +1,4 @@
-name: Prepare Tabular Data Examples
+name: "Examples: Tabular Data"
 on:
   workflow_call:
     inputs:

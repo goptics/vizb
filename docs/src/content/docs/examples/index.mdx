@@ -44,22 +44,22 @@ Sample inputs live under [`examples/`](https://github.com/goptics/vizb/tree/main
 
 ## Live dashboards
 
-| Topic | Workflow | Dashboard |
-|-------|----------|-----------|
-| Tabular data | [prepare-tabular-data-examples.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/prepare-tabular-data-examples.yml) | [vizb.goptics.org/examples/tabular-data/](https://vizb.goptics.org/examples/tabular-data/) |
-| Math & 3D | [prepare-math-and-3d-examples.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/prepare-math-and-3d-examples.yml) | [vizb.goptics.org/examples/math-and-3d/](https://vizb.goptics.org/examples/math-and-3d/) |
-| Comparisons | [prepare-comparisons-examples.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/prepare-comparisons-examples.yml) | [vizb.goptics.org/examples/comparisons/](https://vizb.goptics.org/examples/comparisons/) |
-| GitHub Legends | [prepare-github-legends.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/prepare-github-legends.yml) | [vizb.goptics.org/examples/github-legends/](https://vizb.goptics.org/examples/github-legends/) |
-| Go | [prepare-go-examples.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/prepare-go-examples.yml) | [vizb.goptics.org/examples/go/](https://vizb.goptics.org/examples/go/) |
-| JavaScript | [prepare-javascript-examples.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/prepare-javascript-examples.yml) | [vizb.goptics.org/examples/javascript/](https://vizb.goptics.org/examples/javascript/) |
-| Rust | [prepare-rust-examples.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/prepare-rust-examples.yml) | [vizb.goptics.org/examples/rust/](https://vizb.goptics.org/examples/rust/) |
+| Topic | Workflow | Status | Dashboard |
+|-------|----------|--------|-----------|
+| Tabular data | [tabular-data-examples.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/tabular-data-examples.yml) | [![Tabular Data examples workflow status](https://github.com/goptics/vizb/actions/workflows/tabular-data-examples.yml/badge.svg)](https://github.com/goptics/vizb/actions/workflows/tabular-data-examples.yml) | [Open](https://vizb.goptics.org/examples/tabular-data/) |
+| Math & 3D | [math-and-3d-examples.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/math-and-3d-examples.yml) | [![Math and 3D examples workflow status](https://github.com/goptics/vizb/actions/workflows/math-and-3d-examples.yml/badge.svg)](https://github.com/goptics/vizb/actions/workflows/math-and-3d-examples.yml) | [Open](https://vizb.goptics.org/examples/math-and-3d/) |
+| Comparisons | [comparisons-examples.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/comparisons-examples.yml) | [![Comparisons examples](https://github.com/goptics/vizb/actions/workflows/comparisons-examples.yml/badge.svg)](https://github.com/goptics/vizb/actions/workflows/comparisons-examples.yml) | [Open](https://vizb.goptics.org/examples/comparisons/) |
+| GitHub Legends | [github-legends.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/github-legends.yml) | [![GitHub Legends examples workflow status](https://github.com/goptics/vizb/actions/workflows/github-legends.yml/badge.svg)](https://github.com/goptics/vizb/actions/workflows/github-legends.yml) | [Open](https://vizb.goptics.org/examples/github-legends/) |
+| Go | [go-examples.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/go-examples.yml) | [![Go examples workflow status](https://github.com/goptics/vizb/actions/workflows/go-examples.yml/badge.svg)](https://github.com/goptics/vizb/actions/workflows/go-examples.yml) | [Open](https://vizb.goptics.org/examples/go/) |
+| JavaScript | [javascript-examples.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/javascript-examples.yml) | [![JavaScript examples workflow status](https://github.com/goptics/vizb/actions/workflows/javascript-examples.yml/badge.svg)](https://github.com/goptics/vizb/actions/workflows/javascript-examples.yml) | [Open](https://vizb.goptics.org/examples/javascript/) |
+| Rust | [rust-examples.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/rust-examples.yml) | [![Rust examples workflow status](https://github.com/goptics/vizb/actions/workflows/rust-examples.yml/badge.svg)](https://github.com/goptics/vizb/actions/workflows/rust-examples.yml) | [Open](https://vizb.goptics.org/examples/rust/) |
 
 ## Adding an example
 
 Same steps for every topic — see [examples/README.MD](https://github.com/goptics/vizb/blob/main/examples/README.MD):
 
 1. Add the file under `examples/{category}/` (CSV recipes stay under `examples/csv/`)
-2. Add a matrix entry in the matching `.github/workflows/prepare-*-examples.yml` (or `prepare-github-legends.yml`)
+2. Add a matrix entry in the matching `.github/workflows/*-examples.yml` (or `github-legends.yml`)
 3. Push to `main` — CI rebuilds that dashboard
 
 For contribution skylines, only add a user row to the GitHub Legends matrix — no repo file required.

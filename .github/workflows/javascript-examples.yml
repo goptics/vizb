@@ -1,4 +1,4 @@
-name: Prepare Rust Examples
+name: "Examples: JavaScript"
 on:
   workflow_call:
     inputs:
@@ -6,32 +6,32 @@ on:
         required: false
         type: boolean
         default: false
-        description: "Publish the generated Rust examples immediately"
+        description: "Publish the generated JavaScript examples immediately"
   workflow_dispatch:
     inputs:
       publish:
         required: false
         type: boolean
         default: true
-        description: "Publish the generated Rust examples immediately"
+        description: "Publish the generated JavaScript examples immediately"
 
 jobs:
   convert:
-    name: Convert Rust Benchmarks
+    name: Convert JavaScript Benchmarks
     strategy:
       matrix:
         include:
-          - id: 00-criterion
-            file: criterion
-            name: "Bubble vs Insertion Sort (Criterion)"
-            description: "Criterion.rs output — algorithm on X, input size on Y"
-            group-regex: "(?<x>.*)/n=(?<y>.*)"
+          - id: 00-tinybench
+            file: tinybench
+            name: "Bubble Vs Insertion Sort (tinybench)"
+            description: "Tinybench output — algorithm on X, input size on Y"
+            group-pattern: x/y
+          - id: 01-vitest
+            file: vitest
+            name: "Bubble Vs Insertion Sort (vitest)"
+            description: "Vitest bench output — benchmark name and case from regex groups"
+            group-regex: "n=(?<y>.*)/(?<x>.*)"
 
-          - id: 01-divan
-            file: divan
-            name: "Bubble vs Insertion Sort (Divan)"
-            description: "Divan output — algorithm and input size from group pattern"
-            group-pattern: x__y
 
     runs-on: ubuntu-latest
     steps:
@@ -40,7 +40,7 @@ jobs:
       - name: ${{ matrix.name }}
         uses: ./
         with:
-          file: examples/rust/${{ matrix.file }}.txt
+          file: examples/javascript/${{ matrix.file }}.txt
           id: ${{ matrix.id }}
           name: ${{ matrix.name }}
           description: ${{ matrix.description }}
@@ -61,15 +61,15 @@ jobs:
         if: env.ACT != 'true'
         uses: actions/upload-artifact@v7
         with:
-          name: json-rust-${{ matrix.id }}
+          name: json-javascript-${{ matrix.id }}
           path: ${{ matrix.id }}.json
 
   merge:
-    name: Merge Rust Benchmarks
+    name: Merge JavaScript Benchmarks
     needs: convert
     permissions:
       contents: write
     uses: ./.github/workflows/merge-examples.yml
     with:
-      example_category: rust
+      example_category: javascript
       publish: ${{ inputs.publish }}

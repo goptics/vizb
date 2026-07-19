@@ -1,4 +1,4 @@
-name: Prepare Comparisons Examples
+name: "Examples: Rust"
 on:
   workflow_call:
     inputs:
@@ -6,29 +6,32 @@ on:
         required: false
         type: boolean
         default: false
-        description: "Publish the generated comparisons examples immediately"
+        description: "Publish the generated Rust examples immediately"
   workflow_dispatch:
     inputs:
       publish:
         required: false
         type: boolean
         default: true
-        description: "Publish the generated comparisons examples immediately"
+        description: "Publish the generated Rust examples immediately"
 
 jobs:
   convert:
-    name: Convert Comparisons Data
+    name: Convert Rust Benchmarks
     strategy:
       matrix:
         include:
-          - id: 00-concurrency-frameworks
-            file: concurrency
-            name: "HTTP Framework Throughput"
-            description: "Competitor columns (frameworks) on one chart via --col-axis — load on Y, frameworks on X"
-            group: load
-            group-pattern: y
-            col-axis: x
-            charts: bar,line
+          - id: 00-criterion
+            file: criterion
+            name: "Bubble vs Insertion Sort (Criterion)"
+            description: "Criterion.rs output — algorithm on X, input size on Y"
+            group-regex: "(?<x>.*)/n=(?<y>.*)"
+
+          - id: 01-divan
+            file: divan
+            name: "Bubble vs Insertion Sort (Divan)"
+            description: "Divan output — algorithm and input size from group pattern"
+            group-pattern: x__y
 
     runs-on: ubuntu-latest
     steps:
@@ -37,14 +40,16 @@ jobs:
       - name: ${{ matrix.name }}
         uses: ./
         with:
-          file: examples/csv/${{ matrix.file }}.csv
+          file: examples/rust/${{ matrix.file }}.txt
           id: ${{ matrix.id }}
           name: ${{ matrix.name }}
           description: ${{ matrix.description }}
-          group: ${{ matrix.group }}
           group-pattern: ${{ matrix.group-pattern }}
-          col-axis: ${{ matrix.col-axis }}
-          charts: ${{ matrix.charts }}
+          group-regex: ${{ matrix.group-regex }}
+          chart: |
+            bar:scale=log,sort=asc
+            line:scale=log,sort=asc
+            pie:sort=asc
           output-json: ${{ matrix.id }}.json
           vizb-binary: ${{ env.ACT == 'true' && './bin/vizb' || '' }}
 
@@ -56,15 +61,15 @@ jobs:
         if: env.ACT != 'true'
         uses: actions/upload-artifact@v7
         with:
-          name: json-comparisons-${{ matrix.id }}
+          name: json-rust-${{ matrix.id }}
           path: ${{ matrix.id }}.json
 
   merge:
-    name: Merge Comparisons Data
+    name: Merge Rust Benchmarks
     needs: convert
     permissions:
       contents: write
     uses: ./.github/workflows/merge-examples.yml
     with:
-      example_category: comparisons
+      example_category: rust
       publish: ${{ inputs.publish }}

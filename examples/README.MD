@@ -6,13 +6,13 @@ Sample inputs for the live dashboards on [vizb.goptics.org/examples/](https://vi
 
 | Topic | Source folder | Workflow | Live dashboard |
 |-------|---------------|----------|----------------|
-| Tabular data | `examples/csv/` | [prepare-tabular-data-examples.yml](../.github/workflows/prepare-tabular-data-examples.yml) | [tabular-data](https://vizb.goptics.org/examples/tabular-data/) |
-| Math & 3D | `examples/csv/` | [prepare-math-and-3d-examples.yml](../.github/workflows/prepare-math-and-3d-examples.yml) | [math-and-3d](https://vizb.goptics.org/examples/math-and-3d/) |
-| Comparisons | `examples/csv/` | [prepare-comparisons-examples.yml](../.github/workflows/prepare-comparisons-examples.yml) | [comparisons](https://vizb.goptics.org/examples/comparisons/) |
-| GitHub Legends | _(API-fetched in CI)_ | [prepare-github-legends.yml](../.github/workflows/prepare-github-legends.yml) | [github-legends](https://vizb.goptics.org/examples/github-legends/) |
-| Go | `examples/go/` | [prepare-go-examples.yml](../.github/workflows/prepare-go-examples.yml) | [go](https://vizb.goptics.org/examples/go/) |
-| JavaScript | `examples/javascript/` | [prepare-javascript-examples.yml](../.github/workflows/prepare-javascript-examples.yml) | [javascript](https://vizb.goptics.org/examples/javascript/) |
-| Rust | `examples/rust/` | [prepare-rust-examples.yml](../.github/workflows/prepare-rust-examples.yml) | [rust](https://vizb.goptics.org/examples/rust/) |
+| Tabular data | `examples/csv/` | [tabular-data-examples.yml](../.github/workflows/tabular-data-examples.yml) | [tabular-data](https://vizb.goptics.org/examples/tabular-data/) |
+| Math & 3D | `examples/csv/` | [math-and-3d-examples.yml](../.github/workflows/math-and-3d-examples.yml) | [math-and-3d](https://vizb.goptics.org/examples/math-and-3d/) |
+| Comparisons | `examples/csv/` | [comparisons-examples.yml](../.github/workflows/comparisons-examples.yml) | [comparisons](https://vizb.goptics.org/examples/comparisons/) |
+| GitHub Legends | _(API-fetched in CI)_ | [github-legends.yml](../.github/workflows/github-legends.yml) | [github-legends](https://vizb.goptics.org/examples/github-legends/) |
+| Go | `examples/go/` | [go-examples.yml](../.github/workflows/go-examples.yml) | [go](https://vizb.goptics.org/examples/go/) |
+| JavaScript | `examples/javascript/` | [javascript-examples.yml](../.github/workflows/javascript-examples.yml) | [javascript](https://vizb.goptics.org/examples/javascript/) |
+| Rust | `examples/rust/` | [rust-examples.yml](../.github/workflows/rust-examples.yml) | [rust](https://vizb.goptics.org/examples/rust/) |
 
 CSV input files stay under `examples/csv/`; live HTML is split by **purpose** (tabular vs math vs comparisons), not by parser name.
 
@@ -26,7 +26,7 @@ Open a specific chart with `?id=<id>` — each matrix entry sets a numbered id v
 
 ### GitHub Legends (contribution skylines)
 
-No repo file to add. Append one row to the matrix in [prepare-github-legends.yml](../.github/workflows/prepare-github-legends.yml) — only `id` and `user`:
+No repo file to add. Append one row to the matrix in [github-legends.yml](../.github/workflows/github-legends.yml) — only `id` and `user`:
 
 ```yaml
 - id: 07-octocat        # numbered ?id= deep link; prefix matches ?d=7 in matrix order
@@ -41,9 +41,9 @@ Optionally add a row to [docs/src/content/docs/examples/github-legends.mdx](../d
 
 1. **Add the file** — `examples/csv/my-data.csv`
 2. **Add a matrix entry** — in the matching workflow:
-   - Business / mixed tables → [prepare-tabular-data-examples.yml](../.github/workflows/prepare-tabular-data-examples.yml)
-   - All-numeric 3D / surfaces → [prepare-math-and-3d-examples.yml](../.github/workflows/prepare-math-and-3d-examples.yml)
-   - Wide competitor tables → [prepare-comparisons-examples.yml](../.github/workflows/prepare-comparisons-examples.yml)
+   - Business / mixed tables → [tabular-data-examples.yml](../.github/workflows/tabular-data-examples.yml)
+   - All-numeric 3D / surfaces → [math-and-3d-examples.yml](../.github/workflows/math-and-3d-examples.yml)
+   - Wide competitor tables → [comparisons-examples.yml](../.github/workflows/comparisons-examples.yml)
 3. **Push** — CI rebuilds that dashboard on [vizb.goptics.org](https://vizb.goptics.org)
 
 ### Go / JavaScript / Rust

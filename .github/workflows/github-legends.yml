@@ -1,4 +1,4 @@
-name: Prepare GitHub Legends
+name: "Examples: GitHub Legends"
 on:
   schedule:
     # Refresh contribution skylines every Friday (data is live from the API).
