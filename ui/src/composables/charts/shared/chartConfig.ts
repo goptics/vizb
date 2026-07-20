@@ -851,5 +851,6 @@ export const createLabelConfig = (
       : ('top' as const),
   formatter: '{c}',
   fontSize,
-  color: styling.textColor,
+  color: stacked ? '#fff' : styling.textColor,
+  ...(stacked ? { textBorderColor: 'rgba(0,0,0,0.5)', textBorderWidth: 2 } : {}),
 })

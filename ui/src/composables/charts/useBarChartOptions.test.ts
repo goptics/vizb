@@ -59,12 +59,13 @@ const makeStackedGroupedChartData = (): ChartData => ({
 const makeStackedGroupedConfig = (
   stack = false,
   horizontal = false,
-  showLabels = true
+  showLabels = true,
+  isDark = false
 ): BaseChartConfig => ({
   chartData: ref(makeStackedGroupedChartData()),
   sort: ref({ enabled: false, order: 'asc' }),
   showLabels: ref(showLabels),
-  isDark: ref(false),
+  isDark: ref(isDark),
   scale: ref<'linear' | 'log'>('linear'),
   stack: ref(stack),
   horizontal: ref(horizontal),
@@ -84,22 +85,45 @@ describe('useBarChartOptions — grouped mode', () => {
     expect(series.every((s) => s.stack === undefined)).toBe(true)
   })
 
-  it.each([false, true])('centers labels inside %s stacked bars', (horizontal) => {
-    const { options } = useBarChartOptions(makeStackedGroupedConfig(true, horizontal))
-    const series = options.value.series as { label: { show: boolean; position: string } }[]
+  it.each([
+    [false, false],
+    [true, true],
+  ])(
+    'centers readable labels inside stacked bars when horizontal is %s and dark mode is %s',
+    (horizontal, isDark) => {
+      const { options } = useBarChartOptions(
+        makeStackedGroupedConfig(true, horizontal, true, isDark)
+      )
+      const series = options.value.series as {
+        label: {
+          show: boolean
+          position: string
+          color: string
+          textBorderColor?: string
+          textBorderWidth?: number
+        }
+      }[]
 
-    expect(series.every((s) => s.label.show)).toBe(true)
-    expect(series.every((s) => s.label.position === 'inside')).toBe(true)
-  })
+      expect(series.every((s) => s.label.show)).toBe(true)
+      expect(series.every((s) => s.label.position === 'inside')).toBe(true)
+      expect(series.every((s) => s.label.color === '#fff')).toBe(true)
+      expect(series.every((s) => s.label.textBorderColor === 'rgba(0,0,0,0.5)')).toBe(true)
+      expect(series.every((s) => s.label.textBorderWidth === 2)).toBe(true)
+    }
+  )
 
   it.each([
     [false, 'top'],
     [true, 'right'],
   ])('keeps labels at the bar tip when horizontal is %s', (horizontal, position) => {
     const { options } = useBarChartOptions(makeStackedGroupedConfig(false, horizontal))
-    const series = options.value.series as { label: { position: string } }[]
+    const series = options.value.series as {
+      label: { position: string; color: string; textBorderWidth?: number }
+    }[]
 
     expect(series.every((s) => s.label.position === position)).toBe(true)
+    expect(series.every((s) => s.label.color === '#374151')).toBe(true)
+    expect(series.every((s) => s.label.textBorderWidth === undefined)).toBe(true)
   })
 
   it('keeps labels hidden when stacking is enabled and show labels is off', () => {
