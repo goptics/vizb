@@ -587,8 +587,11 @@ func (s *ServeSuite) TestUIEndpoint() {
 	valid := `{"datasets":` + validDatasetJSON + `}`
 	recorder := s.apiRequest(handler, "/ui", valid, "application/json", "text/html")
 	s.Equal(http.StatusOK, recorder.Code)
-	s.Contains(recorder.Header().Get("Content-Type"), "text/html")
+	s.Equal("text/html; charset=utf-8", recorder.Header().Get("Content-Type"))
 	s.Contains(recorder.Body.String(), "VIZB_DATA")
+
+	recorder = s.apiRequest(handler, "/ui", `{"datasets":[`+validDatasetJSON+`]}`, "application/json", "text/html")
+	s.Equal(http.StatusOK, recorder.Code)
 
 	for _, test := range []struct {
 		name       string
@@ -603,11 +606,15 @@ func (s *ServeSuite) TestUIEndpoint() {
 		{name: "invalid datasets", body: `{"datasets":true}`, accept: "text/html", wantStatus: http.StatusUnprocessableEntity},
 		{name: "incomplete dataset", body: `{"datasets":{"name":"Bench"}}`, accept: "text/html", wantStatus: http.StatusUnprocessableEntity},
 		{name: "unknown nested field", body: `{"datasets":` + validDatasetJSON[:len(validDatasetJSON)-1] + `,"extra":true}}`, accept: "text/html", wantStatus: http.StatusUnprocessableEntity},
+		{name: "remote request input", body: `{"datasets":` + validDatasetJSON + `,"dataUrl":"https://example.com/data.json"}`, accept: "text/html", wantStatus: http.StatusUnprocessableEntity},
+		{name: "remote dataset input", body: `{"datasets":` + validDatasetJSON[:len(validDatasetJSON)-1] + `,"dataUrl":"https://example.com/data.json"}}`, accept: "text/html", wantStatus: http.StatusUnprocessableEntity},
 		{name: "invalid chart type", body: `{"datasets":` + validDatasetJSON + `,"charts":{"types":["unknown"]}}`, accept: "text/html", wantStatus: http.StatusUnprocessableEntity},
 	} {
 		s.Run(test.name, func() {
 			recorder := s.apiRequest(handler, "/ui", test.body, "application/json", test.accept)
 			s.Equal(test.wantStatus, recorder.Code)
+			s.Equal("application/problem+json", recorder.Header().Get("Content-Type"))
+			s.Equal(float64(test.wantStatus), s.problemStatus(recorder))
 		})
 	}
 }
@@ -620,6 +627,11 @@ func (s *ServeSuite) TestUIEndpointAcceptsConfigsStatisticsAndMediaRanges() {
 			s.Require().Len(datasets[0].Settings, 1)
 			s.True(datasets[0].Settings[0].StatEnabled())
 			s.Equal([]string{"counts"}, datasets[0].Settings[0].StatMath())
+			raw, err := json.Marshal(datasets[0].Settings[0])
+			s.Require().NoError(err)
+			var config map[string]any
+			s.Require().NoError(json.Unmarshal(raw, &config))
+			s.Equal(true, config["showLabels"])
 			return "<html>ok</html>", nil
 		})
 	})
@@ -687,6 +699,7 @@ func (s *ServeSuite) TestUIEndpointReportsGenerationFailure() {
 	body := `{"datasets":` + validDatasetJSON + `}`
 	recorder := s.apiRequest(handler, "/ui", body, "application/json", "text/html")
 	s.Equal(http.StatusInternalServerError, recorder.Code)
+	s.Equal("application/problem+json", recorder.Header().Get("Content-Type"))
 	s.Equal(float64(http.StatusInternalServerError), s.problemStatus(recorder))
 	s.NotContains(recorder.Body.String(), "template failed")
 	s.Contains(recorder.Body.String(), "could not generate the response")
