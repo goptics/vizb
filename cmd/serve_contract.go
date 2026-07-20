@@ -186,7 +186,15 @@ func strictDecodeRequestObject(data []byte, target any, prefix string) error {
 		path := prefix + "/" + strings.ReplaceAll(strings.ReplaceAll(field, "~", "~0"), "/", "~1")
 		return bodyValidationError(path, "unknown_field", "unknown request field "+field)
 	}
-	return requestTypeError(err, prefix)
+	var validationErr apiValidationError
+	if errors.As(requestTypeError(err, prefix), &validationErr) {
+		return validationErr
+	}
+	path := strings.TrimSuffix(prefix, "/")
+	if path == "" {
+		path = "/"
+	}
+	return bodyValidationError(path, "invalid_json", err.Error())
 }
 
 func requestTypeError(err error, prefix string) error {
@@ -589,11 +597,7 @@ func decodeChartConfig(raw json.RawMessage, path string) (internalcharts.ChartCo
 		return nil, &validationErr
 	}
 	if err := strictDecodeRequestObject(raw, config, path); err != nil {
-		var validationErr apiValidationError
-		if errors.As(err, &validationErr) {
-			return nil, &validationErr
-		}
-		validationErr = bodyValidationError(path, "invalid_chart_config", err.Error())
+		validationErr := err.(apiValidationError)
 		return nil, &validationErr
 	}
 	if validationErr := validateChartConfigValues(raw, path); validationErr != nil {

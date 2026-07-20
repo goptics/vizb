@@ -999,6 +999,11 @@ func (s *ServeSuite) TestRequestContractHelpers() {
 		}
 
 		s.Error(rejectNullFields([]byte(`{`), "/", map[string]string{}))
+		err := strictDecodeRequestObject([]byte(`{} {}`), new(groupingOptions), "")
+		var validationErr apiValidationError
+		s.Require().ErrorAs(err, &validationErr)
+		s.Equal("/", validationErr.Path)
+		s.Equal("invalid_json", validationErr.Code)
 	})
 
 	s.Run("conversion metadata", func() {
