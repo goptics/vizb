@@ -478,6 +478,7 @@ func (s *ServeSuite) TestConvertEndpointRejectsInvalidRequests() {
 		{name: "invalid output format", body: `{"input":"x,y\na,1\n","output":{"format":"csv"}}`, contentType: "application/json", wantStatus: http.StatusUnprocessableEntity, wantErrors: true},
 		{name: "metadata is not supported", body: `{"input":"x,y\na,1\n","metadata":{"name":"example"}}`, contentType: "application/json", wantStatus: http.StatusUnprocessableEntity, wantErrors: true},
 		{name: "unknown field", body: `{"input":"x,y\na,1\n","extra":true}`, contentType: "application/json", wantStatus: http.StatusUnprocessableEntity, wantErrors: true},
+		{name: "request not object", body: `"foo"`, contentType: "application/json", wantStatus: http.StatusUnprocessableEntity, wantErrors: true, wantPath: "/"},
 		{name: "grouping not object", body: `{"input":"x,y\na,1\n","grouping":"foo"}`, contentType: "application/json", wantStatus: http.StatusUnprocessableEntity, wantErrors: true, wantPath: "/grouping"},
 		{name: "grouping pattern wrong type", body: `{"input":"x,y\na,1\n","grouping":{"pattern":123}}`, contentType: "application/json", wantStatus: http.StatusUnprocessableEntity, wantErrors: true, wantPath: "/grouping/pattern"},
 		{name: "missing content type", body: `{}`, wantStatus: http.StatusUnsupportedMediaType},
