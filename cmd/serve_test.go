@@ -466,6 +466,7 @@ func (s *ServeSuite) TestConvertEndpointRejectsInvalidRequests() {
 		accept      string
 		wantStatus  int
 		wantErrors  bool
+		wantPath    string
 	}{
 		{name: "missing input", body: `{}`, contentType: "application/json", wantStatus: http.StatusUnprocessableEntity, wantErrors: true},
 		{name: "null input", body: `{"input":null}`, contentType: "application/json", wantStatus: http.StatusUnprocessableEntity, wantErrors: true},
@@ -477,6 +478,8 @@ func (s *ServeSuite) TestConvertEndpointRejectsInvalidRequests() {
 		{name: "invalid output format", body: `{"input":"x,y\na,1\n","output":{"format":"csv"}}`, contentType: "application/json", wantStatus: http.StatusUnprocessableEntity, wantErrors: true},
 		{name: "metadata is not supported", body: `{"input":"x,y\na,1\n","metadata":{"name":"example"}}`, contentType: "application/json", wantStatus: http.StatusUnprocessableEntity, wantErrors: true},
 		{name: "unknown field", body: `{"input":"x,y\na,1\n","extra":true}`, contentType: "application/json", wantStatus: http.StatusUnprocessableEntity, wantErrors: true},
+		{name: "grouping not object", body: `{"input":"x,y\na,1\n","grouping":"foo"}`, contentType: "application/json", wantStatus: http.StatusUnprocessableEntity, wantErrors: true, wantPath: "/grouping"},
+		{name: "grouping pattern wrong type", body: `{"input":"x,y\na,1\n","grouping":{"pattern":123}}`, contentType: "application/json", wantStatus: http.StatusUnprocessableEntity, wantErrors: true, wantPath: "/grouping/pattern"},
 		{name: "missing content type", body: `{}`, wantStatus: http.StatusUnsupportedMediaType},
 		{name: "wrong content type", body: `{}`, contentType: "text/plain", wantStatus: http.StatusUnsupportedMediaType},
 		{name: "malformed content type", body: `{}`, contentType: `application/json; charset="`, wantStatus: http.StatusUnsupportedMediaType},
@@ -493,6 +496,10 @@ func (s *ServeSuite) TestConvertEndpointRejectsInvalidRequests() {
 				}
 				s.Require().NoError(json.Unmarshal(recorder.Body.Bytes(), &problem))
 				s.NotEmpty(problem.Errors)
+				if test.wantPath != "" {
+					s.Equal(test.wantPath, problem.Errors[0].Path)
+					s.Equal("invalid_type", problem.Errors[0].Code)
+				}
 			}
 		})
 	}
@@ -1019,7 +1026,7 @@ func (s *ServeSuite) TestRequestContractHelpers() {
 
 		_, validationErr = decodeChartConfig(json.RawMessage(`{"type":"bar","showLabels":"yes"}`), "/config")
 		s.Require().NotNil(validationErr)
-		s.Equal("/config", validationErr.Path)
+		s.Equal("/config/showLabels", validationErr.Path)
 
 		for _, raw := range []string{
 			`{`,

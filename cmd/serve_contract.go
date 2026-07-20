@@ -158,7 +158,7 @@ func rejectNullFields(data []byte, nullPath string, paths map[string]string) err
 	}
 	var fields map[string]json.RawMessage
 	if err := json.Unmarshal(data, &fields); err != nil {
-		return err
+		return requestTypeError(err, nullPath)
 	}
 	keys := make([]string, 0, len(paths))
 	for field := range paths {
@@ -186,7 +186,24 @@ func strictDecodeRequestObject(data []byte, target any, prefix string) error {
 		path := prefix + "/" + strings.ReplaceAll(strings.ReplaceAll(field, "~", "~0"), "/", "~1")
 		return bodyValidationError(path, "unknown_field", "unknown request field "+field)
 	}
-	return err
+	return requestTypeError(err, prefix)
+}
+
+func requestTypeError(err error, prefix string) error {
+	var typeErr *json.UnmarshalTypeError
+	if !errors.As(err, &typeErr) {
+		return err
+	}
+	path := strings.TrimSuffix(prefix, "/")
+	for _, field := range strings.Split(typeErr.Field, ".") {
+		if field != "" {
+			path += "/" + strings.ReplaceAll(strings.ReplaceAll(field, "~", "~0"), "/", "~1")
+		}
+	}
+	if path == "" {
+		path = "/"
+	}
+	return bodyValidationError(path, "invalid_type", err.Error())
 }
 
 type mergeRequest struct {
