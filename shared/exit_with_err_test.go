@@ -77,8 +77,13 @@ func (s *ExitWithErrorSuite) TestExitWithError() {
 }
 
 func (s *ExitWithErrorSuite) TestExitWithErrorConcurrent() {
-	restore, exitCalled := TrapOsExitPanic(s.T())
-	defer restore()
+	origOsExit := OsExit
+	exitCalls := make(chan struct{}, 5)
+	OsExit = func(int) {
+		exitCalls <- struct{}{}
+		panic("exit")
+	}
+	defer func() { OsExit = origOsExit }()
 
 	oldStderr := os.Stderr
 	r, w, _ := os.Pipe()
@@ -103,7 +108,7 @@ func (s *ExitWithErrorSuite) TestExitWithErrorConcurrent() {
 	_, _ = io.Copy(&buf, r)
 	os.Stderr = oldStderr
 
-	s.True(*exitCalled, "Should have received at least one OsExit call")
+	s.NotEmpty(exitCalls, "Should have received at least one OsExit call")
 	s.NotEmpty(buf.String(), "stderr should contain error messages")
 }
 

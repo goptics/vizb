@@ -28,7 +28,8 @@ func parseCSVFile(t testing.TB, path string, cfg parser.Config) ([]shared.DataPo
 		return nil, cfg, err
 	}
 	defer input.Close()
-	return ParseCSV(input, cfg)
+	points, effectiveCfg, _, err := ParseCSV(input, cfg)
+	return points, effectiveCfg, err
 }
 
 func parseCSVFileError(t testing.TB, path string, cfg parser.Config) error {
@@ -358,7 +359,7 @@ func (s *CSVSuite) TestLessThanTwoRowsReturnsNil() {
 }
 
 func (s *CSVSuite) TestParseCSVReturnsResultsAndErrors() {
-	results, cfg, err := ParseCSV(strings.NewReader("name,sells\nalpha,10\n"), parser.Config{
+	results, cfg, _, err := ParseCSV(strings.NewReader("name,sells\nalpha,10\n"), parser.Config{
 		GroupPattern: "x",
 		Group:        []string{"name"},
 	})
@@ -367,16 +368,16 @@ func (s *CSVSuite) TestParseCSVReturnsResultsAndErrors() {
 	s.Require().Len(results, 1)
 	s.Equal("alpha", results[0].XAxis)
 
-	_, _, err = ParseCSV(strings.NewReader("name,sells\nalpha,10\n"), parser.Config{
+	_, _, _, err = ParseCSV(strings.NewReader("name,sells\nalpha,10\n"), parser.Config{
 		GroupPattern: "x",
 		Group:        []string{"missing"},
 	})
 	s.ErrorContains(err, `group column "missing" not found`)
 
-	_, _, err = ParseCSV(strings.NewReader("name,sells\nalpha,\"bad\n"), parser.Config{GroupPattern: "x"})
+	_, _, _, err = ParseCSV(strings.NewReader("name,sells\nalpha,\"bad\n"), parser.Config{GroupPattern: "x"})
 	s.ErrorContains(err, "read CSV")
 
-	_, _, err = ParseCSV(strings.NewReader("name,sells\nalpha,10\n"), parser.Config{
+	_, _, _, err = ParseCSV(strings.NewReader("name,sells\nalpha,10\n"), parser.Config{
 		Group:        []string{"name", "sells"},
 		GroupPattern: "x",
 	})
@@ -396,7 +397,7 @@ func (s *CSVSuite) TestParseCSVReturnsAutoDetectError() {
 }
 
 func (s *CSVSuite) TestParseCSVReturnsGroupRowError() {
-	_, _, err := ParseCSV(strings.NewReader("name,sells\nalpha,10\n"), parser.Config{
+	_, _, _, err := ParseCSV(strings.NewReader("name,sells\nalpha,10\n"), parser.Config{
 		Group:      []string{"name"},
 		GroupRegex: "explicit-regex-bypasses-tabular-pattern",
 	})

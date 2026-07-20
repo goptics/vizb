@@ -30,7 +30,8 @@ func parseJSONFile(t testing.TB, path string, cfg parser.Config) ([]shared.DataP
 		return nil, cfg, err
 	}
 	defer input.Close()
-	return ParseJSON(input, cfg)
+	points, effectiveCfg, _, err := ParseJSON(input, cfg)
+	return points, effectiveCfg, err
 }
 
 func parseJSONFileError(t testing.TB, path string, cfg parser.Config) error {
@@ -508,7 +509,7 @@ func (s *JSONSuite) TestNonArrayInputReturnsNil() {
 }
 
 func (s *JSONSuite) TestParseJSONReturnsResultsAndErrors() {
-	results, cfg, err := ParseJSON(strings.NewReader(`[{"name":"alpha","sells":10}]`), parser.Config{
+	results, cfg, _, err := ParseJSON(strings.NewReader(`[{"name":"alpha","sells":10}]`), parser.Config{
 		GroupPattern: "x",
 		Group:        []string{"name"},
 	})
@@ -517,16 +518,16 @@ func (s *JSONSuite) TestParseJSONReturnsResultsAndErrors() {
 	s.Require().Len(results, 1)
 	s.Equal("alpha", results[0].XAxis)
 
-	_, _, err = ParseJSON(strings.NewReader(`[{"name":"alpha","sells":10}]`), parser.Config{
+	_, _, _, err = ParseJSON(strings.NewReader(`[{"name":"alpha","sells":10}]`), parser.Config{
 		GroupPattern: "x",
 		Group:        []string{"missing"},
 	})
 	s.ErrorContains(err, `group field "missing" not found`)
 
-	_, _, err = ParseJSON(strings.NewReader(`[{"name":`), parser.Config{GroupPattern: "x"})
+	_, _, _, err = ParseJSON(strings.NewReader(`[{"name":`), parser.Config{GroupPattern: "x"})
 	s.ErrorContains(err, "read JSON")
 
-	results, _, err = ParseJSON(strings.NewReader(`[{"name":"alpha","sells":10}]`), parser.Config{
+	results, _, _, err = ParseJSON(strings.NewReader(`[{"name":"alpha","sells":10}]`), parser.Config{
 		AutoGroup:  true,
 		ChartTypes: []string{"scatter"},
 	})
@@ -634,18 +635,18 @@ func (s *JSONErrorSuite) TestMalformedMatrixReturnsError() {
 
 func (s *JSONErrorSuite) TestInitialTokenRead() {
 	s.Run("empty input remains empty", func() {
-		results, _, err := ParseJSON(strings.NewReader(""), s.cfg)
+		results, _, _, err := ParseJSON(strings.NewReader(""), s.cfg)
 		s.Require().NoError(err)
 		s.Empty(results)
 	})
 
 	s.Run("malformed input returns decoder error", func() {
-		_, _, err := ParseJSON(strings.NewReader("not-json"), s.cfg)
+		_, _, _, err := ParseJSON(strings.NewReader("not-json"), s.cfg)
 		s.ErrorContains(err, "read JSON")
 	})
 
 	s.Run("reader failure is preserved", func() {
-		_, _, err := ParseJSON(jsonErrorReader{}, s.cfg)
+		_, _, _, err := ParseJSON(jsonErrorReader{}, s.cfg)
 		s.ErrorContains(err, "injected read failure")
 	})
 }

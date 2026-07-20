@@ -24,8 +24,7 @@ type testBlock struct {
 	expectCPUCount int
 }
 
-// GoBenchmarkSuite exercises ParseGoBenchmark with a per-case parser.Config,
-// resetting the shared.CPUCount global between cases.
+// GoBenchmarkSuite exercises ParseGoBenchmark with a per-case parser.Config.
 type GoBenchmarkSuite struct {
 	suite.Suite
 }
@@ -48,14 +47,6 @@ func (r *dataErrorReader) Read(p []byte) (int, error) {
 	}
 	r.done = true
 	return copy(p, r.data), r.err
-}
-
-func (s *GoBenchmarkSuite) SetupTest() {
-	shared.CPUCount = 0
-}
-
-func (s *GoBenchmarkSuite) TearDownTest() {
-	shared.CPUCount = 0
 }
 
 func (s *GoBenchmarkSuite) TestParseGoBenchmark() {
@@ -241,7 +232,6 @@ func (s *GoBenchmarkSuite) TestParseGoBenchmark() {
 
 	for _, tt := range tests {
 		s.Run(tt.name, func() {
-			shared.CPUCount = 0
 			cfg := parser.Config{
 				GroupPattern: tt.pattern,
 				TimeUnit:     tt.timeUnit,
@@ -249,7 +239,7 @@ func (s *GoBenchmarkSuite) TestParseGoBenchmark() {
 				NumberUnit:   tt.allocUnit,
 			}
 
-			results, _, err := ParseGoBenchmark(strings.NewReader(strings.Join(tt.benchContent, "\n")), cfg)
+			results, _, system, err := ParseGoBenchmark(strings.NewReader(strings.Join(tt.benchContent, "\n")), cfg)
 			s.Require().NoError(err)
 
 			s.Require().Len(results, len(tt.expected))
@@ -269,16 +259,39 @@ func (s *GoBenchmarkSuite) TestParseGoBenchmark() {
 				}
 			}
 
-			s.Equal(tt.expectCPUCount, shared.CPUCount, "CPUCount")
+			cpuCount := 0
+			if system != nil && system.CPU != nil {
+				cpuCount = system.CPU.Cores
+			}
+			s.Equal(tt.expectCPUCount, cpuCount, "CPUCount")
 		})
 	}
+}
+
+func (s *GoBenchmarkSuite) TestParseGoBenchmarkReturnsSystemMetadata() {
+	input := strings.Join([]string{
+		"goos: linux",
+		"goarch: arm64",
+		"pkg: example.com/request-a",
+		"cpu: Request A CPU",
+		"BenchmarkExample-12 100 123 ns/op",
+	}, "\n")
+
+	_, _, system, err := ParseGoBenchmark(strings.NewReader(input), parser.Config{GroupPattern: "y"})
+
+	s.Require().NoError(err)
+	s.Require().NotNil(system)
+	s.Equal("linux", system.OS)
+	s.Equal("arm64", system.Arch)
+	s.Equal("example.com/request-a", system.Pkg)
+	s.Equal(&shared.CPUInfo{Name: "Request A CPU", Cores: 12}, system.CPU)
 }
 
 func (s *GoBenchmarkSuite) TestParseGoBenchmarkReturnsErrors() {
 	benchmark := "BenchmarkExample 100 123 ns/op"
 
 	s.Run("invalid filter", func() {
-		_, _, err := ParseGoBenchmark(strings.NewReader(benchmark), parser.Config{
+		_, _, _, err := ParseGoBenchmark(strings.NewReader(benchmark), parser.Config{
 			GroupPattern: "y",
 			Filter:       "[",
 		})
@@ -286,14 +299,14 @@ func (s *GoBenchmarkSuite) TestParseGoBenchmarkReturnsErrors() {
 	})
 
 	s.Run("invalid benchmark group pattern", func() {
-		_, _, err := ParseGoBenchmark(strings.NewReader(benchmark), parser.Config{
+		_, _, _, err := ParseGoBenchmark(strings.NewReader(benchmark), parser.Config{
 			GroupPattern: "[n/y]",
 		})
 		s.ErrorContains(err, "bracket slots")
 	})
 
 	s.Run("filter excludes benchmark", func() {
-		results, _, err := ParseGoBenchmark(strings.NewReader(benchmark), parser.Config{
+		results, _, _, err := ParseGoBenchmark(strings.NewReader(benchmark), parser.Config{
 			GroupPattern: "y",
 			Filter:       "^Other$",
 		})
@@ -302,7 +315,7 @@ func (s *GoBenchmarkSuite) TestParseGoBenchmarkReturnsErrors() {
 	})
 
 	s.Run("non-result record is ignored", func() {
-		results, _, err := ParseGoBenchmark(strings.NewReader("BenchmarkBroken not-a-result\n"), parser.Config{
+		results, _, _, err := ParseGoBenchmark(strings.NewReader("BenchmarkBroken not-a-result\n"), parser.Config{
 			GroupPattern: "y",
 		})
 		s.Require().NoError(err)
@@ -310,7 +323,7 @@ func (s *GoBenchmarkSuite) TestParseGoBenchmarkReturnsErrors() {
 	})
 
 	s.Run("reader failure", func() {
-		_, _, err := ParseGoBenchmark(goErrorReader{}, parser.Config{GroupPattern: "y"})
+		_, _, _, err := ParseGoBenchmark(goErrorReader{}, parser.Config{GroupPattern: "y"})
 		s.ErrorContains(err, "read Go benchmark")
 	})
 
@@ -319,7 +332,7 @@ func (s *GoBenchmarkSuite) TestParseGoBenchmarkReturnsErrors() {
 			data: []byte("BenchmarkExample 100 123 ns/op\n"),
 			err:  errors.New("injected trailing failure"),
 		}
-		_, _, err := ParseGoBenchmark(input, parser.Config{GroupPattern: "y"})
+		_, _, _, err := ParseGoBenchmark(input, parser.Config{GroupPattern: "y"})
 		s.ErrorContains(err, "read Go benchmark")
 	})
 }
@@ -331,7 +344,7 @@ func (s *GoBenchmarkSuite) TestParseGoBenchmarkJSONEvents() {
 		`{"Action":"pass","Test":"BenchmarkExample"}`,
 	}, "\n")
 
-	results, _, err := ParseGoBenchmark(strings.NewReader(input), parser.Config{
+	results, _, system, err := ParseGoBenchmark(strings.NewReader(input), parser.Config{
 		GroupPattern: "y",
 		TimeUnit:     "ns",
 	})
@@ -339,7 +352,8 @@ func (s *GoBenchmarkSuite) TestParseGoBenchmarkJSONEvents() {
 	s.Require().NoError(err)
 	s.Require().Len(results, 1)
 	s.Equal("Example", results[0].YAxis)
-	s.Equal(8, shared.CPUCount)
+	s.Require().NotNil(system)
+	s.Equal(&shared.CPUInfo{Cores: 8}, system.CPU)
 	s.Require().Len(results[0].Stats, 1)
 	s.Equal("Execution Time (ns/op)", results[0].Stats[0].Type)
 	s.InDelta(123, *results[0].Stats[0].Value, 0.001)
@@ -348,7 +362,7 @@ func (s *GoBenchmarkSuite) TestParseGoBenchmarkJSONEvents() {
 func (s *GoBenchmarkSuite) TestParseGoBenchmarkJSONEventErrors() {
 	s.Run("malformed later event", func() {
 		input := "{\"Action\":\"run\"}\nnot-json\n"
-		_, _, err := ParseGoBenchmark(strings.NewReader(input), parser.Config{GroupPattern: "y"})
+		_, _, _, err := ParseGoBenchmark(strings.NewReader(input), parser.Config{GroupPattern: "y"})
 		s.ErrorContains(err, "read Go benchmark JSON")
 	})
 
@@ -357,7 +371,7 @@ func (s *GoBenchmarkSuite) TestParseGoBenchmarkJSONEventErrors() {
 			data: []byte(`{"Action":"run"}`),
 			err:  errors.New("injected event failure"),
 		}
-		_, _, err := ParseGoBenchmark(input, parser.Config{GroupPattern: "y"})
+		_, _, _, err := ParseGoBenchmark(input, parser.Config{GroupPattern: "y"})
 		s.ErrorContains(err, "read Go benchmark JSON")
 	})
 
@@ -366,7 +380,7 @@ func (s *GoBenchmarkSuite) TestParseGoBenchmarkJSONEventErrors() {
 			data: []byte("{\"Action\":\"run\"}\n"),
 			err:  errors.New("injected event failure"),
 		}
-		_, _, err := ParseGoBenchmark(input, parser.Config{GroupPattern: "y"})
+		_, _, _, err := ParseGoBenchmark(input, parser.Config{GroupPattern: "y"})
 		s.ErrorContains(err, "read Go benchmark JSON")
 	})
 
@@ -380,7 +394,7 @@ func (s *GoBenchmarkSuite) TestParseGoBenchmarkJSONEventErrors() {
 
 	s.Run("single event without trailing newline", func() {
 		input := `{"Action":"output","Output":"BenchmarkExample 100 123 ns/op\n"}`
-		results, _, err := ParseGoBenchmark(strings.NewReader(input), parser.Config{
+		results, _, _, err := ParseGoBenchmark(strings.NewReader(input), parser.Config{
 			GroupPattern: "y",
 			TimeUnit:     "ns",
 		})

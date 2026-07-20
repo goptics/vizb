@@ -2,9 +2,11 @@ package shared
 
 import (
 	"os"
+	"sync"
 )
 
 type TmpFilesManager struct {
+	mu    sync.Mutex
 	files []string
 }
 
@@ -19,13 +21,17 @@ func NewTmpFileManager() TmpFilesManager {
 }
 
 func (tfm *TmpFilesManager) Store(args ...string) {
+	tfm.mu.Lock()
+	defer tfm.mu.Unlock()
 	tfm.files = append(tfm.files, args...)
 }
 
 func (tfm *TmpFilesManager) RemoveAll() {
+	tfm.mu.Lock()
+	defer tfm.mu.Unlock()
+
 	for _, filePath := range tfm.files {
 		os.Remove(filePath)
 	}
-
 	tfm.files = make([]string, 0)
 }

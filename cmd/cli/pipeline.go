@@ -78,8 +78,8 @@ func RunLinear(cmd *cobra.Command, args []string, meta RunMeta, cfg parser.Confi
 		if meta.Parser == "json" && cfg.JSONPath != "" {
 			target = applyJSONPath(target, cfg.JSONPath)
 		}
-		results, effectiveCfg := prepareData(target, meta.Parser, cfg)
-		datasets = []*shared.Dataset{assembleDataset(results, meta, configs, effectiveCfg)}
+		results, effectiveCfg, system := prepareData(target, meta.Parser, cfg)
+		datasets = []*shared.Dataset{assembleDataset(results, meta, configs, effectiveCfg, system)}
 		// Validate swap only for chart subcommands (applyOnPassthrough true).
 		// The root command stores swap as-is, trusting the UI to handle it.
 		if applyOnPassthrough {
@@ -246,7 +246,7 @@ func applyJSONPath(filePath, path string) string {
 // prepareData parses input into data points, aggregating grouped csv/json rows.
 // The returned Config is the parser's effective config (auto-group/auto-value
 // mutations included) for aggregation and dataset assembly.
-func prepareData(filePath, parserKey string, cfg parser.Config) ([]shared.DataPoint, parser.Config) {
+func prepareData(filePath, parserKey string, cfg parser.Config) ([]shared.DataPoint, parser.Config, *shared.Meta) {
 	parseFn, err := parser.GetParser(parserKey)
 	if err != nil {
 		shared.ExitWithError(err.Error(), nil)
@@ -271,7 +271,7 @@ func prepareData(filePath, parserKey string, cfg parser.Config) ([]shared.DataPo
 	}
 	defer input.Close()
 
-	data, effectiveCfg, err := parseFn(input, cfg)
+	data, effectiveCfg, system, err := parseFn(input, cfg)
 	if err != nil {
 		shared.ExitWithError(err.Error(), nil)
 	}
@@ -297,7 +297,7 @@ func prepareData(filePath, parserKey string, cfg parser.Config) ([]shared.DataPo
 		shared.ExitWithError("No dataset found", nil)
 	}
 
-	return data, effectiveCfg
+	return data, effectiveCfg, system
 }
 
 // applyColAxis expands multi-stat points onto cfg.ColAxis when the flag is set.
@@ -403,15 +403,7 @@ func formatAggregationGroup(cfg parser.Config) string {
 
 // assembleDataset builds the output Dataset from parsed results plus the
 // command's metadata and the resolved per-chart configs.
-func assembleDataset(results []shared.DataPoint, m RunMeta, configs []internal_charts.ChartConfig, cfg parser.Config) *shared.Dataset {
-	meta := shared.Meta{OS: shared.OS, Arch: shared.Arch, Pkg: shared.Pkg}
-	if cpuName := strings.TrimSpace(shared.CPU); cpuName != "" || shared.CPUCount != 0 {
-		meta.CPU = &shared.CPUInfo{Name: cpuName, Cores: shared.CPUCount}
-	}
-	var system *shared.Meta
-	if meta != (shared.Meta{}) {
-		system = &meta
-	}
+func assembleDataset(results []shared.DataPoint, m RunMeta, configs []internal_charts.ChartConfig, cfg parser.Config, system *shared.Meta) *shared.Dataset {
 	return core.Assemble(core.AssembleInput{
 		Points: results,
 		Parser: m.Parser,

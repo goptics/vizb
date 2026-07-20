@@ -19,7 +19,8 @@ func init() {
 
 var criterionRe = regexp.MustCompile(`^(\S+)\s+time:\s+\[([\d.]+)\s*(ns|µs|μs|ms|s)\s+([\d.]+)\s*(ns|µs|μs|ms|s)\s+([\d.]+)\s*(ns|µs|μs|ms|s)\]`)
 
-func ParseCriterionBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataPoint, parser.Config, error) {
+// ParseCriterionBenchmark converts Criterion benchmark output into data points.
+func ParseCriterionBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataPoint, parser.Config, *shared.Meta, error) {
 	scanner := bufio.NewScanner(input)
 	var results []shared.DataPoint
 
@@ -36,7 +37,7 @@ func ParseCriterionBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataP
 		name := match[1]
 		include, err := parser.ShouldIncludeBenchmark(name, cfg)
 		if err != nil {
-			return nil, cfg, err
+			return nil, cfg, nil, err
 		}
 		if !include {
 			continue
@@ -48,7 +49,7 @@ func ParseCriterionBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataP
 
 		group, groupErr := parser.GroupBenchmarkName(name, cfg)
 		if groupErr != nil {
-			return nil, cfg, fmt.Errorf("parse criterion benchmark name: %w", groupErr)
+			return nil, cfg, nil, fmt.Errorf("parse criterion benchmark name: %w", groupErr)
 		}
 
 		benchName, xAxis, yAxis, zAxis := group["name"], group["xAxis"], group["yAxis"], group["zAxis"]
@@ -67,8 +68,8 @@ func ParseCriterionBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataP
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, cfg, fmt.Errorf("read criterion benchmark: %w", err)
+		return nil, cfg, nil, fmt.Errorf("read criterion benchmark: %w", err)
 	}
 
-	return results, cfg, nil
+	return results, cfg, nil, nil
 }

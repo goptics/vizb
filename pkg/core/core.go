@@ -119,7 +119,7 @@ func Convert(in ConvertInput) (ConvertResult, error) {
 	if err != nil {
 		return ConvertResult{}, err
 	}
-	points, effectiveCfg, err := parseFn(bytes.NewReader(data), cfg)
+	points, effectiveCfg, system, err := parseFn(bytes.NewReader(data), cfg)
 	if err != nil {
 		return ConvertResult{}, err
 	}
@@ -134,7 +134,11 @@ func Convert(in ConvertInput) (ConvertResult, error) {
 		return ConvertResult{}, fmt.Errorf("no dataset found")
 	}
 
-	dataset := Assemble(AssembleInput{Points: points, Parser: key, Config: effectiveCfg, Metadata: in.Metadata, Charts: in.Charts})
+	metadata := in.Metadata
+	if metadata.System == nil {
+		metadata.System = system
+	}
+	dataset := Assemble(AssembleInput{Points: points, Parser: key, Config: effectiveCfg, Metadata: metadata, Charts: in.Charts})
 	for _, chart := range in.Charts {
 		if swap := chart.SwapString(); swap != "" {
 			if err := shared.ValidateSwap(swap, dataset.Axes); err != nil {

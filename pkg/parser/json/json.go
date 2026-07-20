@@ -65,8 +65,9 @@ func stringify(v any) string {
 // the separators from --group-pattern/-p and routed through the grouping
 // machinery (-p/-r). Nested objects are
 // flattened to dotted keys; array-valued fields inside objects are skipped.
-func ParseJSON(input io.Reader, cfg parser.Config) ([]shared.DataPoint, parser.Config, error) {
-	return parseReader(input, cfg, !cfg.QuietAutoDetect)
+func ParseJSON(input io.Reader, cfg parser.Config) ([]shared.DataPoint, parser.Config, *shared.Meta, error) {
+	points, effectiveCfg, err := parseReader(input, cfg, !cfg.QuietAutoDetect)
+	return points, effectiveCfg, nil, err
 }
 
 func parseReader(input io.Reader, cfg parser.Config, logAuto bool) ([]shared.DataPoint, parser.Config, error) {

@@ -51,7 +51,8 @@ func parseMedWithMAD(s string) (med, mad float64) {
 	return
 }
 
-func ParseTinyBenchBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataPoint, parser.Config, error) {
+// ParseTinyBenchBenchmark converts Tinybench table output into data points.
+func ParseTinyBenchBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataPoint, parser.Config, *shared.Meta, error) {
 	scanner := bufio.NewScanner(input)
 	var results []shared.DataPoint
 
@@ -76,7 +77,7 @@ func ParseTinyBenchBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataP
 
 		include, err := parser.ShouldIncludeBenchmark(taskName, cfg)
 		if err != nil {
-			return nil, cfg, err
+			return nil, cfg, nil, err
 		}
 		if !include {
 			continue
@@ -96,7 +97,7 @@ func ParseTinyBenchBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataP
 
 		group, groupErr := parser.GroupBenchmarkName(taskName, cfg)
 		if groupErr != nil {
-			return nil, cfg, fmt.Errorf("parse tinybench name: %w", groupErr)
+			return nil, cfg, nil, fmt.Errorf("parse tinybench name: %w", groupErr)
 		}
 
 		benchName, xAxis, yAxis, zAxis := group["name"], group["xAxis"], group["yAxis"], group["zAxis"]
@@ -121,8 +122,8 @@ func ParseTinyBenchBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataP
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, cfg, fmt.Errorf("read tinybench benchmark: %w", err)
+		return nil, cfg, nil, fmt.Errorf("read tinybench benchmark: %w", err)
 	}
 
-	return results, cfg, nil
+	return results, cfg, nil, nil
 }

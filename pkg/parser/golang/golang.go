@@ -18,14 +18,6 @@ func init() {
 	parser.Parsers["go"] = ParseGoBenchmark
 }
 
-func storeCpuCount(cpu string) {
-	if shared.CPUCount == 0 {
-		if cpuCount, err := strconv.Atoi(cpu); err == nil {
-			shared.CPUCount = cpuCount
-		}
-	}
-}
-
 func parseBenchmarkName(name benchfmt.Name) (benchName string, cpu string) {
 	b, ps := name.Parts()
 	benchName = string(b)
@@ -43,12 +35,17 @@ func parseBenchmarkName(name benchfmt.Name) (benchName string, cpu string) {
 	return
 }
 
-func ParseGoBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataPoint, parser.Config, error) {
+// ParseGoBenchmark converts Go benchmark text or go test JSON events into data
+// points and returns any system metadata found in the benchmark configuration.
+func ParseGoBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataPoint, parser.Config, *shared.Meta, error) {
 	var results []shared.DataPoint
+	var system shared.Meta
+	var cpuName string
+	var cpuCount int
 
 	benchmarkInput, err := prepareBenchmarkInput(input)
 	if err != nil {
-		return nil, cfg, err
+		return nil, cfg, nil, err
 	}
 	reader := benchfmt.NewReader(benchmarkInput, "input")
 
@@ -62,12 +59,15 @@ func ParseGoBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataPoint, p
 			continue
 		}
 
-		shared.OS, shared.Arch, shared.Pkg, shared.CPU = result.GetConfig("goos"), result.GetConfig("goarch"), result.GetConfig("pkg"), result.GetConfig("cpu")
+		system.OS = result.GetConfig("goos")
+		system.Arch = result.GetConfig("goarch")
+		system.Pkg = result.GetConfig("pkg")
+		cpuName = strings.TrimSpace(result.GetConfig("cpu"))
 		rawBenchName, cpuCore := parseBenchmarkName(result.Name)
 
 		include, err := parser.ShouldIncludeBenchmark(rawBenchName, cfg)
 		if err != nil {
-			return nil, cfg, err
+			return nil, cfg, nil, err
 		}
 		if !include {
 			continue
@@ -76,12 +76,16 @@ func ParseGoBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataPoint, p
 		group, err := parser.GroupBenchmarkName(rawBenchName, cfg)
 
 		if err != nil {
-			return nil, cfg, fmt.Errorf("parse group from benchmark name: %w", err)
+			return nil, cfg, nil, fmt.Errorf("parse group from benchmark name: %w", err)
 		}
 
 		benchName, xAxis, yAxis, zAxis := group["name"], group["xAxis"], group["yAxis"], group["zAxis"]
 
-		storeCpuCount(cpuCore)
+		if cpuCount == 0 {
+			if count, err := strconv.Atoi(cpuCore); err == nil {
+				cpuCount = count
+			}
+		}
 
 		var benchStats []shared.Stat
 
@@ -142,7 +146,7 @@ func ParseGoBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataPoint, p
 		allIters = append(allIters, result.Iters)
 	}
 	if err := reader.Err(); err != nil {
-		return nil, cfg, fmt.Errorf("read Go benchmark: %w", err)
+		return nil, cfg, nil, fmt.Errorf("read Go benchmark: %w", err)
 	}
 
 	hasDifferentIters := false
@@ -165,7 +169,14 @@ func ParseGoBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataPoint, p
 		}
 	}
 
-	return results, cfg, nil
+	if cpuName != "" || cpuCount != 0 {
+		system.CPU = &shared.CPUInfo{Name: cpuName, Cores: cpuCount}
+	}
+	var systemOutput *shared.Meta
+	if system != (shared.Meta{}) {
+		systemOutput = &system
+	}
+	return results, cfg, systemOutput, nil
 }
 
 // prepareBenchmarkInput converts Go test -json events to their benchmark text
