@@ -4,6 +4,24 @@ Notable changes to Vizb documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [v0.16.0] - 2026-07-20
+
+### Added
+
+- **api** — Add root conversion endpoint ([#239](https://github.com/goptics/vizb/pull/239))
+- **ui** — Add lazy loading for remote dataset catalogs ([#233](https://github.com/goptics/vizb/pull/233))
+- **serve** — Add REST API server command ([#232](https://github.com/goptics/vizb/pull/232))
+- **core** — Extract server safe core ([#230](https://github.com/goptics/vizb/pull/230))
+- **api-contract** — Complete and verify REST api contract ([#221](https://github.com/goptics/vizb/pull/221))
+- Add --col-axis for multi-column competitor charts ([#222](https://github.com/goptics/vizb/pull/222))
+- **parser** — Add json parser support for 2d arrays ([#208](https://github.com/goptics/vizb/pull/208))
+
+### Fixed
+
+- **ui** — Center labels inside stacked bars ([#243](https://github.com/goptics/vizb/pull/243))
+- **core** — Make Go benchmark metadata request-scoped ([#238](https://github.com/goptics/vizb/pull/238))
+- **ui** — Include zero values in donut legends ([#226](https://github.com/goptics/vizb/pull/226))
+
 # [v0.15.1] - 2026-07-14
 
 ### Fixed
