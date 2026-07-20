@@ -166,9 +166,8 @@ func runServer(ctx context.Context, opts serveOptions, deps serveDependencies) e
 			shutdown = (*http.Server).Shutdown
 		}
 		if err := shutdown(server, shutdownCtx); err != nil {
-			if closeErr := server.Close(); closeErr != nil && !errors.Is(closeErr, http.ErrServerClosed) {
-				return fmt.Errorf("shutdown HTTP server: %w", errors.Join(err, fmt.Errorf("close HTTP server: %w", closeErr)))
-			}
+			_ = server.Close()
+			<-serveResult
 			return fmt.Errorf("shutdown HTTP server: %w", err)
 		}
 		if err := <-serveResult; err != nil && !errors.Is(err, http.ErrServerClosed) {
@@ -212,8 +211,12 @@ func handleConvertWithGenerator(
 	if !decodeAPIRequest(w, r, &request) {
 		return
 	}
-	if len(request.Input) == 0 || string(request.Input) == "null" {
+	if len(request.Input) == 0 {
 		writeValidationProblem(w, r, bodyValidationError("/input", "required", "input is required"))
+		return
+	}
+	if string(request.Input) == "null" {
+		writeValidationProblem(w, r, bodyValidationError("/input", "invalid_type", "input must be a string, JSON object, or JSON array"))
 		return
 	}
 	input, err := inlineInput(request.Input)
@@ -221,9 +224,9 @@ func handleConvertWithGenerator(
 		writeValidationProblem(w, r, bodyValidationError("/input", "invalid_type", err.Error()))
 		return
 	}
-	format := request.Output.Format
-	if format == "" {
-		format = "dataset"
+	format := "dataset"
+	if request.Output != nil && request.Output.Format != nil {
+		format = *request.Output.Format
 	}
 	if format != "dataset" && format != "html" {
 		writeValidationProblem(w, r, bodyValidationError("/output/format", "invalid_enum", "output.format must be dataset or html"))
@@ -245,7 +248,16 @@ func handleConvertWithGenerator(
 	}
 	result, err := core.Convert(convertInput)
 	if err != nil {
+		var optionErr *core.OptionError
+		if errors.As(err, &optionErr) {
+			writeValidationProblem(w, r, conversionOptionValidationError(request.Charts, optionErr))
+			return
+		}
 		writeAPIProblem(w, r, http.StatusUnprocessableEntity, "Input processing failed", err.Error())
+		return
+	}
+	if len(result.Warnings) > 0 {
+		writeValidationProblem(w, r, conversionWarningValidationErrors(request.Charts, result.Warnings)...)
 		return
 	}
 	if format == "html" {
@@ -275,9 +287,6 @@ func handleMerge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	tagAxis := request.TagAxis
-	if tagAxis == "" {
-		tagAxis = "name"
-	}
 	datasets, validationErr := decodeDatasetArray(request.Datasets, "/datasets")
 	if validationErr != nil {
 		writeValidationProblem(w, r, *validationErr)
@@ -285,7 +294,7 @@ func handleMerge(w http.ResponseWriter, r *http.Request) {
 	}
 	merged, err := core.Merge(datasets, shared.Dimension(tagAxis))
 	if err != nil {
-		writeValidationProblem(w, r, bodyValidationError("/tagAxis", "invalid_enum", err.Error()))
+		writeValidationProblem(w, r, bodyValidationError("/tagAxis", "invalid_enum", "tagAxis must be one of name, x, y, or z"))
 		return
 	}
 	writeAPIJSON(w, http.StatusOK, merged)
@@ -352,6 +361,11 @@ func decodeAPIRequest(w http.ResponseWriter, r *http.Request, target any) bool {
 }
 
 func writeRequestDecodeProblem(w http.ResponseWriter, r *http.Request, err error) {
+	var validationErr apiValidationError
+	if errors.As(err, &validationErr) {
+		writeValidationProblem(w, r, validationErr)
+		return
+	}
 	var maxBytesErr *http.MaxBytesError
 	if errors.As(err, &maxBytesErr) {
 		writeAPIProblem(w, r, http.StatusRequestEntityTooLarge, "Content too large", fmt.Sprintf("Request body must not exceed %d bytes.", maxBytesErr.Limit))

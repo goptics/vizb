@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/goptics/vizb/internal/flags"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -270,6 +271,20 @@ func (s *ChartSpecSuite) TestValidateSwap() {
 		s.NoError(ValidateSwap("yxn", axes))
 		s.Error(ValidateSwap("xym", axes))
 	})
+}
+
+func (s *ChartSpecSuite) TestConvertIntegerFlagValue() {
+	flag := flags.Flag{Name: "limit", Kind: flags.KindInt}
+
+	value, err := convertFlagValue(flag, "12", true, nil)
+	s.Require().NoError(err)
+	s.Equal(12, value)
+
+	_, err = convertFlagValue(flag, "twelve", true, nil)
+	s.EqualError(err, `--chart: key "limit" value "twelve" must be an integer`)
+
+	_, err = convertFlagValue(flag, "", false, nil)
+	s.EqualError(err, `--chart: key "limit" requires a value (e.g. limit=<value>)`)
 }
 
 func TestChartSpecSuite(t *testing.T) {

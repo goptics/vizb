@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -176,6 +177,47 @@ func (s *OpenAPISuite) TestUIContractRejectsRemoteInputAndReturnsHTML() {
 	s.NotNil(successContent["text/html"])
 }
 
+func (s *OpenAPISuite) TestLineAndScatterSymbolsMatchServerValidation() {
+	contract := readContract(s.T())
+	schemas := mustMap(s.T(), mustMap(s.T(), contract["components"], "components")["schemas"], "components.schemas")
+	for _, schemaName := range []string{"LineChartConfig", "ScatterChartConfig"} {
+		s.Run(schemaName, func() {
+			schema := schemas[schemaName]
+			for _, symbol := range []string{"circle", "CIRCLE", "image://marker.svg", "path://M0 0", "M0 0"} {
+				s.NoError(validateSchema(contract, schema, map[string]any{"type": strings.TrimSuffix(strings.ToLower(schemaName), "chartconfig"), "symbol": symbol}, schemaName))
+			}
+			s.Error(validateSchema(contract, schema, map[string]any{"type": strings.TrimSuffix(strings.ToLower(schemaName), "chartconfig"), "symbol": "star"}, schemaName))
+		})
+	}
+}
+
+func (s *OpenAPISuite) TestRootConversionContract() {
+	t := s.T()
+	contract := readContract(t)
+	components := mustMap(t, contract["components"], "components")
+	schemas := mustMap(t, components["schemas"], "components.schemas")
+	request := mustMap(t, schemas["ConvertRequest"], "components.schemas.ConvertRequest")
+	s.Equal(
+		[]string{"charts", "description", "grouping", "id", "input", "jsonPath", "name", "output", "parser", "select", "tag", "theme", "units"},
+		propertyNames(t, request, "ConvertRequest"),
+	)
+	s.Equal([]string{"input"}, stringSliceValue(request["required"]))
+	s.NotContains(propertyNames(t, request, "ConvertRequest"), "metadata")
+
+	paths := mustMap(t, contract["paths"], "paths")
+	root := mustMap(t, mustMap(t, paths["/"], "paths./")["post"], "paths./.post")
+	responses := mustMap(t, root["responses"], "paths./.post.responses")
+	s.Equal([]string{"200", "400", "406", "413", "415", "422", "500"}, sortedMapKeys(responses))
+
+	allResponses := mustMap(t, components["responses"], "components.responses")
+	success := mustMap(t, allResponses["ConvertSuccess"], "components.responses.ConvertSuccess")
+	content := mustMap(t, success["content"], "components.responses.ConvertSuccess.content")
+	s.Equal([]string{"application/json", "text/html"}, sortedMapKeys(content))
+	jsonResponse := mustMap(t, content["application/json"], "ConvertSuccess.application/json")
+	jsonSchema := mustMap(t, jsonResponse["schema"], "ConvertSuccess.application/json.schema")
+	s.Equal("#/components/schemas/Dataset", jsonSchema["$ref"])
+}
+
 func TestOpenAPISuite(t *testing.T) {
 	suite.Run(t, new(OpenAPISuite))
 }
@@ -230,7 +272,7 @@ func verifyOperationExamples(t *testing.T, root map[string]any) {
 		}
 	}
 	for _, name := range []string{
-		"csvConversion", "convertedDataset", "convertedHTML", "taggedDatasets",
+		"csvConversion", "jsonHTMLConversion", "convertedDataset", "convertedHTML", "taggedDatasets",
 		"mergedDatasets", "datasetUI", "selfContainedHTML", "unknownOption", "invalidCSV",
 	} {
 		if !seen[name] {
@@ -368,8 +410,21 @@ func validateSchema(root map[string]any, rawSchema, value any, location string) 
 			}
 		}
 	case "string":
-		if _, ok := value.(string); !ok {
+		stringValue, ok := value.(string)
+		if !ok {
 			return fmt.Errorf("%s must be a string, got %T", location, value)
+		}
+		if min, ok := schema["minLength"].(int); ok && len(stringValue) < min {
+			return fmt.Errorf("%s has length %d, want at least %d", location, len(stringValue), min)
+		}
+		if pattern, ok := schema["pattern"].(string); ok {
+			re, err := regexp.Compile(pattern)
+			if err != nil {
+				return fmt.Errorf("%s has invalid pattern %q: %w", location, pattern, err)
+			}
+			if !re.MatchString(stringValue) {
+				return fmt.Errorf("%s = %#v does not match pattern %q", location, stringValue, pattern)
+			}
 		}
 	case "boolean":
 		if _, ok := value.(bool); !ok {
@@ -513,4 +568,12 @@ func sorted(values []string) []string {
 		}
 	}
 	return result
+}
+
+func sortedMapKeys(values map[string]any) []string {
+	result := make([]string, 0, len(values))
+	for key := range values {
+		result = append(result, key)
+	}
+	return sorted(result)
 }

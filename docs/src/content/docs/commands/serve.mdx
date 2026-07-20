@@ -56,8 +56,13 @@ curl -sS http://127.0.0.1:8080/ \
   -H 'Accept: application/json' \
   --data '{
     "input": "region,latency\\nwest,12\\neast,18\\n",
+    "id": "api-latency",
+    "name": "API latency",
+    "description": "Latency by region",
+    "tag": "v2",
+    "theme": "westeros",
     "parser": "csv",
-    "select": ["region", "latency"],
+    "select": ["region,latency"],
     "charts": { "types": ["bar", "line"] },
     "output": { "format": "dataset" }
   }'

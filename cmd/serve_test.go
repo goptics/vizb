@@ -18,6 +18,7 @@ import (
 
 	"github.com/goptics/vizb/cmd/cli"
 	internalcharts "github.com/goptics/vizb/internal/charts"
+	"github.com/goptics/vizb/pkg/core"
 	"github.com/goptics/vizb/pkg/parser"
 	"github.com/goptics/vizb/shared"
 	"github.com/stretchr/testify/suite"
@@ -205,9 +206,9 @@ func (s *ServeSuite) TestCancellationShutsDownInMemoryListener() {
 			listen:     func(string, string) (net.Listener, error) { return listener, nil },
 		})
 	}()
-	<-listener.acceptStarted
+	s.waitForSignal(listener.acceptStarted)
 	cancel()
-	s.Require().NoError(<-result)
+	s.Require().NoError(s.waitForResult(result))
 }
 
 func (s *ServeSuite) TestCancellationTriggersGracefulShutdown() {
@@ -227,9 +228,9 @@ func (s *ServeSuite) TestCancellationTriggersGracefulShutdown() {
 		})
 	}()
 
-	<-listener.acceptStarted
+	s.waitForSignal(listener.acceptStarted)
 	cancel()
-	s.Require().NoError(<-result)
+	s.Require().NoError(s.waitForResult(result))
 	s.True(shutdownCalled.Load())
 }
 
@@ -243,19 +244,17 @@ func (s *ServeSuite) TestShutdownFailureIsReturned() {
 		result <- runServer(ctx, serveOptions{Host: defaultServeHost, Port: defaultServePort}, serveDependencies{
 			newHandler: http.NotFoundHandler,
 			listen:     func(string, string) (net.Listener, error) { return listener, nil },
-			shutdown: func(server *http.Server, _ context.Context) error {
-				_ = server.Close()
-				return errors.New("drain failed")
-			},
+			shutdown:   func(*http.Server, context.Context) error { return errors.New("drain failed") },
 		})
 	}()
 
-	<-listener.acceptStarted
+	s.waitForSignal(listener.acceptStarted)
 	cancel()
-	s.EqualError(<-result, "shutdown HTTP server: drain failed")
+	s.EqualError(s.waitForResult(result), "shutdown HTTP server: drain failed")
+	s.waitForSignal(listener.closed)
 }
 
-func (s *ServeSuite) TestShutdownFailurePreservesCloseFailure() {
+func (s *ServeSuite) TestShutdownFailureIgnoresCloseError() {
 	listener := closeErrorListener{
 		blockingListener: newBlockingListener(),
 		err:              errors.New("close failed"),
@@ -272,11 +271,11 @@ func (s *ServeSuite) TestShutdownFailurePreservesCloseFailure() {
 		})
 	}()
 
-	<-listener.acceptStarted
+	s.waitForSignal(listener.acceptStarted)
 	cancel()
-	err := <-result
+	err := s.waitForResult(result)
 	s.ErrorIs(err, drainErr)
-	s.ErrorContains(err, "close HTTP server: close failed")
+	s.waitForSignal(listener.closed)
 }
 
 func (s *ServeSuite) TestShutdownDeadlineForceClosesActiveConnections() {
@@ -295,7 +294,11 @@ func (s *ServeSuite) TestShutdownDeadlineForceClosesActiveConnections() {
 				return http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 					defer close(handlerFinished)
 					close(requestStarted)
-					<-releaseRequest
+					select {
+					case <-releaseRequest:
+					case <-time.After(time.Second):
+						s.Fail("timed out waiting to release the active request")
+					}
 				})
 			},
 			listen: func(string, string) (net.Listener, error) { return listener, nil },
@@ -326,9 +329,9 @@ func (s *ServeSuite) TestShutdownDeadlineForceClosesActiveConnections() {
 			err      error
 		}{response: response, err: err}
 	}()
-	<-requestStarted
+	s.waitForSignal(requestStarted)
 	cancel()
-	s.EqualError(<-result, "shutdown HTTP server: context deadline exceeded")
+	s.EqualError(s.waitForResult(result), "shutdown HTTP server: context deadline exceeded")
 	select {
 	case client := <-clientResult:
 		s.NoError(client.err)
@@ -360,9 +363,9 @@ func (s *ServeSuite) TestServeFailureDuringShutdownIsReturned() {
 		})
 	}()
 
-	<-listener.acceptStarted
+	s.waitForSignal(listener.acceptStarted)
 	cancel()
-	s.EqualError(<-result, "serve HTTP: accept failed during shutdown")
+	s.EqualError(s.waitForResult(result), "serve HTTP: accept failed during shutdown")
 }
 
 func (s *ServeSuite) TestServeAddress() {
@@ -404,6 +407,15 @@ func (s *ServeSuite) TestConvertEndpoint() {
 
 	recorder = s.apiRequest(handler, "/", `{"input":[{"region":"west","value":12}],"charts":{"types":["bar"]}}`, "application/json", "")
 	s.Equal(http.StatusOK, recorder.Code)
+
+	recorder = s.apiRequest(
+		handler,
+		"/",
+		`{"input":"region,latency\nwest,12\neast,18\n","parser":"csv","select":["region,latency"],"charts":{"types":["bar"]}}`,
+		"application/json",
+		"application/json",
+	)
+	s.Equal(http.StatusOK, recorder.Code, recorder.Body.String())
 
 	documented := `{
 		"input":{"data":[{"region":"west","latency":12},{"region":"east","latency":18}]},
@@ -454,6 +466,7 @@ func (s *ServeSuite) TestConvertEndpointRejectsInvalidRequests() {
 		accept      string
 		wantStatus  int
 		wantErrors  bool
+		wantPath    string
 	}{
 		{name: "missing input", body: `{}`, contentType: "application/json", wantStatus: http.StatusUnprocessableEntity, wantErrors: true},
 		{name: "null input", body: `{"input":null}`, contentType: "application/json", wantStatus: http.StatusUnprocessableEntity, wantErrors: true},
@@ -465,6 +478,9 @@ func (s *ServeSuite) TestConvertEndpointRejectsInvalidRequests() {
 		{name: "invalid output format", body: `{"input":"x,y\na,1\n","output":{"format":"csv"}}`, contentType: "application/json", wantStatus: http.StatusUnprocessableEntity, wantErrors: true},
 		{name: "metadata is not supported", body: `{"input":"x,y\na,1\n","metadata":{"name":"example"}}`, contentType: "application/json", wantStatus: http.StatusUnprocessableEntity, wantErrors: true},
 		{name: "unknown field", body: `{"input":"x,y\na,1\n","extra":true}`, contentType: "application/json", wantStatus: http.StatusUnprocessableEntity, wantErrors: true},
+		{name: "request not object", body: `"foo"`, contentType: "application/json", wantStatus: http.StatusUnprocessableEntity, wantErrors: true, wantPath: "/"},
+		{name: "grouping not object", body: `{"input":"x,y\na,1\n","grouping":"foo"}`, contentType: "application/json", wantStatus: http.StatusUnprocessableEntity, wantErrors: true, wantPath: "/grouping"},
+		{name: "grouping pattern wrong type", body: `{"input":"x,y\na,1\n","grouping":{"pattern":123}}`, contentType: "application/json", wantStatus: http.StatusUnprocessableEntity, wantErrors: true, wantPath: "/grouping/pattern"},
 		{name: "missing content type", body: `{}`, wantStatus: http.StatusUnsupportedMediaType},
 		{name: "wrong content type", body: `{}`, contentType: "text/plain", wantStatus: http.StatusUnsupportedMediaType},
 		{name: "malformed content type", body: `{}`, contentType: `application/json; charset="`, wantStatus: http.StatusUnsupportedMediaType},
@@ -481,6 +497,10 @@ func (s *ServeSuite) TestConvertEndpointRejectsInvalidRequests() {
 				}
 				s.Require().NoError(json.Unmarshal(recorder.Body.Bytes(), &problem))
 				s.NotEmpty(problem.Errors)
+				if test.wantPath != "" {
+					s.Equal(test.wantPath, problem.Errors[0].Path)
+					s.Equal("invalid_type", problem.Errors[0].Code)
+				}
 			}
 		})
 	}
@@ -504,10 +524,13 @@ func (s *ServeSuite) TestConvertEndpointValidatesStructuredOptions() {
 		{name: "json path with csv", body: `{"input":"x,y\na,1\n","parser":"csv","jsonPath":".data"}`},
 		{name: "select with benchmark", body: `{"input":"BenchmarkFoo 100 1 ns/op\n","parser":"go","select":["x,y"]}`},
 		{name: "empty select", body: `{"input":"x,y\na,1\n","select":[""]}`},
+		{name: "empty grouped select", body: `{"input":"region,value\nwest,1\n","grouping":{"columns":["region"]},"select":[""]}`},
+		{name: "invalid grouped select", body: `{"input":"region,value\nwest,1\n","grouping":{"columns":["region"]},"select":["value{"]}`},
 		{name: "invalid solo select", body: `{"input":"x,y\na,1\n","select":["x"]}`},
 		{name: "invalid repeatable select", body: `{"input":"a,b,c\n1,2,3\n","select":["a,b,c","a,b"]}`},
 		{name: "duplicate grouped select", body: `{"input":"region,value\nwest,1\n","parser":"csv","grouping":{"pattern":"x","columns":["region"]},"select":["value","value"]}`},
 		{name: "group select conflict", body: `{"input":"region,value\nwest,1\n","parser":"csv","grouping":{"pattern":"x","columns":["region"]},"select":["region"]}`},
+		{name: "structured grouping separator mismatch", body: `{"input":"a,b,c\nx,y,1\n","grouping":{"pattern":"x,y,z","columns":["a/b/c"]}}`},
 		{name: "empty chart types", body: `{"input":"x,y\na,1\n","charts":{"types":[]}}`},
 		{name: "duplicate chart types", body: `{"input":"x,y\na,1\n","charts":{"types":["bar","bar"]}}`},
 		{name: "missing config type", body: `{"input":"x,y\na,1\n","charts":{"configs":[{"showLabels":true}]}}`},
@@ -524,6 +547,7 @@ func (s *ServeSuite) TestConvertEndpointValidatesStructuredOptions() {
 		{name: "stat not object", body: `{"input":"x,y\na,1\n","charts":{"configs":[{"type":"bar","stat":true}]}}`},
 		{name: "stat missing enabled", body: `{"input":"x,y\na,1\n","charts":{"configs":[{"type":"bar","stat":{"math":[]}}]}}`},
 		{name: "stat missing math", body: `{"input":"x,y\na,1\n","charts":{"configs":[{"type":"bar","stat":{"enabled":true}}]}}`},
+		{name: "null stat math", body: `{"input":"x,y\na,1\n","charts":{"configs":[{"type":"bar","stat":{"enabled":true,"math":null}}]}}`},
 		{name: "stat invalid math", body: `{"input":"x,y\na,1\n","charts":{"configs":[{"type":"bar","stat":{"enabled":true,"math":["bogus"]}}]}}`},
 		{name: "stat duplicate math", body: `{"input":"x,y\na,1\n","charts":{"configs":[{"type":"bar","stat":{"enabled":true,"math":["counts","counts"]}}]}}`},
 	}
@@ -555,10 +579,34 @@ func (s *ServeSuite) TestConvertEndpointReportsUIGenerationFailure() {
 	s.Contains(recorder.Body.String(), "could not generate the response")
 }
 
+func (s *ServeSuite) TestConvertEndpointReportsInapplicableChartOptions() {
+	handler := newRESTHandler()
+	recorder := s.apiRequest(
+		handler,
+		"/",
+		`{"input":"region,value\nwest,12\n","parser":"csv","charts":{"types":["bar"],"configs":[{"type":"bar","threeDRotate":true}]}}`,
+		"application/json",
+		"application/json",
+	)
+	s.Equal(http.StatusUnprocessableEntity, recorder.Code, recorder.Body.String())
+
+	var problem struct {
+		Errors []apiValidationError `json:"errors"`
+	}
+	s.Require().NoError(json.Unmarshal(recorder.Body.Bytes(), &problem))
+	s.Require().Len(problem.Errors, 1)
+	s.Equal("/charts/configs/0/threeDRotate", problem.Errors[0].Path)
+	s.Equal("inapplicable_option", problem.Errors[0].Code)
+}
+
 func (s *ServeSuite) TestMergeEndpoint() {
 	handler := newRESTHandler()
 	recorder := s.apiRequest(handler, "/merge", `{`, "application/json", "")
 	s.Equal(http.StatusBadRequest, recorder.Code)
+
+	recorder = s.apiRequest(handler, "/merge", `{"datasets":[],"extra":true}`, "application/json", "")
+	s.Equal(http.StatusUnprocessableEntity, recorder.Code)
+	s.Contains(recorder.Body.String(), `"path":"/"`)
 
 	recorder = s.apiRequest(handler, "/merge", `{"datasets":[{"name":"one"}]}`, "application/json", "")
 	s.Equal(http.StatusUnprocessableEntity, recorder.Code)
@@ -571,6 +619,7 @@ func (s *ServeSuite) TestMergeEndpoint() {
 
 	recorder = s.apiRequest(handler, "/merge", `{"datasets":[`+firstMergeJSON+`,`+secondMergeJSON+`],"tagAxis":"invalid"}`, "application/json", "")
 	s.Equal(http.StatusUnprocessableEntity, recorder.Code)
+	s.Contains(recorder.Body.String(), `"/tagAxis"`)
 
 	recorder = s.apiRequest(handler, "/merge", `{"datasets":[{"name":"one"},{"name":"two"}]}`, "application/json", "")
 	s.Equal(http.StatusUnprocessableEntity, recorder.Code)
@@ -660,6 +709,22 @@ func (s *ServeSuite) TestUIEndpointMaterialisesDefaultsForSelectedChartTypes() {
 	s.Equal(http.StatusOK, recorder.Code, recorder.Body.String())
 }
 
+func (s *ServeSuite) TestUIEndpointAddsAnUnselectedOverrideType() {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handleUIWithGenerator(w, r, func(datasets []shared.Dataset, charts []string) (string, error) {
+			s.Nil(charts)
+			s.Require().Len(datasets, 1)
+			s.Require().Len(datasets[0].Settings, 2)
+			s.Equal("bar", datasets[0].Settings[0].ChartType())
+			s.Equal("line", datasets[0].Settings[1].ChartType())
+			return "<html>ok</html>", nil
+		})
+	})
+	body := `{"datasets":` + validDatasetJSON + `,"charts":{"configs":[{"type":"line","smooth":true}]}}`
+	recorder := s.apiRequest(handler, "/ui", body, "application/json", "text/html")
+	s.Equal(http.StatusOK, recorder.Code, recorder.Body.String())
+}
+
 func (s *ServeSuite) TestUIEndpointValidatesDatasetsAndStatistics() {
 	handler := newRESTHandler()
 	tests := []struct {
@@ -680,6 +745,7 @@ func (s *ServeSuite) TestUIEndpointValidatesDatasetsAndStatistics() {
 		{name: "history missing timestamp", datasets: `{"name":"Bench","history":[{"tag":"v1"}],"axes":[],"settings":[],"data":[]}`},
 		{name: "invalid statistics", datasets: validDatasetJSON, suffix: `,"statistics":{"math":["bogus"]}`},
 		{name: "duplicate statistics", datasets: validDatasetJSON, suffix: `,"statistics":{"math":["counts","counts"]}`},
+		{name: "unselected chart config", datasets: validDatasetJSON, suffix: `,"charts":{"types":["bar"],"configs":[{"type":"line"}]}`},
 	}
 	for _, test := range tests {
 		s.Run(test.name, func() {
@@ -745,6 +811,7 @@ func (s *ServeSuite) TestRequestHelpers() {
 	s.False(accepts(request, "text/html"))
 	request.Header.Set("Accept", "text")
 	s.False(accepts(request, "text/html"))
+	request.Header.Set("Accept", "invalid")
 	s.False(accepts(request, "invalid"))
 
 	var target map[string]any
@@ -770,8 +837,9 @@ func (s *ServeSuite) TestRequestHelpers() {
 	cfg = parser.Config{}
 	validationErr = applySelectOptions(&cfg, []string{"region,value"})
 	s.Nil(validationErr)
+	pattern := "x,y"
 	_, validationErr = buildParserConfig(convertRequest{
-		Grouping: &groupingOptions{Pattern: "x,y", Columns: []string{"region/value"}},
+		Grouping: &groupingOptions{Pattern: &pattern, Columns: []string{"region/value"}},
 	}, "csv")
 	s.NotNil(validationErr)
 
@@ -809,6 +877,226 @@ func (s *ServeSuite) TestRequestHelpers() {
 
 	_, validationErr = decodeStrictDataset(json.RawMessage(`{"name":"Bench","history":[{"tag":"v1","timestamp":"now"}],"axes":[],"settings":[],"data":[]}`), "/datasets/0")
 	s.Nil(validationErr)
+}
+
+func (s *ServeSuite) TestRequestContractHelpers() {
+	s.Run("nested object decoding", func() {
+		for _, test := range []struct {
+			name   string
+			raw    string
+			target any
+			path   string
+		}{
+			{name: "null grouping", raw: `null`, target: new(groupingOptions), path: "/grouping"},
+			{name: "null charts", raw: `null`, target: new(chartSelection), path: "/charts"},
+			{name: "unknown charts field", raw: `{"bogus":true}`, target: new(chartSelection), path: "/charts/bogus"},
+			{name: "null output", raw: `null`, target: new(convertOutput), path: "/output"},
+			{name: "unknown output field", raw: `{"bogus":true}`, target: new(convertOutput), path: "/output/bogus"},
+		} {
+			s.Run(test.name, func() {
+				err := json.Unmarshal([]byte(test.raw), test.target)
+				var validationErr apiValidationError
+				s.Require().ErrorAs(err, &validationErr)
+				s.Equal(test.path, validationErr.Path)
+			})
+		}
+	})
+
+	s.Run("statistics decoding", func() {
+		for _, test := range []struct {
+			name string
+			raw  string
+			path string
+		}{
+			{name: "null statistics", raw: `{"statistics":null}`, path: "/statistics"},
+			{name: "null enabled", raw: `{"statistics":{"enabled":null}}`, path: "/statistics/enabled"},
+			{name: "null math", raw: `{"statistics":{"math":null}}`, path: "/statistics/math"},
+			{name: "unknown statistics field", raw: `{"statistics":{"bogus":true}}`, path: "/statistics/bogus"},
+		} {
+			s.Run(test.name, func() {
+				var request uiRequest
+				err := json.Unmarshal([]byte(test.raw), &request)
+				var validationErr apiValidationError
+				s.Require().ErrorAs(err, &validationErr)
+				s.Equal(test.path, validationErr.Path)
+			})
+		}
+
+		var omitted uiRequest
+		s.Require().NoError(json.Unmarshal([]byte(`{}`), &omitted))
+		s.Nil(omitted.Statistics)
+
+		var populated uiRequest
+		s.Require().NoError(json.Unmarshal([]byte(`{"statistics":{"enabled":false,"math":["counts"]}}`), &populated))
+		s.Require().NotNil(populated.Statistics)
+		s.False(*populated.Statistics.Enabled)
+		s.Equal([]string{"counts"}, populated.Statistics.Math)
+	})
+
+	s.Run("conversion option paths", func() {
+		selection := chartSelection{Configs: []json.RawMessage{
+			json.RawMessage(`invalid`),
+			json.RawMessage(`{"type":"bar","swap":"yx"}`),
+		}}
+		for _, test := range []struct {
+			name string
+			path string
+		}{
+			{name: "filter", path: "/grouping/filter"},
+			{name: "grouping", path: "/grouping"},
+			{name: "jsonPath", path: "/jsonPath"},
+			{name: "select", path: "/select"},
+			{name: "swap", path: "/charts/configs/1/swap"},
+			{name: "other", path: "/charts/configs"},
+		} {
+			got := conversionOptionValidationError(selection, &core.OptionError{Name: test.name, Err: errors.New("not applicable")})
+			s.Equal(test.path, got.Path)
+		}
+		s.Equal("/charts/configs", chartConfigFieldPath(selection, "swap", 1))
+	})
+
+	s.Run("warning parsing", func() {
+		s.Empty(warningFlagName("unstructured warning"))
+		s.Empty(warningFlagName(`flag "unterminated`))
+		s.Empty(chartFlagJSONKey("not-a-flag"))
+		s.Equal("show-labels", warningFlagName(`flag "show-labels" skipped: unsupported`))
+		s.Equal("showLabels", chartFlagJSONKey("show-labels"))
+
+		selection := chartSelection{Configs: []json.RawMessage{
+			json.RawMessage(`{"type":"bar","showLabels":true}`),
+			json.RawMessage(`{"type":"line","showLabels":false}`),
+		}}
+		errors := conversionWarningValidationErrors(selection, []string{
+			`flag "show-labels" skipped: unsupported`,
+			`flag "show-labels" skipped: unsupported`,
+			"unstructured warning",
+		})
+		s.Equal([]string{
+			"/charts/configs/0/showLabels",
+			"/charts/configs/1/showLabels",
+			"/charts/configs",
+		}, []string{errors[0].Path, errors[1].Path, errors[2].Path})
+	})
+
+	s.Run("conversion request decoding", func() {
+		for _, test := range []struct {
+			name   string
+			raw    string
+			target any
+			path   string
+		}{
+			{name: "null convert field", raw: `{"theme":null}`, target: new(convertRequest), path: "/theme"},
+			{name: "unknown grouping field", raw: `{"unexpected":true}`, target: new(groupingOptions), path: "/grouping/unexpected"},
+			{name: "null unit field", raw: `{"memory":null}`, target: new(unitOptions), path: "/units/memory"},
+			{name: "unknown unit field", raw: `{"unexpected":true}`, target: new(unitOptions), path: "/units/unexpected"},
+		} {
+			s.Run(test.name, func() {
+				err := json.Unmarshal([]byte(test.raw), test.target)
+				var validationErr apiValidationError
+				s.Require().ErrorAs(err, &validationErr)
+				s.Equal(test.path, validationErr.Path)
+			})
+		}
+
+		s.Error(rejectNullFields([]byte(`{`), "/", map[string]string{}))
+		err := strictDecodeRequestObject([]byte(`{} {}`), new(groupingOptions), "")
+		var validationErr apiValidationError
+		s.Require().ErrorAs(err, &validationErr)
+		s.Equal("/", validationErr.Path)
+		s.Equal("invalid_json", validationErr.Code)
+	})
+
+	s.Run("conversion metadata", func() {
+		id, name := "run-1", "Example"
+		description, tag, theme := "Description", "release", " Westeros "
+		metadata, validationErr := buildConvertMetadata(convertRequest{
+			ID:          &id,
+			Name:        &name,
+			Description: &description,
+			Tag:         &tag,
+			Theme:       &theme,
+		})
+		s.Require().Nil(validationErr)
+		s.Equal(core.Metadata{ID: id, Name: name, Description: description, Tag: tag, Theme: "westeros"}, metadata)
+
+		invalidTheme := "not-a-theme"
+		_, _, validationErr = buildConvertInput(convertRequest{Theme: &invalidTheme}, []byte("x,y\\na,1\\n"))
+		s.Require().NotNil(validationErr)
+		s.Equal("/theme", validationErr.Path)
+	})
+
+	s.Run("chart config decoding", func() {
+		_, validationErr := decodeChartConfig(json.RawMessage(`{`), "/config")
+		s.Require().NotNil(validationErr)
+		s.Equal("/config", validationErr.Path)
+
+		_, validationErr = decodeChartConfig(json.RawMessage(`{"type":"bar","showLabels":"yes"}`), "/config")
+		s.Require().NotNil(validationErr)
+		s.Equal("/config/showLabels", validationErr.Path)
+
+		for _, raw := range []string{
+			`{`,
+			`{"scale":null}`,
+			`{"symbol":1}`,
+			`{"symbol":"not-a-symbol"}`,
+			`{"sort":true}`,
+			`{"sort":{"enabled":null,"order":"asc"}}`,
+			`{"stat":true}`,
+			`{"stat":{"enabled":"yes","math":[]}}`,
+		} {
+			s.NotNil(validateChartConfigValues(json.RawMessage(raw), "/config"), raw)
+		}
+	})
+
+	s.Run("UI materialisation marshal error", func() {
+		for _, test := range []struct {
+			name   string
+			config internalcharts.ChartConfig
+		}{
+			{
+				name:   "marshal base",
+				config: testChartConfig{chartType: "bar", marshalErr: errors.New("marshal failed")},
+			},
+		} {
+			s.Run(test.name, func() {
+				_, _, validationErr := applyUIOptions(
+					[]shared.Dataset{{Settings: []internalcharts.ChartConfig{test.config}}},
+					chartSelection{},
+					nil,
+				)
+				s.Require().NotNil(validationErr)
+			})
+		}
+	})
+
+	s.Run("valid history", func() {
+		raw := json.RawMessage(`{"name":"Bench","history":[{"tag":"v1","timestamp":"now"}],"axes":[],"settings":[],"data":[]}`)
+		datasets, validationErr := decodeDatasets(raw)
+		s.Require().Nil(validationErr)
+		s.Require().Len(datasets, 1)
+		s.Require().Len(datasets[0].History, 1)
+		s.Equal("v1", datasets[0].History[0].Tag)
+	})
+}
+
+func (s *ServeSuite) waitForSignal(signal <-chan struct{}) {
+	s.T().Helper()
+	select {
+	case <-signal:
+	case <-time.After(time.Second):
+		s.FailNow("timed out waiting for signal")
+	}
+}
+
+func (s *ServeSuite) waitForResult(result <-chan error) error {
+	s.T().Helper()
+	select {
+	case err := <-result:
+		return err
+	case <-time.After(time.Second):
+		s.FailNow("timed out waiting for server result")
+		return nil
+	}
 }
 
 func (s *ServeSuite) apiRequest(handler http.Handler, path, body, contentType, accept string) *httptest.ResponseRecorder {
@@ -946,6 +1234,21 @@ func (l *singleConnectionListener) Addr() net.Addr { return testAddr("in-memory"
 
 func directSignalContext(ctx context.Context, _ ...os.Signal) (context.Context, context.CancelFunc) {
 	return context.WithCancel(ctx)
+}
+
+type testChartConfig struct {
+	chartType  string
+	raw        json.RawMessage
+	marshalErr error
+}
+
+func (c testChartConfig) ChartType() string { return c.chartType }
+func (testChartConfig) StatEnabled() bool   { return false }
+func (testChartConfig) StatMath() []string  { return nil }
+func (testChartConfig) SwapString() string  { return "" }
+
+func (c testChartConfig) MarshalJSON() ([]byte, error) {
+	return c.raw, c.marshalErr
 }
 
 func TestServeSuite(t *testing.T) {
