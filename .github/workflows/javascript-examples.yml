@@ -13,14 +13,14 @@ on:
         required: false
         type: boolean
         default: true
-        description: "Publish the generated JavaScript examples immediately"
+        description: "Publish after merge (default true; set false to prepare-only)"
   workflow_dispatch:
     inputs:
       publish:
         required: false
         type: boolean
         default: true
-        description: "Publish the generated JavaScript examples immediately"
+        description: "Publish after merge (default true; set false to prepare-only)"
 
 jobs:
   convert:
@@ -38,7 +38,6 @@ jobs:
             name: "Bubble Vs Insertion Sort (vitest)"
             description: "Vitest bench output — benchmark name and case from regex groups"
             group-regex: "n=(?<y>.*)/(?<x>.*)"
-
 
     runs-on: ubuntu-latest
     steps:
@@ -75,8 +74,18 @@ jobs:
     name: Merge JavaScript Benchmarks
     needs: convert
     permissions:
-      contents: write
+      contents: read
     uses: ./.github/workflows/merge-examples.yml
     with:
       example_category: javascript
-      publish: ${{ github.event_name != 'workflow_dispatch' || inputs.publish == true }}
+
+  publish:
+    name: Publish JavaScript examples
+    needs: merge
+    if: ${{ inputs.publish != false }}  # default on; release/dispatch pass false to skip
+    permissions:
+      contents: write
+    uses: ./.github/workflows/publish-site.yml
+    with:
+      artifact_pattern: site-examples-javascript
+      keep_files: true

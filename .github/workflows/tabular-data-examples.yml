@@ -13,14 +13,14 @@ on:
         required: false
         type: boolean
         default: true
-        description: "Publish the generated tabular-data examples immediately"
+        description: "Publish after merge (default true; set false to prepare-only)"
   workflow_dispatch:
     inputs:
       publish:
         required: false
         type: boolean
         default: true
-        description: "Publish the generated tabular-data examples immediately"
+        description: "Publish after merge (default true; set false to prepare-only)"
 
 jobs:
   convert:
@@ -98,8 +98,18 @@ jobs:
     name: Merge Tabular Data
     needs: convert
     permissions:
-      contents: write
+      contents: read
     uses: ./.github/workflows/merge-examples.yml
     with:
       example_category: tabular-data
-      publish: ${{ github.event_name != 'workflow_dispatch' || inputs.publish == true }}
+
+  publish:
+    name: Publish Tabular Data examples
+    needs: merge
+    if: ${{ inputs.publish != false }}  # default on; release/dispatch pass false to skip
+    permissions:
+      contents: write
+    uses: ./.github/workflows/publish-site.yml
+    with:
+      artifact_pattern: site-examples-tabular-data
+      keep_files: true

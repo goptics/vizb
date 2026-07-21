@@ -107,12 +107,15 @@ jobs:
     permissions:
       contents: write
 
+  # prepare-only (publish: false); final publish-site deploys all site-* artifacts together
   tabular-data-examples:
     name: "Examples: Tabular Data"
     needs: goreleaser
     uses: ./.github/workflows/tabular-data-examples.yml
     permissions:
       contents: write
+    with:
+      publish: false
 
   math-and-3d-examples:
     name: "Examples: Math & 3D"
@@ -120,6 +123,8 @@ jobs:
     uses: ./.github/workflows/math-and-3d-examples.yml
     permissions:
       contents: write
+    with:
+      publish: false
 
   comparisons-examples:
     name: "Examples: Comparisons"
@@ -127,6 +132,8 @@ jobs:
     uses: ./.github/workflows/comparisons-examples.yml
     permissions:
       contents: write
+    with:
+      publish: false
 
   github-legends:
     name: "Examples: GitHub Legends"
@@ -134,6 +141,8 @@ jobs:
     uses: ./.github/workflows/github-legends.yml
     permissions:
       contents: write
+    with:
+      publish: false
 
   go-examples:
     name: "Examples: Go"
@@ -141,6 +150,8 @@ jobs:
     uses: ./.github/workflows/go-examples.yml
     permissions:
       contents: write
+    with:
+      publish: false
 
   javascript-examples:
     name: "Examples: JavaScript"
@@ -148,6 +159,8 @@ jobs:
     uses: ./.github/workflows/javascript-examples.yml
     permissions:
       contents: write
+    with:
+      publish: false
 
   rust-examples:
     name: "Examples: Rust"
@@ -155,6 +168,8 @@ jobs:
     uses: ./.github/workflows/rust-examples.yml
     permissions:
       contents: write
+    with:
+      publish: false
 
   publish-site:
     name: Publish Site

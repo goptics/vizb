@@ -12,6 +12,7 @@
   <p>
     <a href="https://github.com/avelino/awesome-go?tab=readme-ov-file#benchmarks"><img src="https://awesome.re/mentioned-badge-flat.svg" alt="Mentioned in Awesome Go" /></a>
     <a href="https://vizb.goptics.org"><img src="https://img.shields.io/badge/Docs-00ADD8?style=for&logo=readthedocs" alt="Docs" /></a>
+    <a href="https://vizb.goptics.org/api/"><img src="https://img.shields.io/badge/API-OpenAPI-7B42BC?style=for&logo=openapiinitiative&logoColor=white" alt="API" /></a>
     <a href="https://vizb.goptics.org/examples"><img src="https://img.shields.io/badge/Live-Examples-orange?style=for" alt="Examples" /></a>
     <a href="https://github.com/goptics/vizb/actions/workflows/cli.yml"><img src="https://github.com/goptics/vizb/actions/workflows/cli.yml/badge.svg" alt="CLI" /></a>
     <a href="https://github.com/goptics/vizb/actions/workflows/ui.yml"><img src="https://github.com/goptics/vizb/actions/workflows/ui.yml/badge.svg" alt="UI" /></a>
@@ -29,6 +30,7 @@
   <p>
     <a href="https://vizb.goptics.org/getting-started/">Getting Started</a> ·
     <a href="https://vizb.goptics.org/commands/root/">Commands</a> ·
+    <a href="https://vizb.goptics.org/api/">API</a> ·
     <a href="https://vizb.goptics.org/charts/">Charts</a> ·
     <a href="https://vizb.goptics.org/guides/parsers/">Parsers</a> ·
     <a href="https://vizb.goptics.org/guides/group/">Grouping</a> ·

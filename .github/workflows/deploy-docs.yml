@@ -49,8 +49,9 @@ jobs:
           path: docs/dist
           if-no-files-found: error
 
+  # Deploy is a separate job (not nested in build) so callers can prepare-only.
   publish:
-    if: inputs.publish
+    if: ${{ inputs.publish }}
     needs: build
     permissions:
       contents: write
