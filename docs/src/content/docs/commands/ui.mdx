@@ -96,6 +96,16 @@ Upload `bench.json` to the URL separately (GitHub raw, S3, GitHub Pages, etc.), 
 
 The remote JSON may list more chart types in `settings` than were bundled — the UI intersects against `VIZB_CHARTS` at load time, so only shipped renderers appear as tabs.
 
+When the dashboard is served over HTTP(S), a dataset path such as
+`/go-1.25?c=line&g=1` skips the base response and requests
+`<data-url>/dataset/go-1.25` directly. The final path segment is the decoded dataset ID;
+query parameters continue to control charts and groups, and `id`/`d` are ignored in this
+mode. Root, `index.html`, and other HTML paths keep the existing base/catalog flow.
+
+Configure the host to serve the same generated HTML for unmatched paths (`/*`) so direct
+links and refreshes reach the dashboard. Path mode is disabled for `file://` pages; use the
+base/catalog URL flow there.
+
 The base URL supports three response shapes:
 
 - One complete vizb dataset object.
@@ -142,8 +152,8 @@ With an embedded JSON file, 3D is still detected automatically from the data (no
 </Aside>
 
 <Aside type="caution">
-  When using `--data-url`, both the catalog/base response and every detail response must
-  satisfy the same CORS requirements. For `file://` dashboards, this normally means
+  When using `--data-url`, every requested base or detail response must satisfy the same
+  CORS requirements. For `file://` dashboards, this normally means
   responding with `Access-Control-Allow-Origin: *`.
   Most static hosts (GitHub raw, public S3, GitHub Pages, Cloudflare Pages) already do this.
   The HTML can be re-used indefinitely — update the data at the URL to refresh results without regenerating the HTML.

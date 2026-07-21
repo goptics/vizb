@@ -144,7 +144,7 @@ useDashboardInit()
     </IconButton>
   </nav>
 
-  <LoadError v-if="loadError" :message="loadError" />
+  <LoadError v-if="loadError" :message="loadError" :retry="retryActiveDataset" />
 
   <LoadingSkeleton v-else-if="showSkeleton" />
 

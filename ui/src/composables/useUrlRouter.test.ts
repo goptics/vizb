@@ -12,6 +12,7 @@ const holder = vi.hoisted(() => ({
   setArrangement: vi.fn(),
   setChartType: vi.fn(),
   resultGroups: { value: [{ name: 'first' }, { name: 'second' }] },
+  pathDatasetId: null as string | null,
   activeDatasetRef: {
     get value() {
       return holder.datasets?.value[holder.activeDatasetId.value]
@@ -38,6 +39,7 @@ vi.mock('./useDataPoint', () => ({
     selectGroup: holder.selectGroup,
     setArrangement: holder.setArrangement,
     arrangementMap: new Map<string, string>(),
+    pathDatasetId: holder.pathDatasetId,
   }),
 }))
 
@@ -55,10 +57,10 @@ const ds = (settings: Dataset['settings']): Dataset => ({
   data: [],
 })
 
-function mockWindow(search: string) {
+function mockWindow(search: string, pathname = '/') {
   const replaceState = vi.fn()
   vi.stubGlobal('window', {
-    location: { pathname: '/', search },
+    location: { pathname, search, protocol: 'https:' },
     history: { replaceState },
   })
   return replaceState
@@ -74,6 +76,7 @@ describe('useUrlRouter', () => {
     holder.activeChartIndex.value = 0
     holder.activeDatasetId.value = 0
     holder.chartType.value = 'bar'
+    holder.pathDatasetId = null
     holder.selectDataset.mockReset()
     holder.selectDataset.mockImplementation(async (id: number) => {
       holder.activeDatasetId.value = id
@@ -145,6 +148,25 @@ describe('useUrlRouter', () => {
     const { initFromUrl } = useUrlRouter()
     await initFromUrl()
     expect(holder.selectDataset).toHaveBeenCalledWith(2)
+  })
+
+  it('uses path identity while applying the shared chart and group parameters', async () => {
+    holder.pathDatasetId = 'my-id'
+    holder.datasets = ref([
+      ds([
+        { type: 'bar', threeD: false },
+        { type: 'line', sort: { enabled: false, order: 'asc' } },
+      ]),
+      { ...ds([{ type: 'bar' }]), id: 'query-id' },
+    ])
+    mockWindow('?id=query-id&d=1&c=line&g=1&bar.3d=true', '/my-id')
+    const { useUrlRouter } = await import('./useUrlRouter')
+    await useUrlRouter().initFromUrl()
+
+    expect(holder.selectDataset).toHaveBeenCalledWith(0)
+    expect(holder.selectGroup).toHaveBeenCalledWith(1)
+    expect(holder.setChartType).toHaveBeenCalledWith('line')
+    expect((holder.datasets.value[0]!.settings[0] as BarConfig).threeD).toBe(true)
   })
 
   it('applies chart parameters only after the selected detail has loaded', async () => {
@@ -243,6 +265,21 @@ describe('useUrlRouter', () => {
     const { syncUrlToState } = useUrlRouter()
     syncUrlToState()
     expect(replaceState).toHaveBeenCalledWith(null, '', '/?d=1')
+  })
+
+  it('keeps the path identity and omits id/d while syncing chart parameters', async () => {
+    holder.pathDatasetId = 'my-id'
+    holder.datasets = ref([
+      {
+        ...ds([{ type: 'bar', threeD: true }]),
+        id: 'my-id',
+      },
+    ])
+    const replaceState = mockWindow('?id=query-id&d=1', '/my-id')
+    const { useUrlRouter } = await import('./useUrlRouter')
+    useUrlRouter().syncUrlToState()
+
+    expect(replaceState).toHaveBeenCalledWith(null, '', '/my-id?bar.3d=true')
   })
 
   it('syncs 3D settings to bar.3d / bar.3d-vm in the URL', async () => {

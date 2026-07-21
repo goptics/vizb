@@ -144,6 +144,9 @@ detail endpoints must both satisfy the existing CORS requirement (normally
 `Access-Control-Allow-Origin: *` for a `file://` dashboard). Details are cached only in
 memory for the current page session, and failed requests expose a Retry action.
 
+For a single-dataset deep link, serve the generated HTML as the fallback for `/*` and open
+`/<encoded-id>`. Vizb then skips the catalog and fetches only that dataset's detail URL.
+
 ### Merge and generate
 
 ```yaml
