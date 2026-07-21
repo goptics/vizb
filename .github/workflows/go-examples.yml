@@ -13,14 +13,14 @@ on:
         required: false
         type: boolean
         default: true
-        description: "Publish the generated Go examples immediately"
+        description: "Publish after merge (default true; set false to prepare-only)"
   workflow_dispatch:
     inputs:
       publish:
         required: false
         type: boolean
         default: true
-        description: "Publish the generated Go examples immediately"
+        description: "Publish after merge (default true; set false to prepare-only)"
 
 jobs:
   convert:
@@ -128,8 +128,18 @@ jobs:
     name: Merge Go Benchmarks
     needs: convert
     permissions:
-      contents: write
+      contents: read
     uses: ./.github/workflows/merge-examples.yml
     with:
       example_category: go
-      publish: ${{ github.event_name != 'workflow_dispatch' || inputs.publish == true }}
+
+  publish:
+    name: Publish Go examples
+    needs: merge
+    if: ${{ inputs.publish != false }}  # default on; release/dispatch pass false to skip
+    permissions:
+      contents: write
+    uses: ./.github/workflows/publish-site.yml
+    with:
+      artifact_pattern: site-examples-go
+      keep_files: true

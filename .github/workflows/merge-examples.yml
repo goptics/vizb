@@ -6,11 +6,6 @@ on:
         required: true
         type: string
         description: "Example category subdirectory under examples/ (e.g. go, tabular-data, github-legends)"
-      publish:
-        required: false
-        type: boolean
-        default: false
-        description: "Publish the generated example page immediately"
 
 jobs:
   merge:
@@ -56,14 +51,3 @@ jobs:
           name: site-examples-${{ inputs.example_category }}
           path: dist
           if-no-files-found: error
-
-  publish:
-    name: Publish ${{ inputs.example_category }} examples
-    if: inputs.publish
-    needs: merge
-    permissions:
-      contents: write
-    uses: ./.github/workflows/publish-site.yml
-    with:
-      artifact_pattern: site-examples-${{ inputs.example_category }}
-      keep_files: true

@@ -13,14 +13,14 @@ on:
         required: false
         type: boolean
         default: true
-        description: "Publish the generated math-and-3d examples immediately"
+        description: "Publish after merge (default true; set false to prepare-only)"
   workflow_dispatch:
     inputs:
       publish:
         required: false
         type: boolean
         default: true
-        description: "Publish the generated math-and-3d examples immediately"
+        description: "Publish after merge (default true; set false to prepare-only)"
 
 jobs:
   convert:
@@ -94,8 +94,18 @@ jobs:
     name: Merge Math & 3D Data
     needs: convert
     permissions:
-      contents: write
+      contents: read
     uses: ./.github/workflows/merge-examples.yml
     with:
       example_category: math-and-3d
-      publish: ${{ github.event_name != 'workflow_dispatch' || inputs.publish == true }}
+
+  publish:
+    name: Publish Math & 3D examples
+    needs: merge
+    if: ${{ inputs.publish != false }}  # default on; release/dispatch pass false to skip
+    permissions:
+      contents: write
+    uses: ./.github/workflows/publish-site.yml
+    with:
+      artifact_pattern: site-examples-math-and-3d
+      keep_files: true
