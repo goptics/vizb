@@ -132,4 +132,4 @@ jobs:
     uses: ./.github/workflows/merge-examples.yml
     with:
       example_category: go
-      publish: ${{ inputs.publish }}
+      publish: ${{ inputs.publish == true }}

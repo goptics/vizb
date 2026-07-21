@@ -90,4 +90,5 @@ jobs:
     uses: ./.github/workflows/merge-examples.yml
     with:
       example_category: github-legends
-      publish: ${{ github.event_name == 'schedule' || inputs.publish }}
+      # Schedule always publishes; call/dispatch/push use a boolean (empty input → false).
+      publish: ${{ github.event_name == 'schedule' || inputs.publish == true }}
