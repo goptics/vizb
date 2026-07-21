@@ -12,8 +12,8 @@ on:
       publish:
         required: false
         type: boolean
-        default: true
-        description: "Publish after merge (default true; set false to prepare-only)"
+        default: false
+        description: "Publish after merge (default false; set true to publish immediately)"
   workflow_dispatch:
     inputs:
       publish:
@@ -78,7 +78,7 @@ jobs:
   publish:
     name: Publish Comparisons examples
     needs: merge
-    if: ${{ inputs.publish != false }}  # default on; release/dispatch pass false to skip
+    if: ${{ github.event_name == 'push' || inputs.publish }}
     permissions:
       contents: write
     uses: ./.github/workflows/publish-site.yml
