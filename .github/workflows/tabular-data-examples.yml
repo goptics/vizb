@@ -102,4 +102,4 @@ jobs:
     uses: ./.github/workflows/merge-examples.yml
     with:
       example_category: tabular-data
-      publish: ${{ inputs.publish }}
+      publish: ${{ inputs.publish == true }}

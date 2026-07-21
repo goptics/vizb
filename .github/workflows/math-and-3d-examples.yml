@@ -98,4 +98,4 @@ jobs:
     uses: ./.github/workflows/merge-examples.yml
     with:
       example_category: math-and-3d
-      publish: ${{ inputs.publish }}
+      publish: ${{ inputs.publish == true }}

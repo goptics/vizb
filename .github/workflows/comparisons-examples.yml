@@ -74,4 +74,4 @@ jobs:
     uses: ./.github/workflows/merge-examples.yml
     with:
       example_category: comparisons
-      publish: ${{ inputs.publish }}
+      publish: ${{ inputs.publish == true }}
