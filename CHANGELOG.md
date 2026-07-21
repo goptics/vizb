@@ -4,6 +4,14 @@ Notable changes to Vizb documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [v0.16.1] - 2026-07-21
+
+### Fixed
+
+- **ui** — Normalize single embedded dataset ([#257](https://github.com/goptics/vizb/pull/257))
+- **ci** — Coerce examples publish input to boolean on push ([#248](https://github.com/goptics/vizb/pull/248))
+- **docs** — Host live examples under /examples/live and improve CI ([#247](https://github.com/goptics/vizb/pull/247))
+
 # [v0.16.0] - 2026-07-20
 
 ### Added
