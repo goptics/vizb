@@ -1,9 +1,9 @@
-import type { DataSet, ChartType } from './types'
+import type { Dataset, ChartType } from './types'
 
 declare global {
   interface Window {
     // One dataset object (common single-chart HTML) or an array for multi-tab.
-    VIZB_DATA: DataSet | DataSet[]
+    VIZB_DATA: Dataset | Dataset[]
     VIZB_VERSION: string
     VIZB_DATA_URL?: string
     // Charts bundled at generation time (--charts). The chunk pruner drops

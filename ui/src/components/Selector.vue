@@ -15,7 +15,7 @@ import {
   ComboboxTrigger,
 } from './ui/combobox'
 
-// Selector is a generic combobox used by the dataset picker (DataSetHeader),
+// Selector is a generic combobox used by the dataset picker (DatasetHeader),
 // stats view switcher (StatsPanel), axis swap (SwapControl), and the chart-
 // type picker (SettingsPanel). The `icon` field is optional — call sites that
 // don't have a meaningful icon (e.g. group names) just don't pass one and the

@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { DataSet } from '../types'
+import type { Dataset } from '../types'
 import { buildDatasetDetailUrl, classifyPayload, fetchDatasetDetail } from './remoteData'
 
-const detail = (id?: string): DataSet => ({
+const detail = (id?: string): Dataset => ({
   ...(id === undefined ? {} : { id }),
   name: id ?? 'Requested dataset',
   data: [],

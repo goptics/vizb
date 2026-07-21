@@ -7,18 +7,18 @@ import { useSettingsStore } from '@/composables/useSettingsStore'
 import { swapOptionKeys } from '@/lib/swap'
 import { bundleHas3DChunk } from '@/lib/utils'
 
-const { activeDataSet, activeArrangement, isValueMode } = useDataPoint()
+const { activeDataset, activeArrangement, isValueMode } = useDataPoint()
 const { activeConfig } = useSettingsStore()
 
 const swapOptions = computed(() =>
   swapOptionKeys(
-    activeDataSet.value?.data,
+    activeDataset.value?.data,
     isValueMode.value,
     bundleHas3DChunk(
-      activeDataSet.value?.data,
+      activeDataset.value?.data,
       activeConfig.value as { threeD?: boolean } | undefined
     ),
-    activeDataSet.value?.axes
+    activeDataset.value?.axes
   ).map((key) => ({ name: key }))
 )
 

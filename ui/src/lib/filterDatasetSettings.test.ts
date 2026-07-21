@@ -1,26 +1,26 @@
 import { describe, it, expect } from 'vitest'
-import { filterDataSetSettings } from './filterDataSetSettings'
-import type { DataSet } from '../types'
+import { filterDatasetSettings } from './filterDatasetSettings'
+import type { Dataset } from '../types'
 
-const dataset: DataSet = {
+const dataset: Dataset = {
   name: 'Test',
   settings: [{ type: 'bar' }, { type: 'line' }, { type: 'pie' }],
   data: [],
 }
 
-describe('filterDataSetSettings', () => {
+describe('filterDatasetSettings', () => {
   it('returns dataset unchanged when allowed is empty', () => {
-    expect(filterDataSetSettings(dataset, [])).toEqual(dataset)
-    expect(filterDataSetSettings(dataset, undefined)).toEqual(dataset)
+    expect(filterDatasetSettings(dataset, [])).toEqual(dataset)
+    expect(filterDatasetSettings(dataset, undefined)).toEqual(dataset)
   })
 
   it('keeps only bundled chart types', () => {
-    const filtered = filterDataSetSettings(dataset, ['bar'])
+    const filtered = filterDatasetSettings(dataset, ['bar'])
     expect(filtered.settings).toEqual([{ type: 'bar' }])
   })
 
   it('preserves original settings order', () => {
-    const filtered = filterDataSetSettings(dataset, ['pie', 'bar'])
+    const filtered = filterDatasetSettings(dataset, ['pie', 'bar'])
     expect(filtered.settings?.map((s) => s.type)).toEqual(['bar', 'pie'])
   })
 })
