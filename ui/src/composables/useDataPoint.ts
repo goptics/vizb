@@ -11,23 +11,26 @@ import {
 } from '../lib/utils'
 import { presentAxisString } from '../lib/swap'
 import { useSettingsStore } from './useSettingsStore'
-import { classifyRemotePayload, fetchDatasetDetail, type RemotePayload } from '../lib/remoteData'
+import { classifyPayload, fetchDatasetDetail, type DataPayload } from '../lib/remoteData'
 
 const dataUrl = window.VIZB_DATA_URL
-const getDataSets = async (): Promise<RemotePayload> => {
+const getDataSets = async (): Promise<DataPayload> => {
   const url = window.VIZB_DATA_URL
   if (url) {
     const res = await fetch(url)
     if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
-    return classifyRemotePayload(await res.json())
+    return classifyPayload(await res.json())
   }
 
   if (import.meta.env.DEV) {
     const data = await import('../data/sample.json')
-    return { mode: 'full', datasets: data.default as unknown as DataSet[] }
+    // sample.json is always a full-dataset array in dev fixtures.
+    return classifyPayload(data.default)
   }
 
-  return { mode: 'full', datasets: window.VIZB_DATA ?? [] }
+  // Embedded HTML may inject one DataSet object or a DataSet[] (multi-tab).
+  // classifyPayload normalizes both shapes to { mode: 'full', datasets: [...] }.
+  return classifyPayload(window.VIZB_DATA ?? [])
 }
 
 // Global state. shallowRef (not ref): the rows are display-only and never mutated

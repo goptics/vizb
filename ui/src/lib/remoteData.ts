@@ -5,7 +5,8 @@ export type DatasetCatalogEntry = {
   name: string
 }
 
-export type RemotePayload =
+/** Classified UI data: full datasets (eager) or id/name catalog (lazy detail fetch). */
+export type DataPayload =
   | { mode: 'full'; datasets: DataSet[] }
   | { mode: 'catalog'; entries: DatasetCatalogEntry[] }
 
@@ -22,12 +23,13 @@ const payloadShapeError = (message: string) =>
       'or a catalog array of { id, name } entries that omit data and settings.'
   )
 
-export const classifyRemotePayload = (payload: unknown): RemotePayload => {
+/** Normalize embedded VIZB_DATA, --data-url JSON, or dev fixtures into full vs catalog mode. */
+export const classifyPayload = (payload: unknown): DataPayload => {
   if (isObject(payload)) {
     return { mode: 'full', datasets: [payload as DataSet] }
   }
   if (!Array.isArray(payload)) {
-    throw payloadShapeError('Invalid data-url response.')
+    throw payloadShapeError('Invalid data payload.')
   }
   if (payload.length === 0) {
     return { mode: 'full', datasets: [] }
