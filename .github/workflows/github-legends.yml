@@ -90,4 +90,4 @@ jobs:
     uses: ./.github/workflows/merge-examples.yml
     with:
       example_category: github-legends
-      publish: ${{ inputs.publish }}
+      publish: ${{ github.event_name == 'schedule' || inputs.publish }}
