@@ -13,10 +13,10 @@ import { useSettingsStore } from './useSettingsStore'
 // value (TypeScript's optional-field semantics in place of a runtime guard).
 export function useActiveChartShape() {
   const { activeConfig, chartType } = useSettingsStore()
-  const { activeDataSet, activeDataSetId, activeArrangement, getArrangement } = useDataPoint()
+  const { activeDataset, activeDatasetId, activeArrangement, getArrangement } = useDataPoint()
 
   const effectiveSwapTarget = computed(() => {
-    const fromMap = getArrangement(activeDataSetId.value, chartType.value)
+    const fromMap = getArrangement(activeDatasetId.value, chartType.value)
     if (fromMap) return fromMap
     const wire = (activeConfig.value as BarConfig | LineConfig | ScatterConfig | undefined)?.swap
     return wire || activeArrangement.value.targetString
@@ -50,10 +50,10 @@ export function useActiveChartShape() {
   const hasThreeDOption = computed<boolean>(() =>
     canOfferValue3D(
       chartType.value,
-      activeDataSet.value?.data,
+      activeDataset.value?.data,
       hasZOnChart.value,
       activeConfig.value as BarConfig | LineConfig | ScatterConfig | undefined,
-      activeDataSet.value?.axes
+      activeDataset.value?.axes
     )
   )
 

@@ -41,8 +41,8 @@ const {
 } = useSettingsStore()
 
 const {
-  activeDataSet,
-  activeDataSetId,
+  activeDataset,
+  activeDatasetId,
   activeDataDimension,
   activeArrangement,
   getArrangement,
@@ -63,7 +63,7 @@ const CHART_ICONS: Record<ChartType, Component> = {
 
 // Chart-type picker. Shown only when the dataset bundles more than one chart type.
 const availableTypes = computed<ChartType[]>(
-  () => activeDataSet.value?.settings.map((s) => s.type) ?? []
+  () => activeDataset.value?.settings.map((s) => s.type) ?? []
 )
 const showChartTypeSelection = computed(() => availableTypes.value.length > 1)
 const chartOptions = computed(() =>
@@ -83,7 +83,7 @@ const onChartTypeSelect = (id: number) => {
 
 // z on a chart axis under the effective swap (map → wire → identity).
 const effectiveSwapTarget = computed(() => {
-  const fromMap = getArrangement(activeDataSetId.value, chartType.value)
+  const fromMap = getArrangement(activeDatasetId.value, chartType.value)
   if (fromMap) return fromMap
   const wire = (activeConfig.value as BarConfig | LineConfig | ScatterConfig | undefined)?.swap
   return wire || activeArrangement.value.targetString
@@ -93,10 +93,10 @@ const hasZAxis = computed(() => arrangementHasChartZ(effectiveSwapTarget.value))
 const hasThreeDOption = computed(() =>
   canOfferValue3D(
     chartType.value,
-    activeDataSet.value?.data,
+    activeDataset.value?.data,
     hasZAxis.value,
     activeConfig.value as BarConfig | LineConfig | ScatterConfig | undefined,
-    activeDataSet.value?.axes
+    activeDataset.value?.axes
   )
 )
 
@@ -154,7 +154,7 @@ const handlers: SettingsHandlers = {
   visualMap: setVisualMap,
   swap: (target) => {
     if (target === undefined) return
-    setArrangement(activeDataSetId.value, chartType.value, target)
+    setArrangement(activeDatasetId.value, chartType.value, target)
     activeGroupId.value = 0
     resetColor()
     setSwap(target)

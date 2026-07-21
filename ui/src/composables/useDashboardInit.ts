@@ -8,13 +8,13 @@ import { useUrlRouter } from './useUrlRouter'
 // no flat settings shape to seed at startup, so the only remaining init step
 // is restoring state from the URL on first load.
 export function useDashboardInit() {
-  const { dataSets, activeDataSet } = useDataPoint()
+  const { datasets, activeDataset } = useDataPoint()
   const { initFromUrl } = useUrlRouter()
 
   let urlInitialized = false
 
   watch(
-    activeDataSet,
+    activeDataset,
     (d) => {
       if (d?.name) document.title = `Vizb | ${d.name}`
     },
@@ -22,7 +22,7 @@ export function useDashboardInit() {
   )
 
   watch(
-    dataSets,
+    datasets,
     (d) => {
       if (d.length && !urlInitialized) {
         urlInitialized = true

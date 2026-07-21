@@ -1,16 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { ref, type Ref } from 'vue'
-import type { DataSet, ChartConfig } from '../types'
+import type { Dataset, ChartConfig } from '../types'
 
 // vi.hoisted runs before the import statements — store the holder in a
 // closure that the vi.mock factory can read at any time, and replace the ref
 // in beforeEach so each test sees a fresh dataset.
 const holder = vi.hoisted(() => ({
-  ref: undefined as Ref<DataSet | undefined> | undefined,
+  ref: undefined as Ref<Dataset | undefined> | undefined,
 }))
 
 vi.mock('./useDataPoint', () => ({
-  get activeDataSet() {
+  get activeDataset() {
     if (!holder.ref) {
       throw new Error('test forgot to set holder.ref in beforeEach')
     }
@@ -18,7 +18,7 @@ vi.mock('./useDataPoint', () => ({
   },
 }))
 
-const ds = (settings: ChartConfig[]): DataSet => ({
+const ds = (settings: ChartConfig[]): Dataset => ({
   name: 'test',
   settings,
   data: [],

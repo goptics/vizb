@@ -1,17 +1,18 @@
-import type { DataSet } from '../types'
+import type { Dataset } from '../types'
 
 export type DatasetCatalogEntry = {
   id: string
   name: string
 }
 
-export type RemotePayload =
-  | { mode: 'full'; datasets: DataSet[] }
+/** Classified UI data: full datasets (eager) or id/name catalog (lazy detail fetch). */
+export type DataPayload =
+  | { mode: 'full'; datasets: Dataset[] }
   | { mode: 'catalog'; entries: DatasetCatalogEntry[] }
 
 type Fetcher = (input: string | URL, init?: RequestInit) => Promise<Response>
 
-const detailRequests = new Map<string, Promise<DataSet>>()
+const detailRequests = new Map<string, Promise<Dataset>>()
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -22,12 +23,13 @@ const payloadShapeError = (message: string) =>
       'or a catalog array of { id, name } entries that omit data and settings.'
   )
 
-export const classifyRemotePayload = (payload: unknown): RemotePayload => {
+/** Normalize embedded VIZB_DATA, --data-url JSON, or dev fixtures into full vs catalog mode. */
+export const classifyPayload = (payload: unknown): DataPayload => {
   if (isObject(payload)) {
-    return { mode: 'full', datasets: [payload as DataSet] }
+    return { mode: 'full', datasets: [payload as Dataset] }
   }
   if (!Array.isArray(payload)) {
-    throw payloadShapeError('Invalid data-url response.')
+    throw payloadShapeError('Invalid data payload.')
   }
   if (payload.length === 0) {
     return { mode: 'full', datasets: [] }
@@ -54,7 +56,7 @@ export const classifyRemotePayload = (payload: unknown): RemotePayload => {
     throw payloadShapeError('Invalid mixed array of catalog summaries and full datasets.')
   }
   if (fullCount > 0) {
-    return { mode: 'full', datasets: payload as DataSet[] }
+    return { mode: 'full', datasets: payload as Dataset[] }
   }
 
   const ids = new Set<string>()
@@ -84,7 +86,7 @@ export const buildDatasetDetailUrl = (baseUrl: string, id: string): string => {
   return url.toString()
 }
 
-const validateDetail = (payload: unknown, requestedId: string): DataSet => {
+const validateDetail = (payload: unknown, requestedId: string): Dataset => {
   if (!isObject(payload)) {
     throw new Error(
       `Invalid detail response for dataset "${requestedId}": expected one full dataset object.`
@@ -100,21 +102,21 @@ const validateDetail = (payload: unknown, requestedId: string): DataSet => {
     throw new Error(`Invalid detail response for dataset "${requestedId}": name must be non-empty.`)
   }
   if (payload.id === undefined) {
-    return { ...payload, id: requestedId } as DataSet
+    return { ...payload, id: requestedId } as Dataset
   }
   if (payload.id !== requestedId) {
     throw new Error(
       `Dataset detail ID mismatch: requested "${requestedId}" but received "${String(payload.id)}".`
     )
   }
-  return payload as DataSet
+  return payload as Dataset
 }
 
 export const fetchDatasetDetail = (
   baseUrl: string,
   id: string,
   fetcher: Fetcher = fetch
-): Promise<DataSet> => {
+): Promise<Dataset> => {
   const pending = detailRequests.get(id)
   if (pending) return pending
 

@@ -1,11 +1,11 @@
 import { computed, ref, watch } from 'vue'
 import type { ChartConfig, ChartType, Sort, ScaleType } from '../types'
-import { activeDataSet } from './useDataPoint'
+import { activeDataset } from './useDataPoint'
 import { isValidIndex } from '../lib/utils'
 import { activeThemeName, applyTheme, normalizeTheme } from '../lib/themes'
 
 // Module-level singleton state. `activeChartIndex` is the cursor into
-// `activeDataSet.value.settings`; the dataset IS the source of truth — no flat
+// `activeDataset.value.settings`; the dataset IS the source of truth — no flat
 // global state anymore. `setSort` / `setScale` / etc. mutate the active
 // config in place, which the Vue reactivity propagates everywhere.
 const activeChartIndex = ref(0)
@@ -66,7 +66,7 @@ const setTheme = (theme: string) => {
 
 export function useSettingsStore() {
   const activeConfig = computed<ChartConfig | undefined>(
-    () => activeDataSet.value?.settings[activeChartIndex.value]
+    () => activeDataset.value?.settings[activeChartIndex.value]
   )
 
   const chartType = computed<ChartType>(() => activeConfig.value?.type ?? 'bar')
@@ -74,7 +74,7 @@ export function useSettingsStore() {
   // Clamp the active index when the active dataset's chart list shrinks (e.g.
   // a settings change drops one of the bundled charts).
   watch(
-    () => activeDataSet.value?.settings.length,
+    () => activeDataset.value?.settings.length,
     (len) => {
       if (len !== undefined && activeChartIndex.value >= len) {
         activeChartIndex.value = 0
@@ -83,7 +83,7 @@ export function useSettingsStore() {
   )
 
   const setActiveChartIndex = (index: number) => {
-    const len = activeDataSet.value?.settings.length ?? 0
+    const len = activeDataset.value?.settings.length ?? 0
     if (isValidIndex(index, len)) {
       activeChartIndex.value = index
     }
@@ -92,7 +92,7 @@ export function useSettingsStore() {
   // setChartType locates the first config with the requested type and makes it
   // active. No-op if the active dataset has no config of that type.
   const setChartType = (type: ChartType) => {
-    const settings: ChartConfig[] = activeDataSet.value?.settings ?? []
+    const settings: ChartConfig[] = activeDataset.value?.settings ?? []
     const idx = settings.findIndex((s: ChartConfig) => s.type === type)
     if (idx !== -1) {
       activeChartIndex.value = idx

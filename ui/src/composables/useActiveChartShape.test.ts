@@ -1,21 +1,21 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { computed, ref, type Ref } from 'vue'
-import type { DataSet, ChartConfig, ChartType } from '../types'
+import type { Dataset, ChartConfig, ChartType } from '../types'
 
 // The holder is set in beforeEach and read by the mock factories below.
 const holder = vi.hoisted(() => ({
-  ref: undefined as Ref<DataSet | undefined> | undefined,
+  ref: undefined as Ref<Dataset | undefined> | undefined,
   activeIndex: 0,
 }))
 
 vi.mock('./useDataPoint', () => ({
-  get activeDataSet() {
+  get activeDataset() {
     if (!holder.ref) throw new Error('forgot beforeEach')
     return holder.ref
   },
   useDataPoint: () => ({
-    activeDataSet: holder.ref,
-    activeDataSetId: { value: 0 },
+    activeDataset: holder.ref,
+    activeDatasetId: { value: 0 },
     activeArrangement: { value: { identityString: 'xyz', targetString: 'xyz' } },
     getArrangement: () => undefined,
   }),
@@ -30,7 +30,7 @@ vi.mock('./useSettingsStore', () => ({
   }),
 }))
 
-const ds = (settings: ChartConfig[], data: DataSet['data'] = []): DataSet => ({
+const ds = (settings: ChartConfig[], data: Dataset['data'] = []): Dataset => ({
   name: 'test',
   settings,
   data,

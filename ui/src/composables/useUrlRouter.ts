@@ -7,12 +7,12 @@ import type {
   BarConfig,
   LineConfig,
   ScatterConfig,
-  DataSet,
+  Dataset,
 } from '../types'
 import { SORT_ORDERS, SCALE_TYPES } from '../types'
 import { useSettingsStore } from './useSettingsStore'
 import { useDataPoint } from './useDataPoint'
-import { activeDataSet } from './useDataPoint'
+import { activeDataset } from './useDataPoint'
 import { ALL_CHART_TYPES } from './constants'
 import { isValidIndex } from '../lib/utils'
 
@@ -39,7 +39,7 @@ const applyIndexParam = (
 
 const resolveDatasetIndex = (
   params: Record<string, string | undefined>,
-  datasets: DataSet[]
+  datasets: Dataset[]
 ): number => {
   const idParam = params.id?.trim()
   if (idParam) {
@@ -73,7 +73,7 @@ type ConfigUpdate = {
 // the mutation to every consumer (chart pipeline, panel, etc.). Returns true
 // when an update was applied.
 const applyConfigUpdate = (type: ChartType, update: ConfigUpdate): boolean => {
-  const settings = activeDataSet.value?.settings
+  const settings = activeDataset.value?.settings
   if (!settings) return false
   const cfg = settings.find((s) => s.type === type)
   if (!cfg) return false
@@ -100,12 +100,12 @@ export function useUrlRouter() {
   const { activeChartIndex, chartType, setChartType } = useSettingsStore()
 
   const {
-    dataSets,
+    datasets,
     resultGroups,
-    activeDataSetId,
+    activeDatasetId,
     activeGroupId,
     activeArrangement,
-    selectDataSet,
+    selectDataset,
     selectGroup,
     setArrangement,
     arrangementMap,
@@ -113,7 +113,7 @@ export function useUrlRouter() {
 
   // Chart-type list for the active dataset, derived from its `settings` array.
   const availableTypes = computed<ChartType[]>(
-    () => activeDataSet.value?.settings.map((s) => s.type) ?? []
+    () => activeDataset.value?.settings.map((s) => s.type) ?? []
   )
 
   const parseUrlParams = () => {
@@ -127,17 +127,17 @@ export function useUrlRouter() {
 
   const applyParams = async (params: Record<string, string | undefined>) => {
     // 1. Dataset selection (?id= wins over ?d=)
-    const datasetId = resolveDatasetIndex(params, dataSets.value)
-    const catalogShell = dataSets.value[datasetId]
-    const selected = await selectDataSet(datasetId)
+    const datasetId = resolveDatasetIndex(params, datasets.value)
+    const catalogShell = datasets.value[datasetId]
+    const selected = await selectDataset(datasetId)
     if (!selected) {
       // A failed lazy detail remains retryable. When Retry replaces this catalog
       // shell with a loaded detail, re-run initialization so group/chart/swap
       // parameters are applied to the real settings rather than the summary.
       watch(
-        () => dataSets.value[datasetId],
+        () => datasets.value[datasetId],
         (dataset) => {
-          if (dataset !== catalogShell && activeDataSetId.value === datasetId) {
+          if (dataset !== catalogShell && activeDatasetId.value === datasetId) {
             void applyParams(params)
           }
         },
@@ -220,11 +220,11 @@ export function useUrlRouter() {
       // Swap: apply after data loads (same defer pattern as group ID)
       if (sw) {
         const applySwap = () => setArrangement(datasetId, ct, sw)
-        if (dataSets.value.length > 0) {
+        if (datasets.value.length > 0) {
           applySwap()
         } else {
           watch(
-            () => dataSets.value.length,
+            () => datasets.value.length,
             (len) => {
               if (len > 0) applySwap()
             },
@@ -239,7 +239,7 @@ export function useUrlRouter() {
   const syncUrlToState = () => {
     const params: Record<string, string | undefined> = {}
     const identity = activeArrangement.value.identityString
-    const settings: ChartConfig[] = activeDataSet.value?.settings ?? []
+    const settings: ChartConfig[] = activeDataset.value?.settings ?? []
 
     // Active chart tab (omit if first)
     const activeCfg = settings[activeChartIndex.value]
@@ -248,11 +248,11 @@ export function useUrlRouter() {
     }
 
     // Dataset / group
-    const datasetId = activeDataSet.value?.id?.trim()
+    const datasetId = activeDataset.value?.id?.trim()
     if (datasetId) {
       params.id = datasetId
-    } else if (activeDataSetId.value > 0) {
-      params.d = activeDataSetId.value.toString()
+    } else if (activeDatasetId.value > 0) {
+      params.d = activeDatasetId.value.toString()
     }
     if (activeGroupId.value > 0) params.g = activeGroupId.value.toString()
 
@@ -280,7 +280,7 @@ export function useUrlRouter() {
         }
       }
 
-      const arr = arrangementMap.get(`${activeDataSetId.value}:${ct}`)
+      const arr = arrangementMap.get(`${activeDatasetId.value}:${ct}`)
       if (arr && arr !== identity) params[`${ct}.sw`] = arr
     }
 
@@ -302,13 +302,13 @@ export function useUrlRouter() {
     watch(
       () => ({
         chartIndex: activeChartIndex.value,
-        benchmarkId: activeDataSetId.value,
+        benchmarkId: activeDatasetId.value,
         groupId: activeGroupId.value,
         chartType: chartType.value,
         swaps: availableTypes.value
-          .map((ct) => arrangementMap.get(`${activeDataSetId.value}:${ct}`) ?? '')
+          .map((ct) => arrangementMap.get(`${activeDatasetId.value}:${ct}`) ?? '')
           .join(','),
-        csStr: JSON.stringify(activeDataSet.value?.settings ?? []),
+        csStr: JSON.stringify(activeDataset.value?.settings ?? []),
       }),
       () => syncUrlToState()
     )

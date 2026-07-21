@@ -86,8 +86,8 @@ const {
   smooth,
   horizontal,
 } = useActiveChartShape()
-const { activeArrangement, activeDataSet } = useDataPoint()
-const activeAxes = computed(() => activeDataSet.value?.axes)
+const { activeArrangement, activeDataset } = useDataPoint()
+const activeAxes = computed(() => activeDataset.value?.axes)
 
 // Drives which renderer mounts; only the 3D branch loads echarts-gl.
 const is3DChart = computed(() =>

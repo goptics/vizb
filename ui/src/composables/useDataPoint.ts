@@ -1,7 +1,7 @@
 import { ref, shallowRef, markRaw, reactive, computed, nextTick, watch } from 'vue'
-import type { DataSet, ChartType } from '../types'
+import type { Dataset, ChartType } from '../types'
 import type { Arrangement } from './useChartPipeline'
-import { filterDataSetSettings } from '../lib/filterDataSetSettings'
+import { filterDatasetSettings } from '../lib/filterDatasetSettings'
 import {
   resetColor,
   isValidIndex,
@@ -11,42 +11,45 @@ import {
 } from '../lib/utils'
 import { presentAxisString } from '../lib/swap'
 import { useSettingsStore } from './useSettingsStore'
-import { classifyRemotePayload, fetchDatasetDetail, type RemotePayload } from '../lib/remoteData'
+import { classifyPayload, fetchDatasetDetail, type DataPayload } from '../lib/remoteData'
 
 const dataUrl = window.VIZB_DATA_URL
-const getDataSets = async (): Promise<RemotePayload> => {
+const getDatasets = async (): Promise<DataPayload> => {
   const url = window.VIZB_DATA_URL
   if (url) {
     const res = await fetch(url)
     if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
-    return classifyRemotePayload(await res.json())
+    return classifyPayload(await res.json())
   }
 
   if (import.meta.env.DEV) {
     const data = await import('../data/sample.json')
-    return { mode: 'full', datasets: data.default as unknown as DataSet[] }
+    // sample.json is always a full-dataset array in dev fixtures.
+    return classifyPayload(data.default)
   }
 
-  return { mode: 'full', datasets: window.VIZB_DATA ?? [] }
+  // Embedded HTML may inject one Dataset object or a Dataset[] (multi-tab).
+  // classifyPayload normalizes both shapes to { mode: 'full', datasets: [...] }.
+  return classifyPayload(window.VIZB_DATA ?? [])
 }
 
 // Global state. shallowRef (not ref): the rows are display-only and never mutated
 // in place, so deep reactivity would only proxy every row for nothing — and that
 // proxy is what forced the expensive JSON round-trip when cloning into the worker.
 // Top-level `.value =` still triggers reactivity (the selector/dimension/arrangement
-// computeds depend on the ref + activeDataSetId, not per-row reactivity).
-const dataSets = shallowRef<DataSet[]>([])
-const activeDataSetId = ref(0)
+// computeds depend on the ref + activeDatasetId, not per-row reactivity).
+const datasets = shallowRef<Dataset[]>([])
+const activeDatasetId = ref(0)
 const activeGroupId = ref(0)
 const loading = ref(true)
 const loadError = ref<string | null>(null)
 const lazyCatalog = ref(false)
 const detailLoading = ref(false)
 const detailError = ref<string | null>(null)
-const preparedDetails = new Map<string, DataSet>()
+const preparedDetails = new Map<string, Dataset>()
 
-const prepareDataSet = (ds: DataSet): DataSet => {
-  const filtered = filterDataSetSettings(ds, window.VIZB_CHARTS)
+const prepareDataset = (ds: Dataset): Dataset => {
+  const filtered = filterDatasetSettings(ds, window.VIZB_CHARTS)
   const axes = filtered.axes?.map((a) => ({
     key: a.key,
     label: a.label,
@@ -75,9 +78,9 @@ const setArrangement = (datasetId: number, ct: ChartType, targetString: string) 
   arrangementMap.set(`${datasetId}:${ct}`, targetString)
 }
 
-getDataSets()
+getDatasets()
   .then((payload) => {
-    // Each DataSet is wrapped in reactive() so settings mutations (sort/scale/
+    // Each Dataset is wrapped in reactive() so settings mutations (sort/scale/
     // showLabels/threeDRotate/swap) propagate to the chart pipeline's watchers.
     // The `data` field (raw rows) is markRaw'd so it stays proxy-free: the
     // transform worker clones it natively via postMessage structured clone,
@@ -86,11 +89,11 @@ getDataSets()
     // intended perf trade-off.
     if (payload.mode === 'catalog') {
       lazyCatalog.value = true
-      dataSets.value = payload.entries.map((entry) =>
-        prepareDataSet({ ...entry, data: [], settings: [] })
+      datasets.value = payload.entries.map((entry) =>
+        prepareDataset({ ...entry, data: [], settings: [] })
       )
     } else {
-      dataSets.value = payload.datasets.map(prepareDataSet)
+      datasets.value = payload.datasets.map(prepareDataset)
     }
   })
   .catch((err: unknown) => {
@@ -102,33 +105,33 @@ getDataSets()
 
 // Values are normalized once at load (see `normalize`); this just guards the
 // array shape.
-const dataSetsProcessed = computed<DataSet[]>(() => {
-  if (!Array.isArray(dataSets.value)) {
-    dataSets.value = [dataSets.value]
+const datasetsProcessed = computed<Dataset[]>(() => {
+  if (!Array.isArray(datasets.value)) {
+    datasets.value = [datasets.value]
   }
 
-  return dataSets.value
+  return datasets.value
 })
 
 // Data-shape dimensionality tag for the active dataset, used by the settings
 // panel to filter fields (e.g. `threeDRotate` is 3D-only). `undefined` for
 // empty/unknown data — the panel treats that as "no dimension constraint".
 const activeDataDimension = computed(() =>
-  datasetDimension(dataSetsProcessed.value[activeDataSetId.value]?.data)
+  datasetDimension(datasetsProcessed.value[activeDatasetId.value]?.data)
 )
 
-const activeDataSet = computed(
-  () => dataSetsProcessed.value[activeDataSetId.value] || dataSetsProcessed.value[0]
+const activeDataset = computed(
+  () => datasetsProcessed.value[activeDatasetId.value] || datasetsProcessed.value[0]
 )
 
-export { activeDataSet }
+export { activeDataset }
 
 const { chartType, initializeTheme } = useSettingsStore()
 
 export type ChartMode = 'grouped' | 'value' | 'mixed'
 
 const chartMode = computed<ChartMode>(() => {
-  const axes = activeDataSet.value?.axes
+  const axes = activeDataset.value?.axes
   if (!axes?.length) return 'grouped'
   if (checkValueMode(axes)) return 'value'
   if (checkMixedMode(axes)) return 'mixed'
@@ -142,7 +145,7 @@ const isMixedModeDataset = computed(() => chartMode.value === 'mixed')
 
 // Derive identity from axes[] key order if present, else fall back to data shape.
 // axes[] preserves the serial dimension order from --group-pattern / --group-regex.
-const identityFromDataSet = (ds: DataSet | undefined): string => {
+const identityFromDataset = (ds: Dataset | undefined): string => {
   if (ds?.axes?.length) {
     return ds.axes
       .filter((a) => a.key !== 'metric')
@@ -154,10 +157,10 @@ const identityFromDataSet = (ds: DataSet | undefined): string => {
 
 // The active arrangement: per-(dataset, chartType) target with identity fallback.
 const activeArrangement = computed<Arrangement>(() => {
-  const ds = activeDataSet.value
-  const identityString = identityFromDataSet(ds)
+  const ds = activeDataset.value
+  const identityString = identityFromDataset(ds)
   const targetString =
-    arrangementMap.get(`${activeDataSetId.value}:${chartType.value}`) ?? identityString
+    arrangementMap.get(`${activeDatasetId.value}:${chartType.value}`) ?? identityString
   return { identityString, targetString }
 })
 
@@ -165,17 +168,17 @@ const activeArrangement = computed<Arrangement>(() => {
 const resultGroups = computed(() => groupNames.value.map((name) => ({ name })))
 
 watch(
-  () => activeDataSet.value?.theme,
+  () => activeDataset.value?.theme,
   (theme) => {
     initializeTheme(theme)
   },
   { immediate: true }
 )
 
-const selectDataSet = async (id: number): Promise<boolean> => {
-  if (!isValidIndex(id, dataSets.value.length)) return false
+const selectDataset = async (id: number): Promise<boolean> => {
+  if (!isValidIndex(id, datasets.value.length)) return false
 
-  activeDataSetId.value = id
+  activeDatasetId.value = id
   activeGroupId.value = 0
   detailError.value = null
 
@@ -184,14 +187,14 @@ const selectDataSet = async (id: number): Promise<boolean> => {
     return true
   }
 
-  const dataSetId = dataSets.value[id]?.id
-  if (!dataSetId || !dataUrl) return false
+  const datasetId = datasets.value[id]?.id
+  if (!datasetId || !dataUrl) return false
 
-  let detail = preparedDetails.get(dataSetId)
+  let detail = preparedDetails.get(datasetId)
   if (detail) {
-    const next = [...dataSets.value]
+    const next = [...datasets.value]
     next[id] = detail
-    dataSets.value = next
+    datasets.value = next
     detailLoading.value = false
     nextTick(() => resetColor())
     return true
@@ -199,26 +202,26 @@ const selectDataSet = async (id: number): Promise<boolean> => {
 
   detailLoading.value = true
   try {
-    detail = prepareDataSet(await fetchDatasetDetail(dataUrl, dataSetId))
+    detail = prepareDataset(await fetchDatasetDetail(dataUrl, datasetId))
   } catch (error: unknown) {
-    if (activeDataSetId.value !== id) return false
+    if (activeDatasetId.value !== id) return false
     detailError.value = error instanceof Error ? error.message : String(error)
     detailLoading.value = false
     return false
   }
 
-  if (activeDataSetId.value !== id) return false
-  preparedDetails.set(dataSetId, detail)
+  if (activeDatasetId.value !== id) return false
+  preparedDetails.set(datasetId, detail)
 
-  const next = [...dataSets.value]
+  const next = [...datasets.value]
   next[id] = detail
-  dataSets.value = next
+  datasets.value = next
   detailLoading.value = false
   nextTick(() => resetColor())
   return true
 }
 
-const retryActiveDataSet = () => selectDataSet(activeDataSetId.value)
+const retryActiveDataset = () => selectDataset(activeDatasetId.value)
 
 const selectGroup = (id: number) => {
   if (isValidIndex(id, groupNames.value.length)) {
@@ -232,11 +235,11 @@ export function useDataPoint() {
   }
 
   return {
-    dataSets,
-    activeDataSet,
-    activeDataSetId,
+    datasets,
+    activeDataset,
+    activeDatasetId,
     activeDataDimension,
-    selectDataSet,
+    selectDataset,
 
     activeArrangement,
     setArrangement,
@@ -253,7 +256,7 @@ export function useDataPoint() {
     lazyCatalog,
     detailLoading,
     detailError,
-    retryActiveDataSet,
+    retryActiveDataset,
 
     chartMode,
     isValueMode,

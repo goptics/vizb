@@ -10,7 +10,7 @@ import { useDashboardInit } from '../composables/useDashboardInit'
 import { swapAxisLabels } from '../lib/swap'
 import ChartSettingsPopover from '../components/ChartSettingsPopover.vue'
 import ChartCard from '../components/ChartCard.vue'
-import DataSetHeader from '../components/DataSetHeader.vue'
+import DatasetHeader from '../components/DatasetHeader.vue'
 import LoadingSkeleton from '../components/LoadingSkeleton.vue'
 import LoadError from '../components/LoadError.vue'
 import AppFooter from '../components/AppFooter.vue'
@@ -21,10 +21,10 @@ import { isThemeName, THEME_NAMES } from '../lib/themes'
 const version = window.VIZB_VERSION || 'v0.0.0-dev'
 
 const {
-  dataSets,
-  activeDataSet,
-  activeDataSetId,
-  selectDataSet,
+  datasets,
+  activeDataset,
+  activeDatasetId,
+  selectDataset,
   activeArrangement,
   resultGroups,
   activeGroupId,
@@ -35,7 +35,7 @@ const {
   lazyCatalog,
   detailLoading,
   detailError,
-  retryActiveDataSet,
+  retryActiveDataset,
 } = useDataPoint()
 
 const { isDark, toggleDark, chartType, themeName, setTheme } = useSettingsStore()
@@ -60,13 +60,13 @@ const axisLabelsFromAxes = (axes: Axis[] | undefined): AxisLabels | undefined =>
 
 // The full raw rows — the worker owns grouping/projection, so we pass the dataset
 // as-is (no main-thread grouping or swap mutation). Only a dataset switch re-clones.
-const activeResults = computed(() => activeDataSet.value?.data || [])
+const activeResults = computed(() => activeDataset.value?.data || [])
 // Display labels from axes[], permuted to match the active arrangement.
 const activeLabels = computed(() =>
   swapAxisLabels(
     activeArrangement.value.identityString,
     activeArrangement.value.targetString,
-    axisLabelsFromAxes(activeDataSet.value?.axes)
+    axisLabelsFromAxes(activeDataset.value?.axes)
   )
 )
 
@@ -76,7 +76,7 @@ const activeLabels = computed(() =>
 const resolvedSort = computed(() => sort.value ?? { enabled: false, order: 'asc' as const })
 
 // Value-mode axes from the active dataset (undefined for category-mode datasets).
-const activeAxes = computed(() => activeDataSet.value?.axes)
+const activeAxes = computed(() => activeDataset.value?.axes)
 
 // Charts are computed off-thread in a worker, one at a time (queue-based). Each
 // slot carries its own `pending` so its card drives an independent skeleton and
@@ -92,8 +92,8 @@ const { charts, groupNames, datasetInitializing } = useChartPipeline(
   threeD,
   activeAxes,
   chartType,
-  computed(() => activeDataSet.value?.preserveRows === true),
-  computed(() => activeDataSet.value?.name)
+  computed(() => activeDataset.value?.preserveRows === true),
+  computed(() => activeDataset.value?.name)
 )
 
 // The worker owns grouping; feed its group list back into useDataPoint so the
@@ -109,7 +109,7 @@ const showDetailSkeleton = computed(
     detailError.value === null &&
     (detailLoading.value ||
       datasetInitializing.value ||
-      ((activeDataSet.value?.data.length ?? 0) > 0 && charts.value.length === 0))
+      ((activeDataset.value?.data.length ?? 0) > 0 && charts.value.length === 0))
 )
 
 useDashboardInit()
@@ -118,8 +118,8 @@ useDashboardInit()
 <template>
   <nav class="fixed right-6 top-6 z-50 flex items-center gap-2">
     <IconButton
-      v-if="activeDataSet?.meta?.pkg"
-      :href="`https://${activeDataSet.meta?.pkg}`"
+      v-if="activeDataset?.meta?.pkg"
+      :href="`https://${activeDataset.meta?.pkg}`"
       aria-label="View Package Source"
     >
       <Package class="h-5 w-5" />
@@ -148,18 +148,18 @@ useDashboardInit()
 
   <LoadingSkeleton v-else-if="showSkeleton" />
 
-  <main v-else-if="activeDataSet" class="mx-auto min-h-screen max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-    <DataSetHeader
-      :dataSet="activeDataSet"
-      :dataSets="dataSets"
-      :activeDataSetId="activeDataSetId"
+  <main v-else-if="activeDataset" class="mx-auto min-h-screen max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <DatasetHeader
+      :dataset="activeDataset"
+      :datasets="datasets"
+      :activeDatasetId="activeDatasetId"
       :resultGroups="resultGroups"
       :activeGroupId="activeGroupId"
-      @selectDataSet="selectDataSet"
+      @selectDataset="selectDataset"
       @selectGroup="selectGroup"
     />
 
-    <LoadError v-if="detailError" :message="detailError" :retry="retryActiveDataSet" inline />
+    <LoadError v-if="detailError" :message="detailError" :retry="retryActiveDataset" inline />
 
     <LoadingSkeleton v-else-if="showDetailSkeleton" contentOnly />
 
@@ -181,7 +181,7 @@ useDashboardInit()
   </main>
 
   <AppFooter
-    v-if="activeDataSet && !showSkeleton && !showDetailSkeleton && !loadError && !detailError"
+    v-if="activeDataset && !showSkeleton && !showDetailSkeleton && !loadError && !detailError"
     :version="version"
   />
 </template>

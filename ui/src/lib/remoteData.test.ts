@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { DataSet } from '../types'
-import { buildDatasetDetailUrl, classifyRemotePayload, fetchDatasetDetail } from './remoteData'
+import type { Dataset } from '../types'
+import { buildDatasetDetailUrl, classifyPayload, fetchDatasetDetail } from './remoteData'
 
-const detail = (id?: string): DataSet => ({
+const detail = (id?: string): Dataset => ({
   ...(id === undefined ? {} : { id }),
   name: id ?? 'Requested dataset',
   data: [],
@@ -21,8 +21,8 @@ describe('remote data payloads', () => {
 
   it('keeps full object and full-array payloads in eager mode', () => {
     const one = detail('one')
-    expect(classifyRemotePayload(one)).toEqual({ mode: 'full', datasets: [one] })
-    expect(classifyRemotePayload([one, detail('two')])).toEqual({
+    expect(classifyPayload(one)).toEqual({ mode: 'full', datasets: [one] })
+    expect(classifyPayload([one, detail('two')])).toEqual({
       mode: 'full',
       datasets: [one, detail('two')],
     })
@@ -30,7 +30,7 @@ describe('remote data payloads', () => {
 
   it('detects a valid id/name catalog', () => {
     expect(
-      classifyRemotePayload([
+      classifyPayload([
         { id: 'one', name: 'One' },
         { id: 'two', name: 'Two' },
       ])
@@ -73,8 +73,8 @@ describe('remote data payloads', () => {
       message: 'both data and settings',
     },
   ])('rejects $name with the expected-shape guidance', ({ payload, message }) => {
-    expect(() => classifyRemotePayload(payload)).toThrow(message)
-    expect(() => classifyRemotePayload(payload)).toThrow('Expected one full dataset object')
+    expect(() => classifyPayload(payload)).toThrow(message)
+    expect(() => classifyPayload(payload)).toThrow('Expected one full dataset object')
   })
 
   it('builds one encoded detail path segment and preserves only the query', () => {

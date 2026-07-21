@@ -42,7 +42,7 @@ export type Sort = {
   order: SortOrder
 }
 
-// Ordered axis dimension — replaces the flat AxisLabels on DataSet.
+// Ordered axis dimension — replaces the flat AxisLabels on Dataset.
 // `key` is the canonical short key ("name" | "x" | "y" | "z");
 // `label` is the human-readable column name from --group.
 export type Axis = {
@@ -164,7 +164,7 @@ export type HistoryEntry = {
   meta?: Meta
 }
 
-export type DataSet = {
+export type Dataset = {
   id?: string
   name: string
   description?: string
