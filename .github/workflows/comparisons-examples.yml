@@ -12,7 +12,7 @@ on:
       publish:
         required: false
         type: boolean
-        default: false
+        default: true
         description: "Publish the generated comparisons examples immediately"
   workflow_dispatch:
     inputs:
@@ -74,4 +74,4 @@ jobs:
     uses: ./.github/workflows/merge-examples.yml
     with:
       example_category: comparisons
-      publish: ${{ inputs.publish == true }}
+      publish: ${{ github.event_name != 'workflow_dispatch' || inputs.publish == true }}
