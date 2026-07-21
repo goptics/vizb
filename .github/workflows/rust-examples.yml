@@ -1,5 +1,12 @@
 name: "Examples: Rust"
 on:
+  push:
+    branches: [main]
+    paths:
+      - "examples/rust/**"
+      - "action.yml"
+      - ".github/workflows/merge-examples.yml"
+      - ".github/workflows/rust-examples.yml"
   workflow_call:
     inputs:
       publish:

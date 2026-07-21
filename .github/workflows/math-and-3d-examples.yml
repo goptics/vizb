@@ -1,5 +1,12 @@
 name: "Examples: Math & 3D"
 on:
+  push:
+    branches: [main]
+    paths:
+      - "examples/csv/**"
+      - "action.yml"
+      - ".github/workflows/merge-examples.yml"
+      - ".github/workflows/math-and-3d-examples.yml"
   workflow_call:
     inputs:
       publish:

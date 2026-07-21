@@ -1,5 +1,11 @@
 name: "Examples: GitHub Legends"
 on:
+  push:
+    branches: [main]
+    paths:
+      - "action.yml"
+      - ".github/workflows/merge-examples.yml"
+      - ".github/workflows/github-legends.yml"
   schedule:
     # Refresh contribution skylines every Friday (data is live from the API).
     - cron: '0 12 * * 5'
@@ -84,5 +90,4 @@ jobs:
     uses: ./.github/workflows/merge-examples.yml
     with:
       example_category: github-legends
-      # Schedule always publishes; workflow_call/dispatch use the publish input.
       publish: ${{ github.event_name == 'schedule' || inputs.publish }}

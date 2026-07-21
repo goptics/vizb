@@ -1,5 +1,12 @@
 name: "Examples: Go"
 on:
+  push:
+    branches: [main]
+    paths:
+      - "examples/go/**"
+      - "action.yml"
+      - ".github/workflows/merge-examples.yml"
+      - ".github/workflows/go-examples.yml"
   workflow_call:
     inputs:
       publish:
