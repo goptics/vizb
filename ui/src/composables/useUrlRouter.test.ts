@@ -150,6 +150,15 @@ describe('useUrlRouter', () => {
     expect(holder.selectDataset).toHaveBeenCalledWith(2)
   })
 
+  it('syncs the URL immediately after successful initialization', async () => {
+    holder.datasets = ref([ds([])])
+    const replaceState = mockWindow('?d=0')
+    const { useUrlRouter } = await import('./useUrlRouter')
+    await useUrlRouter().initFromUrl()
+
+    expect(replaceState).toHaveBeenCalledWith(null, '', '/')
+  })
+
   it('uses path identity while applying the shared chart and group parameters', async () => {
     holder.pathDatasetId = 'my-id'
     holder.datasets = ref([
@@ -219,9 +228,11 @@ describe('useUrlRouter', () => {
         holder.activeDatasetId.value = id
         return true
       })
-    mockWindow('?id=two&bar.h=true')
+    const replaceState = mockWindow('?id=two&bar.h=true')
     const { useUrlRouter } = await import('./useUrlRouter')
     await useUrlRouter().initFromUrl()
+
+    expect(replaceState).not.toHaveBeenCalled()
 
     holder.datasets.value = [
       holder.datasets.value[0]!,

@@ -317,6 +317,7 @@ export function useUrlRouter() {
       }),
       () => syncUrlToState()
     )
+    if (applied) syncUrlToState()
     return applied
   }
 
