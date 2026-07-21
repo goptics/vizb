@@ -14,7 +14,7 @@ on:
       publish:
         required: false
         type: boolean
-        default: false
+        default: true
         description: "Publish the generated GitHub Legends examples immediately"
   workflow_dispatch:
     inputs:
@@ -91,4 +91,4 @@ jobs:
     with:
       example_category: github-legends
       # Schedule always publishes; call/dispatch/push use a boolean (empty input → false).
-      publish: ${{ github.event_name == 'schedule' || inputs.publish == true }}
+      publish: ${{ github.event_name != 'workflow_dispatch' || inputs.publish == true }}
