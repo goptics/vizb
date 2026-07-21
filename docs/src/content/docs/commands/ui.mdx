@@ -98,7 +98,7 @@ The remote JSON may list more chart types in `settings` than were bundled — th
 
 When the dashboard is served over HTTP(S), a dataset path such as
 `/go-1.25?c=line&g=1` skips the base response and requests
-`<data-url>/dataset/go-1.25` directly. The final path segment is the decoded dataset ID;
+`<data-url>/dataset/go-1.25` directly. The final path segment is the encoded dataset ID;
 query parameters continue to control charts and groups, and `id`/`d` are ignored in this
 mode. Root, `index.html`, and other HTML paths keep the existing base/catalog flow.
 
