@@ -1,5 +1,12 @@
 name: "Examples: Tabular Data"
 on:
+  push:
+    branches: [main]
+    paths:
+      - "examples/csv/**"
+      - "action.yml"
+      - ".github/workflows/merge-examples.yml"
+      - ".github/workflows/tabular-data-examples.yml"
   workflow_call:
     inputs:
       publish:

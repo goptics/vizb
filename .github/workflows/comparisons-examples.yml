@@ -1,5 +1,12 @@
 name: "Examples: Comparisons"
 on:
+  push:
+    branches: [main]
+    paths:
+      - "examples/csv/**"
+      - "action.yml"
+      - ".github/workflows/merge-examples.yml"
+      - ".github/workflows/comparisons-examples.yml"
   workflow_call:
     inputs:
       publish:

@@ -9,19 +9,19 @@ import { Aside } from '@astrojs/starlight/components';
 
 **GitHub Legends** turns public contribution calendars into 3D bar skylines. CI fetches each user from the [jogruber GitHub contributions API](https://github-contributions-api.jogruber.de/v4/) — no static repo files. Demonstrates `--json-path`, `--select`, and date axis splitting. Parser: **JSON**.
 
-**Live dashboard:** [vizb.goptics.org/examples/github-legends/](https://vizb.goptics.org/examples/github-legends/)
+**Live dashboard:** [vizb.goptics.org/examples/live/github-legends/](https://vizb.goptics.org/examples/live/github-legends/)
 
 The workflow [github-legends.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/github-legends.yml) runs on every release and on a **Friday schedule** (`0 12 * * 5` UTC) so skylines stay current.
 
 | Chart | Source | Pattern | Dashboard |
 |-------|--------|---------|-----------|
-| torvalds | [API](https://github-contributions-api.jogruber.de/v4/torvalds) | `[z{Year}-y{Month}-x{Date}]` | [Open](https://vizb.goptics.org/examples/github-legends/?id=00-torvalds) |
-| sindresorhus | [API](https://github-contributions-api.jogruber.de/v4/sindresorhus) | same | [Open](https://vizb.goptics.org/examples/github-legends/?id=01-sindresorhus) |
-| yyx990803 | [API](https://github-contributions-api.jogruber.de/v4/yyx990803) | same | [Open](https://vizb.goptics.org/examples/github-legends/?id=02-yyx990803) |
-| gaearon | [API](https://github-contributions-api.jogruber.de/v4/gaearon) | same | [Open](https://vizb.goptics.org/examples/github-legends/?id=03-gaearon) |
-| isaacs | [API](https://github-contributions-api.jogruber.de/v4/isaacs) | same | [Open](https://vizb.goptics.org/examples/github-legends/?id=04-isaacs) |
-| antirez | [API](https://github-contributions-api.jogruber.de/v4/antirez) | same | [Open](https://vizb.goptics.org/examples/github-legends/?id=05-antirez) |
-| gvanrossum | [API](https://github-contributions-api.jogruber.de/v4/gvanrossum) | same | [Open](https://vizb.goptics.org/examples/github-legends/?id=06-gvanrossum) |
+| torvalds | [API](https://github-contributions-api.jogruber.de/v4/torvalds) | `[z{Year}-y{Month}-x{Date}]` | [Open](https://vizb.goptics.org/examples/live/github-legends/?id=00-torvalds) |
+| sindresorhus | [API](https://github-contributions-api.jogruber.de/v4/sindresorhus) | same | [Open](https://vizb.goptics.org/examples/live/github-legends/?id=01-sindresorhus) |
+| yyx990803 | [API](https://github-contributions-api.jogruber.de/v4/yyx990803) | same | [Open](https://vizb.goptics.org/examples/live/github-legends/?id=02-yyx990803) |
+| gaearon | [API](https://github-contributions-api.jogruber.de/v4/gaearon) | same | [Open](https://vizb.goptics.org/examples/live/github-legends/?id=03-gaearon) |
+| isaacs | [API](https://github-contributions-api.jogruber.de/v4/isaacs) | same | [Open](https://vizb.goptics.org/examples/live/github-legends/?id=04-isaacs) |
+| antirez | [API](https://github-contributions-api.jogruber.de/v4/antirez) | same | [Open](https://vizb.goptics.org/examples/live/github-legends/?id=05-antirez) |
+| gvanrossum | [API](https://github-contributions-api.jogruber.de/v4/gvanrossum) | same | [Open](https://vizb.goptics.org/examples/live/github-legends/?id=06-gvanrossum) |
 
 ## Adding a legend
 

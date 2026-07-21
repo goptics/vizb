@@ -36,18 +36,18 @@ jobs:
           cp .act/jsons/*.json /tmp/jsons/
 
       - name: Prepare output directory
-        run: mkdir -p dist/examples/${{ inputs.example_category }}
+        run: mkdir -p dist/examples/live/${{ inputs.example_category }}
 
       - name: Merging
         uses: ./
         with:
           merge-dir: /tmp/jsons
-          output-html: dist/examples/${{ inputs.example_category }}/index.html
+          output-html: dist/examples/live/${{ inputs.example_category }}/index.html
           vizb-binary: ${{ env.ACT == 'true' && './bin/vizb' || '' }}
 
       - name: Local preview ready
         if: env.ACT == 'true'
-        run: echo "::notice::Local preview at dist/examples/${{ inputs.example_category }}/index.html"
+        run: echo "::notice::Local preview at dist/examples/live/${{ inputs.example_category }}/index.html"
 
       - name: Upload example site
         if: env.ACT != 'true'

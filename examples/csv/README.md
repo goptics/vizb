@@ -171,22 +171,22 @@ CI id: `00-concurrency-frameworks` on the **comparisons** dashboard (see `.githu
 
 | Topic | Dashboard | Source files |
 |-------|-----------|--------------|
-| Tabular data | [tabular-data](https://vizb.goptics.org/examples/tabular-data/) | sales, house-price, life-expectancy |
-| Math & 3D | [math-and-3d](https://vizb.goptics.org/examples/math-and-3d/) | spiral-3d, noise-surface, noise-grid, noise-grid-41, clusters |
-| Comparisons | [comparisons](https://vizb.goptics.org/examples/comparisons/) | concurrency |
+| Tabular data | [tabular-data](https://vizb.goptics.org/examples/live/tabular-data/) | sales, house-price, life-expectancy |
+| Math & 3D | [math-and-3d](https://vizb.goptics.org/examples/live/math-and-3d/) | spiral-3d, noise-surface, noise-grid, noise-grid-41, clusters |
+| Comparisons | [comparisons](https://vizb.goptics.org/examples/live/comparisons/) | concurrency |
 
 | Chart | Source file | Live |
 |-------|-------------|------|
-| Sales auto-group | `sales.csv` | [Open](https://vizb.goptics.org/examples/tabular-data/) |
-| Sales grouped | `sales.csv` | [Open](https://vizb.goptics.org/examples/tabular-data/?id=01-sales-grouped) |
-| Sales by date | `sales.csv` | [Open](https://vizb.goptics.org/examples/tabular-data/?id=02-sales-by-date) |
-| House price vs area | `house-price-area2.csv` | [Open](https://vizb.goptics.org/examples/tabular-data/?id=03-house-price-area2) |
-| Life expectancy vs income | `life-expectancy-income.csv` | [Open](https://vizb.goptics.org/examples/tabular-data/?id=04-life-expectancy-income) |
-| Spiral 3D | `spiral-3d.csv` | [Open](https://vizb.goptics.org/examples/math-and-3d/) |
-| Noise surface | `noise-surface.csv` | [Open](https://vizb.goptics.org/examples/math-and-3d/?id=01-noise-surface) |
-| Noise grid (21³) | `noise-grid.csv` | [Open](https://vizb.goptics.org/examples/math-and-3d/?id=02-noise-grid) |
-| Noise grid (41³) | `noise-grid-41.csv` | [Open](https://vizb.goptics.org/examples/math-and-3d/?id=03-noise-grid-41) |
-| Clusters | `clusters.csv` | [Open](https://vizb.goptics.org/examples/math-and-3d/?id=04-clusters) |
-| HTTP framework throughput | `concurrency.csv` | [Open](https://vizb.goptics.org/examples/comparisons/) |
+| Sales auto-group | `sales.csv` | [Open](https://vizb.goptics.org/examples/live/tabular-data/) |
+| Sales grouped | `sales.csv` | [Open](https://vizb.goptics.org/examples/live/tabular-data/?id=01-sales-grouped) |
+| Sales by date | `sales.csv` | [Open](https://vizb.goptics.org/examples/live/tabular-data/?id=02-sales-by-date) |
+| House price vs area | `house-price-area2.csv` | [Open](https://vizb.goptics.org/examples/live/tabular-data/?id=03-house-price-area2) |
+| Life expectancy vs income | `life-expectancy-income.csv` | [Open](https://vizb.goptics.org/examples/live/tabular-data/?id=04-life-expectancy-income) |
+| Spiral 3D | `spiral-3d.csv` | [Open](https://vizb.goptics.org/examples/live/math-and-3d/) |
+| Noise surface | `noise-surface.csv` | [Open](https://vizb.goptics.org/examples/live/math-and-3d/?id=01-noise-surface) |
+| Noise grid (21³) | `noise-grid.csv` | [Open](https://vizb.goptics.org/examples/live/math-and-3d/?id=02-noise-grid) |
+| Noise grid (41³) | `noise-grid-41.csv` | [Open](https://vizb.goptics.org/examples/live/math-and-3d/?id=03-noise-grid-41) |
+| Clusters | `clusters.csv` | [Open](https://vizb.goptics.org/examples/live/math-and-3d/?id=04-clusters) |
+| HTTP framework throughput | `concurrency.csv` | [Open](https://vizb.goptics.org/examples/live/comparisons/) |
 
 - **Docs:** [Tabular data](https://vizb.goptics.org/examples/tabular-data/) · [Math & 3D](https://vizb.goptics.org/examples/math-and-3d/) · [Comparisons](https://vizb.goptics.org/examples/comparisons/) · [Group guide](../../docs/src/content/docs/guides/group.mdx) · [3D charts](../../docs/src/content/docs/charts/3d.mdx)

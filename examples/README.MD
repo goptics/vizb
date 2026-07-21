@@ -1,18 +1,18 @@
 # Vizb examples
 
-Sample inputs for the live dashboards on [vizb.goptics.org/examples/](https://vizb.goptics.org/examples/). CI turns each recipe into JSON, merges them into one HTML page **per topic**, and deploys to the `website` branch.
+Sample inputs for the live dashboards on [vizb.goptics.org/examples/live/](https://vizb.goptics.org/examples/live/). CI turns each recipe into JSON, merges them into one HTML page **per topic**, and deploys to the `website` branch.
 
 ## Topics
 
 | Topic | Source folder | Workflow | Live dashboard |
 |-------|---------------|----------|----------------|
-| Tabular data | `examples/csv/` | [tabular-data-examples.yml](../.github/workflows/tabular-data-examples.yml) | [tabular-data](https://vizb.goptics.org/examples/tabular-data/) |
-| Math & 3D | `examples/csv/` | [math-and-3d-examples.yml](../.github/workflows/math-and-3d-examples.yml) | [math-and-3d](https://vizb.goptics.org/examples/math-and-3d/) |
-| Comparisons | `examples/csv/` | [comparisons-examples.yml](../.github/workflows/comparisons-examples.yml) | [comparisons](https://vizb.goptics.org/examples/comparisons/) |
-| GitHub Legends | _(API-fetched in CI)_ | [github-legends.yml](../.github/workflows/github-legends.yml) | [github-legends](https://vizb.goptics.org/examples/github-legends/) |
-| Go | `examples/go/` | [go-examples.yml](../.github/workflows/go-examples.yml) | [go](https://vizb.goptics.org/examples/go/) |
-| JavaScript | `examples/javascript/` | [javascript-examples.yml](../.github/workflows/javascript-examples.yml) | [javascript](https://vizb.goptics.org/examples/javascript/) |
-| Rust | `examples/rust/` | [rust-examples.yml](../.github/workflows/rust-examples.yml) | [rust](https://vizb.goptics.org/examples/rust/) |
+| Tabular data | `examples/csv/` | [tabular-data-examples.yml](../.github/workflows/tabular-data-examples.yml) | [tabular-data](https://vizb.goptics.org/examples/live/tabular-data/) |
+| Math & 3D | `examples/csv/` | [math-and-3d-examples.yml](../.github/workflows/math-and-3d-examples.yml) | [math-and-3d](https://vizb.goptics.org/examples/live/math-and-3d/) |
+| Comparisons | `examples/csv/` | [comparisons-examples.yml](../.github/workflows/comparisons-examples.yml) | [comparisons](https://vizb.goptics.org/examples/live/comparisons/) |
+| GitHub Legends | _(API-fetched in CI)_ | [github-legends.yml](../.github/workflows/github-legends.yml) | [github-legends](https://vizb.goptics.org/examples/live/github-legends/) |
+| Go | `examples/go/` | [go-examples.yml](../.github/workflows/go-examples.yml) | [go](https://vizb.goptics.org/examples/live/go/) |
+| JavaScript | `examples/javascript/` | [javascript-examples.yml](../.github/workflows/javascript-examples.yml) | [javascript](https://vizb.goptics.org/examples/live/javascript/) |
+| Rust | `examples/rust/` | [rust-examples.yml](../.github/workflows/rust-examples.yml) | [rust](https://vizb.goptics.org/examples/live/rust/) |
 
 CSV input files stay under `examples/csv/`; live HTML is split by **purpose** (tabular vs math vs comparisons), not by parser name.
 

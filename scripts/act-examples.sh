@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-# Topic slugs match dist/examples/<topic>/ and example workflow names
+# Topic slugs match dist/examples/live/<topic>/ and example workflow names
 # (github-legends uses github-legends.yml without the -examples suffix).
 ALL_TOPICS=(tabular-data math-and-3d comparisons github-legends go rust javascript)
 ONLY_TOPICS=()
@@ -67,7 +67,7 @@ for dep in act docker go; do
   fi
 done
 
-mkdir -p bin dist/examples .act/artifacts
+mkdir -p bin dist/examples/live .act/artifacts
 rm -rf .act/jsons
 mkdir -p .act/jsons
 
@@ -96,17 +96,17 @@ for topic in "${TOPICS[@]}"; do
 done
 
 write_overview() {
-  local index="dist/examples/index.html"
+  local index="dist/examples/live/index.html"
   local built_topics=()
 
   for topic in "${TOPICS[@]}"; do
-    if [[ -f "dist/examples/${topic}/index.html" ]]; then
+    if [[ -f "dist/examples/live/${topic}/index.html" ]]; then
       built_topics+=("$topic")
     fi
   done
 
   if [[ ${#built_topics[@]} -eq 0 ]]; then
-    echo "No example galleries were produced under dist/examples/" >&2
+    echo "No example galleries were produced under dist/examples/live/" >&2
     exit 1
   fi
 
@@ -144,7 +144,7 @@ write_overview() {
 
 open_browser() {
   local target
-  target="$(cd dist/examples && pwd)/index.html"
+  target="$(cd dist/examples/live && pwd)/index.html"
   case "$(uname -s)" in
     Linux) xdg-open "$target" >/dev/null 2>&1 || true ;;
     Darwin) open "$target" ;;

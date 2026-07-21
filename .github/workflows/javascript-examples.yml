@@ -1,5 +1,12 @@
 name: "Examples: JavaScript"
 on:
+  push:
+    branches: [main]
+    paths:
+      - "examples/javascript/**"
+      - "action.yml"
+      - ".github/workflows/merge-examples.yml"
+      - ".github/workflows/javascript-examples.yml"
   workflow_call:
     inputs:
       publish:

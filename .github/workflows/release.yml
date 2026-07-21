@@ -29,7 +29,7 @@ jobs:
             - GoReleaser builds binaries for linux/darwin/windows (amd64 + arm64)
             - Release is published to GitHub Releases
             - A PR is auto-submitted to microsoft/winget-pkgs
-            - Examples at https://goptics.github.io/vizb/examples/ are auto-redeployed
+            - Docs and live examples at https://vizb.goptics.org/examples/live/ are rebuilt and published
 
   cli:
     name: CLI
@@ -100,56 +100,56 @@ jobs:
           installers-regex: '\.zip$'
           token: ${{ secrets.WINGET_TOKEN }}
 
-  prepare-docs:
+  docs:
     name: Prepare Docs
     needs: goreleaser
     uses: ./.github/workflows/deploy-docs.yml
     permissions:
       contents: write
 
-  prepare-tabular-data-examples:
+  tabular-data-examples:
     name: "Examples: Tabular Data"
     needs: goreleaser
     uses: ./.github/workflows/tabular-data-examples.yml
     permissions:
       contents: write
 
-  prepare-math-and-3d-examples:
+  math-and-3d-examples:
     name: "Examples: Math & 3D"
     needs: goreleaser
     uses: ./.github/workflows/math-and-3d-examples.yml
     permissions:
       contents: write
 
-  prepare-comparisons-examples:
+  comparisons-examples:
     name: "Examples: Comparisons"
     needs: goreleaser
     uses: ./.github/workflows/comparisons-examples.yml
     permissions:
       contents: write
 
-  prepare-github-legends:
+  github-legends:
     name: "Examples: GitHub Legends"
     needs: goreleaser
     uses: ./.github/workflows/github-legends.yml
     permissions:
       contents: write
 
-  prepare-go-examples:
+  go-examples:
     name: "Examples: Go"
     needs: goreleaser
     uses: ./.github/workflows/go-examples.yml
     permissions:
       contents: write
 
-  prepare-javascript-examples:
+  javascript-examples:
     name: "Examples: JavaScript"
     needs: goreleaser
     uses: ./.github/workflows/javascript-examples.yml
     permissions:
       contents: write
 
-  prepare-rust-examples:
+  rust-examples:
     name: "Examples: Rust"
     needs: goreleaser
     uses: ./.github/workflows/rust-examples.yml
@@ -159,14 +159,14 @@ jobs:
   publish-site:
     name: Publish Site
     needs:
-      - prepare-docs
-      - prepare-tabular-data-examples
-      - prepare-math-and-3d-examples
-      - prepare-comparisons-examples
-      - prepare-github-legends
-      - prepare-go-examples
-      - prepare-javascript-examples
-      - prepare-rust-examples
+      - docs
+      - tabular-data-examples
+      - math-and-3d-examples
+      - comparisons-examples
+      - github-legends
+      - go-examples
+      - javascript-examples
+      - rust-examples
     permissions:
       contents: write
     uses: ./.github/workflows/publish-site.yml
