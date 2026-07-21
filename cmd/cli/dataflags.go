@@ -16,7 +16,7 @@ import (
 // the former CommonOptions hand-written Bind + validationRules.
 var DataFlags = []flags.Flag{
 	{Name: "name", Shorthand: "n", Default: "Comparisons", Usage: "Name of the comparison", Kind: flags.KindString},
-	{Name: "title", Usage: "Override the chart title when --col-axis produces one chart", Kind: flags.KindString},
+	{Name: "title", Usage: "Override the chart title when --col-axis produces one chart; independent of -n/--name, otherwise ignored", Kind: flags.KindString},
 	{Name: "theme", Usage: "Initial series color theme (a built-in name or comma-separated hex palette)", Kind: flags.KindString, Default: "default", Normalizer: style.NormalizeTheme, SoftValidate: style.ValidateTheme},
 	{Name: "description", Shorthand: "d", Usage: "Description of the comparison", Kind: flags.KindString},
 	{Name: "output", Shorthand: "o", Usage: "Output file path/name", Kind: flags.KindString},
