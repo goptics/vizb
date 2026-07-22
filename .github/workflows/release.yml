@@ -95,6 +95,8 @@ jobs:
     uses: ./.github/workflows/installers.yml
     permissions:
       contents: read
+    with:
+      release_tag: ${{ github.ref_name }}
 
   winget:
     needs: goreleaser

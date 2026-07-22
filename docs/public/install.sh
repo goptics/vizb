@@ -46,19 +46,25 @@ command -v curl >/dev/null 2>&1 || die "curl is required but not installed"
 command -v tar >/dev/null 2>&1 || die "tar is required but not installed"
 
 # ----- fetch latest version -----
-log "fetching latest release..."
-LATEST_URL=$(curl -fsSL -o /dev/null -w '%{url_effective}' \
-  "https://github.com/${REPO}/releases/latest")
-LATEST_URL="${LATEST_URL%/}"
-LATEST="${LATEST_URL##*/}"
-if [[ -z "$LATEST" ]]; then
+RELEASE_TAG="${VIZB_RELEASE_TAG:-}"
+if [[ -z "$RELEASE_TAG" ]]; then
+  log "fetching latest release..."
+  LATEST_URL=$(curl -fsSL -o /dev/null -w '%{url_effective}' \
+    "https://github.com/${REPO}/releases/latest")
+  LATEST_URL="${LATEST_URL%/}"
+  RELEASE_TAG="${LATEST_URL##*/}"
+fi
+if [[ -z "$RELEASE_TAG" ]]; then
   die "failed to determine latest version"
 fi
-VERSION="${LATEST#v}"
+case "$RELEASE_TAG" in
+  *[!A-Za-z0-9._+-]*) die "invalid release tag: $RELEASE_TAG" ;;
+esac
+VERSION="${RELEASE_TAG#v}"
 
 # ----- download & extract -----
 ARCHIVE="vizb@${VERSION}-${OS}-${ARCH}.tar.gz"
-URL="https://github.com/${REPO}/releases/download/${LATEST}/${ARCHIVE}"
+URL="https://github.com/${REPO}/releases/download/${RELEASE_TAG}/${ARCHIVE}"
 
 TMPDIR=$(mktemp -d)
 trap 'rm -rf "$TMPDIR"' EXIT
