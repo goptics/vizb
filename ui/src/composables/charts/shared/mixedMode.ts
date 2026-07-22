@@ -143,6 +143,8 @@ export function buildMixedAxes2DOptions(
       ? {
           ...seriesCommon,
           type: 'bar' as const,
+          large: true,
+          largeThreshold: LARGE_DATA_THRESHOLD,
         }
       : chartType === 'line'
         ? {
