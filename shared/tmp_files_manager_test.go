@@ -70,6 +70,19 @@ func (s *TmpFilesManagerSuite) TestTmpFilesManagerRemoveAllNonExistentFiles() {
 	s.Empty(manager.files)
 }
 
+func (s *TmpFilesManagerSuite) TestTmpFilesManagerRemoveAllDirectory() {
+	tempDir := filepath.Join(s.T().TempDir(), "managed")
+	s.Require().NoError(os.MkdirAll(filepath.Join(tempDir, "nested"), 0o755))
+	s.Require().NoError(os.WriteFile(filepath.Join(tempDir, "nested", "update.tmp"), []byte("temporary"), 0o600))
+
+	manager := NewTmpFileManager()
+	manager.Store(tempDir)
+	manager.RemoveAll()
+
+	s.NoDirExists(tempDir)
+	s.Empty(manager.files)
+}
+
 func (s *TmpFilesManagerSuite) TestGlobalTempFiles() {
 	originalFiles := make([]string, len(TempFiles.files))
 	copy(originalFiles, TempFiles.files)

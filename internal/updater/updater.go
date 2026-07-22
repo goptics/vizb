@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/goptics/vizb/shared"
 	"golang.org/x/mod/semver"
 )
 
@@ -152,6 +153,7 @@ func (u *Updater) prepareCandidate(ctx context.Context, version string) (string,
 	if err != nil {
 		return "", func() {}, fmt.Errorf("create update workspace: %w", err)
 	}
+	shared.TempFiles.Store(tempDir)
 	cleanup := func() { _ = os.RemoveAll(tempDir) }
 
 	checksumsPath := filepath.Join(tempDir, "checksums.txt")
@@ -216,6 +218,7 @@ func replaceExecutable(candidate, target string) error {
 		return fmt.Errorf("stage replacement beside executable: %w", err)
 	}
 	stagedPath := staged.Name()
+	shared.TempFiles.Store(stagedPath)
 	defer os.Remove(stagedPath)
 
 	if _, err := io.Copy(staged, input); err != nil {
@@ -245,6 +248,7 @@ func runWindowsInstaller(ctx context.Context, version, executable string, stdin 
 		return fmt.Errorf("create temporary Windows installer: %w", err)
 	}
 	scriptPath := script.Name()
+	shared.TempFiles.Store(scriptPath)
 	defer os.Remove(scriptPath)
 
 	if _, err := script.Write(embeddedWindowsInstaller); err != nil {

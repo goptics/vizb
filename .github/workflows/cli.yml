@@ -30,8 +30,12 @@ on:
 jobs:
   windows-installer:
     runs-on: windows-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Parse PowerShell installer
         shell: pwsh
