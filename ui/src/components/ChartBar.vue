@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { nextTick, ref, watch } from 'vue'
 import type { EChartsOption } from 'echarts'
 import { use } from 'echarts/core'
 import { BrushComponent, GridComponent } from 'echarts/components'
@@ -15,6 +16,7 @@ const props = defineProps<{
   option: EChartsOption
   initOptions: Record<string, unknown>
 }>()
+const chartRef = ref<InstanceType<typeof VChart>>()
 
 const emit = defineEmits<{
   legendselectchanged: [e: { selected: Record<string, boolean> }]
@@ -24,10 +26,16 @@ const emit = defineEmits<{
 function onBrushSelected(event: Parameters<typeof brushSelectionStats>[1]) {
   emit('brushselected', brushSelectionStats(props.option, event))
 }
+
+watch(
+  () => props.option,
+  () => nextTick(() => chartRef.value?.dispatchAction({ type: 'brush', areas: [] }))
+)
 </script>
 
 <template>
   <VChart
+    ref="chartRef"
     :option="option"
     :init-options="initOptions"
     :autoresize="true"

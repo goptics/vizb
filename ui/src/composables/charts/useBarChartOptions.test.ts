@@ -43,6 +43,25 @@ const makeMixedConfig = (): BaseChartConfig => ({
   isDark: ref(false),
 })
 
+const makeValueConfig = (): BaseChartConfig => ({
+  chartData: ref({
+    title: 'passengers',
+    statType: 'sum',
+    yAxis: [],
+    zAxis: [],
+    series: [],
+    points: [],
+    axisLabels: { x: 'year', y: 'passengers' },
+    valueTuples: [
+      [1949, 112],
+      [1955, 242],
+    ],
+  }),
+  sort: ref({ enabled: false, order: 'asc' }),
+  showLabels: ref(false),
+  isDark: ref(false),
+})
+
 const makeStackedGroupedChartData = (): ChartData => ({
   title: 'revenue',
   statType: 'sum',
@@ -82,6 +101,9 @@ describe('useBarChartOptions — grouped mode', () => {
     expect(
       (options.value.toolbox as { feature: { brush: { type: string[] } } }).feature.brush.type
     ).toEqual(['rect', 'keep', 'clear'])
+    expect(
+      (options.value.series as { large?: boolean }[]).every((s) => s.large === undefined)
+    ).toBe(true)
   })
 
   it('emits stacked bar series when stack is enabled', () => {
@@ -148,6 +170,19 @@ describe('useBarChartOptions — grouped mode', () => {
 })
 
 describe('useBarChartOptions — mixed mode', () => {
+  it.each([
+    ['mixed', makeMixedConfig],
+    ['value', makeValueConfig],
+  ])('enables brushing without large rendering for %s tuples', (_mode, makeConfig) => {
+    const { options } = useBarChartOptions(makeConfig())
+
+    expect(options.value.brush).toMatchObject({ brushMode: 'multiple' })
+    expect((options.value.toolbox as { feature: { brush: unknown } }).feature.brush).toBeDefined()
+    expect(
+      (options.value.series as { large?: boolean }[]).every((s) => s.large === undefined)
+    ).toBe(true)
+  })
+
   it('emits bar series with mixedTuples as data', () => {
     const { options } = useBarChartOptions(makeMixedConfig())
     const s = (options.value.series as { type: string; data: [number, number][] }[])[0]!

@@ -259,7 +259,7 @@ watch(
       <dl
         v-if="brushStats && brushStats.regions > 0"
         aria-live="polite"
-        class="absolute right-2 top-2 grid grid-cols-2 gap-x-3 rounded border border-border bg-card/95 px-3 py-2 text-xs shadow"
+        class="pointer-events-none absolute right-2 top-12 grid grid-cols-2 gap-x-3 rounded border border-border bg-card/95 px-3 py-2 text-xs shadow"
       >
         <dt class="text-muted-foreground">Regions</dt>
         <dd class="text-right font-medium">{{ brushStats.regions }}</dd>
