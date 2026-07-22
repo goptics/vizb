@@ -28,6 +28,7 @@ jobs:
             **What will happen after approval:**
             - GoReleaser builds binaries for linux/darwin/windows (amd64 + arm64)
             - Release is published to GitHub Releases
+            - Linux, macOS, and Windows installers smoke-test the published release
             - A PR is auto-submitted to microsoft/winget-pkgs
             - Docs and live examples at https://vizb.goptics.org/examples/live/ are rebuilt and published
 
@@ -87,6 +88,13 @@ jobs:
           # lacks release scope (403 on POST /releases). Releases created with the
           # default token do not re-fire `on: release` workflows, so winget runs below.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  installers:
+    name: Installers
+    needs: goreleaser
+    uses: ./.github/workflows/installers.yml
+    permissions:
+      contents: read
 
   winget:
     needs: goreleaser

@@ -47,9 +47,10 @@ command -v tar >/dev/null 2>&1 || die "tar is required but not installed"
 
 # ----- fetch latest version -----
 log "fetching latest release..."
-LATEST=$(curl -fsSL -o /dev/null -w '%{url_effective}' \
-  "https://github.com/${REPO}/releases/latest" \
-  | grep -oP '[^/]+(?=/?$)')
+LATEST_URL=$(curl -fsSL -o /dev/null -w '%{url_effective}' \
+  "https://github.com/${REPO}/releases/latest")
+LATEST_URL="${LATEST_URL%/}"
+LATEST="${LATEST_URL##*/}"
 if [[ -z "$LATEST" ]]; then
   die "failed to determine latest version"
 fi

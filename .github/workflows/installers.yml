@@ -1,0 +1,70 @@
+name: Installers
+
+on:
+  workflow_call:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - install.sh
+      - install.ps1
+      - docs/public/install.sh
+      - docs/public/install.ps1
+
+permissions:
+  contents: read
+
+jobs:
+  linux-install:
+    name: Linux installer
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install vizb
+        run: bash docs/public/install.sh
+
+      - name: Verify installation
+        run: |
+          test -x "${HOME}/.local/bin/vizb"
+          "${HOME}/.local/bin/vizb" --version
+
+  macos-install:
+    name: macOS installer
+    runs-on: macos-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install vizb
+        run: bash docs/public/install.sh
+
+      - name: Verify installation
+        run: |
+          test -x "${HOME}/.local/bin/vizb"
+          "${HOME}/.local/bin/vizb" --version
+
+  windows-install:
+    name: Windows installer
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install vizb
+        shell: pwsh
+        run: ./docs/public/install.ps1
+
+      - name: Verify installation
+        shell: pwsh
+        run: |
+          $VizbPath = Join-Path $env:LOCALAPPDATA "vizb\vizb.exe"
+          if (-not (Test-Path -Path $VizbPath -PathType Leaf)) {
+              throw "vizb was not installed at $VizbPath"
+          }
+
+          & $VizbPath --version
+          if ($LASTEXITCODE -ne 0) {
+              throw "vizb --version failed with exit code $LASTEXITCODE"
+          }
