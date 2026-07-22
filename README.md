@@ -65,10 +65,15 @@ Pre-built binaries for Linux, macOS, and Windows are available on the [releases 
 
 ### Docker
 
-Run the API directly or with the repository's Compose configuration:
+Run the API directly:
 
 ```bash
-docker run --rm -p 8080:8080 goptics/vizb
+docker run --rm -p 127.0.0.1:8080:8080 goptics/vizb
+```
+
+Alternatively, use the repository's Compose configuration:
+
+```bash
 docker compose up -d
 ```
 

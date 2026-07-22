@@ -20,7 +20,7 @@ Pull the image and start the API on port 8080:
 
 ```bash
 docker pull goptics/vizb
-docker run --rm -p 8080:8080 goptics/vizb
+docker run --rm -p 127.0.0.1:8080:8080 goptics/vizb
 ```
 
 The image starts `vizb serve` bound to `0.0.0.0` inside the container. You can

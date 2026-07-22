@@ -28,10 +28,15 @@ that the server is not exposed to a network unintentionally.
 ## Docker and Compose
 
 The image starts `vizb serve` on `0.0.0.0:8080` inside the container. Publish it
-on the same host port or start the repository's Compose configuration:
+on the same host port:
 
 ```bash
-docker run --rm -p 8080:8080 goptics/vizb
+docker run --rm -p 127.0.0.1:8080:8080 goptics/vizb
+```
+
+Alternatively, start the repository's Compose configuration:
+
+```bash
 docker compose up -d
 ```
 
@@ -39,7 +44,7 @@ If host port 8080 is already in use, map another host port to container port
 8080:
 
 ```bash
-docker run --rm -p 7878:8080 goptics/vizb
+docker run --rm -p 127.0.0.1:7878:8080 goptics/vizb
 ```
 
 The remapped API is available at `http://127.0.0.1:7878`.
