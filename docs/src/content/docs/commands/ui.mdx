@@ -72,7 +72,7 @@ vizb ui data.json -o report.html -c bar
 vizb ui data.json -o report.html -c bar,line
 
 # Pie only via remote data
-vizb ui --data-url https://example.com/bench.json -o report.html -c pie // 375K
+vizb ui --data-url https://example.com/dataset.json -o report.html -c pie // 375K
 ```
 
 <Aside type="note">
@@ -81,70 +81,121 @@ vizb ui --data-url https://example.com/bench.json -o report.html -c pie // 375K
 
 ### Remote data via `--data-url`
 
-The default embed mode inlines the dataset JSON directly into the HTML file. For small datasets this is ideal — one file, works offline, no dependencies. But as dataset history grows (many merged runs, many benchmarks), the JSON can exceed 10 MB and the output file becomes unwieldy to share or store.
+By default, Vizb puts the dataset inside the generated HTML. This gives you one portable
+file that works offline. With `--data-url`, Vizb generates a smaller HTML file and loads
+the data from an HTTP endpoint when someone opens the dashboard.
 
-Use `--data-url` to decouple the UI layer from the data layer: the HTML stays a lean dashboard shell and fetches the JSON from a URL at load time. The JSON file is hosted separately and can be updated without regenerating the HTML.
-
-Instead of embedding the JSON inside the HTML, point the dashboard at a hosted URL.
-dataset is fetched at load time; only the chart renderers you select are bundled.
+Use `--data-url` when the data is large, changes often, or already comes from an API. You
+can update the response without generating the HTML again.
 
 ```bash
-vizb ui --data-url https://example.com/bench.json -o report.html
+vizb ui --data-url https://example.com/dataset.json -o report.html
 ```
 
-Upload `bench.json` to the URL separately (GitHub raw, S3, GitHub Pages, etc.), then open `report.html` in any browser.
-
-The remote JSON may list more chart types in `settings` than were bundled — the UI intersects against `VIZB_CHARTS` at load time, so only shipped renderers appear as tabs.
-
-The base URL supports three response shapes:
+The URL can return any of these JSON shapes:
 
 - One complete vizb dataset object.
 - An array of complete vizb dataset objects.
-- A lightweight catalog array whose entries contain non-empty, unique `id` and `name` strings and omit both `data` and `settings`.
+- A catalog containing only an `id` and `name` for each dataset. Vizb fetches the full
+  dataset when the user selects it.
 
-For example, a catalog response can be:
+The first two shapes load all data when the page opens. A catalog keeps the initial request
+small and loads one dataset at a time.
+
+#### Lazy catalog
+
+A catalog response looks like this:
 
 ```json
 [
-  { "id": "go-1.24", "name": "Go 1.24" },
-  { "id": "go-1.25/amd64", "name": "Go 1.25 (amd64)" }
+  { "id": "dataset-1", "name": "Dataset 1" },
+  { "id": "dataset/2", "name": "Dataset 2" }
 ]
 ```
 
-Vizb detects this shape automatically. It initially requests only the active dataset from
-`<data-url>/dataset/<encoded-id>`; the ID is encoded as one path segment. Trailing slashes
-on the base path are normalized, existing query parameters are preserved, and any fragment
-is discarded. With `https://api.example.com/vizb/?token=abc#latest`, the second entry above
-is requested from `https://api.example.com/vizb/dataset/go-1.25%2Famd64?token=abc`.
+Vizb recognizes this response and requests the selected dataset from:
 
-The detail endpoint must return one complete dataset object with `name`, `data`, and
-`settings`. It may omit `id`, in which case Vizb uses the catalog ID in memory; if it
-includes `id`, it must match the requested catalog ID. Loaded details are kept in memory
-for the current page session, failed requests remain retryable, and no browser storage is
-written. Deep links through `?id=` select by catalog ID before the first detail request;
-legacy `?d=` indexes remain supported.
+```text
+<data-url>/dataset/<encoded-id>
+```
 
-Do not mix catalog entries with complete datasets in one array. Vizb reports missing or
-duplicate catalog IDs, mixed response shapes, malformed detail objects, and mismatched
-detail IDs as load errors.
+For example, selecting `dataset/2` from `https://api.example.com/vizb` requests:
+
+```text
+https://api.example.com/vizb/dataset/dataset%2F2
+```
+
+The detail response must contain one complete dataset with `name`, `data`, and `settings`.
+It may omit `id`; if it includes one, it must match the catalog ID. Vizb keeps loaded
+details in memory for the current page and lets the user retry failed requests.
+
+You can link to a catalog entry with `?id=`:
+
+```text
+https://charts.example.com/?id=dataset%2F2
+```
+
+Vizb also supports the older `?d=` index parameter.
+
+#### Direct dataset paths
+
+Use a data URL ending in `/dataset` to enable short dashboard URLs such as `/<id>`:
+
+```bash
+vizb ui --data-url https://api.example.com/vizb/dataset -o report.html
+```
+
+Opening this dashboard URL:
+
+```text
+https://charts.example.com/dataset-1
+```
+
+skips the catalog request and fetches:
+
+```text
+https://api.example.com/vizb/dataset/dataset-1
+```
+
+Only data URLs ending in `/dataset` enable this behavior. Other data URLs ignore the page
+path and use the normal response flow. A trailing slash, query string, or fragment on the
+data URL does not change the rule.
+
+Your web host must serve the generated HTML for unmatched paths so direct links and page
+refreshes reach Vizb. Direct paths work on HTTP and HTTPS pages, not when opening the HTML
+through `file://`. Chart and group query parameters still work with a direct path:
+
+```text
+https://charts.example.com/dataset-1?c=line&g=1
+```
+
+#### Response rules
+
+Catalog IDs must be non-empty and unique. Do not mix catalog entries and complete datasets
+in the same array. Vizb shows a load error for invalid response shapes, duplicate IDs,
+malformed details, and detail IDs that do not match the request.
+
+Vizb preserves query parameters from the data URL when it builds a detail URL and removes
+the fragment. The dashboard only shows chart types included when you generated the HTML,
+even if the remote dataset contains settings for other chart types.
 
 Because the remote data shape is unknown at build time, the 3D engine is **not** bundled unless you pass `--3d`:
 
 ```bash
-# Remote data might have a z-axis — opt in to the 3D chunk
-vizb ui --data-url https://example.com/bench.json --3d -o report.html
+# Remote data might have a z-axis; include the 3D renderer
+vizb ui --data-url https://example.com/dataset.json --3d -o report.html
 ```
 
 With an embedded JSON file, 3D is still detected automatically from the data (no `--3d` needed).
 
 <Aside type="note">
-  The default (no `--data-url`) produces a fully self-contained file with no external dependencies — open it directly in any browser, even offline.
+  Without `--data-url`, Vizb produces a self-contained file that works offline.
 </Aside>
 
 <Aside type="caution">
-  When using `--data-url`, both the catalog/base response and every detail response must
-  satisfy the same CORS requirements. For `file://` dashboards, this normally means
-  responding with `Access-Control-Allow-Origin: *`.
-  Most static hosts (GitHub raw, public S3, GitHub Pages, Cloudflare Pages) already do this.
-  The HTML can be re-used indefinitely — update the data at the URL to refresh results without regenerating the HTML.
+  Vizb embeds `--data-url` in the generated HTML. Do not put passwords, API keys, access
+  tokens, or other secrets in the URL.
+
+  The data server must allow requests from the dashboard's origin. For dashboards opened
+  through `file://`, this usually requires `Access-Control-Allow-Origin: *`.
 </Aside>

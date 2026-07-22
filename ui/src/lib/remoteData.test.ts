@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Dataset } from '../types'
-import { buildDatasetDetailUrl, classifyPayload, fetchDatasetDetail } from './remoteData'
+import {
+  buildDatasetDetailUrl,
+  classifyPayload,
+  fetchDatasetDetail,
+  isDatasetCollectionUrl,
+} from './remoteData'
 
 const detail = (id?: string): Dataset => ({
   ...(id === undefined ? {} : { id }),
@@ -77,16 +82,27 @@ describe('remote data payloads', () => {
     expect(() => classifyPayload(payload)).toThrow('Expected one full dataset object')
   })
 
+  it('detects only data URLs whose path ends in the dataset collection', () => {
+    expect(isDatasetCollectionUrl('https://example.com/api/dataset')).toBe(true)
+    expect(isDatasetCollectionUrl('https://example.com/api/dataset/?format=full#latest')).toBe(true)
+    expect(isDatasetCollectionUrl('https://example.com/api/datasets')).toBe(false)
+    expect(isDatasetCollectionUrl('https://example.com/api/dataset.json')).toBe(false)
+    expect(isDatasetCollectionUrl('not a URL')).toBe(false)
+  })
+
   it('builds one encoded detail path segment and preserves only the query', () => {
     expect(
       buildDatasetDetailUrl(
-        'https://example.com/api/catalog///?token=a%20b#section',
+        'https://example.com/api/catalog///?filter=a%20b#section',
         'suite/hello world?'
       )
-    ).toBe('https://example.com/api/catalog/dataset/suite%2Fhello%20world%3F?token=a%20b')
+    ).toBe('https://example.com/api/catalog/dataset/suite%2Fhello%20world%3F?filter=a%20b')
     expect(buildDatasetDetailUrl('https://example.com/', 'one')).toBe(
       'https://example.com/dataset/one'
     )
+    expect(
+      buildDatasetDetailUrl('https://example.com/api/dataset/?format=full#latest', 'suite/one')
+    ).toBe('https://example.com/api/dataset/suite%2Fone?format=full')
   })
 
   it('fills an omitted detail ID', async () => {

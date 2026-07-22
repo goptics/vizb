@@ -11,13 +11,30 @@ import {
 } from '../lib/utils'
 import { presentAxisString } from '../lib/swap'
 import { useSettingsStore } from './useSettingsStore'
-import { classifyPayload, fetchDatasetDetail, type DataPayload } from '../lib/remoteData'
+import {
+  classifyPayload,
+  fetchDatasetDetail,
+  isDatasetCollectionUrl,
+  type DataPayload,
+} from '../lib/remoteData'
+import { extractPathDatasetId } from '../lib/pathRoute'
 
 const dataUrl = window.VIZB_DATA_URL
+const pathname = window.location.pathname
+const pathDatasetId =
+  dataUrl &&
+  isDatasetCollectionUrl(dataUrl) &&
+  window.location.protocol !== 'file:' &&
+  !pathname.endsWith('/')
+    ? extractPathDatasetId(pathname)
+    : null
 const getDatasets = async (): Promise<DataPayload> => {
-  const url = window.VIZB_DATA_URL
-  if (url) {
-    const res = await fetch(url)
+  if (dataUrl && pathDatasetId) {
+    return { mode: 'full', datasets: [await fetchDatasetDetail(dataUrl, pathDatasetId)] }
+  }
+
+  if (dataUrl) {
+    const res = await fetch(dataUrl)
     if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
     return classifyPayload(await res.json())
   }
@@ -78,8 +95,11 @@ const setArrangement = (datasetId: number, ct: ChartType, targetString: string) 
   arrangementMap.set(`${datasetId}:${ct}`, targetString)
 }
 
-getDatasets()
-  .then((payload) => {
+const loadDatasets = async () => {
+  loading.value = true
+  loadError.value = null
+  try {
+    const payload = await getDatasets()
     // Each Dataset is wrapped in reactive() so settings mutations (sort/scale/
     // showLabels/threeDRotate/swap) propagate to the chart pipeline's watchers.
     // The `data` field (raw rows) is markRaw'd so it stays proxy-free: the
@@ -93,15 +113,17 @@ getDatasets()
         prepareDataset({ ...entry, data: [], settings: [] })
       )
     } else {
+      lazyCatalog.value = false
       datasets.value = payload.datasets.map(prepareDataset)
     }
-  })
-  .catch((err: unknown) => {
+  } catch (err: unknown) {
     loadError.value = err instanceof Error ? err.message : String(err)
-  })
-  .finally(() => {
+  } finally {
     loading.value = false
-  })
+  }
+}
+
+void loadDatasets()
 
 // Values are normalized once at load (see `normalize`); this just guards the
 // array shape.
@@ -221,7 +243,8 @@ const selectDataset = async (id: number): Promise<boolean> => {
   return true
 }
 
-const retryActiveDataset = () => selectDataset(activeDatasetId.value)
+const retryActiveDataset = () =>
+  loadError.value ? loadDatasets() : selectDataset(activeDatasetId.value)
 
 const selectGroup = (id: number) => {
   if (isValidIndex(id, groupNames.value.length)) {
@@ -257,6 +280,7 @@ export function useDataPoint() {
     detailLoading,
     detailError,
     retryActiveDataset,
+    pathDatasetId,
 
     chartMode,
     isValueMode,

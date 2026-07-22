@@ -138,11 +138,16 @@ lazy catalog such as:
 
 Catalog IDs must be non-empty and unique, and catalog entries must omit `data` and
 `settings`. When an entry is selected, the dashboard requests one complete dataset from
-`<data-url>/dataset/<encoded-id>`. The detail may omit its `id`; an included ID must match
-the catalog ID. Base query parameters are preserved for detail requests. The base and
-detail endpoints must both satisfy the existing CORS requirement (normally
+`<data-url>/dataset/<encoded-id>`, or `<data-url>/<encoded-id>` when the data URL already
+ends in `/dataset`. The detail may omit its `id`; an included ID must match the catalog ID.
+Base query parameters are preserved for detail requests. The base and detail endpoints
+must both satisfy the existing CORS requirement (normally
 `Access-Control-Allow-Origin: *` for a `file://` dashboard). Details are cached only in
 memory for the current page session, and failed requests expose a Retry action.
+
+When `data-url` ends in `/dataset`, you can serve the generated HTML as the fallback for
+`/*` and open `/<encoded-id>`. Vizb then skips the catalog and fetches only
+`<data-url>/<encoded-id>`. Other data URLs disable this path mode.
 
 ### Merge and generate
 

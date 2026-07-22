@@ -39,8 +39,10 @@ const applyIndexParam = (
 
 const resolveDatasetIndex = (
   params: Record<string, string | undefined>,
-  datasets: Dataset[]
+  datasets: Dataset[],
+  pathDatasetId: string | null
 ): number => {
+  if (pathDatasetId) return 0
   const idParam = params.id?.trim()
   if (idParam) {
     const idx = datasets.findIndex((ds) => ds.id === idParam)
@@ -109,6 +111,7 @@ export function useUrlRouter() {
     selectGroup,
     setArrangement,
     arrangementMap,
+    pathDatasetId,
   } = useDataPoint()
 
   // Chart-type list for the active dataset, derived from its `settings` array.
@@ -126,8 +129,8 @@ export function useUrlRouter() {
   }
 
   const applyParams = async (params: Record<string, string | undefined>) => {
-    // 1. Dataset selection (?id= wins over ?d=)
-    const datasetId = resolveDatasetIndex(params, datasets.value)
+    // 1. Dataset selection (path identity wins, otherwise ?id= wins over ?d=)
+    const datasetId = resolveDatasetIndex(params, datasets.value, pathDatasetId)
     const catalogShell = datasets.value[datasetId]
     const selected = await selectDataset(datasetId)
     if (!selected) {
@@ -248,11 +251,13 @@ export function useUrlRouter() {
     }
 
     // Dataset / group
-    const datasetId = activeDataset.value?.id?.trim()
-    if (datasetId) {
-      params.id = datasetId
-    } else if (activeDatasetId.value > 0) {
-      params.d = activeDatasetId.value.toString()
+    if (!pathDatasetId) {
+      const datasetId = activeDataset.value?.id?.trim()
+      if (datasetId) {
+        params.id = datasetId
+      } else if (activeDatasetId.value > 0) {
+        params.d = activeDatasetId.value.toString()
+      }
     }
     if (activeGroupId.value > 0) params.g = activeGroupId.value.toString()
 
@@ -312,6 +317,7 @@ export function useUrlRouter() {
       }),
       () => syncUrlToState()
     )
+    if (applied) syncUrlToState()
     return applied
   }
 
