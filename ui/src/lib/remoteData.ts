@@ -78,10 +78,24 @@ export const classifyPayload = (payload: unknown): DataPayload => {
   return { mode: 'catalog', entries }
 }
 
+const datasetCollectionPath = (pathname: string): string | null => {
+  const normalized = pathname.replace(/\/+$/, '')
+  return normalized.endsWith('/dataset') ? normalized : null
+}
+
+export const isDatasetCollectionUrl = (rawUrl: string): boolean => {
+  try {
+    return datasetCollectionPath(new URL(rawUrl).pathname) !== null
+  } catch {
+    return false
+  }
+}
+
 export const buildDatasetDetailUrl = (baseUrl: string, id: string): string => {
   const url = new URL(baseUrl)
   const basePath = url.pathname.replace(/\/+$/, '')
-  url.pathname = `${basePath}/dataset/${encodeURIComponent(id)}`
+  const collectionPath = datasetCollectionPath(basePath) ?? `${basePath}/dataset`
+  url.pathname = `${collectionPath}/${encodeURIComponent(id)}`
   url.hash = ''
   return url.toString()
 }

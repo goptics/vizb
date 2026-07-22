@@ -11,13 +11,21 @@ import {
 } from '../lib/utils'
 import { presentAxisString } from '../lib/swap'
 import { useSettingsStore } from './useSettingsStore'
-import { classifyPayload, fetchDatasetDetail, type DataPayload } from '../lib/remoteData'
+import {
+  classifyPayload,
+  fetchDatasetDetail,
+  isDatasetCollectionUrl,
+  type DataPayload,
+} from '../lib/remoteData'
 import { extractPathDatasetId } from '../lib/pathRoute'
 
 const dataUrl = window.VIZB_DATA_URL
 const pathname = window.location.pathname
 const pathDatasetId =
-  dataUrl && window.location.protocol !== 'file:' && !pathname.endsWith('/')
+  dataUrl &&
+  isDatasetCollectionUrl(dataUrl) &&
+  window.location.protocol !== 'file:' &&
+  !pathname.endsWith('/')
     ? extractPathDatasetId(pathname)
     : null
 const getDatasets = async (): Promise<DataPayload> => {

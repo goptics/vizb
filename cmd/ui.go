@@ -47,8 +47,9 @@ When --data-url is set, no input file is needed. The generated HTML will fetch
 DataSet JSON from the provided URL at runtime instead of embedding it. The base
 response may also be an id/name catalog; selected details are then fetched from
 <data-url>/dataset/<encoded-id>. Both endpoints must satisfy CORS requirements.
-On HTTP(S), /<encoded-id> skips the catalog and fetches that detail directly. The host
-must serve the generated HTML as a fallback for those dataset paths.
+When the data URL ends in /dataset, HTTP(S) /<encoded-id> paths skip the catalog and
+fetch <data-url>/<encoded-id> directly. Other data URLs disable path mode. The host must
+serve the generated HTML as a fallback for enabled dataset paths.
 Note: hosts should serve Access-Control-Allow-Origin: * for file:// access.`,
 	Args: cobra.MaximumNArgs(1),
 	Run:  runUI,
