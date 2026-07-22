@@ -28,6 +28,7 @@ import {
 import StatsPanel from './StatsPanel.vue'
 import Badge from './Badge.vue'
 import BadgeButton from './BadgeButton.vue'
+import type { BrushSelectionStats } from '../lib/brushSelection'
 
 // Every chart renderer (2D bar/line/pie + 3D) is loaded via defineAsyncComponent
 // so the echarts runtime stays out of the eager startup bundle: nothing in the
@@ -158,6 +159,7 @@ const { containerRef, isFullscreen, withFullscreenToolbox } = useFullscreen()
 // (see StatsPanel.vue + useStatsWorker.ts), so this check stays payload-free.
 const showStats = ref(false)
 const hasStats = computed(() => chartData.value.series.length > 0 && stat.value?.enabled === true)
+const brushStats = ref<BrushSelectionStats | null>(null)
 
 const showTotal = computed(() => chartHasPlottableData(chartData.value))
 const xAxisBadgeCount = computed(() => chartAxisBadgeCount(chartData.value, 'x'))
@@ -180,9 +182,11 @@ const showSkeleton = ref(!!props.loading)
 // labels, fullscreen toolbox, legend z-toggle). They mutate mergedOptions/
 // ActiveChart without `loading`, and must reach the chart immediately.
 watch(mergedOptions, (o) => {
+  brushStats.value = null
   if (!props.loading) renderedOption.value = o
 })
 watch(ActiveChart, (c) => {
+  brushStats.value = null
   if (!props.loading) renderedChart.value = c
 })
 
@@ -199,6 +203,7 @@ watch(
   () => props.loading,
   (l) => {
     if (l) {
+      brushStats.value = null
       showSkeleton.value = true
       return
     }
@@ -249,7 +254,22 @@ watch(
         :init-options="initOptions"
         class="h-full w-full"
         @legendselectchanged="onLegendSelectChanged"
+        @brushselected="brushStats = $event"
       />
+      <dl
+        v-if="brushStats && brushStats.regions > 0"
+        aria-live="polite"
+        class="absolute right-2 top-2 grid grid-cols-2 gap-x-3 rounded border border-border bg-card/95 px-3 py-2 text-xs shadow"
+      >
+        <dt class="text-muted-foreground">Regions</dt>
+        <dd class="text-right font-medium">{{ brushStats.regions }}</dd>
+        <dt class="text-muted-foreground">Total</dt>
+        <dd class="text-right font-medium">{{ formatChartTotal(brushStats.total) }}</dd>
+        <dt class="text-muted-foreground">Avg</dt>
+        <dd class="text-right font-medium">{{ formatChartTotal(brushStats.average) }}</dd>
+        <dt class="text-muted-foreground">Count</dt>
+        <dd class="text-right font-medium">{{ brushStats.count }}</dd>
+      </dl>
       <div v-if="showSkeleton" class="absolute inset-0 z-10 animate-pulse rounded bg-muted" />
     </div>
     <StatsPanel v-if="hasStats && showStats" :chart-data="chartData" :math="stat?.math" />

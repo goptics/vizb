@@ -41,6 +41,13 @@ export function useBarChartOptions(config: BaseChartConfig) {
 
     const { series, xAxisData, hasYAxis } = sortedData.value
     const baseOptions = getBaseOptions(config)
+    ;(baseOptions.toolbox as { feature: Record<string, unknown> }).feature.brush = {
+      type: ['rect', 'keep', 'clear'],
+    }
+    baseOptions.brush = {
+      toolbox: ['rect', 'keep', 'clear'],
+      brushMode: 'multiple',
+    }
     const styling = getChartStyling(isDark.value)
     // `scale` is optional on BaseChartConfig (relaxed in Task 7) — pie/heatmap/
     // radar pass a config without it. The bar composable is the only consumer,

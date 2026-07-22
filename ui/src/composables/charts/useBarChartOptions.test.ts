@@ -72,6 +72,18 @@ const makeStackedGroupedConfig = (
 })
 
 describe('useBarChartOptions — grouped mode', () => {
+  it('enables multi-region rectangular brushing', () => {
+    const { options } = useBarChartOptions(makeStackedGroupedConfig())
+
+    expect(options.value.brush).toMatchObject({
+      toolbox: ['rect', 'keep', 'clear'],
+      brushMode: 'multiple',
+    })
+    expect(
+      (options.value.toolbox as { feature: { brush: { type: string[] } } }).feature.brush.type
+    ).toEqual(['rect', 'keep', 'clear'])
+  })
+
   it('emits stacked bar series when stack is enabled', () => {
     const { options } = useBarChartOptions(makeStackedGroupedConfig(true))
     const series = options.value.series as { stack?: string }[]
