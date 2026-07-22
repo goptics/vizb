@@ -3,6 +3,8 @@ title: vizb serve
 description: Run Vizb's local synchronous REST API.
 ---
 
+import { Aside } from '@astrojs/starlight/components';
+
 `vizb serve` exposes Vizb conversion, Dataset merging, and UI generation through
 a local JSON API. It is synchronous and stateless: requests do not create jobs
 or persisted server-side artifacts.
@@ -22,6 +24,29 @@ vizb serve --host 0.0.0.0 --port 8080
 
 The host and port make up the API base URL. The default binding is loopback so
 that the server is not exposed to a network unintentionally.
+
+## Docker and Compose
+
+The image starts `vizb serve` on `0.0.0.0:8080` inside the container. Publish it
+on the same host port or start the repository's Compose configuration:
+
+```bash
+docker run --rm -p 8080:8080 goptics/vizb
+docker compose up -d
+```
+
+If host port 8080 is already in use, map another host port to container port
+8080:
+
+```bash
+docker run --rm -p 7878:8080 goptics/vizb
+```
+
+The remapped API is available at `http://127.0.0.1:7878`.
+
+<Aside type="caution">
+  The API has no built-in authentication. Do not expose it publicly without your own authentication, TLS, and access controls.
+</Aside>
 
 Each request body is limited to 10 MiB. The server uses a 5-second header read
 timeout, a 15-second request read timeout, and 60-second write and idle

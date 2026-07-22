@@ -13,6 +13,7 @@
     <a href="https://github.com/avelino/awesome-go?tab=readme-ov-file#benchmarks"><img src="https://awesome.re/mentioned-badge-flat.svg" alt="Mentioned in Awesome Go" /></a>
     <a href="https://vizb.goptics.org"><img src="https://img.shields.io/badge/Docs-00ADD8?style=for&logo=readthedocs" alt="Docs" /></a>
     <a href="https://vizb.goptics.org/api/"><img src="https://img.shields.io/badge/API-OpenAPI-7B42BC?style=for&logo=openapiinitiative&logoColor=white" alt="API" /></a>
+    <a href="https://hub.docker.com/r/goptics/vizb"><img src="https://img.shields.io/docker/pulls/goptics/vizb?logo=docker&label=Docker" alt="Docker Hub" /></a>
     <a href="https://vizb.goptics.org/examples"><img src="https://img.shields.io/badge/Live-Examples-orange?style=for" alt="Examples" /></a>
     <a href="https://github.com/goptics/vizb/actions/workflows/cli.yml"><img src="https://github.com/goptics/vizb/actions/workflows/cli.yml/badge.svg" alt="CLI" /></a>
     <a href="https://github.com/goptics/vizb/actions/workflows/ui.yml"><img src="https://github.com/goptics/vizb/actions/workflows/ui.yml/badge.svg" alt="UI" /></a>
@@ -36,7 +37,8 @@
     <a href="https://vizb.goptics.org/guides/group/">Grouping</a> ·
     <a href="https://vizb.goptics.org/guides/select/">Select</a> ·
     <a href="https://vizb.goptics.org/guides/merging/">Merging</a> ·
-    <a href="https://vizb.goptics.org/ci-cd/github-action/">CI/CD</a>
+    <a href="https://vizb.goptics.org/ci-cd/github-action/">CI/CD</a> ·
+    <a href="https://vizb.goptics.org/installation/#docker">Docker</a>
     <br />
     <sub>Full documentation at <a href="https://vizb.goptics.org/"><strong>vizb.goptics.org</strong></a></sub>
   </p>
@@ -60,6 +62,24 @@ irm https://vizb.goptics.org/install.ps1 | iex
 ### Download Binary
 
 Pre-built binaries for Linux, macOS, and Windows are available on the [releases page](https://github.com/goptics/vizb/releases).
+
+### Docker
+
+Run the API directly or with the repository's Compose configuration:
+
+```bash
+docker run --rm -p 8080:8080 goptics/vizb
+docker compose up -d
+```
+
+Run the CLI against files in the current directory:
+
+```bash
+docker run --rm -v "$PWD:/data" -w /data goptics/vizb bar sales.csv -o out.html
+```
+
+The API has no built-in authentication. Keep it private or put authentication,
+TLS, and access controls in front of it. See the [Docker installation guide](https://vizb.goptics.org/installation/#docker).
 
 ## Quick Example
 
