@@ -32,6 +32,7 @@ func ResetTestState() {
 	resetChanged(uiCmd.Flags())
 	resetChanged(mergeCmd.Flags())
 	resetChanged(serveCmd.Flags())
+	resetChanged(updateCmd.Flags())
 }
 
 // resetChanged clears the Changed flag on every flag in fs so

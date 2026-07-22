@@ -24,6 +24,20 @@ go install github.com/goptics/vizb@latest
   Building from source requires **Go 1.26+**. Install Go from the [official site](https://go.dev/dl) or via [webi](https://webinstall.dev/go/). Pre-built binaries and the install script need no Go runtime.
 </Aside>
 
+## Updating
+
+```bash
+vizb update
+```
+
+Standalone installs from the scripts or release archives update in place after
+verifying the release checksum. Vizb delegates package-managed installs instead
+of overwriting them: Go installs receive the corresponding `go install` command,
+and WinGet installs receive the corresponding `winget upgrade` command.
+
+See [`vizb update`](/commands/update) for the complete detection and safety
+behavior.
+
 ## Download Binary
 
 Pre-built binaries for Linux, macOS, and Windows (amd64 and arm64) are available on the [releases page](https://github.com/goptics/vizb/releases).

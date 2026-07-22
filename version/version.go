@@ -2,7 +2,10 @@ package version
 
 import "runtime/debug"
 
-var Version = "devel"
+var (
+	Version      = "devel"
+	Distribution string
+)
 
 func init() {
 	if Version != "devel" {

@@ -8,7 +8,9 @@ require (
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.6
 	github.com/stretchr/testify v1.10.0
+	golang.org/x/mod v0.38.0
 	golang.org/x/perf v0.0.0-20250909190841-7e13e04d9366
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -33,5 +35,4 @@ require (
 	golang.org/x/sys v0.36.0 // indirect
 	golang.org/x/term v0.28.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
