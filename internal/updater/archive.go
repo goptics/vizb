@@ -2,7 +2,6 @@ package updater
 
 import (
 	"archive/tar"
-	"archive/zip"
 	"compress/gzip"
 	"fmt"
 	"io"
@@ -17,8 +16,6 @@ func extractBinary(archivePath, extension, destination, binaryName string) error
 	switch extension {
 	case ".tar.gz":
 		return extractTarGzipBinary(archivePath, destination, binaryName)
-	case ".zip":
-		return extractZipBinary(archivePath, destination, binaryName)
 	default:
 		return fmt.Errorf("unsupported archive format %q", extension)
 	}
@@ -53,39 +50,6 @@ func extractTarGzipBinary(archivePath, destination, binaryName string) error {
 			return fmt.Errorf("binary in release archive is too large")
 		}
 		return writeExtractedBinary(destination, io.LimitReader(tarReader, header.Size), header.Size)
-	}
-
-	return fmt.Errorf("binary %q not found in release archive", binaryName)
-}
-
-func extractZipBinary(archivePath, destination, binaryName string) error {
-	archive, err := zip.OpenReader(archivePath)
-	if err != nil {
-		return fmt.Errorf("open release archive: %w", err)
-	}
-	defer archive.Close()
-
-	for _, file := range archive.File {
-		if cleanArchiveName(file.Name) != binaryName || !file.Mode().IsRegular() {
-			continue
-		}
-		if file.UncompressedSize64 > maxBinarySize {
-			return fmt.Errorf("binary in release archive is too large")
-		}
-
-		reader, err := file.Open()
-		if err != nil {
-			return fmt.Errorf("open binary in release archive: %w", err)
-		}
-		err = writeExtractedBinary(destination, reader, int64(file.UncompressedSize64))
-		closeErr := reader.Close()
-		if err != nil {
-			return err
-		}
-		if closeErr != nil {
-			return fmt.Errorf("close binary in release archive: %w", closeErr)
-		}
-		return nil
 	}
 
 	return fmt.Errorf("binary %q not found in release archive", binaryName)

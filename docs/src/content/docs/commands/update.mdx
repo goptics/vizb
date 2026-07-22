@@ -16,14 +16,14 @@ metadata file.
 | Installation | Behavior |
 | --- | --- |
 | Linux/macOS installer or official release archive | Downloads the matching GitHub release, verifies `checksums.txt`, and atomically replaces the running binary. |
-| Windows installer | Runs the Vizb installer, which switches the stable install junction to a versioned release directory. |
+| Windows standalone | Does not modify the executable and prints the PowerShell reinstall command. |
 | `go install` | Prints `go install github.com/goptics/vizb@latest` without modifying the binary. |
 | WinGet | Prints `winget upgrade --id goptics.vizb --exact` without modifying the package. |
 | Development or unidentified build | Refuses to modify the executable and links to the installation instructions. |
 
-An official Windows binary copied to an arbitrary directory is not moved or
-overwritten automatically. Install it with `install.ps1` first so Vizb has a
-stable update location.
+Windows standalone self-update is not supported yet. Run the printed
+`install.ps1` command after Vizb exits to install the latest release. WinGet and
+Go-toolchain installations still receive their package-manager commands.
 
 If a standalone binary is in a system directory such as `/usr/local/bin`, the
 update needs permission to create a staging file in that directory. Vizb never

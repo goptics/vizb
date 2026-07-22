@@ -1,15 +1,13 @@
 // Package updater detects how the running Vizb binary was installed and safely
-// updates official standalone releases.
+// updates official standalone Linux and macOS releases.
 package updater
 
 import (
 	"context"
-	_ "embed"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -24,11 +22,6 @@ const (
 	defaultReleaseDownloadURL = "https://github.com/goptics/vizb/releases/download"
 )
 
-type windowsInstaller func(context.Context, string, string, io.Reader, io.Writer, io.Writer) error
-
-//go:embed install.ps1
-var embeddedWindowsInstaller []byte
-
 // Updater contains the runtime and release dependencies for one update run.
 type Updater struct {
 	currentVersion      string
@@ -42,7 +35,6 @@ type Updater struct {
 	latestURL           string
 	releaseDownloadURL  string
 	replace             func(string, string) error
-	installOnWindows    windowsInstaller
 }
 
 // New constructs an updater for the currently running executable.
@@ -72,13 +64,12 @@ func New(currentVersion, distribution string) (*Updater, error) {
 		latestURL:           defaultLatestURL,
 		releaseDownloadURL:  defaultReleaseDownloadURL,
 		replace:             replaceExecutable,
-		installOnWindows:    runWindowsInstaller,
 	}, nil
 }
 
 // Run updates a standalone installation or prints the package-manager command
 // that owns the running executable.
-func (u *Updater) Run(ctx context.Context, stdin io.Reader, stdout, stderr io.Writer) error {
+func (u *Updater) Run(ctx context.Context, _ io.Reader, stdout, _ io.Writer) error {
 	installedBy := detectInstallation(detectionContext{
 		GOOS:                u.goos,
 		RawExecutable:       u.rawExecutable,
@@ -96,6 +87,11 @@ func (u *Updater) Run(ctx context.Context, stdin io.Reader, stdout, stderr io.Wr
 		return nil
 	case installationUnknown:
 		return fmt.Errorf("cannot safely update this development or unidentified vizb build; reinstall from https://vizb.goptics.org/installation")
+	}
+	if u.goos == "windows" {
+		fmt.Fprintln(stdout, "Automatic standalone updates are not supported on Windows yet.")
+		fmt.Fprintln(stdout, "Reinstall with: irm https://vizb.goptics.org/install.ps1 | iex")
+		return nil
 	}
 
 	currentVersion := normalizeVersion(u.currentVersion)
@@ -118,15 +114,6 @@ func (u *Updater) Run(ctx context.Context, stdin io.Reader, stdout, stderr io.Wr
 	}
 	if comparison > 0 {
 		fmt.Fprintf(stdout, "vizb %s is newer than the latest release %s; no downgrade performed.\n", currentVersion, latestVersion)
-		return nil
-	}
-
-	if u.goos == "windows" {
-		fmt.Fprintf(stdout, "Updating vizb from %s to %s through the Windows installer...\n", currentVersion, latestVersion)
-		if err := u.installOnWindows(ctx, latestVersion, u.canonicalExecutable, stdin, stdout, stderr); err != nil {
-			return fmt.Errorf("run Windows installer: %w", err)
-		}
-		fmt.Fprintf(stdout, "Updated vizb to %s.\n", latestVersion)
 		return nil
 	}
 
@@ -179,9 +166,6 @@ func (u *Updater) prepareCandidate(ctx context.Context, version string) (string,
 	}
 
 	binaryName := "vizb"
-	if u.goos == "windows" {
-		binaryName += ".exe"
-	}
 	candidate := filepath.Join(tempDir, binaryName)
 	if err := extractBinary(archivePath, asset.Extension, candidate, binaryName); err != nil {
 		cleanup()
@@ -240,45 +224,4 @@ func replaceExecutable(candidate, target string) error {
 		return fmt.Errorf("atomically install replacement: %w", err)
 	}
 	return nil
-}
-
-func runWindowsInstaller(ctx context.Context, version, executable string, stdin io.Reader, stdout, stderr io.Writer) error {
-	script, err := os.CreateTemp("", "vizb-update-*.ps1")
-	if err != nil {
-		return fmt.Errorf("create temporary Windows installer: %w", err)
-	}
-	scriptPath := script.Name()
-	shared.TempFiles.Store(scriptPath)
-	defer os.Remove(scriptPath)
-
-	if _, err := script.Write(embeddedWindowsInstaller); err != nil {
-		_ = script.Close()
-		return fmt.Errorf("write temporary Windows installer: %w", err)
-	}
-	if err := script.Sync(); err != nil {
-		_ = script.Close()
-		return fmt.Errorf("sync temporary Windows installer: %w", err)
-	}
-	if err := script.Close(); err != nil {
-		return fmt.Errorf("close temporary Windows installer: %w", err)
-	}
-
-	command := exec.CommandContext(
-		ctx,
-		"powershell.exe",
-		"-NoProfile",
-		"-NonInteractive",
-		"-ExecutionPolicy",
-		"Bypass",
-		"-File",
-		scriptPath,
-		"-VersionTag",
-		version,
-		"-SourceExecutable",
-		executable,
-	)
-	command.Stdin = stdin
-	command.Stdout = stdout
-	command.Stderr = stderr
-	return command.Run()
 }

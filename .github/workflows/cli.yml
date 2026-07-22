@@ -9,7 +9,6 @@ on:
       - go.mod
       - go.sum
       - .goreleaser.yml
-      - internal/updater/install.ps1
       - action.yml
       - .github/workflows/action-ci.yml
       - .github/workflows/cli.yml
@@ -21,37 +20,12 @@ on:
       - go.mod
       - go.sum
       - .goreleaser.yml
-      - internal/updater/install.ps1
       - action.yml
       - .github/workflows/action-ci.yml
       - .github/workflows/cli.yml
       - .github/actions/setup-embed-ui/**
 
 jobs:
-  windows-installer:
-    runs-on: windows-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-
-      - name: Parse PowerShell installer
-        shell: pwsh
-        run: |
-          $tokens = $null
-          $errors = $null
-          [System.Management.Automation.Language.Parser]::ParseFile(
-            (Resolve-Path "internal/updater/install.ps1").Path,
-            [ref]$tokens,
-            [ref]$errors
-          ) | Out-Null
-          if ($errors.Count -gt 0) {
-            $errors | ForEach-Object { Write-Error $_.Message }
-            exit 1
-          }
-
   embed-ui:
     runs-on: ubuntu-slim
     steps:

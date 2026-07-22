@@ -53,7 +53,7 @@ func latestReleaseVersion(ctx context.Context, client *http.Client, latestURL, u
 }
 
 func assetFor(version, goos, goarch string) (releaseAsset, error) {
-	if goos != "linux" && goos != "darwin" && goos != "windows" {
+	if goos != "linux" && goos != "darwin" {
 		return releaseAsset{}, fmt.Errorf("unsupported operating system %q", goos)
 	}
 	if goarch != "amd64" && goarch != "arm64" {
@@ -61,9 +61,6 @@ func assetFor(version, goos, goarch string) (releaseAsset, error) {
 	}
 
 	extension := ".tar.gz"
-	if goos == "windows" {
-		extension = ".zip"
-	}
 	releaseVersion := strings.TrimPrefix(normalizeVersion(version), "v")
 	return releaseAsset{
 		Name:      fmt.Sprintf("vizb@%s-%s-%s%s", releaseVersion, goos, goarch, extension),

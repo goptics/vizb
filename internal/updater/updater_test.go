@@ -2,13 +2,11 @@ package updater
 
 import (
 	"archive/tar"
-	"archive/zip"
 	"bytes"
 	"compress/gzip"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -16,7 +14,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"slices"
 	"strings"
 	"testing"
 
@@ -38,7 +35,6 @@ func (s *UpdaterSuite) TestNewUsesCurrentRuntimeAndExecutable() {
 	s.NotEmpty(service.canonicalExecutable)
 	s.NotNil(service.client)
 	s.NotNil(service.replace)
-	s.NotNil(service.installOnWindows)
 }
 
 func (s *UpdaterSuite) TestDetectsInstallationManager() {
@@ -150,7 +146,7 @@ func (s *UpdaterSuite) TestAssetNamingAndPlatformValidation() {
 	}{
 		{name: "linux amd64", version: "v1.2.3", goos: "linux", goarch: "amd64", assetName: "vizb@1.2.3-linux-amd64.tar.gz", extension: ".tar.gz"},
 		{name: "darwin arm64", version: "1.2.3", goos: "darwin", goarch: "arm64", assetName: "vizb@1.2.3-darwin-arm64.tar.gz", extension: ".tar.gz"},
-		{name: "windows arm64", version: "v1.2.3", goos: "windows", goarch: "arm64", assetName: "vizb@1.2.3-windows-arm64.zip", extension: ".zip"},
+		{name: "windows unsupported", version: "v1.2.3", goos: "windows", goarch: "arm64", wantErr: "unsupported operating system"},
 		{name: "unsupported os", version: "v1.2.3", goos: "freebsd", goarch: "amd64", wantErr: "unsupported operating system"},
 		{name: "unsupported arch", version: "v1.2.3", goos: "linux", goarch: "386", wantErr: "unsupported architecture"},
 	}
@@ -340,85 +336,20 @@ func (s *UpdaterSuite) TestManagedAndUnknownBuildsNeverContactReleaseServer() {
 	}
 }
 
-func (s *UpdaterSuite) TestWindowsStandaloneRunsInstallerAfterVersionCheck() {
-	server := newReleaseServer(s.T(), "v1.1.0", "unused", nil, false)
-	defer server.Close()
-
-	service := standaloneUpdater(server, `C:\Users\me\AppData\Local\vizb\vizb.exe`, "v1.0.0", "windows", "amd64")
-	called := false
-	service.installOnWindows = func(_ context.Context, version, executable string, _ io.Reader, _, _ io.Writer) error {
-		called = true
-		s.Equal("v1.1.0", version)
-		s.Equal(`C:\Users\me\AppData\Local\vizb\vizb.exe`, executable)
-		return nil
+func (s *UpdaterSuite) TestWindowsStandalonePrintsReinstallCommandWithoutNetwork() {
+	service := &Updater{
+		currentVersion:      "devel",
+		distribution:        "standalone",
+		rawExecutable:       `C:\Users\me\AppData\Local\vizb\vizb.exe`,
+		canonicalExecutable: `C:\Users\me\AppData\Local\vizb\vizb.exe`,
+		goos:                "windows",
+		goarch:              "amd64",
 	}
 
 	var stdout bytes.Buffer
 	s.Require().NoError(service.Run(context.Background(), strings.NewReader(""), &stdout, io.Discard))
-	s.True(called)
-	s.Contains(stdout.String(), "through the Windows installer")
-	s.Contains(stdout.String(), "Updated vizb to v1.1.0")
-}
-
-func (s *UpdaterSuite) TestWindowsInstallerFailureIsReturned() {
-	server := newReleaseServer(s.T(), "v1.1.0", "unused", nil, false)
-	defer server.Close()
-
-	service := standaloneUpdater(server, `C:\Users\me\AppData\Local\vizb\vizb.exe`, "v1.0.0", "windows", "amd64")
-	service.installOnWindows = func(context.Context, string, string, io.Reader, io.Writer, io.Writer) error {
-		return errors.New("PowerShell failed")
-	}
-
-	err := service.Run(context.Background(), strings.NewReader(""), io.Discard, io.Discard)
-	s.Require().ErrorContains(err, "run Windows installer: PowerShell failed")
-}
-
-func (s *UpdaterSuite) TestWindowsInstallerRunsEmbeddedPinnedScript() {
-	tempDir := s.T().TempDir()
-	argsPath := filepath.Join(tempDir, "args.txt")
-	scriptCopyPath := filepath.Join(tempDir, "installer-copy.ps1")
-	fakePowerShell := filepath.Join(tempDir, "powershell.exe")
-	fake := `#!/bin/sh
-installer=""
-previous=""
-for argument in "$@"; do
-  printf '%s\n' "$argument" >> "$VIZB_TEST_ARGS"
-  if [ "$previous" = "-File" ]; then installer="$argument"; fi
-  previous="$argument"
-done
-/bin/cp "$installer" "$VIZB_TEST_SCRIPT_COPY"
-`
-	s.Require().NoError(os.WriteFile(fakePowerShell, []byte(fake), 0o755))
-	s.T().Setenv("PATH", tempDir)
-	s.T().Setenv("VIZB_TEST_ARGS", argsPath)
-	s.T().Setenv("VIZB_TEST_SCRIPT_COPY", scriptCopyPath)
-
-	s.Require().NoError(runWindowsInstaller(
-		context.Background(),
-		"v1.1.0",
-		`C:\Users\me\AppData\Local\vizb\vizb.exe`,
-		strings.NewReader(""),
-		io.Discard,
-		io.Discard,
-	))
-
-	arguments, err := os.ReadFile(argsPath)
-	s.Require().NoError(err)
-	argumentText := string(arguments)
-	s.Contains(argumentText, "-NonInteractive\n")
-	s.Contains(argumentText, "-File\n")
-	s.Contains(argumentText, "-VersionTag\nv1.1.0\n")
-	s.Contains(argumentText, "-SourceExecutable\nC:\\Users\\me\\AppData\\Local\\vizb\\vizb.exe\n")
-
-	installerCopy, err := os.ReadFile(scriptCopyPath)
-	s.Require().NoError(err)
-	s.Equal(embeddedWindowsInstaller, installerCopy)
-
-	argumentLines := strings.Split(strings.TrimSpace(argumentText), "\n")
-	fileFlag := slices.Index(argumentLines, "-File")
-	s.Require().GreaterOrEqual(fileFlag, 0)
-	s.Require().Less(fileFlag+1, len(argumentLines))
-	s.NoFileExists(argumentLines[fileFlag+1])
+	s.Contains(stdout.String(), "not supported on Windows yet")
+	s.Contains(stdout.String(), "irm https://vizb.goptics.org/install.ps1 | iex")
 }
 
 func (s *UpdaterSuite) TestReleaseResolutionAndErrors() {
@@ -459,20 +390,11 @@ func (s *UpdaterSuite) TestReleaseResolutionAndErrors() {
 	})
 }
 
-func (s *UpdaterSuite) TestZipExtractionAndMissingBinary() {
-	zipBytes := zipArchive(s.T(), "vizb.exe", []byte("windows-binary"))
-	zipPath := filepath.Join(s.T().TempDir(), "release.zip")
-	s.Require().NoError(os.WriteFile(zipPath, zipBytes, 0o600))
-	destination := filepath.Join(s.T().TempDir(), "vizb.exe")
-	s.Require().NoError(extractBinary(zipPath, ".zip", destination, "vizb.exe"))
-	got, err := os.ReadFile(destination)
-	s.Require().NoError(err)
-	s.Equal("windows-binary", string(got))
-
+func (s *UpdaterSuite) TestMissingBinaryInArchive() {
 	missingArchive := tarGzipArchive(s.T(), "other", []byte("no"))
 	missingPath := filepath.Join(s.T().TempDir(), "release.tar.gz")
 	s.Require().NoError(os.WriteFile(missingPath, missingArchive, 0o600))
-	err = extractBinary(missingPath, ".tar.gz", filepath.Join(s.T().TempDir(), "vizb"), "vizb")
+	err := extractBinary(missingPath, ".tar.gz", filepath.Join(s.T().TempDir(), "vizb"), "vizb")
 	s.Require().ErrorContains(err, `binary "vizb" not found`)
 }
 
@@ -549,25 +471,6 @@ func tarGzipArchive(t *testing.T, name string, content []byte) []byte {
 		t.Fatal(err)
 	}
 	if err := gzipWriter.Close(); err != nil {
-		t.Fatal(err)
-	}
-	return buffer.Bytes()
-}
-
-func zipArchive(t *testing.T, name string, content []byte) []byte {
-	t.Helper()
-	var buffer bytes.Buffer
-	zipWriter := zip.NewWriter(&buffer)
-	header := &zip.FileHeader{Name: name, Method: zip.Deflate}
-	header.SetMode(0o755)
-	entry, err := zipWriter.CreateHeader(header)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := entry.Write(content); err != nil {
-		t.Fatal(err)
-	}
-	if err := zipWriter.Close(); err != nil {
 		t.Fatal(err)
 	}
 	return buffer.Bytes()

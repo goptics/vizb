@@ -30,10 +30,12 @@ go install github.com/goptics/vizb@latest
 vizb update
 ```
 
-Standalone installs from the scripts or release archives update in place after
-verifying the release checksum. Vizb delegates package-managed installs instead
-of overwriting them: Go installs receive the corresponding `go install` command,
-and WinGet installs receive the corresponding `winget upgrade` command.
+Standalone Linux and macOS installs from the script or release archives update
+in place after verifying the release checksum. Windows standalone installs print
+the PowerShell reinstall command and are not modified automatically. Vizb
+delegates package-managed installs instead of overwriting them: Go installs
+receive the corresponding `go install` command, and WinGet installs receive the
+corresponding `winget upgrade` command.
 
 See [`vizb update`](/commands/update) for the complete detection and safety
 behavior.
