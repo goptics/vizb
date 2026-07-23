@@ -52,6 +52,7 @@ type ConvertInput struct {
 	Input    []byte
 	Parser   string
 	Config   parser.Config
+	Title    string
 	Metadata Metadata
 	Charts   []internalcharts.ChartConfig
 }
@@ -66,8 +67,9 @@ type ConvertResult struct {
 // applied. Transport adapters use it to distinguish request validation from
 // malformed or otherwise unprocessable input.
 type OptionError struct {
-	Name string
-	Err  error
+	Name    string
+	Err     error
+	Ignored bool
 }
 
 func (e *OptionError) Error() string {
@@ -162,6 +164,10 @@ func Convert(in ConvertInput) (ConvertResult, error) {
 			points = shared.AggregateDataPoints(points)
 		}
 	}
+	points, effectiveCfg, err = ApplyColAxis(points, effectiveCfg, key, in.Title)
+	if err != nil {
+		return ConvertResult{}, err
+	}
 	if len(points) == 0 {
 		return ConvertResult{}, fmt.Errorf("no dataset found")
 	}
@@ -187,6 +193,66 @@ func Convert(in ConvertInput) (ConvertResult, error) {
 		return ConvertResult{}, err
 	}
 	return ConvertResult{Dataset: dataset, Warnings: warnings}, nil
+}
+
+// ApplyColAxis expands grouped multi-column stats onto a free axis and applies
+// the optional single-chart title. Ignored errors are warnings at the CLI
+// boundary and validation errors for strict callers such as the REST API.
+func ApplyColAxis(data []shared.DataPoint, cfg parser.Config, parserKey, title string) ([]shared.DataPoint, parser.Config, error) {
+	ignored := func(name, message string) ([]shared.DataPoint, parser.Config, error) {
+		cfg.ColAxis = ""
+		if title != "" && name != "title" {
+			message += "; --title ignored"
+		}
+		return data, cfg, &OptionError{Name: name, Err: fmt.Errorf("%s", message), Ignored: true}
+	}
+
+	if cfg.ColAxis == "" {
+		if title != "" {
+			return ignored("title", "--title only applies when --col-axis produces one chart; ignoring (use --select … (Title) for multi-stat charts)")
+		}
+		return data, cfg, nil
+	}
+	if !slices.Contains([]string{"n", "x", "y", "z"}, cfg.ColAxis) {
+		return data, cfg, &OptionError{Name: "colAxis", Err: fmt.Errorf("invalid col axis %q; expected n, x, y, or z", cfg.ColAxis)}
+	}
+	if parserKey != "csv" && parserKey != "json" {
+		return ignored("colAxis", "--col-axis is only supported for csv/json parsers; ignoring")
+	}
+	if cfg.Mode.IsSelectAxis() && !cfg.Mode.IsMultiStat() {
+		return ignored("colAxis", "--col-axis requires grouped multi-column stats; ignoring")
+	}
+	if len(cfg.Group) == 0 && !parser.IsExplicitGrouping(cfg) {
+		return ignored("colAxis", "--col-axis requires grouping (-g/-r/-p or auto-group); ignoring")
+	}
+
+	dim := shared.Dimension(cfg.ColAxis)
+	groupAxes := parser.GroupAxes(cfg)
+	for _, axis := range groupAxes {
+		if axis.Key == dim.AxisKey() {
+			return data, cfg, &OptionError{
+				Name: "colAxis",
+				Err:  fmt.Errorf("--col-axis %q conflicts with group dimension (already used by --group-pattern)", cfg.ColAxis),
+			}
+		}
+	}
+	if dim == shared.DimensionZAxis {
+		hasX := slices.ContainsFunc(groupAxes, func(axis shared.Axis) bool { return axis.Key == "x" })
+		hasY := slices.ContainsFunc(groupAxes, func(axis shared.Axis) bool { return axis.Key == "y" })
+		if !hasX || !hasY {
+			return data, cfg, &OptionError{Name: "colAxis", Err: fmt.Errorf("--col-axis z requires both x and y group dimensions")}
+		}
+	}
+
+	data = shared.ExpandStatsOntoAxis(data, dim)
+	if title != "" {
+		for i := range data {
+			for j := range data[i].Stats {
+				data[i].Stats[j].Type = title
+			}
+		}
+	}
+	return data, cfg, nil
 }
 
 // Merge combines complete request datasets atomically. It intentionally accepts

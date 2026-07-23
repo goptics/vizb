@@ -135,6 +135,19 @@ components:
                       showLabels: true
                 output:
                   format: dataset
+            columnAxisConversion:
+              summary: Convert wide competitor columns into one titled chart.
+              value:
+                input: "load,default,chi\n100,3103.62,3103.73\n1000,32423.67,32421.28\n"
+                name: Q1 release
+                title: Framework throughput
+                parser: csv
+                grouping:
+                  pattern: y
+                  columns: [load]
+                  colAxis: x
+                charts:
+                  types: [bar]
             jsonHTMLConversion:
               summary: Convert native JSON input into self-contained HTML.
               value:
@@ -313,6 +326,9 @@ components:
           type: string
           default: Comparisons
           description: Dataset display name.
+        title:
+          type: string
+          description: Chart title used only when grouping.colAxis produces one chart; independent of name.
         description:
           type: string
           description: Dataset description.
@@ -361,6 +377,10 @@ components:
           type: array
           items: { type: string, minLength: 1 }
         filter: { type: string }
+        colAxis:
+          type: string
+          enum: [n, x, y, z]
+          description: Place grouped numeric column names on this free axis so they share one chart.
     UnitOptions:
       type: object
       additionalProperties: false
