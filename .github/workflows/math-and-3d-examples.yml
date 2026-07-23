@@ -48,16 +48,16 @@ jobs:
           - id: 02-noise-grid
             file: noise-grid
             name: "Noise Grid 21³"
-            description: "Simplex noise on a 3D voxel grid (21³) — position from --select x,y,z"
-            select: x,y,z
+            description: "Simplex noise on a 3D voxel grid (21³) — position + visualMap via --select x,y,z,value"
+            select: x,y,z,value
             charts: scatter
             chart: "scatter:3d-visualmap,3d-rotate"
 
           - id: 03-noise-grid-41
             file: noise-grid-41
             name: "Noise Grid 41³"
-            description: "ECharts simplex-noise scatter3D demo — full 41³ grid via --select x,y,z"
-            select: x,y,z
+            description: "ECharts simplex-noise scatter3D demo — full 41³ grid via --select x,y,z,value"
+            select: x,y,z,value
             charts: scatter
             chart: "scatter:3d-visualmap,3d-rotate"
 

@@ -58,7 +58,7 @@ inputs:
     description: "Number unit: K, M, B, T (-N flag)"
     default: ""
   select:
-    description: "csv/json only: select value columns; optional rename with {label} (e.g. 'price{Unit price},count') (--select flag)"
+    description: "csv/json only: select columns; solo mode 2–4 cols x,y[,z][,metric] (e.g. 'x,y,z,value'); grouped mode numeric stats with optional {label} (--select flag)"
     default: ""
   col-axis:
     description: "csv/json: place numeric column names on this axis (n, x, y, or z) so all columns share one chart (--col-axis / -A flag). Works without group; only numeric columns become series. With group, target axis must not already be used by group-pattern."

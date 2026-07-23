@@ -92,11 +92,16 @@ func ValueAxes(cfg Config) []shared.Axis {
 	return axes
 }
 
-// SelectViewAxesCfg returns a cfg copy with Axes from the first solo --select view.
+// SelectViewAxesCfg returns a cfg copy with Axes (and optional MetricColumn)
+// from the first solo --select view.
 func SelectViewAxesCfg(cfg Config) Config {
 	c := cfg
 	if len(cfg.SelectViews) > 0 {
-		c.Axes = append([]ColumnSpec(nil), cfg.SelectViews[0].Columns...)
+		view := cfg.SelectViews[0]
+		c.Axes = append([]ColumnSpec(nil), view.Columns...)
+		if view.MetricSource != "" {
+			c.MetricColumn = view.MetricSource
+		}
 	}
 	return c
 }

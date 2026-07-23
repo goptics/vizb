@@ -57,7 +57,7 @@ var DataFlags = []flags.Flag{
 		ValidSet:   []string{"K", "M", "B", "T"},
 		Normalizer: strings.ToUpper,
 	},
-	{Name: "select", Usage: "csv/json only: select columns (repeatable); solo mode: 2–3 cols per view as x,y[,z] axes (e.g. --select region,latency); grouped mode: numeric stat columns with optional {label}", Kind: flags.KindStringArray},
+	{Name: "select", Usage: "csv/json only: select columns (repeatable); solo mode: 2–4 cols as x,y[,z][,metric] (e.g. --select x,y,z,value); grouped mode: numeric stat columns with optional {label}", Kind: flags.KindStringArray},
 	{
 		Name: "col-axis", Shorthand: "A", Kind: flags.KindString,
 		Usage:    "csv/json: place numeric column names on this axis (n, x, y, or z) so all columns share one chart; works without -g; only numeric columns become series",

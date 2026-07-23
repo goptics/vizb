@@ -169,7 +169,14 @@ func DispatchSelectMode(rows []RowReader, cfg *Config, kindFn AxisColumnKind) ([
 			cfg.SelectViews[0].Columns[i].AxisType = axesCfg.Axes[i].AxisType
 		}
 	}
+	// Surface metric column on the caller's config for dataset assembly.
+	if axesCfg.MetricColumn != "" {
+		cfg.MetricColumn = axesCfg.MetricColumn
+	}
 	if isMixedAxes(axesCfg) {
+		if axesCfg.MetricColumn != "" {
+			return nil, fmt.Errorf("--select metric is only supported in value mode (all-numeric axes); not with a categorical x")
+		}
 		cfg.Mode = ModeMixed
 		return ParseMixedMode(rows, axesCfg), nil
 	}

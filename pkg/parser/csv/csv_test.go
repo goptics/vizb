@@ -739,6 +739,26 @@ func (s *CSVErrorSuite) TestSelectValueModeAllNumeric() {
 	s.Empty(results[0].Stats)
 }
 
+func (s *CSVErrorSuite) TestSelectValueModeWithMetricColumn() {
+	// noise-grid shape: x,y,z position + value visualMap metric
+	view, err := parser.ParseSelectViewFlag("x,y,z,value")
+	s.Require().NoError(err)
+	s.cfg.SelectViews = []parser.SelectView{view}
+	s.cfg.Mode = parser.ResolveMode(s.cfg)
+	path := s.writeFile("x,y,z,value\n0,0,0,4\n1,2,3,5.5\n")
+
+	results, effective := mustParseCSVFile(s.T(), path, s.cfg)
+	s.Equal("value", effective.MetricColumn)
+	s.Require().Len(results, 2)
+	s.Equal("0", results[0].XAxis)
+	s.Equal("0", results[0].YAxis)
+	s.Equal("0", results[0].ZAxis)
+	s.Equal("4", results[0].Metric)
+	s.Equal("1", results[1].XAxis)
+	s.Equal("5.5", results[1].Metric)
+	s.Empty(results[0].Stats)
+}
+
 func (s *CSVErrorSuite) TestSelectMultiStatModeIndependentCombinations() {
 	s.cfg.SelectViews = []parser.SelectView{
 		{Columns: []parser.ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "latency", AxisKey: "y"}}},

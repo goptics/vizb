@@ -51,9 +51,13 @@ const (
 
 // SelectView is one solo --select flag: column placement plus an optional
 // chart-tab name from a trailing (Title) suffix in multi-stat mode.
+// MetricSource is an optional 4th value-mode column (positional or metric:col)
+// used as the visualMap metric; it is not a spatial axis.
 type SelectView struct {
-	Columns   []ColumnSpec
-	TypeLabel string
+	Columns      []ColumnSpec
+	TypeLabel    string
+	MetricSource string // optional visualMap metric column name
+	MetricLabel  string // optional {label} for the metric axis
 }
 
 // ParseFunc parses request-local input and returns data points, the effective

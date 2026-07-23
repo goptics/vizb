@@ -45,14 +45,20 @@ The mode depends on the column types you select:
 
 ### Value mode (all numeric)
 
-Pick two or three numeric columns as coordinate axes. With three, vizb auto-enables 3D. All-numeric files do **not** enter this mode automatically — you must pass `--select` explicitly.
+Pick two or three numeric columns as coordinate axes. With three, vizb auto-enables 3D. An optional **fourth** column is the visualMap **metric** (not a spatial axis). All-numeric files do **not** enter this mode automatically — you must pass `--select` explicitly.
 
 ```bash
 # Two numeric columns → 2D value scatter
-vizb scatter spiral-3d.csv --select x,y -o scatter.html
+vizb scatter examples/csv/spiral-3d.csv --select x,y -o scatter.html
 
 # Three numeric columns → 3D value scatter (auto-enables 3D)
-vizb scatter spiral-3d.csv --select x,y,z -o scatter3d.html
+vizb scatter examples/csv/spiral-3d.csv --select x,y,z -o scatter3d.html
+
+# Four columns → x,y,z position + value metric for visualMap color/size
+vizb scatter examples/csv/noise-grid.csv --select x,y,z,value --3d-visualmap -o noise.html
+
+# Explicit metric key (equivalent to a positional 4th column)
+vizb scatter examples/csv/noise-grid.csv --select x:x,y:y,z:z,metric:value --3d-visualmap -o noise.html
 ```
 
 ### Mixed mode (category + value)

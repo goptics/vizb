@@ -211,6 +211,51 @@ func (s *TabularSuite) TestDispatchSelectMode() {
 	s.ErrorContains(err, "invalid axis")
 }
 
+func (s *TabularSuite) TestDispatchSelectModePropagatesMetricColumn() {
+	cfg := Config{Mode: ModeValue, SelectViews: []SelectView{{
+		Columns: []ColumnSpec{
+			{Source: "x", AxisKey: "x"},
+			{Source: "y", AxisKey: "y"},
+			{Source: "z", AxisKey: "z"},
+		},
+		MetricSource: "value",
+	}}}
+	rows := []RowReader{mockRowReader{
+		cells:   map[string]string{"value": "4"},
+		numeric: map[string]float64{"x": 1, "y": 2, "z": 3, "value": 4},
+		headers: []string{"x", "y", "z", "value"},
+	}}
+	points, err := DispatchSelectMode(rows, &cfg, func(string, string) (string, error) { return "value", nil })
+	s.Require().NoError(err)
+	s.Equal("value", cfg.MetricColumn)
+	s.Require().Len(points, 1)
+	s.Equal("4", points[0].Metric)
+	s.Equal("1", points[0].XAxis)
+	s.Equal("3", points[0].ZAxis)
+}
+
+func (s *TabularSuite) TestDispatchSelectModeRejectsMetricWithMixedAxes() {
+	cfg := Config{Mode: ModeValue, SelectViews: []SelectView{{
+		Columns: []ColumnSpec{
+			{Source: "region", AxisKey: "x"},
+			{Source: "latency", AxisKey: "y"},
+		},
+		MetricSource: "score",
+	}}}
+	rows := []RowReader{mockRowReader{
+		cells:   map[string]string{"region": "West"},
+		numeric: map[string]float64{"latency": 10, "score": 1},
+	}}
+	kindFn := func(source, _ string) (string, error) {
+		if source == "region" {
+			return "category", nil
+		}
+		return "value", nil
+	}
+	_, err := DispatchSelectMode(rows, &cfg, kindFn)
+	s.ErrorContains(err, "metric is only supported in value mode")
+}
+
 func (s *TabularSuite) TestParseSelectStatModeNonMerge() {
 	t := s.T()
 	cfg := Config{

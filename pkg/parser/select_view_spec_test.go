@@ -60,6 +60,38 @@ func (s *SelectViewSpecSuite) TestParseSelectViewFlagExplicitSyntax() {
 	}
 }
 
+func (s *SelectViewSpecSuite) TestParseSelectViewFlagFourColumnsPositionalMetric() {
+	view, err := ParseSelectViewFlag("x,y,z,value")
+	s.Require().NoError(err)
+	s.Len(view.Columns, 3)
+	s.Equal("x", view.Columns[0].AxisKey)
+	s.Equal("x", view.Columns[0].Source)
+	s.Equal("y", view.Columns[1].Source)
+	s.Equal("z", view.Columns[2].Source)
+	s.Equal("value", view.MetricSource)
+	s.Empty(view.MetricLabel)
+}
+
+func (s *SelectViewSpecSuite) TestParseSelectViewFlagFourColumnsMetricLabel() {
+	view, err := ParseSelectViewFlag("x,y,z,value{Noise}")
+	s.Require().NoError(err)
+	s.Equal("value", view.MetricSource)
+	s.Equal("Noise", view.MetricLabel)
+}
+
+func (s *SelectViewSpecSuite) TestParseSelectViewFlagExplicitMetric() {
+	view, err := ParseSelectViewFlag("x:x,y:y,z:z,metric:value")
+	s.Require().NoError(err)
+	s.Len(view.Columns, 3)
+	s.Equal("value", view.MetricSource)
+}
+
+func (s *SelectViewSpecSuite) TestParseSelectViewFlagRejectsFiveColumns() {
+	_, err := ParseSelectViewFlag("a,b,c,d,e")
+	s.Require().Error(err)
+	s.Contains(err.Error(), "2–4 columns")
+}
+
 func (s *SelectViewSpecSuite) TestParseSelectViewFlagTrailingParenTypeLabel() {
 	t := s.T()
 	view, err := ParseSelectViewFlag("region,latency (Latency by Region)")
@@ -107,8 +139,8 @@ func (s *SelectViewSpecSuite) TestParseSelectViewFlagRejectsArity() {
 	if _, err := ParseSelectViewFlag("region"); err == nil {
 		t.Fatal("want error for 1 column")
 	}
-	if _, err := ParseSelectViewFlag("a,b,c,d"); err == nil {
-		t.Fatal("want error for 4 columns")
+	if _, err := ParseSelectViewFlag("a,b,c,d,e"); err == nil {
+		t.Fatal("want error for 5 columns")
 	}
 	if _, err := ParseSelectViewFlag(""); err == nil {
 		t.Fatal("want error for empty")

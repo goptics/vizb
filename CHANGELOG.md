@@ -13,6 +13,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adhere
 - **`--col-axis` / `-A` without group** — works alone; only **numeric** columns become series (non-numeric columns are ignored when col-axis is used without group). Still composes with `-g` / `-p` (e.g. `-g load -p y -A x`).
 - **REST `colAxis`** — top-level field on the convert request body (no longer under `grouping`).
 
+### Added
+
+- **Solo `--select` 4th metric column** — `--select x,y,z,value` (or `metric:value`) sets the visualMap metric for continuous value mode (e.g. noise-grid color/size).
+
 # [v0.16.1] - 2026-07-21
 
 ### Fixed

@@ -8,8 +8,9 @@ import (
 	"github.com/goptics/vizb/shared/utils"
 )
 
-// ParseSelectViewFlag parses one solo --select value (e.g. "region,latency" or
-// "x:region,y:latency,z:sales") into 2–3 column specs with x/y/z axis keys.
+// ParseSelectViewFlag parses one solo --select value (e.g. "region,latency",
+// "x:region,y:latency,z:sales", or "x,y,z,value" / "x:x,y:y,z:z,metric:value")
+// into 2–3 spatial axis specs plus an optional visualMap metric column.
 // Reuses tokenizeSelectFlag from select_spec.go for {label}/quoting.
 // Multi-stat views may end with " (Chart Tab Name)" to rename stat.type.
 func ParseSelectViewFlag(raw string) (SelectView, error) {
@@ -17,68 +18,114 @@ func ParseSelectViewFlag(raw string) (SelectView, error) {
 	if err != nil {
 		return SelectView{}, err
 	}
-	specs, err := parseSelectViewColumns(cols)
+	specs, metricSrc, metricLabel, err := parseSelectViewColumns(cols)
 	if err != nil {
 		return SelectView{}, err
 	}
-	return SelectView{Columns: specs, TypeLabel: typeLabel}, nil
+	return SelectView{
+		Columns:      specs,
+		TypeLabel:    typeLabel,
+		MetricSource: metricSrc,
+		MetricLabel:  metricLabel,
+	}, nil
 }
 
-func parseSelectViewColumns(raw string) ([]ColumnSpec, error) {
+func parseSelectViewColumns(raw string) (specs []ColumnSpec, metricSrc, metricLabel string, err error) {
 	if strings.TrimSpace(raw) == "" {
-		return nil, fmt.Errorf("--select requires 2 or 3 columns (x,y[,z]); got 0")
+		return nil, "", "", fmt.Errorf("--select requires 2–4 columns (x,y[,z][,metric]); got 0")
 	}
 
 	tokens, err := tokenizeSelectFlag(raw)
 	if err != nil {
-		return nil, err
+		return nil, "", "", err
 	}
-	if n := len(tokens); n < 2 || n > 3 {
-		return nil, fmt.Errorf("--select requires 2 or 3 columns (x,y[,z]); got %d", n)
+	n := len(tokens)
+	if n < 2 || n > 4 {
+		return nil, "", "", fmt.Errorf("--select requires 2–4 columns (x,y[,z][,metric]); got %d", n)
 	}
 
 	seenCol := map[string]bool{}
 	seenKey := map[string]bool{}
-	specs := make([]ColumnSpec, 0, len(tokens))
 	explicitCount := 0
+	type parsed struct {
+		spec       ColumnSpec
+		key        string
+		isExplicit bool
+	}
+	items := make([]parsed, 0, n)
 
-	for i, tok := range tokens {
-		spec, key, isExplicit, err := parseAxisToken(tok)
-		if err != nil {
-			return nil, err
+	for _, tok := range tokens {
+		spec, key, isExplicit, perr := parseAxisToken(tok)
+		if perr != nil {
+			return nil, "", "", perr
 		}
 		if spec.Source == "" {
-			return nil, fmt.Errorf("empty column name in --select")
+			return nil, "", "", fmt.Errorf("empty column name in --select")
 		}
 		if seenCol[spec.Source] {
-			return nil, fmt.Errorf("duplicate column '%s' in --select", spec.Source)
+			return nil, "", "", fmt.Errorf("duplicate column '%s' in --select", spec.Source)
 		}
 		seenCol[spec.Source] = true
 
 		if isExplicit {
 			explicitCount++
 			if seenKey[key] {
-				return nil, fmt.Errorf("duplicate axis key '%s' in --select", key)
+				return nil, "", "", fmt.Errorf("duplicate axis key '%s' in --select", key)
 			}
 			seenKey[key] = true
 			spec.AxisKey = key
-		} else {
-			keys := []string{"x", "y", "z"}
-			spec.AxisKey = keys[i]
 		}
-		specs = append(specs, spec)
+		items = append(items, parsed{spec: spec, key: key, isExplicit: isExplicit})
 	}
 
-	if explicitCount > 0 && explicitCount != len(tokens) {
-		return nil, fmt.Errorf("--select: use explicit x:/y:/z: syntax for every column, or omit prefixes for all")
+	if explicitCount > 0 && explicitCount != n {
+		return nil, "", "", fmt.Errorf("--select: use explicit x:/y:/z:/metric: syntax for every column, or omit prefixes for all")
 	}
+
+	// Explicit metric:col peels off the visualMap metric; remaining are spatial axes.
 	if explicitCount > 0 {
-		if err := validateExplicitSelectAxisKeys(specs); err != nil {
-			return nil, err
+		axisItems := make([]parsed, 0, n)
+		for _, it := range items {
+			if it.key == "metric" {
+				if metricSrc != "" {
+					return nil, "", "", fmt.Errorf("duplicate metric column in --select")
+				}
+				metricSrc = it.spec.Source
+				metricLabel = it.spec.Label
+				continue
+			}
+			axisItems = append(axisItems, it)
 		}
+		if metricSrc != "" && len(axisItems) < 2 {
+			return nil, "", "", fmt.Errorf("--select metric requires at least x and y axes")
+		}
+		if metricSrc != "" && len(axisItems) > 3 {
+			return nil, "", "", fmt.Errorf("--select metric allows at most 3 spatial axes (x,y[,z])")
+		}
+		specs = make([]ColumnSpec, len(axisItems))
+		for i, it := range axisItems {
+			specs[i] = it.spec
+		}
+		if err := validateExplicitSelectAxisKeys(specs); err != nil {
+			return nil, "", "", err
+		}
+		return specs, metricSrc, metricLabel, nil
 	}
 
-	return specs, nil
+	// Positional: 2–3 → x,y[,z]; 4 → x,y,z + metric (last column).
+	if n == 4 {
+		metricSrc = items[3].spec.Source
+		metricLabel = items[3].spec.Label
+		items = items[:3]
+	}
+	keys := []string{"x", "y", "z"}
+	specs = make([]ColumnSpec, len(items))
+	for i, it := range items {
+		spec := it.spec
+		spec.AxisKey = keys[i]
+		specs[i] = spec
+	}
+	return specs, metricSrc, metricLabel, nil
 }
 
 // splitTrailingParenLabel strips a view-level " (Title)" suffix used for
@@ -120,7 +167,7 @@ func parseAxisToken(tok string) (ColumnSpec, string, bool, error) {
 	}
 
 	key := strings.TrimSpace(tok[:colon])
-	if key != "x" && key != "y" && key != "z" {
+	if key != "x" && key != "y" && key != "z" && key != "metric" {
 		spec, err := parseColumnToken(tok)
 		return spec, "", false, err
 	}
@@ -146,6 +193,7 @@ func validateExplicitSelectAxisKeys(specs []ColumnSpec) error {
 	if len(specs) == 3 && !has["z"] {
 		return fmt.Errorf("--select with 3 columns requires z:column in explicit syntax")
 	}
+	// metric: is peeled before this runs; only spatial keys remain.
 	return nil
 }
 

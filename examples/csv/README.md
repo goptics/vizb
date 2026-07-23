@@ -72,14 +72,14 @@ These variants are also built in CI as `00-sales-auto-group`, `01-sales-grouped`
 
 **Shape:** Four numeric columns — `x`, `y`, `z`, `value` on a **21³** voxel grid (9,261 points, indices 0–20). `value` is a visual metric (simplex noise × 2 + 4).
 
-**What vizb does:** Continuous 3D via `--select x,y,z` for position. Pair with `--3d-visualmap` for gradient coloring (orthographic `scatter3D` like the [ECharts simplex-noise demo](https://echarts.apache.org/examples/en/editor.html?c=scatter3D-simplex-noise&gl=1)).
+**What vizb does:** Continuous 3D via `--select x,y,z,value` — position from the first three columns, **visualMap metric** from `value`. Pair with `--3d-visualmap` for gradient coloring (orthographic `scatter3D` like the [ECharts simplex-noise demo](https://echarts.apache.org/examples/en/editor.html?c=scatter3D-simplex-noise&gl=1)).
 
 **Good for:** `scatter3D` + visualMap on a manageable file size.
 
 | Goal | Command |
 |------|---------|
-| 3D scatter + visualMap | `vizb scatter examples/csv/noise-grid.csv --select x,y,z --3d-visualmap` |
-| With auto-rotate | `vizb scatter examples/csv/noise-grid.csv --select x,y,z --3d-visualmap --3d-rotate` |
+| 3D scatter + visualMap | `vizb scatter examples/csv/noise-grid.csv --select x,y,z,value --3d-visualmap` |
+| With auto-rotate | `vizb scatter examples/csv/noise-grid.csv --select x,y,z,value --3d-visualmap --3d-rotate` |
 
 ---
 
@@ -87,13 +87,13 @@ These variants are also built in CI as `00-sales-auto-group`, `01-sales-grouped`
 
 **Shape:** Same as `noise-grid.csv` but **41³** (68,921 points, indices 0–40) — full resolution matching the ECharts example loop (`i,j,k` from 0 to 40, `value = noise3D(i/20,j/20,k/20)*2+4`).
 
-**What vizb does:** Same continuous 3D via `--select x,y,z` as `noise-grid.csv`. Heavier dataset; same chart settings.
+**What vizb does:** Same continuous 3D via `--select x,y,z,value` as `noise-grid.csv`. Heavier dataset; same chart settings.
 
 **Good for:** Full-density ECharts-style demo when you want every voxel.
 
 | Goal | Command |
 |------|---------|
-| Full ECharts-scale grid | `vizb scatter examples/csv/noise-grid-41.csv --select x,y,z --3d-visualmap` |
+| Full ECharts-scale grid | `vizb scatter examples/csv/noise-grid-41.csv --select x,y,z,value --3d-visualmap` |
 
 Use `noise-grid.csv` for faster loads; use this file when you need the complete grid.
 

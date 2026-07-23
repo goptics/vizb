@@ -400,11 +400,20 @@ func appendMetricAxis(axes []shared.Axis, cfg parser.Config, points []shared.Dat
 			return axes
 		}
 	}
-	label := cfg.MetricColumn
-	if label == "" {
-		label = "value"
-	}
+	label := metricAxisLabel(cfg)
 	return append(axes, shared.Axis{Key: "metric", Label: label, Type: "value"})
+}
+
+// metricAxisLabel prefers an explicit {label} from the 4th --select column when
+// present on the first SelectView; otherwise the metric column source name.
+func metricAxisLabel(cfg parser.Config) string {
+	if len(cfg.SelectViews) > 0 && cfg.SelectViews[0].MetricLabel != "" {
+		return cfg.SelectViews[0].MetricLabel
+	}
+	if cfg.MetricColumn != "" {
+		return cfg.MetricColumn
+	}
+	return "value"
 }
 
 func autoEnableValueMode3D(configs []internalcharts.ChartConfig, axes []shared.Axis, visualMap bool) {
