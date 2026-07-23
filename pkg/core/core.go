@@ -219,7 +219,7 @@ func ApplyColAxis(data []shared.DataPoint, cfg parser.Config, parserKey, title s
 	if parserKey != "csv" && parserKey != "json" {
 		return ignored("colAxis", "--col-axis is only supported for csv/json parsers; ignoring")
 	}
-	if cfg.Mode.IsSelectAxis() && !cfg.Mode.IsMultiStat() {
+	if cfg.Mode.IsSelectAxis() {
 		return ignored("colAxis", "--col-axis requires grouped multi-column stats; ignoring")
 	}
 	if len(cfg.Group) == 0 && !parser.IsExplicitGrouping(cfg) {

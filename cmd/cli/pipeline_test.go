@@ -1217,19 +1217,22 @@ func (s *PipelineSuite) TestPrepareDataColAxisSelectModeSkips() {
 	s.NotEmpty(results)
 }
 
-func (s *PipelineSuite) TestPrepareDataMultiStatTitleWarnsAndKeepsSelectTitles() {
+func (s *PipelineSuite) TestPrepareDataMultiStatColAxisAndTitleWarnsAndKeepsSelectTitles() {
 	csvFile := s.writeFile("stats.csv", "region,latency,sales\nWest,10,100\n")
-	cfg := parser.Config{SelectViews: []parser.SelectView{
+	cfg := parser.Config{ColAxis: "x", SelectViews: []parser.SelectView{
 		{Columns: []parser.ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "latency", AxisKey: "y"}}, TypeLabel: "Latency by Region"},
 		{Columns: []parser.ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "sales", AxisKey: "y"}}, TypeLabel: "Sales by Region"},
 	}}
 	cfg.Mode = parser.ResolveMode(cfg)
 
 	var results []shared.DataPoint
+	var effective parser.Config
 	errOut := testutil.CaptureStderr(func() {
-		results, _, _ = prepareData(csvFile, "csv", cfg, "Ignored title")
+		results, effective, _ = prepareData(csvFile, "csv", cfg, "Ignored title")
 	})
-	s.Contains(errOut, "--title only applies")
+	s.Contains(errOut, "--col-axis requires grouped multi-column stats")
+	s.Contains(errOut, "--title ignored")
+	s.Empty(effective.ColAxis)
 	s.Require().Len(results, 1)
 	s.ElementsMatch([]string{"Latency by Region", "Sales by Region"}, []string{results[0].Stats[0].Type, results[0].Stats[1].Type})
 }
