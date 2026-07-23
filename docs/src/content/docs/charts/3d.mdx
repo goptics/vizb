@@ -100,13 +100,16 @@ The HTML bundles **3D view** and **3D visual map** toggles in settings (both on 
 Pass solo `--select` with **three numeric columns** for continuous 3D — no `--3d` flag needed. This works on bar, line, and scatter. Bare all-numeric files do **not** enter this mode (they use [auto col-axis x](/guides/group-vs-select#auto-col-axis-all-numeric-data)).
 
 ```bash
-# Explicit value axes → continuous bar3D / line3D / scatter3D
-vizb bar spiral.csv --select x,y,z -o bar.html
-vizb line spiral.csv --select x,y,z -o line.html
-vizb scatter spiral.csv --select x,y,z -o scatter.html
+# Explicit value axes → continuous bar3D / line3D / scatter3D (solo --select required)
+vizb bar examples/csv/spiral-3d.csv --select x,y,z -o bar.html
+vizb line examples/csv/spiral-3d.csv --select x,y,z -o line.html
+vizb scatter examples/csv/spiral-3d.csv --select x,y,z -o scatter.html
+
+# Noise height field as continuous bar3D
+vizb bar examples/csv/noise-surface.csv --select x,y,z --3d-visualmap -o surface.html
 
 # Two columns stays 2D
-vizb scatter spiral.csv --select x,y -o scatter2d.html
+vizb scatter examples/csv/spiral-3d.csv --select x,y -o scatter2d.html
 ```
 
 See [Select](/guides/select) for value-mode rules. Continuous 3D uses the same WebGL scene as grouped 3D — rotate, zoom, pan, and the auto-rotate toggle all apply.

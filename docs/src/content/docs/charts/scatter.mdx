@@ -93,10 +93,10 @@ All-numeric files with no flags use **auto col-axis x**, not continuous coordina
 
 ```bash
 # 2D value scatter from x, y
-vizb scatter clusters.csv --select x,y --visualmap --symbol-size 10 -o scatter.html
+vizb scatter examples/csv/clusters.csv --select x,y --visualmap --symbol-size 10 -o scatter.html
 
 # 3D value scatter from x, y, z
-vizb scatter spiral-3d.csv --select x,y,z -o scatter.html
+vizb scatter examples/csv/spiral-3d.csv --select x,y,z -o scatter.html
 ```
 
 <DocImage src={scatter2DValue} alt="2D value-mode scatter chart of cluster coordinates with visualMap gradient coloring" />
@@ -130,10 +130,10 @@ vizb scatter data.csv -g category,metric --scale log -l -o out.html
 vizb scatter region-metrics.csv --select region,latency --scale log -o out.html
 
 # Cluster scatter with visualMap and diamond markers
-vizb scatter clusters.csv --select x,y --visualmap --symbol diamond --symbol-size 10 -o out.html
+vizb scatter examples/csv/clusters.csv --select x,y --visualmap --symbol diamond --symbol-size 10 -o out.html
 
 # 3D spiral with auto-rotate
-vizb scatter spiral.csv --select x,y,z --3d-rotate -o out.html
+vizb scatter examples/csv/spiral-3d.csv --select x,y,z --3d-rotate -o out.html
 ```
 
 ## Next Steps

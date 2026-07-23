@@ -73,26 +73,46 @@ vizb bar sales.csv -g order_date,category -p "[-y{Month}-x{Date}],z{Category}" -
 
 ## `--select` (csv/json)
 
-`--select` is **repeatable** (csv/json only). With explicit `-g` / `-p` / `-r`, it picks which numeric columns get their own chart (optional `{label}` renames each chart). Without group, it switches to solo value / mixed / multi-stat modes that plot raw columns as coordinate axes.
+`--select` is **repeatable** (csv/json only). Two different jobs, depending on grouping:
+
+| Context | What `--select` does |
+|---------|----------------------|
+| **With** `-g` / `-r` / non-default `-p` | Picks which **numeric** columns get their own chart (optional `{label}` renames each chart) |
+| **Without** group (and without `-A`) | Solo **value / mixed** mode — 2–3 columns become continuous coordinate axes (`x,y` or `x,y,z`) |
 
 ```bash
+# Grouped: only amount and total become charts
 vizb bar sales.csv -g region,product -p x,y --select amount,total -o bars.html
+
+# Continuous coordinates (all-numeric columns as x, y, z — not series names)
+vizb bar examples/csv/noise-surface.csv --select x,y,z -o surface.html --3d-visualmap
+
+# Continuous 3D spiral as bars
+vizb bar examples/csv/spiral-3d.csv --select x,y,z -o spiral.html
 ```
 
 See [Select](/guides/select) for the full mode reference, and [Group vs Select](/guides/group-vs-select) for when to use each.
 
 ## All-numeric data
 
-With no flags, an all-numeric CSV/JSON file uses **auto col-axis x** — every numeric column name becomes a series on X (one chart). For continuous coordinate / continuous 3D bars, pass explicit solo `--select`:
+Bare all-numeric CSV/JSON (no flags) uses **auto col-axis x** — every **numeric column name** becomes a series on X (one chart). That is **not** continuous coordinates.
+
+For continuous coordinate bars (including continuous 3D), always pass **solo `--select`**:
 
 ```bash
-# Continuous 3D value bars from x, y, z columns
-./bin/vizb bar noise-surface.csv --select x,y,z -o surface.html --3d-visualmap
+# Wide metrics as series on X (same as auto col-axis x)
+vizb bar metrics.csv -A x -o series.html
+
+# Continuous 3D value bars — position from columns x, y, z
+vizb bar examples/csv/noise-surface.csv --select x,y,z -o surface.html --3d-visualmap
+
+# Continuous 3D spiral
+vizb bar examples/csv/spiral-3d.csv --select x,y,z --3d-rotate -o spiral.html
 ```
 
 See [Auto col-axis](/guides/group-vs-select#auto-col-axis-all-numeric-data) and [Select](/guides/select).
 
-<DocImage src={bar3DValue} alt="3D bar chart with value-type bars along the Z axis" />
+<DocImage src={bar3DValue} alt="3D bar chart with value-type bars along continuous x, y, z coordinates" />
 
 ## Settings
 

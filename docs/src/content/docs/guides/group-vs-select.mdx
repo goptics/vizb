@@ -96,8 +96,10 @@ vizb line allnums.csv -o lines.html   # same layout for line
 For continuous coordinates or continuous 3D, use **explicit** solo `--select` (not a bare file):
 
 ```bash
-vizb scatter points.csv --select x,y -o scatter.html      # 2D value coordinates
-vizb scatter spiral.csv --select x,y,z -o scatter3d.html  # 3D value coordinates
+vizb scatter examples/csv/clusters.csv --select x,y -o scatter.html
+vizb scatter examples/csv/spiral-3d.csv --select x,y,z -o scatter3d.html
+vizb bar examples/csv/noise-surface.csv --select x,y,z --3d-visualmap -o surface.html
+vizb line examples/csv/spiral-3d.csv --select x,y,z --3d-rotate -o spiral-line.html
 ```
 
 <Aside type="note">

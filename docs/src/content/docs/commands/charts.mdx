@@ -70,17 +70,23 @@ vizb pie data.csv --scale log   # Error: unknown flag: --scale
 # 3D bar with log scale and auto-rotation
 vizb bar data.csv -g category,metric,group -p n,x,y,z --scale log --3d-rotate -o bar3d.html
 
+# Continuous 3D bar from all-numeric columns (solo --select, not bare file)
+vizb bar examples/csv/noise-surface.csv --select x,y,z --3d-visualmap -o surface.html
+
 # Pie with value labels, ascending sort
 vizb pie data.csv -g impl --sort asc --show-labels -o pie.html
 
 # Line from Go benchmarks via stdin, swapping axes
 go test -bench . | vizb line -p n/y --swap yn -o line.html
 
+# Continuous 3D line spiral
+vizb line examples/csv/spiral-3d.csv --select x,y,z --3d-rotate -o spiral.html
+
 # Bar chart with horizontal grouped bars
 vizb bar sales.csv -g region,category -p x,y --horizontal -o bar.html
 
 # Scatter from continuous coordinates (explicit select)
-vizb scatter data.csv --select x,y -o scatter.html
+vizb scatter examples/csv/clusters.csv --select x,y --visualmap -o scatter.html
 
 # JSON output for later merging / re-rendering
 vizb radar data.csv -g impl -o radar.json
