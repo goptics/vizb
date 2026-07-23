@@ -84,6 +84,12 @@ func (s *FlagBagSuite) TestParseConfigMapsSelectGrouped() {
 	s.Equal("count", cfg.Select[1].Source)
 }
 
+func (s *FlagBagSuite) TestMetaIncludesTitle() {
+	cmd, bag := s.newCmdBag(slices.Clone(DataFlags))
+	s.Require().NoError(cmd.Flags().Set("title", "Framework throughput"))
+	s.Equal("Framework throughput", bag.Meta().Title)
+}
+
 func (s *FlagBagSuite) TestParseConfigMapsSelectSoloAxisMode() {
 	cmd, bag := s.newCmdBag(slices.Clone(DataFlags))
 	s.Require().NoError(cmd.Flags().Set("select", "region,latency"))

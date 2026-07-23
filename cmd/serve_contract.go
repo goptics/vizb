@@ -23,6 +23,7 @@ type groupingOptions struct {
 	Regex   string   `json:"regex"`
 	Columns []string `json:"columns"`
 	Filter  string   `json:"filter"`
+	ColAxis *string  `json:"colAxis"`
 }
 
 type unitOptions struct {
@@ -60,6 +61,7 @@ type convertRequest struct {
 	Input       json.RawMessage  `json:"input"`
 	ID          *string          `json:"id"`
 	Name        *string          `json:"name"`
+	Title       *string          `json:"title"`
 	Theme       *string          `json:"theme"`
 	Description *string          `json:"description"`
 	Tag         *string          `json:"tag"`
@@ -78,7 +80,7 @@ type convertOutput struct {
 
 func (r *convertRequest) UnmarshalJSON(data []byte) error {
 	if err := rejectNullFields(data, "/", map[string]string{
-		"id": "/id", "name": "/name", "theme": "/theme", "description": "/description",
+		"id": "/id", "name": "/name", "title": "/title", "theme": "/theme", "description": "/description",
 		"tag": "/tag", "parser": "/parser", "grouping": "/grouping", "units": "/units",
 		"select": "/select", "jsonPath": "/jsonPath", "charts": "/charts", "output": "/output",
 	}); err != nil {
@@ -96,7 +98,7 @@ func (r *convertRequest) UnmarshalJSON(data []byte) error {
 func (o *groupingOptions) UnmarshalJSON(data []byte) error {
 	if err := rejectNullFields(data, "/grouping", map[string]string{
 		"pattern": "/grouping/pattern", "regex": "/grouping/regex",
-		"columns": "/grouping/columns", "filter": "/grouping/filter",
+		"columns": "/grouping/columns", "filter": "/grouping/filter", "colAxis": "/grouping/colAxis",
 	}); err != nil {
 		return err
 	}
@@ -260,10 +262,14 @@ func conversionOptionValidationError(selection chartSelection, optionErr *core.O
 		path = "/grouping/filter"
 	case "grouping":
 		path = "/grouping"
+	case "colAxis":
+		path = "/grouping/colAxis"
 	case "jsonPath":
 		path = "/jsonPath"
 	case "select":
 		path = "/select"
+	case "title":
+		path = "/title"
 	case "swap":
 		path = chartConfigFieldPath(selection, "swap", 0)
 	default:
@@ -351,13 +357,17 @@ func buildConvertInput(request convertRequest, input []byte) (core.ConvertInput,
 		return core.ConvertInput{}, nil, validationErr
 	}
 
-	return core.ConvertInput{
+	convertInput := core.ConvertInput{
 		Input:    input,
 		Parser:   key,
 		Config:   cfg,
 		Metadata: metadata,
 		Charts:   configs,
-	}, types, nil
+	}
+	if request.Title != nil {
+		convertInput.Title = *request.Title
+	}
+	return convertInput, types, nil
 }
 
 func buildConvertMetadata(request convertRequest) (core.Metadata, *apiValidationError) {
@@ -394,6 +404,13 @@ func buildParserConfig(request convertRequest, key string) (parser.Config, *apiV
 		cfg.GroupRegex = request.Grouping.Regex
 		cfg.Group = slices.Clone(request.Grouping.Columns)
 		cfg.Filter = request.Grouping.Filter
+		if request.Grouping.ColAxis != nil {
+			if !slices.Contains([]string{"n", "x", "y", "z"}, *request.Grouping.ColAxis) {
+				validationErr := bodyValidationError("/grouping/colAxis", "invalid_enum", "grouping colAxis must be one of n, x, y, or z")
+				return cfg, &validationErr
+			}
+			cfg.ColAxis = *request.Grouping.ColAxis
+		}
 	}
 	if err := parser.ValidateGroupPattern(cfg.GroupPattern); err != nil {
 		validationErr := bodyValidationError("/grouping/pattern", "invalid_value", err.Error())

@@ -3,6 +3,7 @@ package cli
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -70,6 +71,7 @@ func RunLinear(cmd *cobra.Command, args []string, meta RunMeta, cfg parser.Confi
 	var datasets []*shared.Dataset
 	if cfg.JSONPath == "" {
 		if ds := convertToDataset(target); ds != nil {
+			warnTitleIgnored(meta.Title)
 			datasets = []*shared.Dataset{ds}
 		}
 	}
@@ -78,7 +80,7 @@ func RunLinear(cmd *cobra.Command, args []string, meta RunMeta, cfg parser.Confi
 		if meta.Parser == "json" && cfg.JSONPath != "" {
 			target = applyJSONPath(target, cfg.JSONPath)
 		}
-		results, effectiveCfg, system := prepareData(target, meta.Parser, cfg)
+		results, effectiveCfg, system := prepareData(target, meta.Parser, cfg, meta.Title)
 		datasets = []*shared.Dataset{assembleDataset(results, meta, configs, effectiveCfg, system)}
 		// Validate swap only for chart subcommands (applyOnPassthrough true).
 		// The root command stores swap as-is, trusting the UI to handle it.
@@ -140,6 +142,7 @@ func RunSingleChart(cmd *cobra.Command, args []string, meta RunMeta, cfg parser.
 type RunMeta struct {
 	ID          string
 	Name        string
+	Title       string
 	Theme       string
 	Description string
 	Tag         string
@@ -246,7 +249,11 @@ func applyJSONPath(filePath, path string) string {
 // prepareData parses input into data points, aggregating grouped csv/json rows.
 // The returned Config is the parser's effective config (auto-group/auto-value
 // mutations included) for aggregation and dataset assembly.
-func prepareData(filePath, parserKey string, cfg parser.Config) ([]shared.DataPoint, parser.Config, *shared.Meta) {
+func prepareData(filePath, parserKey string, cfg parser.Config, titles ...string) ([]shared.DataPoint, parser.Config, *shared.Meta) {
+	title := ""
+	if len(titles) > 0 {
+		title = titles[0]
+	}
 	parseFn, err := parser.GetParser(parserKey)
 	if err != nil {
 		shared.ExitWithError(err.Error(), nil)
@@ -291,7 +298,15 @@ func prepareData(filePath, parserKey string, cfg parser.Config) ([]shared.DataPo
 		logAggregationResult(before, len(data), effectiveCfg)
 	}
 
-	data, effectiveCfg = applyColAxis(data, effectiveCfg, parserKey)
+	data, effectiveCfg, err = core.ApplyColAxis(data, effectiveCfg, parserKey, title)
+	if err != nil {
+		var optionErr *core.OptionError
+		if errors.As(err, &optionErr) && optionErr.Ignored {
+			fmt.Fprintln(os.Stderr, style.Warning.Render("warning: "+err.Error()))
+		} else {
+			shared.ExitWithError(err.Error(), nil)
+		}
+	}
 
 	if len(data) == 0 {
 		shared.ExitWithError("No dataset found", nil)
@@ -300,63 +315,10 @@ func prepareData(filePath, parserKey string, cfg parser.Config) ([]shared.DataPo
 	return data, effectiveCfg, system
 }
 
-// applyColAxis expands multi-stat points onto cfg.ColAxis when the flag is set.
-// Requires csv/json + active grouping; otherwise warns, clears ColAxis, and skips.
-// Fatals when the target axis already exists in the group pattern or when z is
-// used without x+y. On success ColAxis stays set so core.Assemble can EnsureAxis.
-func applyColAxis(data []shared.DataPoint, cfg parser.Config, parserKey string) ([]shared.DataPoint, parser.Config) {
-	if cfg.ColAxis == "" {
-		return data, cfg
+func warnTitleIgnored(title string) {
+	if title != "" {
+		fmt.Fprintln(os.Stderr, style.Warning.Render("warning: --title only applies when --col-axis produces one chart; ignoring (use --select … (Title) for multi-stat charts)"))
 	}
-
-	skip := func(msg string) ([]shared.DataPoint, parser.Config) {
-		fmt.Fprintln(os.Stderr, style.Warning.Render(msg))
-		cfg.ColAxis = ""
-		return data, cfg
-	}
-
-	if !tabularParser(parserKey) {
-		return skip("warning: --col-axis is only supported for csv/json parsers; ignoring")
-	}
-
-	// Solo value/mixed --select has no multi-column stats path.
-	if cfg.Mode.IsSelectAxis() && !cfg.Mode.IsMultiStat() {
-		return skip("warning: --col-axis requires grouped multi-column stats; ignoring")
-	}
-
-	// Grouping must be active (explicit -g/-r/-p or auto-group that filled Group).
-	if len(cfg.Group) == 0 && !parser.IsExplicitGrouping(cfg) {
-		return skip("warning: --col-axis requires grouping (-g/-r/-p or auto-group); ignoring")
-	}
-
-	dim := shared.Dimension(cfg.ColAxis)
-	injectKey := dim.AxisKey()
-	groupAxes := parser.GroupAxes(cfg)
-	for _, ax := range groupAxes {
-		if ax.Key == injectKey {
-			shared.ExitWithError(
-				fmt.Sprintf("--col-axis %q conflicts with group dimension (already used by --group-pattern)", cfg.ColAxis),
-				nil,
-			)
-		}
-	}
-
-	if dim == shared.DimensionZAxis {
-		hasX, hasY := false, false
-		for _, ax := range groupAxes {
-			switch ax.Key {
-			case "x":
-				hasX = true
-			case "y":
-				hasY = true
-			}
-		}
-		if !hasX || !hasY {
-			shared.ExitWithError("--col-axis z requires both x and y group dimensions", nil)
-		}
-	}
-
-	return shared.ExpandStatsOntoAxis(data, dim), cfg
 }
 
 // logAggregationResult prints CLI feedback after summing grouped CSV/JSON rows.

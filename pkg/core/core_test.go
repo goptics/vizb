@@ -33,6 +33,41 @@ func (s *CoreSuite) TestConvertCSV() {
 	s.Equal([]string{"x"}, []string{result.Dataset.Axes[0].Key})
 }
 
+func (s *CoreSuite) TestConvertColAxisTitle() {
+	result, err := Convert(ConvertInput{
+		Input:  []byte("load,default,chi\n100,1,2\n"),
+		Parser: "csv",
+		Config: parser.Config{GroupPattern: "y", Group: []string{"load"}, ColAxis: "x"},
+		Title:  "Framework throughput",
+		Metadata: Metadata{
+			Name: "Q1 release",
+		},
+		Charts: []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: "linear"}},
+	})
+	s.Require().NoError(err)
+	s.Equal("Q1 release", result.Dataset.Name)
+	s.Len(result.Dataset.Data, 2)
+	for _, point := range result.Dataset.Data {
+		s.Require().Len(point.Stats, 1)
+		s.Equal("Framework throughput", point.Stats[0].Type)
+	}
+
+	_, err = Convert(ConvertInput{
+		Input:  []byte("load,default,chi\n100,1,2\n"),
+		Parser: "csv",
+		Title:  "Ignored",
+		Charts: []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: "linear"}},
+	})
+	var optionErr *OptionError
+	s.Require().ErrorAs(err, &optionErr)
+	s.Equal("title", optionErr.Name)
+	s.True(optionErr.Ignored)
+
+	_, _, err = ApplyColAxis(nil, parser.Config{ColAxis: "value"}, "csv", "")
+	s.Require().ErrorAs(err, &optionErr)
+	s.Equal("colAxis", optionErr.Name)
+}
+
 func (s *CoreSuite) TestConvertJSONAndValidationFailures() {
 	result, err := Convert(ConvertInput{
 		Input:  []byte(`[{"region":"west","latency":12},{"region":"east","latency":18}]`),
