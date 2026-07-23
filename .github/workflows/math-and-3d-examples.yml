@@ -28,38 +28,44 @@ jobs:
     strategy:
       matrix:
         include:
+          # Continuous coordinates require solo --select (auto-value removed).
           - id: 00-spiral-3d
             file: spiral-3d
             name: "Spiral 3D"
-            description: "Auto-value 3D spiral from x, y, z coordinates"
+            description: "3D spiral from x, y, z coordinates via --select"
+            select: x,y,z
             charts: line
             chart: "line:3d-rotate,3d-visualmap"
 
           - id: 01-noise-surface
             file: noise-surface
             name: "Noise Surface"
-            description: "Simplex noise height field on a 2D grid as continuous 3D"
+            description: "Simplex noise height field on a 2D grid as continuous 3D via --select x,y,z"
+            select: x,y,z
             charts: bar
             chart: "bar:3d-visualmap"
 
           - id: 02-noise-grid
             file: noise-grid
             name: "Noise Grid 21³"
-            description: "Simplex noise on a 3D voxel grid (21³) — position from x,y,z, color/size from value column"
+            description: "Simplex noise on a 3D voxel grid (21³) — position from --select x,y,z"
+            select: x,y,z
             charts: scatter
             chart: "scatter:3d-visualmap,3d-rotate"
 
           - id: 03-noise-grid-41
             file: noise-grid-41
             name: "Noise Grid 41³"
-            description: "ECharts simplex-noise scatter3D demo — full 41³ grid (0–40), orthographic camera, visualMap on value"
+            description: "ECharts simplex-noise scatter3D demo — full 41³ grid via --select x,y,z"
+            select: x,y,z
             charts: scatter
             chart: "scatter:3d-visualmap,3d-rotate"
 
           - id: 04-clusters
             file: clusters
             name: "Clusters"
-            description: "2D scatter — auto-value x,y cluster points with visualMap and symbol size 10"
+            description: "2D scatter — --select x,y cluster points with visualMap and symbol size 10"
+            select: x,y
             charts: scatter
             chart: "scatter:visualmap,symbol-size=10"
 
@@ -74,6 +80,7 @@ jobs:
           id: ${{ matrix.id }}
           name: ${{ matrix.name }}
           description: ${{ matrix.description }}
+          select: ${{ matrix.select }}
           charts: ${{ matrix.charts }}
           chart: ${{ matrix.chart }}
           output-json: ${{ matrix.id }}.json

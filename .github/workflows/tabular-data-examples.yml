@@ -53,7 +53,8 @@ jobs:
           - id: 03-house-price-area2
             file: house-price-area2
             name: "House Price vs Area"
-            description: "2D scatter — auto-value area/price with visualMap gradient (16k points, ECharts house-price demo)"
+            description: "2D scatter — --select area,price with visualMap gradient (16k points, ECharts house-price demo)"
+            select: area,price
             charts: scatter
             chart: "scatter:visualmap"
 
