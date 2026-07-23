@@ -699,6 +699,28 @@ func (s *PipelineSuite) TestAssembleDatasetAppendMetricAxisFromConfig() {
 	s.Equal("noise", ds.Axes[3].Label)
 }
 
+func (s *PipelineSuite) TestPrepareDataSelectValueModeWithMetric() {
+	csvFile := s.writeFile("noise.csv", "x,y,z,value\n0,0,0,4\n1,2,3,5.5\n")
+	view, err := parser.ParseSelectViewFlag("x,y,z,value{Noise}")
+	s.Require().NoError(err)
+	cfg := parser.Config{SelectViews: []parser.SelectView{view}}
+	cfg.Mode = parser.ResolveMode(cfg)
+
+	results, effective, _ := prepareData(csvFile, "csv", cfg)
+	s.Equal("value", effective.MetricColumn)
+	s.Require().Len(results, 2)
+	s.Equal("0", results[0].XAxis)
+	s.Equal("0", results[0].YAxis)
+	s.Equal("0", results[0].ZAxis)
+	s.Equal("4", results[0].Metric)
+	s.Equal("5.5", results[1].Metric)
+
+	ds := assembleDataset(results, RunMeta{Name: "Noise", Parser: "csv"}, []internal_charts.ChartConfig{
+		&scatterchart.Config{Type: "scatter"},
+	}, effective, nil)
+	s.Contains(axisKeyList(ds.Axes), "metric")
+	s.Equal("Noise", ds.Axes[len(ds.Axes)-1].Label)
+}
 func (s *PipelineSuite) TestAssembleDatasetSelectViewMixedAxes() {
 	results := []shared.DataPoint{{XAxis: "Asia", YAxis: "12", Stats: []shared.Stat{}}}
 	cfg := parser.Config{

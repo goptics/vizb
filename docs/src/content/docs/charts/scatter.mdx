@@ -22,7 +22,7 @@ Scatter supports these input modes. Only one applies per dataset:
 | Mode | CLI | What each row becomes |
 |------|-----|----------------------|
 | **Grouped** | `-g` / `-p` | Categorical x, optional y series, optional z depth — same dimension model as bar/line, rendered as `scatter` / `scatter3D` |
-| **Solo `--select`** | `--select` (no `-g` / `-r` / non-default `-p`, no `-A`) | 2–3 columns assigned to `x,y[,z]` — value axes (all numeric) or **mixed** (category x + value y[,z]) |
+| **Solo `--select`** | `--select` (no `-g` / `-r` / non-default `-p`, no `-A`) | 2–4 columns: `x,y[,z][,metric]` — value axes (all numeric) or **mixed** (category x + value y[,z]); 4th is visualMap metric |
 | **Col-axis / auto col-axis** | `-A` or no flags on all-numeric CSV/JSON | Numeric column names as series on the chosen axis (default auto: x) — not continuous coordinates |
 
 ## Grouped mode
@@ -70,7 +70,7 @@ When you have only **x** and **y** grouping (no z column), pass `--3d` to projec
 
 ## `--select` (csv/json)
 
-`--select` is **repeatable** (csv/json only). With explicit `-g` / `-p` / `-r` it picks which numeric columns get their own chart, same as bar/line. **Without group**, scatter is the primary chart for solo `--select` coordinate plotting — its two signatures are value mode (all-numeric `x,y[,z]`) and mixed mode (category on x, values on y[,z]).
+`--select` is **repeatable** (csv/json only). With explicit `-g` / `-p` / `-r` it picks which numeric columns get their own chart, same as bar/line. **Without group**, scatter is the primary chart for solo `--select` coordinate plotting — value mode (all-numeric `x,y[,z][,metric]`), mixed mode (category on x, values on y[,z]), or multi-stat.
 
 ```bash
 # Value mode: two numeric columns → 2D scatter

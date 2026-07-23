@@ -97,7 +97,7 @@ The HTML bundles **3D view** and **3D visual map** toggles in settings (both on 
 
 ## Continuous 3D (solo `--select`)
 
-Pass solo `--select` with **three numeric columns** for continuous 3D — no `--3d` flag needed. This works on bar, line, and scatter. Bare all-numeric files do **not** enter this mode (they use [auto col-axis x](/guides/group-vs-select#auto-col-axis-all-numeric-data)).
+Pass solo `--select` with **three numeric columns** for continuous 3D — no `--3d` flag needed. This works on bar, line, and scatter. An optional **fourth** column is the visualMap metric (e.g. noise-grid `value`). Bare all-numeric files do **not** enter this mode (they use [auto col-axis x](/guides/group-vs-select#auto-col-axis-all-numeric-data)).
 
 ```bash
 # Explicit value axes → continuous bar3D / line3D / scatter3D (solo --select required)
@@ -107,6 +107,9 @@ vizb scatter examples/csv/spiral-3d.csv --select x,y,z -o scatter.html
 
 # Noise height field as continuous bar3D
 vizb bar examples/csv/noise-surface.csv --select x,y,z --3d-visualmap -o surface.html
+
+# Voxel grid: position x,y,z + visualMap metric from value
+vizb scatter examples/csv/noise-grid.csv --select x,y,z,value --3d-visualmap -o noise.html
 
 # Two columns stays 2D
 vizb scatter examples/csv/spiral-3d.csv --select x,y -o scatter2d.html

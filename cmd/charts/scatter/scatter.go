@@ -22,6 +22,7 @@ func init() {
 
 Continuous coordinates (value axes) require solo --select, e.g.:
   vizb scatter data.csv --select x,y,z -o out.html
+  vizb scatter data.csv --select x,y,z,value --3d-visualmap -o out.html
 
 All-numeric files with no flags use auto col-axis x (column names as series),
 not continuous coordinates. Use -A / --col-axis for series-on-axis without --select.`,

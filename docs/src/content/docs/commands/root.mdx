@@ -147,7 +147,7 @@ See the [Group guide](/guides/group) and [3D Charts](/charts/3d) for detailed ex
 | Mode | Trigger | `--select` syntax | What it does |
 |------|---------|-------------------|--------------|
 | **Group stat pick** | `-g`, `-r`, or non-default `-p` | Any number of numeric columns; optional `{label}` | Picks which numeric columns get their own chart |
-| **Solo value axes** | `--select` only; all selected cols numeric | 2–3 cols per flag: `x,y` or `x,y,z` | Assigns columns to continuous coordinate axes; disables auto-group and auto col-axis |
+| **Solo value axes** | `--select` only; all spatial cols numeric | 2–4 cols: `x,y` / `x,y,z` / `x,y,z,value` | Continuous coordinate axes; optional 4th visualMap metric; disables auto-group and auto col-axis |
 | **Solo mixed axes** | One `--select` only; categorical `x` + numeric `y[,z]` | 2–3 cols: `region,latency` | Category on x, values on y/z; [scatter](/charts/scatter) is the primary chart |
 | **Solo multi-stat** | Repeatable `--select` only; 2 cols per flag | `region,latency` + `region,sales` | One dataset; each flag is an independent `dim,metric` pair; charts split by `stat.type` (default `latency by region`) |
 | **Auto-group** | No flags; mixed categorical + numeric file | — | Picks highest-cardinality categorical column as x |
@@ -156,9 +156,9 @@ See the [Group guide](/guides/group) and [3D Charts](/charts/3d) for detailed ex
 
 **Solo `--select` rules:**
 
-- A **single** `--select` needs **2–3 columns** (assigned to `x`, `y`, optional `z` by position).
+- A **single** `--select` needs **2–4 columns**: first 2–3 are spatial (`x`, `y`, optional `z`); optional 4th is the visualMap metric (`value` or `metric:col`).
 - **Repeatable** `--select` (2 columns per flag only): each flag is `dim,metric` → one stat type in a **single dataset**; charts separate by stat name (default `metric by dim`, e.g. `latency by region`). Rename axis labels with `{label}` on the dimension column (`region{Region}`). Rename chart tabs with a trailing `(Title)`: `--select region{Region},latency (Latency by Region)`. Legacy: `{label}` on the metric column still overrides the stat name when `()` is omitted.
-- **Explicit placement** (single `--select` only): `x:region,y:latency,z:sales` — use for every column or omit prefixes for all.
+- **Explicit placement** (single `--select` only): `x:region,y:latency,z:sales` or `x:x,y:y,z:z,metric:value` — use for every column or omit prefixes for all.
 - **No overlap** with `--group` columns. Repeatable solo `--select` does **not** imply grouping.
 - Other parsers warn and ignore `--select`.
 
@@ -167,7 +167,10 @@ See the [Group guide](/guides/group) and [3D Charts](/charts/3d) for detailed ex
 vizb bar sales.csv -g region,product -p x,y --select amount,total -o bars.html
 
 # Solo value: numeric x,y from spiral data
-vizb scatter spiral-3d.csv --select x,y -o xy.html
+vizb scatter examples/csv/spiral-3d.csv --select x,y -o xy.html
+
+# Solo value + visualMap metric (noise grid)
+vizb scatter examples/csv/noise-grid.csv --select x,y,z,value --3d-visualmap -o noise.html
 
 # Solo mixed: category region + value latency (scatter)
 vizb scatter examples/csv/region-metrics.csv --select region,latency -o mixed.html

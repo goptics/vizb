@@ -103,6 +103,19 @@ func (s *FlagBagSuite) TestParseConfigMapsSelectSoloAxisMode() {
 	s.Equal("y", cfg.SelectViews[0].Columns[1].AxisKey)
 }
 
+func (s *FlagBagSuite) TestParseConfigMapsSelectValueMetricFourthColumn() {
+	cmd, bag := s.newCmdBag(slices.Clone(DataFlags))
+	s.Require().NoError(cmd.Flags().Set("select", "x,y,z,value{Noise}"))
+	cfg := bag.ParseConfig()
+	s.Require().Len(cfg.SelectViews, 1)
+	view := cfg.SelectViews[0]
+	s.Len(view.Columns, 3)
+	s.Equal("x", view.Columns[0].Source)
+	s.Equal("z", view.Columns[2].Source)
+	s.Equal("value", view.MetricSource)
+	s.Equal("Noise", view.MetricLabel)
+	s.Empty(cfg.Select)
+}
 func (s *FlagBagSuite) TestParseConfigMapsSelectParenTypeLabel() {
 	cmd, bag := s.newCmdBag(slices.Clone(DataFlags))
 	s.Require().NoError(cmd.Flags().Set("select", "region{Region},latency (Latency by Region)"))

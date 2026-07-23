@@ -8,7 +8,7 @@ import { Aside, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 The `--select` flag is **repeatable** and applies to the `csv` and `json` parsers only. Other parsers warn and ignore it. It plays two different roles depending on whether group is active:
 
 - **With group** (`-g`, `-r`, or a non-default `-p`) — `--select` picks which **numeric columns** get their own chart.
-- **Without group** (solo) — each `--select` assigns 2–3 columns to **coordinate axes**, and vizb plots every row as a separate point (no aggregation).
+- **Without group** (solo) — each `--select` assigns 2–3 columns to **coordinate axes** (optional 4th = visualMap metric), and vizb plots every row as a separate point (no aggregation).
 
 A column cannot be in both `--select` and `--group`. See [Group vs Select](/guides/group-vs-select) for when to use each approach.
 
@@ -33,14 +33,14 @@ This is the grouped companion to `--group` — see the [Group guide](/guides/gro
 
 ## Role 2 — Solo `--select` (no group)
 
-Pass `--select` **without** group (`-g`, `-r`, or non-default `-p`) and **without** `--col-axis` and vizb enters **select axis mode**. Auto-group and auto col-axis are both disabled. Each `--select` defines one view with 2–3 columns assigned to `x`, `y`, and optional `z`. Every row stays a separate point — nothing is summed.
+Pass `--select` **without** group (`-g`, `-r`, or non-default `-p`) and **without** `--col-axis` and vizb enters **select axis mode**. Auto-group and auto col-axis are both disabled. Each `--select` defines one view with 2–3 spatial columns (`x`, `y`, optional `z`) and an optional 4th visualMap metric. Every row stays a separate point — nothing is summed.
 
 The mode depends on the column types you select:
 
 | Mode | Trigger | Result |
 |---|---|---|
-| **Value** | All selected columns numeric | Continuous coordinate axes (`x`, `y`[, `z`]) |
-| **Mixed** | One categorical + numeric | Category on x, values on y[, `z`]; [scatter](/charts/scatter) is the primary chart |
+| **Value** | All spatial columns numeric | Continuous coordinate axes (`x`, `y`[, `z`]); optional 4th metric for visualMap |
+| **Mixed** | One categorical + numeric | Category on x, values on y[, `z`]; [scatter](/charts/scatter) is the primary chart (no metric) |
 | **Multi-stat** | Repeatable flags, 2 columns each | One dataset; each flag → a stat type (`latency by region`); chart tabs by stat |
 
 ### Value mode (all numeric)
@@ -95,9 +95,9 @@ vizb scatter region-metrics.csv \
 
 ## Solo `--select` rules
 
-- A **single** `--select` needs **2–3 columns** (assigned to `x`, `y`, optional `z` by position).
+- A **single** `--select` needs **2–4 columns**: first 2–3 are spatial (`x`, `y`, optional `z` by position); an optional **4th** is the visualMap metric (`value` or explicit `metric:col`).
 - **Repeatable** `--select` takes 2 columns per flag only: each flag is `dim,metric` → one stat type in a **single dataset**; charts separate by stat name. (Legacy: `{label}` on the metric column still overrides the stat name when `()` is omitted.)
-- **Explicit placement** (single `--select` only): `x:region,y:latency,z:sales` — use prefixes for every column or omit them for all.
+- **Explicit placement** (single `--select` only): `x:region,y:latency,z:sales` or `x:x,y:y,z:z,metric:value` — use prefixes for every column or omit them for all.
 - **No overlap** with `--group` columns. Repeatable solo `--select` does **not** imply grouping.
 - Other parsers warn and ignore `--select`.
 
@@ -108,8 +108,8 @@ All-numeric files with **no** flags use **auto col-axis x** (column names as ser
 | | **Auto col-axis x** | **Solo `--select`** |
 |---|---|---|
 | Trigger | No flags; all-numeric file | `--select` only (no group, no `-A`) |
-| Layout | Every numeric column name → series on X (one chart) | Named columns → continuous `x,y[,z]` (or mixed) |
-| 2D vs 3D | Categorical-style series chart | 3 names → 3D; 2 names stays 2D |
+| Layout | Every numeric column name → series on X (one chart) | Named columns → continuous `x,y[,z][,metric]` (or mixed) |
+| 2D vs 3D | Categorical-style series chart | 3 spatial names → 3D; 2 stays 2D; 4th = visualMap metric |
 | Inference | Logged to stdout | None — you are explicit |
 
 ## `--select` with `--col-axis`

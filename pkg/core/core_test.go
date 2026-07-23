@@ -432,6 +432,14 @@ func (s *CoreSuite) TestAssembleFallbacksAndHelpers() {
 	axes = appendMetricAxis(nil, parser.Config{}, []shared.DataPoint{{Metric: "1"}})
 	s.Equal("value", axes[0].Label)
 
+	// Prefer SelectView MetricLabel over MetricColumn source name.
+	axes = appendMetricAxis(nil, parser.Config{
+		MetricColumn: "value",
+		SelectViews:  []parser.SelectView{{MetricSource: "value", MetricLabel: "Noise"}},
+	}, []shared.DataPoint{{Metric: "4"}})
+	s.Equal("metric", axes[0].Key)
+	s.Equal("Noise", axes[0].Label)
+
 	bar := &barchart.Config{Type: "bar"}
 	autoEnableValueMode3D([]internalcharts.ChartConfig{bar}, []shared.Axis{{Key: "x", Type: "value"}, {Key: "y", Type: "value"}}, false)
 	s.Nil(bar.ThreeD)

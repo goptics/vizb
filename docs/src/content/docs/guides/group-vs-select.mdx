@@ -35,7 +35,7 @@ A third layout, **`--col-axis` / `-A`**, puts many numeric column **names** on o
     See the [Group guide](/guides/group) for pattern syntax, bracket slots, regex, and axis labels.
   </TabItem>
   <TabItem label="Select" icon="set">
-    Use **select** when you want to **plot several columns together in one chart** — a scatter of latency vs. price, or category vs. metric. Solo `--select` assigns 2–3 columns to coordinate axes and keeps every row as its own point.
+    Use **select** when you want to **plot several columns together in one chart** — a scatter of latency vs. price, or category vs. metric. Solo `--select` assigns 2–3 columns to coordinate axes (optional 4th visualMap metric) and keeps every row as its own point.
 
     ```bash
     vizb scatter data.csv --select region,latency -o mixed.html

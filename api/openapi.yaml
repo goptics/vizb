@@ -355,10 +355,18 @@ components:
           $ref: '#/components/schemas/UnitOptions'
         select:
           type: array
-          description: Structured column selections; each item is one select expression.
+          description: >
+            Column selections (same as CLI --select). With grouping or colAxis: numeric
+            stat columns (optional {label}). Solo: one expression of 2–4 columns —
+            x,y[,z][,metric] for continuous value mode (4th is visualMap metric), or
+            mixed category+value; repeatable 2-column dim,metric pairs for multi-stat.
           items:
             type: string
             minLength: 1
+          examples:
+            - ["region,latency"]
+            - ["x,y,z,value"]
+            - ["x:x,y:y,z:z,metric:value"]
         jsonPath:
           type: string
           description: JSON-only path to a nested array.

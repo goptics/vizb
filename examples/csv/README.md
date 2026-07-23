@@ -160,8 +160,8 @@ CI id: `00-concurrency-frameworks` on the **comparisons** dashboard (see `.githu
 | `sales.csv` | 10,000 | Auto-group or explicit `--group` | Bar (2D / 3D), line, scatter |
 | `spiral-3d.csv` | 25,000 | Solo `--select x,y,z` | Scatter3D, line3D, bar3D |
 | `noise-surface.csv` | 441 | Solo `--select x,y,z` | Bar3D surface |
-| `noise-grid.csv` | 9,261 | Solo `--select x,y,z` | Scatter3D + visualMap |
-| `noise-grid-41.csv` | 68,921 | Solo `--select x,y,z` | Scatter3D + visualMap (full grid) |
+| `noise-grid.csv` | 9,261 | Solo `--select x,y,z,value` | Scatter3D + visualMap metric |
+| `noise-grid-41.csv` | 68,921 | Solo `--select x,y,z,value` | Scatter3D + visualMap (full grid) |
 | `region-metrics.csv` | 8 | Solo `--select` mixed | Scatter mixed (region × metric) |
 | `house-price-area2.csv` | 16,174 | Solo `--select area,price` | Scatter2D + visualMap |
 | `clusters.csv` | 60 | Solo `--select x,y` | Scatter2D + visualMap, symbol size 10 |

@@ -432,6 +432,26 @@ func (s *ServeSuite) TestConvertEndpoint() {
 		s.Equal("Framework throughput", stats[0].(map[string]any)["type"])
 	}
 
+	// Solo select with 4th visualMap metric column (noise-grid shape).
+	recorder = s.apiRequest(
+		handler,
+		"/",
+		`{"input":"x,y,z,value\n0,0,0,4\n1,2,3,5.5\n","parser":"csv","select":["x,y,z,value"],"charts":{"types":["scatter"]}}`,
+		"application/json",
+		"application/json",
+	)
+	s.Equal(http.StatusOK, recorder.Code, recorder.Body.String())
+	s.Require().NoError(json.Unmarshal(recorder.Body.Bytes(), &dataset))
+	axes := dataset["axes"].([]any)
+	keys := make([]string, 0, len(axes))
+	for _, a := range axes {
+		keys = append(keys, a.(map[string]any)["key"].(string))
+	}
+	s.Contains(keys, "metric")
+	pts := dataset["data"].([]any)
+	s.Require().NotEmpty(pts)
+	s.Equal("4", pts[0].(map[string]any)["metric"])
+
 	documented := `{
 		"input":{"data":[{"region":"west","latency":12},{"region":"east","latency":18}]},
 		"parser":"auto",

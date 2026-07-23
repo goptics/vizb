@@ -84,7 +84,7 @@ vizb line worker-pools.txt -p z/y/x --scale log -o out.html
 | Context | What `--select` does |
 |---------|----------------------|
 | **With** `-g` / `-r` / non-default `-p` | Picks which **numeric** columns get their own chart (optional `{label}` renames each chart) |
-| **Without** group (and without `-A`) | Solo **value / mixed** mode — 2–3 columns become continuous coordinate axes (`x,y` or `x,y,z`) |
+| **Without** group (and without `-A`) | Solo **value / mixed** mode — 2–3 spatial axes (`x,y` or `x,y,z`); optional 4th = visualMap metric |
 
 ```bash
 # Grouped: only latency and sales become charts
