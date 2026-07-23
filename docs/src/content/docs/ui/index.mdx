@@ -143,7 +143,7 @@ The UI keeps shareable state in the URL query string. Switching datasets, chart 
 vizb sales.csv -g date,region -p x,y --id sales-by-date -o report.html
 ```
 
-Other common params: `?c=` (active chart type), `?g=` (group index), and per-chart keys like `bar.so=desc`, `line.sc=log`. See the [root command](/commands/root#deep-links) for the `--id` flag.
+Other common params: `?c=` (active chart type), `?g=` (group index), and per-chart keys like `bar.so=desc`, `line.sc=log`, and `bar.lm=percentage`. Label modes use `<chart>.lm=none|value|percentage`. Legacy global `l=true|false` and per-chart `<chart>.l=true|false` URLs remain value-label inputs; `<chart>.lm` wins when both are present. See the [root command](/commands/root#deep-links) for the `--id` flag.
 
 ## Next Steps
 

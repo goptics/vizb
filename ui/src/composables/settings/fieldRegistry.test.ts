@@ -16,8 +16,8 @@ import type {
 vi.mock('../../components/settings/SortControl.vue', () => ({ default: { name: 'SortControl' } }))
 vi.mock('../../components/settings/ScaleControl.vue', () => ({ default: { name: 'ScaleControl' } }))
 vi.mock('../../components/settings/StackControl.vue', () => ({ default: { name: 'StackControl' } }))
-vi.mock('../../components/settings/ShowLabelsControl.vue', () => ({
-  default: { name: 'ShowLabelsControl' },
+vi.mock('../../components/settings/LabelModeControl.vue', () => ({
+  default: { name: 'LabelModeControl' },
 }))
 vi.mock('../../components/settings/SmoothControl.vue', () => ({
   default: { name: 'SmoothControl' },
@@ -50,7 +50,7 @@ describe('fieldRegistry', () => {
         'threeDRotate',
         'scale',
         'stack',
-        'showLabels',
+        'labelMode',
         'smooth',
         'sort',
         'swap',
@@ -65,7 +65,7 @@ describe('fieldRegistry', () => {
     expect(getControl('sort')).toBeDefined()
     expect(getControl('scale')).toBeDefined()
     expect(getControl('stack')).toBeDefined()
-    expect(getControl('showLabels')).toBeDefined()
+    expect(getControl('labelMode')).toBeDefined()
     expect(getControl('horizontal')).toBeDefined()
     expect(getControl('smooth')).toBeDefined()
     expect(getControl('threeDRotate')).toBeDefined()
@@ -98,16 +98,16 @@ describe('fieldRegistry', () => {
   })
 
   it('fields with no appliesOn have no dimension constraint', () => {
-    // Most fields (sort, scale, showLabels, swap) are available on any
+    // Most fields (sort, scale, labelMode, swap) are available on any
     // dimension. Their `appliesOn` is undefined — the registry treats that as
     // "no constraint".
-    for (const key of ['sort', 'scale', 'showLabels', 'swap'] as const) {
+    for (const key of ['sort', 'scale', 'labelMode', 'swap'] as const) {
       expect(fieldRegistry[key]!.appliesOn).toBeUndefined()
     }
   })
 
-  it('sort, showLabels, and swap apply to all six chart types', () => {
-    for (const key of ['sort', 'showLabels', 'swap'] as const) {
+  it('sort, labelMode, and swap apply to all six chart types', () => {
+    for (const key of ['sort', 'labelMode', 'swap'] as const) {
       expect(fieldRegistry[key]!.appliesTo).toEqual([
         'bar',
         'line',
@@ -121,13 +121,13 @@ describe('fieldRegistry', () => {
 })
 
 describe('getRenderableFields', () => {
-  it('returns 6 entries for a 3D bar config (sort/scale/showLabels/threeDVisualMap/threeDRotate/swap)', () => {
+  it('returns 6 entries for a 3D bar config (sort/scale/labelMode/threeDVisualMap/threeDRotate/swap)', () => {
     const cfg: BarConfig = { type: 'bar' }
     const fields = getRenderableFields(cfg, { dimension: '3D', rendering3D: true, hasZAxis: true })
     expect(fields.map((f) => f.key)).toEqual([
       'sort',
       'scale',
-      'showLabels',
+      'labelMode',
       'threeDVisualMap',
       'threeDRotate',
       'swap',
@@ -141,14 +141,14 @@ describe('getRenderableFields', () => {
       getRenderableFields(cfg, { dimension: '3D', rendering3D: true, hasZAxis: true }).map(
         (f) => f.key
       )
-    ).toEqual(['sort', 'scale', 'showLabels', 'threeDVisualMap', 'threeDRotate', 'swap'])
+    ).toEqual(['sort', 'scale', 'labelMode', 'threeDVisualMap', 'threeDRotate', 'swap'])
   })
 
   it('returns 6 entries for a 2D bar config without value-3D active', () => {
     const cfg: BarConfig = { type: 'bar' }
     expect(
       getRenderableFields(cfg, { dimension: '2D', rendering3D: false }).map((f) => f.key)
-    ).toEqual(['sort', 'scale', 'stack', 'showLabels', 'horizontal', 'swap'])
+    ).toEqual(['sort', 'scale', 'stack', 'labelMode', 'horizontal', 'swap'])
   })
 
   it('returns 7 entries for a 2D bar config with value-3D active', () => {
@@ -160,7 +160,7 @@ describe('getRenderableFields', () => {
         hasThreeDOption: true,
         hasZAxis: false,
       }).map((f) => f.key)
-    ).toEqual(['sort', 'scale', 'showLabels', 'threeD', 'threeDVisualMap', 'threeDRotate', 'swap'])
+    ).toEqual(['sort', 'scale', 'labelMode', 'threeD', 'threeDVisualMap', 'threeDRotate', 'swap'])
   })
 
   it('hides threeD when z is on chart axes in the active swap (xyz)', () => {
@@ -172,7 +172,7 @@ describe('getRenderableFields', () => {
         hasThreeDOption: true,
         hasZAxis: true,
       }).map((f) => f.key)
-    ).toEqual(['sort', 'scale', 'showLabels', 'threeDVisualMap', 'threeDRotate', 'swap'])
+    ).toEqual(['sort', 'scale', 'labelMode', 'threeDVisualMap', 'threeDRotate', 'swap'])
   })
 
   it('shows threeD toggle without baked threeD when engine is available (xyn swap)', () => {
@@ -184,7 +184,7 @@ describe('getRenderableFields', () => {
         hasThreeDOption: true,
         hasZAxis: false,
       }).map((f) => f.key)
-    ).toEqual(['sort', 'scale', 'showLabels', 'horizontal', 'threeD', 'swap'])
+    ).toEqual(['sort', 'scale', 'labelMode', 'horizontal', 'threeD', 'swap'])
   })
 
   it('hides rotate/visualMap on flat 2D xyn chart until value 3D is enabled', () => {
@@ -211,7 +211,7 @@ describe('getRenderableFields', () => {
     const cfg: LineConfig = { type: 'line' }
     expect(
       getRenderableFields(cfg, { dimension: '2D', rendering3D: false }).map((f) => f.key)
-    ).toEqual(['sort', 'scale', 'stack', 'showLabels', 'smooth', 'swap'])
+    ).toEqual(['sort', 'scale', 'stack', 'labelMode', 'smooth', 'swap'])
   })
 
   it('hides stack in value and mixed transform modes', () => {
@@ -236,7 +236,7 @@ describe('getRenderableFields', () => {
     const cfg: PieConfig = { type: 'pie' }
     expect(getRenderableFields(cfg, { dimension: '2D' }).map((f) => f.key)).toEqual([
       'sort',
-      'showLabels',
+      'labelMode',
       'swap',
     ])
   })
@@ -245,7 +245,7 @@ describe('getRenderableFields', () => {
     const cfg: HeatmapConfig = { type: 'heatmap' }
     expect(getRenderableFields(cfg, { dimension: '2D' }).map((f) => f.key)).toEqual([
       'sort',
-      'showLabels',
+      'labelMode',
       'swap',
     ])
   })
@@ -254,7 +254,7 @@ describe('getRenderableFields', () => {
     const cfg: RadarConfig = { type: 'radar' }
     expect(getRenderableFields(cfg, { dimension: '2D' }).map((f) => f.key)).toEqual([
       'sort',
-      'showLabels',
+      'labelMode',
       'swap',
     ])
   })
@@ -265,7 +265,7 @@ describe('getRenderableFields', () => {
       'sort',
       'scale',
       'stack',
-      'showLabels',
+      'labelMode',
       'horizontal',
       'threeDVisualMap',
       'threeDRotate',
@@ -282,7 +282,7 @@ describe('getRenderableFields', () => {
         hasThreeDOption: true,
         hasZAxis: false,
       }).map((f) => f.key)
-    ).toEqual(['sort', 'scale', 'showLabels', 'threeD', 'threeDVisualMap', 'threeDRotate', 'swap'])
+    ).toEqual(['sort', 'scale', 'labelMode', 'threeD', 'threeDVisualMap', 'threeDRotate', 'swap'])
   })
 
   it('returns 6 entries for a 3D scatter config (grouped x+y+z)', () => {
@@ -291,14 +291,14 @@ describe('getRenderableFields', () => {
       getRenderableFields(cfg, { dimension: '3D', rendering3D: true, hasZAxis: true }).map(
         (f) => f.key
       )
-    ).toEqual(['sort', 'scale', 'showLabels', 'threeDVisualMap', 'threeDRotate', 'swap'])
+    ).toEqual(['sort', 'scale', 'labelMode', 'threeDVisualMap', 'threeDRotate', 'swap'])
   })
 
   it('returns 5 entries for a 2D scatter config without value-3D active', () => {
     const cfg: ScatterConfig = { type: 'scatter' }
     expect(
       getRenderableFields(cfg, { dimension: '2D', rendering3D: false }).map((f) => f.key)
-    ).toEqual(['sort', 'scale', 'showLabels', 'visualMap', 'swap'])
+    ).toEqual(['sort', 'scale', 'labelMode', 'visualMap', 'swap'])
   })
 
   it('hides 2D visualMap on 3D scatter', () => {
@@ -319,7 +319,7 @@ describe('getRenderableFields', () => {
       hasZAxis: false,
     })
     const { general, threeD } = partitionRenderableFields(fields)
-    expect(general.map((f) => f.key)).toEqual(['sort', 'scale', 'showLabels', 'swap'])
+    expect(general.map((f) => f.key)).toEqual(['sort', 'scale', 'labelMode', 'swap'])
     expect(threeD.map((f) => f.key)).toEqual(['threeD', 'threeDVisualMap', 'threeDRotate'])
   })
 
@@ -332,6 +332,6 @@ describe('getRenderableFields', () => {
       getRenderableFields(cfg, { dimension: '3D', rendering3D: true, hasZAxis: true }).map(
         (f) => f.key
       )
-    ).toEqual(['sort', 'scale', 'showLabels', 'threeDVisualMap', 'threeDRotate', 'swap'])
+    ).toEqual(['sort', 'scale', 'labelMode', 'threeDVisualMap', 'threeDRotate', 'swap'])
   })
 })

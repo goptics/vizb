@@ -38,11 +38,13 @@ func (s *CommandSuite) TestVariableFlagsBoundPerChart() {
 	// bar carries --scale (variable) and --swap (universal); pie carries neither
 	// --scale nor --visualmap.
 	bar := s.byUse["bar"]
+	s.NotNil(bar.Flags().Lookup("label-mode"))
 	s.NotNil(bar.Flags().Lookup("scale"))
 	s.NotNil(bar.Flags().Lookup("swap"))
 	s.Nil(bar.Flags().Lookup("visualmap"))
 
 	pie := s.byUse["pie"]
+	s.NotNil(pie.Flags().Lookup("label-mode"))
 	s.Nil(pie.Flags().Lookup("scale"))
 	s.NotNil(pie.Flags().Lookup("swap"))
 

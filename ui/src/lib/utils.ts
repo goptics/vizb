@@ -1,6 +1,16 @@
 import { type ClassValue, clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
-import type { ChartType, Meta, ChartData, DataPoint, Axis } from '../types'
+import {
+  LABEL_MODES,
+  type ChartType,
+  type Meta,
+  type ChartData,
+  type DataPoint,
+  type Axis,
+  type ChartConfig,
+  type LabelMode,
+  type ScaleType,
+} from '../types'
 import type { Ref } from 'vue'
 import { arrangementHasChartZ } from './swap'
 import { builderForChart, pickBuilder } from './builders'
@@ -151,6 +161,14 @@ export const canOfferValue3D = (
 /** Round to 2 decimals — matches tooltip number formatting. */
 export const formatChartTotal = (value: number) => String(Math.round(value * 100) / 100)
 
+/** New labelMode wins; legacy showLabels remains a value-label fallback. */
+export const resolveLabelMode = (config: ChartConfig | undefined): LabelMode =>
+  config?.labelMode && LABEL_MODES.includes(config.labelMode)
+    ? config.labelMode
+    : config?.showLabels
+      ? 'value'
+      : 'none'
+
 export const isValueModeChart = (chart: ChartData): boolean => chart.statType === 'value'
 
 export const chartHasPlottableData = (chart: ChartData): boolean =>
@@ -179,8 +197,9 @@ export const chartAxisBadgeCount = (chart: ChartData, axis: 'x' | 'y' | 'z'): nu
  */
 export const computeChartGrandTotal = (
   chart: ChartData,
-  visibleZ?: Record<string, boolean>
-): number => builderForChart(chart).grandTotal(chart, visibleZ)
+  visibleZ?: Record<string, boolean>,
+  scale?: ScaleType
+): number => builderForChart(chart).grandTotal(chart, visibleZ, scale)
 
 export const CPUtoString = (cpu: Meta['cpu']) => {
   if (!cpu) {

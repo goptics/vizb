@@ -1,10 +1,10 @@
 import type { Component } from 'vue'
-import type { ChartConfig, ChartType, ScaleType, Sort } from '@/types'
+import type { ChartConfig, ChartType, LabelMode, ScaleType, Sort } from '@/types'
 import type { Dimension } from '@/lib/utils'
 import SortControl from '@/components/settings/SortControl.vue'
 import ScaleControl from '@/components/settings/ScaleControl.vue'
 import StackControl from '@/components/settings/StackControl.vue'
-import ShowLabelsControl from '@/components/settings/ShowLabelsControl.vue'
+import LabelModeControl from '@/components/settings/LabelModeControl.vue'
 import SmoothControl from '@/components/settings/SmoothControl.vue'
 import HorizontalControl from '@/components/settings/HorizontalControl.vue'
 import ThreeDRotateControl from '@/components/settings/ThreeDRotateControl.vue'
@@ -23,7 +23,7 @@ export type SettingFieldValueMap = {
   sort: Sort
   scale: ScaleType
   stack: boolean
-  showLabels: boolean
+  labelMode: LabelMode
   smooth: boolean
   horizontal: boolean
   threeDRotate: boolean
@@ -68,8 +68,8 @@ export const fieldRegistry: Record<SettingFieldKey, FieldMeta> = {
       ctx.chartMode !== 'value' &&
       ctx.chartMode !== 'mixed',
   },
-  showLabels: {
-    component: ShowLabelsControl,
+  labelMode: {
+    component: LabelModeControl,
     appliesTo: ['bar', 'line', 'scatter', 'pie', 'heatmap', 'radar'],
   },
   smooth: {

@@ -86,7 +86,7 @@ func init() {
 	rootCmd.Flags().StringSliceVarP(&rootCharts, "charts", "c", defaultChartTypes, "Chart types to generate (bar, line, scatter, pie, heatmap, radar)")
 	rootCmd.Flags().StringArrayVar(&rootChartSpecs, "chart", nil,
 		"Per-chart settings override: <type>:<key>=<val>(,<key>=<val>)* or bare flags (labels, stack, 3d-rotate, 3d). "+
-			"Keys: swap, sort, scale, stack, labels, 3d-rotate, 3d, symbol, symbol-size, smooth, horizontal. E.g. --chart bar:stack --chart line:smooth")
+			"Keys: swap, sort, scale, stack, labels, label-mode, 3d-rotate, 3d, symbol, symbol-size, smooth, horizontal. E.g. --chart bar:label-mode=percentage")
 
 	// Build the chart subcommands (bar/line/pie/heatmap/radar/scatter) from the
 	// config/charts registry.

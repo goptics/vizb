@@ -340,6 +340,39 @@ func (s *RootSuite) TestChartSubcommandSortNoDeprecationWarning() {
 	s.FileExists(out)
 }
 
+func (s *RootSuite) TestChartSubcommandLabelMode() {
+	dir := s.T().TempDir()
+	input := testutil.WriteBenchFile(s.T(), dir, "valid.txt",
+		`BenchmarkTest-8    1000000    1234 ns/op    1000 B/op    10 allocs/op`)
+	out := filepath.Join(dir, "out.json")
+
+	rootCmd.SetArgs([]string{"bar", "-o", out, "--show-labels", "--label-mode", "percentage", input})
+	s.Require().NoError(rootCmd.Execute())
+
+	ds := testutil.ReadDataset(s.T(), out)
+	s.Require().Len(ds.Settings, 1)
+	config, ok := ds.Settings[0].(*barchart.Config)
+	s.Require().True(ok)
+	s.Require().NotNil(config.ShowLabels)
+	s.True(*config.ShowLabels)
+	s.Equal("percentage", config.LabelMode)
+}
+
+func (s *RootSuite) TestChartSubcommandRejectsInvalidLabelMode() {
+	dir := s.T().TempDir()
+	input := testutil.WriteBenchFile(s.T(), dir, "valid.txt",
+		`BenchmarkTest-8    1000000    1234 ns/op    1000 B/op    10 allocs/op`)
+	rootCmd.SetArgs([]string{"bar", "--label-mode", "percent", input})
+	barCmd, _, err := rootCmd.Find([]string{"bar"})
+	s.Require().NoError(err)
+	defer func() {
+		s.Require().NoError(barCmd.Flags().Set("label-mode", "none"))
+		barCmd.Flags().Lookup("label-mode").Changed = false
+	}()
+
+	s.Panics(func() { _ = rootCmd.Execute() })
+}
+
 func TestRootSuite(t *testing.T) {
 	suite.Run(t, new(RootSuite))
 }

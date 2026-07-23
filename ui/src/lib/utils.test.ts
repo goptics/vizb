@@ -16,6 +16,7 @@ import {
   isScatterTransformMode,
   getNextColorFor,
   resetColor,
+  resolveLabelMode,
 } from './utils'
 import { applyTheme } from './themes'
 
@@ -151,7 +152,10 @@ describe('computeChartGrandTotal', () => {
   it('sums 1D x-only points', () => {
     const total = computeChartGrandTotal(
       chart({
-        series: [{ xAxis: 'A', values: [10], benchmarkId: '' }],
+        series: [
+          { xAxis: 'A', values: [10], benchmarkId: '' },
+          { xAxis: 'B', values: [5], benchmarkId: '' },
+        ],
         points: [
           { xAxis: 'A', yAxis: '', zAxis: '', value: 10 },
           { xAxis: 'B', yAxis: '', zAxis: '', value: 5 },
@@ -165,7 +169,10 @@ describe('computeChartGrandTotal', () => {
     const total = computeChartGrandTotal(
       chart({
         yAxis: ['Y1'],
-        series: [{ xAxis: 'A', values: [10], benchmarkId: '' }],
+        series: [
+          { xAxis: 'A', values: [10], benchmarkId: '' },
+          { xAxis: 'B', values: [7], benchmarkId: '' },
+        ],
         points: [
           { xAxis: 'A', yAxis: 'Y1', zAxis: '', value: 10 },
           { xAxis: 'B', yAxis: 'Y1', zAxis: '', value: 7 },
@@ -183,6 +190,18 @@ describe('computeChartGrandTotal', () => {
         { xAxis: 'E', yAxis: 'A', zAxis: 'Z1', value: 10 },
         { xAxis: 'E', yAxis: 'A', zAxis: 'Z2', value: 5 },
       ],
+      render3D: {
+        mode: 'grouped',
+        xValues: ['E'],
+        yValues: ['A'],
+        zValues: ['Z1', 'Z2'],
+        barSeries: [],
+        lineSeries: [
+          { name: 'Z1', data: [{ value: [0, 0, 10] }] },
+          { name: 'Z2', data: [{ value: [0, 0, 5] }] },
+        ],
+        cellTotals: { '0,0': 15 },
+      },
     })
     expect(computeChartGrandTotal(data)).toBe(15)
     expect(computeChartGrandTotal(data, { Z1: true, Z2: false })).toBe(10)
@@ -199,6 +218,82 @@ describe('computeChartGrandTotal', () => {
       })
     )
     expect(total).toBe(8)
+  })
+
+  it('uses the displayed aggregate instead of duplicate source points', () => {
+    expect(
+      computeChartGrandTotal(
+        chart({
+          series: [{ xAxis: 'A', values: [15], benchmarkId: '' }],
+          points: [
+            { xAxis: 'A', yAxis: '', zAxis: '', value: 10 },
+            { xAxis: 'A', yAxis: '', zAxis: '', value: 20 },
+          ],
+        })
+      )
+    ).toBe(15)
+  })
+
+  it('ignores non-finite displayed values', () => {
+    expect(
+      computeChartGrandTotal(
+        chart({
+          series: [{ xAxis: 'A', values: [2, NaN, Infinity], benchmarkId: '' }],
+        })
+      )
+    ).toBe(2)
+  })
+
+  it('excludes non-positive marks hidden by a log scale', () => {
+    expect(
+      computeChartGrandTotal(
+        chart({
+          series: [{ xAxis: 'A', values: [10, 0, -3], benchmarkId: '' }],
+        }),
+        undefined,
+        'log'
+      )
+    ).toBe(10)
+  })
+
+  it('uses the displayed label dimension for value and mixed 3D totals', () => {
+    expect(
+      computeChartGrandTotal(
+        chart({
+          statType: 'value',
+          valuePoints3D: [
+            [1, 2, 3, 10],
+            [4, 5, 6, 20],
+          ],
+        })
+      )
+    ).toBe(30)
+    expect(
+      computeChartGrandTotal(
+        chart({
+          statType: 'mixed',
+          render3D: {
+            mode: 'mixed',
+            xValues: ['A'],
+            yValues: [],
+            zValues: [],
+            barSeries: [],
+            lineSeries: [{ name: 'value', data: [{ value: [0, 12, 5] }] }],
+            cellTotals: {},
+          },
+        })
+      )
+    ).toBe(12)
+  })
+})
+
+describe('resolveLabelMode', () => {
+  it('prefers labelMode and preserves legacy showLabels as value mode', () => {
+    expect(resolveLabelMode({ type: 'bar', showLabels: true })).toBe('value')
+    expect(resolveLabelMode({ type: 'bar', showLabels: true, labelMode: 'percentage' })).toBe(
+      'percentage'
+    )
+    expect(resolveLabelMode({ type: 'bar', showLabels: true, labelMode: 'none' })).toBe('none')
   })
 })
 

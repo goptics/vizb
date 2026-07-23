@@ -622,6 +622,13 @@ func validateChartConfigValues(raw json.RawMessage, path string) *apiValidationE
 			return &validationErr
 		}
 	}
+	if labelModeRaw, ok := values["labelMode"]; ok {
+		var labelMode string
+		if err := json.Unmarshal(labelModeRaw, &labelMode); err != nil || (labelMode != "none" && labelMode != "value" && labelMode != "percentage") {
+			validationErr := bodyValidationError(path+"/labelMode", "invalid_enum", "labelMode must be none, value, or percentage")
+			return &validationErr
+		}
+	}
 	if symbolRaw, ok := values["symbol"]; ok {
 		var symbol string
 		if err := json.Unmarshal(symbolRaw, &symbol); err != nil {

@@ -14,7 +14,8 @@ The UI includes a settings panel where you can adjust chart behavior at runtime.
 | `--scale` | Scale toggle | `linear` / `log` |
 | `--sort` | Sort dropdown | `asc` / `desc` / none |
 | `--charts` | Chart visibility | `bar` / `line` / `pie` / `heatmap` / `radar` |
-| `--show-labels` | Labels toggle | on / off |
+| `--label-mode` | Labels selector | Off / Value / Percentage |
+| `--show-labels` | Labels selector | Legacy Value input when `labelMode` is absent |
 | `--smooth` / `--chart line:smooth` | Smooth lines | on / off — 2D line only |
 | `--chart bar:3d-rotate` / `--chart line:3d-rotate` | Auto rotate | on / off — 3D bar and line only |
 
@@ -23,8 +24,8 @@ The UI includes a settings panel where you can adjust chart behavior at runtime.
 ## Setting Defaults from CLI
 
 ```bash
-# Enable log scale and labels by default
-vizb data.csv --scale log --show-labels -o output.html
+# Enable log scale and percentage-only labels by default
+vizb bar data.csv --scale log --label-mode percentage -o output.html
 
 # Sort descending and show only bar chart
 vizb data.csv -s desc -c bar -o output.html
@@ -33,3 +34,5 @@ vizb data.csv -s desc -c bar -o output.html
 <Aside type="note">
   CLI flags set the initial state. All settings can be changed in the UI without regenerating the file.
 </Aside>
+
+Percentage mode changes label text only. Plotted values, axes, sorting, tooltips, statistics, JSON data, and exports remain in their original units. Percentages use the Total badge's rendered-value total, are rounded to at most two decimals, and are omitted when that total is zero or non-finite.

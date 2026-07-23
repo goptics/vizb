@@ -116,6 +116,16 @@ describe('useUrlRouter', () => {
     expect(line.threeDVisualMap).toBe(true)
   })
 
+  it('applies label mode after legacy label parameters', async () => {
+    mockWindow('?l=true&bar.l=false&bar.lm=percentage')
+    const { useUrlRouter } = await import('./useUrlRouter')
+    await useUrlRouter().initFromUrl()
+
+    const settings = holder.datasets!.value[0]!.settings
+    expect(settings[0]).toMatchObject({ showLabels: false, labelMode: 'percentage' })
+    expect(settings[1]).toMatchObject({ showLabels: true })
+  })
+
   it('applies bar.3d and bar.3d-rt from the URL on init', async () => {
     mockWindow('?bar.3d=true&bar.3d-rt=true')
     const { useUrlRouter } = await import('./useUrlRouter')
@@ -324,5 +334,19 @@ describe('useUrlRouter', () => {
     const { syncUrlToState } = useUrlRouter()
     syncUrlToState()
     expect(replaceState).toHaveBeenCalledWith(null, '', '/?bar.h=true')
+  })
+
+  it('syncs labelMode and keeps legacy-only configs on the old parameter', async () => {
+    holder.datasets = ref([
+      ds([
+        { type: 'bar', showLabels: true, labelMode: 'percentage' },
+        { type: 'line', showLabels: true },
+      ]),
+    ])
+    const replaceState = mockWindow('')
+    const { useUrlRouter } = await import('./useUrlRouter')
+    useUrlRouter().syncUrlToState()
+
+    expect(replaceState).toHaveBeenCalledWith(null, '', '/?bar.lm=percentage&line.l=true')
   })
 })

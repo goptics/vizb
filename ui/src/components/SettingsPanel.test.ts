@@ -17,8 +17,8 @@ import type {
 vi.mock('../components/settings/SortControl.vue', () => ({ default: { name: 'SortControl' } }))
 vi.mock('../components/settings/ScaleControl.vue', () => ({ default: { name: 'ScaleControl' } }))
 vi.mock('../components/settings/StackControl.vue', () => ({ default: { name: 'StackControl' } }))
-vi.mock('../components/settings/ShowLabelsControl.vue', () => ({
-  default: { name: 'ShowLabelsControl' },
+vi.mock('../components/settings/LabelModeControl.vue', () => ({
+  default: { name: 'LabelModeControl' },
 }))
 vi.mock('../components/settings/SmoothControl.vue', () => ({
   default: { name: 'SmoothControl' },
@@ -53,12 +53,12 @@ const { getRenderableFields } = await import('../composables/settings/fieldRegis
 // of controls.
 
 describe('SettingsPanel field selection', () => {
-  it('renders 6 controls for a 3D bar config (sort/scale/showLabels/threeDVisualMap/threeDRotate/swap)', () => {
+  it('renders 6 controls for a 3D bar config (sort/scale/labelMode/threeDVisualMap/threeDRotate/swap)', () => {
     const cfg: BarConfig = {
       type: 'bar',
       sort: { enabled: false, order: 'asc' },
       scale: 'linear',
-      showLabels: false,
+      labelMode: 'none',
       threeDRotate: false,
       swap: '',
     }
@@ -66,15 +66,15 @@ describe('SettingsPanel field selection', () => {
       getRenderableFields(cfg, { dimension: '3D', rendering3D: true, hasZAxis: true }).map(
         (f) => f.key
       )
-    ).toEqual(['sort', 'scale', 'showLabels', 'threeDVisualMap', 'threeDRotate', 'swap'])
+    ).toEqual(['sort', 'scale', 'labelMode', 'threeDVisualMap', 'threeDRotate', 'swap'])
   })
 
-  it('renders 6 controls for a 3D line config (sort/scale/showLabels/threeDVisualMap/threeDRotate/swap)', () => {
+  it('renders 6 controls for a 3D line config (sort/scale/labelMode/threeDVisualMap/threeDRotate/swap)', () => {
     const cfg: LineConfig = {
       type: 'line',
       sort: { enabled: false, order: 'asc' },
       scale: 'linear',
-      showLabels: false,
+      labelMode: 'none',
       threeDRotate: false,
       swap: '',
     }
@@ -82,7 +82,7 @@ describe('SettingsPanel field selection', () => {
       getRenderableFields(cfg, { dimension: '3D', rendering3D: true, hasZAxis: true }).map(
         (f) => f.key
       )
-    ).toEqual(['sort', 'scale', 'showLabels', 'threeDVisualMap', 'threeDRotate', 'swap'])
+    ).toEqual(['sort', 'scale', 'labelMode', 'threeDVisualMap', 'threeDRotate', 'swap'])
   })
 
   it('renders 6 controls for z-data bar on xyn swap without baked --3d', () => {
@@ -90,7 +90,7 @@ describe('SettingsPanel field selection', () => {
       type: 'bar',
       sort: { enabled: false, order: 'asc' },
       scale: 'linear',
-      showLabels: false,
+      labelMode: 'none',
       swap: 'xyn',
     }
     expect(
@@ -100,7 +100,7 @@ describe('SettingsPanel field selection', () => {
         hasThreeDOption: true,
         hasZAxis: false,
       }).map((f) => f.key)
-    ).toEqual(['sort', 'scale', 'showLabels', 'horizontal', 'threeD', 'swap'])
+    ).toEqual(['sort', 'scale', 'labelMode', 'horizontal', 'threeD', 'swap'])
   })
 
   it('renders 5 controls for a 2D bar config without value-3D active', () => {
@@ -108,12 +108,12 @@ describe('SettingsPanel field selection', () => {
       type: 'bar',
       sort: { enabled: false, order: 'asc' },
       scale: 'linear',
-      showLabels: false,
+      labelMode: 'none',
       swap: '',
     }
     expect(
       getRenderableFields(cfg, { dimension: '2D', rendering3D: false }).map((f) => f.key)
-    ).toEqual(['sort', 'scale', 'stack', 'showLabels', 'horizontal', 'swap'])
+    ).toEqual(['sort', 'scale', 'stack', 'labelMode', 'horizontal', 'swap'])
   })
 
   it('renders 7 controls for a 2D bar config with value-3D active', () => {
@@ -122,7 +122,7 @@ describe('SettingsPanel field selection', () => {
       threeD: true,
       sort: { enabled: false, order: 'asc' },
       scale: 'linear',
-      showLabels: false,
+      labelMode: 'none',
       swap: '',
     }
     expect(
@@ -132,7 +132,7 @@ describe('SettingsPanel field selection', () => {
         hasThreeDOption: true,
         hasZAxis: false,
       }).map((f) => f.key)
-    ).toEqual(['sort', 'scale', 'showLabels', 'threeD', 'threeDVisualMap', 'threeDRotate', 'swap'])
+    ).toEqual(['sort', 'scale', 'labelMode', 'threeD', 'threeDVisualMap', 'threeDRotate', 'swap'])
   })
 
   it('renders 5 controls for a 2D scatter config (includes visualMap)', () => {
@@ -140,12 +140,12 @@ describe('SettingsPanel field selection', () => {
       type: 'scatter',
       sort: { enabled: false, order: 'asc' },
       scale: 'linear',
-      showLabels: false,
+      labelMode: 'none',
       swap: '',
     }
     expect(
       getRenderableFields(cfg, { dimension: '2D', rendering3D: false }).map((f) => f.key)
-    ).toEqual(['sort', 'scale', 'showLabels', 'visualMap', 'swap'])
+    ).toEqual(['sort', 'scale', 'labelMode', 'visualMap', 'swap'])
   })
 
   it('renders 5 controls for a 2D line config without value-3D active', () => {
@@ -153,24 +153,24 @@ describe('SettingsPanel field selection', () => {
       type: 'line',
       sort: { enabled: false, order: 'asc' },
       scale: 'linear',
-      showLabels: false,
+      labelMode: 'none',
       swap: '',
     }
     expect(
       getRenderableFields(cfg, { dimension: '2D', rendering3D: false }).map((f) => f.key)
-    ).toEqual(['sort', 'scale', 'stack', 'showLabels', 'smooth', 'swap'])
+    ).toEqual(['sort', 'scale', 'stack', 'labelMode', 'smooth', 'swap'])
   })
 
   it('renders 3 controls for a pie config (no scale/threeDRotate)', () => {
     const cfg: PieConfig = {
       type: 'pie',
       sort: { enabled: false, order: 'asc' },
-      showLabels: false,
+      labelMode: 'none',
       swap: '',
     }
     expect(getRenderableFields(cfg, { dimension: '2D' }).map((f) => f.key)).toEqual([
       'sort',
-      'showLabels',
+      'labelMode',
       'swap',
     ])
   })
@@ -179,12 +179,12 @@ describe('SettingsPanel field selection', () => {
     const cfg: HeatmapConfig = {
       type: 'heatmap',
       sort: { enabled: false, order: 'asc' },
-      showLabels: false,
+      labelMode: 'none',
       swap: '',
     }
     expect(getRenderableFields(cfg, { dimension: '2D' }).map((f) => f.key)).toEqual([
       'sort',
-      'showLabels',
+      'labelMode',
       'swap',
     ])
   })
@@ -193,12 +193,12 @@ describe('SettingsPanel field selection', () => {
     const cfg: RadarConfig = {
       type: 'radar',
       sort: { enabled: false, order: 'asc' },
-      showLabels: false,
+      labelMode: 'none',
       swap: '',
     }
     expect(getRenderableFields(cfg, { dimension: '2D' }).map((f) => f.key)).toEqual([
       'sort',
-      'showLabels',
+      'labelMode',
       'swap',
     ])
   })
@@ -209,6 +209,6 @@ describe('SettingsPanel field selection', () => {
       getRenderableFields(cfg, { dimension: '3D', rendering3D: true, hasZAxis: true }).map(
         (f) => f.key
       )
-    ).toEqual(['sort', 'scale', 'showLabels', 'threeDVisualMap', 'threeDRotate', 'swap'])
+    ).toEqual(['sort', 'scale', 'labelMode', 'threeDVisualMap', 'threeDRotate', 'swap'])
   })
 })

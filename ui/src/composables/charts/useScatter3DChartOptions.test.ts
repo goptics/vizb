@@ -81,6 +81,55 @@ describe('useScatter3DChartOptions — continuous mode', () => {
     expect((options.value.yAxis3D as { type: string }).type).toBe('value')
     expect((options.value.zAxis3D as { type: string }).type).toBe('value')
   })
+
+  it('formats continuous point labels against the shared total', () => {
+    const config = makeConfig({
+      title: 'x · y · z',
+      statType: 'value',
+      yAxis: [],
+      zAxis: [],
+      series: [],
+      points: [],
+      render3D: continuousRender,
+    })
+    config.showLabels.value = true
+    config.labelMode = ref('percentage')
+    config.chartTotal = ref(9)
+    const { options } = useScatter3DChartOptions(config)
+    const formatter = (options.value.series as { label: { formatter: (p: any) => string } }[])[0]!
+      .label.formatter
+    expect(formatter({ value: [1, 2, 3] })).toBe('33.33%')
+  })
+})
+
+describe('useScatter3DChartOptions — mixed mode', () => {
+  it('formats the displayed y value as a percentage', () => {
+    const config = makeConfig({
+      title: 'category · y · z',
+      statType: 'mixed',
+      yAxis: [],
+      zAxis: [],
+      series: [],
+      points: [],
+      xCategories: ['A'],
+      render3D: {
+        mode: 'mixed',
+        xValues: ['A'],
+        yValues: [],
+        zValues: [],
+        barSeries: [{ name: 'value', data: [{ value: [0, 12, 5] }] }],
+        lineSeries: [{ name: 'value', data: [{ value: [0, 12, 5] }] }],
+        cellTotals: {},
+      },
+    })
+    config.showLabels.value = true
+    config.labelMode = ref('percentage')
+    config.chartTotal = ref(20)
+    const { options } = useScatter3DChartOptions(config)
+    const formatter = (options.value.series as { label: { formatter: (p: any) => string } }[])[0]!
+      .label.formatter
+    expect(formatter({ value: [0, 12, 5] })).toBe('60%')
+  })
 })
 
 describe('useScatter3DChartOptions — grouped mode', () => {

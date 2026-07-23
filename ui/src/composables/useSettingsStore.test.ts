@@ -112,6 +112,13 @@ describe('useSettingsStore', () => {
     expect((activeConfig.value as { scale?: string } | undefined)?.scale).toBe('log')
   })
 
+  it('setLabelMode writes the selector state to the active config', async () => {
+    const { useSettingsStore } = await import('./useSettingsStore')
+    const { activeConfig, setLabelMode } = useSettingsStore()
+    setLabelMode('percentage')
+    expect(activeConfig.value?.labelMode).toBe('percentage')
+  })
+
   it('setSmooth writes only to line configs', async () => {
     holder.ref = ref(
       ds([

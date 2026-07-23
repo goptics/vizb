@@ -1,6 +1,6 @@
 import type { Ref } from 'vue'
 import type { EChartsOption } from 'echarts'
-import type { Axis, ChartData, Sort, ScaleType, ChartType } from '@/types'
+import type { Axis, ChartData, Sort, ScaleType, ChartType, LabelMode } from '@/types'
 import { createTooltipConfig, createToolboxConfig, getChartStyling } from './shared/chartConfig'
 import { fontSize } from './shared/common'
 import { is3D } from '@/lib/utils'
@@ -9,6 +9,8 @@ export interface BaseChartConfig {
   chartData: Ref<ChartData>
   sort: Ref<Sort>
   showLabels: Ref<boolean>
+  labelMode?: Ref<LabelMode>
+  chartTotal?: Ref<number>
   isDark: Ref<boolean>
   // `scale` and `threeDRotate` only apply to bar/line (the chart types whose
   // config carries them). Pie/heatmap/radar configs don't produce a Ref for

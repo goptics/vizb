@@ -67,7 +67,7 @@ inputs:
     description: "Enable stats panel (--stat flag). Empty = disabled; 'all' or 'true' = all categories; otherwise comma-separated from: counts, center, spread, extremes, shape, percentiles, confidence, correlations"
     default: ""
   chart:
-    description: "Per-chart overrides (--chart flag, repeatable). One override per line: '<type>:<key>=<val>,...'. Keys: swap, sort, scale, labels, 3d-rotate, 3d. E.g. 'bar:scale=log' or 'pie:labels'. Blank lines and #-prefixed lines are ignored."
+    description: "Per-chart overrides (--chart flag, repeatable). One override per line: '<type>:<key>=<val>,...'. Keys include swap, sort, scale, labels, label-mode, 3d-rotate, and 3d. E.g. 'bar:label-mode=percentage'. Blank lines and #-prefixed lines are ignored."
     default: ""
   charts:
     description: "Chart types to generate (-c flag): bar, line, scatter, pie, heatmap, radar"

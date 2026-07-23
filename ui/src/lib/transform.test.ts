@@ -9,6 +9,7 @@ import {
 } from './transform'
 import { translateAxisKey } from './swap'
 import type { DataPoint, Sort, Point3D } from '../types'
+import { computeChartGrandTotal } from './utils'
 
 const noSort: Sort = { enabled: false, order: 'asc' }
 const ascSort: Sort = { enabled: true, order: 'asc' }
@@ -70,7 +71,9 @@ describe('buildChartForSignature — duplicate (xAxis,yAxis) handling', () => {
       { xAxis: 'A', yAxis: '', stats: [{ type: 'val', value: 100 }] },
       { xAxis: 'A', yAxis: '', stats: [{ type: 'val', value: 200 }] },
     ]
-    expect(valuesFor(data, 'A')).toEqual([150])
+    const chart = build(data)
+    expect(chart.series.find((s) => s.xAxis === 'A')?.values).toEqual([150])
+    expect(computeChartGrandTotal(chart)).toBe(150)
   })
 
   it('averages benchmark count=N repeats to their mean (not their sum)', () => {

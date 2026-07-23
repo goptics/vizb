@@ -1,5 +1,5 @@
 import { computed, ref, watch } from 'vue'
-import type { ChartConfig, ChartType, Sort, ScaleType } from '../types'
+import type { ChartConfig, ChartType, Sort, ScaleType, LabelMode } from '../types'
 import { activeDataset } from './useDataPoint'
 import { isValidIndex } from '../lib/utils'
 import { activeThemeName, applyTheme, normalizeTheme } from '../lib/themes'
@@ -126,9 +126,9 @@ export function useSettingsStore() {
     }
   }
 
-  const setShowLabels = (show: boolean) => {
+  const setLabelMode = (mode: LabelMode) => {
     const cfg = activeConfig.value
-    if (cfg) cfg.showLabels = show
+    if (cfg) cfg.labelMode = mode
   }
 
   const setSmooth = (smooth: boolean) => {
@@ -177,7 +177,7 @@ export function useSettingsStore() {
     setSort,
     setScale,
     setStack,
-    setShowLabels,
+    setLabelMode,
     setSmooth,
     setHorizontal,
     setThreeDRotate,

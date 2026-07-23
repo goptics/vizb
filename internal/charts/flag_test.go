@@ -20,6 +20,13 @@ func (s *ChartFlagSuite) TestValidateScaleValue() {
 	assert.Error(t, charts.ValidateScaleValue("sqrt"))
 }
 
+func (s *ChartFlagSuite) TestValidateLabelModeValue() {
+	for _, value := range []string{"none", "VALUE", "percentage"} {
+		s.NoError(charts.ValidateLabelModeValue(value))
+	}
+	s.Error(charts.ValidateLabelModeValue("percent"))
+}
+
 func (s *ChartFlagSuite) TestValidateSymbolSizeValue() {
 	t := s.T()
 	require.NoError(t, charts.ValidateSymbolSizeValue("12"))
