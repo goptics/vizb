@@ -363,18 +363,6 @@ func (s *PipelineSuite) TestRunLinearDatasetPassthrough() {
 	s.Equal("log", typed.Scale)
 }
 
-func (s *PipelineSuite) TestRunLinearDatasetPassthroughTitleWarns() {
-	dir := s.T().TempDir()
-	input := filepath.Join(dir, "baked.json")
-	testutil.WriteJSON(s.T(), input, shared.Dataset{Name: "Baked", Data: []shared.DataPoint{{Name: "P1"}}})
-	out := filepath.Join(dir, "out.json")
-
-	errOut := testutil.CaptureStderr(func() {
-		RunLinear(&cobra.Command{}, []string{input}, RunMeta{Title: "Ignored", Parser: "go", OutputFile: out}, parser.Config{}, nil, false)
-	})
-	s.Contains(errOut, "--title only applies")
-}
-
 func (s *PipelineSuite) TestRunLinearPreservesDatasetOnRoot() {
 	dir := s.T().TempDir()
 	input := filepath.Join(dir, "baked.json")
@@ -1100,48 +1088,6 @@ func (s *PipelineSuite) TestPrepareDataColAxisExpandsOntoX() {
 	s.ElementsMatch([]string{"x", "y"}, axisKeyList(ds.Axes))
 }
 
-func (s *PipelineSuite) TestPrepareDataColAxisAppliesTitle() {
-	csvFile := s.writeFile("concurrency.csv", "load,default,chi\n100,1,2\n")
-	cfg, err := parser.ResolveGroupConfig(parser.Config{GroupPattern: "y", Group: []string{"load"}, ColAxis: "x"})
-	s.Require().NoError(err)
-
-	results, _, _ := prepareData(csvFile, "csv", cfg, "Framework throughput")
-	for _, dp := range results {
-		s.Require().Len(dp.Stats, 1)
-		s.Equal("Framework throughput", dp.Stats[0].Type)
-	}
-}
-
-func (s *PipelineSuite) TestRunLinearColAxisTitleKeepsDatasetName() {
-	csvFile := s.writeFile("concurrency.csv", "load,default,chi\n100,1,2\n")
-	out := filepath.Join(s.T().TempDir(), "out.json")
-	meta := RunMeta{Name: "Q1 release", Title: "Framework throughput", Parser: "csv", OutputFile: out}
-	cfg, err := parser.ResolveGroupConfig(parser.Config{GroupPattern: "y", Group: []string{"load"}, ColAxis: "x"})
-	s.Require().NoError(err)
-
-	RunLinear(&cobra.Command{}, []string{csvFile}, meta, cfg, []internal_charts.ChartConfig{&barchart.Config{Type: "bar", Scale: "linear"}}, false)
-
-	ds := testutil.ReadDataset(s.T(), out)
-	s.Equal("Q1 release", ds.Name)
-	for _, dp := range ds.Data {
-		s.Require().Len(dp.Stats, 1)
-		s.Equal("Framework throughput", dp.Stats[0].Type)
-	}
-}
-
-func (s *PipelineSuite) TestPrepareDataTitleWithoutColAxisWarnsAndKeepsTypes() {
-	csvFile := s.writeFile("wide.csv", "load,default,chi\n100,1,2\n")
-	cfg, err := parser.ResolveGroupConfig(parser.Config{GroupPattern: "y", Group: []string{"load"}})
-	s.Require().NoError(err)
-
-	var results []shared.DataPoint
-	errOut := testutil.CaptureStderr(func() {
-		results, _, _ = prepareData(csvFile, "csv", cfg, "Framework throughput")
-	})
-	s.Contains(errOut, "--title only applies")
-	s.NotEmpty(results[0].Stats[0].Type)
-}
-
 func (s *PipelineSuite) TestPrepareDataColAxisSameAxisFatals() {
 	csvFile := s.writeFile("concurrency.csv",
 		"load,default,chi\n100,1,2\n")
@@ -1165,10 +1111,9 @@ func (s *PipelineSuite) TestPrepareDataColAxisWithoutGroupWarnsAndSkips() {
 	var results []shared.DataPoint
 	var effective parser.Config
 	errOut := testutil.CaptureStderr(func() {
-		results, effective, _ = prepareData(csvFile, "csv", cfg, "Framework throughput")
+		results, effective, _ = prepareData(csvFile, "csv", cfg)
 	})
 	s.Contains(errOut, "--col-axis requires grouping")
-	s.Contains(errOut, "--title ignored")
 	s.Empty(effective.ColAxis) // cleared on skip
 	s.NotEmpty(results)
 	// Unexpanded: still multi-stat column types, not empty-type long form
@@ -1215,26 +1160,6 @@ func (s *PipelineSuite) TestPrepareDataColAxisSelectModeSkips() {
 	s.Contains(errOut, "requires grouped multi-column stats")
 	s.Empty(effective.ColAxis)
 	s.NotEmpty(results)
-}
-
-func (s *PipelineSuite) TestPrepareDataMultiStatColAxisAndTitleWarnsAndKeepsSelectTitles() {
-	csvFile := s.writeFile("stats.csv", "region,latency,sales\nWest,10,100\n")
-	cfg := parser.Config{ColAxis: "x", SelectViews: []parser.SelectView{
-		{Columns: []parser.ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "latency", AxisKey: "y"}}, TypeLabel: "Latency by Region"},
-		{Columns: []parser.ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "sales", AxisKey: "y"}}, TypeLabel: "Sales by Region"},
-	}}
-	cfg.Mode = parser.ResolveMode(cfg)
-
-	var results []shared.DataPoint
-	var effective parser.Config
-	errOut := testutil.CaptureStderr(func() {
-		results, effective, _ = prepareData(csvFile, "csv", cfg, "Ignored title")
-	})
-	s.Contains(errOut, "--col-axis requires grouped multi-column stats")
-	s.Contains(errOut, "--title ignored")
-	s.Empty(effective.ColAxis)
-	s.Require().Len(results, 1)
-	s.ElementsMatch([]string{"Latency by Region", "Sales by Region"}, []string{results[0].Stats[0].Type, results[0].Stats[1].Type})
 }
 
 func (s *PipelineSuite) TestPrepareDataColAxisZWithoutXYFatals() {

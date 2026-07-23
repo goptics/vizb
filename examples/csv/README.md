@@ -135,14 +135,13 @@ Use `noise-grid.csv` for faster loads; use this file when you need the complete 
 
 **Shape:** Wide competitor table — one category column (`load`) and several numeric framework columns (`default`, `chi`, `echo`, `gin`, `goframe`, `httpz`). Throughput-style values at three load levels.
 
-**What vizb does:** With `-g load -p y --col-axis x`, load becomes the Y series dimension and **framework column names land on X** as categories. All competitors share **one chart** (instead of one chart per numeric column). Chart title falls back to the dataset name (`-n`) because expanded stats omit `type`; use `--title` to override just that chart title.
+**What vizb does:** With `-g load -p y --col-axis x`, load becomes the Y series dimension and **framework column names land on X** as categories. All competitors share **one chart** (instead of one chart per numeric column). Chart title falls back to the dataset name (`-n`) because expanded stats omit `type`.
 
 **Good for:** Side-by-side library / framework comparison from wide CSV.
 
 | Goal | Command |
 |------|---------|
 | Frameworks on X, load as series | `vizb bar examples/csv/concurrency.csv -g load -p y -A x` |
-| Separate page and chart titles | `vizb bar examples/csv/concurrency.csv -g load -p y -A x -n 'Q1 release' --title 'Framework throughput'` |
 | Load on X, frameworks as series | `vizb bar examples/csv/concurrency.csv -g load -p x -A y` |
 
 CI id: `00-concurrency-frameworks` on the **comparisons** dashboard (see `.github/workflows/comparisons-examples.yml`).

@@ -417,21 +417,6 @@ func (s *ServeSuite) TestConvertEndpoint() {
 	)
 	s.Equal(http.StatusOK, recorder.Code, recorder.Body.String())
 
-	recorder = s.apiRequest(
-		handler,
-		"/",
-		`{"input":"load,default,chi\n100,1,2\n","name":"Q1 release","title":"Framework throughput","parser":"csv","grouping":{"pattern":"y","columns":["load"],"colAxis":"x"},"charts":{"types":["bar"]}}`,
-		"application/json",
-		"application/json",
-	)
-	s.Equal(http.StatusOK, recorder.Code, recorder.Body.String())
-	s.Require().NoError(json.Unmarshal(recorder.Body.Bytes(), &dataset))
-	s.Equal("Q1 release", dataset["name"])
-	for _, point := range dataset["data"].([]any) {
-		stats := point.(map[string]any)["stats"].([]any)
-		s.Equal("Framework throughput", stats[0].(map[string]any)["type"])
-	}
-
 	documented := `{
 		"input":{"data":[{"region":"west","latency":12},{"region":"east","latency":18}]},
 		"parser":"auto",
@@ -546,8 +531,6 @@ func (s *ServeSuite) TestConvertEndpointValidatesStructuredOptions() {
 		{name: "duplicate grouped select", body: `{"input":"region,value\nwest,1\n","parser":"csv","grouping":{"pattern":"x","columns":["region"]},"select":["value","value"]}`},
 		{name: "group select conflict", body: `{"input":"region,value\nwest,1\n","parser":"csv","grouping":{"pattern":"x","columns":["region"]},"select":["region"]}`},
 		{name: "structured grouping separator mismatch", body: `{"input":"a,b,c\nx,y,1\n","grouping":{"pattern":"x,y,z","columns":["a/b/c"]}}`},
-		{name: "invalid col axis", body: `{"input":"load,a,b\n100,1,2\n","parser":"csv","grouping":{"pattern":"y","columns":["load"],"colAxis":"value"}}`},
-		{name: "title without col axis", body: `{"input":"load,a,b\n100,1,2\n","parser":"csv","title":"Ignored"}`},
 		{name: "empty chart types", body: `{"input":"x,y\na,1\n","charts":{"types":[]}}`},
 		{name: "duplicate chart types", body: `{"input":"x,y\na,1\n","charts":{"types":["bar","bar"]}}`},
 		{name: "missing config type", body: `{"input":"x,y\na,1\n","charts":{"configs":[{"showLabels":true}]}}`},
@@ -961,10 +944,8 @@ func (s *ServeSuite) TestRequestContractHelpers() {
 		}{
 			{name: "filter", path: "/grouping/filter"},
 			{name: "grouping", path: "/grouping"},
-			{name: "colAxis", path: "/grouping/colAxis"},
 			{name: "jsonPath", path: "/jsonPath"},
 			{name: "select", path: "/select"},
-			{name: "title", path: "/title"},
 			{name: "swap", path: "/charts/configs/1/swap"},
 			{name: "other", path: "/charts/configs"},
 		} {
@@ -1005,8 +986,6 @@ func (s *ServeSuite) TestRequestContractHelpers() {
 			path   string
 		}{
 			{name: "null convert field", raw: `{"theme":null}`, target: new(convertRequest), path: "/theme"},
-			{name: "null title", raw: `{"title":null}`, target: new(convertRequest), path: "/title"},
-			{name: "null col axis", raw: `{"colAxis":null}`, target: new(groupingOptions), path: "/grouping/colAxis"},
 			{name: "unknown grouping field", raw: `{"unexpected":true}`, target: new(groupingOptions), path: "/grouping/unexpected"},
 			{name: "null unit field", raw: `{"memory":null}`, target: new(unitOptions), path: "/units/memory"},
 			{name: "unknown unit field", raw: `{"unexpected":true}`, target: new(unitOptions), path: "/units/unexpected"},
