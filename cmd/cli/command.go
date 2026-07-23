@@ -6,6 +6,7 @@
 package cli
 
 import (
+	"fmt"
 	"slices"
 
 	internal_charts "github.com/goptics/vizb/internal/charts"
@@ -21,6 +22,19 @@ type ChartMeta struct {
 	Use   string
 	Short string
 	Long  string
+}
+
+// ContinuousSelectLong is shared Long help for bar/line/scatter: value axes need
+// solo --select; all-numeric no-flag input uses auto col-axis x.
+func ContinuousSelectLong(chart string) string {
+	return fmt.Sprintf(`Generate an interactive %s chart (HTML or JSON) from benchmark output or tabular CSV/JSON data.
+
+Continuous coordinates (value axes) require solo --select, e.g.:
+  vizb %s data.csv --select x,y,z -o out.html
+  vizb %s data.csv --select x,y,z,value --3d-visualmap -o out.html
+
+All-numeric files with no flags use auto col-axis x (column names as series),
+not continuous coordinates. Use -A / --col-axis for series-on-axis without --select.`, chart, chart, chart)
 }
 
 // chartMetas maps chart type to its cobra metadata. Populated by

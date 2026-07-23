@@ -589,8 +589,8 @@ func (s *PipelineSuite) TestAssembleDatasetSetsID() {
 	s.Equal("bench-v1", ds.ID)
 }
 
-func (s *PipelineSuite) TestAssembleDatasetUsesAutoValueAxesFromData() {
-	// Auto-value path: Stats empty + axes populated → value-type axes
+func (s *PipelineSuite) TestAssembleDatasetUsesValueAxesFromSelect() {
+	// Solo value-mode path: Stats empty + axes populated → value-type axes
 	results := []shared.DataPoint{{XAxis: "100", YAxis: "12", ZAxis: "5", Stats: []shared.Stat{}}}
 	cfg := parser.Config{
 		AutoGroup: true,

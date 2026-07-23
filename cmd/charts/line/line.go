@@ -18,13 +18,6 @@ func init() {
 		Type:  "line",
 		Use:   "line [target]",
 		Short: "Generate a line chart from data",
-		Long: `Generate an interactive line chart (HTML or JSON) from benchmark output or tabular CSV/JSON data.
-
-Continuous coordinates (value axes) require solo --select, e.g.:
-  vizb line data.csv --select x,y,z -o out.html
-  vizb line data.csv --select x,y,z,value --3d-visualmap -o out.html
-
-All-numeric files with no flags use auto col-axis x (column names as series),
-not continuous coordinates. Use -A / --col-axis for series-on-axis without --select.`,
+		Long:  cli.ContinuousSelectLong("line"),
 	})
 }

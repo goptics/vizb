@@ -289,9 +289,7 @@ func prepareData(filePath, parserKey string, cfg parser.Config, titles ...string
 		if len(effectiveCfg.Group) > 0 || effectiveCfg.ColAxis != "" {
 			before := len(data)
 			data = shared.AggregateDataPoints(data)
-			if len(effectiveCfg.Group) > 0 {
-				logAggregationResult(before, len(data), effectiveCfg)
-			}
+			logAggregationResult(before, len(data), effectiveCfg)
 		} else {
 			data = shared.CollapseDataPointsByKey(data)
 		}
@@ -336,10 +334,15 @@ func logAggregationResult(before, after int, cfg parser.Config) {
 	fmt.Println(style.Info.Render(fmt.Sprintf("✅ %d grouped rows — all unique (no duplicates to sum)", after)))
 }
 
-// formatAggregationGroup describes the --group columns and dimension keys used
-// when collapsing duplicate CSV/JSON rows.
+// formatAggregationGroup describes group columns / col-axis used when summing rows.
 func formatAggregationGroup(cfg parser.Config) string {
 	cols := parser.EffectiveGroupColumns(cfg)
+	if len(cols) == 0 {
+		if cfg.ColAxis != "" {
+			return "via col-axis " + cfg.ColAxis
+		}
+		return "by row key"
+	}
 	colList := strings.Join(cols, ", ")
 	colPhrase := "by columns: " + colList
 	if len(cols) == 1 {

@@ -86,6 +86,39 @@ func (s *SelectViewSpecSuite) TestParseSelectViewFlagExplicitMetric() {
 	s.Equal("value", view.MetricSource)
 }
 
+func (s *SelectViewSpecSuite) TestParseSelectViewFlagExplicitMetricWithLabel() {
+	view, err := ParseSelectViewFlag("x:x,y:y,metric:noise{Noise}")
+	s.Require().NoError(err)
+	s.Equal("noise", view.MetricSource)
+	s.Equal("Noise", view.MetricLabel)
+	s.Len(view.Columns, 2)
+}
+
+func (s *SelectViewSpecSuite) TestParseSelectViewFlagMetricErrorPaths() {
+	_, err := ParseSelectViewFlag(`"region,latency`)
+	s.Require().Error(err)
+	s.Contains(err.Error(), "unclosed")
+
+	_, err = ParseSelectViewFlag(`x:col{bad,y:latency`)
+	s.Require().Error(err)
+
+	_, err = ParseSelectViewFlag("x:,y:latency")
+	s.Require().Error(err)
+	s.Contains(err.Error(), "empty column")
+
+	_, err = ParseSelectViewFlag("x:a,y:b,metric:c,metric:d")
+	s.Require().Error(err)
+	s.Contains(err.Error(), "duplicate axis key")
+
+	_, err = ParseSelectViewFlag("x:a,metric:b")
+	s.Require().Error(err)
+	s.Contains(err.Error(), "at least x and y")
+
+	_, err = ParseSelectViewFlag("metric:only")
+	s.Require().Error(err)
+	s.Contains(err.Error(), "2–4 columns")
+}
+
 func (s *SelectViewSpecSuite) TestParseSelectViewFlagRejectsFiveColumns() {
 	_, err := ParseSelectViewFlag("a,b,c,d,e")
 	s.Require().Error(err)

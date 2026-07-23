@@ -232,7 +232,7 @@ func ApplyColAxis(data []shared.DataPoint, cfg parser.Config, parserKey, title s
 	// Only treat pattern slots as occupied when grouping is actually active.
 	// A bare default GroupPattern "x" with empty Group must not block ColAxis=x.
 	var groupAxes []shared.Axis
-	if len(cfg.Group) > 0 || cfg.GroupRegex != "" || parser.IsExplicitGrouping(cfg) {
+	if parser.IsExplicitGrouping(cfg) {
 		groupAxes = parser.GroupAxes(cfg)
 		for _, axis := range groupAxes {
 			if axis.Key == dim.AxisKey() {

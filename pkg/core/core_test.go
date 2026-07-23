@@ -87,6 +87,83 @@ func (s *CoreSuite) TestConvertColAxisWithoutGroup() {
 	s.Equal(6.0, byX["b"])
 }
 
+func (s *CoreSuite) TestApplyColAxisGuards() {
+	var optionErr *OptionError
+
+	_, _, err := ApplyColAxis(nil, parser.Config{ColAxis: "x"}, "go", "")
+	s.Require().ErrorAs(err, &optionErr)
+	s.Equal("colAxis", optionErr.Name)
+	s.True(optionErr.Ignored)
+	s.Contains(err.Error(), "only supported for csv/json")
+
+	_, _, err = ApplyColAxis(nil, parser.Config{
+		ColAxis: "x",
+		Mode:    parser.ModeValue,
+		SelectViews: []parser.SelectView{{
+			Columns: []parser.ColumnSpec{{Source: "x"}, {Source: "y"}},
+		}},
+	}, "csv", "t")
+	s.Require().ErrorAs(err, &optionErr)
+	s.True(optionErr.Ignored)
+	s.Contains(err.Error(), "not compatible with solo")
+
+	_, _, err = ApplyColAxis(nil, parser.Config{
+		ColAxis:      "x",
+		Group:        []string{"region"},
+		GroupPattern: "x",
+	}, "csv", "")
+	s.Require().ErrorAs(err, &optionErr)
+	s.False(optionErr.Ignored)
+	s.Contains(err.Error(), "conflicts with group dimension")
+
+	_, _, err = ApplyColAxis(nil, parser.Config{
+		ColAxis:      "z",
+		Group:        []string{"region"},
+		GroupPattern: "x",
+	}, "csv", "")
+	s.Require().ErrorAs(err, &optionErr)
+	s.Contains(err.Error(), "requires both x and y")
+}
+
+func (s *CoreSuite) TestMetricAxisLabelFromSelectView() {
+	points := []shared.DataPoint{{
+		XAxis: "1", YAxis: "2", ZAxis: "3", Metric: "4",
+		Stats: []shared.Stat{},
+	}}
+	cfg := parser.Config{
+		Mode:         parser.ModeValue,
+		MetricColumn: "noise",
+		SelectViews: []parser.SelectView{{
+			Columns: []parser.ColumnSpec{
+				{Source: "x", AxisKey: "x"},
+				{Source: "y", AxisKey: "y"},
+				{Source: "z", AxisKey: "z"},
+			},
+			MetricSource: "noise",
+			MetricLabel:  "Noise",
+		}},
+		Axes: []parser.ColumnSpec{
+			{Source: "x", AxisKey: "x"},
+			{Source: "y", AxisKey: "y"},
+			{Source: "z", AxisKey: "z"},
+		},
+	}
+	ds := Assemble(AssembleInput{
+		Points: points,
+		Parser: "csv",
+		Config: cfg,
+		Charts: []internalcharts.ChartConfig{&scatterchart.Config{Type: "scatter", Scale: "linear"}},
+	})
+	var metric shared.Axis
+	for _, ax := range ds.Axes {
+		if ax.Key == "metric" {
+			metric = ax
+		}
+	}
+	s.Equal("metric", metric.Key)
+	s.Equal("Noise", metric.Label)
+}
+
 func (s *CoreSuite) TestConvertJSONAndValidationFailures() {
 	result, err := Convert(ConvertInput{
 		Input:  []byte(`[{"region":"west","latency":12},{"region":"east","latency":18}]`),

@@ -48,9 +48,8 @@ func parseSelectViewColumns(raw string) (specs []ColumnSpec, metricSrc, metricLa
 	seenKey := map[string]bool{}
 	explicitCount := 0
 	type parsed struct {
-		spec       ColumnSpec
-		key        string
-		isExplicit bool
+		spec ColumnSpec
+		key  string // non-empty when explicit x:/y:/z:/metric:
 	}
 	items := make([]parsed, 0, n)
 
@@ -75,7 +74,7 @@ func parseSelectViewColumns(raw string) (specs []ColumnSpec, metricSrc, metricLa
 			seenKey[key] = true
 			spec.AxisKey = key
 		}
-		items = append(items, parsed{spec: spec, key: key, isExplicit: isExplicit})
+		items = append(items, parsed{spec: spec, key: key})
 	}
 
 	if explicitCount > 0 && explicitCount != n {
@@ -87,9 +86,6 @@ func parseSelectViewColumns(raw string) (specs []ColumnSpec, metricSrc, metricLa
 		axisItems := make([]parsed, 0, n)
 		for _, it := range items {
 			if it.key == "metric" {
-				if metricSrc != "" {
-					return nil, "", "", fmt.Errorf("duplicate metric column in --select")
-				}
 				metricSrc = it.spec.Source
 				metricLabel = it.spec.Label
 				continue
@@ -98,9 +94,6 @@ func parseSelectViewColumns(raw string) (specs []ColumnSpec, metricSrc, metricLa
 		}
 		if metricSrc != "" && len(axisItems) < 2 {
 			return nil, "", "", fmt.Errorf("--select metric requires at least x and y axes")
-		}
-		if metricSrc != "" && len(axisItems) > 3 {
-			return nil, "", "", fmt.Errorf("--select metric allows at most 3 spatial axes (x,y[,z])")
 		}
 		specs = make([]ColumnSpec, len(axisItems))
 		for i, it := range axisItems {

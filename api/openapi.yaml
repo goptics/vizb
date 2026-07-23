@@ -332,7 +332,7 @@ components:
         colAxis:
           type: string
           enum: [n, x, y, z]
-          description: Place grouped numeric column names on this free axis so they share one chart.
+          description: Place numeric column names on this axis (optionally alongside grouping) so they share one chart.
         description:
           type: string
           description: Dataset description.
