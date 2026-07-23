@@ -21,6 +21,9 @@ inputs:
   name:
     description: "Dataset/benchmark name (-n flag)"
     default: "Comparisons"
+  title:
+    description: "Override the chart title when --col-axis produces one chart; independent of -n/--name, otherwise ignored (--title flag)"
+    default: ""
   description:
     description: "Dataset/benchmark description (-d flag)"
     default: ""
@@ -257,6 +260,7 @@ runs:
         [ -n "${{ inputs.tag }}" ] && VIZB_ARGS+=(--tag "${{ inputs.tag }}")
         [ -n "${{ inputs.id }}" ] && VIZB_ARGS+=(--id "${{ inputs.id }}")
         [ -n "${{ inputs.name }}" ] && VIZB_ARGS+=(-n "${{ inputs.name }}")
+        [ -n "${{ inputs.title }}" ] && VIZB_ARGS+=(--title "${{ inputs.title }}")
         [ -n "${{ inputs.description }}" ] && VIZB_ARGS+=(-d "${{ inputs.description }}")
         [ -n "${{ inputs.group }}" ] && VIZB_ARGS+=(-g "${{ inputs.group }}")
         [ -n "${{ inputs.group-pattern }}" ] && VIZB_ARGS+=(-p "${{ inputs.group-pattern }}")
