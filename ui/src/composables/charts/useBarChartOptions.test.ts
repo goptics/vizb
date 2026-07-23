@@ -2,7 +2,6 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { ref } from 'vue'
 import type { ChartData } from '@/types'
 import type { BaseChartConfig } from './baseChartOptions'
-import { LARGE_DATA_THRESHOLD } from './shared'
 import { useBarChartOptions } from './useBarChartOptions'
 
 const originalDPR = (globalThis as { window?: { devicePixelRatio: number } }).window
@@ -22,7 +21,7 @@ afterAll(() => {
   }
 })
 
-const makeMixedChartData = (count = 2): ChartData => ({
+const makeMixedChartData = (): ChartData => ({
   title: 'region vs tax',
   statType: 'mixed',
   yAxis: [],
@@ -30,34 +29,15 @@ const makeMixedChartData = (count = 2): ChartData => ({
   series: [],
   points: [],
   axisLabels: { x: 'region', y: 'tax' },
-  xCategories: count === 2 ? ['West', 'South'] : Array.from({ length: count }, (_, i) => String(i)),
-  mixedTuples:
-    count === 2
-      ? [
-          [0, 1926.35],
-          [1, 447.38],
-        ]
-      : Array.from({ length: count }, (_, i) => [i, i] as [number, number]),
+  xCategories: ['West', 'South'],
+  mixedTuples: [
+    [0, 1926.35],
+    [1, 447.38],
+  ],
 })
 
-const makeMixedConfig = (count = 2): BaseChartConfig => ({
-  chartData: ref(makeMixedChartData(count)),
-  sort: ref({ enabled: false, order: 'asc' }),
-  showLabels: ref(false),
-  isDark: ref(false),
-})
-
-const makeValueConfig = (count = 2): BaseChartConfig => ({
-  chartData: ref({
-    title: 'passengers',
-    statType: 'sum',
-    yAxis: [],
-    zAxis: [],
-    series: [],
-    points: [],
-    axisLabels: { x: 'year', y: 'passengers' },
-    valueTuples: Array.from({ length: count }, (_, i) => [1949 + i, 112 + i]),
-  }),
+const makeMixedConfig = (): BaseChartConfig => ({
+  chartData: ref(makeMixedChartData()),
   sort: ref({ enabled: false, order: 'asc' }),
   showLabels: ref(false),
   isDark: ref(false),
@@ -92,21 +72,6 @@ const makeStackedGroupedConfig = (
 })
 
 describe('useBarChartOptions — grouped mode', () => {
-  it('enables multi-region rectangular brushing', () => {
-    const { options } = useBarChartOptions(makeStackedGroupedConfig())
-
-    expect(options.value.brush).toMatchObject({
-      toolbox: ['rect', 'keep', 'clear'],
-      brushMode: 'multiple',
-    })
-    expect(
-      (options.value.toolbox as { feature: { brush: { type: string[] } } }).feature.brush.type
-    ).toEqual(['rect', 'keep', 'clear'])
-    expect((options.value.series as { large?: boolean }[]).every((s) => s.large === true)).toBe(
-      true
-    )
-  })
-
   it('emits stacked bar series when stack is enabled', () => {
     const { options } = useBarChartOptions(makeStackedGroupedConfig(true))
     const series = options.value.series as { stack?: string }[]
@@ -171,34 +136,6 @@ describe('useBarChartOptions — grouped mode', () => {
 })
 
 describe('useBarChartOptions — mixed mode', () => {
-  it.each([
-    ['mixed', makeMixedConfig],
-    ['value', makeValueConfig],
-  ])('enables brushing below the large threshold for %s tuples', (_mode, makeConfig) => {
-    const { options } = useBarChartOptions(makeConfig())
-
-    expect(options.value.brush).toMatchObject({ brushMode: 'multiple' })
-    expect((options.value.toolbox as { feature: { brush: unknown } }).feature.brush).toBeDefined()
-    expect((options.value.series as { large?: boolean }[]).every((s) => s.large === true)).toBe(
-      true
-    )
-  })
-
-  it.each([
-    ['mixed', makeMixedConfig],
-    ['value', makeValueConfig],
-  ])('keeps large rendering and omits brushing for high-density %s tuples', (_mode, makeConfig) => {
-    const { options } = useBarChartOptions(makeConfig(LARGE_DATA_THRESHOLD))
-
-    expect(options.value.brush).toBeUndefined()
-    expect(
-      (options.value.toolbox as { feature: { brush?: unknown } }).feature.brush
-    ).toBeUndefined()
-    expect(options.value.series).toMatchObject([
-      { large: true, largeThreshold: LARGE_DATA_THRESHOLD },
-    ])
-  })
-
   it('emits bar series with mixedTuples as data', () => {
     const { options } = useBarChartOptions(makeMixedConfig())
     const s = (options.value.series as { type: string; data: [number, number][] }[])[0]!
@@ -233,22 +170,22 @@ describe('useBarChartOptions — mixed mode', () => {
   })
 })
 
-const makeSimpleChartData = (count = 3): ChartData => ({
+const makeSimpleChartData = (): ChartData => ({
   title: 'items',
   statType: 'counts',
   yAxis: [],
   zAxis: [],
-  series: Array.from({ length: count }, (_, i) => ({
-    xAxis: String.fromCharCode(65 + i),
-    values: [(i + 1) * 10],
-    benchmarkId: '',
-  })),
+  series: [
+    { xAxis: 'A', values: [10], benchmarkId: '' },
+    { xAxis: 'B', values: [20], benchmarkId: '' },
+    { xAxis: 'C', values: [30], benchmarkId: '' },
+  ],
   points: [],
   axisLabels: { x: 'category', y: 'value' },
 })
 
-const makeSimpleConfig = (horizontal: boolean, count = 3): BaseChartConfig => ({
-  chartData: ref(makeSimpleChartData(count)),
+const makeSimpleConfig = (horizontal: boolean): BaseChartConfig => ({
+  chartData: ref(makeSimpleChartData()),
   sort: ref({ enabled: false, order: 'asc' }),
   showLabels: ref(false),
   isDark: ref(false),
@@ -277,18 +214,6 @@ const makeGroupedConfig = (horizontal: boolean): BaseChartConfig => ({
 })
 
 describe('useBarChartOptions — horizontal mode', () => {
-  it('keeps large rendering and omits brushing at the large-data threshold', () => {
-    const { options } = useBarChartOptions(makeSimpleConfig(false, LARGE_DATA_THRESHOLD))
-
-    expect(options.value.brush).toBeUndefined()
-    expect(
-      (options.value.toolbox as { feature: { brush?: unknown } }).feature.brush
-    ).toBeUndefined()
-    expect(options.value.series).toMatchObject([
-      { large: true, largeThreshold: LARGE_DATA_THRESHOLD },
-    ])
-  })
-
   it('renders horizontal 1D bars with value xAxis and category yAxis', () => {
     const { options } = useBarChartOptions(makeSimpleConfig(true))
     const opt = options.value

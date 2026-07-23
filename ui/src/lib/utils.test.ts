@@ -273,6 +273,36 @@ describe('chartAxisBadgeCount', () => {
     expect(chartAxisBadgeCount(overlay, 'x')).toBe(2)
     expect(chartAxisBadgeCount(overlay, 'y')).toBe(3)
   })
+
+  it('counts category series when the stat is named value', () => {
+    const grouped = chart({
+      statType: 'value',
+      xCategories: ['West', 'East'],
+      mixedTuples: [
+        [0, 12],
+        [1, 18],
+      ],
+    })
+
+    expect(chartAxisBadgeCount(grouped, 'x')).toBe(2)
+  })
+
+  it.each(['value', 'mixed', 'preserveRows'])(
+    'counts grouped axes when the stat is named %s',
+    (statType) => {
+      const grouped = chart({
+        statType,
+        yAxis: ['Jan', 'Feb'],
+        series: [
+          { xAxis: 'West', values: [12, 18], benchmarkId: '' },
+          { xAxis: 'East', values: [14, 20], benchmarkId: '' },
+        ],
+      })
+
+      expect(chartAxisBadgeCount(grouped, 'x')).toBe(2)
+      expect(chartAxisBadgeCount(grouped, 'y')).toBe(2)
+    }
+  )
 })
 
 describe('chartHasPlottableData', () => {

@@ -10,8 +10,13 @@ const preserveRows = new PreserveRowsBuilder()
 const value = new ValueBuilder()
 const mixed = new MixedBuilder()
 
-/** Pick the builder for a chart based on its statType and flags. */
+/** Pick the builder for a chart from its rendered data shape. */
 export function builderForChart(chart: ChartData): ChartBuilder {
+  if (chart.series.length || chart.points.length) return grouped
+  if (chart.valueTuples?.length || chart.valuePoints3D?.length) return value
+  if (chart.mixedTuples?.length || chart.xCategories?.length) return mixed
+  if (chart.render3D?.mode === 'continuous') return value
+  if (chart.render3D?.mode === 'mixed') return mixed
   if (chart.statType === 'value') return value
   if (chart.statType === 'mixed') return mixed
   if (chart.statType === 'preserveRows') return preserveRows

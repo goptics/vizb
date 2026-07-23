@@ -14,8 +14,8 @@ import {
   getChartStyling,
   horizontalLegendBottom,
   isLargeXAxis,
-  LARGE_DATA_THRESHOLD,
   makeLegendTitle,
+  LARGE_DATA_THRESHOLD,
 } from './shared'
 import { useSortedSeriesData, getEffectiveScale, computeSeriesTotals } from './shared/common'
 import { buildValueAxes2DOptions } from './shared/valueMode'
@@ -23,27 +23,6 @@ import { buildMixedAxes2DOptions } from './shared/mixedMode'
 
 const barNullable = (val: number | null, scale: string): number | null =>
   val === null ? null : scale === 'log' && val <= 0 ? null : val
-
-function withBarBrush(option: EChartsOption, dataLength: number): EChartsOption {
-  // ponytail: ECharts large bars have no brushable item layouts; derive selection
-  // from brush ranges before enabling it at or above the large-data threshold.
-  if (dataLength >= LARGE_DATA_THRESHOLD) return option
-  const toolbox = option.toolbox as { feature?: Record<string, unknown> } | undefined
-  return {
-    ...option,
-    toolbox: {
-      ...toolbox,
-      feature: {
-        ...toolbox?.feature,
-        brush: { type: ['rect', 'keep', 'clear'] },
-      },
-    },
-    brush: {
-      toolbox: ['rect', 'keep', 'clear'],
-      brushMode: 'multiple',
-    },
-  }
-}
 
 export function useBarChartOptions(config: BaseChartConfig) {
   const { chartData, sort, showLabels, isDark, scale, stack, horizontal } = config
@@ -54,20 +33,14 @@ export function useBarChartOptions(config: BaseChartConfig) {
     const isHorizontal = horizontal?.value ?? false
 
     if (chartData.value.mixedTuples?.length) {
-      return withBarBrush(
-        buildMixedAxes2DOptions(config, 'bar'),
-        chartData.value.mixedTuples.length
-      )
+      return buildMixedAxes2DOptions(config, 'bar')
     }
     if (chartData.value.valueTuples?.length) {
-      return withBarBrush(
-        buildValueAxes2DOptions(config, 'bar'),
-        chartData.value.valueTuples.length
-      )
+      return buildValueAxes2DOptions(config, 'bar')
     }
 
     const { series, xAxisData, hasYAxis } = sortedData.value
-    const baseOptions = withBarBrush(getBaseOptions(config), series.length)
+    const baseOptions = getBaseOptions(config)
     const styling = getChartStyling(isDark.value)
     // `scale` is optional on BaseChartConfig (relaxed in Task 7) — pie/heatmap/
     // radar pass a config without it. The bar composable is the only consumer,
@@ -119,7 +92,8 @@ export function useBarChartOptions(config: BaseChartConfig) {
             type: 'bar' as const,
             // Plain values + one series-level label, not a per-point {value,label}
             // object — a 100k-bar chart would otherwise allocate 100k label configs
-            // on every recompute.
+            // on every recompute. `large` keeps the draw on one frame past the
+            // threshold.
             data: series.map((s) => barNullable(s.values[0] ?? null, effectiveScale)),
             label: createLabelConfig(showLabels.value, styling),
             large: true,
