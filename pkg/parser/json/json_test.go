@@ -714,20 +714,6 @@ func (s *JSONErrorSuite) TestValueModeSkipsRowWithBadMetric() {
 	s.Equal("8", results[1].Metric)
 }
 
-func (s *JSONAutoValueSuite) TestSelectSkipsAutoDetect() {
-	// Solo --select (SelectViews) disables auto-value inference and routes value mode.
-	s.cfg.SelectViews = []parser.SelectView{
-		{Columns: []parser.ColumnSpec{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}}},
-	}
-	path := s.writeFile(`[{"x":1,"y":2,"z":3,"w":4}]`)
-
-	results, _ := mustParseJSONFile(s.T(), path, s.cfg)
-	s.Require().Len(results, 1)
-	s.Equal("1", results[0].XAxis)
-	s.Equal("2", results[0].YAxis)
-	s.Empty(results[0].Stats)
-}
-
 func (s *JSONErrorSuite) TestSelectMixedModeMapsCategoryXAndValueY() {
 	s.cfg.SelectViews = []parser.SelectView{
 		{Columns: []parser.ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "latency", AxisKey: "y"}}},
@@ -844,14 +830,15 @@ func (s *JSONAutoGroupSuite) TestNestedFlattenedFieldChosen() {
 	s.Equal([]string{"sells"}, statTypes(results[0].Stats))
 }
 
-func (s *JSONAutoGroupSuite) TestAllNumericAutoValues() {
-	// all numeric → auto-value-mode: first 2 cols become x,y value axes
+func (s *JSONAutoGroupSuite) TestAllNumericAutoColAxis() {
+	// all numeric → auto col-axis x; multi-stat points (expand is pipeline-side)
 	j := `[{"id":1,"sells":10},{"id":2,"sells":20},{"id":3,"sells":30}]`
-	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
+	results, effective := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
+	s.Equal("x", effective.ColAxis)
+	s.Empty(effective.Axes)
 	s.Require().Len(results, 3)
-	s.Equal("1", results[0].XAxis)
-	s.Equal("10", results[0].YAxis)
-	s.Empty(results[0].Stats)
+	s.Empty(results[0].XAxis)
+	s.ElementsMatch([]string{"id", "sells"}, statTypes(results[0].Stats))
 }
 
 func (s *JSONAutoGroupSuite) TestAutoGroupPicksSingleFieldEvenWithMultipleCategoricals() {
@@ -887,137 +874,159 @@ func TestJSONAutoGroupSuite(t *testing.T) {
 	suite.Run(t, new(JSONAutoGroupSuite))
 }
 
-type JSONAutoValueSuite struct {
+type JSONAutoColAxisSuite struct {
 	suite.Suite
 	cfg           parser.Config
 	restoreOsExit func()
 }
 
-func (s *JSONAutoValueSuite) SetupTest() {
+func (s *JSONAutoColAxisSuite) SetupTest() {
 	s.restoreOsExit, _ = testutil.TrapOsExitPanic(s.T())
 	s.cfg = parser.Config{GroupPattern: "x", AutoGroup: true, ChartTypes: []string{"scatter"}}
 }
 
-func (s *JSONAutoValueSuite) TearDownTest() {
+func (s *JSONAutoColAxisSuite) TearDownTest() {
 	s.restoreOsExit()
 }
 
-func (s *JSONAutoValueSuite) writeFile(content string) string {
+func (s *JSONAutoColAxisSuite) writeFile(content string) string {
 	path := filepath.Join(s.T().TempDir(), "data.json")
 	s.Require().NoError(os.WriteFile(path, []byte(content), 0644))
 	return path
 }
 
-func (s *JSONAutoValueSuite) TestTwoNumericFields() {
+func (s *JSONAutoColAxisSuite) TestTwoNumericFields() {
 	j := `[{"price":10,"latency":5},{"price":20,"latency":7}]`
-	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
+	results, effective := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
+	s.Equal("x", effective.ColAxis)
+	s.Empty(effective.Axes)
 	s.Require().Len(results, 2)
-	s.Equal("10", results[0].XAxis)
-	s.Equal("5", results[0].YAxis)
-	s.Empty(results[0].Stats)
+	s.Empty(results[0].XAxis)
+	s.ElementsMatch([]string{"price", "latency"}, statTypes(results[0].Stats))
 }
 
-func (s *JSONAutoValueSuite) TestNoHeaderMatrixTwoNumericColumnsAutoValue() {
+func (s *JSONAutoColAxisSuite) TestNoHeaderMatrixTwoNumericColumnsAutoColAxis() {
 	j := `[[1,2],[3,4],[5,6]]`
 
-	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
+	results, effective := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 
+	s.Equal("x", effective.ColAxis)
+	s.Empty(effective.Axes)
 	s.Require().Len(results, 3)
-	s.Equal("1", results[0].XAxis)
-	s.Equal("2", results[0].YAxis)
-	s.Empty(results[0].Stats)
+	s.Empty(results[0].XAxis)
+	// matrix columns are named x, y, …
+	s.NotEmpty(results[0].Stats)
 }
 
-func (s *JSONAutoValueSuite) TestThreeNumericFields() {
+func (s *JSONAutoColAxisSuite) TestThreeNumericFields() {
 	j := `[{"price":10,"latency":5,"mem":100},{"price":20,"latency":7,"mem":200}]`
-	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
+	results, effective := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
+	s.Equal("x", effective.ColAxis)
+	s.Empty(effective.Axes)
 	s.Require().Len(results, 2)
-	s.Equal("10", results[0].XAxis)
-	s.Equal("5", results[0].YAxis)
-	s.Equal("100", results[0].ZAxis)
-	s.Empty(results[0].Stats)
+	s.Empty(results[0].XAxis)
+	s.ElementsMatch([]string{"price", "latency", "mem"}, statTypes(results[0].Stats))
 }
 
-func (s *JSONAutoValueSuite) TestNoHeaderMatrixFourNumericColumnsUsesMetric() {
+func (s *JSONAutoColAxisSuite) TestNoHeaderMatrixFourNumericColumnsAllAsStats() {
 	j := `[[1,2,3,4],[5,6,7,8]]`
 
-	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
+	results, effective := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
 
+	s.Equal("x", effective.ColAxis)
+	s.Empty(effective.Axes)
+	s.Empty(effective.MetricColumn)
 	s.Require().Len(results, 2)
-	s.Equal("1", results[0].XAxis)
-	s.Equal("2", results[0].YAxis)
-	s.Equal("3", results[0].ZAxis)
-	s.Equal("4", results[0].Metric)
-	s.Empty(results[0].Stats)
+	s.Empty(results[0].Metric)
+	s.NotEmpty(results[0].Stats)
 }
 
-func (s *JSONAutoValueSuite) TestNestedMatrixViaJSONPathAutoValue() {
+func (s *JSONAutoColAxisSuite) TestNestedMatrixViaJSONPathAutoColAxis() {
 	source := s.writeFile(`{"payload":{"rows":[[1,2],[3,4]]}}`)
 	selected, err := SelectPath(source, ".payload.rows")
 	s.Require().NoError(err)
 
-	results, _ := mustParseJSONFile(s.T(), s.writeFile(string(selected)), s.cfg)
+	results, effective := mustParseJSONFile(s.T(), s.writeFile(string(selected)), s.cfg)
 
+	s.Equal("x", effective.ColAxis)
 	s.Require().Len(results, 2)
-	s.Equal("1", results[0].XAxis)
-	s.Equal("2", results[0].YAxis)
-	s.Empty(results[0].Stats)
+	s.Empty(results[0].XAxis)
+	s.NotEmpty(results[0].Stats)
 }
 
-func (s *JSONAutoValueSuite) TestFourNumericFieldsTakeFirstThree() {
+func (s *JSONAutoColAxisSuite) TestFourNumericFieldsAllAsStatsNoMetric() {
 	j := `[{"a":1,"b":2,"c":3,"d":4},{"a":5,"b":6,"c":7,"d":8}]`
-	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
+	results, effective := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
+	s.Equal("x", effective.ColAxis)
+	s.Empty(effective.Axes)
+	s.Empty(effective.MetricColumn)
 	s.Require().Len(results, 2)
-	s.Equal("1", results[0].XAxis)
-	s.Equal("2", results[0].YAxis)
-	s.Equal("3", results[0].ZAxis)
-	s.Equal("4", results[0].Metric)
-	s.Empty(results[0].Stats)
+	s.Empty(results[0].Metric)
+	s.ElementsMatch([]string{"a", "b", "c", "d"}, statTypes(results[0].Stats))
 }
 
-func (s *JSONAutoValueSuite) TestAutoGroupTakesPriority() {
+func (s *JSONAutoColAxisSuite) TestAutoGroupTakesPriority() {
 	// categorical exists → auto-group fires
 	j := `[{"region":"West","price":10},{"region":"East","price":20}]`
-	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
+	results, effective := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
+	s.Empty(effective.ColAxis)
 	s.Require().Len(results, 2)
 	s.Equal("West", results[0].XAxis)
 	s.NotEmpty(results[0].Stats)
 }
 
-func (s *JSONAutoValueSuite) TestOneNumericFieldFallsBackToFlat() {
+func (s *JSONAutoColAxisSuite) TestOneNumericFieldSetsColAxis() {
 	j := `[{"price":10},{"price":20}]`
-	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
+	results, effective := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
+	s.Equal("x", effective.ColAxis)
 	s.Require().Len(results, 2)
 	s.Empty(results[0].XAxis)
-	s.NotEmpty(results[0].Stats)
+	s.Equal([]string{"price"}, statTypes(results[0].Stats))
 }
 
-func (s *JSONAutoValueSuite) TestOneColumnMatrixFallsBackToFlat() {
+func (s *JSONAutoColAxisSuite) TestOneColumnMatrixSetsColAxis() {
 	j := `[[10],[20]]`
-	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
+	results, effective := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
+	s.Equal("x", effective.ColAxis)
 	s.Require().Len(results, 2)
 	s.Empty(results[0].XAxis)
 	s.Equal([]string{"x"}, statTypes(results[0].Stats))
 }
 
-func (s *JSONAutoValueSuite) TestPieChartFallsBackToFlat() {
+func (s *JSONAutoColAxisSuite) TestPieChartGetsAutoColAxis() {
 	s.cfg.ChartTypes = []string{"pie"}
 	j := `[{"price":10,"latency":5},{"price":20,"latency":7}]`
-	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
+	results, effective := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
+	s.Equal("x", effective.ColAxis)
 	s.Require().Len(results, 2)
 	s.Empty(results[0].XAxis)
-	s.NotEmpty(results[0].Stats)
+	s.ElementsMatch([]string{"price", "latency"}, statTypes(results[0].Stats))
 }
 
-func (s *JSONAutoValueSuite) TestRadarChartFallsBackToFlat() {
+func (s *JSONAutoColAxisSuite) TestRadarChartGetsAutoColAxis() {
 	s.cfg.ChartTypes = []string{"radar"}
 	j := `[{"price":10,"latency":5},{"price":20,"latency":7}]`
-	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
+	results, effective := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
+	s.Equal("x", effective.ColAxis)
 	s.Require().Len(results, 2)
-	s.Empty(results[0].XAxis)
-	s.NotEmpty(results[0].Stats)
+	s.ElementsMatch([]string{"price", "latency"}, statTypes(results[0].Stats))
 }
 
-func TestJSONAutoValueSuite(t *testing.T) {
-	suite.Run(t, new(JSONAutoValueSuite))
+func (s *JSONAutoColAxisSuite) TestSelectSkipsAutoDetect() {
+	// Solo --select (SelectViews) disables auto col-axis and routes value mode.
+	s.cfg.SelectViews = []parser.SelectView{
+		{Columns: []parser.ColumnSpec{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}}},
+	}
+	path := s.writeFile(`[{"x":1,"y":2,"z":3,"w":4}]`)
+
+	results, effective := mustParseJSONFile(s.T(), path, s.cfg)
+	s.Empty(effective.ColAxis)
+	s.Require().Len(results, 1)
+	s.Equal("1", results[0].XAxis)
+	s.Equal("2", results[0].YAxis)
+	s.Empty(results[0].Stats)
+}
+
+func TestJSONAutoColAxisSuite(t *testing.T) {
+	suite.Run(t, new(JSONAutoColAxisSuite))
 }

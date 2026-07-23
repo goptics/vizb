@@ -142,10 +142,10 @@ components:
                 name: Q1 release
                 title: Framework throughput
                 parser: csv
+                colAxis: x
                 grouping:
                   pattern: y
                   columns: [load]
-                  colAxis: x
                 charts:
                   types: [bar]
             jsonHTMLConversion:
@@ -328,7 +328,11 @@ components:
           description: Dataset display name.
         title:
           type: string
-          description: Chart title used only when grouping.colAxis produces one chart; independent of name.
+          description: Chart title used only when colAxis produces one chart; independent of name.
+        colAxis:
+          type: string
+          enum: [n, x, y, z]
+          description: Place grouped numeric column names on this free axis so they share one chart.
         description:
           type: string
           description: Dataset description.
@@ -377,10 +381,6 @@ components:
           type: array
           items: { type: string, minLength: 1 }
         filter: { type: string }
-        colAxis:
-          type: string
-          enum: [n, x, y, z]
-          description: Place grouped numeric column names on this free axis so they share one chart.
     UnitOptions:
       type: object
       additionalProperties: false

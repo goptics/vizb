@@ -420,7 +420,7 @@ func (s *ServeSuite) TestConvertEndpoint() {
 	recorder = s.apiRequest(
 		handler,
 		"/",
-		`{"input":"load,default,chi\n100,1,2\n","name":"Q1 release","title":"Framework throughput","parser":"csv","grouping":{"pattern":"y","columns":["load"],"colAxis":"x"},"charts":{"types":["bar"]}}`,
+		`{"input":"load,default,chi\n100,1,2\n","name":"Q1 release","title":"Framework throughput","parser":"csv","colAxis":"x","grouping":{"pattern":"y","columns":["load"]},"charts":{"types":["bar"]}}`,
 		"application/json",
 		"application/json",
 	)
@@ -524,8 +524,9 @@ func (s *ServeSuite) TestConvertEndpointRejectsInvalidRequests() {
 func (s *ServeSuite) TestConvertEndpointValidatesStructuredOptions() {
 	handler := newRESTHandler()
 	tests := []struct {
-		name string
-		body string
+		name     string
+		body     string
+		wantPath string
 	}{
 		{name: "invalid parser", body: `{"input":"x,y\na,1\n","parser":"xml"}`},
 		{name: "invalid group pattern", body: `{"input":"x,y\na,1\n","parser":"csv","grouping":{"pattern":"["}}`},
@@ -546,8 +547,11 @@ func (s *ServeSuite) TestConvertEndpointValidatesStructuredOptions() {
 		{name: "duplicate grouped select", body: `{"input":"region,value\nwest,1\n","parser":"csv","grouping":{"pattern":"x","columns":["region"]},"select":["value","value"]}`},
 		{name: "group select conflict", body: `{"input":"region,value\nwest,1\n","parser":"csv","grouping":{"pattern":"x","columns":["region"]},"select":["region"]}`},
 		{name: "structured grouping separator mismatch", body: `{"input":"a,b,c\nx,y,1\n","grouping":{"pattern":"x,y,z","columns":["a/b/c"]}}`},
-		{name: "invalid col axis", body: `{"input":"load,a,b\n100,1,2\n","parser":"csv","grouping":{"pattern":"y","columns":["load"],"colAxis":"value"}}`},
-		{name: "title without col axis", body: `{"input":"load,a,b\n100,1,2\n","parser":"csv","title":"Ignored"}`},
+		{name: "invalid col axis", body: `{"input":"load,a,b\n100,1,2\n","parser":"csv","grouping":{"pattern":"y","columns":["load"]},"colAxis":"value"}`, wantPath: "/colAxis"},
+		{name: "nested grouping colAxis unknown", body: `{"input":"load,a,b\n100,1,2\n","parser":"csv","grouping":{"pattern":"y","columns":["load"],"colAxis":"x"}}`, wantPath: "/grouping/colAxis"},
+		{name: "null col axis", body: `{"input":"load,a,b\n100,1,2\n","parser":"csv","colAxis":null}`, wantPath: "/colAxis"},
+		// Mixed/auto-group has no col-axis; all-numeric auto-sets colAxis=x so title would apply.
+		{name: "title without col axis", body: `{"input":"region,a,b\nWest,1,2\n","parser":"csv","title":"Ignored"}`},
 		{name: "empty chart types", body: `{"input":"x,y\na,1\n","charts":{"types":[]}}`},
 		{name: "duplicate chart types", body: `{"input":"x,y\na,1\n","charts":{"types":["bar","bar"]}}`},
 		{name: "missing config type", body: `{"input":"x,y\na,1\n","charts":{"configs":[{"showLabels":true}]}}`},
@@ -578,6 +582,9 @@ func (s *ServeSuite) TestConvertEndpointValidatesStructuredOptions() {
 			}
 			s.Require().NoError(json.Unmarshal(recorder.Body.Bytes(), &problem))
 			s.NotEmpty(problem.Errors)
+			if test.wantPath != "" {
+				s.Equal(test.wantPath, problem.Errors[0].Path)
+			}
 		})
 	}
 }
@@ -961,7 +968,7 @@ func (s *ServeSuite) TestRequestContractHelpers() {
 		}{
 			{name: "filter", path: "/grouping/filter"},
 			{name: "grouping", path: "/grouping"},
-			{name: "colAxis", path: "/grouping/colAxis"},
+			{name: "colAxis", path: "/colAxis"},
 			{name: "jsonPath", path: "/jsonPath"},
 			{name: "select", path: "/select"},
 			{name: "title", path: "/title"},
@@ -1006,8 +1013,9 @@ func (s *ServeSuite) TestRequestContractHelpers() {
 		}{
 			{name: "null convert field", raw: `{"theme":null}`, target: new(convertRequest), path: "/theme"},
 			{name: "null title", raw: `{"title":null}`, target: new(convertRequest), path: "/title"},
-			{name: "null col axis", raw: `{"colAxis":null}`, target: new(groupingOptions), path: "/grouping/colAxis"},
+			{name: "null col axis", raw: `{"colAxis":null}`, target: new(convertRequest), path: "/colAxis"},
 			{name: "unknown grouping field", raw: `{"unexpected":true}`, target: new(groupingOptions), path: "/grouping/unexpected"},
+			{name: "nested grouping colAxis", raw: `{"colAxis":"x"}`, target: new(groupingOptions), path: "/grouping/colAxis"},
 			{name: "null unit field", raw: `{"memory":null}`, target: new(unitOptions), path: "/units/memory"},
 			{name: "unknown unit field", raw: `{"unexpected":true}`, target: new(unitOptions), path: "/units/unexpected"},
 		} {

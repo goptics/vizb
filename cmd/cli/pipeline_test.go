@@ -446,16 +446,25 @@ func (s *PipelineSuite) TestLogAggregationResultAllUnique() {
 	s.NotContains(out, "Aggregated into")
 }
 
-func (s *PipelineSuite) TestPrepareDataAutoValuePreservesMetric() {
-	csvFile := s.writeFile("grid.csv", "x,y,z,value\n0,0,0,4\n0,0,1,3.22\n0,1,0,3.28\n")
+func (s *PipelineSuite) TestPrepareDataAutoColAxisExpandsSeries() {
+	// All-numeric auto path: ColAxis=x, no MetricColumn; rows aggregate then expand.
+	csvFile := s.writeFile("grid.csv", "a,b\n1,2\n3,4\n")
 	cfg := parser.Config{AutoGroup: true, ChartTypes: []string{"scatter"}}
 
 	results, effectiveCfg, _ := prepareData(csvFile, "csv", cfg)
-	s.Equal("value", effectiveCfg.MetricColumn)
-	s.Require().Len(results, 3)
-	s.Equal("4", results[0].Metric)
-	s.Equal("3.22", results[1].Metric)
-	s.Equal("3.28", results[2].Metric)
+	s.Equal("x", effectiveCfg.ColAxis)
+	s.Empty(effectiveCfg.MetricColumn)
+	s.Empty(effectiveCfg.Axes)
+	// 2 rows × 2 cols → aggregate sums to one key, expand → 2 series points
+	s.Require().Len(results, 2)
+	byX := map[string]float64{}
+	for _, dp := range results {
+		s.Require().Len(dp.Stats, 1)
+		s.Empty(dp.Stats[0].Type)
+		byX[dp.XAxis] = *dp.Stats[0].Value
+	}
+	s.Equal(4.0, byX["a"]) // 1+3
+	s.Equal(6.0, byX["b"]) // 2+4
 }
 
 func (s *PipelineSuite) TestPrepareDataAutoGroupSkipsCollapseLogWhenAllUnique() {
@@ -1157,23 +1166,21 @@ func (s *PipelineSuite) TestPrepareDataColAxisSameAxisFatals() {
 	})
 }
 
-func (s *PipelineSuite) TestPrepareDataColAxisWithoutGroupWarnsAndSkips() {
-	// No -g and AutoGroup off → no Group; col-axis must warn+skip (multi-stat flat).
+func (s *PipelineSuite) TestPrepareDataColAxisWithoutGroupExpands() {
+	// No -g: col-axis still expands multi-column stats onto the free axis.
 	csvFile := s.writeFile("wide.csv", "a,b,c\n1,2,3\n")
 	cfg := parser.Config{ColAxis: "x"}
 
-	var results []shared.DataPoint
-	var effective parser.Config
-	errOut := testutil.CaptureStderr(func() {
-		results, effective, _ = prepareData(csvFile, "csv", cfg, "Framework throughput")
-	})
-	s.Contains(errOut, "--col-axis requires grouping")
-	s.Contains(errOut, "--title ignored")
-	s.Empty(effective.ColAxis) // cleared on skip
-	s.NotEmpty(results)
-	// Unexpanded: still multi-stat column types, not empty-type long form
-	s.Require().NotEmpty(results[0].Stats)
-	s.NotEmpty(results[0].Stats[0].Type)
+	results, effective, _ := prepareData(csvFile, "csv", cfg, "Framework throughput")
+	s.Equal("x", effective.ColAxis)
+	s.Require().Len(results, 3)
+	xVals := map[string]struct{}{}
+	for _, dp := range results {
+		s.Require().Len(dp.Stats, 1)
+		s.Equal("Framework throughput", dp.Stats[0].Type)
+		xVals[dp.XAxis] = struct{}{}
+	}
+	s.ElementsMatch([]string{"a", "b", "c"}, keysOf(xVals))
 }
 
 func (s *PipelineSuite) TestPrepareDataColAxisNonTabularWarns() {
@@ -1194,7 +1201,7 @@ func (s *PipelineSuite) TestPrepareDataColAxisNonTabularWarns() {
 }
 
 func (s *PipelineSuite) TestPrepareDataColAxisSelectModeSkips() {
-	// Solo value --select (not multi-stat group path): warn+skip.
+	// Solo value --select (coordinate mode): warn+skip.
 	csvFile := s.writeFile("vals.csv", "x,y\n1,2\n3,4\n")
 	cfg := parser.Config{
 		ColAxis: "z",
@@ -1212,29 +1219,94 @@ func (s *PipelineSuite) TestPrepareDataColAxisSelectModeSkips() {
 	errOut := testutil.CaptureStderr(func() {
 		results, effective, _ = prepareData(csvFile, "csv", cfg)
 	})
-	s.Contains(errOut, "requires grouped multi-column stats")
+	s.Contains(errOut, "not compatible with solo value/mixed --select")
 	s.Empty(effective.ColAxis)
 	s.NotEmpty(results)
 }
 
-func (s *PipelineSuite) TestPrepareDataMultiStatColAxisAndTitleWarnsAndKeepsSelectTitles() {
+func (s *PipelineSuite) TestPrepareDataMultiStatColAxisExpands() {
+	// Multi-stat solo --select + ColAxis: expand series onto the free axis.
 	csvFile := s.writeFile("stats.csv", "region,latency,sales\nWest,10,100\n")
-	cfg := parser.Config{ColAxis: "x", SelectViews: []parser.SelectView{
+	cfg := parser.Config{ColAxis: "n", SelectViews: []parser.SelectView{
 		{Columns: []parser.ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "latency", AxisKey: "y"}}, TypeLabel: "Latency by Region"},
 		{Columns: []parser.ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "sales", AxisKey: "y"}}, TypeLabel: "Sales by Region"},
 	}}
 	cfg.Mode = parser.ResolveMode(cfg)
 
-	var results []shared.DataPoint
-	var effective parser.Config
-	errOut := testutil.CaptureStderr(func() {
-		results, effective, _ = prepareData(csvFile, "csv", cfg, "Ignored title")
+	results, effective, _ := prepareData(csvFile, "csv", cfg, "Unified title")
+	s.Equal("n", effective.ColAxis)
+	s.Require().Len(results, 2)
+	names := map[string]float64{}
+	for _, dp := range results {
+		s.Require().Len(dp.Stats, 1)
+		s.Equal("Unified title", dp.Stats[0].Type)
+		names[dp.Name] = *dp.Stats[0].Value
+	}
+	s.Equal(10.0, names["Latency by Region"])
+	s.Equal(100.0, names["Sales by Region"])
+}
+
+func (s *PipelineSuite) TestPrepareDataColAxisSelectFiltersSeries() {
+	// -A x --select a,b without -g: select is a stat filter, then expand.
+	csvFile := s.writeFile("wide.csv", "a,b,c\n1,2,3\n4,5,6\n")
+	cfg := parser.Config{
+		ColAxis: "x",
+		Select:  []parser.ColumnSpec{{Source: "a"}, {Source: "b"}},
+	}
+
+	results, effective, _ := prepareData(csvFile, "csv", cfg)
+	s.Equal("x", effective.ColAxis)
+	s.Require().Len(results, 2)
+	byX := map[string]float64{}
+	for _, dp := range results {
+		s.Require().Len(dp.Stats, 1)
+		byX[dp.XAxis] = *dp.Stats[0].Value
+	}
+	s.Equal(5.0, byX["a"]) // 1+4
+	s.Equal(7.0, byX["b"]) // 2+5
+	_, hasC := byX["c"]
+	s.False(hasC)
+}
+
+func (s *PipelineSuite) TestPrepareDataColAxisMultiRowSums() {
+	// Multi-row all-numeric + ColAxis aggregates (sums) before expand.
+	csvFile := s.writeFile("nums.csv", "a,b\n10,20\n30,40\n")
+	cfg := parser.Config{ColAxis: "x"}
+
+	results, _, _ := prepareData(csvFile, "csv", cfg)
+	s.Require().Len(results, 2)
+	byX := map[string]float64{}
+	for _, dp := range results {
+		s.Require().Len(dp.Stats, 1)
+		byX[dp.XAxis] = *dp.Stats[0].Value
+	}
+	s.Equal(40.0, byX["a"])
+	s.Equal(60.0, byX["b"])
+}
+
+func (s *PipelineSuite) TestPrepareDataGroupPatternAndColAxisStillWorks() {
+	// Regression: -g load -p y -A x
+	csvFile := s.writeFile("concurrency.csv",
+		"load,default,chi\n100,1,2\n1000,3,4\n")
+	cfg, err := parser.ResolveGroupConfig(parser.Config{
+		GroupPattern: "y",
+		Group:        []string{"load"},
+		ColAxis:      "x",
 	})
-	s.Contains(errOut, "--col-axis requires grouped multi-column stats")
-	s.Contains(errOut, "--title ignored")
-	s.Empty(effective.ColAxis)
-	s.Require().Len(results, 1)
-	s.ElementsMatch([]string{"Latency by Region", "Sales by Region"}, []string{results[0].Stats[0].Type, results[0].Stats[1].Type})
+	s.Require().NoError(err)
+
+	results, effective, _ := prepareData(csvFile, "csv", cfg)
+	s.Equal("x", effective.ColAxis)
+	s.Require().Len(results, 4)
+	xVals := map[string]struct{}{}
+	yVals := map[string]struct{}{}
+	for _, dp := range results {
+		s.Require().Len(dp.Stats, 1)
+		xVals[dp.XAxis] = struct{}{}
+		yVals[dp.YAxis] = struct{}{}
+	}
+	s.ElementsMatch([]string{"default", "chi"}, keysOf(xVals))
+	s.ElementsMatch([]string{"100", "1000"}, keysOf(yVals))
 }
 
 func (s *PipelineSuite) TestPrepareDataColAxisZWithoutXYFatals() {

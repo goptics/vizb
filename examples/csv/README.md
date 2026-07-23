@@ -6,7 +6,7 @@ Run any example from the repo root:
 
 ```bash
 vizb bar examples/csv/sales.csv -o out.html
-vizb scatter examples/csv/noise-grid.csv -o out.html
+vizb scatter examples/csv/noise-grid.csv --select x,y,z -o out.html
 ```
 
 Use a chart subcommand (`bar`, `line`, `scatter`, `pie`, …) or the root command with `--charts`. CSV is auto-detected when you pass a `.csv` file.
@@ -41,15 +41,15 @@ These variants are also built in CI as `00-sales-auto-group`, `01-sales-grouped`
 
 **Shape:** Three numeric columns only — `x`, `y`, `z` (25,000 points along a 3D spiral).
 
-**What vizb does:** No categorical columns → **auto-value mode**. First three columns become continuous `x`, `y`, `z` axes; 3D is enabled automatically for bar / line / scatter.
+**What vizb does:** No categorical columns → **auto col-axis x** if you pass no flags (column names as series on X). For continuous 3D coordinates, use explicit solo `--select x,y,z`.
 
 **Good for:** Continuous `scatter3D` / `line3D` / `bar3D`, camera rotate.
 
 | Goal | Command |
 |------|---------|
-| Auto-value 3D scatter | `vizb scatter examples/csv/spiral-3d.csv` |
-| Auto-rotate | `vizb scatter examples/csv/spiral-3d.csv --3d-rotate` |
-| 3D bar or line | `vizb bar examples/csv/spiral-3d.csv` · `vizb line examples/csv/spiral-3d.csv` |
+| Continuous 3D scatter | `vizb scatter examples/csv/spiral-3d.csv --select x,y,z` |
+| Auto-rotate | `vizb scatter examples/csv/spiral-3d.csv --select x,y,z --3d-rotate` |
+| 3D bar or line | `vizb bar examples/csv/spiral-3d.csv --select x,y,z` · `vizb line examples/csv/spiral-3d.csv --select x,y,z` |
 
 ---
 
@@ -57,29 +57,29 @@ These variants are also built in CI as `00-sales-auto-group`, `01-sales-grouped`
 
 **Shape:** Three numeric columns — `x`, `y`, `z` on a **21×21** grid (441 points). `z` is a simplex-noise height field over `(x, y)`.
 
-**What vizb does:** Auto-value mode (2D coordinates + height on `z`). Renders as a continuous 3D surface-style bar chart.
+**What vizb does:** Continuous 3D via `--select x,y,z` (2D coordinates + height on `z`). Renders as a continuous 3D surface-style bar chart.
 
 **Good for:** 2D grid → 3D height (bar3D), quick noise demo (smaller than the grid examples).
 
 | Goal | Command |
 |------|---------|
-| Noise height field | `vizb bar examples/csv/noise-surface.csv` |
-| Scatter view of same points | `vizb scatter examples/csv/noise-surface.csv` |
+| Noise height field | `vizb bar examples/csv/noise-surface.csv --select x,y,z` |
+| Scatter view of same points | `vizb scatter examples/csv/noise-surface.csv --select x,y,z` |
 
 ---
 
 ## `noise-grid.csv`
 
-**Shape:** Four numeric columns — `x`, `y`, `z`, `value` on a **21³** voxel grid (9,261 points, indices 0–20). `value` is the visual metric (simplex noise × 2 + 4).
+**Shape:** Four numeric columns — `x`, `y`, `z`, `value` on a **21³** voxel grid (9,261 points, indices 0–20). `value` is a visual metric (simplex noise × 2 + 4).
 
-**What vizb does:** Auto-value mode: `x,y,z` = position, 4th column = **metric**. Enables **3D** and **visualMap** automatically (point color and size by `value`), orthographic `scatter3D` like the [ECharts simplex-noise demo](https://echarts.apache.org/examples/en/editor.html?c=scatter3D-simplex-noise&gl=1).
+**What vizb does:** Continuous 3D via `--select x,y,z` for position. Pair with `--3d-visualmap` for gradient coloring (orthographic `scatter3D` like the [ECharts simplex-noise demo](https://echarts.apache.org/examples/en/editor.html?c=scatter3D-simplex-noise&gl=1)).
 
 **Good for:** `scatter3D` + visualMap on a manageable file size.
 
 | Goal | Command |
 |------|---------|
-| 3D scatter + visualMap (default) | `vizb scatter examples/csv/noise-grid.csv` |
-| Explicit visualMap flag | `vizb scatter examples/csv/noise-grid.csv --3d-visualmap` |
+| 3D scatter + visualMap | `vizb scatter examples/csv/noise-grid.csv --select x,y,z --3d-visualmap` |
+| With auto-rotate | `vizb scatter examples/csv/noise-grid.csv --select x,y,z --3d-visualmap --3d-rotate` |
 
 ---
 
@@ -87,13 +87,13 @@ These variants are also built in CI as `00-sales-auto-group`, `01-sales-grouped`
 
 **Shape:** Same as `noise-grid.csv` but **41³** (68,921 points, indices 0–40) — full resolution matching the ECharts example loop (`i,j,k` from 0 to 40, `value = noise3D(i/20,j/20,k/20)*2+4`).
 
-**What vizb does:** Same auto-value + metric + visualMap behavior as `noise-grid.csv`. Heavier dataset; same chart settings.
+**What vizb does:** Same continuous 3D via `--select x,y,z` as `noise-grid.csv`. Heavier dataset; same chart settings.
 
 **Good for:** Full-density ECharts-style demo when you want every voxel.
 
 | Goal | Command |
 |------|---------|
-| Full ECharts-scale grid | `vizb scatter examples/csv/noise-grid-41.csv` |
+| Full ECharts-scale grid | `vizb scatter examples/csv/noise-grid-41.csv --select x,y,z --3d-visualmap` |
 
 Use `noise-grid.csv` for faster loads; use this file when you need the complete grid.
 
@@ -117,17 +117,21 @@ Use `noise-grid.csv` for faster loads; use this file when you need the complete 
 
 ## `house-price-area2.csv`
 
-**Shape:** `area`, `price` — 16,174 rows ([ECharts house-price scatter](https://echarts.apache.org/examples/en/editor.html?c=scatter-large)). Auto-value xy; add `--visualmap` for price gradient. CI id: `03-house-price-area2` (tabular-data dashboard).
+**Shape:** `area`, `price` — 16,174 rows ([ECharts house-price scatter](https://echarts.apache.org/examples/en/editor.html?c=scatter-large)). Continuous xy via `--select area,price`; add `--visualmap` for price gradient. CI id: `03-house-price-area2` (tabular-data dashboard).
+
+| Goal | Command |
+|------|---------|
+| House price scatter | `vizb scatter examples/csv/house-price-area2.csv --select area,price --visualmap` |
 
 ---
 
 ## `clusters.csv`
 
-**Shape:** `x`, `y` — 60 rows of 2D cluster coordinates. Auto-value xy; `--visualmap` and `--symbol-size 10` for sized, color-mapped points. CI id: `04-clusters` (math-and-3d dashboard).
+**Shape:** `x`, `y` — 60 rows of 2D cluster coordinates. Continuous xy via `--select x,y`; `--visualmap` and `--symbol-size 10` for sized, color-mapped points. CI id: `04-clusters` (math-and-3d dashboard).
 
 | Goal | Command |
 |------|---------|
-| Cluster scatter with visualMap | `vizb scatter examples/csv/clusters.csv --visualmap --symbol-size 10 -o out.html` |
+| Cluster scatter with visualMap | `vizb scatter examples/csv/clusters.csv --select x,y --visualmap --symbol-size 10 -o out.html` |
 
 ---
 
@@ -154,16 +158,16 @@ CI id: `00-concurrency-frameworks` on the **comparisons** dashboard (see `.githu
 | File | Rows | Mode | Typical chart |
 |------|------|------|----------------|
 | `sales.csv` | 10,000 | Auto-group or explicit `--group` | Bar (2D / 3D), line, scatter |
-| `spiral-3d.csv` | 25,000 | Auto-value (xyz) | Scatter3D, line3D, bar3D |
-| `noise-surface.csv` | 441 | Auto-value (xyz grid) | Bar3D surface |
-| `noise-grid.csv` | 9,261 | Auto-value (xyz + metric) | Scatter3D + visualMap |
-| `noise-grid-41.csv` | 68,921 | Auto-value (xyz + metric) | Scatter3D + visualMap (full grid) |
+| `spiral-3d.csv` | 25,000 | Solo `--select x,y,z` | Scatter3D, line3D, bar3D |
+| `noise-surface.csv` | 441 | Solo `--select x,y,z` | Bar3D surface |
+| `noise-grid.csv` | 9,261 | Solo `--select x,y,z` | Scatter3D + visualMap |
+| `noise-grid-41.csv` | 68,921 | Solo `--select x,y,z` | Scatter3D + visualMap (full grid) |
 | `region-metrics.csv` | 8 | Solo `--select` mixed | Scatter mixed (region × metric) |
-| `house-price-area2.csv` | 16,174 | Auto-value (xy) | Scatter2D + visualMap |
-| `clusters.csv` | 60 | Auto-value (xy) | Scatter2D + visualMap, symbol size 10 |
+| `house-price-area2.csv` | 16,174 | Solo `--select area,price` | Scatter2D + visualMap |
+| `clusters.csv` | 60 | Solo `--select x,y` | Scatter2D + visualMap, symbol size 10 |
 | `concurrency.csv` | 3 | Group + `--col-axis` | Bar/line competitor compare |
 
-**Auto-group** applies when the file has categorical columns and you did not pass `--group`. **Auto-value** applies when every column is numeric — vizb assigns `x`, `y`, `z` (and optional 4th metric) without flags.
+**Auto-group** applies when the file has categorical columns and you did not pass `--group`. **Auto col-axis x** applies when every column is numeric and you pass no flags — every numeric column name becomes a series on X (one chart). Continuous coordinates always need explicit solo `--select`.
 
 ## More detail
 

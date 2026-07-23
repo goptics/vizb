@@ -26,11 +26,11 @@ type Config struct {
 	NumberUnit      string
 	Select          []ColumnSpec // grouped mode: numeric stat columns
 	SelectViews     []SelectView // solo axis mode: one entry per --select occurrence
-	Axes            []ColumnSpec // auto-value mode: numeric cols placed on x,y[,z]
-	MetricColumn    string       // auto-value: 4th numeric col → visualMap metric
+	Axes            []ColumnSpec // solo --select / --axes value mode: numeric cols on x,y[,z]
+	MetricColumn    string       // solo --select / --axes value mode: 4th numeric col → visualMap metric
 	JSONPath        string       // json only: jq-like dot path to the nested array to chart
-	AutoGroup       bool         // csv/json: infer group columns when no explicit grouping is configured
-	ChartTypes      []string     // csv/json auto-value eligibility check (scatter/bar/line only)
+	AutoGroup       bool         // csv/json: infer group columns / col-axis when no explicit grouping is configured
+	ChartTypes      []string     // chart types for the current run (used by chart-aware inference)
 	Mode            Mode         // resolved once in ParseConfig so downstream switches on cfg.Mode
 	ColAxis         string       // csv/json: place numeric column names on this axis (n/x/y/z); empty = one chart per column
 	QuietAutoDetect bool         // suppress csv/json auto-detection notices for request-scoped callers
@@ -42,7 +42,7 @@ type Config struct {
 type Mode int
 
 const (
-	ModeAuto      Mode = iota // no --select and no explicit grouping → auto-group/auto-value
+	ModeAuto      Mode = iota // no --select and no explicit grouping → auto-group / auto col-axis
 	ModeGrouped               // explicit grouping (-g/-r/-p) + --select numeric stat columns
 	ModeValue                 // solo --select, all numeric columns → value axes x,y[,z]
 	ModeMixed                 // solo --select, one categorical x + numeric y[,z]

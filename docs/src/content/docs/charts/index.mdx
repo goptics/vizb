@@ -17,7 +17,7 @@ Vizb folds the same **x/y/z dimension model** into every chart type — you desc
     Track trends across X-axis values. One line per Y-series in 2D; switches to WebGL line3D with a z-axis.
   </Card>
   <Card title="Scatter Chart" icon="magnifier" href="/charts/scatter">
-    Plot individual points in 2D or 3D. Grouped categories or auto-value from all-numeric columns.
+    Plot individual points in 2D or 3D. Grouped categories or solo `--select` continuous coordinates.
   </Card>
   <Card title="Pie Chart" icon="puzzle" href="/charts/pie">
     Show proportional distribution. Scales from one pie (1D) to two side-by-side (2D) to three pies (3D).
@@ -44,9 +44,9 @@ Pie and radar have no cartesian axes, but the same `-p` pattern governs how many
 
 | Chart | 1D (`-p x`) | 2D (`-p x,y` / `-p x/y`) | 3D (`-p x,y,z` / `-p x/y/z`) |
 |-------|--------------|----------------|------------------|
-| **Bar** | Single bar series over X | Grouped bars, one series per Y value; or auto-value (all-numeric) | WebGL bar3D — Z stacked per (X, Y) cell; or auto-value continuous 3D |
-| **Line** | Single line over X | One line per Y value across X; or auto-value (all-numeric) | WebGL line3D — sparse points per Z; or auto-value continuous 3D |
-| **Scatter** | One point per X | One series per Y value across X; or auto-value (all-numeric) | WebGL scatter3D — points per Z; or auto-value continuous 3D |
+| **Bar** | Single bar series over X | Grouped bars, one series per Y value; or col-axis / solo `--select` | WebGL bar3D — Z stacked per (X, Y) cell; or continuous 3D via `--select x,y,z` |
+| **Line** | Single line over X | One line per Y value across X; or col-axis / solo `--select` | WebGL line3D — sparse points per Z; or continuous 3D via `--select x,y,z` |
+| **Scatter** | One point per X | One series per Y value across X; or col-axis / solo `--select` | WebGL scatter3D — points per Z; or continuous 3D via `--select x,y,z` |
 | **Pie** | One pie (X = slices) | Two pies side-by-side (By X / By Y) | Three pies (By X / By Y / By Z) |
 | **Radar** | One polygon, X = spokes, value = stat total | One polygon per X, Y = spokes, legend = X | One polygon per Z, X = data points, Y = spokes |
 | **Heatmap** | n/a — needs at least X + Y | Matrix X × Y, single-series gradient | Same matrix; cell = Σ z, color blends z palette |

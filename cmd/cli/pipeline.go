@@ -247,7 +247,7 @@ func applyJSONPath(filePath, path string) string {
 }
 
 // prepareData parses input into data points, aggregating grouped csv/json rows.
-// The returned Config is the parser's effective config (auto-group/auto-value
+// The returned Config is the parser's effective config (auto-group / auto col-axis
 // mutations included) for aggregation and dataset assembly.
 func prepareData(filePath, parserKey string, cfg parser.Config, titles ...string) ([]shared.DataPoint, parser.Config, *shared.Meta) {
 	title := ""
@@ -283,19 +283,18 @@ func prepareData(filePath, parserKey string, cfg parser.Config, titles ...string
 		shared.ExitWithError(err.Error(), nil)
 	}
 
-	// CSV/JSON emit one DataPoint per row; when grouping is inactive, collapse rows
-	// that share the same (name, x, y, z) by appending stats (no sum/average).
-	if tabularParser(parserKey) && len(effectiveCfg.Group) == 0 {
-		data = shared.CollapseDataPointsByKey(data)
-	}
-
-	// CSV/JSON emit one DataPoint per row; when grouping is active, multiple rows
-	// can share the same (name, xAxis, yAxis, zAxis) key. Collapse them by summing
-	// so the output isn't a row-per-record dump. Benchmark parsers are excluded.
-	if tabularParser(parserKey) && len(effectiveCfg.Group) > 0 {
-		before := len(data)
-		data = shared.AggregateDataPoints(data)
-		logAggregationResult(before, len(data), effectiveCfg)
+	// CSV/JSON emit one DataPoint per row. Grouped rows and col-axis multi-stat
+	// sum by key; plain flat multi-column collapses without summing.
+	if tabularParser(parserKey) {
+		if len(effectiveCfg.Group) > 0 || effectiveCfg.ColAxis != "" {
+			before := len(data)
+			data = shared.AggregateDataPoints(data)
+			if len(effectiveCfg.Group) > 0 {
+				logAggregationResult(before, len(data), effectiveCfg)
+			}
+		} else {
+			data = shared.CollapseDataPointsByKey(data)
+		}
 	}
 
 	data, effectiveCfg, err = core.ApplyColAxis(data, effectiveCfg, parserKey, title)

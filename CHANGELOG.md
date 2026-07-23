@@ -4,6 +4,15 @@ Notable changes to Vizb documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [Unreleased]
+
+### Breaking
+
+- **Remove auto-value** — all-numeric CSV/JSON with no flags no longer maps the first 2–3 columns to continuous coordinate axes (and no longer auto-enables 3D or a 4th-column visualMap metric). Use explicit solo `--select x,y` or `--select x,y,z` for coordinate / continuous 3D charts.
+- **Auto col-axis x** — all-numeric tables with no flags now place every numeric column name on the **x** axis as series (one chart), equivalent to implicit `--col-axis x`.
+- **`--col-axis` / `-A` without group** — works alone; only **numeric** columns become series (non-numeric columns are ignored when col-axis is used without group). Still composes with `-g` / `-p` (e.g. `-g load -p y -A x`).
+- **REST `colAxis`** — top-level field on the convert request body (no longer under `grouping`).
+
 # [v0.16.1] - 2026-07-21
 
 ### Fixed

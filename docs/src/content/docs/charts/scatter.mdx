@@ -1,6 +1,6 @@
 ---
 title: Scatter Chart
-description: Plot individual points in 2D or 3D — grouped categories, solo --select axis mode, or auto-value from all-numeric columns.
+description: Plot individual points in 2D or 3D — grouped categories, solo --select axis mode, or col-axis series from all-numeric columns.
 ---
 
 import { LinkCard, Aside } from '@astrojs/starlight/components';
@@ -11,19 +11,19 @@ import scatter3D from '../../../assets/scatter-3D.png';
 import scatter2DValue from '../../../assets/scatter-2D-value.png';
 import scatter3DMixed from '../../../assets/scatter-3D-mixed.png';
 
-The **scatter chart** plots each row as a point in coordinate space. Unlike bar and line charts, scatter is built for coordinate plotting: you can map grouping columns to categorical axes, use solo `--select` for mixed or value axes, or auto-value from all-numeric columns.
+The **scatter chart** plots each row as a point in coordinate space. Unlike bar and line charts, scatter is built for coordinate plotting: you can map grouping columns to categorical axes, or use solo `--select` for mixed or continuous value axes.
 
 Use scatter charts when individual `(x, y[, z])` positions matter — latency vs. price, a 3D point cloud, or categorical x with a continuous y metric. Scatter is **opt-in**: add `-c scatter` or run `vizb scatter`; it is not in the default `bar,line,pie` bundle.
 
 ## How vizb builds it
 
-Scatter supports three input modes. Only one applies per dataset:
+Scatter supports these input modes. Only one applies per dataset:
 
 | Mode | CLI | What each row becomes |
 |------|-----|----------------------|
 | **Grouped** | `-g` / `-p` | Categorical x, optional y series, optional z depth — same dimension model as bar/line, rendered as `scatter` / `scatter3D` |
-| **Solo `--select`** | `--select` (no `-g` / `-r` / non-default `-p`) | 2–3 columns assigned to `x,y[,z]` — value axes (all numeric) or **mixed** (category x + value y[,z]) |
-| **Auto-value** | No flags (all-numeric CSV/JSON) | Auto-detected numeric columns as raw coordinates on value axes (`type: "value"`) |
+| **Solo `--select`** | `--select` (no `-g` / `-r` / non-default `-p`, no `-A`) | 2–3 columns assigned to `x,y[,z]` — value axes (all numeric) or **mixed** (category x + value y[,z]) |
+| **Col-axis / auto col-axis** | `-A` or no flags on all-numeric CSV/JSON | Numeric column names as series on the chosen axis (default auto: x) — not continuous coordinates |
 
 ## Grouped mode
 
@@ -87,21 +87,21 @@ vizb scatter life-expectancy-income.csv --select Country,"Life Expectancy",Incom
 
 Repeat `--select` (`dim,metric` per flag) for multi-stat datasets — charts separate by stat type. This does **not** enable grouping; use `-g`/`-p` when you need explicit group axes or aggregation. See [Select](/guides/select) for the full mode reference, and [Group vs Select](/guides/group-vs-select) for when to use each.
 
-## Auto-value mode (no flags)
+## Continuous coordinates (solo `--select`)
 
-On an all-numeric CSV/JSON file, vizb auto-detects the first 2–3 columns as coordinate axes and enters value mode automatically — with 3+ columns it renders continuous `scatter3D`. See [Auto-value](/guides/group-vs-select#auto-value-all-numeric-data) for the inference rules; solo `--select` overrides it.
+All-numeric files with no flags use **auto col-axis x**, not continuous coordinates. For value-mode scatter (including continuous 3D), pass explicit solo `--select`:
 
 ```bash
-# All-numeric CSV — auto-detects x, y
-vizb scatter clusters.csv --visualmap --symbol-size 10 -o scatter.html
+# 2D value scatter from x, y
+vizb scatter clusters.csv --select x,y --visualmap --symbol-size 10 -o scatter.html
 
-# Three columns — auto-detects x, y, z and enables 3D
-vizb scatter spiral-3d.csv -o scatter.html
+# 3D value scatter from x, y, z
+vizb scatter spiral-3d.csv --select x,y,z -o scatter.html
 ```
 
 <DocImage src={scatter2DValue} alt="2D value-mode scatter chart of cluster coordinates with visualMap gradient coloring" />
 
-Use the axis swapper in the UI to include or drop `z` and toggle between 2D and 3D without re-running the CLI.
+See [Select](/guides/select) and [Auto col-axis](/guides/group-vs-select#auto-col-axis-all-numeric-data). Use the axis swapper in the UI to include or drop `z` and toggle between 2D and 3D without re-running the CLI.
 
 ## Settings
 
@@ -109,9 +109,9 @@ These settings apply to scatter charts:
 
 | Setting | CLI flag | UI toggle | Notes |
 |---------|----------|-----------|-------|
-| Sort | `--sort asc\|desc` | Sort control | Grouped mode only — hidden for auto-value and mixed |
+| Sort | `--sort asc\|desc` | Sort control | Grouped mode only — hidden for value and mixed |
 | Labels | `--show-labels` | Show labels | Point labels where supported |
-| Swap | `--swap` | Axis switcher | Grouped mode; auto-value with 3 columns |
+| Swap | `--swap` | Axis switcher | Grouped mode; value mode with 3 columns |
 | Scale (log) | `--scale log` | Scale toggle | Log axes — 2D grouped, value, and mixed mode |
 | 3D view | `--3d` | 3D view | Pseudo-3D for grouped x+y (no z column) |
 | 3D visual map | `--3d-visualmap` | 3D visual map | Metric gradient on 3D points |
@@ -130,10 +130,10 @@ vizb scatter data.csv -g category,metric --scale log -l -o out.html
 vizb scatter region-metrics.csv --select region,latency --scale log -o out.html
 
 # Cluster scatter with visualMap and diamond markers
-vizb scatter clusters.csv --visualmap --symbol diamond --symbol-size 10 -o out.html
+vizb scatter clusters.csv --select x,y --visualmap --symbol diamond --symbol-size 10 -o out.html
 
 # 3D spiral with auto-rotate
-vizb scatter spiral.csv -o out.html  # auto-value x,y,z → 3D
+vizb scatter spiral.csv --select x,y,z --3d-rotate -o out.html
 ```
 
 ## Next Steps

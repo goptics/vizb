@@ -75,6 +75,7 @@ See the [Parser Guide](/guides/parsers) for each parser's metrics, and the
 | `--output` | `-o` | *(stdout)* | Output file path. `.json` → JSON, else → HTML |
 | `--parser` | `-P` | `auto` | Parser: `auto` (detect), `go`, `js:tinybench`, `js:vitest`, `rs:criterion`, `rs:divan`, `csv`, `json` |
 | `--name` | `-n` | `Benchmarks` | Dataset name |
+| `--title` | | `""` | Override chart title when `--col-axis` produces one chart; independent of `-n` |
 | `--theme` | | `default` | Initial series palette: `default`, `vintage`, `meadow`, `westeros`, `essos`, `wonderland`, `walden`, `chalk`, `infographic`, `macarons`, `roma`, `shine`, `purple-passion`, or 2+ comma-separated hex colors |
 | `--description` | `-d` | `""` | Dataset description |
 | `--tag` | `-t` | `""` | Tag identifier for release tracking |
@@ -83,6 +84,7 @@ See the [Parser Guide](/guides/parsers) for each parser's metrics, and the
 | `--group-regex` | `-r` | `""` | Regex-based grouping (named captures) |
 | `--group` | `-g` | `""` | Names dimensions in `--group-pattern` order. csv/json: column/field names (separators must match `-p`); benchmark parsers: human-readable axis labels |
 | `--select` | | *(repeatable)* | csv/json only: see [`--select` mode matrix](#--select-mode-matrix) below |
+| `--col-axis` | `-A` | `""` | csv/json: place numeric column names on axis `n`/`x`/`y`/`z` (one chart); works without `-g` |
 | `--json-path` | | `""` | json only: select a nested array to chart via a jq-like dot path (e.g. `--json-path '.data.results'`) |
 | `--sort` | `-s` | `""` | **Deprecated on root:** use `--chart <type>:sort=<asc\|desc>`. Sort order: `asc` or `desc` (default: as-is) |
 | `--charts` | `-c` | `bar,line,pie` | Chart types to generate (`bar`, `line`, `scatter`, `pie`, `heatmap`, `radar`) |
@@ -145,11 +147,12 @@ See the [Group guide](/guides/group) and [3D Charts](/charts/3d) for detailed ex
 | Mode | Trigger | `--select` syntax | What it does |
 |------|---------|-------------------|--------------|
 | **Group stat pick** | `-g`, `-r`, or non-default `-p` | Any number of numeric columns; optional `{label}` | Picks which numeric columns get their own chart |
-| **Solo value axes** | `--select` only; all selected cols numeric | 2–3 cols per flag: `x,y` or `x,y,z` | Assigns columns to continuous coordinate axes; disables auto-group and auto-value |
+| **Solo value axes** | `--select` only; all selected cols numeric | 2–3 cols per flag: `x,y` or `x,y,z` | Assigns columns to continuous coordinate axes; disables auto-group and auto col-axis |
 | **Solo mixed axes** | One `--select` only; categorical `x` + numeric `y[,z]` | 2–3 cols: `region,latency` | Category on x, values on y/z; [scatter](/charts/scatter) is the primary chart |
 | **Solo multi-stat** | Repeatable `--select` only; 2 cols per flag | `region,latency` + `region,sales` | One dataset; each flag is an independent `dim,metric` pair; charts split by `stat.type` (default `latency by region`) |
 | **Auto-group** | No flags; mixed categorical + numeric file | — | Picks highest-cardinality categorical column as x |
-| **Auto-value** | No flags; all-numeric file | — | First 2–3 numeric columns as coordinate axes |
+| **Auto col-axis x** | No flags; all-numeric file | — | Every numeric column name as series on x (one chart) |
+| **Col-axis** | `--col-axis` / `-A` (group optional) | Axis: `n`, `x`, `y`, or `z` | Numeric column names as series on that axis; with `--select`, select filters series |
 
 **Solo `--select` rules:**
 

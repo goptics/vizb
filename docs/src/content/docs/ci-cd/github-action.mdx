@@ -58,7 +58,7 @@ The action:
 | `time-unit` | `"ns"` | Time unit: `ns`, `us`, `ms`, `s` (`-T` flag). |
 | `number-unit` | `""` | Number unit: `K`, `M`, `B`, `T` (`-N` flag). |
 | `select` | `""` | **csv/json only:** select value columns; optional rename with `{label}` (e.g. `price{Unit price},count`) (`--select` flag). |
-| `col-axis` | `""` | **csv/json + group:** place numeric column names on this axis (`n`, `x`, `y`, or `z`) so all columns share one chart (`--col-axis` / `-A` flag). Requires group; target axis must not already be used by `group-pattern`. |
+| `col-axis` | `""` | **csv/json:** place numeric column names on this axis (`n`, `x`, `y`, or `z`) so all columns share one chart (`--col-axis` / `-A` flag). Works without group; only numeric columns become series. With group, target axis must not already be used by `group-pattern`. |
 | `json-path` | `""` | **json only:** select a nested array to chart via a jq-like dot path (e.g. `.data.results`) (`--json-path` flag). |
 | `stat` | `""` | Enable stats panel (`--stat` flag). Empty = disabled; `all` or `true` = all categories; otherwise comma-separated from: `counts`, `center`, `spread`, `extremes`, `shape`, `percentiles`, `confidence`, `correlations`. |
 | `chart` | `""` | Per-chart overrides (`--chart` flag, repeatable). One override per line: `<type>:<key>=<val>,...`. Keys: `swap`, `sort`, `scale`, `labels`, `3d-rotate`, `3d`. E.g. `bar:scale=log` or `pie:labels`. Blank lines and `#`-prefixed lines are ignored. |

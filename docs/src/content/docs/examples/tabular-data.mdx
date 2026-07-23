@@ -26,7 +26,7 @@ Mixed **categorical + numeric** tables: sales orders, house prices, and life exp
 | Sales auto-group | Auto-group by highest-cardinality categorical column |
 | Sales grouped | Explicit `--group` / `--group-pattern` for product × region × category |
 | Sales by date | Date axis splitting with `[n{Year}-y{Month}-x{Date}]` |
-| House price | Auto-value 2D scatter + `--visualmap` |
+| House price | Solo `--select area,price` 2D scatter + `--visualmap` |
 | Life expectancy | Mixed axes via `--select` |
 
 Local-only sample (not on the live dashboard yet): [`region-metrics.csv`](https://github.com/goptics/vizb/blob/main/examples/csv/region-metrics.csv) for multi-view `--select` demos.
@@ -40,7 +40,7 @@ Local-only sample (not on the live dashboard yet): [`region-metrics.csv`](https:
 <Aside type="tip">
   ```bash
   vizb bar examples/csv/sales.csv -o sales.html
-  vizb scatter examples/csv/house-price-area2.csv --visualmap -o house.html
+  vizb scatter examples/csv/house-price-area2.csv --select area,price --visualmap -o house.html
   ```
 </Aside>
 

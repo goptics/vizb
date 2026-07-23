@@ -1,6 +1,6 @@
 ---
 title: Group vs Select
-description: How vizb turns columns into charts — group gives every numeric column its own chart, bucketed by category; select merges columns into one chart as coordinate axes. Plus the auto-inference that picks for you.
+description: How vizb turns columns into charts — group gives every numeric column its own chart, bucketed by category; select merges columns into one chart as coordinate axes. Plus auto-group and auto col-axis inference.
 ---
 
 import { Aside, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
@@ -19,6 +19,8 @@ Vizb charts tabular data (CSV/JSON) two ways. The difference is what your **colu
 | Works on benchmarks | yes — the name is the label | no — CSV/JSON only |
 
 The same data often works with either — the choice is about what you want to *see*, not what the file contains.
+
+A third layout, **`--col-axis` / `-A`**, puts many numeric column **names** on one axis so competitors share a single chart (works with or without group). All-numeric files with no flags use **auto col-axis x** — see below.
 
 ## When to use which
 
@@ -44,7 +46,7 @@ The same data often works with either — the choice is about what you want to *
 </Tabs>
 
 <Aside type="tip">
-  Rule of thumb: **one chart per metric, bucketed by category → group** (it aggregates); **several columns plotted together as coordinates → select** (it never merges).
+  Rule of thumb: **one chart per metric, bucketed by category → group** (it aggregates); **several columns plotted together as coordinates → select** (it never merges); **many numeric columns as series on one axis → col-axis**.
 </Aside>
 
 ### Decision matrix
@@ -53,10 +55,12 @@ The same data often works with either — the choice is about what you want to *
 |---|---|---|
 | One chart **per metric across categories** | Group + numeric `--select` | `-g region,product -p x,y --select latency,sales` |
 | Plot **one metric per category label** on a coordinate chart | Solo mixed `--select` | `--select region,latency` → scatter |
-| Plot **raw numeric coordinates** (no categories) | Solo value `--select` or auto-value | `--select x,y` or no flags on all-numeric file |
+| Plot **raw numeric coordinates** (no categories) | Solo value `--select` | `--select x,y` or `--select x,y,z` |
 | **Several metric views** from one file (no grouping) | Repeatable solo `--select` | `--select region,latency --select region,sales` |
+| **Competitors side-by-side** (column names as series) | `--col-axis` (optional group) | `-g load -p y -A x` or bare all-numeric file |
 | Split a column into year/month/day on axes | Group with bracket `-p` | `-g date,category -p '[n-y-x],z'` |
 | Quick chart with no flags on mixed data | Auto-group | `vizb bar sales.csv` picks highest-cardinality categorical column |
+| Quick chart with no flags on all-numeric data | Auto col-axis x | `vizb bar metrics.csv` — every numeric column on X |
 
 ## Auto-inference (no flags needed)
 
@@ -80,27 +84,24 @@ vizb sales.csv -g region,product -p x,y --3d -o 3d.html   # grouped 3D with expl
 vizb sales.csv -g product -p y -o o.html                  # explicit --group disables auto-group
 ```
 
-### Auto-value (all-numeric data)
+### Auto col-axis (all-numeric data)
 
-When every column in a CSV/JSON file is numeric (no categorical columns exist), auto-group has nothing to pick. Instead, vizb **auto-assigns the first 2-3 columns** as value-type coordinate axes (`x`, `y`, `z`) — no flag needed. This works on **bar**, **line**, and **scatter** charts.
-
-| Columns | Axes | Pattern |
-|---|---|---|
-| 2+ | `x`, `y` | 2D value |
-| 3+ | `x`, `y`, `z` (first 3) | **3D value** (auto-enables 3D) |
-| 4+ | `x`, `y`, `z` + 4th as **metric** | **3D value** + auto visualMap (color/size by metric) |
-
-With 2+ numeric columns, vizb creates a 2D value-mode chart. With 3+, it automatically enables 3D (`bar3D` / `line3D` / `scatter3D`). With 4+, the first three columns are coordinates and the fourth becomes a visual metric. The inference is logged: `🧠 Auto-valued by columns: x, y, z (3D pattern x-y-z), metric: value`.
+When every column in a CSV/JSON file is numeric (no categorical columns exist), auto-group has nothing to pick. Instead, vizb applies **auto col-axis x**: every numeric column name becomes a series on the **x** axis — **one chart**, same layout as explicit `--col-axis x`. There is no 2–3 column coordinate auto-value and no 4th-metric auto visualMap.
 
 ```bash
-vizb scatter allnums.csv -o scatter.html        # auto-value x,y from first 2 columns
-vizb scatter allnums.csv --3d -o 3d.html         # auto-value x,y,z from 3+ columns (auto-3D)
-vizb bar allnums.csv -o bars.html                # bar auto-value (auto-3D with 3+ cols)
-vizb line allnums.csv -o lines.html              # line auto-value (auto-3D with 3+ cols)
+vizb bar allnums.csv -o bars.html     # auto col-axis x — all columns as series on X
+vizb line allnums.csv -o lines.html   # same layout for line
+```
+
+For continuous coordinates or continuous 3D, use **explicit** solo `--select` (not a bare file):
+
+```bash
+vizb scatter points.csv --select x,y -o scatter.html      # 2D value coordinates
+vizb scatter spiral.csv --select x,y,z -o scatter3d.html  # 3D value coordinates
 ```
 
 <Aside type="note">
-  Solo `--select` **overrides** auto-value: it disables inference and uses only the columns you name. Selecting 2 columns keeps the chart 2D even if the file has more numeric columns.
+  Solo `--select` (without `--col-axis`) is **coordinate / mixed / multi-stat mode** — it does not use col-axis layout. Pair `--select` with `-A` when you want to filter which numeric columns become series while still placing them on a col-axis.
 </Aside>
 
 ## The dimensions
@@ -118,7 +119,7 @@ See [Group → The dimensions](/guides/group#the-dimensions) for the full refere
 
 ## Benchmarks
 
-Benchmark output (Go, Rust, JavaScript) is **always grouped** — the benchmark name is already the label (e.g. `BenchmarkSort/1024/QuickSort`), so there are no columns to select. Solo `--select` and auto-value do not apply. See [Group benchmarks](/guides/group#group-benchmarks).
+Benchmark output (Go, Rust, JavaScript) is **always grouped** — the benchmark name is already the label (e.g. `BenchmarkSort/1024/QuickSort`), so there are no columns to select. Solo `--select` and auto col-axis do not apply. See [Group benchmarks](/guides/group#group-benchmarks).
 
-<LinkCard title="Group" href="/guides/group" description="Dimensions, --group, pattern & regex syntax, bracket slots, axis labels, aggregation." />
+<LinkCard title="Group" href="/guides/group" description="Dimensions, --group, pattern & regex syntax, bracket slots, axis labels, aggregation, --col-axis." />
 <LinkCard title="Select" href="/guides/select" description="The --select flag — grouped stat pick and solo value / mixed / multi-stat modes." />

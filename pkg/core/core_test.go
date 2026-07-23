@@ -52,8 +52,9 @@ func (s *CoreSuite) TestConvertColAxisTitle() {
 		s.Equal("Framework throughput", point.Stats[0].Type)
 	}
 
+	// Title without col-axis: categorical auto-group leaves multi-stat columns → title ignored.
 	_, err = Convert(ConvertInput{
-		Input:  []byte("load,default,chi\n100,1,2\n"),
+		Input:  []byte("region,default,chi\nwest,1,2\n"),
 		Parser: "csv",
 		Title:  "Ignored",
 		Charts: []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: "linear"}},
@@ -66,6 +67,24 @@ func (s *CoreSuite) TestConvertColAxisTitle() {
 	_, _, err = ApplyColAxis(nil, parser.Config{ColAxis: "value"}, "csv", "")
 	s.Require().ErrorAs(err, &optionErr)
 	s.Equal("colAxis", optionErr.Name)
+}
+
+func (s *CoreSuite) TestConvertColAxisWithoutGroup() {
+	result, err := Convert(ConvertInput{
+		Input:  []byte("a,b\n1,2\n3,4\n"),
+		Parser: "csv",
+		Config: parser.Config{ColAxis: "x"},
+		Charts: []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: "linear"}},
+	})
+	s.Require().NoError(err)
+	s.Len(result.Dataset.Data, 2)
+	byX := map[string]float64{}
+	for _, point := range result.Dataset.Data {
+		s.Require().Len(point.Stats, 1)
+		byX[point.XAxis] = *point.Stats[0].Value
+	}
+	s.Equal(4.0, byX["a"])
+	s.Equal(6.0, byX["b"])
 }
 
 func (s *CoreSuite) TestConvertJSONAndValidationFailures() {

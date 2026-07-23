@@ -158,10 +158,12 @@ func Convert(in ConvertInput) (ConvertResult, error) {
 		return ConvertResult{}, err
 	}
 	if tabular {
-		if len(effectiveCfg.Group) == 0 {
-			points = shared.CollapseDataPointsByKey(points)
-		} else {
+		// Grouped rows and col-axis multi-stat both sum by key; plain flat
+		// multi-column (no group, no col-axis) collapses without summing.
+		if len(effectiveCfg.Group) > 0 || effectiveCfg.ColAxis != "" {
 			points = shared.AggregateDataPoints(points)
+		} else {
+			points = shared.CollapseDataPointsByKey(points)
 		}
 	}
 	points, effectiveCfg, err = ApplyColAxis(points, effectiveCfg, key, in.Title)
@@ -195,8 +197,9 @@ func Convert(in ConvertInput) (ConvertResult, error) {
 	return ConvertResult{Dataset: dataset, Warnings: warnings}, nil
 }
 
-// ApplyColAxis expands grouped multi-column stats onto a free axis and applies
-// the optional single-chart title. Ignored errors are warnings at the CLI
+// ApplyColAxis expands multi-column stats onto a free axis and applies the
+// optional single-chart title. Grouping is optional: empty group + ColAxis
+// expands after AggregateDataPoints. Ignored errors are warnings at the CLI
 // boundary and validation errors for strict callers such as the REST API.
 func ApplyColAxis(data []shared.DataPoint, cfg parser.Config, parserKey, title string) ([]shared.DataPoint, parser.Config, error) {
 	ignored := func(name, message string) ([]shared.DataPoint, parser.Config, error) {
@@ -219,20 +222,24 @@ func ApplyColAxis(data []shared.DataPoint, cfg parser.Config, parserKey, title s
 	if parserKey != "csv" && parserKey != "json" {
 		return ignored("colAxis", "--col-axis is only supported for csv/json parsers; ignoring")
 	}
-	if cfg.Mode.IsSelectAxis() {
-		return ignored("colAxis", "--col-axis requires grouped multi-column stats; ignoring")
-	}
-	if len(cfg.Group) == 0 && !parser.IsExplicitGrouping(cfg) {
-		return ignored("colAxis", "--col-axis requires grouping (-g/-r/-p or auto-group); ignoring")
+	// Solo value/mixed --select places coordinates on axes; col-axis expand is
+	// for multi-stat (or empty-group multi-column) series. Multi-stat is allowed.
+	if cfg.Mode.IsSelectAxis() && !cfg.Mode.IsMultiStat() {
+		return ignored("colAxis", "--col-axis not compatible with solo value/mixed --select")
 	}
 
 	dim := shared.Dimension(cfg.ColAxis)
-	groupAxes := parser.GroupAxes(cfg)
-	for _, axis := range groupAxes {
-		if axis.Key == dim.AxisKey() {
-			return data, cfg, &OptionError{
-				Name: "colAxis",
-				Err:  fmt.Errorf("--col-axis %q conflicts with group dimension (already used by --group-pattern)", cfg.ColAxis),
+	// Only treat pattern slots as occupied when grouping is actually active.
+	// A bare default GroupPattern "x" with empty Group must not block ColAxis=x.
+	var groupAxes []shared.Axis
+	if len(cfg.Group) > 0 || cfg.GroupRegex != "" || parser.IsExplicitGrouping(cfg) {
+		groupAxes = parser.GroupAxes(cfg)
+		for _, axis := range groupAxes {
+			if axis.Key == dim.AxisKey() {
+				return data, cfg, &OptionError{
+					Name: "colAxis",
+					Err:  fmt.Errorf("--col-axis %q conflicts with group dimension (already used by --group-pattern)", cfg.ColAxis),
+				}
 			}
 		}
 	}

@@ -9,7 +9,7 @@ package parser
 //  2. Solo SelectViews (no explicit grouping):
 //     a. len > 1 → ModeMultiStat (validated to 2-col dim,metric)
 //     b. len == 1 → ModeValue or ModeMixed (caller resolves after type inference)
-//  3. Otherwise → ModeAuto
+//  3. Otherwise → ModeAuto (auto-group and/or auto col-axis; not auto-value axes)
 //
 // Mixed vs value for a solo single view is not known until ResolveAxesTypes
 // runs (it needs the data). ResolveMode sets ModeValue for a single solo view;

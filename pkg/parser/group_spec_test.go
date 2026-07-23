@@ -238,116 +238,55 @@ func TestAutoGroupColumnsSuite(t *testing.T) {
 	suite.Run(t, new(AutoGroupColumnsSuite))
 }
 
-type AutoValueColumnsSuite struct {
+type NumericColumnsSuite struct {
 	suite.Suite
 }
 
-func (s *AutoValueColumnsSuite) TestThreeNumericCols() {
+func (s *NumericColumnsSuite) TestThreeNumericCols() {
 	headers := []string{"price", "latency", "memory"}
 	rows := [][]string{
 		{"10", "5", "100"},
 		{"20", "7", "200"},
 		{"30", "9", "300"},
 	}
-	cols, ok := AutoValueColumns(headers, rows)
-	s.Require().True(ok)
-	s.Equal([]string{"price", "latency", "memory"}, cols)
+	s.Equal([]string{"price", "latency", "memory"}, numericColumns(headers, rows))
 }
 
-func (s *AutoValueColumnsSuite) TestTwoNumericCols() {
-	headers := []string{"price", "latency"}
-	rows := [][]string{
-		{"10", "5"},
-		{"20", "7"},
-	}
-	cols, ok := AutoValueColumns(headers, rows)
-	s.Require().True(ok)
-	s.Equal([]string{"price", "latency"}, cols)
-}
-
-func (s *AutoValueColumnsSuite) TestOneNumericColReturnsFalse() {
-	headers := []string{"price", "region"}
-	rows := [][]string{
-		{"10", "West"},
-		{"20", "East"},
-	}
-	cols, ok := AutoValueColumns(headers, rows)
-	s.False(ok)
-	s.Empty(cols)
-}
-
-func (s *AutoValueColumnsSuite) TestAllNonNumericReturnsFalse() {
-	headers := []string{"region", "product"}
-	rows := [][]string{
-		{"West", "A"},
-		{"East", "B"},
-	}
-	cols, ok := AutoValueColumns(headers, rows)
-	s.False(ok)
-	s.Empty(cols)
-}
-
-func (s *AutoValueColumnsSuite) TestFourNumericColsReturnsFirstThree() {
-	headers := []string{"a", "b", "c", "d"}
-	rows := [][]string{
-		{"1", "2", "3", "4"},
-		{"5", "6", "7", "8"},
-	}
-	cols, ok := AutoValueColumns(headers, rows)
-	s.Require().True(ok)
-	s.Equal([]string{"a", "b", "c"}, cols)
-	all := numericColumns(headers, rows)
-	s.Require().GreaterOrEqual(len(all), 4)
-	s.Equal("d", all[3])
-}
-
-func (s *AutoValueColumnsSuite) TestMixedTypesSkipsNonNumeric() {
+func (s *NumericColumnsSuite) TestMixedTypesSkipsNonNumeric() {
 	headers := []string{"region", "price", "product", "latency"}
 	rows := [][]string{
 		{"West", "10", "foo", "5"},
 		{"East", "20", "bar", "7"},
 	}
-	// region (non-numeric) skipped, price (numeric) kept, product (non-numeric) skipped, latency (numeric) kept
-	cols, ok := AutoValueColumns(headers, rows)
-	s.Require().True(ok)
-	s.Equal([]string{"price", "latency"}, cols)
+	s.Equal([]string{"price", "latency"}, numericColumns(headers, rows))
 }
 
-func (s *AutoValueColumnsSuite) TestEmptyHeaderSkipped() {
+func (s *NumericColumnsSuite) TestEmptyHeaderSkipped() {
 	headers := []string{"price", "", "latency"}
 	rows := [][]string{
 		{"10", "x", "5"},
 		{"20", "y", "7"},
 	}
-	cols, ok := AutoValueColumns(headers, rows)
-	s.Require().True(ok)
-	s.Equal([]string{"price", "latency"}, cols)
+	s.Equal([]string{"price", "latency"}, numericColumns(headers, rows))
 }
 
-func (s *AutoValueColumnsSuite) TestNumericStringValuesClassifiedNumeric() {
-	headers := []string{"price", "count"}
+func (s *NumericColumnsSuite) TestAllNonNumeric() {
+	headers := []string{"region", "product"}
 	rows := [][]string{
-		{"10.5", "100"},
-		{"20.0", "200"},
+		{"West", "A"},
+		{"East", "B"},
 	}
-	cols, ok := AutoValueColumns(headers, rows)
-	s.Require().True(ok)
-	s.Equal([]string{"price", "count"}, cols)
+	s.Empty(numericColumns(headers, rows))
 }
 
-func (s *AutoValueColumnsSuite) TestSingleColumnOnlyReturnsFalse() {
+func (s *NumericColumnsSuite) TestSingleNumericColumn() {
 	headers := []string{"price"}
-	rows := [][]string{
-		{"10"},
-		{"20"},
-	}
-	cols, ok := AutoValueColumns(headers, rows)
-	s.False(ok)
-	s.Empty(cols)
+	rows := [][]string{{"10"}, {"20"}}
+	s.Equal([]string{"price"}, numericColumns(headers, rows))
 }
 
-func TestAutoValueColumnsSuite(t *testing.T) {
-	suite.Run(t, new(AutoValueColumnsSuite))
+func TestNumericColumnsSuite(t *testing.T) {
+	suite.Run(t, new(NumericColumnsSuite))
 }
 
 func (s *GroupSpecSuite) TestParseGroupSpecEmptyGroup() {
@@ -445,15 +384,11 @@ func (s *GroupingHelpersSuite) TestLogAutoGroupEmptyIsNoOp() {
 	}
 }
 
-func (s *GroupingHelpersSuite) TestLogAutoValueBranches() {
+func (s *GroupingHelpersSuite) TestLogAutoColAxis() {
 	t := s.T()
-	out := testutil.CaptureStdout(func() { LogAutoValue([]string{"x", "y"}, "") })
-	if !strings.Contains(out, "2D") || !strings.Contains(out, "x, y") {
-		t.Fatalf("unexpected 2D log: %q", out)
-	}
-	out = testutil.CaptureStdout(func() { LogAutoValue([]string{"x", "y", "z"}, "m") })
-	if !strings.Contains(out, "3D") || !strings.Contains(out, "metric: m") {
-		t.Fatalf("unexpected 3D log: %q", out)
+	out := testutil.CaptureStdout(func() { LogAutoColAxis() })
+	if !strings.Contains(out, "Auto col-axis x") || !strings.Contains(out, "all numeric columns as series") {
+		t.Fatalf("unexpected auto col-axis log: %q", out)
 	}
 }
 
@@ -475,7 +410,7 @@ func (s *AutoDetectTabularConfigSuite) TestAutoGroupPath() {
 	s.Contains(out, "Auto-grouped")
 }
 
-func (s *AutoDetectTabularConfigSuite) TestAutoValue2D() {
+func (s *AutoDetectTabularConfigSuite) TestAutoColAxisAllNumeric() {
 	cfg := Config{AutoGroup: true, GroupPattern: "x", ChartTypes: []string{"scatter"}}
 	headers := []string{"price", "latency"}
 	rows := [][]string{{"10", "5"}, {"20", "7"}}
@@ -483,14 +418,15 @@ func (s *AutoDetectTabularConfigSuite) TestAutoValue2D() {
 	out := testutil.CaptureStdout(func() {
 		got, err := AutoDetectTabularConfig(cfg, headers, rows)
 		s.Require().NoError(err)
-		s.Len(got.Axes, 2)
-		s.Equal("price", got.Axes[0].Source)
-		s.Equal("latency", got.Axes[1].Source)
+		s.Equal("x", got.ColAxis)
+		s.Empty(got.Axes)
+		s.Empty(got.MetricColumn)
+		s.Empty(got.Group)
 	})
-	s.Contains(out, "2D")
+	s.Contains(out, "Auto col-axis x")
 }
 
-func (s *AutoDetectTabularConfigSuite) TestAutoValue3DWithMetric() {
+func (s *AutoDetectTabularConfigSuite) TestAutoColAxisFourNumericNoAxes() {
 	cfg := Config{AutoGroup: true, GroupPattern: "x", ChartTypes: []string{"line"}}
 	headers := []string{"a", "b", "c", "d"}
 	rows := [][]string{{"1", "2", "3", "4"}}
@@ -498,11 +434,40 @@ func (s *AutoDetectTabularConfigSuite) TestAutoValue3DWithMetric() {
 	out := testutil.CaptureStdout(func() {
 		got, err := AutoDetectTabularConfig(cfg, headers, rows)
 		s.Require().NoError(err)
-		s.Len(got.Axes, 3)
-		s.Equal("d", got.MetricColumn)
+		s.Equal("x", got.ColAxis)
+		s.Empty(got.Axes)
+		s.Empty(got.MetricColumn)
 	})
-	s.Contains(out, "3D")
-	s.Contains(out, "metric: d")
+	s.Contains(out, "Auto col-axis x")
+}
+
+func (s *AutoDetectTabularConfigSuite) TestAutoColAxisSingleNumeric() {
+	cfg := Config{AutoGroup: true, GroupPattern: "x", ChartTypes: []string{"scatter"}}
+	got, err := AutoDetectTabularConfig(cfg, []string{"price"}, [][]string{{"10"}, {"20"}})
+	s.Require().NoError(err)
+	s.Equal("x", got.ColAxis)
+	s.Empty(got.Axes)
+}
+
+func (s *AutoDetectTabularConfigSuite) TestPieGetsAutoColAxis() {
+	cfg := Config{AutoGroup: true, GroupPattern: "x", ChartTypes: []string{"pie"}}
+	got, err := AutoDetectTabularConfig(cfg, []string{"a", "b"}, [][]string{{"1", "2"}})
+	s.Require().NoError(err)
+	s.Equal("x", got.ColAxis)
+	s.Empty(got.Axes)
+}
+
+func (s *AutoDetectTabularConfigSuite) TestColAxisSetSkipsAutoGroup() {
+	// User col-axis alone: no auto-group even when categoricals exist.
+	cfg := Config{AutoGroup: true, GroupPattern: "x", ColAxis: "x", ChartTypes: []string{"bar"}}
+	headers := []string{"region", "sells"}
+	rows := [][]string{{"West", "10"}, {"East", "20"}}
+
+	got, err := AutoDetectTabularConfig(cfg, headers, rows)
+	s.Require().NoError(err)
+	s.Equal("x", got.ColAxis)
+	s.Empty(got.Group)
+	s.Empty(got.Axes)
 }
 
 func (s *AutoDetectTabularConfigSuite) TestSkipsWhenAutoGroupOff() {
@@ -510,20 +475,16 @@ func (s *AutoDetectTabularConfigSuite) TestSkipsWhenAutoGroupOff() {
 	got, err := AutoDetectTabularConfig(cfg, []string{"a", "b"}, [][]string{{"1", "2"}})
 	s.Require().NoError(err)
 	s.Empty(got.Axes)
+	s.Empty(got.ColAxis)
 }
 
-func (s *AutoDetectTabularConfigSuite) TestSkipsWhenPieOnly() {
-	cfg := Config{AutoGroup: true, GroupPattern: "x", ChartTypes: []string{"pie"}}
-	got, err := AutoDetectTabularConfig(cfg, []string{"a", "b"}, [][]string{{"1", "2"}})
+func (s *AutoDetectTabularConfigSuite) TestNoNumericLeavesUnchanged() {
+	cfg := Config{AutoGroup: true, GroupPattern: "x", ChartTypes: []string{"bar"}}
+	// Single categorical column: auto-group needs ≥2 headers; no numeric → no col-axis.
+	got, err := AutoDetectTabularConfig(cfg, []string{"region"}, [][]string{{"West"}, {"East"}})
 	s.Require().NoError(err)
-	s.Empty(got.Axes)
-}
-
-func (s *AutoDetectTabularConfigSuite) TestSkipsWhenFewerThanTwoNumeric() {
-	cfg := Config{AutoGroup: true, GroupPattern: "x", ChartTypes: []string{"scatter"}}
-	got, err := AutoDetectTabularConfig(cfg, []string{"price"}, [][]string{{"10"}, {"20"}})
-	s.Require().NoError(err)
-	s.Empty(got.Axes)
+	s.Empty(got.ColAxis)
+	s.Empty(got.Group)
 }
 
 func (s *AutoDetectTabularConfigSuite) TestFinalizeGroupConfigSkipsRegex() {
@@ -535,33 +496,6 @@ func (s *AutoDetectTabularConfigSuite) TestFinalizeGroupConfigSkipsRegex() {
 
 func TestAutoDetectTabularConfigSuite(t *testing.T) {
 	suite.Run(t, new(AutoDetectTabularConfigSuite))
-}
-
-func (s *GroupingHelpersSuite) TestAutoValueEligible() {
-	t := s.T()
-	tests := []struct {
-		name  string
-		types []string
-		want  bool
-	}{
-		{"scatter only", []string{"scatter"}, true},
-		{"bar only", []string{"bar"}, true},
-		{"line only", []string{"line"}, true},
-		{"pie only", []string{"pie"}, false},
-		{"heatmap only", []string{"heatmap"}, false},
-		{"radar only", []string{"radar"}, false},
-		{"mixed with eligible", []string{"pie", "bar", "radar"}, true},
-		{"mixed without eligible", []string{"pie", "heatmap", "radar"}, false},
-		{"empty slice", []string{}, false},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := AutoValueEligible(tt.types)
-			if got != tt.want {
-				t.Errorf("AutoValueEligible(%v) = %v, want %v", tt.types, got, tt.want)
-			}
-		})
-	}
 }
 
 func TestGroupingHelpersSuite(t *testing.T) {

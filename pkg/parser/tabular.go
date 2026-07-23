@@ -150,7 +150,7 @@ func ParseSelectStatMode(rows []RowReader, cfg Config) ([]shared.DataPoint, erro
 	return results, nil
 }
 
-// DispatchSelectMode routes a solo --select (or --axes/auto-value) Config to the
+// DispatchSelectMode routes a solo --select (or explicit --axes) Config to the
 // right parse function after running ResolveAxesTypes. Called by the CSV/JSON
 // entry points; the flag label is baked into kindFn by the caller.
 func DispatchSelectMode(rows []RowReader, cfg *Config, kindFn AxisColumnKind) ([]shared.DataPoint, error) {

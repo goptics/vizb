@@ -87,13 +87,15 @@ vizb line sales.csv -g region,product -p x,y --select latency,sales -o lines.htm
 
 See [Select](/guides/select) for the full mode reference, and [Group vs Select](/guides/group-vs-select) for when to use each.
 
-## Auto-value mode (all-numeric data)
+## All-numeric data
 
-On an all-numeric CSV/JSON file, vizb auto-detects the first 2–3 columns as coordinate axes and renders value-type lines — with 3+ columns it auto-enables 3D (`line3D`). See [Auto-value](/guides/group-vs-select#auto-value-all-numeric-data) for the inference rules; solo `--select` overrides it.
+With no flags, an all-numeric CSV/JSON file uses **auto col-axis x** — every numeric column name becomes a series on X (one chart). For continuous coordinate / continuous 3D lines, pass explicit solo `--select`:
 
 ```bash
-vizb line spiral-3d.csv -o line.html --3d-visualmap --3d-rotate
+vizb line spiral-3d.csv --select x,y,z -o line.html --3d-visualmap --3d-rotate
 ```
+
+See [Auto col-axis](/guides/group-vs-select#auto-col-axis-all-numeric-data) and [Select](/guides/select).
 
 <DocImage src={line2DValue} alt="2D value-type line chart plotting x and y coordinates from numeric columns" />
 

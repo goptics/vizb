@@ -296,7 +296,9 @@ func (b *FlagBag) ParseConfig() parser.Config {
 	cfg.ColAxis = b.String("col-axis")
 	selectRaws := b.StringArray("select")
 	if len(selectRaws) > 0 {
-		if parser.IsExplicitGrouping(cfg) {
+		// Explicit grouping or col-axis: --select picks stat columns (series filter).
+		// Otherwise solo --select is coordinate/multi-stat view mode.
+		if parser.IsExplicitGrouping(cfg) || cfg.ColAxis != "" {
 			seen := map[string]bool{}
 			for _, raw := range selectRaws {
 				selected, err := parser.ParseSelectFlag(raw)
@@ -311,13 +313,15 @@ func (b *FlagBag) ParseConfig() parser.Config {
 					cfg.Select = append(cfg.Select, col)
 				}
 			}
-			groupSet := map[string]bool{}
-			for _, g := range parser.EffectiveGroupColumns(cfg) {
-				groupSet[g] = true
-			}
-			for _, col := range cfg.Select {
-				if groupSet[col.Source] {
-					shared.ExitWithError("column '"+col.Source+"' cannot be in both --select and --group", nil)
+			if parser.IsExplicitGrouping(cfg) {
+				groupSet := map[string]bool{}
+				for _, g := range parser.EffectiveGroupColumns(cfg) {
+					groupSet[g] = true
+				}
+				for _, col := range cfg.Select {
+					if groupSet[col.Source] {
+						shared.ExitWithError("column '"+col.Source+"' cannot be in both --select and --group", nil)
+					}
 				}
 			}
 		} else {

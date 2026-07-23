@@ -236,8 +236,8 @@ func AutoGroupColumns(headers []string, rows [][]string) (cols []string, pattern
 
 // NoExplicitGrouping reports whether the user supplied no explicit grouping
 // configuration (no --group, no --group-regex, default --group-pattern "x",
-// no --select, no auto-value axes). The pipeline uses it to decide whether to
-// opt the csv/json parsers into auto-grouping.
+// no --select, no explicit --axes). The pipeline uses it to decide whether to
+// opt the csv/json parsers into auto-grouping / auto col-axis.
 func NoExplicitGrouping(cfg Config) bool {
 	return !IsExplicitGrouping(cfg) &&
 		!HasSelect(cfg) &&
@@ -299,33 +299,6 @@ func numericColumns(headers []string, rows [][]string) []string {
 	return cols
 }
 
-// AutoValueColumns returns the first 2-3 purely numeric columns (in file
-// order) for auto-value-mode value axes (x, y, z). A column is numeric when
-// all non-empty cells parse as finite floats. Returns ok=false when <2 such
-// columns exist — caller falls back to flat-series.
-func AutoValueColumns(headers []string, rows [][]string) (cols []string, ok bool) {
-	all := numericColumns(headers, rows)
-	if len(all) < 2 {
-		return nil, false
-	}
-	if len(all) > 3 {
-		return all[:3], true
-	}
-	return all, true
-}
-
-// AutoValueEligible reports whether the given chart types are eligible for
-// auto-value-mode. Currently only scatter, bar, and line are supported;
-// pie/heatmap/radar fall back to flat series when all columns are numeric.
-func AutoValueEligible(types []string) bool {
-	for _, t := range types {
-		if t == "scatter" || t == "bar" || t == "line" {
-			return true
-		}
-	}
-	return false
-}
-
 // LogAutoGroup prints the inferred group column. The csv/json parsers call it
 // from their prelude so the inference is non-silent, mirroring the CLI's
 // "Auto-detected parser" message.
@@ -340,22 +313,9 @@ func LogAutoGroup(cols []string) {
 	fmt.Println(style.Info.Render(fmt.Sprintf("🧠 Auto-grouped by %s: %s", noun, strings.Join(cols, ", "))))
 }
 
-// LogAutoValue prints the inferred value axis columns (parallel to LogAutoGroup).
-func LogAutoValue(cols []string, metricCol string) {
-	if len(cols) == 0 {
-		return
-	}
-	noun := "columns"
-	if len(cols) == 2 {
-		noun = "columns (2D pattern x-y)"
-	} else if len(cols) == 3 {
-		noun = "columns (3D pattern x-y-z)"
-	}
-	msg := fmt.Sprintf("🧠 Auto-valued by %s: %s", noun, strings.Join(cols, ", "))
-	if metricCol != "" {
-		msg += fmt.Sprintf(", metric: %s", metricCol)
-	}
-	fmt.Println(style.Info.Render(msg))
+// LogAutoColAxis prints the inferred col-axis placement (parallel to LogAutoGroup).
+func LogAutoColAxis() {
+	fmt.Println(style.Info.Render("🧠 Auto col-axis x: all numeric columns as series"))
 }
 
 // FinalizeGroupConfig resolves and validates explicit --group config for tabular parsers.
@@ -371,7 +331,7 @@ func FinalizeGroupConfig(cfg Config) (Config, error) {
 	return cfg, ValidateTabularGroupAlignment(cfg)
 }
 
-// AutoDetectTabularConfig infers group columns or value axes when auto-group is enabled.
+// AutoDetectTabularConfig infers group columns or col-axis when auto-group is enabled.
 func AutoDetectTabularConfig(cfg Config, autoHeaders []string, rows [][]string) (Config, error) {
 	return autoDetectTabularConfig(cfg, autoHeaders, rows, true)
 }
@@ -385,6 +345,11 @@ func AutoDetectTabularConfigQuiet(cfg Config, autoHeaders []string, rows [][]str
 
 func autoDetectTabularConfig(cfg Config, autoHeaders []string, rows [][]string, log bool) (Config, error) {
 	if !AutoGroupApplies(cfg) {
+		return cfg, nil
+	}
+	// User-set col-axis alone means numeric multi-stat + expand later; do not
+	// auto-group or overwrite ColAxis.
+	if cfg.ColAxis != "" {
 		return cfg, nil
 	}
 
@@ -403,26 +368,13 @@ func autoDetectTabularConfig(cfg Config, autoHeaders []string, rows [][]string, 
 		return cfg, nil
 	}
 
-	if !AutoValueEligible(cfg.ChartTypes) {
-		return cfg, nil
-	}
-	allNumeric := numericColumns(autoHeaders, rows)
-	if len(allNumeric) < 2 {
-		return cfg, nil
-	}
-	valCols := allNumeric
-	if len(valCols) > 3 {
-		valCols = valCols[:3]
-	}
-	cfg.Axes = make([]ColumnSpec, len(valCols))
-	for i, name := range valCols {
-		cfg.Axes[i] = ColumnSpec{Source: name}
-	}
-	if len(allNumeric) >= 4 {
-		cfg.MetricColumn = allNumeric[3]
-	}
-	if log {
-		LogAutoValue(valCols, cfg.MetricColumn)
+	// All-numeric (or no categorical) fallback: place every numeric column as a
+	// series on x via --col-axis. Expand happens in the pipeline after aggregate.
+	if len(numericColumns(autoHeaders, rows)) >= 1 {
+		cfg.ColAxis = "x"
+		if log {
+			LogAutoColAxis()
+		}
 	}
 	return cfg, nil
 }

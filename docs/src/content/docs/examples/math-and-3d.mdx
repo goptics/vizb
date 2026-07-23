@@ -1,13 +1,13 @@
 ---
 title: Math & 3D
-description: All-numeric auto-value examples — spirals, noise surfaces, and voxel grids for continuous 3D charts.
+description: Continuous coordinate examples via solo --select — spirals, noise surfaces, and voxel grids for continuous 3D charts.
 ---
 
 import { Aside, LinkCard } from '@astrojs/starlight/components';
 
 [![Math and 3D examples workflow status](https://github.com/goptics/vizb/actions/workflows/math-and-3d-examples.yml/badge.svg)](https://github.com/goptics/vizb/actions/workflows/math-and-3d-examples.yml)
 
-All-numeric CSV → **auto-value** mode (continuous `x` / `y` / `z`, optional 4th metric for color/size). Parser: **CSV**. Source files under [`examples/csv/`](https://github.com/goptics/vizb/tree/main/examples/csv).
+All-numeric CSV → continuous `x` / `y` / `z` via **explicit solo `--select`** (e.g. `--select x,y,z`). Bare all-numeric files use auto col-axis x instead — not coordinate mode. Parser: **CSV**. Source files under [`examples/csv/`](https://github.com/goptics/vizb/tree/main/examples/csv).
 
 **Live dashboard:** [vizb.goptics.org/examples/live/math-and-3d/](https://vizb.goptics.org/examples/live/math-and-3d/)
 
@@ -32,13 +32,14 @@ Prefer the 21³ grid for everyday loads; use 41³ when you need every voxel.
 ## Related guides
 
 - [3D Charts (WebGL)](/charts/3d) — bar3D / line3D / scatter3D, rotate, visualMap
-- [Tabular data](/guides/data) — auto-value when every column is numeric
+- [Select](/guides/select) — solo `--select` for continuous coordinates
+- [Tabular data](/guides/data) — auto col-axis when every column is numeric (no flags)
 
 <Aside type="tip">
   ```bash
-  vizb scatter examples/csv/spiral-3d.csv -o spiral.html
-  vizb scatter examples/csv/noise-grid.csv --3d-visualmap --3d-rotate -o noise.html
-  vizb scatter examples/csv/clusters.csv --visualmap --symbol-size 10 -o clusters.html
+  vizb scatter examples/csv/spiral-3d.csv --select x,y,z -o spiral.html
+  vizb scatter examples/csv/noise-grid.csv --select x,y,z --3d-visualmap --3d-rotate -o noise.html
+  vizb scatter examples/csv/clusters.csv --select x,y --visualmap --symbol-size 10 -o clusters.html
   ```
 </Aside>
 

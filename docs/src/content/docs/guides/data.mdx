@@ -80,7 +80,7 @@ For all-numeric grids, omit headers and vizb assigns `x`, `y`, `z`, `metric`, th
 ]
 ```
 
-That enters the same auto-value path as all-numeric CSV: `x`, `y`, and `z` become coordinate axes, and `metric` drives visualMap where supported.
+With no flags, that follows the same path as all-numeric CSV: **auto col-axis x** — every numeric column name becomes a series on the x axis (one chart). For continuous coordinates or continuous 3D, pass explicit solo `--select` (e.g. `--select x,y` or `--select x,y,z`).
 
 ### Rules
 
@@ -122,7 +122,7 @@ vizb sales.csv --select=price,count
 vizb sales.csv --select="price{USD}",count   # quote names with , { or }
 ```
 
-A column cannot be in both `--select` and `--group`. Without `--group`, `--select` switches to solo coordinate-axes mode (value / mixed / multi-stat) — see [Select](/guides/select) for the full reference, and [Group vs Select](/guides/group-vs-select) for when to use each.
+A column cannot be in both `--select` and `--group`. Without `--group` and without `--col-axis`, `--select` switches to solo coordinate-axes mode (value / mixed / multi-stat). With `--col-axis`, `--select` filters which numeric columns become series. All-numeric files with no flags use auto col-axis x — see [Select](/guides/select), and [Group vs Select](/guides/group-vs-select).
 
 ## Selecting a nested array with `--json-path`
 

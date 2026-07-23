@@ -52,7 +52,7 @@ Group extracts up to four dimensions from each label:
 CSV and JSON rows have no benchmark name. You tell vizb which columns carry the structure. The `--group` / `-g` flag selects columns. The `--group-pattern` / `-p` flag assigns each column to a dimension. By default each column maps to one dimension (`-p y,x`). Use **bracket slots** `[...]` when a single column's **cell value** encodes multiple dimensions (dates, slash paths, underscore IDs, etc.).
 
 <Aside type="note">
-  Not sure whether to group or to use `--select`? See [Group vs Select](/guides/group-vs-select) for the two models, auto-group / auto-value inference, and a decision matrix. Solo `--select` value, mixed, and multi-stat modes are covered in [Select](/guides/select).
+  Not sure whether to group or to use `--select`? See [Group vs Select](/guides/group-vs-select) for the two models, auto-group / auto col-axis inference, and a decision matrix. Solo `--select` value, mixed, and multi-stat modes are covered in [Select](/guides/select).
 </Aside>
 
 ### Matching separators
@@ -217,7 +217,9 @@ The columns you **don't** select decide the chart values:
 
 ### Competitor columns — `--col-axis` / `-A`
 
-When several numeric columns are **the same metric for different series** (frameworks, libraries, versions), you usually want **one chart**, not one chart per column. `--col-axis` (short `-A`) places those column names onto a free group dimension (`n`, `x`, `y`, or `z`), like merge’s `--tag-axis`.
+When several numeric columns are **the same metric for different series** (frameworks, libraries, versions), you usually want **one chart**, not one chart per column. `--col-axis` (short `-A`) places those **numeric** column names onto a free dimension (`n`, `x`, `y`, or `z`), like merge’s `--tag-axis`.
+
+Works **with or without** `--group`. Without group, only numeric columns become series (non-numeric columns are ignored). All-numeric files with no flags get the same layout via **auto col-axis x** — see [Group vs Select](/guides/group-vs-select#auto-col-axis-all-numeric-data).
 
 Example wide table:
 
@@ -228,19 +230,24 @@ load,default,chi,echo,gin,goframe,httpz
 ```
 
 ```bash
-# Frameworks on X, load levels as Y series — single chart
+# Frameworks on X, load levels as Y series — single chart (group + col-axis)
 vizb bar concurrency.csv -g load -p y -A x -o out.html
 
 # Load on X, frameworks as Y series (classic grouped bar)
 vizb bar concurrency.csv -g load -p x -A y -o out.html
+
+# Col-axis alone (no -g): every numeric column name on X as series
+vizb bar metrics.csv -A x -o out.html
 ```
 
 | Rule | Behaviour |
 |------|-----------|
-| Requires group | Needs `-g` / `-r` / non-default `-p` (or auto-group). Without group: warn and skip |
+| Group optional | Works without `-g` / `-r` / non-default `-p`. With group, target axis must be free |
+| Numeric only | Only **numeric** columns become series; non-numeric ignored when col-axis is used without group |
+| With `--select` | Independent: `--select` filters which numeric columns are series; `-A` places them on the axis |
 | csv/json only | Other parsers: warn and skip |
-| Free axis | Target must **not** already be used by `-p` (e.g. `-p x -A x` is fatal) |
-| `z` | Requires both `x` and `y` group dimensions |
+| Free axis | With group, target must **not** already be used by `-p` (e.g. `-p x -A x` is fatal) |
+| `z` | With group, requires both `x` and `y` group dimensions |
 | Chart title | Expanded points omit `stats[].type`; the UI uses the dataset name (`-n`) as the chart title |
 
 <Aside type="note">

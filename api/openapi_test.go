@@ -198,7 +198,7 @@ func (s *OpenAPISuite) TestRootConversionContract() {
 	schemas := mustMap(t, components["schemas"], "components.schemas")
 	request := mustMap(t, schemas["ConvertRequest"], "components.schemas.ConvertRequest")
 	s.Equal(
-		[]string{"charts", "description", "grouping", "id", "input", "jsonPath", "name", "output", "parser", "select", "tag", "theme", "title", "units"},
+		[]string{"charts", "colAxis", "description", "grouping", "id", "input", "jsonPath", "name", "output", "parser", "select", "tag", "theme", "title", "units"},
 		propertyNames(t, request, "ConvertRequest"),
 	)
 	s.Equal([]string{"input"}, stringSliceValue(request["required"]))

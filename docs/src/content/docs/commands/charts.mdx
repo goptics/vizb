@@ -58,7 +58,7 @@ Every chart subcommand accepts the common data, grouping, and metadata flags:
 | `--visualmap` | — | — | ✅ | — | — | — | Color 2D scatter points by metric (off by default) |
 | `--3d-rotate` | ✅ | ✅ | ✅ | — | — | — | Auto-rotate the 3D scene (only meaningful with 3D data) |
 | `--horizontal` | ✅ | — | — | — | — | — | Horizontal grouped bars — 2D only |
-`bar`, `line`, and `scatter` render in 3D when the data has a z dimension (`-p n/x/y/z`) or auto-value detects 3+ numeric columns. Pie, heatmap, and radar are 2D-only for those flags — passing an unsupported flag is an error:
+`bar`, `line`, and `scatter` render in 3D when the data has a z dimension (`-p n/x/y/z`) or solo `--select` names three numeric columns (`--select x,y,z`). Pie, heatmap, and radar are 2D-only for those flags — passing an unsupported flag is an error:
 
 ```bash
 vizb pie data.csv --scale log   # Error: unknown flag: --scale
@@ -79,8 +79,8 @@ go test -bench . | vizb line -p n/y --swap yn -o line.html
 # Bar chart with horizontal grouped bars
 vizb bar sales.csv -g region,category -p x,y --horizontal -o bar.html
 
-# Scatter from all-numeric columns (auto-value)
-vizb scatter data.csv -o scatter.html
+# Scatter from continuous coordinates (explicit select)
+vizb scatter data.csv --select x,y -o scatter.html
 
 # JSON output for later merging / re-rendering
 vizb radar data.csv -g impl -o radar.json

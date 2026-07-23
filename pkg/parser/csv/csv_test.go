@@ -526,14 +526,15 @@ func (s *CSVAutoGroupSuite) TestHighestCardinalityCategoricalWins() {
 	s.Equal([]string{"sells"}, statTypes(results[0].Stats))
 }
 
-func (s *CSVAutoGroupSuite) TestAllNumericAutoValues() {
-	// all numeric → auto-value-mode kicks in: first 2 cols become x,y value axes
+func (s *CSVAutoGroupSuite) TestAllNumericAutoColAxis() {
+	// all numeric → auto col-axis x; multi-stat points (expand is pipeline-side)
 	csv := "id,sells\n1,10\n2,20\n3,30\n"
-	results, _ := mustParseCSVFile(s.T(), s.writeFile(csv), s.cfg)
+	results, effective := mustParseCSVFile(s.T(), s.writeFile(csv), s.cfg)
+	s.Equal("x", effective.ColAxis)
+	s.Empty(effective.Axes)
 	s.Require().Len(results, 3)
-	s.Equal("1", results[0].XAxis)
-	s.Equal("10", results[0].YAxis)
-	s.Empty(results[0].Stats)
+	s.Empty(results[0].XAxis)
+	s.ElementsMatch([]string{"id", "sells"}, statTypes(results[0].Stats))
 }
 
 func (s *CSVAutoGroupSuite) TestAutoGroupPicksSingleColumnEvenWithMultipleCategoricals() {
@@ -570,116 +571,118 @@ func TestCSVAutoGroupSuite(t *testing.T) {
 	suite.Run(t, new(CSVAutoGroupSuite))
 }
 
-type CSVAutoValueSuite struct {
+type CSVAutoColAxisSuite struct {
 	suite.Suite
 	cfg           parser.Config
 	restoreOsExit func()
 }
 
-func (s *CSVAutoValueSuite) SetupTest() {
+func (s *CSVAutoColAxisSuite) SetupTest() {
 	s.restoreOsExit, _ = testutil.TrapOsExitPanic(s.T())
 	s.cfg = parser.Config{GroupPattern: "x", AutoGroup: true, ChartTypes: []string{"scatter"}}
 }
 
-func (s *CSVAutoValueSuite) TearDownTest() {
+func (s *CSVAutoColAxisSuite) TearDownTest() {
 	s.restoreOsExit()
 }
 
-func (s *CSVAutoValueSuite) writeFile(content string) string {
+func (s *CSVAutoColAxisSuite) writeFile(content string) string {
 	path := filepath.Join(s.T().TempDir(), "data.csv")
 	s.Require().NoError(os.WriteFile(path, []byte(content), 0644))
 	return path
 }
 
-func (s *CSVAutoValueSuite) TestTwoNumericColsProduceValueAxes() {
+func (s *CSVAutoColAxisSuite) TestTwoNumericColsSetColAxisMultiStat() {
 	csv := "price,latency\n10,5\n20,7\n30,9\n"
-	results, _ := mustParseCSVFile(s.T(), s.writeFile(csv), s.cfg)
+	results, effective := mustParseCSVFile(s.T(), s.writeFile(csv), s.cfg)
+	s.Equal("x", effective.ColAxis)
+	s.Empty(effective.Axes)
 	s.Require().Len(results, 3)
-	s.Equal("10", results[0].XAxis)
-	s.Equal("5", results[0].YAxis)
-	s.Equal("20", results[1].XAxis)
-	s.Equal("7", results[1].YAxis)
-	s.Empty(results[0].Stats)
+	s.Empty(results[0].XAxis)
+	s.Empty(results[0].YAxis)
+	s.ElementsMatch([]string{"price", "latency"}, statTypes(results[0].Stats))
+	s.Equal(10.0, *results[0].Stats[0].Value)
 }
 
-func (s *CSVAutoValueSuite) TestThreeNumericColsProduceValueAxes() {
+func (s *CSVAutoColAxisSuite) TestThreeNumericColsAllAsStats() {
 	csv := "price,latency,memory\n10,5,100\n20,7,200\n30,9,300\n"
-	results, _ := mustParseCSVFile(s.T(), s.writeFile(csv), s.cfg)
+	results, effective := mustParseCSVFile(s.T(), s.writeFile(csv), s.cfg)
+	s.Equal("x", effective.ColAxis)
+	s.Empty(effective.Axes)
 	s.Require().Len(results, 3)
-	s.Equal("10", results[0].XAxis)
-	s.Equal("5", results[0].YAxis)
-	s.Equal("100", results[0].ZAxis)
-	s.Empty(results[0].Stats)
+	s.Empty(results[0].XAxis)
+	s.ElementsMatch([]string{"price", "latency", "memory"}, statTypes(results[0].Stats))
 }
 
-func (s *CSVAutoValueSuite) TestFourNumericColsTakeFirstThree() {
+func (s *CSVAutoColAxisSuite) TestFourNumericColsAllAsStatsNoMetric() {
 	csv := "a,b,c,d\n1,2,3,4\n5,6,7,8\n"
-	results, _ := mustParseCSVFile(s.T(), s.writeFile(csv), s.cfg)
+	results, effective := mustParseCSVFile(s.T(), s.writeFile(csv), s.cfg)
+	s.Equal("x", effective.ColAxis)
+	s.Empty(effective.Axes)
+	s.Empty(effective.MetricColumn)
 	s.Require().Len(results, 2)
-	s.Equal("1", results[0].XAxis)
-	s.Equal("2", results[0].YAxis)
-	s.Equal("3", results[0].ZAxis)
-	s.Equal("4", results[0].Metric)
-	s.Empty(results[0].Stats)
+	s.Empty(results[0].Metric)
+	s.ElementsMatch([]string{"a", "b", "c", "d"}, statTypes(results[0].Stats))
 }
 
-func (s *CSVAutoValueSuite) TestOneNumericColFallsBackToFlat() {
-	// single numeric column → auto-group and auto-value both skip, flat series
+func (s *CSVAutoColAxisSuite) TestOneNumericColSetsColAxis() {
 	csv := "price\n10\n20\n"
-	results, _ := mustParseCSVFile(s.T(), s.writeFile(csv), s.cfg)
+	results, effective := mustParseCSVFile(s.T(), s.writeFile(csv), s.cfg)
+	s.Equal("x", effective.ColAxis)
 	s.Require().Len(results, 2)
 	s.Empty(results[0].XAxis)
-	s.NotEmpty(results[0].Stats)
+	s.Equal([]string{"price"}, statTypes(results[0].Stats))
 }
 
-func (s *CSVAutoValueSuite) TestAutoGroupTakesPriorityOverAutoValue() {
-	// categorical columns exist → auto-group fires, not auto-value
+func (s *CSVAutoColAxisSuite) TestAutoGroupTakesPriorityOverAutoColAxis() {
+	// categorical columns exist → auto-group fires, not auto col-axis
 	csv := "region,price,product\nWest,10,foo\nEast,20,bar\n"
-	results, _ := mustParseCSVFile(s.T(), s.writeFile(csv), s.cfg)
+	results, effective := mustParseCSVFile(s.T(), s.writeFile(csv), s.cfg)
+	s.Empty(effective.ColAxis)
 	s.Require().Len(results, 2)
 	s.NotEmpty(results[0].XAxis) // categorical xAxis from auto-group
 	s.Empty(results[0].YAxis)    // single-col group
 	s.NotEmpty(results[0].Stats) // price becomes chart column
 }
 
-func (s *CSVAutoValueSuite) TestMixedTypesSkipsNonNumeric() {
+func (s *CSVAutoColAxisSuite) TestMixedTypesAutoGroupNotColAxis() {
 	// region (non-numeric), price (numeric), product (non-numeric), latency (numeric)
 	// auto-group picks the categorical with highest cardinality
-	// auto-value only fires when NO categoricals exist
 	csv := "region,price,product,latency\nWest,10,foo,5\nEast,20,bar,7\n"
-	results, _ := mustParseCSVFile(s.T(), s.writeFile(csv), s.cfg)
-	// region has 2 distinct, product has 2 distinct → auto-group picks region as xAxis
+	results, effective := mustParseCSVFile(s.T(), s.writeFile(csv), s.cfg)
+	s.Empty(effective.ColAxis)
 	s.Require().Len(results, 2)
 	s.NotEmpty(results[0].XAxis)
 	s.NotEmpty(results[0].Stats)
 }
 
-func (s *CSVAutoValueSuite) TestPieChartFallsBackToFlat() {
-	// pie chart type → auto-value is NOT eligible, falls back to flat series
+func (s *CSVAutoColAxisSuite) TestPieChartGetsAutoColAxis() {
 	s.cfg.ChartTypes = []string{"pie"}
 	csv := "price,latency\n10,5\n20,7\n"
-	results, _ := mustParseCSVFile(s.T(), s.writeFile(csv), s.cfg)
+	results, effective := mustParseCSVFile(s.T(), s.writeFile(csv), s.cfg)
+	s.Equal("x", effective.ColAxis)
 	s.Require().Len(results, 2)
 	s.Empty(results[0].XAxis)
-	s.NotEmpty(results[0].Stats)
+	s.ElementsMatch([]string{"price", "latency"}, statTypes(results[0].Stats))
 }
 
-func (s *CSVAutoValueSuite) TestHeatmapChartFallsBackToFlat() {
+func (s *CSVAutoColAxisSuite) TestHeatmapGetsAutoColAxis() {
 	s.cfg.ChartTypes = []string{"heatmap"}
 	csv := "price,latency\n10,5\n20,7\n"
-	results, _ := mustParseCSVFile(s.T(), s.writeFile(csv), s.cfg)
+	results, effective := mustParseCSVFile(s.T(), s.writeFile(csv), s.cfg)
+	s.Equal("x", effective.ColAxis)
 	s.Require().Len(results, 2)
-	s.Empty(results[0].XAxis)
-	s.NotEmpty(results[0].Stats)
+	s.ElementsMatch([]string{"price", "latency"}, statTypes(results[0].Stats))
 }
 
-func (s *CSVAutoValueSuite) TestSelectSkipsAutoDetect() {
-	// Solo --select (SelectViews) disables auto-value inference and routes value mode.
+func (s *CSVAutoColAxisSuite) TestSelectSkipsAutoDetect() {
+	// Solo --select (SelectViews) disables auto col-axis inference and routes value mode.
 	s.cfg.SelectViews = []parser.SelectView{
 		{Columns: []parser.ColumnSpec{{Source: "x", AxisKey: "x"}, {Source: "y", AxisKey: "y"}}},
 	}
 	csv := "x,y,z,w\n1,2,3,4\n"
-	results, _ := mustParseCSVFile(s.T(), s.writeFile(csv), s.cfg)
+	results, effective := mustParseCSVFile(s.T(), s.writeFile(csv), s.cfg)
+	s.Empty(effective.ColAxis)
 	s.Require().Len(results, 1)
 	s.Equal("1", results[0].XAxis)
 	s.Equal("2", results[0].YAxis)
@@ -789,6 +792,6 @@ func (s *CSVErrorSuite) TestSelectMultiStatModeCustomTypeLabel() {
 	s.Equal("sales by region", results[0].Stats[1].Type)
 }
 
-func TestCSVAutoValueSuite(t *testing.T) {
-	suite.Run(t, new(CSVAutoValueSuite))
+func TestCSVAutoColAxisSuite(t *testing.T) {
+	suite.Run(t, new(CSVAutoColAxisSuite))
 }
