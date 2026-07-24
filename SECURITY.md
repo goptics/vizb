@@ -25,9 +25,14 @@ CSV, and JSON. Treat all input as untrusted when embedding generated HTML in
 shared or hosted environments. Do not serve untrusted vizb output from the same
 origin as sensitive applications without reviewing the content first.
 
-The CLI itself runs locally and does not expose a network service. The primary
-risk surface is malicious or malformed input files processed by the parsers and
-rendered into HTML/JavaScript bundles.
+Most CLI commands run locally, but `vizb serve` exposes an unauthenticated HTTP
+API. The Docker image runs this API on `0.0.0.0:8080` inside the container. Do
+not publish it on a non-loopback host address without your own authentication,
+TLS, and appropriate access controls, such as a protected reverse proxy or
+firewall rules.
+
+The other primary risk surface is malicious or malformed input files processed
+by the parsers and rendered into HTML/JavaScript bundles.
 
 ## Supported Versions
 

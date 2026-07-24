@@ -1,6 +1,6 @@
 ---
 title: Installation
-description: Install vizb using a one-liner, Go toolchain, or download a pre-built binary.
+description: Install vizb using Docker, a one-liner, the Go toolchain, or a pre-built binary.
 ---
 
 import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
@@ -12,6 +12,39 @@ import QuickInstall from '../../components/QuickInstall.mdx';
 
 <Aside type="note">
   The installer downloads the latest binary from GitHub Releases to `~/.local/bin` on Linux/macOS or `%LOCALAPPDATA%\vizb` on Windows. No admin required.
+</Aside>
+
+## Docker
+
+Pull the image and start the API on port 8080:
+
+```bash
+docker pull goptics/vizb
+docker run --rm -p 127.0.0.1:8080:8080 goptics/vizb
+```
+
+The image starts `vizb serve` bound to `0.0.0.0` inside the container. You can
+also start it with the repository's Compose configuration:
+
+```bash
+docker compose up -d
+```
+
+For CLI use, mount the current directory so Vizb can read inputs and persist
+outputs:
+
+```bash
+docker run --rm -v "$PWD:/data" -w /data goptics/vizb bar sales.csv -o out.html
+```
+
+Pipe input with `-i`; the mounted directory still keeps the generated file:
+
+```bash
+cat sales.csv | docker run --rm -i -v "$PWD:/data" -w /data goptics/vizb bar -o out.html
+```
+
+<Aside type="caution">
+  The API has no built-in authentication. Do not expose it publicly without your own authentication, TLS, and access controls. See [`vizb serve`](/commands/serve/) for details and port remapping.
 </Aside>
 
 ## Go Install
