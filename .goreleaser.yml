@@ -18,6 +18,7 @@ builds:
     ldflags:
       - -s -w
       - -X github.com/goptics/vizb/version.Version={{.Tag}}
+      - -X github.com/goptics/vizb/version.Distribution=standalone
     main: .
 
 archives:
@@ -41,4 +42,3 @@ checksum:
 
 snapshot:
   version_template: "{{ .Tag }}-next"
-

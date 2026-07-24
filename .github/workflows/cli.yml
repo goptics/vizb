@@ -8,6 +8,7 @@ on:
       - '**.go'
       - go.mod
       - go.sum
+      - .goreleaser.yml
       - action.yml
       - .github/workflows/action-ci.yml
       - .github/workflows/cli.yml
@@ -18,6 +19,7 @@ on:
       - '**.go'
       - go.mod
       - go.sum
+      - .goreleaser.yml
       - action.yml
       - .github/workflows/action-ci.yml
       - .github/workflows/cli.yml
