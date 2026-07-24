@@ -7,3 +7,4 @@ bin
 **/.vite
 .pnpm-store
 coverage.out
+pkg/template/vizb-ui.gen.go
