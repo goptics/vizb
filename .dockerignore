@@ -1,0 +1,10 @@
+.git
+.github
+bin
+**/node_modules
+**/dist
+**/.astro
+**/.vite
+.pnpm-store
+coverage.out
+pkg/template/vizb-ui.gen.go
