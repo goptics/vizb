@@ -18,6 +18,7 @@ import {
   buildContinuous3DOptions,
   makeContinuous3DParams,
   valuePoints3DToSeries,
+  visible3DCellTotals,
   type Continuous3DContext,
 } from './shared'
 import { resolve3DSymbolProps } from './shared/seriesConfig'
@@ -31,6 +32,8 @@ export function useLine3DChartOptions(config: BaseChartConfig) {
     threeDRotate,
     visibleZ,
     showLabels,
+    labelMode,
+    chartTotal,
     scale,
     threeDVisualMap,
     symbol,
@@ -95,7 +98,13 @@ export function useLine3DChartOptions(config: BaseChartConfig) {
         data: s.data,
         ...resolve3DSymbolProps(valueSymbolSize, symbolOverride, symbolSizeOverride),
         itemStyle: { color: defaultColor },
-        label: create3DCellLabel(showLabels.value, cellTotals, styling.textColor),
+        label: create3DCellLabel(
+          showLabels.value,
+          cellTotals,
+          styling.textColor,
+          labelMode?.value,
+          chartTotal?.value
+        ),
         emphasis: { label: { show: false } },
       }))
 
@@ -143,6 +152,8 @@ export function useLine3DChartOptions(config: BaseChartConfig) {
       styling,
       isDark: isDark.value,
       showLabels: showLabels.value,
+      labelMode: labelMode?.value,
+      chartTotal: chartTotal?.value,
       useVisualMap,
       defaultColor,
       threeDRotate: threeDRotate?.value ?? false,
@@ -174,7 +185,7 @@ export function useLine3DChartOptions(config: BaseChartConfig) {
     const seriesData = render.lineSeries
     const sel = visibleZ?.value ?? {}
     const aggPoints = points.filter((p) => sel[p.zAxis] !== false)
-    const cellTotals = render.cellTotals ?? {}
+    const cellTotals = visible3DCellTotals(render.lineSeries, sel)
     const lastVisibleZName =
       [...zValues].reverse().find((z) => sel[z] !== false) ?? zValues[zValues.length - 1]
 
@@ -203,7 +214,9 @@ export function useLine3DChartOptions(config: BaseChartConfig) {
         label: create3DCellLabel(
           showLabels.value && s.name === lastVisibleZName,
           cellTotals,
-          styling.textColor
+          styling.textColor,
+          labelMode?.value,
+          chartTotal?.value
         ),
         emphasis: { label: { show: false } },
       }

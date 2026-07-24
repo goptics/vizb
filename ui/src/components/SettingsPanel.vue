@@ -6,7 +6,7 @@ import Selector from './Selector.vue'
 import SettingHeader from './SettingHeader.vue'
 import { useSettingsStore } from '../composables/useSettingsStore'
 import { useDataPoint } from '../composables/useDataPoint'
-import { resetColor } from '../lib/utils'
+import { resetColor, resolveLabelMode } from '../lib/utils'
 import {
   getRenderableFields,
   partitionRenderableFields,
@@ -30,7 +30,7 @@ const {
   setSort,
   setScale,
   setStack,
-  setShowLabels,
+  setLabelMode,
   setSmooth,
   setHorizontal,
   setThreeDRotate,
@@ -145,7 +145,7 @@ const handlers: SettingsHandlers = {
   sort: setSort,
   scale: setScale,
   stack: setStack,
-  showLabels: setShowLabels,
+  labelMode: setLabelMode,
   smooth: setSmooth,
   horizontal: setHorizontal,
   threeDRotate: setThreeDRotate,
@@ -167,6 +167,7 @@ const stackEnabled = computed(
 
 const valueFor = (key: SettingFieldKey) => {
   if (!activeConfig.value) return undefined
+  if (key === 'labelMode') return resolveLabelMode(activeConfig.value)
   if (key === 'scale' && stackEnabled.value) return 'linear'
   return (activeConfig.value as Partial<SettingFieldValueMap>)[key]
 }

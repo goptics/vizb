@@ -1,5 +1,5 @@
 import { computed, type Ref } from 'vue'
-import type { Axis, ChartData, Sort, ChartType, ScaleType } from '../types'
+import type { Axis, ChartData, Sort, ChartType, ScaleType, LabelMode } from '../types'
 import type { EChartsOption } from 'echarts'
 import { useBarChartOptions } from './charts/useBarChartOptions'
 import { useLineChartOptions } from './charts/useLineChartOptions'
@@ -17,6 +17,8 @@ export function useChartOptions(
   chartData: Ref<ChartData>,
   sort: Ref<Sort>,
   showLabels: Ref<boolean>,
+  labelMode: Ref<LabelMode>,
+  chartTotal: Ref<number>,
   isDark: Ref<boolean>,
   chartType: Ref<ChartType>,
   scale: Ref<ScaleType>,
@@ -37,6 +39,8 @@ export function useChartOptions(
     chartData,
     sort,
     showLabels,
+    labelMode,
+    chartTotal,
     isDark,
     scale,
     stack,

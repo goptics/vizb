@@ -74,6 +74,7 @@ const { isDark, chartType } = useSettingsStore()
 const {
   sort,
   showLabels,
+  labelMode,
   scale,
   stack,
   threeDRotate,
@@ -124,10 +125,16 @@ function onLegendSelectChanged(e: { selected: Record<string, boolean> }) {
   visibleZ.value = { ...e.selected }
 }
 
+const chartTotalValue = computed(() =>
+  computeChartGrandTotal(chartData.value, visibleZ.value, scale.value)
+)
+
 const { options } = useChartOptions(
   chartData,
   resolvedSort,
   showLabels,
+  labelMode,
+  chartTotalValue,
   isDark,
   chartType,
   scale,
@@ -163,9 +170,7 @@ const showTotal = computed(() => chartHasPlottableData(chartData.value))
 const xAxisBadgeCount = computed(() => chartAxisBadgeCount(chartData.value, 'x'))
 const yAxisBadgeCount = computed(() => chartAxisBadgeCount(chartData.value, 'y'))
 const zAxisBadgeCount = computed(() => chartAxisBadgeCount(chartData.value, 'z'))
-const chartTotal = computed(() =>
-  formatChartTotal(computeChartGrandTotal(chartData.value, visibleZ.value))
-)
+const chartTotal = computed(() => formatChartTotal(chartTotalValue.value))
 
 const mergedOptions = computed<EChartsOption>(() => withFullscreenToolbox(options.value))
 

@@ -44,6 +44,7 @@ Every chart subcommand accepts the common data, grouping, and metadata flags:
 | `--sort` | `-s` | `""` | Sort order: `asc` or `desc` |
 | `--swap` | | `""` | Axis permutation override, e.g. `yx`, `yxn` |
 | `--show-labels` | `-l` | `false` | Show value labels on the chart |
+| `--label-mode` | | *(none)* | Label text: `none`, `value`, or `percentage`; overrides `--show-labels` |
 | `--mem-unit` | `-M` | `B` | Memory unit: `b`, `B`, `KB`, `MB`, `GB` |
 | `--time-unit` | `-T` | `ns` | Time unit: `ns`, `us`, `ms`, `s` |
 | `--number-unit` | `-N` | `""` | Number unit: `K`, `M`, `B`, `T` |
@@ -72,6 +73,9 @@ vizb bar data.csv -g category,metric,group -p n,x,y,z --scale log --3d-rotate -o
 
 # Pie with value labels, ascending sort
 vizb pie data.csv -g impl --sort asc --show-labels -o pie.html
+
+# Percentage-only labels; plotted data and tooltips stay in original units
+vizb pie data.csv -g impl --label-mode percentage -o pie.html
 
 # Line from Go benchmarks via stdin, swapping axes
 go test -bench . | vizb line -p n/y --swap yn -o line.html

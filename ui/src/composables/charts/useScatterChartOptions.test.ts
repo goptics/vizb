@@ -145,6 +145,17 @@ describe('useScatterChartOptions — axes value mode', () => {
     expect(s.label?.show).toBe(true)
   })
 
+  it('formats value-mode labels as percentages', () => {
+    const cfg = makeValueConfig()
+    cfg.showLabels.value = true
+    cfg.labelMode = ref('percentage')
+    cfg.chartTotal = ref(20)
+    const { options } = useScatterChartOptions(cfg)
+    const formatter = (options.value.series as { label: { formatter: (p: any) => string } }[])[0]!
+      .label.formatter
+    expect(formatter({ data: [100, 12] })).toBe('60%')
+  })
+
   it('emits visualMap when enabled in value mode', () => {
     const cfg = makeValueConfig()
     cfg.visualMap!.value = true
@@ -192,6 +203,17 @@ const makeMixedConfig = (): BaseChartConfig => ({
 })
 
 describe('useScatterChartOptions — mixed mode', () => {
+  it('formats mixed-mode labels as percentages', () => {
+    const cfg = makeMixedConfig()
+    cfg.showLabels.value = true
+    cfg.labelMode = ref('percentage')
+    cfg.chartTotal = ref(23)
+    const { options } = useScatterChartOptions(cfg)
+    const formatter = (options.value.series as { label: { formatter: (p: any) => string } }[])[0]!
+      .label.formatter
+    expect(formatter({ data: [0, 12] })).toBe('52.17%')
+  })
+
   it('emits category xAxis and value yAxis', () => {
     const { options } = useScatterChartOptions(makeMixedConfig())
     expect((options.value.xAxis as { type: string; data: string[] }).type).toBe('category')

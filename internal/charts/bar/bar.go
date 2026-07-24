@@ -20,6 +20,7 @@ type Config struct {
 	Scale           string             `json:"scale,omitempty"`
 	Stack           *bool              `json:"stack,omitempty"`
 	ShowLabels      *bool              `json:"showLabels,omitempty"`
+	LabelMode       string             `json:"labelMode,omitempty"`
 	ThreeDRotate    *bool              `json:"threeDRotate,omitempty"`
 	ThreeD          *bool              `json:"threeD,omitempty"`
 	ThreeDVisualMap *bool              `json:"threeDVisualMap,omitempty"`

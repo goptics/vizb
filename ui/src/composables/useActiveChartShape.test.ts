@@ -144,6 +144,14 @@ describe('useActiveChartShape', () => {
     expect(showLabels.value).toBe(true)
   })
 
+  it('lets explicit labelMode override legacy showLabels', async () => {
+    holder.ref = ref(ds([{ type: 'bar' as ChartType, showLabels: true, labelMode: 'none' }]))
+    const { useActiveChartShape } = await import('./useActiveChartShape')
+    const { labelMode, showLabels } = useActiveChartShape()
+    expect(labelMode.value).toBe('none')
+    expect(showLabels.value).toBe(false)
+  })
+
   it('uses configured scale when stack is disabled', async () => {
     holder.ref = ref(ds([{ type: 'bar' as ChartType, scale: 'log', stack: false }]))
     const { useActiveChartShape } = await import('./useActiveChartShape')

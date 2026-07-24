@@ -91,13 +91,13 @@ export class MixedBuilder implements ChartBuilder {
 
   grandTotal(chart: ChartData): number {
     if (chart.mixedTuples?.length) {
-      return chart.mixedTuples.reduce((sum, [, y]) => sum + y, 0)
+      return chart.mixedTuples.reduce((sum, [, y]) => sum + (Number.isFinite(y) ? y : 0), 0)
     }
     if (chart.render3D?.mode === 'mixed') {
-      return (chart.render3D.lineSeries[0]?.data ?? []).reduce(
-        (sum, p) => sum + (p.value[1] ?? 0),
-        0
-      )
+      return (chart.render3D.lineSeries[0]?.data ?? []).reduce((sum, p) => {
+        const value = p.value[1]
+        return sum + (value !== undefined && Number.isFinite(value) ? value : 0)
+      }, 0)
     }
     return 0
   }

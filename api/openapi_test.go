@@ -142,6 +142,13 @@ func (s *OpenAPISuite) TestDatasetSettingsRequireUniqueChartTypes() {
 	}
 	s.NoError(validateSchema(contract, datasetSchema, dataset, "dataset"))
 
+	dataset["settings"] = []any{map[string]any{
+		"type": "bar", "showLabels": true, "labelMode": "percentage",
+	}}
+	s.NoError(validateSchema(contract, datasetSchema, dataset, "dataset"))
+	dataset["settings"] = []any{map[string]any{"type": "bar", "labelMode": "percent"}}
+	s.ErrorContains(validateSchema(contract, datasetSchema, dataset, "dataset"), "matches 0 oneOf schemas")
+
 	dataset["settings"] = []any{
 		map[string]any{"type": "bar"},
 		map[string]any{"type": "bar", "showLabels": true},

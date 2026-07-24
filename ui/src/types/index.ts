@@ -21,6 +21,9 @@ export type ChartType = 'bar' | 'line' | 'scatter' | 'pie' | 'heatmap' | 'radar'
 export type ScaleType = 'linear' | 'log'
 export const SCALE_TYPES: ScaleType[] = ['linear', 'log']
 
+export type LabelMode = 'none' | 'value' | 'percentage'
+export const LABEL_MODES: LabelMode[] = ['none', 'value', 'percentage']
+
 export type Stat = {
   type: string
   value?: number
@@ -65,6 +68,7 @@ export type BarConfig = {
   scale?: ScaleType
   stack?: boolean
   showLabels?: boolean
+  labelMode?: LabelMode
   horizontal?: boolean
   threeDRotate?: boolean
   threeD?: boolean
@@ -79,6 +83,7 @@ export type LineConfig = {
   scale?: ScaleType
   stack?: boolean
   showLabels?: boolean
+  labelMode?: LabelMode
   symbol?: string
   symbolSize?: number
   smooth?: boolean
@@ -94,6 +99,7 @@ export type ScatterConfig = {
   sort?: Sort
   scale?: ScaleType
   showLabels?: boolean
+  labelMode?: LabelMode
   symbol?: string
   symbolSize?: number
   threeDRotate?: boolean
@@ -108,6 +114,7 @@ export type PieConfig = {
   swap?: string
   sort?: Sort
   showLabels?: boolean
+  labelMode?: LabelMode
   stat?: StatConfig
 }
 
@@ -116,6 +123,7 @@ export type HeatmapConfig = {
   swap?: string
   sort?: Sort
   showLabels?: boolean
+  labelMode?: LabelMode
   stat?: StatConfig
 }
 
@@ -124,6 +132,7 @@ export type RadarConfig = {
   swap?: string
   sort?: Sort
   showLabels?: boolean
+  labelMode?: LabelMode
   stat?: StatConfig
 }
 

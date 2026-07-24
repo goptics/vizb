@@ -17,6 +17,8 @@ import {
   resolve3DVisualMap,
   symbolSizeFor3DGrid,
   symbolSizeForContinuous3D,
+  create3DCellLabel,
+  visible3DCellTotals,
 } from './3d'
 import { resetColor } from '@/lib/utils'
 
@@ -26,6 +28,22 @@ const styling = {
   opacity: 0.5,
   backgroundColor: undefined,
 }
+
+describe('3D labels', () => {
+  it('formats cell totals as percentages and respects visible series', () => {
+    const totals = visible3DCellTotals(
+      [
+        { name: 'A', data: [{ value: [0, 0, 10] }] },
+        { name: 'B', data: [{ value: [0, 0, 20] }] },
+      ],
+      { A: true, B: false }
+    )
+    expect(totals).toEqual({ '0,0': 10 })
+
+    const label = create3DCellLabel(true, totals, '#111', 'percentage', 10)
+    expect(label.formatter?.({ value: [0, 0, 10] })).toBe('100%')
+  })
+})
 
 describe('boxSizeForAxisCount', () => {
   it.each([

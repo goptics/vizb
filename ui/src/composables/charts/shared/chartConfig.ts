@@ -841,7 +841,8 @@ export const createLabelConfig = (
   showLabels: boolean,
   styling: ChartStyling,
   orient?: 'horizontal' | 'vertical',
-  stacked = false
+  stacked = false,
+  formatter: string | ((params: any) => string) = '{c}'
 ) => ({
   show: showLabels,
   position: stacked
@@ -849,7 +850,7 @@ export const createLabelConfig = (
     : orient === 'horizontal'
       ? ('right' as const)
       : ('top' as const),
-  formatter: '{c}',
+  formatter,
   fontSize,
   color: stacked ? '#fff' : styling.textColor,
   ...(stacked ? { textBorderColor: 'rgba(0,0,0,0.5)', textBorderWidth: 2 } : {}),
