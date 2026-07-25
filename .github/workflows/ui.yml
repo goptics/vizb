@@ -78,7 +78,15 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - run: pnpm test
+      - run: pnpm test:coverage
+
+      - uses: codecov/codecov-action@v7
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        with:
+          files: ./ui/coverage/lcov.info
+          flags: ui
+          name: ui
 
   e2e:
     runs-on: ubuntu-slim

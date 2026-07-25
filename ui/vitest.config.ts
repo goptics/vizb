@@ -17,7 +17,7 @@ export default defineConfig({
     globals: false,
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'text-summary', 'html', 'json-summary'],
+      reporter: ['text', 'text-summary', 'html', 'json-summary', 'lcov'],
       reportsDirectory: './coverage',
       // All production UI source. Types/d.ts and test helpers stay out.
       include: ['src/**/*.{ts,vue}', 'embed-build/**/*.ts'],
