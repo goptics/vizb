@@ -148,11 +148,15 @@ export function useUrlRouter() {
     if (resultGroups.value.length > 0) {
       applyIndexParam(gParam, resultGroups.value.length, selectGroup)
     } else if (gParam !== undefined) {
-      // once:true fires on the first length change; applyIndexParam validates the index.
-      watch(
+      // Groups may populate across multiple ticks — keep watching until g applies.
+      const stop = watch(
         () => resultGroups.value.length,
-        (len) => applyIndexParam(gParam, len, selectGroup),
-        { once: true }
+        (len) => {
+          if (len === 0) return
+          applyIndexParam(gParam, len, selectGroup)
+          const id = parseInt(gParam, 10)
+          if (!isNaN(id) && isValidIndex(id, len)) stop()
+        }
       )
     }
 

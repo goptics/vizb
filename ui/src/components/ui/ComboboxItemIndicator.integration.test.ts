@@ -27,7 +27,7 @@ describe('ComboboxItemIndicator', () => {
       slots: { default: 'MARK' },
     })
     expect(w.get('[data-testid="radix-ind"]').text()).toBe('MARK')
-    expect(w.html()).toMatch(/ind-class|ml-auto/)
+    expect(w.get('[data-testid="radix-ind"]').classes()).toContain('ind-class')
   })
 
   it('renders without optional class', () => {

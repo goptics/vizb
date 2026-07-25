@@ -80,8 +80,32 @@ jobs:
 
       - run: pnpm test
 
+  e2e:
+    runs-on: ubuntu-slim
+    defaults:
+      run:
+        working-directory: ui
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: ui/pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm exec playwright install --with-deps chromium
+
+      - run: pnpm test:e2e
+
   build:
-    needs: [lint, format, test]
+    needs: [lint, format, test, e2e]
     runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v7

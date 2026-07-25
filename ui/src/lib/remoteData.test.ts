@@ -179,7 +179,7 @@ describe('remote data payloads', () => {
     expect(classifyPayload([])).toEqual({ mode: 'full', datasets: [] })
   })
 
-  it('removeRequest no-ops when a newer request replaced the map entry', async () => {
+  it('clears the in-flight map so a later same-id fetch is not stuck on a settled promise', async () => {
     let resolveFirst!: (response: Response) => void
     let resolveSecond!: (response: Response) => void
     let n = 0
@@ -192,13 +192,35 @@ describe('remote data payloads', () => {
     )
 
     const first = fetchDatasetDetail('https://example.com/catalog', 'race', fetcher)
-    // Force-clear so a second call is not deduped, then start second before first settles
-    // by rejecting first after second is registered — covers delete guard when id mismatch.
     resolveFirst(jsonResponse(detail('race')))
     await first
+
+    // After settle, removeRequest must have cleared the entry so a new call fetches again.
     const second = fetchDatasetDetail('https://example.com/catalog', 'race', fetcher)
     resolveSecond(jsonResponse(detail('race')))
     await second
     expect(fetcher).toHaveBeenCalledTimes(2)
+  })
+
+  it('removeRequest leaves a newer same-id entry intact', async () => {
+    const { _detailRequestsForTest, fetchDatasetDetail: fetchDetail } = await import('./remoteData')
+    let resolveOld!: (response: Response) => void
+    const fetcher = vi.fn(
+      () =>
+        new Promise<Response>((resolve) => {
+          resolveOld = resolve
+        })
+    )
+
+    const oldPromise = fetchDetail('https://example.com/catalog', 'guard', fetcher)
+    // Replace the in-flight entry before the old request settles.
+    const newer = Promise.resolve(detail('guard'))
+    _detailRequestsForTest.set('guard', newer)
+
+    resolveOld(jsonResponse(detail('guard')))
+    await oldPromise
+    // Old removeRequest must not delete the newer entry.
+    expect(_detailRequestsForTest.get('guard')).toBe(newer)
+    _detailRequestsForTest.delete('guard')
   })
 })

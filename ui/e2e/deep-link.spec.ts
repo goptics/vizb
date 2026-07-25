@@ -1,7 +1,7 @@
-import { test, expect } from '@playwright/test'
+import { test as it, expect } from '@playwright/test'
 
-test.describe('deep link', () => {
-  test('applies ?c=line as the active chart type', async ({ page }) => {
+it.describe('deep link', () => {
+  it('applies ?c=line as the active chart type', async ({ page }) => {
     await page.goto('/?c=line')
 
     const active = page.getByTestId('chart-type-active')

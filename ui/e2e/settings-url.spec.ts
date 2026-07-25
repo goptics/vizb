@@ -1,7 +1,7 @@
-import { test, expect } from '@playwright/test'
+import { test as it, expect } from '@playwright/test'
 
-test.describe('settings url', () => {
-  test('toggling stack writes expected URL param', async ({ page }) => {
+it.describe('settings url', () => {
+  it('toggling stack writes expected URL param', async ({ page }) => {
     await page.goto('/')
 
     await page.getByTestId('settings-toggle').click()

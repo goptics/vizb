@@ -282,22 +282,12 @@ describe('StatsPanel', () => {
 
   it('empty views when no columns and correlation off', async () => {
     statsMocks.available.correlation = false
-    const w = mount(StatsPanel, {
-      props: { chartData: chart(), math: [] as never[] },
-    })
-    // math: [] means all descriptive keys still via defaultSelectedKeys([]) → all columns
-    // Force no descriptive by math with only correlations
-    await w.setProps({ math: ['correlations'] })
-    await flushPromises()
-    // reload happens on chartData watch, not math — remount
     const w2 = mount(StatsPanel, {
       props: { chartData: chart(), math: ['correlations'] },
     })
-    statsMocks.available.correlation = false
     await flushPromises()
-    // with only correlations math and correlation unavailable → empty
-    // available is set during load from mock
-    expect(w2.text()).toMatch(/No statistics available|Statistics/)
+    // Correlation-only math with correlation unavailable → empty state copy.
+    expect(w2.text()).toContain('No statistics available')
   })
 
   it('sorts descriptive columns and formats values', async () => {

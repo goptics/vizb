@@ -2,11 +2,11 @@
 
 Three layers. Prefer the lowest layer that can fail for the right reason.
 
-| Layer           | Runner                   | Files                          | What belongs here                                               |
-| --------------- | ------------------------ | ------------------------------ | --------------------------------------------------------------- |
-| **Unit**        | Vitest `node`            | `src/**/*.test.ts`             | Pure libs, workers, composables with mocked Worker/window/fetch |
-| **Integration** | Vitest `happy-dom` + Vue | `src/**/*.integration.test.ts` | Mount contracts: gates, retry, one settings write path          |
-| **E2E**         | Playwright               | `e2e/**/*.spec.ts`             | User journeys against a served HTML fixture                     |
+| Layer           | Runner                   | Files                                                 | What belongs here                                               |
+| --------------- | ------------------------ | ----------------------------------------------------- | --------------------------------------------------------------- |
+| **Unit**        | Vitest `node`            | `src/**/*.test.ts` (excludes `*.integration.test.ts`) | Pure libs, workers, composables with mocked Worker/window/fetch |
+| **Integration** | Vitest `happy-dom` + Vue | `src/**/*.integration.test.ts`                        | Mount contracts: gates, retry, one settings write path          |
+| **E2E**         | Playwright               | `e2e/**/*.spec.ts`                                    | User journeys against a served HTML fixture                     |
 
 ## Commands
 

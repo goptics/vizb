@@ -1,7 +1,7 @@
-import { test, expect } from '@playwright/test'
+import { test as it, expect } from '@playwright/test'
 
-test.describe('load error retry', () => {
-  test('Retry clears error and shows charts', async ({ page }) => {
+it.describe('load error retry', () => {
+  it('Retry clears error and shows charts', async ({ page }) => {
     await page.goto('/?error=1')
 
     await expect(page.getByTestId('load-error')).toBeVisible()

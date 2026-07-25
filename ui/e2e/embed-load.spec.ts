@@ -1,7 +1,7 @@
-import { test, expect } from '@playwright/test'
+import { test as it, expect } from '@playwright/test'
 
-test.describe('embed load', () => {
-  test('shows dataset name and chart card from VIZB_DATA', async ({ page }) => {
+it.describe('embed load', () => {
+  it('shows dataset name and chart card from VIZB_DATA', async ({ page }) => {
     await page.goto('/')
 
     await expect(page.getByTestId('dataset-name')).toHaveText('Alpha Benchmark')

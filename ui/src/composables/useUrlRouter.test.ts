@@ -530,6 +530,29 @@ describe('useUrlRouter', () => {
     expect(holder.selectGroup).not.toHaveBeenCalled()
   })
 
+  it('reapplies deferred group when groups populate across multiple ticks', async () => {
+    holder.resultGroups = ref([])
+    mockWindow('?g=1')
+    const { useUrlRouter } = await import('./useUrlRouter')
+    await useUrlRouter().initFromUrl()
+    expect(holder.selectGroup).not.toHaveBeenCalled()
+
+    // First batch still too short for g=1
+    holder.resultGroups.value = [{ name: 'only' }]
+    await nextTick()
+    expect(holder.selectGroup).not.toHaveBeenCalled()
+
+    // Transient empty tick — watcher stays alive (len === 0 early return)
+    holder.resultGroups.value = []
+    await nextTick()
+    expect(holder.selectGroup).not.toHaveBeenCalled()
+
+    // Second batch makes g=1 valid — watcher must still be alive
+    holder.resultGroups.value = [{ name: 'a' }, { name: 'b' }]
+    await nextTick()
+    expect(holder.selectGroup).toHaveBeenCalledWith(1)
+  })
+
   it('syncs pie configs without cartesian branches', async () => {
     holder.datasets = ref([
       ds([
@@ -580,17 +603,13 @@ describe('useUrlRouter', () => {
   })
 
   it('covers empty deferred group/swap ticks and empty query values', async () => {
-    holder.resultGroups = ref([{ name: 'seed' }])
-    holder.datasets = ref([])
-    mockWindow('?g=0&bar.sw=yx&c=')
-    // Force an empty-string query param through location.search parsing.
     const replaceState = mockWindow('?g=0&bar.sw=yx&empty=')
     holder.resultGroups = ref([])
     holder.datasets = ref([])
     const { useUrlRouter } = await import('./useUrlRouter')
     await useUrlRouter().initFromUrl()
 
-    // First deferred ticks stay at 0 / empty — exercise len>0 false branches.
+    // First deferred ticks stay empty — exercise len>0 false branches.
     holder.resultGroups.value = []
     holder.datasets.value = []
     await nextTick()
@@ -601,14 +620,15 @@ describe('useUrlRouter', () => {
     expect(holder.selectGroup).toHaveBeenCalledWith(0)
     expect(holder.setArrangement).toHaveBeenCalledWith(0, 'bar', 'yx')
 
-    // Sync with only defaults produces an empty query (buildQueryString false branch via omit).
+    // Sync with only defaults produces an empty/default query.
     holder.activeGroupId.value = 0
     holder.activeChartIndex.value = 0
     holder.arrangementMap.clear()
     replaceState.mockClear()
     useUrlRouter().syncUrlToState()
-    // May or may not call replaceState depending on current URL; just ensure no throw.
-    expect(true).toBe(true)
+    expect(replaceState).toHaveBeenCalled()
+    const url = String(replaceState.mock.calls[0]?.[2] ?? '')
+    expect(url === '/' || url.startsWith('/?')).toBe(true)
   })
 
   it('skips deferred group watch when g is absent and groups are empty', async () => {

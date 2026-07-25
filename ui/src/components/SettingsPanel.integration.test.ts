@@ -278,10 +278,12 @@ describe('SettingsPanel', () => {
 
   it('falls back wire swap when map empty', () => {
     holder.arrangementMap = undefined
-    holder.barConfig = { ...holder.barConfig, swap: 'x/z/y' }
+    holder.barConfig = { ...holder.barConfig, swap: 'x/z/y', threeD: true }
     barConfigRef.value = holder.barConfig
     const w = mount(SettingsPanel)
-    expect(w.exists()).toBe(true)
+    expect(w.text()).toContain('Settings')
+    // Wire swap still drives a SwapControl when map is empty.
+    expect(w.findComponent({ name: 'SwapControl' }).exists()).toBe(true)
   })
 
   it('empty activeConfig yields no fields', () => {

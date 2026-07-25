@@ -14,8 +14,7 @@ describe('extractPathDatasetId', () => {
     expect(extractPathDatasetId(pathname)).toBe(expected)
   })
 
-  it('treats empty decoded segment as null', () => {
-    // decodeURIComponent of empty after filter is covered by '/'
+  it('returns null when no path segments remain', () => {
     expect(extractPathDatasetId('///')).toBe(null)
   })
 })

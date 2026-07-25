@@ -70,17 +70,17 @@ tasks:
   test:ui:
     desc: Run UI unit + integration tests
     cmds:
-      - cd ui; pnpm test; cd -
+      - cd ui && pnpm test
 
   test:ui:e2e:
     desc: Run UI Playwright e2e smokes
     cmds:
-      - cd ui; pnpm exec playwright install chromium; pnpm test:e2e; cd -
+      - cd ui && pnpm exec playwright install chromium && pnpm test:e2e
 
   test:ui:coverage:
     desc: Run UI tests with 100% coverage thresholds
     cmds:
-      - cd ui; pnpm test:coverage; cd -
+      - cd ui && pnpm test:coverage
 
 
   test:api-contract:

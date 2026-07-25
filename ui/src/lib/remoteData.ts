@@ -14,6 +14,9 @@ type Fetcher = (input: string | URL, init?: RequestInit) => Promise<Response>
 
 const detailRequests = new Map<string, Promise<Dataset>>()
 
+/** Test seam for in-flight dedup / remove races. */
+export const _detailRequestsForTest = detailRequests
+
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
 
@@ -147,7 +150,7 @@ export const fetchDatasetDetail = (
 
   detailRequests.set(id, request)
   const removeRequest = () => {
-    detailRequests.delete(id)
+    if (detailRequests.get(id) === request) detailRequests.delete(id)
   }
   void request.then(removeRequest, removeRequest)
   return request

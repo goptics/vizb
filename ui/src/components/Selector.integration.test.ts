@@ -184,7 +184,7 @@ describe('Selector', () => {
     const before = w.emitted('select')?.length ?? 0
     await cb.vm.$emit('update:open', false)
     await nextTick()
-    expect((w.emitted('select')?.length ?? 0) >= before).toBe(true)
+    expect(w.emitted('select')?.length).toBe(before)
   })
 
   it('shows search when >10 options and truncation message with resultLimit', () => {

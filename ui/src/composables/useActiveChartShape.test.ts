@@ -177,23 +177,29 @@ describe('useActiveChartShape', () => {
   })
 
   it('prefers arrangement map over wire swap and identity', async () => {
+    // Map ynx keeps z off chart axes → hasThreeDOption true with z-data.
     holder.arrangement = 'ynx'
-    holder.ref = ref(ds([{ type: 'bar' as ChartType, swap: 'xyn' }]))
-    const { useActiveChartShape } = await import('./useActiveChartShape')
-    // hasThreeDOption path uses effectiveSwapTarget via arrangementHasChartZ
-    const { hasThreeDOption } = useActiveChartShape()
-    expect(typeof hasThreeDOption.value).toBe('boolean')
-
-    holder.arrangement = undefined
-    holder.activeArrangement = { identityString: 'xyz', targetString: 'xyn' }
     holder.ref = ref(
       ds(
-        [{ type: 'bar' as ChartType }],
+        [{ type: 'bar' as ChartType, swap: 'xyz' }],
+        [{ name: '', xAxis: 'a', yAxis: 'b', zAxis: 'z1', stats: [] }]
+      )
+    )
+    const { useActiveChartShape } = await import('./useActiveChartShape')
+    const { hasThreeDOption } = useActiveChartShape()
+    expect(hasThreeDOption.value).toBe(true)
+
+    // Wire/identity xyz puts z on chart → hasThreeDOption false (grouped path).
+    holder.arrangement = undefined
+    holder.activeArrangement = { identityString: 'xyz', targetString: 'xyz' }
+    holder.ref = ref(
+      ds(
+        [{ type: 'bar' as ChartType, swap: 'xyz' }],
         [{ name: '', xAxis: 'a', yAxis: 'b', zAxis: 'z1', stats: [] }]
       )
     )
     const again = (await import('./useActiveChartShape')).useActiveChartShape()
-    expect(again.hasThreeDOption.value).toBe(true)
+    expect(again.hasThreeDOption.value).toBe(false)
   })
 
   it('defaults threeDVisualMap/visualMap/smooth/horizontal when absent', async () => {

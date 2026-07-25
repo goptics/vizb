@@ -446,9 +446,8 @@ describe('ChartSettingsPopover', () => {
     expect(w.find('[aria-label="Open chart settings"]').exists()).toBe(true)
     expect(w.find('[data-testid="settings-panel"]').exists()).toBe(true)
     const pop = w.findComponent({ name: 'Popover' })
-    if (pop.exists()) {
-      await pop.vm.$emit('update:open', true)
-      await pop.vm.$emit('update:open', false)
-    }
+    expect(pop.exists()).toBe(true)
+    await pop.vm.$emit('update:open', true)
+    await pop.vm.$emit('update:open', false)
   })
 })

@@ -1,7 +1,7 @@
-import { test, expect } from '@playwright/test'
+import { test as it, expect } from '@playwright/test'
 
-test.describe('stats csv', () => {
-  test('opening stats and clicking CSV fires a download', async ({ page }) => {
+it.describe('stats csv', () => {
+  it('opening stats and clicking CSV fires a download', async ({ page }) => {
     await page.goto('/')
 
     await page.getByTestId('stats-button').click()

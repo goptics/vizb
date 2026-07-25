@@ -20,7 +20,8 @@ const server = http.createServer((req, res) => {
   const urlPath = decodeURIComponent((req.url || '/').split('?')[0] || '/')
   const rel = urlPath === '/' ? 'index.html' : urlPath.replace(/^\//, '')
   const file = path.normalize(path.join(root, rel))
-  if (!file.startsWith(root)) {
+  const relative = path.relative(root, file)
+  if (relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
     res.writeHead(403).end('Forbidden')
     return
   }

@@ -143,27 +143,26 @@ describe('inlineFaviconPlugin', () => {
 })
 
 describe('embedUiPlugin.closeBundle', () => {
+  let workspace: string
   let root: string
   let dist: string
   let assets: string
   let goPath: string
-  let pkgRoot: string
 
   beforeEach(() => {
-    root = fs.mkdtempSync(path.join(os.tmpdir(), 'embed-ui-root-'))
+    workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'embed-ui-'))
+    root = path.join(workspace, 'ui')
     dist = path.join(root, 'dist')
     assets = path.join(dist, 'assets')
     fs.mkdirSync(assets, { recursive: true })
     // plugin writes ../pkg/template/vizb-ui.gen.go relative to rootDir
-    goPath = path.resolve(root, '..', 'pkg', 'template', 'vizb-ui.gen.go')
-    pkgRoot = path.resolve(root, '..', 'pkg')
+    goPath = path.join(workspace, 'pkg', 'template', 'vizb-ui.gen.go')
     fs.mkdirSync(path.dirname(goPath), { recursive: true })
     vi.mocked(childProcess.execSync).mockReset()
   })
 
   afterEach(() => {
-    fs.rmSync(root, { recursive: true, force: true })
-    fs.rmSync(pkgRoot, { recursive: true, force: true })
+    fs.rmSync(workspace, { recursive: true, force: true })
     vi.restoreAllMocks()
   })
 
