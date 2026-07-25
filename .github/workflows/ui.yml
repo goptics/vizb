@@ -82,12 +82,15 @@ jobs:
 
   e2e:
     runs-on: ubuntu-slim
+    permissions:
+      contents: read
     defaults:
       run:
         working-directory: ui
     steps:
       - uses: actions/checkout@v7
-
+        with:
+          persist-credentials: false
       - uses: pnpm/action-setup@v6
         with:
           version: 9
