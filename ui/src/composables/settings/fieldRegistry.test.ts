@@ -305,4 +305,30 @@ describe('getRenderableFields', () => {
       )
     ).toEqual(['sort', 'scale', 'showLabels', 'threeDVisualMap', 'threeDRotate', 'swap'])
   })
+
+  it('skips fields whose appliesOn excludes the current dimension when visible is absent', () => {
+    const original = fieldRegistry.stack
+    // Temporarily strip `visible` so the appliesOn branch is the only filter.
+    fieldRegistry.stack = {
+      component: original.component,
+      appliesTo: original.appliesTo,
+      appliesOn: original.appliesOn,
+    }
+    try {
+      const cfg: BarConfig = { type: 'bar' }
+      expect(getRenderableFields(cfg, { dimension: '3D' }).map((f) => f.key)).not.toContain('stack')
+      expect(getRenderableFields(cfg, { dimension: '2D' }).map((f) => f.key)).toContain('stack')
+    } finally {
+      fieldRegistry.stack = original
+    }
+  })
+
+  it('omits missing THREE_D_FIELD_KEYS from the threeD partition', () => {
+    const { general, threeD } = partitionRenderableFields([
+      { key: 'sort', component: fieldRegistry.sort.component },
+      { key: 'threeDRotate', component: fieldRegistry.threeDRotate.component },
+    ])
+    expect(general.map((f) => f.key)).toEqual(['sort'])
+    expect(threeD.map((f) => f.key)).toEqual(['threeDRotate'])
+  })
 })

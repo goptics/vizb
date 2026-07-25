@@ -125,4 +125,14 @@ describe('useChartOptions dispatch', () => {
     const { options } = dispatch('pie', grouped3DData(), { threeD: true })
     expect(firstSeriesType(options.value)).toBe('pie')
   })
+
+  it('default branch falls back to bar options for unknown chart types', () => {
+    const { options } = dispatch('unknown' as ChartType, makeGroupedChartData(), { threeD: false })
+    expect(firstSeriesType(options.value)).toBe('bar')
+  })
+
+  it('default branch falls back to bar3D when use3D is true', () => {
+    const { options } = dispatch('unknown' as ChartType, grouped3DData(), { threeD: true })
+    expect(firstSeriesType(options.value)).toBe('bar3D')
+  })
 })

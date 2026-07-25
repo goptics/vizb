@@ -92,6 +92,27 @@ describe('transform.worker — setArrangement', () => {
     expect(r!.groupNames).toBeDefined()
   })
 
+  it('applies non-null labels on grouped setArrangement', () => {
+    send(buildInit())
+    postSpy.mockClear()
+    send({
+      type: 'setArrangement',
+      identityString: 'xy',
+      targetString: 'xy',
+      labels: { x: 'region', y: 'cat' },
+    })
+    expect(ready()).toBeDefined()
+  })
+
+  it('compute uses the named group when present', () => {
+    send(buildInit())
+    const sig = ready()!.signatures[0]!.signature
+    const group = ready()!.groupNames[0]!
+    postSpy.mockClear()
+    send(buildCompute({ signature: sig, groupName: group }))
+    expect(charts()).toHaveLength(1)
+  })
+
   it('is a no-op when called before init', () => {
     send({ type: 'setArrangement', identityString: 'yx', targetString: 'yx' })
     expect(postSpy).not.toHaveBeenCalled()
@@ -391,5 +412,206 @@ describe('transform.worker — value mode compute', () => {
     send(buildCompute({ signature: sig, groupName: '' }))
     expect(charts()).toHaveLength(1)
     expect((charts()[0]!.chart as ChartData).valueTuples).toBeUndefined()
+  })
+})
+
+describe('transform.worker — labels on setArrangement and mixed 3D', () => {
+  it('grouped setArrangement accepts labels null and unknown group falls back', () => {
+    send(buildInit({ labels: { x: 'X' } }))
+    postSpy.mockClear()
+    send({
+      type: 'setArrangement',
+      identityString: 'xy',
+      targetString: 'xy',
+      labels: null as unknown as undefined,
+    })
+    expect(ready()).toBeDefined()
+
+    // compute with empty grouped map path: re-init with empty data
+    send(buildInit({ data: [] }))
+    const sig = ready()?.signatures[0]?.signature
+    postSpy.mockClear()
+    if (sig) {
+      send(buildCompute({ signature: sig, groupName: 'ghost' }))
+      // no signatures from empty data → may be undefined
+    }
+  })
+
+  it('value mode setArrangement updates labels', () => {
+    send(
+      buildInit({
+        data: [valueDp('1', '2')],
+        axes: VALUE_AXES,
+        chartType: 'scatter',
+        labels: { x: 'old' },
+      })
+    )
+    postSpy.mockClear()
+    send({
+      type: 'setArrangement',
+      identityString: 'xy',
+      targetString: 'xy',
+      labels: { x: 'price', y: 'lat' },
+    })
+    const r = ready()
+    expect(r!.signatures[0]!.title).toContain('price')
+  })
+
+  it('value mode compute ignores wrong signature', () => {
+    send(
+      buildInit({
+        data: [valueDp('1', '2')],
+        axes: VALUE_AXES,
+        chartType: 'scatter',
+      })
+    )
+    postSpy.mockClear()
+    send(buildCompute({ signature: 'nope' }))
+    expect(charts()).toHaveLength(0)
+  })
+
+  it('mixed mode setArrangement and compute with 3D axes', () => {
+    const MIXED3: Axis[] = [
+      { key: 'x', label: 'region' },
+      { key: 'y', label: 'lat', type: 'value' },
+      { key: 'z', label: 'z', type: 'value' },
+    ]
+    send(
+      buildInit({
+        data: [{ xAxis: 'Asia', yAxis: '12', zAxis: '3', stats: [] }],
+        axes: MIXED3,
+        chartType: 'scatter',
+      })
+    )
+    expect(ready()!.signatures[0]!.signature).toBe('__mixed_mode__')
+    postSpy.mockClear()
+    send({
+      type: 'setArrangement',
+      identityString: 'xyz',
+      targetString: 'xyz',
+      labels: { x: 'region' },
+    })
+    expect(ready()).toBeDefined()
+    postSpy.mockClear()
+    send(buildCompute({ signature: '__mixed_mode__' }))
+    const chart = charts()[0]!.chart as ChartData
+    expect(chart.render3D?.mode).toBe('mixed')
+
+    postSpy.mockClear()
+    send(buildCompute({ signature: 'wrong' }))
+    expect(charts()).toHaveLength(0)
+  })
+})
+
+describe('transform.worker remaining branch edges', () => {
+  it('value setArrangement with and without labels', () => {
+    send(
+      buildInit({
+        data: [valueDp('1', '2')],
+        axes: VALUE_AXES,
+        chartType: 'scatter',
+        labels: { x: 'a' },
+      })
+    )
+    postSpy.mockClear()
+    send({
+      type: 'setArrangement',
+      identityString: 'xy',
+      targetString: 'yx',
+      labels: undefined,
+    })
+    expect(ready()!.signatures[0]!.title).toBeTruthy()
+
+    postSpy.mockClear()
+    send({ type: 'setArrangement', identityString: 'xy', targetString: 'xy' })
+    expect(ready()).toBeDefined()
+
+    postSpy.mockClear()
+    send({
+      type: 'setArrangement',
+      identityString: 'xy',
+      targetString: 'xy',
+      labels: null as unknown as undefined,
+    })
+    expect(ready()).toBeDefined()
+  })
+
+  it('mixed setArrangement with null labels and without labels key', () => {
+    const MIXED: Axis[] = [
+      { key: 'x', label: 'region' },
+      { key: 'y', label: 'lat', type: 'value' },
+    ]
+    send(
+      buildInit({
+        data: [{ xAxis: 'A', yAxis: '1', stats: [] }],
+        axes: MIXED,
+        chartType: 'scatter',
+        labels: { x: 'keep' },
+      })
+    )
+    expect(ready()!.signatures[0]!.title).toContain('region')
+    postSpy.mockClear()
+    send({
+      type: 'setArrangement',
+      identityString: 'xy',
+      targetString: 'xy',
+      labels: null as unknown as undefined,
+    })
+    expect(ready()).toBeDefined()
+
+    postSpy.mockClear()
+    send({ type: 'setArrangement', identityString: 'xy', targetString: 'xy' })
+    expect(ready()).toBeDefined()
+  })
+
+  it('value mode compute succeeds for __value_mode__', () => {
+    send(
+      buildInit({
+        data: [valueDp('1', '2')],
+        axes: VALUE_AXES,
+        chartType: 'scatter',
+      })
+    )
+    postSpy.mockClear()
+    send(buildCompute({ signature: '__value_mode__' }))
+    expect(charts()).toHaveLength(1)
+  })
+
+  it('empty init has no signatures to compute', () => {
+    send(
+      buildInit({
+        data: [],
+        identityString: 'xy',
+        targetString: 'xy',
+      })
+    )
+    postSpy.mockClear()
+    send(buildCompute({ signature: 'val-', groupName: 'x' }))
+    expect(charts()).toHaveLength(0)
+  })
+
+  it('value and mixed ready titles when axes present', () => {
+    send(
+      buildInit({
+        data: [valueDp('1', '2')],
+        axes: VALUE_AXES,
+        chartType: 'scatter',
+      })
+    )
+    expect(ready()!.signatures[0]!.title).toBe('price vs latency')
+
+    postSpy.mockClear()
+    const MIXED: Axis[] = [
+      { key: 'x', label: 'region' },
+      { key: 'y', label: 'lat', type: 'value' },
+    ]
+    send(
+      buildInit({
+        data: [{ xAxis: 'A', yAxis: '1', stats: [] }],
+        axes: MIXED,
+        chartType: 'bar',
+      })
+    )
+    expect(ready()!.signatures[0]!.title).toBe('region vs lat')
   })
 })

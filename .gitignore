@@ -68,3 +68,6 @@ ui/test-results/
 ui/playwright-report/
 ui/blob-report/
 ui/playwright/.cache/
+
+# Vitest UI coverage
+ui/coverage/

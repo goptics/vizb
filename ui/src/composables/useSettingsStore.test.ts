@@ -153,4 +153,194 @@ describe('useSettingsStore', () => {
     expect((activeConfig.value as { stack?: boolean } | undefined)?.stack).toBe(true)
     expect((activeConfig.value as { scale?: string } | undefined)?.scale).toBe('linear')
   })
+
+  it('covers every remaining setter and chart-type helpers', async () => {
+    holder.ref = ref(
+      ds([
+        {
+          type: 'bar',
+          sort: { enabled: false, order: 'asc' },
+          scale: 'linear',
+        } as ChartConfig,
+        {
+          type: 'line',
+          sort: { enabled: false, order: 'asc' },
+        } as ChartConfig,
+        {
+          type: 'scatter',
+          sort: { enabled: false, order: 'asc' },
+        } as ChartConfig,
+      ])
+    )
+
+    const { useSettingsStore } = await import('./useSettingsStore')
+    const store = useSettingsStore()
+
+    store.setShowLabels(true)
+    expect(store.activeConfig.value?.showLabels).toBe(true)
+
+    store.setHorizontal(true)
+    expect((store.activeConfig.value as { horizontal?: boolean }).horizontal).toBe(true)
+
+    store.setSwap('yx')
+    expect(store.activeConfig.value?.swap).toBe('yx')
+
+    store.setThreeD(true)
+    expect((store.activeConfig.value as { threeD?: boolean }).threeD).toBe(true)
+
+    store.setThreeDVisualMap(true)
+    expect((store.activeConfig.value as { threeDVisualMap?: boolean }).threeDVisualMap).toBe(true)
+
+    store.setChartType('scatter')
+    expect(store.chartType.value).toBe('scatter')
+    expect(store.activeChartIndex.value).toBe(2)
+
+    store.setVisualMap(true)
+    expect((store.activeConfig.value as { visualMap?: boolean }).visualMap).toBe(true)
+
+    store.setChartType('missing' as never)
+    expect(store.chartType.value).toBe('scatter')
+
+    store.setActiveChartIndex(99)
+    expect(store.activeChartIndex.value).toBe(2)
+
+    store.setActiveChartIndex(1)
+    store.setHorizontal(true)
+    expect((store.activeConfig.value as { horizontal?: boolean }).horizontal).toBeUndefined()
+
+    store.setVisualMap(true)
+    expect((store.activeConfig.value as { visualMap?: boolean }).visualMap).toBeUndefined()
+  })
+
+  it('clamps activeChartIndex when settings shrink and defaults chartType', async () => {
+    holder.ref = ref(
+      ds([
+        { type: 'bar', sort: { enabled: false, order: 'asc' } },
+        { type: 'pie', sort: { enabled: false, order: 'asc' } },
+      ])
+    )
+    const { useSettingsStore } = await import('./useSettingsStore')
+    const { activeChartIndex, setActiveChartIndex, chartType } = useSettingsStore()
+    setActiveChartIndex(1)
+    expect(chartType.value).toBe('pie')
+
+    holder.ref!.value = ds([{ type: 'bar', sort: { enabled: false, order: 'asc' } }])
+    await Promise.resolve()
+    expect(activeChartIndex.value).toBe(0)
+    expect(chartType.value).toBe('bar')
+
+    holder.ref!.value = undefined
+    await Promise.resolve()
+    expect(chartType.value).toBe('bar')
+  })
+
+  it('initializes dark mode and theme preference from localStorage and toggles dark', async () => {
+    const values = new Map<string, string>([
+      ['dark-mode', 'true'],
+      ['color-theme', 'macarons'],
+    ])
+    const storage = {
+      getItem: vi.fn((key: string) => values.get(key) ?? null),
+      setItem: vi.fn((key: string, value: string) => values.set(key, value)),
+    }
+    const classList = { toggle: vi.fn() }
+    vi.stubGlobal('localStorage', storage)
+    vi.stubGlobal('window', {
+      matchMedia: () => ({ matches: false }),
+    })
+    vi.stubGlobal('document', { documentElement: { classList } })
+
+    const { useSettingsStore } = await import('./useSettingsStore')
+    const { isDark, themeName, toggleDark, initializeTheme } = useSettingsStore()
+
+    expect(isDark.value).toBe(true)
+    expect(themeName.value).toBe('macarons')
+    initializeTheme('vintage')
+    expect(themeName.value).toBe('macarons')
+
+    toggleDark()
+    expect(isDark.value).toBe(false)
+    expect(storage.setItem).toHaveBeenCalledWith('dark-mode', 'false')
+    expect(classList.toggle).toHaveBeenCalled()
+  })
+
+  it('setStack without enabling keeps scale when stack is false', async () => {
+    holder.ref = ref(
+      ds([{ type: 'bar', sort: { enabled: false, order: 'asc' }, scale: 'log' } as ChartConfig])
+    )
+    const { useSettingsStore } = await import('./useSettingsStore')
+    const { activeConfig, setStack } = useSettingsStore()
+    setStack(false)
+    expect((activeConfig.value as { stack?: boolean }).stack).toBe(false)
+    expect((activeConfig.value as { scale?: string }).scale).toBe('log')
+  })
+
+  it('no-ops setters when there is no active config', async () => {
+    holder.ref = ref(undefined)
+    const { useSettingsStore } = await import('./useSettingsStore')
+    const store = useSettingsStore()
+
+    store.setSort({ enabled: true, order: 'desc' })
+    store.setScale('log')
+    store.setStack(true)
+    store.setShowLabels(true)
+    store.setSmooth(true)
+    store.setHorizontal(true)
+    store.setThreeDRotate(true)
+    store.setSwap('yx')
+    store.setThreeD(true)
+    store.setThreeDVisualMap(true)
+    store.setVisualMap(true)
+    store.setChartType('bar')
+    store.setActiveChartIndex(0)
+
+    expect(store.activeConfig.value).toBeUndefined()
+    expect(store.chartType.value).toBe('bar')
+  })
+
+  it('prefers system dark scheme when no localStorage preference exists', async () => {
+    const storage = {
+      getItem: vi.fn(() => null),
+      setItem: vi.fn(),
+    }
+    const classList = { toggle: vi.fn() }
+    vi.stubGlobal('localStorage', storage)
+    vi.stubGlobal('window', {
+      matchMedia: () => ({ matches: true }),
+    })
+    vi.stubGlobal('document', { documentElement: { classList } })
+
+    const { useSettingsStore } = await import('./useSettingsStore')
+    const { isDark } = useSettingsStore()
+    expect(isDark.value).toBe(true)
+  })
+
+  it('is import-safe without browser globals', async () => {
+    vi.unstubAllGlobals()
+    const g = globalThis as typeof globalThis & {
+      window?: unknown
+      document?: unknown
+    }
+    const hadWindow = Object.prototype.hasOwnProperty.call(g, 'window')
+    const hadDocument = Object.prototype.hasOwnProperty.call(g, 'document')
+    const prevWindow = g.window
+    const prevDocument = g.document
+    Reflect.deleteProperty(g, 'window')
+    Reflect.deleteProperty(g, 'document')
+
+    try {
+      vi.resetModules()
+      const { useSettingsStore } = await import('./useSettingsStore')
+      const store = useSettingsStore()
+      store.toggleDark()
+      store.setTheme('roma')
+      expect(store.themeName.value).toBe('roma')
+      expect(typeof store.isDark.value).toBe('boolean')
+    } finally {
+      if (hadWindow) g.window = prevWindow
+      else Reflect.deleteProperty(g, 'window')
+      if (hadDocument) g.document = prevDocument
+      else Reflect.deleteProperty(g, 'document')
+    }
+  })
 })

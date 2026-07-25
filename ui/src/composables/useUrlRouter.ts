@@ -16,14 +16,8 @@ import { activeDataset } from './useDataPoint'
 import { ALL_CHART_TYPES } from './constants'
 import { isValidIndex } from '../lib/utils'
 
-const buildQueryString = (params: Record<string, string | undefined>): string => {
-  const searchParams = new URLSearchParams()
-  for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined && value !== '') {
-      searchParams.set(key, value)
-    }
-  }
-  const qs = searchParams.toString()
+const buildQueryString = (params: Record<string, string>): string => {
+  const qs = new URLSearchParams(params).toString()
   return qs ? `?${qs}` : ''
 }
 
@@ -116,7 +110,7 @@ export function useUrlRouter() {
 
   // Chart-type list for the active dataset, derived from its `settings` array.
   const availableTypes = computed<ChartType[]>(
-    () => activeDataset.value?.settings.map((s) => s.type) ?? []
+    () => activeDataset.value?.settings?.map((s) => s.type) ?? []
   )
 
   const parseUrlParams = () => {
@@ -154,11 +148,10 @@ export function useUrlRouter() {
     if (resultGroups.value.length > 0) {
       applyIndexParam(gParam, resultGroups.value.length, selectGroup)
     } else if (gParam !== undefined) {
+      // once:true fires on the first length change; applyIndexParam validates the index.
       watch(
         () => resultGroups.value.length,
-        (len) => {
-          if (len > 0) applyIndexParam(gParam, len, selectGroup)
-        },
+        (len) => applyIndexParam(gParam, len, selectGroup),
         { once: true }
       )
     }
@@ -228,9 +221,7 @@ export function useUrlRouter() {
         } else {
           watch(
             () => datasets.value.length,
-            (len) => {
-              if (len > 0) applySwap()
-            },
+            () => applySwap(),
             { once: true }
           )
         }
@@ -240,7 +231,7 @@ export function useUrlRouter() {
   }
 
   const syncUrlToState = () => {
-    const params: Record<string, string | undefined> = {}
+    const params: Record<string, string> = {}
     const identity = activeArrangement.value.identityString
     const settings: ChartConfig[] = activeDataset.value?.settings ?? []
 

@@ -17,10 +17,13 @@ import {
   correlationMatrix,
   computeProfiles,
   buildColumns,
+  buildOverlayColumns,
   availableViews,
   computeDescriptive,
   computeCorrelation,
   selectCorrelationAxis,
+  buildCorrelationColumns,
+  buildColumnsGroupedByZ,
 } from './stats'
 import type { Point3D } from '../types'
 
@@ -501,5 +504,77 @@ describe('lazy compute pieces match computeProfiles', () => {
   it('lazy pieces return undefined when no axis has ≥2 entities', () => {
     const single = pts(['A', 'p', 1])
     expect(computeCorrelation(single, ['A'], ['p'])).toBeUndefined() // x=1, y=1 → no usable axis
+  })
+})
+
+describe('remaining stats branch coverage', () => {
+  it('variance of empty is NaN', () => {
+    expect(variance([])).toBeNaN()
+  })
+  it('kendall counts y-only ties (Ty) and joint-tie fallthrough', () => {
+    // ys tied at index pair (1,2): ys=[1,2,2], xs=[1,2,3]
+    // pairs: (0,1) C, (0,2) C, (1,2) dy=0 dx!=0 → Ty
+    // τ_b = (2-0)/sqrt((2+0+0)(2+0+1)) = 2/sqrt(6)
+    expect(kendall([1, 2, 3], [1, 2, 2])).toBeCloseTo(2 / Math.sqrt(6), P)
+    // joint ties (dx=dy=0): reaches Ty check with false condition
+    expect(kendall([1, 1, 2], [9, 9, 10])).toBeCloseTo(1, P)
+  })
+
+  it('buildOverlayColumns returns empty arrays for missing series labels', () => {
+    const cols = buildOverlayColumns(
+      [{ xAxis: 'A', yAxis: '', zAxis: '', value: 1 }],
+      ['A', 'Missing']
+    )
+    expect(cols[0]).toEqual([1])
+    expect(cols[1]).toEqual([])
+  })
+
+  it('buildCorrelationColumns supports z entity axis', () => {
+    const points: Point3D[] = [
+      { xAxis: 'X1', yAxis: 'Y1', zAxis: 'Z1', value: 1 },
+      { xAxis: 'X2', yAxis: 'Y1', zAxis: 'Z1', value: 2 },
+      { xAxis: 'X1', yAxis: 'Y1', zAxis: 'Z2', value: 3 },
+      { xAxis: 'X2', yAxis: 'Y1', zAxis: 'Z2', value: 4 },
+    ]
+    const { labels, columns } = buildCorrelationColumns(
+      points,
+      'z',
+      ['X1', 'X2'],
+      ['Y1'],
+      ['Z1', 'Z2']
+    )
+    expect(labels).toEqual(['Z1', 'Z2'])
+    expect(columns).toHaveLength(2)
+    expect(columns[0]).toEqual([1, 2])
+    expect(columns[1]).toEqual([3, 4])
+  })
+
+  it('buildColumnsGroupedByZ NaN-fills missing (x,z)×y cells and skips duplicate labels', () => {
+    const points: Point3D[] = [
+      { xAxis: 'A', yAxis: 'p', zAxis: 'z1', value: 1 },
+      { xAxis: 'A', yAxis: 'q', zAxis: 'z1', value: 2 },
+    ]
+    const { labels, columns } = buildColumnsGroupedByZ(points, ['A', 'A'], ['z1', 'z2'], ['p', 'q'])
+    // seriesOrder has duplicate A but label set de-dupes A\0z pairs once each
+    expect(labels).toEqual(['A\0z1', 'A\0z2'])
+    expect(columns[0]).toEqual([1, 2])
+    expect(columns[1]![0]).toBeNaN()
+    expect(columns[1]![1]).toBeNaN()
+  })
+
+  it('computeCorrelation can force z axis and falls back when resolved labels empty', () => {
+    const points: Point3D[] = [
+      { xAxis: 'X1', yAxis: 'Y1', zAxis: 'Z1', value: 1 },
+      { xAxis: 'X2', yAxis: 'Y1', zAxis: 'Z1', value: 2 },
+      { xAxis: 'X1', yAxis: 'Y2', zAxis: 'Z2', value: 3 },
+      { xAxis: 'X2', yAxis: 'Y2', zAxis: 'Z2', value: 4 },
+    ]
+    const corr = computeCorrelation(points, ['X1', 'X2'], ['Y1', 'Y2'], ['Z1', 'Z2'], 'z')
+    expect(corr!.axis).toBe('z')
+    expect(corr!.labels).toEqual(['Z1', 'Z2'])
+
+    // requested axis not usable → first usable
+    const fallback = computeCorrelation(points, ['X1', 'X2'], ['Y1', 'Y2'], ['Z1'], 'z')
+    expect(fallback!.axis).not.toBe('z')
   })
 })

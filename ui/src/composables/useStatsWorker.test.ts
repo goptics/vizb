@@ -144,3 +144,17 @@ describe('useStatsWorker — correlation axis cache', () => {
     await p1
   })
 })
+
+describe('useStatsWorker — orphan replies and missing profiles', () => {
+  it('ignores replies for unknown ids without throwing', async () => {
+    expect(() => worker.__emit({ type: 'result', id: 999_999, seriesProfiles: [] })).not.toThrow()
+  })
+
+  it('defaults missing seriesProfiles to an empty array', async () => {
+    const chart = makeChart('no-profiles')
+    const p = computeDescriptive(chart)
+    const id = worker.postMessage.mock.calls[0]![0].id as number
+    worker.__emit({ type: 'result', id })
+    await expect(p).resolves.toEqual([])
+  })
+})

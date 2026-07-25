@@ -156,4 +156,49 @@ describe('remote data payloads', () => {
       message
     )
   })
+
+  it('rejects non-array non-object payloads and non-object array entries', () => {
+    expect(() => classifyPayload('nope')).toThrow('Invalid data payload.')
+    expect(() => classifyPayload([1 as unknown as object])).toThrow('Invalid entry at index 0')
+  })
+
+  it('rejects catalog entries with empty names', () => {
+    expect(() => classifyPayload([{ id: 'one', name: '  ' }])).toThrow('name must be non-empty')
+  })
+
+  it('rejects detail responses with empty names', async () => {
+    const fetcher = vi.fn(async () =>
+      jsonResponse({ id: 'one', name: ' ', data: [], settings: [] })
+    )
+    await expect(fetchDatasetDetail('https://example.com/catalog', 'one', fetcher)).rejects.toThrow(
+      'name must be non-empty'
+    )
+  })
+
+  it('classifies an empty array as full mode with no datasets', () => {
+    expect(classifyPayload([])).toEqual({ mode: 'full', datasets: [] })
+  })
+
+  it('removeRequest no-ops when a newer request replaced the map entry', async () => {
+    let resolveFirst!: (response: Response) => void
+    let resolveSecond!: (response: Response) => void
+    let n = 0
+    const fetcher = vi.fn(
+      () =>
+        new Promise<Response>((resolve) => {
+          if (n++ === 0) resolveFirst = resolve
+          else resolveSecond = resolve
+        })
+    )
+
+    const first = fetchDatasetDetail('https://example.com/catalog', 'race', fetcher)
+    // Force-clear so a second call is not deduped, then start second before first settles
+    // by rejecting first after second is registered — covers delete guard when id mismatch.
+    resolveFirst(jsonResponse(detail('race')))
+    await first
+    const second = fetchDatasetDetail('https://example.com/catalog', 'race', fetcher)
+    resolveSecond(jsonResponse(detail('race')))
+    await second
+    expect(fetcher).toHaveBeenCalledTimes(2)
+  })
 })

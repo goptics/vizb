@@ -14,6 +14,7 @@ Three layers. Prefer the lowest layer that can fail for the right reason.
 pnpm test                 # unit + integration
 pnpm test:unit            # unit only
 pnpm test:integration     # integration only
+pnpm test:coverage        # all vitest + 100% thresholds (src + embed-build)
 pnpm test:e2e             # Playwright smokes (starts fixture server)
 pnpm test:watch           # vitest watch (all vitest projects)
 ```
@@ -22,6 +23,7 @@ From repo root:
 
 ```bash
 task test:ui              # unit + integration
+task test:ui:coverage     # unit + integration with 100% gates
 task test:ui:e2e          # Playwright
 ```
 

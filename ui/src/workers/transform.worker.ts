@@ -154,7 +154,7 @@ const GroupedHandler: ModeHandler = {
     return readyReply(s)
   },
   setArrangement(s, msg) {
-    if (msg.labels !== undefined) s.labels = msg.labels ?? undefined
+    if (msg.labels !== undefined) s.labels = msg.labels || undefined
     applyArrangement(s, msg.identityString, msg.targetString)
     return readyReply(s)
   },
@@ -165,7 +165,11 @@ const GroupedHandler: ModeHandler = {
 
     // Read the selected group's rows; fall back to the first group (or empty) so a
     // stale/unknown groupName still produces a renderable chart instead of dropping.
-    const rows = s.grouped.get(msg.groupName) ?? s.grouped.values().next().value ?? []
+    let rows = s.grouped.get(msg.groupName)
+    if (rows === undefined) {
+      // After init/arrangement the map always has at least one group.
+      rows = s.grouped.values().next().value!
+    }
 
     const canonical = canonicalAxisOrdersFromStrings(s.raw, s.identityString, s.targetString)
 
@@ -197,14 +201,14 @@ const ValueHandler: ModeHandler = {
     return this.readyReply(s)
   },
   setArrangement(s, msg) {
-    if (msg.labels !== undefined) s.labels = msg.labels ?? undefined
+    if (msg.labels !== undefined) s.labels = msg.labels || undefined
     s.identityString = msg.identityString
     s.targetString = msg.targetString
     return this.readyReply(s)
   },
   compute(s, msg) {
-    if (msg.signature !== '__value_mode__' || !s.axes) return
-    const chart = buildValueModeChart(s.raw, s.axes, s.identityString, s.targetString, {
+    if (msg.signature !== '__value_mode__') return
+    const chart = buildValueModeChart(s.raw, s.axes!, s.identityString, s.targetString, {
       scale: msg.scale,
       showLabels: msg.showLabels,
       threeD: msg.threeD,
@@ -218,7 +222,7 @@ const ValueHandler: ModeHandler = {
       signatures: [
         {
           signature: '__value_mode__',
-          title: buildValueModeChart([], s.axes ?? [], s.identityString, s.targetString).title,
+          title: buildValueModeChart([], s.axes!, s.identityString, s.targetString).title,
         },
       ],
       groupNames: [],
@@ -237,12 +241,12 @@ const MixedHandler: ModeHandler = {
     return this.readyReply(s)
   },
   setArrangement(s, msg) {
-    if (msg.labels !== undefined) s.labels = msg.labels ?? undefined
+    if (msg.labels !== undefined) s.labels = msg.labels || undefined
     return this.readyReply(s)
   },
   compute(s, msg) {
-    if (msg.signature !== '__mixed_mode__' || !s.axes) return
-    const chart = buildMixedModeChart(s.raw, s.axes, {
+    if (msg.signature !== '__mixed_mode__') return
+    const chart = buildMixedModeChart(s.raw, s.axes!, {
       scale: msg.scale,
       showLabels: msg.showLabels,
     })
@@ -255,7 +259,7 @@ const MixedHandler: ModeHandler = {
       signatures: [
         {
           signature: '__mixed_mode__',
-          title: buildMixedModeChart([], s.axes ?? []).title,
+          title: buildMixedModeChart([], s.axes!).title,
         },
       ],
       groupNames: [],

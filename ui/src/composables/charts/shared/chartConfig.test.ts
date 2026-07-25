@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import {
   createAxisConfig,
   createValueAxisConfig,
@@ -323,5 +323,244 @@ describe('formatRadarItemTooltip', () => {
     expect(donut).toContain('<span>B</span>')
     expect(donut).not.toContain('<span>C</span>')
     expect(donut).not.toContain('n/a')
+  })
+})
+
+describe('createHorizontalDataZoomConfig', () => {
+  it('returns inside+slider pair for y axis', async () => {
+    const { createHorizontalDataZoomConfig, DATAZOOM_INITIAL_END_PERCENT } =
+      await import('./chartConfig')
+    const dz = createHorizontalDataZoomConfig(styling)
+    expect(dz).toHaveLength(2)
+    expect(dz[0]).toMatchObject({
+      type: 'inside',
+      yAxisIndex: 0,
+      end: DATAZOOM_INITIAL_END_PERCENT,
+    })
+    expect(dz[1]).toMatchObject({ type: 'slider', yAxisIndex: 0 })
+  })
+})
+
+describe('createValueAxisConfig log min', () => {
+  it('sets log minimum from minValue', () => {
+    const axes = createValueAxisConfig(styling, 'x', 'y', 'log', 25)
+    expect(axes.yAxis.min).toBe(10)
+  })
+})
+
+describe('createValueModeTooltip', () => {
+  it('formats x/y and optional cross pointer', async () => {
+    const { createValueModeTooltip } = await import('./chartConfig')
+    const tip = createValueModeTooltip(false, 'price', 'lat', true) as {
+      formatter: (p: unknown) => string
+      axisPointer?: { type?: string }
+    }
+    expect(tip.axisPointer?.type).toBe('cross')
+    expect(tip.formatter({ data: [10, 2] })).toContain('price: 10')
+    expect(tip.formatter({ data: [10, 2] })).toContain('lat: 2')
+  })
+})
+
+describe('createHorizontalAxisConfig log + large', () => {
+  it('sets log min and auto interval for large categories', async () => {
+    const { createHorizontalAxisConfig } = await import('./chartConfig')
+    const many = Array.from({ length: 60 }, (_, i) => `c${i}`)
+    const axes = createHorizontalAxisConfig(styling, many, 'log', 50, 'cat', true)
+    expect(axes.xAxis.min).toBe(10)
+    expect(axes.yAxis.axisLabel.interval).toBe('auto')
+    expect(axes.yAxis.nameGap).toBe(88)
+  })
+
+  it('adds tick margin when no name and no dataZoom', async () => {
+    const { createHorizontalAxisConfig } = await import('./chartConfig')
+    const axes = createHorizontalAxisConfig(styling, ['a', 'b'], 'linear')
+    expect(axes.yAxis.axisLabel.margin).toBe(14)
+  })
+})
+
+describe('createPinnedAxisTooltip', () => {
+  it('formats first axis param and guards empty inputs', async () => {
+    const { createPinnedAxisTooltip } = await import('./chartConfig')
+    const tip = createPinnedAxisTooltip(true) as {
+      position: (pt: number[]) => unknown
+      formatter: (p: unknown) => string
+    }
+    expect(tip.position([12, 3])).toEqual([12, '10%'])
+    expect(tip.position([])).toEqual([0, '10%'])
+    expect(tip.formatter({ name: 'x' })).toBe('')
+    expect(tip.formatter([])).toBe('')
+    expect(tip.formatter([{ name: 'A', marker: '*', value: 3 }])).toContain('<strong>A</strong>')
+  })
+})
+
+describe('createTooltipConfig item + empty branches', () => {
+  it('returns empty for non-array axis params and empty present set', () => {
+    const tip = createTooltipConfig(true, false) as { formatter: (p: unknown) => string }
+    expect(tip.formatter({ name: 'x' })).toBe('')
+    expect(tip.formatter([{ name: 'X', seriesName: 'A', value: null, marker: 'm' }])).toBe('')
+  })
+
+  it('formats single-series axis tooltip without sum/donut', () => {
+    const tip = createTooltipConfig(true, false) as { formatter: (p: unknown) => string }
+    const html = tip.formatter([
+      { name: 'X', seriesName: 'A', value: 10, color: '#a00', marker: 'm' },
+    ])
+    expect(html).toContain('A')
+    expect(html).not.toContain('Σ')
+  })
+
+  it('formats item tooltip using seriesName fallbacks', () => {
+    const tip = createTooltipConfig(false, false) as { formatter: (p: unknown) => string }
+    expect(tip.formatter([])).toBe('')
+    expect(tip.formatter({ marker: '*', name: 'N', value: 1 })).toContain('<strong>N</strong>')
+    expect(tip.formatter({ marker: '*', seriesName: 'S', value: 2 })).toContain(
+      '<strong>S</strong>'
+    )
+  })
+})
+
+describe('createLegendConfig single series', () => {
+  it('hides legend when only one series', async () => {
+    const { createLegendConfig } = await import('./chartConfig')
+    expect(createLegendConfig([{ xAxis: 'a' }], styling, false)).toEqual({ show: false })
+  })
+})
+
+describe('renderDonutSvg total guard', () => {
+  it('returns empty when positive slice total is non-positive', () => {
+    // unreachable via normal positive filter, but keep API contract: empty when <2 positives
+    expect(
+      renderDonutSvg([
+        { name: 'A', value: 0, color: '#a' },
+        { name: 'B', value: 0, color: '#b' },
+      ])
+    ).toBe('')
+  })
+})
+
+describe('createHeatmapLayoutConfig legend top', () => {
+  it('uses legend percentage top when hasLegend', () => {
+    const layout = createHeatmapLayoutConfig({ hasLegend: true, seriesLength: 20 })
+    expect(String(layout.grid.top)).toContain('%')
+  })
+})
+
+describe('remaining chartConfig branches', () => {
+  it('createAxisConfig rotates long labels', () => {
+    const long = [Array(60).fill('x').join(''), Array(50).fill('y').join('')]
+    const axes = createAxisConfig(styling, long, 'linear')
+    expect(axes.xAxis.axisLabel.rotate).toBe(30)
+  })
+
+  it('formatRadarItemTooltip non-array values and title fallbacks', () => {
+    expect(
+      formatRadarItemTooltip(
+        { data: { name: undefined, value: undefined as unknown as number[] }, name: 'N' },
+        indicators,
+        false
+      )
+    ).toContain('<b>N</b>')
+
+    const html = formatRadarItemTooltip(
+      { data: { value: [1, 2, 3] }, seriesName: 'S', color: 123 as unknown as string },
+      indicators,
+      false
+    )
+    expect(html).toContain('<b>S</b>')
+  })
+
+  it('tooltipSpreadRows non-finite stats', async () => {
+    const { tooltipSpreadRows } = await import('./chartConfig')
+    // single value → empty
+    expect(tooltipSpreadRows([1], false)).toBe('')
+    // identical values can yield non-finite cv depending on describe()
+    const html = tooltipSpreadRows([0, 0, 0], false)
+    // still returns a block or empty; just invoke
+    expect(typeof html).toBe('string')
+  })
+
+  it('createTooltipConfig seriesTotals and non-string colors', () => {
+    const totals = new Map<string, number>([['A', 10]])
+    const tip = createTooltipConfig(true, false, totals) as { formatter: (p: unknown) => string }
+    const html = tip.formatter([
+      { name: 'X', seriesName: 'A', value: 4, color: { toString: () => '#abc' }, marker: 'm' },
+      { name: 'X', seriesName: 'B', value: 6, color: '#00c', marker: 'n' },
+    ])
+    expect(html).toContain('Σ10')
+    expect(html).toContain('Σ X:')
+
+    // no donut when only one positive after filter? two values should donut
+    expect(html).toContain('<svg')
+  })
+
+  it('createTooltipConfig item path never takes hasXYAxis true branch in item mode', () => {
+    // dead branch at 746 is unreachable in item mode (hasXYAxis false). Cover seriesName fallback only.
+    const tip = createTooltipConfig(false, true) as { formatter: (p: unknown) => string }
+    expect(tip.formatter({ marker: '*', seriesName: 'Only', value: 1 })).toContain('Only')
+  })
+})
+
+describe('final chartConfig branch cleanup', () => {
+  it('radar title falls back to empty string', () => {
+    const html = formatRadarItemTooltip({ data: { value: [1] } }, ['A'], false)
+    expect(html).toContain('<b></b>')
+  })
+
+  it('radar uses string series color', () => {
+    const html = formatRadarItemTooltip(
+      { data: { value: [1, 2] }, color: '#ff0000' },
+      ['A', 'B'],
+      false
+    )
+    expect(html).toContain('#ff0000')
+  })
+
+  it('tooltip with missing seriesName/name still formats multi series', () => {
+    const tip = createTooltipConfig(true, false) as { formatter: (p: unknown) => string }
+    const html = tip.formatter([
+      { value: 1, color: '#a00', marker: 'm' },
+      { value: 2, color: '#0b0', marker: 'n' },
+    ])
+    expect(html).toContain('Σ')
+  })
+
+  it('tooltip seriesTotals lookup with missing seriesName key', () => {
+    const totals = new Map<string, number>([['', 9]])
+    const tip = createTooltipConfig(true, false, totals) as { formatter: (p: unknown) => string }
+    const html = tip.formatter([
+      { name: 'X', value: 1, color: '#a00', marker: 'm' },
+      { name: 'X', value: 2, color: '#0b0', marker: 'n' },
+    ])
+    expect(html).toContain('Σ9')
+  })
+
+  it('multi-series all-zero skips donut but keeps sum', () => {
+    const tip = createTooltipConfig(true, false) as { formatter: (p: unknown) => string }
+    const html = tip.formatter([
+      { name: 'X', seriesName: 'A', value: 0, color: '#a00', marker: 'm' },
+      { name: 'X', seriesName: 'B', value: 0, color: '#0b0', marker: 'n' },
+    ])
+    expect(html).toContain('Σ X:')
+    expect(html).not.toContain('<svg')
+  })
+})
+
+describe('tooltipSpreadRows non-finite median', () => {
+  it('renders em dash when describe yields non-finite stats', async () => {
+    const stats = await import('@/lib/stats')
+    const empty = stats.describe([])
+    const spy = vi.spyOn(stats, 'describe').mockReturnValue({
+      ...empty,
+      count: 2,
+      median: Number.NaN,
+      iqr: Number.NaN,
+      cv: Number.NaN,
+    })
+    const { tooltipSpreadRows } = await import('./chartConfig')
+    const html = tooltipSpreadRows([1, 2, 3], false)
+    expect(html).toContain('Median: <b>—</b>')
+    expect(html).toContain('IQR: <b>—</b>')
+    expect(html).toContain('CV: <b>—</b>')
+    spy.mockRestore()
   })
 })

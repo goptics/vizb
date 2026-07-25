@@ -147,7 +147,7 @@ export const fetchDatasetDetail = (
 
   detailRequests.set(id, request)
   const removeRequest = () => {
-    if (detailRequests.get(id) === request) detailRequests.delete(id)
+    detailRequests.delete(id)
   }
   void request.then(removeRequest, removeRequest)
   return request

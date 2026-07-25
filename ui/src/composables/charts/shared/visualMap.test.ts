@@ -30,3 +30,15 @@ describe('resolve2DScatterVisualMap', () => {
     expect(resolve2DScatterVisualMap(true, [], styling)).toEqual([])
   })
 })
+
+describe('maxFromScatterValues', () => {
+  it('returns 1 when all values are <= 0', async () => {
+    const { maxFromScatterValues, resolve2DScatterVisualMap } = await import('./visualMap')
+    expect(maxFromScatterValues([])).toBe(1)
+    expect(maxFromScatterValues([-1, 0])).toBe(1)
+    expect(maxFromScatterValues([3, 7, 2])).toBe(7)
+    // dimension default branch
+    const vm = resolve2DScatterVisualMap(true, [2], styling)
+    expect(vm).toMatchObject({ dimension: 2, max: 2 })
+  })
+})

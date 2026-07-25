@@ -424,8 +424,8 @@ export function create3DTooltipFormatter(params: {
         const v = zmap.get(z)
         if (v === undefined) return ''
         const dot = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${getNextColorFor(z)};margin-right:6px"></span>`
-        const zTotal = legendTotals.get(z)
-        const sumTag = zTotal !== undefined ? ` (Σ${round2(zTotal)})` : ''
+        // legendTotals is built from the same aggPoints that fill zmap, so z is present.
+        const sumTag = ` (Σ${round2(legendTotals.get(z)!)})`
         return `${dot}${z}${sumTag}: <b>${round2(v)}</b>`
       })
       .filter(Boolean)

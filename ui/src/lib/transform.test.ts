@@ -6,9 +6,25 @@ import {
   build3DRender,
   projectAndGroup,
   canonicalAxisOrdersFromStrings,
+  canonicalValuesForField,
+  toStatSignature,
+  statsForSignature,
+  sortSeriesByTotal,
+  identityStringFromAxes,
+  axisLabelsFromAxes,
+  isSourceFieldOnChart,
+  projectValueCoords,
+  valuePoints3DToSeries,
+  buildValueMode3DRender,
+  buildValueModeChart,
+  buildMixedModeChart,
+  buildValue3DRender,
+  chartIsGrouped3D,
+  chartIsValue3DEligible,
+  applyCanonicalOrder,
 } from './transform'
 import { translateAxisKey } from './swap'
-import type { DataPoint, Point3D } from '../types'
+import type { DataPoint, Point3D, SeriesData, Axis, ChartData } from '../types'
 import { dp, noSort, ascSort, descSort } from '@/test-utils'
 
 function build(data: DataPoint[]) {
@@ -573,8 +589,6 @@ describe('buildChartData', () => {
 // ---------------------------------------------------------------------------
 // buildValueModeChart
 // ---------------------------------------------------------------------------
-import { buildValueModeChart } from './transform'
-import type { Axis } from '../types'
 
 describe('buildValueModeChart', () => {
   const valueAxes: Axis[] = [
@@ -697,7 +711,6 @@ describe('buildValueModeChart — 3-col swap-driven 3D', () => {
 // ---------------------------------------------------------------------------
 // buildMixedModeChart
 // ---------------------------------------------------------------------------
-import { buildMixedModeChart } from './transform'
 
 describe('buildMixedModeChart', () => {
   const mixedAxes2D: Axis[] = [
@@ -753,5 +766,485 @@ describe('buildMixedModeChart', () => {
       scale: 'log',
     })
     expect(chart.mixedTuples).toEqual([[0, 12]])
+  })
+})
+
+describe('stat signature helpers', () => {
+  it('toStatSignature covers type/unit/per combinations', () => {
+    expect(toStatSignature({})).toBe('-')
+    expect(toStatSignature({ type: 'ns', unit: 'ms' })).toBe('ns-ms')
+    expect(toStatSignature({ type: 'ns', per: 'op' })).toBe('ns')
+    expect(toStatSignature({ type: 'ns', unit: 'ms', per: 'op' })).toBe('ns-ms-op')
+  })
+
+  it('statsForSignature handles undefined stats', () => {
+    expect(statsForSignature(undefined, 'x')).toEqual([])
+    expect(statsForSignature([{ type: 'a', value: 1 }], 'a-')).toEqual([{ type: 'a', value: 1 }])
+  })
+
+  it('sortSeriesByTotal asc and null values', () => {
+    const series: SeriesData[] = [
+      { xAxis: 'A', values: [1, null], benchmarkId: '' },
+      { xAxis: 'B', values: [5], benchmarkId: '' },
+    ]
+    sortSeriesByTotal(series, 'asc')
+    expect(series.map((s) => s.xAxis)).toEqual(['A', 'B'])
+  })
+})
+
+describe('identity / labels / projection helpers', () => {
+  it('identityStringFromAxes maps name and filters unknown keys', () => {
+    const axes: Axis[] = [
+      { key: 'name' },
+      { key: 'x', type: 'value' },
+      { key: 'metric', type: 'value' },
+    ]
+    expect(identityStringFromAxes(axes)).toBe('nx')
+  })
+
+  it('axisLabelsFromAxes only copies labeled axes', () => {
+    expect(axisLabelsFromAxes([{ key: 'x', label: 'X' }, { key: 'y' }])).toEqual({ x: 'X' })
+  })
+
+  it('isSourceFieldOnChart and projectValueCoords edge cases', () => {
+    expect(isSourceFieldOnChart('xyz', 'xyn', 'zAxis')).toBe(false)
+    expect(isSourceFieldOnChart('xy', 'xy', 'zAxis')).toBe(false)
+    expect(projectValueCoords({ xAxis: '1', yAxis: '2', stats: [] }, 'xy', 'xyz')).toBeNull()
+    expect(projectValueCoords({ name: 'n', stats: [] }, 'n', 'n')).toEqual({})
+    expect(fieldValueName()).toBe('')
+  })
+
+  it('valuePoints3DToSeries with and without metric', () => {
+    expect(valuePoints3DToSeries([[1, 2, 3]], 't')[0]!.data[0]!.value).toEqual([1, 2, 3])
+    expect(valuePoints3DToSeries([[1, 2, 3, 4]], 't')[0]!.data[0]!.value).toEqual([1, 2, 3, 4])
+    expect(valuePoints3DToSeries([], 't')[0]!.data).toEqual([])
+  })
+
+  it('buildValueMode3DRender log filter and showLabels', () => {
+    const render = buildValueMode3DRender(
+      [
+        [1, 2, 3, 9],
+        [0, 2, 3],
+      ],
+      't',
+      true,
+      'log'
+    )
+    expect(render.barSeries[0]!.data).toHaveLength(1)
+    expect(render.cellTotals['0']).toBe(9)
+
+    const noMetric = buildValueMode3DRender([[1, 2, 3]], 't', true)
+    expect(noMetric.cellTotals['0']).toBe(3)
+  })
+})
+
+// helper used above — fieldValue is private; exercise via project with name field
+function fieldValueName() {
+  const coords = projectValueCoords({ name: undefined as unknown as string, stats: [] }, 'n', 'n')
+  return coords && Object.keys(coords).length === 0 ? '' : 'x'
+}
+
+describe('buildValueModeChart remaining branches', () => {
+  const axes3: Axis[] = [
+    { key: 'x', type: 'value' },
+    { key: 'y', type: 'value' },
+    { key: 'z', type: 'value' },
+  ]
+
+  it('log scale on 2D path drops non-positive y; metric colors tuples', () => {
+    const chart = buildValueModeChart(
+      [
+        { xAxis: '1', yAxis: '0', stats: [] },
+        { xAxis: '2', yAxis: '3', metric: '4', stats: [] },
+      ],
+      [
+        { key: 'x', type: 'value' },
+        { key: 'y', type: 'value' },
+      ],
+      'xy',
+      'xy',
+      { scale: 'log' }
+    )
+    expect(chart.valueTuples).toEqual([[2, 3, 4]])
+  })
+
+  it('threeD false keeps 2D even when target has z', () => {
+    const chart = buildValueModeChart(
+      [{ xAxis: '1', yAxis: '2', zAxis: '3', stats: [] }],
+      axes3,
+      'xyz',
+      'xyz',
+      { threeD: false }
+    )
+    expect(chart.valueTuples).toBeDefined()
+    expect(chart.render3D).toBeUndefined()
+  })
+
+  it('skips incomplete 3D coords when a dimension maps to name', () => {
+    // identity xyz → target nxy leaves no z on chart axes for 3D path when threeD
+    // and arrangementHasChartZ('nxy') is false — already covered. For incomplete:
+    // project with only xy identity into xyz target returns null length mismatch.
+    expect(projectValueCoords({ xAxis: '1', yAxis: '2', stats: [] }, 'xy', 'xyz')).toBeNull()
+  })
+})
+
+describe('buildMixedModeChart remaining branches', () => {
+  it('drops empty x and non-finite z; log filters 3D', () => {
+    const axes3: Axis[] = [
+      { key: 'x', label: 'region' },
+      { key: 'y', label: 'lat', type: 'value' },
+      { key: 'z', label: 'z', type: 'value' },
+    ]
+    const chart = buildMixedModeChart(
+      [
+        { xAxis: '', yAxis: '1', zAxis: '1', stats: [] },
+        { xAxis: 'A', yAxis: '2', zAxis: 'bad', stats: [] },
+        { xAxis: 'A', yAxis: '0', zAxis: '1', stats: [] },
+        { xAxis: 'A', yAxis: '3', zAxis: '4', stats: [] },
+      ],
+      axes3,
+      { scale: 'log' }
+    )
+    expect(chart.render3D?.lineSeries[0]?.data).toEqual([{ value: [0, 3, 4] }])
+  })
+
+  it('falls back to key labels when axes unlabeled', () => {
+    const chart = buildMixedModeChart(
+      [{ xAxis: 'A', yAxis: '1', stats: [] }],
+      [{ key: 'x' }, { key: 'y', type: 'value' }]
+    )
+    expect(chart.title).toBe('x vs y')
+  })
+})
+
+describe('build3DRender sort and preserveRows log', () => {
+  const p3 = (xAxis: string, yAxis: string, zAxis: string, value: number): Point3D => ({
+    xAxis,
+    yAxis,
+    zAxis,
+    value,
+  })
+
+  it('sort.enabled orders axes by totals', () => {
+    const points = [
+      p3('Low', 'Y1', 'Z1', 1),
+      p3('High', 'Y1', 'Z1', 9),
+      p3('Low', 'Y2', 'Z2', 1),
+      p3('High', 'Y2', 'Z2', 1),
+    ]
+    const render = build3DRender(points, ['Z1', 'Z2'], descSort, false, 'linear')
+    expect(render.xValues[0]).toBe('High')
+  })
+
+  it('preserveRows log filters non-positive sparse values', () => {
+    const points = [p3('A', '1', 'Z1', -1), p3('A', '1', 'Z1', 5)]
+    const render = build3DRender(points, ['Z1'], noSort, false, 'log', undefined, true)
+    expect(render.lineSeries[0]!.data.map((d) => d.value[2])).toEqual([5])
+  })
+
+  it('skips points whose x/y are outside the index maps', () => {
+    // Only A is in points for index; a stray label in z series still only indexes seen x/y
+    const points = [p3('A', '1', 'Z1', 5), p3('MISSING', '1', 'Z2', 9)]
+    const render = build3DRender(points, ['Z1', 'Z2'], noSort, false, 'linear')
+    // Z2 series includes MISSING in xValues so both appear
+    expect(render.xValues).toContain('MISSING')
+  })
+})
+
+describe('buildValue3DRender', () => {
+  const baseChart = (): ChartData => ({
+    title: 'v',
+    statType: 'val',
+    yAxis: ['Y1', 'Y2'],
+    zAxis: [],
+    series: [
+      { xAxis: 'A', values: [1, 0], benchmarkId: '' },
+      { xAxis: 'B', values: [3, 4], benchmarkId: '' },
+      { xAxis: '  ', values: [9, 9], benchmarkId: '' },
+    ],
+    points: [],
+  })
+
+  it('applies canonical order when sort off', () => {
+    const render = buildValue3DRender(baseChart(), noSort, false, 'linear', {
+      x: ['B', 'A'],
+      y: ['Y2', 'Y1'],
+    })
+    expect(render.xValues).toEqual(['B', 'A'])
+    expect(render.yValues).toEqual(['Y2', 'Y1'])
+    expect(render.mode).toBe('value')
+  })
+
+  it('sorts by axis totals when enabled and supports log + labels', () => {
+    const render = buildValue3DRender(baseChart(), descSort, true, 'log')
+    expect(render.xValues[0]).toBe('B')
+    // log drops non-positive cells
+    expect(render.barSeries[0]!.data.every((d) => (d.value[2] ?? 0) > 0)).toBe(true)
+    expect(Object.keys(render.cellTotals).length).toBeGreaterThan(0)
+  })
+
+  it('skips series whose x was filtered out of xValues', () => {
+    const chart = baseChart()
+    chart.series.push({ xAxis: '', values: [1, 2], benchmarkId: '' })
+    const render = buildValue3DRender(chart, noSort)
+    expect(render.xValues.every((x) => x.trim() !== '')).toBe(true)
+  })
+})
+
+describe('chart shape predicates and applyCanonicalOrder', () => {
+  it('chartIsGrouped3D / chartIsValue3DEligible', () => {
+    const grouped: ChartData = {
+      title: 't',
+      statType: 'g',
+      yAxis: ['Y'],
+      zAxis: ['Z'],
+      series: [{ xAxis: 'X', values: [1], benchmarkId: '' }],
+      points: [],
+    }
+    expect(chartIsGrouped3D(grouped)).toBe(true)
+    expect(chartIsValue3DEligible(grouped)).toBe(false)
+    expect(chartIsValue3DEligible({ ...grouped, zAxis: [] })).toBe(true)
+  })
+
+  it('applyCanonicalOrder filters to present values', () => {
+    expect(applyCanonicalOrder(['A', 'B'], undefined)).toEqual(['A', 'B'])
+    expect(applyCanonicalOrder(['A', 'B'], ['B', 'C', 'A'])).toEqual(['B', 'A'])
+  })
+})
+
+describe('fieldValue name branch via projectAndGroup', () => {
+  it('reads name field and empty fallbacks', () => {
+    const raw: DataPoint[] = [{ name: undefined as unknown as string, xAxis: 'A', stats: [] }]
+    const { groupNames } = projectAndGroup(raw, ['name', 'xAxis'], ['name', 'xAxis'])
+    expect(groupNames).toEqual(['Default'])
+  })
+
+  it('projects rows without stats object', () => {
+    const raw: DataPoint[] = [{ xAxis: 'A', yAxis: 'B' } as DataPoint]
+    const { grouped } = projectAndGroup(raw, ['xAxis', 'yAxis'], ['xAxis', 'yAxis'])
+    expect(grouped.get('Default')![0]).not.toHaveProperty('stats')
+  })
+})
+
+describe('remaining transform branch edges', () => {
+  it('fieldValue name empty coalescing and missing record field', () => {
+    // canonicalValuesForField uses fieldValue for name and xAxis
+    const order = canonicalValuesForField(
+      [
+        { name: undefined as unknown as string, xAxis: undefined as unknown as string, stats: [] },
+        { name: 'G', xAxis: 'A', stats: [] },
+      ],
+      'name'
+    )
+    expect(order).toEqual(['G'])
+    expect(
+      canonicalValuesForField(
+        [
+          { xAxis: undefined as unknown as string, stats: [] },
+          { xAxis: 'A', stats: [] },
+        ],
+        'xAxis'
+      )
+    ).toEqual(['A'])
+  })
+
+  it('buildValueMode3DRender empty filtered withMetric and labelVal nullish', () => {
+    // all filtered out under log → filtered[0] undefined → withMetric false via ?? 0
+    const empty = buildValueMode3DRender([[0, 0, 0]], 't', true, 'log')
+    expect(empty.barSeries[0]!.data).toEqual([])
+
+    // point without metric; p[2] used; explicit undefined 4th
+    const r = buildValueMode3DRender([[1, 2, 3, undefined]], 't', true)
+    expect(r.cellTotals['0']).toBe(3)
+  })
+
+  it('buildValueModeChart swapAxisLabels nullish coalesce', () => {
+    // identical keys → swap returns permuted labels; force undefined labels path via empty base
+    const chart = buildValueModeChart(
+      [{ xAxis: '1', yAxis: '2', stats: [] }],
+      [
+        { key: 'x', type: 'value' },
+        { key: 'y', type: 'value' },
+      ],
+      'xy',
+      'xy'
+    )
+    expect(chart.axisLabels).toEqual({})
+  })
+
+  it('incomplete coords continue on 3D and 2D value paths', () => {
+    // identity maps only x into chart x; y/z missing on out
+    const chart3 = buildValueModeChart(
+      [{ xAxis: '1', yAxis: '2', zAxis: '3', stats: [] }],
+      [
+        { key: 'x', type: 'value' },
+        { key: 'y', type: 'value' },
+        { key: 'z', type: 'value' },
+      ],
+      'xyz',
+      'xnn' // only first maps to xAxis; y,z → name
+    )
+    // arrangementHasChartZ('xnn') false → 2D path with only x
+    expect(chart3.valueTuples).toEqual([])
+
+    const chart2 = buildValueModeChart(
+      [{ xAxis: '1', yAxis: '2', stats: [] }],
+      [
+        { key: 'x', type: 'value' },
+        { key: 'y', type: 'value' },
+      ],
+      'xy',
+      'xn'
+    )
+    expect(chart2.valueTuples).toEqual([])
+  })
+
+  it('mixed mode coalesces undefined xAxis', () => {
+    const chart = buildMixedModeChart(
+      [{ yAxis: '1', stats: [] } as DataPoint],
+      [{ key: 'x' }, { key: 'y', type: 'value' }]
+    )
+    expect(chart.mixedTuples).toEqual([])
+  })
+
+  it('sortByAxisTotal asc and missing axis totals', () => {
+    const p3 = (x: string, y: string, z: string, v: number): Point3D => ({
+      xAxis: x,
+      yAxis: y,
+      zAxis: z,
+      value: v,
+    })
+    // include an x value with no points contributing → total ?? 0
+    const points = [p3('B', 'Y', 'Z', 5)]
+    // inject extra x via duplicate z series path: only B in points; sort still works
+    const render = build3DRender([...points, p3('A', 'Y', 'Z', 1)], ['Z'], ascSort, false, 'linear')
+    expect(render.xValues[0]).toBe('A')
+  })
+
+  it('sparseFromPoints skips other z and unknown indices', () => {
+    const p3 = (x: string, y: string, z: string, v: number): Point3D => ({
+      xAxis: x,
+      yAxis: y,
+      zAxis: z,
+      value: v,
+    })
+    const points = [p3('A', '1', 'Z1', 5), p3('A', '1', 'Z2', 9), p3('Ghost', 'GhostY', 'Z1', 1)]
+    // Ghost not in index if we only have A,1 from first points — actually Ghost is included in sets
+    // force preserveRows so sparseFromPoints runs; Ghost is in xValues
+    const render = build3DRender(points, ['Z1'], noSort, false, 'linear', undefined, true)
+    expect(render.lineSeries[0]!.data.some((d) => d.value[2] === 5)).toBe(true)
+    // Z2 series separate
+    expect(render.zValues).toEqual(['Z1'])
+  })
+
+  it('cellsFor skips unknown indices via canonical order excluding a point axis', () => {
+    const p3 = (x: string, y: string, z: string, v: number): Point3D => ({
+      xAxis: x,
+      yAxis: y,
+      zAxis: z,
+      value: v,
+    })
+    const points = [p3('A', '1', 'Z1', 5), p3('B', '2', 'Z1', 7)]
+    // canonical x only A → B still in points but after canonical order xValues=[A]
+    // wait applyCanonicalOrder filters to present in values AND canonical — B is present so if canonical is [A] only A remains
+    const render = build3DRender(points, ['Z1'], noSort, false, 'linear', { x: ['A'], y: ['1'] })
+    // B points skipped in cells because xi undefined
+    const vals = render.lineSeries[0]!.data.map((d) => d.value[2])
+    expect(vals).toEqual([5])
+  })
+
+  it('buildValue3DRender uses ?? 0 for missing series values', () => {
+    const chart: ChartData = {
+      title: 't',
+      statType: 'v',
+      yAxis: ['Y1', 'Y2'],
+      zAxis: [],
+      series: [{ xAxis: 'A', values: [1], benchmarkId: '' }], // missing Y2 value
+      points: [],
+    }
+    const render = buildValue3DRender(chart, descSort, false, 'linear')
+    expect(render.lineSeries[0]!.data.some((d) => d.value[2] === 0)).toBe(true)
+  })
+
+  it('value 3D xz target skips undefined cy', () => {
+    const chart = buildValueModeChart(
+      [{ xAxis: '1', zAxis: '3', stats: [] }],
+      [
+        { key: 'x', type: 'value' },
+        { key: 'z', type: 'value' },
+      ],
+      'xz',
+      'xz',
+      { threeD: true }
+    )
+    expect(chart.valuePoints3D).toBeUndefined()
+  })
+
+  it('sortByAxisTotal desc path and sparse filter value[2] undefined-safe', () => {
+    const points: Point3D[] = [
+      { xAxis: 'A', yAxis: '1', zAxis: 'Z', value: 1 },
+      { xAxis: 'B', yAxis: '1', zAxis: 'Z', value: 9 },
+    ]
+    const desc = build3DRender(points, ['Z'], descSort, false, 'linear')
+    expect(desc.xValues[0]).toBe('B')
+
+    // preserveRows path with a point that could have undefined value coerced — use 0 filtered on log
+    const logP = build3DRender(
+      [
+        { xAxis: 'A', yAxis: '1', zAxis: 'Z', value: 0 },
+        { xAxis: 'A', yAxis: '1', zAxis: 'Z', value: 4 },
+      ],
+      ['Z'],
+      noSort,
+      false,
+      'log',
+      undefined,
+      true
+    )
+    expect(logP.lineSeries[0]!.data).toHaveLength(1)
+  })
+
+  it('cellsFor / sparseFromPoints skip foreign z', () => {
+    const points: Point3D[] = [
+      { xAxis: 'A', yAxis: '1', zAxis: 'Z1', value: 5 },
+      { xAxis: 'A', yAxis: '1', zAxis: 'OTHER', value: 99 },
+    ]
+    const render = build3DRender(points, ['Z1'], noSort, false, 'linear', undefined, true)
+    expect(render.lineSeries[0]!.data.map((d) => d.value[2])).toEqual([5])
+  })
+
+  it('preserveRows sparseFromPoints skips points outside canonical index', () => {
+    const points: Point3D[] = [
+      { xAxis: 'A', yAxis: '1', zAxis: 'Z1', value: 5 },
+      { xAxis: 'B', yAxis: '2', zAxis: 'Z1', value: 7 },
+    ]
+    // canonical keeps only A/1 → B/2 xi/yi undefined in sparseFromPoints
+    const render = build3DRender(
+      points,
+      ['Z1'],
+      noSort,
+      false,
+      'linear',
+      { x: ['A'], y: ['1'] },
+      true
+    )
+    expect(render.lineSeries[0]!.data.map((d) => d.value[2])).toEqual([5])
+  })
+  it('sortByAxisTotal uses 0 for z labels present in zAxisAll but not points', () => {
+    const points: Point3D[] = [{ xAxis: 'A', yAxis: '1', zAxis: 'Z1', value: 5 }]
+    // Z2/Z3 listed but have no points → both sides of compare use total ?? 0
+    const render = build3DRender(points, ['Z2', 'Z3', 'Z1'], ascSort, false, 'linear')
+    expect(render.zValues).toEqual(['Z2', 'Z3', 'Z1'])
+    const desc = build3DRender(points, ['Z2', 'Z3', 'Z1'], descSort, false, 'linear')
+    expect(desc.zValues[0]).toBe('Z1')
+  })
+
+  it('preserveRows log sparse filter uses value[2] ?? 0', () => {
+    const points: Point3D[] = [
+      { xAxis: 'A', yAxis: '1', zAxis: 'Z', value: 0 },
+      { xAxis: 'A', yAxis: '1', zAxis: 'Z', value: 2 },
+    ]
+    const render = build3DRender(points, ['Z'], noSort, false, 'log', undefined, true)
+    expect(render.lineSeries[0]!.data.map((d) => d.value[2])).toEqual([2])
   })
 })

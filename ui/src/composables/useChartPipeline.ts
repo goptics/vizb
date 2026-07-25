@@ -249,7 +249,7 @@ export function useChartPipeline(
       const xLabel = axesNow?.find((a) => a.key === 'x')?.label ?? 'x'
       const yLabel = axesNow?.find((a) => a.key === 'y')?.label ?? 'y'
       const zLabel = axesNow?.find((a) => a.key === 'z')?.label ?? 'z'
-      const use3D = axesNow?.some((a) => a.key === 'z' && a.type === 'value') ?? false
+      const use3D = axesNow?.some((a) => a.key === 'z' && a.type === 'value') === true
       charts.value = [
         {
           key: '__mixed_mode__',

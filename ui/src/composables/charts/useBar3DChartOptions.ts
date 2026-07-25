@@ -103,7 +103,7 @@ export function useBar3DChartOptions(config: BaseChartConfig) {
           type: 'bar3D' as const,
           bevelSize: 0.3,
           bevelSmoothness: 3,
-          ...(barSize ? { barSize } : {}),
+          barSize,
           data: s.data,
           ...(useVisualMap ? {} : { itemStyle: { color: defaultColor } }),
           shading: 'lambert',

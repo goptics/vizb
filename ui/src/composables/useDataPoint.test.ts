@@ -287,4 +287,307 @@ describe('useDataPoint embedded VIZB_DATA', () => {
     expect(state.loadError.value).toBeNull()
     expect(state.datasets.value).toEqual([])
   })
+
+  it('covers arrangement, groups, chart modes, and selection edge cases', async () => {
+    const payload = [
+      {
+        name: 'Grouped',
+        data: [{ name: 'a', xAxis: 'x1', yAxis: 'y1', value: 1 }],
+        settings: [{ type: 'bar' as const }, { type: 'line' as const }],
+        axes: [
+          { key: 'name', label: 'n' },
+          { key: 'x', label: 'x' },
+          { key: 'metric', label: 'm' },
+        ],
+      },
+      {
+        name: 'Value',
+        data: [{ xAxis: '1', yAxis: '2', value: 3 }],
+        settings: [{ type: 'scatter' as const }],
+        axes: [
+          { key: 'x', label: 'price', type: 'value' as const },
+          { key: 'y', label: 'latency', type: 'value' as const },
+        ],
+      },
+      {
+        name: 'Mixed',
+        data: [{ xAxis: 'east', yAxis: '1.5', value: 4 }],
+        settings: [{ type: 'scatter' as const }],
+        axes: [
+          { key: 'x', label: 'region' },
+          { key: 'y', label: 'latency', type: 'value' as const },
+        ],
+      },
+      {
+        name: 'NoAxes',
+        data: [{ name: 'only', value: 9 }],
+        settings: [{ type: 'pie' as const }],
+      },
+    ]
+    vi.stubGlobal('fetch', vi.fn())
+    vi.stubGlobal('window', {
+      location: { pathname: '/', protocol: 'https:' },
+      VIZB_DATA: payload,
+    })
+
+    const { useDataPoint } = await import('./useDataPoint')
+    const state = useDataPoint()
+    await vi.waitFor(() => expect(state.loading.value).toBe(false))
+
+    expect(state.chartMode.value).toBe('grouped')
+    expect(state.isValueMode.value).toBe(false)
+    expect(state.isMixedMode.value).toBe(false)
+    expect(state.isValueModeDataset.value).toBe(false)
+    expect(state.isMixedModeDataset.value).toBe(false)
+    expect(state.activeArrangement.value.identityString).toBe('nx')
+    expect(state.activeDataDimension.value).toBe('2D')
+
+    state.setArrangement(0, 'bar', 'xn')
+    expect(state.getArrangement(0, 'bar')).toBe('xn')
+    expect(state.activeArrangement.value.targetString).toBe('xn')
+
+    state.setGroupNames(['g0', 'g1'])
+    expect(state.resultGroups.value).toEqual([{ name: 'g0' }, { name: 'g1' }])
+    state.selectGroup(1)
+    expect(state.activeGroupId.value).toBe(1)
+    state.selectGroup(99)
+    expect(state.activeGroupId.value).toBe(1)
+
+    await expect(state.selectDataset(1)).resolves.toBe(true)
+    expect(state.activeDatasetId.value).toBe(1)
+    expect(state.activeGroupId.value).toBe(0)
+    expect(state.chartMode.value).toBe('value')
+    expect(state.isValueMode.value).toBe(true)
+    expect(state.isValueModeDataset.value).toBe(true)
+    expect(state.activeArrangement.value.identityString).toBe('xy')
+
+    await expect(state.selectDataset(2)).resolves.toBe(true)
+    expect(state.chartMode.value).toBe('mixed')
+    expect(state.isMixedMode.value).toBe(true)
+    expect(state.isMixedModeDataset.value).toBe(true)
+
+    await expect(state.selectDataset(3)).resolves.toBe(true)
+    expect(state.chartMode.value).toBe('grouped')
+    expect(state.activeArrangement.value.identityString.length).toBeGreaterThan(0)
+    expect(state.activeDataDimension.value).toBe('1D')
+
+    await expect(state.selectDataset(99)).resolves.toBe(false)
+    // Force the non-array guard in datasetsProcessed via activeDataset read.
+    ;(state.datasets as { value: unknown }).value = {
+      name: 'single',
+      data: [],
+      settings: [{ type: 'bar' as const }],
+    }
+    expect(state.activeDataset.value?.name).toBe('single')
+    expect(Array.isArray(state.datasets.value)).toBe(true)
+  })
+
+  it('stringifies non-Error load failures', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw 'boom'
+      })
+    )
+    vi.stubGlobal('window', {
+      location: { pathname: '/', protocol: 'https:' },
+      VIZB_DATA_URL: 'https://api.example.com/catalog',
+      VIZB_DATA: [],
+    })
+
+    const { useDataPoint } = await import('./useDataPoint')
+    const state = useDataPoint()
+    await vi.waitFor(() => expect(state.loading.value).toBe(false))
+    expect(state.loadError.value).toBe('boom')
+  })
+
+  it('falls back to empty VIZB_DATA when undefined', async () => {
+    vi.stubGlobal('fetch', vi.fn())
+    vi.stubGlobal('window', {
+      location: { pathname: '/', protocol: 'https:' },
+      VIZB_DATA: undefined,
+    })
+
+    const { useDataPoint } = await import('./useDataPoint')
+    const state = useDataPoint()
+    await vi.waitFor(() => expect(state.loading.value).toBe(false))
+    expect(state.datasets.value).toEqual([])
+    expect(state.loadError.value).toBeNull()
+  })
+
+  it('stringifies non-Error catalog detail failures', async () => {
+    const catalog = [{ id: 'dataset-1', name: 'Dataset 1' }]
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify(catalog), { status: 200 }))
+      .mockRejectedValueOnce('detail-boom')
+    vi.stubGlobal('fetch', fetcher)
+    vi.stubGlobal('window', {
+      location: { pathname: '/', protocol: 'https:' },
+      VIZB_DATA_URL: 'https://api.example.com/catalog',
+      VIZB_DATA: [],
+    })
+
+    const { useDataPoint } = await import('./useDataPoint')
+    const state = useDataPoint()
+    await vi.waitFor(() => expect(state.loading.value).toBe(false))
+    await expect(state.selectDataset(0)).resolves.toBe(false)
+    expect(state.detailError.value).toBe('detail-boom')
+  })
+
+  it('aborts stale catalog detail when selection changes mid-flight', async () => {
+    const catalog = [
+      { id: 'dataset-1', name: 'Dataset 1' },
+      { id: 'dataset-2', name: 'Dataset 2' },
+    ]
+    let resolveDetail!: (value: Response) => void
+    const detailPromise = new Promise<Response>((resolve) => {
+      resolveDetail = resolve
+    })
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify(catalog), { status: 200 }))
+      .mockReturnValueOnce(detailPromise)
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            id: 'dataset-2',
+            name: 'Dataset 2',
+            data: [{ name: 'b', value: 2 }],
+            settings: [{ type: 'bar' as const }],
+          }),
+          { status: 200 }
+        )
+      )
+    vi.stubGlobal('fetch', fetcher)
+    vi.stubGlobal('window', {
+      location: { pathname: '/', protocol: 'https:' },
+      VIZB_DATA_URL: 'https://api.example.com/catalog',
+      VIZB_DATA: [],
+    })
+
+    const { useDataPoint } = await import('./useDataPoint')
+    const state = useDataPoint()
+    await vi.waitFor(() => expect(state.loading.value).toBe(false))
+
+    const first = state.selectDataset(0)
+    await expect(state.selectDataset(1)).resolves.toBe(true)
+    resolveDetail(
+      new Response(
+        JSON.stringify({
+          id: 'dataset-1',
+          name: 'Dataset 1',
+          data: [{ name: 'a', value: 1 }],
+          settings: [{ type: 'line' as const }],
+        }),
+        { status: 200 }
+      )
+    )
+    await expect(first).resolves.toBe(false)
+    expect(state.activeDatasetId.value).toBe(1)
+    expect(state.activeDataset.value?.id).toBe('dataset-2')
+  })
+
+  it('throws on non-ok catalog fetch responses', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('', { status: 500, statusText: 'Server Error' }))
+    )
+    vi.stubGlobal('window', {
+      location: { pathname: '/', protocol: 'https:' },
+      VIZB_DATA_URL: 'https://api.example.com/catalog',
+      VIZB_DATA: [],
+    })
+
+    const { useDataPoint } = await import('./useDataPoint')
+    const state = useDataPoint()
+    await vi.waitFor(() => expect(state.loading.value).toBe(false))
+    expect(state.loadError.value).toContain('500 Server Error')
+  })
+
+  it('normalizes null settings/data on prepare and rejects catalog shells without id', async () => {
+    const payload = [
+      {
+        name: 'NullFields',
+        data: null,
+        settings: null,
+      },
+    ]
+    vi.stubGlobal('fetch', vi.fn())
+    vi.stubGlobal('window', {
+      location: { pathname: '/', protocol: 'https:' },
+      VIZB_DATA: payload,
+      VIZB_CHARTS: undefined,
+    })
+
+    const { useDataPoint } = await import('./useDataPoint')
+    const state = useDataPoint()
+    await vi.waitFor(() => expect(state.loading.value).toBe(false))
+
+    expect(state.datasets.value[0]?.settings).toEqual([])
+    expect(state.datasets.value[0]?.data).toEqual([])
+  })
+
+  it('returns false when a catalog shell has no id', async () => {
+    // Bypass classify by injecting a lazy catalog shell directly after load.
+    const catalog = [{ id: 'ok', name: 'Ok' }]
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify(catalog), { status: 200 }))
+    vi.stubGlobal('fetch', fetcher)
+    vi.stubGlobal('window', {
+      location: { pathname: '/', protocol: 'https:' },
+      VIZB_DATA_URL: 'https://api.example.com/catalog',
+      VIZB_DATA: [],
+    })
+
+    const { useDataPoint } = await import('./useDataPoint')
+    const state = useDataPoint()
+    await vi.waitFor(() => expect(state.loading.value).toBe(false))
+
+    state.datasets.value = [{ name: 'NoId', data: [], settings: [] } as never]
+    await expect(state.selectDataset(0)).resolves.toBe(false)
+  })
+
+  it('aborts catalog detail error when selection changed before catch', async () => {
+    const catalog = [
+      { id: 'dataset-1', name: 'Dataset 1' },
+      { id: 'dataset-2', name: 'Dataset 2' },
+    ]
+    let rejectDetail!: (reason: unknown) => void
+    const detailPromise = new Promise<Response>((_, reject) => {
+      rejectDetail = reject
+    })
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify(catalog), { status: 200 }))
+      .mockReturnValueOnce(detailPromise)
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            id: 'dataset-2',
+            name: 'Dataset 2',
+            data: [{ name: 'b', value: 2 }],
+            settings: [{ type: 'bar' as const }],
+          }),
+          { status: 200 }
+        )
+      )
+    vi.stubGlobal('fetch', fetcher)
+    vi.stubGlobal('window', {
+      location: { pathname: '/', protocol: 'https:' },
+      VIZB_DATA_URL: 'https://api.example.com/catalog',
+      VIZB_DATA: [],
+    })
+
+    const { useDataPoint } = await import('./useDataPoint')
+    const state = useDataPoint()
+    await vi.waitFor(() => expect(state.loading.value).toBe(false))
+
+    const first = state.selectDataset(0)
+    await expect(state.selectDataset(1)).resolves.toBe(true)
+    rejectDetail(new Error('stale'))
+    await expect(first).resolves.toBe(false)
+    expect(state.detailError.value).toBeNull()
+  })
 })

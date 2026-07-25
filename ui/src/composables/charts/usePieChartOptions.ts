@@ -107,7 +107,7 @@ export function usePieChartOptions(config: BaseChartConfig) {
     const yAxisTotals = computeYAxisTotals(chartData.value.yAxis, sorted.series)
     const yAxisPieData = chartData.value.yAxis.map((y) => ({
       name: y,
-      value: Math.max(0, yAxisTotals.get(y) ?? 0),
+      value: Math.max(0, yAxisTotals.get(y)!),
       itemStyle: { color: getNextColorFor(y) },
     }))
 

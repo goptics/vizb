@@ -93,6 +93,7 @@ matching the touched areas:
 go test -count=1 ./path/to/package   # focused Go change
 task test:cli                        # all CLI tests
 task test:ui                         # UI unit + integration
+task test:ui:coverage                # UI tests with 100% coverage gates
 task test:ui:e2e                     # UI Playwright smokes
 task lint:cli                        # Go linting
 task lint:ui                         # UI type checking

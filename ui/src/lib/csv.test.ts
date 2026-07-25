@@ -79,4 +79,9 @@ describe('correlationCsv', () => {
     )
     expect(csv).toBe(',x,y\nx,1,\ny,,1')
   })
+
+  it('uses empty cells when a matrix row is missing', () => {
+    // missing matrix[i] spreads to no extra cells (row is just the label)
+    expect(correlationCsv(['a', 'b'], [[1]])).toBe(',a,b\na,1\nb')
+  })
 })

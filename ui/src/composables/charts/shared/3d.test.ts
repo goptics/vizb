@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import {
   bandFillRatioForCount,
   barSizeFor3DGrid,
@@ -450,5 +450,312 @@ describe('resolve3DVisualMap', () => {
 
   it('returns empty array when disabled so ECharts can replace-merge it away', () => {
     expect(resolve3DVisualMap(false, metricSeries, styling)).toEqual([])
+  })
+})
+
+describe('createMixed3DTooltipFormatter', () => {
+  it('formats mixed coords with default labels', async () => {
+    const { createMixed3DTooltipFormatter } = await import('./3d')
+    const fmt = createMixed3DTooltipFormatter({
+      xValues: ['West'],
+      isDark: false,
+    })
+    expect(fmt({ value: [0, 1.25, 3.5] })).toContain('x: West')
+    expect(fmt({ value: [0, 1.25, 3.5] })).toContain('y: <b>1.25</b>')
+    expect(fmt({ value: [] })).toContain('x: West')
+  })
+
+  it('uses provided axis labels and falls back for unknown x index', async () => {
+    const { createMixed3DTooltipFormatter } = await import('./3d')
+    const fmt = createMixed3DTooltipFormatter({
+      xValues: ['West'],
+      isDark: true,
+      xAxisLabel: 'Region',
+      yAxisLabel: 'Tax',
+      zAxisLabel: 'Score',
+    })
+    const html = fmt({ value: [5, 2, 3] })
+    expect(html).toContain('Region: 5')
+    expect(html).toContain('Tax: <b>2</b>')
+    expect(html).toContain('Score: <b>3</b>')
+  })
+})
+
+describe('axis3DName helpers', () => {
+  it('returns empty objects when labels are missing', async () => {
+    const { axis3DName, axis3DNameInvisible } = await import('./3d')
+    expect(axis3DName(undefined, styling)).toEqual({})
+    expect(axis3DName('', styling)).toEqual({})
+    expect(axis3DNameInvisible(undefined)).toEqual({ name: '' })
+    expect(axis3DNameInvisible('z')).toMatchObject({ name: 'z' })
+  })
+})
+
+describe('create3DCellLabel', () => {
+  it('hides when show is false and formats totals when present', async () => {
+    const { create3DCellLabel } = await import('./3d')
+    expect(create3DCellLabel(false, {}, '#000')).toEqual({ show: false })
+    const label = create3DCellLabel(true, { '0,1': 12.34 }, '#111')
+    expect(label.show).toBe(true)
+    const formatter = label.formatter as (p: { value: number[] }) => string
+    expect(formatter({ value: [0, 1, 9] })).toBe('12.34')
+    expect(formatter({ value: [] })).toBe('')
+    expect(formatter({ value: [2, 2] })).toBe('')
+  })
+})
+
+describe('create3DGridConfig mixed mode', () => {
+  it('uses max edge for boxHeight and supports orthographic/perspective', () => {
+    const ortho = create3DGridConfig({
+      styling,
+      autoRotate: true,
+      orthographic: true,
+      xCount: 3,
+      yCount: 20,
+      mode: 'mixed',
+    })
+    expect(ortho.boxHeight).toBe(Math.max(ortho.boxWidth, ortho.boxDepth))
+    expect(ortho.viewControl.projection).toBe('orthographic')
+
+    const persp = create3DGridConfig({
+      styling,
+      autoRotate: false,
+      xCount: 3,
+      yCount: 20,
+      mode: 'mixed',
+    })
+    expect(persp.viewControl.maxDistance).toBe(MAX_3D_VIEW_DISTANCE)
+  })
+
+  it('grouped mode can enable orthographic projection', () => {
+    const grid = create3DGridConfig({
+      styling,
+      autoRotate: false,
+      orthographic: true,
+      xCount: 3,
+      yCount: 3,
+      mode: 'grouped',
+    })
+    expect(grid.viewControl.projection).toBe('orthographic')
+  })
+})
+
+describe('buildContinuous3DOptions label formatter', () => {
+  it('formats metric and z labels and empty values', async () => {
+    const { buildContinuous3DOptions, makeContinuous3DParams } = await import('./3d')
+    const { getChartStyling } = await import('./chartConfig')
+    const styling = getChartStyling(false)
+    const base = { tooltip: {} }
+
+    const opts3 = buildContinuous3DOptions(
+      makeContinuous3DParams(
+        {
+          base,
+          styling,
+          isDark: false,
+          showLabels: true,
+          useVisualMap: false,
+          defaultColor: '#111',
+          threeDRotate: false,
+          scale: 'linear',
+          axisLabels: { x: 'x', y: 'y', z: 'z' },
+        },
+        [{ name: 'pts', data: [{ value: [1, 2, 3] }, { value: [4, 5] }] }]
+      ),
+      'scatter3D'
+    )
+    const fmt3 = (
+      opts3.series as { label: { formatter: (p: { value: number[] }) => string } }[]
+    )[0]!.label.formatter
+    expect(fmt3({ value: [1, 2, 3] })).toBe('3')
+    expect(fmt3({ value: [1, 2] })).toBe('')
+
+    const opts4 = buildContinuous3DOptions(
+      makeContinuous3DParams(
+        {
+          base,
+          styling,
+          isDark: false,
+          showLabels: true,
+          useVisualMap: true,
+          defaultColor: '#111',
+          threeDRotate: false,
+          scale: 'linear',
+          axisLabels: { x: 'x', y: 'y', z: 'z', metric: 'm' },
+        },
+        [{ name: 'pts', data: [{ value: [1, 2, 3, 4.5] }] }]
+      ),
+      'scatter3D'
+    )
+    const fmt4 = (
+      opts4.series as { label: { formatter: (p: { value: number[] }) => string } }[]
+    )[0]!.label.formatter
+    expect(fmt4({ value: [1, 2, 3, 4.5] })).toBe('4.5')
+    expect(fmt4({ value: [1, 2, 3] })).toBe('')
+  })
+})
+
+describe('create3DTooltipFormatter missing z branch', () => {
+  it('skips z rows that are undefined in the cell breakdown', () => {
+    const formatter = create3DTooltipFormatter({
+      xValues: ['East'],
+      yValues: ['A'],
+      zValues: ['Z1', 'Z-missing'],
+      aggPoints: [{ xAxis: 'East', yAxis: 'A', zAxis: 'Z1', value: 10 }],
+      isDark: false,
+      xAxisLabel: 'Region',
+      yAxisLabel: 'Product',
+      zAxisLabel: 'Category',
+    })
+    const html = formatter({ value: [0, 0, 0] })
+    expect(html).toContain('Z1')
+    expect(html).not.toContain('Z-missing:')
+  })
+})
+
+describe('maxFrom3DData / seriesHasMetricDimension edges', () => {
+  it('handles empty series and missing dimensions', async () => {
+    const { maxFrom3DData, seriesHasMetricDimension, resolve3DVisualMap } = await import('./3d')
+    expect(seriesHasMetricDimension([])).toBe(false)
+    expect(maxFrom3DData([])).toBe(1)
+    expect(maxFrom3DData([{ data: [{ value: [0, 0] }] }], 2)).toBe(1)
+    expect(resolve3DVisualMap(true, [{ data: [] }], styling)).toMatchObject({ max: 1 })
+  })
+})
+
+describe('remaining 3d branch coverage', () => {
+  it('createContinuous3DAxes log scale', async () => {
+    const { createContinuous3DAxes } = await import('./3d')
+    const axes = createContinuous3DAxes(styling, 'x', 'y', 'z', 'log')
+    expect(axes.xAxis3D.type).toBe('log')
+    expect(axes.xAxis3D.logBase).toBe(10)
+  })
+
+  it('createContinuous3DTooltipFormatter default labels', async () => {
+    const { createContinuous3DTooltipFormatter } = await import('./3d')
+    const fmt = createContinuous3DTooltipFormatter(false, {})
+    expect(fmt({ value: [1, 2, 3] })).toContain('x: 1')
+    expect(fmt({ value: [1, 2, 3] })).toContain('y: 2')
+    expect(fmt({ value: [1, 2, 3] })).toContain('z: 3')
+  })
+
+  it('continuous3DGridCounts tiers', async () => {
+    const { continuous3DGridCounts } = await import('./3d')
+    expect(continuous3DGridCounts(10).xCount).toBe(10)
+    expect(continuous3DGridCounts(100).xCount).toBe(50)
+    expect(continuous3DGridCounts(1000).xCount).toBe(100)
+  })
+
+  it('createValue3DTooltipFormatter fallbacks without labels/color and oob indices', async () => {
+    const { createValue3DTooltipFormatter } = await import('./3d')
+    const fmt = createValue3DTooltipFormatter({
+      xValues: ['only'],
+      yValues: ['onlyY'],
+      seriesData: [{ value: [] as number[] }, { value: [0, 0, 5] }],
+      isDark: false,
+    })
+    const html = fmt({ value: [] as number[] })
+    expect(html).toContain('x: only')
+    expect(html).toContain('y: onlyY')
+    expect(html).toContain('value:')
+    // oob index falls back to String(xi)
+    const html2 = fmt({ value: [5, 5, 1] })
+    expect(html2).toContain('x: 5')
+  })
+
+  it('create3DTooltipFormatter empty cell and missing legend totals', () => {
+    const formatter = create3DTooltipFormatter({
+      xValues: ['East'],
+      yValues: ['A'],
+      zValues: ['Z1'],
+      aggPoints: [],
+      isDark: false,
+    })
+    const html = formatter({ value: [0, 0] })
+    expect(html).toContain('x: East')
+    expect(html).not.toContain('Σ (x,y,z)')
+  })
+
+  it('buildContinuous3DOptions symbol override and empty series', async () => {
+    const { buildContinuous3DOptions, makeContinuous3DParams } = await import('./3d')
+    const { getChartStyling } = await import('./chartConfig')
+    const styling = getChartStyling(false)
+    const opts = buildContinuous3DOptions(
+      makeContinuous3DParams(
+        {
+          base: { tooltip: {} },
+          styling,
+          isDark: false,
+          showLabels: false,
+          useVisualMap: false,
+          defaultColor: '#111',
+          threeDRotate: false,
+          scale: 'linear',
+          axisLabels: {},
+          symbol: 'diamond',
+          symbolSize: 12,
+        },
+        [{ name: 'pts', data: [{ value: [1, 2, 3] }] }]
+      ),
+      'scatter3D'
+    )
+    expect((opts.series as { symbol?: string; symbolSize?: number }[])[0]!.symbol).toBe('diamond')
+    expect((opts.series as { symbolSize?: number }[])[0]!.symbolSize).toBe(12)
+
+    const empty = buildContinuous3DOptions(
+      makeContinuous3DParams(
+        {
+          base: { tooltip: {} },
+          styling,
+          isDark: false,
+          showLabels: false,
+          useVisualMap: false,
+          defaultColor: '#111',
+          threeDRotate: false,
+          scale: 'linear',
+          axisLabels: {},
+        },
+        []
+      )
+    )
+    expect(empty.series).toEqual([])
+  })
+
+  it('create3DVisualMap max fallback branch', () => {
+    expect(create3DVisualMap(0, styling).max).toBe(1)
+  })
+})
+
+describe('value tooltip oob and legend total missing', () => {
+  it('falls back to String(xi/yi) when category arrays are empty', async () => {
+    const { createValue3DTooltipFormatter } = await import('./3d')
+    const fmt = createValue3DTooltipFormatter({
+      xValues: [],
+      yValues: [],
+      seriesData: [{ value: [0, 0, 3] }],
+      isDark: false,
+      valueLabel: 'm',
+    })
+    expect(fmt({ value: [0, 0, 3] })).toContain('x: 0')
+    expect(fmt({ value: [0, 0, 3] })).toContain('y: 0')
+  })
+
+  it('omits Σ tags when legend totals are absent and color fallback', async () => {
+    const utils = await import('@/lib/utils')
+    const spy = vi.spyOn(utils, 'getNextColorFor').mockReturnValue(undefined as unknown as string)
+    const formatter = create3DTooltipFormatter({
+      xValues: ['East'],
+      yValues: ['A'],
+      zValues: ['Z1', 'Z2'],
+      aggPoints: [
+        { xAxis: 'East', yAxis: 'A', zAxis: 'Z1', value: 4 },
+        { xAxis: 'East', yAxis: 'A', zAxis: 'Z2', value: 6 },
+      ],
+      isDark: false,
+    })
+    const html = formatter({ value: [0, 0, 0] })
+    expect(html).toContain('Z1')
+    expect(html).toContain('<svg')
+    spy.mockRestore()
   })
 })

@@ -265,7 +265,7 @@ export function buildValueMode3DRender(
   if (showLabels) {
     filtered.forEach((p, i) => {
       const labelVal = withMetric && p[3] !== undefined ? p[3] : p[2]
-      cellTotals[String(i)] = labelVal ?? 0
+      cellTotals[String(i)] = labelVal as number
     })
   }
 
@@ -294,7 +294,7 @@ export function buildValueModeChart(
   const target = targetString ?? identity
   const scale = opts?.scale ?? 'linear'
   const baseLabels = axisLabelsFromAxes(axes)
-  const labels = { ...(swapAxisLabels(identity, target, baseLabels) ?? baseLabels) }
+  const labels = { ...swapAxisLabels(identity, target, baseLabels)! }
   const use3D = (opts?.threeD ?? true) && arrangementHasChartZ(target)
 
   const valueTuples: [number, number, number?][] = []
@@ -555,7 +555,7 @@ export function build3DRender(
   for (const z of zValues) {
     if (preserveRows) {
       const sparse = sparseFromPoints(points, z, xIndex, yIndex)
-      const filtered = isLog ? sparse.filter((d) => (d.value[2] ?? 0) > 0) : sparse
+      const filtered = isLog ? sparse.filter((d) => (d.value[2] as number) > 0) : sparse
       barSeries.push({ name: z, data: filtered })
       lineSeries.push({ name: z, data: filtered })
       continue

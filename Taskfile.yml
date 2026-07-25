@@ -77,6 +77,12 @@ tasks:
     cmds:
       - cd ui; pnpm exec playwright install chromium; pnpm test:e2e; cd -
 
+  test:ui:coverage:
+    desc: Run UI tests with 100% coverage thresholds
+    cmds:
+      - cd ui; pnpm test:coverage; cd -
+
+
   test:api-contract:
     desc: Validate the OpenAPI contract, examples, and shared schema drift checks
     cmds:

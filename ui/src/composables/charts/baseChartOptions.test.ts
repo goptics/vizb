@@ -74,3 +74,13 @@ describe('BaseChartConfig (relaxed scale/threeDRotate)', () => {
     expect(opts.legend).toBeDefined()
   })
 })
+
+describe('getBaseOptions pixelRatio branch', () => {
+  it('falls back to dpr 1 when devicePixelRatio is falsy', () => {
+    const g = globalThis as unknown as { window: { devicePixelRatio: number } }
+    g.window.devicePixelRatio = 0
+    const opts = getBaseOptions(makeMinimalConfig())
+    expect(opts.toolbox).toBeDefined()
+    g.window.devicePixelRatio = 1
+  })
+})
