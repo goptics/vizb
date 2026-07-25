@@ -506,6 +506,12 @@ describe('create3DCellLabel', () => {
 
 describe('create3DGridConfig mixed mode', () => {
   it('uses max edge for boxHeight and supports orthographic/perspective', () => {
+    type Grid = {
+      boxWidth: number
+      boxDepth: number
+      boxHeight?: number
+      viewControl: { projection?: string; maxDistance?: number; distance: number }
+    }
     const ortho = create3DGridConfig({
       styling,
       autoRotate: true,
@@ -513,7 +519,7 @@ describe('create3DGridConfig mixed mode', () => {
       xCount: 3,
       yCount: 20,
       mode: 'mixed',
-    })
+    }) as Grid
     expect(ortho.boxHeight).toBe(Math.max(ortho.boxWidth, ortho.boxDepth))
     expect(ortho.viewControl.projection).toBe('orthographic')
 
@@ -523,7 +529,7 @@ describe('create3DGridConfig mixed mode', () => {
       xCount: 3,
       yCount: 20,
       mode: 'mixed',
-    })
+    }) as Grid
     expect(persp.viewControl.maxDistance).toBe(MAX_3D_VIEW_DISTANCE)
   })
 
@@ -535,7 +541,7 @@ describe('create3DGridConfig mixed mode', () => {
       xCount: 3,
       yCount: 3,
       mode: 'grouped',
-    })
+    }) as { viewControl: { projection?: string } }
     expect(grid.viewControl.projection).toBe('orthographic')
   })
 })

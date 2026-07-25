@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 const mount = vi.fn()
-const createApp = vi.fn(() => ({ mount }))
+const createApp = vi.fn<(root: unknown) => { mount: typeof mount }>(() => ({ mount }))
 
 vi.mock('vue', async () => {
   const actual = await vi.importActual<typeof import('vue')>('vue')

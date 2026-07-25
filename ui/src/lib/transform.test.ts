@@ -771,7 +771,7 @@ describe('buildMixedModeChart', () => {
 
 describe('stat signature helpers', () => {
   it('toStatSignature covers type/unit/per combinations', () => {
-    expect(toStatSignature({})).toBe('-')
+    expect(toStatSignature({ type: '' })).toBe('-')
     expect(toStatSignature({ type: 'ns', unit: 'ms' })).toBe('ns-ms')
     expect(toStatSignature({ type: 'ns', per: 'op' })).toBe('ns')
     expect(toStatSignature({ type: 'ns', unit: 'ms', per: 'op' })).toBe('ns-ms-op')

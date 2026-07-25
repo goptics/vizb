@@ -249,6 +249,7 @@ describe('useScatter3DChartOptions — optional defaults', () => {
           zValues: [],
           barSeries: [],
           lineSeries: [],
+          cellTotals: {},
         },
       }),
       threeD: true,

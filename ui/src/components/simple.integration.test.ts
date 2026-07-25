@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { defineComponent, h, nextTick, ref } from 'vue'
+import { defineComponent, h } from 'vue'
 import { mount } from '@vue/test-utils'
 import { Sigma } from 'lucide-vue-next'
 import AccentLink from './AccentLink.vue'

@@ -130,7 +130,7 @@ describe('useActiveChartShape', () => {
           sort: { enabled: true, order: 'desc' },
           threeD: true,
           threeDVisualMap: true,
-          stat: { type: 'mean' },
+          stat: { enabled: true, math: [] },
           symbol: 'diamond',
           symbolSize: 12,
           smooth: true,
@@ -153,7 +153,7 @@ describe('useActiveChartShape', () => {
     expect(shape.sort.value).toEqual({ enabled: true, order: 'desc' })
     expect(shape.threeD.value).toBe(true)
     expect(shape.threeDVisualMap.value).toBe(true)
-    expect(shape.stat.value).toEqual({ type: 'mean' })
+    expect(shape.stat.value).toEqual({ enabled: true, math: [] })
     expect(shape.symbol.value).toBe('diamond')
     expect(shape.symbolSize.value).toBe(12)
     expect(shape.smooth.value).toBe(true)

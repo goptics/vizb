@@ -175,7 +175,7 @@ describe('Tabs', () => {
         </Tabs>
       `,
     })
-    expect(w.get('.tabs').exists()).toBe(true)
+    expect(w.get('.tabs')).toBeTruthy()
     expect(w.get('.list').text()).toContain('A')
     expect(w.get('.list').text()).toContain('B')
     expect(w.get('.ta').attributes('data-state')).toBe('active')
@@ -199,7 +199,7 @@ describe('ToggleGroup', () => {
       `,
     })
     const w = mount(Host)
-    expect(w.get('.tg').exists()).toBe(true)
+    expect(w.get('.tg')).toBeTruthy()
     expect(w.get('.i1').attributes('data-state')).toBe('on')
     await w.get('.i2').trigger('click')
     await nextTick()
@@ -291,8 +291,8 @@ describe('Combobox family', () => {
 
     const w = mount(Host, { attachTo: document.body })
     await nextTick()
-    expect(w.get('.cb-root').exists()).toBe(true)
-    expect(w.get('.anchor').exists()).toBe(true)
+    expect(w.get('.cb-root')).toBeTruthy()
+    expect(w.get('.anchor')).toBeTruthy()
     expect(w.get('.trigger').text()).toContain('Pick')
     expect(w.html()).toContain('Search')
     expect(w.html()).toContain('Group')

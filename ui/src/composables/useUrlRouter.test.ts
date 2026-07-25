@@ -449,7 +449,6 @@ describe('useUrlRouter', () => {
         {
           type: 'line',
           sort: { enabled: false, order: 'asc' },
-          visualMap: true,
         },
       ]),
     ])
@@ -495,7 +494,7 @@ describe('useUrlRouter', () => {
   it('ignores config updates when settings or chart type are missing', async () => {
     // settings omitted entirely → applyConfigUpdate early-returns on !settings.
     // Avoid legacy s/l/sc (those read availableTypes via settings.map).
-    holder.datasets = ref([{ name: 'empty', data: [] } as Dataset])
+    holder.datasets = ref([{ name: 'empty', data: [], settings: undefined } as unknown as Dataset])
     mockWindow('?bar.l=true&pie.so=asc')
     const { useUrlRouter } = await import('./useUrlRouter')
     await useUrlRouter().initFromUrl()

@@ -67,7 +67,9 @@ describe('useDashboardInit', () => {
   })
 
   it('does not call initFromUrl again on a second datasets update', async () => {
-    holder.datasets = ref([ds([{ type: 'bar' }], [{ name: 'a', value: 1 }])])
+    holder.datasets = ref([
+      ds([{ type: 'bar' }], [{ name: 'a', stats: [{ type: 'ns', value: 1 }] }]),
+    ])
 
     const { useDashboardInit } = await import('./useDashboardInit')
     useDashboardInit()
@@ -76,7 +78,7 @@ describe('useDashboardInit', () => {
     expect(holder.initFromUrl).toHaveBeenCalledTimes(1)
 
     holder.datasets!.value = [
-      ds([{ type: 'bar' }], [{ name: 'a', value: 1 }]),
+      ds([{ type: 'bar' }], [{ name: 'a', stats: [{ type: 'ns', value: 1 }] }]),
       { name: 'Second', settings: [{ type: 'line' }], data: [] },
     ]
     await nextTick()

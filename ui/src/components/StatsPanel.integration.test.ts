@@ -77,7 +77,9 @@ const { statsMocks, usableAxesRef } = vi.hoisted(() => {
         profile('West', 10),
         profile('East', 20),
       ]),
-      computeCorrelation: vi.fn(async (_c: ChartData, _axis?: string) => corr('x')),
+      computeCorrelation: vi.fn(
+        async (_c: ChartData, _axis?: string): Promise<CorrelationMatrix | undefined> => corr('x')
+      ),
       available: { correlation: true },
       availableViews: vi.fn(() => ({ correlation: true })),
     },
@@ -95,7 +97,7 @@ vi.mock('../lib/stats', async (importOriginal) => {
   return {
     ...actual,
     availableViews: (...args: unknown[]) => {
-      statsMocks.availableViews(...args)
+      ;(statsMocks.availableViews as (...a: unknown[]) => unknown)(...args)
       return { correlation: statsMocks.available.correlation }
     },
     usableCorrelationAxes: () => usableAxesRef.value,
@@ -630,7 +632,7 @@ describe('StatsPanel', () => {
     let corrResolve!: (v: CorrelationMatrix | undefined) => void
     statsMocks.computeCorrelation.mockImplementation(
       () =>
-        new Promise((r) => {
+        new Promise<CorrelationMatrix | undefined>((r) => {
           corrResolve = r
         })
     )

@@ -202,7 +202,7 @@ describe('useBar3DChartOptions — optional defaults', () => {
           zValues: [],
           barSeries: [],
           lineSeries: [],
-          // no cellTotals
+          cellTotals: {},
         },
       }),
       threeD: true,
