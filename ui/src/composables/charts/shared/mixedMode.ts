@@ -29,6 +29,7 @@ import { adjustForLogScaleLine, getEffectiveScale } from './common'
 import { resolve3DSymbolProps, resolveSeriesSymbol } from './seriesConfig'
 import { resolve2DScatterVisualMap } from './visualMap'
 import type { Series3DData } from '@/types'
+import { formatPercentageLabel } from './labels'
 
 const defaultScatterSymbol = { symbol: 'circle' as const, symbolSize: 8 }
 const largeScatterSymbol = { symbol: 'circle' as const, symbolSize: 5 }
@@ -103,7 +104,7 @@ export function buildMixedAxes2DOptions(
   config: BaseChartConfig,
   chartType: Mixed2DChartType = 'scatter'
 ): EChartsOption {
-  const { chartData, showLabels, isDark, scale, visualMap } = config
+  const { chartData, showLabels, labelMode, chartTotal, isDark, scale, visualMap } = config
   const tuples = chartData.value.mixedTuples ?? []
   const xCategories = chartData.value.xCategories ?? []
   const xLabel = chartData.value.axisLabels?.x
@@ -127,7 +128,10 @@ export function buildMixedAxes2DOptions(
     ...createLabelConfig(showLabels.value, styling),
     formatter: (p: { data: [number, number | null] }) => {
       const y = p.data[1]
-      return y === null || y === undefined ? '' : String(Math.round(y * 100) / 100)
+      if (y === null || y === undefined) return ''
+      return labelMode?.value === 'percentage'
+        ? formatPercentageLabel(y, chartTotal?.value ?? 0)
+        : String(Math.round(y * 100) / 100)
     },
   }
 
@@ -202,7 +206,18 @@ export function buildMixedAxes3DOptions(
   config: BaseChartConfig,
   chartType: Mixed3DChartType = 'scatter3D'
 ): EChartsOption {
-  const { chartData, isDark, threeDRotate, scale, threeDVisualMap, symbol, symbolSize } = config
+  const {
+    chartData,
+    isDark,
+    threeDRotate,
+    showLabels,
+    labelMode,
+    chartTotal,
+    scale,
+    threeDVisualMap,
+    symbol,
+    symbolSize,
+  } = config
   const styling = getChartStyling(isDark.value)
   const base = getBaseOptions(config)
   const render = chartData.value.render3D!
@@ -229,6 +244,14 @@ export function buildMixedAxes3DOptions(
     mode: 'mixed',
   })
   const mixedSymbolSize = symbolSizeForContinuous3D(pointCount, grid3D.boxWidth, grid3D.boxDepth)
+  const label = {
+    show: showLabels.value,
+    formatter: (p: { value: number[] }) =>
+      labelMode?.value === 'percentage'
+        ? formatPercentageLabel(p.value[1] ?? NaN, chartTotal?.value ?? 0)
+        : String(Math.round((p.value[1] ?? 0) * 100) / 100),
+    textStyle: { fontSize: 12, color: styling.textColor },
+  }
 
   const series = seriesData.map((s: Series3DData) => {
     if (chartType === 'bar3D') {
@@ -240,7 +263,7 @@ export function buildMixedAxes3DOptions(
         data: s.data,
         ...(useVisualMap ? {} : { itemStyle: { color: defaultColor } }),
         shading: 'lambert',
-        label: { show: false },
+        label,
         emphasis: { label: { show: false } },
       }
     }
@@ -252,7 +275,7 @@ export function buildMixedAxes3DOptions(
         data: s.data,
         itemStyle: { color: defaultColor },
         shading: 'lambert',
-        label: { show: false },
+        label,
         emphasis: { label: { show: false } },
       }
     }
@@ -262,7 +285,7 @@ export function buildMixedAxes3DOptions(
       data: s.data,
       ...resolve3DSymbolProps(mixedSymbolSize, symbolOverride, symbolSizeOverride),
       ...(useVisualMap ? {} : { itemStyle: { color: defaultColor } }),
-      label: { show: false },
+      label,
       emphasis: { label: { show: false } },
     }
   })

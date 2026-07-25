@@ -34,7 +34,7 @@ export interface ChartBuilder {
   /** Cardinality for an axis badge. */
   badgeCount(chart: ChartData, axis: 'x' | 'y' | 'z'): number
   /** Sum of every plotted metric value. */
-  grandTotal(chart: ChartData, visibleZ?: Record<string, boolean>): number
+  grandTotal(chart: ChartData, visibleZ?: Record<string, boolean>, scale?: ScaleType): number
   /** Whether this chart should render as 3D. */
   is3D(chart: ChartData, cfg?: { threeD?: boolean }, axes?: Axis[]): boolean
   /** Whether the category --3d toggle can be offered for this shape. */

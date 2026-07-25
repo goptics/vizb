@@ -15,6 +15,7 @@ import {
 import { adjustForLogScaleLine, getEffectiveScale } from './common'
 import { resolveSeriesSymbol } from './seriesConfig'
 import { resolve2DScatterVisualMap } from './visualMap'
+import { formatPercentageLabel } from './labels'
 
 const defaultScatterSymbol = { symbol: 'circle' as const, symbolSize: 8 }
 const largeScatterSymbol = { symbol: 'circle' as const, symbolSize: 5 }
@@ -65,7 +66,7 @@ export function buildValueAxes2DOptions(
   config: BaseChartConfig,
   chartType: ChartType = 'scatter'
 ): EChartsOption {
-  const { chartData, sort, showLabels, isDark, scale } = config
+  const { chartData, sort, showLabels, labelMode, chartTotal, isDark, scale } = config
   const tuples = chartData.value.valueTuples ?? []
   const xLabel = chartData.value.axisLabels?.x
   const yLabel = chartData.value.axisLabels?.y
@@ -93,7 +94,10 @@ export function buildValueAxes2DOptions(
     ...createLabelConfig(showLabels.value, styling),
     formatter: (p: { data: [number, number | null, number?] }) => {
       const y = p.data[1]
-      return y === null || y === undefined ? '' : String(Math.round(y * 100) / 100)
+      if (y === null || y === undefined) return ''
+      return labelMode?.value === 'percentage'
+        ? formatPercentageLabel(y, chartTotal?.value ?? 0)
+        : String(Math.round(y * 100) / 100)
     },
   }
 

@@ -72,6 +72,16 @@ const makeStackedGroupedConfig = (
 })
 
 describe('useBarChartOptions — grouped mode', () => {
+  it('renders percentage-only labels against the shared chart total', () => {
+    const cfg = makeStackedGroupedConfig()
+    cfg.labelMode = ref('percentage')
+    cfg.chartTotal = ref(100)
+    const { options } = useBarChartOptions(cfg)
+    const formatter = (options.value.series as { label: { formatter: (p: any) => string } }[])[0]!
+      .label.formatter
+    expect(formatter({ value: 10 })).toBe('10%')
+  })
+
   it('emits stacked bar series when stack is enabled', () => {
     const { options } = useBarChartOptions(makeStackedGroupedConfig(true))
     const series = options.value.series as { stack?: string }[]

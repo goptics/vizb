@@ -220,6 +220,9 @@ vizb bench.txt -p n/x/y --chart bar:swap=yx,sort=asc -o output.html
 # Line chart: log scale; pie chart: show labels
 vizb bench.txt --chart line:scale=log --chart pie:labels -o output.html
 
+# Percentage-only bar labels
+vizb bench.txt --chart bar:label-mode=percentage -o output.html
+
 # 3D bar with auto-rotate; line with labels off
 vizb bench.txt -p n/x/y/z --chart bar:3d-rotate --chart line:labels=false -o output.html
 
@@ -234,10 +237,11 @@ vizb sales.csv -g region,category -p x,y --chart bar:horizontal -o out.html
 | `swap` | — | permutation of axis chars (e.g. `yx`, `yxn`) | all |
 | `sort` | — | `asc`, `desc` | all |
 | `labels` | `labels` | `true`, `false` | all |
+| `label-mode` | — | `none`, `value`, `percentage` | all |
 | `scale` | — | `linear`, `log` | `bar`, `line` only |
 | `3d-rotate` | `3d-rotate` | `true`, `false` | `bar`, `line` 3D only |
 
-Bare flags (no `=`) default to `true`. Per-chart settings override the chart's own defaults. The root-level `--sort` and `--show-labels` flags are deprecated — use `--chart` overrides instead.
+Bare flags (no `=`) default to `true`. Per-chart settings override the chart's own defaults. `label-mode` takes precedence over legacy `labels` / `showLabels`. The root-level `--sort` and `--show-labels` flags are deprecated — use `--chart` overrides instead.
 
 ### Tagging for release tracking
 

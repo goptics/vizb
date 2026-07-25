@@ -72,6 +72,15 @@ func (s *ChartSpecSuite) TestParseOverridesBareLabels() {
 	s.Equal(true, s.payload(got["bar"])["showLabels"])
 }
 
+func (s *ChartSpecSuite) TestParseOverridesLabelMode() {
+	got, _, err := ParseOverrides([]string{"bar:label-mode=percentage"}, []string{"bar"}, s.xynAxes)
+	s.Require().NoError(err)
+	s.Equal("percentage", s.payload(got["bar"])["labelMode"])
+
+	_, _, err = ParseOverrides([]string{"bar:label-mode=percent"}, []string{"bar"}, s.xynAxes)
+	s.ErrorContains(err, "label mode")
+}
+
 func (s *ChartSpecSuite) TestParseOverridesLineSmooth() {
 	got, warnings, err := ParseOverrides([]string{"line:smooth"}, []string{"line"}, s.xynAxes)
 	s.Require().NoError(err)

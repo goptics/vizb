@@ -14,6 +14,7 @@ type Config struct {
 	Swap       string             `json:"swap,omitempty"`
 	Sort       *shared.Sort       `json:"sort,omitempty"`
 	ShowLabels *bool              `json:"showLabels,omitempty"`
+	LabelMode  string             `json:"labelMode,omitempty"`
 	Stat       *shared.StatConfig `json:"stat,omitempty"`
 }
 

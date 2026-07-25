@@ -132,7 +132,7 @@ components:
                   types: [bar, line]
                   configs:
                     - type: bar
-                      showLabels: true
+                      labelMode: percentage
                 output:
                   format: dataset
             columnAxisConversion:
@@ -592,6 +592,10 @@ components:
           items:
             type: string
             enum: [counts, center, spread, extremes, shape, percentiles, confidence, correlations]
+    LabelMode:
+      type: string
+      enum: [none, value, percentage]
+      description: Label text only; does not change plotted values, axes, tooltips, statistics, or exports.
     ChartConfig:
       oneOf:
         - $ref: '#/components/schemas/BarChartConfig'
@@ -619,7 +623,8 @@ components:
         sort: { $ref: '#/components/schemas/Sort' }
         scale: { type: string, enum: [linear, log] }
         stack: { type: boolean }
-        showLabels: { type: boolean }
+        showLabels: { type: boolean, deprecated: true, description: Legacy value-label input used only when labelMode is absent. }
+        labelMode: { $ref: '#/components/schemas/LabelMode' }
         threeDRotate: { type: boolean }
         threeD: { type: boolean }
         threeDVisualMap: { type: boolean }
@@ -635,7 +640,8 @@ components:
         sort: { $ref: '#/components/schemas/Sort' }
         scale: { type: string, enum: [linear, log] }
         stack: { type: boolean }
-        showLabels: { type: boolean }
+        showLabels: { type: boolean, deprecated: true, description: Legacy value-label input used only when labelMode is absent. }
+        labelMode: { $ref: '#/components/schemas/LabelMode' }
         symbol:
           $ref: '#/components/schemas/SeriesSymbol'
         symbolSize: { type: number, exclusiveMinimum: 0 }
@@ -653,7 +659,8 @@ components:
         swap: { type: string }
         sort: { $ref: '#/components/schemas/Sort' }
         scale: { type: string, enum: [linear, log] }
-        showLabels: { type: boolean }
+        showLabels: { type: boolean, deprecated: true, description: Legacy value-label input used only when labelMode is absent. }
+        labelMode: { $ref: '#/components/schemas/LabelMode' }
         symbol:
           $ref: '#/components/schemas/SeriesSymbol'
         symbolSize: { type: number, exclusiveMinimum: 0 }
@@ -681,7 +688,8 @@ components:
         type: { const: pie }
         swap: { type: string }
         sort: { $ref: '#/components/schemas/Sort' }
-        showLabels: { type: boolean }
+        showLabels: { type: boolean, deprecated: true, description: Legacy value-label input used only when labelMode is absent. }
+        labelMode: { $ref: '#/components/schemas/LabelMode' }
         stat: { $ref: '#/components/schemas/StatisticsConfig' }
     HeatmapChartConfig:
       type: object
@@ -691,7 +699,8 @@ components:
         type: { const: heatmap }
         swap: { type: string }
         sort: { $ref: '#/components/schemas/Sort' }
-        showLabels: { type: boolean }
+        showLabels: { type: boolean, deprecated: true, description: Legacy value-label input used only when labelMode is absent. }
+        labelMode: { $ref: '#/components/schemas/LabelMode' }
         stat: { $ref: '#/components/schemas/StatisticsConfig' }
     RadarChartConfig:
       type: object
@@ -701,7 +710,8 @@ components:
         type: { const: radar }
         swap: { type: string }
         sort: { $ref: '#/components/schemas/Sort' }
-        showLabels: { type: boolean }
+        showLabels: { type: boolean, deprecated: true, description: Legacy value-label input used only when labelMode is absent. }
+        labelMode: { $ref: '#/components/schemas/LabelMode' }
         stat: { $ref: '#/components/schemas/StatisticsConfig' }
     ProblemDetails:
       type: object

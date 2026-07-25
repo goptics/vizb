@@ -26,6 +26,12 @@ var (
 	// is the shorter "labels"; Key carries that divergence.
 	LabelsFlag = flags.Flag{Name: "show-labels", Shorthand: "l", Key: "labels", Usage: "Show labels on charts", Kind: flags.KindBool, JSONKey: "showLabels"}
 
+	LabelModeFlag = flags.Flag{
+		Name: "label-mode", Usage: "Label text (none, value, percentage)", Kind: flags.KindString, JSONKey: "labelMode",
+		Validate: ValidateLabelModeValue,
+		Encode:   func(v any) any { return strings.ToLower(v.(string)) },
+	}
+
 	StatFlag = flags.Flag{
 		Name:    "stat",
 		Usage:   "Compute statistics (all categories when bare; comma-delimited list for specific categories)",
@@ -37,7 +43,7 @@ var (
 // BaseChartFlags are the --chart keys valid for every chart type. Each chart's
 // flag list is composed by prepending a clone of BaseChartFlags before the
 // chart's own variable flags (declared in cmd/charts/<c>/<c>.go).
-var BaseChartFlags = []flags.Flag{SwapFlag, SortFlag, LabelsFlag, StatFlag}
+var BaseChartFlags = []flags.Flag{SwapFlag, SortFlag, LabelsFlag, LabelModeFlag, StatFlag}
 
 // --- Variable flags: composed by the charts that carry them. ---
 
@@ -125,6 +131,15 @@ func ValidateSortValue(s string) error {
 		return nil
 	}
 	return fmt.Errorf("sort value %q is invalid (must be \"asc\" or \"desc\")", s)
+}
+
+// ValidateLabelModeValue reports whether s is a supported label presentation.
+func ValidateLabelModeValue(s string) error {
+	switch strings.ToLower(s) {
+	case "none", "value", "percentage":
+		return nil
+	}
+	return fmt.Errorf("label mode %q is invalid (must be \"none\", \"value\", or \"percentage\")", s)
 }
 
 // echartsBuiltinSymbols are the ECharts built-in series symbols (case-insensitive).

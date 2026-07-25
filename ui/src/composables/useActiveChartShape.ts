@@ -1,7 +1,15 @@
 import { computed } from 'vue'
-import type { BarConfig, LineConfig, ScatterConfig, ScaleType, Sort, StatConfig } from '../types'
+import type {
+  BarConfig,
+  LabelMode,
+  LineConfig,
+  ScatterConfig,
+  ScaleType,
+  Sort,
+  StatConfig,
+} from '../types'
 import { arrangementHasChartZ } from '../lib/swap'
-import { canOfferValue3D } from '../lib/utils'
+import { canOfferValue3D, resolveLabelMode } from '../lib/utils'
 import { useDataPoint } from './useDataPoint'
 import { useSettingsStore } from './useSettingsStore'
 
@@ -38,7 +46,8 @@ export function useActiveChartShape() {
     () => (activeConfig.value as { threeDRotate?: boolean } | undefined)?.threeDRotate ?? false
   )
 
-  const showLabels = computed<boolean>(() => activeConfig.value?.showLabels ?? false)
+  const labelMode = computed<LabelMode>(() => resolveLabelMode(activeConfig.value))
+  const showLabels = computed<boolean>(() => labelMode.value !== 'none')
 
   const sort = computed<Sort | undefined>(() => activeConfig.value?.sort)
 
@@ -90,6 +99,7 @@ export function useActiveChartShape() {
     stack,
     threeDRotate,
     showLabels,
+    labelMode,
     sort,
     threeD,
     hasThreeDOption,

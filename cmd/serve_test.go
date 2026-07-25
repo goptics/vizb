@@ -1055,6 +1055,10 @@ func (s *ServeSuite) TestRequestContractHelpers() {
 		s.Require().NotNil(validationErr)
 		s.Equal("/config/showLabels", validationErr.Path)
 
+		_, validationErr = decodeChartConfig(json.RawMessage(`{"type":"bar","labelMode":"percent"}`), "/config")
+		s.Require().NotNil(validationErr)
+		s.Equal("/config/labelMode", validationErr.Path)
+
 		for _, raw := range []string{
 			`{`,
 			`{"scale":null}`,

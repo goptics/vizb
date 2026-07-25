@@ -20,12 +20,14 @@ import {
 import { useSortedSeriesData, getEffectiveScale, computeSeriesTotals } from './shared/common'
 import { buildValueAxes2DOptions } from './shared/valueMode'
 import { buildMixedAxes2DOptions } from './shared/mixedMode'
+import { percentageFormatter } from './shared/labels'
 
 const barNullable = (val: number | null, scale: string): number | null =>
   val === null ? null : scale === 'log' && val <= 0 ? null : val
 
 export function useBarChartOptions(config: BaseChartConfig) {
-  const { chartData, sort, showLabels, isDark, scale, stack, horizontal } = config
+  const { chartData, sort, showLabels, labelMode, chartTotal, isDark, scale, stack, horizontal } =
+    config
 
   const sortedData = useSortedSeriesData(chartData, sort)
 
@@ -49,6 +51,12 @@ export function useBarChartOptions(config: BaseChartConfig) {
     const largeX = isLargeXAxis(xAxisData)
     const xLabel = chartData.value.axisLabels?.x
     const useStack = stack?.value === true && effectiveScale !== 'log'
+    const formatter = percentageFormatter(
+      labelMode?.value ?? 'none',
+      chartTotal?.value ?? 0,
+      (p: any) =>
+        typeof p.value === 'number' ? p.value : Array.isArray(p.value) ? p.value.at(-1) : undefined
+    )
 
     if (!hasYAxis && isHorizontal) {
       return {
@@ -69,7 +77,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
             name: chartData.value.title,
             type: 'bar' as const,
             data: series.map((s) => barNullable(s.values[0] ?? null, effectiveScale)),
-            label: createLabelConfig(showLabels.value, styling, 'horizontal'),
+            label: createLabelConfig(showLabels.value, styling, 'horizontal', false, formatter),
             large: true,
             largeThreshold: LARGE_DATA_THRESHOLD,
             itemStyle: { color: getNextColorFor(chartData.value.title) },
@@ -95,7 +103,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
             // on every recompute. `large` keeps the draw on one frame past the
             // threshold.
             data: series.map((s) => barNullable(s.values[0] ?? null, effectiveScale)),
-            label: createLabelConfig(showLabels.value, styling),
+            label: createLabelConfig(showLabels.value, styling, undefined, false, formatter),
             large: true,
             largeThreshold: LARGE_DATA_THRESHOLD,
             itemStyle: { color: getNextColorFor(chartData.value.title) },
@@ -114,7 +122,8 @@ export function useBarChartOptions(config: BaseChartConfig) {
         showLabels.value,
         styling,
         isHorizontal ? 'horizontal' : 'vertical',
-        useStack
+        useStack,
+        formatter
       ),
       large: true,
       largeThreshold: LARGE_DATA_THRESHOLD,

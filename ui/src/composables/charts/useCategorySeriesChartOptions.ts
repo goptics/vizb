@@ -24,6 +24,7 @@ import {
 } from './shared/common'
 import { resolveSeriesSymbol } from './shared/seriesConfig'
 import { resolve2DScatterVisualMap } from './shared/visualMap'
+import { percentageFormatter } from './shared/labels'
 
 export type CategorySeriesKind = 'line' | 'scatter'
 
@@ -57,7 +58,8 @@ const groupedScatterColorValues = (seriesList: { data: (number | null)[] }[]): n
 }
 
 export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: CategorySeriesKind) {
-  const { chartData, sort, isDark, showLabels, scale, stack, visualMap } = config
+  const { chartData, sort, isDark, showLabels, labelMode, chartTotal, scale, stack, visualMap } =
+    config
   const sortedData = useSortedSeriesData(chartData, sort)
   const style = SERIES_STYLE[kind]
 
@@ -76,13 +78,18 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
     const useVisualMap = kind === 'scatter' && visualMap?.value === true
     const smoothLines = kind === 'line' && config.smooth?.value === true
     const useStack = kind === 'line' && stack?.value === true && effectiveScale !== 'log'
+    const formatter = percentageFormatter(
+      labelMode?.value ?? 'none',
+      chartTotal?.value ?? 0,
+      (p: any) => (typeof p.value === 'number' ? p.value : undefined)
+    )
 
     if (!hasYAxis) {
       const singleSeries = {
         name: chartData.value.title,
         type: kind,
         data: series.map((s) => adjustForLogScaleLine(s.values[0] ?? null, effectiveScale)),
-        label: createLabelConfig(showLabels.value, styling),
+        label: createLabelConfig(showLabels.value, styling, undefined, false, formatter),
         ...(kind === 'scatter'
           ? scatterSeriesLargeOpts(useVisualMap)
           : { large: true as const, largeThreshold: LARGE_DATA_THRESHOLD }),
@@ -113,7 +120,7 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
       name: yAxisLabel,
       type: kind,
       data: series.map((s) => adjustForLogScaleLine(s.values[yIndex] ?? null, effectiveScale)),
-      label: createLabelConfig(showLabels.value, styling),
+      label: createLabelConfig(showLabels.value, styling, undefined, false, formatter),
       ...(kind === 'scatter'
         ? scatterSeriesLargeOpts(useVisualMap)
         : { large: true as const, largeThreshold: LARGE_DATA_THRESHOLD }),

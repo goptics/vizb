@@ -1,5 +1,5 @@
 import type { EChartsOption } from 'echarts'
-import type { Render3D, Point3D, ScaleType, Series3DData } from '@/types'
+import type { Render3D, Point3D, ScaleType, Series3DData, LabelMode } from '@/types'
 import { valuePoints3DToSeries } from '@/lib/transform'
 import { getDefaultThemeColor, getNextColorFor } from '@/lib/utils'
 import {
@@ -11,8 +11,26 @@ import {
   getTooltipTheme,
   type ChartStyling,
 } from './chartConfig'
+import { formatPercentageLabel } from './labels'
 
 export const round2 = (v: number) => Math.round(v * 100) / 100
+
+export function visible3DCellTotals(
+  series: Series3DData[],
+  selected: Record<string, boolean>
+): Record<string, number> {
+  const totals: Record<string, number> = {}
+  for (const s of series) {
+    if (selected[s.name] === false) continue
+    for (const { value } of s.data) {
+      const [x = 0, y = 0, amount] = value
+      if (amount === undefined || !Number.isFinite(amount)) continue
+      const key = `${x},${y}`
+      totals[key] = (totals[key] ?? 0) + amount
+    }
+  }
+  return totals
+}
 
 /** Blue-to-red gradient for value-mode 3D visualMap (metric height). */
 export const VALUE_3D_COLOR_RANGE = [
@@ -493,6 +511,8 @@ export type Continuous3DParams = {
   styling: ChartStyling
   isDark: boolean
   showLabels: boolean
+  labelMode?: LabelMode
+  chartTotal?: number
   useVisualMap: boolean
   defaultColor: string
   threeDRotate: boolean
@@ -524,6 +544,8 @@ export function buildContinuous3DOptions(
     styling,
     isDark,
     showLabels,
+    labelMode,
+    chartTotal,
     useVisualMap,
     defaultColor,
     threeDRotate,
@@ -589,7 +611,10 @@ export function buildContinuous3DOptions(
         show: showLabels,
         formatter: (p: { value: number[] }) => {
           const labelVal = metricDimension ? p.value[3] : p.value[2]
-          return labelVal === undefined ? '' : String(round2(labelVal))
+          if (labelVal === undefined) return ''
+          return labelMode === 'percentage'
+            ? formatPercentageLabel(labelVal, chartTotal ?? 0)
+            : String(round2(labelVal))
         },
         textStyle: { fontSize: 12, color: styling.textColor },
       },
@@ -711,7 +736,9 @@ export function create3DGridConfig(opts: {
 export function create3DCellLabel(
   show: boolean,
   cellTotals: Record<string, number>,
-  textColor: string
+  textColor: string,
+  labelMode: LabelMode = 'value',
+  chartTotal = 0
 ) {
   if (!show) return { show: false }
   return {
@@ -719,7 +746,10 @@ export function create3DCellLabel(
     formatter: (p: { value: number[] }) => {
       const [xi = 0, yi = 0] = p.value
       const total = cellTotals[`${xi},${yi}`]
-      return total === undefined ? '' : String(round2(total))
+      if (total === undefined) return ''
+      return labelMode === 'percentage'
+        ? formatPercentageLabel(total, chartTotal)
+        : String(round2(total))
     },
     textStyle: { fontSize: 12, color: textColor },
   }

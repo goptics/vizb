@@ -14,6 +14,7 @@ import {
   createHeatmapDataZoomConfig,
   createHeatmapLayoutConfig,
 } from './shared'
+import { formatPercentageLabel } from './shared/labels'
 
 const round2 = (v: number) => Math.round(v * 100) / 100
 
@@ -62,7 +63,7 @@ function heatmapVisualMap(
 }
 
 function build2DHeatmap(config: BaseChartConfig): EChartsOption {
-  const { chartData, isDark, showLabels } = config
+  const { chartData, isDark, showLabels, labelMode, chartTotal } = config
   const base = getBaseOptions(config)
   const styling = getChartStyling(isDark.value)
   const data = chartData.value
@@ -174,7 +175,14 @@ function build2DHeatmap(config: BaseChartConfig): EChartsOption {
         data: heatmapData,
         label: {
           show: showLabels.value,
-          formatter: (params: any) => formatCellNumber(params.data[2]),
+          formatter: (params: any) => {
+            const [xi, yi, value] = params.data
+            if (labelMode?.value === 'percentage') {
+              if (data.series[xi]?.values[yi] == null) return ''
+              return formatPercentageLabel(value, chartTotal?.value ?? 0)
+            }
+            return formatCellNumber(value)
+          },
           color: styling.textColor,
           fontSize: 11,
         },
@@ -187,11 +195,10 @@ function build2DHeatmap(config: BaseChartConfig): EChartsOption {
 }
 
 function build3DHeatmap(config: BaseChartConfig): EChartsOption {
-  const { chartData, isDark, showLabels, visibleZ } = config
+  const { chartData, isDark, showLabels, labelMode, chartTotal, visibleZ } = config
   const base = getBaseOptions(config)
   const styling = getChartStyling(isDark.value)
   const data = chartData.value
-  const points = data.points ?? []
 
   const render = data.render3D ?? {
     xValues: [],
@@ -207,21 +214,29 @@ function build3DHeatmap(config: BaseChartConfig): EChartsOption {
   const hasZoom = largeX || largeY
 
   const sel = visibleZ?.value ?? {}
-  const visiblePoints = points.filter((p) => sel[p.zAxis] !== false)
 
   const cellLookup = new Map<string, Map<string, number>>()
   const xMarginals = new Map<string, number>()
   const yMarginals = new Map<string, number>()
-  for (const p of visiblePoints) {
-    const key = `${p.xAxis},${p.yAxis}`
-    let zmap = cellLookup.get(key)
-    if (!zmap) {
-      zmap = new Map()
-      cellLookup.set(key, zmap)
+  for (const series of render.lineSeries) {
+    if (sel[series.name] === false) continue
+    for (const item of series.data) {
+      const [xi, yi, value] = item.value
+      const x = xValues[xi ?? -1]
+      const y = yValues[yi ?? -1]
+      if (x === undefined || y === undefined || value === undefined || !Number.isFinite(value)) {
+        continue
+      }
+      const key = `${x},${y}`
+      let zmap = cellLookup.get(key)
+      if (!zmap) {
+        zmap = new Map()
+        cellLookup.set(key, zmap)
+      }
+      zmap.set(series.name, (zmap.get(series.name) ?? 0) + value)
+      xMarginals.set(x, (xMarginals.get(x) ?? 0) + value)
+      yMarginals.set(y, (yMarginals.get(y) ?? 0) + value)
     }
-    zmap.set(p.zAxis, (zmap.get(p.zAxis) ?? 0) + p.value)
-    xMarginals.set(p.xAxis, (xMarginals.get(p.xAxis) ?? 0) + p.value)
-    yMarginals.set(p.yAxis, (yMarginals.get(p.yAxis) ?? 0) + p.value)
   }
 
   const heatmapData: number[][] = []
@@ -388,7 +403,10 @@ function build3DHeatmap(config: BaseChartConfig): EChartsOption {
           show: showLabels.value,
           formatter: (params: any) => {
             const v = Array.isArray(params.value) ? params.value[2] : params.data?.[2]
-            return v === undefined || v === 0 ? '' : formatCellNumber(v)
+            if (v === undefined || v === 0) return ''
+            return labelMode?.value === 'percentage'
+              ? formatPercentageLabel(v, chartTotal?.value ?? 0)
+              : formatCellNumber(v)
           },
           color: '#fff',
           fontSize: 11,

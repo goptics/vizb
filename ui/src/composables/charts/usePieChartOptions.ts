@@ -10,7 +10,7 @@ import {
   formatTooltipValue,
 } from './shared'
 import { fontSize, sortByTotal, sortByValue } from './shared/common'
-import type { Point3D } from '@/types'
+import { formatPercentageLabel } from './shared/labels'
 
 type SeriesWithTotal = { xAxis: string; values: (number | null)[]; total: number }
 
@@ -22,14 +22,6 @@ const computeYAxisTotals = (yAxis: string[], series: SeriesWithTotal[]): Map<str
       series.reduce((sum, s) => sum + (s.values[i] ?? 0), 0)
     )
   })
-  return totals
-}
-
-const computeZAxisTotals = (points: Point3D[]): Map<string, number> => {
-  const totals = new Map<string, number>()
-  for (const point of points) {
-    totals.set(point.zAxis, (totals.get(point.zAxis) ?? 0) + point.value)
-  }
   return totals
 }
 
@@ -46,7 +38,7 @@ const makePieTitle = (
 })
 
 export function usePieChartOptions(config: BaseChartConfig) {
-  const { chartData, sort, showLabels, isDark } = config
+  const { chartData, sort, showLabels, labelMode, chartTotal, isDark } = config
 
   const sortedData = computed(() => {
     const seriesWithTotals = chartData.value.series.map((series) => ({
@@ -68,10 +60,14 @@ export function usePieChartOptions(config: BaseChartConfig) {
     const styling = getChartStyling(isDark.value)
     const baseOptions = getBaseOptions(config)
 
-    const formatter = (params: any) => {
+    const valueFormatter = (params: any) => {
       const percent = Number(params.percent).toFixed(2)
       return `${params.name} (${percent}%)`
     }
+    const formatter =
+      labelMode?.value === 'percentage'
+        ? (params: any) => formatPercentageLabel(Number(params.value), chartTotal?.value ?? 0)
+        : valueFormatter
 
     // Pie hover tooltip: the generic config shows name + value only. Slices are
     // shares of a whole, so surface the percent here too (not just on labels).
@@ -129,14 +125,43 @@ export function usePieChartOptions(config: BaseChartConfig) {
     }
 
     if (hasZAxis(chartData)) {
-      const zAxisTotals = computeZAxisTotals(chartData.value.points ?? [])
-      const zAxisPieData = chartData.value.zAxis
-        .filter((z) => z !== '')
-        .map((z) => ({
-          name: z,
-          value: Math.max(0, zAxisTotals.get(z) ?? 0),
-          itemStyle: { color: getNextColorFor(z) },
-        }))
+      const render = chartData.value.render3D
+      const xTotals = new Map<string, number>()
+      const yTotals = new Map<string, number>()
+      const zTotals = new Map<string, number>()
+      for (const series of render?.lineSeries ?? []) {
+        for (const { value } of series.data) {
+          const [xi, yi, amount] = value
+          const x = render?.xValues[xi ?? -1]
+          const y = render?.yValues[yi ?? -1]
+          if (
+            x === undefined ||
+            y === undefined ||
+            amount === undefined ||
+            !Number.isFinite(amount)
+          ) {
+            continue
+          }
+          xTotals.set(x, (xTotals.get(x) ?? 0) + amount)
+          yTotals.set(y, (yTotals.get(y) ?? 0) + amount)
+          zTotals.set(series.name, (zTotals.get(series.name) ?? 0) + amount)
+        }
+      }
+      const xAxis3DPieData = (render?.xValues ?? []).map((x) => ({
+        name: x,
+        value: Math.max(0, xTotals.get(x) ?? 0),
+        itemStyle: { color: getNextColorFor(x) },
+      }))
+      const yAxis3DPieData = (render?.yValues ?? []).map((y) => ({
+        name: y,
+        value: Math.max(0, yTotals.get(y) ?? 0),
+        itemStyle: { color: getNextColorFor(y) },
+      }))
+      const zAxisPieData = (render?.zValues ?? []).map((z) => ({
+        name: z,
+        value: Math.max(0, zTotals.get(z) ?? 0),
+        itemStyle: { color: getNextColorFor(z) },
+      }))
 
       if (sort.value.enabled) {
         zAxisPieData.sort(sortByValue(sort.value.order))
@@ -152,13 +177,13 @@ export function usePieChartOptions(config: BaseChartConfig) {
       const specs3D = [
         {
           name: 'By X-Axis',
-          data: xAxisPieData,
+          data: xAxis3DPieData,
           radius: ['25%', '50%'] as [string, string],
           center: ['16.66%', '50%'] as [string, string],
         },
         {
           name: 'By Y-Axis',
-          data: yAxisPieData,
+          data: yAxis3DPieData,
           radius: ['25%', '50%'] as [string, string],
           center: ['50%', '50%'] as [string, string],
         },

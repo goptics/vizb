@@ -4,6 +4,7 @@ import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
 import { getNextColorFor, hasXAxis, hasYAxis, hasZAxis } from '@/lib/utils'
 import { getChartStyling, getTooltipTheme, formatRadarItemTooltip } from './shared'
 import { fontSize, sortByTotal } from './shared/common'
+import { percentageFormatter } from './shared/labels'
 
 const makeIndicators = (names: string[], perSpokeMax: number[]) =>
   names.map((name, i) => ({ name, max: Math.max((perSpokeMax[i] ?? 0) * 1.1, 1) }))
@@ -27,13 +28,22 @@ const radarConfig = (
 })
 
 export function useRadarChartOptions(config: BaseChartConfig) {
-  const { chartData, sort, showLabels, isDark } = config
+  const { chartData, sort, showLabels, labelMode, chartTotal, isDark } = config
 
   const options = computed<EChartsOption>(() => {
     const cd = chartData.value
     const styling = getChartStyling(isDark.value)
     const baseOptions = getBaseOptions(config)
-    const label = { show: showLabels.value, fontSize, color: styling.textColor }
+    const label = {
+      show: showLabels.value,
+      fontSize,
+      color: styling.textColor,
+      formatter: percentageFormatter(
+        labelMode?.value ?? 'none',
+        chartTotal?.value ?? 0,
+        (p: any) => (typeof p.value === 'number' ? p.value : undefined)
+      ),
+    }
 
     // X only: xAxis values as spokes, single polygon with totals
     if (!hasYAxis(chartData)) {
@@ -84,12 +94,26 @@ export function useRadarChartOptions(config: BaseChartConfig) {
     if (hasZAxis(chartData)) {
       const yIndex = new Map(yAxis.map((y, i) => [y, i]))
       const grouped = new Map<string, Map<string, number[]>>()
-      for (const pt of cd.points ?? []) {
-        if (!grouped.has(pt.zAxis)) grouped.set(pt.zAxis, new Map())
-        const zMap = grouped.get(pt.zAxis)!
-        if (!zMap.has(pt.xAxis)) zMap.set(pt.xAxis, new Array(yAxis.length).fill(0))
-        const idx = yIndex.get(pt.yAxis)
-        if (idx !== undefined) zMap.get(pt.xAxis)![idx] = pt.value
+      const render = cd.render3D
+      for (const series of render?.lineSeries ?? []) {
+        if (!grouped.has(series.name)) grouped.set(series.name, new Map())
+        const zMap = grouped.get(series.name)!
+        for (const { value } of series.data) {
+          const [xi, yi, amount] = value
+          const x = render?.xValues[xi ?? -1]
+          const y = render?.yValues[yi ?? -1]
+          const idx = y === undefined ? undefined : yIndex.get(y)
+          if (
+            x === undefined ||
+            idx === undefined ||
+            amount === undefined ||
+            !Number.isFinite(amount)
+          ) {
+            continue
+          }
+          if (!zMap.has(x)) zMap.set(x, new Array(yAxis.length).fill(0))
+          zMap.get(x)![idx] = amount
+        }
       }
 
       const perSpokeMax = new Array<number>(yAxis.length).fill(0)

@@ -17,6 +17,7 @@ type Config struct {
 	Scale           string             `json:"scale,omitempty"`
 	Stack           *bool              `json:"stack,omitempty"`
 	ShowLabels      *bool              `json:"showLabels,omitempty"`
+	LabelMode       string             `json:"labelMode,omitempty"`
 	Symbol          string             `json:"symbol,omitempty"`
 	SymbolSize      *float64           `json:"symbolSize,omitempty"`
 	Smooth          *bool              `json:"smooth,omitempty"`

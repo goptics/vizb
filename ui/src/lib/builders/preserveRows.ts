@@ -1,4 +1,4 @@
-import type { ChartData, DataPoint, SeriesData, Point3D } from '@/types'
+import type { ChartData, DataPoint, SeriesData, Point3D, ScaleType } from '@/types'
 import type { ChartBuilder, BuildContext } from './types'
 import { finalizeChart } from './finalize'
 import { statsForSignature } from '../transform'
@@ -116,23 +116,25 @@ export class PreserveRowsBuilder implements ChartBuilder {
     return chart.zAxis.length
   }
 
-  grandTotal(chart: ChartData, visibleZ?: Record<string, boolean>): number {
-    if (chart.points.length > 0) {
-      const filterZ = chart.zAxis.length > 0 && chart.zAxis[0] !== ''
+  grandTotal(chart: ChartData, visibleZ?: Record<string, boolean>, scale?: ScaleType): number {
+    if (chart.render3D) {
       let total = 0
-      for (const pt of chart.points) {
-        if (filterZ && pt.zAxis && visibleZ?.[pt.zAxis] === false) continue
-        total += pt.value
+      for (const series of chart.render3D.lineSeries) {
+        if (visibleZ?.[series.name] === false) continue
+        for (const item of series.data) {
+          const value = item.value[2]
+          if (value !== undefined && Number.isFinite(value)) total += value
+        }
       }
       return total
     }
     if (chart.mixedTuples?.length) {
-      return chart.mixedTuples.reduce((sum, [, y]) => sum + y, 0)
+      return chart.mixedTuples.reduce((sum, [, y]) => sum + (Number.isFinite(y) ? y : 0), 0)
     }
     let total = 0
     for (const s of chart.series) {
       for (const v of s.values) {
-        if (v != null) total += v
+        if (v != null && Number.isFinite(v) && (scale !== 'log' || v > 0)) total += v
       }
     }
     return total

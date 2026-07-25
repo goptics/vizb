@@ -65,10 +65,10 @@ vizb pie sales.csv -g order_date,category -p "[-y{Month}-x{Date}],z{Category}" -
 
 Pie charts expose three runtime settings — sort, labels, and axis swap.
 
-| Setting | CLI flag | UI toggle | Notes |
+| Setting | CLI flag | UI control | Notes |
 |---------|----------|-----------|-------|
 | Sort | `--sort asc\|desc` | Sort control | Orders slices by value |
-| Labels | `--show-labels` | Show labels | Shows name + percentage on each slice |
+| Labels | `--label-mode` | Off / Value / Percentage | Value preserves name + share; Percentage shows only the canonical chart percentage |
 | Swap | `--swap` | Axis switcher | Reorders which axis maps to which pie |
 
 Override settings for just this chart type without affecting others:

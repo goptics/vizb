@@ -8,8 +8,9 @@ import type {
   LineConfig,
   ScatterConfig,
   Dataset,
+  LabelMode,
 } from '../types'
-import { SORT_ORDERS, SCALE_TYPES } from '../types'
+import { SORT_ORDERS, SCALE_TYPES, LABEL_MODES } from '../types'
 import { useSettingsStore } from './useSettingsStore'
 import { useDataPoint } from './useDataPoint'
 import { activeDataset } from './useDataPoint'
@@ -62,6 +63,7 @@ const resolveDatasetIndex = (
 type ConfigUpdate = {
   sort?: { enabled: boolean; order: SortOrder }
   showLabels?: boolean
+  labelMode?: LabelMode
   scale?: ScaleType
   threeD?: boolean
   threeDRotate?: boolean
@@ -82,6 +84,7 @@ const applyConfigUpdate = (type: ChartType, update: ConfigUpdate): boolean => {
 
   if (update.sort) cfg.sort = update.sort
   if (update.showLabels !== undefined) cfg.showLabels = update.showLabels
+  if (update.labelMode !== undefined) cfg.labelMode = update.labelMode
   if (cfg.type === 'bar' || cfg.type === 'line' || cfg.type === 'scatter') {
     const cartesian = cfg as BarConfig | LineConfig | ScatterConfig
     if (update.scale) cartesian.scale = update.scale
@@ -188,6 +191,7 @@ export function useUrlRouter() {
     for (const ct of ALL_CHART_TYPES) {
       const so = params[`${ct}.so`] as SortOrder | undefined
       const l = params[`${ct}.l`]
+      const lm = params[`${ct}.lm`] as LabelMode | undefined
       const sc = params[`${ct}.sc`] as ScaleType | undefined
       const d3 = params[`${ct}.3d`]
       const d3rt = params[`${ct}.3d-rt`]
@@ -201,6 +205,7 @@ export function useUrlRouter() {
       }
       if (l === 'true') update.showLabels = true
       else if (l === 'false') update.showLabels = false
+      if (lm && LABEL_MODES.includes(lm)) update.labelMode = lm
       if (sc && SCALE_TYPES.includes(sc)) update.scale = sc
       if (d3 === 'true') update.threeD = true
       else if (d3 === 'false') update.threeD = false
@@ -265,7 +270,8 @@ export function useUrlRouter() {
     for (const cfg of settings) {
       const ct = cfg.type
       if (cfg.sort?.enabled) params[`${ct}.so`] = cfg.sort.order
-      if (cfg.showLabels === true) params[`${ct}.l`] = 'true'
+      if (cfg.labelMode) params[`${ct}.lm`] = cfg.labelMode
+      else if (cfg.showLabels === true) params[`${ct}.l`] = 'true'
       else if (cfg.showLabels === false) params[`${ct}.l`] = 'false'
       if (cfg.type === 'bar' || cfg.type === 'line' || cfg.type === 'scatter') {
         const cartesian = cfg as BarConfig | LineConfig | ScatterConfig

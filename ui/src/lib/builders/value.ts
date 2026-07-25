@@ -110,10 +110,13 @@ export class ValueBuilder implements ChartBuilder {
 
   grandTotal(chart: ChartData): number {
     if (chart.valuePoints3D?.length) {
-      return chart.valuePoints3D.reduce((sum, [, , z]) => sum + z, 0)
+      return chart.valuePoints3D.reduce((sum, [, , z, metric]) => {
+        const value = metric ?? z
+        return sum + (Number.isFinite(value) ? value : 0)
+      }, 0)
     }
     if (chart.valueTuples?.length) {
-      return chart.valueTuples.reduce((sum, [, y]) => sum + y, 0)
+      return chart.valueTuples.reduce((sum, [, y]) => sum + (Number.isFinite(y) ? y : 0), 0)
     }
     return 0
   }
