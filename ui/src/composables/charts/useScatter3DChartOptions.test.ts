@@ -249,7 +249,7 @@ describe('useScatter3DChartOptions — optional defaults', () => {
           zValues: [],
           barSeries: [],
           lineSeries: [],
-          cellTotals: {},
+          cellTotals: undefined as unknown as Record<string, number>,
         },
       }),
       threeD: true,
