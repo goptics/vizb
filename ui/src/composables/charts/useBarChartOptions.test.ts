@@ -254,3 +254,320 @@ describe('useBarChartOptions — horizontal mode', () => {
     expect((opt.yAxis as { type: string }).type).toBe('value')
   })
 })
+
+const makeValueChartData = (): ChartData => ({
+  title: 'price · latency',
+  statType: 'value',
+  yAxis: [],
+  zAxis: [],
+  series: [],
+  points: [],
+  axisLabels: { x: 'price', y: 'latency' },
+  valueTuples: [
+    [100, 12],
+    [200, 8],
+  ],
+})
+
+describe('useBarChartOptions — value mode and branches', () => {
+  it('emits bar series for valueTuples', () => {
+    const { options } = useBarChartOptions({
+      chartData: ref(makeValueChartData()),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+    })
+    const s = (options.value.series as { type: string; data: unknown[] }[])[0]!
+    expect(s.type).toBe('bar')
+    expect(s.data).toHaveLength(2)
+  })
+
+  it('sorts single-x grouped series by value', () => {
+    const chartData: ChartData = {
+      title: 'one',
+      statType: 'sum',
+      yAxis: ['High', 'Low'],
+      zAxis: [],
+      series: [{ xAxis: 'only', values: [30, 10], benchmarkId: '' }],
+      points: [],
+      axisLabels: { x: 'x', y: 'y' },
+    }
+    const asc = useBarChartOptions({
+      chartData: ref(chartData),
+      sort: ref({ enabled: true, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+    })
+    const desc = useBarChartOptions({
+      chartData: ref(chartData),
+      sort: ref({ enabled: true, order: 'desc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+    })
+    expect((asc.options.value.series as { name: string }[]).map((s) => s.name)).toEqual([
+      'Low',
+      'High',
+    ])
+    expect((desc.options.value.series as { name: string }[]).map((s) => s.name)).toEqual([
+      'High',
+      'Low',
+    ])
+  })
+
+  it('nulls non-positive values on log scale', () => {
+    const chartData: ChartData = {
+      title: 'log',
+      statType: 'v',
+      yAxis: [],
+      zAxis: [],
+      series: [
+        { xAxis: 'a', values: [0], benchmarkId: '' },
+        { xAxis: 'b', values: [-1], benchmarkId: '' },
+        { xAxis: 'c', values: [5], benchmarkId: '' },
+        { xAxis: 'd', values: [null], benchmarkId: '' },
+      ],
+      points: [],
+    }
+    const { options } = useBarChartOptions({
+      chartData: ref(chartData),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      scale: ref('log'),
+    })
+    const series = options.value.series as { data: (number | null)[] }[]
+    expect(series[0]!.data).toEqual([null, null, 5, null])
+  })
+
+  it('adds horizontal dataZoom for large simple categories', () => {
+    const many = Array.from({ length: 60 }, (_, i) => `c${i}`)
+    const chartData: ChartData = {
+      title: 'wide',
+      statType: 'v',
+      yAxis: [],
+      zAxis: [],
+      series: many.map((x, i) => ({ xAxis: x, values: [i + 1], benchmarkId: '' })),
+      points: [],
+      axisLabels: { x: 'cat' },
+    }
+    const { options } = useBarChartOptions({
+      chartData: ref(chartData),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      horizontal: ref(true),
+    })
+    expect(options.value.dataZoom).toBeDefined()
+    expect((options.value.grid as { right?: number }).right).toBe(44)
+  })
+
+  it('adds vertical dataZoom for large simple categories', () => {
+    const many = Array.from({ length: 60 }, (_, i) => `c${i}`)
+    const chartData: ChartData = {
+      title: 'wide',
+      statType: 'v',
+      yAxis: [],
+      zAxis: [],
+      series: many.map((x, i) => ({ xAxis: x, values: [i + 1], benchmarkId: '' })),
+      points: [],
+      axisLabels: { x: 'cat' },
+    }
+    const { options } = useBarChartOptions({
+      chartData: ref(chartData),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+    })
+    expect(options.value.dataZoom).toBeDefined()
+  })
+
+  it('handles horizontal simple bars without x label', () => {
+    const chartData = makeSimpleChartData()
+    chartData.axisLabels = {}
+    const { options } = useBarChartOptions({
+      chartData: ref(chartData),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      horizontal: ref(true),
+    })
+    expect((options.value.grid as { left?: string | number }).left).toBe('3%')
+  })
+
+  it('adds legend title for multi-series vertical bars with y label', () => {
+    const { options } = useBarChartOptions(makeGroupedConfig(false))
+    expect(options.value.title).toBeDefined()
+  })
+
+  it('does not stack when scale is log even if stack is true', () => {
+    const { options } = useBarChartOptions({
+      chartData: ref(makeStackedGroupedChartData()),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      scale: ref('log'),
+      stack: ref(true),
+    })
+    const series = options.value.series as { stack?: string }[]
+    expect(series.every((s) => s.stack === undefined)).toBe(true)
+  })
+
+  it('adds dataZoom for large horizontal grouped categories', () => {
+    const many = Array.from({ length: 60 }, (_, i) => `c${i}`)
+    const chartData: ChartData = {
+      title: 'wide',
+      statType: 'v',
+      yAxis: ['N', 'S'],
+      zAxis: [],
+      series: many.map((x) => ({ xAxis: x, values: [1, 2], benchmarkId: '' })),
+      points: [],
+      axisLabels: { x: 'cat', y: 'reg' },
+    }
+    const { options } = useBarChartOptions({
+      chartData: ref(chartData),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      horizontal: ref(true),
+    })
+    expect(options.value.dataZoom).toBeDefined()
+  })
+})
+
+describe('useBarChartOptions — optional branch edges', () => {
+  it('handles missing values and single-series horizontal without y multi', () => {
+    const chartData: ChartData = {
+      title: 't',
+      statType: 'v',
+      yAxis: ['Only'],
+      zAxis: [],
+      series: [
+        { xAxis: 'A', values: [], benchmarkId: '' },
+        { xAxis: 'B', values: [null], benchmarkId: '' },
+      ],
+      points: [],
+      axisLabels: {},
+    }
+    const { options } = useBarChartOptions({
+      chartData: ref(chartData),
+      sort: ref({ enabled: true, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      horizontal: ref(true),
+    })
+    // single y group → no multi legend bottom band beyond default
+    expect((options.value.series as { data: (number | null)[] }[])[0]!.data).toEqual([null, null])
+  })
+
+  it('sorts with empty data slots and large vertical grouped dataZoom', () => {
+    const many = Array.from({ length: 60 }, (_, i) => `c${i}`)
+    const chartData: ChartData = {
+      title: 't',
+      statType: 'v',
+      yAxis: ['A', 'B'],
+      zAxis: [],
+      series: [{ xAxis: 'only', values: [null, 5], benchmarkId: '' }],
+      points: [],
+      axisLabels: { x: 'x' }, // no y label → no legend title
+    }
+    const sorted = useBarChartOptions({
+      chartData: ref(chartData),
+      sort: ref({ enabled: true, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+    })
+    expect((sorted.options.value.series as { name: string }[]).map((s) => s.name)).toEqual([
+      'A',
+      'B',
+    ])
+    expect(sorted.options.value.title).toBeUndefined()
+
+    const wide: ChartData = {
+      title: 't',
+      statType: 'v',
+      yAxis: ['A', 'B'],
+      zAxis: [],
+      series: many.map((x) => ({ xAxis: x, values: [1, 2], benchmarkId: '' })),
+      points: [],
+      axisLabels: { x: 'x', y: 'y' },
+    }
+    const { options } = useBarChartOptions({
+      chartData: ref(wide),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+    })
+    expect(options.value.dataZoom).toBeDefined()
+    expect(options.value.title).toBeDefined()
+  })
+
+  it('uses default scale when scale ref omitted', () => {
+    const { options } = useBarChartOptions({
+      chartData: ref(makeSimpleChartData()),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+    })
+    expect((options.value.series as unknown[]).length).toBe(1)
+  })
+})
+
+describe('useBarChartOptions — nullish value edges', () => {
+  it('maps missing simple values via ?? null', () => {
+    const chartData: ChartData = {
+      title: 't',
+      statType: 'v',
+      yAxis: [],
+      zAxis: [],
+      series: [{ xAxis: 'A', values: [], benchmarkId: '' }],
+      points: [],
+    }
+    const { options } = useBarChartOptions({
+      chartData: ref(chartData),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+    })
+    expect((options.value.series as { data: (number | null)[] }[])[0]!.data).toEqual([null])
+  })
+
+  it('sort compares undefined data slots as 0', () => {
+    const chartData: ChartData = {
+      title: 't',
+      statType: 'v',
+      yAxis: ['A', 'B'],
+      zAxis: [],
+      series: [{ xAxis: 'only', values: [], benchmarkId: '' }],
+      points: [],
+    }
+    const { options } = useBarChartOptions({
+      chartData: ref(chartData),
+      sort: ref({ enabled: true, order: 'desc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+    })
+    expect((options.value.series as { name: string }[]).map((s) => s.name)).toEqual(['A', 'B'])
+  })
+})
+
+describe('useBarChartOptions — horizontal nullish values', () => {
+  it('maps missing horizontal simple values via ?? null', () => {
+    const chartData: ChartData = {
+      title: 't',
+      statType: 'v',
+      yAxis: [],
+      zAxis: [],
+      series: [{ xAxis: 'A', values: [], benchmarkId: '' }],
+      points: [],
+      axisLabels: { x: 'cat' },
+    }
+    const { options } = useBarChartOptions({
+      chartData: ref(chartData),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      horizontal: ref(true),
+    })
+    expect((options.value.series as { data: (number | null)[] }[])[0]!.data).toEqual([null])
+  })
+})

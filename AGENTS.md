@@ -74,7 +74,12 @@ Root flow: read file or stdin -> detect/parse format -> group data -> build
 - Put shared fixtures and setup on the suite. Use `s.Run` for subcases;
   table-driven cases may live inside suite methods.
 - UI tests group related behavior with Vitest `describe`, use `it` for cases,
-  and keep hooks at the narrowest useful scope.
+  and keep hooks at the narrowest useful scope. Layers (see `ui/TESTING.md`):
+  - unit: `src/**/*.test.ts` (Vitest node)
+  - integration: `src/**/*.integration.test.ts` (Vitest happy-dom)
+  - e2e: `ui/e2e/**/*.spec.ts` (Playwright)
+  Prefer the lowest layer that fails for the right reason. Share fixtures from
+  `ui/src/test-utils`. Settings visibility lives only in `fieldRegistry` tests.
 - Keep tests deterministic and beside tested code. Parser additions include a
   small representative fixture.
 - Do not migrate unrelated existing tests solely to satisfy these conventions.
@@ -87,7 +92,9 @@ matching the touched areas:
 ```bash
 go test -count=1 ./path/to/package   # focused Go change
 task test:cli                        # all CLI tests
-task test:ui                         # all UI tests
+task test:ui                         # UI unit + integration
+task test:ui:coverage                # UI tests with 100% coverage gates
+task test:ui:e2e                     # UI Playwright smokes
 task lint:cli                        # Go linting
 task lint:ui                         # UI type checking
 task format:check                    # all formatting checks

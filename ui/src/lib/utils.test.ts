@@ -1,7 +1,7 @@
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { describe, it, expect } from 'vitest'
 import type { DataPoint } from '../types'
-import type { ChartData, Axis } from '../types'
+import type { ChartData, Axis, Meta } from '../types'
 import {
   canOfferValue3D,
   chartAxisBadgeCount,
@@ -16,6 +16,27 @@ import {
   isScatterTransformMode,
   getNextColorFor,
   resetColor,
+  cn,
+  isValidIndex,
+  getThemePalette,
+  getDefaultThemeColor,
+  chartHasXAxis,
+  chartHasYAxis,
+  chartHasZAxis,
+  hasXAxis,
+  hasYAxis,
+  hasZAxis,
+  isGrouped3D,
+  isValue3DEligible,
+  valueModeHasZAxis,
+  mixedModeHasZAxis,
+  isValueChartType,
+  isValueModeContinuous3D,
+  is3D,
+  isValueModeChart,
+  isMixedModeChart,
+  chartSeriesLabels,
+  CPUtoString,
 } from './utils'
 import { applyTheme } from './themes'
 
@@ -419,5 +440,219 @@ describe('canOfferValue3D with mixed axes', () => {
       { key: 'y', label: 'latency', type: 'value' },
     ]
     expect(canOfferValue3D('scatter', [dp('a', 'b')], false, undefined, axes)).toBe(false)
+  })
+})
+
+const emptyChart = (partial: Partial<ChartData> = {}): ChartData => ({
+  title: 't',
+  statType: 'grouped',
+  yAxis: [],
+  zAxis: [],
+  series: [],
+  points: [],
+  ...partial,
+})
+
+describe('cn / isValidIndex / theme helpers', () => {
+  it('merges class names', () => {
+    expect(cn('a', false && 'b', 'c')).toContain('a')
+    expect(cn('a', false && 'b', 'c')).toContain('c')
+  })
+
+  it('validates index bounds', () => {
+    expect(isValidIndex(0, 2)).toBe(true)
+    expect(isValidIndex(-1, 2)).toBe(false)
+    expect(isValidIndex(2, 2)).toBe(false)
+  })
+
+  it('reads active palette helpers', () => {
+    applyTheme('#111,#222')
+    expect(getThemePalette()[0]).toBe('#111')
+    expect(getDefaultThemeColor()).toBe('#111')
+  })
+})
+
+describe('axis presence helpers', () => {
+  it('detects x/y/z on chart shapes', () => {
+    const chart = emptyChart({
+      yAxis: ['Y'],
+      zAxis: ['Z'],
+      series: [{ xAxis: 'X', values: [1], benchmarkId: '' }],
+    })
+    expect(chartHasXAxis(chart)).toBe(true)
+    expect(chartHasYAxis(chart)).toBe(true)
+    expect(chartHasZAxis(chart)).toBe(true)
+    expect(isGrouped3D(chart)).toBe(true)
+    expect(isValue3DEligible(chart)).toBe(false)
+
+    const xy = emptyChart({
+      yAxis: ['Y'],
+      series: [{ xAxis: 'X', values: [1], benchmarkId: '' }],
+    })
+    expect(isValue3DEligible(xy)).toBe(true)
+
+    const r = ref(chart)
+    expect(hasXAxis(r)).toBe(true)
+    expect(hasYAxis(r)).toBe(true)
+    expect(hasZAxis(r)).toBe(true)
+  })
+})
+
+describe('value/mixed axis and is3D helpers', () => {
+  it('valueModeHasZAxis / mixedModeHasZAxis', () => {
+    expect(valueModeHasZAxis(undefined)).toBe(false)
+    expect(valueModeHasZAxis([{ key: 'z', type: 'value' }])).toBe(true)
+    expect(mixedModeHasZAxis([{ key: 'z', type: 'value' }])).toBe(true)
+    expect(mixedModeHasZAxis([{ key: 'z' }])).toBe(false)
+  })
+
+  it('isValueChartType', () => {
+    expect(isValueChartType('scatter')).toBe(true)
+    expect(isValueChartType('pie')).toBe(false)
+    expect(isValueChartType(undefined)).toBe(false)
+  })
+
+  it('isValueModeContinuous3D requires full continuous path', () => {
+    const chart = emptyChart({
+      statType: 'value',
+      render3D: {
+        mode: 'continuous',
+        xValues: [],
+        yValues: [],
+        zValues: [],
+        barSeries: [],
+        lineSeries: [],
+        cellTotals: {},
+      },
+    })
+    const axes: Axis[] = [
+      { key: 'x', type: 'value' },
+      { key: 'y', type: 'value' },
+      { key: 'z', type: 'value' },
+    ]
+    expect(isValueModeContinuous3D(chart, axes, 'xyz', 'scatter')).toBe(true)
+    expect(isValueModeContinuous3D(chart, axes, undefined, 'scatter')).toBe(false)
+    expect(isValueModeContinuous3D(emptyChart({ statType: 'value' }), axes, 'xyz', 'scatter')).toBe(
+      false
+    )
+  })
+
+  it('is3D routes value/mixed/grouped', () => {
+    const valueChart = ref(
+      emptyChart({
+        statType: 'value',
+        render3D: {
+          mode: 'continuous',
+          xValues: [],
+          yValues: [],
+          zValues: [],
+          barSeries: [],
+          lineSeries: [],
+          cellTotals: {},
+        },
+      })
+    )
+    const valueAxes: Axis[] = [
+      { key: 'x', type: 'value' },
+      { key: 'y', type: 'value' },
+      { key: 'z', type: 'value' },
+    ]
+    expect(is3D(valueChart, false, 'xyz', valueAxes, 'scatter')).toBe(true)
+
+    const mixedChart = ref(
+      emptyChart({
+        statType: 'mixed',
+        render3D: {
+          mode: 'mixed',
+          xValues: [],
+          yValues: [],
+          zValues: [],
+          barSeries: [],
+          lineSeries: [{ name: 't', data: [{ value: [0, 1, 2] }] }],
+          cellTotals: {},
+        },
+      })
+    )
+    expect(is3D(mixedChart)).toBe(true)
+
+    const mixedAxes: Axis[] = [
+      { key: 'x' },
+      { key: 'y', type: 'value' },
+      { key: 'z', type: 'value' },
+    ]
+    const mixedNoRender = ref(emptyChart({ statType: 'mixed' }))
+    expect(is3D(mixedNoRender, false, undefined, mixedAxes, 'scatter')).toBe(true)
+
+    const groupedChart = ref(
+      emptyChart({
+        yAxis: ['Y'],
+        zAxis: ['Z'],
+        series: [{ xAxis: 'X', values: [1], benchmarkId: '' }],
+      })
+    )
+    expect(is3D(groupedChart)).toBe(true)
+  })
+})
+
+describe('datasetDimension 1D/empty', () => {
+  it('returns undefined for empty and 1D for x-only', () => {
+    expect(datasetDimension(undefined)).toBeUndefined()
+    expect(datasetDimension([])).toBeUndefined()
+    expect(datasetDimension([dp('a', '')])).toBe('1D')
+    expect(datasetDimension([dp('a', 'b')])).toBe('2D')
+  })
+})
+
+describe('chart mode tags and series labels', () => {
+  it('isValueModeChart / isMixedModeChart', () => {
+    expect(isValueModeChart(emptyChart({ statType: 'value' }))).toBe(true)
+    expect(isMixedModeChart(emptyChart({ statType: 'mixed' }))).toBe(true)
+    expect(isValueModeChart(emptyChart())).toBe(false)
+  })
+
+  it('chartHasPlottableData mixed render3D path', () => {
+    expect(
+      chartHasPlottableData(
+        emptyChart({
+          render3D: {
+            mode: 'mixed',
+            xValues: [],
+            yValues: [],
+            zValues: [],
+            barSeries: [],
+            lineSeries: [{ name: 't', data: [{ value: [0, 1] }] }],
+            cellTotals: {},
+          },
+        })
+      )
+    ).toBe(true)
+  })
+
+  it('chartSeriesLabels prefers series, then categories, then points', () => {
+    expect(
+      chartSeriesLabels(emptyChart({ series: [{ xAxis: 'A', values: [1], benchmarkId: '' }] }))
+    ).toEqual(['A'])
+    expect(chartSeriesLabels(emptyChart({ xCategories: ['W', 'E'] }))).toEqual(['W', 'E'])
+    expect(
+      chartSeriesLabels(
+        emptyChart({
+          points: [
+            { xAxis: 'P', yAxis: '', zAxis: '', value: 1 },
+            { xAxis: 'P', yAxis: '', zAxis: '', value: 2 },
+            { xAxis: 'Q', yAxis: '', zAxis: '', value: 3 },
+          ],
+        })
+      )
+    ).toEqual(['P', 'Q'])
+  })
+})
+
+describe('CPUtoString', () => {
+  it('formats name/cores combinations', () => {
+    expect(CPUtoString(undefined)).toBe('')
+    expect(CPUtoString({ name: 'Intel', cores: 8 } as Meta['cpu'])).toBe('Intel (8 cores)')
+    expect(CPUtoString({ name: 'Intel' } as Meta['cpu'])).toBe('Intel')
+    expect(CPUtoString({ cores: 4 } as Meta['cpu'])).toBe('4 cores')
+    expect(CPUtoString({} as Meta['cpu'])).toBe('')
   })
 })

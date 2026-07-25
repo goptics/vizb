@@ -74,3 +74,43 @@ describe('BaseChartConfig (relaxed scale/threeDRotate)', () => {
     expect(opts.legend).toBeDefined()
   })
 })
+
+describe('getBaseOptions pixelRatio branch', () => {
+  it('falls back to dpr 1 when devicePixelRatio is falsy', () => {
+    const g = globalThis as unknown as { window: { devicePixelRatio: number } }
+    const prev = g.window.devicePixelRatio
+    try {
+      g.window.devicePixelRatio = 0
+      const cfg = makeMinimalConfig()
+      // Continuous value-mode 3D so is3D() is true and saveAsImage uses dpr.
+      cfg.chartData.value = {
+        ...cfg.chartData.value,
+        statType: 'value',
+        valuePoints3D: [[1, 2, 3]],
+        render3D: {
+          mode: 'continuous',
+          xValues: [],
+          yValues: [],
+          zValues: [],
+          barSeries: [],
+          lineSeries: [{ name: 'pts', data: [{ value: [1, 2, 3] }] }],
+          cellTotals: {},
+        },
+      }
+      cfg.chartType = { value: 'scatter' } as BaseChartConfig['chartType']
+      cfg.arrangementTarget = { value: 'xyz' } as BaseChartConfig['arrangementTarget']
+      cfg.chartAxes = {
+        value: [
+          { key: 'x', label: 'x', type: 'value' },
+          { key: 'y', label: 'y', type: 'value' },
+          { key: 'z', label: 'z', type: 'value' },
+        ],
+      } as BaseChartConfig['chartAxes']
+      const opts = getBaseOptions(cfg)
+      const toolbox = opts.toolbox as { feature?: { saveAsImage?: { pixelRatio?: number } } }
+      expect(toolbox.feature?.saveAsImage?.pixelRatio).toBe(1)
+    } finally {
+      g.window.devicePixelRatio = prev ?? 1
+    }
+  })
+})

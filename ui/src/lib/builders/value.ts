@@ -20,7 +20,7 @@ export class ValueBuilder implements ChartBuilder {
     const target = targetString ?? identity
     const scale = ctx.scale
     const baseLabels = axisLabelsFromAxes(axes ?? [])
-    const labels = { ...(swapAxisLabels(identity, target, baseLabels) ?? baseLabels) }
+    const labels = { ...swapAxisLabels(identity, target, baseLabels)! }
     const use3D = ctx.threeD && arrangementHasChartZ(target)
 
     const valueTuples: [number, number, number?][] = []

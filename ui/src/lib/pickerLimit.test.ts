@@ -26,4 +26,10 @@ describe('limited dataset picker', () => {
     expect(visible).toHaveLength(100)
     expect(visible.at(-1)).toBe(options[999])
   })
+
+  it('keeps result unchanged when active is already visible or absent', () => {
+    const page = options.slice(0, 5)
+    expect(limitPickerOptions(page, options[0], 5)).toEqual(page)
+    expect(limitPickerOptions(page, undefined, 5)).toEqual(page)
+  })
 })

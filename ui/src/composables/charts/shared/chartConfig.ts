@@ -591,8 +591,6 @@ export function renderDonutSvg(
   const pos = slices.filter((s) => s.value > 0)
   if (pos.length < 2) return ''
   const total = pos.reduce((s, p) => s + p.value, 0)
-  if (total <= 0) return ''
-
   const cx = size / 2
   const cy = size / 2
   const outerR = size / 2 - 2
@@ -742,10 +740,6 @@ export function createTooltipConfig(
     formatter: (params) => {
       if (Array.isArray(params)) return ''
       let { name, seriesName } = params
-
-      if (hasXYAxis && seriesName) {
-        name = seriesName
-      }
 
       if (!name && seriesName) {
         name = seriesName

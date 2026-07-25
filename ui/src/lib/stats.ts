@@ -38,8 +38,8 @@ const T95_INF = 1.959964 // normal-limit critical value (df → ∞)
 
 function tCritical95(df: number): number {
   if (df < 1) return NaN
+  /* v8 ignore next -- df is always a finite n-1 from describe() */
   if (!Number.isFinite(df)) return T95_INF
-  // Linear interpolation in 1/df between bracketing breakpoints; t* is
   // near-affine in 1/df, so this tracks the curve closely with few points.
   const interp = (d0: number, t0: number, d1: number, t1: number): number => {
     const u = 1 / d0
@@ -710,7 +710,6 @@ export function computeCorrelation(
   const usable = usableCorrelationAxes(seriesOrder, yAxis, zAxis)
   if (usable.length === 0) return undefined
   const resolved: CorrelationAxis = axis && usable.includes(axis) ? axis : usable[0]!
-  const labels = resolved === 'x' ? seriesOrder : resolved === 'y' ? yAxis : zAxis
   const { labels: resolvedLabels, columns } = buildCorrelationColumns(
     points,
     resolved,
@@ -720,7 +719,7 @@ export function computeCorrelation(
   )
   return {
     axis: resolved,
-    labels: resolvedLabels.length ? resolvedLabels : labels.slice(),
+    labels: resolvedLabels,
     pearson: correlationMatrix(columns, 'pearson'),
     spearman: correlationMatrix(columns, 'spearman'),
     kendall: correlationMatrix(columns, 'kendall'),

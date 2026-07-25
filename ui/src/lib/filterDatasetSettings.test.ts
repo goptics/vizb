@@ -23,4 +23,9 @@ describe('filterDatasetSettings', () => {
     const filtered = filterDatasetSettings(dataset, ['pie', 'bar'])
     expect(filtered.settings?.map((s) => s.type)).toEqual(['bar', 'pie'])
   })
+
+  it('defaults settings to empty array when dataset has no settings', () => {
+    const bare = { name: 'Bare', data: [] } as unknown as Dataset
+    expect(filterDatasetSettings(bare, ['bar']).settings).toEqual([])
+  })
 })

@@ -3,31 +3,14 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { effectScope, reactive, ref, type Ref } from 'vue'
 import type { WorkerResponse, ReadyMessage, ChartMessage } from '../workers/transform.worker'
 import type { DataPoint, AxisLabels, Sort, ScaleType, ChartData, Axis } from '../types'
-
-const ctorSpy = vi.fn()
-class TrackedMockWorker {
-  static instances: TrackedMockWorker[] = []
-  onmessage: ((e: MessageEvent) => void) | null = null
-  postMessage = vi.fn()
-  terminate = vi.fn()
-  __emit = (data: unknown) => this.onmessage?.({ data } as MessageEvent)
-  constructor() {
-    ctorSpy()
-    TrackedMockWorker.instances.push(this)
-  }
-}
+import { dp, noSort, VALUE_AXES, MIXED_AXES } from '@/test-utils'
+import { TrackedMockWorker } from '../workers/__test-utils__/workerHarness'
 
 vi.mock('../workers/transform.worker.ts?worker&inline', () => ({
   default: TrackedMockWorker,
 }))
 
 const { useChartPipeline } = await import('./useChartPipeline')
-
-const noSort: Sort = { enabled: false, order: 'asc' }
-
-function dp(xAxis: string, yAxis = '', zAxis = '', type = 'val', value = 1): DataPoint {
-  return { xAxis, yAxis, zAxis, stats: [{ type, value }] }
-}
 
 const defaultLabels: AxisLabels = { x: 'X', y: 'Y', z: 'Z' }
 
@@ -44,8 +27,7 @@ let threeD: Ref<boolean>
 
 beforeEach(async () => {
   vi.useFakeTimers()
-  TrackedMockWorker.instances.length = 0
-  ctorSpy.mockClear()
+  TrackedMockWorker.reset()
 
   rawData = ref([dp('x1', 'y1'), dp('x2', 'y1'), dp('x1', 'y2')])
   arrangement = ref({ identityString: 'xy', targetString: 'xy' })
@@ -70,7 +52,7 @@ beforeEach(async () => {
   )!
   // Flush the immediate watch + 50 ms debounce.
   await vi.advanceTimersByTimeAsync(50)
-  worker = TrackedMockWorker.instances[0]!
+  worker = TrackedMockWorker.latest()
   expect(worker).toBeDefined()
 })
 
@@ -217,13 +199,8 @@ describe('useChartPipeline — empty data', () => {
 
 describe('useChartPipeline — value mode setArrangement', () => {
   it('posts setArrangement when arrangement changes with value-mode axes', async () => {
-    const axes: Axis[] = [
-      { key: 'x', label: 'price', type: 'value' },
-      { key: 'y', label: 'latency', type: 'value' },
-    ]
-
     scope.stop()
-    TrackedMockWorker.instances.length = 0
+    TrackedMockWorker.reset()
     scope = effectScope()
     scope.run(() =>
       useChartPipeline(
@@ -235,12 +212,12 @@ describe('useChartPipeline — value mode setArrangement', () => {
         showLabels,
         scale,
         threeD,
-        ref(axes),
+        ref(VALUE_AXES),
         ref('scatter')
       )
     )
     await vi.advanceTimersByTimeAsync(50)
-    const w = TrackedMockWorker.instances[0]!
+    const w = TrackedMockWorker.latest()
     w.postMessage.mock.calls.find((c) => c[0].type === 'init')
     w.__emit({
       type: 'ready',
@@ -261,14 +238,9 @@ describe('useChartPipeline — value mode setArrangement', () => {
 
 describe('useChartPipeline — value mode axes forwarding', () => {
   it('includes axes in the init postMessage when provided', async () => {
-    const axes: Axis[] = [
-      { key: 'x', label: 'price', type: 'value' },
-      { key: 'y', label: 'latency', type: 'value' },
-    ]
-
     // Re-mount pipeline with axes ref
     scope.stop()
-    TrackedMockWorker.instances.length = 0
+    TrackedMockWorker.reset()
     scope = effectScope()
     scope.run(() =>
       useChartPipeline(
@@ -280,17 +252,17 @@ describe('useChartPipeline — value mode axes forwarding', () => {
         showLabels,
         scale,
         threeD,
-        ref(axes) // new axes param
+        ref(VALUE_AXES) // new axes param
       )
     )
     await vi.advanceTimersByTimeAsync(50)
-    const w = TrackedMockWorker.instances[0]!
+    const w = TrackedMockWorker.latest()
 
     const initCall = w.postMessage.mock.calls.find(
       (c: unknown[]) => (c[0] as { type: string }).type === 'init'
     )
     expect(initCall).toBeDefined()
-    expect((initCall![0] as { axes: Axis[] }).axes).toEqual(axes)
+    expect((initCall![0] as { axes: Axis[] }).axes).toEqual(VALUE_AXES)
   })
 
   it('posts plain (non-proxy) axes so structured clone succeeds', async () => {
@@ -300,7 +272,7 @@ describe('useChartPipeline — value mode axes forwarding', () => {
     ])
 
     scope.stop()
-    TrackedMockWorker.instances.length = 0
+    TrackedMockWorker.reset()
     scope = effectScope()
     scope.run(() =>
       useChartPipeline(
@@ -316,7 +288,7 @@ describe('useChartPipeline — value mode axes forwarding', () => {
       )
     )
     await vi.advanceTimersByTimeAsync(50)
-    const w = TrackedMockWorker.instances[0]!
+    const w = TrackedMockWorker.latest()
     const initCall = w.postMessage.mock.calls.find(
       (c: unknown[]) => (c[0] as { type: string }).type === 'init'
     )
@@ -327,5 +299,240 @@ describe('useChartPipeline — value mode axes forwarding', () => {
     ])
     // structuredClone throws on Vue reactive proxies — must be plain objects.
     expect(() => structuredClone(posted)).not.toThrow()
+  })
+})
+
+describe('useChartPipeline — mixed mode skeleton', () => {
+  it('pre-populates mixed-mode skeleton with 2D title when z is categorical', async () => {
+    scope.stop()
+    TrackedMockWorker.reset()
+    scope = effectScope()
+    result = scope.run(() =>
+      useChartPipeline(
+        rawData,
+        arrangement,
+        ref({ name: 'N', x: 'X', y: 'Y', z: 'Z', metric: 'M' }),
+        activeGroupId,
+        sort,
+        showLabels,
+        scale,
+        threeD,
+        ref(MIXED_AXES),
+        ref('scatter'),
+        ref(true),
+        ref('Dataset Title')
+      )
+    )!
+    await vi.advanceTimersByTimeAsync(50)
+    worker = TrackedMockWorker.latest()
+
+    expect(result.charts.value).toEqual([
+      {
+        key: '__mixed_mode__',
+        title: 'region vs latency',
+        data: null,
+        pending: true,
+      },
+    ])
+
+    const initCall = worker.postMessage.mock.calls.find((c) => c[0].type === 'init')
+    expect(initCall?.[0]).toMatchObject({
+      labels: { name: 'N', x: 'X', y: 'Y', z: 'Z', metric: 'M' },
+      preserveRows: true,
+      chartType: 'scatter',
+    })
+  })
+
+  it('uses 3D mixed title when z axis is value-typed', async () => {
+    scope.stop()
+    TrackedMockWorker.reset()
+    const mixed3D = [
+      { key: 'x' as const, label: 'region' },
+      { key: 'y' as const, label: 'latency', type: 'value' as const },
+      { key: 'z' as const, label: 'depth', type: 'value' as const },
+    ]
+    scope = effectScope()
+    result = scope.run(() =>
+      useChartPipeline(
+        rawData,
+        arrangement,
+        undefined,
+        activeGroupId,
+        sort,
+        showLabels,
+        scale,
+        threeD,
+        ref(mixed3D),
+        ref('bar')
+      )
+    )!
+    await vi.advanceTimersByTimeAsync(50)
+
+    expect(result.charts.value[0]).toMatchObject({
+      key: '__mixed_mode__',
+      title: 'region · latency · depth',
+      pending: true,
+    })
+  })
+
+  it('falls back to axis key labels when mixed axes omit labels', async () => {
+    scope.stop()
+    TrackedMockWorker.reset()
+    scope = effectScope()
+    result = scope.run(() =>
+      useChartPipeline(
+        rawData,
+        arrangement,
+        ref({}),
+        activeGroupId,
+        sort,
+        showLabels,
+        scale,
+        threeD,
+        ref([
+          { key: 'x', type: 'category' as never },
+          { key: 'y', type: 'value' },
+        ]),
+        ref('line')
+      )
+    )!
+    await vi.advanceTimersByTimeAsync(50)
+
+    expect(result.charts.value[0]?.title).toBe('x vs y')
+  })
+})
+
+describe('useChartPipeline — chart title fallback and plain array input', () => {
+  it('fills blank chart titles from datasetName and accepts plain array rawData', async () => {
+    scope.stop()
+    TrackedMockWorker.reset()
+    const plainRows = [dp('x1', 'y1'), dp('x2', 'y1')]
+    scope = effectScope()
+    result = scope.run(() =>
+      useChartPipeline(
+        plainRows,
+        arrangement,
+        ref(undefined),
+        activeGroupId,
+        sort,
+        showLabels,
+        scale,
+        threeD,
+        undefined,
+        undefined,
+        undefined,
+        ref('Fallback Name')
+      )
+    )!
+    await vi.advanceTimersByTimeAsync(50)
+    worker = TrackedMockWorker.latest()
+
+    replyReady(1)
+    worker.postMessage.mockClear()
+
+    const chart: ChartData = {
+      points: [],
+      yAxis: [],
+      zAxis: [],
+      series: [],
+      title: '',
+    } as unknown as ChartData
+    worker.__emit({
+      type: 'chart',
+      dataEpoch: 1,
+      jobEpoch: 1,
+      signature: 'sig-val',
+      chart,
+    } as ChartMessage)
+
+    expect(result.charts.value.find((c) => c.key === 'sig-val')?.data?.title).toBe('Fallback Name')
+    expect(result.hasAny.value).toBe(true)
+  })
+
+  it('skips setArrangement and recompute while ready is in flight or data is pending', async () => {
+    replyReady(1)
+    replyChart(1, 1, 'sig-val')
+    replyChart(1, 1, 'sig-other')
+
+    // Trigger data pending — params recompute should no-op until reinit.
+    worker.postMessage.mockClear()
+    rawData.value = [dp('pending', 'y1')]
+    sort.value = { enabled: true, order: 'asc' }
+    await vi.advanceTimersByTimeAsync(10)
+    expect(worker.postMessage.mock.calls.some((c) => c[0].type === 'compute')).toBe(false)
+
+    await vi.advanceTimersByTimeAsync(50)
+    const initCall = worker.postMessage.mock.calls.find((c) => c[0].type === 'init')
+    expect(initCall).toBeDefined()
+
+    // While waiting for ready, arrangement should also no-op.
+    worker.postMessage.mockClear()
+    arrangement.value = { identityString: 'xy', targetString: 'yx' }
+    await vi.advanceTimersByTimeAsync(50)
+    expect(
+      worker.postMessage.mock.calls.find((c) => c[0].type === 'setArrangement')
+    ).toBeUndefined()
+  })
+})
+
+describe('useChartPipeline — drain guard and value label fallbacks', () => {
+  it('ignores pump while already draining and drops unknown chart slots', async () => {
+    replyReady(1)
+    // A second ready while a compute is draining should still process, but
+    // pumpQueue's draining early-return is hit by recompute while a compute is open.
+    worker.postMessage.mockClear()
+    sort.value = { enabled: true, order: 'asc' }
+    await vi.advanceTimersByTimeAsync(50)
+    // draining is true from the ready-started compute; recompute queued but pump returns early.
+    // Emit a chart for an unknown signature — slot branch is skipped.
+    replyChart(1, 2, 'missing-sig')
+    expect(result.charts.value.every((c) => c.key !== 'missing-sig')).toBe(true)
+  })
+
+  it('uses default x/y labels in value mode when axes omit labels', async () => {
+    scope.stop()
+    TrackedMockWorker.reset()
+    scope = effectScope()
+    result = scope.run(() =>
+      useChartPipeline(
+        rawData,
+        arrangement,
+        ref(defaultLabels),
+        activeGroupId,
+        sort,
+        showLabels,
+        scale,
+        threeD,
+        ref([
+          { key: 'x', type: 'value' },
+          { key: 'y', type: 'value' },
+        ]),
+        ref('scatter')
+      )
+    )!
+    await vi.advanceTimersByTimeAsync(50)
+    expect(result.charts.value[0]).toMatchObject({
+      key: '__value_mode__',
+      title: 'x vs y',
+    })
+  })
+
+  it('keeps existing chart title when worker already filled it', async () => {
+    replyReady(1)
+    const chart: ChartData = {
+      points: [],
+      yAxis: [],
+      zAxis: [],
+      series: [],
+      title: 'Worker Title',
+    } as unknown as ChartData
+    worker.__emit({
+      type: 'chart',
+      dataEpoch: 1,
+      jobEpoch: 1,
+      signature: 'sig-val',
+      chart,
+    } as ChartMessage)
+    expect(result.charts.value.find((c) => c.key === 'sig-val')?.data?.title).toBe('Worker Title')
   })
 })

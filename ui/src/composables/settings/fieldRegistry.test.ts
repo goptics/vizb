@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import type {
   BarConfig,
   LineConfig,
@@ -7,37 +7,8 @@ import type {
   HeatmapConfig,
   RadarConfig,
 } from '@/types'
-
-// fieldRegistry imports the .vue control components directly. The vitest config
-// intentionally excludes the Vue plugin (pure-function tests only, per project
-// convention), so we stub the .vue files with placeholder objects. The registry's
-// shape + appliesTo matrix + getRenderableFields logic are what this suite
-// actually exercises; the .vue bodies are exercised by the runtime / browser.
-vi.mock('../../components/settings/SortControl.vue', () => ({ default: { name: 'SortControl' } }))
-vi.mock('../../components/settings/ScaleControl.vue', () => ({ default: { name: 'ScaleControl' } }))
-vi.mock('../../components/settings/StackControl.vue', () => ({ default: { name: 'StackControl' } }))
-vi.mock('../../components/settings/ShowLabelsControl.vue', () => ({
-  default: { name: 'ShowLabelsControl' },
-}))
-vi.mock('../../components/settings/SmoothControl.vue', () => ({
-  default: { name: 'SmoothControl' },
-}))
-vi.mock('../../components/settings/HorizontalControl.vue', () => ({
-  default: { name: 'HorizontalControl' },
-}))
-vi.mock('../../components/settings/ThreeDRotateControl.vue', () => ({
-  default: { name: 'ThreeDRotateControl' },
-}))
-vi.mock('../../components/settings/ThreeDControl.vue', () => ({
-  default: { name: 'ThreeDControl' },
-}))
-vi.mock('../../components/settings/ThreeDVisualMapControl.vue', () => ({
-  default: { name: 'ThreeDVisualMapControl' },
-}))
-vi.mock('../../components/settings/VisualMapControl.vue', () => ({
-  default: { name: 'VisualMapControl' },
-}))
-vi.mock('../../components/settings/SwapControl.vue', () => ({ default: { name: 'SwapControl' } }))
+// Side-effect: top-level vi.mock for every settings control SFC fieldRegistry imports.
+import '@/test-utils/mockSettingsControls'
 
 const { fieldRegistry, getControl, getRenderableFields, partitionRenderableFields } =
   await import('./fieldRegistry')
@@ -333,5 +304,31 @@ describe('getRenderableFields', () => {
         (f) => f.key
       )
     ).toEqual(['sort', 'scale', 'showLabels', 'threeDVisualMap', 'threeDRotate', 'swap'])
+  })
+
+  it('skips fields whose appliesOn excludes the current dimension when visible is absent', () => {
+    const original = fieldRegistry.stack
+    // Temporarily strip `visible` so the appliesOn branch is the only filter.
+    fieldRegistry.stack = {
+      component: original.component,
+      appliesTo: original.appliesTo,
+      appliesOn: original.appliesOn,
+    }
+    try {
+      const cfg: BarConfig = { type: 'bar' }
+      expect(getRenderableFields(cfg, { dimension: '3D' }).map((f) => f.key)).not.toContain('stack')
+      expect(getRenderableFields(cfg, { dimension: '2D' }).map((f) => f.key)).toContain('stack')
+    } finally {
+      fieldRegistry.stack = original
+    }
+  })
+
+  it('omits missing THREE_D_FIELD_KEYS from the threeD partition', () => {
+    const { general, threeD } = partitionRenderableFields([
+      { key: 'sort', component: fieldRegistry.sort.component },
+      { key: 'threeDRotate', component: fieldRegistry.threeDRotate.component },
+    ])
+    expect(general.map((f) => f.key)).toEqual(['sort'])
+    expect(threeD.map((f) => f.key)).toEqual(['threeDRotate'])
   })
 })

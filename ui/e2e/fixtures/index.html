@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>vizb e2e fixture</title>
+    <!--
+      Intentional contract double for Playwright smokes until the full embed HTML
+      build is wired into e2e. Mirrors user-visible DOM hooks (dataset name, chart
+      card/title, stats, settings/stack URL sync, load-error + retry) without
+      pulling Vue or echarts. Keep payloads tiny; prefer data-testid only where
+      role/label is awkward.
+    -->
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: system-ui, sans-serif;
+      }
+      body {
+        margin: 0;
+        padding: 1.5rem;
+        background: #fafafa;
+        color: #111;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      .card {
+        border: 1px solid #ddd;
+        border-radius: 0.5rem;
+        padding: 1rem 1.25rem;
+        background: #fff;
+        margin-top: 1rem;
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        align-items: center;
+      }
+      button {
+        cursor: pointer;
+        border: 1px solid #ccc;
+        border-radius: 0.375rem;
+        background: #fff;
+        padding: 0.4rem 0.75rem;
+        font: inherit;
+      }
+      button[aria-pressed='true'],
+      button.active {
+        border-color: #2563eb;
+        background: #eff6ff;
+        color: #1d4ed8;
+      }
+      button.primary {
+        background: #2563eb;
+        border-color: #2563eb;
+        color: #fff;
+      }
+      #load-error {
+        min-height: 12rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+      }
+      #load-error .box {
+        max-width: 28rem;
+      }
+      #load-error .title {
+        color: #b91c1c;
+        font-weight: 600;
+      }
+      #chart-plot {
+        height: 12rem;
+        border-radius: 0.375rem;
+        background: repeating-linear-gradient(
+          90deg,
+          #e5e7eb,
+          #e5e7eb 12px,
+          #f3f4f6 12px,
+          #f3f4f6 24px
+        );
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #4b5563;
+        font-size: 0.875rem;
+      }
+      #stats-panel {
+        margin-top: 1rem;
+        border-top: 1px solid #eee;
+        padding-top: 0.75rem;
+      }
+      #url-display {
+        font-family: ui-monospace, monospace;
+        font-size: 0.8rem;
+        color: #4b5563;
+        word-break: break-all;
+      }
+      h1 {
+        margin: 0 0 0.25rem;
+        font-size: 1.75rem;
+      }
+      h3 {
+        margin: 0;
+        font-size: 1.125rem;
+      }
+      .muted {
+        color: #6b7280;
+        font-size: 0.875rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <header>
+        <h1 data-testid="dataset-name">Loading…</h1>
+        <p class="muted">URL: <span data-testid="url-display" id="url-display"></span></p>
+      </header>
+
+      <div id="load-error" data-testid="load-error" hidden>
+        <div class="box">
+          <p class="title">Failed to load Data set</p>
+          <p class="muted" id="load-error-message">Fixture error</p>
+          <button type="button" class="primary" data-testid="retry-button" id="retry-button">
+            Retry
+          </button>
+        </div>
+      </div>
+
+      <main id="dashboard" data-testid="dashboard" hidden>
+        <div class="row" style="margin-top: 0.75rem">
+          <button
+            type="button"
+            data-testid="settings-toggle"
+            id="settings-toggle"
+            aria-expanded="false"
+          >
+            Settings
+          </button>
+          <span class="muted" id="chart-type-label">chart: bar</span>
+          <span
+            data-testid="chart-type-active"
+            id="chart-type-active"
+            data-chart-type="bar"
+            class="muted"
+            >active: bar</span
+          >
+        </div>
+
+        <section id="settings-panel" data-testid="settings-panel" hidden class="card">
+          <div class="row">
+            <span>Stack series</span>
+            <button type="button" id="stack-toggle" data-testid="stack-toggle" aria-pressed="false">
+              Stack off
+            </button>
+          </div>
+        </section>
+
+        <article class="card" data-testid="chart-card" id="chart-card">
+          <div class="row" style="justify-content: space-between">
+            <h3 data-testid="chart-title" id="chart-title">chart</h3>
+            <button
+              type="button"
+              data-testid="stats-button"
+              id="stats-button"
+              aria-pressed="false"
+              title="Toggle statistics"
+            >
+              Stats
+            </button>
+          </div>
+          <div id="chart-plot" data-testid="chart-plot">bar chart</div>
+          <div id="stats-panel" data-testid="stats-panel" hidden>
+            <div class="row" style="justify-content: space-between">
+              <p class="muted" style="margin: 0">Statistics · sum</p>
+              <a
+                id="csv-download"
+                data-testid="csv-download"
+                href="#"
+                download="revenue-descriptive.csv"
+                >CSV</a
+              >
+            </div>
+            <p class="muted">n=2 · mean placeholder</p>
+          </div>
+        </article>
+      </main>
+    </div>
+
+    <script>
+      // Tiny multi-dataset shell. Real embed reads window.VIZB_DATA the same way.
+      window.VIZB_DATA = {
+        datasets: [
+          {
+            id: 'bench-a',
+            name: 'Alpha Benchmark',
+            charts: [{ title: 'revenue', type: 'bar' }],
+          },
+          {
+            id: 'bench-b',
+            name: 'Beta Benchmark',
+            charts: [{ title: 'latency', type: 'line' }],
+          },
+        ],
+      }
+
+      const params = () => new URLSearchParams(window.location.search)
+      const datasetNameEl = document.querySelector('[data-testid="dataset-name"]')
+      const urlDisplay = document.getElementById('url-display')
+      const loadError = document.getElementById('load-error')
+      const dashboard = document.getElementById('dashboard')
+      const chartTitle = document.getElementById('chart-title')
+      const chartPlot = document.getElementById('chart-plot')
+      const chartTypeActive = document.getElementById('chart-type-active')
+      const chartTypeLabel = document.getElementById('chart-type-label')
+      const settingsPanel = document.getElementById('settings-panel')
+      const settingsToggle = document.getElementById('settings-toggle')
+      const stackToggle = document.getElementById('stack-toggle')
+      const statsPanel = document.getElementById('stats-panel')
+      const statsButton = document.getElementById('stats-button')
+      const csvDownload = document.getElementById('csv-download')
+      const retryButton = document.getElementById('retry-button')
+      const loadErrorMessage = document.getElementById('load-error-message')
+
+      function syncUrlDisplay() {
+        urlDisplay.textContent = window.location.pathname + window.location.search
+      }
+
+      function replaceSearch(next) {
+        const qs = next.toString()
+        const url = window.location.pathname + (qs ? `?${qs}` : '')
+        window.history.replaceState(null, '', url)
+        syncUrlDisplay()
+        return next
+      }
+
+      function activeChartType() {
+        const c = params().get('c')
+        return c === 'line' ||
+          c === 'bar' ||
+          c === 'scatter' ||
+          c === 'pie' ||
+          c === 'heatmap' ||
+          c === 'radar'
+          ? c
+          : 'bar'
+      }
+
+      function stackOn() {
+        // Mirrors per-chart URL keys used by the real router (e.g. bar.st / line.st).
+        const p = params()
+        const ct = activeChartType()
+        return p.get(`${ct}.st`) === 'true' || p.get('stack') === 'true'
+      }
+
+      function renderCharts() {
+        const data = window.VIZB_DATA
+        const ds = data.datasets[0]
+        const ct = activeChartType()
+        const chart = ds.charts[0]
+        datasetNameEl.textContent = ds.name
+        chartTitle.textContent = chart.title
+        chartPlot.textContent = `${ct} chart${stackOn() ? ' (stacked)' : ''}`
+        chartTypeLabel.textContent = `chart: ${ct}`
+        chartTypeActive.textContent = `active: ${ct}`
+        chartTypeActive.dataset.chartType = ct
+        chartTypeActive.classList.toggle('active', true)
+        stackToggle.setAttribute('aria-pressed', stackOn() ? 'true' : 'false')
+        stackToggle.textContent = stackOn() ? 'Stack on' : 'Stack off'
+        stackToggle.classList.toggle('active', stackOn())
+      }
+
+      function showError(message) {
+        loadError.hidden = false
+        dashboard.hidden = true
+        loadErrorMessage.textContent = message || 'Fixture error'
+        datasetNameEl.textContent = '—'
+        syncUrlDisplay()
+      }
+
+      function showDashboard() {
+        loadError.hidden = true
+        dashboard.hidden = false
+        renderCharts()
+        syncUrlDisplay()
+      }
+
+      function boot() {
+        const p = params()
+        if (p.get('error') === '1') {
+          showError('Simulated load failure')
+          return
+        }
+        showDashboard()
+      }
+
+      settingsToggle.addEventListener('click', () => {
+        const open = settingsPanel.hidden
+        settingsPanel.hidden = !open
+        settingsToggle.setAttribute('aria-expanded', open ? 'true' : 'false')
+      })
+
+      stackToggle.addEventListener('click', () => {
+        const p = params()
+        const ct = activeChartType()
+        const key = `${ct}.st`
+        const next = !stackOn()
+        if (next) p.set(key, 'true')
+        else p.delete(key)
+        // Also drop legacy bare key if present
+        p.delete('stack')
+        replaceSearch(p)
+        renderCharts()
+      })
+
+      statsButton.addEventListener('click', () => {
+        const open = statsPanel.hidden
+        statsPanel.hidden = !open
+        statsButton.setAttribute('aria-pressed', open ? 'true' : 'false')
+        statsButton.classList.toggle('active', open)
+      })
+
+      csvDownload.addEventListener('click', (event) => {
+        // Fire a real downloadable Blob so Playwright can observe the download event.
+        event.preventDefault()
+        const csv = 'name,count,mean\nseries-a,2,10\n'
+        const blob = new Blob([csv], { type: 'text/csv' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = 'revenue-descriptive.csv'
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        URL.revokeObjectURL(url)
+      })
+
+      retryButton.addEventListener('click', () => {
+        const p = params()
+        p.delete('error')
+        replaceSearch(p)
+        showDashboard()
+      })
+
+      boot()
+    </script>
+  </body>
+</html>

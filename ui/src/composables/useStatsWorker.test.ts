@@ -1,19 +1,7 @@
 // ui/src/composables/useStatsWorker.test.ts
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import type { ChartData, SeriesProfile, CorrelationMatrix, Point3D, SeriesData } from '../types'
-
-const ctorSpy = vi.fn()
-class TrackedMockWorker {
-  static instances: TrackedMockWorker[] = []
-  onmessage: ((e: MessageEvent) => void) | null = null
-  postMessage = vi.fn()
-  terminate = vi.fn()
-  __emit = (data: unknown) => this.onmessage?.({ data } as MessageEvent)
-  constructor() {
-    ctorSpy()
-    TrackedMockWorker.instances.push(this)
-  }
-}
+import { TrackedMockWorker } from '../workers/__test-utils__/workerHarness'
 
 vi.mock('../workers/stats.worker.ts?worker&inline', () => ({
   default: TrackedMockWorker,
@@ -46,14 +34,14 @@ beforeEach(async () => {
   // so re-importing would also break the binding. The singleton is reused across tests
   // (a TrackedMockWorker instance is created on the FIRST test's warmup, then reused).
   // We clean the spy history and the per-ChartData cache (by using unique chart IDs).
-  ctorSpy.mockClear()
+  TrackedMockWorker.ctorSpy.mockClear()
   TrackedMockWorker.instances.length = 0
   // If the singleton doesn't exist yet (first test), trigger its creation.
   if (!worker) {
     const warmupChart = makeChart('__warmup_first__')
     const warmupPromise = computeDescriptive(warmupChart)
     await Promise.resolve()
-    worker = TrackedMockWorker.instances[0]!
+    worker = TrackedMockWorker.latest()
     // Resolve the warmup so it doesn't leak.
     if (worker.postMessage.mock.calls.length > 0) {
       const id = worker.postMessage.mock.calls[0]![0].id as number
@@ -78,13 +66,13 @@ function emitReply(id: number, kind: 'descriptive' | 'correlation') {
 
 describe('useStatsWorker — singleton lifecycle', () => {
   it('creates exactly one Worker across all tests (singleton)', () => {
-    expect(ctorSpy).toHaveBeenCalledTimes(1)
+    expect(TrackedMockWorker.ctorSpy).toHaveBeenCalledTimes(1)
   })
 
   it('does not create a new Worker on subsequent calls', () => {
-    const ctorCountBefore = ctorSpy.mock.calls.length
+    const ctorCountBefore = TrackedMockWorker.ctorSpy.mock.calls.length
     void computeDescriptive(makeChart('subsequent-call'))
-    expect(ctorSpy.mock.calls.length).toBe(ctorCountBefore)
+    expect(TrackedMockWorker.ctorSpy.mock.calls.length).toBe(ctorCountBefore)
   })
 })
 
@@ -154,5 +142,19 @@ describe('useStatsWorker — correlation axis cache', () => {
     expect(worker.postMessage.mock.calls.length).toBe(1)
     emitReply(worker.postMessage.mock.calls[0]![0].id, 'correlation')
     await p1
+  })
+})
+
+describe('useStatsWorker — orphan replies and missing profiles', () => {
+  it('ignores replies for unknown ids without throwing', async () => {
+    expect(() => worker.__emit({ type: 'result', id: 999_999, seriesProfiles: [] })).not.toThrow()
+  })
+
+  it('defaults missing seriesProfiles to an empty array', async () => {
+    const chart = makeChart('no-profiles')
+    const p = computeDescriptive(chart)
+    const id = worker.postMessage.mock.calls[0]![0].id as number
+    worker.__emit({ type: 'result', id })
+    await expect(p).resolves.toEqual([])
   })
 })

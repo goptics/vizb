@@ -156,4 +156,71 @@ describe('remote data payloads', () => {
       message
     )
   })
+
+  it('rejects non-array non-object payloads and non-object array entries', () => {
+    expect(() => classifyPayload('nope')).toThrow('Invalid data payload.')
+    expect(() => classifyPayload([1 as unknown as object])).toThrow('Invalid entry at index 0')
+  })
+
+  it('rejects catalog entries with empty names', () => {
+    expect(() => classifyPayload([{ id: 'one', name: '  ' }])).toThrow('name must be non-empty')
+  })
+
+  it('rejects detail responses with empty names', async () => {
+    const fetcher = vi.fn(async () =>
+      jsonResponse({ id: 'one', name: ' ', data: [], settings: [] })
+    )
+    await expect(fetchDatasetDetail('https://example.com/catalog', 'one', fetcher)).rejects.toThrow(
+      'name must be non-empty'
+    )
+  })
+
+  it('classifies an empty array as full mode with no datasets', () => {
+    expect(classifyPayload([])).toEqual({ mode: 'full', datasets: [] })
+  })
+
+  it('clears the in-flight map so a later same-id fetch is not stuck on a settled promise', async () => {
+    let resolveFirst!: (response: Response) => void
+    let resolveSecond!: (response: Response) => void
+    let n = 0
+    const fetcher = vi.fn(
+      () =>
+        new Promise<Response>((resolve) => {
+          if (n++ === 0) resolveFirst = resolve
+          else resolveSecond = resolve
+        })
+    )
+
+    const first = fetchDatasetDetail('https://example.com/catalog', 'race', fetcher)
+    resolveFirst(jsonResponse(detail('race')))
+    await first
+
+    // After settle, removeRequest must have cleared the entry so a new call fetches again.
+    const second = fetchDatasetDetail('https://example.com/catalog', 'race', fetcher)
+    resolveSecond(jsonResponse(detail('race')))
+    await second
+    expect(fetcher).toHaveBeenCalledTimes(2)
+  })
+
+  it('removeRequest leaves a newer same-id entry intact', async () => {
+    const { _detailRequestsForTest, fetchDatasetDetail: fetchDetail } = await import('./remoteData')
+    let resolveOld!: (response: Response) => void
+    const fetcher = vi.fn(
+      () =>
+        new Promise<Response>((resolve) => {
+          resolveOld = resolve
+        })
+    )
+
+    const oldPromise = fetchDetail('https://example.com/catalog', 'guard', fetcher)
+    // Replace the in-flight entry before the old request settles.
+    const newer = Promise.resolve(detail('guard'))
+    _detailRequestsForTest.set('guard', newer)
+
+    resolveOld(jsonResponse(detail('guard')))
+    await oldPromise
+    // Old removeRequest must not delete the newer entry.
+    expect(_detailRequestsForTest.get('guard')).toBe(newer)
+    _detailRequestsForTest.delete('guard')
+  })
 })

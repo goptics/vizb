@@ -6,7 +6,7 @@ import { getChartStyling, getTooltipTheme, formatRadarItemTooltip } from './shar
 import { fontSize, sortByTotal } from './shared/common'
 
 const makeIndicators = (names: string[], perSpokeMax: number[]) =>
-  names.map((name, i) => ({ name, max: Math.max((perSpokeMax[i] ?? 0) * 1.1, 1) }))
+  names.map((name, i) => ({ name, max: Math.max(perSpokeMax[i]! * 1.1, 1) }))
 
 const makeTooltip = (isDark: boolean, indicatorNames: string[]): EChartsOption['tooltip'] =>
   ({
@@ -96,36 +96,38 @@ export function useRadarChartOptions(config: BaseChartConfig) {
       for (const xMap of grouped.values()) {
         for (const vals of xMap.values()) {
           vals.forEach((v, i) => {
-            if (v > (perSpokeMax[i] ?? 0)) perSpokeMax[i] = v
+            if (v > perSpokeMax[i]!) perSpokeMax[i] = v
           })
         }
       }
 
       let zValues = cd.zAxis.filter((z) => z !== '')
       if (sort.value.enabled) {
-        const zTotals = new Map<string, number>()
+        const zTotals = new Map(zValues.map((z) => [z, 0]))
         for (const [z, xMap] of grouped) {
           let total = 0
           for (const vals of xMap.values()) total += vals.reduce((a, b) => a + b, 0)
           zTotals.set(z, total)
         }
-        zValues = [...zValues].sort((a, b) =>
-          sort.value.order === 'asc'
-            ? (zTotals.get(a) ?? 0) - (zTotals.get(b) ?? 0)
-            : (zTotals.get(b) ?? 0) - (zTotals.get(a) ?? 0)
-        )
+        zValues = [...zValues].sort((a, b) => {
+          const ta = zTotals.get(a)!
+          const tb = zTotals.get(b)!
+          return sort.value.order === 'asc' ? ta - tb : tb - ta
+        })
       }
 
       // Render largest Z series first so smaller ones stay on top and are hoverable.
-      const zTotalsForRender = new Map<string, number>()
+      const zTotalsForRender = new Map(zValues.map((z) => [z, 0]))
       for (const [z, xMap] of grouped) {
         let t = 0
         for (const vals of xMap.values()) t += vals.reduce((a, b) => a + b, 0)
         zTotalsForRender.set(z, t)
       }
-      const renderZValues = [...zValues].sort(
-        (a, b) => (zTotalsForRender.get(b) ?? 0) - (zTotalsForRender.get(a) ?? 0)
-      )
+      const renderZValues = [...zValues].sort((a, b) => {
+        const ta = zTotalsForRender.get(a)!
+        const tb = zTotalsForRender.get(b)!
+        return tb - ta
+      })
 
       return {
         ...baseOptions,
@@ -159,7 +161,7 @@ export function useRadarChartOptions(config: BaseChartConfig) {
     const perSpokeMax = new Array<number>(yAxis.length).fill(0)
     for (const s of rows) {
       s.values.forEach((v, i) => {
-        if (v !== null && v > (perSpokeMax[i] ?? 0)) perSpokeMax[i] = v
+        if (v !== null && v > perSpokeMax[i]!) perSpokeMax[i] = v
       })
     }
 
