@@ -1,18 +1,40 @@
 import path from 'path'
 import { defineConfig } from 'vitest/config'
+import vue from '@vitejs/plugin-vue'
 
-// Standalone from vite.config.ts so the embed UI build plugins (favicon
-// inlining, bundle compression, Go wrapper, HTML minify) never load under test.
-// The stats/csv units are pure functions — a plain node environment is enough.
+const alias = {
+  '@': path.resolve(__dirname, './src'),
+}
+
+// Standalone from vite.config.ts so embed UI build plugins never load under test.
+// Three projects share one config:
+//   unit         — pure node (libs, workers, composables)
+//   integration  — happy-dom + Vue SFC mounts
+//   e2e smoke is Playwright (see playwright.config.ts), not Vitest.
 export default defineConfig({
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-    },
-  },
+  resolve: { alias },
   test: {
-    environment: 'node',
-    include: ['src/**/*.test.ts', 'embed-build/**/*.test.ts'],
     globals: false,
+    projects: [
+      {
+        resolve: { alias },
+        test: {
+          name: 'unit',
+          environment: 'node',
+          include: ['src/**/*.test.ts', 'embed-build/**/*.test.ts'],
+          exclude: ['src/**/*.integration.test.ts', 'e2e/**'],
+        },
+      },
+      {
+        plugins: [vue()],
+        resolve: { alias },
+        test: {
+          name: 'integration',
+          environment: 'happy-dom',
+          include: ['src/**/*.integration.test.ts'],
+          exclude: ['e2e/**'],
+        },
+      },
+    ],
   },
 })

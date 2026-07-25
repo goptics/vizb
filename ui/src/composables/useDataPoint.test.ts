@@ -208,3 +208,83 @@ describe('useDataPoint remote loading', () => {
     expect(fetcher).not.toHaveBeenCalled()
   })
 })
+
+describe('useDataPoint embedded VIZB_DATA', () => {
+  beforeEach(() => {
+    vi.resetModules()
+    // Unit runs with import.meta.env.DEV=true; without a data URL that path
+    // loads sample.json. Force the production embed branch (window.VIZB_DATA).
+    vi.stubEnv('DEV', false)
+  })
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.unstubAllGlobals()
+  })
+
+  it('loads a single Dataset object from window.VIZB_DATA', async () => {
+    const one = {
+      name: 'Embedded One',
+      data: [{ name: 'a', value: 1 }],
+      settings: [{ type: 'bar' as const }],
+    }
+    const fetcher = vi.fn()
+    vi.stubGlobal('fetch', fetcher)
+    vi.stubGlobal('window', {
+      location: { pathname: '/', protocol: 'https:' },
+      VIZB_DATA: one,
+    })
+
+    const { useDataPoint } = await import('./useDataPoint')
+    const state = useDataPoint()
+
+    await vi.waitFor(() => expect(state.loading.value).toBe(false))
+    expect(state.loadError.value).toBeNull()
+    expect(state.lazyCatalog.value).toBe(false)
+    expect(state.datasets.value).toHaveLength(1)
+    expect(state.activeDataset.value?.name).toBe('Embedded One')
+    expect(fetcher).not.toHaveBeenCalled()
+  })
+
+  it('loads a Dataset array with two entries', async () => {
+    const payload = [
+      {
+        name: 'First',
+        data: [{ name: 'a', value: 1 }],
+        settings: [{ type: 'bar' as const }],
+      },
+      {
+        name: 'Second',
+        data: [{ name: 'b', value: 2 }],
+        settings: [{ type: 'line' as const }],
+      },
+    ]
+    vi.stubGlobal('fetch', vi.fn())
+    vi.stubGlobal('window', {
+      location: { pathname: '/', protocol: 'https:' },
+      VIZB_DATA: payload,
+    })
+
+    const { useDataPoint } = await import('./useDataPoint')
+    const state = useDataPoint()
+
+    await vi.waitFor(() => expect(state.loading.value).toBe(false))
+    expect(state.datasets.value).toHaveLength(2)
+    expect(state.datasets.value.map((d) => d.name)).toEqual(['First', 'Second'])
+    expect(state.activeDataset.value?.name).toBe('First')
+  })
+
+  it('loads an empty array without error', async () => {
+    vi.stubGlobal('fetch', vi.fn())
+    vi.stubGlobal('window', {
+      location: { pathname: '/', protocol: 'https:' },
+      VIZB_DATA: [],
+    })
+
+    const { useDataPoint } = await import('./useDataPoint')
+    const state = useDataPoint()
+
+    await vi.waitFor(() => expect(state.loading.value).toBe(false))
+    expect(state.loadError.value).toBeNull()
+    expect(state.datasets.value).toEqual([])
+  })
+})

@@ -8,15 +8,8 @@ import {
   canonicalAxisOrdersFromStrings,
 } from './transform'
 import { translateAxisKey } from './swap'
-import type { DataPoint, Sort, Point3D } from '../types'
-
-const noSort: Sort = { enabled: false, order: 'asc' }
-const ascSort: Sort = { enabled: true, order: 'asc' }
-const descSort: Sort = { enabled: true, order: 'desc' }
-
-function dp(xAxis: string, yAxis = '', zAxis = '', type = 'val', value = 1): DataPoint {
-  return { xAxis, yAxis, zAxis, stats: [{ type, value }] }
-}
+import type { DataPoint, Point3D } from '../types'
+import { dp, noSort, ascSort, descSort } from '@/test-utils'
 
 function build(data: DataPoint[]) {
   const { signature, statTemplate } = listChartSignatures(data)[0]!

@@ -1,77 +1,39 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { ref } from 'vue'
-import type { ChartData, Render3D } from '@/types'
-import type { BaseChartConfig } from './baseChartOptions'
+import type { ChartData } from '@/types'
+import {
+  baseConfig,
+  emptyChartData,
+  continuousRender3D,
+  groupedRender3D,
+  installDevicePixelRatio,
+} from '@/test-utils'
 import { useScatter3DChartOptions } from './useScatter3DChartOptions'
 
-const originalDPR = (globalThis as { window?: { devicePixelRatio: number } }).window
-  ?.devicePixelRatio
+let restoreDpr: () => void
 beforeAll(() => {
-  ;(globalThis as unknown as { window: { devicePixelRatio: number } }).window = {
-    devicePixelRatio: 1,
-  }
+  restoreDpr = installDevicePixelRatio()
 })
-afterAll(() => {
-  if (originalDPR === undefined) {
-    delete (globalThis as { window?: unknown }).window
-  } else {
-    ;(globalThis as unknown as { window: { devicePixelRatio: number } }).window = {
-      devicePixelRatio: originalDPR,
-    }
-  }
-})
+afterAll(() => restoreDpr())
 
-const makeConfig = (chartData: ChartData): BaseChartConfig => ({
-  chartData: ref(chartData),
-  sort: ref({ enabled: false, order: 'asc' }),
-  showLabels: ref(false),
-  isDark: ref(false),
-  scale: ref('linear'),
-  threeDRotate: ref(false),
-  visibleZ: ref({}),
-  threeD: ref(true),
-  threeDVisualMap: ref(false),
-})
-
-const continuousRender: Render3D = {
-  mode: 'continuous',
-  xValues: [],
-  yValues: [],
-  zValues: [],
-  barSeries: [{ name: 'pts', data: [{ value: [1, 2, 3] }, { value: [4, 5, 6] }] }],
-  lineSeries: [{ name: 'pts', data: [{ value: [1, 2, 3] }, { value: [4, 5, 6] }] }],
-  cellTotals: {},
-}
-
-const groupedRender: Render3D = {
-  mode: 'grouped',
-  xValues: ['x1', 'x2'],
-  yValues: ['y1'],
-  zValues: ['zA', 'zB'],
-  barSeries: [
-    { name: 'zA', data: [{ value: [0, 0, 5] }] },
-    { name: 'zB', data: [{ value: [0, 0, 7] }] },
-  ],
-  lineSeries: [
-    { name: 'zA', data: [{ value: [0, 0, 5] }] },
-    { name: 'zB', data: [{ value: [0, 0, 7] }] },
-  ],
-  cellTotals: { '0,0': 12 },
-}
+const makeConfig = (chartData: ChartData) =>
+  baseConfig({
+    chartData,
+    threeD: true,
+    threeDVisualMap: false,
+  })
 
 describe('useScatter3DChartOptions — continuous mode', () => {
   it('emits scatter3D series on value axes', () => {
     const { options } = useScatter3DChartOptions(
-      makeConfig({
-        title: 'x · y · z',
-        statType: 'value',
-        yAxis: [],
-        zAxis: [],
-        series: [],
-        points: [],
-        axisLabels: { x: 'x', y: 'y', z: 'z' },
-        render3D: continuousRender,
-      })
+      makeConfig(
+        emptyChartData({
+          title: 'x · y · z',
+          statType: 'value',
+          axisLabels: { x: 'x', y: 'y', z: 'z' },
+          render3D: continuousRender3D,
+        })
+      )
     )
     const series = options.value.series as { type: string; data: { value: number[] }[] }[]
     expect(series).toHaveLength(1)
@@ -86,19 +48,20 @@ describe('useScatter3DChartOptions — continuous mode', () => {
 describe('useScatter3DChartOptions — grouped mode', () => {
   it('emits one scatter3D series per z group with category axes', () => {
     const { options } = useScatter3DChartOptions(
-      makeConfig({
-        title: 'avg',
-        statType: 'avg',
-        yAxis: ['y1'],
-        zAxis: ['zA', 'zB'],
-        series: [],
-        points: [
-          { xAxis: 'x1', yAxis: 'y1', zAxis: 'zA', value: 5 },
-          { xAxis: 'x1', yAxis: 'y1', zAxis: 'zB', value: 7 },
-        ],
-        axisLabels: { x: 'x', y: 'y', z: 'z' },
-        render3D: groupedRender,
-      })
+      makeConfig(
+        emptyChartData({
+          title: 'avg',
+          statType: 'avg',
+          yAxis: ['y1'],
+          zAxis: ['zA', 'zB'],
+          points: [
+            { xAxis: 'x1', yAxis: 'y1', zAxis: 'zA', value: 5 },
+            { xAxis: 'x1', yAxis: 'y1', zAxis: 'zB', value: 7 },
+          ],
+          axisLabels: { x: 'x', y: 'y', z: 'z' },
+          render3D: groupedRender3D,
+        })
+      )
     )
     const series = options.value.series as { type: string; name: string }[]
     expect(series).toHaveLength(2)
@@ -109,16 +72,17 @@ describe('useScatter3DChartOptions — grouped mode', () => {
   })
 
   it('honors 2D visualMap flag on 3D scatter when threeDVisualMap is off', () => {
-    const config = makeConfig({
-      title: 'avg',
-      statType: 'avg',
-      yAxis: ['y1'],
-      zAxis: ['zA'],
-      series: [],
-      points: [{ xAxis: 'x1', yAxis: 'y1', zAxis: 'zA', value: 5 }],
-      axisLabels: { x: 'x', y: 'y', z: 'z' },
-      render3D: groupedRender,
-    })
+    const config = makeConfig(
+      emptyChartData({
+        title: 'avg',
+        statType: 'avg',
+        yAxis: ['y1'],
+        zAxis: ['zA'],
+        points: [{ xAxis: 'x1', yAxis: 'y1', zAxis: 'zA', value: 5 }],
+        axisLabels: { x: 'x', y: 'y', z: 'z' },
+        render3D: groupedRender3D,
+      })
+    )
     config.threeDVisualMap = ref(false)
     config.visualMap = ref(true)
     const { options } = useScatter3DChartOptions(config)
@@ -126,19 +90,20 @@ describe('useScatter3DChartOptions — grouped mode', () => {
   })
 
   it('applies category visualMap (dimension 2) on grouped series when enabled', () => {
-    const config = makeConfig({
-      title: 'avg',
-      statType: 'avg',
-      yAxis: ['y1'],
-      zAxis: ['zA', 'zB'],
-      series: [],
-      points: [
-        { xAxis: 'x1', yAxis: 'y1', zAxis: 'zA', value: 5 },
-        { xAxis: 'x1', yAxis: 'y1', zAxis: 'zB', value: 7 },
-      ],
-      axisLabels: { x: 'x', y: 'y', z: 'z' },
-      render3D: groupedRender,
-    })
+    const config = makeConfig(
+      emptyChartData({
+        title: 'avg',
+        statType: 'avg',
+        yAxis: ['y1'],
+        zAxis: ['zA', 'zB'],
+        points: [
+          { xAxis: 'x1', yAxis: 'y1', zAxis: 'zA', value: 5 },
+          { xAxis: 'x1', yAxis: 'y1', zAxis: 'zB', value: 7 },
+        ],
+        axisLabels: { x: 'x', y: 'y', z: 'z' },
+        render3D: groupedRender3D,
+      })
+    )
     config.threeDVisualMap = ref(true)
     const { options } = useScatter3DChartOptions(config)
     expect(options.value.visualMap).toMatchObject({ show: true, dimension: 2 })
@@ -148,19 +113,17 @@ describe('useScatter3DChartOptions — grouped mode', () => {
 describe('useScatter3DChartOptions — valuePoints3D fallback', () => {
   it('renders continuous scatter3D when valuePoints3D present without render3D', () => {
     const { options } = useScatter3DChartOptions(
-      makeConfig({
-        title: 'x · y · z',
-        statType: 'value',
-        yAxis: [],
-        zAxis: [],
-        series: [],
-        points: [],
-        axisLabels: { x: 'x', y: 'y', z: 'z' },
-        valuePoints3D: [
-          [1, 2, 3],
-          [4, 5, 6],
-        ],
-      })
+      makeConfig(
+        emptyChartData({
+          title: 'x · y · z',
+          statType: 'value',
+          axisLabels: { x: 'x', y: 'y', z: 'z' },
+          valuePoints3D: [
+            [1, 2, 3],
+            [4, 5, 6],
+          ],
+        })
+      )
     )
     const series = options.value.series as { type: string; data: { value: number[] }[] }[]
     expect(series).toHaveLength(1)

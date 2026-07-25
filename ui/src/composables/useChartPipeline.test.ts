@@ -3,31 +3,14 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { effectScope, reactive, ref, type Ref } from 'vue'
 import type { WorkerResponse, ReadyMessage, ChartMessage } from '../workers/transform.worker'
 import type { DataPoint, AxisLabels, Sort, ScaleType, ChartData, Axis } from '../types'
-
-const ctorSpy = vi.fn()
-class TrackedMockWorker {
-  static instances: TrackedMockWorker[] = []
-  onmessage: ((e: MessageEvent) => void) | null = null
-  postMessage = vi.fn()
-  terminate = vi.fn()
-  __emit = (data: unknown) => this.onmessage?.({ data } as MessageEvent)
-  constructor() {
-    ctorSpy()
-    TrackedMockWorker.instances.push(this)
-  }
-}
+import { dp, noSort, VALUE_AXES } from '@/test-utils'
+import { TrackedMockWorker } from '../workers/__test-utils__/workerHarness'
 
 vi.mock('../workers/transform.worker.ts?worker&inline', () => ({
   default: TrackedMockWorker,
 }))
 
 const { useChartPipeline } = await import('./useChartPipeline')
-
-const noSort: Sort = { enabled: false, order: 'asc' }
-
-function dp(xAxis: string, yAxis = '', zAxis = '', type = 'val', value = 1): DataPoint {
-  return { xAxis, yAxis, zAxis, stats: [{ type, value }] }
-}
 
 const defaultLabels: AxisLabels = { x: 'X', y: 'Y', z: 'Z' }
 
@@ -44,8 +27,7 @@ let threeD: Ref<boolean>
 
 beforeEach(async () => {
   vi.useFakeTimers()
-  TrackedMockWorker.instances.length = 0
-  ctorSpy.mockClear()
+  TrackedMockWorker.reset()
 
   rawData = ref([dp('x1', 'y1'), dp('x2', 'y1'), dp('x1', 'y2')])
   arrangement = ref({ identityString: 'xy', targetString: 'xy' })
@@ -70,7 +52,7 @@ beforeEach(async () => {
   )!
   // Flush the immediate watch + 50 ms debounce.
   await vi.advanceTimersByTimeAsync(50)
-  worker = TrackedMockWorker.instances[0]!
+  worker = TrackedMockWorker.latest()
   expect(worker).toBeDefined()
 })
 
@@ -217,13 +199,8 @@ describe('useChartPipeline — empty data', () => {
 
 describe('useChartPipeline — value mode setArrangement', () => {
   it('posts setArrangement when arrangement changes with value-mode axes', async () => {
-    const axes: Axis[] = [
-      { key: 'x', label: 'price', type: 'value' },
-      { key: 'y', label: 'latency', type: 'value' },
-    ]
-
     scope.stop()
-    TrackedMockWorker.instances.length = 0
+    TrackedMockWorker.reset()
     scope = effectScope()
     scope.run(() =>
       useChartPipeline(
@@ -235,12 +212,12 @@ describe('useChartPipeline — value mode setArrangement', () => {
         showLabels,
         scale,
         threeD,
-        ref(axes),
+        ref(VALUE_AXES),
         ref('scatter')
       )
     )
     await vi.advanceTimersByTimeAsync(50)
-    const w = TrackedMockWorker.instances[0]!
+    const w = TrackedMockWorker.latest()
     w.postMessage.mock.calls.find((c) => c[0].type === 'init')
     w.__emit({
       type: 'ready',
@@ -261,14 +238,9 @@ describe('useChartPipeline — value mode setArrangement', () => {
 
 describe('useChartPipeline — value mode axes forwarding', () => {
   it('includes axes in the init postMessage when provided', async () => {
-    const axes: Axis[] = [
-      { key: 'x', label: 'price', type: 'value' },
-      { key: 'y', label: 'latency', type: 'value' },
-    ]
-
     // Re-mount pipeline with axes ref
     scope.stop()
-    TrackedMockWorker.instances.length = 0
+    TrackedMockWorker.reset()
     scope = effectScope()
     scope.run(() =>
       useChartPipeline(
@@ -280,17 +252,17 @@ describe('useChartPipeline — value mode axes forwarding', () => {
         showLabels,
         scale,
         threeD,
-        ref(axes) // new axes param
+        ref(VALUE_AXES) // new axes param
       )
     )
     await vi.advanceTimersByTimeAsync(50)
-    const w = TrackedMockWorker.instances[0]!
+    const w = TrackedMockWorker.latest()
 
     const initCall = w.postMessage.mock.calls.find(
       (c: unknown[]) => (c[0] as { type: string }).type === 'init'
     )
     expect(initCall).toBeDefined()
-    expect((initCall![0] as { axes: Axis[] }).axes).toEqual(axes)
+    expect((initCall![0] as { axes: Axis[] }).axes).toEqual(VALUE_AXES)
   })
 
   it('posts plain (non-proxy) axes so structured clone succeeds', async () => {
@@ -300,7 +272,7 @@ describe('useChartPipeline — value mode axes forwarding', () => {
     ])
 
     scope.stop()
-    TrackedMockWorker.instances.length = 0
+    TrackedMockWorker.reset()
     scope = effectScope()
     scope.run(() =>
       useChartPipeline(
@@ -316,7 +288,7 @@ describe('useChartPipeline — value mode axes forwarding', () => {
       )
     )
     await vi.advanceTimersByTimeAsync(50)
-    const w = TrackedMockWorker.instances[0]!
+    const w = TrackedMockWorker.latest()
     const initCall = w.postMessage.mock.calls.find(
       (c: unknown[]) => (c[0] as { type: string }).type === 'init'
     )

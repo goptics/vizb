@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import type {
   BarConfig,
   LineConfig,
@@ -7,37 +7,8 @@ import type {
   HeatmapConfig,
   RadarConfig,
 } from '@/types'
-
-// fieldRegistry imports the .vue control components directly. The vitest config
-// intentionally excludes the Vue plugin (pure-function tests only, per project
-// convention), so we stub the .vue files with placeholder objects. The registry's
-// shape + appliesTo matrix + getRenderableFields logic are what this suite
-// actually exercises; the .vue bodies are exercised by the runtime / browser.
-vi.mock('../../components/settings/SortControl.vue', () => ({ default: { name: 'SortControl' } }))
-vi.mock('../../components/settings/ScaleControl.vue', () => ({ default: { name: 'ScaleControl' } }))
-vi.mock('../../components/settings/StackControl.vue', () => ({ default: { name: 'StackControl' } }))
-vi.mock('../../components/settings/ShowLabelsControl.vue', () => ({
-  default: { name: 'ShowLabelsControl' },
-}))
-vi.mock('../../components/settings/SmoothControl.vue', () => ({
-  default: { name: 'SmoothControl' },
-}))
-vi.mock('../../components/settings/HorizontalControl.vue', () => ({
-  default: { name: 'HorizontalControl' },
-}))
-vi.mock('../../components/settings/ThreeDRotateControl.vue', () => ({
-  default: { name: 'ThreeDRotateControl' },
-}))
-vi.mock('../../components/settings/ThreeDControl.vue', () => ({
-  default: { name: 'ThreeDControl' },
-}))
-vi.mock('../../components/settings/ThreeDVisualMapControl.vue', () => ({
-  default: { name: 'ThreeDVisualMapControl' },
-}))
-vi.mock('../../components/settings/VisualMapControl.vue', () => ({
-  default: { name: 'VisualMapControl' },
-}))
-vi.mock('../../components/settings/SwapControl.vue', () => ({ default: { name: 'SwapControl' } }))
+// Side-effect: top-level vi.mock for every settings control SFC fieldRegistry imports.
+import '@/test-utils/mockSettingsControls'
 
 const { fieldRegistry, getControl, getRenderableFields, partitionRenderableFields } =
   await import('./fieldRegistry')

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { ref, type Ref } from 'vue'
 import type { Dataset, ChartConfig } from '../types'
+import { ds } from '@/test-utils'
 
 // vi.hoisted runs before the import statements — store the holder in a
 // closure that the vi.mock factory can read at any time, and replace the ref
@@ -17,12 +18,6 @@ vi.mock('./useDataPoint', () => ({
     return holder.ref
   },
 }))
-
-const ds = (settings: ChartConfig[]): Dataset => ({
-  name: 'test',
-  settings,
-  data: [],
-})
 
 describe('useSettingsStore', () => {
   beforeEach(() => {
@@ -86,31 +81,46 @@ describe('useSettingsStore', () => {
   // populate `threeDRotate` (it didn't exist in v0.12.0). The setters used to
   // guard on `'field' in cfg`, which silently no-oped the first toggle. The
   // panel already filters by `appliesTo`, so writing the field is always safe.
-  it('setThreeDRotate writes even when the field is absent on the config', async () => {
-    holder.ref = ref(
-      ds([
-        // No threeDRotate field — mimics a Go-migrated v0.12.0 config.
-        { type: 'bar', sort: { enabled: false, order: 'asc' }, scale: 'linear' } as ChartConfig,
-      ])
-    )
-    const { useSettingsStore } = await import('./useSettingsStore')
-    const { activeConfig, setThreeDRotate } = useSettingsStore()
-    setThreeDRotate(true)
-    expect((activeConfig.value as { threeDRotate?: boolean } | undefined)?.threeDRotate).toBe(true)
-  })
-
-  it('setScale writes even when the field is absent on the config', async () => {
-    holder.ref = ref(
-      ds([
-        // No scale field — mimics a config the user hasn't set the scale on yet.
-        { type: 'bar', sort: { enabled: false, order: 'asc' } } as ChartConfig,
-      ])
-    )
-    const { useSettingsStore } = await import('./useSettingsStore')
-    const { activeConfig, setScale } = useSettingsStore()
-    setScale('log')
-    expect((activeConfig.value as { scale?: string } | undefined)?.scale).toBe('log')
-  })
+  it.each([
+    {
+      label: 'setThreeDRotate',
+      config: {
+        type: 'bar',
+        sort: { enabled: false, order: 'asc' },
+        scale: 'linear',
+      } as ChartConfig,
+      apply: async () => {
+        const { useSettingsStore } = await import('./useSettingsStore')
+        const store = useSettingsStore()
+        store.setThreeDRotate(true)
+        return store.activeConfig
+      },
+      field: 'threeDRotate' as const,
+      value: true as const,
+    },
+    {
+      label: 'setScale',
+      config: {
+        type: 'bar',
+        sort: { enabled: false, order: 'asc' },
+      } as ChartConfig,
+      apply: async () => {
+        const { useSettingsStore } = await import('./useSettingsStore')
+        const store = useSettingsStore()
+        store.setScale('log')
+        return store.activeConfig
+      },
+      field: 'scale' as const,
+      value: 'log' as const,
+    },
+  ])(
+    '$label writes even when the field is absent on the config',
+    async ({ config, apply, field, value }) => {
+      holder.ref = ref(ds([config]))
+      const activeConfig = await apply()
+      expect((activeConfig.value as Record<string, unknown> | undefined)?.[field]).toBe(value)
+    }
+  )
 
   it('setSmooth writes only to line configs', async () => {
     holder.ref = ref(

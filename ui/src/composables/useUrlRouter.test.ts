@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { nextTick, ref, type Ref } from 'vue'
 import type { Dataset, BarConfig, LineConfig } from '../types'
+import { ds } from '@/test-utils'
 
 const holder = vi.hoisted(() => ({
   datasets: undefined as Ref<Dataset[]> | undefined,
@@ -50,12 +51,6 @@ vi.mock('./useSettingsStore', () => ({
     setChartType: holder.setChartType,
   }),
 }))
-
-const ds = (settings: Dataset['settings']): Dataset => ({
-  name: 'test',
-  settings,
-  data: [],
-})
 
 function mockWindow(search: string, pathname = '/') {
   const replaceState = vi.fn()

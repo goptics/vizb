@@ -9,13 +9,8 @@ import type {
   ReadyMessage,
   ChartMessage,
 } from './transform.worker'
-import type { DataPoint, Sort, ScaleType, ChartData, Axis } from '../types'
-
-const noSort: Sort = { enabled: false, order: 'asc' }
-
-function dp(xAxis: string, yAxis = '', zAxis = '', type = 'val', value = 1): DataPoint {
-  return { xAxis, yAxis, zAxis, stats: [{ type, value }] }
-}
+import type { DataPoint, ScaleType, ChartData, Axis } from '../types'
+import { dp, noSort, VALUE_AXES } from '@/test-utils'
 
 function buildInit(overrides: Partial<InitMessage> = {}): InitMessage {
   return {
@@ -166,11 +161,6 @@ describe('transform.worker — compute', () => {
     expect(postSpy).not.toHaveBeenCalled()
   })
 })
-
-const VALUE_AXES: Axis[] = [
-  { key: 'x', label: 'price', type: 'value' },
-  { key: 'y', label: 'latency', type: 'value' },
-]
 
 function valueDp(xAxis: string, yAxis: string): DataPoint {
   return { xAxis, yAxis, stats: [] }

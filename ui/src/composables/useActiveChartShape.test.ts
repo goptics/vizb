@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { computed, ref, type Ref } from 'vue'
-import type { Dataset, ChartConfig, ChartType } from '../types'
+import type { Dataset, ChartType } from '../types'
+import { ds } from '@/test-utils'
 
 // The holder is set in beforeEach and read by the mock factories below.
 const holder = vi.hoisted(() => ({
@@ -30,50 +31,36 @@ vi.mock('./useSettingsStore', () => ({
   }),
 }))
 
-const ds = (settings: ChartConfig[], data: Dataset['data'] = []): Dataset => ({
-  name: 'test',
-  settings,
-  data,
-})
-
 describe('useActiveChartShape', () => {
   beforeEach(() => {
     vi.resetModules()
     holder.activeIndex = 0
   })
 
-  it('bar config returns scale/threeDRotate/showLabels defaults when fields are absent', async () => {
-    holder.ref = ref(ds([{ type: 'bar' as ChartType }]))
-    const { useActiveChartShape } = await import('./useActiveChartShape')
-    const { scale, stack, threeDRotate, showLabels } = useActiveChartShape()
-    expect(scale.value).toBe('linear')
-    expect(stack.value).toBe(false)
-    expect(threeDRotate.value).toBe(false)
-    expect(showLabels.value).toBe(false)
-  })
+  it.each(['bar', 'pie', 'scatter'] as const)(
+    '%s config returns scale/threeDRotate/showLabels defaults when fields are absent',
+    async (type) => {
+      holder.ref = ref(ds([{ type }]))
+      const { useActiveChartShape } = await import('./useActiveChartShape')
+      const { scale, stack, threeDRotate, showLabels } = useActiveChartShape()
+      expect(scale.value).toBe('linear')
+      expect(threeDRotate.value).toBe(false)
+      expect(showLabels.value).toBe(false)
+      if (type === 'bar') expect(stack.value).toBe(false)
+    }
+  )
 
-  it('pie config returns the same defaults without runtime branching', async () => {
-    // PieConfig has no `scale` / `threeDRotate` field at all — `??` fallback
-    // gives the same defaults. No `cfg.type === 'bar' || ...` guard needed.
-    holder.ref = ref(ds([{ type: 'pie' as ChartType }]))
-    const { useActiveChartShape } = await import('./useActiveChartShape')
-    const { scale, threeDRotate, showLabels } = useActiveChartShape()
-    expect(scale.value).toBe('linear')
-    expect(threeDRotate.value).toBe(false)
-    expect(showLabels.value).toBe(false)
-  })
-
-  it('hasThreeDOption is true for z-data bar when z is off chart axes', async () => {
-    holder.ref = ref(
-      ds(
-        [{ type: 'bar' as ChartType, swap: 'xyn' }],
-        [{ name: '', xAxis: 'a', yAxis: 'b', zAxis: 'z1', stats: [] }]
+  it.each(['bar', 'scatter'] as const)(
+    'hasThreeDOption is true for z-data %s when z is off chart axes',
+    async (type) => {
+      holder.ref = ref(
+        ds([{ type, swap: 'xyn' }], [{ name: '', xAxis: 'a', yAxis: 'b', zAxis: 'z1', stats: [] }])
       )
-    )
-    const { useActiveChartShape } = await import('./useActiveChartShape')
-    const { hasThreeDOption } = useActiveChartShape()
-    expect(hasThreeDOption.value).toBe(true)
-  })
+      const { useActiveChartShape } = await import('./useActiveChartShape')
+      const { hasThreeDOption } = useActiveChartShape()
+      expect(hasThreeDOption.value).toBe(true)
+    }
+  )
 
   it('hasThreeDOption is false for pie even with z-data', async () => {
     holder.ref = ref(
@@ -85,27 +72,6 @@ describe('useActiveChartShape', () => {
     const { useActiveChartShape } = await import('./useActiveChartShape')
     const { hasThreeDOption } = useActiveChartShape()
     expect(hasThreeDOption.value).toBe(false)
-  })
-
-  it('scatter config returns scale/threeDRotate/showLabels defaults when fields are absent', async () => {
-    holder.ref = ref(ds([{ type: 'scatter' as ChartType }]))
-    const { useActiveChartShape } = await import('./useActiveChartShape')
-    const { scale, threeDRotate, showLabels } = useActiveChartShape()
-    expect(scale.value).toBe('linear')
-    expect(threeDRotate.value).toBe(false)
-    expect(showLabels.value).toBe(false)
-  })
-
-  it('hasThreeDOption is true for z-data scatter when z is off chart axes', async () => {
-    holder.ref = ref(
-      ds(
-        [{ type: 'scatter' as ChartType, swap: 'xyn' }],
-        [{ name: '', xAxis: 'a', yAxis: 'b', zAxis: 'z1', stats: [] }]
-      )
-    )
-    const { useActiveChartShape } = await import('./useActiveChartShape')
-    const { hasThreeDOption } = useActiveChartShape()
-    expect(hasThreeDOption.value).toBe(true)
   })
 
   it('hasThreeDOption is false for scatter in value-mode axes', async () => {
