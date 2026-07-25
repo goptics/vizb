@@ -75,11 +75,15 @@ func (s *ServeSuite) TestDefaultsAndHTTPPolicy() {
 	s.False(applicationCalled.Load())
 }
 
-func (s *ServeSuite) TestRoutesRegisterOnlyTheThreePOSTOperations() {
+func (s *ServeSuite) TestRoutesRegisterDocumentedOperations() {
 	called := make(map[string]bool)
 	routes := composeRESTRoutes(restHandlers{
 		convert: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			called["convert"] = true
+			w.WriteHeader(http.StatusNoContent)
+		}),
+		health: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			called["health"] = true
 			w.WriteHeader(http.StatusNoContent)
 		}),
 		merge: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -90,15 +94,17 @@ func (s *ServeSuite) TestRoutesRegisterOnlyTheThreePOSTOperations() {
 	})
 
 	for _, test := range []struct {
-		path string
-		name string
+		method string
+		path   string
+		name   string
 	}{
-		{path: "/", name: "convert"},
-		{path: "/merge", name: "merge"},
-		{path: "/ui", name: "ui"},
+		{method: http.MethodPost, path: "/", name: "convert"},
+		{method: http.MethodGet, path: "/health", name: "health"},
+		{method: http.MethodPost, path: "/merge", name: "merge"},
+		{method: http.MethodPost, path: "/ui", name: "ui"},
 	} {
 		recorder := httptest.NewRecorder()
-		routes.ServeHTTP(recorder, httptest.NewRequest(http.MethodPost, test.path, nil))
+		routes.ServeHTTP(recorder, httptest.NewRequest(test.method, test.path, nil))
 		s.Equal(http.StatusNoContent, recorder.Code, test.path)
 		s.True(called[test.name])
 	}
@@ -124,6 +130,19 @@ func (s *ServeSuite) TestRoutesRegisterOnlyTheThreePOSTOperations() {
 			}`,
 		},
 		{
+			name:    "wrong health method",
+			request: httptest.NewRequest(http.MethodPost, "/health", nil),
+			status:  http.StatusMethodNotAllowed,
+			allow:   http.MethodGet,
+			body: `{
+				"type":"https://vizb.goptics.org/problems/method-not-allowed",
+				"title":"Method not allowed",
+				"status":405,
+				"detail":"This operation only supports GET.",
+				"instance":"/health"
+			}`,
+		},
+		{
 			name:    "unknown path",
 			request: httptest.NewRequest(http.MethodPost, "/unknown", nil),
 			status:  http.StatusNotFound,
@@ -145,6 +164,18 @@ func (s *ServeSuite) TestRoutesRegisterOnlyTheThreePOSTOperations() {
 			s.JSONEq(test.body, recorder.Body.String())
 		})
 	}
+}
+
+func (s *ServeSuite) TestHealthEndpoint() {
+	request := httptest.NewRequest(http.MethodGet, "/health", nil)
+	request.Header.Set("Accept", "application/json")
+	recorder := httptest.NewRecorder()
+
+	newRESTHandler().ServeHTTP(recorder, request)
+
+	s.Equal(http.StatusOK, recorder.Code)
+	s.Equal("text/plain; charset=utf-8", recorder.Header().Get("Content-Type"))
+	s.Equal("ok", recorder.Body.String())
 }
 
 func (s *ServeSuite) TestInvalidConfigurationReturnsCommandError() {
