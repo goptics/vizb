@@ -278,12 +278,21 @@ describe('SettingsPanel', () => {
 
   it('falls back wire swap when map empty', () => {
     holder.arrangementMap = undefined
+    // Identity has no z — only wire swap should place z on chart axes.
+    holder.arrangement = { targetString: 'x/y' }
     holder.barConfig = { ...holder.barConfig, swap: 'x/z/y', threeD: true }
     barConfigRef.value = holder.barConfig
+    holder.settings = [holder.barConfig]
     const w = mount(SettingsPanel)
-    expect(w.text()).toContain('Settings')
-    // Wire swap still drives a SwapControl when map is empty.
-    expect(w.findComponent({ name: 'SwapControl' }).exists()).toBe(true)
+
+    const swap = w.findComponent({ name: 'SwapControl' })
+    expect(swap.exists()).toBe(true)
+    expect(swap.props('modelValue')).toBe('x/z/y')
+
+    // Wire swap with z → rendering3D chrome on; value-3D toggle stays off (z already on axes).
+    expect(w.findComponent({ name: 'ThreeDRotateControl' }).exists()).toBe(true)
+    expect(w.findComponent({ name: 'ThreeDVisualMapControl' }).exists()).toBe(true)
+    expect(w.findComponent({ name: 'ThreeDControl' }).exists()).toBe(false)
   })
 
   it('empty activeConfig yields no fields', () => {
