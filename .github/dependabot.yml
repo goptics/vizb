@@ -1,0 +1,30 @@
+version: 2
+
+updates:
+  # Go dependencies: go.mod and go.sum
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  # pnpm dependencies: package.json and pnpm-lock.yaml
+  # Dependabot uses "npm" for pnpm projects.
+  - package-ecosystem: "npm"
+    directories:
+      - "/ui"
+      - "/docs"
+      - "/api"
+    schedule:
+      interval: "weekly"
+
+  # Base images in the root Dockerfile
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  # Actions referenced by .github/workflows
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
