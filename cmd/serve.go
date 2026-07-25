@@ -64,48 +64,61 @@ func init() {
 	rootCmd.AddCommand(serveCmd)
 }
 
-// restHandlers is the composition point for the REST API. Keeping the three
+// restHandlers is the composition point for the REST API. Keeping the
 // operations as explicit handlers makes the route map testable and lets future
 // transports reuse the request-scoped core without changing server lifecycle
 // code.
 type restHandlers struct {
 	convert http.Handler
+	health  http.Handler
 	merge   http.Handler
 	ui      http.Handler
 }
 
+type restRoute struct {
+	method  string
+	handler http.Handler
+}
+
 type restRouter struct {
-	routes map[string]http.Handler
+	routes map[string]restRoute
 }
 
 func newRESTHandler() http.Handler {
 	return composeRESTRoutes(restHandlers{
 		convert: http.HandlerFunc(handleConvert),
+		health:  http.HandlerFunc(handleHealth),
 		merge:   http.HandlerFunc(handleMerge),
 		ui:      http.HandlerFunc(handleUI),
 	})
 }
 
 func composeRESTRoutes(handlers restHandlers) http.Handler {
-	return restRouter{routes: map[string]http.Handler{
-		"/":      handlers.convert,
-		"/merge": handlers.merge,
-		"/ui":    handlers.ui,
+	return restRouter{routes: map[string]restRoute{
+		"/":       {method: http.MethodPost, handler: handlers.convert},
+		"/health": {method: http.MethodGet, handler: handlers.health},
+		"/merge":  {method: http.MethodPost, handler: handlers.merge},
+		"/ui":     {method: http.MethodPost, handler: handlers.ui},
 	}}
 }
 
 func (router restRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	handler, ok := router.routes[r.URL.Path]
+	route, ok := router.routes[r.URL.Path]
 	if !ok {
 		writeAPIProblem(w, r, http.StatusNotFound, "Not found", "The requested operation does not exist.")
 		return
 	}
-	if r.Method != http.MethodPost {
-		w.Header().Set("Allow", http.MethodPost)
-		writeAPIProblem(w, r, http.StatusMethodNotAllowed, "Method not allowed", "This operation only supports POST.")
+	if r.Method != route.method {
+		w.Header().Set("Allow", route.method)
+		writeAPIProblem(w, r, http.StatusMethodNotAllowed, "Method not allowed", "This operation only supports "+route.method+".")
 		return
 	}
-	handler.ServeHTTP(w, r)
+	route.handler.ServeHTTP(w, r)
+}
+
+func handleHealth(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	_, _ = io.WriteString(w, "ok")
 }
 
 // newServeCommand wires a configured HTTP server to Cobra. Its dependencies

@@ -1,12 +1,12 @@
 # API contract
 
-`openapi.yaml` is Vizb's canonical public REST contract. It describes only
-`POST /`, `POST /merge`, and `POST /ui`.
+`openapi.yaml` is Vizb's canonical public REST contract. It describes
+`GET /health`, `POST /`, `POST /merge`, and `POST /ui`.
 
 Errors use `application/problem+json`: malformed JSON returns `400`, bodies
 over 10 MiB return `413`, and valid JSON that violates schema or semantic rules
 returns `422`. Unknown paths return `404`; unsupported methods return `405`
-with `Allow: POST`.
+with the route's supported method in `Allow`.
 
 Run the contract checks from this directory:
 

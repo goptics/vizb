@@ -5,7 +5,7 @@ info:
   description: |
     A synchronous, stateless API for converting supported input into Vizb Datasets,
     merging Datasets, and generating a self-contained Vizb UI. The server exposes
-    exactly the three operations in this document; it has no authentication,
+    exactly the four operations in this document; it has no authentication,
     persistence, asynchronous jobs, remote URL ingestion, or server-side command
     execution.
   license:
@@ -23,6 +23,8 @@ servers:
         description: Listener port configured with `--port`.
 security: []
 tags:
+  - name: health
+    description: Report whether the server is accepting requests.
   - name: conversion
     description: Convert inline supported input into a Dataset or HTML.
   - name: datasets
@@ -30,6 +32,31 @@ tags:
   - name: ui
     description: Render complete Vizb Dataset objects as self-contained HTML.
 paths:
+  /health:
+    get:
+      tags: [health]
+      operationId: health
+      summary: Report whether the server is accepting requests.
+      responses:
+        '200':
+          description: The server is accepting requests.
+          content:
+            text/plain:
+              schema:
+                type: string
+                const: ok
+              example: ok
+        '405':
+          description: The method is not supported for this route.
+          headers:
+            Allow:
+              schema:
+                type: string
+                const: GET
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
   /:
     post:
       tags: [conversion]

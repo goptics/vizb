@@ -34,8 +34,8 @@ func (s *OpenAPISuite) TestOpenAPIContract() {
 	}
 
 	paths := mustMap(t, contract["paths"], "paths")
-	if len(paths) != 3 {
-		t.Fatalf("paths has %d entries, want exactly three", len(paths))
+	if len(paths) != 4 {
+		t.Fatalf("paths has %d entries, want exactly four", len(paths))
 	}
 	for _, path := range []string{"/", "/merge", "/ui"} {
 		pathItem := mustMap(t, paths[path], "paths."+path)
@@ -46,6 +46,28 @@ func (s *OpenAPISuite) TestOpenAPIContract() {
 
 	verifyReferences(t, contract, contract, "#")
 	verifyOperationExamples(t, contract)
+}
+
+func (s *OpenAPISuite) TestHealthContract() {
+	contract := readContract(s.T())
+	paths := mustMap(s.T(), contract["paths"], "paths")
+	path := mustMap(s.T(), paths["/health"], "paths./health")
+	s.Len(path, 1)
+	operation := mustMap(s.T(), path["get"], "paths./health.get")
+	responses := mustMap(s.T(), operation["responses"], "paths./health.get.responses")
+	s.Equal([]string{"200", "405"}, sortedMapKeys(responses))
+	success := mustMap(s.T(), responses["200"], "paths./health.get.responses.200")
+	content := mustMap(s.T(), success["content"], "paths./health.get.responses.200.content")
+	text := mustMap(s.T(), content["text/plain"], "health text response")
+	schema := mustMap(s.T(), text["schema"], "health text response schema")
+	s.Equal("string", schema["type"])
+	s.Equal("ok", schema["const"])
+
+	methodNotAllowed := mustMap(s.T(), responses["405"], "paths./health.get.responses.405")
+	headers := mustMap(s.T(), methodNotAllowed["headers"], "health method-not-allowed headers")
+	allow := mustMap(s.T(), headers["Allow"], "health Allow header")
+	allowSchema := mustMap(s.T(), allow["schema"], "health Allow header schema")
+	s.Equal("GET", allowSchema["const"])
 }
 
 func (s *OpenAPISuite) TestReusableSchemasMatchGoWireTypes() {
@@ -265,10 +287,12 @@ func verifyOperationExamples(t *testing.T, root map[string]any) {
 	seen := map[string]bool{}
 	paths := mustMap(t, root["paths"], "paths")
 	for path, rawPathItem := range paths {
-		operation := mustMap(t, mustMap(t, rawPathItem, "paths."+path)["post"], "paths."+path+".post")
-		verifyContentExamples(t, root, operation["requestBody"], "request "+path, seen)
-		for status, response := range mustMap(t, operation["responses"], path+".responses") {
-			verifyContentExamples(t, root, response, "response "+path+" "+status, seen)
+		for method, rawOperation := range mustMap(t, rawPathItem, "paths."+path) {
+			operation := mustMap(t, rawOperation, "paths."+path+"."+method)
+			verifyContentExamples(t, root, operation["requestBody"], "request "+path, seen)
+			for status, response := range mustMap(t, operation["responses"], path+".responses") {
+				verifyContentExamples(t, root, response, "response "+path+" "+status, seen)
+			}
 		}
 	}
 	for _, name := range []string{
