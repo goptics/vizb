@@ -17,6 +17,7 @@
     <a href="https://vizb.goptics.org/examples"><img src="https://img.shields.io/badge/Live-Examples-orange?style=for" alt="Examples" /></a>
     <a href="https://github.com/goptics/vizb/actions/workflows/cli.yml"><img src="https://github.com/goptics/vizb/actions/workflows/cli.yml/badge.svg" alt="CLI" /></a>
     <a href="https://github.com/goptics/vizb/actions/workflows/ui.yml"><img src="https://github.com/goptics/vizb/actions/workflows/ui.yml/badge.svg" alt="UI" /></a>
+    <a href="https://github.com/goptics/vizb/actions/workflows/codeql.yml"><img src="https://github.com/goptics/vizb/actions/workflows/codeql.yml/badge.svg" alt="CodeQL" /></a>
     <a href="https://github.com/goptics/vizb/actions/workflows/release.yml"><img src="https://github.com/goptics/vizb/actions/workflows/release.yml/badge.svg" alt="Release" /></a>
     <a href="https://codecov.io/gh/goptics/vizb"><img src="https://codecov.io/gh/goptics/vizb/branch/main/graph/badge.svg" alt="Codecov" /></a>
     <a href="https://github.com/goptics/vizb/releases"><img src="https://img.shields.io/github/downloads/goptics/vizb/total?color=green&label=downloads" alt="Downloads" /></a>
@@ -68,19 +69,20 @@ Pre-built binaries for Linux, macOS, and Windows are available on the [releases 
 Run the API directly:
 
 ```bash
-docker run --rm -p 127.0.0.1:8080:8080 goptics/vizb
+docker run -d --rm -p 8080:8080 goptics/vizb
 ```
 
-Alternatively, use the repository's Compose configuration:
+then you can hit the api:
 
 ```bash
-docker compose up -d
+curl http://localhost:8080/health
+# output: ok
 ```
 
 Run the CLI against files in the current directory:
 
 ```bash
-docker run --rm -v "$PWD:/data" -w /data goptics/vizb bar sales.csv -o out.html
+docker run --rm -v "$PWD:/data" -w /data goptics/vizb bar data.csv -o out.html
 ```
 
 The API has no built-in authentication. Keep it private or put authentication,
