@@ -82,7 +82,14 @@ jobs:
   publish:
     name: Publish JavaScript examples
     needs: merge
-    if: ${{ inputs.publish }}
+    if: >-
+      ${{
+        inputs.publish ||
+        (
+          github.event_name == 'push' &&
+          github.ref == 'refs/heads/main'
+        )
+      }}
     permissions:
       contents: write
     uses: ./.github/workflows/publish-site.yml

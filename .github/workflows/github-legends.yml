@@ -94,7 +94,15 @@ jobs:
   publish:
     name: Publish GitHub Legends examples
     needs: merge
-    if: ${{ github.event_name == 'schedule' || inputs.publish }}
+    if: >-
+      ${{
+        github.event_name == 'schedule' ||
+        inputs.publish ||
+        (
+          github.event_name == 'push' &&
+          github.ref == 'refs/heads/main'
+        )
+      }}
     permissions:
       contents: write
     uses: ./.github/workflows/publish-site.yml
