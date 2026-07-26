@@ -136,7 +136,7 @@ jobs:
   publish:
     name: Publish Go examples
     needs: merge
-    if: ${{ github.event_name == 'push' || inputs.publish }}
+    if: ${{ inputs.publish }}
     permissions:
       contents: write
     uses: ./.github/workflows/publish-site.yml
