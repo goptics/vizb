@@ -4,6 +4,22 @@ Notable changes to Vizb documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [v0.17.0] - 2026-07-26
+
+### Added
+
+- **cli** — Add installation-aware update command ([#263](https://github.com/goptics/vizb/pull/263))
+- **release** — Publish multi-arch Docker images ([#286](https://github.com/goptics/vizb/pull/286))
+- **api** — Add health endpoint ([#271](https://github.com/goptics/vizb/pull/271))
+- Docker packaging ([#269](https://github.com/goptics/vizb/pull/269))
+- **cli** — Add title override for col-axis charts ([#245](https://github.com/goptics/vizb/pull/245))
+- **ui** — Support direct data-url dataset paths ([#251](https://github.com/goptics/vizb/pull/251))
+
+### Fixed
+
+- **chart** — Bar brush selection stats ([#261](https://github.com/goptics/vizb/pull/261))
+- **action** — Support title override for col-axis charts ([#267](https://github.com/goptics/vizb/pull/267))
+
 # [v0.16.1] - 2026-07-21
 
 ### Fixed
