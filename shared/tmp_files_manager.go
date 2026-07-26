@@ -31,7 +31,7 @@ func (tfm *TmpFilesManager) RemoveAll() {
 	defer tfm.mu.Unlock()
 
 	for _, filePath := range tfm.files {
-		os.Remove(filePath)
+		os.RemoveAll(filePath)
 	}
 	tfm.files = make([]string, 0)
 }

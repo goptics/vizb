@@ -29,6 +29,7 @@ export default defineConfig({
 					{ label: 'vizb merge', slug: 'commands/merge' },
 					{ label: 'vizb ui', slug: 'commands/ui' },
 					{ label: 'vizb serve', slug: 'commands/serve' },
+					{ label: 'vizb update', slug: 'commands/update' },
 				],
 			},
 			...openAPISidebarGroups,
