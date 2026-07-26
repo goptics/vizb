@@ -25,19 +25,26 @@ $Bin = "vizb.exe"
 
 $ArchName = if ([Environment]::Is64BitOperatingSystem) { "amd64" } else { "arm64" }
 Log "detected windows/$ArchName"
-Log "fetching latest release..."
+$VersionTag = $env:VIZB_RELEASE_TAG
 
-$LatestUrl = "https://github.com/$Repo/releases/latest"
-$Request = [System.Net.WebRequest]::Create($LatestUrl)
-$Request.AllowAutoRedirect = $false
-$Response = $Request.GetResponse()
-$Redirect = $Response.GetResponseHeader("Location")
-$Response.Close()
-$VersionTag = $Redirect -replace '.*/', ''
+if (-not $VersionTag) {
+    Log "fetching latest release..."
+    $LatestUrl = "https://github.com/$Repo/releases/latest"
+    $Request = [System.Net.WebRequest]::Create($LatestUrl)
+    $Request.AllowAutoRedirect = $false
+    $Response = $Request.GetResponse()
+    $Redirect = $Response.GetResponseHeader("Location")
+    $Response.Close()
+    $VersionTag = $Redirect -replace '.*/', ''
+}
+
 $Version = $VersionTag -replace '^v', ''
 
 if (-not $Version) {
     LogError "failed to determine latest version"
+}
+if ($VersionTag -notmatch '^[A-Za-z0-9._+-]+$') {
+    LogError "invalid release tag: $VersionTag"
 }
 
 $Arch = if ([Environment]::Is64BitOperatingSystem) { "amd64" } else { "arm64" }
