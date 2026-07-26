@@ -19,10 +19,13 @@ COPY --from=ui /src/pkg/template/vizb-ui.gen.go ./pkg/template/vizb-ui.gen.go
 ARG TARGETARCH
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -ldflags="-s -w" -o /vizb .
 
-FROM gcr.io/distroless/static-debian12:nonroot
-
-# Release wiring may replace this build stage with the GoReleaser Linux binary.
-COPY --from=build /vizb /vizb
-
+FROM gcr.io/distroless/static-debian12:nonroot AS runtime
 ENTRYPOINT ["/vizb"]
 CMD ["serve", "--host", "0.0.0.0", "--port", "8080"]
+
+FROM runtime AS release
+ARG TARGETPLATFORM
+COPY $TARGETPLATFORM/vizb /vizb
+
+FROM runtime AS local
+COPY --from=build /vizb /vizb
