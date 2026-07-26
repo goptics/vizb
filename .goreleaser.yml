@@ -6,7 +6,9 @@ before:
     - go mod tidy
 
 builds:
-  - env:
+  - id: vizb
+    binary: vizb
+    env:
       - CGO_ENABLED=0
     goos:
       - linux
@@ -19,6 +21,30 @@ builds:
       - -s -w
       - -X github.com/goptics/vizb/version.Version={{.Tag}}
     main: .
+
+dockers_v2:
+  - id: vizb
+    ids:
+      - vizb
+    dockerfile: Dockerfile
+    images:
+      - goptics/vizb
+    tags:
+      - "{{ .Version }}"
+      - "{{ if not .IsSnapshot }}{{ .Major }}.{{ .Minor }}{{ end }}"
+      - "{{ if not .IsSnapshot }}{{ .Major }}{{ end }}"
+      - "{{ if not .IsSnapshot }}latest{{ end }}"
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    labels:
+      org.opencontainers.image.source: https://github.com/goptics/vizb
+      org.opencontainers.image.version: "{{ .Version }}"
+      org.opencontainers.image.revision: "{{ .FullCommit }}"
+      org.opencontainers.image.licenses: MIT
+      org.opencontainers.image.description: A tabular data visualization engine for CSV, JSON, and benchmark output
+    flags:
+      - --target=release
 
 archives:
   - formats:
@@ -41,4 +67,3 @@ checksum:
 
 snapshot:
   version_template: "{{ .Tag }}-next"
-
