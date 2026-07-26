@@ -50,7 +50,7 @@ jobs:
 
   goreleaser:
     needs: [cli, ui, api-contract]
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
