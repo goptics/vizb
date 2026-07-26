@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         if: env.ACT != 'true'
         with:
           go-version-file: go.mod
@@ -40,7 +40,7 @@ jobs:
 
       - name: Set up Go
         if: env.ACT != 'true'
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: true
@@ -85,7 +85,7 @@ jobs:
 
       - name: Set up Go
         if: env.ACT != 'true'
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: true
