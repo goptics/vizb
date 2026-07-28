@@ -28,50 +28,51 @@ jobs:
   convert:
     name: Convert GitHub Legends
     strategy:
+      max-parallel: 3
       matrix:
         include:
-          - id: 00-torvalds
-            user: torvalds
+          - serial: "00"
+            id: torvalds
             description: "Linus Torvalds, creator and lead developer of the Linux kernel and creator of Git"
 
-          - id: 01-ahmadawais
-            user: ahmadawais
+          - serial: "01"
+            id: ahmadawais
             description: "Ahmad Awais, GitHub Star and open source engineer behind hundreds of developer tools"
 
-          - id: 02-sindresorhus
-            user: sindresorhus
-            description: "Sindre Sorhus, prolific open source maintainer of widely used JavaScript packages"
-
-          - id: 03-yyx990803
-            user: yyx990803
-            description: "Evan You, creator of Vue.js and Vite"
-
-          - id: 04-gaearon
-            user: gaearon
-            description: "Dan Abramov, co-creator of Redux and a former React core team member"
-
-          - id: 05-isaacs
-            user: isaacs
-            description: "Isaac Z. Schlueter, creator of npm and co-founder of vlt"
-
-          - id: 06-antirez
-            user: antirez
+          - serial: "02"
+            id: antirez
             description: "Salvatore Sanfilippo, creator of Redis"
 
-          - id: 07-gvanrossum
-            user: gvanrossum
+          - serial: "03"
+            id: gvanrossum
             description: "Guido van Rossum, creator of the Python programming language"
+
+          - serial: "04"
+            id: sindresorhus
+            description: "Sindre Sorhus, prolific open source maintainer of widely used JavaScript packages"
+
+          - serial: "05"
+            id: yyx990803
+            description: "Evan You, creator of Vue.js and Vite"
+
+          - serial: "06"
+            id: gaearon
+            description: "Dan Abramov, co-creator of Redux and a former React core team member"
+
+          - serial: "07"
+            id: isaacs
+            description: "Isaac Z. Schlueter, creator of npm and co-founder of vlt"
 
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
 
-      - name: ${{ matrix.user }}
+      - name: ${{ matrix.id }}
         uses: ./
         with:
-          cmd: curl -sfL "https://github-contributions-api.jogruber.de/v4/${{ matrix.user }}"
+          cmd: curl -sfL "https://github-contributions-api.jogruber.de/v4/${{ matrix.id }}"
           id: ${{ matrix.id }}
-          name: ${{ matrix.user }}
+          name: ${{ matrix.id }}
           description: ${{ matrix.description }}
           group: date
           group-pattern: "[z{Year}-y{Month}-x{Date}]"
@@ -79,19 +80,19 @@ jobs:
           select: "count{Contributions}"
           stat: all
           charts: bar
-          output-json: ${{ matrix.id }}.json
+          output-json: ${{ matrix.serial }}-${{ matrix.id }}.json
           vizb-binary: ${{ env.ACT == 'true' && './bin/vizb' || '' }}
 
       - name: Stage json for local merge
         if: env.ACT == 'true'
-        run: mkdir -p .act/jsons && cp ${{ matrix.id }}.json .act/jsons/
+        run: mkdir -p .act/jsons && cp ${{ matrix.serial }}-${{ matrix.id }}.json .act/jsons/
 
       - name: Uploading json artifacts
         if: env.ACT != 'true'
         uses: actions/upload-artifact@v7
         with:
-          name: json-github-legends-${{ matrix.id }}
-          path: ${{ matrix.id }}.json
+          name: json-github-legends-${{ matrix.serial }}-${{ matrix.id }}
+          path: ${{ matrix.serial }}-${{ matrix.id }}.json
 
   merge:
     name: Merge GitHub Legends

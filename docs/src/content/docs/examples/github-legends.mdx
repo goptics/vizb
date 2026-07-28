@@ -15,26 +15,26 @@ The workflow [github-legends.yml](https://github.com/goptics/vizb/blob/main/.git
 
 | Chart | Source | Pattern | Dashboard |
 |-------|--------|---------|-----------|
-| torvalds | [API](https://github-contributions-api.jogruber.de/v4/torvalds) | `[z{Year}-y{Month}-x{Date}]` | [Open](https://vizb.goptics.org/examples/live/github-legends/?id=00-torvalds) |
-| ahmadawais | [API](https://github-contributions-api.jogruber.de/v4/ahmadawais) | same | [Open](https://vizb.goptics.org/examples/live/github-legends/?id=01-ahmadawais) |
-| sindresorhus | [API](https://github-contributions-api.jogruber.de/v4/sindresorhus) | same | [Open](https://vizb.goptics.org/examples/live/github-legends/?id=02-sindresorhus) |
-| yyx990803 | [API](https://github-contributions-api.jogruber.de/v4/yyx990803) | same | [Open](https://vizb.goptics.org/examples/live/github-legends/?id=03-yyx990803) |
-| gaearon | [API](https://github-contributions-api.jogruber.de/v4/gaearon) | same | [Open](https://vizb.goptics.org/examples/live/github-legends/?id=04-gaearon) |
-| isaacs | [API](https://github-contributions-api.jogruber.de/v4/isaacs) | same | [Open](https://vizb.goptics.org/examples/live/github-legends/?id=05-isaacs) |
-| antirez | [API](https://github-contributions-api.jogruber.de/v4/antirez) | same | [Open](https://vizb.goptics.org/examples/live/github-legends/?id=06-antirez) |
-| gvanrossum | [API](https://github-contributions-api.jogruber.de/v4/gvanrossum) | same | [Open](https://vizb.goptics.org/examples/live/github-legends/?id=07-gvanrossum) |
+| torvalds | [API](https://github-contributions-api.jogruber.de/v4/torvalds) | `[z{Year}-y{Month}-x{Date}]` | [Open](https://vizb.goptics.org/examples/live/github-legends/?id=torvalds) |
+| ahmadawais | [API](https://github-contributions-api.jogruber.de/v4/ahmadawais) | same | [Open](https://vizb.goptics.org/examples/live/github-legends/?id=ahmadawais) |
+| antirez | [API](https://github-contributions-api.jogruber.de/v4/antirez) | same | [Open](https://vizb.goptics.org/examples/live/github-legends/?id=antirez) |
+| gvanrossum | [API](https://github-contributions-api.jogruber.de/v4/gvanrossum) | same | [Open](https://vizb.goptics.org/examples/live/github-legends/?id=gvanrossum) |
+| sindresorhus | [API](https://github-contributions-api.jogruber.de/v4/sindresorhus) | same | [Open](https://vizb.goptics.org/examples/live/github-legends/?id=sindresorhus) |
+| yyx990803 | [API](https://github-contributions-api.jogruber.de/v4/yyx990803) | same | [Open](https://vizb.goptics.org/examples/live/github-legends/?id=yyx990803) |
+| gaearon | [API](https://github-contributions-api.jogruber.de/v4/gaearon) | same | [Open](https://vizb.goptics.org/examples/live/github-legends/?id=gaearon) |
+| isaacs | [API](https://github-contributions-api.jogruber.de/v4/isaacs) | same | [Open](https://vizb.goptics.org/examples/live/github-legends/?id=isaacs) |
 
 ## Adding a legend
 
-No repo file. Append one row to the matrix in [github-legends.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/github-legends.yml) with `id`, `user`, and `description`:
+No repo file. Append one row to the matrix in [github-legends.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/github-legends.yml) with `serial`, `id`, and `description`:
 
 ```yaml
-- id: 08-octocat        # numbered ?id= deep link; prefix matches ?d=8 in matrix order
-  user: octocat         # chart title and API path
+- serial: "08"          # controls merge and dashboard order
+  id: octocat           # stable ID, chart title, API path, and ?id= deep link
   description: "The Octocat, GitHub's mascot"
 ```
 
-`id` must stay numbered (`00-`, `01-`, …) in matrix order. The workflow step already wires `curl`, `--json-path`, `--select`, date grouping, and 3D bar flags.
+`serial` must stay numbered (`"00"`, `"01"`, …) in matrix order. Changing the order does not change the stable `id` or its deep link. The workflow step already wires `curl`, `--json-path`, `--select`, date grouping, and 3D bar flags.
 
 Optionally add a row to this page’s table.
 
