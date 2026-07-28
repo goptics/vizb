@@ -32,24 +32,35 @@ jobs:
         include:
           - id: 00-torvalds
             user: torvalds
+            description: "Linus Torvalds, creator and lead developer of the Linux kernel and creator of Git"
 
-          - id: 01-sindresorhus
+          - id: 01-ahmadawais
+            user: ahmadawais
+            description: "Ahmad Awais, GitHub Star and open source engineer behind hundreds of developer tools"
+
+          - id: 02-sindresorhus
             user: sindresorhus
+            description: "Sindre Sorhus, prolific open source maintainer of widely used JavaScript packages"
 
-          - id: 02-yyx990803
+          - id: 03-yyx990803
             user: yyx990803
+            description: "Evan You, creator of Vue.js and Vite"
 
-          - id: 03-gaearon
+          - id: 04-gaearon
             user: gaearon
+            description: "Dan Abramov, co-creator of Redux and a former React core team member"
 
-          - id: 04-isaacs
+          - id: 05-isaacs
             user: isaacs
+            description: "Isaac Z. Schlueter, creator of npm and co-founder of vlt"
 
-          - id: 05-antirez
+          - id: 06-antirez
             user: antirez
+            description: "Salvatore Sanfilippo, creator of Redis"
 
-          - id: 06-gvanrossum
+          - id: 07-gvanrossum
             user: gvanrossum
+            description: "Guido van Rossum, creator of the Python programming language"
 
     runs-on: ubuntu-latest
     steps:
@@ -61,7 +72,7 @@ jobs:
           cmd: curl -sfL "https://github-contributions-api.jogruber.de/v4/${{ matrix.user }}"
           id: ${{ matrix.id }}
           name: ${{ matrix.user }}
-          description: "3D GitHub contribution skyline from jogruber API of the top OSS contributors"
+          description: ${{ matrix.description }}
           group: date
           group-pattern: "[z{Year}-y{Month}-x{Date}]"
           json-path: ".contributions"
