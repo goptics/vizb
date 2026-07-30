@@ -129,7 +129,15 @@ export default defineConfig({
 			{
 				tag: 'meta',
 				attrs: { property: 'og:image:height', content: '600' },
-			}
+			},
+			{
+				tag: 'meta',
+				attrs: { name: 'twitter:card', content: 'summary_large_image' },
+			},
+			{
+				tag: 'meta',
+				attrs: { name: 'twitter:image', content: '/og-image.png' },
+			},
 		],
 	}),
 	],
