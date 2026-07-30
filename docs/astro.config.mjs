@@ -120,7 +120,10 @@ export default defineConfig({
 		head: [
 			{
 				tag: 'meta',
-				attrs: { property: 'og:image', content: '/og-image.png' },
+				attrs: {
+					property: 'og:image',
+					content: 'https://vizb.goptics.org/og-image.png',
+				},
 			},
 			{
 				tag: 'meta',
@@ -136,7 +139,10 @@ export default defineConfig({
 			},
 			{
 				tag: 'meta',
-				attrs: { name: 'twitter:image', content: '/og-image.png' },
+				attrs: {
+					name: 'twitter:image',
+					content: 'https://vizb.goptics.org/og-image.png',
+				},
 			},
 		],
 	}),
