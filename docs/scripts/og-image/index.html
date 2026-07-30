@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<!--
+  Vizb docs Open Graph card (1200×600).
+  Regenerate from repo root:
+    google-chrome --headless --disable-gpu --force-device-scale-factor=1 \
+      --window-size=1200,600 \
+      --screenshot=docs/public/og-image.png \
+      "file://$(pwd)/docs/scripts/og-image/index.html"
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=1200" />
+  <title>Vizb OG</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 1200px;
+      height: 600px;
+      overflow: hidden;
+      background: #08090a;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      /* Cool-tinted neutrals (not pure white) — readable on dark without glare */
+      --text-title: #d2dae8;
+      --text-body: #a9b6c9;
+      --text-soft: #8896ab;
+      --text-muted: #6a788f;
+      --text-faint: #556378;
+      color: var(--text-body);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    #stage {
+      position: relative;
+      width: 1200px;
+      height: 600px;
+      /* Equal L/R inset so outer margins match */
+      padding: 40px 56px 36px;
+      background:
+        radial-gradient(ellipse 42% 50% at 18% 20%, rgba(84, 112, 198, 0.14) 0%, transparent 58%),
+        radial-gradient(ellipse 42% 50% at 82% 78%, rgba(59, 162, 114, 0.09) 0%, transparent 55%),
+        #08090a;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+    }
+
+    #stage::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 90% 85% at 50% 45%, transparent 48%, rgba(0, 0, 0, 0.28) 100%);
+      pointer-events: none;
+    }
+
+    .content {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      justify-content: space-between;
+      width: 100%;
+    }
+
+    /* —— Header: V is the logo —— */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .mark-wrap {
+      position: relative;
+      width: 104px;
+      height: 104px;
+      flex-shrink: 0;
+      display: grid;
+      place-items: center;
+    }
+    .mark-wrap::before {
+      content: "";
+      position: absolute;
+      width: 88px;
+      height: 88px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(84, 112, 198, 0.32) 0%, transparent 68%);
+      filter: blur(10px);
+    }
+    .mark {
+      position: relative;
+      width: 96px;
+      height: 96px;
+    }
+
+    .title-block h1 {
+      font-size: 46px;
+      font-weight: 620;
+      letter-spacing: -0.03em;
+      line-height: 1;
+      color: var(--text-title);
+    }
+    .title-block .tagline {
+      margin-top: 8px;
+      font-size: 20px;
+      font-weight: 520;
+      letter-spacing: -0.014em;
+      color: var(--text-body);
+    }
+    .title-block .sub {
+      margin-top: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-soft);
+      letter-spacing: -0.005em;
+    }
+
+    /* —— Pipeline —— */
+    .pipeline {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      gap: 0;
+      flex: 1;
+      min-height: 0;
+      padding: 8px 0 4px;
+    }
+
+    /* Inputs + layout-driven merge rail */
+    .source {
+      display: flex;
+      align-items: stretch;
+      flex-shrink: 0;
+      height: 248px;
+    }
+
+    .inputs-col {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      width: 148px;
+      height: 100%;
+    }
+
+    .chip {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      height: 52px;
+      padding: 0 13px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.035);
+      border: 1px solid rgba(255, 255, 255, 0.075);
+    }
+    .chip .icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+    .chip .label {
+      font-size: 15px;
+      font-weight: 650;
+      letter-spacing: -0.015em;
+      color: var(--text-title);
+      line-height: 1.1;
+    }
+    .chip .hint {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-soft);
+      margin-top: 1px;
+    }
+    .chip.csv .icon { background: rgba(84, 112, 198, 0.18); color: #8aa0e0; }
+    .chip.json .icon { background: rgba(59, 162, 114, 0.18); color: #6dcea0; }
+    .chip.bench .icon { background: rgba(252, 132, 82, 0.18); color: #ff9d72; }
+
+    /*
+      Merge rail: three rows with space-between match inputs-col.
+      Stub + node in-flow; collector and trunk absolute on node axis.
+      Trunk is vertically centered (middle of the three inputs).
+    */
+    .merge {
+      --node-x: 44px;
+      --trunk-w: 72px;
+      position: relative;
+      width: calc(var(--node-x) + var(--trunk-w));
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .merge-row {
+      height: 52px;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      position: relative;
+    }
+
+    .stub {
+      width: var(--node-x);
+      height: 2px;
+      background: rgba(255, 255, 255, 0.22);
+      border-radius: 1px;
+    }
+
+    .node {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      position: absolute;
+      left: var(--node-x);
+      top: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 2;
+    }
+    .node.csv { background: #5470C6; box-shadow: 0 0 0 3px rgba(84, 112, 198, 0.22); }
+    .node.json {
+      background: #3BA272;
+      box-shadow: 0 0 0 4px rgba(59, 162, 114, 0.2);
+      width: 9px;
+      height: 9px;
+    }
+    .node.bench { background: #FC8452; box-shadow: 0 0 0 3px rgba(252, 132, 82, 0.2); }
+
+    /* vertical collector through node centers */
+    .collector {
+      position: absolute;
+      left: var(--node-x);
+      top: 26px;
+      bottom: 26px;
+      width: 2px;
+      background: rgba(255, 255, 255, 0.22);
+      border-radius: 1px;
+      z-index: 1;
+      transform: translateX(-50%);
+    }
+
+    /* trunk: centered on middle input, longer bridge into chart */
+    .trunk {
+      position: absolute;
+      left: var(--node-x);
+      top: 50%;
+      width: var(--trunk-w);
+      height: 2.5px;
+      background: linear-gradient(90deg, rgba(132, 156, 220, 0.75), rgba(132, 156, 220, 0.5));
+      transform: translateY(-50%);
+      z-index: 1;
+      border-radius: 1px;
+    }
+    .trunk::after {
+      content: "";
+      position: absolute;
+      right: 1px;
+      top: 50%;
+      width: 11px;
+      height: 11px;
+      border-right: 2.5px solid rgba(132, 156, 220, 0.75);
+      border-top: 2.5px solid rgba(132, 156, 220, 0.75);
+      transform: translateY(-50%) rotate(45deg);
+    }
+
+    .chart-panel {
+      flex: 0 0 520px;
+      width: 520px;
+      height: 268px;
+      margin: 0;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.045);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      padding: 14px 18px 12px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .chart-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .chart-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-soft);
+      letter-spacing: -0.01em;
+    }
+    .chart-chips {
+      display: flex;
+      gap: 6px;
+    }
+    .pill {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-muted);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    .legend {
+      display: flex;
+      gap: 14px;
+      margin-bottom: 6px;
+      justify-content: center;
+    }
+    .legend span {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+    }
+
+    .chart-area {
+      flex: 1;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-evenly;
+      gap: 22px;
+      padding: 6px 28px 0;
+      position: relative;
+    }
+    .chart-area::before {
+      content: "";
+      position: absolute;
+      inset: 8px 10px 28px;
+      background-image: repeating-linear-gradient(
+        to top,
+        transparent,
+        transparent 43px,
+        rgba(255, 255, 255, 0.032) 43px,
+        rgba(255, 255, 255, 0.032) 44px
+      );
+      pointer-events: none;
+    }
+
+    .group {
+      display: flex;
+      align-items: flex-end;
+      gap: 5px;
+      height: 100%;
+      position: relative;
+      z-index: 1;
+      padding-bottom: 24px;
+    }
+    .bar {
+      width: 17px;
+      border-radius: 3px 3px 1px 1px;
+      min-height: 6px;
+    }
+    .axis-label {
+      position: absolute;
+      bottom: 2px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .out-rail {
+      width: 72px;
+      height: 28px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      position: relative;
+    }
+    .out-rail .line {
+      width: 100%;
+      height: 2.5px;
+      background: linear-gradient(90deg, rgba(132, 156, 220, 0.55), rgba(132, 156, 220, 0.5));
+      border-radius: 1px;
+      position: relative;
+    }
+    .out-rail .line::after {
+      content: "";
+      position: absolute;
+      right: 1px;
+      top: 50%;
+      width: 11px;
+      height: 11px;
+      border-right: 2.5px solid rgba(132, 156, 220, 0.7);
+      border-top: 2.5px solid rgba(132, 156, 220, 0.7);
+      transform: translateY(-50%) rotate(45deg);
+    }
+
+    /* —— File with proper dog-ear —— */
+    .file-block {
+      flex-shrink: 0;
+      position: relative;
+      width: 120px;
+      margin-left: 4px;
+      /* Same height as chart so icon can pin to true vertical center */
+      height: 268px;
+      align-self: center;
+    }
+
+    .file-icon {
+      width: 96px;
+      height: 116px;
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.4));
+    }
+    .file-icon svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .file-label {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding-top: 10px; /* optical: fold steals a bit of top */
+      pointer-events: none;
+    }
+    .file-label .ext {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: #9aaddc;
+    }
+    .file-label .kind {
+      margin-top: 5px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-soft);
+    }
+    .file-caption {
+      position: absolute;
+      left: 0;
+      right: 0;
+      /* Sit just under the centered icon without shifting it */
+      top: calc(50% + 58px + 8px);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-align: center;
+      line-height: 1.35;
+    }
+
+    .footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      width: 100%;
+    }
+    .features {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .feature {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 11px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.035);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      color: var(--text-soft);
+      letter-spacing: -0.01em;
+    }
+    .domain {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-faint);
+      letter-spacing: 0.01em;
+    }
+  </style>
+</head>
+<body>
+  <div id="stage">
+    <div class="content">
+      <header class="header">
+        <div class="mark-wrap">
+          <svg class="mark" viewBox="32 8 231 257" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Vizb">
+            <path d="M32.2656 51.1875L106.016 264.469H170.547L96.7969 51.1875H32.2656Z" fill="#5470C6"/>
+            <path d="M124.453 213.281L161.328 110.906H225.859L188.984 213.281H124.453Z" fill="#3BA272"/>
+            <path d="M142.891 162.094L179.766 59.7188H244.297L207.422 162.094H142.891Z" fill="#FC8452"/>
+            <path d="M161.328 110.906L198.203 8.53125H262.734L225.859 110.906H161.328Z" fill="#EE6666"/>
+            <path d="M106.016 264.469H170.547L188.984 213.281H124.453L106.016 264.469Z" fill="#1A202C"/>
+          </svg>
+        </div>
+        <div class="title-block">
+          <h1>Vizb</h1>
+          <p class="tagline">Tabular data visualization engine</p>
+          <p class="sub">CSV · JSON · benchmarks → interactive charts in one HTML file</p>
+        </div>
+      </header>
+
+      <div class="pipeline">
+        <div class="source">
+          <div class="inputs-col">
+            <div class="chip csv">
+              <div class="icon" aria-hidden="true">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/>
+                  <path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>
+                </svg>
+              </div>
+              <div>
+                <div class="label">CSV</div>
+                <div class="hint">tables</div>
+              </div>
+            </div>
+            <div class="chip json">
+              <div class="icon" aria-hidden="true">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5c0 1.1.9 2 2 2h1"/>
+                  <path d="M16 3h1a2 2 0 0 1 2 2v5a2 2 0 0 0 2 2 2 2 0 0 0-2 2v5a2 2 0 0 1-2 2h-1"/>
+                </svg>
+              </div>
+              <div>
+                <div class="label">JSON</div>
+                <div class="hint">arrays</div>
+              </div>
+            </div>
+            <div class="chip bench">
+              <div class="icon" aria-hidden="true">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>
+                </svg>
+              </div>
+              <div>
+                <div class="label">Bench</div>
+                <div class="hint">Go · Rust · JS</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="merge" aria-hidden="true">
+            <div class="collector"></div>
+            <div class="trunk"></div>
+            <div class="merge-row">
+              <div class="stub"></div>
+              <div class="node csv"></div>
+            </div>
+            <div class="merge-row">
+              <div class="stub"></div>
+              <div class="node json"></div>
+            </div>
+            <div class="merge-row">
+              <div class="stub"></div>
+              <div class="node bench"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="chart-panel">
+          <div class="chart-top">
+            <div class="chart-title">quantity</div>
+            <div class="chart-chips">
+              <span class="pill">region: 4</span>
+              <span class="pill">category: 4</span>
+            </div>
+          </div>
+          <div class="legend">
+            <span><i class="dot" style="background:#5470C6"></i>A</span>
+            <span><i class="dot" style="background:#3BA272"></i>B</span>
+            <span><i class="dot" style="background:#FC8452"></i>C</span>
+            <span><i class="dot" style="background:#EE6666"></i>D</span>
+          </div>
+          <div class="chart-area">
+            <div class="group">
+              <div class="bar" style="height:72%;background:#5470C6"></div>
+              <div class="bar" style="height:48%;background:#3BA272"></div>
+              <div class="bar" style="height:66%;background:#FC8452"></div>
+              <div class="bar" style="height:52%;background:#EE6666"></div>
+              <span class="axis-label">West</span>
+            </div>
+            <div class="group">
+              <div class="bar" style="height:55%;background:#5470C6"></div>
+              <div class="bar" style="height:78%;background:#3BA272"></div>
+              <div class="bar" style="height:90%;background:#FC8452"></div>
+              <div class="bar" style="height:46%;background:#EE6666"></div>
+              <span class="axis-label">South</span>
+            </div>
+            <div class="group">
+              <div class="bar" style="height:64%;background:#5470C6"></div>
+              <div class="bar" style="height:82%;background:#3BA272"></div>
+              <div class="bar" style="height:94%;background:#FC8452"></div>
+              <div class="bar" style="height:70%;background:#EE6666"></div>
+              <span class="axis-label">North</span>
+            </div>
+            <div class="group">
+              <div class="bar" style="height:70%;background:#5470C6"></div>
+              <div class="bar" style="height:96%;background:#3BA272"></div>
+              <div class="bar" style="height:54%;background:#FC8452"></div>
+              <div class="bar" style="height:74%;background:#EE6666"></div>
+              <span class="axis-label">East</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="out-rail" aria-hidden="true">
+          <div class="line"></div>
+        </div>
+
+        <div class="file-block">
+          <div class="file-icon">
+            <!--
+              Classic document dog-ear:
+              1) body path with top-right corner cut out
+              2) fold face (lighter triangle)
+              3) underside shadow along the crease
+            -->
+            <svg viewBox="0 0 96 116" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <defs>
+                <linearGradient id="bodyGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#1a2438"/>
+                  <stop offset="100%" stop-color="#121a2a"/>
+                </linearGradient>
+                <linearGradient id="foldGrad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#3d4f72"/>
+                  <stop offset="100%" stop-color="#2a3858"/>
+                </linearGradient>
+              </defs>
+              <!-- body with missing top-right square -->
+              <path
+                d="M14 6
+                   H64
+                   L90 32
+                   V102
+                   Q90 110 82 110
+                   H14
+                   Q6 110 6 102
+                   V14
+                   Q6 6 14 6
+                   Z"
+                fill="url(#bodyGrad)"
+                stroke="rgba(132,156,220,0.5)"
+                stroke-width="1.5"
+              />
+              <!-- crease shadow (under fold) -->
+              <path
+                d="M64 6 L64 28 Q64 32 68 32 L90 32"
+                fill="none"
+                stroke="rgba(0,0,0,0.35)"
+                stroke-width="2"
+                stroke-linejoin="round"
+              />
+              <!-- fold face -->
+              <path
+                d="M64 6 L90 32 L68 32 Q64 32 64 28 Z"
+                fill="url(#foldGrad)"
+                stroke="rgba(168,184,234,0.4)"
+                stroke-width="1"
+                stroke-linejoin="round"
+              />
+              <!-- fold highlight edge -->
+              <path
+                d="M64 6 L90 32"
+                stroke="rgba(255,255,255,0.18)"
+                stroke-width="1"
+                fill="none"
+              />
+            </svg>
+            <div class="file-label">
+              <div class="ext">.html</div>
+              <div class="kind">single file</div>
+            </div>
+          </div>
+          <div class="file-caption">self-contained<br/>no server</div>
+        </div>
+      </div>
+
+      <footer class="footer">
+        <div class="features">
+          <span class="feature">bar · line · scatter · pie · radar · heatmap · 3D</span>
+          <span class="feature">stats</span>
+          <span class="feature">merge</span>
+          <span class="feature">GitHub Action</span>
+        </div>
+        <div class="domain">vizb.goptics.org</div>
+      </footer>
+    </div>
+  </div>
+</body>
+</html>
