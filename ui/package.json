@@ -39,7 +39,7 @@
     "@vue/test-utils": "^2.4.11",
     "@vue/tsconfig": "^0.8.1",
     "autoprefixer": "^10.4.20",
-    "baseline-browser-mapping": "^2.9.6",
+    "baseline-browser-mapping": "^2.11.6",
     "happy-dom": "^20.11.1",
     "linkedom": "^0.18.12",
     "postcss": "^8.4.49",

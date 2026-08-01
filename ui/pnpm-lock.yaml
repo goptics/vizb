@@ -55,8 +55,8 @@ importers:
         specifier: ^10.4.20
         version: 10.4.21(postcss@8.5.6)
       baseline-browser-mapping:
-        specifier: ^2.9.6
-        version: 2.10.33
+        specifier: ^2.11.6
+        version: 2.11.6
       happy-dom:
         specifier: ^20.11.1
         version: 20.11.1
@@ -541,8 +541,8 @@ packages:
   balanced-match@1.0.2:
     resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
 
-  baseline-browser-mapping@2.10.33:
-    resolution: {integrity: sha512-bA6+tcSLpz2tIEdDXZPpPTIuxBcC4+w6SieaYyfigIa4h8GlFxbA17v22Vx3JUtuZQj9SgOsnbK+aTBzyDyEuw==}
+  baseline-browser-mapping@2.11.6:
+    resolution: {integrity: sha512-69D/imtToCsIcAl8WBS2YaRwA4jO/j0HhU+hELqMEu9f54MoUtI6+XH5mrKU8rEFNEk/Ui1I2MK4/JkWacclGw==}
     engines: {node: '>=6.0.0'}
     hasBin: true
 
@@ -833,6 +833,7 @@ packages:
 
   glob@10.4.5:
     resolution: {integrity: sha512-7Bv8RF0k6xjo7d4A/PxYLbUCfb6c+Vpd2/mB2yRDlew7Jb5hEXiCD9ibfO7wpk8i4sevK6DFny9h7EYbM3/sHg==}
+    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
     hasBin: true
 
   graceful-fs@4.2.11:
@@ -1034,6 +1035,7 @@ packages:
 
   lucide-vue-next@0.461.0:
     resolution: {integrity: sha512-9qAQq4W3/Ka0VRUjXWDzoFex0lLuPxy8hf6vvs4xkc82tdGqIJhhSx+lAILX4BAiY4e+Hai5C0mGamDno6lHtA==}
+    deprecated: Package deprecated. Please use @lucide/vue instead.
     peerDependencies:
       vue: '>=3.0.1'
 
@@ -2108,7 +2110,7 @@ snapshots:
 
   balanced-match@1.0.2: {}
 
-  baseline-browser-mapping@2.10.33: {}
+  baseline-browser-mapping@2.11.6: {}
 
   binary-extensions@2.3.0: {}
 
@@ -2124,7 +2126,7 @@ snapshots:
 
   browserslist@4.26.3:
     dependencies:
-      baseline-browser-mapping: 2.10.33
+      baseline-browser-mapping: 2.11.6
       caniuse-lite: 1.0.30001749
       electron-to-chromium: 1.5.234
       node-releases: 2.0.23
