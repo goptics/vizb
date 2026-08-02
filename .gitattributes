@@ -1,0 +1,2 @@
+# Collapse large opaque embed diffs in GitHub review UI.
+pkg/template/vizb-ui.gen.go linguist-generated=true
