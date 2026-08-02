@@ -1,0 +1,76 @@
+# Sole routine writer of pkg/template/vizb-ui.gen.go on main.
+# Humans must not commit this file on feature branches (lefthook + CLI PR guard).
+#
+# Privilege split: generate runs with contents:read and no push credentials;
+# only the commit job gets contents:write and only touches the regular gen file.
+#
+# No infinite loop: this workflow only watches ui/** and the embed action; the
+# bot commits only the gen file. Additionally, commits made with GITHUB_TOKEN
+# do not re-trigger workflows (GitHub platform rule).
+name: Sync embed UI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "ui/**"
+      - "ui/pnpm-lock.yaml"
+      - ".github/actions/setup-embed-ui/**"
+      - ".github/workflows/sync-embed-ui.yml"
+
+concurrency:
+  group: sync-embed-ui
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-slim
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup embed UI
+        uses: ./.github/actions/setup-embed-ui
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Verify pure-Go build with regenerated embed
+        run: go build -o /tmp/vizb-sync-check .
+
+      - name: Upload generated embed
+        uses: actions/upload-artifact@v7
+        with:
+          name: sync-embed-ui-gen
+          path: pkg/template/vizb-ui.gen.go
+          if-no-files-found: error
+
+  commit:
+    needs: generate
+    runs-on: ubuntu-slim
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Download generated embed
+        uses: actions/download-artifact@v8
+        with:
+          name: sync-embed-ui-gen
+          path: pkg/template
+
+      - name: Commit gen if changed
+        uses: stefanzweifel/git-auto-commit-action@v7
+        with:
+          commit_message: "chore(ui): sync vizb-ui.gen.go"
+          file_pattern: pkg/template/vizb-ui.gen.go
+          commit_user_name: github-actions[bot]
+          commit_user_email: 41898282+github-actions[bot]@users.noreply.github.com
