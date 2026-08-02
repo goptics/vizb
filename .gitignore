@@ -14,6 +14,9 @@ vendor/
 # Build output
 bin/
 
+# Task status/checksum cache (local only)
+.task/
+
 # act local workflow runs
 .act/
 

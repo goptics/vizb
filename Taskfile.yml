@@ -7,13 +7,13 @@ tasks:
       - task --list
 
   init:
-    desc: Install all dependencies and generate the UI embed
+    desc: Install all dependencies
     cmds:
       - go mod tidy
       - go mod download
       - cd ui; pnpm install; cd -
       - cd docs; pnpm install; cd -
-      - task: build:ui
+      # No embed:ui — pkg/template/vizb-ui.gen.go is tracked on main
       - task: act:install
       - task: cliff:install
       - go run github.com/evilmartians/lefthook@latest install
@@ -33,15 +33,33 @@ tasks:
     cmds:
       - cd docs; [ -d node_modules ] || pnpm install; pnpm build; cd -
 
-  build:ui:
-    desc: Build Vue UI template
+  # Internal: rewrite pkg/template/vizb-ui.gen.go from ui/ when sources are newer.
+  # Hidden from task --list; used as a dependency of build:cli.
+  embed:ui:
+    internal: true
+    sources:
+      - ui/**/*
+      - ui/pnpm-lock.yaml
+    generates:
+      - pkg/template/vizb-ui.gen.go
     cmds:
       - cd ui; [ -d node_modules ] || pnpm install; EMBED_UI=True pnpm build; cd -
 
+  build:ui:
+    desc: Build Vue UI (no CLI embed)
+    cmds:
+      - cd ui; [ -d node_modules ] || pnpm install; pnpm build; cd -
+
   build:cli:
     desc: Build the binary (production-ready, stripped)
+    deps: [embed:ui]
     cmds:
       - go build -ldflags="-s -w" -o ./bin/vizb
+      # Keep working tree clean if embed rewrote gen (feature branches must not
+      # commit gen churn; main bot owns updates). Restoring after build can make
+      # Task re-run embed on the next build:cli when ui/ is still newer than the
+      # committed gen — that is intentional.
+      - git restore pkg/template/vizb-ui.gen.go 2>/dev/null || true
 
   build:
     desc: Build the Docs, UI & binary
