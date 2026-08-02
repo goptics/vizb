@@ -72,10 +72,14 @@ jobs:
         with:
           app-id: ${{ secrets.VIZB_BOT_APP_ID }}
           private-key: ${{ secrets.VIZB_BOT_PRIVATE_KEY }}
+          # Downscope: install may grant more; this token only needs push.
+          permission-contents: write
 
+      # persist-credentials true (default): git-auto-commit pushes with app token.
       - uses: actions/checkout@v7
         with:
           token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: true
 
       - name: Download generated embed
         uses: actions/download-artifact@v8
@@ -89,4 +93,7 @@ jobs:
           commit_message: "chore(ui): sync vizb-ui.gen.go"
           file_pattern: pkg/template/vizb-ui.gen.go
           commit_user_name: vizb-bot[bot]
-          commit_user_email: 4463084+vizb-bot[bot]@users.noreply.github.com
+          # Bot user id 312060874 (not App ID 4463084) so GitHub links the bot badge.
+          commit_user_email: 312060874+vizb-bot[bot]@users.noreply.github.com
+          # Avoid defaulting author to the human who pushed the ui/ change.
+          commit_author: vizb-bot[bot] <312060874+vizb-bot[bot]@users.noreply.github.com>
