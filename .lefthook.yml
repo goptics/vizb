@@ -1,8 +1,23 @@
 pre-commit:
+  # Guard first; piped stops later steps when the guard fails.
+  piped: true
   commands:
+    # Local guard: gen is tracked on main but feature branches must not commit churn.
+    # Main updates are owned by the CI bot (#319). Bypass only with LEFTHOOK=0 when intentional.
+    no-commit-ui-gen:
+      priority: 1
+      glob: "pkg/template/vizb-ui.gen.go"
+      run: |
+        echo "error: do not commit pkg/template/vizb-ui.gen.go from feature branches"
+        echo "  The tracked snapshot on main is updated by CI (see #319)."
+        echo "  Unstage with: git restore --staged pkg/template/vizb-ui.gen.go"
+        echo "  Discard local rewrite: git restore pkg/template/vizb-ui.gen.go"
+        exit 1
     format:
+      priority: 2
       run: task format
       stage_fixed: true
     go-test:
+      priority: 3
       glob: "*.go"
       run: task test

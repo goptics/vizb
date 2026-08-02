@@ -45,6 +45,7 @@ Go-only contributors do **not** need Node.
 | Vue-only build | `task build:ui` — no gen write |
 | Re-embed for CLI | Internal `embed:ui` (not in `task --list`); dep of `task build:cli` when `ui/` is newer than gen |
 | Clean tree after CLI build | `build:cli` runs `git restore` on gen after embed so feature branches do not keep dirty gen |
+| Pre-commit guard | Lefthook blocks staging/committing gen (`no-commit-ui-gen`); bypass only with `LEFTHOOK=0` when intentional |
 | gofmt | Skipped for this file in Taskfile and CI format jobs |
 | golangci-lint | Still runs on it (no special exclude) |
 

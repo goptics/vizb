@@ -68,8 +68,9 @@ users do not install Node just to compile Vizb.
   updated by those tasks. `task build:cli` may re-embed when `ui/` is newer
   than gen (internal `embed:ui`), then **`git restore`s** the gen file so the
   working tree stays clean — **do not commit** regenerated gen from feature
-  branches. The snapshot on `main` is kept in sync by CI when UI changes land
-  (see tracking issues under #316 / #319).
+  branches. A Lefthook pre-commit hook fails if the gen file is staged. The
+  snapshot on `main` is kept in sync by CI when UI changes land (see tracking
+  issues under #316 / #319).
 - `gofmt` (Task + CI format job) **skips** the gen file; `golangci-lint` still
   analyzes it.
 
