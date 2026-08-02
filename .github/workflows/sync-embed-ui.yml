@@ -2,14 +2,14 @@
 # Humans must not commit this file on feature branches (lefthook + CLI PR guard).
 #
 # Privilege split: generate runs with contents:read and no push credentials;
-# commit mints a vizb-bot installation token so the push can bypass the main
+# commit mints a vizber installation token so the push can bypass the main
 # PR-required ruleset (GITHUB_TOKEN / github-actions[bot] cannot).
 #
 # Secrets (repo Actions secrets):
-#   VIZB_BOT_APP_ID       — App ID from https://github.com/apps/vizb-bot
-#   VIZB_BOT_PRIVATE_KEY  — private key PEM generated on the app settings page
+#   VIZBER_APP_ID       — App ID from https://github.com/apps/vizber
+#   VIZBER_PRIVATE_KEY  — private key PEM generated on the app settings page
 #
-# Also add vizb-bot to Main rules bypass list (Apps → vizb-bot → Always).
+# Also add vizber to Main rules bypass list (Apps → vizber → Always).
 #
 # No infinite loop: path filters watch ui/** / setup action only; bot commits
 # only the gen file. App-token commits can re-fire other workflows (unlike
@@ -66,12 +66,12 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Create vizb-bot token
+      - name: Create vizber token
         id: app-token
         uses: actions/create-github-app-token@v2
         with:
-          app-id: ${{ secrets.VIZB_BOT_APP_ID }}
-          private-key: ${{ secrets.VIZB_BOT_PRIVATE_KEY }}
+          app-id: ${{ secrets.VIZBER_APP_ID }}
+          private-key: ${{ secrets.VIZBER_PRIVATE_KEY }}
           # Downscope: install may grant more; this token only needs push.
           permission-contents: write
 
@@ -92,8 +92,10 @@ jobs:
         with:
           commit_message: "chore(ui): sync vizb-ui.gen.go"
           file_pattern: pkg/template/vizb-ui.gen.go
-          commit_user_name: vizb-bot[bot]
-          # Bot user id 312060874 (not App ID 4463084) so GitHub links the bot badge.
-          commit_user_email: 312060874+vizb-bot[bot]@users.noreply.github.com
+          # GitHub Apps always get a [bot] suffix; name the app "vizber" so commits
+          # show as vizber[bot] (not vizb-bot[bot]).
+          commit_user_name: vizber[bot]
+          # Bot user id (not App ID) so GitHub links the bot badge.
+          commit_user_email: 312060874+vizber[bot]@users.noreply.github.com
           # Avoid defaulting author to the human who pushed the ui/ change.
-          commit_author: vizb-bot[bot] <312060874+vizb-bot[bot]@users.noreply.github.com>
+          commit_author: vizber[bot] <312060874+vizber[bot]@users.noreply.github.com>
