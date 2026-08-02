@@ -46,6 +46,8 @@ Go-only contributors do **not** need Node.
 | Re-embed for CLI | Internal `embed:ui` (not in `task --list`); dep of `task build:cli` when `ui/` is newer than gen |
 | Clean tree after CLI build | `build:cli` runs `git restore` on gen after embed so feature branches do not keep dirty gen |
 | Pre-commit guard | Lefthook blocks staging/committing gen (`no-commit-ui-gen`); bypass only with `LEFTHOOK=0` when intentional |
+| CI PR guard | CLI workflow fails if a PR modifies the gen file |
+| Main sync | `.github/workflows/sync-embed-ui.yml` rebuilds and commits gen after `ui/` lands on main |
 | gofmt | Skipped for this file in Taskfile and CI format jobs |
 | golangci-lint | Still runs on it (no special exclude) |
 
@@ -53,9 +55,9 @@ After a fresh clone, the tracked gen file is enough for CLI builds and tests
 (`go build`, `go install`, or `task build:cli` with an up-to-date gen). UI
 work uses `task dev:ui` / `task build:ui` and does not own the gen file on the
 branch. **Do not commit** regenerated gen from feature branches; the snapshot on
-`main` is kept in sync by the follow-up CI bot (see #319). `task build:cli` may
-re-embed for a production binary, then restores the tracked gen so the working
-tree stays clean.
+`main` is updated by the sync-embed-ui workflow. `task build:cli` may re-embed
+for a production binary, then restores the tracked gen so the working tree stays
+clean.
 
 ## Architecture
 

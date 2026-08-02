@@ -1,0 +1,48 @@
+# Sole routine writer of pkg/template/vizb-ui.gen.go on main.
+# Humans must not commit this file on feature branches (lefthook + CLI PR guard).
+#
+# No infinite loop: this workflow only watches ui/** and the embed action; the
+# bot commits only the gen file. Additionally, commits made with GITHUB_TOKEN
+# do not re-trigger workflows (GitHub platform rule).
+name: Sync embed UI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "ui/**"
+      - "ui/pnpm-lock.yaml"
+      - ".github/actions/setup-embed-ui/**"
+      - ".github/workflows/sync-embed-ui.yml"
+
+concurrency:
+  group: sync-embed-ui
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-slim
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup embed UI
+        uses: ./.github/actions/setup-embed-ui
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Verify pure-Go build with regenerated embed
+        run: go build -o /tmp/vizb-sync-check .
+
+      - name: Commit gen if changed
+        uses: stefanzweifel/git-auto-commit-action@v7
+        with:
+          commit_message: "chore(ui): sync vizb-ui.gen.go"
+          file_pattern: pkg/template/vizb-ui.gen.go
+          commit_user_name: github-actions[bot]
+          commit_user_email: 41898282+github-actions[bot]@users.noreply.github.com

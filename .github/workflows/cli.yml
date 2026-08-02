@@ -17,6 +17,7 @@ on:
     branches: [main]
     paths:
       - '**.go'
+      - 'ui/**'
       - go.mod
       - go.sum
       - .goreleaser.yml
@@ -26,17 +27,75 @@ on:
       - .github/actions/setup-embed-ui/**
 
 jobs:
-  embed-ui:
+  # Feature branches must not land gen churn; main is owned by sync-embed-ui.
+  forbid-gen-commit:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Reject pkg/template/vizb-ui.gen.go in PR diffs
+        run: |
+          set -euo pipefail
+          base="${{ github.event.pull_request.base.sha }}"
+          head="${{ github.event.pull_request.head.sha }}"
+          if git diff --name-only "$base"..."$head" | grep -qx 'pkg/template/vizb-ui.gen.go'; then
+            echo "error: do not commit pkg/template/vizb-ui.gen.go"
+            echo "  The tracked snapshot on main is updated by .github/workflows/sync-embed-ui.yml (#319)."
+            echo "  Unstage with: git restore --staged pkg/template/vizb-ui.gen.go"
+            echo "  Discard local rewrite: git restore pkg/template/vizb-ui.gen.go"
+            exit 1
+          fi
+          echo "OK: gen file not modified in this PR"
+
+  embed-ui:
+    needs: [forbid-gen-commit]
+    # needs.forbid-gen-commit is skipped on push/workflow_call; still run embed.
+    if: ${{ always() && (needs.forbid-gen-commit.result == 'success' || needs.forbid-gen-commit.result == 'skipped') }}
+    runs-on: ubuntu-slim
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # PRs need history to detect ui/ changes against the base tip.
+          fetch-depth: 0
+
+      - name: Decide whether to rebuild embed
+        id: embed
+        run: |
+          set -euo pipefail
+          # Always rebuild on push/main and reusable workflow_call (release).
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "rebuild=true" >> "$GITHUB_OUTPUT"
+            echo "reason=non-PR event (${{ github.event_name }})"
+            exit 0
+          fi
+
+          base="${{ github.event.pull_request.base.sha }}"
+          head="${{ github.event.pull_request.head.sha }}"
+          if [ -z "$base" ] || [ -z "$head" ]; then
+            echo "rebuild=true" >> "$GITHUB_OUTPUT"
+            echo "reason=missing PR base/head; rebuild to be safe"
+            exit 0
+          fi
+
+          if git diff --name-only "$base"..."$head" | grep -qE '^(ui/|\.github/actions/setup-embed-ui/)'; then
+            echo "rebuild=true" >> "$GITHUB_OUTPUT"
+            echo "reason=PR touches ui/ or setup-embed-ui"
+          else
+            echo "rebuild=false" >> "$GITHUB_OUTPUT"
+            echo "reason=pure Go PR; use committed gen"
+          fi
 
       - uses: actions/setup-go@v7
+        if: steps.embed.outputs.rebuild == 'true'
         with:
           go-version-file: go.mod
           cache: true
 
       - name: Setup embed UI
+        if: steps.embed.outputs.rebuild == 'true'
         uses: ./.github/actions/setup-embed-ui
 
       - name: Upload embedded UI
