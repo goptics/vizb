@@ -50,77 +50,21 @@ jobs:
           fi
           echo "OK: gen file not modified in this PR"
 
-  embed-ui:
-    needs: [forbid-gen-commit]
-    # needs.forbid-gen-commit is skipped on push/workflow_call; still run embed.
-    if: ${{ always() && (needs.forbid-gen-commit.result == 'success' || needs.forbid-gen-commit.result == 'skipped') }}
+  lint:
     runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v7
-        with:
-          # PRs need history to detect ui/ changes against the base tip.
-          fetch-depth: 0
 
-      - name: Decide whether to rebuild embed
-        id: embed
-        run: |
-          set -euo pipefail
-          # Always rebuild on push/main and reusable workflow_call (release).
-          if [ "${{ github.event_name }}" != "pull_request" ]; then
-            echo "rebuild=true" >> "$GITHUB_OUTPUT"
-            echo "reason=non-PR event (${{ github.event_name }})"
-            exit 0
-          fi
-
-          base="${{ github.event.pull_request.base.sha }}"
-          head="${{ github.event.pull_request.head.sha }}"
-          if [ -z "$base" ] || [ -z "$head" ]; then
-            echo "rebuild=true" >> "$GITHUB_OUTPUT"
-            echo "reason=missing PR base/head; rebuild to be safe"
-            exit 0
-          fi
-
-          if git diff --name-only "$base"..."$head" | grep -qE '^(ui/|\.github/actions/setup-embed-ui/)'; then
-            echo "rebuild=true" >> "$GITHUB_OUTPUT"
-            echo "reason=PR touches ui/ or setup-embed-ui"
-          else
-            echo "rebuild=false" >> "$GITHUB_OUTPUT"
-            echo "reason=pure Go PR; use committed gen"
-          fi
-
-      - uses: actions/setup-go@v7
-        if: steps.embed.outputs.rebuild == 'true'
-        with:
-          go-version-file: go.mod
-          cache: true
-
-      - name: Setup embed UI
-        if: steps.embed.outputs.rebuild == 'true'
+      # PRs: ephemeral re-embed so CLI tests see unmerged ui/ changes.
+      # main / release (workflow_call): use tracked gen (sync-embed-ui keeps main current).
+      - name: Rebuild embed for PR
+        if: github.event_name == 'pull_request'
         uses: ./.github/actions/setup-embed-ui
 
-      - name: Upload embedded UI
-        uses: actions/upload-artifact@v7
-        with:
-          name: cli-embedded-ui-${{ github.sha }}
-          path: pkg/template/vizb-ui.gen.go
-          if-no-files-found: error
-
-  lint:
-    needs: embed-ui
-    runs-on: ubuntu-slim
-    steps:
-      - uses: actions/checkout@v7
-
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: true
-
-      - name: Download embedded UI
-        uses: actions/download-artifact@v8
-        with:
-          name: cli-embedded-ui-${{ github.sha }}
-          path: pkg/template
 
       - uses: golangci/golangci-lint-action@v9
         with:
@@ -146,21 +90,18 @@ jobs:
           fi
 
   test:
-    needs: embed-ui
     runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v7
+
+      - name: Rebuild embed for PR
+        if: github.event_name == 'pull_request'
+        uses: ./.github/actions/setup-embed-ui
 
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: true
-
-      - name: Download embedded UI
-        uses: actions/download-artifact@v8
-        with:
-          name: cli-embedded-ui-${{ github.sha }}
-          path: pkg/template
 
       - run: go mod download
 

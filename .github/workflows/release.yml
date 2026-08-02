@@ -78,12 +78,7 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - name: Download embedded UI
-        uses: actions/download-artifact@v8
-        with:
-          name: cli-embedded-ui-${{ github.sha }}
-          path: pkg/template
-
+      # Tracked gen on the tag (kept current on main by sync-embed-ui).
       - name: Download dependencies
         run: go mod download
 
