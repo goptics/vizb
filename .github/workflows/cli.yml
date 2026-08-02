@@ -78,7 +78,9 @@ jobs:
 
       - name: Check gofmt
         run: |
-          unformatted=$(gofmt -l .)
+          unformatted=$(gofmt -l $(find . -name '*.go' \
+            -not -path './pkg/template/vizb-ui.gen.go' \
+            -not -path './.git/*'))
           if [ -n "$unformatted" ]; then
             echo "$unformatted"
             exit 1

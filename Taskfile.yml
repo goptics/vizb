@@ -120,7 +120,10 @@ tasks:
   format:cli:
     desc: Format CLI files
     cmds:
-      - gofmt -w .
+      - |
+        gofmt -w $(find . -name '*.go' \
+          -not -path './pkg/template/vizb-ui.gen.go' \
+          -not -path './.git/*')
 
   format:ui:
     desc: Format UI files
@@ -137,7 +140,9 @@ tasks:
     desc: Check CLI formatting
     cmds:
       - |
-        unformatted=$(gofmt -l .)
+        unformatted=$(gofmt -l $(find . -name '*.go' \
+          -not -path './pkg/template/vizb-ui.gen.go' \
+          -not -path './.git/*'))
         test -z "$unformatted" || { echo "$unformatted"; exit 1; }
 
   format:check:ui:
