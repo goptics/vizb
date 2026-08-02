@@ -26,6 +26,9 @@ on:
       - .github/workflows/cli.yml
       - .github/actions/setup-embed-ui/**
 
+permissions:
+  contents: read
+
 jobs:
   # Feature branches must not land gen churn; main is owned by sync-embed-ui.
   forbid-gen-commit:
