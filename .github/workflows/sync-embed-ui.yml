@@ -2,11 +2,18 @@
 # Humans must not commit this file on feature branches (lefthook + CLI PR guard).
 #
 # Privilege split: generate runs with contents:read and no push credentials;
-# only the commit job gets contents:write and only touches the regular gen file.
+# commit mints a vizb-bot installation token so the push can bypass the main
+# PR-required ruleset (GITHUB_TOKEN / github-actions[bot] cannot).
 #
-# No infinite loop: this workflow only watches ui/** and the embed action; the
-# bot commits only the gen file. Additionally, commits made with GITHUB_TOKEN
-# do not re-trigger workflows (GitHub platform rule).
+# Secrets (repo Actions secrets):
+#   VIZB_BOT_APP_ID       — App ID from https://github.com/apps/vizb-bot
+#   VIZB_BOT_PRIVATE_KEY  — private key PEM generated on the app settings page
+#
+# Also add vizb-bot to Main rules bypass list (Apps → vizb-bot → Always).
+#
+# No infinite loop: path filters watch ui/** / setup action only; bot commits
+# only the gen file. App-token commits can re-fire other workflows (unlike
+# GITHUB_TOKEN); that is intentional for CLI on **.go.
 name: Sync embed UI
 
 on:
@@ -57,9 +64,18 @@ jobs:
     needs: generate
     runs-on: ubuntu-slim
     permissions:
-      contents: write
+      contents: read
     steps:
+      - name: Create vizb-bot token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.VIZB_BOT_APP_ID }}
+          private-key: ${{ secrets.VIZB_BOT_PRIVATE_KEY }}
+
       - uses: actions/checkout@v7
+        with:
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Download generated embed
         uses: actions/download-artifact@v8
@@ -72,5 +88,5 @@ jobs:
         with:
           commit_message: "chore(ui): sync vizb-ui.gen.go"
           file_pattern: pkg/template/vizb-ui.gen.go
-          commit_user_name: github-actions[bot]
-          commit_user_email: 41898282+github-actions[bot]@users.noreply.github.com
+          commit_user_name: vizb-bot[bot]
+          commit_user_email: 4463084+vizb-bot[bot]@users.noreply.github.com
