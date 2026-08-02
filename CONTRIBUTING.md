@@ -30,10 +30,10 @@ are forwarded.
 ## Setup and commands
 
 ```bash
-task init            # install dependencies
-task build           # build UI, CLI, and docs
-task build:ui        # build UI; regenerates pkg/template/vizb-ui.gen.go
-task build:cli       # build ./bin/vizb
+task init            # install dependencies (does not embed)
+task build           # build docs, Vue UI, and CLI
+task build:ui        # Vue/Vite only — does not write the Go embed
+task build:cli       # re-embed if ui/ is newer, build ./bin/vizb, restore gen
 task dev:ui          # run the UI dev server
 task dev:docs        # run the docs dev server
 task test            # run CLI and UI tests
@@ -61,12 +61,15 @@ The chart UI is a Vue app. Maintainers build it with Node; the result is
 users do not install Node just to compile Vizb.
 
 - **Do not hand-edit** the gen file (`// Code generated ... DO NOT EDIT.`).
-- **Go-only work:** use the committed file as-is; no `task build:ui` required.
-- **UI work:** after changing `ui/`, run `task build:ui` before local Go builds
-  or tests so the embed matches your UI changes.
-- Prefer **not** to include gen-file churn in unrelated or Go-only PRs. Keeping
-  the snapshot on `main` in sync when UI changes land is handled by CI (see
-  tracking issues under #316).
+- **Go-only work:** use the committed file as-is. `task init` and
+  `task build:ui` do not touch gen. Plain `go build` / `go install` work
+  from the tracked snapshot.
+- **UI work:** `task dev:ui` / `task build:ui` for the Vue app. Gen is not
+  updated by those tasks. `task build:cli` may re-embed when `ui/` is newer
+  than gen (internal `embed:ui`), then **`git restore`s** the gen file so the
+  working tree stays clean — **do not commit** regenerated gen from feature
+  branches. The snapshot on `main` is kept in sync by CI when UI changes land
+  (see tracking issues under #316 / #319).
 - `gofmt` (Task + CI format job) **skips** the gen file; `golangci-lint` still
   analyzes it.
 

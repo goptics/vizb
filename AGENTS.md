@@ -11,10 +11,10 @@ JSON datasets. It embeds a Vue 3 UI and also ships as a GitHub composite action.
 Use [Task](https://taskfile.dev/) from the repository root.
 
 ```bash
-task init        # install Go, UI, and docs dependencies
-task build       # build docs, embedded UI, and CLI
-task build:ui    # build UI and regenerate pkg/template/vizb-ui.gen.go
-task build:cli   # build ./bin/vizb
+task init        # install Go, UI, and docs dependencies (does not embed)
+task build       # build docs, Vue UI, and CLI
+task build:ui    # Vue/Vite only — does not write the Go embed
+task build:cli   # re-embed if ui/ is newer, build ./bin/vizb, restore gen
 task dev:ui      # run Vue dev server
 task dev:docs    # run docs dev server
 task test        # run CLI and UI tests
@@ -42,15 +42,19 @@ Go-only contributors do **not** need Node.
 |------|--------|
 | Tracked on main | Committed so pure-Go install works |
 | Never hand-edit | Header is `// Code generated ... DO NOT EDIT.` |
-| Regenerated with Node | `task build:ui` (Vue/Vite + embed plugin) — maintainer/UI work only |
+| Vue-only build | `task build:ui` — no gen write |
+| Re-embed for CLI | Internal `embed:ui` (not in `task --list`); dep of `task build:cli` when `ui/` is newer than gen |
+| Clean tree after CLI build | `build:cli` runs `git restore` on gen after embed so feature branches do not keep dirty gen |
 | gofmt | Skipped for this file in Taskfile and CI format jobs |
 | golangci-lint | Still runs on it (no special exclude) |
 
-After a fresh clone, the tracked gen file is enough for CLI builds and tests.
-After changing `ui/`, run `task build:ui` locally to regenerate before Go
-builds. Prefer not to land gen churn on feature PRs that only touch Go or docs;
-ongoing sync of the committed snapshot when `ui/` lands on main is owned by the
-follow-up CI bot work (see #319).
+After a fresh clone, the tracked gen file is enough for CLI builds and tests
+(`go build`, `go install`, or `task build:cli` with an up-to-date gen). UI
+work uses `task dev:ui` / `task build:ui` and does not own the gen file on the
+branch. **Do not commit** regenerated gen from feature branches; the snapshot on
+`main` is kept in sync by the follow-up CI bot (see #319). `task build:cli` may
+re-embed for a production binary, then restores the tracked gen so the working
+tree stays clean.
 
 ## Architecture
 
