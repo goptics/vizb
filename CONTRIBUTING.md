@@ -30,9 +30,9 @@ are forwarded.
 ## Setup and commands
 
 ```bash
-task init            # install dependencies and generate the UI embed
+task init            # install dependencies
 task build           # build UI, CLI, and docs
-task build:ui        # build UI; writes pkg/template/vizb-ui.gen.go
+task build:ui        # build UI; regenerates pkg/template/vizb-ui.gen.go
 task build:cli       # build ./bin/vizb
 task dev:ui          # run the UI dev server
 task dev:docs        # run the docs dev server
@@ -43,7 +43,7 @@ task test:cover      # run Go coverage
 task lint            # run CLI and UI linters
 task lint:cli        # run golangci-lint
 task lint:ui         # run Vue/TypeScript checks
-task format          # format Go and UI files
+task format          # format Go and UI files (gofmt skips the gen file)
 task format:check    # check formatting without writing
 ```
 
@@ -53,8 +53,22 @@ Run one Go test:
 go test -run 'TestSubjectSuite/TestCase' -v ./path/to/package
 ```
 
-`pkg/template/vizb-ui.gen.go` is generated and gitignored. Never edit or commit
-it. Run `task build:ui` after changing `ui/` and before Go builds or tests.
+### Embedded UI (`pkg/template/vizb-ui.gen.go`)
+
+The chart UI is a Vue app. Maintainers build it with Node; the result is
+**embedded into a generated Go file** that is **tracked in git**. That way
+`go install` and `go build` need only the Go toolchain — contributors and
+users do not install Node just to compile Vizb.
+
+- **Do not hand-edit** the gen file (`// Code generated ... DO NOT EDIT.`).
+- **Go-only work:** use the committed file as-is; no `task build:ui` required.
+- **UI work:** after changing `ui/`, run `task build:ui` before local Go builds
+  or tests so the embed matches your UI changes.
+- Prefer **not** to include gen-file churn in unrelated or Go-only PRs. Keeping
+  the snapshot on `main` in sync when UI changes land is handled by CI (see
+  tracking issues under #316).
+- `gofmt` (Task + CI format job) **skips** the gen file; `golangci-lint` still
+  analyzes it.
 
 Run deploy-example workflows locally with `task act:install` and Docker:
 

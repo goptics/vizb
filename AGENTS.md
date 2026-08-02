@@ -11,9 +11,9 @@ JSON datasets. It embeds a Vue 3 UI and also ships as a GitHub composite action.
 Use [Task](https://taskfile.dev/) from the repository root.
 
 ```bash
-task init        # install Go, UI, and docs dependencies; generate UI embed
+task init        # install Go, UI, and docs dependencies
 task build       # build docs, embedded UI, and CLI
-task build:ui    # build UI and write pkg/template/vizb-ui.gen.go
+task build:ui    # build UI and regenerate pkg/template/vizb-ui.gen.go
 task build:cli   # build ./bin/vizb
 task dev:ui      # run Vue dev server
 task dev:docs    # run docs dev server
@@ -25,16 +25,32 @@ task lint        # run CLI and UI linters
 task lint:cli    # run Go linter
 task lint:ui     # run Vue/TypeScript type checking
 task format      # format CLI and UI files
-task format:cli  # format Go files
+task format:cli  # format Go files (skips vizb-ui.gen.go)
 task format:ui   # format UI files
 task format:check     # check all formatting without writing
-task format:check:cli # check Go formatting
+task format:check:cli # check Go formatting (skips vizb-ui.gen.go)
 task format:check:ui  # check UI formatting
 ```
 
-After a fresh clone or any `ui/` change, run `task build:ui` before Go tests or
-CLI builds. Generated `pkg/template/vizb-ui.gen.go` is gitignored: never edit or
-commit it.
+### Embedded UI gen file
+
+`pkg/template/vizb-ui.gen.go` is the Vue chart UI embedded as Go source so
+`go install` / `go build` work with **only the Go toolchain**. End users and
+Go-only contributors do **not** need Node.
+
+| Rule | Detail |
+|------|--------|
+| Tracked on main | Committed so pure-Go install works |
+| Never hand-edit | Header is `// Code generated ... DO NOT EDIT.` |
+| Regenerated with Node | `task build:ui` (Vue/Vite + embed plugin) — maintainer/UI work only |
+| gofmt | Skipped for this file in Taskfile and CI format jobs |
+| golangci-lint | Still runs on it (no special exclude) |
+
+After a fresh clone, the tracked gen file is enough for CLI builds and tests.
+After changing `ui/`, run `task build:ui` locally to regenerate before Go
+builds. Prefer not to land gen churn on feature PRs that only touch Go or docs;
+ongoing sync of the committed snapshot when `ui/` lands on main is owned by the
+follow-up CI bot work (see #319).
 
 ## Architecture
 
