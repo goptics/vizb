@@ -1,6 +1,9 @@
 # Sole routine writer of pkg/template/vizb-ui.gen.go on main.
 # Humans must not commit this file on feature branches (lefthook + CLI PR guard).
 #
+# Privilege split: generate runs with contents:read and no push credentials;
+# only the commit job gets contents:write and only touches the regular gen file.
+#
 # No infinite loop: this workflow only watches ui/** and the embed action; the
 # bot commits only the gen file. Additionally, commits made with GITHUB_TOKEN
 # do not re-trigger workflows (GitHub platform rule).
@@ -20,13 +23,17 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  sync:
+  generate:
     runs-on: ubuntu-slim
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Setup embed UI
         uses: ./.github/actions/setup-embed-ui
@@ -38,6 +45,27 @@ jobs:
 
       - name: Verify pure-Go build with regenerated embed
         run: go build -o /tmp/vizb-sync-check .
+
+      - name: Upload generated embed
+        uses: actions/upload-artifact@v7
+        with:
+          name: sync-embed-ui-gen
+          path: pkg/template/vizb-ui.gen.go
+          if-no-files-found: error
+
+  commit:
+    needs: generate
+    runs-on: ubuntu-slim
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Download generated embed
+        uses: actions/download-artifact@v8
+        with:
+          name: sync-embed-ui-gen
+          path: pkg/template
 
       - name: Commit gen if changed
         uses: stefanzweifel/git-auto-commit-action@v7
