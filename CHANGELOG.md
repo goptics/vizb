@@ -4,6 +4,17 @@ Notable changes to Vizb documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [v0.17.1] - 2026-08-02
+
+### Fixed
+
+- **install** — Track `pkg/template/vizb-ui.gen.go` again so pure Go `go install` / `go build` work with only the Go toolchain (no Node). Restores install after #197 stopped shipping the embed ([#320](https://github.com/goptics/vizb/pull/320), [#317](https://github.com/goptics/vizb/issues/317)).
+
+### Changed
+
+- **dx** — Split UI build from embed: `build:ui` is Vue-only; `build:cli` re-embeds when needed then restores the tracked gen so feature branches stay clean ([#321](https://github.com/goptics/vizb/pull/321)).
+- **ci** — Sync the embedded UI gen on `main` after `ui/` changes via bot workflow ([#322](https://github.com/goptics/vizb/pull/322), [#323](https://github.com/goptics/vizb/pull/323)).
+
 # [v0.17.0] - 2026-07-26
 
 ### Added
