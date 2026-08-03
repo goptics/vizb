@@ -230,7 +230,7 @@ func parseStructured(name, props string) (Theme, error) {
 	}
 
 	if !hasColors {
-		return Theme{}, fmt.Errorf("structured theme requires colors=#hex,...")
+		return Theme{}, fmt.Errorf("structured theme requires colors with at least two hex values")
 	}
 	if !hasVisualMap {
 		visualMap = visualMapFromColors(colors)
