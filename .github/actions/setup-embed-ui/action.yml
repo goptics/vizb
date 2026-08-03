@@ -22,4 +22,4 @@ runs:
     - name: Build embed UI
       shell: bash
       working-directory: ui
-      run: EMBED_UI=True pnpm build
+      run: pnpm build:embed

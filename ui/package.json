@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
+    "build:embed": "vue-tsc -b && vite build --mode embed",
     "preview": "vite preview",
     "test": "vitest run",
     "test:unit": "vitest run --project unit",
