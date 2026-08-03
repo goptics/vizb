@@ -60,7 +60,7 @@
         "golang.go",
         "Vue.volar",
         "bradlc.vscode-tailwindcss",
-        "esbenp.prettier-vscode",
+        "biomejs.biome",
         "task.vscode-task"
       ],
       "settings": {

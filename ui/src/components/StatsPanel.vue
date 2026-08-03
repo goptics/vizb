@@ -484,7 +484,8 @@ function downloadCsv() {
             class="max-w-xs rounded-md border border-border bg-background px-3 py-1.5 text-xs text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
           />
           <span v-if="debouncedQuery" class="text-xs text-muted-foreground">
-            {{ filteredProfiles.length }} / {{ profiles.length }}
+            {{ filteredProfiles.length }}
+            / {{ profiles.length }}
           </span>
         </div>
         <p v-else class="text-xs text-muted-foreground">

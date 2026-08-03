@@ -10,8 +10,9 @@ import type {
 // Side-effect: top-level vi.mock for every settings control SFC fieldRegistry imports.
 import '@/test-utils/mockSettingsControls'
 
-const { fieldRegistry, getControl, getRenderableFields, partitionRenderableFields } =
-  await import('./fieldRegistry')
+const { fieldRegistry, getControl, getRenderableFields, partitionRenderableFields } = await import(
+  './fieldRegistry'
+)
 
 describe('fieldRegistry', () => {
   it('exposes the eleven known field controls', () => {
