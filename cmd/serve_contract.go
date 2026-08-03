@@ -58,10 +58,14 @@ func (o *statisticsOptions) UnmarshalJSON(data []byte) error {
 }
 
 type convertRequest struct {
-	Input       json.RawMessage  `json:"input"`
-	ID          *string          `json:"id"`
-	Name        *string          `json:"name"`
-	Title       *string          `json:"title"`
+	Input json.RawMessage `json:"input"`
+	ID    *string         `json:"id"`
+	Name  *string         `json:"name"`
+	Title *string         `json:"title"`
+	// Themes is the preferred data-owned theme catalog (Themes[0] active).
+	Themes []shared.Theme `json:"themes"`
+	// Theme is the legacy single theme name/spec; expanded into Themes when
+	// Themes is empty. Prefer Themes for new clients.
 	Theme       *string          `json:"theme"`
 	Description *string          `json:"description"`
 	Tag         *string          `json:"tag"`
@@ -80,9 +84,10 @@ type convertOutput struct {
 
 func (r *convertRequest) UnmarshalJSON(data []byte) error {
 	if err := rejectNullFields(data, "/", map[string]string{
-		"id": "/id", "name": "/name", "title": "/title", "theme": "/theme", "description": "/description",
-		"tag": "/tag", "parser": "/parser", "grouping": "/grouping", "units": "/units",
-		"select": "/select", "jsonPath": "/jsonPath", "charts": "/charts", "output": "/output",
+		"id": "/id", "name": "/name", "title": "/title", "themes": "/themes", "theme": "/theme",
+		"description": "/description", "tag": "/tag", "parser": "/parser", "grouping": "/grouping",
+		"units": "/units", "select": "/select", "jsonPath": "/jsonPath", "charts": "/charts",
+		"output": "/output",
 	}); err != nil {
 		return err
 	}
@@ -384,6 +389,20 @@ func buildConvertMetadata(request convertRequest) (core.Metadata, *apiValidation
 	if request.Tag != nil {
 		metadata.Tag = *request.Tag
 	}
+
+	// Prefer non-empty themes[] (data-owned catalog). Themes[0] is active.
+	// Built-in "default" is omitted (UI owns the default palette).
+	// Empty or omitted themes falls through to the legacy theme string.
+	if len(request.Themes) > 0 {
+		themes, validationErr := validateRequestThemes(request.Themes, "/themes")
+		if validationErr != nil {
+			return core.Metadata{}, validationErr
+		}
+		metadata.Themes = themes
+		return metadata, nil
+	}
+
+	// Legacy theme string → expand into Themes via ResolveThemes / ParseThemeSpec.
 	if request.Theme == nil {
 		return metadata, nil
 	}
@@ -392,24 +411,71 @@ func buildConvertMetadata(request convertRequest) (core.Metadata, *apiValidation
 		validationErr := bodyValidationError("/theme", "invalid_value", err.Error())
 		return core.Metadata{}, &validationErr
 	}
-	// API still accepts a single theme string; expand into data-owned Themes.
-	// Built-in "default" is omitted (UI owns default).
 	resolved, err := style.ResolveThemes([]string{normalized}, "")
 	if err != nil {
 		validationErr := bodyValidationError("/theme", "invalid_value", err.Error())
 		return core.Metadata{}, &validationErr
 	}
 	if len(resolved) > 0 {
-		metadata.Themes = make([]shared.Theme, len(resolved))
-		for i, t := range resolved {
-			metadata.Themes[i] = shared.Theme{
-				Name:            t.Name,
-				Colors:          t.Colors,
-				VisualMapColors: t.VisualMapColors,
-			}
-		}
+		metadata.Themes = styleThemesToShared(resolved)
 	}
 	return metadata, nil
+}
+
+// validateRequestThemes checks data-owned theme objects and returns a clone for
+// Metadata.Themes. Paths use prefix (e.g. "/themes") for validation errors.
+// Entries named "default" are skipped (UI owns default), matching ResolveThemes.
+func validateRequestThemes(themes []shared.Theme, prefix string) ([]shared.Theme, *apiValidationError) {
+	out := make([]shared.Theme, 0, len(themes))
+	for i, theme := range themes {
+		path := fmt.Sprintf("%s/%d", prefix, i)
+		name := strings.TrimSpace(theme.Name)
+		if name == "" {
+			err := bodyValidationError(path+"/name", "required", "theme name is required")
+			return nil, &err
+		}
+		if len(theme.Colors) == 0 {
+			err := bodyValidationError(path+"/colors", "min_items", "theme colors must contain at least one color")
+			return nil, &err
+		}
+		for j, color := range theme.Colors {
+			if strings.TrimSpace(color) == "" {
+				err := bodyValidationError(fmt.Sprintf("%s/colors/%d", path, j), "min_length", "theme color must not be empty")
+				return nil, &err
+			}
+		}
+		if len(theme.VisualMapColors) != 2 {
+			err := bodyValidationError(path+"/visualMapColors", "invalid_value", "visualMapColors must contain exactly two colors")
+			return nil, &err
+		}
+		for j, color := range theme.VisualMapColors {
+			if strings.TrimSpace(color) == "" {
+				err := bodyValidationError(fmt.Sprintf("%s/visualMapColors/%d", path, j), "min_length", "visualMap color must not be empty")
+				return nil, &err
+			}
+		}
+		if strings.EqualFold(name, "default") {
+			continue
+		}
+		out = append(out, shared.Theme{
+			Name:            name,
+			Colors:          slices.Clone(theme.Colors),
+			VisualMapColors: slices.Clone(theme.VisualMapColors),
+		})
+	}
+	return out, nil
+}
+
+func styleThemesToShared(themes []style.Theme) []shared.Theme {
+	out := make([]shared.Theme, len(themes))
+	for i, t := range themes {
+		out[i] = shared.Theme{
+			Name:            t.Name,
+			Colors:          slices.Clone(t.Colors),
+			VisualMapColors: slices.Clone(t.VisualMapColors),
+		}
+	}
+	return out
 }
 
 func buildParserConfig(request convertRequest, key string) (parser.Config, *apiValidationError) {
@@ -826,7 +892,8 @@ type datasetWire struct {
 	Tag          string              `json:"tag"`
 	Timestamp    string              `json:"timestamp"`
 	Name         *string             `json:"name"`
-	Theme        string              `json:"theme"`
+	Themes       []shared.Theme      `json:"themes"`
+	Theme        string              `json:"theme"` // legacy; expanded when Themes empty
 	History      []historyWire       `json:"history"`
 	Description  string              `json:"description"`
 	Meta         *shared.Meta        `json:"meta"`
@@ -917,12 +984,17 @@ func decodeStrictDataset(raw json.RawMessage, path string) (shared.Dataset, *api
 		history = append(history, shared.HistoryEntry{Tag: *entry.Tag, Timestamp: *entry.Timestamp, Meta: entry.Meta})
 	}
 
+	themes, validationErr := resolveDatasetWireThemes(wire.Themes, wire.Theme, path)
+	if validationErr != nil {
+		return shared.Dataset{}, validationErr
+	}
+
 	return shared.Dataset{
 		ID:           wire.ID,
 		Tag:          wire.Tag,
 		Timestamp:    wire.Timestamp,
 		Name:         *wire.Name,
-		Theme:        wire.Theme,
+		Themes:       themes,
 		History:      history,
 		Description:  wire.Description,
 		Meta:         wire.Meta,
@@ -931,6 +1003,30 @@ func decodeStrictDataset(raw json.RawMessage, path string) (shared.Dataset, *api
 		Data:         slices.Clone(*wire.Data),
 		PreserveRows: wire.PreserveRows,
 	}, nil
+}
+
+// resolveDatasetWireThemes validates themes[] when non-empty, otherwise expands a
+// legacy theme string. Themes[0] is active; the legacy Theme string is not retained
+// on the returned catalog (new output uses Themes only).
+func resolveDatasetWireThemes(themes []shared.Theme, legacy string, datasetPath string) ([]shared.Theme, *apiValidationError) {
+	if len(themes) > 0 {
+		return validateRequestThemes(themes, datasetPath+"/themes")
+	}
+	legacy = strings.TrimSpace(legacy)
+	if legacy == "" || strings.EqualFold(legacy, "default") {
+		return nil, nil
+	}
+	normalized := style.NormalizeTheme(legacy)
+	if err := style.ValidateTheme(normalized); err != nil {
+		// Match shared migrate: invalid legacy specs leave Themes empty rather
+		// than failing the whole dataset decode (soft for merge/UI inputs).
+		return nil, nil
+	}
+	resolved, err := style.ResolveThemes([]string{normalized}, "")
+	if err != nil || len(resolved) == 0 {
+		return nil, nil
+	}
+	return styleThemesToShared(resolved), nil
 }
 
 func decodeDatasetArray(rawDatasets []json.RawMessage, path string) ([]shared.Dataset, *apiValidationError) {

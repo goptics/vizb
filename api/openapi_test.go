@@ -77,6 +77,7 @@ func (s *OpenAPISuite) TestReusableSchemasMatchGoWireTypes() {
 
 	for schemaName, value := range map[string]any{
 		"Dataset":            shared.Dataset{},
+		"Theme":              shared.Theme{},
 		"HistoryEntry":       shared.HistoryEntry{},
 		"Meta":               shared.Meta{},
 		"CPUInfo":            shared.CPUInfo{},
@@ -220,9 +221,18 @@ func (s *OpenAPISuite) TestRootConversionContract() {
 	schemas := mustMap(t, components["schemas"], "components.schemas")
 	request := mustMap(t, schemas["ConvertRequest"], "components.schemas.ConvertRequest")
 	s.Equal(
-		[]string{"charts", "description", "grouping", "id", "input", "jsonPath", "name", "output", "parser", "select", "tag", "theme", "title", "units"},
+		[]string{"charts", "description", "grouping", "id", "input", "jsonPath", "name", "output", "parser", "select", "tag", "theme", "themes", "title", "units"},
 		propertyNames(t, request, "ConvertRequest"),
 	)
+	// themes is the data-owned catalog; theme remains as legacy convert input.
+	props := mustMap(t, request["properties"], "ConvertRequest.properties")
+	themes := mustMap(t, props["themes"], "ConvertRequest.properties.themes")
+	s.Equal("array", themes["type"])
+	themeItems := mustMap(t, themes["items"], "ConvertRequest.properties.themes.items")
+	s.Equal("#/components/schemas/Theme", themeItems["$ref"])
+	legacyTheme := mustMap(t, props["theme"], "ConvertRequest.properties.theme")
+	s.Equal("string", legacyTheme["type"])
+	s.Contains(fmt.Sprint(legacyTheme["description"]), "Legacy")
 	s.Equal([]string{"input"}, stringSliceValue(request["required"]))
 	s.NotContains(propertyNames(t, request, "ConvertRequest"), "metadata")
 

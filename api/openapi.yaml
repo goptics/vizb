@@ -246,7 +246,20 @@ components:
                 name: API latency
                 description: Latency by region
                 tag: v2
-                theme: westeros
+                themes:
+                  - name: westeros
+                    colors:
+                      - "#516b91"
+                      - "#59c4e6"
+                      - "#edafda"
+                      - "#93b7e3"
+                      - "#a5e7f0"
+                      - "#cbb0e3"
+                      - "#3f5575"
+                      - "#41a7cb"
+                      - "#d58fc4"
+                      - "#789bc7"
+                    visualMapColors: ["#59c4e6", "#d58fc4"]
                 axes: [{ key: name }, { key: y, type: value }]
                 settings: [{ type: bar, showLabels: true }, { type: line }]
                 data: [{ name: west, yAxis: "12" }, { name: east, yAxis: "18" }]
@@ -362,11 +375,21 @@ components:
         tag:
           type: string
           description: Dataset tag or run identifier.
+        themes:
+          type: array
+          description: >
+            Data-owned theme catalog embedded on the converted Dataset.
+            When non-empty, themes[0] is the active theme. Prefer this over the
+            legacy theme string. Built-in "default" is not embedded (UI owns it).
+          items:
+            $ref: '#/components/schemas/Theme'
         theme:
           type: string
           minLength: 1
-          default: default
-          description: Built-in theme name or a comma-separated palette of at least two hex colors.
+          description: >
+            Legacy single theme name, structured theme, or comma-separated hex
+            palette. Expanded into themes when themes is omitted or empty.
+            Prefer themes for new clients.
           examples: [westeros, "#5470C6,#3BA272"]
         parser:
           type: string
@@ -483,16 +506,25 @@ components:
       type: object
       additionalProperties: false
       required: [name, colors, visualMapColors]
+      description: >
+        Fully expanded color theme. On Dataset and convert responses, themes[0]
+        is the active theme when the catalog is non-empty.
       properties:
-        name: { type: string }
+        name:
+          type: string
+          minLength: 1
+          description: Theme identifier used by the UI selector.
         colors:
           type: array
-          items: { type: string }
+          minItems: 1
+          description: Categorical series palette.
+          items: { type: string, minLength: 1 }
         visualMapColors:
           type: array
           minItems: 2
           maxItems: 2
-          items: { type: string }
+          description: Continuous gradient pair (exactly two colors).
+          items: { type: string, minLength: 1 }
     Dataset:
       type: object
       additionalProperties: false
