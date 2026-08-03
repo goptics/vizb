@@ -67,7 +67,7 @@ func (s *ThemeSuite) TestParseThemeSpecBuiltIn() {
 	s.Len(theme.VisualMapColors, 2)
 
 	// All built-ins expand with curated colors.
-	for name := range builtInThemes {
+	for name := range themeCatalog {
 		t, err := ParseThemeSpec(name)
 		s.Require().NoError(err, name)
 		s.Equal(name, t.Name)
@@ -152,6 +152,21 @@ func (s *ThemeSuite) TestResolveThemesAnonymousAvoidsNamedCustom() {
 	s.Require().Len(themes, 2)
 	s.Equal("custom", themes[0].Name)
 	s.Equal("custom-2", themes[1].Name)
+}
+
+func (s *ThemeSuite) TestResolveThemesStructuredNameStartingWithHash() {
+	// Structured specs must not be treated as anonymous bare-hex, even when
+	// the theme name begins with '#'.
+	themes, err := ResolveThemes([]string{
+		"#brand:colors=#aaa,#bbb",
+		"#f00,#0f0",
+	}, "")
+	s.Require().NoError(err)
+	s.Require().Len(themes, 2)
+	s.Equal("#brand", themes[0].Name)
+	s.Equal([]string{"#aaa", "#bbb"}, themes[0].Colors)
+	s.Equal("custom", themes[1].Name)
+	s.Equal([]string{"#f00", "#0f0"}, themes[1].Colors)
 }
 
 func (s *ThemeSuite) TestResolveThemesDedupeLastWins() {

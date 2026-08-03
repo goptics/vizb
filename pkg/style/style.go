@@ -28,13 +28,6 @@ var (
 )
 
 var (
-	// builtInThemes is the set of known built-in theme names (for NormalizeTheme).
-	// Full color catalogs live in themeCatalog (themes.go).
-	builtInThemes = map[string]struct{}{
-		"default": {}, "vintage": {}, "meadow": {}, "westeros": {}, "essos": {},
-		"wonderland": {}, "walden": {}, "chalk": {}, "infographic": {},
-		"macarons": {}, "roma": {}, "shine": {}, "purple-passion": {},
-	}
 	hexColorPattern = regexp.MustCompile(`^#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?$`)
 )
 
@@ -52,7 +45,7 @@ func NormalizeTheme(value string) string {
 	if trimmed == "" {
 		return trimmed
 	}
-	if _, ok := builtInThemes[strings.ToLower(trimmed)]; ok {
+	if _, ok := themeCatalog[strings.ToLower(trimmed)]; ok {
 		return strings.ToLower(trimmed)
 	}
 	if name, props, ok := splitStructured(trimmed); ok {

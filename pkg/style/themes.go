@@ -268,10 +268,20 @@ func visualMapFromColors(colors []string) []string {
 }
 
 // isAnonymousCustom reports whether the original spec was a bare hex palette
-// (ParseThemeSpec names these "custom").
+// (ParseThemeSpec names these "custom"). Structured specs are never anonymous,
+// even if the name happens to start with '#'.
 func isAnonymousCustom(spec string) bool {
 	trimmed := strings.TrimSpace(spec)
-	return strings.HasPrefix(trimmed, "#")
+	if trimmed == "" {
+		return false
+	}
+	// Structured name:colors=... path — named, not anonymous.
+	if _, _, ok := splitStructured(trimmed); ok {
+		return false
+	}
+	// Bare hex list path only.
+	_, err := parseHexList(trimmed)
+	return err == nil
 }
 
 // ResolveThemes parses theme specs into an ordered catalog for dataset.Themes.
