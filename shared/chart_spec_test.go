@@ -239,6 +239,61 @@ func (s *ChartSpecSuite) TestParseOverridesBarStatValue() {
 	s.Equal("center", math[0])
 }
 
+// TestParseOverrides_BarStatMultiValue confirms comma-separated stat categories
+// stay on the stat key (legacy multi-value) instead of becoming extra tokens.
+func (s *ChartSpecSuite) TestParseOverridesBarStatMultiValue() {
+	got, warnings, err := ParseOverrides([]string{"bar:stat=center,spread"}, []string{"bar"}, s.xynAxes)
+	s.Require().NoError(err)
+	s.Empty(warnings)
+	m := s.payload(got["bar"])
+	stat, ok := m["stat"].(map[string]any)
+	s.Require().True(ok, "expected stat to be a map")
+	s.Equal(true, stat["enabled"])
+	math, _ := stat["math"].([]any)
+	s.Require().Len(math, 2)
+	s.Equal("center", math[0])
+	s.Equal("spread", math[1])
+}
+
+// TestParseOverrides_BarStatMultiValueWithBareLabels confirms multi-value stat
+// followed by a bare known key works in both legacy-comma and semicolon forms.
+func (s *ChartSpecSuite) TestParseOverridesBarStatMultiValueWithBareLabels() {
+	// Semicolon form: unambiguous prop boundary after multi-value stat.
+	got, warnings, err := ParseOverrides(
+		[]string{"bar:stat=center,spread;labels"},
+		[]string{"bar"},
+		s.xynAxes,
+	)
+	s.Require().NoError(err)
+	s.Empty(warnings)
+	m := s.payload(got["bar"])
+	stat, ok := m["stat"].(map[string]any)
+	s.Require().True(ok, "expected stat to be a map")
+	s.Equal(true, stat["enabled"])
+	math, _ := stat["math"].([]any)
+	s.Require().Len(math, 2)
+	s.Equal("center", math[0])
+	s.Equal("spread", math[1])
+	s.Equal(true, m["showLabels"])
+
+	// Legacy comma form: KnownKeys lets "labels" start a new prop after multi-value.
+	got, warnings, err = ParseOverrides(
+		[]string{"bar:stat=center,spread,labels"},
+		[]string{"bar"},
+		s.xynAxes,
+	)
+	s.Require().NoError(err)
+	s.Empty(warnings)
+	m = s.payload(got["bar"])
+	stat, ok = m["stat"].(map[string]any)
+	s.Require().True(ok, "expected stat to be a map")
+	math, _ = stat["math"].([]any)
+	s.Require().Len(math, 2)
+	s.Equal("center", math[0])
+	s.Equal("spread", math[1])
+	s.Equal(true, m["showLabels"])
+}
+
 // TestParseOverrides_BarStatInvalid confirms `stat=<invalid>` is a hard error.
 func (s *ChartSpecSuite) TestParseOverridesBarStatInvalid() {
 	_, _, err := ParseOverrides([]string{"bar:stat=bogus"}, []string{"bar"}, s.xynAxes)
