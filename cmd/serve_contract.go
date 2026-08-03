@@ -407,10 +407,6 @@ func buildConvertMetadata(request convertRequest) (core.Metadata, *apiValidation
 		return metadata, nil
 	}
 	normalized := style.NormalizeTheme(*request.Theme)
-	if err := style.ValidateTheme(normalized); err != nil {
-		validationErr := bodyValidationError("/theme", "invalid_value", err.Error())
-		return core.Metadata{}, &validationErr
-	}
 	resolved, err := style.ResolveThemes([]string{normalized}, "")
 	if err != nil {
 		validationErr := bodyValidationError("/theme", "invalid_value", err.Error())
@@ -1016,12 +1012,10 @@ func resolveDatasetWireThemes(themes []shared.Theme, legacy string, datasetPath 
 	if legacy == "" || strings.EqualFold(legacy, "default") {
 		return nil, nil
 	}
+	// Match shared migrate: invalid legacy specs leave Themes empty rather
+	// than failing the whole dataset decode (soft for merge/UI inputs).
+	// Structured names equal to "default" also yield an empty catalog.
 	normalized := style.NormalizeTheme(legacy)
-	if err := style.ValidateTheme(normalized); err != nil {
-		// Match shared migrate: invalid legacy specs leave Themes empty rather
-		// than failing the whole dataset decode (soft for merge/UI inputs).
-		return nil, nil
-	}
 	resolved, err := style.ResolveThemes([]string{normalized}, "")
 	if err != nil || len(resolved) == 0 {
 		return nil, nil

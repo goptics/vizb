@@ -255,6 +255,28 @@ func (s *DatasetSuite) TestUnmarshalInvalidLegacyThemeKeepsString() {
 	s.Equal("not-a-theme", ds.Theme)
 }
 
+func (s *DatasetSuite) TestUnmarshalLegacyStructuredDefaultNameClearsTheme() {
+	// Structured name "default" is not the bare "default" short-circuit; ParseThemeSpec
+	// succeeds with Name "default", then migrate clears Theme without embedding.
+	raw := []byte(`{"name":"bench","theme":"default:colors=#f00,#0f0","data":[]}`)
+
+	var ds shared.Dataset
+	s.Require().NoError(json.Unmarshal(raw, &ds))
+	s.Empty(ds.Themes)
+	s.Empty(ds.Theme)
+}
+
+func (s *DatasetSuite) TestUnmarshalEmptySettingsArrayStillMigratesTheme() {
+	raw := []byte(`{"name":"bench","theme":"roma","settings":[],"data":[]}`)
+
+	var ds shared.Dataset
+	s.Require().NoError(json.Unmarshal(raw, &ds))
+	s.Nil(ds.Settings)
+	s.Empty(ds.Theme)
+	s.Require().Len(ds.Themes, 1)
+	s.Equal("roma", ds.Themes[0].Name)
+}
+
 func (s *DatasetSuite) TestDatasetUnmarshalJSONLegacySingleObject() {
 	raw := []byte(`{
 		"name":"bench",

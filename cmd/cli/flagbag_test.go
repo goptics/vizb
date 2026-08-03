@@ -218,6 +218,33 @@ func (s *FlagBagSuite) TestValidateThemeSkipsInvalidEntries() {
 	s.Contains(out, "Skipping")
 }
 
+func (s *FlagBagSuite) TestApplySoftRuleValidSetOnlySlice() {
+	// Soft slice/array without SoftValidate uses ApplyValidationRules (warn-and-default).
+	fl := []flags.Flag{{
+		Name:     "tags",
+		Kind:     flags.KindStringSlice,
+		Label:    "tags",
+		ValidSet: []string{"a", "b"},
+		Default:  []string{"a"},
+	}}
+	cmd, bag := s.newCmdBag(fl)
+	s.Require().NoError(cmd.Flags().Set("tags", "a,z"))
+	out := testutil.CaptureStderr(func() { bag.Validate(cmd) })
+	s.Equal([]string{"a"}, bag.StringSlice("tags"))
+	s.Contains(out, "Invalid tags")
+}
+
+func (s *FlagBagSuite) TestApplySoftSkipEntriesNilSlice() {
+	bag := &FlagBag{stringSlices: map[string]*[]string{}}
+	// SoftValidate flag with no bound slice pointer is a no-op.
+	bag.applySoftSkipEntries(flags.Flag{
+		Name:         "theme",
+		Label:        "theme",
+		SoftValidate: style.ValidateTheme,
+	})
+	s.Nil(bag.stringSlices["theme"])
+}
+
 func (s *FlagBagSuite) TestValidateThemeCatalogAndCustomPalettes() {
 	valid := []string{
 		"default", "vintage", "meadow", "westeros", "essos", "wonderland", "walden",

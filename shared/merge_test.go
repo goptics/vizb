@@ -523,6 +523,9 @@ func (s *MergeSuite) TestMergeThemesPure() {
 	s.Nil(mergeThemes(nil, nil))
 	s.Equal(cloneThemes(older), mergeThemes(nil, older))
 	s.Equal(cloneThemes(newer), mergeThemes(newer, nil))
+	s.Nil(cloneThemes(nil))
+	s.Nil(foldThemes(nil))
+	s.Nil(foldThemes([]Dataset{}))
 }
 
 func themeNamesContain(themes []Theme, name string) bool {

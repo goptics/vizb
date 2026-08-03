@@ -1194,6 +1194,26 @@ func (s *ServeSuite) TestRequestContractHelpers() {
 		}, []byte("x,y\\na,1\\n"))
 		s.Require().NotNil(validationErr)
 		s.Equal("/themes/0/visualMapColors", validationErr.Path)
+
+		_, _, validationErr = buildConvertInput(convertRequest{
+			Themes: []shared.Theme{{
+				Name:            "brand",
+				Colors:          []string{"  ", "#0f0"},
+				VisualMapColors: []string{"#f00", "#0f0"},
+			}},
+		}, []byte("x,y\\na,1\\n"))
+		s.Require().NotNil(validationErr)
+		s.Equal("/themes/0/colors/0", validationErr.Path)
+
+		_, _, validationErr = buildConvertInput(convertRequest{
+			Themes: []shared.Theme{{
+				Name:            "brand",
+				Colors:          []string{"#f00", "#0f0"},
+				VisualMapColors: []string{"#f00", "  "},
+			}},
+		}, []byte("x,y\\na,1\\n"))
+		s.Require().NotNil(validationErr)
+		s.Equal("/themes/0/visualMapColors/1", validationErr.Path)
 	})
 
 	s.Run("dataset wire themes", func() {
@@ -1247,6 +1267,32 @@ func (s *ServeSuite) TestRequestContractHelpers() {
 		_, validationErr = decodeStrictDataset(raw, "/datasets/0")
 		s.Require().NotNil(validationErr)
 		s.Equal("/datasets/0/themes/0/visualMapColors", validationErr.Path)
+
+		// Invalid legacy theme is soft: empty Themes, no validation error.
+		raw, err = json.Marshal(map[string]any{
+			"name":     name,
+			"theme":    "not-a-theme",
+			"axes":     []map[string]any{{"key": "name"}, {"key": "y"}},
+			"settings": []map[string]any{{"type": "bar"}},
+			"data":     []map[string]any{{"name": "case", "yAxis": "1"}},
+		})
+		s.Require().NoError(err)
+		ds, validationErr = decodeStrictDataset(raw, "/datasets/0")
+		s.Require().Nil(validationErr)
+		s.Empty(ds.Themes)
+
+		// Structured default name expands to an empty catalog (UI owns default).
+		raw, err = json.Marshal(map[string]any{
+			"name":     name,
+			"theme":    "default:colors=#f00,#0f0",
+			"axes":     []map[string]any{{"key": "name"}, {"key": "y"}},
+			"settings": []map[string]any{{"type": "bar"}},
+			"data":     []map[string]any{{"name": "case", "yAxis": "1"}},
+		})
+		s.Require().NoError(err)
+		ds, validationErr = decodeStrictDataset(raw, "/datasets/0")
+		s.Require().Nil(validationErr)
+		s.Empty(ds.Themes)
 	})
 
 	s.Run("chart config decoding", func() {

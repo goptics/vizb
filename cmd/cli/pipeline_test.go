@@ -828,6 +828,25 @@ func (s *PipelineSuite) TestAssembleDatasetEmptyThemesWhenUnset() {
 	s.Empty(ds.Themes)
 }
 
+func (s *PipelineSuite) TestAssembleDatasetThemeExpandFailureEmbedsNone() {
+	// Soft validation normally filters bad specs; resolveRunThemes still soft-fails
+	// if invalid specs reach assembleDataset.
+	results := []shared.DataPoint{{XAxis: "1", YAxis: "2", Stats: []shared.Stat{}}}
+	cfg := parser.Config{GroupPattern: "x"}
+	var ds *shared.Dataset
+	out := testutil.CaptureStderr(func() {
+		ds = assembleDataset(results, RunMeta{
+			Name:       "T",
+			Parser:     "csv",
+			ThemeSpecs: []string{"not-a-theme"},
+		}, nil, cfg, nil)
+	})
+	s.Require().NotNil(ds)
+	s.Empty(ds.Theme)
+	s.Empty(ds.Themes)
+	s.Contains(out, "theme expand failed")
+}
+
 func (s *PipelineSuite) TestAssembleDatasetInfersAxesWithoutAxisType() {
 	view := append([]parser.ColumnSpec(nil),
 		parser.ColumnSpec{Source: "region", AxisKey: "x"},
