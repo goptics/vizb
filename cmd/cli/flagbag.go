@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -137,21 +138,58 @@ func (b *FlagBag) Validate(cmd *cobra.Command) {
 }
 
 // applySoftRule runs the warn-and-default rule for a soft string/slice flag.
+// KindStringArray / KindStringSlice with SoftValidate: normalize each entry and
+// warn-and-skip invalid ones (keeps valid siblings). ValidSet-only slices and
+// soft string flags still use utils.ApplyValidationRules (warn-and-default).
 func (b *FlagBag) applySoftRule(f flags.Flag) {
+	if f.Kind == flags.KindStringSlice || f.Kind == flags.KindStringArray {
+		if f.SoftValidate != nil {
+			b.applySoftSkipEntries(f)
+			return
+		}
+		rule := utils.ValidationRule{
+			Label:      f.EffectiveLabel(),
+			ValidSet:   f.ValidSet,
+			Normalizer: f.Normalizer,
+			Validator:  f.SoftValidate,
+		}
+		rule.SliceValue = b.stringSlices[f.Name]
+		rule.SliceDefault, _ = f.Default.([]string)
+		utils.ApplyValidationRules([]utils.ValidationRule{rule})
+		return
+	}
 	rule := utils.ValidationRule{
 		Label:      f.EffectiveLabel(),
 		ValidSet:   f.ValidSet,
 		Normalizer: f.Normalizer,
 		Validator:  f.SoftValidate,
+		Value:      b.strs[f.Name],
 	}
-	if f.Kind == flags.KindStringSlice {
-		rule.SliceValue = b.stringSlices[f.Name]
-		rule.SliceDefault, _ = f.Default.([]string)
-	} else {
-		rule.Value = b.strs[f.Name]
-		rule.Default, _ = f.Default.(string)
-	}
+	rule.Default, _ = f.Default.(string)
 	utils.ApplyValidationRules([]utils.ValidationRule{rule})
+}
+
+// applySoftSkipEntries normalizes each string-array/slice entry and drops those
+// that fail SoftValidate, warning once per skipped value.
+func (b *FlagBag) applySoftSkipEntries(f flags.Flag) {
+	slice := b.stringSlices[f.Name]
+	if slice == nil {
+		return
+	}
+	kept := make([]string, 0, len(*slice))
+	for _, raw := range *slice {
+		v := raw
+		if f.Normalizer != nil {
+			v = f.Normalizer(v)
+		}
+		if err := f.SoftValidate(v); err != nil {
+			msg := fmt.Sprintf("Warning: Invalid %s '%v'. Reason: %s. Skipping", f.EffectiveLabel(), raw, err.Error())
+			shared.PrintWarning(msg)
+			continue
+		}
+		kept = append(kept, v)
+	}
+	*slice = kept
 }
 
 // fatalValue renders the current value of a fatal-validated flag as a string for
@@ -341,12 +379,14 @@ func (b *FlagBag) ParseConfig() parser.Config {
 }
 
 // Meta builds the pipeline RunMeta from the bag's metadata/parser data flags.
+// Theme specs stay as raw strings; the pipeline expands them via style.ResolveThemes.
 func (b *FlagBag) Meta() RunMeta {
 	return RunMeta{
 		ID:          b.String("id"),
 		Name:        b.String("name"),
 		Title:       b.String("title"),
-		Theme:       b.String("theme"),
+		ThemeSpecs:  b.StringArray("theme"),
+		ThemeActive: b.String("theme-active"),
 		Description: b.String("description"),
 		Tag:         b.String("tag"),
 		OutputFile:  b.String("output"),

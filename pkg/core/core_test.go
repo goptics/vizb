@@ -24,7 +24,7 @@ func (s *CoreSuite) TestConvertCSV() {
 		Input:    []byte("region,latency\nwest,12\neast,18\n"),
 		Parser:   "csv",
 		Config:   parser.Config{GroupPattern: "x", Group: []string{"region"}},
-		Metadata: Metadata{Name: "API latency", Theme: "default"},
+		Metadata: Metadata{Name: "API latency"},
 		Charts:   []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: "linear"}},
 	})
 	s.Require().NoError(err)
@@ -346,6 +346,33 @@ func (s *CoreSuite) TestMergeAndUIBranchErrors() {
 	html, err := GenerateUI([]shared.Dataset{{Name: "x", Settings: []internalcharts.ChartConfig{&barchart.Config{Type: "bar"}}}}, nil)
 	s.Require().NoError(err)
 	s.Contains(html, "VIZB_CHARTS")
+}
+
+func (s *CoreSuite) TestAssembleEmbedsThemesWithoutLegacyTheme() {
+	themes := []shared.Theme{{
+		Name:            "roma",
+		Colors:          []string{"#E01F54", "#001852"},
+		VisualMapColors: []string{"#a4d8c2", "#E01F54"},
+	}}
+	dataset := Assemble(AssembleInput{
+		Points:   []shared.DataPoint{{XAxis: "west", YAxis: "12"}},
+		Parser:   "csv",
+		Config:   parser.Config{GroupPattern: "x"},
+		Metadata: Metadata{Name: "T", Themes: themes},
+		Charts:   []internalcharts.ChartConfig{&barchart.Config{Type: "bar"}},
+	})
+	s.Empty(dataset.Theme)
+	s.Equal(themes, dataset.Themes)
+
+	empty := Assemble(AssembleInput{
+		Points:   []shared.DataPoint{{XAxis: "west", YAxis: "12"}},
+		Parser:   "csv",
+		Config:   parser.Config{GroupPattern: "x"},
+		Metadata: Metadata{Name: "T"},
+		Charts:   []internalcharts.ChartConfig{&barchart.Config{Type: "bar"}},
+	})
+	s.Empty(empty.Theme)
+	s.Empty(empty.Themes)
 }
 
 func (s *CoreSuite) TestAssembleModesAndThreeD() {

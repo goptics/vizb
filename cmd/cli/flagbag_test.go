@@ -188,7 +188,7 @@ func (s *FlagBagSuite) TestBindRegistersFlags() {
 	fl := append(slices.Clone(DataFlags), internal_charts.BaseChartFlags...)
 	fl = append(fl, internal_charts.ScaleFlag)
 	cmd, _ := s.newCmdBag(fl)
-	for _, name := range []string{"name", "theme", "parser", "group-pattern", "sort", "show-labels", "swap", "scale", "stat"} {
+	for _, name := range []string{"name", "theme", "theme-active", "parser", "group-pattern", "sort", "show-labels", "swap", "scale", "stat"} {
 		s.NotNil(cmd.Flags().Lookup(name), "missing --%s", name)
 	}
 	s.Nil(cmd.Flags().Lookup("axes"))
@@ -198,15 +198,24 @@ func (s *FlagBagSuite) TestValidateNormalisesTheme() {
 	cmd, bag := s.newCmdBag(slices.Clone(DataFlags))
 	s.Require().NoError(cmd.Flags().Set("theme", "Westeros"))
 	bag.Validate(cmd)
-	s.Equal("westeros", bag.String("theme"))
+	s.Equal([]string{"westeros"}, bag.StringArray("theme"))
 
+	// Reset and set a custom palette (StringArray appends; re-bind for a clean list).
+	cmd, bag = s.newCmdBag(slices.Clone(DataFlags))
 	s.Require().NoError(cmd.Flags().Set("theme", " #F00, #00ff00 "))
 	bag.Validate(cmd)
-	s.Equal("#F00,#00ff00", bag.String("theme"))
+	s.Equal([]string{"#F00,#00ff00"}, bag.StringArray("theme"))
+}
 
+func (s *FlagBagSuite) TestValidateThemeSkipsInvalidEntries() {
+	cmd, bag := s.newCmdBag(slices.Clone(DataFlags))
+	s.Require().NoError(cmd.Flags().Set("theme", "vintage"))
 	s.Require().NoError(cmd.Flags().Set("theme", "unknown"))
-	bag.Validate(cmd)
-	s.Equal("default", bag.String("theme"), "invalid theme should reset to default")
+	s.Require().NoError(cmd.Flags().Set("theme", "roma"))
+	out := testutil.CaptureStderr(func() { bag.Validate(cmd) })
+	s.Equal([]string{"vintage", "roma"}, bag.StringArray("theme"))
+	s.Contains(out, "Invalid theme")
+	s.Contains(out, "Skipping")
 }
 
 func (s *FlagBagSuite) TestValidateThemeCatalogAndCustomPalettes() {
@@ -223,13 +232,23 @@ func (s *FlagBagSuite) TestValidateThemeCatalogAndCustomPalettes() {
 	}
 }
 
-func (s *FlagBagSuite) TestMetaIncludesTheme() {
+func (s *FlagBagSuite) TestMetaIncludesThemeSpecs() {
 	cmd, bag := s.newCmdBag(slices.Clone(DataFlags))
 	s.Require().NoError(cmd.Flags().Set("name", "sample"))
 	s.Require().NoError(cmd.Flags().Set("theme", "roma"))
+	s.Require().NoError(cmd.Flags().Set("theme", "vintage"))
+	s.Require().NoError(cmd.Flags().Set("theme-active", "vintage"))
 	meta := bag.Meta()
 	s.Equal("sample", meta.Name)
-	s.Equal("roma", meta.Theme)
+	s.Equal([]string{"roma", "vintage"}, meta.ThemeSpecs)
+	s.Equal("vintage", meta.ThemeActive)
+}
+
+func (s *FlagBagSuite) TestMetaEmptyThemesWhenUnset() {
+	_, bag := s.newCmdBag(slices.Clone(DataFlags))
+	meta := bag.Meta()
+	s.Empty(meta.ThemeSpecs)
+	s.Empty(meta.ThemeActive)
 }
 
 func (s *FlagBagSuite) TestChartSeedTriStateStatAndScale() {
@@ -313,12 +332,14 @@ func (s *FlagBagSuite) TestResetRestoresDefaults() {
 	cmd, bag := s.newCmdBag(fl)
 	s.Require().NoError(cmd.Flags().Set("name", "Custom"))
 	s.Require().NoError(cmd.Flags().Set("theme", "vintage"))
+	s.Require().NoError(cmd.Flags().Set("theme-active", "vintage"))
 	s.Require().NoError(cmd.Flags().Set("symbol-size", "12"))
 	s.Require().NoError(cmd.Flags().Set("port", "9090"))
 	s.Equal(9090, bag.Int("port"))
 	bag.Reset()
 	s.Equal("Comparisons", bag.String("name"))
-	s.Equal("default", bag.String("theme"))
+	s.Empty(bag.StringArray("theme"))
+	s.Empty(bag.String("theme-active"))
 	s.Equal(0.0, bag.Float("symbol-size"))
 	s.Equal(8080, bag.Int("port"))
 }

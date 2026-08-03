@@ -1069,7 +1069,13 @@ func (s *ServeSuite) TestRequestContractHelpers() {
 			Theme:       &theme,
 		})
 		s.Require().Nil(validationErr)
-		s.Equal(core.Metadata{ID: id, Name: name, Description: description, Tag: tag, Theme: "westeros"}, metadata)
+		s.Equal(id, metadata.ID)
+		s.Equal(name, metadata.Name)
+		s.Equal(description, metadata.Description)
+		s.Equal(tag, metadata.Tag)
+		s.Require().Len(metadata.Themes, 1)
+		s.Equal("westeros", metadata.Themes[0].Name)
+		s.NotEmpty(metadata.Themes[0].Colors)
 
 		invalidTheme := "not-a-theme"
 		_, _, validationErr = buildConvertInput(convertRequest{Theme: &invalidTheme}, []byte("x,y\\na,1\\n"))

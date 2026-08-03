@@ -252,7 +252,7 @@ func (s *PipelineSuite) TestCheckTargetFile() {
 func (s *PipelineSuite) TestRunLinearGeneratesOutputFile() {
 	benchFile := s.writeFile("input.txt", `BenchmarkExample-8    1000000    1234 ns/op    1000 B/op    10 allocs/op`)
 
-	meta := RunMeta{Parser: "go", Theme: "default"}
+	meta := RunMeta{Parser: "go"} // no themes → empty Themes (UI default)
 	cfg := parser.Config{GroupPattern: "y", TimeUnit: "ns", MemUnit: "B"}
 	barCfg := &barchart.Config{Type: "bar", Scale: "linear"}
 	configs := []internal_charts.ChartConfig{barCfg}
@@ -277,8 +277,9 @@ func (s *PipelineSuite) TestRunLinearGeneratesOutputFile() {
 
 		content, err := os.ReadFile(out)
 		s.Require().NoError(err)
-		// CLI still writes legacy theme string; Unmarshal migrates "default" → empty Themes.
-		s.Contains(string(content), `"theme":"default"`)
+		// No --theme → omit themes (and legacy theme) from new output.
+		s.NotContains(string(content), `"theme"`)
+		s.NotContains(string(content), `"themes"`)
 		var ds shared.Dataset
 		s.Require().NoError(json.Unmarshal(content, &ds))
 		s.Require().Len(ds.Settings, 1)
@@ -293,7 +294,7 @@ func (s *PipelineSuite) TestRunLinearGeneratesOutputFile() {
 
 func (s *PipelineSuite) TestRunLinearPreservesCustomTheme() {
 	benchFile := s.writeFile("input.txt", `BenchmarkExample-8    1000000    1234 ns/op    1000 B/op    10 allocs/op`)
-	meta := RunMeta{Parser: "go", Theme: "#f00,#00ff00"}
+	meta := RunMeta{Parser: "go", ThemeSpecs: []string{"#f00,#00ff00"}}
 	cfg := parser.Config{GroupPattern: "y", TimeUnit: "ns", MemUnit: "B"}
 	barCfg := &barchart.Config{Type: "bar", Scale: "linear"}
 	out := filepath.Join(s.T().TempDir(), "custom-theme.json")
@@ -302,8 +303,9 @@ func (s *PipelineSuite) TestRunLinearPreservesCustomTheme() {
 
 	content, err := os.ReadFile(out)
 	s.Require().NoError(err)
-	// CLI still writes legacy theme string; Unmarshal expands it into Themes.
-	s.Contains(string(content), `"theme":"#f00,#00ff00"`)
+	// New CLI embeds expanded Themes only (no legacy theme string).
+	s.NotContains(string(content), `"theme":`)
+	s.Contains(string(content), `"themes"`)
 	var ds shared.Dataset
 	s.Require().NoError(json.Unmarshal(content, &ds))
 	s.Empty(ds.Theme)
@@ -783,8 +785,47 @@ func (s *PipelineSuite) TestAssembleDatasetPreservesTheme() {
 			{Columns: []parser.ColumnSpec{{Source: "x", AxisKey: "x", AxisType: "value"}, {Source: "y", AxisKey: "y", AxisType: "value"}}},
 		},
 	}
-	ds := assembleDataset(results, RunMeta{Name: "T", Parser: "csv", Theme: "walden"}, nil, cfg, nil)
-	s.Equal("walden", ds.Theme)
+	ds := assembleDataset(results, RunMeta{Name: "T", Parser: "csv", ThemeSpecs: []string{"walden"}}, nil, cfg, nil)
+	s.Empty(ds.Theme)
+	s.Require().Len(ds.Themes, 1)
+	s.Equal("walden", ds.Themes[0].Name)
+	s.NotEmpty(ds.Themes[0].Colors)
+}
+
+func (s *PipelineSuite) TestAssembleDatasetMultipleThemesAndActive() {
+	results := []shared.DataPoint{{XAxis: "1", YAxis: "2", Stats: []shared.Stat{}}}
+	cfg := parser.Config{GroupPattern: "x"}
+	ds := assembleDataset(results, RunMeta{
+		Name:        "T",
+		Parser:      "csv",
+		ThemeSpecs:  []string{"westeros", "vintage"},
+		ThemeActive: "vintage",
+	}, nil, cfg, nil)
+	s.Empty(ds.Theme)
+	s.Require().Len(ds.Themes, 2)
+	s.Equal("vintage", ds.Themes[0].Name)
+	s.Equal("westeros", ds.Themes[1].Name)
+}
+
+func (s *PipelineSuite) TestAssembleDatasetSkipsDefaultTheme() {
+	results := []shared.DataPoint{{XAxis: "1", YAxis: "2", Stats: []shared.Stat{}}}
+	cfg := parser.Config{GroupPattern: "x"}
+	ds := assembleDataset(results, RunMeta{
+		Name:       "T",
+		Parser:     "csv",
+		ThemeSpecs: []string{"default", "roma"},
+	}, nil, cfg, nil)
+	s.Empty(ds.Theme)
+	s.Require().Len(ds.Themes, 1)
+	s.Equal("roma", ds.Themes[0].Name)
+}
+
+func (s *PipelineSuite) TestAssembleDatasetEmptyThemesWhenUnset() {
+	results := []shared.DataPoint{{XAxis: "1", YAxis: "2", Stats: []shared.Stat{}}}
+	cfg := parser.Config{GroupPattern: "x"}
+	ds := assembleDataset(results, RunMeta{Name: "T", Parser: "csv"}, nil, cfg, nil)
+	s.Empty(ds.Theme)
+	s.Empty(ds.Themes)
 }
 
 func (s *PipelineSuite) TestAssembleDatasetInfersAxesWithoutAxisType() {

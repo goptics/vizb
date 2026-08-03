@@ -139,11 +139,16 @@ func RunSingleChart(cmd *cobra.Command, args []string, meta RunMeta, cfg parser.
 // RunMeta carries the dataset metadata and selected parser from a command's
 // FlagBag into the linear pipeline. It is plain value passing — flag declaration
 // and validation live in the FlagBag, not here.
+//
+// ThemeSpecs are raw --theme values (already soft-validated); ThemeActive is
+// --theme-active. assembleDataset expands them via style.ResolveThemes into
+// Dataset.Themes (legacy Dataset.Theme stays empty on new output).
 type RunMeta struct {
 	ID          string
 	Name        string
 	Title       string
-	Theme       string
+	ThemeSpecs  []string
+	ThemeActive string
 	Description string
 	Tag         string
 	OutputFile  string
@@ -371,11 +376,34 @@ func assembleDataset(results []shared.DataPoint, m RunMeta, configs []internal_c
 		Parser: m.Parser,
 		Config: cfg,
 		Metadata: core.Metadata{
-			ID: m.ID, Name: m.Name, Theme: m.Theme, Description: m.Description, Tag: m.Tag,
+			ID: m.ID, Name: m.Name, Themes: resolveRunThemes(m), Description: m.Description, Tag: m.Tag,
 			System: system,
 		},
 		Charts: configs,
 	})
+}
+
+// resolveRunThemes expands soft-validated --theme specs (+ --theme-active) into
+// shared.Theme values for Dataset.Themes. Specs that fail ParseThemeSpec after
+// soft validation should not occur; on error the list is left empty.
+func resolveRunThemes(m RunMeta) []shared.Theme {
+	resolved, err := style.ResolveThemes(m.ThemeSpecs, m.ThemeActive)
+	if err != nil {
+		shared.PrintWarning(fmt.Sprintf("Warning: theme expand failed: %s. Embedding no themes", err.Error()))
+		return nil
+	}
+	if len(resolved) == 0 {
+		return nil
+	}
+	out := make([]shared.Theme, len(resolved))
+	for i, t := range resolved {
+		out[i] = shared.Theme{
+			Name:            t.Name,
+			Colors:          t.Colors,
+			VisualMapColors: t.VisualMapColors,
+		}
+	}
+	return out
 }
 
 func tabularParser(parserKey string) bool {

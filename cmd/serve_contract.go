@@ -371,7 +371,7 @@ func buildConvertInput(request convertRequest, input []byte) (core.ConvertInput,
 }
 
 func buildConvertMetadata(request convertRequest) (core.Metadata, *apiValidationError) {
-	metadata := core.Metadata{Name: "Comparisons", Theme: "default"}
+	metadata := core.Metadata{Name: "Comparisons"}
 	if request.ID != nil {
 		metadata.ID = *request.ID
 	}
@@ -387,10 +387,27 @@ func buildConvertMetadata(request convertRequest) (core.Metadata, *apiValidation
 	if request.Theme == nil {
 		return metadata, nil
 	}
-	metadata.Theme = style.NormalizeTheme(*request.Theme)
-	if err := style.ValidateTheme(metadata.Theme); err != nil {
+	normalized := style.NormalizeTheme(*request.Theme)
+	if err := style.ValidateTheme(normalized); err != nil {
 		validationErr := bodyValidationError("/theme", "invalid_value", err.Error())
 		return core.Metadata{}, &validationErr
+	}
+	// API still accepts a single theme string; expand into data-owned Themes.
+	// Built-in "default" is omitted (UI owns default).
+	resolved, err := style.ResolveThemes([]string{normalized}, "")
+	if err != nil {
+		validationErr := bodyValidationError("/theme", "invalid_value", err.Error())
+		return core.Metadata{}, &validationErr
+	}
+	if len(resolved) > 0 {
+		metadata.Themes = make([]shared.Theme, len(resolved))
+		for i, t := range resolved {
+			metadata.Themes[i] = shared.Theme{
+				Name:            t.Name,
+				Colors:          t.Colors,
+				VisualMapColors: t.VisualMapColors,
+			}
+		}
 	}
 	return metadata, nil
 }
