@@ -1,10 +1,14 @@
 import { describe, expect, it, beforeEach } from 'vitest'
 import type { Theme } from '../types'
 import {
+  activeThemeName,
+  applyDatasetThemes,
   authorThemeCount,
   DEFAULT_THEME,
   findTheme,
   isAvailableThemeName,
+  isThemeName,
+  listAvailableThemes,
   listAvailableThemeNames,
   normalizeTheme,
   paletteGradientEndpoints,
@@ -173,5 +177,91 @@ describe('themes', () => {
     registerDatasetThemes([vintage])
     expect(resolveTheme('vintage').name).toBe('vintage')
     expect(resolveTheme('#111,#222').visualMapColors).toEqual(['#111', '#222'])
+  })
+
+  it('isThemeName recognizes default and registered dataset names only', () => {
+    expect(isThemeName(undefined)).toBe(false)
+    expect(isThemeName('')).toBe(false)
+    expect(isThemeName('   ')).toBe(false)
+    expect(isThemeName('default')).toBe(true)
+    expect(isThemeName('DEFAULT')).toBe(true)
+    expect(isThemeName('westeros')).toBe(false)
+    registerDatasetThemes([westeros])
+    expect(isThemeName('WESTEROS')).toBe(true)
+    expect(isThemeName('missing')).toBe(false)
+  })
+
+  it('isAvailableThemeName and findTheme handle empty and whitespace names', () => {
+    expect(isAvailableThemeName(undefined)).toBe(false)
+    expect(isAvailableThemeName('')).toBe(false)
+    expect(isAvailableThemeName('   ')).toBe(false)
+    expect(findTheme(undefined)).toBeUndefined()
+    expect(findTheme('')).toBeUndefined()
+    expect(findTheme('   ')).toBeUndefined()
+    expect(findTheme('default')?.name).toBe('default')
+  })
+
+  it('applyDatasetThemes registers themes and applies active name', () => {
+    applyDatasetThemes({ themes: [westeros, vintage] })
+    expect(authorThemeCount()).toBe(2)
+    expect(activeThemeName.value).toBe('westeros')
+    expect(isThemeName('vintage')).toBe(true)
+
+    // Legacy hex theme string → active theme stays the custom palette string.
+    applyDatasetThemes({ theme: '#f00,#0f0,#00f' })
+    expect(authorThemeCount()).toBe(0)
+    expect(activeThemeName.value).toBe('#f00,#0f0,#00f')
+
+    // Empty / missing dataset → UI default.
+    applyDatasetThemes(null)
+    expect(activeThemeName.value).toBe('default')
+    applyDatasetThemes(undefined)
+    expect(activeThemeName.value).toBe('default')
+  })
+
+  it('resolveActiveTheme fills missing visualMapColors and skips empty first theme', () => {
+    expect(
+      resolveActiveTheme({
+        themes: [{ name: 'brand', colors: ['#111', '#222', '#333'], visualMapColors: [] }],
+      })
+    ).toMatchObject({
+      name: 'brand',
+      colors: ['#111', '#222', '#333'],
+      visualMapColors: ['#111', '#333'],
+    })
+    expect(
+      resolveActiveTheme({
+        themes: [{ name: '', colors: ['#aaa', '#bbb'], visualMapColors: ['#aaa', '#bbb'] }],
+      }).name
+    ).toBe('custom')
+    // First entry without colors falls through to default / legacy.
+    expect(
+      resolveActiveTheme({
+        themes: [{ name: 'empty', colors: [], visualMapColors: [] }],
+      })
+    ).toEqual(DEFAULT_THEME)
+    // Legacy # string that is not a valid multi-hex palette → default.
+    expect(resolveActiveTheme({ theme: '#f00' })).toEqual(DEFAULT_THEME)
+    expect(resolveActiveTheme({ theme: '#ggg,#000' })).toEqual(DEFAULT_THEME)
+  })
+
+  it('registerDatasetThemes skips entries without a usable name', () => {
+    registerDatasetThemes([
+      { name: '  ', colors: ['#111', '#222'], visualMapColors: ['#111', '#222'] },
+      { name: undefined as unknown as string, colors: ['#a', '#b'], visualMapColors: ['#a', '#b'] },
+      westeros,
+    ])
+    expect(authorThemeCount()).toBe(1)
+    expect(listAvailableThemeNames()).toEqual(['westeros'])
+  })
+
+  it('clones themes that omit visualMapColors as an empty list', () => {
+    registerDatasetThemes([{ name: 'no-vm-field', colors: ['#111', '#222'] } as Theme])
+    expect(findTheme('no-vm-field')).toMatchObject({
+      name: 'no-vm-field',
+      colors: ['#111', '#222'],
+      visualMapColors: [],
+    })
+    expect(listAvailableThemes()[0]?.visualMapColors).toEqual([])
   })
 })

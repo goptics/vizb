@@ -146,7 +146,8 @@ export function resolveTheme(theme?: string): Theme {
   if (normalized.startsWith('#')) {
     return themeFromCustomPalette(parseCustomPalette(normalized)!)
   }
-  return findTheme(normalized) ?? cloneTheme(DEFAULT_THEME)
+  // normalizeTheme only returns default or a registered dataset name here.
+  return findTheme(normalized)!
 }
 
 export function resolvePalette(theme?: string): readonly string[] {
