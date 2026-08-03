@@ -141,5 +141,5 @@ jobs:
 
       # Smoke: prove embed generation still works. Tracked gen on main is
       # updated by sync-embed-ui.yml after ui/ merges; PRs must not commit gen.
-      - run: EMBED_UI=True pnpm build
+      - run: pnpm build:embed
         working-directory: ui

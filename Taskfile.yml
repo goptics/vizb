@@ -43,7 +43,7 @@ tasks:
     generates:
       - pkg/template/vizb-ui.gen.go
     cmds:
-      - cd ui; [ -d node_modules ] || pnpm install; EMBED_UI=True pnpm build; cd -
+      - cd ui; [ -d node_modules ] || pnpm install; pnpm build:embed; cd -
 
   build:ui:
     desc: Build Vue UI (no CLI embed)

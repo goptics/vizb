@@ -6,7 +6,7 @@ RUN corepack enable && corepack prepare pnpm@9.12.0 --activate && pnpm install -
 
 COPY ui .
 COPY pkg /src/pkg
-RUN EMBED_UI=True pnpm build
+RUN pnpm build:embed
 
 FROM golang:1.26-bookworm AS build
 
