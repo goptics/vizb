@@ -44,17 +44,31 @@ describe('useSettingsStore', () => {
     vi.stubGlobal('window', { matchMedia: () => ({ matches: false }) })
     vi.stubGlobal('document', { documentElement: { classList: { toggle: vi.fn() } } })
 
+    const { registerDatasetThemes } = await import('../lib/themes')
+    registerDatasetThemes([
+      {
+        name: 'ocean',
+        colors: ['#0ff', '#00f', '#0f0'],
+        visualMapColors: ['#0ff', '#00f'],
+      },
+      {
+        name: 'forest',
+        colors: ['#0a0', '#080', '#040'],
+        visualMapColors: ['#0a0', '#040'],
+      },
+    ])
+
     const { useSettingsStore } = await import('./useSettingsStore')
     const { themeName, initializeTheme, setTheme } = useSettingsStore()
-    initializeTheme('vintage')
-    expect(themeName.value).toBe('vintage')
+    initializeTheme('ocean')
+    expect(themeName.value).toBe('ocean')
 
-    setTheme('roma')
-    expect(themeName.value).toBe('roma')
-    expect(storage.setItem).toHaveBeenCalledWith('color-theme', 'roma')
+    setTheme('forest')
+    expect(themeName.value).toBe('forest')
+    expect(storage.setItem).toHaveBeenCalledWith('color-theme', 'forest')
 
-    initializeTheme('chalk')
-    expect(themeName.value).toBe('roma')
+    initializeTheme('ocean')
+    expect(themeName.value).toBe('forest')
   })
 
   it('activeConfig returns the config at the active chart index', async () => {
@@ -237,7 +251,8 @@ describe('useSettingsStore', () => {
   it('initializes dark mode and theme preference from localStorage and toggles dark', async () => {
     const values = new Map<string, string>([
       ['dark-mode', 'true'],
-      ['color-theme', 'macarons'],
+      // Custom hex palette survives without the old 13-theme catalog.
+      ['color-theme', '#111,#222,#333'],
     ])
     const storage = {
       getItem: vi.fn((key: string) => values.get(key) ?? null),
@@ -254,14 +269,29 @@ describe('useSettingsStore', () => {
     const { isDark, themeName, toggleDark, initializeTheme } = useSettingsStore()
 
     expect(isDark.value).toBe(true)
-    expect(themeName.value).toBe('macarons')
-    initializeTheme('vintage')
-    expect(themeName.value).toBe('macarons')
+    expect(themeName.value).toBe('#111,#222,#333')
+    initializeTheme('default')
+    expect(themeName.value).toBe('#111,#222,#333')
 
     toggleDark()
     expect(isDark.value).toBe(false)
     expect(storage.setItem).toHaveBeenCalledWith('dark-mode', 'false')
     expect(classList.toggle).toHaveBeenCalled()
+  })
+
+  it('falls back unknown legacy localStorage theme names to default', async () => {
+    const values = new Map<string, string>([['color-theme', 'macarons']])
+    const storage = {
+      getItem: vi.fn((key: string) => values.get(key) ?? null),
+      setItem: vi.fn(),
+    }
+    vi.stubGlobal('localStorage', storage)
+    vi.stubGlobal('window', { matchMedia: () => ({ matches: false }) })
+    vi.stubGlobal('document', { documentElement: { classList: { toggle: vi.fn() } } })
+
+    const { useSettingsStore } = await import('./useSettingsStore')
+    const { themeName } = useSettingsStore()
+    expect(themeName.value).toBe('default')
   })
 
   it('setStack without enabling keeps scale when stack is false', async () => {
@@ -333,8 +363,8 @@ describe('useSettingsStore', () => {
       const { useSettingsStore } = await import('./useSettingsStore')
       const store = useSettingsStore()
       store.toggleDark()
-      store.setTheme('roma')
-      expect(store.themeName.value).toBe('roma')
+      store.setTheme('#abc,#def')
+      expect(store.themeName.value).toBe('#abc,#def')
       expect(typeof store.isDark.value).toBe('boolean')
     } finally {
       if (hadWindow) g.window = prevWindow

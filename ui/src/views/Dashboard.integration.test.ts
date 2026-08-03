@@ -125,8 +125,9 @@ vi.mock('../composables/useDashboardInit', () => ({
 }))
 
 vi.mock('../lib/themes', () => ({
-  THEME_NAMES: ['default', 'vintage'],
-  isThemeName: (v?: string) => v === 'default' || v === 'vintage',
+  THEME_NAMES: ['default'],
+  listAvailableThemeNames: () => ['default'],
+  isThemeName: (v?: string) => v === 'default',
 }))
 
 vi.mock('../lib/swap', () => ({

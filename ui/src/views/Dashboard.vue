@@ -16,7 +16,7 @@ import LoadError from '../components/LoadError.vue'
 import AppFooter from '../components/AppFooter.vue'
 import IconButton from '../components/IconButton.vue'
 import Selector from '../components/Selector.vue'
-import { isThemeName, THEME_NAMES } from '../lib/themes'
+import { isThemeName, listAvailableThemeNames } from '../lib/themes'
 
 const version = window.VIZB_VERSION || 'v0.0.0-dev'
 
@@ -42,7 +42,8 @@ const { isDark, toggleDark, chartType, themeName, setTheme } = useSettingsStore(
 const { sort, showLabels, scale, threeD } = useActiveChartShape()
 
 const themeItems = computed(() => {
-  const items = THEME_NAMES.map((theme) => ({ name: theme, value: theme }))
+  // Task 7 will gate visibility; until then list default + any registered dataset themes.
+  const items = listAvailableThemeNames().map((theme) => ({ name: theme, value: theme }))
   return isThemeName(themeName.value)
     ? items
     : [{ name: 'Custom palette', value: themeName.value }, ...items]
