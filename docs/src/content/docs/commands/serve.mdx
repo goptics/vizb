@@ -90,13 +90,26 @@ curl -sS http://127.0.0.1:8080/ \
     "name": "API latency",
     "description": "Latency by region",
     "tag": "v2",
-    "theme": "westeros",
+    "themes": [
+      {
+        "name": "westeros",
+        "colors": ["#516b91", "#59c4e6", "#edafda", "#93b7e3", "#a5e7f0", "#cbb0e3", "#3f5575", "#41a7cb", "#d58fc4", "#789bc7"],
+        "visualMapColors": ["#59c4e6", "#d58fc4"]
+      }
+    ],
     "parser": "csv",
     "select": ["region,latency"],
     "charts": { "types": ["bar", "line"] },
     "output": { "format": "dataset" }
   }'
 ```
+
+Prefer the data-owned `themes` array on convert requests and Dataset responses.
+When non-empty, `themes[0]` is the active theme; there is no separate active
+field. Built-in `default` is not embedded (the UI owns it). The legacy string
+`theme` field is still accepted and expanded into `themes` when `themes` is
+omitted or empty. See [Color Themes](/ui/themes) and the [API reference](/api/)
+for the full `Theme` object shape.
 
 ## Merge Datasets
 
