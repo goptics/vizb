@@ -3,8 +3,10 @@ package shared
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	internal_charts "github.com/goptics/vizb/internal/charts"
+	"github.com/goptics/vizb/pkg/style"
 )
 
 type Stat struct {
@@ -65,11 +67,26 @@ type HistoryEntry struct {
 	Meta      *Meta  `json:"meta,omitempty"`
 }
 
+// Theme is a fully expanded color theme embedded on a dataset.
+// When Dataset.Themes is non-empty, Themes[0] is the active theme;
+// there is no separate active-theme field on the wire format.
+type Theme struct {
+	Name            string   `json:"name"`
+	Colors          []string `json:"colors"`
+	VisualMapColors []string `json:"visualMapColors"`
+}
+
 type Dataset struct {
-	ID          string                        `json:"id,omitempty"`
-	Tag         string                        `json:"tag,omitempty"`
-	Timestamp   string                        `json:"timestamp,omitempty"`
-	Name        string                        `json:"name"`
+	ID        string `json:"id,omitempty"`
+	Tag       string `json:"tag,omitempty"`
+	Timestamp string `json:"timestamp,omitempty"`
+	Name      string `json:"name"`
+	// Themes is the data-owned theme catalog. Themes[0] is active when present.
+	// New output writes Themes only (not the legacy Theme string).
+	Themes []Theme `json:"themes,omitempty"`
+	// Theme is the legacy single theme name/spec (pre-themes-array wire).
+	// Used only when unmarshalling old files; migrateLegacyTheme expands it
+	// into Themes and clears this field so re-marshal does not emit both.
 	Theme       string                        `json:"theme,omitempty"`
 	History     []HistoryEntry                `json:"history,omitempty"`
 	Description string                        `json:"description,omitempty"`
@@ -102,6 +119,7 @@ func (d *Dataset) UnmarshalJSON(data []byte) error {
 		Tag          string          `json:"tag,omitempty"`
 		Timestamp    string          `json:"timestamp,omitempty"`
 		Name         string          `json:"name"`
+		Themes       []Theme         `json:"themes,omitempty"`
 		Theme        string          `json:"theme,omitempty"`
 		History      []HistoryEntry  `json:"history,omitempty"`
 		Description  string          `json:"description,omitempty"`
@@ -118,6 +136,7 @@ func (d *Dataset) UnmarshalJSON(data []byte) error {
 	d.Tag = raw.Tag
 	d.Timestamp = raw.Timestamp
 	d.Name = raw.Name
+	d.Themes = raw.Themes
 	d.Theme = raw.Theme
 	d.History = raw.History
 	d.Description = raw.Description
@@ -130,6 +149,7 @@ func (d *Dataset) UnmarshalJSON(data []byte) error {
 	// Settings nil so MigrateDataset can populate it from the legacy struct.
 	if len(raw.Settings) == 0 || raw.Settings[0] != '[' {
 		d.Settings = nil
+		d.migrateLegacyTheme()
 		return nil
 	}
 
@@ -139,6 +159,7 @@ func (d *Dataset) UnmarshalJSON(data []byte) error {
 	}
 	if len(entries) == 0 {
 		d.Settings = nil
+		d.migrateLegacyTheme()
 		return nil
 	}
 
@@ -159,5 +180,44 @@ func (d *Dataset) UnmarshalJSON(data []byte) error {
 		}
 		d.Settings = append(d.Settings, cfg)
 	}
+	d.migrateLegacyTheme()
 	return nil
+}
+
+// migrateLegacyTheme expands a legacy Theme string into Themes when Themes is
+// empty. Themes[0] is the active theme when present. Built-in "default" and
+// empty specs leave Themes empty (UI owns the default palette). Invalid specs
+// leave Theme untouched so data is not discarded.
+func (d *Dataset) migrateLegacyTheme() {
+	if len(d.Themes) > 0 {
+		// Prefer Themes; drop legacy string so re-marshal does not emit both.
+		d.Theme = ""
+		return
+	}
+
+	legacy := strings.TrimSpace(d.Theme)
+	if legacy == "" || strings.EqualFold(legacy, "default") {
+		d.Theme = ""
+		return
+	}
+
+	parsed, err := style.ParseThemeSpec(legacy)
+	if err != nil {
+		return
+	}
+	if strings.EqualFold(parsed.Name, "default") {
+		d.Theme = ""
+		return
+	}
+
+	d.Themes = []Theme{themeFromStyle(parsed)}
+	d.Theme = ""
+}
+
+func themeFromStyle(t style.Theme) Theme {
+	return Theme{
+		Name:            t.Name,
+		Colors:          t.Colors,
+		VisualMapColors: t.VisualMapColors,
+	}
 }

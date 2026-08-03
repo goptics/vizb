@@ -277,10 +277,13 @@ func (s *PipelineSuite) TestRunLinearGeneratesOutputFile() {
 
 		content, err := os.ReadFile(out)
 		s.Require().NoError(err)
+		// CLI still writes legacy theme string; Unmarshal migrates "default" → empty Themes.
+		s.Contains(string(content), `"theme":"default"`)
 		var ds shared.Dataset
 		s.Require().NoError(json.Unmarshal(content, &ds))
 		s.Require().Len(ds.Settings, 1)
-		s.Equal("default", ds.Theme)
+		s.Empty(ds.Theme)
+		s.Empty(ds.Themes)
 		s.Equal("bar", ds.Settings[0].ChartType())
 		typed, ok := ds.Settings[0].(*barchart.Config)
 		s.Require().True(ok, "expected *barchart.Config, got %T", ds.Settings[0])
@@ -299,9 +302,14 @@ func (s *PipelineSuite) TestRunLinearPreservesCustomTheme() {
 
 	content, err := os.ReadFile(out)
 	s.Require().NoError(err)
+	// CLI still writes legacy theme string; Unmarshal expands it into Themes.
+	s.Contains(string(content), `"theme":"#f00,#00ff00"`)
 	var ds shared.Dataset
 	s.Require().NoError(json.Unmarshal(content, &ds))
-	s.Equal("#f00,#00ff00", ds.Theme)
+	s.Empty(ds.Theme)
+	s.Require().Len(ds.Themes, 1)
+	s.Equal("custom", ds.Themes[0].Name)
+	s.Equal([]string{"#f00", "#00ff00"}, ds.Themes[0].Colors)
 }
 
 func (s *PipelineSuite) TestChartStackOverrideRoundTripsThroughMaterialise() {

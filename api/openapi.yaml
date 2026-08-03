@@ -479,6 +479,20 @@ components:
           items:
             type: string
             enum: [counts, center, spread, extremes, shape, percentiles, confidence, correlations]
+    Theme:
+      type: object
+      additionalProperties: false
+      required: [name, colors, visualMapColors]
+      properties:
+        name: { type: string }
+        colors:
+          type: array
+          items: { type: string }
+        visualMapColors:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items: { type: string }
     Dataset:
       type: object
       additionalProperties: false
@@ -488,7 +502,18 @@ components:
         tag: { type: string }
         timestamp: { type: string }
         name: { type: string }
-        theme: { type: string }
+        themes:
+          type: array
+          description: >
+            Data-owned theme catalog. When non-empty, themes[0] is the active
+            theme. New writers emit themes only; legacy theme is migrated on load.
+          items:
+            $ref: '#/components/schemas/Theme'
+        theme:
+          type: string
+          description: >
+            Legacy single theme name or palette. Migrated into themes when themes
+            is empty; omitted from new output after migration.
         history:
           type: array
           items: { $ref: '#/components/schemas/HistoryEntry' }
