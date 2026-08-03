@@ -87,7 +87,7 @@ See the [Parser Guide](/guides/parsers) for each parser's metrics, and the
 | `--json-path` | | `""` | json only: select a nested array to chart via a jq-like dot path (e.g. `--json-path '.data.results'`) |
 | `--sort` | `-s` | `""` | **Deprecated on root:** use `--chart <type>:sort=<asc\|desc>`. Sort order: `asc` or `desc` (default: as-is) |
 | `--charts` | `-c` | `bar,line,pie` | Chart types to generate (`bar`, `line`, `scatter`, `pie`, `heatmap`, `radar`) |
-| `--chart` | | | Per-chart type settings override (repeatable): `<type>:<key>=<val>,...` — see below |
+| `--chart` | | | Per-chart type settings override (repeatable): `<type>:<props>` — comma or semicolon between props; see below |
 | `--show-labels` | `-l` | `false` | **Deprecated on root:** use `--chart <type>:labels`. Show value labels on charts |
 | `--filter` | `-f` | `""` | Regex to include only matching rows (CSV/JSON: `--group` label) or benchmark names |
 | `--mem-unit` | `-M` | `B` | Memory unit: `b`, `B`, `KB`, `MB`, `GB` |
@@ -221,7 +221,22 @@ See [UI Overview → Output File Size](/ui#output-file-size) for a size referenc
 
 ### Per-chart settings
 
-Use `--chart` (repeatable) to override settings for a specific chart type. Each spec is `<type>:<key>=<val>,...` or `<type>:<bare-flag>,...`.
+Use `--chart` (repeatable) to override settings for a specific chart type. Each
+spec is `<type>:<props>` where props are `key=value` pairs or bare flags
+(`labels`, `stack`, …).
+
+**Prop separators**
+
+- **Comma** still separates single-value props. Existing examples stay valid:
+  `bar:swap=yx,sort=asc`, `pie:sort=desc,labels`.
+- When a value itself contains commas (multi-value keys such as `stat`), either:
+  - Put that prop alone (or only before further `key=value` forms):
+    `--chart bar:stat=center,spread`
+  - Or separate props with **semicolons** so commas stay inside the value:
+    `--chart 'bar:stat=center,spread;labels'`
+
+Semicolon mode matches structured `--theme` specs
+(`name:colors=#hex,...;visualMapColors=...`); both use the same prop grammar.
 
 ```bash
 # Bar chart: swap axes to yx, sort ascending
@@ -235,6 +250,12 @@ vizb bench.txt -p n/x/y/z --chart bar:3d-rotate --chart line:labels=false -o out
 
 # Horizontal grouped bars (bar:horizontal)
 vizb sales.csv -g region,category -p x,y --chart bar:horizontal -o out.html
+
+# Multi-value stat categories (comma inside the value)
+vizb sales.csv -c bar --chart bar:stat=center,spread -o out.html
+
+# Multi-value + another prop: use semicolon between props
+vizb sales.csv -c bar --chart 'bar:stat=center,spread;labels' -o out.html
 ```
 
 **Supported keys:**
@@ -246,6 +267,7 @@ vizb sales.csv -g region,category -p x,y --chart bar:horizontal -o out.html
 | `labels` | `labels` | `true`, `false` | all |
 | `scale` | — | `linear`, `log` | `bar`, `line` only |
 | `3d-rotate` | `3d-rotate` | `true`, `false` | `bar`, `line` 3D only |
+| `stat` | `stat` | `all`, or comma-separated categories (`center,spread`, …) | all |
 
 Bare flags (no `=`) default to `true`. Per-chart settings override the chart's own defaults. The root-level `--sort` and `--show-labels` flags are deprecated — use `--chart` overrides instead.
 
