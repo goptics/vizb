@@ -25,6 +25,9 @@ const holder = vi.hoisted(() => ({
   chartType: 'bar' as const,
   themeName: 'default',
   setTheme: vi.fn(),
+  // Author theme count gates selector visibility (0–1 hidden, 2+ shown).
+  authorThemeCount: 0,
+  themeNames: ['default'] as string[],
   sort: { enabled: false, order: 'asc' as const } as
     | { enabled: boolean; order: 'asc' | 'desc' }
     | undefined,
@@ -126,8 +129,11 @@ vi.mock('../composables/useDashboardInit', () => ({
 
 vi.mock('../lib/themes', () => ({
   THEME_NAMES: ['default'],
-  listAvailableThemeNames: () => ['default'],
-  isThemeName: (v?: string) => v === 'default',
+  listAvailableThemeNames: () => holder.themeNames,
+  shouldShowThemeSelector: () => holder.authorThemeCount >= 2,
+  authorThemeCount: () => holder.authorThemeCount,
+  isThemeName: (v?: string) =>
+    !!v && (v === 'default' || holder.themeNames.some((n) => n.toLowerCase() === v.toLowerCase())),
 }))
 
 vi.mock('../lib/swap', () => ({
@@ -262,6 +268,9 @@ describe('Dashboard', () => {
     datasetInitializingRef.value = false
     holder.isDark = false
     holder.themeName = 'default'
+    // Default fixture: no author multi-theme → selector hidden.
+    holder.authorThemeCount = 0
+    holder.themeNames = ['default']
     holder.sort = { enabled: false, order: 'asc' }
     chartsRef.value = [
       { key: 'c1', data: makeGroupedChartData({ title: 'Chart One' }), pending: false },
@@ -282,9 +291,8 @@ describe('Dashboard', () => {
       'github.com/org/pkg'
     )
     expect(w.find('[data-testid="settings-pop"]').exists()).toBe(true)
-
-    await w.get('[data-testid="theme-selector"]').trigger('click')
-    expect(holder.setTheme).toHaveBeenCalledWith('vintage')
+    // 0 author themes → theme selector hidden.
+    expect(w.find('[data-testid="theme-selector"]').exists()).toBe(false)
 
     await w.get('[aria-label="Toggle dark mode"]').trigger('click')
     expect(holder.toggleDark).toHaveBeenCalled()
@@ -297,6 +305,25 @@ describe('Dashboard', () => {
     groupNamesRef.value = ['a', 'b']
     await nextTick()
     expect(holder.setGroupNames).toHaveBeenCalledWith(['a', 'b'])
+  })
+
+  it('shows theme selector only when author provided 2+ themes', async () => {
+    holder.authorThemeCount = 2
+    holder.themeNames = ['default', 'westeros', 'vintage']
+    holder.themeName = 'westeros'
+    const w = mount(Dashboard)
+    expect(w.find('[data-testid="theme-selector"]').exists()).toBe(true)
+
+    await w.get('[data-testid="theme-selector"]').trigger('click')
+    expect(holder.setTheme).toHaveBeenCalledWith('vintage')
+  })
+
+  it('hides theme selector when author provided a single theme', () => {
+    holder.authorThemeCount = 1
+    holder.themeNames = ['westeros']
+    holder.themeName = 'westeros'
+    const w = mount(Dashboard)
+    expect(w.find('[data-testid="theme-selector"]').exists()).toBe(false)
   })
 
   it('loadError branch', () => {
@@ -354,7 +381,9 @@ describe('Dashboard', () => {
     expect(w.find('[aria-label="Toggle dark mode"]').exists()).toBe(true)
   })
 
-  it('custom theme name path', () => {
+  it('custom theme name path shows selector when multi-theme report is active', () => {
+    holder.authorThemeCount = 2
+    holder.themeNames = ['default', 'westeros', 'vintage']
     holder.themeName = 'custom-hex'
     const w = mount(Dashboard)
     expect(w.find('[data-testid="theme-selector"]').exists()).toBe(true)

@@ -16,7 +16,7 @@ import LoadError from '../components/LoadError.vue'
 import AppFooter from '../components/AppFooter.vue'
 import IconButton from '../components/IconButton.vue'
 import Selector from '../components/Selector.vue'
-import { isThemeName, listAvailableThemeNames } from '../lib/themes'
+import { isThemeName, listAvailableThemeNames, shouldShowThemeSelector } from '../lib/themes'
 
 const version = window.VIZB_VERSION || 'v0.0.0-dev'
 
@@ -41,8 +41,11 @@ const {
 const { isDark, toggleDark, chartType, themeName, setTheme } = useSettingsStore()
 const { sort, showLabels, scale, threeD } = useActiveChartShape()
 
+// Author provided 2+ themes → show selector (default + dataset.themes).
+// 0–1 author themes → hide (available set is the single resolved theme only).
+const showThemeSelector = computed(() => shouldShowThemeSelector())
+
 const themeItems = computed(() => {
-  // Task 7 will gate visibility; until then list default + any registered dataset themes.
   const items = listAvailableThemeNames().map((theme) => ({ name: theme, value: theme }))
   return isThemeName(themeName.value)
     ? items
@@ -129,6 +132,7 @@ useDashboardInit()
     <ChartSettingsPopover />
 
     <Selector
+      v-if="showThemeSelector"
       :items="themeItems"
       :activeValue="themeName"
       placeholder="Search themes"

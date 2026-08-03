@@ -190,6 +190,11 @@ const activeArrangement = computed<Arrangement>(() => {
 // Group list as the selector consumes it: a `{ name }[]` over the worker's names.
 const resultGroups = computed(() => groupNames.value.map((name) => ({ name })))
 
+// Re-register dataset themes and re-resolve the active palette whenever the
+// active dataset changes. initializeTheme re-reads localStorage and applies
+// it only when the stored name is still in this report's available set
+// (default + themes when 2+ author themes; otherwise only the single resolved
+// theme). Otherwise author intent wins (themes[0] / default / legacy hex).
 watch(
   () => activeDataset.value,
   (dataset) => {

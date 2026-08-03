@@ -1,8 +1,10 @@
 import { describe, expect, it, beforeEach } from 'vitest'
 import type { Theme } from '../types'
 import {
+  authorThemeCount,
   DEFAULT_THEME,
   findTheme,
+  isAvailableThemeName,
   listAvailableThemeNames,
   normalizeTheme,
   paletteGradientEndpoints,
@@ -12,6 +14,7 @@ import {
   resolvePalette,
   resolveTheme,
   resolveVisualMapColors,
+  shouldShowThemeSelector,
   THEME_NAMES,
 } from './themes'
 
@@ -87,11 +90,36 @@ describe('themes', () => {
 
   it('registers dataset themes for name-based palette resolution', () => {
     registerDatasetThemes([westeros, vintage])
+    expect(authorThemeCount()).toBe(2)
+    expect(shouldShowThemeSelector()).toBe(true)
     expect(listAvailableThemeNames()).toEqual(['default', 'westeros', 'vintage'])
+    expect(isAvailableThemeName('default')).toBe(true)
+    expect(isAvailableThemeName('WESTEROS')).toBe(true)
+    expect(isAvailableThemeName('missing')).toBe(false)
     expect(resolvePalette('WESTEROS')).toEqual(westeros.colors)
     expect(resolvePalette('vintage')).toEqual(vintage.colors)
     expect(resolveVisualMapColors('westeros')).toEqual(westeros.visualMapColors)
     expect(findTheme('missing')).toBeUndefined()
+  })
+
+  it('scopes available set to the single author theme when only one is embedded', () => {
+    registerDatasetThemes([westeros])
+    expect(authorThemeCount()).toBe(1)
+    expect(shouldShowThemeSelector()).toBe(false)
+    expect(listAvailableThemeNames()).toEqual(['westeros'])
+    expect(isAvailableThemeName('westeros')).toBe(true)
+    expect(isAvailableThemeName('default')).toBe(false)
+    // Palette resolution still finds UI default by name; availability is separate.
+    expect(resolvePalette('default')).toEqual(DEFAULT_THEME.colors)
+  })
+
+  it('with zero author themes available set is only default and selector is hidden', () => {
+    registerDatasetThemes(undefined)
+    expect(authorThemeCount()).toBe(0)
+    expect(shouldShowThemeSelector()).toBe(false)
+    expect(listAvailableThemeNames()).toEqual(['default'])
+    expect(isAvailableThemeName('default')).toBe(true)
+    expect(isAvailableThemeName('westeros')).toBe(false)
   })
 
   it('ignores dataset entries named default and entries without colors', () => {
@@ -100,7 +128,9 @@ describe('themes', () => {
       { name: 'empty', colors: [], visualMapColors: [] },
       westeros,
     ])
-    expect(listAvailableThemeNames()).toEqual(['default', 'westeros'])
+    // Only one real author theme → available set is that theme alone.
+    expect(authorThemeCount()).toBe(1)
+    expect(listAvailableThemeNames()).toEqual(['westeros'])
     expect(resolvePalette('default')).toEqual(DEFAULT_THEME.colors)
   })
 

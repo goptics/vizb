@@ -38,13 +38,43 @@ export function registerDatasetThemes(themes?: Theme[]) {
   datasetThemesByName.value = map
 }
 
-/** Built-in default plus currently registered dataset themes. */
+/** Count of embedded non-default dataset themes (author-provided). */
+export function authorThemeCount(): number {
+  return datasetThemesByName.value.size
+}
+
+/**
+ * Themes the viewer may select / that localStorage may apply for this report.
+ * - 0 author themes → only UI default
+ * - 1 author theme → only that theme (no selector; localStorage cannot switch away)
+ * - 2+ author themes → default + registered dataset themes
+ */
 export function listAvailableThemes(): Theme[] {
-  return [cloneTheme(DEFAULT_THEME), ...[...datasetThemesByName.value.values()].map(cloneTheme)]
+  const registered = [...datasetThemesByName.value.values()].map(cloneTheme)
+  if (registered.length >= 2) {
+    return [cloneTheme(DEFAULT_THEME), ...registered]
+  }
+  if (registered.length === 1) {
+    return registered
+  }
+  return [cloneTheme(DEFAULT_THEME)]
 }
 
 export function listAvailableThemeNames(): string[] {
   return listAvailableThemes().map((theme) => theme.name)
+}
+
+/** True when the author embedded 2+ themes (selector is shown). */
+export function shouldShowThemeSelector(): boolean {
+  return authorThemeCount() >= 2
+}
+
+/** True when `value` is in the available set for the current dataset. */
+export function isAvailableThemeName(value?: string): boolean {
+  if (!value) return false
+  const key = value.trim().toLowerCase()
+  if (!key) return false
+  return listAvailableThemeNames().some((name) => name.toLowerCase() === key)
 }
 
 export function findTheme(name?: string): Theme | undefined {
