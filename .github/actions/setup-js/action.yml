@@ -1,0 +1,22 @@
+name: Setup JavaScript toolchain
+description: Install the shared Node version and optionally pnpm with dependency caching
+
+inputs:
+  cache-dependency-path:
+    description: Path to the pnpm lockfile used for the cache key
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - if: inputs.cache-dependency-path != ''
+      uses: pnpm/action-setup@v6
+      with:
+        version: 9
+
+    - uses: actions/setup-node@v6
+      with:
+        node-version: 22
+        cache: ${{ inputs.cache-dependency-path != '' && 'pnpm' || '' }}
+        cache-dependency-path: ${{ inputs.cache-dependency-path }}

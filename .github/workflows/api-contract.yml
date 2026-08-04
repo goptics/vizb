@@ -13,6 +13,7 @@ on:
       - 'docs/astro.config.mjs'
       - 'docs/package.json'
       - 'docs/pnpm-lock.yaml'
+      - '.github/actions/setup-js/**'
       - '.github/workflows/api-contract.yml'
   pull_request:
     branches: [main]
@@ -25,6 +26,7 @@ on:
       - 'docs/astro.config.mjs'
       - 'docs/package.json'
       - 'docs/pnpm-lock.yaml'
+      - '.github/actions/setup-js/**'
       - '.github/workflows/api-contract.yml'
 
 jobs:
@@ -38,14 +40,9 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - uses: pnpm/action-setup@v6
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup-js
         with:
-          version: 9
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 22
-          cache: pnpm
           cache-dependency-path: api/pnpm-lock.yaml
 
       - run: pnpm install --frozen-lockfile
@@ -65,14 +62,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v6
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup-js
         with:
-          version: 9
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 22
-          cache: pnpm
           cache-dependency-path: docs/pnpm-lock.yaml
 
       - run: pnpm install --frozen-lockfile

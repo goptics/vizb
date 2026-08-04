@@ -6,11 +6,13 @@ on:
     branches: [main]
     paths:
       - "ui/**"
+      - ".github/actions/setup-js/**"
       - ".github/workflows/ui.yml"
   pull_request:
     branches: [main]
     paths:
       - "ui/**"
+      - ".github/actions/setup-js/**"
       - ".github/workflows/ui.yml"
 
 jobs:
@@ -22,14 +24,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v6
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup-js
         with:
-          version: 9
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 22
-          cache: pnpm
           cache-dependency-path: ui/pnpm-lock.yaml
 
       - run: pnpm install --frozen-lockfile
@@ -44,14 +41,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v6
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup-js
         with:
-          version: 9
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 22
-          cache: pnpm
           cache-dependency-path: ui/pnpm-lock.yaml
 
       - run: pnpm install --frozen-lockfile
@@ -66,14 +58,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v6
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup-js
         with:
-          version: 9
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 22
-          cache: pnpm
           cache-dependency-path: ui/pnpm-lock.yaml
 
       - run: pnpm install --frozen-lockfile
@@ -99,14 +86,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: pnpm/action-setup@v6
-        with:
-          version: 9
 
-      - uses: actions/setup-node@v6
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup-js
         with:
-          node-version: 22
-          cache: pnpm
           cache-dependency-path: ui/pnpm-lock.yaml
 
       - run: pnpm install --frozen-lockfile
@@ -121,20 +104,10 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v6
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup-js
         with:
-          version: 9
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 22
-          cache: pnpm
           cache-dependency-path: ui/pnpm-lock.yaml
-
-      - uses: actions/setup-go@v7
-        with:
-          go-version-file: go.mod
-          cache: true
 
       - run: pnpm install --frozen-lockfile
         working-directory: ui

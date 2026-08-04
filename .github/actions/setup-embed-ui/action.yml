@@ -4,14 +4,9 @@ description: Install UI deps and generate pkg/template/vizb-ui.gen.go for Go bui
 runs:
   using: composite
   steps:
-    - uses: pnpm/action-setup@v6
+    - name: Setup Node and pnpm
+      uses: ./.github/actions/setup-js
       with:
-        version: 9
-
-    - uses: actions/setup-node@v6
-      with:
-        node-version: 22
-        cache: pnpm
         cache-dependency-path: ui/pnpm-lock.yaml
 
     - name: Install UI dependencies

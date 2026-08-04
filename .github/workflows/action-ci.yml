@@ -12,6 +12,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # Embed rebuilds set up Node themselves; other runs still pin the
+      # verifier runtime instead of inheriting the runner image version.
+      - name: Set up Node
+        if: env.ACT != 'true' && github.event_name != 'pull_request' && github.event_name != 'workflow_dispatch'
+        uses: ./.github/actions/setup-js
+
       - name: Set up Go
         if: env.ACT != 'true'
         uses: actions/setup-go@v7
@@ -53,6 +59,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
+
+      - name: Set up Node
+        if: env.ACT != 'true' && github.event_name != 'pull_request' && github.event_name != 'workflow_dispatch'
+        uses: ./.github/actions/setup-js
 
       - name: Set up Go
         if: env.ACT != 'true'
