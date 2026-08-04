@@ -16,8 +16,8 @@
     "e2e:serve": "node e2e/serve.mjs",
     "test:watch": "vitest",
     "typecheck": "vue-tsc -b --noEmit",
-    "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format": "biome format --write .",
+    "format:check": "biome format ."
   },
   "engines": {
     "node": "22.x"
@@ -33,6 +33,7 @@
     "vue-echarts": "^7.0.3"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.5.6",
     "@playwright/test": "^1.62.0",
     "@types/node": "^24.6.0",
     "@vitejs/plugin-vue": "^6.0.7",
@@ -44,8 +45,6 @@
     "happy-dom": "^20.11.1",
     "linkedom": "^0.18.12",
     "postcss": "^8.4.49",
-    "prettier": "^3.7.3",
-    "prettier-plugin-tailwindcss": "^0.7.1",
     "tailwindcss": "^3.4.16",
     "terser": "^5.44.0",
     "typescript": "~6.0.3",
