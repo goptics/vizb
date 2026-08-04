@@ -183,8 +183,9 @@ export function paletteGradientEndpoints(
 
 export function resolveVisualMapColors(theme: string = activeThemeName.value): readonly string[] {
   const resolved = resolveTheme(theme)
-  if (resolved.visualMapColors?.length >= 2) {
-    return resolved.visualMapColors
+  const visualMap = resolved.visualMapColors
+  if (visualMap && visualMap.length >= 2) {
+    return visualMap
   }
   return gradientEndpoints(resolved.colors)
 }
