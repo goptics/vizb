@@ -23,6 +23,7 @@ on:
       - "ui/**"
       - "ui/pnpm-lock.yaml"
       - ".github/actions/setup-embed-ui/**"
+      - ".github/actions/setup-js/**"
       - ".github/workflows/sync-embed-ui.yml"
 
 concurrency:

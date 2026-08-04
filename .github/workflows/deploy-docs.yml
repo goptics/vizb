@@ -26,14 +26,9 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup-js
         with:
-          version: 9
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 22
-          cache: pnpm
           cache-dependency-path: docs/pnpm-lock.yaml
 
       - run: pnpm install --frozen-lockfile
