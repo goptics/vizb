@@ -843,7 +843,11 @@ export const createLabelConfig = (
     : orient === 'horizontal'
       ? ('right' as const)
       : ('top' as const),
-  formatter: '{c}',
+  formatter: (params: { value?: number | (number | null)[] | null }) => {
+    const raw = Array.isArray(params.value) ? params.value[1] : params.value
+    if (raw == null) return ''
+    return typeof raw === 'number' ? String(Math.round(raw * 100) / 100) : String(raw)
+  },
   fontSize,
   color: stacked ? '#fff' : styling.textColor,
   ...(stacked ? { textBorderColor: 'rgba(0,0,0,0.5)', textBorderWidth: 2 } : {}),

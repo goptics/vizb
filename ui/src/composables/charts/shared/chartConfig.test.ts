@@ -5,6 +5,7 @@ import {
   createDataZoomConfig,
   createGridConfig,
   createTooltipConfig,
+  createLabelConfig,
   createValueModeGridConfig,
   VALUE_MODE_GRID_TOP,
   createHeatmapLayoutConfig,
@@ -543,6 +544,32 @@ describe('final chartConfig branch cleanup', () => {
     ])
     expect(html).toContain('Σ X:')
     expect(html).not.toContain('<svg')
+  })
+})
+
+describe('createLabelConfig value formatter', () => {
+  const label = createLabelConfig(true, getChartStyling(false)) as {
+    formatter: (p: { value?: number | (number | null)[] | null }) => string
+  }
+
+  it('rounds numeric values to 2 decimals', () => {
+    expect(label.formatter({ value: 5941.380000000001 })).toBe('5941.38')
+    expect(label.formatter({ value: 3370.4500000000003 })).toBe('3370.45')
+    expect(label.formatter({ value: 2864.2999999999997 })).toBe('2864.3')
+  })
+
+  it('rounds the y value of a [x, y] tuple', () => {
+    expect(label.formatter({ value: [1, 4512.6900000000005] })).toBe('4512.69')
+  })
+
+  it('renders empty string for null/undefined values', () => {
+    expect(label.formatter({ value: null })).toBe('')
+    expect(label.formatter({ value: undefined })).toBe('')
+    expect(label.formatter({ value: [1, null] })).toBe('')
+  })
+
+  it('passes non-numeric values through unchanged', () => {
+    expect(label.formatter({ value: 'A' as unknown as number })).toBe('A')
   })
 })
 
