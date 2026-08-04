@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/goptics/vizb/internal/specparse"
 )
 
 var (
@@ -48,8 +49,15 @@ func NormalizeTheme(value string) string {
 	if _, ok := themeCatalog[strings.ToLower(trimmed)]; ok {
 		return strings.ToLower(trimmed)
 	}
-	if name, props, ok := splitStructured(trimmed); ok {
-		return normalizeStructured(name, props)
+	// Prefer shared tokenizer when the value is a structured theme spec.
+	if strings.Contains(trimmed, ":") {
+		if parsed, err := specparse.Parse(trimmed, themeSpecParseOptions(trimmed)); err == nil {
+			return normalizeStructuredSpec(parsed)
+		}
+		// Best-effort fallback for structured-looking input that fails tokenization.
+		if name, props, ok := splitStructured(trimmed); ok {
+			return normalizeStructured(name, props)
+		}
 	}
 	// Bare hex (or anything comma-separated): trim each segment.
 	colors := strings.Split(trimmed, ",")
@@ -59,6 +67,31 @@ func NormalizeTheme(value string) string {
 	return strings.Join(colors, ",")
 }
 
+func normalizeStructuredSpec(parsed specparse.Spec) string {
+	parts := make([]string, 0, len(parsed.Props))
+	for _, prop := range parsed.Props {
+		key := prop.Key
+		switch strings.ToLower(key) {
+		case "colors":
+			key = "colors"
+		case "visualmapcolors":
+			key = "visualMapColors"
+		}
+		if !prop.HasValue {
+			parts = append(parts, key)
+			continue
+		}
+		segments := strings.Split(prop.Value, ",")
+		for i := range segments {
+			segments[i] = strings.TrimSpace(segments[i])
+		}
+		parts = append(parts, fmt.Sprintf("%s=%s", key, strings.Join(segments, ",")))
+	}
+	return parsed.Prefix + ":" + strings.Join(parts, ";")
+}
+
+// normalizeStructured is a best-effort semicolon re-serializer used when
+// specparse.Parse fails but the input still looks structured.
 func normalizeStructured(name, props string) string {
 	var parts []string
 	// Preserve property order from input while normalizing values.

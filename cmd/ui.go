@@ -62,7 +62,9 @@ func init() {
 	// --charts lets `vizb ui` prune chart chunks (incl. --data-url, where it's the
 	// only source of the selection since the data is fetched at runtime).
 	uiCmd.Flags().StringSliceVarP(&uiOpts.Charts, "charts", "c", shared.DefaultChartTypes, "Chart types to bundle (bar, line, pie, heatmap, radar, scatter)")
-	uiCmd.Flags().StringArrayVar(&uiOpts.ChartSpecs, "chart", nil, "Per-chart type settings override: <type>:<key>=<val>,... (repeatable)")
+	uiCmd.Flags().StringArrayVar(&uiOpts.ChartSpecs, "chart", nil,
+		"Per-chart settings override (repeatable): <type>:<key>=<val>,... or bare flags; "+
+			"use semicolon between props when a value contains commas (e.g. bar:stat=center,spread;labels)")
 	uiCmd.Flags().BoolVar(&uiOpts.Enable3D, "3d", false, "Bundle the 3D renderer for --data-url (remote data shape is unknown at build time)")
 	cli.BindStatFlag(uiCmd.Flags(), &uiOpts.Stat)
 }

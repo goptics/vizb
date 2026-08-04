@@ -85,8 +85,10 @@ func init() {
 	rootBag.Bind(rootCmd.Flags())
 	rootCmd.Flags().StringSliceVarP(&rootCharts, "charts", "c", defaultChartTypes, "Chart types to generate (bar, line, scatter, pie, heatmap, radar)")
 	rootCmd.Flags().StringArrayVar(&rootChartSpecs, "chart", nil,
-		"Per-chart settings override: <type>:<key>=<val>(,<key>=<val>)* or bare flags (labels, stack, 3d-rotate, 3d). "+
-			"Keys: swap, sort, scale, stack, labels, 3d-rotate, 3d, symbol, symbol-size, smooth, horizontal. E.g. --chart bar:stack --chart line:smooth")
+		"Per-chart settings override (repeatable): <type>:<key>=<val>(,<key>=<val>)* or bare flags. "+
+			"Comma separates single-value props; for multi-value props (e.g. stat=a,b) use semicolon between props or put the multi-value prop alone. "+
+			"Keys: swap, sort, scale, stack, labels, 3d-rotate, 3d, symbol, symbol-size, smooth, horizontal, stat. "+
+			"E.g. --chart bar:stack --chart 'bar:stat=center,spread;labels'")
 
 	// Build the chart subcommands (bar/line/pie/heatmap/radar/scatter) from the
 	// config/charts registry.

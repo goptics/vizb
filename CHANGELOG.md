@@ -10,6 +10,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adhere
 
 - **Data-owned themes** — repeatable `--theme` and `--theme-active` embed a theme catalog on the dataset (`themes[]`; `themes[0]` active; no separate active field on new output). Built-ins expand from the CLI; the UI ships only `default`. Structured custom syntax `name:colors=#hex,...;visualMapColors=#hex,#hex` and bare hex anonymous customs. Multi-theme selector only when the author provides 2+ themes; localStorage scoped to the available set ([#327](https://github.com/goptics/vizb/issues/327)).
 
+### Fixed
+
+- **`--chart` multi-value props** — multi-value props (e.g. `stat=a,b`) are no longer broken by comma prop splitting ([#328](https://github.com/goptics/vizb/issues/328)).
+
+### Changed
+
+- **cli** — shared structured CLI spec tokenizer (`internal/specparse`) used by `--chart` and structured `--theme`.
+
 # [v0.17.1] - 2026-08-02
 
 ### Fixed

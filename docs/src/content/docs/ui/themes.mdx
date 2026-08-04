@@ -49,7 +49,9 @@ on load; re-marshalled output drops the legacy field.
    - `colors` is required (≥2 hex colors)
    - `visualMapColors` is optional (exactly two hex colors); when omitted, Vizb
      uses the first and last color from `colors`
-   - Properties are semicolon-separated; order does not matter
+   - Properties are semicolon-separated (same structured prop grammar as
+     multi-value [`--chart`](/commands/root#per-chart-settings) specs); order
+     does not matter
 3. **Bare hex palette**: `#hex,#hex,...` (≥2 colors) — anonymous custom named
    `custom`, `custom-2`, … when multiple bare palettes are embedded
 

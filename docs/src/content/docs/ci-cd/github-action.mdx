@@ -61,7 +61,7 @@ The action:
 | `col-axis` | `""` | **csv/json + group:** place numeric column names on this axis (`n`, `x`, `y`, or `z`) so all columns share one chart (`--col-axis` / `-A` flag). Requires group; target axis must not already be used by `group-pattern`. |
 | `json-path` | `""` | **json only:** select a nested array to chart via a jq-like dot path (e.g. `.data.results`) (`--json-path` flag). |
 | `stat` | `""` | Enable stats panel (`--stat` flag). Empty = disabled; `all` or `true` = all categories; otherwise comma-separated from: `counts`, `center`, `spread`, `extremes`, `shape`, `percentiles`, `confidence`, `correlations`. |
-| `chart` | `""` | Per-chart overrides (`--chart` flag, repeatable). One override per line: `<type>:<key>=<val>,...`. Keys: `swap`, `sort`, `scale`, `labels`, `3d-rotate`, `3d`. E.g. `bar:scale=log` or `pie:labels`. Blank lines and `#`-prefixed lines are ignored. |
+| `chart` | `""` | Per-chart overrides (`--chart` flag, repeatable). One override per line: `<type>:<props>`. Comma separates single-value props; for multi-value props (e.g. `stat=center,spread`) use semicolon between props or put the multi-value prop alone. E.g. `bar:scale=log`, `pie:labels`, `bar:stat=center,spread;labels`. Blank lines and `#`-prefixed lines are ignored. |
 | `charts` | `"bar,line,pie"` | Chart types to generate (`-c` flag): `bar`, `line`, `scatter`, `pie`, `heatmap`, `radar`. |
 | `parser` | `"auto"` | Parser to use: `csv`, `json`, `go`, `js:tinybench`, `js:vitest`, `rs:criterion`, `rs:divan` (`-P` flag). |
 | `show-labels` | `"false"` | **Deprecated:** use `chart` input instead (e.g. `chart: 'pie:labels'`). Show labels on charts (`-l` flag). |

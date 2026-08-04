@@ -10,6 +10,7 @@ import (
 
 	internal_charts "github.com/goptics/vizb/internal/charts"
 	"github.com/goptics/vizb/internal/flags"
+	"github.com/goptics/vizb/internal/specparse"
 )
 
 // axisChar returns the single character that represents an axis key in a swap
@@ -113,14 +114,16 @@ func ParseOverrides(specs []string, charts []string, axes []Axis) (map[string]in
 	var warnings []string
 
 	for _, spec := range specs {
-		chartType, rest, ok := strings.Cut(spec, ":")
+		// Chart type is needed before tokenization so MultiValueKeys / KnownKeys
+		// can be built from that chart's flag registry.
+		chartType, _, ok := strings.Cut(spec, ":")
 		if !ok {
 			return nil, nil, fmt.Errorf("--chart: malformed spec %q: expected <type>:<key>=<val>,... or <type>:<flag>", spec)
 		}
-		if rest == "" {
-			return nil, nil, fmt.Errorf("--chart: spec %q has no settings after ':'; expected <type>:<key>=<val> or <type>:<flag>", spec)
+		chartType = strings.ToLower(strings.TrimSpace(chartType))
+		if chartType == "" {
+			return nil, nil, fmt.Errorf("--chart: malformed spec %q: expected <type>:<key>=<val>,... or <type>:<flag>", spec)
 		}
-		chartType = strings.ToLower(chartType)
 
 		// Validate the chart type is registered.
 		if _, err := internal_charts.New(chartType); err != nil {
@@ -144,6 +147,11 @@ func ParseOverrides(specs []string, charts []string, axes []Axis) (map[string]in
 			flagByName[f.EffectiveKey()] = f
 		}
 
+		parsed, err := specparse.Parse(spec, chartSpecParseOptions(chartFlags))
+		if err != nil {
+			return nil, nil, formatChartSpecParseError(spec, err)
+		}
+
 		payload, ok := payloads[chartType]
 		if !ok {
 			payload = map[string]any{"type": chartType}
@@ -151,16 +159,8 @@ func ParseOverrides(specs []string, charts []string, axes []Axis) (map[string]in
 			order = append(order, chartType)
 		}
 
-		for token := range strings.SplitSeq(rest, ",") {
-			token = strings.TrimSpace(token)
-			if token == "" {
-				continue
-			}
-
-			key, val, hasEq := strings.Cut(token, "=")
-			key = strings.TrimSpace(key)
-			val = strings.TrimSpace(val)
-
+		for _, prop := range parsed.Props {
+			key := prop.Key
 			f, known := flagByName[key]
 			if !known {
 				// Valid for another chart → drop with a warning; valid nowhere → typo.
@@ -168,13 +168,13 @@ func ParseOverrides(specs []string, charts []string, axes []Axis) (map[string]in
 					warnings = append(warnings, fmt.Sprintf("--chart: key %q is not applicable to %s charts; ignored", key, chartType))
 					continue
 				}
-				if !hasEq {
-					return nil, nil, fmt.Errorf("--chart: malformed token %q in spec %q: unknown bare flag (valid: %s)", token, spec, flagNameList(chartFlags))
+				if !prop.HasValue {
+					return nil, nil, fmt.Errorf("--chart: malformed token %q in spec %q: unknown bare flag (valid: %s)", key, spec, flagNameList(chartFlags))
 				}
 				return nil, nil, fmt.Errorf("--chart: unknown key %q in spec %q (valid keys: %s)", key, spec, flagNameList(chartFlags))
 			}
 
-			pv, err := convertFlagValue(f, val, hasEq, axes)
+			pv, err := convertFlagValue(f, prop.Value, prop.HasValue, axes)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -221,13 +221,9 @@ func convertFlagValue(f flags.Flag, val string, hasEq bool, axes []Axis) (any, e
 			return map[string]any{"enabled": true, "math": []string{}}, nil
 		}
 		// stat=a,b — validate each category and produce the typed payload
-		parts := strings.Split(val, ",")
+		parts := specparse.SplitList(val)
 		math := make([]string, 0, len(parts))
 		for _, p := range parts {
-			p = strings.TrimSpace(p)
-			if p == "" {
-				continue
-			}
 			if !slices.Contains(ValidStatMath, p) {
 				return nil, fmt.Errorf("--chart: stat category %q is invalid (valid: %s)", p, strings.Join(ValidStatMath, ", "))
 			}
@@ -269,6 +265,42 @@ func encode(f flags.Flag, v any) any {
 		return f.Encode(v)
 	}
 	return v
+}
+
+// chartSpecParseOptions builds tokenizer options for a chart's --chart specs.
+// KnownKeys are all EffectiveKey values; MultiValueKeys are flags whose values
+// may contain commas (KindStat today; KindStringSlice for forward safety).
+func chartSpecParseOptions(chartFlags []flags.Flag) specparse.Options {
+	known := make(map[string]struct{}, len(chartFlags))
+	multi := make(map[string]struct{})
+	for _, f := range chartFlags {
+		key := f.EffectiveKey()
+		known[key] = struct{}{}
+		switch f.Kind {
+		case flags.KindStat, flags.KindStringSlice:
+			multi[key] = struct{}{}
+		}
+	}
+	return specparse.Options{
+		AllowBareKeys:  true,
+		RequireProps:   true,
+		KnownKeys:      known,
+		MultiValueKeys: multi,
+	}
+}
+
+// formatChartSpecParseError maps structural tokenizer errors to user-facing
+// --chart messages without leaking the "specparse:" prefix.
+func formatChartSpecParseError(spec string, err error) error {
+	msg := err.Error()
+	switch {
+	case strings.Contains(msg, "missing ':'"):
+		return fmt.Errorf("--chart: malformed spec %q: expected <type>:<key>=<val>,... or <type>:<flag>", spec)
+	case strings.Contains(msg, "requires at least one prop"):
+		return fmt.Errorf("--chart: spec %q has no settings after ':'; expected <type>:<key>=<val> or <type>:<flag>", spec)
+	default:
+		return fmt.Errorf("--chart: malformed spec %q: %s", spec, strings.TrimPrefix(msg, "specparse: "))
+	}
 }
 
 // flagNameList renders the comma-separated valid key names for an error message.

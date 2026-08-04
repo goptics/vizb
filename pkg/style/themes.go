@@ -3,6 +3,8 @@ package style
 import (
 	"fmt"
 	"strings"
+
+	"github.com/goptics/vizb/internal/specparse"
 )
 
 // Theme is a fully expanded color theme for embedding on datasets.
@@ -160,8 +162,11 @@ func parseThemeSpec(value string) (Theme, bool, error) {
 	}
 
 	// 2. Structured form: name:prop=...;prop=...
-	if name, props, ok := splitStructured(trimmed); ok {
-		theme, err := parseStructured(name, props)
+	// Bare hex palettes never contain ':', so a missing colon falls through.
+	// Specs that contain ':' are treated as structured: prop-rule failures
+	// return an error rather than falling through to the hex path.
+	if strings.Contains(trimmed, ":") {
+		theme, err := parseStructuredTheme(trimmed)
 		return theme, false, err
 	}
 
@@ -177,8 +182,87 @@ func parseThemeSpec(value string) (Theme, bool, error) {
 	return Theme{}, false, fmt.Errorf("expected a built-in theme, structured theme, or at least two comma-separated hex colors")
 }
 
-// splitStructured splits "name:props" when the value looks structured
-// (contains ':' and a colors= property). Returns false for bare names.
+// themeSpecParseOptions builds specparse options for theme specs.
+// Theme prop values are comma-separated hex lists; in legacy (no ';') mode the
+// first key must be multi-value so commas stay in the value.
+func themeSpecParseOptions(input string) specparse.Options {
+	opts := specparse.Options{
+		AllowBareKeys: false,
+		RequireProps:  true,
+	}
+	if colon := strings.Index(input, ":"); colon >= 0 {
+		rest := input[colon+1:]
+		if !strings.Contains(rest, ";") {
+			if eq := strings.Index(rest, "="); eq >= 0 {
+				key := strings.TrimSpace(rest[:eq])
+				if key != "" {
+					opts.MultiValueKeys = map[string]struct{}{key: {}}
+				}
+			}
+		}
+	}
+	return opts
+}
+
+// parseStructuredTheme tokenizes via specparse then maps domain props.
+func parseStructuredTheme(trimmed string) (Theme, error) {
+	parsed, err := specparse.Parse(trimmed, themeSpecParseOptions(trimmed))
+	if err != nil {
+		return Theme{}, err
+	}
+	return themeFromSpec(parsed)
+}
+
+func themeFromSpec(parsed specparse.Spec) (Theme, error) {
+	var colors []string
+	var visualMap []string
+	hasColors := false
+	hasVisualMap := false
+
+	for _, prop := range parsed.Props {
+		if !prop.HasValue {
+			return Theme{}, fmt.Errorf("invalid structured theme property %q", prop.Key)
+		}
+		switch strings.ToLower(prop.Key) {
+		case "colors":
+			list, err := parseHexList(prop.Value)
+			if err != nil {
+				return Theme{}, fmt.Errorf("colors: %w", err)
+			}
+			colors = list
+			hasColors = true
+		case "visualmapcolors":
+			list, err := parseHexList(prop.Value)
+			if err != nil {
+				return Theme{}, fmt.Errorf("visualMapColors: %w", err)
+			}
+			if len(list) != 2 {
+				return Theme{}, fmt.Errorf("visualMapColors requires exactly two hex colors")
+			}
+			visualMap = list
+			hasVisualMap = true
+		default:
+			return Theme{}, fmt.Errorf("unknown structured theme property %q", prop.Key)
+		}
+	}
+
+	if !hasColors {
+		return Theme{}, fmt.Errorf("structured theme requires colors with at least two hex values")
+	}
+	if !hasVisualMap {
+		visualMap = visualMapFromColors(colors)
+	}
+
+	return Theme{
+		Name:            parsed.Prefix,
+		Colors:          colors,
+		VisualMapColors: visualMap,
+	}, nil
+}
+
+// splitStructured reports whether value looks like "name:key=...;..." and
+// returns the split name/props. Used by NormalizeTheme for best-effort
+// canonicalization when domain validation is not required.
 func splitStructured(value string) (name, props string, ok bool) {
 	idx := strings.Index(value, ":")
 	if idx < 0 {
@@ -195,60 +279,6 @@ func splitStructured(value string) (name, props string, ok bool) {
 		return "", "", false
 	}
 	return name, props, true
-}
-
-func parseStructured(name, props string) (Theme, error) {
-	var colors []string
-	var visualMap []string
-	hasColors := false
-	hasVisualMap := false
-
-	for _, part := range strings.Split(props, ";") {
-		part = strings.TrimSpace(part)
-		if part == "" {
-			continue
-		}
-		key, val, found := strings.Cut(part, "=")
-		if !found {
-			return Theme{}, fmt.Errorf("invalid structured theme property %q", part)
-		}
-		key = strings.TrimSpace(key)
-		val = strings.TrimSpace(val)
-		switch strings.ToLower(key) {
-		case "colors":
-			parsed, err := parseHexList(val)
-			if err != nil {
-				return Theme{}, fmt.Errorf("colors: %w", err)
-			}
-			colors = parsed
-			hasColors = true
-		case "visualmapcolors":
-			parsed, err := parseHexList(val)
-			if err != nil {
-				return Theme{}, fmt.Errorf("visualMapColors: %w", err)
-			}
-			if len(parsed) != 2 {
-				return Theme{}, fmt.Errorf("visualMapColors requires exactly two hex colors")
-			}
-			visualMap = parsed
-			hasVisualMap = true
-		default:
-			return Theme{}, fmt.Errorf("unknown structured theme property %q", key)
-		}
-	}
-
-	if !hasColors {
-		return Theme{}, fmt.Errorf("structured theme requires colors with at least two hex values")
-	}
-	if !hasVisualMap {
-		visualMap = visualMapFromColors(colors)
-	}
-
-	return Theme{
-		Name:            name,
-		Colors:          colors,
-		VisualMapColors: visualMap,
-	}, nil
 }
 
 // parseHexList parses a comma-separated list of ≥2 #rgb/#rrggbb colors.
