@@ -479,6 +479,64 @@ func (s *ServeSuite) TestConvertEndpoint() {
 	s.Equal("Comparisons", dataset["name"])
 }
 
+func (s *ServeSuite) TestConvertEndpointEmbedsThemesCatalog() {
+	handler := newRESTHandler()
+
+	// Legacy theme string expands into themes[]; response has no legacy theme field.
+	recorder := s.apiRequest(
+		handler,
+		"/",
+		`{"input":"region,value\nwest,12\n","parser":"csv","theme":"Westeros","charts":{"types":["bar"]}}`,
+		"application/json",
+		"application/json",
+	)
+	s.Equal(http.StatusOK, recorder.Code, recorder.Body.String())
+	var dataset map[string]any
+	s.Require().NoError(json.Unmarshal(recorder.Body.Bytes(), &dataset))
+	themes, ok := dataset["themes"].([]any)
+	s.Require().True(ok)
+	s.Require().Len(themes, 1)
+	s.Equal("westeros", themes[0].(map[string]any)["name"])
+	s.NotEmpty(themes[0].(map[string]any)["colors"])
+	s.Len(themes[0].(map[string]any)["visualMapColors"], 2)
+	_, hasLegacy := dataset["theme"]
+	s.False(hasLegacy)
+
+	// Explicit themes[] is echoed with themes[0] active.
+	body := `{
+		"input":"region,value\nwest,12\n",
+		"parser":"csv",
+		"themes":[
+			{"name":"brand","colors":["#f00","#0f0","#00f"],"visualMapColors":["#f00","#00f"]},
+			{"name":"alt","colors":["#111","#222"],"visualMapColors":["#111","#222"]}
+		],
+		"charts":{"types":["bar"]}
+	}`
+	recorder = s.apiRequest(handler, "/", body, "application/json", "application/json")
+	s.Equal(http.StatusOK, recorder.Code, recorder.Body.String())
+	s.Require().NoError(json.Unmarshal(recorder.Body.Bytes(), &dataset))
+	themes = dataset["themes"].([]any)
+	s.Require().Len(themes, 2)
+	s.Equal("brand", themes[0].(map[string]any)["name"])
+	s.Equal("alt", themes[1].(map[string]any)["name"])
+
+	// Invalid themes entry reports a clear JSON pointer path.
+	recorder = s.apiRequest(
+		handler,
+		"/",
+		`{"input":"x,y\na,1\n","themes":[{"name":"x","colors":["#f00"],"visualMapColors":["#f00"]}],"charts":{"types":["bar"]}}`,
+		"application/json",
+		"application/json",
+	)
+	s.Equal(http.StatusUnprocessableEntity, recorder.Code)
+	var problem struct {
+		Errors []apiValidationError `json:"errors"`
+	}
+	s.Require().NoError(json.Unmarshal(recorder.Body.Bytes(), &problem))
+	s.Require().NotEmpty(problem.Errors)
+	s.Equal("/themes/0/visualMapColors", problem.Errors[0].Path)
+}
+
 func (s *ServeSuite) TestConvertEndpointSupportsBenchmarkFamilies() {
 	handler := newRESTHandler()
 	for _, test := range []struct {
@@ -1036,6 +1094,7 @@ func (s *ServeSuite) TestRequestContractHelpers() {
 			path   string
 		}{
 			{name: "null convert field", raw: `{"theme":null}`, target: new(convertRequest), path: "/theme"},
+			{name: "null themes field", raw: `{"themes":null}`, target: new(convertRequest), path: "/themes"},
 			{name: "null title", raw: `{"title":null}`, target: new(convertRequest), path: "/title"},
 			{name: "null col axis", raw: `{"colAxis":null}`, target: new(groupingOptions), path: "/grouping/colAxis"},
 			{name: "unknown grouping field", raw: `{"unexpected":true}`, target: new(groupingOptions), path: "/grouping/unexpected"},
@@ -1069,12 +1128,202 @@ func (s *ServeSuite) TestRequestContractHelpers() {
 			Theme:       &theme,
 		})
 		s.Require().Nil(validationErr)
-		s.Equal(core.Metadata{ID: id, Name: name, Description: description, Tag: tag, Theme: "westeros"}, metadata)
+		s.Equal(id, metadata.ID)
+		s.Equal(name, metadata.Name)
+		s.Equal(description, metadata.Description)
+		s.Equal(tag, metadata.Tag)
+		s.Require().Len(metadata.Themes, 1)
+		s.Equal("westeros", metadata.Themes[0].Name)
+		s.NotEmpty(metadata.Themes[0].Colors)
+		s.Len(metadata.Themes[0].VisualMapColors, 2)
+
+		// themes[] wins over legacy theme string; Themes[0] is active.
+		legacy := "roma"
+		metadata, validationErr = buildConvertMetadata(convertRequest{
+			Themes: []shared.Theme{{
+				Name:            "brand",
+				Colors:          []string{"#f00", "#0f0", "#00f"},
+				VisualMapColors: []string{"#f00", "#00f"},
+			}, {
+				Name:            "secondary",
+				Colors:          []string{"#111", "#222"},
+				VisualMapColors: []string{"#111", "#222"},
+			}},
+			Theme: &legacy,
+		})
+		s.Require().Nil(validationErr)
+		s.Require().Len(metadata.Themes, 2)
+		s.Equal("brand", metadata.Themes[0].Name)
+		s.Equal("secondary", metadata.Themes[1].Name)
+
+		// Built-in default is not embedded.
+		metadata, validationErr = buildConvertMetadata(convertRequest{
+			Themes: []shared.Theme{{
+				Name:            "default",
+				Colors:          []string{"#f00", "#0f0"},
+				VisualMapColors: []string{"#f00", "#0f0"},
+			}},
+		})
+		s.Require().Nil(validationErr)
+		s.Empty(metadata.Themes)
+
+		// Case-insensitive duplicate names are rejected.
+		_, _, validationErr = buildConvertInput(convertRequest{
+			Themes: []shared.Theme{{
+				Name:            "brand",
+				Colors:          []string{"#111", "#222"},
+				VisualMapColors: []string{"#111", "#222"},
+			}, {
+				Name:            "Brand",
+				Colors:          []string{"#aaa", "#bbb"},
+				VisualMapColors: []string{"#aaa", "#bbb"},
+			}},
+		}, []byte("x,y\\na,1\\n"))
+		s.Require().NotNil(validationErr)
+		s.Equal("/themes/1/name", validationErr.Path)
+		s.Equal("duplicate_value", validationErr.Code)
+
+		// Duplicate "default" (including case variants) is also rejected.
+		_, _, validationErr = buildConvertInput(convertRequest{
+			Themes: []shared.Theme{{
+				Name:            "default",
+				Colors:          []string{"#f00", "#0f0"},
+				VisualMapColors: []string{"#f00", "#0f0"},
+			}, {
+				Name:            "DEFAULT",
+				Colors:          []string{"#0f0", "#00f"},
+				VisualMapColors: []string{"#0f0", "#00f"},
+			}},
+		}, []byte("x,y\\na,1\\n"))
+		s.Require().NotNil(validationErr)
+		s.Equal("/themes/1/name", validationErr.Path)
+
+		defaultTheme := "default"
+		metadata, validationErr = buildConvertMetadata(convertRequest{Theme: &defaultTheme})
+		s.Require().Nil(validationErr)
+		s.Empty(metadata.Themes)
 
 		invalidTheme := "not-a-theme"
 		_, _, validationErr = buildConvertInput(convertRequest{Theme: &invalidTheme}, []byte("x,y\\na,1\\n"))
 		s.Require().NotNil(validationErr)
 		s.Equal("/theme", validationErr.Path)
+
+		_, _, validationErr = buildConvertInput(convertRequest{
+			Themes: []shared.Theme{{Name: "", Colors: []string{"#f00"}, VisualMapColors: []string{"#f00", "#0f0"}}},
+		}, []byte("x,y\\na,1\\n"))
+		s.Require().NotNil(validationErr)
+		s.Equal("/themes/0/name", validationErr.Path)
+
+		_, _, validationErr = buildConvertInput(convertRequest{
+			Themes: []shared.Theme{{Name: "brand", Colors: nil, VisualMapColors: []string{"#f00", "#0f0"}}},
+		}, []byte("x,y\\na,1\\n"))
+		s.Require().NotNil(validationErr)
+		s.Equal("/themes/0/colors", validationErr.Path)
+
+		_, _, validationErr = buildConvertInput(convertRequest{
+			Themes: []shared.Theme{{Name: "brand", Colors: []string{"#f00", "#0f0"}, VisualMapColors: []string{"#f00"}}},
+		}, []byte("x,y\\na,1\\n"))
+		s.Require().NotNil(validationErr)
+		s.Equal("/themes/0/visualMapColors", validationErr.Path)
+
+		_, _, validationErr = buildConvertInput(convertRequest{
+			Themes: []shared.Theme{{
+				Name:            "brand",
+				Colors:          []string{"  ", "#0f0"},
+				VisualMapColors: []string{"#f00", "#0f0"},
+			}},
+		}, []byte("x,y\\na,1\\n"))
+		s.Require().NotNil(validationErr)
+		s.Equal("/themes/0/colors/0", validationErr.Path)
+
+		_, _, validationErr = buildConvertInput(convertRequest{
+			Themes: []shared.Theme{{
+				Name:            "brand",
+				Colors:          []string{"#f00", "#0f0"},
+				VisualMapColors: []string{"#f00", "  "},
+			}},
+		}, []byte("x,y\\na,1\\n"))
+		s.Require().NotNil(validationErr)
+		s.Equal("/themes/0/visualMapColors/1", validationErr.Path)
+	})
+
+	s.Run("dataset wire themes", func() {
+		name := "Bench"
+		raw, err := json.Marshal(map[string]any{
+			"name": name,
+			"themes": []map[string]any{{
+				"name":            "roma",
+				"colors":          []string{"#E01F54", "#001852"},
+				"visualMapColors": []string{"#a4d8c2", "#E01F54"},
+			}},
+			"axes":     []map[string]any{{"key": "name"}, {"key": "y"}},
+			"settings": []map[string]any{{"type": "bar"}},
+			"data":     []map[string]any{{"name": "case", "yAxis": "1"}},
+		})
+		s.Require().NoError(err)
+		ds, validationErr := decodeStrictDataset(raw, "/datasets/0")
+		s.Require().Nil(validationErr)
+		s.Require().Len(ds.Themes, 1)
+		s.Equal("roma", ds.Themes[0].Name)
+		s.Empty(ds.Theme)
+
+		// Legacy theme string expands into Themes.
+		raw, err = json.Marshal(map[string]any{
+			"name":     name,
+			"theme":    "vintage",
+			"axes":     []map[string]any{{"key": "name"}, {"key": "y"}},
+			"settings": []map[string]any{{"type": "bar"}},
+			"data":     []map[string]any{{"name": "case", "yAxis": "1"}},
+		})
+		s.Require().NoError(err)
+		ds, validationErr = decodeStrictDataset(raw, "/datasets/0")
+		s.Require().Nil(validationErr)
+		s.Require().Len(ds.Themes, 1)
+		s.Equal("vintage", ds.Themes[0].Name)
+		s.Empty(ds.Theme)
+
+		// Invalid themes[] entry surfaces a clear path.
+		raw, err = json.Marshal(map[string]any{
+			"name": name,
+			"themes": []map[string]any{{
+				"name":            "bad",
+				"colors":          []string{"#f00"},
+				"visualMapColors": []string{"#f00"},
+			}},
+			"axes":     []map[string]any{{"key": "name"}, {"key": "y"}},
+			"settings": []map[string]any{{"type": "bar"}},
+			"data":     []map[string]any{{"name": "case", "yAxis": "1"}},
+		})
+		s.Require().NoError(err)
+		_, validationErr = decodeStrictDataset(raw, "/datasets/0")
+		s.Require().NotNil(validationErr)
+		s.Equal("/datasets/0/themes/0/visualMapColors", validationErr.Path)
+
+		// Invalid legacy theme is soft: empty Themes, no validation error.
+		raw, err = json.Marshal(map[string]any{
+			"name":     name,
+			"theme":    "not-a-theme",
+			"axes":     []map[string]any{{"key": "name"}, {"key": "y"}},
+			"settings": []map[string]any{{"type": "bar"}},
+			"data":     []map[string]any{{"name": "case", "yAxis": "1"}},
+		})
+		s.Require().NoError(err)
+		ds, validationErr = decodeStrictDataset(raw, "/datasets/0")
+		s.Require().Nil(validationErr)
+		s.Empty(ds.Themes)
+
+		// Structured default name expands to an empty catalog (UI owns default).
+		raw, err = json.Marshal(map[string]any{
+			"name":     name,
+			"theme":    "default:colors=#f00,#0f0",
+			"axes":     []map[string]any{{"key": "name"}, {"key": "y"}},
+			"settings": []map[string]any{{"type": "bar"}},
+			"data":     []map[string]any{{"name": "case", "yAxis": "1"}},
+		})
+		s.Require().NoError(err)
+		ds, validationErr = decodeStrictDataset(raw, "/datasets/0")
+		s.Require().Nil(validationErr)
+		s.Empty(ds.Themes)
 	})
 
 	s.Run("chart config decoding", func() {

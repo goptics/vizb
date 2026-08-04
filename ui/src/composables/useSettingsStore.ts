@@ -2,7 +2,7 @@ import { computed, ref, watch } from 'vue'
 import type { ChartConfig, ChartType, Sort, ScaleType } from '../types'
 import { activeDataset } from './useDataPoint'
 import { isValidIndex } from '../lib/utils'
-import { activeThemeName, applyTheme, normalizeTheme } from '../lib/themes'
+import { activeThemeName, applyTheme, isAvailableThemeName, normalizeTheme } from '../lib/themes'
 
 // Module-level singleton state. `activeChartIndex` is the cursor into
 // `activeDataset.value.settings`; the dataset IS the source of truth — no flat
@@ -36,11 +36,12 @@ const initializeDarkMode = () => {
 
 initializeDarkMode()
 
-let hasThemePreference = false
+// Apply a stored theme name only when it is in the available set for the
+// current report (at module load that is only UI default until dataset themes
+// are registered). Unknown legacy names and custom hex strings are ignored.
 if (isBrowser) {
   const savedTheme = localStorage.getItem('color-theme')
-  if (savedTheme !== null) {
-    hasThemePreference = true
+  if (savedTheme !== null && isAvailableThemeName(savedTheme)) {
     applyTheme(savedTheme)
   }
 }
@@ -53,14 +54,28 @@ const toggleDark = () => {
   updateHtmlClass()
 }
 
+/**
+ * Pick the active theme for the current dataset.
+ * Prefer localStorage `color-theme` when that name is still in the available
+ * set for this report; otherwise use the author default (`themes[0]` / default
+ * / legacy hex) passed by the caller.
+ */
 const initializeTheme = (datasetTheme?: string) => {
-  if (!hasThemePreference) applyTheme(datasetTheme)
+  if (isBrowser) {
+    const saved = localStorage.getItem('color-theme')
+    if (saved !== null && isAvailableThemeName(saved)) {
+      applyTheme(saved)
+      return
+    }
+  }
+  applyTheme(datasetTheme)
 }
 
+/** Apply a theme only when its name is in the available set; persist the name. */
 const setTheme = (theme: string) => {
+  if (!isAvailableThemeName(theme)) return
   const normalized = normalizeTheme(theme)
   applyTheme(normalized)
-  hasThemePreference = true
   if (isBrowser) localStorage.setItem('color-theme', normalized)
 }
 

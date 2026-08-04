@@ -44,17 +44,96 @@ describe('useSettingsStore', () => {
     vi.stubGlobal('window', { matchMedia: () => ({ matches: false }) })
     vi.stubGlobal('document', { documentElement: { classList: { toggle: vi.fn() } } })
 
+    const { registerDatasetThemes } = await import('../lib/themes')
+    registerDatasetThemes([
+      {
+        name: 'ocean',
+        colors: ['#0ff', '#00f', '#0f0'],
+        visualMapColors: ['#0ff', '#00f'],
+      },
+      {
+        name: 'forest',
+        colors: ['#0a0', '#080', '#040'],
+        visualMapColors: ['#0a0', '#040'],
+      },
+    ])
+
     const { useSettingsStore } = await import('./useSettingsStore')
     const { themeName, initializeTheme, setTheme } = useSettingsStore()
-    initializeTheme('vintage')
-    expect(themeName.value).toBe('vintage')
+    initializeTheme('ocean')
+    expect(themeName.value).toBe('ocean')
 
-    setTheme('roma')
-    expect(themeName.value).toBe('roma')
-    expect(storage.setItem).toHaveBeenCalledWith('color-theme', 'roma')
+    setTheme('forest')
+    expect(themeName.value).toBe('forest')
+    expect(storage.setItem).toHaveBeenCalledWith('color-theme', 'forest')
 
-    initializeTheme('chalk')
-    expect(themeName.value).toBe('roma')
+    // localStorage preference still in available set → keep forest over author default.
+    initializeTheme('ocean')
+    expect(themeName.value).toBe('forest')
+  })
+
+  it('setTheme ignores names outside the available set', async () => {
+    const values = new Map<string, string>()
+    const storage = {
+      getItem: vi.fn((key: string) => values.get(key) ?? null),
+      setItem: vi.fn((key: string, value: string) => values.set(key, value)),
+    }
+    vi.stubGlobal('localStorage', storage)
+    vi.stubGlobal('window', { matchMedia: () => ({ matches: false }) })
+    vi.stubGlobal('document', { documentElement: { classList: { toggle: vi.fn() } } })
+
+    const { registerDatasetThemes } = await import('../lib/themes')
+    registerDatasetThemes([
+      {
+        name: 'ocean',
+        colors: ['#0ff', '#00f', '#0f0'],
+        visualMapColors: ['#0ff', '#00f'],
+      },
+      {
+        name: 'forest',
+        colors: ['#0a0', '#080', '#040'],
+        visualMapColors: ['#0a0', '#040'],
+      },
+    ])
+
+    const { useSettingsStore } = await import('./useSettingsStore')
+    const { themeName, initializeTheme, setTheme } = useSettingsStore()
+    initializeTheme('ocean')
+    expect(themeName.value).toBe('ocean')
+
+    setTheme('macarons')
+    expect(themeName.value).toBe('ocean')
+    expect(storage.setItem).not.toHaveBeenCalledWith('color-theme', 'macarons')
+
+    setTheme('default')
+    expect(themeName.value).toBe('default')
+    expect(storage.setItem).toHaveBeenCalledWith('color-theme', 'default')
+  })
+
+  it('localStorage theme is ignored when not in the single-theme available set', async () => {
+    const values = new Map<string, string>([['color-theme', 'default']])
+    const storage = {
+      getItem: vi.fn((key: string) => values.get(key) ?? null),
+      setItem: vi.fn((key: string, value: string) => values.set(key, value)),
+    }
+    vi.stubGlobal('localStorage', storage)
+    vi.stubGlobal('window', { matchMedia: () => ({ matches: false }) })
+    vi.stubGlobal('document', { documentElement: { classList: { toggle: vi.fn() } } })
+
+    const { registerDatasetThemes } = await import('../lib/themes')
+    // One author theme → available set is only that theme (selector hidden).
+    registerDatasetThemes([
+      {
+        name: 'ocean',
+        colors: ['#0ff', '#00f', '#0f0'],
+        visualMapColors: ['#0ff', '#00f'],
+      },
+    ])
+
+    const { useSettingsStore } = await import('./useSettingsStore')
+    const { themeName, initializeTheme } = useSettingsStore()
+    initializeTheme('ocean')
+    expect(themeName.value).toBe('ocean')
   })
 
   it('activeConfig returns the config at the active chart index', async () => {
@@ -234,10 +313,11 @@ describe('useSettingsStore', () => {
     expect(chartType.value).toBe('bar')
   })
 
-  it('initializes dark mode and theme preference from localStorage and toggles dark', async () => {
+  it('initializes dark mode from localStorage and toggles dark', async () => {
     const values = new Map<string, string>([
       ['dark-mode', 'true'],
-      ['color-theme', 'macarons'],
+      // Named theme in available set (only default with no dataset themes registered).
+      ['color-theme', 'default'],
     ])
     const storage = {
       getItem: vi.fn((key: string) => values.get(key) ?? null),
@@ -254,14 +334,59 @@ describe('useSettingsStore', () => {
     const { isDark, themeName, toggleDark, initializeTheme } = useSettingsStore()
 
     expect(isDark.value).toBe(true)
-    expect(themeName.value).toBe('macarons')
-    initializeTheme('vintage')
-    expect(themeName.value).toBe('macarons')
+    expect(themeName.value).toBe('default')
+    initializeTheme('default')
+    expect(themeName.value).toBe('default')
 
     toggleDark()
     expect(isDark.value).toBe(false)
     expect(storage.setItem).toHaveBeenCalledWith('dark-mode', 'false')
     expect(classList.toggle).toHaveBeenCalled()
+  })
+
+  it('ignores localStorage custom hex and unknown names outside the available set', async () => {
+    const values = new Map<string, string>([['color-theme', '#111,#222,#333']])
+    const storage = {
+      getItem: vi.fn((key: string) => values.get(key) ?? null),
+      setItem: vi.fn(),
+    }
+    vi.stubGlobal('localStorage', storage)
+    vi.stubGlobal('window', { matchMedia: () => ({ matches: false }) })
+    vi.stubGlobal('document', { documentElement: { classList: { toggle: vi.fn() } } })
+
+    const { registerDatasetThemes } = await import('../lib/themes')
+    // Single author theme: available set is only this name (not default).
+    registerDatasetThemes([
+      { name: 'ocean', colors: ['#0ff', '#00f'], visualMapColors: ['#0ff', '#00f'] },
+    ])
+
+    const { useSettingsStore } = await import('./useSettingsStore')
+    const { themeName, initializeTheme } = useSettingsStore()
+    // Custom hex is not available → author default wins.
+    initializeTheme('ocean')
+    expect(themeName.value).toBe('ocean')
+  })
+
+  it('falls back unknown legacy localStorage theme names to dataset default', async () => {
+    const values = new Map<string, string>([['color-theme', 'macarons']])
+    const storage = {
+      getItem: vi.fn((key: string) => values.get(key) ?? null),
+      setItem: vi.fn(),
+    }
+    vi.stubGlobal('localStorage', storage)
+    vi.stubGlobal('window', { matchMedia: () => ({ matches: false }) })
+    vi.stubGlobal('document', { documentElement: { classList: { toggle: vi.fn() } } })
+
+    const { registerDatasetThemes } = await import('../lib/themes')
+    registerDatasetThemes([
+      { name: 'ocean', colors: ['#0ff', '#00f'], visualMapColors: ['#0ff', '#00f'] },
+    ])
+
+    const { useSettingsStore } = await import('./useSettingsStore')
+    const { themeName, initializeTheme } = useSettingsStore()
+    // Unknown legacy name is not available → author default wins.
+    initializeTheme('ocean')
+    expect(themeName.value).toBe('ocean')
   })
 
   it('setStack without enabling keeps scale when stack is false', async () => {
@@ -333,8 +458,12 @@ describe('useSettingsStore', () => {
       const { useSettingsStore } = await import('./useSettingsStore')
       const store = useSettingsStore()
       store.toggleDark()
-      store.setTheme('roma')
-      expect(store.themeName.value).toBe('roma')
+      // Only available name without registered dataset themes is default.
+      store.setTheme('default')
+      expect(store.themeName.value).toBe('default')
+      // Custom hex is outside the available set → ignored.
+      store.setTheme('#abc,#def')
+      expect(store.themeName.value).toBe('default')
       expect(typeof store.isDark.value).toBe('boolean')
     } finally {
       if (hadWindow) g.window = prevWindow

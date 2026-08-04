@@ -3,6 +3,7 @@ package shared
 import (
 	"slices"
 	"sort"
+	"strings"
 
 	internal_charts "github.com/goptics/vizb/internal/charts"
 )
@@ -36,10 +37,17 @@ func MergeDatasets(benchmarks []Dataset, dim Dimension) []Dataset {
 
 		if existing, exists := tags[tag]; exists {
 			if tag == noTagKey {
+				// Newer timestamp wins for data; always union Themes.
+				var newer, older Dataset
 				if existing.Timestamp >= ds.Timestamp {
-					continue
+					newer, older = *existing, ds
+				} else {
+					newer, older = ds, *existing
 				}
-				tags[tag] = &ds
+				merged := newer
+				merged.Themes = mergeThemes(datasetThemes(newer), datasetThemes(older))
+				merged.Theme = ""
+				tags[tag] = &merged
 				continue
 			}
 
@@ -85,9 +93,8 @@ func MergeDatasets(benchmarks []Dataset, dim Dimension) []Dataset {
 				latest := tagged[len(tagged)-1]
 				base.Tag = latest.Tag
 				base.Timestamp = latest.Timestamp
-				if latest.Theme != "" {
-					base.Theme = latest.Theme
-				}
+				base.Themes = foldThemes(allDatasets)
+				base.Theme = ""
 				base.History = buildHistory(allDatasets, latest.Tag)
 				base.Data = mergeData(allDatasets, dim)
 				base.Axes = EnsureAxis(base.Axes, dim)
@@ -97,6 +104,8 @@ func MergeDatasets(benchmarks []Dataset, dim Dimension) []Dataset {
 
 			latest := tagged[len(tagged)-1]
 			base := deepCloneDataset(latest)
+			base.Themes = foldThemes(tagged)
+			base.Theme = ""
 			base.History = buildHistory(tagged, latest.Tag)
 			base.Data = mergeData(tagged, dim)
 			base.Axes = EnsureAxis(base.Axes, dim)
@@ -138,7 +147,106 @@ func deepCloneDataset(src Dataset) Dataset {
 		copy(dst.Settings, src.Settings)
 	}
 
+	if src.Themes != nil {
+		dst.Themes = cloneThemes(src.Themes)
+	}
+
 	return dst
+}
+
+// datasetThemes returns the theme catalog for merge, expanding a legacy Theme
+// string when Themes is empty (in-memory datasets that skipped UnmarshalJSON).
+func datasetThemes(ds Dataset) []Theme {
+	if len(ds.Themes) > 0 {
+		return ds.Themes
+	}
+	tmp := ds
+	tmp.migrateLegacyTheme()
+	return tmp.Themes
+}
+
+// mergeThemes unions two theme catalogs by case-insensitive name.
+// newer wins on content for the same name. Order prefers newer's sequence,
+// then appends older-only names — so newer Themes[0] stays active first.
+func mergeThemes(newer, older []Theme) []Theme {
+	if len(newer) == 0 && len(older) == 0 {
+		return nil
+	}
+	if len(newer) == 0 {
+		return cloneThemes(older)
+	}
+	if len(older) == 0 {
+		return cloneThemes(newer)
+	}
+
+	byKey := make(map[string]Theme, len(newer)+len(older))
+	order := make([]string, 0, len(newer)+len(older))
+
+	for _, t := range newer {
+		key := strings.ToLower(t.Name)
+		if _, exists := byKey[key]; !exists {
+			order = append(order, key)
+		}
+		byKey[key] = cloneTheme(t)
+	}
+	for _, t := range older {
+		key := strings.ToLower(t.Name)
+		if _, exists := byKey[key]; exists {
+			continue // newer content already recorded
+		}
+		order = append(order, key)
+		byKey[key] = cloneTheme(t)
+	}
+
+	out := make([]Theme, 0, len(order))
+	for _, key := range order {
+		out = append(out, byKey[key])
+	}
+	return out
+}
+
+// foldThemes merges theme catalogs from datasets in chronological order
+// (oldest first). Later timestamps win on same name and establish base order.
+func foldThemes(datasets []Dataset) []Theme {
+	if len(datasets) == 0 {
+		return nil
+	}
+	// Sort a copy by timestamp so fold order is stable regardless of input order.
+	ordered := make([]Dataset, len(datasets))
+	copy(ordered, datasets)
+	sort.SliceStable(ordered, func(i, j int) bool {
+		return ordered[i].Timestamp < ordered[j].Timestamp
+	})
+
+	var result []Theme
+	for _, ds := range ordered {
+		result = mergeThemes(datasetThemes(ds), result)
+	}
+	return result
+}
+
+func cloneThemes(themes []Theme) []Theme {
+	if themes == nil {
+		return nil
+	}
+	out := make([]Theme, len(themes))
+	for i := range themes {
+		out[i] = cloneTheme(themes[i])
+	}
+	return out
+}
+
+func cloneTheme(t Theme) Theme {
+	out := Theme{Name: t.Name}
+	if t.Colors != nil {
+		out.Colors = make([]string, len(t.Colors))
+		copy(out.Colors, t.Colors)
+	}
+	if t.VisualMapColors != nil {
+		out.VisualMapColors = make([]string, len(t.VisualMapColors))
+		copy(out.VisualMapColors, t.VisualMapColors)
+	}
+	return out
 }
 
 type historyCandidate struct {
@@ -227,9 +335,9 @@ func replaceTagData(existing, incoming Dataset, dim Dimension) Dataset {
 	result.Data = append(kept, mergeDataForTag(incoming, dim)...)
 	result.Tag = incoming.Tag
 	result.Timestamp = incoming.Timestamp
-	if incoming.Theme != "" {
-		result.Theme = incoming.Theme
-	}
+	// incoming is the newer-by-timestamp dataset; union themes with it preferred.
+	result.Themes = mergeThemes(datasetThemes(incoming), datasetThemes(existing))
+	result.Theme = ""
 	if incoming.Meta != nil {
 		m := *incoming.Meta
 		if incoming.Meta.CPU != nil {

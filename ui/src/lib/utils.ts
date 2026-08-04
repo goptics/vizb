@@ -4,7 +4,7 @@ import type { ChartType, Meta, ChartData, DataPoint, Axis } from '../types'
 import type { Ref } from 'vue'
 import { arrangementHasChartZ } from './swap'
 import { builderForChart, pickBuilder } from './builders'
-import { activePalette, palettePrimary, THEMES } from './themes'
+import { activePalette, DEFAULT_THEME, palettePrimary } from './themes'
 
 /**
  * Utility function to merge Tailwind CSS classes
@@ -16,7 +16,7 @@ export function cn(...inputs: ClassValue[]) {
 
 export const isValidIndex = (id: number, length: number): boolean => id >= 0 && id < length
 
-export const COLOR_PALETTE = THEMES.default
+export const COLOR_PALETTE = DEFAULT_THEME.colors
 export const getThemePalette = () => activePalette.value
 export const getDefaultThemeColor = () => palettePrimary(activePalette.value)
 

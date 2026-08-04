@@ -17,7 +17,14 @@ import (
 var DataFlags = []flags.Flag{
 	{Name: "name", Shorthand: "n", Default: "Comparisons", Usage: "Name of the comparison", Kind: flags.KindString},
 	{Name: "title", Usage: "Override the chart title when --col-axis produces one chart; independent of -n/--name, otherwise ignored", Kind: flags.KindString},
-	{Name: "theme", Usage: "Initial series color theme (a built-in name or comma-separated hex palette)", Kind: flags.KindString, Default: "default", Normalizer: style.NormalizeTheme, SoftValidate: style.ValidateTheme},
+	{
+		Name: "theme", Kind: flags.KindStringArray,
+		Usage:        "Embed a color theme on the dataset (repeatable). Built-in name, structured name:colors=#hex,...;visualMapColors=#hex,#hex, or bare #hex,#hex,... palette. Empty when unset (UI default). Built-in 'default' is not embedded.",
+		Label:        "theme",
+		Normalizer:   style.NormalizeTheme,
+		SoftValidate: style.ValidateTheme,
+	},
+	{Name: "theme-active", Usage: "Name of the active theme (moved first in the embedded catalog). Use 'default' to leave order unchanged without embedding default", Kind: flags.KindString},
 	{Name: "description", Shorthand: "d", Usage: "Description of the comparison", Kind: flags.KindString},
 	{Name: "output", Shorthand: "o", Usage: "Output file path/name", Kind: flags.KindString},
 	{Name: "tag", Shorthand: "t", Usage: "Tag/identifier for the comparison", Kind: flags.KindString},

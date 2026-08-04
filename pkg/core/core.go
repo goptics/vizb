@@ -26,10 +26,13 @@ import (
 )
 
 // Metadata is the caller-supplied Dataset metadata for Convert.
+// Themes is the data-owned theme catalog (Themes[0] active when non-empty).
+// Leave Themes empty for the UI default palette; do not set the legacy
+// Dataset.Theme string on new output.
 type Metadata struct {
 	ID          string
 	Name        string
-	Theme       string
+	Themes      []shared.Theme
 	Description string
 	Tag         string
 	System      *shared.Meta
@@ -364,7 +367,7 @@ func Assemble(in AssembleInput) *shared.Dataset {
 	ds := &shared.Dataset{
 		ID:           strings.TrimSpace(meta.ID),
 		Name:         name,
-		Theme:        meta.Theme,
+		Themes:       meta.Themes,
 		Description:  meta.Description,
 		Tag:          meta.Tag,
 		Timestamp:    timestamp,

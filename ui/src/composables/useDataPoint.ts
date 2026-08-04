@@ -11,6 +11,7 @@ import {
 } from '../lib/utils'
 import { presentAxisString } from '../lib/swap'
 import { useSettingsStore } from './useSettingsStore'
+import { registerDatasetThemes, resolveActiveTheme } from '../lib/themes'
 import {
   classifyPayload,
   fetchDatasetDetail,
@@ -189,10 +190,26 @@ const activeArrangement = computed<Arrangement>(() => {
 // Group list as the selector consumes it: a `{ name }[]` over the worker's names.
 const resultGroups = computed(() => groupNames.value.map((name) => ({ name })))
 
+// Re-register dataset themes and re-resolve the active palette whenever the
+// active dataset changes. initializeTheme re-reads localStorage and applies
+// it only when the stored name is still in this report's available set
+// (default + themes when 2+ author themes; otherwise only the single resolved
+// theme). Otherwise author intent wins (themes[0] / default / legacy hex).
 watch(
-  () => activeDataset.value?.theme,
-  (theme) => {
-    initializeTheme(theme)
+  () => activeDataset.value,
+  (dataset) => {
+    registerDatasetThemes(dataset?.themes)
+    const active = resolveActiveTheme(dataset)
+    // Legacy hex-only theme string: apply the comma-separated palette key.
+    if (
+      active.name === 'custom' &&
+      dataset?.theme?.trim().startsWith('#') &&
+      !dataset.themes?.length
+    ) {
+      initializeTheme(dataset.theme)
+      return
+    }
+    initializeTheme(active.name)
   },
   { immediate: true }
 )

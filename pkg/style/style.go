@@ -28,41 +28,63 @@ var (
 )
 
 var (
-	builtInThemes = map[string]struct{}{
-		"default": {}, "vintage": {}, "meadow": {}, "westeros": {}, "essos": {},
-		"wonderland": {}, "walden": {}, "chalk": {}, "infographic": {},
-		"macarons": {}, "roma": {}, "shine": {}, "purple-passion": {},
-	}
 	hexColorPattern = regexp.MustCompile(`^#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?$`)
 )
 
-// ValidateTheme accepts a built-in name or a custom palette containing at
-// least two comma-separated #rgb/#rrggbb colors.
+// ValidateTheme accepts a built-in name, a structured theme spec, or a custom
+// palette containing at least two comma-separated #rgb/#rrggbb colors.
 func ValidateTheme(value string) error {
-	if _, ok := builtInThemes[strings.ToLower(value)]; ok {
-		return nil
-	}
-	colors := strings.Split(value, ",")
-	if len(colors) < 2 {
-		return fmt.Errorf("expected a built-in theme or at least two comma-separated hex colors")
-	}
-	for _, color := range colors {
-		if !hexColorPattern.MatchString(strings.TrimSpace(color)) {
-			return fmt.Errorf("invalid hex color %q", strings.TrimSpace(color))
-		}
-	}
-	return nil
+	_, err := ParseThemeSpec(value)
+	return err
 }
 
-// NormalizeTheme canonicalizes built-in names and custom palette whitespace.
+// NormalizeTheme canonicalizes built-in names, structured specs, and custom
+// palette whitespace for soft-flag validation.
 func NormalizeTheme(value string) string {
 	trimmed := strings.TrimSpace(value)
-	if _, ok := builtInThemes[strings.ToLower(trimmed)]; ok {
+	if trimmed == "" {
+		return trimmed
+	}
+	if _, ok := themeCatalog[strings.ToLower(trimmed)]; ok {
 		return strings.ToLower(trimmed)
 	}
+	if name, props, ok := splitStructured(trimmed); ok {
+		return normalizeStructured(name, props)
+	}
+	// Bare hex (or anything comma-separated): trim each segment.
 	colors := strings.Split(trimmed, ",")
 	for i := range colors {
 		colors[i] = strings.TrimSpace(colors[i])
 	}
 	return strings.Join(colors, ",")
+}
+
+func normalizeStructured(name, props string) string {
+	var parts []string
+	// Preserve property order from input while normalizing values.
+	for _, part := range strings.Split(props, ";") {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		key, val, found := strings.Cut(part, "=")
+		if !found {
+			parts = append(parts, part)
+			continue
+		}
+		key = strings.TrimSpace(key)
+		// Canonical key casing for known props.
+		switch strings.ToLower(key) {
+		case "colors":
+			key = "colors"
+		case "visualmapcolors":
+			key = "visualMapColors"
+		}
+		segments := strings.Split(val, ",")
+		for i := range segments {
+			segments[i] = strings.TrimSpace(segments[i])
+		}
+		parts = append(parts, fmt.Sprintf("%s=%s", key, strings.Join(segments, ",")))
+	}
+	return name + ":" + strings.Join(parts, ";")
 }

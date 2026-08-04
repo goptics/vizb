@@ -245,6 +245,28 @@ describe('useDataPoint embedded VIZB_DATA', () => {
     expect(fetcher).not.toHaveBeenCalled()
   })
 
+  it('applies a legacy hex theme string when the dataset has no themes[]', async () => {
+    const one = {
+      name: 'Legacy theme',
+      theme: '#f00,#0f0,#00f',
+      data: [{ name: 'a', value: 1 }],
+      settings: [{ type: 'bar' as const }],
+    }
+    vi.stubGlobal('fetch', vi.fn())
+    vi.stubGlobal('window', {
+      location: { pathname: '/', protocol: 'https:' },
+      VIZB_DATA: one,
+    })
+
+    const { useDataPoint } = await import('./useDataPoint')
+    const { activeThemeName } = await import('../lib/themes')
+    const state = useDataPoint()
+
+    await vi.waitFor(() => expect(state.loading.value).toBe(false))
+    expect(state.activeDataset.value?.theme).toBe('#f00,#0f0,#00f')
+    expect(activeThemeName.value).toBe('#f00,#0f0,#00f')
+  })
+
   it('loads a Dataset array with two entries', async () => {
     const payload = [
       {

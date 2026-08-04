@@ -164,10 +164,27 @@ export type HistoryEntry = {
   meta?: Meta
 }
 
+/** Fully expanded color theme (wire: Dataset.themes[]). */
+export type Theme = {
+  name: string
+  colors: string[]
+  /** Continuous gradient pair; charts fall back to palette endpoints when absent. */
+  visualMapColors?: string[]
+}
+
 export type Dataset = {
   id?: string
   name: string
   description?: string
+  /**
+   * Data-owned theme catalog. themes[0] is active when present; the UI only
+   * ships built-in `default` when themes is empty/absent.
+   */
+  themes?: Theme[]
+  /**
+   * Legacy single theme name/spec (pre-themes-array wire). Go migrates on load;
+   * pure UI JSON may still carry this — soft-handled when themes is empty.
+   */
   theme?: string
   tag?: string
   timestamp?: string
