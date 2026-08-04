@@ -328,9 +328,8 @@ describe('formatRadarItemTooltip', () => {
 
 describe('createHorizontalDataZoomConfig', () => {
   it('returns inside+slider pair for y axis', async () => {
-    const { createHorizontalDataZoomConfig, DATAZOOM_INITIAL_END_PERCENT } = await import(
-      './chartConfig'
-    )
+    const { createHorizontalDataZoomConfig, DATAZOOM_INITIAL_END_PERCENT } =
+      await import('./chartConfig')
     const dz = createHorizontalDataZoomConfig(styling)
     expect(dz).toHaveLength(2)
     expect(dz[0]).toMatchObject({

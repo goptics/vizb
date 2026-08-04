@@ -1,7 +1,7 @@
 {
   "name": "ui",
-  "private": true,
   "version": "0.0.0",
+  "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -16,11 +16,8 @@
     "e2e:serve": "node e2e/serve.mjs",
     "test:watch": "vitest",
     "typecheck": "vue-tsc -b --noEmit",
-    "format": "biome format --write .",
-    "format:check": "biome format ."
-  },
-  "engines": {
-    "node": "22.x"
+    "format": "oxfmt",
+    "format:check": "oxfmt --check"
   },
   "dependencies": {
     "clsx": "^2.1.1",
@@ -33,7 +30,6 @@
     "vue-echarts": "^7.0.3"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.6",
     "@playwright/test": "^1.62.0",
     "@types/node": "^24.6.0",
     "@vitejs/plugin-vue": "^6.0.7",
@@ -44,6 +40,7 @@
     "baseline-browser-mapping": "^2.9.6",
     "happy-dom": "^20.11.1",
     "linkedom": "^0.18.12",
+    "oxfmt": "^0.62.0",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.16",
     "terser": "^5.44.0",
@@ -52,5 +49,8 @@
     "vite-plugin-html": "^3.2.2",
     "vitest": "^4.1.9",
     "vue-tsc": "^3.1.0"
+  },
+  "engines": {
+    "node": "22.x"
   }
 }
