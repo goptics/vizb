@@ -13,7 +13,6 @@ on:
       - .github/workflows/action-ci.yml
       - .github/workflows/cli.yml
       - .github/actions/setup-embed-ui/**
-      - .github/actions/setup-js/**
   pull_request:
     branches: [main]
     paths:
@@ -26,7 +25,6 @@ on:
       - .github/workflows/action-ci.yml
       - .github/workflows/cli.yml
       - .github/actions/setup-embed-ui/**
-      - .github/actions/setup-js/**
 
 permissions:
   contents: read
