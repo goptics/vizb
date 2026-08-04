@@ -354,12 +354,17 @@ describe('useSettingsStore', () => {
     vi.stubGlobal('window', { matchMedia: () => ({ matches: false }) })
     vi.stubGlobal('document', { documentElement: { classList: { toggle: vi.fn() } } })
 
+    const { registerDatasetThemes } = await import('../lib/themes')
+    // Single author theme: available set is only this name (not default).
+    registerDatasetThemes([
+      { name: 'ocean', colors: ['#0ff', '#00f'], visualMapColors: ['#0ff', '#00f'] },
+    ])
+
     const { useSettingsStore } = await import('./useSettingsStore')
     const { themeName, initializeTheme } = useSettingsStore()
-    // Custom hex is not a named available theme → stay on / apply author default.
-    expect(themeName.value).toBe('default')
-    initializeTheme('default')
-    expect(themeName.value).toBe('default')
+    // Custom hex is not available → author default wins.
+    initializeTheme('ocean')
+    expect(themeName.value).toBe('ocean')
   })
 
   it('falls back unknown legacy localStorage theme names to dataset default', async () => {
@@ -372,11 +377,16 @@ describe('useSettingsStore', () => {
     vi.stubGlobal('window', { matchMedia: () => ({ matches: false }) })
     vi.stubGlobal('document', { documentElement: { classList: { toggle: vi.fn() } } })
 
+    const { registerDatasetThemes } = await import('../lib/themes')
+    registerDatasetThemes([
+      { name: 'ocean', colors: ['#0ff', '#00f'], visualMapColors: ['#0ff', '#00f'] },
+    ])
+
     const { useSettingsStore } = await import('./useSettingsStore')
     const { themeName, initializeTheme } = useSettingsStore()
-    expect(themeName.value).toBe('default')
-    initializeTheme('default')
-    expect(themeName.value).toBe('default')
+    // Unknown legacy name is not available → author default wins.
+    initializeTheme('ocean')
+    expect(themeName.value).toBe('ocean')
   })
 
   it('setStack without enabling keeps scale when stack is false', async () => {

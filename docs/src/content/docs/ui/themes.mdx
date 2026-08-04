@@ -63,9 +63,10 @@ vizb results.csv \
 vizb results.csv --theme "#ff6b6b,#4ecdc4,#ffe66d" -o report.html
 ```
 
-Invalid theme specs produce a soft warning and fall back to no embed / UI
-default. Duplicate names (case-insensitive) keep first-seen order; last content
-wins. Hex colors are `#rgb` or `#rrggbb`.
+Invalid theme specs produce a soft warning and are skipped. If no valid
+non-default theme remains, the dataset has no embedded themes and the UI uses
+`default`. Duplicate names (case-insensitive) keep first-seen order; last
+content wins. Hex colors are `#rgb` or `#rrggbb`.
 
 Related flag:
 

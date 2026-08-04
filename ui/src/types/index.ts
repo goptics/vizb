@@ -169,7 +169,7 @@ export type Theme = {
   name: string
   colors: string[]
   /** Continuous gradient pair; charts fall back to palette endpoints when absent. */
-  visualMapColors: string[]
+  visualMapColors?: string[]
 }
 
 export type Dataset = {

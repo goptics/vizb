@@ -1167,6 +1167,37 @@ func (s *ServeSuite) TestRequestContractHelpers() {
 		s.Require().Nil(validationErr)
 		s.Empty(metadata.Themes)
 
+		// Case-insensitive duplicate names are rejected.
+		_, _, validationErr = buildConvertInput(convertRequest{
+			Themes: []shared.Theme{{
+				Name:            "brand",
+				Colors:          []string{"#111", "#222"},
+				VisualMapColors: []string{"#111", "#222"},
+			}, {
+				Name:            "Brand",
+				Colors:          []string{"#aaa", "#bbb"},
+				VisualMapColors: []string{"#aaa", "#bbb"},
+			}},
+		}, []byte("x,y\\na,1\\n"))
+		s.Require().NotNil(validationErr)
+		s.Equal("/themes/1/name", validationErr.Path)
+		s.Equal("duplicate_value", validationErr.Code)
+
+		// Duplicate "default" (including case variants) is also rejected.
+		_, _, validationErr = buildConvertInput(convertRequest{
+			Themes: []shared.Theme{{
+				Name:            "default",
+				Colors:          []string{"#f00", "#0f0"},
+				VisualMapColors: []string{"#f00", "#0f0"},
+			}, {
+				Name:            "DEFAULT",
+				Colors:          []string{"#0f0", "#00f"},
+				VisualMapColors: []string{"#0f0", "#00f"},
+			}},
+		}, []byte("x,y\\na,1\\n"))
+		s.Require().NotNil(validationErr)
+		s.Equal("/themes/1/name", validationErr.Path)
+
 		defaultTheme := "default"
 		metadata, validationErr = buildConvertMetadata(convertRequest{Theme: &defaultTheme})
 		s.Require().Nil(validationErr)

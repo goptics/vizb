@@ -2,7 +2,7 @@ import { describe, expect, it, beforeEach } from 'vitest'
 import type { Theme } from '../types'
 import {
   activeThemeName,
-  applyDatasetThemes,
+  applyTheme,
   authorThemeCount,
   DEFAULT_THEME,
   findTheme,
@@ -152,9 +152,9 @@ describe('themes', () => {
     expect(parseCustomPalette('#ggg,#000')).toBeUndefined()
   })
 
-  it('uses the last available color for short-palette gradients', () => {
+  it('uses first and last palette colors for gradients', () => {
     expect(paletteGradientEndpoints(['#111', '#222'])).toEqual(['#111', '#222'])
-    expect(paletteGradientEndpoints(['#1', '#2', '#3', '#4', '#5', '#6'])).toEqual(['#1', '#5'])
+    expect(paletteGradientEndpoints(['#1', '#2', '#3', '#4', '#5', '#6'])).toEqual(['#1', '#6'])
   })
 
   it("uses the active theme's visualMapColors, with gradient fallback", () => {
@@ -201,22 +201,12 @@ describe('themes', () => {
     expect(findTheme('default')?.name).toBe('default')
   })
 
-  it('applyDatasetThemes registers themes and applies active name', () => {
-    applyDatasetThemes({ themes: [westeros, vintage] })
-    expect(authorThemeCount()).toBe(2)
-    expect(activeThemeName.value).toBe('westeros')
-    expect(isThemeName('vintage')).toBe(true)
-
-    // Legacy hex theme string → active theme stays the custom palette string.
-    applyDatasetThemes({ theme: '#f00,#0f0,#00f' })
-    expect(authorThemeCount()).toBe(0)
-    expect(activeThemeName.value).toBe('#f00,#0f0,#00f')
-
-    // Empty / missing dataset → UI default.
-    applyDatasetThemes(null)
-    expect(activeThemeName.value).toBe('default')
-    applyDatasetThemes(undefined)
-    expect(activeThemeName.value).toBe('default')
+  it('normalizeTheme returns the registered author spelling', () => {
+    registerDatasetThemes([{ ...westeros, name: 'ROMA' }])
+    expect(normalizeTheme('roma')).toBe('ROMA')
+    expect(normalizeTheme('ROMA')).toBe('ROMA')
+    applyTheme('roma')
+    expect(activeThemeName.value).toBe('ROMA')
   })
 
   it('resolveActiveTheme fills missing visualMapColors and skips empty first theme', () => {
@@ -245,18 +235,21 @@ describe('themes', () => {
     expect(resolveActiveTheme({ theme: '#ggg,#000' })).toEqual(DEFAULT_THEME)
   })
 
-  it('registerDatasetThemes skips entries without a usable name', () => {
+  it('registerDatasetThemes names a blank colors-only themes[0] as custom', () => {
     registerDatasetThemes([
       { name: '  ', colors: ['#111', '#222'], visualMapColors: ['#111', '#222'] },
       { name: undefined as unknown as string, colors: ['#a', '#b'], visualMapColors: ['#a', '#b'] },
       westeros,
     ])
-    expect(authorThemeCount()).toBe(1)
-    expect(listAvailableThemeNames()).toEqual(['westeros'])
+    // First blank-name entry → custom; later blank names still skipped.
+    expect(authorThemeCount()).toBe(2)
+    expect(listAvailableThemeNames()).toEqual(['default', 'custom', 'westeros'])
+    expect(findTheme('custom')?.colors).toEqual(['#111', '#222'])
+    expect(normalizeTheme('custom')).toBe('custom')
   })
 
   it('clones themes that omit visualMapColors as an empty list', () => {
-    registerDatasetThemes([{ name: 'no-vm-field', colors: ['#111', '#222'] } as Theme])
+    registerDatasetThemes([{ name: 'no-vm-field', colors: ['#111', '#222'] }])
     expect(findTheme('no-vm-field')).toMatchObject({
       name: 'no-vm-field',
       colors: ['#111', '#222'],

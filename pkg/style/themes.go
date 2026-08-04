@@ -142,31 +142,39 @@ func cloneTheme(t Theme) Theme {
 //  3. bare #hex,#hex,... (≥2) → Name "custom", visualMap first+last
 //  4. else error
 func ParseThemeSpec(value string) (Theme, error) {
+	theme, _, err := parseThemeSpec(value)
+	return theme, err
+}
+
+// parseThemeSpec is ParseThemeSpec plus whether the input was an anonymous
+// bare-hex palette (not a built-in name or structured form).
+func parseThemeSpec(value string) (Theme, bool, error) {
 	trimmed := strings.TrimSpace(value)
 	if trimmed == "" {
-		return Theme{}, fmt.Errorf("expected a built-in theme, structured theme, or at least two comma-separated hex colors")
+		return Theme{}, false, fmt.Errorf("expected a built-in theme, structured theme, or at least two comma-separated hex colors")
 	}
 
 	// 1. Built-in name
 	if t, ok := themeCatalog[strings.ToLower(trimmed)]; ok {
-		return cloneTheme(t), nil
+		return cloneTheme(t), false, nil
 	}
 
 	// 2. Structured form: name:prop=...;prop=...
 	if name, props, ok := splitStructured(trimmed); ok {
-		return parseStructured(name, props)
+		theme, err := parseStructured(name, props)
+		return theme, false, err
 	}
 
-	// 3. Bare hex palette
+	// 3. Bare hex palette (anonymous)
 	if colors, err := parseHexList(trimmed); err == nil {
 		return Theme{
 			Name:            "custom",
 			Colors:          colors,
 			VisualMapColors: visualMapFromColors(colors),
-		}, nil
+		}, true, nil
 	}
 
-	return Theme{}, fmt.Errorf("expected a built-in theme, structured theme, or at least two comma-separated hex colors")
+	return Theme{}, false, fmt.Errorf("expected a built-in theme, structured theme, or at least two comma-separated hex colors")
 }
 
 // splitStructured splits "name:props" when the value looks structured
@@ -267,23 +275,6 @@ func visualMapFromColors(colors []string) []string {
 	return []string{colors[0], colors[len(colors)-1]}
 }
 
-// isAnonymousCustom reports whether the original spec was a bare hex palette
-// (ParseThemeSpec names these "custom"). Structured specs are never anonymous,
-// even if the name happens to start with '#'.
-func isAnonymousCustom(spec string) bool {
-	trimmed := strings.TrimSpace(spec)
-	if trimmed == "" {
-		return false
-	}
-	// Structured name:colors=... path — named, not anonymous.
-	if _, _, ok := splitStructured(trimmed); ok {
-		return false
-	}
-	// Bare hex list path only.
-	_, err := parseHexList(trimmed)
-	return err == nil
-}
-
 // ResolveThemes parses theme specs into an ordered catalog for dataset.Themes.
 //
 // Rules:
@@ -300,7 +291,7 @@ func ResolveThemes(specs []string, activeName string) ([]Theme, error) {
 	}
 	entries := make([]entry, 0, len(specs))
 	for _, spec := range specs {
-		theme, err := ParseThemeSpec(spec)
+		theme, anonymous, err := parseThemeSpec(spec)
 		if err != nil {
 			return nil, err
 		}
@@ -310,7 +301,7 @@ func ResolveThemes(specs []string, activeName string) ([]Theme, error) {
 		}
 		entries = append(entries, entry{
 			theme:     theme,
-			anonymous: isAnonymousCustom(spec),
+			anonymous: anonymous,
 		})
 	}
 

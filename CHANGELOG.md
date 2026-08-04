@@ -6,7 +6,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adhere
 
 # [Unreleased]
 
-### Added
+## Added
 
 - **Data-owned themes** — repeatable `--theme` and `--theme-active` embed a theme catalog on the dataset (`themes[]`; `themes[0]` active; no separate active field on new output). Built-ins expand from the CLI; the UI ships only `default`. Structured custom syntax `name:colors=#hex,...;visualMapColors=#hex,#hex` and bare hex anonymous customs. Multi-theme selector only when the author provides 2+ themes; localStorage scoped to the available set ([#327](https://github.com/goptics/vizb/issues/327)).
 

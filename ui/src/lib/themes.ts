@@ -17,19 +17,26 @@ function cloneTheme(theme: Theme): Theme {
   }
 }
 
+// Match CLI/Go visualMapFromColors: first + last of the palette.
 function gradientEndpoints(palette: readonly string[]): [string, string] {
-  return [palette[0]!, palette[Math.min(4, palette.length - 1)]!]
+  return [palette[0]!, palette[palette.length - 1]!]
 }
 
 /**
  * Register dataset-owned themes so name-based resolution can find their colors.
  * UI always owns `default`; dataset entries named default are ignored.
+ * A colors-only themes[0] with a blank name is registered as `custom` so it
+ * matches resolveActiveTheme's fallback name.
  */
 export function registerDatasetThemes(themes?: Theme[]) {
   const map = new Map<string, Theme>()
-  for (const theme of themes ?? []) {
-    const name = theme?.name?.trim()
-    if (!name) continue
+  for (let i = 0; i < (themes ?? []).length; i++) {
+    const theme = themes![i]!
+    let name = theme?.name?.trim()
+    if (!name) {
+      if (i === 0 && theme?.colors?.length) name = 'custom'
+      else continue
+    }
     const key = name.toLowerCase()
     if (key === DEFAULT_THEME.name) continue
     if (!theme.colors?.length) continue
@@ -136,7 +143,9 @@ export function isThemeName(value?: string): boolean {
 export function normalizeTheme(value?: string): string {
   const trimmed = value?.trim() || DEFAULT_THEME.name
   const name = trimmed.toLowerCase()
-  if (name === DEFAULT_THEME.name || datasetThemesByName.value.has(name)) return name
+  if (name === DEFAULT_THEME.name) return name
+  const registered = datasetThemesByName.value.get(name)
+  if (registered) return registered.name
   const custom = parseCustomPalette(trimmed)
   return custom?.join(',') ?? DEFAULT_THEME.name
 }
@@ -160,20 +169,6 @@ export const activePalette = computed(() => activeTheme.value.colors)
 
 export function applyTheme(theme?: string) {
   activeThemeName.value = normalizeTheme(theme)
-}
-
-/**
- * Register dataset themes and resolve the active theme object.
- * Callers that respect user localStorage preference should gate applyTheme themselves.
- */
-export function applyDatasetThemes(dataset?: Pick<Dataset, 'themes' | 'theme'> | null) {
-  registerDatasetThemes(dataset?.themes)
-  const active = resolveActiveTheme(dataset)
-  if (active.name === 'custom' && dataset?.theme?.trim().startsWith('#')) {
-    applyTheme(dataset.theme)
-    return
-  }
-  applyTheme(active.name)
 }
 
 export function palettePrimary(palette: readonly string[] = activePalette.value): string {

@@ -421,8 +421,10 @@ func buildConvertMetadata(request convertRequest) (core.Metadata, *apiValidation
 // validateRequestThemes checks data-owned theme objects and returns a clone for
 // Metadata.Themes. Paths use prefix (e.g. "/themes") for validation errors.
 // Entries named "default" are skipped (UI owns default), matching ResolveThemes.
+// Duplicate names (case-insensitive), including duplicates of "default", error.
 func validateRequestThemes(themes []shared.Theme, prefix string) ([]shared.Theme, *apiValidationError) {
 	out := make([]shared.Theme, 0, len(themes))
+	seen := make(map[string]struct{}, len(themes))
 	for i, theme := range themes {
 		path := fmt.Sprintf("%s/%d", prefix, i)
 		name := strings.TrimSpace(theme.Name)
@@ -430,6 +432,12 @@ func validateRequestThemes(themes []shared.Theme, prefix string) ([]shared.Theme
 			err := bodyValidationError(path+"/name", "required", "theme name is required")
 			return nil, &err
 		}
+		key := strings.ToLower(name)
+		if _, dup := seen[key]; dup {
+			err := bodyValidationError(path+"/name", "duplicate_value", "theme name is duplicated")
+			return nil, &err
+		}
+		seen[key] = struct{}{}
 		if len(theme.Colors) == 0 {
 			err := bodyValidationError(path+"/colors", "min_items", "theme colors must contain at least one color")
 			return nil, &err
