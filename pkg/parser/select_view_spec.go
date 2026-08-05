@@ -226,6 +226,7 @@ func AppendMultiSelectStatPoint(
 	results *[]shared.DataPoint,
 	views []SelectView,
 	numberUnit string,
+	round bool,
 	merge bool,
 	read func(view SelectView) (MultiSelectRowStat, bool),
 ) {
@@ -241,7 +242,7 @@ func AppendMultiSelectStatPoint(
 			}
 			dp.Stats = append(dp.Stats, shared.Stat{
 				Type:  utils.CreateStatType(SelectStatType(view), numberUnit, ""),
-				Value: shared.F64(utils.FormatNumber(row.Value, numberUnit)),
+				Value: shared.F64(utils.FormatNumber(row.Value, numberUnit, round)),
 			})
 		}
 		if len(dp.Stats) > 0 {
@@ -259,7 +260,7 @@ func AppendMultiSelectStatPoint(
 			XAxis: row.DimVal,
 			Stats: []shared.Stat{{
 				Type:  utils.CreateStatType(SelectStatType(view), numberUnit, ""),
-				Value: shared.F64(utils.FormatNumber(row.Value, numberUnit)),
+				Value: shared.F64(utils.FormatNumber(row.Value, numberUnit, round)),
 			}},
 		})
 	}

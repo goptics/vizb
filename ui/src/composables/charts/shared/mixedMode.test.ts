@@ -234,7 +234,7 @@ describe('buildMixedAxes2DOptions', () => {
   it('formats labels for number/null/undefined', () => {
     const option = buildMixedAxes2DOptions(cfg({ showLabels: true }))
     const formatter = series0(option).label?.formatter
-    expect(formatter!({ data: [0, 2.456] })).toBe('2.46')
+    expect(formatter!({ data: [0, 2.456] })).toBe('2.456')
     expect(formatter!({ data: [0, null] })).toBe('')
     expect(formatter!({ data: [0, undefined as unknown as number] })).toBe('')
   })

@@ -324,7 +324,7 @@ func (s *SelectViewSpecSuite) TestAppendMultiSelectStatPointNonMergeSkipsFailedR
 		{Columns: []ColumnSpec{{Source: "product", AxisKey: "x"}, {Source: "sales", AxisKey: "y"}}},
 	}
 	var results []shared.DataPoint
-	AppendMultiSelectStatPoint(&results, views, "", false, func(view SelectView) (MultiSelectRowStat, bool) {
+	AppendMultiSelectStatPoint(&results, views, "", false, false, func(view SelectView) (MultiSelectRowStat, bool) {
 		if view.Columns[0].Source == "product" {
 			return MultiSelectRowStat{}, false
 		}

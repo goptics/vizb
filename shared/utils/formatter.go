@@ -2,18 +2,39 @@ package utils
 
 import "math"
 
+// float64Epsilon is JS Number.EPSILON (2^-52), used so RoundToTwo matches the
+// former UI round2 half-away-from-zero tie correction on binary floats.
+const float64Epsilon = 2.220446049250313e-16
+
+// RoundToTwo rounds to 2 decimal places with the same decimal-aware epsilon
+// nudge as the previous UI round2: exact ties (e.g. 1.005 → 1.01, -1.005 → -1.01)
+// round half away from zero instead of drifting on binary float error.
+// Non-finite values are returned unchanged.
 func RoundToTwo(num float64) float64 {
-	if num == 0 {
-		return 0
+	if math.IsNaN(num) || math.IsInf(num, 0) {
+		return num
 	}
 
-	return math.Round(num*100) / 100
+	scaled := num * 100
+	sign := 1.0
+	switch {
+	case scaled < 0:
+		sign = -1
+	case scaled == 0:
+		sign = 0
+	}
+	mag := math.Abs(scaled)
+	if mag < 1 {
+		mag = 1
+	}
+	tieCorrected := scaled + sign*float64Epsilon*mag
+	return math.Round(tieCorrected) / 100
 }
 
 // FormatTime converts a time value from nanoseconds to the specified unit.
 // Supported units: "ns" (nanoseconds), "us" (microseconds), "ms" (milliseconds), "s" (seconds).
-// Returns the converted time value as a float64.
-func FormatTime(n float64, unit string) (time float64) {
+// When round is true, the converted value is rounded to 2 decimals via RoundToTwo.
+func FormatTime(n float64, unit string, round bool) (time float64) {
 	if n == 0 {
 		return
 	}
@@ -29,14 +50,17 @@ func FormatTime(n float64, unit string) (time float64) {
 		time = n
 	}
 
-	return RoundToTwo(time)
+	if round {
+		return RoundToTwo(time)
+	}
+	return time
 }
 
 // FormatMem converts a memory value from bytes to the specified unit.
 // Supported units: "b" (bits), "B" (bytes), "KB" (kilobytes), "MB" (megabytes), "GB" (gigabytes).
 // For "b" unit, bytes are converted to bits by multiplying by 8.
-// Returns the converted memory value as a float64.
-func FormatMem(n float64, unit string) (mem float64) {
+// When round is true, the converted value is rounded to 2 decimals via RoundToTwo.
+func FormatMem(n float64, unit string, round bool) (mem float64) {
 	if n == 0 {
 		return
 	}
@@ -54,17 +78,24 @@ func FormatMem(n float64, unit string) (mem float64) {
 		mem = n
 	}
 
-	return RoundToTwo(mem)
+	if round {
+		return RoundToTwo(mem)
+	}
+	return mem
 }
 
 // ConvertTime converts a time value from one unit to another.
 // Supported units: "ns", "us", "ms", "s".
-func ConvertTime(n float64, from, to string) float64 {
+// When round is true, the converted value is rounded to 2 decimals via RoundToTwo.
+func ConvertTime(n float64, from, to string, round bool) float64 {
 	if n == 0 {
 		return 0
 	}
 
 	if from == to {
+		if round {
+			return RoundToTwo(n)
+		}
 		return n
 	}
 
@@ -80,14 +111,14 @@ func ConvertTime(n float64, from, to string) float64 {
 		ns = n
 	}
 
-	return FormatTime(ns, to)
+	return FormatTime(ns, to, round)
 }
 
-// FormatNumber converts an allocation count to the specified unit.
+// FormatNumber converts an allocation count (or generic metric) to the specified unit.
 // Supported units: "K" (thousands), "M" (millions), "B" (billions), "T" (trillions).
-// Empty unit string returns the value unchanged.
-// Returns the converted allocation count as a float64.
-func FormatNumber(n float64, unit string) (allocs float64) {
+// Empty unit string returns the value unchanged (aside from optional rounding).
+// When round is true, the result is rounded to 2 decimals via RoundToTwo.
+func FormatNumber(n float64, unit string, round bool) (allocs float64) {
 	if n == 0 {
 		return
 	}
@@ -105,5 +136,8 @@ func FormatNumber(n float64, unit string) (allocs float64) {
 		allocs = n
 	}
 
-	return RoundToTwo(allocs)
+	if round {
+		return RoundToTwo(allocs)
+	}
+	return allocs
 }

@@ -69,8 +69,8 @@ func (s *TinyBenchSuite) TestUnitConversionToUs() {
 	s.Require().NoError(err)
 	s.Len(results, 6)
 
-	assertStat(s.T(), results[0].Stats[0], "Latency avg (us)", 3.74, "")
-	assertStat(s.T(), results[0].Stats[2], "Latency med (us)", 3.7, "")
+	assertStat(s.T(), results[0].Stats[0], "Latency avg (us)", 3.7415, "")
+	assertStat(s.T(), results[0].Stats[2], "Latency med (us)", 3.703, "")
 }
 
 func (s *TinyBenchSuite) TestFilterRegex() {

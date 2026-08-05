@@ -1,7 +1,7 @@
 import type { EChartsOption } from 'echarts'
 import type { Render3D, Point3D, ScaleType, Series3DData } from '@/types'
 import { valuePoints3DToSeries } from '@/lib/transform'
-import { getDefaultThemeColor, getNextColorFor, round2 } from '@/lib/utils'
+import { getDefaultThemeColor, getNextColorFor, formatChartNumber } from '@/lib/utils'
 import {
   formatTooltipValue,
   tooltipDivider,
@@ -11,8 +11,6 @@ import {
   getTooltipTheme,
   type ChartStyling,
 } from './chartConfig'
-
-export { round2 }
 
 /** Blue-to-red gradient for value-mode 3D visualMap (metric height). */
 export const VALUE_3D_COLOR_RANGE = [
@@ -95,8 +93,8 @@ export function createMixed3DTooltipFormatter(params: {
     const xName = xValues[xi] ?? String(xi)
     return (
       `<b>${xLabel}: ${xName}</b><br/>` +
-      `${yLabel}: <b>${round2(y)}</b><br/>` +
-      `${zLabel}: <b>${round2(z)}</b>`
+      `${yLabel}: <b>${formatChartNumber(y)}</b><br/>` +
+      `${zLabel}: <b>${formatChartNumber(z)}</b>`
     )
   }
 }
@@ -148,13 +146,13 @@ export function createValue3DTooltipFormatter(params: {
 
     const margins =
       tooltipDivider(isDark) +
-      `Σ ${xLabel}(${xName}): <b>${round2(xMarginal)}</b><br/>` +
-      `Σ ${yLabel}(${yName}): <b>${round2(yMarginal)}</b><br/>` +
-      `Σ (${xLabel}∪${yLabel}): <b>${round2(xyUnion)}</b>`
+      `Σ ${xLabel}(${xName}): <b>${formatChartNumber(xMarginal)}</b><br/>` +
+      `Σ ${yLabel}(${yName}): <b>${formatChartNumber(yMarginal)}</b><br/>` +
+      `Σ (${xLabel}∪${yLabel}): <b>${formatChartNumber(xyUnion)}</b>`
 
     return (
       `<b>${xLabel}: ${xName} / ${yLabel}: ${yName}</b><br/>` +
-      `${dot}${metricLabel}: <b>${round2(v)}</b><br/>` +
+      `${dot}${metricLabel}: <b>${formatChartNumber(v)}</b><br/>` +
       margins
     )
   }
@@ -425,8 +423,8 @@ export function create3DTooltipFormatter(params: {
         if (v === undefined) return ''
         const dot = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${getNextColorFor(z)};margin-right:6px"></span>`
         // legendTotals is built from the same aggPoints that fill zmap, so z is present.
-        const sumTag = ` (Σ${round2(legendTotals.get(z)!)})`
-        return `${dot}${z}${sumTag}: <b>${round2(v)}</b>`
+        const sumTag = ` (Σ${formatChartNumber(legendTotals.get(z)!)})`
+        return `${dot}${z}${sumTag}: <b>${formatChartNumber(v)}</b>`
       })
       .filter(Boolean)
 
@@ -434,14 +432,16 @@ export function create3DTooltipFormatter(params: {
     // (x,y fixed by hover) — chart-wide total lives on the ChartCard badge.
     const xyUnion = xMarginal + yMarginal - cellTotal
     const cellSumLine =
-      zmap.size > 0 ? `Σ (${xLabel},${yLabel},${zSumLabel}): <b>${round2(cellTotal)}</b><br/>` : ''
+      zmap.size > 0
+        ? `Σ (${xLabel},${yLabel},${zSumLabel}): <b>${formatChartNumber(cellTotal)}</b><br/>`
+        : ''
 
     const margins =
       tooltipDivider(isDark) +
-      `Σ ${xLabel}(${xName}): <b>${round2(xMarginal)}</b><br/>` +
-      `Σ ${yLabel}(${yName}): <b>${round2(yMarginal)}</b><br/>` +
+      `Σ ${xLabel}(${xName}): <b>${formatChartNumber(xMarginal)}</b><br/>` +
+      `Σ ${yLabel}(${yName}): <b>${formatChartNumber(yMarginal)}</b><br/>` +
       cellSumLine +
-      `Σ (${xLabel}∪${yLabel}): <b>${round2(xyUnion)}</b>`
+      `Σ (${xLabel}∪${yLabel}): <b>${formatChartNumber(xyUnion)}</b>`
 
     // Spread of the z-values in this cell (median / IQR / CV), mirroring the 2D
     // tooltip. Only meaningful with >1 z.
@@ -589,7 +589,7 @@ export function buildContinuous3DOptions(
         show: showLabels,
         formatter: (p: { value: number[] }) => {
           const labelVal = metricDimension ? p.value[3] : p.value[2]
-          return labelVal === undefined ? '' : String(round2(labelVal))
+          return labelVal === undefined ? '' : formatChartNumber(labelVal)
         },
         textStyle: { fontSize: 12, color: styling.textColor },
       },
@@ -719,7 +719,7 @@ export function create3DCellLabel(
     formatter: (p: { value: number[] }) => {
       const [xi = 0, yi = 0] = p.value
       const total = cellTotals[`${xi},${yi}`]
-      return total === undefined ? '' : String(round2(total))
+      return total === undefined ? '' : formatChartNumber(total)
     },
     textStyle: { fontSize: 12, color: textColor },
   }

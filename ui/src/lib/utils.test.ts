@@ -10,8 +10,7 @@ import {
   bundleHas3DChunk,
   datasetHasBothXY,
   datasetDimension,
-  formatChartTotal,
-  round2,
+  formatChartNumber,
   isValueMode,
   isMixedMode,
   isScatterTransformMode,
@@ -224,26 +223,16 @@ describe('computeChartGrandTotal', () => {
   })
 })
 
-describe('formatChartTotal', () => {
-  it('rounds to two decimals', () => {
-    expect(formatChartTotal(10.126)).toBe('10.13')
-  })
-})
-
-describe('round2', () => {
-  it('rounds to two decimals', () => {
-    expect(round2(10.126)).toBe(10.13)
-    expect(round2(3)).toBe(3)
+describe('formatChartNumber', () => {
+  it('preserves full precision', () => {
+    expect(formatChartNumber(10.126)).toBe('10.126')
+    expect(formatChartNumber(3)).toBe('3')
+    expect(formatChartNumber(0.914273581)).toBe('0.914273581')
   })
 
-  it('rounds exact tie values half away from zero', () => {
-    expect(round2(1.005)).toBe(1.01)
-    expect(round2(-1.005)).toBe(-1.01)
-  })
-
-  it('passes through non-finite values', () => {
-    expect(round2(NaN)).toBe(NaN)
-    expect(round2(Infinity)).toBe(Infinity)
+  it('stringifies non-finite values', () => {
+    expect(formatChartNumber(NaN)).toBe('NaN')
+    expect(formatChartNumber(Infinity)).toBe('Infinity')
   })
 })
 

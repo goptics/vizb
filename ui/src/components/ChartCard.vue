@@ -21,7 +21,7 @@ import { useFullscreen } from '../composables/useFullscreen'
 import {
   is3D,
   computeChartGrandTotal,
-  formatChartTotal,
+  formatChartNumber,
   chartAxisBadgeCount,
   chartHasPlottableData,
 } from '../lib/utils'
@@ -164,7 +164,7 @@ const xAxisBadgeCount = computed(() => chartAxisBadgeCount(chartData.value, 'x')
 const yAxisBadgeCount = computed(() => chartAxisBadgeCount(chartData.value, 'y'))
 const zAxisBadgeCount = computed(() => chartAxisBadgeCount(chartData.value, 'z'))
 const chartTotal = computed(() =>
-  formatChartTotal(computeChartGrandTotal(chartData.value, visibleZ.value))
+  formatChartNumber(computeChartGrandTotal(chartData.value, visibleZ.value))
 )
 
 const mergedOptions = computed<EChartsOption>(() => withFullscreenToolbox(options.value))

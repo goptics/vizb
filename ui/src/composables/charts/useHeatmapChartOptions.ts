@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
-import { getDefaultThemeColor, getNextColorFor, isGrouped3D, round2 } from '@/lib/utils'
+import { getDefaultThemeColor, getNextColorFor, isGrouped3D, formatChartNumber } from '@/lib/utils'
 import { resolveVisualMapColors } from '@/lib/themes'
 import {
   getChartStyling,
@@ -18,7 +18,7 @@ import {
 function formatCellNumber(v: number): string {
   if (Math.abs(v) >= 1e6) return (v / 1e6).toFixed(1) + 'M'
   if (Math.abs(v) >= 1e3) return (v / 1e3).toFixed(1) + 'K'
-  return String(round2(v))
+  return formatChartNumber(v)
 }
 
 function heatmapGrid(
@@ -124,10 +124,10 @@ function build2DHeatmap(config: BaseChartConfig): EChartsOption {
         const yPct = yTotal > 0 ? ((val / yTotal) * 100).toFixed(1) : '0.0'
 
         let html = `<b>${xName} / ${yName}</b><br/>`
-        html += `Value: <b>${round2(val)}</b><br/>`
+        html += `Value: <b>${formatChartNumber(val)}</b><br/>`
         html += tooltipDivider(isDark.value)
-        html += `Σ ${xName}: <b>${round2(xTotal)}</b> (${xPct}%)<br/>`
-        html += `Σ ${yName}: <b>${round2(yTotal)}</b> (${yPct}%)`
+        html += `Σ ${xName}: <b>${formatChartNumber(xTotal)}</b> (${xPct}%)<br/>`
+        html += `Σ ${yName}: <b>${formatChartNumber(yTotal)}</b> (${yPct}%)`
 
         return html
       },
@@ -272,11 +272,12 @@ function build3DHeatmap(config: BaseChartConfig): EChartsOption {
         if (v === undefined) return ''
         const color = getNextColorFor(z) ?? getDefaultThemeColor()
         const dot = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};margin-right:6px"></span>`
-        return `${dot}${z}: <b>${round2(v)}</b>`
+        return `${dot}${z}: <b>${formatChartNumber(v)}</b>`
       })
       .filter(Boolean)
 
-    const zSumLine = zBreakdown.size > 1 ? `Σ ${zLabel}: <b>${round2(total)}</b><br/>` : ''
+    const zSumLine =
+      zBreakdown.size > 1 ? `Σ ${zLabel}: <b>${formatChartNumber(total)}</b><br/>` : ''
 
     const xMarginal = xMarginals.get(xName) ?? 0
     const yMarginal = yMarginals.get(yName) ?? 0
@@ -284,8 +285,8 @@ function build3DHeatmap(config: BaseChartConfig): EChartsOption {
     const margins =
       tooltipDivider(isDark.value) +
       zSumLine +
-      `Σ ${xLabel}(${xName}): <b>${round2(xMarginal)}</b><br/>` +
-      `Σ ${yLabel}(${yName}): <b>${round2(yMarginal)}</b>`
+      `Σ ${xLabel}(${xName}): <b>${formatChartNumber(xMarginal)}</b><br/>` +
+      `Σ ${yLabel}(${yName}): <b>${formatChartNumber(yMarginal)}</b>`
 
     const spread = tooltipSpreadRows(Array.from(zBreakdown.values()), isDark.value)
 

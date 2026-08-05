@@ -64,6 +64,10 @@ var DataFlags = []flags.Flag{
 		ValidSet:   []string{"K", "M", "B", "T"},
 		Normalizer: strings.ToUpper,
 	},
+	{
+		Name: "round", Kind: flags.KindBool,
+		Usage: "Round numeric values to 2 decimal places in the output data (off by default; irreversible in the written file)",
+	},
 	{Name: "select", Usage: "csv/json only: select columns (repeatable); solo mode: 2–3 cols per view as x,y[,z] axes (e.g. --select region,latency); grouped mode: numeric stat columns with optional {label}", Kind: flags.KindStringArray},
 	{
 		Name: "col-axis", Shorthand: "A", Kind: flags.KindString,

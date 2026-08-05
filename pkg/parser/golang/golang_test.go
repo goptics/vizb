@@ -76,9 +76,9 @@ func (s *GoBenchmarkSuite) TestParseGoBenchmark() {
 			allocUnit: "K",
 			expected: []shared.DataPoint{
 				{YAxis: "WithMem", Stats: []shared.Stat{
-					{Type: "Execution Time (ms/op)", Value: shared.F64(0.00)},
-					{Type: "Memory Usage (KB/op)", Value: shared.F64(0.06)},
-					{Type: "Allocations (K/op)", Value: shared.F64(0.00)},
+					{Type: "Execution Time (ms/op)", Value: shared.F64(0.00012345)},
+					{Type: "Memory Usage (KB/op)", Value: shared.F64(0.0625)},
+					{Type: "Allocations (K/op)", Value: shared.F64(0.002)},
 				}},
 			},
 			expectMemStats: true,

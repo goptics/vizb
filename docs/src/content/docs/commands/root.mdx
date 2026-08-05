@@ -93,6 +93,7 @@ See the [Parser Guide](/guides/parsers) for each parser's metrics, and the
 | `--mem-unit` | `-M` | `B` | Memory unit: `b`, `B`, `KB`, `MB`, `GB` |
 | `--time-unit` | `-T` | `ns` | Time unit: `ns`, `us`, `ms`, `s` |
 | `--number-unit` | `-N` | `""` | Number unit: `K`, `M`, `B`, `T` (default: as-is) |
+| `--round` | | off | Round numeric values to 2 decimal places **in the output data** (irreversible in the written file; off by default) |
 
 `--theme` changes series colors only; light/dark mode remains independent. Themes expand into
 `dataset.themes[]` with `themes[0]` active (no separate active field on new output). See [Color
