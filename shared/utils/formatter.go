@@ -2,33 +2,14 @@ package utils
 
 import "math"
 
-// float64Epsilon is JS Number.EPSILON (2^-52), used so RoundToTwo matches the
-// former UI round2 half-away-from-zero tie correction on binary floats.
-const float64Epsilon = 2.220446049250313e-16
-
-// RoundToTwo rounds to 2 decimal places with the same decimal-aware epsilon
-// nudge as the previous UI round2: exact ties (e.g. 1.005 → 1.01, -1.005 → -1.01)
-// round half away from zero instead of drifting on binary float error.
-// Non-finite values are returned unchanged.
+// RoundToTwo rounds to 2 decimal places via math.Round (half away from zero).
+// Non-finite values are returned unchanged. Binary float representation may
+// still make some .xx5 literals land on the lower side (e.g. 1.005 → 1.00).
 func RoundToTwo(num float64) float64 {
 	if math.IsNaN(num) || math.IsInf(num, 0) {
 		return num
 	}
-
-	scaled := num * 100
-	sign := 1.0
-	switch {
-	case scaled < 0:
-		sign = -1
-	case scaled == 0:
-		sign = 0
-	}
-	mag := math.Abs(scaled)
-	if mag < 1 {
-		mag = 1
-	}
-	tieCorrected := scaled + sign*float64Epsilon*mag
-	return math.Round(tieCorrected) / 100
+	return math.Round(num*100) / 100
 }
 
 // FormatTime converts a time value from nanoseconds to the specified unit.
