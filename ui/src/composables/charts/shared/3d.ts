@@ -1,7 +1,7 @@
 import type { EChartsOption } from 'echarts'
 import type { Render3D, Point3D, ScaleType, Series3DData } from '@/types'
 import { valuePoints3DToSeries } from '@/lib/transform'
-import { getDefaultThemeColor, getNextColorFor } from '@/lib/utils'
+import { getDefaultThemeColor, getNextColorFor, round2 } from '@/lib/utils'
 import {
   formatTooltipValue,
   tooltipDivider,
@@ -12,7 +12,7 @@ import {
   type ChartStyling,
 } from './chartConfig'
 
-export const round2 = (v: number) => Math.round(v * 100) / 100
+export { round2 }
 
 /** Blue-to-red gradient for value-mode 3D visualMap (metric height). */
 export const VALUE_3D_COLOR_RANGE = [
