@@ -111,6 +111,9 @@ field. Built-in `default` is not embedded (the UI owns it). The legacy string
 omitted or empty. See [Color Themes](/ui/themes) and the [API reference](/api/)
 for the full `Theme` object shape.
 
+Top-level `round` (default `false`) matches CLI `--round`: round numeric values
+to 2 decimal places in the output data.
+
 ## Merge Datasets
 
 `POST /merge` accepts at least two complete Vizb Dataset objects. It returns an

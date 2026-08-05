@@ -561,6 +561,26 @@ func (s *ServeSuite) TestConvertEndpointSupportsBenchmarkFamilies() {
 	}
 }
 
+func (s *ServeSuite) TestConvertEndpointRoundOption() {
+	handler := newRESTHandler()
+	// High-precision loss intact by default; round:true clamps once (issue #336).
+	const body = `{"input":"step,loss\n1,0.914273581\n","parser":"csv","grouping":{"pattern":"x","columns":["step"]},"charts":{"types":["line"]}}`
+
+	statValue := func(raw []byte) float64 {
+		var dataset map[string]any
+		s.Require().NoError(json.Unmarshal(raw, &dataset))
+		return dataset["data"].([]any)[0].(map[string]any)["stats"].([]any)[0].(map[string]any)["value"].(float64)
+	}
+
+	recorder := s.apiRequest(handler, "/", body, "application/json", "application/json")
+	s.Equal(http.StatusOK, recorder.Code, recorder.Body.String())
+	s.InDelta(0.914273581, statValue(recorder.Body.Bytes()), 1e-12)
+
+	recorder = s.apiRequest(handler, "/", body[:len(body)-1]+`,"round":true}`, "application/json", "application/json")
+	s.Equal(http.StatusOK, recorder.Code, recorder.Body.String())
+	s.Equal(0.91, statValue(recorder.Body.Bytes()))
+}
+
 func (s *ServeSuite) TestConvertEndpointRejectsInvalidRequests() {
 	handler := newRESTHandler()
 	for _, test := range []struct {
@@ -1096,6 +1116,7 @@ func (s *ServeSuite) TestRequestContractHelpers() {
 			{name: "null convert field", raw: `{"theme":null}`, target: new(convertRequest), path: "/theme"},
 			{name: "null themes field", raw: `{"themes":null}`, target: new(convertRequest), path: "/themes"},
 			{name: "null title", raw: `{"title":null}`, target: new(convertRequest), path: "/title"},
+			{name: "null round", raw: `{"round":null}`, target: new(convertRequest), path: "/round"},
 			{name: "null col axis", raw: `{"colAxis":null}`, target: new(groupingOptions), path: "/grouping/colAxis"},
 			{name: "unknown grouping field", raw: `{"unexpected":true}`, target: new(groupingOptions), path: "/grouping/unexpected"},
 			{name: "null unit field", raw: `{"memory":null}`, target: new(unitOptions), path: "/units/memory"},

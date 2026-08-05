@@ -221,7 +221,7 @@ func (s *OpenAPISuite) TestRootConversionContract() {
 	schemas := mustMap(t, components["schemas"], "components.schemas")
 	request := mustMap(t, schemas["ConvertRequest"], "components.schemas.ConvertRequest")
 	s.Equal(
-		[]string{"charts", "description", "grouping", "id", "input", "jsonPath", "name", "output", "parser", "select", "tag", "theme", "themes", "title", "units"},
+		[]string{"charts", "description", "grouping", "id", "input", "jsonPath", "name", "output", "parser", "round", "select", "tag", "theme", "themes", "title", "units"},
 		propertyNames(t, request, "ConvertRequest"),
 	)
 	// themes is the data-owned catalog; theme remains as legacy convert input.

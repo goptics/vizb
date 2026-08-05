@@ -132,6 +132,29 @@ func (s *AggregateSuite) TestAggregateDataPointsPreservesMetric() {
 	s.Equal("4", out[0].Metric)
 }
 
+// Summing fractional unit prices reintroduces IEEE dust; RoundStatValues cleans it
+// after AggregateDataPoints (issue #337 with --round).
+func (s *AggregateSuite) TestRoundStatValuesAfterAggregate() {
+	in := []DataPoint{
+		{XAxis: "d1", Stats: []Stat{{Type: "unit_price", Value: F64(441.71)}}},
+		{XAxis: "d1", Stats: []Stat{{Type: "unit_price", Value: F64(141.1)}}},
+		{XAxis: "d1", Stats: []Stat{{Type: "unit_price", Value: F64(196.98)}}},
+	}
+	out := AggregateDataPoints(in)
+	s.Require().Len(out, 1)
+	// Sum is typically 779.79 with binary residue before re-round.
+	RoundStatValues(out)
+	s.Equal(779.79, *out[0].Stats[0].Value)
+
+	dusty := []DataPoint{
+		{Stats: []Stat{{Type: "v", Value: F64(3399.7099999999996)}}},
+		{Stats: []Stat{{Type: "v", Value: F64(2977.1900000000005)}}},
+	}
+	RoundStatValues(dusty)
+	s.Equal(3399.71, *dusty[0].Stats[0].Value)
+	s.Equal(2977.19, *dusty[1].Stats[0].Value)
+}
+
 func TestAggregateSuite(t *testing.T) {
 	suite.Run(t, new(AggregateSuite))
 }

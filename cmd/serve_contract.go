@@ -72,6 +72,7 @@ type convertRequest struct {
 	Parser      *string          `json:"parser"`
 	Grouping    *groupingOptions `json:"grouping"`
 	Units       *unitOptions     `json:"units"`
+	Round       bool             `json:"round"`
 	Select      []string         `json:"select"`
 	JSONPath    string           `json:"jsonPath"`
 	Charts      chartSelection   `json:"charts"`
@@ -86,8 +87,8 @@ func (r *convertRequest) UnmarshalJSON(data []byte) error {
 	if err := rejectNullFields(data, "/", map[string]string{
 		"id": "/id", "name": "/name", "title": "/title", "themes": "/themes", "theme": "/theme",
 		"description": "/description", "tag": "/tag", "parser": "/parser", "grouping": "/grouping",
-		"units": "/units", "select": "/select", "jsonPath": "/jsonPath", "charts": "/charts",
-		"output": "/output",
+		"units": "/units", "round": "/round", "select": "/select", "jsonPath": "/jsonPath",
+		"charts": "/charts", "output": "/output",
 	}); err != nil {
 		return err
 	}
@@ -545,6 +546,7 @@ func buildParserConfig(request convertRequest, key string) (parser.Config, *apiV
 			cfg.NumberUnit = *request.Units.Number
 		}
 	}
+	cfg.Round = request.Round
 
 	var err error
 	cfg, err = parser.ResolveGroupConfig(cfg)

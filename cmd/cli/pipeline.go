@@ -300,6 +300,10 @@ func prepareData(filePath, parserKey string, cfg parser.Config, titles ...string
 	if tabularParser(parserKey) && len(effectiveCfg.Group) > 0 {
 		before := len(data)
 		data = shared.AggregateDataPoints(data)
+		// Sum reintroduces float residue; re-apply 2dp when requested.
+		if effectiveCfg.Round {
+			shared.RoundStatValues(data)
+		}
 		logAggregationResult(before, len(data), effectiveCfg)
 	}
 
