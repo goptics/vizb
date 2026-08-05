@@ -387,7 +387,6 @@ func (b *FlagBag) Meta() RunMeta {
 		Name:        b.String("name"),
 		Title:       b.String("title"),
 		ThemeSpecs:  b.StringArray("theme"),
-		ThemeActive: b.String("theme-active"),
 		Description: b.String("description"),
 		Tag:         b.String("tag"),
 		OutputFile:  b.String("output"),

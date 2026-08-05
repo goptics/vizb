@@ -408,7 +408,7 @@ func buildConvertMetadata(request convertRequest) (core.Metadata, *apiValidation
 		return metadata, nil
 	}
 	normalized := style.NormalizeTheme(*request.Theme)
-	resolved, err := style.ResolveThemes([]string{normalized}, "")
+	resolved, err := style.ResolveThemes([]string{normalized})
 	if err != nil {
 		validationErr := bodyValidationError("/theme", "invalid_value", err.Error())
 		return core.Metadata{}, &validationErr
@@ -1026,7 +1026,7 @@ func resolveDatasetWireThemes(themes []shared.Theme, legacy string, datasetPath 
 	// than failing the whole dataset decode (soft for merge/UI inputs).
 	// Structured names equal to "default" also yield an empty catalog.
 	normalized := style.NormalizeTheme(legacy)
-	resolved, err := style.ResolveThemes([]string{normalized}, "")
+	resolved, err := style.ResolveThemes([]string{normalized})
 	if err != nil || len(resolved) == 0 {
 		return nil, nil
 	}

@@ -190,7 +190,7 @@ func (s *FlagBagSuite) TestBindRegistersFlags() {
 	fl := append(slices.Clone(DataFlags), internal_charts.BaseChartFlags...)
 	fl = append(fl, internal_charts.ScaleFlag)
 	cmd, _ := s.newCmdBag(fl)
-	for _, name := range []string{"name", "theme", "theme-active", "parser", "group-pattern", "round", "sort", "show-labels", "swap", "scale", "stat"} {
+	for _, name := range []string{"name", "theme", "parser", "group-pattern", "round", "sort", "show-labels", "swap", "scale", "stat"} {
 		s.NotNil(cmd.Flags().Lookup(name), "missing --%s", name)
 	}
 	s.Nil(cmd.Flags().Lookup("axes"))
@@ -266,18 +266,15 @@ func (s *FlagBagSuite) TestMetaIncludesThemeSpecs() {
 	s.Require().NoError(cmd.Flags().Set("name", "sample"))
 	s.Require().NoError(cmd.Flags().Set("theme", "roma"))
 	s.Require().NoError(cmd.Flags().Set("theme", "vintage"))
-	s.Require().NoError(cmd.Flags().Set("theme-active", "vintage"))
 	meta := bag.Meta()
 	s.Equal("sample", meta.Name)
 	s.Equal([]string{"roma", "vintage"}, meta.ThemeSpecs)
-	s.Equal("vintage", meta.ThemeActive)
 }
 
 func (s *FlagBagSuite) TestMetaEmptyThemesWhenUnset() {
 	_, bag := s.newCmdBag(slices.Clone(DataFlags))
 	meta := bag.Meta()
 	s.Empty(meta.ThemeSpecs)
-	s.Empty(meta.ThemeActive)
 }
 
 func (s *FlagBagSuite) TestChartSeedTriStateStatAndScale() {
@@ -361,14 +358,12 @@ func (s *FlagBagSuite) TestResetRestoresDefaults() {
 	cmd, bag := s.newCmdBag(fl)
 	s.Require().NoError(cmd.Flags().Set("name", "Custom"))
 	s.Require().NoError(cmd.Flags().Set("theme", "vintage"))
-	s.Require().NoError(cmd.Flags().Set("theme-active", "vintage"))
 	s.Require().NoError(cmd.Flags().Set("symbol-size", "12"))
 	s.Require().NoError(cmd.Flags().Set("port", "9090"))
 	s.Equal(9090, bag.Int("port"))
 	bag.Reset()
 	s.Equal("Comparisons", bag.String("name"))
 	s.Empty(bag.StringArray("theme"))
-	s.Empty(bag.String("theme-active"))
 	s.Equal(0.0, bag.Float("symbol-size"))
 	s.Equal(8080, bag.Int("port"))
 }

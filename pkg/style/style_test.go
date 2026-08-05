@@ -117,7 +117,7 @@ func (s *ThemeSuite) TestParseThemeSpecDefaultHasColors() {
 }
 
 func (s *ThemeSuite) TestResolveThemesSkipsDefault() {
-	themes, err := ResolveThemes([]string{"default", "vintage", "roma"}, "")
+	themes, err := ResolveThemes([]string{"default", "vintage", "roma"})
 	s.Require().NoError(err)
 	s.Len(themes, 2)
 	s.Equal("vintage", themes[0].Name)
@@ -126,13 +126,13 @@ func (s *ThemeSuite) TestResolveThemesSkipsDefault() {
 }
 
 func (s *ThemeSuite) TestResolveThemesOnlyDefaultReturnsEmpty() {
-	themes, err := ResolveThemes([]string{"default", "DEFAULT"}, "default")
+	themes, err := ResolveThemes([]string{"default", "DEFAULT"})
 	s.Require().NoError(err)
 	s.Empty(themes)
 }
 
 func (s *ThemeSuite) TestResolveThemesAnonymousCustomNames() {
-	themes, err := ResolveThemes([]string{"#f00,#0f0", "#111,#222,#333"}, "")
+	themes, err := ResolveThemes([]string{"#f00,#0f0", "#111,#222,#333"})
 	s.Require().NoError(err)
 	s.Require().Len(themes, 2)
 	s.Equal("custom", themes[0].Name)
@@ -147,7 +147,7 @@ func (s *ThemeSuite) TestResolveThemesAnonymousAvoidsNamedCustom() {
 	themes, err := ResolveThemes([]string{
 		"custom:colors=#aaa,#bbb",
 		"#f00,#0f0",
-	}, "")
+	})
 	s.Require().NoError(err)
 	s.Require().Len(themes, 2)
 	s.Equal("custom", themes[0].Name)
@@ -160,7 +160,7 @@ func (s *ThemeSuite) TestResolveThemesStructuredNameStartingWithHash() {
 	themes, err := ResolveThemes([]string{
 		"#brand:colors=#aaa,#bbb",
 		"#f00,#0f0",
-	}, "")
+	})
 	s.Require().NoError(err)
 	s.Require().Len(themes, 2)
 	s.Equal("#brand", themes[0].Name)
@@ -174,7 +174,7 @@ func (s *ThemeSuite) TestResolveThemesDedupeLastWins() {
 		"ocean:colors=#111,#222",
 		"vintage",
 		"ocean:colors=#aaa,#bbb,#ccc",
-	}, "")
+	})
 	s.Require().NoError(err)
 	s.Require().Len(themes, 2)
 	// First-seen order, last content for ocean.
@@ -183,41 +183,11 @@ func (s *ThemeSuite) TestResolveThemesDedupeLastWins() {
 	s.Equal("vintage", themes[1].Name)
 }
 
-func (s *ThemeSuite) TestResolveThemesActiveNameFirst() {
-	themes, err := ResolveThemes([]string{"vintage", "roma", "chalk"}, "roma")
-	s.Require().NoError(err)
-	s.Require().Len(themes, 3)
-	s.Equal("roma", themes[0].Name)
-	s.Equal("vintage", themes[1].Name)
-	s.Equal("chalk", themes[2].Name)
-}
-
-func (s *ThemeSuite) TestResolveThemesActiveDefaultNoReorder() {
-	themes, err := ResolveThemes([]string{"vintage", "roma"}, "default")
-	s.Require().NoError(err)
-	s.Require().Len(themes, 2)
-	s.Equal("vintage", themes[0].Name)
-	s.Equal("roma", themes[1].Name)
-}
-
-func (s *ThemeSuite) TestResolveThemesActiveEmptyNoReorder() {
-	themes, err := ResolveThemes([]string{"vintage", "roma"}, "")
+func (s *ThemeSuite) TestResolveThemesFirstSeenIsActive() {
+	themes, err := ResolveThemes([]string{"vintage", "roma"})
 	s.Require().NoError(err)
 	s.Equal("vintage", themes[0].Name)
 	s.Equal("roma", themes[1].Name)
-}
-
-func (s *ThemeSuite) TestResolveThemesActiveMissingNoReorder() {
-	themes, err := ResolveThemes([]string{"vintage", "roma"}, "chalk")
-	s.Require().NoError(err)
-	s.Equal("vintage", themes[0].Name)
-	s.Equal("roma", themes[1].Name)
-}
-
-func (s *ThemeSuite) TestResolveThemesActiveCaseInsensitive() {
-	themes, err := ResolveThemes([]string{"vintage", "Roma"}, "ROMA")
-	s.Require().NoError(err)
-	s.Equal("roma", themes[0].Name)
 }
 
 func (s *ThemeSuite) TestResolveThemesMixed() {
@@ -226,16 +196,16 @@ func (s *ThemeSuite) TestResolveThemesMixed() {
 		"#f00,#0f0",
 		"westeros",
 		"brand:colors=#123,#456;visualMapColors=#123,#456",
-	}, "brand")
+	})
 	s.Require().NoError(err)
 	s.Require().Len(themes, 3)
-	s.Equal("brand", themes[0].Name)
-	s.Equal("custom", themes[1].Name)
-	s.Equal("westeros", themes[2].Name)
+	s.Equal("custom", themes[0].Name)
+	s.Equal("westeros", themes[1].Name)
+	s.Equal("brand", themes[2].Name)
 }
 
 func (s *ThemeSuite) TestResolveThemesInvalid() {
-	_, err := ResolveThemes([]string{"vintage", "not-a-theme"}, "")
+	_, err := ResolveThemes([]string{"vintage", "not-a-theme"})
 	s.Error(err)
 }
 

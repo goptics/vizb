@@ -312,9 +312,8 @@ func visualMapFromColors(colors []string) []string {
 //   - built-in "default" is omitted (UI owns default)
 //   - anonymous bare-hex customs get unique names: custom, custom-2, …
 //   - duplicate names (case-insensitive): last content wins, first-seen order kept
-//   - if activeName is non-empty, not "default", and present, that theme is moved first
-//   - first returned entry is the active theme when the list is non-empty and active was matched
-func ResolveThemes(specs []string, activeName string) ([]Theme, error) {
+//   - first returned entry is the active theme when the list is non-empty
+func ResolveThemes(specs []string) ([]Theme, error) {
 	type entry struct {
 		theme     Theme
 		anonymous bool
@@ -366,13 +365,6 @@ func ResolveThemes(specs []string, activeName string) ([]Theme, error) {
 	for _, key := range order {
 		out = append(out, byKey[key])
 	}
-
-	// Move active theme first when requested and present.
-	active := strings.TrimSpace(activeName)
-	if active != "" && !strings.EqualFold(active, "default") {
-		out = moveThemeFirst(out, active)
-	}
-
 	return out, nil
 }
 
@@ -386,23 +378,4 @@ func nextAnonymousName(used map[string]struct{}) string {
 			return name
 		}
 	}
-}
-
-func moveThemeFirst(themes []Theme, activeName string) []Theme {
-	idx := -1
-	for i, t := range themes {
-		if strings.EqualFold(t.Name, activeName) {
-			idx = i
-			break
-		}
-	}
-	if idx <= 0 {
-		return themes
-	}
-	active := themes[idx]
-	out := make([]Theme, 0, len(themes))
-	out = append(out, active)
-	out = append(out, themes[:idx]...)
-	out = append(out, themes[idx+1:]...)
-	return out
 }

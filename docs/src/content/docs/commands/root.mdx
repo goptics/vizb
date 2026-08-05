@@ -75,8 +75,7 @@ See the [Parser Guide](/guides/parsers) for each parser's metrics, and the
 | `--output` | `-o` | *(stdout)* | Output file path. `.json` → JSON, else → HTML |
 | `--parser` | `-P` | `auto` | Parser: `auto` (detect), `go`, `js:tinybench`, `js:vitest`, `rs:criterion`, `rs:divan`, `csv`, `json` |
 | `--name` | `-n` | `Benchmarks` | Dataset name |
-| `--theme` | | *(empty)* | Embed a color theme on the dataset (**repeatable**). Built-in name, structured `name:colors=#hex,...;visualMapColors=#hex,#hex`, or bare `#hex,#hex,...` palette. Empty when unset (UI default). Built-in `default` is not embedded. |
-| `--theme-active` | | `""` | Name of the active theme (moved first in the embedded catalog). Use `default` to leave order unchanged without embedding default |
+| `--theme` | | *(empty)* | Embed a color theme on the dataset (**repeatable**; first is active). Built-in name, structured `name:colors=#hex,...;visualMapColors=#hex,#hex`, or bare `#hex,#hex,...` palette. Empty when unset (UI default). Built-in `default` is not embedded. |
 | `--description` | `-d` | `""` | Dataset description |
 | `--tag` | `-t` | `""` | Tag identifier for release tracking |
 | `--id` | | `""` | Stable dataset id for `?id=` deep links in the HTML UI |
@@ -104,8 +103,8 @@ localStorage behavior.
 # Built-in
 vizb data.csv --theme westeros -o report.html
 
-# Multiple themes (selector shown); pin active with --theme-active
-vizb data.csv --theme westeros --theme vintage --theme-active vintage -o report.html
+# Multiple themes (selector shown); first --theme is active
+vizb data.csv --theme vintage --theme westeros -o report.html
 
 # Structured custom or bare hex palette
 vizb data.csv --theme 'brand:colors=#ff6b6b,#4ecdc4,#ffe66d' -o report.html

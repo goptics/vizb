@@ -24,16 +24,11 @@ If you omit `--theme`, the dataset has no `themes` array and the report uses the
 # Single built-in embedded as themes[0] (active)
 vizb results.csv --theme westeros -o report.html
 
-# Multiple themes: first flag is active unless --theme-active reorders
+# Multiple themes: first --theme is active (themes[0])
 vizb results.csv --theme westeros --theme vintage --theme roma -o report.html
-
-# Pin active theme without changing embed order of other flags
-vizb results.csv --theme vintage --theme roma --theme-active roma -o report.html
 ```
 
-Built-in name `default` is **not** embedded (the UI already owns it). Pass
-`--theme-active default` to leave catalog order unchanged without embedding
-`default`.
+Built-in name `default` is **not** embedded (the UI already owns it).
 
 Legacy files that still carry a string `theme` field are migrated into `themes[]`
 on load; re-marshalled output drops the legacy field.
@@ -74,8 +69,7 @@ Related flag:
 
 | Flag | Description |
 |------|-------------|
-| `--theme` | Embed a color theme on the dataset (repeatable). Empty when unset (UI default). |
-| `--theme-active` | Name of the active theme (moved first in the embedded catalog). Use `default` to leave order unchanged without embedding default. |
+| `--theme` | Embed a color theme on the dataset (repeatable; first is active). Empty when unset (UI default). |
 
 ## Viewer selector and localStorage
 

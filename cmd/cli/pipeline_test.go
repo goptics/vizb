@@ -810,19 +810,18 @@ func (s *PipelineSuite) TestAssembleDatasetPreservesTheme() {
 	s.NotEmpty(ds.Themes[0].Colors)
 }
 
-func (s *PipelineSuite) TestAssembleDatasetMultipleThemesAndActive() {
+func (s *PipelineSuite) TestAssembleDatasetMultipleThemesFirstIsActive() {
 	results := []shared.DataPoint{{XAxis: "1", YAxis: "2", Stats: []shared.Stat{}}}
 	cfg := parser.Config{GroupPattern: "x"}
 	ds := assembleDataset(results, RunMeta{
-		Name:        "T",
-		Parser:      "csv",
-		ThemeSpecs:  []string{"westeros", "vintage"},
-		ThemeActive: "vintage",
+		Name:       "T",
+		Parser:     "csv",
+		ThemeSpecs: []string{"westeros", "vintage"},
 	}, nil, cfg, nil)
 	s.Empty(ds.Theme)
 	s.Require().Len(ds.Themes, 2)
-	s.Equal("vintage", ds.Themes[0].Name)
-	s.Equal("westeros", ds.Themes[1].Name)
+	s.Equal("westeros", ds.Themes[0].Name)
+	s.Equal("vintage", ds.Themes[1].Name)
 }
 
 func (s *PipelineSuite) TestAssembleDatasetSkipsDefaultTheme() {
