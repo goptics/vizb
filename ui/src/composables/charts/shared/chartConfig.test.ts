@@ -558,6 +558,13 @@ describe('createLabelConfig value formatter', () => {
     expect(label.formatter({ value: 2864.2999999999997 })).toBe('2864.3')
   })
 
+  it('rounds exact tie values half away from zero', () => {
+    expect(label.formatter({ value: 1.005 })).toBe('1.01')
+    expect(label.formatter({ value: -1.005 })).toBe('-1.01')
+    expect(label.formatter({ value: [1, 1.005] })).toBe('1.01')
+    expect(label.formatter({ value: [1, -1.005] })).toBe('-1.01')
+  })
+
   it('rounds the y value of a [x, y] tuple', () => {
     expect(label.formatter({ value: [1, 4512.6900000000005] })).toBe('4512.69')
   })

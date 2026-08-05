@@ -1,6 +1,6 @@
 import type { EChartsOption } from 'echarts'
 import type { ScaleType } from '@/types'
-import { getDefaultThemeColor, getNextColorFor } from '@/lib/utils'
+import { getDefaultThemeColor, getNextColorFor, round2 } from '@/lib/utils'
 import { type BaseChartConfig, getBaseOptions } from '../baseChartOptions'
 import {
   createAxisConfig,
@@ -127,7 +127,7 @@ export function buildMixedAxes2DOptions(
     ...createLabelConfig(showLabels.value, styling),
     formatter: (p: { data: [number, number | null] }) => {
       const y = p.data[1]
-      return y === null || y === undefined ? '' : String(Math.round(y * 100) / 100)
+      return y === null || y === undefined ? '' : String(round2(y))
     },
   }
 

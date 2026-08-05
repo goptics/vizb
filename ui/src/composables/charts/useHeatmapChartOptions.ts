@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
-import { getDefaultThemeColor, getNextColorFor, isGrouped3D } from '@/lib/utils'
+import { getDefaultThemeColor, getNextColorFor, isGrouped3D, round2 } from '@/lib/utils'
 import { resolveVisualMapColors } from '@/lib/themes'
 import {
   getChartStyling,
@@ -14,8 +14,6 @@ import {
   createHeatmapDataZoomConfig,
   createHeatmapLayoutConfig,
 } from './shared'
-
-const round2 = (v: number) => Math.round(v * 100) / 100
 
 function formatCellNumber(v: number): string {
   if (Math.abs(v) >= 1e6) return (v / 1e6).toFixed(1) + 'M'

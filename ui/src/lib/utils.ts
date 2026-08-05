@@ -148,8 +148,20 @@ export const canOfferValue3D = (
   return builder.canOfferValue3D(chartType, data, hasZOnChart, cfg)
 }
 
+/**
+ * Round to 2 decimals for display. Decimal-aware: nudges by a relative epsilon
+ * so exact ties (e.g. 1.005 → 1.01, -1.005 → -1.01) round half away from zero
+ * deterministically instead of drifting on binary float error.
+ */
+export const round2 = (value: number): number => {
+  if (!Number.isFinite(value)) return value
+  const scaled = value * 100
+  const tieCorrected = scaled + Math.sign(scaled) * Number.EPSILON * Math.max(1, Math.abs(scaled))
+  return Math.round(tieCorrected) / 100
+}
+
 /** Round to 2 decimals — matches tooltip number formatting. */
-export const formatChartTotal = (value: number) => String(Math.round(value * 100) / 100)
+export const formatChartTotal = (value: number) => String(round2(value))
 
 export const isValueModeChart = (chart: ChartData): boolean => chart.statType === 'value'
 

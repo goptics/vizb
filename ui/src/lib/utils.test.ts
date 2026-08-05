@@ -11,6 +11,7 @@ import {
   datasetHasBothXY,
   datasetDimension,
   formatChartTotal,
+  round2,
   isValueMode,
   isMixedMode,
   isScatterTransformMode,
@@ -226,6 +227,23 @@ describe('computeChartGrandTotal', () => {
 describe('formatChartTotal', () => {
   it('rounds to two decimals', () => {
     expect(formatChartTotal(10.126)).toBe('10.13')
+  })
+})
+
+describe('round2', () => {
+  it('rounds to two decimals', () => {
+    expect(round2(10.126)).toBe(10.13)
+    expect(round2(3)).toBe(3)
+  })
+
+  it('rounds exact tie values half away from zero', () => {
+    expect(round2(1.005)).toBe(1.01)
+    expect(round2(-1.005)).toBe(-1.01)
+  })
+
+  it('passes through non-finite values', () => {
+    expect(round2(NaN)).toBe(NaN)
+    expect(round2(Infinity)).toBe(Infinity)
   })
 })
 
