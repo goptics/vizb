@@ -404,7 +404,6 @@ components:
           default: false
           description: >
             Round numeric values to 2 decimal places in the output data
-            (same as CLI --round). Off by default; independent of units.
         select:
           type: array
           description: Structured column selections; each item is one select expression.
