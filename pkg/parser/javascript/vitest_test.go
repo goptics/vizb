@@ -119,6 +119,28 @@ func (s *VitestSuite) TestEmptyFile() {
 	s.Empty(results)
 }
 
+// Throughput, RME, and Samples are raw metrics (no unit convert); still honor cfg.Round.
+func (s *VitestSuite) TestRawMetricsRoundWhenEnabled() {
+	const line = ` ✓ sort.bench.js > n=100 1356ms
+     name                   hz     min     max    mean     p75     p99    p995    p999     rme  samples
+   · bubbleSort     264,413.967  0.00371  0.09741  0.00381  0.00381  0.00491  0.00601  0.00761  ±0.091%   132207.456
+`
+	full, _, _, err := ParseVitestBenchmark(javascriptTestInput(s.T(), line), s.cfg)
+	s.Require().NoError(err)
+	s.Require().Len(full, 1)
+	assertStat(s.T(), full[0].Stats[0], "Throughput avg (ops/s)", 264413.967, "")
+	assertStat(s.T(), full[0].Stats[8], "RME (%)", 0.091, "±")
+	assertStat(s.T(), full[0].Stats[9], "Samples", 132207.456, "")
+
+	s.cfg.Round = true
+	rounded, _, _, err := ParseVitestBenchmark(javascriptTestInput(s.T(), line), s.cfg)
+	s.Require().NoError(err)
+	s.Require().Len(rounded, 1)
+	assertStat(s.T(), rounded[0].Stats[0], "Throughput avg (ops/s)", 264413.97, "")
+	assertStat(s.T(), rounded[0].Stats[8], "RME (%)", 0.09, "±")
+	assertStat(s.T(), rounded[0].Stats[9], "Samples", 132207.46, "")
+}
+
 func (s *VitestSuite) TestReturnsErrors() {
 	s.Run("invalid filter", func() {
 		cfg := s.cfg

@@ -287,6 +287,37 @@ func (s *GoBenchmarkSuite) TestParseGoBenchmarkReturnsSystemMetadata() {
 	s.Equal(&shared.CPUInfo{Name: "Request A CPU", Cores: 12}, system.CPU)
 }
 
+// Unformatted B/s and custom metrics still honor cfg.Round (no unit convert path).
+func (s *GoBenchmarkSuite) TestThroughputAndCustomMetricsRoundWhenEnabled() {
+	input := strings.Join([]string{
+		"BenchmarkThroughput 100 123.456 ns/op 512.456 B/s",
+		"BenchmarkCustom 100 123.456 ns/op 42.567 customUnit",
+		"BenchmarkRes 100 123.456 ns/op 5000.128 res/s",
+	}, "\n")
+
+	full, _, _, err := ParseGoBenchmark(strings.NewReader(input), parser.Config{
+		GroupPattern: "y",
+		TimeUnit:     "ns",
+	})
+	s.Require().NoError(err)
+	s.Require().Len(full, 3)
+	s.InDelta(512.456, *full[0].Stats[1].Value, 1e-9)
+	s.InDelta(42.567, *full[1].Stats[1].Value, 1e-9)
+	s.InDelta(5000.128, *full[2].Stats[1].Value, 1e-9)
+
+	rounded, _, _, err := ParseGoBenchmark(strings.NewReader(input), parser.Config{
+		GroupPattern: "y",
+		TimeUnit:     "ns",
+		Round:        true,
+	})
+	s.Require().NoError(err)
+	s.Require().Len(rounded, 3)
+	s.Equal(123.46, *rounded[0].Stats[0].Value) // ns/op also rounded
+	s.Equal(512.46, *rounded[0].Stats[1].Value)
+	s.Equal(42.57, *rounded[1].Stats[1].Value)
+	s.Equal(5000.13, *rounded[2].Stats[1].Value)
+}
+
 func (s *GoBenchmarkSuite) TestParseGoBenchmarkReturnsErrors() {
 	benchmark := "BenchmarkExample 100 123 ns/op"
 

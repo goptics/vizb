@@ -16,8 +16,8 @@ import {
 } from './shared'
 
 function formatCellNumber(v: number): string {
-  if (Math.abs(v) >= 1e6) return (v / 1e6).toFixed(1) + 'M'
-  if (Math.abs(v) >= 1e3) return (v / 1e3).toFixed(1) + 'K'
+  if (Math.abs(v) >= 1e6) return formatChartNumber(v / 1e6) + 'M'
+  if (Math.abs(v) >= 1e3) return formatChartNumber(v / 1e3) + 'K'
   return formatChartNumber(v)
 }
 

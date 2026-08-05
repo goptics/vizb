@@ -117,7 +117,7 @@ func ParseGoBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataPoint, p
 
 				benchStat = shared.Stat{
 					Type:  utils.CreateStatType("Throughput", unit, ""),
-					Value: shared.F64(val),
+					Value: shared.F64(utils.FormatNumber(val, "", cfg.Round)),
 				}
 			default:
 				customType := "Metric"
@@ -128,7 +128,7 @@ func ParseGoBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataPoint, p
 
 				benchStat = shared.Stat{
 					Type:  utils.CreateStatType(customType, value.Unit, ""),
-					Value: shared.F64(value.Value),
+					Value: shared.F64(utils.FormatNumber(value.Value, "", cfg.Round)),
 				}
 			}
 

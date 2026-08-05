@@ -97,7 +97,7 @@ func ParseVitestBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataPoin
 			YAxis: yAxis,
 			ZAxis: zAxis,
 			Stats: []shared.Stat{
-				{Type: "Throughput avg (ops/s)", Value: shared.F64(hz)},
+				{Type: "Throughput avg (ops/s)", Value: shared.F64(utils.FormatNumber(hz, "", cfg.Round))},
 				{Type: utils.CreateStatType("Latency min", cfg.TimeUnit, ""), Value: shared.F64(utils.ConvertTime(minVal, "ms", cfg.TimeUnit, cfg.Round))},
 				{Type: utils.CreateStatType("Latency max", cfg.TimeUnit, ""), Value: shared.F64(utils.ConvertTime(maxVal, "ms", cfg.TimeUnit, cfg.Round))},
 				{Type: utils.CreateStatType("Latency avg", cfg.TimeUnit, ""), Value: shared.F64(utils.ConvertTime(mean, "ms", cfg.TimeUnit, cfg.Round))},
@@ -105,8 +105,8 @@ func ParseVitestBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataPoin
 				{Type: utils.CreateStatType("Latency p99", cfg.TimeUnit, ""), Value: shared.F64(utils.ConvertTime(p99, "ms", cfg.TimeUnit, cfg.Round))},
 				{Type: utils.CreateStatType("Latency p995", cfg.TimeUnit, ""), Value: shared.F64(utils.ConvertTime(p995, "ms", cfg.TimeUnit, cfg.Round))},
 				{Type: utils.CreateStatType("Latency p999", cfg.TimeUnit, ""), Value: shared.F64(utils.ConvertTime(p999, "ms", cfg.TimeUnit, cfg.Round))},
-				{Type: "RME (%)", Value: shared.F64(rme), Symbol: "±"},
-				{Type: "Samples", Value: shared.F64(samples)},
+				{Type: "RME (%)", Value: shared.F64(utils.FormatNumber(rme, "", cfg.Round)), Symbol: "±"},
+				{Type: "Samples", Value: shared.F64(utils.FormatNumber(samples, "", cfg.Round))},
 			},
 		})
 	}
