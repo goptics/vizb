@@ -82,7 +82,7 @@ jobs:
             file: varmq
             name: "Varmq"
             description: "Variadic queue benchmark"
-            group-pattern: x/y
+            group-pattern: n/x
             charts: bar
             chart: "bar:sort=asc"
 
