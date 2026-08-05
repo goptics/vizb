@@ -1,6 +1,7 @@
 package shared
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -153,6 +154,31 @@ func (s *AggregateSuite) TestRoundStatValuesAfterAggregate() {
 	RoundStatValues(dusty)
 	s.Equal(3399.71, *dusty[0].Stats[0].Value)
 	s.Equal(2977.19, *dusty[1].Stats[0].Value)
+}
+
+// Nil / non-finite values are left alone so JSON stays valid and partial rows
+// do not panic when --round re-quantizes after AggregateDataPoints.
+func (s *AggregateSuite) TestRoundStatValuesSkipsNilAndNonFinite() {
+	nan := math.NaN()
+	posInf := math.Inf(1)
+	negInf := math.Inf(-1)
+	points := []DataPoint{
+		{Stats: []Stat{
+			{Type: "nil", Value: nil},
+			{Type: "nan", Value: &nan},
+			{Type: "pinf", Value: &posInf},
+			{Type: "ninf", Value: &negInf},
+			{Type: "ok", Value: F64(1.006)},
+		}},
+	}
+
+	RoundStatValues(points)
+
+	s.Nil(points[0].Stats[0].Value)
+	s.True(math.IsNaN(*points[0].Stats[1].Value))
+	s.True(math.IsInf(*points[0].Stats[2].Value, 1))
+	s.True(math.IsInf(*points[0].Stats[3].Value, -1))
+	s.Equal(1.01, *points[0].Stats[4].Value)
 }
 
 func TestAggregateSuite(t *testing.T) {
