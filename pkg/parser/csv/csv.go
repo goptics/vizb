@@ -154,7 +154,7 @@ func parseReader(input io.Reader, cfg parser.Config, autoDetect autoDetectFunc) 
 			}
 			stats = append(stats, shared.Stat{
 				Type:  utils.CreateStatType(label, cfg.NumberUnit, ""),
-				Value: shared.F64(utils.FormatNumber(v, cfg.NumberUnit)),
+				Value: shared.F64(utils.FormatNumber(v, cfg.NumberUnit, cfg.Round)),
 			})
 		}
 

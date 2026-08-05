@@ -77,11 +77,18 @@ func assertStat(t *testing.T, s shared.Stat, expectedType string, expectedValue 
 		}
 	}
 	require(s.Type, expectedType, "stat type mismatch")
-	var gotValue any
-	if s.Value != nil {
-		gotValue = *s.Value
+	if s.Value == nil {
+		t.Errorf("stat value mismatch: got nil want %v", expectedValue)
+	} else if *s.Value != expectedValue {
+		// Allow tiny float noise from unit conversion (e.g. 821.61 ns → us).
+		diff := *s.Value - expectedValue
+		if diff < 0 {
+			diff = -diff
+		}
+		if diff > 1e-9 {
+			t.Errorf("stat value mismatch: got %v want %v", *s.Value, expectedValue)
+		}
 	}
-	require(gotValue, expectedValue, "stat value mismatch")
 	require(s.Symbol, expectedSymbol, "stat symbol mismatch")
 }
 
@@ -129,8 +136,8 @@ func (s *CriterionSuite) TestUnitConversionToUs() {
 	s.Require().NoError(err)
 	s.Len(results, 6)
 
-	assertStat(s.T(), results[0].Stats[0], "Latency avg (us)", 3.05, "")
-	assertStat(s.T(), results[1].Stats[0], "Latency avg (us)", 0.82, "")
+	assertStat(s.T(), results[0].Stats[0], "Latency avg (us)", 3.0524, "")
+	assertStat(s.T(), results[1].Stats[0], "Latency avg (us)", 0.82161, "")
 	assertStat(s.T(), results[4].Stats[0], "Latency avg (us)", 1382.7, "")
 }
 

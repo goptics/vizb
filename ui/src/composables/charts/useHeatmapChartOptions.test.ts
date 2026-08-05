@@ -144,8 +144,8 @@ describe('useHeatmapChartOptions — 2D', () => {
   it('formats cell labels with K/M suffixes when showLabels is on', () => {
     const chartData = makeHeatmapChartData({
       series: [
-        { xAxis: 'a', values: [1500, 2_500_000], benchmarkId: '' },
-        { xAxis: 'b', values: [0.5, 42], benchmarkId: '' },
+        { xAxis: 'a', values: [1500, 2_500_000, 1234, 1_234_567], benchmarkId: '' },
+        { xAxis: 'b', values: [0.5, 42, 0, 0], benchmarkId: '' },
       ],
     })
     const { options } = useHeatmapChartOptions(baseConfig({ chartData, showLabels: true }))
@@ -155,6 +155,9 @@ describe('useHeatmapChartOptions — 2D', () => {
     const fmt = series[0]!.label.formatter
     expect(fmt({ data: [0, 0, 1500] })).toBe('1.5K')
     expect(fmt({ data: [0, 1, 2_500_000] })).toBe('2.5M')
+    // Above 1e3 / 1e6: keep stored precision (no toFixed(1) rounding).
+    expect(fmt({ data: [0, 2, 1234] })).toBe('1.234K')
+    expect(fmt({ data: [0, 3, 1_234_567] })).toBe('1.234567M')
     expect(fmt({ data: [1, 0, 0.5] })).toBe('0.5')
     expect(fmt({ data: [1, 1, 42] })).toBe('42')
   })
@@ -275,7 +278,7 @@ describe('useHeatmapChartOptions — grouped 3D', () => {
     expect(fmt({ value: [0, 0, 1500] })).toBe('1.5K')
     expect(fmt({ data: [0, 0, 0] })).toBe('')
     expect(fmt({ data: [0, 0, undefined] })).toBe('')
-    expect(fmt({ value: [0, 0, 2_000_000] })).toBe('2.0M')
+    expect(fmt({ value: [0, 0, 2_000_000] })).toBe('2M')
   })
 
   it('attaches dataZoom for large grouped axes and rotates long x labels', () => {

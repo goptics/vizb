@@ -24,6 +24,7 @@ type Config struct {
 	MemUnit         string
 	TimeUnit        string
 	NumberUnit      string
+	Round           bool         // when true, Format* rounds values to 2 decimals in output data
 	Select          []ColumnSpec // grouped mode: numeric stat columns
 	SelectViews     []SelectView // solo axis mode: one entry per --select occurrence
 	Axes            []ColumnSpec // auto-value mode: numeric cols placed on x,y[,z]

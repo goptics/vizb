@@ -1,6 +1,7 @@
 package shared
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -130,6 +131,54 @@ func (s *AggregateSuite) TestAggregateDataPointsPreservesMetric() {
 	out := AggregateDataPoints(in)
 	s.Require().Len(out, 1)
 	s.Equal("4", out[0].Metric)
+}
+
+// Summing fractional unit prices reintroduces IEEE dust; RoundStatValues cleans it
+// after AggregateDataPoints (issue #337 with --round).
+func (s *AggregateSuite) TestRoundStatValuesAfterAggregate() {
+	in := []DataPoint{
+		{XAxis: "d1", Stats: []Stat{{Type: "unit_price", Value: F64(441.71)}}},
+		{XAxis: "d1", Stats: []Stat{{Type: "unit_price", Value: F64(141.1)}}},
+		{XAxis: "d1", Stats: []Stat{{Type: "unit_price", Value: F64(196.98)}}},
+	}
+	out := AggregateDataPoints(in)
+	s.Require().Len(out, 1)
+	// Sum is typically 779.79 with binary residue before re-round.
+	RoundStatValues(out)
+	s.Equal(779.79, *out[0].Stats[0].Value)
+
+	dusty := []DataPoint{
+		{Stats: []Stat{{Type: "v", Value: F64(3399.7099999999996)}}},
+		{Stats: []Stat{{Type: "v", Value: F64(2977.1900000000005)}}},
+	}
+	RoundStatValues(dusty)
+	s.Equal(3399.71, *dusty[0].Stats[0].Value)
+	s.Equal(2977.19, *dusty[1].Stats[0].Value)
+}
+
+// Nil / non-finite values are left alone so JSON stays valid and partial rows
+// do not panic when --round re-quantizes after AggregateDataPoints.
+func (s *AggregateSuite) TestRoundStatValuesSkipsNilAndNonFinite() {
+	nan := math.NaN()
+	posInf := math.Inf(1)
+	negInf := math.Inf(-1)
+	points := []DataPoint{
+		{Stats: []Stat{
+			{Type: "nil", Value: nil},
+			{Type: "nan", Value: &nan},
+			{Type: "pinf", Value: &posInf},
+			{Type: "ninf", Value: &negInf},
+			{Type: "ok", Value: F64(1.006)},
+		}},
+	}
+
+	RoundStatValues(points)
+
+	s.Nil(points[0].Stats[0].Value)
+	s.True(math.IsNaN(*points[0].Stats[1].Value))
+	s.True(math.IsInf(*points[0].Stats[2].Value, 1))
+	s.True(math.IsInf(*points[0].Stats[3].Value, -1))
+	s.Equal(1.01, *points[0].Stats[4].Value)
 }
 
 func TestAggregateSuite(t *testing.T) {

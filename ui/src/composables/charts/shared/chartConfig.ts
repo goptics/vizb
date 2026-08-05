@@ -2,7 +2,7 @@ import type { EChartsOption } from 'echarts/types/dist/shared'
 import type { ScaleType } from '@/types'
 import { fontSize } from './common'
 import { describe } from '@/lib/stats'
-import { round2 } from '@/lib/utils'
+import { formatChartNumber } from '@/lib/utils'
 
 export const LARGE_X_THRESHOLD = 50
 /** Initial visible share of a large category X-axis when dataZoom first renders. */
@@ -466,7 +466,7 @@ export function createHorizontalAxisConfig(
  */
 export function formatTooltipValue(value: any): string {
   if (value === null || value === undefined) return '—'
-  if (typeof value === 'number') return String(round2(value))
+  if (typeof value === 'number') return formatChartNumber(value)
   return String(value)
 }
 
@@ -572,7 +572,7 @@ export function tooltipSpreadRows(values: number[], isDark: boolean): string {
   const finite = values.filter((v) => Number.isFinite(v))
   if (finite.length < 2) return ''
   const s = describe(finite)
-  const num = (v: number) => (Number.isFinite(v) ? round2(v) : '—')
+  const num = (v: number) => (Number.isFinite(v) ? formatChartNumber(v) : '—')
   const cv = Number.isFinite(s.cv) ? `${(s.cv * 100).toFixed(1)}%` : '—'
   return (
     `${tooltipDivider(isDark)}` +
@@ -700,7 +700,7 @@ export function createTooltipConfig(
 
         const legendRows = present.map((cur) => {
           const seriesSum = seriesTotals?.get(cur.seriesName ?? '')
-          const sumTag = seriesSum === undefined ? '' : ` (Σ${round2(seriesSum)})`
+          const sumTag = seriesSum === undefined ? '' : ` (Σ${formatChartNumber(seriesSum)})`
           return `${cur.marker} ${cur.seriesName}${sumTag}: ${formatTooltipValue(cur.value)}`
         })
         const body = `<strong>${params[0]?.name}</strong><br/>${renderTooltipLegendColumns(legendRows)}`
@@ -713,7 +713,7 @@ export function createTooltipConfig(
           0
         )
         const xName = params[0]?.name ?? ''
-        const sumLine = `${tooltipDivider(isDark)}Σ ${xName}: <b>${round2(total)}</b>`
+        const sumLine = `${tooltipDivider(isDark)}Σ ${xName}: <b>${formatChartNumber(total)}</b>`
         const spread = tooltipSpreadRows(
           present.map((p) => (typeof p.value === 'number' ? p.value : NaN)),
           isDark
@@ -847,7 +847,7 @@ export const createLabelConfig = (
   formatter: (params: { value?: number | (number | null)[] | null }) => {
     const raw = Array.isArray(params.value) ? params.value[1] : params.value
     if (raw == null) return ''
-    return typeof raw === 'number' ? String(round2(raw)) : String(raw)
+    return typeof raw === 'number' ? formatChartNumber(raw) : String(raw)
   },
   fontSize,
   color: stacked ? '#fff' : styling.textColor,

@@ -552,21 +552,18 @@ describe('createLabelConfig value formatter', () => {
     formatter: (p: { value?: number | (number | null)[] | null }) => string
   }
 
-  it('rounds numeric values to 2 decimals', () => {
-    expect(label.formatter({ value: 5941.380000000001 })).toBe('5941.38')
-    expect(label.formatter({ value: 3370.4500000000003 })).toBe('3370.45')
-    expect(label.formatter({ value: 2864.2999999999997 })).toBe('2864.3')
+  it('formats numeric values at full precision', () => {
+    expect(label.formatter({ value: 5941.380000000001 })).toBe('5941.380000000001')
+    expect(label.formatter({ value: 3370.4500000000003 })).toBe('3370.4500000000003')
+    expect(label.formatter({ value: 2864.2999999999997 })).toBe('2864.2999999999997')
+    expect(label.formatter({ value: 1.005 })).toBe('1.005')
+    expect(label.formatter({ value: -1.005 })).toBe('-1.005')
   })
 
-  it('rounds exact tie values half away from zero', () => {
-    expect(label.formatter({ value: 1.005 })).toBe('1.01')
-    expect(label.formatter({ value: -1.005 })).toBe('-1.01')
-    expect(label.formatter({ value: [1, 1.005] })).toBe('1.01')
-    expect(label.formatter({ value: [1, -1.005] })).toBe('-1.01')
-  })
-
-  it('rounds the y value of a [x, y] tuple', () => {
-    expect(label.formatter({ value: [1, 4512.6900000000005] })).toBe('4512.69')
+  it('formats the y value of a [x, y] tuple at full precision', () => {
+    expect(label.formatter({ value: [1, 4512.6900000000005] })).toBe('4512.6900000000005')
+    expect(label.formatter({ value: [1, 1.005] })).toBe('1.005')
+    expect(label.formatter({ value: [1, -1.005] })).toBe('-1.005')
   })
 
   it('renders empty string for null/undefined values', () => {

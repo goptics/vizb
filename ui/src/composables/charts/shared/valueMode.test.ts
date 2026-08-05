@@ -232,7 +232,7 @@ describe('buildValueAxes2DOptions', () => {
     const option = buildValueAxes2DOptions(cfg({ showLabels: true }))
     const formatter = seriesOf(option).label?.formatter
     expect(formatter).toBeTypeOf('function')
-    expect(formatter!({ data: [1, 1.234] })).toBe('1.23')
+    expect(formatter!({ data: [1, 1.234] })).toBe('1.234')
     expect(formatter!({ data: [1, null] })).toBe('')
     expect(formatter!({ data: [1, undefined as unknown as number] })).toBe('')
   })

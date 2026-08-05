@@ -1,6 +1,9 @@
 package shared
 
-import "fmt"
+import (
+	"fmt"
+	"math"
+)
 
 // AggregateDataPoints groups DataPoints by (Name, XAxis, YAxis, ZAxis) and sums
 // Stat.Value for matching stat types within each group. Order of first occurrence
@@ -61,6 +64,26 @@ func AggregateDataPoints(points []DataPoint) []DataPoint {
 		result = append(result, *groups[k])
 	}
 	return result
+}
+
+// RoundStatValues rounds every Stat.Value to 2 decimal places in place.
+// Call after AggregateDataPoints when --round / API round is set: per-row
+// Format* rounding happens before the sum, and float addition reintroduces
+// IEEE residue (e.g. 3399.7099999999996). Matches utils.RoundToTwo.
+func RoundStatValues(points []DataPoint) {
+	for i := range points {
+		for j := range points[i].Stats {
+			if points[i].Stats[j].Value == nil {
+				continue
+			}
+			v := *points[i].Stats[j].Value
+			if math.IsNaN(v) || math.IsInf(v, 0) {
+				continue
+			}
+			r := math.Round(v*100) / 100
+			points[i].Stats[j].Value = &r
+		}
+	}
 }
 
 // CollapseDataPointsByKey merges DataPoints that share the same

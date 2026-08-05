@@ -578,6 +578,24 @@ func (s *PipelineSuite) TestPrepareDataAggregatesCSV() {
 	s.Equal(30.0, *results[0].Stats[0].Value)
 }
 
+// --round re-quantizes after AggregateDataPoints so summed unit prices lose
+// IEEE residue (issue #337). Without Round the sum may still carry dust.
+func (s *PipelineSuite) TestPrepareDataRoundAfterAggregate() {
+	csvFile := s.writeFile("prices.csv", "day,unit_price\nd1,441.71\nd1,141.1\nd1,196.98\n")
+	cfg := parser.Config{
+		GroupPattern: "x",
+		Group:        []string{"day"},
+		Round:        true,
+	}
+
+	results, effectiveCfg, _ := prepareData(csvFile, "csv", cfg)
+	s.True(effectiveCfg.Round)
+	s.Require().Len(results, 1)
+	s.Equal("d1", results[0].XAxis)
+	s.Require().NotEmpty(results[0].Stats)
+	s.Equal(779.79, *results[0].Stats[0].Value)
+}
+
 func (s *PipelineSuite) TestPrepareDataAxesRejectsNonTabularParser() {
 	cfg := parser.Config{Axes: []parser.ColumnSpec{{Source: "x"}, {Source: "y"}}}
 	s.Panics(func() { prepareData("ignored.txt", "go", cfg) })

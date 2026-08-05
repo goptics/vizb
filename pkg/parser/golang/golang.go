@@ -96,17 +96,17 @@ func ParseGoBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataPoint, p
 			case "sec/op":
 				benchStat = shared.Stat{
 					Type:  utils.CreateStatType("Execution Time", cfg.TimeUnit, "op"),
-					Value: shared.F64(utils.FormatTime(value.OrigValue, cfg.TimeUnit)),
+					Value: shared.F64(utils.FormatTime(value.OrigValue, cfg.TimeUnit, cfg.Round)),
 				}
 			case "B/op":
 				benchStat = shared.Stat{
 					Type:  utils.CreateStatType("Memory Usage", cfg.MemUnit, "op"),
-					Value: shared.F64(utils.FormatMem(value.Value, cfg.MemUnit)),
+					Value: shared.F64(utils.FormatMem(value.Value, cfg.MemUnit, cfg.Round)),
 				}
 			case "allocs/op":
 				benchStat = shared.Stat{
 					Type:  utils.CreateStatType("Allocations", cfg.NumberUnit, "op"),
-					Value: shared.F64(utils.FormatNumber(value.Value, cfg.NumberUnit)),
+					Value: shared.F64(utils.FormatNumber(value.Value, cfg.NumberUnit, cfg.Round)),
 				}
 			case "B/s", "MB/s", "GB/s":
 				val, unit := value.OrigValue, value.OrigUnit
@@ -117,7 +117,7 @@ func ParseGoBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataPoint, p
 
 				benchStat = shared.Stat{
 					Type:  utils.CreateStatType("Throughput", unit, ""),
-					Value: shared.F64(val),
+					Value: shared.F64(utils.FormatNumber(val, "", cfg.Round)),
 				}
 			default:
 				customType := "Metric"
@@ -128,7 +128,7 @@ func ParseGoBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataPoint, p
 
 				benchStat = shared.Stat{
 					Type:  utils.CreateStatType(customType, value.Unit, ""),
-					Value: shared.F64(value.Value),
+					Value: shared.F64(utils.FormatNumber(value.Value, "", cfg.Round)),
 				}
 			}
 
@@ -164,7 +164,7 @@ func ParseGoBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataPoint, p
 		for i := range results {
 			results[i].Stats = append(results[i].Stats, shared.Stat{
 				Type:  utils.CreateStatType("Iterations", cfg.NumberUnit, ""),
-				Value: shared.F64(utils.FormatNumber(float64(allIters[i]), cfg.NumberUnit)),
+				Value: shared.F64(utils.FormatNumber(float64(allIters[i]), cfg.NumberUnit, cfg.Round)),
 			})
 		}
 	}

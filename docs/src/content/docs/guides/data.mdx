@@ -169,3 +169,4 @@ This turns a row-per-record dump into a handful of meaningful grouped points. It
 - **CSV:** no thousands separators / currency / `%` parsing. Comma delimiter only. No headerless files.
 - **JSON:** a single top-level object is treated as a vizb Dataset, not a row. Use [`--json-path`](#selecting-a-nested-array-with---json-path) to chart a nested array inside an envelope. Mixed top-level arrays are not normalized.
 - `--number-unit`/`-N` scales every numeric column/field uniformly.
+- Numeric values keep full precision by default. Pass `--round` to round them to 2 decimal places in the output data (irreversible in the written file).

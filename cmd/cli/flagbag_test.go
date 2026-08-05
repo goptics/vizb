@@ -174,6 +174,7 @@ func (s *FlagBagSuite) TestParseConfigMapsFields() {
 	s.Require().NoError(cmd.Flags().Set("mem-unit", "KB"))
 	s.Require().NoError(cmd.Flags().Set("time-unit", "us"))
 	s.Require().NoError(cmd.Flags().Set("number-unit", "M"))
+	s.Require().NoError(cmd.Flags().Set("round", "true"))
 	cfg := bag.ParseConfig()
 	s.Equal("n/x", cfg.GroupPattern)
 	s.Equal("re", cfg.GroupRegex)
@@ -182,13 +183,14 @@ func (s *FlagBagSuite) TestParseConfigMapsFields() {
 	s.Equal("KB", cfg.MemUnit)
 	s.Equal("us", cfg.TimeUnit)
 	s.Equal("M", cfg.NumberUnit)
+	s.True(cfg.Round)
 }
 
 func (s *FlagBagSuite) TestBindRegistersFlags() {
 	fl := append(slices.Clone(DataFlags), internal_charts.BaseChartFlags...)
 	fl = append(fl, internal_charts.ScaleFlag)
 	cmd, _ := s.newCmdBag(fl)
-	for _, name := range []string{"name", "theme", "theme-active", "parser", "group-pattern", "sort", "show-labels", "swap", "scale", "stat"} {
+	for _, name := range []string{"name", "theme", "theme-active", "parser", "group-pattern", "round", "sort", "show-labels", "swap", "scale", "stat"} {
 		s.NotNil(cmd.Flags().Lookup(name), "missing --%s", name)
 	}
 	s.Nil(cmd.Flags().Lookup("axes"))

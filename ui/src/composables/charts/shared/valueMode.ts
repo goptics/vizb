@@ -1,6 +1,6 @@
 import type { EChartsOption } from 'echarts'
 import type { ScaleType, ChartType } from '@/types'
-import { getNextColorFor, VALUE_CHART_TYPES, round2 } from '@/lib/utils'
+import { getNextColorFor, VALUE_CHART_TYPES, formatChartNumber } from '@/lib/utils'
 import { type BaseChartConfig, getBaseOptions } from '../baseChartOptions'
 import {
   createValueModeGridConfig,
@@ -93,7 +93,7 @@ export function buildValueAxes2DOptions(
     ...createLabelConfig(showLabels.value, styling),
     formatter: (p: { data: [number, number | null, number?] }) => {
       const y = p.data[1]
-      return y === null || y === undefined ? '' : String(round2(y))
+      return y === null || y === undefined ? '' : formatChartNumber(y)
     },
   }
 

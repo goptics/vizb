@@ -399,6 +399,11 @@ components:
           $ref: '#/components/schemas/GroupingOptions'
         units:
           $ref: '#/components/schemas/UnitOptions'
+        round:
+          type: boolean
+          default: false
+          description: >
+            Round numeric values to 2 decimal places in the output data
         select:
           type: array
           description: Structured column selections; each item is one select expression.

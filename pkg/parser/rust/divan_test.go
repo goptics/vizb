@@ -54,7 +54,7 @@ func (s *DivanSuite) TestUnitConversionToUs() {
 	s.Len(results, 6)
 
 	assertStat(s.T(), results[0].Stats[0], "Latency fastest (us)", 4.36, "")
-	assertStat(s.T(), results[0].Stats[3], "Latency mean (us)", 4.73, "")
+	assertStat(s.T(), results[0].Stats[3], "Latency mean (us)", 4.733, "")
 	assertStat(s.T(), results[2].Stats[0], "Latency fastest (us)", 1360, "")
 }
 

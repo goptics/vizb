@@ -108,10 +108,10 @@ func ParseTinyBenchBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataP
 			YAxis: yAxis,
 			ZAxis: zAxis,
 			Stats: []shared.Stat{
-				{Type: utils.CreateStatType("Latency avg", cfg.TimeUnit, ""), Value: shared.F64(utils.FormatTime(latencyAvg, cfg.TimeUnit))},
+				{Type: utils.CreateStatType("Latency avg", cfg.TimeUnit, ""), Value: shared.F64(utils.FormatTime(latencyAvg, cfg.TimeUnit, cfg.Round))},
 				{Type: "Latency RME (%)", Value: shared.F64(latencyRME), Symbol: "±"},
-				{Type: utils.CreateStatType("Latency med", cfg.TimeUnit, ""), Value: shared.F64(utils.FormatTime(latencyMed, cfg.TimeUnit))},
-				{Type: utils.CreateStatType("Latency MAD", cfg.TimeUnit, ""), Value: shared.F64(utils.FormatTime(latencyMAD, cfg.TimeUnit)), Symbol: "±"},
+				{Type: utils.CreateStatType("Latency med", cfg.TimeUnit, ""), Value: shared.F64(utils.FormatTime(latencyMed, cfg.TimeUnit, cfg.Round))},
+				{Type: utils.CreateStatType("Latency MAD", cfg.TimeUnit, ""), Value: shared.F64(utils.FormatTime(latencyMAD, cfg.TimeUnit, cfg.Round)), Symbol: "±"},
 				{Type: "Throughput avg (ops/s)", Value: shared.F64(throughputAvg)},
 				{Type: "Throughput RME (%)", Value: shared.F64(throughputRME), Symbol: "±"},
 				{Type: "Throughput med (ops/s)", Value: shared.F64(throughputMed)},

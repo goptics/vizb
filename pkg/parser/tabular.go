@@ -54,7 +54,7 @@ func ParseMixedMode(rows []RowReader, cfg Config) []shared.DataPoint {
 				complete = false
 				break
 			}
-			formatted := strconv.FormatFloat(utils.FormatNumber(v, cfg.NumberUnit), 'g', -1, 64)
+			formatted := strconv.FormatFloat(utils.FormatNumber(v, cfg.NumberUnit, cfg.Round), 'g', -1, 64)
 			assignAxis(&dp, key, formatted)
 		}
 		if !complete {
@@ -104,7 +104,7 @@ func ParseValueMode(rows []RowReader, cfg Config) ([]shared.DataPoint, error) {
 				complete = false
 				break
 			}
-			*dst[i] = strconv.FormatFloat(utils.FormatNumber(v, cfg.NumberUnit), 'g', -1, 64)
+			*dst[i] = strconv.FormatFloat(utils.FormatNumber(v, cfg.NumberUnit, cfg.Round), 'g', -1, 64)
 		}
 		if !complete {
 			continue
@@ -114,7 +114,7 @@ func ParseValueMode(rows []RowReader, cfg Config) ([]shared.DataPoint, error) {
 			if !ok {
 				continue
 			}
-			dp.Metric = strconv.FormatFloat(utils.FormatNumber(mv, cfg.NumberUnit), 'g', -1, 64)
+			dp.Metric = strconv.FormatFloat(utils.FormatNumber(mv, cfg.NumberUnit, cfg.Round), 'g', -1, 64)
 		}
 		results = append(results, dp)
 	}
@@ -128,7 +128,7 @@ func ParseSelectStatMode(rows []RowReader, cfg Config) ([]shared.DataPoint, erro
 	merge := MultiSelectSharedDim(cfg.SelectViews)
 	var results []shared.DataPoint
 	for _, row := range rows {
-		AppendMultiSelectStatPoint(&results, cfg.SelectViews, cfg.NumberUnit, merge, func(view SelectView) (MultiSelectRowStat, bool) {
+		AppendMultiSelectStatPoint(&results, cfg.SelectViews, cfg.NumberUnit, cfg.Round, merge, func(view SelectView) (MultiSelectRowStat, bool) {
 			if len(view.Columns) < 2 {
 				return MultiSelectRowStat{}, false
 			}

@@ -199,7 +199,7 @@ func parseReader(input io.Reader, cfg parser.Config, logAuto bool) ([]shared.Dat
 			}
 			stats = append(stats, shared.Stat{
 				Type:  utils.CreateStatType(label, cfg.NumberUnit, ""),
-				Value: shared.F64(utils.FormatNumber(num, cfg.NumberUnit)),
+				Value: shared.F64(utils.FormatNumber(num, cfg.NumberUnit, cfg.Round)),
 			})
 		}
 

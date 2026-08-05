@@ -165,6 +165,10 @@ func Convert(in ConvertInput) (ConvertResult, error) {
 			points = shared.CollapseDataPointsByKey(points)
 		} else {
 			points = shared.AggregateDataPoints(points)
+			// Sum reintroduces float residue; re-apply 2dp when requested.
+			if effectiveCfg.Round {
+				shared.RoundStatValues(points)
+			}
 		}
 	}
 	points, effectiveCfg, err = ApplyColAxis(points, effectiveCfg, key, in.Title)

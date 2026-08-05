@@ -351,6 +351,29 @@ func (s *CSVSuite) TestNumberUnitScaling() {
 	s.Equal(2.0, *results[0].Stats[0].Value)
 }
 
+// TestFullPrecisionByDefault ensures tabular metrics keep input precision
+// unless --round is set (issue #336: ML losses must not collapse to 0.91).
+func (s *CSVSuite) TestFullPrecisionByDefault() {
+	s.cfg.Group = []string{"step"}
+	csv := "step,train_loss\n1,0.914273581\n2,0.913891247\n3,0.912456839\n4,0.910128475\n5,0.909983221\n"
+
+	results, _ := mustParseCSVFile(s.T(), s.writeFile(csv), s.cfg)
+	s.Require().Len(results, 5)
+	want := []float64{0.914273581, 0.913891247, 0.912456839, 0.910128475, 0.909983221}
+	for i, w := range want {
+		s.Require().NotEmpty(results[i].Stats)
+		s.Equal(w, *results[i].Stats[0].Value)
+	}
+
+	s.cfg.Round = true
+	rounded, _ := mustParseCSVFile(s.T(), s.writeFile(csv), s.cfg)
+	s.Require().Len(rounded, 5)
+	for i := range rounded {
+		s.Require().NotEmpty(rounded[i].Stats)
+		s.Equal(0.91, *rounded[i].Stats[0].Value)
+	}
+}
+
 func (s *CSVSuite) TestLessThanTwoRowsReturnsNil() {
 	pts, _ := mustParseCSVFile(s.T(), s.writeFile("name,sells\n"), s.cfg)
 	s.Nil(pts)

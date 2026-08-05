@@ -326,6 +326,7 @@ func (b *FlagBag) ParseConfig() parser.Config {
 		MemUnit:      b.String("mem-unit"),
 		TimeUnit:     b.String("time-unit"),
 		NumberUnit:   b.String("number-unit"),
+		Round:        b.Bool("round"),
 	})
 	if err != nil {
 		shared.ExitWithError(err.Error(), nil)
