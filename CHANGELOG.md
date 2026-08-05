@@ -4,19 +4,20 @@ Notable changes to Vizb documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased]
-
-## Added
-
-- **Data-owned themes** — repeatable `--theme` and `--theme-active` embed a theme catalog on the dataset (`themes[]`; `themes[0]` active; no separate active field on new output). Built-ins expand from the CLI; the UI ships only `default`. Structured custom syntax `name:colors=#hex,...;visualMapColors=#hex,#hex` and bare hex anonymous customs. Multi-theme selector only when the author provides 2+ themes; localStorage scoped to the available set ([#327](https://github.com/goptics/vizb/issues/327)).
+# [v0.18.0] - 2026-08-05
 
 ### Fixed
 
-- **`--chart` multi-value props** — multi-value props (e.g. `stat=a,b`) are no longer broken by comma prop splitting ([#328](https://github.com/goptics/vizb/issues/328)).
+- Preserve full numeric precision; opt-in `--round` ([#339](https://github.com/goptics/vizb/pull/339))
 
-### Changed
+### [bug]
 
-- **cli** — shared structured CLI spec tokenizer (`internal/specparse`) used by `--chart` and structured `--theme`.
+- Round on-chart bar/line value labels to 2 decimals ([#338](https://github.com/goptics/vizb/pull/338))
+- Shared structured-spec parser for multi-value --chart props ([#330](https://github.com/goptics/vizb/pull/330))
+
+### [feat]
+
+- Data-owned chart themes (UI keeps only default) ([#329](https://github.com/goptics/vizb/pull/329))
 
 # [v0.17.1] - 2026-08-02
 
