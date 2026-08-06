@@ -11,6 +11,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/mod v0.38.0
 	golang.org/x/perf v0.0.0-20250909190841-7e13e04d9366
+	golang.org/x/sys v0.36.0
 	golang.org/x/term v0.28.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -34,6 +35,5 @@ require (
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	golang.org/x/exp v0.0.0-20250819193227-8b4c13bb791b // indirect
-	golang.org/x/sys v0.36.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 )
