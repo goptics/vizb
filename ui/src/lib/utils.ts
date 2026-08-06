@@ -149,10 +149,15 @@ export const canOfferValue3D = (
 }
 
 /**
- * Format a chart number for display. No rounding — values are shown as stored
- * in the dataset (CLI may have applied --round when building the file).
+ * Format a chart number for display. Strips IEEE 754 binary noise (e.g. sum
+ * artifacts like 39128072.70000001 → "39128072.7") while keeping ~15 significant
+ * digits — within double precision. CLI --round still applies when building data;
+ * CSV export uses raw String(v), not this formatter.
  */
-export const formatChartNumber = (value: number): string => String(value)
+export const formatChartNumber = (value: number): string => {
+  if (!Number.isFinite(value)) return String(value)
+  return String(Number(value.toPrecision(15)))
+}
 
 export const isValueModeChart = (chart: ChartData): boolean => chart.statType === 'value'
 

@@ -25,7 +25,8 @@ Options:
   --reuse        Reuse act containers between runs (faster reruns)
   -h, --help     Show this help
 
-Prerequisites: act (>= 0.2.50), Docker, Go 1.26+
+Prerequisites: act (>= 0.2.50), Docker. Uses ./bin/vizb when present;
+otherwise runs task build:cli (needs Task + Go, re-embeds UI if ui/ is newer).
 EOF
 }
 
@@ -60,7 +61,7 @@ else
   TOPICS=("${ONLY_TOPICS[@]}")
 fi
 
-for dep in act docker go; do
+for dep in act docker; do
   if ! command -v "$dep" >/dev/null 2>&1; then
     echo "Missing required tool: $dep" >&2
     exit 1
@@ -71,8 +72,18 @@ mkdir -p bin dist/examples/live .act/artifacts
 rm -rf .act/jsons
 mkdir -p .act/jsons
 
-echo "Building vizb..."
-go build -o bin/vizb .
+# Prefer a prebuilt binary so local UI/CLI work (task build:cli) is not wiped
+# by a plain go build that reuses the stale tracked embed.
+if [[ -x bin/vizb ]]; then
+  echo "Using existing bin/vizb"
+else
+  if ! command -v task >/dev/null 2>&1; then
+    echo "bin/vizb not found and task is missing; install Task or run: task build:cli" >&2
+    exit 1
+  fi
+  echo "bin/vizb missing; building with task build:cli..."
+  task build:cli
+fi
 
 ACT_ARGS=(workflow_dispatch --input publish=false)
 if $REUSE; then

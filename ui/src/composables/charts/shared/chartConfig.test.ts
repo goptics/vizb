@@ -552,16 +552,16 @@ describe('createLabelConfig value formatter', () => {
     formatter: (p: { value?: number | (number | null)[] | null }) => string
   }
 
-  it('formats numeric values at full precision', () => {
-    expect(label.formatter({ value: 5941.380000000001 })).toBe('5941.380000000001')
-    expect(label.formatter({ value: 3370.4500000000003 })).toBe('3370.4500000000003')
-    expect(label.formatter({ value: 2864.2999999999997 })).toBe('2864.2999999999997')
+  it('formats numeric values without IEEE 754 display noise', () => {
+    expect(label.formatter({ value: 5941.380000000001 })).toBe('5941.38')
+    expect(label.formatter({ value: 3370.4500000000003 })).toBe('3370.45')
+    expect(label.formatter({ value: 2864.2999999999997 })).toBe('2864.3')
     expect(label.formatter({ value: 1.005 })).toBe('1.005')
     expect(label.formatter({ value: -1.005 })).toBe('-1.005')
   })
 
-  it('formats the y value of a [x, y] tuple at full precision', () => {
-    expect(label.formatter({ value: [1, 4512.6900000000005] })).toBe('4512.6900000000005')
+  it('formats the y value of a [x, y] tuple without IEEE 754 display noise', () => {
+    expect(label.formatter({ value: [1, 4512.6900000000005] })).toBe('4512.69')
     expect(label.formatter({ value: [1, 1.005] })).toBe('1.005')
     expect(label.formatter({ value: [1, -1.005] })).toBe('-1.005')
   })
