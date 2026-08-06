@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"maps"
 	"net/url"
-	"os"
 	"slices"
 	"strings"
 
@@ -16,8 +15,8 @@ import (
 	linechart "github.com/goptics/vizb/internal/charts/line"
 	piechart "github.com/goptics/vizb/internal/charts/pie"
 	radarchart "github.com/goptics/vizb/internal/charts/radar"
+	"github.com/goptics/vizb/pkg/cliout"
 	"github.com/goptics/vizb/pkg/core"
-	"github.com/goptics/vizb/pkg/style"
 	"github.com/goptics/vizb/pkg/template"
 	"github.com/goptics/vizb/shared"
 	"github.com/goptics/vizb/shared/utils"
@@ -103,7 +102,7 @@ func runUI(cmd *cobra.Command, args []string) {
 		if _, err := f.WriteString(htmlContent); err != nil {
 			shared.ExitWithError("Failed to write output file: %v", err)
 		}
-		fmt.Println(style.Success.Render(fmt.Sprintf("🎉 Generated HTML chart successfully: %s", outFile)))
+		cliout.Info("Generated HTML chart successfully")
 		return
 	}
 
@@ -148,7 +147,7 @@ func runUI(cmd *cobra.Command, args []string) {
 			shared.ExitWithError(err.Error(), nil)
 		}
 		for _, w := range warnings {
-			fmt.Fprintln(os.Stderr, style.Warning.Render(w))
+			cliout.Warn(w)
 		}
 		for i := range datasets {
 			applyOverrides(&datasets[i].Settings, overrides)
@@ -167,7 +166,7 @@ func runUI(cmd *cobra.Command, args []string) {
 	if _, err := f.WriteString(htmlContent); err != nil {
 		shared.ExitWithError("Failed to write output file: %v", err)
 	}
-	fmt.Println(style.Success.Render(fmt.Sprintf("🎉 Generated UI successfully: %s", outFile)))
+	cliout.Info("Generated UI successfully")
 }
 
 func generateEmbeddedUI(datasets []shared.Dataset, charts []string) string {

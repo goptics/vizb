@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"strings"
 
 	internal_charts "github.com/goptics/vizb/internal/charts"
+	"github.com/goptics/vizb/pkg/cliout"
 	"github.com/goptics/vizb/pkg/core"
 	"github.com/goptics/vizb/pkg/parser"
 	_ "github.com/goptics/vizb/pkg/parser/golang"
@@ -17,7 +19,6 @@ import (
 	"github.com/goptics/vizb/pkg/style"
 	"github.com/goptics/vizb/pkg/template"
 	"github.com/goptics/vizb/shared"
-	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 )
 
@@ -49,7 +50,7 @@ func RunLinear(cmd *cobra.Command, args []string, meta RunMeta, cfg parser.Confi
 			detected = "json"
 		}
 		meta.Parser = detected
-		fmt.Println(style.Info.Render("✨ Auto-detected parser: " + detected))
+		cliout.InfoPairAccent("Auto-detected parser", detected, cliout.ParserAccent(detected))
 	}
 
 	// Enable auto-grouping for the csv/json parsers when the user supplied no
@@ -113,7 +114,7 @@ func RunLinear(cmd *cobra.Command, args []string, meta RunMeta, cfg parser.Confi
 			shared.ExitWithError(fatal.Error(), nil)
 		}
 		for _, w := range warnings {
-			fmt.Fprintln(os.Stderr, style.Warning.Render(w))
+			cliout.Warn(w)
 		}
 	}
 
@@ -179,7 +180,7 @@ func resolveInput(cmd *cobra.Command, args []string) (string, bool) {
 }
 
 func checkTargetFile(filePath string) {
-	fmt.Println(style.Info.Render(fmt.Sprintf("🔎 Reading data from file: %s", filePath)))
+	cliout.InfoPair("Reading data", filePath)
 
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		shared.ExitWithError(fmt.Sprintf("Error: File '%s' does not exist", filePath), nil)
@@ -194,13 +195,7 @@ func writeStdinPipedInputs(tempfilePath string) {
 	writer := bufio.NewWriter(inputTempFile)
 
 	dataSetProgressManager := NewDataProgressManager(
-		progressbar.NewOptions(-1,
-			progressbar.OptionSetDescription(style.Info.Render("Processing data sets")),
-			progressbar.OptionSetWidth(50),
-			progressbar.OptionSetRenderBlankState(true),
-			progressbar.OptionEnableColorCodes(true),
-			progressbar.OptionOnCompletion(func() { fmt.Println() }),
-		),
+		NewGreenSpinner(os.Stderr),
 	)
 
 	for {
@@ -211,6 +206,7 @@ func writeStdinPipedInputs(tempfilePath string) {
 		// single-line, newline-less payload (e.g. a curl'd JSON envelope) is lost.
 		if len(line) > 0 {
 			if _, werr := writer.WriteString(line); werr != nil {
+				_ = dataSetProgressManager.Finish()
 				shared.ExitWithError("Error writing to file", werr)
 			}
 			dataSetProgressManager.ProcessLine(line)
@@ -220,13 +216,12 @@ func writeStdinPipedInputs(tempfilePath string) {
 			if err == io.EOF {
 				break
 			}
+			_ = dataSetProgressManager.Finish()
 			shared.ExitWithError("Error reading from stdin", err)
 		}
 	}
 
-	if err := dataSetProgressManager.Finish(); err != nil {
-		shared.ExitWithError("Error finishing progress bar", err)
-	}
+	_ = dataSetProgressManager.Finish()
 
 	if err := writer.Flush(); err != nil {
 		shared.ExitWithError("Error writing to file", err)
@@ -264,26 +259,34 @@ func prepareData(filePath, parserKey string, cfg parser.Config, titles ...string
 	}
 
 	if cfg.JSONPath != "" && parserKey != "json" {
-		fmt.Fprintln(os.Stderr, "warning: --json-path is only supported for the json parser; ignoring")
+		cliout.Warn("--json-path is only supported for the json parser; ignoring")
 	}
 
 	if parser.HasSelect(cfg) && parserKey != "csv" && parserKey != "json" {
-		fmt.Fprintln(os.Stderr, "warning: --select is only supported for csv/json parsers; ignoring")
+		cliout.Warn("--select is only supported for csv/json parsers; ignoring")
 	}
 
 	if len(cfg.Axes) > 0 && parserKey != "csv" && parserKey != "json" {
 		shared.ExitWithError("--axes is only supported for csv/json parsers", nil)
 	}
 
-	fmt.Println(style.Info.Render("🧲 Parsing data..."))
+	// Parse phase: delayed green shimmer (250ms); silent when fast on TTY.
+	// Non-TTY gets a one-shot status line so CI logs still show the step.
+	parseSpin := NewParseSpinner(os.Stderr)
+	if !writerIsTerminal(os.Stderr) {
+		cliout.Info("Parsing data")
+	}
+
 	input, err := os.Open(filePath)
 	if err != nil {
+		_ = parseSpin.Finish()
 		shared.ExitWithError("Error opening file", err)
 	}
 	defer input.Close()
 
 	data, effectiveCfg, system, err := parseFn(input, cfg)
 	if err != nil {
+		_ = parseSpin.Finish()
 		shared.ExitWithError(err.Error(), nil)
 	}
 
@@ -292,17 +295,19 @@ func prepareData(filePath, parserKey string, cfg parser.Config, titles ...string
 	if tabularParser(parserKey) && len(effectiveCfg.Group) == 0 {
 		data = shared.CollapseDataPointsByKey(data)
 	}
+	_ = parseSpin.Finish()
 
-	// CSV/JSON emit one DataPoint per row; when grouping is active, multiple rows
-	// can share the same (name, xAxis, yAxis, zAxis) key. Collapse them by summing
-	// so the output isn't a row-per-record dump. Benchmark parsers are excluded.
+	// Aggregate phase: separate spinner + phrases so the live title is not
+	// still "Parsing data" while summing groups (large CSVs spend time here).
 	if tabularParser(parserKey) && len(effectiveCfg.Group) > 0 {
+		aggSpin := NewAggregateSpinner(os.Stderr)
 		before := len(data)
 		data = shared.AggregateDataPoints(data)
 		// Sum reintroduces float residue; re-apply 2dp when requested.
 		if effectiveCfg.Round {
 			shared.RoundStatValues(data)
 		}
+		_ = aggSpin.Finish()
 		logAggregationResult(before, len(data), effectiveCfg)
 	}
 
@@ -310,7 +315,7 @@ func prepareData(filePath, parserKey string, cfg parser.Config, titles ...string
 	if err != nil {
 		var optionErr *core.OptionError
 		if errors.As(err, &optionErr) && optionErr.Ignored {
-			fmt.Fprintln(os.Stderr, style.Warning.Render("warning: "+err.Error()))
+			cliout.Warn(err.Error())
 		} else {
 			shared.ExitWithError(err.Error(), nil)
 		}
@@ -325,24 +330,27 @@ func prepareData(filePath, parserKey string, cfg parser.Config, titles ...string
 
 func warnTitleIgnored(title string) {
 	if title != "" {
-		fmt.Fprintln(os.Stderr, style.Warning.Render("warning: --title only applies when --col-axis produces one chart; ignoring (use --select … (Title) for multi-stat charts)"))
+		cliout.Warn("--title only applies when --col-axis produces one chart; ignoring (use --select … (Title) for multi-stat charts)")
 	}
 }
 
-// logAggregationResult prints CLI feedback after summing grouped CSV/JSON rows.
-// The opening line always reports the row count and group columns; the closing
-// line differs when every key was already unique (no duplicates to sum).
+// logAggregationResult prints one completion line after summing grouped rows.
+// In-progress work is the aggregate spinner; we do not log a second "Aggregating…" line.
+// Digits and the group series use brand accents for scannability.
 func logAggregationResult(before, after int, cfg parser.Config) {
 	if before == 0 {
 		return
 	}
-	groupDesc := formatAggregationGroup(cfg)
-	fmt.Println(style.Info.Render(fmt.Sprintf("🧮 Aggregating %d rows %s...", before, groupDesc)))
+	// Color counts only; leave "by column: …" plain.
+	n := cliout.Accent(fmt.Sprintf("%d", before), cliout.AccentCount)
+	m := cliout.Accent(fmt.Sprintf("%d", after), cliout.AccentCount)
+	series := formatAggregationGroup(cfg)
+
 	if after < before {
-		fmt.Println(style.Info.Render(fmt.Sprintf("✅ Aggregated into %d grouped data points", after)))
+		cliout.Info(fmt.Sprintf("Aggregated %s rows into %s points %s", n, m, series))
 		return
 	}
-	fmt.Println(style.Info.Render(fmt.Sprintf("✅ %d grouped rows — all unique (no duplicates to sum)", after)))
+	cliout.Info(fmt.Sprintf("Aggregated %s unique rows %s", n, series))
 }
 
 // formatAggregationGroup describes the --group columns and dimension keys used
@@ -392,7 +400,7 @@ func assembleDataset(results []shared.DataPoint, m RunMeta, configs []internal_c
 func resolveRunThemes(m RunMeta) []shared.Theme {
 	resolved, err := style.ResolveThemes(m.ThemeSpecs)
 	if err != nil {
-		shared.PrintWarning(fmt.Sprintf("Warning: theme expand failed: %s. Embedding no themes", err.Error()))
+		cliout.Warn(fmt.Sprintf("theme expand failed: %s. Embedding no themes", err.Error()))
 		return nil
 	}
 	if len(resolved) == 0 {
@@ -456,14 +464,16 @@ func writeOutput(f *os.File, datasets []*shared.Dataset, format string) {
 			shared.ExitWithError("Failed to marshal dataset: %v", err)
 		}
 
-		needsHeatmapChunk := datasetsNeedCorrelation(datasets)
-		needs3D := datasetsNeed3D(datasets)
+		needsHeatmapChunk := slices.ContainsFunc(datasets, func(ds *shared.Dataset) bool {
+			return settingsNeedCorrelation(ds.Settings)
+		})
+		needs3D := slices.ContainsFunc(datasets, shared.DatasetNeeds3D)
 		htmlContent := generateUI(jsonData, chartTypeNames(datasets[0].Settings), needs3D, needsHeatmapChunk, template.VizbHTMLTemplate)
 		if _, err := f.WriteString(htmlContent); err != nil {
 			shared.ExitWithError("Failed to write output file: %v", err)
 		}
 
-		fmt.Println(style.Success.Render("🎉 Generated HTML UI successfully!"))
+		cliout.Info("Generated HTML UI successfully")
 
 	case "json":
 		bytes, err := marshalDatasetsForOutput(datasets)
@@ -473,7 +483,7 @@ func writeOutput(f *os.File, datasets []*shared.Dataset, format string) {
 		if _, err := f.Write(bytes); err != nil {
 			shared.ExitWithError("Failed to write output file", err)
 		}
-		fmt.Println(style.Success.Render("🎉 Generated JSON successfully!"))
+		cliout.Info("Generated JSON successfully")
 	}
 }
 
@@ -494,22 +504,4 @@ func marshalDatasetsForOutput(datasets []*shared.Dataset) ([]byte, error) {
 		slice[i] = *ds
 	}
 	return json.Marshal(slice)
-}
-
-func datasetsNeed3D(datasets []*shared.Dataset) bool {
-	for _, ds := range datasets {
-		if shared.DatasetNeeds3D(ds) {
-			return true
-		}
-	}
-	return false
-}
-
-func datasetsNeedCorrelation(datasets []*shared.Dataset) bool {
-	for _, ds := range datasets {
-		if settingsNeedCorrelation(ds.Settings) {
-			return true
-		}
-	}
-	return false
 }

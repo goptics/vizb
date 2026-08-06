@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"mime"
 	"net"
 	"net/http"
@@ -19,6 +18,7 @@ import (
 
 	"github.com/goptics/vizb/cmd/cli"
 	"github.com/goptics/vizb/internal/flags"
+	"github.com/goptics/vizb/pkg/cliout"
 	"github.com/goptics/vizb/pkg/core"
 	"github.com/goptics/vizb/shared"
 	"github.com/spf13/cobra"
@@ -470,7 +470,7 @@ func writeAPIProblem(w http.ResponseWriter, r *http.Request, status int, title, 
 }
 
 func writeInternalServerError(w http.ResponseWriter, r *http.Request, operation string, err error) {
-	log.Printf("serve: %s: %v", operation, err)
+	cliout.Error("serve " + operation + ": " + err.Error())
 	writeAPIProblem(w, r, http.StatusInternalServerError, "Internal server error", "The server could not generate the response.")
 }
 

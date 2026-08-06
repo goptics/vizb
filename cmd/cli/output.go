@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/goptics/vizb/pkg/style"
+	"github.com/goptics/vizb/pkg/cliout"
 	"github.com/goptics/vizb/shared"
 )
 
@@ -44,7 +44,8 @@ func InferFormatFromExtension(outFile string) string {
 // dumps the (temp) file's contents to stdout. userOutput is the raw -o value.
 func HandleOutputResult(f *os.File, userOutput string) {
 	if userOutput != "" {
-		fmt.Println(style.Info.Render(fmt.Sprintf("📄 Output file: %s", f.Name())))
+		path := f.Name()
+		cliout.InfoPairAccent("Output file", path, cliout.FormatAccent(InferFormatFromExtension(path)))
 		return
 	}
 

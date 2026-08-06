@@ -8,7 +8,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/goptics/vizb/pkg/style"
+	"github.com/goptics/vizb/pkg/cliout"
 )
 
 // GroupSpec describes how --group column names are laid out and joined into labels.
@@ -337,7 +337,7 @@ func LogAutoGroup(cols []string) {
 	if len(cols) > 1 {
 		noun = "columns"
 	}
-	fmt.Println(style.Info.Render(fmt.Sprintf("🧠 Auto-grouped by %s: %s", noun, strings.Join(cols, ", "))))
+	cliout.InfoPair("Auto-grouped by "+noun, strings.Join(cols, ", "))
 }
 
 // LogAutoValue prints the inferred value axis columns (parallel to LogAutoGroup).
@@ -351,11 +351,11 @@ func LogAutoValue(cols []string, metricCol string) {
 	} else if len(cols) == 3 {
 		noun = "columns (3D pattern x-y-z)"
 	}
-	msg := fmt.Sprintf("🧠 Auto-valued by %s: %s", noun, strings.Join(cols, ", "))
+	value := strings.Join(cols, ", ")
 	if metricCol != "" {
-		msg += fmt.Sprintf(", metric: %s", metricCol)
+		value += ", metric: " + metricCol
 	}
-	fmt.Println(style.Info.Render(msg))
+	cliout.InfoPair("Auto-valued by "+noun, value)
 }
 
 // FinalizeGroupConfig resolves and validates explicit --group config for tabular parsers.
