@@ -149,6 +149,22 @@ CI id: `00-concurrency-frameworks` on the **comparisons** dashboard (see `.githu
 
 ---
 
+## `sankey-flows.csv`
+
+**Shape:** Multi-hop **edge list** — `name` (optional panel key), `from` (source), `to` (target), `value` and `cost` (positive flow measures). 14 edges across two funnels (`web`, `app`).
+
+**What vizb does:** Map **x = source**, **y = target** with `-g from,to -p x,y`. Sankey is **opt-in** (`vizb sankey` or `-c sankey`). Duplicate edges sum; multi-hop paths are multiple rows sharing intermediate node names. Optional `name` → `-g name,from,to -p n,x,y` for named panels. Two numerics → measure tabs (one Sankey at a time). **z is ignored** if provided.
+
+**Good for:** Funnel / pipeline flows, multi-hop conversion paths, multi-measure and named-panel demos.
+
+| Goal | Command |
+|------|---------|
+| Basic multi-hop Sankey | `vizb sankey examples/csv/sankey-flows.csv -g from,to -p x,y` |
+| Named panels (`web` / `app`) | `vizb sankey examples/csv/sankey-flows.csv -g name,from,to -p n,x,y` |
+| Root with opt-in renderer | `vizb examples/csv/sankey-flows.csv -g from,to -p x,y -c sankey` |
+
+---
+
 ## Quick reference
 
 | File | Rows | Mode | Typical chart |
@@ -162,6 +178,7 @@ CI id: `00-concurrency-frameworks` on the **comparisons** dashboard (see `.githu
 | `house-price-area2.csv` | 16,174 | Auto-value (xy) | Scatter2D + visualMap |
 | `clusters.csv` | 60 | Auto-value (xy) | Scatter2D + visualMap, symbol size 10 |
 | `concurrency.csv` | 3 | Group + `--col-axis` | Bar/line competitor compare |
+| `sankey-flows.csv` | 14 | Edge list (`from`/`to`) | Sankey (opt-in) |
 
 **Auto-group** applies when the file has categorical columns and you did not pass `--group`. **Auto-value** applies when every column is numeric — vizb assigns `x`, `y`, `z` (and optional 4th metric) without flags.
 

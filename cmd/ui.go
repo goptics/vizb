@@ -15,6 +15,8 @@ import (
 	linechart "github.com/goptics/vizb/internal/charts/line"
 	piechart "github.com/goptics/vizb/internal/charts/pie"
 	radarchart "github.com/goptics/vizb/internal/charts/radar"
+	sankeychart "github.com/goptics/vizb/internal/charts/sankey"
+	scatterchart "github.com/goptics/vizb/internal/charts/scatter"
 	"github.com/goptics/vizb/pkg/cliout"
 	"github.com/goptics/vizb/pkg/core"
 	"github.com/goptics/vizb/pkg/template"
@@ -281,11 +283,15 @@ func applyStatToSettings(settings []internal_charts.ChartConfig, stat *shared.St
 			c.Stat = stat
 		case *linechart.Config:
 			c.Stat = stat
+		case *scatterchart.Config:
+			c.Stat = stat
 		case *piechart.Config:
 			c.Stat = stat
 		case *heatmapchart.Config:
 			c.Stat = stat
 		case *radarchart.Config:
+			c.Stat = stat
+		case *sankeychart.Config:
 			c.Stat = stat
 		default:
 			// ponytail: new chart type — add a case above and wire c.Stat = stat

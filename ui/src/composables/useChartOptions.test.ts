@@ -105,6 +105,18 @@ describe('useChartOptions dispatch', () => {
       data: () => makeRadarChartData(),
       expected: 'radar',
     },
+    {
+      chartType: 'sankey' as const,
+      threeD: false,
+      data: () =>
+        makeGroupedChartData({
+          points: [
+            { xAxis: 'West', yAxis: 'Hardware', zAxis: '', value: 10 },
+            { xAxis: 'East', yAxis: 'Software', zAxis: '', value: 40 },
+          ],
+        }),
+      expected: 'sankey',
+    },
     { chartType: 'bar' as const, threeD: true, data: grouped3DData, expected: 'bar3D' },
     { chartType: 'line' as const, threeD: true, data: grouped3DData, expected: 'line3D' },
     {
@@ -124,6 +136,11 @@ describe('useChartOptions dispatch', () => {
   it('pie stays 2D pie even when chart data is 3D-shaped', () => {
     const { options } = dispatch('pie', grouped3DData(), { threeD: true })
     expect(firstSeriesType(options.value)).toBe('pie')
+  })
+
+  it('sankey stays 2D sankey even when chart data is 3D-shaped', () => {
+    const { options } = dispatch('sankey', grouped3DData(), { threeD: true })
+    expect(firstSeriesType(options.value)).toBe('sankey')
   })
 
   it('default branch falls back to bar options for unknown chart types', () => {

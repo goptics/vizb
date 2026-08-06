@@ -1,0 +1,115 @@
+---
+title: Sankey Chart
+description: Visualize multi-hop flows as weighted links between source and target nodes — edge lists map to a single flow diagram.
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+The **Sankey chart** draws weighted flows between nodes. Each row is an edge: a **source**, a **target**, and a numeric **value** for the link thickness. Multi-hop paths are built by stacking edge rows that share intermediate node names — one chart, many hops.
+
+Use Sankey when your data is already an edge list (funnels, pipelines, conversion paths, energy balances) rather than a categorical matrix. Sankey is **opt-in**: run `vizb sankey` or pass `-c sankey`; it is not in the default `bar,line,pie` bundle.
+
+## How vizb builds it
+
+| Dimension | Role |
+|-----------|------|
+| **XAxis** | **Source** node of each flow edge |
+| **YAxis** | **Target** node of each flow edge |
+| **Measure** | Link weight (flow value); duplicate edges **sum** |
+| **ZAxis** | **Ignored** if provided — no 3D layout; weights still aggregate per `(source, target)` |
+| **Name (`n`)** | Named chart panels (existing 4D behavior) — one Sankey per unique name |
+
+Map columns with **group** (same model as heatmap):
+
+```bash
+# Edge list: columns from → to; numeric columns become measures
+vizb sankey data.csv -g from,to -p x,y -o out.html
+```
+
+## Dimensions
+
+### 2D edge list (source + target)
+
+The core mapping: **x = source**, **y = target**. Each unique node name appears once in the diagram; every row becomes (or merges into) a link.
+
+```bash
+vizb sankey examples/csv/sankey-flows.csv -g from,to -p x,y -o out.html
+```
+
+Duplicate `(source, target)` pairs are summed into a single link. Multi-hop flows are just multiple edge rows that share intermediate node labels (for example `Visit → Landing → Signup → Trial → Paid`).
+
+{/* TODO: Add GIF showing a multi-hop Sankey with node labels and flow widths */}
+
+### Named panels (`n`)
+
+Pass `n` in the group pattern to split independent edge sets into separate chart panels — same 4D behavior as other chart types.
+
+```bash
+vizb sankey examples/csv/sankey-flows.csv -g name,from,to -p n,x,y -o out.html
+```
+
+### Z is ignored
+
+If you include `z` in the pattern, Sankey still runs: there is **no 3D scene** and **no layout use** of z. Flow weights continue to sum per `(source, target)`. Prefer `-p x,y` (or `n,x,y`) for clarity.
+
+```bash
+# Works, but z does not change layout — links still aggregate by source/target
+vizb sankey data.csv -g from,to,channel -p x,y,z -o out.html
+```
+
+### Multiple measures
+
+When the dataset has more than one numeric measure (for example `value` and `cost`), vizb keeps the usual **stat tabs**: one measure is active at a time, and each tab shows a single Sankey for that measure. With group active, `--select` can still pick which **numeric** columns become measures (stat pick), same as other charts.
+
+```bash
+# Two numeric columns → switch measures via stat tabs in the UI
+vizb sankey examples/csv/sankey-flows.csv -g from,to -p x,y -o out.html
+
+# Optional: keep only one measure under group
+vizb sankey examples/csv/sankey-flows.csv -g from,to -p x,y --select value -o out.html
+```
+
+## Settings
+
+Sankey v1 supports sort, labels, and swap only — no log scale and no 3D controls.
+
+| Setting | CLI flag | UI toggle | Notes |
+|---------|----------|-----------|-------|
+| Sort | `--sort asc\|desc` | Sort control | Orders nodes / flows |
+| Labels | `--show-labels` | Show labels | Shows values on links or nodes |
+| Swap | `--swap yx` | Axis switcher | Swaps source and target (x ↔ y) |
+
+```bash
+# Labels + descending sort on the sankey subcommand
+vizb sankey examples/csv/sankey-flows.csv -g from,to -p x,y -l --sort desc -o out.html
+
+# Root command: opt-in renderer only
+vizb examples/csv/sankey-flows.csv -g from,to -p x,y -c sankey -o out.html
+```
+
+<Aside type="note">
+  `scale` (log) and `3d-rotate` are not available for Sankey. Those options remain bar, line, and scatter only.
+</Aside>
+
+## Root command vs subcommand
+
+```bash
+# Subcommand — single chart, flags limited to what Sankey supports
+vizb sankey data.csv -g from,to -p x,y -o out.html
+
+# Root — must opt in with -c; can combine with other renderers
+vizb data.csv -g from,to -p x,y -c sankey -o out.html
+vizb data.csv -g from,to -p x,y -c bar,sankey -o out.html
+```
+
+## Future
+
+- **Solo `--select` edge lists** (no `-g`): map `source,target,value[,metrics]` in one flag — planned as a follow-up.
+- **`-p` aliases** on the **`vizb sankey` subcommand only**: `source`/`target` or `s`/`t` → still map to **x / y** internally; root `-p` vocabulary remains `n` / `x` / `y` / `z`.
+
+## Next Steps
+
+<LinkCard title="Heatmap" href="/charts/heatmap" description="Two categorical dimensions as a colored matrix instead of flow links." />
+<LinkCard title="Bar Chart" href="/charts/bar" description="Side-by-side category comparison on the same grouped data model." />
+<LinkCard title="Charts Overview" href="/charts" description="How every chart type maps x, y, z, and n — including Sankey edge semantics." />
+<LinkCard title="Settings" href="/ui/settings" description="Runtime controls — sort, labels, swap, and more." />

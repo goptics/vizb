@@ -9,6 +9,7 @@ import (
 	_ "github.com/goptics/vizb/cmd/charts/line"
 	_ "github.com/goptics/vizb/cmd/charts/pie"
 	_ "github.com/goptics/vizb/cmd/charts/radar"
+	_ "github.com/goptics/vizb/cmd/charts/sankey"
 	_ "github.com/goptics/vizb/cmd/charts/scatter"
 	"github.com/goptics/vizb/cmd/cli"
 	"github.com/spf13/cobra"
@@ -29,7 +30,7 @@ func (s *CommandSuite) SetupTest() {
 }
 
 func (s *CommandSuite) TestBuildsOneCommandPerChart() {
-	for _, name := range []string{"bar", "line", "scatter", "pie", "heatmap", "radar"} {
+	for _, name := range []string{"bar", "line", "scatter", "pie", "heatmap", "radar", "sankey"} {
 		s.Contains(s.byUse, name, "missing %s subcommand", name)
 	}
 }
@@ -45,6 +46,14 @@ func (s *CommandSuite) TestVariableFlagsBoundPerChart() {
 	pie := s.byUse["pie"]
 	s.Nil(pie.Flags().Lookup("scale"))
 	s.NotNil(pie.Flags().Lookup("swap"))
+
+	// sankey uses BaseChartFlags only (no scale/stack/3d/visualMap).
+	sankey := s.byUse["sankey"]
+	s.Nil(sankey.Flags().Lookup("scale"))
+	s.Nil(sankey.Flags().Lookup("stack"))
+	s.Nil(sankey.Flags().Lookup("3d"))
+	s.Nil(sankey.Flags().Lookup("visualmap"))
+	s.NotNil(sankey.Flags().Lookup("swap"))
 
 	// scatter is the only chart with the 2D --visualmap flag.
 	s.NotNil(s.byUse["scatter"].Flags().Lookup("visualmap"))

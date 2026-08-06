@@ -8,7 +8,8 @@ import (
 )
 
 // ValidChartTypes is every chart type the CLI accepts via --charts.
-var ValidChartTypes = []string{"bar", "line", "scatter", "pie", "heatmap", "radar"}
+// sankey is opt-in only (not in DefaultChartTypes).
+var ValidChartTypes = []string{"bar", "line", "scatter", "pie", "heatmap", "radar", "sankey"}
 
 // DefaultChartTypes is the --charts default when the user does not pass -c.
 var DefaultChartTypes = []string{"bar", "line", "pie"}
