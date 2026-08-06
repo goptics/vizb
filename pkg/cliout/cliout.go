@@ -32,6 +32,13 @@ const (
 // log record is appended on the same line ("◐ Mapping fields> Auto-grouped…").
 const clearLine = "\r\033[K"
 
+// Rendering state set by Configure; Accent reuses this instead of re-probing
+// os.Stderr so test buffers and forced profiles stay consistent with the logger.
+var (
+	accentProfile termenv.Profile
+	accentRender  *lipgloss.Renderer
+)
+
 // stderrWriter always writes to the current os.Stderr so test helpers that
 // swap os.Stderr still observe log output.
 //
@@ -60,6 +67,17 @@ func Configure(w io.Writer) {
 	if w == nil {
 		w = stderrWriter{}
 	}
+	profile := ColorProfile(w)
+	accentProfile = profile
+	// Renderer target: live stderr for the production wrapper; otherwise w so
+	// Accent matches the configured sink (Ascii on pipes/buffers).
+	renderW := io.Writer(w)
+	if _, ok := w.(stderrWriter); ok {
+		renderW = os.Stderr
+	}
+	accentRender = lipgloss.NewRenderer(renderW)
+	accentRender.SetColorProfile(profile)
+
 	logger := log.NewWithOptions(w, log.Options{
 		Level:           log.InfoLevel,
 		ReportTimestamp: false,
@@ -67,7 +85,7 @@ func Configure(w io.Writer) {
 		Formatter:       log.TextFormatter,
 	})
 	logger.SetStyles(vizbStyles())
-	logger.SetColorProfile(ColorProfile(w))
+	logger.SetColorProfile(profile)
 	log.SetDefault(logger)
 }
 
@@ -171,21 +189,15 @@ func FormatAccent(format string) string {
 	}
 }
 
-// Accent tints s with hex when the stderr profile allows color; plain otherwise.
+// Accent tints s with hex when Configure's profile allows color; plain otherwise.
 func Accent(s, color string) string {
-	if s == "" {
+	if s == "" || accentProfile == termenv.Ascii || accentRender == nil {
 		return s
 	}
-	p := ColorProfile(os.Stderr)
-	if p == termenv.Ascii {
-		return s
-	}
-	r := lipgloss.NewRenderer(os.Stderr)
-	r.SetColorProfile(p)
 	return lipgloss.NewStyle().
 		Bold(true).
 		Foreground(lipgloss.Color(color)).
-		Renderer(r).
+		Renderer(accentRender).
 		Render(s)
 }
 

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -460,6 +461,15 @@ func (s *PipelineSuite) TestLogAggregationResultAllUnique() {
 	s.NotContains(out, "Aggregating ")
 }
 
+func (s *PipelineSuite) TestLogAggregationResultEarlyReturnWhenBeforeZero() {
+	cfg := parser.Config{GroupPattern: "x", Group: []string{"region"}}
+	out := testutil.CaptureStderr(func() {
+		logAggregationResult(0, 0, cfg)
+	})
+	s.Empty(out)
+	s.NotContains(out, "Aggregated")
+}
+
 func (s *PipelineSuite) TestPrepareDataAutoValuePreservesMetric() {
 	csvFile := s.writeFile("grid.csv", "x,y,z,value\n0,0,0,4\n0,0,1,3.22\n0,1,0,3.28\n")
 	cfg := parser.Config{AutoGroup: true, ChartTypes: []string{"scatter"}}
@@ -873,15 +883,16 @@ func (s *PipelineSuite) TestAssembleDatasetInfersAxesWithoutAxisType() {
 	s.Equal("value", ds.Axes[1].Type)
 }
 
-func (s *PipelineSuite) TestDatasetsNeed3D() {
+func (s *PipelineSuite) TestDatasetNeeds3DPredicate() {
+	// writeOutput uses slices.ContainsFunc(datasets, shared.DatasetNeeds3D).
 	ds := &shared.Dataset{
 		Data: []shared.DataPoint{{XAxis: "1", YAxis: "2", ZAxis: "3"}},
 		Settings: []internal_charts.ChartConfig{
 			&scatterchart.Config{Type: "scatter"},
 		},
 	}
-	s.True(datasetsNeed3D([]*shared.Dataset{ds}))
-	s.False(datasetsNeed3D(nil))
+	s.True(shared.DatasetNeeds3D(ds))
+	s.False(slices.ContainsFunc(([]*shared.Dataset)(nil), shared.DatasetNeeds3D))
 }
 
 func (s *PipelineSuite) TestWriteOutputEmptyDatasets() {

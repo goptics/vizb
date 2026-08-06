@@ -118,6 +118,23 @@ func (s *ProgressSuite) TestUpdateProgress() {
 	s.Equal("BenchmarkExample · 5 records", mockBar.descriptions[0])
 }
 
+func (s *ProgressSuite) TestUpdateProgressDefaultEmptyDescribe() {
+	// name empty and count 0 → Describe("").
+	mockBar := &MockProgressBar{}
+	manager := NewDataProgressManager(mockBar)
+	manager.updateProgress()
+	s.Require().Len(mockBar.descriptions, 1)
+	s.Equal("", mockBar.descriptions[0])
+}
+
+func (s *ProgressSuite) TestRawBenchmarkExtractNameNoDashSuffix() {
+	raw := &RawDataLine{}
+	// First field without trailing -<digits> is returned as-is.
+	s.Equal("SoloName", raw.ExtractName("SoloName   100   12 ns/op"))
+	// "ns/op" alone: hasBenchmark true, name is the metric token itself.
+	s.Equal("ns/op", raw.ExtractName("ns/op"))
+}
+
 func (s *ProgressSuite) TestProcessLineWithJSON() {
 	mockBar := &MockProgressBar{}
 	manager := NewDataProgressManager(mockBar)
@@ -203,6 +220,36 @@ func (s *ProgressSuite) TestProcessLineIncrementsBenchmarkCount() {
 	}
 
 	s.Equal(4, manager.dataCount)
+}
+
+func (s *ProgressSuite) TestProcessLineNameOnlyUpdatesProgress() {
+	mockBar := &MockProgressBar{}
+	manager := NewDataProgressManager(mockBar)
+
+	// JSON run event: name without ns/op count.
+	manager.ProcessLine(`{"Action":"run","Test":"BenchmarkOnlyName"}`)
+	s.Equal("BenchmarkOnlyName", manager.currentDataName)
+	s.Equal(0, manager.dataCount)
+	s.Require().Len(mockBar.descriptions, 1)
+	s.Equal("BenchmarkOnlyName", mockBar.descriptions[0])
+}
+
+func (s *ProgressSuite) TestProcessLineCountOnlyUpdatesProgress() {
+	mockBar := &MockProgressBar{}
+	manager := NewDataProgressManager(mockBar)
+
+	// JSON ns/op output on a non-Benchmark test: count hits, ExtractName is empty.
+	manager.ProcessLine(`{"Action":"output","Test":"TestHelper","Output":"1234 ns/op"}`)
+	s.Equal(1, manager.dataCount)
+	s.Equal("", manager.currentDataName)
+	s.Require().Len(mockBar.descriptions, 1)
+	s.Equal("1 records", mockBar.descriptions[0])
+
+	// Later name + count uses the combined form.
+	manager.ProcessLine("BenchmarkNamed-8    1000    2000 ns/op")
+	s.Equal(2, manager.dataCount)
+	s.Equal("BenchmarkNamed", manager.currentDataName)
+	s.Equal("BenchmarkNamed · 2 records", mockBar.descriptions[len(mockBar.descriptions)-1])
 }
 
 func (s *ProgressSuite) TestRealWorldBenchmarkOutput() {

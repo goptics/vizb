@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"strings"
 
 	internal_charts "github.com/goptics/vizb/internal/charts"
@@ -205,6 +206,7 @@ func writeStdinPipedInputs(tempfilePath string) {
 		// single-line, newline-less payload (e.g. a curl'd JSON envelope) is lost.
 		if len(line) > 0 {
 			if _, werr := writer.WriteString(line); werr != nil {
+				_ = dataSetProgressManager.Finish()
 				shared.ExitWithError("Error writing to file", werr)
 			}
 			dataSetProgressManager.ProcessLine(line)
@@ -214,6 +216,7 @@ func writeStdinPipedInputs(tempfilePath string) {
 			if err == io.EOF {
 				break
 			}
+			_ = dataSetProgressManager.Finish()
 			shared.ExitWithError("Error reading from stdin", err)
 		}
 	}
@@ -461,8 +464,10 @@ func writeOutput(f *os.File, datasets []*shared.Dataset, format string) {
 			shared.ExitWithError("Failed to marshal dataset: %v", err)
 		}
 
-		needsHeatmapChunk := datasetsNeedCorrelation(datasets)
-		needs3D := datasetsNeed3D(datasets)
+		needsHeatmapChunk := slices.ContainsFunc(datasets, func(ds *shared.Dataset) bool {
+			return settingsNeedCorrelation(ds.Settings)
+		})
+		needs3D := slices.ContainsFunc(datasets, shared.DatasetNeeds3D)
 		htmlContent := generateUI(jsonData, chartTypeNames(datasets[0].Settings), needs3D, needsHeatmapChunk, template.VizbHTMLTemplate)
 		if _, err := f.WriteString(htmlContent); err != nil {
 			shared.ExitWithError("Failed to write output file: %v", err)
@@ -499,22 +504,4 @@ func marshalDatasetsForOutput(datasets []*shared.Dataset) ([]byte, error) {
 		slice[i] = *ds
 	}
 	return json.Marshal(slice)
-}
-
-func datasetsNeed3D(datasets []*shared.Dataset) bool {
-	for _, ds := range datasets {
-		if shared.DatasetNeeds3D(ds) {
-			return true
-		}
-	}
-	return false
-}
-
-func datasetsNeedCorrelation(datasets []*shared.Dataset) bool {
-	for _, ds := range datasets {
-		if settingsNeedCorrelation(ds.Settings) {
-			return true
-		}
-	}
-	return false
 }

@@ -101,12 +101,18 @@ func (m *DataProgressManager) ProcessLine(line string) {
 		p = &RawDataLine{}
 	}
 
-	if hasBenchmark(line) {
+	countHit := hasBenchmark(line)
+	if countHit {
 		m.dataCount++
 	}
 
-	if name := p.ExtractName(line); name != "" {
+	name := p.ExtractName(line)
+	if name != "" {
 		m.currentDataName = name
+	}
+
+	// Refresh on name discovery or count bumps (ns/op lines without a parseable name).
+	if countHit || name != "" {
 		m.updateProgress()
 	}
 }
