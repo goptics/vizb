@@ -23,7 +23,7 @@ Map columns with **group** (same model as heatmap):
 
 ```bash
 # Edge list: columns from → to; numeric columns become measures
-vizb sankey data.csv -g from,to -p x,y -o out.html
+vizb sankey data.csv -g source,target -p x,y -o out.html
 ```
 
 ## Dimensions
@@ -33,7 +33,7 @@ vizb sankey data.csv -g from,to -p x,y -o out.html
 The core mapping: **x = source**, **y = target**. Each unique node name appears once in the diagram; every row becomes (or merges into) a link.
 
 ```bash
-vizb sankey examples/csv/sankey-flows.csv -g from,to -p x,y -o out.html
+vizb sankey examples/csv/sankey-flows.csv -g source,target -p x,y -o out.html
 ```
 
 Duplicate `(source, target)` pairs are summed into a single link. Multi-hop flows are just multiple edge rows that share intermediate node labels (for example `Visit → Landing → Signup → Trial → Paid`).
@@ -45,7 +45,7 @@ Duplicate `(source, target)` pairs are summed into a single link. Multi-hop flow
 Pass `n` in the group pattern to split independent edge sets into separate chart panels — same 4D behavior as other chart types.
 
 ```bash
-vizb sankey examples/csv/sankey-flows.csv -g name,from,to -p n,x,y -o out.html
+vizb sankey examples/csv/sankey-flows.csv -g name,source,target -p n,x,y -o out.html
 ```
 
 ### Z is ignored
@@ -54,7 +54,7 @@ If you include `z` in the pattern, Sankey still runs: there is **no 3D scene** a
 
 ```bash
 # Works, but z does not change layout — links still aggregate by source/target
-vizb sankey data.csv -g from,to,channel -p x,y,z -o out.html
+vizb sankey data.csv -g source,target,channel -p x,y,z -o out.html
 ```
 
 ### Multiple measures
@@ -63,10 +63,10 @@ When the dataset has more than one numeric measure (for example `value` and `cos
 
 ```bash
 # Two numeric columns → switch measures via stat tabs in the UI
-vizb sankey examples/csv/sankey-flows.csv -g from,to -p x,y -o out.html
+vizb sankey examples/csv/sankey-flows.csv -g source,target -p x,y -o out.html
 
 # Optional: keep only one measure under group
-vizb sankey examples/csv/sankey-flows.csv -g from,to -p x,y --select value -o out.html
+vizb sankey examples/csv/sankey-flows.csv -g source,target -p x,y --select value -o out.html
 ```
 
 ## Settings
@@ -81,10 +81,10 @@ Sankey v1 supports sort, labels, and swap only — no log scale and no 3D contro
 
 ```bash
 # Labels + descending sort on the sankey subcommand
-vizb sankey examples/csv/sankey-flows.csv -g from,to -p x,y -l --sort desc -o out.html
+vizb sankey examples/csv/sankey-flows.csv -g source,target -p x,y -l --sort desc -o out.html
 
 # Root command: opt-in renderer only
-vizb examples/csv/sankey-flows.csv -g from,to -p x,y -c sankey -o out.html
+vizb examples/csv/sankey-flows.csv -g source,target -p x,y -c sankey -o out.html
 ```
 
 <Aside type="note">
@@ -95,11 +95,11 @@ vizb examples/csv/sankey-flows.csv -g from,to -p x,y -c sankey -o out.html
 
 ```bash
 # Subcommand — single chart, flags limited to what Sankey supports
-vizb sankey data.csv -g from,to -p x,y -o out.html
+vizb sankey data.csv -g source,target -p x,y -o out.html
 
 # Root — must opt in with -c; can combine with other renderers
-vizb data.csv -g from,to -p x,y -c sankey -o out.html
-vizb data.csv -g from,to -p x,y -c bar,sankey -o out.html
+vizb data.csv -g source,target -p x,y -c sankey -o out.html
+vizb data.csv -g source,target -p x,y -c bar,sankey -o out.html
 ```
 
 ## Future
