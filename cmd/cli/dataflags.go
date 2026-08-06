@@ -67,7 +67,7 @@ var DataFlags = []flags.Flag{
 		Name: "round", Kind: flags.KindBool,
 		Usage: "Round numeric values to 2 decimal places in the output data (off by default; irreversible in the written file)",
 	},
-	{Name: "select", Usage: "csv/json only: select columns (repeatable); solo mode: 2–3 cols as x,y[,z] axes (e.g. --select region,latency); sankey solo: ≥3 cols source,target,value[,metrics]; grouped mode: numeric stat columns with optional {label}", Kind: flags.KindStringArray},
+	{Name: "select", Usage: "csv/json only: select columns (repeatable); solo mode: 2–3 cols as x,y[,z] axes (e.g. --select region,latency); sankey solo: exactly 3 cols source,target,value per flag (repeat for more measures); grouped mode: numeric stat columns with optional {label}", Kind: flags.KindStringArray},
 	{
 		Name: "col-axis", Shorthand: "A", Kind: flags.KindString,
 		Usage:    "csv/json + group: place numeric column names on this axis (n, x, y, or z) so all columns share one chart",

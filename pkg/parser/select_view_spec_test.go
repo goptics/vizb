@@ -107,13 +107,8 @@ func (s *SelectViewSpecSuite) TestParseSelectViewFlagRejectsArity() {
 	if _, err := ParseSelectViewFlag("region"); err == nil {
 		t.Fatal("want error for 1 column")
 	}
-	// 4+ positional columns parse for sankey edge multi-measure; non-edge rejects later.
-	view, err := ParseSelectViewFlag("a,b,c,d")
-	if err != nil {
-		t.Fatalf("4-column positional select should parse: %v", err)
-	}
-	if len(view.Columns) != 4 {
-		t.Fatalf("want 4 columns, got %d", len(view.Columns))
+	if _, err := ParseSelectViewFlag("a,b,c,d"); err == nil {
+		t.Fatal("want error for 4 columns")
 	}
 	if _, err := ParseSelectViewFlag(""); err == nil {
 		t.Fatal("want error for empty")
@@ -143,14 +138,34 @@ func (s *SelectViewSpecSuite) TestValidateSankeySoloSelect() {
 	}); err != nil {
 		t.Fatalf("3-col: %v", err)
 	}
+	// Multi-measure: two flags, shared source/target, different value cols
 	if err := ValidateSankeySoloSelect(Config{
 		ChartTypes: []string{"sankey"},
 		SelectViews: []SelectView{
-			{Columns: []ColumnSpec{{Source: "a"}, {Source: "b"}, {Source: "c"}}},
-			{Columns: []ColumnSpec{{Source: "a"}, {Source: "b"}, {Source: "d"}}},
+			{Columns: []ColumnSpec{{Source: "source"}, {Source: "target"}, {Source: "value"}}},
+			{Columns: []ColumnSpec{{Source: "source"}, {Source: "target"}, {Source: "cost"}}},
+		},
+	}); err != nil {
+		t.Fatalf("multi 3-col sankey select: %v", err)
+	}
+	// Mismatched source/target across flags
+	if err := ValidateSankeySoloSelect(Config{
+		ChartTypes: []string{"sankey"},
+		SelectViews: []SelectView{
+			{Columns: []ColumnSpec{{Source: "source"}, {Source: "target"}, {Source: "value"}}},
+			{Columns: []ColumnSpec{{Source: "a"}, {Source: "b"}, {Source: "cost"}}},
 		},
 	}); err == nil {
-		t.Fatal("want error for multi --select on sankey")
+		t.Fatal("want error when multi-select source/target differ")
+	}
+	// 4-col is rejected at parse; 1-flag with wrong count
+	if err := ValidateSankeySoloSelect(Config{
+		ChartTypes: []string{"sankey"},
+		SelectViews: []SelectView{{Columns: []ColumnSpec{
+			{Source: "a"}, {Source: "b"}, {Source: "c"}, {Source: "d"},
+		}}},
+	}); err == nil {
+		t.Fatal("want error for 4-col sankey select")
 	}
 }
 

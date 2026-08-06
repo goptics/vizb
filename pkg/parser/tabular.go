@@ -150,55 +150,51 @@ func ParseSelectStatMode(rows []RowReader, cfg Config) ([]shared.DataPoint, erro
 	return results, nil
 }
 
-// ParseEdgeMode builds one DataPoint per row for sankey solo --select:
-// column 0 = source (x category), column 1 = target (y category), columns
-// 2+ = numeric measures as stats. Source/target are always string cells
-// (numeric-looking ids stay categorical node names).
+// ParseEdgeMode builds one DataPoint per row for sankey solo --select.
+// Each SelectView is exactly 3 columns: source (x), target (y), value (stat).
+// Multiple views (repeatable --select) share source/target and each add one measure.
+// Source/target are always string cells (numeric-looking ids stay node names).
 func ParseEdgeMode(rows []RowReader, cfg Config) ([]shared.DataPoint, error) {
 	if err := ValidateSankeySoloSelect(cfg); err != nil {
 		return nil, err
 	}
-	view := cfg.SelectViews[0]
-	source, target := view.Columns[0], view.Columns[1]
-	metrics := view.Columns[2:]
+	views := cfg.SelectViews
+	sourceCol, targetCol := views[0].Columns[0].Source, views[0].Columns[1].Source
 
 	if len(rows) > 0 {
-		for _, m := range metrics {
+		for _, view := range views {
+			m := view.Columns[2].Source
 			anyNum := false
 			for _, row := range rows {
-				if _, ok := row.Numeric(m.Source); ok {
+				if _, ok := row.Numeric(m); ok {
 					anyNum = true
 					break
 				}
 			}
 			if !anyNum {
-				return nil, fmt.Errorf("%s column %q is not numeric (sankey edge measure)", rows[0].FlagLabel(), m.Source)
+				return nil, fmt.Errorf("%s column %q is not numeric (sankey edge measure)", rows[0].FlagLabel(), m)
 			}
 		}
 	}
 
 	var results []shared.DataPoint
 	for _, row := range rows {
-		src, ok := row.Cell(source.Source)
+		src, ok := row.Cell(sourceCol)
 		if !ok || src == "" {
 			continue
 		}
-		tgt, ok := row.Cell(target.Source)
+		tgt, ok := row.Cell(targetCol)
 		if !ok || tgt == "" {
 			continue
 		}
 		var stats []shared.Stat
-		for _, m := range metrics {
-			v, ok := row.Numeric(m.Source)
+		for _, view := range views {
+			v, ok := row.Numeric(view.Columns[2].Source)
 			if !ok {
 				continue
 			}
-			label := m.Label
-			if label == "" {
-				label = m.Source
-			}
 			stats = append(stats, shared.Stat{
-				Type:  utils.CreateStatType(label, cfg.NumberUnit, ""),
+				Type:  utils.CreateStatType(EdgeStatType(view), cfg.NumberUnit, ""),
 				Value: shared.F64(utils.FormatNumber(v, cfg.NumberUnit, cfg.Round)),
 			})
 		}
@@ -244,9 +240,6 @@ func DispatchSelectMode(rows []RowReader, cfg *Config, kindFn AxisColumnKind) ([
 	}
 	if cfg.Mode.IsMultiStat() {
 		return ParseSelectStatMode(rows, *cfg)
-	}
-	if len(cfg.SelectViews) == 1 && len(cfg.SelectViews[0].Columns) > 3 {
-		return nil, fmt.Errorf("--select requires 2 or 3 columns (x,y[,z]); got %d", len(cfg.SelectViews[0].Columns))
 	}
 	axesCfg := SelectViewAxesCfg(*cfg)
 	if err := ResolveAxesTypes(&axesCfg, kindFn); err != nil {

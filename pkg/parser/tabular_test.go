@@ -286,7 +286,29 @@ func (s *TabularSuite) TestParseEdgeMode() {
 			Columns: []ColumnSpec{{Source: "source"}, {Source: "target"}},
 		}},
 	})
-	s.ErrorContains(err, "at least 3")
+	s.ErrorContains(err, "exactly 3")
+
+	// Multi-measure: two --select flags with shared source/target
+	multi := Config{
+		Mode:       ModeEdge,
+		ChartTypes: []string{"sankey"},
+		SelectViews: []SelectView{
+			{Columns: []ColumnSpec{{Source: "source"}, {Source: "target"}, {Source: "value"}}},
+			{Columns: []ColumnSpec{{Source: "source"}, {Source: "target"}, {Source: "cost"}}},
+		},
+	}
+	multiRows := []RowReader{
+		mockRowReader{
+			cells:   map[string]string{"source": "A", "target": "B"},
+			numeric: map[string]float64{"value": 10, "cost": 2},
+		},
+	}
+	pts, err := ParseEdgeMode(multiRows, multi)
+	s.Require().NoError(err)
+	s.Require().Len(pts, 1)
+	s.Require().Len(pts[0].Stats, 2)
+	s.Equal(10.0, *pts[0].Stats[0].Value)
+	s.Equal(2.0, *pts[0].Stats[1].Value)
 }
 
 func (s *TabularSuite) TestDispatchSelectModeEdgeForSankey() {

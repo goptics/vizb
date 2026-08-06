@@ -120,7 +120,7 @@ func Convert(in ConvertInput) (ConvertResult, error) {
 	}
 	cfg.ChartTypes = append(slices.Clone(cfg.ChartTypes), chartTypes(in.Charts)...)
 	cfg.Mode = parser.ResolveMode(cfg)
-	if err := parser.ValidateSankeySoloSelect(cfg); err != nil {
+	if err := parser.ValidateSelectViewsForCharts(cfg); err != nil {
 		return ConvertResult{}, &OptionError{Name: "select", Err: err}
 	}
 	tabular := key == "csv" || key == "json"

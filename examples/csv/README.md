@@ -159,7 +159,7 @@ CI id: `00-concurrency-frameworks` on the **comparisons** dashboard (see `.githu
 |------|--------|-----------------|
 | source | `-g source,target -p x,y` → `source` is `x` | 1st column (`source`) |
 | target | `target` is `y` | 2nd column (`target`) |
-| value | other numeric cols (e.g. `value`, `cost`) | 3rd+ columns (`value`, optional `cost`) |
+| value | other numeric cols (e.g. `value`, `cost`) | 3rd column only (`value`); more measures → another `--select` |
 
 Sankey is **opt-in** (`vizb sankey` or `-c sankey`). Duplicate edges sum; multi-hop paths share intermediate node names. Optional `name` → `-g name,source,target -p n,x,y`. **z is ignored** if provided.
 
@@ -168,8 +168,8 @@ Sankey is **opt-in** (`vizb sankey` or `-c sankey`). Duplicate edges sum; multi-
 | Goal | Command |
 |------|---------|
 | Basic multi-hop Sankey | `vizb sankey examples/csv/sankey-flows.csv -g source,target -p x,y` |
-| Solo `--select` (same order: source, target, value) | `vizb sankey examples/csv/sankey-flows.csv --select source,target,value` |
-| Solo multi-measure | `vizb sankey examples/csv/sankey-flows.csv --select source,target,value,cost` |
+| Solo `--select` (exactly 3 cols) | `vizb sankey examples/csv/sankey-flows.csv --select source,target,value` |
+| Solo multi-measure (repeat 3-col flags) | `vizb sankey examples/csv/sankey-flows.csv --select source,target,value --select source,target,cost` |
 | Named panels (`web` / `app`) | `vizb sankey examples/csv/sankey-flows.csv -g name,source,target -p n,x,y` |
 | Root with opt-in renderer | `vizb examples/csv/sankey-flows.csv -g source,target -p x,y -c sankey` |
 

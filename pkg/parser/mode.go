@@ -11,7 +11,7 @@ import "slices"
 // Resolution order:
 //  1. Explicit grouping + Select → ModeGrouped
 //  2. Solo SelectViews (no explicit grouping):
-//     a. sankey in ChartTypes → ModeEdge (min 3 columns; validated separately)
+//     a. sankey in ChartTypes → ModeEdge (exactly 3 columns per flag; validated separately)
 //     b. len > 1 → ModeMultiStat (validated to 2-col dim,metric)
 //     c. len == 1 → ModeValue or ModeMixed (caller resolves after type inference)
 //  3. Otherwise → ModeAuto
