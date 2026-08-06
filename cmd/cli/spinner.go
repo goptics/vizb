@@ -257,10 +257,10 @@ func gradientText(text string, phase int, r *lipgloss.Renderer) string {
 	if text == "" {
 		return text
 	}
+	runes := []rune(text)
 	var b strings.Builder
-	b.Grow(len(text) * 12)
-	i := 0
-	for _, ch := range text {
+	b.Grow(len(runes) * 12)
+	for i, ch := range runes {
 		stop := (i + phase) % len(greenGradientStops)
 		st := lipgloss.NewStyle().
 			Bold(true).
@@ -269,7 +269,6 @@ func gradientText(text string, phase int, r *lipgloss.Renderer) string {
 			st = st.Renderer(r)
 		}
 		b.WriteString(st.Render(string(ch)))
-		i++
 	}
 	return b.String()
 }
