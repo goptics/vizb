@@ -58,7 +58,7 @@ Pie, radar, and Sankey have no cartesian axes in the usual sense, but the same `
 {/* TODO: Add GIF showing chart types rendered side by side */}
 
 <Aside type="note">
-  Heatmap and Sankey require at least a 2D pattern (`-p x,y` for CSV or `-p x/y` for benchmarks). Passing `-p x` with `-c heatmap` or `-c sankey` will produce an empty chart panel. For Sankey, treat the edge list as source/target columns (e.g. `-g from,to -p x,y`).
+  Heatmap and Sankey require at least a 2D pattern (`-p x,y` for CSV or `-p x/y` for benchmarks). Passing `-p x` with `-c heatmap` or `-c sankey` will produce an empty chart panel. For Sankey, treat the edge list as source/target columns (e.g. `-g source,target -p x,y`).
 </Aside>
 
 ## 4D: Named Chart Groups
@@ -125,7 +125,7 @@ Each chart renderer ships as a separate compressed chunk; only the ones you sele
 vizb data.csv -g category,metric -p x,y -c bar,radar -o output.html
 
 # Sankey only (edge list: x = source, y = target)
-vizb data.csv -g from,to -p x,y -c sankey -o output.html
+vizb data.csv -g source,target -p x,y -c sankey -o output.html
 
 # Single chart — smallest possible output
 vizb data.csv -g category -c bar -o output.html

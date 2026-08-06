@@ -151,27 +151,27 @@ CI id: `00-concurrency-frameworks` on the **comparisons** dashboard (see `.githu
 
 ## `sankey-flows.csv`
 
-**Shape:** Multi-hop **edge list** — `name` (optional panel key), `from` (source), `to` (target), `value` and `cost` (positive flow measures). 14 edges across two funnels (`web`, `app`).
+**Shape:** Multi-hop **edge list** — `name` (optional panel key), `source`, `target`, `value` and `cost` (positive flow measures). 14 edges across two funnels (`web`, `app`).
 
 **What vizb does:** Same edge roles always — **source → target → value** — via group **or** solo select (order must match):
 
 | Role | Group | Solo `--select` |
 |------|--------|-----------------|
-| source | `-g from,to -p x,y` → `from` is `x` | 1st column (`from`) |
-| target | `to` is `y` | 2nd column (`to`) |
+| source | `-g source,target -p x,y` → `source` is `x` | 1st column (`source`) |
+| target | `target` is `y` | 2nd column (`target`) |
 | value | other numeric cols (e.g. `value`, `cost`) | 3rd+ columns (`value`, optional `cost`) |
 
-Sankey is **opt-in** (`vizb sankey` or `-c sankey`). Duplicate edges sum; multi-hop paths share intermediate node names. Optional `name` → `-g name,from,to -p n,x,y`. **z is ignored** if provided.
+Sankey is **opt-in** (`vizb sankey` or `-c sankey`). Duplicate edges sum; multi-hop paths share intermediate node names. Optional `name` → `-g name,source,target -p n,x,y`. **z is ignored** if provided.
 
 **Good for:** Funnel / pipeline flows, multi-hop conversion paths, multi-measure and named-panel demos.
 
 | Goal | Command |
 |------|---------|
-| Basic multi-hop Sankey | `vizb sankey examples/csv/sankey-flows.csv -g from,to -p x,y` |
-| Solo `--select` (same order: source, target, value) | `vizb sankey examples/csv/sankey-flows.csv --select from,to,value` |
-| Solo multi-measure | `vizb sankey examples/csv/sankey-flows.csv --select from,to,value,cost` |
-| Named panels (`web` / `app`) | `vizb sankey examples/csv/sankey-flows.csv -g name,from,to -p n,x,y` |
-| Root with opt-in renderer | `vizb examples/csv/sankey-flows.csv -g from,to -p x,y -c sankey` |
+| Basic multi-hop Sankey | `vizb sankey examples/csv/sankey-flows.csv -g source,target -p x,y` |
+| Solo `--select` (same order: source, target, value) | `vizb sankey examples/csv/sankey-flows.csv --select source,target,value` |
+| Solo multi-measure | `vizb sankey examples/csv/sankey-flows.csv --select source,target,value,cost` |
+| Named panels (`web` / `app`) | `vizb sankey examples/csv/sankey-flows.csv -g name,source,target -p n,x,y` |
+| Root with opt-in renderer | `vizb examples/csv/sankey-flows.csv -g source,target -p x,y -c sankey` |
 
 ---
 
@@ -188,7 +188,7 @@ Sankey is **opt-in** (`vizb sankey` or `-c sankey`). Duplicate edges sum; multi-
 | `house-price-area2.csv` | 16,174 | Auto-value (xy) | Scatter2D + visualMap |
 | `clusters.csv` | 60 | Auto-value (xy) | Scatter2D + visualMap, symbol size 10 |
 | `concurrency.csv` | 3 | Group + `--col-axis` | Bar/line competitor compare |
-| `sankey-flows.csv` | 14 | Edge list (`from`/`to`) | Sankey (opt-in) |
+| `sankey-flows.csv` | 14 | Edge list (`source`/`target`) | Sankey (opt-in) |
 
 **Auto-group** applies when the file has categorical columns and you did not pass `--group`. **Auto-value** applies when every column is numeric — vizb assigns `x`, `y`, `z` (and optional 4th metric) without flags.
 

@@ -125,7 +125,7 @@ func (s *SelectViewSpecSuite) TestValidateSankeySoloSelect() {
 	if err := ValidateSankeySoloSelect(Config{}); err != nil {
 		t.Fatalf("empty cfg: %v", err)
 	}
-	if err := ValidateSankeySoloSelect(Config{ChartTypes: []string{"sankey"}, Group: []string{"from"}}); err != nil {
+	if err := ValidateSankeySoloSelect(Config{ChartTypes: []string{"sankey"}, Group: []string{"source"}}); err != nil {
 		t.Fatalf("grouped: %v", err)
 	}
 	err := ValidateSankeySoloSelect(Config{
@@ -138,7 +138,7 @@ func (s *SelectViewSpecSuite) TestValidateSankeySoloSelect() {
 	if err := ValidateSankeySoloSelect(Config{
 		ChartTypes: []string{"sankey"},
 		SelectViews: []SelectView{{Columns: []ColumnSpec{
-			{Source: "from"}, {Source: "to"}, {Source: "value"},
+			{Source: "source"}, {Source: "target"}, {Source: "value"},
 		}}},
 	}); err != nil {
 		t.Fatalf("3-col: %v", err)

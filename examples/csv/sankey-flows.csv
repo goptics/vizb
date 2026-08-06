@@ -1,4 +1,4 @@
-name,from,to,value,cost
+name,source,target,value,cost
 web,Visit,Landing,5000,12
 web,Landing,Signup,1200,8
 web,Landing,Exit,3800,2

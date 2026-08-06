@@ -20,7 +20,7 @@ vizb <chart> [target] [flags]
 ```bash
 vizb bar data.csv -g impl,size -p n,x -o bar.html
 vizb pie data.csv -g impl -o pie.html
-vizb sankey data.csv -g from,to -p x,y -o sankey.html
+vizb sankey data.csv -g source,target -p x,y -o sankey.html
 go test -bench . | vizb line -p n/y -o line.html
 ```
 
@@ -88,7 +88,7 @@ vizb scatter data.csv -o scatter.html
 vizb radar data.csv -g impl -o radar.json
 
 # Sankey from an edge list (x = source, y = target)
-vizb sankey examples/csv/sankey-flows.csv -g from,to -p x,y -o sankey.html
+vizb sankey examples/csv/sankey-flows.csv -g source,target -p x,y -o sankey.html
 ```
 
 <Aside type="note">

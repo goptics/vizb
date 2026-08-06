@@ -240,19 +240,19 @@ func (s *TabularSuite) TestParseEdgeMode() {
 		ChartTypes: []string{"sankey"},
 		SelectViews: []SelectView{{
 			Columns: []ColumnSpec{
-				{Source: "from", AxisKey: "x"},
-				{Source: "to", AxisKey: "y"},
+				{Source: "source", AxisKey: "x"},
+				{Source: "target", AxisKey: "y"},
 				{Source: "value", AxisKey: "z"},
 			},
 		}},
 	}
 	rows := []RowReader{
 		mockRowReader{
-			cells:   map[string]string{"from": "A", "to": "B"},
+			cells:   map[string]string{"source": "A", "target": "B"},
 			numeric: map[string]float64{"value": 10},
 		},
 		mockRowReader{
-			cells:   map[string]string{"from": "B", "to": "C"},
+			cells:   map[string]string{"source": "B", "target": "C"},
 			numeric: map[string]float64{"value": 4},
 		},
 	}
@@ -272,7 +272,7 @@ func (s *TabularSuite) TestParseEdgeMode() {
 		ChartTypes: []string{"sankey"},
 		SelectViews: []SelectView{{
 			Columns: []ColumnSpec{
-				{Source: "from"}, {Source: "to"}, {Source: "label"},
+				{Source: "source"}, {Source: "target"}, {Source: "label"},
 			},
 		}},
 	})
@@ -283,7 +283,7 @@ func (s *TabularSuite) TestParseEdgeMode() {
 		Mode:       ModeEdge,
 		ChartTypes: []string{"sankey"},
 		SelectViews: []SelectView{{
-			Columns: []ColumnSpec{{Source: "from"}, {Source: "to"}},
+			Columns: []ColumnSpec{{Source: "source"}, {Source: "target"}},
 		}},
 	})
 	s.ErrorContains(err, "at least 3")
@@ -295,15 +295,15 @@ func (s *TabularSuite) TestDispatchSelectModeEdgeForSankey() {
 		ChartTypes: []string{"sankey"},
 		SelectViews: []SelectView{{
 			Columns: []ColumnSpec{
-				{Source: "from", AxisKey: "x"},
-				{Source: "to", AxisKey: "y"},
+				{Source: "source", AxisKey: "x"},
+				{Source: "target", AxisKey: "y"},
 				{Source: "value", AxisKey: "z"},
 			},
 		}},
 	}
 	rows := []RowReader{
 		mockRowReader{
-			cells:   map[string]string{"from": "A", "to": "B"},
+			cells:   map[string]string{"source": "A", "target": "B"},
 			numeric: map[string]float64{"value": 3},
 		},
 	}
@@ -319,8 +319,8 @@ func (s *TabularSuite) TestDispatchSelectModeEdgeForSankey() {
 
 	axes := EdgeAxes(cfg.SelectViews[0])
 	s.Equal([]string{"x", "y"}, []string{axes[0].Key, axes[1].Key})
-	s.Equal("from", axes[0].Label)
-	s.Equal("to", axes[1].Label)
+	s.Equal("source", axes[0].Label)
+	s.Equal("target", axes[1].Label)
 }
 
 func (s *TabularSuite) TestDispatchSelectModePropagatesAxisType() {
