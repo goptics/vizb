@@ -119,6 +119,10 @@ func Convert(in ConvertInput) (ConvertResult, error) {
 		cfg.GroupPattern = "x"
 	}
 	cfg.ChartTypes = append(slices.Clone(cfg.ChartTypes), chartTypes(in.Charts)...)
+	cfg.Mode = parser.ResolveMode(cfg)
+	if err := parser.ValidateSankeySoloSelect(cfg); err != nil {
+		return ConvertResult{}, &OptionError{Name: "select", Err: err}
+	}
 	tabular := key == "csv" || key == "json"
 	if tabular && len(cfg.Group) > 0 && cfg.GroupRegex == "" {
 		var err error
@@ -333,12 +337,18 @@ func Assemble(in AssembleInput) *shared.Dataset {
 		view = cfg.SelectViews[0].Columns
 	}
 	viewName := ""
-	if len(view) > 0 && cfg.Mode.IsSelectAxis() && !cfg.Mode.IsMultiStat() {
+	if len(view) > 0 && cfg.Mode.IsSelectAxis() && !cfg.Mode.IsMultiStat() && !cfg.Mode.IsEdge() {
 		viewName = parser.SelectViewDatasetName(view, 0)
+	}
+	if cfg.Mode.IsEdge() && len(view) >= 2 {
+		// Edge list title: source × target (same style as other solo views).
+		viewName = parser.SelectViewDatasetName(view[:2], 0)
 	}
 	var axes []shared.Axis
 	if cfg.Mode.IsMultiStat() {
 		axes = parser.MultiSelectStatAxes(cfg.SelectViews)
+	} else if cfg.Mode.IsEdge() && len(cfg.SelectViews) > 0 {
+		axes = parser.EdgeAxes(cfg.SelectViews[0])
 	} else if len(view) > 0 {
 		axes = parser.DatasetAxesForSelectView(view, points)
 		autoEnableValueMode3D(charts, axes, valueModeHasMetric(cfg, points))

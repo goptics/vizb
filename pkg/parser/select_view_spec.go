@@ -33,8 +33,10 @@ func parseSelectViewColumns(raw string) ([]ColumnSpec, error) {
 	if err != nil {
 		return nil, err
 	}
-	if n := len(tokens); n < 2 || n > 3 {
-		return nil, fmt.Errorf("--select requires 2 or 3 columns (x,y[,z]); got %d", n)
+	// Allow 2+ columns: classic solo is 2–3 (x,y[,z]); sankey edge mode uses
+	// 3+ (source,target,value[,metrics]) and is validated when ChartTypes is set.
+	if n := len(tokens); n < 2 {
+		return nil, fmt.Errorf("--select requires at least 2 columns (x,y[,z]); got %d", n)
 	}
 
 	seenCol := map[string]bool{}
@@ -62,7 +64,9 @@ func parseSelectViewColumns(raw string) ([]ColumnSpec, error) {
 			}
 			seenKey[key] = true
 			spec.AxisKey = key
-		} else {
+		} else if i < 3 {
+			// Positional x,y,z for the first three; further columns are metrics
+			// (sankey edge multi-measure) and leave AxisKey empty.
 			keys := []string{"x", "y", "z"}
 			spec.AxisKey = keys[i]
 		}
@@ -76,9 +80,38 @@ func parseSelectViewColumns(raw string) ([]ColumnSpec, error) {
 		if err := validateExplicitSelectAxisKeys(specs); err != nil {
 			return nil, err
 		}
+		// Explicit x:/y:/z: stays 2–3 columns (no metric tail).
+		if len(specs) > 3 {
+			return nil, fmt.Errorf("--select requires 2 or 3 columns (x,y[,z]); got %d", len(specs))
+		}
 	}
+	// Positional 4+ columns are allowed at parse time for sankey edge multi-measure
+	// (source,target,value,cost,...). Non-edge DispatchSelectMode rejects 4+.
 
 	return specs, nil
+}
+
+// ValidateSankeySoloSelect enforces sankey edge-list rules for solo --select:
+// one flag with at least 3 columns (source, target, value[, extra measures]).
+// Grouped sankey (-g) does not use SelectViews and is not checked here.
+func ValidateSankeySoloSelect(cfg Config) error {
+	if !HasSankeyChart(cfg) || IsExplicitGrouping(cfg) || len(cfg.SelectViews) == 0 {
+		return nil
+	}
+	if len(cfg.SelectViews) > 1 {
+		return fmt.Errorf(
+			"sankey solo --select supports one --select with at least 3 columns (source,target,value[,metrics...]); got %d flags — use -g for grouping, or one --select",
+			len(cfg.SelectViews),
+		)
+	}
+	n := len(cfg.SelectViews[0].Columns)
+	if n < 3 {
+		return fmt.Errorf(
+			"sankey --select requires at least 3 columns (source,target,value); got %d",
+			n,
+		)
+	}
+	return nil
 }
 
 // splitTrailingParenLabel strips a view-level " (Title)" suffix used for

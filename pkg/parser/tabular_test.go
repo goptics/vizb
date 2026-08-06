@@ -234,6 +234,95 @@ func (s *TabularSuite) TestParseSelectStatModeNonMerge() {
 	}
 }
 
+func (s *TabularSuite) TestParseEdgeMode() {
+	cfg := Config{
+		Mode:       ModeEdge,
+		ChartTypes: []string{"sankey"},
+		SelectViews: []SelectView{{
+			Columns: []ColumnSpec{
+				{Source: "from", AxisKey: "x"},
+				{Source: "to", AxisKey: "y"},
+				{Source: "value", AxisKey: "z"},
+			},
+		}},
+	}
+	rows := []RowReader{
+		mockRowReader{
+			cells:   map[string]string{"from": "A", "to": "B"},
+			numeric: map[string]float64{"value": 10},
+		},
+		mockRowReader{
+			cells:   map[string]string{"from": "B", "to": "C"},
+			numeric: map[string]float64{"value": 4},
+		},
+	}
+	points, err := ParseEdgeMode(rows, cfg)
+	s.Require().NoError(err)
+	s.Require().Len(points, 2)
+	s.Equal("A", points[0].XAxis)
+	s.Equal("B", points[0].YAxis)
+	s.Require().Len(points[0].Stats, 1)
+	s.Equal(10.0, *points[0].Stats[0].Value)
+	s.Equal("B", points[1].XAxis)
+	s.Equal("C", points[1].YAxis)
+
+	// Third column must be numeric
+	_, err = ParseEdgeMode(rows, Config{
+		Mode:       ModeEdge,
+		ChartTypes: []string{"sankey"},
+		SelectViews: []SelectView{{
+			Columns: []ColumnSpec{
+				{Source: "from"}, {Source: "to"}, {Source: "label"},
+			},
+		}},
+	})
+	s.ErrorContains(err, "not numeric")
+
+	// Two columns rejected
+	_, err = ParseEdgeMode(rows, Config{
+		Mode:       ModeEdge,
+		ChartTypes: []string{"sankey"},
+		SelectViews: []SelectView{{
+			Columns: []ColumnSpec{{Source: "from"}, {Source: "to"}},
+		}},
+	})
+	s.ErrorContains(err, "at least 3")
+}
+
+func (s *TabularSuite) TestDispatchSelectModeEdgeForSankey() {
+	cfg := Config{
+		Mode:       ModeEdge,
+		ChartTypes: []string{"sankey"},
+		SelectViews: []SelectView{{
+			Columns: []ColumnSpec{
+				{Source: "from", AxisKey: "x"},
+				{Source: "to", AxisKey: "y"},
+				{Source: "value", AxisKey: "z"},
+			},
+		}},
+	}
+	rows := []RowReader{
+		mockRowReader{
+			cells:   map[string]string{"from": "A", "to": "B"},
+			numeric: map[string]float64{"value": 3},
+		},
+	}
+	points, err := DispatchSelectMode(rows, &cfg, func(string, string) (string, error) {
+		return "value", nil // kindFn unused for edge
+	})
+	s.Require().NoError(err)
+	s.Require().Len(points, 1)
+	s.Equal(ModeEdge, cfg.Mode)
+	s.Equal("A", points[0].XAxis)
+	s.Equal("B", points[0].YAxis)
+	s.Require().NotEmpty(points[0].Stats)
+
+	axes := EdgeAxes(cfg.SelectViews[0])
+	s.Equal([]string{"x", "y"}, []string{axes[0].Key, axes[1].Key})
+	s.Equal("from", axes[0].Label)
+	s.Equal("to", axes[1].Label)
+}
+
 func (s *TabularSuite) TestDispatchSelectModePropagatesAxisType() {
 	t := s.T()
 	cfg := Config{

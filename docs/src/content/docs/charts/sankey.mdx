@@ -19,11 +19,14 @@ Use Sankey when your data is already an edge list (funnels, pipelines, conversio
 | **ZAxis** | **Ignored** if provided — no 3D layout; weights still aggregate per `(source, target)` |
 | **Name (`n`)** | Named chart panels (existing 4D behavior) — one Sankey per unique name |
 
-Map columns with **group** (same model as heatmap):
+Map columns with **group** (same model as heatmap) or **solo `--select`**:
 
 ```bash
-# Edge list: columns from → to; numeric columns become measures
+# Group: from → to; numeric columns become measures
 vizb sankey data.csv -g from,to -p x,y -o out.html
+
+# Solo --select (no -g): at least 3 columns — source, target, value
+vizb sankey data.csv --select from,to,value -o out.html
 ```
 
 ## Dimensions
@@ -32,9 +35,23 @@ vizb sankey data.csv -g from,to -p x,y -o out.html
 
 The core mapping: **x = source**, **y = target**. Each unique node name appears once in the diagram; every row becomes (or merges into) a link.
 
+| Approach | Flags | When to use |
+|----------|--------|-------------|
+| **Group** | `-g from,to -p x,y` | Category axes via group pattern; all numeric columns become measures |
+| **Solo `--select`** | `--select from,to,value` | No grouping; **at least 3 columns**: source, target, value[, extra measures] |
+
 ```bash
+# Group path
 vizb sankey examples/csv/sankey-flows.csv -g from,to -p x,y -o out.html
+
+# Solo --select path (min 3 columns)
+vizb sankey examples/csv/sankey-flows.csv --select from,to,value -o out.html
+
+# Solo multi-measure → stat tabs
+vizb sankey examples/csv/sankey-flows.csv --select from,to,value,cost -o out.html
 ```
+
+Solo `--select` with only 1 or 2 columns is **rejected** for Sankey. Source and target are always categorical node names (even if they look numeric).
 
 Duplicate `(source, target)` pairs are summed into a single link. Multi-hop flows are just multiple edge rows that share intermediate node labels (for example `Visit → Landing → Signup → Trial → Paid`).
 
@@ -104,7 +121,6 @@ vizb data.csv -g from,to -p x,y -c bar,sankey -o out.html
 
 ## Future
 
-- **Solo `--select` edge lists** (no `-g`): map `source,target,value[,metrics]` in one flag — planned as a follow-up.
 - **`-p` aliases** on the **`vizb sankey` subcommand only**: `source`/`target` or `s`/`t` → still map to **x / y** internally; root `-p` vocabulary remains `n` / `x` / `y` / `z`.
 
 ## Next Steps

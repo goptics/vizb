@@ -107,11 +107,64 @@ func (s *SelectViewSpecSuite) TestParseSelectViewFlagRejectsArity() {
 	if _, err := ParseSelectViewFlag("region"); err == nil {
 		t.Fatal("want error for 1 column")
 	}
-	if _, err := ParseSelectViewFlag("a,b,c,d"); err == nil {
-		t.Fatal("want error for 4 columns")
+	// 4+ positional columns parse for sankey edge multi-measure; non-edge rejects later.
+	view, err := ParseSelectViewFlag("a,b,c,d")
+	if err != nil {
+		t.Fatalf("4-column positional select should parse: %v", err)
+	}
+	if len(view.Columns) != 4 {
+		t.Fatalf("want 4 columns, got %d", len(view.Columns))
 	}
 	if _, err := ParseSelectViewFlag(""); err == nil {
 		t.Fatal("want error for empty")
+	}
+}
+
+func (s *SelectViewSpecSuite) TestValidateSankeySoloSelect() {
+	t := s.T()
+	if err := ValidateSankeySoloSelect(Config{}); err != nil {
+		t.Fatalf("empty cfg: %v", err)
+	}
+	if err := ValidateSankeySoloSelect(Config{ChartTypes: []string{"sankey"}, Group: []string{"from"}}); err != nil {
+		t.Fatalf("grouped: %v", err)
+	}
+	err := ValidateSankeySoloSelect(Config{
+		ChartTypes:  []string{"sankey"},
+		SelectViews: []SelectView{{Columns: []ColumnSpec{{Source: "a"}, {Source: "b"}}}},
+	})
+	if err == nil {
+		t.Fatal("want error for 2-col sankey select")
+	}
+	if err := ValidateSankeySoloSelect(Config{
+		ChartTypes: []string{"sankey"},
+		SelectViews: []SelectView{{Columns: []ColumnSpec{
+			{Source: "from"}, {Source: "to"}, {Source: "value"},
+		}}},
+	}); err != nil {
+		t.Fatalf("3-col: %v", err)
+	}
+	if err := ValidateSankeySoloSelect(Config{
+		ChartTypes: []string{"sankey"},
+		SelectViews: []SelectView{
+			{Columns: []ColumnSpec{{Source: "a"}, {Source: "b"}, {Source: "c"}}},
+			{Columns: []ColumnSpec{{Source: "a"}, {Source: "b"}, {Source: "d"}}},
+		},
+	}); err == nil {
+		t.Fatal("want error for multi --select on sankey")
+	}
+}
+
+func (s *SelectViewSpecSuite) TestResolveModeEdgeForSankey() {
+	t := s.T()
+	cfg := Config{
+		ChartTypes:  []string{"sankey"},
+		SelectViews: []SelectView{{Columns: []ColumnSpec{{Source: "a"}, {Source: "b"}, {Source: "c"}}}},
+	}
+	if m := ResolveMode(cfg); m != ModeEdge {
+		t.Fatalf("sankey solo select mode = %v, want ModeEdge", m)
+	}
+	if !ModeEdge.IsEdge() || !ModeEdge.IsSelectAxis() {
+		t.Fatal("ModeEdge should report edge and select-axis")
 	}
 }
 
@@ -362,7 +415,7 @@ func (s *SelectViewSpecSuite) TestModeIsGrouped() {
 	if !ModeGrouped.IsGrouped() {
 		t.Fatal("ModeGrouped should report grouped")
 	}
-	for _, m := range []Mode{ModeAuto, ModeValue, ModeMixed, ModeMultiStat} {
+	for _, m := range []Mode{ModeAuto, ModeValue, ModeMixed, ModeMultiStat, ModeEdge} {
 		if m.IsGrouped() {
 			t.Fatalf("mode %v should not be grouped", m)
 		}
