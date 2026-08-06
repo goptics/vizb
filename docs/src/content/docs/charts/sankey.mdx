@@ -11,47 +11,52 @@ Use Sankey when your data is already an edge list (funnels, pipelines, conversio
 
 ## How vizb builds it
 
-| Dimension | Role |
-|-----------|------|
-| **XAxis** | **Source** node of each flow edge |
-| **YAxis** | **Target** node of each flow edge |
-| **Measure** | Link weight (flow value); duplicate edges **sum** |
-| **ZAxis** | **Ignored** if provided — no 3D layout; weights still aggregate per `(source, target)` |
+Every edge has the same three roles, in this order:
+
+| Order | Role | Vizb field | Example column (`sankey-flows.csv`) |
+|------:|------|------------|-------------------------------------|
+| 1 | **source** | `x` | `from` |
+| 2 | **target** | `y` | `to` |
+| 3+ | **value** (link weight) | measure / stats | `value`, optional `cost`, … |
+
+| Extra | Role |
+|-------|------|
+| **ZAxis** | **Ignored** if provided — no 3D; weights still aggregate per `(source, target)` |
 | **Name (`n`)** | Named chart panels (existing 4D behavior) — one Sankey per unique name |
 
-Map columns with **group** (same model as heatmap) or **solo `--select`**:
+**Group** and **solo `--select`** use that same order. Column *names* come from your file; roles are always source → target → value.
 
 ```bash
-# Group: from → to; numeric columns become measures
+# Group: list source then target under -g; -p x,y assigns those roles
 vizb sankey data.csv -g from,to -p x,y -o out.html
 
-# Solo --select (no -g): at least 3 columns — source, target, value
+# Solo --select: same order — source, target, value (min 3 columns; no -g)
 vizb sankey data.csv --select from,to,value -o out.html
 ```
 
 ## Dimensions
 
-### 2D edge list (source + target)
+### 2D edge list (source → target)
 
-The core mapping: **x = source**, **y = target**. Each unique node name appears once in the diagram; every row becomes (or merges into) a link.
+**x = source**, **y = target**, measure = flow weight. Each unique node name appears once; every row becomes (or merges into) a link.
 
-| Approach | Flags | When to use |
-|----------|--------|-------------|
-| **Group** | `-g from,to -p x,y` | Category axes via group pattern; all numeric columns become measures |
-| **Solo `--select`** | `--select from,to,value` | No grouping; **at least 3 columns**: source, target, value[, extra measures] |
+| Approach | Flags (same column order) | Notes |
+|----------|---------------------------|--------|
+| **Group** | `-g from,to -p x,y` | source/target as group axes; remaining numeric columns become measures |
+| **Solo `--select`** | `--select from,to,value` | No `-g`; **≥3 columns** in order source, target, value[, extra measures] |
 
 ```bash
-# Group path
+# Group path (source=from, target=to)
 vizb sankey examples/csv/sankey-flows.csv -g from,to -p x,y -o out.html
 
-# Solo --select path (min 3 columns)
+# Solo --select path (same roles, same order: source, target, value)
 vizb sankey examples/csv/sankey-flows.csv --select from,to,value -o out.html
 
-# Solo multi-measure → stat tabs
+# Solo multi-measure → stat tabs (source, target, then measures)
 vizb sankey examples/csv/sankey-flows.csv --select from,to,value,cost -o out.html
 ```
 
-Solo `--select` with only 1 or 2 columns is **rejected** for Sankey. Source and target are always categorical node names (even if they look numeric).
+Solo `--select` with only 1 or 2 columns is **rejected** for Sankey. The first two columns are always treated as node names (even if they look numeric).
 
 Duplicate `(source, target)` pairs are summed into a single link. Multi-hop flows are just multiple edge rows that share intermediate node labels (for example `Visit → Landing → Signup → Trial → Paid`).
 

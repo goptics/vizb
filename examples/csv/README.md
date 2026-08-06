@@ -153,14 +153,22 @@ CI id: `00-concurrency-frameworks` on the **comparisons** dashboard (see `.githu
 
 **Shape:** Multi-hop **edge list** — `name` (optional panel key), `from` (source), `to` (target), `value` and `cost` (positive flow measures). 14 edges across two funnels (`web`, `app`).
 
-**What vizb does:** Map **x = source**, **y = target** with `-g from,to -p x,y` **or** solo `--select from,to,value` (min 3 columns, no group). Sankey is **opt-in** (`vizb sankey` or `-c sankey`). Duplicate edges sum; multi-hop paths are multiple rows sharing intermediate node names. Optional `name` → `-g name,from,to -p n,x,y` for named panels. Two numerics → measure tabs (one Sankey at a time). **z is ignored** if provided.
+**What vizb does:** Same edge roles always — **source → target → value** — via group **or** solo select (order must match):
+
+| Role | Group | Solo `--select` |
+|------|--------|-----------------|
+| source | `-g from,to -p x,y` → `from` is `x` | 1st column (`from`) |
+| target | `to` is `y` | 2nd column (`to`) |
+| value | other numeric cols (e.g. `value`, `cost`) | 3rd+ columns (`value`, optional `cost`) |
+
+Sankey is **opt-in** (`vizb sankey` or `-c sankey`). Duplicate edges sum; multi-hop paths share intermediate node names. Optional `name` → `-g name,from,to -p n,x,y`. **z is ignored** if provided.
 
 **Good for:** Funnel / pipeline flows, multi-hop conversion paths, multi-measure and named-panel demos.
 
 | Goal | Command |
 |------|---------|
 | Basic multi-hop Sankey | `vizb sankey examples/csv/sankey-flows.csv -g from,to -p x,y` |
-| Solo `--select` (no group) | `vizb sankey examples/csv/sankey-flows.csv --select from,to,value` |
+| Solo `--select` (same order: source, target, value) | `vizb sankey examples/csv/sankey-flows.csv --select from,to,value` |
 | Solo multi-measure | `vizb sankey examples/csv/sankey-flows.csv --select from,to,value,cost` |
 | Named panels (`web` / `app`) | `vizb sankey examples/csv/sankey-flows.csv -g name,from,to -p n,x,y` |
 | Root with opt-in renderer | `vizb examples/csv/sankey-flows.csv -g from,to -p x,y -c sankey` |
