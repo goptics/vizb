@@ -77,9 +77,13 @@ users do not install Node just to compile Vizb.
 Run deploy-example workflows locally with `task act:install` and Docker:
 
 ```bash
+task build:cli                         # optional if bin/vizb already exists
 task act:examples -- --only tabular-data,go
 task act:examples -- --reuse --no-open
 ```
+
+`act:examples` reuses `./bin/vizb` when present; otherwise it runs `task build:cli`
+(so UI changes are re-embedded). It never plain-`go build`s over a local binary.
 
 ## Layout
 
