@@ -115,7 +115,7 @@ func (s *ProgressSuite) TestUpdateProgress() {
 	s.Len(mockBar.descriptions, 1)
 	s.Contains(mockBar.descriptions[0], "BenchmarkExample")
 	s.Contains(mockBar.descriptions[0], "5 records")
-	s.Contains(mockBar.descriptions[0], "Processing Data")
+	s.Equal("BenchmarkExample · 5 records", mockBar.descriptions[0])
 }
 
 func (s *ProgressSuite) TestProcessLineWithJSON() {

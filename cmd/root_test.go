@@ -50,7 +50,7 @@ func (s *RootSuite) TestRunBenchmarkValidFileInput() {
 		`BenchmarkTest-8    1000000    1234 ns/op    1000 B/op    10 allocs/op`)
 	out := filepath.Join(dir, "out.html")
 
-	outStr := testutil.CaptureStdout(func() {
+	outStr := testutil.CaptureStderr(func() {
 		rootCmd.SetArgs([]string{"-o", out, input})
 		s.Require().NoError(rootCmd.Execute())
 	})
@@ -81,15 +81,12 @@ func (s *RootSuite) TestRunBenchmarkGlobalSortApplied() {
 	out := filepath.Join(dir, "out.json")
 	rootCharts = nil
 
-	var outStr string
 	errStr := testutil.CaptureStderr(func() {
-		outStr = testutil.CaptureStdout(func() {
-			rootCmd.SetArgs([]string{"-o", out, "-c", "bar", "-c", "line", "-s", "desc", input})
-			s.Require().NoError(rootCmd.Execute())
-		})
+		rootCmd.SetArgs([]string{"-o", out, "-c", "bar", "-c", "line", "-s", "desc", input})
+		s.Require().NoError(rootCmd.Execute())
 	})
 
-	s.Contains(outStr, "Generated")
+	s.Contains(errStr, "Generated")
 	s.Contains(errStr, "--sort is deprecated")
 
 	ds := testutil.ReadDataset(s.T(), out)
@@ -129,7 +126,7 @@ func (s *RootSuite) TestRunBenchmarkStdinPipe() {
 	dir := s.T().TempDir()
 	out := filepath.Join(dir, "out.json")
 
-	outStr := testutil.CaptureStdout(func() {
+	outStr := testutil.CaptureStderr(func() {
 		rootCmd.SetArgs([]string{"-o", out})
 		s.Require().NoError(rootCmd.Execute())
 	})
@@ -272,17 +269,14 @@ func (s *RootSuite) TestRunBenchmarkSortDeprecationWarning() {
 		`BenchmarkTest-8    1000000    1234 ns/op    1000 B/op    10 allocs/op`)
 	out := filepath.Join(dir, "out.json")
 
-	var outStr string
 	errStr := testutil.CaptureStderr(func() {
-		outStr = testutil.CaptureStdout(func() {
-			rootCmd.SetArgs([]string{"-o", out, "-s", "asc", input})
-			s.Require().NoError(rootCmd.Execute())
-		})
+		rootCmd.SetArgs([]string{"-o", out, "-s", "asc", input})
+		s.Require().NoError(rootCmd.Execute())
 	})
 
 	s.Contains(errStr, "--sort is deprecated")
 	s.Contains(errStr, "--chart")
-	s.Contains(outStr, "Generated")
+	s.Contains(errStr, "Generated")
 	s.FileExists(out)
 }
 
@@ -292,17 +286,14 @@ func (s *RootSuite) TestRunBenchmarkShowLabelsDeprecationWarning() {
 		`BenchmarkTest-8    1000000    1234 ns/op    1000 B/op    10 allocs/op`)
 	out := filepath.Join(dir, "out.json")
 
-	var outStr string
 	errStr := testutil.CaptureStderr(func() {
-		outStr = testutil.CaptureStdout(func() {
-			rootCmd.SetArgs([]string{"-o", out, "-l", input})
-			s.Require().NoError(rootCmd.Execute())
-		})
+		rootCmd.SetArgs([]string{"-o", out, "-l", input})
+		s.Require().NoError(rootCmd.Execute())
 	})
 
 	s.Contains(errStr, "--show-labels is deprecated")
 	s.Contains(errStr, "--chart")
-	s.Contains(outStr, "Generated")
+	s.Contains(errStr, "Generated")
 	s.FileExists(out)
 }
 
@@ -312,16 +303,13 @@ func (s *RootSuite) TestRunBenchmarkNoDeprecationWarningWhenFlagsUnset() {
 		`BenchmarkTest-8    1000000    1234 ns/op    1000 B/op    10 allocs/op`)
 	out := filepath.Join(dir, "out.json")
 
-	var outStr string
 	errStr := testutil.CaptureStderr(func() {
-		outStr = testutil.CaptureStdout(func() {
-			rootCmd.SetArgs([]string{"-o", out, input})
-			s.Require().NoError(rootCmd.Execute())
-		})
+		rootCmd.SetArgs([]string{"-o", out, input})
+		s.Require().NoError(rootCmd.Execute())
 	})
 
 	s.NotContains(errStr, "deprecated")
-	s.Contains(outStr, "Generated")
+	s.Contains(errStr, "Generated")
 	s.FileExists(out)
 }
 
@@ -377,13 +365,13 @@ func (s *RootAutoGroupSuite) TestCSVAutoGroupAggregatesDuplicateKeys() {
 	input := s.writeCSV(dir, "region,sells\nWest,10\nWest,20\nEast,5\n")
 	out := filepath.Join(dir, "out.json")
 
-	outStr := testutil.CaptureStdout(func() {
+	outStr := testutil.CaptureStderr(func() {
 		rootCmd.SetArgs([]string{"-c", "bar", "-o", out, input})
 		s.Require().NoError(rootCmd.Execute())
 	})
 
 	s.Contains(outStr, "Auto-grouped by column")
-	s.Contains(outStr, "Aggregating")
+	s.Contains(outStr, "Aggregated")
 	ds := testutil.ReadDataset(s.T(), out)
 	s.False(ds.PreserveRows)
 	s.Len(ds.Data, 2)
@@ -401,16 +389,16 @@ func (s *RootAutoGroupSuite) TestCSVAutoGroupsXAxisNoFlags() {
 	input := s.writeCSV(dir, "region,sells\nWest,10\nEast,20\nNorth,30\n")
 	out := filepath.Join(dir, "out.json")
 
-	outStr := testutil.CaptureStdout(func() {
+	outStr := testutil.CaptureStderr(func() {
 		rootCmd.SetArgs([]string{"-c", "bar", "-o", out, input})
 		s.Require().NoError(rootCmd.Execute())
 	})
 
 	s.FileExists(out)
 	s.Contains(outStr, "Auto-grouped by column")
-	s.Contains(outStr, "Aggregating 3 rows")
-	s.Contains(outStr, "all unique (no duplicates to sum)")
-	s.NotContains(outStr, "Aggregated into")
+	s.Contains(outStr, "Aggregated")
+	s.Contains(outStr, "unique")
+	s.NotContains(outStr, "Aggregating ")
 	ds := testutil.ReadDataset(s.T(), out)
 	// Auto-group picked the region column → every data point carries its
 	// region value on xAxis. (Axis.Label stays empty without {label} slots.)
@@ -434,16 +422,13 @@ func (s *RootAutoGroupSuite) TestCSVAutoGroup3DPicksSingleColumnAndWarns() {
 	input := s.writeCSV(dir, csv)
 	out := filepath.Join(dir, "out.json")
 
-	var stdout string
 	stderr := testutil.CaptureStderr(func() {
-		stdout = testutil.CaptureStdout(func() {
-			rootCmd.SetArgs([]string{"-c", "bar", "--chart", "bar:3d", "-o", out, input})
-			s.Require().NoError(rootCmd.Execute())
-		})
+		rootCmd.SetArgs([]string{"-c", "bar", "--chart", "bar:3d", "-o", out, input})
+		s.Require().NoError(rootCmd.Execute())
 	})
 
 	s.FileExists(out)
-	s.Contains(stdout, "Auto-grouped by column")
+	s.Contains(stderr, "Auto-grouped by column")
 	s.Contains(stderr, `flag "3d" skipped`)
 	s.Contains(stderr, "requires axis \"y\"")
 
@@ -483,7 +468,7 @@ func (s *RootAutoGroupSuite) TestExplicitGroupOverridesAutoGroup() {
 	input := s.writeCSV(dir, "region,product,sells\nWest,A,10\nEast,B,20\n")
 	out := filepath.Join(dir, "out.json")
 
-	outStr := testutil.CaptureStdout(func() {
+	outStr := testutil.CaptureStderr(func() {
 		rootCmd.SetArgs([]string{"-c", "bar", "-g", "product", "-o", out, input})
 		s.Require().NoError(rootCmd.Execute())
 	})
@@ -505,7 +490,7 @@ func (s *RootAutoGroupSuite) TestBenchmarkParserUnchangedNoGroup() {
 		`BenchmarkTest-8    1000000    1234 ns/op    1000 B/op    10 allocs/op`)
 	out := filepath.Join(dir, "out.json")
 
-	outStr := testutil.CaptureStdout(func() {
+	outStr := testutil.CaptureStderr(func() {
 		rootCmd.SetArgs([]string{"-c", "bar", "-o", out, input})
 		s.Require().NoError(rootCmd.Execute())
 	})

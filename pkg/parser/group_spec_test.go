@@ -439,7 +439,7 @@ func (s *GroupingHelpersSuite) TestEffectiveLabelSeparators() {
 
 func (s *GroupingHelpersSuite) TestLogAutoGroupEmptyIsNoOp() {
 	t := s.T()
-	out := testutil.CaptureStdout(func() { LogAutoGroup(nil) })
+	out := testutil.CaptureStderr(func() { LogAutoGroup(nil) })
 	if out != "" {
 		t.Fatalf("expected no output, got %q", out)
 	}
@@ -447,11 +447,11 @@ func (s *GroupingHelpersSuite) TestLogAutoGroupEmptyIsNoOp() {
 
 func (s *GroupingHelpersSuite) TestLogAutoValueBranches() {
 	t := s.T()
-	out := testutil.CaptureStdout(func() { LogAutoValue([]string{"x", "y"}, "") })
+	out := testutil.CaptureStderr(func() { LogAutoValue([]string{"x", "y"}, "") })
 	if !strings.Contains(out, "2D") || !strings.Contains(out, "x, y") {
 		t.Fatalf("unexpected 2D log: %q", out)
 	}
-	out = testutil.CaptureStdout(func() { LogAutoValue([]string{"x", "y", "z"}, "m") })
+	out = testutil.CaptureStderr(func() { LogAutoValue([]string{"x", "y", "z"}, "m") })
 	if !strings.Contains(out, "3D") || !strings.Contains(out, "metric: m") {
 		t.Fatalf("unexpected 3D log: %q", out)
 	}
@@ -466,7 +466,7 @@ func (s *AutoDetectTabularConfigSuite) TestAutoGroupPath() {
 	headers := []string{"region", "sells"}
 	rows := [][]string{{"West", "10"}, {"East", "20"}}
 
-	out := testutil.CaptureStdout(func() {
+	out := testutil.CaptureStderr(func() {
 		got, err := AutoDetectTabularConfig(cfg, headers, rows)
 		s.Require().NoError(err)
 		s.Equal([]string{"region"}, got.Group)
@@ -480,7 +480,7 @@ func (s *AutoDetectTabularConfigSuite) TestAutoValue2D() {
 	headers := []string{"price", "latency"}
 	rows := [][]string{{"10", "5"}, {"20", "7"}}
 
-	out := testutil.CaptureStdout(func() {
+	out := testutil.CaptureStderr(func() {
 		got, err := AutoDetectTabularConfig(cfg, headers, rows)
 		s.Require().NoError(err)
 		s.Len(got.Axes, 2)
@@ -495,7 +495,7 @@ func (s *AutoDetectTabularConfigSuite) TestAutoValue3DWithMetric() {
 	headers := []string{"a", "b", "c", "d"}
 	rows := [][]string{{"1", "2", "3", "4"}}
 
-	out := testutil.CaptureStdout(func() {
+	out := testutil.CaptureStderr(func() {
 		got, err := AutoDetectTabularConfig(cfg, headers, rows)
 		s.Require().NoError(err)
 		s.Len(got.Axes, 3)

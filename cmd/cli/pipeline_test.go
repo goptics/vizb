@@ -2,7 +2,6 @@ package cli
 
 import (
 	"encoding/json"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -437,23 +436,28 @@ func (s *PipelineSuite) TestRunLinearAutoParser() {
 
 func (s *PipelineSuite) TestLogAggregationResultCollapsesDuplicates() {
 	cfg := parser.Config{GroupPattern: "x", Group: []string{"region"}}
-	out := testutil.CaptureStdout(func() {
+	out := testutil.CaptureStderr(func() {
 		logAggregationResult(50000, 1200, cfg)
 	})
-	s.Contains(out, "Aggregating 50000 rows")
-	s.Contains(out, "Aggregated into 1200 grouped data points")
-	s.NotContains(out, "all unique")
+	s.Contains(out, "Aggregated")
+	s.Contains(out, "50000")
+	s.Contains(out, "1200")
+	s.Contains(out, "into")
+	s.NotContains(out, "unique")
+	s.NotContains(out, "Aggregating ")
 }
 
 func (s *PipelineSuite) TestLogAggregationResultAllUnique() {
 	cfg := parser.Config{GroupPattern: "x", Group: []string{"region"}}
-	out := testutil.CaptureStdout(func() {
+	out := testutil.CaptureStderr(func() {
 		logAggregationResult(3, 3, cfg)
 	})
-	s.Contains(out, "Aggregating 3 rows")
+	s.Contains(out, "Aggregated")
+	s.Contains(out, "3")
+	s.Contains(out, "unique")
 	s.Contains(out, "by column: region")
-	s.Contains(out, "3 grouped rows — all unique (no duplicates to sum)")
-	s.NotContains(out, "Aggregated into")
+	s.NotContains(out, "into")
+	s.NotContains(out, "Aggregating ")
 }
 
 func (s *PipelineSuite) TestPrepareDataAutoValuePreservesMetric() {
@@ -472,14 +476,14 @@ func (s *PipelineSuite) TestPrepareDataAutoGroupSkipsCollapseLogWhenAllUnique() 
 	csvFile := s.writeFile("unique.csv", "region,sells\nWest,10\nEast,20\nNorth,30\n")
 	cfg := parser.Config{AutoGroup: true, GroupPattern: "x", ChartTypes: []string{"bar"}}
 
-	out := testutil.CaptureStdout(func() {
+	out := testutil.CaptureStderr(func() {
 		results, effectiveCfg, _ := prepareData(csvFile, "csv", cfg)
 		s.Equal([]string{"region"}, effectiveCfg.Group)
 		s.Len(results, 3)
 	})
-	s.Contains(out, "Aggregating 3 rows")
-	s.Contains(out, "all unique (no duplicates to sum)")
-	s.NotContains(out, "Aggregated into")
+	s.Contains(out, "Aggregated")
+	s.Contains(out, "unique")
+	s.NotContains(out, "Aggregating ")
 }
 
 func (s *PipelineSuite) TestFormatAggregationGroup() {
@@ -531,18 +535,12 @@ func (s *PipelineSuite) TestPrepareDataAutoGroupAggregatesCSV() {
 	csvFile := s.writeFile("auto-grouped.csv", "region,sells\nWest,10\nWest,20\nEast,5\n")
 	cfg := parser.Config{AutoGroup: true, GroupPattern: "x", ChartTypes: []string{"bar"}}
 
-	r, w, err := os.Pipe()
-	s.Require().NoError(err)
-	oldStdout := os.Stdout
-	os.Stdout = w
-	defer func() { os.Stdout = oldStdout }()
-
-	results, effectiveCfg, _ := prepareData(csvFile, "csv", cfg)
-	w.Close()
-
-	output, err := io.ReadAll(r)
-	s.Require().NoError(err)
-	s.Contains(string(output), "Aggregating")
+	var results []shared.DataPoint
+	var effectiveCfg parser.Config
+	out := testutil.CaptureStderr(func() {
+		results, effectiveCfg, _ = prepareData(csvFile, "csv", cfg)
+	})
+	s.Contains(out, "Aggregated")
 	s.Equal([]string{"region"}, effectiveCfg.Group)
 
 	s.Len(results, 2)
@@ -559,18 +557,11 @@ func (s *PipelineSuite) TestPrepareDataAggregatesCSV() {
 	csvFile := s.writeFile("grouped.csv", "name,sells,date\nalpha,10,2024-01\nalpha,20,2024-01\nbeta,5,2025-02\n")
 	cfg := parser.Config{GroupPattern: "name,x", Group: []string{"name", "date"}}
 
-	r, w, err := os.Pipe()
-	s.Require().NoError(err)
-	oldStdout := os.Stdout
-	os.Stdout = w
-	defer func() { os.Stdout = oldStdout }()
-
-	results, _, _ := prepareData(csvFile, "csv", cfg)
-	w.Close()
-
-	output, err := io.ReadAll(r)
-	s.Require().NoError(err)
-	s.Contains(string(output), "by columns: name, date (name: name, x: date)")
+	var results []shared.DataPoint
+	out := testutil.CaptureStderr(func() {
+		results, _, _ = prepareData(csvFile, "csv", cfg)
+	})
+	s.Contains(out, "by columns: name, date (name: name, x: date)")
 
 	s.Len(results, 2)
 	s.Equal("alpha", results[0].Name)

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/goptics/vizb/internal/flags"
+	"github.com/goptics/vizb/pkg/cliout"
 	"github.com/goptics/vizb/pkg/parser"
 	"github.com/goptics/vizb/shared"
 	"github.com/goptics/vizb/shared/utils"
@@ -184,7 +185,7 @@ func (b *FlagBag) applySoftSkipEntries(f flags.Flag) {
 		}
 		if err := f.SoftValidate(v); err != nil {
 			msg := fmt.Sprintf("Warning: Invalid %s '%v'. Reason: %s. Skipping", f.EffectiveLabel(), raw, err.Error())
-			shared.PrintWarning(msg)
+			cliout.Warn(msg)
 			continue
 		}
 		kept = append(kept, v)

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/goptics/vizb/pkg/style"
 	"github.com/goptics/vizb/shared"
 )
 
@@ -74,13 +73,18 @@ func NewDataProgressManager(bar ProgressBar) *DataProgressManager {
 }
 
 func (m *DataProgressManager) updateProgress() {
-	desc := fmt.Sprintf(
-		"Processing Data [%s] (%d records)",
-		m.currentDataName,
-		m.dataCount,
-	)
-
-	m.bar.Describe(style.Info.Render(desc))
+	// Detail only — the spinner rotates its own activity phrase.
+	// No trailing ellipsis; keep a tight "name · n records" suffix.
+	switch {
+	case m.currentDataName != "" && m.dataCount > 0:
+		m.bar.Describe(fmt.Sprintf("%s · %d records", m.currentDataName, m.dataCount))
+	case m.currentDataName != "":
+		m.bar.Describe(m.currentDataName)
+	case m.dataCount > 0:
+		m.bar.Describe(fmt.Sprintf("%d records", m.dataCount))
+	default:
+		m.bar.Describe("")
+	}
 }
 
 func (m *DataProgressManager) Finish() error {

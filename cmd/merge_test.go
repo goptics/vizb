@@ -102,12 +102,12 @@ func (s *MergeSuite) TestMergeDefaultTempOutput() {
 	file1 := filepath.Join(dir, "bench1.json")
 	testutil.WriteJSON(s.T(), file1, shared.Dataset{Name: "Bench1", Data: []shared.DataPoint{{Name: "T1"}}})
 
-	outStr := testutil.CaptureStdout(func() {
+	outStr := testutil.CaptureStderr(func() {
 		rootCmd.SetArgs([]string{"merge", file1})
 		s.Require().NoError(rootCmd.Execute())
 	})
 
-	s.Contains(outStr, "Generated merged JSON")
+	s.Contains(outStr, "Generated merged JSON successfully")
 }
 
 func (s *MergeSuite) TestMergeOutputWithoutExtension() {
@@ -145,7 +145,7 @@ func (s *MergeSuite) TestMergeSkipsInaccessiblePath() {
 		s.Require().NoError(rootCmd.Execute())
 	})
 
-	s.Contains(stderr, "Warning")
+	s.Contains(stderr, "cannot access")
 	s.Contains(stderr, "cannot access")
 	parsed := s.readDatasets(out)
 	s.Require().Len(parsed, 1)

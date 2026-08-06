@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/goptics/vizb/pkg/cliout"
 	"github.com/goptics/vizb/shared"
 )
 
@@ -100,7 +101,7 @@ func (r ValidationRule) printWarning(value any, defaultValue any, err error) {
 		errMsg += fmt.Sprintf(" Reason: %s.", err.Error())
 	}
 	errMsg += fmt.Sprintf(" Using default '%v'", defaultValue)
-	shared.PrintWarning(errMsg)
+	cliout.Warn(errMsg)
 }
 
 // IsBenchJSONFile determines if the given file path contains JSON benchmark data.
