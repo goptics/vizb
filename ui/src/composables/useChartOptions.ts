@@ -31,7 +31,8 @@ export function useChartOptions(
   symbol: Ref<string | undefined>,
   symbolSize: Ref<number | undefined>,
   smooth: Ref<boolean>,
-  horizontal: Ref<boolean>
+  horizontal: Ref<boolean>,
+  borderRadius: Ref<number | undefined>
 ) {
   const config: BaseChartConfig = {
     chartData,
@@ -49,11 +50,11 @@ export function useChartOptions(
     symbolSize,
     smooth,
     horizontal,
+    borderRadius,
     arrangementTarget,
     chartAxes,
     chartType,
   }
-
   const barOptions = useBarChartOptions(config)
   const lineOptions = useLineChartOptions(config)
   const pieOptions = usePieChartOptions(config)
