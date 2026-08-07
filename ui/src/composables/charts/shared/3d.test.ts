@@ -15,6 +15,7 @@ import {
   createValue3DTooltipFormatter,
   createZLegendConfig,
   resolve3DVisualMap,
+  resolve3DZAxisType,
   symbolSizeFor3DGrid,
   symbolSizeForContinuous3D,
 } from './3d'
@@ -626,6 +627,25 @@ describe('maxFrom3DData / seriesHasMetricDimension edges', () => {
     expect(maxFrom3DData([])).toBe(1)
     expect(maxFrom3DData([{ data: [{ value: [0, 0] }] }], 2)).toBe(1)
     expect(resolve3DVisualMap(true, [{ data: [] }], styling)).toMatchObject({ max: 1 })
+  })
+})
+
+describe('resolve3DZAxisType', () => {
+  it('keeps log when metric heights are positive', () => {
+    expect(
+      resolve3DZAxisType('log', [
+        { name: 'a', data: [{ value: [0, 0, 0.2] }, { value: [1, 0, 3] }] },
+      ])
+    ).toBe('log')
+  })
+
+  it('falls back to value for empty or non-positive metrics', () => {
+    expect(resolve3DZAxisType('log', [])).toBe('value')
+    expect(
+      resolve3DZAxisType('log', [
+        { name: 'a', data: [{ value: [0, 0, 0] }, { value: [1, 0, -1] }] },
+      ])
+    ).toBe('value')
   })
 })
 

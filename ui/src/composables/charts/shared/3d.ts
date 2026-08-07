@@ -11,6 +11,7 @@ import {
   getTooltipTheme,
   type ChartStyling,
 } from './chartConfig'
+import { resolveLogScale } from './common'
 
 /** Blue-to-red gradient for value-mode 3D visualMap (metric height). */
 export const VALUE_3D_COLOR_RANGE = [
@@ -41,6 +42,20 @@ export function maxFrom3DData(series: { data: { value: number[] }[] }[], dimensi
     }
   }
   return max || 1
+}
+
+/** Metric height on grouped/value 3D points is value[2] (not zValues category labels). */
+export function* series3DMetricValues(series: Series3DData[]): Generator<number | null> {
+  for (const s of series) {
+    for (const item of s.data) {
+      yield item.value[2] ?? null
+    }
+  }
+}
+
+/** Log z-axis only when metric heights have a positive domain. */
+export function resolve3DZAxisType(scale: ScaleType, series: Series3DData[]): 'log' | 'value' {
+  return resolveLogScale(scale, series3DMetricValues(series)) === 'log' ? 'log' : 'value'
 }
 
 export function create3DVisualMap(max: number, styling: ChartStyling, dimension: 1 | 2 | 3 = 2) {

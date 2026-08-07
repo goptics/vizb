@@ -18,6 +18,7 @@ import {
   buildContinuous3DOptions,
   makeContinuous3DParams,
   valuePoints3DToSeries,
+  resolve3DZAxisType,
   type Continuous3DContext,
 } from './shared'
 import { buildMixedAxes3DOptions } from './shared/mixedMode'
@@ -35,7 +36,7 @@ export function useBar3DChartOptions(config: BaseChartConfig) {
     const defaultColor = getDefaultThemeColor()
     const axisCommon = makeAxis3DCommon(styling)
     const zAxis3DBase = {
-      ...(scale?.value === 'log' ? { type: 'log' as const } : { type: 'value' as const }),
+      type: resolve3DZAxisType(scale?.value ?? 'linear', render.barSeries),
       ...axisCommon,
     }
     if (render.mode === 'mixed') {

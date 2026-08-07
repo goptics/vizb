@@ -19,6 +19,7 @@ import {
   getTooltipTheme,
   makeContinuous3DParams,
   valuePoints3DToSeries,
+  resolve3DZAxisType,
   type Continuous3DContext,
 } from './shared'
 import { resolve3DSymbolProps } from './shared/seriesConfig'
@@ -48,7 +49,7 @@ export function useScatter3DChartOptions(config: BaseChartConfig) {
     const defaultColor = getDefaultThemeColor()
     const axisCommon = makeAxis3DCommon(styling)
     const zAxis3DBase = {
-      ...(scale?.value === 'log' ? { type: 'log' as const } : { type: 'value' as const }),
+      type: resolve3DZAxisType(scale?.value ?? 'linear', render.lineSeries),
       ...axisCommon,
     }
     const isValueMode = render.mode === 'value'
