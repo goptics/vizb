@@ -36,33 +36,27 @@ describe('createAxisConfig (y-axis range)', () => {
   })
 
   it('fits y-axis to data range for line/scatter (scale: true)', () => {
-    const { yAxis } = createAxisConfig(
-      styling,
-      ['a', 'b'],
-      'linear',
-      undefined,
-      undefined,
-      false,
-      true
-    )
+    const { yAxis } = createAxisConfig(styling, ['a', 'b'], 'linear', undefined, false, true)
     expect(yAxis.scale).toBe(true)
   })
 
-  it('sets log min from data instead of scale when log scale is active', () => {
-    const { yAxis } = createAxisConfig(styling, ['a', 'b'], 'log', 2500, undefined, false, true)
+  it('uses dataMin/dataMax for log scale', () => {
+    const { yAxis } = createAxisConfig(styling, ['a', 'b'], 'log', undefined, false, true)
     expect(yAxis.scale).toBeUndefined()
-    expect(yAxis.min).toBe(1000)
+    expect(yAxis.type).toBe('log')
+    expect(yAxis.min).toBe('dataMin')
+    expect(yAxis.max).toBe('dataMax')
   })
 })
 
 describe('createValueAxisConfig (y-axis range)', () => {
   it('fits y-axis to data for value-mode line/scatter', () => {
-    const { yAxis } = createValueAxisConfig(styling, 'x', 'y', 'linear', undefined, true)
+    const { yAxis } = createValueAxisConfig(styling, 'x', 'y', 'linear', true)
     expect(yAxis.scale).toBe(true)
   })
 
   it('keeps zero baseline for value-mode bar charts', () => {
-    const { yAxis } = createValueAxisConfig(styling, 'x', 'y', 'linear', undefined, false)
+    const { yAxis } = createValueAxisConfig(styling, 'x', 'y', 'linear', false)
     expect(yAxis.scale).toBeUndefined()
   })
 })
@@ -344,9 +338,11 @@ describe('createHorizontalDataZoomConfig', () => {
 })
 
 describe('createValueAxisConfig log min', () => {
-  it('sets log minimum from minValue', () => {
-    const axes = createValueAxisConfig(styling, 'x', 'y', 'log', 25)
-    expect(axes.yAxis.min).toBe(10)
+  it('uses dataMin/dataMax for log scale', () => {
+    const axes = createValueAxisConfig(styling, 'x', 'y', 'log')
+    expect(axes.yAxis.type).toBe('log')
+    expect(axes.yAxis.min).toBe('dataMin')
+    expect(axes.yAxis.max).toBe('dataMax')
   })
 })
 
@@ -364,11 +360,12 @@ describe('createValueModeTooltip', () => {
 })
 
 describe('createHorizontalAxisConfig log + large', () => {
-  it('sets log min and auto interval for large categories', async () => {
+  it('uses dataMin/dataMax for log and auto interval for large categories', async () => {
     const { createHorizontalAxisConfig } = await import('./chartConfig')
     const many = Array.from({ length: 60 }, (_, i) => `c${i}`)
-    const axes = createHorizontalAxisConfig(styling, many, 'log', 50, 'cat', true)
-    expect(axes.xAxis.min).toBe(10)
+    const axes = createHorizontalAxisConfig(styling, many, 'log', 'cat', true)
+    expect(axes.xAxis.min).toBe('dataMin')
+    expect(axes.xAxis.max).toBe('dataMax')
     expect(axes.yAxis.axisLabel.interval).toBe('auto')
     expect(axes.yAxis.nameGap).toBe(88)
   })

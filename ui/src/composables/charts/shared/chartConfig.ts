@@ -9,6 +9,7 @@ export const LARGE_X_THRESHOLD = 50
 export const DATAZOOM_INITIAL_END_PERCENT = 20
 
 const axisTitleFontSize = 16
+const LOG_AXIS_RANGE = { min: 'dataMin' as const, max: 'dataMax' as const }
 
 // Bottom chrome for heatmap / correlation — visualMap always, dataZoom when len > 50.
 export const HEATMAP_VISUAL_MAP_BOTTOM = 8
@@ -227,7 +228,6 @@ export function createValueAxisConfig(
   xAxisName?: string,
   yAxisName?: string,
   yScale: ScaleType = 'linear',
-  minValue?: number,
   fitYAxisToData = false
 ): { xAxis: any; yAxis: any } {
   const nameStyle = {
@@ -238,7 +238,6 @@ export function createValueAxisConfig(
 
   const yAxisConfig: any = {
     type: yScale === 'log' ? 'log' : 'value',
-    logBase: 10,
     ...(yAxisName
       ? { name: yAxisName, nameLocation: 'middle', nameGap: 45, nameTextStyle: nameStyle }
       : {}),
@@ -247,10 +246,9 @@ export function createValueAxisConfig(
     axisLine: { lineStyle: { color: styling.axisColor } },
   }
 
-  if (yScale === 'log' && minValue !== undefined) {
-    const minLog = Math.pow(10, Math.floor(Math.log10(minValue)))
-    yAxisConfig.min = Math.max(1, minLog)
-  } else if (fitYAxisToData && yScale === 'linear') {
+  if (yScale === 'log') {
+    Object.assign(yAxisConfig, LOG_AXIS_RANGE)
+  } else if (fitYAxisToData) {
     yAxisConfig.scale = true
   }
 
@@ -329,14 +327,12 @@ export function createAxisConfig(
   styling: ChartStyling,
   xAxisData: string[],
   scale: ScaleType = 'linear',
-  minValue?: number,
   xAxisName?: string,
   hasDataZoom = false,
   fitYAxisToData = false
 ): { xAxis: any; yAxis: any } {
   const yAxisConfig: any = {
     type: scale === 'log' ? 'log' : 'value',
-    logBase: 10,
     splitLine: {
       lineStyle: {
         opacity: styling.opacity,
@@ -350,12 +346,9 @@ export function createAxisConfig(
     },
   }
 
-  // For log scale, set a clean minimum to avoid showing 0.1
-  if (scale === 'log' && minValue !== undefined) {
-    // Round down to nearest power of 10, but minimum is 1
-    const minLog = Math.pow(10, Math.floor(Math.log10(minValue)))
-    yAxisConfig.min = Math.max(1, minLog)
-  } else if (fitYAxisToData && scale === 'linear') {
+  if (scale === 'log') {
+    Object.assign(yAxisConfig, LOG_AXIS_RANGE)
+  } else if (fitYAxisToData) {
     // ECharts default includes zero; scale the axis to the series min/max instead.
     yAxisConfig.scale = true
   }
@@ -405,7 +398,6 @@ export function createHorizontalAxisConfig(
   styling: ChartStyling,
   yAxisData: string[],
   scale: ScaleType = 'linear',
-  minValue?: number,
   categoryAxisName?: string,
   hasDataZoom = false
 ): { xAxis: any; yAxis: any } {
@@ -417,7 +409,6 @@ export function createHorizontalAxisConfig(
 
   const xAxisConfig: any = {
     type: scale === 'log' ? 'log' : 'value',
-    logBase: 10,
     splitLine: {
       lineStyle: { opacity: styling.opacity },
     },
@@ -429,10 +420,7 @@ export function createHorizontalAxisConfig(
     },
   }
 
-  if (scale === 'log' && minValue !== undefined) {
-    const minLog = Math.pow(10, Math.floor(Math.log10(minValue)))
-    xAxisConfig.min = Math.max(1, minLog)
-  }
+  if (scale === 'log') Object.assign(xAxisConfig, LOG_AXIS_RANGE)
 
   return {
     xAxis: xAxisConfig,

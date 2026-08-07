@@ -285,24 +285,20 @@ export function createContinuous3DAxes(
   scale: ScaleType = 'linear'
 ) {
   const valueType = scale === 'log' ? ('log' as const) : ('value' as const)
-  const log = scale === 'log' ? { logBase: 10 } : {}
   const axisCommon = makeAxis3DCommon(styling)
   return {
     xAxis3D: {
       type: valueType,
-      ...log,
       ...axisCommon,
       ...axis3DName(xLabel, styling),
     },
     yAxis3D: {
       type: valueType,
-      ...log,
       ...axisCommon,
       ...axis3DName(yLabel, styling),
     },
     zAxis3D: {
       type: valueType,
-      ...log,
       ...axisCommon,
       ...axis3DName(zLabel, styling),
     },

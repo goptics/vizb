@@ -25,7 +25,7 @@ import {
   symbolSizeForContinuous3D,
   resolve3DVisualMap,
 } from './3d'
-import { adjustForLogScaleLine, getEffectiveScale } from './common'
+import { adjustForLogScaleLine, resolveLogScale } from './common'
 import { resolve3DSymbolProps, resolveSeriesSymbol } from './seriesConfig'
 import { resolve2DScatterVisualMap } from './visualMap'
 import type { Series3DData } from '@/types'
@@ -110,10 +110,9 @@ export function buildMixedAxes2DOptions(
   const yLabel = chartData.value.axisLabels?.y
   const baseOptions = getBaseOptions(config)
   const styling = getChartStyling(isDark.value)
-  const effectiveScale = scale?.value ?? 'linear'
-  const { minValue, effectiveScale: yScale } = getEffectiveScale(
-    [{ xAxis: chartData.value.title, values: tuples.map(([, y]) => y), benchmarkId: '' }],
-    effectiveScale
+  const yScale = resolveLogScale(
+    scale?.value ?? 'linear',
+    tuples.map(([, y]) => y)
   )
 
   const data = scaleMixedTuples(tuples, yScale)
@@ -174,7 +173,6 @@ export function buildMixedAxes2DOptions(
     styling,
     xCategories,
     yScale,
-    minValue,
     xLabel,
     largeX,
     chartType === 'scatter'
@@ -219,7 +217,6 @@ export function buildMixedAxes3DOptions(
   const { yCount } = continuous3DGridCounts(pointCount)
   const yScale = scale?.value ?? 'linear'
   const valueType = yScale === 'log' ? ('log' as const) : ('value' as const)
-  const logOpts = yScale === 'log' ? { logBase: 10 } : {}
   const grid3D = create3DGridConfig({
     styling,
     autoRotate: threeDRotate?.value ?? false,
@@ -290,13 +287,11 @@ export function buildMixedAxes3DOptions(
     },
     yAxis3D: {
       type: valueType,
-      ...logOpts,
       ...axisCommon,
       ...axis3DName(axisLabels?.y, styling),
     },
     zAxis3D: {
       type: valueType,
-      ...logOpts,
       ...axisCommon,
       ...axis3DName(axisLabels?.z, styling),
     },

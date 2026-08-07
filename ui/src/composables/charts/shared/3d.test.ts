@@ -634,7 +634,8 @@ describe('remaining 3d branch coverage', () => {
     const { createContinuous3DAxes } = await import('./3d')
     const axes = createContinuous3DAxes(styling, 'x', 'y', 'z', 'log')
     expect(axes.xAxis3D.type).toBe('log')
-    expect(axes.xAxis3D.logBase).toBe(10)
+    expect(axes.yAxis3D.type).toBe('log')
+    expect(axes.zAxis3D.type).toBe('log')
   })
 
   it('createContinuous3DTooltipFormatter default labels', async () => {

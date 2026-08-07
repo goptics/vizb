@@ -48,9 +48,7 @@ export function useScatter3DChartOptions(config: BaseChartConfig) {
     const defaultColor = getDefaultThemeColor()
     const axisCommon = makeAxis3DCommon(styling)
     const zAxis3DBase = {
-      ...(scale?.value === 'log'
-        ? { type: 'log' as const, logBase: 10 }
-        : { type: 'value' as const }),
+      ...(scale?.value === 'log' ? { type: 'log' as const } : { type: 'value' as const }),
       ...axisCommon,
     }
     const isValueMode = render.mode === 'value'
