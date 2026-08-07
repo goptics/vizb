@@ -647,6 +647,10 @@ describe('resolve3DZAxisType', () => {
       ])
     ).toBe('value')
   })
+
+  it('treats missing metric height (no value[2]) as non-positive', () => {
+    expect(resolve3DZAxisType('log', [{ name: 'a', data: [{ value: [0, 0] }] }])).toBe('value')
+  })
 })
 
 describe('remaining 3d branch coverage', () => {
