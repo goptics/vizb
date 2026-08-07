@@ -17,7 +17,7 @@ import {
   makeLegendTitle,
   LARGE_DATA_THRESHOLD,
 } from './shared'
-import { useSortedSeriesData, getEffectiveScale, computeSeriesTotals } from './shared/common'
+import { useSortedSeriesData, resolveLogScale, computeSeriesTotals } from './shared/common'
 import { buildValueAxes2DOptions } from './shared/valueMode'
 import { buildMixedAxes2DOptions } from './shared/mixedMode'
 
@@ -45,10 +45,13 @@ export function useBarChartOptions(config: BaseChartConfig) {
     // `scale` is optional on BaseChartConfig (relaxed in Task 7) — pie/heatmap/
     // radar pass a config without it. The bar composable is the only consumer,
     // so we default at the call site.
-    const { minValue, effectiveScale } = getEffectiveScale(series, scale?.value ?? 'linear')
+    const yScale = resolveLogScale(
+      scale?.value ?? 'linear',
+      series.flatMap((s) => s.values)
+    )
     const largeX = isLargeXAxis(xAxisData)
     const xLabel = chartData.value.axisLabels?.x
-    const useStack = stack?.value === true && effectiveScale !== 'log'
+    const useStack = stack?.value === true && yScale !== 'log'
 
     if (!hasYAxis && isHorizontal) {
       return {
@@ -62,13 +65,13 @@ export function useBarChartOptions(config: BaseChartConfig) {
         },
         tooltip: createTooltipConfig(false, isDark.value),
         legend: { show: false },
-        ...createHorizontalAxisConfig(styling, xAxisData, effectiveScale, minValue, xLabel, largeX),
+        ...createHorizontalAxisConfig(styling, xAxisData, yScale, xLabel, largeX),
         ...(largeX ? { dataZoom: createHorizontalDataZoomConfig(styling) } : {}),
         series: [
           {
             name: chartData.value.title,
             type: 'bar' as const,
-            data: series.map((s) => barNullable(s.values[0] ?? null, effectiveScale)),
+            data: series.map((s) => barNullable(s.values[0] ?? null, yScale)),
             label: createLabelConfig(showLabels.value, styling, 'horizontal'),
             large: true,
             largeThreshold: LARGE_DATA_THRESHOLD,
@@ -84,7 +87,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
         grid: createGridConfig(1, largeX),
         tooltip: createTooltipConfig(false, isDark.value),
         legend: { show: false },
-        ...createAxisConfig(styling, xAxisData, effectiveScale, minValue, xLabel, largeX),
+        ...createAxisConfig(styling, xAxisData, yScale, xLabel, largeX),
         ...(largeX ? { dataZoom: createDataZoomConfig(xAxisData, styling) } : {}),
         series: [
           {
@@ -94,7 +97,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
             // object — a 100k-bar chart would otherwise allocate 100k label configs
             // on every recompute. `large` keeps the draw on one frame past the
             // threshold.
-            data: series.map((s) => barNullable(s.values[0] ?? null, effectiveScale)),
+            data: series.map((s) => barNullable(s.values[0] ?? null, yScale)),
             label: createLabelConfig(showLabels.value, styling),
             large: true,
             largeThreshold: LARGE_DATA_THRESHOLD,
@@ -109,7 +112,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
     const transposedSeries = yAxisLabels.map((yAxisLabel, yIndex) => ({
       name: yAxisLabel,
       type: 'bar' as const,
-      data: series.map((s) => barNullable(s.values[yIndex] ?? null, effectiveScale)),
+      data: series.map((s) => barNullable(s.values[yIndex] ?? null, yScale)),
       label: createLabelConfig(
         showLabels.value,
         styling,
@@ -156,7 +159,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
           hasMultipleSeries,
           { bottom: 0 }
         ),
-        ...createHorizontalAxisConfig(styling, xAxisData, effectiveScale, minValue, xLabel, largeX),
+        ...createHorizontalAxisConfig(styling, xAxisData, yScale, xLabel, largeX),
         ...(largeX ? { dataZoom: createHorizontalDataZoomConfig(styling) } : {}),
         series: transposedSeries,
       } as EChartsOption
@@ -173,7 +176,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
         hasMultipleSeries,
         showLegendTitle ? { top: 24 } : undefined
       ),
-      ...createAxisConfig(styling, xAxisData, effectiveScale, minValue, xLabel, largeX),
+      ...createAxisConfig(styling, xAxisData, yScale, xLabel, largeX),
       ...(largeX ? { dataZoom: createDataZoomConfig(xAxisData, styling) } : {}),
       series: transposedSeries,
     } as EChartsOption

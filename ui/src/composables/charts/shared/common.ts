@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 import type { Ref } from 'vue'
-import type { SortOrder, ScaleType, ChartData, SeriesData, Sort } from '@/types'
+import type { SortOrder, ScaleType, ChartData, Sort } from '@/types'
 import type { Point3D } from '@/types'
 import { hasYAxis } from '@/lib/utils'
 
@@ -41,29 +41,13 @@ export function useSortedSeriesData(chartData: Ref<ChartData>, _sort: Ref<Sort>)
   }))
 }
 
-// Compute effective scale and min value — log is downgraded to linear when max < 1.
-// Single pass (no `Math.min(...arr)` spread — that both allocates an intermediate
-// array and throws RangeError once the arg count is large, e.g. 100k points).
-export function getEffectiveScale(
-  series: SeriesData[],
-  scale: ScaleType
-): { minValue: number | undefined; effectiveScale: ScaleType } {
-  let minValue: number | undefined
-  let maxValue = 0
-  let any = false
-  for (const s of series) {
-    for (const v of s.values) {
-      if (v === null) continue
-      if (!any) {
-        maxValue = v
-        any = true
-      } else if (v > maxValue) {
-        maxValue = v
-      }
-      if (v > 0 && (minValue === undefined || v < minValue)) minValue = v
-    }
+/** Log needs a positive domain; fall back to linear when none exists. */
+export function resolveLogScale(scale: ScaleType, values: Iterable<number | null>): ScaleType {
+  if (scale !== 'log') return scale
+  for (const v of values) {
+    if (v !== null && v > 0) return 'log'
   }
-  return { minValue, effectiveScale: scale === 'log' && maxValue < 1 ? 'linear' : scale }
+  return 'linear'
 }
 
 // Sum each named series' data values — used for tooltip axis-sum display. Data

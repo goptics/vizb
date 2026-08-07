@@ -8,7 +8,7 @@ import {
   sortByValue,
   adjustForLogScaleLine,
   useSortedSeriesData,
-  getEffectiveScale,
+  resolveLogScale,
   computeSeriesTotals,
   sortByAxisTotal,
 } from './common'
@@ -80,47 +80,22 @@ describe('useSortedSeriesData', () => {
   })
 })
 
-describe('getEffectiveScale', () => {
-  it('downgrades log to linear when empty (max defaults to 0)', () => {
-    expect(getEffectiveScale([], 'log')).toEqual({
-      minValue: undefined,
-      effectiveScale: 'linear',
-    })
+describe('resolveLogScale', () => {
+  it('falls back to linear when empty', () => {
+    expect(resolveLogScale('log', [])).toBe('linear')
   })
 
-  it('skips nulls and tracks min positive + max', () => {
-    const series = [
-      { xAxis: 'a', values: [null, 5, 2], benchmarkId: '' },
-      { xAxis: 'b', values: [null, 8, 0.5], benchmarkId: '' },
-    ]
-    expect(getEffectiveScale(series, 'linear')).toEqual({
-      minValue: 0.5,
-      effectiveScale: 'linear',
-    })
+  it('keeps log when any value is positive', () => {
+    expect(resolveLogScale('log', [0.2, 0.5])).toBe('log')
+    expect(resolveLogScale('log', [-5, 0, 3])).toBe('log')
   })
 
-  it('downgrades log to linear when max < 1', () => {
-    const series = [{ xAxis: 'a', values: [0.2, 0.5], benchmarkId: '' }]
-    expect(getEffectiveScale(series, 'log')).toEqual({
-      minValue: 0.2,
-      effectiveScale: 'linear',
-    })
+  it('falls back when only non-positive values exist', () => {
+    expect(resolveLogScale('log', [-5, 0, null])).toBe('linear')
   })
 
-  it('keeps log when max >= 1', () => {
-    const series = [{ xAxis: 'a', values: [0.2, 2], benchmarkId: '' }]
-    expect(getEffectiveScale(series, 'log')).toEqual({
-      minValue: 0.2,
-      effectiveScale: 'log',
-    })
-  })
-
-  it('ignores non-positive for minValue but uses them for max', () => {
-    const series = [{ xAxis: 'a', values: [-5, 0, 3], benchmarkId: '' }]
-    expect(getEffectiveScale(series, 'linear')).toEqual({
-      minValue: 3,
-      effectiveScale: 'linear',
-    })
+  it('passes linear through unchanged', () => {
+    expect(resolveLogScale('linear', [1, 2])).toBe('linear')
   })
 })
 

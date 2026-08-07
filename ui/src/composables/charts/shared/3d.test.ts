@@ -15,6 +15,7 @@ import {
   createValue3DTooltipFormatter,
   createZLegendConfig,
   resolve3DVisualMap,
+  resolve3DZAxisType,
   symbolSizeFor3DGrid,
   symbolSizeForContinuous3D,
 } from './3d'
@@ -629,12 +630,36 @@ describe('maxFrom3DData / seriesHasMetricDimension edges', () => {
   })
 })
 
+describe('resolve3DZAxisType', () => {
+  it('keeps log when metric heights are positive', () => {
+    expect(
+      resolve3DZAxisType('log', [
+        { name: 'a', data: [{ value: [0, 0, 0.2] }, { value: [1, 0, 3] }] },
+      ])
+    ).toBe('log')
+  })
+
+  it('falls back to value for empty or non-positive metrics', () => {
+    expect(resolve3DZAxisType('log', [])).toBe('value')
+    expect(
+      resolve3DZAxisType('log', [
+        { name: 'a', data: [{ value: [0, 0, 0] }, { value: [1, 0, -1] }] },
+      ])
+    ).toBe('value')
+  })
+
+  it('treats missing metric height (no value[2]) as non-positive', () => {
+    expect(resolve3DZAxisType('log', [{ name: 'a', data: [{ value: [0, 0] }] }])).toBe('value')
+  })
+})
+
 describe('remaining 3d branch coverage', () => {
   it('createContinuous3DAxes log scale', async () => {
     const { createContinuous3DAxes } = await import('./3d')
     const axes = createContinuous3DAxes(styling, 'x', 'y', 'z', 'log')
     expect(axes.xAxis3D.type).toBe('log')
-    expect(axes.xAxis3D.logBase).toBe(10)
+    expect(axes.yAxis3D.type).toBe('log')
+    expect(axes.zAxis3D.type).toBe('log')
   })
 
   it('createContinuous3DTooltipFormatter default labels', async () => {

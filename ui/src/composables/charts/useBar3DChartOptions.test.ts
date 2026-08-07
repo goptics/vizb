@@ -116,6 +116,25 @@ describe('useBar3DChartOptions — remaining branches', () => {
     expect(options.value.visualMap).toMatchObject({ show: true })
   })
 
+  it('falls back z-axis to value when log has no positive metric domain', () => {
+    const { options } = useBar3DChartOptions(
+      baseConfig({
+        chartData: emptyChartData({
+          title: 'sales',
+          statType: 'sum',
+          render3D: {
+            ...valueModeRender,
+            barSeries: [{ name: 'sales', data: [{ value: [0, 0, 0] }, { value: [1, 0, -2] }] }],
+            cellTotals: { '0,0': 0, '1,0': -2 },
+          },
+        }),
+        threeD: true,
+        scale: 'log',
+      })
+    )
+    expect((options.value.zAxis3D as { type?: string }).type).toBe('value')
+  })
+
   it('emits mixed-mode bar3D', () => {
     const { options } = useBar3DChartOptions(
       baseConfig({
