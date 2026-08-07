@@ -151,15 +151,25 @@ CI id: `00-concurrency-frameworks` on the **comparisons** dashboard (see `.githu
 
 ## `sankey-flows.csv`
 
-**Shape:** Multi-hop **edge list** — `name` (optional panel key), `source` (source), `target` (target), `value` and `cost` (positive flow measures). 14 edges across two funnels (`web`, `app`).
+**Shape:** Multi-hop **edge list** — `name` (optional panel key), `source`, `target`, `value` and `cost` (positive flow measures). 14 edges across two funnels (`web`, `app`).
 
-**What vizb does:** Map **x = source**, **y = target** with `-g source,target -p x,y`. Sankey is **opt-in** (`vizb sankey` or `-c sankey`). Duplicate edges sum; multi-hop paths are multiple rows sharing intermediate node names. Optional `name` → `-g name,source,target -p n,x,y` for named panels. Two numerics → measure tabs (one Sankey at a time). **z is ignored** if provided.
+**What vizb does:** Same edge roles always — **source → target → value** — via group **or** solo select (order must match):
+
+| Role | Group | Solo `--select` |
+|------|--------|-----------------|
+| source | `-g source,target -p x,y` → `source` is `x` | 1st column (`source`) |
+| target | `target` is `y` | 2nd column (`target`) |
+| value | other numeric cols (e.g. `value`, `cost`) | 3rd column only (`value`); more measures → another `--select` |
+
+Sankey is **opt-in** (`vizb sankey` or `-c sankey`). Duplicate edges sum; multi-hop paths share intermediate node names. Optional `name` → `-g name,source,target -p n,x,y`. **z is ignored** if provided.
 
 **Good for:** Funnel / pipeline flows, multi-hop conversion paths, multi-measure and named-panel demos.
 
 | Goal | Command |
 |------|---------|
 | Basic multi-hop Sankey | `vizb sankey examples/csv/sankey-flows.csv -g source,target -p x,y` |
+| Solo `--select` (exactly 3 cols) | `vizb sankey examples/csv/sankey-flows.csv --select source,target,value` |
+| Solo multi-measure (repeat 3-col flags) | `vizb sankey examples/csv/sankey-flows.csv --select source,target,value --select source,target,cost` |
 | Named panels (`web` / `app`) | `vizb sankey examples/csv/sankey-flows.csv -g name,source,target -p n,x,y` |
 | Root with opt-in renderer | `vizb examples/csv/sankey-flows.csv -g source,target -p x,y -c sankey` |
 

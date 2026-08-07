@@ -62,6 +62,11 @@ func RunLinear(cmd *cobra.Command, args []string, meta RunMeta, cfg parser.Confi
 	for _, c := range configs {
 		cfg.ChartTypes = append(cfg.ChartTypes, c.ChartType())
 	}
+	// Re-resolve mode once ChartTypes is known so sankey solo --select becomes ModeEdge.
+	cfg.Mode = parser.ResolveMode(cfg)
+	if err := parser.ValidateSelectViewsForCharts(cfg); err != nil {
+		shared.ExitWithError(err.Error(), nil)
+	}
 
 	outFile := ResolveOutputFileName(meta.OutputFile)
 

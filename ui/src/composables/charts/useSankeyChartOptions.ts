@@ -60,6 +60,19 @@ function sortNodes(nodes: SankeyNode[], order: SortOrder): SankeyNode[] {
   })
 }
 
+/** ECharts-style color circle for tooltip rows (matches other chart formatters). */
+function tooltipColorDot(color: string): string {
+  return `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};margin-right:6px"></span>`
+}
+
+/** ECharts defaults right: '20%' for label room; we keep a tighter inset. */
+const sankeyLayout = {
+  left: '4%',
+  right: '8%',
+  top: '4%',
+  bottom: '4%',
+} as const
+
 function minimalSankeyOption(config: BaseChartConfig): EChartsOption {
   const base = getBaseOptions(config)
   return {
@@ -68,6 +81,7 @@ function minimalSankeyOption(config: BaseChartConfig): EChartsOption {
     series: [
       {
         type: 'sankey',
+        ...sankeyLayout,
         data: [],
         links: [],
         emphasis: { focus: 'adjacency' },
@@ -97,6 +111,11 @@ export function useSankeyChartOptions(config: BaseChartConfig) {
 
     // Drop the internal total field before handing nodes to ECharts.
     const data = nodes.map(({ name, itemStyle }) => ({ name, itemStyle }))
+    // buildSankeyGraph always assigns a color, so lookups below never miss.
+    const nodeColor = new Map<string, string>(
+      nodes.map((n) => [n.name, n.itemStyle!.color!] as const)
+    )
+    const colorFor = (name: string): string => nodeColor.get(name) ?? '#888'
 
     return {
       ...base,
@@ -105,24 +124,31 @@ export function useSankeyChartOptions(config: BaseChartConfig) {
         trigger: 'item',
         ...getTooltipTheme(isDark.value),
         formatter: (params: any) => {
-          // Link hover: source → target + weight
+          // Link hover: colored source → colored target + weight
           if (params.dataType === 'edge' || params.data?.source != null) {
-            const src = params.data?.source ?? params.name
-            const tgt = params.data?.target ?? ''
+            const src = String(params.data?.source ?? params.name ?? '')
+            const tgt = String(params.data?.target ?? '')
             const val = params.data?.value ?? params.value
-            return `${params.marker} <strong>${src} → ${tgt}</strong><br/>${formatTooltipValue(val)}`
+            return (
+              `${tooltipColorDot(colorFor(src))}<strong>${src}</strong>` +
+              ` → ` +
+              `${tooltipColorDot(colorFor(tgt))}<strong>${tgt}</strong>` +
+              `<br/>${formatTooltipValue(val)}`
+            )
           }
           // Node hover: name + total flow through the node
           const name = params.name ?? params.data?.name ?? ''
           const val = params.value ?? params.data?.value
           const valueLine =
             val === undefined || val === null ? '' : `<br/>${formatTooltipValue(val)}`
-          return `${params.marker} <strong>${name}</strong>${valueLine}`
+          const marker = params.marker || tooltipColorDot(colorFor(String(name)))
+          return `${marker} <strong>${name}</strong>${valueLine}`
         },
       } as EChartsOption['tooltip'],
       series: [
         {
           type: 'sankey',
+          ...sankeyLayout,
           data,
           links,
           emphasis: { focus: 'adjacency' },

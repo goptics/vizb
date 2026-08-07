@@ -35,6 +35,7 @@ tasks:
 
   # Internal: rewrite pkg/template/vizb-ui.gen.go from ui/ when sources are newer.
   # Hidden from task --list; used as a dependency of build:cli.
+  # Force re-embed: task build:cli --force  (Task's built-in -f/--force)
   embed:ui:
     internal: true
     sources:
@@ -51,7 +52,7 @@ tasks:
       - cd ui; [ -d node_modules ] || pnpm install; pnpm build; cd -
 
   build:cli:
-    desc: Build the binary (production-ready, stripped)
+    desc: Build the binary (production-ready, stripped). Use --force to re-embed UI.
     deps: [embed:ui]
     cmds:
       - go build -ldflags="-s -w" -o ./bin/vizb

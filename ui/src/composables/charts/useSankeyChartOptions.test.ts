@@ -44,6 +44,10 @@ type SankeySeries = {
   label?: { show?: boolean }
   emphasis?: { focus?: string }
   lineStyle?: { curveness?: number }
+  left?: string
+  right?: string
+  top?: string
+  bottom?: string
 }
 
 const firstSeries = (options: { series?: unknown }): SankeySeries =>
@@ -242,6 +246,12 @@ describe('useSankeyChartOptions', () => {
     expect(options.value.legend).toMatchObject({ show: false })
   })
 
+  it('uses a tighter series inset than ECharts sankey defaults (right 20%)', () => {
+    const { options } = useSankeyChartOptions(baseConfig({ chartData: makeSankeyChartData() }))
+    const series = firstSeries(options.value)
+    expect(series).toMatchObject({ left: '4%', right: '8%', top: '4%', bottom: '4%' })
+  })
+
   it('works with standard grouped chart fixtures that carry points', () => {
     const chartData = makeGroupedChartData({
       points: [
@@ -304,6 +314,39 @@ describe('useSankeyChartOptions', () => {
     expect(series.label?.show).toBe(false)
   })
 
+  it('edge tooltip shows color circles for both source and target', () => {
+    const { options } = useSankeyChartOptions(baseConfig({ chartData: withPoints() }))
+    const series = firstSeries(options.value)
+    const colorByName = new Map(
+      series.data.map((d) => {
+        const node = d as { name: string; itemStyle?: { color?: string } }
+        return [node.name, node.itemStyle?.color ?? ''] as const
+      })
+    )
+    const formatter = (
+      options.value.tooltip as {
+        formatter: (p: {
+          dataType?: string
+          data?: { source?: string; target?: string; value?: number }
+          value?: number
+        }) => string
+      }
+    ).formatter
+
+    const html = formatter({
+      dataType: 'edge',
+      data: { source: 'A', target: 'B', value: 10 },
+    })
+
+    expect(html).toContain('<strong>A</strong>')
+    expect(html).toContain('<strong>B</strong>')
+    expect(html).toContain('→')
+    // One color circle per endpoint, using the same node colors as the series
+    expect(html).toContain(`background:${colorByName.get('A')}`)
+    expect(html).toContain(`background:${colorByName.get('B')}`)
+    expect(html.match(/border-radius:50%/g)?.length).toBe(2)
+  })
+
   describe('tooltip formatter', () => {
     const formatter = (options: { tooltip?: unknown }) =>
       (options.tooltip as { formatter: (params: any) => string }).formatter
@@ -311,35 +354,90 @@ describe('useSankeyChartOptions', () => {
     it('formats edge hover via dataType', () => {
       const { options } = useSankeyChartOptions(baseConfig({ chartData: withPoints() }))
       const html = formatter(options.value)({
-        marker: '*',
         dataType: 'edge',
         data: { source: 'A', target: 'B', value: 10 },
         name: 'A → B',
         value: 10,
       })
-      expect(html).toContain('<strong>A → B</strong>')
+      // Edges render two color dots + source → target + weight.
+      expect(html).toContain('<strong>A</strong>')
+      expect(html).toContain('<strong>B</strong>')
+      expect(html).toContain('→')
       expect(html).toContain('10')
+      expect(html.match(/border-radius:50%/g)?.length).toBe(2)
     })
 
     it('formats edge hover via data.source fallback', () => {
       const { options } = useSankeyChartOptions(baseConfig({ chartData: withPoints() }))
       const html = formatter(options.value)({
-        marker: '*',
         data: { source: 'A', target: 'B', value: 5 },
       })
-      expect(html).toContain('<strong>A → B</strong>')
+      expect(html).toContain('<strong>A</strong>')
+      expect(html).toContain('<strong>B</strong>')
       expect(html).toContain('5')
     })
 
     it('falls back to params.name for the source when data.source is missing', () => {
       const { options } = useSankeyChartOptions(baseConfig({ chartData: withPoints() }))
       const html = formatter(options.value)({
-        marker: '*',
         dataType: 'edge',
         data: { target: 'B', value: 5 },
         name: 'A',
       })
-      expect(html).toBe('* <strong>A → B</strong><br/>5')
+      expect(html).toContain('<strong>A</strong>')
+      expect(html).toContain('<strong>B</strong>')
+      expect(html).toContain('5')
+    })
+
+    it('falls back to an empty target string when data.target is missing', () => {
+      const { options } = useSankeyChartOptions(baseConfig({ chartData: withPoints() }))
+      const html = formatter(options.value)({
+        dataType: 'edge',
+        data: { source: 'A', value: 5 },
+      })
+      expect(html).toContain('<strong>A</strong>')
+      expect(html).toContain('<strong></strong>')
+      expect(html).toContain('5')
+    })
+
+    it('falls back to params.value when data.value is missing on an edge', () => {
+      const { options } = useSankeyChartOptions(baseConfig({ chartData: withPoints() }))
+      const html = formatter(options.value)({
+        dataType: 'edge',
+        data: { source: 'A', target: 'B' },
+        value: 9,
+      })
+      expect(html).toContain('<strong>A</strong>')
+      expect(html).toContain('<strong>B</strong>')
+      expect(html).toContain('9')
+    })
+
+    it('falls back to an empty source when data.source and params.name are missing', () => {
+      const { options } = useSankeyChartOptions(baseConfig({ chartData: withPoints() }))
+      const html = formatter(options.value)({
+        dataType: 'edge',
+        data: { target: 'B', value: 5 },
+      })
+      expect(html).toContain('<strong></strong>')
+      expect(html).toContain('<strong>B</strong>')
+      expect(html).toContain('5')
+    })
+
+    it('falls back to a color dot when no marker is provided on node hover', () => {
+      const { options } = useSankeyChartOptions(baseConfig({ chartData: withPoints() }))
+      const html = formatter(options.value)({ name: 'A', value: 10 })
+      expect(html).toContain('<strong>A</strong>')
+      expect(html).toContain('border-radius:50%')
+      expect(html).toContain('10')
+    })
+
+    it('uses a stable color for nodes not present in the series data', () => {
+      const { options } = useSankeyChartOptions(baseConfig({ chartData: withPoints() }))
+      // Node hover for an unknown node: colorFor falls through to getNextColorFor
+      // (the name is not in nodeColor), so a color dot is still emitted.
+      const html = formatter(options.value)({ name: 'Unknown', value: 1 })
+      expect(html).toContain('<strong>Unknown</strong>')
+      expect(html).toContain('border-radius:50%')
     })
 
     it('formats node hover with a value line', () => {
@@ -356,27 +454,6 @@ describe('useSankeyChartOptions', () => {
       expect(withNull).toBe('* <strong>A</strong>')
       const withUndefined = formatter(options.value)({ marker: '*', name: 'A', value: undefined })
       expect(withUndefined).toBe('* <strong>A</strong>')
-    })
-
-    it('falls back to an empty target string when data.target is missing', () => {
-      const { options } = useSankeyChartOptions(baseConfig({ chartData: withPoints() }))
-      const html = formatter(options.value)({
-        marker: '*',
-        dataType: 'edge',
-        data: { source: 'A', value: 5 },
-      })
-      expect(html).toBe('* <strong>A → </strong><br/>5')
-    })
-
-    it('falls back to params.value when data.value is missing on an edge', () => {
-      const { options } = useSankeyChartOptions(baseConfig({ chartData: withPoints() }))
-      const html = formatter(options.value)({
-        marker: '*',
-        dataType: 'edge',
-        data: { source: 'A', target: 'B' },
-        value: 9,
-      })
-      expect(html).toBe('* <strong>A → B</strong><br/>9')
     })
 
     it('falls back to an empty name when params.name and data.name are missing', () => {

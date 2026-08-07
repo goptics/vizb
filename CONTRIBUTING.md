@@ -34,6 +34,7 @@ task init            # install dependencies (does not embed)
 task build           # build docs, Vue UI, and CLI
 task build:ui        # Vue/Vite only — does not write the Go embed
 task build:cli       # re-embed if ui/ is newer, build ./bin/vizb, restore gen
+task build:cli --force  # always re-embed UI then build
 task dev:ui          # run the UI dev server
 task dev:docs        # run the docs dev server
 task test            # run CLI and UI tests
