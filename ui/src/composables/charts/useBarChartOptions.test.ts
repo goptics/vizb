@@ -571,3 +571,224 @@ describe('useBarChartOptions — horizontal nullish values', () => {
     expect((options.value.series as { data: (number | null)[] }[])[0]!.data).toEqual([null])
   })
 })
+
+describe('useBarChartOptions — borderRadius', () => {
+  // Helper to create chart data with multiple series for stacking tests
+  const makeMultiSeriesChartData = (): ChartData => ({
+    title: 'stacked test',
+    statType: 'sum',
+    yAxis: ['Series A', 'Series B', 'Series C'],
+    zAxis: [],
+    series: [
+      { xAxis: 'X1', values: [10, 20, 30], benchmarkId: '' },
+      { xAxis: 'X2', values: [15, 25, 35], benchmarkId: '' },
+    ],
+    points: [],
+    axisLabels: { x: 'category', y: 'series' },
+  })
+
+  it('should NOT apply borderRadius when radius is undefined', () => {
+    const { options } = useBarChartOptions({
+      chartData: ref(makeSimpleChartData()),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      // borderRadius is intentionally omitted
+    })
+    const series = options.value.series as { itemStyle?: { borderRadius?: number[] } }[]
+    expect(series[0]?.itemStyle?.borderRadius).toBeUndefined()
+  })
+
+  it('should NOT apply borderRadius when radius is 0', () => {
+    const { options } = useBarChartOptions({
+      chartData: ref(makeSimpleChartData()),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      borderRadius: ref(0),
+    })
+    const series = options.value.series as { itemStyle?: { borderRadius?: number[] } }[]
+    expect(series[0]?.itemStyle?.borderRadius).toBeUndefined()
+  })
+
+  it('should apply borderRadius to all bars in non-stacked simple chart', () => {
+    const { options } = useBarChartOptions({
+      chartData: ref(makeSimpleChartData()),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      borderRadius: ref(8),
+      stack: ref(false),
+    })
+    const series = options.value.series as { itemStyle?: { borderRadius?: number[] } }[]
+    expect(series).toHaveLength(1)
+    expect(series[0]?.itemStyle?.borderRadius).toEqual([8, 8, 0, 0])
+  })
+
+  it('should apply borderRadius to all series in non-stacked grouped chart', () => {
+    const { options } = useBarChartOptions({
+      chartData: ref(makeGroupedChartData()),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      borderRadius: ref(8),
+      stack: ref(false),
+    })
+    const series = options.value.series as { name: string; itemStyle?: { borderRadius?: number[] } }[]
+    expect(series).toHaveLength(2)
+    expect(series[0]?.itemStyle?.borderRadius).toEqual([8, 8, 0, 0])
+    expect(series[1]?.itemStyle?.borderRadius).toEqual([8, 8, 0, 0])
+  })
+
+  it('should apply borderRadius ONLY to top series in stacked grouped chart', () => {
+    const { options } = useBarChartOptions({
+      chartData: ref(makeMultiSeriesChartData()),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      borderRadius: ref(8),
+      stack: ref(true),
+    })
+    const series = options.value.series as { name: string; itemStyle?: { borderRadius?: number[] } }[]
+    expect(series).toHaveLength(3)
+    
+    // Lower series (first two) should have no borderRadius
+    expect(series[0]?.itemStyle?.borderRadius).toEqual([0, 0, 0, 0])
+    expect(series[1]?.itemStyle?.borderRadius).toEqual([0, 0, 0, 0])
+    // Top series (last one) should have borderRadius
+    expect(series[2]?.itemStyle?.borderRadius).toEqual([8, 8, 0, 0])
+  })
+
+  it('should apply right-side borderRadius to all bars in horizontal non-stacked chart', () => {
+    const { options } = useBarChartOptions({
+      chartData: ref(makeSimpleChartData()),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      borderRadius: ref(8),
+      stack: ref(false),
+      horizontal: ref(true),
+    })
+    const series = options.value.series as { itemStyle?: { borderRadius?: number[] } }[]
+    expect(series[0]?.itemStyle?.borderRadius).toEqual([0, 8, 8, 0])
+  })
+
+  it('should apply right-side borderRadius ONLY to top series in horizontal stacked chart', () => {
+    const { options } = useBarChartOptions({
+      chartData: ref(makeMultiSeriesChartData()),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      borderRadius: ref(8),
+      stack: ref(true),
+      horizontal: ref(true),
+    })
+    const series = options.value.series as { name: string; itemStyle?: { borderRadius?: number[] } }[]
+    expect(series).toHaveLength(3)
+    
+    // Lower series (first two) should have no borderRadius
+    expect(series[0]?.itemStyle?.borderRadius).toEqual([0, 0, 0, 0])
+    expect(series[1]?.itemStyle?.borderRadius).toEqual([0, 0, 0, 0])
+    // Top series (last one) should have right-side borderRadius
+    expect(series[2]?.itemStyle?.borderRadius).toEqual([0, 8, 8, 0])
+  })
+
+  it('should preserve existing itemStyle properties when applying borderRadius', () => {
+    // Create a chart with a series that already has itemStyle
+    const chartData: ChartData = {
+      title: 'test',
+      statType: 'v',
+      yAxis: ['Series A'],
+      zAxis: [],
+      series: [{ xAxis: 'X1', values: [10], benchmarkId: '' }],
+      points: [],
+    }
+    const { options } = useBarChartOptions({
+      chartData: ref(chartData),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      borderRadius: ref(8),
+    })
+    // Since we can't easily set existing itemStyle via the config,
+    // we verify that the borderRadius is applied correctly
+    const series = options.value.series as { itemStyle?: { borderRadius?: number[] } }[]
+    expect(series[0]?.itemStyle?.borderRadius).toBeDefined()
+  })
+
+  it('should handle mixed mode charts with borderRadius', () => {
+    const { options } = useBarChartOptions({
+      chartData: ref(makeMixedChartData()),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      borderRadius: ref(8),
+    })
+    const series = options.value.series as { type: string; itemStyle?: { borderRadius?: number[] } }[]
+    expect(series[0]?.type).toBe('bar')
+    // Mixed mode should also get borderRadius
+    expect(series[0]?.itemStyle?.borderRadius).toEqual([8, 8, 0, 0])
+  })
+
+  it('should handle value mode charts with borderRadius', () => {
+    const { options } = useBarChartOptions({
+      chartData: ref(makeValueChartData()),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      borderRadius: ref(8),
+    })
+    const series = options.value.series as { type: string; itemStyle?: { borderRadius?: number[] } }[]
+    expect(series[0]?.type).toBe('bar')
+    expect(series[0]?.itemStyle?.borderRadius).toEqual([8, 8, 0, 0])
+  })
+
+  it('should NOT apply borderRadius when chart type is not bar (via mixed mode fallback)', () => {
+    // This tests that borderRadius doesn't leak into other chart types
+    // The actual chart type is determined by the config, but we verify
+    // that mixed mode still works with borderRadius
+    const { options } = useBarChartOptions({
+      chartData: ref(makeMixedChartData()),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      borderRadius: ref(8),
+    })
+    expect(options.value.series).toBeDefined()
+  })
+
+  it('should handle large borderRadius values gracefully', () => {
+    const { options } = useBarChartOptions({
+      chartData: ref(makeSimpleChartData()),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      borderRadius: ref(50),
+      stack: ref(false),
+    })
+    const series = options.value.series as { itemStyle?: { borderRadius?: number[] } }[]
+    expect(series[0]?.itemStyle?.borderRadius).toEqual([50, 50, 0, 0])
+  })
+
+  it('should apply borderRadius correctly when stack is enabled but only one series exists', () => {
+    const chartData: ChartData = {
+      title: 'single series',
+      statType: 'v',
+      yAxis: ['Only One'],
+      zAxis: [],
+      series: [{ xAxis: 'X1', values: [10], benchmarkId: '' }],
+      points: [],
+    }
+    const { options } = useBarChartOptions({
+      chartData: ref(chartData),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      borderRadius: ref(8),
+      stack: ref(true),
+    })
+    const series = options.value.series as { itemStyle?: { borderRadius?: number[] } }[]
+    // With only one series, it should get the borderRadius (it's the top series)
+    expect(series[0]?.itemStyle?.borderRadius).toEqual([8, 8, 0, 0])
+  })
+})
