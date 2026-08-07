@@ -15,6 +15,7 @@ task init        # install Go, UI, and docs dependencies (does not embed)
 task build       # build docs, Vue UI, and CLI
 task build:ui    # Vue/Vite only — does not write the Go embed
 task build:cli   # re-embed if ui/ is newer, build ./bin/vizb, restore gen
+task build:cli --force   # always re-embed UI then build
 task dev:ui      # run Vue dev server
 task dev:docs    # run docs dev server
 task test        # run CLI and UI tests
@@ -43,7 +44,7 @@ Go-only contributors do **not** need Node.
 | Tracked on main | Committed so pure-Go install works |
 | Never hand-edit | Header is `// Code generated ... DO NOT EDIT.` |
 | Vue-only build | `task build:ui` — no gen write |
-| Re-embed for CLI | Internal `embed:ui` (not in `task --list`); dep of `task build:cli` when `ui/` is newer than gen |
+| Re-embed for CLI | Internal `embed:ui` (not in `task --list`); dep of `task build:cli` when `ui/` is newer than gen; force with `task build:cli --force` |
 | Clean tree after CLI build | `build:cli` runs `git restore` on gen after embed so feature branches do not keep dirty gen |
 | Pre-commit guard | Lefthook blocks staging/committing gen (`no-commit-ui-gen`); bypass only with `LEFTHOOK=0` when intentional |
 | CI PR guard | CLI workflow fails if a PR modifies the gen file |

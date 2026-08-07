@@ -45,6 +45,10 @@ type SankeySeries = {
   label?: { show?: boolean }
   emphasis?: { focus?: string }
   lineStyle?: { curveness?: number }
+  left?: string
+  right?: string
+  top?: string
+  bottom?: string
 }
 
 const firstSeries = (options: { series?: unknown }): SankeySeries =>
@@ -208,6 +212,12 @@ describe('useSankeyChartOptions', () => {
     expect(options.value.legend).toMatchObject({ show: false })
   })
 
+  it('uses a tighter series inset than ECharts sankey defaults (right 20%)', () => {
+    const { options } = useSankeyChartOptions(baseConfig({ chartData: makeSankeyChartData() }))
+    const series = firstSeries(options.value)
+    expect(series).toMatchObject({ left: '4%', right: '8%', top: '4%', bottom: '4%' })
+  })
+
   it('works with standard grouped chart fixtures that carry points', () => {
     const chartData = makeGroupedChartData({
       points: [
@@ -232,5 +242,38 @@ describe('useSankeyChartOptions', () => {
       })
     )
     expect(firstSeries(options.value).links).toEqual([{ source: 'A', target: 'B', value: 3 }])
+  })
+
+  it('edge tooltip shows color circles for both source and target', () => {
+    const { options } = useSankeyChartOptions(baseConfig({ chartData: makeSankeyChartData() }))
+    const series = firstSeries(options.value)
+    const colorByName = new Map(
+      series.data.map((d) => {
+        const node = d as { name: string; itemStyle?: { color?: string } }
+        return [node.name, node.itemStyle?.color ?? ''] as const
+      })
+    )
+    const formatter = (
+      options.value.tooltip as {
+        formatter: (p: {
+          dataType?: string
+          data?: { source?: string; target?: string; value?: number }
+          value?: number
+        }) => string
+      }
+    ).formatter
+
+    const html = formatter({
+      dataType: 'edge',
+      data: { source: 'A', target: 'B', value: 10 },
+    })
+
+    expect(html).toContain('<strong>A</strong>')
+    expect(html).toContain('<strong>B</strong>')
+    expect(html).toContain('→')
+    // One color circle per endpoint, using the same node colors as the series
+    expect(html).toContain(`background:${colorByName.get('A')}`)
+    expect(html).toContain(`background:${colorByName.get('B')}`)
+    expect(html.match(/border-radius:50%/g)?.length).toBe(2)
   })
 })
