@@ -433,8 +433,8 @@ describe('useSankeyChartOptions', () => {
 
     it('uses a stable color for nodes not present in the series data', () => {
       const { options } = useSankeyChartOptions(baseConfig({ chartData: withPoints() }))
-      // Node hover for an unknown node: colorFor falls through to getNextColorFor
-      // (the name is not in nodeColor), so a color dot is still emitted.
+      // Node hover for an unknown node: colorFor misses nodeColor and falls
+      // back to '#888', so a color dot is still emitted.
       const html = formatter(options.value)({ name: 'Unknown', value: 1 })
       expect(html).toContain('<strong>Unknown</strong>')
       expect(html).toContain('border-radius:50%')
