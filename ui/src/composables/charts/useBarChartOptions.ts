@@ -24,11 +24,14 @@ import { buildMixedAxes2DOptions } from './shared/mixedMode'
 const barNullable = (val: number | null, scale: string): number | null =>
   val === null ? null : scale === 'log' && val <= 0 ? null : val
 
+// Mirrors internal/charts/bar/bar.go's GetCornerValues: [topLeft, topRight, bottomRight, bottomLeft].
+const cornerValues = (radius: number, isHorizontal: boolean): number[] =>
+  isHorizontal ? [0, radius, radius, 0] : [radius, radius, 0, 0]
+
 export function useBarChartOptions(config: BaseChartConfig) {
-  const { chartData, sort, showLabels, isDark, scale, stack, horizontal } = config
+  const { chartData, sort, showLabels, isDark, scale, stack, horizontal, borderRadius } = config
 
   const sortedData = useSortedSeriesData(chartData, sort)
-
   const options = computed<EChartsOption>(() => {
     const isHorizontal = horizontal?.value ?? false
 
