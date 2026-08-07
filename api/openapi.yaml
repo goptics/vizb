@@ -709,6 +709,7 @@ components:
         scale: { type: string, enum: [linear, log] }
         stack: { type: boolean }
         showLabels: { type: boolean }
+        borderRadius: { type: integer, minimum: 0 }
         threeDRotate: { type: boolean }
         threeD: { type: boolean }
         threeDVisualMap: { type: boolean }
