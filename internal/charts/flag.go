@@ -103,6 +103,13 @@ var (
 		Kind:    flags.KindBool,
 		JSONKey: "horizontal",
 	}
+	BorderRadiusFlag = flags.Flag{
+    Name:     "border-radius",
+    Usage:    "Bar corner radius in pixels (integer >= 0). For stacked bars, radius applies to the outer end only.",
+    Kind:     flags.KindInt,
+    JSONKey:  "borderRadius",
+    Validate: ValidateBorderRadiusValue,
+	}
 )
 
 // --- Pure validators (no shared dependency) usable by descriptors. ---
@@ -125,6 +132,18 @@ func ValidateSortValue(s string) error {
 		return nil
 	}
 	return fmt.Errorf("sort value %q is invalid (must be \"asc\" or \"desc\")", s)
+}
+
+// ValidateBorderRadiusValue reports whether s parses to a non-negative integer (>= 0).
+func ValidateBorderRadiusValue(s string) error {
+	r, err := strconv.Atoi(s)
+	if err != nil {
+		return fmt.Errorf("border radius %q must be an integer", s)
+	}
+	if r < 0 {
+		return fmt.Errorf("border radius must be non-negative (>= 0), got %d", r)
+	}
+	return nil
 }
 
 // echartsBuiltinSymbols are the ECharts built-in series symbols (case-insensitive).
