@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { computed, ref } from 'vue'
 import { mount } from '@vue/test-utils'
-import type { BarConfig, ChartConfig, ChartType, LineConfig } from '@/types'
+import type { BarConfig, ChartConfig, ChartType, LineConfig, SankeyConfig } from '@/types'
 
 const { controlStub } = vi.hoisted(() => {
   const controlStub = (name: string) => ({
@@ -214,6 +214,26 @@ describe('SettingsPanel', () => {
     expect(w.text()).toContain('Chart type')
     await w.get('[data-testid="chart-type-selector"]').trigger('click')
     expect(holder.setChartType).toHaveBeenCalledWith('line')
+  })
+
+  it('lists sankey in the chart type selector and switches to it', () => {
+    holder.settings = [
+      holder.barConfig,
+      {
+        type: 'sankey',
+        sort: { enabled: false, order: 'asc' },
+        showLabels: false,
+        swap: 'x/y',
+      } as SankeyConfig,
+    ]
+    const w = mount(SettingsPanel)
+    expect(w.text()).toContain('Chart type')
+    // The picker passes every available type to the Selector stub; the
+    // GitBranch icon map entry is exercised when the item list is built.
+    const sel = w.findComponent({ name: 'Selector' })
+    const items = sel.props('items') as { name: string; icon: unknown }[]
+    expect(items.map((i) => i.name)).toEqual(['Bar', 'Sankey'])
+    expect(items[1]?.icon).toBeTruthy()
   })
 
   it('hides chart type when single setting', () => {

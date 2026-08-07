@@ -62,6 +62,7 @@ openspec
 .codex
 .opencode
 .worktrees
+.commandcode
 
 # Playwright
 ui/test-results/

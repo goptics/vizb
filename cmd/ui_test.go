@@ -14,6 +14,7 @@ import (
 	linechart "github.com/goptics/vizb/internal/charts/line"
 	piechart "github.com/goptics/vizb/internal/charts/pie"
 	radarchart "github.com/goptics/vizb/internal/charts/radar"
+	sankeychart "github.com/goptics/vizb/internal/charts/sankey"
 	scatterchart "github.com/goptics/vizb/internal/charts/scatter"
 	"github.com/goptics/vizb/pkg/template"
 	"github.com/goptics/vizb/shared"
@@ -369,6 +370,14 @@ func (s *UISuite) TestRunUIAppliesSwapOverride() {
 				&radarchart.Config{Type: "radar", Swap: "xyn"},
 			},
 		},
+		{
+			chartType: "sankey",
+			swapIn:    "xy",
+			swapOut:   "yx",
+			settings: []internal_charts.ChartConfig{
+				&sankeychart.Config{Type: "sankey", Swap: "xy"},
+			},
+		},
 	}
 	for _, tt := range tests {
 		s.Run(tt.chartType, func() {
@@ -507,6 +516,7 @@ func (s *UISuite) TestRunUIAppliesStatToMultipleChartTypes() {
 			&piechart.Config{Type: "pie"},
 			&heatmapchart.Config{Type: "heatmap"},
 			&radarchart.Config{Type: "radar"},
+			&sankeychart.Config{Type: "sankey"},
 		},
 		Data: []shared.DataPoint{{Name: "T1", XAxis: "1", YAxis: "100"}},
 	})
@@ -517,7 +527,7 @@ func (s *UISuite) TestRunUIAppliesStatToMultipleChartTypes() {
 
 	datasets := s.extractVIZBDataArray(s.read(out))
 	settings := datasets[0].(map[string]any)["settings"].([]any)
-	s.Require().Len(settings, 5)
+	s.Require().Len(settings, 6)
 	for _, raw := range settings {
 		stat := raw.(map[string]any)["stat"].(map[string]any)
 		s.Equal([]any{"shape"}, stat["math"])
