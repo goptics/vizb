@@ -115,6 +115,7 @@ vizb bar --horizontal --border-radius 8 data.csv
 
 # Combine with other flags
 vizb bar --stack --horizontal --border-radius 12 data.csv
+```
 
 Run one command to turn your GitHub contribution history into a 3D skyline of your activity over time. Each year stacks as a new layer; within it, every day is a column whose height is your contribution count. Replace `<your-github-username>` with your GitHub username and open the generated `index.html`.
 
