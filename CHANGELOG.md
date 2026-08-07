@@ -4,6 +4,12 @@ Notable changes to Vizb documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [v0.18.2] - 2026-08-07
+
+### Fixed
+
+- **ui** — Apply log scale for fractional values ([#348](https://github.com/goptics/vizb/pull/348))
+
 # [v0.18.1] - 2026-08-06
 
 ### Added
