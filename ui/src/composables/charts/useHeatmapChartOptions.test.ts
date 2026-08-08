@@ -185,7 +185,7 @@ describe('useHeatmapChartOptions — grouped 3D', () => {
     expect(series[0]!.type).toBe('heatmap')
     expect(series.slice(1).map((s) => s.name)).toEqual(['zA', 'zB'])
     expect(series.slice(1).every((s) => s.type === 'scatter')).toBe(true)
-    expect((options.value.legend as { show?: boolean }).show).toBe(true)
+    expect(options.value.legend).toMatchObject({ show: true, left: 'center', top: 0 })
   })
 
   it('hides legend when only one z value', () => {

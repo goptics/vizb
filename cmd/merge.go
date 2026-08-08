@@ -2,13 +2,12 @@ package cmd
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/goptics/vizb/cmd/cli"
+	"github.com/goptics/vizb/pkg/cliout"
 	"github.com/goptics/vizb/pkg/core"
-	"github.com/goptics/vizb/pkg/style"
 	"github.com/goptics/vizb/shared"
 	"github.com/goptics/vizb/shared/utils"
 	"github.com/spf13/cobra"
@@ -76,14 +75,14 @@ func collectJSONFiles(args []string) []string {
 	for _, arg := range args {
 		info, err := os.Stat(arg)
 		if err != nil {
-			logWarn("cannot access %s: %v", arg, err)
+			cliout.Warnf("cannot access %s: %v", arg, err)
 			continue
 		}
 
 		if info.IsDir() {
 			found, err := filepath.Glob(filepath.Join(arg, "*.json"))
 			if err != nil {
-				logWarn("error scanning directory %s: %v", arg, err)
+				cliout.Warnf("error scanning directory %s: %v", arg, err)
 				continue
 			}
 			files = append(files, found...)
@@ -99,7 +98,7 @@ func readFiles(files []string) []shared.Dataset {
 	for _, file := range files {
 		parsed, err := cli.ParseDatasetFile(file)
 		if err != nil {
-			logWarn("%s: %v", file, err)
+			cliout.Warnf("%s: %v", file, err)
 			continue
 		}
 		dataSets = append(dataSets, parsed...)
@@ -128,10 +127,5 @@ func writeMergeOutput(dataSets []shared.Dataset) {
 	if _, err := f.Write(jsonData); err != nil {
 		shared.ExitWithError("Failed to write JSON output: %v", err)
 	}
-	fmt.Println(style.Success.Render(fmt.Sprintf("🎉 Generated merged JSON successfully: %s", outFile)))
-}
-
-func logWarn(format string, args ...any) {
-	msg := fmt.Sprintf("Warning: "+format, args...)
-	fmt.Fprintln(os.Stderr, style.Warning.Render(msg))
+	cliout.Info("Generated merged JSON successfully")
 }

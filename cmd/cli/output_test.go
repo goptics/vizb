@@ -104,11 +104,11 @@ func (s *OutputSuite) TestHandleOutputResultWithNamedOutputShowsPath() {
 	s.Require().NoError(err)
 	defer file.Close()
 
-	output := testutil.CaptureStdout(func() {
+	output := testutil.CaptureStderr(func() {
 		HandleOutputResult(file, "specified_output.html")
 	})
 
-	s.Contains(output, "📄 Output file:")
+	s.Contains(output, "Output file")
 	s.Contains(output, filename)
 	s.NotContains(output, "<html>Test</html>")
 	s.NotContains(output, "\033[H\033[2J")
@@ -128,7 +128,7 @@ func (s *OutputSuite) TestHandleOutputResultWithStdoutShowsContent() {
 
 	s.Contains(output, "\033[H\033[2J")
 	s.Contains(output, content)
-	s.NotContains(output, "📄 Output file:")
+	s.NotContains(output, "Output file")
 }
 
 func (s *OutputSuite) TestConvertToDataset() {

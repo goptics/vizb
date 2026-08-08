@@ -2,7 +2,6 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 	"slices"
 	"strings"
@@ -10,7 +9,7 @@ import (
 	"github.com/goptics/vizb/cmd/cli"
 	internal_charts "github.com/goptics/vizb/internal/charts"
 	"github.com/goptics/vizb/internal/flags"
-	"github.com/goptics/vizb/pkg/style"
+	"github.com/goptics/vizb/pkg/cliout"
 
 	// Chart configs self-register into the charts registry and cli metadata
 	// via init() in cmd/charts/<c>; blank-importing them makes the registry
@@ -20,6 +19,7 @@ import (
 	_ "github.com/goptics/vizb/cmd/charts/line"
 	_ "github.com/goptics/vizb/cmd/charts/pie"
 	_ "github.com/goptics/vizb/cmd/charts/radar"
+	_ "github.com/goptics/vizb/cmd/charts/sankey"
 	_ "github.com/goptics/vizb/cmd/charts/scatter"
 
 	// Parsers self-register into pkg/parser via their init().
@@ -107,7 +107,7 @@ func runBenchmark(cmd *cobra.Command, args []string) {
 		shared.ExitWithError(err.Error(), nil)
 	}
 	for _, w := range warnings {
-		fmt.Fprintln(os.Stderr, style.Warning.Render(w))
+		cliout.Warn(w)
 	}
 
 	// The root command's chart-seed flags (sort/labels/stat) seed every chart;
@@ -148,11 +148,9 @@ func validateRootOptions(cmd *cobra.Command) {
 // have their own per-chart --sort/--show-labels and are NOT deprecated.
 func warnDeprecatedRootFlags(cmd *cobra.Command) {
 	if cmd.Flags().Changed("sort") {
-		fmt.Fprintln(os.Stderr, style.Warning.Render(
-			"Warning: --sort is deprecated on the root command; use --chart <type>:sort=<asc|desc> instead (e.g. --chart bar:sort=asc)"))
+		cliout.Warn("--sort is deprecated on the root command; use --chart <type>:sort=<asc|desc> instead (e.g. --chart bar:sort=asc)")
 	}
 	if cmd.Flags().Changed("show-labels") {
-		fmt.Fprintln(os.Stderr, style.Warning.Render(
-			"Warning: --show-labels is deprecated on the root command; use --chart <type>:labels instead (e.g. --chart pie:labels)"))
+		cliout.Warn("--show-labels is deprecated on the root command; use --chart <type>:labels instead (e.g. --chart pie:labels)")
 	}
 }

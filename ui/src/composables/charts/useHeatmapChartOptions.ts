@@ -323,6 +323,9 @@ function build3DHeatmap(config: BaseChartConfig): EChartsOption {
     legend: {
       show: zValues.length > 1,
       left: 'center',
+      // The heatmap grid reserves its legend band above the plot. ECharts 6
+      // changed the implicit legend position to bottom, so pin the old layout.
+      top: 0,
       itemWidth: 10,
       itemHeight: 10,
       textStyle: { color: styling.textColor },

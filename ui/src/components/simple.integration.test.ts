@@ -254,16 +254,18 @@ describe('SettingHeader / SettingsToggle / SelectionTabs', () => {
   })
 
   it('SettingsToggle emits checked updates', async () => {
+    const onUpdateChecked = vi.fn()
     const w = mount(SettingsToggle, {
       props: {
         id: 't1',
         label: 'On',
         description: 'd',
         checked: false,
+        'onUpdate:checked': onUpdateChecked,
       },
     })
     await w.get('button').trigger('click')
-    expect(w.emitted('update:checked')?.[0]).toEqual([true])
+    expect(onUpdateChecked).toHaveBeenCalledWith(true)
   })
 
   it('SelectionTabs emits and respects disabled', async () => {
@@ -271,19 +273,26 @@ describe('SettingHeader / SettingsToggle / SelectionTabs', () => {
       { value: 'a', label: 'A', icon: Sigma },
       { value: 'b', label: 'B' },
     ]
+    const onUpdateModelValue = vi.fn()
     const w = mount(SelectionTabs, {
-      props: { modelValue: 'a', options: opts },
+      props: { modelValue: 'a', options: opts, 'onUpdate:modelValue': onUpdateModelValue },
     })
     expect(w.text()).toContain('A')
     expect(w.text()).toContain('B')
     await w.get('[data-tabs]').trigger('click')
-    expect(w.emitted('update:modelValue')?.[0]).toEqual(['next'])
+    expect(onUpdateModelValue).toHaveBeenCalledWith('next')
 
+    const onDisabledUpdate = vi.fn()
     const disabled = mount(SelectionTabs, {
-      props: { modelValue: 'a', options: opts, disabled: true },
+      props: {
+        modelValue: 'a',
+        options: opts,
+        disabled: true,
+        'onUpdate:modelValue': onDisabledUpdate,
+      },
     })
     await disabled.get('[data-tabs]').trigger('click')
-    expect(disabled.emitted('update:modelValue')).toBeUndefined()
+    expect(onDisabledUpdate).not.toHaveBeenCalled()
   })
 })
 
@@ -409,6 +418,8 @@ describe('DatasetHeader', () => {
   })
 
   it('multi dataset/group selectors emit', async () => {
+    const onSelectDataset = vi.fn()
+    const onSelectGroup = vi.fn()
     const w = mount(DatasetHeader, {
       props: {
         dataset: { ...baseDataset, meta: {}, description: undefined, timestamp: undefined },
@@ -416,14 +427,16 @@ describe('DatasetHeader', () => {
         activeDatasetId: 0,
         resultGroups: [{ name: 'g0' }, { name: 'g1' }],
         activeGroupId: 0,
+        onSelectDataset,
+        onSelectGroup,
       },
     })
     const selectors = w.findAllComponents({ name: 'Selector' })
     expect(selectors.length).toBe(2)
     await selectors[0]!.trigger('click')
-    expect(w.emitted('selectDataset')?.[0]).toEqual([1])
+    expect(onSelectDataset).toHaveBeenCalledWith(1)
     await selectors[1]!.trigger('click')
-    expect(w.emitted('selectGroup')?.[0]).toEqual([1])
+    expect(onSelectGroup).toHaveBeenCalledWith(1)
   })
 
   it('falls back title when datasets empty', () => {

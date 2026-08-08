@@ -40,11 +40,13 @@ const getDatasets = async (): Promise<DataPayload> => {
     return classifyPayload(await res.json())
   }
 
+  /* v8 ignore start */
   if (import.meta.env.DEV) {
     const data = await import('../data/sample.json')
     // sample.json is always a full-dataset array in dev fixtures.
     return classifyPayload(data.default)
   }
+  /* v8 ignore stop */
 
   // Embedded HTML may inject one Dataset object or a Dataset[] (multi-tab).
   // classifyPayload normalizes both shapes to { mode: 'full', datasets: [...] }.

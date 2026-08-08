@@ -9,6 +9,8 @@ import {
   createValueModeGridConfig,
   VALUE_MODE_GRID_TOP,
   createHeatmapLayoutConfig,
+  createHorizontalAxisConfig,
+  createLegendConfig,
   DATAZOOM_INITIAL_END_PERCENT,
   getChartStyling,
   heatmapDataZoomXBottom,
@@ -30,39 +32,45 @@ const indicators = ['A', 'B', 'C']
 const styling = getChartStyling(true)
 
 describe('createAxisConfig (y-axis range)', () => {
+  it('keeps ECharts 5 axis-name positioning explicit', () => {
+    const { xAxis, yAxis } = createAxisConfig(styling, ['a', 'b'], 'linear', 'x')
+    expect(xAxis.nameMoveOverlap).toBe(false)
+    expect(yAxis.nameMoveOverlap).toBe(false)
+  })
+
   it('includes zero on linear scale by default (bar-style baseline)', () => {
     const { yAxis } = createAxisConfig(styling, ['a', 'b'], 'linear')
     expect(yAxis.scale).toBeUndefined()
   })
 
   it('fits y-axis to data range for line/scatter (scale: true)', () => {
-    const { yAxis } = createAxisConfig(
-      styling,
-      ['a', 'b'],
-      'linear',
-      undefined,
-      undefined,
-      false,
-      true
-    )
+    const { yAxis } = createAxisConfig(styling, ['a', 'b'], 'linear', undefined, false, true)
     expect(yAxis.scale).toBe(true)
   })
 
-  it('sets log min from data instead of scale when log scale is active', () => {
-    const { yAxis } = createAxisConfig(styling, ['a', 'b'], 'log', 2500, undefined, false, true)
+  it('uses dataMin/dataMax for log scale', () => {
+    const { yAxis } = createAxisConfig(styling, ['a', 'b'], 'log', undefined, false, true)
     expect(yAxis.scale).toBeUndefined()
-    expect(yAxis.min).toBe(1000)
+    expect(yAxis.type).toBe('log')
+    expect(yAxis.min).toBe('dataMin')
+    expect(yAxis.max).toBe('dataMax')
   })
 })
 
 describe('createValueAxisConfig (y-axis range)', () => {
+  it('keeps ECharts 5 axis-name positioning explicit', () => {
+    const { xAxis, yAxis } = createValueAxisConfig(styling, 'x', 'y')
+    expect(xAxis.nameMoveOverlap).toBe(false)
+    expect(yAxis.nameMoveOverlap).toBe(false)
+  })
+
   it('fits y-axis to data for value-mode line/scatter', () => {
-    const { yAxis } = createValueAxisConfig(styling, 'x', 'y', 'linear', undefined, true)
+    const { yAxis } = createValueAxisConfig(styling, 'x', 'y', 'linear', true)
     expect(yAxis.scale).toBe(true)
   })
 
   it('keeps zero baseline for value-mode bar charts', () => {
-    const { yAxis } = createValueAxisConfig(styling, 'x', 'y', 'linear', undefined, false)
+    const { yAxis } = createValueAxisConfig(styling, 'x', 'y', 'linear', false)
     expect(yAxis.scale).toBeUndefined()
   })
 })
@@ -99,6 +107,11 @@ describe('createDataZoomConfig', () => {
 })
 
 describe('createGridConfig', () => {
+  it('disables the ECharts 6 automatic outer-bounds adjustment', () => {
+    expect(createGridConfig(1, true).outerBoundsMode).toBe('none')
+    expect(createGridConfig(1, false).outerBoundsMode).toBe('none')
+  })
+
   it('reserves fixed px bottom only when dataZoom is present', () => {
     expect(createGridConfig(1, true).bottom).toBe(100)
     expect(createGridConfig(1, true).containLabel).toBe(false)
@@ -115,6 +128,11 @@ describe('createGridConfig', () => {
 })
 
 describe('createHeatmapLayoutConfig', () => {
+  it('disables the ECharts 6 automatic outer-bounds adjustment', () => {
+    expect(createHeatmapLayoutConfig().grid.outerBoundsMode).toBe('none')
+    expect(createHeatmapLayoutConfig({ hasXDataZoom: true }).grid.outerBoundsMode).toBe('none')
+  })
+
   it('reserves visualMap + tick band only when dataZoom is absent', () => {
     const layout = createHeatmapLayoutConfig({ compact: true })
     expect(layout.visualMapBottom).toBe(HEATMAP_VISUAL_MAP_BOTTOM)
@@ -344,9 +362,11 @@ describe('createHorizontalDataZoomConfig', () => {
 })
 
 describe('createValueAxisConfig log min', () => {
-  it('sets log minimum from minValue', () => {
-    const axes = createValueAxisConfig(styling, 'x', 'y', 'log', 25)
-    expect(axes.yAxis.min).toBe(10)
+  it('uses dataMin/dataMax for log scale', () => {
+    const axes = createValueAxisConfig(styling, 'x', 'y', 'log')
+    expect(axes.yAxis.type).toBe('log')
+    expect(axes.yAxis.min).toBe('dataMin')
+    expect(axes.yAxis.max).toBe('dataMax')
   })
 })
 
@@ -364,11 +384,12 @@ describe('createValueModeTooltip', () => {
 })
 
 describe('createHorizontalAxisConfig log + large', () => {
-  it('sets log min and auto interval for large categories', async () => {
+  it('uses dataMin/dataMax for log and auto interval for large categories', async () => {
     const { createHorizontalAxisConfig } = await import('./chartConfig')
     const many = Array.from({ length: 60 }, (_, i) => `c${i}`)
-    const axes = createHorizontalAxisConfig(styling, many, 'log', 50, 'cat', true)
-    expect(axes.xAxis.min).toBe(10)
+    const axes = createHorizontalAxisConfig(styling, many, 'log', 'cat', true)
+    expect(axes.xAxis.min).toBe('dataMin')
+    expect(axes.xAxis.max).toBe('dataMax')
     expect(axes.yAxis.axisLabel.interval).toBe('auto')
     expect(axes.yAxis.nameGap).toBe(88)
   })
@@ -421,10 +442,30 @@ describe('createTooltipConfig item + empty branches', () => {
   })
 })
 
-describe('createLegendConfig single series', () => {
+describe('createLegendConfig', () => {
   it('hides legend when only one series', async () => {
-    const { createLegendConfig } = await import('./chartConfig')
     expect(createLegendConfig([{ xAxis: 'a' }], styling, false)).toEqual({ show: false })
+  })
+
+  it('pins the default legend to the ECharts 5 top position', () => {
+    expect(createLegendConfig([{ xAxis: 'a' }], styling, true)).toMatchObject({
+      left: 'center',
+      top: 0,
+    })
+  })
+
+  it('does not combine a custom bottom position with the default top position', () => {
+    const legend = createLegendConfig([{ xAxis: 'a' }], styling, true, { bottom: 0 })
+    expect(legend.bottom).toBe(0)
+    expect(legend.top).toBeUndefined()
+  })
+})
+
+describe('createHorizontalAxisConfig', () => {
+  it('keeps ECharts 5 axis-name positioning explicit', () => {
+    const { xAxis, yAxis } = createHorizontalAxisConfig(styling, ['a'], 'linear', 'category')
+    expect(xAxis.nameMoveOverlap).toBe(false)
+    expect(yAxis.nameMoveOverlap).toBe(false)
   })
 })
 
@@ -552,16 +593,16 @@ describe('createLabelConfig value formatter', () => {
     formatter: (p: { value?: number | (number | null)[] | null }) => string
   }
 
-  it('formats numeric values at full precision', () => {
-    expect(label.formatter({ value: 5941.380000000001 })).toBe('5941.380000000001')
-    expect(label.formatter({ value: 3370.4500000000003 })).toBe('3370.4500000000003')
-    expect(label.formatter({ value: 2864.2999999999997 })).toBe('2864.2999999999997')
+  it('formats numeric values without IEEE 754 display noise', () => {
+    expect(label.formatter({ value: 5941.380000000001 })).toBe('5941.38')
+    expect(label.formatter({ value: 3370.4500000000003 })).toBe('3370.45')
+    expect(label.formatter({ value: 2864.2999999999997 })).toBe('2864.3')
     expect(label.formatter({ value: 1.005 })).toBe('1.005')
     expect(label.formatter({ value: -1.005 })).toBe('-1.005')
   })
 
-  it('formats the y value of a [x, y] tuple at full precision', () => {
-    expect(label.formatter({ value: [1, 4512.6900000000005] })).toBe('4512.6900000000005')
+  it('formats the y value of a [x, y] tuple without IEEE 754 display noise', () => {
+    expect(label.formatter({ value: [1, 4512.6900000000005] })).toBe('4512.69')
     expect(label.formatter({ value: [1, 1.005] })).toBe('1.005')
     expect(label.formatter({ value: [1, -1.005] })).toBe('-1.005')
   })

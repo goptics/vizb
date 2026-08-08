@@ -85,7 +85,7 @@ See the [Parser Guide](/guides/parsers) for each parser's metrics, and the
 | `--select` | | *(repeatable)* | csv/json only: see [`--select` mode matrix](#--select-mode-matrix) below |
 | `--json-path` | | `""` | json only: select a nested array to chart via a jq-like dot path (e.g. `--json-path '.data.results'`) |
 | `--sort` | `-s` | `""` | **Deprecated on root:** use `--chart <type>:sort=<asc\|desc>`. Sort order: `asc` or `desc` (default: as-is) |
-| `--charts` | `-c` | `bar,line,pie` | Chart types to generate (`bar`, `line`, `scatter`, `pie`, `heatmap`, `radar`) |
+| `--charts` | `-c` | `bar,line,pie` | Chart types to generate (`bar`, `line`, `scatter`, `pie`, `heatmap`, `radar`, `sankey`) |
 | `--chart` | | | Per-chart type settings override (repeatable): `<type>:<props>` — comma or semicolon between props; see below |
 | `--show-labels` | `-l` | `false` | **Deprecated on root:** use `--chart <type>:labels`. Show value labels on charts |
 | `--filter` | `-f` | `""` | Regex to include only matching rows (CSV/JSON: `--group` label) or benchmark names |
@@ -206,8 +206,8 @@ vizb bench.txt -f "Sort" -o output.html
 ### Reducing output size
 
 By default `bar`, `line`, and `pie` are bundled. Use `--charts` to add
-`heatmap` or `radar`, or to narrow the set further — unselected renderers are
-dropped at generation time.
+`heatmap`, `radar`, or `sankey`, or to narrow the set further — unselected
+renderers are dropped at generation time.
 
 ```bash
 vizb bench.txt -c bar -o output.html       # ~400 kB

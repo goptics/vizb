@@ -116,6 +116,24 @@ export function makeHeatmapChartData(overrides: ChartDataOverrides = {}): ChartD
   })
 }
 
+export function makeSankeyChartData(overrides: ChartDataOverrides = {}): ChartData {
+  return emptyChartData({
+    title: 'flow',
+    statType: 'sum',
+    yAxis: ['B', 'C'],
+    series: [
+      { xAxis: 'A', values: [0], benchmarkId: '' },
+      { xAxis: 'B', values: [0], benchmarkId: '' },
+    ],
+    points: [
+      { xAxis: 'A', yAxis: 'B', zAxis: '', value: 10 },
+      { xAxis: 'B', yAxis: 'C', zAxis: '', value: 5 },
+    ],
+    axisLabels: { x: 'source', y: 'target' },
+    ...overrides,
+  })
+}
+
 export const continuousRender3D: Render3D = {
   mode: 'continuous',
   xValues: [],

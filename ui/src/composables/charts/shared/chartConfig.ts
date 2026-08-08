@@ -1,4 +1,4 @@
-import type { EChartsOption } from 'echarts/types/dist/shared'
+import type { EChartsOption } from 'echarts'
 import type { ScaleType } from '@/types'
 import { fontSize } from './common'
 import { describe } from '@/lib/stats'
@@ -9,6 +9,7 @@ export const LARGE_X_THRESHOLD = 50
 export const DATAZOOM_INITIAL_END_PERCENT = 20
 
 const axisTitleFontSize = 16
+const LOG_AXIS_RANGE = { min: 'dataMin' as const, max: 'dataMax' as const }
 
 // Bottom chrome for heatmap / correlation — visualMap always, dataZoom when len > 50.
 export const HEATMAP_VISUAL_MAP_BOTTOM = 8
@@ -62,6 +63,9 @@ export function createHeatmapLayoutConfig(options: HeatmapLayoutOptions = {}) {
       bottom: gridBottom,
       top: options.top ?? (hasLegend ? `${legendSpace}%` : 8),
       containLabel: !hasXDataZoom,
+      // ECharts 6 otherwise shrinks fixed grids to keep axes inside the
+      // canvas. Vizb already reserves each axis/chrome band explicitly.
+      outerBoundsMode: 'none' as const,
     },
   }
 }
@@ -227,7 +231,6 @@ export function createValueAxisConfig(
   xAxisName?: string,
   yAxisName?: string,
   yScale: ScaleType = 'linear',
-  minValue?: number,
   fitYAxisToData = false
 ): { xAxis: any; yAxis: any } {
   const nameStyle = {
@@ -238,7 +241,9 @@ export function createValueAxisConfig(
 
   const yAxisConfig: any = {
     type: yScale === 'log' ? 'log' : 'value',
-    logBase: 10,
+    // ECharts 6 moves axis names to avoid label overlap by default. Vizb's
+    // nameGap values already reserve their position using the v5 behavior.
+    nameMoveOverlap: false,
     ...(yAxisName
       ? { name: yAxisName, nameLocation: 'middle', nameGap: 45, nameTextStyle: nameStyle }
       : {}),
@@ -247,16 +252,16 @@ export function createValueAxisConfig(
     axisLine: { lineStyle: { color: styling.axisColor } },
   }
 
-  if (yScale === 'log' && minValue !== undefined) {
-    const minLog = Math.pow(10, Math.floor(Math.log10(minValue)))
-    yAxisConfig.min = Math.max(1, minLog)
-  } else if (fitYAxisToData && yScale === 'linear') {
+  if (yScale === 'log') {
+    Object.assign(yAxisConfig, LOG_AXIS_RANGE)
+  } else if (fitYAxisToData) {
     yAxisConfig.scale = true
   }
 
   return {
     xAxis: {
       type: 'value',
+      nameMoveOverlap: false,
       ...(xAxisName
         ? { name: xAxisName, nameLocation: 'middle', nameGap: 30, nameTextStyle: nameStyle }
         : {}),
@@ -329,14 +334,13 @@ export function createAxisConfig(
   styling: ChartStyling,
   xAxisData: string[],
   scale: ScaleType = 'linear',
-  minValue?: number,
   xAxisName?: string,
   hasDataZoom = false,
   fitYAxisToData = false
 ): { xAxis: any; yAxis: any } {
   const yAxisConfig: any = {
     type: scale === 'log' ? 'log' : 'value',
-    logBase: 10,
+    nameMoveOverlap: false,
     splitLine: {
       lineStyle: {
         opacity: styling.opacity,
@@ -350,12 +354,9 @@ export function createAxisConfig(
     },
   }
 
-  // For log scale, set a clean minimum to avoid showing 0.1
-  if (scale === 'log' && minValue !== undefined) {
-    // Round down to nearest power of 10, but minimum is 1
-    const minLog = Math.pow(10, Math.floor(Math.log10(minValue)))
-    yAxisConfig.min = Math.max(1, minLog)
-  } else if (fitYAxisToData && scale === 'linear') {
+  if (scale === 'log') {
+    Object.assign(yAxisConfig, LOG_AXIS_RANGE)
+  } else if (fitYAxisToData) {
     // ECharts default includes zero; scale the axis to the series min/max instead.
     yAxisConfig.scale = true
   }
@@ -363,6 +364,7 @@ export function createAxisConfig(
   return {
     xAxis: {
       type: 'category',
+      nameMoveOverlap: false,
       data: xAxisData,
       // Axis title (group name) under the category axis — not the series ticks.
       ...(xAxisName
@@ -405,7 +407,6 @@ export function createHorizontalAxisConfig(
   styling: ChartStyling,
   yAxisData: string[],
   scale: ScaleType = 'linear',
-  minValue?: number,
   categoryAxisName?: string,
   hasDataZoom = false
 ): { xAxis: any; yAxis: any } {
@@ -417,7 +418,7 @@ export function createHorizontalAxisConfig(
 
   const xAxisConfig: any = {
     type: scale === 'log' ? 'log' : 'value',
-    logBase: 10,
+    nameMoveOverlap: false,
     splitLine: {
       lineStyle: { opacity: styling.opacity },
     },
@@ -429,15 +430,13 @@ export function createHorizontalAxisConfig(
     },
   }
 
-  if (scale === 'log' && minValue !== undefined) {
-    const minLog = Math.pow(10, Math.floor(Math.log10(minValue)))
-    xAxisConfig.min = Math.max(1, minLog)
-  }
+  if (scale === 'log') Object.assign(xAxisConfig, LOG_AXIS_RANGE)
 
   return {
     xAxis: xAxisConfig,
     yAxis: {
       type: 'category',
+      nameMoveOverlap: false,
       inverse: true,
       data: yAxisData,
       ...(categoryAxisName
@@ -764,9 +763,17 @@ export function createLegendConfig(
     return { show: false }
   }
 
+  const hasCustomVerticalPosition =
+    customConfig &&
+    (Object.prototype.hasOwnProperty.call(customConfig, 'top') ||
+      Object.prototype.hasOwnProperty.call(customConfig, 'bottom'))
+
   return {
     show: true,
     left: 'center',
+    // Match the ECharts 5 theme unless a chart intentionally supplies its own
+    // top or bottom placement (for example horizontal bars).
+    ...(!hasCustomVerticalPosition ? { top: 0 } : {}),
     itemWidth: 10,
     itemHeight: 10,
     textStyle: { fontSize, color: styling.textColor },
@@ -818,6 +825,7 @@ export function createGridConfig(seriesLength = 1, hasDataZoom = false): any {
       bottom: 100,
       top: `${legendSpace}%`,
       containLabel: false,
+      outerBoundsMode: 'none',
     }
   }
 
@@ -829,6 +837,7 @@ export function createGridConfig(seriesLength = 1, hasDataZoom = false): any {
     bottom: SERIES_TICK_BAND,
     top: `${legendSpace}%`,
     containLabel: true,
+    outerBoundsMode: 'none',
   }
 }
 

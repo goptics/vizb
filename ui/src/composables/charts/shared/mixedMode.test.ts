@@ -337,8 +337,8 @@ describe('buildMixedAxes3DOptions', () => {
       }),
       'scatter3D'
     )
-    expect(option.yAxis3D).toMatchObject({ type: 'log', logBase: 10 })
-    expect(option.zAxis3D).toMatchObject({ type: 'log', logBase: 10 })
+    expect(option.yAxis3D).toMatchObject({ type: 'log' })
+    expect(option.zAxis3D).toMatchObject({ type: 'log' })
     expect(seriesList(option)).toEqual([])
     expect(option.visualMap).toBeTruthy()
   })

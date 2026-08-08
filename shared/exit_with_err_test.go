@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -71,7 +72,11 @@ func (s *ExitWithErrorSuite) TestExitWithError() {
 
 			s.Error(err, "Expected OsExit to be called (should panic)")
 			s.True(*exitCalled, "OsExit should have been called")
-			s.Equal(tt.expectedOutput, output, "stderr output should match expected")
+			s.Contains(output, ">", "stderr should include level mark")
+			body := strings.TrimSuffix(tt.expectedOutput, "\n")
+			if body != "" {
+				s.Contains(output, body, "stderr should include message body")
+			}
 		})
 	}
 }
@@ -130,21 +135,6 @@ func (s *ExitWithErrorSuite) TestExitWithErrorStderrFailure() {
 
 	s.Error(err, "Expected OsExit to be called (should panic)")
 	s.True(*exitCalled, "OsExit should be called even if stderr write fails")
-}
-
-func (s *ExitWithErrorSuite) TestPrintWarning() {
-	oldStderr := os.Stderr
-	r, w, _ := os.Pipe()
-	os.Stderr = w
-
-	PrintWarning("disk nearly full")
-
-	w.Close()
-	os.Stderr = oldStderr
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	s.Contains(buf.String(), "disk nearly full")
 }
 
 func TestExitWithErrorSuite(t *testing.T) {

@@ -24,13 +24,13 @@
   },
   "dependencies": {
     "clsx": "^2.1.1",
-    "echarts": "^5.5.0",
+    "echarts": "^6.1.0",
     "echarts-gl": "^2.1.0",
     "lucide-vue-next": "^0.461.0",
     "radix-vue": "^1.9.0",
     "tailwind-merge": "^2.5.5",
-    "vue": "^3.5.22",
-    "vue-echarts": "^7.0.3"
+    "vue": "^3.5.41",
+    "vue-echarts": "^8.1.0"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.6",

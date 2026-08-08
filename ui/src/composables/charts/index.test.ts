@@ -8,6 +8,7 @@ describe('composables/charts index', () => {
     expect(typeof charts.usePieChartOptions).toBe('function')
     expect(typeof charts.useHeatmapChartOptions).toBe('function')
     expect(typeof charts.useRadarChartOptions).toBe('function')
+    expect(typeof charts.useSankeyChartOptions).toBe('function')
     expect(typeof charts.useBar3DChartOptions).toBe('function')
     expect(typeof charts.useLine3DChartOptions).toBe('function')
     expect(typeof charts.useScatterChartOptions).toBe('function')

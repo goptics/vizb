@@ -4,6 +4,22 @@ Notable changes to Vizb documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [v0.18.2] - 2026-08-07
+
+### Fixed
+
+- **ui** — Apply log scale for fractional values ([#348](https://github.com/goptics/vizb/pull/348))
+
+# [v0.18.1] - 2026-08-06
+
+### Added
+
+- **cli** — Modernize status logging with Charm-style output ([#341](https://github.com/goptics/vizb/pull/341))
+
+### Fixed
+
+- **ui** — Strip IEEE 754 display noise from chart numbers ([#342](https://github.com/goptics/vizb/pull/342))
+
 # [v0.18.0] - 2026-08-05
 
 ### Fixed

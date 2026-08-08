@@ -13,6 +13,10 @@ import {
 import { Bar3DChart, Line3DChart, Scatter3DChart } from 'echarts-gl/charts'
 import { Grid3DComponent } from 'echarts-gl/components'
 import VChart from 'vue-echarts'
+import {
+  createLegendSelectChangedForwarder,
+  type LegendSelectChangedEvent,
+} from './charts/legendEvents'
 
 // This component owns every echarts-gl import. Because it is only ever reached
 // through a dynamic import() (see ChartCard.vue), the gl engine lands in its own
@@ -37,20 +41,22 @@ defineProps<{
   initOptions: Record<string, unknown>
 }>()
 
-defineEmits<{
-  legendselectchanged: [e: { selected: Record<string, boolean> }]
+const emit = defineEmits<{
+  legendselectchanged: [e: LegendSelectChangedEvent]
 }>()
+
+const onLegendSelectChanged = createLegendSelectChangedForwarder((event) =>
+  emit('legendselectchanged', event)
+)
 </script>
 
 <template>
   <!--
-    `:update-options="{ notMerge: false }"` is the toggle that fixes the
-    autoRotate lag. vue-echarts defaults to
-    `setOption(option, { notMerge: option !== oldOption, ... })`, so every
-    time our options computed produces a new reference (theme, sort, scale,
-    autoRotate, anything), ECharts receives `notMerge: true` and the
-    3D scene is torn down + rebuilt (re-uploads bar/line geometry, re-binds
-    lights, restarts the view-control animation state). That's the lag.
+    `:update-options="{ notMerge: false }"` fixes the autoRotate lag and makes
+    the 3D update contract explicit. vue-echarts 8 normally plans option
+    updates automatically, but a replacement update tears down + rebuilds the
+    3D scene (re-uploads bar/line geometry, re-binds lights, and restarts the
+    view-control animation state).
 
     Overriding to `notMerge: false` makes ECharts MERGE the new option into
     the existing one. Incremental changes — a single field like
@@ -68,6 +74,6 @@ defineEmits<{
     :init-options="initOptions"
     :update-options="{ notMerge: false, replaceMerge: ['series', 'visualMap'] }"
     :autoresize="true"
-    @legendselectchanged="$emit('legendselectchanged', $event)"
+    @legendselectchanged="onLegendSelectChanged"
   />
 </template>

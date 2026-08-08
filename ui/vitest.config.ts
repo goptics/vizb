@@ -2,6 +2,9 @@ import path from 'path'
 import { defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
 
+// Force test mode even if the shell exported NODE_ENV=production.
+process.env.NODE_ENV = 'test'
+
 const alias = {
   '@': path.resolve(__dirname, './src'),
 }
@@ -15,6 +18,9 @@ export default defineConfig({
   resolve: { alias },
   test: {
     globals: false,
+    env: {
+      NODE_ENV: 'test',
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'text-summary', 'html', 'json-summary', 'lcov'],

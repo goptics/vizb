@@ -19,7 +19,7 @@ import {
 import {
   adjustForLogScaleLine,
   useSortedSeriesData,
-  getEffectiveScale,
+  resolveLogScale,
   computeSeriesTotals,
 } from './shared/common'
 import { resolveSeriesSymbol } from './shared/seriesConfig'
@@ -65,7 +65,10 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
     const { series, xAxisData, hasYAxis } = sortedData.value
     const baseOptions = getBaseOptions(config)
     const styling = getChartStyling(isDark.value)
-    const { minValue, effectiveScale } = getEffectiveScale(series, scale?.value ?? 'linear')
+    const yScale = resolveLogScale(
+      scale?.value ?? 'linear',
+      series.flatMap((s) => s.values)
+    )
     const largeX = isLargeXAxis(xAxisData)
     const xLabel = chartData.value.axisLabels?.x
     const seriesExtras = resolveSeriesSymbol(
@@ -75,13 +78,13 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
     )
     const useVisualMap = kind === 'scatter' && visualMap?.value === true
     const smoothLines = kind === 'line' && config.smooth?.value === true
-    const useStack = kind === 'line' && stack?.value === true && effectiveScale !== 'log'
+    const useStack = kind === 'line' && stack?.value === true && yScale !== 'log'
 
     if (!hasYAxis) {
       const singleSeries = {
         name: chartData.value.title,
         type: kind,
-        data: series.map((s) => adjustForLogScaleLine(s.values[0] ?? null, effectiveScale)),
+        data: series.map((s) => adjustForLogScaleLine(s.values[0] ?? null, yScale)),
         label: createLabelConfig(showLabels.value, styling),
         ...(kind === 'scatter'
           ? scatterSeriesLargeOpts(useVisualMap)
@@ -95,7 +98,7 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
         ...baseOptions,
         grid: createGridConfig(1, largeX),
         tooltip: createPinnedAxisTooltip(isDark.value),
-        ...createAxisConfig(styling, xAxisData, effectiveScale, minValue, xLabel, largeX, true),
+        ...createAxisConfig(styling, xAxisData, yScale, xLabel, largeX, true),
         ...(largeX ? { dataZoom: createDataZoomConfig(xAxisData, styling) } : {}),
         legend: { show: false },
         visualMap: resolve2DScatterVisualMap(
@@ -112,7 +115,7 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
     const transposedSeries = yAxisLabels.map((yAxisLabel, yIndex) => ({
       name: yAxisLabel,
       type: kind,
-      data: series.map((s) => adjustForLogScaleLine(s.values[yIndex] ?? null, effectiveScale)),
+      data: series.map((s) => adjustForLogScaleLine(s.values[yIndex] ?? null, yScale)),
       label: createLabelConfig(showLabels.value, styling),
       ...(kind === 'scatter'
         ? scatterSeriesLargeOpts(useVisualMap)
@@ -139,7 +142,7 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
         1
       ),
       tooltip: createTooltipConfig(showXBreakdown, isDark.value, seriesTotals),
-      ...createAxisConfig(styling, xAxisData, effectiveScale, minValue, xLabel, largeX, true),
+      ...createAxisConfig(styling, xAxisData, yScale, xLabel, largeX, true),
       ...(largeX ? { dataZoom: createDataZoomConfig(xAxisData, styling) } : {}),
       legend: createLegendConfig(
         transposedSeries.map((s) => ({ xAxis: s.name })),

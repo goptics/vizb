@@ -224,10 +224,18 @@ describe('computeChartGrandTotal', () => {
 })
 
 describe('formatChartNumber', () => {
-  it('preserves full precision', () => {
+  it('preserves meaningful precision', () => {
     expect(formatChartNumber(10.126)).toBe('10.126')
     expect(formatChartNumber(3)).toBe('3')
     expect(formatChartNumber(0.914273581)).toBe('0.914273581')
+  })
+
+  it('strips IEEE 754 display noise from sums and binary residues', () => {
+    expect(formatChartNumber(0.1 + 0.2)).toBe('0.3')
+    expect(formatChartNumber(39128072.70000001)).toBe('39128072.7')
+    expect(formatChartNumber(5941.380000000001)).toBe('5941.38')
+    expect(formatChartNumber(3370.4500000000003)).toBe('3370.45')
+    expect(formatChartNumber(2864.2999999999997)).toBe('2864.3')
   })
 
   it('stringifies non-finite values', () => {

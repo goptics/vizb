@@ -22,6 +22,7 @@ vi.mock('echarts/charts', () => ({
   PieChart: 'PieChart',
   HeatmapChart: 'HeatmapChart',
   RadarChart: 'RadarChart',
+  SankeyChart: 'SankeyChart',
 }))
 vi.mock('echarts-gl/charts', () => ({
   Bar3DChart: 'Bar3DChart',
@@ -40,6 +41,7 @@ vi.mock('vue-echarts', () => ({
           'data-testid': 'vchart',
           'data-not-merge': props.updateOptions?.notMerge === false ? '0' : '1',
           onClick: () => emit('legendselectchanged', { selected: { A: true } }),
+          onDblclick: () => emit('legendselectchanged', { selected: { A: 'yes' } }),
         })
     },
   }),
@@ -51,6 +53,7 @@ import ChartPie from './ChartPie.vue'
 import ChartScatter from './ChartScatter.vue'
 import ChartHeatmap from './ChartHeatmap.vue'
 import ChartRadar from './ChartRadar.vue'
+import ChartSankey from './ChartSankey.vue'
 import Chart3D from './Chart3D.vue'
 import { BASE_2D } from './charts/base'
 
@@ -69,14 +72,18 @@ describe('chart shells', () => {
     ['ChartScatter', ChartScatter],
     ['ChartHeatmap', ChartHeatmap],
     ['ChartRadar', ChartRadar],
+    ['ChartSankey', ChartSankey],
     ['Chart3D', Chart3D],
   ] as const)('%s mounts VChart and forwards legend event', async (name, Comp) => {
+    const onLegendselectchanged = vi.fn()
     const w = mount(Comp, {
-      props: { option, initOptions },
+      props: { option, initOptions, onLegendselectchanged },
     })
     expect(w.find('[data-testid="vchart"]').exists()).toBe(true)
     await w.get('[data-testid="vchart"]').trigger('click')
-    expect(w.emitted('legendselectchanged')?.[0]).toEqual([{ selected: { A: true } }])
+    expect(onLegendselectchanged).toHaveBeenCalledWith({ selected: { A: true } })
+    await w.get('[data-testid="vchart"]').trigger('dblclick')
+    expect(onLegendselectchanged).toHaveBeenCalledTimes(1)
     expect(useMock).toHaveBeenCalled()
     expect(name).toBeTruthy()
   })

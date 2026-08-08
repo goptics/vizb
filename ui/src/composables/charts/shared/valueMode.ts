@@ -12,7 +12,7 @@ import {
   LARGE_DATA_THRESHOLD,
   scatterSeriesLargeOpts,
 } from './chartConfig'
-import { adjustForLogScaleLine, getEffectiveScale } from './common'
+import { adjustForLogScaleLine, resolveLogScale } from './common'
 import { resolveSeriesSymbol } from './seriesConfig'
 import { resolve2DScatterVisualMap } from './visualMap'
 
@@ -71,10 +71,9 @@ export function buildValueAxes2DOptions(
   const yLabel = chartData.value.axisLabels?.y
   const baseOptions = getBaseOptions(config)
   const styling = getChartStyling(isDark.value)
-  const effectiveScale = scale?.value ?? 'linear'
-  const { minValue, effectiveScale: yScale } = getEffectiveScale(
-    [{ xAxis: chartData.value.title, values: tuples.map((t) => t[1]), benchmarkId: '' }],
-    effectiveScale
+  const yScale = resolveLogScale(
+    scale?.value ?? 'linear',
+    tuples.map((t) => t[1])
   )
 
   const sorted = sortValueTuples(tuples, sort.value.enabled, sort.value.order)
@@ -126,7 +125,6 @@ export function buildValueAxes2DOptions(
       xLabel,
       yLabel,
       yScale,
-      minValue,
       chartType === 'line' || chartType === 'scatter'
     ),
     dataZoom: [

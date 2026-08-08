@@ -16,7 +16,7 @@ export type StatConfig = {
   math: StatMath[] // empty = all categories
 }
 
-export type ChartType = 'bar' | 'line' | 'scatter' | 'pie' | 'heatmap' | 'radar'
+export type ChartType = 'bar' | 'line' | 'scatter' | 'pie' | 'heatmap' | 'radar' | 'sankey'
 
 export type ScaleType = 'linear' | 'log'
 export const SCALE_TYPES: ScaleType[] = ['linear', 'log']
@@ -55,7 +55,7 @@ export type Axis = {
 // Each chart type carries only the fields that apply to it. The `type`
 // discriminator narrows the union at the call site — chart-rendering code may
 // still use `cfg.type === 'bar' || cfg.type === 'line'` to access `scale` /
-// `threeDRotate` (those fields are absent on pie/heatmap/radar). The settings
+// `threeDRotate` (those fields are absent on pie/heatmap/radar/sankey). The settings
 // panel is fully schema-less: it walks `Object.keys(activeConfig)` and renders
 // the registered control for each non-`type` key.
 export type BarConfig = {
@@ -128,6 +128,14 @@ export type RadarConfig = {
   stat?: StatConfig
 }
 
+export type SankeyConfig = {
+  type: 'sankey'
+  swap?: string
+  sort?: Sort
+  showLabels?: boolean
+  stat?: StatConfig
+}
+
 export type ChartConfig =
   | BarConfig
   | LineConfig
@@ -135,6 +143,7 @@ export type ChartConfig =
   | PieConfig
   | HeatmapConfig
   | RadarConfig
+  | SankeyConfig
 
 // Human-readable label for each dimension, derived from the --group columns.
 // `name` is carried (though not rendered as an axis) so the swap feature can

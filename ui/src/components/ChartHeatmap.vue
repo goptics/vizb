@@ -5,6 +5,10 @@ import { GridComponent, VisualMapComponent } from 'echarts/components'
 import { HeatmapChart, ScatterChart } from 'echarts/charts'
 import VChart from 'vue-echarts'
 import { BASE_2D } from './charts/base'
+import {
+  createLegendSelectChangedForwarder,
+  type LegendSelectChangedEvent,
+} from './charts/legendEvents'
 
 use([...BASE_2D, GridComponent, VisualMapComponent, HeatmapChart, ScatterChart])
 
@@ -13,9 +17,13 @@ defineProps<{
   initOptions: Record<string, unknown>
 }>()
 
-defineEmits<{
-  legendselectchanged: [e: { selected: Record<string, boolean> }]
+const emit = defineEmits<{
+  legendselectchanged: [e: LegendSelectChangedEvent]
 }>()
+
+const onLegendSelectChanged = createLegendSelectChangedForwarder((event) =>
+  emit('legendselectchanged', event)
+)
 </script>
 
 <template>
@@ -23,6 +31,6 @@ defineEmits<{
     :option="option"
     :init-options="initOptions"
     :autoresize="true"
-    @legendselectchanged="$emit('legendselectchanged', $event)"
+    @legendselectchanged="onLegendSelectChanged"
   />
 </template>

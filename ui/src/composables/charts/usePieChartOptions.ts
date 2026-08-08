@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
-import type { TitleOption } from 'echarts/types/dist/shared'
+import type { TitleComponentOption } from 'echarts/components'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
 import { getNextColorFor, hasXAxis, hasYAxis, hasZAxis } from '@/lib/utils'
 import {
@@ -37,7 +37,7 @@ const makePieTitle = (
   text: string,
   left: string,
   styling: ReturnType<typeof getChartStyling>
-): TitleOption => ({
+): TitleComponentOption => ({
   text,
   left,
   top: '5%',
