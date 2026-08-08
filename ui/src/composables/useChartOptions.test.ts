@@ -52,7 +52,8 @@ function dispatch(
     ref(undefined),
     ref(undefined),
     cfg.smooth ?? ref(false),
-    cfg.horizontal ?? ref(false)
+    cfg.horizontal ?? ref(false),
+    cfg.borderRadius ?? ref(undefined)
   )
 }
 
@@ -126,7 +127,7 @@ describe('useChartOptions dispatch', () => {
       expected: 'scatter3D',
     },
   ])(
-    'chartType=$chartType threeD=$threeD → series type $expected',
+    'chartType=$chartType threeD=$threeD â†’ series type $expected',
     ({ chartType, threeD, data, expected }) => {
       const { options } = dispatch(chartType, data(), { threeD })
       expect(firstSeriesType(options.value)).toBe(expected)

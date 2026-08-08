@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {
   toRefs,
   ref,
@@ -86,6 +86,7 @@ const {
   symbolSize,
   smooth,
   horizontal,
+  borderRadius,
 } = useActiveChartShape()
 const { activeArrangement, activeDataset } = useDataPoint()
 const activeAxes = computed(() => activeDataset.value?.axes)
@@ -102,16 +103,16 @@ const is3DChart = computed(() =>
 )
 
 // Resolved sort gets a no-op default for the worker when the active config has
-// no `sort` field set — keeps the consumer pipeline shape stable.
+// no `sort` field set - keeps the consumer pipeline shape stable.
 const resolvedSort = computed(() => sort.value ?? { enabled: false, order: 'asc' as const })
 
 // Pick the lazily-loaded renderer for the active chart shape/type. Pie has no
 // 3D form (it renders per-dimension 2D pies even for x/y/z data), so it always
-// routes to ChartPie — never Chart3D, which doesn't register the pie module.
+// routes to ChartPie - never Chart3D, which doesn't register the pie module.
 const ActiveChart = computed<Component>(() => {
-  // Pie, heatmap, radar, and sankey have no 3D form — each renders its own 2D layout even for
+  // Pie, heatmap, radar, and sankey have no 3D form - each renders its own 2D layout even for
   // x/y/z data (pie: per-dimension pies; heatmap: z on legend; radar: per-dimension radars;
-  // sankey: z ignored, links by x→y only), so they must route past the is3D check that
+  // sankey: z ignored, links by x->y only), so they must route past the is3D check that
   // otherwise hands x/y/z off to Chart3D.
   if (chartType.value === 'pie') return RENDERERS.pie
   if (chartType.value === 'heatmap') return RENDERERS.heatmap
@@ -145,7 +146,8 @@ const { options } = useChartOptions(
   symbol,
   symbolSize,
   smooth,
-  horizontal
+  horizontal,
+  borderRadius
 )
 
 const initOptions = {
@@ -153,7 +155,7 @@ const initOptions = {
   devicePixelRatio: window.devicePixelRatio,
 } as const
 
-const { containerRef, isFullscreen, withFullscreenToolbox } = useFullscreen()
+const { isFullscreen, withFullscreenToolbox } = useFullscreen()
 
 // Stats panel is collapsed by default so the chart view is unchanged until the
 // user opts in. Offered for any chart with at least one series; the actual
@@ -174,7 +176,7 @@ const mergedOptions = computed<EChartsOption>(() => withFullscreenToolbox(option
 
 // Double-buffer the chart so a worker recompute never flashes a stale or
 // half-drawn frame. The live `<component>` renders `renderedChart`/`renderedOption`
-// — a buffer we control — not `ActiveChart`/`mergedOptions` directly.
+// a buffer we control - not `ActiveChart`/`mergedOptions` directly.
 const renderedChart = shallowRef<Component>(ActiveChart.value)
 const renderedOption = shallowRef<EChartsOption>(mergedOptions.value)
 const showSkeleton = ref(!!props.loading)
@@ -190,14 +192,14 @@ watch(ActiveChart, (c) => {
 })
 
 // Worker recompute (swap / sort / group switch). While `loading` we raise the
-// skeleton and FREEZE the buffer on the old data underneath it — so nothing the
+// skeleton and FREEZE the buffer on the old data underneath it  so nothing the
 // chart shows changes while the overlay is up. When the new data lands we apply
 // it to the buffer *behind* the still-raised overlay, wait for it to actually
 // paint (nextTick = option handed to echarts; two rAF = canvas repainted), then
 // drop the overlay. The new frame is therefore on screen before the reveal, so
 // neither the old chart nor a half-drawn new one is ever visible. A shape flip
-// (3D↔2D) swaps the renderer component; its own async loadingComponent — an
-// identical skeleton — covers any chunk-load gap, so the swap is seamless too.
+// (3D2D) swaps the renderer component; its own async loadingComponent  an
+// identical skeleton  covers any chunk-load gap, so the swap is seamless too.
 watch(
   () => props.loading,
   (l) => {

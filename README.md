@@ -90,6 +90,33 @@ TLS, and access controls in front of it. See the [Docker installation guide](htt
 
 ## Quick Example
 
+## Bar Chart Options
+
+### `--border-radius <int>`
+
+Set corner radius for bar charts in pixels.
+
+**Behavior:**
+- **Non-stacked bars**: Rounds the free outer corners of each bar
+- **Stacked bars** (`--stack`): Only the top segment (outermost end) receives rounding
+- **Horizontal bars** (`--horizontal`): Rounds the right/free end
+- **Default**: Square corners when flag is omitted
+
+**Examples:**
+```bash
+# Round top corners of vertical bars (8px)
+vizb bar --border-radius 8 data.csv
+
+# Stacked bars - only top segment rounded
+vizb bar --stack --border-radius 8 data.csv
+
+# Horizontal bars - right end rounded
+vizb bar --horizontal --border-radius 8 data.csv
+
+# Combine with other flags
+vizb bar --stack --horizontal --border-radius 12 data.csv
+```
+
 Run one command to turn your GitHub contribution history into a 3D skyline of your activity over time. Each year stacks as a new layer; within it, every day is a column whose height is your contribution count. Replace `<your-github-username>` with your GitHub username and open the generated `index.html`.
 
 ![torvalds contribution history](./assets/torvalds-contribution-history.gif)

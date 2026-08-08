@@ -85,6 +85,10 @@ export function useActiveChartShape() {
     () => (activeConfig.value as BarConfig | undefined)?.horizontal ?? false
   )
 
+  const borderRadius = computed<number | undefined>(
+    () => (activeConfig.value as BarConfig | undefined)?.borderRadius
+  )
+
   return {
     scale,
     stack,
@@ -100,5 +104,6 @@ export function useActiveChartShape() {
     symbolSize,
     smooth,
     horizontal,
+    borderRadius,
   }
 }

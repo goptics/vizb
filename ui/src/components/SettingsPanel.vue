@@ -168,6 +168,13 @@ const handlers: SettingsHandlers = {
     resetColor()
     setSwap(target)
   },
+  borderRadius: (radius: number | undefined) => {
+  // Handle borderRadius change - only for bar charts
+  const cfg = activeConfig.value as BarConfig
+  if (cfg && cfg.type === 'bar') {
+    cfg.borderRadius = radius
+  }
+},
 }
 
 const stackEnabled = computed(

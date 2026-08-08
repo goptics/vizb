@@ -66,6 +66,7 @@ export type BarConfig = {
   stack?: boolean
   showLabels?: boolean
   horizontal?: boolean
+  borderRadius?: number
   threeDRotate?: boolean
   threeD?: boolean
   threeDVisualMap?: boolean
