@@ -27,6 +27,14 @@ task test:ui:coverage     # unit + integration with 100% gates
 task test:ui:e2e          # Playwright
 ```
 
+### `NODE_ENV`
+
+`vitest.config.ts` forces **`NODE_ENV=test`** (Vitest only defaults to `test` when the var is unset).
+
+- **Do not** set `NODE_ENV=production` for unit/integration tests. Production Vue changes `import.meta.env.DEV` and coverage, and is the wrong mode for this suite.
+- Use production for `pnpm build` / embed only.
+- Prefer `pnpm test` / `task test:ui`; bare `vitest` still picks up the same config.
+
 ## Shared fixtures
 
 Import from `@/test-utils` (or relative `../test-utils`):
@@ -49,6 +57,7 @@ Do **not** copy-paste local `makeMixedConfig` / `dp` / DPR stubs into new suites
 5. **Assert behavior** (axis type, stack on, URL key, button present) — not theme hex or font px.
 6. **Pyramid budget** for a feature: ~10 units : 3 integrations : 1 e2e.
 7. No faux component tests that mock every SFC then never mount.
+8. **Component emit checks** → pass Vue 3 listener props (`onSelect`, `'onUpdate:checked'`, …) as `vi.fn()` spies rather than `wrapper.emitted()` (VTU’s emit recorder is tied to Vue’s devtools hook and is unreliable outside the normal test mode).
 
 ## E2E fixtures
 

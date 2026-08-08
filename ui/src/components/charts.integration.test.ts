@@ -74,12 +74,13 @@ describe('chart shells', () => {
     ['ChartSankey', ChartSankey],
     ['Chart3D', Chart3D],
   ] as const)('%s mounts VChart and forwards legend event', async (name, Comp) => {
+    const onLegendselectchanged = vi.fn()
     const w = mount(Comp, {
-      props: { option, initOptions },
+      props: { option, initOptions, onLegendselectchanged },
     })
     expect(w.find('[data-testid="vchart"]').exists()).toBe(true)
     await w.get('[data-testid="vchart"]').trigger('click')
-    expect(w.emitted('legendselectchanged')?.[0]).toEqual([{ selected: { A: true } }])
+    expect(onLegendselectchanged).toHaveBeenCalledWith({ selected: { A: true } })
     expect(useMock).toHaveBeenCalled()
     expect(name).toBeTruthy()
   })

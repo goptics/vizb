@@ -161,6 +161,9 @@ vi.mock('../components/ChartCard.vue', () => ({
 vi.mock('../components/DatasetHeader.vue', () => ({
   default: defineComponent({
     name: 'DatasetHeader',
+    // Declare props so :dataset does not fall through onto a native <div>
+    // (HTMLElement.dataset is read-only → Vue warn under non-production Vue).
+    props: ['dataset', 'datasets', 'activeDatasetId', 'resultGroups', 'activeGroupId'],
     emits: ['selectDataset', 'selectGroup'],
     setup:
       (_, { emit }) =>
@@ -171,7 +174,6 @@ vi.mock('../components/DatasetHeader.vue', () => ({
         ]),
   }),
 }))
-
 vi.mock('../components/LoadingSkeleton.vue', () => ({
   default: defineComponent({
     name: 'LoadingSkeleton',
