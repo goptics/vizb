@@ -52,6 +52,11 @@ jobs:
 
   test:
     runs-on: ubuntu-slim
+    # Pin production so Vitest/Vue stay on the production build. Integration
+    # emit checks use listener spies (not wrapper.emitted()); this catches
+    # regressions if someone reintroduces devtools-only emit recording.
+    env:
+      NODE_ENV: production
     defaults:
       run:
         working-directory: ui

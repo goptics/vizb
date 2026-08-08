@@ -142,6 +142,7 @@ describe('Selector', () => {
   })
 
   it('emits selectValue when model changes under activeValue mode', async () => {
+    const onSelectValue = vi.fn()
     const w = mount(Selector, {
       props: {
         items: [
@@ -150,41 +151,46 @@ describe('Selector', () => {
           { name: 'Emit', value: 'emit' },
         ],
         activeValue: 'a',
+        onSelectValue,
       },
     })
     const cb = w.findComponent({ name: 'Combobox' })
     await cb.vm.$emit('update:modelValue', { value: 'b', label: 'Beta' })
     await nextTick()
-    expect(w.emitted('selectValue')?.[0]).toEqual(['b'])
+    expect(onSelectValue).toHaveBeenCalledWith('b')
   })
 
   it('emits select by index when activeId mode', async () => {
+    const onSelect = vi.fn()
     const w = mount(Selector, {
       props: {
         items: [{ name: 'A' }, { name: 'B' }, { name: 'C' }],
         activeId: 0,
+        onSelect,
       },
     })
     const cb = w.findComponent({ name: 'Combobox' })
     await cb.vm.$emit('update:modelValue', { value: '2', label: 'C' })
     await nextTick()
-    expect(w.emitted('select')?.[0]).toEqual([2])
+    expect(onSelect).toHaveBeenCalledWith(2)
   })
 
   it('re-emits on open close when value differs', async () => {
+    const onSelect = vi.fn()
     const w = mount(Selector, {
       props: {
         items: [{ name: 'A' }, { name: 'B' }],
         activeId: 0,
+        onSelect,
       },
     })
     const cb = w.findComponent({ name: 'Combobox' })
     await cb.vm.$emit('update:modelValue', { value: '1', label: 'B' })
     await nextTick()
-    const before = w.emitted('select')?.length ?? 0
+    const before = onSelect.mock.calls.length
     await cb.vm.$emit('update:open', false)
     await nextTick()
-    expect(w.emitted('select')?.length).toBe(before)
+    expect(onSelect.mock.calls.length).toBe(before)
   })
 
   it('shows search when >10 options and truncation message with resultLimit', () => {
@@ -233,19 +239,22 @@ describe('Selector', () => {
   })
 
   it('does not emit select when same activeId selected', async () => {
+    const onSelect = vi.fn()
     const w = mount(Selector, {
       props: {
         items: [{ name: 'A' }, { name: 'B' }],
         activeId: 1,
+        onSelect,
       },
     })
     const cb = w.findComponent({ name: 'Combobox' })
     await cb.vm.$emit('update:modelValue', { value: '1', label: 'B' })
     await nextTick()
-    expect(w.emitted('select')).toBeUndefined()
+    expect(onSelect).not.toHaveBeenCalled()
   })
 
   it('does not emit selectValue when same activeValue selected', async () => {
+    const onSelectValue = vi.fn()
     const w = mount(Selector, {
       props: {
         items: [
@@ -253,15 +262,17 @@ describe('Selector', () => {
           { name: 'B', value: 'b' },
         ],
         activeValue: 'a',
+        onSelectValue,
       },
     })
     const cb = w.findComponent({ name: 'Combobox' })
     await cb.vm.$emit('update:modelValue', { value: 'a', label: 'A' })
     await nextTick()
-    expect(w.emitted('selectValue')).toBeUndefined()
+    expect(onSelectValue).not.toHaveBeenCalled()
   })
 
   it('activeValue open-close emit path', async () => {
+    const onSelectValue = vi.fn()
     const w = mount(Selector, {
       props: {
         items: [
@@ -269,6 +280,7 @@ describe('Selector', () => {
           { name: 'B', value: 'b' },
         ],
         activeValue: 'a',
+        onSelectValue,
       },
     })
     const cb = w.findComponent({ name: 'Combobox' })
@@ -278,28 +290,32 @@ describe('Selector', () => {
     await nextTick()
     await cb.vm.$emit('update:open', false)
     await nextTick()
-    expect(w.emitted('selectValue')?.length).toBeGreaterThan(0)
+    expect(onSelectValue).toHaveBeenCalled()
   })
 
   it('index items without value use stringified index', async () => {
+    const onSelect = vi.fn()
     const w = mount(Selector, {
       props: {
         items: [{ name: 'One' }, { name: 'Two' }],
         activeId: 0,
+        onSelect,
       },
     })
     expect(w.text()).toContain('One')
     const cb = w.findComponent({ name: 'Combobox' })
     await cb.vm.$emit('update:modelValue', { value: 'NaN', label: 'x' })
     await nextTick()
-    expect(w.emitted('select')).toBeUndefined()
+    expect(onSelect).not.toHaveBeenCalled()
   })
 
   it('open-close activeId emit when value differs', async () => {
+    const onSelect = vi.fn()
     const w = mount(Selector, {
       props: {
         items: [{ name: 'A' }, { name: 'B' }],
         activeId: 0,
+        onSelect,
       },
     })
     const cb = w.findComponent({ name: 'Combobox' })
@@ -309,10 +325,11 @@ describe('Selector', () => {
     await nextTick()
     await cb.vm.$emit('update:open', false)
     await nextTick()
-    expect(w.emitted('select')?.length).toBeGreaterThan(0)
+    expect(onSelect).toHaveBeenCalled()
   })
 
   it('open-close activeValue same value does not emit', async () => {
+    const onSelectValue = vi.fn()
     const w = mount(Selector, {
       props: {
         items: [
@@ -320,6 +337,7 @@ describe('Selector', () => {
           { name: 'B', value: 'b' },
         ],
         activeValue: 'a',
+        onSelectValue,
       },
     })
     const cb = w.findComponent({ name: 'Combobox' })
@@ -329,7 +347,7 @@ describe('Selector', () => {
     await nextTick()
     await cb.vm.$emit('update:open', false)
     await nextTick()
-    expect(w.emitted('selectValue')).toBeUndefined()
+    expect(onSelectValue).not.toHaveBeenCalled()
   })
 
   it('handles missing activeId and activeValue', async () => {
@@ -353,10 +371,12 @@ describe('Selector', () => {
   })
 
   it('open-close activeId same index does not emit', async () => {
+    const onSelect = vi.fn()
     const w = mount(Selector, {
       props: {
         items: [{ name: 'A' }, { name: 'B' }],
         activeId: 1,
+        onSelect,
       },
     })
     const cb = w.findComponent({ name: 'Combobox' })
@@ -366,7 +386,7 @@ describe('Selector', () => {
     await nextTick()
     await cb.vm.$emit('update:open', false)
     await nextTick()
-    expect(w.emitted('select')).toBeUndefined()
+    expect(onSelect).not.toHaveBeenCalled()
   })
 
   it('activeOption optional chain both sides', async () => {

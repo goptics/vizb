@@ -49,6 +49,7 @@ Do **not** copy-paste local `makeMixedConfig` / `dp` / DPR stubs into new suites
 5. **Assert behavior** (axis type, stack on, URL key, button present) — not theme hex or font px.
 6. **Pyramid budget** for a feature: ~10 units : 3 integrations : 1 e2e.
 7. No faux component tests that mock every SFC then never mount.
+8. **Component emit checks** → pass Vue 3 listener props (`onSelect`, `'onUpdate:checked'`, …) as `vi.fn()` spies. Do **not** use `wrapper.emitted()`: VTU records emits only via Vue’s devtools hook, which is disabled when `NODE_ENV=production`, so those assertions fail under production Vue even though real listeners still fire.
 
 ## E2E fixtures
 
