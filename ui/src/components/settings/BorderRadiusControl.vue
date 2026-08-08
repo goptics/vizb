@@ -47,8 +47,14 @@ const emit = defineEmits<{
 
 const displayValue = computed(() => props.modelValue ?? 0)
 
+/**
+ * Updates the borderRadius value. Rejects non-integer and negative values.
+ * Clamps values to 50px max.
+ */
+
 function updateValue(value: number) {
-  if (isNaN(value) || value < 0) {
+  // Reject non-integer values (CLI expects integer)
+  if (!Number.isInteger(value) || value < 0) {
     emit('update:modelValue', undefined)
     return
   }
