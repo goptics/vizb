@@ -41,6 +41,7 @@ vi.mock('vue-echarts', () => ({
           'data-testid': 'vchart',
           'data-not-merge': props.updateOptions?.notMerge === false ? '0' : '1',
           onClick: () => emit('legendselectchanged', { selected: { A: true } }),
+          onDblclick: () => emit('legendselectchanged', { selected: { A: 'yes' } }),
         })
     },
   }),
@@ -81,6 +82,8 @@ describe('chart shells', () => {
     expect(w.find('[data-testid="vchart"]').exists()).toBe(true)
     await w.get('[data-testid="vchart"]').trigger('click')
     expect(onLegendselectchanged).toHaveBeenCalledWith({ selected: { A: true } })
+    await w.get('[data-testid="vchart"]').trigger('dblclick')
+    expect(onLegendselectchanged).toHaveBeenCalledTimes(1)
     expect(useMock).toHaveBeenCalled()
     expect(name).toBeTruthy()
   })

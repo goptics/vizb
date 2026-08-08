@@ -50,6 +50,7 @@ describe('BaseChartConfig (relaxed scale/threeDRotate)', () => {
     expect(opts.tooltip).toBeDefined()
     expect(opts.toolbox).toBeDefined()
     expect(opts.legend).toBeDefined()
+    expect(opts.legend).toMatchObject({ left: 'center', top: 0 })
     expect(opts.emphasis).toEqual({ focus: 'series' })
   })
 

@@ -9,6 +9,8 @@ import {
   createValueModeGridConfig,
   VALUE_MODE_GRID_TOP,
   createHeatmapLayoutConfig,
+  createHorizontalAxisConfig,
+  createLegendConfig,
   DATAZOOM_INITIAL_END_PERCENT,
   getChartStyling,
   heatmapDataZoomXBottom,
@@ -30,6 +32,12 @@ const indicators = ['A', 'B', 'C']
 const styling = getChartStyling(true)
 
 describe('createAxisConfig (y-axis range)', () => {
+  it('keeps ECharts 5 axis-name positioning explicit', () => {
+    const { xAxis, yAxis } = createAxisConfig(styling, ['a', 'b'], 'linear', 'x')
+    expect(xAxis.nameMoveOverlap).toBe(false)
+    expect(yAxis.nameMoveOverlap).toBe(false)
+  })
+
   it('includes zero on linear scale by default (bar-style baseline)', () => {
     const { yAxis } = createAxisConfig(styling, ['a', 'b'], 'linear')
     expect(yAxis.scale).toBeUndefined()
@@ -50,6 +58,12 @@ describe('createAxisConfig (y-axis range)', () => {
 })
 
 describe('createValueAxisConfig (y-axis range)', () => {
+  it('keeps ECharts 5 axis-name positioning explicit', () => {
+    const { xAxis, yAxis } = createValueAxisConfig(styling, 'x', 'y')
+    expect(xAxis.nameMoveOverlap).toBe(false)
+    expect(yAxis.nameMoveOverlap).toBe(false)
+  })
+
   it('fits y-axis to data for value-mode line/scatter', () => {
     const { yAxis } = createValueAxisConfig(styling, 'x', 'y', 'linear', true)
     expect(yAxis.scale).toBe(true)
@@ -93,6 +107,11 @@ describe('createDataZoomConfig', () => {
 })
 
 describe('createGridConfig', () => {
+  it('disables the ECharts 6 automatic outer-bounds adjustment', () => {
+    expect(createGridConfig(1, true).outerBoundsMode).toBe('none')
+    expect(createGridConfig(1, false).outerBoundsMode).toBe('none')
+  })
+
   it('reserves fixed px bottom only when dataZoom is present', () => {
     expect(createGridConfig(1, true).bottom).toBe(100)
     expect(createGridConfig(1, true).containLabel).toBe(false)
@@ -109,6 +128,11 @@ describe('createGridConfig', () => {
 })
 
 describe('createHeatmapLayoutConfig', () => {
+  it('disables the ECharts 6 automatic outer-bounds adjustment', () => {
+    expect(createHeatmapLayoutConfig().grid.outerBoundsMode).toBe('none')
+    expect(createHeatmapLayoutConfig({ hasXDataZoom: true }).grid.outerBoundsMode).toBe('none')
+  })
+
   it('reserves visualMap + tick band only when dataZoom is absent', () => {
     const layout = createHeatmapLayoutConfig({ compact: true })
     expect(layout.visualMapBottom).toBe(HEATMAP_VISUAL_MAP_BOTTOM)
@@ -418,10 +442,30 @@ describe('createTooltipConfig item + empty branches', () => {
   })
 })
 
-describe('createLegendConfig single series', () => {
+describe('createLegendConfig', () => {
   it('hides legend when only one series', async () => {
-    const { createLegendConfig } = await import('./chartConfig')
     expect(createLegendConfig([{ xAxis: 'a' }], styling, false)).toEqual({ show: false })
+  })
+
+  it('pins the default legend to the ECharts 5 top position', () => {
+    expect(createLegendConfig([{ xAxis: 'a' }], styling, true)).toMatchObject({
+      left: 'center',
+      top: 0,
+    })
+  })
+
+  it('does not combine a custom bottom position with the default top position', () => {
+    const legend = createLegendConfig([{ xAxis: 'a' }], styling, true, { bottom: 0 })
+    expect(legend.bottom).toBe(0)
+    expect(legend.top).toBeUndefined()
+  })
+})
+
+describe('createHorizontalAxisConfig', () => {
+  it('keeps ECharts 5 axis-name positioning explicit', () => {
+    const { xAxis, yAxis } = createHorizontalAxisConfig(styling, ['a'], 'linear', 'category')
+    expect(xAxis.nameMoveOverlap).toBe(false)
+    expect(yAxis.nameMoveOverlap).toBe(false)
   })
 })
 

@@ -4,6 +4,10 @@ import { use } from 'echarts/core'
 import { PieChart } from 'echarts/charts'
 import VChart from 'vue-echarts'
 import { BASE_2D } from './charts/base'
+import {
+  createLegendSelectChangedForwarder,
+  type LegendSelectChangedEvent,
+} from './charts/legendEvents'
 
 // Reached only through a dynamic import() (see ChartCard.vue). Pie needs no grid
 // or cartesian coord system, so this chunk stays the lightest of the three.
@@ -14,9 +18,13 @@ defineProps<{
   initOptions: Record<string, unknown>
 }>()
 
-defineEmits<{
-  legendselectchanged: [e: { selected: Record<string, boolean> }]
+const emit = defineEmits<{
+  legendselectchanged: [e: LegendSelectChangedEvent]
 }>()
+
+const onLegendSelectChanged = createLegendSelectChangedForwarder((event) =>
+  emit('legendselectchanged', event)
+)
 </script>
 
 <template>
@@ -24,6 +32,6 @@ defineEmits<{
     :option="option"
     :init-options="initOptions"
     :autoresize="true"
-    @legendselectchanged="$emit('legendselectchanged', $event)"
+    @legendselectchanged="onLegendSelectChanged"
   />
 </template>

@@ -131,6 +131,8 @@ export const embedUiPlugin = (rootDir: string): PluginOption => {
         entryKey: chunkKeyOf(entryFile),
       }
 
+      const htmlWithState = appendVizbDataScriptTag(out)
+
       const nameW = Math.max(...chunkSizes.map(({ file }) => file.length))
       const rawW = Math.max(...chunkSizes.map(({ raw }) => (raw / 1024).toFixed(2).length))
       const b64W = Math.max(...chunkSizes.map(({ b64 }) => (b64 / 1024).toFixed(2).length))
@@ -143,12 +145,19 @@ export const embedUiPlugin = (rootDir: string): PluginOption => {
           return `  ${name}  ${rawStr} kB │ encoded: ${b64Str} kB`
         })
         .join('\n')
-      const templateKB = (Buffer.byteLength(out, 'utf-8') / 1024).toFixed(2)
+      const htmlBytes = Buffer.byteLength(htmlWithState, 'utf-8')
+      const rawTotalBytes = htmlBytes + chunkSizes.reduce((total, chunk) => total + chunk.raw, 0)
+      // Chunk blobs are gzip+base64 in Go; the HTML template remains raw text.
+      const encodedTotalBytes =
+        htmlBytes + chunkSizes.reduce((total, chunk) => total + chunk.b64, 0)
+      const templateKB = (htmlBytes / 1024).toFixed(2)
+      const rawTotalKB = (rawTotalBytes / 1024).toFixed(2)
+      const encodedTotalKB = (encodedTotalBytes / 1024).toFixed(2)
       console.info(
-        `[embed-ui] ${chunkFiles.length} chunks\n${rows}\n\n  HTML template (placeholder): ${templateKB} kB\n`
+        `[embed-ui] ${chunkFiles.length} chunks\n${rows}\n\n` +
+          `  HTML template (placeholder): ${templateKB} kB\n` +
+          `  Total embedded payload (all chunks + HTML): actual: ${rawTotalKB} kB │ encoded: ${encodedTotalKB} kB\n`
       )
-
-      const htmlWithState = appendVizbDataScriptTag(out)
 
       // Escape backticks for Go raw string literal
       const goRawString = htmlWithState.split('`').join('` + "`" + `')
