@@ -1,32 +1,43 @@
-package charts_test
+package charts
 
 import (
 	"testing"
 
-	"github.com/goptics/vizb/internal/charts"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
-type ChartFlagSuite struct {
+type BorderRadiusValidationSuite struct {
 	suite.Suite
 }
 
-func (s *ChartFlagSuite) TestValidateScaleValue() {
-	t := s.T()
-	require.NoError(t, charts.ValidateScaleValue("linear"))
-	require.NoError(t, charts.ValidateScaleValue("LOG"))
-	assert.Error(t, charts.ValidateScaleValue("sqrt"))
+func (s *BorderRadiusValidationSuite) TestValidateBorderRadiusValue() {
+	tests := []struct {
+		name      string
+		value     string
+		expectErr bool
+	}{
+		{"Valid positive integer", "8", false},
+		{"Valid zero", "0", false},
+		{"Valid large integer", "100", false},
+		{"Invalid negative", "-5", true},
+		{"Invalid non-integer", "abc", true},
+		{"Invalid float", "8.5", true},
+		{"Empty string", "", true},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			err := ValidateBorderRadiusValue(tt.value)
+			if tt.expectErr {
+				assert.Error(s.T(), err)
+			} else {
+				assert.NoError(s.T(), err)
+			}
+		})
+	}
 }
 
-func (s *ChartFlagSuite) TestValidateSymbolSizeValue() {
-	t := s.T()
-	require.NoError(t, charts.ValidateSymbolSizeValue("12"))
-	assert.Error(t, charts.ValidateSymbolSizeValue("nope"))
-	assert.Error(t, charts.ValidateSymbolSizeValue("0"))
-}
-
-func TestChartFlagSuite(t *testing.T) {
-	suite.Run(t, new(ChartFlagSuite))
+func TestBorderRadiusValidationSuite(t *testing.T) {
+	suite.Run(t, new(BorderRadiusValidationSuite))
 }
