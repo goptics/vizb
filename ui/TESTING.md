@@ -29,11 +29,11 @@ task test:ui:e2e          # Playwright
 
 ### `NODE_ENV`
 
-Vitest scripts pin **`NODE_ENV=test`**. That is the mode this suite expects.
+`vitest.config.ts` forces **`NODE_ENV=test`** (Vitest only defaults to `test` when the var is unset).
 
-- **Do not** run tests with `NODE_ENV=production` (or a sticky production env in your shell / CI job that overrides the scripts).
-- Production Vue disables devtools hooks, changes `import.meta.env.DEV`, and can break coverage and tooling assumptions. Use production for `pnpm build` / embed, not for unit or integration tests.
-- Prefer `pnpm test` / `task test:ui` rather than bare `vitest` so the scripts set `NODE_ENV=test` for you.
+- **Do not** set `NODE_ENV=production` for unit/integration tests. Production Vue changes `import.meta.env.DEV` and coverage, and is the wrong mode for this suite.
+- Use production for `pnpm build` / embed only.
+- Prefer `pnpm test` / `task test:ui`; bare `vitest` still picks up the same config.
 
 ## Shared fixtures
 
