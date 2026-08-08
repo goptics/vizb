@@ -27,6 +27,14 @@ task test:ui:coverage     # unit + integration with 100% gates
 task test:ui:e2e          # Playwright
 ```
 
+### `NODE_ENV`
+
+Vitest scripts pin **`NODE_ENV=test`**. That is the mode this suite expects.
+
+- **Do not** run tests with `NODE_ENV=production` (or a sticky production env in your shell / CI job that overrides the scripts).
+- Production Vue disables devtools hooks, changes `import.meta.env.DEV`, and can break coverage and tooling assumptions. Use production for `pnpm build` / embed, not for unit or integration tests.
+- Prefer `pnpm test` / `task test:ui` rather than bare `vitest` so the scripts set `NODE_ENV=test` for you.
+
 ## Shared fixtures
 
 Import from `@/test-utils` (or relative `../test-utils`):
@@ -49,7 +57,7 @@ Do **not** copy-paste local `makeMixedConfig` / `dp` / DPR stubs into new suites
 5. **Assert behavior** (axis type, stack on, URL key, button present) — not theme hex or font px.
 6. **Pyramid budget** for a feature: ~10 units : 3 integrations : 1 e2e.
 7. No faux component tests that mock every SFC then never mount.
-8. **Component emit checks** → pass Vue 3 listener props (`onSelect`, `'onUpdate:checked'`, …) as `vi.fn()` spies. Do **not** use `wrapper.emitted()`: VTU records emits only via Vue’s devtools hook, which is disabled when `NODE_ENV=production`, so those assertions fail under production Vue even though real listeners still fire.
+8. **Component emit checks** → pass Vue 3 listener props (`onSelect`, `'onUpdate:checked'`, …) as `vi.fn()` spies rather than `wrapper.emitted()` (VTU’s emit recorder is tied to Vue’s devtools hook and is unreliable outside the normal test mode).
 
 ## E2E fixtures
 
