@@ -52,11 +52,6 @@ jobs:
 
   test:
     runs-on: ubuntu-slim
-    # Pin production so Vitest/Vue stay on the production build. Integration
-    # emit checks use listener spies (not wrapper.emitted()); this catches
-    # regressions if someone reintroduces devtools-only emit recording.
-    env:
-      NODE_ENV: production
     defaults:
       run:
         working-directory: ui
@@ -68,9 +63,14 @@ jobs:
         with:
           cache-dependency-path: ui/pnpm-lock.yaml
 
+      # Install must not run under NODE_ENV=production or pnpm omits devDeps
+      # (vitest, coverage, …). Pin production only for the test run so Vue
+      # uses the production build and listener-spy emit checks stay valid.
       - run: pnpm install --frozen-lockfile
 
       - run: pnpm test:coverage
+        env:
+          NODE_ENV: production
 
       - uses: codecov/codecov-action@v7
         env:
