@@ -7,6 +7,6 @@
     "bundle": "redocly bundle openapi.yaml --dereferenced --output /tmp/vizb-openapi.yaml"
   },
   "devDependencies": {
-    "@redocly/cli": "2.39.0"
+    "@redocly/cli": "2.41.1"
   }
 }
