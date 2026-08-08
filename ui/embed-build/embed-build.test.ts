@@ -242,7 +242,31 @@ describe('embedUiPlugin.closeBundle', () => {
     expect(decoded).toContain('export const s=1')
 
     expect(info).toHaveBeenCalled()
-    expect(String(info.mock.calls[0]?.[0])).toContain('[embed-ui] 3 chunks')
+    const report = String(info.mock.calls[0]?.[0])
+    expect(report).toContain('[embed-ui] 3 chunks')
+
+    const embeddedHtmlBytes = Buffer.byteLength(appendVizbDataScriptTag(outHtml), 'utf-8')
+    const chunkKeys = ['index-abc', 'ChartBar-xyz', 'shared-1']
+    const encodedChunks = chunkKeys.map((key) => {
+      const match = go.match(new RegExp(`"vizb:${key}": "([A-Za-z0-9+/=]+)"`))
+      expect(match, `missing encoded chunk ${key}`).toBeTruthy()
+      return match![1]!
+    })
+    const rawTotalBytes =
+      embeddedHtmlBytes +
+      encodedChunks.reduce(
+        (total, chunk) => total + zlib.gunzipSync(Buffer.from(chunk, 'base64')).length,
+        0
+      )
+    const encodedTotalBytes =
+      embeddedHtmlBytes + encodedChunks.reduce((total, chunk) => total + chunk.length, 0)
+
+    expect(report).toContain(
+      `HTML template (placeholder): ${(embeddedHtmlBytes / 1024).toFixed(2)} kB`
+    )
+    expect(report).toContain(
+      `Total embedded payload (all chunks + HTML): actual: ${(rawTotalBytes / 1024).toFixed(2)} kB │ encoded: ${(encodedTotalBytes / 1024).toFixed(2)} kB`
+    )
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('[embed-ui] gofmt skipped'))
   })
 

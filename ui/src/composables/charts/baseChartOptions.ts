@@ -59,6 +59,9 @@ export const getBaseOptions = (config: BaseChartConfig): Partial<EChartsOption> 
     legend: {
       show: true,
       left: 'center',
+      // ECharts 6 moved the default legend to the bottom. Keep Vizb's existing
+      // top legend band explicit instead of inheriting the library theme.
+      top: 0,
       itemWidth: 10,
       itemHeight: 10,
       textStyle: { fontSize, color: textColor },

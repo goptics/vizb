@@ -5,6 +5,10 @@ import { GridComponent, VisualMapComponent } from 'echarts/components'
 import { ScatterChart } from 'echarts/charts'
 import VChart from 'vue-echarts'
 import { BASE_2D } from './charts/base'
+import {
+  createLegendSelectChangedForwarder,
+  type LegendSelectChangedEvent,
+} from './charts/legendEvents'
 
 // Reached only through a dynamic import() (see ChartCard.vue), so the ScatterChart
 // module lands in its own chunk and is parsed only when a scatter chart renders.
@@ -15,9 +19,13 @@ defineProps<{
   initOptions: Record<string, unknown>
 }>()
 
-defineEmits<{
-  legendselectchanged: [e: { selected: Record<string, boolean> }]
+const emit = defineEmits<{
+  legendselectchanged: [e: LegendSelectChangedEvent]
 }>()
+
+const onLegendSelectChanged = createLegendSelectChangedForwarder((event) =>
+  emit('legendselectchanged', event)
+)
 </script>
 
 <template>
@@ -26,6 +34,6 @@ defineEmits<{
     :init-options="initOptions"
     :autoresize="true"
     :update-options="{ notMerge: false, replaceMerge: ['series', 'visualMap'] }"
-    @legendselectchanged="$emit('legendselectchanged', $event)"
+    @legendselectchanged="onLegendSelectChanged"
   />
 </template>
