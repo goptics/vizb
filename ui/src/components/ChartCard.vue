@@ -56,6 +56,7 @@ const RENDERERS: Record<ChartType, Component> = {
   pie: mk(() => import('./ChartPie.vue')),
   heatmap: mk(() => import('./ChartHeatmap.vue')),
   radar: mk(() => import('./ChartRadar.vue')),
+  sankey: mk(() => import('./ChartSankey.vue')),
 }
 const Chart3D = mk(() => import('./Chart3D.vue'))
 
@@ -108,12 +109,14 @@ const resolvedSort = computed(() => sort.value ?? { enabled: false, order: 'asc'
 // 3D form (it renders per-dimension 2D pies even for x/y/z data), so it always
 // routes to ChartPie — never Chart3D, which doesn't register the pie module.
 const ActiveChart = computed<Component>(() => {
-  // Pie, heatmap, and radar have no 3D form — each renders its own 2D layout even for
-  // x/y/z data (pie: per-dimension pies; heatmap: z on legend; radar: per-dimension radars),
-  // so they must route past the is3D check that otherwise hands x/y/z off to Chart3D.
+  // Pie, heatmap, radar, and sankey have no 3D form — each renders its own 2D layout even for
+  // x/y/z data (pie: per-dimension pies; heatmap: z on legend; radar: per-dimension radars;
+  // sankey: z ignored, links by x→y only), so they must route past the is3D check that
+  // otherwise hands x/y/z off to Chart3D.
   if (chartType.value === 'pie') return RENDERERS.pie
   if (chartType.value === 'heatmap') return RENDERERS.heatmap
   if (chartType.value === 'radar') return RENDERERS.radar
+  if (chartType.value === 'sankey') return RENDERERS.sankey
   return is3DChart.value ? Chart3D : (RENDERERS[chartType.value] ?? RENDERERS.bar)
 })
 

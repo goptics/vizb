@@ -10,6 +10,7 @@ import (
 	_ "github.com/goptics/vizb/cmd/charts/line"
 	_ "github.com/goptics/vizb/cmd/charts/pie"
 	_ "github.com/goptics/vizb/cmd/charts/radar"
+	_ "github.com/goptics/vizb/cmd/charts/sankey"
 	_ "github.com/goptics/vizb/cmd/charts/scatter"
 	internal_charts "github.com/goptics/vizb/internal/charts"
 	"github.com/goptics/vizb/internal/charts/bar"

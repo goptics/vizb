@@ -115,6 +115,74 @@ func (s *SelectViewSpecSuite) TestParseSelectViewFlagRejectsArity() {
 	}
 }
 
+func (s *SelectViewSpecSuite) TestValidateSankeySoloSelect() {
+	t := s.T()
+	if err := ValidateSankeySoloSelect(Config{}); err != nil {
+		t.Fatalf("empty cfg: %v", err)
+	}
+	if err := ValidateSankeySoloSelect(Config{ChartTypes: []string{"sankey"}, Group: []string{"source"}}); err != nil {
+		t.Fatalf("grouped: %v", err)
+	}
+	err := ValidateSankeySoloSelect(Config{
+		ChartTypes:  []string{"sankey"},
+		SelectViews: []SelectView{{Columns: []ColumnSpec{{Source: "a"}, {Source: "b"}}}},
+	})
+	if err == nil {
+		t.Fatal("want error for 2-col sankey select")
+	}
+	if err := ValidateSankeySoloSelect(Config{
+		ChartTypes: []string{"sankey"},
+		SelectViews: []SelectView{{Columns: []ColumnSpec{
+			{Source: "source"}, {Source: "target"}, {Source: "value"},
+		}}},
+	}); err != nil {
+		t.Fatalf("3-col: %v", err)
+	}
+	// Multi-measure: two flags, shared source/target, different value cols
+	if err := ValidateSankeySoloSelect(Config{
+		ChartTypes: []string{"sankey"},
+		SelectViews: []SelectView{
+			{Columns: []ColumnSpec{{Source: "source"}, {Source: "target"}, {Source: "value"}}},
+			{Columns: []ColumnSpec{{Source: "source"}, {Source: "target"}, {Source: "cost"}}},
+		},
+	}); err != nil {
+		t.Fatalf("multi 3-col sankey select: %v", err)
+	}
+	// Mismatched source/target across flags
+	if err := ValidateSankeySoloSelect(Config{
+		ChartTypes: []string{"sankey"},
+		SelectViews: []SelectView{
+			{Columns: []ColumnSpec{{Source: "source"}, {Source: "target"}, {Source: "value"}}},
+			{Columns: []ColumnSpec{{Source: "a"}, {Source: "b"}, {Source: "cost"}}},
+		},
+	}); err == nil {
+		t.Fatal("want error when multi-select source/target differ")
+	}
+	// 4-col is rejected at parse; 1-flag with wrong count
+	if err := ValidateSankeySoloSelect(Config{
+		ChartTypes: []string{"sankey"},
+		SelectViews: []SelectView{{Columns: []ColumnSpec{
+			{Source: "a"}, {Source: "b"}, {Source: "c"}, {Source: "d"},
+		}}},
+	}); err == nil {
+		t.Fatal("want error for 4-col sankey select")
+	}
+}
+
+func (s *SelectViewSpecSuite) TestResolveModeEdgeForSankey() {
+	t := s.T()
+	cfg := Config{
+		ChartTypes:  []string{"sankey"},
+		SelectViews: []SelectView{{Columns: []ColumnSpec{{Source: "a"}, {Source: "b"}, {Source: "c"}}}},
+	}
+	if m := ResolveMode(cfg); m != ModeEdge {
+		t.Fatalf("sankey solo select mode = %v, want ModeEdge", m)
+	}
+	if !ModeEdge.IsEdge() || !ModeEdge.IsSelectAxis() {
+		t.Fatal("ModeEdge should report edge and select-axis")
+	}
+}
+
 func (s *SelectViewSpecSuite) TestParseSelectViewFlagRejectsDuplicateColumn() {
 	t := s.T()
 	if _, err := ParseSelectViewFlag("region,region"); err == nil {
@@ -362,7 +430,7 @@ func (s *SelectViewSpecSuite) TestModeIsGrouped() {
 	if !ModeGrouped.IsGrouped() {
 		t.Fatal("ModeGrouped should report grouped")
 	}
-	for _, m := range []Mode{ModeAuto, ModeValue, ModeMixed, ModeMultiStat} {
+	for _, m := range []Mode{ModeAuto, ModeValue, ModeMixed, ModeMultiStat, ModeEdge} {
 		if m.IsGrouped() {
 			t.Fatalf("mode %v should not be grouped", m)
 		}

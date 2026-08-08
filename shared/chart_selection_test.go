@@ -51,6 +51,7 @@ func (s *ChartSelectionSuite) TestChartsHave3DCapable() {
 		{"scatter is 3D-capable", []string{"scatter"}, true},
 		{"pie is not", []string{"pie"}, false},
 		{"heatmap is not", []string{"heatmap"}, false},
+		{"sankey is not", []string{"sankey"}, false},
 		{"pie+heatmap only", []string{"pie", "heatmap"}, false},
 		{"mixed with bar", []string{"pie", "bar"}, true},
 		{"empty", nil, false},
@@ -73,6 +74,7 @@ func (s *ChartSelectionSuite) TestDatasetNeeds3D() {
 		{"z + scatter => needs 3D", dsWith([]string{"scatter"}, "2"), true},
 		{"z but pie only => no", dsWith([]string{"pie"}, "1"), false},
 		{"z but heatmap only => no", dsWith([]string{"heatmap"}, "1"), false},
+		{"z but sankey only => no", dsWith([]string{"sankey"}, "1"), false},
 		{"bar but no z => no", dsWith([]string{"bar"}, "", ""), false},
 		{"bar but empty data => no", dsWith([]string{"bar"}), false},
 		{"mixed charts with z, one z point", dsWith([]string{"pie", "bar"}, "", "3"), true},
@@ -80,6 +82,7 @@ func (s *ChartSelectionSuite) TestDatasetNeeds3D() {
 		{"threeD line without z => needs 3D", dsWithThreeDOption("line"), true},
 		{"threeD scatter without z => needs 3D", dsWithThreeDOption("scatter"), true},
 		{"threeD pie without z => no", dsWithThreeDOption("pie"), false},
+		{"threeD sankey without z => no", dsWithThreeDOption("sankey"), false},
 	}
 	for _, c := range cases {
 		s.Run(c.name, func() {
@@ -95,6 +98,12 @@ func (s *ChartSelectionSuite) TestConvertFlagValueValidatesIntegers() {
 	s.Equal(3, value)
 	_, err = convertFlagValue(flag, "not-a-number", true, nil)
 	s.ErrorContains(err, "must be an integer")
+}
+
+func (s *ChartSelectionSuite) TestSankeyIsOptInNotDefault() {
+	// sankey is accepted via --charts but never a default bundle member.
+	s.Contains(ValidChartTypes, "sankey")
+	s.NotContains(DefaultChartTypes, "sankey")
 }
 
 var _ internal_charts.ChartConfig = stubChartConfig{}

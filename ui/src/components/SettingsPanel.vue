@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { computed, type Component } from 'vue'
-import { BarChart3, TrendingUp, CircleDot, PieChart, Table, Radar } from 'lucide-vue-next'
+import {
+  BarChart3,
+  TrendingUp,
+  CircleDot,
+  PieChart,
+  Table,
+  Radar,
+  GitBranch,
+} from 'lucide-vue-next'
 import { Card, CardContent, CardHeader, CardTitle, Separator } from './ui'
 import Selector from './Selector.vue'
 import SettingHeader from './SettingHeader.vue'
@@ -59,6 +67,7 @@ const CHART_ICONS: Record<ChartType, Component> = {
   pie: PieChart,
   heatmap: Table,
   radar: Radar,
+  sankey: GitBranch,
 }
 
 // Chart-type picker. Shown only when the dataset bundles more than one chart type.

@@ -369,7 +369,8 @@ func (b *FlagBag) ParseConfig() parser.Config {
 				cfg.SelectViews = append(cfg.SelectViews, view)
 			}
 			if len(cfg.SelectViews) > 1 {
-				if err := parser.ValidateMultiSelectStatViews(cfg.SelectViews); err != nil {
+				// 2-col multi-stat or 3-col sankey multi-measure (chart-checked later).
+				if err := parser.ValidateRepeatableSelectViews(cfg.SelectViews); err != nil {
 					shared.ExitWithError(err.Error(), nil)
 				}
 			}

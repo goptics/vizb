@@ -1,0 +1,15 @@
+name,source,target,value,cost
+web,Visit,Landing,5000,12
+web,Landing,Signup,1200,8
+web,Landing,Exit,3800,2
+web,Signup,Trial,800,15
+web,Signup,Newsletter,400,5
+web,Trial,Paid,320,25
+web,Trial,Churn,480,3
+app,Install,Onboard,3000,10
+app,Onboard,Active,1800,18
+app,Onboard,Dormant,1200,4
+app,Active,Subscribe,900,30
+app,Active,Free,900,6
+app,Subscribe,Renew,600,22
+app,Subscribe,Cancel,300,5

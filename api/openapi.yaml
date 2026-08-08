@@ -491,7 +491,7 @@ components:
           uniqueItems: true
           items:
             type: string
-            enum: [bar, line, scatter, pie, heatmap, radar]
+            enum: [bar, line, scatter, pie, heatmap, radar, sankey]
         configs:
           type: array
           items:
@@ -606,6 +606,13 @@ components:
                   type: { const: radar }
               minContains: 0
               maxContains: 1
+            - contains:
+                type: object
+                required: [type]
+                properties:
+                  type: { const: sankey }
+              minContains: 0
+              maxContains: 1
         data:
           type: array
           items: { $ref: '#/components/schemas/DataPoint' }
@@ -689,6 +696,7 @@ components:
         - $ref: '#/components/schemas/PieChartConfig'
         - $ref: '#/components/schemas/HeatmapChartConfig'
         - $ref: '#/components/schemas/RadarChartConfig'
+        - $ref: '#/components/schemas/SankeyChartConfig'
       discriminator:
         propertyName: type
         mapping:
@@ -698,6 +706,7 @@ components:
           pie: '#/components/schemas/PieChartConfig'
           heatmap: '#/components/schemas/HeatmapChartConfig'
           radar: '#/components/schemas/RadarChartConfig'
+          sankey: '#/components/schemas/SankeyChartConfig'
     BarChartConfig:
       type: object
       additionalProperties: false
@@ -788,6 +797,16 @@ components:
       required: [type]
       properties:
         type: { const: radar }
+        swap: { type: string }
+        sort: { $ref: '#/components/schemas/Sort' }
+        showLabels: { type: boolean }
+        stat: { $ref: '#/components/schemas/StatisticsConfig' }
+    SankeyChartConfig:
+      type: object
+      additionalProperties: false
+      required: [type]
+      properties:
+        type: { const: sankey }
         swap: { type: string }
         sort: { $ref: '#/components/schemas/Sort' }
         showLabels: { type: boolean }

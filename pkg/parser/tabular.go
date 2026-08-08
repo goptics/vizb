@@ -150,10 +150,94 @@ func ParseSelectStatMode(rows []RowReader, cfg Config) ([]shared.DataPoint, erro
 	return results, nil
 }
 
+// ParseEdgeMode builds one DataPoint per row for sankey solo --select.
+// Each SelectView is exactly 3 columns: source (x), target (y), value (stat).
+// Multiple views (repeatable --select) share source/target and each add one measure.
+// Source/target are always string cells (numeric-looking ids stay node names).
+func ParseEdgeMode(rows []RowReader, cfg Config) ([]shared.DataPoint, error) {
+	if err := ValidateSankeySoloSelect(cfg); err != nil {
+		return nil, err
+	}
+	views := cfg.SelectViews
+	sourceCol, targetCol := views[0].Columns[0].Source, views[0].Columns[1].Source
+
+	if len(rows) > 0 {
+		for _, view := range views {
+			m := view.Columns[2].Source
+			anyNum := false
+			for _, row := range rows {
+				if _, ok := row.Numeric(m); ok {
+					anyNum = true
+					break
+				}
+			}
+			if !anyNum {
+				return nil, fmt.Errorf("%s column %q is not numeric (sankey edge measure)", rows[0].FlagLabel(), m)
+			}
+		}
+	}
+
+	var results []shared.DataPoint
+	for _, row := range rows {
+		src, ok := row.Cell(sourceCol)
+		if !ok || src == "" {
+			continue
+		}
+		tgt, ok := row.Cell(targetCol)
+		if !ok || tgt == "" {
+			continue
+		}
+		var stats []shared.Stat
+		for _, view := range views {
+			v, ok := row.Numeric(view.Columns[2].Source)
+			if !ok {
+				continue
+			}
+			stats = append(stats, shared.Stat{
+				Type:  utils.CreateStatType(EdgeStatType(view), cfg.NumberUnit, ""),
+				Value: shared.F64(utils.FormatNumber(v, cfg.NumberUnit, cfg.Round)),
+			})
+		}
+		if len(stats) == 0 {
+			continue
+		}
+		results = append(results, shared.DataPoint{
+			XAxis: src,
+			YAxis: tgt,
+			Stats: stats,
+		})
+	}
+	if len(results) == 0 {
+		return nil, fmt.Errorf("no dataset found")
+	}
+	return results, nil
+}
+
+// EdgeAxes returns category x/y axes for sankey edge solo --select (source/target).
+func EdgeAxes(view SelectView) []shared.Axis {
+	axes := make([]shared.Axis, 0, 2)
+	for i, key := range []string{"x", "y"} {
+		if i >= len(view.Columns) {
+			break
+		}
+		col := view.Columns[i]
+		label := col.Label
+		if label == "" {
+			label = col.Source
+		}
+		axes = append(axes, shared.Axis{Key: key, Label: label})
+	}
+	return axes
+}
+
 // DispatchSelectMode routes a solo --select (or --axes/auto-value) Config to the
 // right parse function after running ResolveAxesTypes. Called by the CSV/JSON
 // entry points; the flag label is baked into kindFn by the caller.
 func DispatchSelectMode(rows []RowReader, cfg *Config, kindFn AxisColumnKind) ([]shared.DataPoint, error) {
+	if cfg.Mode.IsEdge() || (HasSankeyChart(*cfg) && len(cfg.SelectViews) > 0 && !IsExplicitGrouping(*cfg)) {
+		cfg.Mode = ModeEdge
+		return ParseEdgeMode(rows, *cfg)
+	}
 	if cfg.Mode.IsMultiStat() {
 		return ParseSelectStatMode(rows, *cfg)
 	}

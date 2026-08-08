@@ -9,5 +9,6 @@ export const CHART_ROOT_PREFIX: Record<string, string> = {
   ChartPie: 'pie',
   ChartHeatmap: 'heatmap',
   ChartRadar: 'radar',
+  ChartSankey: 'sankey',
   Chart3D: '3d',
 }

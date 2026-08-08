@@ -19,6 +19,7 @@ import (
 	_ "github.com/goptics/vizb/cmd/charts/line"
 	_ "github.com/goptics/vizb/cmd/charts/pie"
 	_ "github.com/goptics/vizb/cmd/charts/radar"
+	_ "github.com/goptics/vizb/cmd/charts/sankey"
 	_ "github.com/goptics/vizb/cmd/charts/scatter"
 
 	// Parsers self-register into pkg/parser via their init().

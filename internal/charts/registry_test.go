@@ -10,6 +10,7 @@ import (
 	_ "github.com/goptics/vizb/cmd/charts/line"
 	_ "github.com/goptics/vizb/cmd/charts/pie"
 	_ "github.com/goptics/vizb/cmd/charts/radar"
+	_ "github.com/goptics/vizb/cmd/charts/sankey"
 	_ "github.com/goptics/vizb/cmd/charts/scatter"
 	"github.com/goptics/vizb/internal/charts"
 	barchart "github.com/goptics/vizb/internal/charts/bar"
@@ -17,6 +18,7 @@ import (
 	linechart "github.com/goptics/vizb/internal/charts/line"
 	piechart "github.com/goptics/vizb/internal/charts/pie"
 	radarchart "github.com/goptics/vizb/internal/charts/radar"
+	sankeychart "github.com/goptics/vizb/internal/charts/sankey"
 	scatterchart "github.com/goptics/vizb/internal/charts/scatter"
 	"github.com/goptics/vizb/shared"
 	"github.com/stretchr/testify/suite"
@@ -30,7 +32,7 @@ type RegistrySuite struct {
 func (s *RegistrySuite) TestRegistryListsChartTypes() {
 	got := charts.Registered()
 	sort.Strings(got)
-	want := []string{"bar", "heatmap", "line", "pie", "radar", "scatter"}
+	want := []string{"bar", "heatmap", "line", "pie", "radar", "sankey", "scatter"}
 	s.Equal(want, got)
 }
 
@@ -65,7 +67,7 @@ func (s *RegistrySuite) TestSmoothFlagIsLineOnly() {
 	}
 
 	s.True(flagNames("line")["smooth"])
-	for _, chartType := range []string{"bar", "scatter", "pie", "heatmap", "radar"} {
+	for _, chartType := range []string{"bar", "scatter", "pie", "heatmap", "radar", "sankey"} {
 		s.False(flagNames(chartType)["smooth"], "%s should not register smooth", chartType)
 	}
 }
@@ -80,7 +82,7 @@ func (s *RegistrySuite) TestHorizontalFlagIsBarOnly() {
 	}
 
 	s.True(flagNames("bar")["horizontal"])
-	for _, chartType := range []string{"line", "scatter", "pie", "heatmap", "radar"} {
+	for _, chartType := range []string{"line", "scatter", "pie", "heatmap", "radar", "sankey"} {
 		s.False(flagNames(chartType)["horizontal"], "%s should not register horizontal", chartType)
 	}
 }
@@ -133,6 +135,7 @@ func (s *RegistrySuite) TestChartConfigAccessors() {
 		&piechart.Config{Type: "pie", Swap: "ynx", Stat: stat},
 		&heatmapchart.Config{Type: "heatmap", Swap: "xy", Stat: stat},
 		&radarchart.Config{Type: "radar", Swap: "yx", Stat: stat},
+		&sankeychart.Config{Type: "sankey", Swap: "xy", Stat: stat},
 	}
 	for _, cfg := range cases {
 		s.True(cfg.StatEnabled())

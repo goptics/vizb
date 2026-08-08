@@ -6,6 +6,7 @@ import type {
   PieConfig,
   HeatmapConfig,
   RadarConfig,
+  SankeyConfig,
 } from '@/types'
 // Side-effect: top-level vi.mock for every settings control SFC fieldRegistry imports.
 import '@/test-utils/mockSettingsControls'
@@ -78,7 +79,7 @@ describe('fieldRegistry', () => {
     }
   })
 
-  it('sort, showLabels, and swap apply to all six chart types', () => {
+  it('sort, showLabels, and swap apply to all seven chart types', () => {
     for (const key of ['sort', 'showLabels', 'swap'] as const) {
       expect(fieldRegistry[key]!.appliesTo).toEqual([
         'bar',
@@ -87,6 +88,7 @@ describe('fieldRegistry', () => {
         'pie',
         'heatmap',
         'radar',
+        'sankey',
       ])
     }
   })
@@ -224,6 +226,15 @@ describe('getRenderableFields', () => {
 
   it('returns 3 entries for a radar config (no scale/threeDRotate; dimension is irrelevant)', () => {
     const cfg: RadarConfig = { type: 'radar' }
+    expect(getRenderableFields(cfg, { dimension: '2D' }).map((f) => f.key)).toEqual([
+      'sort',
+      'showLabels',
+      'swap',
+    ])
+  })
+
+  it('returns 3 entries for a sankey config (no scale/threeDRotate; dimension is irrelevant)', () => {
+    const cfg: SankeyConfig = { type: 'sankey' }
     expect(getRenderableFields(cfg, { dimension: '2D' }).map((f) => f.key)).toEqual([
       'sort',
       'showLabels',
