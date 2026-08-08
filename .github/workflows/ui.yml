@@ -63,9 +63,6 @@ jobs:
         with:
           cache-dependency-path: ui/pnpm-lock.yaml
 
-      # Install must not run under NODE_ENV=production or pnpm omits devDeps
-      # (vitest, coverage, …). Pin production only for the test run so Vue
-      # uses the production build and listener-spy emit checks stay valid.
       - run: pnpm install --frozen-lockfile
 
       - run: pnpm test:coverage
