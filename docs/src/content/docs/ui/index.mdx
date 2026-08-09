@@ -116,7 +116,6 @@ Each chart renderer ships as a separate compressed chunk inside the HTML. Only t
 |-----------|------------------|
 | `bar` only | ~400 kB |
 | `bar,line,pie` (default, 2D data) | ~400 kB |
-| `bar,line,pie,heatmap,radar,sankey,chord` | ~445 kB |
 | `bar` or `line` with z-axis data (embedded JSON) | ~570 kB |
 
 The 3D engine (echarts-gl, ~380 kB encoded) is the heaviest component. For embedded data, Vizb includes it automatically when the dataset has a z-axis and `bar` or `line` is selected. For `vizb ui --data-url`, pass `--3d` to opt in — the remote shape is unknown at build time.
