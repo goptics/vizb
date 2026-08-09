@@ -15,6 +15,7 @@ import (
 	// via init() in cmd/charts/<c>; blank-importing them makes the registry
 	// (and thus the subcommands and --chart key set) complete.
 	_ "github.com/goptics/vizb/cmd/charts/bar"
+	_ "github.com/goptics/vizb/cmd/charts/chord"
 	_ "github.com/goptics/vizb/cmd/charts/heatmap"
 	_ "github.com/goptics/vizb/cmd/charts/line"
 	_ "github.com/goptics/vizb/cmd/charts/pie"
@@ -35,7 +36,8 @@ import (
 )
 
 // defaultChartTypes and validChartTypes alias shared constants for the root
-// --charts flag: bar/line/pie by default, all five accepted when explicit.
+// --charts flag: bar/line/pie by default, all registered chart types accepted
+// when explicit.
 var (
 	defaultChartTypes = shared.DefaultChartTypes
 	validChartTypes   = shared.ValidChartTypes
@@ -65,7 +67,8 @@ var rootCmd = &cobra.Command{
 Turns numeric columns into interactive charts and descriptive statistics in one
 self-contained HTML file. Reads a file or piped stdin, auto-detects the input
 format (override with --parser), and renders bar, line, scatter, pie, heatmap,
-and radar charts you can explore in the browser.`,
+and radar charts you can explore in the browser. Chord and Sankey charts are
+available as opt-in edge visualizations.`,
 	Version: version.Version,
 	Args:    cobra.ArbitraryArgs,
 	Run:     runBenchmark,
@@ -83,15 +86,14 @@ func Execute() {
 
 func init() {
 	rootBag.Bind(rootCmd.Flags())
-	rootCmd.Flags().StringSliceVarP(&rootCharts, "charts", "c", defaultChartTypes, "Chart types to generate (bar, line, scatter, pie, heatmap, radar)")
+	rootCmd.Flags().StringSliceVarP(&rootCharts, "charts", "c", defaultChartTypes, "Chart types to generate (bar, line, scatter, pie, heatmap, radar, sankey, chord)")
 	rootCmd.Flags().StringArrayVar(&rootChartSpecs, "chart", nil,
 		"Per-chart settings override (repeatable): <type>:<key>=<val>(,<key>=<val>)* or bare flags. "+
 			"Comma separates single-value props; for multi-value props (e.g. stat=a,b) use semicolon between props or put the multi-value prop alone. "+
 			"Keys: swap, sort, scale, stack, labels, 3d-rotate, 3d, symbol, symbol-size, smooth, horizontal, stat. "+
 			"E.g. --chart bar:stack --chart 'bar:stat=center,spread;labels'")
 
-	// Build the chart subcommands (bar/line/pie/heatmap/radar/scatter) from the
-	// config/charts registry.
+	// Build the chart subcommands from the config/charts registry.
 	rootCmd.AddCommand(cli.ChartCommands()...)
 }
 

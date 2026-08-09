@@ -11,6 +11,7 @@ import (
 	"github.com/goptics/vizb/cmd/cli"
 	internal_charts "github.com/goptics/vizb/internal/charts"
 	barchart "github.com/goptics/vizb/internal/charts/bar"
+	chordchart "github.com/goptics/vizb/internal/charts/chord"
 	heatmapchart "github.com/goptics/vizb/internal/charts/heatmap"
 	linechart "github.com/goptics/vizb/internal/charts/line"
 	piechart "github.com/goptics/vizb/internal/charts/pie"
@@ -292,6 +293,8 @@ func applyStatToSettings(settings []internal_charts.ChartConfig, stat *shared.St
 		case *radarchart.Config:
 			c.Stat = stat
 		case *sankeychart.Config:
+			c.Stat = stat
+		case *chordchart.Config:
 			c.Stat = stat
 		default:
 			// ponytail: new chart type — add a case above and wire c.Stat = stat

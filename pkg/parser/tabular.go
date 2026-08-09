@@ -150,12 +150,12 @@ func ParseSelectStatMode(rows []RowReader, cfg Config) ([]shared.DataPoint, erro
 	return results, nil
 }
 
-// ParseEdgeMode builds one DataPoint per row for sankey solo --select.
+// ParseEdgeMode builds one DataPoint per row for Sankey or Chord solo --select.
 // Each SelectView is exactly 3 columns: source (x), target (y), value (stat).
 // Multiple views (repeatable --select) share source/target and each add one measure.
 // Source/target are always string cells (numeric-looking ids stay node names).
 func ParseEdgeMode(rows []RowReader, cfg Config) ([]shared.DataPoint, error) {
-	if err := ValidateSankeySoloSelect(cfg); err != nil {
+	if err := ValidateEdgeSoloSelect(cfg); err != nil {
 		return nil, err
 	}
 	views := cfg.SelectViews
@@ -172,7 +172,7 @@ func ParseEdgeMode(rows []RowReader, cfg Config) ([]shared.DataPoint, error) {
 				}
 			}
 			if !anyNum {
-				return nil, fmt.Errorf("%s column %q is not numeric (sankey edge measure)", rows[0].FlagLabel(), m)
+				return nil, fmt.Errorf("%s column %q is not numeric (edge measure)", rows[0].FlagLabel(), m)
 			}
 		}
 	}
@@ -213,7 +213,7 @@ func ParseEdgeMode(rows []RowReader, cfg Config) ([]shared.DataPoint, error) {
 	return results, nil
 }
 
-// EdgeAxes returns category x/y axes for sankey edge solo --select (source/target).
+// EdgeAxes returns category x/y axes for edge-chart solo --select (source/target).
 func EdgeAxes(view SelectView) []shared.Axis {
 	axes := make([]shared.Axis, 0, 2)
 	for i, key := range []string{"x", "y"} {
@@ -234,7 +234,7 @@ func EdgeAxes(view SelectView) []shared.Axis {
 // right parse function after running ResolveAxesTypes. Called by the CSV/JSON
 // entry points; the flag label is baked into kindFn by the caller.
 func DispatchSelectMode(rows []RowReader, cfg *Config, kindFn AxisColumnKind) ([]shared.DataPoint, error) {
-	if cfg.Mode.IsEdge() || (HasSankeyChart(*cfg) && len(cfg.SelectViews) > 0 && !IsExplicitGrouping(*cfg)) {
+	if cfg.Mode.IsEdge() || (HasEdgeChart(*cfg) && len(cfg.SelectViews) > 0 && !IsExplicitGrouping(*cfg)) {
 		cfg.Mode = ModeEdge
 		return ParseEdgeMode(rows, *cfg)
 	}

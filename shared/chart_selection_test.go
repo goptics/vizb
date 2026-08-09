@@ -52,6 +52,7 @@ func (s *ChartSelectionSuite) TestChartsHave3DCapable() {
 		{"pie is not", []string{"pie"}, false},
 		{"heatmap is not", []string{"heatmap"}, false},
 		{"sankey is not", []string{"sankey"}, false},
+		{"chord is not", []string{"chord"}, false},
 		{"pie+heatmap only", []string{"pie", "heatmap"}, false},
 		{"mixed with bar", []string{"pie", "bar"}, true},
 		{"empty", nil, false},
@@ -83,6 +84,7 @@ func (s *ChartSelectionSuite) TestDatasetNeeds3D() {
 		{"threeD scatter without z => needs 3D", dsWithThreeDOption("scatter"), true},
 		{"threeD pie without z => no", dsWithThreeDOption("pie"), false},
 		{"threeD sankey without z => no", dsWithThreeDOption("sankey"), false},
+		{"threeD chord without z => no", dsWithThreeDOption("chord"), false},
 	}
 	for _, c := range cases {
 		s.Run(c.name, func() {
@@ -104,6 +106,11 @@ func (s *ChartSelectionSuite) TestSankeyIsOptInNotDefault() {
 	// sankey is accepted via --charts but never a default bundle member.
 	s.Contains(ValidChartTypes, "sankey")
 	s.NotContains(DefaultChartTypes, "sankey")
+}
+
+func (s *ChartSelectionSuite) TestChordIsOptInNotDefault() {
+	s.Contains(ValidChartTypes, "chord")
+	s.NotContains(DefaultChartTypes, "chord")
 }
 
 var _ internal_charts.ChartConfig = stubChartConfig{}

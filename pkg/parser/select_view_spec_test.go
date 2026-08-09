@@ -183,6 +183,15 @@ func (s *SelectViewSpecSuite) TestResolveModeEdgeForSankey() {
 	}
 }
 
+func (s *SelectViewSpecSuite) TestResolveModeEdgeForChord() {
+	cfg := Config{
+		ChartTypes:  []string{"chord"},
+		SelectViews: []SelectView{{Columns: []ColumnSpec{{Source: "source"}, {Source: "target"}, {Source: "value"}}}},
+	}
+	s.Equal(ModeEdge, ResolveMode(cfg))
+	s.NoError(ValidateEdgeSoloSelect(cfg))
+}
+
 func (s *SelectViewSpecSuite) TestParseSelectViewFlagRejectsDuplicateColumn() {
 	t := s.T()
 	if _, err := ParseSelectViewFlag("region,region"); err == nil {
