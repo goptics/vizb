@@ -1,64 +1,10 @@
 import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
-import { getNextColorFor, hasXAxis, hasYAxis } from '@/lib/utils'
+import { hasXAxis, hasYAxis } from '@/lib/utils'
 import { getChartStyling, getTooltipTheme, formatTooltipValue } from './shared'
 import { fontSize } from './shared/common'
-import type { Point3D, SortOrder } from '@/types'
-
-type SankeyLink = { source: string; target: string; value: number }
-type SankeyNode = { name: string; itemStyle?: { color?: string }; total: number }
-
-/** Aggregate raw points into unique nodes + summed (source, target) links. z is ignored. */
-function buildSankeyGraph(points: Point3D[]): {
-  nodes: SankeyNode[]
-  links: SankeyLink[]
-} {
-  const linkTotals = new Map<string, { source: string; target: string; value: number }>()
-  const nodeTotals = new Map<string, number>()
-
-  for (const p of points) {
-    const source = p.xAxis
-    const target = p.yAxis
-    if (!source || !target) continue
-
-    const key = `${source}\0${target}`
-    const prev = linkTotals.get(key)
-    const add = p.value
-    if (prev) {
-      prev.value += add
-    } else {
-      linkTotals.set(key, { source, target, value: add })
-    }
-
-    // Total flow through a node = sum of link weights touching it (count each
-    // link once per endpoint). Self-loops count twice so degree is consistent.
-    nodeTotals.set(source, (nodeTotals.get(source) ?? 0) + add)
-    nodeTotals.set(target, (nodeTotals.get(target) ?? 0) + add)
-  }
-
-  const nodes: SankeyNode[] = Array.from(nodeTotals.entries()).map(([name, total]) => ({
-    name,
-    total,
-    itemStyle: { color: getNextColorFor(name) },
-  }))
-
-  const links: SankeyLink[] = Array.from(linkTotals.values()).map((l) => ({
-    source: l.source,
-    target: l.target,
-    value: Math.max(0, l.value),
-  }))
-
-  return { nodes, links }
-}
-
-function sortNodes(nodes: SankeyNode[], order: SortOrder): SankeyNode[] {
-  const mult = order === 'asc' ? 1 : -1
-  return [...nodes].sort((a, b) => {
-    if (a.total !== b.total) return mult * (a.total - b.total)
-    return a.name.localeCompare(b.name)
-  })
-}
+import { buildEdgeGraph, sortEdgeGraphNodes } from './shared/edgeGraph'
 
 /** ECharts-style color circle for tooltip rows (matches other chart formatters). */
 function tooltipColorDot(color: string): string {
@@ -103,10 +49,10 @@ export function useSankeyChartOptions(config: BaseChartConfig) {
 
     const styling = getChartStyling(isDark.value)
     const base = getBaseOptions(config)
-    let { nodes, links } = buildSankeyGraph(chartData.value.points ?? [])
+    let { nodes, links } = buildEdgeGraph(chartData.value.points ?? [])
 
     if (sort.value.enabled) {
-      nodes = sortNodes(nodes, sort.value.order)
+      nodes = sortEdgeGraphNodes(nodes, sort.value.order)
     }
 
     // Drop the internal total field before handing nodes to ECharts.

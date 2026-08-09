@@ -10,5 +10,6 @@ export const CHART_ROOT_PREFIX: Record<string, string> = {
   ChartHeatmap: 'heatmap',
   ChartRadar: 'radar',
   ChartSankey: 'sankey',
+  ChartChord: 'chord',
   Chart3D: '3d',
 }

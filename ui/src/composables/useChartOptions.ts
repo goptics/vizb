@@ -7,6 +7,7 @@ import { usePieChartOptions } from './charts/usePieChartOptions'
 import { useHeatmapChartOptions } from './charts/useHeatmapChartOptions'
 import { useRadarChartOptions } from './charts/useRadarChartOptions'
 import { useSankeyChartOptions } from './charts/useSankeyChartOptions'
+import { useChordChartOptions } from './charts/useChordChartOptions'
 import { useBar3DChartOptions } from './charts/useBar3DChartOptions'
 import { useLine3DChartOptions } from './charts/useLine3DChartOptions'
 import { useScatterChartOptions } from './charts/useScatterChartOptions'
@@ -61,6 +62,7 @@ export function useChartOptions(
   const heatmapOptions = useHeatmapChartOptions(config)
   const radarOptions = useRadarChartOptions(config)
   const sankeyOptions = useSankeyChartOptions(config)
+  const chordOptions = useChordChartOptions(config)
   const bar3DOptions = useBar3DChartOptions(config)
   const line3DOptions = useLine3DChartOptions(config)
   const scatterOptions = useScatterChartOptions(config)
@@ -68,7 +70,7 @@ export function useChartOptions(
 
   const options = computed<EChartsOption>(() => {
     // When x, y AND z are all present, bar/line render as 3D charts.
-    // Pie/heatmap/radar/sankey have no 3D equivalent — always their 2D layout.
+    // Pie/heatmap/radar/sankey/chord have no 3D equivalent — always their 2D layout.
     const use3D = is3D(
       chartData,
       threeD.value,
@@ -90,6 +92,8 @@ export function useChartOptions(
         return radarOptions.options.value
       case 'sankey':
         return sankeyOptions.options.value
+      case 'chord':
+        return chordOptions.options.value
       case 'scatter':
         return use3D ? scatter3DOptions.options.value : scatterOptions.options.value
       default:

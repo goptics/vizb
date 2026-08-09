@@ -73,6 +73,7 @@ describe('types + constants touch', () => {
     expect(sample.entryKey).toBe('vizb:index')
     expect(CHART_ROOT_PREFIX.ChartBar).toBe('bar')
     expect(CHART_ROOT_PREFIX.ChartSankey).toBe('sankey')
+    expect(CHART_ROOT_PREFIX.ChartChord).toBe('chord')
   })
 })
 

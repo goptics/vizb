@@ -243,8 +243,8 @@ describe('ChartCard', () => {
     expect(w.text()).toMatch(/Total/)
   })
 
-  it('routes pie/heatmap/radar/sankey past 3D', async () => {
-    for (const t of ['pie', 'heatmap', 'radar', 'sankey'] as ChartType[]) {
+  it('routes pie/heatmap/radar/sankey/chord past 3D', async () => {
+    for (const t of ['pie', 'heatmap', 'radar', 'sankey', 'chord'] as ChartType[]) {
       holder.chartType = t
       chartTypeRef.value = t
       holder.threeD = true
