@@ -114,12 +114,10 @@ func ValidateEdgeSoloSelect(cfg Config) error {
 	if !HasEdgeChart(cfg) || IsExplicitGrouping(cfg) || len(cfg.SelectViews) == 0 {
 		return nil
 	}
-	chartName := edgeChartName(cfg)
 	for i, view := range cfg.SelectViews {
 		if n := len(view.Columns); n != 3 {
 			return fmt.Errorf(
-				"%s --select requires exactly 3 columns (source,target,value) per flag (view %d has %d); for another measure use a second --select source,target,other",
-				chartName,
+				"edge chart --select requires exactly 3 columns (source,target,value) per flag (view %d has %d); for another measure use a second --select source,target,other",
 				i+1, n,
 			)
 		}
@@ -129,20 +127,13 @@ func ValidateEdgeSoloSelect(cfg Config) error {
 		for i, view := range cfg.SelectViews[1:] {
 			if view.Columns[0].Source != src0 || view.Columns[1].Source != tgt0 {
 				return fmt.Errorf(
-					"%s repeatable --select must share the same source and target columns (view 1 uses %s,%s; view %d uses %s,%s)",
-					chartName,
+					"edge chart repeatable --select must share the same source and target columns (view 1 uses %s,%s; view %d uses %s,%s)",
 					src0, tgt0, i+2, view.Columns[0].Source, view.Columns[1].Source,
 				)
 			}
 		}
 	}
 	return nil
-}
-
-// ValidateSankeySoloSelect preserves the existing Sankey-specific API for
-// callers and tests while sharing the edge validation with Chord.
-func ValidateSankeySoloSelect(cfg Config) error {
-	return ValidateEdgeSoloSelect(cfg)
 }
 
 // ValidateSelectViewsForCharts applies chart-aware solo --select rules after
@@ -174,13 +165,6 @@ func EdgeStatType(view SelectView) string {
 		return m.Label
 	}
 	return m.Source
-}
-
-func edgeChartName(cfg Config) string {
-	if strings.Contains(strings.Join(cfg.ChartTypes, ","), "chord") {
-		return "chord"
-	}
-	return "sankey"
 }
 
 // splitTrailingParenLabel strips a view-level " (Title)" suffix used for
