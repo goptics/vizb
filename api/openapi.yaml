@@ -491,7 +491,7 @@ components:
           uniqueItems: true
           items:
             type: string
-            enum: [bar, line, scatter, pie, heatmap, radar, sankey]
+            enum: [bar, line, scatter, pie, heatmap, radar, sankey, chord]
         configs:
           type: array
           items:
@@ -613,6 +613,13 @@ components:
                   type: { const: sankey }
               minContains: 0
               maxContains: 1
+            - contains:
+                type: object
+                required: [type]
+                properties:
+                  type: { const: chord }
+              minContains: 0
+              maxContains: 1
         data:
           type: array
           items: { $ref: '#/components/schemas/DataPoint' }
@@ -697,6 +704,7 @@ components:
         - $ref: '#/components/schemas/HeatmapChartConfig'
         - $ref: '#/components/schemas/RadarChartConfig'
         - $ref: '#/components/schemas/SankeyChartConfig'
+        - $ref: '#/components/schemas/ChordChartConfig'
       discriminator:
         propertyName: type
         mapping:
@@ -707,6 +715,7 @@ components:
           heatmap: '#/components/schemas/HeatmapChartConfig'
           radar: '#/components/schemas/RadarChartConfig'
           sankey: '#/components/schemas/SankeyChartConfig'
+          chord: '#/components/schemas/ChordChartConfig'
     BarChartConfig:
       type: object
       additionalProperties: false
@@ -807,6 +816,16 @@ components:
       required: [type]
       properties:
         type: { const: sankey }
+        swap: { type: string }
+        sort: { $ref: '#/components/schemas/Sort' }
+        showLabels: { type: boolean }
+        stat: { $ref: '#/components/schemas/StatisticsConfig' }
+    ChordChartConfig:
+      type: object
+      additionalProperties: false
+      required: [type]
+      properties:
+        type: { const: chord }
         swap: { type: string }
         sort: { $ref: '#/components/schemas/Sort' }
         showLabels: { type: boolean }
