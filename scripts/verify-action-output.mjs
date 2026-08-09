@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 
-const { EXPECTED_JSON_KIND, EXPECTED_NAMES, HTML_FILE, JSON_FILE } = process.env
+const { EXPECTED_JSON_KIND, EXPECTED_NAMES, EXPECTED_CHART_TYPE, HTML_FILE, JSON_FILE } = process.env
 
 assert.ok(HTML_FILE, 'HTML_FILE is required')
 assert.ok(JSON_FILE, 'JSON_FILE is required')
@@ -33,6 +33,12 @@ for (const dataset of datasets) {
   assert.ok(dataset.data.length > 0, `${dataset.name} data must not be empty`)
   assert.ok(Array.isArray(dataset.settings), `${dataset.name} must contain settings`)
   assert.ok(dataset.settings.length > 0, `${dataset.name} settings must not be empty`)
+  if (EXPECTED_CHART_TYPE) {
+    assert.ok(
+      dataset.settings.some(({ type }) => type === EXPECTED_CHART_TYPE),
+      `${dataset.name} must contain a ${EXPECTED_CHART_TYPE} chart setting`,
+    )
+  }
 }
 
 const html = readFileSync(HTML_FILE, 'utf8')
