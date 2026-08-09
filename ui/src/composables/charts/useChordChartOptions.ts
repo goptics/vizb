@@ -2,9 +2,9 @@ import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
 import { hasXAxis, hasYAxis } from '@/lib/utils'
-import { getChartStyling, getTooltipTheme, formatTooltipValue } from './shared'
+import { getChartStyling, getTooltipTheme } from './shared'
 import { fontSize } from './shared/common'
-import { buildEdgeGraph, sortEdgeGraphNodes } from './shared/edgeGraph'
+import { buildEdgeGraph, formatEdgeTooltip, sortEdgeGraphNodes } from './shared/edgeGraph'
 
 const chordLayout = {
   left: '4%',
@@ -14,10 +14,6 @@ const chordLayout = {
   center: ['50%', '52%'],
   radius: ['58%', '72%'],
 } as const
-
-function tooltipColorDot(color: string): string {
-  return `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};margin-right:6px"></span>`
-}
 
 function minimalChordOption(config: BaseChartConfig): EChartsOption {
   return {
@@ -66,25 +62,7 @@ export function useChordChartOptions(config: BaseChartConfig) {
       tooltip: {
         trigger: 'item',
         ...getTooltipTheme(isDark.value),
-        formatter: (params: any) => {
-          if (params.dataType === 'edge' || params.data?.source != null) {
-            const source = String(params.data?.source ?? params.name ?? '')
-            const target = String(params.data?.target ?? '')
-            const value = params.data?.value ?? params.value
-            return (
-              `${tooltipColorDot(colorFor(source))}<strong>${source}</strong>` +
-              ` → ` +
-              `${tooltipColorDot(colorFor(target))}<strong>${target}</strong>` +
-              `<br/>${formatTooltipValue(value)}`
-            )
-          }
-          const name = String(params.name ?? params.data?.name ?? '')
-          const value = params.value ?? params.data?.value
-          const valueLine =
-            value === undefined || value === null ? '' : `<br/>${formatTooltipValue(value)}`
-          const marker = params.marker || tooltipColorDot(colorFor(name))
-          return `${marker} <strong>${name}</strong>${valueLine}`
-        },
+        formatter: (params: any) => formatEdgeTooltip(params, colorFor),
       } as EChartsOption['tooltip'],
       series: [
         {
