@@ -45,23 +45,9 @@ describe('edgeGraph', () => {
   })
 
   it('sorts nodes by total and breaks ties by name', () => {
-    const { nodes } = buildEdgeGraph([
-      point('C', 'D', 5),
-      point('A', 'B', 5),
-      point('A', 'C', 2),
-    ])
+    const { nodes } = buildEdgeGraph([point('C', 'D', 5), point('A', 'B', 5), point('A', 'C', 2)])
 
-    expect(sortEdgeGraphNodes(nodes, 'asc').map((node) => node.name)).toEqual([
-      'B',
-      'D',
-      'A',
-      'C',
-    ])
-    expect(sortEdgeGraphNodes(nodes, 'desc').map((node) => node.name)).toEqual([
-      'A',
-      'C',
-      'B',
-      'D',
-    ])
+    expect(sortEdgeGraphNodes(nodes, 'asc').map((node) => node.name)).toEqual(['B', 'D', 'A', 'C'])
+    expect(sortEdgeGraphNodes(nodes, 'desc').map((node) => node.name)).toEqual(['A', 'C', 'B', 'D'])
   })
 })

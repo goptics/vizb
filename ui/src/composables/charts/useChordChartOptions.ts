@@ -43,9 +43,7 @@ export function useChordChartOptions(config: BaseChartConfig) {
 
     const styling = getChartStyling(isDark.value)
     const { nodes: rawNodes, links } = buildEdgeGraph(chartData.value.points ?? [])
-    const nodes = sort.value.enabled
-      ? sortEdgeGraphNodes(rawNodes, sort.value.order)
-      : rawNodes
+    const nodes = sort.value.enabled ? sortEdgeGraphNodes(rawNodes, sort.value.order) : rawNodes
     const data = nodes.map(({ name, total, itemStyle }) => ({
       name,
       value: Math.max(0, total),

@@ -69,7 +69,6 @@ export function formatEdgeTooltip(params: any, colorFor: (name: string) => strin
 
   const name = String(params.name ?? params.data?.name ?? '')
   const value = params.value ?? params.data?.value
-  const valueLine =
-    value === undefined || value === null ? '' : `<br/>${formatTooltipValue(value)}`
+  const valueLine = value === undefined || value === null ? '' : `<br/>${formatTooltipValue(value)}`
   return `${params.marker || dot(colorFor(name))} <strong>${name}</strong>${valueLine}`
 }

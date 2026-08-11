@@ -16,7 +16,15 @@ export type StatConfig = {
   math: StatMath[] // empty = all categories
 }
 
-export type ChartType = 'bar' | 'line' | 'scatter' | 'pie' | 'heatmap' | 'radar' | 'sankey' | 'chord'
+export type ChartType =
+  | 'bar'
+  | 'line'
+  | 'scatter'
+  | 'pie'
+  | 'heatmap'
+  | 'radar'
+  | 'sankey'
+  | 'chord'
 
 export type ScaleType = 'linear' | 'log'
 export const SCALE_TYPES: ScaleType[] = ['linear', 'log']

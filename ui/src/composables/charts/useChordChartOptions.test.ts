@@ -1,5 +1,10 @@
 import { describe, expect, it, beforeAll, afterAll } from 'vitest'
-import { baseConfig, emptyChartData, installDevicePixelRatio, makeSankeyChartData } from '@/test-utils'
+import {
+  baseConfig,
+  emptyChartData,
+  installDevicePixelRatio,
+  makeSankeyChartData,
+} from '@/test-utils'
 import { useChordChartOptions } from './useChordChartOptions'
 
 let restoreDpr: () => void
@@ -11,11 +16,13 @@ afterAll(() => restoreDpr())
 const firstSeries = (options: { series?: unknown }) =>
   (options.series as Array<Record<string, any>>)[0]!
 
-const chartData = (points = [
-  { xAxis: 'A', yAxis: 'B', value: 3 },
-  { xAxis: 'A', yAxis: 'B', value: 7 },
-  { xAxis: 'B', yAxis: 'A', value: 5 },
-]) =>
+const chartData = (
+  points = [
+    { xAxis: 'A', yAxis: 'B', value: 3 },
+    { xAxis: 'A', yAxis: 'B', value: 7 },
+    { xAxis: 'B', yAxis: 'A', value: 5 },
+  ]
+) =>
   makeSankeyChartData({
     yAxis: ['A', 'B'],
     series: [
@@ -68,7 +75,7 @@ describe('useChordChartOptions', () => {
         chartData: emptyChartData({
           series: [{ xAxis: 'A', values: [1], benchmarkId: '' }],
           yAxis: [],
-          points: [{ xAxis: 'A', yAxis: 'B', value: 1 }],
+          points: [{ xAxis: 'A', yAxis: 'B', zAxis: '', value: 1 }],
         }),
       })
     )
