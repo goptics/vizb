@@ -158,6 +158,16 @@ func (s *SelectViewSpecSuite) TestValidateEdgeSoloSelect() {
 	}); err == nil {
 		t.Fatal("want error when multi-select source/target differ")
 	}
+	// Chord variant of the same mismatch (edge-chart generalization)
+	if err := ValidateEdgeSoloSelect(Config{
+		ChartTypes: []string{"chord"},
+		SelectViews: []SelectView{
+			{Columns: []ColumnSpec{{Source: "source"}, {Source: "target"}, {Source: "value"}}},
+			{Columns: []ColumnSpec{{Source: "a"}, {Source: "b"}, {Source: "cost"}}},
+		},
+	}); err == nil {
+		t.Fatal("want error when chord multi-select source/target differ")
+	}
 	// 4-col is rejected at parse; 1-flag with wrong count
 	if err := ValidateEdgeSoloSelect(Config{
 		ChartTypes: []string{"sankey"},
