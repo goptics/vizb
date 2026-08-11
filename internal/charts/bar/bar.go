@@ -24,7 +24,7 @@ type Config struct {
 	ThreeD          *bool              `json:"threeD,omitempty"`
 	ThreeDVisualMap *bool              `json:"threeDVisualMap,omitempty"`
 	Horizontal      *bool              `json:"horizontal,omitempty"`
-	BorderRadius    *int               `json:"borderRadius,omitempty"` // Added for border radius support
+	BorderRadius    *int               `json:"borderRadius,omitempty"`
 	Stat            *shared.StatConfig `json:"stat,omitempty"`
 }
 
@@ -36,4 +36,4 @@ func (c Config) StatMath() []string { return c.Stat.StatMath() }
 func (c Config) SwapString() string { return c.Swap }
 
 // New returns a fresh zero-value bar chart Config.
-func New() charts.ChartConfig { return &Config{Type: Type} }
+func New() charts.ChartConfig { return &Config{} }

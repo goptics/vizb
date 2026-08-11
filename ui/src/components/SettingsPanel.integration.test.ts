@@ -21,6 +21,7 @@ vi.mock('@/components/settings/StackControl.vue', () => controlStub('StackContro
 vi.mock('@/components/settings/ShowLabelsControl.vue', () => controlStub('ShowLabelsControl'))
 vi.mock('@/components/settings/SmoothControl.vue', () => controlStub('SmoothControl'))
 vi.mock('@/components/settings/HorizontalControl.vue', () => controlStub('HorizontalControl'))
+vi.mock('@/components/settings/BorderRadiusControl.vue', () => controlStub('BorderRadiusControl'))
 vi.mock('@/components/settings/ThreeDRotateControl.vue', () => controlStub('ThreeDRotateControl'))
 vi.mock('@/components/settings/ThreeDControl.vue', () => controlStub('ThreeDControl'))
 vi.mock('@/components/settings/ThreeDVisualMapControl.vue', () =>
@@ -73,6 +74,7 @@ const holder = vi.hoisted(() => ({
   setShowLabels: vi.fn(),
   setSmooth: vi.fn(),
   setHorizontal: vi.fn(),
+  setBorderRadius: vi.fn(),
   setThreeDRotate: vi.fn(),
   setSwap: vi.fn(),
   setThreeD: vi.fn(),
@@ -103,6 +105,7 @@ vi.mock('@/composables/useSettingsStore', () => ({
     setShowLabels: holder.setShowLabels,
     setSmooth: holder.setSmooth,
     setHorizontal: holder.setHorizontal,
+    setBorderRadius: holder.setBorderRadius,
     setThreeDRotate: holder.setThreeDRotate,
     setSwap: holder.setSwap,
     setThreeD: holder.setThreeD,
@@ -191,6 +194,7 @@ describe('SettingsPanel', () => {
       'StackControl',
       'ShowLabelsControl',
       'HorizontalControl',
+      'BorderRadiusControl',
       'SwapControl',
     ]) {
       expect(w.findComponent({ name }).exists()).toBe(true)
@@ -283,9 +287,16 @@ describe('SettingsPanel', () => {
     await swap.vm.$emit('update:modelValue', undefined)
 
     // fire generic onUpdate for other keys through remaining controls
-    for (const name of ['StackControl', 'ShowLabelsControl', 'HorizontalControl', 'ScaleControl']) {
+    for (const name of [
+      'StackControl',
+      'ShowLabelsControl',
+      'HorizontalControl',
+      'BorderRadiusControl',
+      'ScaleControl',
+    ]) {
       const c = w.findComponent({ name })
-      if (c.exists()) await c.vm.$emit('update:modelValue', true)
+      if (c.exists())
+        await c.vm.$emit('update:modelValue', name === 'BorderRadiusControl' ? 8 : true)
     }
   })
   it('uses arrangement map and wire swap for z detection', () => {

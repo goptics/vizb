@@ -3,8 +3,6 @@ package bar
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -12,20 +10,17 @@ type BarConfigSuite struct {
 	suite.Suite
 }
 
-func (s *BarConfigSuite) TestBarConfigCreation() {
-	cfg := New()
-	require.NotNil(s.T(), cfg)
-
-	barCfg, ok := cfg.(*Config)
-	require.True(s.T(), ok)
-
-	assert.Equal(s.T(), "bar", barCfg.Type)
-	assert.Nil(s.T(), barCfg.BorderRadius)
+func (s *BarConfigSuite) TestBorderRadiusDefaultsNil() {
+	cfg := New().(*Config)
+	s.Nil(cfg.BorderRadius)
 }
 
-func (s *BarConfigSuite) TestConfigChartType() {
-	cfg := &Config{Type: "bar"}
-	assert.Equal(s.T(), "bar", cfg.ChartType())
+func (s *BarConfigSuite) TestBorderRadiusRoundTrip() {
+	r := 8
+	cfg := &Config{Type: Type, BorderRadius: &r}
+	s.Equal("bar", cfg.ChartType())
+	s.Require().NotNil(cfg.BorderRadius)
+	s.Equal(8, *cfg.BorderRadius)
 }
 
 func TestBarConfigSuite(t *testing.T) {

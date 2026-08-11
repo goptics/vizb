@@ -156,6 +156,11 @@ export function useSettingsStore() {
     if (cfg?.type === 'bar') cfg.horizontal = horizontal
   }
 
+  const setBorderRadius = (radius: number | undefined) => {
+    const cfg = activeConfig.value
+    if (cfg?.type === 'bar') cfg.borderRadius = radius
+  }
+
   const setThreeDRotate = (rotate: boolean) => {
     const cfg = activeConfig.value as { threeDRotate?: boolean } | undefined
     if (cfg) cfg.threeDRotate = rotate
@@ -195,6 +200,7 @@ export function useSettingsStore() {
     setShowLabels,
     setSmooth,
     setHorizontal,
+    setBorderRadius,
     setThreeDRotate,
     setSwap,
     setThreeD,

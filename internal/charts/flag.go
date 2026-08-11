@@ -104,11 +104,11 @@ var (
 		JSONKey: "horizontal",
 	}
 	BorderRadiusFlag = flags.Flag{
-    Name:     "border-radius",
-    Usage:    "Bar corner radius in pixels (integer >= 0). For stacked bars, radius applies to the outer end only.",
-    Kind:     flags.KindInt,
-    JSONKey:  "borderRadius",
-    Validate: ValidateBorderRadiusValue,
+		Name:     "border-radius",
+		Usage:    "Bar corner radius in pixels (integer >= 0). For stacked bars, radius applies to the outer end only.",
+		Kind:     flags.KindInt,
+		JSONKey:  "borderRadius",
+		Validate: ValidateBorderRadiusValue,
 	}
 )
 

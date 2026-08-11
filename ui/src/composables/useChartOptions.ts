@@ -56,6 +56,7 @@ export function useChartOptions(
     chartAxes,
     chartType,
   }
+
   const barOptions = useBarChartOptions(config)
   const lineOptions = useLineChartOptions(config)
   const pieOptions = usePieChartOptions(config)

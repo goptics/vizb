@@ -41,6 +41,7 @@ const {
   setShowLabels,
   setSmooth,
   setHorizontal,
+  setBorderRadius,
   setThreeDRotate,
   setSwap,
   setThreeD,
@@ -157,6 +158,7 @@ const handlers: SettingsHandlers = {
   showLabels: setShowLabels,
   smooth: setSmooth,
   horizontal: setHorizontal,
+  borderRadius: setBorderRadius,
   threeDRotate: setThreeDRotate,
   threeD: setThreeD,
   threeDVisualMap: setThreeDVisualMap,
@@ -168,13 +170,6 @@ const handlers: SettingsHandlers = {
     resetColor()
     setSwap(target)
   },
-  borderRadius: (radius: number | undefined) => {
-  // Handle borderRadius change - only for bar charts
-  const cfg = activeConfig.value as BarConfig
-  if (cfg && cfg.type === 'bar') {
-    cfg.borderRadius = radius
-  }
-},
 }
 
 const stackEnabled = computed(

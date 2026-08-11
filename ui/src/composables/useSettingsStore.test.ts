@@ -261,6 +261,9 @@ describe('useSettingsStore', () => {
     store.setHorizontal(true)
     expect((store.activeConfig.value as { horizontal?: boolean }).horizontal).toBe(true)
 
+    store.setBorderRadius(8)
+    expect((store.activeConfig.value as { borderRadius?: number }).borderRadius).toBe(8)
+
     store.setSwap('yx')
     expect(store.activeConfig.value?.swap).toBe('yx')
 
@@ -286,6 +289,9 @@ describe('useSettingsStore', () => {
     store.setActiveChartIndex(1)
     store.setHorizontal(true)
     expect((store.activeConfig.value as { horizontal?: boolean }).horizontal).toBeUndefined()
+
+    store.setBorderRadius(4)
+    expect((store.activeConfig.value as { borderRadius?: number }).borderRadius).toBeUndefined()
 
     store.setVisualMap(true)
     expect((store.activeConfig.value as { visualMap?: boolean }).visualMap).toBeUndefined()
@@ -411,6 +417,7 @@ describe('useSettingsStore', () => {
     store.setShowLabels(true)
     store.setSmooth(true)
     store.setHorizontal(true)
+    store.setBorderRadius(8)
     store.setThreeDRotate(true)
     store.setSwap('yx')
     store.setThreeD(true)

@@ -16,9 +16,10 @@ const { fieldRegistry, getControl, getRenderableFields, partitionRenderableField
 )
 
 describe('fieldRegistry', () => {
-  it('exposes the eleven known field controls', () => {
+  it('exposes the twelve known field controls', () => {
     expect(Object.keys(fieldRegistry).sort()).toEqual(
       [
+        'borderRadius',
         'horizontal',
         'threeDRotate',
         'scale',
@@ -40,6 +41,7 @@ describe('fieldRegistry', () => {
     expect(getControl('stack')).toBeDefined()
     expect(getControl('showLabels')).toBeDefined()
     expect(getControl('horizontal')).toBeDefined()
+    expect(getControl('borderRadius')).toBeDefined()
     expect(getControl('smooth')).toBeDefined()
     expect(getControl('threeDRotate')).toBeDefined()
     expect(getControl('swap')).toBeDefined()
@@ -68,6 +70,12 @@ describe('fieldRegistry', () => {
     expect(fieldRegistry['smooth']!.appliesTo).toEqual(['line'])
     expect(fieldRegistry['smooth']!.visible?.({ rendering3D: false })).toBe(true)
     expect(fieldRegistry['smooth']!.visible?.({ rendering3D: true })).toBe(false)
+  })
+
+  it('borderRadius applies only to 2D bar charts', () => {
+    expect(fieldRegistry['borderRadius']!.appliesTo).toEqual(['bar'])
+    expect(fieldRegistry['borderRadius']!.visible?.({ rendering3D: false })).toBe(true)
+    expect(fieldRegistry['borderRadius']!.visible?.({ rendering3D: true })).toBe(false)
   })
 
   it('fields with no appliesOn have no dimension constraint', () => {
@@ -118,11 +126,11 @@ describe('getRenderableFields', () => {
     ).toEqual(['sort', 'scale', 'showLabels', 'threeDVisualMap', 'threeDRotate', 'swap'])
   })
 
-  it('returns 6 entries for a 2D bar config without value-3D active', () => {
+  it('returns 7 entries for a 2D bar config without value-3D active', () => {
     const cfg: BarConfig = { type: 'bar' }
     expect(
       getRenderableFields(cfg, { dimension: '2D', rendering3D: false }).map((f) => f.key)
-    ).toEqual(['sort', 'scale', 'stack', 'showLabels', 'horizontal', 'swap'])
+    ).toEqual(['sort', 'scale', 'stack', 'showLabels', 'horizontal', 'borderRadius', 'swap'])
   })
 
   it('returns 7 entries for a 2D bar config with value-3D active', () => {
@@ -158,7 +166,7 @@ describe('getRenderableFields', () => {
         hasThreeDOption: true,
         hasZAxis: false,
       }).map((f) => f.key)
-    ).toEqual(['sort', 'scale', 'showLabels', 'horizontal', 'threeD', 'swap'])
+    ).toEqual(['sort', 'scale', 'showLabels', 'horizontal', 'borderRadius', 'threeD', 'swap'])
   })
 
   it('hides rotate/visualMap on flat 2D xyn chart until value 3D is enabled', () => {
@@ -250,6 +258,7 @@ describe('getRenderableFields', () => {
       'stack',
       'showLabels',
       'horizontal',
+      'borderRadius',
       'threeDVisualMap',
       'threeDRotate',
       'swap',

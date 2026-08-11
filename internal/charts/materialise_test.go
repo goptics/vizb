@@ -38,6 +38,13 @@ func (s *MaterialiseSuite) TestScaleDefault() {
 	s.Equal("linear", got.Scale)
 	s.Nil(got.ShowLabels)
 	s.Nil(got.Sort)
+	s.Nil(got.BorderRadius)
+}
+
+func (s *MaterialiseSuite) TestBarBorderRadiusSeed() {
+	got := s.materialise("bar", map[string]any{"borderRadius": 8}, nil).(*barchart.Config)
+	s.Require().NotNil(got.BorderRadius)
+	s.Equal(8, *got.BorderRadius)
 }
 
 func (s *MaterialiseSuite) TestSeedThenOverride() {

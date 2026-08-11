@@ -27,12 +27,12 @@ export type SettingFieldValueMap = {
   showLabels: boolean
   smooth: boolean
   horizontal: boolean
+  borderRadius: number | undefined
   threeDRotate: boolean
   threeD: boolean
   threeDVisualMap: boolean
   visualMap: boolean
   swap: string | undefined
-  borderRadius: number | undefined
 }
 
 export type SettingFieldKey = keyof SettingFieldValueMap
@@ -85,11 +85,10 @@ export const fieldRegistry: Record<SettingFieldKey, FieldMeta> = {
     visible: (ctx) => ctx.rendering3D !== true,
   },
   borderRadius: {
-  component: BorderRadiusControl,
-  appliesTo: ['bar'],
-  visible: (ctx) => ctx.rendering3D !== true,
-},
-
+    component: BorderRadiusControl,
+    appliesTo: ['bar'],
+    visible: (ctx) => ctx.rendering3D !== true,
+  },
   threeD: {
     component: ThreeDControl,
     appliesTo: ['bar', 'line', 'scatter'],
