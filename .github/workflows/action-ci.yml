@@ -46,6 +46,30 @@ jobs:
           JSON_FILE: ${{ steps.vizb.outputs.output-file-json }}
         run: node scripts/verify-action-output.mjs
 
+      - name: Run action (cyclic chord)
+        if: matrix.os == 'ubuntu-latest'
+        id: chord
+        uses: ./
+        with:
+          file: examples/csv/chord-relations.csv
+          parser: csv
+          select: source,target,value
+          charts: chord
+          chart: chord:labels
+          output-html: chord.html
+          output-json: results/chord.json
+          vizb-binary: ./bin/vizb
+
+      - name: Verify Chord outputs
+        if: matrix.os == 'ubuntu-latest'
+        env:
+          EXPECTED_JSON_KIND: object
+          EXPECTED_NAMES: '["Comparisons"]'
+          EXPECTED_CHART_TYPE: chord
+          HTML_FILE: ${{ steps.chord.outputs.output-file-html }}
+          JSON_FILE: ${{ steps.chord.outputs.output-file-json }}
+        run: node scripts/verify-action-output.mjs
+
   stateful:
     strategy:
       matrix:

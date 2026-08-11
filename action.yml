@@ -76,7 +76,7 @@ inputs:
     description: "Per-chart overrides (--chart flag, repeatable). One override per line: '<type>:<key>=<val>,...'. Keys: swap, sort, scale, labels, 3d-rotate, 3d. E.g. 'bar:scale=log' or 'pie:labels'. Blank lines and #-prefixed lines are ignored."
     default: ""
   charts:
-    description: "Chart types to generate (-c flag): bar, line, scatter, pie, heatmap, radar"
+    description: "Chart types to generate (-c flag): bar, line, scatter, pie, heatmap, radar, sankey, chord"
     default: ""
   parser:
     description: "Parser to use: csv, json, go, js:tinybench, js:vitest, rs:criterion, rs:divan (-P flag)"
