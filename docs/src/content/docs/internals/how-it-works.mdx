@@ -24,7 +24,7 @@ Go / Rust / JS bench ↗  (auto-detected)  (grouping applied)
   - merge.go         Merge command
   - ui.go            HTML UI generation command
   - cli/             Shared CLI building blocks — command, options, output, pipeline, progress
-  - charts/          Per-chart-type config specs (bar, line, scatter, pie, heatmap, radar)
+  - charts/          Per-chart-type config specs (bar, line, scatter, pie, heatmap, radar, sankey, chord)
 - pkg/
   - parser/
     - registry.go        Parser registration (ParseFunc, Parsers map)
@@ -53,7 +53,7 @@ Go / Rust / JS bench ↗  (auto-detected)  (grouping applied)
   - migrate.go       v0.12.0 → current Dataset settings migration
 - ui/                Vue 3 + TypeScript visualization app
   - src/composables/
-    - charts/            Per-chart-type options composables (bar, line, scatter, pie, heatmap, radar, 3D variants) plus correlation
+    - charts/            Per-chart-type options composables (bar, line, scatter, pie, heatmap, radar, sankey, chord, 3D variants) plus correlation
     - settings/          Field-registry-driven settings panel
     - useSettingsStore.ts    Reactive chart settings (scale, sort, labels)
     - useChartOptions.ts     Chart composable routing
@@ -210,5 +210,5 @@ Vizb auto-detects the input format from the content (not the file extension). `-
 4. **Parse** — the selected parser extracts names and stats from the input.
 5. **Resolve axes** — `--axes` (`pkg/parser/axes_spec.go`) maps CSV/JSON columns or benchmark label segments to the Name / X / Y / Z dimensions; `--group` (`group_spec.go`) builds the dimension label; `--group-pattern` or `--group-regex` splits that label; `--select` (`select_spec.go`) keeps only matching rows/series.
 6. **Build** — assemble the `Dataset` struct with metadata, axes, per-chart settings, and data points.
-7. **Prune** — `SelectChunks` (`pkg/template/chunks.go`) walks the chunk reference graph built at Vite build time and keeps only chunks reachable from the selected chart renderers (default: `bar,line,pie`). The 3D engine is gated separately: included when `--charts` contains `bar` or `line` and embedded data has a z-axis, or when `vizb ui --data-url` is run with `--3d`.
+7. **Prune** — `SelectChunks` (`pkg/template/chunks.go`) walks the chunk reference graph built at Vite build time and keeps only chunks reachable from the selected chart renderers (default: `bar,line,pie`). Sankey and Chord are opt-in roots. The 3D engine is gated separately: included when `--charts` contains `bar` or `line` and embedded data has a z-axis, or when `vizb ui --data-url` is run with `--3d`.
 8. **Output** — JSON (`json.Marshal`) or HTML (Vue template + embedded JSON + `VIZB_CHARTS` + pruned chunk map). The UI intersects each dataset's `settings` with `VIZB_CHARTS` on load so pruned chart types never appear as tabs.

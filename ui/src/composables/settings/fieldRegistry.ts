@@ -54,7 +54,7 @@ type FieldMeta = {
 export const fieldRegistry: Record<SettingFieldKey, FieldMeta> = {
   sort: {
     component: SortControl,
-    appliesTo: ['bar', 'line', 'scatter', 'pie', 'heatmap', 'radar', 'sankey'],
+    appliesTo: ['bar', 'line', 'scatter', 'pie', 'heatmap', 'radar', 'sankey', 'chord'],
   },
   scale: {
     component: ScaleControl,
@@ -72,7 +72,7 @@ export const fieldRegistry: Record<SettingFieldKey, FieldMeta> = {
   },
   showLabels: {
     component: ShowLabelsControl,
-    appliesTo: ['bar', 'line', 'scatter', 'pie', 'heatmap', 'radar', 'sankey'],
+    appliesTo: ['bar', 'line', 'scatter', 'pie', 'heatmap', 'radar', 'sankey', 'chord'],
   },
   smooth: {
     component: SmoothControl,
@@ -112,7 +112,7 @@ export const fieldRegistry: Record<SettingFieldKey, FieldMeta> = {
   },
   swap: {
     component: SwapControl,
-    appliesTo: ['bar', 'line', 'scatter', 'pie', 'heatmap', 'radar', 'sankey'],
+    appliesTo: ['bar', 'line', 'scatter', 'pie', 'heatmap', 'radar', 'sankey', 'chord'],
   },
 }
 

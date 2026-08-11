@@ -5,6 +5,7 @@ import (
 
 	// Chart configs self-register so ChartCommands has specs to build from.
 	_ "github.com/goptics/vizb/cmd/charts/bar"
+	_ "github.com/goptics/vizb/cmd/charts/chord"
 	_ "github.com/goptics/vizb/cmd/charts/heatmap"
 	_ "github.com/goptics/vizb/cmd/charts/line"
 	_ "github.com/goptics/vizb/cmd/charts/pie"
@@ -30,7 +31,7 @@ func (s *CommandSuite) SetupTest() {
 }
 
 func (s *CommandSuite) TestBuildsOneCommandPerChart() {
-	for _, name := range []string{"bar", "line", "scatter", "pie", "heatmap", "radar", "sankey"} {
+	for _, name := range []string{"bar", "line", "scatter", "pie", "heatmap", "radar", "sankey", "chord"} {
 		s.Contains(s.byUse, name, "missing %s subcommand", name)
 	}
 }
@@ -54,6 +55,14 @@ func (s *CommandSuite) TestVariableFlagsBoundPerChart() {
 	s.Nil(sankey.Flags().Lookup("3d"))
 	s.Nil(sankey.Flags().Lookup("visualmap"))
 	s.NotNil(sankey.Flags().Lookup("swap"))
+
+	// chord uses BaseChartFlags only (no scale/stack/3d/visualMap).
+	chord := s.byUse["chord"]
+	s.Nil(chord.Flags().Lookup("scale"))
+	s.Nil(chord.Flags().Lookup("stack"))
+	s.Nil(chord.Flags().Lookup("3d"))
+	s.Nil(chord.Flags().Lookup("visualmap"))
+	s.NotNil(chord.Flags().Lookup("swap"))
 
 	// scatter is the only chart with the 2D --visualmap flag.
 	s.NotNil(s.byUse["scatter"].Flags().Lookup("visualmap"))

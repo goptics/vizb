@@ -7,6 +7,7 @@ import type {
   HeatmapConfig,
   RadarConfig,
   SankeyConfig,
+  ChordConfig,
 } from '@/types'
 // Side-effect: top-level vi.mock for every settings control SFC fieldRegistry imports.
 import '@/test-utils/mockSettingsControls'
@@ -87,7 +88,7 @@ describe('fieldRegistry', () => {
     }
   })
 
-  it('sort, showLabels, and swap apply to all seven chart types', () => {
+  it('sort, showLabels, and swap apply to all eight chart types', () => {
     for (const key of ['sort', 'showLabels', 'swap'] as const) {
       expect(fieldRegistry[key]!.appliesTo).toEqual([
         'bar',
@@ -97,6 +98,7 @@ describe('fieldRegistry', () => {
         'heatmap',
         'radar',
         'sankey',
+        'chord',
       ])
     }
   })
@@ -248,6 +250,11 @@ describe('getRenderableFields', () => {
       'showLabels',
       'swap',
     ])
+  })
+
+  it('returns 3 entries for a chord config (no scale/threeDRotate; dimension is irrelevant)', () => {
+    const cfg: ChordConfig = { type: 'chord' }
+    expect(getRenderableFields(cfg).map((f) => f.key)).toEqual(['sort', 'showLabels', 'swap'])
   })
 
   it('treats an unknown dimension (no ctx) as "no dimension constraint" — shows all applicable fields', () => {

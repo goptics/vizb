@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	bar "github.com/goptics/vizb/internal/charts/bar"
+	chord "github.com/goptics/vizb/internal/charts/chord"
 	heatmap "github.com/goptics/vizb/internal/charts/heatmap"
 	line "github.com/goptics/vizb/internal/charts/line"
 	pie "github.com/goptics/vizb/internal/charts/pie"
@@ -92,6 +93,7 @@ func (s *OpenAPISuite) TestReusableSchemasMatchGoWireTypes() {
 		"PieChartConfig":     pie.Config{},
 		"HeatmapChartConfig": heatmap.Config{},
 		"RadarChartConfig":   radar.Config{},
+		"ChordChartConfig":   chord.Config{},
 	} {
 		schema := mustMap(t, schemas[schemaName], "components.schemas."+schemaName)
 		got := propertyNames(t, schema, schemaName)
@@ -113,6 +115,7 @@ func (s *OpenAPISuite) TestReusableSchemasMatchGoWireTypes() {
 		"PieChartConfig":     {"type"},
 		"HeatmapChartConfig": {"type"},
 		"RadarChartConfig":   {"type"},
+		"ChordChartConfig":   {"type"},
 	} {
 		schema := mustMap(t, schemas[schemaName], "components.schemas."+schemaName)
 		if got := stringSliceValue(schema["required"]); !reflect.DeepEqual(got, sorted(required)) {

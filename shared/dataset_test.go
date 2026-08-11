@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	_ "github.com/goptics/vizb/cmd/charts/bar"
+	_ "github.com/goptics/vizb/cmd/charts/chord"
 	_ "github.com/goptics/vizb/cmd/charts/line"
 	_ "github.com/goptics/vizb/cmd/charts/pie"
 	_ "github.com/goptics/vizb/cmd/charts/scatter"

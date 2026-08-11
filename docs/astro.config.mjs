@@ -54,6 +54,7 @@ export default defineConfig({
 					{ label: 'Radar Chart', slug: 'charts/radar' },
 					{ label: 'Heatmap', slug: 'charts/heatmap' },
 					{ label: 'Sankey Chart', slug: 'charts/sankey' },
+					{ label: 'Chord Chart', slug: 'charts/chord' },
 					{ label: '3D Charts (WebGL)', slug: 'charts/3d' },
 				],
 			},

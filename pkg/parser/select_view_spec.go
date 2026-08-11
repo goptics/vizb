@@ -33,7 +33,7 @@ func parseSelectViewColumns(raw string) ([]ColumnSpec, error) {
 	if err != nil {
 		return nil, err
 	}
-	// Classic solo and sankey edge: 2 or 3 columns only (never 4+ on one flag).
+	// Classic solo and edge charts: 2 or 3 columns only (never 4+ on one flag).
 	if n := len(tokens); n < 2 || n > 3 {
 		return nil, fmt.Errorf("--select requires 2 or 3 columns (x,y[,z]); got %d", n)
 	}
@@ -83,7 +83,7 @@ func parseSelectViewColumns(raw string) ([]ColumnSpec, error) {
 }
 
 // ValidateRepeatableSelectViews checks multi --select flags share one arity:
-// 2 columns (dim,metric multi-stat) or 3 columns (sankey source,target,value).
+// 2 columns (dim,metric multi-stat) or 3 columns (edge source,target,value).
 func ValidateRepeatableSelectViews(views []SelectView) error {
 	if len(views) <= 1 {
 		return nil
@@ -106,18 +106,18 @@ func ValidateRepeatableSelectViews(views []SelectView) error {
 	return nil
 }
 
-// ValidateSankeySoloSelect enforces sankey edge-list rules for solo --select:
-// each flag is exactly 3 columns (source, target, value). Multiple --select
-// flags are allowed for extra measures and must share the same source/target
-// columns. Grouped sankey (-g) does not use SelectViews and is not checked here.
-func ValidateSankeySoloSelect(cfg Config) error {
-	if !HasSankeyChart(cfg) || IsExplicitGrouping(cfg) || len(cfg.SelectViews) == 0 {
+// ValidateEdgeSoloSelect enforces edge-list rules for solo --select: each flag
+// is exactly 3 columns (source, target, value). Multiple --select flags are
+// allowed for extra measures and must share the same source/target columns.
+// Grouped edge charts do not use SelectViews and are not checked here.
+func ValidateEdgeSoloSelect(cfg Config) error {
+	if !HasEdgeChart(cfg) || IsExplicitGrouping(cfg) || len(cfg.SelectViews) == 0 {
 		return nil
 	}
 	for i, view := range cfg.SelectViews {
 		if n := len(view.Columns); n != 3 {
 			return fmt.Errorf(
-				"sankey --select requires exactly 3 columns (source,target,value) per flag (view %d has %d); for another measure use a second --select source,target,other",
+				"edge chart --select requires exactly 3 columns (source,target,value) per flag (view %d has %d); for another measure use a second --select source,target,other",
 				i+1, n,
 			)
 		}
@@ -127,7 +127,7 @@ func ValidateSankeySoloSelect(cfg Config) error {
 		for i, view := range cfg.SelectViews[1:] {
 			if view.Columns[0].Source != src0 || view.Columns[1].Source != tgt0 {
 				return fmt.Errorf(
-					"sankey repeatable --select must share the same source and target columns (view 1 uses %s,%s; view %d uses %s,%s)",
+					"edge chart repeatable --select must share the same source and target columns (view 1 uses %s,%s; view %d uses %s,%s)",
 					src0, tgt0, i+2, view.Columns[0].Source, view.Columns[1].Source,
 				)
 			}
@@ -137,22 +137,22 @@ func ValidateSankeySoloSelect(cfg Config) error {
 }
 
 // ValidateSelectViewsForCharts applies chart-aware solo --select rules after
-// ChartTypes is known: sankey edge (exactly 3 cols per flag) vs multi-stat (2).
+// ChartTypes is known: edge chart (exactly 3 cols per flag) vs multi-stat (2).
 func ValidateSelectViewsForCharts(cfg Config) error {
 	if len(cfg.SelectViews) == 0 || IsExplicitGrouping(cfg) {
 		return nil
 	}
-	if HasSankeyChart(cfg) {
-		return ValidateSankeySoloSelect(cfg)
+	if HasEdgeChart(cfg) {
+		return ValidateEdgeSoloSelect(cfg)
 	}
 	if len(cfg.SelectViews) > 1 {
-		// Non-sankey multi --select is multi-stat only (2 columns each).
+		// Non-edge multi --select is multi-stat only (2 columns each).
 		return ValidateMultiSelectStatViews(cfg.SelectViews)
 	}
 	return nil
 }
 
-// EdgeStatType names the measure for one sankey edge --select view.
+// EdgeStatType names the measure for one edge-chart --select view.
 func EdgeStatType(view SelectView) string {
 	if view.TypeLabel != "" {
 		return view.TypeLabel

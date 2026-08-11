@@ -115,22 +115,22 @@ func (s *SelectViewSpecSuite) TestParseSelectViewFlagRejectsArity() {
 	}
 }
 
-func (s *SelectViewSpecSuite) TestValidateSankeySoloSelect() {
+func (s *SelectViewSpecSuite) TestValidateEdgeSoloSelect() {
 	t := s.T()
-	if err := ValidateSankeySoloSelect(Config{}); err != nil {
+	if err := ValidateEdgeSoloSelect(Config{}); err != nil {
 		t.Fatalf("empty cfg: %v", err)
 	}
-	if err := ValidateSankeySoloSelect(Config{ChartTypes: []string{"sankey"}, Group: []string{"source"}}); err != nil {
+	if err := ValidateEdgeSoloSelect(Config{ChartTypes: []string{"sankey"}, Group: []string{"source"}}); err != nil {
 		t.Fatalf("grouped: %v", err)
 	}
-	err := ValidateSankeySoloSelect(Config{
+	err := ValidateEdgeSoloSelect(Config{
 		ChartTypes:  []string{"sankey"},
 		SelectViews: []SelectView{{Columns: []ColumnSpec{{Source: "a"}, {Source: "b"}}}},
 	})
 	if err == nil {
 		t.Fatal("want error for 2-col sankey select")
 	}
-	if err := ValidateSankeySoloSelect(Config{
+	if err := ValidateEdgeSoloSelect(Config{
 		ChartTypes: []string{"sankey"},
 		SelectViews: []SelectView{{Columns: []ColumnSpec{
 			{Source: "source"}, {Source: "target"}, {Source: "value"},
@@ -139,7 +139,7 @@ func (s *SelectViewSpecSuite) TestValidateSankeySoloSelect() {
 		t.Fatalf("3-col: %v", err)
 	}
 	// Multi-measure: two flags, shared source/target, different value cols
-	if err := ValidateSankeySoloSelect(Config{
+	if err := ValidateEdgeSoloSelect(Config{
 		ChartTypes: []string{"sankey"},
 		SelectViews: []SelectView{
 			{Columns: []ColumnSpec{{Source: "source"}, {Source: "target"}, {Source: "value"}}},
@@ -149,7 +149,7 @@ func (s *SelectViewSpecSuite) TestValidateSankeySoloSelect() {
 		t.Fatalf("multi 3-col sankey select: %v", err)
 	}
 	// Mismatched source/target across flags
-	if err := ValidateSankeySoloSelect(Config{
+	if err := ValidateEdgeSoloSelect(Config{
 		ChartTypes: []string{"sankey"},
 		SelectViews: []SelectView{
 			{Columns: []ColumnSpec{{Source: "source"}, {Source: "target"}, {Source: "value"}}},
@@ -158,8 +158,18 @@ func (s *SelectViewSpecSuite) TestValidateSankeySoloSelect() {
 	}); err == nil {
 		t.Fatal("want error when multi-select source/target differ")
 	}
+	// Chord variant of the same mismatch (edge-chart generalization)
+	if err := ValidateEdgeSoloSelect(Config{
+		ChartTypes: []string{"chord"},
+		SelectViews: []SelectView{
+			{Columns: []ColumnSpec{{Source: "source"}, {Source: "target"}, {Source: "value"}}},
+			{Columns: []ColumnSpec{{Source: "a"}, {Source: "b"}, {Source: "cost"}}},
+		},
+	}); err == nil {
+		t.Fatal("want error when chord multi-select source/target differ")
+	}
 	// 4-col is rejected at parse; 1-flag with wrong count
-	if err := ValidateSankeySoloSelect(Config{
+	if err := ValidateEdgeSoloSelect(Config{
 		ChartTypes: []string{"sankey"},
 		SelectViews: []SelectView{{Columns: []ColumnSpec{
 			{Source: "a"}, {Source: "b"}, {Source: "c"}, {Source: "d"},
@@ -181,6 +191,15 @@ func (s *SelectViewSpecSuite) TestResolveModeEdgeForSankey() {
 	if !ModeEdge.IsEdge() || !ModeEdge.IsSelectAxis() {
 		t.Fatal("ModeEdge should report edge and select-axis")
 	}
+}
+
+func (s *SelectViewSpecSuite) TestResolveModeEdgeForChord() {
+	cfg := Config{
+		ChartTypes:  []string{"chord"},
+		SelectViews: []SelectView{{Columns: []ColumnSpec{{Source: "source"}, {Source: "target"}, {Source: "value"}}}},
+	}
+	s.Equal(ModeEdge, ResolveMode(cfg))
+	s.NoError(ValidateEdgeSoloSelect(cfg))
 }
 
 func (s *SelectViewSpecSuite) TestParseSelectViewFlagRejectsDuplicateColumn() {

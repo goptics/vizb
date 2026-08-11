@@ -12,4 +12,5 @@ export const ALL_CHART_TYPES: ChartType[] = [
   'heatmap',
   'radar',
   'sankey',
+  'chord',
 ]
