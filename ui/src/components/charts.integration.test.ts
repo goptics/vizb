@@ -23,6 +23,7 @@ vi.mock('echarts/charts', () => ({
   HeatmapChart: 'HeatmapChart',
   RadarChart: 'RadarChart',
   SankeyChart: 'SankeyChart',
+  ChordChart: 'ChordChart',
 }))
 vi.mock('echarts-gl/charts', () => ({
   Bar3DChart: 'Bar3DChart',
@@ -54,6 +55,7 @@ import ChartScatter from './ChartScatter.vue'
 import ChartHeatmap from './ChartHeatmap.vue'
 import ChartRadar from './ChartRadar.vue'
 import ChartSankey from './ChartSankey.vue'
+import ChartChord from './ChartChord.vue'
 import Chart3D from './Chart3D.vue'
 import { BASE_2D } from './charts/base'
 
@@ -73,6 +75,7 @@ describe('chart shells', () => {
     ['ChartHeatmap', ChartHeatmap],
     ['ChartRadar', ChartRadar],
     ['ChartSankey', ChartSankey],
+    ['ChartChord', ChartChord],
     ['Chart3D', Chart3D],
   ] as const)('%s mounts VChart and forwards legend event', async (name, Comp) => {
     const onLegendselectchanged = vi.fn()

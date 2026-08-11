@@ -49,8 +49,9 @@ export function useChordChartOptions(config: BaseChartConfig) {
       value: Math.max(0, total),
       itemStyle,
     }))
+    // buildEdgeGraph always assigns a color, so lookups below never miss the map key's value.
     const nodeColor = new Map<string, string>(
-      nodes.map((node) => [node.name, node.itemStyle?.color ?? '#888'] as const)
+      nodes.map((n) => [n.name, n.itemStyle!.color!] as const)
     )
     const colorFor = (name: string): string => nodeColor.get(name) ?? '#888'
 

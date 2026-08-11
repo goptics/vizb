@@ -5,6 +5,7 @@ import {
   installDevicePixelRatio,
   makeSankeyChartData,
 } from '@/test-utils'
+import type { ChartData } from '@/types'
 import { useChordChartOptions } from './useChordChartOptions'
 
 let restoreDpr: () => void
@@ -83,5 +84,42 @@ describe('useChordChartOptions', () => {
     expect(series.type).toBe('chord')
     expect(series.data).toEqual([])
     expect(series.links).toEqual([])
+  })
+
+  it('treats missing points as an empty list when both axes exist', () => {
+    const { options } = useChordChartOptions(
+      baseConfig({
+        chartData: {
+          ...emptyChartData({
+            series: [{ xAxis: 'A', values: [1], benchmarkId: '' }],
+            yAxis: ['B'],
+          }),
+          points: undefined,
+        } as unknown as ChartData,
+      })
+    )
+    const series = firstSeries(options.value)
+    expect(series.type).toBe('chord')
+    expect(series.data).toEqual([])
+    expect(series.links).toEqual([])
+  })
+
+  it('formats edge and node tooltips via the shared edge formatter', () => {
+    const { options } = useChordChartOptions(baseConfig({ chartData: chartData() }))
+    const formatter = (options.value.tooltip as { formatter: (params: any) => string }).formatter
+
+    const edgeHtml = formatter({
+      dataType: 'edge',
+      data: { source: 'A', target: 'B', value: 10 },
+    })
+    expect(edgeHtml).toContain('<strong>A</strong>')
+    expect(edgeHtml).toContain('<strong>B</strong>')
+    expect(edgeHtml).toContain('→')
+    expect(edgeHtml).toContain('10')
+
+    // Unknown node hits colorFor's map-miss fallback (#888).
+    const nodeHtml = formatter({ name: 'Unknown', value: 1 })
+    expect(nodeHtml).toContain('<strong>Unknown</strong>')
+    expect(nodeHtml).toContain('border-radius:50%')
   })
 })
