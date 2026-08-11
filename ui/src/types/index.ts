@@ -16,7 +16,15 @@ export type StatConfig = {
   math: StatMath[] // empty = all categories
 }
 
-export type ChartType = 'bar' | 'line' | 'scatter' | 'pie' | 'heatmap' | 'radar' | 'sankey'
+export type ChartType =
+  | 'bar'
+  | 'line'
+  | 'scatter'
+  | 'pie'
+  | 'heatmap'
+  | 'radar'
+  | 'sankey'
+  | 'chord'
 
 export type ScaleType = 'linear' | 'log'
 export const SCALE_TYPES: ScaleType[] = ['linear', 'log']
@@ -135,6 +143,14 @@ export type SankeyConfig = {
   stat?: StatConfig
 }
 
+export type ChordConfig = {
+  type: 'chord'
+  swap?: string
+  sort?: Sort
+  showLabels?: boolean
+  stat?: StatConfig
+}
+
 export type ChartConfig =
   | BarConfig
   | LineConfig
@@ -143,6 +159,7 @@ export type ChartConfig =
   | HeatmapConfig
   | RadarConfig
   | SankeyConfig
+  | ChordConfig
 
 // Human-readable label for each dimension, derived from the --group columns.
 // `name` is carried (though not rendered as an axis) so the swap feature can

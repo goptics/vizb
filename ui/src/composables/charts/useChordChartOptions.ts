@@ -6,60 +6,56 @@ import { getChartStyling, getTooltipTheme } from './shared'
 import { fontSize } from './shared/common'
 import { buildEdgeGraph, formatEdgeTooltip, sortEdgeGraphNodes } from './shared/edgeGraph'
 
-/** ECharts defaults right: '20%' for label room; we keep a tighter inset. */
-const sankeyLayout = {
+const chordLayout = {
   left: '4%',
-  right: '8%',
-  top: '4%',
-  bottom: '4%',
+  right: '4%',
+  top: '8%',
+  bottom: '8%',
+  center: ['50%', '52%'],
+  radius: ['58%', '72%'],
 } as const
 
-function minimalSankeyOption(config: BaseChartConfig): EChartsOption {
-  const base = getBaseOptions(config)
+function minimalChordOption(config: BaseChartConfig): EChartsOption {
   return {
-    ...base,
+    ...getBaseOptions(config),
     legend: { show: false },
     series: [
       {
-        type: 'sankey',
-        ...sankeyLayout,
+        type: 'chord',
+        ...chordLayout,
         data: [],
         links: [],
         emphasis: { focus: 'adjacency' },
-        lineStyle: { curveness: 0.5, color: 'gradient' },
+        lineStyle: { color: 'gradient', opacity: 0.35 },
       },
     ],
-  } as EChartsOption
+  } as unknown as EChartsOption
 }
 
-export function useSankeyChartOptions(config: BaseChartConfig) {
+/** Build the ECharts 6 Chord option from Vizb's shared x→y edge points. */
+export function useChordChartOptions(config: BaseChartConfig) {
   const { chartData, sort, showLabels, isDark } = config
 
   const options = computed<EChartsOption>(() => {
-    // Sankey needs source (x) and target (y). Without both, emit an empty series
-    // so the canvas stays blank rather than mis-drawing from partial axes.
     if (!hasXAxis(chartData) || !hasYAxis(chartData)) {
-      return minimalSankeyOption(config)
+      return minimalChordOption(config)
     }
 
     const styling = getChartStyling(isDark.value)
-    const base = getBaseOptions(config)
-    let { nodes, links } = buildEdgeGraph(chartData.value.points ?? [])
-
-    if (sort.value.enabled) {
-      nodes = sortEdgeGraphNodes(nodes, sort.value.order)
-    }
-
-    // Drop the internal total field before handing nodes to ECharts.
-    const data = nodes.map(({ name, itemStyle }) => ({ name, itemStyle }))
-    // buildSankeyGraph always assigns a color, so lookups below never miss.
+    const { nodes: rawNodes, links } = buildEdgeGraph(chartData.value.points ?? [])
+    const nodes = sort.value.enabled ? sortEdgeGraphNodes(rawNodes, sort.value.order) : rawNodes
+    const data = nodes.map(({ name, total, itemStyle }) => ({
+      name,
+      value: Math.max(0, total),
+      itemStyle,
+    }))
     const nodeColor = new Map<string, string>(
-      nodes.map((n) => [n.name, n.itemStyle!.color!] as const)
+      nodes.map((node) => [node.name, node.itemStyle?.color ?? '#888'] as const)
     )
     const colorFor = (name: string): string => nodeColor.get(name) ?? '#888'
 
     return {
-      ...base,
+      ...getBaseOptions(config),
       legend: { show: false },
       tooltip: {
         trigger: 'item',
@@ -68,12 +64,12 @@ export function useSankeyChartOptions(config: BaseChartConfig) {
       } as EChartsOption['tooltip'],
       series: [
         {
-          type: 'sankey',
-          ...sankeyLayout,
+          type: 'chord',
+          ...chordLayout,
           data,
           links,
           emphasis: { focus: 'adjacency' },
-          lineStyle: { curveness: 0.5, color: 'gradient' },
+          lineStyle: { color: 'gradient', opacity: 0.35, curveness: 0.15 },
           label: {
             show: showLabels.value,
             color: styling.textColor,
@@ -81,7 +77,7 @@ export function useSankeyChartOptions(config: BaseChartConfig) {
           },
         },
       ],
-    } as EChartsOption
+    } as unknown as EChartsOption
   })
 
   return { options }

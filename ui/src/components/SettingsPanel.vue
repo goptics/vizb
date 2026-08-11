@@ -8,6 +8,7 @@ import {
   Table,
   Radar,
   GitBranch,
+  Circle,
 } from 'lucide-vue-next'
 import { Card, CardContent, CardHeader, CardTitle, Separator } from './ui'
 import Selector from './Selector.vue'
@@ -68,6 +69,7 @@ const CHART_ICONS: Record<ChartType, Component> = {
   heatmap: Table,
   radar: Radar,
   sankey: GitBranch,
+  chord: Circle,
 }
 
 // Chart-type picker. Shown only when the dataset bundles more than one chart type.
