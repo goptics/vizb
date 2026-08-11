@@ -12,7 +12,6 @@ import ThreeDControl from '@/components/settings/ThreeDControl.vue'
 import ThreeDVisualMapControl from '@/components/settings/ThreeDVisualMapControl.vue'
 import VisualMapControl from '@/components/settings/VisualMapControl.vue'
 import SwapControl from '@/components/settings/SwapControl.vue'
-import BorderRadiusControl from '@/components/settings/BorderRadiusControl.vue'
 
 // Re-exported so SettingsPanel can import the chart-type picker threshold
 // from the same module as the field registry — both are "what to render in the
@@ -27,7 +26,6 @@ export type SettingFieldValueMap = {
   showLabels: boolean
   smooth: boolean
   horizontal: boolean
-  borderRadius: number | undefined
   threeDRotate: boolean
   threeD: boolean
   threeDVisualMap: boolean
@@ -81,11 +79,6 @@ export const fieldRegistry: Record<SettingFieldKey, FieldMeta> = {
   },
   horizontal: {
     component: HorizontalControl,
-    appliesTo: ['bar'],
-    visible: (ctx) => ctx.rendering3D !== true,
-  },
-  borderRadius: {
-    component: BorderRadiusControl,
     appliesTo: ['bar'],
     visible: (ctx) => ctx.rendering3D !== true,
   },

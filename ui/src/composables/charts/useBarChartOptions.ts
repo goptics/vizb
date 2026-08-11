@@ -50,12 +50,9 @@ function applyBorderRadiusToSeries(
   isHorizontal: boolean
 ): EChartsOption {
   if (radius <= 0) return result
-  const series = result.series
-  if (!Array.isArray(series)) return result
-  for (const s of series) {
-    const item = s as { itemStyle?: BarItemStyle }
-    item.itemStyle = {
-      ...item.itemStyle,
+  for (const s of result.series as { itemStyle?: BarItemStyle }[]) {
+    s.itemStyle = {
+      ...s.itemStyle,
       borderRadius: cornerValues(radius, isHorizontal),
     }
   }

@@ -45,6 +45,3 @@ vi.mock('@/components/settings/VisualMapControl.vue', () => ({
 vi.mock('@/components/settings/SwapControl.vue', () => ({
   default: { name: 'SwapControl' },
 }))
-vi.mock('@/components/settings/BorderRadiusControl.vue', () => ({
-  default: { name: 'BorderRadiusControl' },
-}))
