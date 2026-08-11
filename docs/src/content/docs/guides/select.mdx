@@ -90,8 +90,8 @@ vizb scatter region-metrics.csv \
 ## Solo `--select` rules
 
 - A **single** `--select` needs **2–3 columns** (assigned to `x`, `y`, optional `z` by position) for bar/line/scatter/pie/heatmap/radar.
-- **Sankey** solo `--select` needs **exactly 3 columns** per flag: **source, target, value** (same order as group). Example: `--select source,target,value` matches `-g source,target -p x,y` with measure `value`. One, two, or four+ columns on one flag are rejected.
-- **Repeatable** `--select`: for scatter/multi-stat, **2 columns** per flag (`dim,metric`). For Sankey multi-measure, **3 columns** per flag with the same source/target (e.g. `--select source,target,value --select source,target,cost`). Charts separate by stat name. (Legacy: `{label}` on the metric column still overrides the stat name when `()` is omitted.)
+- **Sankey and Chord** solo `--select` need **exactly 3 columns** per flag: **source, target, value** (same order as group). Example: `--select source,target,value` matches `-g source,target -p x,y` with measure `value`. One, two, or four+ columns on one flag are rejected.
+- **Repeatable** `--select`: for scatter/multi-stat, **2 columns** per flag (`dim,metric`). For Sankey and Chord multi-measure, **3 columns** per flag with the same source/target (e.g. `--select source,target,value --select source,target,cost`). Charts separate by stat name. (Legacy: `{label}` on the metric column still overrides the stat name when `()` is omitted.)
 - **Explicit placement** (single `--select` only): `x:region,y:latency,z:sales` — use prefixes for every column or omit them for all.
 - **No overlap** with `--group` columns. Repeatable solo `--select` does **not** imply grouping.
 - Other parsers warn and ignore `--select`.

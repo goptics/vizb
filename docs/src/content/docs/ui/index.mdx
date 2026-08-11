@@ -9,7 +9,7 @@ Vizb generates a single self-contained HTML file with a Vue.js-powered interacti
 
 ## Chart Types
 
-Vizb supports six chart types. All render in a single view:
+Vizb supports eight chart types. All render in a single view:
 
 <CardGrid>
   <Card title="Bar Chart" icon="bars">
@@ -30,6 +30,12 @@ Vizb supports six chart types. All render in a single view:
   <Card title="Heatmap" icon="seti:default">
     Fold X, Y, and Z into a colored grid. Cell value sums the z-axis. Cell color blends the z palette. See [Heatmap](/charts/heatmap).
   </Card>
+  <Card title="Sankey" icon="seti:pipeline">
+    Show weighted flows between source and target nodes. See [Sankey Chart](/charts/sankey).
+  </Card>
+  <Card title="Chord" icon="random">
+    Show circular relationships, including cycles and reverse links. See [Chord Chart](/charts/chord).
+  </Card>
 </CardGrid>
 
 Control which charts appear with `--charts`. This also controls output file size — see [Output File Size](#output-file-size):
@@ -40,7 +46,7 @@ vizb data.csv -c bar,line -o output.html
 
 When your data has a z-axis, bar, line, and scatter charts render in **3D** instead of 2D. See [3D Charts](/charts/3d).
 
-{/* TODO: Add GIF showing all six chart types rendered side by side */}
+{/* TODO: Add GIF showing all eight chart types rendered side by side */}
 
 ## Scale Options
 
@@ -110,7 +116,6 @@ Each chart renderer ships as a separate compressed chunk inside the HTML. Only t
 |-----------|------------------|
 | `bar` only | ~400 kB |
 | `bar,line,pie` (default, 2D data) | ~400 kB |
-| `bar,line,pie,heatmap,radar` | ~445 kB |
 | `bar` or `line` with z-axis data (embedded JSON) | ~570 kB |
 
 The 3D engine (echarts-gl, ~380 kB encoded) is the heaviest component. For embedded data, Vizb includes it automatically when the dataset has a z-axis and `bar` or `line` is selected. For `vizb ui --data-url`, pass `--3d` to opt in — the remote shape is unknown at build time.
@@ -123,7 +128,7 @@ vizb data.csv -c bar,line -o output.html  # ~415 kB
 ```
 
 <Aside type="tip">
-  For sharing or deploying reports, use `--charts` to include only the charts your audience needs. The default bundles bar, line, and pie. Add heatmap or radar with `-c` when you need them.
+  For sharing or deploying reports, use `--charts` to include only the charts your audience needs. The default bundles bar, line, and pie. Add heatmap, radar, Sankey, or Chord with `-c` when you need them.
 </Aside>
 
 ## Deep links

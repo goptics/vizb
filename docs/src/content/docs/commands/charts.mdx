@@ -5,7 +5,7 @@ description: Generate a single chart type with only the flags that chart support
 
 import { Aside } from '@astrojs/starlight/components';
 
-Chart subcommands (`vizb bar`, `vizb line`, `vizb scatter`, `vizb pie`, `vizb heatmap`, `vizb radar`, `vizb sankey`) generate one chart at a time. They produce the same output as the root command with `--charts` limited to that type, but accept only the flags valid for the chart — unsupported flags fail fast.
+Chart subcommands (`vizb bar`, `vizb line`, `vizb scatter`, `vizb pie`, `vizb heatmap`, `vizb radar`, `vizb sankey`, `vizb chord`) generate one chart at a time. They produce the same output as the root command with `--charts` limited to that type, but accept only the flags valid for the chart — unsupported flags fail fast.
 
 Use a subcommand for a single chart; use the [root command](/commands/root) with `--charts` for multiple chart types from one dataset.
 
@@ -15,12 +15,13 @@ Use a subcommand for a single chart; use the [root command](/commands/root) with
 vizb <chart> [target] [flags]
 ```
 
-`<chart>` is one of `bar`, `line`, `scatter`, `pie`, `heatmap`, `radar`, `sankey`. Output is HTML by default, or JSON when `-o` ends in `.json` (same rules as the root command).
+`<chart>` is one of `bar`, `line`, `scatter`, `pie`, `heatmap`, `radar`, `sankey`, `chord`. Output is HTML by default, or JSON when `-o` ends in `.json` (same rules as the root command).
 
 ```bash
 vizb bar data.csv -g impl,size -p n,x -o bar.html
 vizb pie data.csv -g impl -o pie.html
 vizb sankey data.csv -g source,target -p x,y -o sankey.html
+vizb chord data.csv -g source,target -p x,y -o chord.html
 go test -bench . | vizb line -p n/y -o line.html
 ```
 
@@ -52,15 +53,15 @@ Every chart subcommand accepts the common data, grouping, and metadata flags:
 
 ## Chart-specific flags
 
-| Flag | `bar` | `line` | `scatter` | `pie` | `heatmap` | `radar` | `sankey` | Description |
-|------|:---:|:---:|:---------:|:---:|:---:|:---:|:---:|-------------|
-| `--scale` (`-S`) | ✅ | ✅ | ✅ | — | — | — | — | Value scale: `linear` or `log` |
-| `--3d` | ✅ | ✅ | ✅ | — | — | — | — | Pseudo-3D for grouped x+y data (y → depth, metric → height) |
-| `--3d-visualmap` | ✅ | ✅ | ✅ | — | — | — | — | Color 3D geometry by metric value |
-| `--visualmap` | — | — | ✅ | — | — | — | — | Color 2D scatter points by metric (off by default) |
-| `--3d-rotate` | ✅ | ✅ | ✅ | — | — | — | — | Auto-rotate the 3D scene (only meaningful with 3D data) |
-| `--horizontal` | ✅ | — | — | — | — | — | — | Horizontal grouped bars — 2D only |
-`bar`, `line`, and `scatter` render in 3D when the data has a z dimension (`-p n/x/y/z`) or auto-value detects 3+ numeric columns. Pie, heatmap, radar, and sankey are 2D-only for those flags — passing an unsupported flag is an error:
+| Flag | `bar` | `line` | `scatter` | `pie` | `heatmap` | `radar` | `sankey` | `chord` | Description |
+|------|:---:|:---:|:---------:|:---:|:---:|:---:|:---:|:---:|-------------|
+| `--scale` (`-S`) | ✅ | ✅ | ✅ | — | — | — | — | — | Value scale: `linear` or `log` |
+| `--3d` | ✅ | ✅ | ✅ | — | — | — | — | — | Pseudo-3D for grouped x+y data (y → depth, metric → height) |
+| `--3d-visualmap` | ✅ | ✅ | ✅ | — | — | — | — | — | Color 3D geometry by metric value |
+| `--visualmap` | — | — | ✅ | — | — | — | — | — | Color 2D scatter points by metric (off by default) |
+| `--3d-rotate` | ✅ | ✅ | ✅ | — | — | — | — | — | Auto-rotate the 3D scene (only meaningful with 3D data) |
+| `--horizontal` | ✅ | — | — | — | — | — | — | — | Horizontal grouped bars — 2D only |
+`bar`, `line`, and `scatter` render in 3D when the data has a z dimension (`-p n/x/y/z`) or auto-value detects 3+ numeric columns. Pie, heatmap, radar, sankey, and chord are 2D-only for those flags — passing an unsupported flag is an error:
 
 ```bash
 vizb pie data.csv --scale log   # Error: unknown flag: --scale
@@ -89,6 +90,9 @@ vizb radar data.csv -g impl -o radar.json
 
 # Sankey from an edge list (x = source, y = target)
 vizb sankey examples/csv/sankey-flows.csv -g source,target -p x,y -o sankey.html
+
+# Chord from a cyclic edge list (x = source, y = target)
+vizb chord examples/csv/chord-relations.csv -g source,target -p x,y -o chord.html
 ```
 
 <Aside type="note">
