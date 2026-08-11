@@ -6,12 +6,12 @@ import "slices"
 // after Select/SelectViews/Axes are populated (in ParseConfig) so downstream
 // code switches on cfg.Mode instead of re-deriving it from predicates.
 // When ChartTypes is known (set before parse in the pipeline), re-call so
-// sankey solo --select resolves to ModeEdge.
+// edge-chart solo --select resolves to ModeEdge.
 //
 // Resolution order:
 //  1. Explicit grouping + Select → ModeGrouped
 //  2. Solo SelectViews (no explicit grouping):
-//     a. sankey in ChartTypes → ModeEdge (exactly 3 columns per flag; validated separately)
+//     a. sankey or chord in ChartTypes → ModeEdge (exactly 3 columns per flag; validated separately)
 //     b. len > 1 → ModeMultiStat (validated to 2-col dim,metric)
 //     c. len == 1 → ModeValue or ModeMixed (caller resolves after type inference)
 //  3. Otherwise → ModeAuto
@@ -25,7 +25,7 @@ func ResolveMode(cfg Config) Mode {
 		return ModeGrouped
 	}
 	if len(cfg.SelectViews) > 0 && !IsExplicitGrouping(cfg) {
-		if HasSankeyChart(cfg) {
+		if HasEdgeChart(cfg) {
 			return ModeEdge
 		}
 		if len(cfg.SelectViews) > 1 {
@@ -36,7 +36,14 @@ func ResolveMode(cfg Config) Mode {
 	return ModeAuto
 }
 
+// HasEdgeChart reports whether any requested chart type uses source/target/value
+// edge parsing (currently Sankey and Chord).
+func HasEdgeChart(cfg Config) bool {
+	return slices.Contains(cfg.ChartTypes, "sankey") || slices.Contains(cfg.ChartTypes, "chord")
+}
+
 // HasSankeyChart reports whether any requested chart type is sankey.
+// Deprecated: use HasEdgeChart when deciding parser behavior.
 func HasSankeyChart(cfg Config) bool {
 	return slices.Contains(cfg.ChartTypes, "sankey")
 }
@@ -53,5 +60,5 @@ func (m Mode) IsSelectAxis() bool {
 // IsMultiStat reports multi-stat solo --select mode.
 func (m Mode) IsMultiStat() bool { return m == ModeMultiStat }
 
-// IsEdge reports sankey edge-list solo --select mode.
+// IsEdge reports source/target/value edge-list solo --select mode.
 func (m Mode) IsEdge() bool { return m == ModeEdge }

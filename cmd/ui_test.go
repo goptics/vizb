@@ -10,6 +10,7 @@ import (
 
 	internal_charts "github.com/goptics/vizb/internal/charts"
 	barchart "github.com/goptics/vizb/internal/charts/bar"
+	chordchart "github.com/goptics/vizb/internal/charts/chord"
 	heatmapchart "github.com/goptics/vizb/internal/charts/heatmap"
 	linechart "github.com/goptics/vizb/internal/charts/line"
 	piechart "github.com/goptics/vizb/internal/charts/pie"
@@ -517,6 +518,7 @@ func (s *UISuite) TestRunUIAppliesStatToMultipleChartTypes() {
 			&heatmapchart.Config{Type: "heatmap"},
 			&radarchart.Config{Type: "radar"},
 			&sankeychart.Config{Type: "sankey"},
+			&chordchart.Config{Type: "chord"},
 		},
 		Data: []shared.DataPoint{{Name: "T1", XAxis: "1", YAxis: "100"}},
 	})
@@ -527,7 +529,7 @@ func (s *UISuite) TestRunUIAppliesStatToMultipleChartTypes() {
 
 	datasets := s.extractVIZBDataArray(s.read(out))
 	settings := datasets[0].(map[string]any)["settings"].([]any)
-	s.Require().Len(settings, 6)
+	s.Require().Len(settings, 7)
 	for _, raw := range settings {
 		stat := raw.(map[string]any)["stat"].(map[string]any)
 		s.Equal([]any{"shape"}, stat["math"])

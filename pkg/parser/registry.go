@@ -48,7 +48,7 @@ const (
 	ModeValue                 // solo --select, all numeric columns → value axes x,y[,z]
 	ModeMixed                 // solo --select, one categorical x + numeric y[,z]
 	ModeMultiStat             // repeatable solo --select (dim,metric) pairs merged into stats
-	ModeEdge                  // sankey solo --select: source,target,value[,metrics] → x/y cats + stats
+	ModeEdge                  // sankey/chord solo --select: source,target,value[,metrics] → x/y cats + stats
 )
 
 // SelectView is one solo --select flag: column placement plus an optional

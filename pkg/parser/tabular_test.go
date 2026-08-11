@@ -345,6 +345,26 @@ func (s *TabularSuite) TestDispatchSelectModeEdgeForSankey() {
 	s.Equal("target", axes[1].Label)
 }
 
+func (s *TabularSuite) TestParseEdgeModeForChord() {
+	cfg := Config{
+		Mode:       ModeEdge,
+		ChartTypes: []string{"chord"},
+		SelectViews: []SelectView{{Columns: []ColumnSpec{
+			{Source: "source"}, {Source: "target"}, {Source: "weight"},
+		}}},
+	}
+	rows := []RowReader{mockRowReader{
+		cells:   map[string]string{"source": "A", "target": "B"},
+		numeric: map[string]float64{"weight": 7},
+	}}
+	points, err := ParseEdgeMode(rows, cfg)
+	s.Require().NoError(err)
+	s.Require().Len(points, 1)
+	s.Equal("A", points[0].XAxis)
+	s.Equal("B", points[0].YAxis)
+	s.Equal(7.0, *points[0].Stats[0].Value)
+}
+
 func (s *TabularSuite) TestDispatchSelectModePropagatesAxisType() {
 	t := s.T()
 	cfg := Config{
