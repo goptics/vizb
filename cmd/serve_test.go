@@ -463,6 +463,18 @@ func (s *ServeSuite) TestConvertEndpoint() {
 		s.Equal("Framework throughput", stats[0].(map[string]any)["type"])
 	}
 
+	// Chord accepts the same source/target/value edge shape as Sankey and is
+	// exposed through the chart discriminator without a new API data schema.
+	recorder = s.apiRequest(
+		handler,
+		"/",
+		`{"input":"source,target,value\nA,B,10\nB,A,5\n","parser":"csv","select":["source,target,value"],"charts":{"types":["chord"],"configs":[{"type":"chord","showLabels":true}]},"output":{"format":"dataset"}}`,
+		"application/json",
+		"application/json",
+	)
+	s.Equal(http.StatusOK, recorder.Code, recorder.Body.String())
+	s.Require().Contains(recorder.Body.String(), `"type":"chord"`)
+
 	documented := `{
 		"input":{"data":[{"region":"west","latency":12},{"region":"east","latency":18}]},
 		"parser":"auto",
