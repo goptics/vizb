@@ -57,28 +57,30 @@ Central,Sensor,19`}
 				<li><code>-p x,y</code> — first group column → X, second → Y series</li>
 				<li><code>-o sales.html</code> — self-contained HTML</li>
 			</ul>
-
-			<p>
-				No <code>-g</code>? Vizb auto-groups a high-cardinality categorical column and logs
-				the choice. Override whenever the guess is wrong.
-			</p>
-
-			<pre class="quick-example__code"><code>vizb bar sales.csv -o sales.html</code></pre>
-
-			<p>
-				From a clone of the Vizb repo, the full sample is
-				<code>examples/csv/sales.csv</code> (~500 orders across 2024–2025).
-			</p>
-
-			<Aside type="tip">
-				Advanced demo (date split + remote JSON): the
-				<a href="/examples/github-legends">GitHub Legends</a> 3D contribution skylines.
-			</Aside>
 		</div>
 	</div>
 
 	<div class="quick-example__figure">
 		<DocImage src={bar2D} alt="2D grouped bar chart with product series per region" />
+	</div>
+
+	<div class="quick-example__after">
+		<p>
+			No <code>-g</code>? Vizb auto-groups a high-cardinality categorical column and logs the
+			choice. Override whenever the guess is wrong.
+		</p>
+
+		<pre class="quick-example__code"><code>vizb bar sales.csv -o sales.html</code></pre>
+
+		<p>
+			From a clone of the Vizb repo, the full sample is
+			<code>examples/csv/sales.csv</code> (~500 orders across 2024–2025).
+		</p>
+
+		<Aside type="tip">
+			Advanced demo (date split + remote JSON): the
+			<a href="/examples/github-legends">GitHub Legends</a> 3D contribution skylines.
+		</Aside>
 	</div>
 </div>
 
@@ -97,7 +99,8 @@ Central,Sensor,19`}
 	}
 
 	.quick-example__intro :global(p),
-	.quick-example__body :global(p) {
+	.quick-example__body :global(p),
+	.quick-example__after :global(p) {
 		margin-block: 0 0.85rem;
 	}
 
@@ -106,11 +109,15 @@ Central,Sensor,19`}
 	}
 
 	.quick-example__body :global(ul) {
-		margin-block: 0 0.85rem;
+		margin-block: 0;
 	}
 
-	.quick-example__body :global(.starlight-aside) {
+	.quick-example__after :global(.starlight-aside) {
 		margin-block: 1rem 0;
+	}
+
+	.quick-example__after {
+		margin-block-start: 1rem;
 	}
 
 	.quick-example__csv {
