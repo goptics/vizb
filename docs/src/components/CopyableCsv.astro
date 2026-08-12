@@ -31,7 +31,13 @@ const rows = lines.slice(1).map((line) => line.split(',').map((c) => c.trim()));
 		</button>
 	</div>
 	<pre class="copyable-csv__source" hidden>{csv.trim() + '\n'}</pre>
-	<div class="copyable-csv__scroll">
+	{/* Bounded scroll viewport (shadcn ScrollArea-style) for wide/tall samples */}
+	<div
+		class="copyable-csv__scroll"
+		role="region"
+		tabindex="0"
+		aria-label={`CSV preview: ${filename}`}
+	>
 		<table>
 			<thead>
 				<tr>
@@ -166,9 +172,48 @@ const rows = lines.slice(1).map((line) => line.split(',').map((c) => c.trim()));
 		color: var(--sl-color-green-high, var(--sl-color-accent-high));
 	}
 
+	/*
+	 * Scroll area: max-height viewport + thin thumbs (shadcn ScrollArea look)
+	 * without pulling Radix into the Astro docs site.
+	 */
 	.copyable-csv__scroll {
-		overflow-x: auto;
 		max-width: 100%;
+		max-height: min(16rem, 50vh);
+		overflow: auto;
+		overscroll-behavior: contain;
+		outline: none;
+		/* Firefox */
+		scrollbar-width: thin;
+		scrollbar-color: var(--sl-color-gray-4) transparent;
+	}
+
+	.copyable-csv__scroll:focus-visible {
+		box-shadow: inset 0 0 0 2px var(--sl-color-accent);
+	}
+
+	/* WebKit / Chromium thin rounded thumbs */
+	.copyable-csv__scroll::-webkit-scrollbar {
+		width: 0.5rem;
+		height: 0.5rem;
+	}
+
+	.copyable-csv__scroll::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	.copyable-csv__scroll::-webkit-scrollbar-thumb {
+		background-color: var(--sl-color-gray-4);
+		border-radius: 9999px;
+		border: 2px solid transparent;
+		background-clip: content-box;
+	}
+
+	.copyable-csv__scroll::-webkit-scrollbar-thumb:hover {
+		background-color: var(--sl-color-gray-3);
+	}
+
+	.copyable-csv__scroll::-webkit-scrollbar-corner {
+		background: transparent;
 	}
 
 	.copyable-csv :global(table) {
@@ -188,9 +233,14 @@ const rows = lines.slice(1).map((line) => line.split(',').map((c) => c.trim()));
 	}
 
 	.copyable-csv :global(th) {
+		position: sticky;
+		top: 0;
+		z-index: 1;
 		font-weight: 600;
 		color: var(--sl-color-white);
-		background: var(--sl-color-gray-6, transparent);
+		background: var(--sl-color-gray-6, var(--sl-color-bg-nav));
+		/* Keep header edge visible while body scrolls under it */
+		box-shadow: inset 0 -1px 0 var(--sl-color-gray-5);
 	}
 
 	.copyable-csv :global(tbody tr:last-child td) {
