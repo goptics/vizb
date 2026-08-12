@@ -1,27 +1,40 @@
 import { Aside } from '@astrojs/starlight/components';
 import DocImage from './DocImage.astro';
-import SalesSampleCsv from './SalesSampleCsv.astro';
+import CopyableCsv from './CopyableCsv.astro';
 import bar2D from '../assets/bar-2D.png';
 
 Point Vizb at a CSV. Numeric columns become charts. Categorical columns become axes when you group (or when auto-group picks one for you).
 
 After [install](/getting-started/install), chart a table like this:
 
-<SalesSampleCsv />
+<CopyableCsv
+	filename="sales.csv"
+	csv={`region,product,quantity
+West,Widget,39
+West,Gear,20
+South,Widget,15
+South,Sensor,47
+North,Gear,43
+North,Widget,28
+East,Sensor,31
+East,Gear,22
+Central,Widget,35
+Central,Sensor,19`}
+/>
 
 ```bash
-vizb bar sales.csv -g region,category -p x,y -o sales.html
+vizb bar sales.csv -g region,product -p x,y -o sales.html
 ```
 
-Open `sales.html` in a browser. You get a grouped bar chart: region on X, category as series, with a chart tab per numeric metric (`quantity`, `amount`).
+Open `sales.html` in a browser. You get a grouped bar chart: region on X, product as series, height = `quantity`.
 
-<DocImage src={bar2D} alt="2D grouped bar chart with category series per region" />
+<DocImage src={bar2D} alt="2D grouped bar chart with product series per region" />
 
 Flags in this example:
 
 - `bar` — one chart type (smallest learning path)
 - `sales.csv` — the table above (use **Copy CSV** to grab it)
-- `-g region,category` — columns that become dimensions
+- `-g region,product` — columns that become dimensions
 - `-p x,y` — first group column → X, second → Y series
 - `-o sales.html` — self-contained HTML
 
