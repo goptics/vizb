@@ -46,6 +46,7 @@ describe('runPipeline', () => {
     /** @type {string[][]} */
     const calls = []
     runPipeline(baseInputs(), {
+      vizbBin: 'vizb',
       run: (cmd, args) => {
         calls.push([cmd, ...args])
       },
@@ -68,6 +69,7 @@ describe('runPipeline', () => {
     runPipeline(
       baseInputs({ file: '', cmd: 'echo hello', hasInput: true, outputHtml: '' }),
       {
+        vizbBin: 'vizb',
         run: (cmd, args) => {
           calls.push([cmd, ...args])
         },
@@ -94,6 +96,7 @@ describe('runPipeline', () => {
         outputHtml: '',
       }),
       {
+        vizbBin: 'vizb',
         run: (cmd, args) => {
           calls.push([cmd, ...args])
         },
@@ -120,6 +123,7 @@ describe('runPipeline', () => {
         outputHtml: 'pages/index.html',
       }),
       {
+        vizbBin: 'vizb',
         run: (cmd, args) => {
           calls.push([cmd, ...args])
         },
@@ -150,6 +154,7 @@ describe('runPipeline', () => {
         jsonFile: 'merged.json',
       }),
       {
+        vizbBin: 'vizb',
         run: (cmd, args) => {
           calls.push([cmd, ...args])
         },

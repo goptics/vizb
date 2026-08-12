@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { splitMergeFiles } from './inputs.mjs'
 import { buildConvertArgs, buildUiArgs } from './flags.mjs'
 import { run, runShellCapture } from './exec.mjs'
+import { resolveVizbBin } from './resolve-vizb.mjs'
 
 /**
  * @typedef {object} PipelineDeps
@@ -12,6 +13,7 @@ import { run, runShellCapture } from './exec.mjs'
  * @property {(path: string) => boolean} [existsSync]
  * @property {() => string} [tmpdir]
  * @property {string} [vizbBin]
+ * @property {() => string} [resolveVizbBin]
  */
 
 /**
@@ -24,7 +26,7 @@ export function runPipeline(inputs, deps = {}) {
   const execShell = deps.runShellCapture ?? runShellCapture
   const exists = deps.existsSync ?? existsSync
   const getTmp = deps.tmpdir ?? tmpdir
-  const vizb = deps.vizbBin ?? 'vizb'
+  const vizb = deps.vizbBin ?? (deps.resolveVizbBin ?? resolveVizbBin)()
 
   if (inputs.hasInput) {
     let inputPath = inputs.file

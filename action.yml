@@ -151,7 +151,10 @@ runs:
       id: cache-vizb
       uses: actions/cache@v6
       with:
-        path: ~/.local/bin/vizb
+        # Windows installs as vizb.exe (required for Node spawnSync / PATHEXT).
+        path: |
+          ~/.local/bin/vizb
+          ~/.local/bin/vizb.exe
         key: vizb-${{ steps.version.outputs.tag }}-${{ runner.os }}-${{ runner.arch }}
 
     - name: Install vizb
@@ -160,11 +163,23 @@ runs:
       run: |
         mkdir -p ~/.local/bin
 
+        # Node spawnSync on Windows only finds PATHEXT names (vizb.exe), not
+        # extensionless "vizb". Install with .exe on Windows.
+        if [ "${{ runner.os }}" = "Windows" ]; then
+          VIZB_DEST="$HOME/.local/bin/vizb.exe"
+        else
+          VIZB_DEST="$HOME/.local/bin/vizb"
+        fi
+
         VIZB_BINARY="${{ inputs.vizb-binary }}"
         if [ -n "$VIZB_BINARY" ]; then
+          # go build -o ./bin/vizb on Windows yields ./bin/vizb.exe
+          if [ ! -f "$VIZB_BINARY" ] && [ -f "${VIZB_BINARY}.exe" ]; then
+            VIZB_BINARY="${VIZB_BINARY}.exe"
+          fi
           echo "::notice::Installing local vizb binary from $VIZB_BINARY"
-          cp "$VIZB_BINARY" ~/.local/bin/vizb
-          chmod +x ~/.local/bin/vizb
+          cp "$VIZB_BINARY" "$VIZB_DEST"
+          chmod +x "$VIZB_DEST"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
           exit 0
         fi
@@ -188,6 +203,12 @@ runs:
 
         if [ "$OS" = "windows" ]; then
           unzip -o vizb-archive -d ~/.local/bin
+          # Normalize archive layout to vizb.exe for PATH + Node spawn.
+          if [ -f "$HOME/.local/bin/vizb.exe" ]; then
+            :
+          elif [ -f "$HOME/.local/bin/vizb" ]; then
+            mv "$HOME/.local/bin/vizb" "$HOME/.local/bin/vizb.exe"
+          fi
         else
           tar xzf vizb-archive -C ~/.local/bin
           chmod +x ~/.local/bin/vizb
