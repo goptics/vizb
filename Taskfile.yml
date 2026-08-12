@@ -76,10 +76,11 @@ tasks:
       - cd docs; pnpm preview; cd -
 
   test:
-    desc: Run all CLI and UI tests (no cache)
+    desc: Run all CLI, UI, and action tests (no cache)
     cmds:
       - task: test:cli
       - task: test:ui
+      - task: test:action
 
   test:cli:
     desc: Run CLI tests (no cache)
@@ -90,6 +91,11 @@ tasks:
     desc: Run UI unit + integration tests
     cmds:
       - cd ui && pnpm test
+
+  test:action:
+    desc: Run GitHub Action Node unit tests
+    cmds:
+      - node --test action/lib/*.test.mjs
 
   test:ui:e2e:
     desc: Run UI Playwright e2e smokes
