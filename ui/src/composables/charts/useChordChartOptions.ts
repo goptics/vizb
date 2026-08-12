@@ -6,14 +6,36 @@ import { getChartStyling, getTooltipTheme } from './shared'
 import { fontSize } from './shared/common'
 import { buildEdgeGraph, formatEdgeTooltip, sortEdgeGraphNodes } from './shared/edgeGraph'
 
-const chordLayout = {
-  left: '4%',
-  right: '4%',
-  top: '8%',
-  bottom: '8%',
-  center: ['50%', '52%'],
-  radius: ['58%', '72%'],
+// Thin outer ring (demo geometry). top = legend band + gap; bottom = same gap.
+const chordSeriesDefaults = {
+  padAngle: 1,
+  top: 52,
+  bottom: 24,
+  left: '8%',
+  right: '8%',
+  center: ['50%', '50%'] as [string, string],
+  radius: ['70%', '80%'] as [string, string],
+  // Override ECharts' non-zero default; optional rounding is a future flag.
+  itemStyle: { borderRadius: 0 },
+  lineStyle: {
+    opacity: 0.3,
+    color: 'gradient' as const,
+  },
+  emphasis: { focus: 'self' as const },
 } as const
+
+function chordLegend(nodeNames: string[], textColor: string): NonNullable<EChartsOption['legend']> {
+  return {
+    show: nodeNames.length > 0,
+    type: 'scroll',
+    left: 'center',
+    top: 8,
+    itemWidth: 10,
+    itemHeight: 10,
+    data: nodeNames,
+    textStyle: { fontSize, color: textColor },
+  }
+}
 
 function minimalChordOption(config: BaseChartConfig): EChartsOption {
   return {
@@ -22,11 +44,9 @@ function minimalChordOption(config: BaseChartConfig): EChartsOption {
     series: [
       {
         type: 'chord',
-        ...chordLayout,
+        ...chordSeriesDefaults,
         data: [],
         links: [],
-        emphasis: { focus: 'adjacency' },
-        lineStyle: { color: 'gradient', opacity: 0.35 },
       },
     ],
   } as unknown as EChartsOption
@@ -57,7 +77,10 @@ export function useChordChartOptions(config: BaseChartConfig) {
 
     return {
       ...getBaseOptions(config),
-      legend: { show: false },
+      legend: chordLegend(
+        nodes.map((n) => n.name),
+        styling.textColor
+      ),
       tooltip: {
         trigger: 'item',
         ...getTooltipTheme(isDark.value),
@@ -66,14 +89,14 @@ export function useChordChartOptions(config: BaseChartConfig) {
       series: [
         {
           type: 'chord',
-          ...chordLayout,
+          ...chordSeriesDefaults,
           data,
           links,
-          emphasis: { focus: 'adjacency' },
-          lineStyle: { color: 'gradient', opacity: 0.35, curveness: 0.15 },
           label: {
             show: showLabels.value,
-            color: styling.textColor,
+            position: 'inside',
+            color: '#fff',
+            fontWeight: 'bold',
             fontSize,
           },
         },
