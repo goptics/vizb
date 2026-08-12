@@ -22,7 +22,8 @@ const headers = lines[0]?.split(',').map((c) => c.trim()) ?? [];
 const rows = lines.slice(1).map((line) => line.split(',').map((c) => c.trim()));
 ---
 
-<figure class="copyable-csv">
+{/* not-content: opt out of Starlight table { display:block; overflow:auto } which breaks sticky headers */}
+<figure class="copyable-csv not-content">
 	<div class="copyable-csv__bar">
 		<span class="copyable-csv__filename">{filename}</span>
 		<button type="button" class="copyable-csv__btn" data-copyable-csv-btn>
@@ -217,22 +218,40 @@ const rows = lines.slice(1).map((line) => line.split(',').map((c) => c.trim()));
 	}
 
 	.copyable-csv :global(table) {
+		/* Real table layout (Starlight otherwise forces display:block + overflow:auto) */
+		display: table;
 		width: max-content;
 		max-width: none;
 		margin: 0;
-		border-collapse: collapse;
+		/* separate is required for reliable sticky <th> across browsers */
+		border-collapse: separate;
+		border-spacing: 0;
+		overflow: visible;
 		font-size: 0.875rem;
+	}
+
+	.copyable-csv :global(thead) {
+		display: table-header-group;
+	}
+
+	.copyable-csv :global(tbody) {
+		display: table-row-group;
+	}
+
+	.copyable-csv :global(tr) {
+		display: table-row;
 	}
 
 	.copyable-csv :global(th),
 	.copyable-csv :global(td) {
+		display: table-cell;
 		padding: 0.45rem 0.75rem;
 		border-bottom: 1px solid var(--sl-color-gray-5);
 		text-align: left;
 		white-space: nowrap;
 	}
 
-	/* Header row sticks while the body scrolls vertically */
+	/* Header row sticks to the top of .copyable-csv__scroll while body scrolls */
 	.copyable-csv :global(thead th) {
 		position: sticky;
 		top: 0;
