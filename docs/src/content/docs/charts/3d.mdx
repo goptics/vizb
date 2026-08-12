@@ -4,6 +4,7 @@ description: Add a z-axis to render interactive visual 3D bar and line charts in
 ---
 
 import { CardGrid, Card, Aside, LinkCard } from '@astrojs/starlight/components';
+import SalesSampleCsv from '../../../components/SalesSampleCsv.astro';
 
 vizb supports three 3D modes for **bar**, **line**, and **scatter** charts. Both render in a WebGL scene you can rotate, zoom, and pan in the browser. Other chart types (pie, radar, heatmap) receive z-axis data differently — they don't render a 3D scene.
 
@@ -41,11 +42,15 @@ charts. Without a z-axis, charts render as the usual 2D bar/line/pie.
 
 Add a `z` segment to your grouping pattern or a `(?<z>…)` capture to your regex.
 
+Sample sales data for the CSV commands below (copy → `sales.csv`). Full file: [`examples/csv/sales.csv`](https://github.com/goptics/vizb/blob/main/examples/csv/sales.csv) (~500 rows, 2024–2025).
+
+<SalesSampleCsv />
+
 **Pattern — CSV (`x,y,z`) or benchmarks (`x/y/z`):**
 
 ```bash
-# CSV/JSON — comma-separated columns and pattern
-vizb bar data.csv -g category,metric,group -p x,y,z -o output.html
+# CSV/JSON — region × product floor, category as z layers
+vizb bar sales.csv -g region,product,category -p x,y,z -o output.html
 
 # Benchmarks — slash-separated names
 go test -bench . | vizb -p x/y/z -o output.html
@@ -79,14 +84,14 @@ When you have only **x** and **y** dimensions, a 2D bar/line/scatter chart puts 
 
 ```bash
 # CSV with x+y columns — no z grouping needed
-vizb bar data.csv -g category,series -p x,y --3d -o output.html
-vizb line data.csv -g category,series -p x,y --3d -o output.html
+vizb bar sales.csv -g region,category -p x,y --3d -o output.html
+vizb line sales.csv -g region,category -p x,y --3d -o output.html
 
 # Disable the gradient while keeping value 3D
-vizb bar data.csv -g category,series -p x,y --3d --3d-visualmap=false -o output.html
+vizb bar sales.csv -g region,category -p x,y --3d --3d-visualmap=false -o output.html
 
 # Grouped z 3D with visualMap only
-vizb bar data.csv -g x,y,z -p x,y,z --3d-visualmap -o output.html
+vizb bar sales.csv -g region,product,category -p x,y,z --3d-visualmap -o output.html
 ```
 
 The HTML bundles **3D view** and **3D visual map** toggles in settings (both on by default when `--3d` was passed). Turn 3D view off to return to the flat 2D chart without re-running the CLI.

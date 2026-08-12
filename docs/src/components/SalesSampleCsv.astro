@@ -1,0 +1,26 @@
+---
+/**
+ * Compact sales.csv preview shared by chart docs.
+ * Full file: examples/csv/sales.csv (~500 rows, 2024–2025).
+ */
+import CopyableCsv from './CopyableCsv.astro';
+---
+
+<CopyableCsv
+	filename="sales.csv"
+	csv={`order_date,region,category,product,quantity,amount
+2024-01-01,Central,Hardware,Connector,16,2488.24
+2024-01-02,East,Tools,Gear,42,207.08
+2024-01-03,North,Mechanical,Sensor,20,3465.22
+2024-01-04,West,Electronics,Valve,24,7633.44
+2024-03-12,South,Industrial,Widget,31,5088.10
+2024-06-18,East,Electronics,Relay,12,2214.50
+2024-09-05,North,Hardware,Bolt,28,1724.27
+2024-12-20,West,Tools,Gadget,19,2938.82
+2025-02-08,Central,Mechanical,Valve,27,7350.26
+2025-04-14,South,Electronics,Widget,41,3278.77
+2025-07-22,East,Industrial,Connector,15,5093.42
+2025-10-03,North,Tools,Gear,33,4102.15
+2025-11-19,West,Hardware,Sensor,22,2890.40
+2025-12-28,South,Mechanical,Gadget,26,611.32`}
+/>

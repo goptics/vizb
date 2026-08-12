@@ -5,6 +5,7 @@ description: Trace trends across categories with connected lines — one series 
 
 import { CardGrid, Card, LinkCard, Tabs, TabItem, Aside } from '@astrojs/starlight/components';
 import DocImage from '../../../components/DocImage.astro';
+import SalesSampleCsv from '../../../components/SalesSampleCsv.astro';
 import line1D from '../../../assets/line-1D.png';
 import line2D from '../../../assets/line-2D.png';
 import line2DStack from '../../../assets/line-2D-stack.png';
@@ -27,7 +28,9 @@ vizb maps your grouping columns to the chart's visual axes:
 
 ## Dimensions
 
-The 1D and 2D examples use [`sales.csv`](https://github.com/goptics/vizb/blob/main/examples/csv/sales.csv) — 10,000 order rows with categorical columns (`order_date`, `region`, `category`, …) and numeric metrics (`quantity`, `amount`, `total`, …). You can also browse [live tabular-data dashboards](https://vizb.goptics.org/examples/live/tabular-data/) built from the same file.
+Sample orders below (copy → `sales.csv`). Full file: [`examples/csv/sales.csv`](https://github.com/goptics/vizb/blob/main/examples/csv/sales.csv) (~500 rows, 2024–2025). Live: [tabular-data](https://vizb.goptics.org/examples/live/tabular-data/).
+
+<SalesSampleCsv />
 
 ### 1D (X axis)
 
@@ -82,7 +85,7 @@ vizb line worker-pools.txt -p z/y/x --scale log -o out.html
 `--select` is **repeatable** (csv/json only). With explicit `-g` / `-p` / `-r`, it picks which numeric columns get their own chart (optional `{label}` renames each chart). Without group, it switches to solo value / mixed / multi-stat modes that plot raw columns as coordinate axes.
 
 ```bash
-vizb line sales.csv -g region,product -p x,y --select latency,sales -o lines.html
+vizb line sales.csv -g region,product -p x,y --select quantity,amount -o lines.html
 ```
 
 See [Select](/guides/select) for the full mode reference, and [Group vs Select](/guides/group-vs-select) for when to use each.

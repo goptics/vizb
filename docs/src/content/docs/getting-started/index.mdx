@@ -4,7 +4,7 @@ description: Your first interactive HTML chart from a table or benchmark — wit
 ---
 
 import { Aside, LinkCard, CardGrid, Tabs, TabItem } from '@astrojs/starlight/components';
-import CopyableCsv from '../../../components/CopyableCsv.astro';
+import SalesSampleCsv from '../../../components/SalesSampleCsv.astro';
 
 Vizb turns **CSV, JSON, and benchmark output** into interactive charts and stats **without writing chart code**. Point it at data (CLI, [GitHub Action](/ci-cd/github-action), or [REST](/commands/serve)), open one HTML report in any browser.
 
@@ -14,21 +14,13 @@ Vizb turns **CSV, JSON, and benchmark output** into interactive charts and stats
 
 Given a CSV like this — use **Copy CSV**, save as `sales.csv`, then run the command:
 
-<CopyableCsv
-  filename="sales.csv"
-  csv={`region,category,quantity,amount
-West,Mechanical,39,17226
-West,Industrial,20,8000
-South,Mechanical,15,5000
-South,Industrial,47,6631
-North,Electronics,43,8046`}
-/>
+<SalesSampleCsv />
 
 ```bash
 vizb bar sales.csv -g region,category -p x,y -o sales.html
 ```
 
-Open `sales.html` in a browser. You get a grouped bar chart: region on X, category as series, one chart tab per numeric column (`quantity`, `amount`).
+Open `sales.html` in a browser. You get a grouped bar chart: region on X, category as series, one chart tab per numeric column (`quantity`, `amount`). The full repo sample is `examples/csv/sales.csv` (~500 orders across 2024–2025).
 
 | Flag | Role |
 |------|------|
