@@ -39,7 +39,7 @@ func (s *BorderRadiusSuite) TestUnmarshalArrays() {
 }
 
 func (s *BorderRadiusSuite) TestUnmarshalNull() {
-	var r BorderRadius = BorderRadius{1}
+	r := BorderRadius{1}
 	s.Require().NoError(json.Unmarshal([]byte("null"), &r))
 	s.Nil(r)
 }

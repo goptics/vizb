@@ -31,9 +31,10 @@ function isActiveRadius(r: number[] | undefined): r is number[] {
   return !!r && r.length > 0 && r.some((n) => n > 0)
 }
 
-/** Stack cap: first two radii on free outer end; other corners stay square. */
+/** Stack cap: first two radii on free outer end; other corners stay square.
+ * Caller only passes an active radius (length ≥ 1, some n > 0). */
 function stackCapRadius(radius: number[], horizontal: boolean): number[] {
-  const r0 = radius[0] ?? 0
+  const r0 = radius[0]!
   const r1 = radius.length >= 2 ? radius[1]! : r0
   // Horizontal free outer end (value axis → right): TR, BR.
   // Vertical free outer end (value axis → top): TL, TR.
