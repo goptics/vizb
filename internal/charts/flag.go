@@ -103,6 +103,15 @@ var (
 		Kind:    flags.KindBool,
 		JSONKey: "horizontal",
 	}
+	BorderRadiusFlag = flags.Flag{
+		Name:       "border-radius",
+		Usage:      "Corner radius in px: 1–4 non-negative integers (CSS/ECharts TL,TR,BR,BL). e.g. 8 or 8,8,0,0",
+		Kind:       flags.KindString,
+		JSONKey:    "borderRadius",
+		MultiValue: true,
+		Validate:   ValidateBorderRadiusValue,
+		Encode:     EncodeBorderRadius,
+	}
 )
 
 // --- Pure validators (no shared dependency) usable by descriptors. ---
@@ -125,6 +134,55 @@ func ValidateSortValue(s string) error {
 		return nil
 	}
 	return fmt.Errorf("sort value %q is invalid (must be \"asc\" or \"desc\")", s)
+}
+
+// parseBorderRadius parses a comma-separated list of 1–4 non-negative integers
+// (CSS/ECharts corner order: TL, TR, BR, BL).
+func parseBorderRadius(s string) ([]int, error) {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return nil, fmt.Errorf("border radius must be 1–4 non-negative integers (e.g. 8 or 8,8,0,0)")
+	}
+	parts := strings.Split(s, ",")
+	if len(parts) > 4 {
+		return nil, fmt.Errorf("border radius accepts at most 4 values, got %d", len(parts))
+	}
+	out := make([]int, 0, len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			return nil, fmt.Errorf("border radius %q must be an integer", s)
+		}
+		r, err := strconv.Atoi(p)
+		if err != nil {
+			return nil, fmt.Errorf("border radius %q must be an integer", p)
+		}
+		if r < 0 {
+			return nil, fmt.Errorf("border radius must be non-negative (>= 0), got %d", r)
+		}
+		out = append(out, r)
+	}
+	return out, nil
+}
+
+// ValidateBorderRadiusValue reports whether s is 1–4 comma-separated non-negative integers.
+func ValidateBorderRadiusValue(s string) error {
+	_, err := parseBorderRadius(s)
+	return err
+}
+
+// EncodeBorderRadius maps a validated CLI/string value to a []int seed payload
+// (always an array; ECharts treats [8] as all corners).
+func EncodeBorderRadius(v any) any {
+	s, ok := v.(string)
+	if !ok {
+		return v
+	}
+	vals, err := parseBorderRadius(s)
+	if err != nil {
+		return v
+	}
+	return vals
 }
 
 // echartsBuiltinSymbols are the ECharts built-in series symbols (case-insensitive).

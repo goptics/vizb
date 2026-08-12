@@ -92,6 +92,40 @@ func (s *ChartSpecSuite) TestParseOverridesBarHorizontal() {
 	s.Equal(true, s.payload(got["bar"])["horizontal"])
 }
 
+func (s *ChartSpecSuite) TestParseOverridesBarBorderRadiusSingle() {
+	got, warnings, err := ParseOverrides([]string{"bar:border-radius=8"}, []string{"bar"}, s.xynAxes)
+	s.Require().NoError(err)
+	s.Empty(warnings)
+	// Encode always seeds an array; typed config re-marshals as [8].
+	raw := s.payload(got["bar"])["borderRadius"]
+	arr, ok := raw.([]any)
+	s.Require().True(ok, "expected borderRadius array, got %T", raw)
+	s.Equal([]any{float64(8)}, arr)
+}
+
+func (s *ChartSpecSuite) TestParseOverridesBarBorderRadiusMulti() {
+	got, warnings, err := ParseOverrides([]string{"bar:border-radius=8,8,0,0"}, []string{"bar"}, s.xynAxes)
+	s.Require().NoError(err)
+	s.Empty(warnings)
+	raw := s.payload(got["bar"])["borderRadius"]
+	arr, ok := raw.([]any)
+	s.Require().True(ok, "expected borderRadius array, got %T", raw)
+	s.Equal([]any{float64(8), float64(8), float64(0), float64(0)}, arr)
+}
+
+func (s *ChartSpecSuite) TestParseOverridesBarBorderRadiusInvalid() {
+	for _, spec := range []string{
+		"bar:border-radius=",
+		"bar:border-radius=8.5",
+		"bar:border-radius=-1",
+		"bar:border-radius=8,8,0,0,1",
+		"bar:border-radius=abc",
+	} {
+		_, _, err := ParseOverrides([]string{spec}, []string{"bar"}, s.xynAxes)
+		s.Error(err, spec)
+	}
+}
+
 // TestParseOverrides_BareStack confirms a bare stack flag parses correctly.
 func (s *ChartSpecSuite) TestParseOverridesBareStack() {
 	got, _, err := ParseOverrides([]string{"bar:stack"}, []string{"bar"}, s.xynAxes)

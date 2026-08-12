@@ -102,6 +102,7 @@ These settings apply to bar charts:
 | Labels | `--show-labels` | Show labels | Displays value on each bar |
 | Swap | `--swap` | Axis switcher | Rotates which column maps to X vs Y |
 | Horizontal | `--horizontal` | Horizontal toggle | Renders grouped bars horizontally — 2D only |
+| Border radius | `--border-radius <int>[,int...]` | — | 1–4 corner radii px (CSS/ECharts TL,TR,BR,BL); single value = all corners; stacked: outer segment only, first two values on free end (rest square) — 2D only (CLI/config; not in UI settings) |
 | Scale (log) | `--log-scale` | Scale toggle | Log Y axis — 2D only |
 | 3D view | `--3d` | 3D view | Value 3D for x+y data (y → depth, metric → height) |
 | 3D visual map | `--3d-visualmap` | 3D visual map | Metric gradient coloring — on by default with `--3d`; grouped/value 3D |
@@ -121,6 +122,15 @@ vizb bar sales.csv -g region,category -p x,y --horizontal -o out.html
 
 # Stacked 2D bars
 vizb bar sales.csv -g region,category -p x,y --stack -o stacked.html
+
+# Rounded corners (single value = all corners; stacked: outer segment uses first two as free-end cap)
+vizb bar sales.csv -g region,category -p x,y --border-radius 8 -o rounded.html
+
+# Free outer top only on non-stacked bars (TL,TR,BR,BL)
+vizb bar sales.csv -g region,category -p x,y --border-radius 8,8,0,0 -o free-outer.html
+
+# Stacked: only top segment rounded; first two values are the free-end cap
+vizb bar sales.csv -g region,category -p x,y --stack --border-radius 8,4 -o stacked-rounded.html
 ```
 
 ## Next Steps

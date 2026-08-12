@@ -74,6 +74,8 @@ export type BarConfig = {
   stack?: boolean
   showLabels?: boolean
   horizontal?: boolean
+  /** Corner radii in px [TL, TR, BR, BL]; length 1–4 (ECharts expands [8] to all corners). */
+  borderRadius?: number[]
   threeDRotate?: boolean
   threeD?: boolean
   threeDVisualMap?: boolean

@@ -76,6 +76,9 @@ type Flag struct {
 	JSONKey string        // chart Config json tag the value maps to, e.g. "threeDRotate"
 	Encode  func(any) any // transform the Kind-converted value into its payload shape; nil = identity
 
+	// MultiValue: when true, --chart values may contain commas (MultiValueKeys).
+	MultiValue bool
+
 	// --- fatal validation (chart flags): invalid input ⇒ error ---
 	Validate func(string) error // context-free; nil = none (swap is validated against axes by the caller)
 

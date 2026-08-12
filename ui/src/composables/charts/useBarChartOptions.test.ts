@@ -571,3 +571,164 @@ describe('useBarChartOptions — horizontal nullish values', () => {
     expect((options.value.series as { data: (number | null)[] }[])[0]!.data).toEqual([null])
   })
 })
+
+describe('useBarChartOptions — borderRadius', () => {
+  const makeMultiSeriesChartData = (): ChartData => ({
+    title: 'stacked test',
+    statType: 'sum',
+    yAxis: ['Series A', 'Series B', 'Series C'],
+    zAxis: [],
+    series: [
+      { xAxis: 'X1', values: [10, 20, 30], benchmarkId: '' },
+      { xAxis: 'X2', values: [15, 25, 35], benchmarkId: '' },
+    ],
+    points: [],
+    axisLabels: { x: 'category', y: 'series' },
+  })
+
+  type SeriesStyle = { itemStyle?: { borderRadius?: number[] } }
+
+  it('omits borderRadius when undefined or all-zero', () => {
+    for (const borderRadius of [undefined, [0], [0, 0, 0, 0]] as const) {
+      const { options } = useBarChartOptions({
+        chartData: ref(makeSimpleChartData()),
+        sort: ref({ enabled: false, order: 'asc' }),
+        showLabels: ref(false),
+        isDark: ref(false),
+        ...(borderRadius === undefined ? {} : { borderRadius: ref([...borderRadius]) }),
+      })
+      const series = options.value.series as SeriesStyle[]
+      expect(series[0]?.itemStyle?.borderRadius).toBeUndefined()
+    }
+  })
+
+  it('passes [8] through as-is (ECharts expands to all corners)', () => {
+    const { options } = useBarChartOptions({
+      chartData: ref(makeSimpleChartData()),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      borderRadius: ref([8]),
+    })
+    const series = options.value.series as SeriesStyle[]
+    expect(series[0]?.itemStyle?.borderRadius).toEqual([8])
+  })
+
+  it('passes a corner array through as-is', () => {
+    const { options } = useBarChartOptions({
+      chartData: ref(makeSimpleChartData()),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      borderRadius: ref([8, 8, 0, 0]),
+    })
+    const series = options.value.series as SeriesStyle[]
+    expect(series[0]?.itemStyle?.borderRadius).toEqual([8, 8, 0, 0])
+  })
+
+  it('applies radius to every series when not stacked', () => {
+    const { options } = useBarChartOptions({
+      chartData: ref(makeGroupedChartData()),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      borderRadius: ref([8]),
+      stack: ref(false),
+    })
+    const series = options.value.series as SeriesStyle[]
+    expect(series).toHaveLength(2)
+    expect(series[0]?.itemStyle?.borderRadius).toEqual([8])
+    expect(series[1]?.itemStyle?.borderRadius).toEqual([8])
+  })
+
+  it('applies stack-cap radius only to the top segment (single value mirrors)', () => {
+    const { options } = useBarChartOptions({
+      chartData: ref(makeMultiSeriesChartData()),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      borderRadius: ref([8]),
+      stack: ref(true),
+    })
+    const series = options.value.series as SeriesStyle[]
+    expect(series).toHaveLength(3)
+    // Non-outer segments get explicit zeros so ECharts merge cannot keep an
+    // earlier full-radius style after stack is toggled on.
+    expect(series[0]?.itemStyle?.borderRadius).toEqual([0, 0, 0, 0])
+    expect(series[1]?.itemStyle?.borderRadius).toEqual([0, 0, 0, 0])
+    expect(series[2]?.itemStyle?.borderRadius).toEqual([8, 8, 0, 0])
+  })
+
+  it('uses only the first two values for stacked vertical cap', () => {
+    const { options } = useBarChartOptions({
+      chartData: ref(makeMultiSeriesChartData()),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      borderRadius: ref([8, 4, 2, 1]),
+      stack: ref(true),
+    })
+    const series = options.value.series as SeriesStyle[]
+    expect(series[0]?.itemStyle?.borderRadius).toEqual([0, 0, 0, 0])
+    expect(series[1]?.itemStyle?.borderRadius).toEqual([0, 0, 0, 0])
+    expect(series[2]?.itemStyle?.borderRadius).toEqual([8, 4, 0, 0])
+  })
+
+  it('does not remap single radius for non-stacked horizontal bars', () => {
+    const { options } = useBarChartOptions({
+      chartData: ref(makeSimpleChartData()),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      borderRadius: ref([8]),
+      horizontal: ref(true),
+    })
+    const series = options.value.series as SeriesStyle[]
+    expect(series[0]?.itemStyle?.borderRadius).toEqual([8])
+  })
+
+  it('applies free-outer stack-cap radius when horizontal', () => {
+    const { options } = useBarChartOptions({
+      chartData: ref(makeMultiSeriesChartData()),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      borderRadius: ref([8]),
+      stack: ref(true),
+      horizontal: ref(true),
+    })
+    const series = options.value.series as SeriesStyle[]
+    expect(series[0]?.itemStyle?.borderRadius).toEqual([0, 0, 0, 0])
+    expect(series[1]?.itemStyle?.borderRadius).toEqual([0, 0, 0, 0])
+    expect(series[2]?.itemStyle?.borderRadius).toEqual([0, 8, 8, 0])
+  })
+
+  it('uses first two values for stacked horizontal cap', () => {
+    const { options } = useBarChartOptions({
+      chartData: ref(makeMultiSeriesChartData()),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      borderRadius: ref([8, 4]),
+      stack: ref(true),
+      horizontal: ref(true),
+    })
+    const series = options.value.series as SeriesStyle[]
+    expect(series[2]?.itemStyle?.borderRadius).toEqual([0, 8, 4, 0])
+  })
+
+  it('passes borderRadius through in mixed and value modes', () => {
+    for (const chartData of [makeMixedChartData(), makeValueChartData()]) {
+      const { options } = useBarChartOptions({
+        chartData: ref(chartData),
+        sort: ref({ enabled: false, order: 'asc' }),
+        showLabels: ref(false),
+        isDark: ref(false),
+        borderRadius: ref([8]),
+      })
+      const series = options.value.series as (SeriesStyle & { type: string })[]
+      expect(series[0]?.type).toBe('bar')
+      expect(series[0]?.itemStyle?.borderRadius).toEqual([8])
+    }
+  })
+})

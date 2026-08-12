@@ -52,7 +52,8 @@ function dispatch(
     ref(undefined),
     ref(undefined),
     cfg.smooth ?? ref(false),
-    cfg.horizontal ?? ref(false)
+    cfg.horizontal ?? ref(false),
+    cfg.borderRadius ?? ref(undefined)
   )
 }
 
