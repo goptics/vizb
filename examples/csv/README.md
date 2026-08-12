@@ -15,7 +15,7 @@ Use a chart subcommand (`bar`, `line`, `scatter`, `pie`, …) or the root comman
 
 ## `sales.csv`
 
-**Shape:** Mixed categorical + numeric columns (~500 order rows spanning 2024–2025).
+**Shape:** Mixed categorical + numeric columns (10,000 order rows spanning 2024–2025).
 
 | Column kind | Examples |
 |-------------|----------|
@@ -179,7 +179,7 @@ Sankey is **opt-in** (`vizb sankey` or `-c sankey`). Duplicate edges sum; multi-
 
 | File | Rows | Mode | Typical chart |
 |------|------|------|----------------|
-| `sales.csv` | ~500 | Auto-group or explicit `--group` | Bar (2D / 3D), line, scatter |
+| `sales.csv` | 10,000 | Auto-group or explicit `--group` | Bar (2D / 3D), line, scatter |
 | `spiral-3d.csv` | 25,000 | Auto-value (xyz) | Scatter3D, line3D, bar3D |
 | `noise-surface.csv` | 441 | Auto-value (xyz grid) | Bar3D surface |
 | `noise-grid.csv` | 9,261 | Auto-value (xyz + metric) | Scatter3D + visualMap |

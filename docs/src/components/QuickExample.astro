@@ -3,10 +3,10 @@
  * Homepage Quick Example: prose + commands left, CSV right (tablet+);
  * chart image full-width below.
  */
-import { Aside } from '@astrojs/starlight/components';
+import { Aside, Code } from '@astrojs/starlight/components';
 import DocImage from './DocImage.astro';
 import CopyableCsv from './CopyableCsv.astro';
-import bar2D from '../assets/bar-2D.png';
+import heroBarChart from '../assets/hero-bar-chart.png';
 ---
 
 <div class="quick-example">
@@ -27,19 +27,34 @@ import bar2D from '../assets/bar-2D.png';
 				csv={`region,product,quantity
 West,Widget,39
 West,Gear,20
+West,Sensor,28
+West,Relay,14
+West,Bolt,33
 South,Widget,15
+South,Gear,42
 South,Sensor,47
-North,Gear,43
+South,Relay,22
+South,Bolt,18
 North,Widget,28
-East,Sensor,31
+North,Gear,43
+North,Sensor,19
+North,Relay,36
+North,Bolt,25
+East,Widget,31
 East,Gear,22
+East,Sensor,35
+East,Relay,12
+East,Bolt,40
 Central,Widget,35
-Central,Sensor,19`}
+Central,Gear,17
+Central,Sensor,19
+Central,Relay,29
+Central,Bolt,24`}
 			/>
 		</div>
 
 		<div class="quick-example__body">
-			<pre class="quick-example__code"><code>vizb bar sales.csv -g region,product -p x,y -o sales.html</code></pre>
+			<Code code="vizb bar sales.csv -g region,product -p x,y -l -o sales.html" lang="bash" />
 
 			<p>
 				Open <code>sales.html</code> in a browser. You get a grouped bar chart: region on X,
@@ -55,13 +70,17 @@ Central,Sensor,19`}
 				</li>
 				<li><code>-g region,product</code> — columns that become dimensions</li>
 				<li><code>-p x,y</code> — first group column → X, second → Y series</li>
+				<li><code>-l</code> — show value labels on bars</li>
 				<li><code>-o sales.html</code> — self-contained HTML</li>
 			</ul>
 		</div>
 	</div>
 
 	<div class="quick-example__figure">
-		<DocImage src={bar2D} alt="2D grouped bar chart with product series per region" />
+		<DocImage
+			src={heroBarChart}
+			alt="2D grouped bar chart with five product series (Widget, Gear, Sensor, Relay, Bolt) per region"
+		/>
 	</div>
 
 	<div class="quick-example__after">
@@ -70,15 +89,15 @@ Central,Sensor,19`}
 			choice. Override whenever the guess is wrong.
 		</p>
 
-		<pre class="quick-example__code"><code>vizb bar sales.csv -o sales.html</code></pre>
+		<Code code="vizb bar sales.csv -o sales.html" lang="bash" />
 
 		<p>
 			From a clone of the Vizb repo, the full sample is
-			<code>examples/csv/sales.csv</code> (~500 orders across 2024–2025).
+			<code>examples/csv/sales.csv</code> (10,000 orders across 2024–2025).
 		</p>
 
 		<Aside type="tip">
-			Advanced demo (date split + remote JSON): the
+			Advanced demo (date split + remote JSON): the{' '}
 			<a href="/examples/github-legends">GitHub Legends</a> 3D contribution skylines.
 		</Aside>
 	</div>
@@ -132,66 +151,58 @@ Central,Sensor,19`}
 		margin-block: 0.5rem 0;
 	}
 
-	/* Tablet + desktop: left = intro + command/body; right = CSV; image full width below */
+	/* Tablet + desktop: copy left, CSV hugging it (no 1fr middle gap); image full width below */
 	@media (min-width: 48rem) {
 		.quick-example__split {
-			grid-template-columns: minmax(0, 1fr) minmax(14rem, 22rem);
+			/* auto column sizes to the table; prose takes the rest without shoving CSV to the edge */
+			grid-template-columns: minmax(0, 1fr) auto;
 			grid-template-areas:
 				'intro csv'
 				'body csv';
+			justify-content: start;
+			column-gap: 1.5rem;
 		}
 
 		.quick-example__intro {
 			grid-area: intro;
-			max-width: 40rem;
+			max-width: 36rem;
 		}
 
 		.quick-example__body {
 			grid-area: body;
-			max-width: 40rem;
+			max-width: 36rem;
 		}
 
 		.quick-example__csv {
 			grid-area: csv;
 			position: sticky;
 			top: 5.5rem;
-			justify-self: end;
-			width: 100%;
-			max-width: 22rem;
+			/* Hug table width — do not stretch a blank lane beside the copy */
+			justify-self: start;
+			width: max-content;
+			max-width: min(22rem, 100%);
 		}
 
 		.quick-example__csv :global(.copyable-csv) {
-			width: 100%;
+			width: max-content;
 			max-width: 100%;
 			margin-block: 0;
 		}
 
+		/* Keep bounded scroll viewport (scrollbar when rows overflow) */
 		.quick-example__csv :global(.copyable-csv__scroll) {
-			max-height: min(22rem, 60vh);
+			max-height: min(20rem, 55vh);
+			overflow: auto;
 		}
 	}
 
-	.quick-example__code {
+	/* Match MDX fence spacing around Starlight <Code> / Expressive Code */
+	.quick-example__body :global(.expressive-code),
+	.quick-example__after :global(.expressive-code) {
 		margin-block: 0.75rem 0.85rem;
-		padding: 0.85rem 1rem;
-		overflow-x: auto;
-		border-radius: 0.5rem;
-		background: var(--sl-color-gray-6, var(--sl-color-bg-nav));
-		border: 1px solid var(--sl-color-gray-5);
-		font-size: 0.875rem;
-		line-height: 1.5;
 	}
 
-	/* First command sits under intro on the left; tighten top margin a bit */
-	.quick-example__body > .quick-example__code:first-child {
+	.quick-example__body > :global(.expressive-code):first-child {
 		margin-block-start: 0.5rem;
-	}
-
-	.quick-example__code code {
-		font-family: var(--__sl-font-mono, ui-monospace, monospace);
-		background: transparent;
-		padding: 0;
-		border: none;
-		font-size: inherit;
 	}
 </style>
