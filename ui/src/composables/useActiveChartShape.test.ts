@@ -144,7 +144,7 @@ describe('useActiveChartShape', () => {
         {
           type: 'bar' as ChartType,
           horizontal: true,
-          borderRadius: 8,
+          borderRadius: [8],
         },
       ])
     )
@@ -172,7 +172,7 @@ describe('useActiveChartShape', () => {
     holder.activeIndex = 2
     shape = useActiveChartShape()
     expect(shape.horizontal.value).toBe(true)
-    expect(shape.borderRadius.value).toBe(8)
+    expect(shape.borderRadius.value).toEqual([8])
     expect(shape.threeD.value).toBe(false)
     expect(shape.visualMap.value).toBe(false)
     expect(shape.stat.value).toBeUndefined()

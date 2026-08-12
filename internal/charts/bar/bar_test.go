@@ -3,6 +3,7 @@ package bar
 import (
 	"testing"
 
+	"github.com/goptics/vizb/shared"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -15,12 +16,15 @@ func (s *BarConfigSuite) TestBorderRadiusDefaultsNil() {
 	s.Nil(cfg.BorderRadius)
 }
 
-func (s *BarConfigSuite) TestBorderRadiusRoundTrip() {
-	r := 8
+func (s *BarConfigSuite) TestBorderRadiusField() {
+	r := shared.BorderRadius{8}
 	cfg := &Config{Type: Type, BorderRadius: &r}
 	s.Equal("bar", cfg.ChartType())
-	s.Require().NotNil(cfg.BorderRadius)
-	s.Equal(8, *cfg.BorderRadius)
+	s.Equal(shared.BorderRadius{8}, *cfg.BorderRadius)
+
+	r = shared.BorderRadius{8, 8, 0, 0}
+	cfg.BorderRadius = &r
+	s.Equal(shared.BorderRadius{8, 8, 0, 0}, *cfg.BorderRadius)
 }
 
 func TestBarConfigSuite(t *testing.T) {

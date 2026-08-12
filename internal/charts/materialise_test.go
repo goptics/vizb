@@ -42,9 +42,13 @@ func (s *MaterialiseSuite) TestScaleDefault() {
 }
 
 func (s *MaterialiseSuite) TestBarBorderRadiusSeed() {
-	got := s.materialise("bar", map[string]any{"borderRadius": 8}, nil).(*barchart.Config)
+	got := s.materialise("bar", map[string]any{"borderRadius": []int{8}}, nil).(*barchart.Config)
 	s.Require().NotNil(got.BorderRadius)
-	s.Equal(8, *got.BorderRadius)
+	s.Equal(shared.BorderRadius{8}, *got.BorderRadius)
+
+	got = s.materialise("bar", map[string]any{"borderRadius": []int{8, 8, 0, 0}}, nil).(*barchart.Config)
+	s.Require().NotNil(got.BorderRadius)
+	s.Equal(shared.BorderRadius{8, 8, 0, 0}, *got.BorderRadius)
 }
 
 func (s *MaterialiseSuite) TestSeedThenOverride() {

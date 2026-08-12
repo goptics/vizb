@@ -85,7 +85,7 @@ export function useActiveChartShape() {
     () => (activeConfig.value as BarConfig | undefined)?.horizontal ?? false
   )
 
-  const borderRadius = computed<number | undefined>(
+  const borderRadius = computed<number[] | undefined>(
     () => (activeConfig.value as BarConfig | undefined)?.borderRadius
   )
 

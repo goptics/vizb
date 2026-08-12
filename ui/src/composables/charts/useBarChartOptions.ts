@@ -24,37 +24,25 @@ import { buildMixedAxes2DOptions } from './shared/mixedMode'
 const barNullable = (val: number | null, scale: string): number | null =>
   val === null ? null : scale === 'log' && val <= 0 ? null : val
 
-// ECharts itemStyle.borderRadius: [topLeft, topRight, bottomRight, bottomLeft].
-// Free outer end of the bar (top for vertical, right for horizontal).
-const cornerValues = (radius: number, isHorizontal: boolean): number[] =>
-  isHorizontal ? [0, radius, radius, 0] : [radius, radius, 0, 0]
-
+// ECharts itemStyle.borderRadius: [TL, TR, BR, BL] (len 1–4; [8] = all corners).
 type BarItemStyle = { color?: string; borderRadius?: number[] }
 
-function withBorderRadius<T extends { itemStyle: BarItemStyle }>(
-  seriesItem: T,
-  radius: number,
-  isHorizontal: boolean
-): T {
-  if (radius <= 0) return seriesItem
-  seriesItem.itemStyle = {
-    ...seriesItem.itemStyle,
-    borderRadius: cornerValues(radius, isHorizontal),
-  }
-  return seriesItem
+function isActiveRadius(r: number[] | undefined): r is number[] {
+  return !!r && r.length > 0 && r.some((n) => n > 0)
 }
 
-function applyBorderRadiusToSeries(
-  result: EChartsOption,
-  radius: number,
-  isHorizontal: boolean
-): EChartsOption {
-  if (radius <= 0) return result
+/** Stack cap: first two radii on free outer end; other corners stay square. */
+function stackCapRadius(radius: number[], horizontal: boolean): number[] {
+  const r0 = radius[0] ?? 0
+  const r1 = radius.length >= 2 ? radius[1]! : r0
+  // Horizontal free outer end (value axis → right): TR, BR.
+  // Vertical free outer end (value axis → top): TL, TR.
+  return horizontal ? [0, r0, r1, 0] : [r0, r1, 0, 0]
+}
+
+function applyBorderRadiusToSeries(result: EChartsOption, radius: number[]): EChartsOption {
   for (const s of result.series as { itemStyle?: BarItemStyle }[]) {
-    s.itemStyle = {
-      ...s.itemStyle,
-      borderRadius: cornerValues(radius, isHorizontal),
-    }
+    s.itemStyle = { ...s.itemStyle, borderRadius: radius }
   }
   return result
 }
@@ -66,13 +54,16 @@ export function useBarChartOptions(config: BaseChartConfig) {
 
   const options = computed<EChartsOption>(() => {
     const isHorizontal = horizontal?.value ?? false
-    const radius = borderRadius?.value ?? 0
+    const radius = borderRadius?.value
+    const activeRadius = isActiveRadius(radius)
 
     if (chartData.value.mixedTuples?.length) {
-      return applyBorderRadiusToSeries(buildMixedAxes2DOptions(config, 'bar'), radius, isHorizontal)
+      const result = buildMixedAxes2DOptions(config, 'bar')
+      return activeRadius ? applyBorderRadiusToSeries(result, radius) : result
     }
     if (chartData.value.valueTuples?.length) {
-      return applyBorderRadiusToSeries(buildValueAxes2DOptions(config, 'bar'), radius, isHorizontal)
+      const result = buildValueAxes2DOptions(config, 'bar')
+      return activeRadius ? applyBorderRadiusToSeries(result, radius) : result
     }
 
     const { series, xAxisData, hasYAxis } = sortedData.value
@@ -90,6 +81,18 @@ export function useBarChartOptions(config: BaseChartConfig) {
     const useStack = stack?.value === true && yScale !== 'log'
 
     if (!hasYAxis && isHorizontal) {
+      const seriesItem = {
+        name: chartData.value.title,
+        type: 'bar' as const,
+        data: series.map((s) => barNullable(s.values[0] ?? null, yScale)),
+        label: createLabelConfig(showLabels.value, styling, 'horizontal'),
+        large: true,
+        largeThreshold: LARGE_DATA_THRESHOLD,
+        itemStyle: { color: getNextColorFor(chartData.value.title) } as BarItemStyle,
+      }
+      if (activeRadius) {
+        seriesItem.itemStyle = { ...seriesItem.itemStyle, borderRadius: radius }
+      }
       return {
         ...baseOptions,
         grid: {
@@ -103,25 +106,27 @@ export function useBarChartOptions(config: BaseChartConfig) {
         legend: { show: false },
         ...createHorizontalAxisConfig(styling, xAxisData, yScale, xLabel, largeX),
         ...(largeX ? { dataZoom: createHorizontalDataZoomConfig(styling) } : {}),
-        series: [
-          withBorderRadius(
-            {
-              name: chartData.value.title,
-              type: 'bar' as const,
-              data: series.map((s) => barNullable(s.values[0] ?? null, yScale)),
-              label: createLabelConfig(showLabels.value, styling, 'horizontal'),
-              large: true,
-              largeThreshold: LARGE_DATA_THRESHOLD,
-              itemStyle: { color: getNextColorFor(chartData.value.title) },
-            },
-            radius,
-            isHorizontal
-          ),
-        ],
+        series: [seriesItem],
       } as EChartsOption
     }
 
     if (!hasYAxis) {
+      const seriesItem = {
+        name: chartData.value.title,
+        type: 'bar' as const,
+        // Plain values + one series-level label, not a per-point {value,label}
+        // object — a 100k-bar chart would otherwise allocate 100k label configs
+        // on every recompute. `large` keeps the draw on one frame past the
+        // threshold.
+        data: series.map((s) => barNullable(s.values[0] ?? null, yScale)),
+        label: createLabelConfig(showLabels.value, styling),
+        large: true,
+        largeThreshold: LARGE_DATA_THRESHOLD,
+        itemStyle: { color: getNextColorFor(chartData.value.title) } as BarItemStyle,
+      }
+      if (activeRadius) {
+        seriesItem.itemStyle = { ...seriesItem.itemStyle, borderRadius: radius }
+      }
       return {
         ...baseOptions,
         grid: createGridConfig(1, largeX),
@@ -129,25 +134,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
         legend: { show: false },
         ...createAxisConfig(styling, xAxisData, yScale, xLabel, largeX),
         ...(largeX ? { dataZoom: createDataZoomConfig(xAxisData, styling) } : {}),
-        series: [
-          withBorderRadius(
-            {
-              name: chartData.value.title,
-              type: 'bar' as const,
-              // Plain values + one series-level label, not a per-point {value,label}
-              // object — a 100k-bar chart would otherwise allocate 100k label configs
-              // on every recompute. `large` keeps the draw on one frame past the
-              // threshold.
-              data: series.map((s) => barNullable(s.values[0] ?? null, yScale)),
-              label: createLabelConfig(showLabels.value, styling),
-              large: true,
-              largeThreshold: LARGE_DATA_THRESHOLD,
-              itemStyle: { color: getNextColorFor(chartData.value.title) },
-            },
-            radius,
-            isHorizontal
-          ),
-        ],
+        series: [seriesItem],
       } as EChartsOption
     }
 
@@ -180,10 +167,13 @@ export function useBarChartOptions(config: BaseChartConfig) {
       })
     }
 
-    if (radius > 0) {
+    if (activeRadius) {
+      const applied = useStack ? stackCapRadius(radius, isHorizontal) : radius
       transposedSeries.forEach((seriesItem, index) => {
         const isTop = !useStack || index === transposedSeries.length - 1
-        if (isTop) withBorderRadius(seriesItem, radius, isHorizontal)
+        if (isTop) {
+          seriesItem.itemStyle = { ...seriesItem.itemStyle, borderRadius: applied }
+        }
       })
     }
 

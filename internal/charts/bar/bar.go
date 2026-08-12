@@ -14,18 +14,18 @@ const Type = "bar"
 // chart types that carry a Scale (linear/log) and ThreeDRotate (3D) — pie,
 // heatmap, and radar omit them.
 type Config struct {
-	Type            string             `json:"type"` // always "bar"
-	Swap            string             `json:"swap,omitempty"`
-	Sort            *shared.Sort       `json:"sort,omitempty"`
-	Scale           string             `json:"scale,omitempty"`
-	Stack           *bool              `json:"stack,omitempty"`
-	ShowLabels      *bool              `json:"showLabels,omitempty"`
-	ThreeDRotate    *bool              `json:"threeDRotate,omitempty"`
-	ThreeD          *bool              `json:"threeD,omitempty"`
-	ThreeDVisualMap *bool              `json:"threeDVisualMap,omitempty"`
-	Horizontal      *bool              `json:"horizontal,omitempty"`
-	BorderRadius    *int               `json:"borderRadius,omitempty"`
-	Stat            *shared.StatConfig `json:"stat,omitempty"`
+	Type            string               `json:"type"` // always "bar"
+	Swap            string               `json:"swap,omitempty"`
+	Sort            *shared.Sort         `json:"sort,omitempty"`
+	Scale           string               `json:"scale,omitempty"`
+	Stack           *bool                `json:"stack,omitempty"`
+	ShowLabels      *bool                `json:"showLabels,omitempty"`
+	ThreeDRotate    *bool                `json:"threeDRotate,omitempty"`
+	ThreeD          *bool                `json:"threeD,omitempty"`
+	ThreeDVisualMap *bool                `json:"threeDVisualMap,omitempty"`
+	Horizontal      *bool                `json:"horizontal,omitempty"`
+	BorderRadius    *shared.BorderRadius `json:"borderRadius,omitempty"`
+	Stat            *shared.StatConfig   `json:"stat,omitempty"`
 }
 
 // ChartType returns the chart-type discriminator; satisfies charts.ChartConfig.

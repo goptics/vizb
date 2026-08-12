@@ -34,7 +34,7 @@ export function useChartOptions(
   symbolSize: Ref<number | undefined>,
   smooth: Ref<boolean>,
   horizontal: Ref<boolean>,
-  borderRadius: Ref<number | undefined>
+  borderRadius: Ref<number[] | undefined>
 ) {
   const config: BaseChartConfig = {
     chartData,

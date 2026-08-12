@@ -31,10 +31,10 @@ export interface BaseChartConfig {
   /** 2D bar horizontal orientation. When true, bars grow rightward. */
   horizontal?: Ref<boolean>
   /**
-   * Bar corner radius in pixels (bar-only). Applied to the free outer end of
-   * each bar; when stacked, only the topmost/outermost segment is rounded.
+   * Bar corner radii in px (bar-only), length 1–4 [TL, TR, BR, BL].
+   * Passed through to ECharts; when stacked, only the outer segment is rounded.
    */
-  borderRadius?: Ref<number | undefined>
+  borderRadius?: Ref<number[] | undefined>
   /** Active swap target (e.g. xyz) — scatter value-mode 3D is swap-driven. */
   arrangementTarget?: Ref<string>
   chartAxes?: Ref<Axis[] | undefined>
