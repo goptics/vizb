@@ -105,16 +105,9 @@ vizb line allnums.csv -o lines.html              # line auto-value (auto-3D with
 
 ## The dimensions
 
-Both approaches draw on the same four dimensions. Group assigns them categorically; select assigns them as coordinate positions.
+Both approaches draw on the same four dimensions (**Name** / **X** / **Y** / **Z**). Group assigns them as categories; select assigns them as coordinate positions.
 
-| Dimension | Shorthand | Role |
-|---|---|---|
-| **Name** | `n` | Splits rows into separate chart groups |
-| **XAxis** | `x` | Sets the X axis |
-| **YAxis** | `y` | Creates the in-chart series (group) or second coordinate (select) |
-| **ZAxis** | `z` | Adds a depth axis → 3D chart (requires `x` + `y`) |
-
-See [Group → The dimensions](/guides/group#the-dimensions) for the full reference. At least one of `x` or `y` is required for group to take effect; `z` requires both `x` and `y`.
+Full roles and rules: [Dimensions](/getting-started/dimensions). At least one of `x` or `y` is required for group; `z` requires both `x` and `y`.
 
 ## Benchmarks
 

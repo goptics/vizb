@@ -62,13 +62,12 @@ var (
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "vizb [target]",
-	Short: "Tabular visualization engine — charts and stats from CSV, JSON, and benchmarks",
-	Long: `A tabular visualization engine for CSV, JSON, and benchmark output.
-Turns numeric columns into interactive charts and descriptive statistics in one
-self-contained HTML file. Reads a file or piped stdin, auto-detects the input
-format (override with --parser), and renders bar, line, scatter, pie, heatmap,
-and radar charts you can explore in the browser. Chord and Sankey charts are
-available as opt-in edge visualizations.`,
+	Short: "Turn CSV, JSON, and benchmarks into interactive charts and stats",
+	Long: `Turn CSV, JSON, and benchmark output into interactive charts and stats
+without writing chart code. Reads a file or piped stdin, auto-detects the
+format (override with --parser), and writes one self-contained HTML report
+(or JSON). Default charts: bar, line, pie. Add scatter, heatmap, radar,
+sankey, or chord with --charts or a chart subcommand.`,
 	Version: version.Version,
 	Args:    cobra.ArbitraryArgs,
 	Run:     runBenchmark,
@@ -86,12 +85,9 @@ func Execute() {
 
 func init() {
 	rootBag.Bind(rootCmd.Flags())
-	rootCmd.Flags().StringSliceVarP(&rootCharts, "charts", "c", defaultChartTypes, "Chart types to generate (bar, line, scatter, pie, heatmap, radar, sankey, chord)")
+	rootCmd.Flags().StringSliceVarP(&rootCharts, "charts", "c", defaultChartTypes, "Chart types to embed (bar, line, scatter, pie, heatmap, radar, sankey, chord)")
 	rootCmd.Flags().StringArrayVar(&rootChartSpecs, "chart", nil,
-		"Per-chart settings override (repeatable): <type>:<key>=<val>(,<key>=<val>)* or bare flags. "+
-			"Comma separates single-value props; for multi-value props (e.g. stat=a,b) use semicolon between props or put the multi-value prop alone. "+
-			"Keys: swap, sort, scale, stack, labels, 3d-rotate, 3d, symbol, symbol-size, smooth, horizontal, stat. "+
-			"E.g. --chart bar:stack --chart 'bar:stat=center,spread;labels'")
+		"Per-chart override (type:key=val; repeatable; see docs)")
 
 	// Build the chart subcommands from the config/charts registry.
 	rootCmd.AddCommand(cli.ChartCommands()...)

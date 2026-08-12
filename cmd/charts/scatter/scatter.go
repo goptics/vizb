@@ -17,7 +17,7 @@ func init() {
 	cli.SetChartMeta(cli.ChartMeta{
 		Type:  "scatter",
 		Use:   "scatter [target]",
-		Short: "Generate a scatter chart from data",
-		Long:  "Generate an interactive scatter chart (HTML or JSON) from benchmark output or tabular CSV/JSON data.",
+		Short: "Generate a scatter chart",
+		Long:  "Generate an interactive scatter chart (HTML or JSON) from CSV, JSON, or benchmark output.",
 	})
 }

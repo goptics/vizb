@@ -1,42 +1,46 @@
-import { Tabs, TabItem } from '@astrojs/starlight/components';
+import { Aside } from '@astrojs/starlight/components';
+import DocImage from './DocImage.astro';
+import CopyableCsv from './CopyableCsv.astro';
+import bar2D from '../assets/bar-2D.png';
 
-Run one command to turn your GitHub contribution history into a 3D skyline of your activity over time. Each year stacks as a new layer; within it, every day is a column whose height is your contribution count. Replace `<your-github-username>` with your GitHub username and open the generated `index.html`.
+Point Vizb at a CSV. Numeric columns become charts. Categorical columns become axes when you group (or when auto-group picks one for you).
 
-<Tabs syncKey="os">
-  <TabItem label="Linux / macOS" icon="seti:shell">
+After [install](/getting-started/install), chart a table like this:
+
+<CopyableCsv
+  filename="sales.csv"
+  csv={`region,category,quantity,amount
+West,Mechanical,39,17226
+West,Industrial,20,8000
+South,Mechanical,15,5000
+South,Industrial,47,6631
+North,Electronics,43,8046`}
+/>
 
 ```bash
-curl -s "https://github-contributions-api.jogruber.de/v4/<your-github-username>" \
-  | vizb bar \
-      --group date \
-      --group-pattern '[z{Year}-y{Month}-x{Date}]' \
-      --json-path '.contributions' \
-      --select 'count{Contributions}' \
-      --stat \
-      --output index.html
+vizb bar sales.csv -g region,category -p x,y -o sales.html
 ```
 
-  </TabItem>
-  <TabItem label="Windows" icon="seti:powershell">
+Open `sales.html` in a browser. You get a grouped bar chart: region on X, category as series, with a chart tab per numeric metric (`quantity`, `amount`).
 
-```ps1
-(iwr "https://github-contributions-api.jogruber.de/v4/<your-github-username>").Content `
-  | vizb bar `
-      --group date `
-      --group-pattern '[z{Year}-y{Month}-x{Date}]' `
-      --json-path '.contributions' `
-      --select 'count{Contributions}' `
-      --stat `
-      --output index.html
+<DocImage src={bar2D} alt="2D grouped bar chart with category series per region" />
+
+Flags in this example:
+
+- `bar` — one chart type (smallest learning path)
+- `sales.csv` — the table above (use **Copy CSV** to grab it)
+- `-g region,category` — columns that become dimensions
+- `-p x,y` — first group column → X, second → Y series
+- `-o sales.html` — self-contained HTML
+
+No `-g`? Vizb auto-groups a high-cardinality categorical column and logs the choice. Override whenever the guess is wrong.
+
+```bash
+vizb bar sales.csv -o sales.html
 ```
-  </TabItem>
-</Tabs>
 
-Flags used below:
+From a clone of the Vizb repo, a larger sample is `examples/csv/sales.csv`.
 
-- `--group date` — group rows by date
-- `--group-pattern '[z{Year}-y{Month}-x{Date}]'` — split each date into Year / Month / Day axes (z / y / x)
-- `--json-path '.contributions'` — pull the nested contributions array out of the API envelope
-- `--select 'count{Contributions}'` — keep only the count column and rename it to `Contributions`
-- `--stat` — add the statistics panel
-- `--output index.html` — write a self-contained HTML file
+<Aside type="tip">
+  Advanced demo (date split + remote JSON): the [GitHub Legends](/examples/github-legends) 3D contribution skylines.
+</Aside>

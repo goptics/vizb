@@ -5,9 +5,9 @@ description: Generate a single chart type with only the flags that chart support
 
 import { Aside } from '@astrojs/starlight/components';
 
-Chart subcommands (`vizb bar`, `vizb line`, `vizb scatter`, `vizb pie`, `vizb heatmap`, `vizb radar`, `vizb sankey`, `vizb chord`) generate one chart at a time. They produce the same output as the root command with `--charts` limited to that type, but accept only the flags valid for the chart — unsupported flags fail fast.
+Chart subcommands (`vizb <chart>`) generate **one chart type** at a time. They produce the same output as the root command with `--charts` limited to that type, but accept only the flags valid for the chart — unsupported flags fail fast.
 
-Use a subcommand for a single chart; use the [root command](/commands/root) with `--charts` for multiple chart types from one dataset.
+The full list of chart types (and how each reads dimensions) lives on the [Charts overview](/charts). Use a subcommand for a single chart; use the [root command](/commands/root) with `--charts` when you want several renderers from one dataset.
 
 ## Usage
 
@@ -15,7 +15,7 @@ Use a subcommand for a single chart; use the [root command](/commands/root) with
 vizb <chart> [target] [flags]
 ```
 
-`<chart>` is one of `bar`, `line`, `scatter`, `pie`, `heatmap`, `radar`, `sankey`, `chord`. Output is HTML by default, or JSON when `-o` ends in `.json` (same rules as the root command).
+`<chart>` is any type on the [Charts overview](/charts) (for example `bar`, `line`, `pie`). Output is HTML by default, or JSON when `-o` ends in `.json` (same rules as the root command).
 
 ```bash
 vizb bar data.csv -g impl,size -p n,x -o bar.html
@@ -44,7 +44,7 @@ Every chart subcommand accepts the common data, grouping, and metadata flags:
 | `--select` | | `""` | csv/json only: select value columns; optional rename with `{label}` |
 | `--filter` | `-f` | `""` | Regex to include only matching rows (CSV/JSON: `--group` label) or benchmark names |
 | `--sort` | `-s` | `""` | Sort order: `asc` or `desc` |
-| `--swap` | | `""` | Axis permutation override, e.g. `yx`, `yxn` |
+| `--swap` | | `""` | Swap n/x/y/z axis assignment, e.g. `yx`, `yxn` |
 | `--show-labels` | `-l` | `false` | Show value labels on the chart |
 | `--mem-unit` | `-M` | `B` | Memory unit: `b`, `B`, `KB`, `MB`, `GB` |
 | `--time-unit` | `-T` | `ns` | Time unit: `ns`, `us`, `ms`, `s` |

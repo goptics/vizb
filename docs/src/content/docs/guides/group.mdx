@@ -5,9 +5,24 @@ description: Turn rows — CSV/JSON columns or benchmark names — into structur
 
 import { Aside } from '@astrojs/starlight/components';
 
+## Start here
+
+Most grouping is one command: pick category columns with `-g`, map them to dimensions with `-p`, open the HTML.
+
+```bash
+# region on Y (series), product on X — one chart per numeric column
+vizb bar sales.csv -g region,product -p y,x -o sales.html
+```
+
+| Goal | Jump to |
+|------|---------|
+| Decide group vs select | [Group vs Select](/guides/group-vs-select) |
+| What n / x / y / z mean | [Dimensions](/getting-started/dimensions) |
+| Separators, brackets, regex, labels | Sections below on this page |
+
 ## What is group
 
-Group turns each row into a point with up to four dimensions: **Name**, **XAxis**, **YAxis**, and **ZAxis**. This lets vizb chart the data meaningfully instead of as a flat list.
+Group turns each row into a point with up to four dimensions (**Name**, **X**, **Y**, **Z** — see [Dimensions](/getting-started/dimensions)). That structure is what makes multi-axis charts possible.
 
 It always works in two stages:
 
@@ -20,7 +35,7 @@ The two flows differ only in stage 1 — where the label comes from. The same pa
 
 ## Why group
 
-Group creates multi-dimensional charts. Without it, every row is an isolated bar or point. With it, vizb can:
+Without group, every row is an isolated bar or point. With it, vizb can:
 
 - **Separate charts** by logical category (e.g. one chart per algorithm or region).
 - **Populate axes** with meaningful values (e.g. input size on the X-axis).
@@ -32,19 +47,8 @@ Group creates multi-dimensional charts. Without it, every row is an isolated bar
 | No axis structure | X-axis and Y-axis with meaningful categories |
 | Hard to compare across dimensions | Easy side-by-side comparison |
 
-## The Dimensions
-
-Group extracts up to four dimensions from each label:
-
-| Dimension | Role | Description |
-|---|---|---|
-| **Name** (`name` / `n`) | Groups rows into separate charts | Rows sharing the same name appear in the same chart |
-| **XAxis** (`xAxis` / `x`) | Sets the X-axis categories | Each unique value becomes a tick on the X-axis |
-| **YAxis** (`yAxis` / `y`) | Creates series / variants | Each unique value becomes a separate series or bar group |
-| **ZAxis** (`zAxis` / `z`) | Adds a depth axis → 3D chart | Each unique value becomes a stacked depth layer in a [3D chart](/charts/3d) |
-
 <Aside type="note">
-  At least one axis (`x` or `y`) is required for group to take effect. The `name` dimension is optional. When omitted, all rows go into a single chart. The `z` dimension requires **both** `x` and `y` to be present.
+  At least one of `x` or `y` is required for group to take effect. `n` is optional (one chart when omitted). `z` requires both `x` and `y`. Full rules: [Dimensions](/getting-started/dimensions).
 </Aside>
 
 ## Group CSV/JSON data

@@ -1,10 +1,10 @@
 ---
-title: Installation
+title: Install
 description: Install vizb using Docker, a one-liner, the Go toolchain, or a pre-built binary.
 ---
 
 import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
-import QuickInstall from '../../components/QuickInstall.mdx';
+import QuickInstall from '../../../components/QuickInstall.mdx';
 
 ## Quick Install
 
@@ -70,32 +70,35 @@ behavior.
 
 ## Download Binary
 
-Pre-built binaries for Linux, macOS, and Windows (amd64 and arm64) are available on the [releases page](https://github.com/goptics/vizb/releases).
+Pre-built binaries for Linux, macOS, and Windows (amd64 and arm64) are on the
+[releases page](https://github.com/goptics/vizb/releases). Prefer the **latest**
+release assets from that page. The commands below use `v0.18.2` as an illustrative
+version pin — replace it with the version you want.
 
 <Tabs syncKey="os">
   <TabItem label="Linux" icon="linux">
   ```bash
-  # Download (adjust version)
-  curl -sfL https://github.com/goptics/vizb/releases/download/v0.10.3/vizb@0.10.3-linux-amd64.tar.gz | tar xz
+  # Example pin — swap v0.18.2 for the release you need
+  curl -sfL https://github.com/goptics/vizb/releases/download/v0.18.2/vizb@0.18.2-linux-amd64.tar.gz | tar xz
   chmod +x vizb
   sudo mv vizb /usr/local/bin/
   ```
   </TabItem>
   <TabItem label="macOS" icon="apple">
   ```bash
-  # Apple Silicon (M1/M2/M3)
-  curl -sfL https://github.com/goptics/vizb/releases/download/v0.10.3/vizb@0.10.3-darwin-arm64.tar.gz | tar xz
+  # Apple Silicon (M1/M2/M3) — example pin
+  curl -sfL https://github.com/goptics/vizb/releases/download/v0.18.2/vizb@0.18.2-darwin-arm64.tar.gz | tar xz
   chmod +x vizb
   sudo mv vizb /usr/local/bin/
 
   # Intel
-  curl -sfL https://github.com/goptics/vizb/releases/download/v0.10.3/vizb@0.10.3-darwin-amd64.tar.gz | tar xz
+  curl -sfL https://github.com/goptics/vizb/releases/download/v0.18.2/vizb@0.18.2-darwin-amd64.tar.gz | tar xz
   chmod +x vizb
   sudo mv vizb /usr/local/bin/
   ```
   </TabItem>
   <TabItem label="Windows" icon="seti:windows">
-  1. Download `vizb@0.10.3-windows-amd64.zip` from [releases](https://github.com/goptics/vizb/releases)
+  1. Download the latest `vizb@*-windows-amd64.zip` (or a specific version such as `vizb@0.18.2-windows-amd64.zip`) from [releases](https://github.com/goptics/vizb/releases)
   2. Extract `vizb.exe`
   3. Add to a directory in your `PATH`
   </TabItem>
@@ -104,5 +107,12 @@ Pre-built binaries for Linux, macOS, and Windows (amd64 and arm64) are available
 ## Verify
 
 ```bash
+vizb --version
 vizb --help
 ```
+
+A successful install prints a version line (for example `v0.18.2`) and the root help text.
+
+## Next
+
+After install, return to the [Introduction](/getting-started) for your first chart, or read [Dimensions](/getting-started/dimensions).

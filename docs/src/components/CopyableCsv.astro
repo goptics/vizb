@@ -1,0 +1,199 @@
+---
+/**
+ * Renders a small CSV sample as a table with a one-click copy button.
+ * Pass plain CSV text (header + rows); no quoted-field parsing.
+ */
+interface Props {
+	/** Raw CSV text to display and copy */
+	csv: string;
+	/** Optional label shown next to the button (default: sales.csv) */
+	filename?: string;
+}
+
+const { csv, filename = 'sales.csv' } = Astro.props;
+
+const lines = csv
+	.trim()
+	.split(/\r?\n/)
+	.map((line) => line.trim())
+	.filter(Boolean);
+
+const headers = lines[0]?.split(',').map((c) => c.trim()) ?? [];
+const rows = lines.slice(1).map((line) => line.split(',').map((c) => c.trim()));
+---
+
+<figure class="copyable-csv">
+	<div class="copyable-csv__bar">
+		<span class="copyable-csv__filename">{filename}</span>
+		<button type="button" class="copyable-csv__btn" data-copyable-csv-btn>
+			<span class="copyable-csv__btn-label" data-idle>Copy CSV</span>
+			<span class="copyable-csv__btn-label" data-done hidden>Copied</span>
+		</button>
+	</div>
+	<pre class="copyable-csv__source" hidden>{csv.trim() + '\n'}</pre>
+	<div class="copyable-csv__scroll">
+		<table>
+			<thead>
+				<tr>
+					{headers.map((h) => <th scope="col">{h}</th>)}
+				</tr>
+			</thead>
+			<tbody>
+				{
+					rows.map((row) => (
+						<tr>
+							{row.map((cell) => (
+								<td>{cell}</td>
+							))}
+						</tr>
+					))
+				}
+			</tbody>
+		</table>
+	</div>
+</figure>
+
+<script>
+	function bindCopyableCsv() {
+		document.querySelectorAll<HTMLElement>('[data-copyable-csv-btn]').forEach((btn) => {
+			if (btn.dataset.bound === '1') return;
+			btn.dataset.bound = '1';
+
+			btn.addEventListener('click', async () => {
+				const root = btn.closest('.copyable-csv');
+				const source = root?.querySelector('.copyable-csv__source');
+				const text = source?.textContent ?? '';
+				if (!text) return;
+
+				try {
+					await navigator.clipboard.writeText(text);
+				} catch {
+					// Fallback for older browsers / non-secure contexts
+					const ta = document.createElement('textarea');
+					ta.value = text;
+					ta.setAttribute('readonly', '');
+					ta.style.position = 'fixed';
+					ta.style.left = '-9999px';
+					document.body.appendChild(ta);
+					ta.select();
+					document.execCommand('copy');
+					document.body.removeChild(ta);
+				}
+
+				const idle = btn.querySelector<HTMLElement>('[data-idle]');
+				const done = btn.querySelector<HTMLElement>('[data-done]');
+				if (idle && done) {
+					idle.hidden = true;
+					done.hidden = false;
+					btn.classList.add('is-copied');
+					window.setTimeout(() => {
+						idle.hidden = false;
+						done.hidden = true;
+						btn.classList.remove('is-copied');
+					}, 1600);
+				}
+			});
+		});
+	}
+
+	bindCopyableCsv();
+	document.addEventListener('astro:page-load', bindCopyableCsv);
+</script>
+
+<style>
+	/* Hug table columns; never stretch to the full content column. */
+	.copyable-csv {
+		display: block;
+		width: fit-content;
+		max-width: 100%;
+		margin-block: 1rem;
+		border: 1px solid var(--sl-color-gray-5);
+		border-radius: 0.5rem;
+		overflow: hidden;
+		background: var(--sl-color-gray-7, var(--sl-color-bg));
+	}
+
+	.copyable-csv__bar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.75rem;
+		padding: 0.4rem 0.65rem;
+		border-bottom: 1px solid var(--sl-color-gray-5);
+		background: var(--sl-color-gray-6, var(--sl-color-bg-nav));
+	}
+
+	.copyable-csv__filename {
+		font-family: var(--sl-font-mono, ui-monospace, monospace);
+		font-size: 0.8rem;
+		color: var(--sl-color-gray-2);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		min-width: 0;
+	}
+
+	.copyable-csv__btn {
+		flex-shrink: 0;
+		appearance: none;
+		border: 1px solid var(--sl-color-gray-4);
+		border-radius: 0.35rem;
+		padding: 0.2rem 0.55rem;
+		font: inherit;
+		font-size: 0.75rem;
+		font-weight: 500;
+		line-height: 1.3;
+		cursor: pointer;
+		color: var(--sl-color-white);
+		background: var(--sl-color-gray-5);
+		transition:
+			background 0.15s ease,
+			border-color 0.15s ease,
+			color 0.15s ease;
+	}
+
+	.copyable-csv__btn:hover {
+		background: var(--sl-color-gray-4);
+	}
+
+	.copyable-csv__btn:focus-visible {
+		outline: 2px solid var(--sl-color-accent);
+		outline-offset: 2px;
+	}
+
+	.copyable-csv__btn.is-copied {
+		border-color: var(--sl-color-green-high, var(--sl-color-accent));
+		color: var(--sl-color-green-high, var(--sl-color-accent-high));
+	}
+
+	.copyable-csv__scroll {
+		overflow-x: auto;
+		max-width: 100%;
+	}
+
+	.copyable-csv :global(table) {
+		width: max-content;
+		max-width: none;
+		margin: 0;
+		border-collapse: collapse;
+		font-size: 0.875rem;
+	}
+
+	.copyable-csv :global(th),
+	.copyable-csv :global(td) {
+		padding: 0.45rem 0.75rem;
+		border-bottom: 1px solid var(--sl-color-gray-5);
+		text-align: left;
+		white-space: nowrap;
+	}
+
+	.copyable-csv :global(th) {
+		font-weight: 600;
+		color: var(--sl-color-white);
+		background: var(--sl-color-gray-6, transparent);
+	}
+
+	.copyable-csv :global(tbody tr:last-child td) {
+		border-bottom: none;
+	}
+</style>
