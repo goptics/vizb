@@ -1,0 +1,156 @@
+---
+/**
+ * Homepage Quick Example: intro + CSV side-by-side on tablet/desktop.
+ */
+import { Aside } from '@astrojs/starlight/components';
+import DocImage from './DocImage.astro';
+import CopyableCsv from './CopyableCsv.astro';
+import bar2D from '../assets/bar-2D.png';
+---
+
+<div class="quick-example">
+	<div class="quick-example__lead">
+		<div class="quick-example__copy">
+			<p>
+				Point Vizb at a CSV. Numeric columns become charts. Categorical columns become
+				axes when you group (or when auto-group picks one for you).
+			</p>
+			<p>
+				After <a href="/getting-started/install">install</a>, chart a table like this:
+			</p>
+		</div>
+		<div class="quick-example__csv">
+			<CopyableCsv
+				filename="sales.csv"
+				csv={`region,product,quantity
+West,Widget,39
+West,Gear,20
+South,Widget,15
+South,Sensor,47
+North,Gear,43
+North,Widget,28
+East,Sensor,31
+East,Gear,22
+Central,Widget,35
+Central,Sensor,19`}
+			/>
+		</div>
+	</div>
+
+	<pre class="quick-example__code"><code>vizb bar sales.csv -g region,product -p x,y -o sales.html</code></pre>
+
+	<p>
+		Open <code>sales.html</code> in a browser. You get a grouped bar chart: region on X, product
+		as series, height = <code>quantity</code>.
+	</p>
+
+	<DocImage src={bar2D} alt="2D grouped bar chart with product series per region" />
+
+	<p>Flags in this example:</p>
+	<ul>
+		<li><code>bar</code> — one chart type (smallest learning path)</li>
+		<li><code>sales.csv</code> — the table above (use <strong>Copy CSV</strong> to grab it)</li>
+		<li><code>-g region,product</code> — columns that become dimensions</li>
+		<li><code>-p x,y</code> — first group column → X, second → Y series</li>
+		<li><code>-o sales.html</code> — self-contained HTML</li>
+	</ul>
+
+	<p>
+		No <code>-g</code>? Vizb auto-groups a high-cardinality categorical column and logs the
+		choice. Override whenever the guess is wrong.
+	</p>
+
+	<pre class="quick-example__code"><code>vizb bar sales.csv -o sales.html</code></pre>
+
+	<p>
+		From a clone of the Vizb repo, the full sample is <code>examples/csv/sales.csv</code> (~500
+		orders across 2024–2025).
+	</p>
+
+	<Aside type="tip">
+		Advanced demo (date split + remote JSON): the
+		<a href="/examples/github-legends">GitHub Legends</a> 3D contribution skylines.
+	</Aside>
+</div>
+
+<style>
+	.quick-example__lead {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem 1.5rem;
+		margin-block-end: 1rem;
+	}
+
+	.quick-example__copy {
+		min-width: 0;
+	}
+
+	.quick-example__copy :global(p) {
+		margin-block: 0 0.75rem;
+	}
+
+	.quick-example__copy :global(p:last-child) {
+		margin-block-end: 0;
+	}
+
+	/* Hug the CSV card on the right; don't stretch it full width */
+	.quick-example__csv {
+		min-width: 0;
+	}
+
+	.quick-example__csv :global(.copyable-csv) {
+		margin-block: 0;
+	}
+
+	/* Tablet + desktop: copy left, CSV right */
+	@media (min-width: 48rem) {
+		.quick-example__lead {
+			flex-direction: row;
+			align-items: flex-start;
+			justify-content: space-between;
+			gap: 1.5rem 2rem;
+		}
+
+		.quick-example__copy {
+			flex: 1 1 0;
+			/* Keep readable measure */
+			max-width: 36rem;
+		}
+
+		.quick-example__csv {
+			flex: 0 0 auto;
+			/* Sit on the right; shrink if viewport is tight */
+			max-width: min(22rem, 46%);
+		}
+
+		.quick-example__csv :global(.copyable-csv) {
+			width: 100%;
+			max-width: 100%;
+		}
+
+		.quick-example__csv :global(.copyable-csv__scroll) {
+			/* Table is short; allow full height in the side column */
+			max-height: min(20rem, 55vh);
+		}
+	}
+
+	/* Match Starlight expressive-code / pre look enough for shell one-liners */
+	.quick-example__code {
+		margin-block: 1rem;
+		padding: 0.85rem 1rem;
+		overflow-x: auto;
+		border-radius: 0.5rem;
+		background: var(--sl-color-gray-6, var(--sl-color-bg-nav));
+		border: 1px solid var(--sl-color-gray-5);
+		font-size: 0.875rem;
+		line-height: 1.5;
+	}
+
+	.quick-example__code code {
+		font-family: var(--__sl-font-mono, ui-monospace, monospace);
+		background: transparent;
+		padding: 0;
+		border: none;
+		font-size: inherit;
+	}
+</style>
