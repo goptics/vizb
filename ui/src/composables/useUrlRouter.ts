@@ -62,6 +62,7 @@ type ConfigUpdate = {
   threeDVisualMap?: boolean
   visualMap?: boolean
   horizontal?: boolean
+  stack?: boolean
 }
 
 // Find the first config of the given chart type and apply a partial update in
@@ -87,6 +88,11 @@ const applyConfigUpdate = (type: ChartType, update: ConfigUpdate): boolean => {
     }
     if (cfg.type === 'bar' && update.horizontal !== undefined) {
       ;(cfg as BarConfig).horizontal = update.horizontal
+    }
+    if ((cfg.type === 'bar' || cfg.type === 'line') && update.stack !== undefined) {
+      const stackable = cfg as BarConfig | LineConfig
+      stackable.stack = update.stack
+      if (update.stack) stackable.scale = 'linear'
     }
   }
   return true
@@ -191,6 +197,7 @@ export function useUrlRouter() {
       const d3vm = params[`${ct}.3d-vm`]
       const vm = params[`${ct}.vm`]
       const sw = params[`${ct}.sw`]
+      const st = params[`${ct}.st`]
 
       const update: ConfigUpdate = {}
       if (so && SORT_ORDERS.includes(so.toLowerCase() as SortOrder)) {
@@ -212,6 +219,10 @@ export function useUrlRouter() {
       const h = params[`${ct}.h`]
       if (h === 'true') update.horizontal = true
       else if (h === 'false') update.horizontal = false
+      if (ct === 'bar' || ct === 'line') {
+        if (st === 'true') update.stack = true
+        else if (st === 'false') update.stack = false
+      }
 
       if (Object.keys(update).length > 0) {
         applyConfigUpdate(ct, update)
@@ -277,6 +288,9 @@ export function useUrlRouter() {
         if (cfg.type === 'bar') {
           const barCfg = cfg as BarConfig
           if (barCfg.horizontal === true) params[`${ct}.h`] = 'true'
+        }
+        if ((cfg.type === 'bar' || cfg.type === 'line') && cfg.stack !== undefined) {
+          params[`${ct}.st`] = cfg.stack ? 'true' : 'false'
         }
       }
 
