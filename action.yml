@@ -163,8 +163,7 @@ runs:
       run: |
         mkdir -p ~/.local/bin
 
-        # Node spawnSync on Windows only finds PATHEXT names (vizb.exe), not
-        # extensionless "vizb". Install with .exe on Windows.
+        # Node spawnSync on Windows only finds PATHEXT names (vizb.exe).
         if [ "${{ runner.os }}" = "Windows" ]; then
           VIZB_DEST="$HOME/.local/bin/vizb.exe"
         else
@@ -180,7 +179,6 @@ runs:
           echo "::notice::Installing local vizb binary from $VIZB_BINARY"
           cp "$VIZB_BINARY" "$VIZB_DEST"
           chmod +x "$VIZB_DEST"
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
           exit 0
         fi
 
@@ -203,10 +201,7 @@ runs:
 
         if [ "$OS" = "windows" ]; then
           unzip -o vizb-archive -d ~/.local/bin
-          # Normalize archive layout to vizb.exe for PATH + Node spawn.
-          if [ -f "$HOME/.local/bin/vizb.exe" ]; then
-            :
-          elif [ -f "$HOME/.local/bin/vizb" ]; then
+          if [ ! -f "$HOME/.local/bin/vizb.exe" ] && [ -f "$HOME/.local/bin/vizb" ]; then
             mv "$HOME/.local/bin/vizb" "$HOME/.local/bin/vizb.exe"
           fi
         else
@@ -214,9 +209,7 @@ runs:
           chmod +x ~/.local/bin/vizb
         fi
 
-        echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-
-    # Ensure cached installs are on PATH even when the Install step is skipped.
+    # Always on PATH (covers cache hits when Install is skipped).
     - name: Add vizb to PATH
       shell: bash
       run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
@@ -257,5 +250,4 @@ runs:
         INPUT_output-json: ${{ inputs.output-json }}
         INPUT_output-html: ${{ inputs.output-html }}
         INPUT_data-url: ${{ inputs.data-url }}
-        INPUT_vizb-binary: ${{ inputs.vizb-binary }}
       run: node "$GITHUB_ACTION_PATH/action/run.mjs"

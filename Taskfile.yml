@@ -95,7 +95,7 @@ tasks:
   test:action:
     desc: Run GitHub Action Node unit tests
     cmds:
-      - node --test action/lib/*.test.mjs
+      - node --test action/*.test.mjs
 
   test:ui:e2e:
     desc: Run UI Playwright e2e smokes
