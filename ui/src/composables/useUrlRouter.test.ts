@@ -357,6 +357,17 @@ describe('useUrlRouter', () => {
     expect(scatter.stack).toBeUndefined()
   })
 
+  it('uses a linear scale when enabling line stacking', async () => {
+    holder.datasets = ref([ds([{ type: 'line', stack: false, scale: 'log' }])])
+    mockWindow('?line.st=true')
+    const { useUrlRouter } = await import('./useUrlRouter')
+    await useUrlRouter().initFromUrl()
+
+    const line = holder.datasets.value[0]!.settings[0] as LineConfig
+    expect(line.stack).toBe(true)
+    expect(line.scale).toBe('linear')
+  })
+
   it('syncs enabled and disabled bar and line stacks to the URL', async () => {
     holder.datasets = ref([
       ds([
