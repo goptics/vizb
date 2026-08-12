@@ -168,11 +168,14 @@ export function useBarChartOptions(config: BaseChartConfig) {
     }
 
     if (activeRadius) {
-      const applied = useStack ? stackCapRadius(radius, isHorizontal) : radius
+      // Always set borderRadius on every series so vue-echarts/ECharts merge
+      // cannot keep a previous full radius after toggling stack on.
+      const cap = useStack ? stackCapRadius(radius, isHorizontal) : radius
       transposedSeries.forEach((seriesItem, index) => {
-        const isTop = !useStack || index === transposedSeries.length - 1
-        if (isTop) {
-          seriesItem.itemStyle = { ...seriesItem.itemStyle, borderRadius: applied }
+        const isOuter = !useStack || index === transposedSeries.length - 1
+        seriesItem.itemStyle = {
+          ...seriesItem.itemStyle,
+          borderRadius: isOuter ? cap : [0, 0, 0, 0],
         }
       })
     }

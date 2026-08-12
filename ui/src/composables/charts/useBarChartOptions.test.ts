@@ -652,8 +652,10 @@ describe('useBarChartOptions — borderRadius', () => {
     })
     const series = options.value.series as SeriesStyle[]
     expect(series).toHaveLength(3)
-    expect(series[0]?.itemStyle?.borderRadius).toBeUndefined()
-    expect(series[1]?.itemStyle?.borderRadius).toBeUndefined()
+    // Non-outer segments get explicit zeros so ECharts merge cannot keep an
+    // earlier full-radius style after stack is toggled on.
+    expect(series[0]?.itemStyle?.borderRadius).toEqual([0, 0, 0, 0])
+    expect(series[1]?.itemStyle?.borderRadius).toEqual([0, 0, 0, 0])
     expect(series[2]?.itemStyle?.borderRadius).toEqual([8, 8, 0, 0])
   })
 
@@ -667,8 +669,8 @@ describe('useBarChartOptions — borderRadius', () => {
       stack: ref(true),
     })
     const series = options.value.series as SeriesStyle[]
-    expect(series[0]?.itemStyle?.borderRadius).toBeUndefined()
-    expect(series[1]?.itemStyle?.borderRadius).toBeUndefined()
+    expect(series[0]?.itemStyle?.borderRadius).toEqual([0, 0, 0, 0])
+    expect(series[1]?.itemStyle?.borderRadius).toEqual([0, 0, 0, 0])
     expect(series[2]?.itemStyle?.borderRadius).toEqual([8, 4, 0, 0])
   })
 
@@ -696,8 +698,8 @@ describe('useBarChartOptions — borderRadius', () => {
       horizontal: ref(true),
     })
     const series = options.value.series as SeriesStyle[]
-    expect(series[0]?.itemStyle?.borderRadius).toBeUndefined()
-    expect(series[1]?.itemStyle?.borderRadius).toBeUndefined()
+    expect(series[0]?.itemStyle?.borderRadius).toEqual([0, 0, 0, 0])
+    expect(series[1]?.itemStyle?.borderRadius).toEqual([0, 0, 0, 0])
     expect(series[2]?.itemStyle?.borderRadius).toEqual([0, 8, 8, 0])
   })
 
