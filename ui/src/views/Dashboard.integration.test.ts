@@ -426,6 +426,19 @@ describe('Dashboard', () => {
     expect(w.find('[data-testid="footer"]').exists()).toBe(true)
   })
 
+  it('page shell keeps footer after content instead of below a 100vh main', () => {
+    chartsRef.value = [
+      { key: 'c1', data: makeGroupedChartData({ title: 'Chart One' }), pending: false },
+    ]
+    const w = mount(Dashboard)
+    const shell = w.get('[data-testid="page-shell"]')
+    expect(shell.classes()).toContain('min-h-dvh')
+    expect(shell.classes()).toContain('flex-col')
+    expect(w.find('main').classes()).toContain('flex-1')
+    expect(w.find('main').classes()).not.toContain('min-h-screen')
+    expect(w.find('[data-testid="footer"]').exists()).toBe(true)
+  })
+
   it('covers version fallback via resetModules', async () => {
     vi.stubGlobal('VIZB_VERSION', undefined)
     vi.resetModules()

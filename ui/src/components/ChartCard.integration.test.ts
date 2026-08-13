@@ -280,6 +280,11 @@ describe('ChartCard', () => {
     expect(w.classes().join(' ') + w.html()).toMatch(/fixed inset-0|h-\[calc/)
   })
 
+  it('plot height is 600px', () => {
+    const w = mountCard()
+    expect(w.html()).toContain('h-[600px]')
+  })
+
   it('pass-through option updates when not loading', async () => {
     const w = mountCard({ loading: false })
     optionsRef.value = { title: { text: 'new' } }
