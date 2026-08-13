@@ -4,6 +4,7 @@ import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
 import { hasXAxis, hasYAxis } from '@/lib/utils'
 import { getChartStyling, getTooltipTheme } from './shared'
 import { fontSize } from './shared/common'
+import { formatTooltipValue } from './shared/chartConfig'
 import { buildEdgeGraph, formatEdgeTooltip, sortEdgeGraphNodes } from './shared/edgeGraph'
 
 /** ECharts defaults right: '20%' for label room; we keep a tighter inset. */
@@ -75,7 +76,14 @@ export function useSankeyChartOptions(config: BaseChartConfig) {
           emphasis: { focus: 'adjacency' },
           lineStyle: { curveness: 0.5, color: 'gradient' },
           label: {
+            show: true,
+            color: styling.textColor,
+            fontSize,
+          },
+          edgeLabel: {
             show: showLabels.value,
+            formatter: (params: { data?: { value?: number }; value?: number }) =>
+              formatTooltipValue(params.data?.value ?? params.value),
             color: styling.textColor,
             fontSize,
           },
