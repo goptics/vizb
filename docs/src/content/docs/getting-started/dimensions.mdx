@@ -8,7 +8,7 @@ import CopyableCsv from '../../../components/CopyableCsv.astro';
 import InvokeTabs from '../../../components/InvokeTabs.astro';
 import { DIMENSIONS_SALES_SAMPLE } from '../../../data/samples';
 
-Every Vizb chart is driven by the same four dimensions. You assign them with `--group-pattern` / `-p` (or `--group-regex` / `-r`). For CSV and JSON you first pick source columns with `--group` / `-g`. For benchmarks, the benchmark name is already the label and `-p` splits it.
+Every Vizb chart is driven by the same four dimensions. In group mode, you assign them with `--group-pattern` / `-p` (or `--group-regex` / `-r`). For CSV and JSON you first pick source columns with `--group` / `-g`. For benchmarks, the benchmark name is already the label and `-p` splits it. In select mode, `--select` maps columns onto the same dimensions as coordinates.
 
 | Dimension | Shorthand | Role |
 |-----------|-----------|------|
