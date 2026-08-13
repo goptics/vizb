@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue'
 import { describe, it, expect } from 'vitest'
-import type { DataPoint } from '../types'
 import type { ChartData, Axis, Meta } from '../types'
+import { dp } from '@/test-utils'
 import {
   canOfferValue3D,
   chartAxisBadgeCount,
@@ -67,14 +67,6 @@ describe('theme color allocation', () => {
     applyTheme('#abc,#def')
     expect(color.value).toBe('#abc')
   })
-})
-
-const dp = (x: string, y: string, z = ''): DataPoint => ({
-  name: '',
-  xAxis: x,
-  yAxis: y,
-  zAxis: z,
-  stats: [],
 })
 
 describe('datasetHasBothXY', () => {
@@ -470,8 +462,10 @@ const emptyChart = (partial: Partial<ChartData> = {}): ChartData => ({
 
 describe('cn / isValidIndex / theme helpers', () => {
   it('merges class names', () => {
-    expect(cn('a', false && 'b', 'c')).toContain('a')
-    expect(cn('a', false && 'b', 'c')).toContain('c')
+    expect(cn('a', false && 'b', 'c')).toBe('a c')
+    // tailwind-merge resolves conflicting utilities — later wins.
+    expect(cn('px-2', 'px-4')).toBe('px-4')
+    expect(cn('text-sm', 'text-lg')).toBe('text-lg')
   })
 
   it('validates index bounds', () => {

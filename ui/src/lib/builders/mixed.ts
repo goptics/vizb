@@ -74,7 +74,8 @@ export class MixedBuilder implements ChartBuilder {
 
   plottable(chart: ChartData): boolean {
     if ((chart.mixedTuples?.length ?? 0) > 0) return true
-    return chart.render3D?.mode === 'mixed' && (chart.render3D.lineSeries[0]?.data.length ?? 0) > 0
+    // render3D is only set by build() when points3D has data.
+    return chart.render3D?.mode === 'mixed'
   }
 
   badgeCount(chart: ChartData, axis: 'x' | 'y' | 'z'): number {
@@ -83,7 +84,7 @@ export class MixedBuilder implements ChartBuilder {
       if (axis === 'z') return 0
       return chart.mixedTuples.length
     }
-    if (axis === 'x') return chart.xCategories?.length ?? 0
+    if (axis === 'x') return chart.xCategories!.length
     if (axis === 'z') return 0
     const pts = chart.render3D?.lineSeries[0]?.data ?? []
     return new Set(pts.map((p) => p.value[1])).size
@@ -93,13 +94,8 @@ export class MixedBuilder implements ChartBuilder {
     if (chart.mixedTuples?.length) {
       return chart.mixedTuples.reduce((sum, [, y]) => sum + y, 0)
     }
-    if (chart.render3D?.mode === 'mixed') {
-      return (chart.render3D.lineSeries[0]?.data ?? []).reduce(
-        (sum, p) => sum + (p.value[1] ?? 0),
-        0
-      )
-    }
-    return 0
+    const pts = chart.render3D?.lineSeries[0]?.data ?? []
+    return pts.reduce((sum, p) => sum + p.value[1]!, 0)
   }
 
   is3D(chart: ChartData): boolean {

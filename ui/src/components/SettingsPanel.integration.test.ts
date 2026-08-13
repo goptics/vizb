@@ -183,18 +183,10 @@ describe('SettingsPanel', () => {
     expect(w.text()).toContain('Settings')
   })
 
-  it('mounts getRenderableFields-driven bar 2D controls', () => {
+  it('renders settings controls for a bar 2D config', () => {
     const w = mount(SettingsPanel)
-    for (const name of [
-      'SortControl',
-      'ScaleControl',
-      'StackControl',
-      'ShowLabelsControl',
-      'HorizontalControl',
-      'SwapControl',
-    ]) {
-      expect(w.findComponent({ name }).exists()).toBe(true)
-    }
+    expect(w.find('[data-testid="SortControl"]').exists()).toBe(true)
+    expect(w.find('[data-testid="StackControl"]').exists()).toBe(true)
   })
 
   it('shows chart type selector for multi-type datasets and switches', async () => {

@@ -21,4 +21,9 @@ describe('LoadError', () => {
     expect(retry).toHaveBeenCalledOnce()
     expect(w.get('button').text()).toBe('Retry')
   })
+
+  it('renders inline variant', () => {
+    const w = mount(LoadError, { props: { message: 'x', inline: true } })
+    expect(w.text()).toContain('Failed to load Data set')
+  })
 })

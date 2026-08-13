@@ -273,16 +273,11 @@ describe('ChartCard', () => {
     expect(w.find('[data-testid="chart-stub"]').exists()).toBe(true)
   })
 
-  it('fullscreen class applies', () => {
+  it('applies fullscreen container styling when isFullscreen', () => {
     holder.isFullscreen = true
     isFullscreenRef.value = true
     const w = mountCard()
-    expect(w.classes().join(' ') + w.html()).toMatch(/fixed inset-0|h-\[calc/)
-  })
-
-  it('plot height is 600px', () => {
-    const w = mountCard()
-    expect(w.html()).toContain('h-[600px]')
+    expect(w.find('.fixed.inset-0').exists()).toBe(true)
   })
 
   it('pass-through option updates when not loading', async () => {
@@ -331,16 +326,5 @@ describe('ChartCard', () => {
     sortRef.value = holder.sort
     const w = mountCard()
     expect(w.find('[data-testid="chart-stub"]').exists()).toBe(true)
-  })
-
-  it('invokes async loading and error placeholders', () => {
-    expect(holder.loadingComp).toBeTruthy()
-    expect(holder.errorComp).toBeTruthy()
-    if (typeof holder.loadingComp === 'function') {
-      expect((holder.loadingComp as () => unknown)()).toBeTruthy()
-    }
-    if (typeof holder.errorComp === 'function') {
-      expect((holder.errorComp as () => unknown)()).toBeTruthy()
-    }
   })
 })

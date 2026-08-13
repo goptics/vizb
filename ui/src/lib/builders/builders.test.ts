@@ -535,7 +535,21 @@ describe('finalizeChart edge branches', () => {
 })
 
 describe('remaining builder branch edges', () => {
-  it('finalize sortMixedTuples hits missing category total (?? 0)', () => {
+  it('grouped/preserveRows plottable hits mixedTuples-only and empty ?? 0', () => {
+    expect(grouped.plottable(emptyChart())).toBe(false)
+    expect(grouped.plottable(emptyChart({ mixedTuples: [[0, 1]] }))).toBe(true)
+    expect(preserveRows.plottable(emptyChart())).toBe(false)
+    expect(preserveRows.plottable(emptyChart({ mixedTuples: [[0, 1]] }))).toBe(true)
+  })
+
+  it('preserveRows yOrder empty fallback is unreachable with points but empty yOrder forces Array.from', () => {
+    // ySeen always fills yOrder when values exist; empty data still exercises yOrder.length ? branch false
+    const chart = preserveRows.build([], baseCtx({ signature: 'val-', preserveRows: true }))
+    expect(chart.series).toEqual([])
+    expect(chart.mixedTuples ?? []).toEqual([])
+  })
+
+  it('mixed sort with missing category total uses ?? 0', () => {
     // two categories, tuples only for index 1 → index 0 total uses ?? 0
     const chart = finalizeChart(
       {
@@ -554,118 +568,29 @@ describe('remaining builder branch edges', () => {
     expect(chart.xCategories![0]).toBe('Has')
   })
 
-  it('grouped/preserveRows plottable hits mixedTuples-only and empty ?? 0', () => {
-    expect(grouped.plottable(emptyChart())).toBe(false)
-    expect(grouped.plottable(emptyChart({ mixedTuples: [[0, 1]] }))).toBe(true)
-    expect(preserveRows.plottable(emptyChart())).toBe(false)
-    expect(preserveRows.plottable(emptyChart({ mixedTuples: [[0, 1]] }))).toBe(true)
-  })
-
-  it('preserveRows yOrder empty fallback is unreachable with points but empty yOrder forces Array.from', () => {
-    // ySeen always fills yOrder when values exist; empty data still exercises yOrder.length ? branch false
-    const chart = preserveRows.build([], baseCtx({ signature: 'val-', preserveRows: true }))
-    expect(chart.series).toEqual([])
-    expect(chart.mixedTuples ?? []).toEqual([])
-  })
-
-  it('mixed builder axes undefined and query method fallbacks', () => {
-    const chart = mixed.build(
-      [{ xAxis: undefined as unknown as string, yAxis: '1', stats: [] }],
-      baseCtx({ axes: undefined })
-    )
-    expect(chart.mixedTuples).toEqual([])
-
-    // plottable via render3D with empty lineSeries data
-    expect(
-      mixed.plottable(
-        emptyChart({
-          render3D: {
-            mode: 'mixed',
-            xValues: [],
-            yValues: [],
-            zValues: [],
-            barSeries: [],
-            lineSeries: [],
-            cellTotals: {},
-          },
-        })
-      )
-    ).toBe(false)
-
-    expect(mixed.badgeCount(emptyChart({ xCategories: undefined }), 'x')).toBe(0)
-
-    // grandTotal mixed path with missing lineSeries / missing value[1]
-    expect(
-      mixed.grandTotal(
-        emptyChart({
-          render3D: {
-            mode: 'mixed',
-            xValues: [],
-            yValues: [],
-            zValues: [],
-            barSeries: [],
-            lineSeries: [{ name: 't', data: [{ value: [0] as unknown as number[] }] }],
-            cellTotals: {},
-          },
-        })
-      )
-    ).toBe(0)
-    expect(
-      mixed.grandTotal(
-        emptyChart({
-          render3D: {
-            mode: 'mixed',
-            xValues: [],
-            yValues: [],
-            zValues: [],
-            barSeries: [],
-            lineSeries: [],
-            cellTotals: {},
-          },
-        })
-      )
-    ).toBe(0)
-  })
-
-  it('value builder hits swapAxisLabels nullish, incomplete coords, z on chart', () => {
-    // length-mismatch identity/target makes swapAxisLabels return labels unchanged;
-    // also projectValueCoords returns null for length mismatch — use matching length
-    // but identity that maps z off for color branch false when z is on chart.
-    const axes: Axis[] = [
-      { key: 'x', type: 'value' },
-      { key: 'y', type: 'value' },
-      { key: 'z', type: 'value' },
-    ]
-    // z on chart (xyz→xyz) so isSourceFieldOnChart(z) true → skip z color branch
+  it('value build skips rows with no numeric coords', () => {
+    // identity xyz → target nnz maps x,y to name and only z lands on chart;
+    // coords lack xAxis/yAxis → 3D undefined-coords guard skips the row.
     const chart = value.build(
       [{ xAxis: '1', yAxis: '2', zAxis: '3', stats: [] }],
       baseCtx({
-        axes,
+        axes: [
+          { key: 'x', type: 'value' },
+          { key: 'y', type: 'value' },
+          { key: 'z', type: 'value' },
+        ],
         identityString: 'xyz',
-        targetString: 'xyz',
-        threeD: false,
-      })
-    )
-    // threeD false with z arrangement still arrangementHasChartZ true but use3D false
-    // → 2D path; z is on chart so no color dim from z
-    expect(chart.valueTuples).toEqual([[1, 2]])
-
-    // incomplete 3D: project only x,y onto chart with target that has z from identity without z values
-    // identity xy target xy — both defined. For undefined cx in 3D: identity nxy target xyz maps name→x
-    const incomplete = value.build(
-      [{ name: 'n', xAxis: '1', yAxis: '2', stats: [] }],
-      baseCtx({
-        axes: [{ key: 'name' }, { key: 'x', type: 'value' }, { key: 'y', type: 'value' }],
-        identityString: 'nxy',
-        targetString: 'xyz',
+        targetString: 'nnz',
         threeD: true,
       })
     )
-    // name is non-numeric → projectValueCoords returns null
-    expect(incomplete.valuePoints3D).toBeUndefined()
+    expect(chart.valueTuples ?? []).toEqual([])
+    expect(chart.valuePoints3D).toBeUndefined()
+  })
 
-    // 2D incomplete: target drops y
-    const twoD = value.build(
+  it('value 2D skips row when coords lack both axes', () => {
+    // identity xy → target nn maps both to name → coords {} → 2D undefined guard
+    const chart = value.build(
       [{ xAxis: '1', yAxis: '2', stats: [] }],
       baseCtx({
         axes: [
@@ -673,46 +598,89 @@ describe('remaining builder branch edges', () => {
           { key: 'y', type: 'value' },
         ],
         identityString: 'xy',
-        targetString: 'xn', // y maps to name → only x on chart
+        targetString: 'nn',
         threeD: false,
       })
     )
-    expect(twoD.valueTuples).toEqual([])
+    expect(chart.valueTuples).toEqual([])
   })
 
-  it('value 3D continues when chart y is absent from projection (xz target)', () => {
+  it('mixed build skips rows with undefined axes', () => {
+    const chart = mixed.build([{ yAxis: '1', stats: [] }], baseCtx({ axes: undefined }))
+    expect(chart.mixedTuples).toEqual([])
+  })
+
+  it('mixed 3D with all rows filtered keeps empty render', () => {
+    // z axis present → 3D; non-finite y filters every row → no render3D, empty
+    // xCategories; plottable false, badgeCount 0.
+    const chart = mixed.build(
+      [{ xAxis: 'A', yAxis: 'bad', zAxis: '1', stats: [] }],
+      baseCtx({
+        axes: [
+          { key: 'x', type: 'category' },
+          { key: 'y', type: 'value' },
+          { key: 'z', type: 'value' },
+        ],
+      })
+    )
+    expect(chart.mixedTuples).toBeUndefined()
+    expect(chart.render3D).toBeUndefined()
+    expect(mixed.plottable(chart)).toBe(false)
+    expect(mixed.badgeCount(chart, 'y')).toBe(0)
+    expect(mixed.grandTotal(chart)).toBe(0)
+  })
+
+  it('mixed 3D renders line series and query methods sum the 3D data', () => {
+    const chart = mixed.build(
+      [
+        { xAxis: 'A', yAxis: '12', zAxis: '100', stats: [] },
+        { xAxis: 'B', yAxis: '11', zAxis: '1', stats: [] },
+      ],
+      baseCtx({
+        axes: [
+          { key: 'x', type: 'category' },
+          { key: 'y', type: 'value' },
+          { key: 'z', type: 'value' },
+        ],
+      })
+    )
+    expect(chart.render3D?.mode).toBe('mixed')
+    expect(mixed.plottable(chart)).toBe(true)
+    expect(mixed.badgeCount(chart, 'y')).toBe(2)
+    expect(mixed.grandTotal(chart)).toBe(23)
+  })
+
+  it('value 2D uses z as color when metric absent and z off-chart', () => {
     const chart = value.build(
-      [{ xAxis: '1', zAxis: '3', stats: [] }],
+      [{ xAxis: '1', yAxis: '2', zAxis: '9', stats: [] }],
       baseCtx({
         axes: [
           { key: 'x', type: 'value' },
+          { key: 'y', type: 'value' },
           { key: 'z', type: 'value' },
         ],
-        identityString: 'xz',
-        targetString: 'xz',
-        threeD: true,
+        identityString: 'xyz',
+        targetString: 'xyn', // z maps to name → off-chart
+        threeD: false,
       })
     )
-    // cy undefined → skipped; no points
-    expect(chart.valuePoints3D).toBeUndefined()
-    expect(chart.render3D).toBeUndefined()
+    expect(chart.valueTuples).toEqual([[1, 2, 9]])
   })
 
-  it('value builder swapAxisLabels undefined coalesce via undefined labels arg path', () => {
-    // When identity/target lengths differ, swapAxisLabels returns the labels object as-is.
+  it('value 2D skips z color when z is on chart and metric absent', () => {
     const chart = value.build(
-      [{ xAxis: '1', yAxis: '2', stats: [] }],
+      [{ xAxis: '1', yAxis: '2', zAxis: '9', stats: [] }],
       baseCtx({
         axes: [
-          { key: 'x', label: 'X', type: 'value' },
-          { key: 'y', label: 'Y', type: 'value' },
+          { key: 'x', type: 'value' },
+          { key: 'y', type: 'value' },
+          { key: 'z', type: 'value' },
         ],
-        identityString: 'xy',
-        targetString: 'x', // length mismatch → swap returns baseLabels
+        identityString: 'xyz',
+        targetString: 'xyz', // z on chart → no color dim
+        threeD: false,
       })
     )
-    // project also null on length mismatch
-    expect(chart.valueTuples).toEqual([])
-    expect(chart.axisLabels).toEqual({ x: 'X', y: 'Y' })
+    expect(chart.valueTuples).toEqual([[1, 2]])
   })
 })

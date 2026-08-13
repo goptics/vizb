@@ -739,103 +739,51 @@ describe('StatsPanel', () => {
     expect(createObjectURL).toHaveBeenCalled()
   })
 
-  it('setupState branch hammer for sort/corr/slug', async () => {
-    statsMocks.computeDescriptive.mockResolvedValue([
-      { name: 'n1', stats: { ...statsMocks.profile('n1').stats, mean: Number.NaN } },
-      { name: 'f1', stats: { ...statsMocks.profile('f1').stats, mean: 10 } },
-      { name: 'n2', stats: { ...statsMocks.profile('n2').stats, mean: Number.NaN } },
-      { name: 'f2', stats: { ...statsMocks.profile('f2').stats, mean: 1 } },
-    ])
-    statsMocks.available.correlation = true
+  it('renders correlation captions with axis fallbacks and no other dims', async () => {
+    // correlation axis 'x' with 2+ y entries but no labels → caption falls back
+    // to "y-axis" and only x present among other dims keeps names non-empty.
     statsMocks.computeCorrelation.mockResolvedValue(statsMocks.corr('x'))
-    usableAxesRef.value = ['y', 'z']
-
+    usableAxesRef.value = ['x']
     const w = mount(StatsPanel, {
       props: {
         chartData: chart({
-          axisLabels: { x: 'Region' },
+          axisLabels: {},
+          zAxis: [],
           series: [
-            { xAxis: 'a', values: [1, 2], benchmarkId: '' },
-            { xAxis: 'b', values: [3, 4], benchmarkId: '' },
+            { xAxis: 'West', values: [1, 2], benchmarkId: '' },
+            { xAxis: 'East', values: [3, 4], benchmarkId: '' },
           ],
-          yAxis: ['y1', 'y2'],
-          zAxis: ['z1', 'z2'],
         }),
       },
     })
     await flushPromises()
     await w.get('[data-view="correlation"]').trigger('click')
     await flushPromises()
-
-    const s = (w.vm as unknown as { $: { setupState: Record<string, any> } }).$.setupState
-    // labels left + AXIS_FALLBACK right
-    void s.corrEntityLabel
-    void s.corrObsLabel
-    void s.corrAxisItems
-
-    // active = corrAxes[0] when override null and correlation cleared
-    s.correlation = undefined
-    s.corrAxisOverride = null
-    void s.corrAxis // ?? 'x'
-    void s.corrMatrix // []
-    void s.corrOption
-    void s.corrAxisActiveIndex // uses corrAxes[0] === 'y', idx 0
-
-    // idx -1 => 0
-    s.corrAxisOverride = 'x' // not in ['y','z']
-    void s.corrAxisActiveIndex
-
-    // valid idx
-    s.corrAxisOverride = 'z'
-    void s.corrAxisActiveIndex
-
-    s.method = 'nope'
-    void s.corrMethodIndex
-
-    const origSort = Array.prototype.sort
-    Array.prototype.sort = function (this: unknown[], cmp?: (a: unknown, b: unknown) => number) {
-      if (typeof cmp === 'function' && Array.isArray(this) && this.length >= 2) {
-        const rows = this as { stats?: { mean?: number } }[]
-        const nan = rows.filter((r) => r?.stats && !Number.isFinite(r.stats.mean as number))
-        const fin = rows.filter((r) => r?.stats && Number.isFinite(r.stats.mean as number))
-        if (nan[0] && fin[0]) {
-          cmp(nan[0], fin[0])
-          cmp(fin[0], nan[0])
-        }
-        if (nan[0] && nan[1]) cmp(nan[0], nan[1])
-      }
-      return origSort.call(this, cmp as never)
-    }
-    try {
-      s.view = 'descriptive'
-      s.sortKey = 'mean'
-      s.sortDir = 'asc'
-      void s.sortedProfiles
-      s.sortDir = 'desc'
-      void s.sortedProfiles
-    } finally {
-      Array.prototype.sort = origSort
-    }
-
-    s.descLoading = true
-    s.downloadCsv()
-    w.unmount()
+    expect(w.text()).toMatch(/Correlating|the other dimensions/)
   })
 
-  it('covers zAxis nullish fallback in corrAxes', async () => {
+  it('shows correlation skeleton before the reply lands', async () => {
+    // correlation unresolved → corrAxis/matrix/caption fallbacks, invalid method
+    // index, and corrAxisActiveIndex all evaluate against empty correlation.
+    statsMocks.computeCorrelation.mockImplementation(() => new Promise(() => {}))
     usableAxesRef.value = ['x']
-    const data = chart({
-      series: [
-        { xAxis: 'a', values: [1, 2], benchmarkId: '' },
-        { xAxis: 'b', values: [3, 4], benchmarkId: '' },
-      ],
-      yAxis: ['y1', 'y2'],
-      zAxis: undefined as unknown as string[],
-    })
-    const w = mount(StatsPanel, { props: { chartData: data } })
+    const w = mount(StatsPanel, { props: { chartData: chart() } })
     await flushPromises()
-    const s = (w.vm as unknown as { $: { setupState: Record<string, any> } }).$.setupState
-    void s.corrAxes
-    w.unmount()
+    await w.get('[data-view="correlation"]').trigger('click')
+    await flushPromises()
+    // Skeleton (activeLoading) rather than a heatmap.
+    expect(w.find('[data-testid="corr-heatmap"]').exists()).toBe(false)
+    expect(w.find('.animate-pulse').exists()).toBe(true)
+  })
+
+  it('handles undefined zAxis in corrAxes', async () => {
+    usableAxesRef.value = ['x']
+    const w = mount(StatsPanel, {
+      props: { chartData: chart({ zAxis: undefined as unknown as string[] }) },
+    })
+    await flushPromises()
+    await w.get('[data-view="correlation"]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-testid="corr-heatmap"]').exists()).toBe(true)
   })
 })
