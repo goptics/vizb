@@ -41,7 +41,7 @@ function minimalChordOption(config: BaseChartConfig): EChartsOption {
 
 /** Build the ECharts 6 Chord option from Vizb's shared x→y edge points. */
 export function useChordChartOptions(config: BaseChartConfig) {
-  const { chartData, sort, showLabels, isDark } = config
+  const { chartData, sort, showLabels, isDark, visibleZ } = config
 
   const options = computed<EChartsOption>(() => {
     if (!hasXAxis(chartData) || !hasYAxis(chartData)) {
@@ -61,6 +61,9 @@ export function useChordChartOptions(config: BaseChartConfig) {
       nodes.map((n) => [n.name, n.itemStyle!.color!] as const)
     )
     const colorFor = (name: string): string => nodeColor.get(name) ?? '#888'
+    // ChartCard writes legend toggles into visibleZ; persist them so ChartChord's
+    // notMerge remount on resize does not re-show hidden nodes.
+    const selected = visibleZ?.value ?? {}
 
     return {
       ...getBaseOptions(config),
@@ -72,6 +75,7 @@ export function useChordChartOptions(config: BaseChartConfig) {
         itemWidth: 10,
         itemHeight: 10,
         data: nodes.map((n) => n.name),
+        selected,
         textStyle: { fontSize, color: styling.textColor },
       },
       tooltip: {

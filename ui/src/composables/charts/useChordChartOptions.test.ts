@@ -54,6 +54,25 @@ describe('useChordChartOptions', () => {
     })
   })
 
+  it('writes visibleZ onto legend.selected so hidden nodes survive remounts', () => {
+    const { options } = useChordChartOptions(
+      baseConfig({
+        chartData: chartData(),
+        visibleZ: { A: false, B: true },
+      })
+    )
+    expect(options.value.legend).toMatchObject({
+      selected: { A: false, B: true },
+    })
+  })
+
+  it('uses an empty selected map when visibleZ is absent', () => {
+    const cfg = baseConfig({ chartData: chartData() })
+    delete cfg.visibleZ
+    const { options } = useChordChartOptions(cfg)
+    expect(options.value.legend).toMatchObject({ selected: {} })
+  })
+
   it('supports labels, sorting, and non-negative display weights', () => {
     const { options } = useChordChartOptions(
       baseConfig({

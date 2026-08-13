@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { defineComponent, h } from 'vue'
+import { defineComponent, h, ref } from 'vue'
 import { mount } from '@vue/test-utils'
+import { baseConfig, makeSankeyChartData } from '@/test-utils'
+import { useChordChartOptions } from '@/composables/charts/useChordChartOptions'
 
 const useMock = vi.fn()
 const chartHolder = vi.hoisted(() => ({
@@ -121,5 +123,39 @@ describe('chart shells', () => {
     const w = mount(ChartChord, { props: { option, initOptions } })
     invokeAutoresize(w)
     expect(setOption).toHaveBeenCalledWith(option, { notMerge: true })
+  })
+
+  it('ChartChord remount keeps a node hidden after legend toggle', async () => {
+    const setOption = vi.fn()
+    chartHolder.chart = { isDisposed: () => false, setOption }
+    const visibleZ = ref<Record<string, boolean>>({})
+    const { options } = useChordChartOptions(
+      baseConfig({
+        chartData: makeSankeyChartData({
+          yAxis: ['A', 'B'],
+          series: [
+            { xAxis: 'A', values: [0], benchmarkId: '' },
+            { xAxis: 'B', values: [0], benchmarkId: '' },
+          ],
+          points: [
+            { xAxis: 'A', yAxis: 'B', zAxis: '', value: 10 },
+            { xAxis: 'B', yAxis: 'A', zAxis: '', value: 5 },
+          ],
+        }),
+        visibleZ,
+      })
+    )
+    const w = mount(ChartChord, { props: { option: options.value, initOptions } })
+
+    visibleZ.value = { A: false, B: true }
+    await w.setProps({ option: options.value })
+    invokeAutoresize(w)
+
+    expect(setOption).toHaveBeenCalledWith(
+      expect.objectContaining({
+        legend: expect.objectContaining({ selected: { A: false, B: true } }),
+      }),
+      { notMerge: true }
+    )
   })
 })
