@@ -1,0 +1,55 @@
+---
+/**
+ * CLI / HTTP / Action tabs for one vizb invocation.
+ * Pass the CLI command as-is; HTTP and Action are derived.
+ */
+import { Tabs, TabItem, Code } from '@astrojs/starlight/components';
+import { snippetsFromCli } from './invoke/fromCli';
+
+interface Props {
+	/** Exact CLI the reader should copy. Shown unchanged in the CLI tab. */
+	cli: string;
+	/** Inline input for the HTTP body. Required for a real CSV/JSON sample. */
+	input?: string;
+}
+
+const { cli, input } = Astro.props;
+const snippets = snippetsFromCli(cli, input);
+---
+
+<div class="invoke-tabs">
+	<Tabs syncKey="invoke">
+		<TabItem label="CLI" icon="seti:shell">
+			<Code code={snippets.cli} lang="bash" />
+		</TabItem>
+		<TabItem label="HTTP" icon="seti:json">
+			<p class="invoke-tabs__caption">
+				<code>POST /</code> on <a href="/commands/serve">vizb serve</a>. The API takes inline
+				<code>input</code>, not a file path.
+			</p>
+			<Code code={snippets.http} lang="json" />
+		</TabItem>
+		<TabItem label="Action" icon="github">
+			<p class="invoke-tabs__caption">
+				<a href="/ci-cd/github-action">GitHub Action</a> step. Same conversion as the CLI.
+			</p>
+			<Code code={snippets.action} lang="yaml" />
+		</TabItem>
+	</Tabs>
+</div>
+
+<style>
+	.invoke-tabs :global(.expressive-code) {
+		margin-block: 0.5rem 0;
+	}
+
+	.invoke-tabs__caption {
+		margin: 0 0 0.65rem;
+		font-size: 0.9em;
+		color: var(--sl-color-gray-2);
+	}
+
+	.invoke-tabs__caption a {
+		color: var(--sl-color-text-accent);
+	}
+</style>

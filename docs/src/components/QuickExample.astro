@@ -6,6 +6,8 @@
 import { Aside, Code } from '@astrojs/starlight/components';
 import DocImage from './DocImage.astro';
 import CopyableCsv from './CopyableCsv.astro';
+import InvokeTabs from './InvokeTabs.astro';
+import { QUICK_SALES_SAMPLE } from '../data/samples';
 import heroBarChart from '../assets/hero-bar-chart.png';
 ---
 
@@ -22,39 +24,14 @@ import heroBarChart from '../assets/hero-bar-chart.png';
 		</div>
 
 		<div class="quick-example__csv">
-			<CopyableCsv
-				filename="sales.csv"
-				csv={`region,product,quantity
-West,Widget,39
-West,Gear,20
-West,Sensor,28
-West,Relay,14
-West,Bolt,33
-South,Widget,15
-South,Gear,42
-South,Sensor,47
-South,Relay,22
-South,Bolt,18
-North,Widget,28
-North,Gear,43
-North,Sensor,19
-North,Relay,36
-North,Bolt,25
-East,Widget,31
-East,Gear,22
-East,Sensor,35
-East,Relay,12
-East,Bolt,40
-Central,Widget,35
-Central,Gear,17
-Central,Sensor,19
-Central,Relay,29
-Central,Bolt,24`}
-			/>
+			<CopyableCsv filename="sales.csv" csv={QUICK_SALES_SAMPLE} />
 		</div>
 
 		<div class="quick-example__body">
-			<Code code="vizb bar sales.csv -g region,product -p x,y -l -o sales.html" lang="bash" />
+			<InvokeTabs
+				cli={`vizb bar sales.csv -g region,product -p x,y -l -o sales.html`}
+				input={QUICK_SALES_SAMPLE}
+			/>
 
 			<p>
 				Open <code>sales.html</code> in a browser. You get a grouped bar chart: region on X,
@@ -196,13 +173,18 @@ Central,Bolt,24`}
 		}
 	}
 
-	/* Match MDX fence spacing around Starlight <Code> / Expressive Code */
+	/* Match MDX fence spacing around Starlight <Code> / Expressive Code / InvokeTabs */
 	.quick-example__body :global(.expressive-code),
 	.quick-example__after :global(.expressive-code) {
 		margin-block: 0.75rem 0.85rem;
 	}
 
-	.quick-example__body > :global(.expressive-code):first-child {
+	.quick-example__body > :global(.expressive-code):first-child,
+	.quick-example__body > :global(.invoke-tabs):first-child {
 		margin-block-start: 0.5rem;
+	}
+
+	.quick-example__body > :global(.invoke-tabs) {
+		margin-block: 0.75rem 0.85rem;
 	}
 </style>

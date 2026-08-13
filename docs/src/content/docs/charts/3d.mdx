@@ -5,6 +5,9 @@ description: Add a z-axis to render interactive visual 3D bar and line charts in
 
 import { CardGrid, Card, Aside, LinkCard } from '@astrojs/starlight/components';
 import SalesSampleCsv from '../../../components/SalesSampleCsv.astro';
+import InvokeTabs from '../../../components/InvokeTabs.astro';
+import { SALES_SAMPLE } from '../../../data/samples';
+
 
 vizb supports three 3D modes for **bar**, **line**, and **scatter** charts. Both render in a WebGL scene you can rotate, zoom, and pan in the browser. Other chart types (pie, radar, heatmap) receive z-axis data differently — they don't render a 3D scene.
 
@@ -48,10 +51,14 @@ Sample sales data for the CSV commands below (copy → `sales.csv`). Full file: 
 
 **Pattern — CSV (`x,y,z`) or benchmarks (`x/y/z`):**
 
-```bash
-# CSV/JSON — region × product floor, category as z layers
-vizb bar sales.csv -g region,product,category -p x,y,z -o output.html
+CSV/JSON — region × product floor, category as z layers:
 
+<InvokeTabs
+  cli={`vizb bar sales.csv -g region,product,category -p x,y,z -o output.html`}
+  input={SALES_SAMPLE}
+/>
+
+```bash
 # Benchmarks — slash-separated names
 go test -bench . | vizb -p x/y/z -o output.html
 ```
@@ -66,9 +73,9 @@ Pass each CSV/JSON column as a `--group` field in pattern order. See the
 
 **Regex — named `z` capture:**
 
-```bash
-vizb bar data.csv -g category,metric,group,series --group-regex "(?<n>.*)/(?<x>.*)/(?<y>.*)/(?<z>.*)" -o output.html
-```
+<InvokeTabs
+  cli={`vizb bar data.csv -g category,metric,group,series --group-regex "(?<n>.*)/(?<x>.*)/(?<y>.*)/(?<z>.*)" -o output.html`}
+/>
 
 If you supply a `z` without both `x` and `y`, vizb rejects the pattern:
 
@@ -82,11 +89,19 @@ See the [Group guide](/guides/group) for full pattern and regex syntax.
 
 When you have only **x** and **y** dimensions, a 2D bar/line/scatter chart puts every y category in the legend — hard to read with many series. Pass `--3d` on `vizb bar`, `vizb line`, or `vizb scatter` to project the same data into 3D: y categories move to depth, and the metric value becomes bar/line/point height. With `--3d`, a **visualMap** gradient colors the geometry by metric value (on by default).
 
-```bash
-# CSV with x+y columns — no z grouping needed
-vizb bar sales.csv -g region,category -p x,y --3d -o output.html
-vizb line sales.csv -g region,category -p x,y --3d -o output.html
+CSV with x+y columns — no z grouping needed:
 
+<InvokeTabs
+  cli={`vizb bar sales.csv -g region,category -p x,y --3d -o output.html`}
+  input={SALES_SAMPLE}
+/>
+
+<InvokeTabs
+  cli={`vizb line sales.csv -g region,category -p x,y --3d -o output.html`}
+  input={SALES_SAMPLE}
+/>
+
+```bash
 # Disable the gradient while keeping value 3D
 vizb bar sales.csv -g region,category -p x,y --3d --3d-visualmap=false -o output.html
 
@@ -104,10 +119,13 @@ The HTML bundles **3D view** and **3D visual map** toggles in settings (both on 
 
 When your CSV/JSON data has 3+ numeric columns, auto-value renders continuous 3D — no `--3d` flag needed. This works on bar, line, and scatter:
 
-```bash
-# All-numeric CSV — auto-detects x, y, z → bar3D
-vizb bar spiral.csv -o bar.html
+All-numeric CSV — auto-detects x, y, z → bar3D:
 
+<InvokeTabs
+  cli={`vizb bar spiral.csv -o bar.html`}
+/>
+
+```bash
 # Same for line and scatter
 vizb line spiral.csv -o line.html
 vizb scatter spiral.csv -o scatter.html

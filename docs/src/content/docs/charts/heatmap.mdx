@@ -5,6 +5,8 @@ description: Compare values across two dimensions in a colored grid — optional
 
 import { Aside, LinkCard } from '@astrojs/starlight/components';
 import SalesSampleCsv from '../../../components/SalesSampleCsv.astro';
+import InvokeTabs from '../../../components/InvokeTabs.astro';
+import { SALES_SAMPLE } from '../../../data/samples';
 
 The **heatmap** packs X and Y into a flat grid of colored cells. Each cell shows a value and a color — spot high/low combinations at a glance across the full matrix.
 
@@ -30,9 +32,10 @@ Sample orders below (copy → `sales.csv`). Full file: [`examples/csv/sales.csv`
 
 Classic heatmap: one value per X × Y cell, colored on a continuous gradient with a `visualMap` scale. No z-series — magnitude as color.
 
-```bash
-vizb heatmap sales.csv -g region,category -p x,y -o out.html
-```
+<InvokeTabs
+  cli={`vizb heatmap sales.csv -g region,category -p x,y -o out.html`}
+  input={SALES_SAMPLE}
+/>
 
 {/* TODO: Add GIF showing a 2D gradient heatmap with visualMap scale */}
 
@@ -40,9 +43,10 @@ vizb heatmap sales.csv -g region,category -p x,y -o out.html
 
 Z values are folded into each cell rather than rendered as depth. Each cell displays `Σ z` and is colored on the same continuous gradient as the 2D heatmap. Hover a cell to see the individual z-series breakdown with colored dots. Toggle z-series in the legend — cells recompute live.
 
-```bash
-vizb heatmap sales.csv -g region,category,product -p x,y,z -o out.html
-```
+<InvokeTabs
+  cli={`vizb heatmap sales.csv -g region,category,product -p x,y,z -o out.html`}
+  input={SALES_SAMPLE}
+/>
 
 {/* TODO: Add GIF showing a 3D heatmap with legend toggles and tooltip breakdown */}
 

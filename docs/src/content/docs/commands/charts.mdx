@@ -4,6 +4,7 @@ description: Generate a single chart type with only the flags that chart support
 ---
 
 import { Aside } from '@astrojs/starlight/components';
+import InvokeTabs from '../../../components/InvokeTabs.astro';
 
 Chart subcommands (`vizb <chart>`) generate **one chart type** at a time. They produce the same output as the root command with `--charts` limited to that type, but accept only the flags valid for the chart — unsupported flags fail fast.
 
@@ -17,11 +18,12 @@ vizb <chart> [target] [flags]
 
 `<chart>` is any type on the [Charts overview](/charts) (for example `bar`, `line`, `pie`). Output is HTML by default, or JSON when `-o` ends in `.json` (same rules as the root command).
 
+<InvokeTabs cli={`vizb bar data.csv -g impl,size -p n,x -o bar.html`} />
+<InvokeTabs cli={`vizb pie data.csv -g impl -o pie.html`} />
+<InvokeTabs cli={`vizb sankey data.csv -g source,target -p x,y -o sankey.html`} />
+<InvokeTabs cli={`vizb chord data.csv -g source,target -p x,y -o chord.html`} />
+
 ```bash
-vizb bar data.csv -g impl,size -p n,x -o bar.html
-vizb pie data.csv -g impl -o pie.html
-vizb sankey data.csv -g source,target -p x,y -o sankey.html
-vizb chord data.csv -g source,target -p x,y -o chord.html
 go test -bench . | vizb line -p n/y -o line.html
 ```
 

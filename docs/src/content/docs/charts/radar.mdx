@@ -5,6 +5,8 @@ description: Compare multi-axis profiles as spider/web polygons — one polygon 
 
 import { CardGrid, Card, LinkCard, Tabs, TabItem, Aside } from '@astrojs/starlight/components';
 import CopyableCsv from '../../../components/CopyableCsv.astro';
+import InvokeTabs from '../../../components/InvokeTabs.astro';
+import { RADAR_PROFILES_SAMPLE } from '../../../data/samples';
 
 The **radar chart** (also called a spider or web chart) draws filled polygons on a circular grid of spokes. Each spoke is a metric, and each polygon is a subject being compared across all those metrics at once. It's the chart to reach for when you want to see a multi-dimensional profile — not just "which is biggest" but "where does each variant win and where does it lose."
 
@@ -28,32 +30,17 @@ Long-form scores (subject × metric × value). Copy → `profiles.csv`:
 
 <CopyableCsv
 	filename="profiles.csv"
-	csv={`subject,metric,score,tier
-Pond,throughput,92,eager
-Pond,latency,70,eager
-Pond,memory,80,eager
-Pond,stability,88,eager
-Chi,throughput,85,eager
-Chi,latency,78,eager
-Chi,memory,74,eager
-Chi,stability,82,eager
-Gin,throughput,90,lazy
-Gin,latency,65,lazy
-Gin,memory,88,lazy
-Gin,stability,79,lazy
-Echo,throughput,88,lazy
-Echo,latency,72,lazy
-Echo,memory,81,lazy
-Echo,stability,84,lazy`}
+	csv={RADAR_PROFILES_SAMPLE}
 />
 
 ### 1D (X axis)
 
 One polygon on the radar. The X values become the spokes, and the single data point is plotted as a stat-total shape. Best for a quick profile of one subject.
 
-```bash
-vizb radar profiles.csv -g metric -o out.html
-```
+<InvokeTabs
+	cli={`vizb radar profiles.csv -g metric -o out.html`}
+	input={RADAR_PROFILES_SAMPLE}
+/>
 
 {/* TODO: Add GIF showing a 1D radar chart with a single polygon */}
 
@@ -61,9 +48,10 @@ vizb radar profiles.csv -g metric -o out.html
 
 Multiple polygons, one per X value, all sharing the same set of spokes (Y values). The legend lists the X values so you can show or hide individual polygons. This is the core use case: compare how several subjects score across the same set of metrics.
 
-```bash
-vizb radar profiles.csv -g subject,metric -p x,y -o out.html
-```
+<InvokeTabs
+	cli={`vizb radar profiles.csv -g subject,metric -p x,y -o out.html`}
+	input={RADAR_PROFILES_SAMPLE}
+/>
 
 {/* TODO: Add GIF showing a 2D radar chart with multiple overlapping polygons and legend toggles */}
 
@@ -73,9 +61,10 @@ Multiple polygon sets, one set per Z value. Within each Z series, X values becom
 
 Spoke vertices are rendered as circle symbols, so you can hover individual points on each polygon to inspect a specific metric value.
 
-```bash
-vizb radar profiles.csv -g subject,metric,tier -p x,y,z -o out.html
-```
+<InvokeTabs
+	cli={`vizb radar profiles.csv -g subject,metric,tier -p x,y,z -o out.html`}
+	input={RADAR_PROFILES_SAMPLE}
+/>
 
 {/* TODO: Add GIF showing a 3D radar chart with multiple Z polygon sets and hoverable spoke vertices */}
 

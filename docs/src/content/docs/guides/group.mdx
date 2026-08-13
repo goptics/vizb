@@ -4,15 +4,17 @@ description: Turn rows — CSV/JSON columns or benchmark names — into structur
 ---
 
 import { Aside } from '@astrojs/starlight/components';
+import InvokeTabs from '../../../components/InvokeTabs.astro';
+import { SALES_SAMPLE } from '../../../data/samples';
 
 ## Start here
 
 Most grouping is one command: pick category columns with `-g`, map them to dimensions with `-p`, open the HTML.
 
-```bash
-# region on Y (series), product on X — one chart per numeric column
-vizb bar sales.csv -g region,product -p y,x -o sales.html
-```
+<InvokeTabs
+  cli={`vizb bar sales.csv -g region,product -p y,x -o sales.html`}
+  input={SALES_SAMPLE}
+/>
 
 | Goal | Jump to |
 |------|---------|
