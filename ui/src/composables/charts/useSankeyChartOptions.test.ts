@@ -42,6 +42,10 @@ type SankeySeries = {
   data: { name: string }[]
   links: { source: string; target: string; value: number }[]
   label?: { show?: boolean }
+  edgeLabel?: {
+    show?: boolean
+    formatter?: (params: { data?: { value?: number }; value?: number }) => string
+  }
   emphasis?: { focus?: string }
   lineStyle?: { curveness?: number }
   left?: string
@@ -185,18 +189,24 @@ describe('useSankeyChartOptions', () => {
     expect(series.links).toEqual([])
   })
 
-  it('shows node labels when showLabels is on', () => {
-    const { options } = useSankeyChartOptions(
-      baseConfig({ chartData: withPoints(), showLabels: true })
-    )
-    expect(firstSeries(options.value).label?.show).toBe(true)
-  })
-
-  it('hides node labels when showLabels is off', () => {
+  it('always shows node names and hides link values by default', () => {
     const { options } = useSankeyChartOptions(
       baseConfig({ chartData: withPoints(), showLabels: false })
     )
-    expect(firstSeries(options.value).label?.show).toBe(false)
+    const series = firstSeries(options.value)
+    expect(series.label?.show).toBe(true)
+    expect(series.edgeLabel?.show).toBe(false)
+  })
+
+  it('shows link values when showLabels is on', () => {
+    const { options } = useSankeyChartOptions(
+      baseConfig({ chartData: withPoints(), showLabels: true })
+    )
+    const series = firstSeries(options.value)
+    expect(series.label?.show).toBe(true)
+    expect(series.edgeLabel?.show).toBe(true)
+    expect(series.edgeLabel?.formatter?.({ data: { value: 10 } })).toBe('10')
+    expect(series.edgeLabel?.formatter?.({ value: 5 })).toBe('5')
   })
 
   it('sorts nodes by total flow when sort is enabled (asc)', () => {
@@ -311,7 +321,7 @@ describe('useSankeyChartOptions', () => {
     expect(tooltip.backgroundColor).toBe('#1f2937')
     expect(tooltip.borderColor).toBe('#4b5563')
     const series = firstSeries(options.value)
-    expect(series.label?.show).toBe(false)
+    expect(series.label?.show).toBe(true)
   })
 
   it('edge tooltip shows color circles for both source and target', () => {

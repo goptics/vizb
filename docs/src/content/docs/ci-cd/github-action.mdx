@@ -24,6 +24,10 @@ Vizb provides a composite GitHub Action to turn CSV/JSON tabular data or benchma
   When using `cmd`, the action needs a Go toolchain. Add `actions/setup-go` before the vizb step.
 </Aside>
 
+<Aside type="note">
+  The action requires **Node.js 18+** on the runner (preinstalled on GitHub-hosted images). Self-hosted runners must provide `node` on `PATH`.
+</Aside>
+
 ## Versioning
 
 Use `goptics/vizb@v0` to automatically resolve to the latest `v0.x.x` release:
@@ -35,7 +39,7 @@ Use `goptics/vizb@v0` to automatically resolve to the latest `v0.x.x` release:
 The action:
 - Resolves the major version tag to the latest patch release
 - Caches the downloaded binary across runs
-- Falls back to the exact tag for non-major refs (e.g., `@v0.10.3`)
+- Falls back to the exact tag for non-major refs (e.g., `@v0.18.2`)
 
 ## Inputs
 

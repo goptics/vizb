@@ -4,6 +4,11 @@ description: Visualize multi-hop flows as weighted links between source and targ
 ---
 
 import { Aside, LinkCard } from '@astrojs/starlight/components';
+import CopyableCsv from '../../../components/CopyableCsv.astro';
+import DocImage from '../../../components/DocImage.astro';
+import InvokeTabs from '../../../components/InvokeTabs.astro';
+import sankeyChart from '../../../assets/sankey-chart.png';
+import { SANKEY_FLOWS_SAMPLE } from '../../../data/samples';
 
 The **Sankey chart** draws weighted flows between nodes. Each row is an edge: a **source**, a **target**, and a numeric **value** for the link thickness. Multi-hop paths are built by stacking edge rows that share intermediate node names — one chart, many hops.
 
@@ -26,13 +31,28 @@ Every edge has the same three roles, in this order:
 
 **Group** and **solo `--select`** use that same order. Column *names* come from your file; roles are always source → target → value.
 
-```bash
-# Group: list source then target under -g; -p x,y assigns those roles
-vizb sankey data.csv -g source,target -p x,y -o out.html
+Sample multi-hop funnel (optional `name` panels + a second measure `cost`). Use **Copy CSV**, save as `sankey-flows.csv`, then run a command below. A clone of the repo also has `examples/csv/sankey-flows.csv`.
 
-# Solo --select: exactly 3 columns — source, target, value (no -g)
-vizb sankey data.csv --select source,target,value -o out.html
-```
+<CopyableCsv
+  filename="sankey-flows.csv"
+  csv={SANKEY_FLOWS_SAMPLE}
+/>
+
+Group: list source then target under `-g`; `-p x,y` assigns those roles:
+
+<InvokeTabs
+  cli={`vizb sankey sankey-flows.csv -g source,target -p x,y -o out.html`}
+  input={SANKEY_FLOWS_SAMPLE}
+/>
+
+Solo `--select`: exactly 3 columns — source, target, value (no `-g`):
+
+<InvokeTabs
+  cli={`vizb sankey sankey-flows.csv --select source,target,value -o out.html`}
+  input={SANKEY_FLOWS_SAMPLE}
+/>
+
+<DocImage src={sankeyChart} alt="Sankey chart of multi-hop flows with weighted links between source and target nodes" />
 
 ## Dimensions
 
@@ -47,31 +67,34 @@ vizb sankey data.csv --select source,target,value -o out.html
 
 ```bash
 # Group path (columns source → target)
-vizb sankey examples/csv/sankey-flows.csv -g source,target -p x,y -o out.html
+vizb sankey sankey-flows.csv -g source,target -p x,y -o out.html
 
 # Solo --select path (exactly 3 columns: source, target, value)
-vizb sankey examples/csv/sankey-flows.csv --select source,target,value -o out.html
+vizb sankey sankey-flows.csv --select source,target,value -o out.html
+```
 
-# Another measure → another --select with the same source/target (stat tabs)
-vizb sankey examples/csv/sankey-flows.csv \
+Another measure → another `--select` with the same source/target (stat tabs):
+
+<InvokeTabs
+  cli={`vizb sankey sankey-flows.csv \
   --select source,target,value \
   --select source,target,cost \
-  -o out.html
-```
+  -o out.html`}
+  input={SANKEY_FLOWS_SAMPLE}
+/>
 
 Solo `--select` for Sankey requires **exactly 3** columns per flag (not 1, 2, or 4+). Extra measures use a second `--select` (same pattern as scatter multi-stat, but 3 cols each). The first two columns are always treated as node names (even if they look numeric).
 
 Duplicate `(source, target)` pairs are summed into a single link. Multi-hop flows are just multiple edge rows that share intermediate node labels (for example `Visit → Landing → Signup → Trial → Paid`).
 
-{/* TODO: Add GIF showing a multi-hop Sankey with node labels and flow widths */}
-
 ### Named panels (`n`)
 
 Pass `n` in the group pattern to split independent edge sets into separate chart panels — same 4D behavior as other chart types.
 
-```bash
-vizb sankey examples/csv/sankey-flows.csv -g name,source,target -p n,x,y -o out.html
-```
+<InvokeTabs
+  cli={`vizb sankey sankey-flows.csv -g name,source,target -p n,x,y -o out.html`}
+  input={SANKEY_FLOWS_SAMPLE}
+/>
 
 ### Z is ignored
 
@@ -88,10 +111,10 @@ When the dataset has more than one numeric measure (for example `value` and `cos
 
 ```bash
 # Two numeric columns → switch measures via stat tabs in the UI
-vizb sankey examples/csv/sankey-flows.csv -g source,target -p x,y -o out.html
+vizb sankey sankey-flows.csv -g source,target -p x,y -o out.html
 
 # Optional: keep only one measure under group
-vizb sankey examples/csv/sankey-flows.csv -g source,target -p x,y --select value -o out.html
+vizb sankey sankey-flows.csv -g source,target -p x,y --select value -o out.html
 ```
 
 ## Settings
@@ -101,15 +124,15 @@ Sankey v1 supports sort, labels, and swap only — no log scale and no 3D contro
 | Setting | CLI flag | UI toggle | Notes |
 |---------|----------|-----------|-------|
 | Sort | `--sort asc\|desc` | Sort control | Orders nodes / flows |
-| Labels | `--show-labels` | Show labels | Shows values on links or nodes |
+| Labels | `--show-labels` | Show labels | Node names are always shown. `--show-labels` adds the same link values as the tooltip. |
 | Swap | `--swap yx` | Axis switcher | Swaps source and target (x ↔ y) |
 
 ```bash
 # Labels + descending sort on the sankey subcommand
-vizb sankey examples/csv/sankey-flows.csv -g source,target -p x,y -l --sort desc -o out.html
+vizb sankey sankey-flows.csv -g source,target -p x,y -l --sort desc -o out.html
 
 # Root command: opt-in renderer only
-vizb examples/csv/sankey-flows.csv -g source,target -p x,y -c sankey -o out.html
+vizb sankey-flows.csv -g source,target -p x,y -c sankey -o out.html
 ```
 
 <Aside type="note">

@@ -14,7 +14,7 @@ func init() {
 	cli.SetChartMeta(cli.ChartMeta{
 		Type:  chordchart.Type,
 		Use:   "chord [target]",
-		Short: "Generate a chord chart from data",
-		Long:  "Generate an interactive chord chart (HTML or JSON) from benchmark output or tabular CSV/JSON data. Axis mapping: source=x, target=y, value=active stat; n (name) panels are supported. z is ignored for layout.",
+		Short: "Generate a chord chart",
+		Long:  "Generate an interactive chord chart (HTML or JSON) from CSV, JSON, or benchmark output. Axes: source=x, target=y, value=active stat; n panels supported; z ignored for layout.",
 	})
 }

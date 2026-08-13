@@ -14,67 +14,69 @@ import (
 // values feed parser.Config and dataset metadata (read back by name), never the
 // chart seed. Soft flags warn-and-default; they are never fatal. This replaces
 // the former CommonOptions hand-written Bind + validationRules.
+//
+// Flag Usage lines stay short for --help scanning; full recipes live in docs.
 var DataFlags = []flags.Flag{
-	{Name: "name", Shorthand: "n", Default: "Comparisons", Usage: "Name of the comparison", Kind: flags.KindString},
-	{Name: "title", Usage: "Override the chart title when --col-axis produces one chart; independent of -n/--name, otherwise ignored", Kind: flags.KindString},
+	{Name: "name", Shorthand: "n", Default: "Comparisons", Usage: "Dataset display name", Kind: flags.KindString},
+	{Name: "title", Usage: "Chart title when --col-axis yields a single chart", Kind: flags.KindString},
 	{
 		Name: "theme", Kind: flags.KindStringArray,
-		Usage:        "Embed a color theme on the dataset (repeatable; first is active). Built-in name, structured name:colors=#hex,...;visualMapColors=#hex,#hex, or bare #hex,#hex,... palette. Empty when unset (UI default). Built-in 'default' is not embedded.",
+		Usage:        "Embed color theme (name, #hex palette, or structured form; repeatable)",
 		Label:        "theme",
 		Normalizer:   style.NormalizeTheme,
 		SoftValidate: style.ValidateTheme,
 	},
-	{Name: "description", Shorthand: "d", Usage: "Description of the comparison", Kind: flags.KindString},
-	{Name: "output", Shorthand: "o", Usage: "Output file path/name", Kind: flags.KindString},
-	{Name: "tag", Shorthand: "t", Usage: "Tag/identifier for the comparison", Kind: flags.KindString},
+	{Name: "description", Shorthand: "d", Usage: "Dataset description", Kind: flags.KindString},
+	{Name: "output", Shorthand: "o", Usage: "Output path (.html or .json)", Kind: flags.KindString},
+	{Name: "tag", Shorthand: "t", Usage: "Tag for merge/compare", Kind: flags.KindString},
 	{Name: "id", Usage: "Dataset id for ?id= deep links", Kind: flags.KindString},
 	{
 		Name: "parser", Shorthand: "P", Default: "auto", Kind: flags.KindString,
-		Usage:        "Benchmark parser to use; 'auto' detects from input content (one of: auto, " + strings.Join(parser.AvailableParsers(), ", ") + ")",
+		Usage:        "Input parser (auto, " + strings.Join(parser.AvailableParsers(), ", ") + ")",
 		Label:        "parser",
 		SoftValidate: validateParser,
 	},
 	{
 		Name: "group-pattern", Shorthand: "p", Default: "x", Kind: flags.KindString,
-		Usage:        "Pattern to extract grouping information from data labels / series names; CSV/JSON: bracket slots [x-y-n] split a column value; {label} sets axis titles (e.g. -p '[n{year}-y{months}],z{category}')",
+		Usage:        "Map group slots to n/x/y/z dimensions",
 		Label:        "group pattern",
 		SoftValidate: parser.ValidateGroupPattern,
 	},
-	{Name: "group-regex", Shorthand: "r", Usage: "Regex pattern to extract grouping information from data labels / series names", Kind: flags.KindString},
-	{Name: "group", Shorthand: "g", Usage: "Names dimensions in --group-pattern order; use the same separators as -p (e.g. -g \"name category region\" -p \"x n y\", or -g name,category/region -p x,y/z). csv/json: column/field names; benchmark parsers: axis labels", Kind: flags.KindStringSlice},
-	{Name: "filter", Shorthand: "f", Usage: "Regex to include only matching rows (CSV/JSON: --group label) or benchmark names", Kind: flags.KindString},
+	{Name: "group-regex", Shorthand: "r", Usage: "Regex with named captures for n/x/y/z", Kind: flags.KindString},
+	{Name: "group", Shorthand: "g", Usage: "Category columns/fields for dimensions (match -p separators)", Kind: flags.KindStringSlice},
+	{Name: "filter", Shorthand: "f", Usage: "Keep rows or benchmark names matching this regex", Kind: flags.KindString},
 	{
 		Name: "mem-unit", Shorthand: "M", Default: "B", Kind: flags.KindString,
-		Usage:      "Memory unit available: b, B, KB, MB, GB",
+		Usage:      "Memory unit (b, B, KB, MB, GB)",
 		Label:      "memory unit",
 		ValidSet:   []string{"b", "B", "KB", "MB", "GB"},
 		Normalizer: normalizeMemUnit,
 	},
 	{
 		Name: "time-unit", Shorthand: "T", Default: "ns", Kind: flags.KindString,
-		Usage:    "Time unit available: ns, us, ms, s",
+		Usage:    "Time unit (ns, us, ms, s)",
 		Label:    "time unit",
 		ValidSet: []string{"ns", "us", "ms", "s"},
 	},
 	{
 		Name: "number-unit", Shorthand: "N", Kind: flags.KindString,
-		Usage:      "Number unit available: K, M, B, T (default: as-is)",
+		Usage:      "Number scale (K, M, B, T); omit for as-is",
 		Label:      "number unit",
 		ValidSet:   []string{"K", "M", "B", "T"},
 		Normalizer: strings.ToUpper,
 	},
 	{
 		Name: "round", Kind: flags.KindBool,
-		Usage: "Round numeric values to 2 decimal places in the output data (off by default; irreversible in the written file)",
+		Usage: "Round values to 2 decimals in written output (irreversible)",
 	},
-	{Name: "select", Usage: "csv/json only: select columns (repeatable); solo mode: 2–3 cols as x,y[,z] axes (e.g. --select region,latency); sankey/chord solo: exactly 3 cols source,target,value per flag (repeat for more measures); grouped mode: numeric stat columns with optional {label}", Kind: flags.KindStringArray},
+	{Name: "select", Usage: "CSV/JSON: pick metrics or x,y[,z] coordinates (repeatable)", Kind: flags.KindStringArray},
 	{
 		Name: "col-axis", Shorthand: "A", Kind: flags.KindString,
-		Usage:    "csv/json + group: place numeric column names on this axis (n, x, y, or z) so all columns share one chart",
+		Usage:    "Put numeric column names on this axis (n, x, y, z)",
 		Label:    "col-axis",
 		ValidSet: []string{"n", "x", "y", "z"},
 	},
-	{Name: "json-path", Usage: "json only: select a nested array to chart via a jq-like dot path (e.g. --json-path '.data.results')", Kind: flags.KindString},
+	{Name: "json-path", Usage: "JSON: jq-like path to the array to chart", Kind: flags.KindString},
 }
 
 // normalizeMemUnit canonicalises lowercase memory units (kb/mb/gb) to their

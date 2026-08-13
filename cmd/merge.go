@@ -24,17 +24,17 @@ var mergeOpts mergeOptions
 // mergeCmd represents the merge command
 var mergeCmd = &cobra.Command{
 	Use:   "merge [files/directories...]",
-	Short: "Merge multiple data set JSON files",
-	Long: `Merge multiple data set JSON files into a single data set report.
-You can provide individual JSON files or directories containing JSON files.`,
+	Short: "Merge multiple Dataset JSON files",
+	Long: `Merge Dataset JSON files (or directories of them) into one report.
+Tags from each dataset are injected onto the chosen dimension.`,
 	Run: runMerge,
 }
 
 func init() {
 	rootCmd.AddCommand(mergeCmd)
-	mergeCmd.Flags().StringVarP(&mergeOpts.OutputFile, "output", "o", "", "Output file path/name")
+	mergeCmd.Flags().StringVarP(&mergeOpts.OutputFile, "output", "o", "", "Output path (.html or .json)")
 	mergeCmd.Flags().StringVarP(&mergeOpts.TagAxis, "tag-axis", "A", "n",
-		"Where to inject tag: n (name), x (xAxis), y (yAxis), z (zAxis)")
+		"Dimension for tags (n, x, y, z)")
 }
 
 func runMerge(cmd *cobra.Command, args []string) {

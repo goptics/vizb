@@ -4,7 +4,17 @@ on:
   workflow_dispatch:
 
 jobs:
+  # Fast gate: Node unit tests before multi-OS composite runs.
+  unit:
+    runs-on: ubuntu-slim
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Run action unit tests
+        run: node --test action/*.test.mjs
+
   stateless:
+    needs: [unit]
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
@@ -71,6 +81,7 @@ jobs:
         run: node scripts/verify-action-output.mjs
 
   stateful:
+    needs: [unit]
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]

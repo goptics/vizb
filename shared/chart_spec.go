@@ -269,15 +269,14 @@ func encode(f flags.Flag, v any) any {
 
 // chartSpecParseOptions builds tokenizer options for a chart's --chart specs.
 // KnownKeys are all EffectiveKey values; MultiValueKeys are flags whose values
-// may contain commas (KindStat today; KindStringSlice for forward safety).
+// may contain commas (MultiValue, KindStat, or KindStringSlice).
 func chartSpecParseOptions(chartFlags []flags.Flag) specparse.Options {
 	known := make(map[string]struct{}, len(chartFlags))
 	multi := make(map[string]struct{})
 	for _, f := range chartFlags {
 		key := f.EffectiveKey()
 		known[key] = struct{}{}
-		switch f.Kind {
-		case flags.KindStat, flags.KindStringSlice:
+		if f.MultiValue || f.Kind == flags.KindStat || f.Kind == flags.KindStringSlice {
 			multi[key] = struct{}{}
 		}
 	}

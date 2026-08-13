@@ -17,7 +17,7 @@ func init() {
 	cli.SetChartMeta(cli.ChartMeta{
 		Type:  "line",
 		Use:   "line [target]",
-		Short: "Generate a line chart from data",
-		Long:  "Generate an interactive line chart (HTML or JSON) from benchmark output or tabular CSV/JSON data.",
+		Short: "Generate a line chart",
+		Long:  "Generate an interactive line chart (HTML or JSON) from CSV, JSON, or benchmark output.",
 	})
 }

@@ -10,6 +10,7 @@ on:
       - go.sum
       - .goreleaser.yml
       - action.yml
+      - action/**
       - .github/workflows/action-ci.yml
       - .github/workflows/cli.yml
       - .github/actions/setup-embed-ui/**
@@ -22,6 +23,7 @@ on:
       - go.sum
       - .goreleaser.yml
       - action.yml
+      - action/**
       - .github/workflows/action-ci.yml
       - .github/workflows/cli.yml
       - .github/actions/setup-embed-ui/**

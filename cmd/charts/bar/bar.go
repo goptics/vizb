@@ -16,11 +16,12 @@ func init() {
 	charts.SetFlags("bar", append(slices.Clone(charts.BaseChartFlags),
 		charts.ScaleFlag, charts.StackFlag, charts.ThreeDFlag, charts.ThreeDRotateFlag, charts.ThreeDVisualMapFlag,
 		charts.HorizontalFlag,
+		charts.BorderRadiusFlag,
 	))
 	cli.SetChartMeta(cli.ChartMeta{
 		Type:  "bar",
 		Use:   "bar [target]",
-		Short: "Generate a bar chart from data",
-		Long:  "Generate an interactive bar chart (HTML or JSON) from benchmark output or tabular CSV/JSON data.",
+		Short: "Generate a bar chart",
+		Long:  "Generate an interactive bar chart (HTML or JSON) from CSV, JSON, or benchmark output.",
 	})
 }

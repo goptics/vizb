@@ -13,7 +13,7 @@ import (
 var (
 	// SwapFlag's validation is axis-dependent, so it is performed by the
 	// override parser (which holds the runtime axes), not here.
-	SwapFlag = flags.Flag{Name: "swap", Usage: "Axis permutation override", Kind: flags.KindString, JSONKey: "swap"}
+	SwapFlag = flags.Flag{Name: "swap", Usage: "Swap n/x/y/z axis assignment", Kind: flags.KindString, JSONKey: "swap"}
 
 	SortFlag = flags.Flag{
 		Name: "sort", Shorthand: "s", Usage: "Sort order (asc, desc)", Kind: flags.KindString, JSONKey: "sort",
@@ -24,11 +24,11 @@ var (
 
 	// LabelsFlag's cobra flag is --show-labels (-l), but its --chart override key
 	// is the shorter "labels"; Key carries that divergence.
-	LabelsFlag = flags.Flag{Name: "show-labels", Shorthand: "l", Key: "labels", Usage: "Show labels on charts", Kind: flags.KindBool, JSONKey: "showLabels"}
+	LabelsFlag = flags.Flag{Name: "show-labels", Shorthand: "l", Key: "labels", Usage: "Show data labels on charts", Kind: flags.KindBool, JSONKey: "showLabels"}
 
 	StatFlag = flags.Flag{
 		Name:    "stat",
-		Usage:   "Compute statistics (all categories when bare; comma-delimited list for specific categories)",
+		Usage:   "Enable stats panel (all when bare; list categories to limit)",
 		Kind:    flags.KindStat,
 		JSONKey: "stat",
 	}
@@ -43,7 +43,7 @@ var BaseChartFlags = []flags.Flag{SwapFlag, SortFlag, LabelsFlag, StatFlag}
 
 var (
 	ScaleFlag = flags.Flag{
-		Name: "scale", Shorthand: "S", Usage: "Scale type (linear, log)",
+		Name: "scale", Shorthand: "S", Usage: "Value scale (linear, log)",
 		Kind: flags.KindString, Default: "linear", JSONKey: "scale",
 		Validate:   ValidateScaleValue,
 		Encode:     func(v any) any { return strings.ToLower(v.(string)) },
@@ -52,56 +52,65 @@ var (
 		Normalizer: strings.ToLower,
 	}
 	StackFlag = flags.Flag{
-		Name: "stack", Usage: "Stack 2D grouped category series",
+		Name: "stack", Usage: "Stack 2D grouped series",
 		Kind:    flags.KindBool,
 		JSONKey: "stack",
 		Rule:    []flags.RuleFn{RequiresAxes("x", "y"), ExcludesAxes("z"), StackRequiresLinearScale()},
 	}
 	ThreeDFlag = flags.Flag{
-		Name: "3d", Usage: "Enable value 3D for x+y data (y categories on depth, metric on height)",
+		Name: "3d", Usage: "Force 3D for x+y data (y on depth, metric on height)",
 		Kind: flags.KindBool, JSONKey: "threeD",
 		Rule: []flags.RuleFn{RequiresAxes("x", "y")},
 	}
 	ThreeDRotateFlag = flags.Flag{
-		Name: "3d-rotate", Usage: "Auto-rotate the 3D scene (only applies when z-axis data is present)",
+		Name: "3d-rotate", Usage: "Auto-rotate 3D scene (needs z-axis data)",
 		Kind: flags.KindBool, JSONKey: "threeDRotate",
 		Rule: []flags.RuleFn{RequiresAxes("z")},
 	}
 	ThreeDVisualMapFlag = flags.Flag{
-		Name: "3d-visualmap", Usage: "Color 3D bars/lines by metric value (visualMap gradient)",
+		Name: "3d-visualmap", Usage: "Color 3D series by metric (visualMap)",
 		Kind: flags.KindBool, JSONKey: "threeDVisualMap",
 		Rule: []flags.RuleFn{Requires3DMode()},
 	}
 	VisualMapFlag = flags.Flag{
-		Name: "visualmap", Usage: "Color 2D scatter points by metric (visualMap gradient)",
+		Name: "visualmap", Usage: "Color 2D scatter points by metric (visualMap)",
 		Kind: flags.KindBool, JSONKey: "visualMap",
 		Rule: []flags.RuleFn{OnlyScatter2D()},
 	}
 	SymbolFlag = flags.Flag{
 		Name:     "symbol",
-		Usage:    "Marker symbol (ECharts built-in: circle, rect, roundRect, triangle, diamond, pin, arrow, none; or path:// / image:// / SVG path)",
+		Usage:    "Marker symbol (circle, rect, diamond, ...; or path:// / image://)",
 		Kind:     flags.KindString,
 		JSONKey:  "symbol",
 		Validate: ValidateSymbolValue,
 	}
 	SymbolSizeFlag = flags.Flag{
 		Name:     "symbol-size",
-		Usage:    "Marker size in pixels (overrides default sizing)",
+		Usage:    "Marker size in pixels",
 		Kind:     flags.KindFloat,
 		JSONKey:  "symbolSize",
 		Validate: ValidateSymbolSizeValue,
 	}
 	SmoothFlag = flags.Flag{
 		Name:    "smooth",
-		Usage:   "Render smooth curved segments between line chart points",
+		Usage:   "Smooth curved line segments",
 		Kind:    flags.KindBool,
 		JSONKey: "smooth",
 	}
 	HorizontalFlag = flags.Flag{
 		Name:    "horizontal",
-		Usage:   "Render grouped bars horizontally (categories on Y, values on X)",
+		Usage:   "Horizontal bars (categories on Y, values on X)",
 		Kind:    flags.KindBool,
 		JSONKey: "horizontal",
+	}
+	BorderRadiusFlag = flags.Flag{
+		Name:       "border-radius",
+		Usage:      "Corner radius in px: 1–4 non-negative integers (CSS/ECharts TL,TR,BR,BL). e.g. 8 or 8,8,0,0",
+		Kind:       flags.KindString,
+		JSONKey:    "borderRadius",
+		MultiValue: true,
+		Validate:   ValidateBorderRadiusValue,
+		Encode:     EncodeBorderRadius,
 	}
 )
 
@@ -125,6 +134,55 @@ func ValidateSortValue(s string) error {
 		return nil
 	}
 	return fmt.Errorf("sort value %q is invalid (must be \"asc\" or \"desc\")", s)
+}
+
+// parseBorderRadius parses a comma-separated list of 1–4 non-negative integers
+// (CSS/ECharts corner order: TL, TR, BR, BL).
+func parseBorderRadius(s string) ([]int, error) {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return nil, fmt.Errorf("border radius must be 1–4 non-negative integers (e.g. 8 or 8,8,0,0)")
+	}
+	parts := strings.Split(s, ",")
+	if len(parts) > 4 {
+		return nil, fmt.Errorf("border radius accepts at most 4 values, got %d", len(parts))
+	}
+	out := make([]int, 0, len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			return nil, fmt.Errorf("border radius %q must be an integer", s)
+		}
+		r, err := strconv.Atoi(p)
+		if err != nil {
+			return nil, fmt.Errorf("border radius %q must be an integer", p)
+		}
+		if r < 0 {
+			return nil, fmt.Errorf("border radius must be non-negative (>= 0), got %d", r)
+		}
+		out = append(out, r)
+	}
+	return out, nil
+}
+
+// ValidateBorderRadiusValue reports whether s is 1–4 comma-separated non-negative integers.
+func ValidateBorderRadiusValue(s string) error {
+	_, err := parseBorderRadius(s)
+	return err
+}
+
+// EncodeBorderRadius maps a validated CLI/string value to a []int seed payload
+// (always an array; ECharts treats [8] as all corners).
+func EncodeBorderRadius(v any) any {
+	s, ok := v.(string)
+	if !ok {
+		return v
+	}
+	vals, err := parseBorderRadius(s)
+	if err != nil {
+		return v
+	}
+	return vals
 }
 
 // echartsBuiltinSymbols are the ECharts built-in series symbols (case-insensitive).

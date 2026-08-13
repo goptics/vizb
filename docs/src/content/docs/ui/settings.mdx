@@ -5,31 +5,35 @@ description: How CLI flags map to UI settings and defaults.
 
 import { Aside } from '@astrojs/starlight/components';
 
-The UI includes a settings panel where you can adjust chart behavior at runtime. CLI flags set the defaults — UI settings let you override them per-session.
+The UI includes a settings panel where you can adjust chart behavior at runtime. CLI flags set the **initial** defaults. UI settings override them for the session without regenerating the file.
 
 ## CLI to UI Mapping
 
-| CLI Flag | UI Setting | Options |
-|----------|-----------|---------|
-| `--scale` | Scale toggle | `linear` / `log` |
-| `--sort` | Sort dropdown | `asc` / `desc` / none |
-| `--charts` | Chart visibility | `bar` / `line` / `pie` / `heatmap` / `radar` / `sankey` / `chord` |
-| `--show-labels` | Labels toggle | on / off |
-| `--smooth` / `--chart line:smooth` | Smooth lines | on / off — 2D line only |
-| `--chart bar:3d-rotate` / `--chart line:3d-rotate` | Auto rotate | on / off — 3D bar and line only |
+Prefer **per-chart** flags when generating multi-chart HTML. Root-level `--sort` and `--show-labels` are deprecated in favor of `--chart <type>:…`. Chart subcommands (`vizb bar`, …) still take type-specific flags such as `--scale` directly.
 
-{/* TODO: Add GIF showing the settings panel in the UI */}
+| CLI | UI setting | Options |
+|-----|------------|---------|
+| `--chart <type>:scale=log` or `vizb bar --scale log` | Scale toggle | `linear` / `log` (cartesian charts) |
+| `--chart <type>:sort=asc` or `vizb bar --sort asc` | Sort dropdown | `asc` / `desc` / none |
+| `--charts` / `-c` | Which chart tabs exist | `bar` / `line` / `pie` / `scatter` / `heatmap` / `radar` / `sankey` / `chord` |
+| `--chart <type>:labels` or `vizb pie --show-labels` | Labels toggle | on / off |
+| `--chart line:smooth` or `vizb line --smooth` | Smooth lines | on / off — 2D line only |
+| `--chart bar:3d-rotate` (or line/scatter) | Auto rotate | on / off — 3D bar / line / scatter |
+| `--stat` | Statistics button | off unless set; see [Statistics](/ui/stats) |
 
 ## Setting Defaults from CLI
 
 ```bash
-# Enable log scale and labels by default
-vizb data.csv --scale log --show-labels -o output.html
+# Log scale and labels on bar only (root multi-chart path)
+vizb data.csv --chart bar:scale=log,labels -o output.html
 
-# Sort descending and show only bar chart
-vizb data.csv -s desc -c bar -o output.html
+# Single chart subcommand
+vizb bar data.csv --scale log --show-labels -o output.html
+
+# Sort descending, bar only
+vizb bar data.csv --sort desc -o output.html
 ```
 
 <Aside type="note">
-  CLI flags set the initial state. All settings can be changed in the UI without regenerating the file.
+  CLI flags set the initial state. All settings can be changed in the UI without regenerating the file. Deep links keep many of those choices in the URL — see [UI Overview → Deep links](/ui#deep-links).
 </Aside>

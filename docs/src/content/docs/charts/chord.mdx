@@ -4,6 +4,11 @@ description: Visualize cyclic and many-to-many relationships as weighted links a
 ---
 
 import { Aside, LinkCard } from '@astrojs/starlight/components';
+import CopyableCsv from '../../../components/CopyableCsv.astro';
+import DocImage from '../../../components/DocImage.astro';
+import InvokeTabs from '../../../components/InvokeTabs.astro';
+import chordChart from '../../../assets/chord-chart.png';
+import { CHORD_RELATIONS_SAMPLE } from '../../../data/samples';
 
 The **Chord chart** shows weighted relationships between nodes arranged around a circle. Use it for cyclic flows, reciprocal relationships, and many-to-many networks where direction matters but a left-to-right Sankey layout would be misleading.
 
@@ -19,57 +24,61 @@ Chord uses the same edge contract as Sankey:
 | Target node | `y` | `target` |
 | Link weight | active statistic | `value` |
 
-The small cyclic fixture at `examples/csv/chord-relations.csv` contains `A → B → C → A` plus a reverse `B → A` link:
+Sample many-to-many network (nodes `A`–`G`, including reverse edges such as `B → C` and `C → B`). Use **Copy CSV**, save as `chord-relations.csv`, then run a command below. A clone of the repo also has `examples/csv/chord-relations.csv`.
 
-```csv
-source,target,value
-A,B,10
-B,C,8
-C,A,6
-B,A,3
-```
+<CopyableCsv
+  filename="relations.csv"
+  csv={CHORD_RELATIONS_SAMPLE}
+/>
 
-Duplicate links in the same direction are summed. Reverse links remain separate, so `A → B` and `B → A` can have different weights. Numeric-looking source and target values remain categorical node names.
+Duplicate links in the same direction are summed. Reverse links remain separate, so `B → C` and `C → B` can have different weights. Numeric-looking source and target values remain categorical node names.
 
 ## CLI usage
 
 Grouped edge data maps source to `x` and target to `y`:
 
-```bash
-vizb chord examples/csv/chord-relations.csv \
-  -g source,target -p x,y -o chord.html
-```
+<InvokeTabs
+  cli={`vizb chord chord-relations.csv \
+  -g source,target -p x,y -o chord.html`}
+  input={CHORD_RELATIONS_SAMPLE}
+/>
+
+<DocImage src={chordChart} alt="Chord chart of many-to-many relationships with gradient links between nodes A–G around a circular ring" />
 
 Solo selection requires exactly three columns per `--select`: source, target, and value.
 
-```bash
-vizb chord examples/csv/chord-relations.csv \
-  --select source,target,value -o chord.html
-```
+<InvokeTabs
+  cli={`vizb chord chord-relations.csv \
+  --select source,target,value -o chord.html`}
+  input={CHORD_RELATIONS_SAMPLE}
+/>
 
 To generate several chart types from the root command, include Chord explicitly:
 
-```bash
-vizb examples/csv/chord-relations.csv \
-  -g source,target -p x,y -c chord,sankey -o relationships.html
-```
+<InvokeTabs
+  cli={`vizb chord-relations.csv \
+  -g source,target -p x,y -c chord,sankey -o relationships.html`}
+  input={CHORD_RELATIONS_SAMPLE}
+/>
 
 ## Multiple measures and named panels
 
 Repeat `--select` for additional measures. Every repeated view must reuse the same source and target columns; each measure becomes a statistic tab.
 
-```bash
-vizb relations.csv \
+<InvokeTabs
+  cli={`vizb relations.csv \
   --select source,target,value \
   --select source,target,cost \
-  -c chord -o relationships.html
-```
+  -c chord -o relationships.html`}
+  input={CHORD_RELATIONS_SAMPLE}
+/>
 
 Use `n` to split independent edge sets into named panels, just like other Vizb chart types:
 
-```bash
-vizb relations.csv -g name,source,target -p n,x,y -c chord -o panels.html
-```
+<InvokeTabs
+  cli={`vizb relations.csv -g name,source,target -p n,x,y -c chord -o panels.html`}
+  input={CHORD_RELATIONS_SAMPLE}
+/>
 
 Z is ignored by Chord. It does not create a third visual dimension or a separate node axis; links continue to aggregate by `(source, target)`.
 
@@ -81,6 +90,7 @@ Chord supports the initial edge-chart settings:
 |---------|-----|----|--------|
 | Sort | `--sort asc\|desc` | Sort control | Orders nodes by total relationship weight |
 | Labels | `--show-labels` | Show labels | Shows node labels around the circle |
+| Legend | *(always on)* | Legend | Lists nodes with colors; click to focus via legend hover |
 | Swap | `--swap yx` | Axis switcher | Reverses source and target roles |
 | Statistics | `--stat` | Stats panel | Enables the shared statistics panel |
 
@@ -89,43 +99,6 @@ Scale, stacking, 3D, and visual-map settings do not apply to Chord.
 <Aside type="note">
   Chord is directional: a reverse link is not folded into the original link. This makes it suitable for reciprocal relationships and cyclic networks.
 </Aside>
-
-## HTTP API
-
-The API accepts `chord` in `charts.types` and the same typed configuration fields:
-
-```json
-{
-  "input": "source,target,value\nA,B,10\nB,C,8\nC,A,6\n",
-  "parser": "csv",
-  "select": ["source,target,value"],
-  "charts": {
-    "types": ["chord"],
-    "configs": [{ "type": "chord", "showLabels": true }]
-  },
-  "output": { "format": "dataset" }
-}
-```
-
-The `/ui` endpoint also accepts datasets whose `settings` include a Chord configuration.
-
-## GitHub Action
-
-Use the existing Action inputs; no Chord-specific input is required:
-
-```yaml
-- uses: goptics/vizb@main
-  with:
-    file: examples/csv/chord-relations.csv
-    parser: csv
-    select: source,target,value
-    charts: chord
-    chart: chord:labels
-    output-html: chord.html
-    output-json: results/chord.json
-```
-
-Explicit chart selection also keeps the Chord renderer out of reports that do not use it, preserving the default bundle size.
 
 ## Chord or Sankey?
 
@@ -138,4 +111,5 @@ Both charts share the same source/target/value data model, duplicate-link aggreg
 
 <LinkCard title="Sankey Chart" href="/charts/sankey" description="Read the staged-flow counterpart to Chord for funnels and pipelines." />
 <LinkCard title="Charts Overview" href="/charts" description="Compare every Vizb chart type and its dimension mapping." />
+<LinkCard title="vizb serve" href="/commands/serve" description="Same conversion over the local HTTP API." />
 <LinkCard title="GitHub Action" href="/ci-cd/github-action" description="Use Chord in CI-generated HTML and JSON reports." />

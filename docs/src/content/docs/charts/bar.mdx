@@ -5,6 +5,9 @@ description: Compare values across categories with grouped or 3D bars — vizb's
 
 import { CardGrid, Card, LinkCard, Tabs, TabItem, Aside } from '@astrojs/starlight/components';
 import DocImage from '../../../components/DocImage.astro';
+import InvokeTabs from '../../../components/InvokeTabs.astro';
+import SalesSampleCsv from '../../../components/SalesSampleCsv.astro';
+import { SALES_SAMPLE } from '../../../data/samples';
 import bar1D from '../../../assets/bar-1D.png';
 import bar2D from '../../../assets/bar-2D.png';
 import bar2DStack from '../../../assets/bar-2D-stack.png';
@@ -27,15 +30,18 @@ vizb maps your grouping columns to the chart's visual axes:
 
 ## Dimensions
 
-The examples below use [`sales.csv`](https://github.com/goptics/vizb/blob/main/examples/csv/sales.csv) — 10,000 order rows with categorical columns (`order_date`, `region`, `category`, …) and numeric metrics (`quantity`, `amount`, `total`, …). You can also browse [live tabular-data dashboards](https://vizb.goptics.org/examples/live/tabular-data/) built from the same file.
+Sample orders below (copy → `sales.csv`). The full file in the repo is [`examples/csv/sales.csv`](https://github.com/goptics/vizb/blob/main/examples/csv/sales.csv) — about **10,000 rows across 2024–2025**. Live dashboards: [tabular-data](https://vizb.goptics.org/examples/live/tabular-data/).
+
+<SalesSampleCsv />
 
 ### 1D (X axis)
 
 A single series of bars — one bar per X category. The height is the raw value. This is the simplest view: run a benchmark, pick one grouping column, get a bar per result.
 
-```bash
-vizb bar sales.csv -g order_date -p x -o out.html
-```
+<InvokeTabs
+  cli={`vizb bar sales.csv -g order_date -p x -o out.html`}
+  input={SALES_SAMPLE}
+/>
 
 <DocImage src={bar1D} alt="1D bar chart with a single series of blue bars over daily dates" />
 
@@ -43,17 +49,19 @@ vizb bar sales.csv -g order_date -p x -o out.html
 
 Grouped bars: X stays on the category axis, and each distinct Y value becomes its own bar series side-by-side within each X group. The legend lists the Y values so you can toggle individual series on and off.
 
-```bash
-vizb bar sales.csv -g region,category -p x,y -o out.html
-```
+<InvokeTabs
+  cli={`vizb bar sales.csv -g region,category -p x,y -o out.html`}
+  input={SALES_SAMPLE}
+/>
 
 <DocImage src={bar2D} alt="2D grouped bar chart with five category series per region and a color category legend" />
 
 Add `--stack` to show one bar per X value with the Y series stacked inside it. This keeps the grouped data shape but changes the 2D bar rendering to a part-to-whole view.
 
-```bash
-vizb bar sales.csv -g region,category -p x,y --stack -o stacked.html
-```
+<InvokeTabs
+  cli={`vizb bar sales.csv -g region,category -p x,y --stack -o stacked.html`}
+  input={SALES_SAMPLE}
+/>
 
 <DocImage src={bar2DStack} alt="2D stacked bar chart with each region shown as one bar split into category segments" />
 
@@ -61,9 +69,10 @@ vizb bar sales.csv -g region,category -p x,y --stack -o stacked.html
 
 WebGL `bar3D` scene: X and Y form a grid floor, and Z values stack as depth layers on each (X, Y) cell. Rotate, zoom, and pan the scene in the browser. Requires echarts-gl (bundled automatically).
 
-```bash
-vizb bar sales.csv -g order_date,category -p "[-y{Month}-x{Date}],z{Category}" -o out.html
-```
+<InvokeTabs
+  cli={`vizb bar sales.csv -g order_date,category -p "[-y{Month}-x{Date}],z{Category}" -o out.html`}
+  input={SALES_SAMPLE}
+/>
 
 <DocImage src={bar3D} alt="3D stacked bar chart with date, month, and category axes in a WebGL scene" />
 
@@ -75,9 +84,10 @@ vizb bar sales.csv -g order_date,category -p "[-y{Month}-x{Date}],z{Category}" -
 
 `--select` is **repeatable** (csv/json only). With explicit `-g` / `-p` / `-r`, it picks which numeric columns get their own chart (optional `{label}` renames each chart). Without group, it switches to solo value / mixed / multi-stat modes that plot raw columns as coordinate axes.
 
-```bash
-vizb bar sales.csv -g region,product -p x,y --select amount,total -o bars.html
-```
+<InvokeTabs
+  cli={`vizb bar sales.csv -g region,product -p x,y --select amount,quantity -o bars.html`}
+  input={SALES_SAMPLE}
+/>
 
 See [Select](/guides/select) for the full mode reference, and [Group vs Select](/guides/group-vs-select) for when to use each.
 
@@ -85,9 +95,9 @@ See [Select](/guides/select) for the full mode reference, and [Group vs Select](
 
 On an all-numeric CSV/JSON file, vizb auto-detects the first 2–3 columns as coordinate axes and renders value-type bars — with 3+ columns it auto-enables 3D (`bar3D`). See [Auto-value](/guides/group-vs-select#auto-value-all-numeric-data) for the inference rules; solo `--select` overrides it.
 
-```bash
-./bin/vizb bar noise-surface.csv -o surface.html --3d-visualmap
-```
+<InvokeTabs
+  cli={`./bin/vizb bar noise-surface.csv -o surface.html --3d-visualmap`}
+/>
 
 <DocImage src={bar3DValue} alt="3D bar chart with value-type bars along the Z axis" />
 
@@ -102,6 +112,7 @@ These settings apply to bar charts:
 | Labels | `--show-labels` | Show labels | Displays value on each bar |
 | Swap | `--swap` | Axis switcher | Rotates which column maps to X vs Y |
 | Horizontal | `--horizontal` | Horizontal toggle | Renders grouped bars horizontally — 2D only |
+| Border radius | `--border-radius <int>[,int...]` | — | 1–4 corner radii px (CSS/ECharts TL,TR,BR,BL); single value = all corners; stacked: outer segment only, first two values on free end (rest square) — 2D only (CLI/config; not in UI settings) |
 | Scale (log) | `--log-scale` | Scale toggle | Log Y axis — 2D only |
 | 3D view | `--3d` | 3D view | Value 3D for x+y data (y → depth, metric → height) |
 | 3D visual map | `--3d-visualmap` | 3D visual map | Metric gradient coloring — on by default with `--3d`; grouped/value 3D |
@@ -121,6 +132,15 @@ vizb bar sales.csv -g region,category -p x,y --horizontal -o out.html
 
 # Stacked 2D bars
 vizb bar sales.csv -g region,category -p x,y --stack -o stacked.html
+
+# Rounded corners (single value = all corners; stacked: outer segment uses first two as free-end cap)
+vizb bar sales.csv -g region,category -p x,y --border-radius 8 -o rounded.html
+
+# Free outer top only on non-stacked bars (TL,TR,BR,BL)
+vizb bar sales.csv -g region,category -p x,y --border-radius 8,8,0,0 -o free-outer.html
+
+# Stacked: only top segment rounded; first two values are the free-end cap
+vizb bar sales.csv -g region,category -p x,y --stack --border-radius 8,4 -o stacked-rounded.html
 ```
 
 ## Next Steps

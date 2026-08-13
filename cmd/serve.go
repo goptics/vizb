@@ -127,7 +127,7 @@ func handleHealth(w http.ResponseWriter, _ *http.Request) {
 func newServeCommand(bag *cli.FlagBag, deps serveDependencies) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "serve",
-		Short:        "Run Vizb's local REST API server",
+		Short:        "Run the local REST API server",
 		Args:         cobra.NoArgs,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -145,8 +145,8 @@ func newServeCommand(bag *cli.FlagBag, deps serveDependencies) *cobra.Command {
 
 func serveFlags() []flags.Flag {
 	return []flags.Flag{
-		{Name: "host", Default: defaultServeHost, Usage: "Host interface to listen on", Kind: flags.KindString},
-		{Name: "port", Shorthand: "p", Default: defaultServePort, Usage: "TCP port to listen on", Kind: flags.KindInt},
+		{Name: "host", Default: defaultServeHost, Usage: "Listen address interface", Kind: flags.KindString},
+		{Name: "port", Shorthand: "p", Default: defaultServePort, Usage: "Listen TCP port", Kind: flags.KindInt},
 	}
 }
 

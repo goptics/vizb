@@ -4,6 +4,8 @@ description: The --select flag for CSV/JSON — pick which numeric columns get t
 ---
 
 import { Aside, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
+import InvokeTabs from '../../../components/InvokeTabs.astro';
+import { SALES_SAMPLE } from '../../../data/samples';
 
 The `--select` flag is **repeatable** and applies to the `csv` and `json` parsers only. Other parsers warn and ignore it. It plays two different roles depending on whether group is active:
 
@@ -16,8 +18,12 @@ A column cannot be in both `--select` and `--group`. See [Group vs Select](/guid
 
 With group active, every numeric column gets its own chart by default. Use `--select` to keep only the columns you want, in the order you want them, and optionally rename each chart's label.
 
+<InvokeTabs
+  cli={`vizb bar sales.csv -g region,product -p x,y --select amount,quantity -o bars.html`}
+  input={SALES_SAMPLE}
+/>
+
 ```bash
-vizb bar sales.csv -g region,product -p x,y --select amount,total -o bars.html
 vizb bar sales.csv -g region,product -p x,y --select 'amount{Total},count{Orders}' -o bars.html
 ```
 

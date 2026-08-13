@@ -41,33 +41,28 @@ var uiOpts uiOptions
 var uiCmd = &cobra.Command{
 	Use:     "ui [file]",
 	Aliases: []string{"html"},
-	Short:   "Generate the interactive HTML UI from a DataSet JSON file",
-	Long: `Generate an interactive HTML chart from a DataSet JSON file.
-The input file must be a valid vizb DataSet JSON (single object or array).
+	Short:   "Generate interactive HTML from Dataset JSON",
+	Long: `Generate an interactive HTML report from Vizb Dataset JSON
+(single object or array).
 
-When --data-url is set, no input file is needed. The generated HTML will fetch
-DataSet JSON from the provided URL at runtime instead of embedding it. The base
-response may also be an id/name catalog; selected details are then fetched from
-<data-url>/dataset/<encoded-id>. Both endpoints must satisfy CORS requirements.
-When the data URL ends in /dataset, HTTP(S) /<encoded-id> paths skip the catalog and
-fetch <data-url>/<encoded-id> directly. Other data URLs disable path mode. The host must
-serve the generated HTML as a fallback for enabled dataset paths.
-Note: hosts should serve Access-Control-Allow-Origin: * for file:// access.`,
+With --data-url, no input file is needed: the HTML fetches Dataset JSON
+(or an id/name catalog) at runtime. Catalog details load from
+<data-url>/dataset/<id>. Endpoints need CORS for file:// access
+(Access-Control-Allow-Origin: *). See the docs for path-mode and host setup.`,
 	Args: cobra.MaximumNArgs(1),
 	Run:  runUI,
 }
 
 func init() {
 	rootCmd.AddCommand(uiCmd)
-	uiCmd.Flags().StringVarP(&uiOpts.OutputFile, "output", "o", "", "Output file path/name")
-	uiCmd.Flags().StringVarP(&uiOpts.DataURL, "data-url", "U", "", "URL to fetch DataSet JSON or a lazy id/name catalog from at runtime (no input file needed)")
+	uiCmd.Flags().StringVarP(&uiOpts.OutputFile, "output", "o", "", "Output path (.html or .json)")
+	uiCmd.Flags().StringVarP(&uiOpts.DataURL, "data-url", "U", "", "Runtime URL for Dataset JSON or id/name catalog")
 	// --charts lets `vizb ui` prune chart chunks (incl. --data-url, where it's the
 	// only source of the selection since the data is fetched at runtime).
-	uiCmd.Flags().StringSliceVarP(&uiOpts.Charts, "charts", "c", shared.DefaultChartTypes, "Chart types to bundle (bar, line, pie, heatmap, radar, scatter)")
+	uiCmd.Flags().StringSliceVarP(&uiOpts.Charts, "charts", "c", shared.DefaultChartTypes, "Chart types to embed (bar, line, scatter, pie, heatmap, radar, sankey, chord)")
 	uiCmd.Flags().StringArrayVar(&uiOpts.ChartSpecs, "chart", nil,
-		"Per-chart settings override (repeatable): <type>:<key>=<val>,... or bare flags; "+
-			"use semicolon between props when a value contains commas (e.g. bar:stat=center,spread;labels)")
-	uiCmd.Flags().BoolVar(&uiOpts.Enable3D, "3d", false, "Bundle the 3D renderer for --data-url (remote data shape is unknown at build time)")
+		"Per-chart override (type:key=val; repeatable; see docs)")
+	uiCmd.Flags().BoolVar(&uiOpts.Enable3D, "3d", false, "Bundle 3D renderer for --data-url")
 	cli.BindStatFlag(uiCmd.Flags(), &uiOpts.Stat)
 }
 

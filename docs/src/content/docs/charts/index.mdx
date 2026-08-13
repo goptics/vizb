@@ -4,6 +4,7 @@ description: How vizb's chart types share the same x/y/z dimension model — and
 ---
 
 import { CardGrid, Card, LinkCard, Aside } from '@astrojs/starlight/components';
+import InvokeTabs from '../../../components/InvokeTabs.astro';
 
 Vizb folds the same **x/y/z dimension model** into every chart type — you describe your data once with a group pattern (e.g. `-p x,y,z` for CSV or `-p x/y/z` for benchmarks), and each selected renderer interprets it in parallel. One pipeline, several shapes. Use `--charts` (or `-c`) to control which renderers are bundled into the output file.
 
@@ -124,19 +125,21 @@ Add `scatter`, `heatmap`, `radar`, `sankey`, or `chord` explicitly when you need
 
 Each chart renderer ships as a separate compressed chunk; only the ones you select are embedded. This keeps the output small when you only need one or two shapes:
 
-```bash
-# Radar and bar only
-vizb data.csv -g category,metric -p x,y -c bar,radar -o output.html
+<InvokeTabs
+  cli={`vizb data.csv -g category,metric -p x,y -c bar,radar -o output.html`}
+/>
 
-# Sankey only (edge list: x = source, y = target)
-vizb data.csv -g source,target -p x,y -c sankey -o output.html
+<InvokeTabs
+  cli={`vizb data.csv -g source,target -p x,y -c sankey -o output.html`}
+/>
 
-# Chord only (edge list: x = source, y = target)
-vizb data.csv -g source,target -p x,y -c chord -o output.html
+<InvokeTabs
+  cli={`vizb data.csv -g source,target -p x,y -c chord -o output.html`}
+/>
 
-# Single chart — smallest possible output
-vizb data.csv -g category -c bar -o output.html
-```
+<InvokeTabs
+  cli={`vizb data.csv -g category -c bar -o output.html`}
+/>
 
 <Aside type="tip">
   For sharing or deploying reports, pass `--charts` to include only what your audience needs. The 3D engine (~380 kB encoded) is pulled in automatically when bar, line, or scatter is selected *and* your data needs a 3D scene — and omitted otherwise. See [Output File Size](/ui#output-file-size) for the size breakdown.

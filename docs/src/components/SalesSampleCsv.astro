@@ -1,0 +1,10 @@
+---
+/**
+ * Compact sales.csv preview shared by chart docs.
+ * Full file: examples/csv/sales.csv (~500 rows, 2024–2025).
+ */
+import CopyableCsv from './CopyableCsv.astro';
+import { SALES_SAMPLE } from '../data/samples';
+---
+
+<CopyableCsv filename="sales.csv" csv={SALES_SAMPLE} />
