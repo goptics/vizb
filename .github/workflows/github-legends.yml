@@ -72,7 +72,6 @@ jobs:
         with:
           cmd: curl -sfL "https://github-contributions-api.jogruber.de/v4/${{ matrix.id }}"
           cmd-retries: 3
-          cmd-retry-strategy: exponential
           id: ${{ matrix.id }}
           name: ${{ matrix.id }}
           description: ${{ matrix.description }}

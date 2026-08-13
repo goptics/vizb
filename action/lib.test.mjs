@@ -173,28 +173,17 @@ describe('resolveInputs', () => {
     assert.equal(r.tagAxis, 'x')
   })
 
-  it('defaults cmd retry to off (1 attempt), 2s, linear', () => {
+  it('defaults cmd retry to off (1 attempt)', () => {
     const r = resolveInputs(envFrom({ file: 'a.txt' }))
     assert.equal(r.cmdRetries, 1)
-    assert.equal(r.cmdRetryDelay, 2)
-    assert.equal(r.cmdRetryStrategy, 'linear')
   })
 
-  it('parses cmd retry inputs', () => {
-    const r = resolveInputs(
-      envFrom({
-        cmd: 'echo hi',
-        'cmd-retries': '3',
-        'cmd-retry-delay': '0.5',
-        'cmd-retry-strategy': 'exponential',
-      }),
-    )
+  it('parses cmd-retries', () => {
+    const r = resolveInputs(envFrom({ cmd: 'echo hi', 'cmd-retries': '3' }))
     assert.equal(r.cmdRetries, 3)
-    assert.equal(r.cmdRetryDelay, 0.5)
-    assert.equal(r.cmdRetryStrategy, 'exponential')
   })
 
-  it('rejects invalid cmd retry inputs', () => {
+  it('rejects invalid cmd-retries', () => {
     assert.throws(
       () => resolveInputs(envFrom({ file: 'a.txt', 'cmd-retries': '0' })),
       /cmd-retries must be an integer >= 1/,
@@ -202,18 +191,6 @@ describe('resolveInputs', () => {
     assert.throws(
       () => resolveInputs(envFrom({ file: 'a.txt', 'cmd-retries': 'abc' })),
       /cmd-retries must be an integer >= 1/,
-    )
-    assert.throws(
-      () => resolveInputs(envFrom({ file: 'a.txt', 'cmd-retry-delay': '-1' })),
-      /cmd-retry-delay must be a number >= 0/,
-    )
-    assert.throws(
-      () => resolveInputs(envFrom({ file: 'a.txt', 'cmd-retry-delay': 'abc' })),
-      /cmd-retry-delay must be a number >= 0/,
-    )
-    assert.throws(
-      () => resolveInputs(envFrom({ file: 'a.txt', 'cmd-retry-strategy': 'expo' })),
-      /cmd-retry-strategy must be "linear" or "exponential"/,
     )
   })
 })
@@ -280,8 +257,6 @@ describe('runWithRetries', () => {
       },
       {
         retries: 3,
-        delaySec: 2,
-        strategy: 'linear',
         sleep: (sec) => sleeps.push(sec),
         log: (msg) => logs.push(msg),
       },
@@ -302,16 +277,16 @@ describe('runWithRetries', () => {
       },
       {
         retries: 3,
-        delaySec: 2,
-        strategy: 'linear',
         sleep: (sec) => sleeps.push(sec),
         log: (msg) => logs.push(msg),
       },
     )
     assert.equal(attempts, 2)
     assert.deepEqual(sleeps, [2])
-    assert.equal(logs.length, 1)
-    assert.match(logs[0], /::warning::cmd failed \(attempt 1\/3, exit 1\)\. Retrying in 2s \(linear\)\./)
+    assert.equal(
+      logs[0],
+      '::warning::cmd failed (attempt 1/3, exited with code 1). Retrying in 2s.',
+    )
   })
 
   it('rethrows the last error after attempts are exhausted', () => {
@@ -326,8 +301,6 @@ describe('runWithRetries', () => {
           },
           {
             retries: 3,
-            delaySec: 2,
-            strategy: 'linear',
             sleep: (sec) => sleeps.push(sec),
             log: () => {},
           },
@@ -335,25 +308,6 @@ describe('runWithRetries', () => {
       (err) => err instanceof Error && err.exitCode === 7,
     )
     assert.equal(attempts, 3)
-    assert.deepEqual(sleeps, [2, 2])
-  })
-
-  it('uses exponential waits', () => {
-    const sleeps = []
-    assert.throws(
-      () =>
-        runWithRetries(
-          () => failWith(1),
-          {
-            retries: 3,
-            delaySec: 2,
-            strategy: 'exponential',
-            sleep: (sec) => sleeps.push(sec),
-            log: () => {},
-          },
-        ),
-      /exited with code 1/,
-    )
     assert.deepEqual(sleeps, [2, 4])
   })
 
@@ -366,8 +320,6 @@ describe('runWithRetries', () => {
           () => failWith(1),
           {
             retries: 1,
-            delaySec: 2,
-            strategy: 'linear',
             sleep: (sec) => sleeps.push(sec),
             log: (msg) => logs.push(msg),
           },
@@ -386,13 +338,14 @@ describe('runWithRetries', () => {
       },
       {
         retries: 2,
-        delaySec: 0,
-        strategy: 'linear',
         sleep: () => {},
         log: (msg) => logs.push(msg),
       },
     )
-    assert.equal(logs[0], '::warning::cmd failed (attempt 1/2, spawn ENOENT). Retrying in 0s (linear).')
+    assert.equal(
+      logs[0],
+      '::warning::cmd failed (attempt 1/2, spawn ENOENT). Retrying in 2s.',
+    )
   })
 })
 
@@ -432,8 +385,6 @@ describe('runPipeline', () => {
       outputHtml: 'index.html',
       dataUrl: '',
       cmdRetries: 1,
-      cmdRetryDelay: 2,
-      cmdRetryStrategy: 'linear',
       ...over,
     }
   }
@@ -486,8 +437,6 @@ describe('runPipeline', () => {
         hasInput: true,
         outputHtml: '',
         cmdRetries: 3,
-        cmdRetryDelay: 2,
-        cmdRetryStrategy: 'linear',
       }),
       {
         vizbBin: 'vizb',
@@ -505,7 +454,7 @@ describe('runPipeline', () => {
       },
     )
     assert.equal(shells, 3)
-    assert.deepEqual(sleeps, [2, 2])
+    assert.deepEqual(sleeps, [2, 4])
   })
 
   it('does not retry when file is set', () => {

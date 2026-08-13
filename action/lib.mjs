@@ -29,8 +29,6 @@ export function resolveInputs(env = process.env) {
     file,
     cmd,
     cmdRetries: parseCmdRetries(input('cmd-retries', env)),
-    cmdRetryDelay: parseCmdRetryDelay(input('cmd-retry-delay', env)),
-    cmdRetryStrategy: parseCmdRetryStrategy(input('cmd-retry-strategy', env)),
     hasInput: Boolean(file || cmd),
     jsonFile: outputJson || 'bench.json',
     name: input('name', env),
@@ -74,24 +72,7 @@ function parseCmdRetries(value) {
   return n
 }
 
-/** @param {string} value */
-function parseCmdRetryDelay(value) {
-  if (!value) return 2
-  const n = Number(value)
-  if (!Number.isFinite(n) || n < 0) {
-    throw new Error('cmd-retry-delay must be a number >= 0')
-  }
-  return n
-}
-
-/** @param {string} value */
-function parseCmdRetryStrategy(value) {
-  if (!value) return 'linear'
-  if (value !== 'linear' && value !== 'exponential') {
-    throw new Error('cmd-retry-strategy must be "linear" or "exponential"')
-  }
-  return value
-}
+const CMD_RETRY_DELAY_SEC = 2
 
 /** @param {number} seconds */
 function sleepSync(seconds) {
@@ -103,8 +84,6 @@ function sleepSync(seconds) {
  * @param {() => void} fn
  * @param {{
  *   retries: number,
- *   delaySec: number,
- *   strategy: 'linear' | 'exponential',
  *   sleep?: (sec: number) => void,
  *   log?: (msg: string) => void,
  * }} opts
@@ -112,33 +91,20 @@ function sleepSync(seconds) {
 export function runWithRetries(fn, opts) {
   const sleep = opts.sleep ?? sleepSync
   const log = opts.log ?? ((msg) => console.error(msg))
-  let lastError
 
   for (let attempt = 1; attempt <= opts.retries; attempt++) {
     try {
       fn()
       return
     } catch (err) {
-      lastError = err
       if (attempt === opts.retries) throw err
-      const waitSec =
-        opts.strategy === 'exponential'
-          ? opts.delaySec * 2 ** (attempt - 1)
-          : opts.delaySec
-      const detail =
-        err && typeof err === 'object' && 'exitCode' in err
-          ? `exit ${/** @type {{ exitCode: unknown }} */ (err).exitCode}`
-          : err instanceof Error
-            ? err.message
-            : String(err)
+      const waitSec = CMD_RETRY_DELAY_SEC * 2 ** (attempt - 1)
       log(
-        `::warning::cmd failed (attempt ${attempt}/${opts.retries}, ${detail}). Retrying in ${waitSec}s (${opts.strategy}).`,
+        `::warning::cmd failed (attempt ${attempt}/${opts.retries}, ${err.message ?? err}). Retrying in ${waitSec}s.`,
       )
       sleep(waitSec)
     }
   }
-
-  throw lastError
 }
 
 /** @param {string} value */
@@ -265,8 +231,6 @@ export function runPipeline(inputs, deps = {}) {
       inputPath = join(tmpdir(), `vizb-data-input-${process.pid}.txt`)
       runWithRetries(() => execShell(inputs.cmd, inputPath), {
         retries: inputs.cmdRetries,
-        delaySec: inputs.cmdRetryDelay,
-        strategy: inputs.cmdRetryStrategy,
         sleep: deps.sleep,
         log: deps.log,
       })
