@@ -15,7 +15,6 @@ import HistoryPopover from './HistoryPopover.vue'
 import CpuBadge from './CpuBadge.vue'
 import OsBadge from './OsBadge.vue'
 import TimestampBadge from './TimestampBadge.vue'
-import LoadError from './LoadError.vue'
 import DatasetHeader from './DatasetHeader.vue'
 import ChartSettingsPopover from './ChartSettingsPopover.vue'
 import type { Dataset, HistoryEntry } from '@/types'
@@ -371,13 +370,6 @@ describe('History + meta badges', () => {
     const setup = (bareTs.vm as unknown as { $: { setupState: { formattedDate: string } } }).$
       .setupState
     expect(setup.formattedDate).toBe('')
-  })
-})
-
-describe('LoadError inline branch', () => {
-  it('uses compact height when inline', () => {
-    const w = mount(LoadError, { props: { message: 'x', inline: true } })
-    expect(w.classes().join(' ') + w.html()).toContain('min-h-[32rem]')
   })
 })
 

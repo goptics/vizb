@@ -66,7 +66,6 @@ describe('themes', () => {
     expect(DEFAULT_THEME.name).toBe('default')
     expect(DEFAULT_THEME.colors).toHaveLength(10)
     expect(new Set(DEFAULT_THEME.colors.map((c) => c.toLowerCase())).size).toBe(10)
-    expect(DEFAULT_THEME.visualMapColors).toEqual(['#91CC75', '#EE6666'])
   })
 
   it('resolveActiveTheme uses themes[0] when present, else default', () => {

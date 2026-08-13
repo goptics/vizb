@@ -1,25 +1,12 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { describe, it, expect, afterAll } from 'vitest'
 import { ref } from 'vue'
 import type { ChartData } from '@/types'
 import type { BaseChartConfig } from './baseChartOptions'
 import { useLineChartOptions } from './useLineChartOptions'
+import { installDevicePixelRatio } from '@/test-utils'
 
-const originalDPR = (globalThis as { window?: { devicePixelRatio: number } }).window
-  ?.devicePixelRatio
-beforeAll(() => {
-  ;(globalThis as unknown as { window: { devicePixelRatio: number } }).window = {
-    devicePixelRatio: 1,
-  }
-})
-afterAll(() => {
-  if (originalDPR === undefined) {
-    delete (globalThis as { window?: unknown }).window
-  } else {
-    ;(globalThis as unknown as { window: { devicePixelRatio: number } }).window = {
-      devicePixelRatio: originalDPR,
-    }
-  }
-})
+let restoreDpr = installDevicePixelRatio()
+afterAll(() => restoreDpr())
 
 const makeMixedChartData = (): ChartData => ({
   title: 'region vs latency',

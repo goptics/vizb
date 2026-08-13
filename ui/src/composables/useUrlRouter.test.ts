@@ -675,7 +675,7 @@ describe('useUrlRouter', () => {
     useUrlRouter().syncUrlToState()
     expect(replaceState).toHaveBeenCalled()
     const url = String(replaceState.mock.calls[0]?.[2] ?? '')
-    expect(url === '/' || url.startsWith('/?')).toBe(true)
+    expect(url).toBe('/')
   })
 
   it('skips deferred group watch when g is absent and groups are empty', async () => {

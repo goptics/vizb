@@ -370,6 +370,17 @@ describe('Selector', () => {
     await nextTick()
   })
 
+  it('renders with neither activeId nor activeValue', () => {
+    const w = mount(Selector, { props: { items: [{ name: 'A' }, { name: 'B' }] } })
+    expect(w.find('[data-testid="trigger"]').exists()).toBe(true)
+  })
+
+  it('renders truncated results with neither active set', () => {
+    const items = Array.from({ length: 12 }, (_, i) => ({ name: `N${i}`, value: `v${i}` }))
+    const w = mount(Selector, { props: { items, resultLimit: 5 } })
+    expect(w.text()).toMatch(/Showing 5 of 12 matches/)
+  })
+
   it('open-close activeId same index does not emit', async () => {
     const onSelect = vi.fn()
     const w = mount(Selector, {
@@ -387,53 +398,5 @@ describe('Selector', () => {
     await cb.vm.$emit('update:open', false)
     await nextTick()
     expect(onSelect).not.toHaveBeenCalled()
-  })
-
-  it('activeOption optional chain both sides', async () => {
-    const w1 = mount(Selector, {
-      props: { items: [{ name: 'A' }, { name: 'B' }], activeId: 1 },
-    })
-    expect(w1.text()).toContain('B')
-    w1.unmount()
-
-    const w2 = mount(Selector, {
-      props: { items: [{ name: 'A' }, { name: 'B' }] },
-    })
-    // no activeId/activeValue
-    expect(w2.find('[data-testid="trigger"]').exists()).toBe(true)
-    await w2.setProps({ items: [{ name: 'A' }, { name: 'B' }, { name: 'C' }] })
-    await nextTick()
-    w2.unmount()
-
-    const w3 = mount(Selector, {
-      props: {
-        items: [
-          { name: 'A', value: 'a' },
-          { name: 'B', value: 'b' },
-        ],
-        activeValue: 'b',
-      },
-    })
-    expect(w3.text()).toContain('B')
-    // switch to activeId-only mode
-    await w3.setProps({ activeValue: undefined, activeId: 0 })
-    await nextTick()
-    await w3.setProps({ activeValue: undefined, activeId: undefined as unknown as number })
-    await nextTick()
-  })
-
-  it('activeOption with resultLimit covers activeId optional chain', async () => {
-    const items = Array.from({ length: 12 }, (_, i) => ({ name: `N${i}`, value: `v${i}` }))
-    const w = mount(Selector, {
-      props: { items, activeId: 2, resultLimit: 5 },
-    })
-    expect(w.text()).toMatch(/Showing/)
-    await w.setProps({ activeId: undefined as unknown as number, activeValue: undefined })
-    await nextTick()
-    await w.setProps({ activeId: 0 })
-    await nextTick()
-    // activeValue short-circuit path on activeOption
-    await w.setProps({ activeValue: 'v1', activeId: undefined as unknown as number })
-    await nextTick()
   })
 })

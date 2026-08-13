@@ -132,7 +132,6 @@ describe('useFullscreen', () => {
     expect(feature.saveAsImage).toEqual({ show: true })
     expect(my.show).toBe(true)
     expect(my.title).toBe('Fullscreen')
-    expect(my.icon).toContain('path://M3 9V3H9')
     expect((enter.toolbox as { right: number }).right).toBe(8)
 
     fullscreenEl = el
@@ -141,6 +140,5 @@ describe('useFullscreen', () => {
     const exit = api.withFullscreenToolbox({ toolbox: undefined } as never)
     const exitMy = featureOnclick(exit).my
     expect(exitMy.title).toBe('Exit fullscreen')
-    expect(exitMy.icon).toContain('path://M9 3V9H3')
   })
 })

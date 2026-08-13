@@ -228,9 +228,8 @@ const corrAxisItems = computed(() =>
 )
 
 const corrAxisActiveIndex = computed(() => {
-  const active = corrAxisOverride.value ?? correlation.value?.axis ?? corrAxes.value[0]
-  const idx = corrAxes.value.indexOf(active as CorrelationAxis)
-  return idx >= 0 ? idx : 0
+  const active = corrAxisOverride.value ?? correlation.value!.axis
+  return Math.max(corrAxes.value.indexOf(active as CorrelationAxis), 0)
 })
 
 function onCorrAxisSelect(index: number) {
@@ -245,7 +244,7 @@ function onCorrAxisSelect(index: number) {
 // The correlation matrix auto-picks which axis supplies its entities (x → y → z;
 // see selectCorrelationAxis). Caption names the chosen dimension and what it's
 // correlated across, flipping with the worker's choice.
-const corrAxis = computed<'x' | 'y' | 'z'>(() => correlation.value?.axis ?? 'x')
+const corrAxis = computed<'x' | 'y' | 'z'>(() => correlation.value!.axis)
 const corrEntityLabel = computed(() => {
   const a = corrAxis.value
   return props.chartData.axisLabels?.[a] || AXIS_FALLBACK[a]
@@ -256,7 +255,7 @@ const corrObsLabel = computed(() => {
   const counts = {
     x: chartSeriesLabels(props.chartData).length,
     y: props.chartData.yAxis.length,
-    z: props.chartData.zAxis.length,
+    z: (props.chartData.zAxis ?? []).length,
   }
   const labels = props.chartData.axisLabels
   const names = (['x', 'y', 'z'] as const)
@@ -311,17 +310,15 @@ const METHOD_ITEMS = [
   { name: 'Kendall τ' },
   { name: 'Distance' },
 ]
-const corrMethodIndex = computed(() => {
-  const idx = METHOD_VALUES.indexOf(method.value as CorrelationMethod)
-  return idx >= 0 ? idx : 0
-})
+const corrMethodIndex = computed(() =>
+  Math.max(METHOD_VALUES.indexOf(method.value as CorrelationMethod), 0)
+)
 function onMethodSelect(index: number) {
   const m = METHOD_VALUES[index]
   if (m) method.value = m
 }
 const corrMatrix = computed(() => {
-  const c = correlation.value
-  if (!c) return []
+  const c = correlation.value!
   switch (method.value as CorrelationMethod) {
     case 'spearman':
       return c.spearman

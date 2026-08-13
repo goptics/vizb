@@ -1,26 +1,11 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { describe, it, expect, afterAll } from 'vitest'
 import { ref, type Ref } from 'vue'
 import type { ChartData, Sort } from '@/types'
 import { getBaseOptions, type BaseChartConfig } from './baseChartOptions'
+import { installDevicePixelRatio } from '@/test-utils'
 
-// vitest runs in node — stub window.devicePixelRatio so getBaseOptions's
-// is3D-pixelRatio branch has something to read.
-const originalDPR = (globalThis as { window?: { devicePixelRatio: number } }).window
-  ?.devicePixelRatio
-beforeAll(() => {
-  ;(globalThis as unknown as { window: { devicePixelRatio: number } }).window = {
-    devicePixelRatio: 1,
-  }
-})
-afterAll(() => {
-  if (originalDPR === undefined) {
-    delete (globalThis as { window?: unknown }).window
-  } else {
-    ;(globalThis as unknown as { window: { devicePixelRatio: number } }).window = {
-      devicePixelRatio: originalDPR,
-    }
-  }
-})
+let restoreDpr = installDevicePixelRatio()
+afterAll(() => restoreDpr())
 
 // Minimal ChartData that satisfies the bits getBaseOptions / is3D touch.
 // `yAxis` and `zAxis` are non-empty so is3D returns false (a 2D chart).

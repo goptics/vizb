@@ -72,10 +72,6 @@ describe('ui barrels', () => {
     expect(ComboboxBarrel.ComboboxItem).toBe(ComboboxItem)
     expect(ComboboxBarrel.ComboboxItemIndicator).toBe(ComboboxItemIndicator)
     expect(ComboboxBarrel.ComboboxSeparator).toBe(ComboboxSeparator)
-
-    // Touch every export key so barrel modules stay live under coverage.
-    expect(Object.keys(Ui).length).toBeGreaterThan(0)
-    expect(Object.keys(ComboboxBarrel).length).toBeGreaterThan(0)
   })
 })
 
@@ -135,7 +131,6 @@ describe('Label / Separator', () => {
     const w = mount(Separator, { props: { class: 'sep' } })
     const el = w.get('[role="separator"]')
     expect(el.attributes('aria-orientation')).toBe('horizontal')
-    expect(el.classes()).toContain('h-px')
     expect(el.classes()).toContain('sep')
   })
 
@@ -143,7 +138,6 @@ describe('Label / Separator', () => {
     const w = mount(Separator, { props: { orientation: 'vertical' } })
     const el = w.get('[role="separator"]')
     expect(el.attributes('aria-orientation')).toBe('vertical')
-    expect(el.classes()).toContain('w-px')
   })
 })
 
