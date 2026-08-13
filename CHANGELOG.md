@@ -4,6 +4,30 @@ Notable changes to Vizb documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [v0.19.0] - 2026-08-13
+
+### Added
+
+- **bar** — Add --border-radius (top-only when stacked) ([#350](https://github.com/goptics/vizb/pull/350))
+- Document chord charts and cyclic edge examples ([#367](https://github.com/goptics/vizb/pull/367))
+- Support chord output in GitHub Action ([#366](https://github.com/goptics/vizb/pull/366))
+- Expose chord chart configuration in HTTP API ([#365](https://github.com/goptics/vizb/pull/365))
+- Render chord charts in embedded UI ([#364](https://github.com/goptics/vizb/pull/364))
+- Add chord CLI and edge parser support ([#363](https://github.com/goptics/vizb/pull/363))
+- **ui** — Upgrade Vue and ECharts ([#356](https://github.com/goptics/vizb/pull/356))
+
+### Fixed
+
+- **ui** — Sync stack setting to URL ([#373](https://github.com/goptics/vizb/pull/373))
+
+### Changed
+
+- **action** — Move pipeline orchestration to Node ([#369](https://github.com/goptics/vizb/pull/369))
+
+### [feat]
+
+- Sankey chart type (group mapping) ([#346](https://github.com/goptics/vizb/pull/346))
+
 # [v0.18.2] - 2026-08-07
 
 ### Fixed
