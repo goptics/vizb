@@ -19,7 +19,7 @@ A column cannot be in both `--select` and `--group`. See [Group vs Select](/guid
 With group active, every numeric column gets its own chart by default. Use `--select` to keep only the columns you want, in the order you want them, and optionally rename each chart's label.
 
 <InvokeTabs
-  cli={`vizb bar sales.csv -g region,product -p x,y --select amount,total -o bars.html`}
+  cli={`vizb bar sales.csv -g region,product -p x,y --select amount,quantity -o bars.html`}
   input={SALES_SAMPLE}
 />
 

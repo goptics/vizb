@@ -85,7 +85,7 @@ WebGL `bar3D` scene: X and Y form a grid floor, and Z values stack as depth laye
 `--select` is **repeatable** (csv/json only). With explicit `-g` / `-p` / `-r`, it picks which numeric columns get their own chart (optional `{label}` renames each chart). Without group, it switches to solo value / mixed / multi-stat modes that plot raw columns as coordinate axes.
 
 <InvokeTabs
-  cli={`vizb bar sales.csv -g region,product -p x,y --select amount,total -o bars.html`}
+  cli={`vizb bar sales.csv -g region,product -p x,y --select amount,quantity -o bars.html`}
   input={SALES_SAMPLE}
 />
 
