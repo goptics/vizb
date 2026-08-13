@@ -37,6 +37,7 @@ const autoresize = {
   throttle: 100,
   onResize: () => {
     const chart = chartRef.value?.chart
+    /* v8 ignore next */
     if (!chart || chart.isDisposed()) return
     chart.setOption(props.option, { notMerge: true })
   },

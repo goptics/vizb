@@ -24,19 +24,6 @@ const chordSeriesDefaults = {
   emphasis: { focus: 'self' as const },
 } as const
 
-function chordLegend(nodeNames: string[], textColor: string): NonNullable<EChartsOption['legend']> {
-  return {
-    show: nodeNames.length > 0,
-    type: 'scroll',
-    left: 'center',
-    top: 8,
-    itemWidth: 10,
-    itemHeight: 10,
-    data: nodeNames,
-    textStyle: { fontSize, color: textColor },
-  }
-}
-
 function minimalChordOption(config: BaseChartConfig): EChartsOption {
   return {
     ...getBaseOptions(config),
@@ -77,10 +64,16 @@ export function useChordChartOptions(config: BaseChartConfig) {
 
     return {
       ...getBaseOptions(config),
-      legend: chordLegend(
-        nodes.map((n) => n.name),
-        styling.textColor
-      ),
+      legend: {
+        show: nodes.length > 0,
+        type: 'scroll',
+        left: 'center',
+        top: 8,
+        itemWidth: 10,
+        itemHeight: 10,
+        data: nodes.map((n) => n.name),
+        textStyle: { fontSize, color: styling.textColor },
+      },
       tooltip: {
         trigger: 'item',
         ...getTooltipTheme(isDark.value),
