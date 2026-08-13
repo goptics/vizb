@@ -335,6 +335,53 @@ describe('useUrlRouter', () => {
     expect(replaceState).toHaveBeenCalledWith(null, '', '/?bar.h=true')
   })
 
+  it('applies stack parameters to bar and line configs', async () => {
+    holder.datasets = ref([
+      ds([
+        { type: 'bar', stack: false, scale: 'log' },
+        { type: 'line', stack: true, scale: 'log' },
+        { type: 'scatter', scale: 'linear' },
+      ]),
+    ])
+    mockWindow('?bar.st=true&line.st=false&scatter.st=true')
+    const { useUrlRouter } = await import('./useUrlRouter')
+    await useUrlRouter().initFromUrl()
+
+    const bar = holder.datasets.value[0]!.settings[0] as BarConfig
+    const line = holder.datasets.value[0]!.settings[1] as LineConfig
+    const scatter = holder.datasets.value[0]!.settings[2] as { stack?: boolean }
+    expect(bar.stack).toBe(true)
+    expect(bar.scale).toBe('linear')
+    expect(line.stack).toBe(false)
+    expect(line.scale).toBe('log')
+    expect(scatter.stack).toBeUndefined()
+  })
+
+  it('uses a linear scale when enabling line stacking', async () => {
+    holder.datasets = ref([ds([{ type: 'line', stack: false, scale: 'log' }])])
+    mockWindow('?line.st=true')
+    const { useUrlRouter } = await import('./useUrlRouter')
+    await useUrlRouter().initFromUrl()
+
+    const line = holder.datasets.value[0]!.settings[0] as LineConfig
+    expect(line.stack).toBe(true)
+    expect(line.scale).toBe('linear')
+  })
+
+  it('syncs enabled and disabled bar and line stacks to the URL', async () => {
+    holder.datasets = ref([
+      ds([
+        { type: 'bar', stack: true },
+        { type: 'line', stack: false },
+      ]),
+    ])
+    const replaceState = mockWindow('')
+    const { useUrlRouter } = await import('./useUrlRouter')
+    useUrlRouter().syncUrlToState()
+
+    expect(replaceState).toHaveBeenCalledWith(null, '', '/?bar.st=true&line.st=false')
+  })
+
   it('applies legacy global s/l/sc and per-chart sort/labels/scale/vm params', async () => {
     mockWindow(
       '?s=desc&l=true&sc=log&bar.so=asc&bar.l=false&line.l=true&line.sc=log&scatter.vm=true&scatter.so=desc'
