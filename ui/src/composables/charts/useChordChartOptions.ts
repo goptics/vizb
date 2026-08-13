@@ -6,13 +6,22 @@ import { getChartStyling, getTooltipTheme } from './shared'
 import { fontSize } from './shared/common'
 import { buildEdgeGraph, formatEdgeTooltip, sortEdgeGraphNodes } from './shared/edgeGraph'
 
-const chordLayout = {
-  left: '4%',
-  right: '4%',
-  top: '8%',
-  bottom: '8%',
-  center: ['50%', '52%'],
-  radius: ['58%', '72%'],
+// Thin outer ring (demo geometry). top = legend band + gap; bottom = same gap.
+const chordSeriesDefaults = {
+  padAngle: 1,
+  top: 52,
+  bottom: 24,
+  left: '8%',
+  right: '8%',
+  center: ['50%', '50%'] as [string, string],
+  radius: ['70%', '80%'] as [string, string],
+  // Override ECharts' non-zero default; optional rounding is a future flag.
+  itemStyle: { borderRadius: 0 },
+  lineStyle: {
+    opacity: 0.3,
+    color: 'gradient' as const,
+  },
+  emphasis: { focus: 'self' as const },
 } as const
 
 function minimalChordOption(config: BaseChartConfig): EChartsOption {
@@ -22,11 +31,9 @@ function minimalChordOption(config: BaseChartConfig): EChartsOption {
     series: [
       {
         type: 'chord',
-        ...chordLayout,
+        ...chordSeriesDefaults,
         data: [],
         links: [],
-        emphasis: { focus: 'adjacency' },
-        lineStyle: { color: 'gradient', opacity: 0.35 },
       },
     ],
   } as unknown as EChartsOption
@@ -34,7 +41,7 @@ function minimalChordOption(config: BaseChartConfig): EChartsOption {
 
 /** Build the ECharts 6 Chord option from Vizb's shared x→y edge points. */
 export function useChordChartOptions(config: BaseChartConfig) {
-  const { chartData, sort, showLabels, isDark } = config
+  const { chartData, sort, showLabels, isDark, visibleZ } = config
 
   const options = computed<EChartsOption>(() => {
     if (!hasXAxis(chartData) || !hasYAxis(chartData)) {
@@ -54,10 +61,23 @@ export function useChordChartOptions(config: BaseChartConfig) {
       nodes.map((n) => [n.name, n.itemStyle!.color!] as const)
     )
     const colorFor = (name: string): string => nodeColor.get(name) ?? '#888'
+    // ChartCard writes legend toggles into visibleZ; persist them so ChartChord's
+    // notMerge remount on resize does not re-show hidden nodes.
+    const selected = visibleZ?.value ?? {}
 
     return {
       ...getBaseOptions(config),
-      legend: { show: false },
+      legend: {
+        show: nodes.length > 0,
+        type: 'scroll',
+        left: 'center',
+        top: 8,
+        itemWidth: 10,
+        itemHeight: 10,
+        data: nodes.map((n) => n.name),
+        selected,
+        textStyle: { fontSize, color: styling.textColor },
+      },
       tooltip: {
         trigger: 'item',
         ...getTooltipTheme(isDark.value),
@@ -66,14 +86,14 @@ export function useChordChartOptions(config: BaseChartConfig) {
       series: [
         {
           type: 'chord',
-          ...chordLayout,
+          ...chordSeriesDefaults,
           data,
           links,
-          emphasis: { focus: 'adjacency' },
-          lineStyle: { color: 'gradient', opacity: 0.35, curveness: 0.15 },
           label: {
             show: showLabels.value,
-            color: styling.textColor,
+            position: 'inside',
+            color: '#fff',
+            fontWeight: 'bold',
             fontSize,
           },
         },

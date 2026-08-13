@@ -46,8 +46,31 @@ describe('useChordChartOptions', () => {
       { name: 'A', value: 15, itemStyle: { color: expect.any(String) } },
       { name: 'B', value: 15, itemStyle: { color: expect.any(String) } },
     ])
-    expect(series.emphasis).toEqual({ focus: 'adjacency' })
+    expect(series.emphasis).toEqual({ focus: 'self' })
     expect(series.lineStyle).toMatchObject({ color: 'gradient' })
+    expect(options.value.legend).toMatchObject({
+      show: true,
+      data: ['A', 'B'],
+    })
+  })
+
+  it('writes visibleZ onto legend.selected so hidden nodes survive remounts', () => {
+    const { options } = useChordChartOptions(
+      baseConfig({
+        chartData: chartData(),
+        visibleZ: { A: false, B: true },
+      })
+    )
+    expect(options.value.legend).toMatchObject({
+      selected: { A: false, B: true },
+    })
+  })
+
+  it('uses an empty selected map when visibleZ is absent', () => {
+    const cfg = baseConfig({ chartData: chartData() })
+    delete cfg.visibleZ
+    const { options } = useChordChartOptions(cfg)
+    expect(options.value.legend).toMatchObject({ selected: {} })
   })
 
   it('supports labels, sorting, and non-negative display weights', () => {
@@ -84,6 +107,7 @@ describe('useChordChartOptions', () => {
     expect(series.type).toBe('chord')
     expect(series.data).toEqual([])
     expect(series.links).toEqual([])
+    expect((options.value.legend as { show?: boolean }).show).toBe(false)
   })
 
   it('treats missing points as an empty list when both axes exist', () => {

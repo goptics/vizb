@@ -1,8 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { defineComponent, h } from 'vue'
+import { defineComponent, h, ref } from 'vue'
 import { mount } from '@vue/test-utils'
+import { baseConfig, makeSankeyChartData } from '@/test-utils'
+import { useChordChartOptions } from '@/composables/charts/useChordChartOptions'
 
 const useMock = vi.fn()
+const chartHolder = vi.hoisted(() => ({
+  chart: undefined as
+    | { isDisposed: () => boolean; setOption: ReturnType<typeof vi.fn> }
+    | undefined,
+}))
 vi.mock('echarts/core', () => ({ use: (...args: unknown[]) => useMock(...args) }))
 vi.mock('echarts/renderers', () => ({ CanvasRenderer: 'CanvasRenderer' }))
 vi.mock('echarts/components', () => ({
@@ -36,7 +43,8 @@ vi.mock('vue-echarts', () => ({
     name: 'VChart',
     props: ['option', 'initOptions', 'autoresize', 'updateOptions'],
     emits: ['legendselectchanged'],
-    setup(props, { emit }) {
+    setup(props, { emit, expose }) {
+      expose(chartHolder)
       return () =>
         h('div', {
           'data-testid': 'vchart',
@@ -59,9 +67,17 @@ import ChartChord from './ChartChord.vue'
 import Chart3D from './Chart3D.vue'
 import { BASE_2D } from './charts/base'
 
+function invokeAutoresize(wrapper: ReturnType<typeof mount>) {
+  const autoresize = wrapper.getComponent({ name: 'VChart' }).props('autoresize') as {
+    onResize?: () => void
+  }
+  autoresize.onResize?.()
+}
+
 describe('chart shells', () => {
   beforeEach(() => {
     useMock.mockClear()
+    chartHolder.chart = undefined
   })
 
   const option = { title: { text: 't' } }
@@ -99,5 +115,47 @@ describe('chart shells', () => {
   it('Chart3D uses merge update options', () => {
     const w = mount(Chart3D, { props: { option, initOptions } })
     expect(w.get('[data-testid="vchart"]').attributes('data-not-merge')).toBe('0')
+  })
+
+  it('ChartChord remounts option on resize so gradients recompute', () => {
+    const setOption = vi.fn()
+    chartHolder.chart = { isDisposed: () => false, setOption }
+    const w = mount(ChartChord, { props: { option, initOptions } })
+    invokeAutoresize(w)
+    expect(setOption).toHaveBeenCalledWith(option, { notMerge: true })
+  })
+
+  it('ChartChord remount keeps a node hidden after legend toggle', async () => {
+    const setOption = vi.fn()
+    chartHolder.chart = { isDisposed: () => false, setOption }
+    const visibleZ = ref<Record<string, boolean>>({})
+    const { options } = useChordChartOptions(
+      baseConfig({
+        chartData: makeSankeyChartData({
+          yAxis: ['A', 'B'],
+          series: [
+            { xAxis: 'A', values: [0], benchmarkId: '' },
+            { xAxis: 'B', values: [0], benchmarkId: '' },
+          ],
+          points: [
+            { xAxis: 'A', yAxis: 'B', zAxis: '', value: 10 },
+            { xAxis: 'B', yAxis: 'A', zAxis: '', value: 5 },
+          ],
+        }),
+        visibleZ,
+      })
+    )
+    const w = mount(ChartChord, { props: { option: options.value, initOptions } })
+
+    visibleZ.value = { A: false, B: true }
+    await w.setProps({ option: options.value })
+    invokeAutoresize(w)
+
+    expect(setOption).toHaveBeenCalledWith(
+      expect.objectContaining({
+        legend: expect.objectContaining({ selected: { A: false, B: true } }),
+      }),
+      { notMerge: true }
+    )
   })
 })

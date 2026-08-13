@@ -153,40 +153,43 @@ useDashboardInit()
 
   <LoadingSkeleton v-else-if="showSkeleton" />
 
-  <main v-else-if="activeDataset" class="mx-auto min-h-screen max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-    <DatasetHeader
-      :dataset="activeDataset"
-      :datasets="datasets"
-      :activeDatasetId="activeDatasetId"
-      :resultGroups="resultGroups"
-      :activeGroupId="activeGroupId"
-      @selectDataset="selectDataset"
-      @selectGroup="selectGroup"
+  <div v-else-if="activeDataset" class="flex min-h-dvh flex-col" data-testid="page-shell">
+    <main class="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:px-8">
+      <DatasetHeader
+        :dataset="activeDataset"
+        :datasets="datasets"
+        :activeDatasetId="activeDatasetId"
+        :resultGroups="resultGroups"
+        :activeGroupId="activeGroupId"
+        @selectDataset="selectDataset"
+        @selectGroup="selectGroup"
+      />
+
+      <LoadError v-if="detailError" :message="detailError" :retry="retryActiveDataset" inline />
+
+      <LoadingSkeleton v-else-if="showDetailSkeleton" contentOnly />
+
+      <div v-else class="space-y-5">
+        <template v-for="(state, index) in charts" :key="state.key">
+          <ChartCard
+            v-if="state.data"
+            :chartData="state.data"
+            :loading="state.pending"
+            class="animate-fade-in"
+            :style="{ animationDelay: `${index * 50}ms` }"
+          />
+          <div v-else class="rounded-lg border border-border bg-card p-6 shadow-sm">
+            <div class="mb-4 h-6 w-48 animate-pulse rounded bg-muted" />
+            <div class="h-[600px] animate-pulse rounded bg-muted" />
+          </div>
+        </template>
+      </div>
+    </main>
+
+    <AppFooter
+      v-if="!showSkeleton && !showDetailSkeleton && !loadError && !detailError"
+      class="shrink-0"
+      :version="version"
     />
-
-    <LoadError v-if="detailError" :message="detailError" :retry="retryActiveDataset" inline />
-
-    <LoadingSkeleton v-else-if="showDetailSkeleton" contentOnly />
-
-    <div v-else class="space-y-5">
-      <template v-for="(state, index) in charts" :key="state.key">
-        <ChartCard
-          v-if="state.data"
-          :chartData="state.data"
-          :loading="state.pending"
-          class="animate-fade-in"
-          :style="{ animationDelay: `${index * 50}ms` }"
-        />
-        <div v-else class="rounded-lg border border-border bg-card p-6 shadow-sm">
-          <div class="mb-4 h-6 w-48 animate-pulse rounded bg-muted" />
-          <div class="h-[600px] animate-pulse rounded bg-muted" />
-        </div>
-      </template>
-    </div>
-  </main>
-
-  <AppFooter
-    v-if="activeDataset && !showSkeleton && !showDetailSkeleton && !loadError && !detailError"
-    :version="version"
-  />
+  </div>
 </template>
