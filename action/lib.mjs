@@ -28,6 +28,9 @@ export function resolveInputs(env = process.env) {
   return {
     file,
     cmd,
+    cmdRetries: parseCmdRetries(input('cmd-retries', env)),
+    cmdRetryDelay: parseCmdRetryDelay(input('cmd-retry-delay', env)),
+    cmdRetryStrategy: parseCmdRetryStrategy(input('cmd-retry-strategy', env)),
     hasInput: Boolean(file || cmd),
     jsonFile: outputJson || 'bench.json',
     name: input('name', env),
@@ -59,6 +62,83 @@ export function resolveInputs(env = process.env) {
     outputHtml: input('output-html', env),
     dataUrl,
   }
+}
+
+/** @param {string} value */
+function parseCmdRetries(value) {
+  if (!value) return 1
+  const n = Number(value)
+  if (!Number.isInteger(n) || n < 1) {
+    throw new Error('cmd-retries must be an integer >= 1')
+  }
+  return n
+}
+
+/** @param {string} value */
+function parseCmdRetryDelay(value) {
+  if (!value) return 2
+  const n = Number(value)
+  if (!Number.isFinite(n) || n < 0) {
+    throw new Error('cmd-retry-delay must be a number >= 0')
+  }
+  return n
+}
+
+/** @param {string} value */
+function parseCmdRetryStrategy(value) {
+  if (!value) return 'linear'
+  if (value !== 'linear' && value !== 'exponential') {
+    throw new Error('cmd-retry-strategy must be "linear" or "exponential"')
+  }
+  return value
+}
+
+/** @param {number} seconds */
+function sleepSync(seconds) {
+  if (!(seconds > 0)) return
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, seconds * 1000)
+}
+
+/**
+ * @param {() => void} fn
+ * @param {{
+ *   retries: number,
+ *   delaySec: number,
+ *   strategy: 'linear' | 'exponential',
+ *   sleep?: (sec: number) => void,
+ *   log?: (msg: string) => void,
+ * }} opts
+ */
+export function runWithRetries(fn, opts) {
+  const sleep = opts.sleep ?? sleepSync
+  const log = opts.log ?? ((msg) => console.error(msg))
+  let lastError
+
+  for (let attempt = 1; attempt <= opts.retries; attempt++) {
+    try {
+      fn()
+      return
+    } catch (err) {
+      lastError = err
+      if (attempt === opts.retries) throw err
+      const waitSec =
+        opts.strategy === 'exponential'
+          ? opts.delaySec * 2 ** (attempt - 1)
+          : opts.delaySec
+      const detail =
+        err && typeof err === 'object' && 'exitCode' in err
+          ? `exit ${/** @type {{ exitCode: unknown }} */ (err).exitCode}`
+          : err instanceof Error
+            ? err.message
+            : String(err)
+      log(
+        `::warning::cmd failed (attempt ${attempt}/${opts.retries}, ${detail}). Retrying in ${waitSec}s (${opts.strategy}).`,
+      )
+      sleep(waitSec)
+    }
+  }
+
+  throw lastError
 }
 
 /** @param {string} value */
@@ -166,7 +246,13 @@ export function runShellCapture(command, stdoutPath) {
 
 /**
  * @param {ReturnType<typeof resolveInputs>} inputs
- * @param {{ run?: typeof run, runShellCapture?: typeof runShellCapture, vizbBin?: string }} [deps]
+ * @param {{
+ *   run?: typeof run,
+ *   runShellCapture?: typeof runShellCapture,
+ *   vizbBin?: string,
+ *   sleep?: (sec: number) => void,
+ *   log?: (msg: string) => void,
+ * }} [deps]
  */
 export function runPipeline(inputs, deps = {}) {
   const execRun = deps.run ?? run
@@ -177,7 +263,13 @@ export function runPipeline(inputs, deps = {}) {
     let inputPath = inputs.file
     if (!inputPath) {
       inputPath = join(tmpdir(), `vizb-data-input-${process.pid}.txt`)
-      execShell(inputs.cmd, inputPath)
+      runWithRetries(() => execShell(inputs.cmd, inputPath), {
+        retries: inputs.cmdRetries,
+        delaySec: inputs.cmdRetryDelay,
+        strategy: inputs.cmdRetryStrategy,
+        sleep: deps.sleep,
+        log: deps.log,
+      })
     }
     execRun(vizb, [inputPath, '-o', inputs.jsonFile, ...buildConvertArgs(inputs)])
   }

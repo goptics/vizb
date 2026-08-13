@@ -18,6 +18,15 @@ inputs:
   bench-file:
     description: "DEPRECATED: use 'file'. Existing input file; honored only when 'file' is empty." # remove on v1
     default: ""
+  cmd-retries:
+    description: "Total attempts for cmd. 1 = no retry (default). Integer >= 1."
+    default: "1"
+  cmd-retry-delay:
+    description: "Seconds to wait between cmd attempts. Linear: every wait. Exponential: initial wait. Number >= 0."
+    default: "2"
+  cmd-retry-strategy:
+    description: "Backoff between cmd attempts: linear or exponential."
+    default: "linear"
   name:
     description: "Dataset/benchmark name (-n flag)"
     default: "Comparisons"
@@ -221,6 +230,9 @@ runs:
         INPUT_file: ${{ inputs.file }}
         INPUT_bench-cmd: ${{ inputs.bench-cmd }}
         INPUT_bench-file: ${{ inputs.bench-file }}
+        INPUT_cmd-retries: ${{ inputs.cmd-retries }}
+        INPUT_cmd-retry-delay: ${{ inputs.cmd-retry-delay }}
+        INPUT_cmd-retry-strategy: ${{ inputs.cmd-retry-strategy }}
         INPUT_name: ${{ inputs.name }}
         INPUT_title: ${{ inputs.title }}
         INPUT_description: ${{ inputs.description }}
