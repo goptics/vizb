@@ -42,7 +42,7 @@ func (f *statValue) Type() string { return "string" }
 // BindStatFlag registers --stat on fs, pointing at target. Exported so commands
 // that don't use a FlagBag (e.g. the ui subcommand) can register the same flag.
 func BindStatFlag(fs *pflag.FlagSet, target *[]string) {
-	fs.Var(&statValue{value: target}, "stat", "Enable stats panel; omit to disable, use alone for all categories, or =cat1,cat2 for specific (counts, center, spread, extremes, shape, percentiles, confidence, correlations)")
+	fs.Var(&statValue{value: target}, "stat", "Enable stats panel (all when bare; list categories to limit)")
 	fs.Lookup("stat").NoOptDefVal = statFlagAll
 }
 

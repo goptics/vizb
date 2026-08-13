@@ -14,7 +14,7 @@ func init() {
 	cli.SetChartMeta(cli.ChartMeta{
 		Type:  "heatmap",
 		Use:   "heatmap [target]",
-		Short: "Generate a heatmap chart from data",
-		Long:  "Generate an interactive heatmap chart (HTML or JSON) from benchmark output or tabular CSV/JSON data.",
+		Short: "Generate a heatmap chart",
+		Long:  "Generate an interactive heatmap chart (HTML or JSON) from CSV, JSON, or benchmark output.",
 	})
 }

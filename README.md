@@ -39,7 +39,7 @@
     <a href="https://vizb.goptics.org/guides/select/">Select</a> ·
     <a href="https://vizb.goptics.org/guides/merging/">Merging</a> ·
     <a href="https://vizb.goptics.org/ci-cd/github-action/">CI/CD</a> ·
-    <a href="https://vizb.goptics.org/installation/#docker">Docker</a>
+    <a href="https://vizb.goptics.org/getting-started/install/#docker">Docker</a>
     <br />
     <sub>Full documentation at <a href="https://vizb.goptics.org/"><strong>vizb.goptics.org</strong></a></sub>
   </p>
@@ -86,7 +86,7 @@ docker run --rm -v "$PWD:/data" -w /data goptics/vizb bar data.csv -o out.html
 ```
 
 The API has no built-in authentication. Keep it private or put authentication,
-TLS, and access controls in front of it. See the [Docker installation guide](https://vizb.goptics.org/installation/#docker).
+TLS, and access controls in front of it. See the [Docker installation guide](https://vizb.goptics.org/getting-started/install/#docker).
 
 ## Quick Example
 

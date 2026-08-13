@@ -21,7 +21,7 @@ func init() {
 	cli.SetChartMeta(cli.ChartMeta{
 		Type:  "bar",
 		Use:   "bar [target]",
-		Short: "Generate a bar chart from data",
-		Long:  "Generate an interactive bar chart (HTML or JSON) from benchmark output or tabular CSV/JSON data.",
+		Short: "Generate a bar chart",
+		Long:  "Generate an interactive bar chart (HTML or JSON) from CSV, JSON, or benchmark output.",
 	})
 }

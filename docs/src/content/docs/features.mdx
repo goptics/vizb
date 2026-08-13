@@ -1,71 +1,86 @@
 ---
 title: Features
-description: A detailed overview of everything vizb can do.
+description: What Vizb can do — inputs, dimensions, charts, UI, merge, and CI — without writing chart code.
 ---
 
-import { CardGrid, Card, Aside } from '@astrojs/starlight/components';
+import { CardGrid, Card, Aside, LinkCard } from '@astrojs/starlight/components';
 
-Vizb is a tabular visualization engine for CSV, JSON, and benchmark output. A benchmark row is just a named, numeric table row — everything below works the same way for tables and benchmarks.
+Vizb turns CSV, JSON, and benchmark output into interactive charts and stats **without writing chart or frontend code**. Tables and benchmarks share one dimension model; you run the same pipeline from the CLI, [GitHub Action](/ci-cd/github-action), or [REST API](/commands/serve).
+
+New to the product? Start with [Getting Started](/getting-started).
+
+## Inputs
 
 <CardGrid stagger>
-  <Card title="Any CSV or JSON" icon="seti:csv">
-    Chart any table directly. Numeric columns and fields each become their own chart. Promote other columns to the Name / X / Y / Z axes with `--group`. See the [Tabular Data guide](/guides/data).
+  <Card title="CSV and JSON tables" icon="seti:csv">
+    Chart numeric columns. Promote other columns to Name / X / Y / Z with `--group`. Nested JSON arrays via `--json-path`. See [Tabular data](/guides/data).
   </Card>
-  <Card title="Modern Interactive UI" icon="laptop">
-    Vue.js application embedded in a single HTML file. Sort, zoom, swap axes, fullscreen, and export. All in the browser with no server.
+  <Card title="Benchmark parsers" icon="document">
+    Go (`go test -bench`), Rust (Criterion, Divan), JavaScript (Vitest, Tinybench). Auto-detect from content, override with `-P`. See [Supported inputs](/guides/parsers).
   </Card>
-  <Card title="Multi-Chart" icon="analytics">
-    Bar, line, scatter, pie, heatmap, radar, sankey, and chord charts rendered together. Choose which to show with `--charts` or toggle in the UI.
-  </Card>
-  <Card title="3D Charts" icon="cube">
-    Add a z-axis to render interactive 3D stacked-bar and 3D line charts. Rotate, zoom, and auto-rotate the scene. See [3D Charts](/charts/3d).
-  </Card>
-  <Card title="Statistics Panel" icon="approve-check">
-    Per-series descriptive stats (33 metrics, sortable, searchable, CSV export) plus a four-method correlation matrix (Pearson, Spearman, Kendall, distance correlation). Computed off-thread. See [Statistics](/ui/stats).
-  </Card>
-  <Card title="Multi-Dimensional Grouping" icon="puzzle">
-    Extract Name, XAxis, YAxis, and ZAxis from row labels or column values using pattern matching or regex. Handle 1D, 2D, 3D, or 4D data.
-  </Card>
-  <Card title="Axis Swapping" icon="random">
-    Rearrange Name, X-axis, Y-axis, and Z-axis dimensions in the UI for different perspectives on the same data.
-  </Card>
-  <Card title="Tag-Based Merging" icon="code-branch">
-    Tag datasets with version labels. Deep-merge across releases with chronological data ordering.
-  </Card>
-  <Card title="Sorting" icon="list-format">
-    Rank series by value so the largest, smallest, or fastest appear first. Configure with `--sort` or toggle in the UI.
-  </Card>
-  <Card title="Logarithmic Scale" icon="puzzle">
-    Use `--scale log` for 2D bar and line charts when your data spans several orders of magnitude.
-  </Card>
-  <Card title="Large-Data Zoom" icon="magnifier">
-    A dataZoom slider for wide X-axes and an optimized render path for big datasets keep the UI responsive on thousands of points.
-  </Card>
-  <Card title="Axis-Sum Tooltips" icon="information">
-    Hover any point for marginal sums. 2D charts show per-series and x totals. 3D charts show Σ z / Σ x / Σ y. Values recompute live as you toggle the legend.
-  </Card>
-  <Card title="Flexible Input" icon="document">
-    Reads CSV and JSON tables. Also reads benchmark output from Go, Rust (Criterion, Divan), and JavaScript (Vitest, Tinybench). Accepts a file path or an stdin pipe.
-  </Card>
-  <Card title="Automatic Parser Detection" icon="magnifier">
-    `--parser` defaults to `auto`. Vizb inspects the input content and picks the right parser. It prints its choice. Override anytime with `-P`.
-  </Card>
-  <Card title="Comprehensive Metrics" icon="information">
-    Time (ns/us/ms/s), memory (B/KB/MB/GB), allocations, throughput, and latency percentiles. Units are configurable. Which metrics appear depends on the parser used.
-  </Card>
-  <Card title="Smart Filtering" icon="magnifier">
-    Regex to include only matching rows (CSV/JSON: `--group` label) or benchmark names.
-  </Card>
-  <Card title="Export Options" icon="download">
-    Single-file HTML or JSON output. Export charts as JPEG from the UI.
-  </Card>
-  <Card title="GitHub Action" icon="server">
-    First-class CI integration. Run benchmarks, tag releases, merge history, and deploy from GitHub Actions.
+  <Card title="Auto detection" icon="magnifier">
+    `--parser` defaults to `auto`. Vizb prints the chosen parser. File path or stdin pipe both work.
   </Card>
 </CardGrid>
 
-## Learn More
+## Dimension model
+
+<CardGrid stagger>
+  <Card title="Name / X / Y / Z" icon="puzzle">
+    Up to four dimensions on every chart. Patterns and regex split labels. See [Dimensions](/getting-started/dimensions).
+  </Card>
+  <Card title="Group and select" icon="list-format">
+    Group: one chart per metric, categories on axes, sum duplicates. Select: columns as coordinates or metric picks. See [Group vs Select](/guides/group-vs-select).
+  </Card>
+  <Card title="Auto-group and auto-value" icon="magnifier">
+    No flags: categorical files auto-group; all-numeric files auto-value continuous axes. CLI logs the inference so you can override it.
+  </Card>
+  <Card title="Wide competitor columns" icon="random">
+    `--col-axis` / `-A` places numeric column *names* on a free dimension so frameworks or versions share one chart.
+  </Card>
+</CardGrid>
+
+## Charts and UI
+
+<CardGrid stagger>
+  <Card title="Eight chart types" icon="analytics">
+    Bar, line, scatter, pie, heatmap, radar, Sankey, Chord. Choose with `--charts` or a chart subcommand. See [Charts](/charts).
+  </Card>
+  <Card title="3D (WebGL)" icon="cube">
+    Z-axis data (or auto-value with 3+ numeric columns) renders interactive bar3D / line3D / scatter3D. See [3D charts](/charts/3d).
+  </Card>
+  <Card title="Self-contained HTML" icon="laptop">
+    Sort, zoom, swap axes, fullscreen, themes, JPEG export. One file, offline. See [UI](/ui).
+  </Card>
+  <Card title="Statistics panel" icon="approve-check">
+    Opt-in with `--stat`: 33 descriptive metrics per series plus Pearson, Spearman, Kendall, and distance correlation. See [Statistics](/ui/stats).
+  </Card>
+  <Card title="Log scale and large data" icon="magnifier">
+    Log scale on cartesian charts. DataZoom for wide X axes; aggregated grouped CSV/JSON stays responsive.
+  </Card>
+</CardGrid>
+
+## Merge, CI, and API
+
+<CardGrid stagger>
+  <Card title="Tag-based merge" icon="code-branch">
+    Tag datasets, merge JSON across runs, inject tags onto n/x/y/z. See [Merging](/guides/merging).
+  </Card>
+  <Card title="GitHub Action" icon="server">
+    Composite action for cmd or file input, merge, HTML/JSON outputs. See [GitHub Action](/ci-cd/github-action).
+  </Card>
+  <Card title="REST API" icon="seti:json">
+    `vizb serve` exposes convert, merge, and UI generation. See [serve](/commands/serve) and [API](/api/).
+  </Card>
+  <Card title="Units and export" icon="download">
+    Time, memory, and number units. HTML or JSON output. Chart JPEG from the UI.
+  </Card>
+</CardGrid>
+
+## Learn more
 
 <Aside type="tip">
-  Each feature is documented in detail — follow the guides in the sidebar.
+  Prefer the learning path: [Install](/getting-started/install) → [Introduction](/getting-started) → [Dimensions](/getting-started/dimensions) → [Charts](/charts) → [Group vs Select](/guides/group-vs-select) → [Commands](/commands/root).
 </Aside>
+
+<LinkCard title="Getting Started" href="/getting-started" description="Introduction, install, and dimensions." />

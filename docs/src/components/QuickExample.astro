@@ -1,0 +1,190 @@
+---
+/**
+ * Homepage Quick Example: prose + commands left, CSV right (tablet+);
+ * chart image full-width below.
+ */
+import { Aside, Code } from '@astrojs/starlight/components';
+import DocImage from './DocImage.astro';
+import CopyableCsv from './CopyableCsv.astro';
+import InvokeTabs from './InvokeTabs.astro';
+import { QUICK_SALES_SAMPLE } from '../data/samples';
+import heroBarChart from '../assets/hero-bar-chart.png';
+---
+
+<div class="quick-example">
+	<div class="quick-example__split">
+		<div class="quick-example__intro">
+			<p>
+				Point Vizb at a CSV. Numeric columns become charts. Categorical columns become
+				axes when you group (or when auto-group picks one for you).
+			</p>
+			<p>
+				After <a href="/getting-started/install">install</a>, chart a table like this:
+			</p>
+		</div>
+
+		<div class="quick-example__csv">
+			<CopyableCsv filename="sales.csv" csv={QUICK_SALES_SAMPLE} />
+		</div>
+
+		<div class="quick-example__body">
+			<InvokeTabs
+				cli={`vizb bar sales.csv -g region,product -p x,y -l -o sales.html`}
+				input={QUICK_SALES_SAMPLE}
+			/>
+
+			<p>
+				Open <code>sales.html</code> in a browser. You get a grouped bar chart: region on X,
+				product as series, height = <code>quantity</code>.
+			</p>
+
+			<p>Flags in this example:</p>
+			<ul>
+				<li><code>bar</code> — one chart type (smallest learning path)</li>
+				<li>
+					<code>sales.csv</code> — the table above (use <strong>Copy CSV</strong> to grab
+					it)
+				</li>
+				<li><code>-g region,product</code> — columns that become dimensions</li>
+				<li><code>-p x,y</code> — first group column → X, second → Y series</li>
+				<li><code>-l</code> — show value labels on bars</li>
+				<li><code>-o sales.html</code> — self-contained HTML</li>
+			</ul>
+		</div>
+	</div>
+
+	<div class="quick-example__figure">
+		<DocImage
+			src={heroBarChart}
+			alt="2D grouped bar chart with five product series (Widget, Gear, Sensor, Relay, Bolt) per region"
+		/>
+	</div>
+
+	<div class="quick-example__after">
+		<p>
+			No <code>-g</code>? Vizb auto-groups a high-cardinality categorical column and logs the
+			choice. Override whenever the guess is wrong.
+		</p>
+
+		<Code code="vizb bar sales.csv -o sales.html" lang="bash" />
+
+		<p>
+			From a clone of the Vizb repo, the full sample is
+			<code>examples/csv/sales.csv</code> (10,000 orders across 2024–2025).
+		</p>
+
+		<Aside type="tip">
+			Advanced demo (date split + remote JSON): the{' '}
+			<a href="/examples/github-legends">GitHub Legends</a> 3D contribution skylines.
+		</Aside>
+	</div>
+</div>
+
+<style>
+	.quick-example__split {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 0.75rem 2rem;
+		margin-block-end: 1.25rem;
+		align-items: start;
+	}
+
+	.quick-example__intro,
+	.quick-example__body {
+		min-width: 0;
+	}
+
+	.quick-example__intro :global(p),
+	.quick-example__body :global(p),
+	.quick-example__after :global(p) {
+		margin-block: 0 0.85rem;
+	}
+
+	.quick-example__intro :global(p:last-child) {
+		margin-block-end: 0;
+	}
+
+	.quick-example__body :global(ul) {
+		margin-block: 0;
+	}
+
+	.quick-example__after :global(.starlight-aside) {
+		margin-block: 1rem 0;
+	}
+
+	.quick-example__after {
+		margin-block-start: 1rem;
+	}
+
+	.quick-example__csv {
+		min-width: 0;
+	}
+
+	.quick-example__csv :global(.copyable-csv) {
+		margin-block: 0.25rem 0.5rem;
+	}
+
+	.quick-example__figure {
+		margin-block: 0.5rem 0;
+	}
+
+	/* Tablet + desktop: copy left, CSV hugging it (no 1fr middle gap); image full width below */
+	@media (min-width: 48rem) {
+		.quick-example__split {
+			/* auto column sizes to the table; prose takes the rest without shoving CSV to the edge */
+			grid-template-columns: minmax(0, 1fr) auto;
+			grid-template-areas:
+				'intro csv'
+				'body csv';
+			justify-content: start;
+			column-gap: 1.5rem;
+		}
+
+		.quick-example__intro {
+			grid-area: intro;
+			max-width: 36rem;
+		}
+
+		.quick-example__body {
+			grid-area: body;
+			max-width: 36rem;
+		}
+
+		.quick-example__csv {
+			grid-area: csv;
+			position: sticky;
+			top: 5.5rem;
+			/* Hug table width — do not stretch a blank lane beside the copy */
+			justify-self: start;
+			width: max-content;
+			max-width: min(22rem, 100%);
+		}
+
+		.quick-example__csv :global(.copyable-csv) {
+			width: max-content;
+			max-width: 100%;
+			margin-block: 0;
+		}
+
+		/* Keep bounded scroll viewport (scrollbar when rows overflow) */
+		.quick-example__csv :global(.copyable-csv__scroll) {
+			max-height: min(20rem, 55vh);
+			overflow: auto;
+		}
+	}
+
+	/* Match MDX fence spacing around Starlight <Code> / Expressive Code / InvokeTabs */
+	.quick-example__body :global(.expressive-code),
+	.quick-example__after :global(.expressive-code) {
+		margin-block: 0.75rem 0.85rem;
+	}
+
+	.quick-example__body > :global(.expressive-code):first-child,
+	.quick-example__body > :global(.invoke-tabs):first-child {
+		margin-block-start: 0.5rem;
+	}
+
+	.quick-example__body > :global(.invoke-tabs) {
+		margin-block: 0.75rem 0.85rem;
+	}
+</style>

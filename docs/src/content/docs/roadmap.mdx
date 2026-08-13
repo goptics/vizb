@@ -7,15 +7,9 @@ import { CardGrid, Card } from '@astrojs/starlight/components';
 
 ## Current State
 
-Vizb is a data-visualization tool. It turns CSV and JSON tables into interactive 4D HTML charts. It also ships parsers that normalize benchmark output from three languages across five frameworks:
+Vizb turns CSV/JSON tables and benchmark output into charts and stats without writing chart code: one dimension model (`n`/`x`/`y`/`z`), eight chart types (including 3D WebGL for bar/line/scatter), merge history, stats, CLI, GitHub Action, and REST.
 
-- **Go** — `go test -bench` output (raw text and `-json`)
-- **Rust** — `cargo bench` via [Criterion](https://github.com/bheisler/criterion.rs) (`rs:criterion`) and [Divan](https://github.com/nvzqz/divan) (`rs:divan`)
-- **JavaScript / TypeScript** — [Vitest](https://vitest.dev) bench (`js:vitest`) and [Tinybench](https://github.com/tinylibs/tinybench) console.table (`js:tinybench`)
-
-Every parser — CSV, JSON, and benchmark — supports multi-dimensional grouping, tag-based merging, time unit conversion, filtering, and auto-aggregation of grouped rows. See the [Supported Inputs guide](/guides/parsers) for setup.
-
-All inputs visualize the same way, up to **four dimensions**. Add a z-axis for interactive [3D charts](/charts/3d) with auto-rotate and axis-sum tooltips. Or use a flat [heatmap](/charts/heatmap). Charts ship as bar, line, scatter, pie, heatmap, radar, Sankey, and Chord. Each has a [statistics panel](/ui/stats) with descriptive metrics and a four-method correlation matrix (Pearson, Spearman, Kendall, distance correlation).
+Capability inventory lives on [Features](/features). Conceptual model: [Getting Started](/getting-started). Input adapters: [Supported inputs](/guides/parsers).
 
 ## Planned
 

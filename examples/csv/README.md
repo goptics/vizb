@@ -15,7 +15,7 @@ Use a chart subcommand (`bar`, `line`, `scatter`, `pie`, …) or the root comman
 
 ## `sales.csv`
 
-**Shape:** Mixed categorical + numeric columns (10,000 order rows).
+**Shape:** Mixed categorical + numeric columns (10,000 order rows spanning 2024–2025).
 
 | Column kind | Examples |
 |-------------|----------|

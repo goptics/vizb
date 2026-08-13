@@ -86,7 +86,7 @@ func (u *Updater) Run(ctx context.Context, _ io.Reader, stdout, _ io.Writer) err
 		fmt.Fprintf(stdout, "vizb is managed by %s.\nUpdate with: %s\n", installedBy.Manager, installedBy.Instruction)
 		return nil
 	case installationUnknown:
-		return fmt.Errorf("cannot safely update this development or unidentified vizb build; reinstall from https://vizb.goptics.org/installation")
+		return fmt.Errorf("cannot safely update this development or unidentified vizb build; reinstall from https://vizb.goptics.org/getting-started/install")
 	}
 	if u.goos == "windows" {
 		fmt.Fprintln(stdout, "Automatic standalone updates are not supported on Windows yet.")

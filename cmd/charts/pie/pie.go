@@ -14,7 +14,7 @@ func init() {
 	cli.SetChartMeta(cli.ChartMeta{
 		Type:  "pie",
 		Use:   "pie [target]",
-		Short: "Generate a pie chart from data",
-		Long:  "Generate an interactive pie chart (HTML or JSON) from benchmark output or tabular CSV/JSON data.",
+		Short: "Generate a pie chart",
+		Long:  "Generate an interactive pie chart (HTML or JSON) from CSV, JSON, or benchmark output.",
 	})
 }
