@@ -3,7 +3,10 @@ title: Statistics
 description: Per-series descriptive statistics and a correlation matrix, computed off-thread inside the UI.
 ---
 
-import { CardGrid, Card, Aside } from '@astrojs/starlight/components';
+import { Aside } from '@astrojs/starlight/components';
+import DocImage from '../../../components/DocImage.astro';
+import statsDescriptive from '../../../assets/stats-descriptive.png';
+import statsCorrelations from '../../../assets/stats-correlations.png';
 
 The statistics panel is **opt-in**. Pass `--stat` when you generate HTML — on the [root command](/commands/root), a [chart subcommand](/commands/charts), or [`vizb ui`](/commands/ui) — to add a **statistics** button on each chart. Omit `--stat` and charts render without the panel.
 
@@ -28,6 +31,8 @@ These stats work on any dataset. They are especially handy for exploring an unfa
 ## Descriptive Statistics
 
 A sortable, searchable table with one row per series and **33 metrics per row** across seven groups:
+
+<DocImage src={statsDescriptive} alt="Descriptive statistics table with one row per date series, a search box, column picker, and CSV export" />
 
 | Group | Metrics |
 |-------|---------|
@@ -57,11 +62,12 @@ A sortable, searchable table with one row per series and **33 metrics per row** 
 
 For charts that use the z-axis (3D bars, 3D lines, 3D scatter), the descriptive table splits each series into per-z rows labeled `Series / Z`. Each row gets its own 33-metric profile so you can compare slices of a z-group separately instead of averaging them.
 
-{/* TODO: Add GIF showing sorting and searching the descriptive table */}
-
 ## Correlation Matrix
 
 A symmetric matrix of pairwise correlations between the chart's entities — the **series** (x-axis), **categories** (y-axis), or **z-axis values**, depending on the data shape. Rendered as an echarts heatmap. Cells are colored on a diverging **red → neutral → green** scale for `r ∈ [-1, 1]`.
+
+<DocImage src={statsCorrelations} alt="Correlation heatmap of months with Pearson r, a Month axis selector, and a red-to-green scale from −1 to 1" />
+
 
 - **Method toggle** — pick any of four correlation methods. All are precomputed, so toggling is instant:
   - **Pearson r** — linear correlation. The default. Best for roughly linear, roughly normal data.
@@ -77,8 +83,6 @@ Cell labels are hidden once there are many entities. This keeps the grid readabl
 <Aside type="note">
   All four methods use **pairwise-complete observations** — only positions where *both* series are finite contribute to a cell. Entities with fewer than two complete pairs get `NaN`. Distance correlation additionally needs at least four complete pairs.
 </Aside>
-
-{/* TODO: Add GIF showing the correlation matrix with the Pearson/Spearman toggle */}
 
 ## Next Steps
 
