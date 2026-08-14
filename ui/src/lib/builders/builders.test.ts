@@ -5,6 +5,7 @@ import { builderForChart, pickBuilder, grouped, preserveRows, value, mixed } fro
 import { builderStatType } from './types'
 import { finalizeChart } from './finalize'
 import type { BuildContext } from './types'
+import { buildValueModeChart, buildMixedModeChart } from '../transform'
 
 const baseCtx = (overrides: Partial<BuildContext> = {}): BuildContext => ({
   signature: 'val-',
@@ -101,14 +102,10 @@ describe('ValueBuilder', () => {
   ]
   const valueAxes3: Axis[] = [...valueAxes, { key: 'z', label: 'pz', type: 'value' }]
 
-  it('builds 2D valueTuples with metric color and off-chart z color', () => {
+  it('queries 2D valueTuples with metric color and off-chart z color', () => {
     const withMetric: DataPoint[] = [{ xAxis: '1', yAxis: '2', metric: '9', stats: [] }]
-    const chart = value.build(
-      withMetric,
-      baseCtx({ axes: valueAxes, identityString: 'xy', targetString: 'xy' })
-    )
+    const chart = buildValueModeChart(withMetric, valueAxes, 'xy', 'xy', { threeD: false })
     expect(chart.valueTuples).toEqual([[1, 2, 9]])
-    expect(value.plottable(chart)).toBe(true)
     expect(value.badgeCount(chart, 'x')).toBe(1)
     expect(value.badgeCount(chart, 'y')).toBe(1)
     expect(value.badgeCount(chart, 'z')).toBe(0)
@@ -117,10 +114,7 @@ describe('ValueBuilder', () => {
     expect(value.canOfferValue3D()).toBe(false)
 
     const withZ: DataPoint[] = [{ xAxis: '1', yAxis: '2', zAxis: '3', stats: [] }]
-    const chartZ = value.build(
-      withZ,
-      baseCtx({ axes: valueAxes3, identityString: 'xyz', targetString: 'xyn' })
-    )
+    const chartZ = buildValueModeChart(withZ, valueAxes3, 'xyz', 'xyn', { threeD: false })
     expect(chartZ.valueTuples).toEqual([[1, 2, 3]])
   })
 
@@ -131,72 +125,58 @@ describe('ValueBuilder', () => {
       { xAxis: '2', yAxis: '3', metric: '', stats: [] },
       { xAxis: '4', yAxis: '5', metric: 'nope', stats: [] },
     ]
-    const chart = value.build(
-      data,
-      baseCtx({ axes: valueAxes, identityString: 'xy', targetString: 'xy', scale: 'log' })
-    )
+    const chart = buildValueModeChart(data, valueAxes, 'xy', 'xy', {
+      scale: 'log',
+      threeD: false,
+    })
     expect(chart.valueTuples).toEqual([
       [2, 3],
       [4, 5],
     ])
   })
 
-  it('builds continuous 3D with and without metric; log filters non-positive', () => {
+  it('queries continuous 3D with and without metric; log filters non-positive', () => {
     const data: DataPoint[] = [
       { xAxis: '1', yAxis: '2', zAxis: '3', metric: '4', stats: [] },
       { xAxis: '1', yAxis: '2', zAxis: '3', stats: [] },
       { xAxis: '0', yAxis: '2', zAxis: '3', stats: [] },
     ]
-    const chart = value.build(
-      data,
-      baseCtx({
-        axes: valueAxes3,
-        identityString: 'xyz',
-        targetString: 'xyz',
-        threeD: true,
-        showLabels: true,
-      })
-    )
+    const chart = buildValueModeChart(data, valueAxes3, 'xyz', 'xyz', {
+      threeD: true,
+      showLabels: true,
+    })
     expect(chart.valuePoints3D).toEqual([
       [1, 2, 3, 4],
       [1, 2, 3],
       [0, 2, 3],
     ])
     expect(chart.render3D?.mode).toBe('continuous')
-    expect(value.plottable(chart)).toBe(true)
     expect(value.badgeCount(chart, 'x')).toBe(2)
     expect(value.badgeCount(chart, 'z')).toBe(1)
     expect(value.grandTotal(chart)).toBe(3 + 3 + 3)
     expect(value.is3D(chart)).toBe(true)
 
-    const logChart = value.build(
+    const logChart = buildValueModeChart(
       [{ xAxis: '1', yAxis: '2', zAxis: '0', stats: [] }],
-      baseCtx({
-        axes: valueAxes3,
-        identityString: 'xyz',
-        targetString: 'xyz',
-        threeD: true,
-        scale: 'log',
-      })
+      valueAxes3,
+      'xyz',
+      'xyz',
+      { threeD: true, scale: 'log' }
     )
     expect(logChart.valuePoints3D).toBeUndefined()
     expect(logChart.render3D).toBeUndefined()
   })
 
   it('handles missing axes/identity and empty charts in query methods', () => {
-    const chart = value.build([], baseCtx({}))
+    const chart = buildValueModeChart([], [])
     expect(chart.title).toBe('x vs y')
     expect(chart.valueTuples).toEqual([])
-    expect(value.plottable(emptyChart())).toBe(false)
     expect(value.badgeCount(emptyChart(), 'x')).toBe(0)
     expect(value.grandTotal(emptyChart())).toBe(0)
   })
 
   it('uses identityStringFromAxes when identityString omitted', () => {
-    const chart = value.build(
-      [{ xAxis: '10', yAxis: '20', stats: [] }],
-      baseCtx({ axes: valueAxes })
-    )
+    const chart = buildValueModeChart([{ xAxis: '10', yAxis: '20', stats: [] }], valueAxes)
     expect(chart.valueTuples).toEqual([[10, 20]])
   })
 })
@@ -208,20 +188,19 @@ describe('MixedBuilder', () => {
   ]
   const axes3: Axis[] = [...axes2, { key: 'z', label: 'sales', type: 'value' }]
 
-  it('builds 2D mixedTuples and query methods', () => {
+  it('queries 2D mixedTuples', () => {
     const data: DataPoint[] = [
       { xAxis: 'Asia', yAxis: '12', stats: [] },
       { xAxis: '', yAxis: '1', stats: [] },
       { xAxis: 'EU', yAxis: 'bad', stats: [] },
       { xAxis: 'Asia', yAxis: '10', stats: [] },
     ]
-    const chart = mixed.build(data, baseCtx({ axes: axes2 }))
+    const chart = buildMixedModeChart(data, axes2)
     expect(chart.mixedTuples).toEqual([
       [0, 12],
       [0, 10],
     ])
     expect(chart.xCategories).toEqual(['Asia'])
-    expect(mixed.plottable(chart)).toBe(true)
     expect(mixed.badgeCount(chart, 'x')).toBe(1)
     expect(mixed.badgeCount(chart, 'y')).toBe(2)
     expect(mixed.badgeCount(chart, 'z')).toBe(0)
@@ -231,47 +210,44 @@ describe('MixedBuilder', () => {
   })
 
   it('log scale drops non-positive y in 2D', () => {
-    const chart = mixed.build(
+    const chart = buildMixedModeChart(
       [
         { xAxis: 'A', yAxis: '5', stats: [] },
         { xAxis: 'B', yAxis: '0', stats: [] },
       ],
-      baseCtx({ axes: axes2, scale: 'log' })
+      axes2,
+      { scale: 'log' }
     )
     expect(chart.mixedTuples).toEqual([[0, 5]])
   })
-  it('builds mixed 3D render and query fallbacks', () => {
+  it('queries mixed 3D render and fallbacks', () => {
     const data: DataPoint[] = [
       { xAxis: 'Asia', yAxis: '12', zAxis: '100', stats: [] },
       { xAxis: 'EU', yAxis: '11', zAxis: 'bad', stats: [] },
       { xAxis: 'EU', yAxis: '0', zAxis: '1', stats: [] },
     ]
-    const chart = mixed.build(data, baseCtx({ axes: axes3, scale: 'log' }))
+    const chart = buildMixedModeChart(data, axes3, { scale: 'log' })
     // log drops y<=0; non-finite z dropped — Asia kept; EU still registered in xCategories
     expect(chart.render3D?.mode).toBe('mixed')
     expect(chart.render3D?.lineSeries[0]?.data).toEqual([{ value: [0, 12, 100] }])
-    expect(mixed.plottable(chart)).toBe(true)
     expect(mixed.badgeCount(chart, 'x')).toBe(chart.xCategories?.length ?? 0)
     expect(mixed.badgeCount(chart, 'y')).toBe(1)
     expect(mixed.badgeCount(chart, 'z')).toBe(0)
     expect(mixed.grandTotal(chart)).toBe(12)
     expect(mixed.is3D(chart)).toBe(true)
-    const empty = mixed.build([], baseCtx({ axes: axes3 }))
-    expect(mixed.plottable(empty)).toBe(false)
+    const empty = buildMixedModeChart([], axes3)
     expect(mixed.grandTotal(empty)).toBe(0)
     expect(mixed.badgeCount(emptyChart({ xCategories: ['A'] }), 'x')).toBe(1)
     expect(mixed.badgeCount(emptyChart(), 'y')).toBe(0)
   })
 
   it('falls back to default axis labels', () => {
-    const chart = mixed.build(
+    const chart = buildMixedModeChart(
       [{ xAxis: 'A', yAxis: '1', stats: [] }],
-      baseCtx({
-        axes: [
-          { key: 'x', type: 'category' as never },
-          { key: 'y', type: 'value' },
-        ],
-      })
+      [
+        { key: 'x', type: 'category' as never },
+        { key: 'y', type: 'value' },
+      ]
     )
     expect(chart.title).toBe('x vs y')
   })
@@ -289,7 +265,6 @@ describe('PreserveRowsBuilder', () => {
       [0, 12],
       [1, 8],
     ])
-    expect(preserveRows.plottable(chart)).toBe(true)
     expect(preserveRows.badgeCount(chart, 'x')).toBe(2)
     expect(preserveRows.badgeCount(chart, 'y')).toBe(2)
     expect(preserveRows.badgeCount(chart, 'z')).toBe(0)
@@ -363,7 +338,7 @@ describe('PreserveRowsBuilder', () => {
 })
 
 describe('GroupedBuilder query methods and canOfferValue3D', () => {
-  it('plottable / badgeCount / grandTotal cover mixedTuples branches', () => {
+  it('badgeCount / grandTotal cover mixedTuples branches', () => {
     const chart = emptyChart({
       mixedTuples: [
         [0, 1],
@@ -371,7 +346,6 @@ describe('GroupedBuilder query methods and canOfferValue3D', () => {
       ],
       xCategories: ['A', 'B'],
     })
-    expect(grouped.plottable(chart)).toBe(true)
     expect(grouped.badgeCount(chart, 'x')).toBe(2)
     expect(grouped.badgeCount(chart, 'y')).toBe(2)
     expect(grouped.badgeCount(chart, 'z')).toBe(0)
@@ -535,13 +509,6 @@ describe('finalizeChart edge branches', () => {
 })
 
 describe('remaining builder branch edges', () => {
-  it('grouped/preserveRows plottable hits mixedTuples-only and empty ?? 0', () => {
-    expect(grouped.plottable(emptyChart())).toBe(false)
-    expect(grouped.plottable(emptyChart({ mixedTuples: [[0, 1]] }))).toBe(true)
-    expect(preserveRows.plottable(emptyChart())).toBe(false)
-    expect(preserveRows.plottable(emptyChart({ mixedTuples: [[0, 1]] }))).toBe(true)
-  })
-
   it('preserveRows yOrder empty fallback is unreachable with points but empty yOrder forces Array.from', () => {
     // ySeen always fills yOrder when values exist; empty data still exercises yOrder.length ? branch false
     const chart = preserveRows.build([], baseCtx({ signature: 'val-', preserveRows: true }))
@@ -571,18 +538,16 @@ describe('remaining builder branch edges', () => {
   it('value build skips rows with no numeric coords', () => {
     // identity xyz → target nnz maps x,y to name and only z lands on chart;
     // coords lack xAxis/yAxis → 3D undefined-coords guard skips the row.
-    const chart = value.build(
+    const chart = buildValueModeChart(
       [{ xAxis: '1', yAxis: '2', zAxis: '3', stats: [] }],
-      baseCtx({
-        axes: [
-          { key: 'x', type: 'value' },
-          { key: 'y', type: 'value' },
-          { key: 'z', type: 'value' },
-        ],
-        identityString: 'xyz',
-        targetString: 'nnz',
-        threeD: true,
-      })
+      [
+        { key: 'x', type: 'value' },
+        { key: 'y', type: 'value' },
+        { key: 'z', type: 'value' },
+      ],
+      'xyz',
+      'nnz',
+      { threeD: true }
     )
     expect(chart.valueTuples ?? []).toEqual([])
     expect(chart.valuePoints3D).toBeUndefined()
@@ -590,96 +555,84 @@ describe('remaining builder branch edges', () => {
 
   it('value 2D skips row when coords lack both axes', () => {
     // identity xy → target nn maps both to name → coords {} → 2D undefined guard
-    const chart = value.build(
+    const chart = buildValueModeChart(
       [{ xAxis: '1', yAxis: '2', stats: [] }],
-      baseCtx({
-        axes: [
-          { key: 'x', type: 'value' },
-          { key: 'y', type: 'value' },
-        ],
-        identityString: 'xy',
-        targetString: 'nn',
-        threeD: false,
-      })
+      [
+        { key: 'x', type: 'value' },
+        { key: 'y', type: 'value' },
+      ],
+      'xy',
+      'nn',
+      { threeD: false }
     )
     expect(chart.valueTuples).toEqual([])
   })
 
   it('mixed build skips rows with undefined axes', () => {
-    const chart = mixed.build([{ yAxis: '1', stats: [] }], baseCtx({ axes: undefined }))
+    const chart = buildMixedModeChart([{ yAxis: '1', stats: [] }], [])
     expect(chart.mixedTuples).toEqual([])
   })
 
   it('mixed 3D with all rows filtered keeps empty render', () => {
     // z axis present → 3D; non-finite y filters every row → no render3D, empty
-    // xCategories; plottable false, badgeCount 0.
-    const chart = mixed.build(
+    // xCategories; query methods fall back to 0.
+    const chart = buildMixedModeChart(
       [{ xAxis: 'A', yAxis: 'bad', zAxis: '1', stats: [] }],
-      baseCtx({
-        axes: [
-          { key: 'x', type: 'category' },
-          { key: 'y', type: 'value' },
-          { key: 'z', type: 'value' },
-        ],
-      })
+      [
+        { key: 'x', type: 'category' },
+        { key: 'y', type: 'value' },
+        { key: 'z', type: 'value' },
+      ]
     )
     expect(chart.mixedTuples).toBeUndefined()
     expect(chart.render3D).toBeUndefined()
-    expect(mixed.plottable(chart)).toBe(false)
     expect(mixed.badgeCount(chart, 'y')).toBe(0)
     expect(mixed.grandTotal(chart)).toBe(0)
   })
 
   it('mixed 3D renders line series and query methods sum the 3D data', () => {
-    const chart = mixed.build(
+    const chart = buildMixedModeChart(
       [
         { xAxis: 'A', yAxis: '12', zAxis: '100', stats: [] },
         { xAxis: 'B', yAxis: '11', zAxis: '1', stats: [] },
       ],
-      baseCtx({
-        axes: [
-          { key: 'x', type: 'category' },
-          { key: 'y', type: 'value' },
-          { key: 'z', type: 'value' },
-        ],
-      })
+      [
+        { key: 'x', type: 'category' },
+        { key: 'y', type: 'value' },
+        { key: 'z', type: 'value' },
+      ]
     )
     expect(chart.render3D?.mode).toBe('mixed')
-    expect(mixed.plottable(chart)).toBe(true)
     expect(mixed.badgeCount(chart, 'y')).toBe(2)
     expect(mixed.grandTotal(chart)).toBe(23)
   })
 
   it('value 2D uses z as color when metric absent and z off-chart', () => {
-    const chart = value.build(
+    const chart = buildValueModeChart(
       [{ xAxis: '1', yAxis: '2', zAxis: '9', stats: [] }],
-      baseCtx({
-        axes: [
-          { key: 'x', type: 'value' },
-          { key: 'y', type: 'value' },
-          { key: 'z', type: 'value' },
-        ],
-        identityString: 'xyz',
-        targetString: 'xyn', // z maps to name → off-chart
-        threeD: false,
-      })
+      [
+        { key: 'x', type: 'value' },
+        { key: 'y', type: 'value' },
+        { key: 'z', type: 'value' },
+      ],
+      'xyz',
+      'xyn', // z maps to name → off-chart
+      { threeD: false }
     )
     expect(chart.valueTuples).toEqual([[1, 2, 9]])
   })
 
   it('value 2D skips z color when z is on chart and metric absent', () => {
-    const chart = value.build(
+    const chart = buildValueModeChart(
       [{ xAxis: '1', yAxis: '2', zAxis: '9', stats: [] }],
-      baseCtx({
-        axes: [
-          { key: 'x', type: 'value' },
-          { key: 'y', type: 'value' },
-          { key: 'z', type: 'value' },
-        ],
-        identityString: 'xyz',
-        targetString: 'xyz', // z on chart → no color dim
-        threeD: false,
-      })
+      [
+        { key: 'x', type: 'value' },
+        { key: 'y', type: 'value' },
+        { key: 'z', type: 'value' },
+      ],
+      'xyz',
+      'xyz', // z on chart → no color dim
+      { threeD: false }
     )
     expect(chart.valueTuples).toEqual([[1, 2]])
   })

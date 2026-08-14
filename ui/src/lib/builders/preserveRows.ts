@@ -1,13 +1,14 @@
 import type { ChartData, DataPoint, SeriesData, Point3D } from '@/types'
-import type { ChartBuilder, BuildContext } from './types'
+import type { GroupingBuilder, BuildContext } from './types'
 import { finalizeChart } from './finalize'
+import { groupedQueries } from './grouped'
 import { statsForSignature } from '../transform'
 
 // PreserveRows chart shape: one row per data point (no averaging across
 // duplicate (x,y)). When all y values are empty, falls back to a category
 // scatter (mixedTuples against xCategories); otherwise emits one series per
 // row with null-padded values aligned to the first-seen y order.
-export class PreserveRowsBuilder implements ChartBuilder {
+export class PreserveRowsBuilder implements GroupingBuilder {
   build(data: DataPoint[], ctx: BuildContext): ChartData {
     const { signature, statTemplate, labels } = ctx
     const xAxisSet = new Set<string>()
@@ -99,51 +100,9 @@ export class PreserveRowsBuilder implements ChartBuilder {
     )
   }
 
-  plottable(chart: ChartData): boolean {
-    return (
-      chart.series.length > 0 || chart.points.length > 0 || (chart.mixedTuples?.length ?? 0) > 0
-    )
-  }
-
-  badgeCount(chart: ChartData, axis: 'x' | 'y' | 'z'): number {
-    if (chart.mixedTuples?.length && chart.xCategories?.length) {
-      if (axis === 'x') return chart.xCategories.length
-      if (axis === 'z') return 0
-      return chart.mixedTuples.length
-    }
-    if (axis === 'x') return chart.series.length
-    if (axis === 'y') return chart.yAxis.length
-    return chart.zAxis.length
-  }
-
-  grandTotal(chart: ChartData, visibleZ?: Record<string, boolean>): number {
-    if (chart.points.length > 0) {
-      const filterZ = chart.zAxis.length > 0 && chart.zAxis[0] !== ''
-      let total = 0
-      for (const pt of chart.points) {
-        if (filterZ && pt.zAxis && visibleZ?.[pt.zAxis] === false) continue
-        total += pt.value
-      }
-      return total
-    }
-    if (chart.mixedTuples?.length) {
-      return chart.mixedTuples.reduce((sum, [, y]) => sum + y, 0)
-    }
-    let total = 0
-    for (const s of chart.series) {
-      for (const v of s.values) {
-        if (v != null) total += v
-      }
-    }
-    return total
-  }
-
-  is3D(chart: ChartData, cfg?: { threeD?: boolean }): boolean {
-    const hasX = chart.series.some((s) => s.xAxis && s.xAxis.trim() !== '')
-    const hasY = chart.yAxis.length > 0 && chart.yAxis[0] !== ''
-    const hasZ = chart.zAxis.length > 0 && chart.zAxis[0] !== ''
-    return (hasX && hasY && hasZ) || (hasX && hasY && !hasZ && cfg?.threeD === true)
-  }
+  badgeCount = groupedQueries.badgeCount
+  grandTotal = groupedQueries.grandTotal
+  is3D = groupedQueries.is3D
 
   canOfferValue3D(): boolean {
     return false
