@@ -57,13 +57,19 @@ const themeItems = computed(() => {
 // as-is (no main-thread grouping or swap mutation). Only a dataset switch re-clones.
 const activeResults = computed(() => activeDataset.value?.data || [])
 // Display labels from axes[], permuted to match the active arrangement.
-const activeLabels = computed(() =>
-  swapAxisLabels(
-    activeArrangement.value.identityString,
-    activeArrangement.value.targetString,
-    axisLabelsFromAxes(activeDataset.value?.axes ?? [])
-  )
-)
+// Empty axes must stay `undefined` so swapAxisLabels is a no-op ({} would permute).
+const activeLabels = computed(() => {
+  const axes = activeDataset.value?.axes
+  if (!axes?.length) return undefined
+  const labels = axisLabelsFromAxes(axes)
+  return Object.keys(labels).length
+    ? swapAxisLabels(
+        activeArrangement.value.identityString,
+        activeArrangement.value.targetString,
+        labels
+      )
+    : undefined
+})
 
 // Per-chart resolved compute params come from `useActiveChartShape`, which reads
 // the active chart's typed config and applies `?? default` for missing fields.
