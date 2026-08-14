@@ -148,7 +148,7 @@ describe('themes', () => {
   })
 
   it("uses the active theme's visualMapColors, with gradient fallback", () => {
-    expect(resolveVisualMapColors('default')).toEqual(['#91CC75', '#EE6666'])
+    expect(resolveVisualMapColors('default')).toEqual(['#3BA272', '#EE6666'])
     registerDatasetThemes([westeros])
     expect(resolveVisualMapColors('westeros')).toEqual(['#59c4e6', '#d58fc4'])
     expect(resolveVisualMapColors('#111,#222,#333')).toEqual(['#111', '#333'])

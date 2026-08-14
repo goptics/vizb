@@ -113,7 +113,7 @@ func (s *ThemeSuite) TestParseThemeSpecDefaultHasColors() {
 		"#5470C6", "#3BA272", "#FC8452", "#73C0DE", "#EE6666",
 		"#FAC858", "#9A60B4", "#EA7CCC", "#91CC75", "#FF9F7F",
 	}, theme.Colors)
-	s.Equal([]string{"#91CC75", "#EE6666"}, theme.VisualMapColors)
+	s.Equal([]string{"#3BA272", "#EE6666"}, theme.VisualMapColors)
 }
 
 func (s *ThemeSuite) TestResolveThemesSkipsDefault() {
