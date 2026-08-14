@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  # Fast gate: Node unit tests before multi-OS composite runs.
+  # Fast gate: Node unit tests before multi-OS action runs.
   unit:
     runs-on: ubuntu-slim
     steps:

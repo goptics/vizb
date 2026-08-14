@@ -3,9 +3,27 @@ import { closeSync, existsSync, openSync } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
 import { join } from 'node:path'
 
+/** @param {NodeJS.ProcessEnv} env */
+function parsedActionInputs(env) {
+  const raw = env.VIZB_ACTION_INPUTS
+  if (!raw) return null
+  let parsed
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    throw new Error('VIZB_ACTION_INPUTS is not valid JSON')
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('VIZB_ACTION_INPUTS is not valid JSON')
+  }
+  return parsed
+}
+
 /** @param {string} key @param {NodeJS.ProcessEnv} [env] */
 function input(key, env = process.env) {
-  return env[`INPUT_${key}`] ?? ''
+  const blob = parsedActionInputs(env)
+  if (blob && Object.hasOwn(blob, key)) return String(blob[key] ?? '')
+  return env[`INPUT_${key.toUpperCase()}`] ?? ''
 }
 
 /**

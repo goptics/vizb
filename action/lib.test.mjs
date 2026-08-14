@@ -110,9 +110,36 @@ describe('resolveInputs', () => {
   function envFrom(map) {
     /** @type {NodeJS.ProcessEnv} */
     const env = {}
-    for (const [k, v] of Object.entries(map)) env[`INPUT_${k}`] = v
+    for (const [k, v] of Object.entries(map)) env[`INPUT_${k.toUpperCase()}`] = v
     return env
   }
+
+  it('reads GitHub-injected uppercase INPUT_ names', () => {
+    const r = resolveInputs({
+      INPUT_FILE: 'data.csv',
+      'INPUT_CMD-RETRIES': '2',
+    })
+    assert.equal(r.file, 'data.csv')
+    assert.equal(r.cmdRetries, 2)
+  })
+
+  it('prefers VIZB_ACTION_INPUTS JSON over INPUT_*', () => {
+    const r = resolveInputs({
+      VIZB_ACTION_INPUTS: JSON.stringify({
+        file: 'from-json.csv',
+        'cmd-retries': '4',
+        chart: 'bar:scale=log\npie:labels',
+      }),
+      INPUT_FILE: 'from-env.csv',
+    })
+    assert.equal(r.file, 'from-json.csv')
+    assert.equal(r.cmdRetries, 4)
+    assert.equal(r.chart, 'bar:scale=log\npie:labels')
+  })
+
+  it('rejects invalid VIZB_ACTION_INPUTS', () => {
+    assert.throws(() => resolveInputs({ VIZB_ACTION_INPUTS: '{' }), /not valid JSON/)
+  })
 
   it('prefers file/cmd over deprecated bench-* aliases', () => {
     const r = resolveInputs(

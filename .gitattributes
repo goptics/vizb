@@ -1,2 +1,5 @@
 # Collapse large opaque embed diffs in GitHub review UI.
 pkg/template/vizb-ui.gen.go linguist-generated=true
+
+# Git Bash on windows-latest cannot run CRLF shell scripts.
+action/*.sh text eol=lf

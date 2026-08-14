@@ -38,7 +38,7 @@ Use `goptics/vizb@v0` to automatically resolve to the latest `v0.x.x` release:
 
 The action:
 - Resolves the major version tag to the latest patch release
-- Caches the downloaded binary across runs
+- Restores that exact binary from cache when present (skips the download)
 - Falls back to the exact tag for non-major refs (e.g., `@v0.18.2`)
 
 ## Inputs
@@ -78,7 +78,7 @@ The action:
 | `output-json` | `""` | Path for JSON output file. Empty = skip JSON. |
 | `output-html` | `""` | Path for HTML output file. Empty = skip HTML. |
 | `data-url` | `""` | URL to fetch vizb JSON from at runtime (`-U` flag). Accepts a full dataset, a full dataset array, or an automatically detected lazy `[{id,name}]` catalog. When set, no input file is needed. |
-| `vizb-binary` | `""` | Path to a pre-built vizb binary on the runner. When set, skips release download/cache and installs this binary instead — useful for testing local builds or unreleased changes. |
+| `vizb-binary` | `""` | Path to a pre-built vizb binary on the runner. When set, skips version resolution, cache, and release download and installs this binary instead — useful for testing local builds or unreleased changes. |
 
 ## Outputs
 
@@ -267,4 +267,4 @@ Use `vizb-binary` to test unreleased changes without publishing a release. Build
     output-html: pages/index.html
 ```
 
-When `vizb-binary` is set, the action skips version resolution, caching, and the release download — it just installs the binary you provide.
+When `vizb-binary` is set, the action skips version resolution, cache, and the release download — it just installs the binary you provide.
