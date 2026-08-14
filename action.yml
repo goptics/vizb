@@ -18,6 +18,9 @@ inputs:
   bench-file:
     description: "DEPRECATED: use 'file'. Existing input file; honored only when 'file' is empty." # remove on v1
     default: ""
+  cmd-retries:
+    description: "Total attempts for cmd. 1 = no retry (default). Integer >= 1. Failed attempts wait 2s, then double."
+    default: "1"
   name:
     description: "Dataset/benchmark name (-n flag)"
     default: "Comparisons"
@@ -221,6 +224,7 @@ runs:
         INPUT_file: ${{ inputs.file }}
         INPUT_bench-cmd: ${{ inputs.bench-cmd }}
         INPUT_bench-file: ${{ inputs.bench-file }}
+        INPUT_cmd-retries: ${{ inputs.cmd-retries }}
         INPUT_name: ${{ inputs.name }}
         INPUT_title: ${{ inputs.title }}
         INPUT_description: ${{ inputs.description }}

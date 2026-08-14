@@ -71,6 +71,7 @@ jobs:
         uses: ./
         with:
           cmd: curl -sfL "https://github-contributions-api.jogruber.de/v4/${{ matrix.id }}"
+          cmd-retries: 3
           id: ${{ matrix.id }}
           name: ${{ matrix.id }}
           description: ${{ matrix.description }}

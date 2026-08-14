@@ -28,6 +28,7 @@ export function resolveInputs(env = process.env) {
   return {
     file,
     cmd,
+    cmdRetries: parseCmdRetries(input('cmd-retries', env)),
     hasInput: Boolean(file || cmd),
     jsonFile: outputJson || 'bench.json',
     name: input('name', env),
@@ -58,6 +59,51 @@ export function resolveInputs(env = process.env) {
     tagAxis: input('tag-axis', env) || 'n',
     outputHtml: input('output-html', env),
     dataUrl,
+  }
+}
+
+/** @param {string} value */
+function parseCmdRetries(value) {
+  if (!value) return 1
+  const n = Number(value)
+  if (!Number.isInteger(n) || n < 1) {
+    throw new Error('cmd-retries must be an integer >= 1')
+  }
+  return n
+}
+
+const CMD_RETRY_DELAY_SEC = 2
+
+/** @param {number} seconds */
+function sleepSync(seconds) {
+  if (!(seconds > 0)) return
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, seconds * 1000)
+}
+
+/**
+ * @param {() => void} fn
+ * @param {{
+ *   retries: number,
+ *   sleep?: (sec: number) => void,
+ *   log?: (msg: string) => void,
+ * }} opts
+ */
+export function runWithRetries(fn, opts) {
+  const sleep = opts.sleep ?? sleepSync
+  const log = opts.log ?? ((msg) => console.error(msg))
+
+  for (let attempt = 1; attempt <= opts.retries; attempt++) {
+    try {
+      fn()
+      return
+    } catch (err) {
+      if (attempt === opts.retries) throw err
+      const waitSec = CMD_RETRY_DELAY_SEC * 2 ** (attempt - 1)
+      log(
+        `::warning::cmd failed (attempt ${attempt}/${opts.retries}, ${err.message ?? err}). Retrying in ${waitSec}s.`,
+      )
+      sleep(waitSec)
+    }
   }
 }
 
@@ -166,7 +212,13 @@ export function runShellCapture(command, stdoutPath) {
 
 /**
  * @param {ReturnType<typeof resolveInputs>} inputs
- * @param {{ run?: typeof run, runShellCapture?: typeof runShellCapture, vizbBin?: string }} [deps]
+ * @param {{
+ *   run?: typeof run,
+ *   runShellCapture?: typeof runShellCapture,
+ *   vizbBin?: string,
+ *   sleep?: (sec: number) => void,
+ *   log?: (msg: string) => void,
+ * }} [deps]
  */
 export function runPipeline(inputs, deps = {}) {
   const execRun = deps.run ?? run
@@ -177,7 +229,11 @@ export function runPipeline(inputs, deps = {}) {
     let inputPath = inputs.file
     if (!inputPath) {
       inputPath = join(tmpdir(), `vizb-data-input-${process.pid}.txt`)
-      execShell(inputs.cmd, inputPath)
+      runWithRetries(() => execShell(inputs.cmd, inputPath), {
+        retries: inputs.cmdRetries,
+        sleep: deps.sleep,
+        log: deps.log,
+      })
     }
     execRun(vizb, [inputPath, '-o', inputs.jsonFile, ...buildConvertArgs(inputs)])
   }

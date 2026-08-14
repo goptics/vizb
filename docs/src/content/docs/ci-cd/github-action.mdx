@@ -49,6 +49,7 @@ The action:
 | `file` | `""` | Path to an existing input file to visualize — benchmark output, CSV, or JSON (takes priority over `cmd`). |
 | `bench-cmd` | `""` | **Deprecated:** use `cmd`. Honored only when `cmd` is empty. |
 | `bench-file` | `""` | **Deprecated:** use `file`. Honored only when `file` is empty. |
+| `cmd-retries` | `"1"` | Total attempts for `cmd`. `1` = no retry (default). Integer ≥ 1. Failed attempts wait 2s, then double. |
 | `name` | `"Comparisons"` | Dataset/benchmark name (`-n` flag). |
 | `title` | `""` | Override the chart title when `col-axis` produces one chart; independent of `name` (`--title` flag). |
 | `description` | `""` | Dataset/benchmark description (`-d` flag). |
@@ -99,6 +100,8 @@ The action resolves input in this priority order:
   At least one of `cmd`, `file`, `merge-files`, `merge-dir`, or `data-url` must be provided.
 </Aside>
 
+Retry applies only when `cmd` actually runs (`file` is empty). Default is one attempt. Set `cmd-retries` to 3 (or more) to retry a flaky command; failed attempts log a warning and wait 2s, then 4s, then 8s, and so on. Convert, merge, and `ui` are not retried.
+
 ## Minimal Examples
 
 ### Run benchmarks and generate HTML
@@ -107,6 +110,16 @@ The action resolves input in this priority order:
 - uses: goptics/vizb@v0
   with:
     cmd: "go test -bench=."
+    output-html: pages/index.html
+```
+
+### Retry a flaky command
+
+```yaml
+- uses: goptics/vizb@v0
+  with:
+    cmd: "go test -bench=."
+    cmd-retries: 3
     output-html: pages/index.html
 ```
 
