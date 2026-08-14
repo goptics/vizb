@@ -11,9 +11,7 @@ import SettingHeader from './SettingHeader.vue'
 import SettingsToggle from './SettingsToggle.vue'
 import SelectionTabs from './SelectionTabs.vue'
 import HistoryPopover from './HistoryPopover.vue'
-import CpuBadge from './CpuBadge.vue'
-import OsBadge from './OsBadge.vue'
-import TimestampBadge from './TimestampBadge.vue'
+import MetaHistoryBadge from './MetaHistoryBadge.vue'
 import DatasetHeader from './DatasetHeader.vue'
 import ChartSettingsPopover from './ChartSettingsPopover.vue'
 import type { Dataset, HistoryEntry } from '@/types'
@@ -315,47 +313,62 @@ describe('History + meta badges', () => {
     expect(w.find('[data-stub="PopoverContent"]').exists()).toBe(false)
   })
 
-  it('CpuBadge / OsBadge / TimestampBadge render with history', () => {
-    const cpu = mount(CpuBadge, {
+  it('MetaHistoryBadge renders value and history', () => {
+    const cpu = mount(MetaHistoryBadge, {
       props: {
-        cpu: { name: 'Ryzen', cores: 16 },
+        icon: Sigma,
+        label: 'CPU',
+        historyTitle: 'CPU History',
+        value: 'Ryzen (16 cores)',
         history: [
           ...history,
           { tag: 'cores-only', timestamp: '2023-01-01T00:00:00.000Z', meta: { cpu: { cores: 2 } } },
           { tag: 'name-only', timestamp: '2023-02-01T00:00:00.000Z', meta: { cpu: { name: 'X' } } },
         ],
+        filterFn: (e: HistoryEntry) => !!(e.meta?.cpu?.name || e.meta?.cpu?.cores),
+        contentWidth: 'w-80',
+      },
+      slots: {
+        entry: `<span>{{ entry.meta?.cpu?.name || entry.meta?.cpu?.cores }}</span>`,
       },
     })
     expect(cpu.text()).toContain('CPU')
     expect(cpu.text()).toContain('Ryzen')
+    expect(cpu.text()).toContain('CPU History')
 
-    const os = mount(OsBadge, { props: { os: 'linux', history } })
+    const os = mount(MetaHistoryBadge, {
+      props: {
+        icon: Sigma,
+        label: 'OS',
+        historyTitle: 'OS History',
+        value: 'linux',
+        history,
+        filterFn: (e: HistoryEntry) => !!e.meta?.os,
+      },
+      slots: {
+        entry: `<span>{{ entry.meta?.os }}</span>`,
+      },
+    })
     expect(os.text()).toContain('OS')
     expect(os.text()).toContain('linux')
 
-    const ts = mount(TimestampBadge, {
-      props: { timestamp: '2024-06-01T12:30:00.000Z', history },
+    const ts = mount(MetaHistoryBadge, {
+      props: {
+        icon: Sigma,
+        label: 'Updated',
+        historyTitle: 'Update History',
+        value: 'Jun 1, 2024, 12:30 PM',
+        history,
+      },
     })
     expect(ts.text()).toContain('Updated')
-
-    const badTs = mount(TimestampBadge, {
-      props: { timestamp: 'not-a-date' },
-    })
-    expect(badTs.text()).toContain('not-a-date')
-
-    // empty timestamp string branch in formattedDate
-    const emptyTs = mount(TimestampBadge, { props: { timestamp: '' } })
-    expect(emptyTs.find('[data-stub="Popover"]').exists()).toBe(false)
   })
 
-  it('badges hide without primary props', () => {
-    expect(mount(CpuBadge, { props: {} }).find('[data-stub="Popover"]').exists()).toBe(false)
-    expect(mount(OsBadge, { props: {} }).find('[data-stub="Popover"]').exists()).toBe(false)
-    const bareTs = mount(TimestampBadge, { props: {} })
-    expect(bareTs.find('[data-stub="Popover"]').exists()).toBe(false)
-    const setup = (bareTs.vm as unknown as { $: { setupState: { formattedDate: string } } }).$
-      .setupState
-    expect(setup.formattedDate).toBe('')
+  it('MetaHistoryBadge hides without a value', () => {
+    const empty = mount(MetaHistoryBadge, {
+      props: { icon: Sigma, label: 'CPU', historyTitle: 'CPU History', value: '' },
+    })
+    expect(empty.find('[data-stub="Popover"]').exists()).toBe(false)
   })
 })
 
@@ -391,8 +404,24 @@ describe('DatasetHeader', () => {
     })
     expect(w.get('h1').text()).toBe('Bench')
     expect(w.text()).toContain('desc')
-    expect(w.findComponent({ name: 'CpuBadge' }).exists()).toBe(true)
-    expect(w.findComponent({ name: 'OsBadge' }).exists()).toBe(true)
+    expect(w.findAllComponents({ name: 'MetaHistoryBadge' })).toHaveLength(3)
+    expect(w.text()).toContain('CPU')
+    expect(w.text()).toContain('OS')
+    expect(w.text()).toContain('Updated')
+  })
+
+  it('falls back to raw timestamp when the date is invalid', () => {
+    const w = mount(DatasetHeader, {
+      props: {
+        dataset: { ...baseDataset, timestamp: 'not-a-date' },
+        datasets: [{ name: 'Bench' }],
+        activeDatasetId: 0,
+        resultGroups: [{ name: 'g0' }],
+        activeGroupId: 0,
+      },
+    })
+    expect(w.text()).toContain('Updated')
+    expect(w.text()).toContain('not-a-date')
   })
 
   it('multi dataset/group selectors emit', async () => {
