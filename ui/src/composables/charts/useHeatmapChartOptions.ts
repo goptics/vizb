@@ -13,6 +13,8 @@ import {
   isLargeXAxis,
   createHeatmapDataZoomConfig,
   createHeatmapLayoutConfig,
+  hasRotatedXLabels,
+  type ChartStyling,
 } from './shared/chartConfig'
 
 function formatCellNumber(v: number): string {
@@ -21,41 +23,87 @@ function formatCellNumber(v: number): string {
   return formatChartNumber(v)
 }
 
-function heatmapGrid(
-  seriesLength: number,
-  largeX: boolean,
-  largeY: boolean,
-  hasLegend = true
-): any {
-  return createHeatmapLayoutConfig({
+interface HeatmapCartesianInput {
+  xCategories: string[]
+  yCategories: string[]
+  min: number
+  max: number
+  styling: ChartStyling
+  axisLabels?: { x?: string; y?: string }
+  seriesLength: number
+  hasLegend: boolean
+}
+
+/** Shared category axes, rotate, visualMap, dataZoom, and grid for 2D/3D heatmaps. */
+function buildHeatmapCartesian(input: HeatmapCartesianInput) {
+  const { xCategories, yCategories, min, max, styling, axisLabels, seriesLength, hasLegend } = input
+  const largeX = isLargeXAxis(xCategories)
+  const largeY = isLargeXAxis(yCategories)
+  const hasZoom = largeX || largeY
+  const layout = createHeatmapLayoutConfig({
     hasXDataZoom: largeX,
     hasYDataZoom: largeY,
     seriesLength,
     hasLegend,
-  }).grid
-}
-
-function heatmapVisualMap(
-  min: number,
-  max: number,
-  colors: readonly string[],
-  styling: any,
-  largeX: boolean,
-  largeY: boolean
-): any {
-  const { visualMapBottom } = createHeatmapLayoutConfig({
-    hasXDataZoom: largeX,
-    hasYDataZoom: largeY,
   })
+  const nameTextStyle = { color: styling.textColor, fontSize: 14, fontWeight: 'bold' as const }
+
   return {
-    min,
-    max,
-    calculable: true,
-    orient: 'horizontal',
-    left: 'center',
-    bottom: visualMapBottom,
-    inRange: { color: colors },
-    textStyle: { color: styling.textColor },
+    grid: layout.grid,
+    ...(hasZoom
+      ? {
+          dataZoom: createHeatmapDataZoomConfig(
+            largeX,
+            largeY,
+            xCategories.length,
+            yCategories.length,
+            styling
+          ),
+        }
+      : {}),
+    xAxis: {
+      type: 'category' as const,
+      data: xCategories,
+      axisLabel: {
+        color: styling.textColor,
+        fontSize: 12,
+        interval: largeX ? 'auto' : 0,
+        rotate: hasRotatedXLabels(xCategories, largeX) ? 30 : 0,
+      },
+      axisLine: { lineStyle: { color: styling.axisColor } },
+      ...(axisLabels?.x
+        ? {
+            name: axisLabels.x,
+            nameLocation: 'middle' as const,
+            nameGap: largeX ? 41 : 30,
+            nameTextStyle,
+          }
+        : {}),
+    },
+    yAxis: {
+      type: 'category' as const,
+      data: yCategories,
+      axisLabel: { color: styling.textColor, fontSize: 12, interval: largeY ? 'auto' : 0 },
+      axisLine: { lineStyle: { color: styling.axisColor } },
+      ...(axisLabels?.y
+        ? {
+            name: axisLabels.y,
+            nameLocation: 'middle' as const,
+            nameGap: 60,
+            nameTextStyle,
+          }
+        : {}),
+    },
+    visualMap: {
+      min,
+      max,
+      calculable: true,
+      orient: 'horizontal' as const,
+      left: 'center',
+      bottom: layout.visualMapBottom,
+      inRange: { color: resolveVisualMapColors() },
+      textStyle: { color: styling.textColor },
+    },
   }
 }
 
@@ -67,9 +115,6 @@ function build2DHeatmap(config: BaseChartConfig): EChartsOption {
 
   const xCategories = data.series.map((s) => s.xAxis)
   const yCategories = data.yAxis
-  const largeX = isLargeXAxis(xCategories)
-  const largeY = isLargeXAxis(yCategories)
-  const hasZoom = largeX || largeY
 
   const heatmapData: number[][] = []
   let minVal = Infinity
@@ -98,19 +143,17 @@ function build2DHeatmap(config: BaseChartConfig): EChartsOption {
 
   return {
     ...base,
-    grid: heatmapGrid(1, largeX, largeY, false),
+    ...buildHeatmapCartesian({
+      xCategories,
+      yCategories,
+      min: minVal,
+      max: maxVal,
+      styling,
+      axisLabels: data.axisLabels,
+      seriesLength: 1,
+      hasLegend: false,
+    }),
     legend: { show: false },
-    ...(hasZoom
-      ? {
-          dataZoom: createHeatmapDataZoomConfig(
-            largeX,
-            largeY,
-            xCategories.length,
-            yCategories.length,
-            styling
-          ),
-        }
-      : {}),
     tooltip: {
       ...getTooltipTheme(isDark.value),
       position: 'top',
@@ -132,40 +175,6 @@ function build2DHeatmap(config: BaseChartConfig): EChartsOption {
         return html
       },
     },
-    xAxis: {
-      type: 'category',
-      data: xCategories,
-      axisLabel: {
-        color: styling.textColor,
-        fontSize: 12,
-        interval: largeX ? 'auto' : 0,
-        rotate: largeX ? 0 : xCategories.reduce((a, c) => a + c.length, 0) > 100 ? 30 : 0,
-      },
-      axisLine: { lineStyle: { color: styling.axisColor } },
-      ...(data.axisLabels?.x
-        ? {
-            name: data.axisLabels.x,
-            nameLocation: 'middle',
-            nameGap: largeX ? 41 : 30,
-            nameTextStyle: { color: styling.textColor, fontSize: 14, fontWeight: 'bold' },
-          }
-        : {}),
-    },
-    yAxis: {
-      type: 'category',
-      data: yCategories,
-      axisLabel: { color: styling.textColor, fontSize: 12, interval: largeY ? 'auto' : 0 },
-      axisLine: { lineStyle: { color: styling.axisColor } },
-      ...(data.axisLabels?.y
-        ? {
-            name: data.axisLabels.y,
-            nameLocation: 'middle',
-            nameGap: 60,
-            nameTextStyle: { color: styling.textColor, fontSize: 14, fontWeight: 'bold' },
-          }
-        : {}),
-    },
-    visualMap: heatmapVisualMap(minVal, maxVal, resolveVisualMapColors(), styling, largeX, largeY),
     series: [
       {
         type: 'heatmap',
@@ -200,9 +209,6 @@ function build3DHeatmap(config: BaseChartConfig): EChartsOption {
     cellTotals: {},
   }
   const { xValues, yValues, zValues } = render
-  const largeX = isLargeXAxis(xValues)
-  const largeY = isLargeXAxis(yValues)
-  const hasZoom = largeX || largeY
 
   const sel = visibleZ?.value ?? {}
   const visiblePoints = points.filter((p) => sel[p.zAxis] !== false)
@@ -308,18 +314,16 @@ function build3DHeatmap(config: BaseChartConfig): EChartsOption {
 
   return {
     ...base,
-    grid: heatmapGrid(zValues.length, largeX, largeY, zValues.length > 1),
-    ...(hasZoom
-      ? {
-          dataZoom: createHeatmapDataZoomConfig(
-            largeX,
-            largeY,
-            xValues.length,
-            yValues.length,
-            styling
-          ),
-        }
-      : {}),
+    ...buildHeatmapCartesian({
+      xCategories: xValues,
+      yCategories: yValues,
+      min: minTotal,
+      max: maxTotal,
+      styling,
+      axisLabels: data.axisLabels,
+      seriesLength: zValues.length,
+      hasLegend: zValues.length > 1,
+    }),
     legend: {
       show: zValues.length > 1,
       left: 'center',
@@ -341,47 +345,6 @@ function build3DHeatmap(config: BaseChartConfig): EChartsOption {
       trigger: 'item',
       formatter: tooltipFormatter,
     },
-    xAxis: {
-      type: 'category',
-      data: xValues,
-      axisLabel: {
-        color: styling.textColor,
-        fontSize: 12,
-        interval: largeX ? 'auto' : 0,
-        rotate: largeX ? 0 : xValues.reduce((a, c) => a + c.length, 0) > 100 ? 30 : 0,
-      },
-      axisLine: { lineStyle: { color: styling.axisColor } },
-      ...(data.axisLabels?.x
-        ? {
-            name: data.axisLabels.x,
-            nameLocation: 'middle',
-            nameGap: largeX ? 41 : 30,
-            nameTextStyle: { color: styling.textColor, fontSize: 14, fontWeight: 'bold' },
-          }
-        : {}),
-    },
-    yAxis: {
-      type: 'category',
-      data: yValues,
-      axisLabel: { color: styling.textColor, fontSize: 12, interval: largeY ? 'auto' : 0 },
-      axisLine: { lineStyle: { color: styling.axisColor } },
-      ...(data.axisLabels?.y
-        ? {
-            name: data.axisLabels.y,
-            nameLocation: 'middle',
-            nameGap: 60,
-            nameTextStyle: { color: styling.textColor, fontSize: 14, fontWeight: 'bold' },
-          }
-        : {}),
-    },
-    visualMap: heatmapVisualMap(
-      minTotal,
-      maxTotal,
-      resolveVisualMapColors(),
-      styling,
-      largeX,
-      largeY
-    ),
     series: [
       {
         type: 'heatmap',
