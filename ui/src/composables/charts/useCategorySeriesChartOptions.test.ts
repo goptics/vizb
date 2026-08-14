@@ -2,6 +2,8 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import {
   baseConfig,
   makeGroupedChartData,
+  makeMixedChartData,
+  makeValueChartData,
   emptyChartData,
   installDevicePixelRatio,
 } from '@/test-utils'
@@ -139,6 +141,64 @@ describe('useCategorySeriesChartOptions — scatter', () => {
     )
     const series = options.value.series as { stack?: string }[]
     expect(series.every((s) => s.stack === undefined)).toBe(true)
+  })
+})
+
+describe('useCategorySeriesChartOptions — mixed / value dispatch', () => {
+  it('routes mixedTuples to mixed-axis 2D options', () => {
+    const { options } = useCategorySeriesChartOptions(
+      baseConfig({ chartData: makeMixedChartData() }),
+      'line'
+    )
+    const xAxis = options.value.xAxis as { type: string; data: string[] }
+    const series = options.value.series as { type: string; data: [number, number][] }[]
+    expect(xAxis.type).toBe('category')
+    expect(xAxis.data).toEqual(['West', 'South'])
+    expect((options.value.yAxis as { type: string }).type).toBe('value')
+    expect(series[0]!.type).toBe('line')
+    expect(series[0]!.data).toEqual([
+      [0, 1926.35],
+      [1, 447.38],
+    ])
+  })
+
+  it('routes valueTuples to value-axis 2D options', () => {
+    const { options } = useCategorySeriesChartOptions(
+      baseConfig({ chartData: makeValueChartData() }),
+      'scatter'
+    )
+    expect((options.value.xAxis as { type: string }).type).toBe('value')
+    expect((options.value.yAxis as { type: string }).type).toBe('value')
+    const series = options.value.series as { type: string; data: [number, number][] }[]
+    expect(series[0]!.type).toBe('scatter')
+    expect(series[0]!.data).toEqual([
+      [100, 12],
+      [200, 8],
+    ])
+  })
+
+  it('prefers mixedTuples when both tuple modes are present', () => {
+    const chartData = makeMixedChartData({
+      valueTuples: [
+        [1, 2],
+        [3, 4],
+      ],
+    })
+    const { options } = useCategorySeriesChartOptions(baseConfig({ chartData }), 'line')
+    expect((options.value.xAxis as { type: string }).type).toBe('category')
+    const series = options.value.series as { data: [number, number][] }[]
+    expect(series[0]!.data).toEqual([
+      [0, 1926.35],
+      [1, 447.38],
+    ])
+  })
+
+  it('falls through to grouped series when tuple arrays are empty', () => {
+    const chartData = makeGroupedChartData({ mixedTuples: [], valueTuples: [] })
+    const { options } = useCategorySeriesChartOptions(baseConfig({ chartData }), 'line')
+    const series = options.value.series as { type: string; name: string }[]
+    expect(series.every((s) => s.type === 'line')).toBe(true)
+    expect(series.map((s) => s.name)).toEqual(['Hardware', 'Software'])
   })
 })
 

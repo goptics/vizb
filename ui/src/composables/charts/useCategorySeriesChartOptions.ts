@@ -24,6 +24,8 @@ import {
 } from './shared/common'
 import { resolveSeriesSymbol } from './shared/seriesConfig'
 import { resolve2DScatterVisualMap } from './shared/visualMap'
+import { buildValueAxes2DOptions } from './shared/valueMode'
+import { buildMixedAxes2DOptions } from './shared/mixedMode'
 
 export type CategorySeriesKind = 'line' | 'scatter'
 
@@ -62,6 +64,13 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
   const style = SERIES_STYLE[kind]
 
   const options = computed<EChartsOption>(() => {
+    if (chartData.value.mixedTuples?.length) {
+      return buildMixedAxes2DOptions(config, kind)
+    }
+    if (chartData.value.valueTuples?.length) {
+      return buildValueAxes2DOptions(config, kind)
+    }
+
     const { series, xAxisData, hasYAxis } = sortedData.value
     const baseOptions = getBaseOptions(config)
     const styling = getChartStyling(isDark.value)
