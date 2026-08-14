@@ -4,12 +4,6 @@ Notable changes to Vizb documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased]
-
-### Changed
-
-- **action** — Resolve and install are bash scripts (`action/resolve.sh`, `action/install.sh`); only the pipeline runs in Node. Pass inputs with `toJSON(inputs)` (no per-flag `INPUT_*` map). Cache the resolved release tag (including `@v0`) so a hit skips the archive download.
-
 # [v0.19.0] - 2026-08-13
 
 ### Added
