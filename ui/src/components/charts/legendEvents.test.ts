@@ -1,25 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import {
-  isLegendSelectChangedEvent,
-  createLegendSelectChangedForwarder,
-  type LegendSelectChangedEvent,
-} from './legendEvents'
-
-describe('isLegendSelectChangedEvent', () => {
-  it('accepts a record of booleans', () => {
-    expect(isLegendSelectChangedEvent({ selected: { z1: false, z2: true } })).toBe(true)
-    expect(isLegendSelectChangedEvent({ selected: {} })).toBe(true)
-  })
-
-  it('rejects non-record, non-boolean, or missing selected', () => {
-    expect(isLegendSelectChangedEvent(undefined)).toBe(false)
-    expect(isLegendSelectChangedEvent(null)).toBe(false)
-    expect(isLegendSelectChangedEvent('selected')).toBe(false)
-    expect(isLegendSelectChangedEvent({})).toBe(false)
-    expect(isLegendSelectChangedEvent({ selected: [true] })).toBe(false)
-    expect(isLegendSelectChangedEvent({ selected: { z1: 'yes' } })).toBe(false)
-  })
-})
+import { createLegendSelectChangedForwarder, type LegendSelectChangedEvent } from './legendEvents'
 
 describe('createLegendSelectChangedForwarder', () => {
   it('forwards only valid legend-select-changed events', () => {
@@ -28,13 +8,18 @@ describe('createLegendSelectChangedForwarder', () => {
 
     const good: LegendSelectChangedEvent = { selected: { z1: false, z2: true } }
     handle(good)
-    expect(forward).toHaveBeenCalledTimes(1)
-    expect(forward).toHaveBeenCalledWith(good)
+    handle({ selected: {} })
+    expect(forward).toHaveBeenCalledTimes(2)
+    expect(forward).toHaveBeenNthCalledWith(1, good)
+    expect(forward).toHaveBeenNthCalledWith(2, { selected: {} })
 
     // dblclick-style payloads with non-boolean selected are dropped.
     handle({ selected: { z1: 'toggle' } })
+    handle({ selected: [true] })
     handle(null)
+    handle(undefined)
+    handle('selected')
     handle({})
-    expect(forward).toHaveBeenCalledTimes(1)
+    expect(forward).toHaveBeenCalledTimes(2)
   })
 })
