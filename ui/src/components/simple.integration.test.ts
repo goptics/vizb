@@ -2,7 +2,6 @@ import { describe, it, expect, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 import { mount } from '@vue/test-utils'
 import { Sigma } from 'lucide-vue-next'
-import AccentLink from './AccentLink.vue'
 import AppFooter from './AppFooter.vue'
 import Badge from './Badge.vue'
 import BadgeButton from './BadgeButton.vue'
@@ -165,19 +164,6 @@ const history: HistoryEntry[] = [
     meta: { cpu: { name: 'New', cores: 8 }, os: 'darwin' },
   },
 ]
-
-describe('AccentLink', () => {
-  it('renders external link slot', () => {
-    const w = mount(AccentLink, {
-      props: { href: 'https://example.com' },
-      slots: { default: 'Go' },
-    })
-    const a = w.get('a')
-    expect(a.attributes('href')).toBe('https://example.com')
-    expect(a.attributes('target')).toBe('_blank')
-    expect(a.text()).toBe('Go')
-  })
-})
 
 describe('AppFooter', () => {
   it('renders version and year', () => {

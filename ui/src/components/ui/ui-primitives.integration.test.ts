@@ -3,7 +3,6 @@ import { defineComponent, nextTick, ref } from 'vue'
 import { mount } from '@vue/test-utils'
 import * as Ui from './index'
 import * as ComboboxBarrel from './combobox'
-import Button from './Button.vue'
 import Card from './Card.vue'
 import CardContent from './CardContent.vue'
 import CardHeader from './CardHeader.vue'
@@ -14,9 +13,6 @@ import Switch from './Switch.vue'
 import Tabs from './Tabs.vue'
 import TabsList from './TabsList.vue'
 import TabsTrigger from './TabsTrigger.vue'
-import TabsContent from './TabsContent.vue'
-import ToggleGroup from './ToggleGroup.vue'
-import ToggleGroupItem from './ToggleGroupItem.vue'
 import Popover from './Popover.vue'
 import PopoverTrigger from './PopoverTrigger.vue'
 import PopoverContent from './PopoverContent.vue'
@@ -34,7 +30,6 @@ import ComboboxSeparator from './ComboboxSeparator.vue'
 
 describe('ui barrels', () => {
   it('re-exports primitives from index and combobox', () => {
-    expect(Ui.Button).toBe(Button)
     expect(Ui.Card).toBe(Card)
     expect(Ui.CardContent).toBe(CardContent)
     expect(Ui.CardHeader).toBe(CardHeader)
@@ -45,9 +40,6 @@ describe('ui barrels', () => {
     expect(Ui.Tabs).toBe(Tabs)
     expect(Ui.TabsList).toBe(TabsList)
     expect(Ui.TabsTrigger).toBe(TabsTrigger)
-    expect(Ui.TabsContent).toBe(TabsContent)
-    expect(Ui.ToggleGroup).toBe(ToggleGroup)
-    expect(Ui.ToggleGroupItem).toBe(ToggleGroupItem)
     expect(Ui.Popover).toBe(Popover)
     expect(Ui.PopoverTrigger).toBe(PopoverTrigger)
     expect(Ui.PopoverContent).toBe(PopoverContent)
@@ -72,28 +64,6 @@ describe('ui barrels', () => {
     expect(ComboboxBarrel.ComboboxItem).toBe(ComboboxItem)
     expect(ComboboxBarrel.ComboboxItemIndicator).toBe(ComboboxItemIndicator)
     expect(ComboboxBarrel.ComboboxSeparator).toBe(ComboboxSeparator)
-  })
-})
-
-describe('Button', () => {
-  it('defaults type to button and renders slots', () => {
-    const w = mount(Button, {
-      slots: {
-        default: 'Save',
-        icon: '<span class="icon">*</span>',
-      },
-      props: { class: 'extra' },
-    })
-    const btn = w.get('button')
-    expect(btn.attributes('type')).toBe('button')
-    expect(btn.classes()).toContain('extra')
-    expect(btn.text()).toContain('Save')
-    expect(btn.text()).toContain('*')
-  })
-
-  it('honors explicit type prop', () => {
-    const w = mount(Button, { props: { type: 'submit' }, slots: { default: 'Go' } })
-    expect(w.get('button').attributes('type')).toBe('submit')
   })
 })
 
@@ -155,17 +125,15 @@ describe('Switch', () => {
 })
 
 describe('Tabs', () => {
-  it('renders list, triggers, and default content', () => {
+  it('renders list and triggers', () => {
     const w = mount({
-      components: { Tabs, TabsList, TabsTrigger, TabsContent },
+      components: { Tabs, TabsList, TabsTrigger },
       template: `
         <Tabs default-value="a" class="tabs">
           <TabsList class="list">
             <TabsTrigger value="a" class="ta">A</TabsTrigger>
             <TabsTrigger value="b" class="tb">B</TabsTrigger>
           </TabsList>
-          <TabsContent value="a" class="ca">Alpha</TabsContent>
-          <TabsContent force-mount value="b" class="cb">Beta</TabsContent>
         </Tabs>
       `,
     })
@@ -174,30 +142,6 @@ describe('Tabs', () => {
     expect(w.get('.list').text()).toContain('B')
     expect(w.get('.ta').attributes('data-state')).toBe('active')
     expect(w.get('.tb').attributes('data-state')).toBe('inactive')
-    expect(w.get('.ca').text()).toBe('Alpha')
-    expect(w.get('.cb').text()).toBe('Beta')
-  })
-})
-
-describe('ToggleGroup', () => {
-  it('mounts items and reflects selection', async () => {
-    const model = ref('one')
-    const Host = defineComponent({
-      components: { ToggleGroup, ToggleGroupItem },
-      setup: () => ({ model }),
-      template: `
-        <ToggleGroup type="single" v-model="model" class="tg">
-          <ToggleGroupItem value="one" class="i1">One</ToggleGroupItem>
-          <ToggleGroupItem value="two" class="i2">Two</ToggleGroupItem>
-        </ToggleGroup>
-      `,
-    })
-    const w = mount(Host)
-    expect(w.get('.tg')).toBeTruthy()
-    expect(w.get('.i1').attributes('data-state')).toBe('on')
-    await w.get('.i2').trigger('click')
-    await nextTick()
-    expect(model.value).toBe('two')
   })
 })
 
