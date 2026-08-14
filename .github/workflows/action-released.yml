@@ -1,0 +1,29 @@
+name: action (released)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - action.yml
+      - action/resolve.sh
+      - action/install.sh
+      - .github/workflows/action-ci.yml
+      - .github/workflows/action-released.yml
+  push:
+    branches: [main]
+    paths:
+      - action.yml
+      - action/resolve.sh
+      - action/install.sh
+      - .github/workflows/action-ci.yml
+      - .github/workflows/action-released.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  action:
+    uses: ./.github/workflows/action-ci.yml
+    with:
+      binary: released

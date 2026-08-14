@@ -108,11 +108,25 @@ describe('buildConvertArgs', () => {
 describe('resolveInputs', () => {
   /** @param {Record<string, string>} map */
   function envFrom(map) {
-    /** @type {NodeJS.ProcessEnv} */
-    const env = {}
-    for (const [k, v] of Object.entries(map)) env[`INPUT_${k}`] = v
-    return env
+    return { VIZB_ACTION_INPUTS: JSON.stringify(map) }
   }
+
+  it('reads VIZB_ACTION_INPUTS JSON', () => {
+    const r = resolveInputs(
+      envFrom({
+        file: 'from-json.csv',
+        'cmd-retries': '4',
+        chart: 'bar:scale=log\npie:labels',
+      }),
+    )
+    assert.equal(r.file, 'from-json.csv')
+    assert.equal(r.cmdRetries, 4)
+    assert.equal(r.chart, 'bar:scale=log\npie:labels')
+  })
+
+  it('rejects invalid VIZB_ACTION_INPUTS', () => {
+    assert.throws(() => resolveInputs({ VIZB_ACTION_INPUTS: '{' }), /not valid JSON/)
+  })
 
   it('prefers file/cmd over deprecated bench-* aliases', () => {
     const r = resolveInputs(
@@ -247,11 +261,11 @@ describe('runWithRetries', () => {
     throw err
   }
 
-  it('returns on first success without sleeping', () => {
+  it('returns on first success without sleeping', async () => {
     const sleeps = []
     const logs = []
     let attempts = 0
-    runWithRetries(
+    await runWithRetries(
       () => {
         attempts += 1
       },
@@ -266,11 +280,11 @@ describe('runWithRetries', () => {
     assert.deepEqual(logs, [])
   })
 
-  it('retries after failure then succeeds', () => {
+  it('retries after failure then succeeds', async () => {
     const sleeps = []
     const logs = []
     let attempts = 0
-    runWithRetries(
+    await runWithRetries(
       () => {
         attempts += 1
         if (attempts < 2) failWith(1)
@@ -289,10 +303,10 @@ describe('runWithRetries', () => {
     )
   })
 
-  it('rethrows the last error after attempts are exhausted', () => {
+  it('rethrows the last error after attempts are exhausted', async () => {
     const sleeps = []
     let attempts = 0
-    assert.throws(
+    await assert.rejects(
       () =>
         runWithRetries(
           () => {
@@ -311,10 +325,10 @@ describe('runWithRetries', () => {
     assert.deepEqual(sleeps, [2, 4])
   })
 
-  it('does not sleep when retries is 1', () => {
+  it('does not sleep when retries is 1', async () => {
     const sleeps = []
     const logs = []
-    assert.throws(
+    await assert.rejects(
       () =>
         runWithRetries(
           () => failWith(1),
@@ -330,9 +344,9 @@ describe('runWithRetries', () => {
     assert.deepEqual(logs, [])
   })
 
-  it('logs spawn errors by message', () => {
+  it('logs spawn errors by message', async () => {
     const logs = []
-    runWithRetries(
+    await runWithRetries(
       () => {
         if (logs.length === 0) throw new Error('spawn ENOENT')
       },
@@ -389,10 +403,10 @@ describe('runPipeline', () => {
     }
   }
 
-  it('runs convert then ui for file + html', () => {
+  it('runs convert then ui for file + html', async () => {
     /** @type {string[][]} */
     const calls = []
-    runPipeline(baseInputs(), {
+    await runPipeline(baseInputs(), {
       vizbBin: 'vizb',
       run: (cmd, args) => {
         calls.push([cmd, ...args])
@@ -404,12 +418,12 @@ describe('runPipeline', () => {
     assert.deepEqual(calls[1].slice(0, 4), ['vizb', 'ui', 'results/out.json', '-o'])
   })
 
-  it('captures cmd stdout then converts', () => {
+  it('captures cmd stdout then converts', async () => {
     /** @type {string[][]} */
     const calls = []
     /** @type {string[]} */
     const shells = []
-    runPipeline(
+    await runPipeline(
       baseInputs({ file: '', cmd: 'echo hello', hasInput: true, outputHtml: '' }),
       {
         vizbBin: 'vizb',
@@ -426,11 +440,11 @@ describe('runPipeline', () => {
     assert.equal(calls.length, 1)
   })
 
-  it('retries cmd capture until it succeeds', () => {
+  it('retries cmd capture until it succeeds', async () => {
     /** @type {number[]} */
     const sleeps = []
     let shells = 0
-    runPipeline(
+    await runPipeline(
       baseInputs({
         file: '',
         cmd: 'flaky',
@@ -457,9 +471,9 @@ describe('runPipeline', () => {
     assert.deepEqual(sleeps, [2, 4])
   })
 
-  it('does not retry when file is set', () => {
+  it('does not retry when file is set', async () => {
     let shells = 0
-    runPipeline(baseInputs({ cmd: 'should-not-run', cmdRetries: 3 }), {
+    await runPipeline(baseInputs({ cmd: 'should-not-run', cmdRetries: 3 }), {
       vizbBin: 'vizb',
       run: () => {},
       runShellCapture: () => {
@@ -469,12 +483,12 @@ describe('runPipeline', () => {
     assert.equal(shells, 0)
   })
 
-  it('merges when merge-dir set and json exists', () => {
+  it('merges when merge-dir set and json exists', async () => {
     /** @type {string[][]} */
     const calls = []
     // Pre-create path check via real existsSync is fine if we only convert+merge
     // without relying on file presence — inject by writing nothing and only merge-files.
-    runPipeline(
+    await runPipeline(
       baseInputs({
         hasInput: false,
         file: '',
@@ -497,10 +511,10 @@ describe('runPipeline', () => {
     assert.ok(calls[0].includes('results/prev'))
   })
 
-  it('uses data-url for ui without convert', () => {
+  it('uses data-url for ui without convert', async () => {
     /** @type {string[][]} */
     const calls = []
-    runPipeline(
+    await runPipeline(
       baseInputs({
         file: '',
         hasInput: false,

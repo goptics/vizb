@@ -9,6 +9,9 @@ inputs:
   cmd:
     description: "Command whose stdout is visualized — any command emitting CSV/JSON tabular data or benchmark output (e.g., go test -bench=., cargo bench, cat data.csv)."
     default: ""
+  cmd-retries:
+    description: "Total attempts for cmd. 1 = no retry (default). Integer >= 1. Failed attempts wait 2s, then double."
+    default: "1"
   file:
     description: "Path to an existing input file to visualize — benchmark output, CSV, or JSON (takes priority over cmd)"
     default: ""
@@ -18,9 +21,6 @@ inputs:
   bench-file:
     description: "DEPRECATED: use 'file'. Existing input file; honored only when 'file' is empty." # remove on v1
     default: ""
-  cmd-retries:
-    description: "Total attempts for cmd. 1 = no retry (default). Integer >= 1. Failed attempts wait 2s, then double."
-    default: "1"
   name:
     description: "Dataset/benchmark name (-n flag)"
     default: "Comparisons"
@@ -109,7 +109,7 @@ inputs:
     description: "URL to fetch vizb JSON from at runtime (-U flag). Accepts full dataset payloads or a lazy [{id,name}] catalog with details at /dataset/<encoded-id>."
     default: ""
   vizb-binary:
-    description: "Path to a pre-built vizb binary on the runner. When set, skips release download/cache and installs this binary instead — useful for testing local builds or unreleased changes."
+    description: "Path to a pre-built vizb binary on the runner. When set, skips version resolution, cache, and release download and installs this binary instead — useful for testing local builds or unreleased changes."
     default: ""
 outputs:
   output-file-html:
@@ -123,96 +123,29 @@ runs:
   using: composite
   steps:
     - name: Resolve vizb version
+      if: inputs.vizb-binary == ''
       id: version
       shell: bash
-      run: |
-        if [ -n "${{ inputs.vizb-binary }}" ]; then
-          echo "tag=local" >> "$GITHUB_OUTPUT"
-          echo "is-major=false" >> "$GITHUB_OUTPUT"
-          exit 0
-        fi
-
-        REF="${{ github.action_ref }}"
-        if [ -z "$REF" ]; then
-          REF="v0"
-        fi
-
-        if echo "$REF" | grep -qE '^v[0-9]+$'; then
-          PREFIX="${REF#v}"
-          TAG=$(git ls-remote --tags --refs --sort='-version:refname' \
-            https://github.com/goptics/vizb "refs/tags/v${PREFIX}.*" | \
-            head -1 | sed 's|.*/||')
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "is-major=true" >> "$GITHUB_OUTPUT"
-        else
-          echo "tag=$REF" >> "$GITHUB_OUTPUT"
-          echo "is-major=false" >> "$GITHUB_OUTPUT"
-        fi
+      run: bash "$GITHUB_ACTION_PATH/action/resolve.sh"
 
     - name: Cache vizb binary
-      if: steps.version.outputs.is-major != 'true' && inputs.vizb-binary == ''
+      if: inputs.vizb-binary == ''
       id: cache-vizb
       uses: actions/cache@v6
       with:
-        # Windows installs as vizb.exe (required for Node spawnSync / PATHEXT).
         path: |
           ~/.local/bin/vizb
           ~/.local/bin/vizb.exe
         key: vizb-${{ steps.version.outputs.tag }}-${{ runner.os }}-${{ runner.arch }}
 
     - name: Install vizb
-      if: steps.cache-vizb.outputs.cache-hit != 'true'
+      if: inputs.vizb-binary != '' || steps.cache-vizb.outputs.cache-hit != 'true'
       shell: bash
-      run: |
-        mkdir -p ~/.local/bin
+      env:
+        VIZB_BINARY: ${{ inputs.vizb-binary }}
+        VIZB_TAG: ${{ steps.version.outputs.tag }}
+      run: bash "$GITHUB_ACTION_PATH/action/install.sh"
 
-        # Node spawnSync on Windows only finds PATHEXT names (vizb.exe).
-        if [ "${{ runner.os }}" = "Windows" ]; then
-          VIZB_DEST="$HOME/.local/bin/vizb.exe"
-        else
-          VIZB_DEST="$HOME/.local/bin/vizb"
-        fi
-
-        VIZB_BINARY="${{ inputs.vizb-binary }}"
-        if [ -n "$VIZB_BINARY" ]; then
-          # go build -o ./bin/vizb on Windows yields ./bin/vizb.exe
-          if [ ! -f "$VIZB_BINARY" ] && [ -f "${VIZB_BINARY}.exe" ]; then
-            VIZB_BINARY="${VIZB_BINARY}.exe"
-          fi
-          echo "::notice::Installing local vizb binary from $VIZB_BINARY"
-          cp "$VIZB_BINARY" "$VIZB_DEST"
-          chmod +x "$VIZB_DEST"
-          exit 0
-        fi
-
-        OS=$(echo "${{ runner.os }}" | tr '[:upper:]' '[:lower:]')
-        [ "$OS" = "macos" ] && OS="darwin"
-        ARCH=$(echo "${{ runner.arch }}" | tr '[:upper:]' '[:lower:]')
-        [ "$ARCH" = "x64" ] && ARCH="amd64"
-
-        TAG="${{ steps.version.outputs.tag }}"
-        VERSION="${TAG#v}"
-        EXT=".tar.gz"
-        [ "$OS" = "windows" ] && EXT=".zip"
-
-        URL="https://github.com/goptics/vizb/releases/download/${TAG}/vizb@${VERSION}-${OS}-${ARCH}${EXT}"
-
-        curl -sfL "$URL" -o vizb-archive || {
-          echo "::error::Failed to download vizb from $URL. Check that release ${TAG} exists."
-          exit 1
-        }
-
-        if [ "$OS" = "windows" ]; then
-          unzip -o vizb-archive -d ~/.local/bin
-          if [ ! -f "$HOME/.local/bin/vizb.exe" ] && [ -f "$HOME/.local/bin/vizb" ]; then
-            mv "$HOME/.local/bin/vizb" "$HOME/.local/bin/vizb.exe"
-          fi
-        else
-          tar xzf vizb-archive -C ~/.local/bin
-          chmod +x ~/.local/bin/vizb
-        fi
-
-    # Always on PATH (covers cache hits when Install is skipped).
     - name: Add vizb to PATH
       shell: bash
       run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
@@ -220,38 +153,5 @@ runs:
     - name: Run vizb pipeline
       shell: bash
       env:
-        INPUT_cmd: ${{ inputs.cmd }}
-        INPUT_file: ${{ inputs.file }}
-        INPUT_bench-cmd: ${{ inputs.bench-cmd }}
-        INPUT_bench-file: ${{ inputs.bench-file }}
-        INPUT_cmd-retries: ${{ inputs.cmd-retries }}
-        INPUT_name: ${{ inputs.name }}
-        INPUT_title: ${{ inputs.title }}
-        INPUT_description: ${{ inputs.description }}
-        INPUT_tag: ${{ inputs.tag }}
-        INPUT_id: ${{ inputs.id }}
-        INPUT_group: ${{ inputs.group }}
-        INPUT_group-pattern: ${{ inputs.group-pattern }}
-        INPUT_group-regex: ${{ inputs.group-regex }}
-        INPUT_sort: ${{ inputs.sort }}
-        INPUT_filter: ${{ inputs.filter }}
-        INPUT_mem-unit: ${{ inputs.mem-unit }}
-        INPUT_time-unit: ${{ inputs.time-unit }}
-        INPUT_number-unit: ${{ inputs.number-unit }}
-        INPUT_round: ${{ inputs.round }}
-        INPUT_select: ${{ inputs.select }}
-        INPUT_col-axis: ${{ inputs.col-axis }}
-        INPUT_json-path: ${{ inputs.json-path }}
-        INPUT_stat: ${{ inputs.stat }}
-        INPUT_chart: ${{ inputs.chart }}
-        INPUT_charts: ${{ inputs.charts }}
-        INPUT_parser: ${{ inputs.parser }}
-        INPUT_show-labels: ${{ inputs.show-labels }}
-        INPUT_enable-3d: ${{ inputs.enable-3d }}
-        INPUT_merge-files: ${{ inputs.merge-files }}
-        INPUT_merge-dir: ${{ inputs.merge-dir }}
-        INPUT_tag-axis: ${{ inputs.tag-axis }}
-        INPUT_output-json: ${{ inputs.output-json }}
-        INPUT_output-html: ${{ inputs.output-html }}
-        INPUT_data-url: ${{ inputs.data-url }}
+        VIZB_ACTION_INPUTS: ${{ toJSON(inputs) }}
       run: node "$GITHUB_ACTION_PATH/action/run.mjs"
