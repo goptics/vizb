@@ -149,15 +149,9 @@ vi.mock('@/lib/utils', async (importOriginal) => {
 
 import SortControl from './SortControl.vue'
 import ScaleControl from './ScaleControl.vue'
-import StackControl from './StackControl.vue'
-import ShowLabelsControl from './ShowLabelsControl.vue'
-import SmoothControl from './SmoothControl.vue'
-import HorizontalControl from './HorizontalControl.vue'
-import ThreeDControl from './ThreeDControl.vue'
-import ThreeDRotateControl from './ThreeDRotateControl.vue'
-import ThreeDVisualMapControl from './ThreeDVisualMapControl.vue'
-import VisualMapControl from './VisualMapControl.vue'
+import BooleanControl from './BooleanControl.vue'
 import SwapControl from './SwapControl.vue'
+import { fieldRegistry } from '@/composables/settings/fieldRegistry'
 
 describe('settings controls', () => {
   beforeEach(() => {
@@ -210,24 +204,31 @@ describe('settings controls', () => {
   })
 
   it.each([
-    ['StackControl', StackControl, 'stack-switch'],
-    ['ShowLabelsControl', ShowLabelsControl, 'labels-switch'],
-    ['SmoothControl', SmoothControl, 'smooth-lines-switch'],
-    ['HorizontalControl', HorizontalControl, 'horizontal-bars-switch'],
-    ['ThreeDControl', ThreeDControl, 'three-d-switch'],
-    ['ThreeDRotateControl', ThreeDRotateControl, 'three-d-rotate-switch'],
-    ['ThreeDVisualMapControl', ThreeDVisualMapControl, 'three-d-visualmap-switch'],
-    ['VisualMapControl', VisualMapControl, 'visualmap-switch'],
-  ] as const)('%s toggles boolean model', async (_name, Comp, testId) => {
+    'stack',
+    'showLabels',
+    'smooth',
+    'horizontal',
+    'threeD',
+    'threeDRotate',
+    'threeDVisualMap',
+    'visualMap',
+  ] as const)('BooleanControl toggles %s copy', async (key) => {
+    const meta = fieldRegistry[key]
     const vals: boolean[] = []
-    const w = mount(Comp, {
+    const w = mount(BooleanControl, {
       props: {
         modelValue: undefined,
+        id: meta.id!,
+        label: meta.label!,
+        description: meta.description!,
+        separator: meta.separator,
         'onUpdate:modelValue': (v: boolean) => vals.push(v),
       },
     })
-    await w.get(`[data-testid="${testId}"]`).trigger('click')
+    await w.get(`[data-testid="${meta.id}"]`).trigger('click')
     expect(vals).toEqual([true])
+    expect(w.text()).toContain(meta.label)
+    expect(w.find('[data-stub="Separator"]').exists()).toBe(meta.separator === true)
   })
 
   it('SwapControl selects arrangement option', async () => {

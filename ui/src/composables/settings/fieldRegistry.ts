@@ -3,20 +3,8 @@ import type { ChartConfig, ChartType, ScaleType, Sort } from '@/types'
 import type { Dimension } from '@/lib/utils'
 import SortControl from '@/components/settings/SortControl.vue'
 import ScaleControl from '@/components/settings/ScaleControl.vue'
-import StackControl from '@/components/settings/StackControl.vue'
-import ShowLabelsControl from '@/components/settings/ShowLabelsControl.vue'
-import SmoothControl from '@/components/settings/SmoothControl.vue'
-import HorizontalControl from '@/components/settings/HorizontalControl.vue'
-import ThreeDRotateControl from '@/components/settings/ThreeDRotateControl.vue'
-import ThreeDControl from '@/components/settings/ThreeDControl.vue'
-import ThreeDVisualMapControl from '@/components/settings/ThreeDVisualMapControl.vue'
-import VisualMapControl from '@/components/settings/VisualMapControl.vue'
+import BooleanControl from '@/components/settings/BooleanControl.vue'
 import SwapControl from '@/components/settings/SwapControl.vue'
-
-// Re-exported so SettingsPanel can import the chart-type picker threshold
-// from the same module as the field registry — both are "what to render in the
-// settings panel" decisions.
-export { shouldUseTabPicker, CHART_PICKER_TAB_THRESHOLD } from '@/lib/pickerRule'
 
 /** Value type each settings control emits for its field key. */
 export type SettingFieldValueMap = {
@@ -45,8 +33,11 @@ export const THREE_D_FIELD_KEYS: readonly SettingFieldKey[] = [
 type FieldMeta = {
   component: Component
   appliesTo: ChartType[]
-  appliesOn?: Dimension[]
   visible?: (ctx: RenderContext) => boolean
+  id?: string
+  label?: string
+  description?: string
+  separator?: boolean
 }
 
 export const fieldRegistry: Record<SettingFieldKey, FieldMeta> = {
@@ -59,9 +50,12 @@ export const fieldRegistry: Record<SettingFieldKey, FieldMeta> = {
     appliesTo: ['bar', 'line', 'scatter'],
   },
   stack: {
-    component: StackControl,
+    component: BooleanControl,
     appliesTo: ['bar', 'line'],
-    appliesOn: ['2D'],
+    id: 'stack-switch',
+    label: 'Stack series',
+    description: 'Stack grouped bar or line series into category totals.',
+    separator: true,
     visible: (ctx) =>
       ctx.rendering3D !== true &&
       (ctx.dimension === undefined || ctx.dimension === '2D') &&
@@ -69,38 +63,62 @@ export const fieldRegistry: Record<SettingFieldKey, FieldMeta> = {
       ctx.chartMode !== 'mixed',
   },
   showLabels: {
-    component: ShowLabelsControl,
+    component: BooleanControl,
     appliesTo: ['bar', 'line', 'scatter', 'pie', 'heatmap', 'radar', 'sankey', 'chord'],
+    id: 'labels-switch',
+    label: 'Show labels',
+    description: 'Display data labels on chart elements.',
+    separator: true,
   },
   smooth: {
-    component: SmoothControl,
+    component: BooleanControl,
     appliesTo: ['line'],
+    id: 'smooth-lines-switch',
+    label: 'Smooth lines',
+    description: 'Render curved segments between line chart points.',
+    separator: true,
     visible: (ctx) => ctx.rendering3D !== true,
   },
   horizontal: {
-    component: HorizontalControl,
+    component: BooleanControl,
     appliesTo: ['bar'],
+    id: 'horizontal-bars-switch',
+    label: 'Horizontal bars',
+    description: 'Swap axes so bars grow rightward and categories appear on the Y axis.',
+    separator: true,
     visible: (ctx) => ctx.rendering3D !== true,
   },
   threeD: {
-    component: ThreeDControl,
+    component: BooleanControl,
     appliesTo: ['bar', 'line', 'scatter'],
+    id: 'three-d-switch',
+    label: '3D view',
+    description: 'Render as a 3D chart with metric height on the z axis.',
     // Value-mode toggle when the 3D engine is bundled and z is off chart axes.
     visible: (ctx) => ctx.hasThreeDOption === true && ctx.hasZAxis !== true,
   },
   threeDVisualMap: {
-    component: ThreeDVisualMapControl,
+    component: BooleanControl,
     appliesTo: ['bar', 'line', 'scatter'],
+    id: 'three-d-visualmap-switch',
+    label: 'Visual map',
+    description: 'Color bars and lines by metric value using a gradient scale.',
     visible: (ctx) => ctx.rendering3D === true || ctx.dimension === undefined,
   },
   visualMap: {
-    component: VisualMapControl,
+    component: BooleanControl,
     appliesTo: ['scatter'],
+    id: 'visualmap-switch',
+    label: 'Visual map',
+    description: 'Color scatter points by metric value using a gradient scale.',
     visible: (ctx) => ctx.rendering3D !== true,
   },
   threeDRotate: {
-    component: ThreeDRotateControl,
+    component: BooleanControl,
     appliesTo: ['bar', 'line', 'scatter'],
+    id: 'three-d-rotate-switch',
+    label: 'Auto rotate',
+    description: 'Continuously rotate the 3D chart.',
     visible: (ctx) => ctx.rendering3D === true || ctx.dimension === undefined,
   },
   swap: {
@@ -109,14 +127,13 @@ export const fieldRegistry: Record<SettingFieldKey, FieldMeta> = {
   },
 }
 
-export function getControl(key: string): Component | undefined {
-  if (key === 'type' || !(key in fieldRegistry)) return undefined
-  return fieldRegistry[key as SettingFieldKey].component
-}
-
 export type RenderableField<K extends SettingFieldKey = SettingFieldKey> = {
   key: K
   component: Component
+  id?: string
+  label?: string
+  description?: string
+  separator?: boolean
 }
 
 export type RenderContext = {
@@ -136,12 +153,15 @@ export function getRenderableFields(
   for (const key of Object.keys(fieldRegistry) as SettingFieldKey[]) {
     const meta = fieldRegistry[key]
     if (!meta.appliesTo.includes(config.type)) continue
-    if (meta.visible) {
-      if (!meta.visible(ctx)) continue
-    } else if (meta.appliesOn && ctx.dimension && !meta.appliesOn.includes(ctx.dimension)) {
-      continue
-    }
-    fields.push({ key, component: meta.component })
+    if (meta.visible && !meta.visible(ctx)) continue
+    fields.push({
+      key,
+      component: meta.component,
+      id: meta.id,
+      label: meta.label,
+      description: meta.description,
+      separator: meta.separator,
+    })
   }
   return fields
 }

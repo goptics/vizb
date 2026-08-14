@@ -12,9 +12,20 @@ import type {
 // Side-effect: top-level vi.mock for every settings control SFC fieldRegistry imports.
 import '@/test-utils/mockSettingsControls'
 
-const { fieldRegistry, getControl, getRenderableFields, partitionRenderableFields } = await import(
+const { fieldRegistry, getRenderableFields, partitionRenderableFields } = await import(
   './fieldRegistry'
 )
+
+const BOOLEAN_KEYS = [
+  'stack',
+  'showLabels',
+  'smooth',
+  'horizontal',
+  'threeD',
+  'threeDVisualMap',
+  'visualMap',
+  'threeDRotate',
+] as const
 
 describe('fieldRegistry', () => {
   it('exposes the eleven known field controls', () => {
@@ -35,20 +46,42 @@ describe('fieldRegistry', () => {
     )
   })
 
-  it('getControl returns a component for a registered key', () => {
-    expect(getControl('sort')).toBeDefined()
-    expect(getControl('scale')).toBeDefined()
-    expect(getControl('stack')).toBeDefined()
-    expect(getControl('showLabels')).toBeDefined()
-    expect(getControl('horizontal')).toBeDefined()
-    expect(getControl('smooth')).toBeDefined()
-    expect(getControl('threeDRotate')).toBeDefined()
-    expect(getControl('swap')).toBeDefined()
-  })
-
-  it('getControl returns undefined for an unknown key', () => {
-    expect(getControl('unknown')).toBeUndefined()
-    expect(getControl('type')).toBeUndefined()
+  it('boolean fields share BooleanControl and carry toggle copy', () => {
+    for (const key of BOOLEAN_KEYS) {
+      expect(fieldRegistry[key]!.component).toBe(fieldRegistry.stack.component)
+      expect(fieldRegistry[key]!.id).toBeTruthy()
+      expect(fieldRegistry[key]!.label).toBeTruthy()
+      expect(fieldRegistry[key]!.description).toBeTruthy()
+    }
+    expect(fieldRegistry.sort.component).not.toBe(fieldRegistry.stack.component)
+    expect(fieldRegistry.scale.component).not.toBe(fieldRegistry.stack.component)
+    expect(fieldRegistry.swap.component).not.toBe(fieldRegistry.stack.component)
+    expect(fieldRegistry.stack).toMatchObject({
+      id: 'stack-switch',
+      label: 'Stack series',
+      description: 'Stack grouped bar or line series into category totals.',
+      separator: true,
+    })
+    expect(fieldRegistry.showLabels).toMatchObject({
+      id: 'labels-switch',
+      separator: true,
+    })
+    expect(fieldRegistry.smooth).toMatchObject({
+      id: 'smooth-lines-switch',
+      separator: true,
+    })
+    expect(fieldRegistry.horizontal).toMatchObject({
+      id: 'horizontal-bars-switch',
+      separator: true,
+    })
+    expect(fieldRegistry.threeD).toMatchObject({
+      id: 'three-d-switch',
+      label: '3D view',
+    })
+    expect(fieldRegistry.threeD.separator).toBeUndefined()
+    expect(fieldRegistry.threeDVisualMap.separator).toBeUndefined()
+    expect(fieldRegistry.threeDRotate.separator).toBeUndefined()
+    expect(fieldRegistry.visualMap.separator).toBeUndefined()
   })
 
   it('scale and threeDRotate apply to bar, line, and scatter', () => {
@@ -58,7 +91,9 @@ describe('fieldRegistry', () => {
 
   it('stack applies to 2D bar and line only', () => {
     expect(fieldRegistry['stack']!.appliesTo).toEqual(['bar', 'line'])
-    expect(fieldRegistry['stack']!.appliesOn).toEqual(['2D'])
+    expect(fieldRegistry['stack']!.visible?.({ rendering3D: false, dimension: '2D' })).toBe(true)
+    expect(fieldRegistry['stack']!.visible?.({ rendering3D: true })).toBe(false)
+    expect(fieldRegistry['stack']!.visible?.({ dimension: '3D' })).toBe(false)
   })
 
   it('threeDRotate uses rendering3D visibility', () => {
@@ -69,15 +104,6 @@ describe('fieldRegistry', () => {
     expect(fieldRegistry['smooth']!.appliesTo).toEqual(['line'])
     expect(fieldRegistry['smooth']!.visible?.({ rendering3D: false })).toBe(true)
     expect(fieldRegistry['smooth']!.visible?.({ rendering3D: true })).toBe(false)
-  })
-
-  it('fields with no appliesOn have no dimension constraint', () => {
-    // Most fields (sort, scale, showLabels, swap) are available on any
-    // dimension. Their `appliesOn` is undefined — the registry treats that as
-    // "no constraint".
-    for (const key of ['sort', 'scale', 'showLabels', 'swap'] as const) {
-      expect(fieldRegistry[key]!.appliesOn).toBeUndefined()
-    }
   })
 
   it('sort, showLabels, and swap apply to all eight chart types', () => {
@@ -109,6 +135,18 @@ describe('getRenderableFields', () => {
       'swap',
     ])
     for (const f of fields) expect(f.component).toBeDefined()
+  })
+
+  it('copies boolean toggle props onto renderable fields', () => {
+    const cfg: BarConfig = { type: 'bar' }
+    const fields = getRenderableFields(cfg, { dimension: '2D', rendering3D: false })
+    expect(fields.find((f) => f.key === 'stack')).toMatchObject({
+      id: 'stack-switch',
+      label: 'Stack series',
+      description: 'Stack grouped bar or line series into category totals.',
+      separator: true,
+    })
+    expect(fields.find((f) => f.key === 'sort')?.id).toBeUndefined()
   })
 
   it('returns 6 entries for a 3D line config', () => {
@@ -323,23 +361,6 @@ describe('getRenderableFields', () => {
         (f) => f.key
       )
     ).toEqual(['sort', 'scale', 'showLabels', 'threeDVisualMap', 'threeDRotate', 'swap'])
-  })
-
-  it('skips fields whose appliesOn excludes the current dimension when visible is absent', () => {
-    const original = fieldRegistry.stack
-    // Temporarily strip `visible` so the appliesOn branch is the only filter.
-    fieldRegistry.stack = {
-      component: original.component,
-      appliesTo: original.appliesTo,
-      appliesOn: original.appliesOn,
-    }
-    try {
-      const cfg: BarConfig = { type: 'bar' }
-      expect(getRenderableFields(cfg, { dimension: '3D' }).map((f) => f.key)).not.toContain('stack')
-      expect(getRenderableFields(cfg, { dimension: '2D' }).map((f) => f.key)).toContain('stack')
-    } finally {
-      fieldRegistry.stack = original
-    }
   })
 
   it('omits missing THREE_D_FIELD_KEYS from the threeD partition', () => {

@@ -190,7 +190,8 @@ describe('useActiveChartShape', () => {
       )
     )
     const { useActiveChartShape } = await import('./useActiveChartShape')
-    const { hasThreeDOption } = useActiveChartShape()
+    const { hasThreeDOption, hasZOnChart } = useActiveChartShape()
+    expect(hasZOnChart.value).toBe(false)
     expect(hasThreeDOption.value).toBe(true)
 
     // Wire/identity xyz puts z on chart → hasThreeDOption false (grouped path).
@@ -203,6 +204,7 @@ describe('useActiveChartShape', () => {
       )
     )
     const again = (await import('./useActiveChartShape')).useActiveChartShape()
+    expect(again.hasZOnChart.value).toBe(true)
     expect(again.hasThreeDOption.value).toBe(false)
   })
 
