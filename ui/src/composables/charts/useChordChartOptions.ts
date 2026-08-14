@@ -2,9 +2,9 @@ import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
 import { hasXAxis, hasYAxis } from '@/lib/utils'
-import { getChartStyling, getTooltipTheme } from './shared/chartConfig'
+import { getChartStyling } from './shared/chartConfig'
 import { fontSize } from './shared/common'
-import { buildEdgeGraph, formatEdgeTooltip, sortEdgeGraphNodes } from './shared/edgeGraph'
+import { emptyEdgeChartOption, prepareEdgeChart } from './shared/edgeChart'
 
 // Thin outer ring (demo geometry). top = legend band + gap; bottom = same gap.
 const chordSeriesDefaults = {
@@ -24,43 +24,22 @@ const chordSeriesDefaults = {
   emphasis: { focus: 'self' as const },
 } as const
 
-function minimalChordOption(config: BaseChartConfig): EChartsOption {
-  return {
-    ...getBaseOptions(config),
-    legend: { show: false },
-    series: [
-      {
-        type: 'chord',
-        ...chordSeriesDefaults,
-        data: [],
-        links: [],
-      },
-    ],
-  } as unknown as EChartsOption
-}
-
 /** Build the ECharts 6 Chord option from Vizb's shared x→y edge points. */
 export function useChordChartOptions(config: BaseChartConfig) {
-  const { chartData, sort, showLabels, isDark, visibleZ } = config
+  const { chartData, showLabels, isDark, visibleZ } = config
 
   const options = computed<EChartsOption>(() => {
     if (!hasXAxis(chartData) || !hasYAxis(chartData)) {
-      return minimalChordOption(config)
+      return emptyEdgeChartOption(config, { type: 'chord', ...chordSeriesDefaults })
     }
 
     const styling = getChartStyling(isDark.value)
-    const { nodes: rawNodes, links } = buildEdgeGraph(chartData.value.points ?? [])
-    const nodes = sort.value.enabled ? sortEdgeGraphNodes(rawNodes, sort.value.order) : rawNodes
+    const { nodes, links, tooltip } = prepareEdgeChart(config)
     const data = nodes.map(({ name, total, itemStyle }) => ({
       name,
       value: Math.max(0, total),
       itemStyle,
     }))
-    // buildEdgeGraph always assigns a color, so lookups below never miss the map key's value.
-    const nodeColor = new Map<string, string>(
-      nodes.map((n) => [n.name, n.itemStyle!.color!] as const)
-    )
-    const colorFor = (name: string): string => nodeColor.get(name) ?? '#888'
     // ChartCard writes legend toggles into visibleZ; persist them so ChartChord's
     // notMerge remount on resize does not re-show hidden nodes.
     const selected = visibleZ?.value ?? {}
@@ -78,11 +57,7 @@ export function useChordChartOptions(config: BaseChartConfig) {
         selected,
         textStyle: { fontSize, color: styling.textColor },
       },
-      tooltip: {
-        trigger: 'item',
-        ...getTooltipTheme(isDark.value),
-        formatter: (params: any) => formatEdgeTooltip(params, colorFor),
-      } as EChartsOption['tooltip'],
+      tooltip,
       series: [
         {
           type: 'chord',
