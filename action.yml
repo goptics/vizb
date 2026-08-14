@@ -9,6 +9,9 @@ inputs:
   cmd:
     description: "Command whose stdout is visualized — any command emitting CSV/JSON tabular data or benchmark output (e.g., go test -bench=., cargo bench, cat data.csv)."
     default: ""
+  cmd-retries:
+    description: "Total attempts for cmd. 1 = no retry (default). Integer >= 1. Failed attempts wait 2s, then double."
+    default: "1"
   file:
     description: "Path to an existing input file to visualize — benchmark output, CSV, or JSON (takes priority over cmd)"
     default: ""
@@ -18,9 +21,6 @@ inputs:
   bench-file:
     description: "DEPRECATED: use 'file'. Existing input file; honored only when 'file' is empty." # remove on v1
     default: ""
-  cmd-retries:
-    description: "Total attempts for cmd. 1 = no retry (default). Integer >= 1. Failed attempts wait 2s, then double."
-    default: "1"
   name:
     description: "Dataset/benchmark name (-n flag)"
     default: "Comparisons"

@@ -38,23 +38,20 @@ EXT=".tar.gz"
 
 URL="https://github.com/goptics/vizb/releases/download/${TAG}/vizb@${VERSION}-${OS}-${ARCH}${EXT}"
 
-if [ "${VIZB_DRY_RUN:-}" = "1" ]; then
-  echo "dest=${DEST}"
-  echo "url=${URL}"
-  exit 0
-fi
+ARCHIVE=$(mktemp "${TMPDIR:-/tmp}/vizb-archive.XXXXXX")
+trap 'rm -f "$ARCHIVE"' EXIT
 
-curl -sfL "$URL" -o vizb-archive || {
+curl -sfL "$URL" -o "$ARCHIVE" || {
   echo "::error::Failed to download vizb from $URL. Check that release ${TAG} exists."
   exit 1
 }
 
 if [ "$OS" = "windows" ]; then
-  unzip -o vizb-archive -d "$BIN_DIR"
+  unzip -o "$ARCHIVE" -d "$BIN_DIR"
   if [ ! -f "${BIN_DIR}/vizb.exe" ] && [ -f "${BIN_DIR}/vizb" ]; then
     mv "${BIN_DIR}/vizb" "$DEST"
   fi
 else
-  tar xzf vizb-archive -C "$BIN_DIR"
+  tar xzf "$ARCHIVE" -C "$BIN_DIR"
   chmod +x "${BIN_DIR}/vizb"
 fi

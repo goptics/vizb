@@ -2,7 +2,7 @@
 import { resolveInputs, runPipeline } from './lib.mjs'
 
 try {
-  runPipeline(resolveInputs())
+  await runPipeline(resolveInputs())
 } catch (err) {
   const message = err instanceof Error ? err.message : String(err)
   console.error(`::error::${message}`)

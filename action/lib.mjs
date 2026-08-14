@@ -2,40 +2,32 @@ import { spawnSync } from 'node:child_process'
 import { closeSync, existsSync, openSync } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { setTimeout } from 'node:timers/promises'
 
 /** @param {NodeJS.ProcessEnv} env */
-function parsedActionInputs(env) {
+function parseActionInputs(env) {
   const raw = env.VIZB_ACTION_INPUTS
-  if (!raw) return null
-  let parsed
+  if (!raw) return {}
   try {
-    parsed = JSON.parse(raw)
+    return JSON.parse(raw)
   } catch {
     throw new Error('VIZB_ACTION_INPUTS is not valid JSON')
   }
-  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    throw new Error('VIZB_ACTION_INPUTS is not valid JSON')
-  }
-  return parsed
-}
-
-/** @param {string} key @param {NodeJS.ProcessEnv} [env] */
-function input(key, env = process.env) {
-  const blob = parsedActionInputs(env)
-  if (blob && Object.hasOwn(blob, key)) return String(blob[key] ?? '')
-  return env[`INPUT_${key.toUpperCase()}`] ?? ''
 }
 
 /**
  * @param {NodeJS.ProcessEnv} [env]
  */
 export function resolveInputs(env = process.env) {
-  const file = input('file', env) || input('bench-file', env)
-  const cmd = input('cmd', env) || input('bench-cmd', env)
-  const mergeFiles = input('merge-files', env)
-  const mergeDir = input('merge-dir', env)
-  const dataUrl = input('data-url', env)
-  const outputJson = input('output-json', env)
+  const blob = parseActionInputs(env)
+  const input = (key) => String(blob[key] ?? '')
+
+  const file = input('file') || input('bench-file')
+  const cmd = input('cmd') || input('bench-cmd')
+  const mergeFiles = input('merge-files')
+  const mergeDir = input('merge-dir')
+  const dataUrl = input('data-url')
+  const outputJson = input('output-json')
 
   if (!file && !cmd && !mergeFiles && !mergeDir && !dataUrl) {
     throw new Error(
@@ -46,36 +38,36 @@ export function resolveInputs(env = process.env) {
   return {
     file,
     cmd,
-    cmdRetries: parseCmdRetries(input('cmd-retries', env)),
+    cmdRetries: parseCmdRetries(input('cmd-retries')),
     hasInput: Boolean(file || cmd),
     jsonFile: outputJson || 'bench.json',
-    name: input('name', env),
-    title: input('title', env),
-    description: input('description', env),
-    tag: input('tag', env),
-    id: input('id', env),
-    group: input('group', env),
-    groupPattern: input('group-pattern', env),
-    groupRegex: input('group-regex', env),
-    sort: input('sort', env),
-    filter: input('filter', env),
-    memUnit: input('mem-unit', env),
-    timeUnit: input('time-unit', env),
-    numberUnit: input('number-unit', env),
-    round: input('round', env) === 'true',
-    select: input('select', env),
-    colAxis: input('col-axis', env),
-    jsonPath: input('json-path', env),
-    stat: input('stat', env),
-    chart: input('chart', env),
-    charts: input('charts', env),
-    parser: input('parser', env),
-    showLabels: input('show-labels', env) === 'true',
-    enable3d: input('enable-3d', env) === 'true',
+    name: input('name'),
+    title: input('title'),
+    description: input('description'),
+    tag: input('tag'),
+    id: input('id'),
+    group: input('group'),
+    groupPattern: input('group-pattern'),
+    groupRegex: input('group-regex'),
+    sort: input('sort'),
+    filter: input('filter'),
+    memUnit: input('mem-unit'),
+    timeUnit: input('time-unit'),
+    numberUnit: input('number-unit'),
+    round: input('round') === 'true',
+    select: input('select'),
+    colAxis: input('col-axis'),
+    jsonPath: input('json-path'),
+    stat: input('stat'),
+    chart: input('chart'),
+    charts: input('charts'),
+    parser: input('parser'),
+    showLabels: input('show-labels') === 'true',
+    enable3d: input('enable-3d') === 'true',
     mergeFiles,
     mergeDir,
-    tagAxis: input('tag-axis', env) || 'n',
-    outputHtml: input('output-html', env),
+    tagAxis: input('tag-axis') || 'n',
+    outputHtml: input('output-html'),
     dataUrl,
   }
 }
@@ -92,22 +84,16 @@ function parseCmdRetries(value) {
 
 const CMD_RETRY_DELAY_SEC = 2
 
-/** @param {number} seconds */
-function sleepSync(seconds) {
-  if (!(seconds > 0)) return
-  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, seconds * 1000)
-}
-
 /**
  * @param {() => void} fn
  * @param {{
  *   retries: number,
- *   sleep?: (sec: number) => void,
+ *   sleep?: (sec: number) => void | Promise<void>,
  *   log?: (msg: string) => void,
  * }} opts
  */
-export function runWithRetries(fn, opts) {
-  const sleep = opts.sleep ?? sleepSync
+export async function runWithRetries(fn, opts) {
+  const wait = opts.sleep ?? ((sec) => setTimeout(sec * 1000))
   const log = opts.log ?? ((msg) => console.error(msg))
 
   for (let attempt = 1; attempt <= opts.retries; attempt++) {
@@ -120,7 +106,7 @@ export function runWithRetries(fn, opts) {
       log(
         `::warning::cmd failed (attempt ${attempt}/${opts.retries}, ${err.message ?? err}). Retrying in ${waitSec}s.`,
       )
-      sleep(waitSec)
+      await wait(waitSec)
     }
   }
 }
@@ -234,11 +220,11 @@ export function runShellCapture(command, stdoutPath) {
  *   run?: typeof run,
  *   runShellCapture?: typeof runShellCapture,
  *   vizbBin?: string,
- *   sleep?: (sec: number) => void,
+ *   sleep?: (sec: number) => void | Promise<void>,
  *   log?: (msg: string) => void,
  * }} [deps]
  */
-export function runPipeline(inputs, deps = {}) {
+export async function runPipeline(inputs, deps = {}) {
   const execRun = deps.run ?? run
   const execShell = deps.runShellCapture ?? runShellCapture
   const vizb = deps.vizbBin ?? resolveVizbBin()
@@ -247,7 +233,7 @@ export function runPipeline(inputs, deps = {}) {
     let inputPath = inputs.file
     if (!inputPath) {
       inputPath = join(tmpdir(), `vizb-data-input-${process.pid}.txt`)
-      runWithRetries(() => execShell(inputs.cmd, inputPath), {
+      await runWithRetries(() => execShell(inputs.cmd, inputPath), {
         retries: inputs.cmdRetries,
         sleep: deps.sleep,
         log: deps.log,

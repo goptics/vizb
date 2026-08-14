@@ -1,7 +1,18 @@
 name: action
 on:
   workflow_call:
+    inputs:
+      binary:
+        description: "build = local go build + vizb-binary; released = download latest v0"
+        type: string
+        default: build
   workflow_dispatch:
+    inputs:
+      binary:
+        description: "build = local go build + vizb-binary; released = download latest v0"
+        type: choice
+        options: [build, released]
+        default: build
 
 jobs:
   # Fast gate: Node unit tests before multi-OS action runs.
@@ -23,7 +34,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Set up Go
-        if: env.ACT != 'true'
+        if: env.ACT != 'true' && inputs.binary == 'build'
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
@@ -32,11 +43,11 @@ jobs:
       # PRs and manual dispatch: rebuild so action tests see current ui/.
       # workflow_call from main/release: tracked gen is enough.
       - name: Rebuild embed for PR or dispatch
-        if: env.ACT != 'true' && (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch')
+        if: env.ACT != 'true' && inputs.binary == 'build' && (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch')
         uses: ./.github/actions/setup-embed-ui
 
       - name: Build vizb
-        if: env.ACT != 'true'
+        if: env.ACT != 'true' && inputs.binary == 'build'
         run: go build -o ./bin/vizb .
 
       - name: Run action (stateless)
@@ -46,7 +57,7 @@ jobs:
           file: examples/go/hash.txt
           output-html: index.html
           output-json: results/stateless.json
-          vizb-binary: ./bin/vizb
+          vizb-binary: ${{ inputs.binary == 'build' && './bin/vizb' || '' }}
 
       - name: Verify action outputs
         env:
@@ -68,7 +79,7 @@ jobs:
           chart: chord:labels
           output-html: chord.html
           output-json: results/chord.json
-          vizb-binary: ./bin/vizb
+          vizb-binary: ${{ inputs.binary == 'build' && './bin/vizb' || '' }}
 
       - name: Verify Chord outputs
         if: matrix.os == 'ubuntu-latest'
@@ -90,18 +101,18 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Set up Go
-        if: env.ACT != 'true'
+        if: env.ACT != 'true' && inputs.binary == 'build'
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: true
 
       - name: Rebuild embed for PR or dispatch
-        if: env.ACT != 'true' && (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch')
+        if: env.ACT != 'true' && inputs.binary == 'build' && (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch')
         uses: ./.github/actions/setup-embed-ui
 
       - name: Build vizb
-        if: env.ACT != 'true'
+        if: env.ACT != 'true' && inputs.binary == 'build'
         run: go build -o ./bin/vizb .
 
       - name: Generate previous JSON
@@ -110,7 +121,7 @@ jobs:
           name: Hash
           file: examples/go/hash.txt
           output-json: results/prev/hash.json
-          vizb-binary: ./bin/vizb
+          vizb-binary: ${{ inputs.binary == 'build' && './bin/vizb' || '' }}
 
       - name: Run action (stateful)
         id: vizb
@@ -123,7 +134,7 @@ jobs:
           merge-dir: results/prev
           output-html: index.html
           output-json: results/bench.json
-          vizb-binary: ./bin/vizb
+          vizb-binary: ${{ inputs.binary == 'build' && './bin/vizb' || '' }}
 
       - name: Verify action outputs
         env:

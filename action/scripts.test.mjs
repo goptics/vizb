@@ -30,6 +30,53 @@ function writeGitStub(binDir, body) {
   return git
 }
 
+function writeExec(path, body) {
+  writeFileSync(path, `#!/usr/bin/env bash\n${body}`)
+  chmodSync(path, 0o755)
+}
+
+function runInstallRelease({ runnerOs, runnerArch, tag }) {
+  const dir = tempDir('vizb-install-')
+  const home = join(dir, 'home')
+  const cwd = join(dir, 'cwd')
+  const bin = join(dir, 'bin')
+  mkdirSync(home, { recursive: true })
+  mkdirSync(cwd, { recursive: true })
+  mkdirSync(bin, { recursive: true })
+
+  const destName = runnerOs === 'Windows' ? 'vizb.exe' : 'vizb'
+  const dest = join(home, '.local', 'bin', destName)
+  const urlLog = join(dir, 'curl.url')
+  const archiveLog = join(dir, 'curl.dest')
+
+  writeExec(
+    join(bin, 'curl'),
+    `printf '%s' "$2" > '${urlLog}'\nprintf '%s' "$4" > '${archiveLog}'\nprintf archive > "$4"\n`,
+  )
+  writeExec(join(bin, 'tar'), `printf extracted > '${dest}'\n`)
+  writeExec(join(bin, 'unzip'), `printf extracted > '${dest}'\n`)
+
+  const result = runBash(
+    installSh,
+    {
+      HOME: home,
+      RUNNER_OS: runnerOs,
+      RUNNER_ARCH: runnerArch,
+      VIZB_TAG: tag,
+      PATH: `${bin}:${process.env.PATH}`,
+    },
+    { cwd },
+  )
+
+  return {
+    result,
+    cwd,
+    dest,
+    url: existsSync(urlLog) ? readFileSync(urlLog, 'utf8') : '',
+    archive: existsSync(archiveLog) ? readFileSync(archiveLog, 'utf8') : '',
+  }
+}
+
 describe('resolve.sh', () => {
   it('uses a pinned ref as the tag without calling git', () => {
     const dir = tempDir('vizb-resolve-')
@@ -124,38 +171,30 @@ describe('install.sh', () => {
   })
 
   it('maps macos/x64 to a darwin/amd64 tar.gz url', () => {
-    const dir = tempDir('vizb-install-')
-    const result = runBash(installSh, {
-      HOME: dir,
-      RUNNER_OS: 'macOS',
-      RUNNER_ARCH: 'X64',
-      VIZB_TAG: 'v0.18.2',
-      VIZB_DRY_RUN: '1',
-    })
-
-    assert.equal(result.status, 0, result.stderr)
-    assert.match(result.stdout, /dest=.*\/\.local\/bin\/vizb$/m)
-    assert.match(
-      result.stdout,
-      /url=https:\/\/github.com\/goptics\/vizb\/releases\/download\/v0\.18\.2\/vizb@0\.18\.2-darwin-amd64\.tar\.gz/,
+    const r = runInstallRelease({ runnerOs: 'macOS', runnerArch: 'X64', tag: 'v0.18.2' })
+    assert.equal(r.result.status, 0, r.result.stderr)
+    assert.ok(r.dest.endsWith(`${join('.local', 'bin', 'vizb')}`))
+    assert.equal(
+      r.url,
+      'https://github.com/goptics/vizb/releases/download/v0.18.2/vizb@0.18.2-darwin-amd64.tar.gz',
     )
   })
 
-  it('maps windows/x64 to a zip url and vizb.exe dest', () => {
-    const dir = tempDir('vizb-install-')
-    const result = runBash(installSh, {
-      HOME: dir,
-      RUNNER_OS: 'Windows',
-      RUNNER_ARCH: 'X64',
-      VIZB_TAG: 'v0.18.2',
-      VIZB_DRY_RUN: '1',
-    })
+  it('downloads to a unique temp archive and removes it', () => {
+    const r = runInstallRelease({ runnerOs: 'Linux', runnerArch: 'X64', tag: 'v0.18.2' })
+    assert.equal(r.result.status, 0, r.result.stderr)
+    assert.equal(existsSync(join(r.cwd, 'vizb-archive')), false)
+    assert.ok(r.archive.includes('vizb-archive.'))
+    assert.equal(existsSync(r.archive), false)
+  })
 
-    assert.equal(result.status, 0, result.stderr)
-    assert.match(result.stdout, /dest=.*\/\.local\/bin\/vizb\.exe$/m)
-    assert.match(
-      result.stdout,
-      /url=https:\/\/github.com\/goptics\/vizb\/releases\/download\/v0\.18\.2\/vizb@0\.18\.2-windows-amd64\.zip/,
+  it('maps windows/x64 to a zip url and vizb.exe dest', () => {
+    const r = runInstallRelease({ runnerOs: 'Windows', runnerArch: 'X64', tag: 'v0.18.2' })
+    assert.equal(r.result.status, 0, r.result.stderr)
+    assert.ok(r.dest.endsWith(`${join('.local', 'bin', 'vizb.exe')}`))
+    assert.equal(
+      r.url,
+      'https://github.com/goptics/vizb/releases/download/v0.18.2/vizb@0.18.2-windows-amd64.zip',
     )
   })
 })

@@ -2,9 +2,6 @@
 set -euo pipefail
 
 REF="${GITHUB_ACTION_REF:-v0}"
-if [ -z "$REF" ]; then
-  REF="v0"
-fi
 
 if echo "$REF" | grep -qE '^v[0-9]+$'; then
   PREFIX="${REF#v}"
