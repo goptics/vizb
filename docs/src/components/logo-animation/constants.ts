@@ -7,7 +7,7 @@ export const LOGO_COLORS = [
 	'#EE6666',
 ] as const;
 
-export const HEATMAP_LOW = LOGO_COLORS[0];
+export const HEATMAP_LOW = LOGO_COLORS[2];
 export const HEATMAP_HIGH = LOGO_COLORS[4];
 export const GRID_GRAY = '#4a5568';
 

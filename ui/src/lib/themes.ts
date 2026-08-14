@@ -16,7 +16,7 @@ export const DEFAULT_THEME = {
     '#91CC75',
     '#FF9F7F',
   ],
-  visualMapColors: ['#91CC75', '#EE6666'],
+  visualMapColors: ['#3BA272', '#EE6666'],
 } as const satisfies Theme
 
 const HEX_COLOR = /^#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?$/

@@ -24,7 +24,7 @@ var themeCatalog = map[string]Theme{
 			"#5470C6", "#3BA272", "#FC8452", "#73C0DE", "#EE6666",
 			"#FAC858", "#9A60B4", "#EA7CCC", "#91CC75", "#FF9F7F",
 		},
-		VisualMapColors: []string{"#91CC75", "#EE6666"},
+		VisualMapColors: []string{"#3BA272", "#EE6666"},
 	},
 	"vintage": {
 		Name: "vintage",
