@@ -15,7 +15,7 @@ import {
   makeLegendTitle,
   LARGE_DATA_THRESHOLD,
   scatterSeriesLargeOpts,
-} from './shared'
+} from './shared/chartConfig'
 import {
   adjustForLogScaleLine,
   useSortedSeriesData,
@@ -24,6 +24,8 @@ import {
 } from './shared/common'
 import { resolveSeriesSymbol } from './shared/seriesConfig'
 import { resolve2DScatterVisualMap } from './shared/visualMap'
+import { buildValueAxes2DOptions } from './shared/valueMode'
+import { buildMixedAxes2DOptions } from './shared/mixedMode'
 
 export type CategorySeriesKind = 'line' | 'scatter'
 
@@ -62,6 +64,13 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
   const style = SERIES_STYLE[kind]
 
   const options = computed<EChartsOption>(() => {
+    if (chartData.value.mixedTuples?.length) {
+      return buildMixedAxes2DOptions(config, kind)
+    }
+    if (chartData.value.valueTuples?.length) {
+      return buildValueAxes2DOptions(config, kind)
+    }
+
     const { series, xAxisData, hasYAxis } = sortedData.value
     const baseOptions = getBaseOptions(config)
     const styling = getChartStyling(isDark.value)
@@ -90,7 +99,7 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
           ? scatterSeriesLargeOpts(useVisualMap)
           : { large: true as const, largeThreshold: LARGE_DATA_THRESHOLD }),
         ...(style.connectNulls ? { connectNulls: true } : {}),
-        ...(smoothLines ? { smooth: true } : {}),
+        ...(kind === 'line' ? { smooth: smoothLines } : {}),
         ...(useVisualMap ? {} : { itemStyle: { color: getNextColorFor(chartData.value.title) } }),
         ...seriesExtras,
       }
@@ -121,8 +130,9 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
         ? scatterSeriesLargeOpts(useVisualMap)
         : { large: true as const, largeThreshold: LARGE_DATA_THRESHOLD }),
       ...(style.connectNulls ? { connectNulls: true } : {}),
-      ...(smoothLines ? { smooth: true } : {}),
-      ...(useStack ? { stack: 'total', areaStyle: {} } : {}),
+      ...(kind === 'line'
+        ? { smooth: smoothLines, stack: useStack ? 'total' : null, areaStyle: useStack ? {} : null }
+        : {}),
       ...(useVisualMap ? {} : { itemStyle: { color: getNextColorFor(yAxisLabel) } }),
       ...seriesExtras,
     }))

@@ -2,7 +2,6 @@
 import { ChevronsUpDown, Search } from 'lucide-vue-next'
 import { ref, computed, watch, type Component, type HTMLAttributes } from 'vue'
 import { cn } from '@/lib/utils'
-import { limitPickerOptions } from '@/lib/pickerLimit'
 
 import {
   Combobox,
@@ -55,6 +54,20 @@ const options = computed(() =>
 )
 
 type Option = { value: string; label: string; icon?: Component }
+
+const limitPickerOptions = <T extends { value: string }>(
+  matches: T[],
+  active: T | undefined,
+  limit: number
+): T[] => {
+  const limited = matches.slice(0, limit)
+  if (active && !limited.some((option) => option.value === active.value)) {
+    if (limited.length < limit) limited.push(active)
+    else limited[limited.length - 1] = active
+  }
+  return limited
+}
+
 const value = ref<Option | undefined>()
 
 // Control open/close state

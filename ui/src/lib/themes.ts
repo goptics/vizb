@@ -1,8 +1,23 @@
 import { computed, ref } from 'vue'
 import type { Dataset, Theme } from '../types'
-import { DEFAULT_THEME } from './themeCatalog'
 
-export { DEFAULT_THEME, THEMES, THEME_NAMES, type ThemeName } from './themeCatalog'
+/** Sole UI built-in theme. Dataset-owned themes supply any additional palettes. */
+export const DEFAULT_THEME = {
+  name: 'default',
+  colors: [
+    '#5470C6',
+    '#3BA272',
+    '#FC8452',
+    '#73C0DE',
+    '#EE6666',
+    '#FAC858',
+    '#9A60B4',
+    '#EA7CCC',
+    '#91CC75',
+    '#FF9F7F',
+  ],
+  visualMapColors: ['#91CC75', '#EE6666'],
+} as const satisfies Theme
 
 const HEX_COLOR = /^#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?$/
 
@@ -159,10 +174,6 @@ export function resolveTheme(theme?: string): Theme {
   return findTheme(normalized)!
 }
 
-export function resolvePalette(theme?: string): readonly string[] {
-  return resolveTheme(theme).colors
-}
-
 export const activeThemeName = ref<string>(DEFAULT_THEME.name)
 export const activeTheme = computed(() => resolveTheme(activeThemeName.value))
 export const activePalette = computed(() => activeTheme.value.colors)
@@ -173,12 +184,6 @@ export function applyTheme(theme?: string) {
 
 export function palettePrimary(palette: readonly string[] = activePalette.value): string {
   return palette[0]!
-}
-
-export function paletteGradientEndpoints(
-  palette: readonly string[] = activePalette.value
-): [string, string] {
-  return gradientEndpoints(palette)
 }
 
 export function resolveVisualMapColors(theme: string = activeThemeName.value): readonly string[] {

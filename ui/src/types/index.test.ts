@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { ALL_CHART_TYPES } from './constants'
+import { ALL_CHART_TYPES } from './index'
 
 describe('ALL_CHART_TYPES', () => {
   it('lists the closed set of 2D chart types', () => {

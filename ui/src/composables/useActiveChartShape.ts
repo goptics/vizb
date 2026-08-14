@@ -96,6 +96,7 @@ export function useActiveChartShape() {
     showLabels,
     sort,
     threeD,
+    hasZOnChart,
     hasThreeDOption,
     threeDVisualMap,
     visualMap,

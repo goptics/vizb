@@ -13,12 +13,12 @@ describe('App bootstrap', () => {
   })
 
   it('mounts the real Dashboard without crashing', async () => {
-    // Boots the app exactly as production does (createApp(App).mount('#app')).
+    // Boots the app exactly as production does (createApp(Dashboard).mount('#app')).
     await import('./main')
     await new Promise((resolve) => setTimeout(resolve, 0))
 
     // With no VIZB_DATA the shell still renders (empty dataset placeholder),
-    // proving App → Dashboard boots end to end. The worker-backed pipeline runs
+    // proving Dashboard boots end to end. The worker-backed pipeline runs
     // without a Worker global crash (the mock worker is constructed in its place).
     expect(document.querySelector('[data-testid="page-shell"]')).not.toBeNull()
     expect(TrackedMockWorker.instances.length).toBeGreaterThan(0)

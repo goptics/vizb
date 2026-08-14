@@ -114,72 +114,35 @@ export function useSettingsStore() {
     }
   }
 
-  // Per-field setters write back to the active config in place. Each config
-  // shape carries only the fields that apply to its chart type, so `scale` and
-  // `threeDRotate` are only set on bar/line configs (the others have no such
-  // field). The narrowing uses TypeScript's optional-field semantics — no
-  // runtime type-guard. The SettingsPanel already gates by `appliesTo` in
-  // `fieldRegistry`, so the setters are only ever called for the chart types
-  // that carry the field. The Go migration does NOT pre-populate `threeDRotate`
-  // (it didn't exist in v0.12.0), so an `'threeDRotate' in cfg` guard here would
-  // silently no-op the first toggle on a freshly migrated config.
-  const setSort = (sort: Sort) => {
+  // Per-field setters write the active config in place via `patchActive`.
+  // Each config shape carries only the fields that apply to its chart type, so
+  // `scale` and `threeDRotate` are only set on bar/line configs (the others
+  // have no such field). The narrowing uses TypeScript's optional-field
+  // semantics — no runtime `'field' in cfg` guard. SettingsPanel already gates
+  // by `appliesTo` in `fieldRegistry`, so these setters are only called for
+  // chart types that carry the field. The Go migration does NOT pre-populate
+  // `threeDRotate` (it didn't exist in v0.12.0), so a `'threeDRotate' in cfg`
+  // guard would silently no-op the first toggle on a freshly migrated config.
+  const patchActive = (fields: Record<string, unknown>, when?: (cfg: ChartConfig) => boolean) => {
     const cfg = activeConfig.value
-    if (cfg) cfg.sort = { ...sort }
+    if (!cfg || (when && !when(cfg))) return
+    Object.assign(cfg, fields)
   }
 
-  const setScale = (scale: ScaleType) => {
-    const cfg = activeConfig.value as { scale?: ScaleType } | undefined
-    if (cfg) cfg.scale = scale
-  }
-
-  const setStack = (stack: boolean) => {
-    const cfg = activeConfig.value as { stack?: boolean; scale?: ScaleType } | undefined
-    if (cfg) {
-      cfg.stack = stack
-      if (stack) cfg.scale = 'linear'
-    }
-  }
-
-  const setShowLabels = (show: boolean) => {
-    const cfg = activeConfig.value
-    if (cfg) cfg.showLabels = show
-  }
-
-  const setSmooth = (smooth: boolean) => {
-    const cfg = activeConfig.value
-    if (cfg?.type === 'line') cfg.smooth = smooth
-  }
-
-  const setHorizontal = (horizontal: boolean) => {
-    const cfg = activeConfig.value
-    if (cfg?.type === 'bar') cfg.horizontal = horizontal
-  }
-
-  const setThreeDRotate = (rotate: boolean) => {
-    const cfg = activeConfig.value as { threeDRotate?: boolean } | undefined
-    if (cfg) cfg.threeDRotate = rotate
-  }
-
-  const setSwap = (swap: string | undefined) => {
-    const cfg = activeConfig.value
-    if (cfg) cfg.swap = swap
-  }
-
-  const setThreeD = (enabled: boolean) => {
-    const cfg = activeConfig.value as { threeD?: boolean } | undefined
-    if (cfg) cfg.threeD = enabled
-  }
-
-  const setThreeDVisualMap = (enabled: boolean) => {
-    const cfg = activeConfig.value as { threeDVisualMap?: boolean } | undefined
-    if (cfg) cfg.threeDVisualMap = enabled
-  }
-
-  const setVisualMap = (enabled: boolean) => {
-    const cfg = activeConfig.value
-    if (cfg?.type === 'scatter') cfg.visualMap = enabled
-  }
+  const setSort = (sort: Sort) => patchActive({ sort: { ...sort } })
+  const setScale = (scale: ScaleType) => patchActive({ scale })
+  const setStack = (stack: boolean) =>
+    patchActive(stack ? { stack, scale: 'linear' as const } : { stack })
+  const setShowLabels = (show: boolean) => patchActive({ showLabels: show })
+  const setSmooth = (smooth: boolean) => patchActive({ smooth }, (cfg) => cfg.type === 'line')
+  const setHorizontal = (horizontal: boolean) =>
+    patchActive({ horizontal }, (cfg) => cfg.type === 'bar')
+  const setThreeDRotate = (rotate: boolean) => patchActive({ threeDRotate: rotate })
+  const setSwap = (swap: string | undefined) => patchActive({ swap })
+  const setThreeD = (enabled: boolean) => patchActive({ threeD: enabled })
+  const setThreeDVisualMap = (enabled: boolean) => patchActive({ threeDVisualMap: enabled })
+  const setVisualMap = (enabled: boolean) =>
+    patchActive({ visualMap: enabled }, (cfg) => cfg.type === 'scatter')
 
   return {
     activeChartIndex,

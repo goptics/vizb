@@ -3,9 +3,16 @@ import { computed } from 'vue'
 import { Separator } from '../ui'
 import SettingsToggle from '../SettingsToggle.vue'
 
-const props = defineProps<{
-  modelValue: boolean | undefined
-}>()
+const props = withDefaults(
+  defineProps<{
+    modelValue: boolean | undefined
+    id: string
+    label: string
+    description: string
+    separator?: boolean
+  }>(),
+  { separator: false }
+)
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
@@ -16,11 +23,11 @@ const value = computed(() => props.modelValue ?? false)
 
 <template>
   <SettingsToggle
-    id="horizontal-bars-switch"
-    label="Horizontal bars"
-    description="Swap axes so bars grow rightward and categories appear on the Y axis."
+    :id="id"
+    :label="label"
+    :description="description"
     :checked="value"
     @update:checked="emit('update:modelValue', $event)"
   />
-  <Separator />
+  <Separator v-if="separator" />
 </template>

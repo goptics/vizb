@@ -18,29 +18,8 @@ vi.mock('@/components/settings/SortControl.vue', () => ({
 vi.mock('@/components/settings/ScaleControl.vue', () => ({
   default: { name: 'ScaleControl' },
 }))
-vi.mock('@/components/settings/StackControl.vue', () => ({
-  default: { name: 'StackControl' },
-}))
-vi.mock('@/components/settings/ShowLabelsControl.vue', () => ({
-  default: { name: 'ShowLabelsControl' },
-}))
-vi.mock('@/components/settings/SmoothControl.vue', () => ({
-  default: { name: 'SmoothControl' },
-}))
-vi.mock('@/components/settings/HorizontalControl.vue', () => ({
-  default: { name: 'HorizontalControl' },
-}))
-vi.mock('@/components/settings/ThreeDRotateControl.vue', () => ({
-  default: { name: 'ThreeDRotateControl' },
-}))
-vi.mock('@/components/settings/ThreeDControl.vue', () => ({
-  default: { name: 'ThreeDControl' },
-}))
-vi.mock('@/components/settings/ThreeDVisualMapControl.vue', () => ({
-  default: { name: 'ThreeDVisualMapControl' },
-}))
-vi.mock('@/components/settings/VisualMapControl.vue', () => ({
-  default: { name: 'VisualMapControl' },
+vi.mock('@/components/settings/BooleanControl.vue', () => ({
+  default: { name: 'BooleanControl' },
 }))
 vi.mock('@/components/settings/SwapControl.vue', () => ({
   default: { name: 'SwapControl' },

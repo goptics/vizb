@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { Dataset } from '../types'
-import CpuBadge from './CpuBadge.vue'
-import OsBadge from './OsBadge.vue'
-import TimestampBadge from './TimestampBadge.vue'
+import { CalendarSync, Cpu, Monitor } from 'lucide-vue-next'
+import type { Dataset, HistoryEntry } from '../types'
+import { CPUtoString } from '../lib/utils'
 import GroupSelector from './Selector.vue'
+import MetaHistoryBadge from './MetaHistoryBadge.vue'
 
 const props = defineProps<{
   dataset: Dataset
@@ -21,7 +21,22 @@ const emit = defineEmits<{
 
 const mainTitle = computed(() => props.datasets[0]?.name || 'Datasets')
 const hasCPU = computed(() => props.dataset.meta?.cpu?.name || props.dataset.meta?.cpu?.cores)
-const hasOS = computed(() => props.dataset.meta?.os)
+const osLabel = computed(() => props.dataset.meta?.os ?? '')
+
+const formatDate = (ts: string) => {
+  const date = new Date(ts)
+  if (isNaN(date.getTime())) return ts
+  return date.toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
+
+const cpuHistoryFilter = (e: HistoryEntry) => !!(e.meta?.cpu?.name || e.meta?.cpu?.cores)
+const osHistoryFilter = (e: HistoryEntry) => !!e.meta?.os
 </script>
 
 <template>
@@ -40,15 +55,49 @@ const hasOS = computed(() => props.dataset.meta?.os)
     <h1 v-else class="text-4xl font-bold">{{ mainTitle }}</h1>
 
     <div class="flex flex-col items-center gap-2">
-      <CpuBadge v-if="hasCPU" :cpu="dataset.meta?.cpu" :history="dataset.history" />
-      <OsBadge v-if="hasOS" :os="dataset.meta?.os" :history="dataset.history" />
+      <MetaHistoryBadge
+        v-if="hasCPU"
+        :icon="Cpu"
+        label="CPU"
+        history-title="CPU History"
+        :value="CPUtoString(dataset.meta?.cpu)"
+        :history="dataset.history"
+        :filter-fn="cpuHistoryFilter"
+        content-width="w-80"
+      >
+        <template #entry="{ entry }">
+          <span class="min-w-0 truncate text-right tabular-nums"
+            >{{ CPUtoString(entry.meta?.cpu) }}</span
+          >
+        </template>
+      </MetaHistoryBadge>
+      <MetaHistoryBadge
+        v-if="osLabel"
+        :icon="Monitor"
+        label="OS"
+        history-title="OS History"
+        :value="osLabel"
+        :history="dataset.history"
+        :filter-fn="osHistoryFilter"
+      >
+        <template #entry="{ entry }">
+          <span class="shrink-0 tabular-nums">{{ entry.meta?.os }}</span>
+        </template>
+      </MetaHistoryBadge>
     </div>
 
-    <TimestampBadge
+    <MetaHistoryBadge
       v-if="dataset.timestamp"
-      :timestamp="dataset.timestamp"
+      :icon="CalendarSync"
+      label="Updated"
+      history-title="Update History"
+      :value="formatDate(dataset.timestamp)"
       :history="dataset.history"
-    />
+    >
+      <template #entry="{ entry }">
+        <span class="shrink-0 tabular-nums">{{ formatDate(entry.timestamp) }}</span>
+      </template>
+    </MetaHistoryBadge>
 
     <p v-if="dataset.description" class="text-muted-foreground">
       {{ dataset.description }}

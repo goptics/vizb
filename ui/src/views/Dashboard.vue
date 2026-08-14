@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 import { Moon, Sun, Package } from 'lucide-vue-next'
-import type { Axis, AxisLabels } from '../types'
 import { useDataPoint } from '../composables/useDataPoint'
 import { useChartPipeline } from '../composables/useChartPipeline'
 import { useSettingsStore } from '../composables/useSettingsStore'
 import { useActiveChartShape } from '../composables/useActiveChartShape'
-import { useDashboardInit } from '../composables/useDashboardInit'
+import { useUrlRouter } from '../composables/useUrlRouter'
 import { swapAxisLabels } from '../lib/swap'
+import { axisLabelsFromAxes } from '../lib/transform'
 import ChartSettingsPopover from '../components/ChartSettingsPopover.vue'
 import ChartCard from '../components/ChartCard.vue'
 import DatasetHeader from '../components/DatasetHeader.vue'
@@ -40,6 +40,7 @@ const {
 
 const { isDark, toggleDark, chartType, themeName, setTheme } = useSettingsStore()
 const { sort, showLabels, scale, threeD } = useActiveChartShape()
+const { initFromUrl } = useUrlRouter()
 
 // Author provided 2+ themes → show selector (default + dataset.themes).
 // 0–1 author themes → hide (available set is the single resolved theme only).
@@ -52,27 +53,23 @@ const themeItems = computed(() => {
     : [{ name: 'Custom palette', value: themeName.value }, ...items]
 })
 
-// Build an AxisLabels flat map from dataset.axes for swapAxisLabels.
-const axisLabelsFromAxes = (axes: Axis[] | undefined): AxisLabels | undefined => {
-  if (!axes?.length) return undefined
-  const result: Record<string, string> = {}
-  for (const a of axes) {
-    if (a.label) result[a.key] = a.label
-  }
-  return Object.keys(result).length ? (result as AxisLabels) : undefined
-}
-
 // The full raw rows — the worker owns grouping/projection, so we pass the dataset
 // as-is (no main-thread grouping or swap mutation). Only a dataset switch re-clones.
 const activeResults = computed(() => activeDataset.value?.data || [])
 // Display labels from axes[], permuted to match the active arrangement.
-const activeLabels = computed(() =>
-  swapAxisLabels(
-    activeArrangement.value.identityString,
-    activeArrangement.value.targetString,
-    axisLabelsFromAxes(activeDataset.value?.axes)
-  )
-)
+// Empty axes must stay `undefined` so swapAxisLabels is a no-op ({} would permute).
+const activeLabels = computed(() => {
+  const axes = activeDataset.value?.axes
+  if (!axes?.length) return undefined
+  const labels = axisLabelsFromAxes(axes)
+  return Object.keys(labels).length
+    ? swapAxisLabels(
+        activeArrangement.value.identityString,
+        activeArrangement.value.targetString,
+        labels
+      )
+    : undefined
+})
 
 // Per-chart resolved compute params come from `useActiveChartShape`, which reads
 // the active chart's typed config and applies `?? default` for missing fields.
@@ -116,7 +113,26 @@ const showDetailSkeleton = computed(
       ((activeDataset.value?.data.length ?? 0) > 0 && charts.value.length === 0))
 )
 
-useDashboardInit()
+let urlInitialized = false
+
+watch(
+  activeDataset,
+  (d) => {
+    if (d?.name) document.title = `Vizb | ${d.name}`
+  },
+  { immediate: true }
+)
+
+watch(
+  datasets,
+  (d) => {
+    if (d.length && !urlInitialized) {
+      urlInitialized = true
+      void initFromUrl()
+    }
+  },
+  { immediate: true }
+)
 </script>
 
 <template>

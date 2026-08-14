@@ -15,6 +15,7 @@ import Selector from './Selector.vue'
 import SettingHeader from './SettingHeader.vue'
 import { useSettingsStore } from '../composables/useSettingsStore'
 import { useDataPoint } from '../composables/useDataPoint'
+import { useActiveChartShape } from '../composables/useActiveChartShape'
 import { resetColor } from '../lib/utils'
 import {
   getRenderableFields,
@@ -22,9 +23,7 @@ import {
   type SettingFieldKey,
   type SettingFieldValueMap,
 } from '../composables/settings/fieldRegistry'
-import { arrangementHasChartZ } from '../lib/swap'
-import { canOfferValue3D } from '../lib/utils'
-import type { BarConfig, ChartType, LineConfig, ScatterConfig } from '../types'
+import type { ChartType } from '../types'
 
 // Generic, schema-less settings panel: walks `Object.keys(activeConfig)` via
 // `getRenderableFields` and renders the registered control for each key. The
@@ -53,13 +52,13 @@ const {
   activeDataset,
   activeDatasetId,
   activeDataDimension,
-  activeArrangement,
-  getArrangement,
   setArrangement,
   activeGroupId,
   isValueMode,
   chartMode,
 } = useDataPoint()
+
+const { hasZOnChart, hasThreeDOption, threeD, stack } = useActiveChartShape()
 
 const CHART_ICONS: Record<ChartType, Component> = {
   bar: BarChart3,
@@ -92,29 +91,7 @@ const onChartTypeSelect = (id: number) => {
   if (opt) setChartType(opt.value)
 }
 
-// z on a chart axis under the effective swap (map → wire → identity).
-const effectiveSwapTarget = computed(() => {
-  const fromMap = getArrangement(activeDatasetId.value, chartType.value)
-  if (fromMap) return fromMap
-  const wire = (activeConfig.value as BarConfig | LineConfig | ScatterConfig | undefined)?.swap
-  return wire || activeArrangement.value.targetString
-})
-const hasZAxis = computed(() => arrangementHasChartZ(effectiveSwapTarget.value))
-
-const hasThreeDOption = computed(() =>
-  canOfferValue3D(
-    chartType.value,
-    activeDataset.value?.data,
-    hasZAxis.value,
-    activeConfig.value as BarConfig | LineConfig | ScatterConfig | undefined,
-    activeDataset.value?.axes
-  )
-)
-
-const rendering3D = computed(() => {
-  const cfg = activeConfig.value as BarConfig | LineConfig | ScatterConfig | undefined
-  return hasZAxis.value || cfg?.threeD === true
-})
+const rendering3D = computed(() => hasZOnChart.value || threeD.value)
 
 const fieldGroups = computed(() => {
   const cfg = activeConfig.value
@@ -123,7 +100,7 @@ const fieldGroups = computed(() => {
     dimension: activeDataDimension.value,
     rendering3D: rendering3D.value,
     hasThreeDOption: hasThreeDOption.value,
-    hasZAxis: hasZAxis.value,
+    hasZAxis: hasZOnChart.value,
     chartMode: chartMode.value,
   })
   return partitionRenderableFields(fields)
@@ -148,11 +125,7 @@ const filteredGeneral = computed(() => {
 // wire format: it must also update useDataPoint's arrangement (which the
 // pipeline watches to post `setArrangement` to the worker so it re-projects /
 // re-groups off-thread) and reset the group + recolor on a new arrangement.
-type SettingsHandlers = {
-  [K in SettingFieldKey]: (val: SettingFieldValueMap[K]) => void
-}
-
-const handlers: SettingsHandlers = {
+const handlers = {
   sort: setSort,
   scale: setScale,
   stack: setStack,
@@ -163,7 +136,7 @@ const handlers: SettingsHandlers = {
   threeD: setThreeD,
   threeDVisualMap: setThreeDVisualMap,
   visualMap: setVisualMap,
-  swap: (target) => {
+  swap: (target: SettingFieldValueMap['swap']) => {
     if (target === undefined) return
     setArrangement(activeDatasetId.value, chartType.value, target)
     activeGroupId.value = 0
@@ -172,25 +145,16 @@ const handlers: SettingsHandlers = {
   },
 }
 
-const stackEnabled = computed(
-  () => (activeConfig.value as BarConfig | LineConfig | undefined)?.stack === true
-)
-
 const valueFor = (key: SettingFieldKey) => {
   if (!activeConfig.value) return undefined
-  if (key === 'scale' && stackEnabled.value) return 'linear'
+  if (key === 'scale' && stack.value) return 'linear'
   return (activeConfig.value as Partial<SettingFieldValueMap>)[key]
 }
 
-const disabledFor = (key: SettingFieldKey) => key === 'scale' && stackEnabled.value
-
-// Generic keeps key/value correlated; Vue emits force a single cast at the boundary.
-const updateSetting = <K extends SettingFieldKey>(key: K, value: SettingFieldValueMap[K]) => {
-  handlers[key](value)
-}
+const disabledFor = (key: SettingFieldKey) => key === 'scale' && stack.value
 
 const onUpdate = (key: SettingFieldKey, value: unknown) => {
-  updateSetting(key, value as SettingFieldValueMap[SettingFieldKey])
+  ;(handlers[key] as (val: unknown) => void)(value)
 }
 </script>
 
@@ -218,6 +182,10 @@ const onUpdate = (key: SettingFieldKey, value: unknown) => {
           :is="field.component"
           :model-value="valueFor(field.key)"
           :disabled="disabledFor(field.key)"
+          :id="field.id"
+          :label="field.label"
+          :description="field.description"
+          :separator="field.separator"
           @update:model-value="(val: unknown) => onUpdate(field.key, val)"
         />
       </template>
@@ -229,6 +197,10 @@ const onUpdate = (key: SettingFieldKey, value: unknown) => {
             :is="field.component"
             :model-value="valueFor(field.key)"
             :disabled="disabledFor(field.key)"
+            :id="field.id"
+            :label="field.label"
+            :description="field.description"
+            :separator="field.separator"
             @update:model-value="(val: unknown) => onUpdate(field.key, val)"
           />
         </template>

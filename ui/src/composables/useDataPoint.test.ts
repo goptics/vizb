@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Dataset } from '../types'
 
 const detail = {
   name: 'Dataset 2',
@@ -611,5 +612,75 @@ describe('useDataPoint embedded VIZB_DATA', () => {
     rejectDetail(new Error('stale'))
     await expect(first).resolves.toBe(false)
     expect(state.detailError.value).toBeNull()
+  })
+})
+
+describe('extractPathDatasetId', () => {
+  beforeEach(() => {
+    vi.resetModules()
+    vi.stubGlobal('window', {
+      location: { pathname: '/', protocol: 'https:' },
+      VIZB_DATA: [],
+    })
+  })
+  afterEach(() => vi.unstubAllGlobals())
+
+  it.each([
+    ['/', null],
+    ['/index', null],
+    ['/report.html', null],
+    ['/assets/app.js', null],
+    ['/go-1.25', 'go-1.25'],
+    ['/apps/vizb/go-1.25%2Famd64', 'go-1.25/amd64'],
+    ['/%E0%A4%A', null], // invalid URI sequence → catch
+  ])('extracts the dataset identity from %s', async (pathname, expected) => {
+    const { extractPathDatasetId } = await import('./useDataPoint')
+    expect(extractPathDatasetId(pathname)).toBe(expected)
+  })
+
+  it('returns null when no path segments remain', async () => {
+    const { extractPathDatasetId } = await import('./useDataPoint')
+    expect(extractPathDatasetId('///')).toBe(null)
+  })
+})
+
+describe('filterDatasetSettings', () => {
+  const dataset: Dataset = {
+    name: 'Test',
+    settings: [{ type: 'bar' }, { type: 'line' }, { type: 'pie' }],
+    data: [],
+  }
+
+  beforeEach(() => {
+    vi.resetModules()
+    vi.stubGlobal('window', {
+      location: { pathname: '/', protocol: 'https:' },
+      VIZB_DATA: [],
+    })
+  })
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('returns dataset unchanged when allowed is empty', async () => {
+    const { filterDatasetSettings } = await import('./useDataPoint')
+    expect(filterDatasetSettings(dataset, [])).toEqual(dataset)
+    expect(filterDatasetSettings(dataset, undefined)).toEqual(dataset)
+  })
+
+  it('keeps only bundled chart types', async () => {
+    const { filterDatasetSettings } = await import('./useDataPoint')
+    const filtered = filterDatasetSettings(dataset, ['bar'])
+    expect(filtered.settings).toEqual([{ type: 'bar' }])
+  })
+
+  it('preserves original settings order', async () => {
+    const { filterDatasetSettings } = await import('./useDataPoint')
+    const filtered = filterDatasetSettings(dataset, ['pie', 'bar'])
+    expect(filtered.settings?.map((s) => s.type)).toEqual(['bar', 'pie'])
+  })
+
+  it('defaults settings to empty array when dataset has no settings', async () => {
+    const { filterDatasetSettings } = await import('./useDataPoint')
+    const bare = { name: 'Bare', data: [] } as unknown as Dataset
+    expect(filterDatasetSettings(bare, ['bar']).settings).toEqual([])
   })
 })

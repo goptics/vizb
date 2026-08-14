@@ -1,4 +1,4 @@
-import type { ChartBuilder } from './types'
+import type { ChartBuilder, GroupingBuilder } from './types'
 import { GroupedBuilder } from './grouped'
 import { PreserveRowsBuilder } from './preserveRows'
 import { ValueBuilder } from './value'
@@ -10,7 +10,7 @@ const preserveRows = new PreserveRowsBuilder()
 const value = new ValueBuilder()
 const mixed = new MixedBuilder()
 
-/** Pick the builder for a chart from its rendered data shape. */
+/** Pick the query-only builder for a chart from its rendered data shape. */
 export function builderForChart(chart: ChartData): ChartBuilder {
   if (chart.series.length || chart.points.length) return grouped
   if (chart.valueTuples?.length || chart.valuePoints3D?.length) return value
@@ -23,7 +23,14 @@ export function builderForChart(chart: ChartData): ChartBuilder {
   return grouped
 }
 
-/** Pick the builder for the build phase based on context flags. */
+/** Pick the grouped/preserveRows builder for the build phase. */
+export function pickBuilder(ctx: { preserveRows?: boolean }): GroupingBuilder
+/** Pick a query builder from mode flags (value/mixed have no build()). */
+export function pickBuilder(ctx: {
+  preserveRows?: boolean
+  mixedMode?: boolean
+  valueMode?: boolean
+}): ChartBuilder
 export function pickBuilder(ctx: {
   preserveRows?: boolean
   mixedMode?: boolean

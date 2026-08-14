@@ -6,19 +6,15 @@ export { default as CardTitle } from './CardTitle.vue'
 
 // Form components
 export { default as Switch } from './Switch.vue'
-export { default as ToggleGroup } from './ToggleGroup.vue'
-export { default as ToggleGroupItem } from './ToggleGroupItem.vue'
 export { default as Label } from './Label.vue'
 
 // Tabs components
 export { default as Tabs } from './Tabs.vue'
 export { default as TabsList } from './TabsList.vue'
 export { default as TabsTrigger } from './TabsTrigger.vue'
-export { default as TabsContent } from './TabsContent.vue'
 
 // Layout components
 export { default as Separator } from './Separator.vue'
-export { default as Button } from './Button.vue'
 
 // Popover components
 export { default as Popover } from './Popover.vue'

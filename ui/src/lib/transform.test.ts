@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
   buildChartForSignature,
-  buildChartData,
   listChartSignatures,
   build3DRender,
   projectAndGroup,
@@ -559,30 +558,6 @@ describe('canonical axis order', () => {
 
     expect(zForTarget('nxyz')).toEqual(['Z2', 'Z1'])
     expect(zForTarget('nyxz')).toEqual(['Z2', 'Z1'])
-  })
-})
-
-// ---------------------------------------------------------------------------
-// buildChartData (bulk entry point)
-// ---------------------------------------------------------------------------
-describe('buildChartData', () => {
-  it('returns one ChartData per unique signature', () => {
-    const data: DataPoint[] = [
-      {
-        xAxis: 'A',
-        stats: [
-          { type: 'val', unit: 'ms' },
-          { type: 'mem', unit: 'B' },
-        ],
-      },
-    ]
-    const charts = buildChartData(data, undefined, noSort)
-    expect(charts).toHaveLength(2)
-    expect(charts.map((c) => c.statType)).toEqual(expect.arrayContaining(['val', 'mem']))
-  })
-
-  it('returns empty for empty data', () => {
-    expect(buildChartData([], undefined, noSort)).toEqual([])
   })
 })
 

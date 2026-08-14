@@ -9,11 +9,10 @@ import type {
   ScatterConfig,
   Dataset,
 } from '../types'
-import { SORT_ORDERS, SCALE_TYPES } from '../types'
+import { ALL_CHART_TYPES, SORT_ORDERS, SCALE_TYPES } from '../types'
 import { useSettingsStore } from './useSettingsStore'
 import { useDataPoint } from './useDataPoint'
 import { activeDataset } from './useDataPoint'
-import { ALL_CHART_TYPES } from './constants'
 import { isValidIndex } from '../lib/utils'
 
 const buildQueryString = (params: Record<string, string>): string => {

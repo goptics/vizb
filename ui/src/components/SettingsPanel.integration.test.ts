@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { computed, ref } from 'vue'
-import { mount } from '@vue/test-utils'
+import { mount, type VueWrapper } from '@vue/test-utils'
 import type { BarConfig, ChartConfig, ChartType, LineConfig, SankeyConfig } from '@/types'
 
 const { controlStub } = vi.hoisted(() => {
@@ -17,16 +17,15 @@ const { controlStub } = vi.hoisted(() => {
 
 vi.mock('@/components/settings/SortControl.vue', () => controlStub('SortControl'))
 vi.mock('@/components/settings/ScaleControl.vue', () => controlStub('ScaleControl'))
-vi.mock('@/components/settings/StackControl.vue', () => controlStub('StackControl'))
-vi.mock('@/components/settings/ShowLabelsControl.vue', () => controlStub('ShowLabelsControl'))
-vi.mock('@/components/settings/SmoothControl.vue', () => controlStub('SmoothControl'))
-vi.mock('@/components/settings/HorizontalControl.vue', () => controlStub('HorizontalControl'))
-vi.mock('@/components/settings/ThreeDRotateControl.vue', () => controlStub('ThreeDRotateControl'))
-vi.mock('@/components/settings/ThreeDControl.vue', () => controlStub('ThreeDControl'))
-vi.mock('@/components/settings/ThreeDVisualMapControl.vue', () =>
-  controlStub('ThreeDVisualMapControl')
-)
-vi.mock('@/components/settings/VisualMapControl.vue', () => controlStub('VisualMapControl'))
+vi.mock('@/components/settings/BooleanControl.vue', () => ({
+  default: {
+    name: 'BooleanControl',
+    props: ['modelValue', 'disabled', 'id', 'label', 'description', 'separator'],
+    emits: ['update:modelValue'],
+    template:
+      '<div data-testid="BooleanControl" :data-id="id" :data-disabled="String(!!disabled)" :data-value="modelValue" />',
+  },
+}))
 vi.mock('@/components/settings/SwapControl.vue', () => controlStub('SwapControl'))
 
 vi.mock('./Selector.vue', () => ({
@@ -153,6 +152,9 @@ vi.mock('@/lib/swap', async (importOriginal) => {
 
 import SettingsPanel from './SettingsPanel.vue'
 
+const findBoolean = (w: VueWrapper, id: string) =>
+  w.findAllComponents({ name: 'BooleanControl' }).find((c) => c.props('id') === id)
+
 describe('SettingsPanel', () => {
   beforeEach(() => {
     holder.barConfig = {
@@ -186,7 +188,7 @@ describe('SettingsPanel', () => {
   it('renders settings controls for a bar 2D config', () => {
     const w = mount(SettingsPanel)
     expect(w.find('[data-testid="SortControl"]').exists()).toBe(true)
-    expect(w.find('[data-testid="StackControl"]').exists()).toBe(true)
+    expect(findBoolean(w, 'stack-switch')?.exists()).toBe(true)
   })
 
   it('shows chart type selector for multi-type datasets and switches', async () => {
@@ -275,10 +277,12 @@ describe('SettingsPanel', () => {
     await swap.vm.$emit('update:modelValue', undefined)
 
     // fire generic onUpdate for other keys through remaining controls
-    for (const name of ['StackControl', 'ShowLabelsControl', 'HorizontalControl', 'ScaleControl']) {
-      const c = w.findComponent({ name })
-      if (c.exists()) await c.vm.$emit('update:modelValue', true)
+    for (const id of ['stack-switch', 'labels-switch', 'horizontal-bars-switch']) {
+      const c = findBoolean(w, id)
+      if (c) await c.vm.$emit('update:modelValue', true)
     }
+    const scale = w.findComponent({ name: 'ScaleControl' })
+    if (scale.exists()) await scale.vm.$emit('update:modelValue', true)
   })
   it('uses arrangement map and wire swap for z detection', () => {
     holder.arrangementMap = 'x/y/z'
@@ -302,9 +306,9 @@ describe('SettingsPanel', () => {
     expect(swap.props('modelValue')).toBe('x/z/y')
 
     // Wire swap with z → rendering3D chrome on; value-3D toggle stays off (z already on axes).
-    expect(w.findComponent({ name: 'ThreeDRotateControl' }).exists()).toBe(true)
-    expect(w.findComponent({ name: 'ThreeDVisualMapControl' }).exists()).toBe(true)
-    expect(w.findComponent({ name: 'ThreeDControl' }).exists()).toBe(false)
+    expect(findBoolean(w, 'three-d-rotate-switch')?.exists()).toBe(true)
+    expect(findBoolean(w, 'three-d-visualmap-switch')?.exists()).toBe(true)
+    expect(findBoolean(w, 'three-d-switch')).toBeUndefined()
   })
 
   it('empty activeConfig yields no fields', () => {
@@ -385,9 +389,9 @@ describe('SettingsPanel', () => {
     const w = mount(SettingsPanel)
     expect(w.text()).toContain('Chart type')
     // threeD group controls
-    for (const name of ['ThreeDControl', 'ThreeDRotateControl', 'ThreeDVisualMapControl']) {
-      const c = w.findComponent({ name })
-      if (c.exists()) await c.vm.$emit('update:modelValue', true)
+    for (const id of ['three-d-switch', 'three-d-rotate-switch', 'three-d-visualmap-switch']) {
+      const c = findBoolean(w, id)
+      if (c) await c.vm.$emit('update:modelValue', true)
     }
   })
 })

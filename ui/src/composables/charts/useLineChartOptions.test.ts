@@ -95,9 +95,9 @@ describe('useLineChartOptions — grouped mode', () => {
 
   it('does not stack grouped lines by default', () => {
     const { options } = useLineChartOptions(makeGroupedConfig())
-    const series = options.value.series as { stack?: string; areaStyle?: unknown }[]
-    expect(series.every((s) => s.stack === undefined)).toBe(true)
-    expect(series.every((s) => s.areaStyle === undefined)).toBe(true)
+    const series = options.value.series as { stack?: string | null; areaStyle?: unknown }[]
+    expect(series.every((s) => s.stack === null)).toBe(true)
+    expect(series.every((s) => s.areaStyle === null)).toBe(true)
   })
 })
 
@@ -150,7 +150,7 @@ describe('useLineChartOptions — grouped mode', () => {
   it('preserves straight lines by default', () => {
     const { options } = useLineChartOptions(makeGroupedConfig())
     const series = options.value.series as { smooth?: boolean }[]
-    expect(series.every((s) => s.smooth === undefined)).toBe(true)
+    expect(series.every((s) => s.smooth === false)).toBe(true)
   })
 
   it('emits smooth on every grouped line series when enabled', () => {

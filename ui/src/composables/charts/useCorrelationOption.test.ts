@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { buildCorrelationOption } from './useCorrelationOption'
-import { LARGE_X_THRESHOLD } from './shared'
+import { LARGE_X_THRESHOLD } from './shared/chartConfig'
 
 describe('buildCorrelationOption', () => {
   const labels = ['A', 'B', 'C']

@@ -27,10 +27,6 @@ export interface BuildContext {
 }
 
 export interface ChartBuilder {
-  /** Build the ChartData for this chart shape from the raw data points. */
-  build(data: DataPoint[], ctx: BuildContext): ChartData
-  /** Whether the chart has any plottable data. */
-  plottable(chart: ChartData): boolean
   /** Cardinality for an axis badge. */
   badgeCount(chart: ChartData, axis: 'x' | 'y' | 'z'): number
   /** Sum of every plotted metric value. */
@@ -44,6 +40,11 @@ export interface ChartBuilder {
     hasZOnChart: boolean,
     cfg?: { threeD?: boolean }
   ): boolean
+}
+
+/** Grouped/preserveRows builders also materialise ChartData from raw points. */
+export interface GroupingBuilder extends ChartBuilder {
+  build(data: DataPoint[], ctx: BuildContext): ChartData
 }
 
 export const builderStatType = (chart: ChartData): string => chart.statType ?? 'grouped'

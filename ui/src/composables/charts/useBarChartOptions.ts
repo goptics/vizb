@@ -16,7 +16,7 @@ import {
   isLargeXAxis,
   makeLegendTitle,
   LARGE_DATA_THRESHOLD,
-} from './shared'
+} from './shared/chartConfig'
 import { useSortedSeriesData, resolveLogScale, computeSeriesTotals } from './shared/common'
 import { buildValueAxes2DOptions } from './shared/valueMode'
 import { buildMixedAxes2DOptions } from './shared/mixedMode'
@@ -153,7 +153,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
       ),
       large: true,
       largeThreshold: LARGE_DATA_THRESHOLD,
-      ...(useStack ? { stack: 'total' } : {}),
+      stack: useStack ? 'total' : null,
       itemStyle: { color: getNextColorFor(yAxisLabel) } as BarItemStyle,
     }))
 
