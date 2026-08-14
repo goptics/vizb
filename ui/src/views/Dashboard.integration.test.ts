@@ -38,6 +38,7 @@ const holder = vi.hoisted(() => ({
   groupNames: ['g0', 'g1'] as string[],
   datasetInitializing: false,
   initFromUrl: vi.fn(async () => {}),
+  lastPipelineLabels: undefined as unknown,
 }))
 
 function baseDataset(overrides: Partial<Dataset> = {}): Dataset {
@@ -116,6 +117,10 @@ vi.mock('../composables/useActiveChartShape', () => ({
 
 vi.mock('../composables/useChartPipeline', () => ({
   useChartPipeline: (...args: unknown[]) => {
+    const labels = args[2]
+    if (labels && typeof labels === 'object' && labels !== null && 'value' in labels) {
+      holder.lastPipelineLabels = (labels as { value: unknown }).value
+    }
     for (const a of args) {
       if (a && typeof a === 'object' && a !== null && 'value' in a) {
         void (a as { value: unknown }).value
@@ -289,6 +294,7 @@ describe('Dashboard', () => {
     document.title = 'Vizb'
     holder.initFromUrl.mockReset()
     holder.initFromUrl.mockResolvedValue(undefined)
+    holder.lastPipelineLabels = undefined
     vi.stubGlobal('VIZB_VERSION', 'v1.2.3-test')
     vi.clearAllMocks()
   })
@@ -318,6 +324,23 @@ describe('Dashboard', () => {
     groupNamesRef.value = ['a', 'b']
     await nextTick()
     expect(holder.setGroupNames).toHaveBeenCalledWith(['a', 'b'])
+  })
+
+  it('passes undefined chart labels when axes are missing or unlabeled', () => {
+    holder.activeDataset = ref(baseDataset({ axes: undefined }))
+    mount(Dashboard)
+    expect(holder.lastPipelineLabels).toBeUndefined()
+
+    holder.activeDataset = ref(
+      baseDataset({
+        axes: [
+          { key: 'x', label: '' },
+          { key: 'y', label: '' },
+        ],
+      })
+    )
+    mount(Dashboard)
+    expect(holder.lastPipelineLabels).toBeUndefined()
   })
 
   it('shows theme selector only when author provided 2+ themes', async () => {
