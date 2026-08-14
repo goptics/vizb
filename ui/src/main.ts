@@ -1,5 +1,5 @@
 import { createApp } from 'vue'
 import './assets/globals.css'
-import App from './App.vue'
+import Dashboard from './views/Dashboard.vue'
 
-createApp(App).mount('#app')
+createApp(Dashboard).mount('#app')

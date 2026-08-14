@@ -1,7 +1,6 @@
 import { ref, shallowRef, markRaw, reactive, computed, nextTick, watch } from 'vue'
 import type { Dataset, ChartType } from '../types'
 import type { Arrangement } from './useChartPipeline'
-import { filterDatasetSettings } from '../lib/filterDatasetSettings'
 import {
   resetColor,
   isValidIndex,
@@ -18,7 +17,29 @@ import {
   isDatasetCollectionUrl,
   type DataPayload,
 } from '../lib/remoteData'
-import { extractPathDatasetId } from '../lib/pathRoute'
+
+const STATIC_ASSET =
+  /\.(?:html?|css|m?js|cjs|map|json|wasm|xml|txt|ico|png|jpe?g|gif|svg|webp|avif|woff2?|ttf|otf)$/i
+
+export const extractPathDatasetId = (pathname: string): string | null => {
+  const segment = pathname.split('/').filter(Boolean).at(-1)
+  if (!segment) return null
+
+  try {
+    const decoded = decodeURIComponent(segment)
+    if (!decoded || decoded.toLowerCase() === 'index' || STATIC_ASSET.test(decoded)) return null
+    return decoded
+  } catch {
+    return null
+  }
+}
+
+/** Keep only settings whose chart type was bundled at HTML generation time. */
+export function filterDatasetSettings(ds: Dataset, allowed?: ChartType[]): Dataset {
+  if (!allowed?.length) return ds
+  const settings = ds.settings?.filter((s) => allowed.includes(s.type)) ?? []
+  return { ...ds, settings }
+}
 
 const dataUrl = window.VIZB_DATA_URL
 const pathname = window.location.pathname

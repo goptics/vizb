@@ -381,6 +381,68 @@ describe('Selector', () => {
     expect(w.text()).toMatch(/Showing 5 of 12 matches/)
   })
 
+  it('always includes the active option when results are limited', () => {
+    const items = Array.from({ length: 20 }, (_, i) => ({
+      name: `Dataset ${i.toString().padStart(4, '0')}`,
+      value: String(i),
+    }))
+    const w = mount(Selector, {
+      props: { items, activeValue: '15', resultLimit: 5 },
+    })
+    const values = w.findAll('[data-testid="item"]').map((n) => n.attributes('data-value'))
+    expect(values).toHaveLength(5)
+    expect(values).toContain('15')
+    expect(values.at(-1)).toBe('15')
+  })
+
+  it('searches the complete catalog before applying the limit and keeps active', async () => {
+    const items = Array.from({ length: 20 }, (_, i) => ({
+      name: `Dataset ${i.toString().padStart(4, '0')}`,
+      value: String(i),
+    }))
+    const w = mount(Selector, {
+      props: { items, activeValue: '0', resultLimit: 5 },
+    })
+    const cb = w.findComponent({ name: 'Combobox' })
+    await cb.vm.$emit('update:searchTerm', 'Dataset 0019')
+    await nextTick()
+    const values = w.findAll('[data-testid="item"]').map((n) => n.attributes('data-value'))
+    expect(values).toEqual(['19', '0'])
+  })
+
+  it('never exceeds the limit when the active entry does not match a full result page', async () => {
+    const items = Array.from({ length: 20 }, (_, i) => ({
+      name: `Dataset ${i.toString().padStart(4, '0')}`,
+      value: String(i),
+    }))
+    const w = mount(Selector, {
+      props: { items, activeValue: '19', resultLimit: 5 },
+    })
+    const cb = w.findComponent({ name: 'Combobox' })
+    await cb.vm.$emit('update:searchTerm', 'Dataset 0')
+    await nextTick()
+    const values = w.findAll('[data-testid="item"]').map((n) => n.attributes('data-value'))
+    expect(values).toHaveLength(5)
+    expect(values.at(-1)).toBe('19')
+  })
+
+  it('keeps visible list unchanged when active is already visible or absent', () => {
+    const items = Array.from({ length: 8 }, (_, i) => ({
+      name: `Item ${i}`,
+      value: `v${i}`,
+    }))
+    const withActive = mount(Selector, {
+      props: { items, activeValue: 'v0', resultLimit: 5 },
+    })
+    expect(
+      withActive.findAll('[data-testid="item"]').map((n) => n.attributes('data-value'))
+    ).toEqual(['v0', 'v1', 'v2', 'v3', 'v4'])
+    const withoutActive = mount(Selector, { props: { items, resultLimit: 5 } })
+    expect(
+      withoutActive.findAll('[data-testid="item"]').map((n) => n.attributes('data-value'))
+    ).toEqual(['v0', 'v1', 'v2', 'v3', 'v4'])
+  })
+
   it('open-close activeId same index does not emit', async () => {
     const onSelect = vi.fn()
     const w = mount(Selector, {

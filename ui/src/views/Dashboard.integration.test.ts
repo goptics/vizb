@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { computed, defineComponent, h, nextTick, ref } from 'vue'
+import { computed, defineComponent, h, nextTick, ref, type Ref } from 'vue'
 import { mount } from '@vue/test-utils'
 import { makeGroupedChartData } from '@/test-utils'
 import type { Axis, ChartData, Dataset } from '@/types'
 
 const holder = vi.hoisted(() => ({
-  datasets: [{ name: 'Main' }, { name: 'Other' }],
-  activeDataset: undefined as Dataset | undefined,
+  datasets: undefined as Ref<{ name: string }[]> | undefined,
+  activeDataset: undefined as Ref<Dataset | undefined> | undefined,
   activeDatasetId: 0,
   selectDataset: vi.fn(),
   activeArrangement: { identityString: 'x/y', targetString: 'x/y' },
@@ -37,7 +37,7 @@ const holder = vi.hoisted(() => ({
   charts: [] as { key: string; data?: ChartData; pending: boolean }[],
   groupNames: ['g0', 'g1'] as string[],
   datasetInitializing: false,
-  dashInit: vi.fn(),
+  initFromUrl: vi.fn(async () => {}),
 }))
 
 function baseDataset(overrides: Partial<Dataset> = {}): Dataset {
@@ -71,8 +71,14 @@ const datasetInitializingRef = ref(holder.datasetInitializing)
 
 vi.mock('../composables/useDataPoint', () => ({
   useDataPoint: () => ({
-    datasets: computed(() => holder.datasets),
-    activeDataset: computed(() => holder.activeDataset),
+    get datasets() {
+      if (!holder.datasets) throw new Error('forgot beforeEach datasets')
+      return holder.datasets
+    },
+    get activeDataset() {
+      if (!holder.activeDataset) throw new Error('forgot beforeEach activeDataset')
+      return holder.activeDataset
+    },
     activeDatasetId: computed(() => holder.activeDatasetId),
     selectDataset: holder.selectDataset,
     activeArrangement: computed(() => holder.activeArrangement),
@@ -123,8 +129,10 @@ vi.mock('../composables/useChartPipeline', () => ({
   },
 }))
 
-vi.mock('../composables/useDashboardInit', () => ({
-  useDashboardInit: () => holder.dashInit(),
+vi.mock('../composables/useUrlRouter', () => ({
+  useUrlRouter: () => ({
+    initFromUrl: holder.initFromUrl,
+  }),
 }))
 
 vi.mock('../lib/themes', () => ({
@@ -258,8 +266,8 @@ import Dashboard from './Dashboard.vue'
 
 describe('Dashboard', () => {
   beforeEach(() => {
-    holder.activeDataset = baseDataset()
-    holder.datasets = [{ name: 'Main' }, { name: 'Other' }]
+    holder.datasets = ref([{ name: 'Main' }, { name: 'Other' }])
+    holder.activeDataset = ref(baseDataset())
     holder.loading = false
     holder.loadError = null
     holder.detailError = null
@@ -278,13 +286,17 @@ describe('Dashboard', () => {
       { key: 'c2', data: undefined, pending: true },
     ]
     groupNamesRef.value = ['g0', 'g1']
+    document.title = 'Vizb'
+    holder.initFromUrl.mockReset()
+    holder.initFromUrl.mockResolvedValue(undefined)
     vi.stubGlobal('VIZB_VERSION', 'v1.2.3-test')
     vi.clearAllMocks()
   })
 
   it('main happy path: header, charts, footer, nav', async () => {
     const w = mount(Dashboard)
-    expect(holder.dashInit).toHaveBeenCalled()
+    expect(holder.initFromUrl).toHaveBeenCalledTimes(1)
+    expect(document.title).toBe('Vizb | Main')
     expect(w.find('[data-testid="dataset-header"]').exists()).toBe(true)
     expect(w.find('[data-testid="chart-card"]').text()).toContain('Chart One')
     expect(w.find('[data-testid="footer"]').text()).toContain('v1.2.3-test')
@@ -370,7 +382,7 @@ describe('Dashboard', () => {
   })
 
   it('no active dataset renders nav only', () => {
-    holder.activeDataset = undefined
+    holder.activeDataset!.value = undefined
     const w = mount(Dashboard)
     expect(w.find('main').exists()).toBe(false)
     expect(w.find('[data-testid="footer"]').exists()).toBe(false)
@@ -391,7 +403,7 @@ describe('Dashboard', () => {
   })
 
   it('hides package button without pkg meta', () => {
-    holder.activeDataset = baseDataset({ meta: {} })
+    holder.activeDataset!.value = baseDataset({ meta: {} })
     const w = mount(Dashboard)
     expect(w.find('[aria-label="View Package Source"]').exists()).toBe(false)
   })
@@ -403,7 +415,7 @@ describe('Dashboard', () => {
   })
 
   it('axes without labels', () => {
-    holder.activeDataset = baseDataset({
+    holder.activeDataset!.value = baseDataset({
       axes: [{ key: 'x' } as Axis, { key: 'y', label: '' } as Axis],
     })
     const w = mount(Dashboard)
@@ -411,7 +423,7 @@ describe('Dashboard', () => {
   })
 
   it('empty axes and preserveRows', () => {
-    holder.activeDataset = baseDataset({
+    holder.activeDataset!.value = baseDataset({
       axes: undefined,
       data: [],
       preserveRows: true,
@@ -443,5 +455,27 @@ describe('Dashboard', () => {
     const w = mount(mod.default)
     expect(w.find('[data-testid="footer"]').text()).toContain('v0.0.0-dev')
     w.unmount()
+  })
+
+  it('calls initFromUrl once when datasets become non-empty', async () => {
+    holder.datasets!.value = []
+    holder.activeDataset!.value = undefined
+    mount(Dashboard)
+    expect(holder.initFromUrl).not.toHaveBeenCalled()
+
+    holder.datasets!.value = [{ name: 'Main' }]
+    await nextTick()
+    expect(holder.initFromUrl).toHaveBeenCalledTimes(1)
+
+    holder.datasets!.value = [{ name: 'Main' }, { name: 'Other' }]
+    await nextTick()
+    expect(holder.initFromUrl).toHaveBeenCalledTimes(1)
+  })
+
+  it('sets document.title from activeDataset name', async () => {
+    holder.activeDataset!.value = baseDataset({ name: 'Sales' })
+    mount(Dashboard)
+    await nextTick()
+    expect(document.title).toBe('Vizb | Sales')
   })
 })
