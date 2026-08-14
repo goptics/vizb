@@ -10,6 +10,8 @@ export const DATAZOOM_INITIAL_END_PERCENT = 20
 
 const axisTitleFontSize = 16
 const LOG_AXIS_RANGE = { min: 'dataMin' as const, max: 'dataMax' as const }
+const LINEAR_AXIS_RANGE = { min: null, max: null }
+const valueAxisRange = (scale: ScaleType) => (scale === 'log' ? LOG_AXIS_RANGE : LINEAR_AXIS_RANGE)
 
 // Bottom chrome for heatmap / correlation — visualMap always, dataZoom when len > 50.
 export const HEATMAP_VISUAL_MAP_BOTTOM = 8
@@ -244,6 +246,7 @@ export function createValueAxisConfig(
     // ECharts 6 moves axis names to avoid label overlap by default. Vizb's
     // nameGap values already reserve their position using the v5 behavior.
     nameMoveOverlap: false,
+    ...valueAxisRange(yScale),
     ...(yAxisName
       ? { name: yAxisName, nameLocation: 'middle', nameGap: 45, nameTextStyle: nameStyle }
       : {}),
@@ -252,9 +255,7 @@ export function createValueAxisConfig(
     axisLine: { lineStyle: { color: styling.axisColor } },
   }
 
-  if (yScale === 'log') {
-    Object.assign(yAxisConfig, LOG_AXIS_RANGE)
-  } else if (fitYAxisToData) {
+  if (yScale !== 'log' && fitYAxisToData) {
     yAxisConfig.scale = true
   }
 
@@ -341,6 +342,9 @@ export function createAxisConfig(
   const yAxisConfig: any = {
     type: scale === 'log' ? 'log' : 'value',
     nameMoveOverlap: false,
+    ...valueAxisRange(scale),
+    inverse: false,
+    data: null,
     splitLine: {
       lineStyle: {
         opacity: styling.opacity,
@@ -354,9 +358,7 @@ export function createAxisConfig(
     },
   }
 
-  if (scale === 'log') {
-    Object.assign(yAxisConfig, LOG_AXIS_RANGE)
-  } else if (fitYAxisToData) {
+  if (scale !== 'log' && fitYAxisToData) {
     // ECharts default includes zero; scale the axis to the series min/max instead.
     yAxisConfig.scale = true
   }
@@ -365,6 +367,9 @@ export function createAxisConfig(
     xAxis: {
       type: 'category',
       nameMoveOverlap: false,
+      inverse: false,
+      min: null,
+      max: null,
       data: xAxisData,
       // Axis title (group name) under the category axis — not the series ticks.
       ...(xAxisName
@@ -419,6 +424,9 @@ export function createHorizontalAxisConfig(
   const xAxisConfig: any = {
     type: scale === 'log' ? 'log' : 'value',
     nameMoveOverlap: false,
+    ...valueAxisRange(scale),
+    inverse: false,
+    data: null,
     splitLine: {
       lineStyle: { opacity: styling.opacity },
     },
@@ -430,14 +438,14 @@ export function createHorizontalAxisConfig(
     },
   }
 
-  if (scale === 'log') Object.assign(xAxisConfig, LOG_AXIS_RANGE)
-
   return {
     xAxis: xAxisConfig,
     yAxis: {
       type: 'category',
       nameMoveOverlap: false,
       inverse: true,
+      min: null,
+      max: null,
       data: yAxisData,
       ...(categoryAxisName
         ? {
@@ -860,5 +868,6 @@ export const createLabelConfig = (
   },
   fontSize,
   color: stacked ? '#fff' : styling.textColor,
-  ...(stacked ? { textBorderColor: 'rgba(0,0,0,0.5)', textBorderWidth: 2 } : {}),
+  textBorderColor: stacked ? 'rgba(0,0,0,0.5)' : null,
+  textBorderWidth: stacked ? 2 : null,
 })

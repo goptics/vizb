@@ -99,7 +99,7 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
           ? scatterSeriesLargeOpts(useVisualMap)
           : { large: true as const, largeThreshold: LARGE_DATA_THRESHOLD }),
         ...(style.connectNulls ? { connectNulls: true } : {}),
-        ...(smoothLines ? { smooth: true } : {}),
+        ...(kind === 'line' ? { smooth: smoothLines } : {}),
         ...(useVisualMap ? {} : { itemStyle: { color: getNextColorFor(chartData.value.title) } }),
         ...seriesExtras,
       }
@@ -130,8 +130,9 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
         ? scatterSeriesLargeOpts(useVisualMap)
         : { large: true as const, largeThreshold: LARGE_DATA_THRESHOLD }),
       ...(style.connectNulls ? { connectNulls: true } : {}),
-      ...(smoothLines ? { smooth: true } : {}),
-      ...(useStack ? { stack: 'total', areaStyle: {} } : {}),
+      ...(kind === 'line'
+        ? { smooth: smoothLines, stack: useStack ? 'total' : null, areaStyle: useStack ? {} : null }
+        : {}),
       ...(useVisualMap ? {} : { itemStyle: { color: getNextColorFor(yAxisLabel) } }),
       ...seriesExtras,
     }))

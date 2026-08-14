@@ -153,7 +153,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
       ),
       large: true,
       largeThreshold: LARGE_DATA_THRESHOLD,
-      ...(useStack ? { stack: 'total' } : {}),
+      stack: useStack ? 'total' : null,
       itemStyle: { color: getNextColorFor(yAxisLabel) } as BarItemStyle,
     }))
 

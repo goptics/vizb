@@ -48,8 +48,8 @@ describe('useBarChartOptions — grouped mode', () => {
 
   it('does not stack grouped bars by default', () => {
     const { options } = useBarChartOptions(makeStackedGroupedConfig(false))
-    const series = options.value.series as { stack?: string }[]
-    expect(series.every((s) => s.stack === undefined)).toBe(true)
+    const series = options.value.series as { stack?: string | null }[]
+    expect(series.every((s) => s.stack === null)).toBe(true)
   })
 
   it.each([
@@ -90,7 +90,7 @@ describe('useBarChartOptions — grouped mode', () => {
 
     expect(series.every((s) => s.label.position === position)).toBe(true)
     expect(series.every((s) => s.label.color === '#374151')).toBe(true)
-    expect(series.every((s) => s.label.textBorderWidth === undefined)).toBe(true)
+    expect(series.every((s) => s.label.textBorderWidth === null)).toBe(true)
   })
 
   it('keeps labels hidden when stacking is enabled and show labels is off', () => {
@@ -375,8 +375,8 @@ describe('useBarChartOptions — value mode and branches', () => {
       scale: ref('log'),
       stack: ref(true),
     })
-    const series = options.value.series as { stack?: string }[]
-    expect(series.every((s) => s.stack === undefined)).toBe(true)
+    const series = options.value.series as { stack?: string | null }[]
+    expect(series.every((s) => s.stack === null)).toBe(true)
   })
 
   it('adds dataZoom for large horizontal grouped categories', () => {

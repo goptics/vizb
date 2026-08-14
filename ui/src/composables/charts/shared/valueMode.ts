@@ -104,7 +104,7 @@ export function buildValueAxes2DOptions(
     ...(chartType === 'scatter'
       ? scatterSeriesLargeOpts(useVisualMap)
       : { large: true as const, largeThreshold: LARGE_DATA_THRESHOLD }),
-    ...(smoothLines ? { smooth: true } : {}),
+    ...(chartType === 'line' ? { smooth: smoothLines } : {}),
     ...(useVisualMap ? {} : { itemStyle: { color: getNextColorFor(chartData.value.title) } }),
     ...seriesSymbol(chartType, largeX, config.symbol?.value, config.symbolSize?.value),
   }

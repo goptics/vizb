@@ -151,7 +151,7 @@ export function buildMixedAxes2DOptions(
             type: 'line' as const,
             large: true,
             largeThreshold: LARGE_DATA_THRESHOLD,
-            ...(smoothLines ? { smooth: true } : {}),
+            smooth: smoothLines,
             ...resolveSeriesSymbol(
               largeX ? largeLineSymbol : defaultLineSymbol,
               config.symbol?.value,
