@@ -21,7 +21,7 @@ const emit = defineEmits<{
 
 const mainTitle = computed(() => props.datasets[0]?.name || 'Datasets')
 const hasCPU = computed(() => props.dataset.meta?.cpu?.name || props.dataset.meta?.cpu?.cores)
-const hasOS = computed(() => props.dataset.meta?.os)
+const osLabel = computed(() => props.dataset.meta?.os ?? '')
 
 const formatDate = (ts: string) => {
   const date = new Date(ts)
@@ -72,11 +72,11 @@ const osHistoryFilter = (e: HistoryEntry) => !!e.meta?.os
         </template>
       </MetaHistoryBadge>
       <MetaHistoryBadge
-        v-if="hasOS"
+        v-if="osLabel"
         :icon="Monitor"
         label="OS"
         history-title="OS History"
-        :value="dataset.meta?.os ?? ''"
+        :value="osLabel"
         :history="dataset.history"
         :filter-fn="osHistoryFilter"
       >

@@ -410,6 +410,25 @@ describe('DatasetHeader', () => {
     expect(w.text()).toContain('Updated')
   })
 
+  it('includes cores-only CPU history entries', () => {
+    const w = mount(DatasetHeader, {
+      props: {
+        dataset: {
+          ...baseDataset,
+          history: [
+            { tag: 'cores', timestamp: '2024-01-01T00:00:00.000Z', meta: { cpu: { cores: 2 } } },
+            { tag: 'none', timestamp: '2024-01-02T00:00:00.000Z', meta: {} },
+          ],
+        },
+        datasets: [{ name: 'Bench' }],
+        activeDatasetId: 0,
+        resultGroups: [{ name: 'g0' }],
+        activeGroupId: 0,
+      },
+    })
+    expect(w.text()).toContain('2 cores')
+  })
+
   it('falls back to raw timestamp when the date is invalid', () => {
     const w = mount(DatasetHeader, {
       props: {
