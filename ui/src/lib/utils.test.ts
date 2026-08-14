@@ -8,17 +8,14 @@ import {
   chartHasPlottableData,
   computeChartGrandTotal,
   bundleHas3DChunk,
-  datasetHasBothXY,
   datasetDimension,
   formatChartNumber,
   isValueMode,
   isMixedMode,
-  isScatterTransformMode,
   getNextColorFor,
   resetColor,
   cn,
   isValidIndex,
-  getThemePalette,
   getDefaultThemeColor,
   chartHasXAxis,
   chartHasYAxis,
@@ -27,14 +24,11 @@ import {
   hasYAxis,
   hasZAxis,
   isGrouped3D,
-  isValue3DEligible,
   valueModeHasZAxis,
   mixedModeHasZAxis,
   isValueChartType,
   isValueModeContinuous3D,
   is3D,
-  isValueModeChart,
-  isMixedModeChart,
   chartSeriesLabels,
   CPUtoString,
 } from './utils'
@@ -66,19 +60,6 @@ describe('theme color allocation', () => {
     expect(color.value).toBe('#123')
     applyTheme('#abc,#def')
     expect(color.value).toBe('#abc')
-  })
-})
-
-describe('datasetHasBothXY', () => {
-  it('is true when any row has x and y', () => {
-    expect(datasetHasBothXY([dp('a', 'b')])).toBe(true)
-  })
-
-  it('is false for x-only or empty data', () => {
-    expect(datasetHasBothXY([{ name: '', xAxis: 'a', yAxis: '', zAxis: '', stats: [] }])).toBe(
-      false
-    )
-    expect(datasetHasBothXY([])).toBe(false)
   })
 })
 
@@ -417,29 +398,6 @@ describe('isMixedMode', () => {
   })
 })
 
-describe('isScatterTransformMode', () => {
-  it('is true for value or mixed scatter axes', () => {
-    expect(
-      isScatterTransformMode([
-        { key: 'x', type: 'value' },
-        { key: 'y', type: 'value' },
-      ])
-    ).toBe(true)
-    expect(
-      isScatterTransformMode([
-        { key: 'x', label: 'region' },
-        { key: 'y', type: 'value' },
-      ])
-    ).toBe(true)
-    expect(
-      isScatterTransformMode([
-        { key: 'x', label: 'region' },
-        { key: 'y', label: 'group' },
-      ])
-    ).toBe(false)
-  })
-})
-
 describe('canOfferValue3D with mixed axes', () => {
   it('returns false for mixed-axis datasets', () => {
     const axes: Axis[] = [
@@ -474,9 +432,8 @@ describe('cn / isValidIndex / theme helpers', () => {
     expect(isValidIndex(2, 2)).toBe(false)
   })
 
-  it('reads active palette helpers', () => {
+  it('reads the active palette primary color', () => {
     applyTheme('#111,#222')
-    expect(getThemePalette()[0]).toBe('#111')
     expect(getDefaultThemeColor()).toBe('#111')
   })
 })
@@ -492,13 +449,6 @@ describe('axis presence helpers', () => {
     expect(chartHasYAxis(chart)).toBe(true)
     expect(chartHasZAxis(chart)).toBe(true)
     expect(isGrouped3D(chart)).toBe(true)
-    expect(isValue3DEligible(chart)).toBe(false)
-
-    const xy = emptyChart({
-      yAxis: ['Y'],
-      series: [{ xAxis: 'X', values: [1], benchmarkId: '' }],
-    })
-    expect(isValue3DEligible(xy)).toBe(true)
 
     const r = ref(chart)
     expect(hasXAxis(r)).toBe(true)
@@ -613,12 +563,6 @@ describe('datasetDimension 1D/empty', () => {
 })
 
 describe('chart mode tags and series labels', () => {
-  it('isValueModeChart / isMixedModeChart', () => {
-    expect(isValueModeChart(emptyChart({ statType: 'value' }))).toBe(true)
-    expect(isMixedModeChart(emptyChart({ statType: 'mixed' }))).toBe(true)
-    expect(isValueModeChart(emptyChart())).toBe(false)
-  })
-
   it('chartHasPlottableData mixed render3D path', () => {
     expect(
       chartHasPlottableData(

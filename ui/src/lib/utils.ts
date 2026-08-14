@@ -4,7 +4,7 @@ import type { ChartType, Meta, ChartData, DataPoint, Axis } from '../types'
 import type { Ref } from 'vue'
 import { arrangementHasChartZ } from './swap'
 import { builderForChart, pickBuilder } from './builders'
-import { activePalette, DEFAULT_THEME, palettePrimary } from './themes'
+import { activePalette, palettePrimary } from './themes'
 
 /**
  * Utility function to merge Tailwind CSS classes
@@ -16,8 +16,6 @@ export function cn(...inputs: ClassValue[]) {
 
 export const isValidIndex = (id: number, length: number): boolean => id >= 0 && id < length
 
-export const COLOR_PALETTE = DEFAULT_THEME.colors
-export const getThemePalette = () => activePalette.value
 export const getDefaultThemeColor = () => palettePrimary(activePalette.value)
 
 const colorMap = new Map<string, number>()
@@ -60,10 +58,6 @@ export const hasZAxis = (chartData: Ref<ChartData, ChartData>) => chartHasZAxis(
 // Grouped 3D: x, y, and z dimensions are all present in the chart data.
 export const isGrouped3D = (chart: ChartData) =>
   chartHasXAxis(chart) && chartHasYAxis(chart) && chartHasZAxis(chart)
-
-// Value 3D: x+y only — y categories become depth, metric becomes height.
-export const isValue3DEligible = (chart: ChartData) =>
-  chartHasXAxis(chart) && chartHasYAxis(chart) && !chartHasZAxis(chart)
 
 export const valueModeHasZAxis = (axes: Axis[] | undefined): boolean =>
   !!axes?.some((a) => a.key === 'z')
@@ -124,9 +118,6 @@ export const datasetDimension = (data: DataPoint[] | undefined): Dimension | und
   return '1D'
 }
 
-export const datasetHasBothXY = (data: DataPoint[] | undefined): boolean =>
-  !!data?.some((p) => !!p.xAxis && !!p.yAxis)
-
 /** 3D chunk is baked into the HTML bundle (z in raw data, or --3d flag was set). */
 export const bundleHas3DChunk = (
   data: DataPoint[] | undefined,
@@ -158,8 +149,6 @@ export const formatChartNumber = (value: number): string => {
   if (!Number.isFinite(value)) return String(value)
   return String(Number(value.toPrecision(15)))
 }
-
-export const isValueModeChart = (chart: ChartData): boolean => chart.statType === 'value'
 
 export const chartHasPlottableData = (chart: ChartData): boolean =>
   chart.series.length > 0 ||
@@ -217,9 +206,3 @@ export const isValueMode = (axes: Axis[] | undefined): boolean =>
 /** Category x + value y[,z] (solo --select mixed mode). */
 export const isMixedMode = (axes: Axis[] | undefined): boolean =>
   !!axes?.length && axes.some((a) => a.type === 'value') && axes.some((a) => a.type !== 'value')
-
-export const isMixedModeChart = (chart: ChartData): boolean => chart.statType === 'mixed'
-
-/** Scatter datasets routed through value or mixed transform paths. */
-export const isScatterTransformMode = (axes: Axis[] | undefined): boolean =>
-  isValueMode(axes) || isMixedMode(axes)

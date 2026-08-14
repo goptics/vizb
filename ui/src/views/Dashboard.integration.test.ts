@@ -128,7 +128,6 @@ vi.mock('../composables/useDashboardInit', () => ({
 }))
 
 vi.mock('../lib/themes', () => ({
-  THEME_NAMES: ['default'],
   listAvailableThemeNames: () => holder.themeNames,
   shouldShowThemeSelector: () => holder.authorThemeCount >= 2,
   authorThemeCount: () => holder.authorThemeCount,

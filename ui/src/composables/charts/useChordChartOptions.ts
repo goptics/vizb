@@ -2,7 +2,7 @@ import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
 import { hasXAxis, hasYAxis } from '@/lib/utils'
-import { getChartStyling, getTooltipTheme } from './shared'
+import { getChartStyling, getTooltipTheme } from './shared/chartConfig'
 import { fontSize } from './shared/common'
 import { buildEdgeGraph, formatEdgeTooltip, sortEdgeGraphNodes } from './shared/edgeGraph'
 

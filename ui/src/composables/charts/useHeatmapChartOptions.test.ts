@@ -6,7 +6,7 @@ import {
   groupedRender3D,
   installDevicePixelRatio,
 } from '@/test-utils'
-import { LARGE_X_THRESHOLD } from './shared'
+import { LARGE_X_THRESHOLD } from './shared/chartConfig'
 import { useHeatmapChartOptions } from './useHeatmapChartOptions'
 
 let restoreDpr: () => void

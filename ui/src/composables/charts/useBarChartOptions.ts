@@ -16,7 +16,7 @@ import {
   isLargeXAxis,
   makeLegendTitle,
   LARGE_DATA_THRESHOLD,
-} from './shared'
+} from './shared/chartConfig'
 import { useSortedSeriesData, resolveLogScale, computeSeriesTotals } from './shared/common'
 import { buildValueAxes2DOptions } from './shared/valueMode'
 import { buildMixedAxes2DOptions } from './shared/mixedMode'

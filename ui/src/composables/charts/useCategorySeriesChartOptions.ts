@@ -15,7 +15,7 @@ import {
   makeLegendTitle,
   LARGE_DATA_THRESHOLD,
   scatterSeriesLargeOpts,
-} from './shared'
+} from './shared/chartConfig'
 import {
   adjustForLogScaleLine,
   useSortedSeriesData,

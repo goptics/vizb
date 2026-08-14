@@ -11,15 +11,12 @@ import {
   listAvailableThemes,
   listAvailableThemeNames,
   normalizeTheme,
-  paletteGradientEndpoints,
   parseCustomPalette,
   registerDatasetThemes,
   resolveActiveTheme,
-  resolvePalette,
   resolveTheme,
   resolveVisualMapColors,
   shouldShowThemeSelector,
-  THEME_NAMES,
 } from './themes'
 
 const westeros: Theme = {
@@ -62,7 +59,6 @@ describe('themes', () => {
   })
 
   it('ships only the UI default theme in the bundle catalog', () => {
-    expect(THEME_NAMES).toEqual(['default'])
     expect(DEFAULT_THEME.name).toBe('default')
     expect(DEFAULT_THEME.colors).toHaveLength(10)
     expect(new Set(DEFAULT_THEME.colors.map((c) => c.toLowerCase())).size).toBe(10)
@@ -99,8 +95,8 @@ describe('themes', () => {
     expect(isAvailableThemeName('default')).toBe(true)
     expect(isAvailableThemeName('WESTEROS')).toBe(true)
     expect(isAvailableThemeName('missing')).toBe(false)
-    expect(resolvePalette('WESTEROS')).toEqual(westeros.colors)
-    expect(resolvePalette('vintage')).toEqual(vintage.colors)
+    expect(resolveTheme('WESTEROS').colors).toEqual(westeros.colors)
+    expect(resolveTheme('vintage').colors).toEqual(vintage.colors)
     expect(resolveVisualMapColors('westeros')).toEqual(westeros.visualMapColors)
     expect(findTheme('missing')).toBeUndefined()
   })
@@ -113,7 +109,7 @@ describe('themes', () => {
     expect(isAvailableThemeName('westeros')).toBe(true)
     expect(isAvailableThemeName('default')).toBe(false)
     // Palette resolution still finds UI default by name; availability is separate.
-    expect(resolvePalette('default')).toEqual(DEFAULT_THEME.colors)
+    expect(resolveTheme('default').colors).toEqual([...DEFAULT_THEME.colors])
   })
 
   it('with zero author themes available set is only default and selector is hidden', () => {
@@ -134,26 +130,21 @@ describe('themes', () => {
     // Only one real author theme → available set is that theme alone.
     expect(authorThemeCount()).toBe(1)
     expect(listAvailableThemeNames()).toEqual(['westeros'])
-    expect(resolvePalette('default')).toEqual(DEFAULT_THEME.colors)
+    expect(resolveTheme('default').colors).toEqual([...DEFAULT_THEME.colors])
   })
 
   it('defaults invalid or unknown names to the UI default palette', () => {
-    expect(resolvePalette('missing')).toEqual(DEFAULT_THEME.colors)
-    expect(resolvePalette('VINTAGE')).toEqual(DEFAULT_THEME.colors) // not registered
+    expect(resolveTheme('missing').colors).toEqual([...DEFAULT_THEME.colors])
+    expect(resolveTheme('VINTAGE').colors).toEqual([...DEFAULT_THEME.colors]) // not registered
     expect(normalizeTheme()).toBe('default')
     expect(normalizeTheme('roma')).toBe('default')
   })
 
   it('accepts flexible custom #rgb and #rrggbb palettes', () => {
     expect(parseCustomPalette('#f00, #00ff00,#00f')).toEqual(['#f00', '#00ff00', '#00f'])
-    expect(resolvePalette('#f00,#0f0')).toEqual(['#f00', '#0f0'])
+    expect(resolveTheme('#f00,#0f0').colors).toEqual(['#f00', '#0f0'])
     expect(parseCustomPalette('#f00')).toBeUndefined()
     expect(parseCustomPalette('#ggg,#000')).toBeUndefined()
-  })
-
-  it('uses first and last palette colors for gradients', () => {
-    expect(paletteGradientEndpoints(['#111', '#222'])).toEqual(['#111', '#222'])
-    expect(paletteGradientEndpoints(['#1', '#2', '#3', '#4', '#5', '#6'])).toEqual(['#1', '#6'])
   })
 
   it("uses the active theme's visualMapColors, with gradient fallback", () => {

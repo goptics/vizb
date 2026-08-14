@@ -8,7 +8,7 @@ import {
   createHeatmapDataZoomConfig,
   createHeatmapLayoutConfig,
   hasRotatedXLabels,
-} from './shared'
+} from './shared/chartConfig'
 import { fontSize } from './shared/common'
 
 const PREFIX: Record<CorrelationMethod, string> = {

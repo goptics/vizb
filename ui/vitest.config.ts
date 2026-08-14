@@ -38,8 +38,6 @@ export default defineConfig({
         // Pure re-export / type-only modules (0 instrumentable statements).
         'src/components/ui/index.ts',
         'src/components/ui/combobox.ts',
-        'src/composables/charts/index.ts',
-        'src/composables/charts/shared/index.ts',
         'embed-build/types.ts',
         'embed-build/**/*.test.ts',
         'e2e/**',

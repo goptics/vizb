@@ -172,20 +172,6 @@ export function buildChartForSignature(
   })
 }
 
-// Build one ChartData per unique stat signature. Kept as the bulk entry point
-// (tests + any non-worker caller); the worker uses the per-signature builder.
-export function buildChartData(
-  data: DataPoint[],
-  labels: AxisLabels | undefined,
-  sort: Sort,
-  showLabels = false,
-  scale: ScaleType = 'linear'
-): ChartData[] {
-  return listChartSignatures(data).map(({ signature, statTemplate }) =>
-    buildChartForSignature(data, signature, statTemplate, labels, sort, showLabels, scale)
-  )
-}
-
 const SWAP_AXIS_KEYS = new Set(['name', 'x', 'y', 'z'])
 
 export const identityStringFromAxes = (axes: Axis[]): string =>

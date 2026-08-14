@@ -2,7 +2,7 @@ import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
 import { getDefaultThemeColor, getNextColorFor } from '@/lib/utils'
-import { getChartStyling, getTooltipTheme } from './shared'
+import { getChartStyling, getTooltipTheme } from './shared/chartConfig'
 import {
   EMPTY_RENDER,
   makeAxis3DCommon,
@@ -20,7 +20,7 @@ import {
   valuePoints3DToSeries,
   resolve3DZAxisType,
   type Continuous3DContext,
-} from './shared'
+} from './shared/3d'
 import { resolve3DSymbolProps } from './shared/seriesConfig'
 import { buildMixedAxes3DOptions } from './shared/mixedMode'
 import type { Series3DData } from '@/types'

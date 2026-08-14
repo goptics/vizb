@@ -13,7 +13,7 @@ import {
   isLargeXAxis,
   createHeatmapDataZoomConfig,
   createHeatmapLayoutConfig,
-} from './shared'
+} from './shared/chartConfig'
 
 function formatCellNumber(v: number): string {
   if (Math.abs(v) >= 1e6) return formatChartNumber(v / 1e6) + 'M'

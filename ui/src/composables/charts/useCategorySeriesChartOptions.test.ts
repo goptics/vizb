@@ -5,7 +5,7 @@ import {
   emptyChartData,
   installDevicePixelRatio,
 } from '@/test-utils'
-import { LARGE_X_THRESHOLD } from './shared'
+import { LARGE_X_THRESHOLD } from './shared/chartConfig'
 import { useCategorySeriesChartOptions } from './useCategorySeriesChartOptions'
 
 let restoreDpr: () => void
