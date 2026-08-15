@@ -6,6 +6,10 @@ on:
         description: "build = local go build + vizb-binary; released = download latest v0"
         type: string
         default: build
+      rebuild-embed:
+        description: "Regenerate vizb-ui.gen.go from ui/ when embed sources changed"
+        type: boolean
+        default: false
   workflow_dispatch:
     inputs:
       binary:
@@ -44,10 +48,8 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      # Rebuild so action tests see current ui/ without waiting for
-      # sync-embed-ui to commit the tracked gen (that workflow can lag).
       - name: Rebuild embed
-        if: env.ACT != 'true' && inputs.binary == 'build'
+        if: env.ACT != 'true' && inputs.binary == 'build' && inputs.rebuild-embed
         uses: ./.github/actions/setup-embed-ui
 
       - name: Build vizb
@@ -88,7 +90,7 @@ jobs:
           cache: true
 
       - name: Rebuild embed
-        if: env.ACT != 'true' && inputs.binary == 'build'
+        if: env.ACT != 'true' && inputs.binary == 'build' && inputs.rebuild-embed
         uses: ./.github/actions/setup-embed-ui
 
       - name: Build vizb

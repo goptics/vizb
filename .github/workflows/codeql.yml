@@ -10,18 +10,11 @@ on:
   workflow_dispatch:
 
 jobs:
-  embed:
-    uses: ./.github/workflows/embed-ui.yml
-    permissions:
-      contents: read
-      actions: write
-
   analyze:
     name: Analyze (${{ matrix.language }})
-    needs: [embed]
     runs-on: ubuntu-latest
     permissions:
-      actions: write
+      actions: read
       contents: read
       packages: read
       security-events: write
@@ -46,10 +39,6 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-
-      - name: Generate embedded UI
-        if: matrix.language == 'go'
-        uses: ./.github/actions/setup-embed-ui
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
