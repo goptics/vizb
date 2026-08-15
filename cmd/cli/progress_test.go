@@ -115,7 +115,7 @@ func (s *ProgressSuite) TestUpdateProgress() {
 	s.Len(mockBar.descriptions, 1)
 	s.Contains(mockBar.descriptions[0], "BenchmarkExample")
 	s.Contains(mockBar.descriptions[0], "5 records")
-	s.Equal("BenchmarkExample · 5 records", mockBar.descriptions[0])
+	s.Equal("Collected 5 records - BenchmarkExample", mockBar.descriptions[0])
 }
 
 func (s *ProgressSuite) TestUpdateProgressDefaultEmptyDescribe() {
@@ -243,13 +243,13 @@ func (s *ProgressSuite) TestProcessLineCountOnlyUpdatesProgress() {
 	s.Equal(1, manager.dataCount)
 	s.Equal("", manager.currentDataName)
 	s.Require().Len(mockBar.descriptions, 1)
-	s.Equal("1 records", mockBar.descriptions[0])
+	s.Equal("Collected 1 records", mockBar.descriptions[0])
 
 	// Later name + count uses the combined form.
 	manager.ProcessLine("BenchmarkNamed-8    1000    2000 ns/op")
 	s.Equal(2, manager.dataCount)
 	s.Equal("BenchmarkNamed", manager.currentDataName)
-	s.Equal("BenchmarkNamed · 2 records", mockBar.descriptions[len(mockBar.descriptions)-1])
+	s.Equal("Collected 2 records - BenchmarkNamed", mockBar.descriptions[len(mockBar.descriptions)-1])
 }
 
 func (s *ProgressSuite) TestRealWorldBenchmarkOutput() {

@@ -24,7 +24,7 @@ type SpinnerSuite struct {
 func (s *SpinnerSuite) TestFinishOnNonTTYIsNoop() {
 	var buf bytes.Buffer
 	sp := NewGreenSpinner(&buf)
-	sp.Describe("BenchmarkX · 3 records")
+	sp.Describe("Collected 3 records - BenchmarkX")
 	s.NoError(sp.Finish())
 	s.False(sp.tty)
 	s.Empty(buf.String())
@@ -33,9 +33,9 @@ func (s *SpinnerSuite) TestFinishOnNonTTYIsNoop() {
 func (s *SpinnerSuite) TestDescribeAndPhrases() {
 	var buf bytes.Buffer
 	sp := NewGreenSpinner(&buf)
-	sp.Describe("BenchmarkX · 3 records")
+	sp.Describe("Collected 3 records - BenchmarkX")
 	sp.mu.Lock()
-	s.Equal("BenchmarkX · 3 records", sp.detail)
+	s.Equal("Collected 3 records - BenchmarkX", sp.detail)
 	s.NotEmpty(sp.phrase)
 	s.NotContains(sp.phrase, "…")
 	sp.mu.Unlock()
@@ -83,6 +83,15 @@ func (s *SpinnerSuite) TestGradientTextShiftsWithPhase() {
 	s.NotEqual(a, b)
 	s.Contains(a, "\x1b[")
 	s.Equal("", gradientText("", 0, nil))
+}
+
+func (s *SpinnerSuite) TestGradientMovesLeftToRight() {
+	n := len(greenGradientStops)
+	s.Equal(0, gradientStopIndex(0, 0, n))
+	// The color on rune 0 at phase 0 is on rune 1 at phase 1 (band walks right).
+	s.Equal(gradientStopIndex(0, 0, n), gradientStopIndex(1, 1, n))
+	s.Equal(gradientStopIndex(0, 0, n), gradientStopIndex(2, 2, n))
+	s.NotEqual(gradientStopIndex(0, 0, n), gradientStopIndex(0, 1, n))
 }
 
 func (s *SpinnerSuite) TestFinishIdempotent() {
@@ -145,13 +154,42 @@ func (s *SpinnerSuite) forcedTTYSpinner(w io.Writer, color bool) *GreenSpinner {
 func (s *SpinnerSuite) TestPaintActiveWritesLine() {
 	var buf bytes.Buffer
 	sp := s.forcedTTYSpinner(&buf, false)
-	sp.detail = "BenchmarkX · 2 records"
+	sp.detail = "Collected 2 records - BenchmarkX"
 	sp.paint()
 	out := buf.String()
 	s.Contains(out, "\r\033[K")
 	s.Contains(out, "Parsing")
-	s.Contains(out, "BenchmarkX · 2 records")
-	s.Contains(out, " · ")
+	s.Contains(out, "Collected 2 records - BenchmarkX")
+	s.Contains(out, "\n")
+	s.Contains(out, "> ")
+	s.NotContains(out, "Parsing · ")
+	s.Contains(out, "\033[?25l")
+	s.True(bytes.HasSuffix([]byte(out), []byte("\033[1A")), "cursor must park on the activity row")
+	s.NoError(sp.Finish())
+	s.Contains(buf.String(), "\033[?25h")
+}
+
+func (s *SpinnerSuite) TestPaintWithoutDetailIsSingleRow() {
+	var buf bytes.Buffer
+	sp := s.forcedTTYSpinner(&buf, false)
+	sp.paint()
+	out := buf.String()
+	s.Contains(out, "\r\033[K")
+	s.Contains(out, "Parsing")
+	s.NotContains(out, "\n")
+	s.NotContains(out, ">")
+	s.NoError(sp.Finish())
+}
+
+func (s *SpinnerSuite) TestPaintClearsSecondRowWhenDetailRemoved() {
+	var buf bytes.Buffer
+	sp := s.forcedTTYSpinner(&buf, false)
+	sp.detail = "Collected 1 records - BenchmarkX"
+	sp.paint()
+	sp.detail = ""
+	sp.paint()
+	out := buf.String()
+	s.Contains(out, "\033[1A")
 	s.NoError(sp.Finish())
 }
 
@@ -210,8 +248,33 @@ func (s *SpinnerSuite) TestFinishClearsWhenWasActive() {
 	}()
 	s.NoError(sp.Finish())
 	s.Contains(buf.String(), "\r\033[K")
+	s.NotContains(buf.String(), "\033[1A")
 	// Second Finish is idempotent.
 	s.NoError(sp.Finish())
+}
+
+func (s *SpinnerSuite) TestFinishClearsTwoRows() {
+	var buf bytes.Buffer
+	sp := &GreenSpinner{
+		w:       &buf,
+		stop:    make(chan struct{}),
+		done:    make(chan struct{}),
+		tty:     true,
+		active:  true,
+		rows:    2,
+		phrases: []string{"Reading"},
+		phrase:  "Reading",
+		rng:     rand.New(rand.NewSource(1)),
+		style:   lipgloss.NewStyle(),
+	}
+	go func() {
+		<-sp.stop
+		close(sp.done)
+	}()
+	s.NoError(sp.Finish())
+	out := buf.String()
+	s.Contains(out, "\033[1A")
+	s.Equal(2, bytes.Count([]byte(out), []byte("\033[K")))
 }
 
 func (s *SpinnerSuite) TestRotatePhraseLockedSkipsCurrent() {
