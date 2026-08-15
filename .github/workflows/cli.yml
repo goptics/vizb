@@ -63,7 +63,8 @@ jobs:
       group: embed-ui-${{ github.sha }}
       queue: max
     steps:
-      - uses: actions/checkout@v7
+      - if: needs.changes.outputs.changed == 'true'
+        uses: actions/checkout@v7
 
       - name: Rebuild embed
         if: needs.changes.outputs.changed == 'true'
