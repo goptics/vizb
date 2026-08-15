@@ -24,6 +24,7 @@ on:
       - "ui/pnpm-lock.yaml"
       - ".github/actions/setup-embed-ui/**"
       - ".github/actions/setup-js/**"
+      - ".github/workflows/embed-ui.yml"
       - ".github/workflows/sync-embed-ui.yml"
 
 concurrency:
@@ -34,7 +35,14 @@ permissions:
   contents: read
 
 jobs:
+  embed:
+    uses: ./.github/workflows/embed-ui.yml
+    permissions:
+      contents: read
+      actions: write
+
   generate:
+    needs: [embed]
     runs-on: ubuntu-slim
     permissions:
       contents: read

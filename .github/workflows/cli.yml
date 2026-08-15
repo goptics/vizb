@@ -13,6 +13,7 @@ on:
       - action/**
       - .github/workflows/action-ci.yml
       - .github/workflows/cli.yml
+      - .github/workflows/embed-ui.yml
       - .github/actions/setup-embed-ui/**
   pull_request:
     branches: [main]
@@ -26,6 +27,7 @@ on:
       - action/**
       - .github/workflows/action-ci.yml
       - .github/workflows/cli.yml
+      - .github/workflows/embed-ui.yml
       - .github/actions/setup-embed-ui/**
 
 permissions:
@@ -35,15 +37,10 @@ permissions:
 jobs:
   embed:
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-slim
-    concurrency:
-      group: embed-ui-${{ github.sha }}
-      queue: max
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Rebuild embed for PR
-        uses: ./.github/actions/setup-embed-ui
+    uses: ./.github/workflows/embed-ui.yml
+    permissions:
+      contents: read
+      actions: write
 
   # Feature branches must not land gen churn; main is owned by sync-embed-ui.
   forbid-gen-commit:

@@ -11,18 +11,10 @@ on:
 
 jobs:
   embed:
-    runs-on: ubuntu-slim
+    uses: ./.github/workflows/embed-ui.yml
     permissions:
       contents: read
       actions: write
-    concurrency:
-      group: embed-ui-${{ github.sha }}
-      queue: max
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Generate embedded UI
-        uses: ./.github/actions/setup-embed-ui
 
   analyze:
     name: Analyze (${{ matrix.language }})
