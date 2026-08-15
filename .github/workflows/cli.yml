@@ -156,6 +156,7 @@ jobs:
 
   action:
     needs: [lint, format, test, changes]
+    if: ${{ !cancelled() && needs.lint.result == 'success' && needs.format.result == 'success' && needs.test.result == 'success' }}
     uses: ./.github/workflows/action-ci.yml
     with:
       rebuild-embed: ${{ needs.changes.outputs.changed == 'true' }}
