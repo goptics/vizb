@@ -10,8 +10,23 @@ on:
   workflow_dispatch:
 
 jobs:
+  embed:
+    runs-on: ubuntu-slim
+    permissions:
+      contents: read
+      actions: write
+    concurrency:
+      group: embed-ui-${{ github.sha }}
+      queue: max
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Generate embedded UI
+        uses: ./.github/actions/setup-embed-ui
+
   analyze:
     name: Analyze (${{ matrix.language }})
+    needs: [embed]
     runs-on: ubuntu-latest
     permissions:
       actions: write

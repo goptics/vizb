@@ -33,6 +33,18 @@ permissions:
   actions: write
 
 jobs:
+  embed:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-slim
+    concurrency:
+      group: embed-ui-${{ github.sha }}
+      queue: max
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Rebuild embed for PR
+        uses: ./.github/actions/setup-embed-ui
+
   # Feature branches must not land gen churn; main is owned by sync-embed-ui.
   forbid-gen-commit:
     if: github.event_name == 'pull_request'
@@ -57,6 +69,8 @@ jobs:
           echo "OK: gen file not modified in this PR"
 
   lint:
+    needs: [embed]
+    if: ${{ !cancelled() && (needs.embed.result == 'success' || needs.embed.result == 'skipped') }}
     runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v7
@@ -96,6 +110,8 @@ jobs:
           fi
 
   test:
+    needs: [embed]
+    if: ${{ !cancelled() && (needs.embed.result == 'success' || needs.embed.result == 'skipped') }}
     runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v7
