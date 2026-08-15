@@ -14,7 +14,6 @@ on:
       - action/**
       - .github/workflows/action-ci.yml
       - .github/workflows/cli.yml
-      - .github/workflows/embed-ui.yml
       - .github/actions/setup-embed-ui/**
       - .github/actions/setup-js/**
   pull_request:
@@ -29,7 +28,6 @@ on:
       - action/**
       - .github/workflows/action-ci.yml
       - .github/workflows/cli.yml
-      - .github/workflows/embed-ui.yml
       - .github/actions/setup-embed-ui/**
       - .github/actions/setup-js/**
 
@@ -57,11 +55,19 @@ jobs:
 
   embed:
     needs: [changes]
-    if: needs.changes.outputs.changed == 'true'
-    uses: ./.github/workflows/embed-ui.yml
+    runs-on: ubuntu-slim
     permissions:
       contents: read
       actions: write
+    concurrency:
+      group: embed-ui-${{ github.sha }}
+      queue: max
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Rebuild embed
+        if: needs.changes.outputs.changed == 'true'
+        uses: ./.github/actions/setup-embed-ui
 
   # Feature branches must not land gen churn; main is owned by sync-embed-ui.
   forbid-gen-commit:
@@ -87,15 +93,13 @@ jobs:
           echo "OK: gen file not modified in this PR"
 
   lint:
-    needs: [embed]
-    if: ${{ !cancelled() && (needs.embed.result == 'success' || needs.embed.result == 'skipped') }}
+    needs: [embed, changes]
     runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v7
 
-      # Restore SHA cache when embed ran. Skip uses tracked gen.
       - name: Rebuild embed
-        if: needs.embed.result == 'success'
+        if: needs.changes.outputs.changed == 'true'
         uses: ./.github/actions/setup-embed-ui
 
       - uses: actions/setup-go@v7
@@ -127,14 +131,13 @@ jobs:
           fi
 
   test:
-    needs: [embed]
-    if: ${{ !cancelled() && (needs.embed.result == 'success' || needs.embed.result == 'skipped') }}
+    needs: [embed, changes]
     runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v7
 
       - name: Rebuild embed
-        if: needs.embed.result == 'success'
+        if: needs.changes.outputs.changed == 'true'
         uses: ./.github/actions/setup-embed-ui
 
       - uses: actions/setup-go@v7
@@ -156,7 +159,6 @@ jobs:
 
   action:
     needs: [lint, format, test, changes]
-    if: ${{ !cancelled() && needs.lint.result == 'success' && needs.format.result == 'success' && needs.test.result == 'success' }}
     uses: ./.github/workflows/action-ci.yml
     with:
       rebuild-embed: ${{ needs.changes.outputs.changed == 'true' }}
