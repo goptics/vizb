@@ -62,11 +62,12 @@ jobs:
     concurrency:
       group: embed-ui-${{ github.sha }}
       queue: max
-    if: needs.changes.outputs.changed == 'true'
     steps:
-      - uses: actions/checkout@v7
+      - if: needs.changes.outputs.changed == 'true'
+        uses: actions/checkout@v7
 
       - name: Rebuild embed
+        if: needs.changes.outputs.changed == 'true'
         uses: ./.github/actions/setup-embed-ui
 
   # Feature branches must not land gen churn; main is owned by sync-embed-ui.
