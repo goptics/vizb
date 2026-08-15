@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - '**.go'
+      - 'ui/**'
       - go.mod
       - go.sum
       - .goreleaser.yml
@@ -36,7 +37,6 @@ permissions:
 
 jobs:
   embed:
-    if: github.event_name == 'pull_request'
     uses: ./.github/workflows/embed-ui.yml
     permissions:
       contents: read
@@ -72,10 +72,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # PRs: ephemeral re-embed so CLI tests see unmerged ui/ changes.
-      # main / release (workflow_call): use tracked gen (sync-embed-ui keeps main current).
-      - name: Rebuild embed for PR
-        if: github.event_name == 'pull_request'
+      # Ephemeral re-embed so CLI jobs see current ui/ without waiting for
+      # sync-embed-ui to commit the tracked gen (that workflow can lag).
+      - name: Rebuild embed
         uses: ./.github/actions/setup-embed-ui
 
       - uses: actions/setup-go@v7
@@ -113,8 +112,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Rebuild embed for PR
-        if: github.event_name == 'pull_request'
+      - name: Rebuild embed
         uses: ./.github/actions/setup-embed-ui
 
       - uses: actions/setup-go@v7

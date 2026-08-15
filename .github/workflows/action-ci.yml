@@ -44,10 +44,10 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      # PRs and manual dispatch: rebuild so action tests see current ui/.
-      # workflow_call from main/release: tracked gen is enough.
-      - name: Rebuild embed for PR or dispatch
-        if: env.ACT != 'true' && inputs.binary == 'build' && (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch')
+      # Rebuild so action tests see current ui/ without waiting for
+      # sync-embed-ui to commit the tracked gen (that workflow can lag).
+      - name: Rebuild embed
+        if: env.ACT != 'true' && inputs.binary == 'build'
         uses: ./.github/actions/setup-embed-ui
 
       - name: Build vizb
@@ -87,8 +87,8 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - name: Rebuild embed for PR or dispatch
-        if: env.ACT != 'true' && inputs.binary == 'build' && (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch')
+      - name: Rebuild embed
+        if: env.ACT != 'true' && inputs.binary == 'build'
         uses: ./.github/actions/setup-embed-ui
 
       - name: Build vizb
