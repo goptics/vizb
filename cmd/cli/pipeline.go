@@ -227,6 +227,7 @@ func writeStdinPipedInputs(tempfilePath string) {
 	}
 
 	_ = dataSetProgressManager.Finish()
+	logCollectionResult(dataSetProgressManager.dataCount)
 
 	if err := writer.Flush(); err != nil {
 		shared.ExitWithError("Error writing to file", err)
@@ -337,6 +338,16 @@ func warnTitleIgnored(title string) {
 	if title != "" {
 		cliout.Warn("--title only applies when --col-axis produces one chart; ignoring (use --select … (Title) for multi-stat charts)")
 	}
+}
+
+// logCollectionResult prints one completion line after stdin ingest.
+// In-progress work is the green spinner; we do not log a second "Collecting…" line.
+func logCollectionResult(n int) {
+	if n == 0 {
+		return
+	}
+	count := cliout.Accent(fmt.Sprintf("%d", n), cliout.AccentCount)
+	cliout.Info(fmt.Sprintf("Collected %s benchmark records", count))
 }
 
 // logAggregationResult prints one completion line after summing grouped rows.

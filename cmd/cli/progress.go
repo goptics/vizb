@@ -73,15 +73,15 @@ func NewDataProgressManager(bar ProgressBar) *DataProgressManager {
 }
 
 func (m *DataProgressManager) updateProgress() {
-	// Detail only — the spinner rotates its own activity phrase.
-	// No trailing ellipsis; keep a tight "name · n records" suffix.
+	// Detail only — the spinner paints this on row 2 as "> …".
+	// Name is the current benchmark, so lead with the count.
 	switch {
 	case m.currentDataName != "" && m.dataCount > 0:
-		m.bar.Describe(fmt.Sprintf("%s · %d records", m.currentDataName, m.dataCount))
+		m.bar.Describe(fmt.Sprintf("Collected %d records - %s", m.dataCount, m.currentDataName))
 	case m.currentDataName != "":
 		m.bar.Describe(m.currentDataName)
 	case m.dataCount > 0:
-		m.bar.Describe(fmt.Sprintf("%d records", m.dataCount))
+		m.bar.Describe(fmt.Sprintf("Collected %d records", m.dataCount))
 	default:
 		m.bar.Describe("")
 	}

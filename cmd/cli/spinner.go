@@ -80,11 +80,14 @@ const parseSpinnerDelay = 250 * time.Millisecond
 const (
 	spinnerTick      = 100 * time.Millisecond
 	phraseEveryTicks = 20 // 20 * 100ms = 2.0s
+	ansiHideCursor   = "\033[?25l"
+	ansiShowCursor   = "\033[?25h"
+	ansiCursorUp     = "\033[1A"
 )
 
 // GreenSpinner is a stderr activity spinner. Implements ProgressBar so
-// DataProgressManager can drive a detail suffix while the verb phrase rotates
-// and the line shimmers green.
+// DataProgressManager can drive a second-row detail while the verb phrase
+// rotates and shimmers green on its own row.
 type GreenSpinner struct {
 	mu       sync.Mutex
 	w        io.Writer
@@ -93,6 +96,7 @@ type GreenSpinner struct {
 	phrases  []string
 	frame    int
 	tick     int
+	rows     int // 1 or 2; last painted height
 	stop     chan struct{}
 	done     chan struct{}
 	active   bool // painting allowed (after Delay)
@@ -154,7 +158,7 @@ func startSpinner(w io.Writer, delay time.Duration, phrases []string) *GreenSpin
 	return s
 }
 
-// Describe sets the optional detail suffix (benchmark name, record count).
+// Describe sets the optional second-row detail (benchmark name, record count).
 func (s *GreenSpinner) Describe(detail string) {
 	s.mu.Lock()
 	s.detail = detail
@@ -164,7 +168,7 @@ func (s *GreenSpinner) Describe(detail string) {
 	}
 }
 
-// Finish stops the spinner and clears the activity line when it was visible.
+// Finish stops the spinner and clears the activity line(s) when they were visible.
 func (s *GreenSpinner) Finish() error {
 	s.mu.Lock()
 	if s.finished {
@@ -179,7 +183,16 @@ func (s *GreenSpinner) Finish() error {
 	close(s.stop)
 	<-s.done
 	if wasActive {
-		_, _ = fmt.Fprint(s.w, "\r\033[K")
+		s.mu.Lock()
+		rows := s.rows
+		s.mu.Unlock()
+		// After a 2-row paint the cursor is parked on the activity row.
+		if rows == 2 {
+			_, _ = fmt.Fprint(s.w, "\r\033[K\n\033[K"+ansiCursorUp)
+		} else {
+			_, _ = fmt.Fprint(s.w, "\r\033[K")
+		}
+		_, _ = fmt.Fprint(s.w, ansiShowCursor)
 	}
 	return nil
 }
@@ -241,16 +254,39 @@ func (s *GreenSpinner) paint() {
 	if !s.active {
 		return
 	}
+
+	_, _ = fmt.Fprint(s.w, ansiHideCursor)
+
 	// Width(2) keeps glyph + phrase baseline aligned in mono fonts.
 	glyph := s.style.Width(2).Render(spinnerFrames[s.frame])
-	line := s.phrase
-	if s.detail != "" {
-		line = s.phrase + " · " + s.detail
-	}
+	phrase := s.phrase
 	if s.color {
-		line = gradientText(line, s.tick, s.render)
+		phrase = gradientText(phrase, s.tick, s.render)
 	}
-	_, _ = fmt.Fprintf(s.w, "\r\033[K%s%s", glyph, line)
+	_, _ = fmt.Fprintf(s.w, "\r\033[K%s%s", glyph, phrase)
+
+	if s.detail != "" {
+		mark := ">"
+		if s.color {
+			mark = s.style.Render(">")
+		}
+		// Park on the activity row so the cursor never sits on "> …" between ticks.
+		_, _ = fmt.Fprintf(s.w, "\n\033[K%s %s%s", mark, s.detail, ansiCursorUp)
+		s.rows = 2
+		return
+	}
+
+	if s.rows == 2 {
+		// Cursor is already on row 1. Clear leftover row 2 and stay put.
+		_, _ = fmt.Fprint(s.w, "\n\033[K"+ansiCursorUp)
+	}
+	s.rows = 1
+}
+
+// gradientStopIndex maps rune i at animation phase to a stop. Subtracting
+// phase walks the highlight toward higher indices (left → right).
+func gradientStopIndex(i, phase, n int) int {
+	return ((i-phase)%n + n) % n
 }
 
 func gradientText(text string, phase int, r *lipgloss.Renderer) string {
@@ -258,13 +294,13 @@ func gradientText(text string, phase int, r *lipgloss.Renderer) string {
 		return text
 	}
 	runes := []rune(text)
+	n := len(greenGradientStops)
 	var b strings.Builder
 	b.Grow(len(runes) * 12)
 	for i, ch := range runes {
-		stop := (i + phase) % len(greenGradientStops)
 		st := lipgloss.NewStyle().
 			Bold(true).
-			Foreground(lipgloss.Color(greenGradientStops[stop]))
+			Foreground(lipgloss.Color(greenGradientStops[gradientStopIndex(i, phase, n)]))
 		if r != nil {
 			st = st.Renderer(r)
 		}

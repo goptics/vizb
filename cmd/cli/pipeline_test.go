@@ -435,6 +435,45 @@ func (s *PipelineSuite) TestRunLinearAutoParser() {
 	s.FileExists(out)
 }
 
+func (s *PipelineSuite) TestLogCollectionResult() {
+	out := testutil.CaptureStderr(func() {
+		logCollectionResult(12)
+	})
+	s.Contains(out, "Collected")
+	s.Contains(out, "12")
+	s.Contains(out, "benchmark records")
+}
+
+func (s *PipelineSuite) TestLogCollectionResultZeroIsSilent() {
+	out := testutil.CaptureStderr(func() {
+		logCollectionResult(0)
+	})
+	s.Empty(out)
+}
+
+func (s *PipelineSuite) TestWriteStdinPipedInputsLogsCollection() {
+	origStdin := os.Stdin
+	defer func() { os.Stdin = origStdin }()
+
+	stdinFile, err := os.CreateTemp("", "stdin_collect")
+	s.Require().NoError(err)
+	defer os.Remove(stdinFile.Name())
+
+	_, err = stdinFile.WriteString("BenchmarkFoo-8 \t1000\t2000 ns/op\nBenchmarkBar-8 \t1000\t3000 ns/op\n")
+	s.Require().NoError(err)
+	_, err = stdinFile.Seek(0, 0)
+	s.Require().NoError(err)
+	os.Stdin = stdinFile
+
+	outFile := filepath.Join(s.T().TempDir(), "out.txt")
+	out := testutil.CaptureStderr(func() {
+		writeStdinPipedInputs(outFile)
+	})
+	s.Contains(out, "Collected")
+	s.Contains(out, "2")
+	s.Contains(out, "benchmark records")
+}
+
 func (s *PipelineSuite) TestLogAggregationResultCollapsesDuplicates() {
 	cfg := parser.Config{GroupPattern: "x", Group: []string{"region"}}
 	out := testutil.CaptureStderr(func() {
