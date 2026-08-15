@@ -1,20 +1,31 @@
 name: Setup embed UI
-description: Install UI deps and generate pkg/template/vizb-ui.gen.go for Go build/test
+description: Restore or generate pkg/template/vizb-ui.gen.go for Go build/test
 
 runs:
   using: composite
   steps:
+    - name: Restore embed UI
+      id: embed-cache
+      uses: actions/cache@v6
+      with:
+        path: pkg/template/vizb-ui.gen.go
+        key: embed-ui-${{ github.sha }}
+        enableCrossOsArchive: true
+
     - name: Setup Node and pnpm
+      if: steps.embed-cache.outputs.cache-hit != 'true'
       uses: ./.github/actions/setup-js
       with:
         cache-dependency-path: ui/pnpm-lock.yaml
 
     - name: Install UI dependencies
+      if: steps.embed-cache.outputs.cache-hit != 'true'
       shell: bash
       working-directory: ui
       run: pnpm install --frozen-lockfile
 
     - name: Build embed UI
+      if: steps.embed-cache.outputs.cache-hit != 'true'
       shell: bash
       working-directory: ui
       run: pnpm build:embed

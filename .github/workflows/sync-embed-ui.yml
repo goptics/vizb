@@ -38,6 +38,7 @@ jobs:
     runs-on: ubuntu-slim
     permissions:
       contents: read
+      actions: write
     steps:
       - uses: actions/checkout@v7
         with:
