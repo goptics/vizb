@@ -101,7 +101,7 @@ Most settings apply to every chart type. The exceptions are `scale` (log), which
 | `scale` log | ✓ | ✓ | ✓ | ✗ | ✗ | ✗ | ✗ | ✗ |
 | `3d-rotate` (3D auto-rotate) | ✓ 3D only | ✓ 3D only | ✓ 3D only | ✗ | ✗ | ✗ | ✗ | ✗ |
 
-To override a setting for a single chart type without affecting the others, use the `--chart <type>:key=val` syntax:
+To override a setting for a single chart type without affecting the others, use the `--chart <type>:key=val` syntax. Object props use `{field=value;field=value}` (semicolons inside braces; commas stay literal). Unwrapped `bar:bg=color=…` is invalid.
 
 ```bash
 # Turn on labels for bar only
@@ -109,6 +109,12 @@ vizb data.csv -g category --chart bar:labels=true -o output.html
 
 # Enable sort on radar, keep others unsorted
 vizb data.csv -g category,metric -p x,y -c bar,radar --chart radar:sort=asc -o output.html
+
+# Category background on 2D bars (writes background.active: true; no UI toggle)
+vizb data.csv -g category --chart bar:bg -o output.html
+
+# Styled object: braces required; semicolons inside {}; commas stay literal
+vizb data.csv -g category --chart 'bar:bg={color=rgba(180, 180, 180, 0.2);borderColor=#000}' -o output.html
 ```
 
 See [Commands: root](/commands/root) for the full flag reference.
