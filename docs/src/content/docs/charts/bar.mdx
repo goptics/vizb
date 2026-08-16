@@ -113,6 +113,7 @@ These settings apply to bar charts:
 | Swap | `--swap` | Axis switcher | Rotates which column maps to X vs Y |
 | Horizontal | `--horizontal` | Horizontal toggle | Renders grouped bars horizontally — 2D only |
 | Border radius | `--border-radius <int>[,int...]` | — | 1–4 corner radii px (CSS/ECharts TL,TR,BR,BL); single value = all corners; stacked: outer segment only, first two values on free end (rest square) — 2D only (CLI/config; not in UI settings) |
+| Background | `--bg` | — | Category background behind each bar. Bare `--bg` writes `background.active: true` (unspecified style keys keep ECharts defaults). Styled: `--bg 'color=…;borderColor=#000'`. 3D skips the flag — 2D only (CLI/config; not in UI settings) |
 | Scale (log) | `--log-scale` | Scale toggle | Log Y axis — 2D only |
 | 3D view | `--3d` | 3D view | Value 3D for x+y data (y → depth, metric → height) |
 | 3D visual map | `--3d-visualmap` | 3D visual map | Metric gradient coloring — on by default with `--3d`; grouped/value 3D |
@@ -141,6 +142,12 @@ vizb bar sales.csv -g region,category -p x,y --border-radius 8,8,0,0 -o free-out
 
 # Stacked: only top segment rounded; first two values are the free-end cap
 vizb bar sales.csv -g region,category -p x,y --stack --border-radius 8,4 -o stacked-rounded.html
+
+# Category background (bare = on; unspecified style keys keep ECharts defaults)
+vizb bar sales.csv -g region,category -p x,y --bg -o bg.html
+
+# Styled category background (semicolon-separated props; 2D only)
+vizb bar sales.csv -g region,category -p x,y --bg 'color=rgba(180, 180, 180, 0.2);borderColor=#000' -o bg.html
 ```
 
 ## Next Steps
