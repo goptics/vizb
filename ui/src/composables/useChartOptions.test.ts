@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { ref } from 'vue'
-import type { ChartData, ChartType, ScaleType, Axis } from '@/types'
+import type { BarBackground, ChartData, ChartType, ScaleType, Axis } from '@/types'
 import {
   baseConfig,
   makeGroupedChartData,
@@ -25,6 +25,7 @@ function dispatch(
     threeD?: boolean
     arrangementTarget?: string
     chartAxes?: Axis[]
+    background?: BarBackground
   } = {}
 ) {
   // baseConfig is the shared shape; useChartOptions takes loose refs in chart-card order.
@@ -53,7 +54,8 @@ function dispatch(
     ref(undefined),
     cfg.smooth ?? ref(false),
     cfg.horizontal ?? ref(false),
-    cfg.borderRadius ?? ref(undefined)
+    cfg.borderRadius ?? ref(undefined),
+    cfg.background ?? ref(opts.background)
   )
 }
 
@@ -169,5 +171,32 @@ describe('useChartOptions dispatch', () => {
   it('default branch falls back to bar3D when use3D is true', () => {
     const { options } = dispatch('unknown' as ChartType, grouped3DData(), { threeD: true })
     expect(firstSeriesType(options.value)).toBe('bar3D')
+  })
+
+  it('threads an active bar background config onto 2D bar series', () => {
+    const { options } = dispatch('bar', makeGroupedChartData(), {
+      background: { active: true, color: 'rgba(180, 180, 180, 0.2)', shadowBlur: 10 },
+    })
+    const series = options.value.series as {
+      showBackground?: boolean
+      backgroundStyle?: Record<string, unknown>
+    }[]
+    expect(series.every((s) => s.showBackground === true)).toBe(true)
+    expect(series[0]?.backgroundStyle).toEqual({
+      color: 'rgba(180, 180, 180, 0.2)',
+      shadowBlur: 10,
+    })
+  })
+
+  it('writes showBackground false on 2D bar series when background is inactive', () => {
+    const { options } = dispatch('bar', makeGroupedChartData(), {
+      background: { active: false },
+    })
+    const series = options.value.series as {
+      showBackground?: boolean
+      backgroundStyle?: Record<string, unknown>
+    }[]
+    expect(series.every((s) => s.showBackground === false)).toBe(true)
+    expect(series.every((s) => s.backgroundStyle === undefined)).toBe(true)
   })
 })

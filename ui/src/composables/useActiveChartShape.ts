@@ -1,5 +1,13 @@
 import { computed } from 'vue'
-import type { BarConfig, LineConfig, ScatterConfig, ScaleType, Sort, StatConfig } from '../types'
+import type {
+  BarBackground,
+  BarConfig,
+  LineConfig,
+  ScatterConfig,
+  ScaleType,
+  Sort,
+  StatConfig,
+} from '../types'
 import { arrangementHasChartZ } from '../lib/swap'
 import { canOfferValue3D } from '../lib/utils'
 import { useDataPoint } from './useDataPoint'
@@ -89,6 +97,10 @@ export function useActiveChartShape() {
     () => (activeConfig.value as BarConfig | undefined)?.borderRadius
   )
 
+  const background = computed<BarBackground | undefined>(
+    () => (activeConfig.value as BarConfig | undefined)?.background
+  )
+
   return {
     scale,
     stack,
@@ -106,5 +118,6 @@ export function useActiveChartShape() {
     smooth,
     horizontal,
     borderRadius,
+    background,
   }
 }

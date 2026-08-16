@@ -74,6 +74,23 @@ export type Axis = {
   type?: string // 'value' = continuous numeric axis; absent or '' = category (default)
 }
 
+// Bar-only category background (wire `--bg` / `bar:bg`). `active` is the
+// on-switch; every other key maps 1:1 onto ECharts `backgroundStyle`. All keys
+// are optional — unset keys stay absent so ECharts applies its own defaults.
+export type BarBackground = {
+  active?: boolean
+  color?: string
+  borderColor?: string
+  borderWidth?: number
+  borderType?: string
+  borderRadius?: number | number[]
+  shadowBlur?: number
+  shadowColor?: string
+  shadowOffsetX?: number
+  shadowOffsetY?: number
+  opacity?: number
+}
+
 // Per-chart typed configs (wire format: `Dataset.Settings []ChartConfig`).
 // Each chart type carries only the fields that apply to it. The `type`
 // discriminator narrows the union at the call site — chart-rendering code may
@@ -91,6 +108,8 @@ export type BarConfig = {
   horizontal?: boolean
   /** Corner radii in px [TL, TR, BR, BL]; length 1–4 (ECharts expands [8] to all corners). */
   borderRadius?: number[]
+  /** Category background behind each bar (2D only; bar-only). */
+  background?: BarBackground
   threeDRotate?: boolean
   threeD?: boolean
   threeDVisualMap?: boolean

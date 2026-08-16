@@ -1,6 +1,6 @@
 import type { Ref } from 'vue'
 import type { EChartsOption } from 'echarts'
-import type { Axis, ChartData, Sort, ScaleType, ChartType } from '@/types'
+import type { Axis, BarBackground, ChartData, Sort, ScaleType, ChartType } from '@/types'
 import { createTooltipConfig, createToolboxConfig, getChartStyling } from './shared/chartConfig'
 import { fontSize } from './shared/common'
 import { is3D } from '@/lib/utils'
@@ -35,6 +35,8 @@ export interface BaseChartConfig {
    * Passed through to ECharts; when stacked, only the outer segment is rounded.
    */
   borderRadius?: Ref<number[] | undefined>
+  /** Bar-only category background (`--bg`); `active` gates ECharts `showBackground`. */
+  background?: Ref<BarBackground | undefined>
   /** Active swap target (e.g. xyz) — scatter value-mode 3D is swap-driven. */
   arrangementTarget?: Ref<string>
   chartAxes?: Ref<Axis[] | undefined>

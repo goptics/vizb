@@ -699,3 +699,177 @@ describe('useBarChartOptions — borderRadius', () => {
     }
   })
 })
+
+describe('useBarChartOptions — background', () => {
+  const makeMultiSeriesChartData = (): ChartData => ({
+    title: 'background test',
+    statType: 'sum',
+    yAxis: ['Series A', 'Series B', 'Series C'],
+    zAxis: [],
+    series: [
+      { xAxis: 'X1', values: [10, 20, 30], benchmarkId: '' },
+      { xAxis: 'X2', values: [15, 25, 35], benchmarkId: '' },
+    ],
+    points: [],
+    axisLabels: { x: 'category', y: 'series' },
+  })
+
+  type SeriesBackground = {
+    showBackground?: boolean
+    backgroundStyle?: Record<string, unknown>
+  }
+
+  const activeBg = {
+    active: true,
+    color: 'rgba(180, 180, 180, 0.2)',
+    borderColor: '#000',
+    shadowBlur: 10,
+    opacity: 1,
+  }
+
+  it('writes explicit showBackground false and omits backgroundStyle when unset or inactive', () => {
+    for (const background of [undefined, { active: false }, { active: false, color: '#000' }]) {
+      const { options } = useBarChartOptions({
+        chartData: ref(makeSimpleChartData()),
+        sort: ref({ enabled: false, order: 'asc' }),
+        showLabels: ref(false),
+        isDark: ref(false),
+        ...(background === undefined ? {} : { background: ref(background) }),
+      })
+      const series = options.value.series as SeriesBackground[]
+      // Explicit false (ECharts' own default) so the setOption merge cannot
+      // keep a previous chart's `true` after switching the active chart.
+      expect(series[0]?.showBackground).toBe(false)
+      expect(series[0]?.backgroundStyle).toBeUndefined()
+    }
+  })
+
+  it('sets showBackground true and passes defined style keys through unchanged', () => {
+    const { options } = useBarChartOptions({
+      chartData: ref(makeSimpleChartData()),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      background: ref(activeBg),
+    })
+    const series = options.value.series as SeriesBackground[]
+    expect(series[0]?.showBackground).toBe(true)
+    // Exact object: unset keys stay absent — no invented ECharts defaults.
+    expect(series[0]?.backgroundStyle).toEqual({
+      color: 'rgba(180, 180, 180, 0.2)',
+      borderColor: '#000',
+      shadowBlur: 10,
+      opacity: 1,
+    })
+  })
+
+  it('drops explicitly-undefined style keys', () => {
+    const { options } = useBarChartOptions({
+      chartData: ref(makeSimpleChartData()),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      background: ref({ active: true, color: 'rgba(9, 9, 9, 0.4)', shadowColor: undefined }),
+    })
+    const series = options.value.series as SeriesBackground[]
+    expect(series[0]?.backgroundStyle).toEqual({ color: 'rgba(9, 9, 9, 0.4)' })
+  })
+
+  it('uses an empty backgroundStyle when active with no style keys', () => {
+    const { options } = useBarChartOptions({
+      chartData: ref(makeSimpleChartData()),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      background: ref({ active: true }),
+    })
+    const series = options.value.series as SeriesBackground[]
+    expect(series[0]?.showBackground).toBe(true)
+    expect(series[0]?.backgroundStyle).toEqual({})
+  })
+
+  it('applies background to horizontal 1D bars', () => {
+    const { options } = useBarChartOptions({
+      chartData: ref(makeSimpleChartData()),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      horizontal: ref(true),
+      background: ref(activeBg),
+    })
+    const series = options.value.series as SeriesBackground[]
+    expect(series[0]?.showBackground).toBe(true)
+    expect(series[0]?.backgroundStyle).toEqual({
+      color: 'rgba(180, 180, 180, 0.2)',
+      borderColor: '#000',
+      shadowBlur: 10,
+      opacity: 1,
+    })
+  })
+
+  it('applies background to every grouped series', () => {
+    const { options } = useBarChartOptions({
+      chartData: ref(makeGroupedChartData()),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      background: ref(activeBg),
+    })
+    const series = options.value.series as SeriesBackground[]
+    expect(series).toHaveLength(2)
+    expect(series.every((s) => s.showBackground === true)).toBe(true)
+    expect(series.every((s) => s.backgroundStyle?.color === 'rgba(180, 180, 180, 0.2)')).toBe(true)
+  })
+
+  it('applies background to every stacked segment (no outer-only capping)', () => {
+    const { options } = useBarChartOptions({
+      chartData: ref(makeMultiSeriesChartData()),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      stack: ref(true),
+      background: ref(activeBg),
+    })
+    const series = options.value.series as SeriesBackground[]
+    expect(series).toHaveLength(3)
+    expect(series.every((s) => s.showBackground === true)).toBe(true)
+    expect(series.every((s) => s.backgroundStyle?.shadowBlur === 10)).toBe(true)
+  })
+
+  it('passes background through in mixed and value modes', () => {
+    for (const chartData of [makeMixedChartData(), makeValueChartData()]) {
+      const { options } = useBarChartOptions({
+        chartData: ref(chartData),
+        sort: ref({ enabled: false, order: 'asc' }),
+        showLabels: ref(false),
+        isDark: ref(false),
+        background: ref(activeBg),
+      })
+      const series = options.value.series as (SeriesBackground & { type: string })[]
+      expect(series[0]?.type).toBe('bar')
+      expect(series[0]?.showBackground).toBe(true)
+      expect(series[0]?.backgroundStyle).toEqual({
+        color: 'rgba(180, 180, 180, 0.2)',
+        borderColor: '#000',
+        shadowBlur: 10,
+        opacity: 1,
+      })
+    }
+  })
+
+  it('composes background with borderRadius on grouped bars', () => {
+    const { options } = useBarChartOptions({
+      chartData: ref(makeMultiSeriesChartData()),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      borderRadius: ref([8]),
+      background: ref(activeBg),
+    })
+    const series = options.value.series as (SeriesBackground & {
+      itemStyle?: { borderRadius?: number[] }
+    })[]
+    expect(series.every((s) => s.itemStyle?.borderRadius !== undefined)).toBe(true)
+    expect(series.every((s) => s.showBackground === true)).toBe(true)
+  })
+})
