@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -214,6 +215,63 @@ func (s *OpenAPISuite) TestLineAndScatterSymbolsMatchServerValidation() {
 			}
 			s.Error(validateSchema(contract, schema, map[string]any{"type": strings.TrimSuffix(strings.ToLower(schemaName), "chartconfig"), "symbol": "star"}, schemaName))
 		})
+	}
+}
+
+// TestBarBackgroundMatchesServerValidation keeps the BarChartConfig.background
+// schema and the server's strict decode in lockstep: every background the
+// schema accepts unmarshals into the Go wire type, and every background it
+// rejects also fails the server decode (request error, not a 500).
+func (s *OpenAPISuite) TestBarBackgroundMatchesServerValidation() {
+	contract := readContract(s.T())
+	schemas := mustMap(s.T(), mustMap(s.T(), contract["components"], "components")["schemas"], "components.schemas")
+	schema := schemas["BarChartConfig"]
+
+	valid := []map[string]any{
+		{"active": true},
+		{"active": false},
+		{},
+		{
+			"active": true, "color": "rgba(180, 180, 180, 0.2)", "borderColor": "#000",
+			"borderWidth": 0, "borderType": "solid", "shadowBlur": 10,
+			"shadowColor": "rgba(0, 0, 0, 0.5)", "shadowOffsetX": -2, "shadowOffsetY": 2.5,
+			"opacity": 1,
+		},
+		{"active": true, "borderRadius": 8},
+		{"active": true, "borderRadius": []any{8, 8, 0, 0}},
+	}
+	for _, background := range valid {
+		config := map[string]any{"type": "bar", "background": background}
+		s.NoError(validateSchema(contract, schema, config, "BarChartConfig"), fmt.Sprint(background))
+		raw, err := json.Marshal(config)
+		s.Require().NoError(err)
+		s.NoError(json.Unmarshal(raw, &bar.Config{}), string(raw))
+	}
+
+	invalid := []map[string]any{
+		{"decal": 1},
+		{"active": "yes"},
+		{"color": 5},
+		{"borderType": "dash"},
+		{"borderWidth": -1},
+		{"shadowBlur": -0.5},
+		{"opacity": 1.5},
+		{"opacity": -0.1},
+		{"opacity": "0.5"},
+		{"borderWidth": "2"},
+		{"borderRadius": 8.5},
+		{"borderRadius": -1},
+		{"borderRadius": "8"},
+		{"borderRadius": []any{8, "8"}},
+		{"borderRadius": []any{8, 8, 0, 0, 1}},
+		{"borderRadius": []any{-1}},
+	}
+	for _, background := range invalid {
+		config := map[string]any{"type": "bar", "background": background}
+		s.Error(validateSchema(contract, schema, config, "BarChartConfig"), fmt.Sprint(background))
+		raw, err := json.Marshal(config)
+		s.Require().NoError(err)
+		s.Error(json.Unmarshal(raw, &bar.Config{}), string(raw))
 	}
 }
 
@@ -439,6 +497,9 @@ func validateSchema(root map[string]any, rawSchema, value any, location string) 
 		if min, ok := schema["minItems"].(int); ok && len(array) < min {
 			return fmt.Errorf("%s has %d items, want at least %d", location, len(array), min)
 		}
+		if max, ok := schema["maxItems"].(int); ok && len(array) > max {
+			return fmt.Errorf("%s has %d items, want at most %d", location, len(array), max)
+		}
 		if child, exists := schema["items"]; exists {
 			for i, childValue := range array {
 				if err := validateSchema(root, child, childValue, location+"/"+strconv.Itoa(i)); err != nil {
@@ -473,14 +534,51 @@ func validateSchema(root map[string]any, rawSchema, value any, location string) 
 		default:
 			return fmt.Errorf("%s must be an integer, got %T", location, value)
 		}
+		if err := validateNumericBounds(schema, value, location); err != nil {
+			return err
+		}
 	case "number":
 		switch value.(type) {
 		case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
 		default:
 			return fmt.Errorf("%s must be a number, got %T", location, value)
 		}
+		if err := validateNumericBounds(schema, value, location); err != nil {
+			return err
+		}
 	}
 	return nil
+}
+
+// validateNumericBounds enforces the minimum/maximum keywords for integer and
+// number schemas (JSON numbers arrive from YAML examples as int or float64).
+func validateNumericBounds(schema map[string]any, value any, location string) error {
+	number, ok := numericValue(value)
+	if !ok {
+		return nil
+	}
+	if min, ok := numericValue(schema["minimum"]); ok && number < min {
+		return fmt.Errorf("%s = %v is less than minimum %v", location, number, min)
+	}
+	if max, ok := numericValue(schema["maximum"]); ok && number > max {
+		return fmt.Errorf("%s = %v is greater than maximum %v", location, number, max)
+	}
+	return nil
+}
+
+func numericValue(value any) (float64, bool) {
+	switch v := value.(type) {
+	case int:
+		return float64(v), true
+	case int64:
+		return float64(v), true
+	case uint64:
+		return float64(v), true
+	case float64:
+		return v, true
+	default:
+		return 0, false
+	}
 }
 
 func dereference(root map[string]any, raw any) (any, error) {

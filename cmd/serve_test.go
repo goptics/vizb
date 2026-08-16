@@ -703,6 +703,165 @@ func (s *ServeSuite) TestConvertEndpointValidatesStructuredOptions() {
 	}
 }
 
+// TestConvertEndpointBarBackgroundRoundTrip covers the REST wire for the bar
+// category background: a valid object persists onto Dataset settings,
+// active:false / an omitted background leave it off, and a scalar borderRadius
+// normalises to the array form.
+func (s *ServeSuite) TestConvertEndpointBarBackgroundRoundTrip() {
+	handler := newRESTHandler()
+
+	s.Run("styled background persists onto settings", func() {
+		body := `{"input":"region,value\nwest,12\n","parser":"csv","charts":{"types":["bar"],"configs":[{"type":"bar","background":{` +
+			`"active":true,"color":"rgba(180, 180, 180, 0.2)","borderColor":"#000","borderWidth":0,"borderType":"solid",` +
+			`"shadowBlur":10,"shadowColor":"rgba(0, 0, 0, 0.5)","shadowOffsetX":-2,"shadowOffsetY":2.5,"opacity":0.8}}]}}`
+		recorder := s.apiRequest(handler, "/", body, "application/json", "application/json")
+		s.Equal(http.StatusOK, recorder.Code, recorder.Body.String())
+
+		background, ok := s.responseBackground(recorder)
+		s.Require().True(ok, "expected a background object on settings")
+		s.Equal(true, background["active"])
+		s.Equal("rgba(180, 180, 180, 0.2)", background["color"])
+		s.Equal("#000", background["borderColor"])
+		s.Equal(float64(0), background["borderWidth"])
+		s.Equal("solid", background["borderType"])
+		s.Equal(float64(10), background["shadowBlur"])
+		s.Equal("rgba(0, 0, 0, 0.5)", background["shadowColor"])
+		s.Equal(float64(-2), background["shadowOffsetX"])
+		s.Equal(float64(2.5), background["shadowOffsetY"])
+		s.Equal(float64(0.8), background["opacity"])
+	})
+
+	s.Run("scalar borderRadius normalises to array", func() {
+		body := `{"input":"region,value\nwest,12\n","parser":"csv","charts":{"types":["bar"],"configs":[{"type":"bar","background":{"active":true,"borderRadius":8}}]}}`
+		recorder := s.apiRequest(handler, "/", body, "application/json", "application/json")
+		s.Equal(http.StatusOK, recorder.Code, recorder.Body.String())
+
+		background, ok := s.responseBackground(recorder)
+		s.Require().True(ok)
+		s.Equal([]any{float64(8)}, background["borderRadius"])
+	})
+
+	s.Run("active false stays off but persists", func() {
+		body := `{"input":"region,value\nwest,12\n","parser":"csv","charts":{"types":["bar"],"configs":[{"type":"bar","background":{"active":false,"color":"#fff"}}]}}`
+		recorder := s.apiRequest(handler, "/", body, "application/json", "application/json")
+		s.Equal(http.StatusOK, recorder.Code, recorder.Body.String())
+		s.Contains(recorder.Body.String(), `"background":{"active":false,"color":"#fff"}`)
+	})
+
+	s.Run("omitted background leaves no field", func() {
+		body := `{"input":"region,value\nwest,12\n","parser":"csv","charts":{"types":["bar"]}}`
+		recorder := s.apiRequest(handler, "/", body, "application/json", "application/json")
+		s.Equal(http.StatusOK, recorder.Code, recorder.Body.String())
+		s.NotContains(recorder.Body.String(), "background")
+	})
+}
+
+// responseBackground extracts settings[0].background from a Dataset response.
+func (s *ServeSuite) responseBackground(recorder *httptest.ResponseRecorder) (map[string]any, bool) {
+	var dataset struct {
+		Settings []map[string]any `json:"settings"`
+	}
+	s.Require().NoError(json.Unmarshal(recorder.Body.Bytes(), &dataset))
+	s.Require().Len(dataset.Settings, 1)
+	background, ok := dataset.Settings[0]["background"].(map[string]any)
+	return background, ok
+}
+
+// TestUIEndpointBarBackgroundRoundTrip covers POST /ui: the config's
+// background round-trips onto the materialised Dataset settings for the UI,
+// and a background without active stays off.
+func (s *ServeSuite) TestUIEndpointBarBackgroundRoundTrip() {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handleUIWithGenerator(w, r, func(datasets []shared.Dataset, charts []string) (string, error) {
+			background := s.settingBackground(datasets)
+			s.True(background["active"].(bool))
+			s.Equal(0.2, background["opacity"])
+			return "<html>ok</html>", nil
+		})
+	})
+	body := `{"datasets":` + validDatasetJSON + `,"charts":{"types":["bar"],"configs":[{"type":"bar","background":{"active":true,"opacity":0.2}}]}}`
+	recorder := s.apiRequest(handler, "/ui", body, "application/json", "text/html")
+	s.Equal(http.StatusOK, recorder.Code, recorder.Body.String())
+
+	handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handleUIWithGenerator(w, r, func(datasets []shared.Dataset, charts []string) (string, error) {
+			background := s.settingBackground(datasets)
+			active, _ := background["active"].(bool)
+			s.False(active, "background without active must stay off")
+			return "<html>ok</html>", nil
+		})
+	})
+	body = `{"datasets":` + validDatasetJSON + `,"charts":{"configs":[{"type":"bar","background":{"opacity":0.2}}]}}`
+	recorder = s.apiRequest(handler, "/ui", body, "application/json", "text/html")
+	s.Equal(http.StatusOK, recorder.Code, recorder.Body.String())
+}
+
+// settingBackground marshals settings[0] and returns its background object.
+func (s *ServeSuite) settingBackground(datasets []shared.Dataset) map[string]any {
+	s.Require().Len(datasets, 1)
+	s.Require().Len(datasets[0].Settings, 1)
+	raw, err := json.Marshal(datasets[0].Settings[0])
+	s.Require().NoError(err)
+	var config map[string]any
+	s.Require().NoError(json.Unmarshal(raw, &config))
+	background, _ := config["background"].(map[string]any)
+	s.Require().NotNil(background)
+	return background
+}
+
+// TestConvertEndpointRejectsInvalidBackground confirms malformed background
+// objects are request errors (422), never 500s.
+func (s *ServeSuite) TestConvertEndpointRejectsInvalidBackground() {
+	handler := newRESTHandler()
+	for _, test := range []struct {
+		name string
+		body string
+	}{
+		{name: "unknown field", body: `{"input":"region,value\nwest,12\n","charts":{"configs":[{"type":"bar","background":{"decal":1}}]}}`},
+		{name: "background not object", body: `{"input":"region,value\nwest,12\n","charts":{"configs":[{"type":"bar","background":true}]}}`},
+		{name: "null background", body: `{"input":"region,value\nwest,12\n","charts":{"configs":[{"type":"bar","background":null}]}}`},
+		{name: "active wrong type", body: `{"input":"region,value\nwest,12\n","charts":{"configs":[{"type":"bar","background":{"active":"yes"}}]}}`},
+		{name: "color wrong type", body: `{"input":"region,value\nwest,12\n","charts":{"configs":[{"type":"bar","background":{"color":5}}]}}`},
+		{name: "borderType enum", body: `{"input":"region,value\nwest,12\n","charts":{"configs":[{"type":"bar","background":{"borderType":"dash"}}]}}`},
+		{name: "borderWidth negative", body: `{"input":"region,value\nwest,12\n","charts":{"configs":[{"type":"bar","background":{"borderWidth":-1}}]}}`},
+		{name: "opacity above one", body: `{"input":"region,value\nwest,12\n","charts":{"configs":[{"type":"bar","background":{"opacity":1.5}}]}}`},
+		{name: "opacity not number", body: `{"input":"region,value\nwest,12\n","charts":{"configs":[{"type":"bar","background":{"opacity":"0.5"}}]}}`},
+		{name: "borderRadius quoted number", body: `{"input":"region,value\nwest,12\n","charts":{"configs":[{"type":"bar","background":{"borderRadius":"8"}}]}}`},
+		{name: "borderRadius quoted array element", body: `{"input":"region,value\nwest,12\n","charts":{"configs":[{"type":"bar","background":{"borderRadius":[8,"8"]}}]}}`},
+		{name: "borderRadius float", body: `{"input":"region,value\nwest,12\n","charts":{"configs":[{"type":"bar","background":{"borderRadius":8.5}}]}}`},
+		{name: "borderRadius negative array", body: `{"input":"region,value\nwest,12\n","charts":{"configs":[{"type":"bar","background":{"borderRadius":[8,-1]}}]}}`},
+		{name: "borderRadius too many", body: `{"input":"region,value\nwest,12\n","charts":{"configs":[{"type":"bar","background":{"borderRadius":[1,2,3,4,5]}}]}}`},
+		{name: "background on line", body: `{"input":"region,value\nwest,12\n","charts":{"configs":[{"type":"line","background":{"active":true}}]}}`},
+	} {
+		s.Run(test.name, func() {
+			recorder := s.apiRequest(handler, "/", test.body, "application/json", "application/json")
+			s.Equal(http.StatusUnprocessableEntity, recorder.Code, recorder.Body.String())
+			var problem struct {
+				Errors []apiValidationError `json:"errors"`
+			}
+			s.Require().NoError(json.Unmarshal(recorder.Body.Bytes(), &problem))
+			s.NotEmpty(problem.Errors)
+		})
+	}
+}
+
+// TestConvertEndpointBackgroundInapplicableOn3D keeps REST consistent with the
+// CLI: the rule warning for a 3D bar becomes a 422 pointing at the config.
+func (s *ServeSuite) TestConvertEndpointBackgroundInapplicableOn3D() {
+	handler := newRESTHandler()
+	body := `{"input":"x,y,z\n1,2,3\n","charts":{"configs":[{"type":"bar","background":{"active":true}}]}}`
+	recorder := s.apiRequest(handler, "/", body, "application/json", "application/json")
+	s.Equal(http.StatusUnprocessableEntity, recorder.Code, recorder.Body.String())
+
+	var problem struct {
+		Errors []apiValidationError `json:"errors"`
+	}
+	s.Require().NoError(json.Unmarshal(recorder.Body.Bytes(), &problem))
+	s.Require().Len(problem.Errors, 1)
+	s.Equal("/charts/configs/0/background", problem.Errors[0].Path)
+	s.Equal("inapplicable_option", problem.Errors[0].Code)
+}
+
 func (s *ServeSuite) TestConvertEndpointReportsUIGenerationFailure() {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		handleConvertWithGenerator(w, r, func([]shared.Dataset, []string) (string, error) {
