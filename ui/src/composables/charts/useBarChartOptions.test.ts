@@ -727,8 +727,8 @@ describe('useBarChartOptions — background', () => {
     opacity: 1,
   }
 
-  it('writes explicit showBackground false and omits backgroundStyle when unset or inactive', () => {
-    for (const background of [undefined, { active: false }, { active: false, color: '#000' }]) {
+  it('leaves showBackground and backgroundStyle unset when missing, empty, or inactive', () => {
+    for (const background of [undefined, {}, { active: false }, { active: false, color: '#000' }]) {
       const { options } = useBarChartOptions({
         chartData: ref(makeSimpleChartData()),
         sort: ref({ enabled: false, order: 'asc' }),
@@ -737,9 +737,7 @@ describe('useBarChartOptions — background', () => {
         ...(background === undefined ? {} : { background: ref(background) }),
       })
       const series = options.value.series as SeriesBackground[]
-      // Explicit false (ECharts' own default) so the setOption merge cannot
-      // keep a previous chart's `true` after switching the active chart.
-      expect(series[0]?.showBackground).toBe(false)
+      expect(series[0]?.showBackground).toBeUndefined()
       expect(series[0]?.backgroundStyle).toBeUndefined()
     }
   })

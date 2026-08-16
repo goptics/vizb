@@ -188,7 +188,7 @@ describe('useChartOptions dispatch', () => {
     })
   })
 
-  it('writes showBackground false on 2D bar series when background is inactive', () => {
+  it('leaves showBackground unset on 2D bar series when background is inactive', () => {
     const { options } = dispatch('bar', makeGroupedChartData(), {
       background: { active: false },
     })
@@ -196,7 +196,22 @@ describe('useChartOptions dispatch', () => {
       showBackground?: boolean
       backgroundStyle?: Record<string, unknown>
     }[]
-    expect(series.every((s) => s.showBackground === false)).toBe(true)
+    expect(series.every((s) => s.showBackground === undefined)).toBe(true)
+    expect(series.every((s) => s.backgroundStyle === undefined)).toBe(true)
+  })
+
+  it('does not apply bar background to 3D bar series', () => {
+    const { options } = dispatch('bar', grouped3DData(), {
+      threeD: true,
+      background: { active: true, color: 'rgba(180, 180, 180, 0.2)', shadowBlur: 10 },
+    })
+    const series = options.value.series as {
+      type?: string
+      showBackground?: boolean
+      backgroundStyle?: Record<string, unknown>
+    }[]
+    expect(series[0]?.type).toBe('bar3D')
+    expect(series.every((s) => s.showBackground === undefined)).toBe(true)
     expect(series.every((s) => s.backgroundStyle === undefined)).toBe(true)
   })
 })

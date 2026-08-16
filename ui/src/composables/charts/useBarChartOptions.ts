@@ -73,18 +73,19 @@ function backgroundStyleOf(background: BarBackground): BarBackgroundStyle {
   ) as BarBackgroundStyle
 }
 
-/** Stamp the wire background onto every bar series. `showBackground` is always
- * written — explicit `false` when off (ECharts' own default) so the
- * vue-echarts/ECharts merge cannot keep a previous chart's `true` after the
- * active chart index switches. `backgroundStyle` is only written when on. */
+/** Stamp the wire background onto every bar series. Only `active: true` writes
+ * ECharts keys; `active: false` / missing `background` leave `showBackground`
+ * and `backgroundStyle` unset so this renderer does not invent defaults.
+ * ChartCard assigns a new option reference on each update, so vue-echarts
+ * uses `notMerge: true` and omitted keys cannot stick from a previous chart. */
 function applyBackgroundToSeries(
   seriesList: BarSeriesLike[],
-  showBackground: boolean,
   backgroundStyle: BarBackgroundStyle | undefined
 ): void {
+  if (!backgroundStyle) return
   for (const series of seriesList) {
-    series.showBackground = showBackground
-    if (backgroundStyle) series.backgroundStyle = backgroundStyle
+    series.showBackground = true
+    series.backgroundStyle = backgroundStyle
   }
 }
 
@@ -114,21 +115,13 @@ export function useBarChartOptions(config: BaseChartConfig) {
     if (chartData.value.mixedTuples?.length) {
       const result = buildMixedAxes2DOptions(config, 'bar')
       const withRadius = activeRadius ? applyBorderRadiusToSeries(result, radius) : result
-      applyBackgroundToSeries(
-        withRadius.series as BarSeriesLike[],
-        activeBackground,
-        backgroundStyle
-      )
+      applyBackgroundToSeries(withRadius.series as BarSeriesLike[], backgroundStyle)
       return withRadius
     }
     if (chartData.value.valueTuples?.length) {
       const result = buildValueAxes2DOptions(config, 'bar')
       const withRadius = activeRadius ? applyBorderRadiusToSeries(result, radius) : result
-      applyBackgroundToSeries(
-        withRadius.series as BarSeriesLike[],
-        activeBackground,
-        backgroundStyle
-      )
+      applyBackgroundToSeries(withRadius.series as BarSeriesLike[], backgroundStyle)
       return withRadius
     }
 
@@ -159,7 +152,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
       if (activeRadius) {
         seriesItem.itemStyle = { ...seriesItem.itemStyle, borderRadius: radius }
       }
-      applyBackgroundToSeries([seriesItem], activeBackground, backgroundStyle)
+      applyBackgroundToSeries([seriesItem], backgroundStyle)
       return {
         ...baseOptions,
         grid: {
@@ -194,7 +187,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
       if (activeRadius) {
         seriesItem.itemStyle = { ...seriesItem.itemStyle, borderRadius: radius }
       }
-      applyBackgroundToSeries([seriesItem], activeBackground, backgroundStyle)
+      applyBackgroundToSeries([seriesItem], backgroundStyle)
       return {
         ...baseOptions,
         grid: createGridConfig(1, largeX),
@@ -250,7 +243,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
 
     // Unlike the stack-cap radius, the background applies uniformly to every
     // grouped/stacked segment (it spans the whole category column).
-    applyBackgroundToSeries(transposedSeries, activeBackground, backgroundStyle)
+    applyBackgroundToSeries(transposedSeries, backgroundStyle)
 
     const hasMultipleSeries = transposedSeries.length > 1
     const seriesTotals = computeSeriesTotals(transposedSeries)
