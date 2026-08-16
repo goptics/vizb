@@ -29,6 +29,7 @@ const (
 	KindStringSlice             // []string (comma-separated), e.g. --group, --charts
 	KindStringArray             // []string (repeatable flag), e.g. --select, --chart
 	KindStat                    // optional-value string slice, e.g. --stat
+	KindObject                  // optional-value typed object bag, e.g. --bg
 )
 
 // Outcome is the result of evaluating one applicability rule. Multiple rules
@@ -49,6 +50,17 @@ const (
 // in config/charts (which imports shared and parser). Returns the outcome and
 // a human-readable message used in warnings/errors.
 type RuleFn func(ctx any) (Outcome, string)
+
+// ObjectField describes one typed field of a KindObject flag's bag (e.g.
+// `--bg color=rgba(…)` → field "color"). Kind documents the field's wire type;
+// Validate fatals on an invalid raw value; Encode converts the raw string into
+// the field's JSON payload value (nil = keep the string as-is).
+type ObjectField struct {
+	Name     string             // field name inside the object, e.g. "color"
+	Kind     Kind               // wire type of the field's value
+	Validate func(string) error // context-free fatal validation of the raw value; nil = none
+	Encode   func(any) any      // raw string → payload value; nil = identity
+}
 
 // Flag is the single source of truth for one CLI option.
 //
@@ -77,7 +89,13 @@ type Flag struct {
 	Encode  func(any) any // transform the Kind-converted value into its payload shape; nil = identity
 
 	// MultiValue: when true, --chart values may contain commas (MultiValueKeys).
+	// KindObject flags are never MultiValue: their bag is one brace-delimited
+	// --chart value (or one flag value), not a comma-split list.
 	MultiValue bool
+
+	// ObjectFields: for KindObject flags, the typed fields accepted inside the
+	// object bag (semicolon-separated key=value pairs). Unknown keys are fatal.
+	ObjectFields []ObjectField
 
 	// --- fatal validation (chart flags): invalid input ⇒ error ---
 	Validate func(string) error // context-free; nil = none (swap is validated against axes by the caller)
@@ -119,4 +137,14 @@ func (f Flag) EffectiveKey() string {
 // fatal validation.
 func (f Flag) IsSoft() bool {
 	return f.ValidSet != nil || f.Normalizer != nil || f.SoftValidate != nil
+}
+
+// ObjectFieldNames returns the field names accepted inside this KindObject
+// flag's bag.
+func (f Flag) ObjectFieldNames() []string {
+	names := make([]string, 0, len(f.ObjectFields))
+	for _, field := range f.ObjectFields {
+		names = append(names, field.Name)
+	}
+	return names
 }

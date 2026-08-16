@@ -77,6 +77,7 @@ sankey, or chord with --charts or a chart subcommand.`,
 func Execute() {
 	defer shared.TempFiles.RemoveAll()
 	os.Args = cli.RewriteStatArg(os.Args)
+	os.Args = cli.RewriteObjectArg(os.Args)
 
 	if err := rootCmd.Execute(); err != nil {
 		shared.ExitWithError(err.Error(), nil)

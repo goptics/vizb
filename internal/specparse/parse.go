@@ -1,10 +1,16 @@
 // Package specparse tokenizes structured CLI specs of the form:
 //
 //	prefix:prop(;prop)*
-//	prop = key | key=value
+//	prop = key | key=scalar | key={ bag }
+//	bag  = [ prop (';' prop)* ]   # semicolon-only inside {}
 //
-// In legacy mode (no ';'), props are also comma-separated. MultiValueKeys and
-// KnownKeys control how comma-bearing values are reassembled in that mode.
+// A brace-delimited value is one object prop: ',' and ';' inside the braces do
+// not create sibling props, so comma-bearing values (rgba(…), 8,8,0,0) survive
+// intact. Unbalanced braces are a parse error.
+//
+// In legacy mode (no top-level ';'), props are also comma-separated.
+// MultiValueKeys and KnownKeys control how comma-bearing values are
+// reassembled in that mode.
 package specparse
 
 import (
@@ -12,11 +18,14 @@ import (
 	"strings"
 )
 
-// Prop is one key or key=value entry in a structured spec.
+// Prop is one key or key=value entry in a structured spec. A prop whose value
+// is brace-delimited carries the parsed bag in Object (non-nil, possibly
+// empty) and leaves Value empty.
 type Prop struct {
 	Key      string // trimmed, original casing preserved
-	Value    string // trimmed; empty if bare
+	Value    string // trimmed; empty if bare or object-valued
 	HasValue bool   // true when '=' was present (even if value empty)
+	Object   []Prop // brace-delimited bag fields; non-nil only for key={…} values
 }
 
 // Spec is a parsed prefix:props structured CLI token.
@@ -67,7 +76,11 @@ func Parse(input string, opts Options) (Spec, error) {
 
 	var props []Prop
 	var err error
-	if strings.Contains(rest, ";") {
+	hasSemicolon, sepErr := containsDepth0(rest, ';')
+	if sepErr != nil {
+		return Spec{}, sepErr
+	}
+	if hasSemicolon {
 		props, err = parseSemicolonProps(rest, opts)
 	} else {
 		props, err = parseLegacyCommaProps(rest, opts)
@@ -102,8 +115,90 @@ func SplitList(value string) []string {
 	return out
 }
 
+// ParseBag parses a bare semicolon bag of props ("key=value;key=value") — the
+// unwrapped flag form of an object value (e.g. `--bg color=…;opacity=0.5`).
+// Braces are rejected: the bag is the object body without delimiters.
+func ParseBag(input string) ([]Prop, error) {
+	if strings.ContainsAny(input, "{}") {
+		return nil, fmt.Errorf("specparse: braces are not allowed in bag %q (pass fields directly: key=value;key=value)", input)
+	}
+	parts, err := splitDepth0(input, ';')
+	if err != nil {
+		return nil, err
+	}
+	props := make([]Prop, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		prop, err := parsePropSegment(part, Options{})
+		if err != nil {
+			return nil, err
+		}
+		props = append(props, prop)
+	}
+	return props, nil
+}
+
+// splitDepth0 splits s on sep only outside any {...} object. Returns an error
+// when braces are unbalanced.
+func splitDepth0(s string, sep rune) ([]string, error) {
+	parts := make([]string, 0, 1)
+	depth := 0
+	start := 0
+	for i, r := range s {
+		switch r {
+		case '{':
+			depth++
+		case '}':
+			depth--
+			if depth < 0 {
+				return nil, fmt.Errorf("specparse: unmatched '}' in %q", s)
+			}
+		case sep:
+			if depth == 0 {
+				parts = append(parts, s[start:i])
+				start = i + 1 // sep is a one-byte rune
+			}
+		}
+	}
+	if depth != 0 {
+		return nil, fmt.Errorf("specparse: unmatched '{' in %q", s)
+	}
+	return append(parts, s[start:]), nil
+}
+
+// containsDepth0 reports whether sep occurs in s outside any {...} object.
+// Returns an error when braces are unbalanced.
+func containsDepth0(s string, sep rune) (bool, error) {
+	depth := 0
+	for _, r := range s {
+		switch r {
+		case '{':
+			depth++
+		case '}':
+			depth--
+			if depth < 0 {
+				return false, fmt.Errorf("specparse: unmatched '}' in %q", s)
+			}
+		case sep:
+			if depth == 0 {
+				return true, nil
+			}
+		}
+	}
+	if depth != 0 {
+		return false, fmt.Errorf("specparse: unmatched '{' in %q", s)
+	}
+	return false, nil
+}
+
 func parseSemicolonProps(rest string, opts Options) ([]Prop, error) {
-	parts := strings.Split(rest, ";")
+	parts, err := splitDepth0(rest, ';')
+	if err != nil {
+		return nil, err
+	}
 	props := make([]Prop, 0, len(parts))
 	for _, part := range parts {
 		part = strings.TrimSpace(part)
@@ -120,7 +215,10 @@ func parseSemicolonProps(rest string, opts Options) ([]Prop, error) {
 }
 
 func parseLegacyCommaProps(rest string, opts Options) ([]Prop, error) {
-	tokens := strings.Split(rest, ",")
+	tokens, err := splitDepth0(rest, ',')
+	if err != nil {
+		return nil, err
+	}
 	props := make([]Prop, 0, len(tokens))
 
 	for i := 0; i < len(tokens); {
@@ -179,7 +277,44 @@ func parsePropSegment(segment string, opts Options) (Prop, error) {
 		return Prop{}, fmt.Errorf("specparse: empty key in prop %q", segment)
 	}
 	value := strings.TrimSpace(segment[eq+1:])
+	if strings.HasPrefix(value, "{") {
+		object, err := parseObjectBag(value)
+		if err != nil {
+			return Prop{}, err
+		}
+		return Prop{Key: key, HasValue: true, Object: object}, nil
+	}
 	return Prop{Key: key, Value: value, HasValue: true}, nil
+}
+
+// parseObjectBag parses a brace-delimited object value "{field=value;…}" into
+// its bag fields. Only ';' separates fields inside the braces; ',' stays
+// literal so values like rgba(…) and 8,8,0,0 survive.
+func parseObjectBag(value string) ([]Prop, error) {
+	if !strings.HasSuffix(value, "}") {
+		return nil, fmt.Errorf("specparse: malformed object value %q (expected key={field=value;…})", value)
+	}
+	inner := strings.TrimSpace(value[1 : len(value)-1])
+	if inner == "" {
+		return []Prop{}, nil
+	}
+	parts, err := splitDepth0(inner, ';')
+	if err != nil {
+		return nil, err
+	}
+	fields := make([]Prop, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		field, err := parsePropSegment(part, Options{})
+		if err != nil {
+			return nil, err
+		}
+		fields = append(fields, field)
+	}
+	return fields, nil
 }
 
 // isPropStart reports whether token should begin a new prop while scanning a

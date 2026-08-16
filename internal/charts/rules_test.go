@@ -10,6 +10,7 @@ import (
 	"github.com/goptics/vizb/internal/charts"
 	barchart "github.com/goptics/vizb/internal/charts/bar"
 	"github.com/goptics/vizb/internal/flags"
+	"github.com/goptics/vizb/shared"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -374,6 +375,98 @@ func (s *RulesSuite) TestApplyRules_StackSkippedOnLogScale() {
 
 	got := configs[0].(*barchart.Config)
 	s.Nil(got.Stack)
+}
+
+// --- Excludes3DMode (bar --bg) ---
+
+func (s *RulesSuite) TestExcludes3DMode_KeepOn2DAxes() {
+	rule := charts.Excludes3DMode()
+	out, msg := rule(charts.RuleContext{
+		Axes:   []charts.AxisInfo{{Key: "x"}, {Key: "y"}},
+		Config: map[string]any{},
+	})
+	s.Equal(flags.Keep, out)
+	s.Empty(msg)
+}
+
+func (s *RulesSuite) TestExcludes3DMode_SkipWhenZAxisPresent() {
+	rule := charts.Excludes3DMode()
+	out, msg := rule(charts.RuleContext{
+		Axes:   []charts.AxisInfo{{Key: "x"}, {Key: "y"}, {Key: "z"}},
+		Config: map[string]any{},
+	})
+	s.Equal(flags.Skip, out)
+	s.Contains(msg, "2D only")
+}
+
+func (s *RulesSuite) TestExcludes3DMode_SkipWhenThreeDConfigTrue() {
+	// --3d on x+y data never adds a z axis; the config entry is the tell.
+	rule := charts.Excludes3DMode()
+	out, msg := rule(charts.RuleContext{
+		Axes:   []charts.AxisInfo{{Key: "x"}, {Key: "y"}},
+		Config: map[string]any{"threeD": true},
+	})
+	s.Equal(flags.Skip, out)
+	s.Contains(msg, "2D only")
+}
+
+func (s *RulesSuite) TestExcludes3DMode_KeepWhenThreeDConfigFalse() {
+	rule := charts.Excludes3DMode()
+	out, _ := rule(charts.RuleContext{
+		Axes:   []charts.AxisInfo{{Key: "x"}, {Key: "y"}},
+		Config: map[string]any{"threeD": false},
+	})
+	s.Equal(flags.Keep, out)
+}
+
+func (s *RulesSuite) TestExcludes3DMode_FatalOnWrongContext() {
+	rule := charts.Excludes3DMode()
+	out, _ := rule("not a rule context")
+	s.Equal(flags.Fatal, out)
+}
+
+func (s *RulesSuite) TestApplyRules_BackgroundKeptOn2DBar() {
+	configs := []charts.ChartConfig{
+		&barchart.Config{Type: "bar", Background: &shared.Background{Active: true}},
+	}
+	ctx := charts.RuleContext{Axes: []charts.AxisInfo{{Key: "x"}, {Key: "y"}}}
+
+	warnings, fatal := charts.ApplyRules(ctx, configs)
+	s.Nil(fatal)
+	s.Empty(warnings)
+	s.NotNil(configs[0].(*barchart.Config).Background)
+}
+
+func (s *RulesSuite) TestApplyRules_BackgroundSkippedWhenZPresent() {
+	configs := []charts.ChartConfig{
+		&barchart.Config{Type: "bar", Background: &shared.Background{Active: true}},
+	}
+	ctx := charts.RuleContext{Axes: []charts.AxisInfo{{Key: "x"}, {Key: "y"}, {Key: "z"}}}
+
+	warnings, fatal := charts.ApplyRules(ctx, configs)
+	s.Nil(fatal)
+	s.Len(warnings, 1)
+	s.Contains(warnings[0], `"bg" skipped`)
+	s.Contains(warnings[0], "2D only")
+	s.Nil(configs[0].(*barchart.Config).Background)
+}
+
+func (s *RulesSuite) TestApplyRules_BackgroundSkippedOnThreeDOption() {
+	threeD := true
+	configs := []charts.ChartConfig{
+		&barchart.Config{Type: "bar", ThreeD: &threeD, Background: &shared.Background{Active: true}},
+	}
+	ctx := charts.RuleContext{Axes: []charts.AxisInfo{{Key: "x"}, {Key: "y"}}}
+
+	warnings, fatal := charts.ApplyRules(ctx, configs)
+	s.Nil(fatal)
+	s.Len(warnings, 1)
+	s.Contains(warnings[0], `"bg" skipped`)
+	s.Contains(warnings[0], "2D only")
+	got := configs[0].(*barchart.Config)
+	s.Nil(got.Background)
+	s.Require().NotNil(got.ThreeD) // the 3D flag itself is untouched
+	s.True(*got.ThreeD)
 }
 
 func TestRulesSuite(t *testing.T) {

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/goptics/vizb/internal/flags"
+	"github.com/goptics/vizb/internal/specparse"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -365,15 +366,104 @@ func (s *ChartSpecSuite) TestValidateSwap() {
 func (s *ChartSpecSuite) TestConvertIntegerFlagValue() {
 	flag := flags.Flag{Name: "limit", Kind: flags.KindInt}
 
-	value, err := convertFlagValue(flag, "12", true, nil)
+	value, err := convertFlagValue(flag, specparse.Prop{Key: "limit", Value: "12", HasValue: true}, nil)
 	s.Require().NoError(err)
 	s.Equal(12, value)
 
-	_, err = convertFlagValue(flag, "twelve", true, nil)
+	_, err = convertFlagValue(flag, specparse.Prop{Key: "limit", Value: "twelve", HasValue: true}, nil)
 	s.EqualError(err, `--chart: key "limit" value "twelve" must be an integer`)
 
-	_, err = convertFlagValue(flag, "", false, nil)
+	_, err = convertFlagValue(flag, specparse.Prop{Key: "limit"}, nil)
 	s.EqualError(err, `--chart: key "limit" requires a value (e.g. limit=<value>)`)
+}
+
+// --- --chart object values (bar:bg) ---
+
+func (s *ChartSpecSuite) TestParseOverridesBarBgBare() {
+	got, warnings, err := ParseOverrides([]string{"bar:bg"}, []string{"bar"}, s.xynAxes)
+	s.Require().NoError(err)
+	s.Empty(warnings)
+	s.Equal(map[string]any{"active": true}, s.payload(got["bar"])["background"])
+}
+
+func (s *ChartSpecSuite) TestParseOverridesBarBgEmptyBraces() {
+	got, warnings, err := ParseOverrides([]string{"bar:bg={}"}, []string{"bar"}, s.xynAxes)
+	s.Require().NoError(err)
+	s.Empty(warnings)
+	s.Equal(map[string]any{"active": true}, s.payload(got["bar"])["background"])
+}
+
+func (s *ChartSpecSuite) TestParseOverridesBarBgStyled() {
+	spec := "bar:bg={color=rgba(180, 180, 180, 0.2);borderColor=#000;borderWidth=0}"
+	got, warnings, err := ParseOverrides([]string{spec}, []string{"bar"}, s.xynAxes)
+	s.Require().NoError(err)
+	s.Empty(warnings)
+	background, ok := s.payload(got["bar"])["background"].(map[string]any)
+	s.Require().True(ok, "expected background object")
+	s.Equal(true, background["active"])
+	s.Equal("rgba(180, 180, 180, 0.2)", background["color"])
+	s.Equal("#000", background["borderColor"])
+	s.Equal(float64(0), background["borderWidth"])
+}
+
+func (s *ChartSpecSuite) TestParseOverridesBarBgMixedWithSiblings() {
+	s.Run("comma mode", func() {
+		spec := "bar:horizontal,bg={opacity=0.2}"
+		got, warnings, err := ParseOverrides([]string{spec}, []string{"bar"}, s.xynAxes)
+		s.Require().NoError(err)
+		s.Empty(warnings)
+		m := s.payload(got["bar"])
+		s.Equal(true, m["horizontal"])
+		s.Equal(0.2, m["background"].(map[string]any)["opacity"])
+	})
+	s.Run("semicolon mode", func() {
+		spec := "bar:sort=asc;bg={opacity=0.2;borderRadius=8,8,0,0}"
+		got, warnings, err := ParseOverrides([]string{spec}, []string{"bar"}, s.xynAxes)
+		s.Require().NoError(err)
+		s.Empty(warnings)
+		m := s.payload(got["bar"])
+		s.Equal("asc", m["sort"].(map[string]any)["order"])
+		background := m["background"].(map[string]any)
+		s.Equal(0.2, background["opacity"])
+		s.Equal([]any{float64(8), float64(8), float64(0), float64(0)}, background["borderRadius"])
+	})
+}
+
+func (s *ChartSpecSuite) TestParseOverridesBarBgUnwrappedScalarIsError() {
+	for _, spec := range []string{
+		"bar:bg=color=rgba(180,180,180,0.2)",
+		"bar:bg=true",
+		"bar:bg=",
+	} {
+		_, _, err := ParseOverrides([]string{spec}, []string{"bar"}, s.xynAxes)
+		s.Require().Error(err, spec)
+		s.Contains(err.Error(), "brace-delimited object", spec)
+		s.Contains(err.Error(), "bg={", spec)
+	}
+}
+
+func (s *ChartSpecSuite) TestParseOverridesBarBgInvalidFields() {
+	cases := []struct {
+		name string
+		spec string
+		want string
+	}{
+		{"unknown key", "bar:bg={decal=1}", "unknown object field"},
+		{"bare field", "bar:bg={color}", "bare key"},
+		{"bad number", "bar:bg={opacity=abc}", "must be a number"},
+		{"negative width", "bar:bg={borderWidth=-1}", "non-negative"},
+		{"opacity range", "bar:bg={opacity=1.5}", "between 0 and 1"},
+		{"invalid borderType", "bar:bg={borderType=dash}", "solid, dashed, or dotted"},
+		{"invalid borderRadius", "bar:bg={borderRadius=8,8,0,0,1}", "at most 4 values"},
+		{"float borderRadius", "bar:bg={borderRadius=8.5}", "must be an integer"},
+	}
+	for _, c := range cases {
+		s.Run(c.name, func() {
+			_, _, err := ParseOverrides([]string{c.spec}, []string{"bar"}, s.xynAxes)
+			s.Require().Error(err)
+			s.Contains(err.Error(), c.want)
+		})
+	}
 }
 
 func TestChartSpecSuite(t *testing.T) {

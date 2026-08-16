@@ -174,7 +174,7 @@ func ParseOverrides(specs []string, charts []string, axes []Axis) (map[string]in
 				return nil, nil, fmt.Errorf("--chart: unknown key %q in spec %q (valid keys: %s)", key, spec, flagNameList(chartFlags))
 			}
 
-			pv, err := convertFlagValue(f, prop.Value, prop.HasValue, axes)
+			pv, err := convertFlagValue(f, prop, axes)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -199,11 +199,15 @@ func ParseOverrides(specs []string, charts []string, axes []Axis) (map[string]in
 }
 
 // convertFlagValue converts a --chart token value for flag f into its
-// JSON-primitive payload value, validating along the way. hasEq reports whether
-// the token had an `=value`; bare bool and stat flags (no `=`) are valid.
-// Swap is validated against axes (descriptors are axis-unaware).
-func convertFlagValue(f flags.Flag, val string, hasEq bool, axes []Axis) (any, error) {
+// JSON-primitive payload value, validating along the way. prop.HasValue reports
+// whether the token had an `=value`; bare bool, stat, and object flags (no `=`,
+// or a brace-delimited object value) are valid. Swap is validated against axes
+// (descriptors are axis-unaware).
+func convertFlagValue(f flags.Flag, prop specparse.Prop, axes []Axis) (any, error) {
+	val, hasEq := prop.Value, prop.HasValue
 	switch f.Kind {
+	case flags.KindObject:
+		return convertObjectFlagValue(f, prop)
 	case flags.KindBool:
 		v := true
 		if hasEq {
@@ -265,6 +269,28 @@ func encode(f flags.Flag, v any) any {
 		return f.Encode(v)
 	}
 	return v
+}
+
+// convertObjectFlagValue converts a KindObject --chart token into its payload:
+// bare `bar:bg` and empty `bar:bg={}` map to the empty bag (the flag's Encode
+// injects the on-switch), `bar:bg={field=value;…}` to the typed bag, and an
+// unwrapped scalar (`bar:bg=color=…`) is a hard error with a brace hint.
+func convertObjectFlagValue(f flags.Flag, prop specparse.Prop) (any, error) {
+	switch {
+	case !prop.HasValue:
+		return encode(f, map[string]any{}), nil
+	case prop.Object != nil:
+		bag, err := ParseObjectBag(prop.Object, f.ObjectFields)
+		if err != nil {
+			return nil, fmt.Errorf("--chart: key %q: %w", f.Name, err)
+		}
+		return encode(f, bag), nil
+	default:
+		return nil, fmt.Errorf(
+			"--chart: key %q value %q must be a brace-delimited object, e.g. %s={color=rgba(180,180,180,0.2);borderColor=#000}",
+			f.Name, prop.Value, f.Name,
+		)
+	}
 }
 
 // chartSpecParseOptions builds tokenizer options for a chart's --chart specs.

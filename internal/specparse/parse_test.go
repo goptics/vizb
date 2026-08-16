@@ -220,3 +220,124 @@ func (s *SpecParseSuite) TestSplitList() {
 	s.Equal([]string{"a", "c"}, SplitList("a,,c"))
 	s.Equal([]string{"#0ff", "#00f"}, SplitList("#0ff,#00f"))
 }
+
+// --- brace-delimited object values ---
+
+func (s *SpecParseSuite) TestParseObjectValueSemicolonFields() {
+	spec, err := Parse("bar:bg={color=rgba(180, 180, 180, 0.2);borderColor=#000;borderWidth=0}", Options{AllowBareKeys: true})
+	s.Require().NoError(err)
+	s.Require().Len(spec.Props, 1)
+	prop := spec.Props[0]
+	s.Equal("bg", prop.Key)
+	s.True(prop.HasValue)
+	s.Empty(prop.Value)
+	s.Require().NotNil(prop.Object)
+	s.Equal([]Prop{
+		{Key: "color", Value: "rgba(180, 180, 180, 0.2)", HasValue: true},
+		{Key: "borderColor", Value: "#000", HasValue: true},
+		{Key: "borderWidth", Value: "0", HasValue: true},
+	}, prop.Object)
+}
+
+func (s *SpecParseSuite) TestParseObjectValueCommaStaysLiteral() {
+	// No top-level ';': legacy comma mode must not split inside the braces.
+	spec, err := Parse("bar:horizontal,bg={opacity=0.2;shadowColor=rgba(0, 0, 0, 0.5)}", Options{AllowBareKeys: true})
+	s.Require().NoError(err)
+	s.Require().Len(spec.Props, 2)
+	s.Equal(Prop{Key: "horizontal", HasValue: false}, spec.Props[0])
+	object := spec.Props[1].Object
+	s.Require().NotNil(object)
+	s.Len(object, 2)
+	s.Equal("rgba(0, 0, 0, 0.5)", object[1].Value)
+}
+
+func (s *SpecParseSuite) TestParseObjectValueCommaListField() {
+	spec, err := Parse("bar:bg={borderRadius=8,8,0,0}", Options{AllowBareKeys: true})
+	s.Require().NoError(err)
+	s.Require().Len(spec.Props, 1)
+	s.Require().NotNil(spec.Props[0].Object)
+	s.Require().Len(spec.Props[0].Object, 1)
+	s.Equal("8,8,0,0", spec.Props[0].Object[0].Value)
+}
+
+func (s *SpecParseSuite) TestParseObjectValueEmptyBag() {
+	spec, err := Parse("bar:bg={}", Options{AllowBareKeys: true})
+	s.Require().NoError(err)
+	s.Require().Len(spec.Props, 1)
+	s.True(spec.Props[0].HasValue)
+	s.NotNil(spec.Props[0].Object)
+	s.Empty(spec.Props[0].Object)
+}
+
+func (s *SpecParseSuite) TestParseObjectValueWithSiblingAfterSemicolon() {
+	spec, err := Parse("bar:sort=asc;bg={opacity=0.2};labels", Options{AllowBareKeys: true})
+	s.Require().NoError(err)
+	s.Require().Len(spec.Props, 3)
+	s.Equal("sort", spec.Props[0].Key)
+	s.Equal("opacity", spec.Props[1].Object[0].Key)
+	s.Equal("labels", spec.Props[2].Key)
+}
+
+func (s *SpecParseSuite) TestParseScalarPropsHaveNilObject() {
+	spec, err := Parse("bar:swap=yxn,sort=asc", Options{})
+	s.Require().NoError(err)
+	s.Require().Len(spec.Props, 2)
+	s.Nil(spec.Props[0].Object)
+	s.Nil(spec.Props[1].Object)
+}
+
+func (s *SpecParseSuite) TestParseObjectValueErrors() {
+	s.Run("unmatched open brace", func() {
+		_, err := Parse("bar:bg={color=#000", Options{AllowBareKeys: true})
+		s.Require().Error(err)
+		s.Contains(err.Error(), "unmatched '{'")
+	})
+	s.Run("unmatched close brace", func() {
+		_, err := Parse("bar:bg=color=#000}", Options{AllowBareKeys: true})
+		s.Require().Error(err)
+		s.Contains(err.Error(), "unmatched '}'")
+	})
+	s.Run("trailing text after object", func() {
+		_, err := Parse("bar:bg={color=#000} trailing", Options{AllowBareKeys: true})
+		s.Require().Error(err)
+		s.Contains(err.Error(), "malformed object value")
+	})
+	s.Run("empty object field key", func() {
+		_, err := Parse("bar:bg={=bad}", Options{AllowBareKeys: true})
+		s.Require().Error(err)
+		s.Contains(err.Error(), "key")
+	})
+}
+
+func (s *SpecParseSuite) TestParseBag() {
+	props, err := ParseBag("color=rgba(180, 180, 180, 0.2);borderColor=#000;borderWidth=0")
+	s.Require().NoError(err)
+	s.Require().Len(props, 3)
+	s.Equal(Prop{Key: "color", Value: "rgba(180, 180, 180, 0.2)", HasValue: true}, props[0])
+	s.Equal(Prop{Key: "borderColor", Value: "#000", HasValue: true}, props[1])
+	s.Equal(Prop{Key: "borderWidth", Value: "0", HasValue: true}, props[2])
+
+	props, err = ParseBag("borderRadius=8,8,0,0")
+	s.Require().NoError(err)
+	s.Require().Len(props, 1)
+	s.Equal("8,8,0,0", props[0].Value)
+}
+
+func (s *SpecParseSuite) TestParseBagRejectsBraces() {
+	_, err := ParseBag("{color=#000}")
+	s.Require().Error(err)
+	s.Contains(err.Error(), "braces are not allowed")
+
+	_, err = ParseBag("color=#000}")
+	s.Require().Error(err)
+}
+
+func (s *SpecParseSuite) TestParseBagEmptyAndWhitespace() {
+	props, err := ParseBag("")
+	s.Require().NoError(err)
+	s.Empty(props)
+
+	props, err = ParseBag(" ; ")
+	s.Require().NoError(err)
+	s.Empty(props)
+}

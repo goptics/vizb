@@ -277,6 +277,60 @@ func (s *FlagBagSuite) TestMetaEmptyThemesWhenUnset() {
 	s.Empty(meta.ThemeSpecs)
 }
 
+func (s *FlagBagSuite) TestChartSeedObjectFlagTriState() {
+	fl := append(slices.Clone(DataFlags), internal_charts.BgFlag)
+
+	s.Run("unset: background omitted", func() {
+		cmd, bag := s.newCmdBag(fl)
+		seed := bag.ChartSeed(cmd)
+		s.NotContains(seed, "background")
+	})
+	s.Run("bare --bg seeds active only", func() {
+		cmd, bag := s.newCmdBag(fl)
+		s.Require().NoError(cmd.Flags().Set("bg", "on"))
+		seed := bag.ChartSeed(cmd)
+		s.Equal(map[string]any{"active": true}, seed["background"])
+	})
+	s.Run("bag seeds active plus typed props", func() {
+		cmd, bag := s.newCmdBag(fl)
+		s.Require().NoError(cmd.Flags().Set("bg", "color=rgba(180, 180, 180, 0.2);borderColor=#000;borderWidth=0"))
+		seed := bag.ChartSeed(cmd)
+		s.Equal(map[string]any{
+			"active":      true,
+			"color":       "rgba(180, 180, 180, 0.2)",
+			"borderColor": "#000",
+			"borderWidth": float64(0),
+		}, seed["background"])
+	})
+	s.Run("borderRadius encodes to array", func() {
+		cmd, bag := s.newCmdBag(fl)
+		s.Require().NoError(cmd.Flags().Set("bg", "borderRadius=8,8,0,0"))
+		seed := bag.ChartSeed(cmd)
+		background := seed["background"].(map[string]any)
+		s.Equal([]int{8, 8, 0, 0}, background["borderRadius"])
+	})
+}
+
+func (s *FlagBagSuite) TestValidateObjectFlagRejectsInvalidBag() {
+	fl := append(slices.Clone(DataFlags), internal_charts.BgFlag)
+	cmd, bag := s.newCmdBag(fl)
+	s.Require().NoError(cmd.Flags().Set("bg", "decal=1"))
+
+	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
+	defer restore()
+	s.Panics(func() { bag.Validate(cmd) })
+	s.True(*exitCalled)
+}
+
+func (s *FlagBagSuite) TestValidateObjectFlagAcceptsBareAndValidBag() {
+	fl := append(slices.Clone(DataFlags), internal_charts.BgFlag)
+	for _, value := range []string{"on", "color=#fff;opacity=0.5", "borderRadius=8,8,0,0"} {
+		cmd, bag := s.newCmdBag(fl)
+		s.Require().NoError(cmd.Flags().Set("bg", value))
+		bag.Validate(cmd) // must not exit
+	}
+}
+
 func (s *FlagBagSuite) TestChartSeedTriStateStatAndScale() {
 	fl := append(slices.Clone(DataFlags), internal_charts.BaseChartFlags...)
 	fl = append(fl, internal_charts.ScaleFlag)

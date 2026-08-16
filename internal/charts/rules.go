@@ -112,6 +112,28 @@ func Requires3DMode() flags.RuleFn {
 	}
 }
 
+// Excludes3DMode returns a rule that Skips the flag when the chart renders in
+// 3D. 3D has two detection paths: a z axis in the runtime axes (explicit
+// z-axis data or auto-enabled value-mode xyz) or a truthy threeD config entry
+// (--3d forcing 3D on x+y data, which never adds a z axis).
+func Excludes3DMode() flags.RuleFn {
+	return func(ctx any) (flags.Outcome, string) {
+		rc, ok := ctx.(RuleContext)
+		if !ok {
+			return flags.Fatal, "internal: expected charts.RuleContext"
+		}
+		for _, a := range rc.Axes {
+			if a.Key == "z" {
+				return flags.Skip, "background is 2D only; ignoring on 3D chart"
+			}
+		}
+		if enabled, ok := rc.Config["threeD"].(bool); ok && enabled {
+			return flags.Skip, "background is 2D only; ignoring on 3D chart"
+		}
+		return flags.Keep, ""
+	}
+}
+
 // OnlyScatter2D returns a rule that Skips --visualmap when scatter is in xyz
 // value-mode (where autoEnableValueMode3D forces 3D rendering). Checks that
 // x, y, and z axes are all present with type "value".

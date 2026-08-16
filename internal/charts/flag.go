@@ -112,7 +112,49 @@ var (
 		Validate:   ValidateBorderRadiusValue,
 		Encode:     EncodeBorderRadius,
 	}
+	// BgFlag is the bar-only category background: bare --bg turns it on, and a
+	// semicolon bag of style fields (--bg color=…;borderColor=#000) adds typed
+	// props. Encode injects the implicit "active": true on-switch; "active" is
+	// not a user field. 2D only — the rule skips it on 3D bars.
+	BgFlag = flags.Flag{
+		Name: "bg",
+		Usage: "Category background behind bars (2D only; bare = on, or style props " +
+			"semicolon-separated: color, borderColor, borderWidth, borderType, borderRadius, " +
+			"shadowBlur, shadowColor, shadowOffsetX, shadowOffsetY, opacity)",
+		Kind:         flags.KindObject,
+		JSONKey:      "background",
+		Encode:       EncodeBgObject,
+		ObjectFields: bgObjectFields(),
+		Rule:         []flags.RuleFn{Excludes3DMode()},
+	}
 )
+
+// bgObjectFields lists the typed style fields accepted inside the --bg object.
+func bgObjectFields() []flags.ObjectField {
+	return []flags.ObjectField{
+		{Name: "color", Kind: flags.KindString},
+		{Name: "borderColor", Kind: flags.KindString},
+		{Name: "borderWidth", Kind: flags.KindFloat, Validate: ValidateNonNegativeNumberValue, Encode: EncodeNumber},
+		{Name: "borderType", Kind: flags.KindString, Validate: ValidateBorderTypeValue},
+		{Name: "borderRadius", Kind: flags.KindString, Validate: ValidateBorderRadiusValue, Encode: EncodeBorderRadius},
+		{Name: "shadowBlur", Kind: flags.KindFloat, Validate: ValidateNonNegativeNumberValue, Encode: EncodeNumber},
+		{Name: "shadowColor", Kind: flags.KindString},
+		{Name: "shadowOffsetX", Kind: flags.KindFloat, Validate: ValidateNumberValue, Encode: EncodeNumber},
+		{Name: "shadowOffsetY", Kind: flags.KindFloat, Validate: ValidateNumberValue, Encode: EncodeNumber},
+		{Name: "opacity", Kind: flags.KindFloat, Validate: ValidateOpacityValue, Encode: EncodeNumber},
+	}
+}
+
+// EncodeBgObject injects the implicit on-switch into a parsed --bg object bag
+// payload (bare --bg → empty bag → {"active": true}).
+func EncodeBgObject(v any) any {
+	bag, _ := v.(map[string]any)
+	if bag == nil {
+		bag = map[string]any{}
+	}
+	bag["active"] = true
+	return bag
+}
 
 // --- Pure validators (no shared dependency) usable by descriptors. ---
 
@@ -222,4 +264,63 @@ func ValidateSymbolSizeValue(s string) error {
 		return fmt.Errorf("symbol size must be greater than 0, got %g", size)
 	}
 	return nil
+}
+
+// ValidateNumberValue reports whether s parses to a finite number (object-flag
+// field validator, e.g. --bg shadowOffsetX).
+func ValidateNumberValue(s string) error {
+	if _, err := strconv.ParseFloat(s, 64); err != nil {
+		return fmt.Errorf("value %q must be a number", s)
+	}
+	return nil
+}
+
+// ValidateNonNegativeNumberValue reports whether s parses to a number >= 0
+// (object-flag field validator, e.g. --bg borderWidth).
+func ValidateNonNegativeNumberValue(s string) error {
+	n, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return fmt.Errorf("value %q must be a number", s)
+	}
+	if n < 0 {
+		return fmt.Errorf("value must be non-negative (>= 0), got %g", n)
+	}
+	return nil
+}
+
+// ValidateOpacityValue reports whether s parses to a number in 0..1
+// (object-flag field validator, e.g. --bg opacity).
+func ValidateOpacityValue(s string) error {
+	n, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return fmt.Errorf("opacity %q must be a number", s)
+	}
+	if n < 0 || n > 1 {
+		return fmt.Errorf("opacity must be between 0 and 1, got %g", n)
+	}
+	return nil
+}
+
+// ValidateBorderTypeValue reports whether s is a valid background border type
+// (solid, dashed, or dotted).
+func ValidateBorderTypeValue(s string) error {
+	switch s {
+	case "solid", "dashed", "dotted":
+		return nil
+	}
+	return fmt.Errorf("border type %q is invalid (must be solid, dashed, or dotted)", s)
+}
+
+// EncodeNumber maps a validated numeric object-flag field value to a float64
+// payload (non-string input passes through unchanged).
+func EncodeNumber(v any) any {
+	s, ok := v.(string)
+	if !ok {
+		return v
+	}
+	n, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return v
+	}
+	return n
 }
