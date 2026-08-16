@@ -2,7 +2,6 @@ package cli
 
 import (
 	"os"
-	"slices"
 	"strings"
 
 	internal_charts "github.com/goptics/vizb/internal/charts"
@@ -43,16 +42,16 @@ func (o *objectValue) Type() string { return "string" }
 // positional arg. Mirrors RewriteStatArg: the next arg must look like an
 // object bag and must not be an existing file.
 func RewriteObjectArg(args []string) []string {
-	fields := objectFlagFields()
-	if len(fields) == 0 {
+	names := objectFlagNames()
+	if len(names) == 0 {
 		return args
 	}
 	out := make([]string, 0, len(args))
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
-		fieldNames, known := fields[strings.TrimPrefix(arg, "--")]
-		known = known && strings.HasPrefix(arg, "--") && !strings.Contains(arg, "=")
-		if known && i+1 < len(args) && looksLikeObjectValue(args[i+1], fieldNames) {
+		known := names[strings.TrimPrefix(arg, "--")] &&
+			strings.HasPrefix(arg, "--") && !strings.Contains(arg, "=")
+		if known && i+1 < len(args) && looksLikeObjectValue(args[i+1]) {
 			if _, err := os.Stat(args[i+1]); err != nil {
 				out = append(out, arg+"="+args[i+1])
 				i++
@@ -66,9 +65,10 @@ func RewriteObjectArg(args []string) []string {
 
 // looksLikeObjectValue reports whether s could be an argument to an object
 // flag: the "on" sentinel, a brace-wrapped token (rejected later with a hint),
-// or a semicolon bag whose every field starts with a known field name followed
-// by '='. Anything starting with '-' (another flag) is never a value.
-func looksLikeObjectValue(s string, fieldNames []string) bool {
+// or a semicolon key=value bag. Unknown keys are still rewritten so FlagBag
+// validation can reject them instead of treating the bag as a filename.
+// Anything starting with '-' (another flag) is never a value.
+func looksLikeObjectValue(s string) bool {
 	if strings.HasPrefix(s, "-") || s == "" {
 		return false
 	}
@@ -78,29 +78,30 @@ func looksLikeObjectValue(s string, fieldNames []string) bool {
 	if strings.HasPrefix(s, "{") {
 		return strings.HasSuffix(s, "}")
 	}
+	seen := false
 	for _, part := range strings.Split(s, ";") {
-		key, _, ok := strings.Cut(strings.TrimSpace(part), "=")
-		if !ok || !slices.Contains(fieldNames, strings.TrimSpace(key)) {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		if !strings.Contains(part, "=") {
 			return false
 		}
+		seen = true
 	}
-	return true
+	return seen
 }
 
-// objectFlagFields collects the registered KindObject flag names with their
-// accepted field names, for the space-form rewrite.
-func objectFlagFields() map[string][]string {
-	fields := map[string][]string{}
+// objectFlagNames collects the registered KindObject flag names for the
+// space-form rewrite.
+func objectFlagNames() map[string]bool {
+	names := map[string]bool{}
 	for _, chartType := range internal_charts.Registered() {
 		for _, f := range internal_charts.FlagsFor(chartType) {
-			if f.Kind != flags.KindObject {
-				continue
+			if f.Kind == flags.KindObject {
+				names[f.Name] = true
 			}
-			if _, ok := fields[f.Name]; ok {
-				continue // same descriptor registered by another command path
-			}
-			fields[f.Name] = f.ObjectFieldNames()
 		}
 	}
-	return fields
+	return names
 }

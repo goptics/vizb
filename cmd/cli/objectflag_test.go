@@ -4,7 +4,6 @@ import (
 	"os"
 	"testing"
 
-	internal_charts "github.com/goptics/vizb/internal/charts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -35,25 +34,34 @@ func (s *ObjectFlagSuite) TestObjectValueSetAndString() {
 
 func (s *ObjectFlagSuite) TestLooksLikeObjectValue() {
 	t := s.T()
-	fields := internal_charts.BgFlag.ObjectFieldNames()
-	assert.False(t, looksLikeObjectValue("", fields))
-	assert.False(t, looksLikeObjectValue("-h", fields))
-	assert.False(t, looksLikeObjectValue("--chart", fields))
-	assert.True(t, looksLikeObjectValue(objectFlagOn, fields))
-	assert.True(t, looksLikeObjectValue("{color=#000}", fields))
-	assert.False(t, looksLikeObjectValue("{color=#000", fields))
-	assert.True(t, looksLikeObjectValue("color=rgba(1,2,3,0.2)", fields))
-	assert.True(t, looksLikeObjectValue("color=#fff;borderColor=#000", fields))
-	assert.True(t, looksLikeObjectValue("borderRadius=8,8,0,0", fields))
-	assert.False(t, looksLikeObjectValue("decal=1", fields))
-	assert.False(t, looksLikeObjectValue("color", fields))
-	assert.False(t, looksLikeObjectValue("color=#fff;decal=1", fields))
+	assert.False(t, looksLikeObjectValue(""))
+	assert.False(t, looksLikeObjectValue("-h"))
+	assert.False(t, looksLikeObjectValue("--chart"))
+	assert.True(t, looksLikeObjectValue(objectFlagOn))
+	assert.True(t, looksLikeObjectValue("{color=#000}"))
+	assert.False(t, looksLikeObjectValue("{color=#000"))
+	assert.True(t, looksLikeObjectValue("color=rgba(1,2,3,0.2)"))
+	assert.True(t, looksLikeObjectValue("color=#fff;borderColor=#000"))
+	assert.True(t, looksLikeObjectValue("borderRadius=8,8,0,0"))
+	// Unknown keys still look like a bag so --bg decal=1 is rewritten and
+	// rejected by validation instead of being treated as a filename.
+	assert.True(t, looksLikeObjectValue("decal=1"))
+	assert.True(t, looksLikeObjectValue("color=#fff;decal=1"))
+	assert.False(t, looksLikeObjectValue("color"))
+	assert.False(t, looksLikeObjectValue("color=#fff;bare"))
 }
 
 func (s *ObjectFlagSuite) TestRewriteObjectArgJoinsSpaceForm() {
 	args := []string{"vizb", "bar", "--bg", "color=rgba(180, 180, 180, 0.2);borderColor=#000", "data.csv"}
 	got := RewriteObjectArg(args)
 	s.Equal([]string{"vizb", "bar", "--bg=color=rgba(180, 180, 180, 0.2);borderColor=#000", "data.csv"}, got)
+}
+
+func (s *ObjectFlagSuite) TestRewriteObjectArgJoinsUnknownKey() {
+	// Space-form unknown keys must reach FlagBag validation, not become a path.
+	args := []string{"vizb", "bar", "--bg", "decal=1", "data.csv"}
+	got := RewriteObjectArg(args)
+	s.Equal([]string{"vizb", "bar", "--bg=decal=1", "data.csv"}, got)
 }
 
 func (s *ObjectFlagSuite) TestRewriteObjectArgLeavesOtherForms() {
