@@ -138,13 +138,3 @@ func (f Flag) EffectiveKey() string {
 func (f Flag) IsSoft() bool {
 	return f.ValidSet != nil || f.Normalizer != nil || f.SoftValidate != nil
 }
-
-// ObjectFieldNames returns the field names accepted inside this KindObject
-// flag's bag.
-func (f Flag) ObjectFieldNames() []string {
-	names := make([]string, 0, len(f.ObjectFields))
-	for _, field := range f.ObjectFields {
-		names = append(names, field.Name)
-	}
-	return names
-}

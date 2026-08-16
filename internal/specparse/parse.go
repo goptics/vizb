@@ -172,26 +172,8 @@ func splitDepth0(s string, sep rune) ([]string, error) {
 // containsDepth0 reports whether sep occurs in s outside any {...} object.
 // Returns an error when braces are unbalanced.
 func containsDepth0(s string, sep rune) (bool, error) {
-	depth := 0
-	for _, r := range s {
-		switch r {
-		case '{':
-			depth++
-		case '}':
-			depth--
-			if depth < 0 {
-				return false, fmt.Errorf("specparse: unmatched '}' in %q", s)
-			}
-		case sep:
-			if depth == 0 {
-				return true, nil
-			}
-		}
-	}
-	if depth != 0 {
-		return false, fmt.Errorf("specparse: unmatched '{' in %q", s)
-	}
-	return false, nil
+	parts, err := splitDepth0(s, sep)
+	return len(parts) > 1, err
 }
 
 func parseSemicolonProps(rest string, opts Options) ([]Prop, error) {

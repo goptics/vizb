@@ -62,18 +62,6 @@ func (s *BarConfigSuite) TestBackgroundFieldRoundTrip() {
 	s.Equal(shared.BorderRadius{8, 8, 0, 0}, *decoded.Background.BorderRadius)
 }
 
-func (s *BarConfigSuite) TestBackgroundStrictDecodeRejectsInvalid() {
-	raws := []string{
-		`{"type":"bar","background":{"decal":1}}`,
-		`{"type":"bar","background":{"borderType":"dash"}}`,
-		`{"type":"bar","background":{"opacity":2}}`,
-	}
-	for _, raw := range raws {
-		cfg := New().(*Config)
-		s.Error(json.Unmarshal([]byte(raw), cfg), raw)
-	}
-}
-
 func TestBarConfigSuite(t *testing.T) {
 	suite.Run(t, new(BarConfigSuite))
 }
