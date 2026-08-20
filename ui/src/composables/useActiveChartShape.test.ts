@@ -122,7 +122,7 @@ describe('useActiveChartShape', () => {
     expect(scale.value).toBe('log')
   })
 
-  it('reads sort/threeD/visualMap/stat/symbol/smooth/horizontal/borderRadius fields', async () => {
+  it('reads sort/threeD/visualMap/stat/symbol/smooth/horizontal/borderRadius/background fields', async () => {
     holder.ref = ref(
       ds([
         {
@@ -145,6 +145,7 @@ describe('useActiveChartShape', () => {
           type: 'bar' as ChartType,
           horizontal: true,
           borderRadius: [8],
+          background: { active: true, color: 'rgba(180, 180, 180, 0.2)', shadowBlur: 10 },
         },
       ])
     )
@@ -160,6 +161,7 @@ describe('useActiveChartShape', () => {
     expect(shape.smooth.value).toBe(true)
     expect(shape.horizontal.value).toBe(false)
     expect(shape.borderRadius.value).toBeUndefined()
+    expect(shape.background.value).toBeUndefined()
 
     holder.activeIndex = 1
     shape = useActiveChartShape()
@@ -168,11 +170,17 @@ describe('useActiveChartShape', () => {
     expect(shape.symbolSize.value).toBe(8)
     expect(shape.smooth.value).toBe(false)
     expect(shape.borderRadius.value).toBeUndefined()
+    expect(shape.background.value).toBeUndefined()
 
     holder.activeIndex = 2
     shape = useActiveChartShape()
     expect(shape.horizontal.value).toBe(true)
     expect(shape.borderRadius.value).toEqual([8])
+    expect(shape.background.value).toEqual({
+      active: true,
+      color: 'rgba(180, 180, 180, 0.2)',
+      shadowBlur: 10,
+    })
     expect(shape.threeD.value).toBe(false)
     expect(shape.visualMap.value).toBe(false)
     expect(shape.stat.value).toBeUndefined()
@@ -208,7 +216,7 @@ describe('useActiveChartShape', () => {
     expect(again.hasThreeDOption.value).toBe(false)
   })
 
-  it('defaults threeDVisualMap/visualMap/smooth/horizontal/borderRadius when absent', async () => {
+  it('defaults threeDVisualMap/visualMap/smooth/horizontal/borderRadius/background when absent', async () => {
     holder.ref = ref(ds([{ type: 'bar' as ChartType }]))
     const { useActiveChartShape } = await import('./useActiveChartShape')
     const shape = useActiveChartShape()
@@ -217,6 +225,7 @@ describe('useActiveChartShape', () => {
     expect(shape.smooth.value).toBe(false)
     expect(shape.horizontal.value).toBe(false)
     expect(shape.borderRadius.value).toBeUndefined()
+    expect(shape.background.value).toBeUndefined()
     expect(shape.threeD.value).toBe(false)
     expect(shape.sort.value).toBeUndefined()
   })

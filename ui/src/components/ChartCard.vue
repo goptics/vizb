@@ -88,6 +88,7 @@ const {
   smooth,
   horizontal,
   borderRadius,
+  background,
 } = useActiveChartShape()
 const { activeArrangement, activeDataset } = useDataPoint()
 const activeAxes = computed(() => activeDataset.value?.axes)
@@ -149,7 +150,8 @@ const { options } = useChartOptions(
   symbolSize,
   smooth,
   horizontal,
-  borderRadius
+  borderRadius,
+  background
 )
 
 const initOptions = {
