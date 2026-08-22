@@ -10,8 +10,9 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-// BackgroundSuite covers the Background wire type (marshal omitempty) and the
-// object-bag converters shared by --chart braces and the raw --bg flag form.
+// BackgroundSuite covers the Background wire type (strict unmarshal + marshal
+// omitempty) and the object-bag converters shared by --chart braces and the
+// raw --bg flag form.
 type BackgroundSuite struct {
 	suite.Suite
 	fields []flags.ObjectField
@@ -77,6 +78,59 @@ func (s *BackgroundSuite) TestMarshalOmitsUnsetFields() {
 	s.Require().NoError(err)
 	// An explicit zero survives (pointer field); unset fields are omitted.
 	s.JSONEq(`{"active":true,"borderWidth":0}`, string(out))
+}
+
+func (s *BackgroundSuite) TestUnmarshalBorderRadiusForms() {
+	s.Run("single integer normalises to array", func() {
+		var bg Background
+		s.Require().NoError(json.Unmarshal([]byte(`{"active":true,"borderRadius":8}`), &bg))
+		s.Equal(BorderRadius{8}, *bg.BorderRadius)
+	})
+	s.Run("array passes through", func() {
+		var bg Background
+		s.Require().NoError(json.Unmarshal([]byte(`{"active":true,"borderRadius":[8,8,0,0]}`), &bg))
+		s.Equal(BorderRadius{8, 8, 0, 0}, *bg.BorderRadius)
+	})
+}
+
+func (s *BackgroundSuite) TestUnmarshalRejectsInvalid() {
+	cases := []struct {
+		name string
+		raw  string
+		want string
+	}{
+		{"unknown field", `{"decal":1}`, `unknown field "decal"`},
+		{"active wrong type", `{"active":"yes"}`, "background.active: must be a boolean"},
+		{"color wrong type", `{"color":5}`, "background.color: must be a string"},
+		{"borderType enum", `{"borderType":"dash"}`, "solid, dashed, or dotted"},
+		{"borderWidth negative", `{"borderWidth":-1}`, "non-negative"},
+		{"shadowBlur negative", `{"shadowBlur":-0.5}`, "non-negative"},
+		{"borderWidth not number", `{"borderWidth":"thick"}`, "must be a number"},
+		{"opacity above one", `{"opacity":1.5}`, "between 0 and 1"},
+		{"opacity below zero", `{"opacity":-0.1}`, "between 0 and 1"},
+		{"opacity quoted number", `{"opacity":"0.5"}`, "must be a number"},
+		{"borderWidth quoted number", `{"borderWidth":"2"}`, "must be a number"},
+		{"borderRadius float", `{"borderRadius":8.5}`, "must be an integer"},
+		{"borderRadius quoted number", `{"borderRadius":"8"}`, "must be an integer"},
+		{"borderRadius quoted array element", `{"borderRadius":[8,"8"]}`, "must be an integer"},
+		{"borderRadius negative", `{"borderRadius":[-1]}`, "non-negative"},
+		{"borderRadius too many", `{"borderRadius":[1,2,3,4,5]}`, "1–4 values"},
+		{"not an object", `[]`, "must be a JSON object"},
+	}
+	for _, c := range cases {
+		s.Run(c.name, func() {
+			var bg Background
+			err := json.Unmarshal([]byte(c.raw), &bg)
+			s.Require().Error(err)
+			s.Contains(err.Error(), c.want)
+		})
+	}
+}
+
+func (s *BackgroundSuite) TestUnmarshalNullIsNoOp() {
+	bg := Background{Active: true}
+	s.Require().NoError(json.Unmarshal([]byte("null"), &bg))
+	s.True(bg.Active)
 }
 
 func (s *BackgroundSuite) TestParseObjectBag() {
