@@ -43,9 +43,6 @@ func (o *objectValue) Type() string { return "string" }
 // object bag and must not be an existing file.
 func RewriteObjectArg(args []string) []string {
 	names := objectFlagNames()
-	if len(names) == 0 {
-		return args
-	}
 	out := make([]string, 0, len(args))
 	for i := 0; i < len(args); i++ {
 		arg := args[i]

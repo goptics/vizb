@@ -122,23 +122,7 @@ func ParseBag(input string) ([]Prop, error) {
 	if strings.ContainsAny(input, "{}") {
 		return nil, fmt.Errorf("specparse: braces are not allowed in bag %q (pass fields directly: key=value;key=value)", input)
 	}
-	parts, err := splitDepth0(input, ';')
-	if err != nil {
-		return nil, err
-	}
-	props := make([]Prop, 0, len(parts))
-	for _, part := range parts {
-		part = strings.TrimSpace(part)
-		if part == "" {
-			continue
-		}
-		prop, err := parsePropSegment(part, Options{})
-		if err != nil {
-			return nil, err
-		}
-		props = append(props, prop)
-	}
-	return props, nil
+	return parseObjectFields(strings.Split(input, ";"))
 }
 
 // splitDepth0 splits s on sep only outside any {...} object. Returns an error
@@ -280,10 +264,15 @@ func parseObjectBag(value string) ([]Prop, error) {
 	if inner == "" {
 		return []Prop{}, nil
 	}
-	parts, err := splitDepth0(inner, ';')
-	if err != nil {
-		return nil, err
+	if strings.ContainsAny(inner, "{}") {
+		return nil, fmt.Errorf("specparse: nested braces are not allowed in object value %q", value)
 	}
+	return parseObjectFields(strings.Split(inner, ";"))
+}
+
+// parseObjectFields parses semicolon-separated scalar object fields. Empty
+// segments are skipped.
+func parseObjectFields(parts []string) ([]Prop, error) {
 	fields := make([]Prop, 0, len(parts))
 	for _, part := range parts {
 		part = strings.TrimSpace(part)

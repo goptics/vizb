@@ -120,6 +120,15 @@ func (s *ChartFlagSuite) TestValidateOpacityValue() {
 	assert.Error(t, charts.ValidateOpacityValue("nope"))
 }
 
+func (s *ChartFlagSuite) TestNumericValidatorsRejectNonFinite() {
+	t := s.T()
+	for _, v := range []string{"NaN", "+Inf", "-Inf"} {
+		assert.Error(t, charts.ValidateNumberValue(v), v)
+		assert.Error(t, charts.ValidateNonNegativeNumberValue(v), v)
+		assert.Error(t, charts.ValidateOpacityValue(v), v)
+	}
+}
+
 func (s *ChartFlagSuite) TestValidateBorderTypeValue() {
 	t := s.T()
 	require.NoError(t, charts.ValidateBorderTypeValue("solid"))

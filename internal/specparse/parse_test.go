@@ -278,6 +278,20 @@ func (s *SpecParseSuite) TestParseObjectValueWithSiblingAfterSemicolon() {
 	s.Equal("labels", spec.Props[2].Key)
 }
 
+func (s *SpecParseSuite) TestParseSemicolonSkipsEmptySegments() {
+	spec, err := Parse("bar:sort=asc;;labels", Options{AllowBareKeys: true})
+	s.Require().NoError(err)
+	s.Require().Len(spec.Props, 2)
+	s.Equal("sort", spec.Props[0].Key)
+	s.Equal("labels", spec.Props[1].Key)
+}
+
+func (s *SpecParseSuite) TestParseSemicolonRejectsEmptyFieldKey() {
+	_, err := Parse("bar:sort=asc;=bad", Options{})
+	s.Require().Error(err)
+	s.Contains(err.Error(), "key")
+}
+
 func (s *SpecParseSuite) TestParseScalarPropsHaveNilObject() {
 	spec, err := Parse("bar:swap=yxn,sort=asc", Options{})
 	s.Require().NoError(err)
@@ -307,6 +321,21 @@ func (s *SpecParseSuite) TestParseObjectValueErrors() {
 		s.Require().Error(err)
 		s.Contains(err.Error(), "key")
 	})
+	s.Run("nested object field value", func() {
+		_, err := Parse("bar:bg={color={x=y}}", Options{AllowBareKeys: true})
+		s.Require().Error(err)
+		s.Contains(err.Error(), "nested braces")
+	})
+}
+
+func (s *SpecParseSuite) TestParseObjectValueSkipsEmptyFields() {
+	spec, err := Parse("bar:bg={color=#000;;opacity=0.5}", Options{})
+	s.Require().NoError(err)
+	s.Require().Len(spec.Props, 1)
+	s.Equal([]Prop{
+		{Key: "color", Value: "#000", HasValue: true},
+		{Key: "opacity", Value: "0.5", HasValue: true},
+	}, spec.Props[0].Object)
 }
 
 func (s *SpecParseSuite) TestParseBag() {
@@ -340,4 +369,14 @@ func (s *SpecParseSuite) TestParseBagEmptyAndWhitespace() {
 	props, err = ParseBag(" ; ")
 	s.Require().NoError(err)
 	s.Empty(props)
+}
+
+func (s *SpecParseSuite) TestParseBagRejectsInvalidFields() {
+	_, err := ParseBag("=bad")
+	s.Require().Error(err)
+	s.Contains(err.Error(), "key")
+
+	_, err = ParseBag("bare")
+	s.Require().Error(err)
+	s.Contains(err.Error(), "bare")
 }

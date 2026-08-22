@@ -2,6 +2,7 @@ package charts
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 
@@ -266,10 +267,20 @@ func ValidateSymbolSizeValue(s string) error {
 	return nil
 }
 
+// parseFiniteFloat parses s as a finite float64. NaN and ±Inf are rejected
+// because encoding/json cannot marshal them.
+func parseFiniteFloat(s string) (float64, bool) {
+	n, err := strconv.ParseFloat(s, 64)
+	if err != nil || math.IsNaN(n) || math.IsInf(n, 0) {
+		return 0, false
+	}
+	return n, true
+}
+
 // ValidateNumberValue reports whether s parses to a finite number (object-flag
 // field validator, e.g. --bg shadowOffsetX).
 func ValidateNumberValue(s string) error {
-	if _, err := strconv.ParseFloat(s, 64); err != nil {
+	if _, ok := parseFiniteFloat(s); !ok {
 		return fmt.Errorf("value %q must be a number", s)
 	}
 	return nil
@@ -278,8 +289,8 @@ func ValidateNumberValue(s string) error {
 // ValidateNonNegativeNumberValue reports whether s parses to a number >= 0
 // (object-flag field validator, e.g. --bg borderWidth).
 func ValidateNonNegativeNumberValue(s string) error {
-	n, err := strconv.ParseFloat(s, 64)
-	if err != nil {
+	n, ok := parseFiniteFloat(s)
+	if !ok {
 		return fmt.Errorf("value %q must be a number", s)
 	}
 	if n < 0 {
@@ -291,8 +302,8 @@ func ValidateNonNegativeNumberValue(s string) error {
 // ValidateOpacityValue reports whether s parses to a number in 0..1
 // (object-flag field validator, e.g. --bg opacity).
 func ValidateOpacityValue(s string) error {
-	n, err := strconv.ParseFloat(s, 64)
-	if err != nil {
+	n, ok := parseFiniteFloat(s)
+	if !ok {
 		return fmt.Errorf("opacity %q must be a number", s)
 	}
 	if n < 0 || n > 1 {

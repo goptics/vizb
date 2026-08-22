@@ -4,6 +4,9 @@ import (
 	"os"
 	"testing"
 
+	internal_charts "github.com/goptics/vizb/internal/charts"
+	"github.com/goptics/vizb/internal/flags"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -49,6 +52,9 @@ func (s *ObjectFlagSuite) TestLooksLikeObjectValue() {
 	assert.True(t, looksLikeObjectValue("color=#fff;decal=1"))
 	assert.False(t, looksLikeObjectValue("color"))
 	assert.False(t, looksLikeObjectValue("color=#fff;bare"))
+	assert.True(t, looksLikeObjectValue("color=#fff;"))
+	assert.True(t, looksLikeObjectValue(";color=#fff"))
+	assert.True(t, looksLikeObjectValue("color=#fff;;opacity=0.5"))
 }
 
 func (s *ObjectFlagSuite) TestRewriteObjectArgJoinsSpaceForm() {
@@ -87,6 +93,29 @@ func (s *ObjectFlagSuite) TestRewriteObjectArgLeavesOtherForms() {
 		args := []string{"vizb", "bar", "--bg", file}
 		s.Equal(args, RewriteObjectArg(args))
 	})
+}
+
+func (s *ObjectFlagSuite) TestCobraParsesRewrittenObjectArgs() {
+	cases := []struct {
+		name string
+		args []string
+		want string
+	}{
+		{name: "bare", args: []string{"--bg"}, want: objectFlagOn},
+		{name: "equals value", args: []string{"--bg=color=#fff"}, want: "color=#fff"},
+		{name: "space value", args: []string{"--bg", "color=#fff"}, want: "color=#fff"},
+		{name: "equals on", args: []string{"--bg=on"}, want: objectFlagOn},
+	}
+	for _, tc := range cases {
+		s.Run(tc.name, func() {
+			bag := NewFlagBag([]flags.Flag{internal_charts.BgFlag})
+			cmd := &cobra.Command{Use: "t"}
+			bag.Bind(cmd.Flags())
+			s.Require().NoError(cmd.ParseFlags(RewriteObjectArg(tc.args)))
+			s.Equal(tc.want, bag.String("bg"))
+			s.True(cmd.Flags().Changed("bg"))
+		})
+	}
 }
 
 func TestObjectFlagSuite(t *testing.T) {

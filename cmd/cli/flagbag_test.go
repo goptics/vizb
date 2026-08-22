@@ -331,6 +331,13 @@ func (s *FlagBagSuite) TestValidateObjectFlagAcceptsBareAndValidBag() {
 	}
 }
 
+func (s *FlagBagSuite) TestValidateObjectFlagSkippedWhenUnset() {
+	fl := append(slices.Clone(DataFlags), internal_charts.BgFlag)
+	cmd, bag := s.newCmdBag(fl)
+	bag.Validate(cmd)
+	s.Equal("", bag.String("bg"))
+}
+
 func (s *FlagBagSuite) TestChartSeedTriStateStatAndScale() {
 	fl := append(slices.Clone(DataFlags), internal_charts.BaseChartFlags...)
 	fl = append(fl, internal_charts.ScaleFlag)
