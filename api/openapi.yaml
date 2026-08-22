@@ -736,6 +736,24 @@ components:
         threeD: { type: boolean }
         threeDVisualMap: { type: boolean }
         horizontal: { type: boolean }
+        background:
+          type: object
+          additionalProperties: false
+          properties:
+            active: { type: boolean }
+            color: { type: string }
+            borderColor: { type: string }
+            borderWidth: { type: number, minimum: 0 }
+            borderType: { type: string, enum: [solid, dashed, dotted] }
+            borderRadius:
+              oneOf:
+                - { type: integer, minimum: 0 }
+                - { type: array, minItems: 1, maxItems: 4, items: { type: integer, minimum: 0 } }
+            shadowBlur: { type: number, minimum: 0 }
+            shadowColor: { type: string }
+            shadowOffsetX: { type: number }
+            shadowOffsetY: { type: number }
+            opacity: { type: number, minimum: 0, maximum: 1 }
         stat: { $ref: '#/components/schemas/StatisticsConfig' }
     LineChartConfig:
       type: object

@@ -5,6 +5,7 @@ import (
 
 	internal_charts "github.com/goptics/vizb/internal/charts"
 	"github.com/goptics/vizb/internal/flags"
+	"github.com/goptics/vizb/internal/specparse"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -95,10 +96,10 @@ func (s *ChartSelectionSuite) TestDatasetNeeds3D() {
 
 func (s *ChartSelectionSuite) TestConvertFlagValueValidatesIntegers() {
 	flag := flags.Flag{Name: "depth", Kind: flags.KindInt}
-	value, err := convertFlagValue(flag, "3", true, nil)
+	value, err := convertFlagValue(flag, specparse.Prop{Key: "depth", Value: "3", HasValue: true}, nil)
 	s.NoError(err)
 	s.Equal(3, value)
-	_, err = convertFlagValue(flag, "not-a-number", true, nil)
+	_, err = convertFlagValue(flag, specparse.Prop{Key: "depth", Value: "not-a-number", HasValue: true}, nil)
 	s.ErrorContains(err, "must be an integer")
 }
 

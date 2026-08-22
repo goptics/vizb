@@ -25,6 +25,7 @@ type Config struct {
 	ThreeDVisualMap *bool                `json:"threeDVisualMap,omitempty"`
 	Horizontal      *bool                `json:"horizontal,omitempty"`
 	BorderRadius    *shared.BorderRadius `json:"borderRadius,omitempty"`
+	Background      *shared.Background   `json:"background,omitempty"`
 	Stat            *shared.StatConfig   `json:"stat,omitempty"`
 }
 

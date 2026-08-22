@@ -41,7 +41,7 @@ func NewFlagBag(fl []flags.Flag) *FlagBag {
 	}
 	for _, f := range fl {
 		switch f.Kind {
-		case flags.KindString:
+		case flags.KindString, flags.KindObject:
 			b.strs[f.Name] = new(string)
 		case flags.KindBool:
 			b.bools[f.Name] = new(bool)
@@ -103,6 +103,14 @@ func (b *FlagBag) Bind(fs *pflag.FlagSet) {
 				fs.Var(sv, f.Name, f.Usage)
 			}
 			fs.Lookup(f.Name).NoOptDefVal = statFlagAll
+		case flags.KindObject:
+			ov := &objectValue{value: b.strs[f.Name]}
+			if f.Shorthand != "" {
+				fs.VarP(ov, f.Name, f.Shorthand, f.Usage)
+			} else {
+				fs.Var(ov, f.Name, f.Usage)
+			}
+			fs.Lookup(f.Name).NoOptDefVal = objectFlagOn
 		case flags.KindStringArray:
 			if f.Shorthand != "" {
 				fs.StringArrayVarP(b.stringSlices[f.Name], f.Name, f.Shorthand, nil, f.Usage)
@@ -128,6 +136,8 @@ func (b *FlagBag) Validate(cmd *cobra.Command) {
 				Normalizer:   strings.ToLower,
 				SliceDefault: nil,
 			}})
+		case f.Kind == flags.KindObject:
+			b.validateObjectFlag(cmd, f)
 		case f.IsSoft():
 			b.applySoftRule(f)
 		case f.Validate != nil && cmd.Flags().Changed(f.Name):
@@ -135,6 +145,21 @@ func (b *FlagBag) Validate(cmd *cobra.Command) {
 				shared.ExitWithError(err.Error(), nil)
 			}
 		}
+	}
+}
+
+// validateObjectFlag fatals on an invalid object-flag bag (unknown field or a
+// field value that fails its validation). The bare sentinel needs no parse.
+func (b *FlagBag) validateObjectFlag(cmd *cobra.Command, f flags.Flag) {
+	if !cmd.Flags().Changed(f.Name) {
+		return
+	}
+	raw := *b.strs[f.Name]
+	if raw == objectFlagOn {
+		return
+	}
+	if _, err := shared.ParseObjectBagString(raw, f.ObjectFields); err != nil {
+		shared.ExitWithError(fmt.Sprintf("--%s: %v", f.Name, err), nil)
 	}
 }
 
@@ -257,7 +282,8 @@ func (b *FlagBag) StringSliceRef(name string) *[]string { return b.stringSlices[
 
 // ChartSeed builds the chart-config seed from the chart flags in the bag. A
 // chart flag contributes when the user changed it, or when it carries a default
-// (e.g. scale → "linear"). Stat is tri-state: omitted unless changed.
+// (e.g. scale → "linear"). Stat and object flags are tri-state: omitted unless
+// changed (bare --stat / --bg seeds their on-switch payload).
 func (b *FlagBag) ChartSeed(cmd *cobra.Command) map[string]any {
 	seed := map[string]any{}
 	for _, f := range b.flags {
@@ -275,6 +301,11 @@ func (b *FlagBag) ChartSeed(cmd *cobra.Command) map[string]any {
 				math = []string{}
 			}
 			seed[f.JSONKey] = map[string]any{"enabled": true, "math": math}
+		case flags.KindObject:
+			if !changed {
+				continue
+			}
+			seed[f.JSONKey] = encodeFlag(f, b.objectBagValue(f))
 		case flags.KindBool:
 			if changed {
 				seed[f.JSONKey] = encodeFlag(f, *b.bools[f.Name])
@@ -301,7 +332,7 @@ func (b *FlagBag) ChartSeed(cmd *cobra.Command) map[string]any {
 func (b *FlagBag) Reset() {
 	for _, f := range b.flags {
 		switch f.Kind {
-		case flags.KindString:
+		case flags.KindString, flags.KindObject:
 			*b.strs[f.Name], _ = f.Default.(string)
 		case flags.KindBool:
 			*b.bools[f.Name], _ = f.Default.(bool)
@@ -394,6 +425,21 @@ func (b *FlagBag) Meta() RunMeta {
 		OutputFile:  b.String("output"),
 		Parser:      b.String("parser"),
 	}
+}
+
+// objectBagValue parses a changed object flag's raw value into its typed bag
+// payload: the bare sentinel maps to the empty bag. Validate already rejected
+// invalid bags, so a parse error here exits defensively.
+func (b *FlagBag) objectBagValue(f flags.Flag) map[string]any {
+	raw := *b.strs[f.Name]
+	if raw == objectFlagOn {
+		return map[string]any{}
+	}
+	bag, err := shared.ParseObjectBagString(raw, f.ObjectFields)
+	if err != nil {
+		shared.ExitWithError(fmt.Sprintf("--%s: %v", f.Name, err), nil)
+	}
+	return bag
 }
 
 // encodeFlag applies the flag's payload transform when present.

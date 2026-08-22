@@ -17,6 +17,7 @@ func init() {
 		charts.ScaleFlag, charts.StackFlag, charts.ThreeDFlag, charts.ThreeDRotateFlag, charts.ThreeDVisualMapFlag,
 		charts.HorizontalFlag,
 		charts.BorderRadiusFlag,
+		charts.BgFlag,
 	))
 	cli.SetChartMeta(cli.ChartMeta{
 		Type:  "bar",
