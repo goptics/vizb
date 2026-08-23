@@ -234,6 +234,9 @@ spec is `<type>:<props>` where props are `key=value` pairs or bare flags
     `--chart bar:stat=center,spread`
   - Or separate props with **semicolons** so commas stay inside the value:
     `--chart 'bar:stat=center,spread;labels'`
+- **Object props** use braces: `key={field=value;field=value}`. Inside `{}`,
+  only `;` separates fields so commas stay literal (`rgba(…)`,
+  `borderRadius=8,8,0,0`). Unwrapped `bar:bg=color=…` is invalid.
 
 Semicolon mode matches structured `--theme` specs
 (`name:colors=#hex,...;visualMapColors=...`); both use the same prop grammar.
@@ -256,6 +259,12 @@ vizb sales.csv -c bar --chart bar:stat=center,spread -o out.html
 
 # Multi-value + another prop: use semicolon between props
 vizb sales.csv -c bar --chart 'bar:stat=center,spread;labels' -o out.html
+
+# Category background on 2D bars (writes background.active: true; no UI toggle)
+vizb sales.csv -c bar --chart bar:bg -o out.html
+
+# Styled object (semicolons inside braces; commas stay literal)
+vizb sales.csv -c bar --chart 'bar:bg={color=rgba(180, 180, 180, 0.2);borderColor=#000}' -o out.html
 ```
 
 **Supported keys:**
@@ -267,6 +276,7 @@ vizb sales.csv -c bar --chart 'bar:stat=center,spread;labels' -o out.html
 | `labels` | `labels` | `true`, `false` | all |
 | `scale` | — | `linear`, `log` | `bar`, `line` only |
 | `3d-rotate` | `3d-rotate` | `true`, `false` | `bar`, `line` 3D only |
+| `bg` | `bg` | `{field=value;…}` style object, or bare/`{}` for on | `bar` 2D only |
 | `stat` | `stat` | `all`, or comma-separated categories (`center,spread`, …) | all |
 
 Bare flags (no `=`) default to `true`. Per-chart settings override the chart's own defaults. The root-level `--sort` and `--show-labels` flags are deprecated — use `--chart` overrides instead.

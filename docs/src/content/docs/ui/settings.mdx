@@ -19,6 +19,7 @@ Prefer **per-chart** flags when generating multi-chart HTML. Root-level `--sort`
 | `--chart <type>:labels` or `vizb pie --show-labels` | Labels toggle | on / off |
 | `--chart line:smooth` or `vizb line --smooth` | Smooth lines | on / off — 2D line only |
 | `--chart bar:3d-rotate` (or line/scatter) | Auto rotate | on / off — 3D bar / line / scatter |
+| `--chart bar:bg` or `vizb bar --bg` | — | on / off — 2D bar only; CLI/config, no UI toggle; writes `background.active: true` |
 | `--stat` | Statistics button | off unless set; see [Statistics](/ui/stats) |
 
 ## Setting Defaults from CLI
@@ -32,8 +33,16 @@ vizb bar data.csv --scale log --show-labels -o output.html
 
 # Sort descending, bar only
 vizb bar data.csv --sort desc -o output.html
+
+# Category background on 2D bars (no UI toggle; writes background.active: true)
+vizb data.csv --chart bar:bg -o output.html
+vizb bar data.csv --bg -o output.html
+
+# Object props: {field=value;field=value} (semicolons inside braces; commas stay literal)
+# Unwrapped bar:bg=color=… is invalid
+vizb data.csv --chart 'bar:bg={color=rgba(180, 180, 180, 0.2);borderColor=#000}' -o output.html
 ```
 
 <Aside type="note">
-  CLI flags set the initial state. All settings can be changed in the UI without regenerating the file. Deep links keep many of those choices in the URL — see [UI Overview → Deep links](/ui#deep-links).
+  CLI flags set the initial state. Settings that have a UI control can be changed without regenerating the file. Deep links keep many of those choices in the URL — see [UI Overview → Deep links](/ui#deep-links). `--bg` / `--chart bar:bg` has no settings-panel toggle (2D only).
 </Aside>
