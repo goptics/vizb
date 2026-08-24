@@ -37,6 +37,8 @@ func (s *DownloadBarSuite) TestTTYPaintsThenFinishClears() {
 	s.Contains(out, "Downloading v1.1.0")
 	s.Contains(out, "100%")
 	s.Contains(out, "#")
+	s.Equal("1.0 KB", formatBytes(1024))
+	s.Equal("1.0 MB", formatBytes(1<<20))
 
 	closer, ok := wrapped.(io.Closer)
 	s.Require().True(ok)

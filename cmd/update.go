@@ -74,9 +74,7 @@ func isDevBuild(ver, distribution string) bool {
 func previewUpdateDownload(bar *cli.DownloadBar, stdout io.Writer, total int64, pace time.Duration) error {
 	src := bar.Wrap(newPacedReader(total, pace), total, "(devel)")
 	_, err := io.Copy(io.Discard, src)
-	if closer, ok := src.(io.Closer); ok {
-		_ = closer.Close()
-	}
+	_ = bar.Finish()
 	if err != nil {
 		return err
 	}

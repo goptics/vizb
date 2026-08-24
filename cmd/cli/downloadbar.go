@@ -3,7 +3,6 @@ package cli
 import (
 	"fmt"
 	"io"
-	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -33,9 +32,6 @@ type DownloadBar struct {
 
 // NewDownloadBar paints download progress on w when w is a TTY.
 func NewDownloadBar(w io.Writer) *DownloadBar {
-	if w == nil {
-		w = os.Stderr
-	}
 	profile := cliout.ColorProfile(w)
 	b := &DownloadBar{
 		w:     w,
@@ -55,13 +51,12 @@ func NewDownloadBar(w io.Writer) *DownloadBar {
 
 // IsTTY reports whether the bar will paint (stderr is a terminal).
 func (b *DownloadBar) IsTTY() bool {
-	return b != nil && b.tty
+	return b.tty
 }
 
-// Wrap reports read progress for r. Non-TTY writers return r unchanged.
-// total is Content-Length; values <= 0 omit the percent and bar.
+// Wrap reports read progress for r. Non-TTY writers and unknown totals return r unchanged.
 func (b *DownloadBar) Wrap(r io.Reader, total int64, label string) io.Reader {
-	if b == nil || r == nil || !b.tty {
+	if !b.tty || total <= 0 {
 		return r
 	}
 	b.mu.Lock()
@@ -74,9 +69,6 @@ func (b *DownloadBar) Wrap(r io.Reader, total int64, label string) io.Reader {
 
 // Finish clears the progress line when it was painted. Idempotent.
 func (b *DownloadBar) Finish() error {
-	if b == nil {
-		return nil
-	}
 	b.mu.Lock()
 	if b.finished {
 		b.mu.Unlock()
@@ -114,7 +106,7 @@ func (p *progressReader) Close() error {
 func (b *DownloadBar) add(n int64) {
 	b.mu.Lock()
 	b.written += n
-	complete := b.total > 0 && b.written >= b.total
+	complete := b.written >= b.total
 	b.mu.Unlock()
 	b.paint(complete)
 }
@@ -122,13 +114,8 @@ func (b *DownloadBar) add(n int64) {
 func (b *DownloadBar) paint(final bool) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.finished || !b.tty {
+	if !final && b.written < b.total && !b.lastPaint.IsZero() && time.Since(b.lastPaint) < spinnerTick {
 		return
-	}
-	if !final && !b.lastPaint.IsZero() && time.Since(b.lastPaint) < spinnerTick {
-		if b.total <= 0 || b.written < b.total {
-			return
-		}
 	}
 
 	_, _ = fmt.Fprint(b.w, ansiHideCursor)
@@ -145,32 +132,22 @@ func (b *DownloadBar) lineLocked() string {
 		sb.WriteString(b.label)
 	}
 	sb.WriteString("  ")
-	if b.total > 0 {
-		sb.WriteString(b.renderBarLocked())
-		sb.WriteString("  ")
-		pct := int(float64(b.written) / float64(b.total) * 100)
-		if b.written >= b.total || pct > 100 {
-			pct = 100
-		}
-		sb.WriteString(strconv.Itoa(pct))
-		sb.WriteString("%  ")
-		sb.WriteString(formatBytes(b.written))
-		sb.WriteByte('/')
-		sb.WriteString(formatBytes(b.total))
-	} else {
-		sb.WriteString(formatBytes(b.written))
+	sb.WriteString(b.renderBarLocked())
+	sb.WriteString("  ")
+	pct := int(float64(b.written) / float64(b.total) * 100)
+	if b.written >= b.total {
+		pct = 100
 	}
+	sb.WriteString(strconv.Itoa(pct))
+	sb.WriteString("%  ")
+	sb.WriteString(formatBytes(b.written))
+	sb.WriteByte('/')
+	sb.WriteString(formatBytes(b.total))
 	return sb.String()
 }
 
 func (b *DownloadBar) renderBarLocked() string {
-	filled := 0
-	if b.total > 0 {
-		filled = int(float64(downloadBarWidth) * float64(b.written) / float64(b.total))
-		if filled > downloadBarWidth {
-			filled = downloadBarWidth
-		}
-	}
+	filled := min(downloadBarWidth, int(float64(downloadBarWidth)*float64(b.written)/float64(b.total)))
 	empty := downloadBarWidth - filled
 	if b.color {
 		return b.style.Render(strings.Repeat("█", filled)) + strings.Repeat("░", empty)
