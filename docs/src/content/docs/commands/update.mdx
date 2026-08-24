@@ -32,3 +32,7 @@ elevates privileges automatically.
 The update is installed only after the release archive SHA-256 matches its entry
 in the existing GoReleaser `checksums.txt` asset. An invalid or missing checksum
 leaves the current executable unchanged.
+
+On a TTY, standalone updates show archive download progress on stderr.
+Local development builds (`go build`, `task build:cli`) play a mock download on
+a TTY so the bar can be previewed; the running binary is not replaced.

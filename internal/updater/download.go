@@ -18,7 +18,7 @@ const (
 	maxChecksumSize = 1 << 20
 )
 
-func downloadFile(ctx context.Context, client *http.Client, sourceURL, destination, userAgent string, maxSize int64) error {
+func downloadFile(ctx context.Context, client *http.Client, sourceURL, destination, userAgent string, maxSize int64, wrap func(io.Reader, int64, string) io.Reader, label string) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, sourceURL, nil)
 	if err != nil {
 		return fmt.Errorf("create download request: %w", err)
@@ -43,7 +43,14 @@ func downloadFile(ctx context.Context, client *http.Client, sourceURL, destinati
 		return fmt.Errorf("create download destination: %w", err)
 	}
 
-	written, copyErr := io.Copy(output, io.LimitReader(resp.Body, maxSize+1))
+	src := io.Reader(io.LimitReader(resp.Body, maxSize+1))
+	if wrap != nil {
+		src = wrap(src, resp.ContentLength, label)
+	}
+	written, copyErr := io.Copy(output, src)
+	if closer, ok := src.(io.Closer); ok {
+		_ = closer.Close()
+	}
 	syncErr := output.Sync()
 	closeErr := output.Close()
 	if copyErr != nil {
