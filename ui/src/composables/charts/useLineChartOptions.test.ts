@@ -1,6 +1,6 @@
 import { describe, it, expect, afterAll } from 'vitest'
 import { ref } from 'vue'
-import type { ChartData } from '@/types'
+import type { ChartData, ScaleInput } from '@/types'
 import type { BaseChartConfig } from './baseChartOptions'
 import { useLineChartOptions } from './useLineChartOptions'
 import { installDevicePixelRatio } from '@/test-utils'
@@ -79,10 +79,52 @@ const makeGroupedConfig = (opts: { smooth?: boolean; stack?: boolean } = {}): Ba
   sort: ref({ enabled: false, order: 'asc' }),
   showLabels: ref(false),
   isDark: ref(false),
-  scale: ref<'linear' | 'log'>('linear'),
+  scale: ref<ScaleInput>('linear'),
   smooth: ref(opts.smooth ?? false),
   stack: ref(opts.stack ?? false),
 })
+
+const makeNumericStepChartData = (
+  yAxis: string[] = ['train', 'val'],
+  points: [string, number[]][] = [
+    ['1', [10, 8]],
+    ['2', [0, 9]],
+    ['4', [12, 6]],
+  ]
+): ChartData => ({
+  title: 'loss vs step',
+  statType: 'grouped',
+  yAxis,
+  zAxis: [],
+  series: points.map(([xAxis, values]) => ({ xAxis, values, benchmarkId: xAxis })),
+  points: [],
+  axisLabels: { x: 'step', y: 'split' },
+})
+
+const makeNumericStepConfig = (
+  scale: ScaleInput,
+  data: ChartData = makeNumericStepChartData()
+) => ({
+  chartData: ref(data),
+  sort: ref({ enabled: false, order: 'asc' as const }),
+  showLabels: ref(false),
+  isDark: ref(false),
+  scale: ref(scale),
+  smooth: ref(false),
+  stack: ref(false),
+})
+
+const axisOf = (options: { xAxis?: unknown; yAxis?: unknown }) => ({
+  xAxis: options.xAxis as { type?: string; logBase?: number; data?: string[] },
+  yAxis: options.yAxis as { type?: string; logBase?: number },
+})
+
+const tooltipOf = (options: { tooltip?: unknown }) =>
+  options.tooltip as {
+    trigger?: string
+    axisPointer?: { type?: string; snap?: boolean }
+    formatter?: (params: unknown) => string
+  }
 
 describe('useLineChartOptions — grouped mode', () => {
   it('emits stacked area line series when stack is enabled', () => {
@@ -143,6 +185,128 @@ describe('useLineChartOptions — axes value mode', () => {
     const { options } = useLineChartOptions(makeSmoothValueConfig())
     const s = (options.value.series as { smooth?: boolean }[])[0]!
     expect(s.smooth).toBe(true)
+  })
+})
+
+describe('useLineChartOptions — per-axis log scale', () => {
+  it('string log logs the default value axis only', () => {
+    const { options } = useLineChartOptions(makeNumericStepConfig('log'))
+    const { xAxis, yAxis } = axisOf(options.value)
+    expect(xAxis.type).toBe('category')
+    expect(yAxis.type).toBe('log')
+    expect(yAxis.logBase).toBe(10)
+  })
+
+  it('object axes x on numeric-step grouped lines sets log X and value Y with legend', () => {
+    const { options } = useLineChartOptions(makeNumericStepConfig({ type: 'log', axes: ['x'] }))
+    const { xAxis, yAxis } = axisOf(options.value)
+    expect(xAxis.type).toBe('log')
+    expect(yAxis.type).toBe('value')
+    const legend = options.value.legend as { show?: boolean; data?: string[] }
+    expect(legend.show).not.toBe(false)
+    expect(legend.data).toEqual(['train', 'val'])
+    const series = options.value.series as { name: string; data: [number, number | null][] }[]
+    expect(series).toHaveLength(2)
+    expect(series[0]!.data[0]).toEqual([1, 10])
+  })
+
+  it('base 2 sets xAxis.logBase to 2', () => {
+    const { options } = useLineChartOptions(
+      makeNumericStepConfig({ type: 'log', axes: ['x'], base: 2 })
+    )
+    expect(axisOf(options.value).xAxis.logBase).toBe(2)
+  })
+
+  it('X-log does not drop y <= 0', () => {
+    const { options } = useLineChartOptions(makeNumericStepConfig({ type: 'log', axes: ['x'] }))
+    const series = options.value.series as { data: [number, number | null][] }[]
+    expect(series[0]!.data).toEqual([
+      [1, 10],
+      [2, 0],
+      [4, 12],
+    ])
+  })
+
+  it('Y-log still nulls y <= 0', () => {
+    const { options } = useLineChartOptions(makeNumericStepConfig({ type: 'log', axes: ['y'] }))
+    const series = options.value.series as { data: (number | null)[] }[]
+    expect(series[0]!.data).toEqual([10, null, 12])
+    expect(axisOf(options.value).xAxis.type).toBe('category')
+    expect(axisOf(options.value).yAxis.type).toBe('log')
+  })
+
+  it('non-numeric category X stays category when axes includes x', () => {
+    const { options } = useLineChartOptions({
+      ...makeGroupedConfig(),
+      scale: ref<ScaleInput>({ type: 'log', axes: ['x'] }),
+    })
+    const { xAxis, yAxis } = axisOf(options.value)
+    expect(xAxis.type).toBe('category')
+    expect(xAxis.data).toEqual(['Jan', 'Feb'])
+    expect(yAxis.type).toBe('value')
+  })
+
+  it('grouped log-X with 2+ y series uses axis tooltip not cross', () => {
+    const { options } = useLineChartOptions(makeNumericStepConfig({ type: 'log', axes: ['x'] }))
+    const tooltip = tooltipOf(options.value)
+    expect(tooltip.trigger).toBe('axis')
+    expect(tooltip.axisPointer?.type).not.toBe('cross')
+    expect(tooltip.axisPointer?.type).toBe('line')
+    expect(tooltip.axisPointer?.snap).toBe(true)
+    const html = tooltip.formatter?.([
+      { name: '1', seriesName: 'train', value: [1, 10], marker: 'a', color: '#a00' },
+      { name: '1', seriesName: 'val', value: [1, 8], marker: 'b', color: '#00a' },
+    ])
+    expect(html).toContain('train')
+    expect(html).toContain('val')
+    expect(html).toContain('10')
+    expect(html).toContain('8')
+  })
+
+  it('same coerce-X path with one series uses cross', () => {
+    const { options } = useLineChartOptions(
+      makeNumericStepConfig(
+        { type: 'log', axes: ['x'] },
+        makeNumericStepChartData(
+          ['train'],
+          [
+            ['1', [10]],
+            ['2', [0]],
+            ['4', [12]],
+          ]
+        )
+      )
+    )
+    const tooltip = tooltipOf(options.value)
+    expect(tooltip.axisPointer?.type).toBe('cross')
+    expect(tooltip.trigger).toBe('item')
+  })
+
+  it('x-only numeric log-X uses cross and [x, y] pairs', () => {
+    const { options } = useLineChartOptions(
+      makeNumericStepConfig(
+        { type: 'log', axes: ['x'] },
+        {
+          title: 'steps',
+          statType: 'grouped',
+          yAxis: [],
+          zAxis: [],
+          series: [
+            { xAxis: '1', values: [10], benchmarkId: '1' },
+            { xAxis: '2', values: [0], benchmarkId: '2' },
+          ],
+          points: [],
+          axisLabels: { x: 'step' },
+        }
+      )
+    )
+    expect(axisOf(options.value).xAxis.type).toBe('log')
+    const series = options.value.series as { data: [number, number | null][] }[]
+    expect(series[0]!.data).toEqual([
+      [1, 10],
+      [2, 0],
+    ])
+    expect(tooltipOf(options.value).axisPointer?.type).toBe('cross')
   })
 })
 

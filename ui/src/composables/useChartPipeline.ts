@@ -1,5 +1,5 @@
 import { ref, watch, unref, toRaw, markRaw, onScopeDispose, type MaybeRef, type Ref } from 'vue'
-import type { AxisLabels, DataPoint, ChartData, Sort, ScaleType, Axis, ChartType } from '../types'
+import type { AxisLabels, DataPoint, ChartData, Sort, ScaleInput, Axis, ChartType } from '../types'
 import TransformWorker from '../workers/transform.worker.ts?worker&inline'
 import type { WorkerResponse } from '../workers/transform.worker'
 import { listChartSignatures } from '../lib/transform'
@@ -54,7 +54,7 @@ export function useChartPipeline(
   activeGroupId: Ref<number>,
   sort: Ref<Sort>,
   showLabels: Ref<boolean>,
-  scale: Ref<ScaleType>,
+  scale: Ref<ScaleInput>,
   threeD: Ref<boolean>,
   axes?: MaybeRef<Axis[] | undefined>,
   chartType?: MaybeRef<ChartType>,

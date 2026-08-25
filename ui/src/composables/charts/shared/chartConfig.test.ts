@@ -522,6 +522,26 @@ describe('remaining chartConfig branches', () => {
     expect(typeof html).toBe('string')
   })
 
+  it('createTooltipConfig line pointer and [x, y] pair metrics', () => {
+    const totals = new Map<string, number>([['A', 10]])
+    const tip = createTooltipConfig(true, false, totals, 'line') as {
+      axisPointer?: { type?: string; snap?: boolean }
+      formatter: (p: unknown) => string
+    }
+    expect(tip.axisPointer?.type).toBe('line')
+    expect(tip.axisPointer?.snap).toBe(true)
+    const html = tip.formatter([
+      { name: '1', seriesName: 'A', value: [1, 4], color: '#a00', marker: 'm' },
+      { name: '1', seriesName: 'B', value: [1, 6], color: '#00c', marker: 'n' },
+      { name: '1', seriesName: 'Gap', value: [1, null], color: '#ccc', marker: 'g' },
+    ])
+    expect(html).toContain('A')
+    expect(html).toContain('B')
+    expect(html).not.toContain('Gap')
+    expect(html).toContain('4')
+    expect(html).toContain('6')
+  })
+
   it('createTooltipConfig seriesTotals and non-string colors', () => {
     const totals = new Map<string, number>([['A', 10]])
     const tip = createTooltipConfig(true, false, totals) as { formatter: (p: unknown) => string }

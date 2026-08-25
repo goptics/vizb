@@ -639,6 +639,19 @@ describe('resolve3DZAxisType', () => {
     ).toBe('log')
   })
 
+  it('ignores grouped 3D x-only log for the metric axis', () => {
+    expect(
+      resolve3DZAxisType({ type: 'log', axes: ['x'] }, [
+        { name: 'a', data: [{ value: [0, 0, 3] }] },
+      ])
+    ).toBe('value')
+    expect(
+      resolve3DZAxisType({ type: 'log', axes: ['z'], base: 2 }, [
+        { name: 'a', data: [{ value: [0, 0, 3] }] },
+      ])
+    ).toBe('log')
+  })
+
   it('falls back to value for empty or non-positive metrics', () => {
     expect(resolve3DZAxisType('log', [])).toBe('value')
     expect(
@@ -660,6 +673,20 @@ describe('remaining 3d branch coverage', () => {
     expect(axes.xAxis3D.type).toBe('log')
     expect(axes.yAxis3D.type).toBe('log')
     expect(axes.zAxis3D.type).toBe('log')
+    expect(axes.xAxis3D.logBase).toBe(10)
+  })
+
+  it('createContinuous3DAxes logs only requested axes', async () => {
+    const { createContinuous3DAxes } = await import('./3d')
+    const axes = createContinuous3DAxes(styling, 'x', 'y', 'z', {
+      type: 'log',
+      axes: ['x'],
+      base: 2,
+    })
+    expect(axes.xAxis3D.type).toBe('log')
+    expect(axes.xAxis3D.logBase).toBe(2)
+    expect(axes.yAxis3D.type).toBe('value')
+    expect(axes.zAxis3D.type).toBe('value')
   })
 
   it('createContinuous3DTooltipFormatter default labels', async () => {

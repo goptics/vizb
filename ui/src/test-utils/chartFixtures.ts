@@ -1,5 +1,5 @@
 import { ref, type Ref } from 'vue'
-import type { ChartData, ChartType, Render3D, ScaleType, Sort } from '@/types'
+import type { ChartData, ChartType, Render3D, ScaleInput, ScaleType, Sort } from '@/types'
 import type { BaseChartConfig } from '@/composables/charts/baseChartOptions'
 
 const noSort: Sort = { enabled: false, order: 'asc' }
@@ -165,7 +165,7 @@ export type BaseConfigOverrides = {
   sort?: Sort | Ref<Sort>
   showLabels?: boolean | Ref<boolean>
   isDark?: boolean | Ref<boolean>
-  scale?: ScaleType | Ref<ScaleType>
+  scale?: ScaleInput | Ref<ScaleInput>
   stack?: boolean | Ref<boolean>
   threeDRotate?: boolean | Ref<boolean>
   threeD?: boolean | Ref<boolean>

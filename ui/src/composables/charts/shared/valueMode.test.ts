@@ -55,6 +55,14 @@ describe('scaleValueTuples', () => {
       [3, 4, 7],
     ])
   })
+
+  it('x-log drops non-positive x and leaves y intact', () => {
+    const tuples: [number, number, number?][] = [
+      [0, 0],
+      [2, -1],
+    ]
+    expect(scaleValueTuples(tuples, 'linear', 'log')).toEqual([[2, -1]])
+  })
 })
 
 function cfg(overrides: BaseConfigOverrides = {}) {
@@ -116,6 +124,28 @@ describe('buildValueAxes2DOptions', () => {
     expect(seriesOf(option).data).toEqual([])
   })
 
+  it('logs X independently and keeps non-positive y', () => {
+    const option = buildValueAxes2DOptions(
+      cfg({
+        chartData: makeValueChartData({
+          valueTuples: [
+            [10, 0],
+            [100, 8],
+          ],
+        }),
+        scale: { type: 'log', axes: ['x'], base: 2 },
+      }),
+      'line'
+    )
+    expect((option.xAxis as { type?: string; logBase?: number }).type).toBe('log')
+    expect((option.xAxis as { logBase?: number }).logBase).toBe(2)
+    expect((option.yAxis as { type?: string }).type).toBe('value')
+    expect(seriesOf(option).data).toEqual([
+      [10, 0],
+      [100, 8],
+    ])
+  })
+
   it('sorts when enabled and scales log y', () => {
     const option = buildValueAxes2DOptions(
       cfg({
@@ -132,9 +162,9 @@ describe('buildValueAxes2DOptions', () => {
       'line'
     )
     expect(seriesOf(option).data).toEqual([
-      [2, 20, undefined],
-      [3, 5, undefined],
-      [1, null, undefined],
+      [2, 20],
+      [3, 5],
+      [1, null],
     ])
   })
 

@@ -11,7 +11,11 @@ export const DATAZOOM_INITIAL_END_PERCENT = 20
 const axisTitleFontSize = 16
 const LOG_AXIS_RANGE = { min: 'dataMin' as const, max: 'dataMax' as const }
 const LINEAR_AXIS_RANGE = { min: null, max: null }
-const valueAxisRange = (scale: ScaleType) => (scale === 'log' ? LOG_AXIS_RANGE : LINEAR_AXIS_RANGE)
+
+const logAxisProps = (scale: ScaleType, logBase = 10) =>
+  scale === 'log'
+    ? { type: 'log' as const, logBase, ...LOG_AXIS_RANGE }
+    : { type: 'value' as const, ...LINEAR_AXIS_RANGE }
 
 // Bottom chrome for heatmap / correlation — visualMap always, dataZoom when len > 50.
 export const HEATMAP_VISUAL_MAP_BOTTOM = 8
@@ -227,26 +231,33 @@ export function hasRotatedXLabels(xAxisData: string[], hasDataZoom = false): boo
   return xAxisData.reduce((acc, cur) => acc + cur.length, 0) > 100
 }
 
+export type ValueAxisScaleOpts = {
+  xScale?: ScaleType
+  xLogBase?: number
+  yLogBase?: number
+}
+
 /** Dual numeric axes for scatter --axes value mode — mirrors createAxisConfig styling. */
 export function createValueAxisConfig(
   styling: ChartStyling,
   xAxisName?: string,
   yAxisName?: string,
   yScale: ScaleType = 'linear',
-  fitYAxisToData = false
+  fitYAxisToData = false,
+  opts?: ValueAxisScaleOpts
 ): { xAxis: any; yAxis: any } {
   const nameStyle = {
     color: styling.textColor,
     fontSize: axisTitleFontSize,
     fontWeight: 'bold' as const,
   }
+  const xScale = opts?.xScale ?? 'linear'
 
   const yAxisConfig: any = {
-    type: yScale === 'log' ? 'log' : 'value',
+    ...logAxisProps(yScale, opts?.yLogBase ?? 10),
     // ECharts 6 moves axis names to avoid label overlap by default. Vizb's
     // nameGap values already reserve their position using the v5 behavior.
     nameMoveOverlap: false,
-    ...valueAxisRange(yScale),
     ...(yAxisName
       ? { name: yAxisName, nameLocation: 'middle', nameGap: 45, nameTextStyle: nameStyle }
       : {}),
@@ -261,7 +272,7 @@ export function createValueAxisConfig(
 
   return {
     xAxis: {
-      type: 'value',
+      ...logAxisProps(xScale, opts?.xLogBase ?? 10),
       nameMoveOverlap: false,
       ...(xAxisName
         ? { name: xAxisName, nameLocation: 'middle', nameGap: 30, nameTextStyle: nameStyle }
@@ -337,12 +348,12 @@ export function createAxisConfig(
   scale: ScaleType = 'linear',
   xAxisName?: string,
   hasDataZoom = false,
-  fitYAxisToData = false
+  fitYAxisToData = false,
+  yLogBase = 10
 ): { xAxis: any; yAxis: any } {
   const yAxisConfig: any = {
-    type: scale === 'log' ? 'log' : 'value',
+    ...logAxisProps(scale, yLogBase),
     nameMoveOverlap: false,
-    ...valueAxisRange(scale),
     inverse: false,
     data: null,
     splitLine: {
@@ -413,7 +424,8 @@ export function createHorizontalAxisConfig(
   yAxisData: string[],
   scale: ScaleType = 'linear',
   categoryAxisName?: string,
-  hasDataZoom = false
+  hasDataZoom = false,
+  xLogBase = 10
 ): { xAxis: any; yAxis: any } {
   const axisNameStyle = {
     color: styling.textColor,
@@ -422,9 +434,8 @@ export function createHorizontalAxisConfig(
   }
 
   const xAxisConfig: any = {
-    type: scale === 'log' ? 'log' : 'value',
+    ...logAxisProps(scale, xLogBase),
     nameMoveOverlap: false,
-    ...valueAxisRange(scale),
     inverse: false,
     data: null,
     splitLine: {
@@ -679,16 +690,30 @@ export function createPinnedAxisTooltip(isDark = false): EChartsOption['tooltip'
   }
 }
 
+/** Metric from a category value or a coerced `[x, y]` pair. */
+export function tooltipMetric(value: unknown): unknown {
+  if (Array.isArray(value)) return value[1]
+  return value
+}
+
+function tooltipHeader(params: { name?: string; value?: unknown }[]): string {
+  const p = params[0]
+  if (Array.isArray(p?.value)) return formatTooltipValue(p.value[0])
+  return p?.name ?? ''
+}
+
 /**
  * Creates common tooltip configuration
  * @param hasXYAxis - Whether the chart has both X and Y axes
  * @param isDark - Dark mode flag for tooltip theming
  * @param seriesTotals - Per-series totals across all x, appended after each name
+ * @param pointer - Category band (`shadow`) or continuous-X snap line
  */
 export function createTooltipConfig(
   hasXYAxis: boolean,
   isDark = false,
-  seriesTotals?: Map<string, number>
+  seriesTotals?: Map<string, number>,
+  pointer: 'shadow' | 'line' = 'shadow'
 ): EChartsOption['tooltip'] {
   const theme = getTooltipTheme(isDark)
   const styling = getChartStyling(isDark)
@@ -696,41 +721,49 @@ export function createTooltipConfig(
   if (hasXYAxis) {
     return {
       trigger: 'axis',
-      axisPointer: createShadowAxisPointer(styling, theme),
+      axisPointer:
+        pointer === 'line'
+          ? createLineAxisPointer(styling, theme, true)
+          : createShadowAxisPointer(styling, theme),
       ...theme,
       formatter: (params) => {
         if (!Array.isArray(params)) return ''
 
         // null = missing cell (no data for that series at this category) — skip from tooltip
-        const present = params.filter((p) => p.value !== null && p.value !== undefined)
+        const present = params.filter((p) => {
+          const metric = tooltipMetric(p.value)
+          return metric !== null && metric !== undefined
+        })
         if (!present.length) return ''
 
         const legendRows = present.map((cur) => {
           const seriesSum = seriesTotals?.get(cur.seriesName ?? '')
           const sumTag = seriesSum === undefined ? '' : ` (Σ${formatChartNumber(seriesSum)})`
-          return `${cur.marker} ${cur.seriesName}${sumTag}: ${formatTooltipValue(cur.value)}`
+          return `${cur.marker} ${cur.seriesName}${sumTag}: ${formatTooltipValue(tooltipMetric(cur.value))}`
         })
-        const body = `<strong>${params[0]?.name}</strong><br/>${renderTooltipLegendColumns(legendRows)}`
+        const header = tooltipHeader(params)
+        const body = `<strong>${header}</strong><br/>${renderTooltipLegendColumns(legendRows)}`
 
         // Σ across all series at this x = the x marginal. Label with the x name
         // to match the 3D tooltip's "Σ <name>" lines. Only meaningful with >1 series.
         if (present.length <= 1) return body
-        const total = present.reduce(
-          (sum, cur) => sum + (typeof cur.value === 'number' ? cur.value : 0),
+        const metrics = present.map((p) => tooltipMetric(p.value))
+        const total = metrics.reduce<number>(
+          (sum, cur) => sum + (typeof cur === 'number' ? cur : 0),
           0
         )
-        const xName = params[0]?.name ?? ''
-        const sumLine = `${tooltipDivider(isDark)}Σ ${xName}: <b>${formatChartNumber(total)}</b>`
+        const sumLine = `${tooltipDivider(isDark)}Σ ${header}: <b>${formatChartNumber(total)}</b>`
         const spread = tooltipSpreadRows(
-          present.map((p) => (typeof p.value === 'number' ? p.value : NaN)),
+          metrics.map((v) => (typeof v === 'number' ? v : NaN)),
           isDark
         )
         const donut = renderDonutSvg(
           params.flatMap((p) => {
-            if (typeof p.value !== 'number') return []
+            const value = tooltipMetric(p.value)
+            if (typeof value !== 'number') return []
             return [
               {
-                value: p.value,
+                value,
                 color: typeof p.color === 'string' ? p.color : String(p.color),
                 name: p.seriesName ?? '',
               },

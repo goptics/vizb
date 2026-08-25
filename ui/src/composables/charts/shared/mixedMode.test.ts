@@ -147,6 +147,30 @@ describe('buildMixedAxes2DOptions', () => {
     expect(option.legend).toEqual({ show: false })
   })
 
+  it('coerces numeric category X to log and uses cross tooltip', () => {
+    const option = buildMixedAxes2DOptions(
+      cfg({
+        scale: { type: 'log', axes: ['x'], base: 2 },
+        chartData: makeMixedChartData({
+          xCategories: ['1', '10'],
+          mixedTuples: [
+            [0, 5],
+            [1, 0],
+          ],
+        }),
+      }),
+      'line'
+    )
+    expect((option.xAxis as { type?: string; logBase?: number }).type).toBe('log')
+    expect((option.xAxis as { logBase?: number }).logBase).toBe(2)
+    expect((option.yAxis as { type?: string }).type).toBe('value')
+    expect(series0(option).data).toEqual([
+      [1, 5],
+      [10, 0],
+    ])
+    expect((option.tooltip as { axisPointer?: { type?: string } }).axisPointer?.type).toBe('cross')
+  })
+
   it('defaults scale to linear when scale ref omitted', () => {
     const full = cfg()
     const { scale: _scale, ...rest } = full
@@ -339,8 +363,19 @@ describe('buildMixedAxes3DOptions', () => {
     )
     expect(option.yAxis3D).toMatchObject({ type: 'log' })
     expect(option.zAxis3D).toMatchObject({ type: 'log' })
+    expect(option.yAxis3D).toMatchObject({ logBase: 10 })
     expect(seriesList(option)).toEqual([])
     expect(option.visualMap).toBeTruthy()
+  })
+
+  it('logs mixed 3D y only when axes is y', () => {
+    const option = buildMixedAxes3DOptions(
+      mixed3dConfig({ scale: { type: 'log', axes: ['y'] } }),
+      'scatter3D'
+    )
+    expect(option.yAxis3D).toMatchObject({ type: 'log' })
+    expect(option.zAxis3D).toMatchObject({ type: 'value' })
+    expect(option.xAxis3D).toMatchObject({ type: 'category' })
   })
 
   it('omits itemStyle on scatter/bar when visualMap on', () => {

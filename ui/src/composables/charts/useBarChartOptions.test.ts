@@ -306,6 +306,71 @@ describe('useBarChartOptions — value mode and branches', () => {
     expect(series[0]!.data).toEqual([null, null, 5, null])
   })
 
+  it('coerces numeric category X to log without dropping y <= 0', () => {
+    const chartData: ChartData = {
+      title: 'steps',
+      statType: 'v',
+      yAxis: ['a', 'b'],
+      zAxis: [],
+      series: [
+        { xAxis: '1', values: [0, 4], benchmarkId: '' },
+        { xAxis: '10', values: [5, 8], benchmarkId: '' },
+      ],
+      points: [],
+      axisLabels: { x: 'step', y: 'run' },
+    }
+    const { options } = useBarChartOptions({
+      chartData: ref(chartData),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      scale: ref({ type: 'log' as const, axes: ['x'] as ('x' | 'y' | 'z')[] }),
+    })
+    expect((options.value.xAxis as { type?: string }).type).toBe('log')
+    expect((options.value.yAxis as { type?: string }).type).toBe('value')
+    const series = options.value.series as { data: [number, number | null][] }[]
+    expect(series[0]!.data).toEqual([
+      [1, 0],
+      [10, 5],
+    ])
+    expect(
+      (options.value.tooltip as { trigger?: string; axisPointer?: { type?: string } }).trigger
+    ).toBe('axis')
+    expect(
+      (options.value.tooltip as { axisPointer?: { type?: string } }).axisPointer?.type
+    ).not.toBe('cross')
+  })
+
+  it('simple numeric log-X bars use cross tooltip', () => {
+    const chartData: ChartData = {
+      title: 'steps',
+      statType: 'v',
+      yAxis: [],
+      zAxis: [],
+      series: [
+        { xAxis: '1', values: [0], benchmarkId: '' },
+        { xAxis: '10', values: [5], benchmarkId: '' },
+      ],
+      points: [],
+      axisLabels: { x: 'step' },
+    }
+    const { options } = useBarChartOptions({
+      chartData: ref(chartData),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      scale: ref({ type: 'log' as const, axes: ['x'] as ('x' | 'y' | 'z')[] }),
+    })
+    expect((options.value.xAxis as { type?: string }).type).toBe('log')
+    expect((options.value.series as { data: [number, number | null][] }[])[0]!.data).toEqual([
+      [1, 0],
+      [10, 5],
+    ])
+    expect((options.value.tooltip as { axisPointer?: { type?: string } }).axisPointer?.type).toBe(
+      'cross'
+    )
+  })
+
   it('adds horizontal dataZoom for large simple categories', () => {
     const many = Array.from({ length: 60 }, (_, i) => `c${i}`)
     const chartData: ChartData = {

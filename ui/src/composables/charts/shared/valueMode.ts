@@ -1,6 +1,7 @@
 import type { EChartsOption } from 'echarts'
 import type { ScaleType, ChartType } from '@/types'
 import { getNextColorFor, VALUE_CHART_TYPES, formatChartNumber } from '@/lib/utils'
+import { axisIsLog, axisLogBase, DEFAULT_LOG_AXES, parseScale } from '@/lib/scale'
 import { type BaseChartConfig, getBaseOptions } from '../baseChartOptions'
 import {
   createValueModeGridConfig,
@@ -33,10 +34,19 @@ export function sortValueTuples(
 
 export function scaleValueTuples(
   tuples: [number, number, number?][],
-  scale: ScaleType
+  yScale: ScaleType,
+  xScale: ScaleType = 'linear'
 ): [number, number | null, number?][] {
-  if (scale !== 'log') return tuples
-  return tuples.map(([x, y, c]) => [x, adjustForLogScaleLine(y, scale), c])
+  const xLog = xScale === 'log'
+  const yLog = yScale === 'log'
+  if (!xLog && !yLog) return tuples
+  const out: [number, number | null, number?][] = []
+  for (const [x, y, c] of tuples) {
+    if (xLog && x <= 0) continue
+    const yAdj = adjustForLogScaleLine(y, yScale)
+    out.push(c !== undefined ? [x, yAdj, c] : [x, yAdj])
+  }
+  return out
 }
 
 const chartTypeForECharts = (chartType: ChartType): string =>
@@ -71,13 +81,20 @@ export function buildValueAxes2DOptions(
   const yLabel = chartData.value.axisLabels?.y
   const baseOptions = getBaseOptions(config)
   const styling = getChartStyling(isDark.value)
+  const parsed = parseScale(scale?.value)
+  const xWant = axisIsLog(parsed, 'x', DEFAULT_LOG_AXES.value2d)
+  const yWant = axisIsLog(parsed, 'y', DEFAULT_LOG_AXES.value2d)
+  const xScale = resolveLogScale(
+    xWant ? 'log' : 'linear',
+    tuples.map((t) => t[0])
+  )
   const yScale = resolveLogScale(
-    scale?.value ?? 'linear',
+    yWant ? 'log' : 'linear',
     tuples.map((t) => t[1])
   )
 
   const sorted = sortValueTuples(tuples, sort.value.enabled, sort.value.order)
-  const data = scaleValueTuples(sorted, yScale)
+  const data = scaleValueTuples(sorted, yScale, xScale)
   const largeX = isLargeXAxis(data.map((_, i) => String(i)))
 
   const useVisualMap = chartType === 'scatter' && config.visualMap?.value === true
@@ -125,7 +142,12 @@ export function buildValueAxes2DOptions(
       xLabel,
       yLabel,
       yScale,
-      chartType === 'line' || chartType === 'scatter'
+      chartType === 'line' || chartType === 'scatter',
+      {
+        xScale,
+        xLogBase: axisLogBase(parsed, 'x'),
+        yLogBase: axisLogBase(parsed, 'y'),
+      }
     ),
     dataZoom: [
       { type: 'inside', xAxisIndex: 0 },

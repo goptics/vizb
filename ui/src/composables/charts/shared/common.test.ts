@@ -115,6 +115,20 @@ describe('computeSeriesTotals', () => {
     ])
     expect(totals.get('legacy')).toBe(10)
   })
+
+  it('sums y from coerced [x, y] pairs', () => {
+    const totals = computeSeriesTotals([
+      {
+        name: 'train',
+        data: [
+          [1, 10],
+          [2, null],
+          [4, 5],
+        ],
+      },
+    ])
+    expect(totals.get('train')).toBe(15)
+  })
 })
 
 describe('sortByAxisTotal', () => {

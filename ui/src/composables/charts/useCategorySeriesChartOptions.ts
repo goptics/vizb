@@ -10,6 +10,8 @@ import {
   createLegendConfig,
   createPinnedAxisTooltip,
   createTooltipConfig,
+  createValueAxisConfig,
+  createValueModeTooltip,
   getChartStyling,
   isLargeXAxis,
   makeLegendTitle,
@@ -22,6 +24,13 @@ import {
   resolveLogScale,
   computeSeriesTotals,
 } from './shared/common'
+import {
+  axisIsLog,
+  axisLogBase,
+  DEFAULT_LOG_AXES,
+  numericLogXValues,
+  parseScale,
+} from '@/lib/scale'
 import { resolveSeriesSymbol } from './shared/seriesConfig'
 import { resolve2DScatterVisualMap } from './shared/visualMap'
 import { buildValueAxes2DOptions } from './shared/valueMode'
@@ -48,15 +57,27 @@ const SERIES_STYLE: Record<
   },
 }
 
-const groupedScatterColorValues = (seriesList: { data: (number | null)[] }[]): number[] => {
+type SeriesPoint = number | null | [number, number | null]
+
+const groupedScatterColorValues = (seriesList: { data: SeriesPoint[] }[]): number[] => {
   const vals: number[] = []
   for (const s of seriesList) {
     for (const v of s.data) {
-      if (v != null && isFinite(v)) vals.push(v)
+      const n = Array.isArray(v) ? v[1] : v
+      if (n != null && isFinite(n)) vals.push(n)
     }
   }
   return vals
 }
+
+const logYValue = (val: number | null, yLog: boolean): number | null =>
+  adjustForLogScaleLine(val, yLog ? 'log' : 'linear')
+
+const asLogXPairs = (
+  xNums: number[],
+  values: (number | null)[],
+  yLog: boolean
+): [number, number | null][] => xNums.map((x, i) => [x, logYValue(values[i] ?? null, yLog)])
 
 export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: CategorySeriesKind) {
   const { chartData, sort, isDark, showLabels, scale, stack, visualMap } = config
@@ -74,12 +95,34 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
     const { series, xAxisData, hasYAxis } = sortedData.value
     const baseOptions = getBaseOptions(config)
     const styling = getChartStyling(isDark.value)
+    const parsed = parseScale(scale?.value)
+    const xWant = axisIsLog(parsed, 'x', DEFAULT_LOG_AXES.grouped2d)
+    const yWant = axisIsLog(parsed, 'y', DEFAULT_LOG_AXES.grouped2d)
     const yScale = resolveLogScale(
-      scale?.value ?? 'linear',
+      yWant ? 'log' : 'linear',
       series.flatMap((s) => s.values)
     )
+    const yLog = yScale === 'log'
+    const xNums = numericLogXValues(xAxisData, xWant)
+    const coerceX = xNums !== null
     const largeX = isLargeXAxis(xAxisData)
     const xLabel = chartData.value.axisLabels?.x
+    const yLogBase = axisLogBase(parsed, 'y')
+    const groupedAxes = coerceX
+      ? createValueAxisConfig(styling, xLabel, undefined, yScale, true, {
+          xScale: 'log',
+          xLogBase: axisLogBase(parsed, 'x'),
+          yLogBase,
+        })
+      : createAxisConfig(styling, xAxisData, yScale, xLabel, largeX, true, yLogBase)
+    const groupedDataZoom = coerceX
+      ? [
+          { type: 'inside' as const, xAxisIndex: 0 },
+          { type: 'inside' as const, yAxisIndex: 0 },
+        ]
+      : largeX
+        ? createDataZoomConfig(xAxisData, styling)
+        : undefined
     const seriesExtras = resolveSeriesSymbol(
       largeX ? style.largeSymbol : style.defaultSymbol,
       config.symbol?.value,
@@ -93,7 +136,13 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
       const singleSeries = {
         name: chartData.value.title,
         type: kind,
-        data: series.map((s) => adjustForLogScaleLine(s.values[0] ?? null, yScale)),
+        data: xNums
+          ? asLogXPairs(
+              xNums,
+              series.map((s) => s.values[0] ?? null),
+              yLog
+            )
+          : series.map((s) => logYValue(s.values[0] ?? null, yLog)),
         label: createLabelConfig(showLabels.value, styling),
         ...(kind === 'scatter'
           ? scatterSeriesLargeOpts(useVisualMap)
@@ -106,9 +155,11 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
       return {
         ...baseOptions,
         grid: createGridConfig(1, largeX),
-        tooltip: createPinnedAxisTooltip(isDark.value),
-        ...createAxisConfig(styling, xAxisData, yScale, xLabel, largeX, true),
-        ...(largeX ? { dataZoom: createDataZoomConfig(xAxisData, styling) } : {}),
+        tooltip: coerceX
+          ? createValueModeTooltip(isDark.value, xLabel, chartData.value.axisLabels?.y, true)
+          : createPinnedAxisTooltip(isDark.value),
+        ...groupedAxes,
+        ...(groupedDataZoom ? { dataZoom: groupedDataZoom } : {}),
         legend: { show: false },
         visualMap: resolve2DScatterVisualMap(
           useVisualMap,
@@ -124,7 +175,13 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
     const transposedSeries = yAxisLabels.map((yAxisLabel, yIndex) => ({
       name: yAxisLabel,
       type: kind,
-      data: series.map((s) => adjustForLogScaleLine(s.values[yIndex] ?? null, yScale)),
+      data: xNums
+        ? asLogXPairs(
+            xNums,
+            series.map((s) => s.values[yIndex] ?? null),
+            yLog
+          )
+        : series.map((s) => logYValue(s.values[yIndex] ?? null, yLog)),
       label: createLabelConfig(showLabels.value, styling),
       ...(kind === 'scatter'
         ? scatterSeriesLargeOpts(useVisualMap)
@@ -151,9 +208,13 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
         styling,
         1
       ),
-      tooltip: createTooltipConfig(showXBreakdown, isDark.value, seriesTotals),
-      ...createAxisConfig(styling, xAxisData, yScale, xLabel, largeX, true),
-      ...(largeX ? { dataZoom: createDataZoomConfig(xAxisData, styling) } : {}),
+      tooltip: coerceX
+        ? transposedSeries.length <= 1
+          ? createValueModeTooltip(isDark.value, xLabel, yLabel, true)
+          : createTooltipConfig(showXBreakdown, isDark.value, seriesTotals, 'line')
+        : createTooltipConfig(showXBreakdown, isDark.value, seriesTotals),
+      ...groupedAxes,
+      ...(groupedDataZoom ? { dataZoom: groupedDataZoom } : {}),
       legend: createLegendConfig(
         transposedSeries.map((s) => ({ xAxis: s.name })),
         styling,

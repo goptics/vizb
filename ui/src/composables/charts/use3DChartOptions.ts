@@ -19,6 +19,7 @@ import {
   makeContinuous3DParams,
   valuePoints3DToSeries,
   resolve3DZAxisType,
+  zAxisLogBase,
   type Continuous3DContext,
 } from './shared/3d'
 import { getChartStyling, getTooltipTheme } from './shared/chartConfig'
@@ -54,8 +55,10 @@ export function use3DChartOptions(config: BaseChartConfig, kind: Chart3DKind) {
     const defaultColor = getDefaultThemeColor()
     const axisCommon = makeAxis3DCommon(styling)
     const seriesData = kind === 'bar3D' ? render.barSeries : render.lineSeries
+    const zType = resolve3DZAxisType(scale?.value ?? 'linear', seriesData)
     const zAxis3DBase = {
-      type: resolve3DZAxisType(scale?.value ?? 'linear', seriesData),
+      type: zType,
+      ...(zType === 'log' ? { logBase: zAxisLogBase(scale?.value ?? 'linear') } : {}),
       ...axisCommon,
     }
     if (render.mode === 'mixed') {

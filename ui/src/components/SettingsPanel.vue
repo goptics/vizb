@@ -23,7 +23,8 @@ import {
   type SettingFieldKey,
   type SettingFieldValueMap,
 } from '../composables/settings/fieldRegistry'
-import type { ChartType } from '../types'
+import type { ChartType, ScaleInput } from '../types'
+import { scaleTabValue } from '../lib/scale'
 
 // Generic, schema-less settings panel: walks `Object.keys(activeConfig)` via
 // `getRenderableFields` and renders the registered control for each key. The
@@ -147,7 +148,10 @@ const handlers = {
 
 const valueFor = (key: SettingFieldKey) => {
   if (!activeConfig.value) return undefined
-  if (key === 'scale' && stack.value) return 'linear'
+  if (key === 'scale') {
+    if (stack.value) return 'linear'
+    return scaleTabValue((activeConfig.value as { scale?: ScaleInput }).scale)
+  }
   return (activeConfig.value as Partial<SettingFieldValueMap>)[key]
 }
 

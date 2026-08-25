@@ -1,5 +1,5 @@
 import { computed, type Ref } from 'vue'
-import type { Axis, BarBackground, ChartData, Sort, ChartType, ScaleType } from '../types'
+import type { Axis, BarBackground, ChartData, Sort, ChartType, ScaleInput } from '../types'
 import type { EChartsOption } from 'echarts'
 import { useBarChartOptions } from './charts/useBarChartOptions'
 import { useLineChartOptions } from './charts/useLineChartOptions'
@@ -21,7 +21,7 @@ export function useChartOptions(
   showLabels: Ref<boolean>,
   isDark: Ref<boolean>,
   chartType: Ref<ChartType>,
-  scale: Ref<ScaleType>,
+  scale: Ref<ScaleInput>,
   stack: Ref<boolean>,
   threeDRotate: Ref<boolean>,
   visibleZ: Ref<Record<string, boolean>>,

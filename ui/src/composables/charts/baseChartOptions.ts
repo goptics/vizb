@@ -1,6 +1,6 @@
 import type { Ref } from 'vue'
 import type { EChartsOption } from 'echarts'
-import type { Axis, BarBackground, ChartData, Sort, ScaleType, ChartType } from '@/types'
+import type { Axis, BarBackground, ChartData, Sort, ScaleInput, ChartType } from '@/types'
 import { createTooltipConfig, createToolboxConfig, getChartStyling } from './shared/chartConfig'
 import { fontSize } from './shared/common'
 import { is3D } from '@/lib/utils'
@@ -14,7 +14,7 @@ export interface BaseChartConfig {
   // config carries them). Pie/heatmap/radar configs don't produce a Ref for
   // these fields, so they're relaxed to optional here; chart composables that
   // access them default at the call site (e.g. `scale?.value ?? "linear"`).
-  scale?: Ref<ScaleType>
+  scale?: Ref<ScaleInput>
   stack?: Ref<boolean>
   threeDRotate?: Ref<boolean>
   // Legend selection state for z series (3D); key = z name, false = hidden.

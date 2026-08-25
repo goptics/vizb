@@ -274,7 +274,9 @@ export function useUrlRouter() {
       else if (cfg.showLabels === false) params[`${ct}.l`] = 'false'
       if (cfg.type === 'bar' || cfg.type === 'line' || cfg.type === 'scatter') {
         const cartesian = cfg as BarConfig | LineConfig | ScatterConfig
-        if (cartesian.scale && cartesian.scale !== 'linear') params[`${ct}.sc`] = cartesian.scale
+        if (typeof cartesian.scale === 'string' && cartesian.scale !== 'linear') {
+          params[`${ct}.sc`] = cartesian.scale
+        }
         if (cartesian.threeD === true) params[`${ct}.3d`] = 'true'
         if (cartesian.threeDRotate === true) params[`${ct}.3d-rt`] = 'true'
         if (cartesian.threeDVisualMap === true) params[`${ct}.3d-vm`] = 'true'
