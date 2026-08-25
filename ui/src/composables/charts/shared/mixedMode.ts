@@ -1,13 +1,7 @@
 import type { EChartsOption } from 'echarts'
 import type { ScaleType } from '@/types'
 import { getDefaultThemeColor, getNextColorFor, formatChartNumber } from '@/lib/utils'
-import {
-  axisIsLog,
-  axisLogBase,
-  DEFAULT_LOG_AXES,
-  numericLogXValues,
-  parseScale,
-} from '@/lib/scale'
+import { axisIsLog, axisLogBase, numericLogXValues, parseScale } from '@/lib/scale'
 import { type BaseChartConfig, getBaseOptions } from '../baseChartOptions'
 import {
   createAxisConfig,
@@ -22,6 +16,7 @@ import {
   getChartStyling,
   getTooltipTheme,
   isLargeXAxis,
+  INSIDE_XY_ZOOM,
   LARGE_DATA_THRESHOLD,
   scatterSeriesLargeOpts,
 } from './chartConfig'
@@ -120,8 +115,8 @@ export function buildMixedAxes2DOptions(
   const baseOptions = getBaseOptions(config)
   const styling = getChartStyling(isDark.value)
   const parsed = parseScale(scale?.value)
-  const xWant = axisIsLog(parsed, 'x', DEFAULT_LOG_AXES.mixed2d)
-  const yWant = axisIsLog(parsed, 'y', DEFAULT_LOG_AXES.mixed2d)
+  const xWant = axisIsLog(parsed, 'x', ['y'])
+  const yWant = axisIsLog(parsed, 'y', ['y'])
   const yScale = resolveLogScale(
     yWant ? 'log' : 'linear',
     tuples.map(([, y]) => y)
@@ -211,17 +206,7 @@ export function buildMixedAxes2DOptions(
       ? createValueModeTooltip(isDark.value, xLabel, yLabel, true)
       : createMixedModeTooltip(isDark.value, xCategories, chartType, xLabel, yLabel),
     ...axisConfig,
-    dataZoom: xNums
-      ? [
-          { type: 'inside', xAxisIndex: 0 },
-          { type: 'inside', yAxisIndex: 0 },
-        ]
-      : largeX
-        ? createDataZoomConfig(xCategories, styling)
-        : [
-            { type: 'inside', xAxisIndex: 0 },
-            { type: 'inside', yAxisIndex: 0 },
-          ],
+    dataZoom: xNums || !largeX ? INSIDE_XY_ZOOM : createDataZoomConfig(xCategories, styling),
     series: [series],
   } as EChartsOption
 }
@@ -247,8 +232,8 @@ export function buildMixedAxes3DOptions(
   const pointCount = seriesData[0]?.data.length ?? 0
   const { yCount } = continuous3DGridCounts(pointCount)
   const parsed = parseScale(scale?.value)
-  const yLog = axisIsLog(parsed, 'y', DEFAULT_LOG_AXES.mixed3d)
-  const zLog = axisIsLog(parsed, 'z', DEFAULT_LOG_AXES.mixed3d)
+  const yLog = axisIsLog(parsed, 'y', ['y', 'z'])
+  const zLog = axisIsLog(parsed, 'z', ['y', 'z'])
   const grid3D = create3DGridConfig({
     styling,
     autoRotate: threeDRotate?.value ?? false,

@@ -1,6 +1,6 @@
 import type { EChartsOption } from 'echarts'
 import type { Render3D, Point3D, ScaleInput, Series3DData } from '@/types'
-import { axisIsLog, axisLogBase, DEFAULT_LOG_AXES, parseScale } from '@/lib/scale'
+import { axisIsLog, axisLogBase, parseScale } from '@/lib/scale'
 import { valuePoints3DToSeries } from '@/lib/transform'
 import { getDefaultThemeColor, getNextColorFor, formatChartNumber } from '@/lib/utils'
 import {
@@ -55,15 +55,16 @@ export function* series3DMetricValues(series: Series3DData[]): Generator<number 
 }
 
 /** Log z-axis only when metric heights have a positive domain. */
-export function resolve3DZAxisType(scale: ScaleInput, series: Series3DData[]): 'log' | 'value' {
-  const want = axisIsLog(parseScale(scale), 'z', DEFAULT_LOG_AXES.grouped3d)
-  return resolveLogScale(want ? 'log' : 'linear', series3DMetricValues(series)) === 'log'
-    ? 'log'
-    : 'value'
-}
-
-export function zAxisLogBase(scale: ScaleInput): number {
-  return axisLogBase(parseScale(scale), 'z')
+export function resolve3DZAxisType(
+  scale: ScaleInput,
+  series: Series3DData[]
+): { type: 'log'; logBase: number } | { type: 'value' } {
+  const parsed = parseScale(scale)
+  const want = axisIsLog(parsed, 'z', ['z'])
+  if (resolveLogScale(want ? 'log' : 'linear', series3DMetricValues(series)) !== 'log') {
+    return { type: 'value' }
+  }
+  return { type: 'log', logBase: axisLogBase(parsed, 'z') }
 }
 
 export function create3DVisualMap(max: number, styling: ChartStyling, dimension: 1 | 2 | 3 = 2) {
@@ -308,7 +309,7 @@ export function createContinuous3DAxes(
   scale: ScaleInput = 'linear'
 ) {
   const parsed = parseScale(scale)
-  const defaults = DEFAULT_LOG_AXES.continuous3d
+  const defaults = ['x', 'y', 'z'] as const
   const axisCommon = makeAxis3DCommon(styling)
   const valueAxis = (axis: 'x' | 'y' | 'z', label?: string) => {
     const isLog = axisIsLog(parsed, axis, defaults)

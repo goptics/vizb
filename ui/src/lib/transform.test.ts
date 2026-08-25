@@ -802,18 +802,18 @@ describe('identity / labels / projection helpers', () => {
     expect(valuePoints3DToSeries([], 't')[0]!.data).toEqual([])
   })
 
-  it('buildValueMode3DRender log filter and showLabels', () => {
+  it('buildValueMode3DRender showLabels uses metric when present', () => {
     const render = buildValueMode3DRender(
       [
         [1, 2, 3, 9],
         [0, 2, 3],
       ],
       't',
-      true,
-      'log'
+      true
     )
-    expect(render.barSeries[0]!.data).toHaveLength(1)
+    expect(render.barSeries[0]!.data).toHaveLength(2)
     expect(render.cellTotals['0']).toBe(9)
+    expect(render.cellTotals['1']).toBe(3)
 
     const noMetric = buildValueMode3DRender([[1, 2, 3]], 't', true)
     expect(noMetric.cellTotals['0']).toBe(3)
@@ -850,7 +850,7 @@ describe('buildValueModeChart remaining branches', () => {
     expect(chart.valueTuples).toEqual([[2, 3, 4]])
   })
 
-  it('x-log keeps non-positive y and drops non-positive x', () => {
+  it('x-log keeps non-positive y; x<=0 stays in tuples for scaleValueTuples', () => {
     const chart = buildValueModeChart(
       [
         { xAxis: '0', yAxis: '5', stats: [] },
@@ -864,7 +864,10 @@ describe('buildValueModeChart remaining branches', () => {
       'xy',
       { scale: { type: 'log', axes: ['x'] } }
     )
-    expect(chart.valueTuples).toEqual([[2, 0]])
+    expect(chart.valueTuples).toEqual([
+      [0, 5],
+      [2, 0],
+    ])
   })
 
   it('threeD false keeps 2D even when target has z', () => {
@@ -1047,9 +1050,8 @@ describe('remaining transform branch edges', () => {
     ).toEqual(['A'])
   })
 
-  it('buildValueMode3DRender empty filtered withMetric and labelVal nullish', () => {
-    // all filtered out under log → filtered[0] undefined → withMetric false via ?? 0
-    const empty = buildValueMode3DRender([[0, 0, 0]], 't', true, 'log')
+  it('buildValueMode3DRender empty points and labelVal nullish', () => {
+    const empty = buildValueMode3DRender([], 't', true)
     expect(empty.barSeries[0]!.data).toEqual([])
 
     // point without metric; p[2] used; explicit undefined 4th

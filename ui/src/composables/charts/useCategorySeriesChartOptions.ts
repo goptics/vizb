@@ -15,6 +15,7 @@ import {
   getChartStyling,
   isLargeXAxis,
   makeLegendTitle,
+  INSIDE_XY_ZOOM,
   LARGE_DATA_THRESHOLD,
   scatterSeriesLargeOpts,
 } from './shared/chartConfig'
@@ -24,13 +25,7 @@ import {
   resolveLogScale,
   computeSeriesTotals,
 } from './shared/common'
-import {
-  axisIsLog,
-  axisLogBase,
-  DEFAULT_LOG_AXES,
-  numericLogXValues,
-  parseScale,
-} from '@/lib/scale'
+import { asLogXPairs, axisIsLog, axisLogBase, numericLogXValues, parseScale } from '@/lib/scale'
 import { resolveSeriesSymbol } from './shared/seriesConfig'
 import { resolve2DScatterVisualMap } from './shared/visualMap'
 import { buildValueAxes2DOptions } from './shared/valueMode'
@@ -73,12 +68,6 @@ const groupedScatterColorValues = (seriesList: { data: SeriesPoint[] }[]): numbe
 const logYValue = (val: number | null, yLog: boolean): number | null =>
   adjustForLogScaleLine(val, yLog ? 'log' : 'linear')
 
-const asLogXPairs = (
-  xNums: number[],
-  values: (number | null)[],
-  yLog: boolean
-): [number, number | null][] => xNums.map((x, i) => [x, logYValue(values[i] ?? null, yLog)])
-
 export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: CategorySeriesKind) {
   const { chartData, sort, isDark, showLabels, scale, stack, visualMap } = config
   const sortedData = useSortedSeriesData(chartData, sort)
@@ -96,8 +85,8 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
     const baseOptions = getBaseOptions(config)
     const styling = getChartStyling(isDark.value)
     const parsed = parseScale(scale?.value)
-    const xWant = axisIsLog(parsed, 'x', DEFAULT_LOG_AXES.grouped2d)
-    const yWant = axisIsLog(parsed, 'y', DEFAULT_LOG_AXES.grouped2d)
+    const xWant = axisIsLog(parsed, 'x', ['y'])
+    const yWant = axisIsLog(parsed, 'y', ['y'])
     const yScale = resolveLogScale(
       yWant ? 'log' : 'linear',
       series.flatMap((s) => s.values)
@@ -116,10 +105,7 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
         })
       : createAxisConfig(styling, xAxisData, yScale, xLabel, largeX, true, yLogBase)
     const groupedDataZoom = coerceX
-      ? [
-          { type: 'inside' as const, xAxisIndex: 0 },
-          { type: 'inside' as const, yAxisIndex: 0 },
-        ]
+      ? INSIDE_XY_ZOOM
       : largeX
         ? createDataZoomConfig(xAxisData, styling)
         : undefined

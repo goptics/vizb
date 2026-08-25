@@ -18,27 +18,16 @@ import {
   horizontalLegendBottom,
   isLargeXAxis,
   makeLegendTitle,
+  INSIDE_XY_ZOOM,
   LARGE_DATA_THRESHOLD,
 } from './shared/chartConfig'
 import { useSortedSeriesData, resolveLogScale, computeSeriesTotals } from './shared/common'
-import {
-  axisIsLog,
-  axisLogBase,
-  DEFAULT_LOG_AXES,
-  numericLogXValues,
-  parseScale,
-} from '@/lib/scale'
+import { asLogXPairs, axisIsLog, axisLogBase, numericLogXValues, parseScale } from '@/lib/scale'
 import { buildValueAxes2DOptions } from './shared/valueMode'
 import { buildMixedAxes2DOptions } from './shared/mixedMode'
 
 const barNullable = (val: number | null, yLog: boolean): number | null =>
   val === null ? null : yLog && val <= 0 ? null : val
-
-const asLogXPairs = (
-  xNums: number[],
-  values: (number | null)[],
-  yLog: boolean
-): [number, number | null][] => xNums.map((x, i) => [x, barNullable(values[i] ?? null, yLog)])
 
 // ECharts itemStyle.borderRadius: [TL, TR, BR, BL] (len 1–4; [8] = all corners).
 type BarItemStyle = { color?: string; borderRadius?: number[] }
@@ -147,7 +136,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
     // radar pass a config without it. The bar composable is the only consumer,
     // so we default at the call site.
     const parsed = parseScale(scale?.value)
-    const defaultAxes = isHorizontal ? DEFAULT_LOG_AXES.horizontalBar : DEFAULT_LOG_AXES.grouped2d
+    const defaultAxes = isHorizontal ? (['x'] as const) : (['y'] as const)
     const xWant = axisIsLog(parsed, 'x', defaultAxes)
     const yWant = axisIsLog(parsed, 'y', defaultAxes)
     const valueLogWant = isHorizontal ? xWant : yWant
@@ -170,10 +159,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
         ? createHorizontalAxisConfig(styling, xAxisData, yScale, xLabel, largeX, yLogBase)
         : createAxisConfig(styling, xAxisData, yScale, xLabel, largeX, false, yLogBase)
     const groupedDataZoom = xNums
-      ? [
-          { type: 'inside' as const, xAxisIndex: 0 },
-          { type: 'inside' as const, yAxisIndex: 0 },
-        ]
+      ? INSIDE_XY_ZOOM
       : largeX
         ? isHorizontal
           ? createHorizontalDataZoomConfig(styling)

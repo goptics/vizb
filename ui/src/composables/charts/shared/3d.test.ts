@@ -636,7 +636,7 @@ describe('resolve3DZAxisType', () => {
       resolve3DZAxisType('log', [
         { name: 'a', data: [{ value: [0, 0, 0.2] }, { value: [1, 0, 3] }] },
       ])
-    ).toBe('log')
+    ).toEqual({ type: 'log', logBase: 10 })
   })
 
   it('ignores grouped 3D x-only log for the metric axis', () => {
@@ -644,25 +644,27 @@ describe('resolve3DZAxisType', () => {
       resolve3DZAxisType({ type: 'log', axes: ['x'] }, [
         { name: 'a', data: [{ value: [0, 0, 3] }] },
       ])
-    ).toBe('value')
+    ).toEqual({ type: 'value' })
     expect(
       resolve3DZAxisType({ type: 'log', axes: ['z'], base: 2 }, [
         { name: 'a', data: [{ value: [0, 0, 3] }] },
       ])
-    ).toBe('log')
+    ).toEqual({ type: 'log', logBase: 2 })
   })
 
   it('falls back to value for empty or non-positive metrics', () => {
-    expect(resolve3DZAxisType('log', [])).toBe('value')
+    expect(resolve3DZAxisType('log', [])).toEqual({ type: 'value' })
     expect(
       resolve3DZAxisType('log', [
         { name: 'a', data: [{ value: [0, 0, 0] }, { value: [1, 0, -1] }] },
       ])
-    ).toBe('value')
+    ).toEqual({ type: 'value' })
   })
 
   it('treats missing metric height (no value[2]) as non-positive', () => {
-    expect(resolve3DZAxisType('log', [{ name: 'a', data: [{ value: [0, 0] }] }])).toBe('value')
+    expect(resolve3DZAxisType('log', [{ name: 'a', data: [{ value: [0, 0] }] }])).toEqual({
+      type: 'value',
+    })
   })
 })
 

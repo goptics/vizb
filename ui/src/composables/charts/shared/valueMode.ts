@@ -1,7 +1,7 @@
 import type { EChartsOption } from 'echarts'
 import type { ScaleType, ChartType } from '@/types'
 import { getNextColorFor, VALUE_CHART_TYPES, formatChartNumber } from '@/lib/utils'
-import { axisIsLog, axisLogBase, DEFAULT_LOG_AXES, parseScale } from '@/lib/scale'
+import { axisIsLog, axisLogBase, parseScale } from '@/lib/scale'
 import { type BaseChartConfig, getBaseOptions } from '../baseChartOptions'
 import {
   createValueModeGridConfig,
@@ -10,6 +10,7 @@ import {
   createValueModeTooltip,
   getChartStyling,
   isLargeXAxis,
+  INSIDE_XY_ZOOM,
   LARGE_DATA_THRESHOLD,
   scatterSeriesLargeOpts,
 } from './chartConfig'
@@ -82,8 +83,8 @@ export function buildValueAxes2DOptions(
   const baseOptions = getBaseOptions(config)
   const styling = getChartStyling(isDark.value)
   const parsed = parseScale(scale?.value)
-  const xWant = axisIsLog(parsed, 'x', DEFAULT_LOG_AXES.value2d)
-  const yWant = axisIsLog(parsed, 'y', DEFAULT_LOG_AXES.value2d)
+  const xWant = axisIsLog(parsed, 'x', ['y'])
+  const yWant = axisIsLog(parsed, 'y', ['y'])
   const xScale = resolveLogScale(
     xWant ? 'log' : 'linear',
     tuples.map((t) => t[0])
@@ -149,10 +150,7 @@ export function buildValueAxes2DOptions(
         yLogBase: axisLogBase(parsed, 'y'),
       }
     ),
-    dataZoom: [
-      { type: 'inside', xAxisIndex: 0 },
-      { type: 'inside', yAxisIndex: 0 },
-    ],
+    dataZoom: INSIDE_XY_ZOOM,
     series: [series],
   } as EChartsOption
 }

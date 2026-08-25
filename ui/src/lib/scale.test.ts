@@ -1,12 +1,11 @@
 import { describe, it, expect } from 'vitest'
 import {
-  DEFAULT_LOG_AXES,
   DEFAULT_LOG_BASE,
+  asLogXPairs,
   axisIsLog,
   axisLogBase,
   numericLogXValues,
   parseScale,
-  scaleTabValue,
   validLogBase,
 } from './scale'
 
@@ -35,9 +34,9 @@ describe('parseScale', () => {
     expect(axisIsLog(parsed, 'x', ['x'])).toBe(false)
   })
 
-  it('omitted type with axes implies log', () => {
+  it('omitted type stays linear even with axes', () => {
     const parsed = parseScale({ axes: ['x'] })
-    expect(parsed.type).toBe('log')
+    expect(parsed.type).toBe('linear')
     expect(parsed.axes).toEqual(['x'])
   })
 
@@ -67,34 +66,34 @@ describe('parseScale', () => {
 describe('axisIsLog', () => {
   it('string log uses the chart default value axis only', () => {
     const parsed = parseScale('log')
-    expect(axisIsLog(parsed, 'y', DEFAULT_LOG_AXES.grouped2d)).toBe(true)
-    expect(axisIsLog(parsed, 'x', DEFAULT_LOG_AXES.grouped2d)).toBe(false)
-    expect(axisIsLog(parsed, 'x', DEFAULT_LOG_AXES.horizontalBar)).toBe(true)
-    expect(axisIsLog(parsed, 'z', DEFAULT_LOG_AXES.grouped3d)).toBe(true)
-    expect(axisIsLog(parsed, 'x', DEFAULT_LOG_AXES.continuous3d)).toBe(true)
-    expect(axisIsLog(parsed, 'y', DEFAULT_LOG_AXES.continuous3d)).toBe(true)
-    expect(axisIsLog(parsed, 'z', DEFAULT_LOG_AXES.continuous3d)).toBe(true)
+    expect(axisIsLog(parsed, 'y', ['y'])).toBe(true)
+    expect(axisIsLog(parsed, 'x', ['y'])).toBe(false)
+    expect(axisIsLog(parsed, 'x', ['x'])).toBe(true)
+    expect(axisIsLog(parsed, 'z', ['z'])).toBe(true)
+    expect(axisIsLog(parsed, 'x', ['x', 'y', 'z'])).toBe(true)
+    expect(axisIsLog(parsed, 'y', ['x', 'y', 'z'])).toBe(true)
+    expect(axisIsLog(parsed, 'z', ['x', 'y', 'z'])).toBe(true)
   })
 
   it('explicit axes override the default', () => {
     const parsed = parseScale({ type: 'log', axes: ['x'] })
-    expect(axisIsLog(parsed, 'x', DEFAULT_LOG_AXES.grouped2d)).toBe(true)
-    expect(axisIsLog(parsed, 'y', DEFAULT_LOG_AXES.grouped2d)).toBe(false)
+    expect(axisIsLog(parsed, 'x', ['y'])).toBe(true)
+    expect(axisIsLog(parsed, 'y', ['y'])).toBe(false)
   })
 
   it('explicit empty axes logs nothing', () => {
     const parsed = parseScale({ type: 'log', axes: [] })
-    expect(axisIsLog(parsed, 'y', DEFAULT_LOG_AXES.grouped2d)).toBe(false)
+    expect(axisIsLog(parsed, 'y', ['y'])).toBe(false)
   })
 })
 
-describe('scaleTabValue / validLogBase / numericLogXValues', () => {
-  it('maps object scale to the Linear / Logarithmic tab', () => {
-    expect(scaleTabValue(undefined)).toBe('linear')
-    expect(scaleTabValue('log')).toBe('log')
-    expect(scaleTabValue({ type: 'log', axes: ['x'] })).toBe('log')
-    expect(scaleTabValue({ axes: ['x'] })).toBe('log')
-    expect(scaleTabValue({ type: 'linear' })).toBe('linear')
+describe('validLogBase / numericLogXValues / asLogXPairs', () => {
+  it('maps object scale type for the Linear / Logarithmic tab', () => {
+    expect(parseScale(undefined).type).toBe('linear')
+    expect(parseScale('log').type).toBe('log')
+    expect(parseScale({ type: 'log', axes: ['x'] }).type).toBe('log')
+    expect(parseScale({ axes: ['x'] }).type).toBe('linear')
+    expect(parseScale({ type: 'linear' }).type).toBe('linear')
   })
 
   it('rejects invalid log bases', () => {
@@ -112,5 +111,17 @@ describe('scaleTabValue / validLogBase / numericLogXValues', () => {
     expect(numericLogXValues(['-1', '2'], true)).toBeNull()
     expect(numericLogXValues(['1', '2'], false)).toBeNull()
     expect(numericLogXValues([], true)).toBeNull()
+  })
+
+  it('pairs log-X numbers with Y and nulls non-positive Y when Y is log', () => {
+    expect(asLogXPairs([1, 10], [2, 4], false)).toEqual([
+      [1, 2],
+      [10, 4],
+    ])
+    expect(asLogXPairs([1, 10], [0, 4], true)).toEqual([
+      [1, null],
+      [10, 4],
+    ])
+    expect(asLogXPairs([1], [null], true)).toEqual([[1, null]])
   })
 })
