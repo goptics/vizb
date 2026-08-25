@@ -138,6 +138,8 @@ func (b *FlagBag) Validate(cmd *cobra.Command) {
 			}})
 		case f.Kind == flags.KindObject:
 			b.validateObjectFlag(cmd, f)
+		case f.Name == "scale":
+			b.validateScaleFlag(cmd, f)
 		case f.IsSoft():
 			b.applySoftRule(f)
 		case f.Validate != nil && cmd.Flags().Changed(f.Name):
@@ -146,6 +148,23 @@ func (b *FlagBag) Validate(cmd *cobra.Command) {
 			}
 		}
 	}
+}
+
+// validateScaleFlag accepts a bare linear|log (warn-and-default via ValidSet)
+// or an unwrapped bag. Unknown bag keys are fatal; invalid bases and axis
+// names are handled later by EncodeScaleValue (warn-and-default / skip).
+func (b *FlagBag) validateScaleFlag(cmd *cobra.Command, f flags.Flag) {
+	raw := *b.strs[f.Name]
+	if shared.IsScaleBag(raw) {
+		if !cmd.Flags().Changed(f.Name) {
+			return
+		}
+		if _, err := shared.ParseObjectBagString(raw, f.ObjectFields); err != nil {
+			shared.ExitWithError(fmt.Sprintf("--%s: %v", f.Name, err), nil)
+		}
+		return
+	}
+	b.applySoftRule(f)
 }
 
 // validateObjectFlag fatals on an invalid object-flag bag (unknown field or a
@@ -320,7 +339,11 @@ func (b *FlagBag) ChartSeed(cmd *cobra.Command) map[string]any {
 			}
 		default: // KindString
 			if changed || f.Default != nil {
-				seed[f.JSONKey] = encodeFlag(f, *b.strs[f.Name])
+				if f.Name == "scale" {
+					seed[f.JSONKey] = shared.EncodeScaleValue(*b.strs[f.Name], f.ObjectFields)
+				} else {
+					seed[f.JSONKey] = encodeFlag(f, *b.strs[f.Name])
+				}
 			}
 		}
 	}

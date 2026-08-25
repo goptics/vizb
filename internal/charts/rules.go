@@ -74,6 +74,59 @@ func ExcludesAxes(keys ...string) flags.RuleFn {
 	}
 }
 
+// stackedValueAxis is the axis stacking accumulates on: X for horizontal bars,
+// otherwise Y.
+func stackedValueAxis(rc RuleContext) string {
+	if h, ok := rc.Config["horizontal"].(bool); ok && h {
+		return "x"
+	}
+	return "y"
+}
+
+// scaleLogsStackedAxis reports whether scale logs the stacked value axis.
+// String "log" and a log object with omitted axes are today's default value
+// axis. An object that logs only a non-stacked axis does not block stack.
+func scaleLogsStackedAxis(scale any, valueAxis string) bool {
+	switch s := scale.(type) {
+	case string:
+		return strings.EqualFold(s, "log")
+	case map[string]any:
+		typ, _ := s["type"].(string)
+		if !strings.EqualFold(typ, "log") {
+			return false
+		}
+		axes := scaleAxes(s["axes"])
+		if len(axes) == 0 {
+			return true
+		}
+		for _, a := range axes {
+			if strings.EqualFold(a, valueAxis) {
+				return true
+			}
+		}
+		return false
+	default:
+		return false
+	}
+}
+
+func scaleAxes(raw any) []string {
+	switch v := raw.(type) {
+	case []any:
+		out := make([]string, 0, len(v))
+		for _, item := range v {
+			if a, ok := item.(string); ok {
+				out = append(out, a)
+			}
+		}
+		return out
+	case []string:
+		return v
+	default:
+		return nil
+	}
+}
+
 // StackRequiresLinearScale skips --stack when the same chart config uses a log
 // scale. ECharts stacked bar/line series are not valid on log axes.
 func StackRequiresLinearScale() flags.RuleFn {
@@ -86,8 +139,7 @@ func StackRequiresLinearScale() flags.RuleFn {
 		if ok && !enabled {
 			return flags.Keep, ""
 		}
-		scale, _ := rc.Config["scale"].(string)
-		if strings.EqualFold(scale, "log") {
+		if scaleLogsStackedAxis(rc.Config["scale"], stackedValueAxis(rc)) {
 			return flags.Skip, "stacked bar/line charts require linear scale; ignoring"
 		}
 		return flags.Keep, ""

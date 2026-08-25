@@ -98,7 +98,7 @@ func (s *RegistrySuite) TestNewScatterKnownType() {
 }
 
 func (s *RegistrySuite) TestDecodeBarRoundTrip() {
-	original := barchart.Config{Type: "bar", Swap: "yxn", Scale: "log"}
+	original := barchart.Config{Type: "bar", Swap: "yxn", Scale: shared.ScaleLog}
 	raw, err := json.Marshal(original)
 	s.Require().NoError(err)
 

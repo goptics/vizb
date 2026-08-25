@@ -14,7 +14,7 @@ type Config struct {
 	Type            string             `json:"type"`
 	Swap            string             `json:"swap,omitempty"`
 	Sort            *shared.Sort       `json:"sort,omitempty"`
-	Scale           string             `json:"scale,omitempty"`
+	Scale           shared.Scale       `json:"scale,omitempty"`
 	ShowLabels      *bool              `json:"showLabels,omitempty"`
 	Symbol          string             `json:"symbol,omitempty"`
 	SymbolSize      *float64           `json:"symbolSize,omitempty"`

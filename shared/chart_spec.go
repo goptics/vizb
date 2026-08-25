@@ -236,6 +236,9 @@ func convertFlagValue(f flags.Flag, prop specparse.Prop, axes []Axis) (any, erro
 		return map[string]any{"enabled": true, "math": math}, nil
 
 	default: // KindString, KindFloat, KindInt
+		if f.Name == "scale" {
+			return convertScaleFlagValue(f, prop)
+		}
 		if !hasEq {
 			return nil, fmt.Errorf("--chart: key %q requires a value (e.g. %s=<value>)", f.Name, f.Name)
 		}
@@ -269,6 +272,35 @@ func encode(f flags.Flag, v any) any {
 		return f.Encode(v)
 	}
 	return v
+}
+
+// convertScaleFlagValue converts the hybrid scale --chart token: scale=log
+// (string), scale={type=log;axes=x} (braces), or an unwrapped bag
+// (scale=type=log;…) which is a hard error with a brace hint.
+func convertScaleFlagValue(f flags.Flag, prop specparse.Prop) (any, error) {
+	switch {
+	case !prop.HasValue:
+		return nil, fmt.Errorf("--chart: key %q requires a value (e.g. %s=log or %s={type=log;axes=x})", f.Name, f.Name, f.Name)
+	case prop.Object != nil:
+		payload, err := EncodeScaleBag(prop.Object, f.ObjectFields)
+		if err != nil {
+			return nil, fmt.Errorf("--chart: key %q: %w", f.Name, err)
+		}
+		return payload, nil
+	default:
+		if IsScaleBag(prop.Value) {
+			return nil, fmt.Errorf(
+				"--chart: key %q value %q must be a brace-delimited object, e.g. %s={type=log;axes=x}",
+				f.Name, prop.Value, f.Name,
+			)
+		}
+		if f.Validate != nil {
+			if err := f.Validate(prop.Value); err != nil {
+				return nil, fmt.Errorf("--chart: %w", err)
+			}
+		}
+		return strings.ToLower(prop.Value), nil
+	}
 }
 
 // convertObjectFlagValue converts a KindObject --chart token into its payload:
