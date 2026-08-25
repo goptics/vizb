@@ -138,13 +138,8 @@ export function useSettingsStore() {
     if (parseScale(current).type === scale) return
     patchActive({ scale: applyScaleType(current, scale) })
   }
-  const setStack = (stack: boolean) => {
-    if (!stack) {
-      patchActive({ stack })
-      return
-    }
-    patchActive({ stack, scale: applyScaleType(currentScale(), 'linear') })
-  }
+  const setStack = (stack: boolean) =>
+    patchActive(stack ? { stack, scale: applyScaleType(currentScale(), 'linear') } : { stack })
   const setShowLabels = (show: boolean) => patchActive({ showLabels: show })
   const setSmooth = (smooth: boolean) => patchActive({ smooth }, (cfg) => cfg.type === 'line')
   const setHorizontal = (horizontal: boolean) =>

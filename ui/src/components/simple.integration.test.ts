@@ -65,12 +65,12 @@ vi.mock('./ui', () => {
     TabsList: passthrough('TabsList'),
     TabsTrigger: defineComponent({
       name: 'TabsTrigger',
-      props: ['value', 'disabled', 'class'],
+      props: ['value', 'disabled'],
       setup(props, { slots }) {
         return () =>
           h(
             'button',
-            { 'data-value': String(props.value), disabled: props.disabled, class: props.class },
+            { 'data-value': String(props.value), disabled: props.disabled },
             slots.default?.()
           )
       },
@@ -276,20 +276,6 @@ describe('SettingHeader / SettingsToggle / SelectionTabs', () => {
     })
     await disabled.get('[data-tabs]').trigger('click')
     expect(onDisabledUpdate).not.toHaveBeenCalled()
-  })
-
-  it('SelectionTabs applies optional option class on the trigger', () => {
-    const w = mount(SelectionTabs, {
-      props: {
-        modelValue: 'a',
-        options: [
-          { value: 'a', label: 'A' },
-          { value: 'b', label: 'B', class: 'pr-7' },
-        ],
-      },
-    })
-    expect(w.get('[data-value="b"]').classes()).toContain('pr-7')
-    expect(w.get('[data-value="a"]').classes()).not.toContain('pr-7')
   })
 
   it('SelectionTabs renders suffix slot after the option label', () => {

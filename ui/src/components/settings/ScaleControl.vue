@@ -35,10 +35,6 @@ const onUpdate = (val: string | number) => {
   if (props.disabled) return
   emit('update:modelValue', val as ScaleType)
 }
-
-const setInfoOpen = (open: boolean) => {
-  infoOpen.value = open
-}
 </script>
 
 <template>
@@ -60,10 +56,10 @@ const setInfoOpen = (open: boolean) => {
           :aria-expanded="infoOpen"
           role="button"
           tabindex="0"
-          @mouseenter="setInfoOpen(true)"
-          @mouseleave="setInfoOpen(false)"
-          @focus="setInfoOpen(true)"
-          @blur="setInfoOpen(false)"
+          @mouseenter="infoOpen = true"
+          @mouseleave="infoOpen = false"
+          @focus="infoOpen = true"
+          @blur="infoOpen = false"
           @click.stop
           @pointerdown.stop
         >

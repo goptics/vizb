@@ -201,7 +201,6 @@ const onUpdate = (key: SettingFieldKey, value: unknown) => {
             :is="field.component"
             :model-value="valueFor(field.key)"
             :disabled="disabledFor(field.key)"
-
             :id="field.id"
             :label="field.label"
             :description="field.description"
