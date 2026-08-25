@@ -624,9 +624,6 @@ func validateNumericBounds(schema map[string]any, value any, location string) er
 	if max, ok := numericValue(schema["maximum"]); ok && number > max {
 		return fmt.Errorf("%s = %v is greater than maximum %v", location, number, max)
 	}
-	if exclMax, ok := numericValue(schema["exclusiveMaximum"]); ok && number >= exclMax {
-		return fmt.Errorf("%s = %v is not less than exclusiveMaximum %v", location, number, exclMax)
-	}
 	return nil
 }
 
