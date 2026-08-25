@@ -154,14 +154,8 @@ func (b *FlagBag) Validate(cmd *cobra.Command) {
 // or an unwrapped bag. Unknown bag keys are fatal; invalid bases and axis
 // names are handled later by EncodeScaleValue (warn-and-default / skip).
 func (b *FlagBag) validateScaleFlag(cmd *cobra.Command, f flags.Flag) {
-	raw := *b.strs[f.Name]
-	if shared.IsScaleBag(raw) {
-		if !cmd.Flags().Changed(f.Name) {
-			return
-		}
-		if _, err := shared.ParseObjectBagString(raw, f.ObjectFields); err != nil {
-			shared.ExitWithError(fmt.Sprintf("--%s: %v", f.Name, err), nil)
-		}
+	if shared.IsScaleBag(*b.strs[f.Name]) {
+		b.validateObjectFlag(cmd, f)
 		return
 	}
 	b.applySoftRule(f)

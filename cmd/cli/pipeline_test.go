@@ -344,10 +344,9 @@ func (s *PipelineSuite) TestChartScaleBagRoundTripsThroughMaterialise() {
 		typed := cfg.(*linechart.Config)
 		s.Equal("log", typed.Scale.Type)
 		s.Equal([]string{"x"}, typed.Scale.Axes)
-		raw, err := json.Marshal(typed)
+		raw, err := json.Marshal(typed.Scale)
 		s.Require().NoError(err)
-		s.Contains(string(raw), `"scale":{"type":"log"`)
-		s.Contains(string(raw), `"axes":["x"]`)
+		s.JSONEq(`{"type":"log","axes":["x"],"base":10}`, string(raw))
 	})
 }
 

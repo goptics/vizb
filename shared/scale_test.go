@@ -137,14 +137,15 @@ func (s *ScaleSuite) TestIsScaleBag() {
 	s.True(shared.IsScaleBag("{type=log;axes=x}"))
 }
 
-func (s *ScaleSuite) TestEncodeScaleBag() {
+func (s *ScaleSuite) TestParseObjectBagThenPayload() {
 	props := []specparse.Prop{
 		{Key: "type", Value: "log", HasValue: true},
 		{Key: "axes", Value: "x", HasValue: true},
 		{Key: "base", Value: "10", HasValue: true},
 	}
-	got, err := shared.EncodeScaleBag(props, s.fields)
+	bag, err := shared.ParseObjectBag(props, s.fields)
 	s.Require().NoError(err)
+	got := shared.ScaleFromBag(bag).Payload()
 	s.Equal(map[string]any{
 		"type": "log",
 		"axes": []string{"x"},

@@ -36,51 +36,26 @@ type Scale struct {
 // IsScaleBag reports whether raw is an unwrapped key=value scale bag
 // (`type=log;axes=x`). Nested-colon `log:axes=x` is not a bag.
 func IsScaleBag(raw string) bool {
-	raw = strings.TrimSpace(raw)
-	if raw == "" {
-		return false
-	}
-	if strings.ContainsAny(raw, "{}") {
-		return true
-	}
 	eq := strings.Index(raw, "=")
-	if eq < 0 {
-		return false
-	}
 	colon := strings.Index(raw, ":")
-	if colon >= 0 && colon < eq {
-		return false
-	}
-	return true
+	return eq >= 0 && (colon < 0 || colon > eq)
 }
 
 // EncodeScaleValue converts a --scale flag value (bare linear|log or an
 // unwrapped bag) into the Dataset payload: a string or an object map.
 func EncodeScaleValue(raw string, fields []flags.ObjectField) any {
 	raw = strings.TrimSpace(raw)
-	if !IsScaleBag(raw) {
-		return strings.ToLower(raw)
-	}
 	bag, err := ParseObjectBagString(raw, fields)
-	if err != nil {
-		return "linear"
+	if err == nil {
+		return ScaleFromBag(bag).Payload()
 	}
-	return scaleFromBag(bag).Payload()
-}
-
-// EncodeScaleBag converts brace-delimited --chart scale props into the same
-// Dataset payload EncodeScaleValue produces for the unwrapped flag form.
-func EncodeScaleBag(props []specparse.Prop, fields []flags.ObjectField) (any, error) {
-	bag, err := ParseObjectBag(props, fields)
-	if err != nil {
-		return nil, err
-	}
-	return scaleFromBag(bag).Payload(), nil
+	return strings.ToLower(raw)
 }
 
 // Payload is the JSON-shaped seed value: "linear"/"log" or an object map.
 func (s Scale) Payload() any {
-	if s.isStringForm() {
+	if len(s.Axes) == 0 && !isNonDefaultBase(s.Base) && !isNonDefaultBase(s.BaseX) &&
+		!isNonDefaultBase(s.BaseY) && !isNonDefaultBase(s.BaseZ) {
 		if s.Type == "" {
 			return "linear"
 		}
@@ -96,26 +71,17 @@ func (s Scale) Payload() any {
 			base = *s.Base
 		}
 		m["base"] = base
-		if s.BaseX != nil && *s.BaseX != defaultLogBase {
+		if isNonDefaultBase(s.BaseX) {
 			m["baseX"] = *s.BaseX
 		}
-		if s.BaseY != nil && *s.BaseY != defaultLogBase {
+		if isNonDefaultBase(s.BaseY) {
 			m["baseY"] = *s.BaseY
 		}
-		if s.BaseZ != nil && *s.BaseZ != defaultLogBase {
+		if isNonDefaultBase(s.BaseZ) {
 			m["baseZ"] = *s.BaseZ
 		}
 	}
 	return m
-}
-
-func (s Scale) isStringForm() bool {
-	return len(s.Axes) == 0 && !s.hasNonDefaultBase()
-}
-
-func (s Scale) hasNonDefaultBase() bool {
-	return isNonDefaultBase(s.Base) || isNonDefaultBase(s.BaseX) ||
-		isNonDefaultBase(s.BaseY) || isNonDefaultBase(s.BaseZ)
 }
 
 func isNonDefaultBase(p *float64) bool {
@@ -123,43 +89,7 @@ func isNonDefaultBase(p *float64) bool {
 }
 
 func (s Scale) MarshalJSON() ([]byte, error) {
-	if s.isStringForm() {
-		t := s.Type
-		if t == "" {
-			t = "linear"
-		}
-		return json.Marshal(t)
-	}
-	type wire struct {
-		Type  string   `json:"type"`
-		Axes  []string `json:"axes,omitempty"`
-		Base  *float64 `json:"base,omitempty"`
-		BaseX *float64 `json:"baseX,omitempty"`
-		BaseY *float64 `json:"baseY,omitempty"`
-		BaseZ *float64 `json:"baseZ,omitempty"`
-	}
-	out := wire{
-		Type:  s.Type,
-		Axes:  s.Axes,
-		BaseX: omitDefaultLogBase(s.BaseX),
-		BaseY: omitDefaultLogBase(s.BaseY),
-		BaseZ: omitDefaultLogBase(s.BaseZ),
-	}
-	if strings.EqualFold(s.Type, "log") {
-		base := defaultLogBase
-		if s.Base != nil {
-			base = *s.Base
-		}
-		out.Base = &base
-	}
-	return json.Marshal(out)
-}
-
-func omitDefaultLogBase(p *float64) *float64 {
-	if p == nil || *p == defaultLogBase {
-		return nil
-	}
-	return p
+	return json.Marshal(s.Payload())
 }
 
 func (s *Scale) UnmarshalJSON(data []byte) error {
@@ -242,7 +172,9 @@ func decodeScaleField(key string, raw json.RawMessage, out *Scale) error {
 	return nil
 }
 
-func scaleFromBag(bag map[string]any) Scale {
+// ScaleFromBag maps a parsed object bag onto Scale (warn-and-default invalid
+// type/base; skip unknown axes).
+func ScaleFromBag(bag map[string]any) Scale {
 	sc := Scale{}
 	if t, ok := bag["type"].(string); ok && t != "" {
 		switch strings.ToLower(t) {
@@ -258,7 +190,7 @@ func scaleFromBag(bag map[string]any) Scale {
 	} else {
 		sc.Type = "log"
 	}
-	if raw, ok := bag["axes"]; ok {
+	if raw, ok := bag["axes"].(string); ok {
 		sc.Axes = parseScaleAxes(raw)
 	}
 	sc.Base = parseScaleBase(bag, "base")
@@ -268,20 +200,8 @@ func scaleFromBag(bag map[string]any) Scale {
 	return sc
 }
 
-func parseScaleAxes(raw any) []string {
-	var parts []string
-	switch v := raw.(type) {
-	case string:
-		parts = specparse.SplitList(v)
-	case []string:
-		parts = v
-	case []any:
-		for _, item := range v {
-			if s, ok := item.(string); ok {
-				parts = append(parts, s)
-			}
-		}
-	}
+func parseScaleAxes(raw string) []string {
+	parts := specparse.SplitList(raw)
 	out := make([]string, 0, len(parts))
 	seen := map[string]bool{}
 	for _, p := range parts {
@@ -323,17 +243,6 @@ func asScaleFloat(v any) (float64, bool) {
 	switch n := v.(type) {
 	case float64:
 		return n, !math.IsNaN(n) && !math.IsInf(n, 0)
-	case float32:
-		f := float64(n)
-		return f, !math.IsNaN(f) && !math.IsInf(f, 0)
-	case int:
-		return float64(n), true
-	case json.Number:
-		f, err := n.Float64()
-		if err != nil || math.IsNaN(f) || math.IsInf(f, 0) {
-			return 0, false
-		}
-		return f, true
 	case string:
 		f, err := strconv.ParseFloat(n, 64)
 		if err != nil || math.IsNaN(f) || math.IsInf(f, 0) {

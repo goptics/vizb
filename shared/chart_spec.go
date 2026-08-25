@@ -282,11 +282,11 @@ func convertScaleFlagValue(f flags.Flag, prop specparse.Prop) (any, error) {
 	case !prop.HasValue:
 		return nil, fmt.Errorf("--chart: key %q requires a value (e.g. %s=log or %s={type=log;axes=x})", f.Name, f.Name, f.Name)
 	case prop.Object != nil:
-		payload, err := EncodeScaleBag(prop.Object, f.ObjectFields)
+		bag, err := ParseObjectBag(prop.Object, f.ObjectFields)
 		if err != nil {
 			return nil, fmt.Errorf("--chart: key %q: %w", f.Name, err)
 		}
-		return payload, nil
+		return ScaleFromBag(bag).Payload(), nil
 	default:
 		if IsScaleBag(prop.Value) {
 			return nil, fmt.Errorf(

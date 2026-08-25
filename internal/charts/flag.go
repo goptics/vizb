@@ -51,7 +51,6 @@ var (
 		Name: "scale", Shorthand: "S", Usage: "Value scale (linear, log, or type=log;axes=x,y;base=10)",
 		Kind: flags.KindString, Default: "linear", JSONKey: "scale",
 		Validate:     ValidateScaleValue,
-		Encode:       func(v any) any { return strings.ToLower(v.(string)) },
 		Label:        "scale",
 		ValidSet:     []string{"linear", "log"},
 		Normalizer:   strings.ToLower,
