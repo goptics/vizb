@@ -722,10 +722,8 @@ func validateChartConfigValues(raw json.RawMessage, path string) *apiValidationE
 		return validationErr
 	}
 	if scaleRaw, ok := values["scale"]; ok {
-		var scale string
-		if err := json.Unmarshal(scaleRaw, &scale); err != nil || (scale != "linear" && scale != "log") {
-			validationErr := bodyValidationError(path+"/scale", "invalid_enum", "scale must be linear or log")
-			return &validationErr
+		if validationErr := validateScaleValue(scaleRaw, path+"/scale"); validationErr != nil {
+			return validationErr
 		}
 	}
 	if symbolRaw, ok := values["symbol"]; ok {
@@ -795,6 +793,112 @@ func validateChartConfigValues(raw json.RawMessage, path string) *apiValidationE
 		if validationErr := validateStatMath(stat.Math, path+"/stat/math"); validationErr != nil {
 			return validationErr
 		}
+	}
+	return nil
+}
+
+// validateScaleValue accepts the REST Scale wire: "linear"|"log" or an object
+// {type, axes?, base?, baseX?, baseY?, baseZ?}. Unknown keys, unknown axes,
+// and log bases of 1 or <= 0 are request errors (CLI bag parse warns-and-defaults).
+func validateScaleValue(raw json.RawMessage, path string) *apiValidationError {
+	trimmed := bytes.TrimSpace(raw)
+	if len(trimmed) > 0 && trimmed[0] == '"' {
+		var scale string
+		if err := json.Unmarshal(raw, &scale); err != nil || (scale != "linear" && scale != "log") {
+			validationErr := bodyValidationError(path, "invalid_enum", "scale must be linear or log")
+			return &validationErr
+		}
+		return nil
+	}
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &fields); err != nil {
+		validationErr := bodyValidationError(path, "invalid_type", "scale must be a string or object")
+		return &validationErr
+	}
+	if validationErr := rejectNullObjectValues(fields, path); validationErr != nil {
+		return validationErr
+	}
+
+	allowed := map[string]struct{}{
+		"type": {}, "axes": {}, "base": {}, "baseX": {}, "baseY": {}, "baseZ": {},
+	}
+	keys := make([]string, 0, len(fields))
+	for key := range fields {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		if _, ok := allowed[key]; !ok {
+			validationErr := bodyValidationError(path+"/"+key, "unknown_field", "unknown request field "+key)
+			return &validationErr
+		}
+	}
+
+	typeRaw, ok := fields["type"]
+	if !ok {
+		validationErr := bodyValidationError(path+"/type", "required", "scale.type is required")
+		return &validationErr
+	}
+	var scaleType string
+	if err := json.Unmarshal(typeRaw, &scaleType); err != nil || (scaleType != "linear" && scaleType != "log") {
+		validationErr := bodyValidationError(path+"/type", "invalid_enum", "scale.type must be linear or log")
+		return &validationErr
+	}
+
+	if axesRaw, ok := fields["axes"]; ok {
+		if validationErr := validateScaleAxes(axesRaw, path+"/axes"); validationErr != nil {
+			return validationErr
+		}
+	}
+	for _, key := range []string{"base", "baseX", "baseY", "baseZ"} {
+		if baseRaw, ok := fields[key]; ok {
+			if validationErr := validateLogBase(baseRaw, path+"/"+key); validationErr != nil {
+				return validationErr
+			}
+		}
+	}
+	return nil
+}
+
+func validateScaleAxes(raw json.RawMessage, path string) *apiValidationError {
+	var items []json.RawMessage
+	if err := json.Unmarshal(raw, &items); err != nil {
+		validationErr := bodyValidationError(path, "invalid_type", "scale.axes must be an array of axis names")
+		return &validationErr
+	}
+	for i, item := range items {
+		var axis string
+		itemPath := fmt.Sprintf("%s/%d", path, i)
+		if err := json.Unmarshal(item, &axis); err != nil {
+			validationErr := bodyValidationError(itemPath, "invalid_type", "scale.axes items must be strings")
+			return &validationErr
+		}
+		if axis != "x" && axis != "y" && axis != "z" {
+			validationErr := bodyValidationError(itemPath, "invalid_enum", "scale.axes items must be x, y, or z")
+			return &validationErr
+		}
+	}
+	return nil
+}
+
+func validateLogBase(raw json.RawMessage, path string) *apiValidationError {
+	trimmed := bytes.TrimSpace(raw)
+	if len(trimmed) == 0 || trimmed[0] == '"' {
+		validationErr := bodyValidationError(path, "invalid_type", path+" must be a number")
+		return &validationErr
+	}
+	var n float64
+	if err := json.Unmarshal(raw, &n); err != nil {
+		validationErr := bodyValidationError(path, "invalid_type", path+" must be a number")
+		return &validationErr
+	}
+	if n <= 0 {
+		validationErr := bodyValidationError(path, "exclusive_minimum", path+" must be greater than 0")
+		return &validationErr
+	}
+	if n == 1 {
+		validationErr := bodyValidationError(path, "invalid_value", path+" must not be 1")
+		return &validationErr
 	}
 	return nil
 }

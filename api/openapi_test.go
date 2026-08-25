@@ -204,6 +204,59 @@ func (s *OpenAPISuite) TestUIContractRejectsRemoteInputAndReturnsHTML() {
 	s.NotNil(successContent["text/html"])
 }
 
+// TestScaleSchemaAcceptsStringAndObject covers the hybrid Scale wire: a
+// linear|log string or a per-axis object. base=1, unknown keys, and unknown
+// axes must fail schema validation (exclusiveMinimum: 0 is not enough).
+func (s *OpenAPISuite) TestScaleSchemaAcceptsStringAndObject() {
+	contract := readContract(s.T())
+	schemas := mustMap(s.T(), mustMap(s.T(), contract["components"], "components")["schemas"], "components.schemas")
+	scaleSchema := schemas["Scale"]
+	s.Require().NotNil(scaleSchema, "components.schemas.Scale")
+
+	valid := []any{
+		"linear",
+		"log",
+		map[string]any{"type": "linear"},
+		map[string]any{"type": "log", "axes": []any{"x"}},
+		map[string]any{"type": "log", "axes": []any{"x", "y", "z"}, "base": 10, "baseX": 2, "baseY": 5, "baseZ": 8},
+	}
+	for _, value := range valid {
+		s.NoError(validateSchema(contract, scaleSchema, value, "Scale"), fmt.Sprint(value))
+	}
+
+	invalid := []any{
+		"square",
+		true,
+		1,
+		map[string]any{"axes": []any{"x"}},
+		map[string]any{"type": "log", "base": 1},
+		map[string]any{"type": "log", "baseX": 1},
+		map[string]any{"type": "log", "baseY": 1},
+		map[string]any{"type": "log", "baseZ": 1},
+		map[string]any{"type": "log", "base": 0},
+		map[string]any{"type": "log", "base": -2},
+		map[string]any{"type": "log", "foo": 1},
+		map[string]any{"type": "log", "axes": []any{"q"}},
+		map[string]any{"type": "log", "axes": "x"},
+		map[string]any{"type": "log", "base": "10"},
+	}
+	for _, value := range invalid {
+		s.Error(validateSchema(contract, scaleSchema, value, "Scale"), fmt.Sprint(value))
+	}
+
+	for _, schemaName := range []string{"BarChartConfig", "LineChartConfig", "ScatterChartConfig"} {
+		s.Run(schemaName, func() {
+			schema := schemas[schemaName]
+			chartType := strings.TrimSuffix(strings.ToLower(schemaName), "chartconfig")
+			s.NoError(validateSchema(contract, schema, map[string]any{"type": chartType, "scale": "log"}, schemaName))
+			s.NoError(validateSchema(contract, schema, map[string]any{"type": chartType, "scale": map[string]any{"type": "log", "axes": []any{"x"}}}, schemaName))
+			s.Error(validateSchema(contract, schema, map[string]any{"type": chartType, "scale": map[string]any{"type": "log", "base": 1}}, schemaName))
+			s.Error(validateSchema(contract, schema, map[string]any{"type": chartType, "scale": map[string]any{"type": "log", "foo": 1}}, schemaName))
+			s.Error(validateSchema(contract, schema, map[string]any{"type": chartType, "scale": map[string]any{"type": "log", "axes": []any{"q"}}}, schemaName))
+		})
+	}
+}
+
 func (s *OpenAPISuite) TestLineAndScatterSymbolsMatchServerValidation() {
 	contract := readContract(s.T())
 	schemas := mustMap(s.T(), mustMap(s.T(), contract["components"], "components")["schemas"], "components.schemas")
@@ -409,7 +462,7 @@ func validateSchema(root map[string]any, rawSchema, value any, location string) 
 		return err
 	}
 	schema := mustMapValue(dereferenced, location+" schema")
-	if constant, exists := schema["const"]; exists && !reflect.DeepEqual(constant, value) {
+	if constant, exists := schema["const"]; exists && !jsonValuesEqual(constant, value) {
 		return fmt.Errorf("%s = %#v, want constant %#v", location, value, constant)
 	}
 	if enum, exists := schema["enum"]; exists {
@@ -547,6 +600,11 @@ func validateSchema(root map[string]any, rawSchema, value any, location string) 
 			return err
 		}
 	}
+	if notSchema, exists := schema["not"]; exists {
+		if err := validateSchema(root, notSchema, value, location); err == nil {
+			return fmt.Errorf("%s matches not schema", location)
+		}
+	}
 	return nil
 }
 
@@ -560,10 +618,27 @@ func validateNumericBounds(schema map[string]any, value any, location string) er
 	if min, ok := numericValue(schema["minimum"]); ok && number < min {
 		return fmt.Errorf("%s = %v is less than minimum %v", location, number, min)
 	}
+	if exclMin, ok := numericValue(schema["exclusiveMinimum"]); ok && number <= exclMin {
+		return fmt.Errorf("%s = %v is not greater than exclusiveMinimum %v", location, number, exclMin)
+	}
 	if max, ok := numericValue(schema["maximum"]); ok && number > max {
 		return fmt.Errorf("%s = %v is greater than maximum %v", location, number, max)
 	}
+	if exclMax, ok := numericValue(schema["exclusiveMaximum"]); ok && number >= exclMax {
+		return fmt.Errorf("%s = %v is not less than exclusiveMaximum %v", location, number, exclMax)
+	}
 	return nil
+}
+
+// jsonValuesEqual is DeepEqual plus numeric equality so YAML ints and JSON
+// float64s compare as the same JSON number (needed for not: { const: 1 }).
+func jsonValuesEqual(a, b any) bool {
+	if reflect.DeepEqual(a, b) {
+		return true
+	}
+	an, aok := numericValue(a)
+	bn, bok := numericValue(b)
+	return aok && bok && an == bn
 }
 
 func numericValue(value any) (float64, bool) {
