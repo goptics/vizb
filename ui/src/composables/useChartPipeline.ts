@@ -1,5 +1,14 @@
 import { ref, watch, unref, toRaw, markRaw, onScopeDispose, type MaybeRef, type Ref } from 'vue'
-import type { AxisLabels, DataPoint, ChartData, Sort, ScaleInput, Axis, ChartType } from '../types'
+import type {
+  AxisLabels,
+  DataPoint,
+  ChartData,
+  Sort,
+  ScaleInput,
+  ScaleSpec,
+  Axis,
+  ChartType,
+} from '../types'
 import TransformWorker from '../workers/transform.worker.ts?worker&inline'
 import type { WorkerResponse } from '../workers/transform.worker'
 import { listChartSignatures } from '../lib/transform'
@@ -110,6 +119,22 @@ export function useChartPipeline(
   // settings store) — so spread it into a fresh object before posting.
   const currentSort = (): Sort => ({ enabled: sort.value.enabled, order: sort.value.order })
 
+  // Same for scale: string `linear`/`log` clones natively, but object scale
+  // `{ type, axes, base? }` from the reactive dataset/settings store is a Proxy.
+  // Nested `axes` stays a Proxy after toRaw, so copy it into a new array.
+  const currentScale = (): ScaleInput => {
+    const s = scale.value
+    if (typeof s !== 'object' || s == null) return s
+    const out: ScaleSpec = {}
+    if (s.type !== undefined) out.type = s.type
+    if (s.axes !== undefined) out.axes = [...s.axes]
+    if (s.base !== undefined) out.base = s.base
+    if (s.baseX !== undefined) out.baseX = s.baseX
+    if (s.baseY !== undefined) out.baseY = s.baseY
+    if (s.baseZ !== undefined) out.baseZ = s.baseZ
+    return out
+  }
+
   const pumpQueue = () => {
     if (draining) return
     const signature = queue.shift()
@@ -123,7 +148,7 @@ export function useChartPipeline(
       groupName: currentGroupName(),
       sort: currentSort(),
       showLabels: showLabels.value,
-      scale: scale.value,
+      scale: currentScale(),
       threeD: threeD.value,
     })
   }
