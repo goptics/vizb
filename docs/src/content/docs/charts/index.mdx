@@ -115,9 +115,6 @@ vizb data.csv -g category --chart bar:bg -o output.html
 
 # Styled object: braces required; semicolons inside {}; commas stay literal
 vizb data.csv -g category --chart 'bar:bg={color=rgba(180, 180, 180, 0.2);borderColor=#000}' -o output.html
-
-# Per-axis log on line
-vizb data.csv -c line --chart 'line:scale={type=log;axes=x}' -o output.html
 ```
 
 See [Commands: root](/commands/root) for the full flag reference.

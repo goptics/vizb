@@ -258,10 +258,6 @@ vizb bench.txt -p n/x/y --chart bar:swap=yx,sort=asc -o output.html
 # Line chart: log scale; pie chart: show labels
 vizb bench.txt --chart line:scale=log --chart pie:labels -o output.html
 
-# Per-axis log object (braces; commas inside {} stay literal)
-vizb bench.txt -c line --chart 'line:scale={type=log;axes=x}' -o output.html
-vizb bench.txt -c line --chart 'line:scale={type=log;axes=x,y;baseX=5;baseY=10};smooth' -o output.html
-
 # 3D bar with auto-rotate; line with labels off
 vizb bench.txt -p n/x/y/z --chart bar:3d-rotate --chart line:labels=false -o output.html
 

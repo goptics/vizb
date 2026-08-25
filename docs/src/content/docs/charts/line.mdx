@@ -130,11 +130,6 @@ vizb line sales.csv -g region,category --scale log -l -o out.html
 
 # Per-axis log bag (unwrapped; no braces on --scale)
 vizb line sales.csv --scale 'type=log;axes=x' -o out.html
-vizb line sales.csv --scale 'type=log;axes=x,y;base=10' -o out.html
-
-# --chart braces (root multi-chart path)
-vizb sales.csv -c line --chart 'line:scale={type=log;axes=x;base=10}' -o out.html
-vizb sales.csv -c line --chart 'line:scale={type=log;axes=x,y;baseX=5;baseY=10};smooth' -o out.html
 
 # Sort descending
 vizb line sales.csv -g region,category --sort desc -o out.html

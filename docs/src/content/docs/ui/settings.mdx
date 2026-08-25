@@ -31,11 +31,6 @@ vizb data.csv --chart bar:scale=log,labels -o output.html
 # Single chart subcommand
 vizb bar data.csv --scale log --show-labels -o output.html
 
-# Per-axis log bag / --chart braces (panel still only Linear / Logarithmic)
-vizb line data.csv --scale 'type=log;axes=x' -o output.html
-vizb data.csv -c line --chart 'line:scale={type=log;axes=x;base=10}' -o output.html
-vizb data.csv -c line --chart 'line:scale={type=log;axes=x,y;baseX=5;baseY=10};smooth' -o output.html
-
 # Sort descending, bar only
 vizb bar data.csv --sort desc -o output.html
 

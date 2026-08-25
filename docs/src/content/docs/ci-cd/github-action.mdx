@@ -231,16 +231,6 @@ Per-axis log uses the same `chart:` input (braces like `--chart`; no dedicated `
     output-html: pages/index.html
 ```
 
-```yaml
-- uses: goptics/vizb@v0
-  with:
-    file: training.csv
-    charts: line
-    chart: |
-      line:scale={type=log;axes=x,y;baseX=5;baseY=10};smooth
-    output-html: pages/index.html
-```
-
 Category background on 2D bars (`background.active: true` on the wire; no UI toggle; 3D skips the flag):
 
 ```yaml

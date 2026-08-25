@@ -59,10 +59,6 @@ vizb data.csv --chart bar:scale=log -o output.html
 
 # Chart subcommand
 vizb bar data.csv --scale log -o output.html
-
-# Per-axis log (CLI/JSON set axes and base; the panel does not)
-vizb line data.csv --scale 'type=log;axes=x' -o output.html
-vizb data.csv -c line --chart 'line:scale={type=log;axes=x;base=10}' -o output.html
 ```
 
 Use log scale when values span several orders of magnitude (for example 1 to 1,000,000).
