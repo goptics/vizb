@@ -24,7 +24,6 @@ import {
   type SettingFieldValueMap,
 } from '../composables/settings/fieldRegistry'
 import type { ChartType, ScaleInput } from '../types'
-import { parseScale } from '../lib/scale'
 
 // Generic, schema-less settings panel: walks `Object.keys(activeConfig)` via
 // `getRenderableFields` and renders the registered control for each key. The
@@ -59,7 +58,7 @@ const {
   chartMode,
 } = useDataPoint()
 
-const { hasZOnChart, hasThreeDOption, threeD, stack } = useActiveChartShape()
+const { hasZOnChart, hasThreeDOption, threeD, stack, horizontal } = useActiveChartShape()
 
 const CHART_ICONS: Record<ChartType, Component> = {
   bar: BarChart3,
@@ -150,7 +149,7 @@ const valueFor = (key: SettingFieldKey) => {
   if (!activeConfig.value) return undefined
   if (key === 'scale') {
     if (stack.value) return 'linear'
-    return parseScale((activeConfig.value as { scale?: ScaleInput }).scale).type
+    return (activeConfig.value as { scale?: ScaleInput }).scale
   }
   return (activeConfig.value as Partial<SettingFieldValueMap>)[key]
 }
@@ -186,6 +185,7 @@ const onUpdate = (key: SettingFieldKey, value: unknown) => {
           :is="field.component"
           :model-value="valueFor(field.key)"
           :disabled="disabledFor(field.key)"
+          v-bind="field.key === 'scale' ? { defaultAxes: horizontal ? ['x'] : ['y'] } : {}"
           :id="field.id"
           :label="field.label"
           :description="field.description"
@@ -201,6 +201,7 @@ const onUpdate = (key: SettingFieldKey, value: unknown) => {
             :is="field.component"
             :model-value="valueFor(field.key)"
             :disabled="disabledFor(field.key)"
+
             :id="field.id"
             :label="field.label"
             :description="field.description"

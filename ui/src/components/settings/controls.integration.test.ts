@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { computed, defineComponent, h, ref } from 'vue'
 import { mount } from '@vue/test-utils'
-import type { Sort, ScaleType } from '@/types'
+import type { ScaleInput, Sort, ScaleType } from '@/types'
 
 vi.mock('../ui', () => {
   const passthrough = (name: string) =>
@@ -201,6 +201,46 @@ describe('settings controls', () => {
     const tabs = disabled.findComponent({ name: 'SelectionTabs' })
     await tabs.vm.$emit('update:modelValue', 'log')
     expect(emitVals.length).toBe(before)
+  })
+
+  it('ScaleControl shows log info hover only when scale is log', () => {
+    const linear = mount(ScaleControl, { props: { modelValue: 'linear' } })
+    expect(linear.find('[data-testid="scale-log-info"]').exists()).toBe(false)
+    expect(linear.findAll('input')).toHaveLength(0)
+
+    const log = mount(ScaleControl, { props: { modelValue: 'log' } })
+    const info = log.get('[data-testid="scale-log-info"]')
+    expect(info.attributes('title')).toBe('Y log (base 10)')
+    expect(info.attributes('aria-label')).toBe('Y log (base 10)')
+    expect(log.findAll('input')).toHaveLength(0)
+
+    const horizontal = mount(ScaleControl, {
+      props: { modelValue: 'log', defaultAxes: ['x'] },
+    })
+    expect(horizontal.get('[data-testid="scale-log-info"]').attributes('title')).toBe(
+      'X log (base 10)'
+    )
+
+    const objectLog = mount(ScaleControl, {
+      props: { modelValue: { type: 'log', axes: ['x'], base: 10 } },
+    })
+    expect(objectLog.get('[data-testid="scale-log-info"]').attributes('title')).toBe(
+      'X log (base 10) · Y linear'
+    )
+  })
+
+  it('ScaleControl Logarithmic click still writes string log for object scale', async () => {
+    const emitVals: ScaleType[] = []
+    const w = mount(ScaleControl, {
+      props: {
+        modelValue: { type: 'log', axes: ['x'], baseX: 5, baseY: 10 } satisfies ScaleInput,
+        'onUpdate:modelValue': (v: ScaleType) => emitVals.push(v),
+      },
+    })
+    expect(w.find('[data-testid="selection-tabs"]').exists()).toBe(true)
+    await w.get('[data-value="log"]').trigger('click')
+    expect(emitVals).toEqual(['log'])
+    expect(w.findAll('input')).toHaveLength(0)
   })
 
   it.each([

@@ -60,6 +60,33 @@ export function axisLogBase(parsed: ParsedScale, axis: ScaleAxis): number {
   return override ?? parsed.base
 }
 
+function axisPhrase(parsed: ParsedScale, axis: ScaleAxis, isLog: boolean): string {
+  const name = axis.toUpperCase()
+  return isLog ? `${name} log (base ${axisLogBase(parsed, axis)})` : `${name} linear`
+}
+
+/**
+ * Logarithmic hover copy, or `undefined` when the scale is not log.
+ * Omitted axes name only the default value axis; an explicit `axes` list names
+ * every chart axis and marks the rest linear.
+ */
+export function scaleLogInfoText(
+  scale: ScaleInput | undefined | null,
+  defaultAxes: readonly ScaleAxis[] = ['y']
+): string | undefined {
+  const parsed = parseScale(scale)
+  if (parsed.type !== 'log') return undefined
+
+  if (parsed.axes === null) {
+    return defaultAxes.map((axis) => axisPhrase(parsed, axis, true)).join(' · ')
+  }
+
+  const chartAxes: readonly ScaleAxis[] = defaultAxes.includes('z') ? ['x', 'y', 'z'] : ['x', 'y']
+  return chartAxes
+    .map((axis) => axisPhrase(parsed, axis, axisIsLog(parsed, axis, defaultAxes)))
+    .join(' · ')
+}
+
 /**
  * When X is log and every category label is a finite number > 0, return those
  * numbers so callers can coerce the category axis to a value/log axis.
