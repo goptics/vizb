@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   DEFAULT_LOG_BASE,
+  applyScaleType,
   asLogXPairs,
   axisIsLog,
   axisLogBase,
@@ -145,9 +146,9 @@ describe('scaleLogInfoText', () => {
     expect(scaleLogInfoText({ type: 'log', axes: ['x'], base: 10 })).toBe(
       'X log (base 10) · Y linear'
     )
-    expect(
-      scaleLogInfoText({ type: 'log', axes: ['x'], base: 10 }, ['z'])
-    ).toBe('X log (base 10) · Y linear · Z linear')
+    expect(scaleLogInfoText({ type: 'log', axes: ['x'], base: 10 }, ['z'])).toBe(
+      'X log (base 10) · Y linear · Z linear'
+    )
   })
 
   it('uses per-axis bases when both axes are log', () => {
@@ -158,5 +159,20 @@ describe('scaleLogInfoText', () => {
 
   it('treats an explicit empty axes list as all-linear chart axes', () => {
     expect(scaleLogInfoText({ type: 'log', axes: [] })).toBe('X linear · Y linear')
+  })
+})
+
+describe('applyScaleType', () => {
+  it('applyScaleType merges type into an object spec and returns strings as-is', () => {
+    const spec = { type: 'log' as const, axes: ['x'] as ['x'], base: 10, baseX: 5 }
+    expect(applyScaleType(spec, 'log')).toEqual(spec)
+    expect(applyScaleType(spec, 'linear')).toEqual({ ...spec, type: 'linear' })
+    expect(applyScaleType({ type: 'linear', axes: ['x'] }, 'log')).toEqual({
+      type: 'log',
+      axes: ['x'],
+    })
+    expect(applyScaleType('linear', 'log')).toBe('log')
+    expect(applyScaleType('log', 'linear')).toBe('linear')
+    expect(applyScaleType(undefined, 'log')).toBe('log')
   })
 })

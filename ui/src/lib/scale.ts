@@ -29,6 +29,17 @@ function parseAxes(axes: unknown): ScaleAxis[] | null {
   return axes.filter(isScaleAxis)
 }
 
+/** Keep axes/base on an object spec; strings stay strings. */
+export function applyScaleType(
+  current: ScaleInput | undefined | null,
+  type: ScaleType
+): ScaleInput {
+  if (current != null && typeof current === 'object') {
+    return { ...current, type }
+  }
+  return type
+}
+
 /** Normalize Dataset `scale` (string or object) without applying chart defaults. */
 export function parseScale(input: ScaleInput | undefined | null): ParsedScale {
   if (input == null || typeof input !== 'object') {

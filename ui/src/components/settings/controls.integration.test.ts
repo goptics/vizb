@@ -13,6 +13,31 @@ vi.mock('../ui', () => {
     })
   return {
     Separator: passthrough('Separator'),
+    Popover: defineComponent({
+      name: 'Popover',
+      props: ['open'],
+      setup(_, { slots }) {
+        return () => slots.default?.()
+      },
+    }),
+    PopoverTrigger: defineComponent({
+      name: 'PopoverTrigger',
+      inheritAttrs: false,
+      setup(_, { slots, attrs }) {
+        return () =>
+          h(
+            'button',
+            { type: 'button', ...attrs, 'data-stub': 'PopoverTrigger' },
+            slots.default?.()
+          )
+      },
+    }),
+    PopoverContent: defineComponent({
+      name: 'PopoverContent',
+      setup(_, { slots, attrs }) {
+        return () => h('div', { 'data-stub': 'PopoverContent', ...attrs }, slots.default?.())
+      },
+    }),
     Label: defineComponent({
       name: 'Label',
       props: ['for'],
@@ -40,7 +65,7 @@ vi.mock('../SelectionTabs.vue', () => ({
     name: 'SelectionTabs',
     props: ['modelValue', 'options', 'disabled'],
     emits: ['update:modelValue'],
-    setup(p, { emit }) {
+    setup(p, { emit, slots }) {
       return () =>
         h(
           'div',
@@ -53,7 +78,7 @@ vi.mock('../SelectionTabs.vue', () => ({
                 disabled: p.disabled,
                 onClick: () => emit('update:modelValue', o.value),
               },
-              o.label
+              [o.label, slots.suffix?.({ option: o })]
             )
           )
         )
@@ -203,30 +228,53 @@ describe('settings controls', () => {
     expect(emitVals.length).toBe(before)
   })
 
-  it('ScaleControl shows log info hover only when scale is log', () => {
+  it('ScaleControl shows log info popover on the Logarithmic tab only when scale is log', () => {
     const linear = mount(ScaleControl, { props: { modelValue: 'linear' } })
     expect(linear.find('[data-testid="scale-log-info"]').exists()).toBe(false)
+    expect(linear.find('[data-stub="PopoverContent"]').exists()).toBe(false)
     expect(linear.findAll('input')).toHaveLength(0)
 
     const log = mount(ScaleControl, { props: { modelValue: 'log' } })
     const info = log.get('[data-testid="scale-log-info"]')
-    expect(info.attributes('title')).toBe('Y log (base 10)')
+    expect(info.attributes('title')).toBeUndefined()
     expect(info.attributes('aria-label')).toBe('Y log (base 10)')
+    expect(log.get('[data-stub="PopoverContent"]').text()).toBe('Y log (base 10)')
     expect(log.findAll('input')).toHaveLength(0)
+
+    expect(log.get('[data-value="log"]').element.contains(info.element)).toBe(true)
 
     const horizontal = mount(ScaleControl, {
       props: { modelValue: 'log', defaultAxes: ['x'] },
     })
-    expect(horizontal.get('[data-testid="scale-log-info"]').attributes('title')).toBe(
-      'X log (base 10)'
-    )
+    expect(horizontal.get('[data-stub="PopoverContent"]').text()).toBe('X log (base 10)')
 
     const objectLog = mount(ScaleControl, {
       props: { modelValue: { type: 'log', axes: ['x'], base: 10 } },
     })
-    expect(objectLog.get('[data-testid="scale-log-info"]').attributes('title')).toBe(
-      'X log (base 10) · Y linear'
-    )
+    expect(objectLog.get('[data-stub="PopoverContent"]').text()).toBe('X log (base 10) · Y linear')
+  })
+
+  it('ScaleControl opens log info on hover and closes on leave', async () => {
+    const emitVals: ScaleType[] = []
+    const log = mount(ScaleControl, {
+      props: {
+        modelValue: 'log',
+        'onUpdate:modelValue': (v: ScaleType) => emitVals.push(v),
+      },
+    })
+    const info = log.get('[data-testid="scale-log-info"]')
+    expect(info.attributes('aria-expanded')).toBe('false')
+    await info.trigger('mouseenter')
+    expect(info.attributes('aria-expanded')).toBe('true')
+    await info.trigger('mouseleave')
+    expect(info.attributes('aria-expanded')).toBe('false')
+    await info.trigger('focus')
+    expect(info.attributes('aria-expanded')).toBe('true')
+    await info.trigger('blur')
+    expect(info.attributes('aria-expanded')).toBe('false')
+    await info.trigger('click')
+    await info.trigger('pointerdown')
+    expect(emitVals).toEqual([])
   })
 
   it('ScaleControl Logarithmic click still writes string log for object scale', async () => {

@@ -6,6 +6,7 @@ interface Option {
   value: string | number
   label: string
   icon?: Component
+  class?: string
 }
 
 const props = defineProps<{
@@ -32,10 +33,11 @@ const onUpdate = (value: string | number) => {
         :key="option.value"
         :value="option.value"
         :disabled="props.disabled"
-        class="flex-1"
+        :class="['flex-1', option.class]"
       >
         <component :is="option.icon" v-if="option.icon" class="h-4 w-4" />
         <span class="ml-2">{{ option.label }}</span>
+        <slot name="suffix" :option="option" />
       </TabsTrigger>
     </TabsList>
   </Tabs>

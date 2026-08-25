@@ -1,7 +1,8 @@
 import { computed, ref, watch } from 'vue'
-import type { ChartConfig, ChartType, Sort, ScaleType } from '../types'
+import type { ChartConfig, ChartType, Sort, ScaleInput, ScaleType } from '../types'
 import { activeDataset } from './useDataPoint'
 import { isValidIndex } from '../lib/utils'
+import { applyScaleType, parseScale } from '../lib/scale'
 import { activeThemeName, applyTheme, isAvailableThemeName, normalizeTheme } from '../lib/themes'
 
 // Module-level singleton state. `activeChartIndex` is the cursor into
@@ -129,10 +130,21 @@ export function useSettingsStore() {
     Object.assign(cfg, fields)
   }
 
+  const currentScale = () => (activeConfig.value as { scale?: ScaleInput } | undefined)?.scale
+
   const setSort = (sort: Sort) => patchActive({ sort: { ...sort } })
-  const setScale = (scale: ScaleType) => patchActive({ scale })
-  const setStack = (stack: boolean) =>
-    patchActive(stack ? { stack, scale: 'linear' as const } : { stack })
+  const setScale = (scale: ScaleType) => {
+    const current = currentScale()
+    if (parseScale(current).type === scale) return
+    patchActive({ scale: applyScaleType(current, scale) })
+  }
+  const setStack = (stack: boolean) => {
+    if (!stack) {
+      patchActive({ stack })
+      return
+    }
+    patchActive({ stack, scale: applyScaleType(currentScale(), 'linear') })
+  }
   const setShowLabels = (show: boolean) => patchActive({ showLabels: show })
   const setSmooth = (smooth: boolean) => patchActive({ smooth }, (cfg) => cfg.type === 'line')
   const setHorizontal = (horizontal: boolean) =>
