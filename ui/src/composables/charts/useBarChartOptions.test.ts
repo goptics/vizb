@@ -341,6 +341,81 @@ describe('useBarChartOptions — value mode and branches', () => {
     ).not.toBe('cross')
   })
 
+  it('log-X simple bars map missing values via ?? null', () => {
+    const chartData: ChartData = {
+      title: 'steps',
+      statType: 'v',
+      yAxis: [],
+      zAxis: [],
+      series: [{ xAxis: '1', values: [], benchmarkId: '' }],
+      points: [],
+      axisLabels: { x: 'step' },
+    }
+    const { options } = useBarChartOptions({
+      chartData: ref(chartData),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      scale: ref({ type: 'log' as const, axes: ['x'] as ('x' | 'y')[] }),
+    })
+    expect((options.value.series as { data: [number, number | null][] }[])[0]!.data).toEqual([
+      [1, null],
+    ])
+  })
+
+  it('log-X grouped bars map missing y values and sort [x,y] pairs', () => {
+    const chartData: ChartData = {
+      title: 'steps',
+      statType: 'v',
+      yAxis: ['a', 'b'],
+      zAxis: [],
+      series: [{ xAxis: '10', values: [8], benchmarkId: '' }],
+      points: [],
+      axisLabels: { x: 'step', y: 'run' },
+    }
+    const { options } = useBarChartOptions({
+      chartData: ref(chartData),
+      sort: ref({ enabled: true, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(true),
+      scale: ref({ type: 'log' as const, axes: ['x'] as ('x' | 'y')[] }),
+    })
+    const series = options.value.series as { name: string; data: [number, number | null][] }[]
+    expect(series.map((s) => s.name)).toEqual(['b', 'a'])
+    expect(series[0]!.data).toEqual([[10, null]])
+    expect(series[1]!.data).toEqual([[10, 8]])
+    expect((options.value.tooltip as { axisPointer?: { type?: string } }).axisPointer?.type).toBe(
+      'line'
+    )
+  })
+
+  it('grouped log-X with one y series uses cross tooltip', () => {
+    const chartData: ChartData = {
+      title: 'steps',
+      statType: 'v',
+      yAxis: ['train'],
+      zAxis: [],
+      series: [
+        { xAxis: '1', values: [10], benchmarkId: '' },
+        { xAxis: '10', values: [5], benchmarkId: '' },
+      ],
+      points: [],
+      axisLabels: { x: 'step', y: 'split' },
+    }
+    const { options } = useBarChartOptions({
+      chartData: ref(chartData),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      scale: ref({ type: 'log' as const, axes: ['x'] as ('x' | 'y')[] }),
+    })
+    expect((options.value.xAxis as { type?: string }).type).toBe('log')
+    expect((options.value.series as unknown[]).length).toBe(1)
+    expect((options.value.tooltip as { axisPointer?: { type?: string } }).axisPointer?.type).toBe(
+      'cross'
+    )
+  })
+
   it('simple numeric log-X bars use cross tooltip', () => {
     const chartData: ChartData = {
       title: 'steps',

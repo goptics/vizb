@@ -171,6 +171,26 @@ describe('buildMixedAxes2DOptions', () => {
     expect((option.tooltip as { axisPointer?: { type?: string } }).axisPointer?.type).toBe('cross')
   })
 
+  it('falls back to the mixed index when log-X lookup is out of range', () => {
+    const option = buildMixedAxes2DOptions(
+      cfg({
+        scale: { type: 'log', axes: ['x'] },
+        chartData: makeMixedChartData({
+          xCategories: ['1'],
+          mixedTuples: [
+            [0, 5],
+            [9, 8],
+          ],
+        }),
+      }),
+      'line'
+    )
+    expect(series0(option).data).toEqual([
+      [1, 5],
+      [9, 8],
+    ])
+  })
+
   it('defaults scale to linear when scale ref omitted', () => {
     const full = cfg()
     const { scale: _scale, ...rest } = full

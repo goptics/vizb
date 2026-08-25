@@ -171,13 +171,8 @@ export function useBarChartOptions(config: BaseChartConfig) {
       const seriesItem = {
         name: chartData.value.title,
         type: 'bar' as const,
-        data: xNums
-          ? asLogXPairs(
-              xNums,
-              series.map((s) => s.values[0] ?? null),
-              valueLog
-            )
-          : series.map((s) => barNullable(s.values[0] ?? null, valueLog)),
+        // xNums is null while horizontal (category X stays categorical).
+        data: series.map((s) => barNullable(s.values[0] ?? null, valueLog)),
         label: createLabelConfig(showLabels.value, styling, 'horizontal'),
         large: true,
         largeThreshold: LARGE_DATA_THRESHOLD,
