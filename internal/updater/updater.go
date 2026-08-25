@@ -35,6 +35,8 @@ type Updater struct {
 	latestURL           string
 	releaseDownloadURL  string
 	replace             func(string, string) error
+	// ProgressWrap optionally reports archive download progress. Checksums skip it.
+	ProgressWrap func(r io.Reader, total int64, label string) io.Reader
 }
 
 // New constructs an updater for the currently running executable.
@@ -145,7 +147,7 @@ func (u *Updater) prepareCandidate(ctx context.Context, version string) (string,
 
 	checksumsPath := filepath.Join(tempDir, "checksums.txt")
 	checksumsURL := u.releaseURL(version, "checksums.txt")
-	if err := downloadFile(ctx, u.client, checksumsURL, checksumsPath, u.userAgent(), maxChecksumSize); err != nil {
+	if err := downloadFile(ctx, u.client, checksumsURL, checksumsPath, u.userAgent(), maxChecksumSize, nil, ""); err != nil {
 		cleanup()
 		return "", func() {}, fmt.Errorf("download release checksums: %w", err)
 	}
@@ -156,7 +158,7 @@ func (u *Updater) prepareCandidate(ctx context.Context, version string) (string,
 	}
 
 	archivePath := filepath.Join(tempDir, asset.Name)
-	if err := downloadFile(ctx, u.client, u.releaseURL(version, asset.Name), archivePath, u.userAgent(), maxArchiveSize); err != nil {
+	if err := downloadFile(ctx, u.client, u.releaseURL(version, asset.Name), archivePath, u.userAgent(), maxArchiveSize, u.ProgressWrap, version); err != nil {
 		cleanup()
 		return "", func() {}, fmt.Errorf("download release archive: %w", err)
 	}

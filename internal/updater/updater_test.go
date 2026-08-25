@@ -186,6 +186,27 @@ func (s *UpdaterSuite) TestStandaloneUpdateDownloadsVerifiesAndReplaces() {
 	s.Contains(stdout.String(), "Updated vizb from v1.0.0 to v1.1.0")
 }
 
+func (s *UpdaterSuite) TestArchiveDownloadInvokesProgressWrapOnce() {
+	archive := tarGzipArchive(s.T(), "vizb", []byte("new-vizb"))
+	server := newReleaseServer(s.T(), "v1.1.0", "vizb@1.1.0-linux-amd64.tar.gz", archive, false)
+	defer server.Close()
+
+	target := filepath.Join(s.T().TempDir(), "vizb")
+	s.Require().NoError(os.WriteFile(target, []byte("old-vizb"), 0o755))
+
+	var calls, closed int
+	service := standaloneUpdater(server, target, "v1.0.0", "linux", "amd64")
+	service.ProgressWrap = func(r io.Reader, total int64, label string) io.Reader {
+		calls++
+		s.Equal("v1.1.0", label)
+		s.Equal(int64(len(archive)), total)
+		return closeNotify{Reader: r, n: &closed}
+	}
+	s.Require().NoError(service.Run(context.Background(), strings.NewReader(""), io.Discard, io.Discard))
+	s.Equal(1, calls)
+	s.Equal(1, closed)
+}
+
 func (s *UpdaterSuite) TestChecksumFailurePreservesExecutable() {
 	archive := tarGzipArchive(s.T(), "vizb", []byte("new-vizb"))
 	server := newReleaseServer(s.T(), "v1.1.0", "vizb@1.1.0-linux-amd64.tar.gz", archive, true)
@@ -474,6 +495,16 @@ func tarGzipArchive(t *testing.T, name string, content []byte) []byte {
 		t.Fatal(err)
 	}
 	return buffer.Bytes()
+}
+
+type closeNotify struct {
+	io.Reader
+	n *int
+}
+
+func (c closeNotify) Close() error {
+	*c.n++
+	return nil
 }
 
 func TestUpdaterSuite(t *testing.T) {
