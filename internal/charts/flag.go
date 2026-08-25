@@ -44,7 +44,7 @@ var BaseChartFlags = []flags.Flag{SwapFlag, SortFlag, LabelsFlag, StatFlag}
 
 var (
 	ScaleFlag = flags.Flag{
-		Name: "scale", Shorthand: "S", Usage: "Value scale (linear, log)",
+		Name: "scale", Shorthand: "S", Usage: "Value scale (linear, log, or type=log;axes=x[,y];base=10)",
 		Kind: flags.KindString, Default: "linear", JSONKey: "scale",
 		Validate:   ValidateScaleValue,
 		Encode:     func(v any) any { return strings.ToLower(v.(string)) },

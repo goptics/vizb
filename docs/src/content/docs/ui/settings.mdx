@@ -13,7 +13,7 @@ Prefer **per-chart** flags when generating multi-chart HTML. Root-level `--sort`
 
 | CLI | UI setting | Options |
 |-----|------------|---------|
-| `--chart <type>:scale=log` or `vizb bar --scale log` | Scale toggle | `linear` / `log` (cartesian charts) |
+| `--chart <type>:scale=log` or `vizb bar --scale log` / `--scale 'type=log;axes=x'` | Scale toggle | Linear / Logarithmic only — the panel cannot pick axes or base. Logarithmic hover is read-only. |
 | `--chart <type>:sort=asc` or `vizb bar --sort asc` | Sort dropdown | `asc` / `desc` / none |
 | `--charts` / `-c` | Which chart tabs exist | `bar` / `line` / `pie` / `scatter` / `heatmap` / `radar` / `sankey` / `chord` |
 | `--chart <type>:labels` or `vizb pie --show-labels` | Labels toggle | on / off |
@@ -31,6 +31,11 @@ vizb data.csv --chart bar:scale=log,labels -o output.html
 # Single chart subcommand
 vizb bar data.csv --scale log --show-labels -o output.html
 
+# Per-axis log bag / --chart braces (panel still only Linear / Logarithmic)
+vizb line data.csv --scale 'type=log;axes=x' -o output.html
+vizb data.csv -c line --chart 'line:scale={type=log;axes=x;base=10}' -o output.html
+vizb data.csv -c line --chart 'line:scale={type=log;axes=x,y;baseX=5;baseY=10};smooth' -o output.html
+
 # Sort descending, bar only
 vizb bar data.csv --sort desc -o output.html
 
@@ -44,5 +49,5 @@ vizb data.csv --chart 'bar:bg={color=rgba(180, 180, 180, 0.2);borderColor=#000}'
 ```
 
 <Aside type="note">
-  CLI flags set the initial state. Settings that have a UI control can be changed without regenerating the file. Deep links keep many of those choices in the URL — see [UI Overview → Deep links](/ui#deep-links). `--bg` / `--chart bar:bg` has no settings-panel toggle (2D only).
+  CLI flags set the initial state. Settings that have a UI control can be changed without regenerating the file. Deep links keep many of those choices in the URL — see [UI Overview → Deep links](/ui#deep-links). `--bg` / `--chart bar:bg` has no settings-panel toggle (2D only). Scale axes and base are CLI/JSON only: the panel cannot pick them, and Logarithmic hover is read-only.
 </Aside>

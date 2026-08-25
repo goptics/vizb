@@ -192,8 +192,17 @@ See [Group vs Select](/guides/group-vs-select#when-to-use-which) for when to use
 
 ### Logarithmic scale
 
+Bare `log` / `linear` stay strings (log the default value axis). A bag is an unwrapped semicolon list on `--scale` (no braces). `--chart` wraps the same fields in `{…}`. Nested `log:axes=x` is not valid.
+
 ```bash
+vizb line bench.txt --scale log -o output.html
+vizb line bench.txt --scale 'type=log;axes=x' -o output.html
+vizb line bench.txt --scale 'type=log;axes=x,y;base=10' -o output.html
+vizb line bench.txt --scale 'type=log;axes=x,y;baseX=5;baseY=10' -o output.html
+
 vizb bench.txt --chart bar:scale=log -o output.html
+vizb bench.txt -c line --chart 'line:scale={type=log;axes=x;base=10}' -o output.html
+vizb bench.txt -c line --chart 'line:scale={type=log;axes=x,y;baseX=5;baseY=10};smooth' -o output.html
 ```
 
 ### Filtering
@@ -235,8 +244,9 @@ spec is `<type>:<props>` where props are `key=value` pairs or bare flags
   - Or separate props with **semicolons** so commas stay inside the value:
     `--chart 'bar:stat=center,spread;labels'`
 - **Object props** use braces: `key={field=value;field=value}`. Inside `{}`,
-  only `;` separates fields so commas stay literal (`rgba(…)`,
-  `borderRadius=8,8,0,0`). Unwrapped `bar:bg=color=…` is invalid.
+  only `;` separates fields so commas stay literal (`rgba(…)`, `axes=x,y`,
+  `borderRadius=8,8,0,0`). Unwrapped `bar:bg=color=…` or
+  `line:scale=type=log;axes=x` is invalid. Nested `log:axes=x` is not valid.
 
 Semicolon mode matches structured `--theme` specs
 (`name:colors=#hex,...;visualMapColors=...`); both use the same prop grammar.
@@ -247,6 +257,10 @@ vizb bench.txt -p n/x/y --chart bar:swap=yx,sort=asc -o output.html
 
 # Line chart: log scale; pie chart: show labels
 vizb bench.txt --chart line:scale=log --chart pie:labels -o output.html
+
+# Per-axis log object (braces; commas inside {} stay literal)
+vizb bench.txt -c line --chart 'line:scale={type=log;axes=x}' -o output.html
+vizb bench.txt -c line --chart 'line:scale={type=log;axes=x,y;baseX=5;baseY=10};smooth' -o output.html
 
 # 3D bar with auto-rotate; line with labels off
 vizb bench.txt -p n/x/y/z --chart bar:3d-rotate --chart line:labels=false -o output.html
@@ -274,7 +288,7 @@ vizb sales.csv -c bar --chart 'bar:bg={color=rgba(180, 180, 180, 0.2);borderColo
 | `swap` | — | permutation of axis chars (e.g. `yx`, `yxn`) | all |
 | `sort` | — | `asc`, `desc` | all |
 | `labels` | `labels` | `true`, `false` | all |
-| `scale` | — | `linear`, `log` | `bar`, `line` only |
+| `scale` | — | `linear`, `log`, or `{type=log;axes=x[,y][;base=10]}` | `bar`, `line`, `scatter` |
 | `3d-rotate` | `3d-rotate` | `true`, `false` | `bar`, `line` 3D only |
 | `bg` | `bg` | `{field=value;…}` style object, or bare/`{}` for on | `bar` 2D only |
 | `stat` | `stat` | `all`, or comma-separated categories (`center,spread`, …) | all |

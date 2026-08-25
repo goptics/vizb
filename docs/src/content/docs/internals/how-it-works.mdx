@@ -138,7 +138,7 @@ The top-level output struct containing metadata and all data points:
   ],
   "settings": [
     { "type": "bar",  "swap": "yxn", "scale": "linear", "sort": { "enabled": true, "order": "asc" }, "showLabels": false },
-    { "type": "line", "swap": "xyn", "scale": "log",    "sort": { "enabled": true, "order": "asc" }, "showLabels": true,  "threeDRotate": true },
+    { "type": "line", "swap": "xyn", "scale": { "type": "log", "axes": ["x"], "base": 10 }, "sort": { "enabled": true, "order": "asc" }, "showLabels": true,  "threeDRotate": true },
     { "type": "pie",  "swap": "n",   "sort": { "enabled": true, "order": "asc" }, "showLabels": true }
   ],
   "data": [
@@ -148,7 +148,15 @@ The top-level output struct containing metadata and all data points:
 }
 ```
 
-`settings` is an array of per-chart typed configs — each entry carries its own `scale`, `sort`, `showLabels`, etc. v0.12.0 files (a single `settings` object with `charts`/`sort`/`showLabels`/`scale`) are auto-migrated in-memory on read by `shared/migrate.go`, so existing files keep working transparently.
+`settings` is an array of per-chart typed configs — each entry carries its own `scale`, `sort`, `showLabels`, etc. `scale` is a string (`"linear"` | `"log"`, logging the default value axis) or an object when axes or a non-default base are set:
+
+```json
+"scale": "log"
+"scale": { "type": "log", "axes": ["x"], "base": 10 }
+"scale": { "type": "log", "axes": ["x", "y"], "baseX": 5, "baseY": 10 }
+```
+
+v0.12.0 files (a single `settings` object with `charts`/`sort`/`showLabels`/`scale`) are auto-migrated in-memory on read by `shared/migrate.go`, so existing files keep working transparently.
 
 ## Input Detection
 

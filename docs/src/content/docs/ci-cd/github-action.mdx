@@ -67,7 +67,7 @@ The action:
 | `col-axis` | `""` | **csv/json + group:** place numeric column names on this axis (`n`, `x`, `y`, or `z`) so all columns share one chart (`--col-axis` / `-A` flag). Requires group; target axis must not already be used by `group-pattern`. |
 | `json-path` | `""` | **json only:** select a nested array to chart via a jq-like dot path (e.g. `.data.results`) (`--json-path` flag). |
 | `stat` | `""` | Enable stats panel (`--stat` flag). Empty = disabled; `all` or `true` = all categories; otherwise comma-separated from: `counts`, `center`, `spread`, `extremes`, `shape`, `percentiles`, `confidence`, `correlations`. |
-| `chart` | `""` | Per-chart overrides (`--chart` flag, repeatable). One override per line: `<type>:<props>`. Keys include `swap`, `sort`, `scale`, `stack`, `labels`, `3d-rotate`, `3d`, `symbol`, `symbol-size`, `smooth`, `horizontal`, `border-radius`, `bg`, `stat`. Comma separates single-value props; for multi-value props (e.g. `stat=center,spread`) use semicolon between props or put the multi-value prop alone. Object props use `{field=value;field=value}` (semicolons inside braces; commas stay literal) — e.g. `bar:bg`, `bar:bg={color=rgba(180, 180, 180, 0.2);borderColor=#000}`. Unwrapped `bar:bg=color=…` is invalid. Blank lines and `#`-prefixed lines are ignored. |
+| `chart` | `""` | Per-chart overrides (`--chart` flag, repeatable). One override per line: `<type>:<props>`. Keys include `swap`, `sort`, `scale`, `stack`, `labels`, `3d-rotate`, `3d`, `symbol`, `symbol-size`, `smooth`, `horizontal`, `border-radius`, `bg`, `stat`. Comma separates single-value props; for multi-value props (e.g. `stat=center,spread`) use semicolon between props or put the multi-value prop alone. Object props use `{field=value;field=value}` (semicolons inside braces; commas stay literal) — e.g. `bar:bg`, `bar:bg={color=rgba(180, 180, 180, 0.2);borderColor=#000}`, `line:scale={type=log;axes=x}`. Unwrapped `bar:bg=color=…` is invalid. Blank lines and `#`-prefixed lines are ignored. |
 | `charts` | `"bar,line,pie"` | Chart types to generate (`-c` flag): `bar`, `line`, `scatter`, `pie`, `heatmap`, `radar`, `sankey`, `chord`. |
 | `parser` | `"auto"` | Parser to use: `csv`, `json`, `go`, `js:tinybench`, `js:vitest`, `rs:criterion`, `rs:divan` (`-P` flag). |
 | `show-labels` | `"false"` | **Deprecated:** use `chart` input instead (e.g. `chart: 'pie:labels'`). Show labels on charts (`-l` flag). |
@@ -216,6 +216,28 @@ Use the `chart` input (one override per line) to configure individual charts wit
       bar:scale=log,sort=desc
       pie:labels
       scatter:3d
+    output-html: pages/index.html
+```
+
+Per-axis log uses the same `chart:` input (braces like `--chart`; no dedicated `scale` input):
+
+```yaml
+- uses: goptics/vizb@v0
+  with:
+    file: training.csv
+    charts: line
+    chart: |
+      line:scale={type=log;axes=x}
+    output-html: pages/index.html
+```
+
+```yaml
+- uses: goptics/vizb@v0
+  with:
+    file: training.csv
+    charts: line
+    chart: |
+      line:scale={type=log;axes=x,y;baseX=5;baseY=10};smooth
     output-html: pages/index.html
 ```
 

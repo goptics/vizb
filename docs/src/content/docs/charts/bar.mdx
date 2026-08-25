@@ -114,7 +114,7 @@ These settings apply to bar charts:
 | Horizontal | `--horizontal` | Horizontal toggle | Renders grouped bars horizontally — 2D only |
 | Border radius | `--border-radius <int>[,int...]` | — | 1–4 corner radii px (CSS/ECharts TL,TR,BR,BL); single value = all corners; stacked: outer segment only, first two values on free end (rest square) — 2D only (CLI/config; not in UI settings) |
 | Background | `--bg` | — | Category background behind each bar. Bare `--bg` writes `background.active: true` (unspecified style keys keep ECharts defaults). Styled: `--bg 'color=…;borderColor=#000'`. 3D skips the flag — 2D only (CLI/config; not in UI settings) |
-| Scale (log) | `--log-scale` | Scale toggle | Log Y axis — 2D only |
+| Scale (log) | `--scale log` or `--scale 'type=log;axes=x'` | Scale toggle | `linear` / `log` (value axis), or bag for per-axis log. Panel is Linear / Logarithmic only (cannot pick axes or base; hover is read-only) |
 | 3D view | `--3d` | 3D view | Value 3D for x+y data (y → depth, metric → height) |
 | 3D visual map | `--3d-visualmap` | 3D visual map | Metric gradient coloring — on by default with `--3d`; grouped/value 3D |
 | Auto-rotate | `--3d-rotate` | Auto rotate | Spins the 3D scene — 3D only |
@@ -127,6 +127,10 @@ vizb bar sales.csv -g region,category --sort asc -l -o out.html
 
 # Log scale on the bar chart only
 vizb bar sales.csv -g region,category --scale log -o out.html
+
+# Per-axis log bag / --chart braces
+vizb bar sales.csv --scale 'type=log;axes=x' -o out.html
+vizb sales.csv -c bar --chart 'bar:scale={type=log;axes=x}' -o out.html
 
 # Horizontal grouped bars
 vizb bar sales.csv -g region,category -p x,y --horizontal -o out.html
