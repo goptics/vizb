@@ -78,7 +78,7 @@ describe('useCategorySeriesChartOptions — line', () => {
     expect((options.value.tooltip as { trigger?: string }).trigger).toBe('axis')
   })
 
-  it('uses large-series symbol none and dataZoom for wide x axes', () => {
+  it('keeps line dots and dataZoom for wide x axes', () => {
     const many = Array.from({ length: LARGE_X_THRESHOLD + 1 }, (_, i) => `x${i}`)
     const chartData = emptyChartData({
       title: 'wide',
@@ -86,12 +86,18 @@ describe('useCategorySeriesChartOptions — line', () => {
       axisLabels: { x: 'x' },
     })
     const { options } = useCategorySeriesChartOptions(baseConfig({ chartData }), 'line')
-    const series = options.value.series as { symbol?: string; sampling?: string }[]
-    expect(series[0]!.symbol).toBe('none')
-    expect(series[0]!.sampling).toBe('lttb')
+    const series = options.value.series as {
+      symbol?: string
+      symbolSize?: number
+      sampling?: string
+      showAllSymbol?: boolean
+    }[]
+    expect(series[0]!.symbol).toBe('circle')
+    expect(series[0]!.symbolSize).toBe(7)
+    expect(series[0]!.sampling).toBeUndefined()
+    expect(series[0]!.showAllSymbol).toBe(true)
     const dataZoom = options.value.dataZoom as { type: string }[]
-    expect(dataZoom).toHaveLength(1)
-    expect(dataZoom[0]!.type).toBe('slider')
+    expect(dataZoom.map((z) => z.type)).toEqual(['inside', 'slider'])
   })
 
   it('omits legend title when y axis label missing', () => {
@@ -266,7 +272,6 @@ describe('useCategorySeriesChartOptions — remaining branches', () => {
     })
     const { options: wide } = useCategorySeriesChartOptions(baseConfig({ chartData }), 'line')
     const dataZoom = wide.value.dataZoom as { type: string }[]
-    expect(dataZoom).toHaveLength(1)
-    expect(dataZoom[0]!.type).toBe('slider')
+    expect(dataZoom.map((z) => z.type)).toEqual(['inside', 'slider'])
   })
 })

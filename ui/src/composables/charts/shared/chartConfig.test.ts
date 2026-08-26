@@ -96,13 +96,16 @@ describe('createDataZoomConfig', () => {
       expect(entry.start).toBe(0)
       expect(entry.end).toBe(DATAZOOM_INITIAL_END_PERCENT)
       expect(entry.xAxisIndex).toBe(0)
+      expect(entry.yAxisIndex).toEqual([])
       expect(entry.filterMode).toBe('filter')
     }
+    expect(dataZoom.map((z) => z.id)).toEqual(['cartesian-x-inside', 'cartesian-x-slider'])
   })
 
   it('keeps slider chrome and themed boundary labels', () => {
     const slider = createDataZoomConfig(xAxisData, styling).find((z) => z.type === 'slider')
     expect(slider).toMatchObject({
+      id: 'cartesian-x-slider',
       bottom: 34,
       height: 28,
       textStyle: { color: styling.textColor },
@@ -121,14 +124,14 @@ describe('resolveCartesianDataZoom', () => {
     expect(resolveCartesianDataZoom('line', { ...ctx, ...flags })).toEqual({ hasXSlider: false })
   })
 
-  it('uses a slider-only window for large category line axes', () => {
+  it('uses inside+slider for large category line axes', () => {
     const { dataZoom, hasXSlider } = resolveCartesianDataZoom('line', {
       ...ctx,
       numericX: false,
       largeX: true,
     })
     expect(hasXSlider).toBe(true)
-    expect(dataZoom).toEqual(createDataZoomConfig([], styling).filter((z) => z.type === 'slider'))
+    expect(dataZoom).toEqual(createDataZoomConfig([], styling))
   })
 
   it.each(['scatter', 'bar'] as const)(
@@ -447,11 +450,27 @@ describe('createHorizontalDataZoomConfig', () => {
     const dz = createHorizontalDataZoomConfig(styling)
     expect(dz).toHaveLength(2)
     expect(dz[0]).toMatchObject({
+      id: 'cartesian-y-inside',
       type: 'inside',
       yAxisIndex: 0,
+      xAxisIndex: [],
       end: DATAZOOM_INITIAL_END_PERCENT,
+      filterMode: 'none',
+      minValueSpan: 1,
+      moveOnMouseWheel: true,
+      zoomOnMouseWheel: false,
     })
-    expect(dz[1]).toMatchObject({ type: 'slider', yAxisIndex: 0 })
+    expect(dz[1]).toMatchObject({
+      id: 'cartesian-y-slider',
+      type: 'slider',
+      yAxisIndex: 0,
+      xAxisIndex: [],
+      right: 20,
+      width: 20,
+      filterMode: 'none',
+      minValueSpan: 1,
+      showDetail: false,
+    })
   })
 })
 
@@ -485,7 +504,8 @@ describe('createHorizontalAxisConfig log + large', () => {
     expect(axes.xAxis.min).toBe('dataMin')
     expect(axes.xAxis.max).toBe('dataMax')
     expect(axes.yAxis.axisLabel.interval).toBe('auto')
-    expect(axes.yAxis.nameGap).toBe(88)
+    expect(axes.yAxis.nameGap).toBe(30)
+    expect(axes.xAxis.name).toBeNull()
   })
 
   it('adds tick margin when no name and no dataZoom', async () => {

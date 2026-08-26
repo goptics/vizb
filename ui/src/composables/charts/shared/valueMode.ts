@@ -21,7 +21,6 @@ import { resolve2DScatterVisualMap } from './visualMap'
 const defaultScatterSymbol = { symbol: 'circle' as const, symbolSize: 8 }
 const largeScatterSymbol = { symbol: 'circle' as const, symbolSize: 5 }
 const defaultLineSymbol = { symbol: 'circle' as const, symbolSize: 7 }
-const largeLineSymbol = { symbol: 'none', sampling: 'lttb' as const }
 
 export function sortValueTuples(
   tuples: [number, number, number?][],
@@ -67,7 +66,7 @@ const seriesSymbol = (
     )
   }
   if (chartType === 'line') {
-    return resolveSeriesSymbol(largeX ? largeLineSymbol : defaultLineSymbol, symbol, symbolSize)
+    return resolveSeriesSymbol(defaultLineSymbol, symbol, symbolSize)
   }
   return {}
 }
@@ -122,7 +121,7 @@ export function buildValueAxes2DOptions(
     ...(chartType === 'scatter'
       ? scatterSeriesLargeOpts(useVisualMap)
       : { large: true as const, largeThreshold: LARGE_DATA_THRESHOLD }),
-    ...(chartType === 'line' ? { smooth: smoothLines } : {}),
+    ...(chartType === 'line' ? { smooth: smoothLines, showAllSymbol: true as const } : {}),
     ...(useVisualMap ? {} : { itemStyle: { color: getNextColorFor(chartData.value.title) } }),
     ...seriesSymbol(chartType, largeX, config.symbol?.value, config.symbolSize?.value),
   }

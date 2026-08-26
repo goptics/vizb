@@ -130,6 +130,7 @@ function series0(option: ReturnType<typeof buildMixedAxes2DOptions>) {
     symbol?: string
     symbolSize?: number
     sampling?: string
+    showAllSymbol?: boolean
     itemStyle?: { color?: string }
     label?: { formatter?: (p: { data: [number, number | null] }) => string }
   }
@@ -219,6 +220,7 @@ describe('buildMixedAxes2DOptions', () => {
     expect(series0(line).type).toBe('line')
     expect(series0(line).smooth).toBe(true)
     expect(series0(line).symbolSize).toBe(7)
+    expect(series0(line).showAllSymbol).toBe(true)
   })
 
   it('uses large symbols and dataZoom when categories exceed threshold', () => {
@@ -231,11 +233,12 @@ describe('buildMixedAxes2DOptions', () => {
       'line'
     )
     const s = series0(option)
-    expect(s.symbol).toBe('none')
-    expect(s.sampling).toBe('lttb')
+    expect(s.symbol).toBe('circle')
+    expect(s.symbolSize).toBe(7)
+    expect(s.sampling).toBeUndefined()
+    expect(s.showAllSymbol).toBe(true)
     const dataZoom = option.dataZoom as { type: string }[]
-    expect(dataZoom).toHaveLength(1)
-    expect(dataZoom[0]!.type).toBe('slider')
+    expect(dataZoom.map((z) => z.type)).toEqual(['inside', 'slider'])
 
     const scatter = buildMixedAxes2DOptions(
       cfg({

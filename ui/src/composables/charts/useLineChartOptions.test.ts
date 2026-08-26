@@ -161,8 +161,7 @@ describe('useLineChartOptions — simple 1D', () => {
     expect(grid.bottom).toBe(100)
     expect(grid.containLabel).toBe(false)
     const dataZoom = options.value.dataZoom as { type: string }[]
-    expect(dataZoom).toHaveLength(1)
-    expect(dataZoom[0]!.type).toBe('slider')
+    expect(dataZoom.map((z) => z.type)).toEqual(['inside', 'slider'])
   })
 
   it('uses no-legend top on numeric log-X 1D lines', () => {
@@ -228,8 +227,7 @@ describe('useLineChartOptions — grouped mode', () => {
     expect(grid.bottom).toBe(100)
     expect(grid.containLabel).toBe(false)
     const dataZoom = options.value.dataZoom as { type: string }[]
-    expect(dataZoom).toHaveLength(1)
-    expect(dataZoom[0]!.type).toBe('slider')
+    expect(dataZoom.map((z) => z.type)).toEqual(['inside', 'slider'])
   })
 
   it('emits stacked area line series when stack is enabled', () => {

@@ -86,6 +86,7 @@ function seriesOf(option: ReturnType<typeof buildValueAxes2DOptions>) {
     symbol?: string
     symbolSize?: number
     sampling?: string
+    showAllSymbol?: boolean
     itemStyle?: { color?: string }
     label?: { formatter?: (p: { data: [number, number | null, number?] }) => string }
   }
@@ -198,7 +199,7 @@ describe('buildValueAxes2DOptions', () => {
     expect(s.symbol).toBeUndefined()
   })
 
-  it('applies large scatter/line symbols when point count exceeds threshold', () => {
+  it('shrinks large scatter symbols and keeps line dots when point count exceeds threshold', () => {
     const many = Array.from(
       { length: LARGE_X_THRESHOLD + 1 },
       (_, i) => [i, i + 1] as [number, number]
@@ -214,8 +215,10 @@ describe('buildValueAxes2DOptions', () => {
       'line'
     )
     const ls = seriesOf(line)
-    expect(ls.symbol).toBe('none')
-    expect(ls.sampling).toBe('lttb')
+    expect(ls.symbol).toBe('circle')
+    expect(ls.symbolSize).toBe(7)
+    expect(ls.sampling).toBeUndefined()
+    expect(ls.showAllSymbol).toBe(true)
   })
 
   it('uses default symbols for small scatter/line and honors overrides', () => {
@@ -233,6 +236,7 @@ describe('buildValueAxes2DOptions', () => {
 
     const line = buildValueAxes2DOptions(cfg(), 'line')
     expect(seriesOf(line).symbolSize).toBe(7)
+    expect(seriesOf(line).showAllSymbol).toBe(true)
     expect(line.dataZoom).toBeUndefined()
   })
 
