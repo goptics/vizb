@@ -9,7 +9,13 @@ import {
   makeNumericStepChartData,
   baseConfig,
 } from '@/test-utils'
-import { LARGE_X_THRESHOLD, VALUE_MODE_GRID_TOP } from './shared/chartConfig'
+import {
+  LARGE_X_THRESHOLD,
+  VALUE_MODE_GRID_TOP,
+  createDataZoomConfig,
+  createHorizontalDataZoomConfig,
+  getChartStyling,
+} from './shared/chartConfig'
 
 let restoreDpr = installDevicePixelRatio()
 afterAll(() => restoreDpr())
@@ -285,7 +291,7 @@ describe('useBarChartOptions — horizontal mode', () => {
     expect((opt.yAxis as { type: string }).type).toBe('category')
     expect((opt.yAxis as { data: string[] }).data).toEqual(['A', 'B', 'C'])
     expect((opt.yAxis as { name?: string }).name).toBe('category')
-    expect((opt.xAxis as { name?: string }).name).toBeUndefined()
+    expect((opt.xAxis as { name?: string | null }).name).toBeNull()
   })
 
   it('renders horizontal grouped bars with correct series', () => {
@@ -294,7 +300,7 @@ describe('useBarChartOptions — horizontal mode', () => {
     expect((opt.xAxis as { type: string }).type).toBe('value')
     expect((opt.yAxis as { type: string }).type).toBe('category')
     expect((opt.yAxis as { name?: string }).name).toBe('category')
-    expect((opt.xAxis as { name?: string }).name).toBeUndefined()
+    expect((opt.xAxis as { name?: string | null }).name).toBeNull()
     const series = opt.series as { type: string; name: string; data: number[] }[]
     expect(series.length).toBe(2)
     expect(series[0]!.name).toBe('North')
@@ -588,8 +594,9 @@ describe('useBarChartOptions — value mode and branches', () => {
       isDark: ref(false),
       horizontal: ref(true),
     })
-    expect(options.value.dataZoom).toBeDefined()
-    expect((options.value.grid as { right?: number }).right).toBe(44)
+    expect(options.value.dataZoom).toEqual(createHorizontalDataZoomConfig(getChartStyling(false)))
+    expect((options.value.grid as { right?: number; outerBoundsMode?: string }).right).toBe(44)
+    expect((options.value.grid as { outerBoundsMode?: string }).outerBoundsMode).toBe('none')
   })
 
   it('adds vertical dataZoom for large simple categories', () => {
@@ -609,7 +616,7 @@ describe('useBarChartOptions — value mode and branches', () => {
       showLabels: ref(false),
       isDark: ref(false),
     })
-    expect(options.value.dataZoom).toBeDefined()
+    expect(options.value.dataZoom).toEqual(createDataZoomConfig([], getChartStyling(false)))
   })
 
   it('handles horizontal simple bars without x label', () => {
@@ -661,7 +668,9 @@ describe('useBarChartOptions — value mode and branches', () => {
       isDark: ref(false),
       horizontal: ref(true),
     })
-    expect(options.value.dataZoom).toBeDefined()
+    expect(options.value.dataZoom).toEqual(createHorizontalDataZoomConfig(getChartStyling(false)))
+    expect((options.value.grid as { outerBoundsMode?: string }).outerBoundsMode).toBe('none')
+    expect(options.value.title).toBeUndefined()
   })
 })
 

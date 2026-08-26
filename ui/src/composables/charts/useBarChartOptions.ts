@@ -188,6 +188,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
           bottom: '3%',
           top: 8,
           containLabel: true,
+          outerBoundsMode: 'none',
         },
         tooltip: createTooltipConfig(false, isDark.value),
         legend: { show: false },
@@ -306,6 +307,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
           bottom: hasMultipleSeries ? legendBandPx(transposedSeries.length) : '3%',
           top: 8,
           containLabel: true,
+          outerBoundsMode: 'none',
         },
         tooltip: createTooltipConfig(hasXAxis(chartData), isDark.value, seriesTotals),
         legend: createLegendConfig(

@@ -144,8 +144,10 @@ export function createDataZoomConfig(_xAxisData: string[], styling: ChartStyling
   const end = DATAZOOM_INITIAL_END_PERCENT
   return [
     {
+      id: 'cartesian-x-inside',
       type: 'inside',
       xAxisIndex: 0,
+      yAxisIndex: [],
       start: 0,
       end,
       filterMode: 'filter',
@@ -154,10 +156,13 @@ export function createDataZoomConfig(_xAxisData: string[], styling: ChartStyling
     // name, which is pushed below it via a larger nameGap. Heights coordinated
     // with createGridConfig's fixed px bottom so spacing is stable across sizes.
     // textStyle colors the left/right boundary labels to match the theme text
-    // (ECharts' default gray is too dim in dark mode).
+    // (ECharts' default gray is too dim in dark mode). Distinct ids so
+    // vue-echarts 8 replaceMerges this pair when swapping to a Y slider.
     {
+      id: 'cartesian-x-slider',
       type: 'slider',
       xAxisIndex: 0,
+      yAxisIndex: [],
       start: 0,
       end,
       bottom: 34,
@@ -172,20 +177,33 @@ export function createHorizontalDataZoomConfig(styling: ChartStyling): any[] {
   const end = DATAZOOM_INITIAL_END_PERCENT
   return [
     {
+      id: 'cartesian-y-inside',
       type: 'inside',
       yAxisIndex: 0,
+      xAxisIndex: [],
       start: 0,
       end,
-      filterMode: 'filter',
+      // Viewport the inverted Y list; 'filter' deletes off-window categories
+      // and can empty the plot when the window hits 0 at the slider end.
+      filterMode: 'none',
+      minValueSpan: 1,
+      // Wheel pans the list. Do not zoomLock: ECharts then skips mousewheel
+      // entirely (including pan). zoomOnMouseWheel false keeps the window size.
+      moveOnMouseWheel: true,
+      zoomOnMouseWheel: false,
     },
     {
+      id: 'cartesian-y-slider',
       type: 'slider',
       yAxisIndex: 0,
+      xAxisIndex: [],
       start: 0,
       end,
       right: 20,
       width: 20,
-      filterMode: 'filter',
+      filterMode: 'none',
+      minValueSpan: 1,
+      showDetail: false,
       textStyle: { color: styling.textColor },
     },
   ]
@@ -467,6 +485,8 @@ export function createHorizontalAxisConfig(
     nameMoveOverlap: false,
     inverse: false,
     data: null,
+    // Clear a sticky category-axis title after toggling off horizontal.
+    name: null,
     splitLine: {
       lineStyle: { opacity: styling.opacity },
     },
@@ -491,7 +511,8 @@ export function createHorizontalAxisConfig(
         ? {
             name: categoryAxisName,
             nameLocation: 'middle',
-            nameGap: hasDataZoom ? 88 : 30,
+            // Y slider sits on the right; 88px is the bottom X-slider band.
+            nameGap: 30,
             nameTextStyle: axisNameStyle,
           }
         : {}),
@@ -859,6 +880,7 @@ export function createLegendConfig(
 // (the y group on 2D bar/line). ECharts legends have no native title.
 export function makeLegendTitle(text: string, styling: ChartStyling): any {
   return {
+    show: true,
     text,
     left: 'center',
     top: 0,
