@@ -36,6 +36,7 @@ const onUpdate = (value: string | number) => {
       >
         <component :is="option.icon" v-if="option.icon" class="h-4 w-4" />
         <span class="ml-2">{{ option.label }}</span>
+        <slot name="suffix" :option="option" />
       </TabsTrigger>
     </TabsList>
   </Tabs>

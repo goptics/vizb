@@ -277,6 +277,26 @@ describe('SettingHeader / SettingsToggle / SelectionTabs', () => {
     await disabled.get('[data-tabs]').trigger('click')
     expect(onDisabledUpdate).not.toHaveBeenCalled()
   })
+
+  it('SelectionTabs renders suffix slot after the option label', () => {
+    const w = mount(SelectionTabs, {
+      props: {
+        modelValue: 'a',
+        options: [
+          { value: 'a', label: 'A' },
+          { value: 'b', label: 'B' },
+        ],
+      },
+      slots: {
+        suffix: ({ option }: { option: { value: string | number } }) =>
+          h('span', { 'data-testid': `suffix-${option.value}` }, 'after'),
+      },
+    })
+    const logTab = w.get('[data-value="b"]')
+    expect(logTab.text()).toContain('B')
+    expect(logTab.get('[data-testid="suffix-b"]').text()).toBe('after')
+    expect(w.get('[data-value="a"]').find('[data-testid="suffix-a"]').exists()).toBe(true)
+  })
 })
 
 describe('History + meta badges', () => {

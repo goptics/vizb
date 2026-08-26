@@ -1,11 +1,13 @@
 import { describe, it, expect } from 'vitest'
 import {
   DEFAULT_LOG_BASE,
+  applyScaleType,
   asLogXPairs,
   axisIsLog,
   axisLogBase,
   numericLogXValues,
   parseScale,
+  scaleLogInfoText,
   validLogBase,
 } from './scale'
 
@@ -123,5 +125,54 @@ describe('validLogBase / numericLogXValues / asLogXPairs', () => {
       [10, 4],
     ])
     expect(asLogXPairs([1], [null], true)).toEqual([[1, null]])
+  })
+})
+
+describe('scaleLogInfoText', () => {
+  it('is empty for linear', () => {
+    expect(scaleLogInfoText(undefined)).toBeUndefined()
+    expect(scaleLogInfoText('linear')).toBeUndefined()
+    expect(scaleLogInfoText({ type: 'linear', axes: ['x'] })).toBeUndefined()
+  })
+
+  it('names only the default value axis for string log', () => {
+    expect(scaleLogInfoText('log')).toBe('Y log (base 10)')
+    expect(scaleLogInfoText('log', ['x'])).toBe('X log (base 10)')
+    expect(scaleLogInfoText('log', ['z'])).toBe('Z log (base 10)')
+    expect(scaleLogInfoText({ type: 'log' })).toBe('Y log (base 10)')
+  })
+
+  it('names linear axes when the object lists some axes but not others', () => {
+    expect(scaleLogInfoText({ type: 'log', axes: ['x'], base: 10 })).toBe(
+      'X log (base 10) · Y linear'
+    )
+    expect(scaleLogInfoText({ type: 'log', axes: ['x'], base: 10 }, ['z'])).toBe(
+      'X log (base 10) · Y linear · Z linear'
+    )
+  })
+
+  it('uses per-axis bases when both axes are log', () => {
+    expect(scaleLogInfoText({ type: 'log', axes: ['x', 'y'], baseX: 5, baseY: 10 })).toBe(
+      'X log (base 5) · Y log (base 10)'
+    )
+  })
+
+  it('treats an explicit empty axes list as all-linear chart axes', () => {
+    expect(scaleLogInfoText({ type: 'log', axes: [] })).toBe('X linear · Y linear')
+  })
+})
+
+describe('applyScaleType', () => {
+  it('applyScaleType merges type into an object spec and returns strings as-is', () => {
+    const spec = { type: 'log' as const, axes: ['x'] as ['x'], base: 10, baseX: 5 }
+    expect(applyScaleType(spec, 'log')).toEqual(spec)
+    expect(applyScaleType(spec, 'linear')).toEqual({ ...spec, type: 'linear' })
+    expect(applyScaleType({ type: 'linear', axes: ['x'] }, 'log')).toEqual({
+      type: 'log',
+      axes: ['x'],
+    })
+    expect(applyScaleType('linear', 'log')).toBe('log')
+    expect(applyScaleType('log', 'linear')).toBe('linear')
+    expect(applyScaleType(undefined, 'log')).toBe('log')
   })
 })

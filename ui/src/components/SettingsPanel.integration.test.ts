@@ -7,7 +7,7 @@ const { controlStub } = vi.hoisted(() => {
   const controlStub = (name: string) => ({
     default: {
       name,
-      props: ['modelValue', 'disabled'],
+      props: ['modelValue', 'disabled', 'defaultAxes'],
       emits: ['update:modelValue'],
       template: `<div data-testid="${name}" :data-disabled="String(!!disabled)" :data-value="modelValue" />`,
     },
@@ -259,6 +259,24 @@ describe('SettingsPanel', () => {
     expect(scale.exists()).toBe(true)
     expect(scale.props('disabled')).toBe(true)
     expect(scale.props('modelValue')).toBe('linear')
+  })
+
+  it('passes raw object scale and default log axes to ScaleControl', () => {
+    holder.barConfig = {
+      ...holder.barConfig,
+      scale: { type: 'log', axes: ['x'], base: 10 },
+    }
+    barConfigRef.value = holder.barConfig
+    holder.settings = [holder.barConfig]
+    const w = mount(SettingsPanel)
+    const scale = w.findComponent({ name: 'ScaleControl' })
+    expect(scale.props('modelValue')).toEqual({ type: 'log', axes: ['x'], base: 10 })
+    expect(scale.props('defaultAxes')).toEqual(['y'])
+
+    holder.barConfig = { ...holder.barConfig, horizontal: true }
+    barConfigRef.value = holder.barConfig
+    const horizontal = mount(SettingsPanel)
+    expect(horizontal.findComponent({ name: 'ScaleControl' }).props('defaultAxes')).toEqual(['x'])
   })
 
   it('handles field updates including swap side effects', async () => {

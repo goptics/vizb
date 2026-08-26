@@ -29,6 +29,17 @@ function parseAxes(axes: unknown): ScaleAxis[] | null {
   return axes.filter(isScaleAxis)
 }
 
+/** Keep axes/base on an object spec; strings stay strings. */
+export function applyScaleType(
+  current: ScaleInput | undefined | null,
+  type: ScaleType
+): ScaleInput {
+  if (current != null && typeof current === 'object') {
+    return { ...current, type }
+  }
+  return type
+}
+
 /** Normalize Dataset `scale` (string or object) without applying chart defaults. */
 export function parseScale(input: ScaleInput | undefined | null): ParsedScale {
   if (input == null || typeof input !== 'object') {
@@ -58,6 +69,33 @@ export function axisIsLog(
 export function axisLogBase(parsed: ParsedScale, axis: ScaleAxis): number {
   const override = axis === 'x' ? parsed.baseX : axis === 'y' ? parsed.baseY : parsed.baseZ
   return override ?? parsed.base
+}
+
+function axisPhrase(parsed: ParsedScale, axis: ScaleAxis, isLog: boolean): string {
+  const name = axis.toUpperCase()
+  return isLog ? `${name} log (base ${axisLogBase(parsed, axis)})` : `${name} linear`
+}
+
+/**
+ * Logarithmic hover copy, or `undefined` when the scale is not log.
+ * Omitted axes name only the default value axis; an explicit `axes` list names
+ * every chart axis and marks the rest linear.
+ */
+export function scaleLogInfoText(
+  scale: ScaleInput | undefined | null,
+  defaultAxes: readonly ScaleAxis[] = ['y']
+): string | undefined {
+  const parsed = parseScale(scale)
+  if (parsed.type !== 'log') return undefined
+
+  if (parsed.axes === null) {
+    return defaultAxes.map((axis) => axisPhrase(parsed, axis, true)).join(' · ')
+  }
+
+  const chartAxes: readonly ScaleAxis[] = defaultAxes.includes('z') ? ['x', 'y', 'z'] : ['x', 'y']
+  return chartAxes
+    .map((axis) => axisPhrase(parsed, axis, axisIsLog(parsed, axis, defaultAxes)))
+    .join(' · ')
 }
 
 /**
