@@ -160,6 +160,9 @@ describe('useLineChartOptions — simple 1D', () => {
     expect(grid.top).toBe(VALUE_MODE_GRID_TOP)
     expect(grid.bottom).toBe(100)
     expect(grid.containLabel).toBe(false)
+    const dataZoom = options.value.dataZoom as { type: string }[]
+    expect(dataZoom).toHaveLength(1)
+    expect(dataZoom[0]!.type).toBe('slider')
   })
 
   it('uses no-legend top on numeric log-X 1D lines', () => {
@@ -224,6 +227,9 @@ describe('useLineChartOptions — grouped mode', () => {
     expect(grid.top).toBe(48)
     expect(grid.bottom).toBe(100)
     expect(grid.containLabel).toBe(false)
+    const dataZoom = options.value.dataZoom as { type: string }[]
+    expect(dataZoom).toHaveLength(1)
+    expect(dataZoom[0]!.type).toBe('slider')
   })
 
   it('emits stacked area line series when stack is enabled', () => {
@@ -355,6 +361,7 @@ describe('useLineChartOptions — per-axis log scale', () => {
     expect(grid.top).toBe(48)
     expect(grid.bottom).toBe(28)
     expect(grid.containLabel).toBe(true)
+    expect(options.value.dataZoom).toBeUndefined()
   })
 
   it('does not reserve the category slider band when numeric log-X has many steps', () => {
@@ -372,6 +379,7 @@ describe('useLineChartOptions — per-axis log scale', () => {
     expect(grid.top).toBe(48)
     expect(grid.bottom).toBe(28)
     expect(grid.containLabel).toBe(true)
+    expect(options.value.dataZoom).toBeUndefined()
   })
 
   it('grouped log-X with 2+ y series uses axis tooltip not cross', () => {

@@ -5,11 +5,9 @@ import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
 import { getNextColorFor, hasXAxis } from '@/lib/utils'
 import {
   createAxisConfig,
-  createDataZoomConfig,
   createGridConfig,
   createValueModeGridConfig,
   createHorizontalAxisConfig,
-  createHorizontalDataZoomConfig,
   createLabelConfig,
   createLegendConfig,
   createTooltipConfig,
@@ -19,8 +17,8 @@ import {
   legendBandPx,
   isLargeXAxis,
   makeLegendTitle,
-  INSIDE_XY_ZOOM,
   LARGE_DATA_THRESHOLD,
+  resolveCartesianDataZoom,
 } from './shared/chartConfig'
 import { useSortedSeriesData, resolveLogScale, computeSeriesTotals } from './shared/common'
 import { asLogXPairs, axisIsLog, axisLogBase, numericLogXValues, parseScale } from '@/lib/scale'
@@ -159,13 +157,12 @@ export function useBarChartOptions(config: BaseChartConfig) {
       : isHorizontal
         ? createHorizontalAxisConfig(styling, xAxisData, yScale, xLabel, largeX, yLogBase)
         : createAxisConfig(styling, xAxisData, yScale, xLabel, largeX, false, yLogBase)
-    const groupedDataZoom = xNums
-      ? INSIDE_XY_ZOOM
-      : largeX
-        ? isHorizontal
-          ? createHorizontalDataZoomConfig(styling)
-          : createDataZoomConfig(xAxisData, styling)
-        : undefined
+    const zoom = resolveCartesianDataZoom('bar', {
+      numericX: xNums !== null,
+      largeX,
+      styling,
+      horizontal: isHorizontal,
+    })
     const useStack = stack?.value === true && yScale !== 'log'
 
     if (!hasYAxis && isHorizontal) {
@@ -195,7 +192,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
         tooltip: createTooltipConfig(false, isDark.value),
         legend: { show: false },
         ...groupedAxes,
-        ...(groupedDataZoom ? { dataZoom: groupedDataZoom } : {}),
+        dataZoom: zoom.dataZoom,
         series: [seriesItem],
       } as EChartsOption
     }
@@ -226,13 +223,13 @@ export function useBarChartOptions(config: BaseChartConfig) {
       applyBackgroundToSeries([seriesItem], backgroundStyle)
       return {
         ...baseOptions,
-        grid: createValueModeGridConfig(xNums ? false : largeX),
+        grid: createValueModeGridConfig(zoom.hasXSlider),
         tooltip: xNums
           ? createValueModeTooltip(isDark.value, xLabel, chartData.value.axisLabels?.y, true)
           : createTooltipConfig(false, isDark.value),
         legend: { show: false },
         ...groupedAxes,
-        ...(groupedDataZoom ? { dataZoom: groupedDataZoom } : {}),
+        dataZoom: zoom.dataZoom,
         series: [seriesItem],
       } as EChartsOption
     }
@@ -318,7 +315,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
           { bottom: 0 }
         ),
         ...groupedAxes,
-        ...(groupedDataZoom ? { dataZoom: groupedDataZoom } : {}),
+        dataZoom: zoom.dataZoom,
         series: transposedSeries,
       } as EChartsOption
     }
@@ -326,7 +323,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
     return {
       ...baseOptions,
       ...(showLegendTitle ? { title: makeLegendTitle(yLabel!, styling) } : {}),
-      grid: createGridConfig(transposedSeries.length, xNums ? false : largeX, showLegendTitle),
+      grid: createGridConfig(transposedSeries.length, zoom.hasXSlider, showLegendTitle),
       tooltip: xNums
         ? hasMultipleSeries
           ? createTooltipConfig(hasXAxis(chartData), isDark.value, seriesTotals, 'line')
@@ -339,7 +336,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
         showLegendTitle ? { top: 24 } : undefined
       ),
       ...groupedAxes,
-      ...(groupedDataZoom ? { dataZoom: groupedDataZoom } : {}),
+      dataZoom: zoom.dataZoom,
       series: transposedSeries,
     } as EChartsOption
   })

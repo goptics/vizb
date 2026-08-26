@@ -233,7 +233,9 @@ describe('buildMixedAxes2DOptions', () => {
     const s = series0(option)
     expect(s.symbol).toBe('none')
     expect(s.sampling).toBe('lttb')
-    expect(option.dataZoom).toBeTruthy()
+    const dataZoom = option.dataZoom as { type: string }[]
+    expect(dataZoom).toHaveLength(1)
+    expect(dataZoom[0]!.type).toBe('slider')
 
     const scatter = buildMixedAxes2DOptions(
       cfg({
@@ -285,6 +287,29 @@ describe('buildMixedAxes2DOptions', () => {
 
   it('uses inside zoom for small category axes', () => {
     const option = buildMixedAxes2DOptions(cfg())
+    expect(option.dataZoom).toEqual([
+      { type: 'inside', xAxisIndex: 0 },
+      { type: 'inside', yAxisIndex: 0 },
+    ])
+  })
+
+  it('omits inside zoom for small mixed line axes', () => {
+    expect(buildMixedAxes2DOptions(cfg(), 'line').dataZoom).toBeUndefined()
+  })
+
+  it('does not reserve the category slider band for mixed scatter log-X', () => {
+    const cats = Array.from({ length: LARGE_X_THRESHOLD + 1 }, (_, i) => String(i + 1))
+    const tuples = cats.map((_, i) => [i, i + 1] as [number, number])
+    const option = buildMixedAxes2DOptions(
+      cfg({
+        scale: { type: 'log', axes: ['x'] },
+        chartData: makeMixedChartData({ xCategories: cats, mixedTuples: tuples }),
+      }),
+      'scatter'
+    )
+    const grid = option.grid as { bottom?: number; containLabel?: boolean }
+    expect(grid.bottom).toBe(28)
+    expect(grid.containLabel).toBe(true)
     expect(option.dataZoom).toEqual([
       { type: 'inside', xAxisIndex: 0 },
       { type: 'inside', yAxisIndex: 0 },

@@ -5,7 +5,6 @@ import { axisIsLog, axisLogBase, numericLogXValues, parseScale } from '@/lib/sca
 import { type BaseChartConfig, getBaseOptions } from '../baseChartOptions'
 import {
   createAxisConfig,
-  createDataZoomConfig,
   createLabelConfig,
   createValueAxisConfig,
   createValueModeGridConfig,
@@ -16,8 +15,8 @@ import {
   getChartStyling,
   getTooltipTheme,
   isLargeXAxis,
-  INSIDE_XY_ZOOM,
   LARGE_DATA_THRESHOLD,
+  resolveCartesianDataZoom,
   scatterSeriesLargeOpts,
 } from './chartConfig'
 import {
@@ -197,16 +196,22 @@ export function buildMixedAxes2DOptions(
         axisLogBase(parsed, 'y')
       )
 
+  const zoom = resolveCartesianDataZoom(chartType, {
+    numericX: xNums !== null,
+    largeX,
+    styling,
+  })
+
   return {
     ...baseOptions,
     legend: { show: false },
-    grid: createValueModeGridConfig(largeX),
+    grid: createValueModeGridConfig(zoom.hasXSlider),
     visualMap: resolve2DScatterVisualMap(useVisualMap, colorValues, styling, 1),
     tooltip: xNums
       ? createValueModeTooltip(isDark.value, xLabel, yLabel, true)
       : createMixedModeTooltip(isDark.value, xCategories, chartType, xLabel, yLabel),
     ...axisConfig,
-    dataZoom: xNums || !largeX ? INSIDE_XY_ZOOM : createDataZoomConfig(xCategories, styling),
+    ...(zoom.dataZoom ? { dataZoom: zoom.dataZoom } : {}),
     series: [series],
   } as EChartsOption
 }

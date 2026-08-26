@@ -191,6 +191,33 @@ export function createHorizontalDataZoomConfig(styling: ChartStyling): any[] {
   ]
 }
 
+export function resolveCartesianDataZoom(
+  chartType: 'line' | 'scatter' | 'bar',
+  ctx: {
+    numericX: boolean
+    largeX: boolean
+    styling: ChartStyling
+    horizontal?: boolean
+  }
+): { dataZoom?: any[]; hasXSlider: boolean } {
+  if (chartType === 'line') {
+    if (!ctx.numericX && ctx.largeX) {
+      return {
+        dataZoom: createDataZoomConfig([], ctx.styling).filter((z) => z.type === 'slider'),
+        hasXSlider: true,
+      }
+    }
+    return { hasXSlider: false }
+  }
+  if (ctx.numericX || !ctx.largeX) {
+    return { dataZoom: INSIDE_XY_ZOOM, hasXSlider: false }
+  }
+  if (ctx.horizontal) {
+    return { dataZoom: createHorizontalDataZoomConfig(ctx.styling), hasXSlider: false }
+  }
+  return { dataZoom: createDataZoomConfig([], ctx.styling), hasXSlider: true }
+}
+
 export interface ChartStyling {
   textColor: string
   axisColor: string
