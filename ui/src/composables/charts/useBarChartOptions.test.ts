@@ -3,7 +3,12 @@ import { ref } from 'vue'
 import type { ChartData } from '@/types'
 import type { BaseChartConfig } from './baseChartOptions'
 import { useBarChartOptions } from './useBarChartOptions'
-import { installDevicePixelRatio, makeMixedChartData, baseConfig } from '@/test-utils'
+import {
+  installDevicePixelRatio,
+  makeMixedChartData,
+  makeNumericStepChartData,
+  baseConfig,
+} from '@/test-utils'
 import { LARGE_X_THRESHOLD, VALUE_MODE_GRID_TOP } from './shared/chartConfig'
 
 let restoreDpr = installDevicePixelRatio()
@@ -399,20 +404,16 @@ describe('useBarChartOptions — value mode and branches', () => {
   })
 
   it('coerces numeric category X to log without dropping y <= 0', () => {
-    const chartData: ChartData = {
-      title: 'steps',
-      statType: 'v',
-      yAxis: ['a', 'b'],
-      zAxis: [],
-      series: [
-        { xAxis: '1', values: [0, 4], benchmarkId: '' },
-        { xAxis: '10', values: [5, 8], benchmarkId: '' },
-      ],
-      points: [],
-      axisLabels: { x: 'step', y: 'run' },
-    }
     const { options } = useBarChartOptions({
-      chartData: ref(chartData),
+      chartData: ref(
+        makeNumericStepChartData(
+          ['a', 'b'],
+          [
+            ['1', [0, 4]],
+            ['10', [5, 8]],
+          ]
+        )
+      ),
       sort: ref({ enabled: false, order: 'asc' }),
       showLabels: ref(false),
       isDark: ref(false),

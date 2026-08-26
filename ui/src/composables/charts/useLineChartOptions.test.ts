@@ -3,7 +3,11 @@ import { ref } from 'vue'
 import type { ChartData, ScaleInput } from '@/types'
 import type { BaseChartConfig } from './baseChartOptions'
 import { useLineChartOptions } from './useLineChartOptions'
-import { installDevicePixelRatio } from '@/test-utils'
+import {
+  installDevicePixelRatio,
+  makeNumericStepChartData,
+  makeNumericStepConfig,
+} from '@/test-utils'
 import { LARGE_X_THRESHOLD, VALUE_MODE_GRID_TOP } from './shared/chartConfig'
 
 let restoreDpr = installDevicePixelRatio()
@@ -83,36 +87,6 @@ const makeGroupedConfig = (opts: { smooth?: boolean; stack?: boolean } = {}): Ba
   scale: ref<ScaleInput>('linear'),
   smooth: ref(opts.smooth ?? false),
   stack: ref(opts.stack ?? false),
-})
-
-const makeNumericStepChartData = (
-  yAxis: string[] = ['train', 'val'],
-  points: [string, number[]][] = [
-    ['1', [10, 8]],
-    ['2', [0, 9]],
-    ['4', [12, 6]],
-  ]
-): ChartData => ({
-  title: 'loss vs step',
-  statType: 'grouped',
-  yAxis,
-  zAxis: [],
-  series: points.map(([xAxis, values]) => ({ xAxis, values, benchmarkId: xAxis })),
-  points: [],
-  axisLabels: { x: 'step', y: 'split' },
-})
-
-const makeNumericStepConfig = (
-  scale: ScaleInput,
-  data: ChartData = makeNumericStepChartData()
-) => ({
-  chartData: ref(data),
-  sort: ref({ enabled: false, order: 'asc' as const }),
-  showLabels: ref(false),
-  isDark: ref(false),
-  scale: ref(scale),
-  smooth: ref(false),
-  stack: ref(false),
 })
 
 const axisOf = (options: { xAxis?: unknown; yAxis?: unknown }) => ({

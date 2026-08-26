@@ -74,6 +74,38 @@ export function makeValueChartData(overrides: ChartDataOverrides = {}): ChartDat
   })
 }
 
+export function makeNumericStepChartData(
+  yAxis: string[] = ['train', 'val'],
+  points: [string, number[]][] = [
+    ['1', [10, 8]],
+    ['2', [0, 9]],
+    ['4', [12, 6]],
+  ]
+): ChartData {
+  return emptyChartData({
+    title: 'loss vs step',
+    statType: 'grouped',
+    yAxis,
+    series: points.map(([xAxis, values]) => ({ xAxis, values, benchmarkId: xAxis })),
+    axisLabels: { x: 'step', y: 'split' },
+  })
+}
+
+export function makeNumericStepConfig(
+  scale: ScaleInput,
+  data: ChartData = makeNumericStepChartData()
+): BaseChartConfig {
+  return {
+    chartData: ref(data),
+    sort: ref({ enabled: false, order: 'asc' as const }),
+    showLabels: ref(false),
+    isDark: ref(false),
+    scale: ref(scale),
+    smooth: ref(false),
+    stack: ref(false),
+  }
+}
+
 export function makePieChartData(overrides: ChartDataOverrides = {}): ChartData {
   return emptyChartData({
     title: 'share',
