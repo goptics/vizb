@@ -121,14 +121,14 @@ describe('resolveCartesianDataZoom', () => {
     expect(resolveCartesianDataZoom('line', { ...ctx, ...flags })).toEqual({ hasXSlider: false })
   })
 
-  it('uses a slider-only window for large category line axes', () => {
+  it('uses inside+slider for large category line axes', () => {
     const { dataZoom, hasXSlider } = resolveCartesianDataZoom('line', {
       ...ctx,
       numericX: false,
       largeX: true,
     })
     expect(hasXSlider).toBe(true)
-    expect(dataZoom).toEqual(createDataZoomConfig([], styling).filter((z) => z.type === 'slider'))
+    expect(dataZoom).toEqual(createDataZoomConfig([], styling))
   })
 
   it.each(['scatter', 'bar'] as const)(

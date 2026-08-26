@@ -37,13 +37,13 @@ const SERIES_STYLE: Record<
   CategorySeriesKind,
   {
     defaultSymbol: { symbol: 'circle'; symbolSize: number }
-    largeSymbol: { symbol: 'circle' | 'none'; symbolSize?: number; sampling?: 'lttb' }
+    largeSymbol: { symbol: 'circle'; symbolSize: number }
     connectNulls?: true
   }
 > = {
   line: {
     defaultSymbol: { symbol: 'circle', symbolSize: 7 },
-    largeSymbol: { symbol: 'none', sampling: 'lttb' },
+    largeSymbol: { symbol: 'circle', symbolSize: 7 },
     connectNulls: true,
   },
   scatter: {
@@ -134,7 +134,7 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
           ? scatterSeriesLargeOpts(useVisualMap)
           : { large: true as const, largeThreshold: LARGE_DATA_THRESHOLD }),
         ...(style.connectNulls ? { connectNulls: true } : {}),
-        ...(kind === 'line' ? { smooth: smoothLines } : {}),
+        ...(kind === 'line' ? { smooth: smoothLines, showAllSymbol: true as const } : {}),
         ...(useVisualMap ? {} : { itemStyle: { color: getNextColorFor(chartData.value.title) } }),
         ...seriesExtras,
       }
@@ -174,7 +174,12 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
         : { large: true as const, largeThreshold: LARGE_DATA_THRESHOLD }),
       ...(style.connectNulls ? { connectNulls: true } : {}),
       ...(kind === 'line'
-        ? { smooth: smoothLines, stack: useStack ? 'total' : null, areaStyle: useStack ? {} : null }
+        ? {
+            smooth: smoothLines,
+            stack: useStack ? 'total' : null,
+            areaStyle: useStack ? {} : null,
+            showAllSymbol: true as const,
+          }
         : {}),
       ...(useVisualMap ? {} : { itemStyle: { color: getNextColorFor(yAxisLabel) } }),
       ...seriesExtras,

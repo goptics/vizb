@@ -36,7 +36,6 @@ import type { Series3DData } from '@/types'
 const defaultScatterSymbol = { symbol: 'circle' as const, symbolSize: 8 }
 const largeScatterSymbol = { symbol: 'circle' as const, symbolSize: 5 }
 const defaultLineSymbol = { symbol: 'circle' as const, symbolSize: 7 }
-const largeLineSymbol = { symbol: 'none' as const, sampling: 'lttb' as const }
 
 export type Mixed2DChartType = 'scatter' | 'bar' | 'line'
 export type Mixed3DChartType = 'scatter3D' | 'bar3D' | 'line3D'
@@ -163,8 +162,9 @@ export function buildMixedAxes2DOptions(
             large: true,
             largeThreshold: LARGE_DATA_THRESHOLD,
             smooth: smoothLines,
+            showAllSymbol: true as const,
             ...resolveSeriesSymbol(
-              largeX ? largeLineSymbol : defaultLineSymbol,
+              defaultLineSymbol,
               config.symbol?.value,
               config.symbolSize?.value
             ),

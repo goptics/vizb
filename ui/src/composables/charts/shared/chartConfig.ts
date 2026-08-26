@@ -201,13 +201,10 @@ export function resolveCartesianDataZoom(
   }
 ): { dataZoom?: any[]; hasXSlider: boolean } {
   if (chartType === 'line') {
-    if (!ctx.numericX && ctx.largeX) {
-      return {
-        dataZoom: createDataZoomConfig([], ctx.styling).filter((z) => z.type === 'slider'),
-        hasXSlider: true,
-      }
+    if (ctx.numericX || !ctx.largeX) {
+      return { hasXSlider: false }
     }
-    return { hasXSlider: false }
+    return { dataZoom: createDataZoomConfig([], ctx.styling), hasXSlider: true }
   }
   if (ctx.numericX || !ctx.largeX) {
     return { dataZoom: INSIDE_XY_ZOOM, hasXSlider: false }
