@@ -4,6 +4,7 @@ import {
   createValueAxisConfig,
   createDataZoomConfig,
   createGridConfig,
+  legendBandPx,
   createTooltipConfig,
   createLabelConfig,
   createValueModeGridConfig,
@@ -124,6 +125,32 @@ describe('createGridConfig', () => {
 
   it('keeps dataZoom bottom larger than the no-zoom tier', () => {
     expect(createGridConfig(1, true).bottom).toBeGreaterThan(createGridConfig(1, false).bottom)
+  })
+
+  it('uses a compact pixel legend top instead of a percentage', () => {
+    expect(createGridConfig(1).top).toBe(28)
+    expect(createGridConfig(15).top).toBe(28)
+    expect(typeof createGridConfig(2).top).toBe('number')
+  })
+
+  it('adds title space and wrap rows', () => {
+    expect(createGridConfig(2, false, true).top).toBe(48)
+    expect(createGridConfig(16).top).toBe(44)
+    expect(createGridConfig(16, false, true).top).toBe(64)
+  })
+
+  it('keeps slider bottom with compact top when dataZoom is set', () => {
+    const grid = createGridConfig(2, true)
+    expect(grid.top).toBe(28)
+    expect(grid.bottom).toBe(100)
+    expect(grid.containLabel).toBe(false)
+  })
+})
+
+describe('legendBandPx', () => {
+  it('uses the same pixel band as vertical legend top', () => {
+    expect(legendBandPx(2)).toBe(createGridConfig(2).top)
+    expect(legendBandPx(16)).toBe(createGridConfig(16).top)
   })
 })
 

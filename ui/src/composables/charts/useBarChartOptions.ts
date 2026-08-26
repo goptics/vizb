@@ -7,6 +7,7 @@ import {
   createAxisConfig,
   createDataZoomConfig,
   createGridConfig,
+  createValueModeGridConfig,
   createHorizontalAxisConfig,
   createHorizontalDataZoomConfig,
   createLabelConfig,
@@ -15,7 +16,7 @@ import {
   createValueAxisConfig,
   createValueModeTooltip,
   getChartStyling,
-  horizontalLegendBottom,
+  legendBandPx,
   isLargeXAxis,
   makeLegendTitle,
   INSIDE_XY_ZOOM,
@@ -225,7 +226,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
       applyBackgroundToSeries([seriesItem], backgroundStyle)
       return {
         ...baseOptions,
-        grid: createGridConfig(1, largeX),
+        grid: createValueModeGridConfig(xNums ? false : largeX),
         tooltip: xNums
           ? createValueModeTooltip(isDark.value, xLabel, chartData.value.axisLabels?.y, true)
           : createTooltipConfig(false, isDark.value),
@@ -305,7 +306,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
         grid: {
           left: xLabel ? 70 : '3%',
           right: largeX ? 44 : 24,
-          bottom: hasMultipleSeries ? horizontalLegendBottom(transposedSeries.length) : '3%',
+          bottom: hasMultipleSeries ? legendBandPx(transposedSeries.length) : '3%',
           top: 8,
           containLabel: true,
         },
@@ -325,7 +326,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
     return {
       ...baseOptions,
       ...(showLegendTitle ? { title: makeLegendTitle(yLabel!, styling) } : {}),
-      grid: createGridConfig(transposedSeries.length, largeX),
+      grid: createGridConfig(transposedSeries.length, xNums ? false : largeX, showLegendTitle),
       tooltip: xNums
         ? hasMultipleSeries
           ? createTooltipConfig(hasXAxis(chartData), isDark.value, seriesTotals, 'line')

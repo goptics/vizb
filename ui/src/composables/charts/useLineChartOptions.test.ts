@@ -4,6 +4,7 @@ import type { ChartData, ScaleInput } from '@/types'
 import type { BaseChartConfig } from './baseChartOptions'
 import { useLineChartOptions } from './useLineChartOptions'
 import { installDevicePixelRatio } from '@/test-utils'
+import { LARGE_X_THRESHOLD, VALUE_MODE_GRID_TOP } from './shared/chartConfig'
 
 let restoreDpr = installDevicePixelRatio()
 afterAll(() => restoreDpr())
@@ -126,7 +127,131 @@ const tooltipOf = (options: { tooltip?: unknown }) =>
     formatter?: (params: unknown) => string
   }
 
+describe('useLineChartOptions — simple 1D', () => {
+  it('skips the legend top band when there is no legend', () => {
+    const { options } = useLineChartOptions({
+      chartData: ref({
+        title: 'items',
+        statType: 'counts',
+        yAxis: [],
+        zAxis: [],
+        series: [
+          { xAxis: 'A', values: [10], benchmarkId: 'a' },
+          { xAxis: 'B', values: [20], benchmarkId: 'b' },
+        ],
+        points: [],
+        axisLabels: { x: 'category' },
+      }),
+      sort: ref({ enabled: false, order: 'asc' as const }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      scale: ref<ScaleInput>('linear'),
+      smooth: ref(false),
+      stack: ref(false),
+    })
+    const grid = options.value.grid as {
+      top?: number | string
+      bottom?: number
+      containLabel?: boolean
+    }
+    expect((options.value.legend as { show?: boolean }).show).toBe(false)
+    expect(grid.top).toBe(VALUE_MODE_GRID_TOP)
+    expect(grid.bottom).toBe(28)
+    expect(grid.containLabel).toBe(true)
+  })
+
+  it('keeps the category slider band on large-X 1D lines with no legend top', () => {
+    const { options } = useLineChartOptions({
+      chartData: ref({
+        title: 'items',
+        statType: 'counts',
+        yAxis: [],
+        zAxis: [],
+        series: Array.from({ length: LARGE_X_THRESHOLD + 1 }, (_, i) => ({
+          xAxis: `x${i}`,
+          values: [i],
+          benchmarkId: `x${i}`,
+        })),
+        points: [],
+        axisLabels: { x: 'category' },
+      }),
+      sort: ref({ enabled: false, order: 'asc' as const }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      scale: ref<ScaleInput>('linear'),
+      smooth: ref(false),
+      stack: ref(false),
+    })
+    const grid = options.value.grid as { top?: number; bottom?: number; containLabel?: boolean }
+    expect(grid.top).toBe(VALUE_MODE_GRID_TOP)
+    expect(grid.bottom).toBe(100)
+    expect(grid.containLabel).toBe(false)
+  })
+
+  it('uses no-legend top on numeric log-X 1D lines', () => {
+    const { options } = useLineChartOptions(
+      makeNumericStepConfig(
+        { type: 'log', axes: ['x'] },
+        {
+          title: 'steps',
+          statType: 'grouped',
+          yAxis: [],
+          zAxis: [],
+          series: [
+            { xAxis: '1', values: [10], benchmarkId: '1' },
+            { xAxis: '2', values: [0], benchmarkId: '2' },
+          ],
+          points: [],
+          axisLabels: { x: 'step' },
+        }
+      )
+    )
+    expect((options.value.grid as { top?: number }).top).toBe(VALUE_MODE_GRID_TOP)
+  })
+})
+
 describe('useLineChartOptions — grouped mode', () => {
+  it('uses a compact pixel legend band, not the category % top', () => {
+    const { options } = useLineChartOptions(makeGroupedConfig())
+    const grid = options.value.grid as {
+      top?: number | string
+      bottom?: number
+      containLabel?: boolean
+    }
+    expect(grid.top).toBe(48)
+    expect(grid.bottom).toBe(28)
+    expect(grid.containLabel).toBe(true)
+  })
+
+  it('grows the legend band when grouped series wrap', () => {
+    const yAxis = Array.from({ length: 16 }, (_, i) => `s${i}`)
+    const data = makeGroupedChartData()
+    data.yAxis = yAxis
+    data.series = data.series.map((s) => ({ ...s, values: yAxis.map(() => 1) }))
+    const { options } = useLineChartOptions({
+      ...makeGroupedConfig(),
+      chartData: ref(data),
+    })
+    expect((options.value.grid as { top?: number }).top).toBe(48 + 16)
+  })
+
+  it('keeps the category slider band on large-X grouped lines with compact top', () => {
+    const data = makeGroupedChartData()
+    data.series = Array.from({ length: LARGE_X_THRESHOLD + 1 }, (_, i) => ({
+      xAxis: `x${i}`,
+      values: [10, 8],
+      benchmarkId: `x${i}`,
+    }))
+    const { options } = useLineChartOptions({
+      ...makeGroupedConfig(),
+      chartData: ref(data),
+    })
+    const grid = options.value.grid as { top?: number; bottom?: number; containLabel?: boolean }
+    expect(grid.top).toBe(48)
+    expect(grid.bottom).toBe(100)
+    expect(grid.containLabel).toBe(false)
+  })
+
   it('emits stacked area line series when stack is enabled', () => {
     const { options } = useLineChartOptions(makeGroupedConfig({ stack: true }))
     const series = options.value.series as { stack?: string; areaStyle?: Record<string, never> }[]
@@ -244,6 +369,35 @@ describe('useLineChartOptions — per-axis log scale', () => {
     expect(xAxis.type).toBe('category')
     expect(xAxis.data).toEqual(['Jan', 'Feb'])
     expect(yAxis.type).toBe('value')
+  })
+
+  it('uses a compact pixel legend band on numeric log-X, not the category % top', () => {
+    const { options } = useLineChartOptions(makeNumericStepConfig({ type: 'log', axes: ['x'] }))
+    const grid = options.value.grid as {
+      top?: number | string
+      bottom?: number
+      containLabel?: boolean
+    }
+    expect(grid.top).toBe(48)
+    expect(grid.bottom).toBe(28)
+    expect(grid.containLabel).toBe(true)
+  })
+
+  it('does not reserve the category slider band when numeric log-X has many steps', () => {
+    const many = Array.from({ length: LARGE_X_THRESHOLD + 1 }, (_, i) => [
+      String(i + 1),
+      [10, 8],
+    ]) as [string, number[]][]
+    const { options } = useLineChartOptions(
+      makeNumericStepConfig(
+        { type: 'log', axes: ['x'] },
+        makeNumericStepChartData(['train', 'val'], many)
+      )
+    )
+    const grid = options.value.grid as { top?: number; bottom?: number; containLabel?: boolean }
+    expect(grid.top).toBe(48)
+    expect(grid.bottom).toBe(28)
+    expect(grid.containLabel).toBe(true)
   })
 
   it('grouped log-X with 2+ y series uses axis tooltip not cross', () => {

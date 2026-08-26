@@ -418,10 +418,10 @@ export function createAxisConfig(
   }
 }
 
-/** Bottom band (%) for a horizontal chart legend — mirrors createGridConfig top band. */
-export function horizontalLegendBottom(seriesLength = 1): string {
-  const legendSpace = Math.min(15 + Math.floor((seriesLength - 1) / 15) * 2, 35)
-  return `${legendSpace}%`
+/** Pixel legend band — same size for vertical `grid.top` and horizontal `grid.bottom`. */
+export function legendBandPx(seriesLength = 1, hasLegendTitle = false): number {
+  const extraRows = Math.floor((Math.max(seriesLength, 1) - 1) / 15)
+  return (hasLegendTitle ? 48 : 28) + extraRows * 16
 }
 
 export function createHorizontalAxisConfig(
@@ -845,7 +845,7 @@ export function makeLegendTitle(text: string, styling: ChartStyling): any {
 // Fixed px (not %) so the plot area stays predictable across card heights.
 const SERIES_TICK_BAND = 28 // series names on the x axis (no slider)
 
-/** Value-mode charts hide the legend — skip the legend % top band (see heatmap). */
+/** Value-mode charts hide the legend — skip the legend top band (see heatmap). */
 export const VALUE_MODE_GRID_TOP = 8
 
 export function createValueModeGridConfig(hasDataZoom = false): any {
@@ -855,8 +855,12 @@ export function createValueModeGridConfig(hasDataZoom = false): any {
   }
 }
 
-export function createGridConfig(seriesLength = 1, hasDataZoom = false): any {
-  const legendSpace = Math.min(15 + Math.floor((seriesLength - 1) / 15) * 2, 35)
+export function createGridConfig(
+  seriesLength = 1,
+  hasDataZoom = false,
+  hasLegendTitle = false
+): any {
+  const top = legendBandPx(seriesLength, hasLegendTitle)
 
   // With a dataZoom slider we turn containLabel OFF and reserve label space in
   // fixed px. containLabel pins both the tick labels and the axis name to the
@@ -869,7 +873,7 @@ export function createGridConfig(seriesLength = 1, hasDataZoom = false): any {
       left: 55,
       right: 24,
       bottom: 100,
-      top: `${legendSpace}%`,
+      top,
       containLabel: false,
       outerBoundsMode: 'none',
     }
@@ -881,7 +885,7 @@ export function createGridConfig(seriesLength = 1, hasDataZoom = false): any {
     left: '3%',
     right: '3%',
     bottom: SERIES_TICK_BAND,
-    top: `${legendSpace}%`,
+    top,
     containLabel: true,
     outerBoundsMode: 'none',
   }

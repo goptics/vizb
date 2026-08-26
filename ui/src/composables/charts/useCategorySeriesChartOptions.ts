@@ -6,6 +6,7 @@ import {
   createAxisConfig,
   createDataZoomConfig,
   createGridConfig,
+  createValueModeGridConfig,
   createLabelConfig,
   createLegendConfig,
   createPinnedAxisTooltip,
@@ -140,7 +141,7 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
       }
       return {
         ...baseOptions,
-        grid: createGridConfig(1, largeX),
+        grid: createValueModeGridConfig(coerceX ? false : largeX),
         tooltip: coerceX
           ? createValueModeTooltip(isDark.value, xLabel, chartData.value.axisLabels?.y, true)
           : createPinnedAxisTooltip(isDark.value),
@@ -187,7 +188,7 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
     return {
       ...baseOptions,
       ...(yLabel ? { title: makeLegendTitle(yLabel, styling) } : {}),
-      grid: createGridConfig(transposedSeries.length, largeX),
+      grid: createGridConfig(transposedSeries.length, coerceX ? false : largeX, !!yLabel),
       visualMap: resolve2DScatterVisualMap(
         useVisualMap,
         groupedScatterColorValues(transposedSeries),

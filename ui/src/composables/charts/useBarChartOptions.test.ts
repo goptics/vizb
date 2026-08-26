@@ -4,6 +4,7 @@ import type { ChartData } from '@/types'
 import type { BaseChartConfig } from './baseChartOptions'
 import { useBarChartOptions } from './useBarChartOptions'
 import { installDevicePixelRatio, makeMixedChartData, baseConfig } from '@/test-utils'
+import { LARGE_X_THRESHOLD, VALUE_MODE_GRID_TOP } from './shared/chartConfig'
 
 let restoreDpr = installDevicePixelRatio()
 afterAll(() => restoreDpr())
@@ -39,6 +40,47 @@ const makeStackedGroupedConfig = (
 })
 
 describe('useBarChartOptions — grouped mode', () => {
+  it('uses a compact pixel legend band, not the category % top', () => {
+    const { options } = useBarChartOptions(makeStackedGroupedConfig(false))
+    const grid = options.value.grid as {
+      top?: number | string
+      bottom?: number
+      containLabel?: boolean
+    }
+    expect(grid.top).toBe(48)
+    expect(grid.bottom).toBe(28)
+    expect(grid.containLabel).toBe(true)
+  })
+
+  it('grows the legend band when grouped series wrap', () => {
+    const yAxis = Array.from({ length: 16 }, (_, i) => `s${i}`)
+    const data = makeStackedGroupedChartData()
+    data.yAxis = yAxis
+    data.series = data.series.map((s) => ({ ...s, values: yAxis.map(() => 1) }))
+    const { options } = useBarChartOptions({
+      ...makeStackedGroupedConfig(false),
+      chartData: ref(data),
+    })
+    expect((options.value.grid as { top?: number }).top).toBe(48 + 16)
+  })
+
+  it('keeps the category slider band on large-X grouped bars with compact top', () => {
+    const data = makeStackedGroupedChartData()
+    data.series = Array.from({ length: LARGE_X_THRESHOLD + 1 }, (_, i) => ({
+      xAxis: `x${i}`,
+      values: [10, 30],
+      benchmarkId: '',
+    }))
+    const { options } = useBarChartOptions({
+      ...makeStackedGroupedConfig(false),
+      chartData: ref(data),
+    })
+    const grid = options.value.grid as { top?: number; bottom?: number; containLabel?: boolean }
+    expect(grid.top).toBe(48)
+    expect(grid.bottom).toBe(100)
+    expect(grid.containLabel).toBe(false)
+  })
+
   it('emits stacked bar series when stack is enabled', () => {
     const { options } = useBarChartOptions(makeStackedGroupedConfig(true))
     const series = options.value.series as { stack?: string }[]
@@ -180,7 +222,57 @@ const makeGroupedConfig = (horizontal: boolean): BaseChartConfig => ({
   horizontal: ref(horizontal),
 })
 
+describe('useBarChartOptions — simple vertical', () => {
+  it('skips the legend top band when there is no legend', () => {
+    const { options } = useBarChartOptions(makeSimpleConfig(false))
+    const grid = options.value.grid as {
+      top?: number | string
+      bottom?: number
+      containLabel?: boolean
+    }
+    expect(grid.top).toBe(VALUE_MODE_GRID_TOP)
+    expect(grid.bottom).toBe(28)
+    expect(grid.containLabel).toBe(true)
+  })
+
+  it('keeps the category slider band on large-X 1D bars with no legend top', () => {
+    const data = makeSimpleChartData()
+    data.series = Array.from({ length: LARGE_X_THRESHOLD + 1 }, (_, i) => ({
+      xAxis: `x${i}`,
+      values: [i],
+      benchmarkId: '',
+    }))
+    const { options } = useBarChartOptions({
+      ...makeSimpleConfig(false),
+      chartData: ref(data),
+    })
+    const grid = options.value.grid as { top?: number; bottom?: number; containLabel?: boolean }
+    expect(grid.top).toBe(VALUE_MODE_GRID_TOP)
+    expect(grid.bottom).toBe(100)
+    expect(grid.containLabel).toBe(false)
+  })
+})
+
 describe('useBarChartOptions — horizontal mode', () => {
+  it('uses the compact pixel legend band at the bottom', () => {
+    const { options } = useBarChartOptions(makeGroupedConfig(true))
+    const grid = options.value.grid as { bottom?: number | string; top?: number }
+    expect(grid.bottom).toBe(28)
+    expect(grid.top).toBe(8)
+  })
+
+  it('grows the bottom legend band when grouped series wrap', () => {
+    const yAxis = Array.from({ length: 16 }, (_, i) => `s${i}`)
+    const data = makeGroupedChartData()
+    data.yAxis = yAxis
+    data.series = data.series.map((s) => ({ ...s, values: yAxis.map(() => 1) }))
+    const { options } = useBarChartOptions({
+      ...makeGroupedConfig(true),
+      chartData: ref(data),
+    })
+    expect((options.value.grid as { bottom?: number }).bottom).toBe(44)
+  })
+
   it('renders horizontal 1D bars with value xAxis and category yAxis', () => {
     const { options } = useBarChartOptions(makeSimpleConfig(true))
     const opt = options.value
@@ -339,6 +431,36 @@ describe('useBarChartOptions — value mode and branches', () => {
     expect(
       (options.value.tooltip as { axisPointer?: { type?: string } }).axisPointer?.type
     ).not.toBe('cross')
+    const grid = options.value.grid as { top?: number | string; bottom?: number }
+    expect(grid.top).toBe(48)
+    expect(grid.bottom).toBe(28)
+  })
+
+  it('does not reserve the category slider band when numeric log-X has many steps', () => {
+    const chartData: ChartData = {
+      title: 'steps',
+      statType: 'v',
+      yAxis: ['a', 'b'],
+      zAxis: [],
+      series: Array.from({ length: LARGE_X_THRESHOLD + 1 }, (_, i) => ({
+        xAxis: String(i + 1),
+        values: [1, 2],
+        benchmarkId: '',
+      })),
+      points: [],
+      axisLabels: { x: 'step', y: 'run' },
+    }
+    const { options } = useBarChartOptions({
+      chartData: ref(chartData),
+      sort: ref({ enabled: false, order: 'asc' }),
+      showLabels: ref(false),
+      isDark: ref(false),
+      scale: ref({ type: 'log' as const, axes: ['x'] as ('x' | 'y' | 'z')[] }),
+    })
+    const grid = options.value.grid as { top?: number; bottom?: number; containLabel?: boolean }
+    expect(grid.top).toBe(48)
+    expect(grid.bottom).toBe(28)
+    expect(grid.containLabel).toBe(true)
   })
 
   it('log-X simple bars map missing values via ?? null', () => {
@@ -361,6 +483,7 @@ describe('useBarChartOptions — value mode and branches', () => {
     expect((options.value.series as { data: [number, number | null][] }[])[0]!.data).toEqual([
       [1, null],
     ])
+    expect((options.value.grid as { top?: number }).top).toBe(VALUE_MODE_GRID_TOP)
   })
 
   it('log-X grouped bars map missing y values and sort [x,y] pairs', () => {
