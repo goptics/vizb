@@ -1,18 +1,22 @@
 import type { EChartsOption } from 'echarts'
 import type { ScaleType } from '@/types'
 import { getDefaultThemeColor, getNextColorFor, formatChartNumber } from '@/lib/utils'
+import { axisIsLog, axisLogBase, numericLogXValues, parseScale } from '@/lib/scale'
 import { type BaseChartConfig, getBaseOptions } from '../baseChartOptions'
 import {
   createAxisConfig,
   createDataZoomConfig,
   createLabelConfig,
+  createValueAxisConfig,
   createValueModeGridConfig,
+  createValueModeTooltip,
   createLineAxisPointer,
   createShadowAxisPointer,
   formatTooltipValue,
   getChartStyling,
   getTooltipTheme,
   isLargeXAxis,
+  INSIDE_XY_ZOOM,
   LARGE_DATA_THRESHOLD,
   scatterSeriesLargeOpts,
 } from './chartConfig'
@@ -110,12 +114,20 @@ export function buildMixedAxes2DOptions(
   const yLabel = chartData.value.axisLabels?.y
   const baseOptions = getBaseOptions(config)
   const styling = getChartStyling(isDark.value)
+  const parsed = parseScale(scale?.value)
+  const xWant = axisIsLog(parsed, 'x', ['y'])
+  const yWant = axisIsLog(parsed, 'y', ['y'])
   const yScale = resolveLogScale(
-    scale?.value ?? 'linear',
+    yWant ? 'log' : 'linear',
     tuples.map(([, y]) => y)
   )
+  const xNums = numericLogXValues(xCategories, xWant)
 
-  const data = scaleMixedTuples(tuples, yScale)
+  const data = xNums
+    ? tuples.map(
+        ([xi, y]) => [xNums[xi] ?? xi, adjustForLogScaleLine(y, yScale)] as [number, number | null]
+      )
+    : scaleMixedTuples(tuples, yScale)
   const largeX = isLargeXAxis(xCategories)
   const useVisualMap = chartType === 'scatter' && visualMap?.value === true
   const smoothLines = chartType === 'line' && config.smooth?.value === true
@@ -169,28 +181,32 @@ export function buildMixedAxes2DOptions(
             ),
           }
 
-  const axisConfig = createAxisConfig(
-    styling,
-    xCategories,
-    yScale,
-    xLabel,
-    largeX,
-    chartType === 'scatter'
-  )
+  const axisConfig = xNums
+    ? createValueAxisConfig(styling, xLabel, yLabel, yScale, chartType === 'scatter', {
+        xScale: 'log',
+        xLogBase: axisLogBase(parsed, 'x'),
+        yLogBase: axisLogBase(parsed, 'y'),
+      })
+    : createAxisConfig(
+        styling,
+        xCategories,
+        yScale,
+        xLabel,
+        largeX,
+        chartType === 'scatter',
+        axisLogBase(parsed, 'y')
+      )
 
   return {
     ...baseOptions,
     legend: { show: false },
     grid: createValueModeGridConfig(largeX),
     visualMap: resolve2DScatterVisualMap(useVisualMap, colorValues, styling, 1),
-    tooltip: createMixedModeTooltip(isDark.value, xCategories, chartType, xLabel, yLabel),
+    tooltip: xNums
+      ? createValueModeTooltip(isDark.value, xLabel, yLabel, true)
+      : createMixedModeTooltip(isDark.value, xCategories, chartType, xLabel, yLabel),
     ...axisConfig,
-    dataZoom: largeX
-      ? createDataZoomConfig(xCategories, styling)
-      : [
-          { type: 'inside', xAxisIndex: 0 },
-          { type: 'inside', yAxisIndex: 0 },
-        ],
+    dataZoom: xNums || !largeX ? INSIDE_XY_ZOOM : createDataZoomConfig(xCategories, styling),
     series: [series],
   } as EChartsOption
 }
@@ -215,8 +231,9 @@ export function buildMixedAxes3DOptions(
   const seriesData = render.lineSeries
   const pointCount = seriesData[0]?.data.length ?? 0
   const { yCount } = continuous3DGridCounts(pointCount)
-  const yScale = scale?.value ?? 'linear'
-  const valueType = yScale === 'log' ? ('log' as const) : ('value' as const)
+  const parsed = parseScale(scale?.value)
+  const yLog = axisIsLog(parsed, 'y', ['y', 'z'])
+  const zLog = axisIsLog(parsed, 'z', ['y', 'z'])
   const grid3D = create3DGridConfig({
     styling,
     autoRotate: threeDRotate?.value ?? false,
@@ -286,12 +303,14 @@ export function buildMixedAxes3DOptions(
       ...axis3DName(axisLabels?.x, styling),
     },
     yAxis3D: {
-      type: valueType,
+      type: yLog ? ('log' as const) : ('value' as const),
+      ...(yLog ? { logBase: axisLogBase(parsed, 'y') } : {}),
       ...axisCommon,
       ...axis3DName(axisLabels?.y, styling),
     },
     zAxis3D: {
-      type: valueType,
+      type: zLog ? ('log' as const) : ('value' as const),
+      ...(zLog ? { logBase: axisLogBase(parsed, 'z') } : {}),
       ...axisCommon,
       ...axis3DName(axisLabels?.z, styling),
     },

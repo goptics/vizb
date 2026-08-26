@@ -51,13 +51,17 @@ export function resolveLogScale(scale: ScaleType, values: Iterable<number | null
 }
 
 // Sum each named series' data values — used for tooltip axis-sum display. Data
-// items are plain numbers (or null for log gaps); also tolerates the legacy
-// `{ value }` item shape.
-type SeriesDatum = number | null | { value?: number }
+// items are plain numbers (or null for log gaps), coerced `[x, y]` pairs, or
+// the legacy `{ value }` item shape.
+type SeriesDatum = number | null | [number, number | null] | { value?: number }
 export function computeSeriesTotals(
   series: Array<{ name: string; data: SeriesDatum[] }>
 ): Map<string, number> {
-  const valueOf = (d: SeriesDatum): number => (typeof d === 'number' ? d : (d?.value ?? 0))
+  const valueOf = (d: SeriesDatum): number => {
+    if (typeof d === 'number') return d
+    if (Array.isArray(d)) return typeof d[1] === 'number' ? d[1] : 0
+    return d?.value ?? 0
+  }
   return new Map(
     series.map((s) => [s.name, s.data.reduce<number>((sum, d) => sum + valueOf(d), 0)])
   )

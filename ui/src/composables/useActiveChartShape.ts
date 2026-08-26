@@ -4,7 +4,7 @@ import type {
   BarConfig,
   LineConfig,
   ScatterConfig,
-  ScaleType,
+  ScaleInput,
   Sort,
   StatConfig,
 } from '../types'
@@ -36,10 +36,10 @@ export function useActiveChartShape() {
     () => (activeConfig.value as BarConfig | LineConfig | undefined)?.stack ?? false
   )
 
-  const scale = computed<ScaleType>(() =>
+  const scale = computed<ScaleInput>(() =>
     stack.value
       ? 'linear'
-      : ((activeConfig.value as { scale?: ScaleType } | undefined)?.scale ?? 'linear')
+      : ((activeConfig.value as { scale?: ScaleInput } | undefined)?.scale ?? 'linear')
   )
 
   const threeDRotate = computed<boolean>(

@@ -54,8 +54,10 @@ export function use3DChartOptions(config: BaseChartConfig, kind: Chart3DKind) {
     const defaultColor = getDefaultThemeColor()
     const axisCommon = makeAxis3DCommon(styling)
     const seriesData = kind === 'bar3D' ? render.barSeries : render.lineSeries
+    const zAxis = resolve3DZAxisType(scale?.value ?? 'linear', seriesData)
     const zAxis3DBase = {
-      type: resolve3DZAxisType(scale?.value ?? 'linear', seriesData),
+      type: zAxis.type,
+      ...(zAxis.type === 'log' ? { logBase: zAxis.logBase } : {}),
       ...axisCommon,
     }
     if (render.mode === 'mixed') {

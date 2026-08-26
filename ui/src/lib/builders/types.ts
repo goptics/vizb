@@ -3,7 +3,7 @@ import type {
   DataPoint,
   AxisLabels,
   Sort,
-  ScaleType,
+  ScaleInput,
   Stat,
   Axis,
   ChartType,
@@ -16,7 +16,7 @@ export interface BuildContext {
   labels?: AxisLabels
   sort: Sort
   showLabels: boolean
-  scale: ScaleType
+  scale: ScaleInput
   canonical?: CanonicalAxisOrders
   threeD: boolean
   preserveRows: boolean

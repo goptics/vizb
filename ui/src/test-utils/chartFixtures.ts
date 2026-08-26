@@ -1,5 +1,5 @@
 import { ref, type Ref } from 'vue'
-import type { ChartData, ChartType, Render3D, ScaleType, Sort } from '@/types'
+import type { ChartData, ChartType, Render3D, ScaleInput, ScaleType, Sort } from '@/types'
 import type { BaseChartConfig } from '@/composables/charts/baseChartOptions'
 
 const noSort: Sort = { enabled: false, order: 'asc' }
@@ -72,6 +72,38 @@ export function makeValueChartData(overrides: ChartDataOverrides = {}): ChartDat
     ],
     ...overrides,
   })
+}
+
+export function makeNumericStepChartData(
+  yAxis: string[] = ['train', 'val'],
+  points: [string, number[]][] = [
+    ['1', [10, 8]],
+    ['2', [0, 9]],
+    ['4', [12, 6]],
+  ]
+): ChartData {
+  return emptyChartData({
+    title: 'loss vs step',
+    statType: 'grouped',
+    yAxis,
+    series: points.map(([xAxis, values]) => ({ xAxis, values, benchmarkId: xAxis })),
+    axisLabels: { x: 'step', y: 'split' },
+  })
+}
+
+export function makeNumericStepConfig(
+  scale: ScaleInput,
+  data: ChartData = makeNumericStepChartData()
+): BaseChartConfig {
+  return {
+    chartData: ref(data),
+    sort: ref({ enabled: false, order: 'asc' as const }),
+    showLabels: ref(false),
+    isDark: ref(false),
+    scale: ref(scale),
+    smooth: ref(false),
+    stack: ref(false),
+  }
 }
 
 export function makePieChartData(overrides: ChartDataOverrides = {}): ChartData {
@@ -165,7 +197,7 @@ export type BaseConfigOverrides = {
   sort?: Sort | Ref<Sort>
   showLabels?: boolean | Ref<boolean>
   isDark?: boolean | Ref<boolean>
-  scale?: ScaleType | Ref<ScaleType>
+  scale?: ScaleInput | Ref<ScaleInput>
   stack?: boolean | Ref<boolean>
   threeDRotate?: boolean | Ref<boolean>
   threeD?: boolean | Ref<boolean>

@@ -44,6 +44,20 @@ export const ALL_CHART_TYPES: ChartType[] = [
 export type ScaleType = 'linear' | 'log'
 export const SCALE_TYPES: ScaleType[] = ['linear', 'log']
 
+export type ScaleAxis = 'x' | 'y' | 'z'
+
+/** Dataset JSON `scale` object (hand-written or future CLI). */
+export type ScaleSpec = {
+  type?: ScaleType
+  axes?: ScaleAxis[]
+  base?: number
+  baseX?: number
+  baseY?: number
+  baseZ?: number
+}
+
+export type ScaleInput = ScaleType | ScaleSpec
+
 export type Stat = {
   type: string
   value?: number
@@ -102,7 +116,7 @@ export type BarConfig = {
   type: 'bar'
   swap?: string
   sort?: Sort
-  scale?: ScaleType
+  scale?: ScaleInput
   stack?: boolean
   showLabels?: boolean
   horizontal?: boolean
@@ -120,7 +134,7 @@ export type LineConfig = {
   type: 'line'
   swap?: string
   sort?: Sort
-  scale?: ScaleType
+  scale?: ScaleInput
   stack?: boolean
   showLabels?: boolean
   symbol?: string
@@ -136,7 +150,7 @@ export type ScatterConfig = {
   type: 'scatter'
   swap?: string
   sort?: Sort
-  scale?: ScaleType
+  scale?: ScaleInput
   showLabels?: boolean
   symbol?: string
   symbolSize?: number

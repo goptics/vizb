@@ -203,6 +203,36 @@ describe('useCategorySeriesChartOptions — mixed / value dispatch', () => {
 })
 
 describe('useCategorySeriesChartOptions — remaining branches', () => {
+  it('log-X maps missing simple and grouped values via ?? null', () => {
+    const simple = emptyChartData({
+      title: 'steps',
+      yAxis: [],
+      series: [{ xAxis: '1', values: [], benchmarkId: '' }],
+      axisLabels: { x: 'step' },
+    })
+    const { options } = useCategorySeriesChartOptions(
+      baseConfig({ chartData: simple, scale: { type: 'log', axes: ['x'] } }),
+      'line'
+    )
+    expect((options.value.series as { data: [number, number | null][] }[])[0]!.data).toEqual([
+      [1, null],
+    ])
+
+    const grouped = emptyChartData({
+      title: 'steps',
+      yAxis: ['a', 'b'],
+      series: [{ xAxis: '2', values: [10], benchmarkId: '' }],
+      axisLabels: { x: 'step', y: 'run' },
+    })
+    const { options: g } = useCategorySeriesChartOptions(
+      baseConfig({ chartData: grouped, scale: { type: 'log', axes: ['x'] } }),
+      'line'
+    )
+    const series = g.value.series as { data: [number, number | null][] }[]
+    expect(series[0]!.data).toEqual([[2, 10]])
+    expect(series[1]!.data).toEqual([[2, null]])
+  })
+
   it('smooth x-only lines and large grouped dataZoom', () => {
     const { options } = useCategorySeriesChartOptions(
       baseConfig({ chartData: xOnly(), smooth: true }),

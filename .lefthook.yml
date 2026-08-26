@@ -21,3 +21,7 @@ pre-commit:
       priority: 3
       glob: "*.go"
       run: task test
+    ui-test:
+      priority: 4
+      glob: "ui/**"
+      run: task test:ui:coverage

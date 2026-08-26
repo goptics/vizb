@@ -34,7 +34,7 @@ import {
 } from '../lib/transform'
 import { isValueChartType, isValueMode, isMixedMode } from '../lib/utils'
 import { translateAxisKey } from '../lib/swap'
-import type { DataPoint, AxisLabels, Sort, ChartData, ScaleType, Axis, ChartType } from '../types'
+import type { DataPoint, AxisLabels, Sort, ChartData, ScaleInput, Axis, ChartType } from '../types'
 
 export type InitMessage = {
   type: 'init'
@@ -61,7 +61,7 @@ export type ComputeMessage = {
   groupName: string
   sort: Sort
   showLabels: boolean
-  scale: ScaleType
+  scale: ScaleInput
   threeD: boolean
 }
 export type WorkerRequest = InitMessage | SetArrangementMessage | ComputeMessage

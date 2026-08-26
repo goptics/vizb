@@ -2,7 +2,16 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { effectScope, reactive, ref, type Ref } from 'vue'
 import type { WorkerResponse, ReadyMessage, ChartMessage } from '../workers/transform.worker'
-import type { DataPoint, AxisLabels, Sort, ScaleType, ChartData, Axis } from '../types'
+import type {
+  DataPoint,
+  AxisLabels,
+  Sort,
+  ScaleType,
+  ScaleInput,
+  ScaleSpec,
+  ChartData,
+  Axis,
+} from '../types'
 import { dp, noSort, VALUE_AXES, MIXED_AXES } from '@/test-utils'
 import { TrackedMockWorker } from '../workers/__test-utils__/workerHarness'
 
@@ -144,6 +153,132 @@ describe('useChartPipeline — setArrangement', () => {
     expect(setCall).toBeDefined()
     const initCall = worker.postMessage.mock.calls.find((c) => c[0].type === 'init')
     expect(initCall).toBeUndefined()
+  })
+})
+
+describe('useChartPipeline — object scale clone', () => {
+  it('posts a plain cloneable object scale from a Vue reactive Proxy', async () => {
+    scope.stop()
+    TrackedMockWorker.reset()
+    const objectScale = reactive<ScaleSpec>({ type: 'log', axes: ['x'] })
+    const objectScaleRef = ref<ScaleInput>(objectScale)
+    // Vue reactive Proxies cannot be structured-cloned (the original bug).
+    expect(() => structuredClone(objectScaleRef.value)).toThrow()
+
+    scope = effectScope()
+    result = scope.run(() =>
+      useChartPipeline(
+        rawData,
+        arrangement,
+        ref(defaultLabels),
+        activeGroupId,
+        sort,
+        showLabels,
+        objectScaleRef,
+        threeD
+      )
+    )!
+    await vi.advanceTimersByTimeAsync(50)
+    worker = TrackedMockWorker.latest()
+    replyReady(1)
+
+    const computeCall = worker.postMessage.mock.calls.find((c) => c[0].type === 'compute')
+    expect(computeCall).toBeDefined()
+    const posted = computeCall![0] as { scale: ScaleInput }
+    expect(posted.scale).toEqual({ type: 'log', axes: ['x'] })
+    expect(Object.getPrototypeOf(posted.scale)).toBe(Object.prototype)
+    expect(Array.isArray((posted.scale as { axes?: unknown }).axes)).toBe(true)
+    expect(posted.scale).not.toBe(objectScale)
+    expect(() => structuredClone(posted)).not.toThrow()
+  })
+
+  it('copies optional log bases and still posts string scale as a string', async () => {
+    scope.stop()
+    TrackedMockWorker.reset()
+    const objectScale = reactive<ScaleSpec>({
+      type: 'log',
+      axes: ['x', 'y'],
+      base: 2,
+      baseX: 4,
+      baseY: 8,
+      baseZ: 16,
+    })
+    scope = effectScope()
+    result = scope.run(() =>
+      useChartPipeline(
+        rawData,
+        arrangement,
+        ref(defaultLabels),
+        activeGroupId,
+        sort,
+        showLabels,
+        ref(objectScale),
+        threeD
+      )
+    )!
+    await vi.advanceTimersByTimeAsync(50)
+    worker = TrackedMockWorker.latest()
+    replyReady(1)
+
+    const computeCall = worker.postMessage.mock.calls.find((c) => c[0].type === 'compute')
+    const posted = computeCall![0] as { scale: ScaleInput }
+    expect(posted.scale).toEqual({
+      type: 'log',
+      axes: ['x', 'y'],
+      base: 2,
+      baseX: 4,
+      baseY: 8,
+      baseZ: 16,
+    })
+    expect(() => structuredClone(posted.scale)).not.toThrow()
+
+    scope.stop()
+    TrackedMockWorker.reset()
+    scope = effectScope()
+    result = scope.run(() =>
+      useChartPipeline(
+        rawData,
+        arrangement,
+        ref(defaultLabels),
+        activeGroupId,
+        sort,
+        showLabels,
+        ref('log' as ScaleType),
+        threeD
+      )
+    )!
+    await vi.advanceTimersByTimeAsync(50)
+    worker = TrackedMockWorker.latest()
+    replyReady(1)
+    const stringCompute = worker.postMessage.mock.calls.find((c) => c[0].type === 'compute')
+    expect(stringCompute![0].scale).toBe('log')
+    expect(() => structuredClone(stringCompute![0])).not.toThrow()
+  })
+
+  it('omits type and axes when the object scale does not set them', async () => {
+    scope.stop()
+    TrackedMockWorker.reset()
+    const objectScale = reactive<ScaleSpec>({ base: 2 })
+    scope = effectScope()
+    result = scope.run(() =>
+      useChartPipeline(
+        rawData,
+        arrangement,
+        ref(defaultLabels),
+        activeGroupId,
+        sort,
+        showLabels,
+        ref(objectScale),
+        threeD
+      )
+    )!
+    await vi.advanceTimersByTimeAsync(50)
+    worker = TrackedMockWorker.latest()
+    replyReady(1)
+
+    const computeCall = worker.postMessage.mock.calls.find((c) => c[0].type === 'compute')
+    expect(computeCall![0].scale).toEqual({ base: 2 })
+    expect(() => structuredClone(computeCall![0])).not.toThrow()
   })
 })
 

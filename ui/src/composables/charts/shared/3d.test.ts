@@ -636,20 +636,35 @@ describe('resolve3DZAxisType', () => {
       resolve3DZAxisType('log', [
         { name: 'a', data: [{ value: [0, 0, 0.2] }, { value: [1, 0, 3] }] },
       ])
-    ).toBe('log')
+    ).toEqual({ type: 'log', logBase: 10 })
+  })
+
+  it('ignores grouped 3D x-only log for the metric axis', () => {
+    expect(
+      resolve3DZAxisType({ type: 'log', axes: ['x'] }, [
+        { name: 'a', data: [{ value: [0, 0, 3] }] },
+      ])
+    ).toEqual({ type: 'value' })
+    expect(
+      resolve3DZAxisType({ type: 'log', axes: ['z'], base: 2 }, [
+        { name: 'a', data: [{ value: [0, 0, 3] }] },
+      ])
+    ).toEqual({ type: 'log', logBase: 2 })
   })
 
   it('falls back to value for empty or non-positive metrics', () => {
-    expect(resolve3DZAxisType('log', [])).toBe('value')
+    expect(resolve3DZAxisType('log', [])).toEqual({ type: 'value' })
     expect(
       resolve3DZAxisType('log', [
         { name: 'a', data: [{ value: [0, 0, 0] }, { value: [1, 0, -1] }] },
       ])
-    ).toBe('value')
+    ).toEqual({ type: 'value' })
   })
 
   it('treats missing metric height (no value[2]) as non-positive', () => {
-    expect(resolve3DZAxisType('log', [{ name: 'a', data: [{ value: [0, 0] }] }])).toBe('value')
+    expect(resolve3DZAxisType('log', [{ name: 'a', data: [{ value: [0, 0] }] }])).toEqual({
+      type: 'value',
+    })
   })
 })
 
@@ -660,6 +675,20 @@ describe('remaining 3d branch coverage', () => {
     expect(axes.xAxis3D.type).toBe('log')
     expect(axes.yAxis3D.type).toBe('log')
     expect(axes.zAxis3D.type).toBe('log')
+    expect(axes.xAxis3D.logBase).toBe(10)
+  })
+
+  it('createContinuous3DAxes logs only requested axes', async () => {
+    const { createContinuous3DAxes } = await import('./3d')
+    const axes = createContinuous3DAxes(styling, 'x', 'y', 'z', {
+      type: 'log',
+      axes: ['x'],
+      base: 2,
+    })
+    expect(axes.xAxis3D.type).toBe('log')
+    expect(axes.xAxis3D.logBase).toBe(2)
+    expect(axes.yAxis3D.type).toBe('value')
+    expect(axes.zAxis3D.type).toBe('value')
   })
 
   it('createContinuous3DTooltipFormatter default labels', async () => {
