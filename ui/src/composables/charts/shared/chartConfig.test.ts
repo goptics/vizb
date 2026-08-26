@@ -3,6 +3,9 @@ import {
   createAxisConfig,
   createValueAxisConfig,
   createDataZoomConfig,
+  createHorizontalDataZoomConfig,
+  INSIDE_XY_ZOOM,
+  resolveCartesianDataZoom,
   createGridConfig,
   legendBandPx,
   createTooltipConfig,
@@ -103,6 +106,70 @@ describe('createDataZoomConfig', () => {
       bottom: 34,
       height: 28,
       textStyle: { color: styling.textColor },
+    })
+  })
+})
+
+describe('resolveCartesianDataZoom', () => {
+  const ctx = { styling }
+
+  it.each([
+    { chartType: 'line' as const, numericX: true, largeX: false },
+    { chartType: 'line' as const, numericX: true, largeX: true },
+    { chartType: 'line' as const, numericX: false, largeX: false },
+  ])('omits zoom for line ($numericX numericX, $largeX largeX)', (flags) => {
+    expect(resolveCartesianDataZoom('line', { ...ctx, ...flags })).toEqual({ hasXSlider: false })
+  })
+
+  it('uses a slider-only window for large category line axes', () => {
+    const { dataZoom, hasXSlider } = resolveCartesianDataZoom('line', {
+      ...ctx,
+      numericX: false,
+      largeX: true,
+    })
+    expect(hasXSlider).toBe(true)
+    expect(dataZoom).toEqual(createDataZoomConfig([], styling).filter((z) => z.type === 'slider'))
+  })
+
+  it.each(['scatter', 'bar'] as const)(
+    'uses inside zoom for %s unless the category axis is large',
+    (chartType) => {
+      for (const flags of [
+        { numericX: true, largeX: false },
+        { numericX: true, largeX: true },
+        { numericX: false, largeX: false },
+      ]) {
+        expect(resolveCartesianDataZoom(chartType, { ...ctx, ...flags })).toEqual({
+          dataZoom: INSIDE_XY_ZOOM,
+          hasXSlider: false,
+        })
+      }
+    }
+  )
+
+  it.each(['scatter', 'bar'] as const)(
+    'adds inside+slider for large category %s axes',
+    (chartType) => {
+      expect(
+        resolveCartesianDataZoom(chartType, { ...ctx, numericX: false, largeX: true })
+      ).toEqual({
+        dataZoom: createDataZoomConfig([], styling),
+        hasXSlider: true,
+      })
+    }
+  )
+
+  it('uses a Y slider for large horizontal bars and does not reserve the X band', () => {
+    expect(
+      resolveCartesianDataZoom('bar', {
+        ...ctx,
+        numericX: false,
+        largeX: true,
+        horizontal: true,
+      })
+    ).toEqual({
+      dataZoom: createHorizontalDataZoomConfig(styling),
+      hasXSlider: false,
     })
   })
 })

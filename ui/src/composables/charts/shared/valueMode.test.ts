@@ -233,6 +233,15 @@ describe('buildValueAxes2DOptions', () => {
 
     const line = buildValueAxes2DOptions(cfg(), 'line')
     expect(seriesOf(line).symbolSize).toBe(7)
+    expect(line.dataZoom).toBeUndefined()
+  })
+
+  it('keeps inside zoom on scatter and omits it on value-mode line', () => {
+    expect(buildValueAxes2DOptions(cfg(), 'scatter').dataZoom).toEqual([
+      { type: 'inside', xAxisIndex: 0 },
+      { type: 'inside', yAxisIndex: 0 },
+    ])
+    expect(buildValueAxes2DOptions(cfg(), 'line').dataZoom).toBeUndefined()
   })
 
   it('enables smooth lines and visualMap color dimension from third tuple slot', () => {

@@ -4,7 +4,6 @@ import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
 import { getNextColorFor, hasXAxis } from '@/lib/utils'
 import {
   createAxisConfig,
-  createDataZoomConfig,
   createGridConfig,
   createValueModeGridConfig,
   createLabelConfig,
@@ -16,8 +15,8 @@ import {
   getChartStyling,
   isLargeXAxis,
   makeLegendTitle,
-  INSIDE_XY_ZOOM,
   LARGE_DATA_THRESHOLD,
+  resolveCartesianDataZoom,
   scatterSeriesLargeOpts,
 } from './shared/chartConfig'
 import {
@@ -105,11 +104,11 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
           yLogBase,
         })
       : createAxisConfig(styling, xAxisData, yScale, xLabel, largeX, true, yLogBase)
-    const groupedDataZoom = coerceX
-      ? INSIDE_XY_ZOOM
-      : largeX
-        ? createDataZoomConfig(xAxisData, styling)
-        : undefined
+    const zoom = resolveCartesianDataZoom(kind, {
+      numericX: coerceX,
+      largeX,
+      styling,
+    })
     const seriesExtras = resolveSeriesSymbol(
       largeX ? style.largeSymbol : style.defaultSymbol,
       config.symbol?.value,
@@ -141,12 +140,12 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
       }
       return {
         ...baseOptions,
-        grid: createValueModeGridConfig(coerceX ? false : largeX),
+        grid: createValueModeGridConfig(zoom.hasXSlider),
         tooltip: coerceX
           ? createValueModeTooltip(isDark.value, xLabel, chartData.value.axisLabels?.y, true)
           : createPinnedAxisTooltip(isDark.value),
         ...groupedAxes,
-        ...(groupedDataZoom ? { dataZoom: groupedDataZoom } : {}),
+        ...(zoom.dataZoom ? { dataZoom: zoom.dataZoom } : {}),
         legend: { show: false },
         visualMap: resolve2DScatterVisualMap(
           useVisualMap,
@@ -188,7 +187,7 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
     return {
       ...baseOptions,
       ...(yLabel ? { title: makeLegendTitle(yLabel, styling) } : {}),
-      grid: createGridConfig(transposedSeries.length, coerceX ? false : largeX, !!yLabel),
+      grid: createGridConfig(transposedSeries.length, zoom.hasXSlider, !!yLabel),
       visualMap: resolve2DScatterVisualMap(
         useVisualMap,
         groupedScatterColorValues(transposedSeries),
@@ -201,7 +200,7 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
           : createTooltipConfig(showXBreakdown, isDark.value, seriesTotals, 'line')
         : createTooltipConfig(showXBreakdown, isDark.value, seriesTotals),
       ...groupedAxes,
-      ...(groupedDataZoom ? { dataZoom: groupedDataZoom } : {}),
+      ...(zoom.dataZoom ? { dataZoom: zoom.dataZoom } : {}),
       legend: createLegendConfig(
         transposedSeries.map((s) => ({ xAxis: s.name })),
         styling,

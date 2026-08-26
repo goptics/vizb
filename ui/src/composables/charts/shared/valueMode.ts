@@ -150,7 +150,7 @@ export function buildValueAxes2DOptions(
         yLogBase: axisLogBase(parsed, 'y'),
       }
     ),
-    dataZoom: INSIDE_XY_ZOOM,
+    ...(chartType === 'line' ? {} : { dataZoom: INSIDE_XY_ZOOM }),
     series: [series],
   } as EChartsOption
 }
