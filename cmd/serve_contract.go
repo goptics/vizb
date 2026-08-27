@@ -722,10 +722,8 @@ func validateChartConfigValues(raw json.RawMessage, path string) *apiValidationE
 		return validationErr
 	}
 	if scaleRaw, ok := values["scale"]; ok {
-		var scale string
-		if err := json.Unmarshal(scaleRaw, &scale); err != nil || (scale != "linear" && scale != "log") {
-			validationErr := bodyValidationError(path+"/scale", "invalid_enum", "scale must be linear or log")
-			return &validationErr
+		if validationErr := validateScaleValue(scaleRaw, path+"/scale"); validationErr != nil {
+			return validationErr
 		}
 	}
 	if symbolRaw, ok := values["symbol"]; ok {
@@ -795,6 +793,74 @@ func validateChartConfigValues(raw json.RawMessage, path string) *apiValidationE
 		if validationErr := validateStatMath(stat.Math, path+"/stat/math"); validationErr != nil {
 			return validationErr
 		}
+	}
+	return nil
+}
+
+// validateScaleValue accepts the REST Scale wire: "linear"|"log" or an object.
+// shared.Scale.UnmarshalJSON already rejects unknown keys and bad types; REST
+// still requires type and rejects unknown axes and log bases of 1 or <= 0
+// (CLI bag parse warns-and-defaults).
+func validateScaleValue(raw json.RawMessage, path string) *apiValidationError {
+	var scale shared.Scale
+	if err := json.Unmarshal(raw, &scale); err != nil {
+		validationErr := bodyValidationError(path, "invalid_json", err.Error())
+		return &validationErr
+	}
+
+	trimmed := bytes.TrimSpace(raw)
+	if len(trimmed) == 0 || trimmed[0] != '{' {
+		return nil
+	}
+
+	var fields map[string]json.RawMessage
+	// Scale.UnmarshalJSON already accepted this as an object.
+	_ = json.Unmarshal(raw, &fields)
+	if _, ok := fields["type"]; !ok {
+		validationErr := bodyValidationError(path+"/type", "required", "scale.type is required")
+		return &validationErr
+	}
+	if validationErr := validateScaleAxes(scale.Axes, path+"/axes"); validationErr != nil {
+		return validationErr
+	}
+	for _, item := range []struct {
+		key   string
+		value *float64
+	}{
+		{"base", scale.Base},
+		{"baseX", scale.BaseX},
+		{"baseY", scale.BaseY},
+		{"baseZ", scale.BaseZ},
+	} {
+		if validationErr := validateLogBase(item.value, path+"/"+item.key); validationErr != nil {
+			return validationErr
+		}
+	}
+	return nil
+}
+
+func validateScaleAxes(axes []string, path string) *apiValidationError {
+	for i, axis := range axes {
+		if axis != "x" && axis != "y" && axis != "z" {
+			itemPath := fmt.Sprintf("%s/%d", path, i)
+			validationErr := bodyValidationError(itemPath, "invalid_enum", "scale.axes items must be x, y, or z")
+			return &validationErr
+		}
+	}
+	return nil
+}
+
+func validateLogBase(n *float64, path string) *apiValidationError {
+	if n == nil {
+		return nil
+	}
+	if *n <= 0 {
+		validationErr := bodyValidationError(path, "exclusive_minimum", path+" must be greater than 0")
+		return &validationErr
+	}
+	if *n == 1 {
+		validationErr := bodyValidationError(path, "invalid_value", path+" must not be 1")
+		return &validationErr
 	}
 	return nil
 }

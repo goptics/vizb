@@ -677,6 +677,10 @@ func (s *ServeSuite) TestConvertEndpointValidatesStructuredOptions() {
 		{name: "unselected config", body: `{"input":"x,y\na,1\n","charts":{"types":["bar"],"configs":[{"type":"line"}]}}`},
 		{name: "unknown config field", body: `{"input":"x,y\na,1\n","charts":{"configs":[{"type":"bar","bogus":true}]}}`},
 		{name: "invalid scale", body: `{"input":"x,y\na,1\n","charts":{"configs":[{"type":"bar","scale":"square"}]}}`},
+		{name: "scale unknown key", body: `{"input":"x,y\na,1\n","charts":{"configs":[{"type":"bar","scale":{"type":"log","foo":1}}]}}`},
+		{name: "scale unknown axis", body: `{"input":"x,y\na,1\n","charts":{"configs":[{"type":"bar","scale":{"type":"log","axes":["q"]}}]}}`},
+		{name: "scale base 1", body: `{"input":"x,y\na,1\n","charts":{"configs":[{"type":"bar","scale":{"type":"log","base":1}}]}}`},
+		{name: "scale wrong type", body: `{"input":"x,y\na,1\n","charts":{"configs":[{"type":"bar","scale":true}]}}`},
 		{name: "invalid symbol size", body: `{"input":"x,y\na,1\n","charts":{"types":["line"],"configs":[{"type":"line","symbolSize":0}]}}`},
 		{name: "sort not object", body: `{"input":"x,y\na,1\n","charts":{"configs":[{"type":"bar","sort":true}]}}`},
 		{name: "sort missing enabled", body: `{"input":"x,y\na,1\n","charts":{"configs":[{"type":"bar","sort":{"order":"asc"}}]}}`},
@@ -796,6 +800,29 @@ func (s *ServeSuite) TestUIEndpointBarBackgroundRoundTrip() {
 	s.Equal(http.StatusOK, recorder.Code, recorder.Body.String())
 }
 
+// responseScale extracts settings[0].scale from a Dataset JSON response.
+func (s *ServeSuite) responseScale(recorder *httptest.ResponseRecorder) any {
+	s.T().Helper()
+	var dataset struct {
+		Settings []map[string]any `json:"settings"`
+	}
+	s.Require().NoError(json.Unmarshal(recorder.Body.Bytes(), &dataset))
+	s.Require().Len(dataset.Settings, 1)
+	return dataset.Settings[0]["scale"]
+}
+
+// settingScale marshals settings[0] and returns its scale value.
+func (s *ServeSuite) settingScale(datasets []shared.Dataset) any {
+	s.T().Helper()
+	s.Require().Len(datasets, 1)
+	s.Require().Len(datasets[0].Settings, 1)
+	raw, err := json.Marshal(datasets[0].Settings[0])
+	s.Require().NoError(err)
+	var config map[string]any
+	s.Require().NoError(json.Unmarshal(raw, &config))
+	return config["scale"]
+}
+
 // settingBackground marshals settings[0] and returns its background object.
 func (s *ServeSuite) settingBackground(datasets []shared.Dataset) map[string]any {
 	s.Require().Len(datasets, 1)
@@ -836,6 +863,117 @@ func (s *ServeSuite) TestConvertEndpointRejectsInvalidBackground() {
 		s.Run(test.name, func() {
 			recorder := s.apiRequest(handler, "/", test.body, "application/json", "application/json")
 			s.Equal(http.StatusUnprocessableEntity, recorder.Code, recorder.Body.String())
+			var problem struct {
+				Errors []apiValidationError `json:"errors"`
+			}
+			s.Require().NoError(json.Unmarshal(recorder.Body.Bytes(), &problem))
+			s.NotEmpty(problem.Errors)
+		})
+	}
+}
+
+// TestConvertEndpointScaleRoundTrip covers POST /: "scale":"log" stays a
+// string on Dataset settings, and a per-axis object persists as an object.
+func (s *ServeSuite) TestConvertEndpointScaleRoundTrip() {
+	handler := newRESTHandler()
+
+	s.Run("string log persists as string", func() {
+		body := `{"input":"region,value\nwest,12\n","parser":"csv","charts":{"types":["bar"],"configs":[{"type":"bar","scale":"log"}]}}`
+		recorder := s.apiRequest(handler, "/", body, "application/json", "application/json")
+		s.Equal(http.StatusOK, recorder.Code, recorder.Body.String())
+		s.Equal("log", s.responseScale(recorder))
+	})
+
+	s.Run("object log axes persists as object", func() {
+		body := `{"input":"region,value\nwest,12\n","parser":"csv","charts":{"types":["bar"],"configs":[{"type":"bar","scale":{"type":"log","axes":["x"]}}]}}`
+		recorder := s.apiRequest(handler, "/", body, "application/json", "application/json")
+		s.Equal(http.StatusOK, recorder.Code, recorder.Body.String())
+		object, ok := s.responseScale(recorder).(map[string]any)
+		s.Require().True(ok, "expected a scale object on settings, got %#v", s.responseScale(recorder))
+		s.Equal("log", object["type"])
+		s.Equal([]any{"x"}, object["axes"])
+	})
+}
+
+// TestUIEndpointScaleRoundTrip covers POST /ui: scale round-trips onto the
+// materialised Dataset settings inspected by the injected generator.
+func (s *ServeSuite) TestUIEndpointScaleRoundTrip() {
+	s.Run("string log persists as string", func() {
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			handleUIWithGenerator(w, r, func(datasets []shared.Dataset, charts []string) (string, error) {
+				s.Equal("log", s.settingScale(datasets))
+				return "<html>ok</html>", nil
+			})
+		})
+		body := `{"datasets":` + validDatasetJSON + `,"charts":{"types":["bar"],"configs":[{"type":"bar","scale":"log"}]}}`
+		recorder := s.apiRequest(handler, "/ui", body, "application/json", "text/html")
+		s.Equal(http.StatusOK, recorder.Code, recorder.Body.String())
+	})
+
+	s.Run("object log axes persists as object", func() {
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			handleUIWithGenerator(w, r, func(datasets []shared.Dataset, charts []string) (string, error) {
+				object, ok := s.settingScale(datasets).(map[string]any)
+				s.Require().True(ok, "expected a scale object on settings")
+				s.Equal("log", object["type"])
+				s.Equal([]any{"x"}, object["axes"])
+				return "<html>ok</html>", nil
+			})
+		})
+		body := `{"datasets":` + validDatasetJSON + `,"charts":{"types":["bar"],"configs":[{"type":"bar","scale":{"type":"log","axes":["x"]}}]}}`
+		recorder := s.apiRequest(handler, "/ui", body, "application/json", "text/html")
+		s.Equal(http.StatusOK, recorder.Code, recorder.Body.String())
+	})
+}
+
+// TestConvertEndpointRejectsInvalidScale confirms invalid scale values are
+// request errors (422), never 500s. CLI bags warn-and-default these.
+func (s *ServeSuite) TestConvertEndpointRejectsInvalidScale() {
+	handler := newRESTHandler()
+	for _, test := range []struct {
+		name string
+		body string
+	}{
+		{name: "base 1", body: `{"input":"region,value\nwest,12\n","charts":{"configs":[{"type":"bar","scale":{"type":"log","base":1}}]}}`},
+		{name: "baseX 1", body: `{"input":"region,value\nwest,12\n","charts":{"configs":[{"type":"bar","scale":{"type":"log","baseX":1}}]}}`},
+		{name: "unknown key", body: `{"input":"region,value\nwest,12\n","charts":{"configs":[{"type":"bar","scale":{"type":"log","foo":1}}]}}`},
+		{name: "unknown axis", body: `{"input":"region,value\nwest,12\n","charts":{"configs":[{"type":"bar","scale":{"type":"log","axes":["q"]}}]}}`},
+		{name: "wrong type", body: `{"input":"region,value\nwest,12\n","charts":{"configs":[{"type":"bar","scale":true}]}}`},
+		{name: "axes not array", body: `{"input":"region,value\nwest,12\n","charts":{"configs":[{"type":"bar","scale":{"type":"log","axes":"x"}}]}}`},
+	} {
+		s.Run(test.name, func() {
+			recorder := s.apiRequest(handler, "/", test.body, "application/json", "application/json")
+			s.Equal(http.StatusUnprocessableEntity, recorder.Code, recorder.Body.String())
+			s.NotEqual(http.StatusInternalServerError, recorder.Code, recorder.Body.String())
+			var problem struct {
+				Errors []apiValidationError `json:"errors"`
+			}
+			s.Require().NoError(json.Unmarshal(recorder.Body.Bytes(), &problem))
+			s.NotEmpty(problem.Errors)
+		})
+	}
+}
+
+// TestUIEndpointRejectsInvalidScale is the POST /ui counterpart of
+// TestConvertEndpointRejectsInvalidScale.
+func (s *ServeSuite) TestUIEndpointRejectsInvalidScale() {
+	handler := newRESTHandler()
+	for _, test := range []struct {
+		name  string
+		scale string
+	}{
+		{name: "base 1", scale: `{"type":"log","base":1}`},
+		{name: "unknown key", scale: `{"type":"log","foo":1}`},
+		{name: "unknown axis", scale: `{"type":"log","axes":["q"]}`},
+		{name: "wrong type", scale: `true`},
+	} {
+		s.Run(test.name, func() {
+			body := `{"datasets":` + validDatasetJSON + `,"charts":{"types":["bar"],"configs":[{"type":"bar","scale":` + test.scale + `}]}}`
+			recorder := s.apiRequest(handler, "/ui", body, "application/json", "text/html")
+			s.Equal(http.StatusUnprocessableEntity, recorder.Code, recorder.Body.String())
+			s.NotEqual(http.StatusInternalServerError, recorder.Code, recorder.Body.String())
+			s.Equal("application/problem+json", recorder.Header().Get("Content-Type"))
+			s.Equal(float64(http.StatusUnprocessableEntity), s.problemStatus(recorder))
 			var problem struct {
 				Errors []apiValidationError `json:"errors"`
 			}
@@ -1527,9 +1665,34 @@ func (s *ServeSuite) TestRequestContractHelpers() {
 		s.Require().NotNil(validationErr)
 		s.Equal("/config/showLabels", validationErr.Path)
 
+		s.Nil(validateChartConfigValues(json.RawMessage(`{"scale":"log"}`), "/config"))
+		s.Nil(validateChartConfigValues(json.RawMessage(`{"scale":{"type":"log","axes":["x"]}}`), "/config"))
+		s.Nil(validateChartConfigValues(json.RawMessage(`{"scale":{"type":"log","base":2}}`), "/config"))
+
+		for _, test := range []struct {
+			name string
+			raw  string
+			path string
+			code string
+		}{
+			{name: "scale missing type", raw: `{"scale":{}}`, path: "/config/scale/type", code: "required"},
+			{name: "scale base 0", raw: `{"scale":{"type":"log","base":0}}`, path: "/config/scale/base", code: "exclusive_minimum"},
+		} {
+			s.Run(test.name, func() {
+				err := validateChartConfigValues(json.RawMessage(test.raw), "/config")
+				s.Require().NotNil(err, test.raw)
+				s.Equal(test.path, err.Path)
+				s.Equal(test.code, err.Code)
+			})
+		}
+
 		for _, raw := range []string{
 			`{`,
 			`{"scale":null}`,
+			`{"scale":true}`,
+			`{"scale":{"type":"log","base":1}}`,
+			`{"scale":{"type":"log","foo":1}}`,
+			`{"scale":{"type":"log","axes":["q"]}}`,
 			`{"symbol":1}`,
 			`{"symbol":"not-a-symbol"}`,
 			`{"sort":true}`,

@@ -684,6 +684,28 @@ components:
       properties:
         enabled: { type: boolean }
         order: { type: string, enum: [asc, desc] }
+    # LogBase is > 0 and not 1 (logarithm base). exclusiveMinimum: 0 is not
+    # enough on its own because 1 is still valid.
+    LogBase:
+      type: number
+      exclusiveMinimum: 0
+      not: { const: 1 }
+    Scale:
+      oneOf:
+        - type: string
+          enum: [linear, log]
+        - type: object
+          additionalProperties: false
+          required: [type]
+          properties:
+            type: { type: string, enum: [linear, log] }
+            axes:
+              type: array
+              items: { type: string, enum: [x, y, z] }
+            base: { $ref: '#/components/schemas/LogBase' }
+            baseX: { $ref: '#/components/schemas/LogBase' }
+            baseY: { $ref: '#/components/schemas/LogBase' }
+            baseZ: { $ref: '#/components/schemas/LogBase' }
     StatisticsConfig:
       type: object
       additionalProperties: false
@@ -724,7 +746,7 @@ components:
         type: { const: bar }
         swap: { type: string }
         sort: { $ref: '#/components/schemas/Sort' }
-        scale: { type: string, enum: [linear, log] }
+        scale: { $ref: '#/components/schemas/Scale' }
         stack: { type: boolean }
         showLabels: { type: boolean }
         borderRadius:
@@ -763,7 +785,7 @@ components:
         type: { const: line }
         swap: { type: string }
         sort: { $ref: '#/components/schemas/Sort' }
-        scale: { type: string, enum: [linear, log] }
+        scale: { $ref: '#/components/schemas/Scale' }
         stack: { type: boolean }
         showLabels: { type: boolean }
         symbol:
@@ -782,7 +804,7 @@ components:
         type: { const: scatter }
         swap: { type: string }
         sort: { $ref: '#/components/schemas/Sort' }
-        scale: { type: string, enum: [linear, log] }
+        scale: { $ref: '#/components/schemas/Scale' }
         showLabels: { type: boolean }
         symbol:
           $ref: '#/components/schemas/SeriesSymbol'
