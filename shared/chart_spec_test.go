@@ -526,6 +526,26 @@ func (s *ChartSpecSuite) TestParseOverridesScaleUnwrappedBagIsError() {
 	s.Contains(err.Error(), "scale={")
 }
 
+func (s *ChartSpecSuite) TestParseOverridesScaleBareIsError() {
+	_, _, err := ParseOverrides([]string{"line:scale"}, []string{"line"}, s.xynAxes)
+	s.Require().Error(err)
+	s.Contains(err.Error(), `key "scale" requires a value`)
+	s.Contains(err.Error(), "scale={type=log;axes=x}")
+}
+
+func (s *ChartSpecSuite) TestParseOverridesScaleBraceUnknownField() {
+	_, _, err := ParseOverrides([]string{"line:scale={nope=1}"}, []string{"line"}, s.xynAxes)
+	s.Require().Error(err)
+	s.Contains(err.Error(), `key "scale"`)
+	s.Contains(err.Error(), "unknown object field")
+}
+
+func (s *ChartSpecSuite) TestParseOverridesScaleInvalidScalar() {
+	_, _, err := ParseOverrides([]string{"line:scale=foo"}, []string{"line"}, s.xynAxes)
+	s.Require().Error(err)
+	s.Contains(err.Error(), `scale value "foo" is invalid`)
+}
+
 func (s *ChartSpecSuite) TestParseOverridesScaleBraceMatchesFlag() {
 	flagPayload := EncodeScaleValue("type=log;axes=x;base=10", internal_charts.ScaleFlag.ObjectFields)
 	got, _, err := ParseOverrides(

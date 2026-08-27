@@ -168,6 +168,18 @@ func (s *RulesSuite) TestStackRequiresLinearScale_KeepWhenLogOnlyOnX() {
 	s.Empty(msg)
 }
 
+func (s *RulesSuite) TestStackRequiresLinearScale_KeepWhenLinearObject() {
+	rule := charts.StackRequiresLinearScale()
+	out, msg := rule(charts.RuleContext{
+		Value: true,
+		Config: map[string]any{
+			"scale": map[string]any{"type": "linear", "axes": []any{"y"}},
+		},
+	})
+	s.Equal(flags.Keep, out)
+	s.Empty(msg)
+}
+
 func (s *RulesSuite) TestStackRequiresLinearScale_SkipWhenLogObjectOmitsAxes() {
 	rule := charts.StackRequiresLinearScale()
 	out, msg := rule(charts.RuleContext{

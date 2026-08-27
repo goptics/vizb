@@ -153,6 +153,91 @@ func (s *ScaleSuite) TestParseObjectBagThenPayload() {
 	}, got)
 }
 
+func (s *ScaleSuite) TestMarshalPerAxisBases() {
+	baseY, baseZ := 2.0, 8.0
+	sc := shared.Scale{Type: "log", Axes: []string{"y", "z"}, BaseY: &baseY, BaseZ: &baseZ}
+	raw, err := json.Marshal(sc)
+	s.Require().NoError(err)
+	s.JSONEq(`{"type":"log","axes":["y","z"],"base":10,"baseY":2,"baseZ":8}`, string(raw))
+}
+
+func (s *ScaleSuite) TestUnmarshalJSONNullAndObjectFields() {
+	var sc shared.Scale
+	s.Require().NoError(json.Unmarshal([]byte(`null`), &sc))
+	s.Equal(shared.Scale{}, sc)
+
+	s.Require().NoError(json.Unmarshal([]byte(`{}`), &sc))
+	s.Equal("log", sc.Type)
+
+	s.Require().NoError(json.Unmarshal([]byte(`{"type":"log","baseY":2,"baseZ":8}`), &sc))
+	s.Require().NotNil(sc.BaseY)
+	s.Equal(2.0, *sc.BaseY)
+	s.Require().NotNil(sc.BaseZ)
+	s.Equal(8.0, *sc.BaseZ)
+}
+
+func (s *ScaleSuite) TestUnmarshalJSONErrors() {
+	cases := []struct {
+		name string
+		raw  string
+		want string
+	}{
+		{"invalid string type", `"foo"`, `scale value "foo" is invalid`},
+		{"number", `1`, "must be a string or object"},
+		{"array", `[]`, "must be a string or object"},
+		{"type not string", `{"type":1}`, "scale.type:"},
+		{"type invalid", `{"type":"expo"}`, `scale.type "expo" is invalid`},
+		{"axes not array", `{"axes":"x"}`, "must be an array of axis names"},
+		{"base not number", `{"base":"10"}`, "scale.base:"},
+		{"unknown field", `{"nope":1}`, `unknown field "nope"`},
+	}
+	for _, c := range cases {
+		s.Run(c.name, func() {
+			var sc shared.Scale
+			err := json.Unmarshal([]byte(c.raw), &sc)
+			s.Require().Error(err, c.raw)
+			s.Contains(err.Error(), c.want, c.raw)
+		})
+	}
+}
+
+func (s *ScaleSuite) TestScaleFromBagInvalidTypeWarnsAndDefaults() {
+	var got shared.Scale
+	out := testutil.CaptureStderr(func() {
+		got = shared.ScaleFromBag(map[string]any{"type": "expo", "axes": "x"})
+	})
+	s.Contains(out, "Invalid scale type")
+	s.Equal("linear", got.Type)
+	s.Equal([]string{"x"}, got.Axes)
+}
+
+func (s *ScaleSuite) TestScaleFromBagMissingTypeDefaultsToLog() {
+	got := shared.ScaleFromBag(map[string]any{"axes": "x"})
+	s.Equal("log", got.Type)
+	s.Equal([]string{"x"}, got.Axes)
+}
+
+func (s *ScaleSuite) TestEncodeScaleValueDuplicateAxisSkipped() {
+	got := shared.EncodeScaleValue("type=log;axes=x,x", s.fields)
+	s.Equal(map[string]any{
+		"type": "log",
+		"axes": []string{"x"},
+		"base": 10.0,
+	}, got)
+}
+
+func (s *ScaleSuite) TestScaleFromBagInvalidBaseValues() {
+	for _, raw := range []any{"nope", true} {
+		var got shared.Scale
+		out := testutil.CaptureStderr(func() {
+			got = shared.ScaleFromBag(map[string]any{"type": "log", "base": raw})
+		})
+		s.Contains(out, "Invalid scale base", raw)
+		s.Require().NotNil(got.Base, raw)
+		s.Equal(10.0, *got.Base, raw)
+	}
+}
+
 func TestScaleSuite(t *testing.T) {
 	suite.Run(t, new(ScaleSuite))
 }
