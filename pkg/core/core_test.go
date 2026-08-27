@@ -25,7 +25,7 @@ func (s *CoreSuite) TestConvertCSV() {
 		Parser:   "csv",
 		Config:   parser.Config{GroupPattern: "x", Group: []string{"region"}},
 		Metadata: Metadata{Name: "API latency"},
-		Charts:   []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: "linear"}},
+		Charts:   []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: shared.ScaleLinear}},
 	})
 	s.Require().NoError(err)
 	s.Equal("API latency", result.Dataset.Name)
@@ -42,7 +42,7 @@ func (s *CoreSuite) TestConvertColAxisTitle() {
 		Metadata: Metadata{
 			Name: "Q1 release",
 		},
-		Charts: []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: "linear"}},
+		Charts: []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: shared.ScaleLinear}},
 	})
 	s.Require().NoError(err)
 	s.Equal("Q1 release", result.Dataset.Name)
@@ -56,7 +56,7 @@ func (s *CoreSuite) TestConvertColAxisTitle() {
 		Input:  []byte("load,default,chi\n100,1,2\n"),
 		Parser: "csv",
 		Title:  "Ignored",
-		Charts: []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: "linear"}},
+		Charts: []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: shared.ScaleLinear}},
 	})
 	var optionErr *OptionError
 	s.Require().ErrorAs(err, &optionErr)
@@ -73,7 +73,7 @@ func (s *CoreSuite) TestConvertJSONAndValidationFailures() {
 		Input:  []byte(`[{"region":"west","latency":12},{"region":"east","latency":18}]`),
 		Parser: "json",
 		Config: parser.Config{GroupPattern: "x", Group: []string{"region"}},
-		Charts: []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: "linear"}},
+		Charts: []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: shared.ScaleLinear}},
 	})
 	s.Require().NoError(err)
 	s.Len(result.Dataset.Data, 2)
@@ -82,7 +82,7 @@ func (s *CoreSuite) TestConvertJSONAndValidationFailures() {
 		Input:  []byte("region,latency\nwest,12\n"),
 		Parser: "csv",
 		Config: parser.Config{GroupPattern: "x", Group: []string{"missing"}},
-		Charts: []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: "linear"}},
+		Charts: []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: shared.ScaleLinear}},
 	})
 	s.ErrorContains(err, `group column "missing" not found`)
 
@@ -90,13 +90,13 @@ func (s *CoreSuite) TestConvertJSONAndValidationFailures() {
 		Input:  []byte("region,latency\nwest,12\n"),
 		Parser: "csv",
 		Config: parser.Config{Axes: []parser.ColumnSpec{{Source: "missing"}}},
-		Charts: []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: "linear"}},
+		Charts: []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: shared.ScaleLinear}},
 	})
 	s.ErrorContains(err, `--axes column "missing" not found`)
 }
 
 func (s *CoreSuite) TestOperations() {
-	chart := &barchart.Config{Type: "bar", Scale: "linear"}
+	chart := &barchart.Config{Type: "bar", Scale: shared.ScaleLinear}
 	_, err := Convert(ConvertInput{
 		Input:  []byte("region,latency\nwest,nope\n"),
 		Parser: "csv",
@@ -118,7 +118,7 @@ func (s *CoreSuite) TestOperations() {
 }
 
 func (s *CoreSuite) TestConvertBranchErrorsAndAutoDetection() {
-	chart := []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: "linear"}}
+	chart := []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: shared.ScaleLinear}}
 	for _, tc := range []struct {
 		name  string
 		input ConvertInput
@@ -159,7 +159,7 @@ func (s *CoreSuite) TestConvertBranchErrorsAndAutoDetection() {
 }
 
 func (s *CoreSuite) TestConvertIdentifiesInapplicableOptions() {
-	chart := []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: "linear"}}
+	chart := []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: shared.ScaleLinear}}
 	for _, input := range []ConvertInput{
 		{
 			Input:  []byte("BenchmarkFoo-8 100 123 ns/op\n"),
@@ -191,7 +191,7 @@ func (s *CoreSuite) TestConvertIdentifiesInapplicableOptions() {
 }
 
 func (s *CoreSuite) TestConvertBenchmarkFormats() {
-	chart := []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: "linear"}}
+	chart := []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: shared.ScaleLinear}}
 	cases := []struct {
 		name   string
 		parser string
@@ -254,7 +254,7 @@ func (s *CoreSuite) TestConvertGoBenchmarkMetadataIsRequestLocal() {
 				Input:  []byte(tc.input),
 				Parser: "go",
 				Config: parser.Config{GroupPattern: "y", TimeUnit: "ns"},
-				Charts: []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: "linear"}},
+				Charts: []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: shared.ScaleLinear}},
 			})
 			outcomes <- outcome{index: index, dataset: result.Dataset, err: err}
 		}(i)
@@ -277,7 +277,7 @@ func (s *CoreSuite) TestConvertKeepsExplicitSystemMetadata() {
 		Parser:   "go",
 		Config:   parser.Config{GroupPattern: "y", TimeUnit: "ns"},
 		Metadata: Metadata{System: explicit},
-		Charts:   []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: "linear"}},
+		Charts:   []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: shared.ScaleLinear}},
 	})
 
 	s.Require().NoError(err)
@@ -293,7 +293,7 @@ func (s *CoreSuite) TestConvertAutoJSONPathEnvelope() {
 			GroupPattern: "x",
 			Group:        []string{"region"},
 		},
-		Charts: []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: "linear"}},
+		Charts: []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: shared.ScaleLinear}},
 	})
 
 	s.Require().NoError(err)
@@ -302,7 +302,7 @@ func (s *CoreSuite) TestConvertAutoJSONPathEnvelope() {
 }
 
 func (s *CoreSuite) TestConvertReturnsParserLookupError() {
-	chart := []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: "linear"}}
+	chart := []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: shared.ScaleLinear}}
 	saved := parser.Parsers["csv"]
 	delete(parser.Parsers, "csv")
 	s.T().Cleanup(func() { parser.Parsers["csv"] = saved })
@@ -327,7 +327,7 @@ func (s *CoreSuite) TestConvertReturnsChartRuleError() {
 		Input:  []byte("region,latency\nwest,12\n"),
 		Parser: "csv",
 		Config: parser.Config{GroupPattern: "x", Group: []string{"region"}},
-		Charts: []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: "linear"}},
+		Charts: []internalcharts.ChartConfig{&barchart.Config{Type: "bar", Scale: shared.ScaleLinear}},
 	})
 	s.ErrorContains(err, "forced rule failure")
 }

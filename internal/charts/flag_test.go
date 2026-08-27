@@ -19,6 +19,24 @@ func (s *ChartFlagSuite) TestValidateScaleValue() {
 	require.NoError(t, charts.ValidateScaleValue("linear"))
 	require.NoError(t, charts.ValidateScaleValue("LOG"))
 	assert.Error(t, charts.ValidateScaleValue("sqrt"))
+	assert.Error(t, charts.ValidateScaleValue("type=log;axes=x"), "bags are not validated by the string enum")
+}
+
+func (s *ChartFlagSuite) TestScaleFlagDescriptor() {
+	t := s.T()
+	assert.Equal(t, "scale", charts.ScaleFlag.Name)
+	assert.Equal(t, flags.KindString, charts.ScaleFlag.Kind)
+	assert.Equal(t, "linear", charts.ScaleFlag.Default)
+	assert.Equal(t, []string{"linear", "log"}, charts.ScaleFlag.ValidSet)
+	assert.Len(t, charts.ScaleFlag.ObjectFields, 6)
+
+	known := map[string]bool{}
+	for _, field := range charts.ScaleFlag.ObjectFields {
+		known[field.Name] = true
+	}
+	for _, name := range []string{"type", "axes", "base", "baseX", "baseY", "baseZ"} {
+		assert.True(t, known[name], "field %s", name)
+	}
 }
 
 func (s *ChartFlagSuite) TestValidateSymbolSizeValue() {

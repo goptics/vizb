@@ -156,6 +156,42 @@ func (s *RulesSuite) TestStackRequiresLinearScale_SkipWhenLog() {
 	s.Contains(msg, "linear scale")
 }
 
+func (s *RulesSuite) TestStackRequiresLinearScale_KeepWhenLogOnlyOnX() {
+	rule := charts.StackRequiresLinearScale()
+	out, msg := rule(charts.RuleContext{
+		Value: true,
+		Config: map[string]any{
+			"scale": map[string]any{"type": "log", "axes": []any{"x"}},
+		},
+	})
+	s.Equal(flags.Keep, out)
+	s.Empty(msg)
+}
+
+func (s *RulesSuite) TestStackRequiresLinearScale_KeepWhenLinearObject() {
+	rule := charts.StackRequiresLinearScale()
+	out, msg := rule(charts.RuleContext{
+		Value: true,
+		Config: map[string]any{
+			"scale": map[string]any{"type": "linear", "axes": []any{"y"}},
+		},
+	})
+	s.Equal(flags.Keep, out)
+	s.Empty(msg)
+}
+
+func (s *RulesSuite) TestStackRequiresLinearScale_SkipWhenLogObjectOmitsAxes() {
+	rule := charts.StackRequiresLinearScale()
+	out, msg := rule(charts.RuleContext{
+		Value: true,
+		Config: map[string]any{
+			"scale": map[string]any{"type": "log"},
+		},
+	})
+	s.Equal(flags.Skip, out)
+	s.Contains(msg, "linear scale")
+}
+
 func (s *RulesSuite) TestStackRequiresLinearScale_FatalOnWrongContext() {
 	rule := charts.StackRequiresLinearScale()
 	out, msg := rule(struct{}{})
@@ -236,7 +272,7 @@ func (s *RulesSuite) TestApplyRules_EmptyConfigs() {
 
 func (s *RulesSuite) TestApplyRules_NoRulesOnDescriptors() {
 	// A config with no rule-gated keys present is a no-op.
-	raw, err := json.Marshal(barchart.Config{Type: "bar", Scale: "log"})
+	raw, err := json.Marshal(barchart.Config{Type: "bar", Scale: shared.ScaleLog})
 	s.Require().NoError(err)
 
 	cfg, err := charts.Decode("bar", raw)
@@ -330,7 +366,7 @@ func (s *RulesSuite) TestApplyRules_MultipleRulesWorstWins() {
 func (s *RulesSuite) TestApplyRules_StackKeptForXYLinear() {
 	stack := true
 	configs := []charts.ChartConfig{
-		&barchart.Config{Type: "bar", Scale: "linear", Stack: &stack},
+		&barchart.Config{Type: "bar", Scale: shared.ScaleLinear, Stack: &stack},
 	}
 	ctx := charts.RuleContext{Axes: []charts.AxisInfo{{Key: "x"}, {Key: "y"}}}
 
@@ -346,7 +382,7 @@ func (s *RulesSuite) TestApplyRules_StackKeptForXYLinear() {
 func (s *RulesSuite) TestApplyRules_StackSkippedWhenZPresent() {
 	stack := true
 	configs := []charts.ChartConfig{
-		&barchart.Config{Type: "bar", Scale: "linear", Stack: &stack},
+		&barchart.Config{Type: "bar", Scale: shared.ScaleLinear, Stack: &stack},
 	}
 	ctx := charts.RuleContext{Axes: []charts.AxisInfo{{Key: "x"}, {Key: "y"}, {Key: "z"}}}
 
@@ -363,7 +399,7 @@ func (s *RulesSuite) TestApplyRules_StackSkippedWhenZPresent() {
 func (s *RulesSuite) TestApplyRules_StackSkippedOnLogScale() {
 	stack := true
 	configs := []charts.ChartConfig{
-		&barchart.Config{Type: "bar", Scale: "log", Stack: &stack},
+		&barchart.Config{Type: "bar", Scale: shared.ScaleLog, Stack: &stack},
 	}
 	ctx := charts.RuleContext{Axes: []charts.AxisInfo{{Key: "x"}, {Key: "y"}}}
 
@@ -375,6 +411,55 @@ func (s *RulesSuite) TestApplyRules_StackSkippedOnLogScale() {
 
 	got := configs[0].(*barchart.Config)
 	s.Nil(got.Stack)
+}
+
+func (s *RulesSuite) TestApplyRules_StackSkippedWhenLogObjectOnValueAxis() {
+	stack := true
+	configs := []charts.ChartConfig{
+		&barchart.Config{Type: "bar", Scale: shared.Scale{Type: "log", Axes: []string{"y"}}, Stack: &stack},
+	}
+	ctx := charts.RuleContext{Axes: []charts.AxisInfo{{Key: "x"}, {Key: "y"}}}
+
+	warnings, fatal := charts.ApplyRules(ctx, configs)
+	s.Nil(fatal)
+	s.Len(warnings, 1)
+	s.Contains(warnings[0], `"stack" skipped`)
+	s.Nil(configs[0].(*barchart.Config).Stack)
+}
+
+func (s *RulesSuite) TestApplyRules_StackKeptWhenLogObjectOnCategoryAxis() {
+	stack := true
+	configs := []charts.ChartConfig{
+		&barchart.Config{Type: "bar", Scale: shared.Scale{Type: "log", Axes: []string{"x"}}, Stack: &stack},
+	}
+	ctx := charts.RuleContext{Axes: []charts.AxisInfo{{Key: "x"}, {Key: "y"}}}
+
+	warnings, fatal := charts.ApplyRules(ctx, configs)
+	s.Nil(fatal)
+	s.Empty(warnings)
+	got := configs[0].(*barchart.Config)
+	s.Require().NotNil(got.Stack)
+	s.True(*got.Stack)
+}
+
+func (s *RulesSuite) TestApplyRules_StackSkippedWhenHorizontalLogOnX() {
+	stack := true
+	horizontal := true
+	configs := []charts.ChartConfig{
+		&barchart.Config{
+			Type:       "bar",
+			Scale:      shared.Scale{Type: "log", Axes: []string{"x"}},
+			Stack:      &stack,
+			Horizontal: &horizontal,
+		},
+	}
+	ctx := charts.RuleContext{Axes: []charts.AxisInfo{{Key: "x"}, {Key: "y"}}}
+
+	warnings, fatal := charts.ApplyRules(ctx, configs)
+	s.Nil(fatal)
+	s.Len(warnings, 1)
+	s.Contains(warnings[0], `"stack" skipped`)
+	s.Nil(configs[0].(*barchart.Config).Stack)
 }
 
 // --- Excludes3DMode (bar --bg) ---

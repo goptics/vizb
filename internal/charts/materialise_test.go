@@ -1,6 +1,7 @@
 package charts_test
 
 import (
+	"encoding/json"
 	"testing"
 
 	_ "github.com/goptics/vizb/cmd/charts/bar"
@@ -35,10 +36,21 @@ func (s *MaterialiseSuite) materialise(chartType string, seed map[string]any, ov
 func (s *MaterialiseSuite) TestScaleDefault() {
 	// No seed, no override → scale falls back to the descriptor default.
 	got := s.materialise("bar", nil, nil).(*barchart.Config)
-	s.Equal("linear", got.Scale)
+	s.Equal(shared.ScaleLinear, got.Scale)
 	s.Nil(got.ShowLabels)
 	s.Nil(got.Sort)
 	s.Nil(got.BorderRadius)
+}
+
+func (s *MaterialiseSuite) TestScaleObjectSeed() {
+	seed := map[string]any{"scale": map[string]any{"type": "log", "axes": []string{"x"}, "base": 10.0}}
+	got := s.materialise("line", seed, nil).(*linechart.Config)
+	s.Equal("log", got.Scale.Type)
+	s.Equal([]string{"x"}, got.Scale.Axes)
+
+	raw, err := json.Marshal(got.Scale)
+	s.Require().NoError(err)
+	s.JSONEq(`{"type":"log","axes":["x"],"base":10}`, string(raw))
 }
 
 func (s *MaterialiseSuite) TestBarBorderRadiusSeed() {
@@ -53,11 +65,11 @@ func (s *MaterialiseSuite) TestBarBorderRadiusSeed() {
 
 func (s *MaterialiseSuite) TestSeedThenOverride() {
 	seed := map[string]any{"swap": "xyn", "scale": "linear", "sort": sortSeed("asc")}
-	override := &barchart.Config{Swap: "yxn", Scale: "log"}
+	override := &barchart.Config{Swap: "yxn", Scale: shared.ScaleLog}
 	got := s.materialise("bar", seed, override).(*barchart.Config)
 
-	s.Equal("yxn", got.Swap)  // override wins
-	s.Equal("log", got.Scale) // override wins
+	s.Equal("yxn", got.Swap)            // override wins
+	s.Equal(shared.ScaleLog, got.Scale) // override wins
 	s.Require().NotNil(got.Sort)
 	s.Equal("asc", got.Sort.Order) // seed survives where override is empty
 }

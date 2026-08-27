@@ -43,14 +43,18 @@ var BaseChartFlags = []flags.Flag{SwapFlag, SortFlag, LabelsFlag, StatFlag}
 // --- Variable flags: composed by the charts that carry them. ---
 
 var (
+	// ScaleFlag is a hybrid string|bag: --scale log (string) or
+	// --scale type=log;axes=x (unwrapped bag). --chart uses scale=log or
+	// scale={…}; an unwrapped bag there is a hard error. ObjectFields describe
+	// the bag; ValidSet still warn-and-defaults bare linear|log.
 	ScaleFlag = flags.Flag{
-		Name: "scale", Shorthand: "S", Usage: "Value scale (linear, log)",
+		Name: "scale", Shorthand: "S", Usage: "Value scale (linear, log, or type=log;axes=x,y;base=10)",
 		Kind: flags.KindString, Default: "linear", JSONKey: "scale",
-		Validate:   ValidateScaleValue,
-		Encode:     func(v any) any { return strings.ToLower(v.(string)) },
-		Label:      "scale",
-		ValidSet:   []string{"linear", "log"},
-		Normalizer: strings.ToLower,
+		Validate:     ValidateScaleValue,
+		Label:        "scale",
+		ValidSet:     []string{"linear", "log"},
+		Normalizer:   strings.ToLower,
+		ObjectFields: scaleObjectFields(),
 	}
 	StackFlag = flags.Flag{
 		Name: "stack", Usage: "Stack 2D grouped series",
@@ -129,6 +133,18 @@ var (
 		Rule:         []flags.RuleFn{Excludes3DMode()},
 	}
 )
+
+// scaleObjectFields lists the typed fields accepted inside a --scale bag.
+func scaleObjectFields() []flags.ObjectField {
+	return []flags.ObjectField{
+		{Name: "type", Kind: flags.KindString},
+		{Name: "axes", Kind: flags.KindString},
+		{Name: "base", Kind: flags.KindFloat, Encode: EncodeNumber},
+		{Name: "baseX", Kind: flags.KindFloat, Encode: EncodeNumber},
+		{Name: "baseY", Kind: flags.KindFloat, Encode: EncodeNumber},
+		{Name: "baseZ", Kind: flags.KindFloat, Encode: EncodeNumber},
+	}
+}
 
 // bgObjectFields lists the typed style fields accepted inside the --bg object.
 func bgObjectFields() []flags.ObjectField {

@@ -49,7 +49,7 @@ func (s *DatasetSuite) TestDatasetUnmarshalJSONDispatchesByType() {
 
 	s.Equal("bar", ds.Settings[0].ChartType())
 	s.Equal("yxn", s.fieldByName(ds.Settings[0], "Swap"))
-	s.Equal("log", s.fieldByName(ds.Settings[0], "Scale"))
+	s.Equal(shared.ScaleLog, s.fieldByName(ds.Settings[0], "Scale"))
 	showLabels, ok := s.fieldByName(ds.Settings[0], "ShowLabels").(*bool)
 	s.Require().True(ok, "ShowLabels should be *bool, got %T", s.fieldByName(ds.Settings[0], "ShowLabels"))
 	s.Require().NotNil(showLabels)

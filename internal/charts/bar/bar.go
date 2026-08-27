@@ -17,7 +17,7 @@ type Config struct {
 	Type            string               `json:"type"` // always "bar"
 	Swap            string               `json:"swap,omitempty"`
 	Sort            *shared.Sort         `json:"sort,omitempty"`
-	Scale           string               `json:"scale,omitempty"`
+	Scale           shared.Scale         `json:"scale,omitempty"`
 	Stack           *bool                `json:"stack,omitempty"`
 	ShowLabels      *bool                `json:"showLabels,omitempty"`
 	ThreeDRotate    *bool                `json:"threeDRotate,omitempty"`

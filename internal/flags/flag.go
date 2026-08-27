@@ -93,8 +93,9 @@ type Flag struct {
 	// --chart value (or one flag value), not a comma-split list.
 	MultiValue bool
 
-	// ObjectFields: for KindObject flags, the typed fields accepted inside the
-	// object bag (semicolon-separated key=value pairs). Unknown keys are fatal.
+	// ObjectFields: typed fields accepted inside an object bag (semicolon
+	// key=value pairs). Used by KindObject flags and by hybrid KindString flags
+	// that also accept an unwrapped bag (scale). Unknown keys are fatal.
 	ObjectFields []ObjectField
 
 	// --- fatal validation (chart flags): invalid input ⇒ error ---
