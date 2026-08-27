@@ -1667,6 +1667,24 @@ func (s *ServeSuite) TestRequestContractHelpers() {
 
 		s.Nil(validateChartConfigValues(json.RawMessage(`{"scale":"log"}`), "/config"))
 		s.Nil(validateChartConfigValues(json.RawMessage(`{"scale":{"type":"log","axes":["x"]}}`), "/config"))
+		s.Nil(validateChartConfigValues(json.RawMessage(`{"scale":{"type":"log","base":2}}`), "/config"))
+
+		for _, test := range []struct {
+			name string
+			raw  string
+			path string
+			code string
+		}{
+			{name: "scale missing type", raw: `{"scale":{}}`, path: "/config/scale/type", code: "required"},
+			{name: "scale base 0", raw: `{"scale":{"type":"log","base":0}}`, path: "/config/scale/base", code: "exclusive_minimum"},
+		} {
+			s.Run(test.name, func() {
+				err := validateChartConfigValues(json.RawMessage(test.raw), "/config")
+				s.Require().NotNil(err, test.raw)
+				s.Equal(test.path, err.Path)
+				s.Equal(test.code, err.Code)
+			})
+		}
 
 		for _, raw := range []string{
 			`{`,

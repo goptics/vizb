@@ -814,10 +814,8 @@ func validateScaleValue(raw json.RawMessage, path string) *apiValidationError {
 	}
 
 	var fields map[string]json.RawMessage
-	if err := json.Unmarshal(raw, &fields); err != nil {
-		validationErr := bodyValidationError(path, "invalid_type", "scale must be a string or object")
-		return &validationErr
-	}
+	// Scale.UnmarshalJSON already accepted this as an object.
+	_ = json.Unmarshal(raw, &fields)
 	if _, ok := fields["type"]; !ok {
 		validationErr := bodyValidationError(path+"/type", "required", "scale.type is required")
 		return &validationErr
