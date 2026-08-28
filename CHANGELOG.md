@@ -4,6 +4,32 @@ Notable changes to Vizb documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [v0.20.0] - 2026-08-28
+
+### Added
+
+- **api** — Accept per-axis scale object on REST ([#421](https://github.com/goptics/vizb/pull/421))
+- **cli** — Parse --scale bag onto chart Scale ([#418](https://github.com/goptics/vizb/pull/418))
+- **ui** — Add read-only log-scale info hover ([#422](https://github.com/goptics/vizb/pull/422))
+- **ui** — Apply per-axis log scale and logBase ([#419](https://github.com/goptics/vizb/pull/419))
+- **cli** — Show download progress on vizb update ([#411](https://github.com/goptics/vizb/pull/411))
+- **api** — Accept background on BarChartConfig ([#395](https://github.com/goptics/vizb/pull/395))
+- **cli** — Add bar --bg flag with chart object props ([#394](https://github.com/goptics/vizb/pull/394))
+- **ui** — Render bar background onto echarts series ([#396](https://github.com/goptics/vizb/pull/396))
+- **cli** — Split stdin spinner and report collected records ([#390](https://github.com/goptics/vizb/pull/390))
+- **action** — Add optional cmd retries ([#378](https://github.com/goptics/vizb/pull/378))
+
+### Fixed
+
+- **ui** — Restore line canvas zoom and keep horizontal bar slider working ([#426](https://github.com/goptics/vizb/pull/426))
+- **ui** — Restrict line charts to slider-only dataZoom ([#425](https://github.com/goptics/vizb/pull/425))
+- **ui** — Align heatmap visual map with logo green ([#382](https://github.com/goptics/vizb/pull/382))
+- **action** — Skip download when the resolved tag is cached ([#380](https://github.com/goptics/vizb/pull/380))
+
+### Changed
+
+- **ui** — Delete unused helpers and collapse duplicate chart/settings code ([#381](https://github.com/goptics/vizb/pull/381))
+
 # [v0.19.0] - 2026-08-13
 
 ### Added
