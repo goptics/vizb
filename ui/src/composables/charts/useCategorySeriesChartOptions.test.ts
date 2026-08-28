@@ -78,7 +78,7 @@ describe('useCategorySeriesChartOptions — line', () => {
     expect((options.value.tooltip as { trigger?: string }).trigger).toBe('axis')
   })
 
-  it('uses large-series symbol none and dataZoom for wide x axes', () => {
+  it('keeps line dots and dataZoom for wide x axes', () => {
     const many = Array.from({ length: LARGE_X_THRESHOLD + 1 }, (_, i) => `x${i}`)
     const chartData = emptyChartData({
       title: 'wide',
@@ -86,10 +86,18 @@ describe('useCategorySeriesChartOptions — line', () => {
       axisLabels: { x: 'x' },
     })
     const { options } = useCategorySeriesChartOptions(baseConfig({ chartData }), 'line')
-    const series = options.value.series as { symbol?: string; sampling?: string }[]
-    expect(series[0]!.symbol).toBe('none')
-    expect(series[0]!.sampling).toBe('lttb')
-    expect(options.value.dataZoom).toBeDefined()
+    const series = options.value.series as {
+      symbol?: string
+      symbolSize?: number
+      sampling?: string
+      showAllSymbol?: boolean
+    }[]
+    expect(series[0]!.symbol).toBe('circle')
+    expect(series[0]!.symbolSize).toBe(7)
+    expect(series[0]!.sampling).toBeUndefined()
+    expect(series[0]!.showAllSymbol).toBe(true)
+    const dataZoom = options.value.dataZoom as { type: string }[]
+    expect(dataZoom.map((z) => z.type)).toEqual(['inside', 'slider'])
   })
 
   it('omits legend title when y axis label missing', () => {
@@ -203,6 +211,54 @@ describe('useCategorySeriesChartOptions — mixed / value dispatch', () => {
 })
 
 describe('useCategorySeriesChartOptions — remaining branches', () => {
+  it('log-X maps missing simple and grouped values via ?? null', () => {
+    const simple = emptyChartData({
+      title: 'steps',
+      yAxis: [],
+      series: [{ xAxis: '1', values: [], benchmarkId: '' }],
+      axisLabels: { x: 'step' },
+    })
+    const { options } = useCategorySeriesChartOptions(
+      baseConfig({ chartData: simple, scale: { type: 'log', axes: ['x'] } }),
+      'line'
+    )
+    expect((options.value.series as { data: [number, number | null][] }[])[0]!.data).toEqual([
+      [1, null],
+    ])
+
+    const grouped = emptyChartData({
+      title: 'steps',
+      yAxis: ['a', 'b'],
+      series: [{ xAxis: '2', values: [10], benchmarkId: '' }],
+      axisLabels: { x: 'step', y: 'run' },
+    })
+    const { options: g } = useCategorySeriesChartOptions(
+      baseConfig({ chartData: grouped, scale: { type: 'log', axes: ['x'] } }),
+      'line'
+    )
+    const series = g.value.series as { data: [number, number | null][] }[]
+    expect(series[0]!.data).toEqual([[2, 10]])
+    expect(series[1]!.data).toEqual([[2, null]])
+  })
+
+  it('gives scatter log-X inside zoom and line log-X none', () => {
+    const chartData = emptyChartData({
+      title: 'steps',
+      yAxis: [],
+      series: [
+        { xAxis: '1', values: [10], benchmarkId: '' },
+        { xAxis: '2', values: [20], benchmarkId: '' },
+      ],
+      axisLabels: { x: 'step' },
+    })
+    const cfg = baseConfig({ chartData, scale: { type: 'log', axes: ['x'] } })
+    expect(useCategorySeriesChartOptions(cfg, 'line').options.value.dataZoom).toBeUndefined()
+    expect(useCategorySeriesChartOptions(cfg, 'scatter').options.value.dataZoom).toEqual([
+      { type: 'inside', xAxisIndex: 0 },
+      { type: 'inside', yAxisIndex: 0 },
+    ])
+  })
+
   it('smooth x-only lines and large grouped dataZoom', () => {
     const { options } = useCategorySeriesChartOptions(
       baseConfig({ chartData: xOnly(), smooth: true }),
@@ -215,6 +271,7 @@ describe('useCategorySeriesChartOptions — remaining branches', () => {
       series: many.map((x) => ({ xAxis: x, values: [1, 2], benchmarkId: '' })),
     })
     const { options: wide } = useCategorySeriesChartOptions(baseConfig({ chartData }), 'line')
-    expect(wide.value.dataZoom).toBeDefined()
+    const dataZoom = wide.value.dataZoom as { type: string }[]
+    expect(dataZoom.map((z) => z.type)).toEqual(['inside', 'slider'])
   })
 })

@@ -130,6 +130,7 @@ function series0(option: ReturnType<typeof buildMixedAxes2DOptions>) {
     symbol?: string
     symbolSize?: number
     sampling?: string
+    showAllSymbol?: boolean
     itemStyle?: { color?: string }
     label?: { formatter?: (p: { data: [number, number | null] }) => string }
   }
@@ -145,6 +146,50 @@ describe('buildMixedAxes2DOptions', () => {
       [1, 447.38],
     ])
     expect(option.legend).toEqual({ show: false })
+  })
+
+  it('coerces numeric category X to log and uses cross tooltip', () => {
+    const option = buildMixedAxes2DOptions(
+      cfg({
+        scale: { type: 'log', axes: ['x'], base: 2 },
+        chartData: makeMixedChartData({
+          xCategories: ['1', '10'],
+          mixedTuples: [
+            [0, 5],
+            [1, 0],
+          ],
+        }),
+      }),
+      'line'
+    )
+    expect((option.xAxis as { type?: string; logBase?: number }).type).toBe('log')
+    expect((option.xAxis as { logBase?: number }).logBase).toBe(2)
+    expect((option.yAxis as { type?: string }).type).toBe('value')
+    expect(series0(option).data).toEqual([
+      [1, 5],
+      [10, 0],
+    ])
+    expect((option.tooltip as { axisPointer?: { type?: string } }).axisPointer?.type).toBe('cross')
+  })
+
+  it('falls back to the mixed index when log-X lookup is out of range', () => {
+    const option = buildMixedAxes2DOptions(
+      cfg({
+        scale: { type: 'log', axes: ['x'] },
+        chartData: makeMixedChartData({
+          xCategories: ['1'],
+          mixedTuples: [
+            [0, 5],
+            [9, 8],
+          ],
+        }),
+      }),
+      'line'
+    )
+    expect(series0(option).data).toEqual([
+      [1, 5],
+      [9, 8],
+    ])
   })
 
   it('defaults scale to linear when scale ref omitted', () => {
@@ -175,6 +220,7 @@ describe('buildMixedAxes2DOptions', () => {
     expect(series0(line).type).toBe('line')
     expect(series0(line).smooth).toBe(true)
     expect(series0(line).symbolSize).toBe(7)
+    expect(series0(line).showAllSymbol).toBe(true)
   })
 
   it('uses large symbols and dataZoom when categories exceed threshold', () => {
@@ -187,9 +233,12 @@ describe('buildMixedAxes2DOptions', () => {
       'line'
     )
     const s = series0(option)
-    expect(s.symbol).toBe('none')
-    expect(s.sampling).toBe('lttb')
-    expect(option.dataZoom).toBeTruthy()
+    expect(s.symbol).toBe('circle')
+    expect(s.symbolSize).toBe(7)
+    expect(s.sampling).toBeUndefined()
+    expect(s.showAllSymbol).toBe(true)
+    const dataZoom = option.dataZoom as { type: string }[]
+    expect(dataZoom.map((z) => z.type)).toEqual(['inside', 'slider'])
 
     const scatter = buildMixedAxes2DOptions(
       cfg({
@@ -241,6 +290,29 @@ describe('buildMixedAxes2DOptions', () => {
 
   it('uses inside zoom for small category axes', () => {
     const option = buildMixedAxes2DOptions(cfg())
+    expect(option.dataZoom).toEqual([
+      { type: 'inside', xAxisIndex: 0 },
+      { type: 'inside', yAxisIndex: 0 },
+    ])
+  })
+
+  it('omits inside zoom for small mixed line axes', () => {
+    expect(buildMixedAxes2DOptions(cfg(), 'line').dataZoom).toBeUndefined()
+  })
+
+  it('does not reserve the category slider band for mixed scatter log-X', () => {
+    const cats = Array.from({ length: LARGE_X_THRESHOLD + 1 }, (_, i) => String(i + 1))
+    const tuples = cats.map((_, i) => [i, i + 1] as [number, number])
+    const option = buildMixedAxes2DOptions(
+      cfg({
+        scale: { type: 'log', axes: ['x'] },
+        chartData: makeMixedChartData({ xCategories: cats, mixedTuples: tuples }),
+      }),
+      'scatter'
+    )
+    const grid = option.grid as { bottom?: number; containLabel?: boolean }
+    expect(grid.bottom).toBe(28)
+    expect(grid.containLabel).toBe(true)
     expect(option.dataZoom).toEqual([
       { type: 'inside', xAxisIndex: 0 },
       { type: 'inside', yAxisIndex: 0 },
@@ -339,8 +411,19 @@ describe('buildMixedAxes3DOptions', () => {
     )
     expect(option.yAxis3D).toMatchObject({ type: 'log' })
     expect(option.zAxis3D).toMatchObject({ type: 'log' })
+    expect(option.yAxis3D).toMatchObject({ logBase: 10 })
     expect(seriesList(option)).toEqual([])
     expect(option.visualMap).toBeTruthy()
+  })
+
+  it('logs mixed 3D y only when axes is y', () => {
+    const option = buildMixedAxes3DOptions(
+      mixed3dConfig({ scale: { type: 'log', axes: ['y'] } }),
+      'scatter3D'
+    )
+    expect(option.yAxis3D).toMatchObject({ type: 'log' })
+    expect(option.zAxis3D).toMatchObject({ type: 'value' })
+    expect(option.xAxis3D).toMatchObject({ type: 'category' })
   })
 
   it('omits itemStyle on scatter/bar when visualMap on', () => {

@@ -71,7 +71,7 @@ func (s *MigrateExternalSuite) TestMigrateDatasetV0120Settings() {
 	barCfg, ok := ds.Settings[0].(*bar.Config)
 	s.Require().True(ok, "settings[0] = %T, want *bar.Config", ds.Settings[0])
 	s.Equal("bar", barCfg.Type)
-	s.Equal("log", barCfg.Scale)
+	s.Equal(shared.ScaleLog, barCfg.Scale)
 	s.Require().NotNil(barCfg.Sort)
 	s.True(barCfg.Sort.Enabled)
 	s.Equal("desc", barCfg.Sort.Order)
@@ -82,7 +82,7 @@ func (s *MigrateExternalSuite) TestMigrateDatasetV0120Settings() {
 	lineCfg, ok := ds.Settings[1].(*line.Config)
 	s.Require().True(ok, "settings[1] = %T, want *line.Config", ds.Settings[1])
 	s.Equal("line", lineCfg.Type)
-	s.Equal("log", lineCfg.Scale)
+	s.Equal(shared.ScaleLog, lineCfg.Scale)
 
 	// Axes derived from data points: XAxis and YAxis are non-empty, ZAxis is empty.
 	s.Require().Len(ds.Axes, 2)
@@ -190,7 +190,7 @@ func (s *MigrateExternalSuite) TestBuildLegacyConfigPerChartFieldAssignment() {
 		cfg := mustBuildLegacyConfig(s.T(), "bar", shared.Sort{Enabled: true, Order: "asc"}, true, "")
 		barCfg, ok := cfg.(*bar.Config)
 		s.Require().True(ok, "cfg = %T, want *bar.Config", cfg)
-		s.Equal("linear", barCfg.Scale)
+		s.Equal(shared.ScaleLinear, barCfg.Scale)
 		s.True(barCfg.Sort.Enabled)
 		s.Equal("asc", barCfg.Sort.Order)
 		s.Require().NotNil(barCfg.ShowLabels)

@@ -70,6 +70,76 @@ func (s *FlagBagSuite) TestScaleWarnDefault() {
 		testutil.CaptureStderr(func() { bag.Validate(cmd) })
 		s.Equal("linear", bag.String("scale"))
 	})
+	s.Run("nested colon log:axes=x is not a bag", func() {
+		cmd, bag := s.newCmdBag(append(slices.Clone(DataFlags), internal_charts.ScaleFlag))
+		s.Require().NoError(cmd.Flags().Set("scale", "log:axes=x"))
+		testutil.CaptureStderr(func() { bag.Validate(cmd) })
+		s.Equal("linear", bag.String("scale"))
+	})
+}
+
+func (s *FlagBagSuite) TestScaleBagSeed() {
+	fl := append(slices.Clone(DataFlags), internal_charts.ScaleFlag)
+
+	s.Run("bare log stays a string", func() {
+		cmd, bag := s.newCmdBag(fl)
+		s.Require().NoError(cmd.Flags().Set("scale", "log"))
+		bag.Validate(cmd)
+		s.Equal("log", bag.ChartSeed(cmd)["scale"])
+	})
+	s.Run("type=log with no axes stays a string", func() {
+		cmd, bag := s.newCmdBag(fl)
+		s.Require().NoError(cmd.Flags().Set("scale", "type=log"))
+		bag.Validate(cmd)
+		s.Equal("log", bag.ChartSeed(cmd)["scale"])
+	})
+	s.Run("axes bag encodes an object", func() {
+		cmd, bag := s.newCmdBag(fl)
+		s.Require().NoError(cmd.Flags().Set("scale", "type=log;axes=x"))
+		bag.Validate(cmd)
+		s.Equal(map[string]any{
+			"type": "log",
+			"axes": []string{"x"},
+			"base": 10.0,
+		}, bag.ChartSeed(cmd)["scale"])
+	})
+	s.Run("unknown axis warns and skips", func() {
+		cmd, bag := s.newCmdBag(fl)
+		s.Require().NoError(cmd.Flags().Set("scale", "type=log;axes=x,q"))
+		bag.Validate(cmd)
+		var seed map[string]any
+		out := testutil.CaptureStderr(func() { seed = bag.ChartSeed(cmd) })
+		s.Contains(out, "Invalid scale axis")
+		s.Equal(map[string]any{
+			"type": "log",
+			"axes": []string{"x"},
+			"base": 10.0,
+		}, seed["scale"])
+	})
+	s.Run("invalid base warns and defaults", func() {
+		cmd, bag := s.newCmdBag(fl)
+		s.Require().NoError(cmd.Flags().Set("scale", "type=log;axes=x;base=1"))
+		bag.Validate(cmd)
+		var seed map[string]any
+		out := testutil.CaptureStderr(func() { seed = bag.ChartSeed(cmd) })
+		s.Contains(out, "Invalid scale base")
+		s.Equal(map[string]any{
+			"type": "log",
+			"axes": []string{"x"},
+			"base": 10.0,
+		}, seed["scale"])
+	})
+}
+
+func (s *FlagBagSuite) TestScaleBagUnknownKeyIsFatal() {
+	fl := append(slices.Clone(DataFlags), internal_charts.ScaleFlag)
+	cmd, bag := s.newCmdBag(fl)
+	s.Require().NoError(cmd.Flags().Set("scale", "type=log;foo=1"))
+
+	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
+	defer restore()
+	s.Panics(func() { bag.Validate(cmd) })
+	s.True(*exitCalled)
 }
 
 func (s *FlagBagSuite) TestParseConfigMapsSelectGrouped() {

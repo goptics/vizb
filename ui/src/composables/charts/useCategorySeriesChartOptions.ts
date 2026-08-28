@@ -4,16 +4,19 @@ import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
 import { getNextColorFor, hasXAxis } from '@/lib/utils'
 import {
   createAxisConfig,
-  createDataZoomConfig,
   createGridConfig,
+  createValueModeGridConfig,
   createLabelConfig,
   createLegendConfig,
   createPinnedAxisTooltip,
   createTooltipConfig,
+  createValueAxisConfig,
+  createValueModeTooltip,
   getChartStyling,
   isLargeXAxis,
   makeLegendTitle,
   LARGE_DATA_THRESHOLD,
+  resolveCartesianDataZoom,
   scatterSeriesLargeOpts,
 } from './shared/chartConfig'
 import {
@@ -22,6 +25,7 @@ import {
   resolveLogScale,
   computeSeriesTotals,
 } from './shared/common'
+import { asLogXPairs, axisIsLog, axisLogBase, numericLogXValues, parseScale } from '@/lib/scale'
 import { resolveSeriesSymbol } from './shared/seriesConfig'
 import { resolve2DScatterVisualMap } from './shared/visualMap'
 import { buildValueAxes2DOptions } from './shared/valueMode'
@@ -33,13 +37,13 @@ const SERIES_STYLE: Record<
   CategorySeriesKind,
   {
     defaultSymbol: { symbol: 'circle'; symbolSize: number }
-    largeSymbol: { symbol: 'circle' | 'none'; symbolSize?: number; sampling?: 'lttb' }
+    largeSymbol: { symbol: 'circle'; symbolSize: number }
     connectNulls?: true
   }
 > = {
   line: {
     defaultSymbol: { symbol: 'circle', symbolSize: 7 },
-    largeSymbol: { symbol: 'none', sampling: 'lttb' },
+    largeSymbol: { symbol: 'circle', symbolSize: 7 },
     connectNulls: true,
   },
   scatter: {
@@ -48,15 +52,21 @@ const SERIES_STYLE: Record<
   },
 }
 
-const groupedScatterColorValues = (seriesList: { data: (number | null)[] }[]): number[] => {
+type SeriesPoint = number | null | [number, number | null]
+
+const groupedScatterColorValues = (seriesList: { data: SeriesPoint[] }[]): number[] => {
   const vals: number[] = []
   for (const s of seriesList) {
     for (const v of s.data) {
-      if (v != null && isFinite(v)) vals.push(v)
+      const n = Array.isArray(v) ? v[1] : v
+      if (n != null && isFinite(n)) vals.push(n)
     }
   }
   return vals
 }
+
+const logYValue = (val: number | null, yLog: boolean): number | null =>
+  adjustForLogScaleLine(val, yLog ? 'log' : 'linear')
 
 export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: CategorySeriesKind) {
   const { chartData, sort, isDark, showLabels, scale, stack, visualMap } = config
@@ -74,12 +84,31 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
     const { series, xAxisData, hasYAxis } = sortedData.value
     const baseOptions = getBaseOptions(config)
     const styling = getChartStyling(isDark.value)
+    const parsed = parseScale(scale?.value)
+    const xWant = axisIsLog(parsed, 'x', ['y'])
+    const yWant = axisIsLog(parsed, 'y', ['y'])
     const yScale = resolveLogScale(
-      scale?.value ?? 'linear',
+      yWant ? 'log' : 'linear',
       series.flatMap((s) => s.values)
     )
+    const yLog = yScale === 'log'
+    const xNums = numericLogXValues(xAxisData, xWant)
+    const coerceX = xNums !== null
     const largeX = isLargeXAxis(xAxisData)
     const xLabel = chartData.value.axisLabels?.x
+    const yLogBase = axisLogBase(parsed, 'y')
+    const groupedAxes = coerceX
+      ? createValueAxisConfig(styling, xLabel, undefined, yScale, true, {
+          xScale: 'log',
+          xLogBase: axisLogBase(parsed, 'x'),
+          yLogBase,
+        })
+      : createAxisConfig(styling, xAxisData, yScale, xLabel, largeX, true, yLogBase)
+    const zoom = resolveCartesianDataZoom(kind, {
+      numericX: coerceX,
+      largeX,
+      styling,
+    })
     const seriesExtras = resolveSeriesSymbol(
       largeX ? style.largeSymbol : style.defaultSymbol,
       config.symbol?.value,
@@ -93,22 +122,30 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
       const singleSeries = {
         name: chartData.value.title,
         type: kind,
-        data: series.map((s) => adjustForLogScaleLine(s.values[0] ?? null, yScale)),
+        data: xNums
+          ? asLogXPairs(
+              xNums,
+              series.map((s) => s.values[0] ?? null),
+              yLog
+            )
+          : series.map((s) => logYValue(s.values[0] ?? null, yLog)),
         label: createLabelConfig(showLabels.value, styling),
         ...(kind === 'scatter'
           ? scatterSeriesLargeOpts(useVisualMap)
           : { large: true as const, largeThreshold: LARGE_DATA_THRESHOLD }),
         ...(style.connectNulls ? { connectNulls: true } : {}),
-        ...(kind === 'line' ? { smooth: smoothLines } : {}),
+        ...(kind === 'line' ? { smooth: smoothLines, showAllSymbol: true as const } : {}),
         ...(useVisualMap ? {} : { itemStyle: { color: getNextColorFor(chartData.value.title) } }),
         ...seriesExtras,
       }
       return {
         ...baseOptions,
-        grid: createGridConfig(1, largeX),
-        tooltip: createPinnedAxisTooltip(isDark.value),
-        ...createAxisConfig(styling, xAxisData, yScale, xLabel, largeX, true),
-        ...(largeX ? { dataZoom: createDataZoomConfig(xAxisData, styling) } : {}),
+        grid: createValueModeGridConfig(zoom.hasXSlider),
+        tooltip: coerceX
+          ? createValueModeTooltip(isDark.value, xLabel, chartData.value.axisLabels?.y, true)
+          : createPinnedAxisTooltip(isDark.value),
+        ...groupedAxes,
+        ...(zoom.dataZoom ? { dataZoom: zoom.dataZoom } : {}),
         legend: { show: false },
         visualMap: resolve2DScatterVisualMap(
           useVisualMap,
@@ -124,14 +161,25 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
     const transposedSeries = yAxisLabels.map((yAxisLabel, yIndex) => ({
       name: yAxisLabel,
       type: kind,
-      data: series.map((s) => adjustForLogScaleLine(s.values[yIndex] ?? null, yScale)),
+      data: xNums
+        ? asLogXPairs(
+            xNums,
+            series.map((s) => s.values[yIndex] ?? null),
+            yLog
+          )
+        : series.map((s) => logYValue(s.values[yIndex] ?? null, yLog)),
       label: createLabelConfig(showLabels.value, styling),
       ...(kind === 'scatter'
         ? scatterSeriesLargeOpts(useVisualMap)
         : { large: true as const, largeThreshold: LARGE_DATA_THRESHOLD }),
       ...(style.connectNulls ? { connectNulls: true } : {}),
       ...(kind === 'line'
-        ? { smooth: smoothLines, stack: useStack ? 'total' : null, areaStyle: useStack ? {} : null }
+        ? {
+            smooth: smoothLines,
+            stack: useStack ? 'total' : null,
+            areaStyle: useStack ? {} : null,
+            showAllSymbol: true as const,
+          }
         : {}),
       ...(useVisualMap ? {} : { itemStyle: { color: getNextColorFor(yAxisLabel) } }),
       ...seriesExtras,
@@ -144,16 +192,20 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
     return {
       ...baseOptions,
       ...(yLabel ? { title: makeLegendTitle(yLabel, styling) } : {}),
-      grid: createGridConfig(transposedSeries.length, largeX),
+      grid: createGridConfig(transposedSeries.length, zoom.hasXSlider, !!yLabel),
       visualMap: resolve2DScatterVisualMap(
         useVisualMap,
         groupedScatterColorValues(transposedSeries),
         styling,
         1
       ),
-      tooltip: createTooltipConfig(showXBreakdown, isDark.value, seriesTotals),
-      ...createAxisConfig(styling, xAxisData, yScale, xLabel, largeX, true),
-      ...(largeX ? { dataZoom: createDataZoomConfig(xAxisData, styling) } : {}),
+      tooltip: coerceX
+        ? transposedSeries.length <= 1
+          ? createValueModeTooltip(isDark.value, xLabel, yLabel, true)
+          : createTooltipConfig(showXBreakdown, isDark.value, seriesTotals, 'line')
+        : createTooltipConfig(showXBreakdown, isDark.value, seriesTotals),
+      ...groupedAxes,
+      ...(zoom.dataZoom ? { dataZoom: zoom.dataZoom } : {}),
       legend: createLegendConfig(
         transposedSeries.map((s) => ({ xAxis: s.name })),
         styling,

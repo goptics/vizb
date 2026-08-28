@@ -389,6 +389,38 @@ describe('useSettingsStore', () => {
     expect(themeName.value).toBe('ocean')
   })
 
+  it('setScale preserves object log extras when toggling type', async () => {
+    const spec = { type: 'log' as const, axes: ['x'] as ['x'], baseX: 5, baseY: 10 }
+    holder.ref = ref(ds([{ type: 'line', scale: { ...spec } } as ChartConfig]))
+    const { useSettingsStore } = await import('./useSettingsStore')
+    const { activeConfig, setScale } = useSettingsStore()
+
+    setScale('log')
+    expect((activeConfig.value as { scale?: unknown }).scale).toEqual(spec)
+
+    setScale('linear')
+    expect((activeConfig.value as { scale?: unknown }).scale).toEqual({
+      ...spec,
+      type: 'linear',
+    })
+
+    setScale('log')
+    expect((activeConfig.value as { scale?: unknown }).scale).toEqual(spec)
+  })
+
+  it('setStack preserves object log extras when forcing linear', async () => {
+    const spec = { type: 'log' as const, axes: ['x'] as ['x'], base: 10 }
+    holder.ref = ref(ds([{ type: 'bar', scale: { ...spec } } as ChartConfig]))
+    const { useSettingsStore } = await import('./useSettingsStore')
+    const { activeConfig, setStack } = useSettingsStore()
+    setStack(true)
+    expect((activeConfig.value as { stack?: boolean }).stack).toBe(true)
+    expect((activeConfig.value as { scale?: unknown }).scale).toEqual({
+      ...spec,
+      type: 'linear',
+    })
+  })
+
   it('setStack without enabling keeps scale when stack is false', async () => {
     holder.ref = ref(
       ds([{ type: 'bar', sort: { enabled: false, order: 'asc' }, scale: 'log' } as ChartConfig])

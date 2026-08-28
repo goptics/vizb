@@ -3,7 +3,11 @@ import {
   createAxisConfig,
   createValueAxisConfig,
   createDataZoomConfig,
+  createHorizontalDataZoomConfig,
+  INSIDE_XY_ZOOM,
+  resolveCartesianDataZoom,
   createGridConfig,
+  legendBandPx,
   createTooltipConfig,
   createLabelConfig,
   createValueModeGridConfig,
@@ -92,16 +96,83 @@ describe('createDataZoomConfig', () => {
       expect(entry.start).toBe(0)
       expect(entry.end).toBe(DATAZOOM_INITIAL_END_PERCENT)
       expect(entry.xAxisIndex).toBe(0)
+      expect(entry.yAxisIndex).toEqual([])
       expect(entry.filterMode).toBe('filter')
     }
+    expect(dataZoom.map((z) => z.id)).toEqual(['cartesian-x-inside', 'cartesian-x-slider'])
   })
 
   it('keeps slider chrome and themed boundary labels', () => {
     const slider = createDataZoomConfig(xAxisData, styling).find((z) => z.type === 'slider')
     expect(slider).toMatchObject({
+      id: 'cartesian-x-slider',
       bottom: 34,
       height: 28,
       textStyle: { color: styling.textColor },
+    })
+  })
+})
+
+describe('resolveCartesianDataZoom', () => {
+  const ctx = { styling }
+
+  it.each([
+    { chartType: 'line' as const, numericX: true, largeX: false },
+    { chartType: 'line' as const, numericX: true, largeX: true },
+    { chartType: 'line' as const, numericX: false, largeX: false },
+  ])('omits zoom for line ($numericX numericX, $largeX largeX)', (flags) => {
+    expect(resolveCartesianDataZoom('line', { ...ctx, ...flags })).toEqual({ hasXSlider: false })
+  })
+
+  it('uses inside+slider for large category line axes', () => {
+    const { dataZoom, hasXSlider } = resolveCartesianDataZoom('line', {
+      ...ctx,
+      numericX: false,
+      largeX: true,
+    })
+    expect(hasXSlider).toBe(true)
+    expect(dataZoom).toEqual(createDataZoomConfig([], styling))
+  })
+
+  it.each(['scatter', 'bar'] as const)(
+    'uses inside zoom for %s unless the category axis is large',
+    (chartType) => {
+      for (const flags of [
+        { numericX: true, largeX: false },
+        { numericX: true, largeX: true },
+        { numericX: false, largeX: false },
+      ]) {
+        expect(resolveCartesianDataZoom(chartType, { ...ctx, ...flags })).toEqual({
+          dataZoom: INSIDE_XY_ZOOM,
+          hasXSlider: false,
+        })
+      }
+    }
+  )
+
+  it.each(['scatter', 'bar'] as const)(
+    'adds inside+slider for large category %s axes',
+    (chartType) => {
+      expect(
+        resolveCartesianDataZoom(chartType, { ...ctx, numericX: false, largeX: true })
+      ).toEqual({
+        dataZoom: createDataZoomConfig([], styling),
+        hasXSlider: true,
+      })
+    }
+  )
+
+  it('uses a Y slider for large horizontal bars and does not reserve the X band', () => {
+    expect(
+      resolveCartesianDataZoom('bar', {
+        ...ctx,
+        numericX: false,
+        largeX: true,
+        horizontal: true,
+      })
+    ).toEqual({
+      dataZoom: createHorizontalDataZoomConfig(styling),
+      hasXSlider: false,
     })
   })
 })
@@ -124,6 +195,32 @@ describe('createGridConfig', () => {
 
   it('keeps dataZoom bottom larger than the no-zoom tier', () => {
     expect(createGridConfig(1, true).bottom).toBeGreaterThan(createGridConfig(1, false).bottom)
+  })
+
+  it('uses a compact pixel legend top instead of a percentage', () => {
+    expect(createGridConfig(1).top).toBe(28)
+    expect(createGridConfig(15).top).toBe(28)
+    expect(typeof createGridConfig(2).top).toBe('number')
+  })
+
+  it('adds title space and wrap rows', () => {
+    expect(createGridConfig(2, false, true).top).toBe(48)
+    expect(createGridConfig(16).top).toBe(44)
+    expect(createGridConfig(16, false, true).top).toBe(64)
+  })
+
+  it('keeps slider bottom with compact top when dataZoom is set', () => {
+    const grid = createGridConfig(2, true)
+    expect(grid.top).toBe(28)
+    expect(grid.bottom).toBe(100)
+    expect(grid.containLabel).toBe(false)
+  })
+})
+
+describe('legendBandPx', () => {
+  it('uses the same pixel band as vertical legend top', () => {
+    expect(legendBandPx(2)).toBe(createGridConfig(2).top)
+    expect(legendBandPx(16)).toBe(createGridConfig(16).top)
   })
 })
 
@@ -353,11 +450,27 @@ describe('createHorizontalDataZoomConfig', () => {
     const dz = createHorizontalDataZoomConfig(styling)
     expect(dz).toHaveLength(2)
     expect(dz[0]).toMatchObject({
+      id: 'cartesian-y-inside',
       type: 'inside',
       yAxisIndex: 0,
+      xAxisIndex: [],
       end: DATAZOOM_INITIAL_END_PERCENT,
+      filterMode: 'none',
+      minValueSpan: 1,
+      moveOnMouseWheel: true,
+      zoomOnMouseWheel: false,
     })
-    expect(dz[1]).toMatchObject({ type: 'slider', yAxisIndex: 0 })
+    expect(dz[1]).toMatchObject({
+      id: 'cartesian-y-slider',
+      type: 'slider',
+      yAxisIndex: 0,
+      xAxisIndex: [],
+      right: 20,
+      width: 20,
+      filterMode: 'none',
+      minValueSpan: 1,
+      showDetail: false,
+    })
   })
 })
 
@@ -391,7 +504,8 @@ describe('createHorizontalAxisConfig log + large', () => {
     expect(axes.xAxis.min).toBe('dataMin')
     expect(axes.xAxis.max).toBe('dataMax')
     expect(axes.yAxis.axisLabel.interval).toBe('auto')
-    expect(axes.yAxis.nameGap).toBe(88)
+    expect(axes.yAxis.nameGap).toBe(30)
+    expect(axes.xAxis.name).toBeNull()
   })
 
   it('adds tick margin when no name and no dataZoom', async () => {
@@ -520,6 +634,26 @@ describe('remaining chartConfig branches', () => {
     const html = tooltipSpreadRows([0, 0, 0], false)
     // still returns a block or empty; just invoke
     expect(typeof html).toBe('string')
+  })
+
+  it('createTooltipConfig line pointer and [x, y] pair metrics', () => {
+    const totals = new Map<string, number>([['A', 10]])
+    const tip = createTooltipConfig(true, false, totals, 'line') as {
+      axisPointer?: { type?: string; snap?: boolean }
+      formatter: (p: unknown) => string
+    }
+    expect(tip.axisPointer?.type).toBe('line')
+    expect(tip.axisPointer?.snap).toBe(true)
+    const html = tip.formatter([
+      { name: '1', seriesName: 'A', value: [1, 4], color: '#a00', marker: 'm' },
+      { name: '1', seriesName: 'B', value: [1, 6], color: '#00c', marker: 'n' },
+      { name: '1', seriesName: 'Gap', value: [1, null], color: '#ccc', marker: 'g' },
+    ])
+    expect(html).toContain('A')
+    expect(html).toContain('B')
+    expect(html).not.toContain('Gap')
+    expect(html).toContain('4')
+    expect(html).toContain('6')
   })
 
   it('createTooltipConfig seriesTotals and non-string colors', () => {

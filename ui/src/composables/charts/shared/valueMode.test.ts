@@ -55,6 +55,14 @@ describe('scaleValueTuples', () => {
       [3, 4, 7],
     ])
   })
+
+  it('x-log drops non-positive x and leaves y intact', () => {
+    const tuples: [number, number, number?][] = [
+      [0, 0],
+      [2, -1],
+    ]
+    expect(scaleValueTuples(tuples, 'linear', 'log')).toEqual([[2, -1]])
+  })
 })
 
 function cfg(overrides: BaseConfigOverrides = {}) {
@@ -78,6 +86,7 @@ function seriesOf(option: ReturnType<typeof buildValueAxes2DOptions>) {
     symbol?: string
     symbolSize?: number
     sampling?: string
+    showAllSymbol?: boolean
     itemStyle?: { color?: string }
     label?: { formatter?: (p: { data: [number, number | null, number?] }) => string }
   }
@@ -116,6 +125,28 @@ describe('buildValueAxes2DOptions', () => {
     expect(seriesOf(option).data).toEqual([])
   })
 
+  it('logs X independently and keeps non-positive y', () => {
+    const option = buildValueAxes2DOptions(
+      cfg({
+        chartData: makeValueChartData({
+          valueTuples: [
+            [10, 0],
+            [100, 8],
+          ],
+        }),
+        scale: { type: 'log', axes: ['x'], base: 2 },
+      }),
+      'line'
+    )
+    expect((option.xAxis as { type?: string; logBase?: number }).type).toBe('log')
+    expect((option.xAxis as { logBase?: number }).logBase).toBe(2)
+    expect((option.yAxis as { type?: string }).type).toBe('value')
+    expect(seriesOf(option).data).toEqual([
+      [10, 0],
+      [100, 8],
+    ])
+  })
+
   it('sorts when enabled and scales log y', () => {
     const option = buildValueAxes2DOptions(
       cfg({
@@ -132,9 +163,9 @@ describe('buildValueAxes2DOptions', () => {
       'line'
     )
     expect(seriesOf(option).data).toEqual([
-      [2, 20, undefined],
-      [3, 5, undefined],
-      [1, null, undefined],
+      [2, 20],
+      [3, 5],
+      [1, null],
     ])
   })
 
@@ -168,7 +199,7 @@ describe('buildValueAxes2DOptions', () => {
     expect(s.symbol).toBeUndefined()
   })
 
-  it('applies large scatter/line symbols when point count exceeds threshold', () => {
+  it('shrinks large scatter symbols and keeps line dots when point count exceeds threshold', () => {
     const many = Array.from(
       { length: LARGE_X_THRESHOLD + 1 },
       (_, i) => [i, i + 1] as [number, number]
@@ -184,8 +215,10 @@ describe('buildValueAxes2DOptions', () => {
       'line'
     )
     const ls = seriesOf(line)
-    expect(ls.symbol).toBe('none')
-    expect(ls.sampling).toBe('lttb')
+    expect(ls.symbol).toBe('circle')
+    expect(ls.symbolSize).toBe(7)
+    expect(ls.sampling).toBeUndefined()
+    expect(ls.showAllSymbol).toBe(true)
   })
 
   it('uses default symbols for small scatter/line and honors overrides', () => {
@@ -203,6 +236,16 @@ describe('buildValueAxes2DOptions', () => {
 
     const line = buildValueAxes2DOptions(cfg(), 'line')
     expect(seriesOf(line).symbolSize).toBe(7)
+    expect(seriesOf(line).showAllSymbol).toBe(true)
+    expect(line.dataZoom).toBeUndefined()
+  })
+
+  it('keeps inside zoom on scatter and omits it on value-mode line', () => {
+    expect(buildValueAxes2DOptions(cfg(), 'scatter').dataZoom).toEqual([
+      { type: 'inside', xAxisIndex: 0 },
+      { type: 'inside', yAxisIndex: 0 },
+    ])
+    expect(buildValueAxes2DOptions(cfg(), 'line').dataZoom).toBeUndefined()
   })
 
   it('enables smooth lines and visualMap color dimension from third tuple slot', () => {

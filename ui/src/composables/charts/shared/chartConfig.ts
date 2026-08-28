@@ -11,7 +11,11 @@ export const DATAZOOM_INITIAL_END_PERCENT = 20
 const axisTitleFontSize = 16
 const LOG_AXIS_RANGE = { min: 'dataMin' as const, max: 'dataMax' as const }
 const LINEAR_AXIS_RANGE = { min: null, max: null }
-const valueAxisRange = (scale: ScaleType) => (scale === 'log' ? LOG_AXIS_RANGE : LINEAR_AXIS_RANGE)
+
+const logAxisProps = (scale: ScaleType, logBase = 10) =>
+  scale === 'log'
+    ? { type: 'log' as const, logBase, ...LOG_AXIS_RANGE }
+    : { type: 'value' as const, ...LINEAR_AXIS_RANGE }
 
 // Bottom chrome for heatmap / correlation — visualMap always, dataZoom when len > 50.
 export const HEATMAP_VISUAL_MAP_BOTTOM = 8
@@ -81,6 +85,11 @@ export function isLargeXAxis(xAxisData: string[]): boolean {
 // above it the optimized path keeps a 100k-point dataset's draw on one frame.
 export const LARGE_DATA_THRESHOLD = 2000
 
+export const INSIDE_XY_ZOOM = [
+  { type: 'inside' as const, xAxisIndex: 0 },
+  { type: 'inside' as const, yAxisIndex: 0 },
+]
+
 // ECharts skips visualMap on scatter when `large` is on — disable it for gradient mode.
 export function scatterSeriesLargeOpts(useVisualMap: boolean) {
   return useVisualMap
@@ -135,8 +144,10 @@ export function createDataZoomConfig(_xAxisData: string[], styling: ChartStyling
   const end = DATAZOOM_INITIAL_END_PERCENT
   return [
     {
+      id: 'cartesian-x-inside',
       type: 'inside',
       xAxisIndex: 0,
+      yAxisIndex: [],
       start: 0,
       end,
       filterMode: 'filter',
@@ -145,10 +156,13 @@ export function createDataZoomConfig(_xAxisData: string[], styling: ChartStyling
     // name, which is pushed below it via a larger nameGap. Heights coordinated
     // with createGridConfig's fixed px bottom so spacing is stable across sizes.
     // textStyle colors the left/right boundary labels to match the theme text
-    // (ECharts' default gray is too dim in dark mode).
+    // (ECharts' default gray is too dim in dark mode). Distinct ids so
+    // vue-echarts 8 replaceMerges this pair when swapping to a Y slider.
     {
+      id: 'cartesian-x-slider',
       type: 'slider',
       xAxisIndex: 0,
+      yAxisIndex: [],
       start: 0,
       end,
       bottom: 34,
@@ -163,23 +177,60 @@ export function createHorizontalDataZoomConfig(styling: ChartStyling): any[] {
   const end = DATAZOOM_INITIAL_END_PERCENT
   return [
     {
+      id: 'cartesian-y-inside',
       type: 'inside',
       yAxisIndex: 0,
+      xAxisIndex: [],
       start: 0,
       end,
-      filterMode: 'filter',
+      // Viewport the inverted Y list; 'filter' deletes off-window categories
+      // and can empty the plot when the window hits 0 at the slider end.
+      filterMode: 'none',
+      minValueSpan: 1,
+      // Wheel pans the list. Do not zoomLock: ECharts then skips mousewheel
+      // entirely (including pan). zoomOnMouseWheel false keeps the window size.
+      moveOnMouseWheel: true,
+      zoomOnMouseWheel: false,
     },
     {
+      id: 'cartesian-y-slider',
       type: 'slider',
       yAxisIndex: 0,
+      xAxisIndex: [],
       start: 0,
       end,
       right: 20,
       width: 20,
-      filterMode: 'filter',
+      filterMode: 'none',
+      minValueSpan: 1,
+      showDetail: false,
       textStyle: { color: styling.textColor },
     },
   ]
+}
+
+export function resolveCartesianDataZoom(
+  chartType: 'line' | 'scatter' | 'bar',
+  ctx: {
+    numericX: boolean
+    largeX: boolean
+    styling: ChartStyling
+    horizontal?: boolean
+  }
+): { dataZoom?: any[]; hasXSlider: boolean } {
+  if (chartType === 'line') {
+    if (ctx.numericX || !ctx.largeX) {
+      return { hasXSlider: false }
+    }
+    return { dataZoom: createDataZoomConfig([], ctx.styling), hasXSlider: true }
+  }
+  if (ctx.numericX || !ctx.largeX) {
+    return { dataZoom: INSIDE_XY_ZOOM, hasXSlider: false }
+  }
+  if (ctx.horizontal) {
+    return { dataZoom: createHorizontalDataZoomConfig(ctx.styling), hasXSlider: false }
+  }
+  return { dataZoom: createDataZoomConfig([], ctx.styling), hasXSlider: true }
 }
 
 export interface ChartStyling {
@@ -227,26 +278,33 @@ export function hasRotatedXLabels(xAxisData: string[], hasDataZoom = false): boo
   return xAxisData.reduce((acc, cur) => acc + cur.length, 0) > 100
 }
 
+export type ValueAxisScaleOpts = {
+  xScale?: ScaleType
+  xLogBase?: number
+  yLogBase?: number
+}
+
 /** Dual numeric axes for scatter --axes value mode — mirrors createAxisConfig styling. */
 export function createValueAxisConfig(
   styling: ChartStyling,
   xAxisName?: string,
   yAxisName?: string,
   yScale: ScaleType = 'linear',
-  fitYAxisToData = false
+  fitYAxisToData = false,
+  opts?: ValueAxisScaleOpts
 ): { xAxis: any; yAxis: any } {
   const nameStyle = {
     color: styling.textColor,
     fontSize: axisTitleFontSize,
     fontWeight: 'bold' as const,
   }
+  const xScale = opts?.xScale ?? 'linear'
 
   const yAxisConfig: any = {
-    type: yScale === 'log' ? 'log' : 'value',
+    ...logAxisProps(yScale, opts?.yLogBase ?? 10),
     // ECharts 6 moves axis names to avoid label overlap by default. Vizb's
     // nameGap values already reserve their position using the v5 behavior.
     nameMoveOverlap: false,
-    ...valueAxisRange(yScale),
     ...(yAxisName
       ? { name: yAxisName, nameLocation: 'middle', nameGap: 45, nameTextStyle: nameStyle }
       : {}),
@@ -261,7 +319,7 @@ export function createValueAxisConfig(
 
   return {
     xAxis: {
-      type: 'value',
+      ...logAxisProps(xScale, opts?.xLogBase ?? 10),
       nameMoveOverlap: false,
       ...(xAxisName
         ? { name: xAxisName, nameLocation: 'middle', nameGap: 30, nameTextStyle: nameStyle }
@@ -337,12 +395,12 @@ export function createAxisConfig(
   scale: ScaleType = 'linear',
   xAxisName?: string,
   hasDataZoom = false,
-  fitYAxisToData = false
+  fitYAxisToData = false,
+  yLogBase = 10
 ): { xAxis: any; yAxis: any } {
   const yAxisConfig: any = {
-    type: scale === 'log' ? 'log' : 'value',
+    ...logAxisProps(scale, yLogBase),
     nameMoveOverlap: false,
-    ...valueAxisRange(scale),
     inverse: false,
     data: null,
     splitLine: {
@@ -402,10 +460,10 @@ export function createAxisConfig(
   }
 }
 
-/** Bottom band (%) for a horizontal chart legend — mirrors createGridConfig top band. */
-export function horizontalLegendBottom(seriesLength = 1): string {
-  const legendSpace = Math.min(15 + Math.floor((seriesLength - 1) / 15) * 2, 35)
-  return `${legendSpace}%`
+/** Pixel legend band — same size for vertical `grid.top` and horizontal `grid.bottom`. */
+export function legendBandPx(seriesLength = 1, hasLegendTitle = false): number {
+  const extraRows = Math.floor((Math.max(seriesLength, 1) - 1) / 15)
+  return (hasLegendTitle ? 48 : 28) + extraRows * 16
 }
 
 export function createHorizontalAxisConfig(
@@ -413,7 +471,8 @@ export function createHorizontalAxisConfig(
   yAxisData: string[],
   scale: ScaleType = 'linear',
   categoryAxisName?: string,
-  hasDataZoom = false
+  hasDataZoom = false,
+  xLogBase = 10
 ): { xAxis: any; yAxis: any } {
   const axisNameStyle = {
     color: styling.textColor,
@@ -422,11 +481,12 @@ export function createHorizontalAxisConfig(
   }
 
   const xAxisConfig: any = {
-    type: scale === 'log' ? 'log' : 'value',
+    ...logAxisProps(scale, xLogBase),
     nameMoveOverlap: false,
-    ...valueAxisRange(scale),
     inverse: false,
     data: null,
+    // Clear a sticky category-axis title after toggling off horizontal.
+    name: null,
     splitLine: {
       lineStyle: { opacity: styling.opacity },
     },
@@ -451,7 +511,8 @@ export function createHorizontalAxisConfig(
         ? {
             name: categoryAxisName,
             nameLocation: 'middle',
-            nameGap: hasDataZoom ? 88 : 30,
+            // Y slider sits on the right; 88px is the bottom X-slider band.
+            nameGap: 30,
             nameTextStyle: axisNameStyle,
           }
         : {}),
@@ -679,16 +740,30 @@ export function createPinnedAxisTooltip(isDark = false): EChartsOption['tooltip'
   }
 }
 
+/** Metric from a category value or a coerced `[x, y]` pair. */
+export function tooltipMetric(value: unknown): unknown {
+  if (Array.isArray(value)) return value[1]
+  return value
+}
+
+function tooltipHeader(params: { name?: string; value?: unknown }[]): string {
+  const p = params[0]
+  if (Array.isArray(p?.value)) return formatTooltipValue(p.value[0])
+  return p?.name ?? ''
+}
+
 /**
  * Creates common tooltip configuration
  * @param hasXYAxis - Whether the chart has both X and Y axes
  * @param isDark - Dark mode flag for tooltip theming
  * @param seriesTotals - Per-series totals across all x, appended after each name
+ * @param pointer - Category band (`shadow`) or continuous-X snap line
  */
 export function createTooltipConfig(
   hasXYAxis: boolean,
   isDark = false,
-  seriesTotals?: Map<string, number>
+  seriesTotals?: Map<string, number>,
+  pointer: 'shadow' | 'line' = 'shadow'
 ): EChartsOption['tooltip'] {
   const theme = getTooltipTheme(isDark)
   const styling = getChartStyling(isDark)
@@ -696,41 +771,49 @@ export function createTooltipConfig(
   if (hasXYAxis) {
     return {
       trigger: 'axis',
-      axisPointer: createShadowAxisPointer(styling, theme),
+      axisPointer:
+        pointer === 'line'
+          ? createLineAxisPointer(styling, theme, true)
+          : createShadowAxisPointer(styling, theme),
       ...theme,
       formatter: (params) => {
         if (!Array.isArray(params)) return ''
 
         // null = missing cell (no data for that series at this category) — skip from tooltip
-        const present = params.filter((p) => p.value !== null && p.value !== undefined)
+        const present = params.filter((p) => {
+          const metric = tooltipMetric(p.value)
+          return metric !== null && metric !== undefined
+        })
         if (!present.length) return ''
 
         const legendRows = present.map((cur) => {
           const seriesSum = seriesTotals?.get(cur.seriesName ?? '')
           const sumTag = seriesSum === undefined ? '' : ` (Σ${formatChartNumber(seriesSum)})`
-          return `${cur.marker} ${cur.seriesName}${sumTag}: ${formatTooltipValue(cur.value)}`
+          return `${cur.marker} ${cur.seriesName}${sumTag}: ${formatTooltipValue(tooltipMetric(cur.value))}`
         })
-        const body = `<strong>${params[0]?.name}</strong><br/>${renderTooltipLegendColumns(legendRows)}`
+        const header = tooltipHeader(params)
+        const body = `<strong>${header}</strong><br/>${renderTooltipLegendColumns(legendRows)}`
 
         // Σ across all series at this x = the x marginal. Label with the x name
         // to match the 3D tooltip's "Σ <name>" lines. Only meaningful with >1 series.
         if (present.length <= 1) return body
-        const total = present.reduce(
-          (sum, cur) => sum + (typeof cur.value === 'number' ? cur.value : 0),
+        const metrics = present.map((p) => tooltipMetric(p.value))
+        const total = metrics.reduce<number>(
+          (sum, cur) => sum + (typeof cur === 'number' ? cur : 0),
           0
         )
-        const xName = params[0]?.name ?? ''
-        const sumLine = `${tooltipDivider(isDark)}Σ ${xName}: <b>${formatChartNumber(total)}</b>`
+        const sumLine = `${tooltipDivider(isDark)}Σ ${header}: <b>${formatChartNumber(total)}</b>`
         const spread = tooltipSpreadRows(
-          present.map((p) => (typeof p.value === 'number' ? p.value : NaN)),
+          metrics.map((v) => (typeof v === 'number' ? v : NaN)),
           isDark
         )
         const donut = renderDonutSvg(
           params.flatMap((p) => {
-            if (typeof p.value !== 'number') return []
+            const value = tooltipMetric(p.value)
+            if (typeof value !== 'number') return []
             return [
               {
-                value: p.value,
+                value,
                 color: typeof p.color === 'string' ? p.color : String(p.color),
                 name: p.seriesName ?? '',
               },
@@ -797,6 +880,7 @@ export function createLegendConfig(
 // (the y group on 2D bar/line). ECharts legends have no native title.
 export function makeLegendTitle(text: string, styling: ChartStyling): any {
   return {
+    show: true,
     text,
     left: 'center',
     top: 0,
@@ -807,7 +891,7 @@ export function makeLegendTitle(text: string, styling: ChartStyling): any {
 // Fixed px (not %) so the plot area stays predictable across card heights.
 const SERIES_TICK_BAND = 28 // series names on the x axis (no slider)
 
-/** Value-mode charts hide the legend — skip the legend % top band (see heatmap). */
+/** Value-mode charts hide the legend — skip the legend top band (see heatmap). */
 export const VALUE_MODE_GRID_TOP = 8
 
 export function createValueModeGridConfig(hasDataZoom = false): any {
@@ -817,8 +901,12 @@ export function createValueModeGridConfig(hasDataZoom = false): any {
   }
 }
 
-export function createGridConfig(seriesLength = 1, hasDataZoom = false): any {
-  const legendSpace = Math.min(15 + Math.floor((seriesLength - 1) / 15) * 2, 35)
+export function createGridConfig(
+  seriesLength = 1,
+  hasDataZoom = false,
+  hasLegendTitle = false
+): any {
+  const top = legendBandPx(seriesLength, hasLegendTitle)
 
   // With a dataZoom slider we turn containLabel OFF and reserve label space in
   // fixed px. containLabel pins both the tick labels and the axis name to the
@@ -831,7 +919,7 @@ export function createGridConfig(seriesLength = 1, hasDataZoom = false): any {
       left: 55,
       right: 24,
       bottom: 100,
-      top: `${legendSpace}%`,
+      top,
       containLabel: false,
       outerBoundsMode: 'none',
     }
@@ -843,7 +931,7 @@ export function createGridConfig(seriesLength = 1, hasDataZoom = false): any {
     left: '3%',
     right: '3%',
     bottom: SERIES_TICK_BAND,
-    top: `${legendSpace}%`,
+    top,
     containLabel: true,
     outerBoundsMode: 'none',
   }

@@ -14,8 +14,9 @@ import type {
   SortOrder,
   Render3D,
   Series3DData,
-  ScaleType,
+  ScaleInput,
 } from '../types'
+import { axisIsLog, parseScale } from './scale'
 import {
   arrangementHasChartZ,
   sourceFieldForChartAxis,
@@ -153,7 +154,7 @@ export function buildChartForSignature(
   labels: AxisLabels | undefined,
   sort: Sort,
   showLabels = false,
-  scale: ScaleType = 'linear',
+  scale: ScaleInput = 'linear',
   canonical?: CanonicalAxisOrders,
   threeD = false,
   preserveRows = false
@@ -241,15 +242,13 @@ export function valuePoints3DToSeries(points: ValuePoint3D[], title: string): Se
 export function buildValueMode3DRender(
   points: ValuePoint3D[],
   title: string,
-  showLabels = false,
-  scale: ScaleType = 'linear'
+  showLabels = false
 ): Render3D {
-  const filtered = scale === 'log' ? points.filter(([x, y, z]) => x > 0 && y > 0 && z > 0) : points
-  const withMetric = (filtered[0]?.length ?? 0) >= 4
-  const seriesData = valuePoints3DToSeries(filtered, title)[0]!.data
+  const withMetric = (points[0]?.length ?? 0) >= 4
+  const seriesData = valuePoints3DToSeries(points, title)[0]!.data
   const cellTotals: Record<string, number> = {}
   if (showLabels) {
-    filtered.forEach((p, i) => {
+    points.forEach((p, i) => {
       const labelVal = withMetric && p[3] !== undefined ? p[3] : p[2]
       cellTotals[String(i)] = labelVal as number
     })
@@ -274,11 +273,17 @@ export function buildValueModeChart(
   axes: Axis[],
   identityString?: string,
   targetString?: string,
-  opts?: { scale?: ScaleType; showLabels?: boolean; threeD?: boolean }
+  opts?: { scale?: ScaleInput; showLabels?: boolean; threeD?: boolean }
 ): ChartData {
   const identity = identityString ?? identityStringFromAxes(axes)
   const target = targetString ?? identity
   const scale = opts?.scale ?? 'linear'
+  const parsed = parseScale(scale)
+  const xyz = ['x', 'y', 'z'] as const
+  const xLog3d = axisIsLog(parsed, 'x', xyz)
+  const yLog3d = axisIsLog(parsed, 'y', xyz)
+  const zLog3d = axisIsLog(parsed, 'z', xyz)
+  const yLog2d = axisIsLog(parsed, 'y', ['y'])
   const baseLabels = axisLabelsFromAxes(axes)
   const labels = { ...swapAxisLabels(identity, target, baseLabels)! }
   const use3D = (opts?.threeD ?? true) && arrangementHasChartZ(target)
@@ -295,7 +300,7 @@ export function buildValueModeChart(
       const cy = coords.yAxis
       const cz = coords.zAxis
       if (cx === undefined || cy === undefined || cz === undefined) continue
-      if (scale === 'log' && (cx <= 0 || cy <= 0 || cz <= 0)) continue
+      if ((xLog3d && cx <= 0) || (yLog3d && cy <= 0) || (zLog3d && cz <= 0)) continue
       const metricRaw = row.metric
       const metricNum = metricRaw !== undefined && metricRaw !== '' ? Number(metricRaw) : undefined
       if (metricNum !== undefined && isFinite(metricNum)) {
@@ -307,7 +312,7 @@ export function buildValueModeChart(
       const cx = coords.xAxis
       const cy = coords.yAxis
       if (cx === undefined || cy === undefined) continue
-      if (scale === 'log' && cy <= 0) continue
+      if (yLog2d && cy <= 0) continue
 
       let colorDim: number | undefined
       const metricRaw = row.metric
@@ -343,7 +348,7 @@ export function buildValueModeChart(
   }
 
   if (use3D && valuePoints3D.length) {
-    chart.render3D = buildValueMode3DRender(valuePoints3D, title, opts?.showLabels ?? false, scale)
+    chart.render3D = buildValueMode3DRender(valuePoints3D, title, opts?.showLabels ?? false)
   }
 
   return chart
@@ -357,7 +362,7 @@ export const mixedModeHasZ = (axes: Axis[]): boolean =>
 export function buildMixedModeChart(
   data: DataPoint[],
   axes: Axis[],
-  opts?: { scale?: ScaleType; showLabels?: boolean }
+  opts?: { scale?: ScaleInput; showLabels?: boolean }
 ): ChartData {
   const scale = opts?.scale ?? 'linear'
   const labels = axisLabelsFromAxes(axes)
@@ -365,6 +370,9 @@ export function buildMixedModeChart(
   const yLabel = labels.y ?? 'y'
   const zLabel = labels.z ?? 'z'
   const use3D = mixedModeHasZ(axes)
+  const parsed = parseScale(scale)
+  const yLog = axisIsLog(parsed, 'y', use3D ? ['y', 'z'] : ['y'])
+  const zLog = axisIsLog(parsed, 'z', ['y', 'z'])
   const title = use3D ? `${xLabel} · ${yLabel} · ${zLabel}` : `${xLabel} vs ${yLabel}`
 
   const xCategories: string[] = []
@@ -388,10 +396,10 @@ export function buildMixedModeChart(
     if (use3D) {
       const z = Number(row.zAxis)
       if (!isFinite(z)) continue
-      if (scale === 'log' && (y <= 0 || z <= 0)) continue
+      if ((yLog && y <= 0) || (zLog && z <= 0)) continue
       points3D.push({ value: [xi, y, z] })
     } else {
-      if (scale === 'log' && y <= 0) continue
+      if (yLog && y <= 0) continue
       mixedTuples.push([xi, y])
     }
   }
@@ -508,7 +516,7 @@ export function build3DRender(
   zAxisAll: string[],
   sort: Sort,
   showLabels = false,
-  scale: ScaleType = 'linear',
+  scale: ScaleInput = 'linear',
   canonical?: CanonicalAxisOrders,
   preserveRows = false
 ): Render3D {
@@ -534,24 +542,24 @@ export function build3DRender(
   // A log z-axis can't plot 0/negative values. bar3D's full 0-filled grid would
   // be invalid, so under log we drop non-positive cells and make bar sparse too
   // (same intent as the 2D log path nulling values <= 0).
-  const isLog = scale === 'log'
+  const zLog = axisIsLog(parseScale(scale), 'z', ['z'])
 
   const barSeries: Series3DData[] = []
   const lineSeries: Series3DData[] = []
   for (const z of zValues) {
     if (preserveRows) {
       const sparse = sparseFromPoints(points, z, xIndex, yIndex)
-      const filtered = isLog ? sparse.filter((d) => (d.value[2] as number) > 0) : sparse
+      const filtered = zLog ? sparse.filter((d) => (d.value[2] as number) > 0) : sparse
       barSeries.push({ name: z, data: filtered })
       lineSeries.push({ name: z, data: filtered })
       continue
     }
 
     const cells = cellsFor(points, z, xIndex, yIndex)
-    if (isLog) for (const [k, v] of cells) if (v <= 0) cells.delete(k)
+    if (zLog) for (const [k, v] of cells) if (v <= 0) cells.delete(k)
     barSeries.push({
       name: z,
-      data: isLog ? sparseFromCells(cells) : gridFromCells(cells, xIndex, yIndex),
+      data: zLog ? sparseFromCells(cells) : gridFromCells(cells, xIndex, yIndex),
     })
     lineSeries.push({ name: z, data: sparseFromCells(cells) })
   }
@@ -592,7 +600,7 @@ export function buildValue3DRender(
   chart: ChartData,
   sort: Sort,
   showLabels = false,
-  scale: ScaleType = 'linear',
+  scale: ScaleInput = 'linear',
   canonical?: CanonicalAxisOrders
 ): Render3D {
   let xValues = chart.series.map((s) => s.xAxis).filter((x) => x.trim() !== '')
@@ -627,10 +635,10 @@ export function buildValue3DRender(
     }
   }
 
-  const isLog = scale === 'log'
-  if (isLog) for (const [k, v] of cells) if (v <= 0) cells.delete(k)
+  const zLog = axisIsLog(parseScale(scale), 'z', ['z'])
+  if (zLog) for (const [k, v] of cells) if (v <= 0) cells.delete(k)
 
-  const barData = isLog ? sparseFromCells(cells) : gridFromCells(cells, xIndex, yIndex)
+  const barData = zLog ? sparseFromCells(cells) : gridFromCells(cells, xIndex, yIndex)
   const lineData = sparseFromCells(cells)
   const seriesName = chart.title
 

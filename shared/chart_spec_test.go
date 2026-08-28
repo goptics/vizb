@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	internal_charts "github.com/goptics/vizb/internal/charts"
 	"github.com/goptics/vizb/internal/flags"
 	"github.com/goptics/vizb/internal/specparse"
 	"github.com/stretchr/testify/suite"
@@ -464,6 +465,100 @@ func (s *ChartSpecSuite) TestParseOverridesBarBgInvalidFields() {
 			s.Contains(err.Error(), c.want)
 		})
 	}
+}
+
+func (s *ChartSpecSuite) TestParseOverridesScaleStringBackCompat() {
+	got, warnings, err := ParseOverrides([]string{"line:scale=log"}, []string{"line"}, s.xynAxes)
+	s.Require().NoError(err)
+	s.Empty(warnings)
+	s.Equal("log", s.payload(got["line"])["scale"])
+}
+
+func (s *ChartSpecSuite) TestParseOverridesScaleBraceTypeOnlyIsString() {
+	got, warnings, err := ParseOverrides(
+		[]string{"line:scale={type=log}"},
+		[]string{"line"},
+		s.xynAxes,
+	)
+	s.Require().NoError(err)
+	s.Empty(warnings)
+	s.Equal("log", s.payload(got["line"])["scale"])
+}
+
+func (s *ChartSpecSuite) TestParseOverridesScaleBraceBag() {
+	got, warnings, err := ParseOverrides(
+		[]string{"line:scale={type=log;axes=x;base=10}"},
+		[]string{"line"},
+		s.xynAxes,
+	)
+	s.Require().NoError(err)
+	s.Empty(warnings)
+	scale, ok := s.payload(got["line"])["scale"].(map[string]any)
+	s.Require().True(ok, "expected scale object")
+	s.Equal("log", scale["type"])
+	s.Equal([]any{"x"}, scale["axes"])
+	s.Equal(float64(10), scale["base"])
+}
+
+func (s *ChartSpecSuite) TestParseOverridesScaleBraceKeepsSiblingSmooth() {
+	got, warnings, err := ParseOverrides(
+		[]string{"line:scale={type=log;axes=x,y;baseX=5;baseY=10};smooth"},
+		[]string{"line"},
+		s.xynAxes,
+	)
+	s.Require().NoError(err)
+	s.Empty(warnings)
+	m := s.payload(got["line"])
+	s.Equal(true, m["smooth"])
+	scale, ok := m["scale"].(map[string]any)
+	s.Require().True(ok, "expected scale object")
+	s.Equal("log", scale["type"])
+	s.Equal([]any{"x", "y"}, scale["axes"])
+	s.Equal(float64(10), scale["base"])
+	s.Equal(float64(5), scale["baseX"])
+	s.Nil(scale["baseY"])
+}
+
+func (s *ChartSpecSuite) TestParseOverridesScaleUnwrappedBagIsError() {
+	_, _, err := ParseOverrides([]string{"line:scale=type=log;axes=x"}, []string{"line"}, s.xynAxes)
+	s.Require().Error(err)
+	s.Contains(err.Error(), "brace-delimited object")
+	s.Contains(err.Error(), "scale={")
+}
+
+func (s *ChartSpecSuite) TestParseOverridesScaleBareIsError() {
+	_, _, err := ParseOverrides([]string{"line:scale"}, []string{"line"}, s.xynAxes)
+	s.Require().Error(err)
+	s.Contains(err.Error(), `key "scale" requires a value`)
+	s.Contains(err.Error(), "scale={type=log;axes=x}")
+}
+
+func (s *ChartSpecSuite) TestParseOverridesScaleBraceUnknownField() {
+	_, _, err := ParseOverrides([]string{"line:scale={nope=1}"}, []string{"line"}, s.xynAxes)
+	s.Require().Error(err)
+	s.Contains(err.Error(), `key "scale"`)
+	s.Contains(err.Error(), "unknown object field")
+}
+
+func (s *ChartSpecSuite) TestParseOverridesScaleInvalidScalar() {
+	_, _, err := ParseOverrides([]string{"line:scale=foo"}, []string{"line"}, s.xynAxes)
+	s.Require().Error(err)
+	s.Contains(err.Error(), `scale value "foo" is invalid`)
+}
+
+func (s *ChartSpecSuite) TestParseOverridesScaleBraceMatchesFlag() {
+	flagPayload := EncodeScaleValue("type=log;axes=x;base=10", internal_charts.ScaleFlag.ObjectFields)
+	got, _, err := ParseOverrides(
+		[]string{"line:scale={type=log;axes=x;base=10}"},
+		[]string{"line"},
+		s.xynAxes,
+	)
+	s.Require().NoError(err)
+	raw, err := json.Marshal(map[string]any{"scale": flagPayload})
+	s.Require().NoError(err)
+	chartRaw, err := json.Marshal(map[string]any{"scale": s.payload(got["line"])["scale"]})
+	s.Require().NoError(err)
+	s.JSONEq(string(raw), string(chartRaw))
 }
 
 func TestChartSpecSuite(t *testing.T) {

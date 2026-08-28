@@ -143,8 +143,8 @@ func (s *RootSuite) TestRunBenchmarkDatasetPassthrough() {
 	testutil.WriteJSON(s.T(), input, shared.Dataset{
 		Name: "Baked",
 		Settings: []internal_charts.ChartConfig{
-			&barchart.Config{Type: "bar", Scale: "log"},
-			&linechart.Config{Type: "line", Scale: "log"},
+			&barchart.Config{Type: "bar", Scale: shared.ScaleLog},
+			&linechart.Config{Type: "line", Scale: shared.ScaleLog},
 		},
 		Data: []shared.DataPoint{{Name: "P1", XAxis: "1", YAxis: "100"}},
 	})
@@ -160,7 +160,7 @@ func (s *RootSuite) TestRunBenchmarkDatasetPassthrough() {
 	s.Equal("line", ds.Settings[1].ChartType())
 	lineCfg, ok := ds.Settings[1].(*linechart.Config)
 	s.Require().True(ok)
-	s.Equal("log", lineCfg.Scale)
+	s.Equal(shared.ScaleLog, lineCfg.Scale)
 }
 
 func (s *RootSuite) TestRunBenchmarkAutoParser() {
@@ -209,7 +209,25 @@ func (s *RootSuite) TestRunBenchmarkScatterChart() {
 
 	scatterCfg, ok := ds.Settings[0].(*scatterchart.Config)
 	s.Require().True(ok)
-	s.Equal("linear", scatterCfg.Scale)
+	s.Equal(shared.ScaleLinear, scatterCfg.Scale)
+}
+
+func (s *RootSuite) TestRunBenchmarkScaleBagChartOverride() {
+	dir := s.T().TempDir()
+	input := testutil.WriteBenchFile(s.T(), dir, "valid.txt",
+		`BenchmarkTest-8    1000000    1234 ns/op    1000 B/op    10 allocs/op`)
+	out := filepath.Join(dir, "out.json")
+	rootCharts = nil
+
+	rootCmd.SetArgs([]string{"-o", out, "-c", "line", "--chart", "line:scale={type=log;axes=x}", input})
+	s.Require().NoError(rootCmd.Execute())
+
+	ds := testutil.ReadDataset(s.T(), out)
+	s.Require().Len(ds.Settings, 1)
+	lineCfg, ok := ds.Settings[0].(*linechart.Config)
+	s.Require().True(ok)
+	s.Equal("log", lineCfg.Scale.Type)
+	s.Equal([]string{"x"}, lineCfg.Scale.Axes)
 }
 
 func (s *RootSuite) TestRunBenchmarkScatterChartOverride() {
@@ -227,7 +245,7 @@ func (s *RootSuite) TestRunBenchmarkScatterChartOverride() {
 
 	scatterCfg, ok := ds.Settings[0].(*scatterchart.Config)
 	s.Require().True(ok)
-	s.Equal("log", scatterCfg.Scale)
+	s.Equal(shared.ScaleLog, scatterCfg.Scale)
 }
 
 func (s *RootSuite) TestBakesDefaultCharts() {

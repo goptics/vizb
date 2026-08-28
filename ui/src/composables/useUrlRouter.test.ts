@@ -357,6 +357,29 @@ describe('useUrlRouter', () => {
     expect(scatter.stack).toBeUndefined()
   })
 
+  it('applies object log sc without flattening extras', async () => {
+    const spec = { type: 'log' as const, axes: ['x'] as ['x'], base: 10 }
+    holder.datasets = ref([ds([{ type: 'line', scale: { ...spec } }])])
+    mockWindow('?line.sc=log')
+    const { useUrlRouter } = await import('./useUrlRouter')
+    await useUrlRouter().initFromUrl()
+
+    const line = holder.datasets.value[0]!.settings[0] as LineConfig
+    expect(line.scale).toEqual(spec)
+  })
+
+  it('syncs object log type to sc without flattening extras', async () => {
+    const spec = { type: 'log' as const, axes: ['x'] as ['x'], base: 10 }
+    holder.datasets = ref([ds([{ type: 'line', scale: { ...spec } }])])
+    const replaceState = mockWindow('')
+    const { useUrlRouter } = await import('./useUrlRouter')
+    useUrlRouter().syncUrlToState()
+
+    const url = String(replaceState.mock.calls[0]?.[2] ?? '')
+    expect(url).toContain('line.sc=log')
+    expect(holder.datasets.value[0]!.settings[0]).toMatchObject({ scale: spec })
+  })
+
   it('uses a linear scale when enabling line stacking', async () => {
     holder.datasets = ref([ds([{ type: 'line', stack: false, scale: 'log' }])])
     mockWindow('?line.st=true')

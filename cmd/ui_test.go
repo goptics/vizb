@@ -258,7 +258,7 @@ func (s *UISuite) TestRunUIFiltersChartsOnExplicitFlag() {
 		Name: "Test",
 		Settings: []internal_charts.ChartConfig{
 			s.barFromJSON(map[string]any{"type": "bar", "scale": "linear"}),
-			&linechart.Config{Type: "line", Scale: "linear"},
+			&linechart.Config{Type: "line", Scale: shared.ScaleLinear},
 		},
 		Data: []shared.DataPoint{{Name: "Test1", XAxis: "1", YAxis: "100"}},
 	})
@@ -288,7 +288,7 @@ func (s *UISuite) TestRunUIPreservesScatterSettingsWithoutChartsFlag() {
 		Settings: []internal_charts.ChartConfig{
 			&scatterchart.Config{
 				Type:            "scatter",
-				Scale:           "linear",
+				Scale:           shared.ScaleLinear,
 				ThreeDRotate:    &threeD,
 				ThreeDVisualMap: &threeDVisualMap,
 			},
@@ -513,7 +513,7 @@ func (s *UISuite) TestRunUIAppliesStatToMultipleChartTypes() {
 		Name: "Test",
 		Settings: []internal_charts.ChartConfig{
 			s.barFromJSON(map[string]any{"type": "bar", "scale": "linear"}),
-			&linechart.Config{Type: "line", Scale: "linear"},
+			&linechart.Config{Type: "line", Scale: shared.ScaleLinear},
 			&piechart.Config{Type: "pie"},
 			&heatmapchart.Config{Type: "heatmap"},
 			&radarchart.Config{Type: "radar"},

@@ -254,7 +254,7 @@ func (s *PipelineSuite) TestRunLinearGeneratesOutputFile() {
 
 	meta := RunMeta{Parser: "go"} // no themes → empty Themes (UI default)
 	cfg := parser.Config{GroupPattern: "y", TimeUnit: "ns", MemUnit: "B"}
-	barCfg := &barchart.Config{Type: "bar", Scale: "linear"}
+	barCfg := &barchart.Config{Type: "bar", Scale: shared.ScaleLinear}
 	configs := []internal_charts.ChartConfig{barCfg}
 
 	s.Run("HTML output", func() {
@@ -288,7 +288,7 @@ func (s *PipelineSuite) TestRunLinearGeneratesOutputFile() {
 		s.Equal("bar", ds.Settings[0].ChartType())
 		typed, ok := ds.Settings[0].(*barchart.Config)
 		s.Require().True(ok, "expected *barchart.Config, got %T", ds.Settings[0])
-		s.Equal("linear", typed.Scale)
+		s.Equal(shared.ScaleLinear, typed.Scale)
 	})
 }
 
@@ -296,7 +296,7 @@ func (s *PipelineSuite) TestRunLinearPreservesCustomTheme() {
 	benchFile := s.writeFile("input.txt", `BenchmarkExample-8    1000000    1234 ns/op    1000 B/op    10 allocs/op`)
 	meta := RunMeta{Parser: "go", ThemeSpecs: []string{"#f00,#00ff00"}}
 	cfg := parser.Config{GroupPattern: "y", TimeUnit: "ns", MemUnit: "B"}
-	barCfg := &barchart.Config{Type: "bar", Scale: "linear"}
+	barCfg := &barchart.Config{Type: "bar", Scale: shared.ScaleLinear}
 	out := filepath.Join(s.T().TempDir(), "custom-theme.json")
 	meta.OutputFile = out
 	RunLinear(&cobra.Command{}, []string{benchFile}, meta, cfg, []internal_charts.ChartConfig{barCfg}, false)
@@ -312,6 +312,42 @@ func (s *PipelineSuite) TestRunLinearPreservesCustomTheme() {
 	s.Require().Len(ds.Themes, 1)
 	s.Equal("custom", ds.Themes[0].Name)
 	s.Equal([]string{"#f00", "#00ff00"}, ds.Themes[0].Colors)
+}
+
+func (s *PipelineSuite) TestChartScaleBagRoundTripsThroughMaterialise() {
+	s.Run("string log", func() {
+		overrides, warnings, err := shared.ParseOverrides(
+			[]string{"line:scale=log"},
+			[]string{"line"},
+			[]shared.Axis{{Key: "x"}, {Key: "y"}},
+		)
+		s.Require().NoError(err)
+		s.Empty(warnings)
+		cfg, err := internal_charts.Materialise("line", nil, overrides["line"])
+		s.Require().NoError(err)
+		typed := cfg.(*linechart.Config)
+		s.Equal(shared.ScaleLog, typed.Scale)
+		raw, err := json.Marshal(typed)
+		s.Require().NoError(err)
+		s.Contains(string(raw), `"scale":"log"`)
+	})
+	s.Run("brace bag", func() {
+		overrides, warnings, err := shared.ParseOverrides(
+			[]string{"line:scale={type=log;axes=x;base=10}"},
+			[]string{"line"},
+			[]shared.Axis{{Key: "x"}, {Key: "y"}},
+		)
+		s.Require().NoError(err)
+		s.Empty(warnings)
+		cfg, err := internal_charts.Materialise("line", nil, overrides["line"])
+		s.Require().NoError(err)
+		typed := cfg.(*linechart.Config)
+		s.Equal("log", typed.Scale.Type)
+		s.Equal([]string{"x"}, typed.Scale.Axes)
+		raw, err := json.Marshal(typed.Scale)
+		s.Require().NoError(err)
+		s.JSONEq(`{"type":"log","axes":["x"],"base":10}`, string(raw))
+	})
 }
 
 func (s *PipelineSuite) TestChartStackOverrideRoundTripsThroughMaterialise() {
@@ -348,13 +384,13 @@ func (s *PipelineSuite) TestRunLinearDatasetPassthrough() {
 	testutil.WriteJSON(s.T(), input, shared.Dataset{
 		Name: "Baked",
 		Settings: []internal_charts.ChartConfig{
-			&linechart.Config{Type: "line", Scale: "linear"},
+			&linechart.Config{Type: "line", Scale: shared.ScaleLinear},
 		},
 		Data: []shared.DataPoint{{Name: "P1", XAxis: "1", YAxis: "100"}},
 	})
 	out := filepath.Join(dir, "out.json")
 
-	barCfg := &barchart.Config{Type: "bar", Scale: "log"}
+	barCfg := &barchart.Config{Type: "bar", Scale: shared.ScaleLog}
 	meta := RunMeta{Parser: "go", OutputFile: out}
 	cfg := parser.Config{GroupPattern: "y", TimeUnit: "ns", MemUnit: "B"}
 
@@ -370,7 +406,7 @@ func (s *PipelineSuite) TestRunLinearDatasetPassthrough() {
 	s.Equal("bar", ds.Settings[0].ChartType())
 	typed, ok := ds.Settings[0].(*barchart.Config)
 	s.Require().True(ok)
-	s.Equal("log", typed.Scale)
+	s.Equal(shared.ScaleLog, typed.Scale)
 }
 
 func (s *PipelineSuite) TestRunLinearDatasetPassthroughTitleWarns() {
@@ -391,14 +427,14 @@ func (s *PipelineSuite) TestRunLinearPreservesDatasetOnRoot() {
 	testutil.WriteJSON(s.T(), input, shared.Dataset{
 		Name: "Baked",
 		Settings: []internal_charts.ChartConfig{
-			&barchart.Config{Type: "bar", Scale: "linear"},
-			&linechart.Config{Type: "line", Scale: "log"},
+			&barchart.Config{Type: "bar", Scale: shared.ScaleLinear},
+			&linechart.Config{Type: "line", Scale: shared.ScaleLog},
 		},
 		Data: []shared.DataPoint{{Name: "P1", XAxis: "1", YAxis: "100"}},
 	})
 	out := filepath.Join(dir, "out.json")
 
-	barCfg := &barchart.Config{Type: "bar", Scale: "log"}
+	barCfg := &barchart.Config{Type: "bar", Scale: shared.ScaleLog}
 	meta := RunMeta{Parser: "go", OutputFile: out}
 	cfg := parser.Config{GroupPattern: "y", TimeUnit: "ns", MemUnit: "B"}
 
@@ -415,7 +451,7 @@ func (s *PipelineSuite) TestRunLinearPreservesDatasetOnRoot() {
 	s.Equal("line", ds.Settings[1].ChartType())
 	lineCfg, ok := ds.Settings[1].(*linechart.Config)
 	s.Require().True(ok)
-	s.Equal("log", lineCfg.Scale)
+	s.Equal(shared.ScaleLog, lineCfg.Scale)
 }
 
 func (s *PipelineSuite) TestRunLinearAutoParser() {
@@ -423,7 +459,7 @@ func (s *PipelineSuite) TestRunLinearAutoParser() {
 	out := filepath.Join(s.T().TempDir(), "out.json")
 	meta := RunMeta{Parser: "auto", OutputFile: out}
 	cfg := parser.Config{GroupPattern: "x", TimeUnit: "ns", MemUnit: "B"}
-	barCfg := &barchart.Config{Type: "bar", Scale: "linear"}
+	barCfg := &barchart.Config{Type: "bar", Scale: shared.ScaleLinear}
 
 	oldStdout, oldStderr := os.Stdout, os.Stderr
 	devnull, _ := os.Open(os.DevNull)
@@ -1025,7 +1061,7 @@ func (s *PipelineSuite) TestResolveInputStdin() {
 	out := filepath.Join(s.T().TempDir(), "out.json")
 	meta := RunMeta{Parser: "go", OutputFile: out}
 	cfg := parser.Config{GroupPattern: "y", TimeUnit: "ns", MemUnit: "B"}
-	barCfg := &barchart.Config{Type: "bar", Scale: "linear"}
+	barCfg := &barchart.Config{Type: "bar", Scale: shared.ScaleLinear}
 
 	RunLinear(&cobra.Command{}, nil, meta, cfg, []internal_charts.ChartConfig{barCfg}, false)
 	s.FileExists(out)
@@ -1245,7 +1281,7 @@ func (s *PipelineSuite) TestRunLinearColAxisTitleKeepsDatasetName() {
 	cfg, err := parser.ResolveGroupConfig(parser.Config{GroupPattern: "y", Group: []string{"load"}, ColAxis: "x"})
 	s.Require().NoError(err)
 
-	RunLinear(&cobra.Command{}, []string{csvFile}, meta, cfg, []internal_charts.ChartConfig{&barchart.Config{Type: "bar", Scale: "linear"}}, false)
+	RunLinear(&cobra.Command{}, []string{csvFile}, meta, cfg, []internal_charts.ChartConfig{&barchart.Config{Type: "bar", Scale: shared.ScaleLinear}}, false)
 
 	ds := testutil.ReadDataset(s.T(), out)
 	s.Equal("Q1 release", ds.Name)
@@ -1443,7 +1479,7 @@ func (s *PipelineSuite) TestRunLinearMultiSelectProducesSingleDatasetWithStats()
 			{Columns: []parser.ColumnSpec{{Source: "region", AxisKey: "x"}, {Source: "sales", AxisKey: "y"}}},
 		},
 	}
-	scatterCfg := &scatterchart.Config{Type: "scatter", Scale: "linear"}
+	scatterCfg := &scatterchart.Config{Type: "scatter", Scale: shared.ScaleLinear}
 	meta := RunMeta{Parser: "csv", OutputFile: out}
 
 	oldStdout, oldStderr := os.Stdout, os.Stderr

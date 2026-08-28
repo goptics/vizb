@@ -10,6 +10,7 @@ import type {
   Dataset,
 } from '../types'
 import { ALL_CHART_TYPES, SORT_ORDERS, SCALE_TYPES } from '../types'
+import { applyScaleType, parseScale } from '../lib/scale'
 import { useSettingsStore } from './useSettingsStore'
 import { useDataPoint } from './useDataPoint'
 import { activeDataset } from './useDataPoint'
@@ -78,7 +79,7 @@ const applyConfigUpdate = (type: ChartType, update: ConfigUpdate): boolean => {
   if (update.showLabels !== undefined) cfg.showLabels = update.showLabels
   if (cfg.type === 'bar' || cfg.type === 'line' || cfg.type === 'scatter') {
     const cartesian = cfg as BarConfig | LineConfig | ScatterConfig
-    if (update.scale) cartesian.scale = update.scale
+    if (update.scale) cartesian.scale = applyScaleType(cartesian.scale, update.scale)
     if (update.threeD !== undefined) cartesian.threeD = update.threeD
     if (update.threeDRotate !== undefined) cartesian.threeDRotate = update.threeDRotate
     if (update.threeDVisualMap !== undefined) cartesian.threeDVisualMap = update.threeDVisualMap
@@ -91,7 +92,7 @@ const applyConfigUpdate = (type: ChartType, update: ConfigUpdate): boolean => {
     if ((cfg.type === 'bar' || cfg.type === 'line') && update.stack !== undefined) {
       const stackable = cfg as BarConfig | LineConfig
       stackable.stack = update.stack
-      if (update.stack) stackable.scale = 'linear'
+      if (update.stack) stackable.scale = applyScaleType(stackable.scale, 'linear')
     }
   }
   return true
@@ -274,7 +275,9 @@ export function useUrlRouter() {
       else if (cfg.showLabels === false) params[`${ct}.l`] = 'false'
       if (cfg.type === 'bar' || cfg.type === 'line' || cfg.type === 'scatter') {
         const cartesian = cfg as BarConfig | LineConfig | ScatterConfig
-        if (cartesian.scale && cartesian.scale !== 'linear') params[`${ct}.sc`] = cartesian.scale
+        if (parseScale(cartesian.scale).type === 'log') {
+          params[`${ct}.sc`] = 'log'
+        }
         if (cartesian.threeD === true) params[`${ct}.3d`] = 'true'
         if (cartesian.threeDRotate === true) params[`${ct}.3d-rt`] = 'true'
         if (cartesian.threeDVisualMap === true) params[`${ct}.3d-vm`] = 'true'

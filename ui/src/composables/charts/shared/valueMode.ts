@@ -1,6 +1,7 @@
 import type { EChartsOption } from 'echarts'
 import type { ScaleType, ChartType } from '@/types'
 import { getNextColorFor, VALUE_CHART_TYPES, formatChartNumber } from '@/lib/utils'
+import { axisIsLog, axisLogBase, parseScale } from '@/lib/scale'
 import { type BaseChartConfig, getBaseOptions } from '../baseChartOptions'
 import {
   createValueModeGridConfig,
@@ -9,6 +10,7 @@ import {
   createValueModeTooltip,
   getChartStyling,
   isLargeXAxis,
+  INSIDE_XY_ZOOM,
   LARGE_DATA_THRESHOLD,
   scatterSeriesLargeOpts,
 } from './chartConfig'
@@ -19,7 +21,6 @@ import { resolve2DScatterVisualMap } from './visualMap'
 const defaultScatterSymbol = { symbol: 'circle' as const, symbolSize: 8 }
 const largeScatterSymbol = { symbol: 'circle' as const, symbolSize: 5 }
 const defaultLineSymbol = { symbol: 'circle' as const, symbolSize: 7 }
-const largeLineSymbol = { symbol: 'none', sampling: 'lttb' as const }
 
 export function sortValueTuples(
   tuples: [number, number, number?][],
@@ -33,10 +34,19 @@ export function sortValueTuples(
 
 export function scaleValueTuples(
   tuples: [number, number, number?][],
-  scale: ScaleType
+  yScale: ScaleType,
+  xScale: ScaleType = 'linear'
 ): [number, number | null, number?][] {
-  if (scale !== 'log') return tuples
-  return tuples.map(([x, y, c]) => [x, adjustForLogScaleLine(y, scale), c])
+  const xLog = xScale === 'log'
+  const yLog = yScale === 'log'
+  if (!xLog && !yLog) return tuples
+  const out: [number, number | null, number?][] = []
+  for (const [x, y, c] of tuples) {
+    if (xLog && x <= 0) continue
+    const yAdj = adjustForLogScaleLine(y, yScale)
+    out.push(c !== undefined ? [x, yAdj, c] : [x, yAdj])
+  }
+  return out
 }
 
 const chartTypeForECharts = (chartType: ChartType): string =>
@@ -56,7 +66,7 @@ const seriesSymbol = (
     )
   }
   if (chartType === 'line') {
-    return resolveSeriesSymbol(largeX ? largeLineSymbol : defaultLineSymbol, symbol, symbolSize)
+    return resolveSeriesSymbol(defaultLineSymbol, symbol, symbolSize)
   }
   return {}
 }
@@ -71,13 +81,20 @@ export function buildValueAxes2DOptions(
   const yLabel = chartData.value.axisLabels?.y
   const baseOptions = getBaseOptions(config)
   const styling = getChartStyling(isDark.value)
+  const parsed = parseScale(scale?.value)
+  const xWant = axisIsLog(parsed, 'x', ['y'])
+  const yWant = axisIsLog(parsed, 'y', ['y'])
+  const xScale = resolveLogScale(
+    xWant ? 'log' : 'linear',
+    tuples.map((t) => t[0])
+  )
   const yScale = resolveLogScale(
-    scale?.value ?? 'linear',
+    yWant ? 'log' : 'linear',
     tuples.map((t) => t[1])
   )
 
   const sorted = sortValueTuples(tuples, sort.value.enabled, sort.value.order)
-  const data = scaleValueTuples(sorted, yScale)
+  const data = scaleValueTuples(sorted, yScale, xScale)
   const largeX = isLargeXAxis(data.map((_, i) => String(i)))
 
   const useVisualMap = chartType === 'scatter' && config.visualMap?.value === true
@@ -104,7 +121,7 @@ export function buildValueAxes2DOptions(
     ...(chartType === 'scatter'
       ? scatterSeriesLargeOpts(useVisualMap)
       : { large: true as const, largeThreshold: LARGE_DATA_THRESHOLD }),
-    ...(chartType === 'line' ? { smooth: smoothLines } : {}),
+    ...(chartType === 'line' ? { smooth: smoothLines, showAllSymbol: true as const } : {}),
     ...(useVisualMap ? {} : { itemStyle: { color: getNextColorFor(chartData.value.title) } }),
     ...seriesSymbol(chartType, largeX, config.symbol?.value, config.symbolSize?.value),
   }
@@ -125,12 +142,14 @@ export function buildValueAxes2DOptions(
       xLabel,
       yLabel,
       yScale,
-      chartType === 'line' || chartType === 'scatter'
+      chartType === 'line' || chartType === 'scatter',
+      {
+        xScale,
+        xLogBase: axisLogBase(parsed, 'x'),
+        yLogBase: axisLogBase(parsed, 'y'),
+      }
     ),
-    dataZoom: [
-      { type: 'inside', xAxisIndex: 0 },
-      { type: 'inside', yAxisIndex: 0 },
-    ],
+    ...(chartType === 'line' ? {} : { dataZoom: INSIDE_XY_ZOOM }),
     series: [series],
   } as EChartsOption
 }

@@ -1,5 +1,6 @@
 import type { EChartsOption } from 'echarts'
-import type { Render3D, Point3D, ScaleType, Series3DData } from '@/types'
+import type { Render3D, Point3D, ScaleInput, Series3DData } from '@/types'
+import { axisIsLog, axisLogBase, parseScale } from '@/lib/scale'
 import { valuePoints3DToSeries } from '@/lib/transform'
 import { getDefaultThemeColor, getNextColorFor, formatChartNumber } from '@/lib/utils'
 import {
@@ -54,8 +55,16 @@ export function* series3DMetricValues(series: Series3DData[]): Generator<number 
 }
 
 /** Log z-axis only when metric heights have a positive domain. */
-export function resolve3DZAxisType(scale: ScaleType, series: Series3DData[]): 'log' | 'value' {
-  return resolveLogScale(scale, series3DMetricValues(series)) === 'log' ? 'log' : 'value'
+export function resolve3DZAxisType(
+  scale: ScaleInput,
+  series: Series3DData[]
+): { type: 'log'; logBase: number } | { type: 'value' } {
+  const parsed = parseScale(scale)
+  const want = axisIsLog(parsed, 'z', ['z'])
+  if (resolveLogScale(want ? 'log' : 'linear', series3DMetricValues(series)) !== 'log') {
+    return { type: 'value' }
+  }
+  return { type: 'log', logBase: axisLogBase(parsed, 'z') }
 }
 
 export function create3DVisualMap(max: number, styling: ChartStyling, dimension: 1 | 2 | 3 = 2) {
@@ -297,26 +306,24 @@ export function createContinuous3DAxes(
   xLabel?: string,
   yLabel?: string,
   zLabel?: string,
-  scale: ScaleType = 'linear'
+  scale: ScaleInput = 'linear'
 ) {
-  const valueType = scale === 'log' ? ('log' as const) : ('value' as const)
+  const parsed = parseScale(scale)
+  const defaults = ['x', 'y', 'z'] as const
   const axisCommon = makeAxis3DCommon(styling)
+  const valueAxis = (axis: 'x' | 'y' | 'z', label?: string) => {
+    const isLog = axisIsLog(parsed, axis, defaults)
+    return {
+      type: isLog ? ('log' as const) : ('value' as const),
+      ...(isLog ? { logBase: axisLogBase(parsed, axis) } : {}),
+      ...axisCommon,
+      ...axis3DName(label, styling),
+    }
+  }
   return {
-    xAxis3D: {
-      type: valueType,
-      ...axisCommon,
-      ...axis3DName(xLabel, styling),
-    },
-    yAxis3D: {
-      type: valueType,
-      ...axisCommon,
-      ...axis3DName(yLabel, styling),
-    },
-    zAxis3D: {
-      type: valueType,
-      ...axisCommon,
-      ...axis3DName(zLabel, styling),
-    },
+    xAxis3D: valueAxis('x', xLabel),
+    yAxis3D: valueAxis('y', yLabel),
+    zAxis3D: valueAxis('z', zLabel),
   }
 }
 
@@ -507,7 +514,7 @@ export type Continuous3DParams = {
   useVisualMap: boolean
   defaultColor: string
   threeDRotate: boolean
-  scale: ScaleType
+  scale: ScaleInput
   seriesData: Series3DData[]
   axisLabels?: { x?: string; y?: string; z?: string; metric?: string }
   symbol?: string

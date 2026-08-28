@@ -5,25 +5,28 @@ import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
 import { getNextColorFor, hasXAxis } from '@/lib/utils'
 import {
   createAxisConfig,
-  createDataZoomConfig,
   createGridConfig,
+  createValueModeGridConfig,
   createHorizontalAxisConfig,
-  createHorizontalDataZoomConfig,
   createLabelConfig,
   createLegendConfig,
   createTooltipConfig,
+  createValueAxisConfig,
+  createValueModeTooltip,
   getChartStyling,
-  horizontalLegendBottom,
+  legendBandPx,
   isLargeXAxis,
   makeLegendTitle,
   LARGE_DATA_THRESHOLD,
+  resolveCartesianDataZoom,
 } from './shared/chartConfig'
 import { useSortedSeriesData, resolveLogScale, computeSeriesTotals } from './shared/common'
+import { asLogXPairs, axisIsLog, axisLogBase, numericLogXValues, parseScale } from '@/lib/scale'
 import { buildValueAxes2DOptions } from './shared/valueMode'
 import { buildMixedAxes2DOptions } from './shared/mixedMode'
 
-const barNullable = (val: number | null, scale: string): number | null =>
-  val === null ? null : scale === 'log' && val <= 0 ? null : val
+const barNullable = (val: number | null, yLog: boolean): number | null =>
+  val === null ? null : yLog && val <= 0 ? null : val
 
 // ECharts itemStyle.borderRadius: [TL, TR, BR, BL] (len 1–4; [8] = all corners).
 type BarItemStyle = { color?: string; borderRadius?: number[] }
@@ -131,19 +134,43 @@ export function useBarChartOptions(config: BaseChartConfig) {
     // `scale` is optional on BaseChartConfig (relaxed in Task 7) — pie/heatmap/
     // radar pass a config without it. The bar composable is the only consumer,
     // so we default at the call site.
+    const parsed = parseScale(scale?.value)
+    const defaultAxes = isHorizontal ? (['x'] as const) : (['y'] as const)
+    const xWant = axisIsLog(parsed, 'x', defaultAxes)
+    const yWant = axisIsLog(parsed, 'y', defaultAxes)
+    const valueLogWant = isHorizontal ? xWant : yWant
     const yScale = resolveLogScale(
-      scale?.value ?? 'linear',
+      valueLogWant ? 'log' : 'linear',
       series.flatMap((s) => s.values)
     )
+    const valueLog = yScale === 'log'
+    const xNums = !isHorizontal ? numericLogXValues(xAxisData, xWant) : null
     const largeX = isLargeXAxis(xAxisData)
     const xLabel = chartData.value.axisLabels?.x
+    const yLogBase = axisLogBase(parsed, isHorizontal ? 'x' : 'y')
+    const groupedAxes = xNums
+      ? createValueAxisConfig(styling, xLabel, undefined, yScale, false, {
+          xScale: 'log',
+          xLogBase: axisLogBase(parsed, 'x'),
+          yLogBase,
+        })
+      : isHorizontal
+        ? createHorizontalAxisConfig(styling, xAxisData, yScale, xLabel, largeX, yLogBase)
+        : createAxisConfig(styling, xAxisData, yScale, xLabel, largeX, false, yLogBase)
+    const zoom = resolveCartesianDataZoom('bar', {
+      numericX: xNums !== null,
+      largeX,
+      styling,
+      horizontal: isHorizontal,
+    })
     const useStack = stack?.value === true && yScale !== 'log'
 
     if (!hasYAxis && isHorizontal) {
       const seriesItem = {
         name: chartData.value.title,
         type: 'bar' as const,
-        data: series.map((s) => barNullable(s.values[0] ?? null, yScale)),
+        // xNums is null while horizontal (category X stays categorical).
+        data: series.map((s) => barNullable(s.values[0] ?? null, valueLog)),
         label: createLabelConfig(showLabels.value, styling, 'horizontal'),
         large: true,
         largeThreshold: LARGE_DATA_THRESHOLD,
@@ -161,11 +188,12 @@ export function useBarChartOptions(config: BaseChartConfig) {
           bottom: '3%',
           top: 8,
           containLabel: true,
+          outerBoundsMode: 'none',
         },
         tooltip: createTooltipConfig(false, isDark.value),
         legend: { show: false },
-        ...createHorizontalAxisConfig(styling, xAxisData, yScale, xLabel, largeX),
-        ...(largeX ? { dataZoom: createHorizontalDataZoomConfig(styling) } : {}),
+        ...groupedAxes,
+        dataZoom: zoom.dataZoom,
         series: [seriesItem],
       } as EChartsOption
     }
@@ -178,7 +206,13 @@ export function useBarChartOptions(config: BaseChartConfig) {
         // object — a 100k-bar chart would otherwise allocate 100k label configs
         // on every recompute. `large` keeps the draw on one frame past the
         // threshold.
-        data: series.map((s) => barNullable(s.values[0] ?? null, yScale)),
+        data: xNums
+          ? asLogXPairs(
+              xNums,
+              series.map((s) => s.values[0] ?? null),
+              valueLog
+            )
+          : series.map((s) => barNullable(s.values[0] ?? null, valueLog)),
         label: createLabelConfig(showLabels.value, styling),
         large: true,
         largeThreshold: LARGE_DATA_THRESHOLD,
@@ -190,11 +224,13 @@ export function useBarChartOptions(config: BaseChartConfig) {
       applyBackgroundToSeries([seriesItem], backgroundStyle)
       return {
         ...baseOptions,
-        grid: createGridConfig(1, largeX),
-        tooltip: createTooltipConfig(false, isDark.value),
+        grid: createValueModeGridConfig(zoom.hasXSlider),
+        tooltip: xNums
+          ? createValueModeTooltip(isDark.value, xLabel, chartData.value.axisLabels?.y, true)
+          : createTooltipConfig(false, isDark.value),
         legend: { show: false },
-        ...createAxisConfig(styling, xAxisData, yScale, xLabel, largeX),
-        ...(largeX ? { dataZoom: createDataZoomConfig(xAxisData, styling) } : {}),
+        ...groupedAxes,
+        dataZoom: zoom.dataZoom,
         series: [seriesItem],
       } as EChartsOption
     }
@@ -204,7 +240,13 @@ export function useBarChartOptions(config: BaseChartConfig) {
     const transposedSeries = yAxisLabels.map((yAxisLabel, yIndex) => ({
       name: yAxisLabel,
       type: 'bar' as const,
-      data: series.map((s) => barNullable(s.values[yIndex] ?? null, yScale)),
+      data: xNums
+        ? asLogXPairs(
+            xNums,
+            series.map((s) => s.values[yIndex] ?? null),
+            valueLog
+          )
+        : series.map((s) => barNullable(s.values[yIndex] ?? null, valueLog)),
       label: createLabelConfig(
         showLabels.value,
         styling,
@@ -221,9 +263,13 @@ export function useBarChartOptions(config: BaseChartConfig) {
     // data items are now plain numbers (or null). Apply after sort so stacked
     // top-only radius tracks the outermost segment.
     if (sort.value.enabled && xAxisData.length === 1) {
+      const metricAt = (d: number | null | [number, number | null] | undefined): number => {
+        if (Array.isArray(d)) return d[1] ?? 0
+        return d ?? 0
+      }
       transposedSeries.sort((a, b) => {
-        const valA = a.data[0] ?? 0
-        const valB = b.data[0] ?? 0
+        const valA = metricAt(a.data[0])
+        const valB = metricAt(b.data[0])
         return sort.value.order === 'asc' ? valA - valB : valB - valA
       })
     }
@@ -258,9 +304,10 @@ export function useBarChartOptions(config: BaseChartConfig) {
         grid: {
           left: xLabel ? 70 : '3%',
           right: largeX ? 44 : 24,
-          bottom: hasMultipleSeries ? horizontalLegendBottom(transposedSeries.length) : '3%',
+          bottom: hasMultipleSeries ? legendBandPx(transposedSeries.length) : '3%',
           top: 8,
           containLabel: true,
+          outerBoundsMode: 'none',
         },
         tooltip: createTooltipConfig(hasXAxis(chartData), isDark.value, seriesTotals),
         legend: createLegendConfig(
@@ -269,8 +316,8 @@ export function useBarChartOptions(config: BaseChartConfig) {
           hasMultipleSeries,
           { bottom: 0 }
         ),
-        ...createHorizontalAxisConfig(styling, xAxisData, yScale, xLabel, largeX),
-        ...(largeX ? { dataZoom: createHorizontalDataZoomConfig(styling) } : {}),
+        ...groupedAxes,
+        dataZoom: zoom.dataZoom,
         series: transposedSeries,
       } as EChartsOption
     }
@@ -278,16 +325,20 @@ export function useBarChartOptions(config: BaseChartConfig) {
     return {
       ...baseOptions,
       ...(showLegendTitle ? { title: makeLegendTitle(yLabel!, styling) } : {}),
-      grid: createGridConfig(transposedSeries.length, largeX),
-      tooltip: createTooltipConfig(hasXAxis(chartData), isDark.value, seriesTotals),
+      grid: createGridConfig(transposedSeries.length, zoom.hasXSlider, showLegendTitle),
+      tooltip: xNums
+        ? hasMultipleSeries
+          ? createTooltipConfig(hasXAxis(chartData), isDark.value, seriesTotals, 'line')
+          : createValueModeTooltip(isDark.value, xLabel, yLabel, true)
+        : createTooltipConfig(hasXAxis(chartData), isDark.value, seriesTotals),
       legend: createLegendConfig(
         transposedSeries.map((s) => ({ xAxis: s.name })),
         styling,
         hasMultipleSeries,
         showLegendTitle ? { top: 24 } : undefined
       ),
-      ...createAxisConfig(styling, xAxisData, yScale, xLabel, largeX),
-      ...(largeX ? { dataZoom: createDataZoomConfig(xAxisData, styling) } : {}),
+      ...groupedAxes,
+      dataZoom: zoom.dataZoom,
       series: transposedSeries,
     } as EChartsOption
   })
