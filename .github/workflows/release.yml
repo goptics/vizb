@@ -37,6 +37,10 @@ jobs:
     name: CLI
     needs: approve
     uses: ./.github/workflows/cli.yml
+    # cli.yml embed + nested action-ci.yml save actions/cache (requires actions: write).
+    permissions:
+      contents: read
+      actions: write
 
   ui:
     name: UI
