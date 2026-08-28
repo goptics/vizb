@@ -219,6 +219,18 @@ Use the `chart` input (one override per line) to configure individual charts wit
     output-html: pages/index.html
 ```
 
+Per-axis log uses the same `chart:` input (braces like `--chart`; no dedicated `scale` input):
+
+```yaml
+- uses: goptics/vizb@v0
+  with:
+    file: training.csv
+    charts: line
+    chart: |
+      line:scale={type=log;axes=x}
+    output-html: pages/index.html
+```
+
 Category background on 2D bars (`background.active: true` on the wire; no UI toggle; 3D skips the flag):
 
 ```yaml

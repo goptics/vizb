@@ -131,7 +131,7 @@ These settings apply to scatter charts:
 | Sort | `--sort asc\|desc` | Sort control | Grouped mode only — hidden for auto-value and mixed |
 | Labels | `--show-labels` | Show labels | Point labels where supported |
 | Swap | `--swap` | Axis switcher | Grouped mode; auto-value with 3 columns |
-| Scale (log) | `--scale log` | Scale toggle | Log axes — 2D grouped, value, and mixed mode |
+| Scale (log) | `--scale log` or `--scale 'type=log;axes=x'` | Scale toggle | `linear` / `log` (value axis), or bag for per-axis log — 2D grouped, value, and mixed mode |
 | 3D view | `--3d` | 3D view | Pseudo-3D for grouped x+y (no z column) |
 | 3D visual map | `--3d-visualmap` | 3D visual map | Metric gradient on 3D points |
 | 2D visual map | `--visualmap` | Visual map | Gradient coloring on 2D scatter — off by default |
@@ -144,6 +144,9 @@ Override settings for just this chart type:
 ```bash
 # Log scale and labels on a grouped scatter
 vizb scatter data.csv -g category,metric --scale log -l -o out.html
+
+# Per-axis log bag (unwrapped; no braces on --scale)
+vizb scatter data.csv --scale 'type=log;axes=x' -o out.html
 
 # Mixed region vs latency with log y
 vizb scatter region-metrics.csv --select region,latency --scale log -o out.html

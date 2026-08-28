@@ -117,7 +117,7 @@ These settings apply to line charts:
 | Labels | `--show-labels` | Show labels | Displays value at each data point |
 | Smooth lines | `--smooth` | Smooth lines | Curves segments between points — 2D only |
 | Swap | `--swap` | Axis switcher | Rotates which column maps to X vs Y |
-| Scale (log) | `--log-scale` | Scale toggle | Log Y axis — 2D only; gaps at ≤0 |
+| Scale (log) | `--scale log` or `--scale 'type=log;axes=x'` | Scale toggle | `linear` / `log` (value axis), or bag for per-axis log. Gaps at ≤0 |
 | 3D view | `--3d` | 3D view | Value 3D for x+y data (y → depth, metric → height) |
 | 3D visual map | `--3d-visualmap` | 3D visual map | Metric gradient coloring — on by default with `--3d`; grouped/value 3D |
 | Auto-rotate | `--3d-rotate` | Auto rotate | Spins the 3D scene — 3D only |
@@ -127,6 +127,9 @@ Override settings for just this chart type without affecting others:
 ```bash
 # Log scale and labels
 vizb line sales.csv -g region,category --scale log -l -o out.html
+
+# Per-axis log bag (unwrapped; no braces on --scale)
+vizb line sales.csv --scale 'type=log;axes=x' -o out.html
 
 # Sort descending
 vizb line sales.csv -g region,category --sort desc -o out.html

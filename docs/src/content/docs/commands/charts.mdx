@@ -57,7 +57,7 @@ Every chart subcommand accepts the common data, grouping, and metadata flags:
 
 | Flag | `bar` | `line` | `scatter` | `pie` | `heatmap` | `radar` | `sankey` | `chord` | Description |
 |------|:---:|:---:|:---------:|:---:|:---:|:---:|:---:|:---:|-------------|
-| `--scale` (`-S`) | ✅ | ✅ | ✅ | — | — | — | — | — | Value scale: `linear` or `log` |
+| `--scale` (`-S`) | ✅ | ✅ | ✅ | — | — | — | — | — | Value scale: `linear`, `log`, or bag `type=log;axes=x,y;base=10` |
 | `--3d` | ✅ | ✅ | ✅ | — | — | — | — | — | Pseudo-3D for grouped x+y data (y → depth, metric → height) |
 | `--3d-visualmap` | ✅ | ✅ | ✅ | — | — | — | — | — | Color 3D geometry by metric value |
 | `--visualmap` | — | — | ✅ | — | — | — | — | — | Color 2D scatter points by metric (off by default) |
@@ -76,6 +76,9 @@ vizb pie data.csv --scale log   # Error: unknown flag: --scale
 ```bash
 # 3D bar with log scale and auto-rotation
 vizb bar data.csv -g category,metric,group -p n,x,y,z --scale log --3d-rotate -o bar3d.html
+
+# Per-axis log bag (unwrapped on --scale; no braces). String log/linear stay valid.
+vizb line data.csv --scale 'type=log;axes=x' -o line.html
 
 # Pie with value labels, ascending sort
 vizb pie data.csv -g impl --sort asc --show-labels -o pie.html

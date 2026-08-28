@@ -76,7 +76,7 @@ inputs:
     description: "Enable stats panel (--stat flag). Empty = disabled; 'all' or 'true' = all categories; otherwise comma-separated from: counts, center, spread, extremes, shape, percentiles, confidence, correlations"
     default: ""
   chart:
-    description: "Per-chart overrides (--chart flag, repeatable). One override per line: '<type>:<key>=<val>,...'. Keys: swap, sort, scale, stack, labels, 3d-rotate, 3d, symbol, symbol-size, smooth, horizontal, border-radius, bg, stat. Object props use {field=value;field=value} (semicolons inside braces; commas stay literal). E.g. 'bar:scale=log', 'pie:labels', 'bar:bg', or 'bar:bg={color=rgba(180, 180, 180, 0.2);borderColor=#000}'. Blank lines and #-prefixed lines are ignored."
+    description: "Per-chart overrides (--chart flag, repeatable). One override per line: '<type>:<key>=<val>,...'. Keys: swap, sort, scale, stack, labels, 3d-rotate, 3d, symbol, symbol-size, smooth, horizontal, border-radius, bg, stat. Object props use {field=value;field=value} (semicolons inside braces; commas stay literal). E.g. 'bar:scale=log', 'line:scale={type=log;axes=x}', 'pie:labels', 'bar:bg', or 'bar:bg={color=rgba(180, 180, 180, 0.2);borderColor=#000}'. Blank lines and #-prefixed lines are ignored."
     default: ""
   charts:
     description: "Chart types to generate (-c flag): bar, line, scatter, pie, heatmap, radar, sankey, chord"
