@@ -57,7 +57,7 @@ Every chart subcommand accepts the common data, grouping, and metadata flags:
 
 | Flag | `bar` | `line` | `scatter` | `pie` | `heatmap` | `radar` | `sankey` | `chord` | Description |
 |------|:---:|:---:|:---------:|:---:|:---:|:---:|:---:|:---:|-------------|
-| `--scale` (`-S`) | ✅ | ✅ | ✅ | — | — | — | — | — | Value scale: `linear`, `log`, or bag `type=log;axes=x[,y][;base=10]` |
+| `--scale` (`-S`) | ✅ | ✅ | ✅ | — | — | — | — | — | Value scale: `linear`, `log`, or bag `type=log;axes=x,y;base=10` |
 | `--3d` | ✅ | ✅ | ✅ | — | — | — | — | — | Pseudo-3D for grouped x+y data (y → depth, metric → height) |
 | `--3d-visualmap` | ✅ | ✅ | ✅ | — | — | — | — | — | Color 3D geometry by metric value |
 | `--visualmap` | — | — | ✅ | — | — | — | — | — | Color 2D scatter points by metric (off by default) |

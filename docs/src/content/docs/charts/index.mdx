@@ -101,7 +101,7 @@ Most settings apply to every chart type. The exceptions are `scale` (log), which
 | `scale` log | ✓ | ✓ | ✓ | ✗ | ✗ | ✗ | ✗ | ✗ |
 | `3d-rotate` (3D auto-rotate) | ✓ 3D only | ✓ 3D only | ✓ 3D only | ✗ | ✗ | ✗ | ✗ | ✗ |
 
-To override a setting for a single chart type without affecting the others, use the `--chart <type>:key=val` syntax. Object props use `{field=value;field=value}` (semicolons inside braces; commas stay literal). Unwrapped `bar:bg=color=…` or `line:scale=type=log;axes=x` is invalid. Nested `log:axes=x` is not valid.
+To override a setting for a single chart type without affecting the others, use the `--chart <type>:key=val` syntax. Object props use `{field=value;field=value}` (semicolons inside braces; commas stay literal). Unwrapped `bar:bg=color=…` is invalid.
 
 ```bash
 # Turn on labels for bar only

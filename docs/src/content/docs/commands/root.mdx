@@ -245,8 +245,7 @@ spec is `<type>:<props>` where props are `key=value` pairs or bare flags
     `--chart 'bar:stat=center,spread;labels'`
 - **Object props** use braces: `key={field=value;field=value}`. Inside `{}`,
   only `;` separates fields so commas stay literal (`rgba(…)`, `axes=x,y`,
-  `borderRadius=8,8,0,0`). Unwrapped `bar:bg=color=…` or
-  `line:scale=type=log;axes=x` is invalid. Nested `log:axes=x` is not valid.
+  `borderRadius=8,8,0,0`). Unwrapped `bar:bg=color=…` is invalid.
 
 Semicolon mode matches structured `--theme` specs
 (`name:colors=#hex,...;visualMapColors=...`); both use the same prop grammar.
@@ -284,7 +283,7 @@ vizb sales.csv -c bar --chart 'bar:bg={color=rgba(180, 180, 180, 0.2);borderColo
 | `swap` | — | permutation of axis chars (e.g. `yx`, `yxn`) | all |
 | `sort` | — | `asc`, `desc` | all |
 | `labels` | `labels` | `true`, `false` | all |
-| `scale` | — | `linear`, `log`, or `{type=log;axes=x[,y][;base=10]}` | `bar`, `line`, `scatter` |
+| `scale` | — | `linear`, `log`, or `type=log;axes=x,y;base=10` | `bar`, `line`, `scatter` |
 | `3d-rotate` | `3d-rotate` | `true`, `false` | `bar`, `line` 3D only |
 | `bg` | `bg` | `{field=value;…}` style object, or bare/`{}` for on | `bar` 2D only |
 | `stat` | `stat` | `all`, or comma-separated categories (`center,spread`, …) | all |
