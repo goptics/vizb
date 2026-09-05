@@ -1,6 +1,6 @@
 ---
 title: Install
-description: Install vizb using Docker, a one-liner, the Go toolchain, or a pre-built binary.
+description: Install vizb using a package manager, Docker, a one-liner, the Go toolchain, or a pre-built binary.
 ---
 
 import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
@@ -13,6 +13,21 @@ import QuickInstall from '../../../components/QuickInstall.mdx';
 <Aside type="note">
   The installer downloads the latest binary from GitHub Releases to `~/.local/bin` on Linux/macOS or `%LOCALAPPDATA%\vizb` on Windows. No admin required.
 </Aside>
+
+## Package Managers
+
+  <Tabs>
+    <TabItem label="Homebrew" icon="homebrew">
+    <Aside type="note" title="Coming soon">
+      A Homebrew formula is not published yet. Help land `brew install vizb` in homebrew-core — see [issue #205](https://github.com/goptics/vizb/issues/205).
+    </Aside>
+    </TabItem>
+    <TabItem label="WinGet" icon="seti:windows">
+    ```ps1
+    winget install goptics.vizb
+    ```
+    </TabItem>
+  </Tabs>
 
 ## Docker
 
