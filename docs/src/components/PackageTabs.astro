@@ -1,0 +1,97 @@
+---
+/**
+ * Starlight Tabs wrapper that greys out named tabs and blocks activation.
+ * Use for package managers that are not published yet.
+ */
+interface Props {
+	disabled?: string[];
+}
+
+const { disabled = [] } = Astro.props;
+---
+
+<div class="package-tabs" data-disabled-labels={JSON.stringify(disabled)}>
+	<slot />
+</div>
+
+<style>
+	.package-tabs :global([role='tab'][data-disabled-tab='true']) {
+		opacity: 0.45;
+		cursor: not-allowed;
+	}
+
+	.package-tabs :global([role='tab'][data-disabled-tab='true'])::after {
+		content: 'Soon';
+		font-size: 0.65rem;
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		line-height: 1;
+		margin-inline-start: 0.15rem;
+		padding: 0.15rem 0.4rem;
+		border-radius: 999px;
+		background: var(--sl-color-gray-6);
+		color: var(--sl-color-gray-2);
+	}
+</style>
+
+<script>
+	function tabLabel(tab: Element): string {
+		return tab.textContent?.replace(/\s+/g, ' ').trim() ?? '';
+	}
+
+	function markDisabledTabs(root: HTMLElement): HTMLAnchorElement[] {
+		let labels: string[] = [];
+		try {
+			labels = JSON.parse(root.dataset.disabledLabels || '[]') as string[];
+		} catch {
+			return [];
+		}
+
+		const tabs = [...root.querySelectorAll<HTMLAnchorElement>('[role="tab"]')];
+		for (const tab of tabs) {
+			if (!labels.includes(tabLabel(tab))) continue;
+			tab.dataset.disabledTab = 'true';
+			tab.setAttribute('aria-disabled', 'true');
+			tab.setAttribute('tabindex', '-1');
+			tab.title = 'Coming soon';
+			tab.addEventListener(
+				'click',
+				(event) => {
+					event.preventDefault();
+					event.stopImmediatePropagation();
+				},
+				true,
+			);
+		}
+		return tabs.filter((tab) => tab.dataset.disabledTab === 'true');
+	}
+
+	function firstEnabledTab(root: HTMLElement): HTMLAnchorElement | null {
+		return root.querySelector<HTMLAnchorElement>('[role="tab"]:not([data-disabled-tab="true"])');
+	}
+
+	function restoreEnabledTab(root: HTMLElement): void {
+		const selected = root.querySelector<HTMLAnchorElement>('[role="tab"][aria-selected="true"]');
+		if (selected?.dataset.disabledTab !== 'true') return;
+		firstEnabledTab(root)?.click();
+	}
+
+	function initPackageTabs(): void {
+		for (const root of document.querySelectorAll<HTMLElement>('.package-tabs')) {
+			const disabledTabs = markDisabledTabs(root);
+			if (!disabledTabs.length) continue;
+			restoreEnabledTab(root);
+
+			const tablist = root.querySelector('[role="tablist"]');
+			if (!tablist) continue;
+			new MutationObserver(() => restoreEnabledTab(root)).observe(tablist, {
+				attributes: true,
+				subtree: true,
+				attributeFilter: ['aria-selected'],
+			});
+		}
+	}
+
+	initPackageTabs();
+</script>
