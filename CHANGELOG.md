@@ -9,6 +9,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adhere
 ### Added
 
 - **cli** — Add pie `--donut` flag
+- **api** — Accept donut on PieChartConfig
 
 ### Changed
 

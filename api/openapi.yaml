@@ -834,6 +834,7 @@ components:
         swap: { type: string }
         sort: { $ref: '#/components/schemas/Sort' }
         showLabels: { type: boolean }
+        donut: { type: boolean }
         stat: { $ref: '#/components/schemas/StatisticsConfig' }
     HeatmapChartConfig:
       type: object
