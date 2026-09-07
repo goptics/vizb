@@ -47,6 +47,7 @@ func (s *CommandSuite) TestVariableFlagsBoundPerChart() {
 	pie := s.byUse["pie"]
 	s.Nil(pie.Flags().Lookup("scale"))
 	s.NotNil(pie.Flags().Lookup("swap"))
+	s.NotNil(pie.Flags().Lookup("donut"))
 
 	// sankey uses BaseChartFlags only (no scale/stack/3d/visualMap).
 	sankey := s.byUse["sankey"]

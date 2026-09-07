@@ -10,7 +10,7 @@ import (
 
 func init() {
 	charts.Register(charts.Spec{Type: "pie", Factory: piechart.New})
-	charts.SetFlags("pie", slices.Clone(charts.BaseChartFlags))
+	charts.SetFlags("pie", append(slices.Clone(charts.BaseChartFlags), charts.DonutFlag))
 	cli.SetChartMeta(cli.ChartMeta{
 		Type:  "pie",
 		Use:   "pie [target]",

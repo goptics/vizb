@@ -62,7 +62,7 @@ func (s *SankeySuite) TestJSONOmitsInapplicableChartFields() {
 	s.Require().NoError(json.Unmarshal(raw, &m))
 	// Sankey is a flow layout: scale/stack/3D/visualMap never apply and must
 	// not leak into the emitted config JSON.
-	for _, key := range []string{"scale", "stack", "threeD", "threeDRotate", "threeDVisualMap", "visualMap", "smooth", "horizontal"} {
+	for _, key := range []string{"scale", "stack", "threeD", "threeDRotate", "threeDVisualMap", "visualMap", "smooth", "horizontal", "donut"} {
 		_, ok := m[key]
 		s.False(ok, "sankey JSON must not carry %q", key)
 	}

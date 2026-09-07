@@ -7,6 +7,7 @@ import (
 	_ "github.com/goptics/vizb/cmd/charts/bar"
 	_ "github.com/goptics/vizb/cmd/charts/heatmap"
 	_ "github.com/goptics/vizb/cmd/charts/line"
+	_ "github.com/goptics/vizb/cmd/charts/pie"
 	_ "github.com/goptics/vizb/cmd/charts/radar"
 	"github.com/goptics/vizb/internal/charts"
 	barchart "github.com/goptics/vizb/internal/charts/bar"
@@ -105,6 +106,13 @@ func (s *MaterialiseSuite) TestLineSmoothSeed() {
 	got := s.materialise("line", seed, nil).(*linechart.Config)
 	s.Require().NotNil(got.Smooth)
 	s.True(*got.Smooth)
+}
+
+func (s *MaterialiseSuite) TestPieDonutSeed() {
+	seed := map[string]any{"donut": true}
+	got := s.materialise("pie", seed, nil).(*piechart.Config)
+	s.Require().NotNil(got.Donut)
+	s.True(*got.Donut)
 }
 
 func (s *MaterialiseSuite) TestStatSeed() {

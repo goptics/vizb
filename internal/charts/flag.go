@@ -102,6 +102,12 @@ var (
 		Kind:    flags.KindBool,
 		JSONKey: "smooth",
 	}
+	DonutFlag = flags.Flag{
+		Name:    "donut",
+		Usage:   "Render as a donut (hole); default is a filled pie",
+		Kind:    flags.KindBool,
+		JSONKey: "donut",
+	}
 	HorizontalFlag = flags.Flag{
 		Name:    "horizontal",
 		Usage:   "Horizontal bars (categories on Y, values on X)",
