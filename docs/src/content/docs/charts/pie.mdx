@@ -12,7 +12,7 @@ import pie1D from '../../../assets/pie-1D.png';
 import pie2D from '../../../assets/pie-2D.png';
 import pie3D from '../../../assets/pie-3D.png';
 
-The **pie chart** shows how a whole breaks into parts. Unlike bar and line charts, pie has no cartesian axes — vizb maps your dimensions to multiple pie charts rendered side-by-side, one per axis. Each slice carries its name and percentage, so the composition of your dataset is immediately readable.
+The **pie chart** shows how a whole breaks into parts. Unlike bar and line charts, pie has no cartesian axes — vizb maps your dimensions to multiple pie charts rendered side-by-side, one per axis. Each slice carries its name and percentage, so the composition of your dataset is immediately readable. The default is a **filled pie**; `--donut` cuts a hole.
 
 Use pie charts when you care about proportion and share rather than raw magnitude: which dataset name dominates, which configuration contributes the most, or how Z variants divide the total.
 
@@ -71,12 +71,13 @@ This example splits `order_date` into month and day slots (same grouping as the 
 
 ## Settings
 
-Pie charts expose three runtime settings — sort, labels, and axis swap.
+Pie charts expose four runtime settings — sort, labels, donut, and axis swap.
 
 | Setting | CLI flag | UI toggle | Notes |
 |---------|----------|-----------|-------|
 | Sort | `--sort asc\|desc` | Sort control | Orders slices by value |
 | Labels | `--show-labels` | Show labels | Shows name + percentage on each slice |
+| Donut | `--donut` | Donut | Cut a hole in the pie. Off (default) is a filled pie. |
 | Swap | `--swap` | Axis switcher | Reorders which axis maps to which pie |
 
 Override settings for just this chart type without affecting others:
@@ -84,6 +85,9 @@ Override settings for just this chart type without affecting others:
 ```bash
 # Sort slices descending and show labels
 vizb pie sales.csv -g region,category -p x,y --sort desc -l -o out.html
+
+# Filled pie is the default; --donut cuts a hole
+vizb pie sales.csv -g region --donut -o donut.html
 ```
 
 ## Next Steps

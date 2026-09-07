@@ -11,6 +11,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adhere
 - **cli** — Add pie `--donut` flag
 - **api** — Accept donut on PieChartConfig
 - **ui** — Add Donut setting and pie.dn URL param
+- **docs** — Document pie vs donut
 
 ### Changed
 
