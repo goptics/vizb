@@ -623,6 +623,32 @@ describe('useUrlRouter', () => {
     expect(holder.selectGroup).toHaveBeenCalledWith(1)
   })
 
+  it('applies pie.dn=true from the URL on init', async () => {
+    holder.datasets = ref([ds([{ type: 'pie', sort: { enabled: false, order: 'asc' } }])])
+    mockWindow('?pie.dn=true')
+    const { useUrlRouter } = await import('./useUrlRouter')
+    await useUrlRouter().initFromUrl()
+
+    const pie = holder.datasets.value[0]!.settings[0] as { donut?: boolean }
+    expect(pie.donut).toBe(true)
+  })
+
+  it('syncs pie.dn=true when donut is on', async () => {
+    holder.datasets = ref([ds([{ type: 'pie', donut: true }])])
+    const replaceState = mockWindow('')
+    const { useUrlRouter } = await import('./useUrlRouter')
+    useUrlRouter().syncUrlToState()
+    expect(replaceState).toHaveBeenCalledWith(null, '', '/?pie.dn=true')
+  })
+
+  it('omits pie.dn for filled pies', async () => {
+    holder.datasets = ref([ds([{ type: 'pie', donut: false }])])
+    const replaceState = mockWindow('?pie.dn=true')
+    const { useUrlRouter } = await import('./useUrlRouter')
+    useUrlRouter().syncUrlToState()
+    expect(replaceState).toHaveBeenCalledWith(null, '', '/')
+  })
+
   it('syncs pie configs without cartesian branches', async () => {
     holder.datasets = ref([
       ds([
@@ -638,6 +664,7 @@ describe('useUrlRouter', () => {
     expect(url).toContain('pie.l=false')
     expect(url).toContain('heatmap.l=true')
     expect(url).not.toContain('pie.sc=')
+    expect(url).not.toContain('pie.dn')
   })
 
   it('ignores deferred retry when active dataset id no longer matches', async () => {

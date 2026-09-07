@@ -57,7 +57,7 @@ export function createPieSeriesConfig(
   showLabels: boolean,
   styling: { textColor: string },
   customFormatter?: (params: any) => string,
-  radius: [string, string] = ['40%', '70%'],
+  radius: [string, string] = ['0%', '70%'],
   center: [string, string] = ['50%', '50%']
 ): any {
   return {

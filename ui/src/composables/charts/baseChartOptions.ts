@@ -30,6 +30,8 @@ export interface BaseChartConfig {
   smooth?: Ref<boolean>
   /** 2D bar horizontal orientation. When true, bars grow rightward. */
   horizontal?: Ref<boolean>
+  /** Pie hole toggle. Missing/false is a filled pie; true cuts a donut hole. */
+  donut?: Ref<boolean>
   /**
    * Bar corner radii in px (bar-only), length 1–4 [TL, TR, BR, BL].
    * Passed through to ECharts; when stacked, only the outer segment is rounded.

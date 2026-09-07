@@ -4,6 +4,7 @@ import type {
   BarConfig,
   LineConfig,
   ScatterConfig,
+  PieConfig,
   ScaleInput,
   Sort,
   StatConfig,
@@ -93,6 +94,10 @@ export function useActiveChartShape() {
     () => (activeConfig.value as BarConfig | undefined)?.horizontal ?? false
   )
 
+  const donut = computed<boolean>(
+    () => (activeConfig.value as PieConfig | undefined)?.donut ?? false
+  )
+
   const borderRadius = computed<number[] | undefined>(
     () => (activeConfig.value as BarConfig | undefined)?.borderRadius
   )
@@ -117,6 +122,7 @@ export function useActiveChartShape() {
     symbolSize,
     smooth,
     horizontal,
+    donut,
     borderRadius,
     background,
   }

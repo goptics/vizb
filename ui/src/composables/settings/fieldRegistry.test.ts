@@ -19,6 +19,7 @@ const { fieldRegistry, getRenderableFields, partitionRenderableFields } = await 
 const BOOLEAN_KEYS = [
   'stack',
   'showLabels',
+  'donut',
   'smooth',
   'horizontal',
   'threeD',
@@ -28,9 +29,10 @@ const BOOLEAN_KEYS = [
 ] as const
 
 describe('fieldRegistry', () => {
-  it('exposes the eleven known field controls', () => {
+  it('exposes the twelve known field controls', () => {
     expect(Object.keys(fieldRegistry).sort()).toEqual(
       [
+        'donut',
         'horizontal',
         'threeDRotate',
         'scale',
@@ -64,6 +66,12 @@ describe('fieldRegistry', () => {
     })
     expect(fieldRegistry.showLabels).toMatchObject({
       id: 'labels-switch',
+      separator: true,
+    })
+    expect(fieldRegistry.donut).toMatchObject({
+      id: 'donut-switch',
+      label: 'Donut',
+      description: 'Cut a hole in the pie (donut). Off is a filled pie.',
       separator: true,
     })
     expect(fieldRegistry.smooth).toMatchObject({
@@ -104,6 +112,10 @@ describe('fieldRegistry', () => {
     expect(fieldRegistry['smooth']!.appliesTo).toEqual(['line'])
     expect(fieldRegistry['smooth']!.visible?.({ rendering3D: false })).toBe(true)
     expect(fieldRegistry['smooth']!.visible?.({ rendering3D: true })).toBe(false)
+  })
+
+  it('donut applies only to pie charts', () => {
+    expect(fieldRegistry['donut']!.appliesTo).toEqual(['pie'])
   })
 
   it('sort, showLabels, and swap apply to all eight chart types', () => {
@@ -246,11 +258,12 @@ describe('getRenderableFields', () => {
     ).not.toContain('stack')
   })
 
-  it('returns 3 entries for a pie config (no scale/threeDRotate; dimension is irrelevant)', () => {
+  it('returns 4 entries for a pie config (sort, showLabels, donut, swap)', () => {
     const cfg: PieConfig = { type: 'pie' }
     expect(getRenderableFields(cfg, { dimension: '2D' }).map((f) => f.key)).toEqual([
       'sort',
       'showLabels',
+      'donut',
       'swap',
     ])
   })

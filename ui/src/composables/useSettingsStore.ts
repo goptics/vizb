@@ -144,6 +144,7 @@ export function useSettingsStore() {
   const setSmooth = (smooth: boolean) => patchActive({ smooth }, (cfg) => cfg.type === 'line')
   const setHorizontal = (horizontal: boolean) =>
     patchActive({ horizontal }, (cfg) => cfg.type === 'bar')
+  const setDonut = (donut: boolean) => patchActive({ donut }, (cfg) => cfg.type === 'pie')
   const setThreeDRotate = (rotate: boolean) => patchActive({ threeDRotate: rotate })
   const setSwap = (swap: string | undefined) => patchActive({ swap })
   const setThreeD = (enabled: boolean) => patchActive({ threeD: enabled })
@@ -165,6 +166,7 @@ export function useSettingsStore() {
     setShowLabels,
     setSmooth,
     setHorizontal,
+    setDonut,
     setThreeDRotate,
     setSwap,
     setThreeD,

@@ -63,6 +63,7 @@ type ConfigUpdate = {
   visualMap?: boolean
   horizontal?: boolean
   stack?: boolean
+  donut?: boolean
 }
 
 // Find the first config of the given chart type and apply a partial update in
@@ -77,6 +78,7 @@ const applyConfigUpdate = (type: ChartType, update: ConfigUpdate): boolean => {
 
   if (update.sort) cfg.sort = update.sort
   if (update.showLabels !== undefined) cfg.showLabels = update.showLabels
+  if (cfg.type === 'pie' && update.donut !== undefined) cfg.donut = update.donut
   if (cfg.type === 'bar' || cfg.type === 'line' || cfg.type === 'scatter') {
     const cartesian = cfg as BarConfig | LineConfig | ScatterConfig
     if (update.scale) cartesian.scale = applyScaleType(cartesian.scale, update.scale)
@@ -219,6 +221,8 @@ export function useUrlRouter() {
       const h = params[`${ct}.h`]
       if (h === 'true') update.horizontal = true
       else if (h === 'false') update.horizontal = false
+      const dn = params[`${ct}.dn`]
+      if (dn === 'true') update.donut = true
       if (ct === 'bar' || ct === 'line') {
         if (st === 'true') update.stack = true
         else if (st === 'false') update.stack = false
@@ -295,6 +299,7 @@ export function useUrlRouter() {
           params[`${ct}.st`] = cfg.stack ? 'true' : 'false'
         }
       }
+      if (cfg.type === 'pie' && cfg.donut === true) params[`${ct}.dn`] = 'true'
 
       const arr = arrangementMap.get(`${activeDatasetId.value}:${ct}`)
       if (arr && arr !== identity) params[`${ct}.sw`] = arr

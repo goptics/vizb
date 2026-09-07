@@ -166,6 +166,7 @@ export type PieConfig = {
   swap?: string
   sort?: Sort
   showLabels?: boolean
+  donut?: boolean
   stat?: StatConfig
 }
 

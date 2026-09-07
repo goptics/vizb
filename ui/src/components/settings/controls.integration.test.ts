@@ -294,6 +294,7 @@ describe('settings controls', () => {
   it.each([
     'stack',
     'showLabels',
+    'donut',
     'smooth',
     'horizontal',
     'threeD',

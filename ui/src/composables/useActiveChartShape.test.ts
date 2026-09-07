@@ -224,9 +224,19 @@ describe('useActiveChartShape', () => {
     expect(shape.visualMap.value).toBe(false)
     expect(shape.smooth.value).toBe(false)
     expect(shape.horizontal.value).toBe(false)
+    expect(shape.donut.value).toBe(false)
     expect(shape.borderRadius.value).toBeUndefined()
     expect(shape.background.value).toBeUndefined()
     expect(shape.threeD.value).toBe(false)
     expect(shape.sort.value).toBeUndefined()
+  })
+
+  it('defaults donut to false and reads true from a pie config', async () => {
+    holder.ref = ref(ds([{ type: 'pie' as ChartType }]))
+    const { useActiveChartShape } = await import('./useActiveChartShape')
+    expect(useActiveChartShape().donut.value).toBe(false)
+
+    holder.ref = ref(ds([{ type: 'pie' as ChartType, donut: true }]))
+    expect(useActiveChartShape().donut.value).toBe(true)
   })
 })

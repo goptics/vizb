@@ -214,6 +214,49 @@ describe('usePieChartOptions — branch edges', () => {
   })
 })
 
+describe('usePieChartOptions — filled vs donut radii', () => {
+  const radiiOf = (options: { series?: unknown }) =>
+    (options.series as { radius: [string, string] }[]).map((s) => s.radius)
+
+  it('uses filled 1D radius by default and donut radius when enabled', () => {
+    const filled = usePieChartOptions(baseConfig({ chartData: makePieChartData() }))
+    expect(radiiOf(filled.options.value)).toEqual([['0%', '70%']])
+
+    const donut = usePieChartOptions(baseConfig({ chartData: makePieChartData(), donut: true }))
+    expect(radiiOf(donut.options.value)).toEqual([['40%', '70%']])
+  })
+
+  it('uses filled 2D radii by default and donut radii when enabled', () => {
+    const filled = usePieChartOptions(baseConfig({ chartData: xyPie() }))
+    expect(radiiOf(filled.options.value)).toEqual([
+      ['0%', '60%'],
+      ['0%', '60%'],
+    ])
+
+    const donut = usePieChartOptions(baseConfig({ chartData: xyPie(), donut: true }))
+    expect(radiiOf(donut.options.value)).toEqual([
+      ['30%', '60%'],
+      ['30%', '60%'],
+    ])
+  })
+
+  it('uses filled 3D radii by default and donut radii when enabled', () => {
+    const filled = usePieChartOptions(baseConfig({ chartData: xyzPie() }))
+    expect(radiiOf(filled.options.value)).toEqual([
+      ['0%', '50%'],
+      ['0%', '50%'],
+      ['0%', '50%'],
+    ])
+
+    const donut = usePieChartOptions(baseConfig({ chartData: xyzPie(), donut: true }))
+    expect(radiiOf(donut.options.value)).toEqual([
+      ['25%', '50%'],
+      ['25%', '50%'],
+      ['25%', '50%'],
+    ])
+  })
+})
+
 describe('usePieChartOptions — y map fallback', () => {
   it('still emits y pie when y totals map is empty-like', () => {
     const chartData = emptyChartData({
