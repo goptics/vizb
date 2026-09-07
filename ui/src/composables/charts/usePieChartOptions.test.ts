@@ -226,6 +226,23 @@ describe('usePieChartOptions — filled vs donut radii', () => {
     expect(radiiOf(donut.options.value)).toEqual([['40%', '70%']])
   })
 
+  it('uses filled 1D radius for y-only pies and donut radius when enabled', () => {
+    const chartData = emptyChartData({
+      title: 'yonly',
+      statType: 'count',
+      yAxis: ['North', 'South'],
+      series: [
+        { xAxis: '', values: [10, 5], benchmarkId: '' },
+        { xAxis: '', values: [20, 15], benchmarkId: '' },
+      ],
+    })
+    const filled = usePieChartOptions(baseConfig({ chartData }))
+    expect(radiiOf(filled.options.value)).toEqual([['0%', '70%']])
+
+    const donut = usePieChartOptions(baseConfig({ chartData, donut: true }))
+    expect(radiiOf(donut.options.value)).toEqual([['40%', '70%']])
+  })
+
   it('uses filled 2D radii by default and donut radii when enabled', () => {
     const filled = usePieChartOptions(baseConfig({ chartData: xyPie() }))
     expect(radiiOf(filled.options.value)).toEqual([
