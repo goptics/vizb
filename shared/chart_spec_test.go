@@ -87,6 +87,19 @@ func (s *ChartSpecSuite) TestParseOverridesLineSmooth() {
 	s.Nil(s.payload(got["bar"])["smooth"])
 }
 
+func (s *ChartSpecSuite) TestParseOverridesPieDonut() {
+	got, warnings, err := ParseOverrides([]string{"pie:donut"}, []string{"pie"}, s.xynAxes)
+	s.Require().NoError(err)
+	s.Empty(warnings)
+	s.Equal(true, s.payload(got["pie"])["donut"])
+
+	got, warnings, err = ParseOverrides([]string{"bar:donut"}, []string{"bar"}, s.xynAxes)
+	s.Require().NoError(err)
+	s.Require().NotEmpty(warnings)
+	s.Contains(warnings[0], "donut")
+	s.Nil(s.payload(got["bar"])["donut"])
+}
+
 func (s *ChartSpecSuite) TestParseOverridesBarHorizontal() {
 	got, warnings, err := ParseOverrides([]string{"bar:horizontal"}, []string{"bar"}, s.xynAxes)
 	s.Require().NoError(err)

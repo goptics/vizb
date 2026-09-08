@@ -60,7 +60,7 @@ func (s *ChordSuite) TestJSONOmitsInapplicableChartFields() {
 
 	var m map[string]any
 	s.Require().NoError(json.Unmarshal(raw, &m))
-	for _, key := range []string{"scale", "stack", "threeD", "threeDRotate", "threeDVisualMap", "visualMap", "smooth", "horizontal"} {
+	for _, key := range []string{"scale", "stack", "threeD", "threeDRotate", "threeDVisualMap", "visualMap", "smooth", "horizontal", "donut"} {
 		_, ok := m[key]
 		s.False(ok, "chord JSON must not carry %q", key)
 	}
