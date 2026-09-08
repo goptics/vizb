@@ -219,6 +219,24 @@ describe('useSettingsStore', () => {
     expect((activeConfig.value as { smooth?: boolean } | undefined)?.smooth).toBeUndefined()
   })
 
+  it('setDonut writes only to pie configs', async () => {
+    holder.ref = ref(
+      ds([
+        { type: 'pie', sort: { enabled: false, order: 'asc' } },
+        { type: 'bar', sort: { enabled: false, order: 'asc' } },
+      ])
+    )
+    const { useSettingsStore } = await import('./useSettingsStore')
+    const { activeConfig, setActiveChartIndex, setDonut } = useSettingsStore()
+
+    setDonut(true)
+    expect((activeConfig.value as { donut?: boolean } | undefined)?.donut).toBe(true)
+
+    setActiveChartIndex(1)
+    setDonut(true)
+    expect((activeConfig.value as { donut?: boolean } | undefined)?.donut).toBeUndefined()
+  })
+
   it('setStack writes even when the field is absent on the config', async () => {
     holder.ref = ref(
       ds([
@@ -443,6 +461,7 @@ describe('useSettingsStore', () => {
     store.setShowLabels(true)
     store.setSmooth(true)
     store.setHorizontal(true)
+    store.setDonut(true)
     store.setThreeDRotate(true)
     store.setSwap('yx')
     store.setThreeD(true)

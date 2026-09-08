@@ -12,6 +12,7 @@ export type SettingFieldValueMap = {
   scale: ScaleType
   stack: boolean
   showLabels: boolean
+  donut: boolean
   smooth: boolean
   horizontal: boolean
   threeDRotate: boolean
@@ -68,6 +69,14 @@ export const fieldRegistry: Record<SettingFieldKey, FieldMeta> = {
     id: 'labels-switch',
     label: 'Show labels',
     description: 'Display data labels on chart elements.',
+    separator: true,
+  },
+  donut: {
+    component: BooleanControl,
+    appliesTo: ['pie'],
+    id: 'donut-switch',
+    label: 'Donut',
+    description: 'Cut a hole in the pie (donut). Off is a filled pie.',
     separator: true,
   },
   smooth: {

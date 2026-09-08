@@ -10,10 +10,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adhere
 
 - **cli** — Add pie `--donut` flag
 - **api** — Accept donut on PieChartConfig
+- **ui** — Add Donut setting and pie.dn URL param
 
 ### Changed
 
 - **cli** — Default pie charts to filled (missing `donut` means filled pie, not a hole)
+- **ui** — Default pie charts to filled (missing donut means filled, not a hole)
 
 # [v0.20.0] - 2026-08-28
 

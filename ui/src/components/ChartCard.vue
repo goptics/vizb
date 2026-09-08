@@ -87,6 +87,7 @@ const {
   symbolSize,
   smooth,
   horizontal,
+  donut,
   borderRadius,
   background,
 } = useActiveChartShape()
@@ -150,6 +151,7 @@ const { options } = useChartOptions(
   symbolSize,
   smooth,
   horizontal,
+  donut,
   borderRadius,
   background
 )

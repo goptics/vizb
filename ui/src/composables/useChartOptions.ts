@@ -34,6 +34,7 @@ export function useChartOptions(
   symbolSize: Ref<number | undefined>,
   smooth: Ref<boolean>,
   horizontal: Ref<boolean>,
+  donut: Ref<boolean>,
   borderRadius: Ref<number[] | undefined>,
   background: Ref<BarBackground | undefined>
 ) {
@@ -53,6 +54,7 @@ export function useChartOptions(
     symbolSize,
     smooth,
     horizontal,
+    donut,
     borderRadius,
     background,
     arrangementTarget,

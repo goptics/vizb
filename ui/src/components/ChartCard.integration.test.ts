@@ -100,6 +100,7 @@ vi.mock('@/composables/useActiveChartShape', () => ({
     symbolSize: computed(() => undefined),
     smooth: computed(() => false),
     horizontal: computed(() => false),
+    donut: computed(() => false),
   }),
 }))
 

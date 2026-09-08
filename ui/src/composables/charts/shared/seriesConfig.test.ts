@@ -90,7 +90,7 @@ describe('createPieLabelConfig / createPieSeriesConfig', () => {
     expect(createPieSeriesConfig('share', data, true, styling)).toMatchObject({
       name: 'share',
       type: 'pie',
-      radius: ['40%', '70%'],
+      radius: ['0%', '70%'],
       center: ['50%', '50%'],
       data,
       label: { show: true, color: '#abc', fontSize },

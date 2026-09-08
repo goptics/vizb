@@ -10,6 +10,15 @@ import type { Point3D } from '@/types'
 
 type SeriesWithTotal = { xAxis: string; values: (number | null)[]; total: number }
 
+const PIE_RADIUS: Record<
+  '1D' | '2D' | '3D',
+  { filled: [string, string]; donut: [string, string] }
+> = {
+  '1D': { filled: ['0%', '70%'], donut: ['40%', '70%'] },
+  '2D': { filled: ['0%', '60%'], donut: ['30%', '60%'] },
+  '3D': { filled: ['0%', '50%'], donut: ['25%', '50%'] },
+}
+
 const computeYAxisTotals = (yAxis: string[], series: SeriesWithTotal[]): Map<string, number> => {
   const totals = new Map<string, number>()
   yAxis.forEach((y, i) => {
@@ -84,6 +93,8 @@ export function usePieChartOptions(config: BaseChartConfig) {
       itemStyle: { color: getNextColorFor(s.xAxis) },
     }))
 
+    const donut = config.donut?.value === true
+
     const options: EChartsOption = {
       ...baseOptions,
       legend: { show: false },
@@ -93,7 +104,8 @@ export function usePieChartOptions(config: BaseChartConfig) {
           xAxisPieData,
           showLabels.value,
           styling,
-          formatter
+          formatter,
+          PIE_RADIUS['1D'][donut ? 'donut' : 'filled']
         ),
       ],
     }
@@ -118,7 +130,8 @@ export function usePieChartOptions(config: BaseChartConfig) {
           yAxisPieData,
           showLabels.value,
           styling,
-          formatter
+          formatter,
+          PIE_RADIUS['1D'][donut ? 'donut' : 'filled']
         ),
       ]
       return options
@@ -149,19 +162,19 @@ export function usePieChartOptions(config: BaseChartConfig) {
         {
           name: 'By X-Axis',
           data: xAxisPieData,
-          radius: ['25%', '50%'] as [string, string],
+          radius: PIE_RADIUS['3D'][donut ? 'donut' : 'filled'],
           center: ['16.66%', '50%'] as [string, string],
         },
         {
           name: 'By Y-Axis',
           data: yAxisPieData,
-          radius: ['25%', '50%'] as [string, string],
+          radius: PIE_RADIUS['3D'][donut ? 'donut' : 'filled'],
           center: ['50%', '50%'] as [string, string],
         },
         {
           name: 'By Z-Axis',
           data: zAxisPieData,
-          radius: ['25%', '50%'] as [string, string],
+          radius: PIE_RADIUS['3D'][donut ? 'donut' : 'filled'],
           center: ['83.33%', '50%'] as [string, string],
         },
       ]
@@ -181,13 +194,13 @@ export function usePieChartOptions(config: BaseChartConfig) {
       {
         name: 'By X-Axis',
         data: xAxisPieData,
-        radius: ['30%', '60%'] as [string, string],
+        radius: PIE_RADIUS['2D'][donut ? 'donut' : 'filled'],
         center: ['25%', '50%'] as [string, string],
       },
       {
         name: 'By Y-Axis',
         data: yAxisPieData,
-        radius: ['30%', '60%'] as [string, string],
+        radius: PIE_RADIUS['2D'][donut ? 'donut' : 'filled'],
         center: ['75%', '50%'] as [string, string],
       },
     ]

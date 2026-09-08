@@ -205,6 +205,7 @@ export type BaseConfigOverrides = {
   visualMap?: boolean | Ref<boolean>
   smooth?: boolean | Ref<boolean>
   horizontal?: boolean | Ref<boolean>
+  donut?: boolean | Ref<boolean>
   visibleZ?: Record<string, boolean> | Ref<Record<string, boolean>>
   arrangementTarget?: string | Ref<string>
   chartType?: ChartType | Ref<ChartType>
@@ -233,6 +234,7 @@ export function baseConfig(overrides: BaseConfigOverrides = {}): BaseChartConfig
     visualMap: asRef(overrides.visualMap, false),
     smooth: asRef(overrides.smooth, false),
     horizontal: asRef(overrides.horizontal, false),
+    donut: asRef(overrides.donut, false),
     visibleZ: asRef(overrides.visibleZ, {}),
     arrangementTarget: asRef(overrides.arrangementTarget, 'xy'),
     chartType: asRef(overrides.chartType, 'bar' as ChartType),
