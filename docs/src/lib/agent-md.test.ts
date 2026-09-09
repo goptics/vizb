@@ -3,7 +3,13 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { CORE_MD_PATHS, flattenMdx, mdPathForId } from './agent-md.ts';
+import {
+	CORE_MD_PATHS,
+	buildLlmsTxt,
+	flattenMdx,
+	mdPathForId,
+	pageMarkdown,
+} from './agent-md.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(here, '../../..');
@@ -142,5 +148,35 @@ describe('CORE_MD_PATHS', () => {
 			'/troubleshooting.md',
 		];
 		assert.deepEqual(CORE_MD_PATHS, expected);
+	});
+});
+
+describe('buildLlmsTxt', () => {
+	it('links only .md URLs and llms-full.txt, never HTML or GitHub raw', () => {
+		const txt = buildLlmsTxt('https://vizb.goptics.org/', [
+			{
+				id: 'getting-started/install',
+				title: 'Install',
+				description: 'Install vizb',
+				body: '# Install\n',
+			},
+		]);
+		assert.match(txt, /https:\/\/vizb\.goptics\.org\/getting-started\/install\.md/);
+		assert.match(txt, /llms-full\.txt/);
+		assert.equal(txt.includes('raw.githubusercontent.com'), false);
+		assert.equal(/https:\/\/vizb\.goptics\.org\/getting-started\/install[^.m]/.test(txt), false);
+	});
+});
+
+describe('pageMarkdown', () => {
+	it('keeps title frontmatter and flattened body', () => {
+		const out = pageMarkdown({
+			id: 'guides/group',
+			title: 'Group',
+			description: 'Group columns',
+			body: 'import { Aside } from "x";\n\n# Group\n',
+		});
+		assert.match(out, /^---\ntitle: Group\n/);
+		assert.equal(out.includes('import {'), false);
 	});
 });

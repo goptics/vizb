@@ -1,5 +1,10 @@
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, isAbsolute, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const here = dirname(fileURLToPath(import.meta.url));
+const docsRoot = join(here, '../..');
+const contentDocsRoot = join(here, '../content/docs');
 
 export const CORE_MD_PATHS = [
 	'/getting-started.md',
@@ -125,8 +130,63 @@ export type DocPage = {
 	filePath?: string;
 };
 
+const corePathSet = new Set<string>(CORE_MD_PATHS);
+
+/** Resolve a docs MDX/MD file from collection `filePath` or `id`. */
+export function resolveDocFilePath(id: string, filePath?: string): string | undefined {
+	const candidates: string[] = [];
+	if (filePath) {
+		if (isAbsolute(filePath)) {
+			candidates.push(filePath);
+		} else {
+			candidates.push(join(docsRoot, filePath));
+			candidates.push(filePath);
+		}
+	}
+	candidates.push(
+		join(contentDocsRoot, `${id}.mdx`),
+		join(contentDocsRoot, id, 'index.mdx'),
+		join(contentDocsRoot, `${id}.md`),
+		join(contentDocsRoot, id, 'index.md'),
+	);
+	return candidates.find((p) => existsSync(p));
+}
+
+export function docPageFromEntry(entry: {
+	id: string;
+	data: { title?: unknown; description?: unknown };
+	body?: string;
+	filePath?: string;
+}): DocPage {
+	const filePath = resolveDocFilePath(entry.id, entry.filePath);
+	const body = entry.body?.trim()
+		? entry.body
+		: filePath
+			? readFileSync(filePath, 'utf8')
+			: '';
+	if (!body.trim() && corePathSet.has(mdPathForId(entry.id))) {
+		throw new Error(`empty markdown body for core docs page ${entry.id}`);
+	}
+	return {
+		id: entry.id,
+		title: String(entry.data.title ?? entry.id),
+		description: String(entry.data.description ?? ''),
+		body,
+		filePath,
+	};
+}
+
 export function pageMarkdown(page: DocPage): string {
-	const md = flattenMdx(page.body, { fromFile: page.filePath });
+	const filePath = resolveDocFilePath(page.id, page.filePath);
+	const source = page.body?.trim()
+		? page.body
+		: filePath
+			? readFileSync(filePath, 'utf8')
+			: '';
+	if (!source.trim() && corePathSet.has(mdPathForId(page.id))) {
+		throw new Error(`empty markdown body for core docs page ${page.id}`);
+	}
+	const md = flattenMdx(source, { fromFile: filePath ?? page.filePath });
 	return `---\ntitle: ${page.title}\ndescription: ${page.description}\n---\n\n${md}`;
 }
 
