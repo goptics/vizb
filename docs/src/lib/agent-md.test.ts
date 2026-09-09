@@ -208,14 +208,15 @@ describe('buildLlmsTxt', () => {
 				body: '# Install\n',
 			},
 		]);
-		assert.match(txt, /https:\/\/vizb\.goptics\.org\/getting-started\/install\.md/);
-		assert.match(txt, /llms-full\.txt/);
-		const hrefs = [...txt.matchAll(/\((https?:\/\/[^)\s]+)\)/g)].map((m) => m[1]);
+		assert.match(txt, /Docs are at https:\/\/vizb\.goptics\.org\./);
+		assert.match(txt, /\]\(\/getting-started\/install\.md\)/);
+		assert.match(txt, /\]\(\/llms-full\.txt\)/);
+		const hrefs = [...txt.matchAll(/\]\(([^)]+)\)/g)].map((m) => m[1]);
 		assert.ok(hrefs.length > 0);
 		for (const href of hrefs) {
-			assert.equal(new URL(href).hostname, 'vizb.goptics.org');
+			assert.equal(href.startsWith('/'), true, href);
+			assert.equal(href.includes('://'), false, href);
 		}
-		assert.equal(/https:\/\/vizb\.goptics\.org\/getting-started\/install[^.m]/.test(txt), false);
 	});
 });
 

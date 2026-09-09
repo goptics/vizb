@@ -236,7 +236,7 @@ export function buildLlmsTxt(
 		const page = byPath.get(path);
 		const title = page?.title ?? path;
 		const desc = page?.description ? `: ${page.description}` : '';
-		return `- [${title}](${origin}${path})${desc}`;
+		return `- [${title}](${path})${desc}`;
 	};
 
 	const coreSet = new Set<string>(CORE_MD_PATHS);
@@ -250,6 +250,8 @@ export function buildLlmsTxt(
 		'',
 		'> Turn CSV, JSON, and Go/Rust/JavaScript benchmark output into a self-contained interactive HTML chart without writing chart code.',
 		'',
+		`Docs are at ${origin}. Links below are root-relative on that host.`,
+		'',
 		'Vizb is a CLI pipeline (auto-group, n/x/y/z dimensions, HTML or JSON), not a charting library to embed. Prefer minimal flags. Fetch one Core page rather than llms-full.txt.',
 		'',
 		'## Core',
@@ -262,7 +264,7 @@ export function buildLlmsTxt(
 		'',
 		'## Optional',
 		'',
-		`- [Complete documentation](${origin}/llms-full.txt): concatenated markdown dump of every docs page`,
+		'- [Complete documentation](/llms-full.txt): concatenated markdown dump of every docs page',
 		'',
 	].join('\n');
 }
