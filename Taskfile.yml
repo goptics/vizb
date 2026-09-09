@@ -93,7 +93,7 @@ tasks:
       - cd ui && pnpm test
 
   test:docs:
-    desc: Run docs unit tests (agent markdown + skill contract)
+    desc: Run docs unit tests (agent markdown)
     cmds:
       - cd docs; [ -d node_modules ] || pnpm install; pnpm test; cd -
 

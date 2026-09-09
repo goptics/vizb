@@ -91,7 +91,7 @@ TLS, and access controls in front of it. See the [Docker installation guide](htt
 ### AI agents
 
 ```bash
-npx skills add goptics/vizb
+npx skills add goptics/skills --skill vizb
 ```
 
 Then run `/vizb` in Grok, Claude Code, Cursor, Codex, or any agent the [skills CLI](https://github.com/vercel-labs/skills) supports. [Docs](https://vizb.goptics.org/getting-started/ai-agents/).

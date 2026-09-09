@@ -15,7 +15,6 @@ on:
       - 'docs/astro.config.mjs'
       - 'docs/package.json'
       - 'docs/pnpm-lock.yaml'
-      - 'skills/**'
       - '.github/actions/setup-js/**'
       - '.github/workflows/api-contract.yml'
   pull_request:
@@ -31,7 +30,6 @@ on:
       - 'docs/astro.config.mjs'
       - 'docs/package.json'
       - 'docs/pnpm-lock.yaml'
-      - 'skills/**'
       - '.github/actions/setup-js/**'
       - '.github/workflows/api-contract.yml'
 
