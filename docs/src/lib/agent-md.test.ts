@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -48,6 +48,69 @@ describe('flattenMdx', () => {
 		assert.match(out, /https:\/\/vizb\.goptics\.org\/install\.sh/);
 		assert.equal(out.includes('<QuickInstall'), false);
 		assert.equal(out.includes('import {'), false);
+	});
+
+	it('lifts InvokeTabs cli with > in the command into a bash fence', () => {
+		const src = `<InvokeTabs
+  cli={\`vizb bar data.csv --group-regex "(?<n>.*)/(?<x>.*)/(?<y>.*)/(?<z>.*)" -o out.html\`}
+/>
+`;
+		const out = flattenMdx(src);
+		assert.match(out, /```bash/);
+		assert.match(out, /vizb bar data.csv --group-regex/);
+		assert.match(out, /\(\?<n>\.\*\)/);
+		assert.equal(out.includes('<InvokeTabs'), false);
+	});
+
+	it('unwraps Steps and keeps inner fenced bash', () => {
+		const src = `<Steps>\n\n\`\`\`bash\nvizb merge v1.json v2.json --tag v1\n\`\`\`\n\n</Steps>\n`;
+		const out = flattenMdx(src);
+		assert.match(out, /```bash/);
+		assert.match(out, /vizb merge v1\.json v2\.json --tag v1/);
+		assert.equal(out.includes('<Steps'), false);
+	});
+
+	it('lifts a simple InvokeTabs cli into a bash fence', () => {
+		const src = `<InvokeTabs cli={\`vizb bar data.csv -o out.html\`} />\n`;
+		const out = flattenMdx(src);
+		assert.match(out, /```bash/);
+		assert.match(out, /vizb bar data.csv -o out.html/);
+		assert.equal(out.includes('<InvokeTabs'), false);
+	});
+});
+
+describe('flattenMdx corpus', () => {
+	function contentPathForMd(mdPath: string): string {
+		const slug = mdPath.replace(/^\//, '').replace(/\.md$/, '');
+		const docsRoot = join(repoRoot, 'docs/src/content/docs');
+		const candidates = [
+			join(docsRoot, `${slug}.mdx`),
+			join(docsRoot, slug, 'index.mdx'),
+		];
+		const found = candidates.find((p) => existsSync(p));
+		assert.ok(found, `missing content for ${mdPath}`);
+		return found;
+	}
+
+	it('flattens every Core page without leftover JSX and keeps key commands', () => {
+		const byPath = new Map<string, string>();
+		for (const mdPath of CORE_MD_PATHS) {
+			const filePath = contentPathForMd(mdPath);
+			const out = flattenMdx(readFileSync(filePath, 'utf8'), { fromFile: filePath });
+			byPath.set(mdPath, out);
+			assert.equal(out.includes('import {'), false, mdPath);
+			assert.equal(/<[A-Z]/.test(out), false, `${mdPath} leftover JSX`);
+		}
+
+		const merging = byPath.get('/guides/merging.md') ?? '';
+		assert.match(merging, /vizb merge/);
+		assert.match(merging, /--tag/);
+
+		const dimensions = byPath.get('/getting-started/dimensions.md') ?? '';
+		assert.match(dimensions, /vizb/);
+
+		const charts3d = byPath.get('/charts/3d.md') ?? '';
+		assert.equal(charts3d.includes('<InvokeTabs'), false);
 	});
 });
 

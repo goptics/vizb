@@ -33,6 +33,30 @@ export function mdPathForId(id: string): string {
 	return `/${slug}.md`;
 }
 
+/** Quoted/backtick spans may contain `>` (named-capture regex in cli). */
+const ATTR_CHUNK = String.raw`(?:[^>\`'"]|\`[^\`]*\`|'[^']*'|"[^"]*")*`;
+
+function quotedProp(tag: string, prop: string): string | undefined {
+	const fromTicks = tag.match(new RegExp(`${prop}=\\{\`([\\s\\S]*?)\`\\}`));
+	if (fromTicks) return fromTicks[1];
+	const fromDq = tag.match(new RegExp(`${prop}="([^"]*)"`));
+	if (fromDq) return fromDq[1];
+	const fromSq = tag.match(new RegExp(`${prop}='([^']*)'`));
+	if (fromSq) return fromSq[1];
+}
+
+function liftFence(
+	src: string,
+	name: string,
+	prop: string,
+	lang: string,
+): string {
+	return src.replace(new RegExp(`<${name}\\b${ATTR_CHUNK}\\/>`, 'g'), (tag) => {
+		const value = quotedProp(tag, prop);
+		return value ? `\n\`\`\`${lang}\n${value.trim()}\n\`\`\`\n` : '';
+	});
+}
+
 export function flattenMdx(
 	source: string,
 	opts: { fromFile?: string } = {},
@@ -62,6 +86,9 @@ export function flattenMdx(
 		);
 	}
 
+	body = liftFence(body, 'InvokeTabs', 'cli', 'bash');
+	body = liftFence(body, 'CopyableCsv', 'csv', 'csv');
+
 	body = body.replace(
 		/<Aside\b[^>]*>\s*([\s\S]*?)\s*<\/Aside>/g,
 		(_m, inner: string) =>
@@ -77,9 +104,15 @@ export function flattenMdx(
 		(_m, label: string, inner: string) => `### ${label}\n\n${inner.trim()}\n`,
 	);
 
-	body = body.replace(/<\/?(?:Tabs|TabItem|CardGrid|Card|LinkCard)\b[^>]*>/g, '');
-	body = body.replace(/<[A-Z][\w.]*\b[^>]*\/>/g, '');
-	body = body.replace(/<[A-Z][\w.]*\b[^>]*>[\s\S]*?<\/[A-Z][\w.]*>/g, '');
+	body = body.replace(
+		/<\/?(?:Tabs|TabItem|CardGrid|Card|LinkCard|Steps|FileTree)\b[^>]*>/g,
+		'',
+	);
+	body = body.replace(new RegExp(`<[A-Z][\\w.]*\\b${ATTR_CHUNK}\\/>`, 'g'), '');
+	body = body.replace(
+		new RegExp(`<([A-Z][\\w.]*)\\b${ATTR_CHUNK}>([\\s\\S]*?)<\\/\\1>`, 'g'),
+		(_m, _name: string, inner: string) => inner,
+	);
 
 	return body.replace(/\n{3,}/g, '\n\n').trim() + '\n';
 }
