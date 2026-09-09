@@ -1,14 +1,9 @@
 import {
-	CHORD_EXTRA_ARCS,
-	CHORD_RIBBONS,
 	GRID_GRAY,
 	HEAT,
 	HEATMAP_LOW,
 	LOGO_COLORS,
 	RADAR,
-	SANKEY_EXTRA_NODES,
-	SANKEY_RIBBONS,
-	type OverlayPath,
 } from './constants';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -131,33 +126,10 @@ export function buildRadarSeries(): SVGElement {
 	return group;
 }
 
-function overlayPaths(className: string, items: readonly OverlayPath[]): SVGElement {
-	const group = svgEl('g', { class: className, opacity: 0 });
-	for (const item of items) {
-		const attrs: Record<string, string | number> = {
-			d: item.d,
-			fill: item.fill,
-		};
-		if (item.opacity !== undefined) attrs.opacity = item.opacity;
-		group.appendChild(svgEl('path', attrs));
-	}
-	return group;
-}
-
-export function buildSankeyOverlay(): SVGElement {
-	const group = overlayPaths('sankey-overlay', SANKEY_RIBBONS);
-	for (const node of SANKEY_EXTRA_NODES) {
-		group.appendChild(svgEl('path', { d: node.d, fill: node.fill }));
-	}
-	return group;
-}
-
-export function buildChordOverlay(): SVGElement {
-	const group = overlayPaths('chord-overlay', CHORD_RIBBONS);
-	for (const arc of CHORD_EXTRA_ARCS) {
-		group.appendChild(svgEl('path', { d: arc.d, fill: arc.fill }));
-	}
-	return group;
+function cloneOverlay(hero: SVGElement, className: string) {
+	if (hero.querySelector(`.${className}`)) return;
+	const src = document.querySelector(`.logo-anim-refs .${className}`);
+	if (src) hero.insertBefore(src.cloneNode(true), hero.firstChild);
 }
 
 /** Ensure overlay layers exist once under the hero SVG. */
@@ -173,12 +145,8 @@ export function ensureOverlays(hero: SVGElement): {
 		hero.insertBefore(buildRadarGrid(), hero.firstChild);
 		hero.insertBefore(buildRadarSeries(), hero.firstChild);
 	}
-	if (!hero.querySelector('.sankey-overlay')) {
-		hero.insertBefore(buildSankeyOverlay(), hero.firstChild);
-	}
-	if (!hero.querySelector('.chord-overlay')) {
-		hero.insertBefore(buildChordOverlay(), hero.firstChild);
-	}
+	cloneOverlay(hero, 'sankey-overlay');
+	cloneOverlay(hero, 'chord-overlay');
 	return {
 		heatmap: hero.querySelector('.heatmap-grid'),
 		radar: hero.querySelector('.radar-grid'),
