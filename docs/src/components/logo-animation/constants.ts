@@ -240,7 +240,22 @@ export const PHASES: readonly PhaseDef[] = [
 		colors: 'logo',
 	},
 	{ selector: '.scatter-ref', label: 'scatter', pause: 1500, ease: 'outBack', overlay: 'hidden' },
-	{ selector: '.pie-ref', label: 'pie', pause: 1500, ease: 'inOutCubic', overlay: 'hidden' },
+	{
+		selector: '.heatmap-ref',
+		label: 'heatmap',
+		pause: 1500,
+		ease: 'inOutCubic',
+		overlay: 'heatmap',
+		colors: 'heat-high',
+	},
+	{
+		selector: '.pie-ref',
+		label: 'pie',
+		pause: 2500,
+		ease: 'inOutCubic',
+		overlay: 'hidden',
+		colors: 'logo',
+	},
 	{
 		selector: '.chord-ref',
 		label: 'chord',
@@ -256,14 +271,6 @@ export const PHASES: readonly PhaseDef[] = [
 		ease: 'inOutCubic',
 		overlay: 'radar',
 		colors: 'logo',
-	},
-	{
-		selector: '.heatmap-ref',
-		label: 'heatmap',
-		pause: 2500,
-		ease: 'inOutCubic',
-		overlay: 'heatmap',
-		colors: 'heat-high',
 	},
 	{
 		selector: '.logo-ref',

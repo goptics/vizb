@@ -15,7 +15,7 @@ const ZERO: OverlayOpacities = {
 };
 
 describe('PHASES', () => {
-	it('loops bar → sankey → line → scatter → pie → chord → radar → heatmap → logo', () => {
+	it('loops bar → sankey → line → scatter → heatmap → pie → chord → radar → logo', () => {
 		assert.deepEqual(
 			PHASES.map((p) => p.label),
 			[
@@ -23,21 +23,24 @@ describe('PHASES', () => {
 				'sankey',
 				'line',
 				'scatter',
+				'heatmap',
 				'pie',
 				'chord',
 				'radar',
-				'heatmap',
 				'logo',
 			],
 		);
 	});
 
-	it('gives sankey and chord overlay + color modes and restores logo colors on line', () => {
+	it('gives sankey and chord overlay + color modes and restores logo colors on line and pie', () => {
 		const byLabel = Object.fromEntries(PHASES.map((p) => [p.label, p]));
 		assert.equal(byLabel.sankey.overlay, 'sankey');
 		assert.equal(byLabel.sankey.colors, 'sankey');
 		assert.equal(byLabel.sankey.pause, 2000);
 		assert.equal(byLabel.sankey.ease, 'outCubic');
+		assert.equal(byLabel.heatmap.overlay, 'heatmap');
+		assert.equal(byLabel.heatmap.colors, 'heat-high');
+		assert.equal(byLabel.heatmap.pause, 1500);
 		assert.equal(byLabel.chord.overlay, 'chord');
 		assert.equal(byLabel.chord.colors, 'chord');
 		assert.equal(byLabel.chord.pause, 2000);
@@ -45,6 +48,9 @@ describe('PHASES', () => {
 		assert.equal(byLabel.line.colors, 'logo');
 		assert.equal(byLabel.line.pause, 2000);
 		assert.equal(byLabel.line.overlay, 'hidden');
+		assert.equal(byLabel.pie.colors, 'logo');
+		assert.equal(byLabel.pie.pause, 2500);
+		assert.equal(byLabel.pie.overlay, 'hidden');
 	});
 });
 
