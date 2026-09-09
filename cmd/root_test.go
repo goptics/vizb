@@ -59,6 +59,29 @@ func (s *RootSuite) TestRunBenchmarkValidFileInput() {
 	s.Contains(outStr, "Generated")
 }
 
+func (s *RootSuite) TestAgentDefaultBarCsv() {
+	dir := s.T().TempDir()
+	input := s.writeTempCSV(dir, "region,category,quantity\nWest,A,10\nEast,A,20\n")
+	out := filepath.Join(dir, "out.html")
+
+	testutil.CaptureStderr(func() {
+		rootCmd.SetArgs([]string{"bar", input, "-o", out})
+		s.Require().NoError(rootCmd.Execute())
+	})
+
+	s.FileExists(out)
+	body, err := os.ReadFile(out)
+	s.Require().NoError(err)
+	s.Contains(string(body), "<html")
+}
+
+func (s *RootSuite) writeTempCSV(dir, contents string) string {
+	s.T().Helper()
+	path := filepath.Join(dir, "data.csv")
+	s.Require().NoError(os.WriteFile(path, []byte(contents), 0o644))
+	return path
+}
+
 func (s *RootSuite) TestRunBenchmarkNoArgsNoStdinExits() {
 	restore, exitCalled := testutil.TrapOsExitPanic(s.T())
 	defer restore()

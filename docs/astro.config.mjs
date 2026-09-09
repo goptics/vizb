@@ -29,6 +29,7 @@ export default defineConfig({
 				items: [
 					{ label: 'Introduction', slug: 'getting-started' },
 					{ label: 'Install', slug: 'getting-started/install' },
+					{ label: 'AI agents', slug: 'getting-started/ai-agents' },
 					{ label: 'Dimensions', slug: 'getting-started/dimensions' },
 				],
 			},
