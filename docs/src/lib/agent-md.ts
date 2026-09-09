@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, isAbsolute, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { snippetsFromCli } from '../components/invoke/fromCli.ts';
 import * as samples from '../data/samples.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -69,6 +70,35 @@ function liftFence(
 	});
 }
 
+function liftInvokeTabs(src: string): string {
+	return src.replace(new RegExp(`<InvokeTabs\\b${ATTR_CHUNK}\\/>`, 'g'), (tag) => {
+		const cli = quotedProp(tag, 'cli');
+		if (!cli) return '';
+		const snippets = snippetsFromCli(cli, quotedProp(tag, 'input'));
+		return [
+			'',
+			'### CLI',
+			'',
+			'```bash',
+			snippets.cli,
+			'```',
+			'',
+			'### HTTP',
+			'',
+			'```json',
+			snippets.http,
+			'```',
+			'',
+			'### Action',
+			'',
+			'```yaml',
+			snippets.action,
+			'```',
+			'',
+		].join('\n');
+	});
+}
+
 export function flattenMdx(
 	source: string,
 	opts: { fromFile?: string } = {},
@@ -104,7 +134,7 @@ export function flattenMdx(
 		);
 	}
 
-	body = liftFence(body, 'InvokeTabs', 'cli', 'bash');
+	body = liftInvokeTabs(body);
 	body = liftFence(body, 'CopyableCsv', 'csv', 'csv');
 	body = body.replace(
 		new RegExp(`<SalesSampleCsv\\b${ATTR_CHUNK}\\/>`, 'g'),

@@ -92,6 +92,27 @@ describe('flattenMdx', () => {
 		assert.equal(out.includes('<InvokeTabs'), false);
 	});
 
+	it('lifts InvokeTabs into CLI, HTTP, and Action tab content', () => {
+		const src = `<InvokeTabs
+  cli={\`vizb bar sales.csv -g region,category -p x,y -o sales.html\`}
+  input={SALES_SAMPLE}
+/>
+`;
+		const out = flattenMdx(src);
+		assert.match(out, /### CLI/);
+		assert.match(out, /```bash\nvizb bar sales.csv -g region,category -p x,y -o sales.html\n```/);
+		assert.match(out, /### HTTP/);
+		assert.match(out, /```json/);
+		assert.match(out, /"parser": "csv"/);
+		assert.match(out, /order_date,region,category/);
+		assert.match(out, /### Action/);
+		assert.match(out, /```yaml/);
+		assert.match(out, /uses: goptics\/vizb@v0/);
+		assert.match(out, /file: sales.csv/);
+		assert.match(out, /group: region,category/);
+		assert.equal(out.includes('<InvokeTabs'), false);
+	});
+
 	it('lifts CopyableCsv csv={IDENT} from samples.ts into a csv fence', () => {
 		const src = `import { DIMENSIONS_SALES_SAMPLE } from '../../../data/samples';
 
@@ -164,6 +185,13 @@ describe('flattenMdx corpus', () => {
 
 		const charts3d = byPath.get('/charts/3d.md') ?? '';
 		assert.equal(charts3d.includes('<InvokeTabs'), false);
+
+		const bar = byPath.get('/charts/bar.md') ?? '';
+		assert.match(bar, /### CLI/);
+		assert.match(bar, /### HTTP/);
+		assert.match(bar, /"parser": "csv"/);
+		assert.match(bar, /### Action/);
+		assert.match(bar, /uses: goptics\/vizb@v0/);
 	});
 });
 
