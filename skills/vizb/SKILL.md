@@ -14,7 +14,7 @@ metadata:
 
 # vizb
 
-Procedure only. Do not paste human docs into context. Fetch at most one `.md` page from `https://vizb.goptics.org` when you need depth.
+Procedure only. Do not paste human docs into context. Fetch one page per need from `https://vizb.goptics.org`. Never fetch the whole site. Never dump `llms-full.txt` unless the user asked for a full dump.
 
 ## 1. Is this vizb?
 
@@ -42,6 +42,8 @@ If that fails, fetch https://vizb.goptics.org/getting-started/install.md and try
 
 ## 3. Minimal flags
 
+If the job is merging vizb JSON datasets, run `vizb merge` (do not default to `vizb <chart>`). Fetch https://vizb.goptics.org/guides/merging.md if needed.
+
 Default:
 
 ```bash
@@ -50,7 +52,7 @@ vizb <chart> <input> -o <out>.html
 
 Leave the parser on `auto`. Do not add `--group`, `--select`, `--group-pattern`, units, filter, or `--stat` unless the user asked or auto output is wrong. Read vizb’s inference log before adding flags.
 
-`/vizb` with a path or pasted data: run this procedure on that input. `/vizb` with no args: use the current conversation (file, paste, or last command output).
+`/vizb` with a path: run this procedure on that input. Pasted data or `/vizb` with no file path: write a temp file (or pipe stdin) and pass that as input. `/vizb` with no args: use the current conversation (file, paste, or last command output).
 
 Write HTML to a file and return the path. Never paste the HTML into the chat.
 

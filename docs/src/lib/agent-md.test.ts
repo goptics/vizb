@@ -203,15 +203,20 @@ describe('sourceBody', () => {
 });
 
 describe('skills/vizb/SKILL.md', () => {
-	const skill = readFileSync(join(repoRoot, 'skills/vizb/SKILL.md'), 'utf8');
+	function readSkill(): string {
+		return readFileSync(join(repoRoot, 'skills/vizb/SKILL.md'), 'utf8');
+	}
 
 	it('has name, description, /vizb triggers, and metadata.version v0.1.0', () => {
+		const skill = readSkill();
 		assert.match(skill, /^---\n/);
 		assert.match(skill, /^name:\s*vizb\s*$/m);
 		assert.match(skill, /metadata:\s*\n\s+version:\s*v0\.1\.0/);
 		assert.match(skill, /user-invocable:\s*true/);
 		assert.doesNotMatch(skill, /disable-model-invocation:\s*true/);
-		const desc = skill.match(/description:\s*[>|]-?\n([\s\S]*?)(?:\n[a-z-]+:|\n---)/)?.[1] ?? skill;
+		const descMatch = skill.match(/description:\s*[>|]-?\n([\s\S]*?)(?:\n[a-z-]+:|\n---)/);
+		assert.ok(descMatch?.[1], 'missing description block');
+		const desc = descMatch[1];
 		assert.match(desc, /CSV/i);
 		assert.match(desc, /JSON/);
 		assert.match(desc, /benchmark/i);
@@ -220,10 +225,12 @@ describe('skills/vizb/SKILL.md', () => {
 	});
 
 	it('only fetches vizb.goptics.org markdown, never GitHub raw MDX', () => {
+		const skill = readSkill();
 		assert.equal(skill.includes('raw.githubusercontent.com'), false);
 		assert.match(skill, /https:\/\/vizb\.goptics\.org\/llms\.txt/);
-		assert.match(skill, /https:\/\/vizb\.goptics\.org\/install\.sh/);
-		assert.match(skill, /https:\/\/vizb\.goptics\.org\/install\.ps1/);
+		assert.match(skill, /curl -fsSL https:\/\/vizb\.goptics\.org\/install\.sh \| bash/);
+		assert.match(skill, /irm https:\/\/vizb\.goptics\.org\/install\.ps1 \| iex/);
+		assert.match(skill, /https:\/\/vizb\.goptics\.org\/getting-started\/install\.md/);
 		const mdUrls = [...skill.matchAll(/https:\/\/vizb\.goptics\.org(\/[\w./-]+\.md)/g)].map(
 			(m) => m[1],
 		);
@@ -233,5 +240,14 @@ describe('skills/vizb/SKILL.md', () => {
 				path.startsWith('/charts/');
 			assert.ok(allowed, `unexpected skill URL ${path}`);
 		}
+	});
+
+	it('merges datasets, writes pasted input, and fetches one page per need', () => {
+		const skill = readSkill();
+		assert.match(skill, /one page per need/i);
+		assert.doesNotMatch(skill, /at most one/i);
+		assert.match(skill, /vizb merge/);
+		assert.match(skill, /temp(?:orary)? file|pipe stdin/i);
+		assert.match(skill, /Never paste the HTML/i);
 	});
 });
