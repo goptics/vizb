@@ -32,6 +32,13 @@ describe('flattenMdx', () => {
 		assert.match(out, /Hello/);
 	});
 
+	it('keeps import/export lines inside fenced code', () => {
+		const src = '```bash\nexport PATH="$PATH:/usr/local/bin"\nimport { x } from "pkg"\n```\n';
+		const out = flattenMdx(src);
+		assert.match(out, /export PATH=/);
+		assert.match(out, /import \{ x \} from "pkg"/);
+	});
+
 	it('turns Aside into a blockquote', () => {
 		const src = `<Aside type="note">\nBe kind.\n</Aside>\n`;
 		assert.match(flattenMdx(src), /> Be kind/);
@@ -203,7 +210,11 @@ describe('buildLlmsTxt', () => {
 		]);
 		assert.match(txt, /https:\/\/vizb\.goptics\.org\/getting-started\/install\.md/);
 		assert.match(txt, /llms-full\.txt/);
-		assert.equal(txt.includes('raw.githubusercontent.com'), false);
+		const hrefs = [...txt.matchAll(/\((https?:\/\/[^)\s]+)\)/g)].map((m) => m[1]);
+		assert.ok(hrefs.length > 0);
+		for (const href of hrefs) {
+			assert.equal(new URL(href).hostname, 'vizb.goptics.org');
+		}
 		assert.equal(/https:\/\/vizb\.goptics\.org\/getting-started\/install[^.m]/.test(txt), false);
 	});
 });
@@ -216,7 +227,7 @@ describe('pageMarkdown', () => {
 			description: 'Group columns',
 			body: 'import { Aside } from "x";\n\n# Group\n',
 		});
-		assert.match(out, /^---\ntitle: Group\n/);
+		assert.match(out, /^---\ntitle: "Group"\n/);
 		assert.equal(out.includes('import {'), false);
 	});
 });

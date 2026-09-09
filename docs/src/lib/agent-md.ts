@@ -34,9 +34,7 @@ export const CORE_MD_PATHS = [
 ] as const;
 
 export function mdPathForId(id: string): string {
-	const trimmed = id.replace(/\/index$/, '').replace(/^index$/, 'index');
-	const slug = trimmed === 'index' ? 'index' : trimmed.replace(/\/index$/, '');
-	return `/${slug}.md`;
+	return `/${id.replace(/\/index$/, '') || 'index'}.md`;
 }
 
 /** Quoted/backtick spans may contain `>` (named-capture regex in cli). */
@@ -77,6 +75,12 @@ export function flattenMdx(
 ): string {
 	let body = source.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, '');
 	const locals = new Map<string, string>();
+	const fences: string[] = [];
+	body = body.replace(/```[\s\S]*?```/g, (fence) => {
+		const token = `\0FENCE${fences.length}\0`;
+		fences.push(fence);
+		return token;
+	});
 
 	body = body.replace(
 		/^import\s+(\w+)\s+from\s+['"](.+\.mdx)['"]\s*;?[ \t]*$/gm,
@@ -93,10 +97,10 @@ export function flattenMdx(
 	body = body.replace(/^export\s+[\s\S]*?;?[ \t]*$/gm, '');
 
 	for (const [name, md] of locals) {
-		body = body.replace(new RegExp(`<${name}\\s*/>`, 'g'), md);
+		body = body.replace(new RegExp(`<${name}\\s*/>`, 'g'), () => md);
 		body = body.replace(
 			new RegExp(`<${name}\\b[^>]*>[\\s\\S]*?</${name}>`, 'g'),
-			md,
+			() => md,
 		);
 	}
 
@@ -143,6 +147,7 @@ export function flattenMdx(
 		(_m, _name: string, inner: string) => inner,
 	);
 
+	body = body.replace(/\0FENCE(\d+)\0/g, (_m, i) => fences[Number(i)] ?? '');
 	return body.replace(/\n{3,}/g, '\n\n').trim() + '\n';
 }
 
@@ -214,7 +219,8 @@ export function docPageFromEntry(entry: {
 export function pageMarkdown(page: DocPage): string {
 	const { body, filePath } = sourceBody(page);
 	const md = flattenMdx(body, { fromFile: filePath ?? page.filePath });
-	return `---\ntitle: ${page.title}\ndescription: ${page.description}\n---\n\n${md}`;
+	const yamlScalar = (v: string) => JSON.stringify(v);
+	return `---\ntitle: ${yamlScalar(page.title)}\ndescription: ${yamlScalar(page.description)}\n---\n\n${md}`;
 }
 
 export function buildLlmsTxt(
