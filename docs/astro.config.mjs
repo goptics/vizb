@@ -128,6 +128,7 @@ export default defineConfig({
 			]),
 			starlightThemeRapide()
 		],
+		customCss: ['./src/components/quick-install.css'],
 		components: {
 			// Defer Pagefind until first search open (Lighthouse TBT / network).
 			Search: './src/components/Search.astro',
