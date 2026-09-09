@@ -10,9 +10,12 @@ on:
       - 'shared/stat.go'
       - 'internal/charts/**'
       - 'docs/src/content/docs/commands/serve.mdx'
+      - 'docs/src/**'
+      - 'docs/scripts/**'
       - 'docs/astro.config.mjs'
       - 'docs/package.json'
       - 'docs/pnpm-lock.yaml'
+      - 'skills/**'
       - '.github/actions/setup-js/**'
       - '.github/workflows/api-contract.yml'
   pull_request:
@@ -23,9 +26,12 @@ on:
       - 'shared/stat.go'
       - 'internal/charts/**'
       - 'docs/src/content/docs/commands/serve.mdx'
+      - 'docs/src/**'
+      - 'docs/scripts/**'
       - 'docs/astro.config.mjs'
       - 'docs/package.json'
       - 'docs/pnpm-lock.yaml'
+      - 'skills/**'
       - '.github/actions/setup-js/**'
       - '.github/workflows/api-contract.yml'
 
@@ -70,5 +76,11 @@ jobs:
       - run: pnpm install --frozen-lockfile
         working-directory: docs
 
+      - run: pnpm test
+        working-directory: docs
+
       - run: pnpm build
+        working-directory: docs
+
+      - run: node --experimental-strip-types scripts/check-agent-dist.mjs
         working-directory: docs

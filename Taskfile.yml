@@ -92,6 +92,11 @@ tasks:
     cmds:
       - cd ui && pnpm test
 
+  test:docs:
+    desc: Run docs unit tests (agent markdown + skill contract)
+    cmds:
+      - cd docs; [ -d node_modules ] || pnpm install; pnpm test; cd -
+
   test:action:
     desc: Run GitHub Action Node unit tests
     cmds:
