@@ -201,3 +201,37 @@ describe('sourceBody', () => {
 		assert.match(out.body, /Need the binary first/);
 	});
 });
+
+describe('skills/vizb/SKILL.md', () => {
+	const skill = readFileSync(join(repoRoot, 'skills/vizb/SKILL.md'), 'utf8');
+
+	it('has name, description, /vizb triggers, and metadata.version v0.1.0', () => {
+		assert.match(skill, /^---\n/);
+		assert.match(skill, /^name:\s*vizb\s*$/m);
+		assert.match(skill, /metadata:\s*\n\s+version:\s*v0\.1\.0/);
+		assert.match(skill, /user-invocable:\s*true/);
+		assert.doesNotMatch(skill, /disable-model-invocation:\s*true/);
+		const desc = skill.match(/description:\s*[>|]-?\n([\s\S]*?)(?:\n[a-z-]+:|\n---)/)?.[1] ?? skill;
+		assert.match(desc, /CSV/i);
+		assert.match(desc, /JSON/);
+		assert.match(desc, /benchmark/i);
+		assert.match(desc, /HTML/);
+		assert.match(desc, /\/vizb/);
+	});
+
+	it('only fetches vizb.goptics.org markdown, never GitHub raw MDX', () => {
+		assert.equal(skill.includes('raw.githubusercontent.com'), false);
+		assert.match(skill, /https:\/\/vizb\.goptics\.org\/llms\.txt/);
+		assert.match(skill, /https:\/\/vizb\.goptics\.org\/install\.sh/);
+		assert.match(skill, /https:\/\/vizb\.goptics\.org\/install\.ps1/);
+		const mdUrls = [...skill.matchAll(/https:\/\/vizb\.goptics\.org(\/[\w./-]+\.md)/g)].map(
+			(m) => m[1],
+		);
+		for (const path of mdUrls) {
+			const allowed =
+				CORE_MD_PATHS.includes(path as (typeof CORE_MD_PATHS)[number]) ||
+				path.startsWith('/charts/');
+			assert.ok(allowed, `unexpected skill URL ${path}`);
+		}
+	});
+});
