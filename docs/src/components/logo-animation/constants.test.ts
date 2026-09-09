@@ -15,7 +15,7 @@ const ZERO: OverlayOpacities = {
 };
 
 describe('PHASES', () => {
-	it('loops bar → sankey → line → scatter → pie → chord → heatmap → radar → logo', () => {
+	it('loops bar → sankey → line → scatter → pie → chord → radar → heatmap → logo', () => {
 		assert.deepEqual(
 			PHASES.map((p) => p.label),
 			[
@@ -25,8 +25,8 @@ describe('PHASES', () => {
 				'scatter',
 				'pie',
 				'chord',
-				'heatmap',
 				'radar',
+				'heatmap',
 				'logo',
 			],
 		);
