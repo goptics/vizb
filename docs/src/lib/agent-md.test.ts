@@ -60,6 +60,7 @@ describe('flattenMdx', () => {
 		const src = readFileSync(installPath, 'utf8').replace(/^---[\s\S]*?---\n/, '');
 		const out = flattenMdx(src, { fromFile: installPath });
 		assert.match(out, /https:\/\/vizb\.goptics\.org\/install\.sh/);
+		assert.match(out, /npx skills add goptics\/skills --skill vizb/);
 		assert.equal(out.includes('<QuickInstall'), false);
 		assert.equal(out.includes('import {'), false);
 	});
