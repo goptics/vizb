@@ -4,19 +4,13 @@ Notable changes to Vizb documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased]
+# [v0.21.0] - 2026-09-09
 
 ### Added
 
-- **cli** — Add pie `--donut` flag
-- **api** — Accept donut on PieChartConfig
-- **ui** — Add Donut setting and pie.dn URL param
-- **docs** — Document pie vs donut
-
-### Changed
-
-- **cli** — Default pie charts to filled (missing `donut` means filled pie, not a hole)
-- **ui** — Default pie charts to filled (missing donut means filled, not a hole)
+- **skills** — Add vizb agent skill and docs llms.txt ([#443](https://github.com/goptics/vizb/pull/443))
+- **ui** — Pie donut setting and filled-pie default ([#440](https://github.com/goptics/vizb/pull/440))
+- **cli** — Add pie --donut flag with filled-pie default ([#438](https://github.com/goptics/vizb/pull/438))
 
 # [v0.20.0] - 2026-08-28
 
