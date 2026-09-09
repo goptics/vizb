@@ -84,6 +84,39 @@ describe('flattenMdx', () => {
 		assert.match(out, /vizb bar data.csv -o out.html/);
 		assert.equal(out.includes('<InvokeTabs'), false);
 	});
+
+	it('lifts CopyableCsv csv={IDENT} from samples.ts into a csv fence', () => {
+		const src = `import { DIMENSIONS_SALES_SAMPLE } from '../../../data/samples';
+
+<CopyableCsv filename="sales.csv" csv={DIMENSIONS_SALES_SAMPLE} />
+`;
+		const out = flattenMdx(src);
+		assert.match(out, /```csv/);
+		assert.match(out, /region,product,sales/);
+		assert.equal(out.includes('<CopyableCsv'), false);
+	});
+
+	it('lifts SalesSampleCsv into a csv fence of SALES_SAMPLE', () => {
+		const src = `import SalesSampleCsv from '../../../components/SalesSampleCsv.astro';
+
+<SalesSampleCsv />
+`;
+		const out = flattenMdx(src);
+		assert.match(out, /```csv/);
+		assert.match(out, /order_date,region,category/);
+		assert.equal(out.includes('<SalesSampleCsv'), false);
+	});
+
+	it('lifts Card title into a heading and keeps inner text', () => {
+		const src = `<Card title="Bar Chart" icon="bars" href="/charts/bar">
+  Compare values across categories.
+</Card>
+`;
+		const out = flattenMdx(src);
+		assert.match(out, /### Bar Chart/);
+		assert.match(out, /Compare values across categories/);
+		assert.equal(out.includes('<Card'), false);
+	});
 });
 
 describe('flattenMdx corpus', () => {
@@ -115,6 +148,12 @@ describe('flattenMdx corpus', () => {
 
 		const dimensions = byPath.get('/getting-started/dimensions.md') ?? '';
 		assert.match(dimensions, /vizb/);
+		assert.match(dimensions, /```csv/);
+		assert.match(dimensions, /region,product/);
+
+		const charts = byPath.get('/charts.md') ?? '';
+		assert.match(charts, /Bar Chart/);
+		assert.match(charts, /Line Chart/);
 
 		const charts3d = byPath.get('/charts/3d.md') ?? '';
 		assert.equal(charts3d.includes('<InvokeTabs'), false);

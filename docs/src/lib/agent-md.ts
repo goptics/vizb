@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, isAbsolute, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import * as samples from '../data/samples.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const docsRoot = join(here, '../..');
@@ -41,6 +42,12 @@ export function mdPathForId(id: string): string {
 /** Quoted/backtick spans may contain `>` (named-capture regex in cli). */
 const ATTR_CHUNK = String.raw`(?:[^>\`'"]|\`[^\`]*\`|'[^']*'|"[^"]*")*`;
 
+function sampleByIdent(ident: string): string | undefined {
+	if (!(ident in samples)) return undefined;
+	const value = samples[ident as keyof typeof samples];
+	return typeof value === 'string' ? value : undefined;
+}
+
 function quotedProp(tag: string, prop: string): string | undefined {
 	const fromTicks = tag.match(new RegExp(`${prop}=\\{\`([\\s\\S]*?)\`\\}`));
 	if (fromTicks) return fromTicks[1];
@@ -48,6 +55,8 @@ function quotedProp(tag: string, prop: string): string | undefined {
 	if (fromDq) return fromDq[1];
 	const fromSq = tag.match(new RegExp(`${prop}='([^']*)'`));
 	if (fromSq) return fromSq[1];
+	const fromIdent = tag.match(new RegExp(`${prop}=\\{(\\w+)\\}`));
+	if (fromIdent?.[1]) return sampleByIdent(fromIdent[1]);
 }
 
 function liftFence(
@@ -93,6 +102,10 @@ export function flattenMdx(
 
 	body = liftFence(body, 'InvokeTabs', 'cli', 'bash');
 	body = liftFence(body, 'CopyableCsv', 'csv', 'csv');
+	body = body.replace(
+		new RegExp(`<SalesSampleCsv\\b${ATTR_CHUNK}\\/>`, 'g'),
+		() => `\n\`\`\`csv\n${samples.SALES_SAMPLE.trim()}\n\`\`\`\n`,
+	);
 
 	body = body.replace(
 		/<Aside\b[^>]*>\s*([\s\S]*?)\s*<\/Aside>/g,
@@ -108,6 +121,17 @@ export function flattenMdx(
 		/<TabItem\b[^>]*\blabel="([^"]+)"[^>]*>\s*([\s\S]*?)\s*<\/TabItem>/g,
 		(_m, label: string, inner: string) => `### ${label}\n\n${inner.trim()}\n`,
 	);
+
+	body = body.replace(
+		new RegExp(`<Card\\b${ATTR_CHUNK}>\\s*([\\s\\S]*?)\\s*</Card>`, 'g'),
+		(tag, inner: string) => {
+			const title = tag.match(/\btitle="([^"]*)"/)?.[1];
+			const text = inner.trim();
+			return title ? `### ${title}\n\n${text}\n` : `${text}\n`;
+		},
+	);
+
+	body = body.replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
 
 	body = body.replace(
 		/<\/?(?:Tabs|TabItem|CardGrid|Card|LinkCard|Steps|FileTree)\b[^>]*>/g,
