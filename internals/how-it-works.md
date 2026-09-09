@@ -1,0 +1,219 @@
+---
+title: "How It Works"
+description: "The data pipeline from a table or benchmark to an interactive HTML visualization."
+---
+
+Vizb reads a table — straight from CSV/JSON, or normalized from Go, Rust, or JavaScript benchmark output — into a structured Dataset, then embeds it in a self-contained HTML file with a Vue.js charting app.
+
+## Pipeline
+
+```
+CSV / JSON           ↘
+                      →   parser    →   Dataset struct   →   JSON / HTML
+Go / Rust / JS bench ↗  (auto-detected)  (grouping applied)
+```
+
+## Source Structure
+
+- cmd/
+  - root.go          CLI entry point, flag definitions, parser discovery
+  - merge.go         Merge command
+  - ui.go            HTML UI generation command
+  - cli/             Shared CLI building blocks — command, options, output, pipeline, progress
+  - charts/          Per-chart-type config specs (bar, line, scatter, pie, heatmap, radar, sankey, chord)
+- pkg/
+  - parser/
+    - registry.go        Parser registration (ParseFunc, Parsers map)
+    - detect.go          DetectParser — content-based format auto-detection
+    - parse_pattern.go   GroupBenchmarkName, ParseBenchmarkNameWithRegex
+    - tabular_pattern.go CSV/JSON column/field pattern parsing
+    - pattern_labels.go  Label utilities
+    - group_spec.go      `--group` / `--group-pattern` / `--group-regex` resolution
+    - axes_spec.go       `--axes` resolution (Name / X / Y / Z)
+    - select_spec.go     `--select` row/series filtering
+    - csv/               Generic CSV table parser
+    - json/              Generic JSON array-of-objects parser (with jsonpath subselector)
+    - golang/            Go testing.B parser
+    - javascript/        Vitest and Tinybench parsers
+    - rust/              Criterion and Divan parsers
+  - template/
+    - generate-ui.go     HTML template generation
+    - chunks.go          Go-stage chunk pruning (SelectChunks, gated BFS)
+    - vizb-ui.gen.go     Built Vue UI (tracked; rewritten by internal embed:ui when ui/ is newer)
+- shared/
+  - dataset.go         Dataset, DataPoint, Stat structs
+  - merge.go         MergeDatasets function
+  - aggregate.go     AggregateDataPoints — sum CSV/JSON rows sharing a group key
+  - chart_spec.go    Per-chart config specs
+  - chart_selection.go   Which chart renderers are bundled
+  - migrate.go       v0.12.0 → current Dataset settings migration
+- ui/                Vue 3 + TypeScript visualization app
+  - src/composables/
+    - charts/            Per-chart-type options composables (bar, line, scatter, pie, heatmap, radar, sankey, chord, 3D variants) plus correlation
+    - settings/          Field-registry-driven settings panel
+    - useSettingsStore.ts    Reactive chart settings (scale, sort, labels)
+    - useChartOptions.ts     Chart composable routing
+    - useStatsWorker.ts      Off-thread descriptive + correlation compute
+    - useChartPipeline.ts    End-to-end data → options pipeline
+  - src/lib/
+    - stats.ts          Framework-free descriptive statistics (33 metrics, 4 correlation methods)
+    - transform.ts      Data shaping for chart renderers
+    - csv.ts            CSV builders for stats export
+    - swap.ts, utils.ts
+  - src/workers/
+    - stats.worker.ts   Web Worker hosting the heavy stats math
+    - transform.worker.ts  Web Worker to re-render charts asynchronously based on settings changes
+  - src/components/
+    - ChartCard.vue        Individual chart container
+    - ChartBar.vue, ChartLine.vue, ChartScatter.vue, ChartPie.vue, ChartRadar.vue
+    - ChartHeatmap.vue     Heatmap renderer (also used for the correlation matrix)
+    - Chart3D.vue          3D bar / line / scatter renderer
+    - StatsPanel.vue       Descriptive + correlation statistics panel
+    - SettingsPanel.vue    Schema-less settings panel
+    - SelectionTabs.vue    Metric / chart-type picker
+  - src/views/
+    - Dashboard.vue        Full multi-chart dashboard layout
+
+## Data Structures
+
+### Stat
+
+A single metric value extracted from a benchmark result, or one numeric column/field in a CSV/JSON row:
+
+```json
+{
+  "type": "Execution Time (ns/op)",
+  "value": 1523.4
+}
+```
+
+### DataPoint
+
+A single data point (benchmark entry or table row) with up to four named dimensions and one or more metric stats:
+
+```json
+{
+  "name": "Sort",
+  "xAxis": "1024",
+  "yAxis": "QuickSort",
+  "zAxis": "",
+  "stats": [
+    { "type": "Execution Time (ns/op)", "value": 1523.4 },
+    { "type": "Memory Usage (B/op)", "value": 256 },
+    { "type": "Allocations (op)", "value": 4 }
+  ]
+}
+```
+
+### Dataset
+
+The top-level output struct containing metadata and all data points:
+
+```json
+{
+  "id": "sort-comparison",
+  "tag": "v1.1.0",
+  "timestamp": "2025-01-15T10:30:00Z",
+  "name": "MyBenchmarks",
+  "description": "Sorting algorithm comparison",
+  "history": [
+    { "tag": "v0.9.0", "timestamp": "2024-12-01T08:00:00Z" },
+    { "tag": "v1.0.0", "timestamp": "2025-01-15T10:30:00Z" }
+  ],
+  "meta": {
+    "cpu": { "name": "Apple M2", "cores": 8 },
+    "os": "darwin",
+    "arch": "arm64",
+    "pkg": "github.com/example/sort"
+  },
+  "axes": [
+    { "key": "x", "label": "size" },
+    { "key": "y", "label": "ns/op" }
+  ],
+  "settings": [
+    { "type": "bar",  "swap": "yxn", "scale": "linear", "sort": { "enabled": true, "order": "asc" }, "showLabels": false },
+    { "type": "line", "swap": "xyn", "scale": "log",    "sort": { "enabled": true, "order": "asc" }, "showLabels": true,  "threeDRotate": true },
+    { "type": "pie",  "swap": "n",   "sort": { "enabled": true, "order": "asc" }, "showLabels": true }
+  ],
+  "data": [
+    { "name": "Sort", "xAxis": "1024", "yAxis": "QuickSort", "stats": [...] },
+    { "name": "Sort", "xAxis": "1024", "yAxis": "MergeSort", "stats": [...] }
+  ]
+}
+```
+
+`settings` is an array of per-chart typed configs — each entry carries its own `scale`, `sort`, `showLabels`, etc. `scale` is a string (`"linear"` | `"log"`, logging the default value axis) or an object when axes or a non-default base are set:
+
+```json
+"scale": "log"
+"scale": { "type": "log", "axes": ["x"], "base": 10 }
+"scale": { "type": "log", "axes": ["x", "y"], "baseX": 5, "baseY": 10 }
+```
+
+v0.12.0 files (a single `settings` object with `charts`/`sort`/`showLabels`/`scale`) are auto-migrated in-memory on read by `shared/migrate.go`, so existing files keep working transparently.
+
+## Input Detection
+
+Vizb auto-detects the input format from the content (not the file extension). `--parser`/`-P` skips detection and forces a specific parser. Detection runs on file arguments and on piped stdin equally.
+
+  ### CSV / JSON Data
+
+Generic tabular data. A CSV table or a JSON array of objects is parsed into data points — numeric columns/fields each become their own chart, others can be promoted to Name / X / Y / Z with `--group`.
+
+  ```bash
+  vizb data.csv -o output.html
+  vizb data.json -o output.html
+  ```
+
+  ### Go Bench Text
+
+Standard `go test -bench` output. Parsed line by line using `golang.org/x/perf/benchfmt`.
+
+  ```bash
+  go test -bench . > bench.txt
+  vizb bench.txt -o output.html
+  ```
+
+  ### Go Bench JSON
+
+`go test -bench -json` output. Vizb extracts the `output` field from each event and converts to text before parsing.
+
+  ```bash
+  go test -bench . -json | vizb -o output.html
+  ```
+
+  ### Rust Bench
+
+`cargo bench` output from [Criterion](https://github.com/bheisler/criterion.rs) and [Divan](https://github.com/nvzqz/divan). Each is detected from its own header / table style.
+
+  ```bash
+  cargo bench | vizb -o output.html
+  ```
+
+  ### JS / TS Bench
+
+[Vitest](https://vitest.dev) bench and [Tinybench](https://github.com/tinylibs/tinybench) `console.table` output.
+
+  ```bash
+  npx vitest bench | vizb -o output.html
+  ```
+
+  ### Vizb JSON
+
+Previously generated vizb JSON output. Loaded directly without re-parsing.
+
+  ```bash
+  vizb bench.txt -o data.json
+  vizb data.json -o output.html
+  ```
+
+## Processing Steps
+
+1. **Input** — file argument or stdin pipe written to temp file.
+2. **Preprocess** — JSON bench events converted to text (if needed).
+3. **Detect Parser** — `DetectParser` (`pkg/parser/detect.go`) samples the content and picks the first matching signature in priority order. `--parser` forces a specific parser and skips detection.
+4. **Parse** — the selected parser extracts names and stats from the input.
+5. **Resolve axes** — `--axes` (`pkg/parser/axes_spec.go`) maps CSV/JSON columns or benchmark label segments to the Name / X / Y / Z dimensions; `--group` (`group_spec.go`) builds the dimension label; `--group-pattern` or `--group-regex` splits that label; `--select` (`select_spec.go`) keeps only matching rows/series.
+6. **Build** — assemble the `Dataset` struct with metadata, axes, per-chart settings, and data points.
+7. **Prune** — `SelectChunks` (`pkg/template/chunks.go`) walks the chunk reference graph built at Vite build time and keeps only chunks reachable from the selected chart renderers (default: `bar,line,pie`). Sankey and Chord are opt-in roots. The 3D engine is gated separately: included when `--charts` contains `bar` or `line` and embedded data has a z-axis, or when `vizb ui --data-url` is run with `--3d`.
+8. **Output** — JSON (`json.Marshal`) or HTML (Vue template + embedded JSON + `VIZB_CHARTS` + pruned chunk map). The UI intersects each dataset's `settings` with `VIZB_CHARTS` on load so pruned chart types never appear as tabs.

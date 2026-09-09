@@ -1,0 +1,48 @@
+---
+title: "Axis Swapping"
+description: "Rearrange Name, X-axis, and Y-axis dimensions in the UI."
+---
+
+When your data has multiple dimensions (2D or 3D), the UI lets you swap which dimension maps to which axis. This changes the perspective without regenerating the file. Dimensions come from grouping (CSV/JSON columns or benchmark name segments).
+
+## How It Works
+
+Vizb uses up to four dimensions on every dataset:
+- **Name** — separate chart panels
+- **XAxis** — categories or values on the X-axis
+- **YAxis** — series / variants (or second coordinate)
+- **ZAxis** — depth layer of a [3D chart](/charts/3d)
+
+In the UI, use the axis dropdown to rearrange these. For example, swap Name and YAxis to see all variants grouped differently.
+
+The dropdown offers arrangements of the present axes — how many you get depends
+on how many dimensions your data has:
+
+| Dimensions present | Available arrangements |
+|---|---|
+| 1 | `x`, `y` |
+| 2 | `nx`, `ny`, `xn`, `xy`, `yn`, `yx` |
+| 3 | every `n`/`x`/`y` ordering, plus `xyz` orderings (3D) |
+| 4 | every `n`/`x`/`y`/`z` ordering |
+
+An arrangement that **uses** z (e.g. `xyz`) renders a 3D chart; one that rotates z
+out to `name` (e.g. `nxy`) renders 2D. z is only offered when both x and y are
+present. For single-dimension data, the lone value can only be placed on the x or
+y axis — grouping it by `name` would make one chart per point.
+
+## When to Swap
+
+- Compare different perspectives of the same 3D data
+- Group by variant instead of by benchmark family
+- Switch which dimension appears on the X-axis for better comparison
+
+## Setting Defaults
+
+The initial axis assignment comes from your `--group-pattern` or `--group-regex` flags:
+
+```bash
+# Default: Name=XAxis=YAxis assignment from pattern
+vizb bench.txt -p n/x/y -o output.html
+```
+
+> Axis swapping in the UI is non-destructive — the underlying data stays the same. Swap freely and revert anytime.

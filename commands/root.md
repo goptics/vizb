@@ -1,0 +1,308 @@
+---
+title: "vizb"
+description: "Parse data and generate HTML UI visualizations or JSON representation."
+---
+
+The root command (`vizb`) is the primary entry point. It parses data and generates interactive visualizations. The input format is auto-detected by default (override with `--parser`).
+
+Use the root command to generate **multiple chart types** from one dataset (`--charts bar,line,...`) with optional per-chart overrides (`--chart`). To generate a **single chart** with a flag set tailored to it, use the [chart subcommands](/commands/charts) (`vizb bar`, `vizb pie`, …) instead.
+
+## Usage
+
+```bash
+vizb [target] [flags]
+```
+
+## Input Methods
+
+  ### File
+
+```bash
+  vizb data.csv -o output.html
+  ```
+  Pass a file path as the first argument.
+
+  ### Stdin Pipe (benchmarking)
+
+```bash
+  go test -bench . | vizb -o output.html
+  ```
+  Piping go benchmarks directly to vizb.
+
+  ### Auto-Detect
+
+```bash
+  # Format detected from content — no --parser needed
+  vizb data.csv -o output.html                    # ✨ csv
+  vizb data.json -o output.html                   # ✨ json
+  go test -bench . -json | vizb -o output.html    # ✨ go
+  ```
+  With `--parser auto` (the default), vizb inspects the input content, picks the right parser, and prints its choice.
+
+## Parsers
+
+Vizb reads CSV and JSON tables directly, and parses benchmark output from Go, Rust,
+JavaScript, and TypeScript frameworks. The format is detected automatically; force a
+parser with `--parser`:
+
+```bash
+# CSV / JSON tables (auto-detected; -P optional)
+vizb data.csv -o output.html
+vizb data.json -o output.html
+
+# Rust Criterion
+cargo bench | vizb --parser rs:criterion -o output.html
+
+# Rust Divan
+cargo bench | vizb --parser rs:divan -o output.html
+
+# Vitest
+npx vitest bench | vizb --parser js:vitest -o output.html
+
+# Tinybench
+node bench.js | vizb --parser js:tinybench -o output.html
+```
+
+See the [Parser Guide](/guides/parsers) for each parser's metrics, and the
+[Tabular Data guide](/guides/data) for CSV/JSON rules.
+
+## Flags
+
+| Flag | Short | Default | Description |
+|------|-------|---------|-------------|
+| `--output` | `-o` | *(stdout)* | Output file path. `.json` → JSON, else → HTML |
+| `--parser` | `-P` | `auto` | Parser: `auto` (detect), `go`, `js:tinybench`, `js:vitest`, `rs:criterion`, `rs:divan`, `csv`, `json` |
+| `--name` | `-n` | `Benchmarks` | Dataset name |
+| `--theme` | | *(empty)* | Embed a color theme on the dataset (**repeatable**; first is active). Built-in name, structured `name:colors=#hex,...;visualMapColors=#hex,#hex`, or bare `#hex,#hex,...` palette. Empty when unset (UI default). Built-in `default` is not embedded. |
+| `--description` | `-d` | `""` | Dataset description |
+| `--tag` | `-t` | `""` | Tag identifier for release tracking |
+| `--id` | | `""` | Stable dataset id for `?id=` deep links in the HTML UI |
+| `--group-pattern` | `-p` | `x` | Pattern-based grouping (`n`/`x`/`y`/`z` with your chosen separators; `z` → 3D). Benchmarks: `/` or `_`. CSV/JSON: match `-g` (commas for `-g a,b,c`, spaces for quoted `-g "a b"`, etc.) |
+| `--group-regex` | `-r` | `""` | Regex-based grouping (named captures) |
+| `--group` | `-g` | `""` | Names dimensions in `--group-pattern` order. csv/json: column/field names (separators must match `-p`); benchmark parsers: human-readable axis labels |
+| `--select` | | *(repeatable)* | csv/json only: see [`--select` mode matrix](#--select-mode-matrix) below |
+| `--json-path` | | `""` | json only: select a nested array to chart via a jq-like dot path (e.g. `--json-path '.data.results'`) |
+| `--sort` | `-s` | `""` | **Deprecated on root:** use `--chart <type>:sort=<asc\|desc>`. Sort order: `asc` or `desc` (default: as-is) |
+| `--charts` | `-c` | `bar,line,pie` | Chart types to generate (`bar`, `line`, `scatter`, `pie`, `heatmap`, `radar`, `sankey`, `chord`) |
+| `--chart` | | | Per-chart type settings override (repeatable): `<type>:<props>` — comma or semicolon between props; see below |
+| `--show-labels` | `-l` | `false` | **Deprecated on root:** use `--chart <type>:labels`. Show value labels on charts |
+| `--filter` | `-f` | `""` | Regex to include only matching rows (CSV/JSON: `--group` label) or benchmark names |
+| `--mem-unit` | `-M` | `B` | Memory unit: `b`, `B`, `KB`, `MB`, `GB` |
+| `--time-unit` | `-T` | `ns` | Time unit: `ns`, `us`, `ms`, `s` |
+| `--number-unit` | `-N` | `""` | Number unit: `K`, `M`, `B`, `T` (default: as-is) |
+| `--round` | | off | Round numeric values to 2 decimal places **in the output data** (irreversible in the written file; off by default) |
+
+`--theme` changes series colors only; light/dark mode remains independent. Themes expand into
+`dataset.themes[]` with `themes[0]` active (no separate active field on new output). See [Color
+Themes](/ui/themes) for the CLI catalog, structured syntax, multi-theme selector rules, and
+localStorage behavior.
+
+```bash
+# Built-in
+vizb data.csv --theme westeros -o report.html
+
+# Multiple themes (selector shown); first --theme is active
+vizb data.csv --theme vintage --theme westeros -o report.html
+
+# Structured custom or bare hex palette
+vizb data.csv --theme 'brand:colors=#ff6b6b,#4ecdc4,#ffe66d' -o report.html
+vizb data.csv --theme "#ff6b6b,#4ecdc4,#ffe66d" -o report.html
+```
+
+## Examples
+
+### Basic usage
+
+```bash
+# Pipe benchmarks to HTML
+go test -bench . | vizb -o output.html
+
+# From a file
+vizb bench.txt -o output.html
+```
+
+### JSON output
+
+```bash
+# Generate JSON for later merging
+vizb bench.txt -o data.json
+
+# Then generate HTML from JSON
+vizb data.json -o output.html
+```
+
+### Grouping
+
+```bash
+# Pattern grouping (slash-separated multi-dimensional data)
+vizb bench.txt -p n/x/y -o output.html
+
+# 4D grouping → renders a 3D chart (z requires x and y)
+vizb bench.txt -p n/x/y/z -o output.html
+
+# Regex grouping
+vizb bench.txt -r '(?<n>.*)/text=(?<x>.*)/level=(?<y>.*)' -o output.html
+```
+
+See the [Group guide](/guides/group) and [3D Charts](/charts/3d) for detailed examples.
+
+### `--select` mode matrix
+
+`--select` is **repeatable** (`csv` and `json` parsers only). Its role depends on whether grouping is explicit:
+
+| Mode | Trigger | `--select` syntax | What it does |
+|------|---------|-------------------|--------------|
+| **Group stat pick** | `-g`, `-r`, or non-default `-p` | Any number of numeric columns; optional `{label}` | Picks which numeric columns get their own chart |
+| **Solo value axes** | `--select` only; all selected cols numeric | 2–3 cols per flag: `x,y` or `x,y,z` | Assigns columns to continuous coordinate axes; disables auto-group and auto-value |
+| **Solo mixed axes** | One `--select` only; categorical `x` + numeric `y[,z]` | 2–3 cols: `region,latency` | Category on x, values on y/z; [scatter](/charts/scatter) is the primary chart |
+| **Solo multi-stat** | Repeatable `--select` only; 2 cols per flag | `region,latency` + `region,sales` | One dataset; each flag is an independent `dim,metric` pair; charts split by `stat.type` (default `latency by region`) |
+| **Auto-group** | No flags; mixed categorical + numeric file | — | Picks highest-cardinality categorical column as x |
+| **Auto-value** | No flags; all-numeric file | — | First 2–3 numeric columns as coordinate axes |
+
+**Solo `--select` rules:**
+
+- A **single** `--select` needs **2–3 columns** (assigned to `x`, `y`, optional `z` by position).
+- **Repeatable** `--select` (2 columns per flag only): each flag is `dim,metric` → one stat type in a **single dataset**; charts separate by stat name (default `metric by dim`, e.g. `latency by region`). Rename axis labels with `{label}` on the dimension column (`region{Region}`). Rename chart tabs with a trailing `(Title)`: `--select region{Region},latency (Latency by Region)`. Legacy: `{label}` on the metric column still overrides the stat name when `()` is omitted.
+- **Explicit placement** (single `--select` only): `x:region,y:latency,z:sales` — use for every column or omit prefixes for all.
+- **No overlap** with `--group` columns. Repeatable solo `--select` does **not** imply grouping.
+- Other parsers warn and ignore `--select`.
+
+```bash
+# Grouped: pick stat columns
+vizb bar sales.csv -g region,product -p x,y --select amount,total -o bars.html
+
+# Solo value: numeric x,y from spiral data
+vizb scatter spiral-3d.csv --select x,y -o xy.html
+
+# Solo mixed: category region + value latency (scatter)
+vizb scatter examples/csv/region-metrics.csv --select region,latency -o mixed.html
+
+# Multi-stat: one dataset, charts by stat type
+vizb scatter examples/csv/region-metrics.csv \
+  --select region,latency \
+  --select region,sales \
+  -o dual.html
+```
+
+A single solo `--select` auto-names the dataset from its columns (`region × latency`). Repeatable `--select` keeps one dataset; chart tabs follow stat types (`latency by region`, `sales by region`).
+
+See [Group vs Select](/guides/group-vs-select#when-to-use-which) for when to use each approach, and the [Select](/guides/select) guide for the full solo `--select` reference.
+
+### Logarithmic scale
+
+Bare `log` / `linear` stay strings (log the default value axis). A bag is an unwrapped semicolon list on `--scale` (no braces). `--chart` wraps the same fields in `{…}`. Nested `log:axes=x` is not valid.
+
+```bash
+vizb line bench.txt --scale log -o output.html
+vizb line bench.txt --scale 'type=log;axes=x' -o output.html
+vizb line bench.txt --scale 'type=log;axes=x,y;base=10' -o output.html
+vizb line bench.txt --scale 'type=log;axes=x,y;baseX=5;baseY=10' -o output.html
+
+vizb bench.txt --chart bar:scale=log -o output.html
+vizb bench.txt -c line --chart 'line:scale={type=log;axes=x;base=10}' -o output.html
+vizb bench.txt -c line --chart 'line:scale={type=log;axes=x,y;baseX=5;baseY=10};smooth' -o output.html
+```
+
+### Filtering
+
+```bash
+# Include only benchmarks matching a pattern
+vizb bench.txt -f "Sort" -o output.html
+```
+
+### Reducing output size
+
+By default `bar`, `line`, and `pie` are bundled. Use `--charts` to add
+`heatmap`, `radar`, `sankey`, or `chord`, or to narrow the set further — unselected
+renderers are dropped at generation time.
+
+```bash
+vizb bench.txt -c bar -o output.html       # ~400 kB
+vizb bench.txt -c bar,line -o output.html  # ~415 kB
+```
+
+The 3D engine (~380 kB) is included automatically when data has a z-axis and `bar`
+or `line` is selected. For 2D-only data, it is always omitted.
+
+See [UI Overview → Output File Size](/ui#output-file-size) for a size reference table.
+
+### Per-chart settings
+
+Use `--chart` (repeatable) to override settings for a specific chart type. Each
+spec is `<type>:<props>` where props are `key=value` pairs or bare flags
+(`labels`, `stack`, …).
+
+**Prop separators**
+
+- **Comma** still separates single-value props. Existing examples stay valid:
+  `bar:swap=yx,sort=asc`, `pie:sort=desc,labels`.
+- When a value itself contains commas (multi-value keys such as `stat`), either:
+  - Put that prop alone (or only before further `key=value` forms):
+    `--chart bar:stat=center,spread`
+  - Or separate props with **semicolons** so commas stay inside the value:
+    `--chart 'bar:stat=center,spread;labels'`
+- **Object props** use braces: `key={field=value;field=value}`. Inside `{}`,
+  only `;` separates fields so commas stay literal (`rgba(…)`, `axes=x,y`,
+  `borderRadius=8,8,0,0`). Unwrapped `bar:bg=color=…` is invalid.
+
+Semicolon mode matches structured `--theme` specs
+(`name:colors=#hex,...;visualMapColors=...`); both use the same prop grammar.
+
+```bash
+# Bar chart: swap axes to yx, sort ascending
+vizb bench.txt -p n/x/y --chart bar:swap=yx,sort=asc -o output.html
+
+# Line chart: log scale; pie chart: show labels
+vizb bench.txt --chart line:scale=log --chart pie:labels -o output.html
+
+# 3D bar with auto-rotate; line with labels off
+vizb bench.txt -p n/x/y/z --chart bar:3d-rotate --chart line:labels=false -o output.html
+
+# Horizontal grouped bars (bar:horizontal)
+vizb sales.csv -g region,category -p x,y --chart bar:horizontal -o out.html
+
+# Multi-value stat categories (comma inside the value)
+vizb sales.csv -c bar --chart bar:stat=center,spread -o out.html
+
+# Multi-value + another prop: use semicolon between props
+vizb sales.csv -c bar --chart 'bar:stat=center,spread;labels' -o out.html
+
+# Category background on 2D bars (writes background.active: true; no UI toggle)
+vizb sales.csv -c bar --chart bar:bg -o out.html
+
+# Styled object (semicolons inside braces; commas stay literal)
+vizb sales.csv -c bar --chart 'bar:bg={color=rgba(180, 180, 180, 0.2);borderColor=#000}' -o out.html
+```
+
+**Supported keys:**
+
+| Key | Bare flag | Values | Valid for |
+|-----|-----------|--------|-----------|
+| `swap` | — | permutation of axis chars (e.g. `yx`, `yxn`) | all |
+| `sort` | — | `asc`, `desc` | all |
+| `labels` | `labels` | `true`, `false` | all |
+| `scale` | — | `linear`, `log`, or `type=log;axes=x,y;base=10` | `bar`, `line`, `scatter` |
+| `3d-rotate` | `3d-rotate` | `true`, `false` | `bar`, `line` 3D only |
+| `bg` | `bg` | `{field=value;…}` style object, or bare/`{}` for on | `bar` 2D only |
+| `stat` | `stat` | `all`, or comma-separated categories (`center,spread`, …) | all |
+
+Bare flags (no `=`) default to `true`. Per-chart settings override the chart's own defaults. The root-level `--sort` and `--show-labels` flags are deprecated — use `--chart` overrides instead.
+
+### Tagging for release tracking
+
+```bash
+vizb bench.txt -o v1.json --tag v1.0 -n "MyBench"
+```
+
+See [Merging Guide](/guides/merging) for tag-based comparison.
+
+### Deep links
+
+Set `--id` when generating HTML so the UI can link to a dataset by name instead of index:
+
+```bash
+vizb sales.csv -g date,region -p x,y --id sales-by-date -o report.html
+# Share: report.html?id=sales-by-date
+```
+
+The id is stored as a top-level field on the dataset JSON. Passthrough JSON keeps any id already present — `--id` only applies on fresh assembly. When a dataset has an id, the UI syncs `?id=` in the URL; otherwise it falls back to `?d=0`, `?d=1`, … See [UI Overview → Deep links](/ui#deep-links).

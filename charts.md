@@ -1,0 +1,296 @@
+---
+title: "Charts Overview"
+description: "How vizb's chart types share the same x/y/z dimension model — and how to pick the right shape for your data."
+---
+
+Vizb folds the same **x/y/z dimension model** into every chart type — you describe your data once with a group pattern (e.g. `-p x,y,z` for CSV or `-p x/y/z` for benchmarks), and each selected renderer interprets it in parallel. One pipeline, several shapes. Use `--charts` (or `-c`) to control which renderers are bundled into the output file.
+
+## Chart Types
+
+  ### Bar Chart
+
+Compare values across categories. Supports linear and log scale, grouped 2D bars, and WebGL bar3D for z-axis data.
+
+  ### Line Chart
+
+Track trends across X-axis values. One line per Y-series in 2D; switches to WebGL line3D with a z-axis.
+
+  ### Scatter Chart
+
+Plot individual points in 2D or 3D. Grouped categories or auto-value from all-numeric columns.
+
+  ### Pie Chart
+
+Show proportional distribution. Scales from one pie (1D) to two side-by-side (2D) to three pies (3D).
+
+  ### Radar Chart
+
+Multi-dimensional comparison on a spoke diagram. Spokes change meaning across 1D/2D/3D — great for profiles and benchmarks.
+
+  ### Heatmap
+
+X × Y colored grid — works with or without a z-axis. With z, cell value sums z-series and cell color blends the z palette.
+
+  ### Sankey Chart
+
+Weighted flows between source and target nodes. Edge lists map x → source, y → target; multi-hop paths are multiple edge rows. Opt-in only.
+
+  ### Chord Chart
+
+Circular relationships between source and target nodes. Edge lists map x → source, y → target; cycles and reverse links remain visible. Opt-in only.
+
+## Dimensions: 1D, 2D, and 3D
+
+Every vizb chart is driven by up to three chart dimensions: **X-axis** (`x`), **Y-axis** (`y`), and **Z-axis** (`z`). You declare them with the `-p` flag:
+
+| Pattern | Dimensionality | What you get |
+|---------|---------------|--------------|
+| `-p x` | **1D** — X only | X is the only axis |
+| `-p x,y` (CSV) or `-p x/y` (bench) | **2D** — X + Y | Y subdivides each X point into groups or series |
+| `-p x,y,z` (CSV) or `-p x/y/z` (bench) | **3D** — X + Y + Z | Z adds a third dimension; bar/line go WebGL, pie/radar add a third slice set, heatmap blends Z into cell color; **Sankey and Chord ignore z** |
+
+Pie, radar, Sankey, and Chord have no cartesian axes in the usual sense, but the same `-p` pattern governs how they interpret dimensions:
+
+| Chart | 1D (`-p x`) | 2D (`-p x,y` / `-p x/y`) | 3D (`-p x,y,z` / `-p x/y/z`) |
+|-------|--------------|----------------|------------------|
+| **Bar** | Single bar series over X | Grouped bars, one series per Y value; or auto-value (all-numeric) | WebGL bar3D — Z stacked per (X, Y) cell; or auto-value continuous 3D |
+| **Line** | Single line over X | One line per Y value across X; or auto-value (all-numeric) | WebGL line3D — sparse points per Z; or auto-value continuous 3D |
+| **Scatter** | One point per X | One series per Y value across X; or auto-value (all-numeric) | WebGL scatter3D — points per Z; or auto-value continuous 3D |
+| **Pie** | One pie (X = slices) | Two pies side-by-side (By X / By Y) | Three pies (By X / By Y / By Z) |
+| **Radar** | One polygon, X = spokes, value = stat total | One polygon per X, Y = spokes, legend = X | One polygon per Z, X = data points, Y = spokes |
+| **Heatmap** | n/a — needs at least X + Y | Matrix X × Y, single-series gradient | Same matrix; cell = Σ z, color blends z palette |
+| **Sankey** | n/a — needs source + target | **X = source**, **Y = target**; link value = measure; multi-hop = multiple edge rows | **Z ignored** — no 3D layout; weights still sum per (source, target) |
+| **Chord** | n/a — needs source + target | **X = source**, **Y = target**; link value = measure; cycles and reverse links are preserved | **Z ignored** — no 3D layout; weights still sum per (source, target) |
+
+> Heatmap, Sankey, and Chord require at least a 2D pattern (`-p x,y` for CSV or `-p x/y` for benchmarks). Passing `-p x` with one of these charts will produce an empty chart panel. For Sankey and Chord, treat the edge list as source/target columns (e.g. `-g source,target -p x,y`).
+
+## 4D: Named Chart Groups
+
+The `n` axis is the 4th dimension. Unlike x/y/z — which add visual structure *inside* a chart — `n` splits data into **named groups**, each rendered as its own chart panel. Every unique name value becomes a separate chart.
+
+| Pattern | Result |
+|---------|--------|
+| `-p n/x` | One chart per name, each a 1D view |
+| `-p n/x/y` | One chart per name, each a 2D view |
+| `-p n/x/y/z` | One chart per name, each a 3D view — **maximum dimensionality** |
+
+For CSV, `-g` maps columns to pattern slots positionally:
+
+```bash
+# 4D: name=algo, x=input_size, y=variant, z=run_type
+vizb data.csv -g algo,input_size,variant,run_type -p n,x,y,z -c bar -o out.html
+```
+
+> The `n` axis is optional. Without it, all rows share a single unnamed chart. With it, each unique name value gets its own panel — useful for comparing independent algorithms, datasets, or experiments side by side.
+
+## Settings
+
+Most settings apply to every chart type. The exceptions are `scale` (log), which only affects cartesian charts, and `3d-rotate` (3D auto-spin), which only applies when bar, line, or scatter renders in WebGL mode. Sankey and Chord support sort, labels, and swap only.
+
+| Setting | `bar` | `line` | `scatter` | `pie` | `radar` | `heatmap` | `sankey` | `chord` |
+|---------|:-----:|:------:|:---------:|:-----:|:-------:|:---------:|:--------:|:-------:|
+| `sort` / `--sort` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `labels` / `--show-labels` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `swap` (axis reorder) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `scale` log | ✓ | ✓ | ✓ | ✗ | ✗ | ✗ | ✗ | ✗ |
+| `3d-rotate` (3D auto-rotate) | ✓ 3D only | ✓ 3D only | ✓ 3D only | ✗ | ✗ | ✗ | ✗ | ✗ |
+
+To override a setting for a single chart type without affecting the others, use the `--chart <type>:key=val` syntax. Object props use `{field=value;field=value}` (semicolons inside braces; commas stay literal). Unwrapped `bar:bg=color=…` is invalid.
+
+```bash
+# Turn on labels for bar only
+vizb data.csv -g category --chart bar:labels=true -o output.html
+
+# Enable sort on radar, keep others unsorted
+vizb data.csv -g category,metric -p x,y -c bar,radar --chart radar:sort=asc -o output.html
+
+# Category background on 2D bars (writes background.active: true; no UI toggle)
+vizb data.csv -g category --chart bar:bg -o output.html
+
+# Styled object: braces required; semicolons inside {}; commas stay literal
+vizb data.csv -g category --chart 'bar:bg={color=rgba(180, 180, 180, 0.2);borderColor=#000}' -o output.html
+```
+
+See [Commands: root](/commands/root) for the full flag reference.
+
+## Selecting Chart Types
+
+The `--charts` flag (short: `-c`) controls which renderers are compiled into the output HTML. The default is:
+
+```
+bar,line,pie
+```
+
+Add `scatter`, `heatmap`, `radar`, `sankey`, or `chord` explicitly when you need them: `-c bar,line,pie,scatter,heatmap,radar,sankey,chord`.
+
+Each chart renderer ships as a separate compressed chunk; only the ones you select are embedded. This keeps the output small when you only need one or two shapes:
+
+### CLI
+
+```bash
+vizb data.csv -g category,metric -p x,y -c bar,radar -o output.html
+```
+
+### HTTP
+
+```json
+{
+  "input": "<contents of data.csv>",
+  "parser": "csv",
+  "grouping": {
+    "columns": [
+      "category",
+      "metric"
+    ],
+    "pattern": "x,y"
+  },
+  "charts": {
+    "types": [
+      "bar",
+      "radar"
+    ]
+  },
+  "output": {
+    "format": "html"
+  }
+}
+```
+
+### Action
+
+```yaml
+- uses: goptics/vizb@v0
+  with:
+    file: data.csv
+    group: category,metric
+    group-pattern: x,y
+    charts: bar,radar
+    output-html: output.html
+```
+
+### CLI
+
+```bash
+vizb data.csv -g source,target -p x,y -c sankey -o output.html
+```
+
+### HTTP
+
+```json
+{
+  "input": "<contents of data.csv>",
+  "parser": "csv",
+  "grouping": {
+    "columns": [
+      "source",
+      "target"
+    ],
+    "pattern": "x,y"
+  },
+  "charts": {
+    "types": [
+      "sankey"
+    ]
+  },
+  "output": {
+    "format": "html"
+  }
+}
+```
+
+### Action
+
+```yaml
+- uses: goptics/vizb@v0
+  with:
+    file: data.csv
+    group: source,target
+    group-pattern: x,y
+    charts: sankey
+    output-html: output.html
+```
+
+### CLI
+
+```bash
+vizb data.csv -g source,target -p x,y -c chord -o output.html
+```
+
+### HTTP
+
+```json
+{
+  "input": "<contents of data.csv>",
+  "parser": "csv",
+  "grouping": {
+    "columns": [
+      "source",
+      "target"
+    ],
+    "pattern": "x,y"
+  },
+  "charts": {
+    "types": [
+      "chord"
+    ]
+  },
+  "output": {
+    "format": "html"
+  }
+}
+```
+
+### Action
+
+```yaml
+- uses: goptics/vizb@v0
+  with:
+    file: data.csv
+    group: source,target
+    group-pattern: x,y
+    charts: chord
+    output-html: output.html
+```
+
+### CLI
+
+```bash
+vizb data.csv -g category -c bar -o output.html
+```
+
+### HTTP
+
+```json
+{
+  "input": "<contents of data.csv>",
+  "parser": "csv",
+  "grouping": {
+    "columns": [
+      "category"
+    ]
+  },
+  "charts": {
+    "types": [
+      "bar"
+    ]
+  },
+  "output": {
+    "format": "html"
+  }
+}
+```
+
+### Action
+
+```yaml
+- uses: goptics/vizb@v0
+  with:
+    file: data.csv
+    group: category
+    charts: bar
+    output-html: output.html
+```
+
+> For sharing or deploying reports, pass `--charts` to include only what your audience needs. The 3D engine (~380 kB encoded) is pulled in automatically when bar, line, or scatter is selected *and* your data needs a 3D scene — and omitted otherwise. See [Output File Size](/ui#output-file-size) for the size breakdown.
+
+## Next Steps

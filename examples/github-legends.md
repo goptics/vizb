@@ -1,0 +1,54 @@
+---
+title: "GitHub Legends"
+description: "3D GitHub contribution skylines of well-known OSS maintainers — fetched live and refreshed every Friday."
+---
+
+[![GitHub Legends examples workflow status](https://github.com/goptics/vizb/actions/workflows/github-legends.yml/badge.svg)](https://github.com/goptics/vizb/actions/workflows/github-legends.yml)
+
+**GitHub Legends** turns public contribution calendars into 3D bar skylines. CI fetches each user from the [jogruber GitHub contributions API](https://github-contributions-api.jogruber.de/v4/) — no static repo files. Demonstrates `--json-path`, `--select`, and date axis splitting. Parser: **JSON**.
+
+**Live dashboard:** [vizb.goptics.org/examples/live/github-legends/](https://vizb.goptics.org/examples/live/github-legends/)
+
+The workflow [github-legends.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/github-legends.yml) runs on every release and on a **Friday schedule** (`0 12 * * 5` UTC) so skylines stay current.
+
+| Chart | Source | Pattern | Dashboard |
+|-------|--------|---------|-----------|
+| torvalds | [API](https://github-contributions-api.jogruber.de/v4/torvalds) | `[z{Year}-y{Month}-x{Date}]` | [Open](https://vizb.goptics.org/examples/live/github-legends/?id=torvalds) |
+| ahmadawais | [API](https://github-contributions-api.jogruber.de/v4/ahmadawais) | same | [Open](https://vizb.goptics.org/examples/live/github-legends/?id=ahmadawais) |
+| antirez | [API](https://github-contributions-api.jogruber.de/v4/antirez) | same | [Open](https://vizb.goptics.org/examples/live/github-legends/?id=antirez) |
+| gvanrossum | [API](https://github-contributions-api.jogruber.de/v4/gvanrossum) | same | [Open](https://vizb.goptics.org/examples/live/github-legends/?id=gvanrossum) |
+| sindresorhus | [API](https://github-contributions-api.jogruber.de/v4/sindresorhus) | same | [Open](https://vizb.goptics.org/examples/live/github-legends/?id=sindresorhus) |
+| yyx990803 | [API](https://github-contributions-api.jogruber.de/v4/yyx990803) | same | [Open](https://vizb.goptics.org/examples/live/github-legends/?id=yyx990803) |
+| gaearon | [API](https://github-contributions-api.jogruber.de/v4/gaearon) | same | [Open](https://vizb.goptics.org/examples/live/github-legends/?id=gaearon) |
+| isaacs | [API](https://github-contributions-api.jogruber.de/v4/isaacs) | same | [Open](https://vizb.goptics.org/examples/live/github-legends/?id=isaacs) |
+
+## Adding a legend
+
+No repo file. Append one row to the matrix in [github-legends.yml](https://github.com/goptics/vizb/blob/main/.github/workflows/github-legends.yml) with `serial`, `id`, and `description`:
+
+```yaml
+- serial: "08"          # controls merge and dashboard order
+  id: octocat           # stable ID, chart title, API path, and ?id= deep link
+  description: "The Octocat, GitHub's mascot"
+```
+
+`serial` must stay numbered (`"00"`, `"01"`, …) in matrix order. Changing the order does not change the stable `id` or its deep link. The workflow step already wires `curl`, `--json-path`, `--select`, date grouping, and 3D bar flags.
+
+Optionally add a row to this page’s table.
+
+## Related guides
+
+- [Tabular data](/guides/data) — JSON path and select
+- [Group](/guides/group) — date bracket patterns
+- [3D Charts](/charts/3d) — bar3D skylines
+
+> Same pipeline locally (needs network):
+> 
+>   ```bash
+  curl -sfL "https://github-contributions-api.jogruber.de/v4/torvalds" \
+    | vizb bar - \
+        --json-path '.contributions' \
+        --select 'count{Contributions}' \
+        -g date -p '[z{Year}-y{Month}-x{Date}]' \
+        -o torvalds.html
+  ```

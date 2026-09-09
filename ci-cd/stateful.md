@@ -1,0 +1,115 @@
+---
+title: "Stateful CI"
+description: "Track benchmark performance across releases with artifact persistence."
+---
+
+Stateful CI tracks benchmark performance over time. Each run merges with historical data, creating a progressive visualization that shows how performance changes across releases. Vizb is language-agnostic — its parser strategy auto-detects the format, supporting Go, Rust, JavaScript, CSV, JSON, and more.
+
+## How It Works
+
+1. Each release run tags benchmarks with the version
+2. Previous benchmark data is downloaded from artifacts or S3 compatible storage
+3. Vizb merges old and new data with tag-based deep merge
+4. The merged result is uploaded as an artifact for the next run
+5. HTML report shows all versions in a single chart
+
+## Steps
+
+1. **Create the workflow**
+
+   Create `.github/workflows/bench.yml`:
+
+   ```yaml
+   name: Benchmark Tracking
+
+   on:
+     push:
+       tags: ['v*']
+
+   jobs:
+     bench:
+       runs-on: ubuntu-latest
+       steps:
+         - uses: actions/checkout@v4
+
+         - uses: actions/setup-go@v5
+           with:
+             go-version-file: go.mod
+
+         - name: Fetch existing merged.json from R2
+           uses: cloudflare/wrangler-action@v4
+           continue-on-error: true
+           with:
+             apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+             accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+             command: r2 object get my-bench-data/merged.json --file=prev-merged.json --remote
+
+         - uses: goptics/vizb@v0
+           with:
+             cmd: "go test -bench=."
+             tag: ${{ github.ref_name }}
+             merge-dir: prev-merged.json
+             tag-axis: x
+             output-json: merged.json
+             output-html: pages/index.html
+
+         - name: Upload merged.json to R2
+           uses: cloudflare/wrangler-action@v4
+           with:
+             apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+             accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+             command: r2 object put my-bench-data/merged.json --file=merged.json --content-type=application/json --remote
+
+         - uses: peaceiris/actions-gh-pages@v4
+           with:
+             github_token: ${{ secrets.GITHUB_TOKEN }}
+             publish_dir: pages
+   ```
+
+2. **Tag a release**
+
+   ```bash
+   git tag -s v1.0.0 -m "Release v1.0.0"
+   git push origin v1.0.0
+   ```
+
+   This triggers the workflow. The first run creates the initial benchmark. Subsequent tags add to the history.
+
+3. **View the results**
+
+   After the workflow completes:
+   - The HTML report is deployed to GitHub Pages
+   - The merged JSON is stored as an artifact
+   - Next release will download and merge with this data
+
+## Key Configuration
+
+| Setting | Value | Why |
+|---------|-------|-----|
+| `tag` | `${{ github.ref_name }}` | Tags each run with the release version |
+| `merge-dir` | `prev` | Merges with previously downloaded data |
+| `tag-axis` | `x` | Shows versions on the X-axis for progressive comparison |
+| `continue-on-error` | `true` | First run has no previous data — that's OK |
+| `output-json` | `merged.json` | Stores the merged result as an artifact |
+
+> Use `tag-axis: x` so versions appear on the X-axis. This creates a clear timeline showing performance changes across releases, and merge ensures the X-axis is present in `axes` so injected tags stay visible in the chart.
+
+## The Merge Cycle
+
+```
+Release v1.0 → run benchmarks → tag v1.0 → upload merged.json
+                                          ↓
+Release v1.1 → download prev → merge v1.0+v1.1 → upload merged.json
+                                                     ↓
+Release v1.2 → download prev → merge v1.0+v1.1+v1.2 → upload + deploy
+```
+
+Each run:
+1. Downloads the previous `merged.json` artifact
+2. Runs benchmarks with the new tag
+3. Merges old data with new data (inner merge by tag)
+4. Uploads the new merged result for the next run
+
+When re-running benchmarks for an **existing tag** (e.g. re-tagging `v1.8.0` after a fix), merge replaces only that version's data points — it does not wipe accumulated history from prior releases.
+
+> The `continue-on-error: true` on the artifact download step ensures the first run succeeds even when no previous data exists.

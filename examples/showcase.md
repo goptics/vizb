@@ -1,0 +1,16 @@
+---
+title: "Vizb Showcase"
+description: "Projects using Vizb to turn CSV, JSON, benchmarks, and structured data into interactive charts, comparisons, and dashboards — locally or in CI."
+---
+
+> **Using vizb in your project?** [Open a PR](https://github.com/goptics/vizb/edit/main/docs/src/content/docs/examples/showcase.mdx) to add your entry!
+
+## How people are using Vizb
+
+| Repository | Short Description | Workflow | Dashboard |
+|------------|-------------------|----------|-----------|
+| [gomlx/gomlx](https://github.com/gomlx/gomlx) | Accelerated ML framework for Go; `gomlx_checkpoints --plot` shells out to Vizb for interactive training metric charts (loss, accuracy), with optional live `-loop` refresh. | [`gomlx_checkpoints`](https://github.com/gomlx/gomlx/blob/main/cmd/gomlx_checkpoints/README.md) | Local HTML via `--plot` |
+| [goptics/vizb](https://github.com/goptics/vizb) | Vizb's own topic dashboards (tabular data, math 3D, comparisons, GitHub Legends, benchmarks). | [`*-examples.yml`](https://github.com/goptics/vizb/tree/main/.github/workflows) / [`github-legends.yml`](https://github.com/goptics/vizb/blob/main/.github/workflows/github-legends.yml) (also via [`release.yml`](https://github.com/goptics/vizb/blob/main/.github/workflows/release.yml)) | [Docs](https://vizb.goptics.org/examples/) · [Live](https://vizb.goptics.org/examples/live/tabular-data/) |
+| [goptics/varmq-benchmarks](https://github.com/goptics/varmq-benchmarks) | Worker pool benchmarks comparing VarMQ vs PondV2 across workload patterns and CPU configs. | [bench.yml](https://github.com/goptics/varmq-benchmarks/blob/main/.github/workflows/bench.yml) | [Live](https://goptics.github.io/varmq-benchmarks/) |
+| [goptics/sortbench](https://github.com/goptics/sortbench) | Sorting algorithm benchmarks across git versions using per-tag vizb merging (bubble, insertion, shell, quicksort, merge). | [bench.yml](https://github.com/goptics/sortbench/blob/main/.github/workflows/bench.yml) | [Live](https://goptics.github.io/sortbench/) |
+| [goptics/varmq](https://github.com/goptics/varmq) | Tracks benchmark evolution across VarMQ release versions, generating a cumulative bench log dashboard via vizb action on each release. | [deploy-bench-log.yml](https://github.com/goptics/varmq/blob/main/.github/workflows/deploy-bench-log.yml) | [Live](https://varmq.goptics.org/bench-log/) |

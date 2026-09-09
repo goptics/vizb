@@ -1,0 +1,94 @@
+---
+title: "Color Themes"
+description: "Data-owned chart-series color palettes and the CLI theme catalog."
+---
+
+Vizb themes change chart-series colors only. They do not change backgrounds, axes, or the
+separate light/dark appearance setting.
+
+## Data-owned themes
+
+Themes are **owned by the dataset**, not hard-coded into every report UI.
+
+| Layer | Role |
+|-------|------|
+| **UI** | Ships only the `default` palette. Always available as a fallback. |
+| **CLI / API** | Expand built-ins and custom specs into `dataset.themes[]` when you request them. |
+| **Wire format** | New output writes `themes` only. There is **no separate active `theme` field** — `themes[0]` is active when the array is non-empty. |
+
+If you omit `--theme`, the dataset has no `themes` array and the report uses the UI `default` palette.
+
+```bash
+# Single built-in embedded as themes[0] (active)
+vizb results.csv --theme westeros -o report.html
+
+# Multiple themes: first --theme is active (themes[0])
+vizb results.csv --theme westeros --theme vintage --theme roma -o report.html
+```
+
+Built-in name `default` is **not** embedded (the UI already owns it).
+
+Legacy files that still carry a string `theme` field are migrated into `themes[]`
+on load; re-marshalled output drops the legacy field.
+
+## CLI syntax
+
+`--theme` is **repeatable**. Each value is one of:
+
+1. **Built-in name** (case-insensitive): `vintage`, `meadow`, `westeros`, `essos`,
+   `wonderland`, `walden`, `chalk`, `infographic`, `macarons`, `roma`, `shine`,
+   `purple-passion` (plus `default`, which is skipped on embed)
+2. **Structured custom**: `name:colors=#hex,...;visualMapColors=#hex,#hex`
+   - `colors` is required (≥2 hex colors)
+   - `visualMapColors` is optional (exactly two hex colors); when omitted, Vizb
+     uses the first and last color from `colors`
+   - Properties are semicolon-separated (same structured prop grammar as
+     multi-value [`--chart`](/commands/root#per-chart-settings) specs); order
+     does not matter
+3. **Bare hex palette**: `#hex,#hex,...` (≥2 colors) — anonymous custom named
+   `custom`, `custom-2`, … when multiple bare palettes are embedded
+
+```bash
+# Structured brand theme with optional visual-map pair
+vizb results.csv \
+  --theme 'brand:colors=#ff6b6b,#4ecdc4,#ffe66d;visualMapColors=#4ecdc4,#ff6b6b' \
+  -o report.html
+
+# Bare anonymous custom (embedded as name "custom")
+vizb results.csv --theme "#ff6b6b,#4ecdc4,#ffe66d" -o report.html
+```
+
+Invalid theme specs produce a soft warning and are skipped. If no valid
+non-default theme remains, the dataset has no embedded themes and the UI uses
+`default`. Duplicate names (case-insensitive) keep first-seen order; last
+content wins. Hex colors are `#rgb` or `#rrggbb`.
+
+Related flag:
+
+| Flag | Description |
+|------|-------------|
+| `--theme` | Embed a color theme on the dataset (repeatable; first is active). Empty when unset (UI default). |
+
+## Viewer selector and localStorage
+
+The palette selector appears **only when the author embedded 2+ themes**.
+
+| Author themes | Selector | Available options | Active chart palette |
+|---------------|----------|-------------------|----------------------|
+| 0 | Hidden | UI `default` only | `default` |
+| 1 | Hidden | That theme only | `themes[0]` |
+| 2+ | Shown | UI `default` **plus** all dataset themes | `themes[0]` initially |
+
+Viewer choice is saved in `localStorage` (`color-theme`) and reapplied only when
+that name is still in the **available set for the current report**. A saved
+preference outside the available set is ignored so author intent wins (for
+example a single-theme report cannot be switched away via an old preference).
+
+## Built-in palettes (CLI catalog)
+
+CLI built-ins expand into full `themes[]` entries (colors + visual-map pair).
+The report UI itself only ships `default`; the swatches below document the CLI
+catalog for authors. Every built-in contains ten unique colors. Hover a swatch
+to see its position and hex value.
+
+Source of truth for these palettes is `pkg/style` (not the UI bundle).

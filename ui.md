@@ -1,0 +1,148 @@
+---
+title: "UI Overview"
+description: "Interactive visualization features in the vizb HTML output."
+---
+
+Vizb generates a single self-contained HTML file with a Vue.js-powered interactive UI. No server needed. Open the file in any browser.
+
+## Chart Types
+
+Vizb supports eight chart types. All render in a single view:
+
+  ### Bar Chart
+
+Default chart type. Compare values across categories. Supports linear and logarithmic scale.
+
+  ### Line Chart
+
+Track trends across X-axis values. Best for sequential data like input sizes or concurrency levels.
+
+  ### Scatter Chart
+
+Plot individual points in 2D or 3D. Supports grouped categories and auto-value from all-numeric columns. See [Scatter Chart](/charts/scatter).
+
+  ### Pie Chart
+
+Show proportional distribution. Useful for comparing relative sizes of categories.
+
+  ### Radar Chart
+
+Compare multiple series across shared dimensions. Y values become spoke indicators. X values (or Z series) become the polygon overlays. See [Radar Chart](/charts/radar).
+
+  ### Heatmap
+
+Fold X, Y, and Z into a colored grid. Cell value sums the z-axis. Cell color blends the z palette. See [Heatmap](/charts/heatmap).
+
+  ### Sankey
+
+Show weighted flows between source and target nodes. See [Sankey Chart](/charts/sankey).
+
+  ### Chord
+
+Show circular relationships, including cycles and reverse links. See [Chord Chart](/charts/chord).
+
+Control which charts appear with `--charts`. This also controls output file size — see [Output File Size](#output-file-size):
+
+```bash
+vizb data.csv -c bar,line -o output.html
+```
+
+When your data has a z-axis, bar, line, and scatter charts render in **3D** instead of 2D. See [3D Charts](/charts/3d).
+
+## Scale Options
+
+Toggle linear vs logarithmic value scale in the UI, or set the default when generating HTML. Prefer per-chart overrides on the root command (root-level `--scale` is deprecated). The settings panel is **Linear / Logarithmic** only — it cannot pick axes or base. Logarithmic hover is read-only (it names active axes and bases).
+
+```bash
+# Linear (default)
+vizb data.csv -o output.html
+
+# Logarithmic on bar charts — better for high-variance data
+vizb data.csv --chart bar:scale=log -o output.html
+
+# Chart subcommand
+vizb bar data.csv --scale log -o output.html
+```
+
+Use log scale when values span several orders of magnitude (for example 1 to 1,000,000).
+
+## Tooltips & Axis Sums
+
+Hovering a data point shows its value alongside **axis-sum** totals. 2D charts add per-series totals after each series name. They also add a labeled x-marginal at the bottom of the tooltip. 3D charts add `Σ z` / `Σ x` / `Σ y` marginals — see [3D Charts](/charts/3d). Tooltips follow light/dark mode automatically.
+
+## Fullscreen
+
+Every chart has a **fullscreen** button in its toolbar (next to export). Click it to expand the chart to the full viewport. Click again to exit.
+
+## Statistics Panel
+
+Each chart has a **statistics** button when you generate HTML with `--stat`. It opens a panel with a per-series descriptive table (**33 metrics**, sortable, searchable, CSV export) and a **correlation matrix** (Pearson, Spearman, Kendall, distance correlation). Stats run off the main thread. See [Statistics](/ui/stats).
+
+## Large Datasets
+
+Vizb stays responsive on big inputs. When the X-axis has more than ~50 categories, a **dataZoom slider** appears. You can scroll and zoom into a window of the data (starting zoomed to the first **20%** of categories). Datasets above a few thousand points switch to ECharts' optimized large-data render path. This keeps the draw on a single frame.
+
+For CSV/JSON specifically, vizb also **aggregates rows** before charting when `--group` is set — see [Tabular Data](/guides/data#aggregation).
+
+## JPEG Export
+
+Export any chart as a JPEG image directly from the UI. Click the export button on any chart to download.
+
+## Single-File Output
+
+The generated HTML is fully self-contained:
+- Vue.js app embedded inline
+- Chart data embedded as JSON
+- No external dependencies or network requests
+- Works offline
+
+Open with any browser. No build step, no server.
+
+## Output File Size
+
+Each chart renderer ships as a separate compressed chunk inside the HTML. Only the ones you select are embedded at generation time.
+
+| Selection | Approx. file size |
+|-----------|------------------|
+| `bar` only | ~400 kB |
+| `bar,line,pie` (default, 2D data) | ~400 kB |
+| `bar` or `line` with z-axis data (embedded JSON) | ~570 kB |
+
+The 3D engine (echarts-gl, ~380 kB encoded) is the heaviest component. For embedded data, Vizb includes it automatically when the dataset has a z-axis and `bar` or `line` is selected. For `vizb ui --data-url`, pass `--3d` to opt in — the remote shape is unknown at build time.
+
+To reduce file size, pass `--charts` to bundle only the renderers you need:
+
+```bash
+vizb data.csv -c bar -o output.html       # bar only, ~400 kB
+vizb data.csv -c bar,line -o output.html  # ~415 kB
+```
+
+> For sharing or deploying reports, use `--charts` to include only the charts your audience needs. The default bundles bar, line, and pie. Add heatmap, radar, Sankey, or Chord with `-c` when you need them.
+
+## Deep links
+
+The UI keeps shareable state in the URL query string. Switching datasets, chart tabs, groups, or per-chart settings updates the address bar automatically.
+
+**Dataset selection** — prefer a stable id when available:
+
+| Param | When used | Example |
+|-------|-----------|---------|
+| `?id=` | Dataset has a top-level `id` (set with `--id` at build time) | `report.html?id=sales-by-date` |
+| `?d=` | No id on the dataset; index into the merged list | `report.html?d=2` |
+
+`?id=` wins when both are present. Set ids at generation time:
+
+```bash
+vizb sales.csv -g date,region -p x,y --id sales-by-date -o report.html
+```
+
+Other common params: `?c=` (active chart type), `?g=` (group index), and per-chart keys like `bar.so=desc`, `line.sc=log`. See the [root command](/commands/root#deep-links) for the `--id` flag.
+
+## Next Steps
+
+- [Settings](/ui/settings) — CLI flags and UI settings mapping
+- [Axis Swapping](/ui/swapping) — rearrange n/x/y/z dimensions in the UI
+- [3D Charts](/charts/3d) — z-axis, auto-rotate, and axis-sum tooltips
+- [Heatmap](/charts/heatmap) — fold X/Y/Z into a colored grid
+- [Statistics](/ui/stats) — descriptive stats and correlation matrix
+- [Output File Size](#output-file-size) — how `--charts` affects HTML size

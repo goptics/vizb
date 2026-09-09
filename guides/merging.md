@@ -1,0 +1,105 @@
+---
+title: "Merging"
+description: "Combine vizb dataset JSON files from multiple runs, machines, or releases into a single dataset for comparison."
+---
+
+## What is Merging
+
+Merging combines multiple vizb dataset JSON files into one. This lets you overlay results across runs, machines, or releases in a single interactive chart. Benchmarks are the common case. Any dataset vizb produces (including charted CSV/JSON) merges the same way.
+
+Without merging, each run is an isolated report. With merging, you can overlay results from `v1.0` and `v2.0`. You can compare performance across different machines. You can track regressions over time.
+
+## How Merging Works
+
+The general pipeline has three steps:
+
+1. **Convert** each run to JSON:
+   ```bash
+   vizb bench.txt -o data.json
+   ```
+
+2. **Merge** the JSON files:
+   ```bash
+   vizb merge file1.json file2.json -o merged.json
+   ```
+
+3. **Generate** the HTML report:
+   ```bash
+   vizb ui merged.json -o report.html
+   ```
+
+## Outer Merging (Untagged)
+
+Outer merging is a simple concatenation of data. When JSON files contain benchmarks with the same name and no tags, duplicates are resolved by keeping the newer timestamp; if timestamps are equal or absent, the first-seen entry wins. Use outer merging when combining different benchmark suites or independent runs.
+
+```bash
+vizb merge cpu.json memory.json -o combined.json
+```
+
+### Directory Scanning
+
+You can pass a directory to merge all JSON files it contains:
+
+```bash
+vizb merge ./results/ -o all.json
+```
+
+This recursively finds and merges all `.json` files in the `./results/` directory.
+
+## Inner Merging (Tagged)
+
+Inner merging compares the same benchmarks across different conditions. When benchmarks share the same name but carry different tags, they deep-merge into a single entry. This produces a chart with multiple series, one per tag.
+
+1. **Tag individual runs**
+
+   Use `--tag` to label each run with a version, machine name, or any identifier:
+
+   ```bash
+   vizb bench-v1.txt -o v1.json --tag v1 -n "MyBenchmark"
+   vizb bench-v2.txt -o v2.json --tag v2 -n "MyBenchmark"
+   ```
+
+2. **Merge tagged files**
+
+   ```bash
+   vizb merge v1.json v2.json -o comparison.json
+   ```
+
+3. **Generate the HTML report**
+
+   ```bash
+   vizb ui comparison.json -o comparison.html
+   ```
+
+### How Tagged Merge Works
+
+The merge process handles tagged data as follows:
+
+- **Same-tag replacement:** If the same benchmark name appears with the same tag, only that tag's data points on the inject axis (`-A`) are replaced. Older versions and `history[]` entries for other tags are preserved. Newer timestamp wins for top-level metadata.
+- **Deep merge:** Benchmarks with the same name but different tags are combined into a single benchmark entry. The data points from each tag are sorted chronologically. This creates a multi-series chart.
+- **Legacy entries:** Untagged benchmarks (those without a tag) are prepended before any tagged data. They appear as the baseline in the chart.
+
+```bash
+# Re-run v1.8.0 into an accumulated merged.json — v1.3.0/v1.7.x data is preserved
+vizb merge bench-v1.8.0.json merged.json -A x -o merged.json
+```
+
+## Tag-Axis
+
+The `-A` (or `--tag-axis`) flag controls where the tag label is injected in the grouped dimensions. By default, tags are added to the **name/n** dimension. This creates separate charts per tag. Changing the axis lets you control how the comparison is visualized.
+
+| Value | Axis | Effect |
+|---|---|---|
+| `n` | Name (default) | Creates separate chart groups per tag |
+| `x` | XAxis | Places tag values on the X-axis for direct comparison |
+| `y` | YAxis | Places tag values on the Y-axis as separate series |
+
+If the inject dimension is missing from `axes`, merge adds it automatically (in canonical `name` / `x` / `y` / `z` order) so tag values appear in the chart.
+
+```bash
+vizb merge v1.json v2.json -A x -o comparison.json
+```
+
+> Use `-A x` (tag on X-axis) when comparing versions. This places version labels along the X-axis. It makes performance changes easy to see side by side within the same chart.
+
+> Merge requires **JSON files** as input. It does not accept raw `go test -bench` text output. Convert text to JSON first using `vizb bench.txt -o data.json`.

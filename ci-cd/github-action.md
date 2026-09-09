@@ -1,0 +1,296 @@
+---
+title: "GitHub Action"
+description: "Complete reference for the vizb GitHub Action — visualize CSV/JSON tabular data or benchmark output in CI."
+---
+
+Vizb provides a composite GitHub Action to turn CSV/JSON tabular data or benchmark output (Go, Rust, JavaScript) into interactive HTML visualizations in CI. Add it to any workflow with a single step.
+
+## Basic Usage
+
+```yaml
+- uses: actions/setup-go@v6
+  with:
+    go-version-file: go.mod
+
+- uses: goptics/vizb@v0
+  with:
+    cmd: "go test -bench=."
+    output-html: pages/index.html
+```
+
+> When using `cmd`, the action needs a Go toolchain. Add `actions/setup-go` before the vizb step.
+
+> The action requires **Node.js 18+** on the runner (preinstalled on GitHub-hosted images). Self-hosted runners must provide `node` on `PATH`.
+
+## Versioning
+
+Use `goptics/vizb@v0` to automatically resolve to the latest `v0.x.x` release:
+
+```yaml
+- uses: goptics/vizb@v0  # auto-resolves to latest v0.x.x
+```
+
+The action:
+- Resolves the major version tag to the latest patch release
+- Restores that exact binary from cache when present (skips the download)
+- Falls back to the exact tag for non-major refs (e.g., `@v0.18.2`)
+
+## Inputs
+
+| Input | Default | Description |
+|-------|---------|-------------|
+| `cmd` | `""` | Command whose stdout is visualized (e.g., `go test -bench=.`, `cargo bench`, or any command emitting benchmark/CSV/JSON output). |
+| `file` | `""` | Path to an existing input file to visualize — benchmark output, CSV, or JSON (takes priority over `cmd`). |
+| `bench-cmd` | `""` | **Deprecated:** use `cmd`. Honored only when `cmd` is empty. |
+| `bench-file` | `""` | **Deprecated:** use `file`. Honored only when `file` is empty. |
+| `cmd-retries` | `"1"` | Total attempts for `cmd`. `1` = no retry (default). Integer ≥ 1. Failed attempts wait 2s, then double. |
+| `name` | `"Comparisons"` | Dataset/benchmark name (`-n` flag). |
+| `title` | `""` | Override the chart title when `col-axis` produces one chart; independent of `name` (`--title` flag). |
+| `description` | `""` | Dataset/benchmark description (`-d` flag). |
+| `tag` | `""` | Tag/identifier for the dataset (`-t` flag). |
+| `group` | `""` | Column/field names merged into the group name; forwarded as `-g` (accepts space- or comma-separated, e.g. `name category region` or `name,category/region`); parsed by `-p`/`-r`. |
+| `group-pattern` | `"x"` | Group pattern (`-p` flag). |
+| `group-regex` | `""` | Group regex (`-r` flag). |
+| `sort` | `""` | **Deprecated:** use `chart` input instead (e.g. `chart: 'bar:sort=asc'`). Sort order: `asc` or `desc` (`-s` flag). |
+| `filter` | `""` | Regex to include only matching rows (CSV/JSON: `--group` label) or benchmark names (`-f` flag). |
+| `mem-unit` | `"B"` | Memory unit: `b`, `B`, `KB`, `MB`, `GB` (`-M` flag). |
+| `time-unit` | `"ns"` | Time unit: `ns`, `us`, `ms`, `s` (`-T` flag). |
+| `number-unit` | `""` | Number unit: `K`, `M`, `B`, `T` (`-N` flag). |
+| `round` | `"false"` | Round numeric values to 2 decimal places in the output data (`--round` flag). |
+| `select` | `""` | **csv/json only:** select value columns; optional rename with `{label}` (e.g. `price{Unit price},count`) (`--select` flag). |
+| `col-axis` | `""` | **csv/json + group:** place numeric column names on this axis (`n`, `x`, `y`, or `z`) so all columns share one chart (`--col-axis` / `-A` flag). Requires group; target axis must not already be used by `group-pattern`. |
+| `json-path` | `""` | **json only:** select a nested array to chart via a jq-like dot path (e.g. `.data.results`) (`--json-path` flag). |
+| `stat` | `""` | Enable stats panel (`--stat` flag). Empty = disabled; `all` or `true` = all categories; otherwise comma-separated from: `counts`, `center`, `spread`, `extremes`, `shape`, `percentiles`, `confidence`, `correlations`. |
+| `chart` | `""` | Per-chart overrides (`--chart` flag, repeatable). One override per line: `<type>:<props>`. Keys include `swap`, `sort`, `scale`, `stack`, `labels`, `3d-rotate`, `3d`, `symbol`, `symbol-size`, `smooth`, `horizontal`, `border-radius`, `bg`, `stat`. Comma separates single-value props; for multi-value props (e.g. `stat=center,spread`) use semicolon between props or put the multi-value prop alone. Object props use `{field=value;field=value}` (semicolons inside braces; commas stay literal) — e.g. `bar:bg`, `bar:bg={color=rgba(180, 180, 180, 0.2);borderColor=#000}`. Unwrapped `bar:bg=color=…` is invalid. Blank lines and `#`-prefixed lines are ignored. |
+| `charts` | `"bar,line,pie"` | Chart types to generate (`-c` flag): `bar`, `line`, `scatter`, `pie`, `heatmap`, `radar`, `sankey`, `chord`. |
+| `parser` | `"auto"` | Parser to use: `csv`, `json`, `go`, `js:tinybench`, `js:vitest`, `rs:criterion`, `rs:divan` (`-P` flag). |
+| `show-labels` | `"false"` | **Deprecated:** use `chart` input instead (e.g. `chart: 'pie:labels'`). Show labels on charts (`-l` flag). |
+| `enable-3d` | `"false"` | Bundle the 3D renderer for `vizb ui` (`--3d` flag, mainly useful with `data-url` when remote data shape is unknown at build time). |
+| `merge-files` | `""` | Space-separated JSON files to merge. |
+| `merge-dir` | `""` | Directory to scan for JSON files to merge. |
+| `tag-axis` | `"n"` | Tag injection axis: `n`, `x`, `y`, or `z` (`-A` flag). |
+| `output-json` | `""` | Path for JSON output file. Empty = skip JSON. |
+| `output-html` | `""` | Path for HTML output file. Empty = skip HTML. |
+| `data-url` | `""` | URL to fetch vizb JSON from at runtime (`-U` flag). Accepts a full dataset, a full dataset array, or an automatically detected lazy `[{id,name}]` catalog. When set, no input file is needed. |
+| `vizb-binary` | `""` | Path to a pre-built vizb binary on the runner. When set, skips version resolution, cache, and release download and installs this binary instead — useful for testing local builds or unreleased changes. |
+
+## Outputs
+
+| Output | Description |
+|--------|-------------|
+| `output-file-html` | Path to the generated HTML file |
+| `output-file-json` | Path to the generated JSON file (same as `output-json` input) |
+
+## Input Resolution
+
+The action resolves input in this priority order:
+
+1. **`file`** — if provided, uses the existing file directly
+2. **`cmd`** — runs the command and captures output
+3. **Merge-only** — if only `merge-files` or `merge-dir` is provided, skips benchmarking
+4. **`data-url`** — if only `data-url` is provided, skips input/merge and fetches data at runtime
+
+> At least one of `cmd`, `file`, `merge-files`, `merge-dir`, or `data-url` must be provided.
+
+Retry applies only when `cmd` actually runs (`file` is empty). Default is one attempt. Set `cmd-retries` to 3 (or more) to retry a flaky command; failed attempts log a warning and wait 2s, then 4s, then 8s, and so on. Convert, merge, and `ui` are not retried.
+
+## Minimal Examples
+
+### Run benchmarks and generate HTML
+
+```yaml
+- uses: goptics/vizb@v0
+  with:
+    cmd: "go test -bench=."
+    output-html: pages/index.html
+```
+
+### Retry a flaky command
+
+```yaml
+- uses: goptics/vizb@v0
+  with:
+    cmd: "go test -bench=."
+    cmd-retries: 3
+    output-html: pages/index.html
+```
+
+### Use existing benchmark file
+
+```yaml
+- uses: goptics/vizb@v0
+  with:
+    file: bench-results.txt
+    output-html: report.html
+```
+
+### Generate HTML from remote data URL
+
+```yaml
+- uses: goptics/vizb@v0
+  with:
+    data-url: https://example.com/bench.json
+    output-html: pages/index.html
+```
+
+> When `data-url` is set, no `cmd`, `file`, or merge input is needed. The HTML fetches the JSON at runtime. Set `enable-3d: true` to bundle the 3D renderer — remote data shape is unknown when the HTML is generated, including in lazy catalog mode.
+
+The base `data-url` may return one complete dataset, an array of complete datasets, or a
+lazy catalog such as:
+
+```json
+[
+  { "id": "linux-amd64", "name": "Linux amd64" },
+  { "id": "linux/arm64", "name": "Linux arm64" }
+]
+```
+
+Catalog IDs must be non-empty and unique, and catalog entries must omit `data` and
+`settings`. When an entry is selected, the dashboard requests one complete dataset from
+`<data-url>/dataset/<encoded-id>`, or `<data-url>/<encoded-id>` when the data URL already
+ends in `/dataset`. The detail may omit its `id`; an included ID must match the catalog ID.
+Base query parameters are preserved for detail requests. The base and detail endpoints
+must both satisfy the existing CORS requirement (normally
+`Access-Control-Allow-Origin: *` for a `file://` dashboard). Details are cached only in
+memory for the current page session, and failed requests expose a Retry action.
+
+When `data-url` ends in `/dataset`, you can serve the generated HTML as the fallback for
+`/*` and open `/<encoded-id>`. Vizb then skips the catalog and fetches only
+`<data-url>/<encoded-id>`. Other data URLs disable this path mode.
+
+### Merge and generate
+
+```yaml
+- uses: goptics/vizb@v0
+  with:
+    cmd: "go test -bench=."
+    merge-dir: previous-results/
+    tag: v1.2.0
+    tag-axis: x
+    output-json: merged.json
+    output-html: pages/index.html
+```
+
+## CSV / JSON Data Examples
+
+### Select columns from CSV
+
+```yaml
+- uses: goptics/vizb@v0
+  with:
+    file: sales.csv
+    select: "price{Unit price},count"
+    output-html: pages/sales.html
+```
+
+### Chart a nested JSON array
+
+```yaml
+- uses: goptics/vizb@v0
+  with:
+    file: api-dump.json
+    json-path: ".data.results"
+    output-html: pages/results.html
+```
+
+## Chart Overrides
+
+Use the `chart` input (one override per line) to configure individual charts without CLI flags:
+
+```yaml
+- uses: goptics/vizb@v0
+  with:
+    cmd: "go test -bench=."
+    charts: "bar,pie,scatter"
+    chart: |
+      bar:scale=log,sort=desc
+      pie:labels
+      scatter:3d
+    output-html: pages/index.html
+```
+
+Per-axis log uses the same `chart:` input (braces like `--chart`; no dedicated `scale` input):
+
+```yaml
+- uses: goptics/vizb@v0
+  with:
+    file: training.csv
+    charts: line
+    chart: |
+      line:scale={type=log;axes=x}
+    output-html: pages/index.html
+```
+
+Category background on 2D bars (`background.active: true` on the wire; no UI toggle; 3D skips the flag):
+
+```yaml
+- uses: goptics/vizb@v0
+  with:
+    file: sales.csv
+    charts: bar
+    chart: |
+      bar:bg
+    output-html: pages/index.html
+```
+
+Styled object form — `{field=value;field=value}` (semicolons inside braces; commas stay literal). Unwrapped `bar:bg=color=…` is invalid:
+
+```yaml
+- uses: goptics/vizb@v0
+  with:
+    file: sales.csv
+    charts: bar
+    chart: |
+      bar:bg={color=rgba(180, 180, 180, 0.2);borderColor=#000}
+    output-html: pages/index.html
+```
+
+Available override keys: `swap`, `sort`, `scale`, `stack`, `labels`, `3d-rotate`, `3d`, `symbol`, `symbol-size`, `smooth`, `horizontal`, `border-radius`, `bg`, `stat`.
+
+## Stats Panel
+
+Enable the stats panel with the `stat` input:
+
+```yaml
+- uses: goptics/vizb@v0
+  with:
+    cmd: "go test -bench=."
+    stat: "center,spread,percentiles"
+    output-html: pages/index.html
+```
+
+Set `stat: all` (or `stat: true`) to enable every stats category.
+
+## 3D Renderer
+
+Bundle the 3D renderer (mainly useful with `data-url`):
+
+```yaml
+- uses: goptics/vizb@v0
+  with:
+    data-url: https://example.com/bench.json
+    enable-3d: true
+    output-html: pages/index.html
+```
+
+## Testing Local Builds
+
+Use `vizb-binary` to test unreleased changes without publishing a release. Build the binary, place it on the runner, and point the action at it:
+
+```yaml
+- uses: actions/checkout@v6
+- uses: actions/setup-go@v6
+  with:
+    go-version-file: go.mod
+
+- name: Build vizb
+  run: go build -o ./bin/vizb .
+
+- uses: ./
+  with:
+    cmd: "go test -bench=."
+    vizb-binary: ./bin/vizb
+    output-html: pages/index.html
+```
+
+When `vizb-binary` is set, the action skips version resolution, cache, and the release download — it just installs the binary you provide.

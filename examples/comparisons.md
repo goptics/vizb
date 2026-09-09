@@ -1,0 +1,30 @@
+---
+title: "Comparisons"
+description: "Wide competitor tables on one chart with --col-axis — framework throughput and similar side-by-side views."
+---
+
+[![Comparisons examples workflow status](https://github.com/goptics/vizb/actions/workflows/comparisons-examples.yml/badge.svg)](https://github.com/goptics/vizb/actions/workflows/comparisons-examples.yml)
+
+**Wide tables** where each competitor is a numeric column: map category columns with `--group`, put competitor names on an axis with `--col-axis` (`-A`), and keep everyone on **one chart**. Parser: **CSV**.
+
+**Live dashboard:** [vizb.goptics.org/examples/live/comparisons/](https://vizb.goptics.org/examples/live/comparisons/)
+
+| Chart | Input file | Flags | Dashboard |
+|-------|-----------|-------|-----------|
+| HTTP framework throughput | [concurrency.csv](https://github.com/goptics/vizb/blob/main/examples/csv/concurrency.csv) | `-g load -p y -A x` | [Open](https://vizb.goptics.org/examples/live/comparisons/?id=00-concurrency-frameworks) |
+
+## What this teaches
+
+`concurrency.csv` has one category column (`load`) and several framework columns (`default`, `chi`, `echo`, `gin`, …). With `-g load -p y --col-axis x`, load becomes the Y series dimension and **framework column names land on X** as categories — all competitors share one chart instead of one chart per numeric column.
+
+Swap with `-g load -p x -A y` to put load on X and frameworks as series.
+
+## Related guides
+
+- [Group](/guides/group) — grouping dimensions
+- [Tabular data](/guides/data) — CSV column rules
+- [Group vs Select](/guides/group-vs-select) — when to expand columns vs select axes
+
+> ```bash
+  vizb bar examples/csv/concurrency.csv -g load -p y -A x -o frameworks.html
+  ```

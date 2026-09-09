@@ -1,0 +1,201 @@
+---
+title: "vizb serve"
+description: "Run Vizb's local synchronous REST API."
+---
+
+`vizb serve` exposes Vizb conversion, Dataset merging, and UI generation through
+a local JSON API. It is synchronous and stateless: requests do not create jobs
+or persisted server-side artifacts.
+
+## Start the server
+
+```bash
+# Listens on http://127.0.0.1:8080 by default
+vizb serve
+
+# Listen on another local port
+vizb serve --port 9090
+
+# Bind to every interface only when access from another machine is intended
+vizb serve --host 0.0.0.0 --port 8080
+```
+
+The host and port make up the API base URL. The default binding is loopback so
+that the server is not exposed to a network unintentionally.
+
+## Docker and Compose
+
+The image starts `vizb serve` on `0.0.0.0:8080` inside the container. Publish it
+on the same host port:
+
+```bash
+docker run --rm -p 127.0.0.1:8080:8080 goptics/vizb
+```
+
+Alternatively, start the repository's Compose configuration:
+
+```bash
+docker compose up -d
+```
+
+If host port 8080 is already in use, map another host port to container port
+8080:
+
+```bash
+docker run --rm -p 127.0.0.1:7878:8080 goptics/vizb
+```
+
+The remapped API is available at `http://127.0.0.1:7878`.
+
+> The API has no built-in authentication. Do not expose it publicly without your own authentication, TLS, and access controls.
+
+Each request body is limited to 10 MiB. The server uses a 5-second header read
+timeout, a 15-second request read timeout, and 60-second write and idle
+timeouts. On `SIGINT` or `SIGTERM`, it stops accepting requests and allows up
+to 10 seconds for in-flight work to finish.
+
+Browse the generated [API reference](/api/) for the complete OpenAPI contract,
+including request and response schemas and generated code snippets.
+
+## Conventions
+
+- Send `Content-Type: application/json` for every request.
+- The API exposes exactly `POST /`, `POST /merge`, and `POST /ui`.
+- Request objects are strict. Unknown fields and chart options that do not apply
+  to the chosen chart are rejected; they are never silently ignored or defaulted.
+- Successful Dataset responses use `application/json`; HTML responses use
+  `text/html`. Set `Accept` accordingly when requesting HTML.
+- Errors use `application/problem+json` and the Problem Details shape described
+  below.
+- The API does not accept remote URLs, server paths, directories, authentication
+  credentials, or CLI argument strings.
+
+## Convert input
+
+`POST /` converts inline text or JSON input to a Vizb Dataset. Set
+`output.format` to `html` and send `Accept: text/html` to receive a self-contained
+report instead.
+
+```bash
+curl -sS http://127.0.0.1:8080/ \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json' \
+  --data '{
+    "input": "region,latency\\nwest,12\\neast,18\\n",
+    "id": "api-latency",
+    "name": "API latency",
+    "description": "Latency by region",
+    "tag": "v2",
+    "themes": [
+      {
+        "name": "westeros",
+        "colors": ["#516b91", "#59c4e6", "#edafda", "#93b7e3", "#a5e7f0", "#cbb0e3", "#3f5575", "#41a7cb", "#d58fc4", "#789bc7"],
+        "visualMapColors": ["#59c4e6", "#d58fc4"]
+      }
+    ],
+    "parser": "csv",
+    "select": ["region,latency"],
+    "charts": { "types": ["bar", "line"] },
+    "output": { "format": "dataset" }
+  }'
+```
+
+Prefer the data-owned `themes` array on convert requests and Dataset responses.
+When non-empty, `themes[0]` is the active theme; there is no separate active
+field. Built-in `default` is not embedded (the UI owns it). The legacy string
+`theme` field is still accepted and expanded into `themes` when `themes` is
+omitted or empty. See [Color Themes](/ui/themes) and the [API reference](/api/)
+for the full `Theme` object shape.
+
+Top-level `round` (default `false`) matches CLI `--round`: round numeric values
+to 2 decimal places in the output data.
+
+## Merge Datasets
+
+`POST /merge` accepts at least two complete Vizb Dataset objects. It returns an
+array even when the merge produces one Dataset.
+
+```bash
+curl -sS http://127.0.0.1:8080/merge \
+  -H 'Content-Type: application/json' \
+  --data '{
+    "tagAxis": "x",
+    "datasets": [
+      {
+        "name": "Sort", "tag": "v1",
+        "axes": [{"key":"name"},{"key":"y"}],
+        "settings": [{"type":"bar"}],
+        "data": [{"name":"quicksort","yAxis":"12"}]
+      },
+      {
+        "name": "Sort", "tag": "v2",
+        "axes": [{"key":"name"},{"key":"y"}],
+        "settings": [{"type":"bar"}],
+        "data": [{"name":"quicksort","yAxis":"10"}]
+      }
+    ]
+  }'
+```
+
+Unlike `vizb merge`, the API does not skip invalid input: the request fails as a
+whole so a client knows every supplied Dataset participated.
+
+## Generate the UI
+
+`POST /ui` turns one Dataset or an array of Datasets into a self-contained HTML
+application. The response is HTML, so request it explicitly.
+
+```bash
+curl -sS http://127.0.0.1:8080/ui \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: text/html' \
+  --data '{
+    "datasets": {
+      "name": "API latency",
+      "axes": [{"key":"name"},{"key":"y","type":"value"}],
+      "settings": [{"type":"line","smooth":true}],
+      "data": [{"name":"west","yAxis":"12"},{"name":"east","yAxis":"18"}]
+    },
+    "charts": { "types": ["line"] }
+  }' > report.html
+```
+
+Open `report.html` locally; it contains the rendered Vizb application and does
+not depend on this server remaining available.
+
+## Errors
+
+All errors are `application/problem+json`. Every response has a stable `type`,
+`title`, `status`, and `detail`; malformed JSON and semantic validation errors
+additionally include `errors`.
+Each entry identifies the input location, a JSON Pointer-like `path`, a stable
+`code`, and a human-readable `message`.
+
+```json
+{
+  "type": "https://vizb.goptics.org/problems/validation",
+  "title": "Unprocessable content",
+  "status": 422,
+  "detail": "Request validation failed.",
+  "instance": "/merge",
+  "errors": [
+    {
+      "location": "body",
+      "path": "/tagAxis",
+      "code": "invalid_enum",
+      "message": "tagAxis must be one of name, x, y, or z."
+    }
+  ]
+}
+```
+
+| Status | Meaning |
+| --- | --- |
+| `400` | The body is malformed JSON or contains multiple JSON values |
+| `404` | The requested API operation does not exist |
+| `405` | The operation does not support the HTTP method; `Allow: POST` is returned |
+| `406` | The requested `Accept` type cannot represent the selected output |
+| `413` | The request body exceeds the 10 MiB limit |
+| `415` | The request is not `application/json` |
+| `422` | Valid JSON violates request schema or semantic rules, or the input could not be processed |
+| `500` | Unexpected server or template failure |

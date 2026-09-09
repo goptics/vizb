@@ -1,0 +1,155 @@
+---
+title: "Select"
+description: "The --select flag for CSV/JSON — pick which numeric columns get their own chart, or assign columns to coordinate axes in solo value, mixed, and multi-stat modes."
+---
+
+The `--select` flag is **repeatable** and applies to the `csv` and `json` parsers only. Other parsers warn and ignore it. It plays two different roles depending on whether group is active:
+
+- **With group** (`-g`, `-r`, or a non-default `-p`) — `--select` picks which **numeric columns** get their own chart.
+- **Without group** (solo) — each `--select` assigns 2–3 columns to **coordinate axes**, and vizb plots every row as a separate point (no aggregation).
+
+A column cannot be in both `--select` and `--group`. See [Group vs Select](/guides/group-vs-select) for when to use each approach.
+
+## Role 1 — Group stat pick
+
+With group active, every numeric column gets its own chart by default. Use `--select` to keep only the columns you want, in the order you want them, and optionally rename each chart's label.
+
+### CLI
+
+```bash
+vizb bar sales.csv -g region,product -p x,y --select amount,quantity -o bars.html
+```
+
+### HTTP
+
+```json
+{
+  "input": "order_date,region,category,product,quantity,amount\n2024-01-01,Central,Hardware,Connector,16,2488.24\n2024-01-02,East,Tools,Gear,42,207.08\n2024-01-03,North,Mechanical,Sensor,20,3465.22\n2024-01-04,West,Electronics,Valve,24,7633.44\n2024-03-12,South,Industrial,Widget,31,5088.10\n2024-06-18,East,Electronics,Relay,12,2214.50\n2024-09-05,North,Hardware,Bolt,28,1724.27\n2024-12-20,West,Tools,Gadget,19,2938.82\n2025-02-08,Central,Mechanical,Valve,27,7350.26\n2025-04-14,South,Electronics,Widget,41,3278.77\n2025-07-22,East,Industrial,Connector,15,5093.42\n2025-10-03,North,Tools,Gear,33,4102.15\n2025-11-19,West,Hardware,Sensor,22,2890.40\n2025-12-28,South,Mechanical,Gadget,26,611.32\n",
+  "parser": "csv",
+  "grouping": {
+    "columns": [
+      "region",
+      "product"
+    ],
+    "pattern": "x,y"
+  },
+  "select": [
+    "amount,quantity"
+  ],
+  "charts": {
+    "types": [
+      "bar"
+    ]
+  },
+  "output": {
+    "format": "html"
+  }
+}
+```
+
+### Action
+
+```yaml
+- uses: goptics/vizb@v0
+  with:
+    file: sales.csv
+    group: region,product
+    group-pattern: x,y
+    select: amount,quantity
+    charts: bar
+    output-html: bars.html
+```
+
+```bash
+vizb bar sales.csv -g region,product -p x,y --select 'amount{Total},count{Orders}' -o bars.html
+```
+
+| Topic | Behaviour |
+|-------|-----------|
+| Syntax | Comma-separated column names; optional trailing `{label}` to rename the chart (stat) |
+| Order | Charts appear in `--select` flag order |
+| Quoting | Quote names that contain `,`, `{`, or `}` (e.g. `"price{USD}"`) |
+| Scope | `csv` and `json` parsers only; ignored with a warning elsewhere |
+| Omitted | Auto-detects every numeric column (the default) |
+
+This is the grouped companion to `--group` — see the [Group guide](/guides/group) for `--group` / `-p` mechanics.
+
+## Role 2 — Solo `--select` (no group)
+
+Pass `--select` **without** group (`-g`, `-r`, or non-default `-p`) and vizb enters **select axis mode**. Auto-group and auto-value are both disabled. Each `--select` defines one view with 2–3 columns assigned to `x`, `y`, and optional `z`. Every row stays a separate point — nothing is summed.
+
+The mode depends on the column types you select:
+
+| Mode | Trigger | Result |
+|---|---|---|
+| **Value** | All selected columns numeric | Continuous coordinate axes (`x`, `y`[, `z`]) |
+| **Mixed** | One categorical + numeric | Category on x, values on y[, `z`]; [scatter](/charts/scatter) is the primary chart |
+| **Multi-stat** | Repeatable flags, 2 columns each | One dataset; each flag → a stat type (`latency by region`); chart tabs by stat |
+
+### Value mode (all numeric)
+
+Pick two or three numeric columns as coordinate axes. With three, vizb auto-enables 3D.
+
+```bash
+# Two numeric columns → 2D value scatter
+vizb scatter spiral-3d.csv --select x,y -o scatter.html
+
+# Three numeric columns → 3D value scatter (auto-enables 3D)
+vizb scatter spiral-3d.csv --select x,y,z -o scatter3d.html
+```
+
+### Mixed mode (category + value)
+
+When the first selected column is categorical and the rest are numeric, vizb puts the category on the x axis and the values on y (and optional z). This is the natural fit for plots like region vs. latency.
+
+```bash
+# Category region on x, numeric latency on y
+vizb scatter region-metrics.csv --select region,latency -o mixed.html
+
+# Three columns: category x + value y + value z
+vizb scatter life-expectancy-income.csv --select Country,"Life Expectancy",Income -o mixed3d.html
+```
+
+### Multi-stat mode (repeatable)
+
+Repeat `--select` with **two columns per flag** (`dim,metric`) to build several stat combinations in **one dataset**. Charts separate by stat type. The default chart name is `metric by dim` (e.g. `latency by region`).
+
+```bash
+vizb scatter region-metrics.csv \
+  --select region,latency \
+  --select region,sales \
+  -o dual.html
+```
+
+Rename the dimension axis label with `{label}` on the dimension column, and rename chart tabs with a trailing `(Title)`:
+
+```bash
+vizb scatter region-metrics.csv \
+  --select 'region{Region},latency (Latency by Region)' \
+  --select 'region{Region},sales (Sales by Region)' \
+  -o dual.html
+```
+
+## Solo `--select` rules
+
+- A **single** `--select` needs **2–3 columns** (assigned to `x`, `y`, optional `z` by position) for bar/line/scatter/pie/heatmap/radar.
+- **Sankey and Chord** solo `--select` need **exactly 3 columns** per flag: **source, target, value** (same order as group). Example: `--select source,target,value` matches `-g source,target -p x,y` with measure `value`. One, two, or four+ columns on one flag are rejected.
+- **Repeatable** `--select`: for scatter/multi-stat, **2 columns** per flag (`dim,metric`). For Sankey and Chord multi-measure, **3 columns** per flag with the same source/target (e.g. `--select source,target,value --select source,target,cost`). Charts separate by stat name. (Legacy: `{label}` on the metric column still overrides the stat name when `()` is omitted.)
+- **Explicit placement** (single `--select` only): `x:region,y:latency,z:sales` — use prefixes for every column or omit them for all.
+- **No overlap** with `--group` columns. Repeatable solo `--select` does **not** imply grouping.
+- Other parsers warn and ignore `--select`.
+
+## Solo `--select` vs auto-value
+
+Both produce value/mixed charts, but they differ in who picks the columns:
+
+| | **Auto-value** | **Solo `--select`** |
+|---|---|---|
+| Trigger | No flags; all-numeric file | `--select` only |
+| Columns | First 2–3 numeric columns, auto-detected | Only the columns you name |
+| 2D vs 3D | 3+ columns → auto-3D | 3 names → 3D; 2 names stays 2D |
+| Inference | Logged to stdout (`🧠 Auto-valued by …`) | None — you are explicit |
+
+Solo `--select` is the override when auto-value guesses wrong or you want fewer columns than the file holds. See [Group vs Select → Auto-value](/guides/group-vs-select#auto-value-all-numeric-data) for the inference rules.
+
+> For the full mode-by-mode flag reference, see the [`--select` mode matrix](/commands/root#--select-mode-matrix) on the root command page.

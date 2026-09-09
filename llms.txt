@@ -1,0 +1,63 @@
+# Vizb
+
+> Turn CSV, JSON, and Go/Rust/JavaScript benchmark output into a self-contained interactive HTML chart without writing chart code.
+
+Docs are at https://vizb.goptics.org. Links below are root-relative on that host.
+
+Vizb is a CLI pipeline (auto-group, n/x/y/z dimensions, HTML or JSON), not a charting library to embed. Prefer minimal flags. Fetch one Core page rather than llms-full.txt.
+
+## Core
+
+- [Introduction](/getting-started.md): Your first interactive HTML chart from a table or benchmark — without writing chart code.
+- [Install](/getting-started/install.md): Install vizb using a package manager, Docker, a one-liner, the Go toolchain, or a pre-built binary.
+- [Dimensions](/getting-started/dimensions.md): Vizb maps every row onto Name, X, Y, and Z (n/x/y/z). Learn what each dimension does and how patterns assign them.
+- [Group vs Select](/guides/group-vs-select.md): How vizb turns columns into charts — group gives every numeric column its own chart, bucketed by category; select merges columns into one chart as coordinate axes. Plus the auto-inference that picks for you.
+- [Group](/guides/group.md): Turn rows — CSV/JSON columns or benchmark names — into structured dimensions for multi-dimensional charts.
+- [Select](/guides/select.md): The --select flag for CSV/JSON — pick which numeric columns get their own chart, or assign columns to coordinate axes in solo value, mixed, and multi-stat modes.
+- [Tabular Data (CSV & JSON)](/guides/data.md): Chart any CSV or JSON table with vizb — numeric columns each become their own chart, with optional grouping.
+- [Supported Inputs](/guides/parsers.md): Vizb reads CSV/JSON tables and benchmark output from Go, Rust (Criterion, Divan), and JavaScript (Vitest, Tinybench).
+- [Merging](/guides/merging.md): Combine vizb dataset JSON files from multiple runs, machines, or releases into a single dataset for comparison.
+- [Charts Overview](/charts.md): How vizb's chart types share the same x/y/z dimension model — and how to pick the right shape for your data.
+- [Bar Chart](/charts/bar.md): Compare values across categories with grouped or 3D bars — vizb's default chart type.
+- [Line Chart](/charts/line.md): Trace trends across categories with connected lines — one series per Y value, or a full 3D polyline scene.
+- [Scatter Chart](/charts/scatter.md): Plot individual points in 2D or 3D — grouped categories, solo --select axis mode, or auto-value from all-numeric columns.
+- [Pie Chart](/charts/pie.md): Break data into proportional slices — vizb renders one pie per dimension, side-by-side.
+- [Heatmap Chart](/charts/heatmap.md): Compare values across two dimensions in a colored grid — optionally fold a z-axis into each cell.
+- [Radar Chart](/charts/radar.md): Compare multi-axis profiles as spider/web polygons — one polygon per data point, one spoke per Y value.
+- [Sankey Chart](/charts/sankey.md): Visualize multi-hop flows as weighted links between source and target nodes — edge lists map to a single flow diagram.
+- [Chord Chart](/charts/chord.md): Visualize cyclic and many-to-many relationships as weighted links around a circular node layout.
+- [3D Charts (Visual WebGL)](/charts/3d.md): Add a z-axis to render interactive visual 3D bar and line charts in a WebGL scene — rotate, zoom, and pan in the browser.
+- [vizb](/commands/root.md): Parse data and generate HTML UI visualizations or JSON representation.
+- [vizb chart subcommands](/commands/charts.md): Generate a single chart type with only the flags that chart supports.
+- [vizb merge](/commands/merge.md): Merge multiple dataset JSON files into a single dataset file.
+- [Troubleshooting](/troubleshooting.md): Common vizb errors and how to fix them.
+
+## More
+
+- [Deploying](/ci-cd/deploying.md): Deploy Vizb HTML reports to GitHub Pages, Netlify, Cloudflare Pages, and more.
+- [GitHub Action](/ci-cd/github-action.md): Complete reference for the vizb GitHub Action — visualize CSV/JSON tabular data or benchmark output in CI.
+- [Stateful CI](/ci-cd/stateful.md): Track benchmark performance across releases with artifact persistence.
+- [Stateless CI](/ci-cd/stateless.md): Run benchmarks and generate HTML without history tracking.
+- [vizb serve](/commands/serve.md): Run Vizb's local synchronous REST API.
+- [vizb ui](/commands/ui.md): Generate the interactive HTML UI from a dataset JSON file.
+- [vizb update](/commands/update.md): Update a standalone Vizb installation or show the owning package-manager command.
+- [Examples](/examples.md): Topic-based sample datasets and live dashboards for tabular data, math 3D, comparisons, GitHub Legends, and benchmarks.
+- [Benchmarks](/examples/benchmarks.md): Go, JavaScript, and Rust benchmark examples with group patterns and regex.
+- [Comparisons](/examples/comparisons.md): Wide competitor tables on one chart with --col-axis — framework throughput and similar side-by-side views.
+- [GitHub Legends](/examples/github-legends.md): 3D GitHub contribution skylines of well-known OSS maintainers — fetched live and refreshed every Friday.
+- [Math & 3D](/examples/math-and-3d.md): All-numeric auto-value examples — spirals, noise surfaces, and voxel grids for continuous 3D charts.
+- [Vizb Showcase](/examples/showcase.md): Projects using Vizb to turn CSV, JSON, benchmarks, and structured data into interactive charts, comparisons, and dashboards — locally or in CI.
+- [Tabular data](/examples/tabular-data.md): Business and mixed categorical + numeric CSV examples — auto-group, date splitting, and 2D scatter.
+- [Features](/features.md): What Vizb can do — inputs, dimensions, charts, UI, merge, and CI — without writing chart code.
+- [AI agents](/getting-started/ai-agents.md): Connect vizb to coding agents with npx skills add so /vizb can chart tables and benchmarks.
+- [How It Works](/internals/how-it-works.md): The data pipeline from a table or benchmark to an interactive HTML visualization.
+- [Roadmap](/roadmap.md): Current capabilities and future plans for vizb.
+- [UI Overview](/ui.md): Interactive visualization features in the vizb HTML output.
+- [Settings](/ui/settings.md): How CLI flags map to UI settings and defaults.
+- [Statistics](/ui/stats.md): Per-series descriptive statistics and a correlation matrix, computed off-thread inside the UI.
+- [Axis Swapping](/ui/swapping.md): Rearrange Name, X-axis, and Y-axis dimensions in the UI.
+- [Color Themes](/ui/themes.md): Data-owned chart-series color palettes and the CLI theme catalog.
+
+## Optional
+
+- [Complete documentation](/llms-full.txt): concatenated markdown dump of every docs page

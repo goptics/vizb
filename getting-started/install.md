@@ -1,0 +1,146 @@
+---
+title: "Install"
+description: "Install vizb using a package manager, Docker, a one-liner, the Go toolchain, or a pre-built binary."
+---
+
+## Quick Install
+
+<div class="quick-install">
+
+  ### Linux / macOS
+
+```bash
+curl -fsSL https://vizb.goptics.org/install.sh | bash
+```
+
+  ### Windows
+
+```ps1
+irm https://vizb.goptics.org/install.ps1 | iex
+```
+
+  ### Agent
+
+```bash
+npx skills add goptics/skills --skill vizb
+```
+
+</div>
+
+> The installer downloads the latest binary from GitHub Releases to `~/.local/bin` on Linux/macOS or `%LOCALAPPDATA%\vizb` on Windows. No admin required.
+
+## Package Managers
+
+  
+    ### Homebrew
+
+> A Homebrew formula is not published yet. Help land `brew install vizb` in homebrew-core — see [issue #205](https://github.com/goptics/vizb/issues/205).
+
+    ### WinGet
+
+```ps1
+    winget install goptics.vizb
+    ```
+
+  
+
+## Docker
+
+Pull the image and start the API on port 8080:
+
+```bash
+docker pull goptics/vizb
+docker run -d --rm -p 8080:8080 goptics/vizb
+```
+
+The image starts `vizb serve` bound to `0.0.0.0` inside the container.
+
+For CLI use, mount the current directory so Vizb can read inputs and persist
+outputs:
+
+```bash
+docker run --rm -v "$PWD:/data" -w /data goptics/vizb bar sales.csv -o out.html
+```
+
+Pipe input with `-i`; the mounted directory still keeps the generated file:
+
+```bash
+cat sales.csv | docker run --rm -i -v "$PWD:/data" -w /data goptics/vizb bar -o out.html
+```
+
+> The API has no built-in authentication. Do not expose it publicly without your own authentication, TLS, and access controls. See [`vizb serve`](/commands/serve/) for details and port remapping.
+
+## Go Install
+
+```bash
+go install github.com/goptics/vizb@latest
+```
+
+> Building from source requires **Go 1.26+**. Install Go from the [official site](https://go.dev/dl) or via [webi](https://webinstall.dev/go/). Pre-built binaries and the install script need no Go runtime.
+
+## Updating
+
+```bash
+vizb update
+```
+
+Standalone Linux and macOS installs from the script or release archives update
+in place after verifying the release checksum. Windows standalone installs print
+the PowerShell reinstall command and are not modified automatically. Vizb
+delegates package-managed installs instead of overwriting them: Go installs
+receive the corresponding `go install` command, and WinGet installs receive the
+corresponding `winget upgrade` command.
+
+See [`vizb update`](/commands/update) for the complete detection and safety
+behavior.
+
+## Download Binary
+
+Pre-built binaries for Linux, macOS, and Windows (amd64 and arm64) are on the
+[releases page](https://github.com/goptics/vizb/releases). Prefer the **latest**
+release assets from that page. The commands below use `v0.18.2` as an illustrative
+version pin — replace it with the version you want.
+
+  ### Linux
+
+```bash
+  # Example pin — swap v0.18.2 for the release you need
+  curl -sfL https://github.com/goptics/vizb/releases/download/v0.18.2/vizb@0.18.2-linux-amd64.tar.gz | tar xz
+  chmod +x vizb
+  sudo mv vizb /usr/local/bin/
+  ```
+
+  ### macOS
+
+```bash
+  # Apple Silicon (M1/M2/M3) — example pin
+  curl -sfL https://github.com/goptics/vizb/releases/download/v0.18.2/vizb@0.18.2-darwin-arm64.tar.gz | tar xz
+  chmod +x vizb
+  sudo mv vizb /usr/local/bin/
+
+  # Intel
+  curl -sfL https://github.com/goptics/vizb/releases/download/v0.18.2/vizb@0.18.2-darwin-amd64.tar.gz | tar xz
+  chmod +x vizb
+  sudo mv vizb /usr/local/bin/
+  ```
+
+  ### Windows
+
+1. Download the latest `vizb@*-windows-amd64.zip` (or a specific version such as `vizb@0.18.2-windows-amd64.zip`) from [releases](https://github.com/goptics/vizb/releases)
+  2. Extract `vizb.exe`
+  3. Add to a directory in your `PATH`
+
+## Verify
+
+```bash
+vizb --version
+vizb --help
+```
+
+A successful install prints a version line (for example `v0.18.2`) and the root help text.
+
+## Next
+
+After install, return to the [Introduction](/getting-started) for your first chart, or read [Dimensions](/getting-started/dimensions).
+
+To connect vizb to a coding agent (`/vizb`), see [AI agents](/getting-started/ai-agents).

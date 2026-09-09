@@ -1,0 +1,268 @@
+---
+title: "vizb chart subcommands"
+description: "Generate a single chart type with only the flags that chart supports."
+---
+
+Chart subcommands (`vizb <chart>`) generate **one chart type** at a time. They produce the same output as the root command with `--charts` limited to that type, but accept only the flags valid for the chart — unsupported flags fail fast.
+
+The full list of chart types (and how each reads dimensions) lives on the [Charts overview](/charts). Use a subcommand for a single chart; use the [root command](/commands/root) with `--charts` when you want several renderers from one dataset.
+
+## Usage
+
+```bash
+vizb <chart> [target] [flags]
+```
+
+`<chart>` is any type on the [Charts overview](/charts) (for example `bar`, `line`, `pie`). Output is HTML by default, or JSON when `-o` ends in `.json` (same rules as the root command).
+
+### CLI
+
+```bash
+vizb bar data.csv -g impl,size -p n,x -o bar.html
+```
+
+### HTTP
+
+```json
+{
+  "input": "<contents of data.csv>",
+  "parser": "csv",
+  "grouping": {
+    "columns": [
+      "impl",
+      "size"
+    ],
+    "pattern": "n,x"
+  },
+  "charts": {
+    "types": [
+      "bar"
+    ]
+  },
+  "output": {
+    "format": "html"
+  }
+}
+```
+
+### Action
+
+```yaml
+- uses: goptics/vizb@v0
+  with:
+    file: data.csv
+    group: impl,size
+    group-pattern: n,x
+    charts: bar
+    output-html: bar.html
+```
+
+### CLI
+
+```bash
+vizb pie data.csv -g impl -o pie.html
+```
+
+### HTTP
+
+```json
+{
+  "input": "<contents of data.csv>",
+  "parser": "csv",
+  "grouping": {
+    "columns": [
+      "impl"
+    ]
+  },
+  "charts": {
+    "types": [
+      "pie"
+    ]
+  },
+  "output": {
+    "format": "html"
+  }
+}
+```
+
+### Action
+
+```yaml
+- uses: goptics/vizb@v0
+  with:
+    file: data.csv
+    group: impl
+    charts: pie
+    output-html: pie.html
+```
+
+### CLI
+
+```bash
+vizb sankey data.csv -g source,target -p x,y -o sankey.html
+```
+
+### HTTP
+
+```json
+{
+  "input": "<contents of data.csv>",
+  "parser": "csv",
+  "grouping": {
+    "columns": [
+      "source",
+      "target"
+    ],
+    "pattern": "x,y"
+  },
+  "charts": {
+    "types": [
+      "sankey"
+    ]
+  },
+  "output": {
+    "format": "html"
+  }
+}
+```
+
+### Action
+
+```yaml
+- uses: goptics/vizb@v0
+  with:
+    file: data.csv
+    group: source,target
+    group-pattern: x,y
+    charts: sankey
+    output-html: sankey.html
+```
+
+### CLI
+
+```bash
+vizb chord data.csv -g source,target -p x,y -o chord.html
+```
+
+### HTTP
+
+```json
+{
+  "input": "<contents of data.csv>",
+  "parser": "csv",
+  "grouping": {
+    "columns": [
+      "source",
+      "target"
+    ],
+    "pattern": "x,y"
+  },
+  "charts": {
+    "types": [
+      "chord"
+    ]
+  },
+  "output": {
+    "format": "html"
+  }
+}
+```
+
+### Action
+
+```yaml
+- uses: goptics/vizb@v0
+  with:
+    file: data.csv
+    group: source,target
+    group-pattern: x,y
+    charts: chord
+    output-html: chord.html
+```
+
+```bash
+go test -bench . | vizb line -p n/y -o line.html
+```
+
+## Shared flags
+
+Every chart subcommand accepts the common data, grouping, and metadata flags:
+
+| Flag | Short | Default | Description |
+|------|-------|---------|-------------|
+| `--output` | `-o` | *(stdout)* | Output file path. `.json` → JSON, else → HTML |
+| `--parser` | `-P` | `auto` | Parser: `auto` (detect), `go`, `js:tinybench`, `js:vitest`, `rs:criterion`, `rs:divan`, `csv`, `json` |
+| `--name` | `-n` | `Comparisons` | Dataset name |
+| `--theme` | | *(empty)* | Embed a color theme on the dataset (**repeatable**; first is active). Built-in name, structured `name:colors=#hex,...;visualMapColors=#hex,#hex`, or bare `#hex,#hex,...`; see [Color Themes](/ui/themes) |
+| `--description` | `-d` | `""` | Dataset description |
+| `--tag` | `-t` | `""` | Tag identifier for release tracking |
+| `--id` | | `""` | Stable dataset id for `?id=` deep links in the HTML UI |
+| `--group-pattern` | `-p` | `x` | Pattern-based grouping (`n`/`x`/`y`/`z` with separators matching `-g` for CSV/JSON) |
+| `--group-regex` | `-r` | `""` | Regex-based grouping (named captures) |
+| `--group` | `-g` | `""` | Names each dimension in `--group-pattern` order; csv/json column names must use matching separators in `-p` |
+| `--select` | | `""` | csv/json only: select value columns; optional rename with `{label}` |
+| `--filter` | `-f` | `""` | Regex to include only matching rows (CSV/JSON: `--group` label) or benchmark names |
+| `--sort` | `-s` | `""` | Sort order: `asc` or `desc` |
+| `--swap` | | `""` | Swap n/x/y/z axis assignment, e.g. `yx`, `yxn` |
+| `--show-labels` | `-l` | `false` | Show value labels on the chart |
+| `--mem-unit` | `-M` | `B` | Memory unit: `b`, `B`, `KB`, `MB`, `GB` |
+| `--time-unit` | `-T` | `ns` | Time unit: `ns`, `us`, `ms`, `s` |
+| `--number-unit` | `-N` | `""` | Number unit: `K`, `M`, `B`, `T` |
+| `--round` | | off | Round numeric values to 2 decimal places in the output data (off by default) |
+
+## Chart-specific flags
+
+| Flag | `bar` | `line` | `scatter` | `pie` | `heatmap` | `radar` | `sankey` | `chord` | Description |
+|------|:---:|:---:|:---------:|:---:|:---:|:---:|:---:|:---:|-------------|
+| `--scale` (`-S`) | ✅ | ✅ | ✅ | — | — | — | — | — | Value scale: `linear`, `log`, or bag `type=log;axes=x,y;base=10` |
+| `--3d` | ✅ | ✅ | ✅ | — | — | — | — | — | Pseudo-3D for grouped x+y data (y → depth, metric → height) |
+| `--3d-visualmap` | ✅ | ✅ | ✅ | — | — | — | — | — | Color 3D geometry by metric value |
+| `--visualmap` | — | — | ✅ | — | — | — | — | — | Color 2D scatter points by metric (off by default) |
+| `--donut` | — | — | — | ✅ | — | — | — | — | Render as a donut (hole); default is a filled pie |
+| `--3d-rotate` | ✅ | ✅ | ✅ | — | — | — | — | — | Auto-rotate the 3D scene (only meaningful with 3D data) |
+| `--horizontal` | ✅ | — | — | — | — | — | — | — | Horizontal grouped bars — 2D only |
+| `--border-radius` | ✅ | — | — | — | — | — | — | — | 1–4 corner radii px (CSS/ECharts TL,TR,BR,BL); single value = all corners; stacked: outer segment, first two values as free-end cap |
+| `--bg` | ✅ | — | — | — | — | — | — | — | Category background behind 2D bars; bare = on (`background.active: true`); style props semicolon-separated. 3D skips the flag |
+`bar`, `line`, and `scatter` render in 3D when the data has a z dimension (`-p n/x/y/z`) or auto-value detects 3+ numeric columns. Pie, heatmap, radar, sankey, and chord are 2D-only for those flags — passing an unsupported flag is an error:
+
+```bash
+vizb pie data.csv --scale log   # Error: unknown flag: --scale
+```
+
+## Examples
+
+```bash
+# 3D bar with log scale and auto-rotation
+vizb bar data.csv -g category,metric,group -p n,x,y,z --scale log --3d-rotate -o bar3d.html
+
+# Per-axis log bag (unwrapped on --scale; no braces). String log/linear stay valid.
+vizb line data.csv --scale 'type=log;axes=x' -o line.html
+
+# Pie with value labels, ascending sort
+vizb pie data.csv -g impl --sort asc --show-labels -o pie.html
+
+# Line from Go benchmarks via stdin, swapping axes
+go test -bench . | vizb line -p n/y --swap yn -o line.html
+
+# Bar chart with horizontal grouped bars
+vizb bar sales.csv -g region,category -p x,y --horizontal -o bar.html
+
+# Category background on 2D bars (bare = on; writes background.active: true)
+vizb bar sales.csv -g region,category -p x,y --bg -o bar.html
+
+# Scatter from all-numeric columns (auto-value)
+vizb scatter data.csv -o scatter.html
+
+# JSON output for later merging / re-rendering
+vizb radar data.csv -g impl -o radar.json
+
+# Sankey from an edge list (x = source, y = target)
+vizb sankey examples/csv/sankey-flows.csv -g source,target -p x,y -o sankey.html
+
+# Chord from a cyclic edge list (x = source, y = target)
+vizb chord examples/csv/chord-relations.csv -g source,target -p x,y -o chord.html
+```
+
+> For multiple chart types from one dataset, or per-chart overrides via `--chart`,
+>   use the [root command](/commands/root). Subcommands focus on a single chart with a
+>   flag set tailored to it.

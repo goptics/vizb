@@ -1,0 +1,45 @@
+---
+title: "Settings"
+description: "How CLI flags map to UI settings and defaults."
+---
+
+The UI includes a settings panel where you can adjust chart behavior at runtime. CLI flags set the **initial** defaults. UI settings override them for the session without regenerating the file.
+
+## CLI to UI Mapping
+
+Prefer **per-chart** flags when generating multi-chart HTML. Root-level `--sort` and `--show-labels` are deprecated in favor of `--chart <type>:…`. Chart subcommands (`vizb bar`, …) still take type-specific flags such as `--scale` directly.
+
+| CLI | UI setting | Options |
+|-----|------------|---------|
+| `--chart <type>:scale=log` or `vizb bar --scale log` | Scale toggle | Linear / Logarithmic |
+| `--chart <type>:sort=asc` or `vizb bar --sort asc` | Sort dropdown | `asc` / `desc` / none |
+| `--charts` / `-c` | Which chart tabs exist | `bar` / `line` / `pie` / `scatter` / `heatmap` / `radar` / `sankey` / `chord` |
+| `--chart <type>:labels` or `vizb pie --show-labels` | Labels toggle | on / off |
+| `--chart line:smooth` or `vizb line --smooth` | Smooth lines | on / off — 2D line only |
+| `--donut` / `--chart pie:donut` | Donut switch | on / off — pie only; off is filled |
+| `--chart bar:3d-rotate` (or line/scatter) | Auto rotate | on / off — 3D bar / line / scatter |
+| `--chart bar:bg` or `vizb bar --bg` | — | on / off — 2D bar only; CLI/config, no UI toggle; writes `background.active: true` |
+| `--stat` | Statistics button | off unless set; see [Statistics](/ui/stats) |
+
+## Setting Defaults from CLI
+
+```bash
+# Log scale and labels on bar only (root multi-chart path)
+vizb data.csv --chart bar:scale=log,labels -o output.html
+
+# Single chart subcommand
+vizb bar data.csv --scale log --show-labels -o output.html
+
+# Sort descending, bar only
+vizb bar data.csv --sort desc -o output.html
+
+# Category background on 2D bars (no UI toggle; writes background.active: true)
+vizb data.csv --chart bar:bg -o output.html
+vizb bar data.csv --bg -o output.html
+
+# Object props: {field=value;field=value} (semicolons inside braces; commas stay literal)
+# Unwrapped bar:bg=color=… is invalid
+vizb data.csv --chart 'bar:bg={color=rgba(180, 180, 180, 0.2);borderColor=#000}' -o output.html
+```
+
+> CLI flags set the initial state. Settings that have a UI control can be changed without regenerating the file. Deep links keep many of those choices in the URL — see [UI Overview → Deep links](/ui#deep-links). `--bg` / `--chart bar:bg` has no settings-panel toggle (2D only). Scale axes and base are CLI/JSON only: the panel cannot pick them, and Logarithmic hover is read-only.
