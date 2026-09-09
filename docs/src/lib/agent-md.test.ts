@@ -9,6 +9,7 @@ import {
 	flattenMdx,
 	mdPathForId,
 	pageMarkdown,
+	sourceBody,
 } from './agent-md.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -178,5 +179,25 @@ describe('pageMarkdown', () => {
 		});
 		assert.match(out, /^---\ntitle: Group\n/);
 		assert.equal(out.includes('import {'), false);
+	});
+});
+
+describe('sourceBody', () => {
+	it('throws when a Core page has no body and no file', () => {
+		assert.throws(
+			() =>
+				sourceBody({
+					id: 'getting-started/install/index',
+					body: '',
+					filePath: join(here, 'missing-core.mdx'),
+				}),
+			/empty markdown body for core docs page getting-started\/install\/index/,
+		);
+	});
+
+	it('resolves id/index.mdx when body is empty', () => {
+		const out = sourceBody({ id: 'getting-started', body: '' });
+		assert.match(out.filePath ?? '', /getting-started\/index\.mdx$/);
+		assert.match(out.body, /Need the binary first/);
 	});
 });

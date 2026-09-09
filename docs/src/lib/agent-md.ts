@@ -132,7 +132,6 @@ export type DocPage = {
 
 const corePathSet = new Set<string>(CORE_MD_PATHS);
 
-/** Resolve a docs MDX/MD file from collection `filePath` or `id`. */
 export function resolveDocFilePath(id: string, filePath?: string): string | undefined {
 	const candidates: string[] = [];
 	if (filePath) {
@@ -152,21 +151,33 @@ export function resolveDocFilePath(id: string, filePath?: string): string | unde
 	return candidates.find((p) => existsSync(p));
 }
 
+export function sourceBody(page: Pick<DocPage, 'id' | 'body' | 'filePath'>): {
+	body: string;
+	filePath?: string;
+} {
+	const filePath = resolveDocFilePath(page.id, page.filePath);
+	const body = page.body?.trim()
+		? page.body
+		: filePath
+			? readFileSync(filePath, 'utf8')
+			: '';
+	if (!body.trim() && corePathSet.has(mdPathForId(page.id))) {
+		throw new Error(`empty markdown body for core docs page ${page.id}`);
+	}
+	return { body, filePath };
+}
+
 export function docPageFromEntry(entry: {
 	id: string;
 	data: { title?: unknown; description?: unknown };
 	body?: string;
 	filePath?: string;
 }): DocPage {
-	const filePath = resolveDocFilePath(entry.id, entry.filePath);
-	const body = entry.body?.trim()
-		? entry.body
-		: filePath
-			? readFileSync(filePath, 'utf8')
-			: '';
-	if (!body.trim() && corePathSet.has(mdPathForId(entry.id))) {
-		throw new Error(`empty markdown body for core docs page ${entry.id}`);
-	}
+	const { body, filePath } = sourceBody({
+		id: entry.id,
+		body: entry.body ?? '',
+		filePath: entry.filePath,
+	});
 	return {
 		id: entry.id,
 		title: String(entry.data.title ?? entry.id),
@@ -177,16 +188,8 @@ export function docPageFromEntry(entry: {
 }
 
 export function pageMarkdown(page: DocPage): string {
-	const filePath = resolveDocFilePath(page.id, page.filePath);
-	const source = page.body?.trim()
-		? page.body
-		: filePath
-			? readFileSync(filePath, 'utf8')
-			: '';
-	if (!source.trim() && corePathSet.has(mdPathForId(page.id))) {
-		throw new Error(`empty markdown body for core docs page ${page.id}`);
-	}
-	const md = flattenMdx(source, { fromFile: filePath ?? page.filePath });
+	const { body, filePath } = sourceBody(page);
+	const md = flattenMdx(body, { fromFile: filePath ?? page.filePath });
 	return `---\ntitle: ${page.title}\ndescription: ${page.description}\n---\n\n${md}`;
 }
 
