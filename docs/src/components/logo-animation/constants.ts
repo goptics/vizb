@@ -44,9 +44,33 @@ export const RADAR = {
 	] as const,
 } as const;
 
+export const SANKEY_COLORS = [
+	'#5470C6',
+	'#3BA272',
+	'#FC8452',
+	'#EE6666',
+	'#73C0DE',
+] as const;
+
+export const CHORD_COLORS = [
+	'#5470C6',
+	'#3BA272',
+	'#FC8452',
+	'#73C0DE',
+	'#EE6666',
+] as const;
+
 export type Ease = 'outCubic' | 'outBack' | 'inOutCubic';
-export type OverlayMode = 'hidden' | 'heatmap' | 'radar';
-export type ColorMode = 'logo' | 'heat-high';
+export type OverlayMode = 'hidden' | 'heatmap' | 'radar' | 'sankey' | 'chord';
+export type ColorMode = 'logo' | 'heat-high' | 'sankey' | 'chord';
+
+export type OverlayOpacities = {
+	heatmap: number;
+	radar: number;
+	series: number;
+	sankey: number;
+	chord: number;
+};
 
 /** Phase metadata only — DOM refs are resolved at runtime by selector. */
 export type PhaseDef = {
@@ -65,21 +89,51 @@ export type PhaseDef = {
  */
 export const PHASES: readonly PhaseDef[] = [
 	{ selector: '.bar-ref', label: 'bar', pause: 1500, ease: 'outCubic', overlay: 'hidden' },
-	{ selector: '.line-ref', label: 'line', pause: 2000, ease: 'outCubic', overlay: 'hidden' },
+	{
+		selector: '.sankey-ref',
+		label: 'sankey',
+		pause: 2000,
+		ease: 'outCubic',
+		overlay: 'sankey',
+		colors: 'sankey',
+	},
+	{
+		selector: '.line-ref',
+		label: 'line',
+		pause: 2000,
+		ease: 'outCubic',
+		overlay: 'hidden',
+		colors: 'logo',
+	},
 	{ selector: '.scatter-ref', label: 'scatter', pause: 1500, ease: 'outBack', overlay: 'hidden' },
-	{ selector: '.pie-ref', label: 'pie', pause: 1500, ease: 'inOutCubic', overlay: 'hidden' },
 	{
 		selector: '.heatmap-ref',
 		label: 'heatmap',
-		pause: 2000,
+		pause: 1500,
 		ease: 'inOutCubic',
 		overlay: 'heatmap',
 		colors: 'heat-high',
 	},
 	{
+		selector: '.pie-ref',
+		label: 'pie',
+		pause: 2500,
+		ease: 'inOutCubic',
+		overlay: 'hidden',
+		colors: 'logo',
+	},
+	{
+		selector: '.chord-ref',
+		label: 'chord',
+		pause: 2000,
+		ease: 'inOutCubic',
+		overlay: 'chord',
+		colors: 'chord',
+	},
+	{
 		selector: '.radar-ref',
 		label: 'radar',
-		pause: 2500,
+		pause: 2000,
 		ease: 'inOutCubic',
 		overlay: 'radar',
 		colors: 'logo',
@@ -97,9 +151,18 @@ export const PHASES: readonly PhaseDef[] = [
 /** Hold on the logo after the full cycle before looping back to bar. */
 export const LOGO_HOLD_MS = 2000;
 
-/** Overlay opacity triples: [heatmapGrid, radarGrid, radarSeries]. */
-export function overlayOpacity(mode: OverlayMode): [number, number, number] {
-	if (mode === 'heatmap') return [1, 0, 0];
-	if (mode === 'radar') return [0, 1, 1];
-	return [0, 0, 0];
+const OVERLAY_OFF: OverlayOpacities = {
+	heatmap: 0,
+	radar: 0,
+	series: 0,
+	sankey: 0,
+	chord: 0,
+};
+
+export function overlayOpacity(mode: OverlayMode): OverlayOpacities {
+	if (mode === 'heatmap') return { ...OVERLAY_OFF, heatmap: 1 };
+	if (mode === 'radar') return { ...OVERLAY_OFF, radar: 1, series: 1 };
+	if (mode === 'sankey') return { ...OVERLAY_OFF, sankey: 1 };
+	if (mode === 'chord') return { ...OVERLAY_OFF, chord: 1 };
+	return OVERLAY_OFF;
 }

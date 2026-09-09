@@ -126,20 +126,32 @@ export function buildRadarSeries(): SVGElement {
 	return group;
 }
 
+function cloneOverlay(hero: SVGElement, className: string) {
+	if (hero.querySelector(`.${className}`)) return;
+	const src = document.querySelector(`.logo-anim-refs .${className}`);
+	if (src) hero.insertBefore(src.cloneNode(true), hero.firstChild);
+}
+
 /** Ensure overlay layers exist once under the hero SVG. */
 export function ensureOverlays(hero: SVGElement): {
 	heatmap: Element | null;
 	radar: Element | null;
 	series: Element | null;
+	sankey: Element | null;
+	chord: Element | null;
 } {
 	if (!hero.querySelector('.heatmap-grid')) {
 		hero.insertBefore(buildHeatmapGrid(), hero.firstChild);
 		hero.insertBefore(buildRadarGrid(), hero.firstChild);
 		hero.insertBefore(buildRadarSeries(), hero.firstChild);
 	}
+	cloneOverlay(hero, 'sankey-overlay');
+	cloneOverlay(hero, 'chord-overlay');
 	return {
 		heatmap: hero.querySelector('.heatmap-grid'),
 		radar: hero.querySelector('.radar-grid'),
 		series: hero.querySelector('.radar-series'),
+		sankey: hero.querySelector('.sankey-overlay'),
+		chord: hero.querySelector('.chord-overlay'),
 	};
 }

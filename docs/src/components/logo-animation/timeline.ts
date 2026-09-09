@@ -1,10 +1,12 @@
 import {
+	CHORD_COLORS,
 	DUR,
 	HEATMAP_HIGH,
 	LOGO_COLORS,
 	LOGO_HOLD_MS,
 	OVERLAY_DUR,
 	PHASES,
+	SANKEY_COLORS,
 	STAGGER,
 	overlayOpacity,
 	type ColorMode,
@@ -36,6 +38,12 @@ function pathFill(
 	if (mode === 'logo') {
 		return { fill: LOGO_COLORS[index]!, stroke: LOGO_COLORS[index]! };
 	}
+	if (mode === 'sankey') {
+		return { fill: SANKEY_COLORS[index]!, stroke: SANKEY_COLORS[index]! };
+	}
+	if (mode === 'chord') {
+		return { fill: CHORD_COLORS[index]!, stroke: CHORD_COLORS[index]! };
+	}
 	return null;
 }
 
@@ -66,7 +74,13 @@ export function startMorphLoop(
 	vizPaths.forEach((p, i) => {
 		tl.set(p, { d: svg.morphTo(logoRefs[i]!) }, 0);
 	});
-	for (const node of [overlays.heatmap, overlays.radar, overlays.series]) {
+	for (const node of [
+		overlays.heatmap,
+		overlays.radar,
+		overlays.series,
+		overlays.sankey,
+		overlays.chord,
+	]) {
 		if (node) tl.set(node, { opacity: 0 }, 0);
 	}
 
@@ -74,10 +88,12 @@ export function startMorphLoop(
 		const refs = [...document.querySelectorAll(phase.selector)];
 		tl.label(phase.label, `+=${phase.pause}`);
 
-		const [hm, rd, sr] = overlayOpacity(phase.overlay);
-		fade(tl, overlays.heatmap, hm, phase.label);
-		fade(tl, overlays.radar, rd, phase.label);
-		fade(tl, overlays.series, sr, phase.label);
+		const op = overlayOpacity(phase.overlay);
+		fade(tl, overlays.heatmap, op.heatmap, phase.label);
+		fade(tl, overlays.radar, op.radar, phase.label);
+		fade(tl, overlays.series, op.series, phase.label);
+		fade(tl, overlays.sankey, op.sankey, phase.label);
+		fade(tl, overlays.chord, op.chord, phase.label);
 
 		vizPaths.forEach((p, i) => {
 			const at = `${phase.label}+=${i * STAGGER}`;
