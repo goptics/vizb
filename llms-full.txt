@@ -125,6 +125,12 @@ Add `scatter`, `heatmap`, `radar`, `sankey`, or `chord` explicitly when you need
 
 Each chart renderer ships as a separate compressed chunk; only the ones you select are embedded. This keeps the output small when you only need one or two shapes:
 
+### Agent
+
+```text
+/vizb data.csv as bar & radar by category & metric
+```
+
 ### CLI
 
 ```bash
@@ -166,6 +172,12 @@ vizb data.csv -g category,metric -p x,y -c bar,radar -o output.html
     group-pattern: x,y
     charts: bar,radar
     output-html: output.html
+```
+
+### Agent
+
+```text
+/vizb data.csv as sankey by source & target
 ```
 
 ### CLI
@@ -210,6 +222,12 @@ vizb data.csv -g source,target -p x,y -c sankey -o output.html
     output-html: output.html
 ```
 
+### Agent
+
+```text
+/vizb data.csv as chord by source & target
+```
+
 ### CLI
 
 ```bash
@@ -250,6 +268,12 @@ vizb data.csv -g source,target -p x,y -c chord -o output.html
     group-pattern: x,y
     charts: chord
     output-html: output.html
+```
+
+### Agent
+
+```text
+/vizb data.csv as bar by category
 ```
 
 ### CLI
@@ -361,6 +385,12 @@ order_date,region,category,product,quantity,amount
 
 CSV/JSON — region × product floor, category as z layers:
 
+### Agent
+
+```text
+/vizb sales.csv as bar by region, product & category
+```
+
 ### CLI
 
 ```bash
@@ -418,6 +448,12 @@ Pass each CSV/JSON column as a `--group` field in pattern order. See the
 [Tabular Data guide](/guides/data).
 
 **Regex — named `z` capture:**
+
+### Agent
+
+```text
+/vizb data.csv as bar by category, metric, group & series, split by / into name, x, y & depth
+```
 
 ### CLI
 
@@ -477,6 +513,12 @@ When you have only **x** and **y** dimensions, a 2D bar/line/scatter chart puts 
 
 CSV with x+y columns — no z grouping needed:
 
+### Agent
+
+```text
+/vizb sales.csv as bar by region & category, 3d
+```
+
 ### CLI
 
 ```bash
@@ -524,6 +566,12 @@ vizb bar sales.csv -g region,category -p x,y --3d -o output.html
     charts: bar
     chart: "bar:3d"
     output-html: output.html
+```
+
+### Agent
+
+```text
+/vizb sales.csv as line by region & category, 3d
 ```
 
 ### CLI
@@ -592,6 +640,12 @@ The HTML bundles **3D view** and **3D visual map** toggles in settings (both on 
 When your CSV/JSON data has 3+ numeric columns, auto-value renders continuous 3D — no `--3d` flag needed. This works on bar, line, and scatter:
 
 All-numeric CSV — auto-detects x, y, z → bar3D:
+
+### Agent
+
+```text
+/vizb spiral.csv as bar
+```
 
 ### CLI
 
@@ -725,6 +779,12 @@ order_date,region,category,product,quantity,amount
 
 A single series of bars — one bar per X category. The height is the raw value. This is the simplest view: run a benchmark, pick one grouping column, get a bar per result.
 
+### Agent
+
+```text
+/vizb sales.csv as bar by order_date
+```
+
 ### CLI
 
 ```bash
@@ -770,6 +830,12 @@ vizb bar sales.csv -g order_date -p x -o out.html
 
 Grouped bars: X stays on the category axis, and each distinct Y value becomes its own bar series side-by-side within each X group. The legend lists the Y values so you can toggle individual series on and off.
 
+### Agent
+
+```text
+/vizb sales.csv as bar by region & category
+```
+
 ### CLI
 
 ```bash
@@ -813,6 +879,12 @@ vizb bar sales.csv -g region,category -p x,y -o out.html
 ```
 
 Add `--stack` to show one bar per X value with the Y series stacked inside it. This keeps the grouped data shape but changes the 2D bar rendering to a part-to-whole view.
+
+### Agent
+
+```text
+/vizb sales.csv as bar by region & category, stacked
+```
 
 ### CLI
 
@@ -867,6 +939,12 @@ vizb bar sales.csv -g region,category -p x,y --stack -o stacked.html
 
 WebGL `bar3D` scene: X and Y form a grid floor, and Z values stack as depth layers on each (X, Y) cell. Rotate, zoom, and pan the scene in the browser. Requires echarts-gl (bundled automatically).
 
+### Agent
+
+```text
+/vizb sales.csv as bar, split order_date into month & date (skip the year), category as depth
+```
+
 ### CLI
 
 ```bash
@@ -914,6 +992,12 @@ vizb bar sales.csv -g order_date,category -p "[-y{Month}-x{Date}],z{Category}" -
 ## `--select` (csv/json)
 
 `--select` is **repeatable** (csv/json only). With explicit `-g` / `-p` / `-r`, it picks which numeric columns get their own chart (optional `{label}` renames each chart). Without group, it switches to solo value / mixed / multi-stat modes that plot raw columns as coordinate axes.
+
+### Agent
+
+```text
+/vizb sales.csv as bar by region & product, amount & quantity
+```
 
 ### CLI
 
@@ -966,6 +1050,12 @@ See [Select](/guides/select) for the full mode reference, and [Group vs Select](
 ## Auto-value mode (all-numeric data)
 
 On an all-numeric CSV/JSON file, vizb auto-detects the first 2–3 columns as coordinate axes and renders value-type bars — with 3+ columns it auto-enables 3D (`bar3D`). See [Auto-value](/guides/group-vs-select#auto-value-all-numeric-data) for the inference rules; solo `--select` overrides it.
+
+### Agent
+
+```text
+/vizb noise-surface.csv as bar, 3d visual map
+```
 
 ### CLI
 
@@ -1109,6 +1199,12 @@ Duplicate links in the same direction are summed. Reverse links remain separate,
 
 Grouped edge data maps source to `x` and target to `y`:
 
+### Agent
+
+```text
+/vizb chord-relations.csv as chord by source & target
+```
+
 ### CLI
 
 ```bash
@@ -1154,6 +1250,12 @@ vizb chord chord-relations.csv \
 
 Solo selection requires exactly three columns per `--select`: source, target, and value.
 
+### Agent
+
+```text
+/vizb chord-relations.csv as chord, source, target & value
+```
+
 ### CLI
 
 ```bash
@@ -1193,6 +1295,12 @@ vizb chord chord-relations.csv \
 ```
 
 To generate several chart types from the root command, include Chord explicitly:
+
+### Agent
+
+```text
+/vizb chord-relations.csv as chord & sankey by source & target
+```
 
 ### CLI
 
@@ -1242,6 +1350,12 @@ vizb chord-relations.csv \
 
 Repeat `--select` for additional measures. Every repeated view must reuse the same source and target columns; each measure becomes a statistic tab.
 
+### Agent
+
+```text
+/vizb relations.csv as chord, source, target & value; source, target & cost
+```
+
 ### CLI
 
 ```bash
@@ -1286,6 +1400,12 @@ vizb relations.csv \
 ```
 
 Use `n` to split independent edge sets into named panels, just like other Vizb chart types:
+
+### Agent
+
+```text
+/vizb relations.csv as chord by name, source & target
+```
 
 ### CLI
 
@@ -1405,6 +1525,12 @@ order_date,region,category,product,quantity,amount
 
 Classic heatmap: one value per X × Y cell, colored on a continuous gradient with a `visualMap` scale. No z-series — magnitude as color.
 
+### Agent
+
+```text
+/vizb sales.csv as heatmap by region & category
+```
+
 ### CLI
 
 ```bash
@@ -1450,6 +1576,12 @@ vizb heatmap sales.csv -g region,category -p x,y -o out.html
 ### 3D (X + Y + Z axes)
 
 Z values are folded into each cell rather than rendered as depth. Each cell displays `Σ z` and is colored on the same continuous gradient as the 2D heatmap. Hover a cell to see the individual z-series breakdown with colored dots. Toggle z-series in the legend — cells recompute live.
+
+### Agent
+
+```text
+/vizb sales.csv as heatmap by region, category & product
+```
 
 ### CLI
 
@@ -1568,6 +1700,12 @@ order_date,region,category,product,quantity,amount
 
 A single line tracing one value per X category. The simplest view: one grouping column, one continuous curve from left to right.
 
+### Agent
+
+```text
+/vizb sales.csv as line by order_date
+```
+
 ### CLI
 
 ```bash
@@ -1613,6 +1751,12 @@ vizb line sales.csv -g order_date -p x -o out.html
 
 One line per Y value, all sharing the same X axis. The legend lists the Y values so you can show or hide individual lines. Great for comparing multiple algorithms or configurations across the same input sweep.
 
+### Agent
+
+```text
+/vizb sales.csv as line by region & category
+```
+
 ### CLI
 
 ```bash
@@ -1656,6 +1800,12 @@ vizb line sales.csv -g region,category -p x,y -o out.html
 ```
 
 Add `--stack` to render the grouped lines as a stacked area chart, which emphasizes the total per X value and each Y series' contribution to that total.
+
+### Agent
+
+```text
+/vizb sales.csv as line by region & category, stacked
+```
 
 ### CLI
 
@@ -1712,6 +1862,12 @@ WebGL `line3D` scene: each Z value becomes a separate 3D polyline with scatter m
 
 This example uses [Go benchmark output](https://github.com/goptics/vizb/blob/main/examples/go/worker-pools.txt) comparing worker pool implementations. Slash-separated names like `BenchmarkAllSleep10ms/1u-1Mt/Pond-Eager-8` map to `z/y/x` — benchmark suite on Z, workload config on Y, pool implementation on X.
 
+### Agent
+
+```text
+/vizb worker-pools.txt as line, split into depth, y & x, log scale
+```
+
 ### CLI
 
 ```bash
@@ -1764,6 +1920,12 @@ vizb line worker-pools.txt -p z/y/x --scale log -o out.html
 
 `--select` is **repeatable** (csv/json only). With explicit `-g` / `-p` / `-r`, it picks which numeric columns get their own chart (optional `{label}` renames each chart). Without group, it switches to solo value / mixed / multi-stat modes that plot raw columns as coordinate axes.
 
+### Agent
+
+```text
+/vizb sales.csv as line by region & product, quantity & amount
+```
+
 ### CLI
 
 ```bash
@@ -1815,6 +1977,12 @@ See [Select](/guides/select) for the full mode reference, and [Group vs Select](
 ## Auto-value mode (all-numeric data)
 
 On an all-numeric CSV/JSON file, vizb auto-detects the first 2–3 columns as coordinate axes and renders value-type lines — with 3+ columns it auto-enables 3D (`line3D`). See [Auto-value](/guides/group-vs-select#auto-value-all-numeric-data) for the inference rules; solo `--select` overrides it.
+
+### Agent
+
+```text
+/vizb spiral-3d.csv as line, 3d visual map, rotate
+```
 
 ### CLI
 
@@ -1941,6 +2109,12 @@ order_date,region,category,product,quantity,amount
 
 One pie chart: each unique X value is a slice. The slice size is proportional to its total value. This is the clearest way to see which X category dominates.
 
+### Agent
+
+```text
+/vizb sales.csv as pie by region
+```
+
 ### CLI
 
 ```bash
@@ -1983,6 +2157,12 @@ vizb pie sales.csv -g region -o out.html
 ### 2D (X + Y axes)
 
 Two pies side-by-side: **By X-Axis** and **By Y-Axis**. Each pie breaks the total differently — the first by X category, the second by Y column. Comparing the two lets you see which axis has more evenly-distributed weight.
+
+### Agent
+
+```text
+/vizb sales.csv as pie by region & category
+```
 
 ### CLI
 
@@ -2031,6 +2211,12 @@ vizb pie sales.csv -g region,category -p x,y -o out.html
 Three pies in a row: **By X-Axis**, **By Y-Axis**, and **By Z-Axis**. Each pie slices the total along a different axis, giving you a three-way breakdown of the same dataset in a single view.
 
 This example splits `order_date` into month and day slots (same grouping as the [Sales by Date](https://vizb.goptics.org/examples/live/tabular-data/?id=02-sales-by-date) tabular-data dashboard) and maps `category` to the Z axis.
+
+### Agent
+
+```text
+/vizb sales.csv as pie, split order_date into month & date (skip the year), category as depth
+```
 
 ### CLI
 
@@ -2149,6 +2335,12 @@ Echo,stability,84,lazy
 
 One polygon on the radar. The X values become the spokes, and the single data point is plotted as a stat-total shape. Best for a quick profile of one subject.
 
+### Agent
+
+```text
+/vizb profiles.csv as radar by metric
+```
+
 ### CLI
 
 ```bash
@@ -2191,6 +2383,12 @@ vizb radar profiles.csv -g metric -o out.html
 ### 2D (X + Y axes)
 
 Multiple polygons, one per X value, all sharing the same set of spokes (Y values). The legend lists the X values so you can show or hide individual polygons. This is the core use case: compare how several subjects score across the same set of metrics.
+
+### Agent
+
+```text
+/vizb profiles.csv as radar by subject & metric
+```
 
 ### CLI
 
@@ -2239,6 +2437,12 @@ vizb radar profiles.csv -g subject,metric -p x,y -o out.html
 Multiple polygon sets, one set per Z value. Within each Z series, X values become multiple data points and Y values remain the spokes. The legend lists the Z values. To keep smaller polygons hoverable, vizb draws the **largest Z series first** so smaller polygons are rendered on top and their vertices stay reachable.
 
 Spoke vertices are rendered as circle symbols, so you can hover individual points on each polygon to inspect a specific metric value.
+
+### Agent
+
+```text
+/vizb profiles.csv as radar by subject, metric & tier
+```
 
 ### CLI
 
@@ -2355,6 +2559,12 @@ app,Subscribe,Cancel,300,5
 
 Group: list source then target under `-g`; `-p x,y` assigns those roles:
 
+### Agent
+
+```text
+/vizb sankey-flows.csv as sankey by source & target
+```
+
 ### CLI
 
 ```bash
@@ -2398,6 +2608,12 @@ vizb sankey sankey-flows.csv -g source,target -p x,y -o out.html
 ```
 
 Solo `--select`: exactly 3 columns — source, target, value (no `-g`):
+
+### Agent
+
+```text
+/vizb sankey-flows.csv as sankey, source, target & value
+```
 
 ### CLI
 
@@ -2457,6 +2673,12 @@ vizb sankey sankey-flows.csv --select source,target,value -o out.html
 
 Another measure → another `--select` with the same source/target (stat tabs):
 
+### Agent
+
+```text
+/vizb sankey-flows.csv as sankey, source, target & value; source, target & cost
+```
+
 ### CLI
 
 ```bash
@@ -2507,6 +2729,12 @@ Duplicate `(source, target)` pairs are summed into a single link. Multi-hop flow
 ### Named panels (`n`)
 
 Pass `n` in the group pattern to split independent edge sets into separate chart panels — same 4D behavior as other chart types.
+
+### Agent
+
+```text
+/vizb sankey-flows.csv as sankey by name, source & target
+```
 
 ### CLI
 
@@ -2659,6 +2887,12 @@ order_date,region,category,product,quantity,amount
 
 One point per X category.
 
+### Agent
+
+```text
+/vizb sales.csv as scatter by order_date
+```
+
 ### CLI
 
 ```bash
@@ -2703,6 +2937,12 @@ vizb scatter sales.csv -g order_date -p x -o out.html
 ### 2D (X + Y axes)
 
 One series per Y value across the X axis. Toggle series in the legend.
+
+### Agent
+
+```text
+/vizb sales.csv as scatter by region & category
+```
 
 ### CLI
 
@@ -2749,6 +2989,12 @@ vizb scatter sales.csv -g region,category -p x,y -o out.html
 ### 3D (X + Y + Z axes)
 
 WebGL `scatter3D` scene: each Z value is a separate point series across the X/Y grid. Rotate, zoom, and pan in the browser. Requires echarts-gl (bundled automatically).
+
+### Agent
+
+```text
+/vizb sales.csv as scatter, split order_date into month & date (skip the year), category as depth
+```
 
 ### CLI
 
@@ -2811,6 +3057,12 @@ West,14.2,7300
 Central,11.0,7800
 ```
 
+### Agent
+
+```text
+/vizb region-metrics.csv as scatter, region & latency
+```
+
 ### CLI
 
 ```bash
@@ -2861,6 +3113,12 @@ Repeat `--select` (`dim,metric` per flag) for multi-stat datasets — charts sep
 ## Auto-value mode (no flags)
 
 On an all-numeric CSV/JSON file, vizb auto-detects the first 2–3 columns as coordinate axes and enters value mode automatically — with 3+ columns it renders continuous `scatter3D`. See [Auto-value](/guides/group-vs-select#auto-value-all-numeric-data) for the inference rules; solo `--select` overrides it.
+
+### Agent
+
+```text
+/vizb clusters.csv as scatter, visual map, symbol size 10
+```
 
 ### CLI
 
@@ -3558,6 +3816,12 @@ vizb <chart> [target] [flags]
 
 `<chart>` is any type on the [Charts overview](/charts) (for example `bar`, `line`, `pie`). Output is HTML by default, or JSON when `-o` ends in `.json` (same rules as the root command).
 
+### Agent
+
+```text
+/vizb data.csv as bar by impl & size
+```
+
 ### CLI
 
 ```bash
@@ -3600,6 +3864,12 @@ vizb bar data.csv -g impl,size -p n,x -o bar.html
     output-html: bar.html
 ```
 
+### Agent
+
+```text
+/vizb data.csv as pie by impl
+```
+
 ### CLI
 
 ```bash
@@ -3637,6 +3907,12 @@ vizb pie data.csv -g impl -o pie.html
     group: impl
     charts: pie
     output-html: pie.html
+```
+
+### Agent
+
+```text
+/vizb data.csv as sankey by source & target
 ```
 
 ### CLI
@@ -3679,6 +3955,12 @@ vizb sankey data.csv -g source,target -p x,y -o sankey.html
     group-pattern: x,y
     charts: sankey
     output-html: sankey.html
+```
+
+### Agent
+
+```text
+/vizb data.csv as chord by source & target
 ```
 
 ### CLI
@@ -4977,7 +5259,7 @@ title: "Features"
 description: "What Vizb can do — inputs, dimensions, charts, UI, merge, and CI — without writing chart code."
 ---
 
-Vizb turns CSV, JSON, and benchmark output into interactive charts and stats **without writing chart or frontend code**. Tables and benchmarks share one dimension model; you run the same pipeline from the CLI, [GitHub Action](/ci-cd/github-action), or [REST API](/commands/serve).
+Vizb turns CSV, JSON, and benchmark output into interactive charts and stats **without writing chart or frontend code**. Tables and benchmarks share one dimension model; you run the same pipeline from the CLI, a [coding agent](/getting-started/ai-agents), [GitHub Action](/ci-cd/github-action), or [REST API](/commands/serve).
 
 New to the product? Start with [Getting Started](/getting-started).
 
@@ -5049,6 +5331,10 @@ Composite action for cmd or file input, merge, HTML/JSON outputs. See [GitHub Ac
 
 `vizb serve` exposes convert, merge, and UI generation. See [serve](/commands/serve) and [API](/api/).
 
+  ### Coding agents
+
+Install the vizb skill, then `/vizb sales.csv as bar by region & product, show labels`. The agent runs the CLI. See [AI agents](/getting-started/ai-agents).
+
   ### Units and export
 
 Time, memory, and number units. HTML or JSON output. Chart JPEG from the UI.
@@ -5065,7 +5351,7 @@ title: "Introduction"
 description: "Your first interactive HTML chart from a table or benchmark — without writing chart code."
 ---
 
-Vizb turns **CSV, JSON, and benchmark output** into interactive charts and stats **without writing chart code**. Point it at data (CLI, [GitHub Action](/ci-cd/github-action), or [REST](/commands/serve)), open one HTML report in any browser.
+Vizb turns **CSV, JSON, and benchmark output** into interactive charts and stats **without writing chart code**. Point it at data (CLI, a [coding agent](/getting-started/ai-agents), [GitHub Action](/ci-cd/github-action), or [REST](/commands/serve)), open one HTML report in any browser.
 
 **Need the binary first?** [Install](/getting-started/install), then come back here.
 
@@ -5089,6 +5375,12 @@ order_date,region,category,product,quantity,amount
 2025-10-03,North,Tools,Gear,33,4102.15
 2025-11-19,West,Hardware,Sensor,22,2890.40
 2025-12-28,South,Mechanical,Gadget,26,611.32
+```
+
+### Agent
+
+```text
+/vizb sales.csv as bar by region & category
 ```
 
 ### CLI
@@ -5190,6 +5482,7 @@ Deepen when you need to:
   
   
   
+  
 
 ## Benchmarks (optional path)
 
@@ -5244,6 +5537,7 @@ Force a parser with `-P go`, `-P rs:criterion`, `-P rs:divan`, `-P js:vitest`, o
 | Goal | Start here |
 |------|------------|
 | Install | [Install](/getting-started/install) |
+| Chart from a coding agent | [AI agents](/getting-started/ai-agents) (`/vizb sales.csv as bar by region & product, show labels`) |
 | Dimensions in depth | [Dimensions](/getting-started/dimensions) |
 | Group vs select | [Group vs Select](/guides/group-vs-select) |
 | CSV / JSON rules | [Tabular data](/guides/data) |
@@ -5283,11 +5577,79 @@ Skill install is not binary install. If `vizb` is missing, the skill runs the [i
 
 ## Use it
 
+Type `/vizb` plus the file and what you want in natural language. The agent picks a chart, writes an HTML file, and returns the path — it does not paste the HTML into the chat.
+
 ```text
-/vizb path/to/data.csv
+/vizb sales.csv as bar by region & product, show labels
 ```
 
-Or ask in natural language: “turn this benchmark output into an HTML chart.”
+Same conversion as the CLI. Every example in these docs has an **Agent** tab with a prompt like this:
+
+### Agent
+
+```text
+/vizb sales.csv as bar by region & product, show labels
+```
+
+### CLI
+
+```bash
+vizb bar sales.csv -g region,product -p x,y -l -o sales.html
+```
+
+### HTTP
+
+```json
+{
+  "input": "order_date,region,category,product,quantity,amount\n2024-01-01,Central,Hardware,Connector,16,2488.24\n2024-01-02,East,Tools,Gear,42,207.08\n2024-01-03,North,Mechanical,Sensor,20,3465.22\n2024-01-04,West,Electronics,Valve,24,7633.44\n2024-03-12,South,Industrial,Widget,31,5088.10\n2024-06-18,East,Electronics,Relay,12,2214.50\n2024-09-05,North,Hardware,Bolt,28,1724.27\n2024-12-20,West,Tools,Gadget,19,2938.82\n2025-02-08,Central,Mechanical,Valve,27,7350.26\n2025-04-14,South,Electronics,Widget,41,3278.77\n2025-07-22,East,Industrial,Connector,15,5093.42\n2025-10-03,North,Tools,Gear,33,4102.15\n2025-11-19,West,Hardware,Sensor,22,2890.40\n2025-12-28,South,Mechanical,Gadget,26,611.32\n",
+  "parser": "csv",
+  "grouping": {
+    "columns": [
+      "region",
+      "product"
+    ],
+    "pattern": "x,y"
+  },
+  "charts": {
+    "types": [
+      "bar"
+    ],
+    "configs": [
+      {
+        "type": "bar",
+        "showLabels": true
+      }
+    ]
+  },
+  "output": {
+    "format": "html"
+  }
+}
+```
+
+### Action
+
+```yaml
+- uses: goptics/vizb@v0
+  with:
+    file: sales.csv
+    group: region,product
+    group-pattern: x,y
+    charts: bar
+    chart: "bar:labels"
+    output-html: sales.html
+```
+
+Other prompts:
+
+```text
+/vizb sales.csv as pie by region
+/vizb this benchmark as a line chart
+/vizb bench.txt as bar
+/vizb path/to/data.csv as bar
+```
+
+Or ask without the slash: “turn this benchmark output into an HTML chart.”
 
 The agent should start with `vizb <chart> <file> -o out.html` and only add grouping or select flags if auto output is wrong.
 
@@ -5320,6 +5682,12 @@ EU,Widget,60
 ```
 
 Map `region` to Y and `product` to X:
+
+### Agent
+
+```text
+/vizb sales.csv as bar by region & product
+```
 
 ### CLI
 
@@ -5427,6 +5795,12 @@ description: "Install vizb using a package manager, Docker, a one-liner, the Go 
 
 <div class="quick-install">
 
+  ### Agent
+
+```bash
+npx skills add goptics/skills --skill vizb
+```
+
   ### Linux / macOS
 
 ```bash
@@ -5437,12 +5811,6 @@ curl -fsSL https://vizb.goptics.org/install.sh | bash
 
 ```ps1
 irm https://vizb.goptics.org/install.ps1 | iex
-```
-
-  ### Agent
-
-```bash
-npx skills add goptics/skills --skill vizb
 ```
 
 </div>
@@ -5748,6 +6116,12 @@ description: "Turn rows — CSV/JSON columns or benchmark names — into structu
 ## Start here
 
 Most grouping is one command: pick category columns with `-g`, map them to dimensions with `-p`, open the HTML.
+
+### Agent
+
+```text
+/vizb sales.csv as bar by region & product
+```
 
 ### CLI
 
@@ -6650,6 +7024,12 @@ A column cannot be in both `--select` and `--group`. See [Group vs Select](/guid
 
 With group active, every numeric column gets its own chart by default. Use `--select` to keep only the columns you want, in the order you want them, and optionally rename each chart's label.
 
+### Agent
+
+```text
+/vizb sales.csv as bar by region & product, amount & quantity
+```
+
 ### CLI
 
 ```bash
@@ -6802,6 +7182,12 @@ description: "Turn CSV, JSON, and benchmarks into interactive charts and stats w
 
 <div class="quick-install">
 
+  ### Agent
+
+```bash
+npx skills add goptics/skills --skill vizb
+```
+
   ### Linux / macOS
 
 ```bash
@@ -6814,18 +7200,13 @@ curl -fsSL https://vizb.goptics.org/install.sh | bash
 irm https://vizb.goptics.org/install.ps1 | iex
 ```
 
-  ### Agent
-
-```bash
-npx skills add goptics/skills --skill vizb
-```
-
 </div>
 
 ## Quick Example
 
 ## Start from a goal
 
+  
   
   
   
@@ -6847,9 +7228,9 @@ Name, X, Y, and Z drive every chart type. Group for category breakdowns; select 
 
 Interactive UI in one file: sort, swap axes, scale, themes, JPEG export, optional stats. Open it in any browser. See [UI](/ui).
 
-  ### CLI, Action, and API
+  ### CLI, agents, Action, and API
 
-Local CLI, [GitHub Action](/ci-cd/github-action), and [REST](/commands/serve) for the same pipeline. Merge datasets across runs when you need history.
+Local CLI, a [coding agent](/getting-started/ai-agents) via `/vizb`, [GitHub Action](/ci-cd/github-action), and [REST](/commands/serve) for the same pipeline. Merge datasets across runs when you need history.
 
 <p>
   Full inventory: <a href="/features">Features</a>. Live samples: <a href="/examples">Examples</a>.
@@ -7088,7 +7469,7 @@ description: "Current capabilities and future plans for vizb."
 
 ## Current State
 
-Vizb turns CSV/JSON tables and benchmark output into charts and stats without writing chart code: one dimension model (`n`/`x`/`y`/`z`), eight chart types (including 3D WebGL for bar/line/scatter), merge history, stats, CLI, GitHub Action, and REST.
+Vizb turns CSV/JSON tables and benchmark output into charts and stats without writing chart code: one dimension model (`n`/`x`/`y`/`z`), eight chart types (including 3D WebGL for bar/line/scatter), merge history, stats, CLI, coding agents (`/vizb`), GitHub Action, and REST.
 
 Capability inventory lives on [Features](/features). Conceptual model: [Getting Started](/getting-started). Input adapters: [Supported inputs](/guides/parsers).
 

@@ -43,6 +43,12 @@ Duplicate links in the same direction are summed. Reverse links remain separate,
 
 Grouped edge data maps source to `x` and target to `y`:
 
+### Agent
+
+```text
+/vizb chord-relations.csv as chord by source & target
+```
+
 ### CLI
 
 ```bash
@@ -88,6 +94,12 @@ vizb chord chord-relations.csv \
 
 Solo selection requires exactly three columns per `--select`: source, target, and value.
 
+### Agent
+
+```text
+/vizb chord-relations.csv as chord, source, target & value
+```
+
 ### CLI
 
 ```bash
@@ -127,6 +139,12 @@ vizb chord chord-relations.csv \
 ```
 
 To generate several chart types from the root command, include Chord explicitly:
+
+### Agent
+
+```text
+/vizb chord-relations.csv as chord & sankey by source & target
+```
 
 ### CLI
 
@@ -176,6 +194,12 @@ vizb chord-relations.csv \
 
 Repeat `--select` for additional measures. Every repeated view must reuse the same source and target columns; each measure becomes a statistic tab.
 
+### Agent
+
+```text
+/vizb relations.csv as chord, source, target & value; source, target & cost
+```
+
 ### CLI
 
 ```bash
@@ -220,6 +244,12 @@ vizb relations.csv \
 ```
 
 Use `n` to split independent edge sets into named panels, just like other Vizb chart types:
+
+### Agent
+
+```text
+/vizb relations.csv as chord by name, source & target
+```
 
 ### CLI
 

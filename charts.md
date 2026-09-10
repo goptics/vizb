@@ -125,6 +125,12 @@ Add `scatter`, `heatmap`, `radar`, `sankey`, or `chord` explicitly when you need
 
 Each chart renderer ships as a separate compressed chunk; only the ones you select are embedded. This keeps the output small when you only need one or two shapes:
 
+### Agent
+
+```text
+/vizb data.csv as bar & radar by category & metric
+```
+
 ### CLI
 
 ```bash
@@ -166,6 +172,12 @@ vizb data.csv -g category,metric -p x,y -c bar,radar -o output.html
     group-pattern: x,y
     charts: bar,radar
     output-html: output.html
+```
+
+### Agent
+
+```text
+/vizb data.csv as sankey by source & target
 ```
 
 ### CLI
@@ -210,6 +222,12 @@ vizb data.csv -g source,target -p x,y -c sankey -o output.html
     output-html: output.html
 ```
 
+### Agent
+
+```text
+/vizb data.csv as chord by source & target
+```
+
 ### CLI
 
 ```bash
@@ -250,6 +268,12 @@ vizb data.csv -g source,target -p x,y -c chord -o output.html
     group-pattern: x,y
     charts: chord
     output-html: output.html
+```
+
+### Agent
+
+```text
+/vizb data.csv as bar by category
 ```
 
 ### CLI

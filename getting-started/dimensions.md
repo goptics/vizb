@@ -25,6 +25,12 @@ EU,Widget,60
 
 Map `region` to Y and `product` to X:
 
+### Agent
+
+```text
+/vizb sales.csv as bar by region & product
+```
+
 ### CLI
 
 ```bash

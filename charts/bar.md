@@ -43,6 +43,12 @@ order_date,region,category,product,quantity,amount
 
 A single series of bars — one bar per X category. The height is the raw value. This is the simplest view: run a benchmark, pick one grouping column, get a bar per result.
 
+### Agent
+
+```text
+/vizb sales.csv as bar by order_date
+```
+
 ### CLI
 
 ```bash
@@ -88,6 +94,12 @@ vizb bar sales.csv -g order_date -p x -o out.html
 
 Grouped bars: X stays on the category axis, and each distinct Y value becomes its own bar series side-by-side within each X group. The legend lists the Y values so you can toggle individual series on and off.
 
+### Agent
+
+```text
+/vizb sales.csv as bar by region & category
+```
+
 ### CLI
 
 ```bash
@@ -131,6 +143,12 @@ vizb bar sales.csv -g region,category -p x,y -o out.html
 ```
 
 Add `--stack` to show one bar per X value with the Y series stacked inside it. This keeps the grouped data shape but changes the 2D bar rendering to a part-to-whole view.
+
+### Agent
+
+```text
+/vizb sales.csv as bar by region & category, stacked
+```
 
 ### CLI
 
@@ -185,6 +203,12 @@ vizb bar sales.csv -g region,category -p x,y --stack -o stacked.html
 
 WebGL `bar3D` scene: X and Y form a grid floor, and Z values stack as depth layers on each (X, Y) cell. Rotate, zoom, and pan the scene in the browser. Requires echarts-gl (bundled automatically).
 
+### Agent
+
+```text
+/vizb sales.csv as bar, split order_date into month & date (skip the year), category as depth
+```
+
 ### CLI
 
 ```bash
@@ -232,6 +256,12 @@ vizb bar sales.csv -g order_date,category -p "[-y{Month}-x{Date}],z{Category}" -
 ## `--select` (csv/json)
 
 `--select` is **repeatable** (csv/json only). With explicit `-g` / `-p` / `-r`, it picks which numeric columns get their own chart (optional `{label}` renames each chart). Without group, it switches to solo value / mixed / multi-stat modes that plot raw columns as coordinate axes.
+
+### Agent
+
+```text
+/vizb sales.csv as bar by region & product, amount & quantity
+```
 
 ### CLI
 
@@ -284,6 +314,12 @@ See [Select](/guides/select) for the full mode reference, and [Group vs Select](
 ## Auto-value mode (all-numeric data)
 
 On an all-numeric CSV/JSON file, vizb auto-detects the first 2–3 columns as coordinate axes and renders value-type bars — with 3+ columns it auto-enables 3D (`bar3D`). See [Auto-value](/guides/group-vs-select#auto-value-all-numeric-data) for the inference rules; solo `--select` overrides it.
+
+### Agent
+
+```text
+/vizb noise-surface.csv as bar, 3d visual map
+```
 
 ### CLI
 

@@ -14,6 +14,12 @@ A column cannot be in both `--select` and `--group`. See [Group vs Select](/guid
 
 With group active, every numeric column gets its own chart by default. Use `--select` to keep only the columns you want, in the order you want them, and optionally rename each chart's label.
 
+### Agent
+
+```text
+/vizb sales.csv as bar by region & product, amount & quantity
+```
+
 ### CLI
 
 ```bash

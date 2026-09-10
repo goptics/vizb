@@ -3,7 +3,7 @@ title: "Features"
 description: "What Vizb can do — inputs, dimensions, charts, UI, merge, and CI — without writing chart code."
 ---
 
-Vizb turns CSV, JSON, and benchmark output into interactive charts and stats **without writing chart or frontend code**. Tables and benchmarks share one dimension model; you run the same pipeline from the CLI, [GitHub Action](/ci-cd/github-action), or [REST API](/commands/serve).
+Vizb turns CSV, JSON, and benchmark output into interactive charts and stats **without writing chart or frontend code**. Tables and benchmarks share one dimension model; you run the same pipeline from the CLI, a [coding agent](/getting-started/ai-agents), [GitHub Action](/ci-cd/github-action), or [REST API](/commands/serve).
 
 New to the product? Start with [Getting Started](/getting-started).
 
@@ -74,6 +74,10 @@ Composite action for cmd or file input, merge, HTML/JSON outputs. See [GitHub Ac
   ### REST API
 
 `vizb serve` exposes convert, merge, and UI generation. See [serve](/commands/serve) and [API](/api/).
+
+  ### Coding agents
+
+Install the vizb skill, then `/vizb sales.csv as bar by region & product, show labels`. The agent runs the CLI. See [AI agents](/getting-started/ai-agents).
 
   ### Units and export
 

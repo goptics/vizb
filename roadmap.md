@@ -5,7 +5,7 @@ description: "Current capabilities and future plans for vizb."
 
 ## Current State
 
-Vizb turns CSV/JSON tables and benchmark output into charts and stats without writing chart code: one dimension model (`n`/`x`/`y`/`z`), eight chart types (including 3D WebGL for bar/line/scatter), merge history, stats, CLI, GitHub Action, and REST.
+Vizb turns CSV/JSON tables and benchmark output into charts and stats without writing chart code: one dimension model (`n`/`x`/`y`/`z`), eight chart types (including 3D WebGL for bar/line/scatter), merge history, stats, CLI, coding agents (`/vizb`), GitHub Action, and REST.
 
 Capability inventory lives on [Features](/features). Conceptual model: [Getting Started](/getting-started). Input adapters: [Supported inputs](/guides/parsers).
 

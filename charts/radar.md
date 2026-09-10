@@ -47,6 +47,12 @@ Echo,stability,84,lazy
 
 One polygon on the radar. The X values become the spokes, and the single data point is plotted as a stat-total shape. Best for a quick profile of one subject.
 
+### Agent
+
+```text
+/vizb profiles.csv as radar by metric
+```
+
 ### CLI
 
 ```bash
@@ -89,6 +95,12 @@ vizb radar profiles.csv -g metric -o out.html
 ### 2D (X + Y axes)
 
 Multiple polygons, one per X value, all sharing the same set of spokes (Y values). The legend lists the X values so you can show or hide individual polygons. This is the core use case: compare how several subjects score across the same set of metrics.
+
+### Agent
+
+```text
+/vizb profiles.csv as radar by subject & metric
+```
 
 ### CLI
 
@@ -137,6 +149,12 @@ vizb radar profiles.csv -g subject,metric -p x,y -o out.html
 Multiple polygon sets, one set per Z value. Within each Z series, X values become multiple data points and Y values remain the spokes. The legend lists the Z values. To keep smaller polygons hoverable, vizb draws the **largest Z series first** so smaller polygons are rendered on top and their vertices stay reachable.
 
 Spoke vertices are rendered as circle symbols, so you can hover individual points on each polygon to inspect a specific metric value.
+
+### Agent
+
+```text
+/vizb profiles.csv as radar by subject, metric & tier
+```
 
 ### CLI
 

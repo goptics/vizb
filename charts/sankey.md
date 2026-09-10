@@ -46,6 +46,12 @@ app,Subscribe,Cancel,300,5
 
 Group: list source then target under `-g`; `-p x,y` assigns those roles:
 
+### Agent
+
+```text
+/vizb sankey-flows.csv as sankey by source & target
+```
+
 ### CLI
 
 ```bash
@@ -89,6 +95,12 @@ vizb sankey sankey-flows.csv -g source,target -p x,y -o out.html
 ```
 
 Solo `--select`: exactly 3 columns — source, target, value (no `-g`):
+
+### Agent
+
+```text
+/vizb sankey-flows.csv as sankey, source, target & value
+```
 
 ### CLI
 
@@ -148,6 +160,12 @@ vizb sankey sankey-flows.csv --select source,target,value -o out.html
 
 Another measure → another `--select` with the same source/target (stat tabs):
 
+### Agent
+
+```text
+/vizb sankey-flows.csv as sankey, source, target & value; source, target & cost
+```
+
 ### CLI
 
 ```bash
@@ -198,6 +216,12 @@ Duplicate `(source, target)` pairs are summed into a single link. Multi-hop flow
 ### Named panels (`n`)
 
 Pass `n` in the group pattern to split independent edge sets into separate chart panels — same 4D behavior as other chart types.
+
+### Agent
+
+```text
+/vizb sankey-flows.csv as sankey by name, source & target
+```
 
 ### CLI
 

@@ -45,6 +45,12 @@ order_date,region,category,product,quantity,amount
 
 One pie chart: each unique X value is a slice. The slice size is proportional to its total value. This is the clearest way to see which X category dominates.
 
+### Agent
+
+```text
+/vizb sales.csv as pie by region
+```
+
 ### CLI
 
 ```bash
@@ -87,6 +93,12 @@ vizb pie sales.csv -g region -o out.html
 ### 2D (X + Y axes)
 
 Two pies side-by-side: **By X-Axis** and **By Y-Axis**. Each pie breaks the total differently — the first by X category, the second by Y column. Comparing the two lets you see which axis has more evenly-distributed weight.
+
+### Agent
+
+```text
+/vizb sales.csv as pie by region & category
+```
 
 ### CLI
 
@@ -135,6 +147,12 @@ vizb pie sales.csv -g region,category -p x,y -o out.html
 Three pies in a row: **By X-Axis**, **By Y-Axis**, and **By Z-Axis**. Each pie slices the total along a different axis, giving you a three-way breakdown of the same dataset in a single view.
 
 This example splits `order_date` into month and day slots (same grouping as the [Sales by Date](https://vizb.goptics.org/examples/live/tabular-data/?id=02-sales-by-date) tabular-data dashboard) and maps `category` to the Z axis.
+
+### Agent
+
+```text
+/vizb sales.csv as pie, split order_date into month & date (skip the year), category as depth
+```
 
 ### CLI
 

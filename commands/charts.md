@@ -15,6 +15,12 @@ vizb <chart> [target] [flags]
 
 `<chart>` is any type on the [Charts overview](/charts) (for example `bar`, `line`, `pie`). Output is HTML by default, or JSON when `-o` ends in `.json` (same rules as the root command).
 
+### Agent
+
+```text
+/vizb data.csv as bar by impl & size
+```
+
 ### CLI
 
 ```bash
@@ -57,6 +63,12 @@ vizb bar data.csv -g impl,size -p n,x -o bar.html
     output-html: bar.html
 ```
 
+### Agent
+
+```text
+/vizb data.csv as pie by impl
+```
+
 ### CLI
 
 ```bash
@@ -94,6 +106,12 @@ vizb pie data.csv -g impl -o pie.html
     group: impl
     charts: pie
     output-html: pie.html
+```
+
+### Agent
+
+```text
+/vizb data.csv as sankey by source & target
 ```
 
 ### CLI
@@ -136,6 +154,12 @@ vizb sankey data.csv -g source,target -p x,y -o sankey.html
     group-pattern: x,y
     charts: sankey
     output-html: sankey.html
+```
+
+### Agent
+
+```text
+/vizb data.csv as chord by source & target
 ```
 
 ### CLI

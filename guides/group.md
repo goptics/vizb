@@ -7,6 +7,12 @@ description: "Turn rows — CSV/JSON columns or benchmark names — into structu
 
 Most grouping is one command: pick category columns with `-g`, map them to dimensions with `-p`, open the HTML.
 
+### Agent
+
+```text
+/vizb sales.csv as bar by region & product
+```
+
 ### CLI
 
 ```bash

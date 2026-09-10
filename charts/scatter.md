@@ -45,6 +45,12 @@ order_date,region,category,product,quantity,amount
 
 One point per X category.
 
+### Agent
+
+```text
+/vizb sales.csv as scatter by order_date
+```
+
 ### CLI
 
 ```bash
@@ -89,6 +95,12 @@ vizb scatter sales.csv -g order_date -p x -o out.html
 ### 2D (X + Y axes)
 
 One series per Y value across the X axis. Toggle series in the legend.
+
+### Agent
+
+```text
+/vizb sales.csv as scatter by region & category
+```
 
 ### CLI
 
@@ -135,6 +147,12 @@ vizb scatter sales.csv -g region,category -p x,y -o out.html
 ### 3D (X + Y + Z axes)
 
 WebGL `scatter3D` scene: each Z value is a separate point series across the X/Y grid. Rotate, zoom, and pan in the browser. Requires echarts-gl (bundled automatically).
+
+### Agent
+
+```text
+/vizb sales.csv as scatter, split order_date into month & date (skip the year), category as depth
+```
 
 ### CLI
 
@@ -197,6 +215,12 @@ West,14.2,7300
 Central,11.0,7800
 ```
 
+### Agent
+
+```text
+/vizb region-metrics.csv as scatter, region & latency
+```
+
 ### CLI
 
 ```bash
@@ -247,6 +271,12 @@ Repeat `--select` (`dim,metric` per flag) for multi-stat datasets — charts sep
 ## Auto-value mode (no flags)
 
 On an all-numeric CSV/JSON file, vizb auto-detects the first 2–3 columns as coordinate axes and enters value mode automatically — with 3+ columns it renders continuous `scatter3D`. See [Auto-value](/guides/group-vs-select#auto-value-all-numeric-data) for the inference rules; solo `--select` overrides it.
+
+### Agent
+
+```text
+/vizb clusters.csv as scatter, visual map, symbol size 10
+```
 
 ### CLI
 

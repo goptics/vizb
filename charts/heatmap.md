@@ -43,6 +43,12 @@ order_date,region,category,product,quantity,amount
 
 Classic heatmap: one value per X × Y cell, colored on a continuous gradient with a `visualMap` scale. No z-series — magnitude as color.
 
+### Agent
+
+```text
+/vizb sales.csv as heatmap by region & category
+```
+
 ### CLI
 
 ```bash
@@ -88,6 +94,12 @@ vizb heatmap sales.csv -g region,category -p x,y -o out.html
 ### 3D (X + Y + Z axes)
 
 Z values are folded into each cell rather than rendered as depth. Each cell displays `Σ z` and is colored on the same continuous gradient as the 2D heatmap. Hover a cell to see the individual z-series breakdown with colored dots. Toggle z-series in the legend — cells recompute live.
+
+### Agent
+
+```text
+/vizb sales.csv as heatmap by region, category & product
+```
 
 ### CLI
 

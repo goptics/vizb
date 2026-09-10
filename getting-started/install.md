@@ -7,6 +7,12 @@ description: "Install vizb using a package manager, Docker, a one-liner, the Go 
 
 <div class="quick-install">
 
+  ### Agent
+
+```bash
+npx skills add goptics/skills --skill vizb
+```
+
   ### Linux / macOS
 
 ```bash
@@ -17,12 +23,6 @@ curl -fsSL https://vizb.goptics.org/install.sh | bash
 
 ```ps1
 irm https://vizb.goptics.org/install.ps1 | iex
-```
-
-  ### Agent
-
-```bash
-npx skills add goptics/skills --skill vizb
 ```
 
 </div>

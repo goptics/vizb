@@ -43,6 +43,12 @@ order_date,region,category,product,quantity,amount
 
 A single line tracing one value per X category. The simplest view: one grouping column, one continuous curve from left to right.
 
+### Agent
+
+```text
+/vizb sales.csv as line by order_date
+```
+
 ### CLI
 
 ```bash
@@ -88,6 +94,12 @@ vizb line sales.csv -g order_date -p x -o out.html
 
 One line per Y value, all sharing the same X axis. The legend lists the Y values so you can show or hide individual lines. Great for comparing multiple algorithms or configurations across the same input sweep.
 
+### Agent
+
+```text
+/vizb sales.csv as line by region & category
+```
+
 ### CLI
 
 ```bash
@@ -131,6 +143,12 @@ vizb line sales.csv -g region,category -p x,y -o out.html
 ```
 
 Add `--stack` to render the grouped lines as a stacked area chart, which emphasizes the total per X value and each Y series' contribution to that total.
+
+### Agent
+
+```text
+/vizb sales.csv as line by region & category, stacked
+```
 
 ### CLI
 
@@ -187,6 +205,12 @@ WebGL `line3D` scene: each Z value becomes a separate 3D polyline with scatter m
 
 This example uses [Go benchmark output](https://github.com/goptics/vizb/blob/main/examples/go/worker-pools.txt) comparing worker pool implementations. Slash-separated names like `BenchmarkAllSleep10ms/1u-1Mt/Pond-Eager-8` map to `z/y/x` — benchmark suite on Z, workload config on Y, pool implementation on X.
 
+### Agent
+
+```text
+/vizb worker-pools.txt as line, split into depth, y & x, log scale
+```
+
 ### CLI
 
 ```bash
@@ -239,6 +263,12 @@ vizb line worker-pools.txt -p z/y/x --scale log -o out.html
 
 `--select` is **repeatable** (csv/json only). With explicit `-g` / `-p` / `-r`, it picks which numeric columns get their own chart (optional `{label}` renames each chart). Without group, it switches to solo value / mixed / multi-stat modes that plot raw columns as coordinate axes.
 
+### Agent
+
+```text
+/vizb sales.csv as line by region & product, quantity & amount
+```
+
 ### CLI
 
 ```bash
@@ -290,6 +320,12 @@ See [Select](/guides/select) for the full mode reference, and [Group vs Select](
 ## Auto-value mode (all-numeric data)
 
 On an all-numeric CSV/JSON file, vizb auto-detects the first 2–3 columns as coordinate axes and renders value-type lines — with 3+ columns it auto-enables 3D (`line3D`). See [Auto-value](/guides/group-vs-select#auto-value-all-numeric-data) for the inference rules; solo `--select` overrides it.
+
+### Agent
+
+```text
+/vizb spiral-3d.csv as line, 3d visual map, rotate
+```
 
 ### CLI
 

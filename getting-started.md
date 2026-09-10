@@ -3,7 +3,7 @@ title: "Introduction"
 description: "Your first interactive HTML chart from a table or benchmark — without writing chart code."
 ---
 
-Vizb turns **CSV, JSON, and benchmark output** into interactive charts and stats **without writing chart code**. Point it at data (CLI, [GitHub Action](/ci-cd/github-action), or [REST](/commands/serve)), open one HTML report in any browser.
+Vizb turns **CSV, JSON, and benchmark output** into interactive charts and stats **without writing chart code**. Point it at data (CLI, a [coding agent](/getting-started/ai-agents), [GitHub Action](/ci-cd/github-action), or [REST](/commands/serve)), open one HTML report in any browser.
 
 **Need the binary first?** [Install](/getting-started/install), then come back here.
 
@@ -27,6 +27,12 @@ order_date,region,category,product,quantity,amount
 2025-10-03,North,Tools,Gear,33,4102.15
 2025-11-19,West,Hardware,Sensor,22,2890.40
 2025-12-28,South,Mechanical,Gadget,26,611.32
+```
+
+### Agent
+
+```text
+/vizb sales.csv as bar by region & category
 ```
 
 ### CLI
@@ -128,6 +134,7 @@ Deepen when you need to:
   
   
   
+  
 
 ## Benchmarks (optional path)
 
@@ -182,6 +189,7 @@ Force a parser with `-P go`, `-P rs:criterion`, `-P rs:divan`, `-P js:vitest`, o
 | Goal | Start here |
 |------|------------|
 | Install | [Install](/getting-started/install) |
+| Chart from a coding agent | [AI agents](/getting-started/ai-agents) (`/vizb sales.csv as bar by region & product, show labels`) |
 | Dimensions in depth | [Dimensions](/getting-started/dimensions) |
 | Group vs select | [Group vs Select](/guides/group-vs-select) |
 | CSV / JSON rules | [Tabular data](/guides/data) |

@@ -7,6 +7,12 @@ description: "Turn CSV, JSON, and benchmarks into interactive charts and stats w
 
 <div class="quick-install">
 
+  ### Agent
+
+```bash
+npx skills add goptics/skills --skill vizb
+```
+
   ### Linux / macOS
 
 ```bash
@@ -19,18 +25,13 @@ curl -fsSL https://vizb.goptics.org/install.sh | bash
 irm https://vizb.goptics.org/install.ps1 | iex
 ```
 
-  ### Agent
-
-```bash
-npx skills add goptics/skills --skill vizb
-```
-
 </div>
 
 ## Quick Example
 
 ## Start from a goal
 
+  
   
   
   
@@ -52,9 +53,9 @@ Name, X, Y, and Z drive every chart type. Group for category breakdowns; select 
 
 Interactive UI in one file: sort, swap axes, scale, themes, JPEG export, optional stats. Open it in any browser. See [UI](/ui).
 
-  ### CLI, Action, and API
+  ### CLI, agents, Action, and API
 
-Local CLI, [GitHub Action](/ci-cd/github-action), and [REST](/commands/serve) for the same pipeline. Merge datasets across runs when you need history.
+Local CLI, a [coding agent](/getting-started/ai-agents) via `/vizb`, [GitHub Action](/ci-cd/github-action), and [REST](/commands/serve) for the same pipeline. Merge datasets across runs when you need history.
 
 <p>
   Full inventory: <a href="/features">Features</a>. Live samples: <a href="/examples">Examples</a>.
