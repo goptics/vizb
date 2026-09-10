@@ -1,4 +1,4 @@
-/** Map a vizb CLI invocation to HTTP POST / JSON and a GitHub Action step. */
+/** Map a vizb CLI invocation to HTTP, Action, and a natural-language /vizb prompt. */
 
 const CHART_TYPES = new Set([
 	'bar',
@@ -55,6 +55,7 @@ const ACTION_CONFIG_KEY: Record<string, string> = {
 
 export interface InvokeSnippets {
 	cli: string;
+	agent: string;
 	http: string;
 	action: string;
 }
@@ -75,6 +76,7 @@ export function snippetsFromCli(cli: string, input?: string): InvokeSnippets {
 	const parsed = parseCli(cli);
 	return {
 		cli: cli.trim(),
+		agent: buildAgent(parsed),
 		http: JSON.stringify(buildHttp(parsed, input), null, 2),
 		action: buildAction(parsed),
 	};
@@ -120,6 +122,73 @@ function parseCli(cli: string): ParsedCli {
 	}
 
 	return parsed;
+}
+
+function buildAgent(parsed: ParsedCli): string {
+	const head: string[] = [parsed.file ? `/vizb ${parsed.file}` : '/vizb'];
+	const types = chartTypes(parsed);
+	head.push(`as ${joinWords(types.length ? types : ['bar'])}`);
+
+	const cols = splitList(parsed.group);
+	const patternTalk = verbalizePattern(parsed.pattern, cols);
+	if (cols.length > 0 && !patternTalk) head.push(`by ${joinWords(cols)}`);
+
+	const extras: string[] = [];
+	if (patternTalk) extras.push(patternTalk);
+	if (parsed.regex) extras.push(verbalizeRegex(parsed.regex));
+	if (parsed.select.length > 0) extras.push(verbalizeSelect(parsed.select));
+	if (parsed.config.showLabels) extras.push('show labels');
+	if (parsed.config.stack) extras.push('stacked');
+	if (parsed.config.threeDVisualMap) extras.push('3d visual map');
+	else if (parsed.config.threeD) extras.push('3d');
+	if (parsed.config.threeDRotate) extras.push('rotate');
+	if (parsed.config.visualMap) extras.push('visual map');
+	if (typeof parsed.config.scale === 'string') extras.push(`${parsed.config.scale} scale`);
+	if (parsed.config.symbolSize != null) extras.push(`symbol size ${parsed.config.symbolSize}`);
+
+	return extras.length > 0 ? `${head.join(' ')}, ${extras.join(', ')}` : head.join(' ');
+}
+
+function splitList(value: string | undefined): string[] {
+	if (!value) return [];
+	return value.split(/[,/\s]+/).map((s) => s.trim()).filter(Boolean);
+}
+
+function joinWords(items: string[]): string {
+	if (items.length <= 2) return items.join(' & ');
+	return `${items.slice(0, -1).join(', ')} & ${items[items.length - 1]}`;
+}
+
+function dimWord(dim: string): string {
+	if (dim === 'n') return 'name';
+	if (dim === 'z') return 'depth';
+	return dim;
+}
+
+function isTrivialPattern(pattern: string): boolean {
+	return /^[nxyz](?:[,/\s]+[nxyz])*$/.test(pattern.trim());
+}
+
+function verbalizePattern(pattern: string | undefined, cols: string[]): string | undefined {
+	if (!pattern) return;
+	if (isTrivialPattern(pattern)) {
+		if (cols.length > 0) return;
+		return `split into ${joinWords(pattern.split(/[,/\s]+/).map(dimWord))}`;
+	}
+	if (!pattern.includes('[')) return;
+	const split = `split ${cols[0] ?? 'the value'} into month & date (skip the year)`;
+	return cols[1] ? `${split}, ${cols[1]} as depth` : split;
+}
+
+function verbalizeRegex(re: string): string {
+	const names = [...re.matchAll(/\(\?<(\w+)>/g)].map((m) => dimWord(m[1] ?? ''));
+	return `split by / into ${joinWords(names)}`;
+}
+
+function verbalizeSelect(select: string[]): string {
+	return select
+		.map((s) => joinWords(s.split(',').map((c) => c.trim()).filter(Boolean)))
+		.join('; ');
 }
 
 function buildHttp(parsed: ParsedCli, input?: string): Record<string, unknown> {

@@ -1,7 +1,7 @@
 ---
 /**
- * CLI / HTTP / Action tabs for one vizb invocation.
- * Pass the CLI command as-is; HTTP and Action are derived.
+ * Agent / CLI / HTTP / Action tabs for one vizb invocation.
+ * Pass the CLI command as-is; Agent, HTTP, and Action are derived.
  */
 import { Tabs, TabItem, Code } from '@astrojs/starlight/components';
 import { snippetsFromCli } from './invoke/fromCli';
@@ -19,6 +19,13 @@ const snippets = snippetsFromCli(cli, input);
 
 <div class="invoke-tabs">
 	<Tabs syncKey="invoke">
+		<TabItem label="Agent">
+			<p class="invoke-tabs__caption">
+				Natural-language prompt after installing the <a href="/getting-started/ai-agents">vizb skill</a>. The
+				agent runs the CLI.
+			</p>
+			<Code code={snippets.agent} lang="text" />
+		</TabItem>
 		<TabItem label="CLI" icon="seti:shell">
 			<Code code={snippets.cli} lang="bash" />
 		</TabItem>

@@ -8,7 +8,7 @@ import SalesSampleCsv from '../../../components/SalesSampleCsv.astro';
 import InvokeTabs from '../../../components/InvokeTabs.astro';
 import { SALES_SAMPLE } from '../../../data/samples';
 
-Vizb turns **CSV, JSON, and benchmark output** into interactive charts and stats **without writing chart code**. Point it at data (CLI, [GitHub Action](/ci-cd/github-action), or [REST](/commands/serve)), open one HTML report in any browser.
+Vizb turns **CSV, JSON, and benchmark output** into interactive charts and stats **without writing chart code**. Point it at data (CLI, a [coding agent](/getting-started/ai-agents), [GitHub Action](/ci-cd/github-action), or [REST](/commands/serve)), open one HTML report in any browser.
 
 **Need the binary first?** [Install](/getting-started/install), then come back here.
 
@@ -80,6 +80,7 @@ Deepen when you need to:
 
 <CardGrid>
   <LinkCard title="Install" href="/getting-started/install" description="Script, Docker, Go install, and binaries." />
+  <LinkCard title="AI agents" href="/getting-started/ai-agents" description="Install the vizb skill and chart with /vizb." />
   <LinkCard title="Dimensions" href="/getting-started/dimensions" description="What n, x, y, and z mean on every chart." />
   <LinkCard title="Group vs Select" href="/guides/group-vs-select" description="The two ways columns become charts." />
   <LinkCard title="Charts overview" href="/charts" description="How each chart type reads the same dimensions." />
@@ -148,6 +149,7 @@ Force a parser with `-P go`, `-P rs:criterion`, `-P rs:divan`, `-P js:vitest`, o
 | Goal | Start here |
 |------|------------|
 | Install | [Install](/getting-started/install) |
+| Chart from a coding agent | [AI agents](/getting-started/ai-agents) (`/vizb sales.csv as bar by region & product, show labels`) |
 | Dimensions in depth | [Dimensions](/getting-started/dimensions) |
 | Group vs select | [Group vs Select](/guides/group-vs-select) |
 | CSV / JSON rules | [Tabular data](/guides/data) |

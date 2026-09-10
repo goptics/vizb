@@ -3,6 +3,13 @@ import { Tabs, TabItem } from '@astrojs/starlight/components';
 <div class="quick-install">
 
 <Tabs syncKey="os">
+  <TabItem label="Agent">
+
+```bash
+npx skills add goptics/skills --skill vizb
+```
+
+  </TabItem>
   <TabItem label="Linux / macOS" icon="seti:shell">
 
 ```bash
@@ -14,13 +21,6 @@ curl -fsSL https://vizb.goptics.org/install.sh | bash
 
 ```ps1
 irm https://vizb.goptics.org/install.ps1 | iex
-```
-
-  </TabItem>
-  <TabItem label="Agent">
-
-```bash
-npx skills add goptics/skills --skill vizb
 ```
 
   </TabItem>
