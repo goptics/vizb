@@ -26,7 +26,7 @@
   </p>
 
   <p>
-    A tabular visualization engine for <strong>CSV, JSON, and benchmark output</strong>. Turns numeric columns into interactive charts and descriptive statistics in one self-contained HTML file - no server, no dependencies, no build step.
+    A tabular visualization engine for <strong>CSV, JSON, and benchmark output</strong>. Turns numeric columns into interactive <a href="https://echarts.apache.org/">Apache ECharts</a> charts and descriptive statistics in one self-contained HTML file - no server, no extra dependencies, no build step.
   </p>
 
   <p>
@@ -107,7 +107,8 @@ Example: [torvalds](https://github.com/torvalds) contribution history
 #### Agent
 
 ```text
-/vizb as bar, GitHub contributions for <your-github-username>, split date into year, month & date, show stats
+/vizb as bar, GitHub contributions for torvalds, split the date in one 3D grouped chart into date, month & year, show stats.
+data source: https://github-contributions-api.jogruber.de/v4/:github-username
 ```
 
 #### Linux / macOS
