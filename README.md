@@ -48,6 +48,14 @@
 
 ## Quick Install
 
+### AI agents
+
+```bash
+npx skills add goptics/skills --skill vizb
+```
+
+Then run `/vizb` in Grok, Claude Code, Cursor, Codex, or any agent the [skills CLI](https://github.com/vercel-labs/skills) supports. [Docs](https://vizb.goptics.org/getting-started/ai-agents/).
+
 ### Linux / macOS
 
 ```bash
@@ -88,14 +96,6 @@ docker run --rm -v "$PWD:/data" -w /data goptics/vizb bar data.csv -o out.html
 The API has no built-in authentication. Keep it private or put authentication,
 TLS, and access controls in front of it. See the [Docker installation guide](https://vizb.goptics.org/getting-started/install/#docker).
 
-### AI agents
-
-```bash
-npx skills add goptics/skills --skill vizb
-```
-
-Then run `/vizb` in Grok, Claude Code, Cursor, Codex, or any agent the [skills CLI](https://github.com/vercel-labs/skills) supports. [Docs](https://vizb.goptics.org/getting-started/ai-agents/).
-
 ## Quick Example
 
 Run one command to turn your GitHub contribution history into a 3D skyline of your activity over time. Each year stacks as a new layer; within it, every day is a column whose height is your contribution count. Replace `<your-github-username>` with your GitHub username and open the generated `index.html`.
@@ -103,6 +103,12 @@ Run one command to turn your GitHub contribution history into a 3D skyline of yo
 ![torvalds contribution history](./assets/torvalds-contribution-history.gif)
 
 Example: [torvalds](https://github.com/torvalds) contribution history
+
+#### Agent
+
+```text
+/vizb as bar, GitHub contributions for <your-github-username>, split date into year, month & date, show stats
+```
 
 #### Linux / macOS
 
