@@ -93,13 +93,16 @@ describe('flattenMdx', () => {
 		assert.equal(out.includes('<InvokeTabs'), false);
 	});
 
-	it('lifts InvokeTabs into CLI, HTTP, and Action tab content', () => {
+	it('lifts InvokeTabs into Agent, CLI, HTTP, and Action tab content', () => {
 		const src = `<InvokeTabs
   cli={\`vizb bar sales.csv -g region,category -p x,y -o sales.html\`}
   input={SALES_SAMPLE}
 />
 `;
 		const out = flattenMdx(src);
+		assert.ok(out.indexOf('### Agent') < out.indexOf('### CLI'));
+		assert.match(out, /### Agent/);
+		assert.match(out, /```text\n\/vizb sales.csv as bar by region \& category\n```/);
 		assert.match(out, /### CLI/);
 		assert.match(out, /```bash\nvizb bar sales.csv -g region,category -p x,y -o sales.html\n```/);
 		assert.match(out, /### HTTP/);
@@ -188,7 +191,14 @@ describe('flattenMdx corpus', () => {
 		assert.equal(charts3d.includes('<InvokeTabs'), false);
 
 		const bar = byPath.get('/charts/bar.md') ?? '';
+		assert.ok(bar.indexOf('### Agent') < bar.indexOf('### CLI'));
+		assert.match(bar, /### Agent/);
 		assert.match(bar, /### CLI/);
+		assert.match(bar, /\/vizb sales.csv as bar by order_date/);
+		assert.match(
+			bar,
+			/```text\n\/vizb sales.csv as bar, split order_date into month & date \(skip the year\), category as depth\n```/,
+		);
 		assert.match(bar, /### HTTP/);
 		assert.match(bar, /"parser": "csv"/);
 		assert.match(bar, /### Action/);
@@ -281,4 +291,3 @@ describe('sourceBody', () => {
 		assert.match(out.body, /Need the binary first/);
 	});
 });
-

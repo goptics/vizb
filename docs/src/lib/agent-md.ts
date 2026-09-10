@@ -77,6 +77,12 @@ function liftInvokeTabs(src: string): string {
 		const snippets = snippetsFromCli(cli, quotedProp(tag, 'input'));
 		return [
 			'',
+			'### Agent',
+			'',
+			'```text',
+			snippets.agent,
+			'```',
+			'',
 			'### CLI',
 			'',
 			'```bash',

@@ -5,7 +5,7 @@ description: What Vizb can do — inputs, dimensions, charts, UI, merge, and CI 
 
 import { CardGrid, Card, Aside, LinkCard } from '@astrojs/starlight/components';
 
-Vizb turns CSV, JSON, and benchmark output into interactive charts and stats **without writing chart or frontend code**. Tables and benchmarks share one dimension model; you run the same pipeline from the CLI, [GitHub Action](/ci-cd/github-action), or [REST API](/commands/serve).
+Vizb turns CSV, JSON, and benchmark output into interactive charts and stats **without writing chart or frontend code**. Tables and benchmarks share one dimension model; you run the same pipeline from the CLI, a [coding agent](/getting-started/ai-agents), [GitHub Action](/ci-cd/github-action), or [REST API](/commands/serve).
 
 New to the product? Start with [Getting Started](/getting-started).
 
@@ -71,6 +71,9 @@ New to the product? Start with [Getting Started](/getting-started).
   </Card>
   <Card title="REST API" icon="seti:json">
     `vizb serve` exposes convert, merge, and UI generation. See [serve](/commands/serve) and [API](/api/).
+  </Card>
+  <Card title="Coding agents" icon="puzzle">
+    Install the vizb skill, then `/vizb sales.csv as bar by region & product, show labels`. The agent runs the CLI. See [AI agents](/getting-started/ai-agents).
   </Card>
   <Card title="Units and export" icon="download">
     Time, memory, and number units. HTML or JSON output. Chart JPEG from the UI.

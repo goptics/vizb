@@ -4,6 +4,8 @@ description: Connect vizb to coding agents with npx skills add so /vizb can char
 ---
 
 import { Aside } from '@astrojs/starlight/components';
+import InvokeTabs from '../../../components/InvokeTabs.astro';
+import { SALES_SAMPLE } from '../../../data/samples';
 
 Coding agents do not know vizb unless you install the skill. The skill teaches the agent when to use vizb, how to install the binary if it is missing, and which docs page to fetch. The agent still **runs the vizb CLI** — this is not an MCP server.
 
@@ -30,10 +32,28 @@ Skill install is not binary install. If `vizb` is missing, the skill runs the [i
 
 ## Use it
 
+Type `/vizb` plus the file and what you want in natural language. The agent picks a chart, writes an HTML file, and returns the path — it does not paste the HTML into the chat.
+
 ```text
-/vizb path/to/data.csv
+/vizb sales.csv as bar by region & product, show labels
 ```
 
-Or ask in natural language: “turn this benchmark output into an HTML chart.”
+Same conversion as the CLI. Every example in these docs has an **Agent** tab with a prompt like this:
+
+<InvokeTabs
+  cli={`vizb bar sales.csv -g region,product -p x,y -l -o sales.html`}
+  input={SALES_SAMPLE}
+/>
+
+Other prompts:
+
+```text
+/vizb sales.csv as pie by region
+/vizb this benchmark as a line chart
+/vizb bench.txt as bar
+/vizb path/to/data.csv as bar
+```
+
+Or ask without the slash: “turn this benchmark output into an HTML chart.”
 
 The agent should start with `vizb <chart> <file> -o out.html` and only add grouping or select flags if auto output is wrong.

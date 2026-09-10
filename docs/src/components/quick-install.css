@@ -1,5 +1,13 @@
-/* Lucide "bot" — Starlight has no robot icon. */
-.quick-install [role='tablist'] .tab:last-child [role='tab']::before {
+/* Lucide "bot" — Starlight has no robot icon. Agent is the first tab. */
+.quick-install [role='tablist'] .tab:first-child [role='tab'],
+.invoke-tabs [role='tablist'] .tab:first-child [role='tab'] {
+	display: flex;
+	align-items: center;
+	gap: 0.25em;
+}
+
+.quick-install [role='tablist'] .tab:first-child [role='tab']::before,
+.invoke-tabs [role='tablist'] .tab:first-child [role='tab']::before {
 	content: '';
 	display: block;
 	width: 1em;

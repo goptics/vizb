@@ -26,7 +26,7 @@
   </p>
 
   <p>
-    A tabular visualization engine for <strong>CSV, JSON, and benchmark output</strong>. Turns numeric columns into interactive charts and descriptive statistics in one self-contained HTML file - no server, no dependencies, no build step.
+    A tabular visualization engine for <strong>CSV, JSON, and benchmark output</strong>. Turns numeric columns into interactive <a href="https://echarts.apache.org/">Apache ECharts</a> charts and descriptive statistics in one self-contained HTML file - no server, no extra dependencies, no build step.
   </p>
 
   <p>
@@ -47,6 +47,14 @@
 
 
 ## Quick Install
+
+### AI agents
+
+```bash
+npx skills add goptics/skills --skill vizb
+```
+
+Then run `/vizb` in Grok, Claude Code, Cursor, Codex, or any agent the [skills CLI](https://github.com/vercel-labs/skills) supports. [Docs](https://vizb.goptics.org/getting-started/ai-agents/).
 
 ### Linux / macOS
 
@@ -88,14 +96,6 @@ docker run --rm -v "$PWD:/data" -w /data goptics/vizb bar data.csv -o out.html
 The API has no built-in authentication. Keep it private or put authentication,
 TLS, and access controls in front of it. See the [Docker installation guide](https://vizb.goptics.org/getting-started/install/#docker).
 
-### AI agents
-
-```bash
-npx skills add goptics/skills --skill vizb
-```
-
-Then run `/vizb` in Grok, Claude Code, Cursor, Codex, or any agent the [skills CLI](https://github.com/vercel-labs/skills) supports. [Docs](https://vizb.goptics.org/getting-started/ai-agents/).
-
 ## Quick Example
 
 Run one command to turn your GitHub contribution history into a 3D skyline of your activity over time. Each year stacks as a new layer; within it, every day is a column whose height is your contribution count. Replace `<your-github-username>` with your GitHub username and open the generated `index.html`.
@@ -103,6 +103,13 @@ Run one command to turn your GitHub contribution history into a 3D skyline of yo
 ![torvalds contribution history](./assets/torvalds-contribution-history.gif)
 
 Example: [torvalds](https://github.com/torvalds) contribution history
+
+#### Agent
+
+```text
+/vizb as bar, GitHub contributions for torvalds, split the date in one 3D grouped chart into date, month & year, show stats.
+data source: https://github-contributions-api.jogruber.de/v4/:github-username
+```
 
 #### Linux / macOS
 

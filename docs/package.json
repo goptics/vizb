@@ -8,7 +8,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "test": "node --test src/lib/agent-md.test.ts src/components/logo-animation/constants.test.ts"
+    "test": "node --test src/lib/agent-md.test.ts src/components/invoke/fromCli.test.ts src/components/logo-animation/constants.test.ts"
   },
   "dependencies": {
     "@astrojs/starlight": "^0.41.11",
