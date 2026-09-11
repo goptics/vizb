@@ -1,6 +1,6 @@
 // Docs-only CLI built-in swatches for /ui/themes. Source of truth is
 // pkg/style (theme catalog), not the UI bundle — the report UI ships only
-// `default`; other built-ins expand from the CLI into dataset.themes[].
+// `default`; other built-ins expand from the CLI into dataset.appearance.themes[].
 // Keep in sync when palettes change in pkg/style.
 
 export const THEMES = {

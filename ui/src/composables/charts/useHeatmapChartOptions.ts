@@ -16,6 +16,7 @@ import {
   hasRotatedXLabels,
   type ChartStyling,
 } from './shared/chartConfig'
+import { chartFontSize } from './shared/chartFontSize'
 
 function formatCellNumber(v: number): string {
   if (Math.abs(v) >= 1e6) return formatChartNumber(v / 1e6) + 'M'
@@ -66,7 +67,7 @@ function buildHeatmapCartesian(input: HeatmapCartesianInput) {
       data: xCategories,
       axisLabel: {
         color: styling.textColor,
-        fontSize: 12,
+        fontSize: chartFontSize().label,
         interval: largeX ? 'auto' : 0,
         rotate: hasRotatedXLabels(xCategories, largeX) ? 30 : 0,
       },
@@ -83,7 +84,11 @@ function buildHeatmapCartesian(input: HeatmapCartesianInput) {
     yAxis: {
       type: 'category' as const,
       data: yCategories,
-      axisLabel: { color: styling.textColor, fontSize: 12, interval: largeY ? 'auto' : 0 },
+      axisLabel: {
+        color: styling.textColor,
+        fontSize: chartFontSize().label,
+        interval: largeY ? 'auto' : 0,
+      },
       axisLine: { lineStyle: { color: styling.axisColor } },
       ...(axisLabels?.y
         ? {

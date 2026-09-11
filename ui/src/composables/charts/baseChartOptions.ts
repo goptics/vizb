@@ -2,7 +2,7 @@ import type { Ref } from 'vue'
 import type { EChartsOption } from 'echarts'
 import type { Axis, BarBackground, ChartData, Sort, ScaleInput, ChartType } from '@/types'
 import { createTooltipConfig, createToolboxConfig, getChartStyling } from './shared/chartConfig'
-import { fontSize } from './shared/common'
+import { chartFontSize } from './shared/chartFontSize'
 import { is3D } from '@/lib/utils'
 
 export interface BaseChartConfig {
@@ -73,7 +73,7 @@ export const getBaseOptions = (config: BaseChartConfig): Partial<EChartsOption> 
       top: 0,
       itemWidth: 10,
       itemHeight: 10,
-      textStyle: { fontSize, color: textColor },
+      textStyle: { fontSize: chartFontSize().legend, color: textColor },
     },
     emphasis: {
       focus: 'series',

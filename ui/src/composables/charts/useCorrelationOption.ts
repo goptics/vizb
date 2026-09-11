@@ -10,6 +10,7 @@ import {
   hasRotatedXLabels,
 } from './shared/chartConfig'
 import { fontSize } from './shared/common'
+import { chartFontSize } from './shared/chartFontSize'
 
 const PREFIX: Record<CorrelationMethod, string> = {
   pearson: 'r',
@@ -74,7 +75,7 @@ export function buildCorrelationOption(
       splitArea: { show: true },
       axisLabel: {
         color: styling.textColor,
-        fontSize,
+        fontSize: chartFontSize().label,
         interval: large ? 'auto' : 0,
         rotate: hasRotatedXLabels(labels, large) ? 30 : 0,
       },
@@ -86,7 +87,11 @@ export function buildCorrelationOption(
       data: labels,
       inverse: true,
       splitArea: { show: true },
-      axisLabel: { color: styling.textColor, fontSize, interval: large ? 'auto' : 0 },
+      axisLabel: {
+        color: styling.textColor,
+        fontSize: chartFontSize().label,
+        interval: large ? 'auto' : 0,
+      },
       axisLine: { lineStyle: { color: styling.axisColor } },
     },
     visualMap: {

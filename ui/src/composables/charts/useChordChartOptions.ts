@@ -3,7 +3,7 @@ import type { EChartsOption } from 'echarts'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
 import { hasXAxis, hasYAxis } from '@/lib/utils'
 import { getChartStyling } from './shared/chartConfig'
-import { fontSize } from './shared/common'
+import { chartFontSize } from './shared/chartFontSize'
 import { emptyEdgeChartOption, prepareEdgeChart } from './shared/edgeChart'
 
 // Thin outer ring (demo geometry). top = legend band + gap; bottom = same gap.
@@ -55,7 +55,7 @@ export function useChordChartOptions(config: BaseChartConfig) {
         itemHeight: 10,
         data: nodes.map((n) => n.name),
         selected,
-        textStyle: { fontSize, color: styling.textColor },
+        textStyle: { fontSize: chartFontSize().legend, color: styling.textColor },
       },
       tooltip,
       series: [
@@ -69,7 +69,7 @@ export function useChordChartOptions(config: BaseChartConfig) {
             position: 'inside',
             color: '#fff',
             fontWeight: 'bold',
-            fontSize,
+            fontSize: chartFontSize().series,
           },
         },
       ],

@@ -15,10 +15,10 @@ Themes are **owned by the dataset**, not hard-coded into every report UI.
 | Layer | Role |
 |-------|------|
 | **UI** | Ships only the `default` palette. Always available as a fallback. |
-| **CLI / API** | Expand built-ins and custom specs into `dataset.themes[]` when you request them. |
-| **Wire format** | New output writes `themes` only. There is **no separate active `theme` field** — `themes[0]` is active when the array is non-empty. |
+| **CLI / API** | Expand built-ins and custom specs into `dataset.appearance.themes[]` when you request them. |
+| **Wire format** | New output writes `appearance.themes` only. There is **no separate active `theme` field** — `themes[0]` is active when the array is non-empty. Inbound `appearance.theme` (name or palette) expands into that catalog and is not re-emitted. |
 
-If you omit `--theme`, the dataset has no `themes` array and the report uses the UI `default` palette.
+If you omit `--theme`, the dataset has no `appearance.themes` array and the report uses the UI `default` palette.
 
 ```bash
 # Single built-in embedded as themes[0] (active)
@@ -30,8 +30,8 @@ vizb results.csv --theme westeros --theme vintage --theme roma -o report.html
 
 Built-in name `default` is **not** embedded (the UI already owns it).
 
-Legacy files that still carry a string `theme` field are migrated into `themes[]`
-on load; re-marshalled output drops the legacy field.
+Inbound `appearance.theme` is expanded into `appearance.themes[]` on load;
+re-marshalled output drops the string field.
 
 ## CLI syntax
 

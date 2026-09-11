@@ -26,6 +26,11 @@ var DataFlags = []flags.Flag{
 		Normalizer:   style.NormalizeTheme,
 		SoftValidate: style.ValidateTheme,
 	},
+	{
+		Name: "font-size", Kind: flags.KindString,
+		Usage: "Chart text size in px (number, or series=;legend=;label=)",
+		Label: "font-size",
+	},
 	{Name: "description", Shorthand: "d", Usage: "Dataset description", Kind: flags.KindString},
 	{Name: "output", Shorthand: "o", Usage: "Output path (.html or .json)", Kind: flags.KindString},
 	{Name: "tag", Shorthand: "t", Usage: "Tag for merge/compare", Kind: flags.KindString},

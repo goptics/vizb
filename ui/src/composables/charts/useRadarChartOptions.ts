@@ -3,7 +3,8 @@ import type { EChartsOption } from 'echarts'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
 import { getNextColorFor, hasXAxis, hasYAxis, hasZAxis } from '@/lib/utils'
 import { getChartStyling, getTooltipTheme, formatRadarItemTooltip } from './shared/chartConfig'
-import { fontSize, sortByTotal } from './shared/common'
+import { sortByTotal } from './shared/common'
+import { chartFontSize } from './shared/chartFontSize'
 
 const makeIndicators = (names: string[], perSpokeMax: number[]) =>
   names.map((name, i) => ({ name, max: Math.max(perSpokeMax[i]! * 1.1, 1) }))
@@ -21,7 +22,7 @@ const radarConfig = (
   styling: ReturnType<typeof getChartStyling>
 ) => ({
   indicator: indicators,
-  axisName: { color: styling.textColor },
+  axisName: { color: styling.textColor, fontSize: chartFontSize().label },
   splitLine: { lineStyle: { color: styling.axisColor } },
   splitArea: { areaStyle: { opacity: 0.05 } },
 })
@@ -33,7 +34,11 @@ export function useRadarChartOptions(config: BaseChartConfig) {
     const cd = chartData.value
     const styling = getChartStyling(isDark.value)
     const baseOptions = getBaseOptions(config)
-    const label = { show: showLabels.value, fontSize, color: styling.textColor }
+    const label = {
+      show: showLabels.value,
+      fontSize: chartFontSize().series,
+      color: styling.textColor,
+    }
 
     // X only: xAxis values as spokes, single polygon with totals
     if (!hasYAxis(chartData)) {

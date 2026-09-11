@@ -27,6 +27,8 @@ type FlagBag struct {
 	floats       map[string]*float64
 	ints         map[string]*int
 	stringSlices map[string]*[]string // backs KindStringSlice, KindStat, and KindStringArray
+	fontSize     *shared.FontSize     // --font-size, parsed once during Validate
+	fontSizeSet  bool
 }
 
 // NewFlagBag allocates a bag and one typed pointer per flag.
@@ -140,6 +142,8 @@ func (b *FlagBag) Validate(cmd *cobra.Command) {
 			b.validateObjectFlag(cmd, f)
 		case f.Name == "scale":
 			b.validateScaleFlag(cmd, f)
+		case f.Name == "font-size":
+			b.validateFontSizeFlag(cmd, f)
 		case f.IsSoft():
 			b.applySoftRule(f)
 		case f.Validate != nil && cmd.Flags().Changed(f.Name):
@@ -147,6 +151,19 @@ func (b *FlagBag) Validate(cmd *cobra.Command) {
 				shared.ExitWithError(err.Error(), nil)
 			}
 		}
+	}
+}
+
+// validateFontSizeFlag warn-and-skips invalid keys/values; valid siblings stay.
+// The result is cached so Meta() does not re-parse the flag.
+func (b *FlagBag) validateFontSizeFlag(cmd *cobra.Command, f flags.Flag) {
+	if !cmd.Flags().Changed(f.Name) {
+		return
+	}
+	fontSize, warnings := shared.ParseFontSizeFlag(*b.strs[f.Name])
+	b.fontSize, b.fontSizeSet = fontSize, true
+	for _, w := range warnings {
+		cliout.Warn(w)
 	}
 }
 
@@ -432,11 +449,16 @@ func (b *FlagBag) ParseConfig() parser.Config {
 // Meta builds the pipeline RunMeta from the bag's metadata/parser data flags.
 // Theme specs stay as raw strings; the pipeline expands them via style.ResolveThemes.
 func (b *FlagBag) Meta() RunMeta {
+	if !b.fontSizeSet {
+		b.fontSize, _ = shared.ParseFontSizeFlag(b.String("font-size"))
+		b.fontSizeSet = true
+	}
 	return RunMeta{
 		ID:          b.String("id"),
 		Name:        b.String("name"),
 		Title:       b.String("title"),
 		ThemeSpecs:  b.StringArray("theme"),
+		FontSize:    b.fontSize,
 		Description: b.String("description"),
 		Tag:         b.String("tag"),
 		OutputFile:  b.String("output"),

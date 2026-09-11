@@ -42,7 +42,7 @@ const { isDark, toggleDark, chartType, themeName, setTheme } = useSettingsStore(
 const { sort, showLabels, scale, threeD } = useActiveChartShape()
 const { initFromUrl } = useUrlRouter()
 
-// Author provided 2+ themes → show selector (default + dataset.themes).
+// Author provided 2+ themes → show selector (default + appearance.themes).
 // 0–1 author themes → hide (available set is the single resolved theme only).
 const showThemeSelector = computed(() => shouldShowThemeSelector())
 

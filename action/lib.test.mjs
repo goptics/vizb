@@ -62,6 +62,7 @@ describe('buildConvertArgs', () => {
     chart: '',
     charts: '',
     parser: 'auto',
+    fontSize: '',
     showLabels: false,
     enable3d: false,
     mergeFiles: '',
@@ -102,6 +103,11 @@ describe('buildConvertArgs', () => {
     assert.ok(args.includes('-c') && args.includes('bar'))
     assert.ok(args.includes('--chart') && args.includes('bar:scale=log'))
     assert.ok(args.includes('--stat'))
+  })
+
+  it('forwards font-size', () => {
+    const args = buildConvertArgs({ ...base, fontSize: 'series=16;legend=10' })
+    assert.ok(args.includes('--font-size') && args.includes('series=16;legend=10'))
   })
 })
 

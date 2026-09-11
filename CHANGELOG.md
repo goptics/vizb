@@ -4,6 +4,17 @@ Notable changes to Vizb documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [Unreleased]
+
+### Added
+
+- **cli** — Add `--font-size` (number or `series=;legend=;label=` bag) on root and chart subcommands
+- **action** — Add `font-size` input forwarded as `--font-size`
+
+### Changed
+
+- **cli / api / ui** — Move theme catalog and inbound `theme` string under `dataset.appearance` (breaking JSON/API wire; no root-field compatibility)
+
 # [v0.21.0] - 2026-09-09
 
 ### Added

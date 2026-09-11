@@ -27,12 +27,13 @@ import (
 
 // Metadata is the caller-supplied Dataset metadata for Convert.
 // Themes is the data-owned theme catalog (Themes[0] active when non-empty).
-// Leave Themes empty for the UI default palette; do not set the legacy
-// Dataset.Theme string on new output.
+// Leave Themes empty for the UI default palette. Assemble writes both Themes
+// and FontSize into Dataset.Appearance.
 type Metadata struct {
 	ID          string
 	Name        string
 	Themes      []shared.Theme
+	FontSize    *shared.FontSize
 	Description string
 	Tag         string
 	System      *shared.Meta
@@ -379,9 +380,12 @@ func Assemble(in AssembleInput) *shared.Dataset {
 		timestamp = time.Now().UTC().Format(time.RFC3339)
 	}
 	ds := &shared.Dataset{
-		ID:           strings.TrimSpace(meta.ID),
-		Name:         name,
-		Themes:       meta.Themes,
+		ID:   strings.TrimSpace(meta.ID),
+		Name: name,
+		Appearance: shared.CompactAppearance(&shared.Appearance{
+			Themes:   meta.Themes,
+			FontSize: meta.FontSize,
+		}),
 		Description:  meta.Description,
 		Tag:          meta.Tag,
 		Timestamp:    timestamp,

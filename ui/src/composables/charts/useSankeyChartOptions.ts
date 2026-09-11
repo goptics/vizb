@@ -3,7 +3,7 @@ import type { EChartsOption } from 'echarts'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
 import { hasXAxis, hasYAxis } from '@/lib/utils'
 import { getChartStyling } from './shared/chartConfig'
-import { fontSize } from './shared/common'
+import { chartFontSize } from './shared/chartFontSize'
 import { formatTooltipValue } from './shared/chartConfig'
 import { emptyEdgeChartOption, prepareEdgeChart } from './shared/edgeChart'
 
@@ -49,14 +49,14 @@ export function useSankeyChartOptions(config: BaseChartConfig) {
           label: {
             show: true,
             color: styling.textColor,
-            fontSize,
+            fontSize: chartFontSize().series,
           },
           edgeLabel: {
             show: showLabels.value,
             formatter: (params: { data?: { value?: number }; value?: number }) =>
               formatTooltipValue(params.data?.value ?? params.value),
             color: styling.textColor,
-            fontSize,
+            fontSize: chartFontSize().series,
           },
         },
       ],

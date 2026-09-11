@@ -345,6 +345,37 @@ func (s *FlagBagSuite) TestMetaEmptyThemesWhenUnset() {
 	_, bag := s.newCmdBag(slices.Clone(DataFlags))
 	meta := bag.Meta()
 	s.Empty(meta.ThemeSpecs)
+	s.Nil(meta.FontSize)
+}
+
+func (s *FlagBagSuite) TestMetaFontSizeBareAndBag() {
+	cmd, bag := s.newCmdBag(slices.Clone(DataFlags))
+	s.Require().NoError(cmd.Flags().Set("font-size", "14"))
+	meta := bag.Meta()
+	s.Require().NotNil(meta.FontSize)
+	s.Equal(14.0, *meta.FontSize.Series)
+	s.Equal(14.0, *meta.FontSize.Legend)
+	s.Equal(14.0, *meta.FontSize.Label)
+
+	cmd, bag = s.newCmdBag(slices.Clone(DataFlags))
+	s.Require().NoError(cmd.Flags().Set("font-size", "series=16;legend=10"))
+	meta = bag.Meta()
+	s.Require().NotNil(meta.FontSize)
+	s.Equal(16.0, *meta.FontSize.Series)
+	s.Equal(10.0, *meta.FontSize.Legend)
+	s.Nil(meta.FontSize.Label)
+}
+
+func (s *FlagBagSuite) TestValidateFontSizeWarnsAndKeepsSiblings() {
+	cmd, bag := s.newCmdBag(slices.Clone(DataFlags))
+	s.Require().NoError(cmd.Flags().Set("font-size", "series=abc;legend=14;title=9"))
+	out := testutil.CaptureStderr(func() { bag.Validate(cmd) })
+	s.Contains(out, "Invalid font-size series")
+	s.Contains(out, "unknown key")
+	meta := bag.Meta()
+	s.Require().NotNil(meta.FontSize)
+	s.Nil(meta.FontSize.Series)
+	s.Equal(14.0, *meta.FontSize.Legend)
 }
 
 func (s *FlagBagSuite) TestChartSeedObjectFlagTriState() {

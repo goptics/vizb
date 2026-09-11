@@ -76,6 +76,7 @@ See the [Parser Guide](/guides/parsers) for each parser's metrics, and the
 | `--parser` | `-P` | `auto` | Parser: `auto` (detect), `go`, `js:tinybench`, `js:vitest`, `rs:criterion`, `rs:divan`, `csv`, `json` |
 | `--name` | `-n` | `Benchmarks` | Dataset name |
 | `--theme` | | *(empty)* | Embed a color theme on the dataset (**repeatable**; first is active). Built-in name, structured `name:colors=#hex,...;visualMapColors=#hex,#hex`, or bare `#hex,#hex,...` palette. Empty when unset (UI default). Built-in `default` is not embedded. |
+| `--font-size` | | *(empty)* | Chart text size in CSS pixels. A number sets series data labels, legend, and axis ticks to that size. A bag sets keys individually: `series=16;legend=10;label=12`. Invalid keys/values warn and skip. |
 | `--description` | `-d` | `""` | Dataset description |
 | `--tag` | `-t` | `""` | Tag identifier for release tracking |
 | `--id` | | `""` | Stable dataset id for `?id=` deep links in the HTML UI |
@@ -95,9 +96,13 @@ See the [Parser Guide](/guides/parsers) for each parser's metrics, and the
 | `--round` | | off | Round numeric values to 2 decimal places **in the output data** (irreversible in the written file; off by default) |
 
 `--theme` changes series colors only; light/dark mode remains independent. Themes expand into
-`dataset.themes[]` with `themes[0]` active (no separate active field on new output). See [Color
+`dataset.appearance.themes[]` with `themes[0]` active (no separate active field on new output). See [Color
 Themes](/ui/themes) for the CLI catalog, structured syntax, multi-theme selector rules, and
 localStorage behavior.
+
+`--font-size` is baked into `dataset.appearance.fontSize` (CLI/JSON only; no settings-panel control).
+A JSON number means all three targets; an object sets `series` (data labels), `legend`, and `label`
+(axis ticks) independently. Omitted keys stay at 12px.
 
 ```bash
 # Built-in

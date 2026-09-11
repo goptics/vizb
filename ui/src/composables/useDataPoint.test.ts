@@ -246,10 +246,10 @@ describe('useDataPoint embedded VIZB_DATA', () => {
     expect(fetcher).not.toHaveBeenCalled()
   })
 
-  it('applies a legacy hex theme string when the dataset has no themes[]', async () => {
+  it('applies a hex appearance.theme string when the dataset has no themes[]', async () => {
     const one = {
       name: 'Legacy theme',
-      theme: '#f00,#0f0,#00f',
+      appearance: { theme: '#f00,#0f0,#00f' },
       data: [{ name: 'a', value: 1 }],
       settings: [{ type: 'bar' as const }],
     }
@@ -264,7 +264,7 @@ describe('useDataPoint embedded VIZB_DATA', () => {
     const state = useDataPoint()
 
     await vi.waitFor(() => expect(state.loading.value).toBe(false))
-    expect(state.activeDataset.value?.theme).toBe('#f00,#0f0,#00f')
+    expect(state.activeDataset.value?.appearance?.theme).toBe('#f00,#0f0,#00f')
     expect(activeThemeName.value).toBe('#f00,#0f0,#00f')
   })
 

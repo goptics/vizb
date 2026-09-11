@@ -13,6 +13,7 @@ import {
   type ChartStyling,
 } from './chartConfig'
 import { resolveLogScale } from './common'
+import { chartFontSize } from './chartFontSize'
 
 /** Blue-to-red gradient for value-mode 3D visualMap (metric height). */
 export const VALUE_3D_COLOR_RANGE = [
@@ -355,7 +356,7 @@ export function continuous3DGridCounts(pointCount: number): { xCount: number; yC
 
 export function makeAxis3DCommon(styling: ChartStyling) {
   return {
-    axisLabel: { color: styling.textColor },
+    axisLabel: { color: styling.textColor, fontSize: chartFontSize().label },
     axisLine: { lineStyle: { color: styling.axisColor } },
   }
 }
@@ -609,7 +610,7 @@ export function buildContinuous3DOptions(
           const labelVal = metricDimension ? p.value[3] : p.value[2]
           return labelVal === undefined ? '' : formatChartNumber(labelVal)
         },
-        textStyle: { fontSize: 12, color: styling.textColor },
+        textStyle: { fontSize: chartFontSize().series, color: styling.textColor },
       },
       emphasis: { label: { show: false } },
     })),
@@ -739,6 +740,6 @@ export function create3DCellLabel(
       const total = cellTotals[`${xi},${yi}`]
       return total === undefined ? '' : formatChartNumber(total)
     },
-    textStyle: { fontSize: 12, color: textColor },
+    textStyle: { fontSize: chartFontSize().series, color: textColor },
   }
 }

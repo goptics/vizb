@@ -93,7 +93,7 @@ func (s *DatasetSuite) TestDatasetUnmarshalJSONEmptySettings() {
 func (s *DatasetSuite) TestDatasetIDTopLevelRoundTrip() {
 	raw := []byte(`{
 		"id":"bench-v1",
-		"theme":"purple-passion",
+		"appearance":{"theme":"purple-passion"},
 		"name":"bench",
 		"meta":{"os":"linux"},
 		"settings":[{"type":"bar"}],
@@ -103,16 +103,15 @@ func (s *DatasetSuite) TestDatasetIDTopLevelRoundTrip() {
 	var ds shared.Dataset
 	s.Require().NoError(json.Unmarshal(raw, &ds))
 	s.Equal("bench-v1", ds.ID)
-	// Legacy theme string migrates into Themes; Theme is cleared.
-	s.Empty(ds.Theme)
-	s.Require().Len(ds.Themes, 1)
-	s.Equal("purple-passion", ds.Themes[0].Name)
+	s.Require().Len(ds.ThemeCatalog(), 1)
+	s.Equal("purple-passion", ds.ThemeCatalog()[0].Name)
 	s.Require().NotNil(ds.Meta)
 	s.Equal("linux", ds.Meta.OS)
 
 	out, err := json.Marshal(ds)
 	s.Require().NoError(err)
 	s.Contains(string(out), `"id":"bench-v1"`)
+	s.Contains(string(out), `"appearance"`)
 	s.Contains(string(out), `"themes"`)
 	s.NotContains(string(out), `"theme":`)
 }
@@ -120,82 +119,80 @@ func (s *DatasetSuite) TestDatasetIDTopLevelRoundTrip() {
 func (s *DatasetSuite) TestUnmarshalNewThemesArray() {
 	raw := []byte(`{
 		"name":"bench",
-		"themes":[
+		"appearance":{"themes":[
 			{"name":"roma","colors":["#E01F54","#001852"],"visualMapColors":["#a4d8c2","#E01F54"]},
 			{"name":"custom","colors":["#f00","#0f0","#00f"],"visualMapColors":["#f00","#00f"]}
-		],
+		]},
 		"data":[]
 	}`)
 
 	var ds shared.Dataset
 	s.Require().NoError(json.Unmarshal(raw, &ds))
-	s.Empty(ds.Theme)
-	s.Require().Len(ds.Themes, 2)
-	s.Equal("roma", ds.Themes[0].Name)
-	s.Equal([]string{"#E01F54", "#001852"}, ds.Themes[0].Colors)
-	s.Equal([]string{"#a4d8c2", "#E01F54"}, ds.Themes[0].VisualMapColors)
-	s.Equal("custom", ds.Themes[1].Name)
-	s.Equal([]string{"#f00", "#0f0", "#00f"}, ds.Themes[1].Colors)
+	s.Require().Len(ds.ThemeCatalog(), 2)
+	s.Equal("roma", ds.ThemeCatalog()[0].Name)
+	s.Equal([]string{"#E01F54", "#001852"}, ds.ThemeCatalog()[0].Colors)
+	s.Equal([]string{"#a4d8c2", "#E01F54"}, ds.ThemeCatalog()[0].VisualMapColors)
+	s.Equal("custom", ds.ThemeCatalog()[1].Name)
+	s.Equal([]string{"#f00", "#0f0", "#00f"}, ds.ThemeCatalog()[1].Colors)
 }
 
-func (s *DatasetSuite) TestUnmarshalLegacyThemeRoma() {
-	raw := []byte(`{"name":"bench","theme":"roma","data":[]}`)
+func (s *DatasetSuite) TestUnmarshalAppearanceThemeRoma() {
+	raw := []byte(`{"name":"bench","appearance":{"theme":"roma"},"data":[]}`)
 
 	var ds shared.Dataset
 	s.Require().NoError(json.Unmarshal(raw, &ds))
-	s.Empty(ds.Theme)
-	s.Require().Len(ds.Themes, 1)
-	s.Equal("roma", ds.Themes[0].Name)
+	s.Require().Len(ds.ThemeCatalog(), 1)
+	s.Equal("roma", ds.ThemeCatalog()[0].Name)
 	s.Equal([]string{
 		"#E01F54", "#001852", "#f5e8c8", "#b8d2c7", "#c6b38e",
 		"#a4d8c2", "#f3d999", "#d3758f", "#dcc392", "#2e4783",
-	}, ds.Themes[0].Colors)
-	s.Equal([]string{"#a4d8c2", "#E01F54"}, ds.Themes[0].VisualMapColors)
+	}, ds.ThemeCatalog()[0].Colors)
+	s.Equal([]string{"#a4d8c2", "#E01F54"}, ds.ThemeCatalog()[0].VisualMapColors)
 }
 
-func (s *DatasetSuite) TestUnmarshalLegacyThemeCustomHex() {
-	raw := []byte(`{"name":"bench","theme":"#f00,#0f0","data":[]}`)
+func (s *DatasetSuite) TestUnmarshalAppearanceThemeCustomHex() {
+	raw := []byte(`{"name":"bench","appearance":{"theme":"#f00,#0f0"},"data":[]}`)
 
 	var ds shared.Dataset
 	s.Require().NoError(json.Unmarshal(raw, &ds))
-	s.Empty(ds.Theme)
-	s.Require().Len(ds.Themes, 1)
-	s.Equal("custom", ds.Themes[0].Name)
-	s.Equal([]string{"#f00", "#0f0"}, ds.Themes[0].Colors)
-	s.Equal([]string{"#f00", "#0f0"}, ds.Themes[0].VisualMapColors)
+	s.Require().Len(ds.ThemeCatalog(), 1)
+	s.Equal("custom", ds.ThemeCatalog()[0].Name)
+	s.Equal([]string{"#f00", "#0f0"}, ds.ThemeCatalog()[0].Colors)
+	s.Equal([]string{"#f00", "#0f0"}, ds.ThemeCatalog()[0].VisualMapColors)
 }
 
-func (s *DatasetSuite) TestUnmarshalLegacyThemeDefault() {
+func (s *DatasetSuite) TestUnmarshalAppearanceThemeDefault() {
 	for _, value := range []string{"default", "DEFAULT", " Default "} {
-		raw := []byte(fmt.Sprintf(`{"name":"bench","theme":%q,"data":[]}`, value))
+		raw := []byte(fmt.Sprintf(`{"name":"bench","appearance":{"theme":%q},"data":[]}`, value))
 		var ds shared.Dataset
 		s.Require().NoError(json.Unmarshal(raw, &ds), value)
-		s.Empty(ds.Themes, value)
-		s.Empty(ds.Theme, value)
+		s.Empty(ds.ThemeCatalog(), value)
+		s.Nil(ds.Appearance, value)
 	}
 }
 
-func (s *DatasetSuite) TestUnmarshalLegacyThemeEmpty() {
-	raw := []byte(`{"name":"bench","theme":"","data":[]}`)
+func (s *DatasetSuite) TestUnmarshalAppearanceThemeEmpty() {
+	raw := []byte(`{"name":"bench","appearance":{"theme":""},"data":[]}`)
 	var ds shared.Dataset
 	s.Require().NoError(json.Unmarshal(raw, &ds))
-	s.Empty(ds.Themes)
-	s.Empty(ds.Theme)
+	s.Empty(ds.ThemeCatalog())
+	s.Nil(ds.Appearance)
 }
 
 func (s *DatasetSuite) TestMarshalWithThemesOmitsLegacyTheme() {
 	ds := shared.Dataset{
 		Name: "bench",
-		Themes: []shared.Theme{{
+		Appearance: &shared.Appearance{Themes: []shared.Theme{{
 			Name:            "roma",
 			Colors:          []string{"#E01F54", "#001852"},
 			VisualMapColors: []string{"#a4d8c2", "#E01F54"},
-		}},
+		}}},
 		Data: []shared.DataPoint{},
 	}
 
 	out, err := json.Marshal(ds)
 	s.Require().NoError(err)
+	s.Contains(string(out), `"appearance"`)
 	s.Contains(string(out), `"themes"`)
 	s.Contains(string(out), `"roma"`)
 	s.NotContains(string(out), `"theme":`)
@@ -204,7 +201,7 @@ func (s *DatasetSuite) TestMarshalWithThemesOmitsLegacyTheme() {
 func (s *DatasetSuite) TestThemesRoundTrip() {
 	original := shared.Dataset{
 		Name: "bench",
-		Themes: []shared.Theme{
+		Appearance: &shared.Appearance{Themes: []shared.Theme{
 			{
 				Name: "westeros",
 				Colors: []string{
@@ -218,7 +215,7 @@ func (s *DatasetSuite) TestThemesRoundTrip() {
 				Colors:          []string{"#111", "#222", "#333"},
 				VisualMapColors: []string{"#111", "#333"},
 			},
-		},
+		}},
 		Axes: []shared.Axis{{Key: "x"}},
 		Data: []shared.DataPoint{},
 	}
@@ -228,54 +225,95 @@ func (s *DatasetSuite) TestThemesRoundTrip() {
 
 	var got shared.Dataset
 	s.Require().NoError(json.Unmarshal(raw, &got))
-	s.Empty(got.Theme)
-	s.Equal(original.Themes, got.Themes)
+	s.Equal(original.ThemeCatalog(), got.ThemeCatalog())
 }
 
-func (s *DatasetSuite) TestThemesArrayWinsOverLegacyTheme() {
+func (s *DatasetSuite) TestAppearanceThemesWinsOverThemeString() {
 	raw := []byte(`{
 		"name":"bench",
-		"theme":"roma",
-		"themes":[{"name":"chalk","colors":["#fc97af","#87f7cf"],"visualMapColors":["#87f7cf","#fc97af"]}],
+		"appearance":{
+			"theme":"roma",
+			"themes":[{"name":"chalk","colors":["#fc97af","#87f7cf"],"visualMapColors":["#87f7cf","#fc97af"]}]
+		},
 		"data":[]
 	}`)
 
 	var ds shared.Dataset
 	s.Require().NoError(json.Unmarshal(raw, &ds))
-	s.Empty(ds.Theme)
-	s.Require().Len(ds.Themes, 1)
-	s.Equal("chalk", ds.Themes[0].Name)
+	s.Require().Len(ds.ThemeCatalog(), 1)
+	s.Equal("chalk", ds.ThemeCatalog()[0].Name)
+	s.Empty(ds.Appearance.Theme)
 }
 
-func (s *DatasetSuite) TestUnmarshalInvalidLegacyThemeKeepsString() {
-	raw := []byte(`{"name":"bench","theme":"not-a-theme","data":[]}`)
+func (s *DatasetSuite) TestUnmarshalInvalidAppearanceThemeKeepsString() {
+	raw := []byte(`{"name":"bench","appearance":{"theme":"not-a-theme"},"data":[]}`)
 
 	var ds shared.Dataset
 	s.Require().NoError(json.Unmarshal(raw, &ds))
-	s.Empty(ds.Themes)
-	s.Equal("not-a-theme", ds.Theme)
+	s.Empty(ds.ThemeCatalog())
+	s.Equal("not-a-theme", ds.Appearance.Theme)
 }
 
-func (s *DatasetSuite) TestUnmarshalLegacyStructuredDefaultNameClearsTheme() {
-	// Structured name "default" is not the bare "default" short-circuit; ParseThemeSpec
-	// succeeds with Name "default", then migrate clears Theme without embedding.
-	raw := []byte(`{"name":"bench","theme":"default:colors=#f00,#0f0","data":[]}`)
+func (s *DatasetSuite) TestUnmarshalAppearanceStructuredDefaultNameClearsTheme() {
+	raw := []byte(`{"name":"bench","appearance":{"theme":"default:colors=#f00,#0f0"},"data":[]}`)
 
 	var ds shared.Dataset
 	s.Require().NoError(json.Unmarshal(raw, &ds))
-	s.Empty(ds.Themes)
-	s.Empty(ds.Theme)
+	s.Empty(ds.ThemeCatalog())
+	s.Nil(ds.Appearance)
 }
 
 func (s *DatasetSuite) TestUnmarshalEmptySettingsArrayStillMigratesTheme() {
-	raw := []byte(`{"name":"bench","theme":"roma","settings":[],"data":[]}`)
+	raw := []byte(`{"name":"bench","appearance":{"theme":"roma"},"settings":[],"data":[]}`)
 
 	var ds shared.Dataset
 	s.Require().NoError(json.Unmarshal(raw, &ds))
 	s.Nil(ds.Settings)
-	s.Empty(ds.Theme)
-	s.Require().Len(ds.Themes, 1)
-	s.Equal("roma", ds.Themes[0].Name)
+	s.Require().Len(ds.ThemeCatalog(), 1)
+	s.Equal("roma", ds.ThemeCatalog()[0].Name)
+}
+
+func (s *DatasetSuite) TestAppearanceFontSizeRoundTrip() {
+	ds := shared.Dataset{
+		Name: "bench",
+		Appearance: &shared.Appearance{
+			FontSize: &shared.FontSize{
+				Series: shared.F64(16),
+				Legend: shared.F64(10),
+			},
+		},
+		Data: []shared.DataPoint{},
+	}
+	raw, err := json.Marshal(ds)
+	s.Require().NoError(err)
+	s.Contains(string(raw), `"fontSize"`)
+	s.Contains(string(raw), `"series"`)
+	s.NotContains(string(raw), `"theme":`)
+
+	var got shared.Dataset
+	s.Require().NoError(json.Unmarshal(raw, &got))
+	s.Require().NotNil(got.Appearance.FontSize)
+	s.Equal(16.0, *got.Appearance.FontSize.Series)
+	s.Equal(10.0, *got.Appearance.FontSize.Legend)
+	s.Nil(got.Appearance.FontSize.Label)
+
+	all := shared.Dataset{
+		Name: "bench",
+		Appearance: &shared.Appearance{
+			FontSize: &shared.FontSize{Series: shared.F64(14), Legend: shared.F64(14), Label: shared.F64(14)},
+		},
+		Data: []shared.DataPoint{},
+	}
+	raw, err = json.Marshal(all)
+	s.Require().NoError(err)
+	s.Contains(string(raw), `"fontSize":14`)
+}
+
+func (s *DatasetSuite) TestRootThemeFieldsAreIgnored() {
+	raw := []byte(`{"name":"bench","theme":"roma","themes":[{"name":"chalk","colors":["#fc97af"]}],"data":[]}`)
+	var ds shared.Dataset
+	s.Require().NoError(json.Unmarshal(raw, &ds))
+	s.Nil(ds.Appearance)
 }
 
 func (s *DatasetSuite) TestDatasetUnmarshalJSONLegacySingleObject() {
