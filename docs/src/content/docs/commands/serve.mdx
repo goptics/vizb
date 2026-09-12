@@ -111,8 +111,8 @@ When non-empty, `themes[0]` is the active theme; there is no separate active
 field. Built-in `default` is not embedded (the UI owns it). Inbound
 `appearance.theme` is expanded into `appearance.themes` and omitted from
 responses. See [Color Themes](/ui/themes) and the [API reference](/api/)
-for the full `Theme` object shape. Optional `appearance.fontSize` is a number
-or `{series, legend, label}` object (CSS pixels).
+for the full `Theme` object shape. Optional `appearance.fontSize` is a positive number
+or `{series, legend, label}` object of positive sizes (CSS pixels).
 
 Top-level `round` (default `false`) matches CLI `--round`: round numeric values
 to 2 decimal places in the output data.

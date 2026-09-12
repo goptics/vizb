@@ -8,7 +8,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adhere
 
 ### Added
 
-- **cli** — Add `--font-size` (number or `series=;legend=;label=` bag) on root and chart subcommands
+- **cli** — Add `--font-size` (number or `series=16;legend=10;label=12` bag) on root and chart subcommands
 - **action** — Add `font-size` input forwarded as `--font-size`
 
 ### Changed

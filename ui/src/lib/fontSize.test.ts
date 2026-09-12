@@ -34,5 +34,10 @@ describe('resolveFontSize', () => {
       legend: DEFAULT_FONT_SIZE,
       label: 14,
     })
+    expect(resolveFontSize(Number.POSITIVE_INFINITY)).toEqual({
+      series: DEFAULT_FONT_SIZE,
+      legend: DEFAULT_FONT_SIZE,
+      label: DEFAULT_FONT_SIZE,
+    })
   })
 })

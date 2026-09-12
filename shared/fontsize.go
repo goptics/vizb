@@ -102,10 +102,20 @@ func parseFontSize(data []byte, strict bool) (*FontSize, error) {
 		return nil, fmt.Errorf("must be a number or object")
 	}
 	out := FontSize{}
+	normalizedCounts := make(map[string]int, len(fields))
+	for key := range fields {
+		normalizedCounts[strings.ToLower(strings.TrimSpace(key))]++
+	}
 	for key, raw := range fields {
 		k := strings.ToLower(strings.TrimSpace(key))
 		switch k {
 		case "series", "legend", "label":
+			if normalizedCounts[k] > 1 {
+				if strict {
+					return nil, fmt.Errorf("duplicate key %q", k)
+				}
+				continue
+			}
 			n, ok := decodeFontSizeNumber(raw)
 			if !ok {
 				if strict {

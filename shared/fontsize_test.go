@@ -180,6 +180,19 @@ func (s *FontSizeSuite) TestParseStrictErrors() {
 	}
 }
 
+func (s *FontSizeSuite) TestParseStrictDuplicateNormalizedKey() {
+	fs, err := shared.ParseFontSizeJSONStrict([]byte(`{"series":16," Series ":10}`))
+	s.Require().Error(err)
+	s.Nil(fs)
+	s.EqualError(err, `duplicate key "series"`)
+}
+
+func (s *FontSizeSuite) TestUnmarshalDuplicateNormalizedKeySkipped() {
+	var fs shared.FontSize
+	s.Require().NoError(json.Unmarshal([]byte(`{"series":16," Series ":10}`), &fs))
+	s.True(fs.Empty())
+}
+
 func (s *FontSizeSuite) TestUnmarshalNull() {
 	var fs shared.FontSize
 	s.Require().NoError(json.Unmarshal([]byte("null"), &fs))

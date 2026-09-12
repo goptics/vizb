@@ -517,6 +517,23 @@ func (s *MergeSuite) TestMergeFontSizeNewerWinsElseOlder() {
 	s.Equal(16.0, *result[0].Appearance.FontSize.Series)
 }
 
+func (s *MergeSuite) TestMergeFontSizeFoldsByTimestamp() {
+	untagged := Dataset{
+		Name:       "Bench",
+		Timestamp:  "2026-05-14T10:00:00Z",
+		Data:       []DataPoint{{Name: "legacy"}},
+		Appearance: &Appearance{FontSize: &FontSize{Series: F64(16)}},
+	}
+	tagged := makeBench("v1", "Bench", "2026-05-13T10:00:00Z", []DataPoint{{Name: "tagged"}})
+	tagged.Appearance = &Appearance{FontSize: &FontSize{Series: F64(10)}}
+
+	result := MergeDatasets([]Dataset{untagged, tagged}, DimensionName)
+	s.Require().Len(result, 1)
+	s.Require().NotNil(result[0].Appearance)
+	s.Require().NotNil(result[0].Appearance.FontSize)
+	s.Equal(16.0, *result[0].Appearance.FontSize.Series)
+}
+
 func (s *MergeSuite) TestMergeThemesPure() {
 	newer := []Theme{
 		{Name: "A", Colors: []string{"#a2"}},

@@ -187,8 +187,15 @@ func foldAppearance(datasets []Dataset) *Appearance {
 }
 
 func foldFontSize(datasets []Dataset) *FontSize {
+	// Sort a copy by timestamp so fold order is stable regardless of input order.
+	ordered := make([]Dataset, len(datasets))
+	copy(ordered, datasets)
+	sort.SliceStable(ordered, func(i, j int) bool {
+		return ordered[i].Timestamp < ordered[j].Timestamp
+	})
+
 	var font *FontSize
-	for _, ds := range datasets {
+	for _, ds := range ordered {
 		if fs := fontSizeOf(ds); !fs.Empty() {
 			font = cloneFontSize(fs)
 		}
