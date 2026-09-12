@@ -37,7 +37,7 @@ func MergeDatasets(benchmarks []Dataset, dim Dimension) []Dataset {
 
 		if existing, exists := tags[tag]; exists {
 			if tag == noTagKey {
-				// Newer timestamp wins for data; always union Themes.
+				// Newer timestamp wins for data; always union appearance.themes.
 				var newer, older Dataset
 				if existing.Timestamp >= ds.Timestamp {
 					newer, older = *existing, ds
@@ -45,8 +45,7 @@ func MergeDatasets(benchmarks []Dataset, dim Dimension) []Dataset {
 					newer, older = ds, *existing
 				}
 				merged := newer
-				merged.Themes = mergeThemes(datasetThemes(newer), datasetThemes(older))
-				merged.Theme = ""
+				merged.Appearance = mergeAppearances(newer, older)
 				tags[tag] = &merged
 				continue
 			}
@@ -93,8 +92,7 @@ func MergeDatasets(benchmarks []Dataset, dim Dimension) []Dataset {
 				latest := tagged[len(tagged)-1]
 				base.Tag = latest.Tag
 				base.Timestamp = latest.Timestamp
-				base.Themes = foldThemes(allDatasets)
-				base.Theme = ""
+				base.Appearance = foldAppearance(allDatasets)
 				base.History = buildHistory(allDatasets, latest.Tag)
 				base.Data = mergeData(allDatasets, dim)
 				base.Axes = EnsureAxis(base.Axes, dim)
@@ -104,8 +102,7 @@ func MergeDatasets(benchmarks []Dataset, dim Dimension) []Dataset {
 
 			latest := tagged[len(tagged)-1]
 			base := deepCloneDataset(latest)
-			base.Themes = foldThemes(tagged)
-			base.Theme = ""
+			base.Appearance = foldAppearance(tagged)
 			base.History = buildHistory(tagged, latest.Tag)
 			base.Data = mergeData(tagged, dim)
 			base.Axes = EnsureAxis(base.Axes, dim)
@@ -147,22 +144,92 @@ func deepCloneDataset(src Dataset) Dataset {
 		copy(dst.Settings, src.Settings)
 	}
 
-	if src.Themes != nil {
-		dst.Themes = cloneThemes(src.Themes)
-	}
+	dst.Appearance = cloneAppearance(src.Appearance)
 
 	return dst
 }
 
-// datasetThemes returns the theme catalog for merge, expanding a legacy Theme
-// string when Themes is empty (in-memory datasets that skipped UnmarshalJSON).
 func datasetThemes(ds Dataset) []Theme {
-	if len(ds.Themes) > 0 {
-		return ds.Themes
+	if ds.Appearance == nil {
+		return nil
 	}
-	tmp := ds
-	tmp.migrateLegacyTheme()
+	if len(ds.Appearance.Themes) > 0 {
+		return ds.Appearance.Themes
+	}
+	tmp := *ds.Appearance
+	tmp.migrateTheme()
 	return tmp.Themes
+}
+
+func fontSizeOf(ds Dataset) *FontSize {
+	if ds.Appearance == nil {
+		return nil
+	}
+	return ds.Appearance.FontSize
+}
+
+func mergeAppearances(newer, older Dataset) *Appearance {
+	font := fontSizeOf(newer)
+	if font.Empty() {
+		font = fontSizeOf(older)
+	}
+	return CompactAppearance(&Appearance{
+		Themes:   mergeThemes(datasetThemes(newer), datasetThemes(older)),
+		FontSize: cloneFontSize(font),
+	})
+}
+
+func foldAppearance(datasets []Dataset) *Appearance {
+	return CompactAppearance(&Appearance{
+		Themes:   foldThemes(datasets),
+		FontSize: foldFontSize(datasets),
+	})
+}
+
+func foldFontSize(datasets []Dataset) *FontSize {
+	// Sort a copy by timestamp so fold order is stable regardless of input order.
+	ordered := make([]Dataset, len(datasets))
+	copy(ordered, datasets)
+	sort.SliceStable(ordered, func(i, j int) bool {
+		return ordered[i].Timestamp < ordered[j].Timestamp
+	})
+
+	var font *FontSize
+	for _, ds := range ordered {
+		if fs := fontSizeOf(ds); !fs.Empty() {
+			font = cloneFontSize(fs)
+		}
+	}
+	return font
+}
+
+func cloneAppearance(a *Appearance) *Appearance {
+	if a == nil {
+		return nil
+	}
+	out := Appearance{
+		Theme:    a.Theme,
+		Themes:   cloneThemes(a.Themes),
+		FontSize: cloneFontSize(a.FontSize),
+	}
+	return CompactAppearance(&out)
+}
+
+func cloneFontSize(f *FontSize) *FontSize {
+	if f.Empty() {
+		return nil
+	}
+	out := FontSize{}
+	if f.Series != nil {
+		out.Series = F64(*f.Series)
+	}
+	if f.Legend != nil {
+		out.Legend = F64(*f.Legend)
+	}
+	if f.Label != nil {
+		out.Label = F64(*f.Label)
+	}
+	return &out
 }
 
 // mergeThemes unions two theme catalogs by case-insensitive name.
@@ -335,9 +402,8 @@ func replaceTagData(existing, incoming Dataset, dim Dimension) Dataset {
 	result.Data = append(kept, mergeDataForTag(incoming, dim)...)
 	result.Tag = incoming.Tag
 	result.Timestamp = incoming.Timestamp
-	// incoming is the newer-by-timestamp dataset; union themes with it preferred.
-	result.Themes = mergeThemes(datasetThemes(incoming), datasetThemes(existing))
-	result.Theme = ""
+	// incoming is the newer-by-timestamp dataset; union appearance.themes with it preferred.
+	result.Appearance = mergeAppearances(incoming, existing)
 	if incoming.Meta != nil {
 		m := *incoming.Meta
 		if incoming.Meta.CPU != nil {

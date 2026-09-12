@@ -9,7 +9,7 @@ import {
   createHeatmapLayoutConfig,
   hasRotatedXLabels,
 } from './shared/chartConfig'
-import { fontSize } from './shared/common'
+import { chartFontSize } from './shared/chartFontSize'
 
 const PREFIX: Record<CorrelationMethod, string> = {
   pearson: 'r',
@@ -74,7 +74,7 @@ export function buildCorrelationOption(
       splitArea: { show: true },
       axisLabel: {
         color: styling.textColor,
-        fontSize,
+        fontSize: chartFontSize().label,
         interval: large ? 'auto' : 0,
         rotate: hasRotatedXLabels(labels, large) ? 30 : 0,
       },
@@ -86,7 +86,11 @@ export function buildCorrelationOption(
       data: labels,
       inverse: true,
       splitArea: { show: true },
-      axisLabel: { color: styling.textColor, fontSize, interval: large ? 'auto' : 0 },
+      axisLabel: {
+        color: styling.textColor,
+        fontSize: chartFontSize().label,
+        interval: large ? 'auto' : 0,
+      },
       axisLine: { lineStyle: { color: styling.axisColor } },
     },
     visualMap: {
@@ -97,7 +101,7 @@ export function buildCorrelationOption(
       left: 'center',
       bottom: layout.visualMapBottom,
       precision: 2,
-      textStyle: { color: styling.textColor, fontSize },
+      textStyle: { color: styling.textColor, fontSize: chartFontSize().legend },
       inRange: { color: vmColors },
     },
     series: [
@@ -107,7 +111,7 @@ export function buildCorrelationOption(
         label: {
           show: true,
           color: styling.textColor,
-          fontSize,
+          fontSize: chartFontSize().series,
           formatter: (p: unknown) => {
             const v = (p as { data: [number, number, number] }).data[2]
             return Number(v.toFixed(2)).toString()

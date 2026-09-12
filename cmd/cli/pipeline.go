@@ -154,6 +154,7 @@ type RunMeta struct {
 	Name        string
 	Title       string
 	ThemeSpecs  []string
+	FontSize    *shared.FontSize
 	Description string
 	Tag         string
 	OutputFile  string
@@ -403,7 +404,8 @@ func assembleDataset(results []shared.DataPoint, m RunMeta, configs []internal_c
 		Parser: m.Parser,
 		Config: cfg,
 		Metadata: core.Metadata{
-			ID: m.ID, Name: m.Name, Themes: resolveRunThemes(m), Description: m.Description, Tag: m.Tag,
+			ID: m.ID, Name: m.Name, Themes: resolveRunThemes(m), FontSize: m.FontSize,
+			Description: m.Description, Tag: m.Tag,
 			System: system,
 		},
 		Charts: configs,

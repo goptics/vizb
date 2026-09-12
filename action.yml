@@ -84,6 +84,9 @@ inputs:
   parser:
     description: "Parser to use: csv, json, go, js:tinybench, js:vitest, rs:criterion, rs:divan (-P flag)"
     default: "auto"
+  font-size:
+    description: "Chart text size in px (--font-size). A number sets series, legend, and axis ticks; or series=;legend=;label= bag."
+    default: ""
   show-labels:
     description: "DEPRECATED: use 'chart' input instead (e.g. chart: 'pie:labels'). Show labels on charts (-l flag)"
     default: "false"

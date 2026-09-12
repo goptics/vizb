@@ -65,26 +65,26 @@ describe('themes', () => {
   })
 
   it('resolveActiveTheme uses themes[0] when present, else default', () => {
-    expect(resolveActiveTheme({ themes: [westeros, vintage] })).toMatchObject({
+    expect(resolveActiveTheme({ appearance: { themes: [westeros, vintage] } })).toMatchObject({
       name: 'westeros',
       colors: westeros.colors,
       visualMapColors: westeros.visualMapColors,
     })
-    expect(resolveActiveTheme({ themes: [] })).toEqual(DEFAULT_THEME)
+    expect(resolveActiveTheme({ appearance: { themes: [] } })).toEqual(DEFAULT_THEME)
     expect(resolveActiveTheme({})).toEqual(DEFAULT_THEME)
     expect(resolveActiveTheme(null)).toEqual(DEFAULT_THEME)
   })
 
   it('soft-handles legacy hex theme string when themes is empty', () => {
-    expect(resolveActiveTheme({ theme: '#f00,#0f0,#00f' })).toMatchObject({
+    expect(resolveActiveTheme({ appearance: { theme: '#f00,#0f0,#00f' } })).toMatchObject({
       name: 'custom',
       colors: ['#f00', '#0f0', '#00f'],
     })
   })
 
   it('falls back to default for legacy named themes without themes[]', () => {
-    expect(resolveActiveTheme({ theme: 'westeros' })).toEqual(DEFAULT_THEME)
-    expect(resolveActiveTheme({ theme: 'macarons' })).toEqual(DEFAULT_THEME)
+    expect(resolveActiveTheme({ appearance: { theme: 'westeros' } })).toEqual(DEFAULT_THEME)
+    expect(resolveActiveTheme({ appearance: { theme: 'macarons' } })).toEqual(DEFAULT_THEME)
   })
 
   it('registers dataset themes for name-based palette resolution', () => {
@@ -202,7 +202,9 @@ describe('themes', () => {
   it('resolveActiveTheme fills missing visualMapColors and skips empty first theme', () => {
     expect(
       resolveActiveTheme({
-        themes: [{ name: 'brand', colors: ['#111', '#222', '#333'], visualMapColors: [] }],
+        appearance: {
+          themes: [{ name: 'brand', colors: ['#111', '#222', '#333'], visualMapColors: [] }],
+        },
       })
     ).toMatchObject({
       name: 'brand',
@@ -211,18 +213,19 @@ describe('themes', () => {
     })
     expect(
       resolveActiveTheme({
-        themes: [{ name: '', colors: ['#aaa', '#bbb'], visualMapColors: ['#aaa', '#bbb'] }],
+        appearance: {
+          themes: [{ name: '', colors: ['#aaa', '#bbb'], visualMapColors: ['#aaa', '#bbb'] }],
+        },
       }).name
     ).toBe('custom')
     // First entry without colors falls through to default / legacy.
     expect(
       resolveActiveTheme({
-        themes: [{ name: 'empty', colors: [], visualMapColors: [] }],
+        appearance: { themes: [{ name: 'empty', colors: [], visualMapColors: [] }] },
       })
     ).toEqual(DEFAULT_THEME)
-    // Legacy # string that is not a valid multi-hex palette → default.
-    expect(resolveActiveTheme({ theme: '#f00' })).toEqual(DEFAULT_THEME)
-    expect(resolveActiveTheme({ theme: '#ggg,#000' })).toEqual(DEFAULT_THEME)
+    expect(resolveActiveTheme({ appearance: { theme: '#f00' } })).toEqual(DEFAULT_THEME)
+    expect(resolveActiveTheme({ appearance: { theme: '#ggg,#000' } })).toEqual(DEFAULT_THEME)
   })
 
   it('registerDatasetThemes names a blank colors-only themes[0] as custom', () => {

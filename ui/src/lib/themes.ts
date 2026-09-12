@@ -128,8 +128,8 @@ function themeFromCustomPalette(colors: string[]): Theme {
  * Named legacy themes without a themes[] catalog fall back to default
  * (UI no longer ships the 13-theme catalog).
  */
-export function resolveActiveTheme(dataset?: Pick<Dataset, 'themes' | 'theme'> | null): Theme {
-  const first = dataset?.themes?.[0]
+export function resolveActiveTheme(dataset?: Pick<Dataset, 'appearance'> | null): Theme {
+  const first = dataset?.appearance?.themes?.[0]
   if (first?.colors?.length) {
     return cloneTheme({
       name: first.name?.trim() || 'custom',
@@ -140,7 +140,7 @@ export function resolveActiveTheme(dataset?: Pick<Dataset, 'themes' | 'theme'> |
     })
   }
 
-  const legacy = dataset?.theme?.trim()
+  const legacy = dataset?.appearance?.theme?.trim()
   if (legacy?.startsWith('#')) {
     const colors = parseCustomPalette(legacy)
     if (colors) return themeFromCustomPalette(colors)

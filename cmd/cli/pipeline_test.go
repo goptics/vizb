@@ -283,8 +283,8 @@ func (s *PipelineSuite) TestRunLinearGeneratesOutputFile() {
 		var ds shared.Dataset
 		s.Require().NoError(json.Unmarshal(content, &ds))
 		s.Require().Len(ds.Settings, 1)
-		s.Empty(ds.Theme)
-		s.Empty(ds.Themes)
+		s.Empty(ds.Appearance)
+		s.Empty(ds.ThemeCatalog())
 		s.Equal("bar", ds.Settings[0].ChartType())
 		typed, ok := ds.Settings[0].(*barchart.Config)
 		s.Require().True(ok, "expected *barchart.Config, got %T", ds.Settings[0])
@@ -308,10 +308,11 @@ func (s *PipelineSuite) TestRunLinearPreservesCustomTheme() {
 	s.Contains(string(content), `"themes"`)
 	var ds shared.Dataset
 	s.Require().NoError(json.Unmarshal(content, &ds))
-	s.Empty(ds.Theme)
-	s.Require().Len(ds.Themes, 1)
-	s.Equal("custom", ds.Themes[0].Name)
-	s.Equal([]string{"#f00", "#00ff00"}, ds.Themes[0].Colors)
+	s.Require().NotNil(ds.Appearance)
+	s.Empty(ds.Appearance.Theme)
+	s.Require().Len(ds.ThemeCatalog(), 1)
+	s.Equal("custom", ds.ThemeCatalog()[0].Name)
+	s.Equal([]string{"#f00", "#00ff00"}, ds.ThemeCatalog()[0].Colors)
 }
 
 func (s *PipelineSuite) TestChartScaleBagRoundTripsThroughMaterialise() {
@@ -880,10 +881,11 @@ func (s *PipelineSuite) TestAssembleDatasetPreservesTheme() {
 		},
 	}
 	ds := assembleDataset(results, RunMeta{Name: "T", Parser: "csv", ThemeSpecs: []string{"walden"}}, nil, cfg, nil)
-	s.Empty(ds.Theme)
-	s.Require().Len(ds.Themes, 1)
-	s.Equal("walden", ds.Themes[0].Name)
-	s.NotEmpty(ds.Themes[0].Colors)
+	s.Require().NotNil(ds.Appearance)
+	s.Empty(ds.Appearance.Theme)
+	s.Require().Len(ds.ThemeCatalog(), 1)
+	s.Equal("walden", ds.ThemeCatalog()[0].Name)
+	s.NotEmpty(ds.ThemeCatalog()[0].Colors)
 }
 
 func (s *PipelineSuite) TestAssembleDatasetMultipleThemesFirstIsActive() {
@@ -894,10 +896,11 @@ func (s *PipelineSuite) TestAssembleDatasetMultipleThemesFirstIsActive() {
 		Parser:     "csv",
 		ThemeSpecs: []string{"westeros", "vintage"},
 	}, nil, cfg, nil)
-	s.Empty(ds.Theme)
-	s.Require().Len(ds.Themes, 2)
-	s.Equal("westeros", ds.Themes[0].Name)
-	s.Equal("vintage", ds.Themes[1].Name)
+	s.Require().NotNil(ds.Appearance)
+	s.Empty(ds.Appearance.Theme)
+	s.Require().Len(ds.ThemeCatalog(), 2)
+	s.Equal("westeros", ds.ThemeCatalog()[0].Name)
+	s.Equal("vintage", ds.ThemeCatalog()[1].Name)
 }
 
 func (s *PipelineSuite) TestAssembleDatasetSkipsDefaultTheme() {
@@ -908,17 +911,33 @@ func (s *PipelineSuite) TestAssembleDatasetSkipsDefaultTheme() {
 		Parser:     "csv",
 		ThemeSpecs: []string{"default", "roma"},
 	}, nil, cfg, nil)
-	s.Empty(ds.Theme)
-	s.Require().Len(ds.Themes, 1)
-	s.Equal("roma", ds.Themes[0].Name)
+	s.Require().NotNil(ds.Appearance)
+	s.Empty(ds.Appearance.Theme)
+	s.Require().Len(ds.ThemeCatalog(), 1)
+	s.Equal("roma", ds.ThemeCatalog()[0].Name)
+}
+
+func (s *PipelineSuite) TestAssembleDatasetFontSize() {
+	results := []shared.DataPoint{{XAxis: "1", YAxis: "2", Stats: []shared.Stat{}}}
+	cfg := parser.Config{GroupPattern: "x"}
+	ds := assembleDataset(results, RunMeta{
+		Name:     "T",
+		Parser:   "csv",
+		FontSize: &shared.FontSize{Series: shared.F64(16), Legend: shared.F64(10)},
+	}, nil, cfg, nil)
+	s.Require().NotNil(ds.Appearance)
+	s.Require().NotNil(ds.Appearance.FontSize)
+	s.Equal(16.0, *ds.Appearance.FontSize.Series)
+	s.Equal(10.0, *ds.Appearance.FontSize.Legend)
+	s.Nil(ds.Appearance.FontSize.Label)
 }
 
 func (s *PipelineSuite) TestAssembleDatasetEmptyThemesWhenUnset() {
 	results := []shared.DataPoint{{XAxis: "1", YAxis: "2", Stats: []shared.Stat{}}}
 	cfg := parser.Config{GroupPattern: "x"}
 	ds := assembleDataset(results, RunMeta{Name: "T", Parser: "csv"}, nil, cfg, nil)
-	s.Empty(ds.Theme)
-	s.Empty(ds.Themes)
+	s.Nil(ds.Appearance)
+	s.Empty(ds.ThemeCatalog())
 }
 
 func (s *PipelineSuite) TestAssembleDatasetThemeExpandFailureEmbedsNone() {
@@ -935,8 +954,8 @@ func (s *PipelineSuite) TestAssembleDatasetThemeExpandFailureEmbedsNone() {
 		}, nil, cfg, nil)
 	})
 	s.Require().NotNil(ds)
-	s.Empty(ds.Theme)
-	s.Empty(ds.Themes)
+	s.Nil(ds.Appearance)
+	s.Empty(ds.ThemeCatalog())
 	s.Contains(out, "theme expand failed")
 }
 

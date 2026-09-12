@@ -351,108 +351,103 @@ func (s *MergeSuite) TestMergeDatasetsSameNameSameTagDedup() {
 }
 
 func (s *MergeSuite) TestMergeUsesNewestActiveTheme() {
-	// Legacy Theme string migrates into Themes during merge.
+	// Appearance.Theme string expands into the catalog during merge.
 	legacy := Dataset{
-		Name: "Bench", Theme: "vintage", Timestamp: "2026-05-12T10:00:00Z",
+		Name: "Bench", Appearance: &Appearance{Theme: "vintage"}, Timestamp: "2026-05-12T10:00:00Z",
 		Data: []DataPoint{{Name: "legacy"}},
 	}
 	latest := makeBench("v2", "Bench", "2026-05-14T10:00:00Z",
 		[]DataPoint{{Name: "", XAxis: "speed", YAxis: "1e4"}})
-	latest.Themes = []Theme{{Name: "roma", Colors: []string{"#E01F54"}}}
+	latest.Appearance = &Appearance{Themes: []Theme{{Name: "roma", Colors: []string{"#E01F54"}}}}
 
 	result := MergeDatasets([]Dataset{legacy, latest}, DimensionName)
 	s.Require().Len(result, 1)
-	s.Empty(result[0].Theme)
-	s.Require().GreaterOrEqual(len(result[0].Themes), 1)
-	s.Equal("roma", result[0].Themes[0].Name)
-	// Older-only theme is preserved in the catalog.
-	s.True(themeNamesContain(result[0].Themes, "vintage"))
+	s.Require().GreaterOrEqual(len(result[0].ThemeCatalog()), 1)
+	s.Equal("roma", result[0].ThemeCatalog()[0].Name)
+	s.True(themeNamesContain(result[0].ThemeCatalog(), "vintage"))
 
 	updated := latest
 	updated.Timestamp = "2026-05-15T10:00:00Z"
-	updated.Themes = []Theme{{Name: "chalk", Colors: []string{"#111"}}}
+	updated.Appearance = &Appearance{Themes: []Theme{{Name: "chalk", Colors: []string{"#111"}}}}
 	result = MergeDatasets([]Dataset{result[0], updated}, DimensionName)
 	s.Require().Len(result, 1)
-	s.Empty(result[0].Theme)
-	s.Equal("chalk", result[0].Themes[0].Name)
+	s.Equal("chalk", result[0].ThemeCatalog()[0].Name)
 }
 
 func (s *MergeSuite) TestMergePreservesThemesWhenIncomingHasNone() {
 	existing := makeBench("v1", "Bench", "2026-05-13T10:00:00Z",
 		[]DataPoint{{Name: "", XAxis: "speed", YAxis: "1e4"}})
-	existing.Themes = []Theme{{Name: "walden", Colors: []string{"#3F51B5"}}}
+	existing.Appearance = &Appearance{Themes: []Theme{{Name: "walden", Colors: []string{"#3F51B5"}}}}
 	incoming := makeBench("v1", "Bench", "2026-05-14T10:00:00Z",
 		[]DataPoint{{Name: "", XAxis: "speed", YAxis: "2e4"}})
 
 	result := MergeDatasets([]Dataset{existing, incoming}, DimensionName)
 	s.Require().Len(result, 1)
-	s.Empty(result[0].Theme)
-	s.Require().Len(result[0].Themes, 1)
-	s.Equal("walden", result[0].Themes[0].Name)
+	s.Require().Len(result[0].ThemeCatalog(), 1)
+	s.Equal("walden", result[0].ThemeCatalog()[0].Name)
 }
 
 func (s *MergeSuite) TestMergeThemesUnionByName() {
 	older := makeBench("v1", "Bench", "2026-05-13T10:00:00Z",
 		[]DataPoint{{Name: "", XAxis: "speed", YAxis: "1e4"}})
-	older.Themes = []Theme{
+	older.Appearance = &Appearance{Themes: []Theme{
 		{Name: "vintage", Colors: []string{"#old-v"}},
 		{Name: "roma", Colors: []string{"#old-r"}},
-	}
+	}}
 	newer := makeBench("v2", "Bench", "2026-05-14T10:00:00Z",
 		[]DataPoint{{Name: "", XAxis: "speed", YAxis: "2e4"}})
-	newer.Themes = []Theme{
+	newer.Appearance = &Appearance{Themes: []Theme{
 		{Name: "roma", Colors: []string{"#new-r"}},
 		{Name: "chalk", Colors: []string{"#new-c"}},
-	}
+	}}
 
 	result := MergeDatasets([]Dataset{older, newer}, DimensionName)
 	s.Require().Len(result, 1)
-	s.Empty(result[0].Theme)
-	// Newest order first (roma, chalk), then older-only (vintage).
-	s.Require().Len(result[0].Themes, 3)
-	s.Equal("roma", result[0].Themes[0].Name)
-	s.Equal([]string{"#new-r"}, result[0].Themes[0].Colors) // newer content wins
-	s.Equal("chalk", result[0].Themes[1].Name)
-	s.Equal("vintage", result[0].Themes[2].Name)
-	s.Equal([]string{"#old-v"}, result[0].Themes[2].Colors)
+	catalog := result[0].ThemeCatalog()
+	s.Require().Len(catalog, 3)
+	s.Equal("roma", catalog[0].Name)
+	s.Equal([]string{"#new-r"}, catalog[0].Colors)
+	s.Equal("chalk", catalog[1].Name)
+	s.Equal("vintage", catalog[2].Name)
+	s.Equal([]string{"#old-v"}, catalog[2].Colors)
 }
 
 func (s *MergeSuite) TestMergeThemesCaseInsensitiveName() {
 	older := makeBench("v1", "Bench", "2026-05-13T10:00:00Z",
 		[]DataPoint{{Name: "a"}})
-	older.Themes = []Theme{{Name: "Roma", Colors: []string{"#old"}}}
+	older.Appearance = &Appearance{Themes: []Theme{{Name: "Roma", Colors: []string{"#old"}}}}
 	newer := makeBench("v2", "Bench", "2026-05-14T10:00:00Z",
 		[]DataPoint{{Name: "b"}})
-	newer.Themes = []Theme{{Name: "ROMA", Colors: []string{"#new"}}}
+	newer.Appearance = &Appearance{Themes: []Theme{{Name: "ROMA", Colors: []string{"#new"}}}}
 
 	result := MergeDatasets([]Dataset{older, newer}, DimensionName)
 	s.Require().Len(result, 1)
-	s.Require().Len(result[0].Themes, 1)
-	s.Equal("ROMA", result[0].Themes[0].Name) // newer name spelling kept
-	s.Equal([]string{"#new"}, result[0].Themes[0].Colors)
+	s.Require().Len(result[0].ThemeCatalog(), 1)
+	s.Equal("ROMA", result[0].ThemeCatalog()[0].Name)
+	s.Equal([]string{"#new"}, result[0].ThemeCatalog()[0].Colors)
 }
 
 func (s *MergeSuite) TestMergeThemesNewestActiveFirst() {
 	older := makeBench("v1", "Bench", "2026-05-13T10:00:00Z",
 		[]DataPoint{{Name: "a"}})
-	older.Themes = []Theme{
+	older.Appearance = &Appearance{Themes: []Theme{
 		{Name: "vintage", Colors: []string{"#v"}},
 		{Name: "westeros", Colors: []string{"#w"}},
-	}
+	}}
 	newer := makeBench("v2", "Bench", "2026-05-14T10:00:00Z",
 		[]DataPoint{{Name: "b"}})
-	newer.Themes = []Theme{
+	newer.Appearance = &Appearance{Themes: []Theme{
 		{Name: "chalk", Colors: []string{"#c"}},
 		{Name: "westeros", Colors: []string{"#w2"}},
-	}
+	}}
 
 	result := MergeDatasets([]Dataset{older, newer}, DimensionName)
 	s.Require().Len(result, 1)
-	// Newest Themes[0] stays first (active).
-	s.Equal("chalk", result[0].Themes[0].Name)
-	s.Equal("westeros", result[0].Themes[1].Name)
-	s.Equal([]string{"#w2"}, result[0].Themes[1].Colors)
-	s.Equal("vintage", result[0].Themes[2].Name)
+	catalog := result[0].ThemeCatalog()
+	s.Equal("chalk", catalog[0].Name)
+	s.Equal("westeros", catalog[1].Name)
+	s.Equal([]string{"#w2"}, catalog[1].Colors)
+	s.Equal("vintage", catalog[2].Name)
 }
 
 func (s *MergeSuite) TestMergeThemesEmptyOK() {
@@ -463,46 +458,80 @@ func (s *MergeSuite) TestMergeThemesEmptyOK() {
 
 	result := MergeDatasets([]Dataset{bench1, bench2}, DimensionName)
 	s.Require().Len(result, 1)
-	s.Empty(result[0].Themes)
-	s.Empty(result[0].Theme)
+	s.Empty(result[0].ThemeCatalog())
+	s.Nil(result[0].Appearance)
 }
 
 func (s *MergeSuite) TestMergeThemesNoTagUnion() {
 	older := Dataset{
-		Name:      "Bench",
-		Timestamp: "2026-01-01T00:00:00Z",
-		Themes:    []Theme{{Name: "vintage", Colors: []string{"#v"}}},
-		Data:      []DataPoint{{Name: "first"}},
+		Name:       "Bench",
+		Timestamp:  "2026-01-01T00:00:00Z",
+		Appearance: &Appearance{Themes: []Theme{{Name: "vintage", Colors: []string{"#v"}}}},
+		Data:       []DataPoint{{Name: "first"}},
 	}
 	newer := Dataset{
-		Name:      "Bench",
-		Timestamp: "2026-02-01T00:00:00Z",
-		Themes:    []Theme{{Name: "roma", Colors: []string{"#r"}}},
-		Data:      []DataPoint{{Name: "second"}},
+		Name:       "Bench",
+		Timestamp:  "2026-02-01T00:00:00Z",
+		Appearance: &Appearance{Themes: []Theme{{Name: "roma", Colors: []string{"#r"}}}},
+		Data:       []DataPoint{{Name: "second"}},
 	}
 
 	result := MergeDatasets([]Dataset{older, newer}, DimensionName)
 	s.Require().Len(result, 1)
 	s.Equal("second", result[0].Data[0].Name)
-	s.Require().Len(result[0].Themes, 2)
-	s.Equal("roma", result[0].Themes[0].Name)
-	s.Equal("vintage", result[0].Themes[1].Name)
+	s.Require().Len(result[0].ThemeCatalog(), 2)
+	s.Equal("roma", result[0].ThemeCatalog()[0].Name)
+	s.Equal("vintage", result[0].ThemeCatalog()[1].Name)
 }
 
 func (s *MergeSuite) TestMergeThemesDeepCloneIndependence() {
 	srcColors := []string{"#shared"}
 	bench1 := makeBench("v1", "Bench", "2026-05-13T10:00:00Z",
 		[]DataPoint{{Name: "a"}})
-	bench1.Themes = []Theme{{Name: "roma", Colors: srcColors}}
+	bench1.Appearance = &Appearance{Themes: []Theme{{Name: "roma", Colors: srcColors}}}
 	bench2 := makeBench("v2", "Bench", "2026-05-14T10:00:00Z",
 		[]DataPoint{{Name: "b"}})
-	bench2.Themes = []Theme{{Name: "chalk", Colors: []string{"#c"}}}
+	bench2.Appearance = &Appearance{Themes: []Theme{{Name: "chalk", Colors: []string{"#c"}}}}
 
 	result := MergeDatasets([]Dataset{bench1, bench2}, DimensionName)
 	s.Require().Len(result, 1)
-	// Mutating result must not alias source color slice.
-	result[0].Themes[1].Colors[0] = "#mutated"
+	result[0].ThemeCatalog()[1].Colors[0] = "#mutated"
 	s.Equal("#shared", srcColors[0])
+}
+
+func (s *MergeSuite) TestMergeFontSizeNewerWinsElseOlder() {
+	older := makeBench("v1", "Bench", "2026-05-13T10:00:00Z", []DataPoint{{Name: "a"}})
+	older.Appearance = &Appearance{FontSize: &FontSize{Series: F64(14), Legend: F64(14), Label: F64(14)}}
+	newer := makeBench("v2", "Bench", "2026-05-14T10:00:00Z", []DataPoint{{Name: "b"}})
+	newer.Appearance = &Appearance{FontSize: &FontSize{Series: F64(16)}}
+
+	result := MergeDatasets([]Dataset{older, newer}, DimensionName)
+	s.Require().Len(result, 1)
+	s.Require().NotNil(result[0].Appearance.FontSize)
+	s.Equal(16.0, *result[0].Appearance.FontSize.Series)
+	s.Nil(result[0].Appearance.FontSize.Legend)
+
+	newerNoSize := makeBench("v3", "Bench", "2026-05-15T10:00:00Z", []DataPoint{{Name: "c"}})
+	result = MergeDatasets([]Dataset{result[0], newerNoSize}, DimensionName)
+	s.Require().NotNil(result[0].Appearance.FontSize)
+	s.Equal(16.0, *result[0].Appearance.FontSize.Series)
+}
+
+func (s *MergeSuite) TestMergeFontSizeFoldsByTimestamp() {
+	untagged := Dataset{
+		Name:       "Bench",
+		Timestamp:  "2026-05-14T10:00:00Z",
+		Data:       []DataPoint{{Name: "legacy"}},
+		Appearance: &Appearance{FontSize: &FontSize{Series: F64(16)}},
+	}
+	tagged := makeBench("v1", "Bench", "2026-05-13T10:00:00Z", []DataPoint{{Name: "tagged"}})
+	tagged.Appearance = &Appearance{FontSize: &FontSize{Series: F64(10)}}
+
+	result := MergeDatasets([]Dataset{untagged, tagged}, DimensionName)
+	s.Require().Len(result, 1)
+	s.Require().NotNil(result[0].Appearance)
+	s.Require().NotNil(result[0].Appearance.FontSize)
+	s.Equal(16.0, *result[0].Appearance.FontSize.Series)
 }
 
 func (s *MergeSuite) TestMergeThemesPure() {

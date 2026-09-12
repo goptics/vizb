@@ -58,25 +58,42 @@ func (o *statisticsOptions) UnmarshalJSON(data []byte) error {
 }
 
 type convertRequest struct {
-	Input json.RawMessage `json:"input"`
-	ID    *string         `json:"id"`
-	Name  *string         `json:"name"`
-	Title *string         `json:"title"`
-	// Themes is the preferred data-owned theme catalog (Themes[0] active).
-	Themes []shared.Theme `json:"themes"`
-	// Theme is the legacy single theme name/spec; expanded into Themes when
-	// Themes is empty. Prefer Themes for new clients.
-	Theme       *string          `json:"theme"`
-	Description *string          `json:"description"`
-	Tag         *string          `json:"tag"`
-	Parser      *string          `json:"parser"`
-	Grouping    *groupingOptions `json:"grouping"`
-	Units       *unitOptions     `json:"units"`
-	Round       bool             `json:"round"`
-	Select      []string         `json:"select"`
-	JSONPath    string           `json:"jsonPath"`
-	Charts      chartSelection   `json:"charts"`
-	Output      *convertOutput   `json:"output"`
+	Input       json.RawMessage    `json:"input"`
+	ID          *string            `json:"id"`
+	Name        *string            `json:"name"`
+	Title       *string            `json:"title"`
+	Appearance  *appearanceRequest `json:"appearance"`
+	Description *string            `json:"description"`
+	Tag         *string            `json:"tag"`
+	Parser      *string            `json:"parser"`
+	Grouping    *groupingOptions   `json:"grouping"`
+	Units       *unitOptions       `json:"units"`
+	Round       bool               `json:"round"`
+	Select      []string           `json:"select"`
+	JSONPath    string             `json:"jsonPath"`
+	Charts      chartSelection     `json:"charts"`
+	Output      *convertOutput     `json:"output"`
+}
+
+type appearanceRequest struct {
+	Themes   []shared.Theme  `json:"themes"`
+	Theme    *string         `json:"theme"`
+	FontSize json.RawMessage `json:"fontSize"`
+}
+
+func (a *appearanceRequest) UnmarshalJSON(data []byte) error {
+	if err := rejectNullFields(data, "/appearance", map[string]string{
+		"themes": "/appearance/themes", "theme": "/appearance/theme", "fontSize": "/appearance/fontSize",
+	}); err != nil {
+		return err
+	}
+	type wire appearanceRequest
+	var decoded wire
+	if err := strictDecodeRequestObject(data, &decoded, "/appearance"); err != nil {
+		return err
+	}
+	*a = appearanceRequest(decoded)
+	return nil
 }
 
 type convertOutput struct {
@@ -85,7 +102,7 @@ type convertOutput struct {
 
 func (r *convertRequest) UnmarshalJSON(data []byte) error {
 	if err := rejectNullFields(data, "/", map[string]string{
-		"id": "/id", "name": "/name", "title": "/title", "themes": "/themes", "theme": "/theme",
+		"id": "/id", "name": "/name", "title": "/title", "appearance": "/appearance",
 		"description": "/description", "tag": "/tag", "parser": "/parser", "grouping": "/grouping",
 		"units": "/units", "round": "/round", "select": "/select", "jsonPath": "/jsonPath",
 		"charts": "/charts", "output": "/output",
@@ -391,32 +408,55 @@ func buildConvertMetadata(request convertRequest) (core.Metadata, *apiValidation
 		metadata.Tag = *request.Tag
 	}
 
-	// Prefer non-empty themes[] (data-owned catalog). Themes[0] is active.
-	// Built-in "default" is omitted (UI owns the default palette).
-	// Empty or omitted themes falls through to the legacy theme string.
-	if len(request.Themes) > 0 {
-		themes, validationErr := validateRequestThemes(request.Themes, "/themes")
-		if validationErr != nil {
-			return core.Metadata{}, validationErr
-		}
-		metadata.Themes = themes
+	if request.Appearance == nil {
 		return metadata, nil
+	}
+	themes, fontSize, validationErr := resolveAppearanceRequest(request.Appearance, "/appearance")
+	if validationErr != nil {
+		return core.Metadata{}, validationErr
+	}
+	metadata.Themes = themes
+	metadata.FontSize = fontSize
+	return metadata, nil
+}
+
+func resolveAppearanceRequest(req *appearanceRequest, prefix string) ([]shared.Theme, *shared.FontSize, *apiValidationError) {
+	var themes []shared.Theme
+	if len(req.Themes) > 0 {
+		validated, validationErr := validateRequestThemes(req.Themes, prefix+"/themes")
+		if validationErr != nil {
+			return nil, nil, validationErr
+		}
+		themes = validated
+	} else if req.Theme != nil {
+		normalized := style.NormalizeTheme(*req.Theme)
+		resolved, err := style.ResolveThemes([]string{normalized})
+		if err != nil {
+			validationErr := bodyValidationError(prefix+"/theme", "invalid_value", err.Error())
+			return nil, nil, &validationErr
+		}
+		if len(resolved) > 0 {
+			themes = styleThemesToShared(resolved)
+		}
 	}
 
-	// Legacy theme string → expand into Themes via ResolveThemes / ParseThemeSpec.
-	if request.Theme == nil {
-		return metadata, nil
+	fontSize, validationErr := decodeAPIFontSize(req.FontSize, prefix+"/fontSize")
+	if validationErr != nil {
+		return nil, nil, validationErr
 	}
-	normalized := style.NormalizeTheme(*request.Theme)
-	resolved, err := style.ResolveThemes([]string{normalized})
+	return themes, fontSize, nil
+}
+
+func decodeAPIFontSize(raw json.RawMessage, path string) (*shared.FontSize, *apiValidationError) {
+	if len(bytes.TrimSpace(raw)) == 0 || bytes.Equal(bytes.TrimSpace(raw), []byte("null")) {
+		return nil, nil
+	}
+	fs, err := shared.ParseFontSizeJSONStrict(raw)
 	if err != nil {
-		validationErr := bodyValidationError("/theme", "invalid_value", err.Error())
-		return core.Metadata{}, &validationErr
+		validationErr := bodyValidationError(path, "invalid_value", err.Error())
+		return nil, &validationErr
 	}
-	if len(resolved) > 0 {
-		metadata.Themes = styleThemesToShared(resolved)
-	}
-	return metadata, nil
+	return fs, nil
 }
 
 // validateRequestThemes checks data-owned theme objects and returns a clone for
@@ -964,8 +1004,7 @@ type datasetWire struct {
 	Tag          string              `json:"tag"`
 	Timestamp    string              `json:"timestamp"`
 	Name         *string             `json:"name"`
-	Themes       []shared.Theme      `json:"themes"`
-	Theme        string              `json:"theme"` // legacy; expanded when Themes empty
+	Appearance   *appearanceRequest  `json:"appearance"`
 	History      []historyWire       `json:"history"`
 	Description  string              `json:"description"`
 	Meta         *shared.Meta        `json:"meta"`
@@ -1056,7 +1095,7 @@ func decodeStrictDataset(raw json.RawMessage, path string) (shared.Dataset, *api
 		history = append(history, shared.HistoryEntry{Tag: *entry.Tag, Timestamp: *entry.Timestamp, Meta: entry.Meta})
 	}
 
-	themes, validationErr := resolveDatasetWireThemes(wire.Themes, wire.Theme, path)
+	appearance, validationErr := decodeDatasetAppearance(wire.Appearance, path)
 	if validationErr != nil {
 		return shared.Dataset{}, validationErr
 	}
@@ -1066,7 +1105,7 @@ func decodeStrictDataset(raw json.RawMessage, path string) (shared.Dataset, *api
 		Tag:          wire.Tag,
 		Timestamp:    wire.Timestamp,
 		Name:         *wire.Name,
-		Themes:       themes,
+		Appearance:   appearance,
 		History:      history,
 		Description:  wire.Description,
 		Meta:         wire.Meta,
@@ -1077,26 +1116,32 @@ func decodeStrictDataset(raw json.RawMessage, path string) (shared.Dataset, *api
 	}, nil
 }
 
-// resolveDatasetWireThemes validates themes[] when non-empty, otherwise expands a
-// legacy theme string. Themes[0] is active; the legacy Theme string is not retained
-// on the returned catalog (new output uses Themes only).
-func resolveDatasetWireThemes(themes []shared.Theme, legacy string, datasetPath string) ([]shared.Theme, *apiValidationError) {
-	if len(themes) > 0 {
-		return validateRequestThemes(themes, datasetPath+"/themes")
-	}
-	legacy = strings.TrimSpace(legacy)
-	if legacy == "" || strings.EqualFold(legacy, "default") {
+func decodeDatasetAppearance(req *appearanceRequest, datasetPath string) (*shared.Appearance, *apiValidationError) {
+	if req == nil {
 		return nil, nil
 	}
-	// Match shared migrate: invalid legacy specs leave Themes empty rather
-	// than failing the whole dataset decode (soft for merge/UI inputs).
-	// Structured names equal to "default" also yield an empty catalog.
-	normalized := style.NormalizeTheme(legacy)
-	resolved, err := style.ResolveThemes([]string{normalized})
-	if err != nil || len(resolved) == 0 {
-		return nil, nil
+	var themes []shared.Theme
+	if len(req.Themes) > 0 {
+		validated, validationErr := validateRequestThemes(req.Themes, datasetPath+"/appearance/themes")
+		if validationErr != nil {
+			return nil, validationErr
+		}
+		themes = validated
+	} else if req.Theme != nil {
+		legacy := strings.TrimSpace(*req.Theme)
+		if legacy != "" && !strings.EqualFold(legacy, "default") {
+			normalized := style.NormalizeTheme(legacy)
+			resolved, err := style.ResolveThemes([]string{normalized})
+			if err == nil && len(resolved) > 0 {
+				themes = styleThemesToShared(resolved)
+			}
+		}
 	}
-	return styleThemesToShared(resolved), nil
+	fontSize, validationErr := decodeAPIFontSize(req.FontSize, datasetPath+"/appearance/fontSize")
+	if validationErr != nil {
+		return nil, validationErr
+	}
+	return shared.CompactAppearance(&shared.Appearance{Themes: themes, FontSize: fontSize}), nil
 }
 
 func decodeDatasetArray(rawDatasets []json.RawMessage, path string) ([]shared.Dataset, *apiValidationError) {

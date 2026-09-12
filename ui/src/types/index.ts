@@ -249,20 +249,24 @@ export type Theme = {
   visualMapColors?: string[]
 }
 
+export type FontSizeSpec = {
+  series?: number
+  legend?: number
+  label?: number
+}
+
+export type Appearance = {
+  themes?: Theme[]
+  /** Inbound theme name or palette; expanded into themes and omitted on rewrite. */
+  theme?: string
+  fontSize?: number | FontSizeSpec
+}
+
 export type Dataset = {
   id?: string
   name: string
   description?: string
-  /**
-   * Data-owned theme catalog. themes[0] is active when present; the UI only
-   * ships built-in `default` when themes is empty/absent.
-   */
-  themes?: Theme[]
-  /**
-   * Legacy single theme name/spec (pre-themes-array wire). Go migrates on load;
-   * pure UI JSON may still carry this — soft-handled when themes is empty.
-   */
-  theme?: string
+  appearance?: Appearance
   tag?: string
   timestamp?: string
   history?: HistoryEntry[]

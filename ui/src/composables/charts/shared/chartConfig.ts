@@ -1,6 +1,6 @@
 import type { EChartsOption } from 'echarts'
 import type { ScaleType } from '@/types'
-import { fontSize } from './common'
+import { chartFontSize } from './chartFontSize'
 import { describe } from '@/lib/stats'
 import { formatChartNumber } from '@/lib/utils'
 
@@ -309,7 +309,7 @@ export function createValueAxisConfig(
       ? { name: yAxisName, nameLocation: 'middle', nameGap: 45, nameTextStyle: nameStyle }
       : {}),
     splitLine: { lineStyle: { opacity: styling.opacity } },
-    axisLabel: { color: styling.textColor, fontSize },
+    axisLabel: { color: styling.textColor, fontSize: chartFontSize().label },
     axisLine: { lineStyle: { color: styling.axisColor } },
   }
 
@@ -324,7 +324,7 @@ export function createValueAxisConfig(
       ...(xAxisName
         ? { name: xAxisName, nameLocation: 'middle', nameGap: 30, nameTextStyle: nameStyle }
         : {}),
-      axisLabel: { color: styling.textColor, fontSize },
+      axisLabel: { color: styling.textColor, fontSize: chartFontSize().label },
       axisLine: { lineStyle: { color: styling.axisColor } },
       splitLine: { lineStyle: { opacity: styling.opacity } },
     },
@@ -447,7 +447,7 @@ export function createAxisConfig(
         // Series names on the x axis — keep at the default tick size.
         interval: isLargeXAxis(xAxisData) ? 'auto' : 0,
         rotate: hasRotatedXLabels(xAxisData, hasDataZoom) ? 30 : 0,
-        fontSize,
+        fontSize: chartFontSize().label,
         color: styling.textColor,
         // No axis title / slider: sit series ticks in the expanded bottom band.
         ...(!hasDataZoom && !xAxisName ? { margin: 14 } : {}),
@@ -518,7 +518,7 @@ export function createHorizontalAxisConfig(
         : {}),
       axisLabel: {
         interval: isLargeXAxis(yAxisData) ? 'auto' : 0,
-        fontSize,
+        fontSize: chartFontSize().label,
         color: styling.textColor,
         ...(!hasDataZoom && !categoryAxisName ? { margin: 14 } : {}),
       },
@@ -867,7 +867,7 @@ export function createLegendConfig(
     ...(!hasCustomVerticalPosition ? { top: 0 } : {}),
     itemWidth: 10,
     itemHeight: 10,
-    textStyle: { fontSize, color: styling.textColor },
+    textStyle: { fontSize: chartFontSize().legend, color: styling.textColor },
     data: series.map((s) => s.xAxis),
     ...customConfig,
   }
@@ -954,7 +954,7 @@ export const createLabelConfig = (
     if (raw == null) return ''
     return typeof raw === 'number' ? formatChartNumber(raw) : String(raw)
   },
-  fontSize,
+  fontSize: chartFontSize().series,
   color: stacked ? '#fff' : styling.textColor,
   textBorderColor: stacked ? 'rgba(0,0,0,0.5)' : null,
   textBorderWidth: stacked ? 2 : null,

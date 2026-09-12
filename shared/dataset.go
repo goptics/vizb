@@ -68,7 +68,7 @@ type HistoryEntry struct {
 }
 
 // Theme is a fully expanded color theme embedded on a dataset.
-// When Dataset.Themes is non-empty, Themes[0] is the active theme;
+// When Appearance.Themes is non-empty, Themes[0] is the active theme;
 // there is no separate active-theme field on the wire format.
 type Theme struct {
 	Name            string   `json:"name"`
@@ -76,18 +76,42 @@ type Theme struct {
 	VisualMapColors []string `json:"visualMapColors"`
 }
 
+// Appearance is dataset-level visual settings (theme catalog and font sizes).
+type Appearance struct {
+	Themes   []Theme   `json:"themes,omitempty"`
+	Theme    string    `json:"theme,omitempty"` // inbound string; cleared after expansion
+	FontSize *FontSize `json:"fontSize,omitempty"`
+}
+
+func (a *Appearance) empty() bool {
+	return a == nil || (len(a.Themes) == 0 && a.Theme == "" && a.FontSize.Empty())
+}
+
+// CompactAppearance returns nil when a has no themes, theme string, or fontSize.
+// ThemeCatalog returns appearance.themes, or nil when appearance is absent.
+func (d Dataset) ThemeCatalog() []Theme {
+	if d.Appearance == nil {
+		return nil
+	}
+	return d.Appearance.Themes
+}
+
+func CompactAppearance(a *Appearance) *Appearance {
+	if a.empty() {
+		return nil
+	}
+	if a.FontSize.Empty() {
+		a.FontSize = nil
+	}
+	return a
+}
+
 type Dataset struct {
-	ID        string `json:"id,omitempty"`
-	Tag       string `json:"tag,omitempty"`
-	Timestamp string `json:"timestamp,omitempty"`
-	Name      string `json:"name"`
-	// Themes is the data-owned theme catalog. Themes[0] is active when present.
-	// New output writes Themes only (not the legacy Theme string).
-	Themes []Theme `json:"themes,omitempty"`
-	// Theme is the legacy single theme name/spec (pre-themes-array wire).
-	// Used only when unmarshalling old files; migrateLegacyTheme expands it
-	// into Themes and clears this field so re-marshal does not emit both.
-	Theme       string                        `json:"theme,omitempty"`
+	ID          string                        `json:"id,omitempty"`
+	Tag         string                        `json:"tag,omitempty"`
+	Timestamp   string                        `json:"timestamp,omitempty"`
+	Name        string                        `json:"name"`
+	Appearance  *Appearance                   `json:"appearance,omitempty"`
 	History     []HistoryEntry                `json:"history,omitempty"`
 	Description string                        `json:"description,omitempty"`
 	Meta        *Meta                         `json:"meta,omitempty"`
@@ -119,8 +143,7 @@ func (d *Dataset) UnmarshalJSON(data []byte) error {
 		Tag          string          `json:"tag,omitempty"`
 		Timestamp    string          `json:"timestamp,omitempty"`
 		Name         string          `json:"name"`
-		Themes       []Theme         `json:"themes,omitempty"`
-		Theme        string          `json:"theme,omitempty"`
+		Appearance   *Appearance     `json:"appearance,omitempty"`
 		History      []HistoryEntry  `json:"history,omitempty"`
 		Description  string          `json:"description,omitempty"`
 		Meta         *Meta           `json:"meta,omitempty"`
@@ -136,8 +159,7 @@ func (d *Dataset) UnmarshalJSON(data []byte) error {
 	d.Tag = raw.Tag
 	d.Timestamp = raw.Timestamp
 	d.Name = raw.Name
-	d.Themes = raw.Themes
-	d.Theme = raw.Theme
+	d.Appearance = raw.Appearance
 	d.History = raw.History
 	d.Description = raw.Description
 	d.Meta = raw.Meta
@@ -149,7 +171,7 @@ func (d *Dataset) UnmarshalJSON(data []byte) error {
 	// Settings nil so MigrateDataset can populate it from the legacy struct.
 	if len(raw.Settings) == 0 || raw.Settings[0] != '[' {
 		d.Settings = nil
-		d.migrateLegacyTheme()
+		d.migrateAppearance()
 		return nil
 	}
 
@@ -159,7 +181,7 @@ func (d *Dataset) UnmarshalJSON(data []byte) error {
 	}
 	if len(entries) == 0 {
 		d.Settings = nil
-		d.migrateLegacyTheme()
+		d.migrateAppearance()
 		return nil
 	}
 
@@ -180,24 +202,29 @@ func (d *Dataset) UnmarshalJSON(data []byte) error {
 		}
 		d.Settings = append(d.Settings, cfg)
 	}
-	d.migrateLegacyTheme()
+	d.migrateAppearance()
 	return nil
 }
 
-// migrateLegacyTheme expands a legacy Theme string into Themes when Themes is
-// empty. Themes[0] is the active theme when present. Built-in "default" and
-// empty specs leave Themes empty (UI owns the default palette). Invalid specs
-// leave Theme untouched so data is not discarded.
-func (d *Dataset) migrateLegacyTheme() {
-	if len(d.Themes) > 0 {
-		// Prefer Themes; drop legacy string so re-marshal does not emit both.
-		d.Theme = ""
+func (d *Dataset) migrateAppearance() {
+	if d.Appearance != nil {
+		d.Appearance.migrateTheme()
+	}
+	d.Appearance = CompactAppearance(d.Appearance)
+}
+
+// migrateTheme expands Appearance.Theme into Themes when Themes is empty.
+// Built-in "default" and empty specs leave Themes empty (UI owns the default
+// palette). Invalid specs leave Theme untouched so data is not discarded.
+func (a *Appearance) migrateTheme() {
+	if len(a.Themes) > 0 {
+		a.Theme = ""
 		return
 	}
 
-	legacy := strings.TrimSpace(d.Theme)
+	legacy := strings.TrimSpace(a.Theme)
 	if legacy == "" || strings.EqualFold(legacy, "default") {
-		d.Theme = ""
+		a.Theme = ""
 		return
 	}
 
@@ -206,12 +233,12 @@ func (d *Dataset) migrateLegacyTheme() {
 		return
 	}
 	if strings.EqualFold(parsed.Name, "default") {
-		d.Theme = ""
+		a.Theme = ""
 		return
 	}
 
-	d.Themes = []Theme{themeFromStyle(parsed)}
-	d.Theme = ""
+	a.Themes = []Theme{themeFromStyle(parsed)}
+	a.Theme = ""
 }
 
 func themeFromStyle(t style.Theme) Theme {

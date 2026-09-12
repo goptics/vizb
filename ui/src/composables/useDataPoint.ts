@@ -11,6 +11,7 @@ import {
 import { presentAxisString } from '../lib/swap'
 import { useSettingsStore } from './useSettingsStore'
 import { registerDatasetThemes, resolveActiveTheme } from '../lib/themes'
+import { appearanceFontSize } from './charts/shared/chartFontSize'
 import {
   classifyPayload,
   fetchDatasetDetail,
@@ -221,15 +222,16 @@ const resultGroups = computed(() => groupNames.value.map((name) => ({ name })))
 watch(
   () => activeDataset.value,
   (dataset) => {
-    registerDatasetThemes(dataset?.themes)
+    appearanceFontSize.value = dataset?.appearance?.fontSize
+    registerDatasetThemes(dataset?.appearance?.themes)
     const active = resolveActiveTheme(dataset)
-    // Legacy hex-only theme string: apply the comma-separated palette key.
+    // Hex-only appearance.theme: apply the comma-separated palette key.
     if (
       active.name === 'custom' &&
-      dataset?.theme?.trim().startsWith('#') &&
-      !dataset.themes?.length
+      dataset?.appearance?.theme?.trim().startsWith('#') &&
+      !dataset.appearance?.themes?.length
     ) {
-      initializeTheme(dataset.theme)
+      initializeTheme(dataset.appearance.theme)
       return
     }
     initializeTheme(active.name)

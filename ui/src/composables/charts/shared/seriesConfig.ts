@@ -1,4 +1,4 @@
-import { fontSize } from './common'
+import { chartFontSize } from './chartFontSize'
 
 export type SeriesSymbolProps = {
   symbol?: string
@@ -46,7 +46,7 @@ export function createPieLabelConfig(
   return {
     show: showLabels,
     formatter: customFormatter,
-    fontSize,
+    fontSize: chartFontSize().series,
     color: styling.textColor,
   }
 }

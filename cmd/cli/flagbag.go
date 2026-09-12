@@ -140,6 +140,8 @@ func (b *FlagBag) Validate(cmd *cobra.Command) {
 			b.validateObjectFlag(cmd, f)
 		case f.Name == "scale":
 			b.validateScaleFlag(cmd, f)
+		case f.Name == "font-size":
+			b.validateFontSizeFlag(cmd, f)
 		case f.IsSoft():
 			b.applySoftRule(f)
 		case f.Validate != nil && cmd.Flags().Changed(f.Name):
@@ -147,6 +149,17 @@ func (b *FlagBag) Validate(cmd *cobra.Command) {
 				shared.ExitWithError(err.Error(), nil)
 			}
 		}
+	}
+}
+
+// validateFontSizeFlag warn-and-skips invalid keys/values; valid siblings stay.
+func (b *FlagBag) validateFontSizeFlag(cmd *cobra.Command, f flags.Flag) {
+	if !cmd.Flags().Changed(f.Name) {
+		return
+	}
+	_, warnings := shared.ParseFontSizeFlag(*b.strs[f.Name])
+	for _, w := range warnings {
+		cliout.Warn(w)
 	}
 }
 
@@ -432,11 +445,13 @@ func (b *FlagBag) ParseConfig() parser.Config {
 // Meta builds the pipeline RunMeta from the bag's metadata/parser data flags.
 // Theme specs stay as raw strings; the pipeline expands them via style.ResolveThemes.
 func (b *FlagBag) Meta() RunMeta {
+	fontSize, _ := shared.ParseFontSizeFlag(b.String("font-size"))
 	return RunMeta{
 		ID:          b.String("id"),
 		Name:        b.String("name"),
 		Title:       b.String("title"),
 		ThemeSpecs:  b.StringArray("theme"),
+		FontSize:    fontSize,
 		Description: b.String("description"),
 		Tag:         b.String("tag"),
 		OutputFile:  b.String("output"),

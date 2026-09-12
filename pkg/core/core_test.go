@@ -361,8 +361,8 @@ func (s *CoreSuite) TestAssembleEmbedsThemesWithoutLegacyTheme() {
 		Metadata: Metadata{Name: "T", Themes: themes},
 		Charts:   []internalcharts.ChartConfig{&barchart.Config{Type: "bar"}},
 	})
-	s.Empty(dataset.Theme)
-	s.Equal(themes, dataset.Themes)
+	s.Equal(themes, dataset.ThemeCatalog())
+	s.Empty(dataset.Appearance.Theme)
 
 	empty := Assemble(AssembleInput{
 		Points:   []shared.DataPoint{{XAxis: "west", YAxis: "12"}},
@@ -371,8 +371,8 @@ func (s *CoreSuite) TestAssembleEmbedsThemesWithoutLegacyTheme() {
 		Metadata: Metadata{Name: "T"},
 		Charts:   []internalcharts.ChartConfig{&barchart.Config{Type: "bar"}},
 	})
-	s.Empty(empty.Theme)
-	s.Empty(empty.Themes)
+	s.Nil(empty.Appearance)
+	s.Empty(empty.ThemeCatalog())
 }
 
 func (s *CoreSuite) TestAssembleModesAndThreeD() {

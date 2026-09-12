@@ -152,7 +152,8 @@ components:
                 name: API latency
                 description: Latency by region
                 tag: v2
-                theme: westeros
+                appearance:
+                  theme: westeros
                 parser: csv
                 select: ["region,latency"]
                 charts:
@@ -246,20 +247,21 @@ components:
                 name: API latency
                 description: Latency by region
                 tag: v2
-                themes:
-                  - name: westeros
-                    colors:
-                      - "#516b91"
-                      - "#59c4e6"
-                      - "#edafda"
-                      - "#93b7e3"
-                      - "#a5e7f0"
-                      - "#cbb0e3"
-                      - "#3f5575"
-                      - "#41a7cb"
-                      - "#d58fc4"
-                      - "#789bc7"
-                    visualMapColors: ["#59c4e6", "#d58fc4"]
+                appearance:
+                  themes:
+                    - name: westeros
+                      colors:
+                        - "#516b91"
+                        - "#59c4e6"
+                        - "#edafda"
+                        - "#93b7e3"
+                        - "#a5e7f0"
+                        - "#cbb0e3"
+                        - "#3f5575"
+                        - "#41a7cb"
+                        - "#d58fc4"
+                        - "#789bc7"
+                      visualMapColors: ["#59c4e6", "#d58fc4"]
                 axes: [{ key: name }, { key: y, type: value }]
                 settings: [{ type: bar, showLabels: true }, { type: line }]
                 data: [{ name: west, yAxis: "12" }, { name: east, yAxis: "18" }]
@@ -375,22 +377,8 @@ components:
         tag:
           type: string
           description: Dataset tag or run identifier.
-        themes:
-          type: array
-          description: >
-            Data-owned theme catalog embedded on the converted Dataset.
-            When non-empty, themes[0] is the active theme. Prefer this over the
-            legacy theme string. Built-in "default" is not embedded (UI owns it).
-          items:
-            $ref: '#/components/schemas/Theme'
-        theme:
-          type: string
-          minLength: 1
-          description: >
-            Legacy single theme name, structured theme, or comma-separated hex
-            palette. Expanded into themes when themes is omitted or empty.
-            Prefer themes for new clients.
-          examples: [westeros, "#5470C6,#3BA272"]
+        appearance:
+          $ref: '#/components/schemas/Appearance'
         parser:
           type: string
           enum: [auto, csv, json, go, javascript, rust]
@@ -507,6 +495,36 @@ components:
           items:
             type: string
             enum: [counts, center, spread, extremes, shape, percentiles, confidence, correlations]
+    Appearance:
+      type: object
+      additionalProperties: false
+      description: >
+        Dataset-level visual settings. themes[0] is the active theme when the
+        catalog is non-empty. theme is an inbound name or palette expanded into
+        themes and omitted from new output. fontSize is a number (all three
+        targets) or an object of series, legend, and label sizes in CSS pixels.
+      properties:
+        themes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Theme'
+        theme:
+          type: string
+          minLength: 1
+          examples: [westeros, "#5470C6,#3BA272"]
+        fontSize:
+          $ref: '#/components/schemas/FontSize'
+    FontSize:
+      description: Chart text size in CSS pixels for series labels, legend, and axis ticks.
+      oneOf:
+        - type: number
+          exclusiveMinimum: 0
+        - type: object
+          additionalProperties: false
+          properties:
+            series: { type: number, exclusiveMinimum: 0 }
+            legend: { type: number, exclusiveMinimum: 0 }
+            label: { type: number, exclusiveMinimum: 0 }
     Theme:
       type: object
       additionalProperties: false
@@ -539,18 +557,8 @@ components:
         tag: { type: string }
         timestamp: { type: string }
         name: { type: string }
-        themes:
-          type: array
-          description: >
-            Data-owned theme catalog. When non-empty, themes[0] is the active
-            theme. New writers emit themes only; legacy theme is migrated on load.
-          items:
-            $ref: '#/components/schemas/Theme'
-        theme:
-          type: string
-          description: >
-            Legacy single theme name or palette. Migrated into themes when themes
-            is empty; omitted from new output after migration.
+        appearance:
+          $ref: '#/components/schemas/Appearance'
         history:
           type: array
           items: { $ref: '#/components/schemas/HistoryEntry' }
