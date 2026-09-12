@@ -5,7 +5,8 @@ import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
 import { getNextColorFor, hasXAxis, hasYAxis, hasZAxis } from '@/lib/utils'
 import { getChartStyling, getTooltipTheme, formatTooltipValue } from './shared/chartConfig'
 import { createPieSeriesConfig } from './shared/seriesConfig'
-import { fontSize, sortByTotal, sortByValue } from './shared/common'
+import { sortByTotal, sortByValue } from './shared/common'
+import { chartFontSize } from './shared/chartFontSize'
 import type { Point3D } from '@/types'
 
 type SeriesWithTotal = { xAxis: string; values: (number | null)[]; total: number }
@@ -47,7 +48,7 @@ const makePieTitle = (
   left,
   top: '5%',
   textAlign: 'center',
-  textStyle: { color: styling.textColor, fontSize, fontWeight: 'bold' },
+  textStyle: { color: styling.textColor, fontSize: chartFontSize().series, fontWeight: 'bold' },
 })
 
 export function usePieChartOptions(config: BaseChartConfig) {

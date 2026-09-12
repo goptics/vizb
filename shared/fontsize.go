@@ -3,6 +3,7 @@ package shared
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"strconv"
@@ -23,8 +24,21 @@ func (f *FontSize) Empty() bool {
 	return f == nil || (f.Series == nil && f.Legend == nil && f.Label == nil)
 }
 
+var errInvalidFontSize = errors.New("must be a finite number greater than 0")
+
 func validFontSize(n float64) bool {
 	return !math.IsNaN(n) && !math.IsInf(n, 0) && n > 0
+}
+
+func (f *FontSize) set(key string, n float64) {
+	switch key {
+	case "series":
+		f.Series = F64(n)
+	case "legend":
+		f.Legend = F64(n)
+	case "label":
+		f.Label = F64(n)
+	}
 }
 
 func (f FontSize) allEqual() bool {
@@ -44,48 +58,24 @@ func (f FontSize) MarshalJSON() ([]byte, error) {
 // dropped so a Dataset file still loads; the convert API validates strictly
 // before assignment.
 func (f *FontSize) UnmarshalJSON(data []byte) error {
-	trimmed := bytes.TrimSpace(data)
-	if bytes.Equal(trimmed, []byte("null")) || len(trimmed) == 0 {
+	fs, _ := parseFontSize(data, false)
+	if fs == nil {
 		*f = FontSize{}
 		return nil
 	}
-	if trimmed[0] != '{' {
-		n, ok := decodeFontSizeNumber(trimmed)
-		if !ok {
-			*f = FontSize{}
-			return nil
-		}
-		f.Series, f.Legend, f.Label = F64(n), F64(n), F64(n)
-		return nil
-	}
-
-	var fields map[string]json.RawMessage
-	if err := json.Unmarshal(trimmed, &fields); err != nil {
-		*f = FontSize{}
-		return nil
-	}
-	out := FontSize{}
-	for key, raw := range fields {
-		n, ok := decodeFontSizeNumber(raw)
-		if !ok {
-			continue
-		}
-		switch strings.ToLower(strings.TrimSpace(key)) {
-		case "series":
-			out.Series = F64(n)
-		case "legend":
-			out.Legend = F64(n)
-		case "label":
-			out.Label = F64(n)
-		}
-	}
-	*f = out
+	*f = *fs
 	return nil
 }
 
 // ParseFontSizeJSONStrict decodes a JSON number or object and errors on unknown
 // keys, non-numeric values, non-finite numbers, and values ≤ 0.
 func ParseFontSizeJSONStrict(data []byte) (*FontSize, error) {
+	return parseFontSize(data, true)
+}
+
+// parseFontSize decodes a JSON number (all three keys) or object. In strict mode
+// unknown keys and invalid values error; otherwise they are dropped.
+func parseFontSize(data []byte, strict bool) (*FontSize, error) {
 	trimmed := bytes.TrimSpace(data)
 	if len(trimmed) == 0 || bytes.Equal(trimmed, []byte("null")) {
 		return nil, nil
@@ -93,39 +83,44 @@ func ParseFontSizeJSONStrict(data []byte) (*FontSize, error) {
 	if trimmed[0] != '{' {
 		var n float64
 		if err := json.Unmarshal(trimmed, &n); err != nil {
-			return nil, fmt.Errorf("must be a number or object")
+			if strict {
+				return nil, fmt.Errorf("must be a number or object")
+			}
+			return nil, nil
 		}
 		if !validFontSize(n) {
-			return nil, fmt.Errorf("must be a finite number greater than 0")
+			if strict {
+				return nil, errInvalidFontSize
+			}
+			return nil, nil
 		}
 		return &FontSize{Series: F64(n), Legend: F64(n), Label: F64(n)}, nil
 	}
 
 	var fields map[string]json.RawMessage
 	if err := json.Unmarshal(trimmed, &fields); err != nil {
-		return nil, fmt.Errorf("must be a number or object")
+		if strict {
+			return nil, fmt.Errorf("must be a number or object")
+		}
+		return nil, nil
 	}
 	out := FontSize{}
 	for key, raw := range fields {
-		switch strings.ToLower(strings.TrimSpace(key)) {
+		k := strings.ToLower(strings.TrimSpace(key))
+		switch k {
 		case "series", "legend", "label":
-			var n float64
-			if err := json.Unmarshal(raw, &n); err != nil {
-				return nil, fmt.Errorf("%s must be a finite number greater than 0", key)
+			n, ok := decodeFontSizeNumber(raw)
+			if !ok {
+				if strict {
+					return nil, fmt.Errorf("%s %s", key, errInvalidFontSize)
+				}
+				continue
 			}
-			if !validFontSize(n) {
-				return nil, fmt.Errorf("%s must be a finite number greater than 0", key)
-			}
-			switch strings.ToLower(key) {
-			case "series":
-				out.Series = F64(n)
-			case "legend":
-				out.Legend = F64(n)
-			case "label":
-				out.Label = F64(n)
-			}
+			out.set(k, n)
 		default:
-			return nil, fmt.Errorf("unknown key %q", key)
+			if strict {
+				return nil, fmt.Errorf("unknown key %q", key)
+			}
 		}
 	}
 	if out.Empty() {
@@ -183,14 +178,7 @@ func ParseFontSizeFlag(raw string) (*FontSize, []string) {
 				warnings = append(warnings, fontSizeWarn("font-size "+key, val, err.Error()))
 				continue
 			}
-			switch key {
-			case "series":
-				out.Series = F64(n)
-			case "legend":
-				out.Legend = F64(n)
-			case "label":
-				out.Label = F64(n)
-			}
+			out.set(key, n)
 		default:
 			warnings = append(warnings, fontSizeWarn("font-size key", key, "unknown key"))
 		}
@@ -206,11 +194,8 @@ func ParseFontSizeFlag(raw string) (*FontSize, []string) {
 
 func parseFontSizeToken(raw string) (float64, error) {
 	n, err := strconv.ParseFloat(raw, 64)
-	if err != nil {
-		return 0, fmt.Errorf("must be a finite number greater than 0")
-	}
-	if !validFontSize(n) {
-		return 0, fmt.Errorf("must be a finite number greater than 0")
+	if err != nil || !validFontSize(n) {
+		return 0, errInvalidFontSize
 	}
 	return n, nil
 }

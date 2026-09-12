@@ -169,9 +169,13 @@ func fontSizeOf(ds Dataset) *FontSize {
 }
 
 func mergeAppearances(newer, older Dataset) *Appearance {
+	font := fontSizeOf(newer)
+	if font.Empty() {
+		font = fontSizeOf(older)
+	}
 	return CompactAppearance(&Appearance{
 		Themes:   mergeThemes(datasetThemes(newer), datasetThemes(older)),
-		FontSize: firstFontSize(fontSizeOf(newer), fontSizeOf(older)),
+		FontSize: cloneFontSize(font),
 	})
 }
 
@@ -180,13 +184,6 @@ func foldAppearance(datasets []Dataset) *Appearance {
 		Themes:   foldThemes(datasets),
 		FontSize: foldFontSize(datasets),
 	})
-}
-
-func firstFontSize(newer, older *FontSize) *FontSize {
-	if !newer.Empty() {
-		return cloneFontSize(newer)
-	}
-	return cloneFontSize(older)
 }
 
 func foldFontSize(datasets []Dataset) *FontSize {

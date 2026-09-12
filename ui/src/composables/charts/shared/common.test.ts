@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest'
 import { ref } from 'vue'
 import type { ChartData, Point3D } from '@/types'
 import {
-  fontSize,
   sortBy,
   sortByTotal,
   sortByValue,
@@ -12,12 +11,6 @@ import {
   computeSeriesTotals,
   sortByAxisTotal,
 } from './common'
-
-describe('fontSize', () => {
-  it('is 12', () => {
-    expect(fontSize).toBe(12)
-  })
-})
 
 describe('sortBy / sortByTotal / sortByValue', () => {
   it('sorts ascending and descending by key', () => {

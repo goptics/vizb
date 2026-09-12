@@ -9,7 +9,6 @@ import {
   createHeatmapLayoutConfig,
   hasRotatedXLabels,
 } from './shared/chartConfig'
-import { fontSize } from './shared/common'
 import { chartFontSize } from './shared/chartFontSize'
 
 const PREFIX: Record<CorrelationMethod, string> = {
@@ -102,7 +101,7 @@ export function buildCorrelationOption(
       left: 'center',
       bottom: layout.visualMapBottom,
       precision: 2,
-      textStyle: { color: styling.textColor, fontSize },
+      textStyle: { color: styling.textColor, fontSize: chartFontSize().legend },
       inRange: { color: vmColors },
     },
     series: [
@@ -112,7 +111,7 @@ export function buildCorrelationOption(
         label: {
           show: true,
           color: styling.textColor,
-          fontSize,
+          fontSize: chartFontSize().series,
           formatter: (p: unknown) => {
             const v = (p as { data: [number, number, number] }).data[2]
             return Number(v.toFixed(2)).toString()

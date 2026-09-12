@@ -6,7 +6,7 @@ import {
   createPieLabelConfig,
   createPieSeriesConfig,
 } from './seriesConfig'
-import { fontSize } from './common'
+import { DEFAULT_FONT_SIZE } from '@/lib/fontSize'
 
 describe('resolveSeriesSymbol', () => {
   it('returns defaults when overrides absent', () => {
@@ -79,7 +79,7 @@ describe('createPieLabelConfig / createPieSeriesConfig', () => {
     expect(createPieLabelConfig(true, styling, fmt)).toEqual({
       show: true,
       formatter: fmt,
-      fontSize,
+      fontSize: DEFAULT_FONT_SIZE,
       color: '#abc',
     })
     expect(createPieLabelConfig(false, styling).show).toBe(false)
@@ -93,7 +93,7 @@ describe('createPieLabelConfig / createPieSeriesConfig', () => {
       radius: ['0%', '70%'],
       center: ['50%', '50%'],
       data,
-      label: { show: true, color: '#abc', fontSize },
+      label: { show: true, color: '#abc', fontSize: DEFAULT_FONT_SIZE },
     })
   })
 

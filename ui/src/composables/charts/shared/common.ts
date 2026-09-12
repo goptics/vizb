@@ -4,8 +4,6 @@ import type { SortOrder, ScaleType, ChartData, Sort } from '@/types'
 import type { Point3D } from '@/types'
 import { hasYAxis } from '@/lib/utils'
 
-export const fontSize = 12
-
 export const sortBy =
   <K extends string>(key: K) =>
   <T extends Record<K, number>>(sortOrder: SortOrder) => {
