@@ -1,4 +1,4 @@
-export const DEFAULT_FONT_SIZE = 12
+export const DEFAULT_FONT_SIZE = 14
 
 export type FontSizeSpec = {
   series?: number

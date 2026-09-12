@@ -1428,6 +1428,8 @@ func (s *ServeSuite) TestRequestContractHelpers() {
 			path   string
 		}{
 			{name: "null convert field", raw: `{"appearance":null}`, target: new(convertRequest), path: "/appearance"},
+			{name: "null appearance field", raw: `{"themes":null}`, target: new(appearanceRequest), path: "/appearance/themes"},
+			{name: "unknown appearance field", raw: `{"unexpected":true}`, target: new(appearanceRequest), path: "/appearance/unexpected"},
 			{name: "null title", raw: `{"title":null}`, target: new(convertRequest), path: "/title"},
 			{name: "null round", raw: `{"round":null}`, target: new(convertRequest), path: "/round"},
 			{name: "null col axis", raw: `{"colAxis":null}`, target: new(groupingOptions), path: "/grouping/colAxis"},
@@ -1539,6 +1541,20 @@ func (s *ServeSuite) TestRequestContractHelpers() {
 		_, _, validationErr = buildConvertInput(convertRequest{Appearance: &appearanceRequest{Theme: &invalidTheme}}, []byte("x,y\\na,1\\n"))
 		s.Require().NotNil(validationErr)
 		s.Equal("/appearance/theme", validationErr.Path)
+
+		metadata, validationErr = buildConvertMetadata(convertRequest{
+			Appearance: &appearanceRequest{FontSize: json.RawMessage(`{"series":16,"legend":10}`)},
+		})
+		s.Require().Nil(validationErr)
+		s.Require().NotNil(metadata.FontSize)
+		s.Equal(16.0, *metadata.FontSize.Series)
+		s.Equal(10.0, *metadata.FontSize.Legend)
+
+		_, validationErr = buildConvertMetadata(convertRequest{
+			Appearance: &appearanceRequest{FontSize: json.RawMessage(`"14px"`)},
+		})
+		s.Require().NotNil(validationErr)
+		s.Equal("/appearance/fontSize", validationErr.Path)
 
 		_, _, validationErr = buildConvertInput(convertRequest{
 			Appearance: &appearanceRequest{Themes: []shared.Theme{{Name: "", Colors: []string{"#f00"}, VisualMapColors: []string{"#f00", "#0f0"}}}},
@@ -1654,6 +1670,18 @@ func (s *ServeSuite) TestRequestContractHelpers() {
 		ds, validationErr = decodeStrictDataset(raw, "/datasets/0")
 		s.Require().Nil(validationErr)
 		s.Empty(ds.ThemeCatalog())
+
+		raw, err = json.Marshal(map[string]any{
+			"name":       name,
+			"appearance": map[string]any{"fontSize": 0},
+			"axes":       []map[string]any{{"key": "name"}, {"key": "y"}},
+			"settings":   []map[string]any{{"type": "bar"}},
+			"data":       []map[string]any{{"name": "case", "yAxis": "1"}},
+		})
+		s.Require().NoError(err)
+		_, validationErr = decodeStrictDataset(raw, "/datasets/0")
+		s.Require().NotNil(validationErr)
+		s.Equal("/datasets/0/appearance/fontSize", validationErr.Path)
 	})
 
 	s.Run("chart config decoding", func() {

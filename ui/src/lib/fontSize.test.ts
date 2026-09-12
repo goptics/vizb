@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { DEFAULT_FONT_SIZE, resolveFontSize } from './fontSize'
 
 describe('resolveFontSize', () => {
-  it('defaults all keys to 12', () => {
+  it('defaults all keys to 14', () => {
     expect(resolveFontSize(undefined)).toEqual({
       series: DEFAULT_FONT_SIZE,
       legend: DEFAULT_FONT_SIZE,
@@ -15,7 +15,7 @@ describe('resolveFontSize', () => {
     expect(resolveFontSize(12.5)).toEqual({ series: 12.5, legend: 12.5, label: 12.5 })
   })
 
-  it('fills missing object keys with 12', () => {
+  it('fills missing object keys with 14', () => {
     expect(resolveFontSize({ series: 16, legend: 10 })).toEqual({
       series: 16,
       legend: 10,

@@ -131,3 +131,111 @@ func (s *FontSizeSuite) TestParseCaseInsensitiveKeys() {
 	s.Require().NotNil(fs)
 	s.Equal(16.0, *fs.Series)
 }
+
+func (s *FontSizeSuite) TestParseStrictNumber() {
+	fs, err := shared.ParseFontSizeJSONStrict([]byte("14"))
+	s.Require().NoError(err)
+	s.Require().NotNil(fs)
+	s.Equal(14.0, *fs.Series)
+	s.Equal(14.0, *fs.Legend)
+	s.Equal(14.0, *fs.Label)
+}
+
+func (s *FontSizeSuite) TestParseStrictObject() {
+	fs, err := shared.ParseFontSizeJSONStrict([]byte(`{"series":16,"legend":10}`))
+	s.Require().NoError(err)
+	s.Require().NotNil(fs)
+	s.Equal(16.0, *fs.Series)
+	s.Equal(10.0, *fs.Legend)
+	s.Nil(fs.Label)
+}
+
+func (s *FontSizeSuite) TestParseStrictEmptyOrNull() {
+	for _, raw := range []string{"", "  ", "null"} {
+		fs, err := shared.ParseFontSizeJSONStrict([]byte(raw))
+		s.Require().NoError(err, raw)
+		s.Nil(fs, raw)
+	}
+}
+
+func (s *FontSizeSuite) TestParseStrictErrors() {
+	for _, test := range []struct {
+		raw string
+		err string
+	}{
+		{raw: "abc", err: "must be a number or object"},
+		{raw: `"14px"`, err: "must be a number or object"},
+		{raw: "{", err: "must be a number or object"},
+		{raw: "[]", err: "must be a number or object"},
+		{raw: "0", err: "must be a finite number greater than 0"},
+		{raw: "-1", err: "must be a finite number greater than 0"},
+		{raw: `{"series":"x"}`, err: "series must be a finite number greater than 0"},
+		{raw: `{"series":0}`, err: "series must be a finite number greater than 0"},
+		{raw: `{"bogus":1}`, err: `unknown key "bogus"`},
+	} {
+		fs, err := shared.ParseFontSizeJSONStrict([]byte(test.raw))
+		s.Require().Error(err, test.raw)
+		s.Nil(fs, test.raw)
+		s.EqualError(err, test.err, test.raw)
+	}
+}
+
+func (s *FontSizeSuite) TestUnmarshalNull() {
+	var fs shared.FontSize
+	s.Require().NoError(json.Unmarshal([]byte("null"), &fs))
+	s.True(fs.Empty())
+}
+
+func (s *FontSizeSuite) TestUnmarshalZeroDropped() {
+	var fs shared.FontSize
+	s.Require().NoError(json.Unmarshal([]byte("0"), &fs))
+	s.True(fs.Empty())
+}
+
+func (s *FontSizeSuite) TestUnmarshalUnknownOnlyObject() {
+	var fs shared.FontSize
+	s.Require().NoError(json.Unmarshal([]byte(`{"bogus":1}`), &fs))
+	s.True(fs.Empty())
+}
+
+func (s *FontSizeSuite) TestMarshalUnequalObject() {
+	raw, err := json.Marshal(shared.FontSize{
+		Series: shared.F64(16),
+		Legend: shared.F64(10),
+		Label:  shared.F64(12),
+	})
+	s.Require().NoError(err)
+	s.JSONEq(`{"series":16,"legend":10,"label":12}`, string(raw))
+}
+
+func (s *FontSizeSuite) TestEmptyNilReceiver() {
+	var fs *shared.FontSize
+	s.True(fs.Empty())
+}
+
+func (s *FontSizeSuite) TestParseBagEmptySegment() {
+	fs, warns := shared.ParseFontSizeFlag("series=14;;legend=10")
+	s.Empty(warns)
+	s.Require().NotNil(fs)
+	s.Equal(14.0, *fs.Series)
+	s.Equal(10.0, *fs.Legend)
+}
+
+func (s *FontSizeSuite) TestParseBagMissingEquals() {
+	fs, warns := shared.ParseFontSizeFlag("series=14;oops")
+	s.Len(warns, 1)
+	s.Require().NotNil(fs)
+	s.Equal(14.0, *fs.Series)
+}
+
+func (s *FontSizeSuite) TestParseBagAllInvalid() {
+	fs, warns := shared.ParseFontSizeFlag("series=abc")
+	s.Nil(fs)
+	s.Len(warns, 1)
+}
+
+func (s *FontSizeSuite) TestParseBareNegativeInf() {
+	fs, warns := shared.ParseFontSizeFlag("-Inf")
+	s.Nil(fs)
+	s.NotEmpty(warns)
+}

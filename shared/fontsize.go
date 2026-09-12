@@ -99,10 +99,7 @@ func parseFontSize(data []byte, strict bool) (*FontSize, error) {
 
 	var fields map[string]json.RawMessage
 	if err := json.Unmarshal(trimmed, &fields); err != nil {
-		if strict {
-			return nil, fmt.Errorf("must be a number or object")
-		}
-		return nil, nil
+		return nil, fmt.Errorf("must be a number or object")
 	}
 	out := FontSize{}
 	for key, raw := range fields {
@@ -184,9 +181,6 @@ func ParseFontSizeFlag(raw string) (*FontSize, []string) {
 		}
 	}
 	if out.Empty() {
-		if len(warnings) == 0 {
-			warnings = append(warnings, fontSizeWarn("font-size", raw, "empty bag"))
-		}
 		return nil, warnings
 	}
 	return &out, warnings
