@@ -34,6 +34,116 @@ export const CORE_MD_PATHS = [
 	'/troubleshooting.md',
 ] as const;
 
+export type DocSection = {
+	label: string;
+	description: string;
+	paths: string[];
+};
+
+export const DOC_SECTIONS: DocSection[] = [
+	{
+		label: 'Getting Started',
+		description:
+			'First steps: what vizb is, install, connect a coding agent, and the dimension model.',
+		paths: [
+			'/getting-started.md',
+			'/getting-started/install.md',
+			'/getting-started/ai-agents.md',
+			'/getting-started/dimensions.md',
+		],
+	},
+	{
+		label: 'Guides',
+		description:
+			'Conceptual how-tos: grouping vs select, tabular data, parsers, and merging datasets.',
+		paths: [
+			'/guides/group-vs-select.md',
+			'/guides/data.md',
+			'/guides/group.md',
+			'/guides/select.md',
+			'/guides/merging.md',
+			'/guides/parsers.md',
+		],
+	},
+	{
+		label: 'Charts',
+		description:
+			'Pick a chart type and its flags: bar, line, scatter, pie, radar, heatmap, sankey, chord, and 3D.',
+		paths: [
+			'/charts.md',
+			'/charts/bar.md',
+			'/charts/line.md',
+			'/charts/scatter.md',
+			'/charts/pie.md',
+			'/charts/radar.md',
+			'/charts/heatmap.md',
+			'/charts/sankey.md',
+			'/charts/chord.md',
+			'/charts/3d.md',
+		],
+	},
+	{
+		label: 'Commands',
+		description:
+			'CLI reference for the root command, chart generation, merge, ui, serve, and update.',
+		paths: [
+			'/commands/root.md',
+			'/commands/charts.md',
+			'/commands/merge.md',
+			'/commands/ui.md',
+			'/commands/serve.md',
+			'/commands/update.md',
+		],
+	},
+	{
+		label: 'UI',
+		description:
+			'Interacting with the generated HTML report: themes, settings, axis swapping, and stats.',
+		paths: [
+			'/ui.md',
+			'/ui/themes.md',
+			'/ui/settings.md',
+			'/ui/swapping.md',
+			'/ui/stats.md',
+		],
+	},
+	{
+		label: 'CI/CD',
+		description:
+			'Automate charts in pipelines with the GitHub Action and stateless or stateful CI.',
+		paths: [
+			'/ci-cd/github-action.md',
+			'/ci-cd/stateless.md',
+			'/ci-cd/stateful.md',
+			'/ci-cd/deploying.md',
+		],
+	},
+	{
+		label: 'Examples',
+		description: 'Sample datasets and live dashboards to copy from.',
+		paths: [
+			'/examples.md',
+			'/examples/tabular-data.md',
+			'/examples/math-and-3d.md',
+			'/examples/comparisons.md',
+			'/examples/github-legends.md',
+			'/examples/benchmarks.md',
+			'/examples/showcase.md',
+		],
+	},
+	{
+		label: 'Reference',
+		description:
+			'Capabilities, internals, troubleshooting, and roadmap.',
+		paths: [
+			'/features.md',
+			'/internals/how-it-works.md',
+			'/troubleshooting.md',
+			'/roadmap.md',
+		],
+	},
+];
+
 export function mdPathForId(id: string): string {
 	return `/${id.replace(/\/index$/, '') || 'index'}.md`;
 }
@@ -275,34 +385,40 @@ export function buildLlmsTxt(
 		return `- [${title}](${path})${desc}`;
 	};
 
-	const coreSet = new Set<string>(CORE_MD_PATHS);
+	const seen = new Set<string>(DOC_SECTIONS.flatMap((s) => s.paths));
 	const more = pages
 		.map((p) => mdPathForId(p.id))
-		.filter((p) => !coreSet.has(p) && p !== '/index.md')
+		.filter((p) => !seen.has(p) && p !== '/index.md')
 		.sort();
 
-	return [
+	const out = [
 		'# Vizb',
 		'',
 		'> Turn CSV, JSON, and Go/Rust/JavaScript benchmark output into a self-contained interactive HTML chart without writing chart code.',
 		'',
 		`Docs are at ${origin}. Links below are root-relative on that host.`,
 		'',
-		'Vizb is a CLI pipeline (auto-group, n/x/y/z dimensions, HTML or JSON), not a charting library to embed. Prefer minimal flags. Fetch one Core page rather than llms-full.txt.',
+		'Vizb is a CLI pipeline (auto-group, n/x/y/z dimensions, HTML or JSON), not a charting library to embed. Prefer minimal flags. Fetch only the section or page you need rather than llms-full.txt.',
 		'',
-		'## Core',
-		'',
-		...CORE_MD_PATHS.map(line),
-		'',
-		'## More',
-		'',
-		...more.map(line),
-		'',
+	];
+
+	for (const section of DOC_SECTIONS) {
+		out.push(`## ${section.label}`, '', section.description, '');
+		out.push(...section.paths.map(line), '');
+	}
+
+	if (more.length > 0) {
+		out.push('## More', '', ...more.map(line), '');
+	}
+
+	out.push(
 		'## Optional',
 		'',
 		'- [Complete documentation](/llms-full.txt): concatenated markdown dump of every docs page',
 		'',
-	].join('\n');
+	);
+
+	return out.join('\n');
 }
 
 export function buildLlmsFull(pages: DocPage[]): string {

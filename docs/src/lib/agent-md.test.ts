@@ -5,6 +5,7 @@ import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import {
 	CORE_MD_PATHS,
+	DOC_SECTIONS,
 	buildLlmsTxt,
 	flattenMdx,
 	mdPathForId,
@@ -237,6 +238,36 @@ describe('CORE_MD_PATHS', () => {
 	});
 });
 
+describe('DOC_SECTIONS', () => {
+	it('lists every section in sidebar order with a description', () => {
+		assert.deepEqual(
+			DOC_SECTIONS.map((s) => s.label),
+			[
+				'Getting Started',
+				'Guides',
+				'Charts',
+				'Commands',
+				'UI',
+				'CI/CD',
+				'Examples',
+				'Reference',
+			],
+		);
+		for (const section of DOC_SECTIONS) {
+			assert.ok(section.description.trim(), section.label);
+			assert.ok(section.paths.length > 0, section.label);
+		}
+	});
+
+	it('lists each page exactly once, all as .md paths', () => {
+		const paths = DOC_SECTIONS.flatMap((s) => s.paths);
+		assert.equal(new Set(paths).size, paths.length, 'duplicate path');
+		for (const path of paths) {
+			assert.match(path, /^\/.*\.md$/);
+		}
+	});
+});
+
 describe('buildLlmsTxt', () => {
 	it('links only .md URLs and llms-full.txt, never HTML or GitHub raw', () => {
 		const txt = buildLlmsTxt('https://vizb.goptics.org/', [
@@ -256,6 +287,37 @@ describe('buildLlmsTxt', () => {
 			assert.equal(href.startsWith('/'), true, href);
 			assert.equal(href.includes('://'), false, href);
 		}
+	});
+
+	it('groups pages under sections with a description', () => {
+		const txt = buildLlmsTxt('https://vizb.goptics.org/', [
+			{
+				id: 'getting-started/install',
+				title: 'Install',
+				description: 'Install vizb',
+				body: '# Install\n',
+			},
+		]);
+		assert.match(
+			txt,
+			/## Getting Started\n\nFirst steps: what vizb is/,
+		);
+		assert.match(txt, /## Guides\n\nConceptual how-tos/);
+		assert.match(txt, /## Reference\n\nCapabilities, internals/);
+		const install = txt.indexOf('/getting-started/install.md');
+		assert.ok(install > -1 && install < txt.indexOf('## Guides'));
+	});
+
+	it('puts unmatched pages in a More fallback', () => {
+		const txt = buildLlmsTxt('https://vizb.goptics.org/', [
+			{
+				id: 'new-section/page',
+				title: 'New',
+				description: 'New page',
+				body: '# New\n',
+			},
+		]);
+		assert.match(txt, /## More\n\n- \[New\]\(\/new-section\/page\.md\)/);
 	});
 });
 
