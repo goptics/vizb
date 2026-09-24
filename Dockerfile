@@ -1,4 +1,4 @@
-FROM node:22-bookworm-slim AS ui
+FROM node:26-bookworm-slim AS ui
 
 WORKDIR /src/ui
 COPY ui/package.json ui/pnpm-lock.yaml ./
