@@ -14,7 +14,7 @@
     "@astrojs/starlight": "^0.42.1",
     "@pagefind/default-ui": "1.5.2",
     "animejs": "^4.5.0",
-    "astro": "^7.3.2",
+    "astro": "^7.3.4",
     "sharp": "^0.35.4",
     "starlight-openapi": "0.26.2",
     "starlight-theme-rapide": "^0.5.2"
