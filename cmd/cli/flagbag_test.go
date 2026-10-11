@@ -7,6 +7,7 @@ import (
 	internal_charts "github.com/goptics/vizb/internal/charts"
 	"github.com/goptics/vizb/internal/flags"
 	"github.com/goptics/vizb/pkg/style"
+	"github.com/goptics/vizb/shared"
 	"github.com/goptics/vizb/testutil"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/suite"
@@ -462,6 +463,32 @@ func (s *FlagBagSuite) TestChartSeedTriStateStatAndScale() {
 		seed := bag.ChartSeed(cmd)
 		s.Equal(map[string]any{"enabled": true, "order": "asc"}, seed["sort"])
 		s.Equal(true, seed["showLabels"])
+	})
+}
+
+func (s *FlagBagSuite) TestChartSeedLabelSuffix() {
+	fl := append(slices.Clone(DataFlags), internal_charts.BaseChartFlags...)
+
+	s.Run("global form", func() {
+		cmd, bag := s.newCmdBag(fl)
+		s.Require().NoError(cmd.Flags().Set("label-suffix", "%"))
+		seed := bag.ChartSeed(cmd)
+		s.Equal(&shared.Affix{Global: "%"}, seed["labelSuffix"])
+	})
+	s.Run("per-column form", func() {
+		cmd, bag := s.newCmdBag(fl)
+		s.Require().NoError(cmd.Flags().Set("label-suffix", "col1=%,col2=ms"))
+		seed := bag.ChartSeed(cmd)
+		s.Equal(
+			&shared.Affix{Columns: map[string]string{"col1": "%", "col2": "ms"}},
+			seed["labelSuffix"],
+		)
+	})
+	s.Run("usage documents forms", func() {
+		usage := internal_charts.LabelSuffixFlag.Usage
+		s.Contains(usage, "%")
+		s.Contains(usage, "col1=%,col2=ms")
+		s.Contains(usage, "=")
 	})
 }
 

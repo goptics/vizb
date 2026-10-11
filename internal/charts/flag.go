@@ -38,7 +38,7 @@ var (
 // BaseChartFlags are the --chart keys valid for every chart type. Each chart's
 // flag list is composed by prepending a clone of BaseChartFlags before the
 // chart's own variable flags (declared in cmd/charts/<c>/<c>.go).
-var BaseChartFlags = []flags.Flag{SwapFlag, SortFlag, LabelsFlag, StatFlag}
+var BaseChartFlags = []flags.Flag{SwapFlag, SortFlag, LabelsFlag, StatFlag, LabelSuffixFlag}
 
 // --- Variable flags: composed by the charts that carry them. ---
 
@@ -122,6 +122,19 @@ var (
 		MultiValue: true,
 		Validate:   ValidateBorderRadiusValue,
 		Encode:     EncodeBorderRadius,
+	}
+	// LabelSuffixFlag carries the --label-suffix value grammar:
+	// "%" applies globally; "col1=%,col2=ms" applies per column. A "=" in the
+	// value selects per-column parsing, so the global form cannot contain "=".
+	LabelSuffixFlag = flags.Flag{
+		Name: "label-suffix", Usage: "Suffix appended to series labels: global symbol " +
+			"(e.g. %), or per-column affixes (e.g. col1=%,col2=ms); a \"=\" in the " +
+			"value selects per-column parsing, so the global form cannot contain \"=\"",
+		Kind:       flags.KindString,
+		JSONKey:    "labelSuffix",
+		MultiValue: true,
+		Validate:   ValidateAffixValue,
+		Encode:     EncodeAffix,
 	}
 	// BgFlag is the bar-only category background: bare --bg turns it on, and a
 	// semicolon bag of style fields (--bg color=…;borderColor=#000) adds typed
@@ -248,6 +261,26 @@ func EncodeBorderRadius(v any) any {
 		return v
 	}
 	return vals
+}
+
+// ValidateAffixValue reports whether s parses as a label-suffix affix.
+func ValidateAffixValue(s string) error {
+	_, err := flags.ParseAffix(s)
+	return err
+}
+
+// EncodeAffix maps a validated --label-suffix value to a *flags.Affix seed
+// payload (aliased by shared.Affix); non-string input passes through unchanged.
+func EncodeAffix(v any) any {
+	s, ok := v.(string)
+	if !ok {
+		return v
+	}
+	affix, err := flags.ParseAffix(s)
+	if err != nil {
+		return v
+	}
+	return affix
 }
 
 // echartsBuiltinSymbols are the ECharts built-in series symbols (case-insensitive).
