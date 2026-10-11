@@ -279,6 +279,10 @@ vizb sales.csv -c bar --chart bar:bg -o out.html
 
 # Styled object (semicolons inside braces; commas stay literal)
 vizb sales.csv -c bar --chart 'bar:bg={color=rgba(180, 180, 180, 0.2);borderColor=#000}' -o out.html
+
+# Suffix numeric values: global, or per column (exact column-name match)
+vizb sales.csv -c bar --chart 'bar:label-suffix=%' -o out.html
+vizb sales.csv -c line --chart 'line:label-suffix=latency=ms,throughput=%' -o out.html
 ```
 
 **Supported keys:**
@@ -288,6 +292,7 @@ vizb sales.csv -c bar --chart 'bar:bg={color=rgba(180, 180, 180, 0.2);borderColo
 | `swap` | — | permutation of axis chars (e.g. `yx`, `yxn`) | all |
 | `sort` | — | `asc`, `desc` | all |
 | `labels` | `labels` | `true`, `false` | all |
+| `label-suffix` | — | global symbol (`%`) or per-column (`col1=%,col2=ms`) | all |
 | `scale` | — | `linear`, `log`, or `type=log;axes=x,y;base=10` | `bar`, `line`, `scatter` |
 | `3d-rotate` | `3d-rotate` | `true`, `false` | `bar`, `line` 3D only |
 | `bg` | `bg` | `{field=value;…}` style object, or bare/`{}` for on | `bar` 2D only |
