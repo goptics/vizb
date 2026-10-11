@@ -574,6 +574,37 @@ func (s *ChartSpecSuite) TestParseOverridesScaleBraceMatchesFlag() {
 	s.JSONEq(string(raw), string(chartRaw))
 }
 
+// --- --chart label-suffix overrides ---
+
+func (s *ChartSpecSuite) TestParseOverridesBarLabelSuffixColumns() {
+	got, warnings, err := ParseOverrides(
+		[]string{"bar:label-suffix=col1=%,col2=ms"},
+		[]string{"bar"},
+		s.xynAxes,
+	)
+	s.Require().NoError(err)
+	s.Empty(warnings)
+	affix, ok := s.payload(got["bar"])["labelSuffix"].(map[string]any)
+	s.Require().True(ok, "expected labelSuffix object, comma form must not split into bogus props")
+	s.Equal(map[string]any{"col1": "%", "col2": "ms"}, affix["columns"])
+	s.Nil(affix["global"])
+}
+
+func (s *ChartSpecSuite) TestParseOverridesBarLabelSuffixGlobal() {
+	got, warnings, err := ParseOverrides([]string{"bar:label-suffix=%"}, []string{"bar"}, s.xynAxes)
+	s.Require().NoError(err)
+	s.Empty(warnings)
+	affix, ok := s.payload(got["bar"])["labelSuffix"].(map[string]any)
+	s.Require().True(ok, "expected labelSuffix object")
+	s.Equal("%", affix["global"])
+	s.Nil(affix["columns"])
+}
+
+func (s *ChartSpecSuite) TestParseOverridesBarLabelSuffixInvalid() {
+	_, _, err := ParseOverrides([]string{"bar:label-suffix=col="}, []string{"bar"}, s.xynAxes)
+	s.Error(err)
+}
+
 func TestChartSpecSuite(t *testing.T) {
 	suite.Run(t, new(ChartSpecSuite))
 }
