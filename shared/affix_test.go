@@ -64,6 +64,8 @@ func (s *AffixSuite) TestErrors() {
 		{"dup column", "col=%,col=ms", "col"},
 		{"empty key", "=x", "key"},
 		{"empty symbol", "col=", "symbol"},
+		{"empty token", ",", "token"},
+		{"trailing separator", "col=ms,", "token"},
 	}
 	for _, c := range cases {
 		s.Run(c.name, func() {

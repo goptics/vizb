@@ -29,6 +29,9 @@ func ParseAffix(input string) (*Affix, error) {
 	affix := &Affix{}
 	for _, tok := range strings.Split(input, sep) {
 		tok = strings.TrimSpace(tok)
+		if tok == "" {
+			return nil, fmt.Errorf("label affix %q: empty token", input)
+		}
 		key, val, found := strings.Cut(tok, "=")
 		if !found {
 			if affix.Global != "" {
