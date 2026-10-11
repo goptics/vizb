@@ -20,6 +20,7 @@ type Config struct {
 	Scale           shared.Scale         `json:"scale,omitempty"`
 	Stack           *bool                `json:"stack,omitempty"`
 	ShowLabels      *bool                `json:"showLabels,omitempty"`
+	LabelSuffix     *shared.Affix        `json:"labelSuffix,omitempty"`
 	ThreeDRotate    *bool                `json:"threeDRotate,omitempty"`
 	ThreeD          *bool                `json:"threeD,omitempty"`
 	ThreeDVisualMap *bool                `json:"threeDVisualMap,omitempty"`

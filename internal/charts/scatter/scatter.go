@@ -16,6 +16,7 @@ type Config struct {
 	Sort            *shared.Sort       `json:"sort,omitempty"`
 	Scale           shared.Scale       `json:"scale,omitempty"`
 	ShowLabels      *bool              `json:"showLabels,omitempty"`
+	LabelSuffix     *shared.Affix      `json:"labelSuffix,omitempty"`
 	Symbol          string             `json:"symbol,omitempty"`
 	SymbolSize      *float64           `json:"symbolSize,omitempty"`
 	ThreeDRotate    *bool              `json:"threeDRotate,omitempty"`
