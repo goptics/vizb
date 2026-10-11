@@ -811,3 +811,27 @@ describe('labelSuffix axis formatters', () => {
     expect(tip.formatter({ marker: '*', value: 3 })).toContain('3%')
   })
 })
+
+describe('createTooltipConfig labelSuffix fallback + Σ', () => {
+  it('falls back to metricSuffix for unmatched series and affixes both Σ sites', () => {
+    const totals = new Map([
+      ['West', 30],
+      ['East', 70],
+    ])
+    const tip = createTooltipConfig(
+      true,
+      false,
+      totals,
+      'shadow',
+      { columns: { revenue: '%' } },
+      '%'
+    ) as { formatter: (p: unknown[]) => string }
+    const html = tip.formatter([
+      { name: 'Q1', seriesName: 'West', value: 10, marker: 'w' },
+      { name: 'Q1', seriesName: 'East', value: 30, marker: 'e' },
+    ])
+    expect(html).toContain('West (Σ30%): 10%')
+    expect(html).toContain('East (Σ70%): 30%')
+    expect(html).toContain('Σ Q1: <b>40%</b>')
+  })
+})

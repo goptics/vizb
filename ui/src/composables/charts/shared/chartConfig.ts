@@ -566,6 +566,20 @@ export function affixedTooltipValue(value: unknown, suffix: string): string {
   return formatTooltipValue(value) + suffix
 }
 
+/**
+ * Suffix for one rendered value. Single-metric charts have no per-series column,
+ * so an unmatched series name falls back to the chart's metric suffix (the value
+ * axis uses the same), keeping every per-value site consistent within a chart.
+ * Multi-column pivots (--col-axis) put the column name on the series → exact match wins.
+ */
+export function affixForValue(
+  affix: LabelAffix | undefined,
+  column: string,
+  metricSuffix: string
+): string {
+  return affixForColumn(affix, column) || metricSuffix
+}
+
 /** Max legend rows per column before flowing into additional columns. */
 export const TOOLTIP_LEGEND_MAX_ROWS_PER_COL = 10
 
@@ -787,13 +801,16 @@ function tooltipHeader(params: { name?: string; value?: unknown }[]): string {
  * @param isDark - Dark mode flag for tooltip theming
  * @param seriesTotals - Per-series totals across all x, appended after each name
  * @param pointer - Category band (`shadow`) or continuous-X snap line
+ * @param affix - Per-column affixes; rows resolve by series name then metric suffix
+ * @param metricSuffix - Fallback suffix for single-metric charts (the value axis's)
  */
 export function createTooltipConfig(
   hasXYAxis: boolean,
   isDark = false,
   seriesTotals?: Map<string, number>,
   pointer: 'shadow' | 'line' = 'shadow',
-  affix?: LabelAffix
+  affix?: LabelAffix,
+  metricSuffix = ''
 ): EChartsOption['tooltip'] {
   const theme = getTooltipTheme(isDark)
   const styling = getChartStyling(isDark)
@@ -818,8 +835,9 @@ export function createTooltipConfig(
 
         const legendRows = present.map((cur) => {
           const seriesSum = seriesTotals?.get(cur.seriesName ?? '')
-          const sumTag = seriesSum === undefined ? '' : ` (Σ${formatChartNumber(seriesSum)})`
-          const rowSuffix = affixForColumn(affix, cur.seriesName ?? '')
+          const rowSuffix = affixForValue(affix, cur.seriesName ?? '', metricSuffix)
+          const sumTag =
+            seriesSum === undefined ? '' : ` (Σ${formatChartNumber(seriesSum)}${rowSuffix})`
           return `${cur.marker} ${cur.seriesName}${sumTag}: ${affixedTooltipValue(tooltipMetric(cur.value), rowSuffix)}`
         })
         const header = tooltipHeader(params)
@@ -833,7 +851,7 @@ export function createTooltipConfig(
           (sum, cur) => sum + (typeof cur === 'number' ? cur : 0),
           0
         )
-        const sumLine = `${tooltipDivider(isDark)}Σ ${header}: <b>${formatChartNumber(total)}</b>`
+        const sumLine = `${tooltipDivider(isDark)}Σ ${header}: <b>${formatChartNumber(total)}${metricSuffix}</b>`
         const spread = tooltipSpreadRows(
           metrics.map((v) => (typeof v === 'number' ? v : NaN)),
           isDark
@@ -867,7 +885,7 @@ export function createTooltipConfig(
         name = seriesName
       }
 
-      const rowSuffix = affixForColumn(affix, seriesName ?? name ?? '')
+      const rowSuffix = affixForValue(affix, seriesName ?? name ?? '', metricSuffix)
       return `${params.marker} <strong>${name}</strong><br/>${affixedTooltipValue(params.value, rowSuffix)}`
     },
   }

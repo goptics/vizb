@@ -27,6 +27,7 @@ import {
 } from './shared/common'
 import { asLogXPairs, axisIsLog, axisLogBase, numericLogXValues, parseScale } from '@/lib/scale'
 import { affixForColumn } from '@/lib/affix'
+import { affixForValue } from './shared/chartConfig'
 import { resolveSeriesSymbol } from './shared/seriesConfig'
 import { resolve2DScatterVisualMap } from './shared/visualMap'
 import { buildValueAxes2DOptions } from './shared/valueMode'
@@ -185,7 +186,7 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
         styling,
         undefined,
         false,
-        affixForColumn(affix, yAxisLabel)
+        affixForValue(affix, yAxisLabel, metricSuffix)
       ),
       ...(kind === 'scatter'
         ? scatterSeriesLargeOpts(useVisualMap)
@@ -220,8 +221,22 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
       tooltip: coerceX
         ? transposedSeries.length <= 1
           ? createValueModeTooltip(isDark.value, xLabel, yLabel, true, affix)
-          : createTooltipConfig(showXBreakdown, isDark.value, seriesTotals, 'line', affix)
-        : createTooltipConfig(showXBreakdown, isDark.value, seriesTotals, undefined, affix),
+          : createTooltipConfig(
+              showXBreakdown,
+              isDark.value,
+              seriesTotals,
+              'line',
+              affix,
+              metricSuffix
+            )
+        : createTooltipConfig(
+            showXBreakdown,
+            isDark.value,
+            seriesTotals,
+            undefined,
+            affix,
+            metricSuffix
+          ),
       ...groupedAxes,
       ...(zoom.dataZoom ? { dataZoom: zoom.dataZoom } : {}),
       legend: createLegendConfig(

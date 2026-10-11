@@ -23,6 +23,7 @@ import {
 import { useSortedSeriesData, resolveLogScale, computeSeriesTotals } from './shared/common'
 import { asLogXPairs, axisIsLog, axisLogBase, numericLogXValues, parseScale } from '@/lib/scale'
 import { affixForColumn } from '@/lib/affix'
+import { affixForValue } from './shared/chartConfig'
 import { buildValueAxes2DOptions } from './shared/valueMode'
 import { buildMixedAxes2DOptions } from './shared/mixedMode'
 
@@ -220,7 +221,14 @@ export function useBarChartOptions(config: BaseChartConfig) {
           containLabel: true,
           outerBoundsMode: 'none',
         },
-        tooltip: createTooltipConfig(false, isDark.value, undefined, undefined, affix),
+        tooltip: createTooltipConfig(
+          false,
+          isDark.value,
+          undefined,
+          undefined,
+          affix,
+          metricSuffix
+        ),
         legend: { show: false },
         ...groupedAxes,
         dataZoom: zoom.dataZoom,
@@ -257,7 +265,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
         grid: createValueModeGridConfig(zoom.hasXSlider),
         tooltip: xNums
           ? createValueModeTooltip(isDark.value, xLabel, chartData.value.axisLabels?.y, true, affix)
-          : createTooltipConfig(false, isDark.value, undefined, undefined, affix),
+          : createTooltipConfig(false, isDark.value, undefined, undefined, affix, metricSuffix),
         legend: { show: false },
         ...groupedAxes,
         dataZoom: zoom.dataZoom,
@@ -282,7 +290,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
         styling,
         isHorizontal ? 'horizontal' : 'vertical',
         useStack,
-        affixForColumn(affix, yAxisLabel)
+        affixForValue(affix, yAxisLabel, metricSuffix)
       ),
       large: true,
       largeThreshold: LARGE_DATA_THRESHOLD,
@@ -345,7 +353,8 @@ export function useBarChartOptions(config: BaseChartConfig) {
           isDark.value,
           seriesTotals,
           undefined,
-          affix
+          affix,
+          metricSuffix
         ),
         legend: createLegendConfig(
           transposedSeries.map((s) => ({ xAxis: s.name })),
@@ -365,9 +374,23 @@ export function useBarChartOptions(config: BaseChartConfig) {
       grid: createGridConfig(transposedSeries.length, zoom.hasXSlider, showLegendTitle),
       tooltip: xNums
         ? hasMultipleSeries
-          ? createTooltipConfig(hasXAxis(chartData), isDark.value, seriesTotals, 'line', affix)
+          ? createTooltipConfig(
+              hasXAxis(chartData),
+              isDark.value,
+              seriesTotals,
+              'line',
+              affix,
+              metricSuffix
+            )
           : createValueModeTooltip(isDark.value, xLabel, yLabel, true, affix)
-        : createTooltipConfig(hasXAxis(chartData), isDark.value, seriesTotals, undefined, affix),
+        : createTooltipConfig(
+            hasXAxis(chartData),
+            isDark.value,
+            seriesTotals,
+            undefined,
+            affix,
+            metricSuffix
+          ),
       legend: createLegendConfig(
         transposedSeries.map((s) => ({ xAxis: s.name })),
         styling,

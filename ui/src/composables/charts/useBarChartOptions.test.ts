@@ -1146,17 +1146,19 @@ describe('useBarChartOptions — background', () => {
 })
 
 describe('useBarChartOptions — labelSuffix', () => {
+  // Default grouped `-g y`: series are categories (West/East), the metric column
+  // is chartData.title ('revenue'). Every per-value site must resolve the same way.
   const suffixChartData = (): ChartData => ({
     title: 'revenue',
     statType: 'sum',
-    yAxis: ['revenue', 'cost'],
+    yAxis: ['West', 'East'],
     zAxis: [],
     series: [
-      { xAxis: 'West', values: [10, 30], benchmarkId: '' },
-      { xAxis: 'East', values: [20, 40], benchmarkId: '' },
+      { xAxis: 'Q1', values: [10, 30], benchmarkId: '' },
+      { xAxis: 'Q2', values: [20, 40], benchmarkId: '' },
     ],
     points: [],
-    axisLabels: { x: 'region', y: 'category' },
+    axisLabels: { x: 'quarter', y: 'region' },
   })
 
   type SuffixLabel = { name: string; label: { formatter: (p: { value: number }) => string } }
@@ -1168,36 +1170,42 @@ describe('useBarChartOptions — labelSuffix', () => {
   const build = (labelSuffix: LabelAffix) =>
     useBarChartOptions(baseConfig({ chartData: suffixChartData(), showLabels: true, labelSuffix }))
 
-  it('appends a per-column suffix to matching series labels and the value axis', () => {
+  it('applies a per-column suffix to every grouped label, tooltip row, and the value axis', () => {
     const { options } = build({ columns: { revenue: '%' } })
     const series = options.value.series as SuffixLabel[]
     const byName = Object.fromEntries(series.map((s) => [s.name, s]))
-    expect(byName.revenue!.label.formatter({ value: 10 })).toBe('10%')
-    expect(byName.cost!.label.formatter({ value: 30 })).toBe('30')
+    expect(byName.West!.label.formatter({ value: 10 })).toBe('10%')
+    expect(byName.East!.label.formatter({ value: 30 })).toBe('30%')
 
     const yAxis = options.value.yAxis as SuffixYAxis
     expect(yAxis.axisLabel.formatter!(100)).toBe('100%')
+
+    const tip = options.value.tooltip as SuffixTooltip
+    const html = tip.formatter([
+      { name: 'Q1', seriesName: 'West', value: 10, marker: 'w' },
+      { name: 'Q1', seriesName: 'East', value: 30, marker: 'e' },
+    ])
+    expect(html).toContain('West (Σ30%): 10%')
+    expect(html).toContain('East (Σ70%): 30%')
+    expect(html).toContain('Σ Q1: <b>40%</b>')
   })
 
   it('appends a global suffix to every series and the value axis', () => {
     const { options } = build({ global: 'ms' })
     const series = options.value.series as SuffixLabel[]
     const byName = Object.fromEntries(series.map((s) => [s.name, s]))
-    expect(byName.revenue!.label.formatter({ value: 10 })).toBe('10ms')
-    expect(byName.cost!.label.formatter({ value: 30 })).toBe('30ms')
+    expect(byName.West!.label.formatter({ value: 10 })).toBe('10ms')
+    expect(byName.East!.label.formatter({ value: 30 })).toBe('30ms')
 
     const yAxis = options.value.yAxis as SuffixYAxis
     expect(yAxis.axisLabel.formatter!(100)).toBe('100ms')
   })
 
-  it('appends per-series suffixes to tooltip rows, bare for unmatched series', () => {
-    const { options } = build({ columns: { revenue: '%' } })
-    const tip = options.value.tooltip as SuffixTooltip
-    const html = tip.formatter([
-      { name: 'West', seriesName: 'revenue', value: 10, marker: 'r' },
-      { name: 'West', seriesName: 'cost', value: 30, marker: 'c' },
-    ])
-    expect(html).toContain('revenue (Σ30): 10%')
-    expect(html).toContain('cost (Σ70): 30<')
+  it('lets a multi-column pivot match per series while unmatched series fall back to the metric', () => {
+    const { options } = build({ columns: { West: '#', revenue: '%' } })
+    const series = options.value.series as SuffixLabel[]
+    const byName = Object.fromEntries(series.map((s) => [s.name, s]))
+    expect(byName.West!.label.formatter({ value: 10 })).toBe('10#')
+    expect(byName.East!.label.formatter({ value: 30 })).toBe('30%')
   })
 })
