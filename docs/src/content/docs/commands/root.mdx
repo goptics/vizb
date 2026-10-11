@@ -77,6 +77,7 @@ See the [Parser Guide](/guides/parsers) for each parser's metrics, and the
 | `--name` | `-n` | `Benchmarks` | Dataset name |
 | `--theme` | | *(empty)* | Embed a color theme on the dataset (**repeatable**; first is active). Built-in name, structured `name:colors=#hex,...;visualMapColors=#hex,#hex`, or bare `#hex,#hex,...` palette. Empty when unset (UI default). Built-in `default` is not embedded. |
 | `--font-size` | | *(empty)* | Chart text size in CSS pixels. A number sets series data labels, legend, and axis ticks to that size. A bag sets keys individually: `series=16;legend=10;label=12`. Invalid keys/values warn and skip. |
+| `--label-suffix` | | *(empty)* | Suffix appended to numeric values on labels, tooltips, and value-axis ticks on every selected chart. Global (`%`) or per-column (`col1=%,col2=ms`); a `=` selects per-column parsing. Also settable per chart via `--chart <type>:label-suffix=…` |
 | `--description` | `-d` | `""` | Dataset description |
 | `--tag` | `-t` | `""` | Tag identifier for release tracking |
 | `--id` | | `""` | Stable dataset id for `?id=` deep links in the HTML UI |
