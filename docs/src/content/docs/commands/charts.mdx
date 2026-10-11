@@ -49,6 +49,7 @@ Every chart subcommand accepts the common data, grouping, and metadata flags:
 | `--swap` | | `""` | Swap n/x/y/z axis assignment, e.g. `yx`, `yxn` |
 | `--show-labels` | `-l` | `false` | Show value labels on the chart |
 | `--label-suffix` | | *(empty)* | Suffix appended to numeric values on labels, tooltips, and value-axis ticks. Global (`%`) or per-column (`col1=%,col2=ms`); see [Label suffix](#label-suffix) |
+| `--label-prefix` | | *(empty)* | Prefix prepended to numeric values on labels, tooltips, and value-axis ticks. Global (`$`) or per-column (`col1=$,col2=€`); see [Label prefix](#label-prefix) |
 | `--mem-unit` | `-M` | `B` | Memory unit: `b`, `B`, `KB`, `MB`, `GB` |
 | `--time-unit` | `-T` | `ns` | Time unit: `ns`, `us`, `ms`, `s` |
 | `--number-unit` | `-N` | `""` | Number unit: `K`, `M`, `B`, `T` |
@@ -79,6 +80,39 @@ or per column:
 ```
 
 Column names match **exactly** (no case-folding). Columns not listed render bare. A `=` in the value selects per-column parsing, so a global symbol containing `=` (e.g. `--label-suffix='a=b'`) cannot be used in the global form.
+
+### Label prefix
+
+`--label-prefix` prepends a symbol to the numeric values rendered in data labels, tooltips, and value-axis ticks. It uses the same grammar as `--label-suffix`:
+
+```bash
+# Global: every numeric value gets "$"
+vizb bar data.csv --label-prefix='$' -o out.html
+
+# Per column: exact column-name match
+vizb line data.csv -g impl --label-prefix='revenue=$,latency=~' -o out.html
+```
+
+The structured form is stored in the dataset JSON — global:
+
+```json
+"labelPrefix": { "global": "$" }
+```
+
+or per column:
+
+```json
+"labelPrefix": { "columns": { "revenue": "$", "latency": "~" } }
+```
+
+Column names match **exactly** (no case-folding). Columns not listed render bare. A `=` in the value selects per-column parsing, so a global symbol containing `=` (e.g. `--label-prefix='a=b'`) cannot be used in the global form.
+
+Prefix and suffix compose on the same value — prefix first, then suffix:
+
+```bash
+# Renders as $42%
+vizb bar data.csv --label-prefix='$' --label-suffix='%' -o out.html
+```
 
 ## Chart-specific flags
 

@@ -115,6 +115,12 @@ describe('buildConvertArgs', () => {
     assert.ok(args.includes('--label-suffix') && args.includes('col1=%,col2=ms'))
     assert.ok(!buildConvertArgs({ ...base, labelSuffix: '' }).includes('--label-suffix'))
   })
+
+  it('forwards label-prefix only when set', () => {
+    const args = buildConvertArgs({ ...base, labelPrefix: 'col1=$,col2=€' })
+    assert.ok(args.includes('--label-prefix') && args.includes('col1=$,col2=€'))
+    assert.ok(!buildConvertArgs({ ...base, labelPrefix: '' }).includes('--label-prefix'))
+  })
 })
 
 describe('resolveInputs', () => {

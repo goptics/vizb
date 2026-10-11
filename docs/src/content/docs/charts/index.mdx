@@ -91,13 +91,14 @@ vizb data.csv -g algo,input_size,variant,run_type -p n,x,y,z -c bar -o out.html
 
 ## Settings
 
-Most settings apply to every chart type. The exceptions are `scale` (log), which only affects cartesian charts, and `3d-rotate` (3D auto-spin), which only applies when bar, line, or scatter renders in WebGL mode. Sankey and Chord support sort, labels, label-suffix, and swap only.
+Most settings apply to every chart type. The exceptions are `scale` (log), which only affects cartesian charts, and `3d-rotate` (3D auto-spin), which only applies when bar, line, or scatter renders in WebGL mode. Sankey and Chord support sort, labels, label-suffix, label-prefix, and swap only.
 
 | Setting | `bar` | `line` | `scatter` | `pie` | `radar` | `heatmap` | `sankey` | `chord` |
 |---------|:-----:|:------:|:---------:|:-----:|:-------:|:---------:|:--------:|:-------:|
 | `sort` / `--sort` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `labels` / `--show-labels` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `label-suffix` / `--label-suffix` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `label-prefix` / `--label-prefix` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `swap` (axis reorder) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `scale` log | ✓ | ✓ | ✓ | ✗ | ✗ | ✗ | ✗ | ✗ |
 | `3d-rotate` (3D auto-rotate) | ✓ 3D only | ✓ 3D only | ✓ 3D only | ✗ | ✗ | ✗ | ✗ | ✗ |
@@ -119,6 +120,9 @@ vizb data.csv -g category --chart 'bar:bg={color=rgba(180, 180, 180, 0.2);border
 
 # Suffix numeric values: global, or per column (exact match)
 vizb data.csv -g category --chart 'bar:label-suffix=%' -o output.html
+
+# Prefix numeric values; composes with suffix (renders $42%)
+vizb data.csv -g category --chart 'bar:label-prefix=$,label-suffix=%' -o output.html
 ```
 
 See [Commands: root](/commands/root) for the full flag reference.
