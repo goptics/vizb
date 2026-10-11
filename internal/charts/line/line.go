@@ -18,6 +18,7 @@ type Config struct {
 	Stack           *bool              `json:"stack,omitempty"`
 	ShowLabels      *bool              `json:"showLabels,omitempty"`
 	LabelSuffix     *shared.Affix      `json:"labelSuffix,omitempty"`
+	LabelPrefix     *shared.Affix      `json:"labelPrefix,omitempty"`
 	Symbol          string             `json:"symbol,omitempty"`
 	SymbolSize      *float64           `json:"symbolSize,omitempty"`
 	Smooth          *bool              `json:"smooth,omitempty"`

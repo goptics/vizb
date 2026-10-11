@@ -21,6 +21,7 @@ type Config struct {
 	Stack           *bool                `json:"stack,omitempty"`
 	ShowLabels      *bool                `json:"showLabels,omitempty"`
 	LabelSuffix     *shared.Affix        `json:"labelSuffix,omitempty"`
+	LabelPrefix     *shared.Affix        `json:"labelPrefix,omitempty"`
 	ThreeDRotate    *bool                `json:"threeDRotate,omitempty"`
 	ThreeD          *bool                `json:"threeD,omitempty"`
 	ThreeDVisualMap *bool                `json:"threeDVisualMap,omitempty"`
