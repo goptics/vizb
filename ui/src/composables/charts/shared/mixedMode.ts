@@ -32,7 +32,7 @@ import { adjustForLogScaleLine, resolveLogScale } from './common'
 import { resolve3DSymbolProps, resolveSeriesSymbol } from './seriesConfig'
 import { resolve2DScatterVisualMap } from './visualMap'
 import { affixForColumn } from '@/lib/affix'
-import type { LabelAffix, Series3DData } from '@/types'
+import type { Series3DData } from '@/types'
 
 const defaultScatterSymbol = { symbol: 'circle' as const, symbolSize: 8 }
 const largeScatterSymbol = { symbol: 'circle' as const, symbolSize: 5 }
@@ -69,13 +69,12 @@ export function createMixedModeTooltip(
   chartType: Mixed2DChartType,
   xLabel?: string,
   yLabel?: string,
-  affix?: LabelAffix
+  ySuffix = ''
 ): EChartsOption['tooltip'] {
   const theme = getTooltipTheme(isDark)
   const styling = getChartStyling(isDark)
   const xName = xLabel ?? 'x'
   const yName = yLabel ?? 'y'
-  const ySuffix = affixForColumn(affix, yName)
   const snapToCategory = chartType === 'line' || chartType === 'scatter'
 
   return {
@@ -224,8 +223,8 @@ export function buildMixedAxes2DOptions(
     grid: createValueModeGridConfig(zoom.hasXSlider),
     visualMap: resolve2DScatterVisualMap(useVisualMap, colorValues, styling, 1),
     tooltip: xNums
-      ? createValueModeTooltip(isDark.value, xLabel, yLabel, true, affix)
-      : createMixedModeTooltip(isDark.value, xCategories, chartType, xLabel, yLabel, affix),
+      ? createValueModeTooltip(isDark.value, xLabel, yLabel, true, xSuffix, ySuffix)
+      : createMixedModeTooltip(isDark.value, xCategories, chartType, xLabel, yLabel, ySuffix),
     ...axisConfig,
     ...(zoom.dataZoom ? { dataZoom: zoom.dataZoom } : {}),
     series: [series],

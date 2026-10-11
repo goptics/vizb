@@ -469,6 +469,22 @@ describe('mixedMode labelSuffix', () => {
     expect(series[0]!.label.formatter({ data: [0, 12] })).toBe('12%')
   })
 
+  it('resolves 2D mixed tooltips by the same axis key when axisLabels are absent', () => {
+    const option = buildMixedAxes2DOptions(
+      baseConfig({
+        chartData: makeMixedChartData({ axisLabels: {}, title: 'tax' }),
+        labelSuffix: { columns: { tax: '%' } },
+      }),
+      'scatter'
+    )
+    const yAxis = option.yAxis as { axisLabel: { formatter: (v: number) => string } }
+    expect(yAxis.axisLabel.formatter(5)).toBe('5%')
+    const tip = option.tooltip as {
+      formatter: (p: { name: string; value: number; marker: string }) => string
+    }
+    expect(tip.formatter({ name: 'West', value: 5, marker: '•' })).toContain('5%')
+  })
+
   it('appends per-axis suffixes to mixed 3D value axes and tooltip', () => {
     const option = buildMixedAxes3DOptions(
       baseConfig({

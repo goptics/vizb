@@ -141,7 +141,8 @@ export function buildValueAxes2DOptions(
       xLabel,
       yLabel,
       chartType === 'scatter' || chartType === 'line',
-      affix
+      xSuffix,
+      ySuffix
     ),
     ...createValueAxisConfig(
       styling,

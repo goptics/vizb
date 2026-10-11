@@ -66,10 +66,15 @@ vizb bar data.csv --label-suffix='%' -o out.html
 vizb line data.csv -g impl --label-suffix='latency=ms,throughput=%' -o out.html
 ```
 
-The structured form is stored in the dataset JSON:
+The structured form is stored in the dataset JSON — global:
 
 ```json
 "labelSuffix": { "global": "%" }
+```
+
+or per column:
+
+```json
 "labelSuffix": { "columns": { "latency": "ms", "throughput": "%" } }
 ```
 

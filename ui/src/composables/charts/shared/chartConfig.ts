@@ -378,20 +378,23 @@ export function createCrossAxisPointer(styling: ChartStyling, theme: TooltipThem
   }
 }
 
-/** Item tooltip for [x, y] value-mode points — same box theme as grouping charts. */
+/**
+ * Item tooltip for [x, y] value-mode points — same box theme as grouping charts.
+ * Callers pass the axis-resolved suffix strings so axis and tooltip always use
+ * the same key (they can differ once axis labels are absent).
+ */
 export function createValueModeTooltip(
   isDark: boolean,
   xLabel?: string,
   yLabel?: string,
   crossAxisPointer = false,
-  affix?: LabelAffix
+  xSuffix = '',
+  ySuffix = ''
 ): EChartsOption['tooltip'] {
   const theme = getTooltipTheme(isDark)
   const styling = getChartStyling(isDark)
   const xName = xLabel ?? 'x'
   const yName = yLabel ?? 'y'
-  const xSuffix = affixForColumn(affix, xName)
-  const ySuffix = affixForColumn(affix, yName)
   return {
     trigger: 'item',
     ...theme,

@@ -4,6 +4,7 @@ import type { BarBackground } from '@/types'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
 import { getNextColorFor, hasXAxis } from '@/lib/utils'
 import {
+  affixForValue,
   createAxisConfig,
   createGridConfig,
   createValueModeGridConfig,
@@ -23,7 +24,6 @@ import {
 import { useSortedSeriesData, resolveLogScale, computeSeriesTotals } from './shared/common'
 import { asLogXPairs, axisIsLog, axisLogBase, numericLogXValues, parseScale } from '@/lib/scale'
 import { affixForColumn } from '@/lib/affix'
-import { affixForValue } from './shared/chartConfig'
 import { buildValueAxes2DOptions } from './shared/valueMode'
 import { buildMixedAxes2DOptions } from './shared/mixedMode'
 
@@ -264,7 +264,14 @@ export function useBarChartOptions(config: BaseChartConfig) {
         ...baseOptions,
         grid: createValueModeGridConfig(zoom.hasXSlider),
         tooltip: xNums
-          ? createValueModeTooltip(isDark.value, xLabel, chartData.value.axisLabels?.y, true, affix)
+          ? createValueModeTooltip(
+              isDark.value,
+              xLabel,
+              chartData.value.axisLabels?.y,
+              true,
+              '',
+              metricSuffix
+            )
           : createTooltipConfig(false, isDark.value, undefined, undefined, affix, metricSuffix),
         legend: { show: false },
         ...groupedAxes,
@@ -382,7 +389,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
               affix,
               metricSuffix
             )
-          : createValueModeTooltip(isDark.value, xLabel, yLabel, true, affix)
+          : createValueModeTooltip(isDark.value, xLabel, yLabel, true, '', metricSuffix)
         : createTooltipConfig(
             hasXAxis(chartData),
             isDark.value,

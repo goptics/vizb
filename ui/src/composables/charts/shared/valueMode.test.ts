@@ -290,3 +290,36 @@ describe('buildValueAxes2DOptions', () => {
     expect(seriesOf(bar).itemStyle?.color).toBeTruthy()
   })
 })
+
+describe('buildValueAxes2DOptions labelSuffix', () => {
+  // Empty axisLabels: the axis resolves the y suffix against the metric column
+  // (title); the tooltip must use that same key, not its own 'y' fallback.
+  it('uses the axis key for the tooltip when axis labels are absent', () => {
+    const option = buildValueAxes2DOptions(
+      cfg({
+        chartData: makeValueChartData({ axisLabels: {}, title: 'price' }),
+        labelSuffix: { columns: { price: '$' } },
+        showLabels: true,
+      })
+    )
+    const yAxis = option.yAxis as { axisLabel: { formatter: (v: number) => string } }
+    expect(yAxis.axisLabel.formatter(5)).toBe('5$')
+    expect(seriesOf(option).label?.formatter?.({ data: [1, 5] })).toBe('5$')
+    const tip = option.tooltip as unknown as {
+      formatter: (p: { data: [number, number | null] }) => string
+    }
+    expect(tip.formatter({ data: [10, 5] })).toContain('5$')
+  })
+
+  it('leaves values bare with no labelSuffix', () => {
+    const option = buildValueAxes2DOptions(cfg({ showLabels: true }))
+    const yAxis = option.yAxis as { axisLabel: { formatter?: (v: number) => string } }
+    // No custom tick formatter — byte-identical to the pre-feature axis.
+    expect(yAxis.axisLabel.formatter).toBeUndefined()
+    expect(seriesOf(option).label?.formatter?.({ data: [1, 5] })).toBe('5')
+    const tip = option.tooltip as unknown as {
+      formatter: (p: { data: [number, number | null] }) => string
+    }
+    expect(tip.formatter({ data: [10, 5] })).not.toContain('$')
+  })
+})

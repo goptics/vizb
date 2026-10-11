@@ -1,7 +1,8 @@
 import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
-import { getNextColorFor, hasXAxis, hasYAxis, hasZAxis } from '@/lib/utils'
+import { getNextColorFor, hasXAxis, hasYAxis, hasZAxis, formatChartNumber } from '@/lib/utils'
+import { affixForColumn } from '@/lib/affix'
 import { getChartStyling, getTooltipTheme, formatRadarItemTooltip } from './shared/chartConfig'
 import { sortByTotal } from './shared/common'
 import { chartFontSize } from './shared/chartFontSize'
@@ -39,10 +40,26 @@ export function useRadarChartOptions(config: BaseChartConfig) {
     const cd = chartData.value
     const styling = getChartStyling(isDark.value)
     const baseOptions = getBaseOptions(config)
-    const label = {
-      show: showLabels.value,
-      fontSize: chartFontSize().series,
-      color: styling.textColor,
+    const affix = config.labelSuffix?.value
+    // Label formatter is added only when a spoke matches the affix, so the
+    // no-affix option stays byte-identical to ECharts' default numeric label.
+    const makeLabel = (spokes: string[]) => {
+      const base = {
+        show: showLabels.value,
+        fontSize: chartFontSize().series,
+        color: styling.textColor,
+      }
+      if (!affix || !spokes.some((name) => affixForColumn(affix, name))) return base
+      return {
+        ...base,
+        formatter: (p: { value?: unknown; dimensionIndex?: number }) => {
+          const raw = p.value
+          if (typeof raw !== 'number' || Number.isNaN(raw)) return ''
+          return (
+            formatChartNumber(raw) + affixForColumn(affix, spokes[p.dimensionIndex ?? -1] ?? '')
+          )
+        },
+      }
     }
 
     // X only: xAxis values as spokes, single polygon with totals
@@ -60,7 +77,7 @@ export function useRadarChartOptions(config: BaseChartConfig) {
           {
             type: 'radar' as const,
             symbol: 'none',
-            label,
+            label: makeLabel(names),
             data: [{ value: values, name: cd.statType }],
           },
         ],
@@ -83,7 +100,7 @@ export function useRadarChartOptions(config: BaseChartConfig) {
           {
             type: 'radar' as const,
             symbol: 'none',
-            label,
+            label: makeLabel(yAxis),
             data: [{ value: spokeTotals.map((v) => Math.max(0, v)), name: cd.statType }],
           },
         ],
@@ -149,7 +166,7 @@ export function useRadarChartOptions(config: BaseChartConfig) {
           type: 'radar' as const,
           symbol: 'circle',
           symbolSize: 10,
-          label,
+          label: makeLabel(yAxis),
           itemStyle: { color: getNextColorFor(z) },
           lineStyle: { width: 1.5, opacity: 0.7 },
           areaStyle: { opacity: 0.1 },
@@ -189,7 +206,7 @@ export function useRadarChartOptions(config: BaseChartConfig) {
         type: 'radar' as const,
         symbol: 'circle',
         symbolSize: 10,
-        label,
+        label: makeLabel(yAxis),
         itemStyle: { color: getNextColorFor(s.xAxis) },
         lineStyle: { width: 1.5, opacity: 0.7 },
         areaStyle: { opacity: 0.1 },

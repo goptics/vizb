@@ -3,6 +3,7 @@ import type { EChartsOption } from 'echarts'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
 import { getNextColorFor, hasXAxis } from '@/lib/utils'
 import {
+  affixForValue,
   createAxisConfig,
   createGridConfig,
   createValueModeGridConfig,
@@ -27,7 +28,6 @@ import {
 } from './shared/common'
 import { asLogXPairs, axisIsLog, axisLogBase, numericLogXValues, parseScale } from '@/lib/scale'
 import { affixForColumn } from '@/lib/affix'
-import { affixForValue } from './shared/chartConfig'
 import { resolveSeriesSymbol } from './shared/seriesConfig'
 import { resolve2DScatterVisualMap } from './shared/visualMap'
 import { buildValueAxes2DOptions } from './shared/valueMode'
@@ -155,7 +155,14 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
         ...baseOptions,
         grid: createValueModeGridConfig(zoom.hasXSlider),
         tooltip: coerceX
-          ? createValueModeTooltip(isDark.value, xLabel, chartData.value.axisLabels?.y, true, affix)
+          ? createValueModeTooltip(
+              isDark.value,
+              xLabel,
+              chartData.value.axisLabels?.y,
+              true,
+              '',
+              metricSuffix
+            )
           : createPinnedAxisTooltip(isDark.value, metricSuffix),
         ...groupedAxes,
         ...(zoom.dataZoom ? { dataZoom: zoom.dataZoom } : {}),
@@ -220,7 +227,7 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
       ),
       tooltip: coerceX
         ? transposedSeries.length <= 1
-          ? createValueModeTooltip(isDark.value, xLabel, yLabel, true, affix)
+          ? createValueModeTooltip(isDark.value, xLabel, yLabel, true, '', metricSuffix)
           : createTooltipConfig(
               showXBreakdown,
               isDark.value,

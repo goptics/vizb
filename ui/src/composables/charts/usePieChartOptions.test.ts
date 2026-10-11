@@ -335,4 +335,16 @@ describe('usePieChartOptions — labelSuffix', () => {
     )
     expect(firstLabel(options)({ name: 'A', value: 10, percent: 16.666 })).toBe('A (16.67%)')
   })
+
+  it('renders bare slice labels and tooltips when no labelSuffix is set', () => {
+    const { options } = usePieChartOptions(
+      baseConfig({ chartData: makePieChartData({ title: 'revenue' }), showLabels: true })
+    )
+    // Without a suffix the value is omitted — byte-identical to the pre-feature label.
+    expect(firstLabel(options)({ name: 'A', value: 10, percent: 16.666 })).toBe('A (16.67%)')
+    const tooltip = options.value.tooltip as PieTooltip
+    expect(tooltip.formatter({ marker: '*', name: 'A', value: 10, percent: 16.666 })).toContain(
+      '10 (16.67%)'
+    )
+  })
 })

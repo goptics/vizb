@@ -1208,4 +1208,27 @@ describe('useBarChartOptions — labelSuffix', () => {
     expect(byName.West!.label.formatter({ value: 10 })).toBe('10#')
     expect(byName.East!.label.formatter({ value: 30 })).toBe('30%')
   })
+
+  it('renders bare labels, tooltip rows, and axis ticks when no labelSuffix is set', () => {
+    const { options } = useBarChartOptions(
+      baseConfig({ chartData: suffixChartData(), showLabels: true })
+    )
+    const series = options.value.series as SuffixLabel[]
+    const byName = Object.fromEntries(series.map((s) => [s.name, s]))
+    expect(byName.West!.label.formatter({ value: 10 })).toBe('10')
+    expect(byName.East!.label.formatter({ value: 30 })).toBe('30')
+
+    const yAxis = options.value.yAxis as SuffixYAxis
+    // No custom tick formatter — byte-identical to the pre-feature axis.
+    expect(yAxis.axisLabel.formatter).toBeUndefined()
+
+    const tip = options.value.tooltip as SuffixTooltip
+    const html = tip.formatter([
+      { name: 'Q1', seriesName: 'West', value: 10, marker: 'w' },
+      { name: 'Q1', seriesName: 'East', value: 30, marker: 'e' },
+    ])
+    expect(html).toContain('West (Σ30): 10')
+    expect(html).toContain('East (Σ70): 30')
+    expect(html).toContain('Σ Q1: <b>40</b>')
+  })
 })
