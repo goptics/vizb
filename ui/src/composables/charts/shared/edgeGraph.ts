@@ -68,7 +68,7 @@ export function formatEdgeTooltip(
     const value = params.data?.value ?? params.value
     return (
       `${dot(colorFor(source))}<strong>${source}</strong> → ` +
-      `${dot(colorFor(target))}<strong>${target}</strong><br/>${affixedTooltipValue(value, suffix, prefix)}`
+      `${dot(colorFor(target))}<strong>${target}</strong><br/>${affixedTooltipValue(value, prefix, suffix)}`
     )
   }
 
@@ -77,6 +77,6 @@ export function formatEdgeTooltip(
   const valueLine =
     value === undefined || value === null
       ? ''
-      : `<br/>${affixedTooltipValue(value, suffix, prefix)}`
+      : `<br/>${affixedTooltipValue(value, prefix, suffix)}`
   return `${params.marker || dot(colorFor(name))} <strong>${name}</strong>${valueLine}`
 }

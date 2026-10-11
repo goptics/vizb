@@ -323,3 +323,36 @@ describe('buildValueAxes2DOptions labelSuffix', () => {
     expect(tip.formatter({ data: [10, 5] })).not.toContain('$')
   })
 })
+
+describe('buildValueAxes2DOptions labelPrefix', () => {
+  it('prefixes axis ticks, labels, and tooltip for the matching column', () => {
+    const option = buildValueAxes2DOptions(
+      cfg({
+        chartData: makeValueChartData({ axisLabels: {}, title: 'price' }),
+        labelPrefix: { columns: { price: '$' } },
+        showLabels: true,
+      })
+    )
+    const yAxis = option.yAxis as { axisLabel: { formatter: (v: number) => string } }
+    expect(yAxis.axisLabel.formatter(5)).toBe('$5')
+    expect(seriesOf(option).label?.formatter?.({ data: [1, 5] })).toBe('$5')
+    const tip = option.tooltip as unknown as {
+      formatter: (p: { data: [number, number | null] }) => string
+    }
+    expect(tip.formatter({ data: [10, 5] })).toContain('$5')
+  })
+
+  it('composes prefix and suffix as $42%', () => {
+    const option = buildValueAxes2DOptions(
+      cfg({
+        chartData: makeValueChartData({ axisLabels: {}, title: 'price' }),
+        labelPrefix: { columns: { price: '$' } },
+        labelSuffix: { columns: { price: '%' } },
+        showLabels: true,
+      })
+    )
+    const yAxis = option.yAxis as { axisLabel: { formatter: (v: number) => string } }
+    expect(yAxis.axisLabel.formatter(42)).toBe('$42%')
+    expect(seriesOf(option).label?.formatter?.({ data: [1, 42] })).toBe('$42%')
+  })
+})

@@ -100,7 +100,7 @@ export function usePieChartOptions(config: BaseChartConfig) {
       trigger: 'item',
       ...getTooltipTheme(isDark.value),
       formatter: (params: any) =>
-        `${params.marker} <strong>${params.name}</strong><br/>${affixedTooltipValue(params.value, suffix, prefix)} (${Number(params.percent).toFixed(2)}%)`,
+        `${params.marker} <strong>${params.name}</strong><br/>${affixedTooltipValue(params.value, prefix, suffix)} (${Number(params.percent).toFixed(2)}%)`,
     } as EChartsOption['tooltip']
 
     const xAxisPieData = sorted.series.map((s) => ({

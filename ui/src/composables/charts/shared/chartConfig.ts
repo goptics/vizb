@@ -409,7 +409,7 @@ export function createValueModeTooltip(
     ...(crossAxisPointer ? { axisPointer: createCrossAxisPointer(styling, theme) } : {}),
     formatter: (params: unknown) => {
       const [x, y] = (params as { data: [number, number | null] }).data
-      return `<strong>${xName}: ${affixedTooltipValue(x, xSuffix, xPrefix)}</strong><br/>${yName}: ${affixedTooltipValue(y, ySuffix, yPrefix)}`
+      return `<strong>${xName}: ${affixedTooltipValue(x, xPrefix, xSuffix)}</strong><br/>${yName}: ${affixedTooltipValue(y, yPrefix, ySuffix)}`
     },
   }
 }
@@ -580,7 +580,7 @@ export function formatTooltipValue(value: any): string {
 }
 
 /** Tooltip value wrapped with resolved prefix/suffix; missing values ('—') stay bare. */
-export function affixedTooltipValue(value: unknown, suffix: string, prefix = ''): string {
+export function affixedTooltipValue(value: unknown, prefix = '', suffix = ''): string {
   if ((!suffix && !prefix) || value === null || value === undefined)
     return formatTooltipValue(value)
   return applyAffixes(formatTooltipValue(value), prefix, suffix)
@@ -654,7 +654,7 @@ export function formatRadarItemTooltip(
 
   const rows = indicatorNames.map((name, i) => {
     const dot = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color(name)};margin-right:6px"></span>`
-    return `${dot}${name}: <b>${affixedTooltipValue(vals[i], affixForColumn(affix, name), affixForColumn(prefixAffix, name))}</b>`
+    return `${dot}${name}: <b>${affixedTooltipValue(vals[i], affixForColumn(prefixAffix, name), affixForColumn(affix, name))}</b>`
   })
   const legend = renderTooltipLegendColumns(rows)
 
@@ -803,7 +803,7 @@ export function createPinnedAxisTooltip(
       if (!Array.isArray(params)) return ''
       const p = params[0]
       if (!p) return ''
-      return `<strong>${p.name}</strong><br/>${p.marker} ${affixedTooltipValue(p.value, suffix, prefix)}`
+      return `<strong>${p.name}</strong><br/>${p.marker} ${affixedTooltipValue(p.value, prefix, suffix)}`
     },
   }
 }
@@ -868,7 +868,7 @@ export function createTooltipConfig(
             seriesSum === undefined
               ? ''
               : ` (Σ${applyAffixes(formatChartNumber(seriesSum), rowPrefix, rowSuffix)})`
-          return `${cur.marker} ${cur.seriesName}${sumTag}: ${affixedTooltipValue(tooltipMetric(cur.value), rowSuffix, rowPrefix)}`
+          return `${cur.marker} ${cur.seriesName}${sumTag}: ${affixedTooltipValue(tooltipMetric(cur.value), rowPrefix, rowSuffix)}`
         })
         const header = tooltipHeader(params)
         const body = `<strong>${header}</strong><br/>${renderTooltipLegendColumns(legendRows)}`
@@ -917,7 +917,7 @@ export function createTooltipConfig(
 
       const rowSuffix = affixForValue(affix, seriesName ?? name ?? '', metricSuffix)
       const rowPrefix = affixForValue(prefixAffix, seriesName ?? name ?? '', metricPrefix)
-      return `${params.marker} <strong>${name}</strong><br/>${affixedTooltipValue(params.value, rowSuffix, rowPrefix)}`
+      return `${params.marker} <strong>${name}</strong><br/>${affixedTooltipValue(params.value, rowPrefix, rowSuffix)}`
     },
   }
 }

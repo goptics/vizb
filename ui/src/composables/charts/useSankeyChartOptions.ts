@@ -56,7 +56,7 @@ export function useSankeyChartOptions(config: BaseChartConfig) {
           edgeLabel: {
             show: showLabels.value,
             formatter: (params: { data?: { value?: number }; value?: number }) =>
-              affixedTooltipValue(params.data?.value ?? params.value, suffix, prefix),
+              affixedTooltipValue(params.data?.value ?? params.value, prefix, suffix),
             color: styling.textColor,
             fontSize: chartFontSize().series,
           },

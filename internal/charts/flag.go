@@ -277,14 +277,15 @@ func EncodeBorderRadius(v any) any {
 	return vals
 }
 
-// ValidateAffixValue reports whether s parses as a label-suffix affix.
+// ValidateAffixValue reports whether s parses as a label affix (prefix or suffix).
 func ValidateAffixValue(s string) error {
 	_, err := flags.ParseAffix(s)
 	return err
 }
 
-// EncodeAffix maps a validated --label-suffix value to a *flags.Affix seed
-// payload (aliased by shared.Affix); non-string input passes through unchanged.
+// EncodeAffix maps a validated label-affix value (--label-suffix/--label-prefix)
+// to a *flags.Affix seed payload (aliased by shared.Affix); non-string input
+// passes through unchanged.
 func EncodeAffix(v any) any {
 	s, ok := v.(string)
 	if !ok {
