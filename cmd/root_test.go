@@ -162,6 +162,31 @@ func (s *RootSuite) TestRunBenchmarkGlobalLabelSuffixApplied() {
 	}
 }
 
+func (s *RootSuite) TestRunBenchmarkGlobalLabelPrefixApplied() {
+	dir := s.T().TempDir()
+	input := testutil.WriteBenchFile(s.T(), dir, "valid.txt",
+		`BenchmarkTest-8    1000000    1234 ns/op    1000 B/op    10 allocs/op`)
+	out := filepath.Join(dir, "out.json")
+	rootCharts = nil
+
+	errStr := testutil.CaptureStderr(func() {
+		rootCmd.SetArgs([]string{"-o", out, "-c", "bar", "-c", "line", "--label-prefix=$", input})
+		s.Require().NoError(rootCmd.Execute())
+	})
+
+	s.Contains(errStr, "Generated")
+	s.FileExists(out)
+
+	// The root command accepted --label-prefix and seeded labelPrefix into the
+	// chart seed (@see rootBag.ChartSeed) that Materialise applies to every
+	// selected chart. The typed Config field lands in Task 2.
+	seed := rootBag.ChartSeed(rootCmd)
+	s.Equal(&shared.Affix{Global: "$"}, seed["labelPrefix"])
+
+	ds := testutil.ReadDataset(s.T(), out)
+	s.Require().Len(ds.Settings, 2)
+}
+
 func (s *RootSuite) TestRunBenchmarkStdinPipe() {
 	origStdin := os.Stdin
 	defer func() { os.Stdin = origStdin }()
