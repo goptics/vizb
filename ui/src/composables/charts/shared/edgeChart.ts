@@ -29,13 +29,14 @@ export function prepareEdgeChart(config: BaseChartConfig): PreparedEdgeChart {
   const colorFor = (name: string): string => nodeColor.get(name) ?? '#888'
   // Edge/node values are metric totals — the affix resolves against the metric column.
   const suffix = affixForColumn(config.labelSuffix?.value, config.chartData.value.title)
+  const prefix = affixForColumn(config.labelPrefix?.value, config.chartData.value.title)
   return {
     nodes: sorted,
     links,
     tooltip: {
       trigger: 'item',
       ...getTooltipTheme(config.isDark.value),
-      formatter: (params: any) => formatEdgeTooltip(params, colorFor, suffix),
+      formatter: (params: any) => formatEdgeTooltip(params, colorFor, suffix, prefix),
     } as EChartsOption['tooltip'],
   }
 }

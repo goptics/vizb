@@ -17,7 +17,7 @@ import {
   type ChartStyling,
 } from './shared/chartConfig'
 import { chartFontSize } from './shared/chartFontSize'
-import { affixForColumn } from '@/lib/affix'
+import { affixForColumn, applyAffixes } from '@/lib/affix'
 
 function formatCellNumber(v: number): string {
   if (Math.abs(v) >= 1e6) return formatChartNumber(v / 1e6) + 'M'
@@ -123,6 +123,7 @@ function build2DHeatmap(config: BaseChartConfig): EChartsOption {
   const yCategories = data.yAxis
   // Heatmap cell values are the metric — the affix resolves against the chart title.
   const suffix = affixForColumn(config.labelSuffix?.value, data.title)
+  const prefix = affixForColumn(config.labelPrefix?.value, data.title)
 
   const heatmapData: number[][] = []
   let minVal = Infinity
@@ -175,10 +176,10 @@ function build2DHeatmap(config: BaseChartConfig): EChartsOption {
         const yPct = yTotal > 0 ? ((val / yTotal) * 100).toFixed(1) : '0.0'
 
         let html = `<b>${xName} / ${yName}</b><br/>`
-        html += `Value: <b>${formatChartNumber(val)}${suffix}</b><br/>`
+        html += `Value: <b>${applyAffixes(formatChartNumber(val), prefix, suffix)}</b><br/>`
         html += tooltipDivider(isDark.value)
-        html += `Σ ${xName}: <b>${formatChartNumber(xTotal)}${suffix}</b> (${xPct}%)<br/>`
-        html += `Σ ${yName}: <b>${formatChartNumber(yTotal)}${suffix}</b> (${yPct}%)`
+        html += `Σ ${xName}: <b>${applyAffixes(formatChartNumber(xTotal), prefix, suffix)}</b> (${xPct}%)<br/>`
+        html += `Σ ${yName}: <b>${applyAffixes(formatChartNumber(yTotal), prefix, suffix)}</b> (${yPct}%)`
 
         return html
       },
@@ -189,7 +190,8 @@ function build2DHeatmap(config: BaseChartConfig): EChartsOption {
         data: heatmapData,
         label: {
           show: showLabels.value,
-          formatter: (params: any) => formatCellNumber(params.data[2]) + suffix,
+          formatter: (params: any) =>
+            applyAffixes(formatCellNumber(params.data[2]), prefix, suffix),
           color: styling.textColor,
           fontSize: 11,
         },
@@ -270,6 +272,7 @@ function build3DHeatmap(config: BaseChartConfig): EChartsOption {
   const yLabel = data.axisLabels?.y ?? 'y'
   const zLabel = data.axisLabels?.z ?? 'z'
   const suffix = affixForColumn(config.labelSuffix?.value, data.title)
+  const prefix = affixForColumn(config.labelPrefix?.value, data.title)
 
   const tooltipFormatter = (params: any) => {
     const val = Array.isArray(params.value) ? params.value : params.data
@@ -287,12 +290,14 @@ function build3DHeatmap(config: BaseChartConfig): EChartsOption {
         if (v === undefined) return ''
         const color = getNextColorFor(z) ?? getDefaultThemeColor()
         const dot = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};margin-right:6px"></span>`
-        return `${dot}${z}: <b>${formatChartNumber(v)}${suffix}</b>`
+        return `${dot}${z}: <b>${applyAffixes(formatChartNumber(v), prefix, suffix)}</b>`
       })
       .filter(Boolean)
 
     const zSumLine =
-      zBreakdown.size > 1 ? `Σ ${zLabel}: <b>${formatChartNumber(total)}${suffix}</b><br/>` : ''
+      zBreakdown.size > 1
+        ? `Σ ${zLabel}: <b>${applyAffixes(formatChartNumber(total), prefix, suffix)}</b><br/>`
+        : ''
 
     const xMarginal = xMarginals.get(xName) ?? 0
     const yMarginal = yMarginals.get(yName) ?? 0
@@ -300,8 +305,8 @@ function build3DHeatmap(config: BaseChartConfig): EChartsOption {
     const margins =
       tooltipDivider(isDark.value) +
       zSumLine +
-      `Σ ${xLabel}(${xName}): <b>${formatChartNumber(xMarginal)}${suffix}</b><br/>` +
-      `Σ ${yLabel}(${yName}): <b>${formatChartNumber(yMarginal)}${suffix}</b>`
+      `Σ ${xLabel}(${xName}): <b>${applyAffixes(formatChartNumber(xMarginal), prefix, suffix)}</b><br/>` +
+      `Σ ${yLabel}(${yName}): <b>${applyAffixes(formatChartNumber(yMarginal), prefix, suffix)}</b>`
 
     const spread = tooltipSpreadRows(Array.from(zBreakdown.values()), isDark.value)
 
@@ -362,7 +367,9 @@ function build3DHeatmap(config: BaseChartConfig): EChartsOption {
           show: showLabels.value,
           formatter: (params: any) => {
             const v = Array.isArray(params.value) ? params.value[2] : params.data?.[2]
-            return v === undefined || v === 0 ? '' : formatCellNumber(v) + suffix
+            return v === undefined || v === 0
+              ? ''
+              : applyAffixes(formatCellNumber(v), prefix, suffix)
           },
           color: '#fff',
           fontSize: 11,

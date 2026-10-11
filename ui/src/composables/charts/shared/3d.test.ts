@@ -830,4 +830,19 @@ describe('createContinuous3DAxes labelSuffix', () => {
     expect(axes.yAxis3D!.axisLabel.formatter!(10)).toBe('10ms')
     expect(axes.zAxis3D!.axisLabel.formatter).toBeUndefined()
   })
+
+  it('composes prefixes with suffixes on value-axis ticks', () => {
+    const axes = createContinuous3DAxes(
+      styling,
+      'price',
+      'latency',
+      'depth',
+      'linear',
+      { columns: { price: '$', latency: 'ms' } },
+      { columns: { price: '~' } }
+    ) as unknown as Record<string, { axisLabel: { formatter?: (v: number) => string } }>
+    expect(axes.xAxis3D!.axisLabel.formatter!(10)).toBe('~10$')
+    expect(axes.yAxis3D!.axisLabel.formatter!(10)).toBe('10ms')
+    expect(axes.zAxis3D!.axisLabel.formatter).toBeUndefined()
+  })
 })

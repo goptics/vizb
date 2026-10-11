@@ -100,7 +100,9 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
     const xLabel = chartData.value.axisLabels?.x
     const yLogBase = axisLogBase(parsed, 'y')
     const affix = config.labelSuffix?.value
+    const prefixAffix = config.labelPrefix?.value
     const metricSuffix = affixForColumn(affix, chartData.value.title)
+    const metricPrefix = affixForColumn(prefixAffix, chartData.value.title)
     const groupedAxes = coerceX
       ? createValueAxisConfig(
           styling,
@@ -114,9 +116,21 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
             yLogBase,
           },
           '',
-          metricSuffix
+          metricSuffix,
+          '',
+          metricPrefix
         )
-      : createAxisConfig(styling, xAxisData, yScale, xLabel, largeX, true, yLogBase, metricSuffix)
+      : createAxisConfig(
+          styling,
+          xAxisData,
+          yScale,
+          xLabel,
+          largeX,
+          true,
+          yLogBase,
+          metricSuffix,
+          metricPrefix
+        )
     const zoom = resolveCartesianDataZoom(kind, {
       numericX: coerceX,
       largeX,
@@ -142,7 +156,14 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
               yLog
             )
           : series.map((s) => logYValue(s.values[0] ?? null, yLog)),
-        label: createLabelConfig(showLabels.value, styling, undefined, false, metricSuffix),
+        label: createLabelConfig(
+          showLabels.value,
+          styling,
+          undefined,
+          false,
+          metricSuffix,
+          metricPrefix
+        ),
         ...(kind === 'scatter'
           ? scatterSeriesLargeOpts(useVisualMap)
           : { large: true as const, largeThreshold: LARGE_DATA_THRESHOLD }),
@@ -161,9 +182,11 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
               chartData.value.axisLabels?.y,
               true,
               '',
-              metricSuffix
+              metricSuffix,
+              '',
+              metricPrefix
             )
-          : createPinnedAxisTooltip(isDark.value, metricSuffix),
+          : createPinnedAxisTooltip(isDark.value, metricSuffix, metricPrefix),
         ...groupedAxes,
         ...(zoom.dataZoom ? { dataZoom: zoom.dataZoom } : {}),
         legend: { show: false },
@@ -193,7 +216,8 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
         styling,
         undefined,
         false,
-        affixForValue(affix, yAxisLabel, metricSuffix)
+        affixForValue(affix, yAxisLabel, metricSuffix),
+        affixForValue(prefixAffix, yAxisLabel, metricPrefix)
       ),
       ...(kind === 'scatter'
         ? scatterSeriesLargeOpts(useVisualMap)
@@ -227,14 +251,25 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
       ),
       tooltip: coerceX
         ? transposedSeries.length <= 1
-          ? createValueModeTooltip(isDark.value, xLabel, yLabel, true, '', metricSuffix)
+          ? createValueModeTooltip(
+              isDark.value,
+              xLabel,
+              yLabel,
+              true,
+              '',
+              metricSuffix,
+              '',
+              metricPrefix
+            )
           : createTooltipConfig(
               showXBreakdown,
               isDark.value,
               seriesTotals,
               'line',
               affix,
-              metricSuffix
+              metricSuffix,
+              prefixAffix,
+              metricPrefix
             )
         : createTooltipConfig(
             showXBreakdown,
@@ -242,7 +277,9 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
             seriesTotals,
             undefined,
             affix,
-            metricSuffix
+            metricSuffix,
+            prefixAffix,
+            metricPrefix
           ),
       ...groupedAxes,
       ...(zoom.dataZoom ? { dataZoom: zoom.dataZoom } : {}),

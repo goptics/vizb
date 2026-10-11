@@ -2,7 +2,7 @@ import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
 import { getNextColorFor, hasXAxis, hasYAxis, hasZAxis, formatChartNumber } from '@/lib/utils'
-import { affixForColumn } from '@/lib/affix'
+import { affixForColumn, applyAffixes } from '@/lib/affix'
 import { getChartStyling, getTooltipTheme, formatRadarItemTooltip } from './shared/chartConfig'
 import { sortByTotal } from './shared/common'
 import { chartFontSize } from './shared/chartFontSize'
@@ -14,13 +14,14 @@ const makeIndicators = (names: string[], perSpokeMax: number[]) =>
 const makeTooltip = (
   isDark: boolean,
   indicatorNames: string[],
-  affix?: LabelAffix
+  affix?: LabelAffix,
+  prefixAffix?: LabelAffix
 ): EChartsOption['tooltip'] =>
   ({
     trigger: 'item',
     ...getTooltipTheme(isDark),
     formatter: (params: any) =>
-      formatRadarItemTooltip(params, indicatorNames, isDark, getNextColorFor, affix),
+      formatRadarItemTooltip(params, indicatorNames, isDark, getNextColorFor, affix, prefixAffix),
   }) as EChartsOption['tooltip']
 
 const radarConfig = (
@@ -41,6 +42,7 @@ export function useRadarChartOptions(config: BaseChartConfig) {
     const styling = getChartStyling(isDark.value)
     const baseOptions = getBaseOptions(config)
     const affix = config.labelSuffix?.value
+    const prefixAffix = config.labelPrefix?.value
     // Label formatter is added only when a spoke matches the affix, so the
     // no-affix option stays byte-identical to ECharts' default numeric label.
     const makeLabel = (spokes: string[]) => {
@@ -49,14 +51,19 @@ export function useRadarChartOptions(config: BaseChartConfig) {
         fontSize: chartFontSize().series,
         color: styling.textColor,
       }
-      if (!affix || !spokes.some((name) => affixForColumn(affix, name))) return base
+      const hasAffix = (name: string) =>
+        affixForColumn(affix, name) !== '' || affixForColumn(prefixAffix, name) !== ''
+      if (!spokes.some(hasAffix)) return base
       return {
         ...base,
         formatter: (p: { value?: unknown; dimensionIndex?: number }) => {
           const raw = p.value
           if (typeof raw !== 'number' || Number.isNaN(raw)) return ''
-          return (
-            formatChartNumber(raw) + affixForColumn(affix, spokes[p.dimensionIndex ?? -1] ?? '')
+          const spoke = spokes[p.dimensionIndex ?? -1] ?? ''
+          return applyAffixes(
+            formatChartNumber(raw),
+            affixForColumn(prefixAffix, spoke),
+            affixForColumn(affix, spoke)
           )
         },
       }
@@ -70,7 +77,12 @@ export function useRadarChartOptions(config: BaseChartConfig) {
       const values = rows.map((s) => Math.max(0, s.total))
       return {
         ...baseOptions,
-        tooltip: makeTooltip(isDark.value, names, config.labelSuffix?.value),
+        tooltip: makeTooltip(
+          isDark.value,
+          names,
+          config.labelSuffix?.value,
+          config.labelPrefix?.value
+        ),
         legend: { show: false },
         radar: radarConfig(makeIndicators(names, values), styling),
         series: [
@@ -93,7 +105,12 @@ export function useRadarChartOptions(config: BaseChartConfig) {
       )
       return {
         ...baseOptions,
-        tooltip: makeTooltip(isDark.value, yAxis, config.labelSuffix?.value),
+        tooltip: makeTooltip(
+          isDark.value,
+          yAxis,
+          config.labelSuffix?.value,
+          config.labelPrefix?.value
+        ),
         legend: { show: false },
         radar: radarConfig(makeIndicators(yAxis, spokeTotals), styling),
         series: [
@@ -158,7 +175,12 @@ export function useRadarChartOptions(config: BaseChartConfig) {
 
       return {
         ...baseOptions,
-        tooltip: makeTooltip(isDark.value, yAxis, config.labelSuffix?.value),
+        tooltip: makeTooltip(
+          isDark.value,
+          yAxis,
+          config.labelSuffix?.value,
+          config.labelPrefix?.value
+        ),
         legend: { data: zValues, bottom: 5, textStyle: { color: styling.textColor } },
         radar: radarConfig(makeIndicators(yAxis, perSpokeMax), styling),
         series: renderZValues.map((z) => ({
@@ -194,7 +216,12 @@ export function useRadarChartOptions(config: BaseChartConfig) {
 
     return {
       ...baseOptions,
-      tooltip: makeTooltip(isDark.value, yAxis, config.labelSuffix?.value),
+      tooltip: makeTooltip(
+        isDark.value,
+        yAxis,
+        config.labelSuffix?.value,
+        config.labelPrefix?.value
+      ),
       legend: {
         data: rows.map((s) => s.xAxis),
         bottom: 5,

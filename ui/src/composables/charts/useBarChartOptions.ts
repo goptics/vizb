@@ -112,8 +112,10 @@ export function useBarChartOptions(config: BaseChartConfig) {
   const options = computed<EChartsOption>(() => {
     const isHorizontal = horizontal?.value ?? false
     const affix = config.labelSuffix?.value
+    const prefixAffix = config.labelPrefix?.value
     // Value axis / single series represent the metric column (chart title).
     const metricSuffix = affixForColumn(affix, chartData.value.title)
+    const metricPrefix = affixForColumn(prefixAffix, chartData.value.title)
     const radius = borderRadius?.value
     const activeRadius = isActiveRadius(radius)
     const bg = background?.value
@@ -166,7 +168,9 @@ export function useBarChartOptions(config: BaseChartConfig) {
             yLogBase,
           },
           '',
-          metricSuffix
+          metricSuffix,
+          '',
+          metricPrefix
         )
       : isHorizontal
         ? createHorizontalAxisConfig(
@@ -176,7 +180,8 @@ export function useBarChartOptions(config: BaseChartConfig) {
             xLabel,
             largeX,
             yLogBase,
-            metricSuffix
+            metricSuffix,
+            metricPrefix
           )
         : createAxisConfig(
             styling,
@@ -186,7 +191,8 @@ export function useBarChartOptions(config: BaseChartConfig) {
             largeX,
             false,
             yLogBase,
-            metricSuffix
+            metricSuffix,
+            metricPrefix
           )
     const zoom = resolveCartesianDataZoom('bar', {
       numericX: xNums !== null,
@@ -202,7 +208,14 @@ export function useBarChartOptions(config: BaseChartConfig) {
         type: 'bar' as const,
         // xNums is null while horizontal (category X stays categorical).
         data: series.map((s) => barNullable(s.values[0] ?? null, valueLog)),
-        label: createLabelConfig(showLabels.value, styling, 'horizontal', false, metricSuffix),
+        label: createLabelConfig(
+          showLabels.value,
+          styling,
+          'horizontal',
+          false,
+          metricSuffix,
+          metricPrefix
+        ),
         large: true,
         largeThreshold: LARGE_DATA_THRESHOLD,
         itemStyle: { color: getNextColorFor(chartData.value.title) } as BarItemStyle,
@@ -227,7 +240,9 @@ export function useBarChartOptions(config: BaseChartConfig) {
           undefined,
           undefined,
           affix,
-          metricSuffix
+          metricSuffix,
+          prefixAffix,
+          metricPrefix
         ),
         legend: { show: false },
         ...groupedAxes,
@@ -251,7 +266,14 @@ export function useBarChartOptions(config: BaseChartConfig) {
               valueLog
             )
           : series.map((s) => barNullable(s.values[0] ?? null, valueLog)),
-        label: createLabelConfig(showLabels.value, styling, undefined, false, metricSuffix),
+        label: createLabelConfig(
+          showLabels.value,
+          styling,
+          undefined,
+          false,
+          metricSuffix,
+          metricPrefix
+        ),
         large: true,
         largeThreshold: LARGE_DATA_THRESHOLD,
         itemStyle: { color: getNextColorFor(chartData.value.title) } as BarItemStyle,
@@ -270,9 +292,20 @@ export function useBarChartOptions(config: BaseChartConfig) {
               chartData.value.axisLabels?.y,
               true,
               '',
-              metricSuffix
+              metricSuffix,
+              '',
+              metricPrefix
             )
-          : createTooltipConfig(false, isDark.value, undefined, undefined, affix, metricSuffix),
+          : createTooltipConfig(
+              false,
+              isDark.value,
+              undefined,
+              undefined,
+              affix,
+              metricSuffix,
+              prefixAffix,
+              metricPrefix
+            ),
         legend: { show: false },
         ...groupedAxes,
         dataZoom: zoom.dataZoom,
@@ -297,7 +330,8 @@ export function useBarChartOptions(config: BaseChartConfig) {
         styling,
         isHorizontal ? 'horizontal' : 'vertical',
         useStack,
-        affixForValue(affix, yAxisLabel, metricSuffix)
+        affixForValue(affix, yAxisLabel, metricSuffix),
+        affixForValue(prefixAffix, yAxisLabel, metricPrefix)
       ),
       large: true,
       largeThreshold: LARGE_DATA_THRESHOLD,
@@ -361,7 +395,9 @@ export function useBarChartOptions(config: BaseChartConfig) {
           seriesTotals,
           undefined,
           affix,
-          metricSuffix
+          metricSuffix,
+          prefixAffix,
+          metricPrefix
         ),
         legend: createLegendConfig(
           transposedSeries.map((s) => ({ xAxis: s.name })),
@@ -387,16 +423,29 @@ export function useBarChartOptions(config: BaseChartConfig) {
               seriesTotals,
               'line',
               affix,
-              metricSuffix
+              metricSuffix,
+              prefixAffix,
+              metricPrefix
             )
-          : createValueModeTooltip(isDark.value, xLabel, yLabel, true, '', metricSuffix)
+          : createValueModeTooltip(
+              isDark.value,
+              xLabel,
+              yLabel,
+              true,
+              '',
+              metricSuffix,
+              '',
+              metricPrefix
+            )
         : createTooltipConfig(
             hasXAxis(chartData),
             isDark.value,
             seriesTotals,
             undefined,
             affix,
-            metricSuffix
+            metricSuffix,
+            prefixAffix,
+            metricPrefix
           ),
       legend: createLegendConfig(
         transposedSeries.map((s) => ({ xAxis: s.name })),

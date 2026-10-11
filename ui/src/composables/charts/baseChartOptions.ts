@@ -53,6 +53,8 @@ export interface BaseChartConfig {
   chartType?: Ref<ChartType>
   /** Per-column label suffixes (wire `labelSuffix`). Display-only; data stays numeric. */
   labelSuffix?: Ref<LabelAffix | undefined>
+  /** Per-column label prefixes (wire `labelPrefix`). Display-only; data stays numeric. */
+  labelPrefix?: Ref<LabelAffix | undefined>
 }
 
 export const getBaseOptions = (config: BaseChartConfig): Partial<EChartsOption> => {

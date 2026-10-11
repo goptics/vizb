@@ -835,3 +835,43 @@ describe('createTooltipConfig labelSuffix fallback + Σ', () => {
     expect(html).toContain('Σ Q1: <b>40%</b>')
   })
 })
+
+describe('labelPrefix composition', () => {
+  it('composes prefix and suffix on labels, value axes, and tooltips', () => {
+    const label = createLabelConfig(true, styling, undefined, false, '%', '$')
+    expect(label.formatter({ value: 42 })).toBe('$42%')
+
+    const { yAxis } = createValueAxisConfig(
+      styling,
+      'price',
+      'latency',
+      'linear',
+      false,
+      undefined,
+      '%',
+      'ms',
+      '$',
+      '€'
+    )
+    expect((yAxis.axisLabel.formatter as (v: number) => string)(10)).toBe('€10ms')
+
+    const tip = createTooltipConfig(
+      true,
+      false,
+      undefined,
+      'shadow',
+      { columns: { revenue: '%' } },
+      '',
+      { global: '$' },
+      '$'
+    ) as { formatter: (p: unknown[]) => string }
+    const html = tip.formatter([{ name: 'Q1', seriesName: 'revenue', value: 42, marker: 'm' }])
+    expect(html).toContain('$42%')
+  })
+
+  it('passes values through unchanged when no prefix or suffix is set', () => {
+    const label = createLabelConfig(true, styling)
+    expect(label.formatter({ value: 42 })).toBe('42')
+    expect(label.formatter({ value: null })).toBe('')
+  })
+})

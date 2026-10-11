@@ -1,6 +1,21 @@
 import { describe, expect, it } from 'vitest'
-import { affixForColumn } from './affix'
+import { affixForColumn, applyAffixes } from './affix'
 import type { LabelAffix } from '../types'
+
+describe('applyAffixes', () => {
+  it('wraps the value with prefix and suffix', () => {
+    expect(applyAffixes('42', '$', '%')).toBe('$42%')
+  })
+
+  it('passes the value through when both affixes are empty', () => {
+    expect(applyAffixes('42', '', '')).toBe('42')
+  })
+
+  it('applies a lone prefix or a lone suffix unchanged', () => {
+    expect(applyAffixes('42', '$', '')).toBe('$42')
+    expect(applyAffixes('42', '', '%')).toBe('42%')
+  })
+})
 
 describe('affixForColumn', () => {
   it('returns empty string for undefined affix', () => {

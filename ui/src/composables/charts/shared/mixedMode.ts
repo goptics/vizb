@@ -31,7 +31,7 @@ import {
 import { adjustForLogScaleLine, resolveLogScale } from './common'
 import { resolve3DSymbolProps, resolveSeriesSymbol } from './seriesConfig'
 import { resolve2DScatterVisualMap } from './visualMap'
-import { affixForColumn } from '@/lib/affix'
+import { affixForColumn, applyAffixes } from '@/lib/affix'
 import type { Series3DData } from '@/types'
 
 const defaultScatterSymbol = { symbol: 'circle' as const, symbolSize: 8 }
@@ -69,7 +69,8 @@ export function createMixedModeTooltip(
   chartType: Mixed2DChartType,
   xLabel?: string,
   yLabel?: string,
-  ySuffix = ''
+  ySuffix = '',
+  yPrefix = ''
 ): EChartsOption['tooltip'] {
   const theme = getTooltipTheme(isDark)
   const styling = getChartStyling(isDark)
@@ -95,7 +96,8 @@ export function createMixedModeTooltip(
           return xi === undefined ? '' : (xCategories[xi] ?? String(xi))
         })()
       const y = mixedAxisYValue(p)
-      const yText = y === null || y === undefined ? '' : formatTooltipValue(y) + ySuffix
+      const yText =
+        y === null || y === undefined ? '' : applyAffixes(formatTooltipValue(y), yPrefix, ySuffix)
       const marker = p.marker ?? ''
       return `<strong>${xName}: ${category}</strong><br/>${marker} ${yName}: <b>${yText}</b>`
     },
@@ -134,14 +136,19 @@ export function buildMixedAxes2DOptions(
   const colorValues = tuples.map(([, y]) => y).filter((v) => isFinite(v))
   const color = getNextColorFor(chartData.value.title)
   const affix = config.labelSuffix?.value
+  const prefixAffix = config.labelPrefix?.value
   const ySuffix = affixForColumn(affix, yLabel ?? chartData.value.title)
   const xSuffix = affixForColumn(affix, xLabel ?? '')
+  const yPrefix = affixForColumn(prefixAffix, yLabel ?? chartData.value.title)
+  const xPrefix = affixForColumn(prefixAffix, xLabel ?? '')
 
   const label = {
     ...createLabelConfig(showLabels.value, styling),
     formatter: (p: { data: [number, number | null] }) => {
       const y = p.data[1]
-      return y === null || y === undefined ? '' : formatChartNumber(y) + ySuffix
+      return y === null || y === undefined
+        ? ''
+        : applyAffixes(formatChartNumber(y), yPrefix, ySuffix)
     },
   }
 
@@ -198,7 +205,9 @@ export function buildMixedAxes2DOptions(
           yLogBase: axisLogBase(parsed, 'y'),
         },
         xSuffix,
-        ySuffix
+        ySuffix,
+        xPrefix,
+        yPrefix
       )
     : createAxisConfig(
         styling,
@@ -208,7 +217,8 @@ export function buildMixedAxes2DOptions(
         largeX,
         chartType === 'scatter',
         axisLogBase(parsed, 'y'),
-        ySuffix
+        ySuffix,
+        yPrefix
       )
 
   const zoom = resolveCartesianDataZoom(chartType, {
@@ -223,8 +233,25 @@ export function buildMixedAxes2DOptions(
     grid: createValueModeGridConfig(zoom.hasXSlider),
     visualMap: resolve2DScatterVisualMap(useVisualMap, colorValues, styling, 1),
     tooltip: xNums
-      ? createValueModeTooltip(isDark.value, xLabel, yLabel, true, xSuffix, ySuffix)
-      : createMixedModeTooltip(isDark.value, xCategories, chartType, xLabel, yLabel, ySuffix),
+      ? createValueModeTooltip(
+          isDark.value,
+          xLabel,
+          yLabel,
+          true,
+          xSuffix,
+          ySuffix,
+          xPrefix,
+          yPrefix
+        )
+      : createMixedModeTooltip(
+          isDark.value,
+          xCategories,
+          chartType,
+          xLabel,
+          yLabel,
+          ySuffix,
+          yPrefix
+        ),
     ...axisConfig,
     ...(zoom.dataZoom ? { dataZoom: zoom.dataZoom } : {}),
     series: [series],
@@ -255,14 +282,17 @@ export function buildMixedAxes3DOptions(
   const yLog = axisIsLog(parsed, 'y', ['y', 'z'])
   const zLog = axisIsLog(parsed, 'z', ['y', 'z'])
   const affix = config.labelSuffix?.value
+  const prefixAffix = config.labelPrefix?.value
   const ySuffix = affixForColumn(affix, axisLabels?.y ?? 'y')
   const zSuffix = affixForColumn(affix, axisLabels?.z ?? 'z')
-  const axisTick = (suffix: string) =>
-    suffix
+  const yPrefix = affixForColumn(prefixAffix, axisLabels?.y ?? 'y')
+  const zPrefix = affixForColumn(prefixAffix, axisLabels?.z ?? 'z')
+  const axisTick = (suffix: string, prefix: string) =>
+    suffix || prefix
       ? {
           axisLabel: {
             ...axisCommon.axisLabel,
-            formatter: (v: number) => formatChartNumber(v) + suffix,
+            formatter: (v: number) => applyAffixes(formatChartNumber(v), prefix, suffix),
           },
         }
       : {}
@@ -328,6 +358,8 @@ export function buildMixedAxes3DOptions(
         zAxisLabel: axisLabels?.z,
         ySuffix,
         zSuffix,
+        yPrefix,
+        zPrefix,
       }),
     },
     xAxis3D: {
@@ -340,14 +372,14 @@ export function buildMixedAxes3DOptions(
       type: yLog ? ('log' as const) : ('value' as const),
       ...(yLog ? { logBase: axisLogBase(parsed, 'y') } : {}),
       ...axisCommon,
-      ...axisTick(ySuffix),
+      ...axisTick(ySuffix, yPrefix),
       ...axis3DName(axisLabels?.y, styling),
     },
     zAxis3D: {
       type: zLog ? ('log' as const) : ('value' as const),
       ...(zLog ? { logBase: axisLogBase(parsed, 'z') } : {}),
       ...axisCommon,
-      ...axisTick(zSuffix),
+      ...axisTick(zSuffix, zPrefix),
       ...axis3DName(axisLabels?.z, styling),
     },
     grid3D,
