@@ -2,6 +2,7 @@ import { computed } from 'vue'
 import type {
   BarBackground,
   BarConfig,
+  LabelAffix,
   LineConfig,
   ScatterConfig,
   PieConfig,
@@ -106,6 +107,8 @@ export function useActiveChartShape() {
     () => (activeConfig.value as BarConfig | undefined)?.background
   )
 
+  const labelSuffix = computed<LabelAffix | undefined>(() => activeConfig.value?.labelSuffix)
+
   return {
     scale,
     stack,
@@ -125,5 +128,6 @@ export function useActiveChartShape() {
     donut,
     borderRadius,
     background,
+    labelSuffix,
   }
 }

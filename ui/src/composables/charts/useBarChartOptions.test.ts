@@ -1,6 +1,6 @@
 import { describe, it, expect, afterAll } from 'vitest'
 import { ref } from 'vue'
-import type { ChartData } from '@/types'
+import type { ChartData, LabelAffix } from '@/types'
 import type { BaseChartConfig } from './baseChartOptions'
 import { useBarChartOptions } from './useBarChartOptions'
 import {
@@ -1142,5 +1142,62 @@ describe('useBarChartOptions — background', () => {
     })[]
     expect(series.every((s) => s.itemStyle?.borderRadius !== undefined)).toBe(true)
     expect(series.every((s) => s.showBackground === true)).toBe(true)
+  })
+})
+
+describe('useBarChartOptions — labelSuffix', () => {
+  const suffixChartData = (): ChartData => ({
+    title: 'revenue',
+    statType: 'sum',
+    yAxis: ['revenue', 'cost'],
+    zAxis: [],
+    series: [
+      { xAxis: 'West', values: [10, 30], benchmarkId: '' },
+      { xAxis: 'East', values: [20, 40], benchmarkId: '' },
+    ],
+    points: [],
+    axisLabels: { x: 'region', y: 'category' },
+  })
+
+  type SuffixLabel = { name: string; label: { formatter: (p: { value: number }) => string } }
+  type SuffixYAxis = { axisLabel: { formatter?: (v: number) => string } }
+  type SuffixTooltip = {
+    formatter: (p: { name: string; seriesName: string; value: number; marker: string }[]) => string
+  }
+
+  const build = (labelSuffix: LabelAffix) =>
+    useBarChartOptions(baseConfig({ chartData: suffixChartData(), showLabels: true, labelSuffix }))
+
+  it('appends a per-column suffix to matching series labels and the value axis', () => {
+    const { options } = build({ columns: { revenue: '%' } })
+    const series = options.value.series as SuffixLabel[]
+    const byName = Object.fromEntries(series.map((s) => [s.name, s]))
+    expect(byName.revenue!.label.formatter({ value: 10 })).toBe('10%')
+    expect(byName.cost!.label.formatter({ value: 30 })).toBe('30')
+
+    const yAxis = options.value.yAxis as SuffixYAxis
+    expect(yAxis.axisLabel.formatter!(100)).toBe('100%')
+  })
+
+  it('appends a global suffix to every series and the value axis', () => {
+    const { options } = build({ global: 'ms' })
+    const series = options.value.series as SuffixLabel[]
+    const byName = Object.fromEntries(series.map((s) => [s.name, s]))
+    expect(byName.revenue!.label.formatter({ value: 10 })).toBe('10ms')
+    expect(byName.cost!.label.formatter({ value: 30 })).toBe('30ms')
+
+    const yAxis = options.value.yAxis as SuffixYAxis
+    expect(yAxis.axisLabel.formatter!(100)).toBe('100ms')
+  })
+
+  it('appends per-series suffixes to tooltip rows, bare for unmatched series', () => {
+    const { options } = build({ columns: { revenue: '%' } })
+    const tip = options.value.tooltip as SuffixTooltip
+    const html = tip.formatter([
+      { name: 'West', seriesName: 'revenue', value: 10, marker: 'r' },
+      { name: 'West', seriesName: 'cost', value: 30, marker: 'c' },
+    ])
+    expect(html).toContain('revenue (Σ30): 10%')
+    expect(html).toContain('cost (Σ70): 30<')
   })
 })

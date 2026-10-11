@@ -1,5 +1,13 @@
 import { ref, type Ref } from 'vue'
-import type { ChartData, ChartType, Render3D, ScaleInput, ScaleType, Sort } from '@/types'
+import type {
+  ChartData,
+  ChartType,
+  LabelAffix,
+  Render3D,
+  ScaleInput,
+  ScaleType,
+  Sort,
+} from '@/types'
 import type { BaseChartConfig } from '@/composables/charts/baseChartOptions'
 
 const noSort: Sort = { enabled: false, order: 'asc' }
@@ -209,6 +217,7 @@ export type BaseConfigOverrides = {
   visibleZ?: Record<string, boolean> | Ref<Record<string, boolean>>
   arrangementTarget?: string | Ref<string>
   chartType?: ChartType | Ref<ChartType>
+  labelSuffix?: LabelAffix | Ref<LabelAffix | undefined>
 }
 
 function asRef<T>(value: T | Ref<T> | undefined, fallback: T): Ref<T> {
@@ -238,5 +247,6 @@ export function baseConfig(overrides: BaseConfigOverrides = {}): BaseChartConfig
     visibleZ: asRef(overrides.visibleZ, {}),
     arrangementTarget: asRef(overrides.arrangementTarget, 'xy'),
     chartType: asRef(overrides.chartType, 'bar' as ChartType),
+    labelSuffix: asRef<LabelAffix | undefined>(overrides.labelSuffix, undefined),
   }
 }

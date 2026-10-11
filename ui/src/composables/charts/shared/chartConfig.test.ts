@@ -771,3 +771,43 @@ describe('tooltipSpreadRows non-finite median', () => {
     spy.mockRestore()
   })
 })
+
+describe('labelSuffix axis formatters', () => {
+  it('appends x and y suffixes to value-axis ticks', () => {
+    const { xAxis, yAxis } = createValueAxisConfig(
+      styling,
+      'price',
+      'latency',
+      'linear',
+      false,
+      undefined,
+      '%',
+      'ms'
+    )
+    expect((xAxis.axisLabel.formatter as (v: number) => string)(10)).toBe('10%')
+    expect((yAxis.axisLabel.formatter as (v: number) => string)(10)).toBe('10ms')
+  })
+
+  it('appends the value-axis suffix for vertical and horizontal category axes', () => {
+    const { yAxis } = createAxisConfig(styling, ['a'], 'linear', undefined, false, false, 10, '%')
+    expect((yAxis.axisLabel.formatter as (v: number) => string)(10)).toBe('10%')
+    const horizontal = createHorizontalAxisConfig(
+      styling,
+      ['a'],
+      'linear',
+      undefined,
+      false,
+      10,
+      'ms'
+    )
+    expect((horizontal.xAxis.axisLabel.formatter as (v: number) => string)(10)).toBe('10ms')
+  })
+
+  it('affixes item tooltip values and leaves unset names bare', () => {
+    const tip = createTooltipConfig(false, false, undefined, undefined, { global: '%' }) as {
+      formatter: (p: unknown) => string
+    }
+    expect(tip.formatter({ marker: '*', seriesName: 'revenue', value: 3 })).toContain('3%')
+    expect(tip.formatter({ marker: '*', value: 3 })).toContain('3%')
+  })
+})

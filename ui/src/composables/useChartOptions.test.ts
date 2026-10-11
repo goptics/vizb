@@ -56,7 +56,8 @@ function dispatch(
     cfg.horizontal ?? ref(false),
     cfg.donut ?? ref(false),
     cfg.borderRadius ?? ref(undefined),
-    cfg.background ?? ref(opts.background)
+    cfg.background ?? ref(opts.background),
+    cfg.labelSuffix ?? ref(undefined)
   )
 }
 

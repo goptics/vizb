@@ -26,6 +26,7 @@ import {
   computeSeriesTotals,
 } from './shared/common'
 import { asLogXPairs, axisIsLog, axisLogBase, numericLogXValues, parseScale } from '@/lib/scale'
+import { affixForColumn } from '@/lib/affix'
 import { resolveSeriesSymbol } from './shared/seriesConfig'
 import { resolve2DScatterVisualMap } from './shared/visualMap'
 import { buildValueAxes2DOptions } from './shared/valueMode'
@@ -97,13 +98,24 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
     const largeX = isLargeXAxis(xAxisData)
     const xLabel = chartData.value.axisLabels?.x
     const yLogBase = axisLogBase(parsed, 'y')
+    const affix = config.labelSuffix?.value
+    const metricSuffix = affixForColumn(affix, chartData.value.title)
     const groupedAxes = coerceX
-      ? createValueAxisConfig(styling, xLabel, undefined, yScale, true, {
-          xScale: 'log',
-          xLogBase: axisLogBase(parsed, 'x'),
-          yLogBase,
-        })
-      : createAxisConfig(styling, xAxisData, yScale, xLabel, largeX, true, yLogBase)
+      ? createValueAxisConfig(
+          styling,
+          xLabel,
+          undefined,
+          yScale,
+          true,
+          {
+            xScale: 'log',
+            xLogBase: axisLogBase(parsed, 'x'),
+            yLogBase,
+          },
+          '',
+          metricSuffix
+        )
+      : createAxisConfig(styling, xAxisData, yScale, xLabel, largeX, true, yLogBase, metricSuffix)
     const zoom = resolveCartesianDataZoom(kind, {
       numericX: coerceX,
       largeX,
@@ -129,7 +141,7 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
               yLog
             )
           : series.map((s) => logYValue(s.values[0] ?? null, yLog)),
-        label: createLabelConfig(showLabels.value, styling),
+        label: createLabelConfig(showLabels.value, styling, undefined, false, metricSuffix),
         ...(kind === 'scatter'
           ? scatterSeriesLargeOpts(useVisualMap)
           : { large: true as const, largeThreshold: LARGE_DATA_THRESHOLD }),
@@ -142,8 +154,8 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
         ...baseOptions,
         grid: createValueModeGridConfig(zoom.hasXSlider),
         tooltip: coerceX
-          ? createValueModeTooltip(isDark.value, xLabel, chartData.value.axisLabels?.y, true)
-          : createPinnedAxisTooltip(isDark.value),
+          ? createValueModeTooltip(isDark.value, xLabel, chartData.value.axisLabels?.y, true, affix)
+          : createPinnedAxisTooltip(isDark.value, metricSuffix),
         ...groupedAxes,
         ...(zoom.dataZoom ? { dataZoom: zoom.dataZoom } : {}),
         legend: { show: false },
@@ -168,7 +180,13 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
             yLog
           )
         : series.map((s) => logYValue(s.values[yIndex] ?? null, yLog)),
-      label: createLabelConfig(showLabels.value, styling),
+      label: createLabelConfig(
+        showLabels.value,
+        styling,
+        undefined,
+        false,
+        affixForColumn(affix, yAxisLabel)
+      ),
       ...(kind === 'scatter'
         ? scatterSeriesLargeOpts(useVisualMap)
         : { large: true as const, largeThreshold: LARGE_DATA_THRESHOLD }),
@@ -201,9 +219,9 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
       ),
       tooltip: coerceX
         ? transposedSeries.length <= 1
-          ? createValueModeTooltip(isDark.value, xLabel, yLabel, true)
-          : createTooltipConfig(showXBreakdown, isDark.value, seriesTotals, 'line')
-        : createTooltipConfig(showXBreakdown, isDark.value, seriesTotals),
+          ? createValueModeTooltip(isDark.value, xLabel, yLabel, true, affix)
+          : createTooltipConfig(showXBreakdown, isDark.value, seriesTotals, 'line', affix)
+        : createTooltipConfig(showXBreakdown, isDark.value, seriesTotals, undefined, affix),
       ...groupedAxes,
       ...(zoom.dataZoom ? { dataZoom: zoom.dataZoom } : {}),
       legend: createLegendConfig(
