@@ -143,7 +143,12 @@ func ParseOverrides(specs []string, charts []string, axes []Axis) (map[string]in
 		// Build a name → descriptor lookup for this chart's valid keys.
 		chartFlags := internal_charts.FlagsFor(chartType)
 		flagByName := make(map[string]flags.Flag, len(chartFlags))
+		rootOnly := map[string]bool{}
 		for _, f := range chartFlags {
+			if f.RootOnly {
+				rootOnly[f.EffectiveKey()] = true
+				continue
+			}
 			flagByName[f.EffectiveKey()] = f
 		}
 
@@ -161,6 +166,9 @@ func ParseOverrides(specs []string, charts []string, axes []Axis) (map[string]in
 
 		for _, prop := range parsed.Props {
 			key := prop.Key
+			if rootOnly[key] {
+				return nil, nil, fmt.Errorf("--chart: key %q is not a per-chart setting; use --%s instead", key, key)
+			}
 			f, known := flagByName[key]
 			if !known {
 				// Valid for another chart → drop with a warning; valid nowhere → typo.
@@ -335,6 +343,9 @@ func chartSpecParseOptions(chartFlags []flags.Flag) specparse.Options {
 	known := make(map[string]struct{}, len(chartFlags))
 	multi := make(map[string]struct{})
 	for _, f := range chartFlags {
+		if f.RootOnly {
+			continue
+		}
 		key := f.EffectiveKey()
 		known[key] = struct{}{}
 		if f.MultiValue || f.Kind == flags.KindStat || f.Kind == flags.KindStringSlice {

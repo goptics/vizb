@@ -77,8 +77,8 @@ See the [Parser Guide](/guides/parsers) for each parser's metrics, and the
 | `--name` | `-n` | `Benchmarks` | Dataset name |
 | `--theme` | | *(empty)* | Embed a color theme on the dataset (**repeatable**; first is active). Built-in name, structured `name:colors=#hex,...;visualMapColors=#hex,#hex`, or bare `#hex,#hex,...` palette. Empty when unset (UI default). Built-in `default` is not embedded. |
 | `--font-size` | | *(empty)* | Chart text size in CSS pixels. A number sets series data labels, legend, and axis ticks to that size. A bag sets keys individually: `series=16;legend=10;label=12`. Invalid keys/values warn and skip. |
-| `--label-suffix` | | *(empty)* | Suffix appended to numeric values on labels, tooltips, and value-axis ticks on every selected chart. Global (`%`) or per-column (`col1=%,col2=ms`); a `=` selects per-column parsing. Also settable per chart via `--chart <type>:label-suffix=…` |
-| `--label-prefix` | | *(empty)* | Prefix prepended to numeric values on labels, tooltips, and value-axis ticks on every selected chart. Global (`$`) or per-column (`col1=$,col2=€`); a `=` selects per-column parsing. Composes with `--label-suffix` (e.g. `$42%`). Also settable per chart via `--chart <type>:label-prefix=…` |
+| `--label-suffix` | | *(empty)* | Suffix appended to numeric values on labels, tooltips, and value-axis ticks on every selected chart. Global (`%`) or per-column (`col1=%,col2=ms`); a `=` selects per-column parsing. |
+| `--label-prefix` | | *(empty)* | Prefix prepended to numeric values on labels, tooltips, and value-axis ticks on every selected chart. Global (`$`) or per-column (`col1=$,col2=€`); a `=` selects per-column parsing. Composes with `--label-suffix` (e.g. `$42%`). |
 | `--description` | `-d` | `""` | Dataset description |
 | `--tag` | `-t` | `""` | Tag identifier for release tracking |
 | `--id` | | `""` | Stable dataset id for `?id=` deep links in the HTML UI |
@@ -281,13 +281,6 @@ vizb sales.csv -c bar --chart bar:bg -o out.html
 
 # Styled object (semicolons inside braces; commas stay literal)
 vizb sales.csv -c bar --chart 'bar:bg={color=rgba(180, 180, 180, 0.2);borderColor=#000}' -o out.html
-
-# Suffix numeric values: global, or per column (exact column-name match)
-vizb sales.csv -c bar --chart 'bar:label-suffix=%' -o out.html
-vizb sales.csv -c line --chart 'line:label-suffix=latency=ms,throughput=%' -o out.html
-
-# Prefix numeric values (composes with suffix, e.g. $42%)
-vizb sales.csv -c bar --chart 'bar:label-prefix=$' -o out.html
 ```
 
 **Supported keys:**
@@ -297,8 +290,6 @@ vizb sales.csv -c bar --chart 'bar:label-prefix=$' -o out.html
 | `swap` | — | permutation of axis chars (e.g. `yx`, `yxn`) | all |
 | `sort` | — | `asc`, `desc` | all |
 | `labels` | `labels` | `true`, `false` | all |
-| `label-suffix` | — | global symbol (`%`) or per-column (`col1=%,col2=ms`); comma form only (`;` separates props); replaces the root `--label-suffix` for that chart | all |
-| `label-prefix` | — | global symbol (`$`) or per-column (`col1=$,col2=€`); comma form only (`;` separates props); replaces the root `--label-prefix` for that chart | all |
 | `scale` | — | `linear`, `log`, or `type=log;axes=x,y;base=10` | `bar`, `line`, `scatter` |
 | `3d-rotate` | `3d-rotate` | `true`, `false` | `bar`, `line` 3D only |
 | `bg` | `bg` | `{field=value;…}` style object, or bare/`{}` for on | `bar` 2D only |
