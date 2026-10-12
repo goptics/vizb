@@ -103,7 +103,7 @@ Most settings apply to every chart type. The exceptions are `scale` (log), which
 | `scale` log | ✓ | ✓ | ✓ | ✗ | ✗ | ✗ | ✗ | ✗ |
 | `3d-rotate` (3D auto-rotate) | ✓ 3D only | ✓ 3D only | ✓ 3D only | ✗ | ✗ | ✗ | ✗ | ✗ |
 
-To override a setting for a single chart type without affecting the others, use the `--chart <type>:key=val` syntax. `--label-suffix` is not a `--chart` key: units belong to the data, so it applies to every chart. Object props use `{field=value;field=value}` (semicolons inside braces; commas stay literal). Unwrapped `bar:bg=color=…` is invalid.
+To override a setting for a single chart type without affecting the others, use the `--chart <type>:key=val` syntax. `--label-suffix` and `--label-prefix` are not `--chart` keys: units belong to the data, so they apply to every chart. Object props use `{field=value;field=value}` (semicolons inside braces; commas stay literal). Unwrapped `bar:bg=color=…` is invalid.
 
 ```bash
 # Turn on labels for bar only
