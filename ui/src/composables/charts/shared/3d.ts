@@ -3,7 +3,7 @@ import type { LabelAffix, Render3D, Point3D, ScaleInput, Series3DData } from '@/
 import { axisIsLog, axisLogBase, parseScale } from '@/lib/scale'
 import { valuePoints3DToSeries } from '@/lib/transform'
 import { getDefaultThemeColor, getNextColorFor, formatChartNumber } from '@/lib/utils'
-import { affixForColumn } from '@/lib/affix'
+import { affixForColumn, escapeHtml } from '@/lib/affix'
 import {
   formatTooltipValue,
   tooltipDivider,
@@ -121,8 +121,8 @@ export function createMixed3DTooltipFormatter(params: {
     const xName = xValues[xi] ?? String(xi)
     return (
       `<b>${xLabel}: ${xName}</b><br/>` +
-      `${yLabel}: <b>${formatChartNumber(y)}${ySuffix}</b><br/>` +
-      `${zLabel}: <b>${formatChartNumber(z)}${zSuffix}</b>`
+      `${yLabel}: <b>${formatChartNumber(y)}${escapeHtml(ySuffix)}</b><br/>` +
+      `${zLabel}: <b>${formatChartNumber(z)}${escapeHtml(zSuffix)}</b>`
     )
   }
 }
@@ -176,13 +176,13 @@ export function createValue3DTooltipFormatter(params: {
 
     const margins =
       tooltipDivider(isDark) +
-      `Σ ${xLabel}(${xName}): <b>${formatChartNumber(xMarginal)}${metricSuffix}</b><br/>` +
-      `Σ ${yLabel}(${yName}): <b>${formatChartNumber(yMarginal)}${metricSuffix}</b><br/>` +
-      `Σ (${xLabel}∪${yLabel}): <b>${formatChartNumber(xyUnion)}${metricSuffix}</b>`
+      `Σ ${xLabel}(${xName}): <b>${formatChartNumber(xMarginal)}${escapeHtml(metricSuffix)}</b><br/>` +
+      `Σ ${yLabel}(${yName}): <b>${formatChartNumber(yMarginal)}${escapeHtml(metricSuffix)}</b><br/>` +
+      `Σ (${xLabel}∪${yLabel}): <b>${formatChartNumber(xyUnion)}${escapeHtml(metricSuffix)}</b>`
 
     return (
       `<b>${xLabel}: ${xName} / ${yLabel}: ${yName}</b><br/>` +
-      `${dot}${metricLabel}: <b>${formatChartNumber(v)}${metricSuffix}</b><br/>` +
+      `${dot}${metricLabel}: <b>${formatChartNumber(v)}${escapeHtml(metricSuffix)}</b><br/>` +
       margins
     )
   }
@@ -359,11 +359,14 @@ export function createContinuous3DTooltipFormatter(
   return (p: { value: number[] }) => {
     const [x = 0, y = 0, z = 0, metric] = p.value
     const coords =
-      `<b>${xName}: ${formatTooltipValue(x)}${xSuffix}</b><br/>` +
-      `${yName}: ${formatTooltipValue(y)}${ySuffix}<br/>` +
-      `${zName}: ${formatTooltipValue(z)}${zSuffix}`
+      `<b>${xName}: ${formatTooltipValue(x)}${escapeHtml(xSuffix)}</b><br/>` +
+      `${yName}: ${formatTooltipValue(y)}${escapeHtml(ySuffix)}<br/>` +
+      `${zName}: ${formatTooltipValue(z)}${escapeHtml(zSuffix)}`
     if (metric !== undefined) {
-      return coords + `<br/>${metricName}: <b>${formatTooltipValue(metric)}${metricSuffix}</b>`
+      return (
+        coords +
+        `<br/>${metricName}: <b>${formatTooltipValue(metric)}${escapeHtml(metricSuffix)}</b>`
+      )
     }
     return coords
   }
@@ -473,7 +476,7 @@ export function create3DTooltipFormatter(params: {
         const dot = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${getNextColorFor(z)};margin-right:6px"></span>`
         // legendTotals is built from the same aggPoints that fill zmap, so z is present.
         const sumTag = ` (Σ${formatChartNumber(legendTotals.get(z)!)})`
-        return `${dot}${z}${sumTag}: <b>${formatChartNumber(v)}${metricSuffix}</b>`
+        return `${dot}${z}${sumTag}: <b>${formatChartNumber(v)}${escapeHtml(metricSuffix)}</b>`
       })
       .filter(Boolean)
 
@@ -482,15 +485,15 @@ export function create3DTooltipFormatter(params: {
     const xyUnion = xMarginal + yMarginal - cellTotal
     const cellSumLine =
       zmap.size > 0
-        ? `Σ (${xLabel},${yLabel},${zSumLabel}): <b>${formatChartNumber(cellTotal)}${metricSuffix}</b><br/>`
+        ? `Σ (${xLabel},${yLabel},${zSumLabel}): <b>${formatChartNumber(cellTotal)}${escapeHtml(metricSuffix)}</b><br/>`
         : ''
 
     const margins =
       tooltipDivider(isDark) +
-      `Σ ${xLabel}(${xName}): <b>${formatChartNumber(xMarginal)}${metricSuffix}</b><br/>` +
-      `Σ ${yLabel}(${yName}): <b>${formatChartNumber(yMarginal)}${metricSuffix}</b><br/>` +
+      `Σ ${xLabel}(${xName}): <b>${formatChartNumber(xMarginal)}${escapeHtml(metricSuffix)}</b><br/>` +
+      `Σ ${yLabel}(${yName}): <b>${formatChartNumber(yMarginal)}${escapeHtml(metricSuffix)}</b><br/>` +
       cellSumLine +
-      `Σ (${xLabel}∪${yLabel}): <b>${formatChartNumber(xyUnion)}${metricSuffix}</b>`
+      `Σ (${xLabel}∪${yLabel}): <b>${formatChartNumber(xyUnion)}${escapeHtml(metricSuffix)}</b>`
 
     // Spread of the z-values in this cell (median / IQR / CV), mirroring the 2D
     // tooltip. Only meaningful with >1 z.

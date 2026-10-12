@@ -3,7 +3,7 @@ import type { LabelAffix, ScaleType } from '@/types'
 import { chartFontSize } from './chartFontSize'
 import { describe } from '@/lib/stats'
 import { formatChartNumber } from '@/lib/utils'
-import { affixForColumn } from '@/lib/affix'
+import { affixForColumn, escapeHtml } from '@/lib/affix'
 
 export const LARGE_X_THRESHOLD = 50
 /** Initial visible share of a large category X-axis when dataZoom first renders. */
@@ -563,10 +563,10 @@ export function formatTooltipValue(value: any): string {
   return String(value)
 }
 
-/** Tooltip value with a resolved suffix appended; missing values ('—') stay bare. */
+/** Tooltip value with a resolved, HTML-escaped suffix appended; missing values ('—') stay bare. */
 export function affixedTooltipValue(value: unknown, suffix: string): string {
   if (!suffix || value === null || value === undefined) return formatTooltipValue(value)
-  return formatTooltipValue(value) + suffix
+  return formatTooltipValue(value) + escapeHtml(suffix)
 }
 
 /**
@@ -840,7 +840,9 @@ export function createTooltipConfig(
           const seriesSum = seriesTotals?.get(cur.seriesName ?? '')
           const rowSuffix = affixForValue(affix, cur.seriesName ?? '', metricSuffix)
           const sumTag =
-            seriesSum === undefined ? '' : ` (Σ${formatChartNumber(seriesSum)}${rowSuffix})`
+            seriesSum === undefined
+              ? ''
+              : ` (Σ${formatChartNumber(seriesSum)}${escapeHtml(rowSuffix)})`
           return `${cur.marker} ${cur.seriesName}${sumTag}: ${affixedTooltipValue(tooltipMetric(cur.value), rowSuffix)}`
         })
         const header = tooltipHeader(params)
@@ -854,7 +856,7 @@ export function createTooltipConfig(
           (sum, cur) => sum + (typeof cur === 'number' ? cur : 0),
           0
         )
-        const sumLine = `${tooltipDivider(isDark)}Σ ${header}: <b>${formatChartNumber(total)}${metricSuffix}</b>`
+        const sumLine = `${tooltipDivider(isDark)}Σ ${header}: <b>${formatChartNumber(total)}${escapeHtml(metricSuffix)}</b>`
         const spread = tooltipSpreadRows(
           metrics.map((v) => (typeof v === 'number' ? v : NaN)),
           isDark

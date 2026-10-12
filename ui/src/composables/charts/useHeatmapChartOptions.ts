@@ -17,7 +17,7 @@ import {
   type ChartStyling,
 } from './shared/chartConfig'
 import { chartFontSize } from './shared/chartFontSize'
-import { affixForColumn } from '@/lib/affix'
+import { affixForColumn, escapeHtml } from '@/lib/affix'
 
 function formatCellNumber(v: number): string {
   if (Math.abs(v) >= 1e6) return formatChartNumber(v / 1e6) + 'M'
@@ -175,10 +175,10 @@ function build2DHeatmap(config: BaseChartConfig): EChartsOption {
         const yPct = yTotal > 0 ? ((val / yTotal) * 100).toFixed(1) : '0.0'
 
         let html = `<b>${xName} / ${yName}</b><br/>`
-        html += `Value: <b>${formatChartNumber(val)}${suffix}</b><br/>`
+        html += `Value: <b>${formatChartNumber(val)}${escapeHtml(suffix)}</b><br/>`
         html += tooltipDivider(isDark.value)
-        html += `Σ ${xName}: <b>${formatChartNumber(xTotal)}${suffix}</b> (${xPct}%)<br/>`
-        html += `Σ ${yName}: <b>${formatChartNumber(yTotal)}${suffix}</b> (${yPct}%)`
+        html += `Σ ${xName}: <b>${formatChartNumber(xTotal)}${escapeHtml(suffix)}</b> (${xPct}%)<br/>`
+        html += `Σ ${yName}: <b>${formatChartNumber(yTotal)}${escapeHtml(suffix)}</b> (${yPct}%)`
 
         return html
       },
@@ -287,12 +287,14 @@ function build3DHeatmap(config: BaseChartConfig): EChartsOption {
         if (v === undefined) return ''
         const color = getNextColorFor(z) ?? getDefaultThemeColor()
         const dot = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};margin-right:6px"></span>`
-        return `${dot}${z}: <b>${formatChartNumber(v)}${suffix}</b>`
+        return `${dot}${z}: <b>${formatChartNumber(v)}${escapeHtml(suffix)}</b>`
       })
       .filter(Boolean)
 
     const zSumLine =
-      zBreakdown.size > 1 ? `Σ ${zLabel}: <b>${formatChartNumber(total)}${suffix}</b><br/>` : ''
+      zBreakdown.size > 1
+        ? `Σ ${zLabel}: <b>${formatChartNumber(total)}${escapeHtml(suffix)}</b><br/>`
+        : ''
 
     const xMarginal = xMarginals.get(xName) ?? 0
     const yMarginal = yMarginals.get(yName) ?? 0
@@ -300,8 +302,8 @@ function build3DHeatmap(config: BaseChartConfig): EChartsOption {
     const margins =
       tooltipDivider(isDark.value) +
       zSumLine +
-      `Σ ${xLabel}(${xName}): <b>${formatChartNumber(xMarginal)}${suffix}</b><br/>` +
-      `Σ ${yLabel}(${yName}): <b>${formatChartNumber(yMarginal)}${suffix}</b>`
+      `Σ ${xLabel}(${xName}): <b>${formatChartNumber(xMarginal)}${escapeHtml(suffix)}</b><br/>` +
+      `Σ ${yLabel}(${yName}): <b>${formatChartNumber(yMarginal)}${escapeHtml(suffix)}</b>`
 
     const spread = tooltipSpreadRows(Array.from(zBreakdown.values()), isDark.value)
 

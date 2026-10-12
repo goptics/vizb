@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { affixForColumn } from './affix'
+import { affixForColumn, escapeHtml } from './affix'
 import type { LabelAffix } from '../types'
 
 describe('affixForColumn', () => {
@@ -35,5 +35,18 @@ describe('affixForColumn', () => {
   it('treats empty-string values as set', () => {
     expect(affixForColumn({ global: '' }, 'a')).toBe('')
     expect(affixForColumn({ global: '%', columns: { a: '' } }, 'a')).toBe('')
+  })
+})
+
+describe('escapeHtml', () => {
+  it('escapes HTML-significant characters', () => {
+    expect(escapeHtml(`<img src=x onerror="a('&')">`)).toBe(
+      '&lt;img src=x onerror=&quot;a(&#39;&amp;&#39;)&quot;&gt;'
+    )
+  })
+
+  it('leaves plain affixes untouched', () => {
+    expect(escapeHtml('ms')).toBe('ms')
+    expect(escapeHtml('')).toBe('')
   })
 })

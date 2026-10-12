@@ -831,3 +831,16 @@ describe('createContinuous3DAxes labelSuffix', () => {
     expect(axes.zAxis3D!.axisLabel.formatter).toBeUndefined()
   })
 })
+
+describe('3D tooltip suffix escaping', () => {
+  it('renders markup-bearing suffixes as text', () => {
+    const formatter = createContinuous3DTooltipFormatter(
+      false,
+      { x: 'a', y: 'b', z: 'c', metric: 'm' },
+      { global: '<img src=x onerror=alert(1)>' }
+    )
+    const html = formatter({ value: [1, 2, 3, 4] })
+    expect(html).not.toContain('<img')
+    expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;')
+  })
+})

@@ -31,7 +31,7 @@ import {
 import { adjustForLogScaleLine, resolveLogScale } from './common'
 import { resolve3DSymbolProps, resolveSeriesSymbol } from './seriesConfig'
 import { resolve2DScatterVisualMap } from './visualMap'
-import { affixForColumn } from '@/lib/affix'
+import { affixForColumn, escapeHtml } from '@/lib/affix'
 import type { Series3DData } from '@/types'
 
 const defaultScatterSymbol = { symbol: 'circle' as const, symbolSize: 8 }
@@ -95,7 +95,7 @@ export function createMixedModeTooltip(
           return xi === undefined ? '' : (xCategories[xi] ?? String(xi))
         })()
       const y = mixedAxisYValue(p)
-      const yText = y === null || y === undefined ? '' : formatTooltipValue(y) + ySuffix
+      const yText = y === null || y === undefined ? '' : formatTooltipValue(y) + escapeHtml(ySuffix)
       const marker = p.marker ?? ''
       return `<strong>${xName}: ${category}</strong><br/>${marker} ${yName}: <b>${yText}</b>`
     },

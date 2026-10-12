@@ -30,6 +30,7 @@ import {
   renderTooltipLegendColumns,
   TOOLTIP_LEGEND_MAX_ROWS_PER_COL,
   getTooltipTheme,
+  affixedTooltipValue,
 } from './chartConfig'
 
 const indicators = ['A', 'B', 'C']
@@ -833,5 +834,15 @@ describe('createTooltipConfig labelSuffix fallback + Σ', () => {
     expect(html).toContain('West (Σ30%): 10%')
     expect(html).toContain('East (Σ70%): 30%')
     expect(html).toContain('Σ Q1: <b>40%</b>')
+  })
+})
+
+describe('affixedTooltipValue', () => {
+  it('HTML-escapes the suffix so it renders as text in tooltip markup', () => {
+    expect(affixedTooltipValue(5, '<img src=x>')).toBe('5&lt;img src=x&gt;')
+  })
+
+  it('leaves missing values bare', () => {
+    expect(affixedTooltipValue(null, '<b>')).toBe('—')
   })
 })
