@@ -293,7 +293,7 @@ vizb sales.csv -c line --chart 'line:label-suffix=latency=ms,throughput=%' -o ou
 | `swap` | — | permutation of axis chars (e.g. `yx`, `yxn`) | all |
 | `sort` | — | `asc`, `desc` | all |
 | `labels` | `labels` | `true`, `false` | all |
-| `label-suffix` | — | global symbol (`%`) or per-column (`col1=%,col2=ms`) | all |
+| `label-suffix` | — | global symbol (`%`) or per-column (`col1=%,col2=ms`); comma form only (`;` separates props); replaces the root `--label-suffix` for that chart | all |
 | `scale` | — | `linear`, `log`, or `type=log;axes=x,y;base=10` | `bar`, `line`, `scatter` |
 | `3d-rotate` | `3d-rotate` | `true`, `false` | `bar`, `line` 3D only |
 | `bg` | `bg` | `{field=value;…}` style object, or bare/`{}` for on | `bar` 2D only |

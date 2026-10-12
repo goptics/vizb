@@ -48,39 +48,11 @@ Every chart subcommand accepts the common data, grouping, and metadata flags:
 | `--sort` | `-s` | `""` | Sort order: `asc` or `desc` |
 | `--swap` | | `""` | Swap n/x/y/z axis assignment, e.g. `yx`, `yxn` |
 | `--show-labels` | `-l` | `false` | Show value labels on the chart |
-| `--label-suffix` | | *(empty)* | Suffix appended to numeric values on labels, tooltips, and value-axis ticks. Global (`%`) or per-column (`col1=%,col2=ms`); see [Label suffix](#label-suffix) |
+| `--label-suffix` | | *(empty)* | Suffix appended to numeric values on labels, tooltips, and value-axis ticks. Global (`%`), per-column (`latency=ms,throughput=%`, exact name match), or both (`%,latency=ms`); separate with `,` or `;` |
 | `--mem-unit` | `-M` | `B` | Memory unit: `b`, `B`, `KB`, `MB`, `GB` |
 | `--time-unit` | `-T` | `ns` | Time unit: `ns`, `us`, `ms`, `s` |
 | `--number-unit` | `-N` | `""` | Number unit: `K`, `M`, `B`, `T` |
 | `--round` | | off | Round numeric values to 2 decimal places in the output data (off by default) |
-
-### Label suffix
-
-`--label-suffix` appends a symbol to the numeric values rendered in data labels, tooltips, and value-axis ticks. Two forms:
-
-```bash
-# Global: every numeric value gets "%"
-vizb bar data.csv --label-suffix='%' -o out.html
-
-# Per column: exact column-name match
-vizb line data.csv -g impl --label-suffix='latency=ms,throughput=%' -o out.html
-```
-
-The structured form is stored in the dataset JSON — global:
-
-```json
-"labelSuffix": { "global": "%" }
-```
-
-or per column:
-
-```json
-"labelSuffix": { "columns": { "latency": "ms", "throughput": "%" } }
-```
-
-Column names match **exactly** (no case-folding). The forms combine: `--label-suffix='%,latency=ms'` gives `latency` the `ms` suffix and every other column `%`; without a global symbol, unlisted columns render bare. Tokens are separated by `,` or `;` (pick one per value; use `;` when a symbol contains a comma). Any token with `=` is a per-column entry, so a global symbol cannot contain `=`.
-
-In `--chart` specs, use the comma form (`bar:label-suffix=latency=ms,throughput=%`) — `;` separates spec props there. A `--chart` value replaces the root `--label-suffix` for that chart; it is not merged.
 
 ## Chart-specific flags
 
@@ -121,6 +93,9 @@ vizb bar sales.csv -g region,category -p x,y --horizontal -o bar.html
 
 # Category background on 2D bars (bare = on; writes background.active: true)
 vizb bar sales.csv -g region,category -p x,y --bg -o bar.html
+
+# Units on values: "ms" for latency, "%" for every other column
+vizb line data.csv -g impl --label-suffix='%,latency=ms' -o line.html
 
 # Scatter from all-numeric columns (auto-value)
 vizb scatter data.csv -o scatter.html
