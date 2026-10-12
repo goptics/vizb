@@ -45,6 +45,9 @@ func ParseAffix(input string) (*Affix, error) {
 		if key == "" {
 			return nil, fmt.Errorf("label affix %q: empty column key", input)
 		}
+		if sep == ";" && strings.Contains(key, ",") {
+			return nil, fmt.Errorf("label affix %q: mixed ',' and ';' separators; use one", input)
+		}
 		if val == "" {
 			return nil, fmt.Errorf("label affix %q: column %q has empty symbol", input, key)
 		}

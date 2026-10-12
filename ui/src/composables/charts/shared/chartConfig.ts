@@ -3,7 +3,7 @@ import type { LabelAffix, ScaleType } from '@/types'
 import { chartFontSize } from './chartFontSize'
 import { describe } from '@/lib/stats'
 import { formatChartNumber } from '@/lib/utils'
-import { affixForColumn, applyAffixes } from '@/lib/affix'
+import { affixForColumn, applyAffixes, tooltipAffixes } from '@/lib/affix'
 
 export const LARGE_X_THRESHOLD = 50
 /** Initial visible share of a large category X-axis when dataZoom first renders. */
@@ -583,7 +583,7 @@ export function formatTooltipValue(value: any): string {
 export function affixedTooltipValue(value: unknown, prefix = '', suffix = ''): string {
   if ((!suffix && !prefix) || value === null || value === undefined)
     return formatTooltipValue(value)
-  return applyAffixes(formatTooltipValue(value), prefix, suffix)
+  return tooltipAffixes(formatTooltipValue(value), prefix, suffix)
 }
 
 /**
@@ -636,7 +636,9 @@ export function formatRadarItemTooltip(
   isDark: boolean,
   colorFor?: (name: string) => string | undefined,
   affix?: LabelAffix,
-  prefixAffix?: LabelAffix
+  prefixAffix?: LabelAffix,
+  metricSuffix = '',
+  metricPrefix = ''
 ): string {
   if (!params?.data) return ''
 
@@ -654,14 +656,18 @@ export function formatRadarItemTooltip(
 
   const rows = indicatorNames.map((name, i) => {
     const dot = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color(name)};margin-right:6px"></span>`
-    return `${dot}${name}: <b>${affixedTooltipValue(vals[i], affixForColumn(prefixAffix, name), affixForColumn(affix, name))}</b>`
+    return `${dot}${name}: <b>${affixedTooltipValue(vals[i], affixForValue(prefixAffix, name, metricPrefix), affixForValue(affix, name, metricSuffix))}</b>`
   })
   const legend = renderTooltipLegendColumns(rows)
 
   const finiteVals = vals.filter((v) => Number.isFinite(v))
   const sigmaBlock =
     finiteVals.length >= 2
-      ? `${tooltipDivider(isDark)}Σ ${title}: <b>${formatTooltipValue(finiteVals.reduce((a, b) => a + b, 0))}</b>`
+      ? `${tooltipDivider(isDark)}Σ ${title}: <b>${affixedTooltipValue(
+          finiteVals.reduce((a, b) => a + b, 0),
+          metricPrefix,
+          metricSuffix
+        )}</b>`
       : ''
 
   const spread = tooltipSpreadRows(vals, isDark)
@@ -867,7 +873,7 @@ export function createTooltipConfig(
           const sumTag =
             seriesSum === undefined
               ? ''
-              : ` (Σ${applyAffixes(formatChartNumber(seriesSum), rowPrefix, rowSuffix)})`
+              : ` (Σ${tooltipAffixes(formatChartNumber(seriesSum), rowPrefix, rowSuffix)})`
           return `${cur.marker} ${cur.seriesName}${sumTag}: ${affixedTooltipValue(tooltipMetric(cur.value), rowPrefix, rowSuffix)}`
         })
         const header = tooltipHeader(params)
@@ -881,7 +887,7 @@ export function createTooltipConfig(
           (sum, cur) => sum + (typeof cur === 'number' ? cur : 0),
           0
         )
-        const sumLine = `${tooltipDivider(isDark)}Σ ${header}: <b>${applyAffixes(formatChartNumber(total), metricPrefix, metricSuffix)}</b>`
+        const sumLine = `${tooltipDivider(isDark)}Σ ${header}: <b>${tooltipAffixes(formatChartNumber(total), metricPrefix, metricSuffix)}</b>`
         const spread = tooltipSpreadRows(
           metrics.map((v) => (typeof v === 'number' ? v : NaN)),
           isDark

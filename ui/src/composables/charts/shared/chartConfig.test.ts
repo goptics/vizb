@@ -30,6 +30,7 @@ import {
   renderTooltipLegendColumns,
   TOOLTIP_LEGEND_MAX_ROWS_PER_COL,
   getTooltipTheme,
+  affixedTooltipValue,
 } from './chartConfig'
 
 const indicators = ['A', 'B', 'C']
@@ -873,5 +874,15 @@ describe('labelPrefix composition', () => {
     const label = createLabelConfig(true, styling)
     expect(label.formatter({ value: 42 })).toBe('42')
     expect(label.formatter({ value: null })).toBe('')
+  })
+})
+
+describe('affixedTooltipValue', () => {
+  it('HTML-escapes prefix and suffix so they render as text in tooltip markup', () => {
+    expect(affixedTooltipValue(5, '<i>', '<img src=x>')).toBe('&lt;i&gt;5&lt;img src=x&gt;')
+  })
+
+  it('leaves missing values bare', () => {
+    expect(affixedTooltipValue(null, '<i>', '<b>')).toBe('—')
   })
 })

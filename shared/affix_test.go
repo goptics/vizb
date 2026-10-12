@@ -66,6 +66,7 @@ func (s *AffixSuite) TestErrors() {
 		{"empty symbol", "col=", "symbol"},
 		{"empty token", ",", "token"},
 		{"trailing separator", "col=ms,", "token"},
+		{"mixed separators", "%,a=b;c=d", "mixed"},
 	}
 	for _, c := range cases {
 		s.Run(c.name, func() {

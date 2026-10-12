@@ -3,7 +3,12 @@ import type { EChartsOption } from 'echarts'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
 import { getNextColorFor, hasXAxis, hasYAxis, hasZAxis, formatChartNumber } from '@/lib/utils'
 import { affixForColumn, applyAffixes } from '@/lib/affix'
-import { getChartStyling, getTooltipTheme, formatRadarItemTooltip } from './shared/chartConfig'
+import {
+  affixForValue,
+  getChartStyling,
+  getTooltipTheme,
+  formatRadarItemTooltip,
+} from './shared/chartConfig'
 import { sortByTotal } from './shared/common'
 import { chartFontSize } from './shared/chartFontSize'
 import type { LabelAffix } from '@/types'
@@ -15,13 +20,24 @@ const makeTooltip = (
   isDark: boolean,
   indicatorNames: string[],
   affix?: LabelAffix,
-  prefixAffix?: LabelAffix
+  prefixAffix?: LabelAffix,
+  metricSuffix = '',
+  metricPrefix = ''
 ): EChartsOption['tooltip'] =>
   ({
     trigger: 'item',
     ...getTooltipTheme(isDark),
     formatter: (params: any) =>
-      formatRadarItemTooltip(params, indicatorNames, isDark, getNextColorFor, affix, prefixAffix),
+      formatRadarItemTooltip(
+        params,
+        indicatorNames,
+        isDark,
+        getNextColorFor,
+        affix,
+        prefixAffix,
+        metricSuffix,
+        metricPrefix
+      ),
   }) as EChartsOption['tooltip']
 
 const radarConfig = (
@@ -43,6 +59,12 @@ export function useRadarChartOptions(config: BaseChartConfig) {
     const baseOptions = getBaseOptions(config)
     const affix = config.labelSuffix?.value
     const prefixAffix = config.labelPrefix?.value
+    // Spokes are categories, not columns: a spoke-named entry wins, else the
+    // metric column's affix (as pie/heatmap resolve via the chart title).
+    const metricSuffix = affixForColumn(affix, cd.title)
+    const metricPrefix = affixForColumn(prefixAffix, cd.title)
+    const spokeSuffix = (name: string) => affixForValue(affix, name, metricSuffix)
+    const spokePrefix = (name: string) => affixForValue(prefixAffix, name, metricPrefix)
     // Label formatter is added only when a spoke matches the affix, so the
     // no-affix option stays byte-identical to ECharts' default numeric label.
     const makeLabel = (spokes: string[]) => {
@@ -51,8 +73,7 @@ export function useRadarChartOptions(config: BaseChartConfig) {
         fontSize: chartFontSize().series,
         color: styling.textColor,
       }
-      const hasAffix = (name: string) =>
-        affixForColumn(affix, name) !== '' || affixForColumn(prefixAffix, name) !== ''
+      const hasAffix = (name: string) => spokeSuffix(name) !== '' || spokePrefix(name) !== ''
       if (!spokes.some(hasAffix)) return base
       return {
         ...base,
@@ -60,11 +81,7 @@ export function useRadarChartOptions(config: BaseChartConfig) {
           const raw = p.value
           if (typeof raw !== 'number' || Number.isNaN(raw)) return ''
           const spoke = spokes[p.dimensionIndex ?? -1] ?? ''
-          return applyAffixes(
-            formatChartNumber(raw),
-            affixForColumn(prefixAffix, spoke),
-            affixForColumn(affix, spoke)
-          )
+          return applyAffixes(formatChartNumber(raw), spokePrefix(spoke), spokeSuffix(spoke))
         },
       }
     }
@@ -81,7 +98,9 @@ export function useRadarChartOptions(config: BaseChartConfig) {
           isDark.value,
           names,
           config.labelSuffix?.value,
-          config.labelPrefix?.value
+          config.labelPrefix?.value,
+          metricSuffix,
+          metricPrefix
         ),
         legend: { show: false },
         radar: radarConfig(makeIndicators(names, values), styling),
@@ -109,7 +128,9 @@ export function useRadarChartOptions(config: BaseChartConfig) {
           isDark.value,
           yAxis,
           config.labelSuffix?.value,
-          config.labelPrefix?.value
+          config.labelPrefix?.value,
+          metricSuffix,
+          metricPrefix
         ),
         legend: { show: false },
         radar: radarConfig(makeIndicators(yAxis, spokeTotals), styling),
@@ -179,7 +200,9 @@ export function useRadarChartOptions(config: BaseChartConfig) {
           isDark.value,
           yAxis,
           config.labelSuffix?.value,
-          config.labelPrefix?.value
+          config.labelPrefix?.value,
+          metricSuffix,
+          metricPrefix
         ),
         legend: { data: zValues, bottom: 5, textStyle: { color: styling.textColor } },
         radar: radarConfig(makeIndicators(yAxis, perSpokeMax), styling),
@@ -220,7 +243,9 @@ export function useRadarChartOptions(config: BaseChartConfig) {
         isDark.value,
         yAxis,
         config.labelSuffix?.value,
-        config.labelPrefix?.value
+        config.labelPrefix?.value,
+        metricSuffix,
+        metricPrefix
       ),
       legend: {
         data: rows.map((s) => s.xAxis),

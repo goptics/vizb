@@ -3,7 +3,7 @@ import type { LabelAffix, Render3D, Point3D, ScaleInput, Series3DData } from '@/
 import { axisIsLog, axisLogBase, parseScale } from '@/lib/scale'
 import { valuePoints3DToSeries } from '@/lib/transform'
 import { getDefaultThemeColor, getNextColorFor, formatChartNumber } from '@/lib/utils'
-import { affixForColumn, applyAffixes } from '@/lib/affix'
+import { affixForColumn, applyAffixes, tooltipAffixes } from '@/lib/affix'
 import {
   formatTooltipValue,
   tooltipDivider,
@@ -132,8 +132,8 @@ export function createMixed3DTooltipFormatter(params: {
     const xName = xValues[xi] ?? String(xi)
     return (
       `<b>${xLabel}: ${xName}</b><br/>` +
-      `${yLabel}: <b>${applyAffixes(formatChartNumber(y), yPrefix, ySuffix)}</b><br/>` +
-      `${zLabel}: <b>${applyAffixes(formatChartNumber(z), zPrefix, zSuffix)}</b>`
+      `${yLabel}: <b>${tooltipAffixes(formatChartNumber(y), yPrefix, ySuffix)}</b><br/>` +
+      `${zLabel}: <b>${tooltipAffixes(formatChartNumber(z), zPrefix, zSuffix)}</b>`
     )
   }
 }
@@ -189,13 +189,13 @@ export function createValue3DTooltipFormatter(params: {
 
     const margins =
       tooltipDivider(isDark) +
-      `Σ ${xLabel}(${xName}): <b>${applyAffixes(formatChartNumber(xMarginal), metricPrefix, metricSuffix)}</b><br/>` +
-      `Σ ${yLabel}(${yName}): <b>${applyAffixes(formatChartNumber(yMarginal), metricPrefix, metricSuffix)}</b><br/>` +
-      `Σ (${xLabel}∪${yLabel}): <b>${applyAffixes(formatChartNumber(xyUnion), metricPrefix, metricSuffix)}</b>`
+      `Σ ${xLabel}(${xName}): <b>${tooltipAffixes(formatChartNumber(xMarginal), metricPrefix, metricSuffix)}</b><br/>` +
+      `Σ ${yLabel}(${yName}): <b>${tooltipAffixes(formatChartNumber(yMarginal), metricPrefix, metricSuffix)}</b><br/>` +
+      `Σ (${xLabel}∪${yLabel}): <b>${tooltipAffixes(formatChartNumber(xyUnion), metricPrefix, metricSuffix)}</b>`
 
     return (
       `<b>${xLabel}: ${xName} / ${yLabel}: ${yName}</b><br/>` +
-      `${dot}${metricLabel}: <b>${applyAffixes(formatChartNumber(v), metricPrefix, metricSuffix)}</b><br/>` +
+      `${dot}${metricLabel}: <b>${tooltipAffixes(formatChartNumber(v), metricPrefix, metricSuffix)}</b><br/>` +
       margins
     )
   }
@@ -379,13 +379,13 @@ export function createContinuous3DTooltipFormatter(
   return (p: { value: number[] }) => {
     const [x = 0, y = 0, z = 0, metric] = p.value
     const coords =
-      `<b>${xName}: ${applyAffixes(formatTooltipValue(x), xPrefix, xSuffix)}</b><br/>` +
-      `${yName}: ${applyAffixes(formatTooltipValue(y), yPrefix, ySuffix)}<br/>` +
-      `${zName}: ${applyAffixes(formatTooltipValue(z), zPrefix, zSuffix)}`
+      `<b>${xName}: ${tooltipAffixes(formatTooltipValue(x), xPrefix, xSuffix)}</b><br/>` +
+      `${yName}: ${tooltipAffixes(formatTooltipValue(y), yPrefix, ySuffix)}<br/>` +
+      `${zName}: ${tooltipAffixes(formatTooltipValue(z), zPrefix, zSuffix)}`
     if (metric !== undefined) {
       return (
         coords +
-        `<br/>${metricName}: <b>${applyAffixes(formatTooltipValue(metric), metricPrefix, metricSuffix)}</b>`
+        `<br/>${metricName}: <b>${tooltipAffixes(formatTooltipValue(metric), metricPrefix, metricSuffix)}</b>`
       )
     }
     return coords
@@ -497,8 +497,8 @@ export function create3DTooltipFormatter(params: {
         if (v === undefined) return ''
         const dot = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${getNextColorFor(z)};margin-right:6px"></span>`
         // legendTotals is built from the same aggPoints that fill zmap, so z is present.
-        const sumTag = ` (Σ${formatChartNumber(legendTotals.get(z)!)})`
-        return `${dot}${z}${sumTag}: <b>${applyAffixes(formatChartNumber(v), metricPrefix, metricSuffix)}</b>`
+        const sumTag = ` (Σ${tooltipAffixes(formatChartNumber(legendTotals.get(z)!), metricPrefix, metricSuffix)})`
+        return `${dot}${z}${sumTag}: <b>${tooltipAffixes(formatChartNumber(v), metricPrefix, metricSuffix)}</b>`
       })
       .filter(Boolean)
 
@@ -507,15 +507,15 @@ export function create3DTooltipFormatter(params: {
     const xyUnion = xMarginal + yMarginal - cellTotal
     const cellSumLine =
       zmap.size > 0
-        ? `Σ (${xLabel},${yLabel},${zSumLabel}): <b>${applyAffixes(formatChartNumber(cellTotal), metricPrefix, metricSuffix)}</b><br/>`
+        ? `Σ (${xLabel},${yLabel},${zSumLabel}): <b>${tooltipAffixes(formatChartNumber(cellTotal), metricPrefix, metricSuffix)}</b><br/>`
         : ''
 
     const margins =
       tooltipDivider(isDark) +
-      `Σ ${xLabel}(${xName}): <b>${applyAffixes(formatChartNumber(xMarginal), metricPrefix, metricSuffix)}</b><br/>` +
-      `Σ ${yLabel}(${yName}): <b>${applyAffixes(formatChartNumber(yMarginal), metricPrefix, metricSuffix)}</b><br/>` +
+      `Σ ${xLabel}(${xName}): <b>${tooltipAffixes(formatChartNumber(xMarginal), metricPrefix, metricSuffix)}</b><br/>` +
+      `Σ ${yLabel}(${yName}): <b>${tooltipAffixes(formatChartNumber(yMarginal), metricPrefix, metricSuffix)}</b><br/>` +
       cellSumLine +
-      `Σ (${xLabel}∪${yLabel}): <b>${applyAffixes(formatChartNumber(xyUnion), metricPrefix, metricSuffix)}</b>`
+      `Σ (${xLabel}∪${yLabel}): <b>${tooltipAffixes(formatChartNumber(xyUnion), metricPrefix, metricSuffix)}</b>`
 
     // Spread of the z-values in this cell (median / IQR / CV), mirroring the 2D
     // tooltip. Only meaningful with >1 z.

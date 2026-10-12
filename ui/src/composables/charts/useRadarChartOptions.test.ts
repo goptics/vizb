@@ -306,6 +306,20 @@ describe('useRadarChartOptions — labelSuffix', () => {
     expect(firstLabel(options).formatter!({ value: 5, dimensionIndex: 2 })).toBe('5%')
   })
 
+  it('falls back to the metric column affix (chart title) for unmatched spokes', () => {
+    const chartData = makeRadarChartData()
+    const { options } = useRadarChartOptions(
+      baseConfig({
+        chartData,
+        showLabels: true,
+        labelSuffix: { columns: { [chartData.title]: 'ms', speed: 's' } },
+      })
+    )
+    const fmt = firstLabel(options).formatter!
+    expect(fmt({ value: 10, dimensionIndex: 0 })).toBe('10s')
+    expect(fmt({ value: 20, dimensionIndex: 1 })).toBe('20ms')
+  })
+
   it('omits the label formatter with no matching affix (byte-identical default)', () => {
     const { options } = useRadarChartOptions(
       baseConfig({ chartData: makeRadarChartData(), showLabels: true })

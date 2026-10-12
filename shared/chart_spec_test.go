@@ -638,6 +638,12 @@ func (s *ChartSpecSuite) TestParseOverridesBarPrefixAndSuffixTogether() {
 	s.Equal("%", suffix["global"])
 }
 
+func (s *ChartSpecSuite) TestParseOverridesStringFlagRejectsBraceObject() {
+	_, _, err := ParseOverrides([]string{"bar:label-suffix={a=ms;b=%}"}, []string{"bar"}, s.xynAxes)
+	s.Require().Error(err)
+	s.Contains(err.Error(), "does not take a {…} object")
+}
+
 func TestChartSpecSuite(t *testing.T) {
 	suite.Run(t, new(ChartSpecSuite))
 }

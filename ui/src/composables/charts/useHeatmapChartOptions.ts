@@ -17,7 +17,7 @@ import {
   type ChartStyling,
 } from './shared/chartConfig'
 import { chartFontSize } from './shared/chartFontSize'
-import { affixForColumn, applyAffixes } from '@/lib/affix'
+import { affixForColumn, applyAffixes, tooltipAffixes } from '@/lib/affix'
 
 function formatCellNumber(v: number): string {
   if (Math.abs(v) >= 1e6) return formatChartNumber(v / 1e6) + 'M'
@@ -176,10 +176,10 @@ function build2DHeatmap(config: BaseChartConfig): EChartsOption {
         const yPct = yTotal > 0 ? ((val / yTotal) * 100).toFixed(1) : '0.0'
 
         let html = `<b>${xName} / ${yName}</b><br/>`
-        html += `Value: <b>${applyAffixes(formatChartNumber(val), prefix, suffix)}</b><br/>`
+        html += `Value: <b>${tooltipAffixes(formatChartNumber(val), prefix, suffix)}</b><br/>`
         html += tooltipDivider(isDark.value)
-        html += `Σ ${xName}: <b>${applyAffixes(formatChartNumber(xTotal), prefix, suffix)}</b> (${xPct}%)<br/>`
-        html += `Σ ${yName}: <b>${applyAffixes(formatChartNumber(yTotal), prefix, suffix)}</b> (${yPct}%)`
+        html += `Σ ${xName}: <b>${tooltipAffixes(formatChartNumber(xTotal), prefix, suffix)}</b> (${xPct}%)<br/>`
+        html += `Σ ${yName}: <b>${tooltipAffixes(formatChartNumber(yTotal), prefix, suffix)}</b> (${yPct}%)`
 
         return html
       },
@@ -290,13 +290,13 @@ function build3DHeatmap(config: BaseChartConfig): EChartsOption {
         if (v === undefined) return ''
         const color = getNextColorFor(z) ?? getDefaultThemeColor()
         const dot = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};margin-right:6px"></span>`
-        return `${dot}${z}: <b>${applyAffixes(formatChartNumber(v), prefix, suffix)}</b>`
+        return `${dot}${z}: <b>${tooltipAffixes(formatChartNumber(v), prefix, suffix)}</b>`
       })
       .filter(Boolean)
 
     const zSumLine =
       zBreakdown.size > 1
-        ? `Σ ${zLabel}: <b>${applyAffixes(formatChartNumber(total), prefix, suffix)}</b><br/>`
+        ? `Σ ${zLabel}: <b>${tooltipAffixes(formatChartNumber(total), prefix, suffix)}</b><br/>`
         : ''
 
     const xMarginal = xMarginals.get(xName) ?? 0
@@ -305,8 +305,8 @@ function build3DHeatmap(config: BaseChartConfig): EChartsOption {
     const margins =
       tooltipDivider(isDark.value) +
       zSumLine +
-      `Σ ${xLabel}(${xName}): <b>${applyAffixes(formatChartNumber(xMarginal), prefix, suffix)}</b><br/>` +
-      `Σ ${yLabel}(${yName}): <b>${applyAffixes(formatChartNumber(yMarginal), prefix, suffix)}</b>`
+      `Σ ${xLabel}(${xName}): <b>${tooltipAffixes(formatChartNumber(xMarginal), prefix, suffix)}</b><br/>` +
+      `Σ ${yLabel}(${yName}): <b>${tooltipAffixes(formatChartNumber(yMarginal), prefix, suffix)}</b>`
 
     const spread = tooltipSpreadRows(Array.from(zBreakdown.values()), isDark.value)
 
