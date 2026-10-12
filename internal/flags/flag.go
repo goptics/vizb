@@ -93,6 +93,10 @@ type Flag struct {
 	// --chart value (or one flag value), not a comma-split list.
 	MultiValue bool
 
+	// RootOnly: a chart flag set once on the command (root or chart
+	// subcommand) and seeded into every chart; never a --chart override key.
+	RootOnly bool
+
 	// ObjectFields: typed fields accepted inside an object bag (semicolon
 	// key=value pairs). Used by KindObject flags and by hybrid KindString flags
 	// that also accept an unwrapped bag (scale). Unknown keys are fatal.

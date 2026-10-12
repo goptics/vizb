@@ -130,11 +130,11 @@ var (
 		Name: "label-suffix", Usage: "Suffix for numeric labels, tooltips, and value-axis ticks: global symbol " +
 			"(e.g. %), or per-column affixes (e.g. col1=%,col2=ms); a \"=\" in the " +
 			"value selects per-column parsing, so the global form cannot contain \"=\"",
-		Kind:       flags.KindString,
-		JSONKey:    "labelSuffix",
-		MultiValue: true,
-		Validate:   ValidateAffixValue,
-		Encode:     EncodeAffix,
+		Kind:     flags.KindString,
+		JSONKey:  "labelSuffix",
+		RootOnly: true,
+		Validate: ValidateAffixValue,
+		Encode:   EncodeAffix,
 	}
 	// BgFlag is the bar-only category background: bare --bg turns it on, and a
 	// semicolon bag of style fields (--bg color=…;borderColor=#000) adds typed
