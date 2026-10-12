@@ -618,7 +618,8 @@ export function formatRadarItemTooltip(
   indicatorNames: string[],
   isDark: boolean,
   colorFor?: (name: string) => string | undefined,
-  affix?: LabelAffix
+  affix?: LabelAffix,
+  metricSuffix = ''
 ): string {
   if (!params?.data) return ''
 
@@ -636,14 +637,17 @@ export function formatRadarItemTooltip(
 
   const rows = indicatorNames.map((name, i) => {
     const dot = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color(name)};margin-right:6px"></span>`
-    return `${dot}${name}: <b>${affixedTooltipValue(vals[i], affixForColumn(affix, name))}</b>`
+    return `${dot}${name}: <b>${affixedTooltipValue(vals[i], affixForValue(affix, name, metricSuffix))}</b>`
   })
   const legend = renderTooltipLegendColumns(rows)
 
   const finiteVals = vals.filter((v) => Number.isFinite(v))
   const sigmaBlock =
     finiteVals.length >= 2
-      ? `${tooltipDivider(isDark)}Σ ${title}: <b>${formatTooltipValue(finiteVals.reduce((a, b) => a + b, 0))}</b>`
+      ? `${tooltipDivider(isDark)}Σ ${title}: <b>${affixedTooltipValue(
+          finiteVals.reduce((a, b) => a + b, 0),
+          metricSuffix
+        )}</b>`
       : ''
 
   const spread = tooltipSpreadRows(vals, isDark)

@@ -475,7 +475,7 @@ export function create3DTooltipFormatter(params: {
         if (v === undefined) return ''
         const dot = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${getNextColorFor(z)};margin-right:6px"></span>`
         // legendTotals is built from the same aggPoints that fill zmap, so z is present.
-        const sumTag = ` (Σ${formatChartNumber(legendTotals.get(z)!)})`
+        const sumTag = ` (Σ${formatChartNumber(legendTotals.get(z)!)}${escapeHtml(metricSuffix)})`
         return `${dot}${z}${sumTag}: <b>${formatChartNumber(v)}${escapeHtml(metricSuffix)}</b>`
       })
       .filter(Boolean)
