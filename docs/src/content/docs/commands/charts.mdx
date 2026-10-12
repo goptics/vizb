@@ -48,44 +48,12 @@ Every chart subcommand accepts the common data, grouping, and metadata flags:
 | `--sort` | `-s` | `""` | Sort order: `asc` or `desc` |
 | `--swap` | | `""` | Swap n/x/y/z axis assignment, e.g. `yx`, `yxn` |
 | `--show-labels` | `-l` | `false` | Show value labels on the chart |
-| `--label-suffix` | | *(empty)* | Suffix appended to numeric values on labels, tooltips, and value-axis ticks. Global (`%`) or per-column (`col1=%,col2=ms`); see [Label prefix and suffix](#label-prefix-and-suffix) |
-| `--label-prefix` | | *(empty)* | Prefix prepended to numeric values on labels, tooltips, and value-axis ticks. Global (`$`) or per-column (`col1=$,col2=€`); see [Label prefix and suffix](#label-prefix-and-suffix) |
+| `--label-suffix` | | *(empty)* | Suffix appended to numeric values on labels, tooltips, and value-axis ticks. Global (`%`), per-column (`latency=ms,throughput=%`, exact name match), or both (`%,latency=ms`); separate with `,` or `;` |
+| `--label-prefix` | | *(empty)* | Prefix prepended to numeric values on labels, tooltips, and value-axis ticks. Same grammar as `--label-suffix`, e.g. `$` or `$,latency=~`; composes with it (`$42%`); negatives render as `$-5` |
 | `--mem-unit` | `-M` | `B` | Memory unit: `b`, `B`, `KB`, `MB`, `GB` |
 | `--time-unit` | `-T` | `ns` | Time unit: `ns`, `us`, `ms`, `s` |
 | `--number-unit` | `-N` | `""` | Number unit: `K`, `M`, `B`, `T` |
 | `--round` | | off | Round numeric values to 2 decimal places in the output data (off by default) |
-
-### Label prefix and suffix
-
-`--label-prefix` prepends and `--label-suffix` appends a symbol to the numeric values rendered in data labels, tooltips, and value-axis ticks. Both flags share one grammar:
-
-```bash
-# Global: every numeric value gets the symbol
-vizb bar data.csv --label-prefix='$' -o out.html
-vizb bar data.csv --label-suffix='%' -o out.html
-
-# Per column: exact column-name match
-vizb line data.csv -g impl --label-suffix='latency=ms,throughput=%' -o out.html
-
-# Mixed: latency gets "ms", every other column "%"
-vizb line data.csv -g impl --label-suffix='%,latency=ms' -o out.html
-
-# Both together: prefix first, then suffix (renders as $42%)
-vizb bar data.csv --label-prefix='$' --label-suffix='%' -o out.html
-```
-
-- Column names match **exactly** (no case-folding). Without a global symbol, unlisted columns render bare.
-- Tokens are separated by `,` or `;` — pick one per value; use `;` when a symbol contains a comma.
-- Any token with `=` is a per-column entry, so a global symbol cannot contain `=`.
-- In `--chart` specs, use the comma form (`bar:label-suffix=latency=ms,throughput=%`) — `;` separates spec props there. A `--chart` value replaces the root flag for that chart; it is not merged.
-- The prefix goes before the sign: a negative value renders as `$-5`.
-
-The dataset JSON stores the structured form, omitting unset fields:
-
-```json
-"labelPrefix": { "global": "$" },
-"labelSuffix": { "global": "%", "columns": { "latency": "ms" } }
-```
 
 ## Chart-specific flags
 
@@ -126,6 +94,12 @@ vizb bar sales.csv -g region,category -p x,y --horizontal -o bar.html
 
 # Category background on 2D bars (bare = on; writes background.active: true)
 vizb bar sales.csv -g region,category -p x,y --bg -o bar.html
+
+# Units on values: "ms" for latency, "%" for every other column
+vizb line data.csv -g impl --label-suffix='%,latency=ms' -o line.html
+
+# Currency and percent together: renders as $42%
+vizb bar sales.csv --label-prefix='$' --label-suffix='%' -o bar.html
 
 # Scatter from all-numeric columns (auto-value)
 vizb scatter data.csv -o scatter.html
