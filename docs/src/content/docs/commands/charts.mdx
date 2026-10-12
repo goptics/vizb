@@ -78,7 +78,9 @@ or per column:
 "labelSuffix": { "columns": { "latency": "ms", "throughput": "%" } }
 ```
 
-Column names match **exactly** (no case-folding). Columns not listed render bare. A `=` in the value selects per-column parsing, so a global symbol containing `=` (e.g. `--label-suffix='a=b'`) cannot be used in the global form.
+Column names match **exactly** (no case-folding). The forms combine: `--label-suffix='%,latency=ms'` gives `latency` the `ms` suffix and every other column `%`; without a global symbol, unlisted columns render bare. Tokens are separated by `,` or `;` (pick one per value; use `;` when a symbol contains a comma). Any token with `=` is a per-column entry, so a global symbol cannot contain `=`.
+
+In `--chart` specs, use the comma form (`bar:label-suffix=latency=ms,throughput=%`) — `;` separates spec props there. A `--chart` value replaces the root `--label-suffix` for that chart; it is not merged.
 
 ## Chart-specific flags
 

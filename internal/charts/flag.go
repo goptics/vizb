@@ -127,7 +127,7 @@ var (
 	// "%" applies globally; "col1=%,col2=ms" applies per column. A "=" in the
 	// value selects per-column parsing, so the global form cannot contain "=".
 	LabelSuffixFlag = flags.Flag{
-		Name: "label-suffix", Usage: "Suffix appended to series labels: global symbol " +
+		Name: "label-suffix", Usage: "Suffix for numeric labels, tooltips, and value-axis ticks: global symbol " +
 			"(e.g. %), or per-column affixes (e.g. col1=%,col2=ms); a \"=\" in the " +
 			"value selects per-column parsing, so the global form cannot contain \"=\"",
 		Kind:       flags.KindString,

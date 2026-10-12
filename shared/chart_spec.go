@@ -242,6 +242,9 @@ func convertFlagValue(f flags.Flag, prop specparse.Prop, axes []Axis) (any, erro
 		if !hasEq {
 			return nil, fmt.Errorf("--chart: key %q requires a value (e.g. %s=<value>)", f.Name, f.Name)
 		}
+		if prop.Object != nil {
+			return nil, fmt.Errorf("--chart: key %q does not take a {…} object; use %s=<value>", f.Name, f.Name)
+		}
 		if f.Name == "swap" {
 			if err := ValidateSwap(val, axes); err != nil {
 				return nil, fmt.Errorf("--chart: %w", err)
