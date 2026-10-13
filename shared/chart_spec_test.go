@@ -574,6 +574,24 @@ func (s *ChartSpecSuite) TestParseOverridesScaleBraceMatchesFlag() {
 	s.JSONEq(string(raw), string(chartRaw))
 }
 
+// --- --chart rejects root-only flags ---
+
+func (s *ChartSpecSuite) TestParseOverridesRejectsLabelSuffix() {
+	for _, spec := range []string{"bar:label-suffix=%", "line:label-suffix=latency=ms,tput=%"} {
+		s.Run(spec, func() {
+			_, _, err := ParseOverrides([]string{spec}, []string{"bar", "line"}, s.xynAxes)
+			s.Require().Error(err)
+			s.Contains(err.Error(), "use --label-suffix instead")
+		})
+	}
+}
+
+func (s *ChartSpecSuite) TestParseOverridesStringFlagRejectsBraceObject() {
+	_, _, err := ParseOverrides([]string{"bar:sort={a=1;b=2}"}, []string{"bar"}, s.xynAxes)
+	s.Require().Error(err)
+	s.Contains(err.Error(), "does not take a {…} object")
+}
+
 func TestChartSpecSuite(t *testing.T) {
 	suite.Run(t, new(ChartSpecSuite))
 }

@@ -31,6 +31,7 @@ import {
 import { adjustForLogScaleLine, resolveLogScale } from './common'
 import { resolve3DSymbolProps, resolveSeriesSymbol } from './seriesConfig'
 import { resolve2DScatterVisualMap } from './visualMap'
+import { affixForColumn, escapeHtml } from '@/lib/affix'
 import type { Series3DData } from '@/types'
 
 const defaultScatterSymbol = { symbol: 'circle' as const, symbolSize: 8 }
@@ -67,7 +68,8 @@ export function createMixedModeTooltip(
   xCategories: string[],
   chartType: Mixed2DChartType,
   xLabel?: string,
-  yLabel?: string
+  yLabel?: string,
+  ySuffix = ''
 ): EChartsOption['tooltip'] {
   const theme = getTooltipTheme(isDark)
   const styling = getChartStyling(isDark)
@@ -93,7 +95,7 @@ export function createMixedModeTooltip(
           return xi === undefined ? '' : (xCategories[xi] ?? String(xi))
         })()
       const y = mixedAxisYValue(p)
-      const yText = y === null || y === undefined ? '' : formatTooltipValue(y)
+      const yText = y === null || y === undefined ? '' : formatTooltipValue(y) + escapeHtml(ySuffix)
       const marker = p.marker ?? ''
       return `<strong>${xName}: ${category}</strong><br/>${marker} ${yName}: <b>${yText}</b>`
     },
@@ -131,12 +133,15 @@ export function buildMixedAxes2DOptions(
   const smoothLines = chartType === 'line' && config.smooth?.value === true
   const colorValues = tuples.map(([, y]) => y).filter((v) => isFinite(v))
   const color = getNextColorFor(chartData.value.title)
+  const affix = config.labelSuffix?.value
+  const ySuffix = affixForColumn(affix, yLabel ?? chartData.value.title)
+  const xSuffix = affixForColumn(affix, xLabel ?? '')
 
   const label = {
     ...createLabelConfig(showLabels.value, styling),
     formatter: (p: { data: [number, number | null] }) => {
       const y = p.data[1]
-      return y === null || y === undefined ? '' : formatChartNumber(y)
+      return y === null || y === undefined ? '' : formatChartNumber(y) + ySuffix
     },
   }
 
@@ -181,11 +186,20 @@ export function buildMixedAxes2DOptions(
           }
 
   const axisConfig = xNums
-    ? createValueAxisConfig(styling, xLabel, yLabel, yScale, chartType === 'scatter', {
-        xScale: 'log',
-        xLogBase: axisLogBase(parsed, 'x'),
-        yLogBase: axisLogBase(parsed, 'y'),
-      })
+    ? createValueAxisConfig(
+        styling,
+        xLabel,
+        yLabel,
+        yScale,
+        chartType === 'scatter',
+        {
+          xScale: 'log',
+          xLogBase: axisLogBase(parsed, 'x'),
+          yLogBase: axisLogBase(parsed, 'y'),
+        },
+        xSuffix,
+        ySuffix
+      )
     : createAxisConfig(
         styling,
         xCategories,
@@ -193,7 +207,8 @@ export function buildMixedAxes2DOptions(
         xLabel,
         largeX,
         chartType === 'scatter',
-        axisLogBase(parsed, 'y')
+        axisLogBase(parsed, 'y'),
+        ySuffix
       )
 
   const zoom = resolveCartesianDataZoom(chartType, {
@@ -208,8 +223,8 @@ export function buildMixedAxes2DOptions(
     grid: createValueModeGridConfig(zoom.hasXSlider),
     visualMap: resolve2DScatterVisualMap(useVisualMap, colorValues, styling, 1),
     tooltip: xNums
-      ? createValueModeTooltip(isDark.value, xLabel, yLabel, true)
-      : createMixedModeTooltip(isDark.value, xCategories, chartType, xLabel, yLabel),
+      ? createValueModeTooltip(isDark.value, xLabel, yLabel, true, xSuffix, ySuffix)
+      : createMixedModeTooltip(isDark.value, xCategories, chartType, xLabel, yLabel, ySuffix),
     ...axisConfig,
     ...(zoom.dataZoom ? { dataZoom: zoom.dataZoom } : {}),
     series: [series],
@@ -239,6 +254,18 @@ export function buildMixedAxes3DOptions(
   const parsed = parseScale(scale?.value)
   const yLog = axisIsLog(parsed, 'y', ['y', 'z'])
   const zLog = axisIsLog(parsed, 'z', ['y', 'z'])
+  const affix = config.labelSuffix?.value
+  const ySuffix = affixForColumn(affix, axisLabels?.y ?? 'y')
+  const zSuffix = affixForColumn(affix, axisLabels?.z ?? 'z')
+  const axisTick = (suffix: string) =>
+    suffix
+      ? {
+          axisLabel: {
+            ...axisCommon.axisLabel,
+            formatter: (v: number) => formatChartNumber(v) + suffix,
+          },
+        }
+      : {}
   const grid3D = create3DGridConfig({
     styling,
     autoRotate: threeDRotate?.value ?? false,
@@ -299,6 +326,8 @@ export function buildMixedAxes3DOptions(
         xAxisLabel: axisLabels?.x,
         yAxisLabel: axisLabels?.y,
         zAxisLabel: axisLabels?.z,
+        ySuffix,
+        zSuffix,
       }),
     },
     xAxis3D: {
@@ -311,12 +340,14 @@ export function buildMixedAxes3DOptions(
       type: yLog ? ('log' as const) : ('value' as const),
       ...(yLog ? { logBase: axisLogBase(parsed, 'y') } : {}),
       ...axisCommon,
+      ...axisTick(ySuffix),
       ...axis3DName(axisLabels?.y, styling),
     },
     zAxis3D: {
       type: zLog ? ('log' as const) : ('value' as const),
       ...(zLog ? { logBase: axisLogBase(parsed, 'z') } : {}),
       ...axisCommon,
+      ...axisTick(zSuffix),
       ...axis3DName(axisLabels?.z, styling),
     },
     grid3D,

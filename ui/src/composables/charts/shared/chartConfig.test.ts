@@ -30,6 +30,7 @@ import {
   renderTooltipLegendColumns,
   TOOLTIP_LEGEND_MAX_ROWS_PER_COL,
   getTooltipTheme,
+  affixedTooltipValue,
 } from './chartConfig'
 
 const indicators = ['A', 'B', 'C']
@@ -769,5 +770,79 @@ describe('tooltipSpreadRows non-finite median', () => {
     expect(html).toContain('IQR: <b>—</b>')
     expect(html).toContain('CV: <b>—</b>')
     spy.mockRestore()
+  })
+})
+
+describe('labelSuffix axis formatters', () => {
+  it('appends x and y suffixes to value-axis ticks', () => {
+    const { xAxis, yAxis } = createValueAxisConfig(
+      styling,
+      'price',
+      'latency',
+      'linear',
+      false,
+      undefined,
+      '%',
+      'ms'
+    )
+    expect((xAxis.axisLabel.formatter as (v: number) => string)(10)).toBe('10%')
+    expect((yAxis.axisLabel.formatter as (v: number) => string)(10)).toBe('10ms')
+  })
+
+  it('appends the value-axis suffix for vertical and horizontal category axes', () => {
+    const { yAxis } = createAxisConfig(styling, ['a'], 'linear', undefined, false, false, 10, '%')
+    expect((yAxis.axisLabel.formatter as (v: number) => string)(10)).toBe('10%')
+    const horizontal = createHorizontalAxisConfig(
+      styling,
+      ['a'],
+      'linear',
+      undefined,
+      false,
+      10,
+      'ms'
+    )
+    expect((horizontal.xAxis.axisLabel.formatter as (v: number) => string)(10)).toBe('10ms')
+  })
+
+  it('affixes item tooltip values and leaves unset names bare', () => {
+    const tip = createTooltipConfig(false, false, undefined, undefined, { global: '%' }) as {
+      formatter: (p: unknown) => string
+    }
+    expect(tip.formatter({ marker: '*', seriesName: 'revenue', value: 3 })).toContain('3%')
+    expect(tip.formatter({ marker: '*', value: 3 })).toContain('3%')
+  })
+})
+
+describe('createTooltipConfig labelSuffix fallback + Σ', () => {
+  it('falls back to metricSuffix for unmatched series and affixes both Σ sites', () => {
+    const totals = new Map([
+      ['West', 30],
+      ['East', 70],
+    ])
+    const tip = createTooltipConfig(
+      true,
+      false,
+      totals,
+      'shadow',
+      { columns: { revenue: '%' } },
+      '%'
+    ) as { formatter: (p: unknown[]) => string }
+    const html = tip.formatter([
+      { name: 'Q1', seriesName: 'West', value: 10, marker: 'w' },
+      { name: 'Q1', seriesName: 'East', value: 30, marker: 'e' },
+    ])
+    expect(html).toContain('West (Σ30%): 10%')
+    expect(html).toContain('East (Σ70%): 30%')
+    expect(html).toContain('Σ Q1: <b>40%</b>')
+  })
+})
+
+describe('affixedTooltipValue', () => {
+  it('HTML-escapes the suffix so it renders as text in tooltip markup', () => {
+    expect(affixedTooltipValue(5, '<img src=x>')).toBe('5&lt;img src=x&gt;')
+  })
+
+  it('leaves missing values bare', () => {
+    expect(affixedTooltipValue(null, '<b>')).toBe('—')
   })
 })

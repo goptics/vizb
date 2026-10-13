@@ -465,6 +465,32 @@ func (s *FlagBagSuite) TestChartSeedTriStateStatAndScale() {
 	})
 }
 
+func (s *FlagBagSuite) TestChartSeedLabelSuffix() {
+	fl := append(slices.Clone(DataFlags), internal_charts.BaseChartFlags...)
+
+	s.Run("global form", func() {
+		cmd, bag := s.newCmdBag(fl)
+		s.Require().NoError(cmd.Flags().Set("label-suffix", "%"))
+		seed := bag.ChartSeed(cmd)
+		s.Equal(&flags.Affix{Global: "%"}, seed["labelSuffix"])
+	})
+	s.Run("per-column form", func() {
+		cmd, bag := s.newCmdBag(fl)
+		s.Require().NoError(cmd.Flags().Set("label-suffix", "col1=%,col2=ms"))
+		seed := bag.ChartSeed(cmd)
+		s.Equal(
+			&flags.Affix{Columns: map[string]string{"col1": "%", "col2": "ms"}},
+			seed["labelSuffix"],
+		)
+	})
+	s.Run("usage documents forms", func() {
+		usage := internal_charts.LabelSuffixFlag.Usage
+		s.Contains(usage, "%")
+		s.Contains(usage, "col1=%,col2=ms")
+		s.Contains(usage, "=")
+	})
+}
+
 func (s *FlagBagSuite) TestValidateParserInvalid() {
 	err := validateParser("nope")
 	s.Error(err)

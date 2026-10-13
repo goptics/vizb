@@ -131,6 +131,37 @@ func (s *RootSuite) TestRunBenchmarkGlobalSortApplied() {
 	}
 }
 
+func (s *RootSuite) TestRunBenchmarkGlobalLabelSuffixApplied() {
+	dir := s.T().TempDir()
+	input := testutil.WriteBenchFile(s.T(), dir, "valid.txt",
+		`BenchmarkTest-8    1000000    1234 ns/op    1000 B/op    10 allocs/op`)
+	out := filepath.Join(dir, "out.json")
+	rootCharts = nil
+
+	errStr := testutil.CaptureStderr(func() {
+		rootCmd.SetArgs([]string{"-o", out, "-c", "bar", "-c", "line", "--label-suffix=%", input})
+		s.Require().NoError(rootCmd.Execute())
+	})
+
+	s.Contains(errStr, "Generated")
+
+	ds := testutil.ReadDataset(s.T(), out)
+	s.Require().Len(ds.Settings, 2)
+
+	for i, c := range ds.Settings {
+		switch c := c.(type) {
+		case *barchart.Config:
+			s.Require().NotNil(c.LabelSuffix, "settings[%d] (bar) labelSuffix should be set", i)
+			s.Equal("%", c.LabelSuffix.Global)
+		case *linechart.Config:
+			s.Require().NotNil(c.LabelSuffix, "settings[%d] (line) labelSuffix should be set", i)
+			s.Equal("%", c.LabelSuffix.Global)
+		default:
+			s.Failf("unexpected chart type", "settings[%d] type=%T", i, c)
+		}
+	}
+}
+
 func (s *RootSuite) TestRunBenchmarkStdinPipe() {
 	origStdin := os.Stdin
 	defer func() { os.Stdin = origStdin }()

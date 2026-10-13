@@ -10,6 +10,7 @@ import {
   viewDistanceFor3DBox,
   create3DGridConfig,
   create3DTooltipFormatter,
+  createContinuous3DAxes,
   createContinuous3DTooltipFormatter,
   create3DVisualMap,
   createValue3DTooltipFormatter,
@@ -817,5 +818,29 @@ describe('value tooltip oob and legend total missing', () => {
     expect(html).toContain('Z1')
     expect(html).toContain('<svg')
     spy.mockRestore()
+  })
+})
+
+describe('createContinuous3DAxes labelSuffix', () => {
+  it('appends per-axis suffixes to value-axis ticks, bare for unmatched columns', () => {
+    const axes = createContinuous3DAxes(styling, 'price', 'latency', 'depth', 'linear', {
+      columns: { price: '$', latency: 'ms' },
+    }) as unknown as Record<string, { axisLabel: { formatter?: (v: number) => string } }>
+    expect(axes.xAxis3D!.axisLabel.formatter!(10)).toBe('10$')
+    expect(axes.yAxis3D!.axisLabel.formatter!(10)).toBe('10ms')
+    expect(axes.zAxis3D!.axisLabel.formatter).toBeUndefined()
+  })
+})
+
+describe('3D tooltip suffix escaping', () => {
+  it('renders markup-bearing suffixes as text', () => {
+    const formatter = createContinuous3DTooltipFormatter(
+      false,
+      { x: 'a', y: 'b', z: 'c', metric: 'm' },
+      { global: '<img src=x onerror=alert(1)>' }
+    )
+    const html = formatter({ value: [1, 2, 3, 4] })
+    expect(html).not.toContain('<img')
+    expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;')
   })
 })

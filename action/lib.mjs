@@ -63,6 +63,7 @@ export function resolveInputs(env = process.env) {
     charts: input('charts'),
     parser: input('parser'),
     fontSize: input('font-size'),
+    labelSuffix: input('label-suffix'),
     showLabels: input('show-labels') === 'true',
     enable3d: input('enable-3d') === 'true',
     mergeFiles,
@@ -163,6 +164,7 @@ export function buildConvertArgs(inputs) {
   if (inputs.showLabels) args.push('-l')
   if (inputs.parser) args.push('-P', inputs.parser)
   if (inputs.fontSize) args.push('--font-size', inputs.fontSize)
+  if (inputs.labelSuffix) args.push('--label-suffix', inputs.labelSuffix)
   return appendChartStatFlags(args, inputs.charts, inputs.chart, inputs.stat)
 }
 

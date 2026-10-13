@@ -1,6 +1,6 @@
 import { describe, it, expect, afterAll } from 'vitest'
 import { ref } from 'vue'
-import type { ChartData } from '@/types'
+import type { ChartData, LabelAffix } from '@/types'
 import type { BaseChartConfig } from './baseChartOptions'
 import { useBarChartOptions } from './useBarChartOptions'
 import {
@@ -1142,5 +1142,93 @@ describe('useBarChartOptions — background', () => {
     })[]
     expect(series.every((s) => s.itemStyle?.borderRadius !== undefined)).toBe(true)
     expect(series.every((s) => s.showBackground === true)).toBe(true)
+  })
+})
+
+describe('useBarChartOptions — labelSuffix', () => {
+  // Default grouped `-g y`: series are categories (West/East), the metric column
+  // is chartData.title ('revenue'). Every per-value site must resolve the same way.
+  const suffixChartData = (): ChartData => ({
+    title: 'revenue',
+    statType: 'sum',
+    yAxis: ['West', 'East'],
+    zAxis: [],
+    series: [
+      { xAxis: 'Q1', values: [10, 30], benchmarkId: '' },
+      { xAxis: 'Q2', values: [20, 40], benchmarkId: '' },
+    ],
+    points: [],
+    axisLabels: { x: 'quarter', y: 'region' },
+  })
+
+  type SuffixLabel = { name: string; label: { formatter: (p: { value: number }) => string } }
+  type SuffixYAxis = { axisLabel: { formatter?: (v: number) => string } }
+  type SuffixTooltip = {
+    formatter: (p: { name: string; seriesName: string; value: number; marker: string }[]) => string
+  }
+
+  const build = (labelSuffix: LabelAffix) =>
+    useBarChartOptions(baseConfig({ chartData: suffixChartData(), showLabels: true, labelSuffix }))
+
+  it('applies a per-column suffix to every grouped label, tooltip row, and the value axis', () => {
+    const { options } = build({ columns: { revenue: '%' } })
+    const series = options.value.series as SuffixLabel[]
+    const byName = Object.fromEntries(series.map((s) => [s.name, s]))
+    expect(byName.West!.label.formatter({ value: 10 })).toBe('10%')
+    expect(byName.East!.label.formatter({ value: 30 })).toBe('30%')
+
+    const yAxis = options.value.yAxis as SuffixYAxis
+    expect(yAxis.axisLabel.formatter!(100)).toBe('100%')
+
+    const tip = options.value.tooltip as SuffixTooltip
+    const html = tip.formatter([
+      { name: 'Q1', seriesName: 'West', value: 10, marker: 'w' },
+      { name: 'Q1', seriesName: 'East', value: 30, marker: 'e' },
+    ])
+    expect(html).toContain('West (Σ30%): 10%')
+    expect(html).toContain('East (Σ70%): 30%')
+    expect(html).toContain('Σ Q1: <b>40%</b>')
+  })
+
+  it('appends a global suffix to every series and the value axis', () => {
+    const { options } = build({ global: 'ms' })
+    const series = options.value.series as SuffixLabel[]
+    const byName = Object.fromEntries(series.map((s) => [s.name, s]))
+    expect(byName.West!.label.formatter({ value: 10 })).toBe('10ms')
+    expect(byName.East!.label.formatter({ value: 30 })).toBe('30ms')
+
+    const yAxis = options.value.yAxis as SuffixYAxis
+    expect(yAxis.axisLabel.formatter!(100)).toBe('100ms')
+  })
+
+  it('lets a multi-column pivot match per series while unmatched series fall back to the metric', () => {
+    const { options } = build({ columns: { West: '#', revenue: '%' } })
+    const series = options.value.series as SuffixLabel[]
+    const byName = Object.fromEntries(series.map((s) => [s.name, s]))
+    expect(byName.West!.label.formatter({ value: 10 })).toBe('10#')
+    expect(byName.East!.label.formatter({ value: 30 })).toBe('30%')
+  })
+
+  it('renders bare labels, tooltip rows, and axis ticks when no labelSuffix is set', () => {
+    const { options } = useBarChartOptions(
+      baseConfig({ chartData: suffixChartData(), showLabels: true })
+    )
+    const series = options.value.series as SuffixLabel[]
+    const byName = Object.fromEntries(series.map((s) => [s.name, s]))
+    expect(byName.West!.label.formatter({ value: 10 })).toBe('10')
+    expect(byName.East!.label.formatter({ value: 30 })).toBe('30')
+
+    const yAxis = options.value.yAxis as SuffixYAxis
+    // No custom tick formatter — byte-identical to the pre-feature axis.
+    expect(yAxis.axisLabel.formatter).toBeUndefined()
+
+    const tip = options.value.tooltip as SuffixTooltip
+    const html = tip.formatter([
+      { name: 'Q1', seriesName: 'West', value: 10, marker: 'w' },
+      { name: 'Q1', seriesName: 'East', value: 30, marker: 'e' },
+    ])
+    expect(html).toContain('West (Σ30): 10')
+    expect(html).toContain('East (Σ70): 30')
+    expect(html).toContain('Σ Q1: <b>40</b>')
   })
 })

@@ -17,6 +17,7 @@ import {
   type ChartStyling,
 } from './shared/chartConfig'
 import { chartFontSize } from './shared/chartFontSize'
+import { affixForColumn, escapeHtml } from '@/lib/affix'
 
 function formatCellNumber(v: number): string {
   if (Math.abs(v) >= 1e6) return formatChartNumber(v / 1e6) + 'M'
@@ -120,6 +121,8 @@ function build2DHeatmap(config: BaseChartConfig): EChartsOption {
 
   const xCategories = data.series.map((s) => s.xAxis)
   const yCategories = data.yAxis
+  // Heatmap cell values are the metric — the affix resolves against the chart title.
+  const suffix = affixForColumn(config.labelSuffix?.value, data.title)
 
   const heatmapData: number[][] = []
   let minVal = Infinity
@@ -172,10 +175,10 @@ function build2DHeatmap(config: BaseChartConfig): EChartsOption {
         const yPct = yTotal > 0 ? ((val / yTotal) * 100).toFixed(1) : '0.0'
 
         let html = `<b>${xName} / ${yName}</b><br/>`
-        html += `Value: <b>${formatChartNumber(val)}</b><br/>`
+        html += `Value: <b>${formatChartNumber(val)}${escapeHtml(suffix)}</b><br/>`
         html += tooltipDivider(isDark.value)
-        html += `Σ ${xName}: <b>${formatChartNumber(xTotal)}</b> (${xPct}%)<br/>`
-        html += `Σ ${yName}: <b>${formatChartNumber(yTotal)}</b> (${yPct}%)`
+        html += `Σ ${xName}: <b>${formatChartNumber(xTotal)}${escapeHtml(suffix)}</b> (${xPct}%)<br/>`
+        html += `Σ ${yName}: <b>${formatChartNumber(yTotal)}${escapeHtml(suffix)}</b> (${yPct}%)`
 
         return html
       },
@@ -186,7 +189,7 @@ function build2DHeatmap(config: BaseChartConfig): EChartsOption {
         data: heatmapData,
         label: {
           show: showLabels.value,
-          formatter: (params: any) => formatCellNumber(params.data[2]),
+          formatter: (params: any) => formatCellNumber(params.data[2]) + suffix,
           color: styling.textColor,
           fontSize: 11,
         },
@@ -266,6 +269,7 @@ function build3DHeatmap(config: BaseChartConfig): EChartsOption {
   const xLabel = data.axisLabels?.x ?? 'x'
   const yLabel = data.axisLabels?.y ?? 'y'
   const zLabel = data.axisLabels?.z ?? 'z'
+  const suffix = affixForColumn(config.labelSuffix?.value, data.title)
 
   const tooltipFormatter = (params: any) => {
     const val = Array.isArray(params.value) ? params.value : params.data
@@ -283,12 +287,14 @@ function build3DHeatmap(config: BaseChartConfig): EChartsOption {
         if (v === undefined) return ''
         const color = getNextColorFor(z) ?? getDefaultThemeColor()
         const dot = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};margin-right:6px"></span>`
-        return `${dot}${z}: <b>${formatChartNumber(v)}</b>`
+        return `${dot}${z}: <b>${formatChartNumber(v)}${escapeHtml(suffix)}</b>`
       })
       .filter(Boolean)
 
     const zSumLine =
-      zBreakdown.size > 1 ? `Σ ${zLabel}: <b>${formatChartNumber(total)}</b><br/>` : ''
+      zBreakdown.size > 1
+        ? `Σ ${zLabel}: <b>${formatChartNumber(total)}${escapeHtml(suffix)}</b><br/>`
+        : ''
 
     const xMarginal = xMarginals.get(xName) ?? 0
     const yMarginal = yMarginals.get(yName) ?? 0
@@ -296,8 +302,8 @@ function build3DHeatmap(config: BaseChartConfig): EChartsOption {
     const margins =
       tooltipDivider(isDark.value) +
       zSumLine +
-      `Σ ${xLabel}(${xName}): <b>${formatChartNumber(xMarginal)}</b><br/>` +
-      `Σ ${yLabel}(${yName}): <b>${formatChartNumber(yMarginal)}</b>`
+      `Σ ${xLabel}(${xName}): <b>${formatChartNumber(xMarginal)}${escapeHtml(suffix)}</b><br/>` +
+      `Σ ${yLabel}(${yName}): <b>${formatChartNumber(yMarginal)}${escapeHtml(suffix)}</b>`
 
     const spread = tooltipSpreadRows(Array.from(zBreakdown.values()), isDark.value)
 
@@ -358,7 +364,7 @@ function build3DHeatmap(config: BaseChartConfig): EChartsOption {
           show: showLabels.value,
           formatter: (params: any) => {
             const v = Array.isArray(params.value) ? params.value[2] : params.data?.[2]
-            return v === undefined || v === 0 ? '' : formatCellNumber(v)
+            return v === undefined || v === 0 ? '' : formatCellNumber(v) + suffix
           },
           color: '#fff',
           fontSize: 11,

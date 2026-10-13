@@ -3,7 +3,13 @@ import type { EChartsOption } from 'echarts'
 import type { TitleComponentOption } from 'echarts/components'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
 import { getNextColorFor, hasXAxis, hasYAxis, hasZAxis } from '@/lib/utils'
-import { getChartStyling, getTooltipTheme, formatTooltipValue } from './shared/chartConfig'
+import {
+  getChartStyling,
+  getTooltipTheme,
+  formatTooltipValue,
+  affixedTooltipValue,
+} from './shared/chartConfig'
+import { affixForColumn } from '@/lib/affix'
 import { createPieSeriesConfig } from './shared/seriesConfig'
 import { sortByTotal, sortByValue } from './shared/common'
 import { chartFontSize } from './shared/chartFontSize'
@@ -74,8 +80,16 @@ export function usePieChartOptions(config: BaseChartConfig) {
     const styling = getChartStyling(isDark.value)
     const baseOptions = getBaseOptions(config)
 
+    // Pie has no value axis — the affix resolves against the metric column (the
+    // chart title), and is appended to each slice's value.
+    const suffix = affixForColumn(config.labelSuffix?.value, chartData.value.title)
+
     const formatter = (params: any) => {
       const percent = Number(params.percent).toFixed(2)
+      const value = params.value
+      if (suffix && value !== null && value !== undefined) {
+        return `${params.name} (${formatTooltipValue(value)}${suffix}, ${percent}%)`
+      }
       return `${params.name} (${percent}%)`
     }
 
@@ -85,7 +99,7 @@ export function usePieChartOptions(config: BaseChartConfig) {
       trigger: 'item',
       ...getTooltipTheme(isDark.value),
       formatter: (params: any) =>
-        `${params.marker} <strong>${params.name}</strong><br/>${formatTooltipValue(params.value)} (${Number(params.percent).toFixed(2)}%)`,
+        `${params.marker} <strong>${params.name}</strong><br/>${affixedTooltipValue(params.value, suffix)} (${Number(params.percent).toFixed(2)}%)`,
     } as EChartsOption['tooltip']
 
     const xAxisPieData = sorted.series.map((s) => ({
