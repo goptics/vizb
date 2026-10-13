@@ -5,6 +5,7 @@ package chord
 
 import (
 	"github.com/goptics/vizb/internal/charts"
+	"github.com/goptics/vizb/internal/flags"
 	"github.com/goptics/vizb/shared"
 )
 
@@ -15,7 +16,7 @@ type Config struct {
 	Swap        string             `json:"swap,omitempty"`
 	Sort        *shared.Sort       `json:"sort,omitempty"`
 	ShowLabels  *bool              `json:"showLabels,omitempty"`
-	LabelSuffix *shared.Affix      `json:"labelSuffix,omitempty"`
+	LabelSuffix *flags.Affix       `json:"labelSuffix,omitempty"`
 	Stat        *shared.StatConfig `json:"stat,omitempty"`
 }
 

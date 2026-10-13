@@ -7,7 +7,6 @@ import (
 	internal_charts "github.com/goptics/vizb/internal/charts"
 	"github.com/goptics/vizb/internal/flags"
 	"github.com/goptics/vizb/pkg/style"
-	"github.com/goptics/vizb/shared"
 	"github.com/goptics/vizb/testutil"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/suite"
@@ -473,14 +472,14 @@ func (s *FlagBagSuite) TestChartSeedLabelSuffix() {
 		cmd, bag := s.newCmdBag(fl)
 		s.Require().NoError(cmd.Flags().Set("label-suffix", "%"))
 		seed := bag.ChartSeed(cmd)
-		s.Equal(&shared.Affix{Global: "%"}, seed["labelSuffix"])
+		s.Equal(&flags.Affix{Global: "%"}, seed["labelSuffix"])
 	})
 	s.Run("per-column form", func() {
 		cmd, bag := s.newCmdBag(fl)
 		s.Require().NoError(cmd.Flags().Set("label-suffix", "col1=%,col2=ms"))
 		seed := bag.ChartSeed(cmd)
 		s.Equal(
-			&shared.Affix{Columns: map[string]string{"col1": "%", "col2": "ms"}},
+			&flags.Affix{Columns: map[string]string{"col1": "%", "col2": "ms"}},
 			seed["labelSuffix"],
 		)
 	})

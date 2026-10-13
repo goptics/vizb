@@ -565,8 +565,8 @@ export function formatTooltipValue(value: any): string {
 
 /** Tooltip value with a resolved, HTML-escaped suffix appended; missing values ('—') stay bare. */
 export function affixedTooltipValue(value: unknown, suffix: string): string {
-  if (!suffix || value === null || value === undefined) return formatTooltipValue(value)
-  return formatTooltipValue(value) + escapeHtml(suffix)
+  const text = formatTooltipValue(value)
+  return value == null ? text : text + escapeHtml(suffix)
 }
 
 /**
