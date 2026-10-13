@@ -824,7 +824,7 @@ describe('value tooltip oob and legend total missing', () => {
 describe('createContinuous3DAxes labelSuffix', () => {
   it('appends per-axis suffixes to value-axis ticks, bare for unmatched columns', () => {
     const axes = createContinuous3DAxes(styling, 'price', 'latency', 'depth', 'linear', {
-      columns: { price: '$', latency: 'ms' },
+      suffix: { columns: { price: '$', latency: 'ms' } },
     }) as unknown as Record<string, { axisLabel: { formatter?: (v: number) => string } }>
     expect(axes.xAxis3D!.axisLabel.formatter!(10)).toBe('10$')
     expect(axes.yAxis3D!.axisLabel.formatter!(10)).toBe('10ms')
@@ -832,15 +832,10 @@ describe('createContinuous3DAxes labelSuffix', () => {
   })
 
   it('composes prefixes with suffixes on value-axis ticks', () => {
-    const axes = createContinuous3DAxes(
-      styling,
-      'price',
-      'latency',
-      'depth',
-      'linear',
-      { columns: { price: '$', latency: 'ms' } },
-      { columns: { price: '~' } }
-    ) as unknown as Record<string, { axisLabel: { formatter?: (v: number) => string } }>
+    const axes = createContinuous3DAxes(styling, 'price', 'latency', 'depth', 'linear', {
+      suffix: { columns: { price: '$', latency: 'ms' } },
+      prefix: { columns: { price: '~' } },
+    }) as unknown as Record<string, { axisLabel: { formatter?: (v: number) => string } }>
     expect(axes.xAxis3D!.axisLabel.formatter!(10)).toBe('~10$')
     expect(axes.yAxis3D!.axisLabel.formatter!(10)).toBe('10ms')
     expect(axes.zAxis3D!.axisLabel.formatter).toBeUndefined()
@@ -852,7 +847,7 @@ describe('3D tooltip suffix escaping', () => {
     const formatter = createContinuous3DTooltipFormatter(
       false,
       { x: 'a', y: 'b', z: 'c', metric: 'm' },
-      { global: '<img src=x onerror=alert(1)>' }
+      { suffix: { global: '<img src=x onerror=alert(1)>' } }
     )
     const html = formatter({ value: [1, 2, 3, 4] })
     expect(html).not.toContain('<img')

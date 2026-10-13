@@ -17,7 +17,7 @@ import {
 import { adjustForLogScaleLine, resolveLogScale } from './common'
 import { resolveSeriesSymbol } from './seriesConfig'
 import { resolve2DScatterVisualMap } from './visualMap'
-import { affixForColumn, applyAffixes } from '@/lib/affix'
+import { affixesOf, applyAffixes, wrapFor } from '@/lib/affix'
 
 const defaultScatterSymbol = { symbol: 'circle' as const, symbolSize: 8 }
 const largeScatterSymbol = { symbol: 'circle' as const, symbolSize: 5 }
@@ -106,20 +106,15 @@ export function buildValueAxes2DOptions(
     .map((t) => (hasColorDim ? t[2] : t[1]))
     .filter((v): v is number => v !== undefined && v !== null && isFinite(v))
 
-  const affix = config.labelSuffix?.value
-  const prefixAffix = config.labelPrefix?.value
-  const ySuffix = affixForColumn(affix, yLabel ?? chartData.value.title)
-  const xSuffix = affixForColumn(affix, xLabel ?? '')
-  const yPrefix = affixForColumn(prefixAffix, yLabel ?? chartData.value.title)
-  const xPrefix = affixForColumn(prefixAffix, xLabel ?? '')
+  const affixes = affixesOf(config)
+  const yWrap = wrapFor(affixes, yLabel ?? chartData.value.title)
+  const xWrap = wrapFor(affixes, xLabel ?? '')
 
   const label = {
     ...createLabelConfig(showLabels.value, styling),
     formatter: (p: { data: [number, number | null, number?] }) => {
       const y = p.data[1]
-      return y === null || y === undefined
-        ? ''
-        : applyAffixes(formatChartNumber(y), yPrefix, ySuffix)
+      return y === null || y === undefined ? '' : applyAffixes(formatChartNumber(y), yWrap)
     },
   }
 
@@ -146,10 +141,8 @@ export function buildValueAxes2DOptions(
       xLabel,
       yLabel,
       chartType === 'scatter' || chartType === 'line',
-      xSuffix,
-      ySuffix,
-      xPrefix,
-      yPrefix
+      xWrap,
+      yWrap
     ),
     ...createValueAxisConfig(
       styling,
@@ -162,10 +155,8 @@ export function buildValueAxes2DOptions(
         xLogBase: axisLogBase(parsed, 'x'),
         yLogBase: axisLogBase(parsed, 'y'),
       },
-      xSuffix,
-      ySuffix,
-      xPrefix,
-      yPrefix
+      xWrap,
+      yWrap
     ),
     ...(chartType === 'line' ? {} : { dataZoom: INSIDE_XY_ZOOM }),
     series: [series],

@@ -1,9 +1,16 @@
 import type { EChartsOption } from 'echarts'
-import type { LabelAffix, ScaleType } from '@/types'
+import type { ScaleType } from '@/types'
 import { chartFontSize } from './chartFontSize'
 import { describe } from '@/lib/stats'
 import { formatChartNumber } from '@/lib/utils'
-import { affixForColumn, applyAffixes, tooltipAffixes } from '@/lib/affix'
+import {
+  applyAffixes,
+  NO_WRAP,
+  tooltipAffixes,
+  wrapFor,
+  type Affixes,
+  type Wrap,
+} from '@/lib/affix'
 
 export const LARGE_X_THRESHOLD = 50
 /** Initial visible share of a large category X-axis when dataZoom first renders. */
@@ -279,6 +286,10 @@ export function hasRotatedXLabels(xAxisData: string[], hasDataZoom = false): boo
   return xAxisData.reduce((acc, cur) => acc + cur.length, 0) > 100
 }
 
+/** Axis-label formatter spread: present only when the wrap has text. */
+const affixAxisFormatter = (w: Wrap) =>
+  w.prefix || w.suffix ? { formatter: (v: number) => applyAffixes(formatChartNumber(v), w) } : {}
+
 export type ValueAxisScaleOpts = {
   xScale?: ScaleType
   xLogBase?: number
@@ -293,10 +304,8 @@ export function createValueAxisConfig(
   yScale: ScaleType = 'linear',
   fitYAxisToData = false,
   opts?: ValueAxisScaleOpts,
-  xSuffix = '',
-  ySuffix = '',
-  xPrefix = '',
-  yPrefix = ''
+  xWrap: Wrap = NO_WRAP,
+  yWrap: Wrap = NO_WRAP
 ): { xAxis: any; yAxis: any } {
   const nameStyle = {
     color: styling.textColor,
@@ -317,9 +326,7 @@ export function createValueAxisConfig(
     axisLabel: {
       color: styling.textColor,
       fontSize: chartFontSize().label,
-      ...(ySuffix || yPrefix
-        ? { formatter: (v: number) => applyAffixes(formatChartNumber(v), yPrefix, ySuffix) }
-        : {}),
+      ...affixAxisFormatter(yWrap),
     },
     axisLine: { lineStyle: { color: styling.axisColor } },
   }
@@ -338,9 +345,7 @@ export function createValueAxisConfig(
       axisLabel: {
         color: styling.textColor,
         fontSize: chartFontSize().label,
-        ...(xSuffix || xPrefix
-          ? { formatter: (v: number) => applyAffixes(formatChartNumber(v), xPrefix, xSuffix) }
-          : {}),
+        ...affixAxisFormatter(xWrap),
       },
       axisLine: { lineStyle: { color: styling.axisColor } },
       splitLine: { lineStyle: { opacity: styling.opacity } },
@@ -386,7 +391,7 @@ export function createCrossAxisPointer(styling: ChartStyling, theme: TooltipThem
 
 /**
  * Item tooltip for [x, y] value-mode points — same box theme as grouping charts.
- * Callers pass the axis-resolved suffix strings so axis and tooltip always use
+ * Callers pass the axis-resolved wraps so axis and tooltip always use
  * the same key (they can differ once axis labels are absent).
  */
 export function createValueModeTooltip(
@@ -394,10 +399,8 @@ export function createValueModeTooltip(
   xLabel?: string,
   yLabel?: string,
   crossAxisPointer = false,
-  xSuffix = '',
-  ySuffix = '',
-  xPrefix = '',
-  yPrefix = ''
+  xWrap: Wrap = NO_WRAP,
+  yWrap: Wrap = NO_WRAP
 ): EChartsOption['tooltip'] {
   const theme = getTooltipTheme(isDark)
   const styling = getChartStyling(isDark)
@@ -409,7 +412,7 @@ export function createValueModeTooltip(
     ...(crossAxisPointer ? { axisPointer: createCrossAxisPointer(styling, theme) } : {}),
     formatter: (params: unknown) => {
       const [x, y] = (params as { data: [number, number | null] }).data
-      return `<strong>${xName}: ${affixedTooltipValue(x, xPrefix, xSuffix)}</strong><br/>${yName}: ${affixedTooltipValue(y, yPrefix, ySuffix)}`
+      return `<strong>${xName}: ${affixedTooltipValue(x, xWrap)}</strong><br/>${yName}: ${affixedTooltipValue(y, yWrap)}`
     },
   }
 }
@@ -422,8 +425,7 @@ export function createAxisConfig(
   hasDataZoom = false,
   fitYAxisToData = false,
   yLogBase = 10,
-  valueAxisSuffix = '',
-  valueAxisPrefix = ''
+  valueWrap: Wrap = NO_WRAP
 ): { xAxis: any; yAxis: any } {
   const yAxisConfig: any = {
     ...logAxisProps(scale, yLogBase),
@@ -437,12 +439,7 @@ export function createAxisConfig(
     },
     axisLabel: {
       color: styling.textColor,
-      ...(valueAxisSuffix || valueAxisPrefix
-        ? {
-            formatter: (v: number) =>
-              applyAffixes(formatChartNumber(v), valueAxisPrefix, valueAxisSuffix),
-          }
-        : {}),
+      ...affixAxisFormatter(valueWrap),
     },
     axisLine: {
       lineStyle: { color: styling.axisColor },
@@ -506,8 +503,7 @@ export function createHorizontalAxisConfig(
   categoryAxisName?: string,
   hasDataZoom = false,
   xLogBase = 10,
-  valueAxisSuffix = '',
-  valueAxisPrefix = ''
+  valueWrap: Wrap = NO_WRAP
 ): { xAxis: any; yAxis: any } {
   const axisNameStyle = {
     color: styling.textColor,
@@ -527,12 +523,7 @@ export function createHorizontalAxisConfig(
     },
     axisLabel: {
       color: styling.textColor,
-      ...(valueAxisSuffix || valueAxisPrefix
-        ? {
-            formatter: (v: number) =>
-              applyAffixes(formatChartNumber(v), valueAxisPrefix, valueAxisSuffix),
-          }
-        : {}),
+      ...affixAxisFormatter(valueWrap),
     },
     axisLine: {
       lineStyle: { color: styling.axisColor },
@@ -580,23 +571,9 @@ export function formatTooltipValue(value: any): string {
 }
 
 /** Tooltip value wrapped with resolved, HTML-escaped prefix/suffix; missing values ('—') stay bare. */
-export function affixedTooltipValue(value: unknown, prefix = '', suffix = ''): string {
+export function affixedTooltipValue(value: unknown, w: Wrap = NO_WRAP): string {
   const text = formatTooltipValue(value)
-  return value == null ? text : tooltipAffixes(text, prefix, suffix)
-}
-
-/**
- * Suffix for one rendered value. Single-metric charts have no per-series column,
- * so an unmatched series name falls back to the chart's metric suffix (the value
- * axis uses the same), keeping every per-value site consistent within a chart.
- * Multi-column pivots (--col-axis) put the column name on the series → exact match wins.
- */
-export function affixForValue(
-  affix: LabelAffix | undefined,
-  column: string,
-  metricSuffix: string
-): string {
-  return affixForColumn(affix, column) || metricSuffix
+  return value == null ? text : tooltipAffixes(text, w)
 }
 
 /** Max legend rows per column before flowing into additional columns. */
@@ -634,10 +611,8 @@ export function formatRadarItemTooltip(
   indicatorNames: string[],
   isDark: boolean,
   colorFor?: (name: string) => string | undefined,
-  affix?: LabelAffix,
-  prefixAffix?: LabelAffix,
-  metricSuffix = '',
-  metricPrefix = ''
+  affixes?: Affixes,
+  metric: Wrap = NO_WRAP
 ): string {
   if (!params?.data) return ''
 
@@ -655,7 +630,7 @@ export function formatRadarItemTooltip(
 
   const rows = indicatorNames.map((name, i) => {
     const dot = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color(name)};margin-right:6px"></span>`
-    return `${dot}${name}: <b>${affixedTooltipValue(vals[i], affixForValue(prefixAffix, name, metricPrefix), affixForValue(affix, name, metricSuffix))}</b>`
+    return `${dot}${name}: <b>${affixedTooltipValue(vals[i], wrapFor(affixes, name, metric))}</b>`
   })
   const legend = renderTooltipLegendColumns(rows)
 
@@ -664,8 +639,7 @@ export function formatRadarItemTooltip(
     finiteVals.length >= 2
       ? `${tooltipDivider(isDark)}Σ ${title}: <b>${affixedTooltipValue(
           finiteVals.reduce((a, b) => a + b, 0),
-          metricPrefix,
-          metricSuffix
+          metric
         )}</b>`
       : ''
 
@@ -794,8 +768,7 @@ export function renderDonutSvg(
  */
 export function createPinnedAxisTooltip(
   isDark = false,
-  suffix = '',
-  prefix = ''
+  wrap: Wrap = NO_WRAP
 ): EChartsOption['tooltip'] {
   const theme = getTooltipTheme(isDark)
   const styling = getChartStyling(isDark)
@@ -808,7 +781,7 @@ export function createPinnedAxisTooltip(
       if (!Array.isArray(params)) return ''
       const p = params[0]
       if (!p) return ''
-      return `<strong>${p.name}</strong><br/>${p.marker} ${affixedTooltipValue(p.value, prefix, suffix)}`
+      return `<strong>${p.name}</strong><br/>${p.marker} ${affixedTooltipValue(p.value, wrap)}`
     },
   }
 }
@@ -831,18 +804,16 @@ function tooltipHeader(params: { name?: string; value?: unknown }[]): string {
  * @param isDark - Dark mode flag for tooltip theming
  * @param seriesTotals - Per-series totals across all x, appended after each name
  * @param pointer - Category band (`shadow`) or continuous-X snap line
- * @param affix - Per-column affixes; rows resolve by series name then metric suffix
- * @param metricSuffix - Fallback suffix for single-metric charts (the value axis's)
+ * @param affixes - Per-column affixes; rows resolve by series name then metric wrap
+ * @param metric - Fallback wrap for single-metric charts (the value axis's)
  */
 export function createTooltipConfig(
   hasXYAxis: boolean,
   isDark = false,
   seriesTotals?: Map<string, number>,
   pointer: 'shadow' | 'line' = 'shadow',
-  affix?: LabelAffix,
-  metricSuffix = '',
-  prefixAffix?: LabelAffix,
-  metricPrefix = ''
+  affixes?: Affixes,
+  metric: Wrap = NO_WRAP
 ): EChartsOption['tooltip'] {
   const theme = getTooltipTheme(isDark)
   const styling = getChartStyling(isDark)
@@ -867,13 +838,12 @@ export function createTooltipConfig(
 
         const legendRows = present.map((cur) => {
           const seriesSum = seriesTotals?.get(cur.seriesName ?? '')
-          const rowSuffix = affixForValue(affix, cur.seriesName ?? '', metricSuffix)
-          const rowPrefix = affixForValue(prefixAffix, cur.seriesName ?? '', metricPrefix)
+          const row = wrapFor(affixes, cur.seriesName ?? '', metric)
           const sumTag =
             seriesSum === undefined
               ? ''
-              : ` (Σ${tooltipAffixes(formatChartNumber(seriesSum), rowPrefix, rowSuffix)})`
-          return `${cur.marker} ${cur.seriesName}${sumTag}: ${affixedTooltipValue(tooltipMetric(cur.value), rowPrefix, rowSuffix)}`
+              : ` (Σ${tooltipAffixes(formatChartNumber(seriesSum), row)})`
+          return `${cur.marker} ${cur.seriesName}${sumTag}: ${affixedTooltipValue(tooltipMetric(cur.value), row)}`
         })
         const header = tooltipHeader(params)
         const body = `<strong>${header}</strong><br/>${renderTooltipLegendColumns(legendRows)}`
@@ -886,7 +856,7 @@ export function createTooltipConfig(
           (sum, cur) => sum + (typeof cur === 'number' ? cur : 0),
           0
         )
-        const sumLine = `${tooltipDivider(isDark)}Σ ${header}: <b>${tooltipAffixes(formatChartNumber(total), metricPrefix, metricSuffix)}</b>`
+        const sumLine = `${tooltipDivider(isDark)}Σ ${header}: <b>${tooltipAffixes(formatChartNumber(total), metric)}</b>`
         const spread = tooltipSpreadRows(
           metrics.map((v) => (typeof v === 'number' ? v : NaN)),
           isDark
@@ -920,9 +890,8 @@ export function createTooltipConfig(
         name = seriesName
       }
 
-      const rowSuffix = affixForValue(affix, seriesName ?? name ?? '', metricSuffix)
-      const rowPrefix = affixForValue(prefixAffix, seriesName ?? name ?? '', metricPrefix)
-      return `${params.marker} <strong>${name}</strong><br/>${affixedTooltipValue(params.value, rowPrefix, rowSuffix)}`
+      const row = wrapFor(affixes, seriesName ?? name ?? '', metric)
+      return `${params.marker} <strong>${name}</strong><br/>${affixedTooltipValue(params.value, row)}`
     },
   }
 }
@@ -1028,8 +997,7 @@ export const createLabelConfig = (
   styling: ChartStyling,
   orient?: 'horizontal' | 'vertical',
   stacked = false,
-  suffix = '',
-  prefix = ''
+  wrap: Wrap = NO_WRAP
 ) => ({
   show: showLabels,
   position: stacked
@@ -1041,7 +1009,7 @@ export const createLabelConfig = (
     const raw = Array.isArray(params.value) ? params.value[1] : params.value
     if (raw == null) return ''
     const text = typeof raw === 'number' ? formatChartNumber(raw) : String(raw)
-    return applyAffixes(text, prefix, suffix)
+    return applyAffixes(text, wrap)
   },
   fontSize: chartFontSize().series,
   color: stacked ? '#fff' : styling.textColor,

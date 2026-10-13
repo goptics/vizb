@@ -782,30 +782,30 @@ describe('labelSuffix axis formatters', () => {
       'linear',
       false,
       undefined,
-      '%',
-      'ms'
+      { prefix: '', suffix: '%' },
+      { prefix: '', suffix: 'ms' }
     )
     expect((xAxis.axisLabel.formatter as (v: number) => string)(10)).toBe('10%')
     expect((yAxis.axisLabel.formatter as (v: number) => string)(10)).toBe('10ms')
   })
 
   it('appends the value-axis suffix for vertical and horizontal category axes', () => {
-    const { yAxis } = createAxisConfig(styling, ['a'], 'linear', undefined, false, false, 10, '%')
+    const { yAxis } = createAxisConfig(styling, ['a'], 'linear', undefined, false, false, 10, {
+      prefix: '',
+      suffix: '%',
+    })
     expect((yAxis.axisLabel.formatter as (v: number) => string)(10)).toBe('10%')
-    const horizontal = createHorizontalAxisConfig(
-      styling,
-      ['a'],
-      'linear',
-      undefined,
-      false,
-      10,
-      'ms'
-    )
+    const horizontal = createHorizontalAxisConfig(styling, ['a'], 'linear', undefined, false, 10, {
+      prefix: '',
+      suffix: 'ms',
+    })
     expect((horizontal.xAxis.axisLabel.formatter as (v: number) => string)(10)).toBe('10ms')
   })
 
   it('affixes item tooltip values and leaves unset names bare', () => {
-    const tip = createTooltipConfig(false, false, undefined, undefined, { global: '%' }) as {
+    const tip = createTooltipConfig(false, false, undefined, undefined, {
+      suffix: { global: '%' },
+    }) as {
       formatter: (p: unknown) => string
     }
     expect(tip.formatter({ marker: '*', seriesName: 'revenue', value: 3 })).toContain('3%')
@@ -814,7 +814,7 @@ describe('labelSuffix axis formatters', () => {
 })
 
 describe('createTooltipConfig labelSuffix fallback + Σ', () => {
-  it('falls back to metricSuffix for unmatched series and affixes both Σ sites', () => {
+  it('falls back to the metric wrap for unmatched series and affixes both Σ sites', () => {
     const totals = new Map([
       ['West', 30],
       ['East', 70],
@@ -824,8 +824,8 @@ describe('createTooltipConfig labelSuffix fallback + Σ', () => {
       false,
       totals,
       'shadow',
-      { columns: { revenue: '%' } },
-      '%'
+      { suffix: { columns: { revenue: '%' } } },
+      { prefix: '', suffix: '%' }
     ) as { formatter: (p: unknown[]) => string }
     const html = tip.formatter([
       { name: 'Q1', seriesName: 'West', value: 10, marker: 'w' },
@@ -839,7 +839,7 @@ describe('createTooltipConfig labelSuffix fallback + Σ', () => {
 
 describe('labelPrefix composition', () => {
   it('composes prefix and suffix on labels, value axes, and tooltips', () => {
-    const label = createLabelConfig(true, styling, undefined, false, '%', '$')
+    const label = createLabelConfig(true, styling, undefined, false, { prefix: '$', suffix: '%' })
     expect(label.formatter({ value: 42 })).toBe('$42%')
 
     const { yAxis } = createValueAxisConfig(
@@ -849,10 +849,8 @@ describe('labelPrefix composition', () => {
       'linear',
       false,
       undefined,
-      '%',
-      'ms',
-      '$',
-      '€'
+      { prefix: '$', suffix: '%' },
+      { prefix: '€', suffix: 'ms' }
     )
     expect((yAxis.axisLabel.formatter as (v: number) => string)(10)).toBe('€10ms')
 
@@ -861,10 +859,8 @@ describe('labelPrefix composition', () => {
       false,
       undefined,
       'shadow',
-      { columns: { revenue: '%' } },
-      '',
-      { global: '$' },
-      '$'
+      { suffix: { columns: { revenue: '%' } }, prefix: { global: '$' } },
+      { prefix: '$', suffix: '' }
     ) as { formatter: (p: unknown[]) => string }
     const html = tip.formatter([{ name: 'Q1', seriesName: 'revenue', value: 42, marker: 'm' }])
     expect(html).toContain('$42%')
@@ -879,10 +875,12 @@ describe('labelPrefix composition', () => {
 
 describe('affixedTooltipValue', () => {
   it('HTML-escapes prefix and suffix so they render as text in tooltip markup', () => {
-    expect(affixedTooltipValue(5, '<i>', '<img src=x>')).toBe('&lt;i&gt;5&lt;img src=x&gt;')
+    expect(affixedTooltipValue(5, { prefix: '<i>', suffix: '<img src=x>' })).toBe(
+      '&lt;i&gt;5&lt;img src=x&gt;'
+    )
   })
 
   it('leaves missing values bare', () => {
-    expect(affixedTooltipValue(null, '<i>', '<b>')).toBe('—')
+    expect(affixedTooltipValue(null, { prefix: '<i>', suffix: '<b>' })).toBe('—')
   })
 })

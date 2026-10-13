@@ -1,7 +1,7 @@
 import type { EChartsOption } from 'echarts'
 import { type BaseChartConfig, getBaseOptions } from '../baseChartOptions'
 import { getTooltipTheme } from './chartConfig'
-import { affixForColumn } from '@/lib/affix'
+import { affixesOf, wrapFor } from '@/lib/affix'
 import {
   buildEdgeGraph,
   formatEdgeTooltip,
@@ -28,15 +28,14 @@ export function prepareEdgeChart(config: BaseChartConfig): PreparedEdgeChart {
   )
   const colorFor = (name: string): string => nodeColor.get(name) ?? '#888'
   // Edge/node values are metric totals — the affix resolves against the metric column.
-  const suffix = affixForColumn(config.labelSuffix?.value, config.chartData.value.title)
-  const prefix = affixForColumn(config.labelPrefix?.value, config.chartData.value.title)
+  const wrap = wrapFor(affixesOf(config), config.chartData.value.title)
   return {
     nodes: sorted,
     links,
     tooltip: {
       trigger: 'item',
       ...getTooltipTheme(config.isDark.value),
-      formatter: (params: any) => formatEdgeTooltip(params, colorFor, suffix, prefix),
+      formatter: (params: any) => formatEdgeTooltip(params, colorFor, wrap),
     } as EChartsOption['tooltip'],
   }
 }
