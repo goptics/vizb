@@ -88,7 +88,10 @@ inputs:
     description: "Chart text size in px (--font-size). A number sets series, legend, and axis ticks; or series=;legend=;label= bag."
     default: ""
   label-suffix:
-    description: "Suffix appended to numeric values on labels, tooltips, and value-axis ticks (--label-suffix). Global (e.g. '%') or per-column ('col1=%,col2=ms')."
+    description: "Suffix appended to numeric values on labels, tooltips, and value-axis ticks (--label-suffix). Global (e.g. '%') or per-column ('col1=%,col2=ms'). Composes with label-prefix (e.g. '$42%')."
+    default: ""
+  label-prefix:
+    description: "Prefix prepended to numeric values on labels, tooltips, and value-axis ticks (--label-prefix). Global (e.g. '$') or per-column ('col1=$,col2=€'). Composes with label-suffix (e.g. '$42%')."
     default: ""
   show-labels:
     description: "DEPRECATED: use 'chart' input instead (e.g. chart: 'pie:labels'). Show labels on charts (-l flag)"

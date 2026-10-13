@@ -18,6 +18,7 @@ type Config struct {
 	Scale           shared.Scale       `json:"scale,omitempty"`
 	ShowLabels      *bool              `json:"showLabels,omitempty"`
 	LabelSuffix     *flags.Affix       `json:"labelSuffix,omitempty"`
+	LabelPrefix     *flags.Affix       `json:"labelPrefix,omitempty"`
 	Symbol          string             `json:"symbol,omitempty"`
 	SymbolSize      *float64           `json:"symbolSize,omitempty"`
 	ThreeDRotate    *bool              `json:"threeDRotate,omitempty"`

@@ -1,8 +1,8 @@
 import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
-import { getDefaultThemeColor, getNextColorFor, formatChartNumber } from '@/lib/utils'
-import { affixForColumn } from '@/lib/affix'
+import { getDefaultThemeColor, getNextColorFor } from '@/lib/utils'
+import { affixesOf, NO_WRAP, wrapFor, type Wrap } from '@/lib/affix'
 import {
   EMPTY_RENDER,
   makeAxis3DCommon,
@@ -21,6 +21,7 @@ import {
   valuePoints3DToSeries,
   resolve3DZAxisType,
   type Continuous3DContext,
+  axis3DTick,
 } from './shared/3d'
 import { getChartStyling, getTooltipTheme } from './shared/chartConfig'
 import { resolve3DSymbolProps } from './shared/seriesConfig'
@@ -56,21 +57,14 @@ export function use3DChartOptions(config: BaseChartConfig, kind: Chart3DKind) {
     const axisCommon = makeAxis3DCommon(styling)
     const seriesData = kind === 'bar3D' ? render.barSeries : render.lineSeries
     const zAxis = resolve3DZAxisType(scale?.value ?? 'linear', seriesData)
-    const affix = config.labelSuffix?.value
-    // Grouped/value 3D z axis is the value (metric) axis — suffix it like 2D y.
-    const metricSuffix = affixForColumn(affix, chartData.value.title)
+    const affixes = affixesOf(config)
+    // Grouped/value 3D z axis is the value (metric) axis — affix it like 2D y.
+    const metricWrap = wrapFor(affixes, chartData.value.title)
     const zAxis3DBase = {
       type: zAxis.type,
       ...(zAxis.type === 'log' ? { logBase: zAxis.logBase } : {}),
       ...axisCommon,
-      ...(metricSuffix
-        ? {
-            axisLabel: {
-              ...axisCommon.axisLabel,
-              formatter: (v: number) => formatChartNumber(v) + metricSuffix,
-            },
-          }
-        : {}),
+      ...axis3DTick(axisCommon.axisLabel, metricWrap),
     }
     if (render.mode === 'mixed') {
       return buildMixedAxes3DOptions(config, kind)
@@ -120,7 +114,7 @@ export function use3DChartOptions(config: BaseChartConfig, kind: Chart3DKind) {
             yAxisLabel: axisLabels?.y,
             valueLabel,
             seriesColor: defaultColor,
-            metricSuffix,
+            metricWrap,
           }),
         },
         xAxis3D: {
@@ -152,7 +146,7 @@ export function use3DChartOptions(config: BaseChartConfig, kind: Chart3DKind) {
           valueSymbolSize,
           symbolOverride,
           symbolSizeOverride,
-          metricSuffix,
+          metricWrap,
         }),
       } as unknown as EChartsOption
     }
@@ -167,7 +161,7 @@ export function use3DChartOptions(config: BaseChartConfig, kind: Chart3DKind) {
       threeDRotate: threeDRotate?.value ?? false,
       scale: scale?.value ?? 'linear',
       axisLabels,
-      affix,
+      affixes,
       ...(kind !== 'bar3D' ? { symbol: symbolOverride, symbolSize: symbolSizeOverride } : {}),
     }
 
@@ -202,7 +196,7 @@ export function use3DChartOptions(config: BaseChartConfig, kind: Chart3DKind) {
       xAxisLabel: axisLabels?.x,
       yAxisLabel: axisLabels?.y,
       zAxisLabel: axisLabels?.z,
-      metricSuffix,
+      metricWrap,
     })
 
     return {
@@ -245,7 +239,7 @@ export function use3DChartOptions(config: BaseChartConfig, kind: Chart3DKind) {
         groupedSymbolSize,
         symbolOverride,
         symbolSizeOverride,
-        metricSuffix,
+        metricWrap,
       }),
     } as unknown as EChartsOption
   })
@@ -265,7 +259,7 @@ function buildValue3DSeries(params: {
   valueSymbolSize?: number
   symbolOverride?: string
   symbolSizeOverride?: number
-  metricSuffix?: string
+  metricWrap?: Wrap
 }) {
   const {
     kind,
@@ -279,7 +273,7 @@ function buildValue3DSeries(params: {
     valueSymbolSize,
     symbolOverride,
     symbolSizeOverride,
-    metricSuffix = '',
+    metricWrap = NO_WRAP,
   } = params
 
   if (kind === 'bar3D') {
@@ -292,7 +286,7 @@ function buildValue3DSeries(params: {
       data: s.data,
       ...(useVisualMap ? {} : { itemStyle: { color: defaultColor } }),
       shading: 'lambert',
-      label: create3DCellLabel(showLabels, cellTotals, textColor, metricSuffix),
+      label: create3DCellLabel(showLabels, cellTotals, textColor, metricWrap),
       emphasis: { label: { show: false } },
     }))
   }
@@ -314,7 +308,7 @@ function buildValue3DSeries(params: {
       data: s.data,
       ...resolve3DSymbolProps(valueSymbolSize, symbolOverride, symbolSizeOverride),
       itemStyle: { color: defaultColor },
-      label: create3DCellLabel(showLabels, cellTotals, textColor, metricSuffix),
+      label: create3DCellLabel(showLabels, cellTotals, textColor, metricWrap),
       emphasis: { label: { show: false } },
     }))
     return [...lineSeries, ...labelSeries]
@@ -326,7 +320,7 @@ function buildValue3DSeries(params: {
     data: s.data,
     ...resolve3DSymbolProps(valueSymbolSize, symbolOverride, symbolSizeOverride),
     ...(useVisualMap ? {} : { itemStyle: { color: defaultColor } }),
-    label: create3DCellLabel(showLabels, cellTotals, textColor, metricSuffix),
+    label: create3DCellLabel(showLabels, cellTotals, textColor, metricWrap),
     emphasis: { label: { show: false } },
   }))
 }
@@ -341,7 +335,7 @@ function buildGrouped3DSeries(params: {
   groupedSymbolSize: number
   symbolOverride?: string
   symbolSizeOverride?: number
-  metricSuffix?: string
+  metricWrap?: Wrap
 }) {
   const {
     kind,
@@ -353,7 +347,7 @@ function buildGrouped3DSeries(params: {
     groupedSymbolSize,
     symbolOverride,
     symbolSizeOverride,
-    metricSuffix = '',
+    metricWrap = NO_WRAP,
   } = params
 
   if (kind === 'bar3D') {
@@ -368,7 +362,7 @@ function buildGrouped3DSeries(params: {
         data: s.data,
         itemStyle: { color: getNextColorFor(s.name) },
         shading: 'lambert',
-        label: create3DCellLabel(isTop, cellTotals, textColor, metricSuffix),
+        label: create3DCellLabel(isTop, cellTotals, textColor, metricWrap),
         emphasis: { label: { show: false } },
       }
     })
@@ -400,7 +394,7 @@ function buildGrouped3DSeries(params: {
           showLabels && s.name === lastVisibleZName,
           cellTotals,
           textColor,
-          metricSuffix
+          metricWrap
         ),
         emphasis: { label: { show: false } },
       }
@@ -420,7 +414,7 @@ function buildGrouped3DSeries(params: {
         showLabels && s.name === lastVisibleZName,
         cellTotals,
         textColor,
-        metricSuffix
+        metricWrap
       ),
       emphasis: { label: { show: false } },
     }

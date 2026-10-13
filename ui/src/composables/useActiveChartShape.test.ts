@@ -240,12 +240,16 @@ describe('useActiveChartShape', () => {
     expect(useActiveChartShape().donut.value).toBe(true)
   })
 
-  it('reads labelSuffix from the active config, undefined when absent', async () => {
+  it('reads labelSuffix and labelPrefix from the active config, undefined when absent', async () => {
     holder.ref = ref(ds([{ type: 'bar' as ChartType }]))
     const { useActiveChartShape } = await import('./useActiveChartShape')
     expect(useActiveChartShape().labelSuffix.value).toBeUndefined()
+    expect(useActiveChartShape().labelPrefix.value).toBeUndefined()
 
-    holder.ref = ref(ds([{ type: 'bar' as ChartType, labelSuffix: { global: '%' } }]))
+    holder.ref = ref(
+      ds([{ type: 'bar' as ChartType, labelSuffix: { global: '%' }, labelPrefix: { global: '$' } }])
+    )
     expect(useActiveChartShape().labelSuffix.value).toEqual({ global: '%' })
+    expect(useActiveChartShape().labelPrefix.value).toEqual({ global: '$' })
   })
 })

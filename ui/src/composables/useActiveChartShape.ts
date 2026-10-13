@@ -109,6 +109,8 @@ export function useActiveChartShape() {
 
   const labelSuffix = computed<LabelAffix | undefined>(() => activeConfig.value?.labelSuffix)
 
+  const labelPrefix = computed<LabelAffix | undefined>(() => activeConfig.value?.labelPrefix)
+
   return {
     scale,
     stack,
@@ -129,5 +131,6 @@ export function useActiveChartShape() {
     borderRadius,
     background,
     labelSuffix,
+    labelPrefix,
   }
 }

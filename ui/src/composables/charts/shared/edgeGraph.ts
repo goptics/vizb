@@ -1,5 +1,6 @@
 import { getNextColorFor } from '@/lib/utils'
 import type { Point3D, SortOrder } from '@/types'
+import { NO_WRAP, type Wrap } from '@/lib/affix'
 import { affixedTooltipValue } from './chartConfig'
 
 export type EdgeGraphLink = { source: string; target: string; value: number }
@@ -56,7 +57,7 @@ export function sortEdgeGraphNodes(nodes: EdgeGraphNode[], order: SortOrder): Ed
 export function formatEdgeTooltip(
   params: any,
   colorFor: (name: string) => string,
-  suffix = ''
+  wrap: Wrap = NO_WRAP
 ): string {
   const dot = (color: string) =>
     `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};margin-right:6px"></span>`
@@ -67,13 +68,13 @@ export function formatEdgeTooltip(
     const value = params.data?.value ?? params.value
     return (
       `${dot(colorFor(source))}<strong>${source}</strong> → ` +
-      `${dot(colorFor(target))}<strong>${target}</strong><br/>${affixedTooltipValue(value, suffix)}`
+      `${dot(colorFor(target))}<strong>${target}</strong><br/>${affixedTooltipValue(value, wrap)}`
     )
   }
 
   const name = String(params.name ?? params.data?.name ?? '')
   const value = params.value ?? params.data?.value
   const valueLine =
-    value === undefined || value === null ? '' : `<br/>${affixedTooltipValue(value, suffix)}`
+    value === undefined || value === null ? '' : `<br/>${affixedTooltipValue(value, wrap)}`
   return `${params.marker || dot(colorFor(name))} <strong>${name}</strong>${valueLine}`
 }

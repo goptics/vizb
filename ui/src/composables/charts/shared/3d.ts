@@ -1,9 +1,16 @@
 import type { EChartsOption } from 'echarts'
-import type { LabelAffix, Render3D, Point3D, ScaleInput, Series3DData } from '@/types'
+import type { Render3D, Point3D, ScaleInput, Series3DData } from '@/types'
 import { axisIsLog, axisLogBase, parseScale } from '@/lib/scale'
 import { valuePoints3DToSeries } from '@/lib/transform'
 import { getDefaultThemeColor, getNextColorFor, formatChartNumber } from '@/lib/utils'
-import { affixForColumn, escapeHtml } from '@/lib/affix'
+import {
+  applyAffixes,
+  NO_WRAP,
+  tooltipAffixes,
+  wrapFor,
+  type Affixes,
+  type Wrap,
+} from '@/lib/affix'
 import {
   formatTooltipValue,
   tooltipDivider,
@@ -108,10 +115,10 @@ export function createMixed3DTooltipFormatter(params: {
   xAxisLabel?: string
   yAxisLabel?: string
   zAxisLabel?: string
-  ySuffix?: string
-  zSuffix?: string
+  yWrap?: Wrap
+  zWrap?: Wrap
 }) {
-  const { xValues, xAxisLabel, yAxisLabel, zAxisLabel, ySuffix = '', zSuffix = '' } = params
+  const { xValues, xAxisLabel, yAxisLabel, zAxisLabel, yWrap = NO_WRAP, zWrap = NO_WRAP } = params
   const xLabel = xAxisLabel ?? 'x'
   const yLabel = yAxisLabel ?? 'y'
   const zLabel = zAxisLabel ?? 'z'
@@ -121,8 +128,8 @@ export function createMixed3DTooltipFormatter(params: {
     const xName = xValues[xi] ?? String(xi)
     return (
       `<b>${xLabel}: ${xName}</b><br/>` +
-      `${yLabel}: <b>${formatChartNumber(y)}${escapeHtml(ySuffix)}</b><br/>` +
-      `${zLabel}: <b>${formatChartNumber(z)}${escapeHtml(zSuffix)}</b>`
+      `${yLabel}: <b>${tooltipAffixes(formatChartNumber(y), yWrap)}</b><br/>` +
+      `${zLabel}: <b>${tooltipAffixes(formatChartNumber(z), zWrap)}</b>`
     )
   }
 }
@@ -136,7 +143,7 @@ export function createValue3DTooltipFormatter(params: {
   yAxisLabel?: string
   valueLabel?: string
   seriesColor?: string
-  metricSuffix?: string
+  metricWrap?: Wrap
 }) {
   const {
     xValues,
@@ -147,7 +154,7 @@ export function createValue3DTooltipFormatter(params: {
     yAxisLabel,
     valueLabel,
     seriesColor = getDefaultThemeColor(),
-    metricSuffix = '',
+    metricWrap = NO_WRAP,
   } = params
   const xLabel = xAxisLabel ?? 'x'
   const yLabel = yAxisLabel ?? 'y'
@@ -176,13 +183,13 @@ export function createValue3DTooltipFormatter(params: {
 
     const margins =
       tooltipDivider(isDark) +
-      `Σ ${xLabel}(${xName}): <b>${formatChartNumber(xMarginal)}${escapeHtml(metricSuffix)}</b><br/>` +
-      `Σ ${yLabel}(${yName}): <b>${formatChartNumber(yMarginal)}${escapeHtml(metricSuffix)}</b><br/>` +
-      `Σ (${xLabel}∪${yLabel}): <b>${formatChartNumber(xyUnion)}${escapeHtml(metricSuffix)}</b>`
+      `Σ ${xLabel}(${xName}): <b>${tooltipAffixes(formatChartNumber(xMarginal), metricWrap)}</b><br/>` +
+      `Σ ${yLabel}(${yName}): <b>${tooltipAffixes(formatChartNumber(yMarginal), metricWrap)}</b><br/>` +
+      `Σ (${xLabel}∪${yLabel}): <b>${tooltipAffixes(formatChartNumber(xyUnion), metricWrap)}</b>`
 
     return (
       `<b>${xLabel}: ${xName} / ${yLabel}: ${yName}</b><br/>` +
-      `${dot}${metricLabel}: <b>${formatChartNumber(v)}${escapeHtml(metricSuffix)}</b><br/>` +
+      `${dot}${metricLabel}: <b>${tooltipAffixes(formatChartNumber(v), metricWrap)}</b><br/>` +
       margins
     )
   }
@@ -306,6 +313,17 @@ export const EMPTY_RENDER: Render3D = {
   cellTotals: {},
 }
 
+/** 3D value-axis tick formatter spread: present only when the wrap has text. */
+export const axis3DTick = (axisLabel: object, w: Wrap) =>
+  w.prefix || w.suffix
+    ? {
+        axisLabel: {
+          ...axisLabel,
+          formatter: (v: number) => applyAffixes(formatChartNumber(v), w),
+        },
+      }
+    : {}
+
 /** Value axes for --axes x,y,z continuous 3D (swap-driven, not category indices). */
 export function createContinuous3DAxes(
   styling: ChartStyling,
@@ -313,26 +331,18 @@ export function createContinuous3DAxes(
   yLabel?: string,
   zLabel?: string,
   scale: ScaleInput = 'linear',
-  affix?: LabelAffix
+  affixes?: Affixes
 ) {
   const parsed = parseScale(scale)
   const defaults = ['x', 'y', 'z'] as const
   const axisCommon = makeAxis3DCommon(styling)
   const valueAxis = (axis: 'x' | 'y' | 'z', label?: string) => {
     const isLog = axisIsLog(parsed, axis, defaults)
-    const suffix = affixForColumn(affix, label ?? axis)
     return {
       type: isLog ? ('log' as const) : ('value' as const),
       ...(isLog ? { logBase: axisLogBase(parsed, axis) } : {}),
       ...axisCommon,
-      ...(suffix
-        ? {
-            axisLabel: {
-              ...axisCommon.axisLabel,
-              formatter: (v: number) => formatChartNumber(v) + suffix,
-            },
-          }
-        : {}),
+      ...axis3DTick(axisCommon.axisLabel, wrapFor(affixes, label ?? axis)),
       ...axis3DName(label, styling),
     }
   }
@@ -346,27 +356,22 @@ export function createContinuous3DAxes(
 export function createContinuous3DTooltipFormatter(
   _isDark: boolean,
   labels: { x?: string; y?: string; z?: string; metric?: string },
-  affix?: LabelAffix
+  affixes?: Affixes
 ) {
   const xName = labels.x ?? 'x'
   const yName = labels.y ?? 'y'
   const zName = labels.z ?? 'z'
   const metricName = labels.metric ?? 'value'
-  const xSuffix = affixForColumn(affix, xName)
-  const ySuffix = affixForColumn(affix, yName)
-  const zSuffix = affixForColumn(affix, zName)
-  const metricSuffix = affixForColumn(affix, metricName)
+  const cell = (name: string, v: unknown) =>
+    tooltipAffixes(formatTooltipValue(v), wrapFor(affixes, name))
   return (p: { value: number[] }) => {
     const [x = 0, y = 0, z = 0, metric] = p.value
     const coords =
-      `<b>${xName}: ${formatTooltipValue(x)}${escapeHtml(xSuffix)}</b><br/>` +
-      `${yName}: ${formatTooltipValue(y)}${escapeHtml(ySuffix)}<br/>` +
-      `${zName}: ${formatTooltipValue(z)}${escapeHtml(zSuffix)}`
+      `<b>${xName}: ${cell(xName, x)}</b><br/>` +
+      `${yName}: ${cell(yName, y)}<br/>` +
+      `${zName}: ${cell(zName, z)}`
     if (metric !== undefined) {
-      return (
-        coords +
-        `<br/>${metricName}: <b>${formatTooltipValue(metric)}${escapeHtml(metricSuffix)}</b>`
-      )
+      return coords + `<br/>${metricName}: <b>${cell(metricName, metric)}</b>`
     }
     return coords
   }
@@ -422,7 +427,7 @@ export function create3DTooltipFormatter(params: {
   xAxisLabel?: string
   yAxisLabel?: string
   zAxisLabel?: string
-  metricSuffix?: string
+  metricWrap?: Wrap
 }) {
   const {
     xValues,
@@ -433,7 +438,7 @@ export function create3DTooltipFormatter(params: {
     xAxisLabel,
     yAxisLabel,
     zAxisLabel,
-    metricSuffix = '',
+    metricWrap = NO_WRAP,
   } = params
   const xLabel = xAxisLabel ?? 'x'
   const yLabel = yAxisLabel ?? 'y'
@@ -475,8 +480,8 @@ export function create3DTooltipFormatter(params: {
         if (v === undefined) return ''
         const dot = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${getNextColorFor(z)};margin-right:6px"></span>`
         // legendTotals is built from the same aggPoints that fill zmap, so z is present.
-        const sumTag = ` (Σ${formatChartNumber(legendTotals.get(z)!)}${escapeHtml(metricSuffix)})`
-        return `${dot}${z}${sumTag}: <b>${formatChartNumber(v)}${escapeHtml(metricSuffix)}</b>`
+        const sumTag = ` (Σ${tooltipAffixes(formatChartNumber(legendTotals.get(z)!), metricWrap)})`
+        return `${dot}${z}${sumTag}: <b>${tooltipAffixes(formatChartNumber(v), metricWrap)}</b>`
       })
       .filter(Boolean)
 
@@ -485,15 +490,15 @@ export function create3DTooltipFormatter(params: {
     const xyUnion = xMarginal + yMarginal - cellTotal
     const cellSumLine =
       zmap.size > 0
-        ? `Σ (${xLabel},${yLabel},${zSumLabel}): <b>${formatChartNumber(cellTotal)}${escapeHtml(metricSuffix)}</b><br/>`
+        ? `Σ (${xLabel},${yLabel},${zSumLabel}): <b>${tooltipAffixes(formatChartNumber(cellTotal), metricWrap)}</b><br/>`
         : ''
 
     const margins =
       tooltipDivider(isDark) +
-      `Σ ${xLabel}(${xName}): <b>${formatChartNumber(xMarginal)}${escapeHtml(metricSuffix)}</b><br/>` +
-      `Σ ${yLabel}(${yName}): <b>${formatChartNumber(yMarginal)}${escapeHtml(metricSuffix)}</b><br/>` +
+      `Σ ${xLabel}(${xName}): <b>${tooltipAffixes(formatChartNumber(xMarginal), metricWrap)}</b><br/>` +
+      `Σ ${yLabel}(${yName}): <b>${tooltipAffixes(formatChartNumber(yMarginal), metricWrap)}</b><br/>` +
       cellSumLine +
-      `Σ (${xLabel}∪${yLabel}): <b>${formatChartNumber(xyUnion)}${escapeHtml(metricSuffix)}</b>`
+      `Σ (${xLabel}∪${yLabel}): <b>${tooltipAffixes(formatChartNumber(xyUnion), metricWrap)}</b>`
 
     // Spread of the z-values in this cell (median / IQR / CV), mirroring the 2D
     // tooltip. Only meaningful with >1 z.
@@ -553,7 +558,7 @@ export type Continuous3DParams = {
   axisLabels?: { x?: string; y?: string; z?: string; metric?: string }
   symbol?: string
   symbolSize?: number
-  affix?: LabelAffix
+  affixes?: Affixes
 }
 
 export type Continuous3DContext = Omit<Continuous3DParams, 'seriesData'>
@@ -585,7 +590,7 @@ export function buildContinuous3DOptions(
     axisLabels,
     symbol,
     symbolSize,
-    affix,
+    affixes,
   } = params
   const pointCount = seriesData[0]?.data.length ?? 0
   const { xCount, yCount } = continuous3DGridCounts(pointCount)
@@ -595,9 +600,9 @@ export function buildContinuous3DOptions(
     axisLabels?.y,
     axisLabels?.z,
     scale,
-    affix
+    affixes
   )
-  const metricSuffix = affixForColumn(affix, axisLabels?.metric ?? 'value')
+  const metricWrap = wrapFor(affixes, axisLabels?.metric ?? 'value')
   const grid3D = create3DGridConfig({
     styling,
     autoRotate: threeDRotate,
@@ -637,7 +642,7 @@ export function buildContinuous3DOptions(
           z: axisLabels?.z,
           metric: axisLabels?.metric,
         },
-        affix
+        affixes
       ),
     },
     ...axes3D,
@@ -655,7 +660,7 @@ export function buildContinuous3DOptions(
         show: showLabels,
         formatter: (p: { value: number[] }) => {
           const labelVal = metricDimension ? p.value[3] : p.value[2]
-          return labelVal === undefined ? '' : formatChartNumber(labelVal) + metricSuffix
+          return labelVal === undefined ? '' : applyAffixes(formatChartNumber(labelVal), metricWrap)
         },
         textStyle: { fontSize: chartFontSize().series, color: styling.textColor },
       },
@@ -778,7 +783,7 @@ export function create3DCellLabel(
   show: boolean,
   cellTotals: Record<string, number>,
   textColor: string,
-  suffix = ''
+  wrap: Wrap = NO_WRAP
 ) {
   if (!show) return { show: false }
   return {
@@ -786,7 +791,7 @@ export function create3DCellLabel(
     formatter: (p: { value: number[] }) => {
       const [xi = 0, yi = 0] = p.value
       const total = cellTotals[`${xi},${yi}`]
-      return total === undefined ? '' : formatChartNumber(total) + suffix
+      return total === undefined ? '' : applyAffixes(formatChartNumber(total), wrap)
     },
     textStyle: { fontSize: chartFontSize().series, color: textColor },
   }

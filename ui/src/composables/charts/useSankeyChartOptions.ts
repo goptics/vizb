@@ -5,7 +5,7 @@ import { hasXAxis, hasYAxis } from '@/lib/utils'
 import { getChartStyling, affixedTooltipValue } from './shared/chartConfig'
 import { chartFontSize } from './shared/chartFontSize'
 import { emptyEdgeChartOption, prepareEdgeChart } from './shared/edgeChart'
-import { affixForColumn } from '@/lib/affix'
+import { affixesOf, wrapFor } from '@/lib/affix'
 
 /** ECharts defaults right: '20%' for label room; we keep a tighter inset. */
 const sankeyLayout = {
@@ -33,7 +33,7 @@ export function useSankeyChartOptions(config: BaseChartConfig) {
     }
 
     const styling = getChartStyling(isDark.value)
-    const suffix = affixForColumn(config.labelSuffix?.value, chartData.value.title)
+    const wrap = wrapFor(affixesOf(config), chartData.value.title)
     const { nodes, links, tooltip } = prepareEdgeChart(config)
     // Drop the internal total field before handing nodes to ECharts.
     const data = nodes.map(({ name, itemStyle }) => ({ name, itemStyle }))
@@ -55,7 +55,7 @@ export function useSankeyChartOptions(config: BaseChartConfig) {
           edgeLabel: {
             show: showLabels.value,
             formatter: (params: { data?: { value?: number }; value?: number }) =>
-              affixedTooltipValue(params.data?.value ?? params.value, suffix),
+              affixedTooltipValue(params.data?.value ?? params.value, wrap),
             color: styling.textColor,
             fontSize: chartFontSize().series,
           },

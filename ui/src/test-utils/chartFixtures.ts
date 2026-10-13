@@ -218,6 +218,7 @@ export type BaseConfigOverrides = {
   arrangementTarget?: string | Ref<string>
   chartType?: ChartType | Ref<ChartType>
   labelSuffix?: LabelAffix | Ref<LabelAffix | undefined>
+  labelPrefix?: LabelAffix | Ref<LabelAffix | undefined>
 }
 
 function asRef<T>(value: T | Ref<T> | undefined, fallback: T): Ref<T> {
@@ -248,5 +249,6 @@ export function baseConfig(overrides: BaseConfigOverrides = {}): BaseChartConfig
     arrangementTarget: asRef(overrides.arrangementTarget, 'xy'),
     chartType: asRef(overrides.chartType, 'bar' as ChartType),
     labelSuffix: asRef<LabelAffix | undefined>(overrides.labelSuffix, undefined),
+    labelPrefix: asRef<LabelAffix | undefined>(overrides.labelPrefix, undefined),
   }
 }

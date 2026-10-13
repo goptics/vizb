@@ -38,7 +38,7 @@ var (
 // BaseChartFlags are the --chart keys valid for every chart type. Each chart's
 // flag list is composed by prepending a clone of BaseChartFlags before the
 // chart's own variable flags (declared in cmd/charts/<c>/<c>.go).
-var BaseChartFlags = []flags.Flag{SwapFlag, SortFlag, LabelsFlag, StatFlag, LabelSuffixFlag}
+var BaseChartFlags = []flags.Flag{SwapFlag, SortFlag, LabelsFlag, StatFlag, LabelSuffixFlag, LabelPrefixFlag}
 
 // --- Variable flags: composed by the charts that carry them. ---
 
@@ -129,6 +129,16 @@ var (
 			"value selects per-column parsing, so the global form cannot contain \"=\"",
 		Kind:     flags.KindString,
 		JSONKey:  "labelSuffix",
+		RootOnly: true,
+		Validate: ValidateAffixValue,
+		Encode:   EncodeAffix,
+	}
+	LabelPrefixFlag = flags.Flag{
+		Name: "label-prefix", Usage: "Prefix for numeric labels, tooltips, and value-axis ticks: global symbol " +
+			"(e.g. $), or per-column affixes (e.g. col1=$,col2=€); a \"=\" in the " +
+			"value selects per-column parsing, so the global form cannot contain \"=\"",
+		Kind:     flags.KindString,
+		JSONKey:  "labelPrefix",
 		RootOnly: true,
 		Validate: ValidateAffixValue,
 		Encode:   EncodeAffix,

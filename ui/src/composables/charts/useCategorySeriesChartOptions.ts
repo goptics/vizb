@@ -3,7 +3,6 @@ import type { EChartsOption } from 'echarts'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
 import { getNextColorFor, hasXAxis } from '@/lib/utils'
 import {
-  affixForValue,
   createAxisConfig,
   createGridConfig,
   createValueModeGridConfig,
@@ -27,7 +26,7 @@ import {
   computeSeriesTotals,
 } from './shared/common'
 import { asLogXPairs, axisIsLog, axisLogBase, numericLogXValues, parseScale } from '@/lib/scale'
-import { affixForColumn } from '@/lib/affix'
+import { affixesOf, NO_WRAP, wrapFor } from '@/lib/affix'
 import { resolveSeriesSymbol } from './shared/seriesConfig'
 import { resolve2DScatterVisualMap } from './shared/visualMap'
 import { buildValueAxes2DOptions } from './shared/valueMode'
@@ -99,8 +98,8 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
     const largeX = isLargeXAxis(xAxisData)
     const xLabel = chartData.value.axisLabels?.x
     const yLogBase = axisLogBase(parsed, 'y')
-    const affix = config.labelSuffix?.value
-    const metricSuffix = affixForColumn(affix, chartData.value.title)
+    const affixes = affixesOf(config)
+    const metricWrap = wrapFor(affixes, chartData.value.title)
     const groupedAxes = coerceX
       ? createValueAxisConfig(
           styling,
@@ -113,10 +112,10 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
             xLogBase: axisLogBase(parsed, 'x'),
             yLogBase,
           },
-          '',
-          metricSuffix
+          NO_WRAP,
+          metricWrap
         )
-      : createAxisConfig(styling, xAxisData, yScale, xLabel, largeX, true, yLogBase, metricSuffix)
+      : createAxisConfig(styling, xAxisData, yScale, xLabel, largeX, true, yLogBase, metricWrap)
     const zoom = resolveCartesianDataZoom(kind, {
       numericX: coerceX,
       largeX,
@@ -142,7 +141,7 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
               yLog
             )
           : series.map((s) => logYValue(s.values[0] ?? null, yLog)),
-        label: createLabelConfig(showLabels.value, styling, undefined, false, metricSuffix),
+        label: createLabelConfig(showLabels.value, styling, undefined, false, metricWrap),
         ...(kind === 'scatter'
           ? scatterSeriesLargeOpts(useVisualMap)
           : { large: true as const, largeThreshold: LARGE_DATA_THRESHOLD }),
@@ -160,10 +159,10 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
               xLabel,
               chartData.value.axisLabels?.y,
               true,
-              '',
-              metricSuffix
+              NO_WRAP,
+              metricWrap
             )
-          : createPinnedAxisTooltip(isDark.value, metricSuffix),
+          : createPinnedAxisTooltip(isDark.value, metricWrap),
         ...groupedAxes,
         ...(zoom.dataZoom ? { dataZoom: zoom.dataZoom } : {}),
         legend: { show: false },
@@ -193,7 +192,7 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
         styling,
         undefined,
         false,
-        affixForValue(affix, yAxisLabel, metricSuffix)
+        wrapFor(affixes, yAxisLabel, metricWrap)
       ),
       ...(kind === 'scatter'
         ? scatterSeriesLargeOpts(useVisualMap)
@@ -227,22 +226,22 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
       ),
       tooltip: coerceX
         ? transposedSeries.length <= 1
-          ? createValueModeTooltip(isDark.value, xLabel, yLabel, true, '', metricSuffix)
+          ? createValueModeTooltip(isDark.value, xLabel, yLabel, true, NO_WRAP, metricWrap)
           : createTooltipConfig(
               showXBreakdown,
               isDark.value,
               seriesTotals,
               'line',
-              affix,
-              metricSuffix
+              affixes,
+              metricWrap
             )
         : createTooltipConfig(
             showXBreakdown,
             isDark.value,
             seriesTotals,
             undefined,
-            affix,
-            metricSuffix
+            affixes,
+            metricWrap
           ),
       ...groupedAxes,
       ...(zoom.dataZoom ? { dataZoom: zoom.dataZoom } : {}),

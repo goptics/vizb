@@ -576,12 +576,18 @@ func (s *ChartSpecSuite) TestParseOverridesScaleBraceMatchesFlag() {
 
 // --- --chart rejects root-only flags ---
 
-func (s *ChartSpecSuite) TestParseOverridesRejectsLabelSuffix() {
-	for _, spec := range []string{"bar:label-suffix=%", "line:label-suffix=latency=ms,tput=%"} {
+func (s *ChartSpecSuite) TestParseOverridesRejectsRootOnlyAffixes() {
+	cases := map[string]string{
+		"bar:label-suffix=%":                  "use --label-suffix instead",
+		"line:label-suffix=latency=ms,tput=%": "use --label-suffix instead",
+		"bar:label-prefix=$":                  "use --label-prefix instead",
+		"bar:label-prefix=$,label-suffix=%":   "use --label-prefix instead",
+	}
+	for spec, want := range cases {
 		s.Run(spec, func() {
 			_, _, err := ParseOverrides([]string{spec}, []string{"bar", "line"}, s.xynAxes)
 			s.Require().Error(err)
-			s.Contains(err.Error(), "use --label-suffix instead")
+			s.Contains(err.Error(), want)
 		})
 	}
 }

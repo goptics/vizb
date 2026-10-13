@@ -17,6 +17,7 @@ type Config struct {
 	Sort        *shared.Sort       `json:"sort,omitempty"`
 	ShowLabels  *bool              `json:"showLabels,omitempty"`
 	LabelSuffix *flags.Affix       `json:"labelSuffix,omitempty"`
+	LabelPrefix *flags.Affix       `json:"labelPrefix,omitempty"`
 	Stat        *shared.StatConfig `json:"stat,omitempty"`
 }
 

@@ -105,7 +105,7 @@ export type BarBackground = {
   opacity?: number
 }
 
-// Per-column label suffixes produced by the Go CLI (wire shape mirrors the
+// Per-column label affixes produced by the Go CLI (wire shape mirrors the
 // OpenAPI `LabelAffix` schema). Both keys optional; `columns` matches exact,
 // unmodified column names and wins over `global` for that column.
 export interface LabelAffix {
@@ -128,6 +128,7 @@ export type BarConfig = {
   stack?: boolean
   showLabels?: boolean
   labelSuffix?: LabelAffix
+  labelPrefix?: LabelAffix
   horizontal?: boolean
   /** Corner radii in px [TL, TR, BR, BL]; length 1–4 (ECharts expands [8] to all corners). */
   borderRadius?: number[]
@@ -147,6 +148,7 @@ export type LineConfig = {
   stack?: boolean
   showLabels?: boolean
   labelSuffix?: LabelAffix
+  labelPrefix?: LabelAffix
   symbol?: string
   symbolSize?: number
   smooth?: boolean
@@ -163,6 +165,7 @@ export type ScatterConfig = {
   scale?: ScaleInput
   showLabels?: boolean
   labelSuffix?: LabelAffix
+  labelPrefix?: LabelAffix
   symbol?: string
   symbolSize?: number
   threeDRotate?: boolean
@@ -178,6 +181,7 @@ export type PieConfig = {
   sort?: Sort
   showLabels?: boolean
   labelSuffix?: LabelAffix
+  labelPrefix?: LabelAffix
   donut?: boolean
   stat?: StatConfig
 }
@@ -188,6 +192,7 @@ export type HeatmapConfig = {
   sort?: Sort
   showLabels?: boolean
   labelSuffix?: LabelAffix
+  labelPrefix?: LabelAffix
   stat?: StatConfig
 }
 
@@ -197,6 +202,7 @@ export type RadarConfig = {
   sort?: Sort
   showLabels?: boolean
   labelSuffix?: LabelAffix
+  labelPrefix?: LabelAffix
   stat?: StatConfig
 }
 
@@ -206,6 +212,7 @@ export type SankeyConfig = {
   sort?: Sort
   showLabels?: boolean
   labelSuffix?: LabelAffix
+  labelPrefix?: LabelAffix
   stat?: StatConfig
 }
 
@@ -215,6 +222,7 @@ export type ChordConfig = {
   sort?: Sort
   showLabels?: boolean
   labelSuffix?: LabelAffix
+  labelPrefix?: LabelAffix
   stat?: StatConfig
 }
 

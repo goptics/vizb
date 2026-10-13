@@ -1232,3 +1232,73 @@ describe('useBarChartOptions — labelSuffix', () => {
     expect(html).toContain('Σ Q1: <b>40</b>')
   })
 })
+
+describe('useBarChartOptions — labelPrefix', () => {
+  // Metric column is 'count', so only the 'revenue' pivot series matches a
+  // suffix column; the value axis and 'cost' fall back to the metric affix.
+  const prefixChartData = (): ChartData => ({
+    title: 'count',
+    statType: 'sum',
+    yAxis: ['revenue', 'cost'],
+    zAxis: [],
+    series: [
+      { xAxis: 'Q1', values: [10, 5], benchmarkId: '' },
+      { xAxis: 'Q2', values: [20, 7], benchmarkId: '' },
+    ],
+    points: [],
+    axisLabels: { x: 'quarter', y: 'metric' },
+  })
+
+  type AffixLabel = { name: string; label: { formatter: (p: { value: number }) => string } }
+  type AffixYAxis = { axisLabel: { formatter?: (v: number) => string } }
+  type AffixTooltip = {
+    formatter: (p: { name: string; seriesName: string; value: number; marker: string }[]) => string
+  }
+
+  const build = (overrides: { labelPrefix?: LabelAffix; labelSuffix?: LabelAffix }) =>
+    useBarChartOptions(baseConfig({ chartData: prefixChartData(), showLabels: true, ...overrides }))
+
+  it('composes a global prefix with a per-series suffix on labels, axis, and tooltip', () => {
+    const { options } = build({
+      labelPrefix: { global: '$' },
+      labelSuffix: { columns: { revenue: '%' } },
+    })
+    const series = options.value.series as AffixLabel[]
+    const byName = Object.fromEntries(series.map((s) => [s.name, s]))
+    expect(byName.revenue!.label.formatter({ value: 10 })).toBe('$10%')
+    expect(byName.cost!.label.formatter({ value: 5 })).toBe('$5')
+
+    const yAxis = options.value.yAxis as AffixYAxis
+    expect(yAxis.axisLabel.formatter!(100)).toBe('$100')
+
+    const tip = options.value.tooltip as AffixTooltip
+    const html = tip.formatter([
+      { name: 'Q1', seriesName: 'revenue', value: 10, marker: 'r' },
+      { name: 'Q1', seriesName: 'cost', value: 5, marker: 'c' },
+    ])
+    expect(html).toContain('revenue (Σ$30%): $10%')
+    expect(html).toContain('cost (Σ$12): $5')
+    expect(html).toContain('Σ Q1: <b>$15</b>')
+  })
+
+  it('appends a prefix-only affix to every series and the value axis', () => {
+    const { options } = build({ labelPrefix: { global: '$' } })
+    const series = options.value.series as AffixLabel[]
+    const byName = Object.fromEntries(series.map((s) => [s.name, s]))
+    expect(byName.revenue!.label.formatter({ value: 10 })).toBe('$10')
+    expect(byName.cost!.label.formatter({ value: 5 })).toBe('$5')
+
+    const yAxis = options.value.yAxis as AffixYAxis
+    expect(yAxis.axisLabel.formatter!(100)).toBe('$100')
+  })
+
+  it('renders bare labels and axis ticks with no prefix set', () => {
+    const { options } = build({})
+    const series = options.value.series as AffixLabel[]
+    const byName = Object.fromEntries(series.map((s) => [s.name, s]))
+    expect(byName.revenue!.label.formatter({ value: 10 })).toBe('10')
+    const yAxis = options.value.yAxis as AffixYAxis
+    // No custom tick formatter — byte-identical to the pre-feature axis.
+    expect(yAxis.axisLabel.formatter).toBeUndefined()
+  })
+})

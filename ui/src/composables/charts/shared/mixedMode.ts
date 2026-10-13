@@ -27,11 +27,12 @@ import {
   continuous3DGridCounts,
   symbolSizeForContinuous3D,
   resolve3DVisualMap,
+  axis3DTick,
 } from './3d'
 import { adjustForLogScaleLine, resolveLogScale } from './common'
 import { resolve3DSymbolProps, resolveSeriesSymbol } from './seriesConfig'
 import { resolve2DScatterVisualMap } from './visualMap'
-import { affixForColumn, escapeHtml } from '@/lib/affix'
+import { affixesOf, applyAffixes, NO_WRAP, tooltipAffixes, wrapFor, type Wrap } from '@/lib/affix'
 import type { Series3DData } from '@/types'
 
 const defaultScatterSymbol = { symbol: 'circle' as const, symbolSize: 8 }
@@ -69,7 +70,7 @@ export function createMixedModeTooltip(
   chartType: Mixed2DChartType,
   xLabel?: string,
   yLabel?: string,
-  ySuffix = ''
+  yWrap: Wrap = NO_WRAP
 ): EChartsOption['tooltip'] {
   const theme = getTooltipTheme(isDark)
   const styling = getChartStyling(isDark)
@@ -95,7 +96,8 @@ export function createMixedModeTooltip(
           return xi === undefined ? '' : (xCategories[xi] ?? String(xi))
         })()
       const y = mixedAxisYValue(p)
-      const yText = y === null || y === undefined ? '' : formatTooltipValue(y) + escapeHtml(ySuffix)
+      const yText =
+        y === null || y === undefined ? '' : tooltipAffixes(formatTooltipValue(y), yWrap)
       const marker = p.marker ?? ''
       return `<strong>${xName}: ${category}</strong><br/>${marker} ${yName}: <b>${yText}</b>`
     },
@@ -133,15 +135,15 @@ export function buildMixedAxes2DOptions(
   const smoothLines = chartType === 'line' && config.smooth?.value === true
   const colorValues = tuples.map(([, y]) => y).filter((v) => isFinite(v))
   const color = getNextColorFor(chartData.value.title)
-  const affix = config.labelSuffix?.value
-  const ySuffix = affixForColumn(affix, yLabel ?? chartData.value.title)
-  const xSuffix = affixForColumn(affix, xLabel ?? '')
+  const affixes = affixesOf(config)
+  const yWrap = wrapFor(affixes, yLabel ?? chartData.value.title)
+  const xWrap = wrapFor(affixes, xLabel ?? '')
 
   const label = {
     ...createLabelConfig(showLabels.value, styling),
     formatter: (p: { data: [number, number | null] }) => {
       const y = p.data[1]
-      return y === null || y === undefined ? '' : formatChartNumber(y) + ySuffix
+      return y === null || y === undefined ? '' : applyAffixes(formatChartNumber(y), yWrap)
     },
   }
 
@@ -197,8 +199,8 @@ export function buildMixedAxes2DOptions(
           xLogBase: axisLogBase(parsed, 'x'),
           yLogBase: axisLogBase(parsed, 'y'),
         },
-        xSuffix,
-        ySuffix
+        xWrap,
+        yWrap
       )
     : createAxisConfig(
         styling,
@@ -208,7 +210,7 @@ export function buildMixedAxes2DOptions(
         largeX,
         chartType === 'scatter',
         axisLogBase(parsed, 'y'),
-        ySuffix
+        yWrap
       )
 
   const zoom = resolveCartesianDataZoom(chartType, {
@@ -223,8 +225,8 @@ export function buildMixedAxes2DOptions(
     grid: createValueModeGridConfig(zoom.hasXSlider),
     visualMap: resolve2DScatterVisualMap(useVisualMap, colorValues, styling, 1),
     tooltip: xNums
-      ? createValueModeTooltip(isDark.value, xLabel, yLabel, true, xSuffix, ySuffix)
-      : createMixedModeTooltip(isDark.value, xCategories, chartType, xLabel, yLabel, ySuffix),
+      ? createValueModeTooltip(isDark.value, xLabel, yLabel, true, xWrap, yWrap)
+      : createMixedModeTooltip(isDark.value, xCategories, chartType, xLabel, yLabel, yWrap),
     ...axisConfig,
     ...(zoom.dataZoom ? { dataZoom: zoom.dataZoom } : {}),
     series: [series],
@@ -254,18 +256,9 @@ export function buildMixedAxes3DOptions(
   const parsed = parseScale(scale?.value)
   const yLog = axisIsLog(parsed, 'y', ['y', 'z'])
   const zLog = axisIsLog(parsed, 'z', ['y', 'z'])
-  const affix = config.labelSuffix?.value
-  const ySuffix = affixForColumn(affix, axisLabels?.y ?? 'y')
-  const zSuffix = affixForColumn(affix, axisLabels?.z ?? 'z')
-  const axisTick = (suffix: string) =>
-    suffix
-      ? {
-          axisLabel: {
-            ...axisCommon.axisLabel,
-            formatter: (v: number) => formatChartNumber(v) + suffix,
-          },
-        }
-      : {}
+  const affixes = affixesOf(config)
+  const yWrap = wrapFor(affixes, axisLabels?.y ?? 'y')
+  const zWrap = wrapFor(affixes, axisLabels?.z ?? 'z')
   const grid3D = create3DGridConfig({
     styling,
     autoRotate: threeDRotate?.value ?? false,
@@ -326,8 +319,8 @@ export function buildMixedAxes3DOptions(
         xAxisLabel: axisLabels?.x,
         yAxisLabel: axisLabels?.y,
         zAxisLabel: axisLabels?.z,
-        ySuffix,
-        zSuffix,
+        yWrap,
+        zWrap,
       }),
     },
     xAxis3D: {
@@ -340,14 +333,14 @@ export function buildMixedAxes3DOptions(
       type: yLog ? ('log' as const) : ('value' as const),
       ...(yLog ? { logBase: axisLogBase(parsed, 'y') } : {}),
       ...axisCommon,
-      ...axisTick(ySuffix),
+      ...axis3DTick(axisCommon.axisLabel, yWrap),
       ...axis3DName(axisLabels?.y, styling),
     },
     zAxis3D: {
       type: zLog ? ('log' as const) : ('value' as const),
       ...(zLog ? { logBase: axisLogBase(parsed, 'z') } : {}),
       ...axisCommon,
-      ...axisTick(zSuffix),
+      ...axis3DTick(axisCommon.axisLabel, zWrap),
       ...axis3DName(axisLabels?.z, styling),
     },
     grid3D,

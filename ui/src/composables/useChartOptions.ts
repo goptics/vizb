@@ -45,7 +45,8 @@ export function useChartOptions(
   donut: Ref<boolean>,
   borderRadius: Ref<number[] | undefined>,
   background: Ref<BarBackground | undefined>,
-  labelSuffix: Ref<LabelAffix | undefined>
+  labelSuffix: Ref<LabelAffix | undefined>,
+  labelPrefix: Ref<LabelAffix | undefined>
 ) {
   const config: BaseChartConfig = {
     chartData,
@@ -70,6 +71,7 @@ export function useChartOptions(
     chartAxes,
     chartType,
     labelSuffix,
+    labelPrefix,
   }
 
   const barOptions = useBarChartOptions(config)
