@@ -123,9 +123,6 @@ var (
 		Validate:   ValidateBorderRadiusValue,
 		Encode:     EncodeBorderRadius,
 	}
-	// LabelSuffixFlag carries the --label-suffix value grammar:
-	// "%" applies globally; "col1=%,col2=ms" applies per column. A "=" in the
-	// value selects per-column parsing, so the global form cannot contain "=".
 	LabelSuffixFlag = flags.Flag{
 		Name: "label-suffix", Usage: "Suffix for numeric labels, tooltips, and value-axis ticks: global symbol " +
 			"(e.g. %), or per-column affixes (e.g. col1=%,col2=ms); a \"=\" in the " +
@@ -136,10 +133,6 @@ var (
 		Validate: ValidateAffixValue,
 		Encode:   EncodeAffix,
 	}
-	// LabelPrefixFlag carries the --label-prefix value grammar: "$" applies
-	// globally; "col1=$,col2=€" applies per column. A "=" in the value selects
-	// per-column parsing, so the global form cannot contain "=". Same grammar and
-	// validators as LabelSuffixFlag, mirrored so prefix composes with suffix.
 	LabelPrefixFlag = flags.Flag{
 		Name: "label-prefix", Usage: "Prefix for numeric labels, tooltips, and value-axis ticks: global symbol " +
 			"(e.g. $), or per-column affixes (e.g. col1=$,col2=€); a \"=\" in the " +
@@ -277,24 +270,15 @@ func EncodeBorderRadius(v any) any {
 	return vals
 }
 
-// ValidateAffixValue reports whether s parses as a label affix (prefix or suffix).
+// ValidateAffixValue reports whether s parses as a label affix.
 func ValidateAffixValue(s string) error {
 	_, err := flags.ParseAffix(s)
 	return err
 }
 
-// EncodeAffix maps a validated label-affix value (--label-suffix/--label-prefix)
-// to a *flags.Affix seed payload (aliased by shared.Affix); non-string input
-// passes through unchanged.
+// EncodeAffix maps a Validate-checked affix string to its *flags.Affix payload.
 func EncodeAffix(v any) any {
-	s, ok := v.(string)
-	if !ok {
-		return v
-	}
-	affix, err := flags.ParseAffix(s)
-	if err != nil {
-		return v
-	}
+	affix, _ := flags.ParseAffix(v.(string))
 	return affix
 }
 

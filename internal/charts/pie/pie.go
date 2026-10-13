@@ -5,6 +5,7 @@ package pie
 
 import (
 	"github.com/goptics/vizb/internal/charts"
+	"github.com/goptics/vizb/internal/flags"
 	"github.com/goptics/vizb/shared"
 )
 
@@ -15,8 +16,8 @@ type Config struct {
 	Swap        string             `json:"swap,omitempty"`
 	Sort        *shared.Sort       `json:"sort,omitempty"`
 	ShowLabels  *bool              `json:"showLabels,omitempty"`
-	LabelSuffix *shared.Affix      `json:"labelSuffix,omitempty"`
-	LabelPrefix *shared.Affix      `json:"labelPrefix,omitempty"`
+	LabelSuffix *flags.Affix       `json:"labelSuffix,omitempty"`
+	LabelPrefix *flags.Affix       `json:"labelPrefix,omitempty"`
 	Donut       *bool              `json:"donut,omitempty"`
 	Stat        *shared.StatConfig `json:"stat,omitempty"`
 }

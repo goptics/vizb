@@ -10,6 +10,7 @@ import (
 	linechart "github.com/goptics/vizb/internal/charts/line"
 	piechart "github.com/goptics/vizb/internal/charts/pie"
 	scatterchart "github.com/goptics/vizb/internal/charts/scatter"
+	"github.com/goptics/vizb/internal/flags"
 	"github.com/goptics/vizb/shared"
 	"github.com/goptics/vizb/testutil"
 	"github.com/stretchr/testify/suite"
@@ -179,9 +180,9 @@ func (s *RootSuite) TestRunBenchmarkGlobalLabelPrefixApplied() {
 
 	// The root command accepted --label-prefix and seeded labelPrefix into the
 	// chart seed (@see rootBag.ChartSeed) that Materialise applies to every
-	// selected chart. The typed Config field lands in Task 2.
+	// selected chart.
 	seed := rootBag.ChartSeed(rootCmd)
-	s.Equal(&shared.Affix{Global: "$"}, seed["labelPrefix"])
+	s.Equal(&flags.Affix{Global: "$"}, seed["labelPrefix"])
 
 	ds := testutil.ReadDataset(s.T(), out)
 	s.Require().Len(ds.Settings, 2)

@@ -579,11 +579,10 @@ export function formatTooltipValue(value: any): string {
   return String(value)
 }
 
-/** Tooltip value wrapped with resolved prefix/suffix; missing values ('—') stay bare. */
+/** Tooltip value wrapped with resolved, HTML-escaped prefix/suffix; missing values ('—') stay bare. */
 export function affixedTooltipValue(value: unknown, prefix = '', suffix = ''): string {
-  if ((!suffix && !prefix) || value === null || value === undefined)
-    return formatTooltipValue(value)
-  return tooltipAffixes(formatTooltipValue(value), prefix, suffix)
+  const text = formatTooltipValue(value)
+  return value == null ? text : tooltipAffixes(text, prefix, suffix)
 }
 
 /**
