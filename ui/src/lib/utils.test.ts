@@ -243,6 +243,12 @@ describe('formatCompactNumber', () => {
     expect(formatCompactNumber(-2_500_000)).toBe('-2.5M')
   })
 
+  it('promotes values that round up across a unit boundary', () => {
+    expect(formatCompactNumber(999_999.9999999999)).toBe('1M')
+    expect(formatCompactNumber(999_999_999.9999999)).toBe('1B')
+    expect(formatCompactNumber(-999_999_999_999.9999)).toBe('-1T')
+  })
+
   it('stays in T beyond the trillions', () => {
     expect(formatCompactNumber(1.5e15)).toBe('1500T')
   })

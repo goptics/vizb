@@ -280,6 +280,8 @@ describe('useHeatmapChartOptions — grouped 3D', () => {
     expect(fmt({ data: [0, 0, 0] })).toBe('')
     expect(fmt({ data: [0, 0, undefined] })).toBe('')
     expect(fmt({ value: [0, 0, 2_000_000] })).toBe('2M')
+    expect(fmt({ value: [0, 0, 3_000_000_000] })).toBe('3B')
+    expect(fmt({ value: [0, 0, 4_000_000_000_000] })).toBe('4T')
   })
 
   it('attaches dataZoom for large grouped axes and rotates long x labels', () => {
