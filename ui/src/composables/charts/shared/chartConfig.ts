@@ -2,7 +2,7 @@ import type { EChartsOption } from 'echarts'
 import type { ScaleType } from '@/types'
 import { chartFontSize } from './chartFontSize'
 import { describe } from '@/lib/stats'
-import { formatChartNumber } from '@/lib/utils'
+import { formatChartNumber, formatCompactNumber } from '@/lib/utils'
 
 export const LARGE_X_THRESHOLD = 50
 /** Initial visible share of a large category X-axis when dataZoom first renders. */
@@ -309,7 +309,11 @@ export function createValueAxisConfig(
       ? { name: yAxisName, nameLocation: 'middle', nameGap: 45, nameTextStyle: nameStyle }
       : {}),
     splitLine: { lineStyle: { opacity: styling.opacity } },
-    axisLabel: { color: styling.textColor, fontSize: chartFontSize().label },
+    axisLabel: {
+      color: styling.textColor,
+      fontSize: chartFontSize().label,
+      formatter: formatCompactNumber,
+    },
     axisLine: { lineStyle: { color: styling.axisColor } },
   }
 
@@ -324,7 +328,11 @@ export function createValueAxisConfig(
       ...(xAxisName
         ? { name: xAxisName, nameLocation: 'middle', nameGap: 30, nameTextStyle: nameStyle }
         : {}),
-      axisLabel: { color: styling.textColor, fontSize: chartFontSize().label },
+      axisLabel: {
+        color: styling.textColor,
+        fontSize: chartFontSize().label,
+        formatter: formatCompactNumber,
+      },
       axisLine: { lineStyle: { color: styling.axisColor } },
       splitLine: { lineStyle: { opacity: styling.opacity } },
     },
@@ -410,6 +418,7 @@ export function createAxisConfig(
     },
     axisLabel: {
       color: styling.textColor,
+      formatter: formatCompactNumber,
     },
     axisLine: {
       lineStyle: { color: styling.axisColor },
@@ -492,6 +501,7 @@ export function createHorizontalAxisConfig(
     },
     axisLabel: {
       color: styling.textColor,
+      formatter: formatCompactNumber,
     },
     axisLine: {
       lineStyle: { color: styling.axisColor },

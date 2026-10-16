@@ -1,6 +1,11 @@
 import type { EChartsOption } from 'echarts'
 import type { ScaleType } from '@/types'
-import { getDefaultThemeColor, getNextColorFor, formatChartNumber } from '@/lib/utils'
+import {
+  getDefaultThemeColor,
+  getNextColorFor,
+  formatChartNumber,
+  formatCompactNumber,
+} from '@/lib/utils'
 import { axisIsLog, axisLogBase, numericLogXValues, parseScale } from '@/lib/scale'
 import { type BaseChartConfig, getBaseOptions } from '../baseChartOptions'
 import {
@@ -311,12 +316,14 @@ export function buildMixedAxes3DOptions(
       type: yLog ? ('log' as const) : ('value' as const),
       ...(yLog ? { logBase: axisLogBase(parsed, 'y') } : {}),
       ...axisCommon,
+      axisLabel: { ...axisCommon.axisLabel, formatter: formatCompactNumber },
       ...axis3DName(axisLabels?.y, styling),
     },
     zAxis3D: {
       type: zLog ? ('log' as const) : ('value' as const),
       ...(zLog ? { logBase: axisLogBase(parsed, 'z') } : {}),
       ...axisCommon,
+      axisLabel: { ...axisCommon.axisLabel, formatter: formatCompactNumber },
       ...axis3DName(axisLabels?.z, styling),
     },
     grid3D,

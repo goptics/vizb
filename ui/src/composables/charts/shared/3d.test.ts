@@ -10,6 +10,7 @@ import {
   viewDistanceFor3DBox,
   create3DGridConfig,
   create3DTooltipFormatter,
+  createContinuous3DAxes,
   createContinuous3DTooltipFormatter,
   create3DVisualMap,
   createValue3DTooltipFormatter,
@@ -544,6 +545,16 @@ describe('create3DGridConfig mixed mode', () => {
       mode: 'grouped',
     }) as { viewControl: { projection?: string } }
     expect(grid.viewControl.projection).toBe('orthographic')
+  })
+})
+
+describe('createContinuous3DAxes compact tick labels', () => {
+  it('formats every numeric 3D axis', async () => {
+    const { getChartStyling } = await import('./chartConfig')
+    const axes = createContinuous3DAxes(getChartStyling(false), 'x', 'y', 'z', 'log')
+    for (const axis of [axes.xAxis3D, axes.yAxis3D, axes.zAxis3D]) {
+      expect(axis.axisLabel.formatter(4_200_000_000_000)).toBe('4.2T')
+    }
   })
 })
 

@@ -2,7 +2,12 @@ import type { EChartsOption } from 'echarts'
 import type { Render3D, Point3D, ScaleInput, Series3DData } from '@/types'
 import { axisIsLog, axisLogBase, parseScale } from '@/lib/scale'
 import { valuePoints3DToSeries } from '@/lib/transform'
-import { getDefaultThemeColor, getNextColorFor, formatChartNumber } from '@/lib/utils'
+import {
+  getDefaultThemeColor,
+  getNextColorFor,
+  formatChartNumber,
+  formatCompactNumber,
+} from '@/lib/utils'
 import {
   formatTooltipValue,
   tooltipDivider,
@@ -318,6 +323,7 @@ export function createContinuous3DAxes(
       type: isLog ? ('log' as const) : ('value' as const),
       ...(isLog ? { logBase: axisLogBase(parsed, axis) } : {}),
       ...axisCommon,
+      axisLabel: { ...axisCommon.axisLabel, formatter: formatCompactNumber },
       ...axis3DName(label, styling),
     }
   }

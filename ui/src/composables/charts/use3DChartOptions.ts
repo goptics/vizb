@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
-import { getDefaultThemeColor, getNextColorFor } from '@/lib/utils'
+import { getDefaultThemeColor, getNextColorFor, formatCompactNumber } from '@/lib/utils'
 import {
   EMPTY_RENDER,
   makeAxis3DCommon,
@@ -59,6 +59,7 @@ export function use3DChartOptions(config: BaseChartConfig, kind: Chart3DKind) {
       type: zAxis.type,
       ...(zAxis.type === 'log' ? { logBase: zAxis.logBase } : {}),
       ...axisCommon,
+      axisLabel: { ...axisCommon.axisLabel, formatter: formatCompactNumber },
     }
     if (render.mode === 'mixed') {
       return buildMixedAxes3DOptions(config, kind)

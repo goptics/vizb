@@ -367,6 +367,14 @@ describe('buildMixedAxes3DOptions', () => {
     expect(option.zAxis3D).toMatchObject({ type: 'value' })
   })
 
+  it('formats numeric y/z 3D axes compactly, category x raw', () => {
+    const option = buildMixedAxes3DOptions(mixed3dConfig())
+    type Axis = { axisLabel?: { formatter?: (v: number) => string } }
+    expect((option.yAxis3D as Axis).axisLabel?.formatter?.(2_500_000)).toBe('2.5M')
+    expect((option.zAxis3D as Axis).axisLabel?.formatter?.(1500)).toBe('1.5K')
+    expect((option.xAxis3D as Axis).axisLabel?.formatter).toBeUndefined()
+  })
+
   it('defaults scale/threeDRotate when optional refs omitted', () => {
     const full = mixed3dConfig()
     const { scale: _s, threeDRotate: _r, ...rest } = full
