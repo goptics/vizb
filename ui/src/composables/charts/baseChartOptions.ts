@@ -1,6 +1,14 @@
 import type { Ref } from 'vue'
 import type { EChartsOption } from 'echarts'
-import type { Axis, BarBackground, ChartData, Sort, ScaleInput, ChartType } from '@/types'
+import type {
+  Axis,
+  BarBackground,
+  ChartData,
+  LabelAffix,
+  Sort,
+  ScaleInput,
+  ChartType,
+} from '@/types'
 import { createTooltipConfig, createToolboxConfig, getChartStyling } from './shared/chartConfig'
 import { chartFontSize } from './shared/chartFontSize'
 import { is3D } from '@/lib/utils'
@@ -43,6 +51,10 @@ export interface BaseChartConfig {
   arrangementTarget?: Ref<string>
   chartAxes?: Ref<Axis[] | undefined>
   chartType?: Ref<ChartType>
+  /** Per-column label suffixes (wire `labelSuffix`). Display-only; data stays numeric. */
+  labelSuffix?: Ref<LabelAffix | undefined>
+  /** Per-column label prefixes (wire `labelPrefix`). Display-only; data stays numeric. */
+  labelPrefix?: Ref<LabelAffix | undefined>
 }
 
 export const getBaseOptions = (config: BaseChartConfig): Partial<EChartsOption> => {

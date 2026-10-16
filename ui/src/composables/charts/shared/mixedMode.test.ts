@@ -461,3 +461,87 @@ describe('buildMixedAxes3DOptions', () => {
     expect(seriesList(option)[0]!.type).toBe('scatter3D')
   })
 })
+
+describe('mixedMode labelSuffix', () => {
+  it('resolves 2D mixed suffixes with fallback columns (no axisLabels)', () => {
+    const option = buildMixedAxes2DOptions(
+      baseConfig({
+        chartData: makeMixedChartData({ axisLabels: {}, title: 'revenue' }),
+        labelSuffix: { global: '%' },
+      }),
+      'scatter'
+    )
+    const yAxis = option.yAxis as { axisLabel: { formatter?: (v: number) => string } }
+    expect(yAxis.axisLabel.formatter!(5)).toBe('5%')
+    const series = option.series as { label: { formatter: (p: unknown) => string } }[]
+    expect(series[0]!.label.formatter({ data: [0, 12] })).toBe('12%')
+  })
+
+  it('resolves 2D mixed tooltips by the same axis key when axisLabels are absent', () => {
+    const option = buildMixedAxes2DOptions(
+      baseConfig({
+        chartData: makeMixedChartData({ axisLabels: {}, title: 'tax' }),
+        labelSuffix: { columns: { tax: '%' } },
+      }),
+      'scatter'
+    )
+    const yAxis = option.yAxis as { axisLabel: { formatter: (v: number) => string } }
+    expect(yAxis.axisLabel.formatter(5)).toBe('5%')
+    const tip = option.tooltip as {
+      formatter: (p: { name: string; value: number; marker: string }) => string
+    }
+    expect(tip.formatter({ name: 'West', value: 5, marker: '•' })).toContain('5%')
+  })
+
+  it('appends per-axis suffixes to mixed 3D value axes and tooltip', () => {
+    const option = buildMixedAxes3DOptions(
+      baseConfig({
+        chartData: makeMixedChartData({
+          axisLabels: { x: 'region', y: 'tax', z: 'score' },
+          render3D: {
+            mode: 'mixed',
+            xValues: ['West'],
+            yValues: [],
+            zValues: [],
+            barSeries: [],
+            lineSeries: [{ name: 'pts', data: [{ value: [0, 1, 2] }] }],
+            cellTotals: {},
+          },
+        }),
+        labelSuffix: { columns: { tax: '%' }, global: 'ms' },
+      }),
+      'scatter3D'
+    )
+    const yAxis = option.yAxis3D as { axisLabel: { formatter: (v: number) => string } }
+    const zAxis = option.zAxis3D as { axisLabel: { formatter: (v: number) => string } }
+    expect(yAxis.axisLabel.formatter(1)).toBe('1%')
+    expect(zAxis.axisLabel.formatter(2)).toBe('2ms')
+    const tip = option.tooltip as { formatter: (p: { value: number[] }) => string }
+    const html = tip.formatter({ value: [0, 1, 2] })
+    expect(html).toContain('1%')
+    expect(html).toContain('2ms')
+  })
+
+  it('falls back to default mixed 3D axis column names when labels are absent', () => {
+    const option = buildMixedAxes3DOptions(
+      baseConfig({
+        chartData: makeMixedChartData({
+          axisLabels: {},
+          render3D: {
+            mode: 'mixed',
+            xValues: ['West'],
+            yValues: [],
+            zValues: [],
+            barSeries: [],
+            lineSeries: [{ name: 'pts', data: [{ value: [0, 1, 2] }] }],
+            cellTotals: {},
+          },
+        }),
+        labelSuffix: { global: '%' },
+      }),
+      'scatter3D'
+    )
+    const yAxis = option.yAxis3D as { axisLabel: { formatter: (v: number) => string } }
+    expect(yAxis.axisLabel.formatter(1)).toBe('1%')
+  })
+})

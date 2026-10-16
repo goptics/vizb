@@ -109,6 +109,18 @@ describe('buildConvertArgs', () => {
     const args = buildConvertArgs({ ...base, fontSize: 'series=16;legend=10' })
     assert.ok(args.includes('--font-size') && args.includes('series=16;legend=10'))
   })
+
+  it('forwards label-suffix only when set', () => {
+    const args = buildConvertArgs({ ...base, labelSuffix: 'col1=%,col2=ms' })
+    assert.ok(args.includes('--label-suffix') && args.includes('col1=%,col2=ms'))
+    assert.ok(!buildConvertArgs({ ...base, labelSuffix: '' }).includes('--label-suffix'))
+  })
+
+  it('forwards label-prefix only when set', () => {
+    const args = buildConvertArgs({ ...base, labelPrefix: 'col1=$,col2=€' })
+    assert.ok(args.includes('--label-prefix') && args.includes('col1=$,col2=€'))
+    assert.ok(!buildConvertArgs({ ...base, labelPrefix: '' }).includes('--label-prefix'))
+  })
 })
 
 describe('resolveInputs', () => {

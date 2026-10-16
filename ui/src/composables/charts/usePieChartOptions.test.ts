@@ -287,3 +287,103 @@ describe('usePieChartOptions — y map fallback', () => {
     expect(series[1]!.data[0]!.value).toBe(0)
   })
 })
+
+describe('usePieChartOptions — labelSuffix', () => {
+  type PieLabel = {
+    label: { formatter: (p: { name: string; value: number; percent: number }) => string }
+  }
+  type PieTooltip = {
+    formatter: (p: { marker: string; name: string; value: number; percent: number }) => string
+  }
+
+  const firstLabel = (options: ReturnType<typeof usePieChartOptions>['options']) =>
+    (options.value.series as PieLabel[])[0]!.label.formatter
+
+  it('appends a global suffix to slice labels and tooltips (no value axis)', () => {
+    const { options } = usePieChartOptions(
+      baseConfig({
+        chartData: makePieChartData({ title: 'revenue' }),
+        showLabels: true,
+        labelSuffix: { global: 'ms' },
+      })
+    )
+    expect(firstLabel(options)({ name: 'A', value: 10, percent: 16.666 })).toBe('A (10ms, 16.67%)')
+    const tooltip = options.value.tooltip as PieTooltip
+    expect(tooltip.formatter({ marker: '*', name: 'A', value: 10, percent: 16.666 })).toContain(
+      '10ms (16.67%)'
+    )
+  })
+
+  it('resolves a per-column suffix by the pie metric column', () => {
+    const { options } = usePieChartOptions(
+      baseConfig({
+        chartData: makePieChartData({ title: 'revenue' }),
+        showLabels: true,
+        labelSuffix: { columns: { revenue: '%' } },
+      })
+    )
+    expect(firstLabel(options)({ name: 'A', value: 10, percent: 16.666 })).toBe('A (10%, 16.67%)')
+  })
+
+  it('keeps the bare percent label for an unmatched column', () => {
+    const { options } = usePieChartOptions(
+      baseConfig({
+        chartData: makePieChartData({ title: 'revenue' }),
+        showLabels: true,
+        labelSuffix: { columns: { other: '%' } },
+      })
+    )
+    expect(firstLabel(options)({ name: 'A', value: 10, percent: 16.666 })).toBe('A (16.67%)')
+  })
+
+  it('renders bare slice labels and tooltips when no labelSuffix is set', () => {
+    const { options } = usePieChartOptions(
+      baseConfig({ chartData: makePieChartData({ title: 'revenue' }), showLabels: true })
+    )
+    // Without a suffix the value is omitted — byte-identical to the pre-feature label.
+    expect(firstLabel(options)({ name: 'A', value: 10, percent: 16.666 })).toBe('A (16.67%)')
+    const tooltip = options.value.tooltip as PieTooltip
+    expect(tooltip.formatter({ marker: '*', name: 'A', value: 10, percent: 16.666 })).toContain(
+      '10 (16.67%)'
+    )
+  })
+})
+
+describe('usePieChartOptions — labelPrefix', () => {
+  type PieLabel = {
+    label: { formatter: (p: { name: string; value: number; percent: number }) => string }
+  }
+  type PieTooltip = {
+    formatter: (p: { marker: string; name: string; value: number; percent: number }) => string
+  }
+
+  const firstLabel = (options: ReturnType<typeof usePieChartOptions>['options']) =>
+    (options.value.series as PieLabel[])[0]!.label.formatter
+
+  it('composes a global prefix with the metric suffix on slice labels and tooltips', () => {
+    const { options } = usePieChartOptions(
+      baseConfig({
+        chartData: makePieChartData({ title: 'revenue' }),
+        showLabels: true,
+        labelPrefix: { global: '$' },
+        labelSuffix: { columns: { revenue: '%' } },
+      })
+    )
+    expect(firstLabel(options)({ name: 'A', value: 10, percent: 16.666 })).toBe('A ($10%, 16.67%)')
+    const tooltip = options.value.tooltip as PieTooltip
+    expect(tooltip.formatter({ marker: '*', name: 'A', value: 10, percent: 16.666 })).toContain(
+      '$10% (16.67%)'
+    )
+  })
+
+  it('appends a prefix-only affix to slice labels and tooltips', () => {
+    const { options } = usePieChartOptions(
+      baseConfig({
+        chartData: makePieChartData({ title: 'revenue' }),
+        showLabels: true,
+        labelPrefix: { global: '$' },
+      })
+    )
+    expect(firstLabel(options)({ name: 'A', value: 10, percent: 16.666 })).toBe('A ($10, 16.67%)')
+  })
+})

@@ -30,6 +30,7 @@ import {
   renderTooltipLegendColumns,
   TOOLTIP_LEGEND_MAX_ROWS_PER_COL,
   getTooltipTheme,
+  affixedTooltipValue,
 } from './chartConfig'
 
 const indicators = ['A', 'B', 'C']
@@ -80,6 +81,14 @@ describe('compact axis tick labels', () => {
     const { xAxis, yAxis } = createValueAxisConfig(styling, 'x', 'y')
     expect(fmt(xAxis)!(2_500_000)).toBe('2.5M')
     expect(fmt(yAxis)!(3_000_000_000)).toBe('3B')
+  })
+
+  it('composes compact ticks with affixes', () => {
+    const { yAxis } = createAxisConfig(styling, ['a'], 'linear', undefined, false, false, 10, {
+      prefix: '$',
+      suffix: '/s',
+    })
+    expect(fmt(yAxis)!(2_500_000)).toBe('$2.5M/s')
   })
 
   it('log scale axes stay compact', () => {
@@ -796,5 +805,117 @@ describe('tooltipSpreadRows non-finite median', () => {
     expect(html).toContain('IQR: <b>—</b>')
     expect(html).toContain('CV: <b>—</b>')
     spy.mockRestore()
+  })
+})
+
+describe('labelSuffix axis formatters', () => {
+  it('appends x and y suffixes to value-axis ticks', () => {
+    const { xAxis, yAxis } = createValueAxisConfig(
+      styling,
+      'price',
+      'latency',
+      'linear',
+      false,
+      undefined,
+      { prefix: '', suffix: '%' },
+      { prefix: '', suffix: 'ms' }
+    )
+    expect((xAxis.axisLabel.formatter as (v: number) => string)(10)).toBe('10%')
+    expect((yAxis.axisLabel.formatter as (v: number) => string)(10)).toBe('10ms')
+  })
+
+  it('appends the value-axis suffix for vertical and horizontal category axes', () => {
+    const { yAxis } = createAxisConfig(styling, ['a'], 'linear', undefined, false, false, 10, {
+      prefix: '',
+      suffix: '%',
+    })
+    expect((yAxis.axisLabel.formatter as (v: number) => string)(10)).toBe('10%')
+    const horizontal = createHorizontalAxisConfig(styling, ['a'], 'linear', undefined, false, 10, {
+      prefix: '',
+      suffix: 'ms',
+    })
+    expect((horizontal.xAxis.axisLabel.formatter as (v: number) => string)(10)).toBe('10ms')
+  })
+
+  it('affixes item tooltip values and leaves unset names bare', () => {
+    const tip = createTooltipConfig(false, false, undefined, undefined, {
+      suffix: { global: '%' },
+    }) as {
+      formatter: (p: unknown) => string
+    }
+    expect(tip.formatter({ marker: '*', seriesName: 'revenue', value: 3 })).toContain('3%')
+    expect(tip.formatter({ marker: '*', value: 3 })).toContain('3%')
+  })
+})
+
+describe('createTooltipConfig labelSuffix fallback + Σ', () => {
+  it('falls back to the metric wrap for unmatched series and affixes both Σ sites', () => {
+    const totals = new Map([
+      ['West', 30],
+      ['East', 70],
+    ])
+    const tip = createTooltipConfig(
+      true,
+      false,
+      totals,
+      'shadow',
+      { suffix: { columns: { revenue: '%' } } },
+      { prefix: '', suffix: '%' }
+    ) as { formatter: (p: unknown[]) => string }
+    const html = tip.formatter([
+      { name: 'Q1', seriesName: 'West', value: 10, marker: 'w' },
+      { name: 'Q1', seriesName: 'East', value: 30, marker: 'e' },
+    ])
+    expect(html).toContain('West (Σ30%): 10%')
+    expect(html).toContain('East (Σ70%): 30%')
+    expect(html).toContain('Σ Q1: <b>40%</b>')
+  })
+})
+
+describe('labelPrefix composition', () => {
+  it('composes prefix and suffix on labels, value axes, and tooltips', () => {
+    const label = createLabelConfig(true, styling, undefined, false, { prefix: '$', suffix: '%' })
+    expect(label.formatter({ value: 42 })).toBe('$42%')
+
+    const { yAxis } = createValueAxisConfig(
+      styling,
+      'price',
+      'latency',
+      'linear',
+      false,
+      undefined,
+      { prefix: '$', suffix: '%' },
+      { prefix: '€', suffix: 'ms' }
+    )
+    expect((yAxis.axisLabel.formatter as (v: number) => string)(10)).toBe('€10ms')
+
+    const tip = createTooltipConfig(
+      true,
+      false,
+      undefined,
+      'shadow',
+      { suffix: { columns: { revenue: '%' } }, prefix: { global: '$' } },
+      { prefix: '$', suffix: '' }
+    ) as { formatter: (p: unknown[]) => string }
+    const html = tip.formatter([{ name: 'Q1', seriesName: 'revenue', value: 42, marker: 'm' }])
+    expect(html).toContain('$42%')
+  })
+
+  it('passes values through unchanged when no prefix or suffix is set', () => {
+    const label = createLabelConfig(true, styling)
+    expect(label.formatter({ value: 42 })).toBe('42')
+    expect(label.formatter({ value: null })).toBe('')
+  })
+})
+
+describe('affixedTooltipValue', () => {
+  it('HTML-escapes prefix and suffix so they render as text in tooltip markup', () => {
+    expect(affixedTooltipValue(5, { prefix: '<i>', suffix: '<img src=x>' })).toBe(
+      '&lt;i&gt;5&lt;img src=x&gt;'
+    )
+  })
+
+  it('leaves missing values bare', () => {
+    expect(affixedTooltipValue(null, { prefix: '<i>', suffix: '<b>' })).toBe('—')
   })
 })

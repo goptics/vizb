@@ -757,6 +757,8 @@ components:
         scale: { $ref: '#/components/schemas/Scale' }
         stack: { type: boolean }
         showLabels: { type: boolean }
+        labelSuffix: { $ref: "#/components/schemas/LabelAffix" }
+        labelPrefix: { $ref: "#/components/schemas/LabelAffix" }
         borderRadius:
           type: array
           minItems: 1
@@ -796,6 +798,8 @@ components:
         scale: { $ref: '#/components/schemas/Scale' }
         stack: { type: boolean }
         showLabels: { type: boolean }
+        labelSuffix: { $ref: "#/components/schemas/LabelAffix" }
+        labelPrefix: { $ref: "#/components/schemas/LabelAffix" }
         symbol:
           $ref: '#/components/schemas/SeriesSymbol'
         symbolSize: { type: number, exclusiveMinimum: 0 }
@@ -814,6 +818,8 @@ components:
         sort: { $ref: '#/components/schemas/Sort' }
         scale: { $ref: '#/components/schemas/Scale' }
         showLabels: { type: boolean }
+        labelSuffix: { $ref: "#/components/schemas/LabelAffix" }
+        labelPrefix: { $ref: "#/components/schemas/LabelAffix" }
         symbol:
           $ref: '#/components/schemas/SeriesSymbol'
         symbolSize: { type: number, exclusiveMinimum: 0 }
@@ -842,6 +848,8 @@ components:
         swap: { type: string }
         sort: { $ref: '#/components/schemas/Sort' }
         showLabels: { type: boolean }
+        labelSuffix: { $ref: "#/components/schemas/LabelAffix" }
+        labelPrefix: { $ref: "#/components/schemas/LabelAffix" }
         donut: { type: boolean }
         stat: { $ref: '#/components/schemas/StatisticsConfig' }
     HeatmapChartConfig:
@@ -853,6 +861,8 @@ components:
         swap: { type: string }
         sort: { $ref: '#/components/schemas/Sort' }
         showLabels: { type: boolean }
+        labelSuffix: { $ref: "#/components/schemas/LabelAffix" }
+        labelPrefix: { $ref: "#/components/schemas/LabelAffix" }
         stat: { $ref: '#/components/schemas/StatisticsConfig' }
     RadarChartConfig:
       type: object
@@ -863,6 +873,8 @@ components:
         swap: { type: string }
         sort: { $ref: '#/components/schemas/Sort' }
         showLabels: { type: boolean }
+        labelSuffix: { $ref: "#/components/schemas/LabelAffix" }
+        labelPrefix: { $ref: "#/components/schemas/LabelAffix" }
         stat: { $ref: '#/components/schemas/StatisticsConfig' }
     SankeyChartConfig:
       type: object
@@ -873,6 +885,8 @@ components:
         swap: { type: string }
         sort: { $ref: '#/components/schemas/Sort' }
         showLabels: { type: boolean }
+        labelSuffix: { $ref: "#/components/schemas/LabelAffix" }
+        labelPrefix: { $ref: "#/components/schemas/LabelAffix" }
         stat: { $ref: '#/components/schemas/StatisticsConfig' }
     ChordChartConfig:
       type: object
@@ -883,7 +897,17 @@ components:
         swap: { type: string }
         sort: { $ref: '#/components/schemas/Sort' }
         showLabels: { type: boolean }
+        labelSuffix: { $ref: "#/components/schemas/LabelAffix" }
+        labelPrefix: { $ref: "#/components/schemas/LabelAffix" }
         stat: { $ref: '#/components/schemas/StatisticsConfig' }
+    LabelAffix:
+      type: object
+      additionalProperties: false
+      properties:
+        global: { type: string }
+        columns:
+          type: object
+          additionalProperties: { type: string }
     ProblemDetails:
       type: object
       required: [type, title, status, detail]

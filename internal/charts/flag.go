@@ -38,7 +38,7 @@ var (
 // BaseChartFlags are the --chart keys valid for every chart type. Each chart's
 // flag list is composed by prepending a clone of BaseChartFlags before the
 // chart's own variable flags (declared in cmd/charts/<c>/<c>.go).
-var BaseChartFlags = []flags.Flag{SwapFlag, SortFlag, LabelsFlag, StatFlag}
+var BaseChartFlags = []flags.Flag{SwapFlag, SortFlag, LabelsFlag, StatFlag, LabelSuffixFlag, LabelPrefixFlag}
 
 // --- Variable flags: composed by the charts that carry them. ---
 
@@ -122,6 +122,26 @@ var (
 		MultiValue: true,
 		Validate:   ValidateBorderRadiusValue,
 		Encode:     EncodeBorderRadius,
+	}
+	LabelSuffixFlag = flags.Flag{
+		Name: "label-suffix", Usage: "Suffix for numeric labels, tooltips, and value-axis ticks: global symbol " +
+			"(e.g. %), or per-column affixes (e.g. col1=%,col2=ms); a \"=\" in the " +
+			"value selects per-column parsing, so the global form cannot contain \"=\"",
+		Kind:     flags.KindString,
+		JSONKey:  "labelSuffix",
+		RootOnly: true,
+		Validate: ValidateAffixValue,
+		Encode:   EncodeAffix,
+	}
+	LabelPrefixFlag = flags.Flag{
+		Name: "label-prefix", Usage: "Prefix for numeric labels, tooltips, and value-axis ticks: global symbol " +
+			"(e.g. $), or per-column affixes (e.g. col1=$,col2=€); a \"=\" in the " +
+			"value selects per-column parsing, so the global form cannot contain \"=\"",
+		Kind:     flags.KindString,
+		JSONKey:  "labelPrefix",
+		RootOnly: true,
+		Validate: ValidateAffixValue,
+		Encode:   EncodeAffix,
 	}
 	// BgFlag is the bar-only category background: bare --bg turns it on, and a
 	// semicolon bag of style fields (--bg color=…;borderColor=#000) adds typed
@@ -248,6 +268,18 @@ func EncodeBorderRadius(v any) any {
 		return v
 	}
 	return vals
+}
+
+// ValidateAffixValue reports whether s parses as a label affix.
+func ValidateAffixValue(s string) error {
+	_, err := flags.ParseAffix(s)
+	return err
+}
+
+// EncodeAffix maps a Validate-checked affix string to its *flags.Affix payload.
+func EncodeAffix(v any) any {
+	affix, _ := flags.ParseAffix(v.(string))
+	return affix
 }
 
 // echartsBuiltinSymbols are the ECharts built-in series symbols (case-insensitive).

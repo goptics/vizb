@@ -36,7 +36,7 @@
     "@biomejs/biome": "2.5.6",
     "@playwright/test": "^1.62.0",
     "@types/node": "^24.6.0",
-    "@vitejs/plugin-vue": "^6.0.7",
+    "@vitejs/plugin-vue": "^6.0.9",
     "@vitest/coverage-v8": "^4.1.9",
     "@vue/test-utils": "^2.4.11",
     "@vue/tsconfig": "^0.8.1",

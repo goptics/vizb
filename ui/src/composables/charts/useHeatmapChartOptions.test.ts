@@ -443,3 +443,29 @@ describe('useHeatmapChartOptions — marginal fallbacks', () => {
     expect(html).toContain('ghostY')
   })
 })
+
+describe('useHeatmapChartOptions — labelPrefix', () => {
+  it('affixes cell labels and 2D tooltip values, composing with suffix', () => {
+    const chartData = makeHeatmapChartData({
+      series: [
+        { xAxis: 'a', values: [1500, 42], benchmarkId: '' },
+        { xAxis: 'b', values: [0.5, 7], benchmarkId: '' },
+      ],
+    })
+    const { options } = useHeatmapChartOptions(
+      baseConfig({
+        chartData,
+        showLabels: true,
+        labelPrefix: { global: '$' },
+        labelSuffix: { global: '%' },
+      })
+    )
+    const series = options.value.series as {
+      label: { formatter: (p: { data: number[] }) => string }
+    }[]
+    // Cell labels resolve the affix against the chart title (metric), like the tooltip.
+    expect(series[0]!.label.formatter({ data: [0, 0, 1500] })).toBe('$1.5K%')
+    const tooltip = options.value.tooltip as { formatter: (p: unknown) => string }
+    expect(tooltip.formatter({ data: [0, 0, 1500] })).toContain('Value: <b>$1500%</b>')
+  })
+})

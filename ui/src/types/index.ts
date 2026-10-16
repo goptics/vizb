@@ -105,6 +105,14 @@ export type BarBackground = {
   opacity?: number
 }
 
+// Per-column label affixes produced by the Go CLI (wire shape mirrors the
+// OpenAPI `LabelAffix` schema). Both keys optional; `columns` matches exact,
+// unmodified column names and wins over `global` for that column.
+export interface LabelAffix {
+  global?: string
+  columns?: Record<string, string>
+}
+
 // Per-chart typed configs (wire format: `Dataset.Settings []ChartConfig`).
 // Each chart type carries only the fields that apply to it. The `type`
 // discriminator narrows the union at the call site — chart-rendering code may
@@ -119,6 +127,8 @@ export type BarConfig = {
   scale?: ScaleInput
   stack?: boolean
   showLabels?: boolean
+  labelSuffix?: LabelAffix
+  labelPrefix?: LabelAffix
   horizontal?: boolean
   /** Corner radii in px [TL, TR, BR, BL]; length 1–4 (ECharts expands [8] to all corners). */
   borderRadius?: number[]
@@ -137,6 +147,8 @@ export type LineConfig = {
   scale?: ScaleInput
   stack?: boolean
   showLabels?: boolean
+  labelSuffix?: LabelAffix
+  labelPrefix?: LabelAffix
   symbol?: string
   symbolSize?: number
   smooth?: boolean
@@ -152,6 +164,8 @@ export type ScatterConfig = {
   sort?: Sort
   scale?: ScaleInput
   showLabels?: boolean
+  labelSuffix?: LabelAffix
+  labelPrefix?: LabelAffix
   symbol?: string
   symbolSize?: number
   threeDRotate?: boolean
@@ -166,6 +180,8 @@ export type PieConfig = {
   swap?: string
   sort?: Sort
   showLabels?: boolean
+  labelSuffix?: LabelAffix
+  labelPrefix?: LabelAffix
   donut?: boolean
   stat?: StatConfig
 }
@@ -175,6 +191,8 @@ export type HeatmapConfig = {
   swap?: string
   sort?: Sort
   showLabels?: boolean
+  labelSuffix?: LabelAffix
+  labelPrefix?: LabelAffix
   stat?: StatConfig
 }
 
@@ -183,6 +201,8 @@ export type RadarConfig = {
   swap?: string
   sort?: Sort
   showLabels?: boolean
+  labelSuffix?: LabelAffix
+  labelPrefix?: LabelAffix
   stat?: StatConfig
 }
 
@@ -191,6 +211,8 @@ export type SankeyConfig = {
   swap?: string
   sort?: Sort
   showLabels?: boolean
+  labelSuffix?: LabelAffix
+  labelPrefix?: LabelAffix
   stat?: StatConfig
 }
 
@@ -199,6 +221,8 @@ export type ChordConfig = {
   swap?: string
   sort?: Sort
   showLabels?: boolean
+  labelSuffix?: LabelAffix
+  labelPrefix?: LabelAffix
   stat?: StatConfig
 }
 

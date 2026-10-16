@@ -10,6 +10,7 @@ import (
 	linechart "github.com/goptics/vizb/internal/charts/line"
 	piechart "github.com/goptics/vizb/internal/charts/pie"
 	scatterchart "github.com/goptics/vizb/internal/charts/scatter"
+	"github.com/goptics/vizb/internal/flags"
 	"github.com/goptics/vizb/shared"
 	"github.com/goptics/vizb/testutil"
 	"github.com/stretchr/testify/suite"
@@ -129,6 +130,62 @@ func (s *RootSuite) TestRunBenchmarkGlobalSortApplied() {
 			s.Failf("unexpected chart type", "settings[%d] type=%T", i, c)
 		}
 	}
+}
+
+func (s *RootSuite) TestRunBenchmarkGlobalLabelSuffixApplied() {
+	dir := s.T().TempDir()
+	input := testutil.WriteBenchFile(s.T(), dir, "valid.txt",
+		`BenchmarkTest-8    1000000    1234 ns/op    1000 B/op    10 allocs/op`)
+	out := filepath.Join(dir, "out.json")
+	rootCharts = nil
+
+	errStr := testutil.CaptureStderr(func() {
+		rootCmd.SetArgs([]string{"-o", out, "-c", "bar", "-c", "line", "--label-suffix=%", input})
+		s.Require().NoError(rootCmd.Execute())
+	})
+
+	s.Contains(errStr, "Generated")
+
+	ds := testutil.ReadDataset(s.T(), out)
+	s.Require().Len(ds.Settings, 2)
+
+	for i, c := range ds.Settings {
+		switch c := c.(type) {
+		case *barchart.Config:
+			s.Require().NotNil(c.LabelSuffix, "settings[%d] (bar) labelSuffix should be set", i)
+			s.Equal("%", c.LabelSuffix.Global)
+		case *linechart.Config:
+			s.Require().NotNil(c.LabelSuffix, "settings[%d] (line) labelSuffix should be set", i)
+			s.Equal("%", c.LabelSuffix.Global)
+		default:
+			s.Failf("unexpected chart type", "settings[%d] type=%T", i, c)
+		}
+	}
+}
+
+func (s *RootSuite) TestRunBenchmarkGlobalLabelPrefixApplied() {
+	dir := s.T().TempDir()
+	input := testutil.WriteBenchFile(s.T(), dir, "valid.txt",
+		`BenchmarkTest-8    1000000    1234 ns/op    1000 B/op    10 allocs/op`)
+	out := filepath.Join(dir, "out.json")
+	rootCharts = nil
+
+	errStr := testutil.CaptureStderr(func() {
+		rootCmd.SetArgs([]string{"-o", out, "-c", "bar", "-c", "line", "--label-prefix=$", input})
+		s.Require().NoError(rootCmd.Execute())
+	})
+
+	s.Contains(errStr, "Generated")
+	s.FileExists(out)
+
+	// The root command accepted --label-prefix and seeded labelPrefix into the
+	// chart seed (@see rootBag.ChartSeed) that Materialise applies to every
+	// selected chart.
+	seed := rootBag.ChartSeed(rootCmd)
+	s.Equal(&flags.Affix{Global: "$"}, seed["labelPrefix"])
+
+	ds := testutil.ReadDataset(s.T(), out)
+	s.Require().Len(ds.Settings, 2)
 }
 
 func (s *RootSuite) TestRunBenchmarkStdinPipe() {

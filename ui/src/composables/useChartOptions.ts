@@ -1,5 +1,13 @@
 import { computed, type Ref } from 'vue'
-import type { Axis, BarBackground, ChartData, Sort, ChartType, ScaleInput } from '../types'
+import type {
+  Axis,
+  BarBackground,
+  ChartData,
+  LabelAffix,
+  Sort,
+  ChartType,
+  ScaleInput,
+} from '../types'
 import type { EChartsOption } from 'echarts'
 import { useBarChartOptions } from './charts/useBarChartOptions'
 import { useLineChartOptions } from './charts/useLineChartOptions'
@@ -36,7 +44,9 @@ export function useChartOptions(
   horizontal: Ref<boolean>,
   donut: Ref<boolean>,
   borderRadius: Ref<number[] | undefined>,
-  background: Ref<BarBackground | undefined>
+  background: Ref<BarBackground | undefined>,
+  labelSuffix: Ref<LabelAffix | undefined>,
+  labelPrefix: Ref<LabelAffix | undefined>
 ) {
   const config: BaseChartConfig = {
     chartData,
@@ -60,6 +70,8 @@ export function useChartOptions(
     arrangementTarget,
     chartAxes,
     chartType,
+    labelSuffix,
+    labelPrefix,
   }
 
   const barOptions = useBarChartOptions(config)

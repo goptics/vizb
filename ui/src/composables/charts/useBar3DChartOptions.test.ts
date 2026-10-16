@@ -332,3 +332,27 @@ describe('useBar3DChartOptions — value mode itemStyle', () => {
     expect(series[0]!.barSize).toBeDefined()
   })
 })
+
+describe('useBar3DChartOptions — labelSuffix', () => {
+  it('appends the metric suffix to the z-axis ticks and cell labels', () => {
+    const { options } = useBar3DChartOptions(
+      baseConfig({
+        chartData: emptyChartData({
+          title: 'revenue',
+          statType: 'sum',
+          axisLabels: { x: 'x', y: 'y' },
+          render3D: valueModeRender,
+        }),
+        threeD: true,
+        showLabels: true,
+        labelSuffix: { columns: { revenue: '%' } },
+      })
+    )
+    const zAxis = options.value.zAxis3D as { axisLabel: { formatter: (v: number) => string } }
+    expect(zAxis.axisLabel.formatter(10)).toBe('10%')
+    const series = options.value.series as {
+      label: { formatter: (p: { value: number[] }) => string }
+    }[]
+    expect(series[0]!.label.formatter({ value: [0, 0, 15] })).toBe('15%')
+  })
+})

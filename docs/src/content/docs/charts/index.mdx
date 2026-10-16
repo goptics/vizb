@@ -91,17 +91,19 @@ vizb data.csv -g algo,input_size,variant,run_type -p n,x,y,z -c bar -o out.html
 
 ## Settings
 
-Most settings apply to every chart type. The exceptions are `scale` (log), which only affects cartesian charts, and `3d-rotate` (3D auto-spin), which only applies when bar, line, or scatter renders in WebGL mode. Sankey and Chord support sort, labels, and swap only.
+Most settings apply to every chart type. The exceptions are `scale` (log), which only affects cartesian charts, and `3d-rotate` (3D auto-spin), which only applies when bar, line, or scatter renders in WebGL mode. Sankey and Chord support sort, labels, label-suffix, label-prefix, and swap only.
 
 | Setting | `bar` | `line` | `scatter` | `pie` | `radar` | `heatmap` | `sankey` | `chord` |
 |---------|:-----:|:------:|:---------:|:-----:|:-------:|:---------:|:--------:|:-------:|
 | `sort` / `--sort` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `labels` / `--show-labels` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `--label-suffix` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `--label-prefix` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `swap` (axis reorder) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `scale` log | ✓ | ✓ | ✓ | ✗ | ✗ | ✗ | ✗ | ✗ |
 | `3d-rotate` (3D auto-rotate) | ✓ 3D only | ✓ 3D only | ✓ 3D only | ✗ | ✗ | ✗ | ✗ | ✗ |
 
-To override a setting for a single chart type without affecting the others, use the `--chart <type>:key=val` syntax. Object props use `{field=value;field=value}` (semicolons inside braces; commas stay literal). Unwrapped `bar:bg=color=…` is invalid.
+To override a setting for a single chart type without affecting the others, use the `--chart <type>:key=val` syntax. `--label-suffix` and `--label-prefix` are not `--chart` keys: units belong to the data, so they apply to every chart. Object props use `{field=value;field=value}` (semicolons inside braces; commas stay literal). Unwrapped `bar:bg=color=…` is invalid.
 
 ```bash
 # Turn on labels for bar only

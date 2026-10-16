@@ -1,11 +1,6 @@
 import type { EChartsOption } from 'echarts'
 import type { ScaleType } from '@/types'
-import {
-  getDefaultThemeColor,
-  getNextColorFor,
-  formatChartNumber,
-  formatCompactNumber,
-} from '@/lib/utils'
+import { getDefaultThemeColor, getNextColorFor, formatChartNumber } from '@/lib/utils'
 import { axisIsLog, axisLogBase, numericLogXValues, parseScale } from '@/lib/scale'
 import { type BaseChartConfig, getBaseOptions } from '../baseChartOptions'
 import {
@@ -32,10 +27,12 @@ import {
   continuous3DGridCounts,
   symbolSizeForContinuous3D,
   resolve3DVisualMap,
+  axis3DTick,
 } from './3d'
 import { adjustForLogScaleLine, resolveLogScale } from './common'
 import { resolve3DSymbolProps, resolveSeriesSymbol } from './seriesConfig'
 import { resolve2DScatterVisualMap } from './visualMap'
+import { affixesOf, applyAffixes, NO_WRAP, tooltipAffixes, wrapFor, type Wrap } from '@/lib/affix'
 import type { Series3DData } from '@/types'
 
 const defaultScatterSymbol = { symbol: 'circle' as const, symbolSize: 8 }
@@ -72,7 +69,8 @@ export function createMixedModeTooltip(
   xCategories: string[],
   chartType: Mixed2DChartType,
   xLabel?: string,
-  yLabel?: string
+  yLabel?: string,
+  yWrap: Wrap = NO_WRAP
 ): EChartsOption['tooltip'] {
   const theme = getTooltipTheme(isDark)
   const styling = getChartStyling(isDark)
@@ -98,7 +96,8 @@ export function createMixedModeTooltip(
           return xi === undefined ? '' : (xCategories[xi] ?? String(xi))
         })()
       const y = mixedAxisYValue(p)
-      const yText = y === null || y === undefined ? '' : formatTooltipValue(y)
+      const yText =
+        y === null || y === undefined ? '' : tooltipAffixes(formatTooltipValue(y), yWrap)
       const marker = p.marker ?? ''
       return `<strong>${xName}: ${category}</strong><br/>${marker} ${yName}: <b>${yText}</b>`
     },
@@ -136,12 +135,15 @@ export function buildMixedAxes2DOptions(
   const smoothLines = chartType === 'line' && config.smooth?.value === true
   const colorValues = tuples.map(([, y]) => y).filter((v) => isFinite(v))
   const color = getNextColorFor(chartData.value.title)
+  const affixes = affixesOf(config)
+  const yWrap = wrapFor(affixes, yLabel ?? chartData.value.title)
+  const xWrap = wrapFor(affixes, xLabel ?? '')
 
   const label = {
     ...createLabelConfig(showLabels.value, styling),
     formatter: (p: { data: [number, number | null] }) => {
       const y = p.data[1]
-      return y === null || y === undefined ? '' : formatChartNumber(y)
+      return y === null || y === undefined ? '' : applyAffixes(formatChartNumber(y), yWrap)
     },
   }
 
@@ -186,11 +188,20 @@ export function buildMixedAxes2DOptions(
           }
 
   const axisConfig = xNums
-    ? createValueAxisConfig(styling, xLabel, yLabel, yScale, chartType === 'scatter', {
-        xScale: 'log',
-        xLogBase: axisLogBase(parsed, 'x'),
-        yLogBase: axisLogBase(parsed, 'y'),
-      })
+    ? createValueAxisConfig(
+        styling,
+        xLabel,
+        yLabel,
+        yScale,
+        chartType === 'scatter',
+        {
+          xScale: 'log',
+          xLogBase: axisLogBase(parsed, 'x'),
+          yLogBase: axisLogBase(parsed, 'y'),
+        },
+        xWrap,
+        yWrap
+      )
     : createAxisConfig(
         styling,
         xCategories,
@@ -198,7 +209,8 @@ export function buildMixedAxes2DOptions(
         xLabel,
         largeX,
         chartType === 'scatter',
-        axisLogBase(parsed, 'y')
+        axisLogBase(parsed, 'y'),
+        yWrap
       )
 
   const zoom = resolveCartesianDataZoom(chartType, {
@@ -213,8 +225,8 @@ export function buildMixedAxes2DOptions(
     grid: createValueModeGridConfig(zoom.hasXSlider),
     visualMap: resolve2DScatterVisualMap(useVisualMap, colorValues, styling, 1),
     tooltip: xNums
-      ? createValueModeTooltip(isDark.value, xLabel, yLabel, true)
-      : createMixedModeTooltip(isDark.value, xCategories, chartType, xLabel, yLabel),
+      ? createValueModeTooltip(isDark.value, xLabel, yLabel, true, xWrap, yWrap)
+      : createMixedModeTooltip(isDark.value, xCategories, chartType, xLabel, yLabel, yWrap),
     ...axisConfig,
     ...(zoom.dataZoom ? { dataZoom: zoom.dataZoom } : {}),
     series: [series],
@@ -244,6 +256,9 @@ export function buildMixedAxes3DOptions(
   const parsed = parseScale(scale?.value)
   const yLog = axisIsLog(parsed, 'y', ['y', 'z'])
   const zLog = axisIsLog(parsed, 'z', ['y', 'z'])
+  const affixes = affixesOf(config)
+  const yWrap = wrapFor(affixes, axisLabels?.y ?? 'y')
+  const zWrap = wrapFor(affixes, axisLabels?.z ?? 'z')
   const grid3D = create3DGridConfig({
     styling,
     autoRotate: threeDRotate?.value ?? false,
@@ -304,6 +319,8 @@ export function buildMixedAxes3DOptions(
         xAxisLabel: axisLabels?.x,
         yAxisLabel: axisLabels?.y,
         zAxisLabel: axisLabels?.z,
+        yWrap,
+        zWrap,
       }),
     },
     xAxis3D: {
@@ -316,14 +333,14 @@ export function buildMixedAxes3DOptions(
       type: yLog ? ('log' as const) : ('value' as const),
       ...(yLog ? { logBase: axisLogBase(parsed, 'y') } : {}),
       ...axisCommon,
-      axisLabel: { ...axisCommon.axisLabel, formatter: formatCompactNumber },
+      ...axis3DTick(axisCommon.axisLabel, yWrap),
       ...axis3DName(axisLabels?.y, styling),
     },
     zAxis3D: {
       type: zLog ? ('log' as const) : ('value' as const),
       ...(zLog ? { logBase: axisLogBase(parsed, 'z') } : {}),
       ...axisCommon,
-      axisLabel: { ...axisCommon.axisLabel, formatter: formatCompactNumber },
+      ...axis3DTick(axisCommon.axisLabel, zWrap),
       ...axis3DName(axisLabels?.z, styling),
     },
     grid3D,

@@ -44,11 +44,13 @@ var (
 )
 
 // rootFlags are the descriptors the root command binds: every data flag plus the
-// shared chart-seed flags (sort/labels/stat) that seed every selected chart.
-// Scale is per-chart only (bar/line); the root command has no global --scale.
+// shared chart-seed flags (sort/labels/stat/label-suffix/label-prefix) that seed
+// every selected chart. Scale is per-chart only (bar/line); the root command has
+// no global --scale.
 func rootFlags() []flags.Flag {
 	return append(slices.Clone(cli.DataFlags),
-		internal_charts.SortFlag, internal_charts.LabelsFlag, internal_charts.StatFlag)
+		internal_charts.SortFlag, internal_charts.LabelsFlag, internal_charts.StatFlag,
+		internal_charts.LabelSuffixFlag, internal_charts.LabelPrefixFlag)
 }
 
 // rootBag binds and validates the root flags; rootCharts/rootChartSpecs are the

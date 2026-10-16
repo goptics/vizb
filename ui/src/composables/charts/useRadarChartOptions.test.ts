@@ -257,6 +257,113 @@ describe('useRadarChartOptions — nullish indicator max', () => {
   })
 })
 
+describe('useRadarChartOptions — labelSuffix', () => {
+  type RadarLabel = {
+    label: {
+      formatter?: (p: { value?: number; dimensionIndex?: number }) => string
+    }
+  }
+  const firstLabel = (options: ReturnType<typeof useRadarChartOptions>['options']) =>
+    (options.value.series as RadarLabel[])[0]!.label
+
+  it('affixes each data label by its spoke name', () => {
+    const { options } = useRadarChartOptions(
+      baseConfig({
+        chartData: makeRadarChartData(),
+        showLabels: true,
+        labelSuffix: { columns: { speed: 'ms' } },
+      })
+    )
+    const fmt = firstLabel(options).formatter!
+    expect(fmt({ value: 10, dimensionIndex: 0 })).toBe('10ms')
+    // Unmatched spoke renders bare — formatter only formats, never invents a suffix.
+    expect(fmt({ value: 20, dimensionIndex: 1 })).toBe('20')
+    // Non-numeric values render nothing; a missing dimension falls back to bare.
+    expect(fmt({ value: 'x' as unknown as number, dimensionIndex: 0 })).toBe('')
+    expect(fmt({ value: NaN, dimensionIndex: 0 })).toBe('')
+    expect(fmt({ value: 7 })).toBe('7')
+  })
+
+  it('omits the formatter when a columns-only affix matches no spoke', () => {
+    const { options } = useRadarChartOptions(
+      baseConfig({
+        chartData: makeRadarChartData(),
+        showLabels: true,
+        labelSuffix: { columns: { unknown: '%' } },
+      })
+    )
+    expect(firstLabel(options).formatter).toBeUndefined()
+  })
+
+  it('affixes every spoke for a global suffix', () => {
+    const { options } = useRadarChartOptions(
+      baseConfig({
+        chartData: makeRadarChartData(),
+        showLabels: true,
+        labelSuffix: { global: '%' },
+      })
+    )
+    expect(firstLabel(options).formatter!({ value: 5, dimensionIndex: 2 })).toBe('5%')
+  })
+
+  it('falls back to the metric column affix (chart title) for unmatched spokes', () => {
+    const chartData = makeRadarChartData()
+    const { options } = useRadarChartOptions(
+      baseConfig({
+        chartData,
+        showLabels: true,
+        labelSuffix: { columns: { [chartData.title]: 'ms', speed: 's' } },
+      })
+    )
+    const fmt = firstLabel(options).formatter!
+    expect(fmt({ value: 10, dimensionIndex: 0 })).toBe('10s')
+    expect(fmt({ value: 20, dimensionIndex: 1 })).toBe('20ms')
+  })
+
+  it('omits the label formatter with no matching affix (byte-identical default)', () => {
+    const { options } = useRadarChartOptions(
+      baseConfig({ chartData: makeRadarChartData(), showLabels: true })
+    )
+    expect(firstLabel(options).formatter).toBeUndefined()
+  })
+})
+
+describe('useRadarChartOptions — labelPrefix', () => {
+  type RadarLabel = {
+    label: {
+      formatter?: (p: { value?: number; dimensionIndex?: number }) => string
+    }
+  }
+  const firstLabel = (options: ReturnType<typeof useRadarChartOptions>['options']) =>
+    (options.value.series as RadarLabel[])[0]!.label
+
+  it('affixes each data label by its spoke name, composing with suffix', () => {
+    const { options } = useRadarChartOptions(
+      baseConfig({
+        chartData: makeRadarChartData(),
+        showLabels: true,
+        labelPrefix: { columns: { speed: '$' } },
+        labelSuffix: { columns: { speed: '%' } },
+      })
+    )
+    const fmt = firstLabel(options).formatter!
+    expect(fmt({ value: 10, dimensionIndex: 0 })).toBe('$10%')
+    // Unmatched spoke renders bare — formatter only formats, never invents an affix.
+    expect(fmt({ value: 20, dimensionIndex: 1 })).toBe('20')
+  })
+
+  it('affixes tooltip spokes with the prefix', () => {
+    const { options } = useRadarChartOptions(
+      baseConfig({ chartData: makeRadarChartData(), labelPrefix: { global: '$' } })
+    )
+    const tooltip = options.value.tooltip as {
+      formatter: (p: { data: { name: string; value: number[] } }) => string
+    }
+    const html = tooltip.formatter({ data: { name: 'algo-a', value: [10, 20, 5] } })
+    expect(html).toContain('speed: <b>$10</b>')
+  })
+})
+
 describe('useRadarChartOptions — z total missing keys', () => {
   it('sorts z values that have no points using zero totals', () => {
     const data = emptyChartData({

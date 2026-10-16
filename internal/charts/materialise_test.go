@@ -54,6 +54,26 @@ func (s *MaterialiseSuite) TestScaleObjectSeed() {
 	s.JSONEq(`{"type":"log","axes":["x"],"base":10}`, string(raw))
 }
 
+func (s *MaterialiseSuite) TestLabelSuffixSeed() {
+	got := s.materialise("bar", map[string]any{"labelSuffix": map[string]any{"global": "%"}}, nil).(*barchart.Config)
+	s.Require().NotNil(got.LabelSuffix)
+	s.Equal("%", got.LabelSuffix.Global)
+
+	// No seed key → nil.
+	got = s.materialise("bar", nil, nil).(*barchart.Config)
+	s.Nil(got.LabelSuffix)
+}
+
+func (s *MaterialiseSuite) TestLabelPrefixSeed() {
+	got := s.materialise("bar", map[string]any{"labelPrefix": map[string]any{"global": "$"}}, nil).(*barchart.Config)
+	s.Require().NotNil(got.LabelPrefix)
+	s.Equal("$", got.LabelPrefix.Global)
+
+	// No seed key → nil.
+	got = s.materialise("bar", nil, nil).(*barchart.Config)
+	s.Nil(got.LabelPrefix)
+}
+
 func (s *MaterialiseSuite) TestBarBorderRadiusSeed() {
 	got := s.materialise("bar", map[string]any{"borderRadius": []int{8}}, nil).(*barchart.Config)
 	s.Require().NotNil(got.BorderRadius)

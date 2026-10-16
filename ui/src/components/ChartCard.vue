@@ -90,6 +90,8 @@ const {
   donut,
   borderRadius,
   background,
+  labelSuffix,
+  labelPrefix,
 } = useActiveChartShape()
 const { activeArrangement, activeDataset } = useDataPoint()
 const activeAxes = computed(() => activeDataset.value?.axes)
@@ -153,7 +155,9 @@ const { options } = useChartOptions(
   horizontal,
   donut,
   borderRadius,
-  background
+  background,
+  labelSuffix,
+  labelPrefix
 )
 
 const initOptions = {

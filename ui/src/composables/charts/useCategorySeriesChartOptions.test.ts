@@ -275,3 +275,36 @@ describe('useCategorySeriesChartOptions — remaining branches', () => {
     expect(dataZoom.map((z) => z.type)).toEqual(['inside', 'slider'])
   })
 })
+
+describe('useCategorySeriesChartOptions — labelSuffix', () => {
+  const build = () =>
+    useCategorySeriesChartOptions(
+      baseConfig({
+        chartData: makeGroupedChartData(),
+        showLabels: true,
+        labelSuffix: { columns: { revenue: '%' } },
+      }),
+      'line'
+    )
+
+  it('applies the metric suffix to grouped labels, tooltip rows, Σ, and the value axis', () => {
+    const { options } = build()
+    const series = options.value.series as {
+      name: string
+      label: { formatter: (p: { value: number }) => string }
+    }[]
+    expect(series.find((s) => s.name === 'Hardware')!.label.formatter({ value: 10 })).toBe('10%')
+
+    const yAxis = options.value.yAxis as { axisLabel: { formatter?: (v: number) => string } }
+    expect(yAxis.axisLabel.formatter!(100)).toBe('100%')
+
+    const tip = options.value.tooltip as { formatter: (p: unknown[]) => string }
+    const html = tip.formatter([
+      { name: 'West', seriesName: 'Hardware', value: 10, marker: 'h' },
+      { name: 'West', seriesName: 'Software', value: 30, marker: 's' },
+    ])
+    expect(html).toContain('Hardware (Σ30%): 10%')
+    expect(html).toContain('Software (Σ70%): 30%')
+    expect(html).toContain('Σ West: <b>40%</b>')
+  })
+})
