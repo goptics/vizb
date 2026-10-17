@@ -116,6 +116,24 @@ describe('useBar3DChartOptions — remaining branches', () => {
     expect(options.value.visualMap).toMatchObject({ show: true })
   })
 
+  it('formats the numeric z-axis ticks compactly and leaves category axes raw', () => {
+    const { options } = useBar3DChartOptions(
+      baseConfig({
+        chartData: emptyChartData({
+          title: 'sales',
+          statType: 'sum',
+          axisLabels: { x: 'x', y: 'y' },
+          render3D: valueModeRender,
+        }),
+        threeD: true,
+      })
+    )
+    type Axis = { axisLabel?: { formatter?: (v: number) => string } }
+    expect((options.value.zAxis3D as Axis).axisLabel?.formatter?.(1500)).toBe('1.5K')
+    expect((options.value.xAxis3D as Axis).axisLabel?.formatter).toBeUndefined()
+    expect((options.value.yAxis3D as Axis).axisLabel?.formatter).toBeUndefined()
+  })
+
   it('falls back z-axis to value when log has no positive metric domain', () => {
     const { options } = useBar3DChartOptions(
       baseConfig({

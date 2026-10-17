@@ -1219,8 +1219,8 @@ describe('useBarChartOptions — labelSuffix', () => {
     expect(byName.East!.label.formatter({ value: 30 })).toBe('30')
 
     const yAxis = options.value.yAxis as SuffixYAxis
-    // No custom tick formatter — byte-identical to the pre-feature axis.
-    expect(yAxis.axisLabel.formatter).toBeUndefined()
+    // Compact ticks only, no affix text.
+    expect(yAxis.axisLabel.formatter!(1500)).toBe('1.5K')
 
     const tip = options.value.tooltip as SuffixTooltip
     const html = tip.formatter([
@@ -1298,7 +1298,7 @@ describe('useBarChartOptions — labelPrefix', () => {
     const byName = Object.fromEntries(series.map((s) => [s.name, s]))
     expect(byName.revenue!.label.formatter({ value: 10 })).toBe('10')
     const yAxis = options.value.yAxis as AffixYAxis
-    // No custom tick formatter — byte-identical to the pre-feature axis.
-    expect(yAxis.axisLabel.formatter).toBeUndefined()
+    // Compact ticks only, no affix text.
+    expect(yAxis.axisLabel.formatter!(1500)).toBe('1.5K')
   })
 })

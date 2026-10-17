@@ -1,7 +1,13 @@
 import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
 import { type BaseChartConfig, getBaseOptions } from './baseChartOptions'
-import { getDefaultThemeColor, getNextColorFor, isGrouped3D, formatChartNumber } from '@/lib/utils'
+import {
+  getDefaultThemeColor,
+  getNextColorFor,
+  isGrouped3D,
+  formatChartNumber,
+  formatCompactNumber,
+} from '@/lib/utils'
 import { resolveVisualMapColors } from '@/lib/themes'
 import {
   getChartStyling,
@@ -18,12 +24,6 @@ import {
 } from './shared/chartConfig'
 import { chartFontSize } from './shared/chartFontSize'
 import { affixesOf, applyAffixes, tooltipAffixes, wrapFor } from '@/lib/affix'
-
-function formatCellNumber(v: number): string {
-  if (Math.abs(v) >= 1e6) return formatChartNumber(v / 1e6) + 'M'
-  if (Math.abs(v) >= 1e3) return formatChartNumber(v / 1e3) + 'K'
-  return formatChartNumber(v)
-}
 
 interface HeatmapCartesianInput {
   xCategories: string[]
@@ -189,7 +189,7 @@ function build2DHeatmap(config: BaseChartConfig): EChartsOption {
         data: heatmapData,
         label: {
           show: showLabels.value,
-          formatter: (params: any) => applyAffixes(formatCellNumber(params.data[2]), wrap),
+          formatter: (params: any) => applyAffixes(formatCompactNumber(params.data[2]), wrap),
           color: styling.textColor,
           fontSize: 11,
         },
@@ -364,7 +364,7 @@ function build3DHeatmap(config: BaseChartConfig): EChartsOption {
           show: showLabels.value,
           formatter: (params: any) => {
             const v = Array.isArray(params.value) ? params.value[2] : params.data?.[2]
-            return v === undefined || v === 0 ? '' : applyAffixes(formatCellNumber(v), wrap)
+            return v === undefined || v === 0 ? '' : applyAffixes(formatCompactNumber(v), wrap)
           },
           color: '#fff',
           fontSize: 11,

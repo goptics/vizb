@@ -548,6 +548,16 @@ describe('create3DGridConfig mixed mode', () => {
   })
 })
 
+describe('createContinuous3DAxes compact tick labels', () => {
+  it('formats every numeric 3D axis', async () => {
+    const { getChartStyling } = await import('./chartConfig')
+    const axes = createContinuous3DAxes(getChartStyling(false), 'x', 'y', 'z', 'log')
+    for (const axis of [axes.xAxis3D, axes.yAxis3D, axes.zAxis3D]) {
+      expect(axis.axisLabel.formatter(4_200_000_000_000)).toBe('4.2T')
+    }
+  })
+})
+
 describe('buildContinuous3DOptions label formatter', () => {
   it('formats metric and z labels and empty values', async () => {
     const { buildContinuous3DOptions, makeContinuous3DParams } = await import('./3d')
@@ -828,7 +838,7 @@ describe('createContinuous3DAxes labelSuffix', () => {
     }) as unknown as Record<string, { axisLabel: { formatter?: (v: number) => string } }>
     expect(axes.xAxis3D!.axisLabel.formatter!(10)).toBe('10$')
     expect(axes.yAxis3D!.axisLabel.formatter!(10)).toBe('10ms')
-    expect(axes.zAxis3D!.axisLabel.formatter).toBeUndefined()
+    expect(axes.zAxis3D!.axisLabel.formatter!(1500)).toBe('1.5K')
   })
 
   it('composes prefixes with suffixes on value-axis ticks', () => {
@@ -838,7 +848,7 @@ describe('createContinuous3DAxes labelSuffix', () => {
     }) as unknown as Record<string, { axisLabel: { formatter?: (v: number) => string } }>
     expect(axes.xAxis3D!.axisLabel.formatter!(10)).toBe('~10$')
     expect(axes.yAxis3D!.axisLabel.formatter!(10)).toBe('10ms')
-    expect(axes.zAxis3D!.axisLabel.formatter).toBeUndefined()
+    expect(axes.zAxis3D!.axisLabel.formatter!(1500)).toBe('1.5K')
   })
 })
 

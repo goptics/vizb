@@ -62,6 +62,41 @@ describe('createAxisConfig (y-axis range)', () => {
   })
 })
 
+describe('compact axis tick labels', () => {
+  const fmt = (axis: any) => axis.axisLabel.formatter as ((v: number) => string) | undefined
+
+  it('createAxisConfig formats the numeric y-axis only', () => {
+    const { xAxis, yAxis } = createAxisConfig(styling, ['a', 'b'])
+    expect(fmt(yAxis)!(10_000_000)).toBe('10M')
+    expect(fmt(xAxis)).toBeUndefined()
+  })
+
+  it('createHorizontalAxisConfig formats the numeric x-axis only', () => {
+    const { xAxis, yAxis } = createHorizontalAxisConfig(styling, ['a', 'b'])
+    expect(fmt(xAxis)!(1500)).toBe('1.5K')
+    expect(fmt(yAxis)).toBeUndefined()
+  })
+
+  it('createValueAxisConfig formats both numeric axes', () => {
+    const { xAxis, yAxis } = createValueAxisConfig(styling, 'x', 'y')
+    expect(fmt(xAxis)!(2_500_000)).toBe('2.5M')
+    expect(fmt(yAxis)!(3_000_000_000)).toBe('3B')
+  })
+
+  it('composes compact ticks with affixes', () => {
+    const { yAxis } = createAxisConfig(styling, ['a'], 'linear', undefined, false, false, 10, {
+      prefix: '$',
+      suffix: '/s',
+    })
+    expect(fmt(yAxis)!(2_500_000)).toBe('$2.5M/s')
+  })
+
+  it('log scale axes stay compact', () => {
+    const { yAxis } = createAxisConfig(styling, ['a'], 'log')
+    expect(fmt(yAxis)!(1_000_000)).toBe('1M')
+  })
+})
+
 describe('createValueAxisConfig (y-axis range)', () => {
   it('keeps ECharts 5 axis-name positioning explicit', () => {
     const { xAxis, yAxis } = createValueAxisConfig(styling, 'x', 'y')

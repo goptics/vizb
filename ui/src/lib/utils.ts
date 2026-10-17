@@ -150,6 +150,25 @@ export const formatChartNumber = (value: number): string => {
   return String(Number(value.toPrecision(15)))
 }
 
+const COMPACT_UNITS: ReadonlyArray<[number, string]> = [
+  [1e12, 'T'],
+  [1e9, 'B'],
+  [1e6, 'M'],
+  [1e3, 'K'],
+]
+
+/** Axis-tick style number: 1500 -> "1.5K", 2.5e6 -> "2.5M"; below 1000 falls through to formatChartNumber. */
+export const formatCompactNumber = (value: number): string => {
+  if (!Number.isFinite(value)) return String(value)
+  // Normalise first so 999999.9999999999 picks M (-> "1M"), not K (-> "1000K").
+  const v = Number(value.toPrecision(15))
+  const abs = Math.abs(v)
+  for (const [unit, suffix] of COMPACT_UNITS) {
+    if (abs >= unit) return formatChartNumber(v / unit) + suffix
+  }
+  return formatChartNumber(v)
+}
+
 export const chartHasPlottableData = (chart: ChartData): boolean =>
   chart.series.length > 0 ||
   chart.points.length > 0 ||

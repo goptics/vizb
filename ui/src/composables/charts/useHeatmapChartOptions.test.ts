@@ -158,6 +158,7 @@ describe('useHeatmapChartOptions — 2D', () => {
     // Above 1e3 / 1e6: keep stored precision (no toFixed(1) rounding).
     expect(fmt({ data: [0, 2, 1234] })).toBe('1.234K')
     expect(fmt({ data: [0, 3, 1_234_567] })).toBe('1.234567M')
+    expect(fmt({ data: [0, 4, 3_000_000_000] })).toBe('3B')
     expect(fmt({ data: [1, 0, 0.5] })).toBe('0.5')
     expect(fmt({ data: [1, 1, 42] })).toBe('42')
   })
@@ -279,6 +280,8 @@ describe('useHeatmapChartOptions — grouped 3D', () => {
     expect(fmt({ data: [0, 0, 0] })).toBe('')
     expect(fmt({ data: [0, 0, undefined] })).toBe('')
     expect(fmt({ value: [0, 0, 2_000_000] })).toBe('2M')
+    expect(fmt({ value: [0, 0, 3_000_000_000] })).toBe('3B')
+    expect(fmt({ value: [0, 0, 4_000_000_000_000] })).toBe('4T')
   })
 
   it('attaches dataZoom for large grouped axes and rotates long x labels', () => {

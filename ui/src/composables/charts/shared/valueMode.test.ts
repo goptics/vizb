@@ -314,8 +314,8 @@ describe('buildValueAxes2DOptions labelSuffix', () => {
   it('leaves values bare with no labelSuffix', () => {
     const option = buildValueAxes2DOptions(cfg({ showLabels: true }))
     const yAxis = option.yAxis as { axisLabel: { formatter?: (v: number) => string } }
-    // No custom tick formatter — byte-identical to the pre-feature axis.
-    expect(yAxis.axisLabel.formatter).toBeUndefined()
+    // Compact ticks only, no affix text.
+    expect(yAxis.axisLabel.formatter!(1500)).toBe('1.5K')
     expect(seriesOf(option).label?.formatter?.({ data: [1, 5] })).toBe('5')
     const tip = option.tooltip as unknown as {
       formatter: (p: { data: [number, number | null] }) => string

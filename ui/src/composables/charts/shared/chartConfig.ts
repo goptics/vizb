@@ -2,7 +2,7 @@ import type { EChartsOption } from 'echarts'
 import type { ScaleType } from '@/types'
 import { chartFontSize } from './chartFontSize'
 import { describe } from '@/lib/stats'
-import { formatChartNumber } from '@/lib/utils'
+import { formatChartNumber, formatCompactNumber } from '@/lib/utils'
 import {
   applyAffixes,
   NO_WRAP,
@@ -286,9 +286,10 @@ export function hasRotatedXLabels(xAxisData: string[], hasDataZoom = false): boo
   return xAxisData.reduce((acc, cur) => acc + cur.length, 0) > 100
 }
 
-/** Axis-label formatter spread: present only when the wrap has text. */
-const affixAxisFormatter = (w: Wrap) =>
-  w.prefix || w.suffix ? { formatter: (v: number) => applyAffixes(formatChartNumber(v), w) } : {}
+/** Numeric axis tick formatter: compact K/M/B/T, wrapped in the column's affixes. */
+const affixAxisFormatter = (w: Wrap) => ({
+  formatter: (v: number) => applyAffixes(formatCompactNumber(v), w),
+})
 
 export type ValueAxisScaleOpts = {
   xScale?: ScaleType

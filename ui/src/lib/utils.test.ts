@@ -10,6 +10,7 @@ import {
   bundleHas3DChunk,
   datasetDimension,
   formatChartNumber,
+  formatCompactNumber,
   isValueMode,
   isMixedMode,
   getNextColorFor,
@@ -214,6 +215,47 @@ describe('formatChartNumber', () => {
   it('stringifies non-finite values', () => {
     expect(formatChartNumber(NaN)).toBe('NaN')
     expect(formatChartNumber(Infinity)).toBe('Infinity')
+  })
+})
+
+describe('formatCompactNumber', () => {
+  it('leaves magnitudes below one thousand unchanged', () => {
+    expect(formatCompactNumber(0)).toBe('0')
+    expect(formatCompactNumber(42)).toBe('42')
+    expect(formatCompactNumber(999.5)).toBe('999.5')
+    expect(formatCompactNumber(-12.5)).toBe('-12.5')
+  })
+
+  it('picks the largest fitting unit from K to T', () => {
+    expect(formatCompactNumber(1500)).toBe('1.5K')
+    expect(formatCompactNumber(2_500_000)).toBe('2.5M')
+    expect(formatCompactNumber(3_000_000_000)).toBe('3B')
+    expect(formatCompactNumber(4_200_000_000_000)).toBe('4.2T')
+  })
+
+  it('renders round values without decimals', () => {
+    expect(formatCompactNumber(1000)).toBe('1K')
+    expect(formatCompactNumber(10_000_000)).toBe('10M')
+    expect(formatCompactNumber(1e12)).toBe('1T')
+  })
+
+  it('keeps the sign of negative values', () => {
+    expect(formatCompactNumber(-2_500_000)).toBe('-2.5M')
+  })
+
+  it('promotes values that round up across a unit boundary', () => {
+    expect(formatCompactNumber(999_999.9999999999)).toBe('1M')
+    expect(formatCompactNumber(999_999_999.9999999)).toBe('1B')
+    expect(formatCompactNumber(-999_999_999_999.9999)).toBe('-1T')
+  })
+
+  it('stays in T beyond the trillions', () => {
+    expect(formatCompactNumber(1.5e15)).toBe('1500T')
+  })
+
+  it('stringifies non-finite values', () => {
+    expect(formatCompactNumber(NaN)).toBe('NaN')
+    expect(formatCompactNumber(Infinity)).toBe('Infinity')
   })
 })
 

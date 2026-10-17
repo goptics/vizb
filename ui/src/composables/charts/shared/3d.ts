@@ -2,7 +2,12 @@ import type { EChartsOption } from 'echarts'
 import type { Render3D, Point3D, ScaleInput, Series3DData } from '@/types'
 import { axisIsLog, axisLogBase, parseScale } from '@/lib/scale'
 import { valuePoints3DToSeries } from '@/lib/transform'
-import { getDefaultThemeColor, getNextColorFor, formatChartNumber } from '@/lib/utils'
+import {
+  getDefaultThemeColor,
+  getNextColorFor,
+  formatChartNumber,
+  formatCompactNumber,
+} from '@/lib/utils'
 import {
   applyAffixes,
   NO_WRAP,
@@ -313,16 +318,13 @@ export const EMPTY_RENDER: Render3D = {
   cellTotals: {},
 }
 
-/** 3D value-axis tick formatter spread: present only when the wrap has text. */
-export const axis3DTick = (axisLabel: object, w: Wrap) =>
-  w.prefix || w.suffix
-    ? {
-        axisLabel: {
-          ...axisLabel,
-          formatter: (v: number) => applyAffixes(formatChartNumber(v), w),
-        },
-      }
-    : {}
+/** 3D value-axis tick label: compact K/M/B/T, wrapped in the column's affixes. */
+export const axis3DTick = (axisLabel: object, w: Wrap) => ({
+  axisLabel: {
+    ...axisLabel,
+    formatter: (v: number) => applyAffixes(formatCompactNumber(v), w),
+  },
+})
 
 /** Value axes for --axes x,y,z continuous 3D (swap-driven, not category indices). */
 export function createContinuous3DAxes(
