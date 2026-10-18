@@ -170,21 +170,36 @@ describe('resolveCartesianDataZoom', () => {
     expect(dataZoom).toEqual(createDataZoomConfig([], styling))
   })
 
-  it.each(['scatter', 'bar'] as const)(
-    'uses inside zoom for %s unless the category axis is large',
-    (chartType) => {
-      for (const flags of [
-        { numericX: true, largeX: false },
-        { numericX: true, largeX: true },
-        { numericX: false, largeX: false },
-      ]) {
-        expect(resolveCartesianDataZoom(chartType, { ...ctx, ...flags })).toEqual({
-          dataZoom: INSIDE_XY_ZOOM,
-          hasXSlider: false,
-        })
-      }
+  it('uses inside zoom for scatter unless the category axis is large', () => {
+    for (const flags of [
+      { numericX: true, largeX: false },
+      { numericX: true, largeX: true },
+      { numericX: false, largeX: false },
+    ]) {
+      expect(resolveCartesianDataZoom('scatter', { ...ctx, ...flags })).toEqual({
+        dataZoom: INSIDE_XY_ZOOM,
+        hasXSlider: false,
+      })
     }
-  )
+  })
+
+  it('uses inside zoom for bar only on numeric X axes', () => {
+    for (const flags of [
+      { numericX: true, largeX: false },
+      { numericX: true, largeX: true },
+    ]) {
+      expect(resolveCartesianDataZoom('bar', { ...ctx, ...flags })).toEqual({
+        dataZoom: INSIDE_XY_ZOOM,
+        hasXSlider: false,
+      })
+    }
+  })
+
+  it.each([false, true])('omits zoom for small category bars (horizontal %s)', (horizontal) => {
+    expect(
+      resolveCartesianDataZoom('bar', { ...ctx, numericX: false, largeX: false, horizontal })
+    ).toEqual({ hasXSlider: false })
+  })
 
   it.each(['scatter', 'bar'] as const)(
     'adds inside+slider for large category %s axes',
