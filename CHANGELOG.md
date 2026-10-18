@@ -4,16 +4,23 @@ Notable changes to Vizb documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased]
+# [v0.22.0] - 2026-10-18
 
 ### Added
 
-- **cli** — Add `--font-size` (number or `series=16;legend=10;label=12` bag) on root and chart subcommands
-- **action** — Add `font-size` input forwarded as `--font-size`
+- **cli** — Add `--label-prefix` flag on root and chart subcommands, with matching action input and API field ([#482](https://github.com/goptics/vizb/pull/482))
+- **cli** — Add `--label-suffix` flag on root and chart subcommands, with matching action input and API field ([#481](https://github.com/goptics/vizb/pull/481))
+- **ui** — Compact K/M/B/T tick labels on numeric axes ([#484](https://github.com/goptics/vizb/pull/484))
+- **cli** — Add `--font-size` (number or `series=16;legend=10;label=12` bag) on root and chart subcommands ([#447](https://github.com/goptics/vizb/pull/447))
+- **action** — Add `font-size` input forwarded as `--font-size` ([#447](https://github.com/goptics/vizb/pull/447))
+
+### Fixed
+
+- **ui** — Drop inside zoom on small category bar charts ([#491](https://github.com/goptics/vizb/pull/491))
 
 ### Changed
 
-- **cli / api / ui** — Move theme catalog and inbound `theme` string under `dataset.appearance` (breaking JSON/API wire; no root-field compatibility)
+- **cli / api / ui** — **BREAKING** Move theme catalog and inbound `theme` string under `dataset.appearance` (JSON/API wire change; no root-field compatibility) ([#447](https://github.com/goptics/vizb/pull/447))
 
 # [v0.21.0] - 2026-09-09
 
