@@ -232,6 +232,10 @@ export function resolveCartesianDataZoom(
     }
     return { dataZoom: createDataZoomConfig([], ctx.styling), hasXSlider: true }
   }
+  // Small category bars fit on screen; wheel zoom there only distorts them.
+  if (chartType === 'bar' && !ctx.numericX && !ctx.largeX) {
+    return { hasXSlider: false }
+  }
   if (ctx.numericX || !ctx.largeX) {
     return { dataZoom: INSIDE_XY_ZOOM, hasXSlider: false }
   }
