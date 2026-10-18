@@ -19,6 +19,9 @@ Prefer **per-chart** flags when generating multi-chart HTML. Root-level `--sort`
 | `--donut` / `--chart pie:donut` | Donut switch | on / off — pie only; off is filled |
 | `--chart bar:3d-rotate` (or line/scatter) | Auto rotate | on / off — 3D bar / line / scatter |
 | `--chart bar:bg` or `vizb bar --bg` | — | on / off — 2D bar only; CLI/config, no UI toggle; writes `background.active: true` |
+| `--font-size` | — | baked into `appearance.fontSize`; no panel control |
+| `--label-suffix` | — | baked into `labelSuffix` (`{global}` or `{columns}`); no panel control |
+| `--label-prefix` | — | baked into `labelPrefix` (`{global}` or `{columns}`); no panel control |
 | `--stat` | Statistics button | off unless set; see [Statistics](/ui/stats) |
 
 ## Setting Defaults from CLI

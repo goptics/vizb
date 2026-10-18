@@ -85,17 +85,19 @@ vizb data.csv -g algo,input_size,variant,run_type -p n,x,y,z -c bar -o out.html
 
 ## Settings
 
-Most settings apply to every chart type. The exceptions are `scale` (log), which only affects cartesian charts, and `3d-rotate` (3D auto-spin), which only applies when bar, line, or scatter renders in WebGL mode. Sankey and Chord support sort, labels, and swap only.
+Most settings apply to every chart type. The exceptions are `scale` (log), which only affects cartesian charts, and `3d-rotate` (3D auto-spin), which only applies when bar, line, or scatter renders in WebGL mode. Sankey and Chord support sort, labels, label-suffix, label-prefix, and swap only.
 
 | Setting | `bar` | `line` | `scatter` | `pie` | `radar` | `heatmap` | `sankey` | `chord` |
 |---------|:-----:|:------:|:---------:|:-----:|:-------:|:---------:|:--------:|:-------:|
 | `sort` / `--sort` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `labels` / `--show-labels` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `--label-suffix` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `--label-prefix` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `swap` (axis reorder) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `scale` log | ✓ | ✓ | ✓ | ✗ | ✗ | ✗ | ✗ | ✗ |
 | `3d-rotate` (3D auto-rotate) | ✓ 3D only | ✓ 3D only | ✓ 3D only | ✗ | ✗ | ✗ | ✗ | ✗ |
 
-To override a setting for a single chart type without affecting the others, use the `--chart <type>:key=val` syntax. Object props use `{field=value;field=value}` (semicolons inside braces; commas stay literal). Unwrapped `bar:bg=color=…` is invalid.
+To override a setting for a single chart type without affecting the others, use the `--chart <type>:key=val` syntax. `--label-suffix` and `--label-prefix` are not `--chart` keys: units belong to the data, so they apply to every chart. Object props use `{field=value;field=value}` (semicolons inside braces; commas stay literal). Unwrapped `bar:bg=color=…` is invalid.
 
 ```bash
 # Turn on labels for bar only
@@ -3340,7 +3342,10 @@ The action:
 | `chart` | `""` | Per-chart overrides (`--chart` flag, repeatable). One override per line: `<type>:<props>`. Keys include `swap`, `sort`, `scale`, `stack`, `labels`, `3d-rotate`, `3d`, `symbol`, `symbol-size`, `smooth`, `horizontal`, `border-radius`, `bg`, `stat`. Comma separates single-value props; for multi-value props (e.g. `stat=center,spread`) use semicolon between props or put the multi-value prop alone. Object props use `{field=value;field=value}` (semicolons inside braces; commas stay literal) — e.g. `bar:bg`, `bar:bg={color=rgba(180, 180, 180, 0.2);borderColor=#000}`. Unwrapped `bar:bg=color=…` is invalid. Blank lines and `#`-prefixed lines are ignored. |
 | `charts` | `"bar,line,pie"` | Chart types to generate (`-c` flag): `bar`, `line`, `scatter`, `pie`, `heatmap`, `radar`, `sankey`, `chord`. |
 | `parser` | `"auto"` | Parser to use: `csv`, `json`, `go`, `js:tinybench`, `js:vitest`, `rs:criterion`, `rs:divan` (`-P` flag). |
+| `font-size` | `""` | Chart text size (`--font-size`). A number sets series, legend, and axis ticks; or `series=16;legend=10;label=12` bag. |
 | `show-labels` | `"false"` | **Deprecated:** use `chart` input instead (e.g. `chart: 'pie:labels'`). Show labels on charts (`-l` flag). |
+| `label-suffix` | `""` | Suffix appended to numeric values on labels, tooltips, and value-axis ticks (`--label-suffix`). Global (e.g. `%`) or per-column (e.g. `col1=%,col2=ms`). |
+| `label-prefix` | `""` | Prefix prepended to numeric values on labels, tooltips, and value-axis ticks (`--label-prefix`). Global (e.g. `$`) or per-column (e.g. `col1=$,col2=€`). Composes with `label-suffix` (e.g. `$42%`). |
 | `enable-3d` | `"false"` | Bundle the 3D renderer for `vizb ui` (`--3d` flag, mainly useful with `data-url` when remote data shape is unknown at build time). |
 | `merge-files` | `""` | Space-separated JSON files to merge. |
 | `merge-dir` | `""` | Directory to scan for JSON files to merge. |
@@ -4030,6 +4035,8 @@ Every chart subcommand accepts the common data, grouping, and metadata flags:
 | `--sort` | `-s` | `""` | Sort order: `asc` or `desc` |
 | `--swap` | | `""` | Swap n/x/y/z axis assignment, e.g. `yx`, `yxn` |
 | `--show-labels` | `-l` | `false` | Show value labels on the chart |
+| `--label-suffix` | | *(empty)* | Suffix appended to numeric values on labels, tooltips, and value-axis ticks. Global (`%`), per-column (`latency=ms,throughput=%`, exact name match), or both (`%,latency=ms`); separate with `,` or `;` |
+| `--label-prefix` | | *(empty)* | Prefix prepended to numeric values on labels, tooltips, and value-axis ticks. Same grammar as `--label-suffix`, e.g. `$` or `$,latency=~`; composes with it (`$42%`); negatives render as `$-5` |
 | `--mem-unit` | `-M` | `B` | Memory unit: `b`, `B`, `KB`, `MB`, `GB` |
 | `--time-unit` | `-T` | `ns` | Time unit: `ns`, `us`, `ms`, `s` |
 | `--number-unit` | `-N` | `""` | Number unit: `K`, `M`, `B`, `T` |
@@ -4074,6 +4081,12 @@ vizb bar sales.csv -g region,category -p x,y --horizontal -o bar.html
 
 # Category background on 2D bars (bare = on; writes background.active: true)
 vizb bar sales.csv -g region,category -p x,y --bg -o bar.html
+
+# Units on values: "ms" for latency, "%" for every other column
+vizb line data.csv -g impl --label-suffix='%,latency=ms' -o line.html
+
+# Currency and percent together: renders as $42%
+vizb bar sales.csv --label-prefix='$' --label-suffix='%' -o bar.html
 
 # Scatter from all-numeric columns (auto-value)
 vizb scatter data.csv -o scatter.html
@@ -4268,6 +4281,9 @@ See the [Parser Guide](/guides/parsers) for each parser's metrics, and the
 | `--parser` | `-P` | `auto` | Parser: `auto` (detect), `go`, `js:tinybench`, `js:vitest`, `rs:criterion`, `rs:divan`, `csv`, `json` |
 | `--name` | `-n` | `Benchmarks` | Dataset name |
 | `--theme` | | *(empty)* | Embed a color theme on the dataset (**repeatable**; first is active). Built-in name, structured `name:colors=#hex,...;visualMapColors=#hex,#hex`, or bare `#hex,#hex,...` palette. Empty when unset (UI default). Built-in `default` is not embedded. |
+| `--font-size` | | *(empty)* | Chart text size in CSS pixels. A number sets series data labels, legend, and axis ticks to that size. A bag sets keys individually: `series=16;legend=10;label=12`. Invalid keys/values warn and skip. |
+| `--label-suffix` | | *(empty)* | Suffix appended to numeric values on labels, tooltips, and value-axis ticks on every selected chart. Global (`%`) or per-column (`col1=%,col2=ms`); a `=` selects per-column parsing. |
+| `--label-prefix` | | *(empty)* | Prefix prepended to numeric values on labels, tooltips, and value-axis ticks on every selected chart. Global (`$`) or per-column (`col1=$,col2=€`); a `=` selects per-column parsing. Composes with `--label-suffix` (e.g. `$42%`). |
 | `--description` | `-d` | `""` | Dataset description |
 | `--tag` | `-t` | `""` | Tag identifier for release tracking |
 | `--id` | | `""` | Stable dataset id for `?id=` deep links in the HTML UI |
@@ -4287,9 +4303,13 @@ See the [Parser Guide](/guides/parsers) for each parser's metrics, and the
 | `--round` | | off | Round numeric values to 2 decimal places **in the output data** (irreversible in the written file; off by default) |
 
 `--theme` changes series colors only; light/dark mode remains independent. Themes expand into
-`dataset.themes[]` with `themes[0]` active (no separate active field on new output). See [Color
+`dataset.appearance.themes[]` with `themes[0]` active (no separate active field on new output). See [Color
 Themes](/ui/themes) for the CLI catalog, structured syntax, multi-theme selector rules, and
 localStorage behavior.
+
+`--font-size` is baked into `dataset.appearance.fontSize` (CLI/JSON only; no settings-panel control).
+A JSON number means all three targets; an object sets `series` (data labels), `legend`, and `label`
+(axis ticks) independently. Omitted keys stay at 12px.
 
 ```bash
 # Built-in
@@ -4592,13 +4612,15 @@ curl -sS http://127.0.0.1:8080/ \
     "name": "API latency",
     "description": "Latency by region",
     "tag": "v2",
-    "themes": [
-      {
-        "name": "westeros",
-        "colors": ["#516b91", "#59c4e6", "#edafda", "#93b7e3", "#a5e7f0", "#cbb0e3", "#3f5575", "#41a7cb", "#d58fc4", "#789bc7"],
-        "visualMapColors": ["#59c4e6", "#d58fc4"]
-      }
-    ],
+    "appearance": {
+      "themes": [
+        {
+          "name": "westeros",
+          "colors": ["#516b91", "#59c4e6", "#edafda", "#93b7e3", "#a5e7f0", "#cbb0e3", "#3f5575", "#41a7cb", "#d58fc4", "#789bc7"],
+          "visualMapColors": ["#59c4e6", "#d58fc4"]
+        }
+      ]
+    },
     "parser": "csv",
     "select": ["region,latency"],
     "charts": { "types": ["bar", "line"] },
@@ -4606,12 +4628,13 @@ curl -sS http://127.0.0.1:8080/ \
   }'
 ```
 
-Prefer the data-owned `themes` array on convert requests and Dataset responses.
+Prefer `appearance.themes` on convert requests and Dataset responses.
 When non-empty, `themes[0]` is the active theme; there is no separate active
-field. Built-in `default` is not embedded (the UI owns it). The legacy string
-`theme` field is still accepted and expanded into `themes` when `themes` is
-omitted or empty. See [Color Themes](/ui/themes) and the [API reference](/api/)
-for the full `Theme` object shape.
+field. Built-in `default` is not embedded (the UI owns it). Inbound
+`appearance.theme` is expanded into `appearance.themes` and omitted from
+responses. See [Color Themes](/ui/themes) and the [API reference](/api/)
+for the full `Theme` object shape. Optional `appearance.fontSize` is a positive number
+or `{series, legend, label}` object of positive sizes (CSS pixels).
 
 Top-level `round` (default `false`) matches CLI `--round`: round numeric values
 to 2 decimal places in the output data.
@@ -7797,6 +7820,9 @@ Prefer **per-chart** flags when generating multi-chart HTML. Root-level `--sort`
 | `--donut` / `--chart pie:donut` | Donut switch | on / off — pie only; off is filled |
 | `--chart bar:3d-rotate` (or line/scatter) | Auto rotate | on / off — 3D bar / line / scatter |
 | `--chart bar:bg` or `vizb bar --bg` | — | on / off — 2D bar only; CLI/config, no UI toggle; writes `background.active: true` |
+| `--font-size` | — | baked into `appearance.fontSize`; no panel control |
+| `--label-suffix` | — | baked into `labelSuffix` (`{global}` or `{columns}`); no panel control |
+| `--label-prefix` | — | baked into `labelPrefix` (`{global}` or `{columns}`); no panel control |
 | `--stat` | Statistics button | off unless set; see [Statistics](/ui/stats) |
 
 ## Setting Defaults from CLI
@@ -7967,10 +7993,10 @@ Themes are **owned by the dataset**, not hard-coded into every report UI.
 | Layer | Role |
 |-------|------|
 | **UI** | Ships only the `default` palette. Always available as a fallback. |
-| **CLI / API** | Expand built-ins and custom specs into `dataset.themes[]` when you request them. |
-| **Wire format** | New output writes `themes` only. There is **no separate active `theme` field** — `themes[0]` is active when the array is non-empty. |
+| **CLI / API** | Expand built-ins and custom specs into `dataset.appearance.themes[]` when you request them. |
+| **Wire format** | New output writes `appearance.themes` only. There is **no separate active `theme` field** — `themes[0]` is active when the array is non-empty. Inbound `appearance.theme` (name or palette) expands into that catalog and is not re-emitted. |
 
-If you omit `--theme`, the dataset has no `themes` array and the report uses the UI `default` palette.
+If you omit `--theme`, the dataset has no `appearance.themes` array and the report uses the UI `default` palette.
 
 ```bash
 # Single built-in embedded as themes[0] (active)
@@ -7982,8 +8008,8 @@ vizb results.csv --theme westeros --theme vintage --theme roma -o report.html
 
 Built-in name `default` is **not** embedded (the UI already owns it).
 
-Legacy files that still carry a string `theme` field are migrated into `themes[]`
-on load; re-marshalled output drops the legacy field.
+Inbound `appearance.theme` is expanded into `appearance.themes[]` on load;
+re-marshalled output drops the string field.
 
 ## CLI syntax
 
