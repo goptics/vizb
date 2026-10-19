@@ -3,11 +3,16 @@ package charts
 import (
 	"fmt"
 	"math"
+	"slices"
 	"strconv"
 	"strings"
 
 	"github.com/goptics/vizb/internal/flags"
 )
+
+// SortOrders lists valid sort orders; "best" is resolved per chart by the UI
+// from its better-direction (low → asc, high/unknown → desc).
+var SortOrders = []string{"asc", "desc", "best"}
 
 // --- Base flags: every chart accepts these as --chart keys. ---
 
@@ -20,7 +25,7 @@ var (
 		Name: "sort", Shorthand: "s", Usage: "Sort order (asc, desc, best)", Kind: flags.KindString, JSONKey: "sort",
 		Validate: ValidateSortValue,
 		Encode:   func(v any) any { return map[string]any{"enabled": true, "order": strings.ToLower(v.(string))} },
-		Label:    "sort order", ValidSet: []string{"asc", "desc", "best"}, Normalizer: strings.ToLower,
+		Label:    "sort order", ValidSet: SortOrders, Normalizer: strings.ToLower,
 	}
 
 	// LabelsFlag's cobra flag is --show-labels (-l), but its --chart override key
@@ -211,12 +216,9 @@ func ValidateScaleValue(s string) error {
 	return fmt.Errorf("scale value %q is invalid (must be \"linear\" or \"log\")", s)
 }
 
-// ValidateSortValue reports whether s is a valid sort order (asc/desc/best),
-// case-insensitively. "best" is resolved per chart by the UI from its
-// better-direction (low → asc, high/unknown → desc).
+// ValidateSortValue reports whether s is one of SortOrders, case-insensitively.
 func ValidateSortValue(s string) error {
-	switch strings.ToLower(s) {
-	case "asc", "desc", "best":
+	if slices.Contains(SortOrders, strings.ToLower(s)) {
 		return nil
 	}
 	return fmt.Errorf("sort value %q is invalid (must be \"asc\", \"desc\", or \"best\")", s)

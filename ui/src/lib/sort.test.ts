@@ -1,25 +1,22 @@
 import { describe, it, expect } from 'vitest'
-import { effectiveSortOrder, resolveSort } from './sort'
+import { resolveSort } from './sort'
 
-describe('effectiveSortOrder', () => {
+describe('resolveSort', () => {
+  const order = (o: 'asc' | 'desc' | 'best', better?: 'high' | 'low') =>
+    resolveSort({ enabled: true, order: o }, better).order
+
   it('keeps asc and desc regardless of direction', () => {
-    expect(effectiveSortOrder('asc', 'high')).toBe('asc')
-    expect(effectiveSortOrder('desc', 'low')).toBe('desc')
+    expect(order('asc', 'high')).toBe('asc')
+    expect(order('desc', 'low')).toBe('desc')
   })
 
   it('resolves best from the chart direction, desc when unknown', () => {
-    expect(effectiveSortOrder('best', 'low')).toBe('asc')
-    expect(effectiveSortOrder('best', 'high')).toBe('desc')
-    expect(effectiveSortOrder('best', undefined)).toBe('desc')
+    expect(order('best', 'low')).toBe('asc')
+    expect(order('best', 'high')).toBe('desc')
+    expect(order('best')).toBe('desc')
   })
-})
 
-describe('resolveSort', () => {
-  it('resolves the order and keeps enabled', () => {
-    expect(resolveSort({ enabled: true, order: 'best' }, 'low')).toEqual({
-      enabled: true,
-      order: 'asc',
-    })
+  it('keeps enabled', () => {
     expect(resolveSort({ enabled: false, order: 'desc' })).toEqual({
       enabled: false,
       order: 'desc',
