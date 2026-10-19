@@ -6,6 +6,7 @@ type Dispatcher = {
 }
 type SeriesMouseEvent = { componentType?: string; seriesIndex?: number; dataIndex?: number }
 
+/** Mouse handlers for bar/line charts: block hover lights its whole series. */
 export function createSeriesHover(getChart: () => Dispatcher | null | undefined) {
   const isSeries = (e: SeriesMouseEvent) =>
     e.componentType === 'series' && typeof e.seriesIndex === 'number'

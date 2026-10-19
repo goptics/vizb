@@ -42,6 +42,7 @@ type statisticsOptions struct {
 	Math    []string `json:"math"`
 }
 
+// UnmarshalJSON strictly decodes /statistics, rejecting nulls and unknown fields.
 func (o *statisticsOptions) UnmarshalJSON(data []byte) error {
 	if err := rejectNullFields(data, "/statistics", map[string]string{
 		"enabled": "/statistics/enabled", "math": "/statistics/math",
@@ -101,6 +102,8 @@ type convertOutput struct {
 	Format *string `json:"format"`
 }
 
+// UnmarshalJSON strictly decodes a convert request, rejecting nulls and
+// unknown fields with JSON-pointer paths.
 func (r *convertRequest) UnmarshalJSON(data []byte) error {
 	if err := rejectNullFields(data, "/", map[string]string{
 		"id": "/id", "name": "/name", "title": "/title", "appearance": "/appearance",
@@ -524,6 +527,8 @@ func styleThemesToShared(themes []style.Theme) []shared.Theme {
 	return out
 }
 
+// buildParserConfig maps a REST convert request onto parser.Config, returning a
+// body validation error for invalid grouping, select, or better values.
 func buildParserConfig(request convertRequest, key string) (parser.Config, *apiValidationError) {
 	cfg := parser.Config{GroupPattern: "x", MemUnit: "B", TimeUnit: "ns", JSONPath: request.JSONPath}
 	if request.Grouping != nil {

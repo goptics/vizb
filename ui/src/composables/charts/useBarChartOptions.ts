@@ -95,6 +95,7 @@ function applyBackgroundToSeries(
   }
 }
 
+/** Reactive ECharts options for 2D bar charts (single, grouped, stacked, mixed, value). */
 export function useBarChartOptions(config: BaseChartConfig) {
   const {
     chartData,

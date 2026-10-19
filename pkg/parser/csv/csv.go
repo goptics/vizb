@@ -43,6 +43,8 @@ func ParseCSV(input io.Reader, cfg parser.Config) ([]shared.DataPoint, parser.Co
 
 type autoDetectFunc func(parser.Config, []string, [][]string) (parser.Config, error)
 
+// parseReader parses CSV rows into data points; autoDetect may fill in
+// grouping when none was configured.
 func parseReader(input io.Reader, cfg parser.Config, autoDetect autoDetectFunc) ([]shared.DataPoint, parser.Config, error) {
 	var err error
 	cfg, err = parser.FinalizeGroupConfig(cfg)

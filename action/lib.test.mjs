@@ -410,7 +410,6 @@ describe('runPipeline', () => {
       round: false,
       select: '',
       better: '',
-    better: '',
       colAxis: '',
       jsonPath: '',
       stat: '',

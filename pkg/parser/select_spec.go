@@ -49,6 +49,8 @@ func ParseSelectFlag(raw string) ([]ColumnSpec, error) {
 	return specs, nil
 }
 
+// parseColumnToken parses one --select token: an optional trailing :high/:low
+// direction, then a quoted or bare column name with an optional {label}.
 func parseColumnToken(tok string) (ColumnSpec, error) {
 	tok, better := splitBetterSuffix(tok)
 	spec, err := parseColumnSource(tok)
@@ -78,6 +80,7 @@ func splitBetterSuffix(tok string) (string, string) {
 	return head, dir
 }
 
+// parseColumnSource parses a column name (quoted or bare) and optional {label}.
 func parseColumnSource(tok string) (ColumnSpec, error) {
 	if len(tok) >= 2 && tok[0] == '"' {
 		source, err := strconv.Unquote(tok)

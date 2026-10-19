@@ -71,6 +71,7 @@ const groupedScatterColorValues = (seriesList: { data: SeriesPoint[] }[]): numbe
 const logYValue = (val: number | null, yLog: boolean): number | null =>
   adjustForLogScaleLine(val, yLog ? 'log' : 'linear')
 
+/** Reactive ECharts options shared by line and scatter category-series charts. */
 export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: CategorySeriesKind) {
   const { chartData, sort, isDark, showLabels, scale, stack, visualMap } = config
   const sortedData = useSortedSeriesData(chartData, sort)

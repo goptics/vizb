@@ -210,6 +210,8 @@ func prepareBenchmarkInput(input io.Reader) (io.Reader, error) {
 	}
 }
 
+// readBenchmarkEvents collects the "output" text from `go test -json` events
+// into a reader the plain-text benchmark parser can consume.
 func readBenchmarkEvents(reader *bufio.Reader, first shared.BenchEvent, firstErr error) (io.Reader, error) {
 	var output strings.Builder
 	if first.Action == "output" {

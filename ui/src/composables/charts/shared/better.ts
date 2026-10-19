@@ -1,6 +1,7 @@
 import type { Better } from '@/types'
 import { LARGE_DATA_THRESHOLD } from './chartConfig'
 
+/** Glyph that marks the best value on a chart. */
 export const BEST_MARK = '★'
 
 /** Human hint for a metric direction; empty when unknown. */
