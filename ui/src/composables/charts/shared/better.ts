@@ -134,10 +134,16 @@ export function applyBestMarker(
 export function trophyAxisLabel(
   seriesList: MarkableSeries[],
   better: Better | undefined,
-  selected: Record<string, boolean>
-): { formatter: (value: string, index: number) => string } {
-  const winners = bestCategories(seriesList, better, selected)
-  return { formatter: (v, i) => (winners.has(i) ? `${WINNER_MARK} ${v}` : v) }
+  selected: Record<string, boolean>,
+  categories: string[]
+): { formatter: (value: string) => string } {
+  // Match by label, not the formatter's index: ECharts passes a zoom-relative
+  // index on category axes. ponytail: a repeated label shares its group's
+  // trophy; category axes come from grouping keys, so labels are unique.
+  const winners = new Set(
+    [...bestCategories(seriesList, better, selected)].map((j) => categories[j])
+  )
+  return { formatter: (v) => (winners.has(v) ? `${WINNER_MARK} ${v}` : v) }
 }
 
 /**
@@ -151,7 +157,7 @@ export function withCategoryTrophy<A extends Record<'xAxis' | 'yAxis', any>>(
   better: Better | undefined,
   selected: Record<string, boolean>
 ): A {
-  const trophy = trophyAxisLabel(seriesList, better, selected)
+  const trophy = trophyAxisLabel(seriesList, better, selected, axes[key].data)
   return { ...axes, [key]: { ...axes[key], axisLabel: { ...axes[key].axisLabel, ...trophy } } }
 }
 

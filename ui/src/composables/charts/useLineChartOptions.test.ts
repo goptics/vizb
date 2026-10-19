@@ -514,12 +514,9 @@ describe('useLineChartOptions — group trophy', () => {
     const opts = useLineChartOptions(cfg).options.value
     const axis = opts.xAxis as {
       data: string[]
-      axisLabel: { formatter: (v: string, i: number) => string }
+      axisLabel: { formatter: (v: string) => string }
     }
-    expect(axis.data.map((v, i) => axis.axisLabel.formatter(v, i))).toEqual([
-      `${WINNER_MARK} Jan`,
-      'Feb',
-    ])
+    expect(axis.data.map((v) => axis.axisLabel.formatter(v))).toEqual([`${WINNER_MARK} Jan`, 'Feb'])
     const series = opts.series as { data: unknown[] }[]
     expect(series.every((s) => s.data.every((d) => typeof d === 'number'))).toBe(true)
   })

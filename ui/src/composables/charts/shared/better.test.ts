@@ -157,8 +157,9 @@ describe('trophyAxisLabel', () => {
     selected: Record<string, boolean> = {}
   ) => {
     const s = rows.map((d, i) => ({ name: 'abc'[i], data: d }))
-    const { formatter } = trophyAxisLabel(s, better, selected)
-    return rows[0]!.map((_, j) => formatter(`c${j}`, j))
+    const cats = rows[0]!.map((_, j) => `c${j}`)
+    const { formatter } = trophyAxisLabel(s, better, selected, cats)
+    return cats.map((c) => formatter(c))
   }
   const T = WINNER_MARK
 
@@ -195,8 +196,22 @@ describe('trophyAxisLabel', () => {
     expect(labels(rows)).toEqual([`${T} c0`, 'c1'])
     expect(labels(rows, 'low', { b: false, c: false })).toEqual(['c0', 'c1'])
     expect(labels(rows, 'low', { a: false })).toEqual(['c0', `${T} c1`])
-    const unnamed = trophyAxisLabel([{ data: [1, 9] }, { name: 'x', data: [1, 9] }], 'low', {})
-    expect(unnamed.formatter('c0', 0)).toBe(`${T} c0`)
+    const unnamed = trophyAxisLabel([{ data: [1, 9] }, { name: 'x', data: [1, 9] }], 'low', {}, [
+      'c0',
+      'c1',
+    ])
+    expect(unnamed.formatter('c0')).toBe(`${T} c0`)
+  })
+
+  it('keys on the label, so a dataZoom-shifted index cannot move the trophy', () => {
+    const s = [
+      { name: 'a', data: [9, 9, 1] },
+      { name: 'b', data: [9, 9, 1] },
+    ]
+    const { formatter } = trophyAxisLabel(s, 'low', {}, ['c0', 'c1', 'c2'])
+    // Zoomed to [c2]: ECharts calls formatter('c2', 0).
+    expect(formatter('c2')).toBe(`${T} c2`)
+    expect(formatter('c0')).toBe('c0')
   })
 
   it('skips categories with a missing value', () => {
@@ -219,7 +234,7 @@ describe('trophyAxisLabel', () => {
       { name: 'a', data: [1, 2] },
       { name: 'b', data: [1, 2] },
     ]
-    expect(trophyAxisLabel(s, undefined, {}).formatter('c0', 0)).toBe('c0')
+    expect(trophyAxisLabel(s, undefined, {}, ['c0', 'c1']).formatter('c0')).toBe('c0')
     expect(labels([[[1, 2]], [[1, 3]]])).toEqual(['c0'])
     const big = Array.from({ length: 2001 }, (_, i) => i)
     expect(labels([big, big])[0]).toBe('c0')

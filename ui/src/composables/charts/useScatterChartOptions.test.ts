@@ -284,11 +284,8 @@ describe('useScatterChartOptions — group trophy', () => {
     cfg.chartData.value = { ...cfg.chartData.value, better: 'high' }
     const axis = useScatterChartOptions(cfg).options.value.xAxis as {
       data: string[]
-      axisLabel: { formatter: (v: string, i: number) => string }
+      axisLabel: { formatter: (v: string) => string }
     }
-    expect(axis.data.map((v, i) => axis.axisLabel.formatter(v, i))).toEqual([
-      'x1',
-      `${WINNER_MARK} x2`,
-    ])
+    expect(axis.data.map((v) => axis.axisLabel.formatter(v))).toEqual(['x1', `${WINNER_MARK} x2`])
   })
 })

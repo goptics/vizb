@@ -1324,9 +1324,9 @@ describe('useBarChartOptions — category trophy', () => {
     const opts = useBarChartOptions(cfg).options.value
     const axis = (horizontal ? opts.yAxis : opts.xAxis) as {
       data: string[]
-      axisLabel: { formatter: (v: string, i: number) => string }
+      axisLabel: { formatter: (v: string) => string }
     }
-    return axis.data.map((v, i) => axis.axisLabel.formatter(v, i))
+    return axis.data.map((v) => axis.axisLabel.formatter(v))
   }
 
   it('crowns the best group on the category axis, vertical and horizontal', () => {
