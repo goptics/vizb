@@ -18,10 +18,15 @@ const enabled = computed(() => props.modelValue?.enabled ?? false)
 const order = computed<SortOrder>(() => props.modelValue?.order ?? 'asc')
 
 const sortDirectionOptions = [
-  { value: 'asc', label: 'Ascending', icon: SortAsc },
-  { value: 'desc', label: 'Descending', icon: SortDesc },
-  // Per chart: ascending when lower is better, otherwise descending.
-  { value: 'best', label: 'Best first', icon: Trophy },
+  // Short labels keep three tabs on one line in the settings panel.
+  { value: 'asc', label: 'Asc', icon: SortAsc, title: 'Ascending' },
+  { value: 'desc', label: 'Desc', icon: SortDesc, title: 'Descending' },
+  {
+    value: 'best',
+    label: 'Best first',
+    icon: Trophy,
+    title: 'Ascending when lower is better, otherwise descending',
+  },
 ]
 
 const setEnabled = (val: boolean) => emit('update:modelValue', { enabled: val, order: order.value })
@@ -35,7 +40,7 @@ const setOrder = (val: string | number) =>
     <SettingsToggle
       id="sorting-switch"
       label="Enable sorting"
-      description="Sort your data by the selected axis. Best first puts each chart's winner first."
+      description="Sort your data by the selected axis."
       :checked="enabled"
       @update:checked="setEnabled"
     />

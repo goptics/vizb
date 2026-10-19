@@ -70,11 +70,12 @@ vi.mock('../SelectionTabs.vue', () => ({
         h(
           'div',
           { 'data-testid': 'selection-tabs' },
-          (p.options as { value: string; label: string }[]).map((o) =>
+          (p.options as { value: string; label: string; title?: string }[]).map((o) =>
             h(
               'button',
               {
                 'data-value': o.value,
+                title: o.title,
                 disabled: p.disabled,
                 onClick: () => emit('update:modelValue', o.value),
               },
@@ -204,6 +205,8 @@ describe('settings controls', () => {
     await w.get('[data-value="best"]').trigger('click')
     expect(model.value).toEqual({ enabled: true, order: 'best' })
     expect(w.text()).toContain('Best first')
+    expect(w.get('[data-value="asc"]').text()).toBe('Asc')
+    expect(w.get('[data-value="asc"]').attributes('title')).toBe('Ascending')
   })
 
   it('ScaleControl emits and ignores when disabled', async () => {
