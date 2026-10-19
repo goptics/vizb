@@ -132,6 +132,7 @@ func ParseGoBenchmark(input io.Reader, cfg parser.Config) ([]shared.DataPoint, p
 				}
 			}
 
+			benchStat.Better = betterForGoUnit(value.Unit)
 			benchStats = append(benchStats, benchStat)
 		}
 
@@ -241,4 +242,17 @@ func readBenchmarkEvents(reader *bufio.Reader, first shared.BenchEvent, firstErr
 			return nil, fmt.Errorf("read Go benchmark JSON: %w", err)
 		}
 	}
+}
+
+// betterForGoUnit infers which direction is better from a raw benchmark unit:
+// time, memory and allocations per op are lower-is-better, anything per
+// second is higher-is-better, other custom units are unknown.
+func betterForGoUnit(unit string) string {
+	switch {
+	case unit == "sec/op" || unit == "B/op" || unit == "allocs/op":
+		return shared.BetterLow
+	case strings.HasSuffix(unit, "/s"):
+		return shared.BetterHigh
+	}
+	return ""
 }

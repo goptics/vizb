@@ -89,3 +89,17 @@ func (s *SelectSpecSuite) TestParseSelectFlagInvalidQuotedColumn() {
 func TestSelectSpecSuite(t *testing.T) {
 	suite.Run(t, new(SelectSpecSuite))
 }
+
+func (s *SelectSpecSuite) TestParseSelectFlagBetterSuffix() {
+	specs, err := ParseSelectFlag(`rps{Req/s}:high,latency:LOW,"a:b","c:d":low,rps2:up,lab{Time: ms},x{y}junk`)
+	s.Require().NoError(err)
+	s.Require().Len(specs, 7)
+
+	s.Equal(ColumnSpec{Source: "rps", Label: "Req/s", Better: "high"}, specs[0])
+	s.Equal(ColumnSpec{Source: "latency", Better: "low"}, specs[1])
+	s.Equal(ColumnSpec{Source: "a:b"}, specs[2])
+	s.Equal(ColumnSpec{Source: "c:d", Better: "low"}, specs[3])
+	s.Equal(ColumnSpec{Source: "rps2:up"}, specs[4], "non-direction suffix stays part of the column name")
+	s.Equal(ColumnSpec{Source: "lab", Label: "Time: ms"}, specs[5], "colon inside label is not a suffix")
+	s.Equal(ColumnSpec{Source: "x", Label: "y"}, specs[6], "text after label keeps today's behavior")
+}

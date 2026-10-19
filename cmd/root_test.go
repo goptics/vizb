@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -599,4 +600,50 @@ func (s *RootAutoGroupSuite) TestBenchmarkParserUnchangedNoGroup() {
 
 func TestRootAutoGroupSuite(t *testing.T) {
 	suite.Run(t, new(RootAutoGroupSuite))
+}
+
+func (s *RootSuite) readDataset(path string) shared.Dataset {
+	s.T().Helper()
+	body, err := os.ReadFile(path)
+	s.Require().NoError(err)
+	var ds shared.Dataset
+	s.Require().NoError(json.Unmarshal(body, &ds))
+	return ds
+}
+
+func (s *RootSuite) TestBetterDirection() {
+	dir := s.T().TempDir()
+
+	s.Run("csv inline suffix and flag", func() {
+		ResetTestState()
+		input := s.writeTempCSV(dir, "name,rps,latency\na,10,5\nb,20,3\n")
+		out := filepath.Join(dir, "csv.json")
+		testutil.CaptureStderr(func() {
+			rootCmd.SetArgs([]string{input, "-g", "name", "--select", "rps:high,latency", "--better", "latency:low", "-o", out})
+			s.Require().NoError(rootCmd.Execute())
+		})
+		got := map[string]string{}
+		for _, st := range s.readDataset(out).Data[0].Stats {
+			got[st.Type] = st.Better
+		}
+		s.Equal(map[string]string{"rps": "high", "latency": "low"}, got)
+	})
+
+	s.Run("go bench override and unmatched warning", func() {
+		ResetTestState()
+		input := testutil.WriteBenchFile(s.T(), dir, "b.txt",
+			`BenchmarkTest-8    1000000    1234 ns/op    1000 B/op    3 widgets/op`)
+		out := filepath.Join(dir, "go.json")
+		stderr := testutil.CaptureStderr(func() {
+			rootCmd.SetArgs([]string{input, "--better", "widgets/op:high,nosuch:low", "-o", out})
+			s.Require().NoError(rootCmd.Execute())
+		})
+		s.Contains(stderr, `"nosuch" matched no metric`)
+		got := map[string]string{}
+		for _, st := range s.readDataset(out).Data[0].Stats {
+			got[st.Type] = st.Better
+		}
+		s.Equal("low", got["Execution Time (ns/op)"])
+		s.Equal("high", got["Metric (widgets/op)"])
+	})
 }

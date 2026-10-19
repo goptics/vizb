@@ -9,6 +9,7 @@ import {
   createValueModeGridConfig,
   createHorizontalAxisConfig,
   createLabelConfig,
+  hoverLabelEmphasis,
   createLegendConfig,
   createTooltipConfig,
   createValueAxisConfig,
@@ -25,6 +26,7 @@ import { asLogXPairs, axisIsLog, axisLogBase, numericLogXValues, parseScale } fr
 import { affixesOf, NO_WRAP, wrapFor } from '@/lib/affix'
 import { buildValueAxes2DOptions } from './shared/valueMode'
 import { buildMixedAxes2DOptions } from './shared/mixedMode'
+import { applyBestMarker } from './shared/better'
 
 const barNullable = (val: number | null, yLog: boolean): number | null =>
   val === null ? null : yLog && val <= 0 ? null : val
@@ -104,6 +106,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
     horizontal,
     borderRadius,
     background,
+    visibleZ,
   } = config
 
   const sortedData = useSortedSeriesData(chartData, sort)
@@ -185,6 +188,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
       horizontal: isHorizontal,
     })
     const useStack = stack?.value === true && yScale !== 'log'
+    const markOpts = { isDark: isDark.value, showLabels: showLabels.value }
 
     if (!hasYAxis && isHorizontal) {
       const seriesItem = {
@@ -193,6 +197,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
         // xNums is null while horizontal (category X stays categorical).
         data: series.map((s) => barNullable(s.values[0] ?? null, valueLog)),
         label: createLabelConfig(showLabels.value, styling, 'horizontal', false, metricWrap),
+        ...hoverLabelEmphasis(showLabels.value),
         large: true,
         largeThreshold: LARGE_DATA_THRESHOLD,
         itemStyle: { color: getNextColorFor(chartData.value.title) } as BarItemStyle,
@@ -201,6 +206,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
         seriesItem.itemStyle = { ...seriesItem.itemStyle, borderRadius: radius }
       }
       applyBackgroundToSeries([seriesItem], backgroundStyle)
+      applyBestMarker([seriesItem], chartData.value.better, {}, markOpts)
       return {
         ...baseOptions,
         grid: {
@@ -242,6 +248,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
             )
           : series.map((s) => barNullable(s.values[0] ?? null, valueLog)),
         label: createLabelConfig(showLabels.value, styling, undefined, false, metricWrap),
+        ...hoverLabelEmphasis(showLabels.value),
         large: true,
         largeThreshold: LARGE_DATA_THRESHOLD,
         itemStyle: { color: getNextColorFor(chartData.value.title) } as BarItemStyle,
@@ -250,6 +257,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
         seriesItem.itemStyle = { ...seriesItem.itemStyle, borderRadius: radius }
       }
       applyBackgroundToSeries([seriesItem], backgroundStyle)
+      applyBestMarker([seriesItem], chartData.value.better, {}, markOpts)
       return {
         ...baseOptions,
         grid: createValueModeGridConfig(zoom.hasXSlider),
@@ -289,6 +297,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
         useStack,
         wrapFor(affixes, yAxisLabel, metricWrap)
       ),
+      ...hoverLabelEmphasis(showLabels.value),
       large: true,
       largeThreshold: LARGE_DATA_THRESHOLD,
       stack: useStack ? 'total' : null,
@@ -329,6 +338,8 @@ export function useBarChartOptions(config: BaseChartConfig) {
 
     const hasMultipleSeries = transposedSeries.length > 1
     const seriesTotals = computeSeriesTotals(transposedSeries)
+    // After totals: marked points become {value, ...} objects.
+    applyBestMarker(transposedSeries, chartData.value.better, visibleZ?.value ?? {}, markOpts)
 
     const yLabel = chartData.value.axisLabels?.y
     // Vertical: legend encodes the y group with yLabel as a top title.

@@ -153,6 +153,18 @@ describe('useBarChartOptions — grouped mode', () => {
     expect(series.every((s) => !s.label.show)).toBe(true)
     expect(series.every((s) => s.label.position === 'inside')).toBe(true)
   })
+
+  it('reveals values on hover only when labels are off', () => {
+    type Emph = { emphasis?: { focus: string; label: { show: boolean } } }
+    const off = useBarChartOptions(makeStackedGroupedConfig(true, false, false)).options
+    expect(
+      (off.value.series as Emph[]).every(
+        (s) => s.emphasis?.focus === 'series' && s.emphasis.label.show
+      )
+    ).toBe(true)
+    const on = useBarChartOptions(makeStackedGroupedConfig(true, false, true)).options
+    expect((on.value.series as Emph[]).every((s) => s.emphasis === undefined)).toBe(true)
+  })
 })
 
 describe('useBarChartOptions — mixed mode', () => {

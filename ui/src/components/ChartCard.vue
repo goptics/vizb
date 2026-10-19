@@ -28,6 +28,7 @@ import {
 import StatsPanel from './StatsPanel.vue'
 import Badge from './Badge.vue'
 import BadgeButton from './BadgeButton.vue'
+import { betterHint } from '@/composables/charts/shared/better'
 
 // Every chart renderer (2D bar/line/pie + 3D) is loaded via defineAsyncComponent
 // so the echarts runtime stays out of the eager startup bundle: nothing in the
@@ -130,6 +131,7 @@ const ActiveChart = computed<Component>(() => {
 // Legend z-toggle state, kept in sync via the legendselectchanged event so
 // tooltip/label sums reflect only the visible z series.
 const visibleZ = ref<Record<string, boolean>>({})
+const hint = computed(() => betterHint(chartData.value.better))
 function onLegendSelectChanged(e: { selected: Record<string, boolean> }) {
   visibleZ.value = { ...e.selected }
 }
@@ -235,6 +237,7 @@ watch(
     <div class="mb-2 flex items-center justify-between gap-2">
       <h3 class="text-lg font-semibold text-card-foreground">
         {{ chartData.title }}
+        <span v-if="hint" class="ml-2 text-xs font-normal text-muted-foreground">{{ hint }}</span>
       </h3>
       <div class="flex flex-wrap items-center justify-end gap-1.5">
         <Badge :label="chartData.axisLabels?.x || 'Series'" :value="String(xAxisBadgeCount)" />

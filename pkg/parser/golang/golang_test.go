@@ -288,6 +288,31 @@ func (s *GoBenchmarkSuite) TestParseGoBenchmarkReturnsSystemMetadata() {
 }
 
 // Unformatted B/s and custom metrics still honor cfg.Round (no unit convert path).
+func (s *GoBenchmarkSuite) TestInfersBetterFromUnit() {
+	input := strings.Join([]string{
+		"BenchmarkA-8 100 123 ns/op 64 B/op 2 allocs/op 10 MB/s 5 req/s 3 widgets/op",
+		"BenchmarkB-8 200 123 ns/op 64 B/op 2 allocs/op 10 MB/s 5 req/s 3 widgets/op",
+	}, "\n")
+
+	results, _, _, err := ParseGoBenchmark(strings.NewReader(input), parser.Config{GroupPattern: "y", TimeUnit: "ns"})
+	s.Require().NoError(err)
+	s.Require().Len(results, 2)
+
+	got := map[string]string{}
+	for _, st := range results[0].Stats {
+		got[st.Type] = st.Better
+	}
+	s.Equal(map[string]string{
+		"Execution Time (ns/op)": shared.BetterLow,
+		"Memory Usage/op":        shared.BetterLow,
+		"Allocations/op":         shared.BetterLow,
+		"Throughput (MB/s)":      shared.BetterHigh,
+		"Throughput (req/s)":     shared.BetterHigh,
+		"Metric (widgets/op)":    "",
+		"Iterations":             "",
+	}, got)
+}
+
 func (s *GoBenchmarkSuite) TestThroughputAndCustomMetricsRoundWhenEnabled() {
 	input := strings.Join([]string{
 		"BenchmarkThroughput 100 123.456 ns/op 512.456 B/s",

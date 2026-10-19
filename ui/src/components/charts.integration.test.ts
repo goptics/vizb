@@ -9,6 +9,7 @@ const chartHolder = vi.hoisted(() => ({
   chart: undefined as
     | { isDisposed: () => boolean; setOption: ReturnType<typeof vi.fn> }
     | undefined,
+  dispatchAction: vi.fn(),
 }))
 vi.mock('echarts/core', () => ({ use: (...args: unknown[]) => useMock(...args) }))
 vi.mock('echarts/renderers', () => ({ CanvasRenderer: 'CanvasRenderer' }))
@@ -42,7 +43,7 @@ vi.mock('vue-echarts', () => ({
   default: defineComponent({
     name: 'VChart',
     props: ['option', 'initOptions', 'autoresize', 'updateOptions'],
-    emits: ['legendselectchanged'],
+    emits: ['legendselectchanged', 'mouseover', 'mouseout'],
     setup(props, { emit, expose }) {
       expose(chartHolder)
       return () =>
@@ -51,6 +52,8 @@ vi.mock('vue-echarts', () => ({
           'data-not-merge': props.updateOptions?.notMerge === false ? '0' : '1',
           onClick: () => emit('legendselectchanged', { selected: { A: true } }),
           onDblclick: () => emit('legendselectchanged', { selected: { A: 'yes' } }),
+          onMouseenter: () => emit('mouseover', { componentType: 'series', seriesIndex: 1 }),
+          onMouseleave: () => emit('mouseout', { componentType: 'series', seriesIndex: 1 }),
         })
     },
   }),
@@ -157,5 +160,19 @@ describe('chart shells', () => {
       }),
       { notMerge: true }
     )
+  })
+})
+
+describe('bar/line series hover', () => {
+  it.each([
+    ['bar', ChartBar],
+    ['line', ChartLine],
+  ])('%s highlights the hovered block series through the chart ref', async (_, Comp) => {
+    chartHolder.dispatchAction.mockClear()
+    const w = mount(Comp, { props: { option: {}, initOptions: {} } })
+    await w.get('[data-testid="vchart"]').trigger('mouseenter')
+    expect(chartHolder.dispatchAction).toHaveBeenCalledWith({ type: 'highlight', seriesIndex: 1 })
+    await w.get('[data-testid="vchart"]').trigger('mouseleave')
+    expect(chartHolder.dispatchAction).toHaveBeenLastCalledWith({ type: 'downplay' })
   })
 })

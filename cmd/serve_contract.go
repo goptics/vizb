@@ -70,6 +70,7 @@ type convertRequest struct {
 	Units       *unitOptions       `json:"units"`
 	Round       bool               `json:"round"`
 	Select      []string           `json:"select"`
+	Better      string             `json:"better"`
 	JSONPath    string             `json:"jsonPath"`
 	Charts      chartSelection     `json:"charts"`
 	Output      *convertOutput     `json:"output"`
@@ -104,7 +105,7 @@ func (r *convertRequest) UnmarshalJSON(data []byte) error {
 	if err := rejectNullFields(data, "/", map[string]string{
 		"id": "/id", "name": "/name", "title": "/title", "appearance": "/appearance",
 		"description": "/description", "tag": "/tag", "parser": "/parser", "grouping": "/grouping",
-		"units": "/units", "round": "/round", "select": "/select", "jsonPath": "/jsonPath",
+		"units": "/units", "round": "/round", "select": "/select", "better": "/better", "jsonPath": "/jsonPath",
 		"charts": "/charts", "output": "/output",
 	}); err != nil {
 		return err
@@ -596,6 +597,10 @@ func buildParserConfig(request convertRequest, key string) (parser.Config, *apiV
 	}
 	if validationErr := applySelectOptions(&cfg, request.Select); validationErr != nil {
 		return cfg, validationErr
+	}
+	if cfg.Better, err = shared.ParseBetterFlag(request.Better); err != nil {
+		validationErr := bodyValidationError("/better", "invalid_better", err.Error())
+		return cfg, &validationErr
 	}
 	cfg.Mode = parser.ResolveMode(cfg)
 	return cfg, nil

@@ -194,8 +194,9 @@ func ParseEdgeMode(rows []RowReader, cfg Config) ([]shared.DataPoint, error) {
 				continue
 			}
 			stats = append(stats, shared.Stat{
-				Type:  utils.CreateStatType(EdgeStatType(view), cfg.NumberUnit, ""),
-				Value: shared.F64(utils.FormatNumber(v, cfg.NumberUnit, cfg.Round)),
+				Type:   utils.CreateStatType(EdgeStatType(view), cfg.NumberUnit, ""),
+				Value:  shared.F64(utils.FormatNumber(v, cfg.NumberUnit, cfg.Round)),
+				Better: view.Columns[2].Better,
 			})
 		}
 		if len(stats) == 0 {

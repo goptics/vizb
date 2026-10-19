@@ -491,6 +491,30 @@ func (s *ServeSuite) TestConvertEndpoint() {
 	s.Equal("Comparisons", dataset["name"])
 }
 
+func (s *ServeSuite) TestConvertEndpointBetter() {
+	handler := newRESTHandler()
+
+	recorder := s.apiRequest(
+		handler,
+		"/",
+		`{"input":"name,rps\na,10\nb,20\n","parser":"csv","grouping":{"columns":["name"]},"select":["rps"],"better":"rps:high","charts":{"types":["bar"]},"output":{"format":"dataset"}}`,
+		"application/json",
+		"application/json",
+	)
+	s.Equal(http.StatusOK, recorder.Code, recorder.Body.String())
+	s.Contains(recorder.Body.String(), `"better":"high"`)
+
+	recorder = s.apiRequest(
+		handler,
+		"/",
+		`{"input":"name,rps\na,10\n","parser":"csv","better":"rps:up","charts":{"types":["bar"]}}`,
+		"application/json",
+		"application/json",
+	)
+	s.Equal(http.StatusUnprocessableEntity, recorder.Code, recorder.Body.String())
+	s.Contains(recorder.Body.String(), "/better")
+}
+
 func (s *ServeSuite) TestConvertEndpointEmbedsThemesCatalog() {
 	handler := newRESTHandler()
 

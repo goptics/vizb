@@ -199,6 +199,15 @@ describe('ChartCard', () => {
     expect(w.text()).toMatch(/Total/)
   })
 
+  it('shows the better-direction hint only when known', () => {
+    const chartData = {
+      ...makeGroupedChartData({ title: 'Latency' }),
+      better: 'low' as const,
+    }
+    expect(mountCard({ chartData }).get('h3').text()).toBe('Latency ↓ lower is better')
+    expect(mountCard({ title: 'Latency' }).get('h3').text()).toBe('Latency')
+  })
+
   it('shows skeleton overlay while loading', () => {
     const w = mountCard({ loading: true })
     expect(w.find('.absolute.animate-pulse').exists()).toBe(true)

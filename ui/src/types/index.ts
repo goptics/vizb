@@ -58,11 +58,15 @@ export type ScaleSpec = {
 
 export type ScaleInput = ScaleType | ScaleSpec
 
+export type Better = 'high' | 'low'
+
 export type Stat = {
   type: string
   value?: number
   unit?: string
   per?: string
+  symbol?: string
+  better?: Better
 }
 
 export type DataPoint = {
@@ -375,6 +379,7 @@ export type ChartData = {
   title: string
   statType: string
   statUnit?: string
+  better?: Better // which direction of the metric wins; absent when unknown
   yAxis: string[]
   zAxis: string[]
   series: SeriesData[]

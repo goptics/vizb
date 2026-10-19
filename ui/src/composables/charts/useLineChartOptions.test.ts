@@ -187,6 +187,12 @@ describe('useLineChartOptions — simple 1D', () => {
 })
 
 describe('useLineChartOptions — grouped mode', () => {
+  it('reveals values on hover when labels are off', () => {
+    const { options } = useLineChartOptions(makeGroupedConfig())
+    const series = options.value.series as { emphasis?: { label: { show: boolean } } }[]
+    expect(series.every((s) => s.emphasis?.label.show)).toBe(true)
+  })
+
   it('uses a compact pixel legend band, not the category % top', () => {
     const { options } = useLineChartOptions(makeGroupedConfig())
     const grid = options.value.grid as {

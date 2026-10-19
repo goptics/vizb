@@ -74,6 +74,16 @@ func (s *JSONSuite) TestExplicitColsSelectsAndOrders() {
 	s.Equal([]string{"stocks", "sells"}, statTypes(results[0].Stats))
 }
 
+func (s *JSONSuite) TestExplicitColsCarryBetter() {
+	s.cfg.Select = []parser.ColumnSpec{{Source: "stocks", Better: shared.BetterHigh}, {Source: "sells"}}
+	j := `[{"name":"a","sells":10,"stocks":5}]`
+
+	results, _ := mustParseJSONFile(s.T(), s.writeFile(j), s.cfg)
+
+	s.Equal(shared.BetterHigh, results[0].Stats[0].Better)
+	s.Empty(results[0].Stats[1].Better)
+}
+
 func (s *JSONSuite) TestExplicitColsRename() {
 	s.cfg.Select = []parser.ColumnSpec{{Source: "sells", Label: "Revenue"}}
 	j := `[{"name":"a","sells":10}]`

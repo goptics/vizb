@@ -198,8 +198,9 @@ func parseReader(input io.Reader, cfg parser.Config, logAuto bool) ([]shared.Dat
 				label = l
 			}
 			stats = append(stats, shared.Stat{
-				Type:  utils.CreateStatType(label, cfg.NumberUnit, ""),
-				Value: shared.F64(utils.FormatNumber(num, cfg.NumberUnit, cfg.Round)),
+				Type:   utils.CreateStatType(label, cfg.NumberUnit, ""),
+				Value:  shared.F64(utils.FormatNumber(num, cfg.NumberUnit, cfg.Round)),
+				Better: cfg.SelectBetter(k),
 			})
 		}
 

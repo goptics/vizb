@@ -86,6 +86,7 @@ export class PreserveRowsBuilder implements GroupingBuilder {
       {
         statType: statTemplate.type,
         statUnit: statTemplate.unit,
+        better: statTemplate.better,
         title: statTemplate.type,
         yAxisValues,
         zAxisValues: Array.from(zAxisSet),

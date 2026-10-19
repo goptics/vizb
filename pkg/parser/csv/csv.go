@@ -153,8 +153,9 @@ func parseReader(input io.Reader, cfg parser.Config, autoDetect autoDetectFunc) 
 				label = l
 			}
 			stats = append(stats, shared.Stat{
-				Type:  utils.CreateStatType(label, cfg.NumberUnit, ""),
-				Value: shared.F64(utils.FormatNumber(v, cfg.NumberUnit, cfg.Round)),
+				Type:   utils.CreateStatType(label, cfg.NumberUnit, ""),
+				Value:  shared.F64(utils.FormatNumber(v, cfg.NumberUnit, cfg.Round)),
+				Better: cfg.SelectBetter(headers[c]),
 			})
 		}
 

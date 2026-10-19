@@ -7,6 +7,7 @@ import (
 	internal_charts "github.com/goptics/vizb/internal/charts"
 	"github.com/goptics/vizb/internal/flags"
 	"github.com/goptics/vizb/pkg/style"
+	"github.com/goptics/vizb/shared"
 	"github.com/goptics/vizb/testutil"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/suite"
@@ -152,6 +153,16 @@ func (s *FlagBagSuite) TestParseConfigMapsSelectGrouped() {
 	s.Equal("price", cfg.Select[0].Source)
 	s.Equal("Unit price", cfg.Select[0].Label)
 	s.Equal("count", cfg.Select[1].Source)
+}
+
+func (s *FlagBagSuite) TestParseConfigMapsBetter() {
+	cmd, bag := s.newCmdBag(slices.Clone(DataFlags))
+	s.Require().NoError(cmd.Flags().Set("group", "date"))
+	s.Require().NoError(cmd.Flags().Set("select", "rps:high,latency"))
+	s.Require().NoError(cmd.Flags().Set("better", "latency:low,Memory Usage:high"))
+	cfg := bag.ParseConfig()
+	s.Equal("high", cfg.Select[0].Better)
+	s.Equal([]shared.BetterRule{{Key: "latency", Dir: "low"}, {Key: "Memory Usage", Dir: "high"}}, cfg.Better)
 }
 
 func (s *FlagBagSuite) TestMetaIncludesTitle() {

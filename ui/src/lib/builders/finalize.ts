@@ -1,4 +1,4 @@
-import type { ChartData, SeriesData, Point3D, AxisLabels, SortOrder } from '@/types'
+import type { Better, ChartData, SeriesData, Point3D, AxisLabels, SortOrder } from '@/types'
 import type { BuildContext } from './types'
 import {
   applyCanonicalOrder,
@@ -36,6 +36,7 @@ export function finalizeChart(
   pieces: {
     statType: string
     statUnit?: string
+    better?: Better
     title: string
     yAxisValues: string[]
     zAxisValues: string[]
@@ -85,6 +86,7 @@ export function finalizeChart(
     title: pieces.title,
     statType: pieces.statType,
     statUnit: pieces.statUnit,
+    ...(pieces.better ? { better: pieces.better } : {}),
     yAxis: yAxisValues,
     zAxis: zAxisValues,
     series: pieces.series,

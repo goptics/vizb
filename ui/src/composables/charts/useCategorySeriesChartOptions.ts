@@ -7,6 +7,7 @@ import {
   createGridConfig,
   createValueModeGridConfig,
   createLabelConfig,
+  hoverLabelEmphasis,
   createLegendConfig,
   createPinnedAxisTooltip,
   createTooltipConfig,
@@ -31,6 +32,7 @@ import { resolveSeriesSymbol } from './shared/seriesConfig'
 import { resolve2DScatterVisualMap } from './shared/visualMap'
 import { buildValueAxes2DOptions } from './shared/valueMode'
 import { buildMixedAxes2DOptions } from './shared/mixedMode'
+import { applyBestMarker } from './shared/better'
 
 export type CategorySeriesKind = 'line' | 'scatter'
 
@@ -70,7 +72,7 @@ const logYValue = (val: number | null, yLog: boolean): number | null =>
   adjustForLogScaleLine(val, yLog ? 'log' : 'linear')
 
 export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: CategorySeriesKind) {
-  const { chartData, sort, isDark, showLabels, scale, stack, visualMap } = config
+  const { chartData, sort, isDark, showLabels, scale, stack, visualMap, visibleZ } = config
   const sortedData = useSortedSeriesData(chartData, sort)
   const style = SERIES_STYLE[kind]
 
@@ -129,6 +131,7 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
     const useVisualMap = kind === 'scatter' && visualMap?.value === true
     const smoothLines = kind === 'line' && config.smooth?.value === true
     const useStack = kind === 'line' && stack?.value === true && yScale !== 'log'
+    const markOpts = { isDark: isDark.value, showLabels: showLabels.value }
 
     if (!hasYAxis) {
       const singleSeries = {
@@ -147,9 +150,11 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
           : { large: true as const, largeThreshold: LARGE_DATA_THRESHOLD }),
         ...(style.connectNulls ? { connectNulls: true } : {}),
         ...(kind === 'line' ? { smooth: smoothLines, showAllSymbol: true as const } : {}),
+        ...(kind === 'line' ? hoverLabelEmphasis(showLabels.value) : {}),
         ...(useVisualMap ? {} : { itemStyle: { color: getNextColorFor(chartData.value.title) } }),
         ...seriesExtras,
       }
+      if (kind === 'line') applyBestMarker([singleSeries], chartData.value.better, {}, markOpts)
       return {
         ...baseOptions,
         grid: createValueModeGridConfig(zoom.hasXSlider),
@@ -206,11 +211,16 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
             showAllSymbol: true as const,
           }
         : {}),
+      ...(kind === 'line' ? hoverLabelEmphasis(showLabels.value) : {}),
       ...(useVisualMap ? {} : { itemStyle: { color: getNextColorFor(yAxisLabel) } }),
       ...seriesExtras,
     }))
 
     const seriesTotals = computeSeriesTotals(transposedSeries)
+    // After totals: marked points become {value, ...} objects.
+    if (kind === 'line') {
+      applyBestMarker(transposedSeries, chartData.value.better, visibleZ?.value ?? {}, markOpts)
+    }
     const yLabel = chartData.value.axisLabels?.y
     const showXBreakdown = kind === 'line' || hasXAxis(chartData)
 

@@ -94,6 +94,19 @@ func (s *CSVSuite) TestExplicitColsRename() {
 	s.Equal([]string{"Unit price", "Total"}, statTypes(results[0].Stats))
 }
 
+func (s *CSVSuite) TestExplicitColsCarryBetter() {
+	s.cfg.Select = []parser.ColumnSpec{
+		{Source: "price", Label: "Unit price", Better: shared.BetterLow},
+		{Source: "count"},
+	}
+	csv := "name,price,count\na,100,10\n"
+
+	results, _ := mustParseCSVFile(s.T(), s.writeFile(csv), s.cfg)
+
+	s.Equal(shared.BetterLow, results[0].Stats[0].Better)
+	s.Empty(results[0].Stats[1].Better)
+}
+
 func (s *CSVSuite) TestExplicitColsMissingColumnErrors() {
 	s.cfg.Select = []parser.ColumnSpec{{Source: "missing"}}
 	csv := "name,price\na,10\n"
