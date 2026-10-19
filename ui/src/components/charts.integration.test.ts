@@ -10,6 +10,8 @@ const chartHolder = vi.hoisted(() => ({
     | { isDisposed: () => boolean; setOption: ReturnType<typeof vi.fn> }
     | undefined,
   dispatchAction: vi.fn(),
+  setOption: vi.fn(),
+  getOption: vi.fn(() => ({ tooltip: [{ trigger: 'axis' }] })),
 }))
 vi.mock('echarts/core', () => ({ use: (...args: unknown[]) => useMock(...args) }))
 vi.mock('echarts/renderers', () => ({ CanvasRenderer: 'CanvasRenderer' }))
@@ -167,12 +169,15 @@ describe('bar/line series hover', () => {
   it.each([
     ['bar', ChartBar],
     ['line', ChartLine],
+    ['scatter', ChartScatter],
   ])('%s highlights the hovered block series through the chart ref', async (_, Comp) => {
     chartHolder.dispatchAction.mockClear()
     const w = mount(Comp, { props: { option: {}, initOptions: {} } })
     await w.get('[data-testid="vchart"]').trigger('mouseenter')
     expect(chartHolder.dispatchAction).toHaveBeenCalledWith({ type: 'highlight', seriesIndex: 1 })
+    expect(chartHolder.setOption).toHaveBeenLastCalledWith({ tooltip: { show: false } })
     await w.get('[data-testid="vchart"]').trigger('mouseleave')
     expect(chartHolder.dispatchAction).toHaveBeenLastCalledWith({ type: 'downplay' })
+    expect(chartHolder.setOption).toHaveBeenLastCalledWith({ tooltip: { show: true } })
   })
 })
