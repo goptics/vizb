@@ -140,6 +140,21 @@ export function trophyAxisLabel(
   return { formatter: (v, i) => (winners.has(i) ? `${WINNER_MARK} ${v}` : v) }
 }
 
+/**
+ * Returns `axes` with trophyAxisLabel merged into the category axis (`key`)
+ * label. Callers skip numeric-x (value axis) charts.
+ */
+export function withCategoryTrophy<A extends Record<'xAxis' | 'yAxis', any>>(
+  axes: A,
+  key: 'xAxis' | 'yAxis',
+  seriesList: MarkableSeries[],
+  better: Better | undefined,
+  selected: Record<string, boolean>
+): A {
+  const trophy = trophyAxisLabel(seriesList, better, selected)
+  return { ...axes, [key]: { ...axes[key], axisLabel: { ...axes[key].axisLabel, ...trophy } } }
+}
+
 function bestCategories(
   seriesList: MarkableSeries[],
   better: Better | undefined,

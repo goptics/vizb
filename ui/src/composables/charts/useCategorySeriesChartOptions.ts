@@ -32,7 +32,7 @@ import { resolveSeriesSymbol } from './shared/seriesConfig'
 import { resolve2DScatterVisualMap } from './shared/visualMap'
 import { buildValueAxes2DOptions } from './shared/valueMode'
 import { buildMixedAxes2DOptions } from './shared/mixedMode'
-import { applyBestMarker } from './shared/better'
+import { applyBestMarker, withCategoryTrophy } from './shared/better'
 
 export type CategorySeriesKind = 'line' | 'scatter'
 
@@ -73,7 +73,7 @@ const logYValue = (val: number | null, yLog: boolean): number | null =>
 
 /** Reactive ECharts options shared by line and scatter category-series charts. */
 export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: CategorySeriesKind) {
-  const { chartData, sort, isDark, showLabels, scale, stack, visualMap } = config
+  const { chartData, sort, isDark, showLabels, scale, stack, visualMap, visibleZ } = config
   const sortedData = useSortedSeriesData(chartData, sort)
   const style = SERIES_STYLE[kind]
 
@@ -225,6 +225,16 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
     const seriesTotals = computeSeriesTotals(transposedSeries)
     // ponytail: no ★ on multi-line charts — a star per x reads as noise; the
     // lines' crossovers carry the comparison (single-line charts keep it).
+    // The 🏆 on the best group's x label still names the winning group.
+    const axes = xNums
+      ? groupedAxes
+      : withCategoryTrophy(
+          groupedAxes,
+          'xAxis',
+          transposedSeries,
+          chartData.value.better,
+          visibleZ?.value ?? {}
+        )
     const yLabel = chartData.value.axisLabels?.y
     const showXBreakdown = kind === 'line' || hasXAxis(chartData)
 
@@ -257,7 +267,7 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
             affixes,
             metricWrap
           ),
-      ...groupedAxes,
+      ...axes,
       ...(zoom.dataZoom ? { dataZoom: zoom.dataZoom } : {}),
       legend: createLegendConfig(
         transposedSeries.map((s) => ({ xAxis: s.name })),

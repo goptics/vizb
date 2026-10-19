@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import type { ChartData, ScaleInput } from '@/types'
 import type { BaseChartConfig } from './baseChartOptions'
 import { useLineChartOptions } from './useLineChartOptions'
+import { WINNER_MARK } from './shared/better'
 import {
   installDevicePixelRatio,
   makeNumericStepChartData,
@@ -502,5 +503,24 @@ describe('useLineChartOptions — grouped mode', () => {
     const series = options.value.series as { step?: string }[]
     expect(series).toHaveLength(2)
     expect(series.every((s) => s.step === 'end')).toBe(true)
+  })
+})
+
+describe('useLineChartOptions — group trophy', () => {
+  // Jan (North 10, South 8) totals lower than Feb (12, 9).
+  it('crowns the best group on the x axis, without starring points', () => {
+    const cfg = makeGroupedConfig()
+    cfg.chartData.value = { ...cfg.chartData.value, better: 'low' }
+    const opts = useLineChartOptions(cfg).options.value
+    const axis = opts.xAxis as {
+      data: string[]
+      axisLabel: { formatter: (v: string, i: number) => string }
+    }
+    expect(axis.data.map((v, i) => axis.axisLabel.formatter(v, i))).toEqual([
+      `${WINNER_MARK} Jan`,
+      'Feb',
+    ])
+    const series = opts.series as { data: unknown[] }[]
+    expect(series.every((s) => s.data.every((d) => typeof d === 'number'))).toBe(true)
   })
 })
