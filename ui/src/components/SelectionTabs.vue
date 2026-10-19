@@ -6,6 +6,7 @@ interface Option {
   value: string | number
   label: string
   icon?: Component
+  title?: string // hover text when the label is abbreviated
 }
 
 const props = defineProps<{
@@ -32,6 +33,7 @@ const onUpdate = (value: string | number) => {
         :key="option.value"
         :value="option.value"
         :disabled="props.disabled"
+        :title="option.title"
         class="flex-1"
       >
         <component :is="option.icon" v-if="option.icon" class="h-4 w-4" />

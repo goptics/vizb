@@ -26,7 +26,11 @@ const emit = defineEmits<{
 }>()
 
 const chart = ref<InstanceType<typeof VChart> | null>(null)
-const { onMouseover, onMouseout } = createSeriesHover(() => chart.value)
+const blockHover = ref(false)
+const { onMouseover, onMouseout, onGlobalout } = createSeriesHover(
+  () => chart.value?.chart,
+  (on) => (blockHover.value = on)
+)
 
 const onLegendSelectChanged = createLegendSelectChangedForwarder((event) =>
   emit('legendselectchanged', event)
@@ -36,11 +40,13 @@ const onLegendSelectChanged = createLegendSelectChangedForwarder((event) =>
 <template>
   <VChart
     ref="chart"
+    :class="{ 'vizb-block-hover': blockHover }"
     :option="option"
     :init-options="initOptions"
     :autoresize="true"
     @legendselectchanged="onLegendSelectChanged"
     @mouseover="onMouseover"
     @mouseout="onMouseout"
+    @globalout="onGlobalout"
   />
 </template>

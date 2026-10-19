@@ -212,6 +212,12 @@ func (s *ChartSpecSuite) TestParseOverridesMultipleSpecsSameType() {
 	s.Equal("asc", m["sort"].(map[string]any)["order"])
 }
 
+func (s *ChartSpecSuite) TestParseOverridesSortBest() {
+	got, _, err := ParseOverrides([]string{"bar:sort=BEST"}, []string{"bar"}, s.xynAxes)
+	s.Require().NoError(err)
+	s.Equal(map[string]any{"enabled": true, "order": "best"}, s.payload(got["bar"])["sort"])
+}
+
 // TestParseOverrides_Empty confirms the function returns nil for empty input.
 func (s *ChartSpecSuite) TestParseOverridesEmpty() {
 	got, warnings, err := ParseOverrides(nil, []string{"bar"}, s.xynAxes)

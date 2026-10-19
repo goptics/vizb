@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { SortAsc, SortDesc } from 'lucide-vue-next'
+import { SortAsc, SortDesc, Trophy } from 'lucide-vue-next'
 import { Separator } from '../ui'
 import type { Sort, SortOrder } from '@/types'
 import SettingsToggle from '../SettingsToggle.vue'
@@ -18,8 +18,15 @@ const enabled = computed(() => props.modelValue?.enabled ?? false)
 const order = computed<SortOrder>(() => props.modelValue?.order ?? 'asc')
 
 const sortDirectionOptions = [
-  { value: 'asc', label: 'Ascending', icon: SortAsc },
-  { value: 'desc', label: 'Descending', icon: SortDesc },
+  // Short labels keep three tabs on one line in the settings panel.
+  { value: 'asc', label: 'Asc', icon: SortAsc, title: 'Ascending' },
+  { value: 'desc', label: 'Desc', icon: SortDesc, title: 'Descending' },
+  {
+    value: 'best',
+    label: 'Best first',
+    icon: Trophy,
+    title: 'Ascending when lower is better, otherwise descending',
+  },
 ]
 
 const setEnabled = (val: boolean) => emit('update:modelValue', { enabled: val, order: order.value })

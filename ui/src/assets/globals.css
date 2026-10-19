@@ -58,3 +58,11 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* A hovered block hides the group (axis) tooltip without touching ECharts state;
+   see components/charts/seriesHover.ts. */
+.vizb-block-hover .vizb-group-tooltip {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  transition: none !important;
+}

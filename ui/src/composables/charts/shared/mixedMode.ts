@@ -4,6 +4,7 @@ import { getDefaultThemeColor, getNextColorFor, formatChartNumber } from '@/lib/
 import { axisIsLog, axisLogBase, numericLogXValues, parseScale } from '@/lib/scale'
 import { type BaseChartConfig, getBaseOptions } from '../baseChartOptions'
 import {
+  GROUP_TOOLTIP_CLASS,
   createAxisConfig,
   createLabelConfig,
   createValueAxisConfig,
@@ -80,6 +81,7 @@ export function createMixedModeTooltip(
 
   return {
     trigger: 'axis',
+    className: GROUP_TOOLTIP_CLASS,
     ...theme,
     axisPointer: snapToCategory
       ? createLineAxisPointer(styling, theme, true)

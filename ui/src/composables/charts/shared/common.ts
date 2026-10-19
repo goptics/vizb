@@ -1,12 +1,12 @@
 import { computed } from 'vue'
 import type { Ref } from 'vue'
-import type { SortOrder, ScaleType, ChartData, Sort } from '@/types'
+import type { ResolvedSortOrder, ScaleType, ChartData, Sort } from '@/types'
 import type { Point3D } from '@/types'
 import { hasYAxis } from '@/lib/utils'
 
 export const sortBy =
   <K extends string>(key: K) =>
-  <T extends Record<K, number>>(sortOrder: SortOrder) => {
+  <T extends Record<K, number>>(sortOrder: ResolvedSortOrder) => {
     if (sortOrder === 'asc') {
       return (a: T, b: T) => a[key] - b[key]
     }
@@ -70,7 +70,7 @@ export function sortByAxisTotal(
   values: string[],
   key: 'xAxis' | 'yAxis' | 'zAxis',
   points: Point3D[],
-  order: SortOrder
+  order: ResolvedSortOrder
 ): string[] {
   const totals = new Map<string, number>()
   for (const p of points) totals.set(p[key], (totals.get(p[key]) ?? 0) + p.value)

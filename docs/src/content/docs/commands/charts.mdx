@@ -46,7 +46,7 @@ Every chart subcommand accepts the common data, grouping, and metadata flags:
 | `--select` | | `""` | csv/json only: select value columns; optional rename with `{label}` and `:high`/`:low` direction |
 | `--better` | | `""` | Mark which direction is better per metric, e.g. `rps:high,latency:low` |
 | `--filter` | `-f` | `""` | Regex to include only matching rows (CSV/JSON: `--group` label) or benchmark names |
-| `--sort` | `-s` | `""` | Sort order: `asc` or `desc` |
+| `--sort` | `-s` | `""` | Sort order: `asc`, `desc`, or `best` (winner first per chart) |
 | `--swap` | | `""` | Swap n/x/y/z axis assignment, e.g. `yx`, `yxn` |
 | `--show-labels` | `-l` | `false` | Show value labels on the chart |
 | `--label-suffix` | | *(empty)* | Suffix appended to numeric values on labels, tooltips, and value-axis ticks. Global (`%`), per-column (`latency=ms,throughput=%`, exact name match), or both (`%,latency=ms`); separate with `,` or `;` |

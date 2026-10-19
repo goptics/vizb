@@ -1,5 +1,6 @@
-import type { Better, ChartData, SeriesData, Point3D, AxisLabels, SortOrder } from '@/types'
+import type { Better, ChartData, SeriesData, Point3D, AxisLabels, ResolvedSortOrder } from '@/types'
 import type { BuildContext } from './types'
+import { resolveSort } from '@/lib/sort'
 import {
   applyCanonicalOrder,
   sortSeriesByTotal,
@@ -12,7 +13,7 @@ import {
 function sortMixedTuplesByCategoryTotal(
   mixedTuples: [number, number][],
   xCategories: string[],
-  order: SortOrder
+  order: ResolvedSortOrder
 ): { mixedTuples: [number, number][]; xCategories: string[] } {
   const totals = new Map<number, number>()
   for (const [xi, y] of mixedTuples) totals.set(xi, (totals.get(xi) ?? 0) + y)
@@ -49,7 +50,9 @@ export function finalizeChart(
   },
   ctx: BuildContext
 ): ChartData {
-  const { sort, canonical, threeD, preserveRows } = ctx
+  const { canonical, threeD, preserveRows } = ctx
+  // `best` becomes asc/desc from this chart's direction before any sorting.
+  const sort = resolveSort(ctx.sort, pieces.better)
   let { yAxisValues, zAxisValues, mixedTuples, xCategories } = pieces
 
   let xAxisValues = mixedTuples

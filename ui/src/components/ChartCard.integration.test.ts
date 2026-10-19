@@ -12,7 +12,8 @@ const holder = vi.hoisted(() => ({
   arrangement: 'x/y',
   axes: undefined as { key: string; type?: string }[] | undefined,
   options: { title: { text: 'opt' } } as Record<string, unknown>,
-  sort: undefined as { enabled: boolean; order: 'asc' | 'desc' } | undefined,
+  sort: undefined as { enabled: boolean; order: 'asc' | 'desc' | 'best' } | undefined,
+  resolvedSort: undefined as { value: unknown } | undefined,
   loaders: [] as Array<() => Promise<unknown>>,
   loadingComp: null as unknown,
   errorComp: null as unknown,
@@ -125,6 +126,7 @@ vi.mock('@/composables/useChartOptions', () => ({
     // Force evaluation of computed args passed from ChartCard.
     void resolvedSort.value
     void arrangementTarget.value
+    holder.resolvedSort = resolvedSort
     return { options: optionsRef }
   },
 }))
@@ -333,6 +335,15 @@ describe('ChartCard', () => {
     chartTypeRef.value = 'line'
     await nextTick()
     expect(w.find('[data-testid="chart-stub"]').exists()).toBe(true)
+  })
+
+  it('resolves best-first sort from the chart direction', () => {
+    holder.sort = { enabled: true, order: 'best' }
+    sortRef.value = holder.sort
+    mountCard({ chartData: { ...makeGroupedChartData(), better: 'low' } })
+    expect(holder.resolvedSort?.value).toEqual({ enabled: true, order: 'asc' })
+    mountCard({ chartData: { ...makeGroupedChartData(), better: 'high' } })
+    expect(holder.resolvedSort?.value).toEqual({ enabled: true, order: 'desc' })
   })
 
   it('uses explicit sort when present', () => {

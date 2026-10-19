@@ -6,11 +6,11 @@ import type {
   Render3D,
   ScaleInput,
   ScaleType,
-  Sort,
+  ResolvedSort,
 } from '@/types'
 import type { BaseChartConfig } from '@/composables/charts/baseChartOptions'
 
-const noSort: Sort = { enabled: false, order: 'asc' }
+const noSort: ResolvedSort = { enabled: false, order: 'asc' }
 
 /** Install `window.devicePixelRatio` for node-env chart option tests. Returns cleanup. */
 export function installDevicePixelRatio(ratio = 1): () => void {
@@ -202,7 +202,7 @@ export const groupedRender3D: Render3D = {
 
 export type BaseConfigOverrides = {
   chartData?: ChartData | Ref<ChartData>
-  sort?: Sort | Ref<Sort>
+  sort?: ResolvedSort | Ref<ResolvedSort>
   showLabels?: boolean | Ref<boolean>
   isDark?: boolean | Ref<boolean>
   scale?: ScaleInput | Ref<ScaleInput>

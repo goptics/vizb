@@ -29,6 +29,7 @@ import StatsPanel from './StatsPanel.vue'
 import Badge from './Badge.vue'
 import BadgeButton from './BadgeButton.vue'
 import { betterHint } from '@/composables/charts/shared/better'
+import { resolveSort } from '@/lib/sort'
 
 // Every chart renderer (2D bar/line/pie + 3D) is loaded via defineAsyncComponent
 // so the echarts runtime stays out of the eager startup bundle: nothing in the
@@ -110,7 +111,9 @@ const is3DChart = computed(() =>
 
 // Resolved sort gets a no-op default for the worker when the active config has
 // no `sort` field set — keeps the consumer pipeline shape stable.
-const resolvedSort = computed(() => sort.value ?? { enabled: false, order: 'asc' as const })
+const resolvedSort = computed(() =>
+  resolveSort(sort.value ?? { enabled: false, order: 'asc' }, chartData.value.better)
+)
 
 // Pick the lazily-loaded renderer for the active chart shape/type. Pie has no
 // 3D form (it renders per-dimension 2D pies even for x/y/z data), so it always

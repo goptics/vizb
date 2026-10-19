@@ -4,7 +4,7 @@ import type {
   BarBackground,
   ChartData,
   LabelAffix,
-  Sort,
+  ResolvedSort,
   ChartType,
   ScaleInput,
 } from '../types'
@@ -25,7 +25,7 @@ import { is3D } from '../lib/utils'
 
 export function useChartOptions(
   chartData: Ref<ChartData>,
-  sort: Ref<Sort>,
+  sort: Ref<ResolvedSort>,
   showLabels: Ref<boolean>,
   isDark: Ref<boolean>,
   chartType: Ref<ChartType>,

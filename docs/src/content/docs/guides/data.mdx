@@ -151,6 +151,16 @@ vizb bench.txt --better='widgets/op:high'          # custom Go metric
 - In axis mode the axis prefix comes first: `--select='x:name,y:latency:low'`.
 - `--col-axis` charts mix several columns in one chart, so they show no direction.
 
+### Best-first sorting
+
+Sort order `best` puts each chart's winner first: ascending for lower-is-better charts, descending for higher-is-better and charts without a direction. One setting suits a report that mixes both:
+
+```bash
+vizb bench.txt --chart bar:sort=best   # Execution Time ascending, Throughput descending
+```
+
+In the UI it is the **Best first** option in the sort settings, and `?bar.so=best` in the URL.
+
 ## Selecting a nested array with `--json-path`
 
 The `json` parser expects a top-level array. When your rows are wrapped in an envelope — `{"data":{"results":[...]}}`, `{"runs":[{"samples":[...]}]}` — point `--json-path` at the nested array with a jq-like dot path:

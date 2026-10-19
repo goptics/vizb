@@ -9,6 +9,8 @@ import {
   createLegendSelectChangedForwarder,
   type LegendSelectChangedEvent,
 } from './charts/legendEvents'
+import { createSeriesHover } from './charts/seriesHover'
+import { ref } from 'vue'
 
 // Reached only through a dynamic import() (see ChartCard.vue), so the ScatterChart
 // module lands in its own chunk and is parsed only when a scatter chart renders.
@@ -23,6 +25,13 @@ const emit = defineEmits<{
   legendselectchanged: [e: LegendSelectChangedEvent]
 }>()
 
+const chart = ref<InstanceType<typeof VChart> | null>(null)
+const blockHover = ref(false)
+const { onMouseover, onMouseout, onGlobalout } = createSeriesHover(
+  () => chart.value?.chart,
+  (on) => (blockHover.value = on)
+)
+
 const onLegendSelectChanged = createLegendSelectChangedForwarder((event) =>
   emit('legendselectchanged', event)
 )
@@ -30,10 +39,15 @@ const onLegendSelectChanged = createLegendSelectChangedForwarder((event) =>
 
 <template>
   <VChart
+    ref="chart"
+    :class="{ 'vizb-block-hover': blockHover }"
     :option="option"
     :init-options="initOptions"
     :autoresize="true"
     :update-options="{ notMerge: false, replaceMerge: ['series', 'visualMap'] }"
     @legendselectchanged="onLegendSelectChanged"
+    @mouseover="onMouseover"
+    @mouseout="onMouseout"
+    @globalout="onGlobalout"
   />
 </template>

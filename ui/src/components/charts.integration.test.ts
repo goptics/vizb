@@ -9,7 +9,6 @@ const chartHolder = vi.hoisted(() => ({
   chart: undefined as
     | { isDisposed: () => boolean; setOption: ReturnType<typeof vi.fn> }
     | undefined,
-  dispatchAction: vi.fn(),
 }))
 vi.mock('echarts/core', () => ({ use: (...args: unknown[]) => useMock(...args) }))
 vi.mock('echarts/renderers', () => ({ CanvasRenderer: 'CanvasRenderer' }))
@@ -43,7 +42,7 @@ vi.mock('vue-echarts', () => ({
   default: defineComponent({
     name: 'VChart',
     props: ['option', 'initOptions', 'autoresize', 'updateOptions'],
-    emits: ['legendselectchanged', 'mouseover', 'mouseout'],
+    emits: ['legendselectchanged', 'mouseover', 'mouseout', 'globalout'],
     setup(props, { emit, expose }) {
       expose(chartHolder)
       return () =>
@@ -54,6 +53,7 @@ vi.mock('vue-echarts', () => ({
           onDblclick: () => emit('legendselectchanged', { selected: { A: 'yes' } }),
           onMouseenter: () => emit('mouseover', { componentType: 'series', seriesIndex: 1 }),
           onMouseleave: () => emit('mouseout', { componentType: 'series', seriesIndex: 1 }),
+          onMouseout: () => emit('globalout'),
         })
     },
   }),
@@ -167,12 +167,26 @@ describe('bar/line series hover', () => {
   it.each([
     ['bar', ChartBar],
     ['line', ChartLine],
-  ])('%s highlights the hovered block series through the chart ref', async (_, Comp) => {
-    chartHolder.dispatchAction.mockClear()
+    ['scatter', ChartScatter],
+  ])('%s highlights the series and toggles the block-hover class', async (_, Comp) => {
+    vi.useFakeTimers()
+    const inst = { dispatchAction: vi.fn() }
+    const prev = chartHolder.chart
+    chartHolder.chart = inst as unknown as typeof chartHolder.chart
     const w = mount(Comp, { props: { option: {}, initOptions: {} } })
-    await w.get('[data-testid="vchart"]').trigger('mouseenter')
-    expect(chartHolder.dispatchAction).toHaveBeenCalledWith({ type: 'highlight', seriesIndex: 1 })
-    await w.get('[data-testid="vchart"]').trigger('mouseleave')
-    expect(chartHolder.dispatchAction).toHaveBeenLastCalledWith({ type: 'downplay' })
+    const el = w.get('[data-testid="vchart"]')
+    await el.trigger('mouseenter')
+    expect(inst.dispatchAction).toHaveBeenCalledWith({ type: 'highlight', seriesIndex: 1 })
+    expect(el.classes()).toContain('vizb-block-hover')
+    await el.trigger('mouseleave')
+    vi.runAllTimers()
+    await w.vm.$nextTick()
+    expect(el.classes()).not.toContain('vizb-block-hover')
+    await el.trigger('mouseenter')
+    await el.trigger('mouseout')
+    await w.vm.$nextTick()
+    expect(el.classes()).not.toContain('vizb-block-hover')
+    chartHolder.chart = prev
+    vi.useRealTimers()
   })
 })
