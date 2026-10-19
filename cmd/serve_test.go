@@ -491,6 +491,29 @@ func (s *ServeSuite) TestConvertEndpoint() {
 	s.Equal("Comparisons", dataset["name"])
 }
 
+func (s *ServeSuite) TestConvertEndpointSortBest() {
+	handler := newRESTHandler()
+	recorder := s.apiRequest(
+		handler,
+		"/",
+		`{"input":"BenchmarkA-8 100 10 ns/op\nBenchmarkB-8 100 20 ns/op\n","charts":{"types":["bar"],"configs":[{"type":"bar","sort":{"enabled":true,"order":"best"}}]},"output":{"format":"dataset"}}`,
+		"application/json",
+		"application/json",
+	)
+	s.Equal(http.StatusOK, recorder.Code, recorder.Body.String())
+	s.Contains(recorder.Body.String(), `"order":"best"`)
+
+	recorder = s.apiRequest(
+		handler,
+		"/",
+		`{"input":"BenchmarkA-8 100 10 ns/op\n","charts":{"types":["bar"],"configs":[{"type":"bar","sort":{"enabled":true,"order":"top"}}]}}`,
+		"application/json",
+		"application/json",
+	)
+	s.Equal(http.StatusUnprocessableEntity, recorder.Code, recorder.Body.String())
+	s.Contains(recorder.Body.String(), "asc, desc, or best")
+}
+
 func (s *ServeSuite) TestConvertEndpointBetter() {
 	handler := newRESTHandler()
 

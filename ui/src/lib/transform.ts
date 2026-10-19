@@ -11,7 +11,8 @@ import type {
   SeriesData,
   Stat,
   Sort,
-  SortOrder,
+  ResolvedSort,
+  ResolvedSortOrder,
   Render3D,
   Series3DData,
   ScaleInput,
@@ -108,7 +109,7 @@ export const statsForSignature = (stats: Stat[] | undefined, signature: string):
 
 // Sort series in place by their summed value across all y, mirroring the old
 // main-thread `useSortedSeriesData`. Totals are computed once (not per compare).
-export function sortSeriesByTotal(series: SeriesData[], order: SortOrder): void {
+export function sortSeriesByTotal(series: SeriesData[], order: ResolvedSortOrder): void {
   const totals = new Map<SeriesData, number>()
   for (const s of series)
     totals.set(
@@ -436,7 +437,7 @@ function sortByAxisTotal(
   values: string[],
   key: 'xAxis' | 'yAxis' | 'zAxis',
   points: Point3D[],
-  order: SortOrder
+  order: ResolvedSortOrder
 ): string[] {
   const totals = new Map<string, number>()
   for (const p of points) totals.set(p[key], (totals.get(p[key]) ?? 0) + p.value)
@@ -514,7 +515,7 @@ const gridFromCells = (
 export function build3DRender(
   points: Point3D[],
   zAxisAll: string[],
-  sort: Sort,
+  sort: ResolvedSort,
   showLabels = false,
   scale: ScaleInput = 'linear',
   canonical?: CanonicalAxisOrders,
@@ -598,7 +599,7 @@ export const chartIsValue3DEligible = (c: ChartData): boolean => {
 // with metric height on zAxis3D (no z grouping / legend).
 export function buildValue3DRender(
   chart: ChartData,
-  sort: Sort,
+  sort: ResolvedSort,
   showLabels = false,
   scale: ScaleInput = 'linear',
   canonical?: CanonicalAxisOrders

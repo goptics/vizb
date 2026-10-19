@@ -22,6 +22,17 @@ func (s *ChartFlagSuite) TestValidateScaleValue() {
 	assert.Error(t, charts.ValidateScaleValue("type=log;axes=x"), "bags are not validated by the string enum")
 }
 
+func (s *ChartFlagSuite) TestValidateSortValue() {
+	t := s.T()
+	for _, v := range []string{"asc", "desc", "best", "BEST"} {
+		require.NoError(t, charts.ValidateSortValue(v), v)
+	}
+	err := charts.ValidateSortValue("top")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "best")
+	assert.Contains(t, charts.SortFlag.ValidSet, "best")
+}
+
 func (s *ChartFlagSuite) TestScaleFlagDescriptor() {
 	t := s.T()
 	assert.Equal(t, "scale", charts.ScaleFlag.Name)

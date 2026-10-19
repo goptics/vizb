@@ -46,7 +46,7 @@ inputs:
     description: "Group regex (-r flag)"
     default: ""
   sort:
-    description: "DEPRECATED: use 'chart' input instead (e.g. chart: 'bar:sort=asc'). Sort order: asc or desc (-s flag)"
+    description: "DEPRECATED: use 'chart' input instead (e.g. chart: 'bar:sort=asc'). Sort order: asc, desc, or best (-s flag)"
     default: ""
   filter:
     description: "Regex to include only matching rows (CSV/JSON: --group label) or benchmark names (-f flag)"

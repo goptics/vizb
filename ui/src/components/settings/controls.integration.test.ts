@@ -201,6 +201,9 @@ describe('settings controls', () => {
     expect(model.value).toEqual({ enabled: true, order: 'asc' })
     await w.get('[data-value="desc"]').trigger('click')
     expect(model.value).toEqual({ enabled: true, order: 'desc' })
+    await w.get('[data-value="best"]').trigger('click')
+    expect(model.value).toEqual({ enabled: true, order: 'best' })
+    expect(w.text()).toContain('Best first')
   })
 
   it('ScaleControl emits and ignores when disabled', async () => {

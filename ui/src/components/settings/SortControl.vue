@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { SortAsc, SortDesc } from 'lucide-vue-next'
+import { SortAsc, SortDesc, Trophy } from 'lucide-vue-next'
 import { Separator } from '../ui'
 import type { Sort, SortOrder } from '@/types'
 import SettingsToggle from '../SettingsToggle.vue'
@@ -20,6 +20,8 @@ const order = computed<SortOrder>(() => props.modelValue?.order ?? 'asc')
 const sortDirectionOptions = [
   { value: 'asc', label: 'Ascending', icon: SortAsc },
   { value: 'desc', label: 'Descending', icon: SortDesc },
+  // Per chart: ascending when lower is better, otherwise descending.
+  { value: 'best', label: 'Best first', icon: Trophy },
 ]
 
 const setEnabled = (val: boolean) => emit('update:modelValue', { enabled: val, order: order.value })
@@ -33,7 +35,7 @@ const setOrder = (val: string | number) =>
     <SettingsToggle
       id="sorting-switch"
       label="Enable sorting"
-      description="Sort your data by the selected axis."
+      description="Sort your data by the selected axis. Best first puts each chart's winner first."
       :checked="enabled"
       @update:checked="setEnabled"
     />

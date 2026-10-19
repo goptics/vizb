@@ -432,6 +432,14 @@ describe('useUrlRouter', () => {
     expect(scatter.visualMap).toBe(true)
   })
 
+  it('reads best-first sort from the URL', async () => {
+    mockWindow('?bar.so=BEST')
+    const { useUrlRouter } = await import('./useUrlRouter')
+    await useUrlRouter().initFromUrl()
+    const bar = holder.datasets!.value[0]!.settings.find((s) => s.type === 'bar') as BarConfig
+    expect(bar.sort).toEqual({ enabled: true, order: 'best' })
+  })
+
   it('applies false toggles for labels, 3d, visualMap, and horizontal', async () => {
     holder.datasets = ref([
       ds([

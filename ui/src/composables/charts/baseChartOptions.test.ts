@@ -1,6 +1,6 @@
 import { describe, it, expect, afterAll } from 'vitest'
 import { ref, type Ref } from 'vue'
-import type { ChartData, Sort } from '@/types'
+import type { ChartData, ResolvedSort } from '@/types'
 import { getBaseOptions, type BaseChartConfig } from './baseChartOptions'
 import { installDevicePixelRatio } from '@/test-utils'
 
@@ -23,7 +23,7 @@ const makeChartData = (): ChartData => ({
 // test acts as a compile-time guard for the relaxation.
 const makeMinimalConfig = (): BaseChartConfig => {
   const chartData: Ref<ChartData> = ref(makeChartData())
-  const sort: Ref<Sort> = ref({ enabled: false, order: 'asc' })
+  const sort: Ref<ResolvedSort> = ref({ enabled: false, order: 'asc' })
   const showLabels = ref(false)
   const isDark = ref(false)
   return { chartData, sort, showLabels, isDark }
@@ -41,7 +41,7 @@ describe('BaseChartConfig (relaxed scale/threeDRotate)', () => {
 
   it('getBaseOptions still works when scale/threeDRotate are provided', () => {
     const chartData: Ref<ChartData> = ref(makeChartData())
-    const sort: Ref<Sort> = ref({ enabled: false, order: 'asc' })
+    const sort: Ref<ResolvedSort> = ref({ enabled: false, order: 'asc' })
     const showLabels = ref(false)
     const isDark = ref(false)
     const scale = ref<'linear' | 'log'>('log')

@@ -17,10 +17,10 @@ var (
 	SwapFlag = flags.Flag{Name: "swap", Usage: "Swap n/x/y/z axis assignment", Kind: flags.KindString, JSONKey: "swap"}
 
 	SortFlag = flags.Flag{
-		Name: "sort", Shorthand: "s", Usage: "Sort order (asc, desc)", Kind: flags.KindString, JSONKey: "sort",
+		Name: "sort", Shorthand: "s", Usage: "Sort order (asc, desc, best)", Kind: flags.KindString, JSONKey: "sort",
 		Validate: ValidateSortValue,
 		Encode:   func(v any) any { return map[string]any{"enabled": true, "order": strings.ToLower(v.(string))} },
-		Label:    "sort order", ValidSet: []string{"asc", "desc"}, Normalizer: strings.ToLower,
+		Label:    "sort order", ValidSet: []string{"asc", "desc", "best"}, Normalizer: strings.ToLower,
 	}
 
 	// LabelsFlag's cobra flag is --show-labels (-l), but its --chart override key
@@ -211,14 +211,15 @@ func ValidateScaleValue(s string) error {
 	return fmt.Errorf("scale value %q is invalid (must be \"linear\" or \"log\")", s)
 }
 
-// ValidateSortValue reports whether s is a valid sort order (asc/desc),
-// case-insensitively.
+// ValidateSortValue reports whether s is a valid sort order (asc/desc/best),
+// case-insensitively. "best" is resolved per chart by the UI from its
+// better-direction (low → asc, high/unknown → desc).
 func ValidateSortValue(s string) error {
 	switch strings.ToLower(s) {
-	case "asc", "desc":
+	case "asc", "desc", "best":
 		return nil
 	}
-	return fmt.Errorf("sort value %q is invalid (must be \"asc\" or \"desc\")", s)
+	return fmt.Errorf("sort value %q is invalid (must be \"asc\", \"desc\", or \"best\")", s)
 }
 
 // parseBorderRadius parses a comma-separated list of 1–4 non-negative integers

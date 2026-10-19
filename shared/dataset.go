@@ -47,7 +47,7 @@ type Axis struct {
 // Sort controls sort direction for chart data.
 type Sort struct {
 	Enabled bool   `json:"enabled"`
-	Order   string `json:"order"` // "asc" or "desc"
+	Order   string `json:"order"` // "asc", "desc", or "best" (per-chart direction)
 }
 
 // ChartConfig is the tiny contract every per-chart config implements. The

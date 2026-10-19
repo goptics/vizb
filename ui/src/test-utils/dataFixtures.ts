@@ -1,9 +1,9 @@
-import type { Axis, DataPoint, Sort } from '@/types'
+import type { Axis, DataPoint, ResolvedSort } from '@/types'
 
 /** Default sort fixtures used across transform/worker/pipeline tests. */
-export const noSort: Sort = { enabled: false, order: 'asc' }
-export const ascSort: Sort = { enabled: true, order: 'asc' }
-export const descSort: Sort = { enabled: true, order: 'desc' }
+export const noSort: ResolvedSort = { enabled: false, order: 'asc' }
+export const ascSort: ResolvedSort = { enabled: true, order: 'asc' }
+export const descSort: ResolvedSort = { enabled: true, order: 'desc' }
 
 /** Minimal DataPoint row for transform / worker / pipeline suites. */
 export function dp(xAxis: string, yAxis = '', zAxis = '', type = 'val', value = 1): DataPoint {

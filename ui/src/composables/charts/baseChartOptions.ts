@@ -5,7 +5,7 @@ import type {
   BarBackground,
   ChartData,
   LabelAffix,
-  Sort,
+  ResolvedSort,
   ScaleInput,
   ChartType,
 } from '@/types'
@@ -15,7 +15,7 @@ import { is3D } from '@/lib/utils'
 
 export interface BaseChartConfig {
   chartData: Ref<ChartData>
-  sort: Ref<Sort>
+  sort: Ref<ResolvedSort>
   showLabels: Ref<boolean>
   isDark: Ref<boolean>
   // `scale` and `threeDRotate` only apply to bar/line (the chart types whose

@@ -695,7 +695,7 @@ components:
       required: [enabled, order]
       properties:
         enabled: { type: boolean }
-        order: { type: string, enum: [asc, desc] }
+        order: { type: string, enum: [asc, desc, best] }
     # LogBase is > 0 and not 1 (logarithm base). exclusiveMinimum: 0 is not
     # enough on its own because 1 is still valid.
     LogBase:

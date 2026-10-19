@@ -296,6 +296,26 @@ describe('buildChartForSignature — additional branches', () => {
   })
 })
 
+describe('buildChartForSignature — best-first sort', () => {
+  it.each([
+    ['low', ['Low', 'Mid', 'High']],
+    ['high', ['High', 'Mid', 'Low']],
+    [undefined, ['High', 'Mid', 'Low']],
+  ] as const)('better=%s puts the winner first', (better, expected) => {
+    const data: DataPoint[] = [
+      dp('Low', '', '', 'v', 1),
+      dp('High', '', '', 'v', 9),
+      dp('Mid', '', '', 'v', 5),
+    ].map((p) => ({ ...p, stats: p.stats!.map((st) => ({ ...st, better })) }))
+    const { signature, statTemplate } = listChartSignatures(data)[0]!
+    const chart = buildChartForSignature(data, signature, statTemplate, undefined, {
+      enabled: true,
+      order: 'best',
+    })
+    expect(chart.series.map((s) => s.xAxis)).toEqual(expected)
+  })
+})
+
 describe('buildChartForSignature — preserveRows 1D sort', () => {
   it.each([
     [ascSort, ['Low', 'Mid', 'High']],

@@ -1,5 +1,5 @@
 import { getNextColorFor } from '@/lib/utils'
-import type { Point3D, SortOrder } from '@/types'
+import type { Point3D, ResolvedSortOrder } from '@/types'
 import { NO_WRAP, type Wrap } from '@/lib/affix'
 import { affixedTooltipValue } from './chartConfig'
 
@@ -46,7 +46,10 @@ export function buildEdgeGraph(points: Point3D[]): {
   return { nodes, links }
 }
 
-export function sortEdgeGraphNodes(nodes: EdgeGraphNode[], order: SortOrder): EdgeGraphNode[] {
+export function sortEdgeGraphNodes(
+  nodes: EdgeGraphNode[],
+  order: ResolvedSortOrder
+): EdgeGraphNode[] {
   const multiplier = order === 'asc' ? 1 : -1
   return [...nodes].sort((a, b) => {
     if (a.total !== b.total) return multiplier * (a.total - b.total)

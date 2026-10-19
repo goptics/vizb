@@ -1,5 +1,7 @@
-export type SortOrder = 'asc' | 'desc'
-export const SORT_ORDERS: SortOrder[] = ['asc', 'desc']
+// `best` is resolved per chart from its better-direction (see lib/sort.ts).
+export type SortOrder = 'asc' | 'desc' | 'best'
+export type ResolvedSortOrder = Exclude<SortOrder, 'best'>
+export const SORT_ORDERS: SortOrder[] = ['asc', 'desc', 'best']
 
 export type StatMath =
   | 'counts'
@@ -81,6 +83,12 @@ export type DataPoint = {
 export type Sort = {
   enabled: boolean
   order: SortOrder
+}
+
+/** Sort after `best` is resolved for one chart; what comparators consume. */
+export type ResolvedSort = {
+  enabled: boolean
+  order: ResolvedSortOrder
 }
 
 // Ordered axis dimension — replaces the flat AxisLabels on Dataset.

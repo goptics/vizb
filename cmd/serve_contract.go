@@ -813,8 +813,8 @@ func validateChartConfigValues(raw json.RawMessage, path string) *apiValidationE
 			return &validationErr
 		}
 		var order string
-		if err := json.Unmarshal(orderRaw, &order); err != nil || (order != "asc" && order != "desc") {
-			validationErr := bodyValidationError(path+"/sort/order", "invalid_enum", "sort.order must be asc or desc")
+		if err := json.Unmarshal(orderRaw, &order); err != nil || (order != "asc" && order != "desc" && order != "best") {
+			validationErr := bodyValidationError(path+"/sort/order", "invalid_enum", "sort.order must be asc, desc, or best")
 			return &validationErr
 		}
 	}
