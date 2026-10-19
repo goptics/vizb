@@ -42,7 +42,7 @@ vi.mock('vue-echarts', () => ({
   default: defineComponent({
     name: 'VChart',
     props: ['option', 'initOptions', 'autoresize', 'updateOptions'],
-    emits: ['legendselectchanged', 'mouseover', 'mouseout'],
+    emits: ['legendselectchanged', 'mouseover', 'mouseout', 'globalout'],
     setup(props, { emit, expose }) {
       expose(chartHolder)
       return () =>
@@ -53,6 +53,7 @@ vi.mock('vue-echarts', () => ({
           onDblclick: () => emit('legendselectchanged', { selected: { A: 'yes' } }),
           onMouseenter: () => emit('mouseover', { componentType: 'series', seriesIndex: 1 }),
           onMouseleave: () => emit('mouseout', { componentType: 'series', seriesIndex: 1 }),
+          onMouseout: () => emit('globalout'),
         })
     },
   }),
@@ -167,23 +168,24 @@ describe('bar/line series hover', () => {
     ['bar', ChartBar],
     ['line', ChartLine],
     ['scatter', ChartScatter],
-  ])('%s drives the raw ECharts instance on block hover', async (_, Comp) => {
+  ])('%s highlights the series and toggles the block-hover class', async (_, Comp) => {
     vi.useFakeTimers()
-    const inst = {
-      dispatchAction: vi.fn(),
-      setOption: vi.fn(),
-      getOption: () => ({ tooltip: [{ trigger: 'axis' }] }),
-    }
+    const inst = { dispatchAction: vi.fn() }
     const prev = chartHolder.chart
     chartHolder.chart = inst as unknown as typeof chartHolder.chart
     const w = mount(Comp, { props: { option: {}, initOptions: {} } })
-    await w.get('[data-testid="vchart"]').trigger('mouseenter')
+    const el = w.get('[data-testid="vchart"]')
+    await el.trigger('mouseenter')
     expect(inst.dispatchAction).toHaveBeenCalledWith({ type: 'highlight', seriesIndex: 1 })
-    expect(inst.setOption).toHaveBeenLastCalledWith({ tooltip: { show: false } })
-    await w.get('[data-testid="vchart"]').trigger('mouseleave')
+    expect(el.classes()).toContain('vizb-block-hover')
+    await el.trigger('mouseleave')
     vi.runAllTimers()
-    expect(inst.dispatchAction).toHaveBeenLastCalledWith({ type: 'downplay' })
-    expect(inst.setOption).toHaveBeenLastCalledWith({ tooltip: { show: true } })
+    await w.vm.$nextTick()
+    expect(el.classes()).not.toContain('vizb-block-hover')
+    await el.trigger('mouseenter')
+    await el.trigger('mouseout')
+    await w.vm.$nextTick()
+    expect(el.classes()).not.toContain('vizb-block-hover')
     chartHolder.chart = prev
     vi.useRealTimers()
   })

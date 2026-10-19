@@ -1,47 +1,58 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { createSeriesHover } from './seriesHover'
+import { createSeriesHover, LEAVE_DELAY_MS } from './seriesHover'
 
 describe('createSeriesHover', () => {
   afterEach(() => vi.useRealTimers())
 
-  const setup = (tooltip: unknown = [{ trigger: 'axis' }]) => {
+  const setup = (hasChart = true) => {
     vi.useFakeTimers()
     const calls: Record<string, unknown>[] = []
-    const chart = {
-      dispatchAction: (p: Record<string, unknown>) => void calls.push(p),
-      setOption: (o: Record<string, unknown>) => void calls.push({ setOption: o }),
-      getOption: () => ({ tooltip }),
-    }
-    return { calls, hover: createSeriesHover(() => chart) }
+    const blockHover: boolean[] = []
+    const chart = { dispatchAction: (p: Record<string, unknown>) => void calls.push(p) }
+    const hover = createSeriesHover(
+      () => (hasChart ? chart : null),
+      (on) => blockHover.push(on)
+    )
+    return { calls, blockHover, hover }
   }
   const block = { componentType: 'series', seriesIndex: 2, dataIndex: 1 }
 
-  it('highlights the whole series and hides the group tooltip on block hover', () => {
-    const { calls, hover } = setup()
+  it('highlights the whole series and flags block hover', () => {
+    const { calls, blockHover, hover } = setup()
     hover.onMouseover(block)
-    expect(calls).toEqual([
-      { type: 'downplay' },
-      { type: 'highlight', seriesIndex: 2 },
-      { type: 'hideTip' },
-      { setOption: { tooltip: { show: false } } },
-    ])
+    expect(calls).toEqual([{ type: 'downplay' }, { type: 'highlight', seriesIndex: 2 }])
+    expect(blockHover).toEqual([true])
   })
 
-  it('restores the column highlight and tooltip after leaving', () => {
-    const { calls, hover } = setup()
+  it('restores the column highlight and clears block hover after the leave delay', () => {
+    const { calls, blockHover, hover } = setup()
     hover.onMouseover(block)
     calls.length = 0
     hover.onMouseout(block)
-    expect(calls).toEqual([]) // deferred
+    vi.advanceTimersByTime(LEAVE_DELAY_MS - 1)
+    expect(calls).toEqual([])
+    vi.advanceTimersByTime(1)
+    expect(calls).toEqual([{ type: 'downplay' }, { type: 'highlight', dataIndex: 1 }])
+    expect(blockHover).toEqual([true, false])
+  })
+
+  it('keeps block hover while crossing a gap to another bar (no tooltip flash)', () => {
+    const { calls, blockHover, hover } = setup()
+    hover.onMouseover({ componentType: 'series', seriesIndex: 0, dataIndex: 1 })
+    hover.onMouseout({ componentType: 'series', seriesIndex: 0, dataIndex: 1 })
+    vi.advanceTimersByTime(LEAVE_DELAY_MS / 2)
+    hover.onMouseover({ componentType: 'series', seriesIndex: 1, dataIndex: 1 })
     vi.runAllTimers()
+    expect(blockHover).toEqual([true, true])
     expect(calls).toEqual([
       { type: 'downplay' },
-      { type: 'highlight', dataIndex: 1 },
-      { setOption: { tooltip: { show: true } } },
+      { type: 'highlight', seriesIndex: 0 },
+      { type: 'downplay' },
+      { type: 'highlight', seriesIndex: 1 },
     ])
   })
 
-  it('treats a redraw mouseout + mouseover on the same block as staying hovered', () => {
+  it('does not re-dispatch for a redraw mouseout + mouseover on the same block', () => {
     const { calls, hover } = setup()
     hover.onMouseover(block)
     calls.length = 0
@@ -51,32 +62,22 @@ describe('createSeriesHover', () => {
     expect(calls).toEqual([])
   })
 
-  it('re-highlights when moving to a block of another series', () => {
+  it('only downplays on leave when the event has no data index', () => {
     const { calls, hover } = setup()
-    hover.onMouseover(block)
-    calls.length = 0
-    hover.onMouseout(block)
-    hover.onMouseover({ componentType: 'series', seriesIndex: 0, dataIndex: 1 })
-    vi.runAllTimers()
-    expect(calls).toEqual([{ type: 'downplay' }, { type: 'highlight', seriesIndex: 0 }])
-  })
-
-  it('keeps item tooltips (value mode) and does not restore what it never hid', () => {
-    const { calls, hover } = setup({ trigger: 'item' })
-    hover.onMouseover({ componentType: 'series', seriesIndex: 0, dataIndex: 0 })
     hover.onMouseout({ componentType: 'series', seriesIndex: 0 })
     vi.runAllTimers()
-    expect(calls).toEqual([
-      { type: 'downplay' },
-      { type: 'highlight', seriesIndex: 0 },
-      { type: 'downplay' },
-    ])
+    expect(calls).toEqual([{ type: 'downplay' }])
   })
 
-  it('treats a missing option as no axis tooltip', () => {
-    const { calls, hover } = setup(null)
-    hover.onMouseover({ componentType: 'series', seriesIndex: 0 })
-    expect(calls).toHaveLength(2)
+  it('leaving the chart cancels the pending column restore and clears highlight', () => {
+    const { calls, blockHover, hover } = setup()
+    hover.onMouseover(block)
+    hover.onMouseout(block)
+    calls.length = 0
+    hover.onGlobalout()
+    vi.runAllTimers()
+    expect(calls).toEqual([{ type: 'downplay' }])
+    expect(blockHover.at(-1)).toBe(false)
   })
 
   it('ignores non-series events and a missing chart', () => {
@@ -85,19 +86,21 @@ describe('createSeriesHover', () => {
     hover.onMouseout({ componentType: 'series' })
     vi.runAllTimers()
     expect(calls).toEqual([])
-    const none = createSeriesHover(() => null)
-    expect(() => none.onMouseover(block)).not.toThrow()
-    expect(() => none.onMouseout(block)).not.toThrow()
+    const none = setup(false)
+    expect(() => {
+      none.hover.onMouseover(block)
+      none.hover.onMouseout(block)
+      none.hover.onGlobalout()
+    }).not.toThrow()
   })
 
-  it('skips the deferred leave if the chart is gone by then', () => {
-    let chart: {
-      dispatchAction: () => void
-      setOption: () => void
-      getOption: () => object
-    } | null = { dispatchAction: vi.fn(), setOption: vi.fn(), getOption: () => ({}) }
+  it('skips the deferred restore if the chart is gone by then', () => {
     vi.useFakeTimers()
-    const hover = createSeriesHover(() => chart)
+    let chart: { dispatchAction: () => void } | null = { dispatchAction: vi.fn() }
+    const hover = createSeriesHover(
+      () => chart,
+      () => {}
+    )
     hover.onMouseout(block)
     chart = null
     expect(() => vi.runAllTimers()).not.toThrow()

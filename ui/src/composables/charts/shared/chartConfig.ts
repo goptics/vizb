@@ -771,6 +771,9 @@ export function renderDonutSvg(
  * item-trigger tooltip is hard to hit, so we trigger on the axis and pin the
  * box to a fixed height so it never jumps over the line.
  */
+/** Class on group (axis) tooltips; hidden by CSS while a single block is hovered. */
+export const GROUP_TOOLTIP_CLASS = 'vizb-group-tooltip'
+
 export function createPinnedAxisTooltip(
   isDark = false,
   wrap: Wrap = NO_WRAP
@@ -779,6 +782,7 @@ export function createPinnedAxisTooltip(
   const styling = getChartStyling(isDark)
   return {
     trigger: 'axis',
+    className: GROUP_TOOLTIP_CLASS,
     axisPointer: createLineAxisPointer(styling, theme, true),
     position: (pt: number[]) => [pt[0] ?? 0, '10%'],
     ...theme,
@@ -826,6 +830,7 @@ export function createTooltipConfig(
   if (hasXYAxis) {
     return {
       trigger: 'axis',
+      className: GROUP_TOOLTIP_CLASS,
       axisPointer:
         pointer === 'line'
           ? createLineAxisPointer(styling, theme, true)
