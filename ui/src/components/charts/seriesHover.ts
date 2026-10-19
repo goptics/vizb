@@ -5,6 +5,9 @@
 // The group (axis) tooltip describes a whole column, which is noise while a
 // single block is hovered, so it is hidden until the pointer leaves the block.
 // Item tooltips (value-mode charts) are left alone: they are the only readout.
+//
+// Talks to the raw ECharts instance: vue-echarts' own setOption is a no-op
+// unless `manual-update` is on.
 type ActionPayload = { type: string; seriesIndex?: number; dataIndex?: number }
 type Chart = {
   dispatchAction: (payload: ActionPayload) => void
@@ -24,30 +27,43 @@ export function createSeriesHover(getChart: () => Chart | null | undefined) {
   const isSeries = (e: SeriesMouseEvent) =>
     e.componentType === 'series' && typeof e.seriesIndex === 'number'
   let tooltipHidden = false
+  let hoveredSeries: number | undefined
+  // Highlighting redraws the bar under a still pointer, which zrender reports
+  // as mouseout + mouseover. Leave work waits a tick so that pair cancels out.
+  let pendingLeave: ReturnType<typeof setTimeout> | undefined
 
   return {
     onMouseover(e: SeriesMouseEvent) {
       const chart = getChart()
       if (!chart || !isSeries(e)) return
-      chart.dispatchAction({ type: 'downplay' })
-      chart.dispatchAction({ type: 'highlight', seriesIndex: e.seriesIndex })
-      if (hasAxisTooltip(chart)) {
+      clearTimeout(pendingLeave)
+      if (hoveredSeries !== e.seriesIndex) {
+        hoveredSeries = e.seriesIndex
+        chart.dispatchAction({ type: 'downplay' })
+        chart.dispatchAction({ type: 'highlight', seriesIndex: e.seriesIndex })
+      }
+      if (!tooltipHidden && hasAxisTooltip(chart)) {
         chart.dispatchAction({ type: 'hideTip' })
         chart.setOption({ tooltip: { show: false } })
         tooltipHidden = true
       }
     },
     onMouseout(e: SeriesMouseEvent) {
-      const chart = getChart()
-      if (!chart || !isSeries(e)) return
-      chart.dispatchAction({ type: 'downplay' })
-      if (typeof e.dataIndex === 'number') {
-        chart.dispatchAction({ type: 'highlight', dataIndex: e.dataIndex })
-      }
-      if (tooltipHidden) {
-        chart.setOption({ tooltip: { show: true } })
-        tooltipHidden = false
-      }
+      if (!getChart() || !isSeries(e)) return
+      clearTimeout(pendingLeave)
+      pendingLeave = setTimeout(() => {
+        const chart = getChart()
+        if (!chart) return
+        hoveredSeries = undefined
+        chart.dispatchAction({ type: 'downplay' })
+        if (typeof e.dataIndex === 'number') {
+          chart.dispatchAction({ type: 'highlight', dataIndex: e.dataIndex })
+        }
+        if (tooltipHidden) {
+          chart.setOption({ tooltip: { show: true } })
+          tooltipHidden = false
+        }
+      }, 0)
     },
   }
 }

@@ -26,7 +26,7 @@ const emit = defineEmits<{
 }>()
 
 const chart = ref<InstanceType<typeof VChart> | null>(null)
-const { onMouseover, onMouseout } = createSeriesHover(() => chart.value)
+const { onMouseover, onMouseout } = createSeriesHover(() => chart.value?.chart)
 
 const onLegendSelectChanged = createLegendSelectChangedForwarder((event) =>
   emit('legendselectchanged', event)
