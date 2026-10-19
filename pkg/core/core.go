@@ -165,10 +165,7 @@ func Convert(in ConvertInput) (ConvertResult, error) {
 	if err != nil {
 		return ConvertResult{}, err
 	}
-	var betterWarnings []string
-	for _, key := range shared.ApplyBetter(points, cfg.Better) {
-		betterWarnings = append(betterWarnings, fmt.Sprintf("better key %q matched no metric; ignoring", key))
-	}
+	betterWarnings := shared.ApplyBetter(points, cfg.Better)
 	if tabular {
 		if len(effectiveCfg.Group) == 0 {
 			points = shared.CollapseDataPointsByKey(points)

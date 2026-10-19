@@ -296,8 +296,8 @@ func prepareData(filePath, parserKey string, cfg parser.Config, titles ...string
 		_ = parseSpin.Finish()
 		shared.ExitWithError(err.Error(), nil)
 	}
-	for _, key := range shared.ApplyBetter(data, cfg.Better) {
-		cliout.Warnf("--better key %q matched no metric; ignoring", key)
+	for _, w := range shared.ApplyBetter(data, cfg.Better) {
+		cliout.Warn(w)
 	}
 
 	// CSV/JSON emit one DataPoint per row; when grouping is inactive, collapse rows

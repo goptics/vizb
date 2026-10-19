@@ -58,9 +58,8 @@ func ParseBetterFlag(raw string) ([]BetterRule, error) {
 }
 
 // ApplyBetter sets Stat.Better on every stat a rule matches, overriding
-// inferred or inline directions, and returns the keys that matched nothing.
-func ApplyBetter(data []DataPoint, rules []BetterRule) []string {
-	var unmatched []string
+// inferred or inline directions, and returns a warning per key that matched nothing.
+func ApplyBetter(data []DataPoint, rules []BetterRule) (warnings []string) {
 	for _, r := range rules {
 		hit := false
 		for i := range data {
@@ -72,10 +71,10 @@ func ApplyBetter(data []DataPoint, rules []BetterRule) []string {
 			}
 		}
 		if !hit {
-			unmatched = append(unmatched, r.Key)
+			warnings = append(warnings, fmt.Sprintf("better key %q matched no metric; ignoring", r.Key))
 		}
 	}
-	return unmatched
+	return warnings
 }
 
 // statMatchesKey matches a stat type ("Name (unit)", "Name/per", "Name") by its
