@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import type { ChartData } from '@/types'
 import type { BaseChartConfig } from './baseChartOptions'
 import { useScatterChartOptions } from './useScatterChartOptions'
+import { WINNER_MARK } from './shared/better'
 import { installDevicePixelRatio } from '@/test-utils'
 
 let restoreDpr = installDevicePixelRatio()
@@ -273,5 +274,18 @@ describe('useScatterChartOptions — group mode', () => {
       expect(s.large).toBe(false)
       expect(s.largeThreshold).toBeUndefined()
     }
+  })
+})
+
+describe('useScatterChartOptions — group trophy', () => {
+  // x1 (A 10, B 20) totals lower than x2 (15, 25).
+  it('crowns the best group on the x axis', () => {
+    const cfg = makeGroupedConfig()
+    cfg.chartData.value = { ...cfg.chartData.value, better: 'high' }
+    const axis = useScatterChartOptions(cfg).options.value.xAxis as {
+      data: string[]
+      axisLabel: { formatter: (v: string) => string }
+    }
+    expect(axis.data.map((v) => axis.axisLabel.formatter(v))).toEqual(['x1', `${WINNER_MARK} x2`])
   })
 })

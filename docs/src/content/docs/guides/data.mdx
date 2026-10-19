@@ -126,7 +126,7 @@ A column cannot be in both `--select` and `--group`. Without `--group`, `--selec
 
 ## Better direction
 
-Charts show a badge next to the title ("Lower is better" / "Higher is better") and mark the best value with ★: per category on bar charts (the best bar overall when one series is shown; hiding a series in the legend moves the ★), and the best point on single-line charts. Multi-line charts get no ★, since the crossovers already tell the story.
+Charts show a badge next to the title ("Lower is better" / "Higher is better") and mark the best value with ★: per category on bar charts (the best bar overall when one series is shown; hiding a series in the legend moves the ★), and the best point on single-line charts. Multi-line charts get no ★, since the crossovers already tell the story. On bar, line, and scatter charts with several series, 🏆 marks the best group's category label: the one whose visible bars add up to the best total. Groups missing a value are skipped. Tied groups all get it, and if every group ties, none does.
 
 Benchmark parsers set the direction automatically:
 

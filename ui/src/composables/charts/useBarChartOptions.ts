@@ -26,7 +26,7 @@ import { asLogXPairs, axisIsLog, axisLogBase, numericLogXValues, parseScale } fr
 import { affixesOf, NO_WRAP, wrapFor } from '@/lib/affix'
 import { buildValueAxes2DOptions } from './shared/valueMode'
 import { buildMixedAxes2DOptions } from './shared/mixedMode'
-import { applyBestMarker } from './shared/better'
+import { applyBestMarker, withCategoryTrophy } from './shared/better'
 
 const barNullable = (val: number | null, yLog: boolean): number | null =>
   val === null ? null : yLog && val <= 0 ? null : val
@@ -339,6 +339,17 @@ export function useBarChartOptions(config: BaseChartConfig) {
 
     const hasMultipleSeries = transposedSeries.length > 1
     const seriesTotals = computeSeriesTotals(transposedSeries)
+    // 🏆 on the best group's category label (x vertical, y horizontal). Before
+    // applyBestMarker, which turns marked points into objects.
+    const axes = xNums
+      ? groupedAxes
+      : withCategoryTrophy(
+          groupedAxes,
+          isHorizontal ? 'yAxis' : 'xAxis',
+          transposedSeries,
+          chartData.value.better,
+          visibleZ?.value ?? {}
+        )
     // After totals: marked points become {value, ...} objects.
     applyBestMarker(transposedSeries, chartData.value.better, visibleZ?.value ?? {}, markOpts)
 
@@ -371,7 +382,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
           hasMultipleSeries,
           { bottom: 0 }
         ),
-        ...groupedAxes,
+        ...axes,
         dataZoom: zoom.dataZoom,
         series: transposedSeries,
       } as EChartsOption
@@ -406,7 +417,7 @@ export function useBarChartOptions(config: BaseChartConfig) {
         hasMultipleSeries,
         showLegendTitle ? { top: 24 } : undefined
       ),
-      ...groupedAxes,
+      ...axes,
       dataZoom: zoom.dataZoom,
       series: transposedSeries,
     } as EChartsOption
