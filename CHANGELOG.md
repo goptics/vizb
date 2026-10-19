@@ -4,6 +4,20 @@ Notable changes to Vizb documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [v0.23.0] - 2026-10-19
+
+### Added
+
+- **cli / api / action** — Mark which direction of a metric is better: benchmark parsers infer it from the unit, CSV/JSON declare it with `--better key:high|low` or a `:high`/`:low` suffix in `--select` ([#493](https://github.com/goptics/vizb/pull/493))
+- **ui** — Show a "Lower/Higher is better" badge beside the chart title and a gold ★ on the best value per group ([#493](https://github.com/goptics/vizb/pull/493))
+- **cli / api / action / ui** — Add `best` sort order (`--sort best`, `sort=best`, "Best first" tab): ascending when lower is better, otherwise descending ([#494](https://github.com/goptics/vizb/pull/494))
+- **cli / api / action / ui** — Add `--step` for 2D line charts (staircase segments; wins over `smooth`), with `step` API field and "Step lines" UI toggle ([#496](https://github.com/goptics/vizb/pull/496))
+- **ui** — Prefix the best group's category label with 🏆 on 2D bar, line, and scatter charts ([#497](https://github.com/goptics/vizb/pull/497))
+
+### Changed
+
+- **ui** — Hovering a bar, line point, or scatter point highlights its whole series and shows its labels; the group tooltip shows only on group hover ([#493](https://github.com/goptics/vizb/pull/493), [#494](https://github.com/goptics/vizb/pull/494))
+
 # [v0.22.0] - 2026-10-18
 
 ### Added
