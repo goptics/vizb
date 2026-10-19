@@ -76,7 +76,10 @@ export function applyBestMarker(
   const rows = seriesList.map((s) => s.data as (number | null)[])
   const visible = seriesList.map((s) => selected[s.name ?? ''] !== false)
   const mask = bestMask(rows, better, visible)
-  const borderColor = opts.isDark ? '#ffffff' : '#111827'
+  // Gold reads as "winner"; deeper in light mode for contrast on white, and a
+  // glow keeps the outline visible on orange/yellow series bars.
+  const gold = opts.isDark ? '#fbbf24' : '#d97706'
+  const glow = opts.isDark ? 'rgba(251,191,36,0.55)' : 'rgba(217,119,6,0.45)'
 
   seriesList.forEach((s, i) => {
     const base = s.label?.formatter
@@ -84,9 +87,15 @@ export function applyBestMarker(
       mask[i]![j]
         ? {
             value: d,
-            itemStyle: { borderColor, borderWidth: 2 },
+            itemStyle: { borderColor: gold, borderWidth: 2, shadowColor: glow, shadowBlur: 8 },
             label: {
               show: true,
+              color: gold,
+              fontWeight: 'bold',
+              fontSize: 14,
+              // Dark outline keeps the gold star legible on orange/yellow bars.
+              textBorderColor: 'rgba(0,0,0,0.55)',
+              textBorderWidth: 2,
               formatter: (p: LabelParams) =>
                 opts.showLabels && base ? `${BEST_MARK} ${base(p)}` : BEST_MARK,
             },

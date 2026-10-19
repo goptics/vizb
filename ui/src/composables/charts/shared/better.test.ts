@@ -86,6 +86,9 @@ describe('applyBestMarker', () => {
     }
     expect(best.value).toBe(7)
     expect(best.label.formatter({ value: 7 })).toBe(BEST_MARK)
+    expect((best as unknown as { itemStyle: { borderColor: string } }).itemStyle.borderColor).toBe(
+      '#d97706'
+    )
     expect('emphasis' in best).toBe(false) // series b has no value formatter
     const withBase = s[0]!.data[1] as { emphasis: { label: { formatter: (p: object) => string } } }
     expect(withBase.emphasis.label.formatter({ value: 1 })).toBe(`${BEST_MARK} v1`)
@@ -116,7 +119,7 @@ describe('applyBestMarker', () => {
       itemStyle: { borderColor: string }
       label: { formatter: (p: object) => string }
     }
-    expect(best.itemStyle.borderColor).toBe('#ffffff')
+    expect(best.itemStyle.borderColor).toBe('#fbbf24')
     expect(best.label.formatter({ value: 1 })).toBe(BEST_MARK)
   })
 
