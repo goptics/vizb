@@ -74,7 +74,8 @@ var DataFlags = []flags.Flag{
 		Name: "round", Kind: flags.KindBool,
 		Usage: "Round values to 2 decimals in written output (irreversible)",
 	},
-	{Name: "select", Usage: "CSV/JSON: pick metrics or x,y[,z] coordinates (repeatable)", Kind: flags.KindStringArray},
+	{Name: "select", Usage: "CSV/JSON: pick metrics or x,y[,z] coordinates; append :high or :low to mark the better direction (repeatable)", Kind: flags.KindStringArray},
+	{Name: "better", Usage: "Mark which direction is better per metric, e.g. rps:high,latency:low (overrides inferred)", Kind: flags.KindString},
 	{
 		Name: "col-axis", Shorthand: "A", Kind: flags.KindString,
 		Usage:    "Put numeric column names on this axis (n, x, y, z)",

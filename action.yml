@@ -64,7 +64,10 @@ inputs:
     description: "Round numeric values to 2 decimal places in the output data (--round flag). Off by default."
     default: "false"
   select:
-    description: "csv/json only: select value columns; optional rename with {label} (e.g. 'price{Unit price},count') (--select flag)"
+    description: "csv/json only: select value columns; optional rename with {label} and better direction with :high/:low (e.g. 'price{Unit price}:low,count') (--select flag)"
+    default: ""
+  better:
+    description: "Mark which direction is better per metric, overriding inferred directions (e.g. 'rps:high,latency:low') (--better flag)"
     default: ""
   col-axis:
     description: "csv/json + group: place numeric column names on this axis (n, x, y, or z) so all columns share one chart (--col-axis / -A flag). Requires group; target axis must not already be used by group-pattern."

@@ -398,6 +398,9 @@ components:
           items:
             type: string
             minLength: 1
+        better:
+          type: string
+          description: Better direction per metric, e.g. "rps:high,latency:low"; overrides inferred directions. Keys match a stat's name, label, full type, or unit.
         jsonPath:
           type: string
           description: JSON-only path to a nested array.
@@ -685,6 +688,7 @@ components:
         type: { type: string }
         value: { type: number }
         symbol: { type: string }
+        better: { type: string, enum: [high, low] }
     Sort:
       type: object
       additionalProperties: false

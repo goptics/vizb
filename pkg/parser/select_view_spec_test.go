@@ -459,3 +459,46 @@ func (s *SelectViewSpecSuite) TestModeIsGrouped() {
 func TestSelectViewSpecSuite(t *testing.T) {
 	suite.Run(t, new(SelectViewSpecSuite))
 }
+
+func (s *SelectViewSpecSuite) TestParseSelectViewFlagBetterSuffix() {
+	s.Run("explicit axis keeps suffix", func() {
+		view, err := ParseSelectViewFlag("x:name,y:latency:low")
+		s.Require().NoError(err)
+		s.Require().Len(view.Columns, 2)
+		s.Equal("latency", view.Columns[1].Source)
+		s.Equal("y", view.Columns[1].AxisKey)
+		s.Equal("low", view.Columns[1].Better)
+	})
+	s.Run("axis prefix wins over bare direction", func() {
+		view, err := ParseSelectViewFlag("x:low,y:v")
+		s.Require().NoError(err)
+		s.Equal("low", view.Columns[0].Source)
+		s.Equal("x", view.Columns[0].AxisKey)
+		s.Empty(view.Columns[0].Better)
+	})
+	s.Run("implicit placement", func() {
+		view, err := ParseSelectViewFlag("name,rps{Req/s}:high")
+		s.Require().NoError(err)
+		s.Equal("rps", view.Columns[1].Source)
+		s.Equal("high", view.Columns[1].Better)
+	})
+}
+
+func (s *SelectViewSpecSuite) TestAppendMultiSelectStatPointCarriesBetter() {
+	views := []SelectView{
+		{Columns: []ColumnSpec{{Source: "name"}, {Source: "rps", Better: "high"}}},
+		{Columns: []ColumnSpec{{Source: "name"}, {Source: "lat"}}},
+	}
+	read := func(SelectView) (MultiSelectRowStat, bool) { return MultiSelectRowStat{DimVal: "a", Value: 1}, true }
+	for _, merge := range []bool{true, false} {
+		var results []shared.DataPoint
+		AppendMultiSelectStatPoint(&results, views, "", false, merge, read)
+		var got []string
+		for _, dp := range results {
+			for _, st := range dp.Stats {
+				got = append(got, st.Better)
+			}
+		}
+		s.Equal([]string{"high", ""}, got, "merge=%v", merge)
+	}
+}

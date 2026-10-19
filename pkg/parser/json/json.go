@@ -70,6 +70,8 @@ func ParseJSON(input io.Reader, cfg parser.Config) ([]shared.DataPoint, parser.C
 	return points, effectiveCfg, nil, err
 }
 
+// parseReader parses a top-level JSON array into data points; logAuto prints
+// auto-detection notices.
 func parseReader(input io.Reader, cfg parser.Config, logAuto bool) ([]shared.DataPoint, parser.Config, error) {
 	var err error
 	cfg, err = parser.FinalizeGroupConfig(cfg)
@@ -198,8 +200,9 @@ func parseReader(input io.Reader, cfg parser.Config, logAuto bool) ([]shared.Dat
 				label = l
 			}
 			stats = append(stats, shared.Stat{
-				Type:  utils.CreateStatType(label, cfg.NumberUnit, ""),
-				Value: shared.F64(utils.FormatNumber(num, cfg.NumberUnit, cfg.Round)),
+				Type:   utils.CreateStatType(label, cfg.NumberUnit, ""),
+				Value:  shared.F64(utils.FormatNumber(num, cfg.NumberUnit, cfg.Round)),
+				Better: cfg.SelectBetter(k),
 			})
 		}
 

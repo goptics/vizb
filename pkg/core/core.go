@@ -165,6 +165,7 @@ func Convert(in ConvertInput) (ConvertResult, error) {
 	if err != nil {
 		return ConvertResult{}, err
 	}
+	betterWarnings := shared.ApplyBetter(points, cfg.Better)
 	if tabular {
 		if len(effectiveCfg.Group) == 0 {
 			points = shared.CollapseDataPointsByKey(points)
@@ -204,7 +205,7 @@ func Convert(in ConvertInput) (ConvertResult, error) {
 	if err != nil {
 		return ConvertResult{}, err
 	}
-	return ConvertResult{Dataset: dataset, Warnings: warnings}, nil
+	return ConvertResult{Dataset: dataset, Warnings: append(betterWarnings, warnings...)}, nil
 }
 
 // ApplyColAxis expands grouped multi-column stats onto a free axis and applies

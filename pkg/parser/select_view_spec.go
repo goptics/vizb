@@ -327,8 +327,9 @@ func AppendMultiSelectStatPoint(
 				dp.XAxis = row.DimVal
 			}
 			dp.Stats = append(dp.Stats, shared.Stat{
-				Type:  utils.CreateStatType(SelectStatType(view), numberUnit, ""),
-				Value: shared.F64(utils.FormatNumber(row.Value, numberUnit, round)),
+				Type:   utils.CreateStatType(SelectStatType(view), numberUnit, ""),
+				Value:  shared.F64(utils.FormatNumber(row.Value, numberUnit, round)),
+				Better: viewBetter(view),
 			})
 		}
 		if len(dp.Stats) > 0 {
@@ -345,11 +346,20 @@ func AppendMultiSelectStatPoint(
 		*results = append(*results, shared.DataPoint{
 			XAxis: row.DimVal,
 			Stats: []shared.Stat{{
-				Type:  utils.CreateStatType(SelectStatType(view), numberUnit, ""),
-				Value: shared.F64(utils.FormatNumber(row.Value, numberUnit, round)),
+				Type:   utils.CreateStatType(SelectStatType(view), numberUnit, ""),
+				Value:  shared.F64(utils.FormatNumber(row.Value, numberUnit, round)),
+				Better: viewBetter(view),
 			}},
 		})
 	}
+}
+
+// viewBetter is the direction of a solo view's metric (second) column.
+func viewBetter(view SelectView) string {
+	if len(view.Columns) < 2 {
+		return ""
+	}
+	return view.Columns[1].Better
 }
 
 // MultiSelectStatAxes returns dataset axes for multi-stat solo --select (category x only).

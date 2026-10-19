@@ -13,6 +13,7 @@ type Stat struct {
 	Type   string   `json:"type,omitempty"`
 	Value  *float64 `json:"value,omitempty"`
 	Symbol string   `json:"symbol,omitempty"`
+	Better string   `json:"better,omitempty"` // BetterHigh, BetterLow, or "" when unknown
 }
 
 // F64 returns a pointer to f, used when setting Stat.Value so that zero

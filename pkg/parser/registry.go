@@ -24,17 +24,28 @@ type Config struct {
 	MemUnit         string
 	TimeUnit        string
 	NumberUnit      string
-	Round           bool         // when true, Format* rounds values to 2 decimals in output data
-	Select          []ColumnSpec // grouped mode: numeric stat columns
-	SelectViews     []SelectView // solo axis mode: one entry per --select occurrence
-	Axes            []ColumnSpec // auto-value mode: numeric cols placed on x,y[,z]
-	MetricColumn    string       // auto-value: 4th numeric col → visualMap metric
-	JSONPath        string       // json only: jq-like dot path to the nested array to chart
-	AutoGroup       bool         // csv/json: infer group columns when no explicit grouping is configured
-	ChartTypes      []string     // csv/json auto-value eligibility check (scatter/bar/line only)
-	Mode            Mode         // resolved once in ParseConfig so downstream switches on cfg.Mode
-	ColAxis         string       // csv/json: place numeric column names on this axis (n/x/y/z); empty = one chart per column
-	QuietAutoDetect bool         // suppress csv/json auto-detection notices for request-scoped callers
+	Round           bool                // when true, Format* rounds values to 2 decimals in output data
+	Select          []ColumnSpec        // grouped mode: numeric stat columns
+	SelectViews     []SelectView        // solo axis mode: one entry per --select occurrence
+	Axes            []ColumnSpec        // auto-value mode: numeric cols placed on x,y[,z]
+	MetricColumn    string              // auto-value: 4th numeric col → visualMap metric
+	JSONPath        string              // json only: jq-like dot path to the nested array to chart
+	AutoGroup       bool                // csv/json: infer group columns when no explicit grouping is configured
+	ChartTypes      []string            // csv/json auto-value eligibility check (scatter/bar/line only)
+	Mode            Mode                // resolved once in ParseConfig so downstream switches on cfg.Mode
+	ColAxis         string              // csv/json: place numeric column names on this axis (n/x/y/z); empty = one chart per column
+	QuietAutoDetect bool                // suppress csv/json auto-detection notices for request-scoped callers
+	Better          []shared.BetterRule // --better: applied to stats after parsing
+}
+
+// SelectBetter returns the inline :high/:low direction of a grouped --select column.
+func (c Config) SelectBetter(source string) string {
+	for _, spec := range c.Select {
+		if spec.Source == source {
+			return spec.Better
+		}
+	}
+	return ""
 }
 
 // Mode is the resolved parse mode for a Config. Set once in ParseConfig so

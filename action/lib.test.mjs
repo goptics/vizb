@@ -56,6 +56,7 @@ describe('buildConvertArgs', () => {
     numberUnit: '',
     round: false,
     select: '',
+    better: '',
     colAxis: '',
     jsonPath: '',
     stat: '',
@@ -103,6 +104,11 @@ describe('buildConvertArgs', () => {
     assert.ok(args.includes('-c') && args.includes('bar'))
     assert.ok(args.includes('--chart') && args.includes('bar:scale=log'))
     assert.ok(args.includes('--stat'))
+  })
+
+  it('forwards better', () => {
+    const args = buildConvertArgs({ ...base, better: 'rps:high' })
+    assert.ok(args.includes('--better') && args.includes('rps:high'))
   })
 
   it('forwards font-size', () => {
@@ -403,6 +409,7 @@ describe('runPipeline', () => {
       numberUnit: '',
       round: false,
       select: '',
+      better: '',
       colAxis: '',
       jsonPath: '',
       stat: '',

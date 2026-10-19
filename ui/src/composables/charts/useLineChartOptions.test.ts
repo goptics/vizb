@@ -102,6 +102,29 @@ const tooltipOf = (options: { tooltip?: unknown }) =>
   }
 
 describe('useLineChartOptions — simple 1D', () => {
+  it('stars the best point of a single line', () => {
+    const { options } = useLineChartOptions({
+      chartData: ref({
+        title: 'ns',
+        statType: 'ns',
+        better: 'low' as const,
+        yAxis: [],
+        zAxis: [],
+        series: [
+          { xAxis: 'v1', values: [30], benchmarkId: 'a' },
+          { xAxis: 'v2', values: [10], benchmarkId: 'b' },
+          { xAxis: 'v3', values: [20], benchmarkId: 'c' },
+        ],
+        points: [],
+      }),
+      sort: ref({ enabled: false, order: 'asc' as const }),
+      showLabels: ref(false),
+      isDark: ref(false),
+    })
+    const [line] = options.value.series as { data: unknown[] }[]
+    expect(line!.data.map((d) => typeof d)).toEqual(['number', 'object', 'number'])
+  })
+
   it('skips the legend top band when there is no legend', () => {
     const { options } = useLineChartOptions({
       chartData: ref({
@@ -187,6 +210,19 @@ describe('useLineChartOptions — simple 1D', () => {
 })
 
 describe('useLineChartOptions — grouped mode', () => {
+  it('does not star points on multi-line charts', () => {
+    const cfg = makeGroupedConfig()
+    cfg.chartData.value = { ...cfg.chartData.value, better: 'low' }
+    const series = useLineChartOptions(cfg).options.value.series as { data: unknown[] }[]
+    expect(series.every((s) => s.data.every((d) => typeof d === 'number'))).toBe(true)
+  })
+
+  it('reveals values on hover when labels are off', () => {
+    const { options } = useLineChartOptions(makeGroupedConfig())
+    const series = options.value.series as { emphasis?: { label: { show: boolean } } }[]
+    expect(series.every((s) => s.emphasis?.label.show)).toBe(true)
+  })
+
   it('uses a compact pixel legend band, not the category % top', () => {
     const { options } = useLineChartOptions(makeGroupedConfig())
     const grid = options.value.grid as {

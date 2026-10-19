@@ -56,6 +56,7 @@ export function resolveInputs(env = process.env) {
     numberUnit: input('number-unit'),
     round: input('round') === 'true',
     select: input('select'),
+    better: input('better'),
     colAxis: input('col-axis'),
     jsonPath: input('json-path'),
     stat: input('stat'),
@@ -160,6 +161,7 @@ export function buildConvertArgs(inputs) {
   if (inputs.numberUnit) args.push('-N', inputs.numberUnit)
   if (inputs.round) args.push('--round')
   if (inputs.select) args.push('--select', inputs.select)
+  if (inputs.better) args.push('--better', inputs.better)
   if (inputs.colAxis) args.push('--col-axis', inputs.colAxis)
   if (inputs.jsonPath) args.push('--json-path', inputs.jsonPath)
   if (inputs.showLabels) args.push('-l')

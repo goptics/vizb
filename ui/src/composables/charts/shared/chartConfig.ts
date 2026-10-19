@@ -997,6 +997,11 @@ export function createGridConfig(
   }
 }
 
+/** With labels off, reveal values on hover: axis hover highlights a column,
+ * block hover highlights its whole series (components/charts/seriesHover.ts). */
+export const hoverLabelEmphasis = (showLabels: boolean) =>
+  showLabels ? {} : { emphasis: { focus: 'series' as const, label: { show: true } } }
+
 export const createLabelConfig = (
   showLabels: boolean,
   styling: ChartStyling,

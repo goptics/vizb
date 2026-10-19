@@ -34,6 +34,17 @@ function build(data: DataPoint[]) {
 const valuesFor = (data: DataPoint[], xAxis: string) =>
   build(data).series.find((s) => s.xAxis === xAxis)!.values
 
+describe('ChartData.better', () => {
+  it('carries the stat direction and omits it when unknown', () => {
+    const withDir: DataPoint[] = [
+      { xAxis: 'a', yAxis: '1', stats: [{ type: 'ns', value: 1, better: 'low' }] },
+    ]
+    expect(build(withDir).better).toBe('low')
+    const without: DataPoint[] = [{ xAxis: 'a', yAxis: '1', stats: [{ type: 'ns', value: 1 }] }]
+    expect('better' in build(without)).toBe(false)
+  })
+})
+
 // ---------------------------------------------------------------------------
 // listChartSignatures
 // ---------------------------------------------------------------------------

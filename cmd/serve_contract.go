@@ -42,6 +42,7 @@ type statisticsOptions struct {
 	Math    []string `json:"math"`
 }
 
+// UnmarshalJSON strictly decodes /statistics, rejecting nulls and unknown fields.
 func (o *statisticsOptions) UnmarshalJSON(data []byte) error {
 	if err := rejectNullFields(data, "/statistics", map[string]string{
 		"enabled": "/statistics/enabled", "math": "/statistics/math",
@@ -70,6 +71,7 @@ type convertRequest struct {
 	Units       *unitOptions       `json:"units"`
 	Round       bool               `json:"round"`
 	Select      []string           `json:"select"`
+	Better      string             `json:"better"`
 	JSONPath    string             `json:"jsonPath"`
 	Charts      chartSelection     `json:"charts"`
 	Output      *convertOutput     `json:"output"`
@@ -100,11 +102,13 @@ type convertOutput struct {
 	Format *string `json:"format"`
 }
 
+// UnmarshalJSON strictly decodes a convert request, rejecting nulls and
+// unknown fields with JSON-pointer paths.
 func (r *convertRequest) UnmarshalJSON(data []byte) error {
 	if err := rejectNullFields(data, "/", map[string]string{
 		"id": "/id", "name": "/name", "title": "/title", "appearance": "/appearance",
 		"description": "/description", "tag": "/tag", "parser": "/parser", "grouping": "/grouping",
-		"units": "/units", "round": "/round", "select": "/select", "jsonPath": "/jsonPath",
+		"units": "/units", "round": "/round", "select": "/select", "better": "/better", "jsonPath": "/jsonPath",
 		"charts": "/charts", "output": "/output",
 	}); err != nil {
 		return err
@@ -523,6 +527,8 @@ func styleThemesToShared(themes []style.Theme) []shared.Theme {
 	return out
 }
 
+// buildParserConfig maps a REST convert request onto parser.Config, returning a
+// body validation error for invalid grouping, select, or better values.
 func buildParserConfig(request convertRequest, key string) (parser.Config, *apiValidationError) {
 	cfg := parser.Config{GroupPattern: "x", MemUnit: "B", TimeUnit: "ns", JSONPath: request.JSONPath}
 	if request.Grouping != nil {
@@ -596,6 +602,10 @@ func buildParserConfig(request convertRequest, key string) (parser.Config, *apiV
 	}
 	if validationErr := applySelectOptions(&cfg, request.Select); validationErr != nil {
 		return cfg, validationErr
+	}
+	if cfg.Better, err = shared.ParseBetterFlag(request.Better); err != nil {
+		validationErr := bodyValidationError("/better", "invalid_better", err.Error())
+		return cfg, &validationErr
 	}
 	cfg.Mode = parser.ResolveMode(cfg)
 	return cfg, nil

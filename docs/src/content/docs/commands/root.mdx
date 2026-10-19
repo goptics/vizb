@@ -85,7 +85,8 @@ See the [Parser Guide](/guides/parsers) for each parser's metrics, and the
 | `--group-pattern` | `-p` | `x` | Pattern-based grouping (`n`/`x`/`y`/`z` with your chosen separators; `z` → 3D). Benchmarks: `/` or `_`. CSV/JSON: match `-g` (commas for `-g a,b,c`, spaces for quoted `-g "a b"`, etc.) |
 | `--group-regex` | `-r` | `""` | Regex-based grouping (named captures) |
 | `--group` | `-g` | `""` | Names dimensions in `--group-pattern` order. csv/json: column/field names (separators must match `-p`); benchmark parsers: human-readable axis labels |
-| `--select` | | *(repeatable)* | csv/json only: see [`--select` mode matrix](#--select-mode-matrix) below |
+| `--select` | | *(repeatable)* | csv/json only: see [`--select` mode matrix](#--select-mode-matrix) below. Append `:high` / `:low` to a column to mark its [better direction](/guides/data#better-direction) |
+| `--better` | | `""` | Mark which direction is better per metric, e.g. `rps:high,latency:low`; overrides inferred directions. See [Better direction](/guides/data#better-direction) |
 | `--json-path` | | `""` | json only: select a nested array to chart via a jq-like dot path (e.g. `--json-path '.data.results'`) |
 | `--sort` | `-s` | `""` | **Deprecated on root:** use `--chart <type>:sort=<asc\|desc>`. Sort order: `asc` or `desc` (default: as-is) |
 | `--charts` | `-c` | `bar,line,pie` | Chart types to generate (`bar`, `line`, `scatter`, `pie`, `heatmap`, `radar`, `sankey`, `chord`) |

@@ -9,6 +9,8 @@ import {
   createLegendSelectChangedForwarder,
   type LegendSelectChangedEvent,
 } from './charts/legendEvents'
+import { createSeriesHover } from './charts/seriesHover'
+import { ref } from 'vue'
 
 // Reached only through a dynamic import() (see ChartCard.vue), so the BarChart
 // module lands in its own chunk and is parsed only when a bar chart renders.
@@ -23,6 +25,9 @@ const emit = defineEmits<{
   legendselectchanged: [e: LegendSelectChangedEvent]
 }>()
 
+const chart = ref<InstanceType<typeof VChart> | null>(null)
+const { onMouseover, onMouseout } = createSeriesHover(() => chart.value)
+
 const onLegendSelectChanged = createLegendSelectChangedForwarder((event) =>
   emit('legendselectchanged', event)
 )
@@ -30,9 +35,12 @@ const onLegendSelectChanged = createLegendSelectChangedForwarder((event) =>
 
 <template>
   <VChart
+    ref="chart"
     :option="option"
     :init-options="initOptions"
     :autoresize="true"
     @legendselectchanged="onLegendSelectChanged"
+    @mouseover="onMouseover"
+    @mouseout="onMouseout"
   />
 </template>

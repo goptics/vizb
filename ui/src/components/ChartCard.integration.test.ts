@@ -199,6 +199,19 @@ describe('ChartCard', () => {
     expect(w.text()).toMatch(/Total/)
   })
 
+  it('shows the better-direction hint only when known', () => {
+    const chartData = {
+      ...makeGroupedChartData({ title: 'Latency' }),
+      better: 'low' as const,
+    }
+    const w = mountCard({ chartData })
+    expect(w.get('h3').text()).toBe('Latency')
+    expect(w.get('[data-testid="better-hint"]').text()).toBe('Lower is better')
+    const high = mountCard({ chartData: { ...chartData, better: 'high' } })
+    expect(high.get('[data-testid="better-hint"]').text()).toBe('Higher is better')
+    expect(mountCard({ title: 'Latency' }).find('[data-testid="better-hint"]').exists()).toBe(false)
+  })
+
   it('shows skeleton overlay while loading', () => {
     const w = mountCard({ loading: true })
     expect(w.find('.absolute.animate-pulse').exists()).toBe(true)
