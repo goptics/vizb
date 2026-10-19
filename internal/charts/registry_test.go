@@ -74,6 +74,21 @@ func (s *RegistrySuite) TestSmoothFlagIsLineOnly() {
 	}
 }
 
+func (s *RegistrySuite) TestStepFlagIsLineOnly() {
+	flagNames := func(chartType string) map[string]bool {
+		out := map[string]bool{}
+		for _, f := range charts.FlagsFor(chartType) {
+			out[f.EffectiveKey()] = true
+		}
+		return out
+	}
+
+	s.True(flagNames("line")["step"])
+	for _, chartType := range []string{"bar", "scatter", "pie", "heatmap", "radar", "sankey", "chord"} {
+		s.False(flagNames(chartType)["step"], "%s should not register step", chartType)
+	}
+}
+
 func (s *RegistrySuite) TestDonutFlagIsPieOnly() {
 	flagNames := func(chartType string) map[string]bool {
 		out := map[string]bool{}

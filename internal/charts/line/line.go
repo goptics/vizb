@@ -23,6 +23,7 @@ type Config struct {
 	Symbol          string             `json:"symbol,omitempty"`
 	SymbolSize      *float64           `json:"symbolSize,omitempty"`
 	Smooth          *bool              `json:"smooth,omitempty"`
+	Step            *bool              `json:"step,omitempty"`
 	ThreeDRotate    *bool              `json:"threeDRotate,omitempty"`
 	ThreeD          *bool              `json:"threeD,omitempty"`
 	ThreeDVisualMap *bool              `json:"threeDVisualMap,omitempty"`

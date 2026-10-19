@@ -99,7 +99,8 @@ export function buildValueAxes2DOptions(
   const largeX = isLargeXAxis(data.map((_, i) => String(i)))
 
   const useVisualMap = chartType === 'scatter' && config.visualMap?.value === true
-  const smoothLines = chartType === 'line' && config.smooth?.value === true
+  const stepLines = chartType === 'line' && config.step?.value === true
+  const smoothLines = chartType === 'line' && config.smooth?.value === true && !stepLines
   const hasColorDim = tuples.some((t) => t[2] !== undefined)
   const colorDimension = (hasColorDim ? 2 : 1) as 1 | 2
   const colorValues = sorted
@@ -126,7 +127,13 @@ export function buildValueAxes2DOptions(
     ...(chartType === 'scatter'
       ? scatterSeriesLargeOpts(useVisualMap)
       : { large: true as const, largeThreshold: LARGE_DATA_THRESHOLD }),
-    ...(chartType === 'line' ? { smooth: smoothLines, showAllSymbol: true as const } : {}),
+    ...(chartType === 'line'
+      ? {
+          smooth: smoothLines,
+          ...(stepLines ? { step: 'end' as const } : {}),
+          showAllSymbol: true as const,
+        }
+      : {}),
     ...(useVisualMap ? {} : { itemStyle: { color: getNextColorFor(chartData.value.title) } }),
     ...seriesSymbol(chartType, largeX, config.symbol?.value, config.symbolSize?.value),
   }

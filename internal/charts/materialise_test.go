@@ -128,6 +128,13 @@ func (s *MaterialiseSuite) TestLineSmoothSeed() {
 	s.True(*got.Smooth)
 }
 
+func (s *MaterialiseSuite) TestLineStepSeed() {
+	seed := map[string]any{"step": true}
+	got := s.materialise("line", seed, nil).(*linechart.Config)
+	s.Require().NotNil(got.Step)
+	s.True(*got.Step)
+}
+
 func (s *MaterialiseSuite) TestPieDonutSeed() {
 	seed := map[string]any{"donut": true}
 	got := s.materialise("pie", seed, nil).(*piechart.Config)

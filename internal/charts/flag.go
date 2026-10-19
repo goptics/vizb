@@ -106,6 +106,13 @@ var (
 		Usage:   "Smooth curved line segments",
 		Kind:    flags.KindBool,
 		JSONKey: "smooth",
+		Rule:    []flags.RuleFn{SmoothIgnoredWithStep()},
+	}
+	StepFlag = flags.Flag{
+		Name:    "step",
+		Usage:   "Step (staircase) line segments; overrides --smooth",
+		Kind:    flags.KindBool,
+		JSONKey: "step",
 	}
 	DonutFlag = flags.Flag{
 		Name:    "donut",

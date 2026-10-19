@@ -12,7 +12,7 @@ func init() {
 	charts.Register(charts.Spec{Type: "line", Factory: linechart.New})
 	charts.SetFlags("line", append(slices.Clone(charts.BaseChartFlags),
 		charts.ScaleFlag, charts.StackFlag, charts.ThreeDFlag, charts.ThreeDRotateFlag, charts.ThreeDVisualMapFlag,
-		charts.SymbolFlag, charts.SymbolSizeFlag, charts.SmoothFlag,
+		charts.SymbolFlag, charts.SymbolSizeFlag, charts.SmoothFlag, charts.StepFlag,
 	))
 	cli.SetChartMeta(cli.ChartMeta{
 		Type:  "line",

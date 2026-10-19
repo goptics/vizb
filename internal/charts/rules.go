@@ -146,6 +146,21 @@ func StackRequiresLinearScale() flags.RuleFn {
 	}
 }
 
+// SmoothIgnoredWithStep returns a rule that Skips smooth when step is also on:
+// a stepped line cannot curve, so step wins.
+func SmoothIgnoredWithStep() flags.RuleFn {
+	return func(ctx any) (flags.Outcome, string) {
+		rc, ok := ctx.(RuleContext)
+		if !ok {
+			return flags.Fatal, "internal: expected charts.RuleContext"
+		}
+		if smooth, _ := rc.Value.(bool); smooth && rc.Config["step"] == true {
+			return flags.Skip, "ignored when step is set"
+		}
+		return flags.Keep, ""
+	}
+}
+
 // Requires3DMode returns a rule that Skips the flag when no z-axis is present.
 // Both explicit z-axis data and auto-enabled value-mode xyz add a z axis to
 // the runtime axes, so a single z-axis check covers both cases.

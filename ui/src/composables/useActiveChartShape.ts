@@ -91,6 +91,10 @@ export function useActiveChartShape() {
     () => (activeConfig.value as LineConfig | undefined)?.smooth ?? false
   )
 
+  const step = computed<boolean>(
+    () => (activeConfig.value as LineConfig | undefined)?.step ?? false
+  )
+
   const horizontal = computed<boolean>(
     () => (activeConfig.value as BarConfig | undefined)?.horizontal ?? false
   )
@@ -126,6 +130,7 @@ export function useActiveChartShape() {
     symbol,
     symbolSize,
     smooth,
+    step,
     horizontal,
     donut,
     borderRadius,

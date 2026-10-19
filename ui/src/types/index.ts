@@ -163,6 +163,7 @@ export type LineConfig = {
   symbol?: string
   symbolSize?: number
   smooth?: boolean
+  step?: boolean
   threeDRotate?: boolean
   threeD?: boolean
   threeDVisualMap?: boolean

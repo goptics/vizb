@@ -60,6 +60,17 @@ describe('useCategorySeriesChartOptions — line', () => {
     expect(series.every((s) => s.smooth === true)).toBe(true)
   })
 
+  it('step wins over smooth on grouped and x-only lines', () => {
+    for (const chartData of [makeGroupedChartData(), xOnly()]) {
+      const { options } = useCategorySeriesChartOptions(
+        baseConfig({ chartData, smooth: true, step: true }),
+        'line'
+      )
+      const series = options.value.series as { smooth?: boolean; step?: string }[]
+      expect(series.every((s) => s.step === 'end' && s.smooth === false)).toBe(true)
+    }
+  })
+
   it('builds single-series x-only line with pinned tooltip', () => {
     const { options } = useCategorySeriesChartOptions(
       baseConfig({ chartData: xOnly(), showLabels: true }),

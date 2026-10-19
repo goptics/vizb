@@ -808,6 +808,7 @@ components:
           $ref: '#/components/schemas/SeriesSymbol'
         symbolSize: { type: number, exclusiveMinimum: 0 }
         smooth: { type: boolean }
+        step: { type: boolean }
         threeDRotate: { type: boolean }
         threeD: { type: boolean }
         threeDVisualMap: { type: boolean }

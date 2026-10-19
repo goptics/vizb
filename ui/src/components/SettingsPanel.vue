@@ -40,6 +40,7 @@ const {
   setStack,
   setShowLabels,
   setSmooth,
+  setStep,
   setHorizontal,
   setDonut,
   setThreeDRotate,
@@ -59,7 +60,7 @@ const {
   chartMode,
 } = useDataPoint()
 
-const { hasZOnChart, hasThreeDOption, threeD, stack, horizontal } = useActiveChartShape()
+const { hasZOnChart, hasThreeDOption, threeD, stack, horizontal, step } = useActiveChartShape()
 
 const CHART_ICONS: Record<ChartType, Component> = {
   bar: BarChart3,
@@ -103,6 +104,7 @@ const fieldGroups = computed(() => {
     hasThreeDOption: hasThreeDOption.value,
     hasZAxis: hasZOnChart.value,
     chartMode: chartMode.value,
+    step: step.value,
   })
   return partitionRenderableFields(fields)
 })
@@ -132,6 +134,7 @@ const handlers = {
   stack: setStack,
   showLabels: setShowLabels,
   smooth: setSmooth,
+  step: setStep,
   horizontal: setHorizontal,
   donut: setDonut,
   threeDRotate: setThreeDRotate,
