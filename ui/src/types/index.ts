@@ -67,7 +67,6 @@ export type Stat = {
   value?: number
   unit?: string
   per?: string
-  symbol?: string
   better?: Better
 }
 

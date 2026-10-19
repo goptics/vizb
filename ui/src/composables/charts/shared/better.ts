@@ -23,7 +23,7 @@ const finite = (v: number | null | undefined): v is number =>
 export function bestMask(
   rows: (number | null | undefined)[][],
   better: Better,
-  visible: boolean[] = rows.map(() => true)
+  visible: boolean[]
 ): boolean[][] {
   const mask = rows.map((r) => r.map(() => false))
   const pick = (vals: number[]) => (better === 'low' ? Math.min(...vals) : Math.max(...vals))
@@ -101,11 +101,9 @@ export function applyBestMarker(
                 opts.showLabels && base ? `${BEST_MARK} ${base(p)}` : BEST_MARK,
             },
             // Hover labels (labels off) still show the value next to the star.
-            ...(base
-              ? {
-                  emphasis: { label: { formatter: (p: LabelParams) => `${BEST_MARK} ${base(p)}` } },
-                }
-              : {}),
+            emphasis: {
+              label: { formatter: (p: LabelParams) => `${BEST_MARK} ${base?.(p) ?? p.value}` },
+            },
           }
         : d
     )

@@ -70,13 +70,13 @@ func (s *BetterSuite) TestApplyBetter() {
 
 	s.Run("matches base name, unit, full type and label case-insensitively", func() {
 		d := data()
-		unmatched := ApplyBetter(d, []BetterRule{
+		warnings := ApplyBetter(d, []BetterRule{
 			{Key: "execution time", Dir: BetterHigh},
 			{Key: "widgets/op", Dir: BetterHigh},
 			{Key: "allocations/op", Dir: BetterHigh},
 			{Key: "req/s", Dir: BetterLow},
 		})
-		s.Empty(unmatched)
+		s.Empty(warnings)
 		got := []string{}
 		for _, st := range d[0].Stats {
 			got = append(got, st.Better)
@@ -86,12 +86,12 @@ func (s *BetterSuite) TestApplyBetter() {
 
 	s.Run("unit match is whole-unit", func() {
 		d := data()
-		unmatched := ApplyBetter(d, []BetterRule{{Key: "op", Dir: BetterHigh}})
-		s.Equal([]string{"op"}, unmatched)
+		warnings := ApplyBetter(d, []BetterRule{{Key: "op", Dir: BetterHigh}})
+		s.Equal([]string{`better key "op" matched no metric; ignoring`}, warnings)
 		s.Equal(BetterLow, d[0].Stats[0].Better)
 	})
 
-	s.Run("reports unmatched keys", func() {
-		s.Equal([]string{"nosuch"}, ApplyBetter(data(), []BetterRule{{Key: "nosuch", Dir: BetterLow}}))
+	s.Run("warns per unmatched key", func() {
+		s.Equal([]string{`better key "nosuch" matched no metric; ignoring`}, ApplyBetter(data(), []BetterRule{{Key: "nosuch", Dir: BetterLow}}))
 	})
 }

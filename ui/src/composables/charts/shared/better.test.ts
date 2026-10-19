@@ -18,7 +18,8 @@ describe('bestMask', () => {
           [7, 2],
           [12, 3],
         ],
-        'low'
+        'low',
+        [true, true, true]
       )
     ).toEqual([
       [false, true],
@@ -28,7 +29,7 @@ describe('bestMask', () => {
   })
 
   it('marks the highest and keeps ties', () => {
-    expect(bestMask([[5], [5], [1]], 'high')).toEqual([[true], [true], [false]])
+    expect(bestMask([[5], [5], [1]], 'high', [true, true, true])).toEqual([[true], [true], [false]])
   })
 
   it('ignores hidden rows and nulls', () => {
@@ -37,11 +38,11 @@ describe('bestMask', () => {
       [false],
       [true],
     ])
-    expect(bestMask([[null], [3]], 'low')).toEqual([[false], [false]])
+    expect(bestMask([[null], [3]], 'low', [true, true])).toEqual([[false], [false]])
   })
 
   it('compares categories when only one row is visible', () => {
-    expect(bestMask([[4, 2, 9]], 'low')).toEqual([[false, true, false]])
+    expect(bestMask([[4, 2, 9]], 'low', [true])).toEqual([[false, true, false]])
     expect(
       bestMask(
         [
@@ -58,8 +59,8 @@ describe('bestMask', () => {
   })
 
   it('marks nothing without competition', () => {
-    expect(bestMask([[4]], 'low')).toEqual([[false]])
-    expect(bestMask([], 'low')).toEqual([])
+    expect(bestMask([[4]], 'low', [true])).toEqual([[false]])
+    expect(bestMask([], 'low', [])).toEqual([])
   })
 })
 
@@ -89,7 +90,9 @@ describe('applyBestMarker', () => {
     expect((best as unknown as { itemStyle: { borderColor: string } }).itemStyle.borderColor).toBe(
       '#d97706'
     )
-    expect('emphasis' in best).toBe(false) // series b has no value formatter
+    // series b has no value formatter: hover label falls back to the raw value
+    const hoverB = best as unknown as { emphasis: { label: { formatter: (p: object) => string } } }
+    expect(hoverB.emphasis.label.formatter({ value: 7 })).toBe(`${BEST_MARK} 7`)
     const withBase = s[0]!.data[1] as { emphasis: { label: { formatter: (p: object) => string } } }
     expect(withBase.emphasis.label.formatter({ value: 1 })).toBe(`${BEST_MARK} v1`)
   })
