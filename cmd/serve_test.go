@@ -1207,7 +1207,7 @@ func (s *ServeSuite) TestUIEndpointAddsAnUnselectedOverrideType() {
 			return "<html>ok</html>", nil
 		})
 	})
-	body := `{"datasets":` + validDatasetJSON + `,"charts":{"configs":[{"type":"line","smooth":true}]}}`
+	body := `{"datasets":` + validDatasetJSON + `,"charts":{"configs":[{"type":"line","smooth":true,"step":true}]}}`
 	recorder := s.apiRequest(handler, "/ui", body, "application/json", "text/html")
 	s.Equal(http.StatusOK, recorder.Code, recorder.Body.String())
 }

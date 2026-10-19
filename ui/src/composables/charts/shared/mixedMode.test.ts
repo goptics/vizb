@@ -126,6 +126,7 @@ function series0(option: ReturnType<typeof buildMixedAxes2DOptions>) {
     type: string
     data: unknown
     smooth?: boolean
+    step?: string
     large?: boolean
     symbol?: string
     symbolSize?: number
@@ -221,6 +222,13 @@ describe('buildMixedAxes2DOptions', () => {
     expect(series0(line).smooth).toBe(true)
     expect(series0(line).symbolSize).toBe(7)
     expect(series0(line).showAllSymbol).toBe(true)
+  })
+
+  it('step wins over smooth on line series', () => {
+    const line = buildMixedAxes2DOptions(cfg({ smooth: true, step: true }), 'line')
+    expect(series0(line).step).toBe('end')
+    expect(series0(line).smooth).toBe(false)
+    expect(series0(buildMixedAxes2DOptions(cfg(), 'line')).step).toBeUndefined()
   })
 
   it('uses large symbols and dataZoom when categories exceed threshold', () => {

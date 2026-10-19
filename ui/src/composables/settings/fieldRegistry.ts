@@ -14,6 +14,7 @@ export type SettingFieldValueMap = {
   showLabels: boolean
   donut: boolean
   smooth: boolean
+  step: boolean
   horizontal: boolean
   threeDRotate: boolean
   threeD: boolean
@@ -86,6 +87,16 @@ export const fieldRegistry: Record<SettingFieldKey, FieldMeta> = {
     label: 'Smooth lines',
     description: 'Render curved segments between line chart points.',
     separator: true,
+    // Step wins over smooth, so hide the curve toggle while step is on.
+    visible: (ctx) => ctx.rendering3D !== true && ctx.step !== true,
+  },
+  step: {
+    component: BooleanControl,
+    appliesTo: ['line'],
+    id: 'step-lines-switch',
+    label: 'Step lines',
+    description: 'Render line chart points as a staircase. Overrides smooth lines.',
+    separator: true,
     visible: (ctx) => ctx.rendering3D !== true,
   },
   horizontal: {
@@ -152,6 +163,8 @@ export type RenderContext = {
   /** z mapped to chart zAxis in the active swap (not raw-data z presence). */
   hasZAxis?: boolean
   chartMode?: 'grouped' | 'value' | 'mixed'
+  /** Active line config has step on (hides smooth). */
+  step?: boolean
 }
 
 export function getRenderableFields(

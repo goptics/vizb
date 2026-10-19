@@ -79,13 +79,16 @@ const makeGroupedChartData = (): ChartData => ({
   axisLabels: { x: 'month', y: 'region' },
 })
 
-const makeGroupedConfig = (opts: { smooth?: boolean; stack?: boolean } = {}): BaseChartConfig => ({
+const makeGroupedConfig = (
+  opts: { smooth?: boolean; step?: boolean; stack?: boolean } = {}
+): BaseChartConfig => ({
   chartData: ref(makeGroupedChartData()),
   sort: ref({ enabled: false, order: 'asc' }),
   showLabels: ref(false),
   isDark: ref(false),
   scale: ref<ScaleInput>('linear'),
   smooth: ref(opts.smooth ?? false),
+  step: ref(opts.step ?? false),
   stack: ref(opts.stack ?? false),
 })
 
@@ -492,5 +495,12 @@ describe('useLineChartOptions — grouped mode', () => {
     const series = options.value.series as { smooth?: boolean }[]
     expect(series).toHaveLength(2)
     expect(series.every((s) => s.smooth === true)).toBe(true)
+  })
+
+  it('emits step on every grouped line series when enabled', () => {
+    const { options } = useLineChartOptions(makeGroupedConfig({ step: true }))
+    const series = options.value.series as { step?: string }[]
+    expect(series).toHaveLength(2)
+    expect(series.every((s) => s.step === 'end')).toBe(true)
   })
 })

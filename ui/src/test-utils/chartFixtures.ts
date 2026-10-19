@@ -110,6 +110,7 @@ export function makeNumericStepConfig(
     isDark: ref(false),
     scale: ref(scale),
     smooth: ref(false),
+    step: ref(false),
     stack: ref(false),
   }
 }
@@ -212,6 +213,7 @@ export type BaseConfigOverrides = {
   threeDVisualMap?: boolean | Ref<boolean>
   visualMap?: boolean | Ref<boolean>
   smooth?: boolean | Ref<boolean>
+  step?: boolean | Ref<boolean>
   horizontal?: boolean | Ref<boolean>
   donut?: boolean | Ref<boolean>
   visibleZ?: Record<string, boolean> | Ref<Record<string, boolean>>
@@ -243,6 +245,7 @@ export function baseConfig(overrides: BaseConfigOverrides = {}): BaseChartConfig
     threeDVisualMap: asRef(overrides.threeDVisualMap, false),
     visualMap: asRef(overrides.visualMap, false),
     smooth: asRef(overrides.smooth, false),
+    step: asRef(overrides.step, false),
     horizontal: asRef(overrides.horizontal, false),
     donut: asRef(overrides.donut, false),
     visibleZ: asRef(overrides.visibleZ, {}),

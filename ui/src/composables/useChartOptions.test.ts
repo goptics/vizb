@@ -53,6 +53,7 @@ function dispatch(
     ref(undefined),
     ref(undefined),
     cfg.smooth ?? ref(false),
+    cfg.step ?? ref(false),
     cfg.horizontal ?? ref(false),
     cfg.donut ?? ref(false),
     cfg.borderRadius ?? ref(undefined),

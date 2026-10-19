@@ -134,6 +134,7 @@ describe('useActiveChartShape', () => {
           symbol: 'diamond',
           symbolSize: 12,
           smooth: true,
+          step: true,
         },
         {
           type: 'scatter' as ChartType,
@@ -159,6 +160,7 @@ describe('useActiveChartShape', () => {
     expect(shape.symbol.value).toBe('diamond')
     expect(shape.symbolSize.value).toBe(12)
     expect(shape.smooth.value).toBe(true)
+    expect(shape.step.value).toBe(true)
     expect(shape.horizontal.value).toBe(false)
     expect(shape.borderRadius.value).toBeUndefined()
     expect(shape.background.value).toBeUndefined()
@@ -169,6 +171,7 @@ describe('useActiveChartShape', () => {
     expect(shape.symbol.value).toBe('circle')
     expect(shape.symbolSize.value).toBe(8)
     expect(shape.smooth.value).toBe(false)
+    expect(shape.step.value).toBe(false)
     expect(shape.borderRadius.value).toBeUndefined()
     expect(shape.background.value).toBeUndefined()
 
@@ -223,6 +226,7 @@ describe('useActiveChartShape', () => {
     expect(shape.threeDVisualMap.value).toBe(false)
     expect(shape.visualMap.value).toBe(false)
     expect(shape.smooth.value).toBe(false)
+    expect(shape.step.value).toBe(false)
     expect(shape.horizontal.value).toBe(false)
     expect(shape.donut.value).toBe(false)
     expect(shape.borderRadius.value).toBeUndefined()

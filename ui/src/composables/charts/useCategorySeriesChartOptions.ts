@@ -130,7 +130,9 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
       config.symbolSize?.value
     )
     const useVisualMap = kind === 'scatter' && visualMap?.value === true
-    const smoothLines = kind === 'line' && config.smooth?.value === true
+    const stepLines = kind === 'line' && config.step?.value === true
+    const smoothLines = kind === 'line' && config.smooth?.value === true && !stepLines
+    const stepOpt = stepLines ? { step: 'end' as const } : {}
     const useStack = kind === 'line' && stack?.value === true && yScale !== 'log'
     const markOpts = { isDark: isDark.value, showLabels: showLabels.value }
 
@@ -150,7 +152,9 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
           ? scatterSeriesLargeOpts(useVisualMap)
           : { large: true as const, largeThreshold: LARGE_DATA_THRESHOLD }),
         ...(style.connectNulls ? { connectNulls: true } : {}),
-        ...(kind === 'line' ? { smooth: smoothLines, showAllSymbol: true as const } : {}),
+        ...(kind === 'line'
+          ? { smooth: smoothLines, ...stepOpt, showAllSymbol: true as const }
+          : {}),
         ...(kind === 'line' ? hoverLabelEmphasis(showLabels.value) : {}),
         ...(useVisualMap ? {} : { itemStyle: { color: getNextColorFor(chartData.value.title) } }),
         ...seriesExtras,
@@ -207,6 +211,7 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
       ...(kind === 'line'
         ? {
             smooth: smoothLines,
+            ...stepOpt,
             stack: useStack ? 'total' : null,
             areaStyle: useStack ? {} : null,
             showAllSymbol: true as const,

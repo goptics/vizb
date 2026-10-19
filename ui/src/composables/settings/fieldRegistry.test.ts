@@ -21,6 +21,7 @@ const BOOLEAN_KEYS = [
   'showLabels',
   'donut',
   'smooth',
+  'step',
   'horizontal',
   'threeD',
   'threeDVisualMap',
@@ -29,7 +30,7 @@ const BOOLEAN_KEYS = [
 ] as const
 
 describe('fieldRegistry', () => {
-  it('exposes the twelve known field controls', () => {
+  it('exposes the thirteen known field controls', () => {
     expect(Object.keys(fieldRegistry).sort()).toEqual(
       [
         'donut',
@@ -39,6 +40,7 @@ describe('fieldRegistry', () => {
         'stack',
         'showLabels',
         'smooth',
+        'step',
         'sort',
         'swap',
         'threeD',
@@ -78,6 +80,11 @@ describe('fieldRegistry', () => {
       id: 'smooth-lines-switch',
       separator: true,
     })
+    expect(fieldRegistry.step).toMatchObject({
+      id: 'step-lines-switch',
+      label: 'Step lines',
+      separator: true,
+    })
     expect(fieldRegistry.horizontal).toMatchObject({
       id: 'horizontal-bars-switch',
       separator: true,
@@ -112,6 +119,14 @@ describe('fieldRegistry', () => {
     expect(fieldRegistry['smooth']!.appliesTo).toEqual(['line'])
     expect(fieldRegistry['smooth']!.visible?.({ rendering3D: false })).toBe(true)
     expect(fieldRegistry['smooth']!.visible?.({ rendering3D: true })).toBe(false)
+  })
+
+  it('step applies only to 2D line charts and hides smooth while on', () => {
+    expect(fieldRegistry['step']!.appliesTo).toEqual(['line'])
+    expect(fieldRegistry['step']!.visible?.({ rendering3D: false })).toBe(true)
+    expect(fieldRegistry['step']!.visible?.({ rendering3D: true })).toBe(false)
+    expect(fieldRegistry['step']!.visible?.({ rendering3D: false, step: true })).toBe(true)
+    expect(fieldRegistry['smooth']!.visible?.({ rendering3D: false, step: true })).toBe(false)
   })
 
   it('donut applies only to pie charts', () => {
@@ -237,7 +252,7 @@ describe('getRenderableFields', () => {
     const cfg: LineConfig = { type: 'line' }
     expect(
       getRenderableFields(cfg, { dimension: '2D', rendering3D: false }).map((f) => f.key)
-    ).toEqual(['sort', 'scale', 'stack', 'showLabels', 'smooth', 'swap'])
+    ).toEqual(['sort', 'scale', 'stack', 'showLabels', 'smooth', 'step', 'swap'])
   })
 
   it('hides stack in value and mixed transform modes', () => {

@@ -81,6 +81,7 @@ function seriesOf(option: ReturnType<typeof buildValueAxes2DOptions>) {
     type: string
     data: unknown
     smooth?: boolean
+    step?: string
     large?: boolean
     largeThreshold?: number
     symbol?: string
@@ -269,6 +270,13 @@ describe('buildValueAxes2DOptions', () => {
 
     const line = buildValueAxes2DOptions(cfg({ smooth: true }), 'line')
     expect(seriesOf(line).smooth).toBe(true)
+  })
+
+  it('step wins over smooth on line series', () => {
+    const line = buildValueAxes2DOptions(cfg({ smooth: true, step: true }), 'line')
+    expect(seriesOf(line).step).toBe('end')
+    expect(seriesOf(line).smooth).toBe(false)
+    expect(seriesOf(buildValueAxes2DOptions(cfg(), 'line')).step).toBeUndefined()
   })
 
   it('formats labels for number, null, and undefined y', () => {

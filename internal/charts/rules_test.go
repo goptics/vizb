@@ -124,6 +124,39 @@ func (s *RulesSuite) TestExcludesAxes_PanicsOnEmptyKeys() {
 	})
 }
 
+// --- SmoothIgnoredWithStep ---
+
+func (s *RulesSuite) TestSmoothIgnoredWithStep() {
+	rule := charts.SmoothIgnoredWithStep()
+	cases := []struct {
+		name   string
+		smooth any
+		config map[string]any
+		want   flags.Outcome
+	}{
+		{"smooth alone kept", true, map[string]any{}, flags.Keep},
+		{"step off kept", true, map[string]any{"step": false}, flags.Keep},
+		{"smooth off with step kept", false, map[string]any{"step": true}, flags.Keep},
+		{"smooth with step skipped", true, map[string]any{"step": true}, flags.Skip},
+	}
+	for _, tc := range cases {
+		s.Run(tc.name, func() {
+			out, msg := rule(charts.RuleContext{Value: tc.smooth, Config: tc.config})
+			s.Equal(tc.want, out)
+			if tc.want == flags.Skip {
+				s.Contains(msg, "step")
+			} else {
+				s.Empty(msg)
+			}
+		})
+	}
+}
+
+func (s *RulesSuite) TestSmoothIgnoredWithStep_FatalOnWrongContext() {
+	out, _ := charts.SmoothIgnoredWithStep()("not a context")
+	s.Equal(flags.Fatal, out)
+}
+
 // --- StackRequiresLinearScale ---
 
 func (s *RulesSuite) TestStackRequiresLinearScale_KeepWhenLinear() {

@@ -134,7 +134,8 @@ export function buildMixedAxes2DOptions(
     : scaleMixedTuples(tuples, yScale)
   const largeX = isLargeXAxis(xCategories)
   const useVisualMap = chartType === 'scatter' && visualMap?.value === true
-  const smoothLines = chartType === 'line' && config.smooth?.value === true
+  const stepLines = chartType === 'line' && config.step?.value === true
+  const smoothLines = chartType === 'line' && config.smooth?.value === true && !stepLines
   const colorValues = tuples.map(([, y]) => y).filter((v) => isFinite(v))
   const color = getNextColorFor(chartData.value.title)
   const affixes = affixesOf(config)
@@ -171,6 +172,7 @@ export function buildMixedAxes2DOptions(
             large: true,
             largeThreshold: LARGE_DATA_THRESHOLD,
             smooth: smoothLines,
+            ...(stepLines ? { step: 'end' as const } : {}),
             showAllSymbol: true as const,
             ...resolveSeriesSymbol(
               defaultLineSymbol,

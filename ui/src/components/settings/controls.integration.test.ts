@@ -302,6 +302,7 @@ describe('settings controls', () => {
     'showLabels',
     'donut',
     'smooth',
+    'step',
     'horizontal',
     'threeD',
     'threeDRotate',

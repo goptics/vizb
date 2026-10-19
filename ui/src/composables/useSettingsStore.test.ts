@@ -219,6 +219,24 @@ describe('useSettingsStore', () => {
     expect((activeConfig.value as { smooth?: boolean } | undefined)?.smooth).toBeUndefined()
   })
 
+  it('setStep writes only to line configs', async () => {
+    holder.ref = ref(
+      ds([
+        { type: 'line', sort: { enabled: false, order: 'asc' } },
+        { type: 'bar', sort: { enabled: false, order: 'asc' } },
+      ])
+    )
+    const { useSettingsStore } = await import('./useSettingsStore')
+    const { activeConfig, setActiveChartIndex, setStep } = useSettingsStore()
+
+    setStep(true)
+    expect((activeConfig.value as { step?: boolean } | undefined)?.step).toBe(true)
+
+    setActiveChartIndex(1)
+    setStep(true)
+    expect((activeConfig.value as { step?: boolean } | undefined)?.step).toBeUndefined()
+  })
+
   it('setDonut writes only to pie configs', async () => {
     holder.ref = ref(
       ds([

@@ -142,6 +142,7 @@ export function useSettingsStore() {
     patchActive(stack ? { stack, scale: applyScaleType(currentScale(), 'linear') } : { stack })
   const setShowLabels = (show: boolean) => patchActive({ showLabels: show })
   const setSmooth = (smooth: boolean) => patchActive({ smooth }, (cfg) => cfg.type === 'line')
+  const setStep = (step: boolean) => patchActive({ step }, (cfg) => cfg.type === 'line')
   const setHorizontal = (horizontal: boolean) =>
     patchActive({ horizontal }, (cfg) => cfg.type === 'bar')
   const setDonut = (donut: boolean) => patchActive({ donut }, (cfg) => cfg.type === 'pie')
@@ -165,6 +166,7 @@ export function useSettingsStore() {
     setStack,
     setShowLabels,
     setSmooth,
+    setStep,
     setHorizontal,
     setDonut,
     setThreeDRotate,

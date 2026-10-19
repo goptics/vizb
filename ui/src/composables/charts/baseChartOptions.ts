@@ -36,6 +36,8 @@ export interface BaseChartConfig {
   symbolSize?: Ref<number | undefined>
   /** 2D line-only curve toggle. Ignored by 3D renderers. */
   smooth?: Ref<boolean>
+  /** 2D line-only staircase toggle; wins over smooth. Ignored by 3D renderers. */
+  step?: Ref<boolean>
   /** 2D bar horizontal orientation. When true, bars grow rightward. */
   horizontal?: Ref<boolean>
   /** Pie hole toggle. Missing/false is a filled pie; true cuts a donut hole. */
