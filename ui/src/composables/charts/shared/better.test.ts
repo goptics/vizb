@@ -3,8 +3,8 @@ import { applyBestMarker, bestMask, betterHint, BEST_MARK } from './better'
 
 describe('betterHint', () => {
   it('describes each direction and is empty when unknown', () => {
-    expect(betterHint('low')).toBe('↓ lower is better')
-    expect(betterHint('high')).toBe('↑ higher is better')
+    expect(betterHint('low')).toBe('Lower is better')
+    expect(betterHint('high')).toBe('Higher is better')
     expect(betterHint(undefined)).toBe('')
   })
 })

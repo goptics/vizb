@@ -11,7 +11,7 @@ import {
   type Component,
 } from 'vue'
 import type { EChartsOption } from 'echarts'
-import { Sigma } from 'lucide-vue-next'
+import { ArrowDownWideNarrow, ArrowUpWideNarrow, Sigma } from 'lucide-vue-next'
 import { useChartOptions } from '../composables/useChartOptions'
 import type { ChartData, ChartType } from '../types'
 import { useSettingsStore } from '../composables/useSettingsStore'
@@ -132,6 +132,9 @@ const ActiveChart = computed<Component>(() => {
 // tooltip/label sums reflect only the visible z series.
 const visibleZ = ref<Record<string, boolean>>({})
 const hint = computed(() => betterHint(chartData.value.better))
+const hintIcon = computed(() =>
+  chartData.value.better === 'high' ? ArrowUpWideNarrow : ArrowDownWideNarrow
+)
 function onLegendSelectChanged(e: { selected: Record<string, boolean> }) {
   visibleZ.value = { ...e.selected }
 }
@@ -235,10 +238,20 @@ watch(
     :class="{ 'fixed inset-0 z-50 rounded-none': isFullscreen }"
   >
     <div class="mb-2 flex items-center justify-between gap-2">
-      <h3 class="text-lg font-semibold text-card-foreground">
-        {{ chartData.title }}
-        <span v-if="hint" class="ml-2 text-xs font-normal text-muted-foreground">{{ hint }}</span>
-      </h3>
+      <div class="flex min-w-0 flex-wrap items-center gap-2">
+        <h3 class="text-lg font-semibold text-card-foreground">
+          {{ chartData.title }}
+        </h3>
+        <span
+          v-if="hint"
+          data-testid="better-hint"
+          :title="`${hint}; ★ marks the best value`"
+          class="inline-flex items-center gap-1 rounded-full bg-[hsl(var(--primary)/0.1)] px-2 py-0.5 text-xs font-medium text-primary ring-1 ring-inset ring-[hsl(var(--primary)/0.25)]"
+        >
+          <component :is="hintIcon" class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          {{ hint }}
+        </span>
+      </div>
       <div class="flex flex-wrap items-center justify-end gap-1.5">
         <Badge :label="chartData.axisLabels?.x || 'Series'" :value="String(xAxisBadgeCount)" />
         <Badge :label="chartData.axisLabels?.y || 'Y-axis'" :value="String(yAxisBadgeCount)" />

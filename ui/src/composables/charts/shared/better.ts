@@ -5,8 +5,8 @@ export const BEST_MARK = '★'
 
 /** Human hint for a metric direction; empty when unknown. */
 export function betterHint(better?: Better): string {
-  if (better === 'low') return '↓ lower is better'
-  if (better === 'high') return '↑ higher is better'
+  if (better === 'low') return 'Lower is better'
+  if (better === 'high') return 'Higher is better'
   return ''
 }
 

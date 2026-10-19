@@ -204,8 +204,12 @@ describe('ChartCard', () => {
       ...makeGroupedChartData({ title: 'Latency' }),
       better: 'low' as const,
     }
-    expect(mountCard({ chartData }).get('h3').text()).toBe('Latency ↓ lower is better')
-    expect(mountCard({ title: 'Latency' }).get('h3').text()).toBe('Latency')
+    const w = mountCard({ chartData })
+    expect(w.get('h3').text()).toBe('Latency')
+    expect(w.get('[data-testid="better-hint"]').text()).toBe('Lower is better')
+    const high = mountCard({ chartData: { ...chartData, better: 'high' } })
+    expect(high.get('[data-testid="better-hint"]').text()).toBe('Higher is better')
+    expect(mountCard({ title: 'Latency' }).find('[data-testid="better-hint"]').exists()).toBe(false)
   })
 
   it('shows skeleton overlay while loading', () => {
