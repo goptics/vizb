@@ -51,17 +51,18 @@ The action:
 | `group` | `""` | Column/field names merged into the group name; forwarded as `-g` (accepts space- or comma-separated, e.g. `name category region` or `name,category/region`); parsed by `-p`/`-r`. |
 | `group-pattern` | `"x"` | Group pattern (`-p` flag). |
 | `group-regex` | `""` | Group regex (`-r` flag). |
-| `sort` | `""` | **Deprecated:** use `chart` input instead (e.g. `chart: 'bar:sort=asc'`). Sort order: `asc` or `desc` (`-s` flag). |
+| `sort` | `""` | **Deprecated:** use `chart` input instead (e.g. `chart: 'bar:sort=asc'`). Sort order: `asc`, `desc`, or `best` (`-s` flag). |
 | `filter` | `""` | Regex to include only matching rows (CSV/JSON: `--group` label) or benchmark names (`-f` flag). |
 | `mem-unit` | `"B"` | Memory unit: `b`, `B`, `KB`, `MB`, `GB` (`-M` flag). |
 | `time-unit` | `"ns"` | Time unit: `ns`, `us`, `ms`, `s` (`-T` flag). |
 | `number-unit` | `""` | Number unit: `K`, `M`, `B`, `T` (`-N` flag). |
 | `round` | `"false"` | Round numeric values to 2 decimal places in the output data (`--round` flag). |
-| `select` | `""` | **csv/json only:** select value columns; optional rename with `{label}` (e.g. `price{Unit price},count`) (`--select` flag). |
+| `select` | `""` | **csv/json only:** select value columns; optional rename with `{label}` and better direction with `:high`/`:low` (e.g. `price{Unit price}:low,count`) (`--select` flag). |
+| `better` | `""` | Mark which direction is better per metric, overriding inferred directions (e.g. `rps:high,latency:low`) (`--better` flag). |
 | `col-axis` | `""` | **csv/json + group:** place numeric column names on this axis (`n`, `x`, `y`, or `z`) so all columns share one chart (`--col-axis` / `-A` flag). Requires group; target axis must not already be used by `group-pattern`. |
 | `json-path` | `""` | **json only:** select a nested array to chart via a jq-like dot path (e.g. `.data.results`) (`--json-path` flag). |
 | `stat` | `""` | Enable stats panel (`--stat` flag). Empty = disabled; `all` or `true` = all categories; otherwise comma-separated from: `counts`, `center`, `spread`, `extremes`, `shape`, `percentiles`, `confidence`, `correlations`. |
-| `chart` | `""` | Per-chart overrides (`--chart` flag, repeatable). One override per line: `<type>:<props>`. Keys include `swap`, `sort`, `scale`, `stack`, `labels`, `3d-rotate`, `3d`, `symbol`, `symbol-size`, `smooth`, `horizontal`, `border-radius`, `bg`, `stat`. Comma separates single-value props; for multi-value props (e.g. `stat=center,spread`) use semicolon between props or put the multi-value prop alone. Object props use `{field=value;field=value}` (semicolons inside braces; commas stay literal) — e.g. `bar:bg`, `bar:bg={color=rgba(180, 180, 180, 0.2);borderColor=#000}`. Unwrapped `bar:bg=color=…` is invalid. Blank lines and `#`-prefixed lines are ignored. |
+| `chart` | `""` | Per-chart overrides (`--chart` flag, repeatable). One override per line: `<type>:<props>`. Keys include `swap`, `sort`, `scale`, `stack`, `labels`, `3d-rotate`, `3d`, `symbol`, `symbol-size`, `smooth`, `step`, `horizontal`, `border-radius`, `bg`, `stat`. Comma separates single-value props; for multi-value props (e.g. `stat=center,spread`) use semicolon between props or put the multi-value prop alone. Object props use `{field=value;field=value}` (semicolons inside braces; commas stay literal) — e.g. `bar:bg`, `bar:bg={color=rgba(180, 180, 180, 0.2);borderColor=#000}`. Unwrapped `bar:bg=color=…` is invalid. Blank lines and `#`-prefixed lines are ignored. |
 | `charts` | `"bar,line,pie"` | Chart types to generate (`-c` flag): `bar`, `line`, `scatter`, `pie`, `heatmap`, `radar`, `sankey`, `chord`. |
 | `parser` | `"auto"` | Parser to use: `csv`, `json`, `go`, `js:tinybench`, `js:vitest`, `rs:criterion`, `rs:divan` (`-P` flag). |
 | `font-size` | `""` | Chart text size (`--font-size`). A number sets series, legend, and axis ticks; or `series=16;legend=10;label=12` bag. |
@@ -248,7 +249,7 @@ Styled object form — `{field=value;field=value}` (semicolons inside braces; co
     output-html: pages/index.html
 ```
 
-Available override keys: `swap`, `sort`, `scale`, `stack`, `labels`, `3d-rotate`, `3d`, `symbol`, `symbol-size`, `smooth`, `horizontal`, `border-radius`, `bg`, `stat`.
+Available override keys: `swap`, `sort`, `scale`, `stack`, `labels`, `3d-rotate`, `3d`, `symbol`, `symbol-size`, `smooth`, `step`, `horizontal`, `border-radius`, `bg`, `stat`.
 
 ## Stats Panel
 

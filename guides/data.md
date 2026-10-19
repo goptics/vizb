@@ -122,6 +122,43 @@ vizb sales.csv --select="price{USD}",count   # quote names with , { or }
 
 A column cannot be in both `--select` and `--group`. Without `--group`, `--select` switches to solo coordinate-axes mode (value / mixed / multi-stat) — see [Select](/guides/select) for the full reference, and [Group vs Select](/guides/group-vs-select) for when to use each.
 
+## Better direction
+
+Charts show a badge next to the title ("Lower is better" / "Higher is better") and mark the best value with ★: per category on bar charts (the best bar overall when one series is shown; hiding a series in the legend moves the ★), and the best point on single-line charts. Multi-line charts get no ★, since the crossovers already tell the story. On bar, line, and scatter charts with several series, 🏆 marks the best group's category label: the one whose visible bars add up to the best total. Groups missing a value are skipped. Tied groups all get it, and if every group ties, none does.
+
+Benchmark parsers set the direction automatically:
+
+| Parser | Lower is better | Higher is better | No direction |
+|--------|-----------------|------------------|--------------|
+| Go | `ns/op`, `B/op`, `allocs/op` | `MB/s` and any `*/s` unit | other custom metrics, Iterations |
+| Rust (criterion, divan) | Latency | | Samples |
+| JavaScript (tinybench, vitest) | Latency, RME, MAD | Throughput (`ops/s`) | Samples |
+
+CSV/JSON columns have no direction until you set one, either inline in `--select` or with `--better`:
+
+```bash
+vizb data.csv -g name --select='rps{Req/s}:high,latency:low'
+vizb data.csv -g name --better='Req/s:high,latency:low'
+vizb bench.txt --better='widgets/op:high'          # custom Go metric
+```
+
+- `--better` keys match a metric's displayed name (column name or its `{label}`), its full chart title, or its unit (`ns/op`, `req/s`). Matching ignores case and compares the whole string.
+- `--better` wins over the inline suffix and over inferred directions.
+- A key that matches nothing prints a warning; the command still succeeds.
+- Quote a column whose name really ends in `:high` or `:low`: `--select='"mode:low"'`.
+- In axis mode the axis prefix comes first: `--select='x:name,y:latency:low'`.
+- `--col-axis` charts mix several columns in one chart, so they show no direction.
+
+### Best-first sorting
+
+Sort order `best` puts each chart's winner first: ascending for lower-is-better charts, descending for higher-is-better and charts without a direction. One setting suits a report that mixes both:
+
+```bash
+vizb bench.txt --chart bar:sort=best   # Execution Time ascending, Throughput descending
+```
+
+In the UI it is the **Best first** option in the sort settings, and `?bar.so=best` in the URL.
+
 ## Selecting a nested array with `--json-path`
 
 The `json` parser expects a top-level array. When your rows are wrapped in an envelope — `{"data":{"results":[...]}}`, `{"runs":[{"samples":[...]}]}` — point `--json-path` at the nested array with a jq-like dot path:

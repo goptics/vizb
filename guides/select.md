@@ -72,7 +72,7 @@ vizb bar sales.csv -g region,product -p x,y --select 'amount{Total},count{Orders
 
 | Topic | Behaviour |
 |-------|-----------|
-| Syntax | Comma-separated column names; optional trailing `{label}` to rename the chart (stat) |
+| Syntax | Comma-separated column names; optional trailing `{label}` to rename the chart (stat); optional `:high` / `:low` to mark the [better direction](/guides/data#better-direction) |
 | Order | Charts appear in `--select` flag order |
 | Quoting | Quote names that contain `,`, `{`, or `}` (e.g. `"price{USD}"`) |
 | Scope | `csv` and `json` parsers only; ignored with a warning elsewhere |

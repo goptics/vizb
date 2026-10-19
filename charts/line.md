@@ -378,6 +378,7 @@ These settings apply to line charts:
 | Stack | `--stack` | Stack series | Renders 2D grouped lines as stacked areas; ignored for z data and log scale |
 | Labels | `--show-labels` | Show labels | Displays value at each data point |
 | Smooth lines | `--smooth` | Smooth lines | Curves segments between points — 2D only |
+| Step lines | `--step` | Step lines | Staircase segments between points — 2D only; overrides `--smooth` |
 | Swap | `--swap` | Axis switcher | Rotates which column maps to X vs Y |
 | Scale (log) | `--scale log` or `--scale 'type=log;axes=x'` | Scale toggle | `linear` / `log` (value axis), or bag for per-axis log. Gaps at ≤0 |
 | 3D view | `--3d` | 3D view | Value 3D for x+y data (y → depth, metric → height) |

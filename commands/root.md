@@ -83,9 +83,10 @@ See the [Parser Guide](/guides/parsers) for each parser's metrics, and the
 | `--group-pattern` | `-p` | `x` | Pattern-based grouping (`n`/`x`/`y`/`z` with your chosen separators; `z` → 3D). Benchmarks: `/` or `_`. CSV/JSON: match `-g` (commas for `-g a,b,c`, spaces for quoted `-g "a b"`, etc.) |
 | `--group-regex` | `-r` | `""` | Regex-based grouping (named captures) |
 | `--group` | `-g` | `""` | Names dimensions in `--group-pattern` order. csv/json: column/field names (separators must match `-p`); benchmark parsers: human-readable axis labels |
-| `--select` | | *(repeatable)* | csv/json only: see [`--select` mode matrix](#--select-mode-matrix) below |
+| `--select` | | *(repeatable)* | csv/json only: see [`--select` mode matrix](#--select-mode-matrix) below. Append `:high` / `:low` to a column to mark its [better direction](/guides/data#better-direction) |
+| `--better` | | `""` | Mark which direction is better per metric, e.g. `rps:high,latency:low`; overrides inferred directions. See [Better direction](/guides/data#better-direction) |
 | `--json-path` | | `""` | json only: select a nested array to chart via a jq-like dot path (e.g. `--json-path '.data.results'`) |
-| `--sort` | `-s` | `""` | **Deprecated on root:** use `--chart <type>:sort=<asc\|desc>`. Sort order: `asc` or `desc` (default: as-is) |
+| `--sort` | `-s` | `""` | **Deprecated on root:** use `--chart <type>:sort=<asc\|desc\|best>`. Sort order: `asc`, `desc`, or `best` (default: as-is) |
 | `--charts` | `-c` | `bar,line,pie` | Chart types to generate (`bar`, `line`, `scatter`, `pie`, `heatmap`, `radar`, `sankey`, `chord`) |
 | `--chart` | | | Per-chart type settings override (repeatable): `<type>:<props>` — comma or semicolon between props; see below |
 | `--show-labels` | `-l` | `false` | **Deprecated on root:** use `--chart <type>:labels`. Show value labels on charts |
@@ -286,7 +287,7 @@ vizb sales.csv -c bar --chart 'bar:bg={color=rgba(180, 180, 180, 0.2);borderColo
 | Key | Bare flag | Values | Valid for |
 |-----|-----------|--------|-----------|
 | `swap` | — | permutation of axis chars (e.g. `yx`, `yxn`) | all |
-| `sort` | — | `asc`, `desc` | all |
+| `sort` | — | `asc`, `desc`, `best` | all |
 | `labels` | `labels` | `true`, `false` | all |
 | `scale` | — | `linear`, `log`, or `type=log;axes=x,y;base=10` | `bar`, `line`, `scatter` |
 | `3d-rotate` | `3d-rotate` | `true`, `false` | `bar`, `line` 3D only |

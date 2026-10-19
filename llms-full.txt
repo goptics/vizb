@@ -2037,6 +2037,7 @@ These settings apply to line charts:
 | Stack | `--stack` | Stack series | Renders 2D grouped lines as stacked areas; ignored for z data and log scale |
 | Labels | `--show-labels` | Show labels | Displays value at each data point |
 | Smooth lines | `--smooth` | Smooth lines | Curves segments between points — 2D only |
+| Step lines | `--step` | Step lines | Staircase segments between points — 2D only; overrides `--smooth` |
 | Swap | `--swap` | Axis switcher | Rotates which column maps to X vs Y |
 | Scale (log) | `--scale log` or `--scale 'type=log;axes=x'` | Scale toggle | `linear` / `log` (value axis), or bag for per-axis log. Gaps at ≤0 |
 | 3D view | `--3d` | 3D view | Value 3D for x+y data (y → depth, metric → height) |
@@ -3329,17 +3330,18 @@ The action:
 | `group` | `""` | Column/field names merged into the group name; forwarded as `-g` (accepts space- or comma-separated, e.g. `name category region` or `name,category/region`); parsed by `-p`/`-r`. |
 | `group-pattern` | `"x"` | Group pattern (`-p` flag). |
 | `group-regex` | `""` | Group regex (`-r` flag). |
-| `sort` | `""` | **Deprecated:** use `chart` input instead (e.g. `chart: 'bar:sort=asc'`). Sort order: `asc` or `desc` (`-s` flag). |
+| `sort` | `""` | **Deprecated:** use `chart` input instead (e.g. `chart: 'bar:sort=asc'`). Sort order: `asc`, `desc`, or `best` (`-s` flag). |
 | `filter` | `""` | Regex to include only matching rows (CSV/JSON: `--group` label) or benchmark names (`-f` flag). |
 | `mem-unit` | `"B"` | Memory unit: `b`, `B`, `KB`, `MB`, `GB` (`-M` flag). |
 | `time-unit` | `"ns"` | Time unit: `ns`, `us`, `ms`, `s` (`-T` flag). |
 | `number-unit` | `""` | Number unit: `K`, `M`, `B`, `T` (`-N` flag). |
 | `round` | `"false"` | Round numeric values to 2 decimal places in the output data (`--round` flag). |
-| `select` | `""` | **csv/json only:** select value columns; optional rename with `{label}` (e.g. `price{Unit price},count`) (`--select` flag). |
+| `select` | `""` | **csv/json only:** select value columns; optional rename with `{label}` and better direction with `:high`/`:low` (e.g. `price{Unit price}:low,count`) (`--select` flag). |
+| `better` | `""` | Mark which direction is better per metric, overriding inferred directions (e.g. `rps:high,latency:low`) (`--better` flag). |
 | `col-axis` | `""` | **csv/json + group:** place numeric column names on this axis (`n`, `x`, `y`, or `z`) so all columns share one chart (`--col-axis` / `-A` flag). Requires group; target axis must not already be used by `group-pattern`. |
 | `json-path` | `""` | **json only:** select a nested array to chart via a jq-like dot path (e.g. `.data.results`) (`--json-path` flag). |
 | `stat` | `""` | Enable stats panel (`--stat` flag). Empty = disabled; `all` or `true` = all categories; otherwise comma-separated from: `counts`, `center`, `spread`, `extremes`, `shape`, `percentiles`, `confidence`, `correlations`. |
-| `chart` | `""` | Per-chart overrides (`--chart` flag, repeatable). One override per line: `<type>:<props>`. Keys include `swap`, `sort`, `scale`, `stack`, `labels`, `3d-rotate`, `3d`, `symbol`, `symbol-size`, `smooth`, `horizontal`, `border-radius`, `bg`, `stat`. Comma separates single-value props; for multi-value props (e.g. `stat=center,spread`) use semicolon between props or put the multi-value prop alone. Object props use `{field=value;field=value}` (semicolons inside braces; commas stay literal) — e.g. `bar:bg`, `bar:bg={color=rgba(180, 180, 180, 0.2);borderColor=#000}`. Unwrapped `bar:bg=color=…` is invalid. Blank lines and `#`-prefixed lines are ignored. |
+| `chart` | `""` | Per-chart overrides (`--chart` flag, repeatable). One override per line: `<type>:<props>`. Keys include `swap`, `sort`, `scale`, `stack`, `labels`, `3d-rotate`, `3d`, `symbol`, `symbol-size`, `smooth`, `step`, `horizontal`, `border-radius`, `bg`, `stat`. Comma separates single-value props; for multi-value props (e.g. `stat=center,spread`) use semicolon between props or put the multi-value prop alone. Object props use `{field=value;field=value}` (semicolons inside braces; commas stay literal) — e.g. `bar:bg`, `bar:bg={color=rgba(180, 180, 180, 0.2);borderColor=#000}`. Unwrapped `bar:bg=color=…` is invalid. Blank lines and `#`-prefixed lines are ignored. |
 | `charts` | `"bar,line,pie"` | Chart types to generate (`-c` flag): `bar`, `line`, `scatter`, `pie`, `heatmap`, `radar`, `sankey`, `chord`. |
 | `parser` | `"auto"` | Parser to use: `csv`, `json`, `go`, `js:tinybench`, `js:vitest`, `rs:criterion`, `rs:divan` (`-P` flag). |
 | `font-size` | `""` | Chart text size (`--font-size`). A number sets series, legend, and axis ticks; or `series=16;legend=10;label=12` bag. |
@@ -3526,7 +3528,7 @@ Styled object form — `{field=value;field=value}` (semicolons inside braces; co
     output-html: pages/index.html
 ```
 
-Available override keys: `swap`, `sort`, `scale`, `stack`, `labels`, `3d-rotate`, `3d`, `symbol`, `symbol-size`, `smooth`, `horizontal`, `border-radius`, `bg`, `stat`.
+Available override keys: `swap`, `sort`, `scale`, `stack`, `labels`, `3d-rotate`, `3d`, `symbol`, `symbol-size`, `smooth`, `step`, `horizontal`, `border-radius`, `bg`, `stat`.
 
 ## Stats Panel
 
@@ -4030,9 +4032,10 @@ Every chart subcommand accepts the common data, grouping, and metadata flags:
 | `--group-pattern` | `-p` | `x` | Pattern-based grouping (`n`/`x`/`y`/`z` with separators matching `-g` for CSV/JSON) |
 | `--group-regex` | `-r` | `""` | Regex-based grouping (named captures) |
 | `--group` | `-g` | `""` | Names each dimension in `--group-pattern` order; csv/json column names must use matching separators in `-p` |
-| `--select` | | `""` | csv/json only: select value columns; optional rename with `{label}` |
+| `--select` | | `""` | csv/json only: select value columns; optional rename with `{label}` and `:high`/`:low` direction |
+| `--better` | | `""` | Mark which direction is better per metric, e.g. `rps:high,latency:low` |
 | `--filter` | `-f` | `""` | Regex to include only matching rows (CSV/JSON: `--group` label) or benchmark names |
-| `--sort` | `-s` | `""` | Sort order: `asc` or `desc` |
+| `--sort` | `-s` | `""` | Sort order: `asc`, `desc`, or `best` (winner first per chart) |
 | `--swap` | | `""` | Swap n/x/y/z axis assignment, e.g. `yx`, `yxn` |
 | `--show-labels` | `-l` | `false` | Show value labels on the chart |
 | `--label-suffix` | | *(empty)* | Suffix appended to numeric values on labels, tooltips, and value-axis ticks. Global (`%`), per-column (`latency=ms,throughput=%`, exact name match), or both (`%,latency=ms`); separate with `,` or `;` |
@@ -4290,9 +4293,10 @@ See the [Parser Guide](/guides/parsers) for each parser's metrics, and the
 | `--group-pattern` | `-p` | `x` | Pattern-based grouping (`n`/`x`/`y`/`z` with your chosen separators; `z` → 3D). Benchmarks: `/` or `_`. CSV/JSON: match `-g` (commas for `-g a,b,c`, spaces for quoted `-g "a b"`, etc.) |
 | `--group-regex` | `-r` | `""` | Regex-based grouping (named captures) |
 | `--group` | `-g` | `""` | Names dimensions in `--group-pattern` order. csv/json: column/field names (separators must match `-p`); benchmark parsers: human-readable axis labels |
-| `--select` | | *(repeatable)* | csv/json only: see [`--select` mode matrix](#--select-mode-matrix) below |
+| `--select` | | *(repeatable)* | csv/json only: see [`--select` mode matrix](#--select-mode-matrix) below. Append `:high` / `:low` to a column to mark its [better direction](/guides/data#better-direction) |
+| `--better` | | `""` | Mark which direction is better per metric, e.g. `rps:high,latency:low`; overrides inferred directions. See [Better direction](/guides/data#better-direction) |
 | `--json-path` | | `""` | json only: select a nested array to chart via a jq-like dot path (e.g. `--json-path '.data.results'`) |
-| `--sort` | `-s` | `""` | **Deprecated on root:** use `--chart <type>:sort=<asc\|desc>`. Sort order: `asc` or `desc` (default: as-is) |
+| `--sort` | `-s` | `""` | **Deprecated on root:** use `--chart <type>:sort=<asc\|desc\|best>`. Sort order: `asc`, `desc`, or `best` (default: as-is) |
 | `--charts` | `-c` | `bar,line,pie` | Chart types to generate (`bar`, `line`, `scatter`, `pie`, `heatmap`, `radar`, `sankey`, `chord`) |
 | `--chart` | | | Per-chart type settings override (repeatable): `<type>:<props>` — comma or semicolon between props; see below |
 | `--show-labels` | `-l` | `false` | **Deprecated on root:** use `--chart <type>:labels`. Show value labels on charts |
@@ -4493,7 +4497,7 @@ vizb sales.csv -c bar --chart 'bar:bg={color=rgba(180, 180, 180, 0.2);borderColo
 | Key | Bare flag | Values | Valid for |
 |-----|-----------|--------|-----------|
 | `swap` | — | permutation of axis chars (e.g. `yx`, `yxn`) | all |
-| `sort` | — | `asc`, `desc` | all |
+| `sort` | — | `asc`, `desc`, `best` | all |
 | `labels` | `labels` | `true`, `false` | all |
 | `scale` | — | `linear`, `log`, or `type=log;axes=x,y;base=10` | `bar`, `line`, `scatter` |
 | `3d-rotate` | `3d-rotate` | `true`, `false` | `bar`, `line` 3D only |
@@ -6083,6 +6087,43 @@ vizb sales.csv --select="price{USD}",count   # quote names with , { or }
 
 A column cannot be in both `--select` and `--group`. Without `--group`, `--select` switches to solo coordinate-axes mode (value / mixed / multi-stat) — see [Select](/guides/select) for the full reference, and [Group vs Select](/guides/group-vs-select) for when to use each.
 
+## Better direction
+
+Charts show a badge next to the title ("Lower is better" / "Higher is better") and mark the best value with ★: per category on bar charts (the best bar overall when one series is shown; hiding a series in the legend moves the ★), and the best point on single-line charts. Multi-line charts get no ★, since the crossovers already tell the story. On bar, line, and scatter charts with several series, 🏆 marks the best group's category label: the one whose visible bars add up to the best total. Groups missing a value are skipped. Tied groups all get it, and if every group ties, none does.
+
+Benchmark parsers set the direction automatically:
+
+| Parser | Lower is better | Higher is better | No direction |
+|--------|-----------------|------------------|--------------|
+| Go | `ns/op`, `B/op`, `allocs/op` | `MB/s` and any `*/s` unit | other custom metrics, Iterations |
+| Rust (criterion, divan) | Latency | | Samples |
+| JavaScript (tinybench, vitest) | Latency, RME, MAD | Throughput (`ops/s`) | Samples |
+
+CSV/JSON columns have no direction until you set one, either inline in `--select` or with `--better`:
+
+```bash
+vizb data.csv -g name --select='rps{Req/s}:high,latency:low'
+vizb data.csv -g name --better='Req/s:high,latency:low'
+vizb bench.txt --better='widgets/op:high'          # custom Go metric
+```
+
+- `--better` keys match a metric's displayed name (column name or its `{label}`), its full chart title, or its unit (`ns/op`, `req/s`). Matching ignores case and compares the whole string.
+- `--better` wins over the inline suffix and over inferred directions.
+- A key that matches nothing prints a warning; the command still succeeds.
+- Quote a column whose name really ends in `:high` or `:low`: `--select='"mode:low"'`.
+- In axis mode the axis prefix comes first: `--select='x:name,y:latency:low'`.
+- `--col-axis` charts mix several columns in one chart, so they show no direction.
+
+### Best-first sorting
+
+Sort order `best` puts each chart's winner first: ascending for lower-is-better charts, descending for higher-is-better and charts without a direction. One setting suits a report that mixes both:
+
+```bash
+vizb bench.txt --chart bar:sort=best   # Execution Time ascending, Throughput descending
+```
+
+In the UI it is the **Best first** option in the sort settings, and `?bar.so=best` in the URL.
+
 ## Selecting a nested array with `--json-path`
 
 The `json` parser expects a top-level array. When your rows are wrapped in an envelope — `{"data":{"results":[...]}}`, `{"runs":[{"samples":[...]}]}` — point `--json-path` at the nested array with a jq-like dot path:
@@ -7105,7 +7146,7 @@ vizb bar sales.csv -g region,product -p x,y --select 'amount{Total},count{Orders
 
 | Topic | Behaviour |
 |-------|-----------|
-| Syntax | Comma-separated column names; optional trailing `{label}` to rename the chart (stat) |
+| Syntax | Comma-separated column names; optional trailing `{label}` to rename the chart (stat); optional `:high` / `:low` to mark the [better direction](/guides/data#better-direction) |
 | Order | Charts appear in `--select` flag order |
 | Quoting | Quote names that contain `,`, `{`, or `}` (e.g. `"price{USD}"`) |
 | Scope | `csv` and `json` parsers only; ignored with a warning elsewhere |
@@ -7813,10 +7854,11 @@ Prefer **per-chart** flags when generating multi-chart HTML. Root-level `--sort`
 | CLI | UI setting | Options |
 |-----|------------|---------|
 | `--chart <type>:scale=log` or `vizb bar --scale log` | Scale toggle | Linear / Logarithmic |
-| `--chart <type>:sort=asc` or `vizb bar --sort asc` | Sort dropdown | `asc` / `desc` / none |
+| `--chart <type>:sort=asc` or `vizb bar --sort asc` | Sort dropdown | `asc` / `desc` / `best` / none |
 | `--charts` / `-c` | Which chart tabs exist | `bar` / `line` / `pie` / `scatter` / `heatmap` / `radar` / `sankey` / `chord` |
 | `--chart <type>:labels` or `vizb pie --show-labels` | Labels toggle | on / off |
-| `--chart line:smooth` or `vizb line --smooth` | Smooth lines | on / off — 2D line only |
+| `--chart line:smooth` or `vizb line --smooth` | Smooth lines | on / off — 2D line only; hidden while Step lines is on |
+| `--chart line:step` or `vizb line --step` | Step lines | on / off — 2D line only; wins over smooth |
 | `--donut` / `--chart pie:donut` | Donut switch | on / off — pie only; off is filled |
 | `--chart bar:3d-rotate` (or line/scatter) | Auto rotate | on / off — 3D bar / line / scatter |
 | `--chart bar:bg` or `vizb bar --bg` | — | on / off — 2D bar only; CLI/config, no UI toggle; writes `background.active: true` |

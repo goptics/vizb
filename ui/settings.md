@@ -12,10 +12,11 @@ Prefer **per-chart** flags when generating multi-chart HTML. Root-level `--sort`
 | CLI | UI setting | Options |
 |-----|------------|---------|
 | `--chart <type>:scale=log` or `vizb bar --scale log` | Scale toggle | Linear / Logarithmic |
-| `--chart <type>:sort=asc` or `vizb bar --sort asc` | Sort dropdown | `asc` / `desc` / none |
+| `--chart <type>:sort=asc` or `vizb bar --sort asc` | Sort dropdown | `asc` / `desc` / `best` / none |
 | `--charts` / `-c` | Which chart tabs exist | `bar` / `line` / `pie` / `scatter` / `heatmap` / `radar` / `sankey` / `chord` |
 | `--chart <type>:labels` or `vizb pie --show-labels` | Labels toggle | on / off |
-| `--chart line:smooth` or `vizb line --smooth` | Smooth lines | on / off — 2D line only |
+| `--chart line:smooth` or `vizb line --smooth` | Smooth lines | on / off — 2D line only; hidden while Step lines is on |
+| `--chart line:step` or `vizb line --step` | Step lines | on / off — 2D line only; wins over smooth |
 | `--donut` / `--chart pie:donut` | Donut switch | on / off — pie only; off is filled |
 | `--chart bar:3d-rotate` (or line/scatter) | Auto rotate | on / off — 3D bar / line / scatter |
 | `--chart bar:bg` or `vizb bar --bg` | — | on / off — 2D bar only; CLI/config, no UI toggle; writes `background.active: true` |
