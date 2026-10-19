@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import type { ChartData, LabelAffix } from '@/types'
 import type { BaseChartConfig } from './baseChartOptions'
 import { useBarChartOptions } from './useBarChartOptions'
+import { WINNER_MARK } from './shared/better'
 import {
   installDevicePixelRatio,
   makeMixedChartData,
@@ -1312,5 +1313,28 @@ describe('useBarChartOptions — labelPrefix', () => {
     const yAxis = options.value.yAxis as AffixYAxis
     // Compact ticks only, no affix text.
     expect(yAxis.axisLabel.formatter!(1500)).toBe('1.5K')
+  })
+})
+
+describe('useBarChartOptions — category trophy', () => {
+  // Groups A (North 10, South 20) and B (15, 25): A has the lower total.
+  const categoryLabels = (horizontal: boolean, better?: 'low' | 'high') => {
+    const cfg = makeGroupedConfig(horizontal)
+    cfg.chartData.value = { ...cfg.chartData.value, better }
+    const opts = useBarChartOptions(cfg).options.value
+    const axis = (horizontal ? opts.yAxis : opts.xAxis) as {
+      data: string[]
+      axisLabel: { formatter: (v: string, i: number) => string }
+    }
+    return axis.data.map((v, i) => axis.axisLabel.formatter(v, i))
+  }
+
+  it('crowns the best group on the category axis, vertical and horizontal', () => {
+    expect(categoryLabels(false, 'low')).toEqual([`${WINNER_MARK} A`, 'B'])
+    expect(categoryLabels(true, 'high')).toEqual(['A', `${WINNER_MARK} B`])
+  })
+
+  it('leaves labels alone without a direction', () => {
+    expect(categoryLabels(false)).toEqual(['A', 'B'])
   })
 })

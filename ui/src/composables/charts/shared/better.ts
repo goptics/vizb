@@ -3,6 +3,8 @@ import { LARGE_DATA_THRESHOLD } from './chartConfig'
 
 /** Glyph that marks the best value on a chart. */
 export const BEST_MARK = '★'
+/** Glyph prefixed to the category axis label of the best group (2D bar). */
+export const WINNER_MARK = '🏆'
 
 /** Human hint for a metric direction; empty when unknown. */
 export function betterHint(better?: Better): string {
@@ -56,6 +58,22 @@ type MarkableSeries = {
   label?: { formatter?: LabelFormatter }
 }
 
+/** Rows + legend visibility, or null when the chart can't be marked. */
+function markable(
+  seriesList: MarkableSeries[],
+  better: Better | undefined,
+  selected: Record<string, boolean>
+): { rows: (number | null)[][]; visible: boolean[]; better: Better } | null {
+  if (!better || !seriesList.length) return null
+  // ponytail: ECharts `large` mode ignores per-item styles past this size anyway.
+  if (seriesList.some((s) => s.data.length > LARGE_DATA_THRESHOLD)) return null
+  const plain = seriesList.every((s) => s.data.every((d) => d == null || typeof d === 'number'))
+  if (!plain) return null
+  const rows = seriesList.map((s) => s.data as (number | null)[])
+  const visible = seriesList.map((s) => selected[s.name ?? ''] !== false)
+  return { rows, visible, better }
+}
+
 /**
  * Replaces the best data points of bar/line series with styled items: a
  * contrasting border and a ★ label (prefixed to the value label when labels
@@ -68,15 +86,9 @@ export function applyBestMarker(
   selected: Record<string, boolean>,
   opts: { isDark: boolean; showLabels: boolean }
 ): void {
-  if (!better || !seriesList.length) return
-  // ponytail: ECharts `large` mode ignores per-item styles past this size anyway.
-  if (seriesList.some((s) => s.data.length > LARGE_DATA_THRESHOLD)) return
-  const plain = seriesList.every((s) => s.data.every((d) => d == null || typeof d === 'number'))
-  if (!plain) return
-
-  const rows = seriesList.map((s) => s.data as (number | null)[])
-  const visible = seriesList.map((s) => selected[s.name ?? ''] !== false)
-  const mask = bestMask(rows, better, visible)
+  const m = markable(seriesList, better, selected)
+  if (!m) return
+  const mask = bestMask(m.rows, m.better, m.visible)
   // Gold reads as "winner"; deeper in light mode for contrast on white, and a
   // glow keeps the outline visible on orange/yellow series bars.
   const gold = opts.isDark ? '#fbbf24' : '#d97706'
@@ -108,4 +120,40 @@ export function applyBestMarker(
         : d
     )
   })
+}
+
+/**
+ * Category axis-label fragment that prefixes the best group with 🏆: the
+ * category whose visible series total is lowest (`low`) or highest (`high`).
+ * Needs two visible series (one series already gets a ★ on its best category).
+ * Categories missing a visible value are skipped, so a gap can't win on `low`.
+ * Tied categories all get it, unless every category ties. Call before
+ * applyBestMarker (it needs plain data). Always returns a formatter: ECharts
+ * merges option updates, so omitting it would keep a stale trophy.
+ */
+export function trophyAxisLabel(
+  seriesList: MarkableSeries[],
+  better: Better | undefined,
+  selected: Record<string, boolean>
+): { formatter: (value: string, index: number) => string } {
+  const winners = bestCategories(seriesList, better, selected)
+  return { formatter: (v, i) => (winners.has(i) ? `${WINNER_MARK} ${v}` : v) }
+}
+
+function bestCategories(
+  seriesList: MarkableSeries[],
+  better: Better | undefined,
+  selected: Record<string, boolean>
+): Set<number> {
+  const m = markable(seriesList, better, selected)
+  const live = m ? m.rows.filter((_, i) => m.visible[i]) : []
+  if (live.length < 2) return new Set()
+  const totals = live[0]!.map((_, j) => {
+    const vals = live.map((r) => r[j])
+    return vals.every(finite) ? vals.reduce((a, b) => a + b, 0) : NaN
+  })
+  const eligible = totals.filter(Number.isFinite)
+  const best = m!.better === 'low' ? Math.min(...eligible) : Math.max(...eligible)
+  const winners = totals.flatMap((t, j) => (t === best ? [j] : []))
+  return winners.length === eligible.length ? new Set() : new Set(winners)
 }

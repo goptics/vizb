@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { applyBestMarker, bestMask, betterHint, BEST_MARK } from './better'
+import {
+  applyBestMarker,
+  bestMask,
+  betterHint,
+  trophyAxisLabel,
+  BEST_MARK,
+  WINNER_MARK,
+} from './better'
 
 describe('betterHint', () => {
   it('describes each direction and is empty when unknown', () => {
@@ -139,5 +146,82 @@ describe('applyBestMarker', () => {
     const tuples = [{ data: [[1, 2]] as unknown[] }, { data: [[1, 3]] as unknown[] }]
     applyBestMarker(tuples, 'low', {}, opts)
     expect(tuples[0]!.data[0]).toEqual([1, 2])
+  })
+})
+
+describe('trophyAxisLabel', () => {
+  // rows = series, columns = categories c0, c1, ...
+  const labels = (
+    rows: unknown[][],
+    better: 'low' | 'high' | undefined = 'low',
+    selected: Record<string, boolean> = {}
+  ) => {
+    const s = rows.map((d, i) => ({ name: 'abc'[i], data: d }))
+    const { formatter } = trophyAxisLabel(s, better, selected)
+    return rows[0]!.map((_, j) => formatter(`c${j}`, j))
+  }
+  const T = WINNER_MARK
+
+  it('crowns the category with the best visible total', () => {
+    const rows = [
+      [1, 5, 9],
+      [2, 1, 9],
+    ]
+    expect(labels(rows)).toEqual([`${T} c0`, 'c1', 'c2'])
+    expect(labels(rows, 'high')).toEqual(['c0', 'c1', `${T} c2`])
+  })
+
+  it('crowns tied categories but not when every category ties', () => {
+    expect(
+      labels([
+        [1, 2, 5],
+        [2, 1, 5],
+      ])
+    ).toEqual([`${T} c0`, `${T} c1`, 'c2'])
+    expect(
+      labels([
+        [1, 2],
+        [2, 1],
+      ])
+    ).toEqual(['c0', 'c1'])
+  })
+
+  it('recomputes from legend selection and needs two visible series', () => {
+    const rows = [
+      [1, 20],
+      [9, 2],
+      [9, 2],
+    ]
+    expect(labels(rows)).toEqual([`${T} c0`, 'c1'])
+    expect(labels(rows, 'low', { b: false, c: false })).toEqual(['c0', 'c1'])
+    expect(labels(rows, 'low', { a: false })).toEqual(['c0', `${T} c1`])
+    const unnamed = trophyAxisLabel([{ data: [1, 9] }, { name: 'x', data: [1, 9] }], 'low', {})
+    expect(unnamed.formatter('c0', 0)).toBe(`${T} c0`)
+  })
+
+  it('skips categories with a missing value', () => {
+    expect(
+      labels([
+        [null, 5, 6],
+        [1, 5, 9],
+      ])
+    ).toEqual(['c0', `${T} c1`, 'c2'])
+    expect(
+      labels([
+        [null, 5],
+        [1, 5],
+      ])
+    ).toEqual(['c0', 'c1'])
+  })
+
+  it('adds nothing without direction, for tuple data, or large series', () => {
+    const s = [
+      { name: 'a', data: [1, 2] },
+      { name: 'b', data: [1, 2] },
+    ]
+    expect(trophyAxisLabel(s, undefined, {}).formatter('c0', 0)).toBe('c0')
+    expect(labels([[[1, 2]], [[1, 3]]])).toEqual(['c0'])
+    const big = Array.from({ length: 2001 }, (_, i) => i)
+    expect(labels([big, big])[0]).toBe('c0')
   })
 })
