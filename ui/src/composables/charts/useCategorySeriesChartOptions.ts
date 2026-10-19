@@ -72,7 +72,7 @@ const logYValue = (val: number | null, yLog: boolean): number | null =>
   adjustForLogScaleLine(val, yLog ? 'log' : 'linear')
 
 export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: CategorySeriesKind) {
-  const { chartData, sort, isDark, showLabels, scale, stack, visualMap, visibleZ } = config
+  const { chartData, sort, isDark, showLabels, scale, stack, visualMap } = config
   const sortedData = useSortedSeriesData(chartData, sort)
   const style = SERIES_STYLE[kind]
 
@@ -217,10 +217,8 @@ export function useCategorySeriesChartOptions(config: BaseChartConfig, kind: Cat
     }))
 
     const seriesTotals = computeSeriesTotals(transposedSeries)
-    // After totals: marked points become {value, ...} objects.
-    if (kind === 'line') {
-      applyBestMarker(transposedSeries, chartData.value.better, visibleZ?.value ?? {}, markOpts)
-    }
+    // ponytail: no ★ on multi-line charts — a star per x reads as noise; the
+    // lines' crossovers carry the comparison (single-line charts keep it).
     const yLabel = chartData.value.axisLabels?.y
     const showXBreakdown = kind === 'line' || hasXAxis(chartData)
 
