@@ -53,12 +53,12 @@ export function finalizeChart(
   const { canonical, threeD, preserveRows } = ctx
   // `best` becomes asc/desc from this chart's direction before any sorting.
   const sort = resolveSort(ctx.sort, pieces.better)
-  let { yAxisValues, zAxisValues, mixedTuples, xCategories } = pieces
+  let { yAxisValues, zAxisValues, mixedTuples, xCategories, series } = pieces
 
   let xAxisValues = mixedTuples
     ? (xCategories ?? [])
     : preserveRows
-      ? pieces.series.map((s) => s.xAxis)
+      ? series.map((s) => s.xAxis)
       : Array.from(pieces.xSet)
 
   if (!sort.enabled && canonical) {
@@ -72,11 +72,18 @@ export function finalizeChart(
     } else if (!preserveRows) {
       xAxisValues = applyCanonicalOrder(xAxisValues, canonical.x)
     }
+    // Series values were built in the pre-reorder y order; permute them to
+    // follow the canonical names or legends would label the wrong bars.
+    const oldY = new Map(yAxisValues.map((y, i) => [y, i]))
     yAxisValues = applyCanonicalOrder(yAxisValues, canonical.y)
+    series = series.map((s) => ({
+      ...s,
+      values: yAxisValues.map((y) => s.values[oldY.get(y)!] ?? null),
+    }))
     zAxisValues = applyCanonicalOrder(zAxisValues, canonical.z)
   }
 
-  if (sort.enabled && pieces.series.length) sortSeriesByTotal(pieces.series, sort.order)
+  if (sort.enabled && series.length) sortSeriesByTotal(series, sort.order)
   if (sort.enabled && mixedTuples?.length && xCategories?.length) {
     ;({ mixedTuples, xCategories } = sortMixedTuplesByCategoryTotal(
       mixedTuples,
@@ -92,7 +99,7 @@ export function finalizeChart(
     ...(pieces.better ? { better: pieces.better } : {}),
     yAxis: yAxisValues,
     zAxis: zAxisValues,
-    series: pieces.series,
+    series,
     points: pieces.points,
     axisLabels: pieces.axisLabels,
     ...(mixedTuples?.length ? { mixedTuples, xCategories } : {}),

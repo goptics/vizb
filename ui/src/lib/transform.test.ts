@@ -1016,6 +1016,29 @@ describe('buildValue3DRender', () => {
     expect(Object.keys(render.cellTotals).length).toBeGreaterThan(0)
   })
 
+  it('keeps cell values aligned to y names under canonical reorder', () => {
+    const render = buildValue3DRender(baseChart(), noSort, true, 'linear', {
+      x: ['B', 'A'],
+      y: ['Y2', 'Y1'],
+    })
+    // B=[3,4] / A=[1,0] in [Y1,Y2] order → cells keyed by (xi,yi) of the reordered axes
+    expect(render.cellTotals).toEqual({ '0,0': 4, '0,1': 3, '1,0': 0, '1,1': 1 })
+  })
+
+  it('keeps cell values aligned to y names when sort reorders yValues', () => {
+    const chart: ChartData = {
+      title: 't',
+      statType: 'v',
+      yAxis: ['Y1', 'Y2'],
+      zAxis: [],
+      series: [{ xAxis: 'A', values: [1, 10], benchmarkId: '' }],
+      points: [],
+    }
+    const render = buildValue3DRender(chart, descSort, true)
+    expect(render.yValues).toEqual(['Y2', 'Y1'])
+    expect(render.cellTotals).toEqual({ '0,0': 10, '0,1': 1 })
+  })
+
   it('skips series whose x was filtered out of xValues', () => {
     const chart = baseChart()
     chart.series.push({ xAxis: '', values: [1, 2], benchmarkId: '' })

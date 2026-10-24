@@ -606,6 +606,10 @@ export function buildValue3DRender(
 ): Render3D {
   let xValues = chart.series.map((s) => s.xAxis).filter((x) => x.trim() !== '')
   let yValues = chart.yAxis.filter((y) => y !== '')
+  // s.values stay in chart.yAxis order; look them up by name so reordering
+  // yValues (canonical or sort) cannot shift a value onto the wrong y.
+  const ySrc = new Map(chart.yAxis.map((y, i) => [y, i]))
+  const valueAt = (s: SeriesData, y: string): number => s.values[ySrc.get(y)!] ?? 0
 
   if (!sort.enabled && canonical) {
     xValues = applyCanonicalOrder(xValues, canonical.x)
@@ -614,10 +618,9 @@ export function buildValue3DRender(
 
   if (sort.enabled) {
     const points: Point3D[] = []
-    for (let yi = 0; yi < yValues.length; yi++) {
-      const yAxis = yValues[yi]!
+    for (const yAxis of yValues) {
       for (const s of chart.series) {
-        points.push({ xAxis: s.xAxis, yAxis, zAxis: '', value: s.values[yi] ?? 0 })
+        points.push({ xAxis: s.xAxis, yAxis, zAxis: '', value: valueAt(s, yAxis) })
       }
     }
     xValues = sortByAxisTotal(xValues, 'xAxis', points, sort.order)
@@ -628,11 +631,11 @@ export function buildValue3DRender(
   const yIndex = new Map(yValues.map((v, i) => [v, i]))
   const cells = new Map<string, number>()
 
-  for (let yi = 0; yi < yValues.length; yi++) {
+  for (const [y, yi] of yIndex) {
     for (const s of chart.series) {
       const xi = xIndex.get(s.xAxis)
       if (xi === undefined) continue
-      cells.set(`${xi},${yi}`, s.values[yi] ?? 0)
+      cells.set(`${xi},${yi}`, valueAt(s, y))
     }
   }
 
