@@ -508,6 +508,46 @@ describe('finalizeChart edge branches', () => {
   })
 })
 
+describe('canonical y order keeps series values aligned', () => {
+  // Regression: a group whose first-seen y order differs from the dataset-wide
+  // canonical order had its y names reordered while series values stayed in
+  // the group's own order, so bars carried the wrong legend label.
+  const rows = [dp('a', 'F', '', 'val', 1), dp('a', 'S', '', 'val', 2)]
+  const canonical = { y: ['S', 'F'] }
+
+  it('grouped builder permutes values with the canonical y order', () => {
+    const chart = grouped.build(rows, baseCtx({ canonical }))
+    expect(chart.yAxis).toEqual(['S', 'F'])
+    expect(chart.series[0]!.values).toEqual([2, 1])
+  })
+
+  it('preserveRows builder permutes each row series with the canonical y order', () => {
+    const chart = preserveRows.build(rows, baseCtx({ preserveRows: true, canonical }))
+    expect(chart.yAxis).toEqual(['S', 'F'])
+    expect(chart.series.map((s) => s.values)).toEqual([
+      [null, 1],
+      [2, null],
+    ])
+  })
+
+  it('pads with null when a series is shorter than the y order', () => {
+    const chart = finalizeChart(
+      {
+        statType: 'val',
+        title: 'val',
+        yAxisValues: ['F', 'S'],
+        zAxisValues: [''],
+        series: [{ xAxis: 'a', values: [1], benchmarkId: '' }],
+        points: [],
+        xSet: new Set(['a']),
+      },
+      baseCtx({ canonical })
+    )
+    expect(chart.yAxis).toEqual(['S', 'F'])
+    expect(chart.series[0]!.values).toEqual([null, 1])
+  })
+})
+
 describe('remaining builder branch edges', () => {
   it('preserveRows yOrder empty fallback is unreachable with points but empty yOrder forces Array.from', () => {
     // ySeen always fills yOrder when values exist; empty data still exercises yOrder.length ? branch false
