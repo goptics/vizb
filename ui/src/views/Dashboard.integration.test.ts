@@ -299,6 +299,16 @@ describe('Dashboard', () => {
     vi.clearAllMocks()
   })
 
+  it('skips cards whose group has no data for the signature', () => {
+    chartsRef.value = [
+      { key: 'c1', data: makeGroupedChartData({ title: 'Chart One' }), pending: false },
+      { key: 'c2', data: makeGroupedChartData({ title: 'Empty', series: [] }), pending: false },
+    ]
+    const w = mount(Dashboard)
+    expect(w.findAll('[data-testid="chart-card"]').map((c) => c.text())).toEqual(['Chart One'])
+    expect(w.get('.space-y-5').element.children.length).toBe(1)
+  })
+
   it('main happy path: header, charts, footer, nav', async () => {
     const w = mount(Dashboard)
     expect(holder.initFromUrl).toHaveBeenCalledTimes(1)

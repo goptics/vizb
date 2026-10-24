@@ -8,6 +8,7 @@ import { useActiveChartShape } from '../composables/useActiveChartShape'
 import { useUrlRouter } from '../composables/useUrlRouter'
 import { swapAxisLabels } from '../lib/swap'
 import { axisLabelsFromAxes } from '../lib/transform'
+import { chartHasPlottableData } from '../lib/utils'
 import ChartSettingsPopover from '../components/ChartSettingsPopover.vue'
 import ChartCard from '../components/ChartCard.vue'
 import DatasetHeader from '../components/DatasetHeader.vue'
@@ -187,14 +188,20 @@ watch(
 
       <div v-else class="space-y-5">
         <template v-for="(state, index) in charts" :key="state.key">
+          <!-- Chart list is dataset-wide per stat signature; a group with no rows
+               for one yields an empty chart. Skip it (charts[] keeps its slot, so
+               activeChartIndex stays aligned). -->
           <ChartCard
-            v-if="state.data"
+            v-if="state.data && chartHasPlottableData(state.data)"
             :chartData="state.data"
             :loading="state.pending"
             class="animate-fade-in"
             :style="{ animationDelay: `${index * 50}ms` }"
           />
-          <div v-else class="rounded-lg border border-border bg-card p-6 shadow-sm">
+          <div
+            v-else-if="!state.data"
+            class="rounded-lg border border-border bg-card p-6 shadow-sm"
+          >
             <div class="mb-4 h-6 w-48 animate-pulse rounded bg-muted" />
             <div class="h-[600px] animate-pulse rounded bg-muted" />
           </div>
