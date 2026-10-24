@@ -4,6 +4,12 @@ Notable changes to Vizb documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [v0.23.1] - 2026-10-24
+
+### Fixed
+
+- **ui** — Skip chart cards whose selected group has no data for the stat signature instead of rendering a blank plot with "Series: 0 / Y-axis: 0" badges ([#501](https://github.com/goptics/vizb/pull/501))
+
 # [v0.23.0] - 2026-10-19
 
 ### Added
