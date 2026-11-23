@@ -54,6 +54,25 @@ Vizb generates a single self-contained HTML file. Upload that file (or a directo
   ```
 
   </TabItem>
+  <TabItem label="deed.page">
+
+  For a quick share with no Pages site or hosting account to set up, upload the HTML file to [deed.page](https://deed.page). One request, no account; choose your own slug:
+
+  ```bash
+  curl -T benchmark.html "https://deed.page/v1/sites?slug=my-benchmarks"
+  ```
+
+  The JSON response contains the permanent `url` and a `token` that is shown once. Save the token as a repository secret (for example `DEEDPAGE_TOKEN`) so a workflow can publish new results to the same URL:
+
+  ```yaml
+  - run: |
+      curl -fsS -T benchmark.html "https://deed.page/v1/sites?slug=my-benchmarks" \
+        -H "Authorization: Bearer ${{ secrets.DEEDPAGE_TOKEN }}"
+  ```
+
+  Free sites take uploads up to 4 MB and show a small deed.page badge. See the [deed.page docs](https://deed.page/docs) for limits and the full API.
+
+  </TabItem>
   <TabItem label="Artifact Only" icon="rocket">
 
   Upload as a workflow artifact for manual download:
